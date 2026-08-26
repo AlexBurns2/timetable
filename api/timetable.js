@@ -20,7 +20,7 @@
  *   EMAIL_DOMAIN      optional  default: the domain of SCHOOL_EMAIL
  */
 
-const DEFAULT_ORIGIN = "https://pugmeowla.github.io";
+const DEFAULT_ORIGIN = "https://alexburns2.github.io";
 const TOKEN_SKEW_MS = 60 * 60 * 1000;   // refresh an hour before expiry
 
 let cachedToken = null;                  // { token, type, exp }  exp = seconds
