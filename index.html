@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Timetable</title>
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#ffffff; --panel-2:#f0f1f4; --line:#dcdfe5;
+  --text:#14161a; --muted:#666d78; --accent:#3b6ef6;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg:#0e1013; --panel:#171a1f; --panel-2:#1e2229; --line:#2a2f38;
+  --text:#e8eaee; --muted:#8b94a3; --accent:#6b93ff;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); min-height:100vh;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1400px;margin:0 auto;padding:18px 18px 60px}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
+.brand h1{margin:0;font-size:20px;letter-spacing:-.02em}
+.brand span{color:var(--muted);font-size:13px}
+.btn{
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:8px 12px;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;
+}
+.btn:hover{background:var(--panel-2)}
+.btn.icon{width:38px;padding:8px 0;text-align:center}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+.weeknav{display:flex;align-items:center;gap:6px}
+.weeklabel{min-width:210px;text-align:center;color:var(--muted);font-size:13px}
+.wk{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;
+    background:var(--accent);color:#fff;font-size:11px;font-weight:650;vertical-align:1px}
+
+/* ---------- now bar ---------- */
+.now{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;margin-bottom:16px}
+.nowcard{
+  flex:1 1 260px;background:var(--panel);border:1px solid var(--line);
+  border-left:5px solid var(--accent);
+  border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);min-width:0;
+}
+.nowcard .lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.nowcard .subj{font-size:17px;font-weight:650;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nowcard .meta{color:var(--muted);font-size:13px;margin-top:2px}
+.nowcard .count{font-variant-numeric:tabular-nums;font-size:13px;margin-top:6px;font-weight:600}
+
+/* ---------- grid ---------- */
+.grid{
+  display:grid;gap:10px;align-items:start;
+  grid-template-columns:80px repeat(var(--days,5),minmax(0,1fr));
+}
+.colhead{position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 2px 8px;text-align:center}
+.colhead .dow{font-weight:650;font-size:14px}
+.colhead .dat{color:var(--muted);font-size:12px}
+.colhead.today .dow,.colhead.today .dat{color:var(--accent)}
+.periodcell{color:var(--muted);font-size:12px;text-align:right;padding:14px 8px 0 0;line-height:1.3}
+.periodcell b{display:block;color:var(--text);font-size:13px}
+.periodcell.brk{padding-top:8px}
+.cell{min-height:76px}
+.cell.brk{min-height:0}
+.lesson{
+  background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--c,var(--accent));
+  border-radius:var(--radius);padding:10px 11px;box-shadow:var(--shadow);height:100%;
+  overflow:hidden;transition:transform .12s ease;
+}
+.lesson:hover{transform:translateY(-1px)}
+.lesson .s{font-weight:650;font-size:14px;line-height:1.25;overflow-wrap:anywhere;hyphens:auto}
+.lesson .r{color:var(--muted);font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+.lesson .t{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.lesson .tm{color:var(--muted);font-size:11px;margin-top:5px;font-variant-numeric:tabular-nums}
+.lesson.current{outline:2px solid var(--c,var(--accent));outline-offset:1px}
+.lesson.past{opacity:.45}
+.breakbar{
+  background:var(--panel-2);border:1px dashed var(--line);border-radius:10px;
+  padding:5px 10px;color:var(--muted);font-size:12px;text-align:center;
+}
+.free{
+  border:1px dashed var(--line);border-radius:var(--radius);height:100%;min-height:76px;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;
+}
+
+/* ---------- mobile ---------- */
+.dayswitch{display:none;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.dayswitch button{
+  flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  padding:7px 14px;cursor:pointer;font-size:13px
+}
+.dayswitch button[aria-pressed="true"]{background:var(--accent);border-color:transparent;color:#fff}
+@media (max-width:820px){
+  .grid{grid-template-columns:66px minmax(0,1fr)}
+  .dayswitch{display:flex}
+  .weeklabel{min-width:0;font-size:12px}
+  .brand h1{font-size:18px}
+}
+
+/* ---------- email gate ---------- */
+.gate{
+  position:fixed;inset:0;z-index:50;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.gate[hidden]{display:none}
+.gatecard{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  box-shadow:var(--shadow);padding:26px;width:min(420px,100%);
+}
+.gatecard h2{margin:0 0 6px;font-size:19px}
+.gatecard p{margin:0 0 18px;color:var(--muted);font-size:13px}
+.emailrow{display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;background:var(--panel-2);overflow:hidden}
+.emailrow input{flex:1;min-width:0;border:0;background:none;padding:11px 12px;outline:none}
+.emailrow .dom{padding-right:12px;color:var(--muted);font-size:13px;white-space:nowrap}
+.gatecard .btn{margin-top:14px;width:100%}
+.gateerr{color:#e5484d;font-size:13px;margin-top:10px;min-height:18px}
+
+/* ---------- settings ---------- */
+dialog{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);
+  border-radius:var(--radius);padding:0;box-shadow:var(--shadow);width:min(520px,92vw);
+}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg-h{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.dlg-h h2{margin:0;font-size:16px;margin-right:auto}
+.dlg-b{padding:16px;max-height:65vh;overflow:auto}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.field input[type=text]{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px
+}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+.colrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.colrow:last-child{border-bottom:0}
+.colrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.colrow input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.dlg-f{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line)}
+.status{margin:0 0 14px;font-size:13px;color:var(--muted)}
+.status.err{color:#e5484d}
+</style>
+</head>
+<body>
+
+<!-- first-run email prompt -->
+<div class="gate" id="gate" hidden>
+  <div class="gatecard">
+    <h2>Your timetable</h2>
+    <p>Enter your school email to load it. It is saved on this device, so you only do this once.</p>
+    <form id="gateform">
+      <div class="emailrow">
+        <input type="text" id="gateemail" autocomplete="username" autocapitalize="none"
+               autocorrect="off" spellcheck="false" placeholder="first.last1">
+        <span class="dom" id="gatedomain"></span>
+      </div>
+      <button class="btn primary" type="submit" id="gatego">Show my timetable</button>
+    </form>
+    <div class="gateerr" id="gateerr"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <h1 id="title">Timetable</h1>
+    <span id="sub">Loading&hellip;</span>
+  </div>
+  <div class="weeknav">
+    <button class="btn icon" id="prev" title="Previous week">&lsaquo;</button>
+    <div class="weeklabel" id="weeklabel"></div>
+    <button class="btn icon" id="next" title="Next week">&rsaquo;</button>
+  </div>
+  <button class="btn" id="today">Today</button>
+  <button class="btn icon" id="theme" title="Toggle theme">&#9686;</button>
+  <button class="btn icon" id="settings" title="Settings">&#9881;</button>
+</header>
+
+<div class="now" id="now"></div>
+<div class="dayswitch" id="dayswitch"></div>
+<div class="grid" id="grid"></div>
+
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <div class="dlg-b">
+    <p class="status" id="status"></p>
+    <div class="field">
+      <label for="ep">Timetable endpoint</label>
+      <input type="text" id="ep" placeholder="https://your-project.vercel.app/api/timetable" spellcheck="false">
+      <div class="hint">Your Vercel function. It holds the school login; this page never sees it.</div>
+    </div>
+    <div class="field">
+      <label for="em">School email</label>
+      <input type="text" id="em" placeholder="first.last1" spellcheck="false" autocapitalize="none">
+    </div>
+    <div class="field">
+      <label>Subject colours</label>
+      <div id="colours"></div>
+      <div class="hint" id="nocolours" hidden>Colours appear once a timetable has loaded.</div>
+    </div>
+  </div>
+  <div class="dlg-f">
+    <button class="btn" id="resetcolours">Reset colours</button>
+    <button class="btn primary" id="save">Save &amp; reload</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+"use strict";
+
+/* ===================================================================
+   CONFIG — set ENDPOINT once and the page needs no manual setup.
+   =================================================================== */
+const CONFIG = {
+  ENDPOINT: "",                              /* https://your-project.vercel.app/api/timetable */
+  EMAIL_DOMAIN: "education.nsw.gov.au"
+};
+
+/* ===================== storage ===================== */
+const LS = { ep:'tt.endpoint', email:'tt.email', theme:'tt.theme', colours:'tt.colours', cache:'tt.cache' };
+const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
+const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let endpoint = get(LS.ep, '') || CONFIG.ENDPOINT;
+let email    = get(LS.email, '');
+let colours  = get(LS.colours, {});
+
+/* ===================== theme ===================== */
+const applyTheme = t => document.documentElement.setAttribute('data-theme', t);
+applyTheme(get(LS.theme, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+document.getElementById('theme').onclick = () => {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(t); set(LS.theme, t);
+};
+
+/* ===================== date helpers ===================== */
+const DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CYCLE_DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const startOfWeek = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; };
+const sameDay = (a,b) => !!a && !!b && ymd(a) === ymd(b);
+const fmtShort = d => d.getDate() + ' ' + MON[d.getMonth()];
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+function toMinutes(v){
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return v > 1440 ? null : v;
+  const s = String(v).trim();
+  const iso = s.match(/T(\d{1,2}):(\d{2})/);
+  if (iso) return (+iso[1])*60 + (+iso[2]);
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp])?/);
+  if (!m) return null;
+  let h = +m[1]; const mi = +m[2]; const ap = m[3] && m[3].toLowerCase();
+  if (ap === 'p' && h < 12) h += 12;
+  if (ap === 'a' && h === 12) h = 0;
+  return h*60 + mi;
+}
+const fmtTime = mins => {
+  if (mins === null || mins === undefined) return '';
+  const h = Math.floor(mins/60), m = mins%60;
+  return (((h+11)%12)+1) + ':' + pad(m) + (h >= 12 ? 'pm' : 'am');
+};
+function toDate(v){
+  if (!v) return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  const s = String(v);
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], (+m[2])-1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], (+m[2])-1, +m[1]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+/* ===================== field pickers ===================== */
+const pick = (o, keys) => {
+  if (o == null || typeof o !== 'object') return undefined;
+  const lower = {};
+  for (const k of Object.keys(o)) lower[k.toLowerCase()] = o[k];
+  for (const k of keys){
+    const v = lower[k.toLowerCase()];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+};
+const deepStr = v => (v && typeof v === 'object')
+  ? (pick(v, ['name','fullName','displayName','description','title','shortName','code','text']) || '')
+  : (v === undefined || v === null ? '' : v);
+const str = v => String(deepStr(v)).trim();
+
+/* the API may wrap the array; take the first array of rows we find */
+function asArray(v){
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === 'object'){
+    for (const val of Object.values(v)) if (Array.isArray(val)) return val;
+  }
+  return [];
+}
+
+/* ===================== cycle mapping =====================
+   The API returns a repeating 10-day fortnight keyed by DayName
+   ("MonA" ... "FriB"). The cycle start date maps calendar days onto it. */
+function cycleDayFor(date, cycleStart){
+  if (!cycleStart) return null;
+  const d = midnight(date), start = midnight(cycleStart);
+  const dow = d.getDay();
+  if (dow === 0 || dow === 6) return null;
+  if (d < start) return null;
+  let elapsed = 0;
+  const cur = new Date(start);
+  while (cur < d){
+    cur.setDate(cur.getDate()+1);
+    const w = cur.getDay();
+    if (w !== 0 && w !== 6) elapsed++;
+  }
+  return CYCLE_DAYS[elapsed % 10];
+}
+const periodNumber = v => {
+  const s = String(v == null ? '' : v).trim();
+  const m = s.match(/(?:period|p)?\s*(\d+)/i);
+  return m ? m[1] : s;
+};
+const classify = v => {
+  const p = String(v == null ? '' : v).toLowerCase();
+  if (p.includes('assembly')) return 'assembly';
+  if (p.includes('recess') || p === 'break') return 'break';
+  if (p.includes('lunch')) return 'lunch';
+  return 'class';
+};
+const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
+  .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+
+/* ===================== state ===================== */
+let weekStart = startOfWeek(new Date());
+let entries = [];
+let slots = [];
+let cycleStart = null;
+let displayName = '';
+let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
+let loadError = '';
+let loading = false;
+
+/* ===================== normalising ===================== */
+function buildBellIndex(bellTimes){
+  const idx = {};
+  for (const bt of asArray(bellTimes)){
+    const day = str(pick(bt, ['DayName','dayName'])).toLowerCase();
+    const per = periodNumber(pick(bt, ['Period','period','PeriodNumber','periodNumber'])).toLowerCase();
+    const start = toMinutes(pick(bt, ['StartTime','startTime','Start','start','From','from']));
+    const end   = toMinutes(pick(bt, ['EndTime','endTime','End','end','To','to']));
+    if (start === null && end === null) continue;
+    if (day) idx[day + '|' + per] = { start, end };
+    if (!idx['*|' + per]) idx['*|' + per] = { start, end };
+  }
+  return idx;
+}
+
+function normalise(payload){
+  const bell = buildBellIndex(payload.bellTimes);
+  const rows = asArray(payload.timetable);
+  const out = [];
+
+  for (const raw of rows){
+    const dayName = str(pick(raw, ['DayName','dayName']));
+    if (!dayName) continue;
+    const dayKey = dayName.toLowerCase();
+    if (CYCLE_DAYS.indexOf(dayKey) === -1) continue;
+
+    const period = str(pick(raw, ['Period','period','PeriodNumber','periodNumber']));
+    const kind = classify(period);
+    const pnum = periodNumber(period).toLowerCase();
+    const bt = bell[dayKey + '|' + pnum] || bell['*|' + pnum] || {};
+
+    const subject = str(pick(raw, ['SubjectName','Subject','subjectName','subject','Description','description','ClassName','className','Class','class']));
+    const code    = str(pick(raw, ['ClassCode','classCode','Code','code']));
+    const teacher = str(pick(raw, ['TeacherName','teacherName','TeacherFullName','teacherFullName','Teacher','teacher','StaffName','staffName']));
+    const room    = str(pick(raw, ['RoomNumber','roomNumber','RoomName','roomName','Room','room','RoomCode','roomCode','Location','location']));
+
+    const start = bt.start != null ? bt.start : toMinutes(pick(raw, ['StartTime','startTime','Start','start']));
+    const end   = bt.end   != null ? bt.end   : toMinutes(pick(raw, ['EndTime','endTime','End','end']));
+
+    out.push({ dayKey, period, pnum, kind, code, teacher, room, start, end,
+               subject: subject || (kind === 'class' ? (code || 'Class') : titleCase(period)) });
+  }
+  return out;
+}
+
+/* one ordered row per period across the whole cycle */
+function buildSlots(){
+  const map = new Map();
+  for (const e of entries){
+    const key = e.pnum || e.period.toLowerCase();
+    const cur = map.get(key) || { key, period:e.period, kind:e.kind, start:e.start, end:e.end };
+    if (e.start != null && (cur.start == null || e.start < cur.start)) cur.start = e.start;
+    if (e.end   != null && (cur.end   == null || e.end   > cur.end  )) cur.end   = e.end;
+    if (e.kind !== 'class') cur.kind = e.kind;
+    map.set(key, cur);
+  }
+  slots = [...map.values()].sort((a,b) => {
+    if (a.start != null && b.start != null && a.start !== b.start) return a.start - b.start;
+    return String(a.key).localeCompare(String(b.key), undefined, { numeric:true });
+  });
+}
+
+/* ===================== colours ===================== */
+const PALETTE = ['#3b6ef6','#e0542e','#12a594','#a259e6','#e5a000','#d6409f','#2f9e44','#0e7490','#c2410c','#7c3aed','#0891b2','#be123c'];
+const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h*31 + s.charCodeAt(i))|0; return Math.abs(h); };
+const colourFor = s => colours[s] || PALETTE[hash(String(s)) % PALETTE.length];
+
+/* ===================== loading ===================== */
+function endpointUrl(){
+  const u = new URL(endpoint, location.href);
+  u.searchParams.set('email', email);
+  return u.toString();
+}
+
+async function load(useCache){
+  loadError = '';
+  if (!endpoint || !email) return;
+
+  if (useCache){
+    const c = get(LS.cache, null);
+    if (c && c.email === email && Date.now() - c.at < 6*60*60*1000){
+      apply(c.payload);
+      return;
+    }
+  }
+
+  loading = true;
+  try {
+    const res = await fetch(endpointUrl(), { headers:{ Accept:'application/json' } });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+    apply(data);
+    set(LS.cache, { email, at: Date.now(), payload: data });
+  } catch (err) {
+    loadError = err.message;
+    entries = []; slots = [];
+  } finally {
+    loading = false;
+  }
+}
+
+function apply(payload){
+  entries = normalise(payload);
+  buildSlots();
+  cycleStart = toDate(
+    typeof payload.startDate === 'string' ? payload.startDate
+      : pick(payload.startDate || {}, ['startDate','StartDate','date','Date'])
+  );
+  const p = payload.profile;
+  displayName = p
+    ? titleCase(str(pick(p, ['FullName','fullName'])) ||
+       [str(pick(p, ['FirstName','firstName'])), str(pick(p, ['LastName','lastName']))].filter(Boolean).join(' '))
+    : '';
+  if (!displayName) displayName = nameFromEmail(payload.email || email);
+  if (!entries.length) loadError = 'No lessons were returned for that address.';
+}
+
+function nameFromEmail(e){
+  const parts = String(e || '').split('@')[0].split('.');
+  if (parts.length < 2) return '';
+  return titleCase(parts[0]) + ' ' + titleCase(parts[1].replace(/\d+$/, ''));
+}
+
+/* ===================== render ===================== */
+const $ = id => document.getElementById(id);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const entryAt = (cycleDay, slotKey) => entries.find(e => e.dayKey === cycleDay && (e.pnum || e.period.toLowerCase()) === slotKey);
+
+function render(){
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const isMobile = matchMedia('(max-width:820px)').matches;
+  const days = [0,1,2,3,4].map(i => addDays(weekStart, i));
+  const cycles = days.map(d => cycleDayFor(d, cycleStart));
+
+  $('title').textContent = displayName ? displayName + ' — Timetable' : 'Timetable';
+  $('sub').textContent = loading ? 'Loading…'
+    : loadError ? loadError
+    : !endpoint ? 'No endpoint configured — open Settings'
+    : entries.length + ' periods in the cycle';
+  $('sub').style.color = loadError ? '#e5484d' : '';
+
+  const wkLetter = (cycles.find(Boolean) || '').slice(-1).toUpperCase();
+  $('weeklabel').innerHTML = esc(fmtShort(days[0]) + ' – ' + fmtShort(days[4]) + ' ' + days[4].getFullYear()) +
+    (wkLetter ? '<span class="wk">Week ' + wkLetter + '</span>' : '');
+
+  const ds = $('dayswitch');
+  ds.innerHTML = '';
+  days.forEach((d, i) => {
+    const b = document.createElement('button');
+    b.textContent = DAY[d.getDay()].slice(0,3) + ' ' + d.getDate();
+    b.setAttribute('aria-pressed', String(i === mobileDay));
+    b.onclick = () => { mobileDay = i; render(); };
+    ds.appendChild(b);
+  });
+
+  /* now / next, from today's position in the cycle */
+  const todayCycle = cycleDayFor(now, cycleStart);
+  const todays = entries
+    .filter(e => e.dayKey === todayCycle && e.kind === 'class' && e.start != null)
+    .sort((a,b) => a.start - b.start);
+  const current  = todays.find(e => e.start <= nowMin && nowMin < (e.end == null ? e.start+60 : e.end));
+  const upcoming = todays.find(e => e.start > nowMin);
+  const nowEl = $('now');
+  nowEl.innerHTML = '';
+  nowEl.appendChild(nowCard('Now',  current,  current  ? (current.end == null ? 0 : current.end) - nowMin : null, 'left'));
+  nowEl.appendChild(nowCard('Next', upcoming, upcoming ? upcoming.start - nowMin : null, 'until'));
+
+  /* grid */
+  const idx = isMobile ? [mobileDay] : [0,1,2,3,4];
+  const grid = $('grid');
+  grid.style.setProperty('--days', idx.length);
+  grid.innerHTML = '';
+  grid.appendChild(el('div','colhead'));
+  idx.forEach(i => {
+    const d = days[i];
+    const h = el('div','colhead' + (sameDay(d, now) ? ' today' : ''));
+    h.innerHTML = '<div class="dow">' + DAY[d.getDay()] + '</div><div class="dat">' + fmtShort(d) + '</div>';
+    grid.appendChild(h);
+  });
+
+  slots.forEach(slot => {
+    const isBreak = slot.kind !== 'class';
+    const pc = el('div','periodcell' + (isBreak ? ' brk' : ''));
+    if (!isBreak){
+      const time = slot.start != null ? fmtTime(slot.start) + '<br>' + fmtTime(slot.end) : '';
+      pc.innerHTML = '<b>' + esc(/^\d+$/.test(slot.key) ? 'P' + slot.key : titleCase(slot.period)) + '</b>' + time;
+    }
+    grid.appendChild(pc);
+
+    idx.forEach(i => {
+      const d = days[i], cyc = cycles[i];
+      const cell = el('div','cell' + (isBreak ? ' brk' : ''));
+      const e = cyc ? entryAt(cyc, slot.key) : null;
+
+      if (isBreak){
+        const label = titleCase((e && e.period) || slot.period) +
+                      (slot.start != null ? ' · ' + fmtTime(slot.start) + '–' + fmtTime(slot.end) : '');
+        cell.appendChild(el('div','breakbar', label));
+      } else if (!e){
+        cell.appendChild(el('div','free', cyc ? '—' : ''));
+      } else {
+        const c = colourFor(e.subject);
+        const box = el('div','lesson');
+        box.style.setProperty('--c', c);
+        const endMin = e.end == null ? (e.start == null ? null : e.start + 60) : e.end;
+        const isNow  = sameDay(d, now) && e.start != null && e.start <= nowMin && nowMin < endMin;
+        const isPast = (!sameDay(d, now) && d < now) || (sameDay(d, now) && endMin != null && endMin <= nowMin);
+        if (isNow)  box.classList.add('current');
+        if (isPast) box.classList.add('past');
+        box.innerHTML =
+          '<div class="s">' + esc(e.subject) + '</div>' +
+          (e.room    ? '<div class="r">' + esc(e.room)    + '</div>' : '') +
+          (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
+          (e.start != null ? '<div class="tm">' + fmtTime(e.start) + ' – ' + fmtTime(e.end) + '</div>' : '');
+        cell.appendChild(box);
+      }
+      grid.appendChild(cell);
+    });
+  });
+}
+
+function nowCard(label, e, mins, mode){
+  const d = el('div','nowcard');
+  if (!e){
+    d.innerHTML = '<div class="lbl">' + label + '</div><div class="subj">Nothing scheduled</div><div class="meta">Enjoy the break</div>';
+    return d;
+  }
+  const c = colourFor(e.subject);
+  d.style.borderLeftColor = c;
+  const bits = [e.room, e.teacher].filter(Boolean).join(' · ');
+  const cd = (mins != null && mins >= 0)
+    ? (mode === 'left' ? mins + ' min left' : 'starts in ' + mins + ' min')
+    : '';
+  d.innerHTML =
+    '<div class="lbl">' + label + '</div>' +
+    '<div class="subj">' + esc(e.subject) + '</div>' +
+    '<div class="meta">' + esc(bits) + (e.start != null ? ' · ' + fmtTime(e.start) + '–' + fmtTime(e.end) : '') + '</div>' +
+    (cd ? '<div class="count" style="color:' + c + '">' + cd + '</div>' : '');
+  return d;
+}
+
+/* ===================== email gate ===================== */
+const gate = $('gate');
+$('gatedomain').textContent = '@' + CONFIG.EMAIL_DOMAIN;
+
+function showGate(msg){
+  $('gateerr').textContent = msg || '';
+  $('gateemail').value = String(email || '').split('@')[0];
+  gate.hidden = false;
+  setTimeout(() => $('gateemail').focus(), 30);
+}
+$('gateform').onsubmit = async ev => {
+  ev.preventDefault();
+  const v = $('gateemail').value.trim().toLowerCase();
+  if (!v) return;
+  const user = v.includes('@') ? v.split('@')[0] : v;
+  if (!/^[a-z0-9][a-z0-9._-]*$/.test(user)){
+    $('gateerr').textContent = 'That does not look like a school username.';
+    return;
+  }
+  email = user + '@' + CONFIG.EMAIL_DOMAIN;
+  $('gatego').textContent = 'Loading…';
+  $('gateerr').textContent = '';
+  await load(false);
+  $('gatego').textContent = 'Show my timetable';
+  if (loadError){ $('gateerr').textContent = loadError; return; }
+  set(LS.email, email);
+  gate.hidden = true;
+  render();
+};
+
+/* ===================== settings ===================== */
+const dlg = $('dlg');
+$('settings').onclick = () => {
+  $('ep').value = endpoint;
+  $('em').value = String(email || '').split('@')[0];
+  $('status').textContent = loadError || '';
+  $('status').className = 'status' + (loadError ? ' err' : '');
+  renderColours();
+  dlg.showModal();
+};
+const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
+function renderColours(){
+  const host = $('colours');
+  host.innerHTML = '';
+  const subs = [...new Set(entries.filter(e => e.kind === 'class').map(e => e.subject))].filter(Boolean).sort();
+  $('nocolours').hidden = subs.length > 0;
+  subs.forEach(s => {
+    const row = el('div','colrow');
+    const sw = document.createElement('input');
+    sw.type = 'color';
+    sw.value = toHex(colourFor(s));
+    sw.oninput = () => { colours[s] = sw.value; set(LS.colours, colours); render(); };
+    row.appendChild(el('span','', s));
+    row.appendChild(sw);
+    host.appendChild(row);
+  });
+}
+$('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colours, colours); renderColours(); render(); };
+$('save').onclick = async e => {
+  e.preventDefault();
+  endpoint = $('ep').value.trim();
+  const user = $('em').value.trim().toLowerCase().split('@')[0];
+  email = user ? user + '@' + CONFIG.EMAIL_DOMAIN : '';
+  set(LS.ep, endpoint); set(LS.email, email);
+  localStorage.removeItem(LS.cache);
+  dlg.close();
+  await load(false);
+  render();
+  if (loadError) showGate(loadError);
+};
+
+/* ===================== controls ===================== */
+$('prev').onclick  = () => { weekStart = addDays(weekStart,-7); render(); };
+$('next').onclick  = () => { weekStart = addDays(weekStart, 7); render(); };
+$('today').onclick = () => {
+  weekStart = startOfWeek(new Date());
+  mobileDay = Math.min(4, (new Date().getDay()+6)%7);
+  render();
+};
+addEventListener('keydown', e => {
+  if (dlg.open || !gate.hidden) return;
+  if (e.key === 'ArrowLeft')  $('prev').click();
+  if (e.key === 'ArrowRight') $('next').click();
+  if (e.key === 't' || e.key === 'T') $('today').click();
+});
+addEventListener('resize', render);
+
+/* ===================== boot ===================== */
+(async () => {
+  render();
+  if (!endpoint) return;
+  if (!email){ showGate(); return; }
+  await load(true);
+  render();
+  if (loadError){ showGate(loadError); return; }
+  load(false).then(render);          /* freshen the cached copy in the background */
+})();
+
+setInterval(render, 30000);
+setInterval(() => { if (endpoint && email) load(false).then(render); }, 15*60*1000);
+})();
+</script>
+</body>
+</html>
