@@ -13,6 +13,7 @@
  *   SCHOOL_EMAIL      required  e.g. your.name1@education.nsw.gov.au
  *   SCHOOL_PASSWORD   required  your school password
  *   SCHOOL_API_BASE   required  https://intranet.nbscmanlys-h.schools.nsw.edu.au
+ *   SCHOOL_TOKEN_PATH optional  default: /api/token
  *   ALLOWED_ORIGIN    optional  comma-separated origins allowed to call this
  *                               (default: the GitHub Pages origin below)
  *   ALLOWED_EMAILS    optional  comma-separated usernames/addresses that may be
@@ -88,7 +89,9 @@ async function getToken(apiBase, emailAddress, password) {
     return cachedToken;
   }
 
-  const url = `${apiBase}${process.env.SCHOOL_TOKEN_PATH || "/token"}`;
+  /* The intranet serves its SPA shell (200 + HTML) for unknown paths, so a wrong
+     path looks like success. Auth lives at /api/token; /token is the SPA. */
+  const url = `${apiBase}${process.env.SCHOOL_TOKEN_PATH || "/api/token"}`;
   let res;
   try {
     res = await fetch(url, {
@@ -192,7 +195,7 @@ export default async function handler(req, res) {
    * Never echoes SCHOOL_EMAIL / SCHOOL_PASSWORD or any real token.
    */
   if (req.query.diag) {
-    const paths = [process.env.SCHOOL_TOKEN_PATH, "/token", "/api/token",
+    const paths = [process.env.SCHOOL_TOKEN_PATH, "/api/token", "/token",
                    "/api/auth/token", "/auth/token", "/api/login"].filter(Boolean);
     const seen = new Set();
     const probes = [];

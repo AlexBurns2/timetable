@@ -181,7 +181,16 @@ The current code turns this into a readable message rather than a parse error:
   "hint": "check-api-base" }
 ```
 
-### Every probe returns an HTML page (200 or a redirect)
+### `/token` returns a 200 HTML page
+
+This is what NBSC's intranet does: it serves its single-page-app shell with a
+**200** for any unrecognised path, so a wrong path looks like a success rather
+than a 404. The auth endpoint lives at **`/api/token`**, which is the default —
+`/token` (as used by the older sample) now hits the SPA catch-all.
+
+If it moves again, find it with the probe and set `SCHOOL_TOKEN_PATH`.
+
+### Every probe returns an HTML page (or a redirect)
 
 If `SCHOOL_API_BASE` is definitely correct and `/token` still answers with a web
 page, the intranet is serving a **sign-in page instead of the API**. Common causes:
@@ -229,7 +238,7 @@ copy too).
 | `SCHOOL_API_BASE` | yes | School intranet base URL, no trailing slash |
 | `ALLOWED_ORIGIN` | no | Comma-separated origins allowed to call the API. Defaults to `https://alexburns2.github.io` |
 | `ALLOWED_EMAILS` | no | Comma-separated usernames allowed to be looked up. **Unset means anyone can look up anyone.** |
-| `SCHOOL_TOKEN_PATH` | no | Auth path on the school API. Defaults to `/token` |
+| `SCHOOL_TOKEN_PATH` | no | Auth path on the school API. Defaults to `/api/token` |
 | `EMAIL_DOMAIN` | no | Defaults to the domain of `SCHOOL_EMAIL` |
 
 ### Locking it down
