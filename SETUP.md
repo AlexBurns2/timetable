@@ -115,14 +115,21 @@ the week letter, not calendar dates**. Nothing is greyed out by default.
   following days — after the last lesson it shows tomorrow's first. On Friday
   afternoon it reads *Enjoy the weekend* with Monday's opener underneath.
 
-Blocks are **positioned by real time**, not dropped into fixed period rows. The
-left gutter shows the actual bell boundaries and each card's height is its
-duration, so free periods are simply empty space rather than blank rows.
-Wednesday runs to its own bell — assembly at 10:45 pushes recess to 11:05 and
-lunch 35 minutes earlier — and lands lower in the column automatically.
+### Compact and Full
 
-Recess and assembly get their own blocks; the two lunch halves are merged into
-a single **Lunch**.
+⚙ → Layout offers two ways to read the same data:
+
+**Compact** (default) positions blocks by **real clock time**. The left gutter
+shows actual bell boundaries and each card's height is its duration, so free
+periods are simply empty space rather than blank rows, and Wednesday's different
+bell lands lower in the column on its own. Cards carry the essentials.
+
+**Full** gives every period its own row with all days aligned, times in the left
+gutter, and roomier cards. Free periods show as empty cells.
+
+Recess and assembly get their own blocks in both; the two lunch halves are
+merged into a single **Lunch**. Wednesday's assembly at 10:45 pushes its recess
+to 11:05 and lunch 35 minutes earlier — both layouts reflect that.
 
 ### Display toggles
 

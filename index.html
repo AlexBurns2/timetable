@@ -292,17 +292,44 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .grid{display:grid;column-gap:9px;row-gap:0;
       grid-template-columns:58px repeat(var(--days,5),minmax(0,1fr));align-items:start}
 .corner{}
-.dhead{padding:2px 2px 9px;text-align:center}
-.dhead .dow{font-weight:700;font-size:14.5px;font-family:var(--font-display);
+.dayhead{padding:2px 2px 9px;text-align:center}
+.dayhead .dow{font-weight:700;font-size:14.5px;font-family:var(--font-display);
             letter-spacing:var(--display-ls);text-transform:var(--display-tt);
             display:block;transition:color .2s}
-.dhead small{font-size:.72em;letter-spacing:.06em;color:var(--accent);
+.dayhead small{font-size:.72em;letter-spacing:.06em;color:var(--accent);
              margin-left:.35em;font-weight:700;vertical-align:.06em}
-[data-skin="paper"] .dhead .dow{font-size:21px}
-.dhead .rule{display:block;height:2px;width:100%;margin-top:8px;border-radius:2px;
+[data-skin="paper"] .dayhead .dow{font-size:21px}
+.dayhead .rule{display:block;height:2px;width:100%;margin-top:8px;border-radius:2px;
              background:var(--line);opacity:.5}
-.dhead.today .dow{color:var(--accent)}
-.dhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:7px}
+.dayhead.today .dow{color:var(--accent)}
+.dayhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:7px}
+
+/* ── compact: blocks are absolutely placed inside each day column ── */
+[data-view="compact"] .lesson,
+[data-view="compact"] .breakbar{position:absolute;left:0;right:0;width:auto}
+[data-view="compact"] .grid{column-gap:9px}
+
+/* ── full: one row per period, cells sized by content ─────────────── */
+[data-view="full"] .grid{
+  column-gap:10px;row-gap:9px;align-items:stretch;
+  grid-template-columns:86px repeat(var(--days,5),minmax(0,1fr));
+}
+[data-view="full"] .cell{display:flex;min-height:92px}
+[data-view="full"] .cell.brk{min-height:0}
+[data-view="full"] .lesson{height:100%;padding:10px 11px}
+[data-view="full"] .lesson .s{font-size:14.5px}
+[data-view="full"] .lesson .r,[data-view="full"] .lesson .t{font-size:12.5px}
+[data-view="full"] .lesson .tm{display:block;margin-top:auto;padding-top:6px}
+[data-view="full"] .breakbar{padding:5px 10px;min-height:24px}
+[data-view="full"] .free{min-height:92px}
+[data-view="full"] .periodcell{
+  color:var(--muted);font-size:12px;text-align:right;padding:14px 9px 0 0;
+  line-height:1.35;font-family:var(--font-num);
+}
+[data-view="full"] .periodcell b{display:block;color:var(--text);font-size:13.5px;font-weight:700}
+[data-view="full"] .periodcell.brk{padding-top:8px}
+[data-view="full"] .periodcell .approx{opacity:.55;font-style:italic}
+.free{width:100%}
 
 .tcol{position:relative}
 .tmark{position:absolute;right:9px;translate:0 -50%;font-size:11px;color:var(--muted);
@@ -310,7 +337,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .dbody{position:relative;min-width:0}
 
 .lesson{
-  position:absolute;left:0;right:0;text-align:left;cursor:pointer;overflow:hidden;
+  position:relative;width:100%;text-align:left;cursor:pointer;overflow:hidden;
   background:color-mix(in srgb, var(--c) var(--tint), var(--panel));
   border:var(--card-border);
   border-left:var(--card-accent) solid var(--c,var(--accent));
@@ -332,7 +359,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px;z-index:2}
 
 .breakbar{
-  position:absolute;left:0;right:0;overflow:hidden;
+  position:relative;width:100%;overflow:hidden;
   background:color-mix(in srgb,var(--text) 6%,transparent);
   border:1px dashed var(--line);border-radius:calc(var(--card-radius) * .6);
   color:var(--text);font-size:10.5px;font-family:var(--font-num);
@@ -347,7 +374,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 
 /* Today focus mode */
 .dimmed{opacity:.28;filter:saturate(.55);transition:opacity .2s,filter .2s}
-.dhead.dimmed .dow{color:var(--muted)}
+.dayhead.dimmed .dow{color:var(--muted)}
 
 /* Coloured outlines off: neutral card border, colour survives as a dot */
 .nooutline .lesson{
@@ -580,6 +607,14 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
+      <label>Layout</label>
+      <div class="modes" id="views">
+        <button type="button" data-view="compact" title="Positioned by clock time">Compact</button>
+        <button type="button" data-view="full" title="One row per period">Full</button>
+      </div>
+    </div>
+
+    <div class="field">
       <label>Display</label>
       <div class="custrow"><span>Week letter on day names</span>
         <input type="checkbox" id="t_weekletter" class="sw"></div>
@@ -629,7 +664,7 @@ const SKINS = [
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* ═══ storage ═══ */
-const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room',
+const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view',
              weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -642,6 +677,7 @@ let roomMode   = get(LS.room, 'full');
 let showWeekLetter = get(LS.weekletter, true);
 let showOutline    = get(LS.outline, true);
 let showProgress   = get(LS.progress, true);
+let viewMode       = get(LS.view, 'compact');
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
 const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
@@ -670,6 +706,7 @@ function inkFor(hex){
 
 function applyLook(){
   const root = document.documentElement;
+  root.setAttribute('data-view', viewMode);
   root.classList.toggle('nooutline', !showOutline);
   root.setAttribute('data-skin', skin);
   root.setAttribute('data-mode', mode);
@@ -1171,111 +1208,164 @@ function render(){
     ? weekendCard(upcoming, upcomingWhen)
     : nowCard('Next', upcoming, nowMin, upcomingWhen, false));
 
-  /* ── grid ──────────────────────────────────────────────────────────
-     Blocks are positioned by real time rather than dropped into fixed
-     period rows: Wednesday runs to its own bell, and a period-row grid
-     had to leave whole rows empty to keep the days aligned. */
+  /* ── grid ── two layouts, same data ───────────────────────────────
+     compact: blocks positioned by real clock time, minimal cards
+     full:    one row per period, every day aligned, fuller cards      */
   const idx = isMobile ? [mobileDay] : [0,1,2,3,4];
-  const PX = 1.4;                       /* pixels per minute */
   const grid = $('grid');
   grid.style.setProperty('--days', idx.length);
   grid.innerHTML = '';
 
-  /* gather every block that will be drawn, per shown day */
-  const columns = idx.map(i => {
-    const cyc = cycles[i];
-    const blocks = [];
-    if (cyc){
-      for (const slot of slots){
-        const e = entryAt(cyc, slot.key);
-        const b = bellFor(cyc, slot.key);
-        const st = (e && e.start != null) ? e.start : (b ? b.start : null);
-        const en = (e && e.end   != null) ? e.end   : (b ? b.end   : null);
-        if (st == null || en == null || en <= st) continue;
-        const kind = e ? e.kind : slot.kind;
-        if (!e && kind === 'class') continue;      /* free period: draw nothing */
-        blocks.push({ start:st, end:en, kind, entry:e, slot });
-      }
-    }
-    return { i, cyc, blocks };
-  });
+  const ctx = { idx, grid, days, cycles, week, showingCurrentWeek, todayKey, now, nowMin };
+  if (viewMode === 'full') renderFull(ctx); else renderCompact(ctx);
+}
 
-  const allBlocks = columns.flatMap(c => c.blocks);
-  const dayStart = allBlocks.length ? Math.min(...allBlocks.map(b => b.start)) : 8*60;
-  const dayEnd   = allBlocks.length ? Math.max(...allBlocks.map(b => b.end))   : 15*60;
+/* a day heading, shared by both layouts */
+function dayHead(ctx, i){
+  const d = ctx.days[i];
+  const isToday = ctx.showingCurrentWeek && DAY_KEYS[i] === ctx.todayKey;
+  const h = el('div','dayhead' + (isToday ? ' today' : '') +
+                     (focusToday && !isToday ? ' dimmed' : ''));
+  h.innerHTML = '<span class="dow">' + DAY[d.getDay()] +
+    (showWeekLetter ? '<small>' + ctx.week.toUpperCase() + '</small>' : '') +
+    '</span><i class="rule"></i>';
+  return h;
+}
+
+/* every block a day will draw, in time order */
+function blocksFor(cyc){
+  const out = [];
+  if (!cyc) return out;
+  for (const slot of slots){
+    const e = entryAt(cyc, slot.key);
+    const b = bellFor(cyc, slot.key);
+    const st = (e && e.start != null) ? e.start : (b ? b.start : null);
+    const en = (e && e.end   != null) ? e.end   : (b ? b.end   : null);
+    if (st == null || en == null || en <= st) continue;
+    const kind = e ? e.kind : slot.kind;
+    if (!e && kind === 'class') continue;          /* free period */
+    out.push({ start:st, end:en, kind, entry:e, slot });
+  }
+  return out;
+}
+
+function lessonCard(e, start, end, isToday, nowMin, date, tall){
+  const box = document.createElement('button');
+  box.type = 'button';
+  box.className = 'lesson' + (tall ? ' tall' : '');
+  box.style.setProperty('--c', colourFor(e.subject));
+  if (isToday && e.start != null && e.start <= nowMin && nowMin < end) box.classList.add('current');
+  box.innerHTML =
+    '<div class="s">' + esc(e.subject) + '</div>' +
+    (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
+    (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
+    '<div class="tm">' + fmtTime(start) + '–' + fmtTime(end) + '</div>';
+  box.onclick = () => showDetail(e, date);
+  return box;
+}
+
+/* ── compact: positioned by clock time ─────────────────────────────── */
+function renderCompact(ctx){
+  const PX = 1.45;              /* pixels per minute */
+  const GAP = 4;                /* keeps touching blocks visually separate */
+  const columns = ctx.idx.map(i => ({ i, cyc: ctx.cycles[i], blocks: blocksFor(ctx.cycles[i]) }));
+  const all = columns.flatMap(c => c.blocks);
+  const dayStart = all.length ? Math.min(...all.map(b => b.start)) : 8*60;
+  const dayEnd   = all.length ? Math.max(...all.map(b => b.end))   : 15*60;
   const height   = Math.max(120, (dayEnd - dayStart) * PX);
   const yOf = m => (m - dayStart) * PX;
 
-  /* row 1: corner + day headings */
-  grid.appendChild(el('div','corner'));
-  columns.forEach(c => {
-    const d = days[c.i];
-    const isToday = showingCurrentWeek && DAY_KEYS[c.i] === todayKey;
-    const h = el('div','dhead' + (isToday ? ' today' : '') +
-                       (focusToday && !isToday ? ' dimmed' : ''));
-    h.innerHTML = '<span class="dow">' + DAY[d.getDay()] +
-      (showWeekLetter ? '<small>' + week.toUpperCase() + '</small>' : '') +
-      '</span><i class="rule"></i>';
-    grid.appendChild(h);
-  });
+  ctx.grid.appendChild(el('div','corner'));
+  columns.forEach(c => ctx.grid.appendChild(dayHead(ctx, c.i)));
 
-  /* row 2: time gutter + one positioned column per day */
   const gutter = el('div','tcol');
   gutter.style.height = height + 'px';
-  const marks = [...new Set(allBlocks.flatMap(b => [b.start, b.end]))].sort((a,b) => a-b);
+  const marks = [...new Set(all.flatMap(b => [b.start, b.end]))].sort((a,b) => a-b);
   let lastY = -99;
   marks.forEach(m => {
     const y = yOf(m);
-    if (y - lastY < 17) return;          /* keep labels from colliding */
+    if (y - lastY < 17) return;
     lastY = y;
     const t = el('span','tmark', fmtTime(m));
     t.style.top = y + 'px';
     gutter.appendChild(t);
   });
-  grid.appendChild(gutter);
+  ctx.grid.appendChild(gutter);
 
   columns.forEach(c => {
-    const isToday = showingCurrentWeek && DAY_KEYS[c.i] === todayKey;
+    const isToday = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
     const body = el('div','dbody' + (focusToday && !isToday ? ' dimmed' : ''));
     body.style.height = height + 'px';
-
     for (const blk of c.blocks){
-      const h = Math.max(16, (blk.end - blk.start) * PX);
-      const top = yOf(blk.start);
+      const h = Math.max(15, (blk.end - blk.start) * PX - GAP);
+      const top = yOf(blk.start) + GAP / 2;
       const e = blk.entry;
-
+      let node;
       if (blk.kind !== 'class'){
-        const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly')
-                                                : slotLabel(blk.slot);
-        const bar = el('div','breakbar' + (blk.kind === 'assembly' ? ' assembly' : ''));
-        bar.style.top = top + 'px';
-        bar.style.height = h + 'px';
-        /* a 20-minute break is ~28px tall; only add times when they fit */
-        bar.innerHTML = '<span>' + esc(name) + '</span>' +
+        const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(blk.slot);
+        node = el('div','breakbar' + (blk.kind === 'assembly' ? ' assembly' : ''));
+        node.innerHTML = '<span>' + esc(name) + '</span>' +
           (h >= 34 ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
-        bar.title = name + ' · ' + fmtTime(blk.start) + '–' + fmtTime(blk.end);
-        body.appendChild(bar);
-        continue;
+        node.title = name + ' · ' + fmtTime(blk.start) + '–' + fmtTime(blk.end);
+      } else {
+        node = lessonCard(e, blk.start, blk.end, isToday, ctx.nowMin, ctx.days[c.i], h >= 86);
       }
-
-      const c2 = colourFor(e.subject);
-      const box = document.createElement('button');
-      box.type = 'button';
-      box.className = 'lesson' + (h >= 86 ? ' tall' : '');
-      box.style.setProperty('--c', c2);
-      box.style.top = top + 'px';
-      box.style.height = h + 'px';
-      const isNow = isToday && e.start <= nowMin && nowMin < blk.end;
-      if (isNow) box.classList.add('current');
-      box.innerHTML =
-        '<div class="s">' + esc(e.subject) + '</div>' +
-        (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
-        (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
-        '<div class="tm">' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</div>';
-      box.onclick = () => showDetail(e, days[c.i]);
-      body.appendChild(box);
+      node.style.top = top + 'px';
+      node.style.height = h + 'px';
+      body.appendChild(node);
     }
-    grid.appendChild(body);
+    ctx.grid.appendChild(body);
+  });
+}
+
+/* ── full: one row per period, days aligned ────────────────────────── */
+function renderFull(ctx){
+  ctx.grid.appendChild(el('div','corner'));
+  ctx.idx.forEach(i => ctx.grid.appendChild(dayHead(ctx, i)));
+
+  slots.forEach(slot => {
+    const isBreak = slot.kind !== 'class';
+    const pc = el('div','periodcell' + (isBreak ? ' brk' : ''));
+    if (!isBreak){
+      /* most days share a time; Wednesday often doesn't */
+      const times = ctx.cycles.map(c => bellFor(c, slot.key)).filter(Boolean);
+      const tally = {};
+      times.forEach(t => { const k = t.start + '|' + t.end; tally[k] = (tally[k]||0)+1; });
+      const best = Object.keys(tally).sort((a,b) => tally[b]-tally[a])[0];
+      const same = Object.keys(tally).length <= 1;
+      const show = best ? best.split('|').map(Number) : null;
+      pc.innerHTML = '<b>' + esc(slotLabel(slot)) + '</b>' +
+        (show ? '<span class="' + (same ? '' : 'approx') + '">' +
+                fmtTime(show[0]) + '<br>' + fmtTime(show[1]) + '</span>' : '');
+    }
+    ctx.grid.appendChild(pc);
+
+    ctx.idx.forEach(i => {
+      const cyc = ctx.cycles[i];
+      const isToday = ctx.showingCurrentWeek && DAY_KEYS[i] === ctx.todayKey;
+      const cell = el('div','cell' + (isBreak ? ' brk' : '') +
+                              (focusToday && !isToday ? ' dimmed' : ''));
+      const e = cyc ? entryAt(cyc, slot.key) : null;
+      const b = cyc ? bellFor(cyc, slot.key) : null;
+
+      if (isBreak){
+        const st = (e && e.start != null) ? e.start : (b ? b.start : null);
+        const en = (e && e.end   != null) ? e.end   : (b ? b.end   : null);
+        if (st != null){
+          const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(slot);
+          const bar = el('div','breakbar' + (e && e.kind === 'assembly' ? ' assembly' : ''));
+          bar.innerHTML = '<span>' + esc(name) + '</span>' +
+                          '<em>' + fmtTime(st) + '–' + fmtTime(en) + '</em>';
+          cell.appendChild(bar);
+        }
+      } else if (e){
+        const en = e.end == null ? e.start + 60 : e.end;
+        cell.appendChild(lessonCard(e, e.start, en, isToday, ctx.nowMin, ctx.days[i], true));
+      } else {
+        cell.appendChild(el('div','free'));
+      }
+      ctx.grid.appendChild(cell);
+    });
   });
 }
 
@@ -1451,6 +1541,19 @@ function bindCustom(){
 }
 bindCustom();
 
+function renderViews(){
+  [...$('views').children].forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.view === viewMode)));
+}
+[...$('views').children].forEach(b => {
+  b.onclick = () => {
+    viewMode = b.dataset.view;
+    set(LS.view, viewMode);
+    document.documentElement.setAttribute('data-view', viewMode);
+    renderViews(); render();
+  };
+});
+
 function renderToggles(){
   $('t_weekletter').checked = showWeekLetter;
   $('t_outline').checked    = showOutline;
@@ -1498,7 +1601,7 @@ $('mode').onclick = () => {
 $('settings').onclick = () => {
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderToggles(); renderColours();
+  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews(); renderToggles(); renderColours();
   dlg.showModal();
 };
 const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
