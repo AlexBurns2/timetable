@@ -263,15 +263,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 [data-skin="swiss"] .weekbtn,[data-skin="brutal"] .weekbtn,
 [data-skin="blueprint"] .weekbtn,[data-skin="terminal"] .weekbtn{border-radius:0}
 [data-skin="brutal"] .weekbtn{border:3px solid var(--line)}
-/* "Currently: Week A" flash, so the button's meaning is never ambiguous */
-.nowis{
-  position:absolute;right:calc(100% + 10px);top:50%;translate:0 -50%;
-  white-space:nowrap;font-size:12px;color:var(--muted);font-family:var(--font-num);
-  opacity:0;pointer-events:none;transition:opacity .25s;
-}
-.nowis.show{opacity:1}
-.nowis b{color:var(--text)}
-@media (max-width:520px){ .nowis{display:none} }
+
 
 /* now / next */
 .now{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
@@ -296,75 +288,80 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 [data-skin="swiss"] .prog i,[data-skin="brutal"] .prog i,
 [data-skin="terminal"] .prog i,[data-skin="blueprint"] .prog i{border-radius:0}
 
-/* grid */
-.grid{display:grid;gap:10px;align-items:stretch;grid-template-columns:84px repeat(var(--days,5),minmax(0,1fr))}
-/* No box, no backdrop: on a patterned skin (Glass, Blueprint, Notebook) a
-   per-cell wash tiles the page pattern and looks like a stray tile. The day
-   name sits directly on the page and an always-present rule keeps every
-   column exactly the same height whether or not it is today. */
-.colhead{padding:2px 2px 10px;text-align:center;background:none}
-.colhead .rule{
-  display:block;height:2px;width:100%;margin-top:7px;border-radius:2px;
-  background:var(--line);opacity:.5;
-}
-.colhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:6px}
-.colhead .dow{font-weight:700;font-size:14px;font-family:var(--font-display);
-              letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-[data-skin="paper"] .colhead .dow{font-size:22px}
-.colhead .dat{color:var(--muted);font-size:12px;font-family:var(--font-num)}
-.colhead.today .dow{color:var(--accent)}
-.colhead .dow{transition:color .2s}
-.periodcell{color:var(--muted);font-size:12px;text-align:right;padding:15px 9px 0 0;
-            line-height:1.35;font-family:var(--font-num)}
-.periodcell b{display:block;color:var(--text);font-size:14px;font-weight:700}
-.periodcell.brk{padding-top:9px}
-.cell{min-height:88px;display:flex}
-.cell.brk{min-height:0}
+/* ---------- grid (time-positioned) ---------- */
+.grid{display:grid;column-gap:9px;row-gap:0;
+      grid-template-columns:58px repeat(var(--days,5),minmax(0,1fr));align-items:start}
+.corner{}
+.dhead{padding:2px 2px 9px;text-align:center}
+.dhead .dow{font-weight:700;font-size:14.5px;font-family:var(--font-display);
+            letter-spacing:var(--display-ls);text-transform:var(--display-tt);
+            display:block;transition:color .2s}
+.dhead small{font-size:.72em;letter-spacing:.06em;color:var(--accent);
+             margin-left:.35em;font-weight:700;vertical-align:.06em}
+[data-skin="paper"] .dhead .dow{font-size:21px}
+.dhead .rule{display:block;height:2px;width:100%;margin-top:8px;border-radius:2px;
+             background:var(--line);opacity:.5}
+.dhead.today .dow{color:var(--accent)}
+.dhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:7px}
+
+.tcol{position:relative}
+.tmark{position:absolute;right:9px;translate:0 -50%;font-size:11px;color:var(--muted);
+       font-family:var(--font-num);font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}
+.dbody{position:relative;min-width:0}
 
 .lesson{
-  position:relative;width:100%;text-align:left;cursor:pointer;
+  position:absolute;left:0;right:0;text-align:left;cursor:pointer;overflow:hidden;
   background:color-mix(in srgb, var(--c) var(--tint), var(--panel));
   border:var(--card-border);
   border-left:var(--card-accent) solid var(--c,var(--accent));
-  border-radius:var(--card-radius);padding:11px 12px;box-shadow:var(--shadow);
-  overflow:hidden;transition:transform .14s ease, box-shadow .14s ease, background .15s;
-  display:flex;flex-direction:column;gap:1px;
+  border-radius:var(--card-radius);padding:7px 9px;box-shadow:var(--shadow);
+  transition:box-shadow .14s ease, background .15s;
+  display:flex;flex-direction:column;gap:0;
 }
-.lesson:hover{box-shadow:var(--shadow-hi)}
-.lesson .s{
-  font-weight:700;font-size:15px;line-height:1.2;overflow-wrap:anywhere;
-  font-family:var(--font-display);letter-spacing:var(--display-ls);
-}
-[data-skin="paper"] .lesson .s{font-size:19px;line-height:1.05}
+.lesson:hover{box-shadow:var(--shadow-hi);z-index:3}
+.lesson .s{font-weight:700;font-size:13.5px;line-height:1.18;overflow-wrap:anywhere;
+           font-family:var(--font-display);letter-spacing:var(--display-ls)}
+[data-skin="paper"] .lesson .s{font-size:17px;line-height:1.05}
 [data-skin="glass"] .lesson .s,[data-skin="terminal"] .lesson .s{font-family:var(--font-ui)}
-.lesson .r{font-size:12.5px;margin-top:4px;font-weight:700;opacity:.9}
-.lesson .t{color:inherit;opacity:.86;font-size:12.5px;overflow-wrap:anywhere}
-.lesson .tm{color:inherit;opacity:.85;font-size:11.5px;margin-top:auto;padding-top:6px;
+.lesson .r{font-size:11.5px;margin-top:2px;font-weight:700;opacity:.9;
+           overflow-wrap:anywhere;font-family:var(--font-num)}
+.lesson .t{color:inherit;opacity:.86;font-size:11.5px;overflow-wrap:anywhere}
+.lesson .tm{display:none;color:inherit;opacity:.85;font-size:11px;margin-top:auto;
             font-family:var(--font-num);font-variant-numeric:tabular-nums}
-.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px}
-.lesson.current{position:relative}
-.dimmed{opacity:.3;filter:saturate(.5);transition:opacity .2s,filter .2s}
-.colhead.dimmed .dow{color:var(--muted)}
-.btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px}
+.lesson.tall .tm{display:block}
+.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px;z-index:2}
 
 .breakbar{
-  width:100%;background:color-mix(in srgb,var(--text) 7%,transparent);
-  border:1px dashed var(--line);border-radius:var(--card-radius);
-  padding:5px 10px;color:var(--text);font-size:11.5px;text-align:center;
-  font-family:var(--font-num);display:flex;gap:7px;justify-content:center;
-  align-items:baseline;flex-wrap:wrap;opacity:.92;
+  position:absolute;left:0;right:0;overflow:hidden;
+  background:color-mix(in srgb,var(--text) 6%,transparent);
+  border:1px dashed var(--line);border-radius:calc(var(--card-radius) * .6);
+  color:var(--text);font-size:10.5px;font-family:var(--font-num);
+  display:flex;gap:8px;justify-content:center;align-items:center;
+  letter-spacing:.06em;opacity:.8;white-space:nowrap;padding:0 6px;
 }
-.breakbar span{font-weight:700}
-.breakbar em{font-style:normal;opacity:.72}
-.breakbar.assembly{
-  border-style:solid;border-color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 16%,transparent);
+.breakbar span{font-weight:700;text-transform:uppercase}
+.breakbar em{font-style:normal;opacity:.7}
+/* Assembly is just another scheduled block, not an active state -- an accent
+   fill made it look permanently "current". */
+.breakbar.assembly{border-style:solid;opacity:.95}
+
+/* Today focus mode */
+.dimmed{opacity:.28;filter:saturate(.55);transition:opacity .2s,filter .2s}
+.dhead.dimmed .dow{color:var(--muted)}
+
+/* Coloured outlines off: neutral card border, colour survives as a dot */
+.nooutline .lesson{
+  border-color:var(--line) !important;
+  border-left-color:var(--line) !important;
+  border-top-color:var(--line) !important;
+  background:var(--panel) !important;
 }
-.periodcell .approx{opacity:.55;font-style:italic}
-/* A free period is simply blank -- an outlined empty box reads as a broken
-   card, especially on the patterned skins. */
-.free{width:100%;min-height:88px}
+.nooutline .lesson.current{outline-color:var(--accent) !important}
+.nooutline .lesson .s::before{
+  content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--c,var(--accent));margin-right:6px;vertical-align:1px;flex:none;
+}
+.nooutline .nowcard{border-left-color:var(--accent) !important}
 
 /* mobile */
 .dayswitch{display:none;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:5px}
@@ -504,7 +501,6 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <span id="sub"></span>
     </div>
     <div class="weeknav">
-      <span class="nowis" id="nowis" aria-hidden="true"></span>
       <button class="weekbtn" id="weekbtn" title="Switch between Week A and Week B"></button>
     </div>
     <button class="btn" id="today">Today</button>
@@ -577,10 +573,20 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="field">
       <label>Room numbers</label>
       <div class="modes" id="rooms">
-        <button type="button" data-room="full">CR1007.118</button>
-        <button type="button" data-room="building">CR1007</button>
-        <button type="button" data-room="number">118</button>
+        <button type="button" data-room="full" title="CR1007.118">Full</button>
+        <button type="button" data-room="building" title="CR1007">New</button>
+        <button type="button" data-room="number" title="118">Legacy</button>
       </div>
+    </div>
+
+    <div class="field">
+      <label>Display</label>
+      <div class="custrow"><span>Week letter on day names</span>
+        <input type="checkbox" id="t_weekletter" class="sw"></div>
+      <div class="custrow"><span>Coloured subject outlines</span>
+        <input type="checkbox" id="t_outline" class="sw"></div>
+      <div class="custrow"><span>Progress bar on Now</span>
+        <input type="checkbox" id="t_progress" class="sw"></div>
     </div>
 
     <div class="field">
@@ -623,13 +629,19 @@ const SKINS = [
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* ═══ storage ═══ */
-const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room',
+             weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 const endpoint = CONFIG.ENDPOINT;
 let email    = get(LS.email, '');
 let colours  = get(LS.colours, {});
+/* display settings -- declared before applyLook() runs */
+let roomMode   = get(LS.room, 'full');
+let showWeekLetter = get(LS.weekletter, true);
+let showOutline    = get(LS.outline, true);
+let showProgress   = get(LS.progress, true);
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
 const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
@@ -658,6 +670,7 @@ function inkFor(hex){
 
 function applyLook(){
   const root = document.documentElement;
+  root.classList.toggle('nooutline', !showOutline);
   root.setAttribute('data-skin', skin);
   root.setAttribute('data-mode', mode);
 
@@ -872,7 +885,15 @@ const classify = v => {
   if (p.includes('lunch') || /^l\d*$/.test(p)) return 'lunch';
   return 'class';
 };
-const BREAK_NAMES = { r:'Recess', l1:'Lunch 1', l2:'Lunch 2' };
+/* Both lunch halves collapse into one block -- the split is a supervision
+   detail, not something worth two rows on screen. */
+const mergeKey = k => {
+  const v = String(k).toLowerCase();
+  if (/^l\d*$/.test(v) || v.includes('lunch')) return 'lunch';
+  if (v === 'r' || v.includes('recess')) return 'recess';
+  return v;
+};
+const BREAK_NAMES = { recess:'Recess', lunch:'Lunch' };
 const slotLabel = slot => {
   const k = String(slot.key).toLowerCase();
   if (BREAK_NAMES[k]) return BREAK_NAMES[k];
@@ -886,7 +907,6 @@ let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
 let loadError = '', loading = false;
-let roomMode = get(LS.room, 'full');
 let focusToday = false;        /* Today button: dim everything but the current day */
 
 /* ═══ normalise ═══ */
@@ -958,7 +978,7 @@ function normalise(payload){
    is ordered by its AVERAGE start across the cycle and each cell renders that
    day's own times. */
 function buildSlots(){
-  const withLesson = new Set(entries.map(e => (e.pnum || e.period).toLowerCase()));
+  const withLesson = new Set(entries.map(e => mergeKey(e.pnum || e.period)));
   const map = new Map();
 
   const note = (key, label, kind, start, end) => {
@@ -971,13 +991,13 @@ function buildSlots(){
   };
 
   for (const b of bellRows){
-    const key = periodNumber(b.label).toLowerCase();
+    const key = mergeKey(periodNumber(b.label));
     const kind = b.type === 'R' ? classifyBell(b.label) : classify(b.label);
-    note(key, b.label, kind, b.start, b.end);
+    note(key, BREAK_NAMES[key] || b.label, kind, b.start, b.end);
   }
   /* anything the bell table missed but a lesson claims */
   for (const e of entries){
-    const key = (e.pnum || e.period).toLowerCase();
+    const key = mergeKey(e.pnum || e.period);
     if (!map.has(key)) note(key, e.period, e.kind, e.start, e.end);
   }
 
@@ -1012,9 +1032,14 @@ function classifyBell(label){
 
 /* that day's actual times for a slot, falling back to the cycle average */
 function bellFor(dayKey, slotKey){
-  const k = String(slotKey).toLowerCase();
-  const hit = bellRows.find(b => b.day === dayKey && periodNumber(b.label).toLowerCase() === k);
-  return hit || null;
+  const k = mergeKey(slotKey);
+  const hits = bellRows.filter(b => b.day === dayKey && mergeKey(periodNumber(b.label)) === k);
+  if (!hits.length) return null;
+  const starts = hits.map(h => h.start).filter(v => v != null);
+  const ends   = hits.map(h => h.end).filter(v => v != null);
+  return { day:dayKey, label:hits[0].label, type:hits[0].type,
+           start: starts.length ? Math.min(...starts) : null,
+           end:   ends.length   ? Math.max(...ends)   : null };
 }
 
 /* ═══ colours ═══ */
@@ -1070,7 +1095,8 @@ function nameFromEmail(e){
 const $ = id => document.getElementById(id);
 const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
 const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const entryAt = (cycleDay, slotKey) => entries.find(e => e.dayKey === cycleDay && (e.pnum || e.period.toLowerCase()) === slotKey);
+const entryAt = (cycleDay, slotKey) =>
+  entries.find(e => e.dayKey === cycleDay && mergeKey(e.pnum || e.period) === mergeKey(slotKey));
 
 function render(){
   const now = new Date();
@@ -1145,100 +1171,112 @@ function render(){
     ? weekendCard(upcoming, upcomingWhen)
     : nowCard('Next', upcoming, nowMin, upcomingWhen, false));
 
-  /* grid */
+  /* ── grid ──────────────────────────────────────────────────────────
+     Blocks are positioned by real time rather than dropped into fixed
+     period rows: Wednesday runs to its own bell, and a period-row grid
+     had to leave whole rows empty to keep the days aligned. */
   const idx = isMobile ? [mobileDay] : [0,1,2,3,4];
+  const PX = 1.4;                       /* pixels per minute */
   const grid = $('grid');
   grid.style.setProperty('--days', idx.length);
   grid.innerHTML = '';
-  grid.appendChild(el('div','colhead'));
-  idx.forEach(i => {
-    const d = days[i];
-    const isToday = showingCurrentWeek && DAY_KEYS[i] === todayKey;
-    const h = el('div','colhead' + (isToday ? ' today' : '') +
+
+  /* gather every block that will be drawn, per shown day */
+  const columns = idx.map(i => {
+    const cyc = cycles[i];
+    const blocks = [];
+    if (cyc){
+      for (const slot of slots){
+        const e = entryAt(cyc, slot.key);
+        const b = bellFor(cyc, slot.key);
+        const st = (e && e.start != null) ? e.start : (b ? b.start : null);
+        const en = (e && e.end   != null) ? e.end   : (b ? b.end   : null);
+        if (st == null || en == null || en <= st) continue;
+        const kind = e ? e.kind : slot.kind;
+        if (!e && kind === 'class') continue;      /* free period: draw nothing */
+        blocks.push({ start:st, end:en, kind, entry:e, slot });
+      }
+    }
+    return { i, cyc, blocks };
+  });
+
+  const allBlocks = columns.flatMap(c => c.blocks);
+  const dayStart = allBlocks.length ? Math.min(...allBlocks.map(b => b.start)) : 8*60;
+  const dayEnd   = allBlocks.length ? Math.max(...allBlocks.map(b => b.end))   : 15*60;
+  const height   = Math.max(120, (dayEnd - dayStart) * PX);
+  const yOf = m => (m - dayStart) * PX;
+
+  /* row 1: corner + day headings */
+  grid.appendChild(el('div','corner'));
+  columns.forEach(c => {
+    const d = days[c.i];
+    const isToday = showingCurrentWeek && DAY_KEYS[c.i] === todayKey;
+    const h = el('div','dhead' + (isToday ? ' today' : '') +
                        (focusToday && !isToday ? ' dimmed' : ''));
-    h.innerHTML = '<div class="dow">' + DAY[d.getDay()] + '</div><i class="rule"></i>';
+    h.innerHTML = '<span class="dow">' + DAY[d.getDay()] +
+      (showWeekLetter ? '<small>' + week.toUpperCase() + '</small>' : '') +
+      '</span><i class="rule"></i>';
     grid.appendChild(h);
   });
 
-  let rot = 0;
-  slots.forEach(slot => {
-    const isBreak = slot.kind !== 'class';
-    const pc = el('div','periodcell' + (isBreak ? ' brk' : ''));
-    if (!isBreak){
-      /* Wednesday runs to a different bell, so only show a time in the gutter
-         when every day in view agrees; otherwise the cards carry the truth. */
-      const times = cycles.map(c => bellFor(c, slot.key)).filter(Boolean);
-      /* Most days share a time; Wednesday often doesn't. Show the common one
-         and mark it as approximate -- each card carries its own exact time. */
-      const tally = {};
-      times.forEach(t => { const k = t.start + '|' + t.end; tally[k] = (tally[k]||0)+1; });
-      const best = Object.keys(tally).sort((a,b) => tally[b]-tally[a])[0];
-      const same = Object.keys(tally).length <= 1;
-      const show = best ? best.split('|').map(Number) : null;
-      pc.innerHTML = '<b>' + esc(slotLabel(slot)) + '</b>' +
-        (show ? '<span class="' + (same ? '' : 'approx') + '" title="' +
-                (same ? '' : 'Wednesday runs to a different bell') + '">' +
-                fmtTime(show[0]) + '<br>' + fmtTime(show[1]) + '</span>' : '');
-    }
-    grid.appendChild(pc);
-
-    idx.forEach(i => {
-      const d = days[i], cyc = cycles[i];
-      const dayIsToday = showingCurrentWeek && DAY_KEYS[i] === todayKey;
-      const cell = el('div','cell' + (isBreak ? ' brk' : ''));
-      const e = cyc ? entryAt(cyc, slot.key) : null;
-
-      if (focusToday && !dayIsToday) cell.classList.add('dimmed');
-      if (isBreak){
-        const b = cyc ? bellFor(cyc, slot.key) : null;
-        const st = b && b.start != null ? b.start : (e ? e.start : null);
-        const en = b && b.end   != null ? b.end   : (e ? e.end   : null);
-        if (b || e){
-          const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(slot);
-          const bar = el('div','breakbar' + (e && e.kind === 'assembly' ? ' assembly' : ''));
-          bar.innerHTML = '<span>' + esc(name) + '</span>' +
-            (st != null ? '<em>' + fmtTime(st) + '–' + fmtTime(en) + '</em>' : '') +
-            (e && e.room ? '<em>' + esc(roomLabel(e)) + '</em>' : '');
-          cell.appendChild(bar);
-        }
-      } else if (!e){
-        cell.appendChild(el('div','free', cyc ? '' : ''));
-      } else {
-        const c = colourFor(e.subject);
-        const box = document.createElement('button');
-        box.type = 'button';
-        box.className = 'lesson';
-        box.style.setProperty('--c', c);
-        box.style.setProperty('--rot', (((rot++ % 4) - 1.5) * 0.62).toFixed(2) + 'deg');
-        const endMin = e.end == null ? (e.start == null ? null : e.start + 60) : e.end;
-        const isNow  = dayIsToday && e.start != null && e.start <= nowMin && nowMin < endMin;
-        if (isNow) box.classList.add('current');
-        /* Nothing is greyed out by default; Today turns on focus mode. */
-        if (focusToday && !dayIsToday) box.classList.add('dimmed');
-        box.innerHTML =
-          '<div class="s">' + esc(e.subject) + '</div>' +
-          (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
-          (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
-          (e.start != null ? '<div class="tm">' + fmtTime(e.start) + '–' + fmtTime(e.end) + '</div>' : '');
-        box.onclick = () => showDetail(e, d);
-        cell.appendChild(box);
-      }
-      grid.appendChild(cell);
-    });
+  /* row 2: time gutter + one positioned column per day */
+  const gutter = el('div','tcol');
+  gutter.style.height = height + 'px';
+  const marks = [...new Set(allBlocks.flatMap(b => [b.start, b.end]))].sort((a,b) => a-b);
+  let lastY = -99;
+  marks.forEach(m => {
+    const y = yOf(m);
+    if (y - lastY < 17) return;          /* keep labels from colliding */
+    lastY = y;
+    const t = el('span','tmark', fmtTime(m));
+    t.style.top = y + 'px';
+    gutter.appendChild(t);
   });
-}
+  grid.appendChild(gutter);
 
-function weekendCard(next, when){
-  const d = el('div','nowcard weekend');
-  const back = next
-    ? (when || 'Monday') + ' · ' + next.subject +
-      (next.start != null ? ' · ' + fmtTime(next.start) : '')
-    : 'No further classes scheduled';
-  d.innerHTML =
-    '<div class="lbl">Next</div>' +
-    '<div class="subj">Enjoy the weekend</div>' +
-    '<div class="meta">Back ' + esc(back) + '</div>';
-  return d;
+  columns.forEach(c => {
+    const isToday = showingCurrentWeek && DAY_KEYS[c.i] === todayKey;
+    const body = el('div','dbody' + (focusToday && !isToday ? ' dimmed' : ''));
+    body.style.height = height + 'px';
+
+    for (const blk of c.blocks){
+      const h = Math.max(16, (blk.end - blk.start) * PX);
+      const top = yOf(blk.start);
+      const e = blk.entry;
+
+      if (blk.kind !== 'class'){
+        const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly')
+                                                : slotLabel(blk.slot);
+        const bar = el('div','breakbar' + (blk.kind === 'assembly' ? ' assembly' : ''));
+        bar.style.top = top + 'px';
+        bar.style.height = h + 'px';
+        /* a 20-minute break is ~28px tall; only add times when they fit */
+        bar.innerHTML = '<span>' + esc(name) + '</span>' +
+          (h >= 34 ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
+        bar.title = name + ' · ' + fmtTime(blk.start) + '–' + fmtTime(blk.end);
+        body.appendChild(bar);
+        continue;
+      }
+
+      const c2 = colourFor(e.subject);
+      const box = document.createElement('button');
+      box.type = 'button';
+      box.className = 'lesson' + (h >= 86 ? ' tall' : '');
+      box.style.setProperty('--c', c2);
+      box.style.top = top + 'px';
+      box.style.height = h + 'px';
+      const isNow = isToday && e.start <= nowMin && nowMin < blk.end;
+      if (isNow) box.classList.add('current');
+      box.innerHTML =
+        '<div class="s">' + esc(e.subject) + '</div>' +
+        (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
+        (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
+        '<div class="tm">' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</div>';
+      box.onclick = () => showDetail(e, days[c.i]);
+      body.appendChild(box);
+    }
+    grid.appendChild(body);
+  });
 }
 
 function nowCard(label, e, nowMin, when, weekend){
@@ -1263,7 +1301,7 @@ function nowCard(label, e, nowMin, when, weekend){
     '<div class="subj">' + esc(e.subject) + '</div>' +
     '<div class="meta">' + (when ? '<b>' + esc(when) + '</b> · ' : '') + esc(bits) +
       (e.start != null ? ' · ' + fmtTime(e.start) + '–' + fmtTime(e.end) : '') + '</div>' +
-    (running
+    (running && showProgress
       ? '<div class="progrow"><div class="prog"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
         '<span class="count">' + cd + '</span></div>'
       : (cd ? '<div class="count">' + cd + '</div>' : ''));
@@ -1413,6 +1451,24 @@ function bindCustom(){
 }
 bindCustom();
 
+function renderToggles(){
+  $('t_weekletter').checked = showWeekLetter;
+  $('t_outline').checked    = showOutline;
+  $('t_progress').checked   = showProgress;
+}
+[['t_weekletter','weekletter'],['t_outline','outline'],['t_progress','progress']]
+  .forEach(([id, key]) => {
+    $(id).addEventListener('change', ev => {
+      const v = ev.target.checked;
+      if (key === 'weekletter') showWeekLetter = v;
+      if (key === 'outline')    showOutline    = v;
+      if (key === 'progress')   showProgress   = v;
+      set(LS[key], v);
+      document.documentElement.classList.toggle('nooutline', !showOutline);
+      render();
+    });
+  });
+
 function renderRooms(){
   [...$('rooms').children].forEach(b =>
     b.setAttribute('aria-pressed', String(b.dataset.room === roomMode)));
@@ -1442,7 +1498,7 @@ $('mode').onclick = () => {
 $('settings').onclick = () => {
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderColours();
+  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderToggles(); renderColours();
   dlg.showModal();
 };
 const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
@@ -1471,21 +1527,10 @@ $('save').onclick = async e => {
 };
 
 /* ═══ controls ═══ */
-let flashTimer = null;
-function flashCurrent(){
-  const real = cycleDayFor(new Date(), cycleStart);
-  if (!real) return;
-  const n = $('nowis');
-  n.innerHTML = 'Currently: <b>Week ' + real.slice(-1).toUpperCase() + '</b>';
-  n.classList.add('show');
-  clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => n.classList.remove('show'), 2600);
-}
 function toggleWeek(){
   const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
   viewWeek = shown === 'a' ? 'b' : 'a';
   render();
-  flashCurrent();
 }
 $('weekbtn').onclick = toggleWeek;
 

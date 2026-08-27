@@ -104,9 +104,9 @@ without opening Settings. The endpoint is not exposed anywhere in the UI.
 The timetable is a repeating ten-day cycle, so the grid shows **weekday names and
 the week letter, not calendar dates**. Nothing is greyed out by default.
 
-- The **Week A / Week B** button is the only week control — tap it to swap. A
-  brief `Currently: Week B` appears beside it so it is always clear which week is
-  really on today.
+- The **Week A / Week B** button is the only week control — tap it to swap. Each
+  day name carries its week letter (`Monday A`), which you can turn off under
+  ⚙ → Display.
 - The current day is highlighted only while the current week is on screen.
 - The lesson happening right now is outlined.
 - **Today** is a toggle: press it to jump to the current week and dim everything
@@ -115,11 +115,24 @@ the week letter, not calendar dates**. Nothing is greyed out by default.
   following days — after the last lesson it shows tomorrow's first. On Friday
   afternoon it reads *Enjoy the weekend* with Monday's opener underneath.
 
-Rows come from the school's bell schedule, so **recess, both lunch halves and
-Wednesday's assembly** each get their own row. Wednesday runs to a different
-bell — assembly at 10:45 pushes recess to 11:05 and lunch 35 minutes earlier —
-so each cell shows that day's real times and the left gutter shows the common
-time in italics when days disagree.
+Blocks are **positioned by real time**, not dropped into fixed period rows. The
+left gutter shows the actual bell boundaries and each card's height is its
+duration, so free periods are simply empty space rather than blank rows.
+Wednesday runs to its own bell — assembly at 10:45 pushes recess to 11:05 and
+lunch 35 minutes earlier — and lands lower in the column automatically.
+
+Recess and assembly get their own blocks; the two lunch halves are merged into
+a single **Lunch**.
+
+### Display toggles
+
+⚙ → Display:
+
+| Toggle | Default |
+|---|---|
+| Week letter on day names (`Monday A`) | on |
+| Coloured subject outlines — off keeps the colour as a dot | on |
+| Progress bar on the Now card | on |
 
 ---
 
@@ -161,8 +174,9 @@ Glass look with your own palette.
 
 ### Room numbers
 
-⚙ → Room numbers picks how `CR1007.118` appears: **CR1007.118** (default),
-**CR1007**, or **118**. The lesson detail sheet always shows the full code.
+⚙ → Room numbers: **Full** (`CR1007.118`, default), **New** (`CR1007`), or
+**Legacy** (`118`). Hovering each option shows an example. The lesson detail
+sheet always shows the full code.
 
 ### What the cards show
 
@@ -190,6 +204,66 @@ const SUBJECT_RENAMES = {
 
 Clicking any lesson opens a detail sheet with the full room code, the teacher's
 email, the class code and the original course name.
+
+---
+
+## Putting it on mscunofficial.com
+
+The domain is registered at Cloudflare and the site runs on Vercel, which serves
+**both** `index.html` and `/api/timetable`. Pointing the domain at Vercel puts
+everything on one origin, which means CORS stops mattering entirely.
+
+### 1. Add the domain in Vercel
+
+Project → **Settings** → **Domains** → add `mscunofficial.com`, then add
+`www.mscunofficial.com` and set it to redirect to the apex.
+
+Vercel then shows the exact DNS records to create. **Use the values Vercel
+displays** — they occasionally change.
+
+### 2. Create the records in Cloudflare
+
+Cloudflare dashboard → `mscunofficial.com` → **DNS** → **Records**. Typically:
+
+| Type | Name | Content |
+|---|---|---|
+| A | `@` | the IP Vercel shows |
+| CNAME | `www` | `cname.vercel-dns.com` |
+
+### 3. Set both records to "DNS only" — this is the part that bites
+
+Click the orange cloud on each record so it turns **grey**.
+
+With the proxy on, Cloudflare terminates TLS itself and intercepts the
+verification handshake, so Vercel cannot issue its certificate. The symptoms are
+`Failed to generate cert`, `Invalid Configuration`, or a redirect loop.
+
+Once Vercel reports the domain as **Valid** with a certificate issued, you *can*
+switch the proxy back on if you want Cloudflare's caching — set SSL/TLS mode to
+**Full (strict)** first. Leaving it grey is perfectly fine and is the simpler
+path.
+
+### 4. Point the page at the same origin
+
+Because Vercel now serves the page and the API together, make the endpoint
+relative in `index.html`:
+
+```js
+const CONFIG = {
+  ENDPOINT: "/api/timetable",
+  EMAIL_DOMAIN: "education.nsw.gov.au"
+};
+```
+
+Then update `ALLOWED_ORIGIN` in Vercel to `https://mscunofficial.com` and
+redeploy. (With a relative endpoint the browser never sends a cross-origin
+request, so this is belt-and-braces.)
+
+### 5. Retire GitHub Pages
+
+With the domain on Vercel, the Pages copy is redundant — repo → Settings →
+Pages → set Source to **None**, so there is only one live version to keep
+current.
 
 ---
 
