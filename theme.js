@@ -10,7 +10,8 @@
 
 const LS = {
   skin:'tt.skin', mode:'tt.mode', zen:'tt.zen', custom:'tt.custom',
-  textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion'
+  textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
+  view:'tt.view', outline:'tt.outline'
 };
 
 const get = (k, d) => {
@@ -84,7 +85,9 @@ function readState(){
     textScale: get(LS.textScale, 1),
     zoom: get(LS.zoom, 1),
     contrast: get(LS.contrast, 'normal'),
-    motion: get(LS.motion, 'normal')
+    motion: get(LS.motion, 'normal'),
+    view: get(LS.view, 'compact'),
+    outline: get(LS.outline, true)
   };
 }
 
@@ -96,6 +99,11 @@ function apply(state){
   root.setAttribute('data-mode', st.mode);
   root.classList.toggle('zen', !!st.zen);
   root.setAttribute('data-contrast', st.contrast);
+  /* The compact grid positions cards absolutely via [data-view]; without this
+     set before first paint they flow in document order and every column
+     stacks out of alignment. */
+  root.setAttribute('data-view', st.view);
+  root.classList.toggle('nooutline', !st.outline);
   root.setAttribute('data-motion', st.motion);
   root.style.setProperty('--text-scale', st.textScale);
   root.style.setProperty('--ui-zoom', st.zoom);

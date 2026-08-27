@@ -182,7 +182,7 @@ depends on the wallpaper behind them.
 | `index.html` | the timetable — stays at the root of the domain |
 | `home.html` | hub with links to everything, room for more |
 | `notes.html` | scratchpad, saves to the device as you type |
-| `games.html` | placeholder cards, themed and ready to fill in |
+| `games.html` | Snake, 2048, Minesweeper, Typing race, Reaction |
 | `theme.css` | tokens + every skin — **shared by all pages** |
 | `theme.js` | applies the saved theme before first paint — shared |
 | `site.css` | page furniture for home/notes/games |
@@ -193,6 +193,17 @@ zoom. A change in one tab also reaches the others via the `storage` event.
 
 To add a page: copy `notes.html`, keep the three shared `<link>`/`<script>`
 tags, and write the body.
+
+Navigation: the timetable header has a **⌂** button to the hub; the hub and
+inner pages each have **Home** / **Timetable** buttons and a light-dark toggle.
+The hub also carries a theme picker (⚙) with the same Plain / Classic / all
+behaviour as the timetable's.
+
+`theme.js` sets `data-view` and the outline class **before first paint**. The
+compact grid positions cards absolutely off `[data-view]`, so if that attribute
+is missing the cards fall back to document flow and every column stacks out of
+alignment — which is exactly what happened when the attribute was only being set
+by the settings handlers.
 
 ---
 

@@ -20,8 +20,21 @@
       <h1>MSC Unofficial</h1>
       <p class="lede">Your timetable, your notes, and a place to waste five minutes.</p>
     </div>
-    <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+    <div class="hubctl">
+      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+      <button class="btn icon" id="themebtn" title="Themes">&#9881;</button>
+    </div>
   </header>
+
+  <div class="themebar" id="themebar" hidden>
+    <div class="tbhead">
+      <span>Theme</span>
+      <button class="btn" id="tbmore" type="button">Show all</button>
+    </div>
+    <div class="skins" id="skins"></div>
+    <p class="tbhint">Applies everywhere — timetable, notes and games.
+      Fine-grained options live in the timetable's settings.</p>
+  </div>
 
   <nav class="tiles">
     <a class="tile primary" href="./">
@@ -53,11 +66,45 @@
 
 </div>
 <script>
-document.getElementById('mode').onclick = () => {
+const $ = id => document.getElementById(id);
+
+$('mode').onclick = () => {
   const st = TT.readState();
   const next = st.mode === 'dark' ? 'light' : 'dark';
   TT.set(TT.LS.mode, next);
   TT.apply(Object.assign(st, { mode: next }));
+};
+
+let expanded = false;
+function paintSkins(){
+  const host = $('skins');
+  const cur = TT.readState().skin;
+  host.innerHTML = '';
+  const showAll = expanded || TT.QUICK_SKINS.indexOf(cur) === -1;
+  const list = showAll ? TT.SKINS : TT.SKINS.filter(s => TT.QUICK_SKINS.indexOf(s.id) !== -1);
+  $('tbmore').textContent = showAll ? 'Show fewer' : 'Show all';
+  $('tbmore').hidden = TT.QUICK_SKINS.indexOf(cur) === -1 && !expanded;
+  list.forEach(s => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'skinbtn';
+    b.setAttribute('aria-pressed', String(s.id === cur));
+    b.innerHTML = '<span class="sw" style="background:' + s.swatch +
+                  (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
+                  '<span class="nm">' + s.name + '</span>';
+    b.onclick = () => {
+      TT.set(TT.LS.skin, s.id);
+      TT.apply(Object.assign(TT.readState(), { skin: s.id }));
+      paintSkins();
+    };
+    host.appendChild(b);
+  });
+}
+$('tbmore').onclick = () => { expanded = !expanded; paintSkins(); };
+$('themebtn').onclick = () => {
+  const bar = $('themebar');
+  bar.hidden = !bar.hidden;
+  if (!bar.hidden) paintSkins();
 };
 </script>
 </body>

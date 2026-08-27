@@ -114,3 +114,28 @@ a{color:var(--accent)}
   .hubhead{flex-wrap:wrap}
   .wrap{padding:20px 16px 60px}
 }
+
+/* ── homepage theme bar ──────────────────────────────────────── */
+.hubctl{display:flex;gap:8px;flex-shrink:0}
+.themebar{
+  background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
+  padding:16px;box-shadow:var(--shadow);margin-bottom:20px;
+}
+.themebar[hidden]{display:none}
+.tbhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.tbhead span{
+  font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
+}
+.tbhead .btn{padding:5px 11px;font-size:12px}
+.tbhint{margin:12px 0 0;color:var(--muted);font-size:12px}
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:9px}
+.skinbtn{
+  border:2px solid var(--line);border-radius:var(--radius);padding:0;cursor:pointer;
+  overflow:hidden;background:none;text-align:left;color:var(--text);
+}
+.skinbtn[aria-pressed="true"]{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent);
+}
+.skinbtn .sw{height:46px;display:block}
+.skinbtn .nm{display:block;padding:6px 8px;font-size:12px;font-weight:700;background:var(--panel-2)}
