@@ -175,9 +175,40 @@ depends on the wallpaper behind them.
 
 ---
 
+## Pages
+
+| File | Is |
+|---|---|
+| `index.html` | the timetable — stays at the root of the domain |
+| `home.html` | hub with links to everything, room for more |
+| `notes.html` | scratchpad, saves to the device as you type |
+| `games.html` | placeholder cards, themed and ready to fill in |
+| `theme.css` | tokens + every skin — **shared by all pages** |
+| `theme.js` | applies the saved theme before first paint — shared |
+| `site.css` | page furniture for home/notes/games |
+
+Because the theme lives in `theme.css` + `theme.js`, a skin picked on the
+timetable is already applied when you land on Notes — including text size and
+zoom. A change in one tab also reaches the others via the `storage` event.
+
+To add a page: copy `notes.html`, keep the three shared `<link>`/`<script>`
+tags, and write the body.
+
+---
+
 ## Appearance
 
-⚙ → Appearance. Eight skins, each with its own typeface and treatment:
+⚙ → Appearance shows four tiles — **Plain**, **Classic**, **+** and
+**Custom**. Pressing **+** reveals all twelve; **Fewer** collapses it again.
+
+| Skin | Look |
+|---|---|
+| **Classic** | A faithful port of the original NBSC timetable — Apple system type, frosted white panels, pastel subject dots, coloured card outlines |
+| **Retro** | Early-2000s desktop: teal ground, bevelled chrome, glossy gradient title bars, Tahoma |
+| **Sci-fi** | Ship's console — notched panel corners, cyan glow, wide caps |
+| **Newsprint** | Broadsheet: cream stock, hairline rules, serif headlines, small-caps rooms |
+
+and the originals:
 
 | Skin | Look |
 |---|---|
@@ -212,6 +243,49 @@ folded into an **Advanced** dropdown, collapsed by default:
 It writes to `localStorage` on that device only, and the accent's text colour is
 chosen automatically for contrast. Frosted glass + colour mesh reproduces the
 Glass look with your own palette.
+
+### Subject colours
+
+Defaults now match the original timetable: one pastel per faculty, matched on
+the course name — Maths `#FFA9A6`, English `#FEFB99`, Technology `#FFD5F4`,
+Science `#A4FEFF`, Music, HSIE, Languages, Visual Arts, and a spread of
+fallbacks for anything unrecognised. Dark mode has its own brighter set.
+
+Each subject gets a dropdown: **Default**, any faculty colour, or **Custom…**
+which reveals a colour picker.
+
+### Accessibility
+
+⚙ → Accessibility:
+
+| Control | Does |
+|---|---|
+| Text size | 80–150%, scales type only (`--text-scale` on the root font size) |
+| Zoom | 70–150%, scales the whole interface |
+| High contrast | Drops muted greys to full-strength text, thickens card borders |
+| Reduce motion | Collapses transitions and animations |
+
+All four persist and apply across every page.
+
+### Your own school login
+
+⚙ → Your own school login. Enter a school email and password and the timetable
+is fetched **under that account** rather than the site owner's — so other
+people's lookups stop going through your credentials.
+
+Sent as `X-School-Email` / `X-School-Password` headers, never as query
+parameters, so they stay out of URLs, server logs and `Referer`. The server uses
+them for that request only, caches the resulting token per account, and marks
+those responses `private, no-store` so they are never held at the edge. The
+`ALLOWED_EMAILS` allowlist doesn't apply to someone using their own login.
+
+> **Worth understanding before you share this with people.** The password is
+> kept in `localStorage` in plain text — anything that can run a script on the
+> page, or anyone with access to that browser profile, can read it. It is also
+> transmitted to whichever deployment `CONFIG.ENDPOINT` points at, so users are
+> trusting the operator of that deployment. It is a real improvement over
+> everyone sharing one account, but it is not a substitute for a proper OAuth
+> flow, which this API doesn't offer.
 
 ### Room numbers
 

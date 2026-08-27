@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="wrap hub">
+
+  <header class="hubhead">
+    <div>
+      <div class="eyebrow">NBSC Manly Campus &middot; unofficial</div>
+      <h1>MSC Unofficial</h1>
+      <p class="lede">Your timetable, your notes, and a place to waste five minutes.</p>
+    </div>
+    <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+  </header>
+
+  <nav class="tiles">
+    <a class="tile primary" href="./">
+      <span class="ico">🗓️</span>
+      <span class="tname">Timetable</span>
+      <span class="tdesc">Your fortnight, live from the school API</span>
+    </a>
+    <a class="tile" href="notes.html">
+      <span class="ico">📝</span>
+      <span class="tname">Notes</span>
+      <span class="tdesc">Scratchpad that saves as you type</span>
+    </a>
+    <a class="tile" href="games.html">
+      <span class="ico">🎮</span>
+      <span class="tname">Games</span>
+      <span class="tdesc">A few things to do between periods</span>
+    </a>
+    <div class="tile soon" aria-disabled="true">
+      <span class="ico">✨</span>
+      <span class="tname">More soon</span>
+      <span class="tdesc">Room to grow — assessments, bell countdown, whatever's next</span>
+    </div>
+  </nav>
+
+  <footer class="hubfoot">
+    <span>Theme follows you across every page.</span>
+    <a href="./">Back to timetable →</a>
+  </footer>
+
+</div>
+<script>
+document.getElementById('mode').onclick = () => {
+  const st = TT.readState();
+  const next = st.mode === 'dark' ? 'light' : 'dark';
+  TT.set(TT.LS.mode, next);
+  TT.apply(Object.assign(st, { mode: next }));
+};
+</script>
+</body>
+</html>

@@ -7,210 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   The whole look is driven by these tokens. Each skin re-declares
-   them, so the markup and layout never change between skins.
-   ═══════════════════════════════════════════════════════════════ */
-:root{
-  --bg:#faf7f0; --bg-img:none; --panel:#fff; --panel-2:#f2efe6;
-  --line:#ddd6c6; --text:#241f18; --muted:#7d7364; --accent:#c2571f; --accent-ink:#fff;
-  --radius:14px; --card-radius:14px;
-  --shadow:0 1px 2px rgba(0,0,0,.05), 0 6px 18px rgba(0,0,0,.06);
-  --shadow-hi:0 4px 10px rgba(0,0,0,.08), 0 14px 34px rgba(0,0,0,.1);
-  --font-ui:"DM Sans",system-ui,sans-serif;
-  --font-display:"Instrument Serif",Georgia,serif;
-  --font-num:"DM Sans",system-ui,sans-serif;
-  --tint:14%;            /* how much subject colour bleeds into a card */
-  --card-border:1px solid var(--line);
-  --card-accent:5px;     /* left colour bar width */
-  --rot:0deg;
-  --display-tt:normal; --display-ls:-.02em; --display-w:700;
-}
-
-/* ── PLAIN ─ the quiet default: white on white, grey on grey ────── */
-[data-skin="plain"]{
-  --bg:#ffffff; --bg-img:none; --panel:#ffffff; --panel-2:#f6f6f7;
-  --line:#e5e5e8; --text:#18181b; --muted:#8b8b93; --accent:#4f4fd0; --accent-ink:#fff;
-  --font-ui:"DM Sans",system-ui,sans-serif;
-  --font-display:"DM Sans",system-ui,sans-serif;
-  --font-num:"DM Sans",system-ui,sans-serif;
-  --card-radius:10px; --tint:0%; --card-accent:3px;
-  --card-border:1px solid var(--line);
-  --shadow:none; --shadow-hi:0 1px 4px rgba(0,0,0,.09);
-  --display-ls:-.015em; --display-w:600; --display-tt:normal;
-}
-[data-skin="plain"][data-mode="dark"]{
-  --bg:#161618; --panel:#1f1f22; --panel-2:#27272b;
-  --line:#303035; --text:#eaeaee; --muted:#87878f; --accent:#8f8ff2;
-  --shadow-hi:0 1px 4px rgba(0,0,0,.55);
-}
-
-/* ── PAPER ─ ruled notebook, post-it lessons ───────────────────── */
-[data-skin="paper"]{
-  --bg:#f7f3e8;
-  --bg-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(80,110,160,.13) 31px 32px);
-  --panel:#fffdf6; --panel-2:#f0ead8; --line:#ded4bd;
-  --text:#2c2519; --muted:#8a7f6a; --accent:#c2571f; --accent-ink:#fff;
-  --font-ui:"Patrick Hand",'Comic Sans MS',cursive;
-  --font-display:"Caveat",cursive;
-  --font-num:"Patrick Hand",cursive;
-  --card-radius:3px; --tint:44%; --card-accent:0px;
-  --card-border:1px solid rgba(0,0,0,.09);
-  --shadow:2px 3px 7px rgba(60,45,20,.16);
-  --shadow-hi:4px 7px 16px rgba(60,45,20,.22);
-  --display-w:700; --display-ls:0;
-}
-[data-skin="paper"][data-mode="dark"]{
-  --bg:#221f1a;
-  --bg-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(150,170,210,.09) 31px 32px);
-  --panel:#2e2a23; --panel-2:#282420; --line:#413a30;
-  --text:#f0e9db; --muted:#a2957f; --accent:#e8834a;
-  --tint:30%;
-}
-/* The red margin rule belongs to the ruled page, so it starts below the
-   masthead instead of striking through the title. */
-[data-skin="paper"] .grid{position:relative}
-[data-skin="paper"] .grid::before{
-  content:"";position:absolute;top:-14px;bottom:-30px;left:-14px;
-  width:2px;background:rgba(200,70,70,.4);pointer-events:none;z-index:0;
-}
-[data-skin="paper"][data-mode="dark"] .grid::before{background:rgba(235,120,120,.38)}
-@media (max-width:860px){ [data-skin="paper"] .grid::before{display:none} }
-[data-skin="paper"] .lesson{transform:rotate(var(--rot))}
-[data-skin="paper"] .lesson:hover{transform:rotate(0deg) translateY(-3px) scale(1.02)}
-/* sticky-tape tab on each note */
-[data-skin="paper"] .lesson::before{
-  content:"";position:absolute;top:-7px;left:50%;translate:-50% 0;
-  width:46px;height:15px;background:rgba(255,255,255,.55);
-  border:1px solid rgba(0,0,0,.07);border-top:0;
-  box-shadow:0 1px 2px rgba(0,0,0,.08);
-}
-[data-skin="paper"][data-mode="dark"] .lesson::before{background:rgba(255,255,255,.14)}
-
-/* ── GLASS ─ frosted tiles over a colour mesh ──────────────────── */
-[data-skin="glass"]{
-  --bg:#0d1220;
-  --bg-img:
-    radial-gradient(60vw 60vw at 12% 8%,rgba(120,90,255,.5),transparent 60%),
-    radial-gradient(55vw 55vw at 88% 18%,rgba(0,190,220,.42),transparent 62%),
-    radial-gradient(60vw 60vw at 50% 96%,rgba(255,80,160,.34),transparent 60%);
-  --panel:rgba(255,255,255,.09); --panel-2:rgba(255,255,255,.055);
-  --line:rgba(255,255,255,.2);
-  --text:#f3f5fb; --muted:rgba(233,238,250,.66); --accent:#8ab4ff; --accent-ink:#0a1020;
-  --font-ui:"Space Grotesk",system-ui,sans-serif;
-  --font-display:"Space Grotesk",system-ui,sans-serif;
-  --font-num:"Space Grotesk",system-ui,sans-serif;
-  --card-radius:20px; --tint:26%; --card-accent:0px;
-  --card-border:1px solid rgba(255,255,255,.22);
-  --shadow:0 4px 24px rgba(0,0,0,.3);
-  --shadow-hi:0 10px 40px rgba(0,0,0,.42);
-  --display-ls:-.03em;
-}
-[data-skin="glass"][data-mode="light"]{
-  --bg:#eef1f8;
-  --bg-img:
-    radial-gradient(60vw 60vw at 10% 5%,rgba(150,120,255,.42),transparent 60%),
-    radial-gradient(55vw 55vw at 90% 15%,rgba(0,200,230,.36),transparent 62%),
-    radial-gradient(60vw 60vw at 50% 95%,rgba(255,120,180,.3),transparent 60%);
-  --panel:rgba(255,255,255,.55); --panel-2:rgba(255,255,255,.38);
-  --line:rgba(255,255,255,.8);
-  --text:#15192b; --muted:#5b6178; --accent:#4a5cf0; --accent-ink:#fff;
-  --tint:30%;
-}
-[data-skin="glass"] .lesson,[data-skin="glass"] .nowcard,
-[data-skin="glass"] .breakbar,[data-skin="glass"] .btn,
-[data-skin="glass"] dialog,[data-skin="glass"] .gatecard,
-[data-skin="glass"] .dayswitch button{
-  backdrop-filter:blur(22px) saturate(180%);
-  -webkit-backdrop-filter:blur(22px) saturate(180%);
-}
-/* specular top edge */
-[data-skin="glass"] .lesson::after,[data-skin="glass"] .nowcard::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(160deg,rgba(255,255,255,.4),transparent 42%);
-}
-
-/* ── SWISS ─ stark white, hairlines, no shadow ─────────────────── */
-[data-skin="swiss"]{
-  --bg:#fff; --bg-img:none; --panel:#fff; --panel-2:#f6f6f6;
-  --line:#111; --text:#000; --muted:#767676; --accent:#e8112d; --accent-ink:#fff;
-  --font-ui:"Space Grotesk",Helvetica,Arial,sans-serif;
-  --font-display:"Space Grotesk",Helvetica,sans-serif;
-  --font-num:"Space Grotesk",Helvetica,sans-serif;
-  --card-radius:0px; --tint:0%; --card-accent:0px;
-  --card-border:1px solid #111;
-  --shadow:none; --shadow-hi:none;
-  --display-ls:-.045em; --display-w:700;
-}
-[data-skin="swiss"][data-mode="dark"]{
-  --bg:#000; --panel:#000; --panel-2:#111; --line:#fff; --text:#fff; --muted:#8c8c8c;
-  --card-border:1px solid #fff;
-}
-[data-skin="swiss"] .lesson{border-top:5px solid var(--c,var(--accent))}
-[data-skin="swiss"] .lesson:hover{background:var(--panel-2)}
-[data-skin="swiss"] .colhead .dow{text-transform:uppercase;letter-spacing:.06em;font-size:12px}
-
-/* ── TERMINAL ─ phosphor CRT ───────────────────────────────────── */
-[data-skin="terminal"],[data-skin="terminal"][data-mode="light"]{
-  --bg:#05080a; --bg-img:none; --panel:#0b1114; --panel-2:#0f171b;
-  --line:#265046; --text:#b6ffd6; --muted:#5fae87; --accent:#39ff9e; --accent-ink:#04120a;
-  --font-ui:"JetBrains Mono",ui-monospace,monospace;
-  --font-display:"JetBrains Mono",monospace;
-  --font-num:"JetBrains Mono",monospace;
-  --card-radius:0px; --tint:16%; --card-accent:3px;
-  --card-border:1px solid #1d3a33;
-  --shadow:none; --shadow-hi:0 0 0 1px var(--accent);
-  --display-ls:.04em; --display-tt:uppercase;
-}
-[data-skin="terminal"] body::after{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
-  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
-  mix-blend-mode:multiply;
-}
-[data-skin="terminal"] .lesson .s::before{content:"> ";color:var(--accent)}
-[data-skin="terminal"] .lesson:hover{box-shadow:0 0 14px rgba(57,255,158,.28)}
-
-/* ── BLUEPRINT ─ drafting paper ────────────────────────────────── */
-[data-skin="blueprint"],[data-skin="blueprint"][data-mode="light"]{
-  --bg:#07223d;
-  --bg-img:
-    repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),
-    repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 28px);
-  --panel:rgba(9,42,74,.82); --panel-2:rgba(12,52,90,.9);
-  --line:rgba(150,210,255,.55);
-  --text:#f2f9ff; --muted:#a9d2f2; --accent:#7ff0ff; --accent-ink:#052033;
-  --font-ui:"Space Mono",monospace;
-  --font-display:"Space Mono",monospace;
-  --font-num:"Space Mono",monospace;
-  --card-radius:0px; --tint:14%; --card-accent:0px;
-  --card-border:1px dashed rgba(150,210,255,.55);
-  --shadow:none; --shadow-hi:none;
-  --display-tt:uppercase; --display-ls:.08em;
-}
-[data-skin="blueprint"] .lesson{outline:1px solid rgba(150,210,255,.14);outline-offset:3px}
-[data-skin="blueprint"] .lesson:hover{border-style:solid}
-
-/* ── BRUTAL ─ thick borders, hard shadows ──────────────────────── */
-[data-skin="brutal"]{
-  --bg:#ffe94a; --bg-img:none; --panel:#fffdf5; --panel-2:#fff4c2;
-  --line:#000; --text:#000; --muted:#4a4a4a; --accent:#0047ff; --accent-ink:#fff;
-  --card-radius:0px; --tint:34%; --card-accent:0px;
-  --card-border:3px solid #000;
-  --shadow:5px 5px 0 #000; --shadow-hi:8px 8px 0 #000;
-  --font-ui:"Space Grotesk",system-ui,sans-serif;
-  --font-display:"Archivo Black",system-ui,sans-serif;
-  --font-num:"Space Grotesk",monospace;
-  --display-tt:uppercase; --display-ls:-.01em;
-}
-[data-skin="brutal"][data-mode="dark"]{
-  --bg:#12121a; --panel:#20202c; --panel-2:#2a2a38; --line:#fff;
-  --text:#fff; --muted:#b3b3c4; --accent:#ffe94a; --accent-ink:#000;
-  --card-border:3px solid #fff; --shadow:5px 5px 0 #fff; --shadow-hi:8px 8px 0 #fff;
-}
-[data-skin="brutal"] .lesson:hover{translate:-3px -3px}
-
-/* ═══════════════ shared structure ═══════════════ */
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
@@ -225,17 +24,6 @@ body{
 button,select,input{font:inherit;color:inherit}
 .wrap{max-width:1400px;margin:0 auto;padding:20px 20px 70px;position:relative;z-index:1}
 
-/* ── Zen wallpaper mode ────────────────────────────────────────────
-   The page paints nothing; cards, bars and dialogs stay opaque enough
-   to read on top of whatever the browser is showing behind. */
-html.zen{--page-bg:transparent;--page-img:none;background:transparent}
-html.zen body{background-color:transparent;background-image:none}
-html.zen body::after{display:none}          /* terminal scanlines would tint it */
-html.zen .dayhead,html.zen .corner,html.zen .tcol{background:transparent}
-/* break bars are nearly transparent by design; over an unknown wallpaper they
-   need a backing or the label sits straight on the picture */
-html.zen .breakbar{background:color-mix(in srgb,var(--panel) 88%,transparent)}
-html.zen [data-skin="paper"] .grid::before{opacity:.55}
 
 header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
@@ -466,6 +254,12 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   overflow:hidden;background:none;text-align:left;
 }
 .skinbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.skinbtn.more .sw.plus{
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:300;line-height:1;color:var(--muted);
+  background:var(--panel-2);
+}
+.skinbtn.more:hover .sw.plus{color:var(--accent)}
 .skinbtn .sw{height:46px;display:block}
 .skinbtn .nm{display:block;padding:6px 8px;font-size:12px;font-weight:700;background:var(--panel-2)}
 .custrow{display:flex;align-items:center;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
@@ -505,7 +299,13 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .colrow:last-child{border-bottom:0}
 .colrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .colrow input[type=color]{width:36px;height:29px;padding:0;border:1px solid var(--line);
-                          border-radius:7px;background:none;cursor:pointer}
+                          border-radius:7px;background:none;cursor:pointer;flex:none}
+.colrow input[type=color][hidden]{display:none}
+.colsel{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+        padding:5px 7px;font-size:12px;flex:none;max-width:9.5em}
+.crin{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+      padding:6px 9px;font-size:12.5px;width:11em;flex:none}
+.custrow .btn{flex:1}
 
 /* lesson detail */
 #detail .dlg-b{padding:0}
@@ -637,6 +437,41 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
+      <label>Your own school login</label>
+      <div class="hint" style="margin-top:0;margin-bottom:9px">
+        Optional. With this set, your timetable is fetched using your account
+        instead of the site owner's. Stored <b>only on this device</b> and sent
+        to the timetable service with each request — anyone who can run scripts
+        on this site, or read this browser profile, could read it. Leave blank
+        to use the shared login.
+      </div>
+      <div class="custrow"><span>School email</span>
+        <input type="text" id="cr_email" class="crin" spellcheck="false"
+               autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>
+      <div class="custrow"><span>Password</span>
+        <input type="password" id="cr_pass" class="crin" autocomplete="off"
+               placeholder="••••••••"></div>
+      <div class="custrow">
+        <button class="btn" type="button" id="cr_save">Save login</button>
+        <button class="btn" type="button" id="cr_clear">Clear</button>
+      </div>
+      <div class="hint" id="cr_state"></div>
+    </div>
+
+    <div class="field">
+      <label>Accessibility</label>
+      <div class="custrow"><span>Text size</span>
+        <input type="range" id="a_text" min="80" max="150" step="5"><b id="a_text_v"></b></div>
+      <div class="custrow"><span>Zoom</span>
+        <input type="range" id="a_zoom" min="70" max="150" step="5"><b id="a_zoom_v"></b></div>
+      <div class="custrow"><span>High contrast</span>
+        <input type="checkbox" id="a_contrast" class="sw"></div>
+      <div class="custrow"><span>Reduce motion</span>
+        <input type="checkbox" id="a_motion" class="sw"></div>
+      <div class="custrow"><button class="btn" type="button" id="a_reset">Reset accessibility</button></div>
+    </div>
+
+    <div class="field">
       <label>Layout</label>
       <div class="modes" id="views">
         <button type="button" data-view="compact" title="Positioned by clock time">Compact</button>
@@ -687,22 +522,15 @@ const CONFIG = {
   EMAIL_DOMAIN: "education.nsw.gov.au"
 };
 
-/* ═══ skins ═══ */
-const SKINS = [
-  { id:'plain',     name:'Plain',     swatch:'linear-gradient(#fff,#fff)', both:true, border:'#e5e5e8' },
-  { id:'paper',     name:'Notebook',  swatch:'linear-gradient(#f7f3e8,#f7f3e8) padding-box, repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)', both:true },
-  { id:'glass',     name:'Glass',     swatch:'radial-gradient(circle at 25% 20%,#7a5aff,transparent 60%),radial-gradient(circle at 80% 30%,#00becc,transparent 62%),radial-gradient(circle at 50% 90%,#ff50a0,transparent 60%),#0d1220', both:true },
-  { id:'swiss',     name:'Swiss',     swatch:'linear-gradient(#fff,#fff)', both:true, border:'#111' },
-  { id:'terminal',  name:'Terminal',  swatch:'repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)', both:false },
-  { id:'blueprint', name:'Blueprint', swatch:'repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#0b2a4a', both:false },
-  { id:'brutal',    name:'Brutal',    swatch:'linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)', both:true },
-  /* last, so it sits in the bottom-right of the picker */
-  { id:'custom',    name:'Custom',    swatch:'conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)', both:false, custom:true }
-];
-const SKIN_IDS = SKINS.map(s => s.id);
+/* skin catalogue + look application live in theme.js */
+const SKINS = TT.SKINS, SKIN_IDS = TT.SKIN_IDS;
+const CUSTOM_FONTS = TT.CUSTOM_FONTS, CUSTOM_DEFAULTS = TT.CUSTOM_DEFAULTS;
+const inkFor = TT.inkFor;
 
 /* ═══ storage ═══ */
 const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
+             creds:'tt.creds',
+             textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
              weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -717,92 +545,24 @@ let showOutline    = get(LS.outline, true);
 let showProgress   = get(LS.progress, true);
 let viewMode       = get(LS.view, 'compact');
 let zenMode        = get(LS.zen, false);
-const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
-                      'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
-const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
-                          accent:'#6d4aff', line:'#d9dde5',
-                          radius:12, tint:22, font:'DM Sans',
-                          glass:false, backdrop:'solid', shadow:'soft',
-                          border:1, accent2:'#00c2c7' };
+/* Optional personal school login. Stored on this device only — see the
+   warning shown beside the fields in Settings. */
+let creds          = get(LS.creds, null);
+let textScale      = get(LS.textScale, 1);
+let zoom           = get(LS.zoom, 1);
+let contrast       = get(LS.contrast, 'normal');
+let motion         = get(LS.motion, 'normal');
 let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
 let skin     = get(LS.skin, 'plain');
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
 
-const CUSTOM_VARS = ['--bg','--bg-img','--panel','--panel-2','--line','--text','--muted',
-                     '--accent','--accent-ink','--card-radius','--radius','--tint',
-                     '--card-border','--card-accent','--shadow','--shadow-hi',
-                     '--font-ui','--font-display','--font-num','--display-tt','--display-ls'];
-
-/* relative luminance -> black or white text on top of the chosen accent */
-function inkFor(hex){
-  const h = String(hex).replace('#','');
-  if (h.length !== 6) return '#fff';
-  const v = [0,2,4].map(i => parseInt(h.slice(i,i+2),16)/255)
-                   .map(c => c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4));
-  return (0.2126*v[0] + 0.7152*v[1] + 0.0722*v[2]) > 0.42 ? '#000' : '#fff';
-}
-
 function applyLook(){
-  const root = document.documentElement;
-  root.setAttribute('data-view', viewMode);
-  root.classList.toggle('zen', zenMode);
-  root.classList.toggle('nooutline', !showOutline);
-  root.setAttribute('data-skin', skin);
-  root.setAttribute('data-mode', mode);
-
-  CUSTOM_VARS.forEach(v => root.style.removeProperty(v));
-  if (skin !== 'custom') return;
-
-  const c = custom, S = (k,v) => root.style.setProperty(k, v);
-  const dark = inkFor(c.bg) === '#fff';
-
-  S('--bg', c.bg);
-  S('--bg-img',
-      c.backdrop === 'gradient'
-        ? 'linear-gradient(160deg, ' + c.accent + '22, transparent 55%), ' +
-          'linear-gradient(20deg, ' + c.accent2 + '1f, transparent 60%)'
-    : c.backdrop === 'mesh'
-        ? 'radial-gradient(58vw 58vw at 12% 8%, ' + c.accent + '66, transparent 60%),' +
-          'radial-gradient(52vw 52vw at 88% 16%, ' + c.accent2 + '5c, transparent 62%),' +
-          'radial-gradient(56vw 56vw at 50% 96%, ' + c.accent + '40, transparent 60%)'
-        : 'none');
-
-  /* frosted mode makes the cards translucent so the backdrop shows through */
-  if (c.glass){
-    const tintRGB = dark ? '255,255,255' : '255,255,255';
-    S('--panel',   'rgba(' + tintRGB + ',' + (dark ? '.10' : '.55') + ')');
-    S('--panel-2', 'rgba(' + tintRGB + ',' + (dark ? '.06' : '.38') + ')');
-    S('--line',    'rgba(' + tintRGB + ',' + (dark ? '.22' : '.8')  + ')');
-  } else {
-    S('--panel', c.panel);
-    S('--panel-2', 'color-mix(in srgb, ' + c.panel + ' 90%, ' + c.text + ')');
-    S('--line', c.line);
-  }
-
-  S('--text', c.text);
-  S('--muted', 'color-mix(in srgb, ' + c.text + ' 58%, ' + (c.glass ? c.bg : c.panel) + ')');
-  S('--accent', c.accent);
-  S('--accent-ink', inkFor(c.accent));
-  S('--card-radius', c.radius + 'px');
-  S('--radius', Math.max(4, Math.round(c.radius * 0.85)) + 'px');
-  S('--tint', c.tint + '%');
-  S('--card-border', c.border + 'px solid ' + (c.glass ? 'rgba(255,255,255,.24)' : c.line));
-  S('--card-accent', '4px');
-  S('--shadow',
-      c.shadow === 'none' ? 'none'
-    : c.shadow === 'hard' ? (c.border >= 2 ? '5px 5px 0 ' + c.line : '0 3px 0 ' + c.line)
-    : '0 1px 3px rgba(0,0,0,.10)');
-  S('--shadow-hi',
-      c.shadow === 'none' ? 'none'
-    : c.shadow === 'hard' ? (c.border >= 2 ? '8px 8px 0 ' + c.line : '0 5px 0 ' + c.line)
-    : '0 4px 16px rgba(0,0,0,.16)');
-  const f = '"' + c.font + '", system-ui, sans-serif';
-  S('--font-ui', f); S('--font-display', f); S('--font-num', f);
-  S('--display-tt', 'normal'); S('--display-ls', '-.01em');
-  root.classList.toggle('customglass', !!c.glass);
+  TT.apply({ skin, mode, zen:zenMode, custom,
+             textScale, zoom, contrast, motion });
+  document.documentElement.setAttribute('data-view', viewMode);
+  document.documentElement.classList.toggle('nooutline', !showOutline);
 }
-applyLook();
 
 /* ═══ dates ═══ */
 const DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1124,9 +884,45 @@ function bellFor(dayKey, slotKey){
    on time-positioned blocks, so both axes are provably identical. */
 const CELL_GAP = 6;
 
-const PALETTE = ['#e0542e','#3b6ef6','#12a594','#a259e6','#e5a000','#d6409f','#2f9e44','#0e7490','#c2410c','#7c3aed','#0891b2','#be123c'];
+/* Default subject colours match the original NBSC timetable: one pastel per
+   faculty, matched on the course name, with a spread of fallbacks for
+   anything unrecognised. Light and dark get their own values. */
+const CAT_COLOURS = {
+  light:{ math:'#FFA9A6', english:'#FEFB99', technology:'#FFD5F4', music:'#E0C0F4',
+          science:'#A4FEFF', hsie:'#D7CDB3', languages:'#F2884B', va:'#FFADFF',
+          other:'#A5D5FF' },
+  dark: { math:'#FF8582', english:'#FFF06A', technology:'#FF9BDD', music:'#CFA8F4',
+          science:'#76F0F2', hsie:'#D8C99F', languages:'#FF9B63', va:'#E56BE5',
+          other:'#82C5FF' }
+};
+const CAT_ORDER = ['math','english','technology','music','science','hsie','languages','va','other'];
+const CAT_NAMES = { math:'Mathematics', english:'English', technology:'Technology',
+                    music:'Music', science:'Science', hsie:'HSIE', languages:'Languages',
+                    va:'Visual Arts', other:'Other' };
+
+function categoryFor(name){
+  const n = String(name || '').toLowerCase();
+  if (/\bmath/.test(n) || /\bextension\b/.test(n) || /\bm(a|ax|x)\d?\b/.test(n)) return 'math';
+  if (n.includes('english')) return 'english';
+  if (/engineer|software|technolog|textile|graphic|digital|computing|design|industrial/.test(n)) return 'technology';
+  if (/\bmusic\b/.test(n)) return 'music';
+  if (/physic|chem|biolog|science|investigat/.test(n)) return 'science';
+  if (/history|geograph|business|legal|economic|commerce|society|hsie|studies of religion/.test(n)) return 'hsie';
+  if (/french|japanese|chinese|spanish|german|italian|korean|language|latin/.test(n)) return 'languages';
+  if (/visual art|visual design|photograph|\bart\b/.test(n)) return 'va';
+  return null;
+}
+
+const PALETTE = ['#e0542e','#3b6ef6','#12a594','#a259e6','#e5a000','#d6409f',
+                 '#2f9e44','#0e7490','#c2410c','#7c3aed','#0891b2','#be123c'];
 const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h*31 + s.charCodeAt(i))|0; return Math.abs(h); };
-const colourFor = s => colours[s] || PALETTE[hash(String(s)) % PALETTE.length];
+
+function defaultColour(subject){
+  const cat = categoryFor(subject);
+  if (cat) return CAT_COLOURS[mode === 'dark' ? 'dark' : 'light'][cat];
+  return PALETTE[hash(String(subject)) % PALETTE.length];
+}
+const colourFor = s => colours[s] || defaultColour(s);
 
 /* ═══ load ═══ */
 function endpointUrl(){
@@ -1147,7 +943,12 @@ async function load(useCache){
   try {
     /* no-store: the browser must always revalidate, otherwise a stale timetable
        can stick around for hours. Vercel's s-maxage still shields the school API. */
-    const res = await fetch(endpointUrl(), { headers:{ Accept:'application/json' }, cache:'no-store' });
+    const headers = { Accept:'application/json' };
+    if (creds && creds.email && creds.password){
+      headers['X-School-Email'] = creds.email;
+      headers['X-School-Password'] = creds.password;
+    }
+    const res = await fetch(endpointUrl(), { headers, cache:'no-store' });
     const text = await res.text();
     let data = null;
     try { data = JSON.parse(text); } catch {}
@@ -1535,10 +1336,18 @@ $('whoami').addEventListener('blur', ev => setUser(ev.target.value));
 
 /* ═══ settings ═══ */
 const dlg = $('dlg');
+let skinsExpanded = false;
 function renderSkins(){
   const host = $('skins');
   host.innerHTML = '';
-  SKINS.forEach(s => {
+
+  /* Collapsed shows just the two staples, the expander, and Custom —
+     twelve swatches at once made the panel a wall of colour. */
+  const quick = TT.QUICK_SKINS;
+  const showAll = skinsExpanded || quick.indexOf(skin) === -1;
+  const list = showAll ? SKINS : SKINS.filter(s => quick.indexOf(s.id) !== -1);
+
+  const tile = s => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'skinbtn';
@@ -1548,8 +1357,32 @@ function renderSkins(){
                   '<span class="nm">' + s.name + '</span>';
     b.onclick = () => { skin = s.id; set(LS.skin, skin); applyLook();
                         renderSkins(); renderModes(); renderCustom(); render(); };
-    host.appendChild(b);
-  });
+    return b;
+  };
+
+  if (showAll){
+    list.forEach(s => host.appendChild(tile(s)));
+    if (skinsExpanded){
+      const less = document.createElement('button');
+      less.type = 'button';
+      less.className = 'skinbtn more';
+      less.innerHTML = '<span class="sw plus">&minus;</span><span class="nm">Fewer</span>';
+      less.onclick = () => { skinsExpanded = false; renderSkins(); };
+      host.appendChild(less);
+    }
+  } else {
+    /* order: Plain, Classic, +, Custom */
+    host.appendChild(tile(SKINS.find(s => s.id === 'plain')));
+    host.appendChild(tile(SKINS.find(s => s.id === 'classic')));
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'skinbtn more';
+    more.title = 'Show every theme';
+    more.innerHTML = '<span class="sw plus">+</span><span class="nm">More</span>';
+    more.onclick = () => { skinsExpanded = true; renderSkins(); };
+    host.appendChild(more);
+    host.appendChild(tile(SKINS.find(s => s.id === 'custom')));
+  }
 }
 function renderCustom(){
   const on = skin === 'custom';
@@ -1597,6 +1430,64 @@ function bindCustom(){
   };
 }
 bindCustom();
+
+function renderCreds(){
+  $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
+  $('cr_pass').value  = creds ? creds.password : '';
+  $('cr_state').textContent = creds
+    ? 'Using your own login (' + creds.email + ').'
+    : 'Using the shared login.';
+}
+$('cr_save').onclick = async () => {
+  const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
+  const pass = $('cr_pass').value;
+  if (!user || !pass){ $('cr_state').textContent = 'Enter both an email and a password.'; return; }
+  creds = { email: user + '@' + CONFIG.EMAIL_DOMAIN, password: pass };
+  set(LS.creds, creds);
+  localStorage.removeItem(LS.cache);
+  if (!email) { email = creds.email; set(LS.email, email); }
+  $('cr_state').textContent = 'Checking…';
+  await load(false);
+  renderCreds();
+  if (loadError){ $('cr_state').textContent = loadError; }
+  render();
+};
+$('cr_clear').onclick = async () => {
+  creds = null;
+  set(LS.creds, null);
+  localStorage.removeItem(LS.cache);
+  renderCreds();
+  await load(false);
+  render();
+};
+
+function renderA11y(){
+  $('a_text').value = Math.round(textScale * 100);
+  $('a_text_v').textContent = Math.round(textScale * 100) + '%';
+  $('a_zoom').value = Math.round(zoom * 100);
+  $('a_zoom_v').textContent = Math.round(zoom * 100) + '%';
+  $('a_contrast').checked = contrast === 'high';
+  $('a_motion').checked   = motion === 'reduced';
+}
+$('a_text').addEventListener('input', ev => {
+  textScale = +ev.target.value / 100; set(LS.textScale, textScale);
+  applyLook(); renderA11y(); render();
+});
+$('a_zoom').addEventListener('input', ev => {
+  zoom = +ev.target.value / 100; set(LS.zoom, zoom);
+  applyLook(); renderA11y(); render();
+});
+$('a_contrast').addEventListener('change', ev => {
+  contrast = ev.target.checked ? 'high' : 'normal'; set(LS.contrast, contrast); applyLook();
+});
+$('a_motion').addEventListener('change', ev => {
+  motion = ev.target.checked ? 'reduced' : 'normal'; set(LS.motion, motion); applyLook();
+});
+$('a_reset').onclick = () => {
+  textScale = 1; zoom = 1; contrast = 'normal'; motion = 'normal';
+  set(LS.textScale,1); set(LS.zoom,1); set(LS.contrast,'normal'); set(LS.motion,'normal');
+  applyLook(); renderA11y(); render();
+};
 
 function renderViews(){
   [...$('views').children].forEach(b =>
@@ -1665,7 +1556,8 @@ $('mode').onclick = () => {
 $('settings').onclick = () => {
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews(); renderToggles(); renderColours();
+  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
+  renderToggles(); renderA11y(); renderCreds(); renderColours();
   dlg.showModal();
 };
 const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
@@ -1674,12 +1566,41 @@ function renderColours(){
   host.innerHTML = '';
   const subs = [...new Set(entries.filter(e => e.kind === 'class').map(e => e.subject))].filter(Boolean).sort();
   $('nocolours').hidden = subs.length > 0;
-  subs.forEach(s => {
+  const shade = mode === 'dark' ? 'dark' : 'light';
+
+  subs.forEach(sub => {
     const row = el('div','colrow');
+    row.appendChild(el('span','', sub));
+
+    /* preset faculty colours plus a free-choice swatch */
+    const sel = document.createElement('select');
+    sel.className = 'colsel';
+    sel.add(new Option('Default', 'default'));
+    CAT_ORDER.forEach(k => sel.add(new Option(CAT_NAMES[k], k)));
+    sel.add(new Option('Custom…', 'custom'));
+
     const sw = document.createElement('input');
-    sw.type = 'color'; sw.value = toHex(colourFor(s));
-    sw.oninput = () => { colours[s] = sw.value; set(LS.colours, colours); render(); };
-    row.appendChild(el('span','', s));
+    sw.type = 'color';
+    sw.value = toHex(colourFor(sub));
+
+    const chosen = colours[sub];
+    const asCat = chosen && CAT_ORDER.find(k =>
+      CAT_COLOURS[shade][k].toLowerCase() === String(chosen).toLowerCase());
+    sel.value = !chosen ? 'default' : (asCat || 'custom');
+    sw.hidden = sel.value !== 'custom';
+
+    sel.onchange = () => {
+      if (sel.value === 'default'){ delete colours[sub]; }
+      else if (sel.value === 'custom'){ colours[sub] = sw.value; }
+      else { colours[sub] = CAT_COLOURS[shade][sel.value]; }
+      set(LS.colours, colours);
+      sw.hidden = sel.value !== 'custom';
+      sw.value = toHex(colourFor(sub));
+      render();
+    };
+    sw.oninput = () => { colours[sub] = sw.value; set(LS.colours, colours); render(); };
+
+    row.appendChild(sel);
     row.appendChild(sw);
     host.appendChild(row);
   });

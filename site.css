@@ -1,0 +1,116 @@
+/* ═══════════════════════════════════════════════════════════════
+   Shared page furniture for the non-timetable pages (home, notes,
+   games). Reads the same tokens theme.css defines, so every skin
+   applies here with no extra work.
+   ═══════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background-color:var(--page-bg, var(--bg));
+  background-image:var(--page-img, var(--bg-img));
+  background-attachment:fixed;
+  color:var(--text);min-height:100vh;
+  font:15px/1.5 var(--font-ui);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+.wrap{max-width:1000px;margin:0 auto;padding:26px 20px 70px;position:relative;z-index:1}
+
+.btn{
+  background:var(--panel);border:var(--card-border);border-radius:var(--radius);
+  padding:9px 14px;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;
+  color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+  transition:transform .12s,background .15s,box-shadow .15s;
+}
+.btn:hover{background:var(--panel-2);box-shadow:var(--shadow-hi)}
+.btn:active{transform:translateY(1px)}
+.btn.icon{width:40px;padding:9px 0;justify-content:center}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* ── hub ─────────────────────────────────────────────────────── */
+.hubhead{display:flex;align-items:flex-start;gap:16px;margin-bottom:30px}
+.hubhead>div{flex:1;min-width:0}
+.eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;
+}
+.hubhead h1{
+  margin:0;font-family:var(--font-display);font-size:clamp(30px,6vw,52px);
+  font-weight:var(--display-w);letter-spacing:var(--display-ls);
+  text-transform:var(--display-tt);line-height:1.02;
+}
+.lede{margin:8px 0 0;color:var(--muted);font-size:15px;max-width:46ch}
+
+.tiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.tile{
+  display:flex;flex-direction:column;gap:5px;
+  background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
+  padding:20px;box-shadow:var(--shadow);text-decoration:none;color:var(--text);
+  transition:transform .15s,box-shadow .15s,background .15s;min-height:150px;
+}
+.tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.tile.primary{border-left:5px solid var(--accent)}
+.tile.soon{opacity:.55;cursor:default}
+.tile.soon:hover{transform:none;box-shadow:var(--shadow);background:var(--panel)}
+.tile .ico{font-size:28px;line-height:1;margin-bottom:6px}
+.tile .tname{
+  font-family:var(--font-display);font-size:20px;font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt);
+}
+.tile .tdesc{color:var(--muted);font-size:13px;margin-top:auto}
+
+.hubfoot{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  margin-top:32px;padding-top:16px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:12.5px;
+}
+.hubfoot a{color:var(--accent);text-decoration:none;font-weight:700}
+.hubfoot a:hover{text-decoration:underline}
+
+/* ── inner pages ─────────────────────────────────────────────── */
+.pagehead{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--line);
+}
+.pagehead h1{
+  margin:0;margin-right:auto;font-family:var(--font-display);
+  font-size:clamp(24px,4vw,36px);font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt);
+}
+.crumbs{display:flex;gap:8px;align-items:center}
+
+.pad{
+  width:100%;min-height:58vh;resize:vertical;padding:18px;
+  background:var(--panel);color:var(--text);
+  border:var(--card-border);border-radius:var(--card-radius);
+  box-shadow:var(--shadow);font:inherit;line-height:1.6;outline:none;
+}
+.pad:focus{border-color:var(--accent)}
+.padbar{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin-top:12px;color:var(--muted);font-size:12.5px;flex-wrap:wrap;
+}
+
+.gamegrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.game{
+  background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
+  padding:18px;box-shadow:var(--shadow);min-height:170px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.game .ico{font-size:26px;line-height:1}
+.game h2{
+  margin:2px 0 0;font-family:var(--font-display);font-size:18px;
+  font-weight:var(--display-w);letter-spacing:var(--display-ls);
+  text-transform:var(--display-tt);
+}
+.game p{margin:0;color:var(--muted);font-size:13px}
+.game .tag{
+  margin-top:auto;align-self:flex-start;font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  border:1px dashed var(--line);border-radius:999px;padding:3px 9px;
+}
+@media (max-width:640px){
+  .hubhead{flex-wrap:wrap}
+  .wrap{padding:20px 16px 60px}
+}

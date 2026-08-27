@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Games — MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Games</h1>
+    <div class="crumbs">
+      <a class="btn" href="home.html">&#8962; Home</a>
+      <a class="btn" href="./">&#8592; Timetable</a>
+      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+    </div>
+  </div>
+
+  <p class="lede" style="margin:0 0 20px">Placeholders for now — the layout and theming are wired up, so
+  dropping a real game into any of these is just a matter of filling in the card.</p>
+  <div class="gamegrid">
+    <div class="game"><span class="ico">🐍</span><h2>Snake</h2>
+      <p>The classic. Arrow keys, one life, no mercy.</p><span class="tag">Coming soon</span></div>
+    <div class="game"><span class="ico">🧩</span><h2>2048</h2>
+      <p>Slide the tiles, chase the number.</p><span class="tag">Coming soon</span></div>
+    <div class="game"><span class="ico">💣</span><h2>Minesweeper</h2>
+      <p>Right-click to flag. Left-click to regret.</p><span class="tag">Coming soon</span></div>
+    <div class="game"><span class="ico">⌨️</span><h2>Typing race</h2>
+      <p>Words per minute, measured honestly.</p><span class="tag">Coming soon</span></div>
+    <div class="game"><span class="ico">🎯</span><h2>Reaction test</h2>
+      <p>Click the moment it changes. Best of five.</p><span class="tag">Coming soon</span></div>
+    <div class="game"><span class="ico">➕</span><h2>Your idea here</h2>
+      <p>Room for whatever you feel like building next.</p><span class="tag">Open slot</span></div>
+  </div>
+</div>
+<script>
+document.getElementById('mode').onclick = () => {
+  const st = TT.readState();
+  const next = st.mode === 'dark' ? 'light' : 'dark';
+  TT.set(TT.LS.mode, next);
+  TT.apply(Object.assign(st, { mode: next }));
+};
+
+</script>
+</body>
+</html>

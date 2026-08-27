@@ -24,7 +24,10 @@
 const DEFAULT_ORIGIN = "https://alexburns2.github.io";
 const TOKEN_SKEW_MS = 60 * 60 * 1000;   // refresh an hour before expiry
 
-let cachedToken = null;                  // { token, type, exp }  exp = seconds
+/* One cached token per account. Visitors may supply their own credentials,
+   in which case their timetable is fetched under their own login rather than
+   the site owner's. Keyed by email so the two never mix. */
+const tokenCache = new Map();            // email -> { token, type, exp }
 
 /* ------------------------------------------------------------------ utils */
 
@@ -85,9 +88,9 @@ async function readJson(res, url) {
 
 async function getToken(apiBase, emailAddress, password) {
   const now = Date.now();
-  if (cachedToken && cachedToken.exp * 1000 - TOKEN_SKEW_MS > now) {
-    return cachedToken;
-  }
+  const key = String(emailAddress).toLowerCase();
+  const hit = tokenCache.get(key);
+  if (hit && hit.exp * 1000 - TOKEN_SKEW_MS > now) return hit;
 
   /* The intranet serves its SPA shell (200 + HTML) for unknown paths, so a wrong
      path looks like success. Auth lives at /api/token; /token is the SPA. */
@@ -111,7 +114,7 @@ async function getToken(apiBase, emailAddress, password) {
     console.error(`POST ${url} returned ${res.status}.`);
     const err = new Error(
       res.status === 401
-        ? "The school rejected SCHOOL_EMAIL / SCHOOL_PASSWORD."
+        ? "The school rejected those sign-in details."
         : `School authentication failed (${res.status}).`
     );
     err.status = 502;
@@ -128,12 +131,14 @@ async function getToken(apiBase, emailAddress, password) {
   }
 
   const payload = decodeJwtPayload(token);
-  cachedToken = {
+  const entry = {
+    email: key,
     token,
     type: data.type || "Bearer",
     exp: (payload && payload.exp) || Math.floor(Date.now() / 1000) + 3600
   };
-  return cachedToken;
+  tokenCache.set(key, entry);
+  return entry;
 }
 
 async function apiGet(apiBase, path, auth, retry = true) {
@@ -152,8 +157,8 @@ async function apiGet(apiBase, path, auth, retry = true) {
   }
 
   if (res.status === 401 && retry) {
-    cachedToken = null;                                   // force a re-login
-    return null;                                          // caller retries
+    tokenCache.delete(String(auth.email || '').toLowerCase());   // force a re-login
+    return null;                                                 // caller retries
   }
   if (!res.ok) {
     const err = new Error(`School API returned ${res.status} for ${path}`);
@@ -175,7 +180,8 @@ export default async function handler(req, res) {
   if (origins.includes(origin)) res.setHeader("Access-Control-Allow-Origin", origin);
   else res.setHeader("Access-Control-Allow-Origin", origins[0]);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers",
+                "Content-Type, X-School-Email, X-School-Password");
 
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -232,18 +238,32 @@ export default async function handler(req, res) {
     });
   }
 
+  /* Own-credentials mode: sent as headers rather than query params so they
+     never land in a URL, a log line or a Referer. Used for this request only
+     and never written anywhere. */
+  const ownEmail = String(req.headers["x-school-email"] || "").trim();
+  const ownPassword = String(req.headers["x-school-password"] || "");
+  const usingOwn = !!(ownEmail && ownPassword);
+
   const domain = (process.env.EMAIL_DOMAIN || schoolEmail.split("@")[1] || "").toLowerCase();
-  const email = normaliseEmail(req.query.email || schoolEmail, domain);
+  const authEmail = usingOwn ? normaliseEmail(ownEmail, domain) : schoolEmail;
+  if (usingOwn && !authEmail) {
+    return res.status(400).json({ error: "That sign-in address is not valid." });
+  }
+  /* With your own login, the timetable fetched is your own by default. */
+  const email = normaliseEmail(req.query.email || authEmail, domain);
   if (!email) return res.status(400).json({ error: "A valid email address is required." });
 
+  /* The allowlist protects the owner's account; it does not apply to someone
+     signing in with their own credentials. */
   const allowlist = listEnv("ALLOWED_EMAILS");
-  if (allowlist.length) {
+  if (!usingOwn && allowlist.length) {
     const ok = allowlist.some(e => normaliseEmail(e, domain) === email);
     if (!ok) return res.status(403).json({ error: "That address is not permitted on this site." });
   }
 
   try {
-    let auth = await getToken(apiBase, schoolEmail, password);
+    let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
 
     const fetchAll = async a => Promise.all([
       apiGet(apiBase, `/api/timetable/${encodeURIComponent(email)}`, a),
@@ -255,7 +275,7 @@ export default async function handler(req, res) {
     let [timetable, bellTimes, startDate, profile] = await fetchAll(auth);
 
     if (timetable === null) {                             // 401 → token refreshed
-      auth = await getToken(apiBase, schoolEmail, password);
+      auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
       [timetable, bellTimes, startDate, profile] = await fetchAll(auth);
     }
 
@@ -264,9 +284,12 @@ export default async function handler(req, res) {
     }
 
     // Cache at the edge briefly so repeat opens don't re-hit the school API.
-    res.setHeader("Cache-Control", "public, s-maxage=900, stale-while-revalidate=3600");
+    res.setHeader("Cache-Control", usingOwn
+      ? "private, no-store"                       // never cache a personal login
+      : "public, s-maxage=900, stale-while-revalidate=3600");
 
-    return res.status(200).json({ email, timetable, bellTimes, startDate, profile });
+    return res.status(200).json({ email, timetable, bellTimes, startDate, profile,
+                                  ownLogin: usingOwn });
   } catch (error) {
     const status = error.status || 502;
     console.error("Timetable request failed:", error.message, `(apiBase=${apiBase})`);
