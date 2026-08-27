@@ -71,6 +71,15 @@ const CONFIG = {
 };
 ```
 
+**Keep this absolute.** A relative path like `/api/timetable` resolves against
+whichever origin is serving the page, so on GitHub Pages it hits Pages' own 404
+instead of the function. An absolute URL works from Pages, from Vercel and from
+a custom domain alike — every origin just has to be listed in `ALLOWED_ORIGIN`.
+
+(When the page happens to be served from the same origin as the function, the
+code drops to a relative request on its own, so nothing crosses origins
+needlessly.)
+
 Commit and push.
 
 ---
@@ -275,21 +284,19 @@ switch the proxy back on if you want Cloudflare's caching — set SSL/TLS mode t
 **Full (strict)** first. Leaving it grey is perfectly fine and is the simpler
 path.
 
-### 4. Point the page at the same origin
+### 4. Add the new origin to ALLOWED_ORIGIN
 
-Because Vercel now serves the page and the API together, make the endpoint
-relative in `index.html`:
+Set `ALLOWED_ORIGIN` in Vercel to a comma-separated list covering **every**
+origin the page is served from, then redeploy:
 
-```js
-const CONFIG = {
-  ENDPOINT: "/api/timetable",
-  EMAIL_DOMAIN: "education.nsw.gov.au"
-};
+```
+https://mscunofficial.com,https://www.mscunofficial.com,https://alexburns2.github.io
 ```
 
-Then update `ALLOWED_ORIGIN` in Vercel to `https://mscunofficial.com` and
-redeploy. (With a relative endpoint the browser never sends a cross-origin
-request, so this is belt-and-braces.)
+Leave `CONFIG.ENDPOINT` absolute. When the page is served from the same origin
+as the function the code uses a relative request automatically, so pointing the
+domain at Vercel costs nothing — and anyone still on the Pages URL keeps
+working.
 
 ### 5. Retire GitHub Pages
 
@@ -388,6 +395,28 @@ Exactly what it says — the credentials failed at `/token`. Retype them in Verc
 ### `Could not reach the school API`
 
 DNS or network failure reaching `SCHOOL_API_BASE`. Usually a typo in the host.
+
+### It works for you but 404s for someone else
+
+Check the **host** of the failing request in their devtools, not just the status.
+If it reads `yourname.github.io/api/timetable` rather than your Vercel domain,
+`CONFIG.ENDPOINT` is relative — a relative path resolves against whatever origin
+served the page, and GitHub Pages has no `/api/` route, so it returns its own
+HTML 404. The giveaways are `server: GitHub.com`, `content-type: text/html` and
+`Sec-Fetch-Site: same-origin`.
+
+Make `CONFIG.ENDPOINT` absolute (see step 3) and confirm their origin is in
+`ALLOWED_ORIGIN`. You can check the allowlist from a terminal:
+
+```bash
+curl -s -D - -o /dev/null -H "Origin: https://alexburns2.github.io" "https://YOUR-PROJECT.vercel.app/api/timetable?email=your.name1" | grep -i access-control-allow-origin
+```
+
+The header should echo the origin you sent. If it echoes a *different* one, that
+origin isn't on the list.
+
+GitHub Pages caches aggressively (`x-cache: HIT`), so after redeploying have
+them hard-refresh.
 
 ### The page loads but every request fails with a CORS error
 

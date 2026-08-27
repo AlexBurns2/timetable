@@ -678,8 +678,12 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 /* ═══ CONFIG ═══ set ENDPOINT once and the page needs no manual setup ═══ */
 const CONFIG = {
-  /* The only place the endpoint lives. Not exposed in Settings. */
-  ENDPOINT: "/api/timetable",
+  /* The only place the endpoint lives. Not exposed in Settings.
+     Keep this ABSOLUTE. A relative path resolves against whatever origin is
+     serving the page, so on GitHub Pages it hits Pages' own 404 instead of the
+     function. Absolute works from Pages, from Vercel and from a custom domain
+     alike -- just make sure each origin is listed in ALLOWED_ORIGIN. */
+  ENDPOINT: "https://timetable-iota-ten.vercel.app/api/timetable",
   EMAIL_DOMAIN: "education.nsw.gov.au"
 };
 
@@ -1128,7 +1132,9 @@ const colourFor = s => colours[s] || PALETTE[hash(String(s)) % PALETTE.length];
 function endpointUrl(){
   const u = new URL(endpoint, location.href);
   u.searchParams.set('email', email);
-  return u.toString();
+  /* served from the same origin as the function? drop to a relative URL so the
+     request never leaves the origin and CORS is irrelevant */
+  return u.origin === location.origin ? u.pathname + u.search : u.toString();
 }
 async function load(useCache){
   loadError = '';
@@ -1142,8 +1148,18 @@ async function load(useCache){
     /* no-store: the browser must always revalidate, otherwise a stale timetable
        can stick around for hours. Vercel's s-maxage still shields the school API. */
     const res = await fetch(endpointUrl(), { headers:{ Accept:'application/json' }, cache:'no-store' });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
+    /* A host with no such route answers with its own HTML error page. Saying
+       "404" there is useless -- name the actual problem. */
+    const isPage = /^\s*<(!doctype|html)/i.test(text);
+    if (!res.ok){
+      throw new Error((data && data.error) ||
+        (isPage ? 'The timetable service is not reachable at this address — the site is misconfigured.'
+                : res.status + ' ' + res.statusText));
+    }
+    if (!data) throw new Error('The timetable service returned an unreadable response.');
     apply(data);
     set(LS.cache, { email, at: Date.now(), payload: data });
   } catch (err) {
