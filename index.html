@@ -1638,8 +1638,8 @@ $('today').onclick = () => {
 addEventListener('keydown', e => {
   if (dlg.open || $('detail').open || !gate.hidden) return;
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek();
-  if (e.key === 't' || e.key === 'T') $('today').click();
-  if (e.key === 's' || e.key === 'S') $('settings').click();
+  if (e.key === 'T') $('today').click();
+  if (e.key === 'S') $('settings').click();
 });
 addEventListener('resize', render);
 
