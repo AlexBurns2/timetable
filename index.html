@@ -68,11 +68,15 @@
   --text:#f0e9db; --muted:#a2957f; --accent:#e8834a;
   --tint:30%;
 }
-/* the red margin rule */
-[data-skin="paper"] .wrap::before{
-  content:"";position:fixed;top:0;bottom:0;left:max(26px,calc(50% - 700px + 26px));
-  width:2px;background:rgba(200,70,70,.42);pointer-events:none;z-index:0;
+/* The red margin rule belongs to the ruled page, so it starts below the
+   masthead instead of striking through the title. */
+[data-skin="paper"] .grid{position:relative}
+[data-skin="paper"] .grid::before{
+  content:"";position:absolute;top:-14px;bottom:-30px;left:-14px;
+  width:2px;background:rgba(200,70,70,.4);pointer-events:none;z-index:0;
 }
+[data-skin="paper"][data-mode="dark"] .grid::before{background:rgba(235,120,120,.38)}
+@media (max-width:860px){ [data-skin="paper"] .grid::before{display:none} }
 [data-skin="paper"] .lesson{transform:rotate(var(--rot))}
 [data-skin="paper"] .lesson:hover{transform:rotate(0deg) translateY(-3px) scale(1.02)}
 /* sticky-tape tab on each note */
@@ -150,7 +154,7 @@
 /* ── TERMINAL ─ phosphor CRT ───────────────────────────────────── */
 [data-skin="terminal"],[data-skin="terminal"][data-mode="light"]{
   --bg:#05080a; --bg-img:none; --panel:#0b1114; --panel-2:#0f171b;
-  --line:#1d3a33; --text:#9dffc4; --muted:#3f8f6b; --accent:#39ff9e; --accent-ink:#04120a;
+  --line:#265046; --text:#b6ffd6; --muted:#5fae87; --accent:#39ff9e; --accent-ink:#04120a;
   --font-ui:"JetBrains Mono",ui-monospace,monospace;
   --font-display:"JetBrains Mono",monospace;
   --font-num:"JetBrains Mono",monospace;
@@ -169,13 +173,13 @@
 
 /* ── BLUEPRINT ─ drafting paper ────────────────────────────────── */
 [data-skin="blueprint"],[data-skin="blueprint"][data-mode="light"]{
-  --bg:#0b2a4a;
+  --bg:#07223d;
   --bg-img:
-    repeating-linear-gradient(to right,rgba(255,255,255,.09) 0 1px,transparent 1px 28px),
-    repeating-linear-gradient(to bottom,rgba(255,255,255,.09) 0 1px,transparent 1px 28px);
-  --panel:rgba(255,255,255,.05); --panel-2:rgba(255,255,255,.09);
-  --line:rgba(150,210,255,.42);
-  --text:#e2f2ff; --muted:#8fc0e8; --accent:#67e8f9; --accent-ink:#062033;
+    repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),
+    repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 28px);
+  --panel:rgba(9,42,74,.82); --panel-2:rgba(12,52,90,.9);
+  --line:rgba(150,210,255,.55);
+  --text:#f2f9ff; --muted:#a9d2f2; --accent:#7ff0ff; --accent-ink:#052033;
   --font-ui:"Space Mono",monospace;
   --font-display:"Space Mono",monospace;
   --font-num:"Space Mono",monospace;
@@ -246,12 +250,28 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 [data-skin="brutal"] .btn.primary,[data-skin="swiss"] .btn.primary{border-color:var(--line)}
 .weeknav{display:flex;align-items:center;gap:6px}
-.weeklabel{min-width:212px;text-align:center;color:var(--muted);font-size:13px;font-family:var(--font-num)}
-.wk{
-  display:inline-block;margin-left:7px;padding:2px 9px;border-radius:999px;
-  background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;
+.weeknav{position:relative}
+.weekbtn{
+  background:var(--accent);color:var(--accent-ink);border:var(--card-border);border-color:transparent;
+  border-radius:999px;padding:9px 20px;cursor:pointer;font-weight:700;font-size:15px;
+  letter-spacing:.01em;box-shadow:var(--shadow);white-space:nowrap;
+  font-family:var(--font-display);transition:transform .12s, filter .15s;
 }
-[data-skin="swiss"] .wk,[data-skin="brutal"] .wk,[data-skin="blueprint"] .wk{border-radius:0}
+.weekbtn:hover{filter:brightness(1.08)}
+.weekbtn:active{transform:scale(.97)}
+.weekbtn .swap{opacity:.65;font-weight:400;margin-left:8px;font-size:12px}
+[data-skin="swiss"] .weekbtn,[data-skin="brutal"] .weekbtn,
+[data-skin="blueprint"] .weekbtn,[data-skin="terminal"] .weekbtn{border-radius:0}
+[data-skin="brutal"] .weekbtn{border:3px solid var(--line)}
+/* "Currently: Week A" flash, so the button's meaning is never ambiguous */
+.nowis{
+  position:absolute;right:calc(100% + 10px);top:50%;translate:0 -50%;
+  white-space:nowrap;font-size:12px;color:var(--muted);font-family:var(--font-num);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.nowis.show{opacity:1}
+.nowis b{color:var(--text)}
+@media (max-width:520px){ .nowis{display:none} }
 
 /* now / next */
 .now{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
@@ -263,6 +283,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .nowcard .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .nowcard .subj{font-size:19px;font-weight:700;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nowcard .meta{color:var(--muted);font-size:13px;margin-top:3px}
+.nowcard.weekend{border-left-color:var(--accent)}
 .nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:13px;margin-top:7px;font-weight:700}
 .progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
@@ -277,17 +298,22 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 
 /* grid */
 .grid{display:grid;gap:10px;align-items:stretch;grid-template-columns:84px repeat(var(--days,5),minmax(0,1fr))}
-/* Sticky headers need an opaque-ish backdrop. Repainting --bg-img here would
-   redraw the page gradient once per cell, so use a blurred wash instead. */
-.colhead{position:sticky;top:0;z-index:5;padding:7px 2px 9px;text-align:center;
-         background:color-mix(in srgb, var(--bg) 78%, transparent);
-         backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+/* No box, no backdrop: on a patterned skin (Glass, Blueprint, Notebook) a
+   per-cell wash tiles the page pattern and looks like a stray tile. The day
+   name sits directly on the page and an always-present rule keeps every
+   column exactly the same height whether or not it is today. */
+.colhead{padding:2px 2px 10px;text-align:center;background:none}
+.colhead .rule{
+  display:block;height:2px;width:100%;margin-top:7px;border-radius:2px;
+  background:var(--line);opacity:.5;
+}
+.colhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:6px}
 .colhead .dow{font-weight:700;font-size:14px;font-family:var(--font-display);
               letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
 [data-skin="paper"] .colhead .dow{font-size:22px}
 .colhead .dat{color:var(--muted);font-size:12px;font-family:var(--font-num)}
-.colhead.today .dow,.colhead.today .dat{color:var(--accent)}
-.colhead.today::after{content:"";display:block;height:3px;background:var(--accent);margin:5px auto 0;width:34px;border-radius:2px}
+.colhead.today .dow{color:var(--accent)}
+.colhead .dow{transition:color .2s}
 .periodcell{color:var(--muted);font-size:12px;text-align:right;padding:15px 9px 0 0;
             line-height:1.35;font-family:var(--font-num)}
 .periodcell b{display:block;color:var(--text);font-size:14px;font-weight:700}
@@ -323,14 +349,22 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px}
 
 .breakbar{
-  width:100%;background:var(--panel-2);border:var(--card-border);border-radius:var(--card-radius);
-  padding:5px 10px;color:var(--muted);font-size:11.5px;text-align:center;
-  font-family:var(--font-num);opacity:.85;
+  width:100%;background:color-mix(in srgb,var(--text) 7%,transparent);
+  border:1px dashed var(--line);border-radius:var(--card-radius);
+  padding:5px 10px;color:var(--text);font-size:11.5px;text-align:center;
+  font-family:var(--font-num);display:flex;gap:7px;justify-content:center;
+  align-items:baseline;flex-wrap:wrap;opacity:.92;
 }
-.free{
-  width:100%;border:1px dashed var(--line);border-radius:var(--card-radius);min-height:88px;
-  display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;opacity:.6;
+.breakbar span{font-weight:700}
+.breakbar em{font-style:normal;opacity:.72}
+.breakbar.assembly{
+  border-style:solid;border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 16%,transparent);
 }
+.periodcell .approx{opacity:.55;font-style:italic}
+/* A free period is simply blank -- an outlined empty box reads as a broken
+   card, especially on the patterned skins. */
+.free{width:100%;min-height:88px}
 
 /* mobile */
 .dayswitch{display:none;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:5px}
@@ -405,6 +439,14 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
            font-variant-numeric:tabular-nums;flex:none}
 .custrow select{background:var(--panel-2);border:1px solid var(--line);
                 border-radius:8px;padding:6px 8px;font-size:13px}
+.custrow input.sw{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex:none}
+/* frosted mode for the custom skin */
+.customglass .lesson,.customglass .nowcard,.customglass .breakbar,
+.customglass .btn,.customglass .weekbtn,.customglass dialog,
+.customglass .gatecard,.customglass .dayswitch button,.customglass .idrow{
+  backdrop-filter:blur(20px) saturate(175%);
+  -webkit-backdrop-filter:blur(20px) saturate(175%);
+}
 .custrow .btn{width:100%}
 .modes{display:flex;gap:8px}
 .modes button{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
@@ -462,9 +504,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <span id="sub"></span>
     </div>
     <div class="weeknav">
-      <button class="btn icon" id="prev" title="Previous week">&lsaquo;</button>
-      <div class="weeklabel" id="weeklabel"></div>
-      <button class="btn icon" id="next" title="Next week">&rsaquo;</button>
+      <span class="nowis" id="nowis" aria-hidden="true"></span>
+      <button class="weekbtn" id="weekbtn" title="Switch between Week A and Week B"></button>
     </div>
     <button class="btn" id="today">Today</button>
     <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
@@ -503,6 +544,22 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="custrow"><span>Border</span><input type="color" id="c_line"></div>
       <div class="custrow"><span>Corner radius</span><input type="range" id="c_radius" min="0" max="26" step="1"><b id="c_radius_v"></b></div>
       <div class="custrow"><span>Subject tint</span><input type="range" id="c_tint" min="0" max="70" step="1"><b id="c_tint_v"></b></div>
+      <div class="custrow"><span>Second colour</span><input type="color" id="c_accent2"></div>
+      <div class="custrow"><span>Backdrop</span>
+        <select id="c_backdrop">
+          <option value="solid">Solid</option>
+          <option value="gradient">Soft gradient</option>
+          <option value="mesh">Colour mesh</option>
+        </select></div>
+      <div class="custrow"><span>Frosted glass</span>
+        <input type="checkbox" id="c_glass" class="sw"></div>
+      <div class="custrow"><span>Shadow</span>
+        <select id="c_shadow">
+          <option value="none">None</option>
+          <option value="soft">Soft</option>
+          <option value="hard">Hard offset</option>
+        </select></div>
+      <div class="custrow"><span>Border width</span><input type="range" id="c_border" min="0" max="4" step="1"><b id="c_border_v"></b></div>
       <div class="custrow"><span>Typeface</span><select id="c_font"></select></div>
       <div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>
       <div class="hint">Saved on this device only.</div>
@@ -515,6 +572,15 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <button type="button" data-mode="dark">Dark</button>
       </div>
       <div class="hint" id="modehint"></div>
+    </div>
+
+    <div class="field">
+      <label>Room numbers</label>
+      <div class="modes" id="rooms">
+        <button type="button" data-room="full">CR1007.118</button>
+        <button type="button" data-room="building">CR1007</button>
+        <button type="button" data-room="number">118</button>
+      </div>
     </div>
 
     <div class="field">
@@ -550,13 +616,14 @@ const SKINS = [
   { id:'swiss',     name:'Swiss',     swatch:'linear-gradient(#fff,#fff)', both:true, border:'#111' },
   { id:'terminal',  name:'Terminal',  swatch:'repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)', both:false },
   { id:'blueprint', name:'Blueprint', swatch:'repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#0b2a4a', both:false },
-  { id:'custom',    name:'Custom',    swatch:'conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)', both:false, custom:true },
-  { id:'brutal',    name:'Brutal',    swatch:'linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)', both:true }
+  { id:'brutal',    name:'Brutal',    swatch:'linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)', both:true },
+  /* last, so it sits in the bottom-right of the picker */
+  { id:'custom',    name:'Custom',    swatch:'conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)', both:false, custom:true }
 ];
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* ═══ storage ═══ */
-const LS = { email:'tt.email', custom:'tt.custom', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -567,7 +634,9 @@ const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
 const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
                           accent:'#6d4aff', line:'#d9dde5',
-                          radius:12, tint:22, font:'DM Sans' };
+                          radius:12, tint:22, font:'DM Sans',
+                          glass:false, backdrop:'solid', shadow:'soft',
+                          border:1, accent2:'#00c2c7' };
 let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
 let skin     = get(LS.skin, 'plain');
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -596,24 +665,52 @@ function applyLook(){
   if (skin !== 'custom') return;
 
   const c = custom, S = (k,v) => root.style.setProperty(k, v);
-  S('--bg', c.bg); S('--bg-img', 'none');
-  S('--panel', c.panel);
-  S('--panel-2', 'color-mix(in srgb, ' + c.panel + ' 90%, ' + c.text + ')');
-  S('--line', c.line);
+  const dark = inkFor(c.bg) === '#fff';
+
+  S('--bg', c.bg);
+  S('--bg-img',
+      c.backdrop === 'gradient'
+        ? 'linear-gradient(160deg, ' + c.accent + '22, transparent 55%), ' +
+          'linear-gradient(20deg, ' + c.accent2 + '1f, transparent 60%)'
+    : c.backdrop === 'mesh'
+        ? 'radial-gradient(58vw 58vw at 12% 8%, ' + c.accent + '66, transparent 60%),' +
+          'radial-gradient(52vw 52vw at 88% 16%, ' + c.accent2 + '5c, transparent 62%),' +
+          'radial-gradient(56vw 56vw at 50% 96%, ' + c.accent + '40, transparent 60%)'
+        : 'none');
+
+  /* frosted mode makes the cards translucent so the backdrop shows through */
+  if (c.glass){
+    const tintRGB = dark ? '255,255,255' : '255,255,255';
+    S('--panel',   'rgba(' + tintRGB + ',' + (dark ? '.10' : '.55') + ')');
+    S('--panel-2', 'rgba(' + tintRGB + ',' + (dark ? '.06' : '.38') + ')');
+    S('--line',    'rgba(' + tintRGB + ',' + (dark ? '.22' : '.8')  + ')');
+  } else {
+    S('--panel', c.panel);
+    S('--panel-2', 'color-mix(in srgb, ' + c.panel + ' 90%, ' + c.text + ')');
+    S('--line', c.line);
+  }
+
   S('--text', c.text);
-  S('--muted', 'color-mix(in srgb, ' + c.text + ' 58%, ' + c.panel + ')');
+  S('--muted', 'color-mix(in srgb, ' + c.text + ' 58%, ' + (c.glass ? c.bg : c.panel) + ')');
   S('--accent', c.accent);
   S('--accent-ink', inkFor(c.accent));
   S('--card-radius', c.radius + 'px');
   S('--radius', Math.max(4, Math.round(c.radius * 0.85)) + 'px');
   S('--tint', c.tint + '%');
-  S('--card-border', '1px solid ' + c.line);
+  S('--card-border', c.border + 'px solid ' + (c.glass ? 'rgba(255,255,255,.24)' : c.line));
   S('--card-accent', '4px');
-  S('--shadow', c.radius > 0 ? '0 1px 3px rgba(0,0,0,.10)' : 'none');
-  S('--shadow-hi', '0 4px 16px rgba(0,0,0,.16)');
+  S('--shadow',
+      c.shadow === 'none' ? 'none'
+    : c.shadow === 'hard' ? (c.border >= 2 ? '5px 5px 0 ' + c.line : '0 3px 0 ' + c.line)
+    : '0 1px 3px rgba(0,0,0,.10)');
+  S('--shadow-hi',
+      c.shadow === 'none' ? 'none'
+    : c.shadow === 'hard' ? (c.border >= 2 ? '8px 8px 0 ' + c.line : '0 5px 0 ' + c.line)
+    : '0 4px 16px rgba(0,0,0,.16)');
   const f = '"' + c.font + '", system-ui, sans-serif';
   S('--font-ui', f); S('--font-display', f); S('--font-num', f);
   S('--display-tt', 'normal'); S('--display-ls', '-.01em');
+  root.classList.toggle('customglass', !!c.glass);
 }
 applyLook();
 
@@ -621,6 +718,7 @@ applyLook();
 const DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CYCLE_DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
+const DAY_KEYS = ['mon','tue','wed','thu','fri'];
 const pad = n => String(n).padStart(2,'0');
 const ymd = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
 const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
@@ -713,13 +811,19 @@ function cleanSubject(name, code){
 }
 /* "CR1007.118" -> "118", "ER0020.27" -> "27". The part after the final dot is
    the human room number; everything before it is the building/floor code. */
-function shortRoom(r){
+function splitRoom(r){
   const s = String(r || '').trim();
-  if (!s) return '';
   const dot = s.lastIndexOf('.');
-  if (dot === -1) return s;
-  const tail = s.slice(dot + 1).trim();
-  return tail || s;
+  if (dot === -1) return { building:s, number:s, full:s };
+  return { building:s.slice(0, dot).trim() || s, number:s.slice(dot + 1).trim() || s, full:s };
+}
+/* roomMode: 'full' -> CR1007.118 | 'building' -> CR1007 | 'number' -> 118 */
+function roomLabel(e){
+  const parts = splitRoom(e.rawRoom || e.room);
+  if (!parts.full) return '';
+  return roomMode === 'building' ? parts.building
+       : roomMode === 'number'   ? parts.number
+       : parts.full;
 }
 
 /* Teachers arrive as "stephen.henne@det.nsw.edu.au" -> "Stephen Henne".
@@ -764,22 +868,39 @@ const periodNumber = v => {
 const classify = v => {
   const p = String(v == null ? '' : v).toLowerCase();
   if (p.includes('assembly')) return 'assembly';
-  if (p.includes('recess') || p === 'break') return 'break';
-  if (p.includes('lunch')) return 'lunch';
+  if (p.includes('recess') || p === 'break' || p === 'r') return 'break';
+  if (p.includes('lunch') || /^l\d*$/.test(p)) return 'lunch';
   return 'class';
+};
+const BREAK_NAMES = { r:'Recess', l1:'Lunch 1', l2:'Lunch 2' };
+const slotLabel = slot => {
+  const k = String(slot.key).toLowerCase();
+  if (BREAK_NAMES[k]) return BREAK_NAMES[k];
+  if (/^\d+$/.test(k)) return 'Period ' + k;
+  return titleCase(slot.period);
 };
 
 /* ═══ state ═══ */
-let weekStart = startOfWeek(new Date());
+let viewWeek = null;           /* 'a' | 'b' -- which cycle week is on screen */
 let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
 let loadError = '', loading = false;
+let roomMode = get(LS.room, 'full');
 let focusToday = false;        /* Today button: dim everything but the current day */
 
 /* ═══ normalise ═══ */
+let bellRows = [];      /* raw bell schedule, kept for row building */
+
 function buildBellIndex(bellTimes){
   const idx = {};
+  bellRows = asArray(bellTimes).map(bt => ({
+    day:   str(pick(bt, ['DayName','dayName'])).toLowerCase(),
+    label: str(pick(bt, ['Period','period','PeriodNumber','periodNumber'])),
+    type:  str(pick(bt, ['Type','type'])).toUpperCase(),
+    start: toMinutes(pick(bt, ['StartTime','startTime','Start','start','From','from'])),
+    end:   toMinutes(pick(bt, ['EndTime','endTime','End','end','To','to']))
+  })).filter(b => b.label);
   for (const bt of asArray(bellTimes)){
     const day = str(pick(bt, ['DayName','dayName'])).toLowerCase();
     const per = periodNumber(pick(bt, ['Period','period','PeriodNumber','periodNumber'])).toLowerCase();
@@ -818,7 +939,7 @@ function normalise(payload){
 
     out.push({
       dayKey, dayName, period, pnum, kind, code,
-      room: shortRoom(room), rawRoom: room,
+      room: room, rawRoom: room,
       teacher: tidyTeacher(teacher), rawTeacher: teacher,
       rawSubject,
       subject: kind === 'class' ? cleanSubject(rawSubject, code) : titleCase(period),
@@ -831,20 +952,69 @@ function normalise(payload){
   return out;
 }
 
+/* Rows come from the bell schedule, not just from lessons, so recess, both
+   lunch halves and Wednesday's assembly get their own row. Days disagree about
+   when those land (Wednesday's assembly shifts recess and lunch), so each slot
+   is ordered by its AVERAGE start across the cycle and each cell renders that
+   day's own times. */
 function buildSlots(){
+  const withLesson = new Set(entries.map(e => (e.pnum || e.period).toLowerCase()));
   const map = new Map();
-  for (const e of entries){
-    const key = e.pnum || e.period.toLowerCase();
-    const cur = map.get(key) || { key, period:e.period, kind:e.kind, start:e.start, end:e.end };
-    if (e.start != null && (cur.start == null || e.start < cur.start)) cur.start = e.start;
-    if (e.end   != null && (cur.end   == null || e.end   > cur.end  )) cur.end   = e.end;
-    if (e.kind !== 'class') cur.kind = e.kind;
-    map.set(key, cur);
+
+  const note = (key, label, kind, start, end) => {
+    const k = String(key).toLowerCase();
+    const cur = map.get(k) || { key:k, period:label, kind, starts:[], ends:[] };
+    if (start != null) cur.starts.push(start);
+    if (end   != null) cur.ends.push(end);
+    if (kind !== 'class') cur.kind = kind;
+    map.set(k, cur);
+  };
+
+  for (const b of bellRows){
+    const key = periodNumber(b.label).toLowerCase();
+    const kind = b.type === 'R' ? classifyBell(b.label) : classify(b.label);
+    note(key, b.label, kind, b.start, b.end);
   }
-  slots = [...map.values()].sort((a,b) => {
+  /* anything the bell table missed but a lesson claims */
+  for (const e of entries){
+    const key = (e.pnum || e.period).toLowerCase();
+    if (!map.has(key)) note(key, e.period, e.kind, e.start, e.end);
+  }
+
+  const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
+  let all = [...map.values()].map(v => ({
+    key:v.key, period:v.period, kind:v.kind,
+    start: avg(v.starts), end: avg(v.ends),
+    hasLesson: withLesson.has(v.key)
+  }));
+
+  /* keep rows that hold a lesson, plus breaks that sit inside the school day */
+  const taught = all.filter(r => r.hasLesson && r.start != null);
+  const first = taught.length ? Math.min(...taught.map(r => r.start)) : 0;
+  const last  = taught.length ? Math.max(...taught.map(r => r.start)) : 1440;
+  all = all.filter(r => r.hasLesson ||
+                        (r.kind !== 'class' && r.start != null &&
+                         r.start >= first && r.start <= last));
+
+  slots = all.sort((a,b) => {
     if (a.start != null && b.start != null && a.start !== b.start) return a.start - b.start;
     return String(a.key).localeCompare(String(b.key), undefined, { numeric:true });
   });
+}
+
+/* a bell row flagged Type=R is a break; use its label to name it */
+function classifyBell(label){
+  const p = String(label || '').toLowerCase();
+  if (p.startsWith('l')) return 'lunch';
+  if (p.startsWith('r')) return 'break';
+  return classify(label);
+}
+
+/* that day's actual times for a slot, falling back to the cycle average */
+function bellFor(dayKey, slotKey){
+  const k = String(slotKey).toLowerCase();
+  const hit = bellRows.find(b => b.day === dayKey && periodNumber(b.label).toLowerCase() === k);
+  return hit || null;
 }
 
 /* ═══ colours ═══ */
@@ -906,21 +1076,29 @@ function render(){
   const now = new Date();
   const nowMin = now.getHours()*60 + now.getMinutes();
   const isMobile = matchMedia('(max-width:860px)').matches;
-  const days = [0,1,2,3,4].map(i => addDays(weekStart, i));
-  const cycles = days.map(d => cycleDayFor(d, cycleStart));
+  /* The grid is a cycle, not a calendar. Work out which week is really on
+     today, then show whichever the user has toggled to. */
+  const realCycle = cycleDayFor(now, cycleStart);
+  const realWeek  = realCycle ? realCycle.slice(-1) : null;
+  /* Don't latch a week until the cycle start date has actually arrived --
+     the first render runs before the fetch resolves. */
+  if (viewWeek === null && realWeek) viewWeek = realWeek;
+  const week = viewWeek || realWeek || 'a';
+  const showingCurrentWeek = !!realWeek && week === realWeek;
+  const todayKey = realCycle ? realCycle.slice(0, 3) : null;
+
+  const days = [0,1,2,3,4].map(i => addDays(startOfWeek(now), i));
+  const cycles = DAY_KEYS.map(k => k + week);
 
   $('title').textContent = displayName || 'Timetable';
   $('sub').textContent = loading ? 'Loading…' : (loadError || '');
   $('sub').className = loadError ? 'err' : '';
   if (document.activeElement !== $('whoami')) $('whoami').value = String(email || '').split('@')[0];
 
-  /* No calendar dates on screen — the timetable is a repeating cycle, so the
-     week letter is the only thing that actually identifies what is shown. */
-  const wkLetter = (cycles.find(Boolean) || '').slice(-1).toUpperCase();
-  $('weeklabel').innerHTML = wkLetter
-    ? '<span class="wk">Week ' + wkLetter + '</span>'
-    : '<span class="wk">Timetable</span>';
+  $('weekbtn').innerHTML = 'Week ' + week.toUpperCase() +
+    '<span class="swap">tap to swap</span>';
   $('today').setAttribute('aria-pressed', String(focusToday));
+  $('today').disabled = false;
 
   const ds = $('dayswitch');
   ds.innerHTML = '';
@@ -937,11 +1115,35 @@ function render(){
   const todays = entries.filter(e => e.dayKey === todayCycle && e.kind === 'class' && e.start != null)
                         .sort((a,b) => a.start - b.start);
   const current  = todays.find(e => e.start <= nowMin && nowMin < (e.end == null ? e.start+60 : e.end));
-  const upcoming = todays.find(e => e.start > nowMin);
+
+  /* Next rolls into following days, so after the last lesson it points at
+     tomorrow morning rather than giving up. */
+  let upcoming = todays.find(e => e.start > nowMin);
+  let upcomingWhen = '';
+  if (!upcoming && realCycle){
+    const startIdx = CYCLE_DAYS.indexOf(realCycle);
+    for (let step = 1; step <= 10 && !upcoming; step++){
+      const key = CYCLE_DAYS[(startIdx + step) % 10];
+      const dayLessons = entries
+        .filter(e => e.dayKey === key && e.kind === 'class' && e.start != null)
+        .sort((a,b) => a.start - b.start);
+      if (dayLessons.length){
+        upcoming = dayLessons[0];
+        const nm = DAY[[1,2,3,4,5][DAY_KEYS.indexOf(key.slice(0,3))]];
+        /* "Tomorrow" only when it really is tomorrow -- the next cycle day
+           after Friday is three calendar days away. */
+        upcomingWhen = (step === 1 && todayKey !== 'fri') ? 'Tomorrow' : nm;
+      }
+    }
+  }
+  /* Friday, classes done: the useful message is that the week is over. */
+  const doneForWeek = todayKey === 'fri' && !current && !todays.some(e => e.start > nowMin);
   const nowEl = $('now');
   nowEl.innerHTML = '';
-  nowEl.appendChild(nowCard('Now',  current,  nowMin));
-  nowEl.appendChild(nowCard('Next', upcoming, nowMin));
+  nowEl.appendChild(nowCard('Now',  current,  nowMin, ''));
+  nowEl.appendChild(doneForWeek
+    ? weekendCard(upcoming, upcomingWhen)
+    : nowCard('Next', upcoming, nowMin, upcomingWhen, false));
 
   /* grid */
   const idx = isMobile ? [mobileDay] : [0,1,2,3,4];
@@ -951,10 +1153,10 @@ function render(){
   grid.appendChild(el('div','colhead'));
   idx.forEach(i => {
     const d = days[i];
-    const isToday = sameDay(d, now);
+    const isToday = showingCurrentWeek && DAY_KEYS[i] === todayKey;
     const h = el('div','colhead' + (isToday ? ' today' : '') +
                        (focusToday && !isToday ? ' dimmed' : ''));
-    h.innerHTML = '<div class="dow">' + DAY[d.getDay()] + '</div>';
+    h.innerHTML = '<div class="dow">' + DAY[d.getDay()] + '</div><i class="rule"></i>';
     grid.appendChild(h);
   });
 
@@ -963,21 +1165,42 @@ function render(){
     const isBreak = slot.kind !== 'class';
     const pc = el('div','periodcell' + (isBreak ? ' brk' : ''));
     if (!isBreak){
-      const time = slot.start != null ? fmtTime(slot.start) + '<br>' + fmtTime(slot.end) : '';
-      pc.innerHTML = '<b>' + esc(/^\d+$/.test(slot.key) ? 'Period ' + slot.key : titleCase(slot.period)) + '</b>' + time;
+      /* Wednesday runs to a different bell, so only show a time in the gutter
+         when every day in view agrees; otherwise the cards carry the truth. */
+      const times = cycles.map(c => bellFor(c, slot.key)).filter(Boolean);
+      /* Most days share a time; Wednesday often doesn't. Show the common one
+         and mark it as approximate -- each card carries its own exact time. */
+      const tally = {};
+      times.forEach(t => { const k = t.start + '|' + t.end; tally[k] = (tally[k]||0)+1; });
+      const best = Object.keys(tally).sort((a,b) => tally[b]-tally[a])[0];
+      const same = Object.keys(tally).length <= 1;
+      const show = best ? best.split('|').map(Number) : null;
+      pc.innerHTML = '<b>' + esc(slotLabel(slot)) + '</b>' +
+        (show ? '<span class="' + (same ? '' : 'approx') + '" title="' +
+                (same ? '' : 'Wednesday runs to a different bell') + '">' +
+                fmtTime(show[0]) + '<br>' + fmtTime(show[1]) + '</span>' : '');
     }
     grid.appendChild(pc);
 
     idx.forEach(i => {
       const d = days[i], cyc = cycles[i];
+      const dayIsToday = showingCurrentWeek && DAY_KEYS[i] === todayKey;
       const cell = el('div','cell' + (isBreak ? ' brk' : ''));
       const e = cyc ? entryAt(cyc, slot.key) : null;
 
-      if (focusToday && cyc && !sameDay(d, now)) cell.classList.add('dimmed');
+      if (focusToday && !dayIsToday) cell.classList.add('dimmed');
       if (isBreak){
-        cell.appendChild(el('div','breakbar',
-          titleCase((e && e.period) || slot.period) +
-          (slot.start != null ? ' · ' + fmtTime(slot.start) + '–' + fmtTime(slot.end) : '')));
+        const b = cyc ? bellFor(cyc, slot.key) : null;
+        const st = b && b.start != null ? b.start : (e ? e.start : null);
+        const en = b && b.end   != null ? b.end   : (e ? e.end   : null);
+        if (b || e){
+          const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(slot);
+          const bar = el('div','breakbar' + (e && e.kind === 'assembly' ? ' assembly' : ''));
+          bar.innerHTML = '<span>' + esc(name) + '</span>' +
+            (st != null ? '<em>' + fmtTime(st) + '–' + fmtTime(en) + '</em>' : '') +
+            (e && e.room ? '<em>' + esc(roomLabel(e)) + '</em>' : '');
+          cell.appendChild(bar);
+        }
       } else if (!e){
         cell.appendChild(el('div','free', cyc ? '' : ''));
       } else {
@@ -988,14 +1211,13 @@ function render(){
         box.style.setProperty('--c', c);
         box.style.setProperty('--rot', (((rot++ % 4) - 1.5) * 0.62).toFixed(2) + 'deg');
         const endMin = e.end == null ? (e.start == null ? null : e.start + 60) : e.end;
-        const isToday = sameDay(d, now);
-        const isNow  = isToday && e.start != null && e.start <= nowMin && nowMin < endMin;
+        const isNow  = dayIsToday && e.start != null && e.start <= nowMin && nowMin < endMin;
         if (isNow) box.classList.add('current');
         /* Nothing is greyed out by default; Today turns on focus mode. */
-        if (focusToday && !isToday) box.classList.add('dimmed');
+        if (focusToday && !dayIsToday) box.classList.add('dimmed');
         box.innerHTML =
           '<div class="s">' + esc(e.subject) + '</div>' +
-          (e.room    ? '<div class="r">' + esc(e.room) + '</div>' : '') +
+          (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
           (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
           (e.start != null ? '<div class="tm">' + fmtTime(e.start) + '–' + fmtTime(e.end) + '</div>' : '');
         box.onclick = () => showDetail(e, d);
@@ -1006,26 +1228,41 @@ function render(){
   });
 }
 
-function nowCard(label, e, nowMin){
+function weekendCard(next, when){
+  const d = el('div','nowcard weekend');
+  const back = next
+    ? (when || 'Monday') + ' · ' + next.subject +
+      (next.start != null ? ' · ' + fmtTime(next.start) : '')
+    : 'No further classes scheduled';
+  d.innerHTML =
+    '<div class="lbl">Next</div>' +
+    '<div class="subj">Enjoy the weekend</div>' +
+    '<div class="meta">Back ' + esc(back) + '</div>';
+  return d;
+}
+
+function nowCard(label, e, nowMin, when, weekend){
   const d = el('div','nowcard');
   if (!e){
-    d.innerHTML = '<div class="lbl">' + label + '</div><div class="subj">Nothing scheduled</div>' +
-                  '<div class="meta">Enjoy the break</div>';
+    d.innerHTML = '<div class="lbl">' + label + '</div>' +
+      '<div class="subj">' + (weekend ? 'Enjoy the weekend' : 'Nothing scheduled') + '</div>' +
+      '<div class="meta">' + (weekend ? 'No more classes this week' : 'Enjoy the break') + '</div>';
     return d;
   }
   const c = colourFor(e.subject);
   d.style.setProperty('--c', c);
-  const bits = [e.room, e.teacher].filter(Boolean).join(' · ');
+  const bits = [roomLabel(e), e.teacher].filter(Boolean).join(' · ');
   const endMin = e.end == null ? e.start + 60 : e.end;
-  const running = e.start <= nowMin && nowMin < endMin;
-  const mins = running ? endMin - nowMin : e.start - nowMin;
+  const running = !when && e.start <= nowMin && nowMin < endMin;
+  const mins = running ? endMin - nowMin : (when ? -1 : e.start - nowMin);
   const pct = running ? Math.max(0, Math.min(100, ((nowMin - e.start) / (endMin - e.start)) * 100)) : 0;
   const mm = m => m >= 60 ? Math.floor(m/60) + 'h ' + (m%60) + 'm' : m + ' min';
   const cd = mins >= 0 ? (running ? mm(mins) + ' left' : 'starts in ' + mm(mins)) : '';
   d.innerHTML =
     '<div class="lbl">' + label + '</div>' +
     '<div class="subj">' + esc(e.subject) + '</div>' +
-    '<div class="meta">' + esc(bits) + (e.start != null ? ' · ' + fmtTime(e.start) + '–' + fmtTime(e.end) : '') + '</div>' +
+    '<div class="meta">' + (when ? '<b>' + esc(when) + '</b> · ' : '') + esc(bits) +
+      (e.start != null ? ' · ' + fmtTime(e.start) + '–' + fmtTime(e.end) : '') + '</div>' +
     (running
       ? '<div class="progrow"><div class="prog"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
         '<span class="count">' + cd + '</span></div>'
@@ -1045,7 +1282,7 @@ function showDetail(e, date){
 
   const rows = [
     ['Period', /^\d+$/.test(e.pnum) ? 'Period ' + e.pnum : titleCase(e.period)],
-    ['Room', e.rawRoom && e.rawRoom !== e.room ? e.room + '  (' + e.rawRoom + ')' : e.room],
+    ['Room', e.rawRoom || e.room],
     ['Teacher', e.teacher],
     ['Email', e.rawTeacher && e.rawTeacher.includes('@') ? e.rawTeacher : ''],
     ['Class code', e.code],
@@ -1140,8 +1377,13 @@ function renderCustom(){
   $('c_text').value   = custom.text;
   $('c_accent').value = custom.accent;
   $('c_line').value   = custom.line;
+  $('c_accent2').value = custom.accent2;
+  $('c_backdrop').value = custom.backdrop;
+  $('c_shadow').value = custom.shadow;
+  $('c_glass').checked = !!custom.glass;
   $('c_radius').value = custom.radius; $('c_radius_v').textContent = custom.radius + 'px';
   $('c_tint').value   = custom.tint;   $('c_tint_v').textContent   = custom.tint + '%';
+  $('c_border').value = custom.border; $('c_border_v').textContent = custom.border + 'px';
   sel.value = custom.font;
 }
 function bindCustom(){
@@ -1155,15 +1397,29 @@ function bindCustom(){
     });
   };
   touch('c_bg','bg'); touch('c_panel','panel'); touch('c_text','text');
-  touch('c_accent','accent'); touch('c_line','line'); touch('c_font','font');
+  touch('c_accent','accent'); touch('c_accent2','accent2');
+  touch('c_line','line'); touch('c_font','font');
+  touch('c_backdrop','backdrop'); touch('c_shadow','shadow');
   touch('c_radius','radius', () => { $('c_radius_v').textContent = custom.radius + 'px'; });
   touch('c_tint','tint',     () => { $('c_tint_v').textContent   = custom.tint + '%'; });
+  touch('c_border','border', () => { $('c_border_v').textContent = custom.border + 'px'; });
+  $('c_glass').addEventListener('change', ev => {
+    custom.glass = ev.target.checked; set(LS.custom, custom); applyLook(); render();
+  });
   $('c_reset').onclick = () => {
     custom = Object.assign({}, CUSTOM_DEFAULTS);
     set(LS.custom, custom); applyLook(); renderCustom(); render();
   };
 }
 bindCustom();
+
+function renderRooms(){
+  [...$('rooms').children].forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.room === roomMode)));
+}
+[...$('rooms').children].forEach(b => {
+  b.onclick = () => { roomMode = b.dataset.room; set(LS.room, roomMode); renderRooms(); render(); };
+});
 
 function renderModes(){
   const cur = SKINS.find(s => s.id === skin);
@@ -1186,7 +1442,7 @@ $('mode').onclick = () => {
 $('settings').onclick = () => {
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderColours();
+  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderColours();
   dlg.showModal();
 };
 const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
@@ -1215,20 +1471,38 @@ $('save').onclick = async e => {
 };
 
 /* ═══ controls ═══ */
-$('prev').onclick  = () => { weekStart = addDays(weekStart,-7); render(); };
-$('next').onclick  = () => { weekStart = addDays(weekStart, 7); render(); };
+let flashTimer = null;
+function flashCurrent(){
+  const real = cycleDayFor(new Date(), cycleStart);
+  if (!real) return;
+  const n = $('nowis');
+  n.innerHTML = 'Currently: <b>Week ' + real.slice(-1).toUpperCase() + '</b>';
+  n.classList.add('show');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => n.classList.remove('show'), 2600);
+}
+function toggleWeek(){
+  const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
+  viewWeek = shown === 'a' ? 'b' : 'a';
+  render();
+  flashCurrent();
+}
+$('weekbtn').onclick = toggleWeek;
+
 $('today').onclick = () => {
   focusToday = !focusToday;
   if (focusToday){
-    weekStart = startOfWeek(new Date());
-    mobileDay = Math.min(4, (new Date().getDay()+6)%7);
+    const real = cycleDayFor(new Date(), cycleStart);
+    if (real){
+      viewWeek = real.slice(-1);
+      mobileDay = Math.max(0, DAY_KEYS.indexOf(real.slice(0,3)));
+    }
   }
   render();
 };
 addEventListener('keydown', e => {
   if (dlg.open || $('detail').open || !gate.hidden) return;
-  if (e.key === 'ArrowLeft')  $('prev').click();
-  if (e.key === 'ArrowRight') $('next').click();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek();
   if (e.key === 't' || e.key === 'T') $('today').click();
   if (e.key === 's' || e.key === 'S') $('settings').click();
 });
