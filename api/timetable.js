@@ -55,25 +55,68 @@ function listEnv(name) {
 
 /* --------------------------------------------------------------- school API */
 
+/*
+ * Read a response as JSON, but explain clearly when it is not JSON.
+ * The school intranet answers some misconfigurations with an HTML page and a
+ * 200, so `res.json()` alone produces a useless "Unexpected token '<'" error.
+ */
+async function readJson(res, url) {
+  const body = await res.text();
+  try {
+    return JSON.parse(body);
+  } catch {
+    const looksHtml = /^\s*<(!doctype|html)/i.test(body);
+    console.error(
+      `Expected JSON from ${url} but got ${looksHtml ? "an HTML page" : "unparseable data"}. ` +
+      `status=${res.status} content-type=${res.headers.get("content-type") || "none"} ` +
+      `first bytes: ${JSON.stringify(body.slice(0, 120))}`
+    );
+    const err = new Error(
+      looksHtml
+        ? "The school API returned a web page instead of JSON. Check that SCHOOL_API_BASE is the intranet origin with no trailing path."
+        : "The school API returned a response that could not be parsed as JSON."
+    );
+    err.status = 502;
+    err.hint = looksHtml ? "check-api-base" : "bad-json";
+    throw err;
+  }
+}
+
 async function getToken(apiBase, emailAddress, password) {
   const now = Date.now();
   if (cachedToken && cachedToken.exp * 1000 - TOKEN_SKEW_MS > now) {
     return cachedToken;
   }
 
-  const res = await fetch(`${apiBase}/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ emailAddress, password })
-  });
-
-  if (!res.ok) {
-    const err = new Error(`School authentication failed (${res.status}).`);
-    err.status = res.status === 401 ? 502 : res.status;
+  const url = `${apiBase}/token`;
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ emailAddress, password })
+    });
+  } catch (e) {
+    console.error(`Could not reach ${url}: ${e.message}`);
+    const err = new Error("Could not reach the school API. Check SCHOOL_API_BASE.");
+    err.status = 502;
+    err.hint = "check-api-base";
     throw err;
   }
 
-  const data = await res.json();
+  if (!res.ok) {
+    console.error(`POST ${url} returned ${res.status}.`);
+    const err = new Error(
+      res.status === 401
+        ? "The school rejected SCHOOL_EMAIL / SCHOOL_PASSWORD."
+        : `School authentication failed (${res.status}).`
+    );
+    err.status = 502;
+    err.hint = res.status === 401 ? "check-credentials" : "auth-failed";
+    throw err;
+  }
+
+  const data = await readJson(res, url);
   const token = data && data.token;
   if (!token) {
     const err = new Error("School API did not return a token.");
@@ -91,10 +134,19 @@ async function getToken(apiBase, emailAddress, password) {
 }
 
 async function apiGet(apiBase, path, auth, retry = true) {
-  const res = await fetch(apiBase + path, {
-    method: "GET",
-    headers: { Authorization: `${auth.type} ${auth.token}`, Accept: "application/json" }
-  });
+  let res;
+  try {
+    res = await fetch(apiBase + path, {
+      method: "GET",
+      headers: { Authorization: `${auth.type} ${auth.token}`, Accept: "application/json" }
+    });
+  } catch (e) {
+    console.error(`Could not reach ${apiBase + path}: ${e.message}`);
+    const err = new Error("Could not reach the school API. Check SCHOOL_API_BASE.");
+    err.status = 502;
+    err.hint = "check-api-base";
+    throw err;
+  }
 
   if (res.status === 401 && retry) {
     cachedToken = null;                                   // force a re-login
@@ -106,13 +158,7 @@ async function apiGet(apiBase, path, auth, retry = true) {
     throw err;
   }
 
-  const ct = res.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) {
-    const err = new Error("School API returned a non-JSON response.");
-    err.status = 502;
-    throw err;
-  }
-  return res.json();
+  return readJson(res, apiBase + path);
 }
 
 /* ------------------------------------------------------------------ handler */
@@ -177,11 +223,14 @@ export default async function handler(req, res) {
     return res.status(200).json({ email, timetable, bellTimes, startDate, profile });
   } catch (error) {
     const status = error.status || 502;
-    console.error("Timetable request failed:", error.message);
+    console.error("Timetable request failed:", error.message, `(apiBase=${apiBase})`);
+    // Only surface messages this file authored (they carry a hint and contain no
+    // secrets); anything else stays in the logs.
     return res.status(status).json({
       error: status === 404
         ? "No timetable was found for that address."
-        : "Unable to load the timetable from the school API."
+        : (error.hint ? error.message : "Unable to load the timetable from the school API."),
+      hint: error.hint || undefined
     });
   }
 }
