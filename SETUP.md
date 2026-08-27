@@ -96,17 +96,30 @@ Wrong value = the page loads but every fetch fails with a CORS error in the cons
 2. Types it, presses Enter → timetable appears.
 3. Every visit after that goes straight to the timetable — the email is in `localStorage`.
 
-To change it later: ⚙ → School email. The endpoint is not exposed anywhere in the UI.
+The username also sits under the heading on the page itself, so it can be changed
+without opening Settings. The endpoint is not exposed anywhere in the UI.
+
+### Reading the grid
+
+The timetable is a repeating ten-day cycle, so the grid shows **weekday names and
+the week letter, not calendar dates**. Nothing is greyed out by default — every
+day is equally readable.
+
+- The lesson happening right now is outlined.
+- **Today** is a toggle: press it to dim everything except the current day, press
+  again to bring the whole week back.
+- The **Now** card carries a progress bar for the running period plus the time left.
 
 ---
 
 ## Appearance
 
-⚙ → Appearance. Seven skins, each with its own typeface and treatment:
+⚙ → Appearance. Eight skins, each with its own typeface and treatment:
 
 | Skin | Look |
 |---|---|
 | **Plain** *(default)* | White on white, grey on grey in dark mode. Subject colour reduced to a thin edge |
+| **Custom** | Your own colours, corner radius, subject tint and typeface. Saved on the device |
 | **Notebook** | Ruled paper, lessons as taped-on post-it notes, handwriting (Caveat / Patrick Hand) |
 | **Glass** | Frosted translucent tiles over a colour mesh, Space Grotesk |
 | **Swiss** | Stark white, hairline rules, coloured top bars, no shadows |
@@ -119,9 +132,37 @@ and Blueprint have one fixed palette each (the light/dark buttons grey out).
 
 Subject colours are editable per subject and stored per device.
 
-Clicking any lesson opens a detail sheet with the room, teacher, period, the
-**class code** (`11PHYS A3`) and the original unabbreviated subject name — the
-things stripped from the card to keep it readable.
+Selecting **Custom** reveals colour pickers for background, card, text, accent and
+border, plus sliders for corner radius and subject tint and a typeface menu. It
+writes to `localStorage` on that device only, and the accent's text colour is
+chosen automatically for contrast.
+
+### What the cards show
+
+The API returns both a roll code and a proper course name; the card shows the
+readable one and hides the rest:
+
+| API field | Example | On the card |
+|---|---|---|
+| `CourseName` | `Engineering Studies Yr11` | **Engineering Studies** |
+| `ClassCode` | `11ENGST A4` | (detail sheet only) |
+| `RoomCode` | `ER0020.166` | **166** |
+| `Teacher` | `stephen.henne@det.nsw.edu.au` | **Stephen Henne** |
+
+Room numbers keep only the part after the final dot. Teacher names are derived
+from the email local-part when the API gives an address rather than a name.
+
+To rename a subject for display, edit `SUBJECT_RENAMES` near the top of the
+script in `index.html`:
+
+```js
+const SUBJECT_RENAMES = {
+  'Mathematics Extension 1': 'Maths Ext 1',
+};
+```
+
+Clicking any lesson opens a detail sheet with the full room code, the teacher's
+email, the class code and the original course name.
 
 ---
 

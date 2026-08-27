@@ -225,7 +225,16 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
   font-weight:var(--display-w);letter-spacing:var(--display-ls);
   text-transform:var(--display-tt);line-height:1.05;
 }
-.brand span{color:var(--muted);font-size:13px;margin-top:2px}
+.brand>span{color:var(--muted);font-size:12.5px;margin-top:3px;min-height:16px}
+.brand>span.err{color:#e5484d}
+.idrow{display:flex;align-items:center;gap:0;margin-top:5px;
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);
+  padding:3px 9px;max-width:max-content;transition:border-color .15s}
+.idrow:focus-within{border-color:var(--accent)}
+.idrow input{border:0;background:none;outline:none;padding:3px 0;width:11ch;
+  font-size:13px;font-family:var(--font-num)}
+.idrow .dom{color:var(--muted);font-size:12px;white-space:nowrap;opacity:.8}
+@media (max-width:520px){ .idrow .dom{display:none} }
 .btn{
   background:var(--panel);border:var(--card-border);border-radius:var(--radius);
   padding:8px 13px;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;
@@ -255,8 +264,16 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .nowcard .subj{font-size:19px;font-weight:700;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nowcard .meta{color:var(--muted);font-size:13px;margin-top:3px}
 .nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:13px;margin-top:7px;font-weight:700}
-.prog{height:4px;background:var(--panel-2);border-radius:99px;margin-top:9px;overflow:hidden}
-.prog i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px}
+.progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
+.prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
+      border-radius:99px;overflow:hidden;min-width:0}
+.prog i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px;
+        transition:width .6s linear}
+.progrow .count{margin-top:0;white-space:nowrap;color:var(--c,var(--accent))}
+[data-skin="swiss"] .prog,[data-skin="brutal"] .prog,
+[data-skin="terminal"] .prog,[data-skin="blueprint"] .prog{border-radius:0}
+[data-skin="swiss"] .prog i,[data-skin="brutal"] .prog i,
+[data-skin="terminal"] .prog i,[data-skin="blueprint"] .prog i{border-radius:0}
 
 /* grid */
 .grid{display:grid;gap:10px;align-items:stretch;grid-template-columns:84px repeat(var(--days,5),minmax(0,1fr))}
@@ -299,7 +316,10 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .lesson .tm{color:inherit;opacity:.85;font-size:11.5px;margin-top:auto;padding-top:6px;
             font-family:var(--font-num);font-variant-numeric:tabular-nums}
 .lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px}
-.lesson.past{opacity:.42}
+.lesson.current{position:relative}
+.dimmed{opacity:.3;filter:saturate(.5);transition:opacity .2s,filter .2s}
+.colhead.dimmed .dow{color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px}
 
 .breakbar{
@@ -375,6 +395,17 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .skinbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
 .skinbtn .sw{height:46px;display:block}
 .skinbtn .nm{display:block;padding:6px 8px;font-size:12px;font-weight:700;background:var(--panel-2)}
+.custrow{display:flex;align-items:center;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
+.custrow:last-of-type{border-bottom:0}
+.custrow>span{flex:1;font-size:13px}
+.custrow input[type=color]{width:36px;height:29px;padding:0;border:1px solid var(--line);
+                           border-radius:7px;background:none;cursor:pointer;flex:none}
+.custrow input[type=range]{width:118px;flex:none;accent-color:var(--accent)}
+.custrow b{width:40px;text-align:right;font-size:12px;color:var(--muted);
+           font-variant-numeric:tabular-nums;flex:none}
+.custrow select{background:var(--panel-2);border:1px solid var(--line);
+                border-radius:8px;padding:6px 8px;font-size:13px}
+.custrow .btn{width:100%}
 .modes{display:flex;gap:8px}
 .modes button{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
               padding:9px;cursor:pointer;font-size:13px}
@@ -422,7 +453,13 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   <header>
     <div class="brand">
       <h1 id="title">Timetable</h1>
-      <span id="sub">Loading&hellip;</span>
+      <div class="idrow">
+        <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
+               autocorrect="off" autocomplete="username" placeholder="first.last1"
+               aria-label="Your school username">
+        <span class="dom" id="whoamidom"></span>
+      </div>
+      <span id="sub"></span>
     </div>
     <div class="weeknav">
       <button class="btn icon" id="prev" title="Previous week">&lsaquo;</button>
@@ -457,6 +494,20 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="skins" id="skins"></div>
     </div>
 
+    <div class="field" id="customwrap" hidden>
+      <label>Custom theme</label>
+      <div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>
+      <div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>
+      <div class="custrow"><span>Text</span><input type="color" id="c_text"></div>
+      <div class="custrow"><span>Accent</span><input type="color" id="c_accent"></div>
+      <div class="custrow"><span>Border</span><input type="color" id="c_line"></div>
+      <div class="custrow"><span>Corner radius</span><input type="range" id="c_radius" min="0" max="26" step="1"><b id="c_radius_v"></b></div>
+      <div class="custrow"><span>Subject tint</span><input type="range" id="c_tint" min="0" max="70" step="1"><b id="c_tint_v"></b></div>
+      <div class="custrow"><span>Typeface</span><select id="c_font"></select></div>
+      <div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>
+      <div class="hint">Saved on this device only.</div>
+    </div>
+
     <div class="field">
       <label>Light / dark</label>
       <div class="modes" id="modes">
@@ -472,10 +523,6 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="hint" id="nocolours" hidden>Colours appear once a timetable has loaded.</div>
     </div>
 
-    <div class="field">
-      <label for="em">School email</label>
-      <input type="text" id="em" placeholder="first.last1" spellcheck="false" autocapitalize="none">
-    </div>
 
   </div>
   <div class="dlg-f">
@@ -503,25 +550,70 @@ const SKINS = [
   { id:'swiss',     name:'Swiss',     swatch:'linear-gradient(#fff,#fff)', both:true, border:'#111' },
   { id:'terminal',  name:'Terminal',  swatch:'repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)', both:false },
   { id:'blueprint', name:'Blueprint', swatch:'repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#0b2a4a', both:false },
+  { id:'custom',    name:'Custom',    swatch:'conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)', both:false, custom:true },
   { id:'brutal',    name:'Brutal',    swatch:'linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)', both:true }
 ];
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* ═══ storage ═══ */
-const LS = { email:'tt.email', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+const LS = { email:'tt.email', custom:'tt.custom', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 const endpoint = CONFIG.ENDPOINT;
 let email    = get(LS.email, '');
 let colours  = get(LS.colours, {});
+const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
+                      'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
+const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
+                          accent:'#6d4aff', line:'#d9dde5',
+                          radius:12, tint:22, font:'DM Sans' };
+let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
 let skin     = get(LS.skin, 'plain');
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
 
+const CUSTOM_VARS = ['--bg','--bg-img','--panel','--panel-2','--line','--text','--muted',
+                     '--accent','--accent-ink','--card-radius','--radius','--tint',
+                     '--card-border','--card-accent','--shadow','--shadow-hi',
+                     '--font-ui','--font-display','--font-num','--display-tt','--display-ls'];
+
+/* relative luminance -> black or white text on top of the chosen accent */
+function inkFor(hex){
+  const h = String(hex).replace('#','');
+  if (h.length !== 6) return '#fff';
+  const v = [0,2,4].map(i => parseInt(h.slice(i,i+2),16)/255)
+                   .map(c => c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4));
+  return (0.2126*v[0] + 0.7152*v[1] + 0.0722*v[2]) > 0.42 ? '#000' : '#fff';
+}
+
 function applyLook(){
-  document.documentElement.setAttribute('data-skin', skin);
-  document.documentElement.setAttribute('data-mode', mode);
+  const root = document.documentElement;
+  root.setAttribute('data-skin', skin);
+  root.setAttribute('data-mode', mode);
+
+  CUSTOM_VARS.forEach(v => root.style.removeProperty(v));
+  if (skin !== 'custom') return;
+
+  const c = custom, S = (k,v) => root.style.setProperty(k, v);
+  S('--bg', c.bg); S('--bg-img', 'none');
+  S('--panel', c.panel);
+  S('--panel-2', 'color-mix(in srgb, ' + c.panel + ' 90%, ' + c.text + ')');
+  S('--line', c.line);
+  S('--text', c.text);
+  S('--muted', 'color-mix(in srgb, ' + c.text + ' 58%, ' + c.panel + ')');
+  S('--accent', c.accent);
+  S('--accent-ink', inkFor(c.accent));
+  S('--card-radius', c.radius + 'px');
+  S('--radius', Math.max(4, Math.round(c.radius * 0.85)) + 'px');
+  S('--tint', c.tint + '%');
+  S('--card-border', '1px solid ' + c.line);
+  S('--card-accent', '4px');
+  S('--shadow', c.radius > 0 ? '0 1px 3px rgba(0,0,0,.10)' : 'none');
+  S('--shadow-hi', '0 4px 16px rgba(0,0,0,.16)');
+  const f = '"' + c.font + '", system-ui, sans-serif';
+  S('--font-ui', f); S('--font-display', f); S('--font-num', f);
+  S('--display-tt', 'normal'); S('--display-ls', '-.01em');
 }
 applyLook();
 
@@ -591,6 +683,13 @@ function asArray(v){
 /* ═══ subject tidy-up ═══
    The API gives names like "11PHYS A3 Physics Yr11". Strip the leading class
    code and the trailing year suffix, but never strip down to nothing. */
+/* Optional display renames, applied after the year suffix is stripped.
+   Left-hand side is the cleaned CourseName. Edit freely. */
+const SUBJECT_RENAMES = {
+  // 'Mathematics Extension 1': 'Maths Ext 1',
+  // 'Mathematics HSC': 'Maths Advanced',
+};
+
 function cleanSubject(name, code){
   const original = String(name || '').trim();
   let s = original;
@@ -609,11 +708,30 @@ function cleanSubject(name, code){
   }
   s = s.replace(/^[\s:\-–—]+/, '').replace(/\s{2,}/g, ' ').trim();
   if (!s) s = original.replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '').trim();
-  return s || original || String(code || '').trim() || 'Class';
+  s = s || original || String(code || '').trim() || 'Class';
+  return SUBJECT_RENAMES[s] || s;
 }
-/* "Doyle, Mr R" -> "Mr R Doyle" reads better on a card */
+/* "CR1007.118" -> "118", "ER0020.27" -> "27". The part after the final dot is
+   the human room number; everything before it is the building/floor code. */
+function shortRoom(r){
+  const s = String(r || '').trim();
+  if (!s) return '';
+  const dot = s.lastIndexOf('.');
+  if (dot === -1) return s;
+  const tail = s.slice(dot + 1).trim();
+  return tail || s;
+}
+
+/* Teachers arrive as "stephen.henne@det.nsw.edu.au" -> "Stephen Henne".
+   Also handles "Doyle, Mr R" -> "Mr R Doyle" and passes plain names through. */
 function tidyTeacher(t){
   const s = String(t || '').trim();
+  if (!s) return '';
+  if (s.includes('@')){
+    const n = nameFromEmail(s);
+    if (n) return n;
+    return titleCase(s.split('@')[0].replace(/[._]+/g, ' ').replace(/\d+$/, ''));
+  }
   const m = s.match(/^([^,]+),\s*(.+)$/);
   return m ? (m[2] + ' ' + m[1]).replace(/\s{2,}/g,' ').trim() : s;
 }
@@ -635,9 +753,12 @@ function cycleDayFor(date, cycleStart){
   while (cur < d){ cur.setDate(cur.getDate()+1); const w = cur.getDay(); if (w !== 0 && w !== 6) elapsed++; }
   return CYCLE_DAYS[elapsed % 10];
 }
+/* Only a bare number ("4", "P4", "Period 4") is a period number. Labels like
+   "L1"/"L2" (lunch halves) and "R" (recess) must keep their own identity --
+   an unanchored match turned "L1" into "1" and clobbered period 1's bell times. */
 const periodNumber = v => {
   const s = String(v == null ? '' : v).trim();
-  const m = s.match(/(?:period|p)?\s*(\d+)/i);
+  const m = s.match(/^(?:period\s*|p)?(\d+)$/i);
   return m ? m[1] : s;
 };
 const classify = v => {
@@ -654,6 +775,7 @@ let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
 let loadError = '', loading = false;
+let focusToday = false;        /* Today button: dim everything but the current day */
 
 /* ═══ normalise ═══ */
 function buildBellIndex(bellTimes){
@@ -683,19 +805,27 @@ function normalise(payload){
     const kind = classify(period);
     const pnum = periodNumber(period).toLowerCase();
     const bt = bell[dayKey + '|' + pnum] || bell['*|' + pnum] || {};
+    const rowStart = toMinutes(pick(raw, ['StartTime','startTime','Start','start']));
+    const rowEnd   = toMinutes(pick(raw, ['EndTime','endTime','End','end']));
 
-    const rawSubject = str(pick(raw, ['SubjectName','Subject','subjectName','subject','Description','description','ClassName','className','Class','class']));
+    /* CourseName is the human name ("Engineering Studies Yr11"); ClassCode is
+       the roll code ("11ENGST A4"). Prefer the former, keep the latter for the
+       detail sheet. */
+    const rawSubject = str(pick(raw, ['CourseName','courseName','SubjectName','Subject','subjectName','subject','Description','description','ClassName','className']));
     const code    = str(pick(raw, ['ClassCode','classCode','Code','code']));
-    const teacher = str(pick(raw, ['TeacherName','teacherName','TeacherFullName','teacherFullName','Teacher','teacher','StaffName','staffName']));
-    const room    = str(pick(raw, ['RoomNumber','roomNumber','RoomName','roomName','Room','room','RoomCode','roomCode','Location','location']));
+    const teacher = str(pick(raw, ['TeacherName','teacherName','TeacherFullName','teacherFullName','Teacher','teacher','DefaultTeacher','StaffName','staffName']));
+    const room    = str(pick(raw, ['RoomCode','roomCode','RoomNumber','roomNumber','RoomName','roomName','Room','room','Location','location']));
 
     out.push({
-      dayKey, dayName, period, pnum, kind, code, room,
-      teacher: tidyTeacher(teacher),
+      dayKey, dayName, period, pnum, kind, code,
+      room: shortRoom(room), rawRoom: room,
+      teacher: tidyTeacher(teacher), rawTeacher: teacher,
       rawSubject,
       subject: kind === 'class' ? cleanSubject(rawSubject, code) : titleCase(period),
-      start: bt.start != null ? bt.start : toMinutes(pick(raw, ['StartTime','startTime','Start','start'])),
-      end:   bt.end   != null ? bt.end   : toMinutes(pick(raw, ['EndTime','endTime','End','end']))
+      /* The row carries its own times and is authoritative; bell times only
+         fill gaps for rows that omit them. */
+      start: rowStart != null ? rowStart : bt.start,
+      end:   rowEnd   != null ? rowEnd   : bt.end
     });
   }
   return out;
@@ -780,20 +910,23 @@ function render(){
   const cycles = days.map(d => cycleDayFor(d, cycleStart));
 
   $('title').textContent = displayName || 'Timetable';
-  $('sub').textContent = loading ? 'Loading…'
-    : loadError ? loadError
-    : entries.filter(e => e.kind === 'class').length + ' classes in the fortnight';
-  $('sub').style.color = loadError ? '#e5484d' : '';
+  $('sub').textContent = loading ? 'Loading…' : (loadError || '');
+  $('sub').className = loadError ? 'err' : '';
+  if (document.activeElement !== $('whoami')) $('whoami').value = String(email || '').split('@')[0];
 
+  /* No calendar dates on screen — the timetable is a repeating cycle, so the
+     week letter is the only thing that actually identifies what is shown. */
   const wkLetter = (cycles.find(Boolean) || '').slice(-1).toUpperCase();
-  $('weeklabel').innerHTML = esc(fmtShort(days[0]) + ' – ' + fmtShort(days[4])) +
-    (wkLetter ? '<span class="wk">Week ' + wkLetter + '</span>' : '');
+  $('weeklabel').innerHTML = wkLetter
+    ? '<span class="wk">Week ' + wkLetter + '</span>'
+    : '<span class="wk">Timetable</span>';
+  $('today').setAttribute('aria-pressed', String(focusToday));
 
   const ds = $('dayswitch');
   ds.innerHTML = '';
   days.forEach((d, i) => {
     const b = document.createElement('button');
-    b.textContent = DAY[d.getDay()].slice(0,3) + ' ' + d.getDate();
+    b.textContent = DAY[d.getDay()].slice(0,3);
     b.setAttribute('aria-pressed', String(i === mobileDay));
     b.onclick = () => { mobileDay = i; render(); };
     ds.appendChild(b);
@@ -818,8 +951,10 @@ function render(){
   grid.appendChild(el('div','colhead'));
   idx.forEach(i => {
     const d = days[i];
-    const h = el('div','colhead' + (sameDay(d, now) ? ' today' : ''));
-    h.innerHTML = '<div class="dow">' + DAY[d.getDay()] + '</div><div class="dat">' + fmtShort(d) + '</div>';
+    const isToday = sameDay(d, now);
+    const h = el('div','colhead' + (isToday ? ' today' : '') +
+                       (focusToday && !isToday ? ' dimmed' : ''));
+    h.innerHTML = '<div class="dow">' + DAY[d.getDay()] + '</div>';
     grid.appendChild(h);
   });
 
@@ -838,6 +973,7 @@ function render(){
       const cell = el('div','cell' + (isBreak ? ' brk' : ''));
       const e = cyc ? entryAt(cyc, slot.key) : null;
 
+      if (focusToday && cyc && !sameDay(d, now)) cell.classList.add('dimmed');
       if (isBreak){
         cell.appendChild(el('div','breakbar',
           titleCase((e && e.period) || slot.period) +
@@ -852,10 +988,11 @@ function render(){
         box.style.setProperty('--c', c);
         box.style.setProperty('--rot', (((rot++ % 4) - 1.5) * 0.62).toFixed(2) + 'deg');
         const endMin = e.end == null ? (e.start == null ? null : e.start + 60) : e.end;
-        const isNow  = sameDay(d, now) && e.start != null && e.start <= nowMin && nowMin < endMin;
-        const isPast = (!sameDay(d, now) && d < now) || (sameDay(d, now) && endMin != null && endMin <= nowMin);
-        if (isNow)  box.classList.add('current');
-        if (isPast) box.classList.add('past');
+        const isToday = sameDay(d, now);
+        const isNow  = isToday && e.start != null && e.start <= nowMin && nowMin < endMin;
+        if (isNow) box.classList.add('current');
+        /* Nothing is greyed out by default; Today turns on focus mode. */
+        if (focusToday && !isToday) box.classList.add('dimmed');
         box.innerHTML =
           '<div class="s">' + esc(e.subject) + '</div>' +
           (e.room    ? '<div class="r">' + esc(e.room) + '</div>' : '') +
@@ -882,14 +1019,17 @@ function nowCard(label, e, nowMin){
   const endMin = e.end == null ? e.start + 60 : e.end;
   const running = e.start <= nowMin && nowMin < endMin;
   const mins = running ? endMin - nowMin : e.start - nowMin;
-  const cd = mins >= 0 ? (running ? mins + ' min left' : 'in ' + mins + ' min') : '';
   const pct = running ? Math.max(0, Math.min(100, ((nowMin - e.start) / (endMin - e.start)) * 100)) : 0;
+  const mm = m => m >= 60 ? Math.floor(m/60) + 'h ' + (m%60) + 'm' : m + ' min';
+  const cd = mins >= 0 ? (running ? mm(mins) + ' left' : 'starts in ' + mm(mins)) : '';
   d.innerHTML =
     '<div class="lbl">' + label + '</div>' +
     '<div class="subj">' + esc(e.subject) + '</div>' +
     '<div class="meta">' + esc(bits) + (e.start != null ? ' · ' + fmtTime(e.start) + '–' + fmtTime(e.end) : '') + '</div>' +
-    (cd ? '<div class="count" style="color:' + c + '">' + cd + '</div>' : '') +
-    (running ? '<div class="prog"><i style="width:' + pct.toFixed(1) + '%"></i></div>' : '');
+    (running
+      ? '<div class="progrow"><div class="prog"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+        '<span class="count">' + cd + '</span></div>'
+      : (cd ? '<div class="count">' + cd + '</div>' : ''));
   return d;
 }
 
@@ -905,8 +1045,9 @@ function showDetail(e, date){
 
   const rows = [
     ['Period', /^\d+$/.test(e.pnum) ? 'Period ' + e.pnum : titleCase(e.period)],
-    ['Room', e.room],
+    ['Room', e.rawRoom && e.rawRoom !== e.room ? e.room + '  (' + e.rawRoom + ')' : e.room],
     ['Teacher', e.teacher],
+    ['Email', e.rawTeacher && e.rawTeacher.includes('@') ? e.rawTeacher : ''],
     ['Class code', e.code],
     ['Cycle day', e.dayName],
     ['Full name', e.rawSubject && e.rawSubject !== e.subject ? e.rawSubject : '']
@@ -945,6 +1086,31 @@ $('gateform').onsubmit = async ev => {
   render();
 };
 
+/* ═══ username field on the page ═══ */
+$('whoamidom').textContent = '@' + CONFIG.EMAIL_DOMAIN;
+async function setUser(raw){
+  const v = String(raw || '').trim().toLowerCase();
+  const user = v.includes('@') ? v.split('@')[0] : v;
+  if (!user || !/^[a-z0-9][a-z0-9._-]*$/.test(user)){
+    loadError = 'That does not look like a school username.'; render(); return;
+  }
+  const next = user + '@' + CONFIG.EMAIL_DOMAIN;
+  if (next === email){
+    if (loadError){ loadError = ''; render(); }   /* clear a stale rejection */
+    return;
+  }
+  email = next;
+  localStorage.removeItem(LS.cache);
+  await load(false);
+  if (!loadError) set(LS.email, email);
+  render();
+}
+$('whoami').addEventListener('keydown', ev => {
+  if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }
+});
+$('whoami').addEventListener('change', ev => setUser(ev.target.value));
+$('whoami').addEventListener('blur', ev => setUser(ev.target.value));
+
 /* ═══ settings ═══ */
 const dlg = $('dlg');
 function renderSkins(){
@@ -958,10 +1124,47 @@ function renderSkins(){
     b.innerHTML = '<span class="sw" style="background:' + s.swatch +
                   (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
-    b.onclick = () => { skin = s.id; set(LS.skin, skin); applyLook(); renderSkins(); renderModes(); render(); };
+    b.onclick = () => { skin = s.id; set(LS.skin, skin); applyLook();
+                        renderSkins(); renderModes(); renderCustom(); render(); };
     host.appendChild(b);
   });
 }
+function renderCustom(){
+  const on = skin === 'custom';
+  $('customwrap').hidden = !on;
+  if (!on) return;
+  const sel = $('c_font');
+  if (!sel.options.length) CUSTOM_FONTS.forEach(f => sel.add(new Option(f, f)));
+  $('c_bg').value     = custom.bg;
+  $('c_panel').value  = custom.panel;
+  $('c_text').value   = custom.text;
+  $('c_accent').value = custom.accent;
+  $('c_line').value   = custom.line;
+  $('c_radius').value = custom.radius; $('c_radius_v').textContent = custom.radius + 'px';
+  $('c_tint').value   = custom.tint;   $('c_tint_v').textContent   = custom.tint + '%';
+  sel.value = custom.font;
+}
+function bindCustom(){
+  const touch = (id, key, after) => {
+    $(id).addEventListener('input', ev => {
+      custom[key] = (key === 'radius' || key === 'tint') ? +ev.target.value : ev.target.value;
+      set(LS.custom, custom);
+      applyLook();
+      if (after) after();
+      render();
+    });
+  };
+  touch('c_bg','bg'); touch('c_panel','panel'); touch('c_text','text');
+  touch('c_accent','accent'); touch('c_line','line'); touch('c_font','font');
+  touch('c_radius','radius', () => { $('c_radius_v').textContent = custom.radius + 'px'; });
+  touch('c_tint','tint',     () => { $('c_tint_v').textContent   = custom.tint + '%'; });
+  $('c_reset').onclick = () => {
+    custom = Object.assign({}, CUSTOM_DEFAULTS);
+    set(LS.custom, custom); applyLook(); renderCustom(); render();
+  };
+}
+bindCustom();
+
 function renderModes(){
   const cur = SKINS.find(s => s.id === skin);
   [...$('modes').children].forEach(b => {
@@ -981,10 +1184,9 @@ $('mode').onclick = () => {
   set(LS.mode, mode); applyLook(); render();
 };
 $('settings').onclick = () => {
-  $('em').value = String(email || '').split('@')[0];
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderColours();
+  renderSkins(); renderModes(); renderCustom(); renderColours();
   dlg.showModal();
 };
 const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
@@ -1006,22 +1208,21 @@ function renderColours(){
 $('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colours, colours); renderColours(); render(); };
 $('save').onclick = async e => {
   e.preventDefault();
-  const user = $('em').value.trim().toLowerCase().split('@')[0];
-  email = user ? user + '@' + CONFIG.EMAIL_DOMAIN : '';
-  set(LS.email, email);
-  localStorage.removeItem(LS.cache);
   dlg.close();
+  localStorage.removeItem(LS.cache);
   await load(false);
   render();
-  if (loadError) showGate(loadError);
 };
 
 /* ═══ controls ═══ */
 $('prev').onclick  = () => { weekStart = addDays(weekStart,-7); render(); };
 $('next').onclick  = () => { weekStart = addDays(weekStart, 7); render(); };
 $('today').onclick = () => {
-  weekStart = startOfWeek(new Date());
-  mobileDay = Math.min(4, (new Date().getDay()+6)%7);
+  focusToday = !focusToday;
+  if (focusToday){
+    weekStart = startOfWeek(new Date());
+    mobileDay = Math.min(4, (new Date().getDay()+6)%7);
+  }
   render();
 };
 addEventListener('keydown', e => {
