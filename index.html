@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="paper" data-mode="light">
+<html lang="en" data-skin="plain" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -26,6 +26,24 @@
   --card-accent:5px;     /* left colour bar width */
   --rot:0deg;
   --display-tt:normal; --display-ls:-.02em; --display-w:700;
+}
+
+/* ── PLAIN ─ the quiet default: white on white, grey on grey ────── */
+[data-skin="plain"]{
+  --bg:#ffffff; --bg-img:none; --panel:#ffffff; --panel-2:#f6f6f7;
+  --line:#e5e5e8; --text:#18181b; --muted:#8b8b93; --accent:#4f4fd0; --accent-ink:#fff;
+  --font-ui:"DM Sans",system-ui,sans-serif;
+  --font-display:"DM Sans",system-ui,sans-serif;
+  --font-num:"DM Sans",system-ui,sans-serif;
+  --card-radius:10px; --tint:0%; --card-accent:3px;
+  --card-border:1px solid var(--line);
+  --shadow:none; --shadow-hi:0 1px 4px rgba(0,0,0,.09);
+  --display-ls:-.015em; --display-w:600; --display-tt:normal;
+}
+[data-skin="plain"][data-mode="dark"]{
+  --bg:#161618; --panel:#1f1f22; --panel-2:#27272b;
+  --line:#303035; --text:#eaeaee; --muted:#87878f; --accent:#8f8ff2;
+  --shadow-hi:0 1px 4px rgba(0,0,0,.55);
 }
 
 /* ── PAPER ─ ruled notebook, post-it lessons ───────────────────── */
@@ -459,11 +477,6 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <input type="text" id="em" placeholder="first.last1" spellcheck="false" autocapitalize="none">
     </div>
 
-    <div class="field">
-      <label for="ep">Timetable endpoint</label>
-      <input type="text" id="ep" placeholder="https://your-project.vercel.app/api/timetable" spellcheck="false">
-      <div class="hint">Your Vercel function. It holds the school login; this page never sees it.</div>
-    </div>
   </div>
   <div class="dlg-f">
     <button class="btn" id="resetcolours">Reset colours</button>
@@ -477,12 +490,14 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 /* ═══ CONFIG ═══ set ENDPOINT once and the page needs no manual setup ═══ */
 const CONFIG = {
-  ENDPOINT: "",                     /* https://your-project.vercel.app/api/timetable */
+  /* The only place the endpoint lives. Not exposed in Settings. */
+  ENDPOINT: "https://timetable-iota-ten.vercel.app/api/timetable",
   EMAIL_DOMAIN: "education.nsw.gov.au"
 };
 
 /* ═══ skins ═══ */
 const SKINS = [
+  { id:'plain',     name:'Plain',     swatch:'linear-gradient(#fff,#fff)', both:true, border:'#e5e5e8' },
   { id:'paper',     name:'Notebook',  swatch:'linear-gradient(#f7f3e8,#f7f3e8) padding-box, repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)', both:true },
   { id:'glass',     name:'Glass',     swatch:'radial-gradient(circle at 25% 20%,#7a5aff,transparent 60%),radial-gradient(circle at 80% 30%,#00becc,transparent 62%),radial-gradient(circle at 50% 90%,#ff50a0,transparent 60%),#0d1220', both:true },
   { id:'swiss',     name:'Swiss',     swatch:'linear-gradient(#fff,#fff)', both:true, border:'#111' },
@@ -493,16 +508,16 @@ const SKINS = [
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* ═══ storage ═══ */
-const LS = { ep:'tt.endpoint', email:'tt.email', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+const LS = { email:'tt.email', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-let endpoint = get(LS.ep, '') || CONFIG.ENDPOINT;
+const endpoint = CONFIG.ENDPOINT;
 let email    = get(LS.email, '');
 let colours  = get(LS.colours, {});
-let skin     = get(LS.skin, 'paper');
+let skin     = get(LS.skin, 'plain');
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-if (SKIN_IDS.indexOf(skin) === -1) skin = 'paper';
+if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
 
 function applyLook(){
   document.documentElement.setAttribute('data-skin', skin);
@@ -767,7 +782,6 @@ function render(){
   $('title').textContent = displayName || 'Timetable';
   $('sub').textContent = loading ? 'Loading…'
     : loadError ? loadError
-    : !endpoint ? 'No endpoint configured — open Settings'
     : entries.filter(e => e.kind === 'class').length + ' classes in the fortnight';
   $('sub').style.color = loadError ? '#e5484d' : '';
 
@@ -967,7 +981,6 @@ $('mode').onclick = () => {
   set(LS.mode, mode); applyLook(); render();
 };
 $('settings').onclick = () => {
-  $('ep').value = endpoint;
   $('em').value = String(email || '').split('@')[0];
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
@@ -993,10 +1006,9 @@ function renderColours(){
 $('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colours, colours); renderColours(); render(); };
 $('save').onclick = async e => {
   e.preventDefault();
-  endpoint = $('ep').value.trim();
   const user = $('em').value.trim().toLowerCase().split('@')[0];
   email = user ? user + '@' + CONFIG.EMAIL_DOMAIN : '';
-  set(LS.ep, endpoint); set(LS.email, email);
+  set(LS.email, email);
   localStorage.removeItem(LS.cache);
   dlg.close();
   await load(false);

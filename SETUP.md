@@ -61,7 +61,8 @@ See **Troubleshooting** below if it doesn't.
 
 ## 3. Point the page at your endpoint
 
-In `index.html`, near the top of the `<script>`:
+The endpoint lives **only** in the source — it is deliberately not shown or
+editable in Settings. In `index.html`, near the top of the `<script>`:
 
 ```js
 const CONFIG = {
@@ -95,16 +96,17 @@ Wrong value = the page loads but every fetch fails with a CORS error in the cons
 2. Types it, presses Enter → timetable appears.
 3. Every visit after that goes straight to the timetable — the email is in `localStorage`.
 
-To change it later: ⚙ → School email.
+To change it later: ⚙ → School email. The endpoint is not exposed anywhere in the UI.
 
 ---
 
 ## Appearance
 
-⚙ → Appearance. Six skins, each with its own typeface and treatment:
+⚙ → Appearance. Seven skins, each with its own typeface and treatment:
 
 | Skin | Look |
 |---|---|
+| **Plain** *(default)* | White on white, grey on grey in dark mode. Subject colour reduced to a thin edge |
 | **Notebook** | Ruled paper, lessons as taped-on post-it notes, handwriting (Caveat / Patrick Hand) |
 | **Glass** | Frosted translucent tiles over a colour mesh, Space Grotesk |
 | **Swiss** | Stark white, hairline rules, coloured top bars, no shadows |
@@ -112,8 +114,8 @@ To change it later: ⚙ → School email.
 | **Blueprint** | Navy drafting grid, dashed outlines, Space Mono |
 | **Brutal** | Yellow ground, 3px black borders, hard offset shadows, Archivo Black |
 
-Notebook, Glass, Swiss and Brutal have light and dark variants; Terminal and
-Blueprint have one fixed palette each (the light/dark buttons grey out).
+Plain, Notebook, Glass, Swiss and Brutal have light and dark variants; Terminal
+and Blueprint have one fixed palette each (the light/dark buttons grey out).
 
 Subject colours are editable per subject and stored per device.
 
@@ -125,7 +127,36 @@ things stripped from the card to keep it readable.
 
 ## Troubleshooting
 
-The function reports the *resolved URL* and the first bytes of any bad response
+### Start here: the diagnostic probe
+
+```bash
+curl "https://YOUR-PROJECT.vercel.app/api/timetable?diag=1"
+```
+
+This POSTs **dummy** credentials to several candidate token paths and reports what
+each one returns. It never sends or echoes your real email, password or token.
+
+```json
+{ "apiBase": "https://…",
+  "env": { "SCHOOL_EMAIL": true, "SCHOOL_PASSWORD": true, "SCHOOL_API_BASE": true },
+  "probes": [ { "path": "/token", "status": 302, "redirectsTo": "https://login…", "isHtml": false },
+              { "path": "/api/token", "status": 401, "looksJson": true } ] }
+```
+
+Read it like this:
+
+- **`apiBase` is not the school intranet** → `SCHOOL_API_BASE` is wrong. Fix and redeploy.
+- **A path shows `looksJson: true`** (usually status 400/401 for dummy creds) → that
+  is the real token endpoint. If it isn't `/token`, set `SCHOOL_TOKEN_PATH` to it.
+- **Every path shows `isHtml: true` or `redirectsTo` an external host** → the intranet is
+  answering with a sign-in page rather than the API. That's an authentication or
+  network-origin problem, not a URL typo — see below.
+- **`error` on every path** → the host is unreachable from Vercel.
+
+Once it works, you can delete the `if (req.query.diag)` block from
+`api/timetable.js` if you'd rather not leave it exposed.
+
+The function also reports the *resolved URL* and the first bytes of any bad response
 to the Vercel logs, so the logs will usually name the problem outright.
 
 ### `Unexpected token '<', "<!doctype "... is not valid JSON`
@@ -149,6 +180,22 @@ The current code turns this into a readable message rather than a parse error:
 { "error": "The school API returned a web page instead of JSON. Check that SCHOOL_API_BASE is the intranet origin with no trailing path.",
   "hint": "check-api-base" }
 ```
+
+### Every probe returns an HTML page (200 or a redirect)
+
+If `SCHOOL_API_BASE` is definitely correct and `/token` still answers with a web
+page, the intranet is serving a **sign-in page instead of the API**. Common causes:
+
+- The token endpoint moved. Find it with the probe and set `SCHOOL_TOKEN_PATH`.
+- The intranet sits behind DoE single sign-on, and an unauthenticated server-side
+  request gets redirected to the login page. A browser session works because it
+  already holds SSO cookies; Vercel has none. If `redirectsTo` points at
+  `login.microsoftonline.com` or a DoE portal, this is what's happening — the
+  `emailAddress`/`password` flow alone can't satisfy it.
+- The school restricts the API by IP or blocks datacentre traffic.
+
+The probe output distinguishes these: a moved path still answers JSON somewhere,
+whereas an SSO wall redirects every path to the same external host.
 
 ### `The school rejected SCHOOL_EMAIL / SCHOOL_PASSWORD`
 
@@ -182,6 +229,7 @@ copy too).
 | `SCHOOL_API_BASE` | yes | School intranet base URL, no trailing slash |
 | `ALLOWED_ORIGIN` | no | Comma-separated origins allowed to call the API. Defaults to `https://alexburns2.github.io` |
 | `ALLOWED_EMAILS` | no | Comma-separated usernames allowed to be looked up. **Unset means anyone can look up anyone.** |
+| `SCHOOL_TOKEN_PATH` | no | Auth path on the school API. Defaults to `/token` |
 | `EMAIL_DOMAIN` | no | Defaults to the domain of `SCHOOL_EMAIL` |
 
 ### Locking it down

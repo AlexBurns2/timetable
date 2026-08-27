@@ -88,7 +88,7 @@ async function getToken(apiBase, emailAddress, password) {
     return cachedToken;
   }
 
-  const url = `${apiBase}/token`;
+  const url = `${apiBase}${process.env.SCHOOL_TOKEN_PATH || "/token"}`;
   let res;
   try {
     res = await fetch(url, {
@@ -184,6 +184,49 @@ export default async function handler(req, res) {
   if (!schoolEmail || !password || !apiBase) {
     console.error("Missing SCHOOL_EMAIL / SCHOOL_PASSWORD / SCHOOL_API_BASE.");
     return res.status(500).json({ error: "Server authentication is not configured." });
+  }
+
+  /* ---- ?diag=1 -----------------------------------------------------------
+   * Probes the school API with DUMMY credentials and reports what comes back,
+   * so a misconfigured base URL or a moved token path is visible in one call.
+   * Never echoes SCHOOL_EMAIL / SCHOOL_PASSWORD or any real token.
+   */
+  if (req.query.diag) {
+    const paths = [process.env.SCHOOL_TOKEN_PATH, "/token", "/api/token",
+                   "/api/auth/token", "/auth/token", "/api/login"].filter(Boolean);
+    const seen = new Set();
+    const probes = [];
+    for (const path of paths) {
+      if (seen.has(path)) continue;
+      seen.add(path);
+      try {
+        const r = await fetch(apiBase + path, {
+          method: "POST",
+          redirect: "manual",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ emailAddress: "probe@example.invalid", password: "probe" })
+        });
+        const body = await r.text().catch(() => "");
+        const ct = r.headers.get("content-type") || "none";
+        const isHtml = /^\s*<(!doctype|html)/i.test(body);
+        console.error(`diag ${path}: status=${r.status} ct=${ct} location=${r.headers.get("location") || "-"} first=${JSON.stringify(body.slice(0,200))}`);
+        probes.push({ path, status: r.status, contentType: ct,
+                      redirectsTo: r.headers.get("location") || null,
+                      isHtml, looksJson: /json/i.test(ct) || /^\s*[{[]/.test(body),
+                      bytes: body.length });
+      } catch (e) {
+        console.error(`diag ${path}: unreachable ${e.message}`);
+        probes.push({ path, error: e.message });
+      }
+    }
+    return res.status(200).json({
+      apiBase,
+      env: { SCHOOL_EMAIL: !!schoolEmail, SCHOOL_PASSWORD: !!password,
+             SCHOOL_API_BASE: !!apiBase, ALLOWED_ORIGIN: !!process.env.ALLOWED_ORIGIN,
+             SCHOOL_TOKEN_PATH: process.env.SCHOOL_TOKEN_PATH || null },
+      probes,
+      note: "A real token endpoint answers dummy credentials with JSON (usually 400/401). isHtml:true means that path serves a web page."
+    });
   }
 
   const domain = (process.env.EMAIL_DOMAIN || schoolEmail.split("@")[1] || "").toLowerCase();
