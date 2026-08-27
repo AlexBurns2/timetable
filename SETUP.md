@@ -119,6 +119,9 @@ the week letter, not calendar dates**. Nothing is greyed out by default.
 
 ⚙ → Layout offers two ways to read the same data:
 
+Cells are separated by the same gap horizontally and vertically — a single
+constant drives both the CSS grid gap and the inset on time-positioned blocks.
+
 **Compact** (default) positions blocks by **real clock time**. The left gutter
 shows actual bell boundaries and each card's height is its duration, so free
 periods are simply empty space rather than blank rows, and Wednesday's different
@@ -140,6 +143,26 @@ to 11:05 and lunch 35 minutes earlier — both layouts reflect that.
 | Week letter on day names (`Monday A`) | on |
 | Coloured subject outlines — off keeps the colour as a dot | on |
 | Progress bar on the Now card | on |
+| Transparent background — for browser wallpapers | off |
+
+### Transparent background (Zen)
+
+The page paints its background through `--page-bg` / `--page-img` rather than
+directly, so one toggle can drop it entirely:
+
+```css
+html.zen{ --page-bg:transparent; --page-img:none; }
+```
+
+With it on, the page canvas is transparent and a browser wallpaper (Zen and
+similar) shows through. Cards, the Now/Next panels and the dialogs stay opaque,
+day headings and the time gutter paint nothing, break bars gain a backing so
+their labels don't sit straight on the picture, and Terminal's scanline overlay
+is suppressed — it uses `mix-blend-mode: multiply` and would tint the wallpaper.
+
+Skins whose cards are deliberately translucent (Glass, and Custom with frosted
+glass on) stay translucent, which is usually the point — but contrast then
+depends on the wallpaper behind them.
 
 ---
 
@@ -163,17 +186,19 @@ and Blueprint have one fixed palette each (the light/dark buttons grey out).
 
 Subject colours are editable per subject and stored per device.
 
-Selecting **Custom** (bottom-right of the picker) reveals:
+Selecting **Custom** (bottom-right of the picker) shows six everyday controls —
+**Background, Card, Text, Accent, Corner radius, Typeface** — with the rest
+folded into an **Advanced** dropdown, collapsed by default:
 
-| Control | Does |
+| Advanced | Does |
 |---|---|
-| Background / Card / Text / Border | base palette |
-| Accent + Second colour | highlights, and the two colours used by the backdrop |
+| Border colour | card outline |
+| Second colour | the other colour in gradient/mesh backdrops |
 | Backdrop | solid, soft gradient, or colour mesh |
 | Frosted glass | translucent blurred cards, as in the Glass skin |
 | Shadow | none, soft, or hard offset |
 | Border width | 0–4px |
-| Corner radius / Subject tint / Typeface | shape and type |
+| Subject tint | how strongly subject colour bleeds into a card |
 
 It writes to `localStorage` on that device only, and the accent's text colour is
 chosen automatically for contrast. Frosted glass + colour mesh reproduces the

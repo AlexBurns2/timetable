@@ -214,13 +214,28 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
-  background:var(--bg); background-image:var(--bg-img);
+  /* --page-bg / --page-img indirect so a single toggle can drop the page
+     background out entirely and let Zen's wallpaper show through. */
+  background-color:var(--page-bg, var(--bg));
+  background-image:var(--page-img, var(--bg-img));
   background-attachment:fixed; color:var(--text); min-height:100vh;
   font:15px/1.5 var(--font-ui);
   -webkit-font-smoothing:antialiased; transition:background-color .25s, color .25s;
 }
 button,select,input{font:inherit;color:inherit}
 .wrap{max-width:1400px;margin:0 auto;padding:20px 20px 70px;position:relative;z-index:1}
+
+/* ── Zen wallpaper mode ────────────────────────────────────────────
+   The page paints nothing; cards, bars and dialogs stay opaque enough
+   to read on top of whatever the browser is showing behind. */
+html.zen{--page-bg:transparent;--page-img:none;background:transparent}
+html.zen body{background-color:transparent;background-image:none}
+html.zen body::after{display:none}          /* terminal scanlines would tint it */
+html.zen .dayhead,html.zen .corner,html.zen .tcol{background:transparent}
+/* break bars are nearly transparent by design; over an unknown wallpaper they
+   need a backing or the label sits straight on the picture */
+html.zen .breakbar{background:color-mix(in srgb,var(--panel) 88%,transparent)}
+html.zen [data-skin="paper"] .grid::before{opacity:.55}
 
 header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
@@ -289,7 +304,7 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 [data-skin="terminal"] .prog i,[data-skin="blueprint"] .prog i{border-radius:0}
 
 /* ---------- grid (time-positioned) ---------- */
-.grid{display:grid;column-gap:9px;row-gap:0;
+.grid{display:grid;gap:var(--cell-gap,5px);
       grid-template-columns:58px repeat(var(--days,5),minmax(0,1fr));align-items:start}
 .corner{}
 .dayhead{padding:2px 2px 9px;text-align:center}
@@ -307,11 +322,11 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 /* ── compact: blocks are absolutely placed inside each day column ── */
 [data-view="compact"] .lesson,
 [data-view="compact"] .breakbar{position:absolute;left:0;right:0;width:auto}
-[data-view="compact"] .grid{column-gap:9px}
+
 
 /* ── full: one row per period, cells sized by content ─────────────── */
 [data-view="full"] .grid{
-  column-gap:10px;row-gap:9px;align-items:stretch;
+  align-items:stretch;
   grid-template-columns:86px repeat(var(--days,5),minmax(0,1fr));
 }
 [data-view="full"] .cell{display:flex;min-height:92px}
@@ -464,6 +479,16 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .custrow select{background:var(--panel-2);border:1px solid var(--line);
                 border-radius:8px;padding:6px 8px;font-size:13px}
 .custrow input.sw{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex:none}
+.adv{margin-top:10px;border-top:1px solid var(--line);padding-top:4px}
+.adv>summary{
+  cursor:pointer;list-style:none;padding:7px 0;font-size:12px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  display:flex;align-items:center;gap:7px;
+}
+.adv>summary::-webkit-details-marker{display:none}
+.adv>summary::before{content:"B8";transition:transform .18s;display:inline-block;font-size:11px}
+.adv[open]>summary::before{transform:rotate(90deg)}
+.adv>summary:hover{color:var(--text)}
 /* frosted mode for the custom skin */
 .customglass .lesson,.customglass .nowcard,.customglass .breakbar,
 .customglass .btn,.customglass .weekbtn,.customglass dialog,
@@ -564,26 +589,31 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>
       <div class="custrow"><span>Text</span><input type="color" id="c_text"></div>
       <div class="custrow"><span>Accent</span><input type="color" id="c_accent"></div>
-      <div class="custrow"><span>Border</span><input type="color" id="c_line"></div>
       <div class="custrow"><span>Corner radius</span><input type="range" id="c_radius" min="0" max="26" step="1"><b id="c_radius_v"></b></div>
-      <div class="custrow"><span>Subject tint</span><input type="range" id="c_tint" min="0" max="70" step="1"><b id="c_tint_v"></b></div>
-      <div class="custrow"><span>Second colour</span><input type="color" id="c_accent2"></div>
-      <div class="custrow"><span>Backdrop</span>
-        <select id="c_backdrop">
-          <option value="solid">Solid</option>
-          <option value="gradient">Soft gradient</option>
-          <option value="mesh">Colour mesh</option>
-        </select></div>
-      <div class="custrow"><span>Frosted glass</span>
-        <input type="checkbox" id="c_glass" class="sw"></div>
-      <div class="custrow"><span>Shadow</span>
-        <select id="c_shadow">
-          <option value="none">None</option>
-          <option value="soft">Soft</option>
-          <option value="hard">Hard offset</option>
-        </select></div>
-      <div class="custrow"><span>Border width</span><input type="range" id="c_border" min="0" max="4" step="1"><b id="c_border_v"></b></div>
       <div class="custrow"><span>Typeface</span><select id="c_font"></select></div>
+
+      <details class="adv" id="c_adv">
+        <summary>Advanced</summary>
+        <div class="custrow"><span>Border colour</span><input type="color" id="c_line"></div>
+        <div class="custrow"><span>Second colour</span><input type="color" id="c_accent2"></div>
+        <div class="custrow"><span>Backdrop</span>
+          <select id="c_backdrop">
+            <option value="solid">Solid</option>
+            <option value="gradient">Soft gradient</option>
+            <option value="mesh">Colour mesh</option>
+          </select></div>
+        <div class="custrow"><span>Frosted glass</span>
+          <input type="checkbox" id="c_glass" class="sw"></div>
+        <div class="custrow"><span>Shadow</span>
+          <select id="c_shadow">
+            <option value="none">None</option>
+            <option value="soft">Soft</option>
+            <option value="hard">Hard offset</option>
+          </select></div>
+        <div class="custrow"><span>Border width</span><input type="range" id="c_border" min="0" max="4" step="1"><b id="c_border_v"></b></div>
+        <div class="custrow"><span>Subject tint</span><input type="range" id="c_tint" min="0" max="70" step="1"><b id="c_tint_v"></b></div>
+      </details>
+
       <div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>
       <div class="hint">Saved on this device only.</div>
     </div>
@@ -622,6 +652,10 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_outline" class="sw"></div>
       <div class="custrow"><span>Progress bar on Now</span>
         <input type="checkbox" id="t_progress" class="sw"></div>
+      <div class="custrow"><span>Transparent background</span>
+        <input type="checkbox" id="t_zen" class="sw"></div>
+      <div class="hint">Drops the page background so a browser wallpaper
+        (Zen and similar) shows through. Cards stay readable.</div>
     </div>
 
     <div class="field">
@@ -664,7 +698,7 @@ const SKINS = [
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* ═══ storage ═══ */
-const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view',
+const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
              weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -678,6 +712,7 @@ let showWeekLetter = get(LS.weekletter, true);
 let showOutline    = get(LS.outline, true);
 let showProgress   = get(LS.progress, true);
 let viewMode       = get(LS.view, 'compact');
+let zenMode        = get(LS.zen, false);
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
 const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
@@ -707,6 +742,7 @@ function inkFor(hex){
 function applyLook(){
   const root = document.documentElement;
   root.setAttribute('data-view', viewMode);
+  root.classList.toggle('zen', zenMode);
   root.classList.toggle('nooutline', !showOutline);
   root.setAttribute('data-skin', skin);
   root.setAttribute('data-mode', mode);
@@ -1080,6 +1116,10 @@ function bellFor(dayKey, slotKey){
 }
 
 /* ═══ colours ═══ */
+/* Gap between cells -- used for the CSS grid gap and for the vertical inset
+   on time-positioned blocks, so both axes are provably identical. */
+const CELL_GAP = 6;
+
 const PALETTE = ['#e0542e','#3b6ef6','#12a594','#a259e6','#e5a000','#d6409f','#2f9e44','#0e7490','#c2410c','#7c3aed','#0891b2','#be123c'];
 const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h*31 + s.charCodeAt(i))|0; return Math.abs(h); };
 const colourFor = s => colours[s] || PALETTE[hash(String(s)) % PALETTE.length];
@@ -1216,6 +1256,7 @@ function render(){
   grid.style.setProperty('--days', idx.length);
   grid.innerHTML = '';
 
+  grid.style.setProperty('--cell-gap', CELL_GAP + 'px');
   const ctx = { idx, grid, days, cycles, week, showingCurrentWeek, todayKey, now, nowMin };
   if (viewMode === 'full') renderFull(ctx); else renderCompact(ctx);
 }
@@ -1267,7 +1308,7 @@ function lessonCard(e, start, end, isToday, nowMin, date, tall){
 /* ── compact: positioned by clock time ─────────────────────────────── */
 function renderCompact(ctx){
   const PX = 1.45;              /* pixels per minute */
-  const GAP = 4;                /* keeps touching blocks visually separate */
+  const GAP = CELL_GAP;         /* same value the CSS grid uses between columns */
   const columns = ctx.idx.map(i => ({ i, cyc: ctx.cycles[i], blocks: blocksFor(ctx.cycles[i]) }));
   const all = columns.flatMap(c => c.blocks);
   const dayStart = all.length ? Math.min(...all.map(b => b.start)) : 8*60;
@@ -1558,7 +1599,14 @@ function renderToggles(){
   $('t_weekletter').checked = showWeekLetter;
   $('t_outline').checked    = showOutline;
   $('t_progress').checked   = showProgress;
+  $('t_zen').checked        = zenMode;
 }
+$('t_zen').addEventListener('change', ev => {
+  zenMode = ev.target.checked;
+  set(LS.zen, zenMode);
+  document.documentElement.classList.toggle('zen', zenMode);
+  render();
+});
 [['t_weekletter','weekletter'],['t_outline','outline'],['t_progress','progress']]
   .forEach(([id, key]) => {
     $(id).addEventListener('change', ev => {
