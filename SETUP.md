@@ -102,13 +102,24 @@ without opening Settings. The endpoint is not exposed anywhere in the UI.
 ### Reading the grid
 
 The timetable is a repeating ten-day cycle, so the grid shows **weekday names and
-the week letter, not calendar dates**. Nothing is greyed out by default — every
-day is equally readable.
+the week letter, not calendar dates**. Nothing is greyed out by default.
 
+- The **Week A / Week B** button is the only week control — tap it to swap. A
+  brief `Currently: Week B` appears beside it so it is always clear which week is
+  really on today.
+- The current day is highlighted only while the current week is on screen.
 - The lesson happening right now is outlined.
-- **Today** is a toggle: press it to dim everything except the current day, press
-  again to bring the whole week back.
-- The **Now** card carries a progress bar for the running period plus the time left.
+- **Today** is a toggle: press it to jump to the current week and dim everything
+  except today; press again to bring the whole week back.
+- The **Now** card has a progress bar and the time remaining. **Next** rolls into
+  following days — after the last lesson it shows tomorrow's first. On Friday
+  afternoon it reads *Enjoy the weekend* with Monday's opener underneath.
+
+Rows come from the school's bell schedule, so **recess, both lunch halves and
+Wednesday's assembly** each get their own row. Wednesday runs to a different
+bell — assembly at 10:45 pushes recess to 11:05 and lunch 35 minutes earlier —
+so each cell shows that day's real times and the left gutter shows the common
+time in italics when days disagree.
 
 ---
 
@@ -119,7 +130,7 @@ day is equally readable.
 | Skin | Look |
 |---|---|
 | **Plain** *(default)* | White on white, grey on grey in dark mode. Subject colour reduced to a thin edge |
-| **Custom** | Your own colours, corner radius, subject tint and typeface. Saved on the device |
+| **Custom** *(last in the picker)* | Your own colours, backdrop, frosted glass, shadows, borders, radius, tint and typeface. Saved on the device |
 | **Notebook** | Ruled paper, lessons as taped-on post-it notes, handwriting (Caveat / Patrick Hand) |
 | **Glass** | Frosted translucent tiles over a colour mesh, Space Grotesk |
 | **Swiss** | Stark white, hairline rules, coloured top bars, no shadows |
@@ -132,10 +143,26 @@ and Blueprint have one fixed palette each (the light/dark buttons grey out).
 
 Subject colours are editable per subject and stored per device.
 
-Selecting **Custom** reveals colour pickers for background, card, text, accent and
-border, plus sliders for corner radius and subject tint and a typeface menu. It
-writes to `localStorage` on that device only, and the accent's text colour is
-chosen automatically for contrast.
+Selecting **Custom** (bottom-right of the picker) reveals:
+
+| Control | Does |
+|---|---|
+| Background / Card / Text / Border | base palette |
+| Accent + Second colour | highlights, and the two colours used by the backdrop |
+| Backdrop | solid, soft gradient, or colour mesh |
+| Frosted glass | translucent blurred cards, as in the Glass skin |
+| Shadow | none, soft, or hard offset |
+| Border width | 0–4px |
+| Corner radius / Subject tint / Typeface | shape and type |
+
+It writes to `localStorage` on that device only, and the accent's text colour is
+chosen automatically for contrast. Frosted glass + colour mesh reproduces the
+Glass look with your own palette.
+
+### Room numbers
+
+⚙ → Room numbers picks how `CR1007.118` appears: **CR1007.118** (default),
+**CR1007**, or **118**. The lesson detail sheet always shows the full code.
 
 ### What the cards show
 
