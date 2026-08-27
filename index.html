@@ -438,13 +438,11 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
-      <label>Your own school login</label>
+      <label>Custom credentials</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
         Optional. With this set, your timetable is fetched using your account
-        instead of the site owner's. Stored <b>only on this device</b> and sent
-        to the timetable service with each request — anyone who can run scripts
-        on this site, or read this browser profile, could read it. Leave blank
-        to use the shared login.
+        instead of the shared credentials Stored <b>only on this device</b>. 
+        Leave blank to use the shared login.
       </div>
       <div class="custrow"><span>School email</span>
         <input type="text" id="cr_email" class="crin" spellcheck="false"
@@ -490,8 +488,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_progress" class="sw"></div>
       <div class="custrow"><span>Transparent background</span>
         <input type="checkbox" id="t_zen" class="sw"></div>
-      <div class="hint">Drops the page background so a browser wallpaper
-        (Zen and similar) shows through. Cards stay readable.</div>
+      <div class="hint">Drops the page background for compatibility 
+        with custom browser wallpapers like Zen.</div>
     </div>
 
     <div class="field">

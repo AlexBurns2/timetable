@@ -131,7 +131,7 @@ const BUILD = {};
 
 /* ── Snake ─────────────────────────────────────────────────────── */
 BUILD.snake = host => {
-  head(host, 'Snake', 'Arrow keys or WASD. Eat the dot, avoid yourself.',
+  head(host, 'Snake', 'Arrow keys or WASD. Eat dot, no eat snake',
        '<canvas id="cv" width="320" height="320"></canvas>');
   const ctx = $('cv').getContext('2d'), N = 16, S = 20;
   let snake = [{x:8,y:8}], dir = {x:1,y:0}, next = dir,
@@ -286,7 +286,7 @@ BUILD.mines = host => {
 
 /* ── Typing race ───────────────────────────────────────────────── */
 BUILD.typing = host => {
-  head(host, 'Typing race', 'Type the line. The clock starts on your first keystroke.',
+  head(host, 'Typing race', 'The clock starts on your first keystroke.',
        '<div id="typetext"></div><input id="typein" autocomplete="off" spellcheck="false" placeholder="Start typing…">');
   const LINES = [
     'the quick brown fox jumps over the lazy dog',
@@ -324,7 +324,7 @@ BUILD.typing = host => {
 
 /* ── Reaction test ─────────────────────────────────────────────── */
 BUILD.react = host => {
-  head(host, 'Reaction', 'Wait for green, then click as fast as you can. Best of five.',
+  head(host, 'Reaction', 'Best of five.',
        '<div id="react">Click to start</div>');
   const el = $('react');
   let state = 'idle', t = null, at = 0, times = [];
