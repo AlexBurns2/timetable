@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Andre Kwok — Timetable</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+:root{--glass:rgba(255,255,255,.55);--glass-hi:rgba(255,255,255,.75);--line:rgba(255,255,255,.6);--ink:#1d1d1f;--ink-soft:rgba(29,29,31,.55);--ink-faint:rgba(29,29,31,.35);--accent:#0a84ff;--cat-math:#FFA9A6;--cat-english:#FEFB99;--cat-technology:#FFD5F4;--cat-music:#E0C0F4;--cat-science:#A4FEFF;--cat-hsie:#D7CDB3;--cat-languages:#f2884b;--cat-va:#FFADFF;--cat-other:#A5D5FF;--break-bg:rgba(255,255,255,.28);--break-line:rgba(29,29,31,.12);--page-bg:transparent;--column-gap:8px;--shadow-panel:0 10px 34px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.06);--shadow-card:0 8px 22px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.08);--shadow-card-hover:0 14px 32px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.1)}
+[data-theme=dark]{--glass:rgba(32,32,36,.5);--glass-hi:rgba(44,44,48,.62);--line:rgba(255,255,255,.12);--ink:#f5f5f7;--ink-soft:rgba(245,245,247,.62);--ink-faint:rgba(245,245,247,.38);--accent:#409cff;--break-bg:rgba(255,255,255,.05);--break-line:rgba(255,255,255,.14);--cat-math:#FF8582;--cat-english:#FFF06A;--cat-technology:#FF9BDD;--cat-music:#CFA8F4;--cat-science:#76F0F2;--cat-hsie:#D8C99F;--cat-languages:#FF9B63;--cat-other:#82C5FF;--cat-va:#E56BE5;--page-bg:radial-gradient(circle at 20% 10%,rgba(255,255,255,.05),transparent 55%),rgba(16,17,20,.78);--shadow-panel:0 10px 34px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.35);--shadow-card:0 8px 22px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.3);--shadow-card-hover:0 14px 32px rgba(0,0,0,.55),0 4px 10px rgba(0,0,0,.35)}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{margin:0;padding:0;min-height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Inter,sans-serif;color:var(--ink);min-height:100vh;padding:36px 18px 70px;background:var(--page-bg);background-attachment:fixed}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:18px 26px;margin-bottom:26px;background:var(--glass);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-panel)}
+.title-block .eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px}
+h1{font-weight:700;font-size:clamp(24px,4vw,32px);margin:0;letter-spacing:-.02em;color:var(--ink)}
+.sub{font-size:13px;color:var(--ink-soft);margin-top:3px;font-weight:400}
+.emailInputWrap{margin-top:10px}
+#emailInput{font-family:inherit;font-size:12px;padding:6px 10px;border-radius:10px;border:1.5px solid rgba(29,29,31,.25);background:rgba(255,255,255,.9);color:var(--ink);width:260px;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:border-color .2s ease,box-shadow .2s ease}
+[data-theme=dark] #emailInput{border:1px solid var(--line);background:var(--glass-hi);box-shadow:none}
+#emailInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.12)}
+#emailInput::placeholder{color:var(--ink-faint)}
+.emailHint{font-size:10.5px;color:var(--ink-faint);margin-top:5px}
+.bellRow{display:flex;gap:12px;flex-wrap:wrap;flex:1 1 320px;min-width:0}
+.bell{background:var(--glass-hi);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--line);border-radius:18px;padding:12px 18px;min-width:210px;flex:3 1 260px;box-shadow:var(--shadow-panel)}
+.bell.next{opacity:.92;flex:1 1 150px;min-width:150px}
+.bell .eyebrow2{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--accent);margin-bottom:3px}
+.bell .line1{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.bell .line2{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.bellProgressWrap{display:flex;align-items:center;gap:8px;margin-top:4px}
+.bellProgressTime{font-size:10.5px;font-weight:600;color:var(--accent);flex-shrink:0}
+.bellProgressTrack{flex:1;height:5px;border-radius:999px;background:rgba(10,132,255,.16);overflow:hidden}
+.bellProgressFill{height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 1s linear}
+.bellRoomLine{font-size:11px;color:var(--ink-soft);margin-top:3px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bellTimeLeft{font-weight:600;color:var(--ink-soft);flex-shrink:0}
+.refreshRow{display:flex;align-items:center;gap:8px;margin-top:8px}
+.refreshBtn{font-family:inherit;font-size:11px;font-weight:600;color:var(--accent);background:transparent;border:1px solid var(--line);border-radius:10px;padding:4px 9px;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.refreshBtn:hover{background:var(--glass-hi)}
+.refreshBtn:active{transform:scale(.95)}
+.refreshBtn[disabled]{opacity:.5;cursor:default}
+.updatedAt{font-size:10.5px;color:var(--ink-faint)}
+.statusBanner{text-align:center;font-size:13px;font-weight:500;padding:12px 18px;margin-bottom:20px;border-radius:16px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);color:var(--ink-soft)}
+.statusBanner.error{color:#c23b2f;border-color:rgba(194,59,47,.35)}
+.arrowbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s ease,background .2s ease;flex-shrink:0}
+.arrowbtn:hover{background:var(--ink);color:#fff;transform:scale(1.06)}
+.arrowbtn:active{transform:scale(.94)}
+.weekSwitch{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
+.weekSwitch .label{min-width:90px;text-align:center;font-weight:600;font-size:15px}
+.daySwitch{display:none;align-items:center;justify-content:center;gap:14px;margin-bottom:18px;padding:10px 16px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:18px}
+.daySwitch .label{text-align:center;min-width:130px}
+.daySwitch .day{font-weight:700;font-size:15px}
+.daySwitch .week{font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+.grid{display:grid;grid-template-columns:60px repeat(5,1fr);column-gap:var(--column-gap);row-gap:var(--column-gap)}
+.grid .head{font-weight:600;font-size:14px;text-align:center;padding:10px 4px 14px;color:var(--ink)}
+.grid .head small{display:block;font-weight:400;font-size:10.5px;color:var(--ink-faint);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+.grid .head.today{color:var(--accent)}
+.grid .head .day-name{display:inline-block}
+.grid .head.today .day-name:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
+.day-column{position:relative;min-height:610px;background:rgba(255,255,255,.025);border-radius:18px}
+[data-theme=dark] .day-column{background:rgba(255,255,255,.015)}
+.time-column{position:relative;min-height:610px}
+.time-label{position:absolute;left:0;right:0;transform:translateY(-50%);text-align:center;font-size:10.5px;font-weight:500;color:var(--ink-faint)}
+.cls{position:absolute;left:0;right:0;background:var(--glass-hi);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid var(--line);border-radius:16px;margin-top:3px;margin-bottom:3px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;box-shadow:var(--shadow-card);transition:transform .25s ease,box-shadow .25s ease;overflow:hidden}
+.cls:hover{transform:translateY(-2px);box-shadow:var(--shadow-card-hover)}
+.cls .code{font-weight:700;font-size:12px;color:var(--ink);padding-left:12px;position:relative}
+.cls .code:before{content:"";position:absolute;left:0;top:3px;width:6px;height:6px;border-radius:50%;background:var(--c,var(--accent))}
+.cls .teacher,.cls .room{font-size:11px;color:var(--ink-soft)}
+.cls .teacher{margin-top:3px}
+.cls .room{margin-top:auto}
+.cls.now{outline:2px solid var(--accent);outline-offset:0}
+.grid[data-outline-colors="1"] .cls:not(.now){outline:2.5px solid var(--c,var(--accent));outline-offset:0}
+.grid[data-outline-colors="1"] .cls.now{background:color-mix(in srgb,var(--accent) 22%,var(--glass-hi))}
+.cls{cursor:pointer}
+.break-card{position:absolute;left:0;right:0;margin-top:3px;margin-bottom:3px;display:flex;align-items:center;justify-content:center;background:var(--break-bg);border:1px dashed var(--break-line);border-radius:16px;color:var(--ink-faint)}
+.break-card .tag{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.themeToggle{position:static;flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--shadow-panel);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:transform .2s ease}
+.themeToggle:hover{transform:scale(1.08)}
+.themeToggle:active{transform:scale(.92)}
+.header-buttons{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+.schoolToggle{order:2}
+.infoToggle{order:1;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--shadow-panel);display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;text-decoration:none;transition:transform .2s ease,background .2s ease}
+.infoToggle:hover{transform:scale(1.08);background:var(--glass)}
+.infoToggle:active{transform:scale(.92)}
+.infoOverlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+.infoOverlay.open{opacity:1;visibility:visible}
+.infoPopup{width:min(620px,100%);max-height:min(1000px,90vh);display:flex;flex-direction:column;background:var(--glass-hi);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--line);border-radius:26px;box-shadow:0 24px 70px rgba(0,0,0,.25),0 4px 16px rgba(0,0,0,.12);transform:translateY(12px) scale(.97);transition:transform .25s ease}
+.infoOverlay.open .infoPopup{transform:translateY(0) scale(1)}
+.infoPopupHeader{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px}
+.infoPopupTitle{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.infoPopupSubtitle{font-size:11px;color:var(--ink-faint);margin-top:3px}
+.infoClose{width:32px;height:32px;border:0;border-radius:50%;background:var(--glass);color:var(--ink);font-family:inherit;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease}
+.infoClose:hover{background:var(--glass-hi);transform:scale(1.08)}
+.infoClose:active{transform:scale(.92)}
+.infoPopupBody{padding:0 22px 18px;overflow-y:auto}
+.settingsSection{margin-bottom:18px}
+.settingsHeading{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+.settingsSubheading{font-size:13px;font-weight:700;color:var(--ink);margin:16px 0 8px}
+.settingsSubheading:first-child{margin-top:0}
+.settingsRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--glass);border:1px solid var(--line);border-radius:14px}
+.settingsRow+.settingsRow{margin-top:8px}
+.settingsRow .settingsLabel{font-size:13.5px;font-weight:600;color:var(--ink)}
+.settingsRow .settingsHint{font-size:11px;color:var(--ink-faint);margin-top:2px}
+.switch{position:relative;width:42px;height:25px;flex-shrink:0;border-radius:999px;border:1px solid var(--line);background:var(--glass-hi);cursor:pointer;transition:background .2s ease}
+.switch .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .2s ease}
+.switch.on{background:var(--accent);border-color:var(--accent)}
+.switch.on .knob{transform:translateX(17px)}
+.infoTextarea{width:100%;min-height:280px;max-height:55vh;resize:none;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--glass);color:var(--ink);font-family:inherit;font-size:14px;line-height:1.55;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.infoTextarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.12)}
+.infoTextarea::placeholder{color:var(--ink-faint)}
+.infoPopupFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
+.infoSaved{font-size:11px;color:var(--ink-faint)}
+.infoClear,.infoRepoLink{border:1px solid var(--line);border-radius:10px;padding:7px 11px;background:var(--glass);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.infoClear{color:var(--ink-soft)}
+.infoRepoLink{color:var(--accent);text-decoration:none}
+.infoClear:hover,.infoRepoLink:hover{background:var(--glass-hi)}
+.infoClear:active,.infoRepoLink:active{transform:scale(.96)}
+.infoFooterActions{display:flex;align-items:center;gap:8px}
+.settingsRowBg{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.bgField{display:flex;flex-direction:column;gap:4px}
+.bgField label{font-size:10.5px;font-weight:600;color:var(--ink-soft)}
+.hexInput{width:96px;font-family:inherit;font-size:12px;padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--glass);color:var(--ink);outline:none;transition:border-color .2s ease}
+.hexInput:focus{border-color:var(--accent)}
+.bgResetBtn{margin-left:auto}
+.detailRow{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--break-line)}
+.detailRow:last-child{border-bottom:none}
+.detailLabel{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint)}
+.detailValue{font-size:13.5px;color:var(--ink);text-align:right}
+.detailStudentsNote{font-size:12px;color:var(--ink-faint);margin-top:6px;font-style:italic}
+.segRow{display:flex;gap:6px}
+.segBtn{flex:1;padding:8px 6px;border-radius:10px;border:1px solid var(--line);background:var(--glass);color:var(--ink-soft);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;transition:background .2s ease,color .2s ease}
+.segBtn[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+@media(max-width:760px){
+  .header-buttons{flex-direction:row}
+  .infoOverlay{align-items:flex-end;padding:12px}
+  .infoPopup{max-height:90vh;border-radius:24px}
+  .infoTextarea{min-height:240px}
+  header{flex-direction:column;text-align:center}
+  .title-block{display:flex;flex-direction:column;align-items:center;width:100%}
+  #emailInput{width:min(260px,90vw)}
+  .bellRow{align-self:stretch;width:100%;max-width:420px;margin:0 auto;flex:none}
+  .header-buttons{width:100%;justify-content:center;margin-top:12px}
+  .bell{text-align:center}
+  .refreshRow{justify-content:center}
+  .weekSwitch{display:none}
+  .daySwitch{display:flex}
+  .grid{grid-template-columns:1fr;column-gap:0;row-gap:10px}
+  .grid .corner-cell,.grid .head,.grid>.time-column,.grid>.day-column{display:none}
+  .grid>.day-column[data-active="1"]{display:block;grid-column:1;max-width:420px;margin:0 auto;width:100%}
+  .daySwitch .day.today{color:var(--accent)}
+  .daySwitch .day.today:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="title-block">
+<div class="eyebrow">MSC Unofficial</div>
+<h1 id="profileName">Andre Kwok</h1>
+<div class="emailInputWrap">
+<input type="text" id="emailInput" placeholder="Enter the start of your email" autocomplete="username">
+<div class="emailHint">Enter the start of your email and press Enter</div>
+</div>
+</div>
+<div class="bellRow">
+<div class="bell">
+<div class="eyebrow2">NOW</div>
+<div class="line1" id="bellLine1">Loading…</div>
+<div class="line2" id="bellLine2"></div>
+<div class="bellProgressWrap" id="bellProgressWrap" style="display:none">
+<span class="bellProgressTime" id="bellProgressStart"></span>
+<div class="bellProgressTrack"><div class="bellProgressFill" id="bellProgressFill"></div></div>
+<span class="bellProgressTime" id="bellProgressEnd"></span>
+</div>
+<div class="bellRoomLine" id="bellRoomLine">
+<span id="bellRoomText"></span>
+<span class="bellTimeLeft" id="bellTimeLeft"></span>
+</div>
+<div class="refreshRow">
+<button class="refreshBtn" id="refreshBtn" title="Refresh timetable">↻ Refresh</button>
+<span class="updatedAt" id="updatedAt"></span>
+</div>
+</div>
+<div class="bell next">
+<div class="eyebrow2">NEXT</div>
+<div class="line1" id="nextLine1">Loading…</div>
+<div class="line2" id="nextLine2"></div>
+<div class="bellRoomLine" id="nextRoomLine">
+<span id="nextRoomText"></span>
+<span class="bellTimeLeft" id="nextTimeLeft"></span>
+</div>
+</div>
+</div>
+<div class="header-buttons">
+<button class="infoToggle" id="infoToggle" aria-label="Open settings" title="Settings">⚙️</button>
+<a class="infoToggle schoolToggle" href="home.html" target="_blank" rel="noopener noreferrer" aria-label="Open school intranet" title="School intranet">🏫</a>
+</div>
+</header>
+
+<div class="infoOverlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoPopupTitle">
+<div class="infoPopup">
+<div class="infoPopupHeader">
+<div>
+<div class="infoPopupTitle" id="infoPopupTitle">Settings & notes</div>
+<div class="infoPopupSubtitle"></div>
+</div>
+<button class="infoClose" id="infoClose" aria-label="Close information">×</button>
+</div>
+<div class="infoPopupBody">
+<div class="settingsSection">
+<div class="settingsHeading">Settings</div>
+
+<div class="settingsSubheading">Display</div>
+<div class="settingsRow">
+<div><div class="settingsLabel">Dark mode</div></div>
+<div class="switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark mode"><div class="knob"></div></div>
+</div>
+<div class="settingsRow">
+<div><div class="settingsLabel">Colour outlines</div><div class="settingsHint">Outline each period in its subject colour</div></div>
+<div class="switch" id="outlineSwitch" role="switch" aria-checked="false" aria-label="Toggle colour outlines"><div class="knob"></div></div>
+</div>
+<div class="settingsRow">
+<div><div class="settingsLabel">Progress bar</div><div class="settingsHint">Show a progress bar in the NOW box instead of a time range</div></div>
+<div class="switch" id="progressSwitch" role="switch" aria-checked="true" aria-label="Toggle progress bar"><div class="knob"></div></div>
+</div>
+<div class="settingsRow" style="flex-direction:column;align-items:stretch;gap:8px">
+<div><div class="settingsLabel">Room numbers</div><div class="settingsHint">How room codes like CR1007.118 are shown</div></div>
+<div class="segRow" id="roomModeRow">
+<button type="button" class="segBtn" data-room="full">Full</button>
+<button type="button" class="segBtn" data-room="building">New</button>
+<button type="button" class="segBtn" data-room="number">Old</button>
+</div>
+</div>
+<div class="settingsRow settingsRowBg">
+<div class="bgField">
+<label for="lightBgInput">Light Background Colour</label>
+<input type="text" id="lightBgInput" class="hexInput" placeholder="#ffffff" maxlength="7">
+</div>
+<div class="bgField">
+<label for="darkBgInput">Dark Background Colour</label>
+<input type="text" id="darkBgInput" class="hexInput" placeholder="#101114" maxlength="7">
+</div>
+<button class="infoClear bgResetBtn" id="bgReset" type="button">Reset</button>
+</div>
+</div>
+<div class="settingsHeading">Notes</div>
+<textarea class="infoTextarea" id="infoTextarea" placeholder="Hi its me Andre Kwok, this is my timetable replacement I made because the original one looks so bad and the amazing OGGYP Timetable (Which inspired mine) is no longer available. This was made with a lot of love, dedication and too much vibe-coding.
+
+You can write extra information here, such as notes about your classes, reminders, or anything else you want to keep track of. This information is automatically saved in your browser and will be available the next time you visit this page.
+
+Please don't show this to anyone in the tech block cause I'm scared I'll be executed on the spot for exploiting the schools API.
+
+If anything breaks or if you have any suggestions for me to add, please contanct me at andretnk49@gmail.com, or anywhere else."></textarea>
+<div class="infoPopupFooter">
+<span class="infoSaved" id="infoSaved"></span>
+<div class="infoFooterActions">
+<a class="infoRepoLink" id="infoRepoLink" href="https://github.com/Pugmeowla/timetable" target="_blank" rel="noopener noreferrer" title="View source and README on GitHub">Github</a>
+<button class="infoClear" id="exportCalendarBtn" type="button" title="Download the currently shown timetable (Week A and Week B) as an .ics calendar file">Export .ics</button>
+<button class="infoClear" id="infoClear" type="button">Clear</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="infoOverlay" id="periodOverlay" role="dialog" aria-modal="true" aria-labelledby="periodPopupTitle">
+<div class="infoPopup">
+<div class="infoPopupHeader">
+<div>
+<div class="infoPopupTitle" id="periodPopupTitle">Period details</div>
+<div class="infoPopupSubtitle" id="periodPopupSubtitle"></div>
+</div>
+<button class="infoClose" id="periodClose" aria-label="Close period details">×</button>
+</div>
+<div class="infoPopupBody" id="periodPopupBody"></div>
+</div>
+</div>
+
+<div class="statusBanner" id="statusBanner" style="display:none"></div>
+<div class="weekSwitch" id="weekSwitch">
+<button class="arrowbtn" id="weekPrev">‹</button>
+<div class="label" id="weekLabel">Week A</div>
+<button class="arrowbtn" id="weekNext">›</button>
+</div>
+<div class="daySwitch" id="daySwitch">
+<button class="arrowbtn" id="dayPrev">‹</button>
+<div class="label"><div class="day" id="dayLabel">Monday</div><div class="week" id="dayWeekLabel">Week A</div></div>
+<button class="arrowbtn" id="dayNext">›</button>
+</div>
+<div class="grid" id="grid"></div>
+</div>
+
+<script>const CONFIG = {
+  API_BASE: "https://intranet.nbscmanlys-h.schools.nsw.edu.au",
+  TOKEN_URL: "https://timetable-ivory-nine.vercel.app/api/token",
+  USER_EMAIL: "andre.kwok2@education.nsw.gov.au",
+};
+
+function decodeJwtPayload(token) {
+  try {
+    const part = token.split(".")[1];
+    return JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return null;
+  }
+}
+
+async function loadToken() {
+  const cached = JSON.parse(localStorage.getItem("school-token") || "null");
+  const REFRESH_BEFORE = 60 * 60 * 1000;
+
+  if (cached?.token && cached?.exp) {
+    const expiresAt = cached.exp * 1000;
+    if (Date.now() < expiresAt - REFRESH_BEFORE) return cached;
+  }
+
+  const res = await fetch(CONFIG.TOKEN_URL, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new ApiError("Unable to obtain the school token.", res.status);
+  }
+
+  const data = await res.json();
+
+  if (!data.token) {
+    throw new ApiError("Token server did not return a token.", 502);
+  }
+
+  const payload = decodeJwtPayload(data.token);
+
+  if (!payload?.exp) {
+    throw new ApiError("Token did not contain an expiration time.", 502);
+  }
+
+  const auth = {
+    token: data.token,
+    type: data.type || "Bearer",
+    iat: payload.iat || null,
+    exp: payload.exp,
+  };
+
+  localStorage.setItem("school-token", JSON.stringify(auth));
+  return auth;
+}
+
+function formatName(name) {
+  if (!name) return "";
+  return name
+    .split(/[-\s]+/)
+    .filter(Boolean)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function nameFromEmail(email) {
+  if (!email || !email.includes("@")) return null;
+  const parts = email.split("@")[0].split(".");
+  if (parts.length < 2) return null;
+  return formatName(parts[0]) + " " + formatName(parts[1].replace(/\d+$/, ""));
+}
+
+function getCurrentEmail() {
+  const input = document.getElementById("emailInput");
+  let username = input.value.trim();
+  if (!username) username = CONFIG.USER_EMAIL.split("@")[0];
+  if (username.includes("@")) username = username.split("@")[0];
+  return username + "@education.nsw.gov.au";
+}
+
+function updateProfileDisplay(email, apiProfile = null) {
+  let name = null;
+
+  if (apiProfile) {
+    name =
+      apiProfile.FullName ||
+      apiProfile.fullName ||
+      [apiProfile.FirstName || apiProfile.firstName, apiProfile.LastName || apiProfile.lastName]
+        .filter(Boolean)
+        .join(" ");
+  }
+
+  if (!name) name = nameFromEmail(email);
+  if (!name) name = "Timetable";
+
+  document.getElementById("profileName").textContent = name;
+  document.title = `${name} — Timetable`;
+}
+
+function timeToMin(value) {
+  if (value == null || value === "") return 0;
+
+  let str = String(value).trim(),
+    ampm = str.match(/\s*(AM|PM)$/i);
+  str = str.replace(/\s*(AM|PM)$/i, "");
+
+  const parts = str.split(":");
+  let h = Number(parts[0]),
+    m = Number(parts[1] || 0);
+
+  if (ampm) {
+    const pm = ampm[1].toLowerCase() === "pm";
+    if (pm && h < 12) h += 12;
+    if (!pm && h === 12) h = 0;
+  }
+
+  return h * 60 + m;
+}
+
+function formatTime(value) {
+  if (!value) return "";
+
+  const total = timeToMin(value),
+    h = Math.floor(total / 60),
+    m = total % 60;
+
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+}
+
+function getPeriodNumber(value) {
+  if (value == null) return "";
+
+  const str = String(value).trim(),
+    match = str.match(/(?:period|p)?\s*(\d+)/i);
+
+  return match ? match[1] : str;
+}
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function apiGet(path, retry = true) {
+  const { type, token } = await loadToken();
+
+  if (!token) {
+    throw new ApiError("Unable to obtain a school token.", 401);
+  }
+
+  let res;
+
+  try {
+    res = await fetch(CONFIG.API_BASE + path, {
+      method: "GET",
+      headers: {
+        Authorization: `${type} ${token}`,
+        Accept: "application/json",
+      },
+    });
+  } catch (e) {
+    throw new ApiError("Network error contacting the school intranet.", 0);
+  }
+
+  if (res.status === 401 && retry) {
+    localStorage.removeItem("school-token");
+    return apiGet(path, false);
+  }
+
+  if (res.status === 401) {
+    throw new ApiError("The new school session was rejected.", 401);
+  }
+
+  if (res.status === 403) {
+    throw new ApiError("Access to this timetable was denied.", 403);
+  }
+
+  if (res.status === 404) {
+    throw new ApiError("That endpoint was not found.", 404);
+  }
+
+  if (!res.ok) {
+    throw new ApiError(`Unexpected server response (${res.status}).`, res.status);
+  }
+
+  const contentType = res.headers.get("Content-Type") || "";
+
+  if (!contentType.includes("application/json")) {
+    throw new ApiError("Server returned an unexpected response format.", res.status);
+  }
+
+  return await res.json();
+}
+
+const timetableService = (() => {
+  let cache = {
+    email: null,
+    timetable: null,
+    bellTimes: null,
+    startDate: null,
+    profile: null,
+    fetchedAt: null,
+  };
+
+  async function loadAll(force = false) {
+    const email = getCurrentEmail();
+
+    if (cache.email !== email) {
+      cache = {
+        email,
+        timetable: null,
+        bellTimes: null,
+        startDate: null,
+        profile: null,
+        fetchedAt: null,
+      };
+    }
+
+    if (cache.timetable && !force) return cache;
+
+    const [timetable, bellTimes, startDateRes, profile] = await Promise.all([
+      apiGet(`/api/timetable/${encodeURIComponent(email)}`),
+      apiGet("/api/timetable/bell-times").catch(() => null),
+      apiGet("/api/timetable/settings/start-date").catch(() => null),
+      apiGet(`/api/user/${encodeURIComponent(email)}`).catch(() => null),
+    ]);
+
+    console.log("Timetable API response:", timetable);
+    console.log("Bell times API response:", bellTimes);
+
+    cache = {
+      email,
+      timetable,
+      bellTimes,
+      startDate: startDateRes,
+      profile,
+      fetchedAt: new Date(),
+    };
+
+    return cache;
+  }
+
+  return {
+    loadAll,
+    get current() {
+      return cache;
+    },
+  };
+})();
+
+const CYCLE_DAYS = ["MonA", "TueA", "WedA", "ThuA", "FriA", "MonB", "TueB", "WedB", "ThuB", "FriB"];
+
+const DAY_LABELS = {
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday",
+};
+
+const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri"];
+const WEEK_ORDER = ["A", "B"];
+
+function extractDateString(data) {
+  if (!data) return null;
+  if (typeof data === "string") return data;
+
+  return data.startDate || data.StartDate || data.date || data.Date || null;
+}
+
+function getTimetableDay(date, cycleStartDate) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const dow = d.getDay();
+
+  if (dow === 0 || dow === 6 || !cycleStartDate) return null;
+
+  const start = new Date(
+    cycleStartDate.getFullYear(),
+    cycleStartDate.getMonth(),
+    cycleStartDate.getDate(),
+  );
+
+  if (d < start) return null;
+
+  let elapsed = 0;
+  const cursor = new Date(start);
+
+  while (cursor < d) {
+    cursor.setDate(cursor.getDate() + 1);
+
+    const cdow = cursor.getDay();
+
+    if (cdow !== 0 && cdow !== 6) elapsed++;
+  }
+
+  return CYCLE_DAYS[elapsed % 10];
+}
+
+function dayNameToParts(dayName) {
+  const clean = String(dayName).trim();
+  const week = clean.slice(-1).toUpperCase();
+
+  return {
+    dayKey: clean.slice(0, -1).toLowerCase().slice(0, 3),
+    week,
+  };
+}
+
+const FALLBACK_COLORS = ["var(--cat-other)"];
+const subjectColorMap = {};
+
+function colorForSubject(key) {
+  const normalized = String(key || "").toLowerCase();
+
+  if (
+    normalized.includes("math") ||
+    normalized.includes("mah") ||
+    normalized.includes("ma") ||
+    normalized.includes("extension") ||
+    normalized.includes("mx1") ||
+    normalized.includes("mx2") ||
+    normalized.includes("max1") ||
+    normalized.includes("max2") ||
+    /\bmat\b/.test(normalized)
+  )
+    return "var(--cat-math)";
+
+  if (normalized.includes("english") || normalized.includes("enx") || normalized.includes("ena"))
+    return "var(--cat-english)";
+
+  if (
+    normalized.includes("engineer") ||
+    normalized.includes("software") ||
+    normalized === "se" ||
+    normalized.includes("-se-") ||
+    normalized.includes("se") ||
+    normalized.startsWith("se-") ||
+    normalized.endsWith("-se") ||
+    normalized.includes("technology") ||
+    normalized.includes("textile") ||
+    normalized.includes("graphics") ||
+    normalized.includes("digital") ||
+    normalized.includes("computing") ||
+    normalized.includes("ict") ||
+    normalized.includes("design") ||
+    normalized.includes("engst")
+  )
+    return "var(--cat-technology)";
+
+  if (normalized.includes("mu")) return "var(--cat-music)";
+
+  if (
+    normalized.includes("physics") ||
+    normalized.includes("phys") ||
+    normalized.includes("phy") ||
+    normalized.includes("chem") ||
+    normalized.includes("chm") ||
+    normalized.includes("biology") ||
+    normalized.includes("bio") ||
+    normalized.includes("science")
+  )
+    return "var(--cat-science)";
+
+  if (
+    normalized.includes("history") ||
+    normalized.includes("geography") ||
+    normalized.includes("geo") ||
+    normalized.includes("business") ||
+    normalized.includes("legal") ||
+    normalized.includes("economics") ||
+    normalized.includes("commerce") ||
+    normalized.includes("society") ||
+    normalized.includes("hsie")
+  )
+    return "var(--cat-hsie)";
+
+  if (
+    normalized.includes("french") ||
+    normalized.includes("japanese") ||
+    normalized.includes("jap") ||
+    normalized.includes("chinese") ||
+    normalized.includes("spanish") ||
+    normalized.includes("german") ||
+    normalized.includes("italian") ||
+    normalized.includes("korean") ||
+    normalized.includes("language") ||
+    normalized.includes("lote")
+  )
+    return "var(--cat-languages)";
+
+  if (
+    normalized.includes("visual arts") ||
+    normalized.includes("visual-art") ||
+    normalized.includes("visualart") ||
+    normalized.includes("va") ||
+    normalized.includes("art")
+  )
+    return "var(--cat-va)";
+
+  if (!subjectColorMap[normalized]) {
+    const index = Object.keys(subjectColorMap).length % FALLBACK_COLORS.length;
+
+    subjectColorMap[normalized] = FALLBACK_COLORS[index];
+  }
+
+  return subjectColorMap[normalized];
+}
+
+function findBellTime(bellTimes, dayName, period) {
+  if (!Array.isArray(bellTimes)) return null;
+
+  const p = getPeriodNumber(period).toLowerCase();
+  const d = String(dayName ?? "")
+    .trim()
+    .toLowerCase();
+
+  let match = bellTimes.find((bt) => {
+    const bp = getPeriodNumber(
+      bt.Period ?? bt.period ?? bt.PeriodNumber ?? bt.periodNumber ?? "",
+    ).toLowerCase();
+
+    const bd = String(bt.DayName ?? bt.dayName ?? "")
+      .trim()
+      .toLowerCase();
+
+    return bp === p && bd === d;
+  });
+
+  if (!match) {
+    match = bellTimes.find((bt) => {
+      const bp = getPeriodNumber(
+        bt.Period ?? bt.period ?? bt.PeriodNumber ?? bt.periodNumber ?? "",
+      ).toLowerCase();
+
+      return !(bt.DayName || bt.dayName) && bp === p;
+    });
+  }
+
+  if (!match) {
+    match = bellTimes.find((bt) => {
+      const bp = getPeriodNumber(
+        bt.Period ?? bt.period ?? bt.PeriodNumber ?? bt.periodNumber ?? "",
+      ).toLowerCase();
+
+      return bp === p;
+    });
+  }
+
+  if (!match) return null;
+
+  return {
+    start:
+      match.StartTime ??
+      match.startTime ??
+      match.Start ??
+      match.start ??
+      match.BellStart ??
+      match.bellStart ??
+      null,
+
+    end:
+      match.EndTime ??
+      match.endTime ??
+      match.End ??
+      match.end ??
+      match.BellEnd ??
+      match.bellEnd ??
+      null,
+  };
+}
+
+function classifyPeriod(value) {
+  const p = String(value ?? "").toLowerCase();
+
+  if (p.includes("assembly")) return "assembly";
+  if (p.includes("recess") || p === "break") return "break";
+  if (p.includes("lunch")) return "lunch";
+
+  return "class";
+}
+
+function getTeacher(raw) {
+  const value =
+    raw.TeacherName ??
+    raw.teacherName ??
+    raw.TeacherFullName ??
+    raw.teacherFullName ??
+    raw.Teacher ??
+    raw.teacher ??
+    raw.StaffName ??
+    raw.staffName ??
+    "";
+
+  if (!value) return "";
+
+  if (typeof value === "string" && value.includes("@")) {
+    const parts = value.split("@")[0].split(".");
+
+    if (parts.length >= 2) {
+      return formatName(parts[0]) + " " + formatName(parts[1].replace(/\d+$/, ""));
+    }
+
+    return formatName(value.split("@")[0].replace(/\d+$/, ""));
+  }
+
+  return String(value).trim();
+}
+
+function getRoom(raw) {
+  const value =
+    raw.RoomNumber ??
+    raw.roomNumber ??
+    raw.RoomName ??
+    raw.roomName ??
+    raw.Room ??
+    raw.room ??
+    raw.Location ??
+    raw.location ??
+    raw.RoomCode ??
+    raw.roomCode ??
+    "";
+
+  return value ? String(value).trim() : "";
+}
+
+/* "CR1007.118" -> "118" (Legacy), "CR1007" (New), "CR1007.118" (Full) */
+function splitRoom(r) {
+  const s = String(r || "").trim();
+  const dot = s.lastIndexOf(".");
+  if (dot === -1) return { building: s, number: s, full: s };
+  return { building: s.slice(0, dot).trim() || s, number: s.slice(dot + 1).trim() || s, full: s };
+}
+
+let roomMode = localStorage.getItem("timetable-room-mode") || "full";
+
+function roomLabel(room) {
+  if (!room) return "";
+  const parts = splitRoom(room);
+  return roomMode === "building" ? parts.building : roomMode === "number" ? parts.number : parts.full;
+}
+
+function getSubject(raw) {
+  return (
+    raw.SubjectName ||
+    raw.Subject ||
+    raw.subjectName ||
+    raw.subject ||
+    raw.Class ||
+    raw.class ||
+    "Class"
+  );
+}
+
+function getCode(raw, subject) {
+  return (
+    raw.ClassCode || raw.classCode || raw.Code || raw.code || raw.Class || raw.class || subject
+  );
+}
+
+function getRawTimes(raw, bellTimes, dayName, period) {
+  const bt = findBellTime(bellTimes, dayName, period);
+
+  return {
+    start: bt?.start || raw.StartTime || raw.startTime || raw.Start || raw.start || null,
+
+    end: bt?.end || raw.EndTime || raw.endTime || raw.End || raw.end || null,
+  };
+}
+
+function normalizeTimetable(rawTimetable, bellTimes) {
+  const grouped = {
+    A: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+    B: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+  };
+
+  if (!Array.isArray(rawTimetable)) return grouped;
+
+  for (const raw of rawTimetable) {
+    const dayName = raw.DayName || raw.dayName;
+
+    if (!dayName) continue;
+
+    const { dayKey, week } = dayNameToParts(dayName);
+
+    if (!grouped[week] || !grouped[week][dayKey]) continue;
+
+    const period = raw.Period ?? raw.period;
+    const kind = classifyPeriod(period);
+    const times = getRawTimes(raw, bellTimes, dayName, period);
+
+    const subject = getSubject(raw);
+    const code = getCode(raw, subject);
+
+    if (kind !== "class") {
+      grouped[week][dayKey].push({
+        kind,
+        start: times.start,
+        end: times.end,
+        raw,
+      });
+
+      continue;
+    }
+
+    grouped[week][dayKey].push({
+      kind: "class",
+      code,
+      periodNumber: getPeriodNumber(period),
+      subjKey: String(subject + " " + code)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-"),
+      subjName: subject,
+      teacher: getTeacher(raw),
+      room: getRoom(raw),
+      start: times.start,
+      end: times.end,
+      raw,
+    });
+  }
+
+  for (const week of WEEK_ORDER) {
+    for (const day of DAY_ORDER) {
+      const rows = grouped[week][day];
+      const isWednesday = day === "wed";
+
+      const breaks = isWednesday
+        ? [
+            { kind: "assembly", start: "10:45", end: "11:05" },
+            { kind: "break", start: "11:05", end: "11:25" },
+            { kind: "lunch", start: "12:20", end: "13:00" },
+          ]
+        : [
+            { kind: "break", start: "10:45", end: "11:05" },
+            { kind: "lunch", start: "12:55", end: "13:35" },
+          ];
+
+      for (const br of breaks) {
+        const exists = rows.some(
+          (item) =>
+            item.start &&
+            item.end &&
+            timeToMin(item.start) === timeToMin(br.start) &&
+            timeToMin(item.end) === timeToMin(br.end),
+        );
+
+        if (!exists) rows.push(br);
+      }
+
+      if (isWednesday) {
+        const wednesdayTimes = {
+          0: { start: "07:55", end: "08:55" },
+          1: { start: "08:55", end: "09:50" },
+          2: { start: "09:50", end: "10:45" },
+          3: { start: "11:25", end: "12:20" },
+          4: { start: "13:00", end: "13:55" },
+          5: { start: "13:55", end: "14:50" },
+        };
+
+        for (const item of rows) {
+          if (item.kind !== "class") continue;
+
+          const period = item.periodNumber || getPeriodNumber(item.raw?.Period || item.raw?.period);
+
+          if (wednesdayTimes[period]) {
+            item.start = wednesdayTimes[period].start;
+            item.end = wednesdayTimes[period].end;
+          }
+        }
+      }
+
+      rows.sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
+
+      const withGaps = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        withGaps.push(rows[i]);
+
+        const cur = rows[i];
+        const nxt = rows[i + 1];
+
+        if (cur && nxt && cur.end && nxt.start) {
+          const gap = timeToMin(nxt.start) - timeToMin(cur.end);
+
+          if (gap >= 20) {
+            withGaps.push({
+              kind: "free",
+              start: cur.end,
+              end: nxt.start,
+            });
+          }
+        }
+      }
+
+      grouped[week][day] = withGaps;
+    }
+  }
+
+  return grouped;
+}
+
+const grid = document.getElementById("grid");
+const statusBanner = document.getElementById("statusBanner");
+const refreshBtn = document.getElementById("refreshBtn");
+const updatedAtEl = document.getElementById("updatedAt");
+
+let SCHEDULE = {
+  A: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+  B: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+};
+
+let TODAY_CYCLE_DAY = null;
+let CYCLE_START_DATE = null;
+let currentWeek = "A";
+let seqIndex = 0;
+
+function setStatus(message, isError = false) {
+  if (!message) {
+    statusBanner.style.display = "none";
+    return;
+  }
+
+  statusBanner.style.display = "block";
+  statusBanner.className = "statusBanner" + (isError ? " error" : "");
+
+  statusBanner.textContent = message;
+}
+
+const DEFAULT_TIMELINE_START = 7 * 60 + 55;
+const NO_PERIOD_0_START = 8 * 60 + 55;
+const TIMELINE_END = 14 * 60 + 50;
+const TIMELINE_HEIGHT = 610;
+
+let TIMELINE_START = DEFAULT_TIMELINE_START;
+
+function hasPeriodZero() {
+  const week = SCHEDULE[currentWeek];
+
+  if (!week) return false;
+
+  return DAY_ORDER.some((day) =>
+    (week[day] || []).some((item) => item.kind === "class" && String(item.periodNumber) === "0"),
+  );
+}
+
+function hasPeriodZeroForDay(week, day) {
+  return (SCHEDULE[week]?.[day] || []).some(
+    (item) => item.kind === "class" && String(item.periodNumber) === "0",
+  );
+}
+
+function timelineTop(time, timelineStart) {
+  const base = timelineStart !== undefined ? timelineStart : TIMELINE_START;
+
+  return ((timeToMin(time) - base) / (TIMELINE_END - base)) * TIMELINE_HEIGHT;
+}
+
+function timelineHeight(start, end, timelineStart) {
+  const base = timelineStart !== undefined ? timelineStart : TIMELINE_START;
+
+  return ((timeToMin(end) - timeToMin(start)) / (TIMELINE_END - base)) * TIMELINE_HEIGHT;
+}
+
+function isToday(week, dayKey) {
+  if (!TODAY_CYCLE_DAY) return false;
+
+  return TODAY_CYCLE_DAY === dayKey.charAt(0).toUpperCase() + dayKey.slice(1) + week;
+}
+
+function isNowActive(week, dayKey, start, end) {
+  if (!isToday(week, dayKey) || !start || !end) return false;
+
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  return cur >= timeToMin(start) && cur < timeToMin(end);
+}
+
+function build() {
+  grid.innerHTML = "";
+
+  TIMELINE_START = hasPeriodZero() ? DEFAULT_TIMELINE_START : NO_PERIOD_0_START;
+
+  const mobileDay = DAY_ORDER[seqIndex % 5];
+
+  const mobileWeek = WEEK_ORDER[Math.floor(seqIndex / 5)];
+
+  const isMobileView = window.matchMedia("(max-width:760px)").matches;
+
+  const corner = document.createElement("div");
+
+  corner.className = "corner-cell";
+  grid.appendChild(corner);
+
+  DAY_ORDER.forEach((day) => {
+    const head = document.createElement("div");
+
+    head.className =
+      "head" +
+      (isToday(currentWeek, day) ? " today" : "") +
+      (day === mobileDay ? " mobile-active" : "");
+
+    head.innerHTML = `<span class="day-name">${DAY_LABELS[day]}</span><small>Week ${currentWeek}</small>`;
+
+    grid.appendChild(head);
+  });
+
+  const timeColumn = document.createElement("div");
+
+  timeColumn.className = "time-column";
+
+  const labels = [
+    "07:55",
+    "08:55",
+    "09:50",
+    "10:45",
+    "11:05",
+    "11:25",
+    "12:20",
+    "12:55",
+    "13:00",
+    "13:35",
+    "13:55",
+    "14:50",
+  ];
+
+  const MIN_LABEL_GAP = 15;
+  let lastLabelTop = -Infinity;
+
+  [...new Set(labels)]
+    .filter((time) => timeToMin(time) >= TIMELINE_START && timeToMin(time) <= TIMELINE_END)
+    .sort((a, b) => timeToMin(a) - timeToMin(b))
+    .forEach((time) => {
+      let top = timelineTop(time);
+
+      if (top - lastLabelTop < MIN_LABEL_GAP) {
+        top = lastLabelTop + MIN_LABEL_GAP;
+      }
+
+      lastLabelTop = top;
+
+      const label = document.createElement("div");
+
+      label.className = "time-label";
+      label.style.top = `${top}px`;
+      label.textContent = time;
+
+      timeColumn.appendChild(label);
+    });
+
+  grid.appendChild(timeColumn);
+
+  DAY_ORDER.forEach((day) => {
+    const column = document.createElement("div");
+
+    column.className = "day-column";
+    column.dataset.day = day;
+    column.dataset.active = day === mobileDay ? "1" : "0";
+
+    const rows = SCHEDULE[currentWeek]?.[day] || [];
+
+    const dayTimelineStart =
+      isMobileView && day === mobileDay
+        ? hasPeriodZeroForDay(currentWeek, day)
+          ? DEFAULT_TIMELINE_START
+          : NO_PERIOD_0_START
+        : TIMELINE_START;
+
+    rows.forEach((item) => {
+      if (!item.start || !item.end) return;
+
+      const start = timeToMin(item.start);
+      const end = timeToMin(item.end);
+
+      if (end <= start) return;
+
+      const top = timelineTop(item.start, dayTimelineStart);
+
+      const height = timelineHeight(item.start, item.end, dayTimelineStart);
+
+      const VERTICAL_GAP = 8;
+
+      const finalTop = top + VERTICAL_GAP / 2;
+
+      const finalHeight = Math.max(height - VERTICAL_GAP, 20);
+
+      if (item.kind !== "class") {
+        const breakCard = document.createElement("div");
+
+        breakCard.className = "break-card";
+
+        breakCard.style.top = `${finalTop}px`;
+
+        breakCard.style.height = `${finalHeight}px`;
+
+        let label = "Break";
+
+        if (item.kind === "lunch") label = "Lunch";
+        if (item.kind === "break") label = "Recess";
+        if (item.kind === "assembly") label = "Assembly";
+        if (item.kind === "free") label = "Free period";
+
+        breakCard.innerHTML = `<span class="tag">${label}</span>`;
+
+        column.appendChild(breakCard);
+        return;
+      }
+
+      const card = document.createElement("div");
+
+      card.className = "cls";
+
+      card.style.top = `${finalTop}px`;
+
+      card.style.height = `${finalHeight}px`;
+
+      card.style.setProperty("--c", colorForSubject(item.subjKey));
+
+      if (isNowActive(currentWeek, day, item.start, item.end)) {
+        card.classList.add("now");
+      }
+
+      const code = document.createElement("div");
+
+      code.className = "code";
+      code.textContent = item.code || "";
+
+      card.appendChild(code);
+
+      if (item.teacher) {
+        const teacher = document.createElement("div");
+
+        teacher.className = "teacher";
+        teacher.textContent = item.teacher;
+
+        card.appendChild(teacher);
+      }
+
+      if (item.room) {
+        const room = document.createElement("div");
+
+        room.className = "room";
+        room.textContent = roomLabel(item.room);
+
+        card.appendChild(room);
+      }
+
+      card.addEventListener("click", () => openPeriodDetails(item, day));
+
+      column.appendChild(card);
+    });
+
+    grid.appendChild(column);
+  });
+
+  document.getElementById("weekLabel").textContent = `Week ${currentWeek}`;
+
+  const dayLabelEl = document.getElementById("dayLabel");
+
+  dayLabelEl.textContent = DAY_LABELS[mobileDay];
+
+  dayLabelEl.classList.toggle("today", isToday(mobileWeek, mobileDay));
+
+  document.getElementById("dayWeekLabel").textContent = `Week ${mobileWeek}`;
+}
+
+/* Find the next class after `cur` minutes today, or roll forward through
+   the 10-day cycle (MonA..FriB) to the first day that has a class. */
+function findNextClassInfo() {
+  if (!TODAY_CYCLE_DAY) return null;
+
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  const { dayKey, week } = dayNameToParts(TODAY_CYCLE_DAY);
+  const todayRows = (SCHEDULE[week]?.[dayKey] || [])
+    .filter((r) => r.kind === "class" && r.start)
+    .sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
+
+  let next = todayRows.find((r) => timeToMin(r.start) > cur);
+  let when = null;
+
+  if (!next) {
+    const startIdx = CYCLE_DAYS.indexOf(TODAY_CYCLE_DAY);
+
+    for (let step = 1; step <= 10 && !next; step++) {
+      const code = CYCLE_DAYS[(startIdx + step) % 10];
+      const parts = dayNameToParts(code);
+
+      const rows = (SCHEDULE[parts.week]?.[parts.dayKey] || [])
+        .filter((r) => r.kind === "class" && r.start)
+        .sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
+
+      if (rows.length) {
+        next = rows[0];
+        when = step === 1 && dayKey !== "fri" ? "Tomorrow" : DAY_LABELS[parts.dayKey];
+      }
+    }
+  }
+
+  return next ? { item: next, when } : null;
+}
+
+function updateBell() {
+  const line1 = document.getElementById("bellLine1");
+
+  const line2 = document.getElementById("bellLine2");
+
+  const progressWrap = document.getElementById("bellProgressWrap");
+
+  const progressFill = document.getElementById("bellProgressFill");
+
+  const progressStart = document.getElementById("bellProgressStart");
+
+  const progressEnd = document.getElementById("bellProgressEnd");
+
+  const roomLine = document.getElementById("bellRoomLine");
+
+  const roomText = document.getElementById("bellRoomText");
+
+  const timeLeftEl = document.getElementById("bellTimeLeft");
+
+  const nextLine1 = document.getElementById("nextLine1");
+  const nextLine2 = document.getElementById("nextLine2");
+  const nextRoomText = document.getElementById("nextRoomText");
+  const nextTimeLeft = document.getElementById("nextTimeLeft");
+
+  progressWrap.style.display = "none";
+  roomLine.style.display = "none";
+  roomText.textContent = "";
+  timeLeftEl.textContent = "";
+  line2.style.display = "";
+
+  if (!TODAY_CYCLE_DAY) {
+    line1.textContent = "No school today";
+    line2.textContent = "Weekend or outside term";
+    nextLine1.textContent = "—";
+    nextLine2.textContent = "";
+    nextRoomText.textContent = "";
+    nextTimeLeft.textContent = "";
+    return;
+  }
+
+  const { dayKey, week } = dayNameToParts(TODAY_CYCLE_DAY);
+
+  const now = new Date();
+
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  const rows = SCHEDULE[week]?.[dayKey] || [];
+
+  let current = null;
+
+  for (const item of rows) {
+    if (!item.start || !item.end) continue;
+
+    const s = timeToMin(item.start);
+    const e = timeToMin(item.end);
+
+    if (cur >= s && cur < e) {
+      if (item.kind === "class") {
+        current = item;
+      }
+
+      break;
+    }
+  }
+
+  if (current) {
+    line1.textContent = `${current.code} — ${current.subjName}`;
+
+    if (progressBarEnabled) {
+      line2.style.display = "none";
+
+      progressWrap.style.display = "flex";
+
+      progressStart.textContent = formatTime(current.start);
+
+      progressEnd.textContent = formatTime(current.end);
+
+      const s = timeToMin(current.start);
+      const e = timeToMin(current.end);
+      const pct = Math.min(100, Math.max(0, ((cur - s) / (e - s)) * 100));
+
+      progressFill.style.width = `${pct}%`;
+
+      roomLine.style.display = "flex";
+      roomText.textContent = roomLabel(current.room) || "";
+
+      const minsLeft = Math.max(0, e - cur);
+      timeLeftEl.textContent = `${minsLeft} min left`;
+    } else {
+      line2.textContent =
+        `${formatTime(current.start)} - ${formatTime(current.end)}` +
+        `${current.room ? ` · ${roomLabel(current.room)}` : ""}`;
+    }
+  } else {
+    line1.textContent = "No class right now";
+    line2.textContent = DAY_LABELS[dayKey];
+  }
+
+  const nextInfo = findNextClassInfo();
+
+  if (!nextInfo) {
+    nextLine1.textContent = "Nothing scheduled";
+    nextLine2.textContent = "";
+    nextRoomText.textContent = "";
+    nextTimeLeft.textContent = "";
+    return;
+  }
+
+  const { item: next, when } = nextInfo;
+
+  nextLine1.textContent = `${next.code} — ${next.subjName}`;
+  nextLine2.textContent = (when ? `${when} · ` : "") + formatTime(next.start);
+  nextRoomText.textContent = roomLabel(next.room) || "";
+
+  if (!when) {
+    const minsUntil = Math.max(0, timeToMin(next.start) - cur);
+    nextTimeLeft.textContent = `in ${minsUntil} min`;
+  } else {
+    nextTimeLeft.textContent = "";
+  }
+}
+
+async function refresh(force = false) {
+  refreshBtn.disabled = true;
+
+  setStatus(force ? "Refreshing timetable…" : "Loading timetable…");
+
+  const currentEmail = getCurrentEmail();
+
+  updateProfileDisplay(currentEmail);
+
+  try {
+    const { timetable, bellTimes, startDate, profile, fetchedAt } =
+      await timetableService.loadAll(force);
+
+    const cycleStart = extractDateString(startDate);
+
+    const cycleStartDate = cycleStart ? new Date(cycleStart) : null;
+
+    CYCLE_START_DATE = cycleStartDate;
+
+    TODAY_CYCLE_DAY = cycleStartDate ? getTimetableDay(new Date(), cycleStartDate) : null;
+
+    if (TODAY_CYCLE_DAY) {
+      currentWeek = TODAY_CYCLE_DAY.slice(-1);
+
+      const dayIdx = DAY_ORDER.indexOf(TODAY_CYCLE_DAY.slice(0, 3).toLowerCase());
+
+      seqIndex = WEEK_ORDER.indexOf(currentWeek) * 5 + (dayIdx >= 0 ? dayIdx : 0);
+    }
+
+    SCHEDULE = normalizeTimetable(timetable, bellTimes);
+
+    updateProfileDisplay(currentEmail, profile);
+
+    setStatus(null);
+
+    if (fetchedAt) {
+      updatedAtEl.textContent = `Updated ${fetchedAt.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+    }
+
+    build();
+    updateBell();
+  } catch (err) {
+    const message =
+      err instanceof ApiError
+        ? `Unable to load timetable. ${err.message}`
+        : "Unable to load timetable. An unexpected error occurred.";
+
+    setStatus(message, true);
+
+    console.error("Timetable load failed:", err);
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+const emailInput = document.getElementById("emailInput");
+
+const savedUsername = localStorage.getItem("timetable-username");
+
+emailInput.value = savedUsername || CONFIG.USER_EMAIL.split("@")[0];
+
+function submitEmail() {
+  let username = emailInput.value.trim();
+
+  if (!username) return;
+
+  if (username.includes("@")) {
+    username = username.split("@")[0];
+  }
+
+  CONFIG.USER_EMAIL = username + "@education.nsw.gov.au";
+
+  localStorage.setItem("timetable-username", username);
+
+  refresh(true);
+}
+
+emailInput.addEventListener("change", submitEmail);
+
+emailInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+  submitEmail();
+});
+
+refreshBtn.addEventListener("click", () => refresh(true));
+
+document.getElementById("weekPrev").addEventListener("click", () => {
+  currentWeek = currentWeek === "A" ? "B" : "A";
+
+  seqIndex = WEEK_ORDER.indexOf(currentWeek) * 5 + (seqIndex % 5);
+
+  build();
+});
+
+document.getElementById("weekNext").addEventListener("click", () => {
+  currentWeek = currentWeek === "A" ? "B" : "A";
+
+  seqIndex = WEEK_ORDER.indexOf(currentWeek) * 5 + (seqIndex % 5);
+
+  build();
+});
+
+document.getElementById("dayPrev").addEventListener("click", () => {
+  seqIndex = (seqIndex + 9) % 10;
+
+  currentWeek = WEEK_ORDER[Math.floor(seqIndex / 5)];
+
+  build();
+});
+
+document.getElementById("dayNext").addEventListener("click", () => {
+  seqIndex = (seqIndex + 1) % 10;
+
+  currentWeek = WEEK_ORDER[Math.floor(seqIndex / 5)];
+
+  build();
+});
+
+refresh(false);
+
+setInterval(() => {
+  updateBell();
+  build();
+}, 60000);
+
+const LIGHT_BG_KEY = "timetable-bg-light";
+const DARK_BG_KEY = "timetable-bg-dark";
+
+const lightBgInput = document.getElementById("lightBgInput");
+
+const darkBgInput = document.getElementById("darkBgInput");
+
+const bgReset = document.getElementById("bgReset");
+
+function isValidHex(value) {
+  return /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(value.trim());
+}
+
+function normalizeHex(value) {
+  value = value.trim();
+  return value.startsWith("#") ? value : `#${value}`;
+}
+
+function applyCustomBg() {
+  const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+
+  const stored =
+    theme === "dark" ? localStorage.getItem(DARK_BG_KEY) : localStorage.getItem(LIGHT_BG_KEY);
+
+  if (stored && isValidHex(stored)) {
+    document.body.style.backgroundColor = normalizeHex(stored);
+  } else {
+    document.body.style.backgroundColor = "";
+  }
+}
+
+const savedLightBg = localStorage.getItem(LIGHT_BG_KEY);
+
+const savedDarkBg = localStorage.getItem(DARK_BG_KEY);
+
+if (savedLightBg) lightBgInput.value = savedLightBg;
+if (savedDarkBg) darkBgInput.value = savedDarkBg;
+
+lightBgInput.addEventListener("input", () => {
+  const value = lightBgInput.value.trim();
+
+  if (!value) {
+    localStorage.removeItem(LIGHT_BG_KEY);
+    applyCustomBg();
+    return;
+  }
+
+  if (!isValidHex(value)) return;
+
+  localStorage.setItem(LIGHT_BG_KEY, value);
+  applyCustomBg();
+});
+
+darkBgInput.addEventListener("input", () => {
+  const value = darkBgInput.value.trim();
+
+  if (!value) {
+    localStorage.removeItem(DARK_BG_KEY);
+    applyCustomBg();
+    return;
+  }
+
+  if (!isValidHex(value)) return;
+
+  localStorage.setItem(DARK_BG_KEY, value);
+  applyCustomBg();
+});
+
+bgReset.addEventListener("click", () => {
+  localStorage.removeItem(LIGHT_BG_KEY);
+  localStorage.removeItem(DARK_BG_KEY);
+  lightBgInput.value = "";
+  darkBgInput.value = "";
+  applyCustomBg();
+});
+
+const themeSwitch = document.getElementById("themeSwitch");
+
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+
+  const isDark = theme === "dark";
+
+  themeSwitch.classList.toggle("on", isDark);
+
+  themeSwitch.setAttribute("aria-checked", String(isDark));
+
+  if (typeof applyCustomBg === "function") {
+    applyCustomBg();
+  }
+}
+
+const stored = localStorage.getItem("timetable-theme");
+
+applyTheme(stored || "light");
+
+mq.addEventListener("change", (event) => {
+  if (!localStorage.getItem("timetable-theme")) {
+    applyTheme(event.matches ? "dark" : "light");
+  }
+});
+
+themeSwitch.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+
+  localStorage.setItem("timetable-theme", next);
+
+  applyTheme(next);
+});
+
+const outlineSwitch = document.getElementById("outlineSwitch");
+
+const OUTLINE_STORAGE_KEY = "timetable-outline-colors";
+
+let outlineByColor = localStorage.getItem(OUTLINE_STORAGE_KEY) !== "0";
+
+function applyOutlineSetting() {
+  grid.dataset.outlineColors = outlineByColor ? "1" : "0";
+
+  outlineSwitch.classList.toggle("on", outlineByColor);
+
+  outlineSwitch.setAttribute("aria-checked", String(outlineByColor));
+}
+
+applyOutlineSetting();
+
+outlineSwitch.addEventListener("click", () => {
+  outlineByColor = !outlineByColor;
+
+  localStorage.setItem(OUTLINE_STORAGE_KEY, outlineByColor ? "1" : "0");
+
+  applyOutlineSetting();
+});
+
+const progressSwitch = document.getElementById("progressSwitch");
+
+const PROGRESS_STORAGE_KEY = "timetable-progress-bar";
+
+let progressBarEnabled = localStorage.getItem(PROGRESS_STORAGE_KEY) !== "0";
+
+function applyProgressSetting() {
+  progressSwitch.classList.toggle("on", progressBarEnabled);
+
+  progressSwitch.setAttribute("aria-checked", String(progressBarEnabled));
+}
+
+applyProgressSetting();
+
+progressSwitch.addEventListener("click", () => {
+  progressBarEnabled = !progressBarEnabled;
+
+  localStorage.setItem(PROGRESS_STORAGE_KEY, progressBarEnabled ? "1" : "0");
+
+  applyProgressSetting();
+  updateBell();
+});
+
+/* ---------- Display: room number mode ---------- */
+const roomModeButtons = [...document.querySelectorAll("#roomModeRow .segBtn")];
+
+function applyRoomModeSetting() {
+  roomModeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.room === roomMode)));
+}
+
+applyRoomModeSetting();
+
+roomModeButtons.forEach((b) => {
+  b.addEventListener("click", () => {
+    roomMode = b.dataset.room;
+    localStorage.setItem("timetable-room-mode", roomMode);
+    applyRoomModeSetting();
+    build();
+    updateBell();
+  });
+});
+
+function getStudents(raw) {
+  const value =
+    raw.Students ??
+    raw.students ??
+    raw.StudentList ??
+    raw.studentList ??
+    raw.Enrolments ??
+    raw.enrolments ??
+    raw.ClassStudents ??
+    raw.classStudents ??
+    null;
+
+  if (!Array.isArray(value) || !value.length) return null;
+
+  return value.map((s) => {
+    if (typeof s === "string") return s;
+
+    return (
+      s.FullName ||
+      s.fullName ||
+      [s.FirstName || s.firstName, s.LastName || s.lastName].filter(Boolean).join(" ") ||
+      s.Name ||
+      s.name ||
+      "Unknown student"
+    );
+  });
+}
+
+const periodOverlay = document.getElementById("periodOverlay");
+
+const periodClose = document.getElementById("periodClose");
+
+const periodPopupSubtitle = document.getElementById("periodPopupSubtitle");
+
+const periodPopupBody = document.getElementById("periodPopupBody");
+
+function detailRow(label, value) {
+  return `<div class="detailRow"><div class="detailLabel">${label}</div><div class="detailValue">${value}</div></div>`;
+}
+
+function openPeriodDetails(item, dayKey) {
+  periodPopupSubtitle.textContent = `${DAY_LABELS[dayKey]} · Week ${currentWeek}`;
+
+  let html = "";
+
+  html += detailRow("Class code", item.code || "");
+
+  if (item.periodNumber) html += detailRow("Period", item.periodNumber);
+
+  html += detailRow("Time", `${formatTime(item.start)} - ${formatTime(item.end)}`);
+
+  if (item.teacher) html += detailRow("Teacher", item.teacher);
+
+  if (item.room) html += detailRow("Room", roomLabel(item.room));
+
+  const students = getStudents(item.raw || {});
+
+  
+
+  periodPopupBody.innerHTML = html;
+
+  periodOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closePeriodDetails() {
+  periodOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+periodClose.addEventListener("click", closePeriodDetails);
+
+periodOverlay.addEventListener("click", (event) => {
+  if (event.target === periodOverlay) {
+    closePeriodDetails();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && periodOverlay.classList.contains("open")) {
+    closePeriodDetails();
+  }
+});
+
+const infoBtn = document.getElementById("infoToggle");
+
+const infoOverlay = document.getElementById("infoOverlay");
+
+const infoClose = document.getElementById("infoClose");
+
+const infoTextarea = document.getElementById("infoTextarea");
+
+const infoClear = document.getElementById("infoClear");
+
+const infoSaved = document.getElementById("infoSaved");
+
+const INFO_STORAGE_KEY = "timetable-extra-information";
+
+const savedInfo = localStorage.getItem(INFO_STORAGE_KEY);
+
+if (savedInfo !== null) {
+  infoTextarea.value = savedInfo;
+}
+
+function openInfoPopup() {
+  infoOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+
+  setTimeout(() => infoTextarea.focus(), 150);
+}
+
+function closeInfoPopup() {
+  infoOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+infoBtn.addEventListener("click", openInfoPopup);
+
+infoClose.addEventListener("click", closeInfoPopup);
+
+infoOverlay.addEventListener("click", (event) => {
+  if (event.target === infoOverlay) {
+    closeInfoPopup();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && infoOverlay.classList.contains("open")) {
+    closeInfoPopup();
+  }
+});
+
+infoTextarea.addEventListener("input", () => {
+  localStorage.setItem(INFO_STORAGE_KEY, infoTextarea.value);
+
+  infoSaved.textContent = "Saved automatically";
+});
+
+infoClear.addEventListener("click", () => {
+  if (!confirm("Clear all information?")) return;
+
+  infoTextarea.value = "";
+
+  localStorage.removeItem(INFO_STORAGE_KEY);
+
+  infoSaved.textContent = "Cleared";
+});
+
+/* ---------- Export as calendar (.ics) ---------- */
+
+function icsEscape(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
+}
+
+function icsFold(line) {
+  // RFC5545 line folding at 75 octets, continuation lines start with a space
+  if (line.length <= 75) return line;
+
+  let result = "";
+  let remaining = line;
+
+  while (remaining.length > 75) {
+    result += remaining.slice(0, 75) + "\r\n ";
+    remaining = remaining.slice(75);
+  }
+
+  return result + remaining;
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function formatIcsDate(date) {
+  return (
+    date.getFullYear() +
+    pad2(date.getMonth() + 1) +
+    pad2(date.getDate()) +
+    "T" +
+    pad2(date.getHours()) +
+    pad2(date.getMinutes()) +
+    pad2(date.getSeconds())
+  );
+}
+
+function formatIcsDateUTC(date) {
+  return (
+    date.getUTCFullYear() +
+    pad2(date.getUTCMonth() + 1) +
+    pad2(date.getUTCDate()) +
+    "T" +
+    pad2(date.getUTCHours()) +
+    pad2(date.getUTCMinutes()) +
+    pad2(date.getUTCSeconds()) +
+    "Z"
+  );
+}
+
+// Find the first calendar date (on/after the cycle start) whose timetable
+// cycle-day code matches each of the 10 MonA..FriB slots, so recurring
+// events can be anchored to the correct real-world date and week parity.
+function computeAnchorDates(cycleStartDate) {
+  const anchors = {};
+
+  if (!cycleStartDate) return anchors;
+
+  const cursor = new Date(
+    cycleStartDate.getFullYear(),
+    cycleStartDate.getMonth(),
+    cycleStartDate.getDate(),
+  );
+
+  // Scan up to ~4 school-cycles worth of calendar days to be safe.
+  for (let i = 0; i < 42 && Object.keys(anchors).length < CYCLE_DAYS.length; i++) {
+    const cycleDay = getTimetableDay(cursor, cycleStartDate);
+
+    if (cycleDay && !anchors[cycleDay]) {
+      anchors[cycleDay] = new Date(cursor);
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return anchors;
+}
+
+function buildIcsCalendar() {
+  const anchors = computeAnchorDates(CYCLE_START_DATE);
+
+  // Fallback: if we don't know the real cycle start date, anchor Week A to
+  // the coming Monday and Week B to the Monday after, so the file is still
+  // usable (just without guaranteed real-world week-parity alignment).
+  const today = new Date();
+  const todayDow = today.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = todayDow === 0 ? -6 : 1 - todayDow;
+  const fallbackMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diffToMonday);
+
+  const lines = [];
+
+  lines.push("BEGIN:VCALENDAR");
+  lines.push("VERSION:2.0");
+  lines.push("PRODID:-//Andre Kwok Timetable//Export//EN");
+  lines.push("CALSCALE:GREGORIAN");
+  lines.push("METHOD:PUBLISH");
+  lines.push(icsFold(`X-WR-CALNAME:${icsEscape(document.getElementById("profileName").textContent + " Timetable")}`));
+
+  const now = new Date();
+  const dtstamp = formatIcsDateUTC(now);
+
+  // Recur for roughly a school year (52 weeks) from each anchor date.
+  const untilDate = new Date(now);
+  untilDate.setFullYear(untilDate.getFullYear() + 1);
+  const until = formatIcsDateUTC(untilDate);
+
+  let eventCount = 0;
+
+  WEEK_ORDER.forEach((week) => {
+    DAY_ORDER.forEach((day) => {
+      const cycleCode = day.charAt(0).toUpperCase() + day.slice(1) + week;
+
+      let anchor = anchors[cycleCode];
+
+      if (!anchor) {
+        // Fallback anchoring when no cycle start date is known
+        const dayIndex = DAY_ORDER.indexOf(day); // 0=mon..4=fri
+        const weekOffset = WEEK_ORDER.indexOf(week) * 7;
+        anchor = new Date(fallbackMonday);
+        anchor.setDate(fallbackMonday.getDate() + weekOffset + dayIndex);
+      }
+
+      const rows = SCHEDULE[week]?.[day] || [];
+
+      rows.forEach((item, idx) => {
+        if (item.kind !== "class" || !item.start || !item.end) return;
+
+        const startMin = timeToMin(item.start);
+        const endMin = timeToMin(item.end);
+
+        if (endMin <= startMin) return;
+
+        const dtStart = new Date(anchor);
+        dtStart.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
+
+        const dtEnd = new Date(anchor);
+        dtEnd.setHours(Math.floor(endMin / 60), endMin % 60, 0, 0);
+
+        const uid = `${cycleCode}-${idx}-${item.code || "class"}-${item.periodNumber || ""}@andrekwok-timetable`
+          .toLowerCase()
+          .replace(/[^a-z0-9@.-]+/g, "-");
+
+        const summary = `${item.code || item.subjName}${item.subjName && item.code !== item.subjName ? " - " + item.subjName : ""}`;
+
+        const descriptionParts = [];
+        if (item.teacher) descriptionParts.push(`Teacher: ${item.teacher}`);
+        if (item.periodNumber) descriptionParts.push(`Period: ${item.periodNumber}`);
+        descriptionParts.push(`Week ${week}`);
+
+        lines.push("BEGIN:VEVENT");
+        lines.push(`UID:${uid}`);
+        lines.push(`DTSTAMP:${dtstamp}`);
+        lines.push(`DTSTART:${formatIcsDate(dtStart)}`);
+        lines.push(`DTEND:${formatIcsDate(dtEnd)}`);
+        lines.push(`RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=${until}`);
+        lines.push(icsFold(`SUMMARY:${icsEscape(summary)}`));
+        if (item.room) lines.push(icsFold(`LOCATION:${icsEscape(roomLabel(item.room))}`));
+        lines.push(icsFold(`DESCRIPTION:${icsEscape(descriptionParts.join("\\n"))}`));
+        lines.push("END:VEVENT");
+
+        eventCount++;
+      });
+    });
+  });
+
+  lines.push("END:VCALENDAR");
+
+  return { ics: lines.join("\r\n"), eventCount };
+}
+
+function downloadIcsFile(content, filename) {
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("exportCalendarBtn").addEventListener("click", () => {
+  const { ics, eventCount } = buildIcsCalendar();
+
+  if (eventCount === 0) {
+    infoSaved.textContent = "No classes to export yet — load a timetable first.";
+    return;
+  }
+
+  const nameForFile = (document.getElementById("profileName").textContent || "timetable")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
+
+  downloadIcsFile(ics, `${nameForFile}-timetable.ics`);
+
+  infoSaved.textContent = `Exported ${eventCount} class${eventCount === 1 ? "" : "es"} to calendar file`;
+});
+</script>
+</body>
+</html>
