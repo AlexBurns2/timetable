@@ -1461,10 +1461,7 @@ async function refresh(force = false) {
     setStatus(null);
 
     if (fetchedAt) {
-      updatedAtEl.textContent = `Updated ${fetchedAt.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
+      updatedAtEl.textContent = ``;
     }
 
     build();
