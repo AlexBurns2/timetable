@@ -29,27 +29,14 @@ h1{font-weight:700;font-size:clamp(24px,4vw,32px);margin:0;letter-spacing:-.02em
 .bell .eyebrow2{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--accent);margin-bottom:3px}
 .bell .line1{font-size:15px;font-weight:600;letter-spacing:-.01em}
 .bell .line2{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
-.bellProgressWrap{display:flex;align-items:center;gap:8px;margin-top:4px}
+.bellProgressWrap{display:flex;align-items:center;gap:8px;margin-top:4px;margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px;width:calc(100% + 36px)}
 .bellProgressTime{font-size:10.5px;font-weight:600;color:var(--accent);flex-shrink:0}
 .bellProgressTrack{flex:1;height:5px;border-radius:999px;background:rgba(10,132,255,.16);overflow:hidden}
 .bellProgressFill{height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 1s linear}
 .bellRoomLine{font-size:11px;color:var(--ink-soft);margin-top:3px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .bellTimeLeft{font-weight:600;color:var(--ink-soft);flex-shrink:0}
-.bell:not(.next){ padding-right:92px }
-.refreshRow{
-  position:absolute;
-  top:12px;
-  right:14px;
-  margin-top:0;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:2px;
-}
-.refreshBtn{font-family:inherit;font-size:11px;font-weight:600;color:var(--accent);background:transparent;border:1px solid var(--line);border-radius:10px;padding:4px 9px;cursor:pointer;transition:background .2s ease,transform .2s ease}
-.refreshBtn:hover{background:var(--glass-hi)}
-.refreshBtn:active{transform:scale(.95)}
-.refreshBtn[disabled]{opacity:.5;cursor:default}
-.updatedAt{font-size:9.5px;color:var(--ink-faint)}
+.bellRow.progress-off{justify-content:flex-end}
+.bellRow.progress-off .bell:not(.next){flex:1 1 150px;min-width:150px}
 .statusBanner{text-align:center;font-size:13px;font-weight:500;padding:12px 18px;margin-bottom:20px;border-radius:16px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);color:var(--ink-soft)}
 .statusBanner.error{color:#c23b2f;border-color:rgba(194,59,47,.35)}
 .arrowbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s ease,background .2s ease;flex-shrink:0}
@@ -152,7 +139,6 @@ h1{font-weight:700;font-size:clamp(24px,4vw,32px);margin:0;letter-spacing:-.02em
   .bellRow{align-self:stretch;width:100%;max-width:420px;margin:0 auto;flex:none}
   .header-buttons{width:100%;justify-content:center;margin-top:12px}
   .bell{text-align:center}
-  .refreshRow{justify-content:center}
   .weekSwitch{display:none}
   .daySwitch{display:flex}
   .grid{grid-template-columns:1fr;column-gap:0;row-gap:10px}
@@ -174,7 +160,7 @@ h1{font-weight:700;font-size:clamp(24px,4vw,32px);margin:0;letter-spacing:-.02em
 <div class="emailHint">Enter the start of your email and press Enter</div>
 </div>
 </div>
-<div class="bellRow">
+<div class="bellRow" id="bellRow">
 <div class="bell">
 <div class="eyebrow2">NOW</div>
 <div class="line1" id="bellLine1">Loading…</div>
@@ -187,10 +173,6 @@ h1{font-weight:700;font-size:clamp(24px,4vw,32px);margin:0;letter-spacing:-.02em
 <div class="bellRoomLine" id="bellRoomLine">
 <span id="bellRoomText"></span>
 <span class="bellTimeLeft" id="bellTimeLeft"></span>
-</div>
-<div class="refreshRow">
-<button class="refreshBtn" id="refreshBtn" title="Refresh timetable">↻ Refresh</button>
-<span class="updatedAt" id="updatedAt"></span>
 </div>
 </div>
 <div class="bell next">
@@ -1003,8 +985,6 @@ function normalizeTimetable(rawTimetable, bellTimes) {
 
 const grid = document.getElementById("grid");
 const statusBanner = document.getElementById("statusBanner");
-const refreshBtn = document.getElementById("refreshBtn");
-const updatedAtEl = document.getElementById("updatedAt");
 
 let SCHEDULE = {
   A: { mon: [], tue: [], wed: [], thu: [], fri: [] },
@@ -1327,6 +1307,9 @@ function updateBell() {
   const nextRoomText = document.getElementById("nextRoomText");
   const nextTimeLeft = document.getElementById("nextTimeLeft");
 
+  const bellRow = document.getElementById("bellRow");
+  bellRow.classList.toggle("progress-off", !progressBarEnabled);
+
   progressWrap.style.display = "none";
   roomLine.style.display = "none";
   roomText.textContent = "";
@@ -1426,8 +1409,6 @@ function updateBell() {
 }
 
 async function refresh(force = false) {
-  refreshBtn.disabled = true;
-
   setStatus(force ? "Refreshing timetable…" : "Loading timetable…");
 
   const currentEmail = getCurrentEmail();
@@ -1460,10 +1441,6 @@ async function refresh(force = false) {
 
     setStatus(null);
 
-    if (fetchedAt) {
-      updatedAtEl.textContent = ``;
-    }
-
     build();
     updateBell();
   } catch (err) {
@@ -1475,8 +1452,6 @@ async function refresh(force = false) {
     setStatus(message, true);
 
     console.error("Timetable load failed:", err);
-  } finally {
-    refreshBtn.disabled = false;
   }
 }
 
@@ -1510,8 +1485,6 @@ emailInput.addEventListener("keydown", (event) => {
   event.preventDefault();
   submitEmail();
 });
-
-refreshBtn.addEventListener("click", () => refresh(true));
 
 document.getElementById("weekPrev").addEventListener("click", () => {
   currentWeek = currentWeek === "A" ? "B" : "A";
