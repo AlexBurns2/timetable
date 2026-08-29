@@ -38,7 +38,7 @@ button,select,input{font:inherit;color:inherit}
 }
 [data-header="split"] .now{flex-basis:100%;order:3;margin-top:8px}
 [data-header="split"] .headbtns{flex-direction:row;align-self:center}
-.brand{display:flex;flex-direction:column;justify-content:center;margin-right:auto;min-width:0}
+.brand{display:flex;flex-direction:column;justify-content:center;min-width:150px;flex:1 1 auto}
 .brand h1{
   margin:0;font-family:var(--font-display);font-size:clamp(22px,3vw,34px);
   font-weight:var(--display-w);letter-spacing:var(--display-ls);
@@ -88,12 +88,11 @@ button,select,input{font:inherit;color:inherit}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 [data-skin="brutal"] .btn.primary,[data-skin="swiss"] .btn.primary{border-color:var(--line)}
 /* now / next — sit inside the topbar, simple flat cards, no colour bar */
-.now{display:flex;gap:12px;flex:1 1 380px;min-width:0}
+.now{display:flex;gap:12px;flex:3 1 320px;min-width:0}
 .nowcard{
   position:relative;flex:1 1 220px;background:var(--panel-2);border:1px solid var(--line);
   border-radius:var(--radius);padding:11px 14px;min-width:0;overflow:hidden;
 }
-[data-skin="classic"] .now,[data-skin="swiss"] .now{flex-basis:100%;margin-top:2px}
 .nowcard .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .nowcard .subj{font-size:17px;font-weight:700;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nowcard .meta{color:var(--muted);font-size:12.5px;margin-top:2px}

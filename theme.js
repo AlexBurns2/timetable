@@ -165,6 +165,33 @@ apply();
 /* a change made in another tab should follow here too */
 addEventListener('storage', ev => { if (ev.key && ev.key.startsWith('tt.')) apply(); });
 
+/* ── shared API helper (used by the games page's Guess-Who) ──────────── */
+const API_ENDPOINT = '/api/timetable';
+const EMAIL_DOMAIN = 'education.nsw.gov.au';
+function apiHeaders(){
+  const h = { Accept:'application/json' };
+  const c = get('tt.creds', null);
+  if (c && c.email && c.password){
+    h['X-School-Email'] = c.email;
+    h['X-School-Password'] = c.password;
+  }
+  return h;
+}
+async function apiGet(params){
+  const u = new URL(API_ENDPOINT, location.href);
+  for (const k in params) u.searchParams.set(k, params[k]);
+  const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+  const res = await fetch(url, { headers: apiHeaders(), cache:'no-store' });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+  return data;
+}
+const myEmail = () => {
+  const c = get('tt.creds', null);
+  return get('tt.email', (c && c.email) || '');
+};
+
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
-              CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply };
+              CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
+              apiGet, myEmail, EMAIL_DOMAIN };
 })();

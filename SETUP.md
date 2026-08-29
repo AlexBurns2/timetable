@@ -646,3 +646,29 @@ you already have, needs no new accounts, and Vercel KV has a free tier. Keep
 `localStorage` as the offline cache and treat the server copy as the source of
 truth on load. Notes should sync the same way but stored separately, since
 they're larger and change more often.
+
+---
+
+## Latest round of changes
+
+- **Header layout toggle** (⚙ → Display → Header): *Classic* (everything in one
+  rounded widget — identity left, Now/Next middle, controls right; default) or
+  *Separated* (Now/Next drop to their own row). Applies to every theme.
+- **Class rosters are links.** Each name in a class list opens that person's
+  timetable — the username box up top drives it. Signing in is a one-time thing;
+  switching whose timetable you view never re-authenticates (that box also
+  auto-widens for long names).
+- **Guess Who** (Games): picks a random person from your combined classmates and
+  reveals hints — shared classes, year, name shape, letters — until you name
+  them. Only ever mentions people already in a class with you.
+- **Games page** is now a grid of cards with entrance/hover animations; click one
+  to play, "All games" to go back. Respects Reduce motion.
+- **Settings footer**: Access / Display / Colours open sub-panels; a light-dark
+  toggle sits beside **Export .ics**. No Save button (everything applies live),
+  no emoji labels.
+- Click any popup's backdrop to close it. Week letters on day names are **off by
+  default**. Glass light-mode has a properly frosted top widget. Settings no
+  longer scroll sideways.
+
+The Games page fetches your classes and rosters through the shared login via
+`TT.apiGet` in `theme.js`, so it works on any page without duplicating the auth.

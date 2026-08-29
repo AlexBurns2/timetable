@@ -11,16 +11,40 @@
 <script src="theme.js"></script>
 <link rel="stylesheet" href="site.css">
 <style>
-.picker{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-.picker button{
-  background:var(--panel);border:var(--card-border);border-radius:var(--radius);
-  padding:9px 15px;cursor:pointer;box-shadow:var(--shadow);color:var(--text);
+/* card grid */
+.gamegrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.gamecard{
+  position:relative;overflow:hidden;text-align:left;cursor:pointer;
+  background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
+  padding:20px;box-shadow:var(--shadow);color:var(--text);min-height:160px;
+  display:flex;flex-direction:column;gap:5px;
+  opacity:0;transform:translateY(12px);
+  animation:cardIn .45s cubic-bezier(.2,.7,.2,1) forwards;
+  transition:transform .16s ease, box-shadow .16s ease, background .15s;
 }
-.picker button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.gamecard:hover{transform:translateY(-4px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.gamecard:active{transform:translateY(-1px)}
+.gamecard .ico{font-size:30px;line-height:1;margin-bottom:4px;
+  transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.gamecard:hover .ico{transform:scale(1.15) rotate(-6deg)}
+.gamecard h2{margin:0;font-family:var(--font-display);font-size:19px;
+  font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.gamecard p{margin:0;color:var(--muted);font-size:13px}
+.gamecard .go{margin-top:auto;font-size:12px;font-weight:700;color:var(--accent);
+  opacity:0;transform:translateX(-6px);transition:opacity .18s,transform .18s}
+.gamecard:hover .go{opacity:1;transform:none}
+@keyframes cardIn{to{opacity:1;transform:none}}
+
+.gamestage{animation:stageIn .35s ease}
+.gamestage[hidden]{display:none}
+@keyframes stageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.back{margin-bottom:14px}
 .stage{
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
   padding:18px;box-shadow:var(--shadow);
 }
+html[data-motion="reduced"] .gamecard{animation:none;opacity:1;transform:none}
+html[data-motion="reduced"] .gamestage{animation:none}
 .stage h2{margin:0 0 4px;font-family:var(--font-display);font-size:20px;
   font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
 .stage .how{color:var(--muted);font-size:13px;margin:0 0 14px}
@@ -68,6 +92,24 @@ canvas{
 }
 #react.wait{background:#c2571f;color:#fff}
 #react.go{background:#2f9e44;color:#fff}
+/* guess who */
+.gwhints{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.gwhint{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:10px 13px;font-size:14px}
+.gwhint.fresh{animation:hintIn .4s cubic-bezier(.2,.7,.2,1)}
+.gwhint.win{border-color:#2f9e44;background:color-mix(in srgb,#2f9e44 14%,var(--panel))}
+.gwhint.lose{border-color:#e5484d;background:color-mix(in srgb,#e5484d 12%,var(--panel))}
+@keyframes hintIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.gwrow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+#gwin{flex:1;min-width:160px;padding:11px 13px;border:var(--card-border);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);outline:none}
+#gwin:focus{border-color:var(--accent)}
+.gwlog{display:flex;flex-direction:column;gap:5px}
+.gwguessrow{padding:6px 11px;border-radius:var(--radius);font-size:13.5px;font-weight:600;
+  animation:hintIn .25s ease}
+.gwguessrow.miss{background:color-mix(in srgb,#e5484d 12%,var(--panel));color:var(--text)}
+.gwguessrow.win{background:color-mix(in srgb,#2f9e44 16%,var(--panel));color:var(--text)}
+html[data-motion="reduced"] .gwhint.fresh,html[data-motion="reduced"] .gwguessrow{animation:none}
 </style>
 </head>
 <body>
@@ -81,8 +123,12 @@ canvas{
     </div>
   </div>
 
-  <div class="picker" id="picker"></div>
-  <div class="stage" id="stage"></div>
+  <div class="gamegrid" id="gamegrid"></div>
+
+  <div class="gamestage" id="gamestage" hidden>
+    <button class="btn back" id="back">&#8592; All games</button>
+    <div class="stage" id="stage"></div>
+  </div>
 </div>
 
 <script>
@@ -97,37 +143,202 @@ $('mode').onclick = () => {
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
-  { id:'snake',  name:'🐍 Snake' },
-  { id:'g2048',  name:'🧩 2048' },
-  { id:'mines',  name:'💣 Minesweeper' },
-  { id:'typing', name:'⌨️ Typing race' },
-  { id:'react',  name:'🎯 Reaction' }
+  { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Work out a random classmate from hints' },
+  { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
+  { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
+  { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
+  { id:'typing', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
+  { id:'react',  ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' }
 ];
-let currentId = 'snake';
 
-function paintPicker(){
-  $('picker').innerHTML = '';
-  GAMES.forEach(g => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = g.name;
-    b.setAttribute('aria-pressed', String(g.id === currentId));
-    b.onclick = () => load(g.id);
-    $('picker').appendChild(b);
+function showGrid(){
+  if (stop){ stop(); stop = null; }
+  $('gamestage').hidden = true;
+  const grid = $('gamegrid');
+  grid.hidden = false;
+  grid.innerHTML = '';
+  GAMES.forEach((g, i) => {
+    const c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'gamecard';
+    c.style.animationDelay = (i * 55) + 'ms';
+    c.innerHTML = '<span class="ico">' + g.ico + '</span>' +
+      '<h2>' + g.name + '</h2><p>' + g.blurb + '</p><span class="go">Play &#8594;</span>';
+    c.onclick = () => openGame(g.id);
+    grid.appendChild(c);
   });
 }
-function load(id){
-  if (stop) { stop(); stop = null; }
-  currentId = id;
-  paintPicker();
+function openGame(id){
+  if (stop){ stop(); stop = null; }
+  $('gamegrid').hidden = true;
+  const st = $('gamestage');
+  st.hidden = false;
+  /* retrigger the entrance animation */
+  st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
   stop = BUILD[id]($('stage'));
 }
+$('back').onclick = showGrid;
+
 const head = (host, title, how, extra) =>
   host.innerHTML = '<div class="row"><div><h2>' + title + '</h2>' +
                    '<p class="how">' + how + '</p></div>' +
                    '<span class="score" id="sc"></span></div>' + (extra || '');
 
 const BUILD = {};
+
+/* ── Guess Who ─────────────────────────────────────────────────────
+   Picks a random person from your combined classmates and drips hints
+   (shared classes, year, name shape, letters). No privacy concern — it
+   only ever names people already in a class with you.                 */
+let gwPool = null;              /* cached across opens in this session */
+
+const cleanSubject = name => String(name||'')
+  .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i,'')
+  .replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/,'')
+  .replace(/^[\s:\-–—]+/,'').trim();
+const personName = r => {
+  const full = r.FullName||r.fullName||r.Name||r.name||'';
+  const first = r.FirstName||r.firstName||r.GivenName||r.preferredName||'';
+  const last  = r.LastName||r.lastName||r.Surname||r.surname||'';
+  const mail  = r.Email||r.email||r.emailAddress||'';
+  const nm = full || [first,last].filter(Boolean).join(' ');
+  if (nm) return nm;
+  if (mail){ const p = mail.split('@')[0].split('.');
+    if (p.length>=2) return cap(p[0])+' '+cap(p[1].replace(/\d+$/,'')); }
+  return '';
+};
+const cap = s => s ? s[0].toUpperCase()+s.slice(1).toLowerCase() : s;
+const isStaff = r => /teacher|staff/i.test(r.Role||r.role||r.Type||r.type||'');
+
+async function buildPool(){
+  const email = TT.myEmail();
+  const tt = await TT.apiGet({ email });
+  const rows = (tt.timetable||[]).filter(r =>
+    r.ClassCode && !/assembly|recess|lunch|roll/i.test((r.Period||'') + ' ' + (r.CourseName||'')));
+  const codeSubject = {};
+  rows.forEach(r => { codeSubject[r.ClassCode] = cleanSubject(r.CourseName) || r.ClassCode; });
+  const codes = [...new Set(rows.map(r => r.ClassCode))].slice(0, 8);
+  const me = String(email).toLowerCase();
+  const people = new Map();
+  for (const code of codes){
+    let data;
+    try { data = await TT.apiGet({ class: code }); } catch { continue; }
+    const arr = Array.isArray(data) ? data : (data.roster || data.students || []);
+    for (const r of arr){
+      if (isStaff(r)) continue;
+      const mail = String(r.Email||r.email||r.emailAddress||'').toLowerCase();
+      const name = personName(r);
+      if (!name || (mail && mail === me)) continue;
+      const key = mail || name.toLowerCase();
+      if (!people.has(key)) people.set(key,
+        { name, year: r.Year||r.year||r.Form||r.form||'', subjects:new Set() });
+      people.get(key).subjects.add(codeSubject[code]);
+    }
+  }
+  return [...people.values()].map(p => ({ name:p.name, year:p.year, subjects:[...p.subjects] }));
+}
+
+BUILD.guesswho = host => {
+  head(host, 'Guess Who', 'A random person from your classes. Use the hints.', '<div id="gw"></div>');
+  const box = document.getElementById('gw');
+  box.innerHTML = '<p class="how">Loading your classmates…</p>';
+  let alive = true;
+
+  (async () => {
+    try {
+      if (!gwPool) gwPool = await buildPool();
+      if (!alive) return;
+      if (gwPool.length < 3){
+        box.innerHTML = '<p class="how">Not enough classmates found to play. ' +
+          'Make sure you are signed in on the timetable first.</p>';
+        return;
+      }
+      play();
+    } catch (err){
+      if (alive) box.innerHTML = '<p class="how">Could not load classmates: ' + err.message + '</p>';
+    }
+  })();
+
+  function play(){
+    const pool = gwPool;
+    const target = pool[(Math.random()*pool.length)|0];
+    const names = pool.map(p => p.name).sort();
+    let level = 0, guesses = 0, wonlost = false;
+    const first = target.name.split(' ')[0], last = target.name.split(' ').slice(1).join(' ');
+
+    /* hints revealed one per wrong guess */
+    const hints = [
+      () => 'They are in <b>' + target.subjects.length + '</b> of your classes.',
+      () => 'Those classes: <b>' + target.subjects.join(', ') + '</b>.',
+      () => target.year ? 'Year / form: <b>' + target.year + '</b>.' : 'No year on record — skip.',
+      () => 'Their name has <b>' + first.length + '</b>-letter first name, <b>' +
+            (last.length||'?') + '</b>-letter surname.',
+      () => 'First name starts with <b>' + first[0].toUpperCase() + '</b>.',
+      () => 'Surname starts with <b>' + (last[0]||'?').toUpperCase() + '</b>.',
+      () => 'First name: <b>' + reveal(first, 0.6) + '</b>'
+    ];
+
+    render();
+    function render(){
+      box.innerHTML =
+        '<div class="gwhints" id="gwhints"></div>' +
+        '<div class="gwrow">' +
+          '<input id="gwin" list="gwlist" autocomplete="off" placeholder="Name a classmate…">' +
+          '<datalist id="gwlist">' + names.map(n => '<option value="' + n.replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+          '<button class="btn primary" id="gwguess" type="button">Guess</button>' +
+        '</div>' +
+        '<div class="gwlog" id="gwlog"></div>';
+      paintHints();
+      document.getElementById('gwguess').onclick = guess;
+      document.getElementById('gwin').addEventListener('keydown', e => { if (e.key==='Enter') guess(); });
+      document.getElementById('gwin').focus();
+    }
+    function paintHints(){
+      document.getElementById('gwhints').innerHTML =
+        hints.slice(0, level+1).map((h,i) =>
+          '<div class="gwhint' + (i===level ? ' fresh' : '') + '">' + h() + '</div>').join('');
+      document.getElementById('sc').textContent = wonlost ? '' : 'Guess ' + (guesses+1);
+    }
+    function guess(){
+      if (wonlost) return;
+      const inp = document.getElementById('gwin');
+      const v = inp.value.trim();
+      if (!v) return;
+      guesses++;
+      const right = v.toLowerCase() === target.name.toLowerCase();
+      const log = document.getElementById('gwlog');
+      const row = document.createElement('div');
+      row.className = 'gwguessrow ' + (right ? 'win' : 'miss');
+      row.textContent = (right ? '✓ ' : '✗ ') + v;
+      log.prepend(row);
+      inp.value = '';
+      if (right){
+        wonlost = true;
+        document.getElementById('sc').textContent = 'Got them in ' + guesses + '!';
+        document.getElementById('gwhints').innerHTML =
+          '<div class="gwhint win">It was <b>' + target.name + '</b> 🎉 — ' +
+          'shared classes: ' + target.subjects.join(', ') + '.</div>';
+        inp.disabled = true;
+        document.getElementById('gwguess').textContent = 'Play again';
+        document.getElementById('gwguess').disabled = false;
+        document.getElementById('gwguess').onclick = play2;
+      } else if (level < hints.length - 1){
+        level++; paintHints();
+      } else {
+        wonlost = true;
+        document.getElementById('gwhints').innerHTML +=
+          '<div class="gwhint lose">Out of hints — it was <b>' + target.name + '</b>.</div>';
+        document.getElementById('gwguess').textContent = 'Play again';
+        document.getElementById('gwguess').onclick = play2;
+      }
+    }
+    function play2(){ play(); }
+  }
+  function reveal(word, frac){
+    return [...word].map((ch,i) => (i===0 || Math.random()<frac) ? ch : '_').join(' ');
+  }
+  return () => { alive = false; };
+};
 
 /* ── Snake ─────────────────────────────────────────────────────── */
 BUILD.snake = host => {
@@ -352,8 +563,7 @@ BUILD.react = host => {
   return () => clearTimeout(t);
 };
 
-paintPicker();
-load('snake');
+showGrid();
 </script>
 </body>
 </html>
