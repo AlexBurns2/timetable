@@ -135,6 +135,11 @@
   content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(150deg,rgba(255,255,255,.55),transparent 40%);
 }
+/* Separated header: no widget, so drop the frosted panel entirely on Glass */
+[data-header="split"][data-skin="glass"] .topbar{
+  border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+[data-header="split"][data-skin="glass"] .topbar::before{display:none}
 [data-skin="glass"] .nowcard{border-color:rgba(255,255,255,.75)}
 /* specular top edge */
 [data-skin="glass"] .lesson::after,[data-skin="glass"] .nowcard::after{
@@ -292,6 +297,14 @@ html[data-motion="reduced"] *::after{
 /* the original outlines each card in its subject colour */
 [data-skin="classic"] .lesson{outline:2.5px solid var(--c,var(--accent));outline-offset:0}
 [data-skin="classic"] .lesson.current{outline-color:var(--accent);outline-width:2.5px}
+/* outlines off: drop the coloured ring, leave a plain border (dot stays) */
+html.nooutline[data-skin="classic"] .lesson:not(.current){outline:none}
+html.nooutline[data-skin="classic"] .nowcard{outline:none}
+/* keep Classic's own absolute dot rather than the generic inline one */
+html.nooutline[data-skin="classic"] .lesson .s::before{
+  position:absolute;left:0;top:.45em;width:6px;height:6px;margin:0;
+  background:var(--c,var(--accent));
+}
 [data-skin="classic"] .lesson .s{padding-left:12px;position:relative}
 [data-skin="classic"] .lesson .s::before{
   content:"";position:absolute;left:0;top:.45em;

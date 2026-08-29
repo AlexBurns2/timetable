@@ -13,6 +13,7 @@
 <style>
 /* card grid */
 .gamegrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.gamegrid[hidden]{display:none}
 .gamecard{
   position:relative;overflow:hidden;text-align:left;cursor:pointer;
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
@@ -35,9 +36,11 @@
 .gamecard:hover .go{opacity:1;transform:none}
 @keyframes cardIn{to{opacity:1;transform:none}}
 
-.gamestage{animation:stageIn .35s ease}
+.gamestage{animation:stageIn .3s cubic-bezier(.2,.7,.2,1)}
 .gamestage[hidden]{display:none}
-@keyframes stageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes stageIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+.gamegrid.leaving,.gamestage.leaving{opacity:0;transform:scale(.985);
+  transition:opacity .12s ease,transform .12s ease;pointer-events:none}
 .back{margin-bottom:14px}
 .stage{
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
@@ -56,13 +59,14 @@ canvas{
   border:1px solid var(--line);border-radius:calc(var(--card-radius) * .6);background:var(--panel-2);
 }
 /* 2048 */
-#g2048{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(340px,100%)}
-#g2048 div{
-  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  border-radius:calc(var(--card-radius) * .5);background:var(--panel-2);
-  font-family:var(--font-num);font-weight:700;font-size:20px;
-  color:var(--text);border:1px solid var(--line);
-}
+.cell2048{background:var(--panel-2);border:1px solid var(--line);
+  border-radius:calc(var(--card-radius) * .5)}
+.tile2048{box-shadow:var(--shadow)}
+/* card stat line */
+.gamecard .stat{font-size:11px;color:var(--muted);font-family:var(--font-num);
+  font-variant-numeric:tabular-nums}
+.gwyou{font-size:12px;color:var(--muted);margin-bottom:10px}
+.gwyou b{color:var(--text)}
 /* minesweeper */
 #mines{display:grid;gap:3px;width:min(360px,100%)}
 #mines button{
@@ -162,22 +166,36 @@ function showGrid(){
     c.type = 'button';
     c.className = 'gamecard';
     c.style.animationDelay = (i * 55) + 'ms';
+    const stat = statLine(g.id);
     c.innerHTML = '<span class="ico">' + g.ico + '</span>' +
-      '<h2>' + g.name + '</h2><p>' + g.blurb + '</p><span class="go">Play &#8594;</span>';
+      '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
+      (stat ? '<span class="stat">' + stat + '</span>' : '') +
+      '<span class="go">Play &#8594;</span>';
     c.onclick = () => openGame(g.id);
     grid.appendChild(c);
   });
 }
+const reduced = () => document.documentElement.getAttribute('data-motion') === 'reduced';
 function openGame(id){
   if (stop){ stop(); stop = null; }
-  $('gamegrid').hidden = true;
-  const st = $('gamestage');
-  st.hidden = false;
-  /* retrigger the entrance animation */
-  st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
-  stop = BUILD[id]($('stage'));
+  const grid = $('gamegrid'), st = $('gamestage');
+  const go = () => {
+    grid.hidden = true; grid.classList.remove('leaving');
+    st.hidden = false;
+    st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
+    stop = BUILD[id]($('stage'));
+  };
+  if (reduced()){ go(); return; }
+  grid.classList.add('leaving');           /* fade the grid away, then swap in */
+  setTimeout(go, 130);
 }
-$('back').onclick = showGrid;
+$('back').onclick = () => {
+  const grid = $('gamegrid'), st = $('gamestage');
+  if (stop){ stop(); stop = null; }
+  if (reduced()){ showGrid(); return; }
+  st.classList.add('leaving');
+  setTimeout(() => { st.classList.remove('leaving'); showGrid(); }, 130);
+};
 
 const head = (host, title, how, extra) =>
   host.innerHTML = '<div class="row"><div><h2>' + title + '</h2>' +
@@ -190,7 +208,29 @@ const BUILD = {};
    Picks a random person from your combined classmates and drips hints
    (shared classes, year, name shape, letters). No privacy concern — it
    only ever names people already in a class with you.                 */
-let gwPool = null;              /* cached across opens in this session */
+let gwData = null;              /* {pool, viewer} cached across opens this session */
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ── local stats / high scores (item 6) ──────────────────────────────
+   recordStat updates a per-game record; mode 'max' keeps the highest,
+   'min' the lowest, 'count' increments. statVal reads one back. */
+function allStats(){ return TT.get('tt.stats', {}); }
+function recordStat(game, { key, mode, value }){
+  const s = allStats(); s[game] = s[game] || {};
+  const cur = s[game][key];
+  if (mode === 'max') s[game][key] = cur == null ? value : Math.max(cur, value);
+  else if (mode === 'min') s[game][key] = cur == null ? value : Math.min(cur, value);
+  else if (mode === 'count') s[game][key] = (cur || 0) + (value || 1);
+  else s[game][key] = value;
+  TT.set('tt.stats', s);
+  return s[game][key];
+}
+const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
+const statLine = game => {
+  const s = allStats()[game]; if (!s) return '';
+  return Object.entries(s).map(([k,v]) => STAT_LABEL[k] ? STAT_LABEL[k]+' '+v : '').filter(Boolean).join(' · ');
+};
+const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared' };
 
 const cleanSubject = name => String(name||'')
   .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i,'')
@@ -208,16 +248,25 @@ const personName = r => {
   return '';
 };
 const cap = s => s ? s[0].toUpperCase()+s.slice(1).toLowerCase() : s;
-const isStaff = r => /teacher|staff/i.test(r.Role||r.role||r.Type||r.type||'');
+/* students are @education.nsw.gov.au; staff are @det.nsw.edu.au or role-tagged */
+const isStaff = r => {
+  const mail = String(r.Email||r.email||r.emailAddress||'').toLowerCase();
+  return /teacher|staff/i.test(r.Role||r.role||r.Type||r.type||'') ||
+         /@det\.nsw\.edu\.au$/.test(mail);
+};
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; };
 
+/* pool of everyone sharing a class with the loaded timetable, plus that
+   viewer's name so the game confirms whose classes it is drawn from */
 async function buildPool(){
   const email = TT.myEmail();
   const tt = await TT.apiGet({ email });
+  const viewer = personName({ Email: email }) || String(email).split('@')[0];
   const rows = (tt.timetable||[]).filter(r =>
     r.ClassCode && !/assembly|recess|lunch|roll/i.test((r.Period||'') + ' ' + (r.CourseName||'')));
   const codeSubject = {};
   rows.forEach(r => { codeSubject[r.ClassCode] = cleanSubject(r.CourseName) || r.ClassCode; });
-  const codes = [...new Set(rows.map(r => r.ClassCode))].slice(0, 8);
+  const codes = [...new Set(rows.map(r => r.ClassCode))].slice(0, 10);
   const me = String(email).toLowerCase();
   const people = new Map();
   for (const code of codes){
@@ -231,26 +280,27 @@ async function buildPool(){
       if (!name || (mail && mail === me)) continue;
       const key = mail || name.toLowerCase();
       if (!people.has(key)) people.set(key,
-        { name, year: r.Year||r.year||r.Form||r.form||'', subjects:new Set() });
+        { name, year: String(r.Year||r.year||r.Form||r.form||'').trim(), subjects:new Set() });
       people.get(key).subjects.add(codeSubject[code]);
     }
   }
-  return [...people.values()].map(p => ({ name:p.name, year:p.year, subjects:[...p.subjects] }));
+  const pool = [...people.values()].map(p => ({ name:p.name, year:p.year, subjects:[...p.subjects] }));
+  return { pool, viewer };
 }
 
 BUILD.guesswho = host => {
-  head(host, 'Guess Who', 'A random person from your classes. Use the hints.', '<div id="gw"></div>');
+  head(host, 'Guess Who', 'A random classmate. Guess who from the hints.', '<div id="gw"></div>');
   const box = document.getElementById('gw');
   box.innerHTML = '<p class="how">Loading your classmates…</p>';
   let alive = true;
 
   (async () => {
     try {
-      if (!gwPool) gwPool = await buildPool();
+      if (!gwData) gwData = await buildPool();
       if (!alive) return;
-      if (gwPool.length < 3){
+      if (gwData.pool.length < 3){
         box.innerHTML = '<p class="how">Not enough classmates found to play. ' +
-          'Make sure you are signed in on the timetable first.</p>';
+          'Open a timetable and sign in first.</p>';
         return;
       }
       play();
@@ -260,27 +310,36 @@ BUILD.guesswho = host => {
   })();
 
   function play(){
-    const pool = gwPool;
+    const pool = gwData.pool;
     const target = pool[(Math.random()*pool.length)|0];
     const names = pool.map(p => p.name).sort();
-    let level = 0, guesses = 0, wonlost = false;
+    let guesses = 0, wonlost = false;
     const first = target.name.split(' ')[0], last = target.name.split(' ').slice(1).join(' ');
+    const others = pool.filter(p => p !== target);
+    const classmate = shuffle(others.filter(p => p.subjects.some(s => target.subjects.includes(s))))[0];
+    const someClasses = shuffle(target.subjects.slice());
 
-    /* hints revealed one per wrong guess */
-    const hints = [
+    /* a shuffled mix of hint types; only ones we have data for are included */
+    const hintPool = [
       () => 'They are in <b>' + target.subjects.length + '</b> of your classes.',
-      () => 'Those classes: <b>' + target.subjects.join(', ') + '</b>.',
-      () => target.year ? 'Year / form: <b>' + target.year + '</b>.' : 'No year on record — skip.',
-      () => 'Their name has <b>' + first.length + '</b>-letter first name, <b>' +
-            (last.length||'?') + '</b>-letter surname.',
+      () => 'One of their classes is <b>' + someClasses[0] + '</b>.',
+      target.subjects.length > 1 ? () => 'They also take <b>' + someClasses[1] + '</b>.' : null,
+      target.year ? () => 'They are in year/form <b>' + target.year + '</b>.' : null,
+      () => 'Their first name has <b>' + first.length + '</b> letters' +
+            (last ? ', surname <b>' + last.length + '</b>' : '') + '.',
       () => 'First name starts with <b>' + first[0].toUpperCase() + '</b>.',
-      () => 'Surname starts with <b>' + (last[0]||'?').toUpperCase() + '</b>.',
-      () => 'First name: <b>' + reveal(first, 0.6) + '</b>'
-    ];
+      last ? () => 'Surname starts with <b>' + last[0].toUpperCase() + '</b>.' : null,
+      classmate ? () => '<b>' + classmate.name + '</b> is in one of their classes.' : null,
+      () => 'First name: <b>' + reveal(first, 0.55) + '</b>.'
+    ].filter(Boolean);
+    /* keep the class-count opener first, shuffle the rest */
+    const hints = [hintPool[0], ...shuffle(hintPool.slice(1))];
+    let level = 0;
 
     render();
     function render(){
       box.innerHTML =
+        '<div class="gwyou">Playing from <b>' + esc(gwData.viewer) + '</b>’s classes</div>' +
         '<div class="gwhints" id="gwhints"></div>' +
         '<div class="gwrow">' +
           '<input id="gwin" list="gwlist" autocomplete="off" placeholder="Name a classmate…">' +
@@ -297,7 +356,9 @@ BUILD.guesswho = host => {
       document.getElementById('gwhints').innerHTML =
         hints.slice(0, level+1).map((h,i) =>
           '<div class="gwhint' + (i===level ? ' fresh' : '') + '">' + h() + '</div>').join('');
-      document.getElementById('sc').textContent = wonlost ? '' : 'Guess ' + (guesses+1);
+      const left = hints.length - (level+1);
+      document.getElementById('sc').textContent = wonlost ? ''
+        : 'Guess ' + (guesses+1) + ' · ' + (left>0 ? left + ' hint' + (left===1?'':'s') + ' left' : 'last hint');
     }
     function guess(){
       if (wonlost) return;
@@ -314,25 +375,26 @@ BUILD.guesswho = host => {
       inp.value = '';
       if (right){
         wonlost = true;
-        document.getElementById('sc').textContent = 'Got them in ' + guesses + '!';
+        recordStat('guesswho', { key:'best', mode:'min', value:guesses });
+        document.getElementById('sc').textContent = 'Got them in ' + guesses + '! (best ' + statVal('guesswho','best') + ')';
         document.getElementById('gwhints').innerHTML =
           '<div class="gwhint win">It was <b>' + target.name + '</b> 🎉 — ' +
           'shared classes: ' + target.subjects.join(', ') + '.</div>';
         inp.disabled = true;
-        document.getElementById('gwguess').textContent = 'Play again';
-        document.getElementById('gwguess').disabled = false;
-        document.getElementById('gwguess').onclick = play2;
+        endButton();
       } else if (level < hints.length - 1){
         level++; paintHints();
       } else {
         wonlost = true;
         document.getElementById('gwhints').innerHTML +=
           '<div class="gwhint lose">Out of hints — it was <b>' + target.name + '</b>.</div>';
-        document.getElementById('gwguess').textContent = 'Play again';
-        document.getElementById('gwguess').onclick = play2;
+        endButton();
       }
     }
-    function play2(){ play(); }
+    function endButton(){
+      const b = document.getElementById('gwguess');
+      b.textContent = 'Play again'; b.disabled = false; b.onclick = play;
+    }
   }
   function reveal(word, frac){
     return [...word].map((ch,i) => (i===0 || Math.random()<frac) ? ch : '_').join(' ');
@@ -346,7 +408,7 @@ BUILD.snake = host => {
        '<canvas id="cv" width="320" height="320"></canvas>');
   const ctx = $('cv').getContext('2d'), N = 16, S = 20;
   let snake = [{x:8,y:8}], dir = {x:1,y:0}, next = dir,
-      food = {x:4,y:4}, score = 0, dead = false;
+      food = {x:4,y:4}, score = 0, dead = false, recorded = false;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
   const key = e => {
     const k = e.key.toLowerCase();
@@ -371,7 +433,9 @@ BUILD.snake = host => {
         while (snake.some(p => p.x===food.x && p.y===food.y));
       } else snake.pop();
     }
-    $('sc').textContent = dead ? 'Dead — score ' + score + ' · press R' : 'Score ' + score;
+    if (dead && !recorded){ recorded = true; recordStat('snake', {key:'high', mode:'max', value:score}); }
+    $('sc').textContent = dead ? 'Dead — score ' + score + ' (best ' + (statVal('snake','high')||score) + ') · press R'
+                               : 'Score ' + score + (statVal('snake','high') ? ' · best ' + statVal('snake','high') : '');
     ctx.clearRect(0,0,320,320);
     ctx.fillStyle = css('--accent');
     snake.forEach(p => ctx.fillRect(p.x*S+1, p.y*S+1, S-2, S-2));
@@ -380,60 +444,129 @@ BUILD.snake = host => {
   };
   const restart = e => {
     if (e.key.toLowerCase() !== 'r' || !dead) return;
-    snake=[{x:8,y:8}]; dir={x:1,y:0}; next=dir; score=0; dead=false;
+    snake=[{x:8,y:8}]; dir={x:1,y:0}; next=dir; score=0; dead=false; recorded=false;
   };
   addEventListener('keydown', restart);
   const t = setInterval(tick, 110); tick();
   return () => { clearInterval(t); removeEventListener('keydown', key); removeEventListener('keydown', restart); };
 };
 
-/* ── 2048 ──────────────────────────────────────────────────────── */
+/* ── 2048 (animated) ───────────────────────────────────────────────
+   Tiles are absolutely positioned and keep a stable id, so a move
+   transitions each one to its new cell instead of teleporting.       */
 BUILD.g2048 = host => {
   head(host, '2048', 'Arrow keys or WASD. Combine matching tiles.',
-       '<div id="g2048"></div>');
-  let g = Array(16).fill(0), score = 0;
-  const add = () => {
-    const free = g.map((v,i) => v?null:i).filter(v => v!==null);
-    if (free.length) g[free[(Math.random()*free.length)|0]] = Math.random()<0.9?2:4;
+       '<div id="g2048wrap"><div id="g2048bg"></div><div id="g2048tiles"></div></div>');
+  const CELL = 74, GAP = 8, STEP = CELL + GAP;
+  const wrap = $('g2048wrap'), bg = $('g2048bg'), layer = $('g2048tiles');
+  wrap.style.cssText = 'position:relative;width:' + (4*STEP-GAP) + 'px;max-width:100%;aspect-ratio:1';
+  bg.style.cssText = 'position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);gap:' + GAP + 'px';
+  for (let i=0;i<16;i++){ const d=document.createElement('div'); d.className='cell2048'; bg.appendChild(d); }
+  layer.style.cssText = 'position:absolute;inset:0';
+
+  let tiles = [], score = 0, uid = 0, busy = false;
+  const at = (r,c) => tiles.find(t => t.r===r && t.c===c);
+  const spawn = () => {
+    const free = [];
+    for (let r=0;r<4;r++) for (let c=0;c<4;c++) if (!at(r,c)) free.push([r,c]);
+    if (!free.length) return;
+    const [r,c] = free[(Math.random()*free.length)|0];
+    tiles.push({ id:++uid, r, c, val: Math.random()<0.9?2:4, isNew:true });
   };
+  const tint = v => 'color-mix(in srgb, var(--accent) ' + Math.min(82, 10+Math.log2(v)*9) + '%, var(--panel))';
   const paint = () => {
-    const host2 = $('g2048'); host2.innerHTML = '';
-    g.forEach(v => {
-      const d = document.createElement('div');
-      d.textContent = v || '';
-      if (v) d.style.background = 'color-mix(in srgb, var(--accent) ' +
-        Math.min(80, 12 + Math.log2(v)*9) + '%, var(--panel))';
-      host2.appendChild(d);
+    const seen = new Set();
+    tiles.forEach(t => {
+      let el = layer.querySelector('[data-id="' + t.id + '"]');
+      if (!el){
+        el = document.createElement('div'); el.className='tile2048'; el.dataset.id=t.id;
+        el.style.cssText = 'position:absolute;width:' + CELL + 'px;height:' + CELL + 'px;'+
+          'display:flex;align-items:center;justify-content:center;border-radius:calc(var(--card-radius)*.5);'+
+          'font-family:var(--font-num);font-weight:700;font-size:22px;color:var(--text);'+
+          'transition:transform .13s ease;will-change:transform';
+        el.style.transform = 'translate(' + (t.c*STEP) + 'px,' + (t.r*STEP) + 'px)';
+        layer.appendChild(el);
+        if (t.isNew){ el.animate([{transform:el.style.transform+' scale(.1)',opacity:0},
+                                   {transform:el.style.transform+' scale(1)',opacity:1}],
+                                  {duration:130,easing:'ease'}); }
+      }
+      el.textContent = t.val;
+      el.style.background = tint(t.val);
+      el.style.fontSize = (t.val>=1000?17:t.val>=100?20:22)+'px';
+      el.style.transform = 'translate(' + (t.c*STEP) + 'px,' + (t.r*STEP) + 'px)';
+      if (t.pop){ el.animate([{transform:el.style.transform+' scale(1)'},
+                              {transform:el.style.transform+' scale(1.18)'},
+                              {transform:el.style.transform+' scale(1)'}],{duration:150,easing:'ease'}); t.pop=false; }
+      seen.add(String(t.id));
     });
-    $('sc').textContent = 'Score ' + score;
+    layer.querySelectorAll('.tile2048').forEach(el => { if (!seen.has(el.dataset.id)) el.remove(); });
+    $('sc').textContent = 'Score ' + score + (statVal('g2048','high') ? ' · best ' + statVal('g2048','high') : '');
   };
-  const line = row => {                       /* slide + merge one row left */
-    const a = row.filter(Boolean);
-    for (let i=0;i<a.length-1;i++)
-      if (a[i]===a[i+1]){ a[i]*=2; score+=a[i]; a.splice(i+1,1); }
-    while (a.length<4) a.push(0);
-    return a;
-  };
-  const rows = () => [0,1,2,3].map(r => g.slice(r*4, r*4+4));
-  const cols = () => [0,1,2,3].map(c => [0,1,2,3].map(r => g[r*4+c]));
-  const setRows = rs => { g = rs.flat(); };
-  const setCols = cs => { cs.forEach((col,c) => col.forEach((v,r) => g[r*4+c] = v)); };
-  const move = d => {
-    const before = g.join(',');
-    if (d==='l') setRows(rows().map(line));
-    if (d==='r') setRows(rows().map(r => line(r.slice().reverse()).reverse()));
-    if (d==='u') setCols(cols().map(line));
-    if (d==='d') setCols(cols().map(c => line(c.slice().reverse()).reverse()));
-    if (g.join(',') !== before){ add(); paint(); }
-  };
+
+  /* slide/merge one ordered line of tiles (already sorted in travel direction) */
+  function collapse(lineTiles){
+    let moved = false;
+    const out = [];
+    for (let i=0;i<lineTiles.length;i++){
+      const t = lineTiles[i], nxt = lineTiles[i+1];
+      if (nxt && nxt.val === t.val && !t._merged && !nxt._merged){
+        t._merged = true; nxt._merged = true; nxt._gone = true;
+        out.push({ keep:t, absorbed:nxt, val:t.val*2 });
+        i++;                                   /* skip the absorbed one */
+      } else out.push({ keep:t, val:t.val });
+    }
+    return out;
+  }
+  function move(dir){
+    if (busy) return;
+    const before = tiles.map(t => t.id+':'+t.r+','+t.c+'='+t.val).join('|');
+    tiles.forEach(t => { t._merged=false; t._gone=false; });
+    const lines = [];
+    for (let k=0;k<4;k++){
+      let line = tiles.filter(t => (dir==='l'||dir==='r') ? t.r===k : t.c===k);
+      line.sort((a,b) => (dir==='l'||dir==='u') ? (a.c+a.r)-(b.c+b.r) : (b.c+b.r)-(a.c+a.r));
+      lines.push({ k, line });
+    }
+    lines.forEach(({k, line}) => {
+      const merged = collapse(line);
+      merged.forEach((m, idx) => {
+        const pos = (dir==='l'||dir==='u') ? idx : 3-idx;
+        if (dir==='l'){ m.keep.r=k; m.keep.c=pos; }
+        if (dir==='r'){ m.keep.r=k; m.keep.c=pos; }
+        if (dir==='u'){ m.keep.c=k; m.keep.r=pos; }
+        if (dir==='d'){ m.keep.c=k; m.keep.r=pos; }
+        if (m.absorbed){ m.absorbed.r=m.keep.r; m.absorbed.c=m.keep.c; }   /* slide onto target */
+      });
+    });
+    /* first move the absorbed tiles onto their target (animate), then merge values */
+    paint();
+    const changed = tiles.map(t => t.id+':'+t.r+','+t.c).join('|') !== before.replace(/=\d+/g,'');
+    const anyGone = tiles.some(t => t._gone);
+    if (!changed && !anyGone) return;
+    busy = true;
+    setTimeout(() => {
+      tiles = tiles.filter(t => !t._gone);
+      tiles.forEach(t => { if (t._merged && !t._gone){ t.val*=2; score+=t.val; t.pop=true;
+        recordStat('g2048', {key:'high', mode:'max', value:score}); } });
+      spawn();
+      paint();
+      busy = false;
+      if (isOver()) $('sc').textContent = 'Game over — score ' + score + ' · best ' + statVal('g2048','high');
+    }, 130);
+  }
+  function isOver(){
+    if (tiles.length < 16) return false;
+    for (const t of tiles){
+      for (const [dr,dc] of [[0,1],[1,0]]){ const n=at(t.r+dr,t.c+dc); if (n && n.val===t.val) return false; }
+    }
+    return true;
+  }
   const key = e => {
-    const m = {arrowleft:'l',a:'l',arrowright:'r',d:'r',
-               arrowup:'u',w:'u',arrowdown:'d',s:'d'}[e.key.toLowerCase()];
-    if (!m) return;
-    e.preventDefault(); move(m);
+    const m = {arrowleft:'l',a:'l',arrowright:'r',d:'r',arrowup:'u',w:'u',arrowdown:'d',s:'d'}[e.key.toLowerCase()];
+    if (!m) return; e.preventDefault(); move(m);
   };
   addEventListener('keydown', key);
-  add(); add(); paint();
+  spawn(); spawn(); paint();
   return () => removeEventListener('keydown', key);
 };
 
@@ -487,7 +620,9 @@ BUILD.mines = host => {
   const check = () => {
     if (over) return;
     const opened = open.filter(Boolean).length;
-    if (opened === N*N - MINES){ over = true; $('sc').textContent = 'Cleared!'; }
+    if (opened === N*N - MINES){ over = true;
+      recordStat('mines', {key:'cleared', mode:'count', value:1});
+      $('sc').textContent = 'Cleared! (' + statVal('mines','cleared') + ' total)'; }
     else $('sc').textContent = (N*N - MINES - opened) + ' left';
   };
   const reset = () => { open=[]; flag=[]; over=false; first=true; paint(); check(); };
@@ -521,7 +656,8 @@ BUILD.typing = host => {
       done = true;
       const secs = (Date.now() - started) / 1000;
       const wpm = Math.round((target.split(' ').length / secs) * 60);
-      $('sc').textContent = wpm + ' wpm in ' + secs.toFixed(1) + 's';
+      recordStat('typing', {key:'wpm', mode:'max', value:wpm});
+      $('sc').textContent = wpm + ' wpm in ' + secs.toFixed(1) + 's · top ' + statVal('typing','wpm');
       $('typein').disabled = true;
     } else if (!done){
       const wrong = [...v].filter((ch,i) => ch !== target[i]).length;
@@ -553,7 +689,8 @@ BUILD.react = host => {
       const ms = Date.now() - at;
       times.push(ms);
       const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
-      $('sc').textContent = ms + ' ms · avg ' + avg + ' over ' + times.length;
+      recordStat('react', {key:'fastest', mode:'min', value:ms});
+      $('sc').textContent = ms + ' ms · avg ' + avg + ' · fastest ' + statVal('react','fastest');
       if (times.length >= 5){
         state = 'idle'; times = [];
         show('', ms + ' ms — done. Click to go again');

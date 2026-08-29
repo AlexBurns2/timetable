@@ -672,3 +672,26 @@ they're larger and change more often.
 
 The Games page fetches your classes and rosters through the shared login via
 `TT.apiGet` in `theme.js`, so it works on any page without duplicating the auth.
+
+---
+
+## Round of polish
+
+- **Header toggle bug fixed** — the `tt.header` key was missing from the
+  timetable's storage map, so the Classic/Separated switch never applied. Glass
+  now drops its frosted panel entirely in Separated mode.
+- **Classic outlines toggle** now works: off = plain border (the subject dot
+  stays); on = the coloured ring.
+- The **username box** is discreet by default (the `@domain` suffix only appears
+  while editing) and grows for longer names without stretching to fill.
+- **Guess Who** confirms whose classes it's drawn from, excludes teachers
+  (by role *and* `@det.nsw.edu.au`), varies its hints (class count, a class or
+  two, year, a classmate, name shape/letters), shows a hints-left counter, and
+  no longer prints a dead "no year" hint. It can only pool people who share a
+  class with you — a whole-year roster isn't exposed by the API, so that's the
+  natural limit.
+- **Games** open with a crossfade into a clean stage (a `[hidden]`/`display`
+  specificity bug had been leaving the grid visible behind the game). Each game
+  keeps a **local high score / stat** (`tt.stats`), shown on its card.
+- **2048 tiles animate** — they slide to their new cell and pop on merge instead
+  of teleporting, via position-tracked tiles with stable ids.
