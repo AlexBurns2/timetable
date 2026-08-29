@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" data-skin="plain" data-mode="light" data-view="compact">
 <head>
-<meta name="robots" content="noindex, nofollow" />
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Andre Kwok — Timetable</title>
-<link rel="icon" type="image/png" href="favicon.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Timetable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -587,152 +590,53 @@ function toMinutes(v){
   if (ap === 'a' && h === 12) h = 0;
   return h*60 + mi;
 }
-
-function formatTime(value) {
-  if (!value) return "";
-
-  const total = timeToMin(value),
-    h = Math.floor(total / 60),
-    m = total % 60;
-
-  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
-}
-
-function getPeriodNumber(value) {
-  if (value == null) return "";
-
-  const str = String(value).trim(),
-    match = str.match(/(?:period|p)?\s*(\d+)/i);
-
-  return match ? match[1] : str;
-}
-
-class ApiError extends Error {
-  constructor(message, status) {
-    super(message);
-    this.status = status;
-  }
-}
-
-async function apiGet(path, retry = true) {
-  const { type, token } = await loadToken();
-
-  if (!token) {
-    throw new ApiError("Unable to obtain a school token.", 401);
-  }
-
-  let res;
-
-  try {
-    res = await fetch(CONFIG.API_BASE + path, {
-      method: "GET",
-      headers: {
-        Authorization: `${type} ${token}`,
-        Accept: "application/json",
-      },
-    });
-  } catch (e) {
-    throw new ApiError("Network error contacting the school intranet.", 0);
-  }
-
-  if (res.status === 401 && retry) {
-    localStorage.removeItem("school-token");
-    return apiGet(path, false);
-  }
-
-  if (res.status === 401) {
-    throw new ApiError("The new school session was rejected.", 401);
-  }
-
-  if (res.status === 403) {
-    throw new ApiError("Access to this timetable was denied.", 403);
-  }
-
-  if (res.status === 404) {
-    throw new ApiError("That endpoint was not found.", 404);
-  }
-
-  if (!res.ok) {
-    throw new ApiError(`Unexpected server response (${res.status}).`, res.status);
-  }
-
-  const contentType = res.headers.get("Content-Type") || "";
-
-  if (!contentType.includes("application/json")) {
-    throw new ApiError("Server returned an unexpected response format.", res.status);
-  }
-
-  return await res.json();
-}
-
-const timetableService = (() => {
-  let cache = {
-    email: null,
-    timetable: null,
-    bellTimes: null,
-    startDate: null,
-    profile: null,
-    fetchedAt: null,
-  };
-
-  async function loadAll(force = false) {
-    const email = getCurrentEmail();
-
-    if (cache.email !== email) {
-      cache = {
-        email,
-        timetable: null,
-        bellTimes: null,
-        startDate: null,
-        profile: null,
-        fetchedAt: null,
-      };
-    }
-
-    if (cache.timetable && !force) return cache;
-
-    const [timetable, bellTimes, startDateRes, profile] = await Promise.all([
-      apiGet(`/api/timetable/${encodeURIComponent(email)}`),
-      apiGet("/api/timetable/bell-times").catch(() => null),
-      apiGet("/api/timetable/settings/start-date").catch(() => null),
-      apiGet(`/api/user/${encodeURIComponent(email)}`).catch(() => null),
-    ]);
-
-    console.log("Timetable API response:", timetable);
-    console.log("Bell times API response:", bellTimes);
-
-    cache = {
-      email,
-      timetable,
-      bellTimes,
-      startDate: startDateRes,
-      profile,
-      fetchedAt: new Date(),
-    };
-
-    return cache;
-  }
-
-  return {
-    loadAll,
-    get current() {
-      return cache;
-    },
-  };
-})();
-
-const CYCLE_DAYS = ["MonA", "TueA", "WedA", "ThuA", "FriA", "MonB", "TueB", "WedB", "ThuB", "FriB"];
-
-const DAY_LABELS = {
-  mon: "Monday",
-  tue: "Tuesday",
-  wed: "Wednesday",
-  thu: "Thursday",
-  fri: "Friday",
+const fmtTime = mins => {
+  if (mins === null || mins === undefined) return '';
+  const h = Math.floor(mins/60), m = mins%60;
+  return (((h+11)%12)+1) + ':' + pad(m) + (h >= 12 ? 'pm' : 'am');
 };
+function toDate(v){
+  if (!v) return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  const s = String(v);
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], (+m[2])-1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], (+m[2])-1, +m[1]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
 
-const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri"];
-const WEEK_ORDER = ["A", "B"];
+/* ═══ field pickers ═══ */
+const pick = (o, keys) => {
+  if (o == null || typeof o !== 'object') return undefined;
+  const lower = {};
+  for (const k of Object.keys(o)) lower[k.toLowerCase()] = o[k];
+  for (const k of keys){
+    const v = lower[k.toLowerCase()];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+};
+const deepStr = v => (v && typeof v === 'object')
+  ? (pick(v, ['name','fullName','displayName','description','title','shortName','code','text']) || '')
+  : (v === undefined || v === null ? '' : v);
+const str = v => String(deepStr(v)).trim();
+function asArray(v){
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === 'object'){ for (const val of Object.values(v)) if (Array.isArray(val)) return val; }
+  return [];
+}
+
+/* ═══ subject tidy-up ═══
+   The API gives names like "11PHYS A3 Physics Yr11". Strip the leading class
+   code and the trailing year suffix, but never strip down to nothing. */
+/* Optional display renames, applied after the year suffix is stripped.
+   Left-hand side is the cleaned CourseName. Edit freely. */
+const SUBJECT_RENAMES = {
+  // 'Mathematics Extension 1': 'Maths Ext 1',
+  // 'Mathematics HSC': 'Maths Advanced',
+};
 
 function cleanSubject(name, code){
   const original = String(name || '').trim();
@@ -872,194 +776,223 @@ function normalise(payload){
   for (const raw of asArray(payload.timetable)){
     const dayName = str(pick(raw, ['DayName','dayName']));
     if (!dayName) continue;
+    const dayKey = dayName.toLowerCase();
+    if (CYCLE_DAYS.indexOf(dayKey) === -1) continue;
 
-    const { dayKey, week } = dayNameToParts(dayName);
+    const period = str(pick(raw, ['Period','period','PeriodNumber','periodNumber']));
+    const kind = classify(period);
+    const pnum = periodNumber(period).toLowerCase();
+    const bt = bell[dayKey + '|' + pnum] || bell['*|' + pnum] || {};
+    const rowStart = toMinutes(pick(raw, ['StartTime','startTime','Start','start']));
+    const rowEnd   = toMinutes(pick(raw, ['EndTime','endTime','End','end']));
 
-    if (!grouped[week] || !grouped[week][dayKey]) continue;
+    /* CourseName is the human name ("Engineering Studies Yr11"); ClassCode is
+       the roll code ("11ENGST A4"). Prefer the former, keep the latter for the
+       detail sheet. */
+    const rawSubject = str(pick(raw, ['CourseName','courseName','SubjectName','Subject','subjectName','subject','Description','description','ClassName','className']));
+    const code    = str(pick(raw, ['ClassCode','classCode','Code','code']));
+    const teacher = str(pick(raw, ['TeacherName','teacherName','TeacherFullName','teacherFullName','Teacher','teacher','DefaultTeacher','StaffName','staffName']));
+    const room    = str(pick(raw, ['RoomCode','roomCode','RoomNumber','roomNumber','RoomName','roomName','Room','room','Location','location']));
 
-    const period = raw.Period ?? raw.period;
-    const kind = classifyPeriod(period);
-    const times = getRawTimes(raw, bellTimes, dayName, period);
-
-    const subject = getSubject(raw);
-    const code = getCode(raw, subject);
-
-    if (kind !== "class") {
-      grouped[week][dayKey].push({
-        kind,
-        start: times.start,
-        end: times.end,
-        raw,
-      });
-
-      continue;
-    }
-
-    grouped[week][dayKey].push({
-      kind: "class",
-      code,
-      periodNumber: getPeriodNumber(period),
-      subjKey: String(subject + " " + code)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-"),
-      subjName: subject,
-      teacher: getTeacher(raw),
-      room: getRoom(raw),
-      start: times.start,
-      end: times.end,
-      raw,
+    out.push({
+      dayKey, dayName, period, pnum, kind, code,
+      room: room, rawRoom: room,
+      teacher: tidyTeacher(teacher), rawTeacher: teacher,
+      rawSubject,
+      subject: kind === 'class' ? cleanSubject(rawSubject, code) : titleCase(period),
+      /* The row carries its own times and is authoritative; bell times only
+         fill gaps for rows that omit them. */
+      start: rowStart != null ? rowStart : bt.start,
+      end:   rowEnd   != null ? rowEnd   : bt.end
     });
   }
-
-  for (const week of WEEK_ORDER) {
-    for (const day of DAY_ORDER) {
-      const rows = grouped[week][day];
-      const isWednesday = day === "wed";
-
-      const breaks = isWednesday
-        ? [
-            { kind: "assembly", start: "10:45", end: "11:05" },
-            { kind: "break", start: "11:05", end: "11:25" },
-            { kind: "lunch", start: "12:20", end: "13:00" },
-          ]
-        : [
-            { kind: "break", start: "10:45", end: "11:05" },
-            { kind: "lunch", start: "12:55", end: "13:35" },
-          ];
-
-      for (const br of breaks) {
-        const exists = rows.some(
-          (item) =>
-            item.start &&
-            item.end &&
-            timeToMin(item.start) === timeToMin(br.start) &&
-            timeToMin(item.end) === timeToMin(br.end),
-        );
-
-        if (!exists) rows.push(br);
-      }
-
-      if (isWednesday) {
-        const wednesdayTimes = {
-          0: { start: "07:55", end: "08:55" },
-          1: { start: "08:55", end: "09:50" },
-          2: { start: "09:50", end: "10:45" },
-          3: { start: "11:25", end: "12:20" },
-          4: { start: "13:00", end: "13:55" },
-          5: { start: "13:55", end: "14:50" },
-        };
-
-        for (const item of rows) {
-          if (item.kind !== "class") continue;
-
-          const period = item.periodNumber || getPeriodNumber(item.raw?.Period || item.raw?.period);
-
-          if (wednesdayTimes[period]) {
-            item.start = wednesdayTimes[period].start;
-            item.end = wednesdayTimes[period].end;
-          }
-        }
-      }
-
-      rows.sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
-
-      const withGaps = [];
-
-      for (let i = 0; i < rows.length; i++) {
-        withGaps.push(rows[i]);
-
-        const cur = rows[i];
-        const nxt = rows[i + 1];
-
-        if (cur && nxt && cur.end && nxt.start) {
-          const gap = timeToMin(nxt.start) - timeToMin(cur.end);
-
-          if (gap >= 20) {
-            withGaps.push({
-              kind: "free",
-              start: cur.end,
-              end: nxt.start,
-            });
-          }
-        }
-      }
-
-      grouped[week][day] = withGaps;
-    }
-  }
-
-  return grouped;
+  return out;
 }
 
-const grid = document.getElementById("grid");
-const statusBanner = document.getElementById("statusBanner");
+/* Rows come from the bell schedule, not just from lessons, so recess, both
+   lunch halves and Wednesday's assembly get their own row. Days disagree about
+   when those land (Wednesday's assembly shifts recess and lunch), so each slot
+   is ordered by its AVERAGE start across the cycle and each cell renders that
+   day's own times. */
+function buildSlots(){
+  const withLesson = new Set(entries.map(e => mergeKey(e.pnum || e.period)));
+  const map = new Map();
 
-let SCHEDULE = {
-  A: { mon: [], tue: [], wed: [], thu: [], fri: [] },
-  B: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+  const note = (key, label, kind, start, end) => {
+    const k = String(key).toLowerCase();
+    const cur = map.get(k) || { key:k, period:label, kind, starts:[], ends:[] };
+    if (start != null) cur.starts.push(start);
+    if (end   != null) cur.ends.push(end);
+    if (kind !== 'class') cur.kind = kind;
+    map.set(k, cur);
+  };
+
+  for (const b of bellRows){
+    const key = mergeKey(periodNumber(b.label));
+    const kind = b.type === 'R' ? classifyBell(b.label) : classify(b.label);
+    note(key, BREAK_NAMES[key] || b.label, kind, b.start, b.end);
+  }
+  /* anything the bell table missed but a lesson claims */
+  for (const e of entries){
+    const key = mergeKey(e.pnum || e.period);
+    if (!map.has(key)) note(key, e.period, e.kind, e.start, e.end);
+  }
+
+  const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
+  let all = [...map.values()].map(v => ({
+    key:v.key, period:v.period, kind:v.kind,
+    start: avg(v.starts), end: avg(v.ends),
+    hasLesson: withLesson.has(v.key)
+  }));
+
+  /* keep rows that hold a lesson, plus breaks that sit inside the school day */
+  const taught = all.filter(r => r.hasLesson && r.start != null);
+  const first = taught.length ? Math.min(...taught.map(r => r.start)) : 0;
+  const last  = taught.length ? Math.max(...taught.map(r => r.start)) : 1440;
+  all = all.filter(r => r.hasLesson ||
+                        (r.kind !== 'class' && r.start != null &&
+                         r.start >= first && r.start <= last));
+
+  slots = all.sort((a,b) => {
+    if (a.start != null && b.start != null && a.start !== b.start) return a.start - b.start;
+    return String(a.key).localeCompare(String(b.key), undefined, { numeric:true });
+  });
+}
+
+/* a bell row flagged Type=R is a break; use its label to name it */
+function classifyBell(label){
+  const p = String(label || '').toLowerCase();
+  if (p.startsWith('l')) return 'lunch';
+  if (p.startsWith('r')) return 'break';
+  return classify(label);
+}
+
+/* that day's actual times for a slot, falling back to the cycle average */
+function bellFor(dayKey, slotKey){
+  const k = mergeKey(slotKey);
+  const hits = bellRows.filter(b => b.day === dayKey && mergeKey(periodNumber(b.label)) === k);
+  if (!hits.length) return null;
+  const starts = hits.map(h => h.start).filter(v => v != null);
+  const ends   = hits.map(h => h.end).filter(v => v != null);
+  return { day:dayKey, label:hits[0].label, type:hits[0].type,
+           start: starts.length ? Math.min(...starts) : null,
+           end:   ends.length   ? Math.max(...ends)   : null };
+}
+
+/* ═══ colours ═══ */
+/* Gap between cells -- used for the CSS grid gap and for the vertical inset
+   on time-positioned blocks, so both axes are provably identical. */
+const CELL_GAP = 6;
+
+/* Default subject colours match the original NBSC timetable: one pastel per
+   faculty, matched on the course name, with a spread of fallbacks for
+   anything unrecognised. Light and dark get their own values. */
+const CAT_COLOURS = {
+  light:{ math:'#FFA9A6', english:'#FEFB99', technology:'#FFD5F4', music:'#E0C0F4',
+          science:'#A4FEFF', hsie:'#D7CDB3', languages:'#F2884B', va:'#FFADFF',
+          other:'#A5D5FF' },
+  dark: { math:'#FF8582', english:'#FFF06A', technology:'#FF9BDD', music:'#CFA8F4',
+          science:'#76F0F2', hsie:'#D8C99F', languages:'#FF9B63', va:'#E56BE5',
+          other:'#82C5FF' }
 };
+const CAT_ORDER = ['math','english','technology','music','science','hsie','languages','va','other'];
+const CAT_NAMES = { math:'Mathematics', english:'English', technology:'Technology',
+                    music:'Music', science:'Science', hsie:'HSIE', languages:'Languages',
+                    va:'Visual Arts', other:'Other' };
 
-let TODAY_CYCLE_DAY = null;
-let CYCLE_START_DATE = null;
-let currentWeek = "A";
-let seqIndex = 0;
+function categoryFor(name){
+  const n = String(name || '').toLowerCase();
+  if (/\bmath/.test(n) || /\bextension\b/.test(n) || /\bm(a|ax|x)\d?\b/.test(n)) return 'math';
+  if (n.includes('english')) return 'english';
+  if (/engineer|software|technolog|textile|graphic|digital|computing|design|industrial/.test(n)) return 'technology';
+  if (/\bmusic\b/.test(n)) return 'music';
+  if (/physic|chem|biolog|science|investigat/.test(n)) return 'science';
+  if (/history|geograph|business|legal|economic|commerce|society|hsie|studies of religion/.test(n)) return 'hsie';
+  if (/french|japanese|chinese|spanish|german|italian|korean|language|latin/.test(n)) return 'languages';
+  if (/visual art|visual design|photograph|\bart\b/.test(n)) return 'va';
+  return null;
+}
 
-function setStatus(message, isError = false) {
-  if (!message) {
-    statusBanner.style.display = "none";
-    return;
+const PALETTE = ['#e0542e','#3b6ef6','#12a594','#a259e6','#e5a000','#d6409f',
+                 '#2f9e44','#0e7490','#c2410c','#7c3aed','#0891b2','#be123c'];
+const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h*31 + s.charCodeAt(i))|0; return Math.abs(h); };
+
+function defaultColour(subject){
+  const cat = categoryFor(subject);
+  if (cat) return CAT_COLOURS[mode === 'dark' ? 'dark' : 'light'][cat];
+  return PALETTE[hash(String(subject)) % PALETTE.length];
+}
+const colourFor = s => colours[s] || defaultColour(s);
+
+/* ═══ load ═══ */
+function endpointUrl(){
+  const u = new URL(endpoint, location.href);
+  u.searchParams.set('email', email);
+  /* served from the same origin as the function? drop to a relative URL so the
+     request never leaves the origin and CORS is irrelevant */
+  return u.origin === location.origin ? u.pathname + u.search : u.toString();
+}
+async function load(useCache){
+  loadError = '';
+  if (!endpoint || !email) return;
+  if (useCache){
+    const c = get(LS.cache, null);
+    if (c && c.email === email && Date.now() - c.at < 6*60*60*1000){ apply(c.payload); return; }
   }
-
-  statusBanner.style.display = "block";
-  statusBanner.className = "statusBanner" + (isError ? " error" : "");
-
-  statusBanner.textContent = message;
+  loading = true;
+  try {
+    /* no-store: the browser must always revalidate, otherwise a stale timetable
+       can stick around for hours. Vercel's s-maxage still shields the school API. */
+    const headers = { Accept:'application/json' };
+    if (creds && creds.email && creds.password){
+      headers['X-School-Email'] = creds.email;
+      headers['X-School-Password'] = creds.password;
+    }
+    const res = await fetch(endpointUrl(), { headers, cache:'no-store' });
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
+    /* A host with no such route answers with its own HTML error page. Saying
+       "404" there is useless -- name the actual problem. */
+    const isPage = /^\s*<(!doctype|html)/i.test(text);
+    if (!res.ok){
+      throw new Error((data && data.error) ||
+        (isPage ? 'The timetable service is not reachable at this address — the site is misconfigured.'
+                : res.status + ' ' + res.statusText));
+    }
+    if (!data) throw new Error('The timetable service returned an unreadable response.');
+    apply(data);
+    set(LS.cache, { email, at: Date.now(), payload: data });
+  } catch (err) {
+    loadError = err.message;
+    entries = []; slots = [];
+  } finally { loading = false; }
+}
+function apply(payload){
+  entries = normalise(payload);
+  buildSlots();
+  cycleStart = toDate(typeof payload.startDate === 'string' ? payload.startDate
+    : pick(payload.startDate || {}, ['startDate','StartDate','date','Date']));
+  const p = payload.profile;
+  displayName = p ? titleCase(str(pick(p, ['FullName','fullName'])) ||
+      [str(pick(p, ['FirstName','firstName'])), str(pick(p, ['LastName','lastName']))].filter(Boolean).join(' ')) : '';
+  if (!displayName) displayName = nameFromEmail(payload.email || email);
+  if (!entries.length) loadError = 'No lessons were returned for that address.';
+}
+function nameFromEmail(e){
+  const parts = String(e || '').split('@')[0].split('.');
+  if (parts.length < 2) return '';
+  return titleCase(parts[0]) + ' ' + titleCase(parts[1].replace(/\d+$/, ''));
 }
 
-const DEFAULT_TIMELINE_START = 7 * 60 + 55;
-const NO_PERIOD_0_START = 8 * 60 + 55;
-const TIMELINE_END = 14 * 60 + 50;
-const TIMELINE_HEIGHT = 610;
+/* ═══ render ═══ */
+const $ = id => document.getElementById(id);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const entryAt = (cycleDay, slotKey) =>
+  entries.find(e => e.dayKey === cycleDay && mergeKey(e.pnum || e.period) === mergeKey(slotKey));
 
-let TIMELINE_START = DEFAULT_TIMELINE_START;
-
-function hasPeriodZero() {
-  const week = SCHEDULE[currentWeek];
-
-  if (!week) return false;
-
-  return DAY_ORDER.some((day) =>
-    (week[day] || []).some((item) => item.kind === "class" && String(item.periodNumber) === "0"),
-  );
-}
-
-function hasPeriodZeroForDay(week, day) {
-  return (SCHEDULE[week]?.[day] || []).some(
-    (item) => item.kind === "class" && String(item.periodNumber) === "0",
-  );
-}
-
-function timelineTop(time, timelineStart) {
-  const base = timelineStart !== undefined ? timelineStart : TIMELINE_START;
-
-  return ((timeToMin(time) - base) / (TIMELINE_END - base)) * TIMELINE_HEIGHT;
-}
-
-function timelineHeight(start, end, timelineStart) {
-  const base = timelineStart !== undefined ? timelineStart : TIMELINE_START;
-
-  return ((timeToMin(end) - timeToMin(start)) / (TIMELINE_END - base)) * TIMELINE_HEIGHT;
-}
-
-function isToday(week, dayKey) {
-  if (!TODAY_CYCLE_DAY) return false;
-
-  return TODAY_CYCLE_DAY === dayKey.charAt(0).toUpperCase() + dayKey.slice(1) + week;
-}
-
-function isNowActive(week, dayKey, start, end) {
-  if (!isToday(week, dayKey) || !start || !end) return false;
-
+function render(){
   const now = new Date();
   const nowMin = now.getHours()*60 + now.getMinutes();
   const isMobile = matchMedia('(max-width:860px)').matches;
