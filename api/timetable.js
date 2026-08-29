@@ -291,6 +291,34 @@ export default async function handler(req, res) {
     }
   }
 
+  /* ---- ?group=student|teacher -------------------------------------------
+   * Whole-school directory. /api/group/{student|teacher} returns everyone,
+   * used by the Guess Who difficulty picker (grade / school / teachers).
+   */
+  if (req.query.group) {
+    const g = String(req.query.group).toLowerCase();
+    if (g !== "student" && g !== "teacher") return res.status(400).json({ error: "Unknown group." });
+    try {
+      let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+      let list = await apiGet(apiBase, `/api/group/${g}`, auth);
+      if (list === null) {
+        auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+        list = await apiGet(apiBase, `/api/group/${g}`, auth);
+      }
+      res.setHeader("Cache-Control", usingOwn ? "private, no-store"
+                                              : "public, s-maxage=3600, stale-while-revalidate=86400");
+      return res.status(200).json({ group: g, people: list });
+    } catch (error) {
+      const status = error.status || 502;
+      console.error("Group directory failed:", error.message);
+      return res.status(status).json({
+        error: status === 404 ? "That directory was not found."
+                              : "Unable to load the directory from the school API.",
+        hint: error.hint || undefined
+      });
+    }
+  }
+
   try {
     let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
 

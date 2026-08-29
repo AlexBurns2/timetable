@@ -695,3 +695,30 @@ The Games page fetches your classes and rosters through the shared login via
   keeps a **local high score / stat** (`tt.stats`), shown on its card.
 - **2048 tiles animate** — they slide to their new cell and pop on merge instead
   of teleporting, via position-tracked tiles with stable ids.
+
+---
+
+## Fixes & Guess Who difficulty
+
+- The name pill on the timetable shows the full `@education.nsw.gov.au` again; the
+  header (brand) is width-capped so a long name or username can't squeeze the
+  Now/Next boxes. The username still auto-sizes and switches whose timetable you
+  view without re-authenticating.
+- Settings **Login** fields no longer overflow — a `.field input[type=text]`
+  rule had been stretching only the email box to full width.
+- **Guess Who** gained a difficulty picker: **My classes** (people who share a
+  class, with class hints), **My grade**, **Whole school**, **Teachers**. The
+  last three use the school directory endpoints `/api/group/student` and
+  `/api/group/teacher` (proxied via `?group=`). Hints are tiered so vague ones
+  (year, class count, name length) come first and near-answers (a shared
+  classmate, partial name reveals) come last, shuffled within each tier; the two
+  class hints are always different classes, and the classmate hint prefers
+  someone who shares a *different* class than the one already named.
+
+### Subject colours
+
+Colours are **not** taken from the API's per-lesson `Colour` field. They come
+from a built-in faculty palette matched on the course name (Maths pink, Science
+cyan, English yellow, …), with per-mode values and manual overrides in
+⚙ → Colours. If you'd rather use the school's own `Colour` values, that's a
+small change to `defaultColour()` / `normalise()` — say the word.

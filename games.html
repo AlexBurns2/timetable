@@ -97,6 +97,12 @@ canvas{
 #react.wait{background:#c2571f;color:#fff}
 #react.go{background:#2f9e44;color:#fff}
 /* guess who */
+.gwtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.gwdiffs{display:flex;gap:6px;flex-wrap:wrap}
+.gwdiff{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+  padding:6px 13px;font-size:12.5px;cursor:pointer;color:var(--text)}
+.gwdiff[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.gwtop .gwyou{margin:0 0 0 auto}
 .gwhints{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .gwhint{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
   padding:10px 13px;font-size:14px}
@@ -147,7 +153,7 @@ $('mode').onclick = () => {
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
-  { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Work out a random classmate from hints' },
+  { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery person — classmates, grade or teachers' },
   { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
@@ -258,20 +264,24 @@ const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=(Math.random()*(i
 
 /* pool of everyone sharing a class with the loaded timetable, plus that
    viewer's name so the game confirms whose classes it is drawn from */
-async function buildPool(){
+async function loadGuessData(){
   const email = TT.myEmail();
   const tt = await TT.apiGet({ email });
   const viewer = personName({ Email: email }) || String(email).split('@')[0];
+  const me = String(email).toLowerCase();
+  const groups = (tt.profile && (tt.profile.groups || tt.profile.Groups)) || [];
+  let grade = '';
+  for (const g of groups){ const m = String(g).match(/(?:yr|year)\s*(\d{1,2})/i); if (m){ grade = m[1]; break; } }
+
+  /* people who share a class with you, tagged with the subjects you share */
   const rows = (tt.timetable||[]).filter(r =>
     r.ClassCode && !/assembly|recess|lunch|roll/i.test((r.Period||'') + ' ' + (r.CourseName||'')));
   const codeSubject = {};
   rows.forEach(r => { codeSubject[r.ClassCode] = cleanSubject(r.CourseName) || r.ClassCode; });
   const codes = [...new Set(rows.map(r => r.ClassCode))].slice(0, 10);
-  const me = String(email).toLowerCase();
-  const people = new Map();
+  const cp = new Map();
   for (const code of codes){
-    let data;
-    try { data = await TT.apiGet({ class: code }); } catch { continue; }
+    let data; try { data = await TT.apiGet({ class: code }); } catch { continue; }
     const arr = Array.isArray(data) ? data : (data.roster || data.students || []);
     for (const r of arr){
       if (isStaff(r)) continue;
@@ -279,74 +289,137 @@ async function buildPool(){
       const name = personName(r);
       if (!name || (mail && mail === me)) continue;
       const key = mail || name.toLowerCase();
-      if (!people.has(key)) people.set(key,
-        { name, year: String(r.Year||r.year||r.Form||r.form||'').trim(), subjects:new Set() });
-      people.get(key).subjects.add(codeSubject[code]);
+      if (!cp.has(key)) cp.set(key, { name, email:mail,
+        year:String(r.Year||r.year||r.Form||r.form||'').replace(/\D/g,''), subjects:new Set() });
+      cp.get(key).subjects.add(codeSubject[code]);
     }
   }
-  const pool = [...people.values()].map(p => ({ name:p.name, year:p.year, subjects:[...p.subjects] }));
-  return { pool, viewer };
+  const classPool = [...cp.values()].map(p => ({ name:p.name, email:p.email, year:p.year, subjects:[...p.subjects] }));
+  return { email:me, viewer, grade, classPool, students:null, teachers:null };
 }
 
+/* map a raw directory record to a person */
+function dirPerson(r){
+  const name = personName(r);
+  const mail = String(r.emailAddress||r.Email||r.email||'').toLowerCase();
+  const year = String(r.year||r.Year||r.grade||r.Grade||r.yearGroup||r.rollClass||'').replace(/\D/g,'');
+  return name ? { name, email:mail, year, subjects:[] } : null;
+}
+async function poolFor(diff){
+  if (diff === 'myclasses') return gwData.classPool;
+  if (diff === 'teachers'){
+    if (!gwData.teachers){
+      const d = await TT.apiGet({ group:'teacher' });
+      gwData.teachers = (Array.isArray(d)?d:(d.people||d)).map(dirPerson).filter(Boolean);
+    }
+    return gwData.teachers.filter(p => p.email !== gwData.email);
+  }
+  if (!gwData.students){
+    const d = await TT.apiGet({ group:'student' });
+    gwData.students = (Array.isArray(d)?d:(d.people||d)).map(dirPerson).filter(Boolean)
+                        .filter(p => p.email !== gwData.email);
+  }
+  if (diff === 'grade' && gwData.grade)
+    return gwData.students.filter(p => p.year === gwData.grade);
+  return gwData.students;   /* whole school */
+}
+
+const DIFFS = [
+  { id:'myclasses', name:'My classes', desc:'People in a class with you' },
+  { id:'grade',     name:'My grade',   desc:'Everyone in your year' },
+  { id:'school',    name:'Whole school', desc:'Any student' },
+  { id:'teachers',  name:'Teachers',   desc:'Any teacher' }
+];
+
 BUILD.guesswho = host => {
-  head(host, 'Guess Who', 'A random classmate. Guess who from the hints.', '<div id="gw"></div>');
+  head(host, 'Guess Who', 'Guess the mystery person from the hints.', '<div id="gw"></div>');
   const box = document.getElementById('gw');
-  box.innerHTML = '<p class="how">Loading your classmates…</p>';
-  let alive = true;
+  let alive = true, diff = TT.get('tt.gwdiff', 'myclasses');
 
   (async () => {
+    box.innerHTML = '<p class="how">Loading…</p>';
     try {
-      if (!gwData) gwData = await buildPool();
+      if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
-      if (gwData.pool.length < 3){
-        box.innerHTML = '<p class="how">Not enough classmates found to play. ' +
-          'Open a timetable and sign in first.</p>';
-        return;
-      }
-      play();
+      start();
     } catch (err){
-      if (alive) box.innerHTML = '<p class="how">Could not load classmates: ' + err.message + '</p>';
+      if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
     }
   })();
 
-  function play(){
-    const pool = gwData.pool;
+  async function start(){
+    box.innerHTML =
+      '<div class="gwtop"><div class="gwdiffs" id="gwdiffs"></div>' +
+      '<div class="gwyou">as <b>' + esc(gwData.viewer) + '</b></div></div>' +
+      '<div id="gwbody"><p class="how">Loading people…</p></div>';
+    const dd = document.getElementById('gwdiffs');
+    DIFFS.forEach(d => {
+      const b = document.createElement('button');
+      b.type='button'; b.className='gwdiff'; b.textContent=d.name; b.title=d.desc;
+      b.setAttribute('aria-pressed', String(d.id===diff));
+      b.onclick = () => { diff=d.id; TT.set('tt.gwdiff',diff);
+        [...dd.children].forEach(c=>c.setAttribute('aria-pressed',String(c===b))); load(); };
+      dd.appendChild(b);
+    });
+    load();
+  }
+
+  async function load(){
+    const body = document.getElementById('gwbody');
+    body.innerHTML = '<p class="how">Loading people…</p>';
+    let pool;
+    try { pool = await poolFor(diff); } catch(err){ body.innerHTML = '<p class="how">Could not load: '+esc(err.message)+'</p>'; return; }
+    if (!alive) return;
+    if (!pool || pool.length < 3){
+      body.innerHTML = '<p class="how">Not enough people in this pool to play. Try another difficulty, or open a timetable first.</p>';
+      return;
+    }
+    play(pool.slice());
+  }
+
+  function play(pool){
+    const body = document.getElementById('gwbody');
     const target = pool[(Math.random()*pool.length)|0];
-    const names = pool.map(p => p.name).sort();
+    const names = [...new Set(pool.map(p => p.name))].sort();
     let guesses = 0, wonlost = false;
     const first = target.name.split(' ')[0], last = target.name.split(' ').slice(1).join(' ');
-    const others = pool.filter(p => p !== target);
-    const classmate = shuffle(others.filter(p => p.subjects.some(s => target.subjects.includes(s))))[0];
-    const someClasses = shuffle(target.subjects.slice());
+    const subs = shuffle(target.subjects.slice());
+    const hasClasses = target.subjects.length > 0;
+    /* a classmate who shares a class, preferring one who shares a DIFFERENT
+       class than the one we reveal first, so the two hints aren't redundant */
+    const firstClass = subs[0];
+    const peer = shuffle(pool.filter(p => p !== target && p.subjects.length &&
+        p.subjects.some(s => target.subjects.includes(s) && s !== firstClass)))[0]
+      || shuffle(pool.filter(p => p !== target && p.subjects.some(s => target.subjects.includes(s))))[0];
 
-    /* a shuffled mix of hint types; only ones we have data for are included */
-    const hintPool = [
-      () => 'They are in <b>' + target.subjects.length + '</b> of your classes.',
-      () => 'One of their classes is <b>' + someClasses[0] + '</b>.',
-      target.subjects.length > 1 ? () => 'They also take <b>' + someClasses[1] + '</b>.' : null,
-      target.year ? () => 'They are in year/form <b>' + target.year + '</b>.' : null,
-      () => 'Their first name has <b>' + first.length + '</b> letters' +
-            (last ? ', surname <b>' + last.length + '</b>' : '') + '.',
-      () => 'First name starts with <b>' + first[0].toUpperCase() + '</b>.',
-      last ? () => 'Surname starts with <b>' + last[0].toUpperCase() + '</b>.' : null,
-      classmate ? () => '<b>' + classmate.name + '</b> is in one of their classes.' : null,
-      () => 'First name: <b>' + reveal(first, 0.55) + '</b>.'
-    ].filter(Boolean);
-    /* keep the class-count opener first, shuffle the rest */
-    const hints = [hintPool[0], ...shuffle(hintPool.slice(1))];
+    /* hints grouped by how much they give away; revealed weakest-first,
+       shuffled within each tier, so the near-answer hints come last */
+    const T = [[], [], [], []];
+    if (target.year) T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
+    if (hasClasses){
+      T[0].push(() => 'They are in <b>' + target.subjects.length + '</b> of your classes.');
+      T[0].push(() => 'One of their classes is <b>' + firstClass + '</b>.');
+      if (subs[1]) T[1].push(() => 'They also take <b>' + subs[1] + '</b>.');
+    }
+    T[1].push(() => 'Their first name has <b>' + first.length + '</b> letters'
+                    + (last ? ', surname <b>' + last.length + '</b>' : '') + '.');
+    T[2].push(() => 'Their first name starts with <b>' + first[0].toUpperCase() + '</b>.');
+    if (last) T[2].push(() => 'Their surname starts with <b>' + last[0].toUpperCase() + '</b>.');
+    if (peer) T[2].push(() => 'They share a class with <b>' + peer.name + '</b>.');
+    T[3].push(() => 'Their first name looks like <b>' + reveal(first, 0.5) + '</b>.');
+    if (last) T[3].push(() => 'Their surname looks like <b>' + reveal(last, 0.45) + '</b>.');
+    const hints = [].concat(...T.map(shuffle));
     let level = 0;
 
     render();
     function render(){
-      box.innerHTML =
-        '<div class="gwyou">Playing from <b>' + esc(gwData.viewer) + '</b>’s classes</div>' +
+      body.innerHTML =
         '<div class="gwhints" id="gwhints"></div>' +
         '<div class="gwrow">' +
-          '<input id="gwin" list="gwlist" autocomplete="off" placeholder="Name a classmate…">' +
+          '<input id="gwin" list="gwlist" autocomplete="off" placeholder="Name the mystery person…">' +
           '<datalist id="gwlist">' + names.map(n => '<option value="' + n.replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
           '<button class="btn primary" id="gwguess" type="button">Guess</button>' +
-        '</div>' +
-        '<div class="gwlog" id="gwlog"></div>';
+        '</div><div class="gwlog" id="gwlog"></div>';
       paintHints();
       document.getElementById('gwguess').onclick = guess;
       document.getElementById('gwin').addEventListener('keydown', e => { if (e.key==='Enter') guess(); });
@@ -356,45 +429,37 @@ BUILD.guesswho = host => {
       document.getElementById('gwhints').innerHTML =
         hints.slice(0, level+1).map((h,i) =>
           '<div class="gwhint' + (i===level ? ' fresh' : '') + '">' + h() + '</div>').join('');
-      const left = hints.length - (level+1);
+      const leftN = hints.length - (level+1);
       document.getElementById('sc').textContent = wonlost ? ''
-        : 'Guess ' + (guesses+1) + ' · ' + (left>0 ? left + ' hint' + (left===1?'':'s') + ' left' : 'last hint');
+        : 'Guess ' + (guesses+1) + ' · ' + (leftN>0 ? leftN + ' hint' + (leftN===1?'':'s') + ' left' : 'last hint');
     }
     function guess(){
       if (wonlost) return;
-      const inp = document.getElementById('gwin');
-      const v = inp.value.trim();
+      const inp = document.getElementById('gwin'), v = inp.value.trim();
       if (!v) return;
       guesses++;
       const right = v.toLowerCase() === target.name.toLowerCase();
-      const log = document.getElementById('gwlog');
       const row = document.createElement('div');
       row.className = 'gwguessrow ' + (right ? 'win' : 'miss');
       row.textContent = (right ? '✓ ' : '✗ ') + v;
-      log.prepend(row);
+      document.getElementById('gwlog').prepend(row);
       inp.value = '';
       if (right){
         wonlost = true;
         recordStat('guesswho', { key:'best', mode:'min', value:guesses });
         document.getElementById('sc').textContent = 'Got them in ' + guesses + '! (best ' + statVal('guesswho','best') + ')';
         document.getElementById('gwhints').innerHTML =
-          '<div class="gwhint win">It was <b>' + target.name + '</b> 🎉 — ' +
-          'shared classes: ' + target.subjects.join(', ') + '.</div>';
-        inp.disabled = true;
-        endButton();
-      } else if (level < hints.length - 1){
-        level++; paintHints();
-      } else {
-        wonlost = true;
+          '<div class="gwhint win">It was <b>' + esc(target.name) + '</b> 🎉' +
+          (target.subjects.length ? ' — shares: ' + esc(target.subjects.join(', ')) : '') + '.</div>';
+        inp.disabled = true; endBtn();
+      } else if (level < hints.length - 1){ level++; paintHints(); }
+      else { wonlost = true;
         document.getElementById('gwhints').innerHTML +=
-          '<div class="gwhint lose">Out of hints — it was <b>' + target.name + '</b>.</div>';
-        endButton();
+          '<div class="gwhint lose">Out of hints — it was <b>' + esc(target.name) + '</b>.</div>';
+        endBtn();
       }
     }
-    function endButton(){
-      const b = document.getElementById('gwguess');
-      b.textContent = 'Play again'; b.disabled = false; b.onclick = play;
-    }
+    function endBtn(){ const b=document.getElementById('gwguess'); b.textContent='Play again'; b.disabled=false; b.onclick=()=>play(pool); }
   }
   function reveal(word, frac){
     return [...word].map((ch,i) => (i===0 || Math.random()<frac) ? ch : '_').join(' ');
