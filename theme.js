@@ -11,7 +11,7 @@
 const LS = {
   skin:'tt.skin', mode:'tt.mode', zen:'tt.zen', custom:'tt.custom',
   textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
-  view:'tt.view', outline:'tt.outline'
+  view:'tt.view', outline:'tt.outline', header:'tt.header'
 };
 
 const get = (k, d) => {
@@ -87,7 +87,8 @@ function readState(){
     contrast: get(LS.contrast, 'normal'),
     motion: get(LS.motion, 'normal'),
     view: get(LS.view, 'compact'),
-    outline: get(LS.outline, true)
+    outline: get(LS.outline, true),
+    header: get(LS.header, 'unified')
   };
 }
 
@@ -103,6 +104,7 @@ function apply(state){
      set before first paint they flow in document order and every column
      stacks out of alignment. */
   root.setAttribute('data-view', st.view);
+  root.setAttribute('data-header', st.header);
   root.classList.toggle('nooutline', !st.outline);
   root.setAttribute('data-motion', st.motion);
   root.style.setProperty('--text-scale', st.textScale);

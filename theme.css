@@ -106,23 +106,36 @@
   --display-ls:-.03em;
 }
 [data-skin="glass"][data-mode="light"]{
-  --bg:#eef1f8;
+  --bg:#dfe4f2;
   --bg-img:
-    radial-gradient(60vw 60vw at 10% 5%,rgba(150,120,255,.42),transparent 60%),
-    radial-gradient(55vw 55vw at 90% 15%,rgba(0,200,230,.36),transparent 62%),
-    radial-gradient(60vw 60vw at 50% 95%,rgba(255,120,180,.3),transparent 60%);
-  --panel:rgba(255,255,255,.55); --panel-2:rgba(255,255,255,.38);
-  --line:rgba(255,255,255,.8);
-  --text:#15192b; --muted:#5b6178; --accent:#4a5cf0; --accent-ink:#fff;
+    radial-gradient(58vw 58vw at 8% 2%,rgba(124,92,255,.6),transparent 58%),
+    radial-gradient(52vw 52vw at 92% 12%,rgba(0,196,232,.52),transparent 60%),
+    radial-gradient(60vw 60vw at 50% 98%,rgba(255,96,168,.42),transparent 60%);
+  --panel:rgba(255,255,255,.42); --panel-2:rgba(255,255,255,.28);
+  --line:rgba(255,255,255,.9);
+  --text:#12162a; --muted:#4a5170; --accent:#4a5cf0; --accent-ink:#fff;
   --tint:30%;
 }
 [data-skin="glass"] .lesson,[data-skin="glass"] .nowcard,
 [data-skin="glass"] .breakbar,[data-skin="glass"] .btn,
+[data-skin="glass"] .topbar,[data-skin="glass"] .arrowbtn,
 [data-skin="glass"] dialog,[data-skin="glass"] .gatecard,
-[data-skin="glass"] .dayswitch button{
+[data-skin="glass"] .idrow,[data-skin="glass"] .dayswitch button{
   backdrop-filter:blur(22px) saturate(180%);
   -webkit-backdrop-filter:blur(22px) saturate(180%);
 }
+/* the top widget: frosted, with a bright rim and a specular sheen so it
+   actually reads as glass in light mode */
+[data-skin="glass"] .topbar{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:0 8px 30px rgba(30,40,90,.16), inset 0 1px 0 rgba(255,255,255,.7);
+}
+[data-skin="glass"] .topbar::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(150deg,rgba(255,255,255,.55),transparent 40%);
+}
+[data-skin="glass"] .nowcard{border-color:rgba(255,255,255,.75)}
 /* specular top edge */
 [data-skin="glass"] .lesson::after,[data-skin="glass"] .nowcard::after{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
