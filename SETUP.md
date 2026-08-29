@@ -585,3 +585,64 @@ Day 0 of the cycle is treated as a **Monday**: the start date is snapped back to
 **Errors are deliberately vague to the client.** Real causes go to the Vercel logs.
 
 **Still worth knowing:** anyone who finds the endpoint can pull timetables through your account at whatever rate they like. `ALLOWED_EMAILS` is the fix if that matters to you.
+
+---
+
+## Recent additions
+
+**Class lists.** Clicking a period opens the detail sheet with a **View class
+list** button. It calls the proxy with `?class=<ClassCode>`, which fetches
+`/api/timetable/class/{code}` from the school API and returns the roster. The
+frontend pulls names tolerantly (FirstName/LastName/FullName/Email) since the
+exact field shape isn't documented.
+
+**Login is mandatory.** First run shows a sign-in modal requiring email **and**
+password, stored on the device (`tt.creds`) and sent as `X-School-Email` /
+`X-School-Password` headers. The identity pill in the header reopens it; Settings
+has the same fields plus **Sign out**.
+
+**Settings are split.** The main popup holds Appearance, Light/dark and Login
+only. Three buttons open sub-panels — **Access** (text size, zoom, contrast,
+motion), **Display** (layout, room format, options), **Colours** — and **Export
+.ics** downloads the next four weeks as a calendar file.
+
+**Classic is the default theme**, swapped with Plain in the picker.
+
+**Header** is one rounded widget: identity left, Now/Next middle, settings + home
+stacked right. Week A/B arrows sit centred above the grid. Click any day heading
+to spotlight it; there is no separate Today button, and dark mode lives only in
+Settings.
+
+---
+
+## Syncing settings to an account (not just the device)
+
+Right now every preference — theme, credentials, notes, colours — lives in
+`localStorage`, which is per-browser. To follow a user across devices you need a
+tiny bit of server state keyed by identity. Options, cheapest first:
+
+1. **A key-value store behind the existing Vercel function.** Add a
+   `/api/prefs` route backed by Vercel KV (Upstash Redis) or Vercel Postgres.
+   Key by the user's school email (they already sign in), value is the JSON blob
+   currently in `localStorage`. On load, `GET /api/prefs?email=…` and merge over
+   the local copy; on change, debounce a `PUT`. ~40 lines. The catch: the school
+   email is the only identity you have, and it's not *authenticated* to you —
+   anyone could request anyone's prefs unless you gate it. Since the user already
+   supplies a password that the school validates, you can require the same
+   `X-School-*` headers and only return prefs after the school API accepts the
+   token — so possession of prefs follows possession of the real login.
+
+2. **Their own storage, not yours.** A "Sync" toggle that reads/writes the
+   settings JSON to the user's Google Drive *appDataFolder* or a GitHub Gist via
+   OAuth. No database to run or secure, and the data never touches your server —
+   but it's more UI and an OAuth flow per provider.
+
+3. **Export / import.** A "Copy settings" / "Paste settings" pair (the JSON blob
+   as text, or a URL hash). Zero backend; the user moves it manually. Good enough
+   for a handful of power users.
+
+For this project I'd do **(1) with the school-token gate**: it reuses the login
+you already have, needs no new accounts, and Vercel KV has a free tier. Keep
+`localStorage` as the offline cache and treat the server copy as the source of
+truth on load. Notes should sync the same way but stored separately, since
+they're larger and change more often.

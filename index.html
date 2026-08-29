@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="plain" data-mode="light" data-view="compact">
+<html lang="en" data-skin="classic" data-mode="light" data-view="compact">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -25,23 +25,52 @@ button,select,input{font:inherit;color:inherit}
 .wrap{max-width:1400px;margin:0 auto;padding:20px 20px 70px;position:relative;z-index:1}
 
 
-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
+/* the whole top strip is one rounded widget: identity left, now/next middle,
+   controls right. A plain header on Plain/Swiss, a panelled card elsewhere. */
+.topbar{
+  display:flex;align-items:stretch;gap:16px;flex-wrap:wrap;margin-bottom:16px;
+  padding:16px 18px;border-radius:var(--card-radius);
+  background:var(--panel);border:var(--card-border);box-shadow:var(--shadow);
+}
+[data-skin="classic"] .topbar,[data-skin="swiss"] .topbar{
+  background:none;border:0;box-shadow:none;padding:2px 0 6px;
+}
+.brand{display:flex;flex-direction:column;justify-content:center;margin-right:auto;min-width:0}
 .brand h1{
-  margin:0;font-family:var(--font-display);font-size:clamp(24px,3.4vw,38px);
+  margin:0;font-family:var(--font-display);font-size:clamp(22px,3vw,34px);
   font-weight:var(--display-w);letter-spacing:var(--display-ls);
   text-transform:var(--display-tt);line-height:1.05;
 }
-.brand>span{color:var(--muted);font-size:12.5px;margin-top:3px;min-height:16px}
+.brand>span{color:var(--muted);font-size:12px;margin-top:2px;min-height:14px}
 .brand>span.err{color:#e5484d}
-.idrow{display:flex;align-items:center;gap:0;margin-top:5px;
+.idrow{
+  display:inline-flex;align-items:center;gap:0;margin-top:7px;cursor:pointer;
   border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);
-  padding:3px 9px;max-width:max-content;transition:border-color .15s}
-.idrow:focus-within{border-color:var(--accent)}
-.idrow input{border:0;background:none;outline:none;padding:3px 0;width:11ch;
-  font-size:13px;font-family:var(--font-num)}
+  padding:5px 11px;max-width:max-content;transition:border-color .15s;
+  font:inherit;color:var(--text);
+}
+.idrow:hover{border-color:var(--accent)}
+.idrow .idname{font-size:13px;font-family:var(--font-num)}
 .idrow .dom{color:var(--muted);font-size:12px;white-space:nowrap;opacity:.8}
 @media (max-width:520px){ .idrow .dom{display:none} }
+.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:flex-start}
+
+/* centred week switch, sits above the middle column */
+.weekswitch{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
+.weeklabel{
+  min-width:96px;text-align:center;font-weight:700;font-size:16px;
+  font-family:var(--font-display);letter-spacing:var(--display-ls);text-transform:var(--display-tt);
+}
+.arrowbtn{
+  width:38px;height:38px;border-radius:50%;border:var(--card-border);
+  background:var(--panel);color:var(--text);font-size:17px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
+  transition:transform .12s,background .15s;
+}
+.arrowbtn:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.arrowbtn:active{transform:scale(.92)}
+[data-skin="swiss"] .arrowbtn,[data-skin="brutal"] .arrowbtn,
+[data-skin="blueprint"] .arrowbtn,[data-skin="terminal"] .arrowbtn{border-radius:0}
 .btn{
   background:var(--panel);border:var(--card-border);border-radius:var(--radius);
   padding:8px 13px;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;
@@ -52,34 +81,17 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .btn.icon{width:40px;padding:8px 0;text-align:center}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 [data-skin="brutal"] .btn.primary,[data-skin="swiss"] .btn.primary{border-color:var(--line)}
-.weeknav{display:flex;align-items:center;gap:6px}
-.weeknav{position:relative}
-.weekbtn{
-  background:var(--accent);color:var(--accent-ink);border:var(--card-border);border-color:transparent;
-  border-radius:999px;padding:9px 20px;cursor:pointer;font-weight:700;font-size:15px;
-  letter-spacing:.01em;box-shadow:var(--shadow);white-space:nowrap;
-  font-family:var(--font-display);transition:transform .12s, filter .15s;
-}
-.weekbtn:hover{filter:brightness(1.08)}
-.weekbtn:active{transform:scale(.97)}
-.weekbtn .swap{opacity:.65;font-weight:400;margin-left:8px;font-size:12px}
-[data-skin="swiss"] .weekbtn,[data-skin="brutal"] .weekbtn,
-[data-skin="blueprint"] .weekbtn,[data-skin="terminal"] .weekbtn{border-radius:0}
-[data-skin="brutal"] .weekbtn{border:3px solid var(--line)}
-
-
-/* now / next */
-.now{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+/* now / next — sit inside the topbar, simple flat cards, no colour bar */
+.now{display:flex;gap:12px;flex:1 1 460px;min-width:0}
 .nowcard{
-  position:relative;flex:1 1 280px;background:var(--panel);border:var(--card-border);
-  border-left:5px solid var(--c,var(--accent));
-  border-radius:var(--card-radius);padding:13px 15px;box-shadow:var(--shadow);min-width:0;overflow:hidden;
+  position:relative;flex:1 1 220px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--radius);padding:11px 14px;min-width:0;overflow:hidden;
 }
-.nowcard .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.nowcard .subj{font-size:19px;font-weight:700;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nowcard .meta{color:var(--muted);font-size:13px;margin-top:3px}
-.nowcard.weekend{border-left-color:var(--accent)}
-.nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:13px;margin-top:7px;font-weight:700}
+[data-skin="classic"] .now,[data-skin="swiss"] .now{flex-basis:100%;margin-top:2px}
+.nowcard .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.nowcard .subj{font-size:17px;font-weight:700;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nowcard .meta{color:var(--muted);font-size:12.5px;margin-top:2px}
+.nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px;font-weight:700}
 .progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
       border-radius:99px;overflow:hidden;min-width:0}
@@ -95,7 +107,9 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
 .grid{display:grid;gap:var(--cell-gap,5px);
       grid-template-columns:58px repeat(var(--days,5),minmax(0,1fr));align-items:start}
 .corner{}
-.dayhead{padding:2px 2px 9px;text-align:center}
+.dayhead{padding:4px 2px 9px;text-align:center;width:100%;
+         background:none;border:0;cursor:pointer;color:var(--text);font:inherit}
+.dayhead:hover .dow{color:var(--accent)}
 .dayhead .dow{font-weight:700;font-size:14.5px;font-family:var(--font-display);
             letter-spacing:var(--display-ls);text-transform:var(--display-tt);
             display:block;transition:color .2s}
@@ -106,6 +120,8 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
              background:var(--line);opacity:.5}
 .dayhead.today .dow{color:var(--accent)}
 .dayhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:7px}
+.dayhead.focus .dow{color:var(--accent)}
+.dayhead.focus .rule{background:var(--accent);opacity:1;height:3px;margin-top:7px}
 
 /* ── compact: blocks are absolutely placed inside each day column ── */
 [data-view="compact"] .lesson,
@@ -223,6 +239,9 @@ header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18p
           background:var(--panel-2);overflow:hidden}
 .emailrow input{flex:1;min-width:0;border:0;background:none;padding:12px 13px;outline:none}
 .emailrow .dom{padding-right:13px;color:var(--muted);font-size:13px;white-space:nowrap}
+.gatepass{width:100%;margin-top:10px;padding:12px 13px;border:var(--card-border);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--text);outline:none}
+.gatepass:focus{border-color:var(--accent)}
 .gatecard .btn{margin-top:15px;width:100%;font-weight:700}
 .gateerr{color:#e5484d;font-size:13px;margin-top:11px;min-height:19px}
 [data-skin="terminal"] .gateerr,[data-skin="blueprint"] .gateerr{color:#ff8a8a}
@@ -244,6 +263,9 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
                         border-radius:var(--radius);padding:10px 12px}
 .hint{font-size:12px;color:var(--muted);margin-top:6px}
 .dlg-f{display:flex;gap:9px;justify-content:flex-end;padding:13px 17px;border-top:1px solid var(--line)}
+.dlg-f2{justify-content:space-between;flex-wrap:wrap;gap:9px}
+.tabbtns{display:flex;gap:8px;flex-wrap:wrap}
+.tabbtns .btn{padding:8px 11px;font-size:12.5px}
 .status{margin:0 0 15px;font-size:13px;color:var(--muted)}
 .status.err{color:#e5484d}
 
@@ -320,20 +342,34 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .drow dt{width:96px;flex:none;color:var(--muted);font-size:11px;letter-spacing:.1em;
          text-transform:uppercase;font-weight:700;padding-top:2px}
 .drow dd{margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+.classlist{padding:6px 20px 18px}
+.classlist[hidden]{display:none}
+.cltitle{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+  color:var(--muted);margin:2px 0 10px}
+.cltitle.err{color:#e5484d;text-transform:none;letter-spacing:0;font-size:13px}
+.clul{list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 14px}
+.clul li{display:flex;align-items:baseline;gap:8px;padding:5px 0;
+  border-bottom:1px solid var(--line);font-size:14px}
+.clul li em{margin-left:auto;font-style:normal;color:var(--muted);font-size:12px}
+.clul li.teacher span{font-weight:700;color:var(--accent)}
 </style>
 </head>
 <body>
 
 <div class="gate" id="gate" hidden>
   <div class="gatecard">
-    <h2>Your timetable</h2>
-    <p>Enter your school email to load it. It's saved on this device, so you only do this once.</p>
+    <h2>Sign in</h2>
+    <p>Your timetable loads with your own school login. Both are stored
+      <b>only on this device</b> and sent straight to the timetable service.</p>
     <form id="gateform">
       <div class="emailrow">
         <input type="text" id="gateemail" autocomplete="username" autocapitalize="none"
                autocorrect="off" spellcheck="false" placeholder="first.last1">
         <span class="dom" id="gatedomain"></span>
       </div>
+      <input type="password" id="gatepass" class="gatepass" autocomplete="current-password"
+             placeholder="School password">
       <button class="btn primary" type="submit" id="gatego">Show my timetable</button>
     </form>
     <div class="gateerr" id="gateerr"></div>
@@ -341,27 +377,28 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 </div>
 
 <div class="wrap">
-  <header>
+  <header class="topbar">
     <div class="brand">
       <h1 id="title">Timetable</h1>
-      <div class="idrow">
-        <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
-               autocorrect="off" autocomplete="username" placeholder="first.last1"
-               aria-label="Your school username">
+      <button class="idrow" id="whoami" type="button" title="Change login">
+        <span class="idname" id="idname">first.last1</span>
         <span class="dom" id="whoamidom"></span>
-      </div>
+      </button>
       <span id="sub"></span>
     </div>
-    <div class="weeknav">
-      <button class="weekbtn" id="weekbtn" title="Switch between Week A and Week B"></button>
+    <div class="now" id="now"></div>
+    <div class="headbtns">
+      <button class="btn icon" id="settings" title="Settings">&#9881;</button>
+      <a class="btn icon" href="home.html" id="homebtn" title="Home">&#8962;</a>
     </div>
-    <a class="btn icon" href="home.html" id="homebtn" title="Home">&#8962;</a>
-    <button class="btn" id="today">Today</button>
-    <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
-    <button class="btn icon" id="settings" title="Settings">&#9881;</button>
   </header>
 
-  <div class="now" id="now"></div>
+  <div class="weekswitch">
+    <button class="arrowbtn" id="weekprev" title="Previous week">&lsaquo;</button>
+    <div class="weeklabel" id="weeklabel">Week A</div>
+    <button class="arrowbtn" id="weeknext" title="Next week">&rsaquo;</button>
+  </div>
+
   <div class="dayswitch" id="dayswitch"></div>
   <div class="grid" id="grid"></div>
 </div>
@@ -370,8 +407,12 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   <div class="dlg-b">
     <div class="dhead" id="dhead"></div>
     <dl class="drows" id="drows"></dl>
+    <div class="classlist" id="classlist" hidden></div>
   </div>
-  <div class="dlg-f"><button class="btn" id="dclose">Close</button></div>
+  <div class="dlg-f">
+    <button class="btn" id="dclass">View class list</button>
+    <button class="btn" id="dclose">Close</button>
+  </div>
 </dialog>
 
 <dialog id="dlg">
@@ -416,7 +457,6 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       </details>
 
       <div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>
-      <div class="hint">Saved on this device only.</div>
     </div>
 
     <div class="field">
@@ -429,20 +469,10 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
-      <label>Room numbers</label>
-      <div class="modes" id="rooms">
-        <button type="button" data-room="full" title="CR1007.118">Full</button>
-        <button type="button" data-room="building" title="CR1007">New</button>
-        <button type="button" data-room="number" title="118">Legacy</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Custom credentials</label>
+      <label>Login</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
-        Optional. With this set, your timetable is fetched using your account
-        instead of the shared credentials Stored <b>only on this device</b>. 
-        Leave blank to use the shared login.
+        Your school login, stored <b>only on this device</b> and sent to the
+        timetable service to fetch your timetable.
       </div>
       <div class="custrow"><span>School email</span>
         <input type="text" id="cr_email" class="crin" spellcheck="false"
@@ -452,13 +482,28 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
                placeholder="••••••••"></div>
       <div class="custrow">
         <button class="btn" type="button" id="cr_save">Save login</button>
-        <button class="btn" type="button" id="cr_clear">Clear</button>
+        <button class="btn" type="button" id="cr_clear">Sign out</button>
       </div>
       <div class="hint" id="cr_state"></div>
     </div>
+  </div>
+  <div class="dlg-f dlg-f2">
+    <div class="tabbtns">
+      <button class="btn" type="button" id="openA11y" title="Text size, zoom, contrast">&#9855; Access</button>
+      <button class="btn" type="button" id="openDisplay" title="Layout &amp; display">&#9783; Display</button>
+      <button class="btn" type="button" id="openColours" title="Subject colours">&#127752; Colours</button>
+    </div>
+    <div class="tabbtns">
+      <button class="btn" type="button" id="exportics" title="Download an .ics calendar">&#128197; Export .ics</button>
+      <button class="btn primary" id="save">Save &amp; reload</button>
+    </div>
+  </div>
+</dialog>
 
+<dialog id="dlgA11y">
+  <form method="dialog" class="dlg-h"><h2>Accessibility</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <div class="dlg-b">
     <div class="field">
-      <label>Accessibility</label>
       <div class="custrow"><span>Text size</span>
         <input type="range" id="a_text" min="80" max="150" step="5"><b id="a_text_v"></b></div>
       <div class="custrow"><span>Zoom</span>
@@ -469,7 +514,13 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="a_motion" class="sw"></div>
       <div class="custrow"><button class="btn" type="button" id="a_reset">Reset accessibility</button></div>
     </div>
+  </div>
+  <div class="dlg-f"><button class="btn primary" type="button" data-back>Done</button></div>
+</dialog>
 
+<dialog id="dlgDisplay">
+  <form method="dialog" class="dlg-h"><h2>Display</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <div class="dlg-b">
     <div class="field">
       <label>Layout</label>
       <div class="modes" id="views">
@@ -477,9 +528,16 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <button type="button" data-view="full" title="One row per period">Full</button>
       </div>
     </div>
-
     <div class="field">
-      <label>Display</label>
+      <label>Room numbers</label>
+      <div class="modes" id="rooms">
+        <button type="button" data-room="full" title="CR1007.118">Full</button>
+        <button type="button" data-room="building" title="CR1007">New</button>
+        <button type="button" data-room="number" title="118">Legacy</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Options</label>
       <div class="custrow"><span>Week letter on day names</span>
         <input type="checkbox" id="t_weekletter" class="sw"></div>
       <div class="custrow"><span>Coloured subject outlines</span>
@@ -488,21 +546,24 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_progress" class="sw"></div>
       <div class="custrow"><span>Transparent background</span>
         <input type="checkbox" id="t_zen" class="sw"></div>
-      <div class="hint">Drops the page background for compatibility 
-        with custom browser wallpapers like Zen.</div>
+      <div class="hint">Transparent drops the page background for custom
+        browser wallpapers like Zen.</div>
     </div>
+  </div>
+  <div class="dlg-f"><button class="btn primary" type="button" data-back>Done</button></div>
+</dialog>
 
+<dialog id="dlgColours">
+  <form method="dialog" class="dlg-h"><h2>Subject colours</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <div class="dlg-b">
     <div class="field">
-      <label>Subject colours</label>
       <div id="colours"></div>
       <div class="hint" id="nocolours" hidden>Colours appear once a timetable has loaded.</div>
     </div>
-
-
   </div>
   <div class="dlg-f">
-    <button class="btn" id="resetcolours">Reset colours</button>
-    <button class="btn primary" id="save">Save &amp; reload</button>
+    <button class="btn" type="button" id="resetcolours">Reset colours</button>
+    <button class="btn primary" type="button" data-back>Done</button>
   </div>
 </dialog>
 
@@ -552,9 +613,9 @@ let zoom           = get(LS.zoom, 1);
 let contrast       = get(LS.contrast, 'normal');
 let motion         = get(LS.motion, 'normal');
 let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
-let skin     = get(LS.skin, 'plain');
+let skin     = get(LS.skin, 'classic');
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
+if (SKIN_IDS.indexOf(skin) === -1) skin = 'classic';
 
 function applyLook(){
   TT.apply({ skin, mode, zen:zenMode, custom,
@@ -744,7 +805,7 @@ let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
 let loadError = '', loading = false;
-let focusToday = false;        /* Today button: dim everything but the current day */
+let focusIdx = null;           /* click a day heading to spotlight it; null = show all */
 
 /* ═══ normalise ═══ */
 let bellRows = [];      /* raw bell schedule, kept for row building */
@@ -1013,12 +1074,8 @@ function render(){
   $('title').textContent = displayName || 'Timetable';
   $('sub').textContent = loading ? 'Loading…' : (loadError || '');
   $('sub').className = loadError ? 'err' : '';
-  if (document.activeElement !== $('whoami')) $('whoami').value = String(email || '').split('@')[0];
-
-  $('weekbtn').innerHTML = 'Week ' + week.toUpperCase() +
-    '<span class="swap">tap to swap</span>';
-  $('today').setAttribute('aria-pressed', String(focusToday));
-  $('today').disabled = false;
+  $('idname').textContent = String(email || '').split('@')[0] || 'sign in';
+  $('weeklabel').textContent = 'Week ' + week.toUpperCase();
 
   const ds = $('dayswitch');
   ds.innerHTML = '';
@@ -1082,11 +1139,15 @@ function render(){
 function dayHead(ctx, i){
   const d = ctx.days[i];
   const isToday = ctx.showingCurrentWeek && DAY_KEYS[i] === ctx.todayKey;
-  const h = el('div','dayhead' + (isToday ? ' today' : '') +
-                     (focusToday && !isToday ? ' dimmed' : ''));
+  const h = el('button','dayhead' + (isToday ? ' today' : '') +
+                     (focusIdx === i ? ' focus' : '') +
+                     (focusIdx != null && focusIdx !== i ? ' dimmed' : ''));
+  h.type = 'button';
+  h.title = 'Spotlight this day';
   h.innerHTML = '<span class="dow">' + DAY[d.getDay()] +
     (showWeekLetter ? '<small>' + ctx.week.toUpperCase() + '</small>' : '') +
     '</span><i class="rule"></i>';
+  h.onclick = () => { focusIdx = (focusIdx === i) ? null : i; render(); };
   return h;
 }
 
@@ -1152,7 +1213,7 @@ function renderCompact(ctx){
 
   columns.forEach(c => {
     const isToday = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
-    const body = el('div','dbody' + (focusToday && !isToday ? ' dimmed' : ''));
+    const body = el('div','dbody' + (focusIdx != null && focusIdx !== c.i ? ' dimmed' : ''));
     body.style.height = height + 'px';
     for (const blk of c.blocks){
       const h = Math.max(15, (blk.end - blk.start) * PX - GAP);
@@ -1195,6 +1256,10 @@ function renderFull(ctx){
       pc.innerHTML = '<b>' + esc(slotLabel(slot)) + '</b>' +
         (show ? '<span class="' + (same ? '' : 'approx') + '">' +
                 fmtTime(show[0]) + '<br>' + fmtTime(show[1]) + '</span>' : '');
+    } else {
+      /* Breaks (esp. Wednesday) run to different times each day, so the gutter
+         shows only the label and each cell carries that day's own time. */
+      pc.innerHTML = '<b>' + esc(slotLabel(slot)) + '</b>';
     }
     ctx.grid.appendChild(pc);
 
@@ -1202,7 +1267,7 @@ function renderFull(ctx){
       const cyc = ctx.cycles[i];
       const isToday = ctx.showingCurrentWeek && DAY_KEYS[i] === ctx.todayKey;
       const cell = el('div','cell' + (isBreak ? ' brk' : '') +
-                              (focusToday && !isToday ? ' dimmed' : ''));
+                              (focusIdx != null && focusIdx !== i ? ' dimmed' : ''));
       const e = cyc ? entryAt(cyc, slot.key) : null;
       const b = cyc ? bellFor(cyc, slot.key) : null;
 
@@ -1272,67 +1337,113 @@ function showDetail(e, date){
     ['Teacher', e.teacher],
     ['Email', e.rawTeacher && e.rawTeacher.includes('@') ? e.rawTeacher : ''],
     ['Class code', e.code],
-    ['Cycle day', e.dayName],
     ['Full name', e.rawSubject && e.rawSubject !== e.subject ? e.rawSubject : '']
   ].filter(r => r[1]);
 
   $('drows').innerHTML = rows.map(r =>
     '<div class="drow"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>').join('');
+
+  detailEntry = e;
+  const cl = $('classlist');
+  cl.hidden = true; cl.innerHTML = '';
+  const btn = $('dclass');
+  btn.hidden = !(e.kind === 'class' && e.code);
+  btn.textContent = 'View class list';
+  btn.disabled = false;
   $('detail').showModal();
 }
+
+/* ═══ class roster ═══ */
+let detailEntry = null;
+async function loadClass(code){
+  const u = new URL(endpoint, location.href);
+  u.searchParams.set('class', code);
+  const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+  const headers = { Accept:'application/json' };
+  if (creds && creds.email && creds.password){
+    headers['X-School-Email'] = creds.email;
+    headers['X-School-Password'] = creds.password;
+  }
+  const res = await fetch(url, { headers, cache:'no-store' });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+  return data;
+}
+/* the roster shape isn't documented — pull a name and any year/form from
+   whatever fields exist, and skip the teacher if the API includes them. */
+function rosterPeople(data){
+  const arr = asArray(data && data.roster !== undefined ? data.roster : data);
+  return arr.map(r => {
+    const full = str(pick(r, ['FullName','fullName','Name','name','displayName']));
+    const first = str(pick(r, ['FirstName','firstName','GivenName','givenName','preferredName']));
+    const last  = str(pick(r, ['LastName','lastName','Surname','surname','familyName']));
+    const nm = full || [first, last].filter(Boolean).join(' ');
+    const mail = str(pick(r, ['Email','email','emailAddress','EmailAddress']));
+    const name = nm || (mail ? nameFromEmail(mail) : '') || str(pick(r, ['username','Username'])) || 'Student';
+    const year = str(pick(r, ['Year','year','Form','form','Grade','grade','RollClass','rollClass']));
+    const isTeacher = /teacher|staff/i.test(str(pick(r, ['Role','role','Type','type'])));
+    return { name, year, mail, isTeacher };
+  }).filter(x => x.name);
+}
+$('dclass').onclick = async () => {
+  if (!detailEntry) return;
+  const btn = $('dclass'), cl = $('classlist');
+  if (!cl.hidden){ cl.hidden = true; cl.innerHTML = ''; btn.textContent = 'View class list'; return; }
+  btn.disabled = true; btn.textContent = 'Loading…';
+  try {
+    const data = await loadClass(detailEntry.code);
+    const people = rosterPeople(data).sort((a,b) => a.name.localeCompare(b.name));
+    cl.innerHTML = people.length
+      ? '<div class="cltitle">' + people.length + ' in ' + esc(detailEntry.code) + '</div>' +
+        '<ul class="clul">' + people.map(pn =>
+          '<li' + (pn.isTeacher ? ' class="teacher"' : '') + '><span>' + esc(pn.name) + '</span>' +
+          (pn.year ? '<em>' + esc(pn.year) + '</em>' : '') + '</li>').join('') + '</ul>'
+      : '<div class="cltitle">No students listed for this class.</div>';
+    cl.hidden = false;
+    btn.textContent = 'Hide class list';
+  } catch (err) {
+    cl.innerHTML = '<div class="cltitle err">' + esc(err.message) + '</div>';
+    cl.hidden = false;
+    btn.textContent = 'View class list';
+  } finally { btn.disabled = false; }
+};
 $('dclose').onclick = () => $('detail').close();
 $('detail').onclick = ev => { if (ev.target === $('detail')) $('detail').close(); };
 
-/* ═══ email gate ═══ */
+/* ═══ login gate — email + password, mandatory, stored on this device ═══ */
 const gate = $('gate');
 $('gatedomain').textContent = '@' + CONFIG.EMAIL_DOMAIN;
 function showGate(msg){
   $('gateerr').textContent = msg || '';
-  $('gateemail').value = String(email || '').split('@')[0];
+  $('gateemail').value = String((creds && creds.email) || email || '').split('@')[0];
+  $('gatepass').value = (creds && creds.password) || '';
   gate.hidden = false;
-  setTimeout(() => $('gateemail').focus(), 30);
+  setTimeout(() => $((creds && creds.email) ? 'gatepass' : 'gateemail').focus(), 30);
 }
 $('gateform').onsubmit = async ev => {
   ev.preventDefault();
   const v = $('gateemail').value.trim().toLowerCase();
-  if (!v) return;
+  const pass = $('gatepass').value;
   const user = v.includes('@') ? v.split('@')[0] : v;
   if (!/^[a-z0-9][a-z0-9._-]*$/.test(user)){ $('gateerr').textContent = 'That does not look like a school username.'; return; }
+  if (!pass){ $('gateerr').textContent = 'Enter your school password.'; return; }
   email = user + '@' + CONFIG.EMAIL_DOMAIN;
-  $('gatego').textContent = 'Loading…';
+  creds = { email, password: pass };
+  $('gatego').textContent = 'Signing in…';
   $('gateerr').textContent = '';
+  localStorage.removeItem(LS.cache);
   await load(false);
   $('gatego').textContent = 'Show my timetable';
   if (loadError){ $('gateerr').textContent = loadError; return; }
   set(LS.email, email);
+  set(LS.creds, creds);
   gate.hidden = true;
   render();
 };
 
-/* ═══ username field on the page ═══ */
+/* ═══ identity pill opens the login ═══ */
 $('whoamidom').textContent = '@' + CONFIG.EMAIL_DOMAIN;
-async function setUser(raw){
-  const v = String(raw || '').trim().toLowerCase();
-  const user = v.includes('@') ? v.split('@')[0] : v;
-  if (!user || !/^[a-z0-9][a-z0-9._-]*$/.test(user)){
-    loadError = 'That does not look like a school username.'; render(); return;
-  }
-  const next = user + '@' + CONFIG.EMAIL_DOMAIN;
-  if (next === email){
-    if (loadError){ loadError = ''; render(); }   /* clear a stale rejection */
-    return;
-  }
-  email = next;
-  localStorage.removeItem(LS.cache);
-  await load(false);
-  if (!loadError) set(LS.email, email);
-  render();
-}
-$('whoami').addEventListener('keydown', ev => {
-  if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }
-});
-$('whoami').addEventListener('change', ev => setUser(ev.target.value));
-$('whoami').addEventListener('blur', ev => setUser(ev.target.value));
+$('whoami').onclick = () => showGate();
 
 /* ═══ settings ═══ */
 const dlg = $('dlg');
@@ -1372,8 +1483,8 @@ function renderSkins(){
     }
   } else {
     /* order: Plain, Classic, +, Custom */
-    host.appendChild(tile(SKINS.find(s => s.id === 'plain')));
     host.appendChild(tile(SKINS.find(s => s.id === 'classic')));
+    host.appendChild(tile(SKINS.find(s => s.id === 'plain')));
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'skinbtn more';
@@ -1435,8 +1546,8 @@ function renderCreds(){
   $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_pass').value  = creds ? creds.password : '';
   $('cr_state').textContent = creds
-    ? 'Using your own login (' + creds.email + ').'
-    : 'Using the shared login.';
+    ? 'Signed in as ' + creds.email
+    : 'Not signed in.';
 }
 $('cr_save').onclick = async () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
@@ -1452,13 +1563,10 @@ $('cr_save').onclick = async () => {
   if (loadError){ $('cr_state').textContent = loadError; }
   render();
 };
-$('cr_clear').onclick = async () => {
-  creds = null;
-  set(LS.creds, null);
-  localStorage.removeItem(LS.cache);
-  renderCreds();
-  await load(false);
-  render();
+$('cr_clear').onclick = () => {
+  creds = null; set(LS.creds, null); localStorage.removeItem(LS.cache);
+  entries = []; slots = []; displayName = '';
+  dlg.close(); render(); showGate();
 };
 
 function renderA11y(){
@@ -1547,18 +1655,62 @@ function renderModes(){
 [...$('modes').children].forEach(b => {
   b.onclick = () => { mode = b.dataset.mode; set(LS.mode, mode); applyLook(); renderModes(); render(); };
 });
-$('mode').onclick = () => {
-  const cur = SKINS.find(s => s.id === skin);
-  if (!cur.both) return;
-  mode = mode === 'dark' ? 'light' : 'dark';
-  set(LS.mode, mode); applyLook(); render();
-};
 $('settings').onclick = () => {
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
   renderToggles(); renderA11y(); renderCreds(); renderColours();
   dlg.showModal();
+};
+
+/* sub-panels stack on top of the main dialog and pop back to it */
+$('openA11y').onclick    = () => { renderA11y(); $('dlgA11y').showModal(); };
+$('openDisplay').onclick = () => { renderViews(); renderRooms(); renderToggles(); $('dlgDisplay').showModal(); };
+$('openColours').onclick = () => { renderColours(); $('dlgColours').showModal(); };
+document.querySelectorAll('dialog [data-back]').forEach(b =>
+  b.onclick = () => b.closest('dialog').close());
+
+/* ═══ export .ics ═══ — the cycle mapped onto the next four weeks */
+function icsStamp(date, mins){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(),
+                     Math.floor(mins/60), mins%60);
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + 'T' +
+         p(d.getHours()) + p(d.getMinutes()) + '00';
+}
+function buildICS(){
+  const esc = v => String(v||'').replace(/[\\;,]/g, m => '\\'+m).replace(/\n/g,'\\n');
+  const out = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MSC Unofficial//Timetable//EN','CALSCALE:GREGORIAN'];
+  const stamp = icsStamp(new Date(), new Date().getHours()*60+new Date().getMinutes());
+  const start = midnight(new Date());
+  for (let i = 0; i < 28; i++){
+    const day = addDays(start, i);
+    const cyc = cycleDayFor(day, cycleStart);
+    if (!cyc) continue;
+    entries.filter(e => e.dayKey === cyc && e.kind === 'class' && e.start != null && e.end != null)
+      .forEach((e, n) => {
+        out.push('BEGIN:VEVENT',
+          'UID:' + ymd(day) + '-' + e.pnum + '-' + n + '@mscunofficial',
+          'DTSTAMP:' + stamp,
+          'DTSTART:' + icsStamp(day, e.start),
+          'DTEND:' + icsStamp(day, e.end),
+          'SUMMARY:' + esc(e.subject),
+          'LOCATION:' + esc(roomLabel(e)),
+          'DESCRIPTION:' + esc([e.teacher, e.code].filter(Boolean).join(' · ')),
+          'END:VEVENT');
+      });
+  }
+  out.push('END:VCALENDAR');
+  return out.join('\r\n');
+}
+$('exportics').onclick = () => {
+  if (!entries.length){ $('status').textContent = 'Load a timetable first.'; $('status').className = 'status err'; return; }
+  const blob = new Blob([buildICS()], { type:'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'timetable.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
 function renderColours(){
@@ -1620,23 +1772,11 @@ function toggleWeek(){
   viewWeek = shown === 'a' ? 'b' : 'a';
   render();
 }
-$('weekbtn').onclick = toggleWeek;
-
-$('today').onclick = () => {
-  focusToday = !focusToday;
-  if (focusToday){
-    const real = cycleDayFor(new Date(), cycleStart);
-    if (real){
-      viewWeek = real.slice(-1);
-      mobileDay = Math.max(0, DAY_KEYS.indexOf(real.slice(0,3)));
-    }
-  }
-  render();
-};
+$('weekprev').onclick = toggleWeek;
+$('weeknext').onclick = toggleWeek;
 addEventListener('keydown', e => {
   if (dlg.open || $('detail').open || !gate.hidden) return;
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek();
-  if (e.key === 'T') $('today').click();
   if (e.key === 'S') $('settings').click();
 });
 addEventListener('resize', render);
@@ -1645,14 +1785,14 @@ addEventListener('resize', render);
 (async () => {
   render();
   if (!endpoint) return;
-  if (!email){ showGate(); return; }
+  if (!creds || !creds.email || !creds.password){ showGate(); return; }
   await load(true);
   render();
   if (loadError){ showGate(loadError); return; }
   load(false).then(render);
 })();
 setInterval(render, 30000);
-setInterval(() => { if (endpoint && email) load(false).then(render); }, 15*60*1000);
+setInterval(() => { if (endpoint && creds) load(false).then(render); }, 15*60*1000);
 })();
 </script>
 </body>

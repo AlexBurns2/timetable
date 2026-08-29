@@ -262,6 +262,35 @@ export default async function handler(req, res) {
     if (!ok) return res.status(403).json({ error: "That address is not permitted on this site." });
   }
 
+  /* ---- ?class=<code> -----------------------------------------------------
+   * Class roster. The school API exposes the students in a class at
+   * /api/timetable/class/{ClassCode}. Returned as-is (minus caching), so the
+   * page can list who is in a period.
+   */
+  if (req.query.class) {
+    const code = String(req.query.class).trim();
+    if (!code) return res.status(400).json({ error: "A class code is required." });
+    try {
+      let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+      let roster = await apiGet(apiBase, `/api/timetable/class/${encodeURIComponent(code)}`, auth);
+      if (roster === null) {                              // token expired → retry once
+        auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+        roster = await apiGet(apiBase, `/api/timetable/class/${encodeURIComponent(code)}`, auth);
+      }
+      res.setHeader("Cache-Control", usingOwn ? "private, no-store"
+                                              : "public, s-maxage=900, stale-while-revalidate=3600");
+      return res.status(200).json({ class: code, roster });
+    } catch (error) {
+      const status = error.status || 502;
+      console.error("Class roster failed:", error.message);
+      return res.status(status).json({
+        error: status === 404 ? "No class list was found for that class."
+                              : "Unable to load the class list from the school API.",
+        hint: error.hint || undefined
+      });
+    }
+  }
+
   try {
     let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
 

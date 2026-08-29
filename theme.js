@@ -22,10 +22,10 @@ const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catc
 
 /* every skin in picker order; `custom` last so it lands bottom-right */
 const SKINS = [
-  { id:'plain',     name:'Plain',     both:true, border:'#e5e5e8',
-    swatch:'linear-gradient(#fff,#fff)' },
   { id:'classic',   name:'Classic',   both:true,
     swatch:'linear-gradient(160deg,#dfe7f2,#f4f7fb 60%),radial-gradient(circle at 78% 22%,#0a84ff55,transparent 60%)' },
+  { id:'plain',     name:'Plain',     both:true, border:'#e5e5e8',
+    swatch:'linear-gradient(#fff,#fff)' },
   { id:'paper',     name:'Notebook',  both:true,
     swatch:'linear-gradient(#f7f3e8,#f7f3e8) padding-box, repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)' },
   { id:'glass',     name:'Glass',     both:true,
@@ -50,7 +50,7 @@ const SKINS = [
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* the four shown before the picker is expanded */
-const QUICK_SKINS = ['plain','classic','custom'];
+const QUICK_SKINS = ['classic','plain','custom'];
 
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
@@ -75,8 +75,8 @@ function inkFor(hex){
 }
 
 function readState(){
-  let skin = get(LS.skin, 'plain');
-  if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
+  let skin = get(LS.skin, 'classic');
+  if (SKIN_IDS.indexOf(skin) === -1) skin = 'classic';
   return {
     skin,
     mode: get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
