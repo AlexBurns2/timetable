@@ -1,1659 +1,2060 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="plain" data-mode="light" data-view="compact">
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Timetable</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
-<script src="theme.js"></script>
+<meta name="robots" content="noindex, nofollow" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Andre Kwok — Timetable</title>
+<link rel="icon" type="image/png" href="favicon.png">
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  /* --page-bg / --page-img indirect so a single toggle can drop the page
-     background out entirely and let Zen's wallpaper show through. */
-  background-color:var(--page-bg, var(--bg));
-  background-image:var(--page-img, var(--bg-img));
-  background-attachment:fixed; color:var(--text); min-height:100vh;
-  font:15px/1.5 var(--font-ui);
-  -webkit-font-smoothing:antialiased; transition:background-color .25s, color .25s;
-}
-button,select,input{font:inherit;color:inherit}
-.wrap{max-width:1400px;margin:0 auto;padding:20px 20px 70px;position:relative;z-index:1}
+:root{--glass:rgba(255,255,255,.55);--glass-hi:rgba(255,255,255,.75);--line:rgba(255,255,255,.6);--ink:#1d1d1f;--ink-soft:rgba(29,29,31,.55);--ink-faint:rgba(29,29,31,.35);--accent:#0a84ff;--cat-math:#FFA9A6;--cat-english:#FEFB99;--cat-technology:#FFD5F4;--cat-music:#E0C0F4;--cat-science:#A4FEFF;--cat-hsie:#D7CDB3;--cat-languages:#f2884b;--cat-va:#FFADFF;--cat-other:#A5D5FF;--break-bg:rgba(255,255,255,.28);--break-line:rgba(29,29,31,.12);--page-bg:transparent;--column-gap:8px;--shadow-panel:0 10px 34px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.06);--shadow-card:0 8px 22px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.08);--shadow-card-hover:0 14px 32px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.1)}
+[data-theme=dark]{--glass:rgba(32,32,36,.5);--glass-hi:rgba(44,44,48,.62);--line:rgba(255,255,255,.12);--ink:#f5f5f7;--ink-soft:rgba(245,245,247,.62);--ink-faint:rgba(245,245,247,.38);--accent:#409cff;--break-bg:rgba(255,255,255,.05);--break-line:rgba(255,255,255,.14);--cat-math:#FF8582;--cat-english:#FFF06A;--cat-technology:#FF9BDD;--cat-music:#CFA8F4;--cat-science:#76F0F2;--cat-hsie:#D8C99F;--cat-languages:#FF9B63;--cat-other:#82C5FF;--cat-va:#E56BE5;--page-bg:radial-gradient(circle at 20% 10%,rgba(255,255,255,.05),transparent 55%),rgba(16,17,20,.78);--shadow-panel:0 10px 34px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.35);--shadow-card:0 8px 22px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.3);--shadow-card-hover:0 14px 32px rgba(0,0,0,.55),0 4px 10px rgba(0,0,0,.35)}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{margin:0;padding:0;min-height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Inter,sans-serif;color:var(--ink);min-height:100vh;padding:36px 18px 70px;background:var(--page-bg);background-attachment:fixed}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:18px 26px;margin-bottom:26px;background:var(--glass);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow-panel)}
+.title-block .eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px}
+h1{font-weight:700;font-size:clamp(24px,4vw,32px);margin:0;letter-spacing:-.02em;color:var(--ink)}
+.sub{font-size:13px;color:var(--ink-soft);margin-top:3px;font-weight:400}
+.emailInputWrap{margin-top:10px}
+#emailInput{font-family:inherit;font-size:12px;padding:6px 10px;border-radius:10px;border:1.5px solid rgba(29,29,31,.25);background:rgba(255,255,255,.9);color:var(--ink);width:260px;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:border-color .2s ease,box-shadow .2s ease}
+[data-theme=dark] #emailInput{border:1px solid var(--line);background:var(--glass-hi);box-shadow:none}
+#emailInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.12)}
+#emailInput::placeholder{color:var(--ink-faint)}
+.emailHint{font-size:10.5px;color:var(--ink-faint);margin-top:5px}
+.bellRow{display:flex;gap:12px;flex-wrap:wrap;flex:1 1 320px;min-width:0}
+.bell{background:var(--glass-hi);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--line);border-radius:18px;padding:12px 18px;min-width:210px;flex:3 1 260px;box-shadow:var(--shadow-panel);position:relative}
+.bell.next{opacity:.92;flex:1 1 150px;min-width:150px}
+.bell .eyebrow2{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--accent);margin-bottom:3px}
+.bell .line1{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.bell .line2{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.bellProgressWrap{display:flex;align-items:center;gap:8px;margin-top:4px;margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px;width:calc(100% + 36px)}
+.bellProgressTime{font-size:10.5px;font-weight:600;color:var(--accent);flex-shrink:0}
+.bellProgressTrack{flex:1;height:5px;border-radius:999px;background:rgba(10,132,255,.16);overflow:hidden}
+.bellProgressFill{height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 1s linear}
+.bellRoomLine{font-size:11px;color:var(--ink-soft);margin-top:3px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bellTimeLeft{font-weight:600;color:var(--ink-soft);flex-shrink:0}
+.bellRow.progress-off{justify-content:flex-end}
+.bellRow.progress-off .bell:not(.next){flex:1 1 150px;min-width:150px}
+.statusBanner{text-align:center;font-size:13px;font-weight:500;padding:12px 18px;margin-bottom:20px;border-radius:16px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);color:var(--ink-soft)}
+.statusBanner.error{color:#c23b2f;border-color:rgba(194,59,47,.35)}
+.arrowbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s ease,background .2s ease;flex-shrink:0}
+.arrowbtn:hover{background:var(--ink);color:#fff;transform:scale(1.06)}
+.arrowbtn:active{transform:scale(.94)}
+.weekSwitch{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
+.weekSwitch .label{min-width:90px;text-align:center;font-weight:600;font-size:15px}
+.daySwitch{display:none;align-items:center;justify-content:center;gap:14px;margin-bottom:18px;padding:10px 16px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:18px}
+.daySwitch .label{text-align:center;min-width:130px}
+.daySwitch .day{font-weight:700;font-size:15px}
+.daySwitch .week{font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+.grid{display:grid;grid-template-columns:60px repeat(5,1fr);column-gap:var(--column-gap);row-gap:var(--column-gap)}
+.grid .head{font-weight:600;font-size:14px;text-align:center;padding:10px 4px 14px;color:var(--ink)}
+.grid .head small{display:block;font-weight:400;font-size:10.5px;color:var(--ink-faint);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+.grid .head.today{color:var(--accent)}
+.grid .head .day-name{display:inline-block}
+.grid .head.today .day-name:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
+.day-column{position:relative;min-height:610px;background:rgba(255,255,255,.025);border-radius:18px}
+[data-theme=dark] .day-column{background:rgba(255,255,255,.015)}
+.time-column{position:relative;min-height:610px}
+.time-label{position:absolute;left:0;right:0;transform:translateY(-50%);text-align:center;font-size:10.5px;font-weight:500;color:var(--ink-faint)}
+.cls{position:absolute;left:0;right:0;background:var(--glass-hi);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid var(--line);border-radius:16px;margin-top:3px;margin-bottom:3px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;box-shadow:var(--shadow-card);transition:transform .25s ease,box-shadow .25s ease;overflow:hidden}
+.cls:hover{transform:translateY(-2px);box-shadow:var(--shadow-card-hover)}
+.cls .code{font-weight:700;font-size:12px;color:var(--ink);padding-left:12px;position:relative}
+.cls .code:before{content:"";position:absolute;left:0;top:3px;width:6px;height:6px;border-radius:50%;background:var(--c,var(--accent))}
+.cls .teacher,.cls .room{font-size:11px;color:var(--ink-soft)}
+.cls .teacher{margin-top:3px}
+.cls .room{margin-top:auto}
+.cls.now{outline:2px solid var(--accent);outline-offset:0}
+.grid[data-outline-colors="1"] .cls:not(.now){outline:2.5px solid var(--c,var(--accent));outline-offset:0}
+.grid[data-outline-colors="1"] .cls.now{background:color-mix(in srgb,var(--accent) 22%,var(--glass-hi))}
+.cls{cursor:pointer}
+.break-card{position:absolute;left:0;right:0;margin-top:3px;margin-bottom:3px;display:flex;align-items:center;justify-content:center;background:var(--break-bg);border:1px dashed var(--break-line);border-radius:16px;color:var(--ink-faint)}
+.break-card .tag{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.themeToggle{position:static;flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--shadow-panel);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:transform .2s ease}
+.themeToggle:hover{transform:scale(1.08)}
+.themeToggle:active{transform:scale(.92)}
+.header-buttons{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+.schoolToggle{order:2}
+.infoToggle{order:1;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--glass-hi);color:var(--ink);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--shadow-panel);display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;text-decoration:none;transition:transform .2s ease,background .2s ease}
+.infoToggle:hover{transform:scale(1.08);background:var(--glass)}
+.infoToggle:active{transform:scale(.92)}
+.infoOverlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+.infoOverlay.open{opacity:1;visibility:visible}
+.infoPopup{width:min(620px,100%);max-height:min(1000px,90vh);display:flex;flex-direction:column;background:var(--glass-hi);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--line);border-radius:26px;box-shadow:0 24px 70px rgba(0,0,0,.25),0 4px 16px rgba(0,0,0,.12);transform:translateY(12px) scale(.97);transition:transform .25s ease}
+.infoOverlay.open .infoPopup{transform:translateY(0) scale(1)}
+.infoPopupHeader{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px}
+.infoPopupTitle{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.infoPopupSubtitle{font-size:11px;color:var(--ink-faint);margin-top:3px}
+.infoClose{width:32px;height:32px;border:0;border-radius:50%;background:var(--glass);color:var(--ink);font-family:inherit;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease}
+.infoClose:hover{background:var(--glass-hi);transform:scale(1.08)}
+.infoClose:active{transform:scale(.92)}
+.infoPopupBody{padding:0 22px 18px;overflow-y:auto}
+.settingsSection{margin-bottom:18px}
+.settingsHeading{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+.settingsSubheading{font-size:13px;font-weight:700;color:var(--ink);margin:16px 0 8px}
+.settingsSubheading:first-child{margin-top:0}
+.settingsRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--glass);border:1px solid var(--line);border-radius:14px}
+.settingsRow+.settingsRow{margin-top:8px}
+.settingsRow .settingsLabel{font-size:13.5px;font-weight:600;color:var(--ink)}
+.settingsRow .settingsHint{font-size:11px;color:var(--ink-faint);margin-top:2px}
+.switch{position:relative;width:42px;height:25px;flex-shrink:0;border-radius:999px;border:1px solid var(--line);background:var(--glass-hi);cursor:pointer;transition:background .2s ease}
+.switch .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .2s ease}
+.switch.on{background:var(--accent);border-color:var(--accent)}
+.switch.on .knob{transform:translateX(17px)}
+.infoTextarea{width:100%;min-height:280px;max-height:55vh;resize:none;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--glass);color:var(--ink);font-family:inherit;font-size:14px;line-height:1.55;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.infoTextarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.12)}
+.infoTextarea::placeholder{color:var(--ink-faint)}
+.infoPopupFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
+.infoSaved{font-size:11px;color:var(--ink-faint)}
+.infoClear,.infoRepoLink{border:1px solid var(--line);border-radius:10px;padding:7px 11px;background:var(--glass);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.infoClear{color:var(--ink-soft)}
+.infoRepoLink{color:var(--accent);text-decoration:none}
+.infoClear:hover,.infoRepoLink:hover{background:var(--glass-hi)}
+.infoClear:active,.infoRepoLink:active{transform:scale(.96)}
+.infoFooterActions{display:flex;align-items:center;gap:8px}
+.settingsRowBg{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.bgField{display:flex;flex-direction:column;gap:4px}
+.bgField label{font-size:10.5px;font-weight:600;color:var(--ink-soft)}
+.hexInput{width:96px;font-family:inherit;font-size:12px;padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--glass);color:var(--ink);outline:none;transition:border-color .2s ease}
+.hexInput:focus{border-color:var(--accent)}
+.bgResetBtn{margin-left:auto}
+.detailRow{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--break-line)}
+.detailRow:last-child{border-bottom:none}
+.detailLabel{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint)}
+.detailValue{font-size:13.5px;color:var(--ink);text-align:right}
+.detailStudentsNote{font-size:12px;color:var(--ink-faint);margin-top:6px;font-style:italic}
+.segRow{display:flex;gap:6px}
+.segBtn{flex:1;padding:8px 6px;border-radius:10px;border:1px solid var(--line);background:var(--glass);color:var(--ink-soft);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;transition:background .2s ease,color .2s ease}
+.segBtn[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 
-
-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
-.brand h1{
-  margin:0;font-family:var(--font-display);font-size:clamp(24px,3.4vw,38px);
-  font-weight:var(--display-w);letter-spacing:var(--display-ls);
-  text-transform:var(--display-tt);line-height:1.05;
+@media(max-width:760px){
+  .header-buttons{flex-direction:row}
+  .infoOverlay{align-items:flex-end;padding:12px}
+  .infoPopup{max-height:90vh;border-radius:24px}
+  .infoTextarea{min-height:240px}
+  header{flex-direction:column;text-align:center}
+  .title-block{display:flex;flex-direction:column;align-items:center;width:100%}
+  #emailInput{width:min(260px,90vw)}
+  .bellRow{align-self:stretch;width:100%;max-width:420px;margin:0 auto;flex:none}
+  .header-buttons{width:100%;justify-content:center;margin-top:12px}
+  .bell{text-align:center}
+  .weekSwitch{display:none}
+  .daySwitch{display:flex}
+  .grid{grid-template-columns:1fr;column-gap:0;row-gap:10px}
+  .grid .corner-cell,.grid .head,.grid>.time-column,.grid>.day-column{display:none}
+  .grid>.day-column[data-active="1"]{display:block;grid-column:1;max-width:420px;margin:0 auto;width:100%}
+  .daySwitch .day.today{color:var(--accent)}
+  .daySwitch .day.today:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
 }
-.brand>span{color:var(--muted);font-size:12.5px;margin-top:3px;min-height:16px}
-.brand>span.err{color:#e5484d}
-.idrow{display:flex;align-items:center;gap:0;margin-top:5px;
-  border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);
-  padding:3px 9px;max-width:max-content;transition:border-color .15s}
-.idrow:focus-within{border-color:var(--accent)}
-.idrow input{border:0;background:none;outline:none;padding:3px 0;width:11ch;
-  font-size:13px;font-family:var(--font-num)}
-.idrow .dom{color:var(--muted);font-size:12px;white-space:nowrap;opacity:.8}
-@media (max-width:520px){ .idrow .dom{display:none} }
-.btn{
-  background:var(--panel);border:var(--card-border);border-radius:var(--radius);
-  padding:8px 13px;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;
-  transition:transform .12s,background .15s,box-shadow .15s;
-}
-.btn:hover{background:var(--panel-2);box-shadow:var(--shadow-hi)}
-.btn:active{transform:translateY(1px)}
-.btn.icon{width:40px;padding:8px 0;text-align:center}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-[data-skin="brutal"] .btn.primary,[data-skin="swiss"] .btn.primary{border-color:var(--line)}
-.weeknav{display:flex;align-items:center;gap:6px}
-.weeknav{position:relative}
-.weekbtn{
-  background:var(--accent);color:var(--accent-ink);border:var(--card-border);border-color:transparent;
-  border-radius:999px;padding:9px 20px;cursor:pointer;font-weight:700;font-size:15px;
-  letter-spacing:.01em;box-shadow:var(--shadow);white-space:nowrap;
-  font-family:var(--font-display);transition:transform .12s, filter .15s;
-}
-.weekbtn:hover{filter:brightness(1.08)}
-.weekbtn:active{transform:scale(.97)}
-.weekbtn .swap{opacity:.65;font-weight:400;margin-left:8px;font-size:12px}
-[data-skin="swiss"] .weekbtn,[data-skin="brutal"] .weekbtn,
-[data-skin="blueprint"] .weekbtn,[data-skin="terminal"] .weekbtn{border-radius:0}
-[data-skin="brutal"] .weekbtn{border:3px solid var(--line)}
-
-
-/* now / next */
-.now{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
-.nowcard{
-  position:relative;flex:1 1 280px;background:var(--panel);border:var(--card-border);
-  border-left:5px solid var(--c,var(--accent));
-  border-radius:var(--card-radius);padding:13px 15px;box-shadow:var(--shadow);min-width:0;overflow:hidden;
-}
-.nowcard .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.nowcard .subj{font-size:19px;font-weight:700;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nowcard .meta{color:var(--muted);font-size:13px;margin-top:3px}
-.nowcard.weekend{border-left-color:var(--accent)}
-.nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:13px;margin-top:7px;font-weight:700}
-.progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
-.prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
-      border-radius:99px;overflow:hidden;min-width:0}
-.prog i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px;
-        transition:width .6s linear}
-.progrow .count{margin-top:0;white-space:nowrap;color:var(--c,var(--accent))}
-[data-skin="swiss"] .prog,[data-skin="brutal"] .prog,
-[data-skin="terminal"] .prog,[data-skin="blueprint"] .prog{border-radius:0}
-[data-skin="swiss"] .prog i,[data-skin="brutal"] .prog i,
-[data-skin="terminal"] .prog i,[data-skin="blueprint"] .prog i{border-radius:0}
-
-/* ---------- grid (time-positioned) ---------- */
-.grid{display:grid;gap:var(--cell-gap,5px);
-      grid-template-columns:58px repeat(var(--days,5),minmax(0,1fr));align-items:start}
-.corner{}
-.dayhead{padding:2px 2px 9px;text-align:center}
-.dayhead .dow{font-weight:700;font-size:14.5px;font-family:var(--font-display);
-            letter-spacing:var(--display-ls);text-transform:var(--display-tt);
-            display:block;transition:color .2s}
-.dayhead small{font-size:.72em;letter-spacing:.06em;color:var(--accent);
-             margin-left:.35em;font-weight:700;vertical-align:.06em}
-[data-skin="paper"] .dayhead .dow{font-size:21px}
-.dayhead .rule{display:block;height:2px;width:100%;margin-top:8px;border-radius:2px;
-             background:var(--line);opacity:.5}
-.dayhead.today .dow{color:var(--accent)}
-.dayhead.today .rule{background:var(--accent);opacity:1;height:3px;margin-top:7px}
-
-/* ── compact: blocks are absolutely placed inside each day column ── */
-[data-view="compact"] .lesson,
-[data-view="compact"] .breakbar{position:absolute;left:0;right:0;width:auto}
-
-
-/* ── full: one row per period, cells sized by content ─────────────── */
-[data-view="full"] .grid{
-  align-items:stretch;
-  grid-template-columns:86px repeat(var(--days,5),minmax(0,1fr));
-}
-[data-view="full"] .cell{display:flex;min-height:92px}
-[data-view="full"] .cell.brk{min-height:0}
-[data-view="full"] .lesson{height:100%;padding:10px 11px}
-[data-view="full"] .lesson .s{font-size:14.5px}
-[data-view="full"] .lesson .r,[data-view="full"] .lesson .t{font-size:12.5px}
-[data-view="full"] .lesson .tm{display:block;margin-top:auto;padding-top:6px}
-[data-view="full"] .breakbar{padding:5px 10px;min-height:24px}
-[data-view="full"] .free{min-height:92px}
-[data-view="full"] .periodcell{
-  color:var(--muted);font-size:12px;text-align:right;padding:14px 9px 0 0;
-  line-height:1.35;font-family:var(--font-num);
-}
-[data-view="full"] .periodcell b{display:block;color:var(--text);font-size:13.5px;font-weight:700}
-[data-view="full"] .periodcell.brk{padding-top:8px}
-[data-view="full"] .periodcell .approx{opacity:.55;font-style:italic}
-.free{width:100%}
-
-.tcol{position:relative}
-.tmark{position:absolute;right:9px;translate:0 -50%;font-size:11px;color:var(--muted);
-       font-family:var(--font-num);font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}
-.dbody{position:relative;min-width:0}
-
-.lesson{
-  position:relative;width:100%;text-align:left;cursor:pointer;overflow:hidden;
-  background:color-mix(in srgb, var(--c) var(--tint), var(--panel));
-  border:var(--card-border);
-  border-left:var(--card-accent) solid var(--c,var(--accent));
-  border-radius:var(--card-radius);padding:7px 9px;box-shadow:var(--shadow);
-  transition:box-shadow .14s ease, background .15s;
-  display:flex;flex-direction:column;gap:0;
-}
-.lesson:hover{box-shadow:var(--shadow-hi);z-index:3}
-.lesson .s{font-weight:700;font-size:13.5px;line-height:1.18;overflow-wrap:anywhere;
-           font-family:var(--font-display);letter-spacing:var(--display-ls)}
-[data-skin="paper"] .lesson .s{font-size:17px;line-height:1.05}
-[data-skin="glass"] .lesson .s,[data-skin="terminal"] .lesson .s{font-family:var(--font-ui)}
-.lesson .r{font-size:11.5px;margin-top:2px;font-weight:700;opacity:.9;
-           overflow-wrap:anywhere;font-family:var(--font-num)}
-.lesson .t{color:inherit;opacity:.86;font-size:11.5px;overflow-wrap:anywhere}
-.lesson .tm{display:none;color:inherit;opacity:.85;font-size:11px;margin-top:auto;
-            font-family:var(--font-num);font-variant-numeric:tabular-nums}
-.lesson.tall .tm{display:block}
-.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px;z-index:2}
-
-.breakbar{
-  position:relative;width:100%;overflow:hidden;
-  background:color-mix(in srgb,var(--text) 6%,transparent);
-  border:1px dashed var(--line);border-radius:calc(var(--card-radius) * .6);
-  color:var(--text);font-size:10.5px;font-family:var(--font-num);
-  display:flex;gap:8px;justify-content:center;align-items:center;
-  letter-spacing:.06em;opacity:.8;white-space:nowrap;padding:0 6px;
-}
-.breakbar span{font-weight:700;text-transform:uppercase}
-.breakbar em{font-style:normal;opacity:.7}
-/* Assembly is just another scheduled block, not an active state -- an accent
-   fill made it look permanently "current". */
-.breakbar.assembly{border-style:solid;opacity:.95}
-
-/* Today focus mode */
-.dimmed{opacity:.28;filter:saturate(.55);transition:opacity .2s,filter .2s}
-.dayhead.dimmed .dow{color:var(--muted)}
-
-/* Coloured outlines off: neutral card border, colour survives as a dot */
-.nooutline .lesson{
-  border-color:var(--line) !important;
-  border-left-color:var(--line) !important;
-  border-top-color:var(--line) !important;
-  background:var(--panel) !important;
-}
-.nooutline .lesson.current{outline-color:var(--accent) !important}
-.nooutline .lesson .s::before{
-  content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
-  background:var(--c,var(--accent));margin-right:6px;vertical-align:1px;flex:none;
-}
-.nooutline .nowcard{border-left-color:var(--accent) !important}
-
-/* mobile */
-.dayswitch{display:none;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:5px}
-.dayswitch button{
-  flex:0 0 auto;background:var(--panel);border:var(--card-border);border-radius:999px;
-  padding:8px 15px;cursor:pointer;font-size:13px;box-shadow:var(--shadow);
-}
-[data-skin="swiss"] .dayswitch button,[data-skin="brutal"] .dayswitch button,
-[data-skin="blueprint"] .dayswitch button,[data-skin="terminal"] .dayswitch button{border-radius:0}
-.dayswitch button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-@media (max-width:860px){
-  .grid{grid-template-columns:70px minmax(0,1fr)}
-  .dayswitch{display:flex}
-  .weeklabel{min-width:0;font-size:12px}
-  .weeknav{order:3;width:100%;justify-content:space-between}
-  [data-skin="paper"] .wrap::before{display:none}
-}
-
-/* gate */
-.gate{position:fixed;inset:0;z-index:60;background:var(--bg);background-image:var(--bg-img);
-      display:flex;align-items:center;justify-content:center;padding:24px}
-.gate[hidden]{display:none}
-.gatecard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
-          box-shadow:var(--shadow-hi);padding:30px;width:min(430px,100%)}
-.gatecard h2{margin:0 0 7px;font-family:var(--font-display);font-size:clamp(24px,5vw,32px);
-             font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.gatecard p{margin:0 0 20px;color:var(--muted);font-size:13.5px}
-.emailrow{display:flex;align-items:center;border:var(--card-border);border-radius:var(--radius);
-          background:var(--panel-2);overflow:hidden}
-.emailrow input{flex:1;min-width:0;border:0;background:none;padding:12px 13px;outline:none}
-.emailrow .dom{padding-right:13px;color:var(--muted);font-size:13px;white-space:nowrap}
-.gatecard .btn{margin-top:15px;width:100%;font-weight:700}
-.gateerr{color:#e5484d;font-size:13px;margin-top:11px;min-height:19px}
-[data-skin="terminal"] .gateerr,[data-skin="blueprint"] .gateerr{color:#ff8a8a}
-
-/* dialogs */
-dialog{
-  border:var(--card-border);background:var(--panel);color:var(--text);
-  border-radius:var(--card-radius);padding:0;box-shadow:var(--shadow-hi);width:min(540px,93vw);
-}
-dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
-.dlg-h{display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid var(--line)}
-.dlg-h h2{margin:0;font-size:17px;margin-right:auto;font-family:var(--font-display);
-          font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.dlg-b{padding:17px;max-height:66vh;overflow:auto}
-.field{margin-bottom:18px}
-.field>label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-             color:var(--muted);margin-bottom:7px;font-weight:700}
-.field input[type=text]{width:100%;background:var(--panel-2);border:1px solid var(--line);
-                        border-radius:var(--radius);padding:10px 12px}
-.hint{font-size:12px;color:var(--muted);margin-top:6px}
-.dlg-f{display:flex;gap:9px;justify-content:flex-end;padding:13px 17px;border-top:1px solid var(--line)}
-.status{margin:0 0 15px;font-size:13px;color:var(--muted)}
-.status.err{color:#e5484d}
-
-/* skin picker */
-.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:9px}
-.skinbtn{
-  border:2px solid var(--line);border-radius:var(--radius);padding:0;cursor:pointer;
-  overflow:hidden;background:none;text-align:left;
-}
-.skinbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
-.skinbtn.more .sw.plus{
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;font-weight:300;line-height:1;color:var(--muted);
-  background:var(--panel-2);
-}
-.skinbtn.more:hover .sw.plus{color:var(--accent)}
-.skinbtn .sw{height:46px;display:block}
-.skinbtn .nm{display:block;padding:6px 8px;font-size:12px;font-weight:700;background:var(--panel-2)}
-.custrow{display:flex;align-items:center;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
-.custrow:last-of-type{border-bottom:0}
-.custrow>span{flex:1;font-size:13px}
-.custrow input[type=color]{width:36px;height:29px;padding:0;border:1px solid var(--line);
-                           border-radius:7px;background:none;cursor:pointer;flex:none}
-.custrow input[type=range]{width:118px;flex:none;accent-color:var(--accent)}
-.custrow b{width:40px;text-align:right;font-size:12px;color:var(--muted);
-           font-variant-numeric:tabular-nums;flex:none}
-.custrow select{background:var(--panel-2);border:1px solid var(--line);
-                border-radius:8px;padding:6px 8px;font-size:13px}
-.custrow input.sw{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex:none}
-.adv{margin-top:10px;border-top:1px solid var(--line);padding-top:4px}
-.adv>summary{
-  cursor:pointer;list-style:none;padding:7px 0;font-size:12px;font-weight:700;
-  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
-  display:flex;align-items:center;gap:7px;
-}
-.adv>summary::-webkit-details-marker{display:none}
-.adv>summary::before{content:"B8";transition:transform .18s;display:inline-block;font-size:11px}
-.adv[open]>summary::before{transform:rotate(90deg)}
-.adv>summary:hover{color:var(--text)}
-/* frosted mode for the custom skin */
-.customglass .lesson,.customglass .nowcard,.customglass .breakbar,
-.customglass .btn,.customglass .weekbtn,.customglass dialog,
-.customglass .gatecard,.customglass .dayswitch button,.customglass .idrow{
-  backdrop-filter:blur(20px) saturate(175%);
-  -webkit-backdrop-filter:blur(20px) saturate(175%);
-}
-.custrow .btn{width:100%}
-.modes{display:flex;gap:8px}
-.modes button{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-              padding:9px;cursor:pointer;font-size:13px}
-.modes button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.colrow{display:flex;align-items:center;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
-.colrow:last-child{border-bottom:0}
-.colrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
-.colrow input[type=color]{width:36px;height:29px;padding:0;border:1px solid var(--line);
-                          border-radius:7px;background:none;cursor:pointer;flex:none}
-.colrow input[type=color][hidden]{display:none}
-.colsel{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
-        padding:5px 7px;font-size:12px;flex:none;max-width:9.5em}
-.crin{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
-      padding:6px 9px;font-size:12.5px;width:11em;flex:none}
-.custrow .btn{flex:1}
-
-/* lesson detail */
-#detail .dlg-b{padding:0}
-.dhead{padding:22px 20px;border-bottom:1px solid var(--line);
-       background:color-mix(in srgb,var(--c) 22%,var(--panel))}
-.dhead .dsub{font-family:var(--font-display);font-size:clamp(23px,5vw,31px);font-weight:var(--display-w);
-             letter-spacing:var(--display-ls);line-height:1.1;text-transform:var(--display-tt)}
-.dhead .dwhen{color:var(--muted);font-size:13.5px;margin-top:5px;font-family:var(--font-num)}
-.drows{padding:6px 20px 18px}
-.drow{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
-.drow:last-child{border-bottom:0}
-.drow dt{width:96px;flex:none;color:var(--muted);font-size:11px;letter-spacing:.1em;
-         text-transform:uppercase;font-weight:700;padding-top:2px}
-.drow dd{margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
-
-<div class="gate" id="gate" hidden>
-  <div class="gatecard">
-    <h2>Your timetable</h2>
-    <p>Enter your school email to load it. It's saved on this device, so you only do this once.</p>
-    <form id="gateform">
-      <div class="emailrow">
-        <input type="text" id="gateemail" autocomplete="username" autocapitalize="none"
-               autocorrect="off" spellcheck="false" placeholder="first.last1">
-        <span class="dom" id="gatedomain"></span>
-      </div>
-      <button class="btn primary" type="submit" id="gatego">Show my timetable</button>
-    </form>
-    <div class="gateerr" id="gateerr"></div>
-  </div>
-</div>
-
 <div class="wrap">
-  <header>
-    <div class="brand">
-      <h1 id="title">Timetable</h1>
-      <div class="idrow">
-        <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
-               autocorrect="off" autocomplete="username" placeholder="first.last1"
-               aria-label="Your school username">
-        <span class="dom" id="whoamidom"></span>
-      </div>
-      <span id="sub"></span>
-    </div>
-    <div class="weeknav">
-      <button class="weekbtn" id="weekbtn" title="Switch between Week A and Week B"></button>
-    </div>
-    <a class="btn icon" href="home.html" id="homebtn" title="Home">&#8962;</a>
-    <button class="btn" id="today">Today</button>
-    <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
-    <button class="btn icon" id="settings" title="Settings">&#9881;</button>
-  </header>
+<header>
+<div class="title-block">
+<div class="eyebrow">MSC Unofficial</div>
+<h1 id="profileName">Andre Kwok</h1>
+<div class="emailInputWrap">
+<input type="text" id="emailInput" placeholder="Enter the start of your email" autocomplete="username">
+<div class="emailHint">Enter the start of your email and press Enter</div>
+</div>
+</div>
+<div class="bellRow" id="bellRow">
+<div class="bell">
+<div class="eyebrow2">NOW</div>
+<div class="line1" id="bellLine1">Loading…</div>
+<div class="line2" id="bellLine2"></div>
+<div class="bellProgressWrap" id="bellProgressWrap" style="display:none">
+<span class="bellProgressTime" id="bellProgressStart"></span>
+<div class="bellProgressTrack"><div class="bellProgressFill" id="bellProgressFill"></div></div>
+<span class="bellProgressTime" id="bellProgressEnd"></span>
+</div>
+<div class="bellRoomLine" id="bellRoomLine">
+<span id="bellRoomText"></span>
+<span class="bellTimeLeft" id="bellTimeLeft"></span>
+</div>
+</div>
+<div class="bell next">
+<div class="eyebrow2">NEXT</div>
+<div class="line1" id="nextLine1">Loading…</div>
+<div class="line2" id="nextLine2"></div>
+<div class="bellRoomLine" id="nextRoomLine">
+<span id="nextRoomText"></span>
+<span class="bellTimeLeft" id="nextTimeLeft"></span>
+</div>
+</div>
+</div>
+<div class="header-buttons">
+<button class="infoToggle" id="infoToggle" aria-label="Open settings" title="Settings">⚙️</button>
+<a class="infoToggle schoolToggle" href="home.html" target="_blank" rel="noopener noreferrer" aria-label="Open school intranet" title="School intranet">🏫</a>
+</div>
+</header>
 
-  <div class="now" id="now"></div>
-  <div class="dayswitch" id="dayswitch"></div>
-  <div class="grid" id="grid"></div>
+<div class="infoOverlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoPopupTitle">
+<div class="infoPopup">
+<div class="infoPopupHeader">
+<div>
+<div class="infoPopupTitle" id="infoPopupTitle">Settings & notes</div>
+<div class="infoPopupSubtitle"></div>
+</div>
+<button class="infoClose" id="infoClose" aria-label="Close information">×</button>
+</div>
+<div class="infoPopupBody">
+<div class="settingsSection">
+<div class="settingsHeading">Settings</div>
+
+<div class="settingsSubheading">Display</div>
+<div class="settingsRow">
+<div><div class="settingsLabel">Dark mode</div></div>
+<div class="switch" id="themeSwitch" role="switch" aria-checked="false" aria-label="Toggle dark mode"><div class="knob"></div></div>
+</div>
+<div class="settingsRow">
+<div><div class="settingsLabel">Colour outlines</div><div class="settingsHint">Outline each period in its subject colour</div></div>
+<div class="switch" id="outlineSwitch" role="switch" aria-checked="false" aria-label="Toggle colour outlines"><div class="knob"></div></div>
+</div>
+<div class="settingsRow">
+<div><div class="settingsLabel">Progress bar</div><div class="settingsHint">Show a progress bar in the NOW box instead of a time range</div></div>
+<div class="switch" id="progressSwitch" role="switch" aria-checked="true" aria-label="Toggle progress bar"><div class="knob"></div></div>
+</div>
+<div class="settingsRow" style="flex-direction:column;align-items:stretch;gap:8px">
+<div><div class="settingsLabel">Room numbers</div><div class="settingsHint">How room codes like CR1007.118 are shown</div></div>
+<div class="segRow" id="roomModeRow">
+<button type="button" class="segBtn" data-room="full">Full</button>
+<button type="button" class="segBtn" data-room="building">New</button>
+<button type="button" class="segBtn" data-room="number">Old</button>
+</div>
+</div>
+<div class="settingsRow settingsRowBg">
+<div class="bgField">
+<label for="lightBgInput">Light Background Colour</label>
+<input type="text" id="lightBgInput" class="hexInput" placeholder="#ffffff" maxlength="7">
+</div>
+<div class="bgField">
+<label for="darkBgInput">Dark Background Colour</label>
+<input type="text" id="darkBgInput" class="hexInput" placeholder="#101114" maxlength="7">
+</div>
+<button class="infoClear bgResetBtn" id="bgReset" type="button">Reset</button>
+</div>
+</div>
+<div class="settingsHeading">Notes</div>
+<textarea class="infoTextarea" id="infoTextarea" placeholder="Welcome to MSC Unofficial, created by Andre Kwok and Alex Burns. You can write extra information here, such as notes about your classes, reminders, or anything else you want to keep track of. This information is automatically saved in your browser and will be available the next time you visit this page.
+
+Please don't show this to anyone in the tech block cause I'm scared I'll be executed on the spot for exploiting the schools API. If anything breaks or if you have any suggestions for me to add, please contanct us at andre.kwok2@education.nsw.gov.au or alex.burns6@education.nsw.gov.au, or anywhere else."></textarea>
+<div class="infoPopupFooter">
+<span class="infoSaved" id="infoSaved"></span>
+<div class="infoFooterActions">
+<a class="infoRepoLink" id="infoRepoLink" href="https://github.com/AlexBurns2/timetable" target="_blank" rel="noopener noreferrer" title="View source and README on GitHub">Github</a>
+<button class="infoClear" id="exportCalendarBtn" type="button" title="Download the currently shown timetable (Week A and Week B) as an .ics calendar file">Export .ics</button>
+<button class="infoClear" id="infoClear" type="button">Clear</button>
+</div>
+</div>
+</div>
+</div>
 </div>
 
-<dialog id="detail">
-  <div class="dlg-b">
-    <div class="dhead" id="dhead"></div>
-    <dl class="drows" id="drows"></dl>
-  </div>
-  <div class="dlg-f"><button class="btn" id="dclose">Close</button></div>
-</dialog>
+<div class="infoOverlay" id="periodOverlay" role="dialog" aria-modal="true" aria-labelledby="periodPopupTitle">
+<div class="infoPopup">
+<div class="infoPopupHeader">
+<div>
+<div class="infoPopupTitle" id="periodPopupTitle">Period details</div>
+<div class="infoPopupSubtitle" id="periodPopupSubtitle"></div>
+</div>
+<button class="infoClose" id="periodClose" aria-label="Close period details">×</button>
+</div>
+<div class="infoPopupBody" id="periodPopupBody"></div>
+</div>
+</div>
 
-<dialog id="dlg">
-  <form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close">&#10005;</button></form>
-  <div class="dlg-b">
-    <p class="status" id="status"></p>
+<div class="statusBanner" id="statusBanner" style="display:none"></div>
+<div class="weekSwitch" id="weekSwitch">
+<button class="arrowbtn" id="weekPrev">‹</button>
+<div class="label" id="weekLabel">Week A</div>
+<button class="arrowbtn" id="weekNext">›</button>
+</div>
+<div class="daySwitch" id="daySwitch">
+<button class="arrowbtn" id="dayPrev">‹</button>
+<div class="label"><div class="day" id="dayLabel">Monday</div><div class="week" id="dayWeekLabel">Week A</div></div>
+<button class="arrowbtn" id="dayNext">›</button>
+</div>
+<div class="grid" id="grid"></div>
+</div>
 
-    <div class="field">
-      <label>Appearance</label>
-      <div class="skins" id="skins"></div>
-    </div>
-
-    <div class="field" id="customwrap" hidden>
-      <label>Custom theme</label>
-      <div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>
-      <div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>
-      <div class="custrow"><span>Text</span><input type="color" id="c_text"></div>
-      <div class="custrow"><span>Accent</span><input type="color" id="c_accent"></div>
-      <div class="custrow"><span>Corner radius</span><input type="range" id="c_radius" min="0" max="26" step="1"><b id="c_radius_v"></b></div>
-      <div class="custrow"><span>Typeface</span><select id="c_font"></select></div>
-
-      <details class="adv" id="c_adv">
-        <summary>Advanced</summary>
-        <div class="custrow"><span>Border colour</span><input type="color" id="c_line"></div>
-        <div class="custrow"><span>Second colour</span><input type="color" id="c_accent2"></div>
-        <div class="custrow"><span>Backdrop</span>
-          <select id="c_backdrop">
-            <option value="solid">Solid</option>
-            <option value="gradient">Soft gradient</option>
-            <option value="mesh">Colour mesh</option>
-          </select></div>
-        <div class="custrow"><span>Frosted glass</span>
-          <input type="checkbox" id="c_glass" class="sw"></div>
-        <div class="custrow"><span>Shadow</span>
-          <select id="c_shadow">
-            <option value="none">None</option>
-            <option value="soft">Soft</option>
-            <option value="hard">Hard offset</option>
-          </select></div>
-        <div class="custrow"><span>Border width</span><input type="range" id="c_border" min="0" max="4" step="1"><b id="c_border_v"></b></div>
-        <div class="custrow"><span>Subject tint</span><input type="range" id="c_tint" min="0" max="70" step="1"><b id="c_tint_v"></b></div>
-      </details>
-
-      <div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>
-      <div class="hint">Saved on this device only.</div>
-    </div>
-
-    <div class="field">
-      <label>Light / dark</label>
-      <div class="modes" id="modes">
-        <button type="button" data-mode="light">Light</button>
-        <button type="button" data-mode="dark">Dark</button>
-      </div>
-      <div class="hint" id="modehint"></div>
-    </div>
-
-    <div class="field">
-      <label>Room numbers</label>
-      <div class="modes" id="rooms">
-        <button type="button" data-room="full" title="CR1007.118">Full</button>
-        <button type="button" data-room="building" title="CR1007">New</button>
-        <button type="button" data-room="number" title="118">Legacy</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Custom credentials</label>
-      <div class="hint" style="margin-top:0;margin-bottom:9px">
-        Optional. With this set, your timetable is fetched using your account
-        instead of the shared credentials Stored <b>only on this device</b>. 
-        Leave blank to use the shared login.
-      </div>
-      <div class="custrow"><span>School email</span>
-        <input type="text" id="cr_email" class="crin" spellcheck="false"
-               autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>
-      <div class="custrow"><span>Password</span>
-        <input type="password" id="cr_pass" class="crin" autocomplete="off"
-               placeholder="••••••••"></div>
-      <div class="custrow">
-        <button class="btn" type="button" id="cr_save">Save login</button>
-        <button class="btn" type="button" id="cr_clear">Clear</button>
-      </div>
-      <div class="hint" id="cr_state"></div>
-    </div>
-
-    <div class="field">
-      <label>Accessibility</label>
-      <div class="custrow"><span>Text size</span>
-        <input type="range" id="a_text" min="80" max="150" step="5"><b id="a_text_v"></b></div>
-      <div class="custrow"><span>Zoom</span>
-        <input type="range" id="a_zoom" min="70" max="150" step="5"><b id="a_zoom_v"></b></div>
-      <div class="custrow"><span>High contrast</span>
-        <input type="checkbox" id="a_contrast" class="sw"></div>
-      <div class="custrow"><span>Reduce motion</span>
-        <input type="checkbox" id="a_motion" class="sw"></div>
-      <div class="custrow"><button class="btn" type="button" id="a_reset">Reset accessibility</button></div>
-    </div>
-
-    <div class="field">
-      <label>Layout</label>
-      <div class="modes" id="views">
-        <button type="button" data-view="compact" title="Positioned by clock time">Compact</button>
-        <button type="button" data-view="full" title="One row per period">Full</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Display</label>
-      <div class="custrow"><span>Week letter on day names</span>
-        <input type="checkbox" id="t_weekletter" class="sw"></div>
-      <div class="custrow"><span>Coloured subject outlines</span>
-        <input type="checkbox" id="t_outline" class="sw"></div>
-      <div class="custrow"><span>Progress bar on Now</span>
-        <input type="checkbox" id="t_progress" class="sw"></div>
-      <div class="custrow"><span>Transparent background</span>
-        <input type="checkbox" id="t_zen" class="sw"></div>
-      <div class="hint">Drops the page background for compatibility 
-        with custom browser wallpapers like Zen.</div>
-    </div>
-
-    <div class="field">
-      <label>Subject colours</label>
-      <div id="colours"></div>
-      <div class="hint" id="nocolours" hidden>Colours appear once a timetable has loaded.</div>
-    </div>
-
-
-  </div>
-  <div class="dlg-f">
-    <button class="btn" id="resetcolours">Reset colours</button>
-    <button class="btn primary" id="save">Save &amp; reload</button>
-  </div>
-</dialog>
-
-<script>
-(() => {
-"use strict";
-
-/* ═══ CONFIG ═══ set ENDPOINT once and the page needs no manual setup ═══ */
-const CONFIG = {
-  /* The only place the endpoint lives. Not exposed in Settings.
-     Keep this ABSOLUTE. A relative path resolves against whatever origin is
-     serving the page, so on GitHub Pages it hits Pages' own 404 instead of the
-     function. Absolute works from Pages, from Vercel and from a custom domain
-     alike -- just make sure each origin is listed in ALLOWED_ORIGIN. */
-  ENDPOINT: "/api/timetable",
-  EMAIL_DOMAIN: "education.nsw.gov.au"
+<script>const CONFIG = {
+  API_BASE: "https://intranet.nbscmanlys-h.schools.nsw.edu.au",
+  TOKEN_URL: "https://timetable-ivory-nine.vercel.app/api/token",
+  USER_EMAIL: "andre.kwok2@education.nsw.gov.au",
 };
 
-/* skin catalogue + look application live in theme.js */
-const SKINS = TT.SKINS, SKIN_IDS = TT.SKIN_IDS;
-const CUSTOM_FONTS = TT.CUSTOM_FONTS, CUSTOM_DEFAULTS = TT.CUSTOM_DEFAULTS;
-const inkFor = TT.inkFor;
-
-/* ═══ storage ═══ */
-const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
-             creds:'tt.creds',
-             textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
-             weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
-const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
-const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-
-const endpoint = CONFIG.ENDPOINT;
-let email    = get(LS.email, '');
-let colours  = get(LS.colours, {});
-/* display settings -- declared before applyLook() runs */
-let roomMode   = get(LS.room, 'full');
-let showWeekLetter = get(LS.weekletter, true);
-let showOutline    = get(LS.outline, true);
-let showProgress   = get(LS.progress, true);
-let viewMode       = get(LS.view, 'compact');
-let zenMode        = get(LS.zen, false);
-/* Optional personal school login. Stored on this device only — see the
-   warning shown beside the fields in Settings. */
-let creds          = get(LS.creds, null);
-let textScale      = get(LS.textScale, 1);
-let zoom           = get(LS.zoom, 1);
-let contrast       = get(LS.contrast, 'normal');
-let motion         = get(LS.motion, 'normal');
-let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
-let skin     = get(LS.skin, 'plain');
-let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
-
-function applyLook(){
-  TT.apply({ skin, mode, zen:zenMode, custom,
-             textScale, zoom, contrast, motion });
-  document.documentElement.setAttribute('data-view', viewMode);
-  document.documentElement.classList.toggle('nooutline', !showOutline);
-}
-applyLook();          /* must run before the first render, not only on change */
-
-/* ═══ dates ═══ */
-const DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const CYCLE_DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
-const DAY_KEYS = ['mon','tue','wed','thu','fri'];
-const pad = n => String(n).padStart(2,'0');
-const ymd = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
-const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
-const startOfWeek = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; };
-const sameDay = (a,b) => !!a && !!b && ymd(a) === ymd(b);
-const fmtShort = d => d.getDate() + ' ' + MON[d.getMonth()];
-const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
-function toMinutes(v){
-  if (v === null || v === undefined || v === '') return null;
-  if (typeof v === 'number') return v > 1440 ? null : v;
-  const s = String(v).trim();
-  const iso = s.match(/T(\d{1,2}):(\d{2})/);
-  if (iso) return (+iso[1])*60 + (+iso[2]);
-  const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp])?/);
-  if (!m) return null;
-  let h = +m[1]; const mi = +m[2]; const ap = m[3] && m[3].toLowerCase();
-  if (ap === 'p' && h < 12) h += 12;
-  if (ap === 'a' && h === 12) h = 0;
-  return h*60 + mi;
-}
-const fmtTime = mins => {
-  if (mins === null || mins === undefined) return '';
-  const h = Math.floor(mins/60), m = mins%60;
-  return (((h+11)%12)+1) + ':' + pad(m) + (h >= 12 ? 'pm' : 'am');
-};
-function toDate(v){
-  if (!v) return null;
-  if (v instanceof Date) return isNaN(v) ? null : v;
-  const s = String(v);
-  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (m) return new Date(+m[1], (+m[2])-1, +m[3]);
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (m) return new Date(+m[3], (+m[2])-1, +m[1]);
-  const d = new Date(s);
-  return isNaN(d) ? null : d;
-}
-
-/* ═══ field pickers ═══ */
-const pick = (o, keys) => {
-  if (o == null || typeof o !== 'object') return undefined;
-  const lower = {};
-  for (const k of Object.keys(o)) lower[k.toLowerCase()] = o[k];
-  for (const k of keys){
-    const v = lower[k.toLowerCase()];
-    if (v !== undefined && v !== null && v !== '') return v;
+function decodeJwtPayload(token) {
+  try {
+    const part = token.split(".")[1];
+    return JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return null;
   }
-  return undefined;
-};
-const deepStr = v => (v && typeof v === 'object')
-  ? (pick(v, ['name','fullName','displayName','description','title','shortName','code','text']) || '')
-  : (v === undefined || v === null ? '' : v);
-const str = v => String(deepStr(v)).trim();
-function asArray(v){
-  if (Array.isArray(v)) return v;
-  if (v && typeof v === 'object'){ for (const val of Object.values(v)) if (Array.isArray(val)) return val; }
-  return [];
 }
 
-/* ═══ subject tidy-up ═══
-   The API gives names like "11PHYS A3 Physics Yr11". Strip the leading class
-   code and the trailing year suffix, but never strip down to nothing. */
-/* Optional display renames, applied after the year suffix is stripped.
-   Left-hand side is the cleaned CourseName. Edit freely. */
-const SUBJECT_RENAMES = {
-  // 'Mathematics Extension 1': 'Maths Ext 1',
-  // 'Mathematics HSC': 'Maths Advanced',
-};
+async function loadToken() {
+  const cached = JSON.parse(localStorage.getItem("school-token") || "null");
+  const REFRESH_BEFORE = 60 * 60 * 1000;
 
-function cleanSubject(name, code){
-  const original = String(name || '').trim();
-  let s = original;
-  s = s.replace(/\s*[-–—,]?\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '');            /* "... Yr11" */
-  /* Strip a leading class code, but only if a real word survives -- otherwise
-     a subject that is *only* a code ("11PHYS A3") would collapse to "A3". */
-  const keepsAWord = v => /[A-Za-z]{3,}/.test(v);
-  const noCode = s.replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, '');
-  if (noCode !== s && keepsAWord(noCode)) s = noCode;
-  if (code){
-    const c = String(code).trim();
-    if (c && s.toLowerCase().startsWith(c.toLowerCase())){
-      const rest = s.slice(c.length);
-      if (keepsAWord(rest)) s = rest;
+  if (cached?.token && cached?.exp) {
+    const expiresAt = cached.exp * 1000;
+    if (Date.now() < expiresAt - REFRESH_BEFORE) return cached;
+  }
+
+  const res = await fetch(CONFIG.TOKEN_URL, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new ApiError("Unable to obtain the school token.", res.status);
+  }
+
+  const data = await res.json();
+
+  if (!data.token) {
+    throw new ApiError("Token server did not return a token.", 502);
+  }
+
+  const payload = decodeJwtPayload(data.token);
+
+  if (!payload?.exp) {
+    throw new ApiError("Token did not contain an expiration time.", 502);
+  }
+
+  const auth = {
+    token: data.token,
+    type: data.type || "Bearer",
+    iat: payload.iat || null,
+    exp: payload.exp,
+  };
+
+  localStorage.setItem("school-token", JSON.stringify(auth));
+  return auth;
+}
+
+function formatName(name) {
+  if (!name) return "";
+  return name
+    .split(/[-\s]+/)
+    .filter(Boolean)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function nameFromEmail(email) {
+  if (!email || !email.includes("@")) return null;
+  const parts = email.split("@")[0].split(".");
+  if (parts.length < 2) return null;
+  return formatName(parts[0]) + " " + formatName(parts[1].replace(/\d+$/, ""));
+}
+
+function getCurrentEmail() {
+  const input = document.getElementById("emailInput");
+  let username = input.value.trim();
+  if (!username) username = CONFIG.USER_EMAIL.split("@")[0];
+  if (username.includes("@")) username = username.split("@")[0];
+  return username + "@education.nsw.gov.au";
+}
+
+function updateProfileDisplay(email, apiProfile = null) {
+  let name = null;
+
+  if (apiProfile) {
+    name =
+      apiProfile.FullName ||
+      apiProfile.fullName ||
+      [apiProfile.FirstName || apiProfile.firstName, apiProfile.LastName || apiProfile.lastName]
+        .filter(Boolean)
+        .join(" ");
+  }
+
+  if (!name) name = nameFromEmail(email);
+  if (!name) name = "Timetable";
+
+  document.getElementById("profileName").textContent = name;
+  document.title = `${name} — Timetable`;
+}
+
+function timeToMin(value) {
+  if (value == null || value === "") return 0;
+
+  let str = String(value).trim(),
+    ampm = str.match(/\s*(AM|PM)$/i);
+  str = str.replace(/\s*(AM|PM)$/i, "");
+
+  const parts = str.split(":");
+  let h = Number(parts[0]),
+    m = Number(parts[1] || 0);
+
+  if (ampm) {
+    const pm = ampm[1].toLowerCase() === "pm";
+    if (pm && h < 12) h += 12;
+    if (!pm && h === 12) h = 0;
+  }
+
+  return h * 60 + m;
+}
+
+function formatTime(value) {
+  if (!value) return "";
+
+  const total = timeToMin(value),
+    h = Math.floor(total / 60),
+    m = total % 60;
+
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+}
+
+function getPeriodNumber(value) {
+  if (value == null) return "";
+
+  const str = String(value).trim(),
+    match = str.match(/(?:period|p)?\s*(\d+)/i);
+
+  return match ? match[1] : str;
+}
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function apiGet(path, retry = true) {
+  const { type, token } = await loadToken();
+
+  if (!token) {
+    throw new ApiError("Unable to obtain a school token.", 401);
+  }
+
+  let res;
+
+  try {
+    res = await fetch(CONFIG.API_BASE + path, {
+      method: "GET",
+      headers: {
+        Authorization: `${type} ${token}`,
+        Accept: "application/json",
+      },
+    });
+  } catch (e) {
+    throw new ApiError("Network error contacting the school intranet.", 0);
+  }
+
+  if (res.status === 401 && retry) {
+    localStorage.removeItem("school-token");
+    return apiGet(path, false);
+  }
+
+  if (res.status === 401) {
+    throw new ApiError("The new school session was rejected.", 401);
+  }
+
+  if (res.status === 403) {
+    throw new ApiError("Access to this timetable was denied.", 403);
+  }
+
+  if (res.status === 404) {
+    throw new ApiError("That endpoint was not found.", 404);
+  }
+
+  if (!res.ok) {
+    throw new ApiError(`Unexpected server response (${res.status}).`, res.status);
+  }
+
+  const contentType = res.headers.get("Content-Type") || "";
+
+  if (!contentType.includes("application/json")) {
+    throw new ApiError("Server returned an unexpected response format.", res.status);
+  }
+
+  return await res.json();
+}
+
+const timetableService = (() => {
+  let cache = {
+    email: null,
+    timetable: null,
+    bellTimes: null,
+    startDate: null,
+    profile: null,
+    fetchedAt: null,
+  };
+
+  async function loadAll(force = false) {
+    const email = getCurrentEmail();
+
+    if (cache.email !== email) {
+      cache = {
+        email,
+        timetable: null,
+        bellTimes: null,
+        startDate: null,
+        profile: null,
+        fetchedAt: null,
+      };
     }
+
+    if (cache.timetable && !force) return cache;
+
+    const [timetable, bellTimes, startDateRes, profile] = await Promise.all([
+      apiGet(`/api/timetable/${encodeURIComponent(email)}`),
+      apiGet("/api/timetable/bell-times").catch(() => null),
+      apiGet("/api/timetable/settings/start-date").catch(() => null),
+      apiGet(`/api/user/${encodeURIComponent(email)}`).catch(() => null),
+    ]);
+
+    console.log("Timetable API response:", timetable);
+    console.log("Bell times API response:", bellTimes);
+
+    cache = {
+      email,
+      timetable,
+      bellTimes,
+      startDate: startDateRes,
+      profile,
+      fetchedAt: new Date(),
+    };
+
+    return cache;
   }
-  s = s.replace(/^[\s:\-–—]+/, '').replace(/\s{2,}/g, ' ').trim();
-  if (!s) s = original.replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '').trim();
-  s = s || original || String(code || '').trim() || 'Class';
-  return SUBJECT_RENAMES[s] || s;
-}
-/* "CR1007.118" -> "118", "ER0020.27" -> "27". The part after the final dot is
-   the human room number; everything before it is the building/floor code. */
-function splitRoom(r){
-  const s = String(r || '').trim();
-  const dot = s.lastIndexOf('.');
-  if (dot === -1) return { building:s, number:s, full:s };
-  return { building:s.slice(0, dot).trim() || s, number:s.slice(dot + 1).trim() || s, full:s };
-}
-/* roomMode: 'full' -> CR1007.118 | 'building' -> CR1007 | 'number' -> 118 */
-function roomLabel(e){
-  const parts = splitRoom(e.rawRoom || e.room);
-  if (!parts.full) return '';
-  return roomMode === 'building' ? parts.building
-       : roomMode === 'number'   ? parts.number
-       : parts.full;
+
+  return {
+    loadAll,
+    get current() {
+      return cache;
+    },
+  };
+})();
+
+const CYCLE_DAYS = ["MonA", "TueA", "WedA", "ThuA", "FriA", "MonB", "TueB", "WedB", "ThuB", "FriB"];
+
+const DAY_LABELS = {
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday",
+};
+
+const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri"];
+const WEEK_ORDER = ["A", "B"];
+
+function extractDateString(data) {
+  if (!data) return null;
+  if (typeof data === "string") return data;
+
+  return data.startDate || data.StartDate || data.date || data.Date || null;
 }
 
-/* Teachers arrive as "stephen.henne@det.nsw.edu.au" -> "Stephen Henne".
-   Also handles "Doyle, Mr R" -> "Mr R Doyle" and passes plain names through. */
-function tidyTeacher(t){
-  const s = String(t || '').trim();
-  if (!s) return '';
-  if (s.includes('@')){
-    const n = nameFromEmail(s);
-    if (n) return n;
-    return titleCase(s.split('@')[0].replace(/[._]+/g, ' ').replace(/\d+$/, ''));
-  }
-  const m = s.match(/^([^,]+),\s*(.+)$/);
-  return m ? (m[2] + ' ' + m[1]).replace(/\s{2,}/g,' ').trim() : s;
-}
-const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
-  .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+function getTimetableDay(date, cycleStartDate) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-/* ═══ cycle mapping ═══ */
-function cycleDayFor(date, cycleStart){
-  if (!cycleStart) return null;
-  /* Day 0 of the cycle is a Monday. If the API's start date lands mid-week,
-     snap back to that week's Monday, otherwise every column shifts and a
-     Monday column would show (say) Thursday's lessons. */
-  const d = midnight(date), start = midnight(startOfWeek(cycleStart));
   const dow = d.getDay();
-  if (dow === 0 || dow === 6) return null;
+
+  if (dow === 0 || dow === 6 || !cycleStartDate) return null;
+
+  const start = new Date(
+    cycleStartDate.getFullYear(),
+    cycleStartDate.getMonth(),
+    cycleStartDate.getDate(),
+  );
+
   if (d < start) return null;
+
   let elapsed = 0;
-  const cur = new Date(start);
-  while (cur < d){ cur.setDate(cur.getDate()+1); const w = cur.getDay(); if (w !== 0 && w !== 6) elapsed++; }
+  const cursor = new Date(start);
+
+  while (cursor < d) {
+    cursor.setDate(cursor.getDate() + 1);
+
+    const cdow = cursor.getDay();
+
+    if (cdow !== 0 && cdow !== 6) elapsed++;
+  }
+
   return CYCLE_DAYS[elapsed % 10];
 }
-/* Only a bare number ("4", "P4", "Period 4") is a period number. Labels like
-   "L1"/"L2" (lunch halves) and "R" (recess) must keep their own identity --
-   an unanchored match turned "L1" into "1" and clobbered period 1's bell times. */
-const periodNumber = v => {
-  const s = String(v == null ? '' : v).trim();
-  const m = s.match(/^(?:period\s*|p)?(\d+)$/i);
-  return m ? m[1] : s;
-};
-const classify = v => {
-  const p = String(v == null ? '' : v).toLowerCase();
-  if (p.includes('assembly')) return 'assembly';
-  if (p.includes('recess') || p === 'break' || p === 'r') return 'break';
-  if (p.includes('lunch') || /^l\d*$/.test(p)) return 'lunch';
-  return 'class';
-};
-/* Both lunch halves collapse into one block -- the split is a supervision
-   detail, not something worth two rows on screen. */
-const mergeKey = k => {
-  const v = String(k).toLowerCase();
-  if (/^l\d*$/.test(v) || v.includes('lunch')) return 'lunch';
-  if (v === 'r' || v.includes('recess')) return 'recess';
-  return v;
-};
-const BREAK_NAMES = { recess:'Recess', lunch:'Lunch' };
-const slotLabel = slot => {
-  const k = String(slot.key).toLowerCase();
-  if (BREAK_NAMES[k]) return BREAK_NAMES[k];
-  if (/^\d+$/.test(k)) return 'Period ' + k;
-  return titleCase(slot.period);
-};
 
-/* ═══ state ═══ */
-let viewWeek = null;           /* 'a' | 'b' -- which cycle week is on screen */
-let entries = [], slots = [];
-let cycleStart = null, displayName = '';
-let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
-let loadError = '', loading = false;
-let focusToday = false;        /* Today button: dim everything but the current day */
+function dayNameToParts(dayName) {
+  const clean = String(dayName).trim();
+  const week = clean.slice(-1).toUpperCase();
 
-/* ═══ normalise ═══ */
-let bellRows = [];      /* raw bell schedule, kept for row building */
-
-function buildBellIndex(bellTimes){
-  const idx = {};
-  bellRows = asArray(bellTimes).map(bt => ({
-    day:   str(pick(bt, ['DayName','dayName'])).toLowerCase(),
-    label: str(pick(bt, ['Period','period','PeriodNumber','periodNumber'])),
-    type:  str(pick(bt, ['Type','type'])).toUpperCase(),
-    start: toMinutes(pick(bt, ['StartTime','startTime','Start','start','From','from'])),
-    end:   toMinutes(pick(bt, ['EndTime','endTime','End','end','To','to']))
-  })).filter(b => b.label);
-  for (const bt of asArray(bellTimes)){
-    const day = str(pick(bt, ['DayName','dayName'])).toLowerCase();
-    const per = periodNumber(pick(bt, ['Period','period','PeriodNumber','periodNumber'])).toLowerCase();
-    const start = toMinutes(pick(bt, ['StartTime','startTime','Start','start','From','from']));
-    const end   = toMinutes(pick(bt, ['EndTime','endTime','End','end','To','to']));
-    if (start === null && end === null) continue;
-    if (day) idx[day + '|' + per] = { start, end };
-    if (!idx['*|' + per]) idx['*|' + per] = { start, end };
-  }
-  return idx;
+  return {
+    dayKey: clean.slice(0, -1).toLowerCase().slice(0, 3),
+    week,
+  };
 }
 
-function normalise(payload){
-  const bell = buildBellIndex(payload.bellTimes);
-  const out = [];
-  for (const raw of asArray(payload.timetable)){
-    const dayName = str(pick(raw, ['DayName','dayName']));
-    if (!dayName) continue;
-    const dayKey = dayName.toLowerCase();
-    if (CYCLE_DAYS.indexOf(dayKey) === -1) continue;
+const FALLBACK_COLORS = ["var(--cat-other)"];
+const subjectColorMap = {};
 
-    const period = str(pick(raw, ['Period','period','PeriodNumber','periodNumber']));
-    const kind = classify(period);
-    const pnum = periodNumber(period).toLowerCase();
-    const bt = bell[dayKey + '|' + pnum] || bell['*|' + pnum] || {};
-    const rowStart = toMinutes(pick(raw, ['StartTime','startTime','Start','start']));
-    const rowEnd   = toMinutes(pick(raw, ['EndTime','endTime','End','end']));
+function colorForSubject(key) {
+  const normalized = String(key || "").toLowerCase();
 
-    /* CourseName is the human name ("Engineering Studies Yr11"); ClassCode is
-       the roll code ("11ENGST A4"). Prefer the former, keep the latter for the
-       detail sheet. */
-    const rawSubject = str(pick(raw, ['CourseName','courseName','SubjectName','Subject','subjectName','subject','Description','description','ClassName','className']));
-    const code    = str(pick(raw, ['ClassCode','classCode','Code','code']));
-    const teacher = str(pick(raw, ['TeacherName','teacherName','TeacherFullName','teacherFullName','Teacher','teacher','DefaultTeacher','StaffName','staffName']));
-    const room    = str(pick(raw, ['RoomCode','roomCode','RoomNumber','roomNumber','RoomName','roomName','Room','room','Location','location']));
+  if (
+    normalized.includes("math") ||
+    normalized.includes("mah") ||
+    normalized.includes("ma") ||
+    normalized.includes("extension") ||
+    normalized.includes("mx1") ||
+    normalized.includes("mx2") ||
+    normalized.includes("max1") ||
+    normalized.includes("max2") ||
+    /\bmat\b/.test(normalized)
+  )
+    return "var(--cat-math)";
 
-    out.push({
-      dayKey, dayName, period, pnum, kind, code,
-      room: room, rawRoom: room,
-      teacher: tidyTeacher(teacher), rawTeacher: teacher,
-      rawSubject,
-      subject: kind === 'class' ? cleanSubject(rawSubject, code) : titleCase(period),
-      /* The row carries its own times and is authoritative; bell times only
-         fill gaps for rows that omit them. */
-      start: rowStart != null ? rowStart : bt.start,
-      end:   rowEnd   != null ? rowEnd   : bt.end
+  if (normalized.includes("english") || normalized.includes("enx") || normalized.includes("ena"))
+    return "var(--cat-english)";
+
+  if (
+    normalized.includes("engineer") ||
+    normalized.includes("software") ||
+    normalized === "se" ||
+    normalized.includes("-se-") ||
+    normalized.includes("se") ||
+    normalized.startsWith("se-") ||
+    normalized.endsWith("-se") ||
+    normalized.includes("technology") ||
+    normalized.includes("textile") ||
+    normalized.includes("graphics") ||
+    normalized.includes("digital") ||
+    normalized.includes("computing") ||
+    normalized.includes("ict") ||
+    normalized.includes("design") ||
+    normalized.includes("engst")
+  )
+    return "var(--cat-technology)";
+
+  if (normalized.includes("mu")) return "var(--cat-music)";
+
+  if (
+    normalized.includes("physics") ||
+    normalized.includes("phys") ||
+    normalized.includes("phy") ||
+    normalized.includes("chem") ||
+    normalized.includes("chm") ||
+    normalized.includes("biology") ||
+    normalized.includes("bio") ||
+    normalized.includes("science")
+  )
+    return "var(--cat-science)";
+
+  if (
+    normalized.includes("history") ||
+    normalized.includes("geography") ||
+    normalized.includes("geo") ||
+    normalized.includes("business") ||
+    normalized.includes("legal") ||
+    normalized.includes("economics") ||
+    normalized.includes("commerce") ||
+    normalized.includes("society") ||
+    normalized.includes("hsie")
+  )
+    return "var(--cat-hsie)";
+
+  if (
+    normalized.includes("french") ||
+    normalized.includes("japanese") ||
+    normalized.includes("jap") ||
+    normalized.includes("chinese") ||
+    normalized.includes("spanish") ||
+    normalized.includes("german") ||
+    normalized.includes("italian") ||
+    normalized.includes("korean") ||
+    normalized.includes("language") ||
+    normalized.includes("lote")
+  )
+    return "var(--cat-languages)";
+
+  if (
+    normalized.includes("visual arts") ||
+    normalized.includes("visual-art") ||
+    normalized.includes("visualart") ||
+    normalized.includes("va") ||
+    normalized.includes("art")
+  )
+    return "var(--cat-va)";
+
+  if (!subjectColorMap[normalized]) {
+    const index = Object.keys(subjectColorMap).length % FALLBACK_COLORS.length;
+
+    subjectColorMap[normalized] = FALLBACK_COLORS[index];
+  }
+
+  return subjectColorMap[normalized];
+}
+
+function findBellTime(bellTimes, dayName, period) {
+  if (!Array.isArray(bellTimes)) return null;
+
+  const p = getPeriodNumber(period).toLowerCase();
+  const d = String(dayName ?? "")
+    .trim()
+    .toLowerCase();
+
+  let match = bellTimes.find((bt) => {
+    const bp = getPeriodNumber(
+      bt.Period ?? bt.period ?? bt.PeriodNumber ?? bt.periodNumber ?? "",
+    ).toLowerCase();
+
+    const bd = String(bt.DayName ?? bt.dayName ?? "")
+      .trim()
+      .toLowerCase();
+
+    return bp === p && bd === d;
+  });
+
+  if (!match) {
+    match = bellTimes.find((bt) => {
+      const bp = getPeriodNumber(
+        bt.Period ?? bt.period ?? bt.PeriodNumber ?? bt.periodNumber ?? "",
+      ).toLowerCase();
+
+      return !(bt.DayName || bt.dayName) && bp === p;
     });
   }
-  return out;
+
+  if (!match) {
+    match = bellTimes.find((bt) => {
+      const bp = getPeriodNumber(
+        bt.Period ?? bt.period ?? bt.PeriodNumber ?? bt.periodNumber ?? "",
+      ).toLowerCase();
+
+      return bp === p;
+    });
+  }
+
+  if (!match) return null;
+
+  return {
+    start:
+      match.StartTime ??
+      match.startTime ??
+      match.Start ??
+      match.start ??
+      match.BellStart ??
+      match.bellStart ??
+      null,
+
+    end:
+      match.EndTime ??
+      match.endTime ??
+      match.End ??
+      match.end ??
+      match.BellEnd ??
+      match.bellEnd ??
+      null,
+  };
 }
 
-/* Rows come from the bell schedule, not just from lessons, so recess, both
-   lunch halves and Wednesday's assembly get their own row. Days disagree about
-   when those land (Wednesday's assembly shifts recess and lunch), so each slot
-   is ordered by its AVERAGE start across the cycle and each cell renders that
-   day's own times. */
-function buildSlots(){
-  const withLesson = new Set(entries.map(e => mergeKey(e.pnum || e.period)));
-  const map = new Map();
+function classifyPeriod(value) {
+  const p = String(value ?? "").toLowerCase();
 
-  const note = (key, label, kind, start, end) => {
-    const k = String(key).toLowerCase();
-    const cur = map.get(k) || { key:k, period:label, kind, starts:[], ends:[] };
-    if (start != null) cur.starts.push(start);
-    if (end   != null) cur.ends.push(end);
-    if (kind !== 'class') cur.kind = kind;
-    map.set(k, cur);
+  if (p.includes("assembly")) return "assembly";
+  if (p.includes("recess") || p === "break") return "break";
+  if (p.includes("lunch")) return "lunch";
+
+  return "class";
+}
+
+function getTeacher(raw) {
+  const value =
+    raw.TeacherName ??
+    raw.teacherName ??
+    raw.TeacherFullName ??
+    raw.teacherFullName ??
+    raw.Teacher ??
+    raw.teacher ??
+    raw.StaffName ??
+    raw.staffName ??
+    "";
+
+  if (!value) return "";
+
+  if (typeof value === "string" && value.includes("@")) {
+    const parts = value.split("@")[0].split(".");
+
+    if (parts.length >= 2) {
+      return formatName(parts[0]) + " " + formatName(parts[1].replace(/\d+$/, ""));
+    }
+
+    return formatName(value.split("@")[0].replace(/\d+$/, ""));
+  }
+
+  return String(value).trim();
+}
+
+function getRoom(raw) {
+  const value =
+    raw.RoomNumber ??
+    raw.roomNumber ??
+    raw.RoomName ??
+    raw.roomName ??
+    raw.Room ??
+    raw.room ??
+    raw.Location ??
+    raw.location ??
+    raw.RoomCode ??
+    raw.roomCode ??
+    "";
+
+  return value ? String(value).trim() : "";
+}
+
+/* "CR1007.118" -> "118" (Legacy), "CR1007" (New), "CR1007.118" (Full) */
+function splitRoom(r) {
+  const s = String(r || "").trim();
+  const dot = s.lastIndexOf(".");
+  if (dot === -1) return { building: s, number: s, full: s };
+  return { building: s.slice(0, dot).trim() || s, number: s.slice(dot + 1).trim() || s, full: s };
+}
+
+let roomMode = localStorage.getItem("timetable-room-mode") || "full";
+
+function roomLabel(room) {
+  if (!room) return "";
+  const parts = splitRoom(room);
+  return roomMode === "building" ? parts.building : roomMode === "number" ? parts.number : parts.full;
+}
+
+function getSubject(raw) {
+  return (
+    raw.SubjectName ||
+    raw.Subject ||
+    raw.subjectName ||
+    raw.subject ||
+    raw.Class ||
+    raw.class ||
+    "Class"
+  );
+}
+
+function getCode(raw, subject) {
+  return (
+    raw.ClassCode || raw.classCode || raw.Code || raw.code || raw.Class || raw.class || subject
+  );
+}
+
+function getRawTimes(raw, bellTimes, dayName, period) {
+  const bt = findBellTime(bellTimes, dayName, period);
+
+  return {
+    start: bt?.start || raw.StartTime || raw.startTime || raw.Start || raw.start || null,
+
+    end: bt?.end || raw.EndTime || raw.endTime || raw.End || raw.end || null,
+  };
+}
+
+function normalizeTimetable(rawTimetable, bellTimes) {
+  const grouped = {
+    A: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+    B: { mon: [], tue: [], wed: [], thu: [], fri: [] },
   };
 
-  for (const b of bellRows){
-    const key = mergeKey(periodNumber(b.label));
-    const kind = b.type === 'R' ? classifyBell(b.label) : classify(b.label);
-    note(key, BREAK_NAMES[key] || b.label, kind, b.start, b.end);
-  }
-  /* anything the bell table missed but a lesson claims */
-  for (const e of entries){
-    const key = mergeKey(e.pnum || e.period);
-    if (!map.has(key)) note(key, e.period, e.kind, e.start, e.end);
-  }
+  if (!Array.isArray(rawTimetable)) return grouped;
 
-  const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
-  let all = [...map.values()].map(v => ({
-    key:v.key, period:v.period, kind:v.kind,
-    start: avg(v.starts), end: avg(v.ends),
-    hasLesson: withLesson.has(v.key)
-  }));
+  for (const raw of rawTimetable) {
+    const dayName = raw.DayName || raw.dayName;
 
-  /* keep rows that hold a lesson, plus breaks that sit inside the school day */
-  const taught = all.filter(r => r.hasLesson && r.start != null);
-  const first = taught.length ? Math.min(...taught.map(r => r.start)) : 0;
-  const last  = taught.length ? Math.max(...taught.map(r => r.start)) : 1440;
-  all = all.filter(r => r.hasLesson ||
-                        (r.kind !== 'class' && r.start != null &&
-                         r.start >= first && r.start <= last));
+    if (!dayName) continue;
 
-  slots = all.sort((a,b) => {
-    if (a.start != null && b.start != null && a.start !== b.start) return a.start - b.start;
-    return String(a.key).localeCompare(String(b.key), undefined, { numeric:true });
-  });
-}
+    const { dayKey, week } = dayNameToParts(dayName);
 
-/* a bell row flagged Type=R is a break; use its label to name it */
-function classifyBell(label){
-  const p = String(label || '').toLowerCase();
-  if (p.startsWith('l')) return 'lunch';
-  if (p.startsWith('r')) return 'break';
-  return classify(label);
-}
+    if (!grouped[week] || !grouped[week][dayKey]) continue;
 
-/* that day's actual times for a slot, falling back to the cycle average */
-function bellFor(dayKey, slotKey){
-  const k = mergeKey(slotKey);
-  const hits = bellRows.filter(b => b.day === dayKey && mergeKey(periodNumber(b.label)) === k);
-  if (!hits.length) return null;
-  const starts = hits.map(h => h.start).filter(v => v != null);
-  const ends   = hits.map(h => h.end).filter(v => v != null);
-  return { day:dayKey, label:hits[0].label, type:hits[0].type,
-           start: starts.length ? Math.min(...starts) : null,
-           end:   ends.length   ? Math.max(...ends)   : null };
-}
+    const period = raw.Period ?? raw.period;
+    const kind = classifyPeriod(period);
+    const times = getRawTimes(raw, bellTimes, dayName, period);
 
-/* ═══ colours ═══ */
-/* Gap between cells -- used for the CSS grid gap and for the vertical inset
-   on time-positioned blocks, so both axes are provably identical. */
-const CELL_GAP = 6;
+    const subject = getSubject(raw);
+    const code = getCode(raw, subject);
 
-/* Default subject colours match the original NBSC timetable: one pastel per
-   faculty, matched on the course name, with a spread of fallbacks for
-   anything unrecognised. Light and dark get their own values. */
-const CAT_COLOURS = {
-  light:{ math:'#FFA9A6', english:'#FEFB99', technology:'#FFD5F4', music:'#E0C0F4',
-          science:'#A4FEFF', hsie:'#D7CDB3', languages:'#F2884B', va:'#FFADFF',
-          other:'#A5D5FF' },
-  dark: { math:'#FF8582', english:'#FFF06A', technology:'#FF9BDD', music:'#CFA8F4',
-          science:'#76F0F2', hsie:'#D8C99F', languages:'#FF9B63', va:'#E56BE5',
-          other:'#82C5FF' }
-};
-const CAT_ORDER = ['math','english','technology','music','science','hsie','languages','va','other'];
-const CAT_NAMES = { math:'Mathematics', english:'English', technology:'Technology',
-                    music:'Music', science:'Science', hsie:'HSIE', languages:'Languages',
-                    va:'Visual Arts', other:'Other' };
+    if (kind !== "class") {
+      grouped[week][dayKey].push({
+        kind,
+        start: times.start,
+        end: times.end,
+        raw,
+      });
 
-function categoryFor(name){
-  const n = String(name || '').toLowerCase();
-  if (/\bmath/.test(n) || /\bextension\b/.test(n) || /\bm(a|ax|x)\d?\b/.test(n)) return 'math';
-  if (n.includes('english')) return 'english';
-  if (/engineer|software|technolog|textile|graphic|digital|computing|design|industrial/.test(n)) return 'technology';
-  if (/\bmusic\b/.test(n)) return 'music';
-  if (/physic|chem|biolog|science|investigat/.test(n)) return 'science';
-  if (/history|geograph|business|legal|economic|commerce|society|hsie|studies of religion/.test(n)) return 'hsie';
-  if (/french|japanese|chinese|spanish|german|italian|korean|language|latin/.test(n)) return 'languages';
-  if (/visual art|visual design|photograph|\bart\b/.test(n)) return 'va';
-  return null;
-}
-
-const PALETTE = ['#e0542e','#3b6ef6','#12a594','#a259e6','#e5a000','#d6409f',
-                 '#2f9e44','#0e7490','#c2410c','#7c3aed','#0891b2','#be123c'];
-const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h*31 + s.charCodeAt(i))|0; return Math.abs(h); };
-
-function defaultColour(subject){
-  const cat = categoryFor(subject);
-  if (cat) return CAT_COLOURS[mode === 'dark' ? 'dark' : 'light'][cat];
-  return PALETTE[hash(String(subject)) % PALETTE.length];
-}
-const colourFor = s => colours[s] || defaultColour(s);
-
-/* ═══ load ═══ */
-function endpointUrl(){
-  const u = new URL(endpoint, location.href);
-  u.searchParams.set('email', email);
-  /* served from the same origin as the function? drop to a relative URL so the
-     request never leaves the origin and CORS is irrelevant */
-  return u.origin === location.origin ? u.pathname + u.search : u.toString();
-}
-async function load(useCache){
-  loadError = '';
-  if (!endpoint || !email) return;
-  if (useCache){
-    const c = get(LS.cache, null);
-    if (c && c.email === email && Date.now() - c.at < 6*60*60*1000){ apply(c.payload); return; }
-  }
-  loading = true;
-  try {
-    /* no-store: the browser must always revalidate, otherwise a stale timetable
-       can stick around for hours. Vercel's s-maxage still shields the school API. */
-    const headers = { Accept:'application/json' };
-    if (creds && creds.email && creds.password){
-      headers['X-School-Email'] = creds.email;
-      headers['X-School-Password'] = creds.password;
+      continue;
     }
-    const res = await fetch(endpointUrl(), { headers, cache:'no-store' });
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch {}
-    /* A host with no such route answers with its own HTML error page. Saying
-       "404" there is useless -- name the actual problem. */
-    const isPage = /^\s*<(!doctype|html)/i.test(text);
-    if (!res.ok){
-      throw new Error((data && data.error) ||
-        (isPage ? 'The timetable service is not reachable at this address — the site is misconfigured.'
-                : res.status + ' ' + res.statusText));
-    }
-    if (!data) throw new Error('The timetable service returned an unreadable response.');
-    apply(data);
-    set(LS.cache, { email, at: Date.now(), payload: data });
-  } catch (err) {
-    loadError = err.message;
-    entries = []; slots = [];
-  } finally { loading = false; }
-}
-function apply(payload){
-  entries = normalise(payload);
-  buildSlots();
-  cycleStart = toDate(typeof payload.startDate === 'string' ? payload.startDate
-    : pick(payload.startDate || {}, ['startDate','StartDate','date','Date']));
-  const p = payload.profile;
-  displayName = p ? titleCase(str(pick(p, ['FullName','fullName'])) ||
-      [str(pick(p, ['FirstName','firstName'])), str(pick(p, ['LastName','lastName']))].filter(Boolean).join(' ')) : '';
-  if (!displayName) displayName = nameFromEmail(payload.email || email);
-  if (!entries.length) loadError = 'No lessons were returned for that address.';
-}
-function nameFromEmail(e){
-  const parts = String(e || '').split('@')[0].split('.');
-  if (parts.length < 2) return '';
-  return titleCase(parts[0]) + ' ' + titleCase(parts[1].replace(/\d+$/, ''));
-}
 
-/* ═══ render ═══ */
-const $ = id => document.getElementById(id);
-const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; };
-const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const entryAt = (cycleDay, slotKey) =>
-  entries.find(e => e.dayKey === cycleDay && mergeKey(e.pnum || e.period) === mergeKey(slotKey));
-
-function render(){
-  const now = new Date();
-  const nowMin = now.getHours()*60 + now.getMinutes();
-  const isMobile = matchMedia('(max-width:860px)').matches;
-  /* The grid is a cycle, not a calendar. Work out which week is really on
-     today, then show whichever the user has toggled to. */
-  const realCycle = cycleDayFor(now, cycleStart);
-  const realWeek  = realCycle ? realCycle.slice(-1) : null;
-  /* Don't latch a week until the cycle start date has actually arrived --
-     the first render runs before the fetch resolves. */
-  if (viewWeek === null && realWeek) viewWeek = realWeek;
-  const week = viewWeek || realWeek || 'a';
-  const showingCurrentWeek = !!realWeek && week === realWeek;
-  const todayKey = realCycle ? realCycle.slice(0, 3) : null;
-
-  const days = [0,1,2,3,4].map(i => addDays(startOfWeek(now), i));
-  const cycles = DAY_KEYS.map(k => k + week);
-
-  $('title').textContent = displayName || 'Timetable';
-  $('sub').textContent = loading ? 'Loading…' : (loadError || '');
-  $('sub').className = loadError ? 'err' : '';
-  if (document.activeElement !== $('whoami')) $('whoami').value = String(email || '').split('@')[0];
-
-  $('weekbtn').innerHTML = 'Week ' + week.toUpperCase() +
-    '<span class="swap">tap to swap</span>';
-  $('today').setAttribute('aria-pressed', String(focusToday));
-  $('today').disabled = false;
-
-  const ds = $('dayswitch');
-  ds.innerHTML = '';
-  days.forEach((d, i) => {
-    const b = document.createElement('button');
-    b.textContent = DAY[d.getDay()].slice(0,3);
-    b.setAttribute('aria-pressed', String(i === mobileDay));
-    b.onclick = () => { mobileDay = i; render(); };
-    ds.appendChild(b);
-  });
-
-  /* now / next */
-  const todayCycle = cycleDayFor(now, cycleStart);
-  const todays = entries.filter(e => e.dayKey === todayCycle && e.kind === 'class' && e.start != null)
-                        .sort((a,b) => a.start - b.start);
-  const current  = todays.find(e => e.start <= nowMin && nowMin < (e.end == null ? e.start+60 : e.end));
-
-  /* Next rolls into following days, so after the last lesson it points at
-     tomorrow morning rather than giving up. */
-  let upcoming = todays.find(e => e.start > nowMin);
-  let upcomingWhen = '';
-  if (!upcoming && realCycle){
-    const startIdx = CYCLE_DAYS.indexOf(realCycle);
-    for (let step = 1; step <= 10 && !upcoming; step++){
-      const key = CYCLE_DAYS[(startIdx + step) % 10];
-      const dayLessons = entries
-        .filter(e => e.dayKey === key && e.kind === 'class' && e.start != null)
-        .sort((a,b) => a.start - b.start);
-      if (dayLessons.length){
-        upcoming = dayLessons[0];
-        const nm = DAY[[1,2,3,4,5][DAY_KEYS.indexOf(key.slice(0,3))]];
-        /* "Tomorrow" only when it really is tomorrow -- the next cycle day
-           after Friday is three calendar days away. */
-        upcomingWhen = (step === 1 && todayKey !== 'fri') ? 'Tomorrow' : nm;
-      }
-    }
-  }
-  /* Friday, classes done: the useful message is that the week is over. */
-  const doneForWeek = todayKey === 'fri' && !current && !todays.some(e => e.start > nowMin);
-  const nowEl = $('now');
-  nowEl.innerHTML = '';
-  nowEl.appendChild(nowCard('Now',  current,  nowMin, ''));
-  nowEl.appendChild(doneForWeek
-    ? weekendCard(upcoming, upcomingWhen)
-    : nowCard('Next', upcoming, nowMin, upcomingWhen, false));
-
-  /* ── grid ── two layouts, same data ───────────────────────────────
-     compact: blocks positioned by real clock time, minimal cards
-     full:    one row per period, every day aligned, fuller cards      */
-  const idx = isMobile ? [mobileDay] : [0,1,2,3,4];
-  const grid = $('grid');
-  grid.style.setProperty('--days', idx.length);
-  grid.innerHTML = '';
-
-  grid.style.setProperty('--cell-gap', CELL_GAP + 'px');
-  const ctx = { idx, grid, days, cycles, week, showingCurrentWeek, todayKey, now, nowMin };
-  if (viewMode === 'full') renderFull(ctx); else renderCompact(ctx);
-}
-
-/* a day heading, shared by both layouts */
-function dayHead(ctx, i){
-  const d = ctx.days[i];
-  const isToday = ctx.showingCurrentWeek && DAY_KEYS[i] === ctx.todayKey;
-  const h = el('div','dayhead' + (isToday ? ' today' : '') +
-                     (focusToday && !isToday ? ' dimmed' : ''));
-  h.innerHTML = '<span class="dow">' + DAY[d.getDay()] +
-    (showWeekLetter ? '<small>' + ctx.week.toUpperCase() + '</small>' : '') +
-    '</span><i class="rule"></i>';
-  return h;
-}
-
-/* every block a day will draw, in time order */
-function blocksFor(cyc){
-  const out = [];
-  if (!cyc) return out;
-  for (const slot of slots){
-    const e = entryAt(cyc, slot.key);
-    const b = bellFor(cyc, slot.key);
-    const st = (e && e.start != null) ? e.start : (b ? b.start : null);
-    const en = (e && e.end   != null) ? e.end   : (b ? b.end   : null);
-    if (st == null || en == null || en <= st) continue;
-    const kind = e ? e.kind : slot.kind;
-    if (!e && kind === 'class') continue;          /* free period */
-    out.push({ start:st, end:en, kind, entry:e, slot });
-  }
-  return out;
-}
-
-function lessonCard(e, start, end, isToday, nowMin, date, tall){
-  const box = document.createElement('button');
-  box.type = 'button';
-  box.className = 'lesson' + (tall ? ' tall' : '');
-  box.style.setProperty('--c', colourFor(e.subject));
-  if (isToday && e.start != null && e.start <= nowMin && nowMin < end) box.classList.add('current');
-  box.innerHTML =
-    '<div class="s">' + esc(e.subject) + '</div>' +
-    (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
-    (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
-    '<div class="tm">' + fmtTime(start) + '–' + fmtTime(end) + '</div>';
-  box.onclick = () => showDetail(e, date);
-  return box;
-}
-
-/* ── compact: positioned by clock time ─────────────────────────────── */
-function renderCompact(ctx){
-  const PX = 1.45;              /* pixels per minute */
-  const GAP = CELL_GAP;         /* same value the CSS grid uses between columns */
-  const columns = ctx.idx.map(i => ({ i, cyc: ctx.cycles[i], blocks: blocksFor(ctx.cycles[i]) }));
-  const all = columns.flatMap(c => c.blocks);
-  const dayStart = all.length ? Math.min(...all.map(b => b.start)) : 8*60;
-  const dayEnd   = all.length ? Math.max(...all.map(b => b.end))   : 15*60;
-  const height   = Math.max(120, (dayEnd - dayStart) * PX);
-  const yOf = m => (m - dayStart) * PX;
-
-  ctx.grid.appendChild(el('div','corner'));
-  columns.forEach(c => ctx.grid.appendChild(dayHead(ctx, c.i)));
-
-  const gutter = el('div','tcol');
-  gutter.style.height = height + 'px';
-  const marks = [...new Set(all.flatMap(b => [b.start, b.end]))].sort((a,b) => a-b);
-  let lastY = -99;
-  marks.forEach(m => {
-    const y = yOf(m);
-    if (y - lastY < 17) return;
-    lastY = y;
-    const t = el('span','tmark', fmtTime(m));
-    t.style.top = y + 'px';
-    gutter.appendChild(t);
-  });
-  ctx.grid.appendChild(gutter);
-
-  columns.forEach(c => {
-    const isToday = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
-    const body = el('div','dbody' + (focusToday && !isToday ? ' dimmed' : ''));
-    body.style.height = height + 'px';
-    for (const blk of c.blocks){
-      const h = Math.max(15, (blk.end - blk.start) * PX - GAP);
-      const top = yOf(blk.start) + GAP / 2;
-      const e = blk.entry;
-      let node;
-      if (blk.kind !== 'class'){
-        const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(blk.slot);
-        node = el('div','breakbar' + (blk.kind === 'assembly' ? ' assembly' : ''));
-        node.innerHTML = '<span>' + esc(name) + '</span>' +
-          (h >= 34 ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
-        node.title = name + ' · ' + fmtTime(blk.start) + '–' + fmtTime(blk.end);
-      } else {
-        node = lessonCard(e, blk.start, blk.end, isToday, ctx.nowMin, ctx.days[c.i], h >= 86);
-      }
-      node.style.top = top + 'px';
-      node.style.height = h + 'px';
-      body.appendChild(node);
-    }
-    ctx.grid.appendChild(body);
-  });
-}
-
-/* ── full: one row per period, days aligned ────────────────────────── */
-function renderFull(ctx){
-  ctx.grid.appendChild(el('div','corner'));
-  ctx.idx.forEach(i => ctx.grid.appendChild(dayHead(ctx, i)));
-
-  slots.forEach(slot => {
-    const isBreak = slot.kind !== 'class';
-    const pc = el('div','periodcell' + (isBreak ? ' brk' : ''));
-    if (!isBreak){
-      /* most days share a time; Wednesday often doesn't */
-      const times = ctx.cycles.map(c => bellFor(c, slot.key)).filter(Boolean);
-      const tally = {};
-      times.forEach(t => { const k = t.start + '|' + t.end; tally[k] = (tally[k]||0)+1; });
-      const best = Object.keys(tally).sort((a,b) => tally[b]-tally[a])[0];
-      const same = Object.keys(tally).length <= 1;
-      const show = best ? best.split('|').map(Number) : null;
-      pc.innerHTML = '<b>' + esc(slotLabel(slot)) + '</b>' +
-        (show ? '<span class="' + (same ? '' : 'approx') + '">' +
-                fmtTime(show[0]) + '<br>' + fmtTime(show[1]) + '</span>' : '');
-    }
-    ctx.grid.appendChild(pc);
-
-    ctx.idx.forEach(i => {
-      const cyc = ctx.cycles[i];
-      const isToday = ctx.showingCurrentWeek && DAY_KEYS[i] === ctx.todayKey;
-      const cell = el('div','cell' + (isBreak ? ' brk' : '') +
-                              (focusToday && !isToday ? ' dimmed' : ''));
-      const e = cyc ? entryAt(cyc, slot.key) : null;
-      const b = cyc ? bellFor(cyc, slot.key) : null;
-
-      if (isBreak){
-        const st = (e && e.start != null) ? e.start : (b ? b.start : null);
-        const en = (e && e.end   != null) ? e.end   : (b ? b.end   : null);
-        if (st != null){
-          const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(slot);
-          const bar = el('div','breakbar' + (e && e.kind === 'assembly' ? ' assembly' : ''));
-          bar.innerHTML = '<span>' + esc(name) + '</span>' +
-                          '<em>' + fmtTime(st) + '–' + fmtTime(en) + '</em>';
-          cell.appendChild(bar);
-        }
-      } else if (e){
-        const en = e.end == null ? e.start + 60 : e.end;
-        cell.appendChild(lessonCard(e, e.start, en, isToday, ctx.nowMin, ctx.days[i], true));
-      } else {
-        cell.appendChild(el('div','free'));
-      }
-      ctx.grid.appendChild(cell);
+    grouped[week][dayKey].push({
+      kind: "class",
+      code,
+      periodNumber: getPeriodNumber(period),
+      subjKey: String(subject + " " + code)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-"),
+      subjName: subject,
+      teacher: getTeacher(raw),
+      room: getRoom(raw),
+      start: times.start,
+      end: times.end,
+      raw,
     });
-  });
-}
-
-function nowCard(label, e, nowMin, when, weekend){
-  const d = el('div','nowcard');
-  if (!e){
-    d.innerHTML = '<div class="lbl">' + label + '</div>' +
-      '<div class="subj">' + (weekend ? 'Enjoy the weekend' : 'Nothing scheduled') + '</div>' +
-      '<div class="meta">' + (weekend ? 'No more classes this week' : 'Enjoy the break') + '</div>';
-    return d;
   }
-  const c = colourFor(e.subject);
-  d.style.setProperty('--c', c);
-  const bits = [roomLabel(e), e.teacher].filter(Boolean).join(' · ');
-  const endMin = e.end == null ? e.start + 60 : e.end;
-  const running = !when && e.start <= nowMin && nowMin < endMin;
-  const mins = running ? endMin - nowMin : (when ? -1 : e.start - nowMin);
-  const pct = running ? Math.max(0, Math.min(100, ((nowMin - e.start) / (endMin - e.start)) * 100)) : 0;
-  const mm = m => m >= 60 ? Math.floor(m/60) + 'h ' + (m%60) + 'm' : m + ' min';
-  const cd = mins >= 0 ? (running ? mm(mins) + ' left' : 'starts in ' + mm(mins)) : '';
-  d.innerHTML =
-    '<div class="lbl">' + label + '</div>' +
-    '<div class="subj">' + esc(e.subject) + '</div>' +
-    '<div class="meta">' + (when ? '<b>' + esc(when) + '</b> · ' : '') + esc(bits) +
-      (e.start != null ? ' · ' + fmtTime(e.start) + '–' + fmtTime(e.end) : '') + '</div>' +
-    (running && showProgress
-      ? '<div class="progrow"><div class="prog"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
-        '<span class="count">' + cd + '</span></div>'
-      : (cd ? '<div class="count">' + cd + '</div>' : ''));
-  return d;
+
+  for (const week of WEEK_ORDER) {
+    for (const day of DAY_ORDER) {
+      const rows = grouped[week][day];
+      const isWednesday = day === "wed";
+
+      const breaks = isWednesday
+        ? [
+            { kind: "assembly", start: "10:45", end: "11:05" },
+            { kind: "break", start: "11:05", end: "11:25" },
+            { kind: "lunch", start: "12:20", end: "13:00" },
+          ]
+        : [
+            { kind: "break", start: "10:45", end: "11:05" },
+            { kind: "lunch", start: "12:55", end: "13:35" },
+          ];
+
+      for (const br of breaks) {
+        const exists = rows.some(
+          (item) =>
+            item.start &&
+            item.end &&
+            timeToMin(item.start) === timeToMin(br.start) &&
+            timeToMin(item.end) === timeToMin(br.end),
+        );
+
+        if (!exists) rows.push(br);
+      }
+
+      if (isWednesday) {
+        const wednesdayTimes = {
+          0: { start: "07:55", end: "08:55" },
+          1: { start: "08:55", end: "09:50" },
+          2: { start: "09:50", end: "10:45" },
+          3: { start: "11:25", end: "12:20" },
+          4: { start: "13:00", end: "13:55" },
+          5: { start: "13:55", end: "14:50" },
+        };
+
+        for (const item of rows) {
+          if (item.kind !== "class") continue;
+
+          const period = item.periodNumber || getPeriodNumber(item.raw?.Period || item.raw?.period);
+
+          if (wednesdayTimes[period]) {
+            item.start = wednesdayTimes[period].start;
+            item.end = wednesdayTimes[period].end;
+          }
+        }
+      }
+
+      rows.sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
+
+      const withGaps = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        withGaps.push(rows[i]);
+
+        const cur = rows[i];
+        const nxt = rows[i + 1];
+
+        if (cur && nxt && cur.end && nxt.start) {
+          const gap = timeToMin(nxt.start) - timeToMin(cur.end);
+
+          if (gap >= 20) {
+            withGaps.push({
+              kind: "free",
+              start: cur.end,
+              end: nxt.start,
+            });
+          }
+        }
+      }
+
+      grouped[week][day] = withGaps;
+    }
+  }
+
+  return grouped;
 }
 
-/* ═══ lesson detail ═══ */
-function showDetail(e, date){
-  const c = colourFor(e.subject);
-  const head = $('dhead');
-  head.style.setProperty('--c', c);
-  head.innerHTML =
-    '<div class="dsub">' + esc(e.subject) + '</div>' +
-    '<div class="dwhen">' + esc(DAY[date.getDay()] + ' ' + fmtShort(date)) +
-    (e.start != null ? ' · ' + fmtTime(e.start) + ' – ' + fmtTime(e.end) : '') + '</div>';
+const grid = document.getElementById("grid");
+const statusBanner = document.getElementById("statusBanner");
 
-  const rows = [
-    ['Period', /^\d+$/.test(e.pnum) ? 'Period ' + e.pnum : titleCase(e.period)],
-    ['Room', e.rawRoom || e.room],
-    ['Teacher', e.teacher],
-    ['Email', e.rawTeacher && e.rawTeacher.includes('@') ? e.rawTeacher : ''],
-    ['Class code', e.code],
-    ['Cycle day', e.dayName],
-    ['Full name', e.rawSubject && e.rawSubject !== e.subject ? e.rawSubject : '']
-  ].filter(r => r[1]);
-
-  $('drows').innerHTML = rows.map(r =>
-    '<div class="drow"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>').join('');
-  $('detail').showModal();
-}
-$('dclose').onclick = () => $('detail').close();
-$('detail').onclick = ev => { if (ev.target === $('detail')) $('detail').close(); };
-
-/* ═══ email gate ═══ */
-const gate = $('gate');
-$('gatedomain').textContent = '@' + CONFIG.EMAIL_DOMAIN;
-function showGate(msg){
-  $('gateerr').textContent = msg || '';
-  $('gateemail').value = String(email || '').split('@')[0];
-  gate.hidden = false;
-  setTimeout(() => $('gateemail').focus(), 30);
-}
-$('gateform').onsubmit = async ev => {
-  ev.preventDefault();
-  const v = $('gateemail').value.trim().toLowerCase();
-  if (!v) return;
-  const user = v.includes('@') ? v.split('@')[0] : v;
-  if (!/^[a-z0-9][a-z0-9._-]*$/.test(user)){ $('gateerr').textContent = 'That does not look like a school username.'; return; }
-  email = user + '@' + CONFIG.EMAIL_DOMAIN;
-  $('gatego').textContent = 'Loading…';
-  $('gateerr').textContent = '';
-  await load(false);
-  $('gatego').textContent = 'Show my timetable';
-  if (loadError){ $('gateerr').textContent = loadError; return; }
-  set(LS.email, email);
-  gate.hidden = true;
-  render();
+let SCHEDULE = {
+  A: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+  B: { mon: [], tue: [], wed: [], thu: [], fri: [] },
 };
 
-/* ═══ username field on the page ═══ */
-$('whoamidom').textContent = '@' + CONFIG.EMAIL_DOMAIN;
-async function setUser(raw){
-  const v = String(raw || '').trim().toLowerCase();
-  const user = v.includes('@') ? v.split('@')[0] : v;
-  if (!user || !/^[a-z0-9][a-z0-9._-]*$/.test(user)){
-    loadError = 'That does not look like a school username.'; render(); return;
-  }
-  const next = user + '@' + CONFIG.EMAIL_DOMAIN;
-  if (next === email){
-    if (loadError){ loadError = ''; render(); }   /* clear a stale rejection */
+let TODAY_CYCLE_DAY = null;
+let CYCLE_START_DATE = null;
+let currentWeek = "A";
+let seqIndex = 0;
+
+function setStatus(message, isError = false) {
+  if (!message) {
+    statusBanner.style.display = "none";
     return;
   }
-  email = next;
-  localStorage.removeItem(LS.cache);
-  await load(false);
-  if (!loadError) set(LS.email, email);
-  render();
+
+  statusBanner.style.display = "block";
+  statusBanner.className = "statusBanner" + (isError ? " error" : "");
+
+  statusBanner.textContent = message;
 }
-$('whoami').addEventListener('keydown', ev => {
-  if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }
-});
-$('whoami').addEventListener('change', ev => setUser(ev.target.value));
-$('whoami').addEventListener('blur', ev => setUser(ev.target.value));
 
-/* ═══ settings ═══ */
-const dlg = $('dlg');
-let skinsExpanded = false;
-function renderSkins(){
-  const host = $('skins');
-  host.innerHTML = '';
+const DEFAULT_TIMELINE_START = 7 * 60 + 55;
+const NO_PERIOD_0_START = 8 * 60 + 55;
+const TIMELINE_END = 14 * 60 + 50;
+const TIMELINE_HEIGHT = 610;
 
-  /* Collapsed shows just the two staples, the expander, and Custom —
-     twelve swatches at once made the panel a wall of colour. */
-  const quick = TT.QUICK_SKINS;
-  const showAll = skinsExpanded || quick.indexOf(skin) === -1;
-  const list = showAll ? SKINS : SKINS.filter(s => quick.indexOf(s.id) !== -1);
+let TIMELINE_START = DEFAULT_TIMELINE_START;
 
-  const tile = s => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'skinbtn';
-    b.setAttribute('aria-pressed', String(s.id === skin));
-    b.innerHTML = '<span class="sw" style="background:' + s.swatch +
-                  (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
-                  '<span class="nm">' + s.name + '</span>';
-    b.onclick = () => { skin = s.id; set(LS.skin, skin); applyLook();
-                        renderSkins(); renderModes(); renderCustom(); render(); };
-    return b;
-  };
+function hasPeriodZero() {
+  const week = SCHEDULE[currentWeek];
 
-  if (showAll){
-    list.forEach(s => host.appendChild(tile(s)));
-    if (skinsExpanded){
-      const less = document.createElement('button');
-      less.type = 'button';
-      less.className = 'skinbtn more';
-      less.innerHTML = '<span class="sw plus">&minus;</span><span class="nm">Fewer</span>';
-      less.onclick = () => { skinsExpanded = false; renderSkins(); };
-      host.appendChild(less);
+  if (!week) return false;
+
+  return DAY_ORDER.some((day) =>
+    (week[day] || []).some((item) => item.kind === "class" && String(item.periodNumber) === "0"),
+  );
+}
+
+function hasPeriodZeroForDay(week, day) {
+  return (SCHEDULE[week]?.[day] || []).some(
+    (item) => item.kind === "class" && String(item.periodNumber) === "0",
+  );
+}
+
+function timelineTop(time, timelineStart) {
+  const base = timelineStart !== undefined ? timelineStart : TIMELINE_START;
+
+  return ((timeToMin(time) - base) / (TIMELINE_END - base)) * TIMELINE_HEIGHT;
+}
+
+function timelineHeight(start, end, timelineStart) {
+  const base = timelineStart !== undefined ? timelineStart : TIMELINE_START;
+
+  return ((timeToMin(end) - timeToMin(start)) / (TIMELINE_END - base)) * TIMELINE_HEIGHT;
+}
+
+function isToday(week, dayKey) {
+  if (!TODAY_CYCLE_DAY) return false;
+
+  return TODAY_CYCLE_DAY === dayKey.charAt(0).toUpperCase() + dayKey.slice(1) + week;
+}
+
+function isNowActive(week, dayKey, start, end) {
+  if (!isToday(week, dayKey) || !start || !end) return false;
+
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  return cur >= timeToMin(start) && cur < timeToMin(end);
+}
+
+function build() {
+  grid.innerHTML = "";
+
+  TIMELINE_START = hasPeriodZero() ? DEFAULT_TIMELINE_START : NO_PERIOD_0_START;
+
+  const mobileDay = DAY_ORDER[seqIndex % 5];
+
+  const mobileWeek = WEEK_ORDER[Math.floor(seqIndex / 5)];
+
+  const isMobileView = window.matchMedia("(max-width:760px)").matches;
+
+  const corner = document.createElement("div");
+
+  corner.className = "corner-cell";
+  grid.appendChild(corner);
+
+  DAY_ORDER.forEach((day) => {
+    const head = document.createElement("div");
+
+    head.className =
+      "head" +
+      (isToday(currentWeek, day) ? " today" : "") +
+      (day === mobileDay ? " mobile-active" : "");
+
+    head.innerHTML = `<span class="day-name">${DAY_LABELS[day]}</span><small>Week ${currentWeek}</small>`;
+
+    grid.appendChild(head);
+  });
+
+  const timeColumn = document.createElement("div");
+
+  timeColumn.className = "time-column";
+
+  const labels = [
+    "07:55",
+    "08:55",
+    "09:50",
+    "10:45",
+    "11:05",
+    "11:25",
+    "12:20",
+    "12:55",
+    "13:00",
+    "13:35",
+    "13:55",
+    "14:50",
+  ];
+
+  const MIN_LABEL_GAP = 15;
+  let lastLabelTop = -Infinity;
+
+  [...new Set(labels)]
+    .filter((time) => timeToMin(time) >= TIMELINE_START && timeToMin(time) <= TIMELINE_END)
+    .sort((a, b) => timeToMin(a) - timeToMin(b))
+    .forEach((time) => {
+      let top = timelineTop(time);
+
+      if (top - lastLabelTop < MIN_LABEL_GAP) {
+        top = lastLabelTop + MIN_LABEL_GAP;
+      }
+
+      lastLabelTop = top;
+
+      const label = document.createElement("div");
+
+      label.className = "time-label";
+      label.style.top = `${top}px`;
+      label.textContent = time;
+
+      timeColumn.appendChild(label);
+    });
+
+  grid.appendChild(timeColumn);
+
+  DAY_ORDER.forEach((day) => {
+    const column = document.createElement("div");
+
+    column.className = "day-column";
+    column.dataset.day = day;
+    column.dataset.active = day === mobileDay ? "1" : "0";
+
+    const rows = SCHEDULE[currentWeek]?.[day] || [];
+
+    const dayTimelineStart =
+      isMobileView && day === mobileDay
+        ? hasPeriodZeroForDay(currentWeek, day)
+          ? DEFAULT_TIMELINE_START
+          : NO_PERIOD_0_START
+        : TIMELINE_START;
+
+    rows.forEach((item) => {
+      if (!item.start || !item.end) return;
+
+      const start = timeToMin(item.start);
+      const end = timeToMin(item.end);
+
+      if (end <= start) return;
+
+      const top = timelineTop(item.start, dayTimelineStart);
+
+      const height = timelineHeight(item.start, item.end, dayTimelineStart);
+
+      const VERTICAL_GAP = 8;
+
+      const finalTop = top + VERTICAL_GAP / 2;
+
+      const finalHeight = Math.max(height - VERTICAL_GAP, 20);
+
+      if (item.kind !== "class") {
+        const breakCard = document.createElement("div");
+
+        breakCard.className = "break-card";
+
+        breakCard.style.top = `${finalTop}px`;
+
+        breakCard.style.height = `${finalHeight}px`;
+
+        let label = "Break";
+
+        if (item.kind === "lunch") label = "Lunch";
+        if (item.kind === "break") label = "Recess";
+        if (item.kind === "assembly") label = "Assembly";
+        if (item.kind === "free") label = "Free period";
+
+        breakCard.innerHTML = `<span class="tag">${label}</span>`;
+
+        column.appendChild(breakCard);
+        return;
+      }
+
+      const card = document.createElement("div");
+
+      card.className = "cls";
+
+      card.style.top = `${finalTop}px`;
+
+      card.style.height = `${finalHeight}px`;
+
+      card.style.setProperty("--c", colorForSubject(item.subjKey));
+
+      if (isNowActive(currentWeek, day, item.start, item.end)) {
+        card.classList.add("now");
+      }
+
+      const code = document.createElement("div");
+
+      code.className = "code";
+      code.textContent = item.code || "";
+
+      card.appendChild(code);
+
+      if (item.teacher) {
+        const teacher = document.createElement("div");
+
+        teacher.className = "teacher";
+        teacher.textContent = item.teacher;
+
+        card.appendChild(teacher);
+      }
+
+      if (item.room) {
+        const room = document.createElement("div");
+
+        room.className = "room";
+        room.textContent = roomLabel(item.room);
+
+        card.appendChild(room);
+      }
+
+      card.addEventListener("click", () => openPeriodDetails(item, day));
+
+      column.appendChild(card);
+    });
+
+    grid.appendChild(column);
+  });
+
+  document.getElementById("weekLabel").textContent = `Week ${currentWeek}`;
+
+  const dayLabelEl = document.getElementById("dayLabel");
+
+  dayLabelEl.textContent = DAY_LABELS[mobileDay];
+
+  dayLabelEl.classList.toggle("today", isToday(mobileWeek, mobileDay));
+
+  document.getElementById("dayWeekLabel").textContent = `Week ${mobileWeek}`;
+}
+
+/* Find the next class after `cur` minutes today, or roll forward through
+   the 10-day cycle (MonA..FriB) to the first day that has a class. */
+function findNextClassInfo() {
+  if (!TODAY_CYCLE_DAY) return null;
+
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  const { dayKey, week } = dayNameToParts(TODAY_CYCLE_DAY);
+  const todayRows = (SCHEDULE[week]?.[dayKey] || [])
+    .filter((r) => r.kind === "class" && r.start)
+    .sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
+
+  let next = todayRows.find((r) => timeToMin(r.start) > cur);
+  let when = null;
+
+  if (!next) {
+    const startIdx = CYCLE_DAYS.indexOf(TODAY_CYCLE_DAY);
+
+    for (let step = 1; step <= 10 && !next; step++) {
+      const code = CYCLE_DAYS[(startIdx + step) % 10];
+      const parts = dayNameToParts(code);
+
+      const rows = (SCHEDULE[parts.week]?.[parts.dayKey] || [])
+        .filter((r) => r.kind === "class" && r.start)
+        .sort((a, b) => timeToMin(a.start) - timeToMin(b.start));
+
+      if (rows.length) {
+        next = rows[0];
+        when = step === 1 && dayKey !== "fri" ? "Tomorrow" : DAY_LABELS[parts.dayKey];
+      }
+    }
+  }
+
+  return next ? { item: next, when } : null;
+}
+
+function updateBell() {
+  const line1 = document.getElementById("bellLine1");
+
+  const line2 = document.getElementById("bellLine2");
+
+  const progressWrap = document.getElementById("bellProgressWrap");
+
+  const progressFill = document.getElementById("bellProgressFill");
+
+  const progressStart = document.getElementById("bellProgressStart");
+
+  const progressEnd = document.getElementById("bellProgressEnd");
+
+  const roomLine = document.getElementById("bellRoomLine");
+
+  const roomText = document.getElementById("bellRoomText");
+
+  const timeLeftEl = document.getElementById("bellTimeLeft");
+
+  const nextLine1 = document.getElementById("nextLine1");
+  const nextLine2 = document.getElementById("nextLine2");
+  const nextRoomText = document.getElementById("nextRoomText");
+  const nextTimeLeft = document.getElementById("nextTimeLeft");
+
+  const bellRow = document.getElementById("bellRow");
+  bellRow.classList.toggle("progress-off", !progressBarEnabled);
+
+  progressWrap.style.display = "none";
+  roomLine.style.display = "none";
+  roomText.textContent = "";
+  timeLeftEl.textContent = "";
+  line2.style.display = "";
+
+  if (!TODAY_CYCLE_DAY) {
+    line1.textContent = "No school today";
+    line2.textContent = "Weekend or outside term";
+    nextLine1.textContent = "—";
+    nextLine2.textContent = "";
+    nextRoomText.textContent = "";
+    nextTimeLeft.textContent = "";
+    return;
+  }
+
+  const { dayKey, week } = dayNameToParts(TODAY_CYCLE_DAY);
+
+  const now = new Date();
+
+  const cur = now.getHours() * 60 + now.getMinutes();
+
+  const rows = SCHEDULE[week]?.[dayKey] || [];
+
+  let current = null;
+
+  for (const item of rows) {
+    if (!item.start || !item.end) continue;
+
+    const s = timeToMin(item.start);
+    const e = timeToMin(item.end);
+
+    if (cur >= s && cur < e) {
+      if (item.kind === "class") {
+        current = item;
+      }
+
+      break;
+    }
+  }
+
+  if (current) {
+    line1.textContent = `${current.code} — ${current.subjName}`;
+
+    if (progressBarEnabled) {
+      line2.style.display = "none";
+
+      progressWrap.style.display = "flex";
+
+      progressStart.textContent = formatTime(current.start);
+
+      progressEnd.textContent = formatTime(current.end);
+
+      const s = timeToMin(current.start);
+      const e = timeToMin(current.end);
+      const pct = Math.min(100, Math.max(0, ((cur - s) / (e - s)) * 100));
+
+      progressFill.style.width = `${pct}%`;
+
+      roomLine.style.display = "flex";
+      roomText.textContent = roomLabel(current.room) || "";
+
+      const minsLeft = Math.max(0, e - cur);
+      timeLeftEl.textContent = `${minsLeft} min left`;
+    } else {
+      line2.textContent =
+        `${formatTime(current.start)} - ${formatTime(current.end)}` +
+        `${current.room ? ` · ${roomLabel(current.room)}` : ""}`;
     }
   } else {
-    /* order: Plain, Classic, +, Custom */
-    host.appendChild(tile(SKINS.find(s => s.id === 'plain')));
-    host.appendChild(tile(SKINS.find(s => s.id === 'classic')));
-    const more = document.createElement('button');
-    more.type = 'button';
-    more.className = 'skinbtn more';
-    more.title = 'Show every theme';
-    more.innerHTML = '<span class="sw plus">+</span><span class="nm">More</span>';
-    more.onclick = () => { skinsExpanded = true; renderSkins(); };
-    host.appendChild(more);
-    host.appendChild(tile(SKINS.find(s => s.id === 'custom')));
+    line1.textContent = "No class right now";
+    line2.textContent = DAY_LABELS[dayKey];
+  }
+
+  const nextInfo = findNextClassInfo();
+
+  if (!nextInfo) {
+    nextLine1.textContent = "Nothing scheduled";
+    nextLine2.textContent = "";
+    nextRoomText.textContent = "";
+    nextTimeLeft.textContent = "";
+    return;
+  }
+
+  const { item: next, when } = nextInfo;
+
+  nextLine1.textContent = `${next.code} — ${next.subjName}`;
+  nextLine2.textContent = (when ? `${when} · ` : "") + formatTime(next.start);
+  nextRoomText.textContent = roomLabel(next.room) || "";
+
+  if (!when) {
+    const minsUntil = Math.max(0, timeToMin(next.start) - cur);
+    nextTimeLeft.textContent = `in ${minsUntil} min`;
+  } else {
+    nextTimeLeft.textContent = "";
   }
 }
-function renderCustom(){
-  const on = skin === 'custom';
-  $('customwrap').hidden = !on;
-  if (!on) return;
-  const sel = $('c_font');
-  if (!sel.options.length) CUSTOM_FONTS.forEach(f => sel.add(new Option(f, f)));
-  $('c_bg').value     = custom.bg;
-  $('c_panel').value  = custom.panel;
-  $('c_text').value   = custom.text;
-  $('c_accent').value = custom.accent;
-  $('c_line').value   = custom.line;
-  $('c_accent2').value = custom.accent2;
-  $('c_backdrop').value = custom.backdrop;
-  $('c_shadow').value = custom.shadow;
-  $('c_glass').checked = !!custom.glass;
-  $('c_radius').value = custom.radius; $('c_radius_v').textContent = custom.radius + 'px';
-  $('c_tint').value   = custom.tint;   $('c_tint_v').textContent   = custom.tint + '%';
-  $('c_border').value = custom.border; $('c_border_v').textContent = custom.border + 'px';
-  sel.value = custom.font;
-}
-function bindCustom(){
-  const touch = (id, key, after) => {
-    $(id).addEventListener('input', ev => {
-      custom[key] = (key === 'radius' || key === 'tint') ? +ev.target.value : ev.target.value;
-      set(LS.custom, custom);
-      applyLook();
-      if (after) after();
-      render();
-    });
-  };
-  touch('c_bg','bg'); touch('c_panel','panel'); touch('c_text','text');
-  touch('c_accent','accent'); touch('c_accent2','accent2');
-  touch('c_line','line'); touch('c_font','font');
-  touch('c_backdrop','backdrop'); touch('c_shadow','shadow');
-  touch('c_radius','radius', () => { $('c_radius_v').textContent = custom.radius + 'px'; });
-  touch('c_tint','tint',     () => { $('c_tint_v').textContent   = custom.tint + '%'; });
-  touch('c_border','border', () => { $('c_border_v').textContent = custom.border + 'px'; });
-  $('c_glass').addEventListener('change', ev => {
-    custom.glass = ev.target.checked; set(LS.custom, custom); applyLook(); render();
-  });
-  $('c_reset').onclick = () => {
-    custom = Object.assign({}, CUSTOM_DEFAULTS);
-    set(LS.custom, custom); applyLook(); renderCustom(); render();
-  };
-}
-bindCustom();
 
-function renderCreds(){
-  $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
-  $('cr_pass').value  = creds ? creds.password : '';
-  $('cr_state').textContent = creds
-    ? 'Using your own login (' + creds.email + ').'
-    : 'Using the shared login.';
-}
-$('cr_save').onclick = async () => {
-  const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
-  const pass = $('cr_pass').value;
-  if (!user || !pass){ $('cr_state').textContent = 'Enter both an email and a password.'; return; }
-  creds = { email: user + '@' + CONFIG.EMAIL_DOMAIN, password: pass };
-  set(LS.creds, creds);
-  localStorage.removeItem(LS.cache);
-  if (!email) { email = creds.email; set(LS.email, email); }
-  $('cr_state').textContent = 'Checking…';
-  await load(false);
-  renderCreds();
-  if (loadError){ $('cr_state').textContent = loadError; }
-  render();
-};
-$('cr_clear').onclick = async () => {
-  creds = null;
-  set(LS.creds, null);
-  localStorage.removeItem(LS.cache);
-  renderCreds();
-  await load(false);
-  render();
-};
+async function refresh(force = false) {
+  setStatus(force ? "Refreshing timetable…" : "Loading timetable…");
 
-function renderA11y(){
-  $('a_text').value = Math.round(textScale * 100);
-  $('a_text_v').textContent = Math.round(textScale * 100) + '%';
-  $('a_zoom').value = Math.round(zoom * 100);
-  $('a_zoom_v').textContent = Math.round(zoom * 100) + '%';
-  $('a_contrast').checked = contrast === 'high';
-  $('a_motion').checked   = motion === 'reduced';
-}
-$('a_text').addEventListener('input', ev => {
-  textScale = +ev.target.value / 100; set(LS.textScale, textScale);
-  applyLook(); renderA11y(); render();
-});
-$('a_zoom').addEventListener('input', ev => {
-  zoom = +ev.target.value / 100; set(LS.zoom, zoom);
-  applyLook(); renderA11y(); render();
-});
-$('a_contrast').addEventListener('change', ev => {
-  contrast = ev.target.checked ? 'high' : 'normal'; set(LS.contrast, contrast); applyLook();
-});
-$('a_motion').addEventListener('change', ev => {
-  motion = ev.target.checked ? 'reduced' : 'normal'; set(LS.motion, motion); applyLook();
-});
-$('a_reset').onclick = () => {
-  textScale = 1; zoom = 1; contrast = 'normal'; motion = 'normal';
-  set(LS.textScale,1); set(LS.zoom,1); set(LS.contrast,'normal'); set(LS.motion,'normal');
-  applyLook(); renderA11y(); render();
-};
+  const currentEmail = getCurrentEmail();
 
-function renderViews(){
-  [...$('views').children].forEach(b =>
-    b.setAttribute('aria-pressed', String(b.dataset.view === viewMode)));
-}
-[...$('views').children].forEach(b => {
-  b.onclick = () => {
-    viewMode = b.dataset.view;
-    set(LS.view, viewMode);
-    document.documentElement.setAttribute('data-view', viewMode);
-    renderViews(); render();
-  };
-});
+  updateProfileDisplay(currentEmail);
 
-function renderToggles(){
-  $('t_weekletter').checked = showWeekLetter;
-  $('t_outline').checked    = showOutline;
-  $('t_progress').checked   = showProgress;
-  $('t_zen').checked        = zenMode;
-}
-$('t_zen').addEventListener('change', ev => {
-  zenMode = ev.target.checked;
-  set(LS.zen, zenMode);
-  document.documentElement.classList.toggle('zen', zenMode);
-  render();
-});
-[['t_weekletter','weekletter'],['t_outline','outline'],['t_progress','progress']]
-  .forEach(([id, key]) => {
-    $(id).addEventListener('change', ev => {
-      const v = ev.target.checked;
-      if (key === 'weekletter') showWeekLetter = v;
-      if (key === 'outline')    showOutline    = v;
-      if (key === 'progress')   showProgress   = v;
-      set(LS[key], v);
-      document.documentElement.classList.toggle('nooutline', !showOutline);
-      render();
-    });
-  });
+  try {
+    const { timetable, bellTimes, startDate, profile, fetchedAt } =
+      await timetableService.loadAll(force);
 
-function renderRooms(){
-  [...$('rooms').children].forEach(b =>
-    b.setAttribute('aria-pressed', String(b.dataset.room === roomMode)));
-}
-[...$('rooms').children].forEach(b => {
-  b.onclick = () => { roomMode = b.dataset.room; set(LS.room, roomMode); renderRooms(); render(); };
-});
+    const cycleStart = extractDateString(startDate);
 
-function renderModes(){
-  const cur = SKINS.find(s => s.id === skin);
-  [...$('modes').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
-    b.disabled = !cur.both;
-    b.style.opacity = cur.both ? '' : '.45';
-  });
-  $('modehint').textContent = cur.both ? '' : cur.name + ' has one fixed palette.';
-}
-[...$('modes').children].forEach(b => {
-  b.onclick = () => { mode = b.dataset.mode; set(LS.mode, mode); applyLook(); renderModes(); render(); };
-});
-$('mode').onclick = () => {
-  const cur = SKINS.find(s => s.id === skin);
-  if (!cur.both) return;
-  mode = mode === 'dark' ? 'light' : 'dark';
-  set(LS.mode, mode); applyLook(); render();
-};
-$('settings').onclick = () => {
-  $('status').textContent = loadError || '';
-  $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
-  renderToggles(); renderA11y(); renderCreds(); renderColours();
-  dlg.showModal();
-};
-const toHex = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#3b6ef6';
-function renderColours(){
-  const host = $('colours');
-  host.innerHTML = '';
-  const subs = [...new Set(entries.filter(e => e.kind === 'class').map(e => e.subject))].filter(Boolean).sort();
-  $('nocolours').hidden = subs.length > 0;
-  const shade = mode === 'dark' ? 'dark' : 'light';
+    const cycleStartDate = cycleStart ? new Date(cycleStart) : null;
 
-  subs.forEach(sub => {
-    const row = el('div','colrow');
-    row.appendChild(el('span','', sub));
+    CYCLE_START_DATE = cycleStartDate;
 
-    /* preset faculty colours plus a free-choice swatch */
-    const sel = document.createElement('select');
-    sel.className = 'colsel';
-    sel.add(new Option('Default', 'default'));
-    CAT_ORDER.forEach(k => sel.add(new Option(CAT_NAMES[k], k)));
-    sel.add(new Option('Custom…', 'custom'));
+    TODAY_CYCLE_DAY = cycleStartDate ? getTimetableDay(new Date(), cycleStartDate) : null;
 
-    const sw = document.createElement('input');
-    sw.type = 'color';
-    sw.value = toHex(colourFor(sub));
+    if (TODAY_CYCLE_DAY) {
+      currentWeek = TODAY_CYCLE_DAY.slice(-1);
 
-    const chosen = colours[sub];
-    const asCat = chosen && CAT_ORDER.find(k =>
-      CAT_COLOURS[shade][k].toLowerCase() === String(chosen).toLowerCase());
-    sel.value = !chosen ? 'default' : (asCat || 'custom');
-    sw.hidden = sel.value !== 'custom';
+      const dayIdx = DAY_ORDER.indexOf(TODAY_CYCLE_DAY.slice(0, 3).toLowerCase());
 
-    sel.onchange = () => {
-      if (sel.value === 'default'){ delete colours[sub]; }
-      else if (sel.value === 'custom'){ colours[sub] = sw.value; }
-      else { colours[sub] = CAT_COLOURS[shade][sel.value]; }
-      set(LS.colours, colours);
-      sw.hidden = sel.value !== 'custom';
-      sw.value = toHex(colourFor(sub));
-      render();
-    };
-    sw.oninput = () => { colours[sub] = sw.value; set(LS.colours, colours); render(); };
-
-    row.appendChild(sel);
-    row.appendChild(sw);
-    host.appendChild(row);
-  });
-}
-$('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colours, colours); renderColours(); render(); };
-$('save').onclick = async e => {
-  e.preventDefault();
-  dlg.close();
-  localStorage.removeItem(LS.cache);
-  await load(false);
-  render();
-};
-
-/* ═══ controls ═══ */
-function toggleWeek(){
-  const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
-  viewWeek = shown === 'a' ? 'b' : 'a';
-  render();
-}
-$('weekbtn').onclick = toggleWeek;
-
-$('today').onclick = () => {
-  focusToday = !focusToday;
-  if (focusToday){
-    const real = cycleDayFor(new Date(), cycleStart);
-    if (real){
-      viewWeek = real.slice(-1);
-      mobileDay = Math.max(0, DAY_KEYS.indexOf(real.slice(0,3)));
+      seqIndex = WEEK_ORDER.indexOf(currentWeek) * 5 + (dayIdx >= 0 ? dayIdx : 0);
     }
-  }
-  render();
-};
-addEventListener('keydown', e => {
-  if (dlg.open || $('detail').open || !gate.hidden) return;
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek();
-  if (e.key === 'T') $('today').click();
-  if (e.key === 'S') $('settings').click();
-});
-addEventListener('resize', render);
 
-/* ═══ boot ═══ */
-(async () => {
-  render();
-  if (!endpoint) return;
-  if (!email){ showGate(); return; }
-  await load(true);
-  render();
-  if (loadError){ showGate(loadError); return; }
-  load(false).then(render);
-})();
-setInterval(render, 30000);
-setInterval(() => { if (endpoint && email) load(false).then(render); }, 15*60*1000);
-})();
+    SCHEDULE = normalizeTimetable(timetable, bellTimes);
+
+    updateProfileDisplay(currentEmail, profile);
+
+    setStatus(null);
+
+    build();
+    updateBell();
+  } catch (err) {
+    const message =
+      err instanceof ApiError
+        ? `Unable to load timetable. ${err.message}`
+        : "Unable to load timetable. An unexpected error occurred.";
+
+    setStatus(message, true);
+
+    console.error("Timetable load failed:", err);
+  }
+}
+
+const emailInput = document.getElementById("emailInput");
+
+const savedUsername = localStorage.getItem("timetable-username");
+
+emailInput.value = savedUsername || CONFIG.USER_EMAIL.split("@")[0];
+
+function submitEmail() {
+  let username = emailInput.value.trim();
+
+  if (!username) return;
+
+  if (username.includes("@")) {
+    username = username.split("@")[0];
+  }
+
+  CONFIG.USER_EMAIL = username + "@education.nsw.gov.au";
+
+  localStorage.setItem("timetable-username", username);
+
+  refresh(true);
+}
+
+emailInput.addEventListener("change", submitEmail);
+
+emailInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+  submitEmail();
+});
+
+document.getElementById("weekPrev").addEventListener("click", () => {
+  currentWeek = currentWeek === "A" ? "B" : "A";
+
+  seqIndex = WEEK_ORDER.indexOf(currentWeek) * 5 + (seqIndex % 5);
+
+  build();
+});
+
+document.getElementById("weekNext").addEventListener("click", () => {
+  currentWeek = currentWeek === "A" ? "B" : "A";
+
+  seqIndex = WEEK_ORDER.indexOf(currentWeek) * 5 + (seqIndex % 5);
+
+  build();
+});
+
+document.getElementById("dayPrev").addEventListener("click", () => {
+  seqIndex = (seqIndex + 9) % 10;
+
+  currentWeek = WEEK_ORDER[Math.floor(seqIndex / 5)];
+
+  build();
+});
+
+document.getElementById("dayNext").addEventListener("click", () => {
+  seqIndex = (seqIndex + 1) % 10;
+
+  currentWeek = WEEK_ORDER[Math.floor(seqIndex / 5)];
+
+  build();
+});
+
+refresh(false);
+
+setInterval(() => {
+  updateBell();
+  build();
+}, 60000);
+
+const LIGHT_BG_KEY = "timetable-bg-light";
+const DARK_BG_KEY = "timetable-bg-dark";
+
+const lightBgInput = document.getElementById("lightBgInput");
+
+const darkBgInput = document.getElementById("darkBgInput");
+
+const bgReset = document.getElementById("bgReset");
+
+function isValidHex(value) {
+  return /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(value.trim());
+}
+
+function normalizeHex(value) {
+  value = value.trim();
+  return value.startsWith("#") ? value : `#${value}`;
+}
+
+function applyCustomBg() {
+  const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+
+  const stored =
+    theme === "dark" ? localStorage.getItem(DARK_BG_KEY) : localStorage.getItem(LIGHT_BG_KEY);
+
+  if (stored && isValidHex(stored)) {
+    document.body.style.backgroundColor = normalizeHex(stored);
+  } else {
+    document.body.style.backgroundColor = "";
+  }
+}
+
+const savedLightBg = localStorage.getItem(LIGHT_BG_KEY);
+
+const savedDarkBg = localStorage.getItem(DARK_BG_KEY);
+
+if (savedLightBg) lightBgInput.value = savedLightBg;
+if (savedDarkBg) darkBgInput.value = savedDarkBg;
+
+lightBgInput.addEventListener("input", () => {
+  const value = lightBgInput.value.trim();
+
+  if (!value) {
+    localStorage.removeItem(LIGHT_BG_KEY);
+    applyCustomBg();
+    return;
+  }
+
+  if (!isValidHex(value)) return;
+
+  localStorage.setItem(LIGHT_BG_KEY, value);
+  applyCustomBg();
+});
+
+darkBgInput.addEventListener("input", () => {
+  const value = darkBgInput.value.trim();
+
+  if (!value) {
+    localStorage.removeItem(DARK_BG_KEY);
+    applyCustomBg();
+    return;
+  }
+
+  if (!isValidHex(value)) return;
+
+  localStorage.setItem(DARK_BG_KEY, value);
+  applyCustomBg();
+});
+
+bgReset.addEventListener("click", () => {
+  localStorage.removeItem(LIGHT_BG_KEY);
+  localStorage.removeItem(DARK_BG_KEY);
+  lightBgInput.value = "";
+  darkBgInput.value = "";
+  applyCustomBg();
+});
+
+const themeSwitch = document.getElementById("themeSwitch");
+
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+
+  const isDark = theme === "dark";
+
+  themeSwitch.classList.toggle("on", isDark);
+
+  themeSwitch.setAttribute("aria-checked", String(isDark));
+
+  if (typeof applyCustomBg === "function") {
+    applyCustomBg();
+  }
+}
+
+const stored = localStorage.getItem("timetable-theme");
+
+applyTheme(stored || "light");
+
+mq.addEventListener("change", (event) => {
+  if (!localStorage.getItem("timetable-theme")) {
+    applyTheme(event.matches ? "dark" : "light");
+  }
+});
+
+themeSwitch.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+
+  localStorage.setItem("timetable-theme", next);
+
+  applyTheme(next);
+});
+
+const outlineSwitch = document.getElementById("outlineSwitch");
+
+const OUTLINE_STORAGE_KEY = "timetable-outline-colors";
+
+let outlineByColor = localStorage.getItem(OUTLINE_STORAGE_KEY) !== "0";
+
+function applyOutlineSetting() {
+  grid.dataset.outlineColors = outlineByColor ? "1" : "0";
+
+  outlineSwitch.classList.toggle("on", outlineByColor);
+
+  outlineSwitch.setAttribute("aria-checked", String(outlineByColor));
+}
+
+applyOutlineSetting();
+
+outlineSwitch.addEventListener("click", () => {
+  outlineByColor = !outlineByColor;
+
+  localStorage.setItem(OUTLINE_STORAGE_KEY, outlineByColor ? "1" : "0");
+
+  applyOutlineSetting();
+});
+
+const progressSwitch = document.getElementById("progressSwitch");
+
+const PROGRESS_STORAGE_KEY = "timetable-progress-bar";
+
+let progressBarEnabled = localStorage.getItem(PROGRESS_STORAGE_KEY) !== "0";
+
+function applyProgressSetting() {
+  progressSwitch.classList.toggle("on", progressBarEnabled);
+
+  progressSwitch.setAttribute("aria-checked", String(progressBarEnabled));
+}
+
+applyProgressSetting();
+
+progressSwitch.addEventListener("click", () => {
+  progressBarEnabled = !progressBarEnabled;
+
+  localStorage.setItem(PROGRESS_STORAGE_KEY, progressBarEnabled ? "1" : "0");
+
+  applyProgressSetting();
+  updateBell();
+});
+
+/* ---------- Display: room number mode ---------- */
+const roomModeButtons = [...document.querySelectorAll("#roomModeRow .segBtn")];
+
+function applyRoomModeSetting() {
+  roomModeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.room === roomMode)));
+}
+
+applyRoomModeSetting();
+
+roomModeButtons.forEach((b) => {
+  b.addEventListener("click", () => {
+    roomMode = b.dataset.room;
+    localStorage.setItem("timetable-room-mode", roomMode);
+    applyRoomModeSetting();
+    build();
+    updateBell();
+  });
+});
+
+function getStudents(raw) {
+  const value =
+    raw.Students ??
+    raw.students ??
+    raw.StudentList ??
+    raw.studentList ??
+    raw.Enrolments ??
+    raw.enrolments ??
+    raw.ClassStudents ??
+    raw.classStudents ??
+    null;
+
+  if (!Array.isArray(value) || !value.length) return null;
+
+  return value.map((s) => {
+    if (typeof s === "string") return s;
+
+    return (
+      s.FullName ||
+      s.fullName ||
+      [s.FirstName || s.firstName, s.LastName || s.lastName].filter(Boolean).join(" ") ||
+      s.Name ||
+      s.name ||
+      "Unknown student"
+    );
+  });
+}
+
+const periodOverlay = document.getElementById("periodOverlay");
+
+const periodClose = document.getElementById("periodClose");
+
+const periodPopupSubtitle = document.getElementById("periodPopupSubtitle");
+
+const periodPopupBody = document.getElementById("periodPopupBody");
+
+function detailRow(label, value) {
+  return `<div class="detailRow"><div class="detailLabel">${label}</div><div class="detailValue">${value}</div></div>`;
+}
+
+function openPeriodDetails(item, dayKey) {
+  periodPopupSubtitle.textContent = `${DAY_LABELS[dayKey]} · Week ${currentWeek}`;
+
+  let html = "";
+
+  html += detailRow("Class code", item.code || "");
+
+  if (item.periodNumber) html += detailRow("Period", item.periodNumber);
+
+  html += detailRow("Time", `${formatTime(item.start)} - ${formatTime(item.end)}`);
+
+  if (item.teacher) html += detailRow("Teacher", item.teacher);
+
+  if (item.room) html += detailRow("Room", roomLabel(item.room));
+
+  const students = getStudents(item.raw || {});
+
+  
+
+  periodPopupBody.innerHTML = html;
+
+  periodOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closePeriodDetails() {
+  periodOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+periodClose.addEventListener("click", closePeriodDetails);
+
+periodOverlay.addEventListener("click", (event) => {
+  if (event.target === periodOverlay) {
+    closePeriodDetails();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && periodOverlay.classList.contains("open")) {
+    closePeriodDetails();
+  }
+});
+
+const infoBtn = document.getElementById("infoToggle");
+
+const infoOverlay = document.getElementById("infoOverlay");
+
+const infoClose = document.getElementById("infoClose");
+
+const infoTextarea = document.getElementById("infoTextarea");
+
+const infoClear = document.getElementById("infoClear");
+
+const infoSaved = document.getElementById("infoSaved");
+
+const INFO_STORAGE_KEY = "timetable-extra-information";
+
+const savedInfo = localStorage.getItem(INFO_STORAGE_KEY);
+
+if (savedInfo !== null) {
+  infoTextarea.value = savedInfo;
+}
+
+function openInfoPopup() {
+  infoOverlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+
+  setTimeout(() => infoTextarea.focus(), 150);
+}
+
+function closeInfoPopup() {
+  infoOverlay.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+infoBtn.addEventListener("click", openInfoPopup);
+
+infoClose.addEventListener("click", closeInfoPopup);
+
+infoOverlay.addEventListener("click", (event) => {
+  if (event.target === infoOverlay) {
+    closeInfoPopup();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && infoOverlay.classList.contains("open")) {
+    closeInfoPopup();
+  }
+});
+
+infoTextarea.addEventListener("input", () => {
+  localStorage.setItem(INFO_STORAGE_KEY, infoTextarea.value);
+
+  infoSaved.textContent = "Saved automatically";
+});
+
+infoClear.addEventListener("click", () => {
+  if (!confirm("Clear all information?")) return;
+
+  infoTextarea.value = "";
+
+  localStorage.removeItem(INFO_STORAGE_KEY);
+
+  infoSaved.textContent = "Cleared";
+});
+
+/* ---------- Export as calendar (.ics) ---------- */
+
+function icsEscape(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
+}
+
+function icsFold(line) {
+  // RFC5545 line folding at 75 octets, continuation lines start with a space
+  if (line.length <= 75) return line;
+
+  let result = "";
+  let remaining = line;
+
+  while (remaining.length > 75) {
+    result += remaining.slice(0, 75) + "\r\n ";
+    remaining = remaining.slice(75);
+  }
+
+  return result + remaining;
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function formatIcsDate(date) {
+  return (
+    date.getFullYear() +
+    pad2(date.getMonth() + 1) +
+    pad2(date.getDate()) +
+    "T" +
+    pad2(date.getHours()) +
+    pad2(date.getMinutes()) +
+    pad2(date.getSeconds())
+  );
+}
+
+function formatIcsDateUTC(date) {
+  return (
+    date.getUTCFullYear() +
+    pad2(date.getUTCMonth() + 1) +
+    pad2(date.getUTCDate()) +
+    "T" +
+    pad2(date.getUTCHours()) +
+    pad2(date.getUTCMinutes()) +
+    pad2(date.getUTCSeconds()) +
+    "Z"
+  );
+}
+
+// Find the first calendar date (on/after the cycle start) whose timetable
+// cycle-day code matches each of the 10 MonA..FriB slots, so recurring
+// events can be anchored to the correct real-world date and week parity.
+function computeAnchorDates(cycleStartDate) {
+  const anchors = {};
+
+  if (!cycleStartDate) return anchors;
+
+  const cursor = new Date(
+    cycleStartDate.getFullYear(),
+    cycleStartDate.getMonth(),
+    cycleStartDate.getDate(),
+  );
+
+  // Scan up to ~4 school-cycles worth of calendar days to be safe.
+  for (let i = 0; i < 42 && Object.keys(anchors).length < CYCLE_DAYS.length; i++) {
+    const cycleDay = getTimetableDay(cursor, cycleStartDate);
+
+    if (cycleDay && !anchors[cycleDay]) {
+      anchors[cycleDay] = new Date(cursor);
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return anchors;
+}
+
+function buildIcsCalendar() {
+  const anchors = computeAnchorDates(CYCLE_START_DATE);
+
+  // Fallback: if we don't know the real cycle start date, anchor Week A to
+  // the coming Monday and Week B to the Monday after, so the file is still
+  // usable (just without guaranteed real-world week-parity alignment).
+  const today = new Date();
+  const todayDow = today.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = todayDow === 0 ? -6 : 1 - todayDow;
+  const fallbackMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diffToMonday);
+
+  const lines = [];
+
+  lines.push("BEGIN:VCALENDAR");
+  lines.push("VERSION:2.0");
+  lines.push("PRODID:-//Andre Kwok Timetable//Export//EN");
+  lines.push("CALSCALE:GREGORIAN");
+  lines.push("METHOD:PUBLISH");
+  lines.push(icsFold(`X-WR-CALNAME:${icsEscape(document.getElementById("profileName").textContent + " Timetable")}`));
+
+  const now = new Date();
+  const dtstamp = formatIcsDateUTC(now);
+
+  // Recur for roughly a school year (52 weeks) from each anchor date.
+  const untilDate = new Date(now);
+  untilDate.setFullYear(untilDate.getFullYear() + 1);
+  const until = formatIcsDateUTC(untilDate);
+
+  let eventCount = 0;
+
+  WEEK_ORDER.forEach((week) => {
+    DAY_ORDER.forEach((day) => {
+      const cycleCode = day.charAt(0).toUpperCase() + day.slice(1) + week;
+
+      let anchor = anchors[cycleCode];
+
+      if (!anchor) {
+        // Fallback anchoring when no cycle start date is known
+        const dayIndex = DAY_ORDER.indexOf(day); // 0=mon..4=fri
+        const weekOffset = WEEK_ORDER.indexOf(week) * 7;
+        anchor = new Date(fallbackMonday);
+        anchor.setDate(fallbackMonday.getDate() + weekOffset + dayIndex);
+      }
+
+      const rows = SCHEDULE[week]?.[day] || [];
+
+      rows.forEach((item, idx) => {
+        if (item.kind !== "class" || !item.start || !item.end) return;
+
+        const startMin = timeToMin(item.start);
+        const endMin = timeToMin(item.end);
+
+        if (endMin <= startMin) return;
+
+        const dtStart = new Date(anchor);
+        dtStart.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
+
+        const dtEnd = new Date(anchor);
+        dtEnd.setHours(Math.floor(endMin / 60), endMin % 60, 0, 0);
+
+        const uid = `${cycleCode}-${idx}-${item.code || "class"}-${item.periodNumber || ""}@andrekwok-timetable`
+          .toLowerCase()
+          .replace(/[^a-z0-9@.-]+/g, "-");
+
+        const summary = `${item.code || item.subjName}${item.subjName && item.code !== item.subjName ? " - " + item.subjName : ""}`;
+
+        const descriptionParts = [];
+        if (item.teacher) descriptionParts.push(`Teacher: ${item.teacher}`);
+        if (item.periodNumber) descriptionParts.push(`Period: ${item.periodNumber}`);
+        descriptionParts.push(`Week ${week}`);
+
+        lines.push("BEGIN:VEVENT");
+        lines.push(`UID:${uid}`);
+        lines.push(`DTSTAMP:${dtstamp}`);
+        lines.push(`DTSTART:${formatIcsDate(dtStart)}`);
+        lines.push(`DTEND:${formatIcsDate(dtEnd)}`);
+        lines.push(`RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=${until}`);
+        lines.push(icsFold(`SUMMARY:${icsEscape(summary)}`));
+        if (item.room) lines.push(icsFold(`LOCATION:${icsEscape(roomLabel(item.room))}`));
+        lines.push(icsFold(`DESCRIPTION:${icsEscape(descriptionParts.join("\\n"))}`));
+        lines.push("END:VEVENT");
+
+        eventCount++;
+      });
+    });
+  });
+
+  lines.push("END:VCALENDAR");
+
+  return { ics: lines.join("\r\n"), eventCount };
+}
+
+function downloadIcsFile(content, filename) {
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("exportCalendarBtn").addEventListener("click", () => {
+  const { ics, eventCount } = buildIcsCalendar();
+
+  if (eventCount === 0) {
+    infoSaved.textContent = "No classes to export yet — load a timetable first.";
+    return;
+  }
+
+  const nameForFile = (document.getElementById("profileName").textContent || "timetable")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
+
+  downloadIcsFile(ics, `${nameForFile}-timetable.ics`);
+
+  infoSaved.textContent = `Exported ${eventCount} class${eventCount === 1 ? "" : "es"} to calendar file`;
+});
 </script>
 </body>
 </html>
