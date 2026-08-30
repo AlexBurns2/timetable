@@ -120,6 +120,27 @@ canvas{
 .gwguessrow.miss{background:color-mix(in srgb,#e5484d 12%,var(--panel));color:var(--text)}
 .gwguessrow.win{background:color-mix(in srgb,#2f9e44 16%,var(--panel));color:var(--text)}
 html[data-motion="reduced"] .gwhint.fresh,html[data-motion="reduced"] .gwguessrow{animation:none}
+/* classroom */
+#crin{flex:1;min-width:160px;padding:11px 13px;border:var(--card-border);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);outline:none}
+#crin:focus{border-color:var(--accent)}
+.crq{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;text-align:center}
+.crprog{font-size:12px;color:var(--muted,var(--text));opacity:.7;margin-bottom:6px}
+.crsub{font-size:22px;font-weight:700}
+.crmeta{font-size:13px;opacity:.75;margin-top:4px}
+/* six degrees */
+.chhead{margin-bottom:10px}
+.chtarget{font-size:16px}
+.chyr{font-size:12px;opacity:.7}
+.chmeta{font-size:12.5px;opacity:.75;margin-top:3px}
+.chtrail{font-size:13px;opacity:.85;margin-bottom:12px;word-break:break-word}
+.chopts{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+.chopt{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:11px 14px;color:var(--text);cursor:pointer;font-size:14px}
+.chopt:hover{border-color:var(--accent)}
+.chopt em{font-style:normal;font-size:12px;opacity:.65;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -154,6 +175,8 @@ $('mode').onclick = () => {
 let stop = null;
 const GAMES = [
   { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery person — classmates, grade or teachers' },
+  { id:'classroom', ico:'🚪', name:'Classroom', blurb:'Name the room each of your classes is in' },
+  { id:'chain',  ico:'🔗', name:'Six Degrees', blurb:'Hop student to student through shared classes' },
   { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
@@ -254,6 +277,14 @@ const personName = r => {
   return '';
 };
 const cap = s => s ? s[0].toUpperCase()+s.slice(1).toLowerCase() : s;
+/* "stephen.henne@det.nsw.edu.au" / "HENNE, Stephen" -> "Stephen Henne" */
+const tidyName = t => {
+  t = String(t||'').trim();
+  if (!t) return '';
+  if (t.includes('@')) t = t.split('@')[0];
+  if (/[.,]/.test(t)) return t.split(/[.,]\s*/).filter(Boolean).map(cap).join(' ').replace(/\s+\d+/g,'').trim();
+  return t;
+};
 /* students are @education.nsw.gov.au; staff are @det.nsw.edu.au or role-tagged */
 const isStaff = r => {
   const mail = String(r.Email||r.email||r.emailAddress||'').toLowerCase();
@@ -295,16 +326,55 @@ async function loadGuessData(){
     }
   }
   const classPool = [...cp.values()].map(p => ({ name:p.name, email:p.email, year:p.year, subjects:[...p.subjects] }));
-  return { email:me, viewer, grade, classPool, students:null, teachers:null };
+
+  /* one representative room / teacher / period per class, for the Classroom
+     game — take the first row of each class that actually names a room */
+  const rmOf  = r => String(r.RoomCode||r.RoomNumber||r.RoomName||r.Room||r.Location||'').trim();
+  const tchOf = r => String(r.TeacherName||r.TeacherFullName||r.Teacher||r.StaffName||'').trim();
+  const rooms = [];
+  const seenRoom = new Set();
+  rows.forEach(r => {
+    const room = rmOf(r);
+    if (!room || seenRoom.has(r.ClassCode)) return;
+    seenRoom.add(r.ClassCode);
+    rooms.push({ subject: codeSubject[r.ClassCode], room,
+                 teacher: tidyName(tchOf(r)), period: String(r.Period||'').trim() });
+  });
+
+  return { email:me, viewer, grade, classPool, rooms, students:null, teachers:null };
 }
+
+/* the directory doesn't name its year field consistently — pull a year number
+   out of whichever of the usual fields carries it (Year / Form / Grade / roll
+   class / cohort), keeping only the digits so "Year 8", "8", "8B" all give 8 */
+const yearOf = r => String(
+    r.year || r.Year || r.grade || r.Grade || r.yearGroup || r.YearGroup ||
+    r.form || r.Form || r.rollClass || r.RollClass || r.RollGroup || r.rollGroup ||
+    r.cohort || r.Cohort || r.stage || r.Stage || ''
+  ).replace(/\D/g, '');
 
 /* map a raw directory record to a person */
 function dirPerson(r){
   const name = personName(r);
   const mail = String(r.emailAddress||r.Email||r.email||'').toLowerCase();
-  const year = String(r.year||r.Year||r.grade||r.Grade||r.yearGroup||r.rollClass||'').replace(/\D/g,'');
-  return name ? { name, email:mail, year, subjects:[] } : null;
+  return name ? { name, email:mail, year:yearOf(r), subjects:[] } : null;
 }
+
+/* Load the whole-school student directory once. While we still have the raw
+   list, find the viewer's own record so we can read their year straight from
+   the directory — far more reliable than scraping it out of the profile's
+   group names, which is what left "My year" empty and unplayable before. */
+async function loadStudents(){
+  if (gwData.students) return;
+  const d = await TT.apiGet({ group:'student' });
+  const all = (Array.isArray(d) ? d : (d.people || d)).map(dirPerson).filter(Boolean);
+  if (!gwData.grade){
+    const mine = all.find(p => p.email && p.email === gwData.email);
+    if (mine && mine.year) gwData.grade = mine.year;
+  }
+  gwData.students = all.filter(p => p.email !== gwData.email);
+}
+
 async function poolFor(diff){
   if (diff === 'myclasses') return gwData.classPool;
   if (diff === 'teachers'){
@@ -314,13 +384,12 @@ async function poolFor(diff){
     }
     return gwData.teachers.filter(p => p.email !== gwData.email);
   }
-  if (!gwData.students){
-    const d = await TT.apiGet({ group:'student' });
-    gwData.students = (Array.isArray(d)?d:(d.people||d)).map(dirPerson).filter(Boolean)
-                        .filter(p => p.email !== gwData.email);
+  await loadStudents();
+  if (diff === 'grade'){
+    if (!gwData.grade)
+      throw new Error("Couldn't work out which year you're in — try another mode.");
+    return gwData.students.filter(p => p.year && p.year === gwData.grade);
   }
-  if (diff === 'grade' && gwData.grade)
-    return gwData.students.filter(p => p.year === gwData.grade);
   return gwData.students;   /* whole school */
 }
 
@@ -463,6 +532,198 @@ BUILD.guesswho = host => {
   }
   function reveal(word, frac){
     return [...word].map((ch,i) => (i===0 || Math.random()<frac) ? ch : '_').join(' ');
+  }
+  return () => { alive = false; };
+};
+
+/* ── Classroom ─────────────────────────────────────────────────────
+   Uses the rooms from your own timetable: each round names a class and
+   you type which room it runs in. Self-contained — no directory calls. */
+BUILD.classroom = host => {
+  head(host, 'Classroom', 'Name the room each of your classes runs in.', '<div id="cr"></div>');
+  const box = document.getElementById('cr');
+  let alive = true;
+  (async () => {
+    box.innerHTML = '<p class="how">Loading…</p>';
+    try {
+      if (!gwData) gwData = await loadGuessData();
+      if (!alive) return;
+      start();
+    } catch (err){
+      if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
+    }
+  })();
+
+  function start(){
+    const rooms = (gwData.rooms || []).filter(r => r.room && r.subject);
+    if (rooms.length < 3){
+      box.innerHTML = '<p class="how">Your timetable doesn’t list enough rooms to play. Open your timetable first.</p>';
+      return;
+    }
+    const allRooms = [...new Set(rooms.map(r => r.room))].sort();
+    const norm = s => String(s).toLowerCase().replace(/\s+/g,'');
+    let queue = shuffle(rooms.slice()), i = 0, correct = 0, history = [];
+
+    render();
+    function render(){
+      if (i >= queue.length){ finish(); return; }
+      const q = queue[i];
+      box.innerHTML =
+        '<div class="crq">' +
+          '<div class="crprog">Class ' + (i+1) + ' of ' + queue.length + '</div>' +
+          '<div class="crsub">' + esc(q.subject) + '</div>' +
+          (q.teacher ? '<div class="crmeta">with ' + esc(q.teacher) + '</div>' : '') +
+          (q.period ? '<div class="crmeta">' + esc(/^\d+$/.test(q.period) ? 'Period ' + q.period : q.period) + '</div>' : '') +
+        '</div>' +
+        '<div class="gwrow">' +
+          '<input id="crin" list="crlist" autocomplete="off" placeholder="Room…">' +
+          '<datalist id="crlist">' + allRooms.map(r => '<option value="' + esc(r) + '">').join('') + '</datalist>' +
+          '<button class="btn primary" id="crgo" type="button">Check</button>' +
+        '</div>' +
+        '<div class="gwlog">' + history.map(h =>
+          '<div class="gwguessrow ' + (h.right ? 'win' : 'miss') + '">' +
+          (h.right ? '✓ ' : '✗ ') + esc(h.subject) + ' → ' + esc(h.room) + '</div>').join('') + '</div>';
+      const inp = document.getElementById('crin');
+      document.getElementById('crgo').onclick = check;
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+      inp.focus();
+      document.getElementById('sc').textContent = correct + ' correct';
+    }
+    function check(){
+      const inp = document.getElementById('crin'), v = inp.value.trim();
+      if (!v) return;
+      const q = queue[i];
+      const right = norm(v) === norm(q.room);
+      if (right) correct++;
+      history.unshift({ subject:q.subject, room:q.room, right });
+      i++;
+      render();
+    }
+    function finish(){
+      const best = recordStat('classroom', { key:'high', mode:'max', value:correct });
+      box.innerHTML =
+        '<div class="crq"><div class="crsub">' + correct + ' / ' + queue.length + '</div>' +
+          '<div class="crmeta">best ' + best + '</div></div>' +
+        '<div class="gwlog">' + history.map(h =>
+          '<div class="gwguessrow ' + (h.right ? 'win' : 'miss') + '">' +
+          (h.right ? '✓ ' : '✗ ') + esc(h.subject) + ' → ' + esc(h.room) + '</div>').join('') + '</div>' +
+        '<div class="gwrow"><button class="btn primary" id="crgo" type="button">Play again</button></div>';
+      document.getElementById('sc').textContent = correct + ' / ' + queue.length;
+      document.getElementById('crgo').onclick = start;
+    }
+  }
+  return () => { alive = false; };
+};
+
+/* ── Six Degrees ───────────────────────────────────────────────────
+   Builds a graph of your classmates, linking any two who share one of
+   your classes, then drops you on one and asks you to hop through the
+   shared classes to reach a target person in as few hops as possible. */
+BUILD.chain = host => {
+  head(host, 'Six Degrees', 'Hop student to student through classes they share, and reach the target.', '<div id="ch"></div>');
+  const box = document.getElementById('ch');
+  let alive = true;
+  (async () => {
+    box.innerHTML = '<p class="how">Loading…</p>';
+    try {
+      if (!gwData) gwData = await loadGuessData();
+      if (!alive) return;
+      start();
+    } catch (err){
+      if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
+    }
+  })();
+
+  function start(){
+    const nodes = (gwData.classPool || []).filter(p => p.subjects && p.subjects.length);
+    if (nodes.length < 6){
+      box.innerHTML = '<p class="how">Not enough classmates with shared classes to play. Open your timetable first.</p>';
+      return;
+    }
+    /* link classmates who share one of your classes (same subject bucket) */
+    const bySubj = new Map();
+    nodes.forEach((p,i) => p.subjects.forEach(s => {
+      if (!bySubj.has(s)) bySubj.set(s, []);
+      bySubj.get(s).push(i);
+    }));
+    const adj = nodes.map(() => new Set());
+    for (const arr of bySubj.values())
+      for (let a=0; a<arr.length; a++) for (let b=a+1; b<arr.length; b++){
+        adj[arr[a]].add(arr[b]); adj[arr[b]].add(arr[a]);
+      }
+    const bfs = src => {
+      const dist = nodes.map(() => Infinity); dist[src] = 0;
+      const q = [src];
+      for (let h=0; h<q.length; h++){ const c = q[h];
+        for (const n of adj[c]) if (dist[n] === Infinity){ dist[n] = dist[c]+1; q.push(n); } }
+      return dist;
+    };
+    const rand = n => (Math.random()*n)|0;
+    const sharedClass = (a,b) => nodes[a].subjects.find(s => nodes[b].subjects.includes(s));
+
+    /* choose a start/target pair that sits 2–4 hops apart */
+    let game = null;
+    for (let t=0; t<80 && !game; t++){
+      const target = rand(nodes.length);
+      const dist = bfs(target);
+      const cands = [];
+      for (let i=0; i<nodes.length; i++) if (dist[i] >= 2 && dist[i] <= 4) cands.push(i);
+      if (cands.length) game = { start: cands[rand(cands.length)], target, dist };
+    }
+    if (!game){
+      box.innerHTML = '<p class="how">Couldn’t find two classmates far enough apart to make a puzzle. Try again.</p>';
+      return;
+    }
+
+    let cur = game.start, steps = 0, path = [game.start], won = false;
+    const par = game.dist[game.start], dist = game.dist;
+
+    render();
+    function render(){
+      const nbrs = [...adj[cur]];
+      const good = nbrs.filter(n => dist[n] < dist[cur]);       /* moves toward target */
+      const rest = shuffle(nbrs.filter(n => dist[n] >= dist[cur]));
+      let show = [...good, ...rest].slice(0, 14);
+      if (nbrs.includes(game.target) && !show.includes(game.target)) show[show.length-1] = game.target;
+      show = shuffle(show);
+      box.innerHTML =
+        '<div class="chhead">' +
+          '<div class="chtarget">Reach <b>' + esc(nodes[game.target].name) + '</b>' +
+            (nodes[game.target].year ? ' <span class="chyr">Yr ' + esc(nodes[game.target].year) + '</span>' : '') + '</div>' +
+          '<div class="chmeta">On <b>' + esc(nodes[cur].name) + '</b> · ' + steps + ' hop' + (steps===1?'':'s') + ' · par ' + par + '</div>' +
+        '</div>' +
+        '<div class="chtrail">' + path.map(p => esc(nodes[p].name)).join(' → ') + '</div>' +
+        '<div class="chopts" id="chopts"></div>' +
+        '<div class="gwrow"><button class="btn" id="chnew" type="button">New pair</button></div>';
+      const opts = document.getElementById('chopts');
+      show.forEach(n => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'chopt';
+        b.innerHTML = '<span>' + esc(nodes[n].name) + '</span><em>via ' + esc(sharedClass(cur,n) || 'shared class') + '</em>';
+        b.onclick = () => move(n);
+        opts.appendChild(b);
+      });
+      document.getElementById('chnew').onclick = start;
+      document.getElementById('sc').textContent = steps + ' hop' + (steps===1?'':'s');
+    }
+    function move(n){
+      if (won) return;
+      cur = n; steps++; path.push(n);
+      if (n === game.target){
+        won = true;
+        recordStat('chain', { key:'cleared', mode:'count', value:1 });
+        const best = recordStat('chain', { key:'best', mode:'min', value:steps });
+        box.innerHTML =
+          '<div class="chhead"><div class="chtarget">Reached <b>' + esc(nodes[game.target].name) + '</b> 🎉</div>' +
+            '<div class="chmeta">' + steps + ' hop' + (steps===1?'':'s') + ' (par ' + par + ') · fewest ' + best + '</div></div>' +
+          '<div class="chtrail">' + path.map(p => esc(nodes[p].name)).join(' → ') + '</div>' +
+          '<div class="gwrow"><button class="btn primary" id="chnew" type="button">New pair</button></div>';
+        document.getElementById('sc').textContent = 'Done in ' + steps + '!';
+        document.getElementById('chnew').onclick = start;
+        return;
+      }
+      render();
+    }
   }
   return () => { alive = false; };
 };
