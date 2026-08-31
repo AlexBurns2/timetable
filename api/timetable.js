@@ -31,7 +31,7 @@ const tokenCache = new Map();            // email -> { token, type, exp }
 
 /* ------------------------------------------------------------------ utils */
 
-function decodeJwtPayload(token) {
+export function decodeJwtPayload(token) {
   try {
     const part = token.split(".")[1];
     const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
@@ -42,7 +42,7 @@ function decodeJwtPayload(token) {
   }
 }
 
-function normaliseEmail(input, domain) {
+export function normaliseEmail(input, domain) {
   const raw = String(input || "").trim().toLowerCase();
   if (!raw) return "";
   const user = raw.includes("@") ? raw.split("@")[0] : raw;
@@ -86,7 +86,7 @@ async function readJson(res, url) {
   }
 }
 
-async function getToken(apiBase, emailAddress, password) {
+export async function getToken(apiBase, emailAddress, password) {
   const now = Date.now();
   const key = String(emailAddress).toLowerCase();
   const hit = tokenCache.get(key);

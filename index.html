@@ -606,7 +606,9 @@ const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view
              textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
              weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
-const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  /* mirror settings to the signed-in user (theme.js debounces + skips creds/cache) */
+  if (window.TT && TT.syncPush && k.startsWith('tt.') && k !== LS.creds && k !== LS.cache) TT.syncPush(); };
 
 const endpoint = CONFIG.ENDPOINT;
 let email    = get(LS.email, '');
@@ -1469,6 +1471,12 @@ $('gateform').onsubmit = async ev => {
   if (loadError){ $('gateerr').textContent = loadError; return; }
   set(LS.email, email);
   set(LS.creds, creds);
+  /* now that we're signed in: adopt any settings saved under this account
+     (syncPull reloads if it finds newer ones), otherwise seed the server. */
+  if (window.TT){
+    if (TT.syncPull) await TT.syncPull();
+    if (TT.syncPush) TT.syncPush();
+  }
   gate.hidden = true;
   render();
 };

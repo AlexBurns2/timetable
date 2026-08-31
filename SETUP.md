@@ -615,37 +615,72 @@ Settings.
 
 ---
 
-## Syncing settings to an account (not just the device)
+## Settings sync (implemented — Phase 1)
 
-Right now every preference — theme, credentials, notes, colours — lives in
-`localStorage`, which is per-browser. To follow a user across devices you need a
-tiny bit of server state keyed by identity. Options, cheapest first:
+Preferences now follow the **account**, not the browser. Every `tt.*` setting
+(theme, colours, layout, accessibility, stats…) mirrors to a small table keyed
+by the user's verified school email; `localStorage` stays as the offline cache.
 
-1. **A key-value store behind the existing Vercel function.** Add a
-   `/api/prefs` route backed by Vercel KV (Upstash Redis) or Vercel Postgres.
-   Key by the user's school email (they already sign in), value is the JSON blob
-   currently in `localStorage`. On load, `GET /api/prefs?email=…` and merge over
-   the local copy; on change, debounce a `PUT`. ~40 lines. The catch: the school
-   email is the only identity you have, and it's not *authenticated* to you —
-   anyone could request anyone's prefs unless you gate it. Since the user already
-   supplies a password that the school validates, you can require the same
-   `X-School-*` headers and only return prefs after the school API accepts the
-   token — so possession of prefs follows possession of the real login.
+**Identity, not a new login.** There is no second account system. The browser
+sends the same `X-School-Email` / `X-School-Password` headers it already uses
+for the timetable; the server re-authenticates them against the school API and
+the email in the resulting JWT *is* the identity. Possession of settings follows
+possession of the real school login. The database key is stored server-side with
+the service-role key — the browser never touches the database.
 
-2. **Their own storage, not yours.** A "Sync" toggle that reads/writes the
-   settings JSON to the user's Google Drive *appDataFolder* or a GitHub Gist via
-   OAuth. No database to run or secure, and the data never touches your server —
-   but it's more UI and an OAuth flow per provider.
+**Never synced:** `tt.creds` (the password — the server strips it even if sent),
+`tt.cache` (the bulky device-local timetable copy), `tt.notes` (stored as a raw
+string, not JSON — would need its own row), and `tt.syncedat` (per-device sync
+bookkeeping).
 
-3. **Export / import.** A "Copy settings" / "Paste settings" pair (the JSON blob
-   as text, or a URL hash). Zero backend; the user moves it manually. Good enough
-   for a handful of power users.
+### Files
 
-For this project I'd do **(1) with the school-token gate**: it reuses the login
-you already have, needs no new accounts, and Vercel KV has a free tier. Keep
-`localStorage` as the offline cache and treat the server copy as the source of
-truth on load. Notes should sync the same way but stored separately, since
-they're larger and change more often.
+| File | Role |
+|---|---|
+| `api/_supabase.js` | `db` (service-role client) + `whoami(req)` — verifies the caller by their school login. Underscore prefix keeps it out of routing. |
+| `api/prefs.js` | `GET`/`PUT /api/prefs`, keyed by `whoami().email`. |
+| `theme.js` | client: `syncPull()` on load, debounced `syncPush()` on change, `pagehide` flush. |
+| `index.html` | its local `set()` calls `TT.syncPush()`; the login handler calls `TT.syncPull()`. |
+
+**How the client stays loop-free.** A pull is gated on the server's `updated_at`
+stamp (stored locally as `tt.syncedat`), *not* on comparing values — jsonb does
+not preserve object key order, so a value-diff would reload forever. When a pull
+finds a newer stamp it adopts the settings and reloads **once** (so the page's
+in-memory state and grid DOM rebind to the synced values); after the reload the
+stamps match and it settles. A `pulling` flag stops adopted values bouncing
+straight back out as a push.
+
+### What you need to set up (one time)
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com) (free
+   tier). Project → **SQL Editor** → run:
+   ```sql
+   create table prefs (
+     email      text primary key,
+     data       jsonb not null default '{}',
+     updated_at timestamptz not null default now()
+   );
+   ```
+   RLS can stay **off** — only the service-role key (server-side) ever touches
+   this table; the browser has no direct access.
+
+2. **Copy two secrets** from Supabase → **Project Settings → API**:
+   - Project URL → set Vercel env var `SUPABASE_URL`
+   - `service_role` secret (NOT `anon`) → set `SUPABASE_SERVICE_ROLE_KEY`
+
+3. **Add both env vars in Vercel** (Settings → Environment Variables), then
+   **redeploy** (env vars only apply to deployments made after they're added).
+   `package.json` already lists `@supabase/supabase-js`, so Vercel installs it.
+
+4. **Verify.** With the site deployed and signed in, change a theme on one
+   browser, open the site signed-in on another, and it should adopt the change on
+   load. If `SUPABASE_*` is missing, `/api/prefs` returns `503 not configured`
+   and the app simply runs local-only — nothing else breaks.
+
+> **Why Supabase and not Vercel KV.** Vercel's own KV/Postgres were retired in
+> 2024; storage now comes from the Vercel Marketplace (Supabase / Neon / Upstash).
+> Supabase is chosen because Phases 2–3 (daily Guess Who, realtime boards) reuse
+> the same Postgres + its Realtime/JWT layer — see `HANDOFF.md`.
 
 ---
 
