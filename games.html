@@ -289,8 +289,8 @@ const cleanSubject = name => String(name||'')
   .replace(/^[\s:\-–—]+/,'').trim();
 const personName = r => {
   const full = r.FullName||r.fullName||r.Name||r.name||'';
-  const first = r.FirstName||r.firstName||r.GivenName||r.preferredName||'';
-  const last  = r.LastName||r.lastName||r.Surname||r.surname||'';
+  const first = r.FirstName||r.firstName||r.firstname||r.GivenName||r.preferredName||'';
+  const last  = r.LastName||r.lastName||r.lastname||r.Surname||r.surname||'';
   const mail  = r.Email||r.email||r.emailAddress||'';
   const nm = full || [first,last].filter(Boolean).join(' ');
   if (nm) return nm;
@@ -369,11 +369,17 @@ async function loadGuessData(){
 /* the directory doesn't name its year field consistently — pull a year number
    out of whichever of the usual fields carries it (Year / Form / Grade / roll
    class / cohort), keeping only the digits so "Year 8", "8", "8B" all give 8 */
-const yearOf = r => String(
+const yearOf = r => {
+  const direct = String(
     r.year || r.Year || r.grade || r.Grade || r.yearGroup || r.YearGroup ||
     r.form || r.Form || r.rollClass || r.RollClass || r.RollGroup || r.rollGroup ||
     r.cohort || r.Cohort || r.stage || r.Stage || ''
   ).replace(/\D/g, '');
+  if (direct) return direct;
+  const gs = r.groups || r.Groups || [];       // real directory carries year here, e.g. "yr11"
+  for (const g of (Array.isArray(gs) ? gs : [])){ const m = String(g).match(/(?:yr|year)\.?\s*(\d{1,2})/i); if (m) return m[1]; }
+  return '';
+};
 
 /* map a raw directory record to a person */
 function dirPerson(r){

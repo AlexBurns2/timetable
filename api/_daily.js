@@ -36,25 +36,40 @@ const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 /* mirror the client's name/year extraction so pools line up */
 function personName(r) {
   const full  = r.FullName || r.fullName || r.Name || r.name || "";
-  const first = r.FirstName || r.firstName || r.GivenName || r.preferredName || "";
-  const last  = r.LastName || r.lastName || r.Surname || r.surname || "";
+  const first = r.FirstName || r.firstName || r.firstname || r.GivenName || r.preferredName || "";
+  const last  = r.LastName || r.lastName || r.lastname || r.Surname || r.surname || "";
   const mail  = r.Email || r.email || r.emailAddress || "";
   const nm = full || [first, last].filter(Boolean).join(" ");
   if (nm) return String(nm).trim();
   if (mail) { const p = String(mail).split("@")[0].split("."); if (p.length >= 2) return cap(p[0]) + " " + cap(p[1].replace(/\d+$/, "")); }
   return "";
 }
+/* year lives in the `groups` array as "yr11" on the real directory, not in a
+   Year/Form field — check the named fields first, then fall back to groups */
 function yearOf(r) {
-  return String(
+  const direct = String(
     r.year || r.Year || r.grade || r.Grade || r.yearGroup || r.YearGroup ||
     r.form || r.Form || r.rollClass || r.RollClass || r.RollGroup || r.rollGroup ||
     r.cohort || r.Cohort || r.stage || r.Stage || ""
   ).replace(/\D/g, "");
+  if (direct) return direct;
+  const groups = r.groups || r.Groups || [];
+  for (const g of (Array.isArray(groups) ? groups : [])) {
+    const m = String(g).match(/(?:yr|year)\.?\s*(\d{1,2})/i);
+    if (m) return m[1];
+  }
+  return "";
 }
 function toPerson(r) {
   const name = personName(r);
   const email = String(r.emailAddress || r.Email || r.email || "").toLowerCase();
   return name ? { name, email, year: yearOf(r) } : null;
+}
+
+/* normalise the raw /api/group/* payload (bare array, or wrapped) to people */
+export function parseDirectory(raw) {
+  const arr = Array.isArray(raw) ? raw : (raw && (raw.people || raw.students || raw.roster)) || [];
+  return arr.map(toPerson).filter(Boolean);
 }
 
 /* deterministic partial reveal: first letter always, others by a stable hash */
@@ -79,10 +94,8 @@ function buildHints(first, last) {
 
 /* the deduped, deterministically ordered roster for one year */
 async function loadYear(year) {
-  const raw = await fetchAsOwner("/api/group/student");
-  const arr = Array.isArray(raw) ? raw : (raw && (raw.people || raw.students || raw.roster)) || [];
   const seen = new Set(); const list = [];
-  arr.map(toPerson).filter(Boolean)
+  parseDirectory(await fetchAsOwner("/api/group/student"))
      .filter(p => p.year === String(year) && p.name.includes(" "))   // need a surname for hints
      .sort((a, b) => (a.email || a.name).localeCompare(b.email || b.name))  // stable order across runs
      .forEach(p => { const k = p.email || p.name.toLowerCase(); if (!seen.has(k)) { seen.add(k); list.push(p); } });
@@ -92,9 +105,7 @@ async function loadYear(year) {
 /* find the caller's year — from the JWT first, else from the directory */
 export async function resolveYear(me) {
   if (me.year) return String(me.year);
-  const raw = await fetchAsOwner("/api/group/student");
-  const arr = Array.isArray(raw) ? raw : (raw && (raw.people || raw.students || raw.roster)) || [];
-  const mine = arr.map(toPerson).filter(Boolean).find(p => p.email && p.email === me.email);
+  const mine = parseDirectory(await fetchAsOwner("/api/group/student")).find(p => p.email && p.email === me.email);
   return mine && mine.year ? String(mine.year) : null;
 }
 
