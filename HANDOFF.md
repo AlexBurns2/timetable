@@ -5,14 +5,22 @@ wants to add server-side state in three phases. This doc is everything you need 
 do it without the prior conversation. A visual version of the plan lives at
 <https://claude.ai/code/artifact/6466d2e1-a842-4f5e-b19e-d59a33dfcf04>.
 
-> **STATUS (2026-08-31):** Phase 0 + Phase 1 are **built** — `api/_supabase.js`,
-> `api/prefs.js`, the exported auth helpers in `api/timetable.js`, and the
-> `theme.js` / `index.html` sync client are all in place and browser-tested
-> against a mock. What remains for Phase 1 is the *provisioning* (create the
-> Supabase project, run the `prefs` table SQL, set `SUPABASE_URL` +
-> `SUPABASE_SERVICE_ROLE_KEY` in Vercel, redeploy) — see SETUP.md → "Settings
-> sync". Phases 2 (daily Guess Who) and 3 (realtime) are still unbuilt; the
-> sections below are the plan for them.
+> **STATUS (2026-09-01):** Phases 0, 1 **and 2** are **built** and browser-tested
+> against mocks:
+> - Phase 1 (settings sync): `api/_supabase.js`, `api/prefs.js`, exported auth
+>   helpers in `api/timetable.js`, sync client in `theme.js` / `index.html`.
+> - Phase 2 (daily Guess Who): `api/_daily.js`, `api/daily.js`,
+>   `api/daily-generate.js`, `vercel.json` cron, `fetchAsOwner` in
+>   `api/timetable.js`, and `BUILD.dailyguess` + `TT.api` on the client.
+> - Shared weekly Tetris leaderboard: `api/tetris.js` + `BUILD.tetris` — the
+>   same whoami-verified, service-role pattern (table `tetris_score`).
+>
+> What remains is **provisioning** (create the Supabase project, run the `prefs`,
+> `daily_puzzle`, `daily_result`, `tetris_score` table SQL, set `SUPABASE_URL` +
+> `SUPABASE_SERVICE_ROLE_KEY`, optionally `CRON_SECRET`, redeploy) — all in
+> SETUP.md. **Phase 3 (realtime boards/multiplayer) is still unbuilt**; the
+> sections below are its plan. The realtime-token bridge there is the natural
+> next build, and a shared Tetris weekly leaderboard would reuse the same pattern.
 
 **Golden rules**
 - The browser never gets a database key. All DB access goes through the Vercel

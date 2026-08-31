@@ -67,6 +67,17 @@ canvas{
   font-variant-numeric:tabular-nums}
 .gwyou{font-size:12px;color:var(--muted);margin-bottom:10px}
 .gwyou b{color:var(--text)}
+/* tetris leaderboard */
+.tlb{margin-top:16px;max-width:420px}
+.tlb h3{margin:0 0 8px;font-family:var(--font-display);font-size:15px;
+  font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.tlbrow{display:flex;gap:10px;align-items:baseline;padding:5px 11px;border-radius:var(--radius);font-size:13.5px}
+.tlbrow:nth-child(odd){background:var(--panel-2)}
+.tlbrow.me{background:color-mix(in srgb,var(--accent) 18%,var(--panel));font-weight:700}
+.tlbrow .rk{width:26px;color:var(--muted);font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.tlbrow.me .rk{color:var(--accent)}
+.tlbrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlbrow .tm{font-family:var(--font-num);font-variant-numeric:tabular-nums}
 /* minesweeper */
 #mines{display:grid;gap:3px;width:min(360px,100%)}
 #mines button{
@@ -174,9 +185,11 @@ $('mode').onclick = () => {
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
+  { id:'dailyguess', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student from your year — same for everyone, every day' },
   { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery person — classmates, grade or teachers' },
   { id:'classroom', ico:'🚪', name:'Classroom', blurb:'Name the room each of your classes is in' },
   { id:'chain',  ico:'🔗', name:'Six Degrees', blurb:'Hop student to student through shared classes' },
+  { id:'tetris', ico:'🟦', name:'Tetris', blurb:'Clear 40 lines — fixed weekly piece order, best time resets each Monday' },
   { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
@@ -257,9 +270,18 @@ function recordStat(game, { key, mode, value }){
 const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
 const statLine = game => {
   const s = allStats()[game]; if (!s) return '';
+  if (game === 'tetris')                       // weekly best, hidden once the week rolls over
+    return (s.week === tetrisWeek() && s.best != null) ? 'Best this week ' + s.best.toFixed(1) + 's' : '';
   return Object.entries(s).map(([k,v]) => STAT_LABEL[k] ? STAT_LABEL[k]+' '+v : '').filter(Boolean).join(' · ');
 };
-const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared' };
+const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak' };
+
+/* Monday-anchored week index (local time); drives Tetris's weekly reset */
+function tetrisWeek(){
+  const n = new Date();
+  const day = Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024,0,1)) / 86400000);
+  return Math.floor(day / 7);   // 2024-01-01 was a Monday
+}
 
 const cleanSubject = name => String(name||'')
   .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i,'')
@@ -534,6 +556,302 @@ BUILD.guesswho = host => {
     return [...word].map((ch,i) => (i===0 || Math.random()<frac) ? ch : '_').join(' ');
   }
   return () => { alive = false; };
+};
+
+/* ── Daily Guess Who ───────────────────────────────────────────────
+   The same mystery student for everyone in your year, once a day. The
+   server picks and grades — the answer never reaches the browser. One
+   hint to start, one more per wrong guess. Streak counts winning days. */
+BUILD.dailyguess = host => {
+  head(host, 'Daily Guess Who', 'One mystery student from your year — the same for everyone today.', '<div id="dg"></div>');
+  const box = document.getElementById('dg');
+  let alive = true;
+
+  (async () => {
+    box.innerHTML = '<p class="how">Loading today’s puzzle…</p>';
+    let state;
+    try { state = await TT.api('/api/daily'); }
+    catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; return; }
+    if (alive) render(state);
+  })();
+
+  function render(s){
+    box.innerHTML =
+      '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · ' + esc(s.date) + '</div>' +
+      '<div class="gwyou" style="margin-left:auto">🔥 streak <b id="dgstreak">' + (s.streak||0) + '</b></div></div>' +
+      '<div class="gwhints" id="dghints"></div>' +
+      '<div class="gwrow" id="dgrow">' +
+        '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name today’s mystery student…">' +
+        '<datalist id="dglist">' + (s.candidates||[]).map(n => '<option value="' + esc(n).replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+        '<button class="btn primary" id="dgguess" type="button">Guess</button>' +
+      '</div><div class="gwlog" id="dglog"></div>';
+
+    const hintsEl = document.getElementById('dghints');
+    const cur = (s.hints || []).slice();
+    const paint = fresh => hintsEl.innerHTML = cur.map((h,i) =>
+      '<div class="gwhint' + (i===fresh?' fresh':'') + '">' + h + '</div>').join('');
+    paint(-1);
+
+    const sc = document.getElementById('sc');
+    const setScore = st => sc.textContent = st.done ? '' : 'Guess ' + (st.guesses+1) + ' of ' + st.totalHints;
+    setScore(s);
+    recordStat('dailyguess', { key:'streak', mode:'set', value:s.streak||0 });
+
+    if (s.done){ finish(s); return; }
+
+    const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
+    async function doGuess(){
+      const v = input.value.trim(); if (!v) return;
+      btn.disabled = true;
+      let r;
+      try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v } }); }
+      catch(err){ if (alive){ btn.disabled = false; } return; }
+      if (!alive) return;
+      const row = document.createElement('div');
+      row.className = 'gwguessrow ' + (r.correct ? 'win' : 'miss');
+      row.textContent = (r.correct ? '✓ ' : '✗ ') + v;
+      document.getElementById('dglog').prepend(row);
+      input.value = '';
+      if (r.nextHint){ cur.push(r.nextHint); paint(cur.length-1); }
+      recordStat('dailyguess', { key:'streak', mode:'set', value:r.streak||0 });
+      document.getElementById('dgstreak').textContent = r.streak||0;
+      if (r.done){ finish(r); }
+      else { setScore(r); btn.disabled = false; input.focus(); }
+    }
+    btn.onclick = doGuess;
+    input.addEventListener('keydown', e => { if (e.key==='Enter') doGuess(); });
+    input.focus();
+
+    function finish(res){ dgFinish(res, hintsEl); }
+  }
+
+  function dgFinish(s, hintsEl){
+    const row = document.getElementById('dgrow'); if (row) row.style.display = 'none';
+    if (sc()) sc().textContent = '';
+    const banner = document.createElement('div');
+    banner.className = 'gwhint ' + (s.won ? 'win' : 'lose');
+    banner.innerHTML = s.won
+      ? 'You got it in <b>' + s.guesses + '</b>! It was <b>' + esc(s.answer) + '</b> 🎉'
+      : 'Out of guesses — it was <b>' + esc(s.answer) + '</b>.';
+    hintsEl.appendChild(banner);
+    const note = document.createElement('p');
+    note.className = 'gwyou'; note.style.marginTop = '12px';
+    note.innerHTML = 'Come back tomorrow for a new one. Current streak: <b>' + (s.streak||0) + '</b>.';
+    hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
+    function sc(){ return document.getElementById('sc'); }
+  }
+
+  return () => { alive = false; };
+};
+
+/* ── Tetris ────────────────────────────────────────────────────────
+   Sprint to 40 lines. The piece order is a deterministic 7-bag seeded
+   by the week number, so it's identical for everyone and resets each
+   Monday; your best clear time is kept per-week and resets with it.   */
+BUILD.tetris = host => {
+  head(host, 'Tetris',
+    'Clear 40 lines. Fixed weekly piece order — your best time resets each Monday.',
+    '<div class="row" style="align-items:flex-start;gap:16px;flex-wrap:wrap">' +
+      '<canvas id="tcan" width="240" height="480"></canvas>' +
+      '<div id="tside" style="min-width:130px;display:flex;flex-direction:column;gap:6px">' +
+        '<div class="crmeta" style="margin:0">Next</div>' +
+        '<canvas id="tnext" width="96" height="72"></canvas>' +
+        '<div>Lines left: <b id="tlines">40</b></div>' +
+        '<div>Time: <b id="ttime" style="font-variant-numeric:tabular-nums">0.0s</b></div>' +
+        '<div>Best (week): <b id="tbest">—</b></div>' +
+        '<div class="crmeta" style="margin-top:6px">← → move · ↑ / X rotate<br>↓ soft · space hard · P pause</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
+          '<button class="btn" id="tpause" type="button">Pause</button>' +
+          '<button class="btn" id="trestart" type="button">Restart</button></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tlb" id="tlb"></div>');
+
+  const COLS = 10, ROWS = 20, CELL = 24, TARGET = 40;
+  const can = document.getElementById('tcan'), ctx = can.getContext('2d');
+  const ncan = document.getElementById('tnext'), nctx = ncan.getContext('2d');
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  const SHAPES = {
+    I:[[1,1,1,1]], O:[[1,1],[1,1]], T:[[0,1,0],[1,1,1]],
+    S:[[0,1,1],[1,1,0]], Z:[[1,1,0],[0,1,1]], J:[[1,0,0],[1,1,1]], L:[[0,0,1],[1,1,1]]
+  };
+  const COLORS = { I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c' };
+  const KEYS = Object.keys(SHAPES);
+
+  /* deterministic weekly piece stream: mulberry32 seeded by the week number,
+     feeding shuffled 7-bags so every player gets the same order all week */
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const wk = tetrisWeek();
+  let rnd = mulberry32(0x9e3779b9 ^ wk);
+  let bag = [];
+  function nextType(){
+    if (!bag.length){ bag = KEYS.slice();
+      for (let i=bag.length-1;i>0;i--){ const j=(rnd()*(i+1))|0; [bag[i],bag[j]]=[bag[j],bag[i]]; } }
+    return bag.shift();
+  }
+
+  let grid, piece, nextT, cleared, startAt, timerId, dropId, over, paused, raf, alive = true;
+
+  function spawn(){
+    const type = nextT || nextType(); nextT = nextType();
+    const cells = SHAPES[type].map(r => r.slice());
+    piece = { type, cells, x: (COLS - cells[0].length) >> 1, y: 0 };
+    if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
+  }
+  function collides(cells, px, py){
+    for (let r=0;r<cells.length;r++) for (let c=0;c<cells[r].length;c++){
+      if (!cells[r][c]) continue;
+      const x = px+c, y = py+r;
+      if (x<0 || x>=COLS || y>=ROWS) return true;
+      if (y>=0 && grid[y][x]) return true;
+    }
+    return false;
+  }
+  function rotate(cells){                 // clockwise: transpose + reverse rows
+    const h=cells.length, w=cells[0].length, out=[];
+    for (let c=0;c<w;c++){ out[c]=[]; for (let r=h-1;r>=0;r--) out[c].push(cells[r][c]); }
+    return out;
+  }
+  function tryRotate(){
+    const rc = rotate(piece.cells);
+    for (const dx of [0,-1,1,-2,2]){ if (!collides(rc, piece.x+dx, piece.y)){ piece.cells=rc; piece.x+=dx; return; } }
+  }
+  function move(dx){ if (!collides(piece.cells, piece.x+dx, piece.y)) piece.x+=dx; }
+  function softDrop(){
+    if (!collides(piece.cells, piece.x, piece.y+1)){ piece.y++; return true; }
+    lock(); return false;
+  }
+  function hardDrop(){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; lock(); }
+  function lock(){
+    piece.cells.forEach((row,r) => row.forEach((v,c) => {
+      if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c] = piece.type; }));
+    let lines = 0;
+    for (let r=ROWS-1;r>=0;r--){
+      if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; }
+    }
+    if (lines){ cleared += lines; document.getElementById('tlines').textContent = Math.max(0, TARGET-cleared); }
+    if (cleared >= TARGET){ end(true); return; }
+    spawn();
+  }
+
+  function end(won){
+    over = true; clearInterval(dropId); clearInterval(timerId);
+    const el = (Date.now()-startAt)/1000;
+    document.getElementById('sc').textContent = won ? 'Cleared 40 in ' + el.toFixed(1) + 's!' : 'Topped out.';
+    if (won){
+      const s = allStats(); const t = (s.tetris && s.tetris.week===wk) ? s.tetris : { week:wk, best:null };
+      if (t.best==null || el<t.best) t.best = el;
+      s.tetris = { week:wk, best:t.best }; TT.set('tt.stats', s);
+      document.getElementById('tbest').textContent = t.best.toFixed(1)+'s';
+      submitScore(el);                       // to the shared weekly board (if signed in)
+    }
+    draw();
+  }
+
+  /* weekly leaderboard — shared, keyed by the same week number as the pieces */
+  async function submitScore(elSec){
+    if (!TT.myEmail()) return;
+    try { renderLB(await TT.api('/api/tetris', { method:'POST', body:{ week:wk, timeMs: Math.round(elSec*1000) } })); }
+    catch (e) {}
+  }
+  async function loadLB(){
+    const el = document.getElementById('tlb'); if (!el) return;
+    if (!TT.myEmail()){ el.innerHTML = ''; return; }
+    try { renderLB(await TT.api('/api/tetris', { params:{ week: wk } })); }
+    catch (e) { el.innerHTML = ''; }          // 401 / 503 → just hide it
+  }
+  function renderLB(d){
+    const el = document.getElementById('tlb'); if (!el || !alive) return;
+    const rows = (d && d.top) || [];
+    if (!rows.length && (!d || d.meBest == null)){
+      el.innerHTML = '<h3>This week’s top times</h3><p class="how">No times yet — set the first.</p>'; return;
+    }
+    let html = '<h3>This week’s top times</h3>' + rows.map((r,i) =>
+      '<div class="tlbrow' + (r.you ? ' me' : '') + '"><span class="rk">' + (i+1) + '</span>' +
+      '<span class="nm">' + esc(r.name) + '</span><span class="tm">' + (r.time_ms/1000).toFixed(1) + 's</span></div>').join('');
+    if (d.meRank && d.meRank > rows.length)    // your row, if you're off the bottom of the top-20
+      html += '<div class="tlbrow me"><span class="rk">' + d.meRank + '</span>' +
+              '<span class="nm">You</span><span class="tm">' + (d.meBest/1000).toFixed(1) + 's</span></div>';
+    el.innerHTML = html;
+  }
+
+  function tick(){ if (!over && !paused) { softDrop(); draw(); } }
+  function clock(){ if (!over && !paused) document.getElementById('ttime').textContent = ((Date.now()-startAt)/1000).toFixed(1)+'s'; }
+
+  function cellPx(cx,cy,type,g){
+    g.fillStyle = COLORS[type]; g.fillRect(cx+1, cy+1, CELL-2, CELL-2);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(cx+1, cy+1, CELL-2, 4);
+  }
+  function draw(){
+    ctx.fillStyle = cssVar('--panel-2') || '#111'; ctx.fillRect(0,0,can.width,can.height);
+    ctx.strokeStyle = 'rgba(128,128,128,.15)';
+    for (let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,ROWS*CELL); ctx.stroke(); }
+    for (let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(COLS*CELL,y*CELL); ctx.stroke(); }
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) if (grid[r][c]) cellPx(c*CELL, r*CELL, grid[r][c], ctx);
+    if (piece && !over){
+      // ghost
+      let gy = piece.y; while (!collides(piece.cells, piece.x, gy+1)) gy++;
+      ctx.globalAlpha = .22;
+      piece.cells.forEach((row,r) => row.forEach((v,c) => { if (v) cellPx((piece.x+c)*CELL,(gy+r)*CELL,piece.type,ctx); }));
+      ctx.globalAlpha = 1;
+      piece.cells.forEach((row,r) => row.forEach((v,c) => { if (v && piece.y+r>=0) cellPx((piece.x+c)*CELL,(piece.y+r)*CELL,piece.type,ctx); }));
+    }
+    // next preview
+    nctx.clearRect(0,0,ncan.width,ncan.height);
+    if (nextT){ const sh=SHAPES[nextT], w=sh[0].length, h=sh.length, s=18,
+      ox=(ncan.width-w*s)/2, oy=(ncan.height-h*s)/2;
+      sh.forEach((row,r)=>row.forEach((v,c)=>{ if(v){ nctx.fillStyle=COLORS[nextT];
+        nctx.fillRect(ox+c*s+1,oy+r*s+1,s-2,s-2); } })); }
+  }
+
+  function reset(){
+    grid = Array.from({length:ROWS}, () => new Array(COLS).fill(null));
+    rnd = mulberry32(0x9e3779b9 ^ wk);   // same weekly piece order every attempt
+    bag = []; nextT = null; cleared = 0; over = false; paused = false;
+    startAt = Date.now();
+    document.getElementById('tlines').textContent = TARGET;
+    document.getElementById('ttime').textContent = '0.0s';
+    document.getElementById('tpause').textContent = 'Pause';
+    document.getElementById('sc').textContent = '';
+    const s = allStats().tetris;
+    document.getElementById('tbest').textContent = (s && s.week===wk && s.best!=null) ? s.best.toFixed(1)+'s' : '—';
+    clearInterval(dropId); clearInterval(timerId);
+    spawn();
+    dropId = setInterval(tick, 700);
+    timerId = setInterval(clock, 100);
+    draw();
+  }
+
+  function onKey(e){
+    if (over && e.key!=='r' && e.key!=='R') return;
+    const k = e.key;
+    if (k==='ArrowLeft'){ move(-1); draw(); }
+    else if (k==='ArrowRight'){ move(1); draw(); }
+    else if (k==='ArrowDown'){ if (softDrop()) draw(); }
+    else if (k==='ArrowUp' || k==='x' || k==='X'){ tryRotate(); draw(); }
+    else if (k===' '){ hardDrop(); draw(); }
+    else if (k==='p' || k==='P'){ togglePause(); }
+    else return;
+    e.preventDefault();
+  }
+  let pauseStart = 0;
+  function togglePause(){
+    if (over) return;
+    paused = !paused;
+    if (paused){ pauseStart = Date.now(); document.getElementById('sc').textContent = 'Paused'; }
+    else { startAt += Date.now() - pauseStart; document.getElementById('sc').textContent = ''; }  // don't count paused time
+    document.getElementById('tpause').textContent = paused ? 'Resume' : 'Pause';
+  }
+  document.getElementById('tpause').onclick = togglePause;
+  document.getElementById('trestart').onclick = reset;
+  document.addEventListener('keydown', onKey);
+
+  reset();
+  loadLB();
+  return () => { alive = false; clearInterval(dropId); clearInterval(timerId);
+                 document.removeEventListener('keydown', onKey); };
 };
 
 /* ── Classroom ─────────────────────────────────────────────────────

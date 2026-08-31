@@ -60,7 +60,7 @@ button,select,input{font:inherit;color:inherit}
   width:8ch;min-width:3ch;max-width:17ch}
 .idrow .dom{color:var(--muted);font-size:11px;white-space:nowrap;opacity:.7}
 @media (max-width:520px){ .idrow .dom{display:none} }
-.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:flex-start}
+.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 
 /* centred week switch, sits above the middle column */
 .weekswitch{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
@@ -103,9 +103,10 @@ button,select,input{font:inherit;color:inherit}
 .progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
       border-radius:99px;overflow:hidden;min-width:0}
-.prog i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px;
+/* fixed accent fill — the per-subject colour was often too pale to read */
+.prog i{display:block;height:100%;background:var(--accent);border-radius:99px;
         transition:width .6s linear}
-.progrow .count{margin-top:0;white-space:nowrap;color:var(--c,var(--accent))}
+.progrow .count{margin-top:0;white-space:nowrap;color:var(--accent)}
 [data-skin="swiss"] .prog,[data-skin="brutal"] .prog,
 [data-skin="terminal"] .prog,[data-skin="blueprint"] .prog{border-radius:0}
 [data-skin="swiss"] .prog i,[data-skin="brutal"] .prog i,

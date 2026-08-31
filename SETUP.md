@@ -684,6 +684,130 @@ straight back out as a push.
 
 ---
 
+## Daily Guess Who (Phase 2)
+
+A once-a-day puzzle, Wordle-style: **one mystery student from your own year, the
+same for everyone in that year, chosen and graded on the server.** The answer
+never reaches the browser — guesses are POSTed and graded server-side. One hint
+shows to start, one more per wrong guess; you get as many guesses as there are
+hints. A streak counts consecutive winning days.
+
+Scope is deliberately **your own year only** — the same footing as the practice
+game's "My grade" mode. A whole-school daily would name strangers.
+
+### How the pick works
+
+The mystery person is a **deterministic** function of the date + year (an FNV
+hash over a roster sorted by email), so the midnight cron and a lazy
+first-request both land on the same person, and an `ignoreDuplicates` upsert
+means whoever writes the row first wins. That also means **you don't strictly
+need the cron** — `/api/daily` generates the day's puzzle on first request if
+it's missing. The cron is just pre-warming so the first player doesn't wait for
+the directory fetch.
+
+### Files
+
+| File | Role |
+|---|---|
+| `api/_daily.js` | the engine: `ensurePuzzle`, `resolveYear`, `computeStreak`, deterministic pick + name-shape hints. Underscore = not a route. |
+| `api/daily.js` | `GET` (state) / `POST` (grade a guess), keyed by verified email + year. |
+| `api/daily-generate.js` | cron target; builds years 7–12 for the day. Guarded by `CRON_SECRET`. |
+| `api/timetable.js` | now exports `fetchAsOwner(path)` — fetches the directory as the server's own account (identity-independent, so the cron can run with no user). |
+| `vercel.json` | the cron schedule. |
+| `games.html` | the **Daily Guess Who** card + `BUILD.dailyguess`, using `TT.api`. |
+
+### What you need to set up
+
+1. **Run the table SQL** in Supabase → SQL Editor (reuses the Phase-1 project):
+   ```sql
+   create table daily_puzzle (
+     date       date not null,
+     year       text not null,
+     target     jsonb not null,     -- { name, first, last, hints[] } — server-only
+     candidates jsonb not null,     -- [names] for the datalist
+     created_at timestamptz not null default now(),
+     primary key (date, year)
+   );
+   create table daily_result (
+     email      text not null,
+     date       date not null,
+     year       text not null,
+     guesses    int  not null default 0,
+     won        boolean not null default false,
+     done       boolean not null default false,
+     updated_at timestamptz not null default now(),
+     primary key (email, date)
+   );
+   ```
+   RLS stays **off** — only the service-role key touches these.
+
+2. **(Optional) Enable the cron.** Add a `CRON_SECRET` env var in Vercel (any
+   long random string). Vercel sends it to the cron automatically; without it the
+   generator route refuses all callers, and puzzles are still built lazily. On
+   the Hobby plan crons run about once a day — fine for this. The schedule in
+   `vercel.json` is `0 14 * * *` (UTC), which is just after midnight in Sydney
+   year-round.
+
+3. **Redeploy.** No new npm dependency beyond Phase 1's `@supabase/supabase-js`.
+
+4. **Verify.** Signed in, open **Games → Daily Guess Who**. Signed out,
+   `curl https://…/api/daily` returns `401`; a `503` means `SUPABASE_*` is unset.
+
+> **Privacy.** The candidate list sent to the browser is the player's own year
+> roster (names only) — the same data the practice game's grade mode already
+> exposes. It's fetched fresh behind the verified login and marked
+> `private, no-store`; the target's identity is never sent until the round ends.
+
+---
+
+## Tetris (weekly sprint + leaderboard)
+
+A 40-line sprint. The piece order is a **deterministic 7-bag seeded by the week
+number** (Monday-anchored), so it's identical for everyone all week and replays
+the same on every restart — which makes clear-times comparable. Your local best
+is kept **per week** (`tt.stats.tetris = { week, best }`) and resets when the
+week rolls over. Controls: ← → move, ↑/X rotate, ↓ soft drop, space hard drop,
+P pause.
+
+### Shared weekly leaderboard
+
+Clearing 40 lines while signed in submits your time to a **shared board for that
+week**, shown under the game. It reuses the Phase-1/2 identity plumbing:
+`/api/tetris` verifies you with `whoami`, keeps only your best per week, and
+derives your display name from your verified email server-side (emails are never
+returned to the browser — your own row is flagged instead). The board is
+partitioned by the same week number as the pieces, so it resets when they do.
+
+- `api/tetris.js` — `GET ?week=N` (top 20 + your rank) / `POST {week,timeMs}`.
+- `games.html` — submits on a win, renders the board via `TT.api`.
+
+**Setup:** run one more table in the same Supabase project; no new env vars.
+```sql
+create table tetris_score (
+  email      text not null,
+  week       int  not null,
+  name       text not null,
+  time_ms    int  not null,
+  created_at timestamptz not null default now(),
+  primary key (email, week)
+);
+```
+RLS off (service-role only). Times are client-reported, as with any web
+leaderboard — a 3s floor / 1h ceiling drops obvious garbage, but it isn't
+anti-cheat. Signed out or unconfigured, the board just hides and the game still
+plays locally.
+
+---
+
+## Progress bar + header tweaks
+
+- The Now-card **progress bar is now a fixed accent colour** (`--accent`) instead
+  of the per-subject colour, which was often too pale to read.
+- The **settings/home buttons are vertically centred** in the header widget
+  (`.headbtns { align-self: center }`) in both header layouts.
+
+---
+
 ## Latest round of changes
 
 - **Header layout toggle** (⚙ → Display → Header): *Classic* (everything in one

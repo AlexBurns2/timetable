@@ -169,6 +169,25 @@ async function apiGet(apiBase, path, auth, retry = true) {
   return readJson(res, apiBase + path);
 }
 
+/*
+ * Fetch a school-API path authenticated as the SERVER's own account
+ * (SCHOOL_EMAIL / SCHOOL_PASSWORD), retrying once on a 401. Used by shared,
+ * identity-independent jobs like the daily-puzzle generator, which need the
+ * directory but aren't tied to any one caller. Returns parsed JSON.
+ */
+export async function fetchAsOwner(path) {
+  const apiBase = (process.env.SCHOOL_API_BASE || "").replace(/\/+$/, "");
+  const email = process.env.SCHOOL_EMAIL, password = process.env.SCHOOL_PASSWORD;
+  if (!apiBase || !email || !password) throw new Error("Server school credentials are not configured.");
+  let auth = await getToken(apiBase, email, password);
+  let out = await apiGet(apiBase, path, auth);
+  if (out === null) {                       // token expired → refresh and retry
+    auth = await getToken(apiBase, email, password);
+    out = await apiGet(apiBase, path, auth);
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ handler */
 
 export default async function handler(req, res) {

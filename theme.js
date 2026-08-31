@@ -192,6 +192,21 @@ async function apiGet(params){
   if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
   return data;
 }
+/* generic call to any /api/* route with the school-login headers attached.
+   api('/api/daily'), api('/api/daily', { method:'POST', body:{guess} }). */
+async function api(path, opts){
+  opts = opts || {};
+  const u = new URL(path, location.href);
+  if (opts.params) for (const k in opts.params) u.searchParams.set(k, opts.params[k]);
+  const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+  const headers = Object.assign({}, apiHeaders());
+  const init = { method: opts.method || 'GET', headers, cache: 'no-store' };
+  if (opts.body !== undefined){ headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(opts.body); }
+  const res = await fetch(url, init);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+  return data;
+}
 const myEmail = () => {
   const c = get('tt.creds', null);
   return get('tt.email', (c && c.email) || '');
@@ -288,7 +303,7 @@ addEventListener('pagehide', () => {
 
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, myEmail, EMAIL_DOMAIN, syncPull, syncPush };
+              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush };
 
 /* returning users: pull the server copy on load */
 if (hasCreds()) syncPull();
