@@ -670,7 +670,7 @@ BUILD.tetris = host => {
         '<div>Lines left: <b id="tlines">40</b></div>' +
         '<div>Time: <b id="ttime" style="font-variant-numeric:tabular-nums">0.0s</b></div>' +
         '<div>Best (week): <b id="tbest">—</b></div>' +
-        '<div class="crmeta" style="margin-top:6px">← → move · ↑/X rotate · Z ccw<br>↓ soft · space hard<br>Shift hold · P pause</div>' +
+        '<div class="crmeta" style="margin-top:6px">← → move · ↑/X rotate (hold to spin)<br>Z ccw · space drop · Shift hold · P pause</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
           '<button class="btn" id="tpause" type="button">Pause</button>' +
           '<button class="btn" id="trestart" type="button">Restart</button></div>' +
@@ -695,8 +695,8 @@ BUILD.tetris = host => {
      feeding shuffled 7-bags so every player gets the same order all week */
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  // handling — tuned for a snappy, tetr.io-ish feel
-  const GRAVITY = 750, SOFT = 26, DAS = 110, ARR = 16, LOCK_DELAY = 500, MAX_RESETS = 15;
+  // handling — DAS/ARR a touch gentler; rotate auto-repeats after a brief pause
+  const GRAVITY = 750, DAS = 160, ARR = 45, ROT_DAS = 250, ROT_ARR = 130, LOCK_DELAY = 500, MAX_RESETS = 15;
 
   const wk = tetrisWeek();
   let rnd = mulberry32(0x9e3779b9 ^ wk);
@@ -709,7 +709,8 @@ BUILD.tetris = host => {
 
   let grid, piece, nextT, hold, holdUsed, cleared, startAt, over, paused, alive = true;
   let loopId, lastTick, dropAcc = 0, pauseStart = 0;
-  let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
+  let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false;
+  let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
   let grounded = false, lockStart = 0, lockResets = 0;
 
   function collides(cells, px, py){
@@ -825,10 +826,14 @@ BUILD.tetris = host => {
       if (!dasCharged){ dasCharged = true; arrLast = now; tryMove(moveDir, now); }
       else while (now - arrLast >= ARR){ arrLast += ARR; if (!tryMove(moveDir, now)) break; }
     }
-    // gravity (much faster while soft-dropping)
-    const interval = softHeld ? SOFT : GRAVITY;
+    // held rotate: one spin, a brief pause, then keep spinning
+    if (rotHeld && now - rotStart >= ROT_DAS){
+      if (!rotCharged){ rotCharged = true; rotLast = now; tryRotate(1, now); }
+      else while (now - rotLast >= ROT_ARR){ rotLast += ROT_ARR; tryRotate(1, now); }
+    }
+    // gravity
     dropAcc += dt;
-    while (dropAcc >= interval){ dropAcc -= interval;
+    while (dropAcc >= GRAVITY){ dropAcc -= GRAVITY;
       if (!collides(piece.cells, piece.x, piece.y+1)) piece.y++;
       updateGround(now, false);
     }
@@ -871,7 +876,7 @@ BUILD.tetris = host => {
     grid = Array.from({length:ROWS}, () => new Array(COLS).fill(null));
     rnd = mulberry32(0x9e3779b9 ^ wk);   // same weekly piece order every attempt
     bag = []; nextT = null; hold = null; holdUsed = false; cleared = 0; over = false; paused = false;
-    moveDir = 0; dasCharged = false; softHeld = false; grounded = false; lockStart = 0; lockResets = 0; dropAcc = 0;
+    moveDir = 0; dasCharged = false; rotHeld = false; rotCharged = false; grounded = false; lockStart = 0; lockResets = 0; dropAcc = 0;
     startAt = Date.now(); lastTick = performance.now();
     document.getElementById('tlines').textContent = TARGET;
     document.getElementById('ttime').textContent = '0.0s';
@@ -889,8 +894,7 @@ BUILD.tetris = host => {
     const now = performance.now(), k = e.key;
     if (k==='ArrowLeft'){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; tryMove(-1,now); draw(); } }
     else if (k==='ArrowRight'){ if(!e.repeat){ moveDir=1; dasStart=now; dasCharged=false; tryMove(1,now); draw(); } }
-    else if (k==='ArrowDown'){ softHeld = true; }
-    else if (k==='ArrowUp' || k==='x' || k==='X'){ if(!e.repeat){ tryRotate(1,now); draw(); } }
+    else if (k==='ArrowUp' || k==='x' || k==='X'){ if(!e.repeat){ rotHeld=true; rotStart=now; rotCharged=false; tryRotate(1,now); draw(); } }
     else if (k==='z' || k==='Z'){ if(!e.repeat){ tryRotate(-1,now); draw(); } }
     else if (k===' '){ if(!e.repeat){ hardDrop(now); draw(); } }
     else if (k==='Shift'){ if(!e.repeat){ doHold(now); draw(); } }
@@ -899,9 +903,10 @@ BUILD.tetris = host => {
     e.preventDefault();
   }
   function onKeyUp(e){
-    if (e.key==='ArrowLeft'){ if (moveDir===-1){ moveDir=0; dasCharged=false; } }
-    else if (e.key==='ArrowRight'){ if (moveDir===1){ moveDir=0; dasCharged=false; } }
-    else if (e.key==='ArrowDown'){ softHeld = false; }
+    const k = e.key;
+    if (k==='ArrowLeft'){ if (moveDir===-1){ moveDir=0; dasCharged=false; } }
+    else if (k==='ArrowRight'){ if (moveDir===1){ moveDir=0; dasCharged=false; } }
+    else if (k==='ArrowUp' || k==='x' || k==='X'){ rotHeld=false; rotCharged=false; }
   }
   function togglePause(){
     if (over) return;

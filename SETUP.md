@@ -768,13 +768,15 @@ the same on every restart — which makes clear-times comparable. Your local bes
 is kept **per week** (`tt.stats.tetris = { week, best }`) and resets when the
 week rolls over.
 
-Handling is tuned for a tetr.io-ish feel: a single time-based loop drives gravity,
-**DAS/ARR** auto-shift (hold ← / → to slide to the wall), and a **lock delay**
-with a 15-move reset cap — a grounded piece doesn't set instantly, so you can
-slide it under an overhang. There's a **hold** slot (Left Shift, once per piece)
-and the landing spot is shown as a hollow coloured **outline** rather than a
-translucent ghost. Controls: ← → move, ↑/X rotate, Z rotate CCW, ↓ soft drop,
-space hard drop, **Shift hold**, P pause.
+Handling: a single time-based loop drives gravity, **DAS/ARR** auto-shift (a tap
+or brief hold moves one cell; hold ← / → longer to slide to the wall — tuned
+gentle so it isn't twitchy), and a **lock delay** with a 15-move reset cap, so a
+grounded piece doesn't set instantly and you can slide it under an overhang.
+There's a **hold** slot (Left Shift, once per piece) and the landing spot shows
+as a hollow coloured **outline**. Dropping/placing is **spacebar only** (there's
+no soft drop); holding **↑** spins once, pauses briefly, then keeps spinning.
+Controls: ← → move, ↑/X rotate (hold to spin), Z rotate CCW, space drop,
+**Shift hold**, P pause.
 
 ### Shared weekly leaderboard
 
