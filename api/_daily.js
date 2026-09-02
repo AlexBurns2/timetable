@@ -82,9 +82,10 @@ function mask(word, frac) {
 /* ordered easy→hard, all name-shape (year is the same for everyone in the pool) */
 function buildHints(first, last) {
   const H = [];
-  H.push("Their first name has <b>" + first.length + "</b> letters" +
-         (last ? ", surname <b>" + last.length + "</b>" : "") + ".");
+  // first-name and surname length are separate hints — together they give too much away
+  H.push("Their first name has <b>" + first.length + "</b> letters.");
   H.push("Their first name starts with <b>" + first[0].toUpperCase() + "</b>.");
+  if (last) H.push("Their surname has <b>" + last.length + "</b> letters.");
   if (last) H.push("Their surname starts with <b>" + last[0].toUpperCase() + "</b>.");
   H.push("Their first name looks like <b>" + mask(first, 0.5) + "</b>.");
   if (last) H.push("Their surname looks like <b>" + mask(last, 0.4) + "</b>.");

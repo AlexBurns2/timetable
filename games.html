@@ -482,24 +482,27 @@ BUILD.guesswho = host => {
     const first = target.name.split(' ')[0], last = target.name.split(' ').slice(1).join(' ');
     const subs = shuffle(target.subjects.slice());
     const hasClasses = target.subjects.length > 0;
-    /* a classmate who shares a class, preferring one who shares a DIFFERENT
-       class than the one we reveal first, so the two hints aren't redundant */
+    /* a classmate who shares a class the target has but that we never NAME in a
+       hint, so "shares a class with X" can't overlap a class we already gave.
+       (With ≤2 classes every class gets named, so there's simply no peer hint.) */
     const firstClass = subs[0];
-    const peer = shuffle(pool.filter(p => p !== target && p.subjects.length &&
-        p.subjects.some(s => target.subjects.includes(s) && s !== firstClass)))[0]
-      || shuffle(pool.filter(p => p !== target && p.subjects.some(s => target.subjects.includes(s))))[0];
+    const namedClasses = new Set([firstClass, subs[1]].filter(Boolean));
+    const peer = shuffle(pool.filter(p => p !== target &&
+        p.subjects.some(s => target.subjects.includes(s) && !namedClasses.has(s))))[0];
 
     /* hints grouped by how much they give away; revealed weakest-first,
        shuffled within each tier, so the near-answer hints come last */
     const T = [[], [], [], []];
-    if (target.year) T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
+    if (target.year && diff !== 'grade')                    // pointless in My-grade — all one year
+      T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
     if (hasClasses){
       T[0].push(() => 'They are in <b>' + target.subjects.length + '</b> of your classes.');
       T[0].push(() => 'One of their classes is <b>' + firstClass + '</b>.');
       if (subs[1]) T[1].push(() => 'They also take <b>' + subs[1] + '</b>.');
     }
-    T[1].push(() => 'Their first name has <b>' + first.length + '</b> letters'
-                    + (last ? ', surname <b>' + last.length + '</b>' : '') + '.');
+    /* first-name and surname length kept in separate tiers — together they give too much away */
+    T[1].push(() => 'Their first name has <b>' + first.length + '</b> letters.');
+    if (last) T[2].push(() => 'Their surname has <b>' + last.length + '</b> letters.');
     T[2].push(() => 'Their first name starts with <b>' + first[0].toUpperCase() + '</b>.');
     if (last) T[2].push(() => 'Their surname starts with <b>' + last[0].toUpperCase() + '</b>.');
     if (peer) T[2].push(() => 'They share a class with <b>' + peer.name + '</b>.');
@@ -659,13 +662,15 @@ BUILD.tetris = host => {
     'Clear 40 lines. Fixed weekly piece order — your best time resets each Monday.',
     '<div class="row" style="align-items:flex-start;gap:16px;flex-wrap:wrap">' +
       '<canvas id="tcan" width="240" height="480"></canvas>' +
-      '<div id="tside" style="min-width:130px;display:flex;flex-direction:column;gap:6px">' +
-        '<div class="crmeta" style="margin:0">Next</div>' +
-        '<canvas id="tnext" width="96" height="72"></canvas>' +
+      '<div id="tside" style="min-width:150px;display:flex;flex-direction:column;gap:6px">' +
+        '<div style="display:flex;gap:12px">' +
+          '<div><div class="crmeta" style="margin:0">Hold</div><canvas id="thold" width="72" height="60"></canvas></div>' +
+          '<div><div class="crmeta" style="margin:0">Next</div><canvas id="tnext" width="72" height="60"></canvas></div>' +
+        '</div>' +
         '<div>Lines left: <b id="tlines">40</b></div>' +
         '<div>Time: <b id="ttime" style="font-variant-numeric:tabular-nums">0.0s</b></div>' +
         '<div>Best (week): <b id="tbest">—</b></div>' +
-        '<div class="crmeta" style="margin-top:6px">← → move · ↑ / X rotate<br>↓ soft · space hard · P pause</div>' +
+        '<div class="crmeta" style="margin-top:6px">← → move · ↑/X rotate · Z ccw<br>↓ soft · space hard<br>Shift hold · P pause</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' +
           '<button class="btn" id="tpause" type="button">Pause</button>' +
           '<button class="btn" id="trestart" type="button">Restart</button></div>' +
@@ -676,6 +681,7 @@ BUILD.tetris = host => {
   const COLS = 10, ROWS = 20, CELL = 24, TARGET = 40;
   const can = document.getElementById('tcan'), ctx = can.getContext('2d');
   const ncan = document.getElementById('tnext'), nctx = ncan.getContext('2d');
+  const hcan = document.getElementById('thold'), hctx = hcan.getContext('2d');
   const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   const SHAPES = {
@@ -689,6 +695,9 @@ BUILD.tetris = host => {
      feeding shuffled 7-bags so every player gets the same order all week */
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  // handling — tuned for a snappy, tetr.io-ish feel
+  const GRAVITY = 750, SOFT = 26, DAS = 110, ARR = 16, LOCK_DELAY = 500, MAX_RESETS = 15;
+
   const wk = tetrisWeek();
   let rnd = mulberry32(0x9e3779b9 ^ wk);
   let bag = [];
@@ -698,14 +707,11 @@ BUILD.tetris = host => {
     return bag.shift();
   }
 
-  let grid, piece, nextT, cleared, startAt, timerId, dropId, over, paused, raf, alive = true;
+  let grid, piece, nextT, hold, holdUsed, cleared, startAt, over, paused, alive = true;
+  let loopId, lastTick, dropAcc = 0, pauseStart = 0;
+  let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
+  let grounded = false, lockStart = 0, lockResets = 0;
 
-  function spawn(){
-    const type = nextT || nextType(); nextT = nextType();
-    const cells = SHAPES[type].map(r => r.slice());
-    piece = { type, cells, x: (COLS - cells[0].length) >> 1, y: 0 };
-    if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
-  }
   function collides(cells, px, py){
     for (let r=0;r<cells.length;r++) for (let c=0;c<cells[r].length;c++){
       if (!cells[r][c]) continue;
@@ -720,17 +726,42 @@ BUILD.tetris = host => {
     for (let c=0;c<w;c++){ out[c]=[]; for (let r=h-1;r>=0;r--) out[c].push(cells[r][c]); }
     return out;
   }
-  function tryRotate(){
-    const rc = rotate(piece.cells);
-    for (const dx of [0,-1,1,-2,2]){ if (!collides(rc, piece.x+dx, piece.y)){ piece.cells=rc; piece.x+=dx; return; } }
+  /* Re-check whether we're resting on something and run the lock timer. A
+     successful move/rotate (isAction) restarts the timer, up to MAX_RESETS —
+     that's what lets you slide a piece under an overhang instead of it setting
+     the instant it touches down. Falling clear of everything clears the count. */
+  function updateGround(now, isAction){
+    if (!collides(piece.cells, piece.x, piece.y+1)){ grounded = false; if (isAction) lockResets = 0; }
+    else {
+      if (!grounded){ grounded = true; lockStart = now; }
+      else if (isAction && lockResets < MAX_RESETS){ lockStart = now; lockResets++; }
+    }
   }
-  function move(dx){ if (!collides(piece.cells, piece.x+dx, piece.y)) piece.x+=dx; }
-  function softDrop(){
-    if (!collides(piece.cells, piece.x, piece.y+1)){ piece.y++; return true; }
-    lock(); return false;
+  function tryMove(dx, now){
+    if (collides(piece.cells, piece.x+dx, piece.y)) return false;
+    piece.x += dx; updateGround(now, true); return true;
   }
-  function hardDrop(){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; lock(); }
-  function lock(){
+  function tryRotate(dir, now){
+    const rc = dir>0 ? rotate(piece.cells) : rotate(rotate(rotate(piece.cells)));
+    for (const dx of [0,-1,1,-2,2]) if (!collides(rc, piece.x+dx, piece.y)){
+      piece.cells = rc; piece.x += dx; updateGround(now, true); return;
+    }
+  }
+  function spawnFrom(type, now){
+    const cells = SHAPES[type].map(r => r.slice());
+    piece = { type, cells, x:(COLS-cells[0].length)>>1, y:0 };
+    grounded = false; lockStart = 0; lockResets = 0; dropAcc = 0;
+    if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
+  }
+  function spawnNext(now){ const type = nextT; nextT = nextType(); spawnFrom(type, now); }
+  function doHold(now){
+    if (holdUsed) return; holdUsed = true;              // one hold per piece
+    const cur = piece.type;
+    if (hold == null){ hold = cur; spawnNext(now); }
+    else { const h = hold; hold = cur; spawnFrom(h, now); }
+  }
+  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; commitLock(now); }
+  function commitLock(now){
     piece.cells.forEach((row,r) => row.forEach((v,c) => {
       if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c] = piece.type; }));
     let lines = 0;
@@ -739,11 +770,12 @@ BUILD.tetris = host => {
     }
     if (lines){ cleared += lines; document.getElementById('tlines').textContent = Math.max(0, TARGET-cleared); }
     if (cleared >= TARGET){ end(true); return; }
-    spawn();
+    holdUsed = false;                                   // hold frees up once a piece locks
+    spawnNext(now);
   }
 
   function end(won){
-    over = true; clearInterval(dropId); clearInterval(timerId);
+    over = true; clearInterval(loopId);
     const el = (Date.now()-startAt)/1000;
     document.getElementById('sc').textContent = won ? 'Cleared 40 in ' + el.toFixed(1) + 's!' : 'Topped out.';
     if (won){
@@ -783,81 +815,111 @@ BUILD.tetris = host => {
     el.innerHTML = html;
   }
 
-  function tick(){ if (!over && !paused) { softDrop(); draw(); } }
-  function clock(){ if (!over && !paused) document.getElementById('ttime').textContent = ((Date.now()-startAt)/1000).toFixed(1)+'s'; }
+  /* one time-based loop drives gravity, DAS/ARR auto-shift and the lock timer */
+  function loop(){
+    if (over || paused) return;
+    const now = performance.now();
+    const dt = Math.min(100, now - lastTick); lastTick = now;
+    // horizontal auto-shift: initial delay (DAS), then repeat every ARR ms
+    if (moveDir !== 0 && now - dasStart >= DAS){
+      if (!dasCharged){ dasCharged = true; arrLast = now; tryMove(moveDir, now); }
+      else while (now - arrLast >= ARR){ arrLast += ARR; if (!tryMove(moveDir, now)) break; }
+    }
+    // gravity (much faster while soft-dropping)
+    const interval = softHeld ? SOFT : GRAVITY;
+    dropAcc += dt;
+    while (dropAcc >= interval){ dropAcc -= interval;
+      if (!collides(piece.cells, piece.x, piece.y+1)) piece.y++;
+      updateGround(now, false);
+    }
+    if (grounded && now - lockStart >= LOCK_DELAY){ commitLock(now); if (over) return; }
+    document.getElementById('ttime').textContent = ((Date.now()-startAt)/1000).toFixed(1)+'s';
+    draw();
+  }
 
   function cellPx(cx,cy,type,g){
     g.fillStyle = COLORS[type]; g.fillRect(cx+1, cy+1, CELL-2, CELL-2);
     g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(cx+1, cy+1, CELL-2, 4);
   }
+  function miniDraw(g, cv, type){
+    g.clearRect(0,0,cv.width,cv.height);
+    if (!type) return;
+    const sh=SHAPES[type], w=sh[0].length, h=sh.length, s=15, ox=(cv.width-w*s)/2, oy=(cv.height-h*s)/2;
+    sh.forEach((row,r)=>row.forEach((v,c)=>{ if(v){
+      g.fillStyle=COLORS[type]; g.fillRect(ox+c*s+1,oy+r*s+1,s-2,s-2);
+      g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(ox+c*s+1,oy+r*s+1,s-2,3); } }));
+  }
   function draw(){
     ctx.fillStyle = cssVar('--panel-2') || '#111'; ctx.fillRect(0,0,can.width,can.height);
-    ctx.strokeStyle = 'rgba(128,128,128,.15)';
+    ctx.strokeStyle = 'rgba(128,128,128,.15)'; ctx.lineWidth = 1;
     for (let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,ROWS*CELL); ctx.stroke(); }
     for (let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(COLS*CELL,y*CELL); ctx.stroke(); }
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) if (grid[r][c]) cellPx(c*CELL, r*CELL, grid[r][c], ctx);
     if (piece && !over){
-      // ghost
+      // landing preview: a coloured outline where the piece will settle (no fill)
       let gy = piece.y; while (!collides(piece.cells, piece.x, gy+1)) gy++;
-      ctx.globalAlpha = .22;
-      piece.cells.forEach((row,r) => row.forEach((v,c) => { if (v) cellPx((piece.x+c)*CELL,(gy+r)*CELL,piece.type,ctx); }));
-      ctx.globalAlpha = 1;
+      ctx.strokeStyle = COLORS[piece.type]; ctx.lineWidth = 2;
+      piece.cells.forEach((row,r) => row.forEach((v,c) => { if (v) ctx.strokeRect((piece.x+c)*CELL+2,(gy+r)*CELL+2,CELL-4,CELL-4); }));
+      ctx.lineWidth = 1;
       piece.cells.forEach((row,r) => row.forEach((v,c) => { if (v && piece.y+r>=0) cellPx((piece.x+c)*CELL,(piece.y+r)*CELL,piece.type,ctx); }));
     }
-    // next preview
-    nctx.clearRect(0,0,ncan.width,ncan.height);
-    if (nextT){ const sh=SHAPES[nextT], w=sh[0].length, h=sh.length, s=18,
-      ox=(ncan.width-w*s)/2, oy=(ncan.height-h*s)/2;
-      sh.forEach((row,r)=>row.forEach((v,c)=>{ if(v){ nctx.fillStyle=COLORS[nextT];
-        nctx.fillRect(ox+c*s+1,oy+r*s+1,s-2,s-2); } })); }
+    miniDraw(nctx, ncan, nextT);
+    miniDraw(hctx, hcan, hold);
   }
 
   function reset(){
     grid = Array.from({length:ROWS}, () => new Array(COLS).fill(null));
     rnd = mulberry32(0x9e3779b9 ^ wk);   // same weekly piece order every attempt
-    bag = []; nextT = null; cleared = 0; over = false; paused = false;
-    startAt = Date.now();
+    bag = []; nextT = null; hold = null; holdUsed = false; cleared = 0; over = false; paused = false;
+    moveDir = 0; dasCharged = false; softHeld = false; grounded = false; lockStart = 0; lockResets = 0; dropAcc = 0;
+    startAt = Date.now(); lastTick = performance.now();
     document.getElementById('tlines').textContent = TARGET;
     document.getElementById('ttime').textContent = '0.0s';
     document.getElementById('tpause').textContent = 'Pause';
     document.getElementById('sc').textContent = '';
     const s = allStats().tetris;
     document.getElementById('tbest').textContent = (s && s.week===wk && s.best!=null) ? s.best.toFixed(1)+'s' : '—';
-    clearInterval(dropId); clearInterval(timerId);
-    spawn();
-    dropId = setInterval(tick, 700);
-    timerId = setInterval(clock, 100);
+    nextT = nextType(); spawnNext(performance.now());
+    clearInterval(loopId); loopId = setInterval(loop, 16);
     draw();
   }
 
   function onKey(e){
-    if (over && e.key!=='r' && e.key!=='R') return;
-    const k = e.key;
-    if (k==='ArrowLeft'){ move(-1); draw(); }
-    else if (k==='ArrowRight'){ move(1); draw(); }
-    else if (k==='ArrowDown'){ if (softDrop()) draw(); }
-    else if (k==='ArrowUp' || k==='x' || k==='X'){ tryRotate(); draw(); }
-    else if (k===' '){ hardDrop(); draw(); }
-    else if (k==='p' || k==='P'){ togglePause(); }
+    if (over) return;
+    const now = performance.now(), k = e.key;
+    if (k==='ArrowLeft'){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; tryMove(-1,now); draw(); } }
+    else if (k==='ArrowRight'){ if(!e.repeat){ moveDir=1; dasStart=now; dasCharged=false; tryMove(1,now); draw(); } }
+    else if (k==='ArrowDown'){ softHeld = true; }
+    else if (k==='ArrowUp' || k==='x' || k==='X'){ if(!e.repeat){ tryRotate(1,now); draw(); } }
+    else if (k==='z' || k==='Z'){ if(!e.repeat){ tryRotate(-1,now); draw(); } }
+    else if (k===' '){ if(!e.repeat){ hardDrop(now); draw(); } }
+    else if (k==='Shift'){ if(!e.repeat){ doHold(now); draw(); } }
+    else if (k==='p' || k==='P'){ if(!e.repeat) togglePause(); }
     else return;
     e.preventDefault();
   }
-  let pauseStart = 0;
+  function onKeyUp(e){
+    if (e.key==='ArrowLeft'){ if (moveDir===-1){ moveDir=0; dasCharged=false; } }
+    else if (e.key==='ArrowRight'){ if (moveDir===1){ moveDir=0; dasCharged=false; } }
+    else if (e.key==='ArrowDown'){ softHeld = false; }
+  }
   function togglePause(){
     if (over) return;
     paused = !paused;
     if (paused){ pauseStart = Date.now(); document.getElementById('sc').textContent = 'Paused'; }
-    else { startAt += Date.now() - pauseStart; document.getElementById('sc').textContent = ''; }  // don't count paused time
+    else { startAt += Date.now() - pauseStart; lastTick = performance.now(); document.getElementById('sc').textContent = ''; }  // don't count paused time
     document.getElementById('tpause').textContent = paused ? 'Resume' : 'Pause';
   }
   document.getElementById('tpause').onclick = togglePause;
   document.getElementById('trestart').onclick = reset;
   document.addEventListener('keydown', onKey);
+  document.addEventListener('keyup', onKeyUp);
 
   reset();
   loadLB();
-  return () => { alive = false; clearInterval(dropId); clearInterval(timerId);
-                 document.removeEventListener('keydown', onKey); };
+  return () => { alive = false; clearInterval(loopId);
+                 document.removeEventListener('keydown', onKey);
+                 document.removeEventListener('keyup', onKeyUp); };
 };
 
 /* ── Classroom ─────────────────────────────────────────────────────

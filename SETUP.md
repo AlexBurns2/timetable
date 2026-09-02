@@ -766,8 +766,15 @@ A 40-line sprint. The piece order is a **deterministic 7-bag seeded by the week
 number** (Monday-anchored), so it's identical for everyone all week and replays
 the same on every restart — which makes clear-times comparable. Your local best
 is kept **per week** (`tt.stats.tetris = { week, best }`) and resets when the
-week rolls over. Controls: ← → move, ↑/X rotate, ↓ soft drop, space hard drop,
-P pause.
+week rolls over.
+
+Handling is tuned for a tetr.io-ish feel: a single time-based loop drives gravity,
+**DAS/ARR** auto-shift (hold ← / → to slide to the wall), and a **lock delay**
+with a 15-move reset cap — a grounded piece doesn't set instantly, so you can
+slide it under an overhang. There's a **hold** slot (Left Shift, once per piece)
+and the landing spot is shown as a hollow coloured **outline** rather than a
+translucent ghost. Controls: ← → move, ↑/X rotate, Z rotate CCW, ↓ soft drop,
+space hard drop, **Shift hold**, P pause.
 
 ### Shared weekly leaderboard
 
@@ -805,6 +812,22 @@ plays locally.
   of the per-subject colour, which was often too pale to read.
 - The **settings/home buttons are vertically centred** in the header widget
   (`.headbtns { align-self: center }`) in both header layouts.
+
+---
+
+## Dark-mode native controls + Guess Who hints
+
+- **`color-scheme` is now set** (in `theme.js` `apply()`) to match the effective
+  palette — dark in dark mode, always-dark for the fixed-dark skins, and by the
+  custom background's own darkness for Custom. Without it, native controls stayed
+  light on a dark page and the `<datalist>` autocomplete rendered white text on a
+  white popup (illegible while typing a Guess Who guess). This fixes every page's
+  inputs, dropdowns and scrollbars, not just the games.
+- **Guess Who hints** (both the practice game and the daily): first-name and
+  surname *length* are now **separate hints** (together they gave too much away);
+  the **year hint is dropped in "My grade"** mode (everyone's the same year); and
+  the "shares a class with X" hint now only names someone who shares an
+  **un-named** class, so it can't restate a class a previous hint already gave.
 
 ---
 

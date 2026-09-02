@@ -104,6 +104,17 @@ function apply(state){
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-mode', st.mode);
+  /* Keep native controls (the datalist autocomplete popup, text inputs,
+     scrollbars) in step with the effective palette. Without this a dark page
+     keeps a light native popup, and its option text — which inherits the
+     input's light colour — renders white-on-white. Custom follows its own
+     background's darkness; the fixed-dark skins are always dark. */
+  root.style.colorScheme =
+      st.skin === 'custom'
+        ? (inkFor(st.custom.bg) === '#fff' ? 'dark' : 'light')
+    : (st.skin === 'scifi' || st.skin === 'terminal' || st.skin === 'blueprint')
+        ? 'dark'
+        : (st.mode === 'dark' ? 'dark' : 'light');
   root.classList.toggle('zen', !!st.zen);
   root.setAttribute('data-contrast', st.contrast);
   /* The compact grid positions cards absolutely via [data-view]; without this
