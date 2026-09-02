@@ -79,8 +79,10 @@ function mask(word, frac) {
   ).join(" ");
 }
 
-/* ordered easy→hard, all name-shape (year is the same for everyone in the pool) */
-function buildHints(first, last) {
+/* ordered easy→hard, all name-shape (year is the same for everyone in the pool).
+   Computed from the stored name on every read, so hint changes go live without
+   regenerating puzzles. */
+export function buildHints(first, last) {
   const H = [];
   // first-name and surname length are separate hints — together they give too much away
   H.push("Their first name has <b>" + first.length + "</b> letters.");

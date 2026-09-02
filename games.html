@@ -67,6 +67,15 @@ canvas{
   font-variant-numeric:tabular-nums}
 .gwyou{font-size:12px;color:var(--muted);margin-bottom:10px}
 .gwyou b{color:var(--text)}
+/* daily past-puzzle chips */
+.dgdays{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.dgday{display:flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text);white-space:nowrap}
+.dgday:hover{border-color:var(--accent)}
+.dgday.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.dgday .dgi{font-weight:700}
+.dgday.won .dgi{color:#2f9e44}
+.dgday.lost .dgi{color:#e5484d}
 /* tetris leaderboard */
 .tlb{margin-top:16px;max-width:420px}
 .tlb h3{margin:0 0 8px;font-family:var(--font-display);font-size:15px;
@@ -572,28 +581,39 @@ BUILD.guesswho = host => {
    server picks and grades — the answer never reaches the browser. One
    hint to start, one more per wrong guess. Streak counts winning days. */
 BUILD.dailyguess = host => {
-  head(host, 'Daily Guess Who', 'One mystery student from your year — the same for everyone today.', '<div id="dg"></div>');
+  head(host, 'Daily Guess Who', 'One mystery student from your year — same for everyone. Replay past days, or go Unlimited.', '<div id="dg"></div>');
   const box = document.getElementById('dg');
   let alive = true;
 
-  (async () => {
-    box.innerHTML = '<p class="how">Loading today’s puzzle…</p>';
-    let state;
-    try { state = await TT.api('/api/daily'); }
+  const shiftISO = (d, delta) => { const x=new Date(d+'T00:00:00Z'); x.setUTCDate(x.getUTCDate()+delta); return x.toISOString().slice(0,10); };
+  const shortDate = d => new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{month:'short',day:'numeric',timeZone:'UTC'});
+
+  async function loadDay(date){       // date=null → today
+    box.innerHTML = '<p class="how">Loading…</p>';
+    let s;
+    try { s = await TT.api('/api/daily', { params: date ? { date } : {} }); }
     catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; return; }
-    if (alive) render(state);
-  })();
+    if (alive) render(s);
+  }
+  loadDay(null);
 
   function render(s){
+    const isToday = s.date === s.today;
     box.innerHTML =
-      '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · ' + esc(s.date) + '</div>' +
-      '<div class="gwyou" style="margin-left:auto">🔥 streak <b id="dgstreak">' + (s.streak||0) + '</b></div></div>' +
+      '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></div>' +
+      '<div style="margin-left:auto;display:flex;gap:10px;align-items:center">' +
+        '<span class="gwyou" style="margin:0">🔥 streak <b id="dgstreak">' + (s.streak||0) + '</b></span>' +
+        '<button class="btn" id="dgunlimited" type="button">Unlimited →</button></div></div>' +
+      '<div class="dgdays" id="dgdays"></div>' +
       '<div class="gwhints" id="dghints"></div>' +
       '<div class="gwrow" id="dgrow">' +
-        '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name today’s mystery student…">' +
+        '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name the mystery student…">' +
         '<datalist id="dglist">' + (s.candidates||[]).map(n => '<option value="' + esc(n).replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
         '<button class="btn primary" id="dgguess" type="button">Guess</button>' +
       '</div><div class="gwlog" id="dglog"></div>';
+
+    document.getElementById('dgunlimited').onclick = () => openGame('guesswho');
+    renderDays(s);
 
     const hintsEl = document.getElementById('dghints');
     const cur = (s.hints || []).slice();
@@ -606,14 +626,14 @@ BUILD.dailyguess = host => {
     setScore(s);
     recordStat('dailyguess', { key:'streak', mode:'set', value:s.streak||0 });
 
-    if (s.done){ finish(s); return; }
+    if (s.done){ dgFinish(s, hintsEl, isToday); return; }
 
     const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
     async function doGuess(){
       const v = input.value.trim(); if (!v) return;
       btn.disabled = true;
       let r;
-      try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v } }); }
+      try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } }); }
       catch(err){ if (alive){ btn.disabled = false; } return; }
       if (!alive) return;
       const row = document.createElement('div');
@@ -624,30 +644,51 @@ BUILD.dailyguess = host => {
       if (r.nextHint){ cur.push(r.nextHint); paint(cur.length-1); }
       recordStat('dailyguess', { key:'streak', mode:'set', value:r.streak||0 });
       document.getElementById('dgstreak').textContent = r.streak||0;
-      if (r.done){ finish(r); }
+      if (r.done){ dgFinish(r, hintsEl, isToday); }
       else { setScore(r); btn.disabled = false; input.focus(); }
     }
     btn.onclick = doGuess;
     input.addEventListener('keydown', e => { if (e.key==='Enter') doGuess(); });
     input.focus();
-
-    function finish(res){ dgFinish(res, hintsEl); }
   }
 
-  function dgFinish(s, hintsEl){
+  /* a chip per day for the last two weeks: ✓ won, ✗ lost, plain = unplayed */
+  function renderDays(s){
+    const daysEl = document.getElementById('dgdays');
+    const hist = {}; (s.history||[]).forEach(h => hist[h.date] = h);
+    let html = '';
+    for (let i=0;i<14;i++){
+      const d = shiftISO(s.today, -i), h = hist[d];
+      const status = h && h.won ? 'won' : (h && h.done ? 'lost' : 'open');
+      const icon = h && h.won ? '✓' : (h && h.done ? '✗' : '');
+      html += '<button class="dgday ' + status + (d===s.date ? ' cur' : '') + '" data-date="' + d + '">' +
+        '<span class="dgd">' + (i===0 ? 'Today' : esc(shortDate(d))) + '</span>' +
+        (icon ? '<span class="dgi">' + icon + '</span>' : '') + '</button>';
+    }
+    daysEl.innerHTML = html;
+    [...daysEl.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
+  }
+
+  function dgFinish(s, hintsEl, isToday){
     const row = document.getElementById('dgrow'); if (row) row.style.display = 'none';
-    if (sc()) sc().textContent = '';
+    const sc = document.getElementById('sc'); if (sc) sc.textContent = '';
+    const st = document.getElementById('dgstreak'); if (st) st.textContent = s.streak||0;
     const banner = document.createElement('div');
     banner.className = 'gwhint ' + (s.won ? 'win' : 'lose');
     banner.innerHTML = s.won
       ? 'You got it in <b>' + s.guesses + '</b>! It was <b>' + esc(s.answer) + '</b> 🎉'
       : 'Out of guesses — it was <b>' + esc(s.answer) + '</b>.';
     hintsEl.appendChild(banner);
+    // reflect the result on the current chip without a refetch
+    const chip = document.querySelector('.dgday.cur');
+    if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(s.won?'won':'lost');
+      let ic = chip.querySelector('.dgi'); if(!ic){ ic=document.createElement('span'); ic.className='dgi'; chip.appendChild(ic); }
+      ic.textContent = s.won ? '✓' : '✗'; }
     const note = document.createElement('p');
     note.className = 'gwyou'; note.style.marginTop = '12px';
-    note.innerHTML = 'Come back tomorrow for a new one. Current streak: <b>' + (s.streak||0) + '</b>.';
+    note.innerHTML = (isToday ? 'Come back tomorrow for a new one. ' : 'Pick another day above. ') +
+                     'Current streak: <b>' + (s.streak||0) + '</b>.';
     hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
-    function sc(){ return document.getElementById('sc'); }
   }
 
   return () => { alive = false; };

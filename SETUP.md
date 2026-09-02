@@ -758,6 +758,20 @@ the directory fetch.
 > exposes. It's fetched fresh behind the verified login and marked
 > `private, no-store`; the target's identity is never sent until the round ends.
 
+### Past puzzles, Unlimited, and live hints
+
+- **Hints are recomputed from the stored name on every read** (`buildHints` in
+  `_daily.js`), not baked into the puzzle row. So changing the hint logic applies
+  immediately to *already-generated* puzzles — no regeneration or table wipe
+  needed. Only the answer + candidate list are stored per day.
+- **`GET/POST /api/daily` take an optional `date`** (default today, Sydney; up to
+  30 days back, never the future), so you can **replay past days**. The game shows
+  a row of day-chips (✓ won / ✗ lost / plain unplayed) from a `history` field, and
+  an **Unlimited →** button that jumps to the practice Guess Who.
+- **Reopen fix:** a finished puzzle now shows exactly the hints you saw
+  (`shown = done ? guesses : guesses+1`), instead of revealing one phantom extra.
+- Completing a past day still updates your streak (computed relative to today).
+
 ---
 
 ## Tetris (weekly sprint + leaderboard)
@@ -825,6 +839,10 @@ plays locally.
   light on a dark page and the `<datalist>` autocomplete rendered white text on a
   white popup (illegible while typing a Guess Who guess). This fixes every page's
   inputs, dropdowns and scrollbars, not just the games.
+- **Glass dark mode** is less shiny: the specular sheen on cards drops from
+  `rgba(255,255,255,.4)` to `.1` (and card borders/topbar rim soften) in dark
+  only — light-mode glass keeps its full gloss. Fixes the plasticky look and the
+  washed-out text.
 - **Guess Who hints** (both the practice game and the daily): first-name and
   surname *length* are now **separate hints** (together they gave too much away);
   the **year hint is dropped in "My grade"** mode (everyone's the same year); and

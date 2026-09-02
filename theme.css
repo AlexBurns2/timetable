@@ -141,11 +141,26 @@
 }
 [data-header="split"][data-skin="glass"] .topbar::before{display:none}
 [data-skin="glass"] .nowcard{border-color:rgba(255,255,255,.75)}
-/* specular top edge */
+/* specular top edge — strong in light mode; gentle in dark so cards don't look
+   like glossy plastic or wash out their text */
 [data-skin="glass"] .lesson::after,[data-skin="glass"] .nowcard::after{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.1),transparent 32%);
+}
+[data-skin="glass"][data-mode="light"] .lesson::after,
+[data-skin="glass"][data-mode="light"] .nowcard::after{
   background:linear-gradient(160deg,rgba(255,255,255,.4),transparent 42%);
 }
+/* dark mode: dial back the bright rims and inner sheen too */
+[data-skin="glass"]:not([data-mode="light"]){ --card-border:1px solid rgba(255,255,255,.13); }
+[data-skin="glass"]:not([data-mode="light"]) .topbar{
+  border-color:rgba(255,255,255,.16);
+  box-shadow:0 8px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
+}
+[data-skin="glass"]:not([data-mode="light"]) .topbar::before{
+  background:linear-gradient(150deg,rgba(255,255,255,.14),transparent 40%);
+}
+[data-skin="glass"]:not([data-mode="light"]) .nowcard{ border-color:rgba(255,255,255,.2); }
 
 /* ── SWISS ─ stark white, hairlines, no shadow ─────────────────── */
 [data-skin="swiss"]{
