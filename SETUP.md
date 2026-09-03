@@ -774,51 +774,57 @@ the directory fetch.
 
 ---
 
-## Tetris (weekly sprint + leaderboard)
+## Tetris (Sprint + Zen, tetr.io-style)
 
-A 40-line sprint. The piece order is a **deterministic 7-bag seeded by the week
-number** (Monday-anchored), so it's identical for everyone all week and replays
-the same on every restart — which makes clear-times comparable. Your local best
-is kept **per week** (`tt.stats.tetris = { week, best }`) and resets when the
-week rolls over.
+A tetr.io-style layout — **Hold + stats on the left, board centre, Next + buttons
+on the right** — with two modes (pills at the top):
 
-Handling: a single time-based loop drives gravity, **DAS/ARR** auto-shift (a tap
-or brief hold moves one cell; hold ← / → longer to slide to the wall — tuned
-gentle so it isn't twitchy), and a **lock delay** with a 15-move reset cap, so a
-grounded piece doesn't set instantly and you can slide it under an overhang.
-There's a **hold** slot (Left Shift, once per piece) and the landing spot shows
-as a hollow coloured **outline**. Dropping/placing is **spacebar only** (there's
-no soft drop); holding **↑** spins once, pauses briefly, then keeps spinning.
-Controls: ← → move, ↑/X rotate (hold to spin), Z rotate CCW, space drop,
-**Shift hold**, P pause.
+- **Sprint** — clear 40 lines fastest. Pieces are a **deterministic weekly 7-bag**
+  (Monday-anchored), identical for everyone and replayed the same each attempt, so
+  times are comparable. Local best per week (`tt.stats.tetris`).
+- **Zen** — survive as long as you can; random pieces, gravity **ramps up with
+  time**, endless until you top out. Local best all-time (`tt.stats.tetriszen`).
 
-### Shared weekly leaderboard
+It **does not auto-start** — a board overlay shows "Press Start" and the game
+begins on the Start button or the hard-drop key; game-over shows a Restart prompt.
 
-Clearing 40 lines while signed in submits your time to a **shared board for that
-week**, shown under the game. It reuses the Phase-1/2 identity plumbing:
-`/api/tetris` verifies you with `whoami`, keeps only your best per week, and
-derives your display name from your verified email server-side (emails are never
-returned to the browser — your own row is flagged instead). The board is
-partitioned by the same week number as the pieces, so it resets when they do.
+Handling: one time-based loop drives gravity, **DAS/ARR** auto-shift, a **lock
+delay** (15-move reset cap, so you can slide under overhangs), soft drop (hold
+down), hold (once per piece), a hollow-outline landing preview, and hold-rotate
+that spins after a brief pause.
 
-- `api/tetris.js` — `GET ?week=N` (top 20 + your rank) / `POST {week,timeMs}`.
-- `games.html` — submits on a win, renders the board via `TT.api`.
+**Controls are configurable** (Controls button → panel): every action is
+**rebindable** (click a key, press the new one) and **DAS / ARR / soft-drop
+speed** are sliders. Config is stored in `tt.tetriscfg`, so it syncs with your
+other settings. Defaults: ← → move, ↑ rotate (hold to spin) / Z ccw, ↓ soft drop,
+space hard drop, Shift hold, **P pause, R restart**.
 
-**Setup:** run one more table in the same Supabase project; no new env vars.
+### Leaderboards
+
+`/api/tetris` serves **two** boards, both `whoami`-verified with a server-derived
+name (emails never leave the server; your own row is flagged `you`):
+
+- **Sprint** — `?mode=sprint&week=N`, ranked by **shortest** time, resets weekly.
+- **Zen** — `?mode=zen`, ranked by **longest** survival, **all-time (never resets)**.
+
+Submitted on a 40-clear (Sprint) or on top-out (Zen). `games.html` renders
+whichever matches the current mode.
+
+**Setup:** run **both** tables in the same Supabase project; no new env vars.
 ```sql
 create table tetris_score (
-  email      text not null,
-  week       int  not null,
-  name       text not null,
-  time_ms    int  not null,
-  created_at timestamptz not null default now(),
+  email text not null, week int not null, name text not null,
+  time_ms int not null, created_at timestamptz not null default now(),
   primary key (email, week)
+);
+create table zen_score (
+  email text primary key, name text not null,
+  ms int not null, created_at timestamptz not null default now()
 );
 ```
 RLS off (service-role only). Times are client-reported, as with any web
-leaderboard — a 3s floor / 1h ceiling drops obvious garbage, but it isn't
-anti-cheat. Signed out or unconfigured, the board just hides and the game still
-plays locally.
+leaderboard — floor/ceiling bounds drop obvious garbage, but it isn't anti-cheat.
+Signed out or unconfigured, the boards just hide and the game still plays locally.
 
 ---
 
@@ -828,6 +834,14 @@ plays locally.
   of the per-subject colour, which was often too pale to read.
 - The **settings/home buttons are vertically centred** in the header widget
   (`.headbtns { align-self: center }`) in both header layouts.
+
+### Timetable polish
+
+- **Lunch** no longer shows a time range in compact view, matching Recess/Assembly
+  (the block was just tall enough to trigger the time label; now suppressed by name).
+- The **current-period outline is flush** with the card (`outline-offset:0`, was 2px).
+- **Classic** marks the current day with **blue text only** — the blue dot under
+  the day heading is removed.
 
 ---
 

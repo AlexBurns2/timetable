@@ -335,10 +335,7 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 [data-skin="classic"] .dbody{background:rgba(255,255,255,.025);border-radius:18px}
 [data-skin="classic"][data-mode="dark"] .dbody{background:rgba(255,255,255,.015)}
 [data-skin="classic"] .dayhead .rule{display:none}
-[data-skin="classic"] .dayhead.today .dow::after{
-  content:"";display:block;width:5px;height:5px;border-radius:50%;
-  background:var(--accent);margin:5px auto 0;
-}
+/* current day is shown by the blue text alone — no dot */
 
 /* ══════════════════════════════════════════════════════════════════
    RETRO — early-2000s desktop web: teal ground, bevelled chrome,

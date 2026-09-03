@@ -184,7 +184,7 @@ button,select,input{font:inherit;color:inherit}
 .lesson .tm{display:none;color:inherit;opacity:.85;font-size:11px;margin-top:auto;
             font-family:var(--font-num);font-variant-numeric:tabular-nums}
 .lesson.tall .tm{display:block}
-.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px;z-index:2}
+.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:0;z-index:2}
 
 .breakbar{
   position:relative;width:100%;overflow:hidden;
@@ -1243,8 +1243,9 @@ function renderCompact(ctx){
       if (blk.kind !== 'class'){
         const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(blk.slot);
         node = el('div','breakbar' + (blk.kind === 'assembly' ? ' assembly' : ''));
+        const showTime = h >= 34 && !/^lunch$/i.test(name);   // lunch matches recess/assembly: no time
         node.innerHTML = '<span>' + esc(name) + '</span>' +
-          (h >= 34 ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
+          (showTime ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
         node.title = name + ' · ' + fmtTime(blk.start) + '–' + fmtTime(blk.end);
       } else {
         node = lessonCard(e, blk.start, blk.end, isToday, ctx.nowMin, ctx.days[c.i], h >= 86);
