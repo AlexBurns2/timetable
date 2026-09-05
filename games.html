@@ -119,6 +119,16 @@ canvas{
 .tsliders{display:flex;flex-direction:column;gap:12px}
 .tslider{display:flex;flex-direction:column;gap:4px;font-size:13px}
 .tslider input[type=range]{width:100%;accent-color:var(--accent)}
+/* shared game leaderboard panel */
+.glb{margin-top:18px;max-width:420px}
+.glbhd{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.glbhd h3{margin:0;font-family:var(--font-display);font-size:15px;font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.glbtabs{display:flex;gap:6px}
+.glbtab{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;
+  font-size:12px;cursor:pointer;color:var(--text)}
+.glbtab:hover{border-color:var(--accent)}
+.glbtab.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* minesweeper */
 #mines{display:grid;gap:3px;width:min(360px,100%)}
 #mines button{
@@ -240,6 +250,7 @@ const GAMES = [
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
+  lbState = null;
   $('gamestage').hidden = true;
   const grid = $('gamegrid');
   grid.hidden = false;
@@ -267,6 +278,8 @@ function openGame(id){
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
     stop = BUILD[id]($('stage'));
+    lbState = null;
+    if (LB_GAMES[id]) mountLB(id);
   };
   if (reduced()){ go(); return; }
   grid.classList.add('leaving');           /* fade the grid away, then swap in */
@@ -306,6 +319,8 @@ function recordStat(game, { key, mode, value }){
   else if (mode === 'count') s[game][key] = (cur || 0) + (value || 1);
   else s[game][key] = value;
   TT.set('tt.stats', s);
+  const lb = LB_GAMES[game];      // a new personal best also goes to the shared board
+  if (lb && key === lb.metric && (mode === 'max' || mode === 'min') && s[game][key] === value) lbSubmit(game, value);
   return s[game][key];
 }
 const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
@@ -322,6 +337,68 @@ function tetrisWeek(){
   const n = new Date();
   const day = Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024,0,1)) / 86400000);
   return Math.floor(day / 7);   // 2024-01-01 was a Monday
+}
+
+/* ── shared game leaderboards ─────────────────────────────────────────
+   Each of these games gets both an all-time ("unlimited") board and a
+   this-week board, keyed by the metric a new personal best is recorded on.
+   recordStat submits automatically; the panel is mounted by openGame. */
+const LB_GAMES = {
+  snake:     { metric:'high',    dir:'max', label:'High score',  fmt:v=>String(v) },
+  g2048:     { metric:'high',    dir:'max', label:'Score',       fmt:v=>String(v) },
+  typing:    { metric:'wpm',     dir:'max', label:'Words / min', fmt:v=>v+' wpm' },
+  react:     { metric:'fastest', dir:'min', label:'Reaction',    fmt:v=>v+' ms' },
+  classroom: { metric:'high',    dir:'max', label:'Correct',     fmt:v=>String(v) },
+  chain:     { metric:'best',    dir:'min', label:'Fewest hops', fmt:v=>String(v) }
+};
+let lbState = null;   // { game, period, week, all } for the mounted panel
+
+async function lbSubmit(game, score){
+  if (!TT.myEmail()) return;
+  const lb = LB_GAMES[game]; if (!lb) return;
+  try {
+    const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score, week:tetrisWeek() } });
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+  } catch(e){}
+}
+function mountLB(game){
+  const lb = LB_GAMES[game]; if (!lb) return;
+  const panel = document.createElement('div');
+  panel.className = 'glb'; panel.id = 'glb';
+  panel.innerHTML =
+    '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
+    '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
+    '<button type="button" class="glbtab" data-p="all">All time</button></div></div>' +
+    '<div id="glbbody"><p class="how">Loading…</p></div>';
+  $('stage').appendChild(panel);
+  lbState = { game, period:'week', week:null, all:null };
+  [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
+    lbState.period = b.dataset.p;
+    [...panel.querySelectorAll('.glbtab')].forEach(t => t.classList.toggle('cur', t===b));
+    paintLB();
+  });
+  loadLBoard(game);
+}
+async function loadLBoard(game){
+  const lb = LB_GAMES[game], body = $('glbbody');
+  if (!TT.myEmail()){ if (body) body.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboard.</p>'; return; }
+  try {
+    const d = await TT.api('/api/leaderboard', { params:{ game, metric:lb.metric, week:tetrisWeek() } });
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+  } catch(e){ if (body) body.innerHTML = ''; }
+}
+function paintLB(){
+  const body = $('glbbody'); if (!body || !lbState) return;
+  const lb = LB_GAMES[lbState.game];
+  const b = lbState.period === 'week' ? lbState.week : lbState.all;
+  if (!b){ body.innerHTML = '<p class="how">Loading…</p>'; return; }
+  const rows = b.top || [];
+  if (!rows.length && b.meBest == null){ body.innerHTML = '<p class="how">No scores yet — be the first.</p>'; return; }
+  let html = rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+    '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
+  if (b.meRank && b.meRank > rows.length)
+    html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(lb.fmt(b.meBest))+'</span></div>';
+  body.innerHTML = html;
 }
 
 const cleanSubject = name => String(name||'')

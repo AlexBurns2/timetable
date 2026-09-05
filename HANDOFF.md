@@ -15,10 +15,10 @@ do it without the prior conversation. A visual version of the plan lives at
 > - Shared weekly Tetris leaderboard: `api/tetris.js` + `BUILD.tetris` — the
 >   same whoami-verified, service-role pattern (table `tetris_score`).
 >
-> What remains is **provisioning** (create the Supabase project, run the `prefs`,
-> `daily_puzzle`, `daily_result`, `tetris_score` table SQL, set `SUPABASE_URL` +
-> `SUPABASE_SERVICE_ROLE_KEY`, optionally `CRON_SECRET`, redeploy) — all in
-> SETUP.md. **Phase 3 (realtime boards/multiplayer) is still unbuilt**; the
+> What remains is **provisioning** (create the Supabase project, run the table SQL —
+> `prefs`, `daily_puzzle`, `daily_result`, `tetris_score`, `zen_score`, `game_score` —
+> set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, optionally `CRON_SECRET`,
+> redeploy) — all in SETUP.md. **Phase 3 (realtime boards/multiplayer) is still unbuilt**; the
 > sections below are its plan. The realtime-token bridge there is the natural
 > next build, and a shared Tetris weekly leaderboard would reuse the same pattern.
 

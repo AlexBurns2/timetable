@@ -10,6 +10,17 @@
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
 <link rel="stylesheet" href="site.css">
+<style>
+.notebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.notesel{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.notesel select{
+  font:inherit;font-size:14px;font-weight:500;letter-spacing:0;text-transform:none;
+  color:var(--text);background:var(--panel);border:var(--card-border);border-radius:var(--radius);
+  padding:8px 12px;box-shadow:var(--shadow);cursor:pointer;max-width:min(70vw,340px);
+}
+.notehint{font-size:12.5px;color:var(--muted)}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -22,43 +33,104 @@
     </div>
   </div>
 
-  <textarea class="pad" id="pad" placeholder="Anything you want to remember. Saves to this device as you type."></textarea>
+  <div class="notebar">
+    <label class="notesel">Subject <select id="subj"></select></label>
+    <span class="notehint" id="subjhint"></span>
+  </div>
+
+  <textarea class="pad" id="pad" placeholder="Notes for this subject. Saved to your account and synced across devices."></textarea>
   <div class="padbar">
-    <span id="padstate">Saved automatically to this device</span>
+    <span id="padstate">Saved</span>
     <span><span id="padcount">0</span> characters &middot;
-      <button class="btn" id="padclear" style="padding:5px 10px;font-size:12px">Clear</button></span>
+      <button class="btn" id="padclear" style="padding:5px 10px;font-size:12px">Clear subject</button></span>
   </div>
 </div>
 <script>
-document.getElementById('mode').onclick = () => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$('mode').onclick = () => {
   const st = TT.readState();
   const next = st.mode === 'dark' ? 'light' : 'dark';
   TT.set(TT.LS.mode, next);
   TT.apply(Object.assign(st, { mode: next }));
 };
 
-const pad = document.getElementById('pad');
-const KEY = 'tt.notes';
-try { pad.value = localStorage.getItem(KEY) || ''; } catch {}
-const count = () => document.getElementById('padcount').textContent = pad.value.length;
-count();
+/* Notes are stored per subject as { subject: text } under tt.subjectnotes, which
+   syncs with the rest of your settings. (The old single scratchpad lived at
+   tt.notes on the device; it's migrated into "General" once.) */
+const NKEY = 'tt.subjectnotes', GENERAL = 'General';
+const allNotes = () => TT.get(NKEY, {}) || {};
+function saveNote(subj, text){ const n = allNotes(); if (text && text.length) n[subj] = text; else delete n[subj]; TT.set(NKEY, n); }
+
+const cleanSubject = name => String(name||'')
+  .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i,'')
+  .replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/,'')
+  .replace(/^[\s:\-–—]+/,'').trim();
+
+/* one-time migration of the old device scratchpad into General */
+(function migrate(){
+  const n = allNotes();
+  if (n[GENERAL] == null){ let old=''; try { old = localStorage.getItem('tt.notes') || ''; } catch {}
+    if (old){ n[GENERAL] = old; TT.set(NKEY, n); } }
+})();
+
+const pad = $('pad'), subjSel = $('subj');
+let subjectList = [GENERAL];
+let current = TT.get('tt.notesubj', GENERAL);
+
+function paintOptions(){
+  const n = allNotes();
+  subjSel.innerHTML = subjectList.map(s =>
+    '<option value="'+esc(s)+'">'+esc(s)+(n[s] && n[s].trim() ? ' •' : '')+'</option>').join('');
+  subjSel.value = current;
+}
+function loadSubject(subj){
+  current = subj;
+  TT.set('tt.notesubj', subj);
+  pad.value = allNotes()[subj] || '';
+  $('padcount').textContent = pad.value.length;
+  $('padstate').textContent = 'Saved';
+  subjSel.value = subj;          // keep the dropdown in sync after any repaint
+}
 let saveTimer = null;
+function flush(){ clearTimeout(saveTimer); saveNote(current, pad.value); paintOptions(); $('padstate').textContent = 'Saved'; }
+
+async function buildSubjects(){
+  let tt = null;
+  const cache = TT.get('tt.cache', null);
+  if (cache && cache.payload && cache.payload.timetable) tt = cache.payload;
+  if (!tt && TT.myEmail()){ try { tt = await TT.apiGet({ email: TT.myEmail() }); } catch(e){} }
+
+  const subs = new Set();
+  if (tt && tt.timetable) for (const r of tt.timetable){
+    if (r.ClassCode && !/assembly|recess|lunch|roll/i.test((r.Period||'') + ' ' + (r.CourseName||''))){
+      const s = cleanSubject(r.CourseName); if (s) subs.add(s);
+    }
+  }
+  subjectList = [GENERAL, ...[...subs].sort()];
+  Object.keys(allNotes()).forEach(k => { if (!subjectList.includes(k)) subjectList.push(k); });  // keep notes whose class dropped off
+  if (!subjectList.includes(current)) current = GENERAL;
+  $('subjhint').textContent = subs.size ? '' :
+    (TT.myEmail() ? 'No subjects found — open your timetable first.' : 'Sign in on the timetable to load your subjects.');
+  paintOptions();
+  loadSubject(current);
+}
+
+subjSel.onchange = () => { const chosen = subjSel.value; flush(); loadSubject(chosen); };
 pad.addEventListener('input', () => {
-  count();
-  document.getElementById('padstate').textContent = 'Saving…';
+  $('padcount').textContent = pad.value.length;
+  $('padstate').textContent = 'Saving…';
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try { localStorage.setItem(KEY, pad.value); document.getElementById('padstate').textContent = 'Saved to this device'; }
-    catch { document.getElementById('padstate').textContent = 'Could not save — storage is full or blocked'; }
-  }, 350);
+  saveTimer = setTimeout(flush, 400);
 });
-document.getElementById('padclear').onclick = () => {
-  if (!pad.value || !confirm('Clear these notes?')) return;
-  pad.value = ''; count();
-  try { localStorage.removeItem(KEY); } catch {}
-  document.getElementById('padstate').textContent = 'Cleared';
+addEventListener('pagehide', flush);
+$('padclear').onclick = () => {
+  if (!pad.value || !confirm('Clear notes for ' + current + '?')) return;
+  pad.value = ''; $('padcount').textContent = 0; saveNote(current, ''); paintOptions(); $('padstate').textContent = 'Cleared';
 };
 
+buildSubjects();
 </script>
 </body>
 </html>

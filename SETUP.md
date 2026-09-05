@@ -828,6 +828,47 @@ Signed out or unconfigured, the boards just hide and the game still plays locall
 
 ---
 
+## Game leaderboards (all games)
+
+Beyond Tetris, the arcade games share a **generic leaderboard**: Snake, 2048,
+Typing race, Reaction, Classroom, and Six Degrees. Each shows a panel under the
+game with two tabs — **This week** (a weekly-reset challenge board) and **All time**
+(the unlimited board). A new personal best submits automatically.
+
+- `api/leaderboard.js` — `GET ?game=&metric=&week=N` / `POST {game,metric,score,week}`,
+  both returning `{ week, all }`. Same `whoami` identity + server-derived name as the
+  other boards; higher- or lower-is-better is per game (server-side `DIRS`).
+- `games.html` — `recordStat` is the single submit point (a new best posts to the
+  board); `openGame` mounts the panel; `LB_GAMES` maps each game to its metric,
+  direction, and number formatting. Every score lands in **two buckets**: `all` and
+  `w<week>`.
+
+**Setup:** one more table, no new env vars.
+```sql
+create table game_score (
+  game text not null, metric text not null, period text not null,
+  email text not null, name text not null, score int not null,
+  updated_at timestamptz not null default now(),
+  primary key (game, metric, period, email)
+);
+```
+RLS off (service-role only). Signed out / unconfigured → the panel shows a sign-in
+note or hides, and the games still play with local high scores. Tetris keeps its own
+dedicated boards (Sprint weekly, Zen all-time). To add a game: extend `LB_GAMES`
+(client) and `DIRS` (server).
+
+## Subject notes
+
+The Notes page is **per subject**. A dropdown lists **General plus every subject from
+your timetable** (from the class rows' course names, same cleaning the games use).
+Notes are stored as `tt.subjectnotes = { subject: text }`, which **syncs with your
+other settings** across devices; the last-open subject is remembered in `tt.notesubj`.
+The old single scratchpad (`tt.notes`, device-only) migrates into **General** once.
+Subjects come from `tt.cache` when the timetable's been opened, else a live fetch; a
+`•` marks subjects that already have notes.
+
+---
+
 ## Progress bar + header tweaks
 
 - The Now-card **progress bar is now a fixed accent colour** (`--accent`) instead
