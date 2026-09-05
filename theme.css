@@ -24,6 +24,16 @@
   --display-tt:normal; --display-ls:-.02em; --display-w:700;
 }
 
+/* Native <select> option lists: Chromium/Firefox honour option colours but often
+   drop color-scheme theming once the control itself is styled, leaving light text
+   on a white popup in dark mode. Set them explicitly so every dropdown stays
+   readable (covers the notes subject picker and the custom-skin controls). */
+select option{ background:#ffffff; color:#16181d; }
+:root[data-mode="dark"] select option{ background:#23242b; color:#f2f2f5; }
+:root[data-skin="terminal"] select option{ background:#0b1410; color:#b6ffd6; }
+:root[data-skin="scifi"] select option{ background:#081119; color:#dff4ff; }
+:root[data-skin="blueprint"] select option{ background:#0a2137; color:#eaf4ff; }
+
 /* ── PLAIN ─ the quiet default: white on white, grey on grey ────── */
 [data-skin="plain"]{
   --bg:#ffffff; --bg-img:none; --panel:#ffffff; --panel-2:#f6f6f7;
