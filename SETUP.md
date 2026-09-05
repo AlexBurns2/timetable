@@ -774,16 +774,24 @@ the directory fetch.
 
 ---
 
-## Tetris (Sprint + Zen, tetr.io-style)
+## Tetris (Sprint / Survival / Zen, tetr.io-style)
 
 A tetr.io-style layout — **Hold + stats on the left, board centre, Next + buttons
-on the right** — with two modes (pills at the top):
+on the right** — with three modes (pills at the top):
 
 - **Sprint** — clear 40 lines fastest. Pieces are a **deterministic weekly 7-bag**
   (Monday-anchored), identical for everyone and replayed the same each attempt, so
-  times are comparable. Local best per week (`tt.stats.tetris`).
-- **Zen** — survive as long as you can; random pieces, gravity **ramps up with
-  time**, endless until you top out. Local best all-time (`tt.stats.tetriszen`).
+  times are comparable. Local best per week (`tt.stats.tetris`); weekly board.
+- **Survival** — survive the **rising speed**; random pieces, gravity ramps with
+  time, endless until you top out. Local best all-time (`tt.stats.tetriszen`);
+  all-time board.
+- **Zen** — endless and **relaxed**: constant gentle gravity, **no clock-pressure,
+  no score, no leaderboard**. Just keep placing blocks.
+
+**Cross-device save** (Survival + Zen): a **Save** button uploads the current board
+(grid, active piece, hold, next queue, cleared, elapsed) to `/api/gamestate`, keyed
+by `(email, mode)` — manual, not continuous. Reopen the mode (any device) and it
+offers **Resume / New game**. The save is cleared on top-out or when you start fresh.
 
 It **does not auto-start** — a board overlay shows "Press Start" and the game
 begins on the Start button or the hard-drop key; game-over shows a Restart prompt.
@@ -805,12 +813,15 @@ space hard drop, Shift hold, **P pause, R restart**.
 name (emails never leave the server; your own row is flagged `you`):
 
 - **Sprint** — `?mode=sprint&week=N`, ranked by **shortest** time, resets weekly.
-- **Zen** — `?mode=zen`, ranked by **longest** survival, **all-time (never resets)**.
+- **Survival** — `?mode=zen`, ranked by **longest** survival, **all-time (never
+  resets)**. (The server mode name stays `zen`, backed by the `zen_score` table —
+  it predates the rename; the client maps *Survival* → `zen`.) Zen mode has no board.
 
-Submitted on a 40-clear (Sprint) or on top-out (Zen). `games.html` renders
+Submitted on a 40-clear (Sprint) or on top-out (Survival). `games.html` renders
 whichever matches the current mode.
 
-**Setup:** run **both** tables in the same Supabase project; no new env vars.
+**Setup:** run these tables in the same Supabase project; no new env vars.
+`game_state` powers the Survival/Zen cross-device save.
 ```sql
 create table tetris_score (
   email text not null, week int not null, name text not null,
@@ -820,6 +831,11 @@ create table tetris_score (
 create table zen_score (
   email text primary key, name text not null,
   ms int not null, created_at timestamptz not null default now()
+);
+create table game_state (
+  email text not null, mode text not null, state jsonb not null,
+  updated_at timestamptz not null default now(),
+  primary key (email, mode)
 );
 ```
 RLS off (service-role only). Times are client-reported, as with any web

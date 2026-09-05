@@ -107,6 +107,7 @@ canvas{
 .tover[hidden]{display:none}
 .tovt{font-family:var(--font-display);font-size:19px;font-weight:var(--display-w);margin-bottom:6px}
 .tovs{font-size:13px;color:var(--muted)}
+.tovbtns{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
 .tbtns{display:flex;flex-direction:column;gap:6px}
 .tkeyhint{font-size:11px;line-height:1.55;color:var(--muted)}
 .tcfg{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);
@@ -826,7 +827,7 @@ BUILD.tetris = host => {
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
   let mode = TT.get('tt.tetrismode', 'sprint');
 
-  head(host, 'Tetris', 'Sprint 40 lines or go Zen. Rebind keys and tune handling under Controls.', '<div id="twrap"></div>');
+  head(host, 'Tetris', 'Sprint, Survival, or endless Zen. Rebind keys and tune handling under Controls.', '<div id="twrap"></div>');
   document.getElementById('twrap').innerHTML =
     '<div class="tmodes" id="tmodes"></div>' +
     '<div class="tgame">' +
@@ -847,6 +848,7 @@ BUILD.tetris = host => {
         '<div class="tbtns">' +
           '<button class="btn primary" id="tstart" type="button">Start</button>' +
           '<button class="btn" id="tpause" type="button">Pause</button>' +
+          '<button class="btn" id="tsave" type="button" hidden>Save</button>' +
           '<button class="btn" id="tcontrols" type="button">Controls</button>' +
         '</div>' +
         '<div class="tkeyhint" id="tkeyhint"></div>' +
@@ -885,6 +887,7 @@ BUILD.tetris = host => {
   let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
   let grounded = false, lockStart = 0, lockResets = 0;
   let rebinding = null;
+  let savedState = null, saveFlashTimer = null;
 
   /* ── piece mechanics ── */
   function collides(cells, px, py){
@@ -931,7 +934,10 @@ BUILD.tetris = host => {
   }
 
   /* ── loop ── */
-  const gravityMs = () => mode==='zen' ? Math.max(90, 800 - (elapsedMs/1000)*4) : 750;
+  const gravityMs = () => mode==='survival' ? Math.max(90, 800 - (elapsedMs/1000)*4) : (mode==='zen' ? 800 : 750);
+  const saveable = () => mode==='zen' || mode==='survival';
+  const hasLB = () => mode==='sprint' || mode==='survival';
+  const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen'}[mode] || mode);
   function loop(){
     if (phase!=='playing') return;
     const now = performance.now();
@@ -946,7 +952,9 @@ BUILD.tetris = host => {
       else while (now-rotLast>=ROT_ARR){ rotLast+=ROT_ARR; tryRotate(1,now); }
     }
     const interval = softHeld ? cfg.sdf : gravityMs();
-    dropAcc += dt;
+    /* clamp to one interval/frame so switching to the fast soft-drop rate can't
+       spend banked gravity time in a single frame (which looked like a hard drop) */
+    dropAcc = Math.min(dropAcc + dt, interval);
     while (dropAcc>=interval){ dropAcc-=interval;
       if (!collides(piece.cells, piece.x, piece.y+1)) piece.y++;
       updateGround(now, false);
@@ -983,10 +991,13 @@ BUILD.tetris = host => {
   /* ── stats / overlay ── */
   function fmtBest(){
     if (mode==='sprint'){ const s=allStats().tetris; return (s && s.week===wk && s.best!=null) ? s.best.toFixed(1)+'s' : '—'; }
-    const z=allStats().tetriszen; return (z && z.best!=null) ? (z.best/1000).toFixed(1)+'s' : '—';
+    if (mode==='survival'){ const z=allStats().tetriszen; return (z && z.best!=null) ? (z.best/1000).toFixed(1)+'s' : '—'; }
+    return '—';
   }
   function renderStatsLabels(){
     $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
+    const bestRow = $$('tbest').closest('.tstat');
+    if (bestRow) bestRow.style.display = mode==='zen' ? 'none' : 'flex';   // Zen keeps no score
     $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : 'Best (all-time)';
     $$('tbest').textContent = fmtBest();
   }
@@ -994,12 +1005,20 @@ BUILD.tetris = host => {
     $$('ttime').textContent = (elapsedMs/1000).toFixed(1)+'s';
     $$('tgoal').textContent = mode==='sprint' ? Math.max(0, TARGET-cleared) : cleared;
   }
-  function showOver(title, sub){ const o=$$('tover'); o.innerHTML='<div><div class="tovt">'+title+'</div>'+(sub?'<div class="tovs">'+sub+'</div>':'')+'</div>'; o.hidden=false; }
-  function hideOver(){ $$('tover').hidden=true; }
+  function showOver(title, sub, actions){
+    const o=$$('tover');
+    let html='<div><div class="tovt">'+title+'</div>'+(sub?'<div class="tovs">'+sub+'</div>':'');
+    if (actions && actions.length) html+='<div class="tovbtns">'+actions.map((a,i)=>'<button class="btn'+(i===0?' primary':'')+'" type="button" data-i="'+i+'">'+a.label+'</button>').join('')+'</div>';
+    html+='</div>';
+    o.innerHTML=html; o.hidden=false; o._actions=actions||null;
+    if (actions) [...o.querySelectorAll('.tovbtns .btn')].forEach(b=>b.onclick=e=>{ e.stopPropagation(); actions[+b.dataset.i].fn(); });
+  }
+  function hideOver(){ $$('tover').hidden=true; $$('tover')._actions=null; }
 
   /* ── game flow ── */
   function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; nextT=null; cleared=0; elapsedMs=0; }
   function begin(){
+    if (saveable()) clearState();              // starting fresh discards any saved game
     emptyBoard(); newRng();
     holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
@@ -1007,7 +1026,47 @@ BUILD.tetris = host => {
     phase='playing'; baseTime=Date.now(); lastTick=performance.now(); hideOver();
     $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
     clearInterval(loopId); loopId=setInterval(loop,16);
-    renderStatsLabels(); updateStats(); draw();
+    renderStatsLabels(); updateSaveBtn(); updateStats(); draw();
+  }
+
+  /* ── save / resume across devices (Zen + Survival) ── */
+  function serialize(){
+    return { grid: grid.map(r=>r.slice()),
+             piece: piece ? { type:piece.type, x:piece.x, y:piece.y, cells:piece.cells.map(r=>r.slice()) } : null,
+             nextT, hold, holdUsed, cleared, elapsedMs, bag: bag.slice() };
+  }
+  function applyState(s){
+    grid = (s.grid||[]).map(r=>r.slice());
+    if (grid.length!==ROWS) emptyBoard();      // guard against a malformed save
+    piece = s.piece ? { type:s.piece.type, x:s.piece.x, y:s.piece.y, cells:s.piece.cells.map(r=>r.slice()) } : null;
+    nextT = s.nextT; hold = s.hold||null; holdUsed = !!s.holdUsed; cleared = s.cleared||0; elapsedMs = s.elapsedMs||0;
+    rnd = mulberry32((Math.random()*4294967296)>>>0); bag = Array.isArray(s.bag) ? s.bag.slice() : [];
+    moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
+    grounded=false; lockStart=0; lockResets=0; dropAcc=0;
+    if (!piece){ nextT = nextT || nextType(); spawnNext(performance.now()); }
+  }
+  function resumeGame(s){
+    applyState(s);
+    phase='playing'; baseTime=Date.now()-elapsedMs; lastTick=performance.now(); hideOver();
+    $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
+    clearInterval(loopId); loopId=setInterval(loop,16);
+    renderStatsLabels(); updateSaveBtn(); updateStats(); draw();
+  }
+  function updateSaveBtn(){ const b=$$('tsave'); if (b){ b.hidden = !saveable(); b.textContent='Save'; } }
+  function flashSave(msg){ const b=$$('tsave'); if (!b) return; b.textContent=msg;
+    clearTimeout(saveFlashTimer); saveFlashTimer=setTimeout(()=>{ const x=$$('tsave'); if (x) x.textContent='Save'; }, 1600); }
+  async function saveGame(){
+    if (!saveable()) return;
+    if (phase!=='playing' && phase!=='paused'){ flashSave('Nothing to save'); return; }
+    if (!TT.myEmail()){ flashSave('Sign in to save'); return; }
+    flashSave('Saving…');
+    try { await TT.api('/api/gamestate', { method:'PUT', body:{ mode, state: serialize() } }); flashSave('Saved ✓'); }
+    catch(e){ flashSave('Save failed'); }
+  }
+  async function clearState(){
+    savedState = null;
+    if (!saveable() || !TT.myEmail()) return;
+    try { await TT.api('/api/gamestate', { method:'DELETE', params:{ mode } }); } catch(e){}
   }
   function togglePause(){
     if (phase==='playing'){ phase='paused'; pauseAt=Date.now(); $$('tpause').textContent='Resume'; showOver('Paused', 'Press '+keyLabel(cfg.keys.pause)+' to resume'); }
@@ -1019,32 +1078,39 @@ BUILD.tetris = host => {
     if (mode==='sprint'){
       if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};
         if (t.best==null||el<t.best) t.best=el; s.tetris={week:wk,best:t.best}; TT.set('tt.stats',s);
-        submitScore('sprint', Math.round(elapsedMs)); showOver('Cleared 40 in '+el.toFixed(1)+'s! 🎉', restart); }
+        submitScore(Math.round(elapsedMs)); showOver('Cleared 40 in '+el.toFixed(1)+'s! 🎉', restart); }
       else showOver('Topped out.', restart);
-    } else {
+    } else if (mode==='survival'){
       const ms=Math.round(elapsedMs); const s=allStats(); const z=s.tetriszen||{best:null};
       if (z.best==null||ms>z.best) z.best=ms; s.tetriszen={best:z.best}; TT.set('tt.stats',s);
-      submitScore('zen', ms); showOver('Survived '+(ms/1000).toFixed(1)+'s', restart);
+      submitScore(ms); showOver('Survived '+(ms/1000).toFixed(1)+'s', restart);
+      clearState();
+    } else {   // zen — no score, no board
+      showOver('Topped out — '+cleared+' lines cleared', restart);
+      clearState();
     }
     renderStatsLabels(); draw();
   }
 
-  /* ── leaderboard (Sprint: weekly, fastest; Zen: all-time, longest) ── */
-  async function submitScore(m, ms){
-    if (!TT.myEmail()) return;
-    const body = m==='zen' ? { mode:'zen', ms } : { mode:'sprint', week:wk, timeMs:ms };
+  /* ── leaderboard (Sprint: weekly, fastest; Survival: all-time, longest).
+     Survival uses the server's `zen` board (the zen_score table); the new Zen
+     mode has no leaderboard. ── */
+  async function submitScore(ms){
+    if (!TT.myEmail() || !hasLB()) return;
+    const body = mode==='survival' ? { mode:'zen', ms } : { mode:'sprint', week:wk, timeMs:ms };
     try { renderLB(await TT.api('/api/tetris', { method:'POST', body })); } catch(e){}
   }
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
-    if (!TT.myEmail()){ el.innerHTML=''; return; }
-    const params = mode==='zen' ? { mode:'zen' } : { mode:'sprint', week:wk };
+    if (!hasLB() || !TT.myEmail()){ el.innerHTML=''; return; }
+    const params = mode==='survival' ? { mode:'zen' } : { mode:'sprint', week:wk };
     try { renderLB(await TT.api('/api/tetris', { params })); } catch(e){ el.innerHTML=''; }
   }
   function renderLB(d){
     const el=$$('tlb'); if (!el || !alive) return;
+    if (!hasLB()){ el.innerHTML=''; return; }
     const rows=(d && d.top)||[];
-    const title = mode==='zen' ? 'Longest survivals (all-time)' : 'This week’s fastest';
+    const title = mode==='survival' ? 'Longest survivals (all-time)' : 'This week’s fastest';
     if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3><p class="how">No times yet — set the first.</p>'; return; }
     let html='<h3>'+title+'</h3>'+rows.map((r,i)=>
       '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
@@ -1055,17 +1121,33 @@ BUILD.tetris = host => {
   }
 
   /* ── modes ── */
-  const MODES=[['sprint','Sprint','Clear 40 lines as fast as you can'],['zen','Zen','Survive as long as you can']];
+  const MODES=[
+    ['sprint','Sprint','Clear 40 lines as fast as you can — weekly board'],
+    ['survival','Survival','Endless, speeding up — all-time board'],
+    ['zen','Zen','Endless and relaxed — no clock, no leaderboard']
+  ];
   function renderModes(){
     $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+'</button>').join('');
     [...$$('tmodes').querySelectorAll('.tmode')].forEach(b=>b.onclick=()=>{ if (b.dataset.mode===mode) return; mode=b.dataset.mode; TT.set('tt.tetrismode',mode); toReady(); });
   }
-  function toReady(){
+  async function toReady(){
     phase='ready'; clearInterval(loopId); emptyBoard(); newRng();
-    renderModes(); renderStatsLabels(); updateStats(); draw();
+    renderModes(); renderStatsLabels(); updateStats(); updateSaveBtn(); draw();
     $$('tstart').textContent='Start'; $$('tpause').textContent='Pause';
-    showOver(mode==='zen' ? 'Zen — survive' : 'Sprint — 40 lines', 'Press Start or '+keyLabel(cfg.keys.hardDrop));
+    const titles = { sprint:'Sprint — 40 lines', survival:'Survival — rising speed', zen:'Zen — endless & relaxed' };
+    showOver(titles[mode], 'Press Start or '+keyLabel(cfg.keys.hardDrop));
     loadLB();
+    if (saveable() && TT.myEmail()){          // offer to resume a saved game
+      const forMode = mode;
+      try {
+        const r = await TT.api('/api/gamestate', { params:{ mode: forMode } });
+        if (r && r.state && phase==='ready' && mode===forMode){
+          savedState = r.state;
+          showOver('Saved '+modeName()+' game', 'Pick up where you left off?',
+            [{ label:'Resume', fn:()=>resumeGame(savedState) }, { label:'New game', fn:begin }]);
+        }
+      } catch(e){}
+    }
   }
 
   /* ── controls / config panel ── */
@@ -1123,8 +1205,9 @@ BUILD.tetris = host => {
   /* ── wire up ── */
   $$('tstart').onclick = begin;
   $$('tpause').onclick = () => { if (phase==='playing'||phase==='paused') togglePause(); };
+  $$('tsave').onclick = saveGame;
   $$('tcontrols').onclick = () => { const c=$$('tcfg'); c.hidden=!c.hidden; if (!c.hidden) renderCfg(); };
-  $$('tover').onclick = () => { if (phase==='paused') togglePause(); else begin(); };
+  $$('tover').onclick = () => { if ($$('tover')._actions) return; if (phase==='paused') togglePause(); else begin(); };
   document.addEventListener('keydown', onKey);
   document.addEventListener('keyup', onKeyUp);
 

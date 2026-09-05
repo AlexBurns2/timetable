@@ -16,7 +16,8 @@ do it without the prior conversation. A visual version of the plan lives at
 >   same whoami-verified, service-role pattern (table `tetris_score`).
 >
 > What remains is **provisioning** (create the Supabase project, run the table SQL —
-> `prefs`, `daily_puzzle`, `daily_result`, `tetris_score`, `zen_score`, `game_score` —
+> `prefs`, `daily_puzzle`, `daily_result`, `tetris_score`, `zen_score`, `game_score`,
+> `game_state` —
 > set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, optionally `CRON_SECRET`,
 > redeploy) — all in SETUP.md. **Phase 3 (realtime boards/multiplayer) is still unbuilt**; the
 > sections below are its plan. The realtime-token bridge there is the natural
