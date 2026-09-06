@@ -785,8 +785,9 @@ on the right** — with three modes (pills at the top):
 - **Survival** — survive the **rising speed**; random pieces, gravity ramps with
   time, endless until you top out. Local best all-time (`tt.stats.tetriszen`);
   all-time board.
-- **Zen** — endless and **relaxed**: constant gentle gravity, **no clock-pressure,
-  no score, no leaderboard**. Just keep placing blocks.
+- **Zen** — endless and **relaxed**: constant gentle gravity, a simple **points
+  score** (100/300/500/800 per 1–4 lines) shown in place of the clock, **no
+  leaderboard**. Just keep placing blocks.
 
 **Cross-device save** (Survival + Zen): a **Save** button uploads the current board
 (grid, active piece, hold, next queue, cleared, elapsed) to `/api/gamestate`, keyed

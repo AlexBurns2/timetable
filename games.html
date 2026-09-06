@@ -835,7 +835,7 @@ BUILD.tetris = host => {
         '<div class="tpanel"><div class="tlabel">Hold</div><canvas id="thold" width="80" height="64"></canvas></div>' +
         '<div class="tstats">' +
           '<div class="tstat"><span id="tgoallabel">Lines left</span><b id="tgoal">40</b></div>' +
-          '<div class="tstat"><span>Time</span><b id="ttime">0.0s</b></div>' +
+          '<div class="tstat"><span id="ttimelabel">Time</span><b id="ttime">0.0s</b></div>' +
           '<div class="tstat"><span id="tbestlabel">Best</span><b id="tbest">—</b></div>' +
         '</div>' +
       '</div>' +
@@ -880,7 +880,7 @@ BUILD.tetris = host => {
     return bag.shift();
   }
 
-  let grid, piece, nextT, hold, holdUsed, cleared, elapsedMs = 0;
+  let grid, piece, nextT, hold, holdUsed, cleared, score = 0, elapsedMs = 0;
   let phase = 'ready';            // 'ready' | 'playing' | 'paused' | 'over'
   let loopId, lastTick, baseTime, dropAcc = 0, pauseAt = 0, alive = true;
   let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
@@ -928,7 +928,7 @@ BUILD.tetris = host => {
     piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c]=piece.type; }));
     let lines=0;
     for (let r=ROWS-1;r>=0;r--){ if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; } }
-    if (lines) cleared+=lines;
+    if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800; }
     if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
     holdUsed=false; spawnNext(now); updateStats();
   }
@@ -996,13 +996,14 @@ BUILD.tetris = host => {
   }
   function renderStatsLabels(){
     $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
+    $$('ttimelabel').textContent = mode==='zen' ? 'Score' : 'Time';
     const bestRow = $$('tbest').closest('.tstat');
     if (bestRow) bestRow.style.display = mode==='zen' ? 'none' : 'flex';   // Zen keeps no score
     $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : 'Best (all-time)';
     $$('tbest').textContent = fmtBest();
   }
   function updateStats(){
-    $$('ttime').textContent = (elapsedMs/1000).toFixed(1)+'s';
+    $$('ttime').textContent = mode==='zen' ? String(score) : (elapsedMs/1000).toFixed(1)+'s';
     $$('tgoal').textContent = mode==='sprint' ? Math.max(0, TARGET-cleared) : cleared;
   }
   function showOver(title, sub, actions){
@@ -1016,7 +1017,7 @@ BUILD.tetris = host => {
   function hideOver(){ $$('tover').hidden=true; $$('tover')._actions=null; }
 
   /* ── game flow ── */
-  function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; nextT=null; cleared=0; elapsedMs=0; }
+  function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; nextT=null; cleared=0; score=0; elapsedMs=0; }
   function begin(){
     if (saveable()) clearState();              // starting fresh discards any saved game
     emptyBoard(); newRng();
@@ -1033,13 +1034,13 @@ BUILD.tetris = host => {
   function serialize(){
     return { grid: grid.map(r=>r.slice()),
              piece: piece ? { type:piece.type, x:piece.x, y:piece.y, cells:piece.cells.map(r=>r.slice()) } : null,
-             nextT, hold, holdUsed, cleared, elapsedMs, bag: bag.slice() };
+             nextT, hold, holdUsed, cleared, score, elapsedMs, bag: bag.slice() };
   }
   function applyState(s){
     grid = (s.grid||[]).map(r=>r.slice());
     if (grid.length!==ROWS) emptyBoard();      // guard against a malformed save
     piece = s.piece ? { type:s.piece.type, x:s.piece.x, y:s.piece.y, cells:s.piece.cells.map(r=>r.slice()) } : null;
-    nextT = s.nextT; hold = s.hold||null; holdUsed = !!s.holdUsed; cleared = s.cleared||0; elapsedMs = s.elapsedMs||0;
+    nextT = s.nextT; hold = s.hold||null; holdUsed = !!s.holdUsed; cleared = s.cleared||0; score = s.score||0; elapsedMs = s.elapsedMs||0;
     rnd = mulberry32((Math.random()*4294967296)>>>0); bag = Array.isArray(s.bag) ? s.bag.slice() : [];
     moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
@@ -1085,8 +1086,8 @@ BUILD.tetris = host => {
       if (z.best==null||ms>z.best) z.best=ms; s.tetriszen={best:z.best}; TT.set('tt.stats',s);
       submitScore(ms); showOver('Survived '+(ms/1000).toFixed(1)+'s', restart);
       clearState();
-    } else {   // zen — no score, no board
-      showOver('Topped out — '+cleared+' lines cleared', restart);
+    } else {   // zen — score shown, no leaderboard
+      showOver('Topped out — score '+score, cleared+' lines · '+restart);
       clearState();
     }
     renderStatsLabels(); draw();
