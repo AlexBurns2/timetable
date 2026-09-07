@@ -60,7 +60,7 @@ button,select,input{font:inherit;color:inherit}
   width:8ch;min-width:3ch;max-width:17ch}
 .idrow .dom{color:var(--muted);font-size:11px;white-space:nowrap;opacity:.7}
 @media (max-width:520px){ .idrow .dom{display:none} }
-.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:flex-start}
+.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 
 /* centred week switch, sits above the middle column */
 .weekswitch{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
@@ -103,9 +103,10 @@ button,select,input{font:inherit;color:inherit}
 .progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
       border-radius:99px;overflow:hidden;min-width:0}
-.prog i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px;
+/* fixed accent fill — the per-subject colour was often too pale to read */
+.prog i{display:block;height:100%;background:var(--accent);border-radius:99px;
         transition:width .6s linear}
-.progrow .count{margin-top:0;white-space:nowrap;color:var(--c,var(--accent))}
+.progrow .count{margin-top:0;white-space:nowrap;color:var(--accent)}
 [data-skin="swiss"] .prog,[data-skin="brutal"] .prog,
 [data-skin="terminal"] .prog,[data-skin="blueprint"] .prog{border-radius:0}
 [data-skin="swiss"] .prog i,[data-skin="brutal"] .prog i,
@@ -183,7 +184,7 @@ button,select,input{font:inherit;color:inherit}
 .lesson .tm{display:none;color:inherit;opacity:.85;font-size:11px;margin-top:auto;
             font-family:var(--font-num);font-variant-numeric:tabular-nums}
 .lesson.tall .tm{display:block}
-.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:2px;z-index:2}
+.lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:0;z-index:2}
 
 .breakbar{
   position:relative;width:100%;overflow:hidden;
@@ -606,7 +607,9 @@ const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view
              textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
              weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
-const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  /* mirror settings to the signed-in user (theme.js debounces + skips creds/cache) */
+  if (window.TT && TT.syncPush && k.startsWith('tt.') && k !== LS.creds && k !== LS.cache) TT.syncPush(); };
 
 const endpoint = CONFIG.ENDPOINT;
 let email    = get(LS.email, '');
@@ -1240,8 +1243,9 @@ function renderCompact(ctx){
       if (blk.kind !== 'class'){
         const name = e && e.kind === 'assembly' ? (e.subject || 'Assembly') : slotLabel(blk.slot);
         node = el('div','breakbar' + (blk.kind === 'assembly' ? ' assembly' : ''));
+        const showTime = h >= 34 && !/^lunch$/i.test(name);   // lunch matches recess/assembly: no time
         node.innerHTML = '<span>' + esc(name) + '</span>' +
-          (h >= 34 ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
+          (showTime ? '<em>' + fmtTime(blk.start) + '–' + fmtTime(blk.end) + '</em>' : '');
         node.title = name + ' · ' + fmtTime(blk.start) + '–' + fmtTime(blk.end);
       } else {
         node = lessonCard(e, blk.start, blk.end, isToday, ctx.nowMin, ctx.days[c.i], h >= 86);
@@ -1469,6 +1473,12 @@ $('gateform').onsubmit = async ev => {
   if (loadError){ $('gateerr').textContent = loadError; return; }
   set(LS.email, email);
   set(LS.creds, creds);
+  /* now that we're signed in: adopt any settings saved under this account
+     (syncPull reloads if it finds newer ones), otherwise seed the server. */
+  if (window.TT){
+    if (TT.syncPull) await TT.syncPull();
+    if (TT.syncPush) TT.syncPush();
+  }
   gate.hidden = true;
   render();
 };

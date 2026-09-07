@@ -67,6 +67,69 @@ canvas{
   font-variant-numeric:tabular-nums}
 .gwyou{font-size:12px;color:var(--muted);margin-bottom:10px}
 .gwyou b{color:var(--text)}
+/* daily past-puzzle chips */
+.dgdays{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.dgday{display:flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text);white-space:nowrap}
+.dgday:hover{border-color:var(--accent)}
+.dgday.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.dgday .dgi{font-weight:700}
+.dgday.won .dgi{color:#2f9e44}
+.dgday.lost .dgi{color:#e5484d}
+/* tetris leaderboard */
+.tlb{margin-top:16px;max-width:420px}
+.tlb h3{margin:0 0 8px;font-family:var(--font-display);font-size:15px;
+  font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.tlbrow{display:flex;gap:10px;align-items:baseline;padding:5px 11px;border-radius:var(--radius);font-size:13.5px}
+.tlbrow:nth-child(odd){background:var(--panel-2)}
+.tlbrow.me{background:color-mix(in srgb,var(--accent) 18%,var(--panel));font-weight:700}
+.tlbrow .rk{width:26px;color:var(--muted);font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.tlbrow.me .rk{color:var(--accent)}
+.tlbrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlbrow .tm{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+/* tetris layout (tetr.io-ish): hold left, board centre, next right */
+.tmodes{display:flex;gap:8px;margin-bottom:14px}
+.tmode{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+  padding:6px 15px;font-size:13px;cursor:pointer;color:var(--text)}
+.tmode:hover{border-color:var(--accent)}
+.tmode.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tgame{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+.tside{display:flex;flex-direction:column;gap:12px;min-width:96px}
+.tpanel{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:8px}
+.tlabel{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.tstats{display:flex;flex-direction:column;gap:7px}
+.tstat{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+.tstat b{color:var(--text);font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.tboardwrap{position:relative;flex:none}
+.tover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:16px;border-radius:calc(var(--card-radius)*.6);cursor:pointer;
+  background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.tover[hidden]{display:none}
+.tovt{font-family:var(--font-display);font-size:19px;font-weight:var(--display-w);margin-bottom:6px}
+.tovs{font-size:13px;color:var(--muted)}
+.tovbtns{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.tbtns{display:flex;flex-direction:column;gap:6px}
+.tkeyhint{font-size:11px;line-height:1.55;color:var(--muted)}
+.tcfg{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);
+  padding:16px;margin-top:14px;max-width:520px}
+.tcfg[hidden]{display:none}
+.tcfghd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tkeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:6px 14px;margin-bottom:14px}
+.tkeyrow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+.tkeybtn{padding:4px 10px;font-size:12px;min-width:58px}
+.tsliders{display:flex;flex-direction:column;gap:12px}
+.tslider{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.tslider input[type=range]{width:100%;accent-color:var(--accent)}
+/* shared game leaderboard panel */
+.glb{margin-top:18px;max-width:420px}
+.glbhd{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.glbhd h3{margin:0;font-family:var(--font-display);font-size:15px;font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.glbtabs{display:flex;gap:6px}
+.glbtab{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;
+  font-size:12px;cursor:pointer;color:var(--text)}
+.glbtab:hover{border-color:var(--accent)}
+.glbtab.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* minesweeper */
 #mines{display:grid;gap:3px;width:min(360px,100%)}
 #mines button{
@@ -174,9 +237,11 @@ $('mode').onclick = () => {
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
+  { id:'dailyguess', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student from your year — same for everyone, every day' },
   { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery person — classmates, grade or teachers' },
   { id:'classroom', ico:'🚪', name:'Classroom', blurb:'Name the room each of your classes is in' },
   { id:'chain',  ico:'🔗', name:'Six Degrees', blurb:'Hop student to student through shared classes' },
+  { id:'tetris', ico:'🟦', name:'Tetris', blurb:'Clear 40 lines — fixed weekly piece order, best time resets each Monday' },
   { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
@@ -186,6 +251,7 @@ const GAMES = [
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
+  lbState = null;
   $('gamestage').hidden = true;
   const grid = $('gamegrid');
   grid.hidden = false;
@@ -213,6 +279,8 @@ function openGame(id){
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
     stop = BUILD[id]($('stage'));
+    lbState = null;
+    if (LB_GAMES[id]) mountLB(id);
   };
   if (reduced()){ go(); return; }
   grid.classList.add('leaving');           /* fade the grid away, then swap in */
@@ -252,14 +320,94 @@ function recordStat(game, { key, mode, value }){
   else if (mode === 'count') s[game][key] = (cur || 0) + (value || 1);
   else s[game][key] = value;
   TT.set('tt.stats', s);
+  const lb = LB_GAMES[game];      // a new personal best also goes to the shared board
+  if (lb && key === lb.metric && (mode === 'max' || mode === 'min') && s[game][key] === value) lbSubmit(game, value);
   return s[game][key];
 }
 const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
 const statLine = game => {
   const s = allStats()[game]; if (!s) return '';
+  if (game === 'tetris')                       // weekly best, hidden once the week rolls over
+    return (s.week === tetrisWeek() && s.best != null) ? 'Best this week ' + fmtHMS(s.best*1000) : '';
   return Object.entries(s).map(([k,v]) => STAT_LABEL[k] ? STAT_LABEL[k]+' '+v : '').filter(Boolean).join(' · ');
 };
-const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared' };
+const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak' };
+
+/* Monday-anchored week index (local time); drives Tetris's weekly reset */
+function tetrisWeek(){
+  const n = new Date();
+  const day = Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024,0,1)) / 86400000);
+  return Math.floor(day / 7);   // 2024-01-01 was a Monday
+}
+
+/* milliseconds → HH:MM:SS.d (tenths kept so sprint times stay precise) */
+function fmtHMS(ms){
+  const total = Math.max(0, +ms||0);
+  const t = Math.floor(total/1000), p = n => String(n).padStart(2,'0');
+  return p(Math.floor(t/3600))+':'+p(Math.floor((t%3600)/60))+':'+p(t%60)+'.'+Math.floor((total%1000)/100);
+}
+
+/* ── shared game leaderboards ─────────────────────────────────────────
+   Each of these games gets both an all-time ("unlimited") board and a
+   this-week board, keyed by the metric a new personal best is recorded on.
+   recordStat submits automatically; the panel is mounted by openGame. */
+const LB_GAMES = {
+  snake:     { metric:'high',    dir:'max', label:'High score',  fmt:v=>String(v) },
+  g2048:     { metric:'high',    dir:'max', label:'Score',       fmt:v=>String(v) },
+  typing:    { metric:'wpm',     dir:'max', label:'Words / min', fmt:v=>v+' wpm' },
+  react:     { metric:'fastest', dir:'min', label:'Reaction',    fmt:v=>v+' ms' },
+  classroom: { metric:'high',    dir:'max', label:'Correct',     fmt:v=>String(v) },
+  chain:     { metric:'best',    dir:'min', label:'Fewest hops', fmt:v=>String(v) }
+};
+let lbState = null;   // { game, period, week, all } for the mounted panel
+
+async function lbSubmit(game, score){
+  if (!TT.myEmail()) return;
+  const lb = LB_GAMES[game]; if (!lb) return;
+  try {
+    const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score, week:tetrisWeek() } });
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+  } catch(e){}
+}
+function mountLB(game){
+  const lb = LB_GAMES[game]; if (!lb) return;
+  const panel = document.createElement('div');
+  panel.className = 'glb'; panel.id = 'glb';
+  panel.innerHTML =
+    '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
+    '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
+    '<button type="button" class="glbtab" data-p="all">All time</button></div></div>' +
+    '<div id="glbbody"><p class="how">Loading…</p></div>';
+  $('stage').appendChild(panel);
+  lbState = { game, period:'week', week:null, all:null };
+  [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
+    lbState.period = b.dataset.p;
+    [...panel.querySelectorAll('.glbtab')].forEach(t => t.classList.toggle('cur', t===b));
+    paintLB();
+  });
+  loadLBoard(game);
+}
+async function loadLBoard(game){
+  const lb = LB_GAMES[game], body = $('glbbody');
+  if (!TT.myEmail()){ if (body) body.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboard.</p>'; return; }
+  try {
+    const d = await TT.api('/api/leaderboard', { params:{ game, metric:lb.metric, week:tetrisWeek() } });
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+  } catch(e){ if (body) body.innerHTML = ''; }
+}
+function paintLB(){
+  const body = $('glbbody'); if (!body || !lbState) return;
+  const lb = LB_GAMES[lbState.game];
+  const b = lbState.period === 'week' ? lbState.week : lbState.all;
+  if (!b){ body.innerHTML = '<p class="how">Loading…</p>'; return; }
+  const rows = b.top || [];
+  if (!rows.length && b.meBest == null){ body.innerHTML = '<p class="how">No scores yet — be the first.</p>'; return; }
+  let html = rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+    '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
+  if (b.meRank && b.meRank > rows.length)
+    html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(lb.fmt(b.meBest))+'</span></div>';
+  body.innerHTML = html;
+}
 
 const cleanSubject = name => String(name||'')
   .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i,'')
@@ -267,8 +415,8 @@ const cleanSubject = name => String(name||'')
   .replace(/^[\s:\-–—]+/,'').trim();
 const personName = r => {
   const full = r.FullName||r.fullName||r.Name||r.name||'';
-  const first = r.FirstName||r.firstName||r.GivenName||r.preferredName||'';
-  const last  = r.LastName||r.lastName||r.Surname||r.surname||'';
+  const first = r.FirstName||r.firstName||r.firstname||r.GivenName||r.preferredName||'';
+  const last  = r.LastName||r.lastName||r.lastname||r.Surname||r.surname||'';
   const mail  = r.Email||r.email||r.emailAddress||'';
   const nm = full || [first,last].filter(Boolean).join(' ');
   if (nm) return nm;
@@ -347,11 +495,17 @@ async function loadGuessData(){
 /* the directory doesn't name its year field consistently — pull a year number
    out of whichever of the usual fields carries it (Year / Form / Grade / roll
    class / cohort), keeping only the digits so "Year 8", "8", "8B" all give 8 */
-const yearOf = r => String(
+const yearOf = r => {
+  const direct = String(
     r.year || r.Year || r.grade || r.Grade || r.yearGroup || r.YearGroup ||
     r.form || r.Form || r.rollClass || r.RollClass || r.RollGroup || r.rollGroup ||
     r.cohort || r.Cohort || r.stage || r.Stage || ''
   ).replace(/\D/g, '');
+  if (direct) return direct;
+  const gs = r.groups || r.Groups || [];       // real directory carries year here, e.g. "yr11"
+  for (const g of (Array.isArray(gs) ? gs : [])){ const m = String(g).match(/(?:yr|year)\.?\s*(\d{1,2})/i); if (m) return m[1]; }
+  return '';
+};
 
 /* map a raw directory record to a person */
 function dirPerson(r){
@@ -454,24 +608,27 @@ BUILD.guesswho = host => {
     const first = target.name.split(' ')[0], last = target.name.split(' ').slice(1).join(' ');
     const subs = shuffle(target.subjects.slice());
     const hasClasses = target.subjects.length > 0;
-    /* a classmate who shares a class, preferring one who shares a DIFFERENT
-       class than the one we reveal first, so the two hints aren't redundant */
+    /* a classmate who shares a class the target has but that we never NAME in a
+       hint, so "shares a class with X" can't overlap a class we already gave.
+       (With ≤2 classes every class gets named, so there's simply no peer hint.) */
     const firstClass = subs[0];
-    const peer = shuffle(pool.filter(p => p !== target && p.subjects.length &&
-        p.subjects.some(s => target.subjects.includes(s) && s !== firstClass)))[0]
-      || shuffle(pool.filter(p => p !== target && p.subjects.some(s => target.subjects.includes(s))))[0];
+    const namedClasses = new Set([firstClass, subs[1]].filter(Boolean));
+    const peer = shuffle(pool.filter(p => p !== target &&
+        p.subjects.some(s => target.subjects.includes(s) && !namedClasses.has(s))))[0];
 
     /* hints grouped by how much they give away; revealed weakest-first,
        shuffled within each tier, so the near-answer hints come last */
     const T = [[], [], [], []];
-    if (target.year) T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
+    if (target.year && diff !== 'grade')                    // pointless in My-grade — all one year
+      T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
     if (hasClasses){
       T[0].push(() => 'They are in <b>' + target.subjects.length + '</b> of your classes.');
       T[0].push(() => 'One of their classes is <b>' + firstClass + '</b>.');
       if (subs[1]) T[1].push(() => 'They also take <b>' + subs[1] + '</b>.');
     }
-    T[1].push(() => 'Their first name has <b>' + first.length + '</b> letters'
-                    + (last ? ', surname <b>' + last.length + '</b>' : '') + '.');
+    /* first-name and surname length kept in separate tiers — together they give too much away */
+    T[1].push(() => 'Their first name has <b>' + first.length + '</b> letters.');
+    if (last) T[2].push(() => 'Their surname has <b>' + last.length + '</b> letters.');
     T[2].push(() => 'Their first name starts with <b>' + first[0].toUpperCase() + '</b>.');
     if (last) T[2].push(() => 'Their surname starts with <b>' + last[0].toUpperCase() + '</b>.');
     if (peer) T[2].push(() => 'They share a class with <b>' + peer.name + '</b>.');
@@ -534,6 +691,538 @@ BUILD.guesswho = host => {
     return [...word].map((ch,i) => (i===0 || Math.random()<frac) ? ch : '_').join(' ');
   }
   return () => { alive = false; };
+};
+
+/* ── Daily Guess Who ───────────────────────────────────────────────
+   The same mystery student for everyone in your year, once a day. The
+   server picks and grades — the answer never reaches the browser. One
+   hint to start, one more per wrong guess. Streak counts winning days. */
+BUILD.dailyguess = host => {
+  head(host, 'Daily Guess Who', 'One mystery student from your year — same for everyone. Replay past days, or go Unlimited.', '<div id="dg"></div>');
+  const box = document.getElementById('dg');
+  let alive = true;
+
+  const shiftISO = (d, delta) => { const x=new Date(d+'T00:00:00Z'); x.setUTCDate(x.getUTCDate()+delta); return x.toISOString().slice(0,10); };
+  const shortDate = d => new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{month:'short',day:'numeric',timeZone:'UTC'});
+
+  async function loadDay(date){       // date=null → today
+    box.innerHTML = '<p class="how">Loading…</p>';
+    let s;
+    try { s = await TT.api('/api/daily', { params: date ? { date } : {} }); }
+    catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; return; }
+    if (alive) render(s);
+  }
+  loadDay(null);
+
+  function render(s){
+    const isToday = s.date === s.today;
+    box.innerHTML =
+      '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></div>' +
+      '<div style="margin-left:auto;display:flex;gap:10px;align-items:center">' +
+        '<span class="gwyou" style="margin:0">🔥 streak <b id="dgstreak">' + (s.streak||0) + '</b></span>' +
+        '<button class="btn" id="dgunlimited" type="button">Unlimited →</button></div></div>' +
+      '<div class="dgdays" id="dgdays"></div>' +
+      '<div class="gwhints" id="dghints"></div>' +
+      '<div class="gwrow" id="dgrow">' +
+        '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name the mystery student…">' +
+        '<datalist id="dglist">' + (s.candidates||[]).map(n => '<option value="' + esc(n).replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+        '<button class="btn primary" id="dgguess" type="button">Guess</button>' +
+      '</div><div class="gwlog" id="dglog"></div>';
+
+    document.getElementById('dgunlimited').onclick = () => openGame('guesswho');
+    renderDays(s);
+
+    const hintsEl = document.getElementById('dghints');
+    const cur = (s.hints || []).slice();
+    const paint = fresh => hintsEl.innerHTML = cur.map((h,i) =>
+      '<div class="gwhint' + (i===fresh?' fresh':'') + '">' + h + '</div>').join('');
+    paint(-1);
+
+    const sc = document.getElementById('sc');
+    const setScore = st => sc.textContent = st.done ? '' : 'Guess ' + (st.guesses+1) + ' of ' + st.totalHints;
+    setScore(s);
+    recordStat('dailyguess', { key:'streak', mode:'set', value:s.streak||0 });
+
+    if (s.done){ dgFinish(s, hintsEl, isToday); return; }
+
+    const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
+    async function doGuess(){
+      const v = input.value.trim(); if (!v) return;
+      btn.disabled = true;
+      let r;
+      try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } }); }
+      catch(err){ if (alive){ btn.disabled = false; } return; }
+      if (!alive) return;
+      const row = document.createElement('div');
+      row.className = 'gwguessrow ' + (r.correct ? 'win' : 'miss');
+      row.textContent = (r.correct ? '✓ ' : '✗ ') + v;
+      document.getElementById('dglog').prepend(row);
+      input.value = '';
+      if (r.nextHint){ cur.push(r.nextHint); paint(cur.length-1); }
+      recordStat('dailyguess', { key:'streak', mode:'set', value:r.streak||0 });
+      document.getElementById('dgstreak').textContent = r.streak||0;
+      if (r.done){ dgFinish(r, hintsEl, isToday); }
+      else { setScore(r); btn.disabled = false; input.focus(); }
+    }
+    btn.onclick = doGuess;
+    input.addEventListener('keydown', e => { if (e.key==='Enter') doGuess(); });
+    input.focus();
+  }
+
+  /* a chip per day for the last two weeks: ✓ won, ✗ lost, plain = unplayed */
+  function renderDays(s){
+    const daysEl = document.getElementById('dgdays');
+    const hist = {}; (s.history||[]).forEach(h => hist[h.date] = h);
+    let html = '';
+    for (let i=0;i<14;i++){
+      const d = shiftISO(s.today, -i), h = hist[d];
+      const status = h && h.won ? 'won' : (h && h.done ? 'lost' : 'open');
+      const icon = h && h.won ? '✓' : (h && h.done ? '✗' : '');
+      html += '<button class="dgday ' + status + (d===s.date ? ' cur' : '') + '" data-date="' + d + '">' +
+        '<span class="dgd">' + (i===0 ? 'Today' : esc(shortDate(d))) + '</span>' +
+        (icon ? '<span class="dgi">' + icon + '</span>' : '') + '</button>';
+    }
+    daysEl.innerHTML = html;
+    [...daysEl.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
+  }
+
+  function dgFinish(s, hintsEl, isToday){
+    const row = document.getElementById('dgrow'); if (row) row.style.display = 'none';
+    const sc = document.getElementById('sc'); if (sc) sc.textContent = '';
+    const st = document.getElementById('dgstreak'); if (st) st.textContent = s.streak||0;
+    const banner = document.createElement('div');
+    banner.className = 'gwhint ' + (s.won ? 'win' : 'lose');
+    banner.innerHTML = s.won
+      ? 'You got it in <b>' + s.guesses + '</b>! It was <b>' + esc(s.answer) + '</b> 🎉'
+      : 'Out of guesses — it was <b>' + esc(s.answer) + '</b>.';
+    hintsEl.appendChild(banner);
+    // reflect the result on the current chip without a refetch
+    const chip = document.querySelector('.dgday.cur');
+    if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(s.won?'won':'lost');
+      let ic = chip.querySelector('.dgi'); if(!ic){ ic=document.createElement('span'); ic.className='dgi'; chip.appendChild(ic); }
+      ic.textContent = s.won ? '✓' : '✗'; }
+    const note = document.createElement('p');
+    note.className = 'gwyou'; note.style.marginTop = '12px';
+    note.innerHTML = (isToday ? 'Come back tomorrow for a new one. ' : 'Pick another day above. ') +
+                     'Current streak: <b>' + (s.streak||0) + '</b>.';
+    hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
+  }
+
+  return () => { alive = false; };
+};
+
+/* ── Tetris ────────────────────────────────────────────────────────
+   Two modes — Sprint (clear 40 lines; deterministic weekly pieces; best
+   time per week) and Zen (survive as long as you can; gravity ramps with
+   time; all-time board). tetr.io-style layout, rebindable keys + handling. */
+BUILD.tetris = host => {
+  const COLS = 10, ROWS = 20, CELL = 24, TARGET = 40, LOCK_DELAY = 500, MAX_RESETS = 15, ROT_DAS = 250, ROT_ARR = 130;
+  const wk = tetrisWeek();
+
+  /* ── config: keybinds + handling, persisted (syncs with other settings) ── */
+  const DEFAULTS = {
+    keys: { left:'ArrowLeft', right:'ArrowRight', softDrop:'ArrowDown', hardDrop:' ',
+            rotateCW:'ArrowUp', rotateCCW:'z', hold:'Shift', pause:'p', restart:'r' },
+    das:160, arr:45, sdf:25
+  };
+  function loadCfg(){
+    const c = TT.get('tt.tetriscfg', {}) || {};
+    return { keys: Object.assign({}, DEFAULTS.keys, c.keys||{}),
+             das: c.das==null?DEFAULTS.das:c.das, arr: c.arr==null?DEFAULTS.arr:c.arr, sdf: c.sdf==null?DEFAULTS.sdf:c.sdf };
+  }
+  let cfg = loadCfg();
+  const saveCfg = () => TT.set('tt.tetriscfg', cfg);
+  let mode = TT.get('tt.tetrismode', 'sprint');
+
+  head(host, 'Tetris', 'Sprint, Survival, or endless Zen. Rebind keys and tune handling under Controls.', '<div id="twrap"></div>');
+  document.getElementById('twrap').innerHTML =
+    '<div class="tmodes" id="tmodes"></div>' +
+    '<div class="tgame">' +
+      '<div class="tside">' +
+        '<div class="tpanel"><div class="tlabel">Hold</div><canvas id="thold" width="80" height="64"></canvas></div>' +
+        '<div class="tstats">' +
+          '<div class="tstat"><span id="tgoallabel">Lines left</span><b id="tgoal">40</b></div>' +
+          '<div class="tstat"><span id="ttimelabel">Time</span><b id="ttime">0.0s</b></div>' +
+          '<div class="tstat"><span id="tbestlabel">Best</span><b id="tbest">—</b></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tboardwrap">' +
+        '<canvas id="tcan" width="240" height="480"></canvas>' +
+        '<div class="tover" id="tover"></div>' +
+      '</div>' +
+      '<div class="tside">' +
+        '<div class="tpanel"><div class="tlabel">Next</div><canvas id="tnext" width="80" height="64"></canvas></div>' +
+        '<div class="tbtns">' +
+          '<button class="btn primary" id="tstart" type="button">Start</button>' +
+          '<button class="btn" id="tpause" type="button">Pause</button>' +
+          '<button class="btn" id="tsave" type="button" hidden>Save</button>' +
+          '<button class="btn" id="tcontrols" type="button">Controls</button>' +
+        '</div>' +
+        '<div class="tkeyhint" id="tkeyhint"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tcfg" id="tcfg" hidden></div>' +
+    '<div class="tlb" id="tlb"></div>';
+
+  const $$ = id => document.getElementById(id);
+  const can = $$('tcan'), ctx = can.getContext('2d');
+  const ncan = $$('tnext'), nctx = ncan.getContext('2d');
+  const hcan = $$('thold'), hctx = hcan.getContext('2d');
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  const SHAPES = {
+    I:[[1,1,1,1]], O:[[1,1],[1,1]], T:[[0,1,0],[1,1,1]],
+    S:[[0,1,1],[1,1,0]], Z:[[1,1,0],[0,1,1]], J:[[1,0,0],[1,1,1]], L:[[0,0,1],[1,1,1]]
+  };
+  const COLORS = { I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c' };
+  const KEYS = Object.keys(SHAPES);
+
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  let rnd, bag = [];
+  function newRng(){ rnd = mode==='sprint' ? mulberry32(0x9e3779b9 ^ wk) : mulberry32((Math.random()*4294967296)>>>0); bag = []; }
+  function nextType(){
+    if (!bag.length){ bag = KEYS.slice();
+      for (let i=bag.length-1;i>0;i--){ const j=(rnd()*(i+1))|0; [bag[i],bag[j]]=[bag[j],bag[i]]; } }
+    return bag.shift();
+  }
+
+  let grid, piece, nextT, hold, holdUsed, cleared, score = 0, elapsedMs = 0;
+  let phase = 'ready';            // 'ready' | 'playing' | 'paused' | 'over'
+  let loopId, lastTick, baseTime, dropAcc = 0, pauseAt = 0, alive = true;
+  let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
+  let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
+  let grounded = false, lockStart = 0, lockResets = 0;
+  let rebinding = null;
+  let savedState = null, saveFlashTimer = null;
+
+  /* ── piece mechanics ── */
+  function collides(cells, px, py){
+    for (let r=0;r<cells.length;r++) for (let c=0;c<cells[r].length;c++){
+      if (!cells[r][c]) continue;
+      const x=px+c, y=py+r;
+      if (x<0 || x>=COLS || y>=ROWS) return true;
+      if (y>=0 && grid[y][x]) return true;
+    }
+    return false;
+  }
+  function rotate(cells){ const h=cells.length, w=cells[0].length, out=[];
+    for (let c=0;c<w;c++){ out[c]=[]; for (let r=h-1;r>=0;r--) out[c].push(cells[r][c]); } return out; }
+  function updateGround(now, isAction){
+    if (!collides(piece.cells, piece.x, piece.y+1)){ grounded=false; if (isAction) lockResets=0; }
+    else { if (!grounded){ grounded=true; lockStart=now; }
+           else if (isAction && lockResets<MAX_RESETS){ lockStart=now; lockResets++; } }
+  }
+  function tryMove(dx, now){ if (collides(piece.cells, piece.x+dx, piece.y)) return false; piece.x+=dx; updateGround(now,true); return true; }
+  function tryRotate(dir, now){
+    const rc = dir>0 ? rotate(piece.cells) : rotate(rotate(rotate(piece.cells)));
+    for (const dx of [0,-1,1,-2,2]) if (!collides(rc, piece.x+dx, piece.y)){ piece.cells=rc; piece.x+=dx; updateGround(now,true); return; }
+  }
+  function spawnFrom(type, now){
+    const cells = SHAPES[type].map(r=>r.slice());
+    piece = { type, cells, x:(COLS-cells[0].length)>>1, y:0 };
+    grounded=false; lockStart=0; lockResets=0; dropAcc=0;
+    if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
+  }
+  function spawnNext(now){ const type=nextT; nextT=nextType(); spawnFrom(type, now); }
+  function doHold(now){
+    if (holdUsed) return; holdUsed=true;
+    const cur=piece.type;
+    if (hold==null){ hold=cur; spawnNext(now); } else { const h=hold; hold=cur; spawnFrom(h, now); }
+  }
+  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; commitLock(now); }
+  function commitLock(now){
+    piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c]=piece.type; }));
+    let lines=0;
+    for (let r=ROWS-1;r>=0;r--){ if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; } }
+    if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800; }
+    if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
+    holdUsed=false; spawnNext(now); updateStats();
+  }
+
+  /* ── loop ── */
+  const gravityMs = () => mode==='survival' ? Math.max(90, 800 - (elapsedMs/1000)*4) : (mode==='zen' ? 800 : 750);
+  const saveable = () => mode==='zen' || mode==='survival';
+  const hasLB = () => mode==='sprint' || mode==='survival';
+  const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen'}[mode] || mode);
+  function loop(){
+    if (phase!=='playing') return;
+    const now = performance.now();
+    const dt = Math.min(100, now-lastTick); lastTick=now;
+    elapsedMs = Date.now() - baseTime;
+    if (moveDir!==0 && now-dasStart>=cfg.das){
+      if (!dasCharged){ dasCharged=true; arrLast=now; tryMove(moveDir,now); }
+      else while (now-arrLast>=cfg.arr){ arrLast+=cfg.arr; if (!tryMove(moveDir,now)) break; }
+    }
+    if (rotHeld && now-rotStart>=ROT_DAS){
+      if (!rotCharged){ rotCharged=true; rotLast=now; tryRotate(1,now); }
+      else while (now-rotLast>=ROT_ARR){ rotLast+=ROT_ARR; tryRotate(1,now); }
+    }
+    const interval = softHeld ? cfg.sdf : gravityMs();
+    /* clamp to one interval/frame so switching to the fast soft-drop rate can't
+       spend banked gravity time in a single frame (which looked like a hard drop) */
+    dropAcc = Math.min(dropAcc + dt, interval);
+    while (dropAcc>=interval){ dropAcc-=interval;
+      if (!collides(piece.cells, piece.x, piece.y+1)) piece.y++;
+      updateGround(now, false);
+      if (phase!=='playing') return;
+    }
+    if (grounded && now-lockStart>=LOCK_DELAY){ commitLock(now); if (phase!=='playing') return; }
+    updateStats(); draw();
+  }
+
+  /* ── render ── */
+  function cellPx(cx,cy,type,g){ g.fillStyle=COLORS[type]; g.fillRect(cx+1,cy+1,CELL-2,CELL-2);
+    g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(cx+1,cy+1,CELL-2,4); }
+  function miniDraw(g, cv, type){ g.clearRect(0,0,cv.width,cv.height); if (!type) return;
+    const sh=SHAPES[type], w=sh[0].length, h=sh.length, s=15, ox=(cv.width-w*s)/2, oy=(cv.height-h*s)/2;
+    sh.forEach((row,r)=>row.forEach((v,c)=>{ if(v){ g.fillStyle=COLORS[type]; g.fillRect(ox+c*s+1,oy+r*s+1,s-2,s-2);
+      g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(ox+c*s+1,oy+r*s+1,s-2,3); } })); }
+  function draw(){
+    ctx.fillStyle = cssVar('--panel-2') || '#111'; ctx.fillRect(0,0,can.width,can.height);
+    ctx.strokeStyle='rgba(128,128,128,.15)'; ctx.lineWidth=1;
+    for (let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,ROWS*CELL); ctx.stroke(); }
+    for (let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(COLS*CELL,y*CELL); ctx.stroke(); }
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) if (grid[r][c]) cellPx(c*CELL,r*CELL,grid[r][c],ctx);
+    if (piece && phase==='playing'){
+      let gy=piece.y; while (!collides(piece.cells, piece.x, gy+1)) gy++;
+      ctx.strokeStyle=COLORS[piece.type]; ctx.lineWidth=2;
+      piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if(v) ctx.strokeRect((piece.x+c)*CELL+2,(gy+r)*CELL+2,CELL-4,CELL-4); }));
+      ctx.lineWidth=1;
+      piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if(v && piece.y+r>=0) cellPx((piece.x+c)*CELL,(piece.y+r)*CELL,piece.type,ctx); }));
+    }
+    miniDraw(nctx, ncan, nextT);
+    miniDraw(hctx, hcan, hold);
+  }
+
+  /* ── stats / overlay ── */
+  function fmtBest(){
+    if (mode==='sprint'){ const s=allStats().tetris; return (s && s.week===wk && s.best!=null) ? fmtHMS(s.best*1000) : '—'; }
+    if (mode==='survival'){ const z=allStats().tetriszen; return (z && z.best!=null) ? fmtHMS(z.best) : '—'; }
+    return '—';
+  }
+  function renderStatsLabels(){
+    $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
+    $$('ttimelabel').textContent = mode==='zen' ? 'Score' : 'Time';
+    const bestRow = $$('tbest').closest('.tstat');
+    if (bestRow) bestRow.style.display = mode==='zen' ? 'none' : 'flex';   // Zen keeps no score
+    $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : 'Best (all-time)';
+    $$('tbest').textContent = fmtBest();
+  }
+  function updateStats(){
+    $$('ttime').textContent = mode==='zen' ? String(score) : fmtHMS(elapsedMs);
+    $$('tgoal').textContent = mode==='sprint' ? Math.max(0, TARGET-cleared) : cleared;
+  }
+  function showOver(title, sub, actions){
+    const o=$$('tover');
+    let html='<div><div class="tovt">'+title+'</div>'+(sub?'<div class="tovs">'+sub+'</div>':'');
+    if (actions && actions.length) html+='<div class="tovbtns">'+actions.map((a,i)=>'<button class="btn'+(i===0?' primary':'')+'" type="button" data-i="'+i+'">'+a.label+'</button>').join('')+'</div>';
+    html+='</div>';
+    o.innerHTML=html; o.hidden=false; o._actions=actions||null;
+    if (actions) [...o.querySelectorAll('.tovbtns .btn')].forEach(b=>b.onclick=e=>{ e.stopPropagation(); actions[+b.dataset.i].fn(); });
+  }
+  function hideOver(){ $$('tover').hidden=true; $$('tover')._actions=null; }
+
+  /* ── game flow ── */
+  function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; nextT=null; cleared=0; score=0; elapsedMs=0; }
+  function begin(){
+    if (saveable()) clearState();              // starting fresh discards any saved game
+    emptyBoard(); newRng();
+    holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
+    grounded=false; lockStart=0; lockResets=0; dropAcc=0;
+    nextT=nextType(); spawnNext(performance.now());
+    phase='playing'; baseTime=Date.now(); lastTick=performance.now(); hideOver();
+    $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
+    clearInterval(loopId); loopId=setInterval(loop,16);
+    renderStatsLabels(); updateSaveBtn(); updateStats(); draw();
+  }
+
+  /* ── save / resume across devices (Zen + Survival) ── */
+  function serialize(){
+    return { grid: grid.map(r=>r.slice()),
+             piece: piece ? { type:piece.type, x:piece.x, y:piece.y, cells:piece.cells.map(r=>r.slice()) } : null,
+             nextT, hold, holdUsed, cleared, score, elapsedMs, bag: bag.slice() };
+  }
+  function applyState(s){
+    grid = (s.grid||[]).map(r=>r.slice());
+    if (grid.length!==ROWS) emptyBoard();      // guard against a malformed save
+    piece = s.piece ? { type:s.piece.type, x:s.piece.x, y:s.piece.y, cells:s.piece.cells.map(r=>r.slice()) } : null;
+    nextT = s.nextT; hold = s.hold||null; holdUsed = !!s.holdUsed; cleared = s.cleared||0; score = s.score||0; elapsedMs = s.elapsedMs||0;
+    rnd = mulberry32((Math.random()*4294967296)>>>0); bag = Array.isArray(s.bag) ? s.bag.slice() : [];
+    moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
+    grounded=false; lockStart=0; lockResets=0; dropAcc=0;
+    if (!piece){ nextT = nextT || nextType(); spawnNext(performance.now()); }
+  }
+  function resumeGame(s){
+    applyState(s);
+    phase='playing'; baseTime=Date.now()-elapsedMs; lastTick=performance.now(); hideOver();
+    $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
+    clearInterval(loopId); loopId=setInterval(loop,16);
+    renderStatsLabels(); updateSaveBtn(); updateStats(); draw();
+  }
+  function updateSaveBtn(){ const b=$$('tsave'); if (b){ b.hidden = !saveable(); b.textContent='Save'; } }
+  function flashSave(msg){ const b=$$('tsave'); if (!b) return; b.textContent=msg;
+    clearTimeout(saveFlashTimer); saveFlashTimer=setTimeout(()=>{ const x=$$('tsave'); if (x) x.textContent='Save'; }, 1600); }
+  async function saveGame(){
+    if (!saveable()) return;
+    if (phase!=='playing' && phase!=='paused'){ flashSave('Nothing to save'); return; }
+    if (!TT.myEmail()){ flashSave('Sign in to save'); return; }
+    flashSave('Saving…');
+    try { await TT.api('/api/gamestate', { method:'PUT', body:{ mode, state: serialize() } }); flashSave('Saved ✓'); }
+    catch(e){ flashSave('Save failed'); }
+  }
+  async function clearState(){
+    savedState = null;
+    if (!saveable() || !TT.myEmail()) return;
+    try { await TT.api('/api/gamestate', { method:'DELETE', params:{ mode } }); } catch(e){}
+  }
+  function togglePause(){
+    if (phase==='playing'){ phase='paused'; pauseAt=Date.now(); $$('tpause').textContent='Resume'; showOver('Paused', 'Press '+keyLabel(cfg.keys.pause)+' to resume'); }
+    else if (phase==='paused'){ phase='playing'; baseTime += Date.now()-pauseAt; lastTick=performance.now(); $$('tpause').textContent='Pause'; hideOver(); }
+  }
+  function end(won){
+    phase='over'; clearInterval(loopId);
+    const restart = 'Restart ('+keyLabel(cfg.keys.restart)+')';
+    if (mode==='sprint'){
+      if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};
+        if (t.best==null||el<t.best) t.best=el; s.tetris={week:wk,best:t.best}; TT.set('tt.stats',s);
+        submitScore(Math.round(elapsedMs)); showOver('Cleared 40 in '+fmtHMS(elapsedMs)+'! 🎉', restart); }
+      else showOver('Topped out.', restart);
+    } else if (mode==='survival'){
+      const ms=Math.round(elapsedMs); const s=allStats(); const z=s.tetriszen||{best:null};
+      if (z.best==null||ms>z.best) z.best=ms; s.tetriszen={best:z.best}; TT.set('tt.stats',s);
+      submitScore(ms); showOver('Survived '+fmtHMS(ms), restart);
+      clearState();
+    } else {   // zen — score shown, no leaderboard
+      showOver('Topped out — score '+score, cleared+' lines · '+restart);
+      clearState();
+    }
+    renderStatsLabels(); draw();
+  }
+
+  /* ── leaderboard (Sprint: weekly, fastest; Survival: all-time, longest).
+     Survival uses the server's `zen` board (the zen_score table); the new Zen
+     mode has no leaderboard. ── */
+  async function submitScore(ms){
+    if (!TT.myEmail() || !hasLB()) return;
+    const body = mode==='survival' ? { mode:'zen', ms } : { mode:'sprint', week:wk, timeMs:ms };
+    try { renderLB(await TT.api('/api/tetris', { method:'POST', body })); } catch(e){}
+  }
+  async function loadLB(){
+    const el=$$('tlb'); if (!el) return;
+    if (!hasLB() || !TT.myEmail()){ el.innerHTML=''; return; }
+    const params = mode==='survival' ? { mode:'zen' } : { mode:'sprint', week:wk };
+    try { renderLB(await TT.api('/api/tetris', { params })); } catch(e){ el.innerHTML=''; }
+  }
+  function renderLB(d){
+    const el=$$('tlb'); if (!el || !alive) return;
+    if (!hasLB()){ el.innerHTML=''; return; }
+    const rows=(d && d.top)||[];
+    const title = mode==='survival' ? 'Longest survivals (all-time)' : 'This week’s fastest';
+    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3><p class="how">No times yet — set the first.</p>'; return; }
+    let html='<h3>'+title+'</h3>'+rows.map((r,i)=>
+      '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+fmtHMS(r.time_ms)+'</span></div>').join('');
+    if (d.meRank && d.meRank>rows.length)
+      html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+fmtHMS(d.meBest)+'</span></div>';
+    el.innerHTML=html;
+  }
+
+  /* ── modes ── */
+  const MODES=[
+    ['sprint','Sprint','Clear 40 lines as fast as you can — weekly board'],
+    ['survival','Survival','Endless, speeding up — all-time board'],
+    ['zen','Zen','Endless and relaxed — no clock, no leaderboard']
+  ];
+  function renderModes(){
+    $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+'</button>').join('');
+    [...$$('tmodes').querySelectorAll('.tmode')].forEach(b=>b.onclick=()=>{ if (b.dataset.mode===mode) return; mode=b.dataset.mode; TT.set('tt.tetrismode',mode); toReady(); });
+  }
+  async function toReady(){
+    phase='ready'; clearInterval(loopId); emptyBoard(); newRng();
+    renderModes(); renderStatsLabels(); updateStats(); updateSaveBtn(); draw();
+    $$('tstart').textContent='Start'; $$('tpause').textContent='Pause';
+    const titles = { sprint:'Sprint — 40 lines', survival:'Survival — rising speed', zen:'Zen — endless & relaxed' };
+    showOver(titles[mode], 'Press Start or '+keyLabel(cfg.keys.hardDrop));
+    loadLB();
+    if (saveable() && TT.myEmail()){          // offer to resume a saved game
+      const forMode = mode;
+      try {
+        const r = await TT.api('/api/gamestate', { params:{ mode: forMode } });
+        if (r && r.state && phase==='ready' && mode===forMode){
+          savedState = r.state;
+          showOver('Saved '+modeName()+' game', 'Pick up where you left off?',
+            [{ label:'Resume', fn:()=>resumeGame(savedState) }, { label:'New game', fn:begin }]);
+        }
+      } catch(e){}
+    }
+  }
+
+  /* ── controls / config panel ── */
+  const ACTIONS=[['left','Move left'],['right','Move right'],['softDrop','Soft drop'],['hardDrop','Hard drop'],
+                 ['rotateCW','Rotate CW'],['rotateCCW','Rotate CCW'],['hold','Hold'],['pause','Pause'],['restart','Restart']];
+  function keyLabel(k){ return k===' '?'Space':k==='ArrowLeft'?'←':k==='ArrowRight'?'→':k==='ArrowUp'?'↑':k==='ArrowDown'?'↓':(k&&k.length===1)?k.toUpperCase():k; }
+  function renderKeyHint(){ const K=cfg.keys; $$('tkeyhint').innerHTML =
+    keyLabel(K.left)+' '+keyLabel(K.right)+' move · '+keyLabel(K.rotateCW)+' rotate (hold spins) · '+keyLabel(K.softDrop)+' soft · '+
+    keyLabel(K.hardDrop)+' drop · '+keyLabel(K.hold)+' hold · '+keyLabel(K.pause)+' pause · '+keyLabel(K.restart)+' restart'; }
+  function slider(k,label,unit,min,max){ return '<div class="tslider"><label>'+label+': <b id="tslv_'+k+'">'+cfg[k]+'</b>'+unit+'</label>'+
+    '<input type="range" id="tsl_'+k+'" min="'+min+'" max="'+max+'" value="'+cfg[k]+'"></div>'; }
+  function renderCfg(){
+    const c=$$('tcfg');
+    c.innerHTML =
+      '<div class="tcfghd"><b>Controls &amp; handling</b><button class="btn" id="tcfgclose" type="button">Close</button></div>' +
+      '<p class="how" style="margin:0 0 10px">Click a key, then press the new one. Handling is in milliseconds.</p>' +
+      '<div class="tkeys">' + ACTIONS.map(([a,label])=>'<div class="tkeyrow"><span>'+label+'</span>'+
+        '<button class="btn tkeybtn" type="button" data-act="'+a+'">'+(rebinding===a?'press a key…':keyLabel(cfg.keys[a]))+'</button></div>').join('') + '</div>' +
+      '<div class="tsliders">'+slider('das','DAS (delay before auto-shift)','ms',0,400)+slider('arr','ARR (auto-shift repeat)','ms',0,120)+slider('sdf','Soft drop','ms/cell',5,120)+'</div>' +
+      '<div style="margin-top:12px"><button class="btn" id="tcfgreset" type="button">Reset to defaults</button></div>';
+    $$('tcfgclose').onclick=()=>{ rebinding=null; c.hidden=true; };
+    $$('tcfgreset').onclick=()=>{ cfg=JSON.parse(JSON.stringify(DEFAULTS)); saveCfg(); renderCfg(); renderKeyHint(); };
+    [...c.querySelectorAll('.tkeybtn')].forEach(b=>b.onclick=()=>{ rebinding=b.dataset.act; renderCfg(); });
+    ['das','arr','sdf'].forEach(k=>{ const el=$$('tsl_'+k); if (el) el.oninput=()=>{ cfg[k]=+el.value; $$('tslv_'+k).textContent=el.value; saveCfg(); }; });
+  }
+
+  /* ── input ── */
+  const keyMatch = (e, bound) => !!bound && (e.key===bound || (e.key.length===1 && e.key.toLowerCase()===String(bound).toLowerCase()));
+  function onKey(e){
+    if (rebinding){ if (e.key!=='Escape'){ cfg.keys[rebinding]=e.key; saveCfg(); } rebinding=null; renderCfg(); renderKeyHint(); e.preventDefault(); return; }
+    const K=cfg.keys;
+    if (keyMatch(e,K.restart)){ begin(); e.preventDefault(); return; }
+    if (keyMatch(e,K.pause) && (phase==='playing'||phase==='paused')){ togglePause(); e.preventDefault(); return; }
+    if (phase==='ready' || phase==='over'){ if (keyMatch(e,K.hardDrop)){ begin(); e.preventDefault(); } return; }
+    if (phase!=='playing') return;
+    const now=performance.now();
+    if (keyMatch(e,K.left)){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; tryMove(-1,now); } }
+    else if (keyMatch(e,K.right)){ if(!e.repeat){ moveDir=1; dasStart=now; dasCharged=false; tryMove(1,now); } }
+    else if (keyMatch(e,K.softDrop)){ softHeld=true; }
+    else if (keyMatch(e,K.rotateCW)){ if(!e.repeat){ rotHeld=true; rotStart=now; rotCharged=false; tryRotate(1,now); } }
+    else if (keyMatch(e,K.rotateCCW)){ if(!e.repeat){ tryRotate(-1,now); } }
+    else if (keyMatch(e,K.hardDrop)){ if(!e.repeat){ hardDrop(now); } }
+    else if (keyMatch(e,K.hold)){ if(!e.repeat){ doHold(now); } }
+    else return;
+    e.preventDefault(); draw();
+  }
+  function onKeyUp(e){
+    const K=cfg.keys;
+    if (keyMatch(e,K.left)){ if (moveDir===-1){ moveDir=0; dasCharged=false; } }
+    else if (keyMatch(e,K.right)){ if (moveDir===1){ moveDir=0; dasCharged=false; } }
+    else if (keyMatch(e,K.softDrop)){ softHeld=false; }
+    else if (keyMatch(e,K.rotateCW)){ rotHeld=false; rotCharged=false; }
+  }
+
+  /* ── wire up ── */
+  $$('tstart').onclick = begin;
+  $$('tpause').onclick = () => { if (phase==='playing'||phase==='paused') togglePause(); };
+  $$('tsave').onclick = saveGame;
+  $$('tcontrols').onclick = () => { const c=$$('tcfg'); c.hidden=!c.hidden; if (!c.hidden) renderCfg(); };
+  $$('tover').onclick = () => { if ($$('tover')._actions) return; if (phase==='paused') togglePause(); else begin(); };
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('keyup', onKeyUp);
+
+  renderModes(); renderKeyHint(); toReady();   // ready, NOT auto-started
+
+  return () => { alive=false; clearInterval(loopId);
+                 document.removeEventListener('keydown', onKey); document.removeEventListener('keyup', onKeyUp); };
 };
 
 /* ── Classroom ─────────────────────────────────────────────────────

@@ -615,37 +615,311 @@ Settings.
 
 ---
 
-## Syncing settings to an account (not just the device)
+## Settings sync (implemented — Phase 1)
 
-Right now every preference — theme, credentials, notes, colours — lives in
-`localStorage`, which is per-browser. To follow a user across devices you need a
-tiny bit of server state keyed by identity. Options, cheapest first:
+Preferences now follow the **account**, not the browser. Every `tt.*` setting
+(theme, colours, layout, accessibility, stats…) mirrors to a small table keyed
+by the user's verified school email; `localStorage` stays as the offline cache.
 
-1. **A key-value store behind the existing Vercel function.** Add a
-   `/api/prefs` route backed by Vercel KV (Upstash Redis) or Vercel Postgres.
-   Key by the user's school email (they already sign in), value is the JSON blob
-   currently in `localStorage`. On load, `GET /api/prefs?email=…` and merge over
-   the local copy; on change, debounce a `PUT`. ~40 lines. The catch: the school
-   email is the only identity you have, and it's not *authenticated* to you —
-   anyone could request anyone's prefs unless you gate it. Since the user already
-   supplies a password that the school validates, you can require the same
-   `X-School-*` headers and only return prefs after the school API accepts the
-   token — so possession of prefs follows possession of the real login.
+**Identity, not a new login.** There is no second account system. The browser
+sends the same `X-School-Email` / `X-School-Password` headers it already uses
+for the timetable; the server re-authenticates them against the school API and
+the email in the resulting JWT *is* the identity. Possession of settings follows
+possession of the real school login. The database key is stored server-side with
+the service-role key — the browser never touches the database.
 
-2. **Their own storage, not yours.** A "Sync" toggle that reads/writes the
-   settings JSON to the user's Google Drive *appDataFolder* or a GitHub Gist via
-   OAuth. No database to run or secure, and the data never touches your server —
-   but it's more UI and an OAuth flow per provider.
+**Never synced:** `tt.creds` (the password — the server strips it even if sent),
+`tt.cache` (the bulky device-local timetable copy), `tt.notes` (stored as a raw
+string, not JSON — would need its own row), and `tt.syncedat` (per-device sync
+bookkeeping).
 
-3. **Export / import.** A "Copy settings" / "Paste settings" pair (the JSON blob
-   as text, or a URL hash). Zero backend; the user moves it manually. Good enough
-   for a handful of power users.
+### Files
 
-For this project I'd do **(1) with the school-token gate**: it reuses the login
-you already have, needs no new accounts, and Vercel KV has a free tier. Keep
-`localStorage` as the offline cache and treat the server copy as the source of
-truth on load. Notes should sync the same way but stored separately, since
-they're larger and change more often.
+| File | Role |
+|---|---|
+| `api/_supabase.js` | `db` (service-role client) + `whoami(req)` — verifies the caller by their school login. Underscore prefix keeps it out of routing. |
+| `api/prefs.js` | `GET`/`PUT /api/prefs`, keyed by `whoami().email`. |
+| `theme.js` | client: `syncPull()` on load, debounced `syncPush()` on change, `pagehide` flush. |
+| `index.html` | its local `set()` calls `TT.syncPush()`; the login handler calls `TT.syncPull()`. |
+
+**How the client stays loop-free.** A pull is gated on the server's `updated_at`
+stamp (stored locally as `tt.syncedat`), *not* on comparing values — jsonb does
+not preserve object key order, so a value-diff would reload forever. When a pull
+finds a newer stamp it adopts the settings and reloads **once** (so the page's
+in-memory state and grid DOM rebind to the synced values); after the reload the
+stamps match and it settles. A `pulling` flag stops adopted values bouncing
+straight back out as a push.
+
+### What you need to set up (one time)
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com) (free
+   tier). Project → **SQL Editor** → run:
+   ```sql
+   create table prefs (
+     email      text primary key,
+     data       jsonb not null default '{}',
+     updated_at timestamptz not null default now()
+   );
+   ```
+   RLS can stay **off** — only the service-role key (server-side) ever touches
+   this table; the browser has no direct access.
+
+2. **Copy two secrets** from Supabase → **Project Settings → API**:
+   - Project URL → set Vercel env var `SUPABASE_URL`
+   - `service_role` secret (NOT `anon`) → set `SUPABASE_SERVICE_ROLE_KEY`
+
+3. **Add both env vars in Vercel** (Settings → Environment Variables), then
+   **redeploy** (env vars only apply to deployments made after they're added).
+   `package.json` already lists `@supabase/supabase-js`, so Vercel installs it.
+
+4. **Verify.** With the site deployed and signed in, change a theme on one
+   browser, open the site signed-in on another, and it should adopt the change on
+   load. If `SUPABASE_*` is missing, `/api/prefs` returns `503 not configured`
+   and the app simply runs local-only — nothing else breaks.
+
+> **Why Supabase and not Vercel KV.** Vercel's own KV/Postgres were retired in
+> 2024; storage now comes from the Vercel Marketplace (Supabase / Neon / Upstash).
+> Supabase is chosen because Phases 2–3 (daily Guess Who, realtime boards) reuse
+> the same Postgres + its Realtime/JWT layer — see `HANDOFF.md`.
+
+---
+
+## Daily Guess Who (Phase 2)
+
+A once-a-day puzzle, Wordle-style: **one mystery student from your own year, the
+same for everyone in that year, chosen and graded on the server.** The answer
+never reaches the browser — guesses are POSTed and graded server-side. One hint
+shows to start, one more per wrong guess; you get as many guesses as there are
+hints. A streak counts consecutive winning days.
+
+Scope is deliberately **your own year only** — the same footing as the practice
+game's "My grade" mode. A whole-school daily would name strangers.
+
+### How the pick works
+
+The mystery person is a **deterministic** function of the date + year (an FNV
+hash over a roster sorted by email), so the midnight cron and a lazy
+first-request both land on the same person, and an `ignoreDuplicates` upsert
+means whoever writes the row first wins. That also means **you don't strictly
+need the cron** — `/api/daily` generates the day's puzzle on first request if
+it's missing. The cron is just pre-warming so the first player doesn't wait for
+the directory fetch.
+
+### Files
+
+| File | Role |
+|---|---|
+| `api/_daily.js` | the engine: `ensurePuzzle`, `resolveYear`, `computeStreak`, deterministic pick + name-shape hints. Underscore = not a route. |
+| `api/daily.js` | `GET` (state) / `POST` (grade a guess), keyed by verified email + year. |
+| `api/daily-generate.js` | cron target; builds years 7–12 for the day. Guarded by `CRON_SECRET`. |
+| `api/timetable.js` | now exports `fetchAsOwner(path)` — fetches the directory as the server's own account (identity-independent, so the cron can run with no user). |
+| `vercel.json` | the cron schedule. |
+| `games.html` | the **Daily Guess Who** card + `BUILD.dailyguess`, using `TT.api`. |
+
+### What you need to set up
+
+1. **Run the table SQL** in Supabase → SQL Editor (reuses the Phase-1 project):
+   ```sql
+   create table daily_puzzle (
+     date       date not null,
+     year       text not null,
+     target     jsonb not null,     -- { name, first, last, hints[] } — server-only
+     candidates jsonb not null,     -- [names] for the datalist
+     created_at timestamptz not null default now(),
+     primary key (date, year)
+   );
+   create table daily_result (
+     email      text not null,
+     date       date not null,
+     year       text not null,
+     guesses    int  not null default 0,
+     won        boolean not null default false,
+     done       boolean not null default false,
+     updated_at timestamptz not null default now(),
+     primary key (email, date)
+   );
+   ```
+   RLS stays **off** — only the service-role key touches these.
+
+2. **(Optional) Enable the cron.** Add a `CRON_SECRET` env var in Vercel (any
+   long random string). Vercel sends it to the cron automatically; without it the
+   generator route refuses all callers, and puzzles are still built lazily. On
+   the Hobby plan crons run about once a day — fine for this. The schedule in
+   `vercel.json` is `0 14 * * *` (UTC), which is just after midnight in Sydney
+   year-round.
+
+3. **Redeploy.** No new npm dependency beyond Phase 1's `@supabase/supabase-js`.
+
+4. **Verify.** Signed in, open **Games → Daily Guess Who**. Signed out,
+   `curl https://…/api/daily` returns `401`; a `503` means `SUPABASE_*` is unset.
+
+> **Privacy.** The candidate list sent to the browser is the player's own year
+> roster (names only) — the same data the practice game's grade mode already
+> exposes. It's fetched fresh behind the verified login and marked
+> `private, no-store`; the target's identity is never sent until the round ends.
+
+### Past puzzles, Unlimited, and live hints
+
+- **Hints are recomputed from the stored name on every read** (`buildHints` in
+  `_daily.js`), not baked into the puzzle row. So changing the hint logic applies
+  immediately to *already-generated* puzzles — no regeneration or table wipe
+  needed. Only the answer + candidate list are stored per day.
+- **`GET/POST /api/daily` take an optional `date`** (default today, Sydney; up to
+  30 days back, never the future), so you can **replay past days**. The game shows
+  a row of day-chips (✓ won / ✗ lost / plain unplayed) from a `history` field, and
+  an **Unlimited →** button that jumps to the practice Guess Who.
+- **Reopen fix:** a finished puzzle now shows exactly the hints you saw
+  (`shown = done ? guesses : guesses+1`), instead of revealing one phantom extra.
+- Completing a past day still updates your streak (computed relative to today).
+
+---
+
+## Tetris (Sprint / Survival / Zen, tetr.io-style)
+
+A tetr.io-style layout — **Hold + stats on the left, board centre, Next + buttons
+on the right** — with three modes (pills at the top):
+
+- **Sprint** — clear 40 lines fastest. Pieces are a **deterministic weekly 7-bag**
+  (Monday-anchored), identical for everyone and replayed the same each attempt, so
+  times are comparable. Local best per week (`tt.stats.tetris`); weekly board.
+- **Survival** — survive the **rising speed**; random pieces, gravity ramps with
+  time, endless until you top out. Local best all-time (`tt.stats.tetriszen`);
+  all-time board.
+- **Zen** — endless and **relaxed**: constant gentle gravity, a simple **points
+  score** (100/300/500/800 per 1–4 lines) shown in place of the clock, **no
+  leaderboard**. Just keep placing blocks.
+
+**Cross-device save** (Survival + Zen): a **Save** button uploads the current board
+(grid, active piece, hold, next queue, cleared, elapsed) to `/api/gamestate`, keyed
+by `(email, mode)` — manual, not continuous. Reopen the mode (any device) and it
+offers **Resume / New game**. The save is cleared on top-out or when you start fresh.
+
+It **does not auto-start** — a board overlay shows "Press Start" and the game
+begins on the Start button or the hard-drop key; game-over shows a Restart prompt.
+
+Handling: one time-based loop drives gravity, **DAS/ARR** auto-shift, a **lock
+delay** (15-move reset cap, so you can slide under overhangs), soft drop (hold
+down), hold (once per piece), a hollow-outline landing preview, and hold-rotate
+that spins after a brief pause.
+
+**Controls are configurable** (Controls button → panel): every action is
+**rebindable** (click a key, press the new one) and **DAS / ARR / soft-drop
+speed** are sliders. Config is stored in `tt.tetriscfg`, so it syncs with your
+other settings. Defaults: ← → move, ↑ rotate (hold to spin) / Z ccw, ↓ soft drop,
+space hard drop, Shift hold, **P pause, R restart**.
+
+### Leaderboards
+
+`/api/tetris` serves **two** boards, both `whoami`-verified with a server-derived
+name (emails never leave the server; your own row is flagged `you`):
+
+- **Sprint** — `?mode=sprint&week=N`, ranked by **shortest** time, resets weekly.
+- **Survival** — `?mode=zen`, ranked by **longest** survival, **all-time (never
+  resets)**. (The server mode name stays `zen`, backed by the `zen_score` table —
+  it predates the rename; the client maps *Survival* → `zen`.) Zen mode has no board.
+
+Submitted on a 40-clear (Sprint) or on top-out (Survival). `games.html` renders
+whichever matches the current mode.
+
+**Setup:** run these tables in the same Supabase project; no new env vars.
+`game_state` powers the Survival/Zen cross-device save.
+```sql
+create table tetris_score (
+  email text not null, week int not null, name text not null,
+  time_ms int not null, created_at timestamptz not null default now(),
+  primary key (email, week)
+);
+create table zen_score (
+  email text primary key, name text not null,
+  ms int not null, created_at timestamptz not null default now()
+);
+create table game_state (
+  email text not null, mode text not null, state jsonb not null,
+  updated_at timestamptz not null default now(),
+  primary key (email, mode)
+);
+```
+RLS off (service-role only). Times are client-reported, as with any web
+leaderboard — floor/ceiling bounds drop obvious garbage, but it isn't anti-cheat.
+Signed out or unconfigured, the boards just hide and the game still plays locally.
+
+---
+
+## Game leaderboards (all games)
+
+Beyond Tetris, the arcade games share a **generic leaderboard**: Snake, 2048,
+Typing race, Reaction, Classroom, and Six Degrees. Each shows a panel under the
+game with two tabs — **This week** (a weekly-reset challenge board) and **All time**
+(the unlimited board). A new personal best submits automatically.
+
+- `api/leaderboard.js` — `GET ?game=&metric=&week=N` / `POST {game,metric,score,week}`,
+  both returning `{ week, all }`. Same `whoami` identity + server-derived name as the
+  other boards; higher- or lower-is-better is per game (server-side `DIRS`).
+- `games.html` — `recordStat` is the single submit point (a new best posts to the
+  board); `openGame` mounts the panel; `LB_GAMES` maps each game to its metric,
+  direction, and number formatting. Every score lands in **two buckets**: `all` and
+  `w<week>`.
+
+**Setup:** one more table, no new env vars.
+```sql
+create table game_score (
+  game text not null, metric text not null, period text not null,
+  email text not null, name text not null, score int not null,
+  updated_at timestamptz not null default now(),
+  primary key (game, metric, period, email)
+);
+```
+RLS off (service-role only). Signed out / unconfigured → the panel shows a sign-in
+note or hides, and the games still play with local high scores. Tetris keeps its own
+dedicated boards (Sprint weekly, Zen all-time). To add a game: extend `LB_GAMES`
+(client) and `DIRS` (server).
+
+## Subject notes
+
+The Notes page is **per subject**. A dropdown lists **General plus every subject from
+your timetable** (from the class rows' course names, same cleaning the games use).
+Notes are stored as `tt.subjectnotes = { subject: text }`, which **syncs with your
+other settings** across devices; the last-open subject is remembered in `tt.notesubj`.
+The old single scratchpad (`tt.notes`, device-only) migrates into **General** once.
+Subjects come from `tt.cache` when the timetable's been opened, else a live fetch; a
+`•` marks subjects that already have notes.
+
+---
+
+## Progress bar + header tweaks
+
+- The Now-card **progress bar is now a fixed accent colour** (`--accent`) instead
+  of the per-subject colour, which was often too pale to read.
+- The **settings/home buttons are vertically centred** in the header widget
+  (`.headbtns { align-self: center }`) in both header layouts.
+
+### Timetable polish
+
+- **Lunch** no longer shows a time range in compact view, matching Recess/Assembly
+  (the block was just tall enough to trigger the time label; now suppressed by name).
+- The **current-period outline is flush** with the card (`outline-offset:0`, was 2px).
+- **Classic** marks the current day with **blue text only** — the blue dot under
+  the day heading is removed.
+
+---
+
+## Dark-mode native controls + Guess Who hints
+
+- **`color-scheme` is now set** (in `theme.js` `apply()`) to match the effective
+  palette — dark in dark mode, always-dark for the fixed-dark skins, and by the
+  custom background's own darkness for Custom. Without it, native controls stayed
+  light on a dark page and the `<datalist>` autocomplete rendered white text on a
+  white popup (illegible while typing a Guess Who guess). This fixes every page's
+  inputs, dropdowns and scrollbars, not just the games.
+- **Glass dark mode** is less shiny: the specular sheen on cards drops from
+  `rgba(255,255,255,.4)` to `.1` (and card borders/topbar rim soften) in dark
+  only — light-mode glass keeps its full gloss. Fixes the plasticky look and the
+  washed-out text.
+- **Guess Who hints** (both the practice game and the daily): first-name and
+  surname *length* are now **separate hints** (together they gave too much away);
+  the **year hint is dropped in "My grade"** mode (everyone's the same year); and
+  the "shares a class with X" hint now only names someone who shares an
+  **un-named** class, so it can't restate a class a previous hint already gave.
 
 ---
 

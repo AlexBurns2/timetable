@@ -31,7 +31,7 @@ const tokenCache = new Map();            // email -> { token, type, exp }
 
 /* ------------------------------------------------------------------ utils */
 
-function decodeJwtPayload(token) {
+export function decodeJwtPayload(token) {
   try {
     const part = token.split(".")[1];
     const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
@@ -42,7 +42,7 @@ function decodeJwtPayload(token) {
   }
 }
 
-function normaliseEmail(input, domain) {
+export function normaliseEmail(input, domain) {
   const raw = String(input || "").trim().toLowerCase();
   if (!raw) return "";
   const user = raw.includes("@") ? raw.split("@")[0] : raw;
@@ -86,7 +86,7 @@ async function readJson(res, url) {
   }
 }
 
-async function getToken(apiBase, emailAddress, password) {
+export async function getToken(apiBase, emailAddress, password) {
   const now = Date.now();
   const key = String(emailAddress).toLowerCase();
   const hit = tokenCache.get(key);
@@ -167,6 +167,25 @@ async function apiGet(apiBase, path, auth, retry = true) {
   }
 
   return readJson(res, apiBase + path);
+}
+
+/*
+ * Fetch a school-API path authenticated as the SERVER's own account
+ * (SCHOOL_EMAIL / SCHOOL_PASSWORD), retrying once on a 401. Used by shared,
+ * identity-independent jobs like the daily-puzzle generator, which need the
+ * directory but aren't tied to any one caller. Returns parsed JSON.
+ */
+export async function fetchAsOwner(path) {
+  const apiBase = (process.env.SCHOOL_API_BASE || "").replace(/\/+$/, "");
+  const email = process.env.SCHOOL_EMAIL, password = process.env.SCHOOL_PASSWORD;
+  if (!apiBase || !email || !password) throw new Error("Server school credentials are not configured.");
+  let auth = await getToken(apiBase, email, password);
+  let out = await apiGet(apiBase, path, auth);
+  if (out === null) {                       // token expired → refresh and retry
+    auth = await getToken(apiBase, email, password);
+    out = await apiGet(apiBase, path, auth);
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ handler */

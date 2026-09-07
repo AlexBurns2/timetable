@@ -18,7 +18,13 @@ const get = (k, d) => {
   try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }
   catch { return d; }
 };
-const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+/* true only while syncPull writes server values in, so those writes don't
+   bounce straight back out as a push. */
+let pulling = false;
+const set = (k, v) => {
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  if (!pulling && k.startsWith('tt.') && !SYNC_SKIP.has(k)) scheduleSync();
+};
 
 /* every skin in picker order; `custom` last so it lands bottom-right */
 const SKINS = [
@@ -98,6 +104,17 @@ function apply(state){
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-mode', st.mode);
+  /* Keep native controls (the datalist autocomplete popup, text inputs,
+     scrollbars) in step with the effective palette. Without this a dark page
+     keeps a light native popup, and its option text — which inherits the
+     input's light colour — renders white-on-white. Custom follows its own
+     background's darkness; the fixed-dark skins are always dark. */
+  root.style.colorScheme =
+      st.skin === 'custom'
+        ? (inkFor(st.custom.bg) === '#fff' ? 'dark' : 'light')
+    : (st.skin === 'scifi' || st.skin === 'terminal' || st.skin === 'blueprint')
+        ? 'dark'
+        : (st.mode === 'dark' ? 'dark' : 'light');
   root.classList.toggle('zen', !!st.zen);
   root.setAttribute('data-contrast', st.contrast);
   /* The compact grid positions cards absolutely via [data-view]; without this
@@ -186,12 +203,119 @@ async function apiGet(params){
   if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
   return data;
 }
+/* generic call to any /api/* route with the school-login headers attached.
+   api('/api/daily'), api('/api/daily', { method:'POST', body:{guess} }). */
+async function api(path, opts){
+  opts = opts || {};
+  const u = new URL(path, location.href);
+  if (opts.params) for (const k in opts.params) u.searchParams.set(k, opts.params[k]);
+  const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+  const headers = Object.assign({}, apiHeaders());
+  const init = { method: opts.method || 'GET', headers, cache: 'no-store' };
+  if (opts.body !== undefined){ headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(opts.body); }
+  const res = await fetch(url, init);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+  return data;
+}
 const myEmail = () => {
   const c = get('tt.creds', null);
   return get('tt.email', (c && c.email) || '');
 };
 
+/* ── settings sync (Phase 1) ───────────────────────────────────────────
+   Mirror the tt.* bag to /api/prefs, keyed by school login, so settings
+   follow the user rather than the device. localStorage stays the offline
+   cache; the server copy wins on load. Never synced: the password, the
+   device-local timetable cache, the raw-string notes, and the local sync
+   bookkeeping key. */
+const SYNC_SKIP = new Set(['tt.creds', 'tt.cache', 'tt.notes', 'tt.syncedat']);
+
+function hasCreds(){
+  const c = get('tt.creds', null);
+  return !!(c && c.email && c.password);
+}
+function apiUrl(path){
+  const u = new URL(path, location.href);
+  return u.origin === location.origin ? u.pathname + u.search : u.toString();
+}
+function collectPrefs(){
+  const blob = {};
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k && k.startsWith('tt.') && !SYNC_SKIP.has(k)) blob[k] = get(k);
+  }
+  return blob;
+}
+
+let pushTimer = null;
+function scheduleSync(){
+  if (!hasCreds()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { pushTimer = null; flushPush(); }, 900);
+}
+async function flushPush(keepalive){
+  if (!hasCreds()) return;
+  try {
+    const res = await fetch(apiUrl('/api/prefs'), {
+      method: 'PUT', keepalive: !!keepalive,
+      headers: Object.assign({ 'Content-Type': 'application/json' }, apiHeaders()),
+      body: JSON.stringify(collectPrefs())
+    });
+    if (res.ok){
+      const out = await res.json().catch(() => null);
+      if (out && out.updated_at) set('tt.syncedat', out.updated_at);  // in SYNC_SKIP → no echo
+    }
+  } catch {}
+}
+/* Public: schedule a debounced push. Pages that write tt.* through their own
+   set() (index.html) call this so their changes sync too. */
+const syncPush = scheduleSync;
+
+async function syncPull(){
+  if (!hasCreds()) return;
+  let payload = null;
+  try {
+    const res = await fetch(apiUrl('/api/prefs'), { headers: apiHeaders(), cache: 'no-store' });
+    if (!res.ok) return;
+    payload = await res.json();
+  } catch { return; }
+
+  const data = payload && payload.data;
+  if (!data || typeof data !== 'object') return;
+
+  /* Gate on the server's version stamp, not on comparing values: jsonb does
+     not preserve object key order, so a value-diff would loop forever. */
+  const stamp = payload.updated_at || null;
+  if (stamp === get('tt.syncedat', null)) return;   // already in sync
+
+  pulling = true;
+  try {
+    for (const k in data){
+      if (!k.startsWith('tt.') || SYNC_SKIP.has(k)) continue;
+      try { localStorage.setItem(k, JSON.stringify(data[k])); } catch {}
+    }
+  } finally { pulling = false; }
+  set('tt.syncedat', stamp);
+  apply();
+
+  /* The page captured its state from localStorage before this async pull
+     resolved (grid DOM, view mode, colours). A one-time reload rebinds it to
+     the synced values. Gated by the stamp above, so it never loops. */
+  try { location.reload(); } catch {}
+}
+
+/* flush a pending change when leaving the page */
+addEventListener('pagehide', () => {
+  if (!pushTimer) return;
+  clearTimeout(pushTimer); pushTimer = null;
+  flushPush(true);
+});
+
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, myEmail, EMAIL_DOMAIN };
+              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush };
+
+/* returning users: pull the server copy on load */
+if (hasCreds()) syncPull();
 })();
