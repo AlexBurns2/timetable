@@ -797,16 +797,27 @@ offers **Resume / New game**. The save is cleared on top-out or when you start f
 It **does not auto-start** — a board overlay shows "Press Start" and the game
 begins on the Start button or the hard-drop key; game-over shows a Restart prompt.
 
+Rotation is proper **SRS** — spawn pieces in SRS boxes (3×3 for JLSTZ, 4×4 for I),
+rotation states, and the standard **wall-kick tables** (JLSTZ + I), so wall kicks
+and T-spins behave as in tetr.io. There's also a **180 spin** (default `A`) with a
+compact 180 kick set.
+
 Handling: one time-based loop drives gravity, **DAS/ARR** auto-shift, a **lock
 delay** (15-move reset cap, so you can slide under overhangs), soft drop (hold
 down), hold (once per piece), a hollow-outline landing preview, and hold-rotate
 that spins after a brief pause.
 
+**Layout** is tetr.io-style: **Hold on the left, board centre, Next on the right
+showing the next 4 pieces**, buttons below. It stays that way on narrow screens —
+the three columns don't wrap; the board scales down (`max-width`) so Next stays on
+the right.
+
 **Controls are configurable** (Controls button → panel): every action is
-**rebindable** (click a key, press the new one) and **DAS / ARR / soft-drop
-speed** are sliders. Config is stored in `tt.tetriscfg`, so it syncs with your
-other settings. Defaults: ← → move, ↑ rotate (hold to spin) / Z ccw, ↓ soft drop,
-space hard drop, Shift hold, **P pause, R restart**.
+**rebindable** (click a key, press the new one) — including Rotate CW / CCW / 180
+— and **DAS / ARR / soft-drop / DAS-cut-delay (DCD)** are sliders. Config is stored
+in `tt.tetriscfg`, so it syncs with your other settings. Defaults: ← → move,
+↑ CW (hold to spin) / Z CCW / A 180, ↓ soft drop, space hard drop, Shift hold,
+**P pause, R restart**.
 
 ### Leaderboards
 

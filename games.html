@@ -94,14 +94,25 @@ canvas{
   padding:6px 15px;font-size:13px;cursor:pointer;color:var(--text)}
 .tmode:hover{border-color:var(--accent)}
 .tmode.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.tgame{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
-.tside{display:flex;flex-direction:column;gap:12px;min-width:96px}
+/* three columns that stay side-by-side (Hold | board | Next); the board scales
+   down on narrow screens rather than the Next column wrapping underneath */
+.tgame{display:flex;gap:14px;align-items:flex-start;justify-content:center;flex-wrap:nowrap;max-width:100%}
+.tside{display:flex;flex-direction:column;gap:12px;flex:0 0 auto}
+.tside.tleft{align-items:flex-end}
+#tcan,#tnext,#thold{display:block;max-width:100%;height:auto}
 .tpanel{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:8px}
 .tlabel{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.tstats{display:flex;flex-direction:column;gap:7px}
+.tstats{display:flex;flex-direction:column;gap:7px;min-width:118px}
 .tstat{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
 .tstat b{color:var(--text);font-family:var(--font-num);font-variant-numeric:tabular-nums}
-.tboardwrap{position:relative;flex:none}
+.tboardwrap{position:relative;flex:0 1 auto;min-width:0}
+@media (max-width:560px){
+  .tgame{gap:8px}
+  .tpanel{padding:5px}
+  #thold{width:52px} #tnext{width:56px}
+  .tstats{min-width:0;font-size:12px}
+  .tstat{gap:6px;font-size:12px}
+}
 .tover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
   padding:16px;border-radius:calc(var(--card-radius)*.6);cursor:pointer;
   background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
@@ -109,8 +120,8 @@ canvas{
 .tovt{font-family:var(--font-display);font-size:19px;font-weight:var(--display-w);margin-bottom:6px}
 .tovs{font-size:13px;color:var(--muted)}
 .tovbtns{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-.tbtns{display:flex;flex-direction:column;gap:6px}
-.tkeyhint{font-size:11px;line-height:1.55;color:var(--muted)}
+.tbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px auto 0;max-width:520px}
+.tkeyhint{font-size:11px;line-height:1.55;color:var(--muted);text-align:center;margin-top:8px}
 .tcfg{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);
   padding:16px;margin-top:14px;max-width:520px}
 .tcfg[hidden]{display:none}
@@ -823,13 +834,14 @@ BUILD.tetris = host => {
   /* ── config: keybinds + handling, persisted (syncs with other settings) ── */
   const DEFAULTS = {
     keys: { left:'ArrowLeft', right:'ArrowRight', softDrop:'ArrowDown', hardDrop:' ',
-            rotateCW:'ArrowUp', rotateCCW:'z', hold:'Shift', pause:'p', restart:'r' },
-    das:160, arr:45, sdf:25
+            rotateCW:'ArrowUp', rotateCCW:'z', rotate180:'a', hold:'Shift', pause:'p', restart:'r' },
+    das:160, arr:45, sdf:25, dcd:0
   };
   function loadCfg(){
     const c = TT.get('tt.tetriscfg', {}) || {};
     return { keys: Object.assign({}, DEFAULTS.keys, c.keys||{}),
-             das: c.das==null?DEFAULTS.das:c.das, arr: c.arr==null?DEFAULTS.arr:c.arr, sdf: c.sdf==null?DEFAULTS.sdf:c.sdf };
+             das:c.das==null?DEFAULTS.das:c.das, arr:c.arr==null?DEFAULTS.arr:c.arr,
+             sdf:c.sdf==null?DEFAULTS.sdf:c.sdf, dcd:c.dcd==null?DEFAULTS.dcd:c.dcd };
   }
   let cfg = loadCfg();
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
@@ -839,11 +851,11 @@ BUILD.tetris = host => {
   document.getElementById('twrap').innerHTML =
     '<div class="tmodes" id="tmodes"></div>' +
     '<div class="tgame">' +
-      '<div class="tside">' +
-        '<div class="tpanel"><div class="tlabel">Hold</div><canvas id="thold" width="80" height="64"></canvas></div>' +
+      '<div class="tside tleft">' +
+        '<div class="tpanel"><div class="tlabel">Hold</div><canvas id="thold" width="80" height="60"></canvas></div>' +
         '<div class="tstats">' +
           '<div class="tstat"><span id="tgoallabel">Lines left</span><b id="tgoal">40</b></div>' +
-          '<div class="tstat"><span id="ttimelabel">Time</span><b id="ttime">0.0s</b></div>' +
+          '<div class="tstat"><span id="ttimelabel">Time</span><b id="ttime">00:00:00.0</b></div>' +
           '<div class="tstat"><span id="tbestlabel">Best</span><b id="tbest">—</b></div>' +
         '</div>' +
       '</div>' +
@@ -851,17 +863,17 @@ BUILD.tetris = host => {
         '<canvas id="tcan" width="240" height="480"></canvas>' +
         '<div class="tover" id="tover"></div>' +
       '</div>' +
-      '<div class="tside">' +
-        '<div class="tpanel"><div class="tlabel">Next</div><canvas id="tnext" width="80" height="64"></canvas></div>' +
-        '<div class="tbtns">' +
-          '<button class="btn primary" id="tstart" type="button">Start</button>' +
-          '<button class="btn" id="tpause" type="button">Pause</button>' +
-          '<button class="btn" id="tsave" type="button" hidden>Save</button>' +
-          '<button class="btn" id="tcontrols" type="button">Controls</button>' +
-        '</div>' +
-        '<div class="tkeyhint" id="tkeyhint"></div>' +
+      '<div class="tside tright">' +
+        '<div class="tpanel"><div class="tlabel">Next</div><canvas id="tnext" width="80" height="224"></canvas></div>' +
       '</div>' +
     '</div>' +
+    '<div class="tbtns">' +
+      '<button class="btn primary" id="tstart" type="button">Start</button>' +
+      '<button class="btn" id="tpause" type="button">Pause</button>' +
+      '<button class="btn" id="tsave" type="button" hidden>Save</button>' +
+      '<button class="btn" id="tcontrols" type="button">Controls</button>' +
+    '</div>' +
+    '<div class="tkeyhint" id="tkeyhint"></div>' +
     '<div class="tcfg" id="tcfg" hidden></div>' +
     '<div class="tlb" id="tlb"></div>';
 
@@ -871,33 +883,61 @@ BUILD.tetris = host => {
   const hcan = $$('thold'), hctx = hcan.getContext('2d');
   const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-  const SHAPES = {
-    I:[[1,1,1,1]], O:[[1,1],[1,1]], T:[[0,1,0],[1,1,1]],
-    S:[[0,1,1],[1,1,0]], Z:[[1,1,0],[0,1,1]], J:[[1,0,0],[1,1,1]], L:[[0,0,1],[1,1,1]]
+  /* SRS spawn states in padded boxes (3×3 for JLSTZ, 4×4 for I, 2×2 for O) */
+  const SPAWN = {
+    I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    O:[[1,1],[1,1]],
+    T:[[0,1,0],[1,1,1],[0,0,0]],
+    S:[[0,1,1],[1,1,0],[0,0,0]],
+    Z:[[1,1,0],[0,1,1],[0,0,0]],
+    J:[[1,0,0],[1,1,1],[0,0,0]],
+    L:[[0,0,1],[1,1,1],[0,0,0]]
   };
   const COLORS = { I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c' };
-  const KEYS = Object.keys(SHAPES);
+  const KEYS = Object.keys(SPAWN);
+
+  /* SRS kick tables — offsets in SRS coords (y up); applied with y negated for the
+     screen grid. States: 0 spawn, 1 CW, 2 flipped, 3 CCW. */
+  const KICK_JLSTZ = {
+    '0,1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '1,0':[[0,0],[1,0],[1,-1],[0,2],[1,2]],
+    '1,2':[[0,0],[1,0],[1,-1],[0,2],[1,2]],     '2,1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    '2,3':[[0,0],[1,0],[1,1],[0,-2],[1,-2]],    '3,2':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    '3,0':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],  '0,3':[[0,0],[1,0],[1,1],[0,-2],[1,-2]]
+  };
+  const KICK_I = {
+    '0,1':[[0,0],[-2,0],[1,0],[-2,-1],[1,2]],  '1,0':[[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+    '1,2':[[0,0],[-1,0],[2,0],[-1,2],[2,-1]],  '2,1':[[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+    '2,3':[[0,0],[2,0],[-1,0],[2,1],[-1,-2]],  '3,2':[[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+    '3,0':[[0,0],[1,0],[-2,0],[1,-2],[-2,1]],  '0,3':[[0,0],[-1,0],[2,0],[-1,2],[2,-1]]
+  };
+  /* a compact 180 kick set (already in grid coords: negative y = up) */
+  const KICK_180 = [[0,0],[0,-1],[0,1],[1,0],[-1,0],[1,-1],[-1,-1]];
+
+  const rotCW = m => { const n=m.length, o=Array.from({length:n},()=>Array(n).fill(0));
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++) o[c][n-1-r]=m[r][c]; return o; };
+  const rotCCW = m => { const n=m.length, o=Array.from({length:n},()=>Array(n).fill(0));
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++) o[n-1-c][r]=m[r][c]; return o; };
 
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  let rnd, bag = [];
+  let rnd, bag = [], queue = [];
   function newRng(){ rnd = mode==='sprint' ? mulberry32(0x9e3779b9 ^ wk) : mulberry32((Math.random()*4294967296)>>>0); bag = []; }
   function nextType(){
     if (!bag.length){ bag = KEYS.slice();
       for (let i=bag.length-1;i>0;i--){ const j=(rnd()*(i+1))|0; [bag[i],bag[j]]=[bag[j],bag[i]]; } }
     return bag.shift();
   }
+  function fillQueue(){ while (queue.length < 7) queue.push(nextType()); }
 
-  let grid, piece, nextT, hold, holdUsed, cleared, score = 0, elapsedMs = 0;
+  let grid, piece, hold, holdUsed, cleared, score = 0, elapsedMs = 0;
   let phase = 'ready';            // 'ready' | 'playing' | 'paused' | 'over'
   let loopId, lastTick, baseTime, dropAcc = 0, pauseAt = 0, alive = true;
   let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
   let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
   let grounded = false, lockStart = 0, lockResets = 0;
-  let rebinding = null;
-  let savedState = null, saveFlashTimer = null;
+  let rebinding = null, savedState = null, saveFlashTimer = null;
 
-  /* ── piece mechanics ── */
+  /* ── piece mechanics (SRS) ── */
   function collides(cells, px, py){
     for (let r=0;r<cells.length;r++) for (let c=0;c<cells[r].length;c++){
       if (!cells[r][c]) continue;
@@ -907,29 +947,39 @@ BUILD.tetris = host => {
     }
     return false;
   }
-  function rotate(cells){ const h=cells.length, w=cells[0].length, out=[];
-    for (let c=0;c<w;c++){ out[c]=[]; for (let r=h-1;r>=0;r--) out[c].push(cells[r][c]); } return out; }
   function updateGround(now, isAction){
     if (!collides(piece.cells, piece.x, piece.y+1)){ grounded=false; if (isAction) lockResets=0; }
     else { if (!grounded){ grounded=true; lockStart=now; }
            else if (isAction && lockResets<MAX_RESETS){ lockStart=now; lockResets++; } }
   }
+  /* DAS cut delay: after a rotate/hold while a direction is held, cut the DAS
+     charge down to at most cfg.dcd so the piece doesn't slam into the wall. */
+  function applyDCD(now){ if (cfg.dcd>0 && moveDir!==0 && now-dasStart>cfg.dcd){ dasStart=now-cfg.dcd; dasCharged=false; } }
   function tryMove(dx, now){ if (collides(piece.cells, piece.x+dx, piece.y)) return false; piece.x+=dx; updateGround(now,true); return true; }
   function tryRotate(dir, now){
-    const rc = dir>0 ? rotate(piece.cells) : rotate(rotate(rotate(piece.cells)));
-    for (const dx of [0,-1,1,-2,2]) if (!collides(rc, piece.x+dx, piece.y)){ piece.cells=rc; piece.x+=dx; updateGround(now,true); return; }
+    if (piece.type==='O') return;                        // O is rotationally symmetric
+    const from = piece.rot, to = (from + (dir===2?2:dir) + 4) % 4;
+    const m = dir===2 ? rotCW(rotCW(piece.cells)) : dir>0 ? rotCW(piece.cells) : rotCCW(piece.cells);
+    const kicks = dir===2 ? KICK_180
+      : (piece.type==='I' ? KICK_I : KICK_JLSTZ)[from+','+to].map(([kx,ky])=>[kx,-ky]);
+    for (const [dx,dy] of kicks){
+      if (!collides(m, piece.x+dx, piece.y+dy)){
+        piece.cells=m; piece.x+=dx; piece.y+=dy; piece.rot=to; updateGround(now,true); applyDCD(now); return;
+      }
+    }
   }
   function spawnFrom(type, now){
-    const cells = SHAPES[type].map(r=>r.slice());
-    piece = { type, cells, x:(COLS-cells[0].length)>>1, y:0 };
+    const cells = SPAWN[type].map(r=>r.slice());
+    piece = { type, cells, rot:0, x:(COLS-cells[0].length)>>1, y:0 };
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
     if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
   }
-  function spawnNext(now){ const type=nextT; nextT=nextType(); spawnFrom(type, now); }
+  function spawnNext(now){ fillQueue(); const type=queue.shift(); fillQueue(); spawnFrom(type, now); }
   function doHold(now){
     if (holdUsed) return; holdUsed=true;
     const cur=piece.type;
     if (hold==null){ hold=cur; spawnNext(now); } else { const h=hold; hold=cur; spawnFrom(h, now); }
+    applyDCD(now);
   }
   function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; commitLock(now); }
   function commitLock(now){
@@ -960,9 +1010,7 @@ BUILD.tetris = host => {
       else while (now-rotLast>=ROT_ARR){ rotLast+=ROT_ARR; tryRotate(1,now); }
     }
     const interval = softHeld ? cfg.sdf : gravityMs();
-    /* clamp to one interval/frame so switching to the fast soft-drop rate can't
-       spend banked gravity time in a single frame (which looked like a hard drop) */
-    dropAcc = Math.min(dropAcc + dt, interval);
+    dropAcc = Math.min(dropAcc + dt, interval);   // one step/frame max — no soft-drop burst
     while (dropAcc>=interval){ dropAcc-=interval;
       if (!collides(piece.cells, piece.x, piece.y+1)) piece.y++;
       updateGround(now, false);
@@ -975,10 +1023,19 @@ BUILD.tetris = host => {
   /* ── render ── */
   function cellPx(cx,cy,type,g){ g.fillStyle=COLORS[type]; g.fillRect(cx+1,cy+1,CELL-2,CELL-2);
     g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(cx+1,cy+1,CELL-2,4); }
-  function miniDraw(g, cv, type){ g.clearRect(0,0,cv.width,cv.height); if (!type) return;
-    const sh=SHAPES[type], w=sh[0].length, h=sh.length, s=15, ox=(cv.width-w*s)/2, oy=(cv.height-h*s)/2;
-    sh.forEach((row,r)=>row.forEach((v,c)=>{ if(v){ g.fillStyle=COLORS[type]; g.fillRect(ox+c*s+1,oy+r*s+1,s-2,s-2);
-      g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(ox+c*s+1,oy+r*s+1,s-2,3); } })); }
+  function drawPieceBox(g, type, ox, oy, w, h){
+    if (!type) return;
+    const sh=SPAWN[type]; let minR=99,maxR=-1,minC=99,maxC=-1;
+    sh.forEach((row,r)=>row.forEach((v,c)=>{ if(v){ if(r<minR)minR=r; if(r>maxR)maxR=r; if(c<minC)minC=c; if(c>maxC)maxC=c; } }));
+    const pw=maxC-minC+1, ph=maxR-minR+1, s=Math.min((w-10)/pw,(h-8)/ph,16);
+    const px=ox+(w-pw*s)/2, py=oy+(h-ph*s)/2;
+    for(let r=minR;r<=maxR;r++)for(let c=minC;c<=maxC;c++) if(sh[r][c]){
+      g.fillStyle=COLORS[type]; g.fillRect(px+(c-minC)*s+1, py+(r-minR)*s+1, s-2, s-2);
+      g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(px+(c-minC)*s+1, py+(r-minR)*s+1, s-2, 3); }
+  }
+  function drawNext(){ nctx.clearRect(0,0,ncan.width,ncan.height); const slot=ncan.height/4;
+    for(let i=0;i<4;i++) drawPieceBox(nctx, queue[i], 0, i*slot, ncan.width, slot); }
+  function drawHold(){ hctx.clearRect(0,0,hcan.width,hcan.height); drawPieceBox(hctx, hold, 0, 0, hcan.width, hcan.height); }
   function draw(){
     ctx.fillStyle = cssVar('--panel-2') || '#111'; ctx.fillRect(0,0,can.width,can.height);
     ctx.strokeStyle='rgba(128,128,128,.15)'; ctx.lineWidth=1;
@@ -992,8 +1049,7 @@ BUILD.tetris = host => {
       ctx.lineWidth=1;
       piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if(v && piece.y+r>=0) cellPx((piece.x+c)*CELL,(piece.y+r)*CELL,piece.type,ctx); }));
     }
-    miniDraw(nctx, ncan, nextT);
-    miniDraw(hctx, hcan, hold);
+    drawNext(); drawHold();
   }
 
   /* ── stats / overlay ── */
@@ -1025,13 +1081,13 @@ BUILD.tetris = host => {
   function hideOver(){ $$('tover').hidden=true; $$('tover')._actions=null; }
 
   /* ── game flow ── */
-  function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; nextT=null; cleared=0; score=0; elapsedMs=0; }
+  function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; queue=[]; cleared=0; score=0; elapsedMs=0; }
   function begin(){
     if (saveable()) clearState();              // starting fresh discards any saved game
     emptyBoard(); newRng();
     holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
-    nextT=nextType(); spawnNext(performance.now());
+    spawnNext(performance.now());
     phase='playing'; baseTime=Date.now(); lastTick=performance.now(); hideOver();
     $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
     clearInterval(loopId); loopId=setInterval(loop,16);
@@ -1041,18 +1097,20 @@ BUILD.tetris = host => {
   /* ── save / resume across devices (Zen + Survival) ── */
   function serialize(){
     return { grid: grid.map(r=>r.slice()),
-             piece: piece ? { type:piece.type, x:piece.x, y:piece.y, cells:piece.cells.map(r=>r.slice()) } : null,
-             nextT, hold, holdUsed, cleared, score, elapsedMs, bag: bag.slice() };
+             piece: piece ? { type:piece.type, x:piece.x, y:piece.y, rot:piece.rot, cells:piece.cells.map(r=>r.slice()) } : null,
+             queue: queue.slice(), hold, holdUsed, cleared, score, elapsedMs, bag: bag.slice() };
   }
   function applyState(s){
     grid = (s.grid||[]).map(r=>r.slice());
     if (grid.length!==ROWS) emptyBoard();      // guard against a malformed save
-    piece = s.piece ? { type:s.piece.type, x:s.piece.x, y:s.piece.y, cells:s.piece.cells.map(r=>r.slice()) } : null;
-    nextT = s.nextT; hold = s.hold||null; holdUsed = !!s.holdUsed; cleared = s.cleared||0; score = s.score||0; elapsedMs = s.elapsedMs||0;
+    piece = s.piece ? { type:s.piece.type, x:s.piece.x, y:s.piece.y, rot:s.piece.rot||0, cells:s.piece.cells.map(r=>r.slice()) } : null;
+    queue = Array.isArray(s.queue) ? s.queue.slice() : [];
+    hold = s.hold||null; holdUsed = !!s.holdUsed; cleared = s.cleared||0; score = s.score||0; elapsedMs = s.elapsedMs||0;
     rnd = mulberry32((Math.random()*4294967296)>>>0); bag = Array.isArray(s.bag) ? s.bag.slice() : [];
     moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
-    if (!piece){ nextT = nextT || nextType(); spawnNext(performance.now()); }
+    fillQueue();
+    if (!piece) spawnNext(performance.now());
   }
   function resumeGame(s){
     applyState(s);
@@ -1061,7 +1119,7 @@ BUILD.tetris = host => {
     clearInterval(loopId); loopId=setInterval(loop,16);
     renderStatsLabels(); updateSaveBtn(); updateStats(); draw();
   }
-  function updateSaveBtn(){ const b=$$('tsave'); if (b){ b.hidden = !saveable(); b.textContent='Save'; } }
+  function updateSaveBtn(){ const b=$$('tsave'); if (b){ b.style.display = saveable() ? '' : 'none'; b.textContent='Save'; } }
   function flashSave(msg){ const b=$$('tsave'); if (!b) return; b.textContent=msg;
     clearTimeout(saveFlashTimer); saveFlashTimer=setTimeout(()=>{ const x=$$('tsave'); if (x) x.textContent='Save'; }, 1600); }
   async function saveGame(){
@@ -1102,8 +1160,7 @@ BUILD.tetris = host => {
   }
 
   /* ── leaderboard (Sprint: weekly, fastest; Survival: all-time, longest).
-     Survival uses the server's `zen` board (the zen_score table); the new Zen
-     mode has no leaderboard. ── */
+     Survival uses the server's `zen` board (the zen_score table); Zen has none. ── */
   async function submitScore(ms){
     if (!TT.myEmail() || !hasLB()) return;
     const body = mode==='survival' ? { mode:'zen', ms } : { mode:'sprint', week:wk, timeMs:ms };
@@ -1161,11 +1218,11 @@ BUILD.tetris = host => {
 
   /* ── controls / config panel ── */
   const ACTIONS=[['left','Move left'],['right','Move right'],['softDrop','Soft drop'],['hardDrop','Hard drop'],
-                 ['rotateCW','Rotate CW'],['rotateCCW','Rotate CCW'],['hold','Hold'],['pause','Pause'],['restart','Restart']];
+                 ['rotateCW','Rotate CW'],['rotateCCW','Rotate CCW'],['rotate180','Rotate 180'],['hold','Hold'],['pause','Pause'],['restart','Restart']];
   function keyLabel(k){ return k===' '?'Space':k==='ArrowLeft'?'←':k==='ArrowRight'?'→':k==='ArrowUp'?'↑':k==='ArrowDown'?'↓':(k&&k.length===1)?k.toUpperCase():k; }
   function renderKeyHint(){ const K=cfg.keys; $$('tkeyhint').innerHTML =
-    keyLabel(K.left)+' '+keyLabel(K.right)+' move · '+keyLabel(K.rotateCW)+' rotate (hold spins) · '+keyLabel(K.softDrop)+' soft · '+
-    keyLabel(K.hardDrop)+' drop · '+keyLabel(K.hold)+' hold · '+keyLabel(K.pause)+' pause · '+keyLabel(K.restart)+' restart'; }
+    keyLabel(K.left)+' '+keyLabel(K.right)+' move · '+keyLabel(K.rotateCW)+' cw · '+keyLabel(K.rotateCCW)+' ccw · '+keyLabel(K.rotate180)+' 180 · '+
+    keyLabel(K.softDrop)+' soft · '+keyLabel(K.hardDrop)+' drop · '+keyLabel(K.hold)+' hold · '+keyLabel(K.pause)+' pause · '+keyLabel(K.restart)+' restart'; }
   function slider(k,label,unit,min,max){ return '<div class="tslider"><label>'+label+': <b id="tslv_'+k+'">'+cfg[k]+'</b>'+unit+'</label>'+
     '<input type="range" id="tsl_'+k+'" min="'+min+'" max="'+max+'" value="'+cfg[k]+'"></div>'; }
   function renderCfg(){
@@ -1175,12 +1232,13 @@ BUILD.tetris = host => {
       '<p class="how" style="margin:0 0 10px">Click a key, then press the new one. Handling is in milliseconds.</p>' +
       '<div class="tkeys">' + ACTIONS.map(([a,label])=>'<div class="tkeyrow"><span>'+label+'</span>'+
         '<button class="btn tkeybtn" type="button" data-act="'+a+'">'+(rebinding===a?'press a key…':keyLabel(cfg.keys[a]))+'</button></div>').join('') + '</div>' +
-      '<div class="tsliders">'+slider('das','DAS (delay before auto-shift)','ms',0,400)+slider('arr','ARR (auto-shift repeat)','ms',0,120)+slider('sdf','Soft drop','ms/cell',5,120)+'</div>' +
+      '<div class="tsliders">'+slider('das','DAS (delay before auto-shift)','ms',0,400)+slider('arr','ARR (auto-shift repeat)','ms',0,120)+
+        slider('sdf','Soft drop','ms/cell',5,120)+slider('dcd','DAS cut delay','ms',0,100)+'</div>' +
       '<div style="margin-top:12px"><button class="btn" id="tcfgreset" type="button">Reset to defaults</button></div>';
     $$('tcfgclose').onclick=()=>{ rebinding=null; c.hidden=true; };
     $$('tcfgreset').onclick=()=>{ cfg=JSON.parse(JSON.stringify(DEFAULTS)); saveCfg(); renderCfg(); renderKeyHint(); };
     [...c.querySelectorAll('.tkeybtn')].forEach(b=>b.onclick=()=>{ rebinding=b.dataset.act; renderCfg(); });
-    ['das','arr','sdf'].forEach(k=>{ const el=$$('tsl_'+k); if (el) el.oninput=()=>{ cfg[k]=+el.value; $$('tslv_'+k).textContent=el.value; saveCfg(); }; });
+    ['das','arr','sdf','dcd'].forEach(k=>{ const el=$$('tsl_'+k); if (el) el.oninput=()=>{ cfg[k]=+el.value; $$('tslv_'+k).textContent=el.value; saveCfg(); }; });
   }
 
   /* ── input ── */
@@ -1198,6 +1256,7 @@ BUILD.tetris = host => {
     else if (keyMatch(e,K.softDrop)){ softHeld=true; }
     else if (keyMatch(e,K.rotateCW)){ if(!e.repeat){ rotHeld=true; rotStart=now; rotCharged=false; tryRotate(1,now); } }
     else if (keyMatch(e,K.rotateCCW)){ if(!e.repeat){ tryRotate(-1,now); } }
+    else if (keyMatch(e,K.rotate180)){ if(!e.repeat){ tryRotate(2,now); } }
     else if (keyMatch(e,K.hardDrop)){ if(!e.repeat){ hardDrop(now); } }
     else if (keyMatch(e,K.hold)){ if(!e.repeat){ doHold(now); } }
     else return;
