@@ -782,12 +782,13 @@ on the right** — with three modes (pills at the top):
 - **Sprint** — clear 40 lines fastest. Pieces are a **deterministic weekly 7-bag**
   (Monday-anchored), identical for everyone and replayed the same each attempt, so
   times are comparable. Local best per week (`tt.stats.tetris`); weekly board.
-- **Survival** — survive the **rising speed**; random pieces, gravity ramps with
-  time, endless until you top out. Local best all-time (`tt.stats.tetriszen`);
-  all-time board.
-- **Zen** — endless and **relaxed**: constant gentle gravity, a simple **points
-  score** (100/300/500/800 per 1–4 lines) shown in place of the clock, **no
-  leaderboard**. Just keep placing blocks.
+- **Survival** — survive the **rising speed**; random pieces, gravity ramps
+  **hard and fast** (halves ~every 12s, floors near 20G) so games stay tense and
+  don't drag. Local best all-time (`tt.stats.tetriszen`); all-time board.
+- **Zen** — endless and **relaxed**: uses your chosen gravity, a simple **points
+  score** (100/300/500/800 per 1–4 lines) in place of the clock, and a
+  **scoreboard showing everyone's current score next to their all-time best**
+  (never resets).
 
 **Cross-device save** (Survival + Zen): a **Save** button uploads the current board
 (grid, active piece, hold, next queue, cleared, elapsed) to `/api/gamestate`, keyed
@@ -813,27 +814,35 @@ the three columns don't wrap; the board scales down (`max-width`) so Next stays 
 the right.
 
 **Controls are configurable** (Controls button → panel): every action is
-**rebindable** (click a key, press the new one) — including Rotate CW / CCW / 180
-— and **DAS / ARR / soft-drop / DAS-cut-delay (DCD)** are sliders. Config is stored
-in `tt.tetriscfg`, so it syncs with your other settings. Defaults: ← → move,
+**rebindable** (click a key, press the new one) — including Rotate CW / CCW / 180.
+Sliders: **DAS**, **ARR**, **soft drop** (down to 0 = instant), **DAS-cut-delay
+(DCD)**, and **gravity** (normal fall speed for Sprint/Zen). A checkbox,
+**"Accelerate side-to-side the longer you hold"**, ramps auto-shift up to instant
+over ~0.4s of holding (an alternative to fixed ARR). Config is stored in
+`tt.tetriscfg`, so it syncs with your other settings. Defaults: ← → move,
 ↑ CW (hold to spin) / Z CCW / A 180, ↓ soft drop, space hard drop, Shift hold,
 **P pause, R restart**.
 
 ### Leaderboards
 
-`/api/tetris` serves **two** boards, both `whoami`-verified with a server-derived
+`/api/tetris` serves several boards, all `whoami`-verified with a server-derived
 name (emails never leave the server; your own row is flagged `you`):
 
-- **Sprint** — `?mode=sprint&week=N`, ranked by **shortest** time, resets weekly.
-- **Survival** — `?mode=zen`, ranked by **longest** survival, **all-time (never
-  resets)**. (The server mode name stays `zen`, backed by the `zen_score` table —
-  it predates the rename; the client maps *Survival* → `zen`.) Zen mode has no board.
+- **Sprint** — two tabs: `?mode=sprint&week=N` (this week, ranked by **shortest**
+  time, resets weekly) and `?mode=sprintall` (**all-time fastest**, never resets).
+- **Survival** — `?mode=zen`, ranked by **longest** survival, all-time. (The server
+  mode name stays `zen`, backed by `zen_score` — it predates the rename; the client
+  maps *Survival* → `zen`.)
+- **Zen** — `?mode=zenscore`, each player's **current score next to their all-time
+  best**, ranked by best, never resets.
 
-Submitted on a 40-clear (Sprint) or on top-out (Survival). `games.html` renders
-whichever matches the current mode.
+Submitted on a 40-clear (Sprint, to both weekly + all-time), top-out (Survival), or
+top-out/save (Zen). The two new modes use **separate tables** so existing weekly/
+survival data is untouched.
 
 **Setup:** run these tables in the same Supabase project; no new env vars.
-`game_state` powers the Survival/Zen cross-device save.
+`game_state` powers the Survival/Zen cross-device save; `sprint_best` and
+`zen_board` are the new all-time boards.
 ```sql
 create table tetris_score (
   email text not null, week int not null, name text not null,
@@ -848,6 +857,15 @@ create table game_state (
   email text not null, mode text not null, state jsonb not null,
   updated_at timestamptz not null default now(),
   primary key (email, mode)
+);
+create table sprint_best (
+  email text primary key, name text not null,
+  time_ms int not null, created_at timestamptz not null default now()
+);
+create table zen_board (
+  email text primary key, name text not null,
+  current int not null default 0, best int not null default 0,
+  updated_at timestamptz not null default now()
 );
 ```
 RLS off (service-role only). Times are client-reported, as with any web

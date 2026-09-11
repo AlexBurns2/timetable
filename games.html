@@ -87,7 +87,9 @@ canvas{
 .tlbrow .rk{width:26px;color:var(--muted);font-family:var(--font-num);font-variant-numeric:tabular-nums}
 .tlbrow.me .rk{color:var(--accent)}
 .tlbrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tlbrow .tm{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.tlbrow .tm{font-family:var(--font-num);font-variant-numeric:tabular-nums;min-width:46px;text-align:right}
+.tlbrow.tlbhd{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:none;font-weight:700}
+.tlbrow.tlbhd .rk,.tlbrow.tlbhd .nm,.tlbrow.tlbhd .tm{color:var(--muted)}
 /* tetris layout (tetr.io-ish): hold left, board centre, next right */
 .tmodes{display:flex;gap:8px;margin-bottom:14px}
 .tmode{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
@@ -835,13 +837,15 @@ BUILD.tetris = host => {
   const DEFAULTS = {
     keys: { left:'ArrowLeft', right:'ArrowRight', softDrop:'ArrowDown', hardDrop:' ',
             rotateCW:'ArrowUp', rotateCCW:'z', rotate180:'a', hold:'Shift', pause:'p', restart:'r' },
-    das:160, arr:45, sdf:25, dcd:0
+    das:160, arr:45, sdf:20, dcd:0, grav:800, accel:false
   };
+  const ACCEL_TIME = 400;   // ms of holding over which side-movement ramps to instant
   function loadCfg(){
     const c = TT.get('tt.tetriscfg', {}) || {};
     return { keys: Object.assign({}, DEFAULTS.keys, c.keys||{}),
              das:c.das==null?DEFAULTS.das:c.das, arr:c.arr==null?DEFAULTS.arr:c.arr,
-             sdf:c.sdf==null?DEFAULTS.sdf:c.sdf, dcd:c.dcd==null?DEFAULTS.dcd:c.dcd };
+             sdf:c.sdf==null?DEFAULTS.sdf:c.sdf, dcd:c.dcd==null?DEFAULTS.dcd:c.dcd,
+             grav:c.grav==null?DEFAULTS.grav:c.grav, accel:!!c.accel };
   }
   let cfg = loadCfg();
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
@@ -992,9 +996,12 @@ BUILD.tetris = host => {
   }
 
   /* ── loop ── */
-  const gravityMs = () => mode==='survival' ? Math.max(90, 800 - (elapsedMs/1000)*4) : (mode==='zen' ? 800 : 750);
+  /* Survival ramps hard and fast (halves ~every 12s, floors near 20G) so games
+     stay tense and don't drag; Sprint/Zen use the player's chosen gravity. */
+  const gravityMs = () => mode==='survival'
+    ? Math.max(17, 700 * Math.pow(0.55, (elapsedMs/1000)/12))
+    : cfg.grav;
   const saveable = () => mode==='zen' || mode==='survival';
-  const hasLB = () => mode==='sprint' || mode==='survival';
   const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen'}[mode] || mode);
   function loop(){
     if (phase!=='playing') return;
@@ -1003,19 +1010,28 @@ BUILD.tetris = host => {
     elapsedMs = Date.now() - baseTime;
     if (moveDir!==0 && now-dasStart>=cfg.das){
       if (!dasCharged){ dasCharged=true; arrLast=now; tryMove(moveDir,now); }
-      else while (now-arrLast>=cfg.arr){ arrLast+=cfg.arr; if (!tryMove(moveDir,now)) break; }
+      else {
+        let arr = cfg.arr;
+        if (cfg.accel){ const held = now - dasStart - cfg.das; arr = Math.max(0, cfg.arr*(1 - Math.min(1, held/ACCEL_TIME))); }
+        if (arr <= 1){ while (tryMove(moveDir, now)) {} arrLast = now; }   // ramped to instant → slide to the wall
+        else while (now-arrLast>=arr){ arrLast+=arr; if (!tryMove(moveDir,now)) break; }
+      }
     }
     if (rotHeld && now-rotStart>=ROT_DAS){
       if (!rotCharged){ rotCharged=true; rotLast=now; tryRotate(1,now); }
       else while (now-rotLast>=ROT_ARR){ rotLast+=ROT_ARR; tryRotate(1,now); }
     }
-    const interval = softHeld ? cfg.sdf : gravityMs();
-    dropAcc = Math.min(dropAcc + dt, interval);   // one step/frame max — no soft-drop burst
-    while (dropAcc>=interval){ dropAcc-=interval;
+    /* soft drop resets dropAcc on keypress (see onKey), so lowering sdf gives a
+       genuinely faster drop — multiple cells/frame — without dumping banked gravity */
+    const interval = Math.max(1, softHeld ? cfg.sdf : gravityMs());
+    dropAcc += dt;
+    let steps = 0;
+    while (dropAcc>=interval && steps<ROWS){ dropAcc-=interval; steps++;
       if (!collides(piece.cells, piece.x, piece.y+1)) piece.y++;
       updateGround(now, false);
       if (phase!=='playing') return;
     }
+    if (dropAcc > interval) dropAcc = interval;   // discard backlog after a lag spike
     if (grounded && now-lockStart>=LOCK_DELAY){ commitLock(now); if (phase!=='playing') return; }
     updateStats(); draw();
   }
@@ -1056,14 +1072,14 @@ BUILD.tetris = host => {
   function fmtBest(){
     if (mode==='sprint'){ const s=allStats().tetris; return (s && s.week===wk && s.best!=null) ? fmtHMS(s.best*1000) : '—'; }
     if (mode==='survival'){ const z=allStats().tetriszen; return (z && z.best!=null) ? fmtHMS(z.best) : '—'; }
-    return '—';
+    const zs=allStats().tetriszenscore; return (zs && zs.best!=null) ? String(zs.best) : '—';   // Zen best score
   }
   function renderStatsLabels(){
     $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
     $$('ttimelabel').textContent = mode==='zen' ? 'Score' : 'Time';
     const bestRow = $$('tbest').closest('.tstat');
-    if (bestRow) bestRow.style.display = mode==='zen' ? 'none' : 'flex';   // Zen keeps no score
-    $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : 'Best (all-time)';
+    if (bestRow) bestRow.style.display = 'flex';   // every mode now has a "best"
+    $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : (mode==='survival' ? 'Best (all-time)' : 'Best score');
     $$('tbest').textContent = fmtBest();
   }
   function updateStats(){
@@ -1127,8 +1143,11 @@ BUILD.tetris = host => {
     if (phase!=='playing' && phase!=='paused'){ flashSave('Nothing to save'); return; }
     if (!TT.myEmail()){ flashSave('Sign in to save'); return; }
     flashSave('Saving…');
-    try { await TT.api('/api/gamestate', { method:'PUT', body:{ mode, state: serialize() } }); flashSave('Saved ✓'); }
-    catch(e){ flashSave('Save failed'); }
+    try {
+      await TT.api('/api/gamestate', { method:'PUT', body:{ mode, state: serialize() } });
+      if (mode==='zen') submitZen(score);      // reflect the ongoing game's score on the board
+      flashSave('Saved ✓');
+    } catch(e){ flashSave('Save failed'); }
   }
   async function clearState(){
     savedState = null;
@@ -1152,37 +1171,82 @@ BUILD.tetris = host => {
       if (z.best==null||ms>z.best) z.best=ms; s.tetriszen={best:z.best}; TT.set('tt.stats',s);
       submitScore(ms); showOver('Survived '+fmtHMS(ms), restart);
       clearState();
-    } else {   // zen — score shown, no leaderboard
+    } else {   // zen — track best score locally + push current/best to the Zen board
+      const s=allStats(); const zs=s.tetriszenscore||{best:null};
+      if (zs.best==null||score>zs.best) zs.best=score; s.tetriszenscore={best:zs.best}; TT.set('tt.stats',s);
+      submitZen(score);
       showOver('Topped out — score '+score, cleared+' lines · '+restart);
       clearState();
     }
     renderStatsLabels(); draw();
   }
 
-  /* ── leaderboard (Sprint: weekly, fastest; Survival: all-time, longest).
-     Survival uses the server's `zen` board (the zen_score table); Zen has none. ── */
-  async function submitScore(ms){
-    if (!TT.myEmail() || !hasLB()) return;
-    const body = mode==='survival' ? { mode:'zen', ms } : { mode:'sprint', week:wk, timeMs:ms };
-    try { renderLB(await TT.api('/api/tetris', { method:'POST', body })); } catch(e){}
+  /* ── leaderboards ──
+     Sprint: weekly (tetris_score) + all-time (sprint_best) as two tabs.
+     Survival: all-time longest survival (zen_score).
+     Zen: everyone's current score next to their all-time best (zen_board). ── */
+  let sprintBoards = { week:null, all:null }, sprintTab = 'week';
+  async function submitScore(ms){        // sprint (40-clear) or survival (top-out)
+    if (!TT.myEmail()) return;
+    try {
+      if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{method:'POST',body:{mode:'zen',ms}}), 'Longest survivals (all-time)'); }
+      else {
+        const [w,a] = await Promise.all([
+          TT.api('/api/tetris',{method:'POST',body:{mode:'sprint',week:wk,timeMs:ms}}),
+          TT.api('/api/tetris',{method:'POST',body:{mode:'sprintall',timeMs:ms}})
+        ]);
+        sprintBoards={week:w,all:a}; renderSprintLB();
+      }
+    } catch(e){}
+  }
+  async function submitZen(sc){
+    if (!TT.myEmail()) return;
+    try { renderZenLB(await TT.api('/api/tetris',{method:'POST',body:{mode:'zenscore',score:sc}})); } catch(e){}
   }
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
-    if (!hasLB() || !TT.myEmail()){ el.innerHTML=''; return; }
-    const params = mode==='survival' ? { mode:'zen' } : { mode:'sprint', week:wk };
-    try { renderLB(await TT.api('/api/tetris', { params })); } catch(e){ el.innerHTML=''; }
+    if (!TT.myEmail()){ el.innerHTML=''; return; }
+    try {
+      if (mode==='sprint'){
+        const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}), TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
+        sprintBoards={week:w,all:a}; renderSprintLB();
+      } else if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{params:{mode:'zen'}}), 'Longest survivals (all-time)'); }
+      else { renderZenLB(await TT.api('/api/tetris',{params:{mode:'zenscore'}})); }
+    } catch(e){ if($$('tlb')) $$('tlb').innerHTML=''; }
   }
-  function renderLB(d){
-    const el=$$('tlb'); if (!el || !alive) return;
-    if (!hasLB()){ el.innerHTML=''; return; }
+  function rowsHTML(d, fmt){
     const rows=(d && d.top)||[];
-    const title = mode==='survival' ? 'Longest survivals (all-time)' : 'This week’s fastest';
+    let html=rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+fmt(r)+'</span></div>').join('');
+    if (d && d.meRank && d.meRank>rows.length)
+      html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+fmt({time_ms:d.meBest})+'</span></div>';
+    return html;
+  }
+  function renderTimeLB(d, title){
+    const el=$$('tlb'); if (!el || !alive) return;
+    const rows=(d && d.top)||[];
     if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3><p class="how">No times yet — set the first.</p>'; return; }
-    let html='<h3>'+title+'</h3>'+rows.map((r,i)=>
-      '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+fmtHMS(r.time_ms)+'</span></div>').join('');
-    if (d.meRank && d.meRank>rows.length)
-      html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+fmtHMS(d.meBest)+'</span></div>';
+    el.innerHTML='<h3>'+title+'</h3>'+rowsHTML(d, r=>fmtHMS(r.time_ms));
+  }
+  function renderSprintLB(){
+    const el=$$('tlb'); if (!el || !alive) return;
+    const d = sprintTab==='week' ? sprintBoards.week : sprintBoards.all;
+    const tabs='<div class="glbtabs"><button type="button" class="glbtab'+(sprintTab==='week'?' cur':'')+'" data-t="week">This week</button>'+
+      '<button type="button" class="glbtab'+(sprintTab==='all'?' cur':'')+'" data-t="all">All time</button></div>';
+    const rows=(d && d.top)||[];
+    const body = (!rows.length && (!d||d.meBest==null)) ? '<p class="how">No times yet — set the first.</p>' : rowsHTML(d, r=>fmtHMS(r.time_ms));
+    el.innerHTML='<div class="glbhd"><h3>Sprint — fastest</h3>'+tabs+'</div>'+body;
+    [...el.querySelectorAll('.glbtab')].forEach(b=>b.onclick=()=>{ sprintTab=b.dataset.t; renderSprintLB(); });
+  }
+  function renderZenLB(d){
+    const el=$$('tlb'); if (!el || !alive) return;
+    const rows=(d && d.top)||[];
+    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3><p class="how">No scores yet — set the first.</p>'; return; }
+    let html='<h3>Zen scores</h3><div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
+      rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+        '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
+    if (d && d.meRank && d.meRank>rows.length)
+      html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+(d.meCurrent||0)+'</span><span class="tm">'+(d.meBest||0)+'</span></div>';
     el.innerHTML=html;
   }
 
@@ -1233,12 +1297,15 @@ BUILD.tetris = host => {
       '<div class="tkeys">' + ACTIONS.map(([a,label])=>'<div class="tkeyrow"><span>'+label+'</span>'+
         '<button class="btn tkeybtn" type="button" data-act="'+a+'">'+(rebinding===a?'press a key…':keyLabel(cfg.keys[a]))+'</button></div>').join('') + '</div>' +
       '<div class="tsliders">'+slider('das','DAS (delay before auto-shift)','ms',0,400)+slider('arr','ARR (auto-shift repeat)','ms',0,120)+
-        slider('sdf','Soft drop','ms/cell',5,120)+slider('dcd','DAS cut delay','ms',0,100)+'</div>' +
+        slider('sdf','Soft drop (lower = faster, 0 = instant)','ms/cell',0,120)+slider('dcd','DAS cut delay','ms',0,100)+
+        slider('grav','Gravity — normal fall speed (lower = faster)','ms/cell',20,1200)+'</div>' +
+      '<label class="tcheck"><input type="checkbox" id="tacc"'+(cfg.accel?' checked':'')+'> Accelerate side-to-side the longer you hold</label>' +
       '<div style="margin-top:12px"><button class="btn" id="tcfgreset" type="button">Reset to defaults</button></div>';
     $$('tcfgclose').onclick=()=>{ rebinding=null; c.hidden=true; };
     $$('tcfgreset').onclick=()=>{ cfg=JSON.parse(JSON.stringify(DEFAULTS)); saveCfg(); renderCfg(); renderKeyHint(); };
     [...c.querySelectorAll('.tkeybtn')].forEach(b=>b.onclick=()=>{ rebinding=b.dataset.act; renderCfg(); });
-    ['das','arr','sdf','dcd'].forEach(k=>{ const el=$$('tsl_'+k); if (el) el.oninput=()=>{ cfg[k]=+el.value; $$('tslv_'+k).textContent=el.value; saveCfg(); }; });
+    ['das','arr','sdf','dcd','grav'].forEach(k=>{ const el=$$('tsl_'+k); if (el) el.oninput=()=>{ cfg[k]=+el.value; $$('tslv_'+k).textContent=el.value; saveCfg(); }; });
+    const acc=$$('tacc'); if (acc) acc.onchange=()=>{ cfg.accel=acc.checked; saveCfg(); };
   }
 
   /* ── input ── */
@@ -1253,7 +1320,7 @@ BUILD.tetris = host => {
     const now=performance.now();
     if (keyMatch(e,K.left)){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; tryMove(-1,now); } }
     else if (keyMatch(e,K.right)){ if(!e.repeat){ moveDir=1; dasStart=now; dasCharged=false; tryMove(1,now); } }
-    else if (keyMatch(e,K.softDrop)){ softHeld=true; }
+    else if (keyMatch(e,K.softDrop)){ if(!e.repeat) dropAcc=0; softHeld=true; }
     else if (keyMatch(e,K.rotateCW)){ if(!e.repeat){ rotHeld=true; rotStart=now; rotCharged=false; tryRotate(1,now); } }
     else if (keyMatch(e,K.rotateCCW)){ if(!e.repeat){ tryRotate(-1,now); } }
     else if (keyMatch(e,K.rotate180)){ if(!e.repeat){ tryRotate(2,now); } }
