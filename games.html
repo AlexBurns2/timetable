@@ -46,15 +46,23 @@
 /* per-category horizontal scroller: ~3½ cards visible (a peek hints you can scroll).
    Scroll with the wheel while hovering, or click-and-drag. No visible scrollbar. */
 .gamesections[hidden]{display:none}
-/* padding gives the card shadows room; equal negative margins reclaim it so the
-   row is full-bleed to the wrap edges and the shadows are never clipped into a
-   dark rectangle. overflow-y must be hidden (paired with overflow-x:auto). */
-.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;
-  padding:24px 16px 32px;margin:-16px -16px -12px;
+/* The row is padded so card shadows have room (never clipped into a dark
+   rectangle); a wrapper adds a soft fade at whichever edge has more off-screen.
+   On hover a tile lifts (no growing shadow), so nothing clips. */
+.gamesecrow{position:relative;margin:0 -16px -4px}
+.gamesecrow::before,.gamesecrow::after{content:'';position:absolute;top:6px;bottom:6px;width:48px;
+  pointer-events:none;z-index:3;opacity:0;transition:opacity .22s ease}
+.gamesecrow::before{left:0;background:linear-gradient(to right,var(--bg),color-mix(in srgb,var(--bg),transparent 100%))}
+.gamesecrow::after{right:0;background:linear-gradient(to left,var(--bg),color-mix(in srgb,var(--bg),transparent 100%))}
+.gamesecrow.can-left::before{opacity:1}
+.gamesecrow.can-right::after{opacity:1}
+.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:28px 16px 32px;
   cursor:grab;scrollbar-width:none;-ms-overflow-style:none}
 .gamerow::-webkit-scrollbar{display:none}
 .gamerow.dragging{cursor:grabbing}
-.gamerow .gamecard{flex:0 0 calc((100% - 42px) / 3.5);min-width:200px}
+.gamerow .gamecard{flex:0 0 calc((100% - 42px) / 3.5);min-width:200px;
+  transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease}
+.gamerow .gamecard:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
 @media (max-width:640px){ .gamerow .gamecard{flex-basis:80%;min-width:0} }
 .stage{
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
@@ -402,6 +410,10 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 #rvin{flex:1;min-width:160px;padding:11px 13px;border:var(--card-border);border-radius:var(--radius);
   background:var(--panel-2);color:var(--text);outline:none}
 #rvin:focus{border-color:var(--accent)}
+.rvcodeopts{grid-template-columns:1fr}
+.rvcodeopts .mcopt{font-family:var(--font-num);white-space:pre-wrap;font-size:13px;text-align:left}
+.rvprompt code{font-family:var(--font-num);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
+.rvdiagram{display:block;margin:12px auto 0;max-width:100%}
 </style>
 </head>
 <body>
@@ -513,9 +525,10 @@ let stop = null;
 const GAMES = [
   { id:'flashcards', cat:'Revision', ico:'🗂️', name:'Flashcards', blurb:'Make, share and study decks' },
   { id:'maths',   cat:'Revision', ico:'➗', name:'Maths', blurb:'Differentiation, integration, combinatorics, graphs' },
-  { id:'physics', cat:'Revision', ico:'🔭', name:'Physics', blurb:'SUVAT, waves and energy' },
-  { id:'chem',    cat:'Revision', ico:'⚗️', name:'Chemistry', blurb:'Redox and solubility' },
-  { id:'python',  cat:'Revision', ico:'💻', name:'Python', blurb:'Predict the output' },
+  { id:'physics', cat:'Revision', ico:'🔭', name:'Physics', blurb:'Kinematics, dynamics, waves, electricity' },
+  { id:'chem',    cat:'Revision', ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
+  { id:'engineering', cat:'Revision', ico:'🔧', name:'Engineering', blurb:'Materials, heat treatment, mechanics' },
+  { id:'software', cat:'Revision', ico:'💻', name:'Software', blurb:'Read code and write it' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -543,6 +556,7 @@ function showGrid(){
     if (!inCat.length) return;
     const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
     grid.appendChild(h);
+    const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
     const row = document.createElement('div'); row.className = 'gamerow';
     inCat.forEach((g, i) => {
       const c = document.createElement('button');
@@ -556,11 +570,21 @@ function showGrid(){
       c.onclick = () => openGame(g.id);
       row.appendChild(c);
     });
-    grid.appendChild(row);
+    wrap.appendChild(row); grid.appendChild(wrap);
     dragScroll(row);
+    row.addEventListener('scroll', () => edgeFades(row), { passive:true });
+    requestAnimationFrame(() => edgeFades(row));
   });
   renderLBSum();
 }
+/* toggle the left/right fade on a row's wrapper based on how far it's scrolled */
+function edgeFades(row){
+  const w = row.parentElement; if (!w || !w.classList.contains('gamesecrow')) return;
+  const max = row.scrollWidth - row.clientWidth;
+  w.classList.toggle('can-left', row.scrollLeft > 4);
+  w.classList.toggle('can-right', max > 4 && row.scrollLeft < max - 4);
+}
+addEventListener('resize', () => document.querySelectorAll('.gamerow').forEach(edgeFades));
 /* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
    the browser's own horizontal scroll; a drag swallows the click that follows). */
 function dragScroll(row){
@@ -2985,43 +3009,71 @@ BUILD.flashcards = host => {
    or { q, input:true, answer, accept?:fn } for a typed answer. Optional clue/note. */
 function revGame(host, opts){
   head(host, opts.title, opts.how, '<div id="rv"></div>');
-  const box = $('rv'), lastKey = 'tt.rev_' + opts.statKey;
-  let topic = TT.get(lastKey, opts.topics[0].id);
-  if (topic !== 'mix' && !opts.topics.some(t => t.id === topic)) topic = opts.topics[0].id;
+  const box = $('rv'), sk = opts.statKey;
+  const modular = !!opts.modules;
   let score = 0, streak = 0, cur = null, answered = false;
-  const pills = () => {
-    const all = opts.topics.length > 1 ? [{id:'mix',name:'Mixed'}, ...opts.topics] : opts.topics;
-    return '<div class="diffbar" id="rvtopics" style="margin-bottom:12px">' +
-      all.map(t => '<button class="diffpill" type="button" data-t="'+t.id+'" aria-pressed="'+(t.id===topic)+'">'+esc(t.name)+'</button>').join('') + '</div>';
+  /* flat mode (Maths/Software): one topic pill row with a Mixed option */
+  let topic = modular ? null : TT.get('tt.rev_'+sk, (opts.topics.length>1?'mix':opts.topics[0].id));
+  if (!modular && topic!=='mix' && !opts.topics.some(t=>t.id===topic)) topic = opts.topics[0].id;
+  /* modular mode (Chem/Physics/Eng): a module row + a subtopic multi-select row */
+  let modId = modular ? TT.get('tt.rev_'+sk+'_mod','all') : null;
+  if (modular && modId!=='all' && !opts.modules.some(m=>m.id===modId)) modId='all';
+  let excl = (modular && TT.get('tt.rev_'+sk+'_excl',{})) || {};   // excluded subtopic ids
+  const curMod = () => opts.modules.find(m=>m.id===modId);
+  const pool = () => {
+    if (!modular) return topic==='mix' ? opts.topics : [opts.topics.find(t=>t.id===topic)];
+    if (modId==='all') return opts.modules.flatMap(m=>m.topics);
+    const on = curMod().topics.filter(t=>!excl[t.id]); return on.length ? on : curMod().topics;
   };
-  const wirePills = () => { const bar = $('rvtopics'); if (!bar) return;
-    [...bar.children].forEach(b => b.onclick = () => { topic = b.dataset.t; TT.set(lastKey, topic);
-      [...bar.children].forEach(x => x.setAttribute('aria-pressed', String(x===b))); nextQ(); }); };
+  const pill = (id,name,on,multi) => '<button class="diffpill'+(multi?' rvmulti':'')+'" type="button" data-id="'+id+'" aria-pressed="'+on+'">'+esc(name)+'</button>';
+  function selUI(){
+    if (!modular){
+      const all = opts.topics.length>1 ? [{id:'mix',name:'Mixed'},...opts.topics] : opts.topics;
+      return '<div class="diffbar rvsel" style="margin-bottom:12px">'+all.map(t=>pill(t.id,t.name,t.id===topic)).join('')+'</div>';
+    }
+    let h = '<div class="diffbar rvsel" style="margin-bottom:8px">'+pill('all','Whole topic',modId==='all')+opts.modules.map(m=>pill(m.id,m.name,m.id===modId)).join('')+'</div>';
+    if (modId!=='all') h += '<div class="diffbar rvsub" style="margin-bottom:12px">'+curMod().topics.map(t=>pill(t.id,t.name,!excl[t.id],true)).join('')+'</div>';
+    return h;
+  }
+  function wireSel(){
+    const bar = box.querySelector('.rvsel');
+    if (bar) [...bar.children].forEach(b => b.onclick = () => {
+      if (!modular){ topic=b.dataset.id; TT.set('tt.rev_'+sk,topic); }
+      else { modId=b.dataset.id; TT.set('tt.rev_'+sk+'_mod',modId); }
+      nextQ();
+    });
+    const sub = box.querySelector('.rvsub');
+    if (sub) [...sub.children].forEach(b => b.onclick = () => {
+      const id=b.dataset.id, isOn=!excl[id], active=curMod().topics.filter(t=>!excl[t.id]).length;
+      if (isOn){ if (active<=1) return; excl[id]=true; } else delete excl[id];
+      TT.set('tt.rev_'+sk+'_excl',excl); b.setAttribute('aria-pressed',String(!excl[id])); nextQ();
+    });
+  }
   start();
   function start(){
-    box.innerHTML = pills() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
-      '<div class="rvclue">Pick a topic, then start. Score climbs with each correct answer.</div></div>' +
+    box.innerHTML = selUI() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
+      '<div class="rvclue">'+(modular?'Pick a module (or the whole topic), then start.':'Pick a topic, then start.')+' Answers reveal the working.</div></div>' +
       '<div class="gwrow"><button class="btn primary" id="rvstart" type="button">Start</button></div>';
-    wirePills(); $('rvstart').onclick = nextQ;
-    $('sc').textContent = 'Best streak ' + (statVal(opts.statKey,'streak') || 0);
+    wireSel(); $('rvstart').onclick = nextQ;
+    $('sc').textContent = 'Best streak ' + (statVal(sk,'streak') || 0);
   }
   function nextQ(){
-    const t = topic==='mix' ? opts.topics[(Math.random()*opts.topics.length)|0] : opts.topics.find(x=>x.id===topic);
+    const list = pool(); const t = list[(Math.random()*list.length)|0];
     cur = t.gen(); cur._topic = t.name; answered = false; render();
   }
   function render(){
-    let html = pills() +
-      '<div class="rvq"><div class="rvprog">Score '+score+' · streak '+streak+(topic==='mix'?' · '+esc(cur._topic):'')+'</div>' +
-        '<div class="rvprompt">'+cur.q+'</div>'+(cur.clue?'<div class="rvclue">'+cur.clue+'</div>':'')+'</div>';
+    let html = selUI() +
+      '<div class="rvq"><div class="rvprog">Score '+score+' · streak '+streak+' · '+esc(cur._topic)+'</div>' +
+        '<div class="rvprompt">'+cur.q+'</div></div>';   /* no formula shown up front — that's the point */
     html += cur.input
       ? '<div class="gwrow"><input id="rvin" autocomplete="off" placeholder="Your answer…"><button class="btn primary" id="rvgo" type="button">Check</button></div>'
       : '<div class="mcq" id="rvopts"></div>';
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
-    box.innerHTML = html; wirePills();
+    box.innerHTML = html; wireSel();
     $('sc').textContent = 'Score ' + score;
     if (cur.input){ const inp = $('rvin'); inp.focus();
       const go = () => submit(inp.value); $('rvgo').onclick = go; inp.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
-    } else { const wrap = $('rvopts');
+    } else { const wrap = $('rvopts'); if (cur.code) wrap.classList.add('rvcodeopts');
       cur.choices.forEach(c => { const b = document.createElement('button'); b.type='button'; b.className='mcopt'; b.textContent = c;
         b.onclick = () => submit(c, b); wrap.appendChild(b); });
     }
@@ -3070,7 +3122,8 @@ function mc(answer, distractors){
 }
 function physMC(val, unit, wrongs){
   const fmt = x => (Math.round(x*100)/100) + ' ' + unit;
-  return mc(fmt(val), wrongs.map(fmt));
+  const pad = [val*2, val/2, val+1, Math.abs(val)*1.5, val*3];  // fallbacks so options never collapse
+  return mc(fmt(val), wrongs.concat(pad).map(fmt));
 }
 const nCr = (n,r) => { if (r<0||r>n) return 0; r=Math.min(r,n-r); let x=1; for (let i=0;i<r;i++) x = x*(n-i)/(i+1); return Math.round(x); };
 const nPr = (n,r) => { let x=1; for (let i=0;i<r;i++) x*=(n-i); return x; };
@@ -3104,30 +3157,54 @@ function genInt(){
   const m = mc(ans, dis);
   return { q:'Integrate <b>' + polyStr(terms) + '</b> with respect to x', choices:m.choices, answer:m.answer };
 }
+const fact = n => { let x=1; for (let i=2;i<=n;i++) x*=i; return x; };
 function genComb(){
-  const type = ri(0,3);
-  if (type===0){ const n=ri(5,10), r=ri(2,n-2); return { q:'Evaluate <b>'+n+'C'+r+'</b> ("'+n+' choose '+r+'").', input:true, answer:nCr(n,r), note:'C('+n+','+r+') = '+nCr(n,r)+'.' }; }
-  if (type===1){ const n=ri(4,8), r=ri(2,Math.min(4,n-1)); return { q:'Evaluate <b>'+n+'P'+r+'</b> (arrangements of '+r+' from '+n+').', input:true, answer:nPr(n,r), note:n+'P'+r+' = '+nPr(n,r)+'.' }; }
-  if (type===2){ const n=ri(4,8), k=ri(1,n-1); return { q:'In the expansion of <b>(1 + x)'+sup(n)+'</b>, what is the coefficient of <b>x'+sup(k)+'</b>?', input:true, answer:nCr(n,k), note:'It equals C('+n+','+k+') = '+nCr(n,k)+'.' }; }
-  const n=ri(3,6), a=ri(1,3), b=nzr(-3,3), k=ri(1,n-1);
-  const coef = nCr(n,k)*Math.pow(a,n-k)*Math.pow(b,k);
-  return { q:'In the expansion of <b>('+a+' '+(b<0?'−':'+')+' '+Math.abs(b)+'x)'+sup(n)+'</b>, find the coefficient of <b>x'+sup(k)+'</b>.', input:true, answer:coef, note:'C('+n+','+k+')·'+a+sup(n-k)+'·('+b+')'+sup(k)+' = '+coef+'.' };
+  const type = ri(0,5);
+  if (type===0){ const n=ri(4,7); return { q:'In how many ways can <b>'+n+' people</b> be seated around a <b>circular table</b>?', input:true, answer:fact(n-1), note:'Fix one seat: ('+n+'−1)! = '+fact(n-1)+'.' }; }
+  if (type===1){ const n=ri(4,7); return { q:'In how many ways can <b>'+n+' different books</b> be lined up on a shelf?', input:true, answer:fact(n), note:n+'! = '+fact(n)+'.' }; }
+  if (type===2){ const a=ri(4,7), b=ri(3,6), r=ri(2,3), s=ri(1,2);
+    return { q:'A team needs <b>'+r+'</b> people from a group of <b>'+a+'</b> and <b>'+s+'</b> from a group of <b>'+b+'</b>. How many ways?', input:true, answer:nCr(a,r)*nCr(b,s), note:'C('+a+','+r+')×C('+b+','+s+') = '+nCr(a,r)+'×'+nCr(b,s)+' = '+(nCr(a,r)*nCr(b,s))+'.' }; }
+  if (type===3){ const m=ri(4,6), w=ri(3,5), k=ri(3,4), j=ri(1,Math.min(2,w)), men=k-j;
+    if (men<1||men>m) return genComb();
+    return { q:'From <b>'+m+' boys</b> and <b>'+w+' girls</b>, a committee of <b>'+k+'</b> is picked with exactly <b>'+j+' girl'+(j>1?'s':'')+'</b>. How many committees?', input:true, answer:nCr(w,j)*nCr(m,men), note:'C('+w+','+j+')×C('+m+','+men+') = '+(nCr(w,j)*nCr(m,men))+'.' }; }
+  if (type===4){ const [wd,ans] = pk([['BOOK',12],['LEVEL',30],['APPLE',60],['BANANA',60],['ERROR',20],['CANADA',120]]);
+    return { q:'How many distinct arrangements are there of the letters of <b>'+wd+'</b>?', input:true, answer:ans, note:wd.length+"! divided by the factorials of the repeated letters = "+ans+'.' }; }
+  const b=ri(2,3), g=ri(2,3);
+  return { q:'<b>'+b+' boys</b> and <b>'+g+' girls</b> sit in a row with <b>all the girls together</b>. How many arrangements?', input:true, answer:fact(b+1)*fact(g), note:'Treat the girls as one block: ('+b+'+1)!×'+g+'! = '+fact(b+1)+'×'+fact(g)+' = '+(fact(b+1)*fact(g))+'.' };
 }
 function genGraph(){
-  const h=ri(1,5), k=ri(1,5), a=ri(2,4);
-  const all = [
-    { eq:'f(x − '+h+')', d:'Translation '+h+' unit'+(h>1?'s':'')+' right' },
-    { eq:'f(x + '+h+')', d:'Translation '+h+' unit'+(h>1?'s':'')+' left' },
-    { eq:'f(x) + '+k,    d:'Translation '+k+' unit'+(k>1?'s':'')+' up' },
-    { eq:'f(x) − '+k,    d:'Translation '+k+' unit'+(k>1?'s':'')+' down' },
-    { eq:a+'f(x)',       d:'Vertical stretch, scale factor '+a },
-    { eq:'f('+a+'x)',    d:'Horizontal stretch, scale factor 1/'+a },
-    { eq:'−f(x)',        d:'Reflection in the x-axis' },
-    { eq:'f(−x)',        d:'Reflection in the y-axis' }
+  const B = pk([{n:'x²',f:i=>'('+i+')²'},{n:'x³',f:i=>'('+i+')³'},{n:'√x',f:i=>'√('+i+')'},{n:'|x|',f:i=>'|'+i+'|'}]);
+  const h=ri(1,4), k=ri(1,4), a=ri(2,3);
+  const forms = [
+    { eq:B.f('x − '+h), d:'Translation '+h+' unit'+(h>1?'s':'')+' right' },
+    { eq:B.f('x + '+h), d:'Translation '+h+' unit'+(h>1?'s':'')+' left' },
+    { eq:B.n+' + '+k,   d:'Translation '+k+' unit'+(k>1?'s':'')+' up' },
+    { eq:B.n+' − '+k,   d:'Translation '+k+' unit'+(k>1?'s':'')+' down' },
+    { eq:a+B.n,         d:'Vertical stretch, scale factor '+a },
+    { eq:B.f(a+'x'),    d:'Horizontal stretch, scale factor 1/'+a },
+    { eq:'−'+B.n,       d:'Reflection in the x-axis' },
+    { eq:B.f('−x'),     d:'Reflection in the y-axis' }
   ];
-  const chosen = pk(all);
-  const m = mc(chosen.d, shuffle(all.filter(o => o.d!==chosen.d)).map(o => o.d));
-  return { q:'Describe the transformation from <b>y = f(x)</b> to <b>y = '+chosen.eq+'</b>.', choices:m.choices, answer:m.answer };
+  const chosen = pk(forms);
+  if (Math.random()<0.5){ const m = mc(chosen.d, shuffle(forms.filter(o=>o.d!==chosen.d)).map(o=>o.d));
+    return { q:'The graph of <b>y = '+B.n+'</b> becomes <b>y = '+chosen.eq+'</b>. Describe the transformation.', choices:m.choices, answer:m.answer }; }
+  const m = mc(chosen.eq, shuffle(forms.filter(o=>o.eq!==chosen.eq)).map(o=>o.eq));
+  return { q:'The graph of <b>y = '+B.n+'</b> undergoes a <b>'+chosen.d.toLowerCase()+'</b>. Which is the new equation?', choices:m.choices, answer:m.answer };
+}
+/* Software: choose the correct code for a task (curated, single-answer) */
+function genCode(){
+  const items = [
+    { q:'Which prints the integers 0 to 4?', a:'for i in range(5): print(i)', w:['for i in range(1, 5): print(i)','for i in range(4): print(i)','print(range(5))'] },
+    { q:'Which gives the largest value in a list <code>xs</code>?', a:'max(xs)', w:['min(xs)','sum(xs)','len(xs)'] },
+    { q:'Which is True only when <code>n</code> is even?', a:'n % 2 == 0', w:['n // 2 == 0','n / 2 == 0','n % 2 == 1'] },
+    { q:'Which reverses the string <code>s</code>?', a:'s[::-1]', w:['s[::1]','s.reverse()','s[1:-1]'] },
+    { q:'Which builds a list of every item in <code>xs</code> plus one?', a:'[x + 1 for x in xs]', w:['xs + 1','[x for x in xs + 1]','xs.append(1)'] },
+    { q:'Which counts how many items are in <code>xs</code>?', a:'len(xs)', w:['count(xs)','xs.length','xs.count()'] },
+    { q:'Which joins a list of strings <code>words</code> with spaces?', a:'" ".join(words)', w:['words.join(" ")','"".join(words)','join(words, " ")'] },
+    { q:'Which reads an integer from the user into <code>n</code>?', a:'n = int(input())', w:['n = input(int)','int(n = input())','n = input().int()'] }
+  ];
+  const it = pk(items);
+  return { q:it.q, choices: mc(it.a, it.w).choices, answer:it.a, code:true };
 }
 function genPython(){
   const t = ri(0,4); let code, out, dis = [];
@@ -3201,14 +3278,164 @@ function genSol(){
     note:'SNAAP: salts of Sodium, Nitrate, Ammonium, Acetate and Potassium are soluble; most other carbonates, hydroxides, sulfides and these salts are not.' };
 }
 
-BUILD.python  = host => revGame(host, { title:'Python', how:'Predict what each snippet prints.', statKey:'python',
-  topics:[{ id:'out', name:'Predict output', gen:genPython }] });
-BUILD.maths   = host => revGame(host, { title:'Maths', how:'Procedural practice — pick a topic.', statKey:'maths',
+const rd = (x,d) => { const f = Math.pow(10,d||0); return Math.round(x*f)/f; };
+
+/* ── diagrams ── */
+function vseprSVG(kind){
+  const dot=(x,y,r,f)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+f+'" stroke="var(--line)" stroke-width="1.5"/>';
+  const bond=(x,y)=>'<line x1="100" y1="62" x2="'+x+'" y2="'+y+'" stroke="var(--text)" stroke-width="2"/>';
+  const outs={ lin:[[28,62],[172,62]], bent:[[46,96],[154,96]], tri:[[100,16],[38,98],[162,98]],
+    pyr:[[100,104],[46,58],[154,58]], tet:[[46,24],[154,24],[40,102],[160,102]] }[kind]||[];
+  return '<svg class="rvdiagram" viewBox="0 0 200 120" width="210" role="img" aria-label="molecular shape">'+
+    outs.map(p=>bond(p[0],p[1])).join('')+outs.map(p=>dot(p[0],p[1],12,'var(--panel)')).join('')+dot(100,62,16,'var(--accent)')+'</svg>';
+}
+function vectorSVG(a,b){
+  return '<svg class="rvdiagram" viewBox="0 0 200 135" width="220" role="img" aria-label="vector diagram">'+
+    '<defs><marker id="vah" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="var(--muted)"/></marker></defs>'+
+    '<line x1="34" y1="108" x2="160" y2="108" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#vah)"/>'+
+    '<line x1="34" y1="108" x2="34" y2="24" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#vah)"/>'+
+    '<line x1="34" y1="108" x2="160" y2="24" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#vah)"/>'+
+    '<text x="92" y="126" fill="var(--muted)" font-size="12">'+a+' N</text>'+
+    '<text x="4" y="70" fill="var(--muted)" font-size="12">'+b+' N</text>'+
+    '<text x="104" y="60" fill="var(--muted)" font-size="12">R = ?</text></svg>';
+}
+
+/* ══ CHEMISTRY ══ */
+const CHEM_NAMES=[['sodium chloride','NaCl'],['magnesium oxide','MgO'],['calcium fluoride','CaF₂'],['aluminium oxide','Al₂O₃'],
+  ['sodium sulfate','Na₂SO₄'],['ammonium chloride','NH₄Cl'],['iron(III) oxide','Fe₂O₃'],['copper(II) sulfate','CuSO₄'],
+  ['potassium carbonate','K₂CO₃'],['calcium hydroxide','Ca(OH)₂'],['carbon dioxide','CO₂'],['sulfur trioxide','SO₃'],
+  ['dinitrogen tetroxide','N₂O₄'],['phosphorus trichloride','PCl₃'],['magnesium nitrate','Mg(NO₃)₂']];
+function genChemName(){ const [name,f]=pk(CHEM_NAMES);
+  if(Math.random()<0.5){ const m=mc(f, shuffle(CHEM_NAMES.filter(p=>p[1]!==f)).map(p=>p[1])); return {q:'What is the formula of <b>'+name+'</b>?', choices:m.choices, answer:m.answer}; }
+  const m=mc(name, shuffle(CHEM_NAMES.filter(p=>p[0]!==name)).map(p=>p[0])); return {q:'What is the name of <b>'+f+'</b>?', choices:m.choices, answer:m.answer}; }
+function genChemIso(){ const m1=ri(10,60), m2=m1+ri(1,3), p=ri(20,80); const ram=rd((m1*p+m2*(100-p))/100,2);
+  return {q:'An element has two isotopes: mass <b>'+m1+'</b> ('+p+'%) and mass <b>'+m2+'</b> ('+(100-p)+'%). Find the relative atomic mass.', input:true, answer:ram, accept:v=>Math.abs(Number(v)-ram)<0.05, note:'('+m1+'×'+p+' + '+m2+'×'+(100-p)+')/100 = '+ram+'.'}; }
+const ECONFIG=[[7,'N','1s² 2s² 2p³'],[8,'O','1s² 2s² 2p⁴'],[9,'F','1s² 2s² 2p⁵'],[11,'Na','1s² 2s² 2p⁶ 3s¹'],[12,'Mg','1s² 2s² 2p⁶ 3s²'],[13,'Al','1s² 2s² 2p⁶ 3s² 3p¹'],[15,'P','1s² 2s² 2p⁶ 3s² 3p³'],[16,'S','1s² 2s² 2p⁶ 3s² 3p⁴'],[17,'Cl','1s² 2s² 2p⁶ 3s² 3p⁵'],[18,'Ar','1s² 2s² 2p⁶ 3s² 3p⁶'],[20,'Ca','1s² 2s² 2p⁶ 3s² 3p⁶ 4s²']];
+function genChemEconfig(){ const [z,sym,cfg]=pk(ECONFIG); const m=mc(cfg, shuffle(ECONFIG.filter(e=>e[2]!==cfg)).map(e=>e[2]));
+  return {q:'What is the ground-state electron configuration of <b>'+sym+'</b> (Z = '+z+')?', choices:m.choices, answer:m.answer}; }
+const VSEPR=[{f:'CH₄',shape:'Tetrahedral',polar:false,imf:'Dispersion',d:'tet'},{f:'NH₃',shape:'Trigonal pyramidal',polar:true,imf:'Hydrogen bonding',d:'pyr'},
+  {f:'H₂O',shape:'Bent',polar:true,imf:'Hydrogen bonding',d:'bent'},{f:'CO₂',shape:'Linear',polar:false,imf:'Dispersion',d:'lin'},
+  {f:'BF₃',shape:'Trigonal planar',polar:false,imf:'Dispersion',d:'tri'},{f:'HCl',shape:'Linear',polar:true,imf:'Dipole–dipole',d:'lin'},
+  {f:'CCl₄',shape:'Tetrahedral',polar:false,imf:'Dispersion',d:'tet'},{f:'PCl₃',shape:'Trigonal pyramidal',polar:true,imf:'Dipole–dipole',d:'pyr'}];
+function genChemShape(){ const v=pk(VSEPR), k=ri(0,2);
+  if(k===0){ const shapes=['Linear','Bent','Trigonal planar','Trigonal pyramidal','Tetrahedral']; const m=mc(v.shape, shuffle(shapes.filter(s=>s!==v.shape)));
+    return {q:'What is the VSEPR shape of <b>'+v.f+'</b>?'+vseprSVG(v.d), choices:m.choices, answer:m.answer}; }
+  if(k===1) return {q:'Is <b>'+v.f+'</b> a polar molecule?', choices:['Polar','Non-polar'], answer:v.polar?'Polar':'Non-polar', note:v.f+' is '+(v.polar?'polar':'non-polar')+' overall.'};
+  const imfs=['Dispersion','Dipole–dipole','Hydrogen bonding']; const m=mc(v.imf, imfs.filter(i=>i!==v.imf));
+  return {q:'What is the strongest intermolecular force between <b>'+v.f+'</b> molecules?', choices:m.choices, answer:m.answer}; }
+const MR=[['H₂O',18.0],['CO₂',44.0],['NaCl',58.5],['CaCO₃',100.1],['H₂SO₄',98.1],['C₆H₁₂O₆',180.2],['NaOH',40.0],['NH₃',17.0],['O₂',32.0],['CH₄',16.0],['MgO',40.3],['KCl',74.6]];
+function genChemMoles(){ const [f,mr]=pk(MR);
+  if(Math.random()<0.5){ const mass=ri(2,20)*5, n=mass/mr; return {q:'How many moles are in <b>'+mass+' g</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(n,3), accept:v=>Math.abs(Number(v)-n)<0.01, note:'n = m/M = '+mass+'/'+mr+' = '+rd(n,3)+' mol.'}; }
+  const n=ri(1,10)/2, mass=n*mr; return {q:'What is the mass of <b>'+n+' mol</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(mass,2), accept:v=>Math.abs(Number(v)-mass)<0.05, note:'m = nM = '+n+'×'+mr+' = '+rd(mass,2)+' g.'}; }
+const LIMRX=[{eq:'N₂ + 3H₂ → 2NH₃',A:['N₂',1],B:['H₂',3]},{eq:'2H₂ + O₂ → 2H₂O',A:['H₂',2],B:['O₂',1]},{eq:'C + O₂ → CO₂',A:['C',1],B:['O₂',1]},{eq:'2Mg + O₂ → 2MgO',A:['Mg',2],B:['O₂',1]}];
+function genChemLimiting(){ const r=pk(LIMRX), nA=ri(2,10), nB=ri(2,10), ra=nA/r.A[1], rb=nB/r.B[1];
+  if(ra===rb) return genChemLimiting(); const lim=ra<rb?r.A[0]:r.B[0];
+  return {q:'For <b>'+r.eq+'</b>, you have <b>'+nA+' mol '+r.A[0]+'</b> and <b>'+nB+' mol '+r.B[0]+'</b>. Which is the limiting reagent?', choices:[r.A[0],r.B[0]], answer:lim, note:'Compare mol ÷ coefficient: '+r.A[0]+' → '+rd(ra,2)+', '+r.B[0]+' → '+rd(rb,2)+'. Smaller limits.'}; }
+const EMP=[{q:'A compound is 40% C, 6.7% H, 53.3% O by mass. Find its empirical formula.',a:'CH₂O'},{q:'A compound is 52.2% C, 13.0% H, 34.8% O. Find its empirical formula.',a:'C₂H₆O'},
+  {q:'A compound contains 2.4 g C and 0.6 g H. Find its empirical formula.',a:'CH₃'},{q:'A compound is 27.3% C and 72.7% O. Find its empirical formula.',a:'CO₂'},{q:'A compound is 75% C and 25% H. Find its empirical formula.',a:'CH₄'}];
+function genChemEmp(){ const it=pk(EMP); const m=mc(it.a, shuffle(EMP.filter(e=>e.a!==it.a)).map(e=>e.a).concat(['C₂H₄O','CH','C₃H₈'])); return {q:it.q, choices:m.choices, answer:it.a, note:'Divide each mass (or %) by its molar mass, then simplify the ratio.'}; }
+function genChemSol2(){ const k=ri(0,2);
+  if(k===0){ const n=ri(1,10)/2, V=ri(1,5)*0.5, c=n/V; return {q:'Find the concentration of a solution containing <b>'+n+' mol</b> in <b>'+V+' L</b>.', input:true, answer:rd(c,2), accept:v=>Math.abs(Number(v)-c)<0.02, note:'c = n/V = '+n+'/'+V+' = '+rd(c,2)+' mol/L.'}; }
+  if(k===1){ const c1=ri(1,4), v1=ri(1,5)*10, v2=v1*ri(2,4), c2=c1*v1/v2; return {q:'<b>'+v1+' mL</b> of <b>'+c1+' mol/L</b> solution is diluted to <b>'+v2+' mL</b>. Find the new concentration.', input:true, answer:rd(c2,3), accept:v=>Math.abs(Number(v)-c2)<0.01, note:'c₁V₁ = c₂V₂ → '+rd(c2,3)+' mol/L.'}; }
+  const n=ri(1,5)/2, vol=rd(n*24.79,2); return {q:'What volume does <b>'+n+' mol</b> of gas occupy at 25 °C and 100 kPa? (molar volume 24.79 L/mol)', input:true, answer:vol, accept:v=>Math.abs(Number(v)-vol)<0.1, note:'V = n × 24.79 = '+vol+' L.'}; }
+const RXNTYPE=[['2H₂ + O₂ → 2H₂O','Synthesis'],['CaCO₃ → CaO + CO₂','Decomposition'],['Zn + CuSO₄ → ZnSO₄ + Cu','Displacement'],['CH₄ + 2O₂ → CO₂ + 2H₂O','Combustion'],['HCl + NaOH → NaCl + H₂O','Neutralisation'],['2Na + Cl₂ → 2NaCl','Synthesis'],['AgNO₃ + NaCl → AgCl + NaNO₃','Precipitation']];
+function genChemType(){ const [eq,t]=pk(RXNTYPE); const types=['Synthesis','Decomposition','Displacement','Combustion','Neutralisation','Precipitation']; const m=mc(t, shuffle(types.filter(x=>x!==t))); return {q:'Classify this reaction: <b>'+eq+'</b>', choices:m.choices, answer:m.answer}; }
+const SRP=[['Zn²⁺/Zn',-0.76],['Cu²⁺/Cu',0.34],['Ag⁺/Ag',0.80],['Fe²⁺/Fe',-0.44],['Mg²⁺/Mg',-2.37],['Pb²⁺/Pb',-0.13]];
+function genGalvanic(){ let a=pk(SRP), b=pk(SRP); while(b[0]===a[0]) b=pk(SRP); const [hi,lo]=a[1]>b[1]?[a,b]:[b,a]; const emf=rd(hi[1]-lo[1],2);
+  if(Math.random()<0.5) return {q:'A galvanic cell is built from '+a[0]+' (E° = '+a[1]+' V) and '+b[0]+' (E° = '+b[1]+' V). Find the cell potential.', input:true, answer:emf, accept:v=>Math.abs(Number(v)-emf)<0.01, note:'E°cell = E°cathode − E°anode = '+hi[1]+' − ('+lo[1]+') = '+emf+' V.'};
+  const anode=lo[0].split('/')[1]; return {q:'In a cell of '+a[0]+' (E° = '+a[1]+' V) and '+b[0]+' (E° = '+b[1]+' V), which metal is the <b>anode</b>?', choices:[hi[0].split('/')[1],anode], answer:anode, note:'The more negative E° ('+lo[0]+') is oxidised, so it is the anode.'}; }
+function genCalor(){ const m=ri(50,300), dT=ri(5,40), q=rd(m*4.18*dT/1000,2); return {q:'How much heat (kJ) warms <b>'+m+' g</b> of water by <b>'+dT+' °C</b>? (c = 4.18 J/g·°C)', input:true, answer:q, accept:v=>Math.abs(Number(v)-q)<0.1, note:'q = mcΔT = '+m+'×4.18×'+dT+' = '+(m*4.18*dT)+' J = '+q+' kJ.'}; }
+const BONDRX=[{eq:'H₂ + Cl₂ → 2HCl',broken:[['H–H',436],['Cl–Cl',242]],formed:[['H–Cl',431,2]]},{eq:'H₂ + Br₂ → 2HBr',broken:[['H–H',436],['Br–Br',193]],formed:[['H–Br',366,2]]},{eq:'N₂ + 3H₂ → 2NH₃',broken:[['N≡N',945],['H–H',436,3]],formed:[['N–H',391,6]]}];
+function genBondE(){ const r=pk(BONDRX); const sum=arr=>arr.reduce((s,x)=>s+x[1]*(x[2]||1),0); const dH=sum(r.broken)-sum(r.formed);
+  const tbl=[...r.broken,...r.formed].map(x=>x[0]+' = '+x[1]).join(', ');
+  return {q:'For <b>'+r.eq+'</b>, bond energies (kJ/mol): '+tbl+'. Find ΔH.', input:true, answer:dH, accept:v=>Math.abs(Number(v)-dH)<1, note:'ΔH = Σ(bonds broken) − Σ(bonds formed) = '+sum(r.broken)+' − '+sum(r.formed)+' = '+dH+' kJ/mol.'}; }
+const FORMRX=[{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',t:[['CO₂',-394,1],['H₂O',-286,2],['CH₄',-75,-1],['O₂',0,-2]]},{eq:'2H₂ + O₂ → 2H₂O',t:[['H₂O',-286,2],['H₂',0,-2],['O₂',0,-1]]},{eq:'C + O₂ → CO₂',t:[['CO₂',-394,1],['C',0,-1],['O₂',0,-1]]}];
+function genFormation(){ const r=pk(FORMRX); const dH=r.t.reduce((s,x)=>s+x[1]*x[2],0); const given=r.t.filter(x=>x[1]!==0).map(x=>'ΔHf('+x[0]+') = '+x[1]).join(', ');
+  return {q:'Using standard enthalpies of formation (kJ/mol): '+given+', find ΔH for <b>'+r.eq+'</b>.', input:true, answer:dH, accept:v=>Math.abs(Number(v)-dH)<1, note:'ΔH = ΣΔHf(products) − ΣΔHf(reactants) = '+dH+' kJ/mol.'}; }
+function genGibbs(){ const dH=ri(-100,100), dS=ri(-200,200), T=ri(1,6)*100, dG=rd(dH-T*dS/1000,1);
+  if(Math.random()<0.5) return {q:'A reaction has ΔH = <b>'+dH+' kJ</b>, ΔS = <b>'+dS+' J/K</b>, at <b>T = '+T+' K</b>. Find ΔG (kJ).', input:true, answer:dG, accept:v=>Math.abs(Number(v)-dG)<0.5, note:'ΔG = ΔH − TΔS = '+dH+' − '+T+'×'+dS+'/1000 = '+dG+' kJ.'};
+  return {q:'A reaction has ΔG = <b>'+dG+' kJ</b>. Is it spontaneous?', choices:['Spontaneous','Non-spontaneous'], answer:dG<0?'Spontaneous':'Non-spontaneous', note:'A reaction is spontaneous when ΔG < 0.'}; }
+
+/* ══ PHYSICS ══ */
+function genVectors(){ const [a,b,c]=pk([[3,4,5],[6,8,10],[5,12,13],[8,15,17],[9,12,15],[7,24,25]]); const m=physMC(c,'N',[a+b,Math.abs(a-b),rd(Math.sqrt(a*b),1)]);
+  return {q:'Two perpendicular forces of <b>'+a+' N</b> and <b>'+b+' N</b> act at a point. Find the magnitude of the resultant.'+vectorSVG(a,b), choices:m.choices, answer:m.answer, note:'R = √('+a+'² + '+b+'²) = '+c+' N.'}; }
+function genRelVel(){ let va=nzr(-30,30), vb=nzr(-30,30); if(va===vb) return genRelVel(); const rel=va-vb;
+  return {q:'Along a straight road (right = positive), car A travels at <b>'+va+' m/s</b> and car B at <b>'+vb+' m/s</b>. Find the velocity of A relative to B.', input:true, answer:rel, accept:v=>Number(v)===rel, note:'v(A rel B) = vA − vB = '+va+' − ('+vb+') = '+rel+' m/s.'}; }
+function genKinematics(){ const u=ri(0,15), v=ri(16,40), t=ri(2,8), a=rd((v-u)/t,2); const m=physMC(a,'m/s²',[v-u, rd((v+u)/t,2), rd((v-u)/t/2,2)]);
+  return {q:'A car speeds up from <b>'+u+' m/s</b> to <b>'+v+' m/s</b> in <b>'+t+' s</b>. Find its acceleration.', choices:m.choices, answer:m.answer, note:'a = Δv/Δt = ('+v+'−'+u+')/'+t+' = '+a+' m/s².'}; }
+function genNewton(){ const mass=ri(2,20), a=ri(1,10), F=mass*a; const m=physMC(F,'N',[mass+a, rd(F/2,1), rd(mass/a,2)]);
+  return {q:'What net force gives a <b>'+mass+' kg</b> mass an acceleration of <b>'+a+' m/s²</b>?', choices:m.choices, answer:m.answer, note:'F = ma = '+mass+'×'+a+' = '+F+' N.'}; }
+function genFriction(){ const mu=[0.1,0.2,0.3,0.4,0.5][ri(0,4)], N=ri(10,60)*10, Ff=rd(mu*N,1); const m=physMC(Ff,'N',[rd(N/mu,1), rd(mu+N,1), rd(N-mu,1)]);
+  return {q:'A block has coefficient of friction <b>μ = '+mu+'</b> and normal force <b>N = '+N+' N</b>. Find the friction force.', choices:m.choices, answer:m.answer, note:'Ff = μN = '+mu+'×'+N+' = '+Ff+' N.'}; }
+function genMomentum(){ if(Math.random()<0.5){ const mass=ri(2,20), v=ri(2,20), p=mass*v; const m=physMC(p,'kg·m/s',[mass+v, rd(p/2,1), Math.abs(mass-v)]);
+    return {q:'Find the momentum of a <b>'+mass+' kg</b> object moving at <b>'+v+' m/s</b>.', choices:m.choices, answer:m.answer, note:'p = mv = '+mass+'×'+v+' = '+p+' kg·m/s.'}; }
+  const m1=ri(2,6), v1=ri(2,10), m2=ri(2,6), vf=rd(m1*v1/(m1+m2),2); const m=physMC(vf,'m/s',[v1, rd(m1*v1,2), rd(v1/2,2)]);
+  return {q:'A <b>'+m1+' kg</b> trolley at <b>'+v1+' m/s</b> collides with and sticks to a stationary <b>'+m2+' kg</b> trolley. Find their common velocity.', choices:m.choices, answer:m.answer, note:'m₁v₁ = (m₁+m₂)v → v = '+vf+' m/s.'}; }
+function genSnell(){ if(Math.random()<0.5){ const vf=ri(15,25), v=vf*1e7, n=rd(3e8/v,2); const m=physMC(n,'',[rd(v/3e8,2), rd(3e8/v/2,2), rd(3e8/v+1,2)]);
+    return {q:'Light travels at <b>'+(v/1e8)+'×10⁸ m/s</b> inside a material. Find its refractive index. (c = 3×10⁸ m/s)', choices:m.choices, answer:m.answer, note:'n = c/v = 3×10⁸ / '+(v/1e8)+'×10⁸ = '+n+'.'}; }
+  const media=[['air',1.0],['water',1.33],['glass',1.5],['diamond',2.4]]; let f=pk(media), t=pk(media); while(t[1]===f[1]) t=pk(media);
+  const toward=t[1]>f[1]; return {q:'Light passes from <b>'+f[0]+' (n = '+f[1]+')</b> into <b>'+t[0]+' (n = '+t[1]+')</b>. How does it bend?', choices:['Toward the normal','Away from the normal'], answer:toward?'Toward the normal':'Away from the normal', note:'Entering a '+(toward?'denser':'less dense')+' medium (higher→lower speed) bends light '+(toward?'toward':'away from')+' the normal.'}; }
+function genSuper(){ const inPhase=Math.random()<0.5; return {q:'Two identical waves overlap '+(inPhase?'<b>in phase</b> (crest on crest)':'<b>out of phase</b> (crest on trough)')+'. What interference results?', choices:['Constructive','Destructive'], answer:inPhase?'Constructive':'Destructive', note:'In phase → constructive; exactly out of phase → destructive.'}; }
+function genSound(){ const t=ri(1,6), d=rd(340*t/2,0); const m=physMC(d,'m',[340*t, rd(340/t,0), rd(340*t/4,0)]);
+  return {q:'An echo returns <b>'+t+' s</b> after a shout (speed of sound 340 m/s). How far away is the wall?', choices:m.choices, answer:m.answer, note:'d = vt/2 = 340×'+t+'/2 = '+d+' m.'}; }
+function genEM(){ const order=['radio','microwave','infrared','visible light','ultraviolet','X-rays','gamma rays']; let a=ri(0,6), b=ri(0,6); while(b===a) b=ri(0,6);
+  const higher = a>b?order[a]:order[b]; return {q:'Which has the higher frequency: <b>'+order[a]+'</b> or <b>'+order[b]+'</b>?', choices:[order[a],order[b]], answer:higher, note:'Increasing frequency: radio → microwave → infrared → visible → UV → X-rays → gamma.'}; }
+function genOhm(){ const k=ri(0,2), I=ri(1,10), R=ri(1,20), V=I*R;
+  if(k===0){ const m=physMC(V,'V',[I+R, rd(V/2,1), rd(R/I,2)]); return {q:'A <b>'+R+' Ω</b> resistor carries <b>'+I+' A</b>. Find the voltage across it.', choices:m.choices, answer:m.answer, note:'V = IR = '+I+'×'+R+' = '+V+' V.'}; }
+  if(k===1){ const m=physMC(I,'A',[V, rd(R/V,2), V*R]); return {q:'A <b>'+V+' V</b> supply is across a <b>'+R+' Ω</b> resistor. Find the current.', choices:m.choices, answer:m.answer, note:'I = V/R = '+V+'/'+R+' = '+I+' A.'}; }
+  const m=physMC(V*I,'W',[V+I, rd(V/I,2), 2*V*I]); return {q:'A device draws <b>'+I+' A</b> at <b>'+V+' V</b>. Find the power.', choices:m.choices, answer:m.answer, note:'P = VI = '+V+'×'+I+' = '+(V*I)+' W.'}; }
+function genResistors(){ const R1=ri(1,12), R2=ri(1,12);
+  if(Math.random()<0.5){ const m=physMC(R1+R2,'Ω',[Math.abs(R1-R2), R1*R2, rd(R1*R2/(R1+R2),2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>series</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Series: '+R1+' + '+R2+' = '+(R1+R2)+' Ω.'}; }
+  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[R1+R2, Math.abs(R1-R2), rd((R1+R2)/2,2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
+function genEfield(){ const V=ri(10,100)*10, d=ri(2,10)/100, E=rd(V/d,0); const m=physMC(E,'V/m',[V*d, rd(d/V,4), V+d]);
+  return {q:'Two plates <b>'+d+' m</b> apart have a potential difference of <b>'+V+' V</b>. Find the electric field strength.', choices:m.choices, answer:m.answer, note:'E = V/d = '+V+'/'+d+' = '+E+' V/m.'}; }
+function genMag(){ const B=[0.1,0.2,0.5,1,2][ri(0,4)], I=ri(1,10), L=ri(1,5), F=rd(B*I*L,2); const m=physMC(F,'N',[rd(B+I+L,2), rd(B*I,2), I*L]);
+  return {q:'A <b>'+L+' m</b> wire carries <b>'+I+' A</b> perpendicular to a <b>'+B+' T</b> field. Find the force on it.', choices:m.choices, answer:m.answer, note:'F = BIL = '+B+'×'+I+'×'+L+' = '+F+' N.'}; }
+
+/* ══ ENGINEERING ══ */
+const ENG_FACTS=[
+  {q:'Increasing the carbon content of plain-carbon steel generally makes it…', a:'Harder but more brittle', w:['Softer and more ductile','More corrosion resistant','Much lower in density']},
+  {q:'Which iron has ~2–4% carbon, is brittle, and has good compressive strength?', a:'Cast iron', w:['Mild steel','Stainless steel','Wrought iron']},
+  {q:'Mild (low-carbon) steel is best described as…', a:'Ductile and easily welded', w:['Very hard and brittle','Non-magnetic','Higher carbon than cast iron']},
+  {q:'Stainless steel resists corrosion mainly because it contains…', a:'Chromium', w:['Carbon','Lead','Tin']},
+  {q:'Thermoplastics differ from thermosets because they…', a:'Soften and can be remelted on heating', w:['Cannot be reshaped once set','Are always brittle','Conduct electricity well']},
+  {q:'A composite material is…', a:'A matrix reinforced by a second material', w:['A single pure metal','Made only of polymers','A metal and its own oxide']},
+  {q:'Carbon-fibre reinforced polymer is valued mainly for its…', a:'High strength-to-weight ratio', w:['Very low cost','High density','Good electrical conductivity']}];
+const HEAT_TREAT=[
+  {q:'Which heat treatment softens steel and relieves stress by very slow cooling?', a:'Annealing', w:['Quenching','Tempering','Case hardening']},
+  {q:'Rapidly cooling hot steel in water or oil to make it very hard is…', a:'Quenching', w:['Annealing','Normalising','Tempering']},
+  {q:'Reheating quenched steel to cut brittleness (giving up some hardness) is…', a:'Tempering', w:['Quenching','Annealing','Hardening']},
+  {q:'Heating then cooling in still air to refine the grain structure is…', a:'Normalising', w:['Quenching','Tempering','Annealing']}];
+function genEngFact(){ const it=pk(ENG_FACTS); return {q:it.q, choices:mc(it.a,it.w).choices, answer:it.a}; }
+function genHeatTreat(){ const it=pk(HEAT_TREAT); return {q:it.q, choices:mc(it.a,it.w).choices, answer:it.a}; }
+function genMoments(){ const F=ri(5,50), d=rd(ri(2,20)/10,1), M=rd(F*d,2); const m=physMC(M,'N·m',[rd(F+d,1), rd(F/d,2), 2*F*d]);
+  return {q:'A force of <b>'+F+' N</b> acts <b>'+d+' m</b> from a pivot (perpendicular). Find the moment.', choices:m.choices, answer:m.answer, note:'M = F × d = '+F+'×'+d+' = '+M+' N·m.'}; }
+function genCouple(){ const F=ri(5,40), d=rd(ri(2,16)/10,1), T=rd(F*d,2); const m=physMC(T,'N·m',[rd(F+d,1), rd(F*d/2,2), 2*F*d]);
+  return {q:'A couple is two equal <b>'+F+' N</b> forces acting <b>'+d+' m</b> apart in opposite directions. Find its moment.', choices:m.choices, answer:m.answer, note:'Couple moment = F × d = '+F+'×'+d+' = '+T+' N·m.'}; }
+
+BUILD.software = host => revGame(host, { title:'Software', how:'Read code and write it.', statKey:'software',
+  topics:[{id:'out',name:'Predict output',gen:genPython},{id:'write',name:'Write code',gen:genCode}] });
+BUILD.maths = host => revGame(host, { title:'Maths', how:'Procedural practice — pick a topic.', statKey:'maths',
   topics:[{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
-BUILD.physics = host => revGame(host, { title:'Physics', how:'Work through the core formulas.', statKey:'physics',
-  topics:[{id:'suvat',name:'SUVAT',gen:genSuvat},{id:'waves',name:'Waves',gen:genWaves},{id:'energy',name:'Energy',gen:genEnergy}] });
-BUILD.chem    = host => revGame(host, { title:'Chemistry', how:'Redox and solubility drills.', statKey:'chem',
-  topics:[{id:'redox',name:'Redox',gen:genRedox},{id:'sol',name:'Solubility',gen:genSol}] });
+BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Four modules — pick one, or the whole topic.', statKey:'chem',
+  modules:[
+    {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape}]},
+    {id:'m2',name:'Module 2',topics:[{id:'c-mole',name:'Moles & mass',gen:genChemMoles},{id:'c-lim',name:'Limiting reagent',gen:genChemLimiting},{id:'c-emp',name:'Empirical formula',gen:genChemEmp},{id:'c-soln',name:'Solutions & gases',gen:genChemSol2}]},
+    {id:'m3',name:'Module 3',topics:[{id:'c-type',name:'Reaction types',gen:genChemType},{id:'c-redox',name:'Redox',gen:genRedox},{id:'c-galv',name:'Galvanic cells',gen:genGalvanic},{id:'c-sol',name:'Solubility',gen:genSol}]},
+    {id:'m4',name:'Module 4',topics:[{id:'c-cal',name:'Calorimetry',gen:genCalor},{id:'c-bond',name:'Bond energies',gen:genBondE},{id:'c-form',name:'Enthalpy of formation',gen:genFormation},{id:'c-gibbs',name:'Entropy & Gibbs',gen:genGibbs}]}
+  ] });
+BUILD.physics = host => revGame(host, { title:'Physics', how:'Four modules — pick one, or the whole topic.', statKey:'physics',
+  modules:[
+    {id:'m1',name:'Kinematics',topics:[{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
+    {id:'m2',name:'Dynamics',topics:[{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
+    {id:'m3',name:'Waves',topics:[{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
+    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
+  ] });
+BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Materials, processes and mechanics.', statKey:'engineering',
+  modules:[
+    {id:'mat',name:'Materials',topics:[{id:'e-steel',name:'Steels & irons',gen:genEngFact},{id:'e-heat',name:'Heat treatment',gen:genHeatTreat}]},
+    {id:'mech',name:'Mechanics',topics:[{id:'e-mom',name:'Moments',gen:genMoments},{id:'e-couple',name:'Couples',gen:genCouple}]}
+  ] });
 
 showGrid();
 </script>

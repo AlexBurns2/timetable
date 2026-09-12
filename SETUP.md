@@ -1061,7 +1061,42 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Games grid rows + accurate reaction timer (latest)
+## Scroller edge-fades + full revision syllabus (latest)
+
+- **Scroller polish.** Each category row is now wrapped in `.gamesecrow`, whose `::before`/`::after`
+  are **edge-fade gradients** that fade the cards where the row runs off the page. They toggle by
+  scroll position (`edgeFades()` adds `can-left`/`can-right`): the neutral (just-opened) state shows
+  only the right fade, and mid-scroll shows both. The fade uses `color-mix(... transparent 100%)` so
+  it dissolves to nothing rather than a grey block, and matches any skin's `--bg`.
+- **Hover no longer clips.** Cards used to grow their shadow on hover, which clipped back out of the
+  padded row. They now **lift** instead — `.gamerow .gamecard:hover{transform:translateY(-6px)}` with
+  the normal `--shadow` — staying inside the row's padding (bumped to 28/32px). No visible scrollbar
+  on any skin (`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`).
+- **Revision tab filled out.** All revision games run through the same `revGame(host, opts)` engine,
+  which now supports **modules with selectable subtopics**: a module pill row plus a subtopic
+  multi-select row (at least one must stay on). Selection persists per subject in
+  `tt.rev_<key>` / `tt.rev_<key>_mod` / `tt.rev_<key>_excl`. You can drill into one subtopic, a whole
+  module, or the whole topic. **Formulas are no longer shown before you answer** (that was the point);
+  the working is revealed *after*, in the feedback note.
+  - **Chemistry** (4 modules): M1 naming, isotopes/Aᵣ, electron config, VSEPR shape + polarity + IMF;
+    M2 moles↔mass, limiting reagent, empirical formula, solutions & gas volume; M3 reaction types,
+    redox, galvanic cells, solubility; M4 calorimetry, bond energies, enthalpy of formation, Gibbs.
+  - **Physics** (4 modules): Kinematics, Dynamics, Waves, Electricity & magnetism.
+  - **Engineering** (new subject): materials (steels/irons, polymers, composites, heat treatment) and
+    mechanics (moments, couples).
+  - **Maths**: combinatorics is now **real word problems** (circular seating, committees, word
+    arrangements) and transforms use **concrete functions** (x², x³, √x, |x|), not bare f(x).
+  - **Software** (was "Python"): predict-output **plus** a write-code mode (pick the correct snippet
+    for a task). New game id `software`.
+  - Accuracy: answers are computed in-engine (or from curated, hand-checked lists), delivered as MC
+    or integer input with the numbers **given in the question**. `physMC()` pads its distractors so
+    options never collapse to one. All 43 generators were fuzzed (400+ runs each): no exceptions, no
+    MC answer missing from its choices, no non-finite numbers, every numeric answer passes its own
+    accept check. Two inline SVG diagrams (`vseprSVG`, `vectorSVG`) render for shape and vector Qs.
+
+Client-only — ship `games.html`.
+
+## Games grid rows + accurate reaction timer
 
 - The games grid is now **one horizontal scroller per category** (Revision / Timetable / Arcade).
   It shows ~3½ cards (a peek of the next hints you can scroll), **no visible scrollbar**, and you
