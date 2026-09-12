@@ -1318,7 +1318,9 @@ BUILD.tetris = host => {
   function updatePracticeBtns(){
     const u=$$('tundo'), r=$$('tredo'); if (!u||!r) return;
     const on = mode==='practice';
-    u.hidden = !on; r.hidden = !on;
+    /* .btn sets display:inline-flex, which beats the [hidden] attribute — so toggle
+       display directly, else undo/redo would show in every mode. */
+    u.style.display = on ? '' : 'none'; r.style.display = on ? '' : 'none';
     if (on){ u.disabled = undoStack.length<=1; r.disabled = redoStack.length===0; }
   }
   function loop(){
