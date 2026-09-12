@@ -182,7 +182,7 @@ depends on the wallpaper behind them.
 | `index.html` | the timetable — stays at the root of the domain |
 | `home.html` | hub with links to everything, room for more |
 | `notes.html` | scratchpad, saves to the device as you type |
-| `games.html` | Snake, 2048, Minesweeper, Typing race, Reaction |
+| `games.html` | Guess Who ×2, Tetris, Classroom, Six Degrees, Odd One Out, Snake, 2048, Memory, Minesweeper, Typing race, Reaction |
 | `theme.css` | tokens + every skin — **shared by all pages** |
 | `theme.js` | applies the saved theme before first paint — shared |
 | `site.css` | page furniture for home/notes/games |
@@ -902,6 +902,33 @@ RLS off (service-role only). Signed out / unconfigured → the panel shows a sig
 note or hides, and the games still play with local high scores. Tetris keeps its own
 dedicated boards (Sprint weekly, Zen all-time). To add a game: extend `LB_GAMES`
 (client) and `DIRS` (server).
+
+## Games polish & two new games (latest)
+
+**No database changes.** These are client-only (`games.html` + a little CSS); the
+leaderboard tables and the Classroom/Six Degrees metric keys are untouched, so
+existing scores stay valid.
+
+- **Minesweeper** — three sizes (Easy 9×9/10, Medium 13×13/28, Hard 16×16/45) via
+  difficulty pills; **first dig is always safe** (the click *and its neighbours* are
+  kept mine-free, so you always open a flood); higher-contrast raised/sunken cells +
+  classic number colours that work in every skin; live mine counter and timer; **flag
+  mode** toggle for touch; right-click flag; **chording** (click an opened number whose
+  flags match to sweep the rest); win records a per-size best time.
+- **Classroom** — was a fill-in with a giveaway autocomplete; now a **timed
+  multiple-choice run** mixing *where is your X* / *who takes your X* / *which class in
+  room Y*, all drawn from your own timetable, with a per-question clock, streak and
+  3 lives. Score is still `high` = correct answers (same leaderboard).
+- **Six Degrees** — longer chains (par 3–6, widening if the graph is small) and a
+  **hop budget** (par + 2): run out and the target gets away. Still records fewest hops.
+- **Odd One Out** (new, 🧠) — timetable recall: three of four people share one of your
+  classes, tap the one who doesn't, against a shrinking bar; 3 lives. Local best only.
+- **Memory** (new, 🃏) — match-pairs with three grid sizes; tracks best moves per size.
+  Local only.
+- **Snake** speeds up as you grow; **Typing race** has more lines + a New-text button.
+
+New local stat keys: `mines.best<size>`, `memory.best<size>`/`plays`, `oddone.high`.
+`oddone` and `memory` are deliberately **not** in `LB_GAMES`, so nothing hits the API.
 
 ## Subject notes
 
