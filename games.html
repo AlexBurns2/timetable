@@ -46,7 +46,11 @@
 /* per-category horizontal scroller: ~3½ cards visible (a peek hints you can scroll).
    Scroll with the wheel while hovering, or click-and-drag. No visible scrollbar. */
 .gamesections[hidden]{display:none}
-.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:2px;margin-bottom:14px;
+/* padding gives the card shadows room; equal negative margins reclaim it so the
+   row is full-bleed to the wrap edges and the shadows are never clipped into a
+   dark rectangle. overflow-y must be hidden (paired with overflow-x:auto). */
+.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;
+  padding:24px 16px 32px;margin:-16px -16px -12px;
   cursor:grab;scrollbar-width:none;-ms-overflow-style:none}
 .gamerow::-webkit-scrollbar{display:none}
 .gamerow.dragging{cursor:grabbing}

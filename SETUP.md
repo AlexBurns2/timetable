@@ -1067,7 +1067,9 @@ tables touched.
   It shows ~3½ cards (a peek of the next hints you can scroll), **no visible scrollbar**, and you
   scroll it with the **mouse wheel while hovering** or by **click-and-drag** (`dragScroll()`; a
   drag swallows the click so it never opens a game by accident). Touch uses native scrolling.
-  `.gamerow` card basis `calc((100% - 42px)/3.5)`; container is `.gamesections`.
+  `.gamerow` card basis `calc((100% - 42px)/3.5)`; container is `.gamesections`. The row is
+  padded (24/32px) with equal negative margins (full-bleed) so the card **shadows aren't clipped**
+  into a dark rectangle by `overflow-y:hidden` — important on Glass and other heavy-shadow skins.
 - **Reaction test accuracy**: it now measures on **pointerdown** (the press) instead of `click`
   (which fires on release, adding the press-to-release time — the reason readings ran ~100 ms
   high). It also stamps the stimulus time in a `requestAnimationFrame` on the frame the green is
