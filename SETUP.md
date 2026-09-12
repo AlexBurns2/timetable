@@ -1061,6 +1061,19 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
+## Games grid rows + accurate reaction timer (latest)
+
+- The games grid is now **one horizontal scroller per category** (Revision / Timetable / Arcade),
+  showing ~4 cards at a time with the rest scrolling sideways (`.gamerow`; container is
+  `.gamesections`). Card basis is `calc((100% - 42px)/4)` with a `min-width`, and drops to 66%
+  on phones.
+- **Reaction test accuracy**: it now measures on **pointerdown** (the press) instead of `click`
+  (which fires on release, adding the press-to-release time — the reason readings ran ~100 ms
+  high). It also stamps the stimulus time in a `requestAnimationFrame` on the frame the green is
+  painted, using `performance.now()`.
+
+Client-only — ship `games.html`.
+
 ## Subject notes
 
 The Notes page is **per subject**. A dropdown lists **General plus every subject from

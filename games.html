@@ -40,9 +40,17 @@
 .gamestage{animation:stageIn .3s cubic-bezier(.2,.7,.2,1)}
 .gamestage[hidden]{display:none}
 @keyframes stageIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
-.gamegrid.leaving,.gamestage.leaving{opacity:0;transform:scale(.985);
+.gamegrid.leaving,.gamesections.leaving,.gamestage.leaving{opacity:0;transform:scale(.985);
   transition:opacity .12s ease,transform .12s ease;pointer-events:none}
 .back{margin-bottom:14px}
+/* per-category horizontal scroller: shows ~4 cards, the rest scroll sideways */
+.gamesections[hidden]{display:none}
+.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 12px;margin-bottom:8px;
+  scroll-snap-type:x proximity;scrollbar-width:thin}
+.gamerow::-webkit-scrollbar{height:8px}
+.gamerow::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
+.gamerow .gamecard{flex:0 0 calc((100% - 42px) / 4);min-width:180px;scroll-snap-align:start}
+@media (max-width:640px){ .gamerow .gamecard{flex-basis:66%;min-width:0} }
 .stage{
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
   padding:18px;box-shadow:var(--shadow);
@@ -252,6 +260,7 @@ html[data-motion="reduced"] .memcard,html[data-motion="reduced"] .memcard .face{
   height:190px;border-radius:var(--card-radius);display:flex;align-items:center;
   justify-content:center;cursor:pointer;font-weight:700;font-size:17px;
   border:var(--card-border);background:var(--panel-2);color:var(--text);text-align:center;padding:16px;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
 }
 #react.wait{background:#c2571f;color:#fff}
 #react.go{background:#2f9e44;color:#fff}
@@ -406,7 +415,7 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
     </div>
   </div>
 
-  <div class="gamegrid" id="gamegrid"></div>
+  <div class="gamesections" id="gamegrid"></div>
   <div class="lbsum" id="lbsum" hidden></div>
 
   <div class="gamestage" id="gamestage" hidden>
@@ -524,24 +533,25 @@ function showGrid(){
   const grid = $('gamegrid');
   grid.hidden = false;
   grid.innerHTML = '';
-  let i = 0;
   CAT_ORDER.forEach(cat => {
     const inCat = GAMES.filter(g => g.cat === cat);
     if (!inCat.length) return;
     const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
     grid.appendChild(h);
-    inCat.forEach(g => {
+    const row = document.createElement('div'); row.className = 'gamerow';
+    inCat.forEach((g, i) => {
       const c = document.createElement('button');
       c.type = 'button'; c.className = 'gamecard';
-      c.style.animationDelay = (i++ * 45) + 'ms';
+      c.style.animationDelay = (i * 45) + 'ms';
       const stat = statLine(g.id);
       c.innerHTML = '<span class="ico">' + g.ico + '</span>' +
         '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
         (stat ? '<span class="stat">' + stat + '</span>' : '') +
         '<span class="go">Play &#8594;</span>';
       c.onclick = () => openGame(g.id);
-      grid.appendChild(c);
+      row.appendChild(c);
     });
+    grid.appendChild(row);
   });
   renderLBSum();
 }
@@ -2583,14 +2593,20 @@ BUILD.react = host => {
   const arm = () => {
     show('wait', 'Wait for green…');
     state = 'wait';
-    t = setTimeout(() => { state = 'go'; at = Date.now(); show('go', 'CLICK'); },
+    /* record the stimulus time on the frame the green is actually painted, using a
+       monotonic clock — so the timer starts when you SEE green, not a tick before */
+    t = setTimeout(() => { state = 'go'; show('go', 'CLICK');
+                           requestAnimationFrame(() => { at = performance.now(); }); },
                    900 + Math.random()*2200);
   };
-  el.onclick = () => {
+  /* measure on pointerDOWN (the press), not click — click fires on release, which
+     added the press-to-release time and inflated every reading */
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
     if (state === 'idle'){ arm(); return; }
     if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon — click to retry'); return; }
     if (state === 'go'){
-      const ms = Date.now() - at;
+      const ms = Math.max(0, Math.round(performance.now() - at));
       times.push(ms); SFX.good();
       const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
       recordStat('react', {key:'fastest', mode:'min', value:ms});
@@ -2600,7 +2616,7 @@ BUILD.react = host => {
         show('', ms + ' ms — done. Click to go again');
       } else { state = 'idle'; setTimeout(arm, 700); show('', ms + ' ms'); }
     }
-  };
+  });
   return () => clearTimeout(t);
 };
 
