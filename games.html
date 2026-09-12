@@ -342,6 +342,39 @@ html[data-motion="reduced"] .lbsumcard{transition:none}
   padding:4px 9px;background:var(--panel);font-size:12px}
 .adminrow .del:hover{border-color:#e5484d}
 .adminnote{font-size:12.5px;color:var(--muted);margin:10px 0}
+/* category headers in the game grid (span the full width of the grid) */
+.cathd{grid-column:1/-1;font-family:var(--font-display);font-size:13px;font-weight:var(--display-w);
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px -2px;opacity:0;
+  animation:cardIn .4s ease forwards}
+.cathd:first-child{margin-top:0}
+html[data-motion="reduced"] .cathd{animation:none;opacity:1}
+/* flashcards */
+.fcdecks{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.fcdeck{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--radius);padding:10px 13px}
+.fcdeck .nm{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcdeck .ct{font-size:12px;color:var(--muted);font-family:var(--font-num);white-space:nowrap}
+.fcrow{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.fcrow input,.fcrow textarea{flex:1;min-width:150px;padding:9px 11px;border:var(--card-border);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--text);outline:none;font:inherit;resize:vertical}
+.fcrow input:focus,.fcrow textarea:focus{border-color:var(--accent)}
+.fcface{min-height:190px;border:1px solid var(--line);border-radius:var(--card-radius);background:var(--panel-2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:24px;cursor:pointer;user-select:none;margin:6px 0}
+.fcface .lbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.fcface .txt{font-size:20px;font-weight:600;white-space:pre-wrap;word-break:break-word}
+.fcface.flip{animation:fcflip .28s ease}
+@keyframes fcflip{0%{transform:rotateX(88deg);opacity:0}100%{transform:none;opacity:1}}
+html[data-motion="reduced"] .fcface.flip{animation:none}
+.fcbar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.fcprog{text-align:center;font-size:13px;color:var(--muted);margin-top:8px}
+.fccardrow{display:flex;gap:8px;align-items:flex-start;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--radius);padding:9px 11px;margin-bottom:6px}
+.fccardrow .qa{flex:1;min-width:0;font-size:13.5px}
+.fccardrow .qa b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fccardrow .qa em{color:var(--muted);font-style:normal;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fccardrow .del{color:#e5484d;cursor:pointer;border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 9px;background:var(--panel);font-size:12px;flex:none}
 </style>
 </head>
 <body>
@@ -451,19 +484,21 @@ let isAdmin = false;
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
-  { id:'dailyguess', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
-  { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
-  { id:'classroom', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
-  { id:'chain',  ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
-  { id:'oddone', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
-  { id:'tetris', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice' },
-  { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
-  { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
-  { id:'memory', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
-  { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
-  { id:'typing', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
-  { id:'react',  ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' }
+  { id:'flashcards', cat:'Revision', ico:'🗂️', name:'Flashcards', blurb:'Make your own decks and study them' },
+  { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
+  { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
+  { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
+  { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
+  { id:'oddone', cat:'Timetable', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
+  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice' },
+  { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
+  { id:'g2048',  cat:'Arcade', ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
+  { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
+  { id:'mines',  cat:'Arcade', ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
+  { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
+  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' }
 ];
+const CAT_ORDER = ['Revision', 'Timetable', 'Arcade'];
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
@@ -472,18 +507,24 @@ function showGrid(){
   const grid = $('gamegrid');
   grid.hidden = false;
   grid.innerHTML = '';
-  GAMES.forEach((g, i) => {
-    const c = document.createElement('button');
-    c.type = 'button';
-    c.className = 'gamecard';
-    c.style.animationDelay = (i * 55) + 'ms';
-    const stat = statLine(g.id);
-    c.innerHTML = '<span class="ico">' + g.ico + '</span>' +
-      '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
-      (stat ? '<span class="stat">' + stat + '</span>' : '') +
-      '<span class="go">Play &#8594;</span>';
-    c.onclick = () => openGame(g.id);
-    grid.appendChild(c);
+  let i = 0;
+  CAT_ORDER.forEach(cat => {
+    const inCat = GAMES.filter(g => g.cat === cat);
+    if (!inCat.length) return;
+    const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
+    grid.appendChild(h);
+    inCat.forEach(g => {
+      const c = document.createElement('button');
+      c.type = 'button'; c.className = 'gamecard';
+      c.style.animationDelay = (i++ * 45) + 'ms';
+      const stat = statLine(g.id);
+      c.innerHTML = '<span class="ico">' + g.ico + '</span>' +
+        '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
+        (stat ? '<span class="stat">' + stat + '</span>' : '') +
+        '<span class="go">Play &#8594;</span>';
+      c.onclick = () => openGame(g.id);
+      grid.appendChild(c);
+    });
   });
   renderLBSum();
 }
@@ -2612,68 +2653,210 @@ BUILD.leaderboards = host => {
 
 /* ── Admin (owner only): reset a board, or edit/delete individual scores ── */
 BUILD.admin = host => {
-  head(host, 'Admin', 'Owner tools for the game boards.', '<div id="adm"></div>');
+  head(host, 'Admin', 'Owner tools for the game boards. Changes are immediate and affect everyone.', '<div id="adm"></div>');
   const box = $('adm');
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable first.</p>'; return () => {}; }
   const wk = tetrisWeek();
-  const GEN = LB_CAT.filter(c => c.g);        // only generic game_score boards are editable
-  let cur = GEN[0], period = 'all', data = null;
+  /* generic game_score boards + the Tetris boards (separate tables via /api/tetris) */
+  const GEN = LB_CAT.filter(c => c.g).map(c => ({ id:c.id, name:c.name, kind:'g', metric:c.g.metric, fmt:c.fmt, valOf:r=>r.score }));
+  const TET = [
+    { id:'tsprint',    name:'Tetris Sprint (weekly)',    kind:'t', mode:'sprint',    fmt:fmtHMS,       valOf:r=>r.time_ms, sync:true, unit:'ms' },
+    { id:'tsprintall', name:'Tetris Sprint (all-time)',  kind:'t', mode:'sprintall', fmt:fmtHMS,       valOf:r=>r.time_ms, sync:true, unit:'ms' },
+    { id:'tsurv',      name:'Tetris Survival',           kind:'t', mode:'zen',       fmt:fmtHMS,       valOf:r=>r.time_ms, unit:'ms' },
+    { id:'tzen',       name:'Tetris Zen',                kind:'t', mode:'zenscore',  fmt:v=>String(v), valOf:r=>r.best,    unit:'pts' }
+  ];
+  const CATS = [...GEN, ...TET];
+  let cur = CATS[0], period = 'all', data = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
     '<div class="glbhd"><h3 id="admtitle"></h3>' +
-      '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
-      '<button type="button" class="glbtab cur" data-p="all">All time</button>' +
-      '<button type="button" class="glbtab glbwipe" id="admwipe">Reset board</button></div></div>' +
+      '<div class="glbtabs">' +
+        '<button type="button" class="glbtab" data-p="week">This week</button>' +
+        '<button type="button" class="glbtab cur" data-p="all">All time</button>' +
+        '<button type="button" class="glbtab" id="admsync" hidden>Sync weekly → all-time</button>' +
+        '<button type="button" class="glbtab glbwipe" id="admwipe">Reset board</button></div></div>' +
     '<p class="adminnote" id="admnote"></p>' +
     '<div id="admbody"><p class="how">Loading…</p></div>';
   const pick = $('admpick');
-  GEN.forEach(c => { const b = document.createElement('button');
+  CATS.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
     b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
     pick.appendChild(b); });
   [...box.querySelectorAll('.glbtab[data-p]')].forEach(b => b.onclick = () => {
-    period = b.dataset.p; [...box.querySelectorAll('.glbtab[data-p]')].forEach(t=>t.classList.toggle('cur', t===b)); load(); });
+    period = b.dataset.p; [...box.querySelectorAll('.glbtab[data-p]')].forEach(t=>t.classList.toggle('cur', t===b)); render(); });
   $('admwipe').onclick = wipeBoard;
+  $('admsync').onclick = syncSprint;
   load();
 
+  function syncTabsUI(){
+    const gen = cur.kind === 'g';
+    [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
+    $('admsync').hidden = !cur.sync;
+  }
   async function load(){
-    $('admtitle').textContent = cur.name;
-    $('admnote').textContent = 'Editing the ' + (period==='week' ? 'this-week' : 'all-time') + ' board. Changes are immediate and affect everyone.';
-    const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>';
-    try { data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
+    $('admtitle').textContent = cur.name; syncTabsUI();
+    const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>'; data = null;
+    try {
+      if (cur.kind === 'g') data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.metric, week:wk } });
+      else data = await TT.api('/api/tetris', { params:{ mode:cur.mode, week:wk, admin:1 } });
       if (!data.canWipe){ body.innerHTML = '<p class="how">You are not the owner. Set OWNER_EMAIL on the server to your school login.</p>'; return; }
       render();
     } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
   }
+  function curRows(){
+    if (!data) return [];
+    if (cur.kind === 'g'){ const b = period==='week' ? data.week : data.all; return (b && b.top) || []; }
+    return data.top || [];
+  }
   function render(){
-    const b = period==='week' ? data.week : data.all;
-    const rows = (b && b.top) || [];
-    const body = $('admbody');
+    syncTabsUI();
+    $('admtitle').textContent = cur.name;
+    $('admnote').textContent = cur.kind === 'g'
+      ? 'Editing the ' + (period==='week' ? 'this-week' : 'all-time') + ' board.'
+      : (cur.mode === 'sprint' ? 'Editing this week’s Sprint clears.' : 'Editing the ' + cur.name + ' board.');
+    const rows = curRows(), body = $('admbody');
     if (!rows.length){ body.innerHTML = '<p class="how">No scores on this board.</p>'; return; }
-    body.innerHTML = rows.map((r,i) => '<div class="adminrow" data-email="'+esc(r.email||'')+'">' +
-      '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+'</span>' +
-      '<input class="sc" type="number" value="'+r.score+'" aria-label="score">' +
-      '<button class="btn" type="button" data-act="save">Save</button>' +
-      '<button class="del" type="button" data-act="del">Delete</button></div>').join('');
+    body.innerHTML = rows.map((r,i) => { const v = cur.valOf(r);
+      return '<div class="adminrow" data-email="'+esc(r.email||'')+'">' +
+        '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+' · '+esc(cur.fmt(v))+'</span>' +
+        '<input class="sc" type="number" value="'+v+'" aria-label="value"'+(cur.unit?' title="'+cur.unit+'"':'')+'>' +
+        '<button class="btn" type="button" data-act="save">Save</button>' +
+        '<button class="del" type="button" data-act="del">Delete</button></div>'; }).join('');
     [...body.querySelectorAll('.adminrow')].forEach(row => {
       const email = row.dataset.email;
       row.querySelector('[data-act=save]').onclick = () => edit('set', email, +row.querySelector('.sc').value);
       row.querySelector('[data-act=del]').onclick  = () => { if (confirm('Delete this score?')) edit('delete', email); };
     });
   }
-  async function edit(action, email, score){
-    const period_ = period==='week' ? ('w'+wk) : 'all';
-    try { data = await TT.api('/api/leaderboard', { method:'POST',
-        body:{ game:cur.id, metric:cur.g.metric, week:wk, action, email, period:period_, score } });
+  async function edit(action, email, value){
+    try {
+      if (cur.kind === 'g'){
+        data = await TT.api('/api/leaderboard', { method:'POST',
+          body:{ game:cur.id, metric:cur.metric, week:wk, action, email, period: period==='week' ? 'w'+wk : 'all', score:value } });
+      } else {
+        data = await TT.api('/api/tetris', { method:'POST', body:{ mode:cur.mode, action, email, value, week:wk } });
+      }
       lbSumCache = null; render();
     } catch(e){ alert('Could not save: ' + e.message); }
   }
   async function wipeBoard(){
     if (!confirm('Clear the entire "'+cur.name+'" board for everyone? This cannot be undone.')) return;
-    try { data = await TT.api('/api/leaderboard', { method:'POST',
-        body:{ game:cur.id, metric:cur.g.metric, week:wk, score:0, action:'wipe' } });
+    try {
+      if (cur.kind === 'g') data = await TT.api('/api/leaderboard', { method:'POST', body:{ game:cur.id, metric:cur.metric, week:wk, score:0, action:'wipe' } });
+      else data = await TT.api('/api/tetris', { method:'POST', body:{ mode:cur.mode, action:'wipe', week:wk } });
       lbSumCache = null; render();
     } catch(e){ alert('Could not reset: ' + e.message); }
+  }
+  async function syncSprint(){
+    if (!confirm('Copy everyone’s best weekly Sprint time into the all-time board?')) return;
+    try {
+      data = await TT.api('/api/tetris', { method:'POST', body:{ action:'sync' } });
+      lbSumCache = null;
+      cur = TET.find(c => c.id === 'tsprintall'); [...pick.children].forEach((x,i)=>x.setAttribute('aria-pressed', String(CATS[i]===cur)));
+      render();
+    } catch(e){ alert('Could not sync: ' + e.message); }
+  }
+  return () => {};
+};
+
+/* ── Flashcards (revision): make decks and study them; saved to your account ── */
+BUILD.flashcards = host => {
+  head(host, 'Flashcards', 'Make your own decks and study them. Saved to your account and synced across devices.', '<div id="fc"></div>');
+  const box = $('fc');
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  let decks = TT.get('tt.flashcards', []); if (!Array.isArray(decks)) decks = [];
+  const saveDecks = () => TT.set('tt.flashcards', decks);
+  const deckById = id => decks.find(d => d.id === id);
+  let deckId = null, study = null;
+  list();
+
+  function list(){
+    let html = '<div class="fcdecks">';
+    html += decks.length ? decks.map(d => '<div class="fcdeck" data-id="'+d.id+'">' +
+        '<span class="nm">'+esc(d.name)+'</span><span class="ct">'+d.cards.length+' card'+(d.cards.length===1?'':'s')+'</span>' +
+        '<button class="btn" type="button" data-act="study">Study</button>' +
+        '<button class="btn" type="button" data-act="edit">Edit</button>' +
+        '<button class="del" type="button" data-act="del">✕</button></div>').join('')
+      : '<p class="how" style="margin:0">No decks yet. Create one below.</p>';
+    html += '</div><div class="fcrow"><input id="fcnew" placeholder="New deck name…" maxlength="60" autocomplete="off">' +
+      '<button class="btn primary" id="fcaddd" type="button">Create deck</button></div>';
+    box.innerHTML = html;
+    $('sc').textContent = decks.length + ' deck' + (decks.length===1?'':'s');
+    const addDeck = () => { const v = $('fcnew').value.trim(); if (!v) return;
+      const d = { id:uid(), name:v, cards:[] }; decks.push(d); saveDecks(); deckId = d.id; edit(); };
+    $('fcaddd').onclick = addDeck;
+    $('fcnew').addEventListener('keydown', e => { if (e.key==='Enter') addDeck(); });
+    [...box.querySelectorAll('.fcdeck')].forEach(row => { const d = deckById(row.dataset.id);
+      row.querySelector('[data-act=study]').onclick = () => { deckId=d.id; startStudy(); };
+      row.querySelector('[data-act=edit]').onclick  = () => { deckId=d.id; edit(); };
+      row.querySelector('[data-act=del]').onclick   = () => { if (confirm('Delete deck "'+d.name+'"?')){ decks=decks.filter(x=>x.id!==d.id); saveDecks(); list(); } };
+    });
+  }
+
+  function edit(){
+    const d = deckById(deckId); if (!d){ list(); return; }
+    box.innerHTML =
+      '<div class="fcrow"><button class="btn" id="fcback" type="button">← Decks</button>' +
+        '<input id="fcname" value="'+esc(d.name)+'" maxlength="60" aria-label="Deck name"></div>' +
+      '<div class="fcrow"><input id="fcq" placeholder="Front (question)…" autocomplete="off">' +
+        '<input id="fca" placeholder="Back (answer)…" autocomplete="off">' +
+        '<button class="btn primary" id="fccadd" type="button">Add card</button></div>' +
+      '<div id="fclist"></div>';
+    $('fcback').onclick = list;
+    $('fcname').onchange = () => { d.name = $('fcname').value.trim() || 'Untitled'; saveDecks(); };
+    const addCard = () => { const q=$('fcq').value.trim(), a=$('fca').value.trim(); if (!q||!a) return;
+      d.cards.push({ q, a }); saveDecks(); $('fcq').value=''; $('fca').value=''; $('fcq').focus(); paintCards(); };
+    $('fccadd').onclick = addCard;
+    $('fca').addEventListener('keydown', e => { if (e.key==='Enter') addCard(); });
+    paintCards();
+    function paintCards(){
+      $('sc').textContent = d.cards.length + ' card' + (d.cards.length===1?'':'s');
+      $('fclist').innerHTML = d.cards.length ? d.cards.map((c,idx) => '<div class="fccardrow" data-i="'+idx+'">' +
+        '<span class="qa"><b>'+esc(c.q)+'</b><em>'+esc(c.a)+'</em></span>' +
+        '<button class="del" type="button">✕</button></div>').join('') : '<p class="how">No cards yet.</p>';
+      [...$('fclist').querySelectorAll('.fccardrow')].forEach(row =>
+        row.querySelector('.del').onclick = () => { d.cards.splice(+row.dataset.i,1); saveDecks(); paintCards(); });
+    }
+  }
+
+  function startStudy(){
+    const d = deckById(deckId); if (!d){ list(); return; }
+    if (!d.cards.length){ alert('Add some cards to this deck first.'); edit(); return; }
+    study = { order: shuffle(d.cards.map((_,i)=>i)), pos:0, showBack:false, got:0, again:0 };
+    renderStudy();
+  }
+  function renderStudy(){
+    const d = deckById(deckId);
+    if (study.pos >= study.order.length){ studyDone(d); return; }
+    const c = d.cards[study.order[study.pos]];
+    box.innerHTML =
+      '<div class="fcrow"><button class="btn" id="fcback" type="button">← Decks</button>' +
+        '<button class="btn" id="fcshuffle" type="button">Shuffle</button></div>' +
+      '<div class="fcface" id="fcface"><span class="lbl" id="fclbl">Front — tap to flip</span>' +
+        '<span class="txt" id="fctxt">'+esc(c.q)+'</span></div>' +
+      '<div class="fcbar" id="fcgrade" hidden><button class="btn" id="fcagain" type="button">Again</button>' +
+        '<button class="btn primary" id="fcgot" type="button">Got it</button></div>' +
+      '<div class="fcprog">Card '+(study.pos+1)+' of '+study.order.length+' · '+esc(d.name)+'</div>';
+    $('sc').textContent = 'Studying ' + d.name;
+    const face = $('fcface');
+    face.onclick = () => { if (study.showBack) return; study.showBack = true; SFX.flip();
+      $('fclbl').textContent = 'Back'; $('fctxt').textContent = c.a;
+      if (gameAnim()){ face.classList.remove('flip'); void face.offsetWidth; face.classList.add('flip'); }
+      $('fcgrade').hidden = false; };
+    $('fcback').onclick = list;
+    $('fcshuffle').onclick = () => { study.order = shuffle(study.order); study.pos = 0; study.showBack = false; renderStudy(); };
+    const next = () => { study.pos++; study.showBack = false; renderStudy(); };
+    $('fcagain').onclick = () => { study.again++; study.order.push(study.order[study.pos]); next(); };
+    $('fcgot').onclick   = () => { study.got++; SFX.good(); next(); };
+  }
+  function studyDone(d){
+    SFX.win();
+    box.innerHTML =
+      '<div class="fcface"><span class="lbl">Done</span><span class="txt">'+esc(d.name)+'<br>'+study.got+' got it · '+study.again+' to review</span></div>' +
+      '<div class="fcbar"><button class="btn" id="fcback" type="button">← Decks</button>' +
+        '<button class="btn primary" id="fcredo" type="button">Study again</button></div>';
+    $('sc').textContent = '';
+    $('fcback').onclick = list; $('fcredo').onclick = startStudy;
   }
   return () => {};
 };

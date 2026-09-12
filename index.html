@@ -49,6 +49,7 @@ button,select,input{font:inherit;color:inherit}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .brand>span{color:var(--muted);font-size:12px;margin-top:2px;min-height:14px}
+.brand>span:empty{display:none}   /* no dead space below the pill when there's no status */
 .brand>span.err{color:#e5484d}
 .idrow{
   display:inline-flex;align-items:center;gap:0;margin-top:6px;align-self:flex-start;

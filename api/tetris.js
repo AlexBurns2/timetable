@@ -32,11 +32,13 @@ function nameFromEmail(email) {
 
 const SPRINT_MIN = 3000, SPRINT_MAX = 3600000;   // 3s … 1h
 const ZEN_MIN = 2000, ZEN_MAX = 7200000;         // 2s … 2h
+/* owner (from the environment) may edit/reset any board; unset ⇒ nobody */
+const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
-async function sprintBoard(me, week) {
+async function sprintBoard(me, week, adm) {
   const { data: top } = await db.from("tetris_score")
     .select("name, time_ms, email").eq("week", week)
-    .order("time_ms", { ascending: true }).limit(20);
+    .order("time_ms", { ascending: true }).limit(adm ? 200 : 20);
   const { data: mine } = await db.from("tetris_score")
     .select("time_ms").eq("email", me.email).eq("week", week).maybeSingle();
   const meBest = mine ? mine.time_ms : null;
@@ -46,12 +48,12 @@ async function sprintBoard(me, week) {
       .select("*", { count: "exact", head: true }).eq("week", week).lt("time_ms", meBest);
     meRank = (count || 0) + 1;
   }
-  return { mode: "sprint", top: (top || []).map(r => ({ name: r.name, time_ms: r.time_ms, you: r.email === me.email })), meBest, meRank };
+  return { mode: "sprint", top: (top || []).map(r => ({ name: r.name, time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
 }
 
-async function zenBoard(me) {
+async function zenBoard(me, adm) {
   const { data: top } = await db.from("zen_score")
-    .select("name, ms, email").order("ms", { ascending: false }).limit(20);
+    .select("name, ms, email").order("ms", { ascending: false }).limit(adm ? 200 : 20);
   const { data: mine } = await db.from("zen_score")
     .select("ms").eq("email", me.email).maybeSingle();
   const meBest = mine ? mine.ms : null;
@@ -61,13 +63,13 @@ async function zenBoard(me) {
       .select("*", { count: "exact", head: true }).gt("ms", meBest);   // longer is better
     meRank = (count || 0) + 1;
   }
-  return { mode: "zen", top: (top || []).map(r => ({ name: r.name, time_ms: r.ms, you: r.email === me.email })), meBest, meRank };
+  return { mode: "zen", top: (top || []).map(r => ({ name: r.name, time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
 }
 
 /* all-time fastest Sprint clears (separate table from the weekly tetris_score) */
-async function sprintAllBoard(me) {
+async function sprintAllBoard(me, adm) {
   const { data: top } = await db.from("sprint_best")
-    .select("name, time_ms, email").order("time_ms", { ascending: true }).limit(20);
+    .select("name, time_ms, email").order("time_ms", { ascending: true }).limit(adm ? 200 : 20);
   const { data: mine } = await db.from("sprint_best")
     .select("time_ms").eq("email", me.email).maybeSingle();
   const meBest = mine ? mine.time_ms : null;
@@ -76,13 +78,13 @@ async function sprintAllBoard(me) {
     const { count } = await db.from("sprint_best").select("*", { count: "exact", head: true }).lt("time_ms", meBest);
     meRank = (count || 0) + 1;
   }
-  return { mode: "sprintall", top: (top || []).map(r => ({ name: r.name, time_ms: r.time_ms, you: r.email === me.email })), meBest, meRank };
+  return { mode: "sprintall", top: (top || []).map(r => ({ name: r.name, time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
 }
 
 /* Zen scoreboard: each player's most recent score alongside their all-time best */
-async function zenScoreBoard(me) {
+async function zenScoreBoard(me, adm) {
   const { data: top } = await db.from("zen_board")
-    .select("name, current, best, email").order("best", { ascending: false }).limit(20);
+    .select("name, current, best, email").order("best", { ascending: false }).limit(adm ? 200 : 20);
   const { data: mine } = await db.from("zen_board")
     .select("current, best").eq("email", me.email).maybeSingle();
   const meBest = mine ? mine.best : null, meCurrent = mine ? mine.current : null;
@@ -91,7 +93,15 @@ async function zenScoreBoard(me) {
     const { count } = await db.from("zen_board").select("*", { count: "exact", head: true }).gt("best", meBest);
     meRank = (count || 0) + 1;
   }
-  return { mode: "zenscore", top: (top || []).map(r => ({ name: r.name, current: r.current, best: r.best, you: r.email === me.email })), meBest, meCurrent, meRank };
+  return { mode: "zenscore", top: (top || []).map(r => ({ name: r.name, current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meCurrent, meRank, canWipe: adm };
+}
+
+/* pick the right board for a mode (used by admin actions to return fresh data) */
+function boardFor(mode, me, week, adm) {
+  if (mode === "zen") return zenBoard(me, adm);
+  if (mode === "sprintall") return sprintAllBoard(me, adm);
+  if (mode === "zenscore") return zenScoreBoard(me, adm);
+  return sprintBoard(me, week, adm);
 }
 
 export default async function handler(req, res) {
@@ -107,14 +117,17 @@ export default async function handler(req, res) {
 
   const weekOf = v => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n < 100000 ? n : null; };
 
+  const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
+
   if (req.method === "GET") {
     const mode = req.query.mode;
-    if (mode === "zen") return res.status(200).json(await zenBoard(me));
-    if (mode === "sprintall") return res.status(200).json(await sprintAllBoard(me));
-    if (mode === "zenscore") return res.status(200).json(await zenScoreBoard(me));
+    const adm = !!req.query.admin && isOwner;                 // owner-only: include emails + full list
+    if (mode === "zen") return res.status(200).json(await zenBoard(me, adm));
+    if (mode === "sprintall") return res.status(200).json(await sprintAllBoard(me, adm));
+    if (mode === "zenscore") return res.status(200).json(await zenScoreBoard(me, adm));
     const week = weekOf(req.query.week);
     if (week === null) return res.status(400).json({ error: "A valid week is required." });
-    return res.status(200).json(await sprintBoard(me, week));
+    return res.status(200).json(await sprintBoard(me, week, adm));
   }
 
   if (req.method === "POST") {
@@ -122,6 +135,61 @@ export default async function handler(req, res) {
     if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
     const mode = (body && body.mode) || "sprint";
     const name = nameFromEmail(me.email);
+
+    /* ── owner admin actions: edit / delete / wipe a board, or sync sprint bests ── */
+    if (body && body.action) {
+      if (!isOwner) return res.status(403).json({ error: "Only the owner can edit scores." });
+      const action = body.action;
+      const wk = weekOf(body.week);
+
+      if (action === "sync") {                                // backfill sprint_best from every weekly time
+        const { data: weekly } = await db.from("tetris_score").select("email, time_ms");
+        const best = new Map();
+        for (const r of (weekly || [])) if (!best.has(r.email) || r.time_ms < best.get(r.email)) best.set(r.email, r.time_ms);
+        const { data: cur } = await db.from("sprint_best").select("email, time_ms");
+        const curMap = new Map((cur || []).map(r => [r.email, r.time_ms]));
+        const rows = [];
+        for (const [e, t] of best) if (!curMap.has(e) || t < curMap.get(e)) rows.push({ email: e, name: nameFromEmail(e), time_ms: t });
+        if (rows.length) { const { error } = await db.from("sprint_best").upsert(rows);
+          if (error) { console.error("sprint sync:", error.message); return res.status(502).json({ error: "Couldn't sync." }); } }
+        return res.status(200).json(await sprintAllBoard(me, true));
+      }
+
+      const TBL = {
+        sprint:    { t: "tetris_score", val: "time_ms" },
+        sprintall: { t: "sprint_best",  val: "time_ms" },
+        zen:       { t: "zen_score",    val: "ms" },
+        zenscore:  { t: "zen_board",    val: "best" }
+      }[mode];
+      if (!TBL) return res.status(400).json({ error: "Unknown board." });
+      if (mode === "sprint" && wk === null) return res.status(400).json({ error: "A valid week is required." });
+
+      if (action === "wipe") {
+        let q = db.from(TBL.t).delete();
+        q = mode === "sprint" ? q.eq("week", wk) : q.neq("email", "__none__");
+        const { error } = await q;
+        if (error) { console.error("tetris wipe:", error.message); return res.status(502).json({ error: "Couldn't clear the board." }); }
+        return res.status(200).json(await boardFor(mode, me, wk, true));
+      }
+
+      const email = String((body && body.email) || "").toLowerCase();
+      if (!email) return res.status(400).json({ error: "Which score?" });
+      if (action === "delete") {
+        let q = db.from(TBL.t).delete().eq("email", email);
+        if (mode === "sprint") q = q.eq("week", wk);
+        const { error } = await q;
+        if (error) { console.error("tetris delete:", error.message); return res.status(502).json({ error: "Couldn't delete." }); }
+      } else if (action === "set") {
+        const val = Math.round(Number(body && body.value));
+        if (!Number.isFinite(val) || val < 0) return res.status(400).json({ error: "That value is out of range." });
+        const rec = { email, name: nameFromEmail(email), [TBL.val]: val };
+        if (mode === "sprint") rec.week = wk;
+        if (mode === "zenscore") rec.current = val;
+        const { error } = await db.from(TBL.t).upsert(rec);
+        if (error) { console.error("tetris set:", error.message); return res.status(502).json({ error: "Couldn't save." }); }
+      } else return res.status(400).json({ error: "Unknown action." });
+      return res.status(200).json(await boardFor(mode, me, wk, true));
+    }
 
     if (mode === "sprintall") {
       const timeMs = Math.round(Number(body && body.timeMs));

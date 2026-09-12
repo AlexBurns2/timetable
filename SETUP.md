@@ -1012,6 +1012,24 @@ New local stat keys: `mines.best<size>`, `memory.best<size>`/`plays`, `oddone.hi
   timetable only (they need the live parsed timetable, not just cached data).
   No new deploy steps — just ship `home.html`, `settings.css`, `settings.js`, `games.html`.
 
+## Tetris in Admin + Flashcards (latest)
+
+- **Admin now covers the Tetris boards** too (Sprint weekly, Sprint all-time, Survival, Zen),
+  alongside the generic ones — edit a value, delete a row, or reset the board. `api/tetris.js`
+  gained owner-gated actions (`OWNER_EMAIL`, same env var as the leaderboard): `?admin=1` on a
+  GET returns each row's email to the owner; `POST {mode, action:'set'|'delete'|'wipe', email,
+  value, week}` edits one board.
+- **Sync weekly → all-time**: `POST /api/tetris {action:'sync'}` (owner only) backfills
+  `sprint_best` from every `tetris_score` row (min time per player). Fixes the case where the
+  all-time Sprint board was missing players who only had weekly times. The Admin panel has a
+  "Sync weekly → all-time" button on the Sprint boards.
+- **Flashcards** (new, Revision category) — a custom deck maker: create decks, add/edit/delete
+  Q&A cards, and study (flip, self-grade Again/Got it, shuffle). Decks live in `tt.flashcards`,
+  so they sync across devices like other settings. No server or DB involvement.
+- The games grid is now grouped into **Revision / Timetable / Arcade** sections.
+
+Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
+
 ## Subject notes
 
 The Notes page is **per subject**. A dropdown lists **General plus every subject from
