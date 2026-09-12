@@ -78,7 +78,10 @@ canvas{
 .dgday.won .dgi{color:#2f9e44}
 .dgday.lost .dgi{color:#e5484d}
 /* daily: toolbar, archive, and the "how others did" summary bars */
-.dgtoolbar{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
+.dgtoolbar{display:flex;gap:14px;flex-wrap:wrap;margin:2px 0 12px}
+.dgtool{background:none;border:0;padding:0;color:var(--muted);font-size:12.5px;font-weight:700;
+  cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
+.dgtool:hover{color:var(--accent)}
 .dgarch{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 #dgsummary{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
   padding:14px;margin-bottom:14px}
@@ -286,6 +289,48 @@ html[data-motion="reduced"] .gwhint.fresh,html[data-motion="reduced"] .gwguessro
   padding:11px 14px;color:var(--text);cursor:pointer;font-size:14px}
 .chopt:hover{border-color:var(--accent)}
 .chopt em{font-style:normal;font-size:12px;opacity:.65;white-space:nowrap}
+/* six degrees: pre-start greyed-out board + tile flip-in on Start */
+.chdim{opacity:.45;filter:grayscale(.6);pointer-events:none}
+.chopt.chface .cnm,.chopt.chface em{visibility:hidden}
+.chopt.chflip{animation:chflip .4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes chflip{from{transform:rotateX(90deg);opacity:0}to{transform:none;opacity:1}}
+.chstartwrap{display:flex;justify-content:center;margin:6px 0 4px}
+.chblank{opacity:.55;letter-spacing:2px}
+html[data-motion="reduced"] .chopt.chflip{animation:none}
+/* volume popover on the sound button */
+.volwrap{position:relative;display:inline-flex}
+.volpop{position:absolute;top:calc(100% + 6px);right:0;z-index:30;background:var(--panel);
+  border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow-hi);padding:9px 12px}
+.volpop[hidden]{display:none}
+.volpop input[type=range]{width:120px;accent-color:var(--accent);vertical-align:middle}
+/* leaderboard summary strip beneath the game grid */
+.lbsum{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
+.lbsumhd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.lbsumhd h2{margin:0;font-family:var(--font-display);font-size:17px;font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.lbsumhd a{color:var(--accent);font-weight:700;text-decoration:none;font-size:13px;cursor:pointer}
+.lbsumhd a:hover{text-decoration:underline}
+.lbsumgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.lbsumcard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
+  box-shadow:var(--shadow);padding:12px 14px;cursor:pointer;transition:transform .14s,box-shadow .14s}
+.lbsumcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi)}
+.lbsumcard .g{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.lbsumcard .lead{display:flex;align-items:baseline;gap:8px;font-size:14px}
+.lbsumcard .lead .who{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbsumcard .lead .val{margin-left:auto;font-family:var(--font-num);font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
+.lbsumcard .empty{font-size:13px;color:var(--muted)}
+html[data-motion="reduced"] .lbsumcard{transition:none}
+/* admin panel */
+.adminrow{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:var(--radius);font-size:14px}
+.adminrow:nth-child(even){background:var(--panel-2)}
+.adminrow .rk{width:24px;color:var(--muted);font-family:var(--font-num)}
+.adminrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adminrow input.sc{width:82px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);color:var(--text);font-family:var(--font-num);text-align:right}
+.adminrow .del{color:#e5484d;cursor:pointer;border:1px solid var(--line);border-radius:var(--radius);
+  padding:4px 9px;background:var(--panel);font-size:12px}
+.adminrow .del:hover{border-color:#e5484d}
+.adminnote{font-size:12.5px;color:var(--muted);margin:10px 0}
 </style>
 </head>
 <body>
@@ -295,12 +340,17 @@ html[data-motion="reduced"] .gwhint.fresh,html[data-motion="reduced"] .gwguessro
     <div class="crumbs">
       <a class="btn" href="home.html">🏠 Home</a>
       <a class="btn" href="./">🗓️ Timetable</a>
-      <button class="btn icon" id="sfx" title="Game sounds">&#128266;</button>
+      <button class="btn icon" id="admin" title="Admin" hidden>🛠️</button>
+      <span class="volwrap" id="volwrap">
+        <button class="btn icon" id="sfx" title="Game sound (hold to set volume)">&#128266;</button>
+        <span class="volpop" id="volpop" hidden><input type="range" id="volsl" min="0" max="100" step="5" aria-label="Volume"></span>
+      </span>
       <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
     </div>
   </div>
 
   <div class="gamegrid" id="gamegrid"></div>
+  <div class="lbsum" id="lbsum" hidden></div>
 
   <div class="gamestage" id="gamestage" hidden>
     <button class="btn back" id="back">&#8592; All games</button>
@@ -317,63 +367,83 @@ $('mode').onclick = () => {
   TT.apply(Object.assign(st, { mode: next }));
 };
 
-/* ── game sound & animation (item 10) ───────────────────────────────
-   Tiny synthesised Web-Audio blips — no audio files. Sound defaults OFF,
-   animations honour the reduce-motion setting. Both live in Settings as
-   tt.gamesfx / tt.gameanim; the header 🔊 button is a quick toggle. */
+/* ── game sound & animation ─────────────────────────────────────────
+   Synthesised Web-Audio blips — no audio files. Sound defaults OFF,
+   volume in tt.gamevol (0–1). Animations honour reduce-motion. Tap the
+   header button to mute/unmute; hold it for a volume slider. */
 const SFX = (() => {
   let ctx = null;
-  const on = () => TT.get('tt.gamesfx', false);
-  const ac = () => { if (!on()) return null;
+  const on  = () => TT.get('tt.gamesfx', false);
+  const vol = () => { let v = +TT.get('tt.gamevol', 0.7); return isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.7; };
+  const ac = () => { if (!on() || vol() <= 0) return null;
     try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
       if (ctx.state === 'suspended') ctx.resume(); return ctx; } catch { return null; } };
-  function tone(freq, dur, type = 'sine', gain = 0.05, when = 0){
+  function tone(freq, dur, type = 'sine', gain = 0.15, when = 0){
     const c = ac(); if (!c) return;
     const o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.value = freq;
     o.connect(g); g.connect(c.destination);
-    const t = c.currentTime + when;
-    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const t = c.currentTime + when, g0 = Math.max(0.0001, gain * vol());
+    g.gain.setValueAtTime(g0, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.start(t); o.stop(t + dur);
   }
-  const seq = (notes, type = 'triangle') => notes.forEach(([f, w]) => tone(f, 0.12, type, 0.05, w));
+  const seq = (notes, type = 'triangle') => notes.forEach(([f, w]) => tone(f, 0.13, type, 0.17, w));
   return {
-    move:  () => tone(200, 0.04, 'square', 0.025),
-    place: () => tone(150, 0.08, 'square', 0.035),
-    good:  () => { tone(523, 0.07, 'sine', 0.05); tone(784, 0.09, 'sine', 0.05, 0.06); },
-    bad:   () => tone(150, 0.2, 'sawtooth', 0.045),
+    move:  () => tone(200, 0.05, 'square', 0.09),
+    place: () => tone(150, 0.09, 'square', 0.14),
+    good:  () => { tone(523, 0.08, 'sine', 0.17); tone(784, 0.10, 'sine', 0.17, 0.06); },
+    bad:   () => tone(150, 0.22, 'sawtooth', 0.15),
     win:   () => seq([[523,0],[659,0.09],[784,0.18],[1047,0.28]]),
     lose:  () => seq([[440,0],[349,0.1],[262,0.22]], 'sawtooth'),
-    tick:  () => tone(900, 0.03, 'sine', 0.02),
-    flip:  () => tone(430, 0.04, 'sine', 0.03),
+    tick:  () => tone(900, 0.04, 'sine', 0.09),
+    flip:  () => tone(430, 0.05, 'sine', 0.12),
     clear: () => seq([[660,0],[880,0.06]], 'triangle')
   };
 })();
 const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
-(function initSfxBtn(){
-  const b = $('sfx'); if (!b) return;
-  const paint = () => { const on = TT.get('tt.gamesfx', false);
-    b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Game sounds: on' : 'Game sounds: off'; };
-  b.onclick = () => { TT.set('tt.gamesfx', !TT.get('tt.gamesfx', false)); paint(); if (TT.get('tt.gamesfx',false)) SFX.flip(); };
-  paint();
+(function initSound(){
+  const b = $('sfx'), pop = $('volpop'), sl = $('volsl'), wrap = $('volwrap');
+  if (!b || !sl) return;
+  const icon = () => { const on = TT.get('tt.gamesfx', false), v = +TT.get('tt.gamevol', 0.7);
+    b.textContent = !on ? '🔇' : (v < 0.34 ? '🔈' : v < 0.67 ? '🔉' : '🔊');
+    b.setAttribute('aria-pressed', String(on)); };
+  sl.value = Math.round((+TT.get('tt.gamevol', 0.7)) * 100);
+  let held = false, timer = null;
+  const open = () => { held = true; pop.hidden = false; };
+  const cancel = () => { if (timer){ clearTimeout(timer); timer = null; } };
+  b.addEventListener('pointerdown', () => { held = false; cancel(); timer = setTimeout(open, 300); });
+  b.addEventListener('pointerup', () => { cancel(); if (held) return;    // a hold opened the slider
+    TT.set('tt.gamesfx', !TT.get('tt.gamesfx', false)); icon(); if (TT.get('tt.gamesfx', false)) SFX.flip(); });
+  b.addEventListener('pointercancel', cancel);
+  sl.addEventListener('input', () => { const v = +sl.value / 100; TT.set('tt.gamevol', v);
+    if (v > 0 && !TT.get('tt.gamesfx', false)) TT.set('tt.gamesfx', true); icon(); SFX.tick(); });
+  document.addEventListener('pointerdown', e => { if (!pop.hidden && !wrap.contains(e.target)) pop.hidden = true; });
+  icon();
+})();
+/* the Admin button appears only for the owner (server says canWipe) */
+let isAdmin = false;
+(async function initAdmin(){
+  if (!TT.myEmail()) return;
+  try { const d = await TT.api('/api/leaderboard', { params:{ game:'chain', metric:'targets', week:tetrisWeek() } });
+    if (d && d.canWipe){ isAdmin = true; const a = $('admin'); if (a){ a.hidden = false; a.onclick = () => openGame('admin'); } }
+  } catch(e){}
 })();
 
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
-  { id:'dailyguess', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student from your year — same for everyone, every day' },
-  { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery person — classmates, grade or teachers' },
-  { id:'classroom', ico:'🚪', name:'Classroom', blurb:'Beat the clock on rooms, teachers and classes from your timetable' },
-  { id:'chain',  ico:'🔗', name:'Six Degrees', blurb:'Hop student to student through shared classes on a tight move budget' },
-  { id:'oddone', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t — spot them fast' },
-  { id:'tetris', ico:'🟦', name:'Tetris', blurb:'Clear 40 lines — fixed weekly piece order, best time resets each Monday' },
-  { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself — it speeds up' },
+  { id:'dailyguess', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
+  { id:'guesswho', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
+  { id:'classroom', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
+  { id:'chain',  ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
+  { id:'oddone', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
+  { id:'tetris', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice' },
+  { id:'snake',  ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
-  { id:'memory', ico:'🃏', name:'Memory', blurb:'Flip and match every pair in the fewest moves' },
-  { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines — three sizes' },
+  { id:'memory', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
+  { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
   { id:'typing', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
-  { id:'react',  ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' },
-  { id:'leaderboards', ico:'🏆', name:'Leaderboards', blurb:'Every game’s board in one place' }
+  { id:'react',  ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' }
 ];
 
 function showGrid(){
@@ -396,6 +466,54 @@ function showGrid(){
     c.onclick = () => openGame(g.id);
     grid.appendChild(c);
   });
+  renderLBSum();
+}
+
+/* ── leaderboard catalogue (shared by the summary strip + the full view) ── */
+const LB_CAT = [
+  { id:'chain',     name:'Six Degrees',    g:{metric:'targets'}, fmt:v=>String(v) },
+  { id:'oddone',    name:'Odd One Out',    g:{metric:'high'},    fmt:v=>String(v) },
+  { id:'classroom', name:'Classroom',      g:{metric:'high'},    fmt:v=>String(v) },
+  { id:'snake',     name:'Snake',          g:{metric:'high'},    fmt:v=>String(v) },
+  { id:'g2048',     name:'2048',           g:{metric:'high'},    fmt:v=>String(v) },
+  { id:'typing',    name:'Typing race',    g:{metric:'wpm'},     fmt:v=>v+' wpm' },
+  { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
+  { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
+  { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
+  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
+];
+let lbFocus = null;          // which board the full view should open on
+let lbSumCache = null;       // cached leaders for the summary strip (per session)
+async function fetchLeaders(){
+  if (lbSumCache) return lbSumCache;
+  const wk = tetrisWeek();
+  lbSumCache = await Promise.all(LB_CAT.map(async cat => {
+    try {
+      if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } });
+        const r = (d.all.top||[])[0]; return r ? { who:r.name, val:cat.fmt(r.score) } : null; }
+      if (cat.t==='sprint'){   const d = await TT.api('/api/tetris',{params:{mode:'sprintall'}}); const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
+      if (cat.t==='zen'){      const d = await TT.api('/api/tetris',{params:{mode:'zen'}});       const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
+      if (cat.t==='zenscore'){ const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});  const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.best)}:null; }
+    } catch(e){ return null; }
+    return null;
+  }));
+  return lbSumCache;
+}
+async function renderLBSum(){
+  const el = $('lbsum'); if (!el) return;
+  el.hidden = false;
+  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2></div><p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
+  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><p class="how">Loading leaders…</p>';
+  $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
+  const leaders = await fetchLeaders();
+  if ($('gamegrid').hidden) return;               // user already opened a game
+  const cards = LB_CAT.map((cat,i) => { const L = leaders[i];
+    return '<button class="lbsumcard" data-i="'+i+'"><div class="g">'+esc(cat.name)+'</div>' +
+      (L ? '<div class="lead"><span class="who">🥇 '+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>'
+         : '<div class="empty">No scores yet</div>') + '</button>'; }).join('');
+  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><div class="lbsumgrid">'+cards+'</div>';
+  $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
+  [...el.querySelectorAll('.lbsumcard')].forEach(c => c.onclick = () => { lbFocus = LB_CAT[+c.dataset.i].id; openGame('leaderboards'); });
 }
 const reduced = () => document.documentElement.getAttribute('data-motion') === 'reduced';
 function openGame(id){
@@ -403,6 +521,7 @@ function openGame(id){
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
+    $('lbsum').hidden = true;
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
     stop = BUILD[id]($('stage'));
@@ -494,7 +613,8 @@ async function lbSubmit(game, score){
   const lb = LB_GAMES[game]; if (!lb) return;
   try {
     const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score, week:tetrisWeek() } });
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.canWipe = d.canWipe; paintLB(); updateWipe(); }
+    lbSumCache = null;   // summary strip is now stale
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){}
 }
 function mountLB(game){
@@ -504,36 +624,23 @@ function mountLB(game){
   panel.innerHTML =
     '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
     '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
-    '<button type="button" class="glbtab" data-p="all">All time</button>' +
-    '<button type="button" class="glbtab glbwipe" id="glbwipe" hidden>Reset board</button></div></div>' +
+    '<button type="button" class="glbtab" data-p="all">All time</button></div></div>' +
     '<div id="glbbody"><p class="how">Loading…</p></div>';
   $('stage').appendChild(panel);
-  lbState = { game, period:'week', week:null, all:null, canWipe:false };
-  [...panel.querySelectorAll('.glbtab:not(.glbwipe)')].forEach(b => b.onclick = () => {
+  lbState = { game, period:'week', week:null, all:null };
+  [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
     lbState.period = b.dataset.p;
-    [...panel.querySelectorAll('.glbtab:not(.glbwipe)')].forEach(t => t.classList.toggle('cur', t===b));
+    [...panel.querySelectorAll('.glbtab')].forEach(t => t.classList.toggle('cur', t===b));
     paintLB();
   });
-  $('glbwipe').onclick = () => wipeLB(game);
   loadLBoard(game);
-}
-function updateWipe(){
-  const b = $('glbwipe'); if (b) b.hidden = !(lbState && lbState.canWipe);
-}
-async function wipeLB(game){
-  const lb = LB_GAMES[game]; if (!lb) return;
-  if (!confirm('Clear the entire "'+lb.label+'" board for everyone? This cannot be undone.')) return;
-  try {
-    const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score:0, week:tetrisWeek(), action:'wipe' } });
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.canWipe = d.canWipe; paintLB(); updateWipe(); }
-  } catch(e){ alert('Could not reset the board: ' + e.message); }
 }
 async function loadLBoard(game){
   const lb = LB_GAMES[game], body = $('glbbody');
   if (!TT.myEmail()){ if (body) body.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboard.</p>'; return; }
   try {
     const d = await TT.api('/api/leaderboard', { params:{ game, metric:lb.metric, week:tetrisWeek() } });
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.canWipe = d.canWipe; paintLB(); updateWipe(); }
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){ if (body) body.innerHTML = ''; }
 }
 function paintLB(){
@@ -868,20 +975,19 @@ BUILD.dailyguess = host => {
       '<div style="margin-left:auto;display:flex;gap:10px;align-items:center">' +
         '<span class="gwyou" style="margin:0">🔥 streak <b id="dgstreak">' + streak + '</b></span>' +
         '<button class="btn" id="dgunlimited" type="button">Unlimited →</button></div></div>' +
-      '<div class="dgtoolbar"><button class="btn" id="dgarchbtn" type="button">📚 Archive</button>' +
-        '<button class="btn" id="dgsumbtn" type="button">📊 How others did</button></div>' +
-      '<div class="dgdays" id="dgdays"></div>' +
-      '<div class="dgarch" id="dgarch" hidden></div>' +
-      '<div id="dgsummary" hidden></div>' +
+      '<div class="dgtoolbar"><button class="dgtool" id="dgarchbtn" type="button">Show archive</button>' +
+        '<button class="dgtool" id="dgsumbtn" type="button">Show summary</button></div>' +
+      '<div id="dgdayswrap" hidden><div class="dgdays" id="dgdays"></div><div class="dgarch" id="dgarch"></div></div>' +
       '<div class="gwhints" id="dghints"></div>' +
       '<div class="gwrow" id="dgrow">' +
         '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name the mystery student…">' +
         '<datalist id="dglist">' + (s.candidates||[]).map(n => '<option value="' + esc(n).replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
         '<button class="btn primary" id="dgguess" type="button">Guess</button>' +
-      '</div><div class="gwlog" id="dglog"></div>';
+      '</div><div class="gwlog" id="dglog"></div>' +
+      '<div id="dgsummary" hidden></div>';
 
     document.getElementById('dgunlimited').onclick = () => openGame('guesswho');
-    document.getElementById('dgarchbtn').onclick = toggleArchive;
+    document.getElementById('dgarchbtn').onclick = toggleDays;
     document.getElementById('dgsumbtn').onclick = () => toggleSummary(s.date);
     renderDays(s);
 
@@ -904,7 +1010,7 @@ BUILD.dailyguess = host => {
       banner.className = 'gwhint ' + (won ? 'win' : 'lose');
       banner.innerHTML = won
         ? 'You got it in <b>' + guesses + '</b>! It was <b>' + esc(answer) + '</b> 🎉'
-        : 'Out of guesses — it was <b>' + esc(answer) + '</b>.';
+        : 'Out of guesses. It was <b>' + esc(answer) + '</b>.';
       hintsEl.appendChild(banner);
       const chip = document.querySelector('.dgday.cur');
       if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(won?'won':'lost');
@@ -966,30 +1072,29 @@ BUILD.dailyguess = host => {
     [...daysEl.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
   }
 
-  /* archive: every past day since the epoch that has results (loaded on demand) */
+  /* day picker: recent chips + every past day since the epoch that has results */
   let archLoaded = false;
-  async function toggleArchive(){
-    const el = document.getElementById('dgarch'), btn = document.getElementById('dgarchbtn');
-    if (!el.hidden){ el.hidden = true; btn.textContent = '📚 Archive'; return; }
-    el.hidden = false; btn.textContent = '📚 Hide archive';
+  async function toggleDays(){
+    const wrap = document.getElementById('dgdayswrap'), btn = document.getElementById('dgarchbtn');
+    if (!wrap.hidden){ wrap.hidden = true; btn.textContent = 'Show archive'; return; }
+    wrap.hidden = false; btn.textContent = 'Hide archive';
     if (archLoaded) return;
-    el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    const el = document.getElementById('dgarch');
     try {
       const d = await TT.api('/api/daily', { params:{ archive:1 } });
       const arr = d.archive || [];
-      if (!arr.length){ el.innerHTML = '<p class="how" style="margin:0">No past days with results yet — check back once people have played.</p>'; return; }
       el.innerHTML = arr.map(a => '<button class="dgday" data-date="'+a.date+'" title="'+a.wins+' of '+a.played+' solved it">' +
         '<span class="dgd">'+esc(shortDate(a.date))+'</span><span class="dgi">'+a.wins+'/'+a.played+'</span></button>').join('');
       [...el.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
       archLoaded = true;
-    } catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the archive.</p>'; }
+    } catch(e){}
   }
 
   /* "how others did": win/loss + guess-count histogram for the loaded day */
-  async function openSummary(date){ const el = document.getElementById('dgsummary'); el.hidden = false;
-    document.getElementById('dgsumbtn').textContent = '📊 Hide summary'; await loadSummary(date); }
-  async function toggleSummary(date){ const el = document.getElementById('dgsummary'), btn = document.getElementById('dgsumbtn');
-    if (!el.hidden){ el.hidden = true; btn.textContent = '📊 How others did'; return; }
+  async function openSummary(date){ document.getElementById('dgsummary').hidden = false;
+    document.getElementById('dgsumbtn').textContent = 'Hide summary'; await loadSummary(date); }
+  async function toggleSummary(date){ const el = document.getElementById('dgsummary');
+    if (!el.hidden){ el.hidden = true; document.getElementById('dgsumbtn').textContent = 'Show summary'; return; }
     await openSummary(date); }
   async function loadSummary(date){
     const el = document.getElementById('dgsummary'); el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
@@ -997,19 +1102,21 @@ BUILD.dailyguess = host => {
     catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the summary.</p>'; }
   }
   function renderSummary(el, sum){
-    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet — be the first.</p>'; return; }
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet. Be the first.</p>'; return; }
     const rate = Math.round(sum.wins / sum.played * 100);
+    const names = sum.names || {};                       // {bucket: [names]} for hover
     const max = Math.max(1, sum.losses, ...Object.keys(sum.dist).map(k => sum.dist[k]));
-    const bar = (label, n, miss) => '<div class="dgbar' + (miss?' miss':'') + '"><span class="dgbl">' + label + '</span>' +
+    const tip = key => { const list = names[key]; return list && list.length ? ' title="' + esc(list.join(', ')) + '"' : ''; };
+    const bar = (label, n, key, miss) => '<div class="dgbar' + (miss?' miss':'') + '"' + tip(key) + '><span class="dgbl">' + label + '</span>' +
       '<span class="dgbt"><i style="width:' + (n/max*100) + '%"></i></span><span class="dgbn">' + n + '</span></div>';
     let rows = '';
-    for (let i=1;i<=sum.totalHints;i++) rows += bar(i, sum.dist[i]||0, false);
-    rows += bar('✗', sum.losses, true);
+    for (let i=1;i<=sum.totalHints;i++) rows += bar(i, sum.dist[i]||0, String(i), false);
+    rows += bar('✗', sum.losses, 'lost', true);
     el.innerHTML =
       '<div class="dgsumhd"><span class="big">' + sum.played + '</span> played · <span class="big">' + rate + '%</span> solved · ' +
         '<b>' + sum.wins + '</b> won, <b>' + sum.losses + '</b> lost</div>' +
       '<div class="dgbars">' + rows + '</div>' +
-      '<p class="how" style="margin:8px 0 0">Guesses taken to solve it (✗ = didn’t get it).</p>';
+      '<p class="how" style="margin:8px 0 0">Guesses taken to solve it. Hover a row to see who.</p>';
   }
 
   return () => { alive = false; };
@@ -1041,7 +1148,7 @@ BUILD.tetris = host => {
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
   let mode = TT.get('tt.tetrismode', 'sprint');
 
-  head(host, 'Tetris', 'Sprint, Survival, or endless Zen. Rebind keys and tune handling under Controls.', '<div id="twrap"></div>');
+  head(host, 'Tetris', 'Sprint, Survival, Zen and Practice. Keys and handling under Controls.', '<div id="twrap"></div>');
   document.getElementById('twrap').innerHTML =
     '<div class="tmodes" id="tmodes"></div>' +
     '<div class="tgame">' +
@@ -1064,8 +1171,8 @@ BUILD.tetris = host => {
     '<div class="tbtns">' +
       '<button class="btn primary" id="tstart" type="button">Start</button>' +
       '<button class="btn" id="tpause" type="button">Pause</button>' +
-      '<button class="btn" id="tundo" type="button" hidden>↶ Undo</button>' +
-      '<button class="btn" id="tredo" type="button" hidden>↷ Redo</button>' +
+      '<button class="btn" id="tundo" type="button" hidden>↶ Undo (U)</button>' +
+      '<button class="btn" id="tredo" type="button" hidden>↷ Redo (Y)</button>' +
       '<button class="btn" id="tsave" type="button" hidden>Save</button>' +
       '<button class="btn" id="tcontrols" type="button">Controls</button>' +
     '</div>' +
@@ -1532,9 +1639,10 @@ BUILD.tetris = host => {
     const K=cfg.keys;
     if (keyMatch(e,K.restart)){ begin(); e.preventDefault(); return; }
     if (keyMatch(e,K.pause) && (phase==='playing'||phase==='paused')){ togglePause(); e.preventDefault(); return; }
-    if (mode==='practice'){                                  // U = undo, Y = redo, any time
-      if (e.key==='u'||e.key==='U'){ undo(); e.preventDefault(); return; }
-      if (e.key==='y'||e.key==='Y'){ redo(); e.preventDefault(); return; }
+    if (mode==='practice'){                                  // U / Ctrl+Z = undo, Y / Ctrl+Y = redo, any time
+      const k = e.key.toLowerCase();
+      if (k==='u' || (k==='z' && (e.ctrlKey||e.metaKey) && !e.shiftKey)){ undo(); e.preventDefault(); return; }
+      if (k==='y' || ((e.ctrlKey||e.metaKey) && (k==='y' || (k==='z' && e.shiftKey)))){ redo(); e.preventDefault(); return; }
     }
     if (phase==='ready' || phase==='over'){ if (keyMatch(e,K.hardDrop)){ begin(); e.preventDefault(); } return; }
     if (phase!=='playing') return;
@@ -1580,7 +1688,7 @@ BUILD.tetris = host => {
    you type which room it runs in. Self-contained — no directory calls. */
 BUILD.classroom = host => {
   head(host, 'Classroom',
-    'Multiple choice against the clock, all pulled from your own timetable — rooms, teachers and classes. Three slips and the run ends.',
+    'Multiple choice from your own timetable: rooms, teachers and classes. It speeds up as you go, three slips and the run ends.',
     '<div id="cr"></div>');
   const box = $('cr');
   let alive = true, timer = null;
@@ -1589,13 +1697,28 @@ BUILD.classroom = host => {
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
-      start();
+      ready();
     } catch (err){
       if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
     }
   })();
 
-  function start(){
+  function ready(){
+    if (timer){ clearInterval(timer); timer = null; }
+    const rooms = (gwData.rooms || []).filter(r => r.room && r.subject);
+    if (rooms.length < 3){
+      box.innerHTML = '<p class="how">Your timetable doesn’t list enough rooms to play. Open your timetable first.</p>';
+      return;
+    }
+    box.innerHTML =
+      '<div class="crq"><div class="crsub">Ready?</div>' +
+        '<div class="crclue">Name the room, teacher or class. You get 3 lives and the clock speeds up.</div></div>' +
+      '<div class="gwrow"><button class="btn primary" id="crstart" type="button">Start</button></div>';
+    $('sc').textContent = 'Best ' + (statVal('classroom','high') != null ? statVal('classroom','high') : '—');
+    $('crstart').onclick = run;
+  }
+
+  function run(){
     if (timer){ clearInterval(timer); timer = null; }
     const rooms = (gwData.rooms || []).filter(r => r.room && r.subject);
     if (rooms.length < 3){
@@ -1616,7 +1739,7 @@ BUILD.classroom = host => {
     if (allSubjects.length >= 3) types.push('subject');
 
     let correct = 0, streak = 0, lives = 3, lastKey = '', qStart = 0;
-    const timeFor = () => Math.max(4000, 9000 - correct*250 - streak*150);   // speeds up as you go
+    const timeFor = () => Math.max(4000, 12000 - correct*450 - streak*150);   // starts slow, speeds up
 
     /* a plausible wrong room code: one digit nudged by ±1 (ER0018.169 → ER0019.168) */
     function nearMiss(code){
@@ -1715,7 +1838,7 @@ BUILD.classroom = host => {
           '<div class="crmeta">best ' + best + '</div></div>' +
         '<div class="gwrow"><button class="btn primary" id="cragain" type="button">Play again</button></div>';
       $('sc').textContent = correct + ' correct';
-      $('cragain').onclick = start;
+      $('cragain').onclick = run;
     }
     nextQ();
   }
@@ -1729,7 +1852,7 @@ BUILD.classroom = host => {
    away as your score climbs, so a lucky short hop can't carry the board.  */
 BUILD.chain = host => {
   head(host, 'Six Degrees',
-    'Reach the target by hopping through a class you share — then do it again, and again. How many can you chain before the clock runs out?',
+    'Chain classmate to classmate through a shared class. How many targets can you reach before the clock runs out?',
     '<div id="ch"></div>');
   const box = document.getElementById('ch');
   let alive = true, timer = null;
@@ -1767,20 +1890,14 @@ BUILD.chain = host => {
   function startScreen(){
     const g = build();
     if (!g){ box.innerHTML = '<p class="how">Not enough classmates with shared classes to play. Open your timetable first.</p>'; return; }
-    box.innerHTML =
-      '<div class="chhead"><div class="chtarget">Timed gauntlet</div>' +
-      '<div class="chmeta">Reach each target, then chain straight into the next. ' + (RUN_TIME/1000) + ' seconds on the clock — targets get further apart as you go.</div></div>' +
-      '<div class="gwrow"><button class="btn primary" id="chstart" type="button">Start run</button></div>';
-    document.getElementById('sc').textContent = 'Best ' + (statVal('chain','targets') != null ? statVal('chain','targets') : '—');
-    document.getElementById('chstart').onclick = () => run(g);
+    run(g);
   }
 
   function run(g){
     const { nodes, adj, bfs, sharedClass } = g;
     let cur = rand(nodes.length), tries = 0;
     while (adj[cur].size === 0 && tries++ < 50) cur = rand(nodes.length);   // start with edges
-    let score = 0, target = null, dist = null, ended = false;
-    const t0 = Date.now();
+    let score = 0, target = null, dist = null, ended = false, started = false, t0 = 0;
 
     function pickTarget(){
       dist = bfs(cur);
@@ -1790,43 +1907,54 @@ BUILD.chain = host => {
         for (let i=0; i<nodes.length; i++) if (i !== cur && dist[i] !== Infinity && dist[i] >= d) cands.push(i);
       target = cands.length ? cands[rand(cands.length)] : null;
     }
+    const tgtLine  = () => 'Reach <b>' + esc(nodes[target].name) + '</b>' + (nodes[target].year ? ' <span class="chyr">Yr ' + esc(nodes[target].year) + '</span>' : '');
+    const metaLine = () => 'On <b>' + esc(nodes[cur].name) + '</b> · reached <b>' + score + '</b> · <b id="chclock">' + Math.ceil(RUN_TIME/1000) + 's</b> left';
     pickTarget();
     render();
 
-    timer = setInterval(() => {
-      if (ended) return;
-      const left = Math.max(0, RUN_TIME - (Date.now() - t0));
-      const bar = document.getElementById('chbar'); if (bar) bar.style.width = (left / RUN_TIME * 100) + '%';
-      const clock = document.getElementById('chclock'); if (clock) clock.textContent = Math.ceil(left/1000) + 's';
-      if (left <= 0) finish();
-    }, 100);
-
     function render(){
-      if (target == null){ finish(); return; }
+      if (started && target == null){ finish(); return; }
       const nbrs = [...adj[cur]];
       let show = shuffle(nbrs.slice()).slice(0, 14);
-      if (nbrs.includes(target) && !show.includes(target)) show[show.length-1] = target;
+      if (target != null && nbrs.includes(target) && !show.includes(target)) show[show.length-1] = target;
       show = shuffle(show);
       box.innerHTML =
         '<div class="crtimer"><i id="chbar" style="width:100%"></i></div>' +
-        '<div class="chhead">' +
-          '<div class="chtarget">Reach <b>' + esc(nodes[target].name) + '</b>' +
-            (nodes[target].year ? ' <span class="chyr">Yr ' + esc(nodes[target].year) + '</span>' : '') + '</div>' +
-          '<div class="chmeta">On <b>' + esc(nodes[cur].name) + '</b> · reached <b>' + score + '</b> · <b id="chclock">' + Math.ceil(RUN_TIME/1000) + 's</b> left</div>' +
+        '<div id="chboard"' + (started ? '' : ' class="chdim"') + '>' +
+          '<div class="chhead">' +
+            '<div class="chtarget" id="chtgt">' + (started ? tgtLine() : 'Reach <b class="chblank">______</b>') + '</div>' +
+            '<div class="chmeta" id="chmeta">' + (started ? metaLine() : 'On <b class="chblank">______</b> · ' + (RUN_TIME/1000) + 's') + '</div>' +
+          '</div>' +
+          '<div class="chopts" id="chopts"></div>' +
         '</div>' +
-        '<div class="chopts" id="chopts"></div>';
+        (started ? '' : '<div class="chstartwrap"><button class="btn primary" id="chstart" type="button">Start run</button></div>');
       const opts = document.getElementById('chopts');
-      show.forEach(n => {
+      show.forEach((n, idx) => {
         const b = document.createElement('button');
-        b.type = 'button'; b.className = 'chopt';
-        b.innerHTML = '<span>' + esc(nodes[n].name) + '</span><em>via ' + esc(sharedClass(cur,n) || 'shared class') + '</em>';
+        b.type = 'button'; b.className = 'chopt' + (started ? ' chflip' : ' chface');
+        if (started) b.style.animationDelay = (idx*25) + 'ms';
+        b.innerHTML = '<span class="cnm">' + esc(nodes[n].name) + '</span><em>via ' + esc(sharedClass(cur,n) || 'shared class') + '</em>';
         b.onclick = () => move(n);
         opts.appendChild(b);
       });
-      document.getElementById('sc').textContent = 'Reached ' + score;
+      if (!started){
+        document.getElementById('chstart').onclick = startRun;
+        document.getElementById('sc').textContent = 'Best ' + (statVal('chain','targets') != null ? statVal('chain','targets') : '—');
+      } else document.getElementById('sc').textContent = 'Reached ' + score;
+    }
+    function startRun(){
+      started = true; t0 = Date.now();
+      render();                                   // reveal names (flip) + fill the target/on lines
+      timer = setInterval(() => {
+        if (ended) return;
+        const left = Math.max(0, RUN_TIME - (Date.now() - t0));
+        const bar = document.getElementById('chbar'); if (bar) bar.style.width = (left / RUN_TIME * 100) + '%';
+        const clock = document.getElementById('chclock'); if (clock) clock.textContent = Math.ceil(left/1000) + 's';
+        if (left <= 0) finish();
+      }, 100);
     }
     function move(n){
-      if (ended) return;
+      if (!started || ended) return;
       const hit = n === target;
       cur = n;
       if (hit){ score++; SFX.good(); pickTarget(); } else SFX.move();
@@ -1854,7 +1982,7 @@ BUILD.chain = host => {
    of yours, one isn't — spot the outsider before the bar empties.     */
 BUILD.oddone = host => {
   head(host, 'Odd One Out',
-    'Three of the four share a class of yours — tap the one who doesn’t, before the bar empties. Three misses ends the run.',
+    'Three of the four share a class of yours. Tap the one who doesn’t before the bar empties. Three misses ends the run.',
     '<div id="oo"></div>');
   const box = $('oo');
   let alive = true, timer = null;
@@ -1937,7 +2065,7 @@ BUILD.memory = host => {
   const LV = { easy:{r:3,c:4,label:'Easy'}, med:{r:4,c:4,label:'Medium'}, hard:{r:4,c:6,label:'Hard'} };
   let lvl = TT.get('tt.memLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   const FACES = ['🐶','🐱','🦊','🐼','🐧','🦉','🐢','🐙','🦋','🌵','🍩','🍕','⚽','🎸','🚀','🎲','🔥','🌈','⭐','🍉','🐝','🦕','🎧','🧩'];
-  head(host, 'Memory', 'Flip two cards a turn; clear every matching pair in as few moves as you can.',
+  head(host, 'Memory', 'Flip two cards a turn. Clear every pair in as few moves as you can.',
     '<div class="minesbar"><div class="diffbar" id="memlvl"></div>' +
       '<div class="minesinfo"><span id="memmoves">Moves 0</span><span id="memtime">⏱ 0</span></div></div>' +
     '<div id="memgrid"></div>' +
@@ -2001,7 +2129,7 @@ BUILD.memory = host => {
 
 /* ── Snake ─────────────────────────────────────────────────────── */
 BUILD.snake = host => {
-  head(host, 'Snake', 'Arrow keys or WASD. Eat the dot — you speed up as you grow. Press R after a crash.',
+  head(host, 'Snake', 'Arrow keys or WASD. Press R after a crash.',
        '<canvas id="cv" width="320" height="320"></canvas>');
   const ctx = $('cv').getContext('2d'), N = 16, S = 20;
   let snake = [{x:8,y:8}], dir = {x:1,y:0}, next = dir,
@@ -2180,7 +2308,7 @@ BUILD.mines = host => {
   };
   let lvl = TT.get('tt.minesLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   head(host, 'Minesweeper',
-    'Dig a square to open it; right-click (or Flag mode) to flag a mine. Your first dig is always safe. Click an opened number once its flags match to sweep the rest.',
+    'Dig to open, right-click (or Flag mode) to flag. Your first dig is always safe. Click a number once its flags match to sweep the rest.',
     '<div class="minesbar"><div class="diffbar" id="mlvl"></div>' +
       '<div class="minesinfo"><span id="mflags">💣 0</span><span id="mtime">⏱ 0</span></div></div>' +
     '<div id="mines"></div>' +
@@ -2291,7 +2419,7 @@ BUILD.mines = host => {
 
 /* ── Typing race ───────────────────────────────────────────────── */
 BUILD.typing = host => {
-  head(host, 'Typing race', 'A fresh random line every time — the clock starts on your first keystroke. No pasting.',
+  head(host, 'Typing race', 'A fresh random line every time. The clock starts on your first keystroke.',
        '<div id="typetext"></div><input id="typein" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Start typing…">' +
        '<div class="minesfoot"><button class="btn" id="typenew" type="button">New text</button></div>');
   /* random-word lines so nothing can be memorised or looked up */
@@ -2387,50 +2515,35 @@ BUILD.react = host => {
   return () => clearTimeout(t);
 };
 
-/* ── Leaderboards (all boards in one place) ─────────────────────────── */
+/* ── Leaderboards (read-only; owner controls live in Admin) ─────────── */
 BUILD.leaderboards = host => {
-  head(host, 'Leaderboards', 'Pick a game to see its board. Weekly resets each Monday; all-time never does.', '<div id="lbp"></div>');
+  head(host, 'Leaderboards', 'Pick a game. Weekly resets each Monday, all-time never does.', '<div id="lbp"></div>');
   const box = $('lbp');
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return () => {}; }
   const wk = tetrisWeek();
-  const CAT = [
-    { id:'chain',     name:'Six Degrees',    g:{metric:'targets'}, fmt:v=>String(v) },
-    { id:'oddone',    name:'Odd One Out',    g:{metric:'high'},    fmt:v=>String(v) },
-    { id:'classroom', name:'Classroom',      g:{metric:'high'},    fmt:v=>String(v) },
-    { id:'snake',     name:'Snake',          g:{metric:'high'},    fmt:v=>String(v) },
-    { id:'g2048',     name:'2048',           g:{metric:'high'},    fmt:v=>String(v) },
-    { id:'typing',    name:'Typing race',    g:{metric:'wpm'},     fmt:v=>v+' wpm' },
-    { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
-    { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
-    { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
-    { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
-  ];
-  let cur = CAT[0], period = 'all', canWipe = false, data = null;
+  let cur = LB_CAT.find(c => c.id === lbFocus) || LB_CAT[0], period = 'all', data = null;
   box.innerHTML =
     '<div class="diffbar" id="lbpick" style="margin-bottom:14px"></div>' +
     '<div class="glbhd"><h3 id="lbtitle"></h3>' +
       '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
-      '<button type="button" class="glbtab cur" data-p="all">All time</button>' +
-      '<button type="button" class="glbtab glbwipe" id="lbwipe" hidden>Reset board</button></div></div>' +
+      '<button type="button" class="glbtab cur" data-p="all">All time</button></div></div>' +
     '<div id="lbbody"><p class="how">Loading…</p></div>';
   const pick = $('lbpick');
-  CAT.forEach(c => { const b = document.createElement('button');
+  LB_CAT.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
     b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
     pick.appendChild(b); });
   [...box.querySelectorAll('.glbtab[data-p]')].forEach(b => b.onclick = () => {
     period = b.dataset.p; [...box.querySelectorAll('.glbtab[data-p]')].forEach(t=>t.classList.toggle('cur', t===b)); paint(); });
-  $('lbwipe').onclick = wipe;
   load();
 
   const remap = (arr, key) => (arr||[]).map(r => ({ name:r.name, score:r[key], you:r.you }));
   async function load(){
     $('lbtitle').textContent = 'Leaderboard · ' + cur.name;
-    const body = $('lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; canWipe=false; data=null;
+    const body = $('lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
     try {
       if (cur.g){
         data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
-        canWipe = !!data.canWipe;
       } else if (cur.t === 'sprint'){
         const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}), TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
         data = { week:{ top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank },
@@ -2450,26 +2563,86 @@ BUILD.leaderboards = host => {
     const tabs = [...box.querySelectorAll('.glbtab[data-p]')];
     tabs.forEach(t => { if (t.dataset.p==='week') t.style.display = single ? 'none' : ''; });
     if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
-    $('lbwipe').hidden = !(canWipe && cur.g);
   }
   function paint(){
     const body = $('lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
     const b = period==='week' ? data.week : data.all;
     if (!b){ body.innerHTML='<p class="how">No board.</p>'; return; }
     const rows = b.top || [];
-    if (!rows.length && b.meBest==null){ body.innerHTML='<p class="how">No scores yet — be the first.</p>'; return; }
+    if (!rows.length && b.meBest==null){ body.innerHTML='<p class="how">No scores yet, be the first.</p>'; return; }
     let html = rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
       '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(cur.fmt(r.score))+'</span></div>').join('');
     if (b.meRank && b.meRank>rows.length)
       html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(cur.fmt(b.meBest))+'</span></div>';
     body.innerHTML = html;
   }
-  async function wipe(){
-    if (!cur.g) return;
+  return () => {};
+};
+
+/* ── Admin (owner only): reset a board, or edit/delete individual scores ── */
+BUILD.admin = host => {
+  head(host, 'Admin', 'Owner tools for the game boards.', '<div id="adm"></div>');
+  const box = $('adm');
+  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable first.</p>'; return () => {}; }
+  const wk = tetrisWeek();
+  const GEN = LB_CAT.filter(c => c.g);        // only generic game_score boards are editable
+  let cur = GEN[0], period = 'all', data = null;
+  box.innerHTML =
+    '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
+    '<div class="glbhd"><h3 id="admtitle"></h3>' +
+      '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
+      '<button type="button" class="glbtab cur" data-p="all">All time</button>' +
+      '<button type="button" class="glbtab glbwipe" id="admwipe">Reset board</button></div></div>' +
+    '<p class="adminnote" id="admnote"></p>' +
+    '<div id="admbody"><p class="how">Loading…</p></div>';
+  const pick = $('admpick');
+  GEN.forEach(c => { const b = document.createElement('button');
+    b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
+    b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
+    pick.appendChild(b); });
+  [...box.querySelectorAll('.glbtab[data-p]')].forEach(b => b.onclick = () => {
+    period = b.dataset.p; [...box.querySelectorAll('.glbtab[data-p]')].forEach(t=>t.classList.toggle('cur', t===b)); load(); });
+  $('admwipe').onclick = wipeBoard;
+  load();
+
+  async function load(){
+    $('admtitle').textContent = cur.name;
+    $('admnote').textContent = 'Editing the ' + (period==='week' ? 'this-week' : 'all-time') + ' board. Changes are immediate and affect everyone.';
+    const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>';
+    try { data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
+      if (!data.canWipe){ body.innerHTML = '<p class="how">You are not the owner. Set OWNER_EMAIL on the server to your school login.</p>'; return; }
+      render();
+    } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
+  }
+  function render(){
+    const b = period==='week' ? data.week : data.all;
+    const rows = (b && b.top) || [];
+    const body = $('admbody');
+    if (!rows.length){ body.innerHTML = '<p class="how">No scores on this board.</p>'; return; }
+    body.innerHTML = rows.map((r,i) => '<div class="adminrow" data-email="'+esc(r.email||'')+'">' +
+      '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+'</span>' +
+      '<input class="sc" type="number" value="'+r.score+'" aria-label="score">' +
+      '<button class="btn" type="button" data-act="save">Save</button>' +
+      '<button class="del" type="button" data-act="del">Delete</button></div>').join('');
+    [...body.querySelectorAll('.adminrow')].forEach(row => {
+      const email = row.dataset.email;
+      row.querySelector('[data-act=save]').onclick = () => edit('set', email, +row.querySelector('.sc').value);
+      row.querySelector('[data-act=del]').onclick  = () => { if (confirm('Delete this score?')) edit('delete', email); };
+    });
+  }
+  async function edit(action, email, score){
+    const period_ = period==='week' ? ('w'+wk) : 'all';
+    try { data = await TT.api('/api/leaderboard', { method:'POST',
+        body:{ game:cur.id, metric:cur.g.metric, week:wk, action, email, period:period_, score } });
+      lbSumCache = null; render();
+    } catch(e){ alert('Could not save: ' + e.message); }
+  }
+  async function wipeBoard(){
     if (!confirm('Clear the entire "'+cur.name+'" board for everyone? This cannot be undone.')) return;
-    try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ game:cur.id, metric:cur.g.metric, score:0, week:wk, action:'wipe' } });
-      canWipe = !!data.canWipe; syncTabs(); paint();
-    } catch(e){ alert('Could not reset the board: ' + e.message); }
+    try { data = await TT.api('/api/leaderboard', { method:'POST',
+        body:{ game:cur.id, metric:cur.g.metric, week:wk, score:0, action:'wipe' } });
+      lbSumCache = null; render();
+    } catch(e){ alert('Could not reset: ' + e.message); }
   }
   return () => {};
 };

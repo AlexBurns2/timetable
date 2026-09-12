@@ -41,18 +41,29 @@ async function historyFor(email, today) {
     .gte("date", shiftDate(today, -(HISTORY_DAYS - 1))).lte("date", today);
   return (data || []).map(r => ({ date: r.date, done: !!r.done, won: !!r.won }));
 }
-/* how everyone in the year went on one day: win/loss + a guess-count histogram */
+const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
+function nameFromEmail(email) {
+  const local = String(email).split("@")[0];
+  const parts = local.split(".").filter(Boolean);
+  if (parts.length >= 2) return cap(parts[0]) + " " + cap(parts[1].replace(/\d+$/, ""));
+  return cap(local.replace(/\d+$/, "")) || "Someone";
+}
+/* how everyone in the year went on one day: win/loss, a guess-count histogram,
+   and the names in each bucket (for the hover tooltip; capped so it stays small) */
 async function summaryFor(year, date, totalHints) {
   const { data } = await db.from("daily_result")
-    .select("guesses, won, done").eq("year", String(year)).eq("date", date);
+    .select("email, guesses, won, done").eq("year", String(year)).eq("date", date);
   const rows = data || [];
-  const dist = {}; for (let i = 1; i <= totalHints; i++) dist[i] = 0;
+  const dist = {}, names = {}; for (let i = 1; i <= totalHints; i++){ dist[i] = 0; names[i] = []; }
+  names.lost = [];
   let played = 0, wins = 0;
+  const push = (k, email) => { if (names[k].length < 40) names[k].push(nameFromEmail(email)); };
   for (const r of rows) {
     if (r.done) played++;
-    if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= totalHints) dist[r.guesses]++; }
+    if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= totalHints){ dist[r.guesses]++; push(r.guesses, r.email); } }
+    else if (r.done) push("lost", r.email);
   }
-  return { played, wins, losses: played - wins, totalHints, dist };
+  return { played, wins, losses: played - wins, totalHints, dist, names };
 }
 /* every past day (from EPOCH) that actually has results, newest first */
 async function archiveFor(year, today) {

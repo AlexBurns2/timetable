@@ -971,6 +971,33 @@ New local stat keys: `mines.best<size>`, `memory.best<size>`/`plays`, `oddone.hi
 - **UI**: home controls moved top-right; timetable name/email vertically centred; games
   Home/Timetable buttons got real icons (🏠 / 🗓️) instead of the misleading back-arrow.
 
+## Games UI pass + Admin panel (latest)
+
+**No new tables.** One new server capability: owner-only score editing (reuses `game_score`).
+
+- **Leaderboards** are no longer a card. A summarised strip (each board's #1) sits
+  **under the game grid**, with "View all →" opening the full read-only board view.
+  The full view lost its Reset button (controls moved to Admin).
+- **Admin** (🛠️ in the header, shown only when the server says you're the owner via
+  `OWNER_EMAIL`) → `BUILD.admin`: pick a board, **reset it**, or **edit / delete
+  individual scores**. New `POST /api/leaderboard` actions, both owner-gated:
+  `action:'set'` `{game,metric,period,email,score}` and `action:'delete'`
+  `{game,metric,period,email}`. `period` is `'all'` or `'w<week>'` (whichever tab is
+  open). The board GET now includes each row's `email` **only for the owner**, so the
+  panel can target rows.
+- **Six Degrees** pre-start now shows the real board **greyed out with hidden names and a
+  blank "Reach ______"**; hitting Start flips the tiles in and fills the target/current.
+- **Classroom** got a **Start screen** (prep time) and starts slower (~12s) then speeds up.
+- **Daily Guess Who** decluttered: discrete text buttons (**Show/Hide archive**,
+  **Show/Hide summary**), the day chips are **hidden until Archive**, and the summary sits
+  **below your own result**. The summary now returns per-bucket **names** (`summary.names`)
+  so hovering a histogram row shows exactly who solved it in that many guesses.
+- **Sound**: much louder, and the header button is now **tap = mute, hold = volume slider**
+  (`tt.gamevol`, 0–1, default 0.7; dragging also unmutes). Also in Settings.
+- **Tetris practice** undo/redo hotkeys: **U / Ctrl+Z** undo, **Y / Ctrl+Y** redo (labelled
+  on the buttons).
+- Captions trimmed across the board and em-dashes removed.
+
 ## Subject notes
 
 The Notes page is **per subject**. A dropdown lists **General plus every subject from

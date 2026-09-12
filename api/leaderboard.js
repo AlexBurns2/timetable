@@ -38,11 +38,11 @@ const MAX_SCORE = 100000000;
    in the environment to your school login; unset ⇒ nobody can wipe. */
 const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
-async function board(game, metric, period, dir, meEmail) {
+async function board(game, metric, period, dir, meEmail, withEmail) {
   const asc = dir === "min";
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
-    .order("score", { ascending: asc }).limit(20);
+    .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit
   const { data: mine } = await db.from("game_score")
     .select("score").eq("game", game).eq("metric", metric).eq("period", period).eq("email", meEmail).maybeSingle();
   const meBest = mine ? mine.score : null;
@@ -54,7 +54,8 @@ async function board(game, metric, period, dir, meEmail) {
     const { count } = await q;
     meRank = (count || 0) + 1;
   }
-  return { top: (top || []).map(r => ({ name: r.name, score: r.score, you: r.email === meEmail })), meBest, meRank };
+  return { top: (top || []).map(r => { const o = { name: r.name, score: r.score, you: r.email === meEmail };
+    if (withEmail) o.email = r.email; return o; }), meBest, meRank };
 }
 
 async function writeBest(game, metric, period, email, name, score, dir) {
@@ -93,10 +94,27 @@ export default async function handler(req, res) {
   const wperiod = "w" + week;
   const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
 
+  const validPeriod = p => p === "all" || p === wperiod;
+
   if (req.method === "POST" && src.action === "wipe") {
     if (!isOwner) return res.status(403).json({ error: "Only the owner can clear this board." });
     const { error } = await db.from("game_score").delete().eq("game", game).eq("metric", metric);
     if (error) { console.error("leaderboard wipe:", error.message); return res.status(502).json({ error: "Couldn't clear the board." }); }
+  } else if (req.method === "POST" && (src.action === "set" || src.action === "delete")) {
+    if (!isOwner) return res.status(403).json({ error: "Only the owner can edit scores." });
+    const email = String(src.email || "").toLowerCase();
+    const period = String(src.period || "");
+    if (!email || !validPeriod(period)) return res.status(400).json({ error: "Which score?" });
+    if (src.action === "delete") {
+      const { error } = await db.from("game_score").delete()
+        .eq("game", game).eq("metric", metric).eq("period", period).eq("email", email);
+      if (error) { console.error("leaderboard delete:", error.message); return res.status(502).json({ error: "Couldn't delete that score." }); }
+    } else {
+      const score = Math.round(Number(src.score));
+      if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
+      const { error } = await db.from("game_score").upsert({ game, metric, period, email, name: nameFromEmail(email), score });
+      if (error) { console.error("leaderboard set:", error.message); return res.status(502).json({ error: "Couldn't save that score." }); }
+    }
   } else if (req.method === "POST") {
     const score = Math.round(Number(src.score));
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
@@ -110,8 +128,8 @@ export default async function handler(req, res) {
   }
 
   return res.status(200).json({
-    week: await board(game, metric, wperiod, dir, me.email),
-    all:  await board(game, metric, "all", dir, me.email),
+    week: await board(game, metric, wperiod, dir, me.email, isOwner),
+    all:  await board(game, metric, "all", dir, me.email, isOwner),
     canWipe: isOwner
   });
 }
