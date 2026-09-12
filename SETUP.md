@@ -930,6 +930,47 @@ existing scores stay valid.
 New local stat keys: `mines.best<size>`, `memory.best<size>`/`plays`, `oddone.high`.
 `oddone` and `memory` are deliberately **not** in `LB_GAMES`, so nothing hits the API.
 
+## Second games pass + Resources + Daily upgrades (latest)
+
+**Still no new tables.** Everything reuses `game_score` and `daily_result`. One new
+**optional** env var: `OWNER_EMAIL`.
+
+- **Leaderboards page** (`BUILD.leaderboards`, a 🏆 card) — one place for every board:
+  a game picker, This-week / All-time tabs, and the Tetris boards (Sprint/Survival/Zen)
+  folded in. Redeploy needs nothing new.
+- **Wipe a board (owner only)** — `POST /api/leaderboard {action:'wipe', game, metric}`
+  deletes that game's rows from `game_score`. Gated server-side to `OWNER_EMAIL`
+  (set it to your school login, e.g. `alex.burns6@education.nsw.gov.au`; **unset ⇒ nobody
+  can wipe**). The GET response now carries `canWipe` so the button only shows for you.
+- **Six Degrees → timed gauntlet** — reach a target, get another instantly; chain as many
+  as you can in 90s; targets sit further away as your score climbs. New metric
+  `chain:targets` (higher = better). The old `chain:best` rows are left in place (not
+  shown, not deleted); wipe if you want them gone.
+- **Odd One Out** now has a leaderboard (`oddone:high`) and speeds up over the run.
+- **Classroom** — countdown now accelerates; room questions throw in **one-digit-off red
+  herrings** (GYM.1 → GYM.0/GYM.2) generated from the real code, so options look alike.
+- **Typing race** — sentences are now random words (uncheeseable); **paste and drag are
+  blocked**, big input jumps are rejected, and any run over 1000 wpm (or under 0.5 s) is
+  **disqualified** (not recorded).
+- **Sound & animation** (`SFX` in games.html) — synthesised Web-Audio blips, no files.
+  Toggles live in Settings → Accessibility (`tt.gamesfx` default off, `tt.gameanim`
+  default on, which also honours reduce-motion) and there's a 🔊 quick-toggle in the
+  games header.
+- **Tetris practice mode** — a 4th mode: zen-like, **undo/redo** (buttons + `U`/`Y`),
+  nothing tracked, no board, no save.
+- **Daily Guess Who** — graded **in the browser** now (the GET returns the day's `answer`
+  + full hints), so guesses are instant; the guess still POSTs in the background to keep
+  streaks, cross-device state and the summary correct. Added a **"How others did"**
+  histogram (`?summary=1`) and a **Sept-1 archive** (`?archive=1`, days with results).
+  `EPOCH = 2026-09-01` in `api/daily.js` bounds how far back you can go.
+  *Trade-off:* the answer now reaches the client (needed for instant grading), so it's
+  visible to anyone who opens dev-tools — fine for a casual game, but not secret.
+- **Resources** (`resources.html`, linked from home) — textbooks by **year → subject**,
+  seeded from the HSC Textbook Library Drive folder (real per-subject folder ids baked in;
+  clicking a subject opens that Drive folder). Edit the `RES` map to add/replace subjects.
+- **UI**: home controls moved top-right; timetable name/email vertically centred; games
+  Home/Timetable buttons got real icons (🏠 / 🗓️) instead of the misleading back-arrow.
+
 ## Subject notes
 
 The Notes page is **per subject**. A dropdown lists **General plus every subject from

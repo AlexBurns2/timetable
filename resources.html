@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="classic" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resources — MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/images/icon.png">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="site.css">
+<style>
+.reslede{color:var(--muted);font-size:14px;margin:0 0 18px;max-width:60ch}
+.reslede a{color:var(--accent);font-weight:700;text-decoration:none}
+.reslede a:hover{text-decoration:underline}
+.yeartabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.yeartab{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+  padding:8px 18px;font-size:14px;cursor:pointer;color:var(--text);font-weight:700}
+.yeartab:hover{border-color:var(--accent)}
+.yeartab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.subjgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.subjcard{
+  display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);
+  background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
+  padding:15px 16px;box-shadow:var(--shadow);
+  transition:transform .14s,box-shadow .14s,background .14s;
+}
+.subjcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.subjcard .ico{font-size:24px;line-height:1;flex:none}
+.subjcard .nm{font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.subjcard .go{margin-left:auto;color:var(--accent);font-size:15px;flex:none;opacity:.5;transition:opacity .14s,transform .14s}
+.subjcard:hover .go{opacity:1;transform:translateX(2px)}
+html[data-motion="reduced"] .subjcard{transition:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Resources</h1>
+    <div class="crumbs">
+      <a class="btn" href="home.html">🏠 Home</a>
+      <a class="btn" href="./">🗓️ Timetable</a>
+      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+    </div>
+  </div>
+
+  <p class="reslede">Textbooks by year and subject, straight from the student-run HSC Textbook Library.
+    Pick your year, then a subject — it opens that folder in Google Drive.
+    <a id="reslib" href="#" target="_blank" rel="noopener">Open the whole library ↗</a></p>
+
+  <div class="yeartabs" id="yeartabs"></div>
+  <div class="subjgrid" id="subjgrid"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+$('mode').onclick = () => {
+  const st = TT.readState();
+  const next = st.mode === 'dark' ? 'light' : 'dark';
+  TT.set(TT.LS.mode, next);
+  TT.apply(Object.assign(st, { mode: next }));
+};
+
+const DRIVE = 'https://drive.google.com/drive/folders/';
+const LIBRARY = '1vAADiVrKUIR_iApOoBdghSvKU6JhIwKT';
+$('reslib').href = DRIVE + LIBRARY;
+
+/* Seeded from the HSC Textbook Library on Google Drive (folder ids per subject).
+   To add/replace a subject, drop its Drive folder id in here. */
+const RES = {
+  '11': {
+    'Standard Maths':'1-ZgYiueT1wxc-f0mcXswWekovIJMx3Ht',
+    'Advanced Maths':'1-3LwW5I4_XFCt0PkultgH5-JswZzZNSo',
+    'Extension 1 Maths':'1JdQmZkV_y4FVWk3F5Aw0J7ZG7nxw0Laj',
+    'Biology':'1-b6O-KZ1X2tKlAFnR_aH5Bj0plH8-xQO',
+    'Chemistry':'1D8cgiWy-opw3vTuZfDH1Ao9U70Psa0ZI',
+    'Physics':'1-2PYlIiew4QkCV5YgM7I32aIg_mXExZ5',
+    'Investigating Science':'1-aXZIkH44AKLT0fenagy4lcJhgZzlDij',
+    'Business Studies':'1-TwxOutyk5BT0OKG-WirTzvwXs2b_CFq',
+    'Economics':'1fwyHXJv8OBOAvHNByVvRVVUw3HOY9oe4',
+    'Legal Studies':'17DrHOqMaNERBSvHSZZKdjSWyKj0Y5O4h',
+    'PDHPE':'1IlSNGP_380FRyY1iO4Rw8O9roZ_LNhLA',
+    'Software Design and Development':'1iWz5Px1gaz4VdnPtX0EMjHNWfKg9T1GU'
+  },
+  '12': {
+    'Standard Maths':'1sJVEEXArwBzR5hJw5hYGdnZi08p3OB7L',
+    'Advanced Maths':'1jtM1gGLES7kRjd9pYVoqbt-4C0WGxdlh',
+    'Ext 1 Maths':'1--MvXInYEfFJmoGlE8gfY1X2lotFu6r_',
+    'Ext 2 Maths':'105aC-xr_urOIX0CcCOuCKWHuYNan8Ii6',
+    'English Advanced':'1-ZpST6XEERDG42JUceff4WgVNJ8jpgx2',
+    'Biology':'1--wdIPwfCr-NQZut7w8eHO1bljPp6ocr',
+    'Chemistry':'1JrVwZTW8qUlPMFX3mqnpslgN55EEgTXW',
+    'Physics':'1PD-tH5ErYeMiYqhwFc6luaOzFJBsrIqc',
+    'Ancient History':'1pqsou2mnH7jv1quA1uOfV-2cRaBwEr7t',
+    'Modern History':'1qSKhIAXylSD7SQNlno1mzqXUzGA1zLbE',
+    'Geography':'1-EsTNJK5DMFQ2s5JtfM-1MnFYAKafSpy',
+    'Business Studies':'1IuzHEB0A03vANcEQSUdw-kH-sPaMXHoj',
+    'Economics':'1mklIq1MxT6-8E8GTv1z3x2aHLXQMBYZj',
+    'Legal Studies':'1_muvbe-BmBA3Og5x_myrOyvvluDJXj90',
+    'Studies of Religion':'1-62fUhH5CHle92irLf9MWDRTLTZIf6aM',
+    'Society and Culture':'1-OTTUj_sqF4mmm9KzXm8twNUCmhhAOzD',
+    'CAFS':'1LWBgAPEpaFN_oUODw-svKKVHZBBZ5ZVe',
+    'PDHPE':'11FJAAp9Q1B6rh72I4r1ppMQYKf4Y7ZrZ',
+    'Design and Technology':'1-7Hqz_C-o4Wtgfq20M9OjgG23nRpw2ro',
+    'Engineering Studies':'1-aCiBhpb9gnX2n9oqy0pSMZOfVYhtA8J',
+    'Food Technology':'1-HXSOqkvgoajHeyGA8uavWHhDuj37I_Z',
+    'Hospitality':'1-U5tQp1cmi5wNn53bq4VMfuTKjFyZJYg',
+    'IPT':'1fi1ZlKOSE13V4amdhuL4lH3nfE0kxnx6',
+    'Software Design and Development':'1-Ps6UMefKsk7xZEej8wLf0gicgGROepM',
+    'French':'1-g-ADfzqRigpNb92xxvGxVI91vKUXSm4',
+    'Japanese':'1-5nAxOaaIgnLPxL0oQ0XucdXb5QSsUCy'
+  }
+};
+
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* a rough emoji per subject, matched on keywords */
+function subjectIcon(name){
+  const n = name.toLowerCase();
+  if (/ext|advanced maths|standard maths|maths/.test(n)) return '➗';
+  if (/biolog/.test(n)) return '🧬';
+  if (/chem/.test(n)) return '⚗️';
+  if (/physics/.test(n)) return '🔭';
+  if (/investigating|science/.test(n)) return '🔬';
+  if (/english/.test(n)) return '📖';
+  if (/history/.test(n)) return '🏛️';
+  if (/geograph/.test(n)) return '🌏';
+  if (/business|economic|commerce/.test(n)) return '📈';
+  if (/legal/.test(n)) return '⚖️';
+  if (/pdhpe|health/.test(n)) return '🏃';
+  if (/religion/.test(n)) return '🕊️';
+  if (/society|culture|cafs/.test(n)) return '👥';
+  if (/design|engineer|technolog/.test(n)) return '🛠️';
+  if (/food|hospitality/.test(n)) return '🍳';
+  if (/ipt|software|computing/.test(n)) return '💻';
+  if (/french|japanese|language|chinese|german/.test(n)) return '🗣️';
+  return '📘';
+}
+
+let year = TT.get('tt.resyear', '11'); if (!RES[year]) year = '11';
+
+function renderYears(){
+  const el = $('yeartabs');
+  el.innerHTML = Object.keys(RES).map(y =>
+    '<button class="yeartab" type="button" data-y="'+y+'" aria-pressed="'+(y===year)+'">Year '+y+'</button>').join('');
+  [...el.children].forEach(b => b.onclick = () => { year = b.dataset.y; TT.set('tt.resyear', year);
+    [...el.children].forEach(x => x.setAttribute('aria-pressed', String(x===b))); renderSubjects(); });
+}
+function renderSubjects(){
+  const subs = RES[year] || {};
+  $('subjgrid').innerHTML = Object.keys(subs).map(name =>
+    '<a class="subjcard" href="'+DRIVE+subs[name]+'" target="_blank" rel="noopener">' +
+      '<span class="ico">'+subjectIcon(name)+'</span>' +
+      '<span class="nm">'+esc(name)+'</span><span class="go">↗</span></a>').join('');
+}
+renderYears(); renderSubjects();
+</script>
+</body>
+</html>

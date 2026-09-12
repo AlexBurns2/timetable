@@ -41,7 +41,7 @@ button,select,input{font:inherit;color:inherit}
 [data-header="split"] .headbtns{flex-direction:row;align-self:center}
 /* capped so a long name or username never squeezes the Now/Next boxes */
 .brand{display:flex;flex-direction:column;justify-content:center;min-width:150px;
-  flex:0 1 auto;max-width:min(42%,420px)}
+  flex:0 1 auto;max-width:min(42%,420px);align-self:center}
 .brand h1{
   margin:0;font-family:var(--font-display);font-size:clamp(22px,3vw,34px);
   font-weight:var(--display-w);letter-spacing:var(--display-ls);
@@ -520,6 +520,10 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="a_contrast" class="sw"></div>
       <div class="custrow"><span>Reduce motion</span>
         <input type="checkbox" id="a_motion" class="sw"></div>
+      <div class="custrow"><span>Game sounds</span>
+        <input type="checkbox" id="g_sfx" class="sw"></div>
+      <div class="custrow"><span>Game animations</span>
+        <input type="checkbox" id="g_anim" class="sw"></div>
       <div class="custrow"><button class="btn" type="button" id="a_reset">Reset accessibility</button></div>
     </div>
   </div>
@@ -1644,6 +1648,8 @@ function renderA11y(){
   $('a_zoom_v').textContent = Math.round(zoom * 100) + '%';
   $('a_contrast').checked = contrast === 'high';
   $('a_motion').checked   = motion === 'reduced';
+  $('g_sfx').checked      = get('tt.gamesfx', false);
+  $('g_anim').checked     = get('tt.gameanim', true);
 }
 $('a_text').addEventListener('input', ev => {
   textScale = +ev.target.value / 100; set(LS.textScale, textScale);
@@ -1659,6 +1665,8 @@ $('a_contrast').addEventListener('change', ev => {
 $('a_motion').addEventListener('change', ev => {
   motion = ev.target.checked ? 'reduced' : 'normal'; set(LS.motion, motion); applyLook();
 });
+$('g_sfx').addEventListener('change', ev => set('tt.gamesfx', ev.target.checked));
+$('g_anim').addEventListener('change', ev => set('tt.gameanim', ev.target.checked));
 $('a_reset').onclick = () => {
   textScale = 1; zoom = 1; contrast = 'normal'; motion = 'normal';
   set(LS.textScale,1); set(LS.zoom,1); set(LS.contrast,'normal'); set(LS.motion,'normal');

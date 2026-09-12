@@ -77,6 +77,22 @@ canvas{
 .dgday .dgi{font-weight:700}
 .dgday.won .dgi{color:#2f9e44}
 .dgday.lost .dgi{color:#e5484d}
+/* daily: toolbar, archive, and the "how others did" summary bars */
+.dgtoolbar{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
+.dgarch{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#dgsummary{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px;margin-bottom:14px}
+#dgsummary[hidden]{display:none}
+.dgsumhd{font-size:13px;color:var(--muted);margin-bottom:10px}
+.dgsumhd .big{font-family:var(--font-num);font-weight:700;font-size:19px;color:var(--text)}
+.dgbars{display:flex;flex-direction:column;gap:6px}
+.dgbar{display:flex;align-items:center;gap:8px;font-size:13px}
+.dgbar .dgbl{width:20px;text-align:center;font-weight:700;color:var(--muted);font-family:var(--font-num)}
+.dgbar .dgbt{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:999px;overflow:hidden;height:18px}
+.dgbar .dgbt>i{display:block;height:100%;background:var(--accent);min-width:3px;border-radius:999px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.dgbar.miss .dgbt>i{background:#e5484d}
+.dgbar .dgbn{width:28px;text-align:right;font-family:var(--font-num);font-variant-numeric:tabular-nums}
+html[data-motion="reduced"] .dgbar .dgbt>i{transition:none}
 /* tetris leaderboard */
 .tlb{margin-top:16px;max-width:420px}
 .tlb h3{margin:0 0 8px;font-family:var(--font-display);font-size:15px;
@@ -144,6 +160,8 @@ canvas{
   font-size:12px;cursor:pointer;color:var(--text)}
 .glbtab:hover{border-color:var(--accent)}
 .glbtab.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.glbtab.glbwipe{border-color:#e5484d;color:#e5484d}
+.glbtab.glbwipe:hover{background:color-mix(in srgb,#e5484d 14%,var(--panel));border-color:#e5484d}
 /* minesweeper */
 .minesbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 .minesinfo{display:flex;gap:14px;font-family:var(--font-num);font-variant-numeric:tabular-nums;
@@ -275,8 +293,9 @@ html[data-motion="reduced"] .gwhint.fresh,html[data-motion="reduced"] .gwguessro
   <div class="pagehead">
     <h1>Games</h1>
     <div class="crumbs">
-      <a class="btn" href="home.html">&#8962; Home</a>
-      <a class="btn" href="./">&#8592; Timetable</a>
+      <a class="btn" href="home.html">🏠 Home</a>
+      <a class="btn" href="./">🗓️ Timetable</a>
+      <button class="btn icon" id="sfx" title="Game sounds">&#128266;</button>
       <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
     </div>
   </div>
@@ -298,6 +317,47 @@ $('mode').onclick = () => {
   TT.apply(Object.assign(st, { mode: next }));
 };
 
+/* ── game sound & animation (item 10) ───────────────────────────────
+   Tiny synthesised Web-Audio blips — no audio files. Sound defaults OFF,
+   animations honour the reduce-motion setting. Both live in Settings as
+   tt.gamesfx / tt.gameanim; the header 🔊 button is a quick toggle. */
+const SFX = (() => {
+  let ctx = null;
+  const on = () => TT.get('tt.gamesfx', false);
+  const ac = () => { if (!on()) return null;
+    try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume(); return ctx; } catch { return null; } };
+  function tone(freq, dur, type = 'sine', gain = 0.05, when = 0){
+    const c = ac(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    o.connect(g); g.connect(c.destination);
+    const t = c.currentTime + when;
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur);
+  }
+  const seq = (notes, type = 'triangle') => notes.forEach(([f, w]) => tone(f, 0.12, type, 0.05, w));
+  return {
+    move:  () => tone(200, 0.04, 'square', 0.025),
+    place: () => tone(150, 0.08, 'square', 0.035),
+    good:  () => { tone(523, 0.07, 'sine', 0.05); tone(784, 0.09, 'sine', 0.05, 0.06); },
+    bad:   () => tone(150, 0.2, 'sawtooth', 0.045),
+    win:   () => seq([[523,0],[659,0.09],[784,0.18],[1047,0.28]]),
+    lose:  () => seq([[440,0],[349,0.1],[262,0.22]], 'sawtooth'),
+    tick:  () => tone(900, 0.03, 'sine', 0.02),
+    flip:  () => tone(430, 0.04, 'sine', 0.03),
+    clear: () => seq([[660,0],[880,0.06]], 'triangle')
+  };
+})();
+const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
+(function initSfxBtn(){
+  const b = $('sfx'); if (!b) return;
+  const paint = () => { const on = TT.get('tt.gamesfx', false);
+    b.textContent = on ? '🔊' : '🔇'; b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Game sounds: on' : 'Game sounds: off'; };
+  b.onclick = () => { TT.set('tt.gamesfx', !TT.get('tt.gamesfx', false)); paint(); if (TT.get('tt.gamesfx',false)) SFX.flip(); };
+  paint();
+})();
+
 /* every game returns a cleanup fn so switching never leaves a timer running */
 let stop = null;
 const GAMES = [
@@ -312,7 +372,8 @@ const GAMES = [
   { id:'memory', ico:'🃏', name:'Memory', blurb:'Flip and match every pair in the fewest moves' },
   { id:'mines',  ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines — three sizes' },
   { id:'typing', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
-  { id:'react',  ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' }
+  { id:'react',  ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' },
+  { id:'leaderboards', ico:'🏆', name:'Leaderboards', blurb:'Every game’s board in one place' }
 ];
 
 function showGrid(){
@@ -397,7 +458,7 @@ const statLine = game => {
     return (s.week === tetrisWeek() && s.best != null) ? 'Best this week ' + fmtHMS(s.best*1000) : '';
   return Object.entries(s).map(([k,v]) => STAT_LABEL[k] ? STAT_LABEL[k]+' '+v : '').filter(Boolean).join(' · ');
 };
-const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak' };
+const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak', targets:'Best run' };
 
 /* Monday-anchored week index (local time); drives Tetris's weekly reset */
 function tetrisWeek(){
@@ -418,21 +479,22 @@ function fmtHMS(ms){
    this-week board, keyed by the metric a new personal best is recorded on.
    recordStat submits automatically; the panel is mounted by openGame. */
 const LB_GAMES = {
-  snake:     { metric:'high',    dir:'max', label:'High score',  fmt:v=>String(v) },
-  g2048:     { metric:'high',    dir:'max', label:'Score',       fmt:v=>String(v) },
-  typing:    { metric:'wpm',     dir:'max', label:'Words / min', fmt:v=>v+' wpm' },
-  react:     { metric:'fastest', dir:'min', label:'Reaction',    fmt:v=>v+' ms' },
-  classroom: { metric:'high',    dir:'max', label:'Correct',     fmt:v=>String(v) },
-  chain:     { metric:'best',    dir:'min', label:'Fewest hops', fmt:v=>String(v) }
+  snake:     { metric:'high',    dir:'max', label:'High score',      fmt:v=>String(v) },
+  g2048:     { metric:'high',    dir:'max', label:'Score',           fmt:v=>String(v) },
+  typing:    { metric:'wpm',     dir:'max', label:'Words / min',     fmt:v=>v+' wpm' },
+  react:     { metric:'fastest', dir:'min', label:'Reaction',        fmt:v=>v+' ms' },
+  classroom: { metric:'high',    dir:'max', label:'Correct',         fmt:v=>String(v) },
+  chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v) },
+  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) }
 };
-let lbState = null;   // { game, period, week, all } for the mounted panel
+let lbState = null;   // { game, period, week, all, canWipe } for the mounted panel
 
 async function lbSubmit(game, score){
   if (!TT.myEmail()) return;
   const lb = LB_GAMES[game]; if (!lb) return;
   try {
     const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score, week:tetrisWeek() } });
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.canWipe = d.canWipe; paintLB(); updateWipe(); }
   } catch(e){}
 }
 function mountLB(game){
@@ -442,23 +504,36 @@ function mountLB(game){
   panel.innerHTML =
     '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
     '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
-    '<button type="button" class="glbtab" data-p="all">All time</button></div></div>' +
+    '<button type="button" class="glbtab" data-p="all">All time</button>' +
+    '<button type="button" class="glbtab glbwipe" id="glbwipe" hidden>Reset board</button></div></div>' +
     '<div id="glbbody"><p class="how">Loading…</p></div>';
   $('stage').appendChild(panel);
-  lbState = { game, period:'week', week:null, all:null };
-  [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
+  lbState = { game, period:'week', week:null, all:null, canWipe:false };
+  [...panel.querySelectorAll('.glbtab:not(.glbwipe)')].forEach(b => b.onclick = () => {
     lbState.period = b.dataset.p;
-    [...panel.querySelectorAll('.glbtab')].forEach(t => t.classList.toggle('cur', t===b));
+    [...panel.querySelectorAll('.glbtab:not(.glbwipe)')].forEach(t => t.classList.toggle('cur', t===b));
     paintLB();
   });
+  $('glbwipe').onclick = () => wipeLB(game);
   loadLBoard(game);
+}
+function updateWipe(){
+  const b = $('glbwipe'); if (b) b.hidden = !(lbState && lbState.canWipe);
+}
+async function wipeLB(game){
+  const lb = LB_GAMES[game]; if (!lb) return;
+  if (!confirm('Clear the entire "'+lb.label+'" board for everyone? This cannot be undone.')) return;
+  try {
+    const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score:0, week:tetrisWeek(), action:'wipe' } });
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.canWipe = d.canWipe; paintLB(); updateWipe(); }
+  } catch(e){ alert('Could not reset the board: ' + e.message); }
 }
 async function loadLBoard(game){
   const lb = LB_GAMES[game], body = $('glbbody');
   if (!TT.myEmail()){ if (body) body.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboard.</p>'; return; }
   try {
     const d = await TT.api('/api/leaderboard', { params:{ game, metric:lb.metric, week:tetrisWeek() } });
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.canWipe = d.canWipe; paintLB(); updateWipe(); }
   } catch(e){ if (body) body.innerHTML = ''; }
 }
 function paintLB(){
@@ -761,13 +836,15 @@ BUILD.guesswho = host => {
 
 /* ── Daily Guess Who ───────────────────────────────────────────────
    The same mystery student for everyone in your year, once a day. The
-   server picks and grades — the answer never reaches the browser. One
-   hint to start, one more per wrong guess. Streak counts winning days. */
+   server still records every guess (streak, cross-device, the community
+   summary), but grading is done in the browser off the day's answer so
+   feedback is instant. A "how others did" summary and a Sept-1 archive
+   sit under the game. */
 BUILD.dailyguess = host => {
-  head(host, 'Daily Guess Who', 'One mystery student from your year — same for everyone. Replay past days, or go Unlimited.', '<div id="dg"></div>');
+  head(host, 'Daily Guess Who', 'One mystery student from your year — same for everyone. See how the year went, replay past days, or go Unlimited.', '<div id="dg"></div>');
   const box = document.getElementById('dg');
   let alive = true;
-
+  const norm = x => String(x==null?'':x).trim().toLowerCase().replace(/\s+/g,' ');
   const shiftISO = (d, delta) => { const x=new Date(d+'T00:00:00Z'); x.setUTCDate(x.getUTCDate()+delta); return x.toISOString().slice(0,10); };
   const shortDate = d => new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{month:'short',day:'numeric',timeZone:'UTC'});
 
@@ -781,13 +858,21 @@ BUILD.dailyguess = host => {
   loadDay(null);
 
   function render(s){
-    const isToday = s.date === s.today;
+    const isToday = s.date === s.today, epoch = s.epoch || '2026-09-01';
+    const answer = s.answer, total = s.totalHints;
+    let guesses = s.guesses||0, done = !!s.done, won = !!s.won, streak = s.streak||0;
+    let shown = s.shown != null ? s.shown : Math.min(guesses+1, total);
+
     box.innerHTML =
       '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></div>' +
       '<div style="margin-left:auto;display:flex;gap:10px;align-items:center">' +
-        '<span class="gwyou" style="margin:0">🔥 streak <b id="dgstreak">' + (s.streak||0) + '</b></span>' +
+        '<span class="gwyou" style="margin:0">🔥 streak <b id="dgstreak">' + streak + '</b></span>' +
         '<button class="btn" id="dgunlimited" type="button">Unlimited →</button></div></div>' +
+      '<div class="dgtoolbar"><button class="btn" id="dgarchbtn" type="button">📚 Archive</button>' +
+        '<button class="btn" id="dgsumbtn" type="button">📊 How others did</button></div>' +
       '<div class="dgdays" id="dgdays"></div>' +
+      '<div class="dgarch" id="dgarch" hidden></div>' +
+      '<div id="dgsummary" hidden></div>' +
       '<div class="gwhints" id="dghints"></div>' +
       '<div class="gwrow" id="dgrow">' +
         '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name the mystery student…">' +
@@ -796,52 +881,81 @@ BUILD.dailyguess = host => {
       '</div><div class="gwlog" id="dglog"></div>';
 
     document.getElementById('dgunlimited').onclick = () => openGame('guesswho');
+    document.getElementById('dgarchbtn').onclick = toggleArchive;
+    document.getElementById('dgsumbtn').onclick = () => toggleSummary(s.date);
     renderDays(s);
 
     const hintsEl = document.getElementById('dghints');
-    const cur = (s.hints || []).slice();
-    const paint = fresh => hintsEl.innerHTML = cur.map((h,i) =>
+    const allHints = s.hints || [];
+    const paint = fresh => hintsEl.innerHTML = allHints.slice(0, shown).map((h,i) =>
       '<div class="gwhint' + (i===fresh?' fresh':'') + '">' + h + '</div>').join('');
     paint(-1);
 
     const sc = document.getElementById('sc');
-    const setScore = st => sc.textContent = st.done ? '' : 'Guess ' + (st.guesses+1) + ' of ' + st.totalHints;
-    setScore(s);
-    recordStat('dailyguess', { key:'streak', mode:'set', value:s.streak||0 });
+    const setScore = () => sc.textContent = done ? '' : 'Guess ' + (guesses+1) + ' of ' + total;
+    setScore();
+    recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
 
-    if (s.done){ dgFinish(s, hintsEl, isToday); return; }
+    function finish(){
+      SFX[won ? 'win' : 'lose']();
+      const row = document.getElementById('dgrow'); if (row) row.style.display = 'none';
+      sc.textContent = '';
+      const banner = document.createElement('div');
+      banner.className = 'gwhint ' + (won ? 'win' : 'lose');
+      banner.innerHTML = won
+        ? 'You got it in <b>' + guesses + '</b>! It was <b>' + esc(answer) + '</b> 🎉'
+        : 'Out of guesses — it was <b>' + esc(answer) + '</b>.';
+      hintsEl.appendChild(banner);
+      const chip = document.querySelector('.dgday.cur');
+      if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(won?'won':'lost');
+        let ic = chip.querySelector('.dgi'); if(!ic){ ic=document.createElement('span'); ic.className='dgi'; chip.appendChild(ic); }
+        ic.textContent = won ? '✓' : '✗'; }
+      const note = document.createElement('p');
+      note.className = 'gwyou'; note.style.marginTop = '12px';
+      note.innerHTML = (isToday ? 'Come back tomorrow for a new one. ' : 'Pick another day above. ') +
+                       'Current streak: <b id="dgstreaknote">' + streak + '</b>.';
+      hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
+      openSummary(s.date);
+    }
+
+    if (done){ finish(); return; }
 
     const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
-    async function doGuess(){
-      const v = input.value.trim(); if (!v) return;
-      btn.disabled = true;
-      let r;
-      try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } }); }
-      catch(err){ if (alive){ btn.disabled = false; } return; }
-      if (!alive) return;
+    function doGuess(){
+      const v = input.value.trim(); if (!v || done) return;
+      guesses++;
+      const correct = norm(v) === norm(answer);          // graded locally — instant, no round-trip
       const row = document.createElement('div');
-      row.className = 'gwguessrow ' + (r.correct ? 'win' : 'miss');
-      row.textContent = (r.correct ? '✓ ' : '✗ ') + v;
+      row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
+      row.textContent = (correct ? '✓ ' : '✗ ') + v;
       document.getElementById('dglog').prepend(row);
       input.value = '';
-      if (r.nextHint){ cur.push(r.nextHint); paint(cur.length-1); }
-      recordStat('dailyguess', { key:'streak', mode:'set', value:r.streak||0 });
-      document.getElementById('dgstreak').textContent = r.streak||0;
-      if (r.done){ dgFinish(r, hintsEl, isToday); }
-      else { setScore(r); btn.disabled = false; input.focus(); }
+      if (correct){ won = true; done = true; }
+      else if (guesses >= total){ done = true; }
+      else { shown = Math.min(guesses+1, total); paint(shown-1); }
+      /* record in the background so streak, the summary and cross-device stay right */
+      TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } })
+        .then(r => { if (!alive || !r) return; streak = r.streak != null ? r.streak : streak;
+          const a=document.getElementById('dgstreak'); if(a) a.textContent = streak;
+          const b=document.getElementById('dgstreaknote'); if(b) b.textContent = streak;
+          recordStat('dailyguess', { key:'streak', mode:'set', value:streak }); })
+        .catch(()=>{});
+      if (done) finish(); else { setScore(); input.focus(); }
     }
     btn.onclick = doGuess;
     input.addEventListener('keydown', e => { if (e.key==='Enter') doGuess(); });
     input.focus();
   }
 
-  /* a chip per day for the last two weeks: ✓ won, ✗ lost, plain = unplayed */
+  /* a chip per day for the last two weeks (never before the epoch) */
   function renderDays(s){
     const daysEl = document.getElementById('dgdays');
     const hist = {}; (s.history||[]).forEach(h => hist[h.date] = h);
+    const epoch = s.epoch || '2026-09-01';
     let html = '';
     for (let i=0;i<14;i++){
-      const d = shiftISO(s.today, -i), h = hist[d];
+      const d = shiftISO(s.today, -i); if (d < epoch) break;
+      const h = hist[d];
       const status = h && h.won ? 'won' : (h && h.done ? 'lost' : 'open');
       const icon = h && h.won ? '✓' : (h && h.done ? '✗' : '');
       html += '<button class="dgday ' + status + (d===s.date ? ' cur' : '') + '" data-date="' + d + '">' +
@@ -852,26 +966,50 @@ BUILD.dailyguess = host => {
     [...daysEl.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
   }
 
-  function dgFinish(s, hintsEl, isToday){
-    const row = document.getElementById('dgrow'); if (row) row.style.display = 'none';
-    const sc = document.getElementById('sc'); if (sc) sc.textContent = '';
-    const st = document.getElementById('dgstreak'); if (st) st.textContent = s.streak||0;
-    const banner = document.createElement('div');
-    banner.className = 'gwhint ' + (s.won ? 'win' : 'lose');
-    banner.innerHTML = s.won
-      ? 'You got it in <b>' + s.guesses + '</b>! It was <b>' + esc(s.answer) + '</b> 🎉'
-      : 'Out of guesses — it was <b>' + esc(s.answer) + '</b>.';
-    hintsEl.appendChild(banner);
-    // reflect the result on the current chip without a refetch
-    const chip = document.querySelector('.dgday.cur');
-    if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(s.won?'won':'lost');
-      let ic = chip.querySelector('.dgi'); if(!ic){ ic=document.createElement('span'); ic.className='dgi'; chip.appendChild(ic); }
-      ic.textContent = s.won ? '✓' : '✗'; }
-    const note = document.createElement('p');
-    note.className = 'gwyou'; note.style.marginTop = '12px';
-    note.innerHTML = (isToday ? 'Come back tomorrow for a new one. ' : 'Pick another day above. ') +
-                     'Current streak: <b>' + (s.streak||0) + '</b>.';
-    hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
+  /* archive: every past day since the epoch that has results (loaded on demand) */
+  let archLoaded = false;
+  async function toggleArchive(){
+    const el = document.getElementById('dgarch'), btn = document.getElementById('dgarchbtn');
+    if (!el.hidden){ el.hidden = true; btn.textContent = '📚 Archive'; return; }
+    el.hidden = false; btn.textContent = '📚 Hide archive';
+    if (archLoaded) return;
+    el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    try {
+      const d = await TT.api('/api/daily', { params:{ archive:1 } });
+      const arr = d.archive || [];
+      if (!arr.length){ el.innerHTML = '<p class="how" style="margin:0">No past days with results yet — check back once people have played.</p>'; return; }
+      el.innerHTML = arr.map(a => '<button class="dgday" data-date="'+a.date+'" title="'+a.wins+' of '+a.played+' solved it">' +
+        '<span class="dgd">'+esc(shortDate(a.date))+'</span><span class="dgi">'+a.wins+'/'+a.played+'</span></button>').join('');
+      [...el.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
+      archLoaded = true;
+    } catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the archive.</p>'; }
+  }
+
+  /* "how others did": win/loss + guess-count histogram for the loaded day */
+  async function openSummary(date){ const el = document.getElementById('dgsummary'); el.hidden = false;
+    document.getElementById('dgsumbtn').textContent = '📊 Hide summary'; await loadSummary(date); }
+  async function toggleSummary(date){ const el = document.getElementById('dgsummary'), btn = document.getElementById('dgsumbtn');
+    if (!el.hidden){ el.hidden = true; btn.textContent = '📊 How others did'; return; }
+    await openSummary(date); }
+  async function loadSummary(date){
+    const el = document.getElementById('dgsummary'); el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); renderSummary(el, d.summary); }
+    catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the summary.</p>'; }
+  }
+  function renderSummary(el, sum){
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet — be the first.</p>'; return; }
+    const rate = Math.round(sum.wins / sum.played * 100);
+    const max = Math.max(1, sum.losses, ...Object.keys(sum.dist).map(k => sum.dist[k]));
+    const bar = (label, n, miss) => '<div class="dgbar' + (miss?' miss':'') + '"><span class="dgbl">' + label + '</span>' +
+      '<span class="dgbt"><i style="width:' + (n/max*100) + '%"></i></span><span class="dgbn">' + n + '</span></div>';
+    let rows = '';
+    for (let i=1;i<=sum.totalHints;i++) rows += bar(i, sum.dist[i]||0, false);
+    rows += bar('✗', sum.losses, true);
+    el.innerHTML =
+      '<div class="dgsumhd"><span class="big">' + sum.played + '</span> played · <span class="big">' + rate + '%</span> solved · ' +
+        '<b>' + sum.wins + '</b> won, <b>' + sum.losses + '</b> lost</div>' +
+      '<div class="dgbars">' + rows + '</div>' +
+      '<p class="how" style="margin:8px 0 0">Guesses taken to solve it (✗ = didn’t get it).</p>';
   }
 
   return () => { alive = false; };
@@ -926,6 +1064,8 @@ BUILD.tetris = host => {
     '<div class="tbtns">' +
       '<button class="btn primary" id="tstart" type="button">Start</button>' +
       '<button class="btn" id="tpause" type="button">Pause</button>' +
+      '<button class="btn" id="tundo" type="button" hidden>↶ Undo</button>' +
+      '<button class="btn" id="tredo" type="button" hidden>↷ Redo</button>' +
       '<button class="btn" id="tsave" type="button" hidden>Save</button>' +
       '<button class="btn" id="tcontrols" type="button">Controls</button>' +
     '</div>' +
@@ -977,6 +1117,7 @@ BUILD.tetris = host => {
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   let rnd, bag = [], queue = [];
+  let undoStack = [], redoStack = [];        // practice mode only — history of committed states
   function newRng(){ rnd = mode==='sprint' ? mulberry32(0x9e3779b9 ^ wk) : mulberry32((Math.random()*4294967296)>>>0); bag = []; }
   function nextType(){
     if (!bag.length){ bag = KEYS.slice();
@@ -1045,6 +1186,7 @@ BUILD.tetris = host => {
     if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800; }
     if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
     holdUsed=false; spawnNext(now); updateStats();
+    if (mode==='practice') pushHistory();          // snapshot each placement so it can be undone
   }
 
   /* ── loop ── */
@@ -1054,7 +1196,24 @@ BUILD.tetris = host => {
     ? Math.max(17, 700 * Math.pow(0.55, (elapsedMs/1000)/12))
     : cfg.grav;
   const saveable = () => mode==='zen' || mode==='survival';
-  const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen'}[mode] || mode);
+  const scored = () => mode==='zen' || mode==='practice';    // score-based (not a clock)
+  const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen',practice:'Practice'}[mode] || mode);
+  /* ── practice: undo / redo of committed placements (nothing is tracked) ── */
+  function pushHistory(){ undoStack.push(serialize()); if (undoStack.length>300) undoStack.shift(); redoStack.length=0; updatePracticeBtns(); }
+  function restoreInto(s){
+    applyState(s);
+    if (phase!=='playing'){ phase='playing'; hideOver(); clearInterval(loopId); loopId=setInterval(loop,16); }
+    baseTime = Date.now()-elapsedMs; lastTick=performance.now();
+    renderStatsLabels(); updateStats(); draw(); updatePracticeBtns();
+  }
+  function undo(){ if (mode!=='practice' || undoStack.length<=1) return; redoStack.push(undoStack.pop()); restoreInto(undoStack[undoStack.length-1]); }
+  function redo(){ if (mode!=='practice' || !redoStack.length) return; const s=redoStack.pop(); undoStack.push(s); restoreInto(s); }
+  function updatePracticeBtns(){
+    const u=$$('tundo'), r=$$('tredo'); if (!u||!r) return;
+    const on = mode==='practice';
+    u.hidden = !on; r.hidden = !on;
+    if (on){ u.disabled = undoStack.length<=1; r.disabled = redoStack.length===0; }
+  }
   function loop(){
     if (phase!=='playing') return;
     const now = performance.now();
@@ -1128,14 +1287,15 @@ BUILD.tetris = host => {
   }
   function renderStatsLabels(){
     $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
-    $$('ttimelabel').textContent = mode==='zen' ? 'Score' : 'Time';
+    $$('ttimelabel').textContent = scored() ? 'Score' : 'Time';
     const bestRow = $$('tbest').closest('.tstat');
-    if (bestRow) bestRow.style.display = 'flex';   // every mode now has a "best"
+    if (bestRow) bestRow.style.display = mode==='practice' ? 'none' : 'flex';   // practice isn't tracked
     $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : (mode==='survival' ? 'Best (all-time)' : 'Best score');
     $$('tbest').textContent = fmtBest();
+    updatePracticeBtns();
   }
   function updateStats(){
-    $$('ttime').textContent = mode==='zen' ? String(score) : fmtHMS(elapsedMs);
+    $$('ttime').textContent = scored() ? String(score) : fmtHMS(elapsedMs);
     $$('tgoal').textContent = mode==='sprint' ? Math.max(0, TARGET-cleared) : cleared;
   }
   function showOver(title, sub, actions){
@@ -1156,6 +1316,7 @@ BUILD.tetris = host => {
     holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
     spawnNext(performance.now());
+    undoStack.length=0; redoStack.length=0; if (mode==='practice') pushHistory();   // initial snapshot
     phase='playing'; baseTime=Date.now(); lastTick=performance.now(); hideOver();
     $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
     clearInterval(loopId); loopId=setInterval(loop,16);
@@ -1223,6 +1384,8 @@ BUILD.tetris = host => {
       if (z.best==null||ms>z.best) z.best=ms; s.tetriszen={best:z.best}; TT.set('tt.stats',s);
       submitScore(ms); showOver('Survived '+fmtHMS(ms), restart);
       clearState();
+    } else if (mode==='practice'){   // nothing tracked — offer undo of the fatal piece
+      showOver('Topped out — score '+score, cleared+' lines · Undo the last piece, or '+restart);
     } else {   // zen — track best score locally + push current/best to the Zen board
       const s=allStats(); const zs=s.tetriszenscore||{best:null};
       if (zs.best==null||score>zs.best) zs.best=score; s.tetriszenscore={best:zs.best}; TT.set('tt.stats',s);
@@ -1257,6 +1420,7 @@ BUILD.tetris = host => {
   }
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
+    if (mode==='practice'){ el.innerHTML=''; return; }   // practice has no board
     if (!TT.myEmail()){ el.innerHTML=''; return; }
     try {
       if (mode==='sprint'){
@@ -1306,7 +1470,8 @@ BUILD.tetris = host => {
   const MODES=[
     ['sprint','Sprint','Clear 40 lines as fast as you can — weekly board'],
     ['survival','Survival','Endless, speeding up — all-time board'],
-    ['zen','Zen','Endless and relaxed — no clock, no leaderboard']
+    ['zen','Zen','Endless and relaxed — no clock, no leaderboard'],
+    ['practice','Practice','Undo & redo freely — nothing tracked']
   ];
   function renderModes(){
     $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+'</button>').join('');
@@ -1316,7 +1481,7 @@ BUILD.tetris = host => {
     phase='ready'; clearInterval(loopId); emptyBoard(); newRng();
     renderModes(); renderStatsLabels(); updateStats(); updateSaveBtn(); draw();
     $$('tstart').textContent='Start'; $$('tpause').textContent='Pause';
-    const titles = { sprint:'Sprint — 40 lines', survival:'Survival — rising speed', zen:'Zen — endless & relaxed' };
+    const titles = { sprint:'Sprint — 40 lines', survival:'Survival — rising speed', zen:'Zen — endless & relaxed', practice:'Practice — undo & redo' };
     showOver(titles[mode], 'Press Start or '+keyLabel(cfg.keys.hardDrop));
     loadLB();
     if (saveable() && TT.myEmail()){          // offer to resume a saved game
@@ -1367,6 +1532,10 @@ BUILD.tetris = host => {
     const K=cfg.keys;
     if (keyMatch(e,K.restart)){ begin(); e.preventDefault(); return; }
     if (keyMatch(e,K.pause) && (phase==='playing'||phase==='paused')){ togglePause(); e.preventDefault(); return; }
+    if (mode==='practice'){                                  // U = undo, Y = redo, any time
+      if (e.key==='u'||e.key==='U'){ undo(); e.preventDefault(); return; }
+      if (e.key==='y'||e.key==='Y'){ redo(); e.preventDefault(); return; }
+    }
     if (phase==='ready' || phase==='over'){ if (keyMatch(e,K.hardDrop)){ begin(); e.preventDefault(); } return; }
     if (phase!=='playing') return;
     const now=performance.now();
@@ -1392,6 +1561,8 @@ BUILD.tetris = host => {
   /* ── wire up ── */
   $$('tstart').onclick = begin;
   $$('tpause').onclick = () => { if (phase==='playing'||phase==='paused') togglePause(); };
+  $$('tundo').onclick = undo;
+  $$('tredo').onclick = redo;
   $$('tsave').onclick = saveGame;
   $$('tcontrols').onclick = () => { const c=$$('tcfg'); c.hidden=!c.hidden; if (!c.hidden) renderCfg(); };
   $$('tover').onclick = () => { if ($$('tover')._actions) return; if (phase==='paused') togglePause(); else begin(); };
@@ -1444,9 +1615,18 @@ BUILD.classroom = host => {
     if (allTeachers.length >= 3 && withTeacher.length >= 2) types.push('teacher');
     if (allSubjects.length >= 3) types.push('subject');
 
-    const TIME = 9000;
     let correct = 0, streak = 0, lives = 3, lastKey = '', qStart = 0;
+    const timeFor = () => Math.max(4000, 9000 - correct*250 - streak*150);   // speeds up as you go
 
+    /* a plausible wrong room code: one digit nudged by ±1 (ER0018.169 → ER0019.168) */
+    function nearMiss(code){
+      const pos = []; for (let i=0;i<code.length;i++) if (/\d/.test(code[i])) pos.push(i);
+      if (!pos.length) return code + '2';
+      const i = pos[(Math.random()*pos.length)|0];
+      let d = +code[i], nd = Math.random()<0.5 ? d+1 : d-1;
+      if (nd < 0) nd = 1; if (nd > 9) nd = 8; if (nd === d) nd = (d+1)%10;
+      return code.slice(0,i) + nd + code.slice(i+1);
+    }
     /* 4 options: the answer plus distinct distractors from the same field */
     function opts4(pool, answer){
       const out = [answer];
@@ -1454,6 +1634,19 @@ BUILD.classroom = host => {
         if (out.length >= 4) break;
         if (!out.some(o => norm(o) === norm(v))) out.push(v);
       }
+      return shuffle(out);
+    }
+    /* rooms get one-digit-off red herrings mixed with real other rooms, so the
+       options look confusingly alike rather than obviously different buildings */
+    function roomOpts(answer){
+      const out = [answer];
+      const pool = shuffle([ nearMiss(answer), nearMiss(answer), nearMiss(answer),
+                             ...shuffle(allRooms.filter(r => norm(r) !== norm(answer))).slice(0,2) ]);
+      for (const v of pool){ if (out.length >= 4) break;
+        if (v && !out.some(o => norm(o) === norm(v))) out.push(v); }
+      let guard = 0;
+      while (out.length < 4 && guard++ < 30){ const v = nearMiss(answer);
+        if (v && !out.some(o => norm(o) === norm(v))) out.push(v); }
       return shuffle(out);
     }
     function nextQ(){
@@ -1468,7 +1661,7 @@ BUILD.classroom = host => {
       if (type === 'room'){
         prompt = 'Where is your ' + esc(cls.subject) + '?';
         clue = [cls.teacher ? 'with ' + cls.teacher : '', periodTxt(cls.period)].filter(Boolean).join(' · ');
-        answer = cls.room; options = opts4(allRooms, cls.room);
+        answer = cls.room; options = roomOpts(cls.room);
       } else if (type === 'teacher'){
         prompt = 'Who takes your ' + esc(cls.subject) + '?';
         clue = [roomTxt(cls.room), periodTxt(cls.period)].filter(Boolean).join(' · ');
@@ -1499,6 +1692,7 @@ BUILD.classroom = host => {
         wrap.appendChild(b);
       });
       qStart = Date.now();
+      const TIME = timeFor();
       const bar = $('crbar');
       timer = setInterval(() => {
         const left = Math.max(0, TIME - (Date.now() - qStart));
@@ -1509,11 +1703,12 @@ BUILD.classroom = host => {
     function resolve(btn, right, answer, wrap){
       if (timer){ clearInterval(timer); timer = null; }
       [...wrap.children].forEach(b => { b.disabled = true; if (b.textContent === answer) b.classList.add('right'); });
-      if (right){ correct++; streak++; setTimeout(() => { if (alive) nextQ(); }, 520); }
-      else { if (btn) btn.classList.add('wrong'); streak = 0; lives--;
+      if (right){ correct++; streak++; SFX.good(); setTimeout(() => { if (alive) nextQ(); }, 520); }
+      else { if (btn) btn.classList.add('wrong'); SFX.bad(); streak = 0; lives--;
         setTimeout(() => { if (!alive) return; lives ? nextQ() : finish(); }, 950); }
     }
     function finish(){
+      SFX.lose();
       const best = recordStat('classroom', { key:'high', mode:'max', value:correct });
       box.innerHTML =
         '<div class="crq"><div class="crsub">' + correct + ' correct</div>' +
@@ -1527,90 +1722,99 @@ BUILD.classroom = host => {
   return () => { alive = false; if (timer) clearInterval(timer); };
 };
 
-/* ── Six Degrees ───────────────────────────────────────────────────
-   Builds a graph of your classmates, linking any two who share one of
-   your classes, then drops you on one and asks you to hop through the
-   shared classes to reach a target person in as few hops as possible. */
+/* ── Six Degrees (timed gauntlet) ───────────────────────────────────
+   Graph of your classmates linked by shared classes. You're dropped on a
+   node and given a target; reach it and a NEW target appears instantly.
+   Chain as many as you can before the clock runs out. Targets sit further
+   away as your score climbs, so a lucky short hop can't carry the board.  */
 BUILD.chain = host => {
-  head(host, 'Six Degrees', 'Hop student to student through a class they share and reach the target — before your hops run out. Match par for a clean run.', '<div id="ch"></div>');
+  head(host, 'Six Degrees',
+    'Reach the target by hopping through a class you share — then do it again, and again. How many can you chain before the clock runs out?',
+    '<div id="ch"></div>');
   const box = document.getElementById('ch');
-  let alive = true;
+  let alive = true, timer = null;
+  const RUN_TIME = 90000;
+  const clearTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
   (async () => {
     box.innerHTML = '<p class="how">Loading…</p>';
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
-      start();
+      startScreen();
     } catch (err){
       if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
     }
   })();
 
-  function start(){
+  function build(){
     const nodes = (gwData.classPool || []).filter(p => p.subjects && p.subjects.length);
-    if (nodes.length < 6){
-      box.innerHTML = '<p class="how">Not enough classmates with shared classes to play. Open your timetable first.</p>';
-      return;
-    }
-    /* link classmates who share one of your classes (same subject bucket) */
+    if (nodes.length < 6) return null;
     const bySubj = new Map();
-    nodes.forEach((p,i) => p.subjects.forEach(s => {
-      if (!bySubj.has(s)) bySubj.set(s, []);
-      bySubj.get(s).push(i);
-    }));
+    nodes.forEach((p,i) => p.subjects.forEach(s => { if (!bySubj.has(s)) bySubj.set(s, []); bySubj.get(s).push(i); }));
     const adj = nodes.map(() => new Set());
     for (const arr of bySubj.values())
-      for (let a=0; a<arr.length; a++) for (let b=a+1; b<arr.length; b++){
-        adj[arr[a]].add(arr[b]); adj[arr[b]].add(arr[a]);
-      }
+      for (let a=0; a<arr.length; a++) for (let b=a+1; b<arr.length; b++){ adj[arr[a]].add(arr[b]); adj[arr[b]].add(arr[a]); }
     const bfs = src => {
-      const dist = nodes.map(() => Infinity); dist[src] = 0;
-      const q = [src];
-      for (let h=0; h<q.length; h++){ const c = q[h];
-        for (const n of adj[c]) if (dist[n] === Infinity){ dist[n] = dist[c]+1; q.push(n); } }
+      const dist = nodes.map(() => Infinity); dist[src] = 0; const q = [src];
+      for (let h=0; h<q.length; h++){ const c = q[h]; for (const n of adj[c]) if (dist[n] === Infinity){ dist[n] = dist[c]+1; q.push(n); } }
       return dist;
     };
-    const rand = n => (Math.random()*n)|0;
     const sharedClass = (a,b) => nodes[a].subjects.find(s => nodes[b].subjects.includes(s));
+    return { nodes, adj, bfs, sharedClass };
+  }
+  const rand = n => (Math.random()*n)|0;
 
-    /* prefer a longer chain (3–6 hops); widen the window if the graph is small */
-    let game = null;
-    for (const [lo,hi] of [[3,6],[2,6],[2,8]]){
-      for (let t=0; t<80 && !game; t++){
-        const target = rand(nodes.length);
-        const dist = bfs(target);
-        const cands = [];
-        for (let i=0; i<nodes.length; i++) if (dist[i] >= lo && dist[i] <= hi) cands.push(i);
-        if (cands.length) game = { start: cands[rand(cands.length)], target, dist };
-      }
-      if (game) break;
+  function startScreen(){
+    const g = build();
+    if (!g){ box.innerHTML = '<p class="how">Not enough classmates with shared classes to play. Open your timetable first.</p>'; return; }
+    box.innerHTML =
+      '<div class="chhead"><div class="chtarget">Timed gauntlet</div>' +
+      '<div class="chmeta">Reach each target, then chain straight into the next. ' + (RUN_TIME/1000) + ' seconds on the clock — targets get further apart as you go.</div></div>' +
+      '<div class="gwrow"><button class="btn primary" id="chstart" type="button">Start run</button></div>';
+    document.getElementById('sc').textContent = 'Best ' + (statVal('chain','targets') != null ? statVal('chain','targets') : '—');
+    document.getElementById('chstart').onclick = () => run(g);
+  }
+
+  function run(g){
+    const { nodes, adj, bfs, sharedClass } = g;
+    let cur = rand(nodes.length), tries = 0;
+    while (adj[cur].size === 0 && tries++ < 50) cur = rand(nodes.length);   // start with edges
+    let score = 0, target = null, dist = null, ended = false;
+    const t0 = Date.now();
+
+    function pickTarget(){
+      dist = bfs(cur);
+      const minD = 2 + Math.min(4, Math.floor(score / 4));                  // further as you climb
+      let cands = [];
+      for (let d = minD; d >= 1 && !cands.length; d--)
+        for (let i=0; i<nodes.length; i++) if (i !== cur && dist[i] !== Infinity && dist[i] >= d) cands.push(i);
+      target = cands.length ? cands[rand(cands.length)] : null;
     }
-    if (!game){
-      box.innerHTML = '<p class="how">Couldn’t find two classmates far enough apart to make a puzzle. Try again.</p>';
-      return;
-    }
-
-    let cur = game.start, steps = 0, path = [game.start], done = false;
-    const par = game.dist[game.start], dist = game.dist;
-    const budget = par + 2;                       /* a couple of spare hops, then you're out */
-
+    pickTarget();
     render();
+
+    timer = setInterval(() => {
+      if (ended) return;
+      const left = Math.max(0, RUN_TIME - (Date.now() - t0));
+      const bar = document.getElementById('chbar'); if (bar) bar.style.width = (left / RUN_TIME * 100) + '%';
+      const clock = document.getElementById('chclock'); if (clock) clock.textContent = Math.ceil(left/1000) + 's';
+      if (left <= 0) finish();
+    }, 100);
+
     function render(){
+      if (target == null){ finish(); return; }
       const nbrs = [...adj[cur]];
-      const good = nbrs.filter(n => dist[n] < dist[cur]);       /* moves toward target */
-      const rest = shuffle(nbrs.filter(n => dist[n] >= dist[cur]));
-      let show = [...good, ...rest].slice(0, 14);
-      if (nbrs.includes(game.target) && !show.includes(game.target)) show[show.length-1] = game.target;
+      let show = shuffle(nbrs.slice()).slice(0, 14);
+      if (nbrs.includes(target) && !show.includes(target)) show[show.length-1] = target;
       show = shuffle(show);
       box.innerHTML =
+        '<div class="crtimer"><i id="chbar" style="width:100%"></i></div>' +
         '<div class="chhead">' +
-          '<div class="chtarget">Reach <b>' + esc(nodes[game.target].name) + '</b>' +
-            (nodes[game.target].year ? ' <span class="chyr">Yr ' + esc(nodes[game.target].year) + '</span>' : '') + '</div>' +
-          '<div class="chmeta">On <b>' + esc(nodes[cur].name) + '</b> · ' + (budget-steps) + ' hop' + (budget-steps===1?'':'s') + ' left · par ' + par + '</div>' +
+          '<div class="chtarget">Reach <b>' + esc(nodes[target].name) + '</b>' +
+            (nodes[target].year ? ' <span class="chyr">Yr ' + esc(nodes[target].year) + '</span>' : '') + '</div>' +
+          '<div class="chmeta">On <b>' + esc(nodes[cur].name) + '</b> · reached <b>' + score + '</b> · <b id="chclock">' + Math.ceil(RUN_TIME/1000) + 's</b> left</div>' +
         '</div>' +
-        '<div class="chtrail">' + path.map(p => esc(nodes[p].name)).join(' → ') + '</div>' +
-        '<div class="chopts" id="chopts"></div>' +
-        '<div class="gwrow"><button class="btn" id="chnew" type="button">New pair</button></div>';
+        '<div class="chopts" id="chopts"></div>';
       const opts = document.getElementById('chopts');
       show.forEach(n => {
         const b = document.createElement('button');
@@ -1619,40 +1823,30 @@ BUILD.chain = host => {
         b.onclick = () => move(n);
         opts.appendChild(b);
       });
-      document.getElementById('chnew').onclick = start;
-      document.getElementById('sc').textContent = (budget-steps) + ' hop' + (budget-steps===1?'':'s') + ' left';
+      document.getElementById('sc').textContent = 'Reached ' + score;
     }
     function move(n){
-      if (done) return;
-      cur = n; steps++; path.push(n);
-      if (n === game.target){
-        done = true;
-        recordStat('chain', { key:'cleared', mode:'count', value:1 });
-        const best = recordStat('chain', { key:'best', mode:'min', value:steps });
-        box.innerHTML =
-          '<div class="chhead"><div class="chtarget">Reached <b>' + esc(nodes[game.target].name) + '</b> 🎉</div>' +
-            '<div class="chmeta">' + steps + ' hop' + (steps===1?'':'s') + ' (par ' + par + ')' + (steps===par?' — par!':'') + ' · fewest ' + best + '</div></div>' +
-          '<div class="chtrail">' + path.map(p => esc(nodes[p].name)).join(' → ') + '</div>' +
-          '<div class="gwrow"><button class="btn primary" id="chnew" type="button">New pair</button></div>';
-        document.getElementById('sc').textContent = 'Done in ' + steps + '!';
-        document.getElementById('chnew').onclick = start;
-        return;
-      }
-      if (steps >= budget){                         /* out of hops — didn't make it */
-        done = true;
-        box.innerHTML =
-          '<div class="chhead"><div class="chtarget">Out of hops — <b>' + esc(nodes[game.target].name) + '</b> got away</div>' +
-            '<div class="chmeta">You had ' + budget + ' hops to make par ' + par + '</div></div>' +
-          '<div class="chtrail">' + path.map(p => esc(nodes[p].name)).join(' → ') + '</div>' +
-          '<div class="gwrow"><button class="btn primary" id="chnew" type="button">New pair</button></div>';
-        document.getElementById('sc').textContent = 'Out of hops';
-        document.getElementById('chnew').onclick = start;
-        return;
-      }
+      if (ended) return;
+      const hit = n === target;
+      cur = n;
+      if (hit){ score++; SFX.good(); pickTarget(); } else SFX.move();
       render();
     }
+    function finish(){
+      if (ended) return;
+      ended = true; clearTimer();
+      const best = recordStat('chain', { key:'targets', mode:'max', value:score });  // metric matches LB → auto-submits
+      recordStat('chain', { key:'runs', mode:'count', value:1 });
+      SFX.win();
+      box.innerHTML =
+        '<div class="chhead"><div class="chtarget">Time! You reached <b>' + score + '</b> ' + (score===1?'target':'targets') + ' 🎉</div>' +
+          '<div class="chmeta">Best run <b>' + best + '</b></div></div>' +
+        '<div class="gwrow"><button class="btn primary" id="chagain" type="button">Play again</button></div>';
+      document.getElementById('sc').textContent = 'Reached ' + score;
+      document.getElementById('chagain').onclick = () => startScreen();
+    }
   }
-  return () => { alive = false; };
+  return () => { alive = false; clearTimer(); };
 };
 
 /* ── Odd One Out ───────────────────────────────────────────────────
@@ -1680,7 +1874,7 @@ BUILD.oddone = host => {
       return;
     }
     let score = 0, streak = 0, lives = 3, lastSubj = '';
-    const TIME0 = 8000, TMIN = 3500;
+    const TIME0 = 8000, TMIN = 3000, runStart = Date.now();
     function round(){
       let subj, tries = 0;
       do { subj = subjects[(Math.random()*subjects.length)|0]; } while (subj === lastSubj && subjects.length > 1 && tries++ < 6);
@@ -1691,7 +1885,9 @@ BUILD.oddone = host => {
       render(subj, shuffle([...three, odd]), odd);
     }
     function render(subj, cards, odd){
-      const time = Math.max(TMIN, TIME0 - streak*400);
+      /* speeds up with your streak AND with time survived in the run */
+      const elapsed = Date.now() - runStart;
+      const time = Math.max(TMIN, TIME0 - streak*300 - Math.floor(elapsed/8000)*300);
       box.innerHTML =
         '<div class="crtimer"><i id="oobar" style="width:100%"></i></div>' +
         '<div class="crq"><div class="crprog">Score ' + score + ' · streak ' + streak + '</div>' +
@@ -1717,12 +1913,13 @@ BUILD.oddone = host => {
     function resolve(btn, right, wrap){
       if (timer){ clearInterval(timer); timer = null; }
       [...wrap.children].forEach(b => { b.disabled = true; if (b.dataset.odd) b.classList.add('right'); });
-      if (right){ score++; streak++; recordStat('oddone', { key:'high', mode:'max', value:score });
+      if (right){ score++; streak++; SFX.good(); recordStat('oddone', { key:'high', mode:'max', value:score });
         setTimeout(() => { if (alive) round(); }, 520); }
-      else { if (btn) btn.classList.add('wrong'); streak = 0; lives--;
+      else { if (btn) btn.classList.add('wrong'); SFX.bad(); streak = 0; lives--;
         setTimeout(() => { if (!alive) return; lives ? round() : finish(); }, 1000); }
     }
     function finish(){
+      SFX.lose();
       const best = statVal('oddone', 'high') || score;
       box.innerHTML =
         '<div class="crq"><div class="crsub">Score ' + score + '</div><div class="crmeta">best ' + best + '</div></div>' +
@@ -1764,17 +1961,17 @@ BUILD.memory = host => {
   function flip(i){
     if (locked || up.includes(i) || matched.has(i)) return;
     if (!started){ started = true; startTimer(); }
-    up.push(i); paint();
+    up.push(i); SFX.flip(); paint();
     if (up.length === 2){
       moves++; $('memmoves').textContent = 'Moves ' + moves;
       const [a,b] = up;
-      if (cards[a] === cards[b]){ matched.add(a); matched.add(b); up = []; paint();
+      if (cards[a] === cards[b]){ matched.add(a); matched.add(b); up = []; SFX.good(); paint();
         if (matched.size === cards.length) win(); }
       else { locked = true; setTimeout(() => { up = []; locked = false; paint(); }, 700); }
     }
   }
   function win(){
-    stopTimer();
+    stopTimer(); SFX.win();
     const secs = Math.round((Date.now()-tstart)/1000);
     const best = recordStat('memory', { key:'best'+lvl, mode:'min', value:moves });
     recordStat('memory', { key:'plays', mode:'count', value:1 });
@@ -1828,12 +2025,12 @@ BUILD.snake = host => {
     else {
       snake.unshift(h);
       if (h.x===food.x && h.y===food.y){
-        score++;
+        score++; SFX.tick();
         do { food = {x:(Math.random()*N)|0, y:(Math.random()*N)|0}; }
         while (snake.some(p => p.x===food.x && p.y===food.y));
       } else snake.pop();
     }
-    if (dead && !recorded){ recorded = true; recordStat('snake', {key:'high', mode:'max', value:score}); }
+    if (dead && !recorded){ recorded = true; SFX.lose(); recordStat('snake', {key:'high', mode:'max', value:score}); }
     $('sc').textContent = dead ? 'Dead — score ' + score + ' (best ' + (statVal('snake','high')||score) + ') · press R'
                                : 'Score ' + score + (statVal('snake','high') ? ' · best ' + statVal('snake','high') : '');
     ctx.clearRect(0,0,320,320);
@@ -1948,12 +2145,14 @@ BUILD.g2048 = host => {
     busy = true;
     setTimeout(() => {
       tiles = tiles.filter(t => !t._gone);
-      tiles.forEach(t => { if (t._merged && !t._gone){ t.val*=2; score+=t.val; t.pop=true;
+      let didMerge = false;
+      tiles.forEach(t => { if (t._merged && !t._gone){ t.val*=2; score+=t.val; t.pop=true; didMerge = true;
         recordStat('g2048', {key:'high', mode:'max', value:score}); } });
+      if (didMerge) SFX.place();
       spawn();
       paint();
       busy = false;
-      if (isOver()) $('sc').textContent = 'Game over — score ' + score + ' · best ' + statVal('g2048','high');
+      if (isOver()){ SFX.lose(); $('sc').textContent = 'Game over — score ' + score + ' · best ' + statVal('g2048','high'); }
     }, 130);
   }
   function isOver(){
@@ -2027,10 +2226,10 @@ BUILD.mines = host => {
     nb.forEach(j => { if (!flag[j]) dig(j); });
   };
   const stopTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
-  const lose = () => { over = true; stopTimer();
+  const lose = () => { over = true; stopTimer(); SFX.lose();
     for (let i=0;i<N*N;i++) if (bomb[i]) open[i] = true;   /* reveal every mine */
     paint(); $('sc').textContent = 'Boom — hit New game to try again'; };
-  const win = () => { over = true; stopTimer();
+  const win = () => { over = true; stopTimer(); SFX.win();
     const secs = Math.round((Date.now()-tstart)/1000);
     recordStat('mines', { key:'cleared', mode:'count', value:1 });
     const best = recordStat('mines', { key:'best'+lvl, mode:'min', value:secs });
@@ -2056,12 +2255,14 @@ BUILD.mines = host => {
       const ii = i;
       b.onclick = () => {
         if (over) return;
-        if (flagMode && !open[ii]){ flag[ii] = !flag[ii]; paint(); info(); return; }
-        if (open[ii]) chord(ii); else dig(ii);
+        if (flagMode && !open[ii]){ flag[ii] = !flag[ii]; SFX.flip(); paint(); info(); return; }
+        const wasOpen = open[ii];
+        if (wasOpen) chord(ii); else dig(ii);
+        if (!over && open[ii] && !wasOpen) SFX.place();
         paint(); info(); check();
       };
       b.oncontextmenu = e => { e.preventDefault();
-        if (over || open[ii]) return; flag[ii] = !flag[ii]; paint(); info(); };
+        if (over || open[ii]) return; flag[ii] = !flag[ii]; SFX.flip(); paint(); info(); };
       grid.appendChild(b);
     }
   };
@@ -2090,21 +2291,24 @@ BUILD.mines = host => {
 
 /* ── Typing race ───────────────────────────────────────────────── */
 BUILD.typing = host => {
-  head(host, 'Typing race', 'The clock starts on your first keystroke. Type it exactly, then hit New text to go again.',
-       '<div id="typetext"></div><input id="typein" autocomplete="off" spellcheck="false" placeholder="Start typing…">' +
+  head(host, 'Typing race', 'A fresh random line every time — the clock starts on your first keystroke. No pasting.',
+       '<div id="typetext"></div><input id="typein" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Start typing…">' +
        '<div class="minesfoot"><button class="btn" id="typenew" type="button">New text</button></div>');
-  const LINES = [
-    'the quick brown fox jumps over the lazy dog',
-    'never trust a computer you cannot throw out a window',
-    'a room without books is like a body without a soul',
-    'simplicity is the ultimate sophistication',
-    'the bell goes in five minutes so pack up your books',
-    'sharpen your pencil and double check every answer',
-    'read the whole question twice before you start writing',
-    'practice makes progress far more often than perfection',
-    'the mitochondria is the powerhouse of the cell'
-  ];
-  let target = LINES[(Math.random()*LINES.length)|0], started = 0, done = false;
+  /* random-word lines so nothing can be memorised or looked up */
+  const WORDS = ('time year people way day man thing woman life child world school state family student group '+
+    'country problem hand part place case week company system program question work government number night point '+
+    'home water room mother area money story fact month lot right study book eye job word business issue side kind '+
+    'head house friend father power hour game line end member law car city community name team minute idea body '+
+    'back parent face level office door health person art war history party result change morning reason research '+
+    'girl guy moment air teacher force education foot boy age policy music market sense nation plan college '+
+    'quick brown fox jumps lazy dog river light stone bright cloud simple garden window paper coffee ').split(/\s+/).filter(Boolean);
+  const makeLine = () => {
+    const n = 9 + ((Math.random()*4)|0);          // 9–12 words
+    const out = [];
+    for (let i=0;i<n;i++) out.push(WORDS[(Math.random()*WORDS.length)|0]);
+    return out.join(' ');
+  };
+  let target = makeLine(), started = 0, done = false, prevLen = 0, cheated = false;
   const paint = val => {
     $('typetext').innerHTML = [...target].map((ch,i) => {
       const c = ch === ' ' ? '&nbsp;' : ch;
@@ -2112,28 +2316,41 @@ BUILD.typing = host => {
       return val[i] === ch ? '<u>' + c + '</u>' : '<i>' + c + '</i>';
     }).join('');
   };
+  const inp = $('typein');
+  /* block the obvious cheats: paste, drop, autofill dumps, and any single
+     input event that leaps more than 2 chars forward (a programmatic paste) */
+  inp.addEventListener('paste', e => { e.preventDefault(); cheated = true; $('sc').textContent = 'No pasting — type it out'; });
+  inp.addEventListener('drop',  e => e.preventDefault());
   const onInput = () => {
-    const v = $('typein').value;
+    let v = inp.value;
+    if (v.length - prevLen > 2){        // a jump this big isn't human keystrokes
+      cheated = true; v = v.slice(0, prevLen + 1); inp.value = v;
+    }
+    prevLen = v.length;
     if (!started && v.length) started = Date.now();
     paint(v);
     if (!done && v === target){
       done = true;
       const secs = (Date.now() - started) / 1000;
       const wpm = Math.round((target.split(' ').length / secs) * 60);
-      recordStat('typing', {key:'wpm', mode:'max', value:wpm});
-      $('sc').textContent = wpm + ' wpm in ' + secs.toFixed(1) + 's · top ' + statVal('typing','wpm');
-      $('typein').disabled = true;
+      if (cheated || wpm > 1000 || secs < 0.5){    // disqualify implausible runs
+        $('sc').textContent = 'Disqualified (' + wpm + ' wpm) — no pasting';
+      } else {
+        recordStat('typing', {key:'wpm', mode:'max', value:wpm});
+        $('sc').textContent = wpm + ' wpm in ' + secs.toFixed(1) + 's · top ' + statVal('typing','wpm');
+      }
+      inp.disabled = true;
     } else if (!done){
       const wrong = [...v].filter((ch,i) => ch !== target[i]).length;
       $('sc').textContent = wrong ? wrong + ' wrong' : v.length + '/' + target.length;
     }
   };
   function reset(){
-    target = LINES[(Math.random()*LINES.length)|0]; started = 0; done = false;
-    const inp = $('typein'); inp.value = ''; inp.disabled = false;
+    target = makeLine(); started = 0; done = false; prevLen = 0; cheated = false;
+    inp.value = ''; inp.disabled = false;
     paint(''); $('sc').textContent = '0/' + target.length; inp.focus();
   }
-  $('typein').addEventListener('input', onInput);
+  inp.addEventListener('input', onInput);
   $('typenew').onclick = reset;
   paint(''); $('sc').textContent = '0/' + target.length;
   return () => {};
@@ -2154,10 +2371,10 @@ BUILD.react = host => {
   };
   el.onclick = () => {
     if (state === 'idle'){ arm(); return; }
-    if (state === 'wait'){ clearTimeout(t); state = 'idle'; show('', 'Too soon — click to retry'); return; }
+    if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon — click to retry'); return; }
     if (state === 'go'){
       const ms = Date.now() - at;
-      times.push(ms);
+      times.push(ms); SFX.good();
       const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
       recordStat('react', {key:'fastest', mode:'min', value:ms});
       $('sc').textContent = ms + ' ms · avg ' + avg + ' · fastest ' + statVal('react','fastest');
@@ -2168,6 +2385,93 @@ BUILD.react = host => {
     }
   };
   return () => clearTimeout(t);
+};
+
+/* ── Leaderboards (all boards in one place) ─────────────────────────── */
+BUILD.leaderboards = host => {
+  head(host, 'Leaderboards', 'Pick a game to see its board. Weekly resets each Monday; all-time never does.', '<div id="lbp"></div>');
+  const box = $('lbp');
+  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return () => {}; }
+  const wk = tetrisWeek();
+  const CAT = [
+    { id:'chain',     name:'Six Degrees',    g:{metric:'targets'}, fmt:v=>String(v) },
+    { id:'oddone',    name:'Odd One Out',    g:{metric:'high'},    fmt:v=>String(v) },
+    { id:'classroom', name:'Classroom',      g:{metric:'high'},    fmt:v=>String(v) },
+    { id:'snake',     name:'Snake',          g:{metric:'high'},    fmt:v=>String(v) },
+    { id:'g2048',     name:'2048',           g:{metric:'high'},    fmt:v=>String(v) },
+    { id:'typing',    name:'Typing race',    g:{metric:'wpm'},     fmt:v=>v+' wpm' },
+    { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
+    { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
+    { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
+    { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
+  ];
+  let cur = CAT[0], period = 'all', canWipe = false, data = null;
+  box.innerHTML =
+    '<div class="diffbar" id="lbpick" style="margin-bottom:14px"></div>' +
+    '<div class="glbhd"><h3 id="lbtitle"></h3>' +
+      '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
+      '<button type="button" class="glbtab cur" data-p="all">All time</button>' +
+      '<button type="button" class="glbtab glbwipe" id="lbwipe" hidden>Reset board</button></div></div>' +
+    '<div id="lbbody"><p class="how">Loading…</p></div>';
+  const pick = $('lbpick');
+  CAT.forEach(c => { const b = document.createElement('button');
+    b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
+    b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
+    pick.appendChild(b); });
+  [...box.querySelectorAll('.glbtab[data-p]')].forEach(b => b.onclick = () => {
+    period = b.dataset.p; [...box.querySelectorAll('.glbtab[data-p]')].forEach(t=>t.classList.toggle('cur', t===b)); paint(); });
+  $('lbwipe').onclick = wipe;
+  load();
+
+  const remap = (arr, key) => (arr||[]).map(r => ({ name:r.name, score:r[key], you:r.you }));
+  async function load(){
+    $('lbtitle').textContent = 'Leaderboard · ' + cur.name;
+    const body = $('lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; canWipe=false; data=null;
+    try {
+      if (cur.g){
+        data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
+        canWipe = !!data.canWipe;
+      } else if (cur.t === 'sprint'){
+        const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}), TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
+        data = { week:{ top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank },
+                 all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
+      } else if (cur.t === 'zen'){
+        const d = await TT.api('/api/tetris',{params:{mode:'zen'}});
+        const b = { top:remap(d.top,'time_ms'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
+      } else if (cur.t === 'zenscore'){
+        const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
+        const b = { top:remap(d.top,'best'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
+      }
+      syncTabs(); paint();
+    } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
+  }
+  function syncTabs(){
+    const single = !cur.g && cur.t !== 'sprint';         // survival/zen are all-time only
+    const tabs = [...box.querySelectorAll('.glbtab[data-p]')];
+    tabs.forEach(t => { if (t.dataset.p==='week') t.style.display = single ? 'none' : ''; });
+    if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
+    $('lbwipe').hidden = !(canWipe && cur.g);
+  }
+  function paint(){
+    const body = $('lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
+    const b = period==='week' ? data.week : data.all;
+    if (!b){ body.innerHTML='<p class="how">No board.</p>'; return; }
+    const rows = b.top || [];
+    if (!rows.length && b.meBest==null){ body.innerHTML='<p class="how">No scores yet — be the first.</p>'; return; }
+    let html = rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(cur.fmt(r.score))+'</span></div>').join('');
+    if (b.meRank && b.meRank>rows.length)
+      html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(cur.fmt(b.meBest))+'</span></div>';
+    body.innerHTML = html;
+  }
+  async function wipe(){
+    if (!cur.g) return;
+    if (!confirm('Clear the entire "'+cur.name+'" board for everyone? This cannot be undone.')) return;
+    try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ game:cur.id, metric:cur.g.metric, score:0, week:wk, action:'wipe' } });
+      canWipe = !!data.canWipe; syncTabs(); paint();
+    } catch(e){ alert('Could not reset the board: ' + e.message); }
+  }
+  return () => {};
 };
 
 showGrid();

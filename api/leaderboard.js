@@ -28,9 +28,15 @@ function nameFromEmail(email) {
 /* which (game:metric) pairs are allowed, and whether higher or lower wins */
 const DIRS = {
   "snake:high": "max", "g2048:high": "max", "typing:wpm": "max",
-  "react:fastest": "min", "classroom:high": "max", "chain:best": "min"
+  "react:fastest": "min", "classroom:high": "max",
+  "chain:best": "min",         // legacy single-puzzle Six Degrees (kept readable)
+  "chain:targets": "max",      // new Six Degrees gauntlet — most targets in a run
+  "oddone:high": "max"         // Odd One Out — best score in a run
 };
 const MAX_SCORE = 100000000;
+/* who may clear a board (server-side, never trust the client). Set OWNER_EMAIL
+   in the environment to your school login; unset ⇒ nobody can wipe. */
+const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
 async function board(game, metric, period, dir, meEmail) {
   const asc = dir === "min";
@@ -85,8 +91,13 @@ export default async function handler(req, res) {
   const week = weekOf(src.week);
   if (week === null) return res.status(400).json({ error: "A valid week is required." });
   const wperiod = "w" + week;
+  const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
 
-  if (req.method === "POST") {
+  if (req.method === "POST" && src.action === "wipe") {
+    if (!isOwner) return res.status(403).json({ error: "Only the owner can clear this board." });
+    const { error } = await db.from("game_score").delete().eq("game", game).eq("metric", metric);
+    if (error) { console.error("leaderboard wipe:", error.message); return res.status(502).json({ error: "Couldn't clear the board." }); }
+  } else if (req.method === "POST") {
     const score = Math.round(Number(src.score));
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
     const name = nameFromEmail(me.email);
@@ -100,6 +111,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     week: await board(game, metric, wperiod, dir, me.email),
-    all:  await board(game, metric, "all", dir, me.email)
+    all:  await board(game, metric, "all", dir, me.email),
+    canWipe: isOwner
   });
 }

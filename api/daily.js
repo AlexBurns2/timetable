@@ -18,15 +18,15 @@ import { ensurePuzzle, resolveYear, computeStreak, sydneyDate, buildHints } from
 const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 const shiftDate = (d, delta) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + delta); return x.toISOString().slice(0, 10); };
 
-const HISTORY_DAYS = 14, MAX_BACK = 30;
+const HISTORY_DAYS = 14;
+const EPOCH = "2026-09-01";   // the first day the site had daily puzzles — nothing before this
 
-/* a real YYYY-MM-DD, not in the future, no older than MAX_BACK days */
+/* a real YYYY-MM-DD, from EPOCH up to today (Sydney) */
 function cleanDate(d, today) {
   if (!d) return today;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(d))) return null;
-  if (d > today) return null;
-  const days = (Date.parse(today) - Date.parse(d)) / 86400000;
-  return days <= MAX_BACK ? d : null;
+  if (d > today || d < EPOCH) return null;
+  return d;
 }
 
 async function wonDatesFor(email) {
@@ -40,6 +40,30 @@ async function historyFor(email, today) {
     .select("date, done, won").eq("email", email)
     .gte("date", shiftDate(today, -(HISTORY_DAYS - 1))).lte("date", today);
   return (data || []).map(r => ({ date: r.date, done: !!r.done, won: !!r.won }));
+}
+/* how everyone in the year went on one day: win/loss + a guess-count histogram */
+async function summaryFor(year, date, totalHints) {
+  const { data } = await db.from("daily_result")
+    .select("guesses, won, done").eq("year", String(year)).eq("date", date);
+  const rows = data || [];
+  const dist = {}; for (let i = 1; i <= totalHints; i++) dist[i] = 0;
+  let played = 0, wins = 0;
+  for (const r of rows) {
+    if (r.done) played++;
+    if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= totalHints) dist[r.guesses]++; }
+  }
+  return { played, wins, losses: played - wins, totalHints, dist };
+}
+/* every past day (from EPOCH) that actually has results, newest first */
+async function archiveFor(year, today) {
+  const { data } = await db.from("daily_result")
+    .select("date, won, done").eq("year", String(year)).gte("date", EPOCH).lte("date", today);
+  const by = {};
+  for (const r of (data || [])) {
+    const d = by[r.date] || (by[r.date] = { date: r.date, played: 0, wins: 0 });
+    if (r.done) d.played++; if (r.won) d.wins++;
+  }
+  return Object.values(by).sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export default async function handler(req, res) {
@@ -84,15 +108,16 @@ export default async function handler(req, res) {
   let won = !!(result && result.won);
 
   if (req.method === "GET") {
-    // Reveal exactly what the player saw: one per wrong guess while playing, and
-    // — once finished — just the ones seen (no phantom extra hint on reopen).
+    if (req.query.archive) return res.status(200).json({ epoch: EPOCH, today, archive: await archiveFor(year, today) });
+    if (req.query.summary) return res.status(200).json({ date, summary: await summaryFor(year, date, totalHints) });
+    // how many hints the player has already seen (one per wrong guess).
     const shown = done ? Math.min(guesses, totalHints) : Math.min(guesses + 1, totalHints);
     const streak = computeStreak(await wonDatesFor(me.email), today);
     return res.status(200).json({
-      date, today, year, candidates: puzzle.candidates || [],
-      hints: hints.slice(0, shown), totalHints, guesses, done, won, streak,
+      date, today, epoch: EPOCH, year, candidates: puzzle.candidates || [],
+      hints, shown, totalHints, guesses, done, won, streak,   // full hints + how many are already unlocked
       history: await historyFor(me.email, today),
-      answer: done ? answerName : undefined
+      answer: answerName                                       // sent so the browser can grade instantly
     });
   }
 
