@@ -43,14 +43,15 @@
 .gamegrid.leaving,.gamesections.leaving,.gamestage.leaving{opacity:0;transform:scale(.985);
   transition:opacity .12s ease,transform .12s ease;pointer-events:none}
 .back{margin-bottom:14px}
-/* per-category horizontal scroller: shows ~4 cards, the rest scroll sideways */
+/* per-category horizontal scroller: ~3½ cards visible (a peek hints you can scroll).
+   Scroll with the wheel while hovering, or click-and-drag. No visible scrollbar. */
 .gamesections[hidden]{display:none}
-.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 12px;margin-bottom:8px;
-  scroll-snap-type:x proximity;scrollbar-width:thin}
-.gamerow::-webkit-scrollbar{height:8px}
-.gamerow::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px}
-.gamerow .gamecard{flex:0 0 calc((100% - 42px) / 4);min-width:180px;scroll-snap-align:start}
-@media (max-width:640px){ .gamerow .gamecard{flex-basis:66%;min-width:0} }
+.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:2px;margin-bottom:14px;
+  cursor:grab;scrollbar-width:none;-ms-overflow-style:none}
+.gamerow::-webkit-scrollbar{display:none}
+.gamerow.dragging{cursor:grabbing}
+.gamerow .gamecard{flex:0 0 calc((100% - 42px) / 3.5);min-width:200px}
+@media (max-width:640px){ .gamerow .gamecard{flex-basis:80%;min-width:0} }
 .stage{
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
   padding:18px;box-shadow:var(--shadow);
@@ -552,8 +553,29 @@ function showGrid(){
       row.appendChild(c);
     });
     grid.appendChild(row);
+    dragScroll(row);
   });
   renderLBSum();
+}
+/* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
+   the browser's own horizontal scroll; a drag swallows the click that follows). */
+function dragScroll(row){
+  row.addEventListener('wheel', e => {
+    if (row.scrollWidth <= row.clientWidth) return;
+    const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    if (d){ row.scrollLeft += d; e.preventDefault(); }
+  }, { passive:false });
+  let down = false, moved = false, sx = 0, sl = 0;
+  row.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    down = true; moved = false; sx = e.clientX; sl = row.scrollLeft; });
+  row.addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx;
+    if (Math.abs(dx) > 6){ moved = true; row.classList.add('dragging'); }
+    if (moved){ row.scrollLeft = sl - dx; e.preventDefault(); } });
+  const end = () => { if (!down) return; down = false; row.classList.remove('dragging');
+    if (moved){ row.classList.add('nodrag'); setTimeout(() => row.classList.remove('nodrag'), 0); } };
+  row.addEventListener('pointerup', end);
+  row.addEventListener('pointerleave', end);
+  row.addEventListener('click', e => { if (row.classList.contains('nodrag')){ e.stopPropagation(); e.preventDefault(); } }, true);
 }
 
 /* ── leaderboard catalogue (shared by the summary strip + the full view) ── */

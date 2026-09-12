@@ -1063,10 +1063,11 @@ tables touched.
 
 ## Games grid rows + accurate reaction timer (latest)
 
-- The games grid is now **one horizontal scroller per category** (Revision / Timetable / Arcade),
-  showing ~4 cards at a time with the rest scrolling sideways (`.gamerow`; container is
-  `.gamesections`). Card basis is `calc((100% - 42px)/4)` with a `min-width`, and drops to 66%
-  on phones.
+- The games grid is now **one horizontal scroller per category** (Revision / Timetable / Arcade).
+  It shows ~3½ cards (a peek of the next hints you can scroll), **no visible scrollbar**, and you
+  scroll it with the **mouse wheel while hovering** or by **click-and-drag** (`dragScroll()`; a
+  drag swallows the click so it never opens a game by accident). Touch uses native scrolling.
+  `.gamerow` card basis `calc((100% - 42px)/3.5)`; container is `.gamesections`.
 - **Reaction test accuracy**: it now measures on **pointerdown** (the press) instead of `click`
   (which fires on release, adding the press-to-release time — the reason readings ran ~100 ms
   high). It also stamps the stimulus time in a `requestAnimationFrame` on the frame the green is
