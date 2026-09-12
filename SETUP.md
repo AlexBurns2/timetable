@@ -1030,6 +1030,37 @@ New local stat keys: `mines.best<size>`, `memory.best<size>`/`plays`, `oddone.hi
 
 Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 
+## Shared flashcards + revision games (latest)
+
+- **Public flashcard decks.** In Flashcards: **Share** a deck (pick a category) publishes it;
+  **Browse public decks** lists everyone's by category and **Import** copies one into your decks.
+  New endpoint `api/decks.js` (same `whoami` identity; authors can delete their own, `OWNER_EMAIL`
+  can delete any). **One new table:**
+  ```sql
+  create table shared_deck (
+    id text primary key, email text not null, name text not null,
+    category text not null, cards jsonb not null,
+    created_at timestamptz not null default now()
+  );
+  ```
+  RLS off (service-role only). Categories: Maths, Physics, Chemistry, Biology, English, History,
+  Geography, Languages, Business, Other.
+- **Revision games** (new, in the Revision category) — all **procedurally generated** through a
+  shared quiz engine (`revGame`); best streak saved locally per game:
+  - **Maths** — differentiation & integration of polynomials (MC, mistake-based distractors),
+    combinatorics incl. binomial coefficients (typed integer answers), graph transformations.
+  - **Physics** — SUVAT, waves (v=fλ, period), energy (KE, PE with g=9.8, work, power). MC.
+  - **Chemistry** — redox (oxidation states from a curated formula list + oxidised/reduced),
+    solubility via **SNAAP** (soluble salts carry a SNAAP ion; the "insoluble" set is a curated
+    list of genuinely insoluble salts, so the game never teaches wrong chemistry).
+  - **Python** — predict-the-output of small generated snippets (arithmetic incl. // and %,
+    strings, range loops, list ops, f-strings); outputs computed in-engine so they're exact.
+  Answers were spot-checked (6C3=20, (2−2x)⁴ x² coeff=96, ∫/d-dx correct, SUVAT/PE numerics,
+  Cr₂O₃→+3, etc.). MC everywhere except combinatorics/oxidation-state (typed integers).
+
+Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
+tables touched.
+
 ## Subject notes
 
 The Notes page is **per subject**. A dropdown lists **General plus every subject from
