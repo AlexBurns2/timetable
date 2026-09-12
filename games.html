@@ -138,6 +138,17 @@ html[data-motion="reduced"] .dgbar .dgbt>i{transition:none}
   padding:16px;border-radius:calc(var(--card-radius)*.6);cursor:pointer;
   background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 .tover[hidden]{display:none}
+/* tetris feedback: line-clear flash + hard-drop / top-out shake */
+.tflash{position:absolute;inset:0;border-radius:calc(var(--card-radius)*.6);pointer-events:none;opacity:0}
+.tflash.on{animation:tflash .22s ease}
+.tflash.big{animation:tflashbig .5s ease}
+.tflash.redon{animation:tflashred .35s ease}
+@keyframes tflash{0%{opacity:.5;background:#fff}100%{opacity:0;background:#fff}}
+@keyframes tflashbig{0%{opacity:.85;background:linear-gradient(120deg,#f472b6,#38bdf8,#4ade80,#facc15)}100%{opacity:0}}
+@keyframes tflashred{0%{opacity:.6;background:#e5484d}100%{opacity:0;background:#e5484d}}
+#tcan.tshake{animation:tshake .16s ease}
+@keyframes tshake{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-2px,1px)}}
+html[data-motion="reduced"] .tflash,html[data-motion="reduced"] #tcan.tshake{animation:none}
 .tovt{font-family:var(--font-display);font-size:19px;font-weight:var(--display-w);margin-bottom:6px}
 .tovs{font-size:13px;color:var(--muted)}
 .tovbtns{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
@@ -397,7 +408,15 @@ const SFX = (() => {
     lose:  () => seq([[440,0],[349,0.1],[262,0.22]], 'sawtooth'),
     tick:  () => tone(900, 0.04, 'sine', 0.09),
     flip:  () => tone(430, 0.05, 'sine', 0.12),
-    clear: () => seq([[660,0],[880,0.06]], 'triangle')
+    clear: () => seq([[660,0],[880,0.06]], 'triangle'),
+    /* tetris flavour */
+    rotate:() => tone(340, 0.05, 'triangle', 0.10),
+    drop:  () => { tone(120, 0.10, 'sawtooth', 0.16); tone(70, 0.12, 'sine', 0.12, 0.01); },
+    lock:  () => tone(180, 0.06, 'square', 0.10),
+    hold:  () => tone(520, 0.06, 'sine', 0.11),
+    line:  n => { const notes=[[523,0],[659,0.05],[784,0.10]].slice(0, Math.min(3, n)); seq(notes); },
+    tetris:() => seq([[523,0],[659,0.07],[784,0.14],[1047,0.21],[1319,0.30]]),
+    level: () => tone(880, 0.06, 'triangle', 0.10)
   };
 })();
 const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
@@ -1162,6 +1181,7 @@ BUILD.tetris = host => {
       '</div>' +
       '<div class="tboardwrap">' +
         '<canvas id="tcan" width="240" height="480"></canvas>' +
+        '<div class="tflash" id="tflash"></div>' +
         '<div class="tover" id="tover"></div>' +
       '</div>' +
       '<div class="tside tright">' +
@@ -1185,6 +1205,11 @@ BUILD.tetris = host => {
   const ncan = $$('tnext'), nctx = ncan.getContext('2d');
   const hcan = $$('thold'), hctx = hcan.getContext('2d');
   const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  /* juice: brief flash overlay + canvas shake, both gated on the animation setting */
+  function flash(kind){ if (!gameAnim()) return; const f=$$('tflash'); if(!f) return;
+    f.className='tflash'; void f.offsetWidth; f.classList.add(kind); }
+  function shake(){ if (!gameAnim()) return; const c=$$('tcan'); if(!c) return;
+    c.classList.remove('tshake'); void c.offsetWidth; c.classList.add('tshake'); }
 
   /* SRS spawn states in padded boxes (3×3 for JLSTZ, 4×4 for I, 2×2 for O) */
   const SPAWN = {
@@ -1261,16 +1286,17 @@ BUILD.tetris = host => {
   function applyDCD(now){ if (cfg.dcd>0 && moveDir!==0 && now-dasStart>cfg.dcd){ dasStart=now-cfg.dcd; dasCharged=false; } }
   function tryMove(dx, now){ if (collides(piece.cells, piece.x+dx, piece.y)) return false; piece.x+=dx; updateGround(now,true); return true; }
   function tryRotate(dir, now){
-    if (piece.type==='O') return;                        // O is rotationally symmetric
+    if (piece.type==='O') return false;                  // O is rotationally symmetric
     const from = piece.rot, to = (from + (dir===2?2:dir) + 4) % 4;
     const m = dir===2 ? rotCW(rotCW(piece.cells)) : dir>0 ? rotCW(piece.cells) : rotCCW(piece.cells);
     const kicks = dir===2 ? KICK_180
       : (piece.type==='I' ? KICK_I : KICK_JLSTZ)[from+','+to].map(([kx,ky])=>[kx,-ky]);
     for (const [dx,dy] of kicks){
       if (!collides(m, piece.x+dx, piece.y+dy)){
-        piece.cells=m; piece.x+=dx; piece.y+=dy; piece.rot=to; updateGround(now,true); applyDCD(now); return;
+        piece.cells=m; piece.x+=dx; piece.y+=dy; piece.rot=to; updateGround(now,true); applyDCD(now); return true;
       }
     }
+    return false;
   }
   function spawnFrom(type, now){
     const cells = SPAWN[type].map(r=>r.slice());
@@ -1283,14 +1309,16 @@ BUILD.tetris = host => {
     if (holdUsed) return; holdUsed=true;
     const cur=piece.type;
     if (hold==null){ hold=cur; spawnNext(now); } else { const h=hold; hold=cur; spawnFrom(h, now); }
-    applyDCD(now);
+    SFX.hold(); applyDCD(now);
   }
-  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; commitLock(now); }
+  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); shake(); commitLock(now); }
   function commitLock(now){
     piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c]=piece.type; }));
     let lines=0;
     for (let r=ROWS-1;r>=0;r--){ if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; } }
-    if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800; }
+    if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800;
+      if (lines>=4){ SFX.tetris(); flash('big'); } else { SFX.line(lines); flash('on'); } }
+    else SFX.lock();
     if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
     holdUsed=false; spawnNext(now); updateStats();
     if (mode==='practice') pushHistory();          // snapshot each placement so it can be undone
@@ -1482,6 +1510,7 @@ BUILD.tetris = host => {
   }
   function end(won){
     phase='over'; clearInterval(loopId);
+    if (won){ SFX.win(); flash('big'); } else { SFX.lose(); flash('redon'); shake(); }
     const restart = 'Restart ('+keyLabel(cfg.keys.restart)+')';
     if (mode==='sprint'){
       if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};
@@ -1649,12 +1678,12 @@ BUILD.tetris = host => {
     if (phase==='ready' || phase==='over'){ if (keyMatch(e,K.hardDrop)){ begin(); e.preventDefault(); } return; }
     if (phase!=='playing') return;
     const now=performance.now();
-    if (keyMatch(e,K.left)){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; tryMove(-1,now); } }
-    else if (keyMatch(e,K.right)){ if(!e.repeat){ moveDir=1; dasStart=now; dasCharged=false; tryMove(1,now); } }
+    if (keyMatch(e,K.left)){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; if (tryMove(-1,now)) SFX.move(); } }
+    else if (keyMatch(e,K.right)){ if(!e.repeat){ moveDir=1; dasStart=now; dasCharged=false; if (tryMove(1,now)) SFX.move(); } }
     else if (keyMatch(e,K.softDrop)){ if(!e.repeat) dropAcc=0; softHeld=true; }
-    else if (keyMatch(e,K.rotateCW)){ if(!e.repeat){ rotHeld=true; rotStart=now; rotCharged=false; tryRotate(1,now); } }
-    else if (keyMatch(e,K.rotateCCW)){ if(!e.repeat){ tryRotate(-1,now); } }
-    else if (keyMatch(e,K.rotate180)){ if(!e.repeat){ tryRotate(2,now); } }
+    else if (keyMatch(e,K.rotateCW)){ if(!e.repeat){ rotHeld=true; rotStart=now; rotCharged=false; if (tryRotate(1,now)) SFX.rotate(); } }
+    else if (keyMatch(e,K.rotateCCW)){ if(!e.repeat){ if (tryRotate(-1,now)) SFX.rotate(); } }
+    else if (keyMatch(e,K.rotate180)){ if(!e.repeat){ if (tryRotate(2,now)) SFX.rotate(); } }
     else if (keyMatch(e,K.hardDrop)){ if(!e.repeat){ hardDrop(now); } }
     else if (keyMatch(e,K.hold)){ if(!e.repeat){ doHold(now); } }
     else return;

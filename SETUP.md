@@ -998,6 +998,20 @@ New local stat keys: `mines.best<size>`, `memory.best<size>`/`plays`, `oddone.hi
   on the buttons).
 - Captions trimmed across the board and em-dashes removed.
 
+## Tetris juice + Settings on the home page (latest)
+
+- **Tetris** now has sound + animation: move / rotate / hold / soft-lock blips, a
+  hard-drop **thud + board shake**, a **line-clear flash** (rainbow for a Tetris), and
+  win/top-out stingers. All go through the same `SFX` object (respects the volume
+  slider) and the flash/shake honour the reduce-motion setting.
+- **Settings on the home page.** The timetable's settings are unchanged; the home page
+  gets its own copy via two new files, `settings.css` + `settings.js` (loaded only by
+  `home.html`; the gear button opens it). It covers Appearance, Custom theme, Login,
+  Accessibility and Display — everything drives through `theme.js`'s `TT.apply`, so it
+  themes every page identically. **Subject colours** and **.ics export** stay on the
+  timetable only (they need the live parsed timetable, not just cached data).
+  No new deploy steps — just ship `home.html`, `settings.css`, `settings.js`, `games.html`.
+
 ## Subject notes
 
 The Notes page is **per subject**. A dropdown lists **General plus every subject from
