@@ -1063,11 +1063,10 @@ tables touched.
 
 ## Scroller edge-fades + full revision syllabus (latest)
 
-- **Scroller polish.** Each category row is now wrapped in `.gamesecrow`, whose `::before`/`::after`
-  are **edge-fade gradients** that fade the cards where the row runs off the page. They toggle by
-  scroll position (`edgeFades()` adds `can-left`/`can-right`): the neutral (just-opened) state shows
-  only the right fade, and mid-scroll shows both. The fade uses `color-mix(... transparent 100%)` so
-  it dissolves to nothing rather than a grey block, and matches any skin's `--bg`.
+- **Scroller edges.** Cards **just hard-clip at the page edge** — no fade overlay (an earlier
+  edge-fade experiment was cut; the little white fade looked worse than a clean clip). The row still
+  lives in a `.gamesecrow` wrapper whose negative margins make it full-bleed so tiles clip right at
+  the page edge, and its padding keeps the card shadows from clipping into a dark rectangle.
 - **Hover no longer clips.** Cards used to grow their shadow on hover, which clipped back out of the
   padded row. They now **lift** instead — `.gamerow .gamecard:hover{transform:translateY(-6px)}` with
   the normal `--shadow` — staying inside the row's padding (bumped to 28/32px). No visible scrollbar

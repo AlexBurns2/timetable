@@ -47,15 +47,9 @@
    Scroll with the wheel while hovering, or click-and-drag. No visible scrollbar. */
 .gamesections[hidden]{display:none}
 /* The row is padded so card shadows have room (never clipped into a dark
-   rectangle); a wrapper adds a soft fade at whichever edge has more off-screen.
-   On hover a tile lifts (no growing shadow), so nothing clips. */
+   rectangle); the wrapper's negative margins make it full-bleed so tiles clip
+   cleanly at the page edge. On hover a tile lifts (no growing shadow). */
 .gamesecrow{position:relative;margin:0 -16px -4px}
-.gamesecrow::before,.gamesecrow::after{content:'';position:absolute;top:6px;bottom:6px;width:48px;
-  pointer-events:none;z-index:3;opacity:0;transition:opacity .22s ease}
-.gamesecrow::before{left:0;background:linear-gradient(to right,var(--bg),color-mix(in srgb,var(--bg),transparent 100%))}
-.gamesecrow::after{right:0;background:linear-gradient(to left,var(--bg),color-mix(in srgb,var(--bg),transparent 100%))}
-.gamesecrow.can-left::before{opacity:1}
-.gamesecrow.can-right::after{opacity:1}
 .gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:28px 16px 32px;
   cursor:grab;scrollbar-width:none;-ms-overflow-style:none}
 .gamerow::-webkit-scrollbar{display:none}
@@ -572,19 +566,9 @@ function showGrid(){
     });
     wrap.appendChild(row); grid.appendChild(wrap);
     dragScroll(row);
-    row.addEventListener('scroll', () => edgeFades(row), { passive:true });
-    requestAnimationFrame(() => edgeFades(row));
   });
   renderLBSum();
 }
-/* toggle the left/right fade on a row's wrapper based on how far it's scrolled */
-function edgeFades(row){
-  const w = row.parentElement; if (!w || !w.classList.contains('gamesecrow')) return;
-  const max = row.scrollWidth - row.clientWidth;
-  w.classList.toggle('can-left', row.scrollLeft > 4);
-  w.classList.toggle('can-right', max > 4 && row.scrollLeft < max - 4);
-}
-addEventListener('resize', () => document.querySelectorAll('.gamerow').forEach(edgeFades));
 /* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
    the browser's own horizontal scroll; a drag swallows the click that follows). */
 function dragScroll(row){
