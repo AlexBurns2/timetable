@@ -1061,7 +1061,33 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Scroller edge-fades + full revision syllabus (latest)
+## Engineering materials content + spaced-repetition selection (latest)
+
+- **Engineering revision rebuilt from the study guide.** The Engineering game now has five
+  modules — **Steels, Cast irons, Heat treatment, Structure & properties, Mechanics** — each split
+  into selectable subtopics, with ~72 curated multiple-choice questions drawn from the Year 11
+  Engineering Studies "Materials & grain structure" guide (plain-carbon steels and their carbon
+  ranges/uses, eutectoid & pearlite, grey/nodular/white/malleable cast irons, full & process
+  annealing, normalising, quench hardening, tempering, carburising, nitriding, induction hardening,
+  the ferrite/cementite/austenite/pearlite phases, and the property definitions + stress–strain
+  curve). Content lives in curated banks (`STEEL_LM`, `IRON_GN`, `HEAT_QT`, `STR_PH`, …) rather than
+  numeric generators, so the wording is exam-accurate; all 72 were auto-checked (answer present, four
+  distinct options).
+- **Spaced-repetition question selection (all revision games).** The engine used to pick a topic and
+  a question at random, so the same one came up often. Now `revGame` keeps a per-game history
+  `tt.rev_<key>_hist` (`{sig: [seen, wrong]}`, persisted and synced) plus an in-session `recent`
+  list. `nextQ` picks a **subtopic fairly** (every subtopic, including procedural ones, gets airtime)
+  then biases **which question within it** toward ones you've **never seen** (big boost) or **got
+  wrong** (revisit boost), while decaying ones you keep getting right. A recent-window (capped just
+  below the pool size) guarantees **no back-to-back repeats** even in a small subtopic. Curated
+  questions carry a stable `key` (bank index, or an explicit `key:` on the chem/software generators)
+  so this works across sessions; purely numeric generators stay fresh via new numbers each time.
+  Verified in-browser: a 7-item subtopic shows all 7 before any repeat with 0 back-to-back; a
+  whole-topic run stays varied and now includes the procedural Mechanics questions.
+
+Client-only — ship `games.html`.
+
+## Scroller edge-fades → clean clip + full revision syllabus
 
 - **Scroller edges.** Cards **just hard-clip at the page edge** — no fade overlay (an earlier
   edge-fade experiment was cut; the little white fade looked worse than a clean clip). The row still
