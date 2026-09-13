@@ -4846,6 +4846,408 @@ const MATH_CONCEPTS = [
   {q:'The graph of y = f(x) + k, for k > 0, is shifted…', a:'k units up', w:['k units down','k units right','k units left']},
   {q:'The graph of y = −f(x) is a reflection of y = f(x) in the…', a:'x-axis', w:['y-axis','line y = x','origin only']}];
 
+/* ══ EXPANSION: chemistry, physics and engineering ══
+   Sourced from the KISS Chemistry PhotoMasters (Modules 1–4), the NSW Physics
+   Stage 6 syllabus, and the Engineering Studies textbook (Engineering
+   Fundamentals, Engineered Products, Braking Systems, Biomedical). The
+   textbook's historical chronologies are deliberately reduced to the concept
+   that actually matters — e.g. "guarding moving parts" rather than who patented
+   which lawnmower. */
+
+/* ── chemistry: mixtures & separation (Module 1) ───────────────────────── */
+const SEPARATION = [
+  { n:'Filtration', d:'separates an insoluble solid from a liquid by passing the mixture through a porous barrier' },
+  { n:'Evaporation', d:'drives off the solvent to leave a dissolved solid behind' },
+  { n:'Distillation', d:'separates liquids by boiling one off and condensing it back, using the difference in boiling points' },
+  { n:'Fractional distillation', d:'separates several liquids whose boiling points are close, using a fractionating column' },
+  { n:'Chromatography', d:'separates components by how strongly each is carried along by a solvent versus held by the paper' },
+  { n:'Decanting', d:'pours the liquid off a settled solid without disturbing it' },
+  { n:'Sieving', d:'separates solid particles from each other by size' },
+  { n:'Separating funnel', d:'separates two liquids that do not mix, by draining off the denser layer' },
+  { n:'Magnetic separation', d:'pulls out a magnetic component such as iron filings' },
+  { n:'Centrifuging', d:'spins a mixture so the denser component is forced to the bottom' }
+];
+const MIX_CONCEPT = [
+  {q:'What makes a mixture different from a compound?', a:'Its components keep their own properties and can be separated physically', w:['Its components are chemically bonded','It always contains only one element','It can never be separated again']},
+  {q:'A solution is best described as…', a:'A homogeneous mixture of a solute dissolved in a solvent', w:['A pure substance','A mixture you can see the parts of','A compound of fixed ratio']},
+  {q:'"Homogeneous" means the mixture…', a:'Has a uniform composition throughout', w:['Has visibly separate parts','Contains only one element','Cannot be separated']},
+  {q:'Separation techniques work because they exploit differences in…', a:'Physical properties such as particle size, boiling point or solubility', w:['Chemical formulas','Atomic number','The number of protons']},
+  {q:'Allotropes are…', a:'Different forms of the same element with different structures and properties', w:['Atoms of one element with different masses','Different elements with the same mass','Compounds with the same formula']},
+  {q:'Diamond and graphite are allotropes because they…', a:'Are both carbon, but their atoms are arranged differently', w:['Contain different elements','Have different numbers of protons','Are both compounds of carbon']},
+  {q:'Graphite conducts electricity but diamond does not, because graphite has…', a:'Delocalised electrons free to move between its layers', w:['A higher melting point','More protons per atom','Ionic bonding']},
+  {q:'Isotopes of an element differ in their number of…', a:'Neutrons', w:['Protons','Electrons in a neutral atom','Energy levels']}
+];
+function genSeparation(){
+  if (Math.random() < 0.4) return bankQ(MIX_CONCEPT, 'mixc');
+  return termQ(SEPARATION, 'sep',
+    r => 'Which technique <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── chemistry: balancing equations (Module 2), computed ───────────────── */
+const BALANCE = [
+  { eq:'__ H₂ + __ O₂ → __ H₂O',                 c:[2,1,2] },
+  { eq:'__ N₂ + __ H₂ → __ NH₃',                 c:[1,3,2] },
+  { eq:'__ CH₄ + __ O₂ → __ CO₂ + __ H₂O',       c:[1,2,1,2] },
+  { eq:'__ Fe + __ O₂ → __ Fe₂O₃',               c:[4,3,2] },
+  { eq:'__ Na + __ Cl₂ → __ NaCl',               c:[2,1,2] },
+  { eq:'__ Al + __ Cl₂ → __ AlCl₃',              c:[2,3,2] },
+  { eq:'__ Mg + __ HCl → __ MgCl₂ + __ H₂',      c:[1,2,1,1] },
+  { eq:'__ C₃H₈ + __ O₂ → __ CO₂ + __ H₂O',      c:[1,5,3,4] },
+  { eq:'__ KClO₃ → __ KCl + __ O₂',              c:[2,2,3] },
+  { eq:'__ H₂O₂ → __ H₂O + __ O₂',               c:[2,2,1] },
+  { eq:'__ Na + __ H₂O → __ NaOH + __ H₂',       c:[2,2,2,1] },
+  { eq:'__ CaCO₃ + __ HCl → __ CaCl₂ + __ H₂O + __ CO₂', c:[1,2,1,1,1] },
+  { eq:'__ Zn + __ HCl → __ ZnCl₂ + __ H₂',      c:[1,2,1,1] },
+  { eq:'__ C₂H₆ + __ O₂ → __ CO₂ + __ H₂O',      c:[2,7,4,6] },
+  { eq:'__ Ca + __ O₂ → __ CaO',                 c:[2,1,2] },
+  { eq:'__ SO₂ + __ O₂ → __ SO₃',                c:[2,1,2] },
+  { eq:'__ P₄ + __ O₂ → __ P₄O₁₀',               c:[1,5,1] },
+  { eq:'__ NH₃ + __ O₂ → __ NO + __ H₂O',        c:[4,5,4,6] },
+  { eq:'__ Fe₂O₃ + __ C → __ Fe + __ CO₂',       c:[2,3,4,3] },
+  { eq:'__ Cu + __ O₂ → __ CuO',                 c:[2,1,2] },
+  { eq:'__ K + __ H₂O → __ KOH + __ H₂',         c:[2,2,2,1] },
+  { eq:'__ C₄H₁₀ + __ O₂ → __ CO₂ + __ H₂O',     c:[2,13,8,10] }
+];
+function genBalance(){
+  const r = pk(BALANCE), right = r.c.join(', ');
+  const bump = (i, by) => r.c.map((v,j) => j === i ? Math.max(1, v + by) : v).join(', ');
+  const wrong = [bump(0,1), bump(r.c.length-1,1), bump(1,1), r.c.map(v=>v+1).join(', ')]
+    .filter(x => x !== right);
+  const m = mc(right, shuffle(wrong));
+  return { q:'Balance this equation — what are the coefficients, left to right?<br><b>' + r.eq + '</b>',
+    choices:m.choices, answer:m.answer, key:'bal:'+r.eq,
+    note:'Balanced: ' + r.eq.replace(/__ /g, () => '').trim() + ' with coefficients ' + right + '. Atoms of each element must be equal on both sides.' };
+}
+
+/* ── chemistry: gas laws (Module 2), computed ──────────────────────────── */
+function genGasLaw(){
+  const k = ri(0,3);
+  if (k === 0){                                        // Boyle: P1V1 = P2V2
+    const p1 = ri(100,300), v1 = ri(2,10), v2 = v1 * ri(2,4);
+    const p2 = rd(p1*v1/v2, 1);
+    const m = physMC(p2, 'kPa', [rd(p1*v2/v1,1), p1+v1, rd(p1/2,1)]);
+    return { q:'A gas at <b>'+p1+' kPa</b> occupies <b>'+v1+' L</b>. At constant temperature it expands to <b>'+v2+' L</b>. What is the new pressure?',
+      choices:m.choices, answer:m.answer, note:'Boyle’s law: P₁V₁ = P₂V₂ → '+p1+'×'+v1+'/'+v2+' = '+p2+' kPa.' };
+  }
+  if (k === 1){                                        // Charles: V1/T1 = V2/T2
+    const t1 = ri(250,320), v1 = ri(2,9), t2 = t1 + ri(40,150);
+    const v2 = rd(v1*t2/t1, 2);
+    const m = physMC(v2, 'L', [rd(v1*t1/t2,2), rd(v1+t2-t1,2), v1]);
+    return { q:'A gas occupies <b>'+v1+' L</b> at <b>'+t1+' K</b>. At constant pressure it is heated to <b>'+t2+' K</b>. What is the new volume?',
+      choices:m.choices, answer:m.answer, note:'Charles’ law: V₁/T₁ = V₂/T₂ → '+v1+'×'+t2+'/'+t1+' = '+v2+' L.' };
+  }
+  if (k === 2){                                        // combined
+    const p1 = ri(100,200), v1 = ri(2,8), t1 = ri(270,310);
+    const p2 = p1 + ri(40,120), t2 = t1 + ri(30,120);
+    const v2 = rd(p1*v1*t2/(t1*p2), 2);
+    const m = physMC(v2, 'L', [rd(v1*p2/p1,2), rd(v1*t2/t1,2), v1]);
+    return { q:'A gas is <b>'+v1+' L</b> at <b>'+p1+' kPa</b> and <b>'+t1+' K</b>. It changes to <b>'+p2+' kPa</b> and <b>'+t2+' K</b>. What is the new volume?',
+      choices:m.choices, answer:m.answer, note:'Combined: P₁V₁/T₁ = P₂V₂/T₂ → '+v2+' L.' };
+  }
+  const n = ri(1,6)/2, t = ri(280,340), v = rd(n*8.314*t/101.3, 2);   // ideal, P in kPa
+  const m = physMC(v, 'L', [rd(n*8.314*t,2), rd(v/2,2), rd(n*t/101.3,2)]);
+  return { q:'What volume does <b>'+n+' mol</b> of an ideal gas occupy at <b>'+t+' K</b> and <b>101.3 kPa</b>? (R = 8.314 J/mol·K)',
+    choices:m.choices, answer:m.answer, note:'PV = nRT → V = nRT/P = '+n+'×8.314×'+t+'/101.3 = '+v+' L.' };
+}
+
+/* ── chemistry: reaction rates & collision theory (Module 3) ───────────── */
+const RATE_C = [
+  {q:'Collision theory says a reaction happens only when particles collide…', a:'With enough energy, and in the right orientation', w:['At any speed at all','Exactly head-on every time','Only in the presence of a catalyst']},
+  {q:'The minimum energy a collision needs for a reaction to proceed is the…', a:'Activation energy', w:['Enthalpy of formation','Bond energy','Lattice energy']},
+  {q:'Raising the temperature speeds a reaction up mainly because particles…', a:'Move faster, so collisions are more frequent AND more of them exceed the activation energy', w:['Become larger','Are destroyed faster','Lose their activation energy']},
+  {q:'Raising the concentration of a dissolved reactant speeds the reaction up because…', a:'There are more particles in the same volume, so collisions are more frequent', w:['The particles move faster','The activation energy falls','The temperature rises']},
+  {q:'For a gas, increasing the pressure has the same effect as…', a:'Increasing the concentration — it forces particles closer together', w:['Lowering the temperature','Adding a catalyst','Increasing the surface area']},
+  {q:'Powdering a solid reactant speeds the reaction up because it…', a:'Increases the surface area exposed to the other reactant', w:['Raises the temperature','Lowers the activation energy','Increases the concentration of the solid']},
+  {q:'A catalyst speeds up a reaction by…', a:'Providing an alternative pathway with a lower activation energy', w:['Raising the temperature of the mixture','Being used up to release energy','Increasing the concentration of reactants']},
+  {q:'After a reaction, a catalyst is…', a:'Chemically unchanged and can be recovered', w:['Consumed and must be replaced','Converted into product','Always a gas']},
+  {q:'Does a catalyst change the enthalpy change (ΔH) of a reaction?', a:'No — it only lowers the activation energy', w:['Yes, it makes ΔH more negative','Yes, it makes ΔH more positive','Yes, it reverses the sign of ΔH']},
+  {q:'Which of these is NOT a valid indication that a chemical change has occurred?', a:'The mixture changes shape', w:['A gas is produced','A precipitate forms','The temperature changes without heating']},
+  {q:'A precipitate forming when two solutions are mixed indicates…', a:'A new insoluble solid has been produced — a chemical change', w:['The solvent has evaporated','A physical change only','The solution has been diluted']},
+  {q:'In the reaction Mg + 2HCl → MgCl₂ + H₂, the rate could be measured by…', a:'The rate at which hydrogen gas bubbles are produced', w:['The colour of the magnesium','The mass of the test tube','The volume of acid added']}
+];
+const RATE_FACTORS = [
+  { n:'Temperature', d:'particles move faster, so collisions are both more frequent and more energetic' },
+  { n:'Concentration', d:'more particles are packed into the same volume, so collisions happen more often' },
+  { n:'Gas pressure', d:'the same particles are forced into a smaller space, raising the collision frequency' },
+  { n:'Surface area', d:'more of the solid is exposed, so more particles are available to be hit' },
+  { n:'Catalyst', d:'an alternative reaction pathway with a lower activation energy is provided' }
+];
+function genRates(){
+  if (Math.random() < 0.45)
+    return termQ(RATE_FACTORS, 'ratef',
+      r => 'Which factor speeds a reaction up because <b>' + r.d + '</b>?',
+      r => 'How does <b>' + r.n + '</b> increase the rate of a reaction?');
+  return bankQ(RATE_C, 'ratec');
+}
+
+/* ── chemistry: activity series (Module 3), computed from the order ────── */
+const ACTIVITY = ['Potassium','Sodium','Calcium','Magnesium','Aluminium','Zinc','Iron','Lead','Copper','Silver','Gold'];
+function genActivity(){
+  const k = ri(0,2);
+  let i = ri(0, ACTIVITY.length-2), j = ri(i+1, ACTIVITY.length-1);
+  const more = ACTIVITY[i], less = ACTIVITY[j];          // earlier in the list = more reactive
+  if (k === 0)
+    return { q:'Which metal is <b>more reactive</b>: '+more+' or '+less+'?', choices:shuffle([more,less]),
+      answer:more, key:'act-cmp:'+more+'|'+less,
+      note:'Activity series (most → least reactive): '+ACTIVITY.join(' > ')+'.' };
+  if (k === 1)
+    return { q:'Will <b>'+more+'</b> displace <b>'+less+'</b> from a solution of its salt?', choices:['Yes','No'],
+      answer:'Yes', key:'act-dis:'+more+'|'+less,
+      note:more+' is above '+less+' in the activity series, so it displaces it.' };
+  return { q:'Will <b>'+less+'</b> displace <b>'+more+'</b> from a solution of its salt?', choices:['Yes','No'],
+    answer:'No', key:'act-nod:'+less+'|'+more,
+    note:less+' is below '+more+' in the activity series, so no reaction occurs.' };
+}
+
+/* ── chemistry: energy profiles (Module 4) ─────────────────────────────── */
+const ENERGY_C = [
+  {q:'In an exothermic reaction, the products…', a:'Have less stored chemical energy than the reactants, so energy is released', w:['Have more energy than the reactants','Have exactly the same energy','Always form a gas']},
+  {q:'The sign of ΔH for an exothermic reaction is…', a:'Negative', w:['Positive','Always zero','Undefined']},
+  {q:'In an endothermic reaction the surroundings…', a:'Get colder, because energy is absorbed from them', w:['Get hotter','Stay at exactly the same temperature','Always produce a gas']},
+  {q:'Breaking chemical bonds is…', a:'Endothermic — energy must be put in', w:['Exothermic — energy is released','Neither, bonds break freely','Always spontaneous']},
+  {q:'Forming chemical bonds is…', a:'Exothermic — energy is released', w:['Endothermic — energy is absorbed','Energy neutral','Only possible with a catalyst']},
+  {q:'A reaction is exothermic overall when…', a:'More energy is released forming bonds than is absorbed breaking them', w:['More energy is absorbed than released','No bonds are broken','The activation energy is zero']},
+  {q:'On an energy profile diagram, the activation energy is the gap between…', a:'The reactants and the peak of the curve', w:['The reactants and the products','The peak and the products','Zero and the products']},
+  {q:'Adding a catalyst changes an energy profile diagram by…', a:'Lowering the peak, without moving the reactant or product levels', w:['Lowering the product level','Raising the reactant level','Removing the peak entirely']},
+  {q:'The heat of combustion of a fuel is the energy released when…', a:'One mole (or a stated mass) of the fuel burns completely in oxygen', w:['A fuel is formed from its elements','A fuel evaporates','One mole of oxygen is consumed']},
+  {q:'Entropy is best described as a measure of…', a:'The disorder, or the number of ways energy and particles can be arranged', w:['The total energy of a system','The rate of a reaction','The strength of the bonds']},
+  {q:'Which change increases entropy the most?', a:'A solid turning into a gas', w:['A gas turning into a liquid','A liquid freezing','A gas being compressed']},
+  {q:'A reaction that produces more moles of gas than it consumes has…', a:'A positive entropy change (ΔS > 0)', w:['A negative entropy change','No entropy change','Zero enthalpy change']},
+  {q:'A reaction with negative ΔH and positive ΔS is…', a:'Spontaneous at all temperatures', w:['Never spontaneous','Spontaneous only when hot','Spontaneous only when cold']},
+  {q:'A reaction with positive ΔH and negative ΔS is…', a:'Never spontaneous at any temperature', w:['Always spontaneous','Spontaneous only when hot','Spontaneous only when cold']},
+  {q:'Hess’s law says the enthalpy change of a reaction…', a:'Is the same whichever route is taken from reactants to products', w:['Depends on the path taken','Is always negative','Depends on the catalyst used']},
+  {q:'Specific heat capacity is the energy needed to…', a:'Raise the temperature of a fixed mass of a substance by one degree', w:['Melt one mole of a substance','Break one mole of bonds','Raise any mass by one degree']},
+  {q:'Water is used in calorimetry largely because it has…', a:'A high specific heat capacity and well-known properties', w:['The lowest specific heat capacity','No heat capacity at all','A very low boiling point']},
+  {q:'Using bond energies, ΔH is calculated as…', a:'Bonds broken minus bonds formed', w:['Bonds formed minus bonds broken','Bonds broken plus bonds formed','Bonds formed divided by bonds broken']},
+  {q:'The standard enthalpy of formation of an element in its standard state is…', a:'Zero, by definition', w:['Always negative','Always positive','Equal to its bond energy']},
+  {q:'The Gibbs free energy equation is…', a:'ΔG = ΔH − TΔS', w:['ΔG = ΔH + TΔS','ΔG = TΔS − ΔH','ΔG = ΔH × TΔS']},
+  {q:'A reaction is spontaneous when…', a:'ΔG is negative', w:['ΔG is positive','ΔH is positive','ΔS is negative']},
+  {q:'Why must temperature be in kelvin in the Gibbs equation?', a:'It is an absolute scale, so the TΔS term scales correctly', w:['Kelvin values are always smaller','Celsius cannot be negative','It makes ΔG positive']}
+];
+function genEnergyProfile(){ return bankQ(ENERGY_C, 'enp'); }
+
+/* ── physics: thermodynamics (Module 3) ────────────────────────────────── */
+const THERMO_C = [
+  { n:'Temperature', d:'a measure of the average kinetic energy of the particles in a substance' },
+  { n:'Heat', d:'energy transferred between objects because of a temperature difference' },
+  { n:'Thermal equilibrium', d:'the state where two objects in contact have reached the same temperature, so no net heat flows' },
+  { n:'Specific heat capacity', d:'the energy needed to raise one kilogram of a substance by one degree' },
+  { n:'Latent heat', d:'the energy absorbed or released during a change of state, with no temperature change' },
+  { n:'Conduction', d:'heat transfer through direct particle contact and vibration, without the material itself flowing' },
+  { n:'Convection', d:'heat transfer carried by the bulk movement of a heated fluid, as warm fluid rises' },
+  { n:'Radiation', d:'heat transfer by electromagnetic waves, needing no medium at all' },
+  { n:'Thermal conductivity', d:'how readily a material lets heat pass through it' },
+  { n:'Absolute zero', d:'the temperature at which particle motion is at its minimum, 0 K or −273 °C' }
+];
+function genThermoCalc(){
+  const k = ri(0,2);
+  if (k === 0){                                       // Q = mcΔT
+    const m0 = ri(2,20)/10, c = pk([390,900,4180,2100]), dT = ri(5,60);
+    const q = rd(m0*c*dT/1000, 2);
+    const mm = physMC(q, 'kJ', [rd(m0*c/1000,2), rd(c*dT/1000,2), rd(q*2,2)]);
+    return { q:'How much energy is needed to raise <b>'+m0+' kg</b> of a substance by <b>'+dT+' °C</b>? (c = '+c+' J/kg·°C)',
+      choices:mm.choices, answer:mm.answer, note:'Q = mcΔT = '+m0+'×'+c+'×'+dT+' = '+(m0*c*dT).toFixed(0)+' J = '+q+' kJ.' };
+  }
+  if (k === 1){                                       // latent heat Q = mL
+    const m0 = ri(1,20)/10, L = pk([334000, 2260000, 205000]);
+    const q = rd(m0*L/1000, 1);
+    const mm = physMC(q, 'kJ', [rd(L/1000,1), rd(m0*L/2000,1), rd(m0+L/1000,1)]);
+    return { q:'How much energy is needed to change the state of <b>'+m0+' kg</b> of a substance with a latent heat of <b>'+(L/1000)+' kJ/kg</b>?',
+      choices:mm.choices, answer:mm.answer, note:'Q = mL = '+m0+'×'+(L/1000)+' = '+q+' kJ (the temperature does not change).' };
+  }
+  const kk = pk([0.04, 0.6, 50, 200]), A = ri(1,6)/2, dT = ri(10,60), d = ri(1,20)/100;
+  const rate = rd(kk*A*dT/d, 1);
+  const mm = physMC(rate, 'W', [rd(kk*A*dT*d,1), rd(kk*dT/(A*d),1), rd(A*dT/d,1)]);
+  return { q:'A slab of area <b>'+A+' m²</b> and thickness <b>'+d+' m</b> has <b>'+dT+' °C</b> across it (k = '+kk+' W/m·K). What is the rate of heat flow?',
+    choices:mm.choices, answer:mm.answer, note:'Q/t = kAΔT/d = '+kk+'×'+A+'×'+dT+'/'+d+' = '+rate+' W.' };
+}
+function genThermo(){
+  if (Math.random() < 0.45) return genThermoCalc();
+  return termQ(THERMO_C, 'thm',
+    r => 'Which term means <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* extra wave ideas the syllabus names */
+const WAVE_EXTRA = [
+  {q:'A standing wave is produced when…', a:'Two identical waves travel in opposite directions and superpose', w:['A single wave reflects off nothing','Two waves of different frequency meet','A wave slows down']},
+  {q:'On a standing wave, a point that never moves is called a…', a:'Node', w:['Antinode','Crest','Trough']},
+  {q:'On a standing wave, a point of maximum movement is called an…', a:'Antinode', w:['Node','Wavefront','Origin']},
+  {q:'Resonance occurs when a system is driven at…', a:'Its natural frequency, giving a large amplitude response', w:['Any frequency at all','A frequency far from its natural one','Zero frequency']},
+  {q:'Diffraction is the…', a:'Spreading of a wave as it passes through a gap or around an obstacle', w:['Bending as it changes speed between media','Bouncing off a surface','Cancelling of two waves']},
+  {q:'Diffraction is most noticeable when the gap is…', a:'About the same size as the wavelength', w:['Much larger than the wavelength','Much smaller than an atom','Perfectly square']},
+  {q:'The Doppler effect describes the change in observed…', a:'Frequency when the source and observer move relative to each other', w:['Amplitude when a wave reflects','Speed of light in a medium','Wavelength during diffraction']},
+  {q:'As an ambulance siren approaches you, the pitch you hear is…', a:'Higher than the true pitch, and it drops as it passes', w:['Lower, then rises as it passes','Unchanged throughout','Louder but the same pitch']},
+  {q:'Refraction happens because a wave…', a:'Changes speed when it enters a different medium', w:['Loses energy','Changes frequency','Is absorbed']},
+  {q:'When light refracts, the quantity that stays the same is its…', a:'Frequency', w:['Speed','Wavelength','Direction']},
+  {q:'Progressive (travelling) waves differ from standing waves because they…', a:'Transfer energy from one place to another', w:['Have fixed nodes','Never reflect','Cannot carry sound']},
+  {q:'The inverse square law means that doubling your distance from a point source…', a:'Reduces the intensity to a quarter', w:['Halves the intensity','Doubles the intensity','Leaves intensity unchanged']}
+];
+
+/* extra electricity / magnetism ideas */
+const EM_EXTRA = [
+  {q:'The magnetic field around a straight current-carrying wire is…', a:'A series of concentric circles around the wire', w:['Straight lines along the wire','A single loop at one end','Zero everywhere']},
+  {q:'The field inside a current-carrying solenoid is…', a:'Strong and nearly uniform, like that of a bar magnet', w:['Zero','Circular around the axis','Always pointing outwards']},
+  {q:'Adding an iron core to a solenoid…', a:'Greatly strengthens the magnetic field', w:['Cancels the field','Reverses the current','Has no effect']},
+  {q:'Reversing the current in a solenoid…', a:'Reverses the direction of its magnetic field', w:['Doubles the field strength','Switches the field off','Has no effect on the field']},
+  {q:'Conventional current is defined as flowing…', a:'From the positive terminal to the negative terminal', w:['From negative to positive','In the direction electrons move','Only in a vacuum']},
+  {q:'In a series circuit, the current through each component is…', a:'The same everywhere', w:['Divided between components','Largest at the first component','Zero at the last component']},
+  {q:'In a parallel circuit, the potential difference across each branch is…', a:'The same across every branch', w:['Divided between branches','Highest in the longest branch','Always zero']},
+  {q:'An ammeter must be connected…', a:'In series with the component whose current is being measured', w:['In parallel with the component','Across the battery only','Anywhere in the circuit']},
+  {q:'A voltmeter must be connected…', a:'In parallel with the component whose voltage is being measured', w:['In series with the component','Across the ammeter','In place of the battery']},
+  {q:'Electromotive force (emf) is the energy supplied per…', a:'Unit of charge by the source', w:['Second by the resistor','Unit of current','Metre of wire']},
+  {q:'The electric field between two parallel charged plates is…', a:'Uniform, and equal to V/d', w:['Strongest near one plate','Zero in the middle','Circular']},
+  {q:'Two unlike charges placed near each other will…', a:'Attract', w:['Repel','Exert no force','Neutralise instantly']}
+];
+
+/* ── engineering: mechanical advantage, velocity ratio and efficiency ──── */
+function genMachines(){
+  const k = ri(0,3);
+  if (k === 0){                                     // MA = L / E
+    const E = ri(20,120), ma = ri(2,6), L = E*ma;
+    const m = physMC(ma, '', [rd(E/L,2), rd(L+E,0), rd(L-E,0)]);
+    return { q:'A machine lifts a load of <b>'+L+' N</b> using an effort of <b>'+E+' N</b>. What is its mechanical advantage?',
+      choices:m.choices, answer:m.answer, note:'MA = Load / Effort = '+L+'/'+E+' = '+ma+'.' };
+  }
+  if (k === 1){                                     // VR of an inclined plane = 1/sinθ
+    const deg = pk([15,20,30,45]), vr = rd(1/Math.sin(deg*Math.PI/180), 2);
+    const m = physMC(vr, '', [rd(Math.sin(deg*Math.PI/180),2), rd(1/Math.cos(deg*Math.PI/180),2), deg]);
+    return { q:'A ramp is inclined at <b>'+deg+'°</b>. What is its velocity ratio?',
+      choices:m.choices, answer:m.answer, note:'For an inclined plane VR = 1/sin θ = 1/sin '+deg+'° = '+vr+'.' };
+  }
+  if (k === 2){                                     // efficiency = MA/VR
+    const vr = ri(2,8), eff = pk([50,60,75,80,90]), ma = rd(eff/100*vr, 2);
+    const m = physMC(ma, '', [vr, rd(vr/(eff/100),2), rd(eff/100,2)]);
+    return { q:'A machine has a velocity ratio of <b>'+vr+'</b> and is <b>'+eff+'%</b> efficient. What is its mechanical advantage?',
+      choices:m.choices, answer:m.answer, note:'η = MA/VR, so MA = η × VR = '+(eff/100)+'×'+vr+' = '+ma+'.' };
+  }
+  const ma = ri(2,6), vr = ma + ri(1,3), eff = rd(ma/vr*100, 1);
+  const m = physMC(eff, '%', [rd(vr/ma*100,1), rd(ma*vr,1), rd(100-eff,1)]);
+  return { q:'A machine has a mechanical advantage of <b>'+ma+'</b> and a velocity ratio of <b>'+vr+'</b>. What is its efficiency?',
+    choices:m.choices, answer:m.answer, note:'η = MA/VR × 100 = '+ma+'/'+vr+' × 100 = '+eff+'%.' };
+}
+
+/* ── engineering: stress, strain and the tensile test ──────────────────── */
+function genStressCalc(){
+  const k = ri(0,2);
+  if (k === 0){                                     // stress = F / A
+    const F = ri(2,40)*500, A = ri(1,20)/10000;     // m²
+    const sig = rd(F/A/1e6, 2);                     // MPa
+    const m = physMC(sig, 'MPa', [rd(F*A/1e6,2), rd(F/A/1e3,2), rd(A/F,4)]);
+    return { q:'A bar of cross-sectional area <b>'+(A*1e4)+' cm²</b> carries a load of <b>'+F+' N</b>. What is the stress?',
+      choices:m.choices, answer:m.answer, note:'σ = F/A = '+F+'/'+A+' = '+(F/A/1e6).toFixed(2)+' MPa.' };
+  }
+  if (k === 1){                                     // strain = e / L
+    const L = ri(1,30)/10, e = ri(1,40)/10000;      // m
+    const eps = rd(e/L, 5);
+    const m = mc(String(eps), [String(rd(L/e,2)), String(rd(e*L,5)), String(rd(eps*10,4))]);
+    return { q:'A cable <b>'+L+' m</b> long stretches by <b>'+(e*1000)+' mm</b>. What is the strain?',
+      choices:m.choices, answer:m.answer, note:'ε = e/L = '+e+'/'+L+' = '+eps+' (strain has no units).' };
+  }
+  const eps = ri(5,40)/10000, sig = ri(50,300);
+  const E = rd(sig/eps/1000, 0);                    // GPa
+  const m = physMC(E, 'GPa', [rd(eps/sig*1000,4), rd(sig*eps,3), rd(E/2,0)]);
+  return { q:'A material under <b>'+sig+' MPa</b> shows a strain of <b>'+eps+'</b>. What is its Young’s modulus?',
+    choices:m.choices, answer:m.answer, note:'E = σ/ε = '+sig+'/'+eps+' = '+(sig/eps).toFixed(0)+' MPa ≈ '+E+' GPa.' };
+}
+const TENSILE_C = [
+  { n:'Proportional limit', d:'the point up to which stress and strain stay directly proportional, so the graph is a straight line' },
+  { n:'Elastic limit', d:'the last point from which the material still returns to its original shape once unloaded' },
+  { n:'Upper yield point', d:'where the material suddenly gives and begins to deform plastically' },
+  { n:'Lower yield point', d:'the slightly lower stress at which plastic deformation then continues' },
+  { n:'Ultimate tensile strength', d:'the greatest stress the material withstands before necking begins' },
+  { n:'Necking', d:'the local thinning of the specimen that starts once the maximum stress is passed' },
+  { n:'Breaking point', d:'the stress at which the specimen finally fractures' },
+  { n:'Work hardening', d:'the strengthening that occurs as a metal is plastically deformed' },
+  { n:'Plastic deformation', d:'permanent change of shape that remains after the load is removed' },
+  { n:'Elastic deformation', d:'temporary change of shape that reverses completely when unloaded' }
+];
+function genStress(){
+  if (Math.random() < 0.45) return genStressCalc();
+  return termQ(TENSILE_C, 'ten',
+    r => 'On a stress–strain curve, which point or term is <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── engineering: braking systems ──────────────────────────────────────── */
+const BRAKES = [
+  {q:'A brake works by converting the vehicle’s kinetic energy into…', a:'Heat, through friction', w:['Electrical energy only','Potential energy','Sound alone']},
+  {q:'Compared with drum brakes, disc brakes mainly have the advantage of…', a:'Better cooling, so they resist brake fade', w:['Lower cost always','Working without friction','Needing no hydraulic fluid']},
+  {q:'Brake fade is caused by…', a:'Overheating reducing the friction between pad and disc', w:['Too much brake fluid','Cold weather','Excess tyre pressure']},
+  {q:'Hydraulic brakes work on the principle that…', a:'Pressure applied to an enclosed fluid is transmitted equally throughout it', w:['Liquids compress easily','Fluids lose pressure with distance','Gases transmit force better than liquids']},
+  {q:'Hydraulic fluid is used rather than a gas because liquids are…', a:'Practically incompressible, so the pedal movement transmits directly', w:['Lighter than gases','Easier to compress','Better electrical conductors']},
+  {q:'If the master cylinder is smaller in area than the slave cylinder, the system gives…', a:'A force multiplication at the slave cylinder', w:['A force reduction','No change in force','A loss of pressure']},
+  {q:'A brake disc is usually made of cast iron because it…', a:'Has good wear resistance and absorbs and sheds heat well', w:['Is the lightest available material','Cannot rust','Has the highest tensile strength']},
+  {q:'Brake pads must have a high coefficient of friction and also…', a:'Resist fading and wear at high temperature', w:['Melt easily to lubricate the disc','Conduct electricity','Be perfectly elastic']},
+  {q:'Ventilated discs improve braking because they…', a:'Increase the surface area for cooling airflow', w:['Reduce the friction available','Make the disc heavier','Remove the need for pads']},
+  {q:'The friction force available at a brake is proportional to…', a:'The normal force pressing the pad against the disc', w:['The speed of the vehicle only','The mass of the pad','The area of contact alone']},
+  {q:'ABS (anti-lock braking) improves safety mainly by…', a:'Preventing the wheels locking, so steering control is retained', w:['Increasing the top speed','Removing the need for brake fluid','Making the brakes silent']},
+  {q:'A handbrake is usually mechanical rather than hydraulic so that it…', a:'Still works if the hydraulic system fails', w:['Is cheaper to make','Applies more force than the footbrake','Works only when moving']},
+  {q:'The brake pedal is a lever so that it…', a:'Multiplies the driver’s foot force before the master cylinder', w:['Reduces the force applied','Stores brake fluid','Cools the brake discs']},
+  {q:'Cars use two independent hydraulic circuits so that…', a:'A leak in one circuit still leaves braking on the other', w:['The pedal feels softer','Fluid can be changed while driving','The brakes never get hot']},
+  {q:'A brake booster (servo) uses engine vacuum to…', a:'Reduce the pedal effort the driver must apply', w:['Cool the brake fluid','Lock the wheels faster','Replace the master cylinder']},
+  {q:'A higher coefficient of friction between pad and disc gives…', a:'More braking force for the same pedal pressure', w:['Less braking force','Cooler brakes always','A longer stopping distance']},
+  {q:'Brake discs can warp because…', a:'Uneven heating and cooling causes uneven thermal expansion', w:['The fluid becomes too thick','They are too light','The pads are too soft']},
+  {q:'Regenerative braking in an electric vehicle…', a:'Recovers kinetic energy as electrical energy instead of losing it all as heat', w:['Uses larger friction pads','Removes the need for any friction brakes','Stores energy as heat in the disc']},
+  {q:'Stopping distance is the sum of…', a:'Reaction distance and braking distance', w:['Braking distance only','Reaction distance only','Speed multiplied by mass']},
+  {q:'Doubling a vehicle’s speed increases its braking distance by roughly…', a:'Four times, since kinetic energy goes with v²', w:['Two times','Half','No change']},
+  {q:'Asbestos was removed from brake linings primarily because…', a:'Its dust is a serious health hazard', w:['It was too expensive','It had no friction','It melted too easily']}
+];
+
+/* ── engineering: engineered products (concepts, not the history) ──────── */
+const PRODUCTS = [
+  {q:'Guarding the moving parts of a machine — for example enclosing a mower blade — is an example of…', a:'Designing safety into the product rather than relying on the user', w:['Reducing manufacturing cost','Improving the appearance','Increasing the power output']},
+  {q:'A dead-man switch, which stops a machine as soon as the operator lets go, is a…', a:'Fail-safe design feature', w:['Cost-saving measure','Decorative feature','Way to increase speed']},
+  {q:'Ergonomics in product design is concerned with…', a:'Fitting the product to the human body and how people actually use it', w:['The cost of raw materials','The strength of the metal','The speed of manufacture']},
+  {q:'Planned obsolescence means a product is…', a:'Designed to have a limited useful life so it is replaced', w:['Built to last indefinitely','Made from recycled material','Designed for easy repair']},
+  {q:'Life-cycle analysis of a product considers…', a:'Its whole impact from raw material through use to disposal', w:['Only the manufacturing stage','Only the selling price','Only its warranty period']},
+  {q:'Choosing a material for a product is mainly a balance between…', a:'Required properties, cost, and how easily it can be manufactured', w:['Colour and weight only','The designer’s preference','The oldest available process']},
+  {q:'Mass production lowers unit cost mainly because…', a:'Tooling and setup costs are spread over many identical items', w:['Materials become stronger','Workers are paid less','Quality control is skipped']},
+  {q:'Die casting is best suited to…', a:'Producing many identical, detailed metal parts quickly', w:['One-off prototypes','Joining two metals','Hardening a surface']},
+  {q:'Injection moulding is the standard process for…', a:'Forming thermoplastic parts in high volume', w:['Shaping cast iron','Welding steel','Heat treating alloys']},
+  {q:'A prototype is built mainly to…', a:'Test whether the design actually works before committing to production', w:['Sell to the first customer','Replace the final product','Avoid the need for testing']},
+  {q:'Quality control during manufacture exists to…', a:'Check products meet the specification and catch faults early', w:['Increase the production rate','Lower the material grade','Replace the design stage']},
+  {q:'Designing a product so it can be taken apart for repair or recycling is called…', a:'Design for disassembly', w:['Planned obsolescence','Mass production','Reverse engineering']},
+  {q:'A tolerance on a dimension specifies…', a:'The allowable variation from the stated size', w:['The exact size every part must be','The strength of the material','The surface finish required']},
+  {q:'Standardisation of components means…', a:'Parts are made to agreed common sizes so they are interchangeable', w:['Every part is unique','Parts are made by hand','Designs are never reused']},
+  {q:'Reverse engineering is…', a:'Examining an existing product to work out how it was designed and made', w:['Designing a product backwards','Recycling a product','Running a machine in reverse']},
+  {q:'CAD is mainly valuable in design because it…', a:'Lets a design be modified, tested and shared before anything is built', w:['Removes the need for any testing','Manufactures the part directly','Replaces the designer']},
+  {q:'A jig or fixture is used in manufacture to…', a:'Hold and locate the workpiece so every part is made the same', w:['Cut the material','Harden the surface','Measure the final product']},
+  {q:'Anthropometric data is used in design to…', a:'Match a product to the range of human body sizes', w:['Calculate material strength','Estimate production cost','Choose a colour scheme']},
+  {q:'Surface finish matters on a moving part mainly because it affects…', a:'Friction, wear and fatigue life', w:['Only the appearance','The density of the metal','The melting point']},
+  {q:'Choosing a recycled or recyclable material mainly improves a product’s…', a:'Environmental impact over its life cycle', w:['Tensile strength','Manufacturing speed','Electrical conductivity']},
+  {q:'A factor of safety is applied in design to…', a:'Allow for uncertainty in loads, materials and manufacture', w:['Make the product cheaper','Reduce the material used','Speed up production']}
+];
+
+/* ── engineering: biomedical ───────────────────────────────────────────── */
+const BIOMED = [
+  {q:'Biocompatibility means a material…', a:'Is not rejected, toxic or harmful when placed in the body', w:['Is biodegradable within days','Conducts electricity','Is always metallic']},
+  {q:'Titanium is widely used for implants mainly because it is…', a:'Biocompatible, corrosion resistant and has a high strength-to-weight ratio', w:['The cheapest metal available','The heaviest metal','A good electrical insulator']},
+  {q:'Osseointegration is…', a:'Bone growing into and bonding directly with an implant surface', w:['Rejection of an implant','Corrosion of an implant','Removal of bone tissue']},
+  {q:'Stainless steel used for implants must be…', a:'Highly corrosion resistant so body fluids do not attack it', w:['As hard as possible','Magnetic','Porous throughout']},
+  {q:'A key requirement of a hip-replacement joint is…', a:'Low friction and high wear resistance over many years of movement', w:['Maximum weight','High electrical conductivity','Complete rigidity of the whole leg']},
+  {q:'UHMWPE (ultra-high molecular weight polyethylene) is used in joint replacements as the…', a:'Low-friction bearing surface', w:['Load-bearing metal stem','Electrical insulator','Adhesive']},
+  {q:'A material used in a heart valve must above all…', a:'Not cause blood to clot on its surface', w:['Be as stiff as possible','Dissolve slowly','Be magnetic']},
+  {q:'A major design consideration for a prosthetic limb is…', a:'Keeping it light while strong enough for repeated loading', w:['Making it as heavy as possible','Maximising the number of parts','Avoiding all movement']},
+  {q:'Fatigue failure matters in implants because they are…', a:'Loaded and unloaded millions of times over their life', w:['Never subjected to force','Only used once','Made of ceramic always']},
+  {q:'X-ray imaging works because different tissues…', a:'Absorb radiation by different amounts, with bone absorbing most', w:['Emit their own X-rays','Reflect sound waves','Glow under visible light']},
+  {q:'Ultrasound imaging is generally preferred for a foetus because it…', a:'Uses sound waves rather than ionising radiation', w:['Gives much sharper images than any other method','Is the cheapest possible option','Works through bone easily']},
+  {q:'A biomedical engineer’s designs must satisfy medical regulators mainly to ensure…', a:'The device is safe and effective for patients', w:['It is the cheapest on the market','It looks attractive','It can be mass produced']},
+  {q:'An implant material must tolerate sterilisation, which usually means withstanding…', a:'High temperature, steam or radiation without degrading', w:['Being frozen solid','Being painted','Prolonged sunlight']},
+  {q:'Body fluids are corrosive to metals because they are…', a:'Warm, salty and slightly acidic', w:['Completely inert','Pure water','Strongly alkaline']},
+  {q:'Stress shielding happens when an implant is…', a:'Much stiffer than the bone, so the bone carries less load and weakens', w:['Weaker than the bone','Made of plastic','Too small for the patient']},
+  {q:'Ceramics such as alumina are used in joints because they are…', a:'Extremely hard and wear resistant, though brittle', w:['Very ductile','Electrically conductive','Easily deformed']},
+  {q:'Shape memory alloys such as nitinol are useful in stents because they…', a:'Return to a preset shape at body temperature', w:['Dissolve in the bloodstream','Conduct electricity','Are magnetic']},
+  {q:'A dialysis machine substitutes for the kidneys by…', a:'Filtering waste products out of the blood', w:['Pumping blood around the body','Adding oxygen to the blood','Replacing bone marrow']},
+  {q:'A pacemaker works by…', a:'Delivering timed electrical impulses to regulate the heartbeat', w:['Pumping blood mechanically','Replacing a heart valve','Filtering the blood']},
+  {q:'MRI is often preferred over CT for soft tissue because it…', a:'Gives better soft-tissue contrast without ionising radiation', w:['Is much faster in every case','Uses stronger X-rays','Works only on bone']},
+  {q:'The main reason an implant may be rejected is…', a:'The body’s immune system reacting against the material', w:['The implant being too light','The implant being sterilised','The patient being too young']}
+];
+function genBrakes(){ return bankQ(BRAKES, 'brk'); }
+function genProducts(){ return bankQ(PRODUCTS, 'prd'); }
+function genBiomed(){ return bankQ(BIOMED, 'bio'); }
+
 BUILD.software = host => revGame(host, { title:'Software', how:'The three Year 11 modules — pick one, or the whole topic.', statKey:'software',
   modules:[
     {id:'fund',name:'Fundamentals',topics:[
@@ -4871,17 +5273,17 @@ BUILD.maths = host => revGame(host, { title:'Maths', how:'Procedural practice �
   topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
 BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Four modules — pick one, or the whole topic.', statKey:'chem',
   modules:[
-    {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape}]},
-    {id:'m2',name:'Module 2',topics:[{id:'c-mole',name:'Moles & mass',gen:genChemMoles},{id:'c-lim',name:'Limiting reagent',gen:genChemLimiting},{id:'c-emp',name:'Empirical formula',gen:genChemEmp},{id:'c-soln',name:'Solutions & gases',gen:genChemSol2}]},
-    {id:'m3',name:'Module 3',topics:[{id:'c-type',name:'Reaction types',gen:genChemType},{id:'c-redox',name:'Redox',gen:genRedox},{id:'c-galv',name:'Galvanic cells',gen:genGalvanic},{id:'c-sol',name:'Solubility',gen:genSol}]},
-    {id:'m4',name:'Module 4',topics:[{id:'c-cal',name:'Calorimetry',gen:genCalor},{id:'c-bond',name:'Bond energies',gen:genBondE},{id:'c-form',name:'Enthalpy of formation',gen:genFormation},{id:'c-gibbs',name:'Entropy & Gibbs',gen:genGibbs}]}
+    {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-mix',name:'Mixtures & separation',gen:genSeparation},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape}]},
+    {id:'m2',name:'Module 2',topics:[{id:'c-mole',name:'Moles & mass',gen:genChemMoles},{id:'c-bal',name:'Balancing equations',gen:genBalance},{id:'c-gas',name:'Gas laws',gen:genGasLaw},{id:'c-lim',name:'Limiting reagent',gen:genChemLimiting},{id:'c-emp',name:'Empirical formula',gen:genChemEmp},{id:'c-soln',name:'Solutions & gases',gen:genChemSol2}]},
+    {id:'m3',name:'Module 3',topics:[{id:'c-type',name:'Reaction types',gen:genChemType},{id:'c-rate',name:'Reaction rates',gen:genRates},{id:'c-act',name:'Activity series',gen:genActivity},{id:'c-redox',name:'Redox',gen:genRedox},{id:'c-galv',name:'Galvanic cells',gen:genGalvanic},{id:'c-sol',name:'Solubility',gen:genSol}]},
+    {id:'m4',name:'Module 4',topics:[{id:'c-cal',name:'Calorimetry',gen:genCalor},{id:'c-enp',name:'Energy & entropy',gen:genEnergyProfile},{id:'c-bond',name:'Bond energies',gen:genBondE},{id:'c-form',name:'Enthalpy of formation',gen:genFormation},{id:'c-gibbs',name:'Entropy & Gibbs',gen:genGibbs}]}
   ] });
 BUILD.physics = host => revGame(host, { title:'Physics', how:'Four modules — pick one, or the whole topic.', statKey:'physics',
   modules:[
     {id:'m1',name:'Kinematics',topics:[{id:'p-kc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_KIN,'kin'):genPhysQuant('kin')},{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
     {id:'m2',name:'Dynamics',topics:[{id:'p-dc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_DYN,'dyn'):genPhysQuant('dyn')},{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
-    {id:'m3',name:'Waves',topics:[{id:'p-wc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_WAVE,'wave'):genPhysQuant('wave')},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
-    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_EM,'em'):genPhysQuant('em')},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
+    {id:'m3',name:'Waves & thermodynamics',topics:[{id:'p-thermo',name:'Thermodynamics',gen:genThermo},{id:'p-wc',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_WAVE,'wave'):r<0.62?bankQ(WAVE_EXTRA,'wavex'):genPhysQuant('wave');}},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
+    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_EM,'em'):r<0.62?bankQ(EM_EXTRA,'emx'):genPhysQuant('em');}},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
 BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Five modules — pick one, or the whole topic.', statKey:'engineering',
   modules:[
@@ -4897,7 +5299,13 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Five modul
       {id:'e-prop',name:'Mechanical properties',gen:genPropFact}]},
     {id:'mech',name:'Mechanics',topics:[
       {id:'e-mom',name:'Moments',gen:genMoments},
-      {id:'e-couple',name:'Couples',gen:genCouple}]}
+      {id:'e-couple',name:'Couples',gen:genCouple},
+      {id:'e-mach',name:'Machines & efficiency',gen:genMachines},
+      {id:'e-stress',name:'Stress & strain',gen:genStress}]},
+    {id:'app',name:'Applications',topics:[
+      {id:'e-brk',name:'Braking systems',gen:genBrakes},
+      {id:'e-prd',name:'Engineered products',gen:genProducts},
+      {id:'e-bio',name:'Biomedical',gen:genBiomed}]}
   ] });
 
 showGrid();

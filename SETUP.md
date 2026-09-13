@@ -1061,7 +1061,40 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Streak syncs across devices + a sound that keeps growing (latest)
+## Chemistry, physics and engineering expanded from the class resources (latest)
+
+Built from the KISS Chemistry PhotoMasters (Modules 1-4), the NSW Physics Stage 6
+syllabus, and the Engineering Studies textbook (Engineering Fundamentals,
+Engineered Products, Braking Systems, Biomedical). The textbook chapters are
+scans with no text layer, so the technical pages were read as images; its
+historical chronologies were deliberately reduced to the concept that matters -
+"guarding moving parts" rather than who patented which lawnmower.
+
+**New subtopics**
+
+| Subject | Added |
+|---|---|
+| Chemistry M1 | Mixtures & separation - filtration, distillation, chromatography, decanting, separating funnel, centrifuging, plus allotropes and mixture/solution concepts |
+| Chemistry M2 | **Balancing equations** (22 equations) and **Gas laws** (Boyle, Charles, combined, ideal) - both computed |
+| Chemistry M3 | **Reaction rates** (collision theory, temperature, concentration/pressure, surface area, catalysts) and **Activity series** (generated from the reactivity order) |
+| Chemistry M4 | **Energy & entropy** - activation energy, energy profiles, bond making/breaking, Hess law, entropy sign, Gibbs |
+| Physics M3 | **Thermodynamics** - now "Waves & thermodynamics", covering temperature vs kinetic energy, thermal equilibrium, Q=mcDT, latent heat, conduction/convection/radiation and thermal conductivity Q/t=kADT/d. Waves gained standing waves, resonance, diffraction and the Doppler effect |
+| Physics M4 | Solenoids, field shapes, conventional current, meters, emf and parallel plates |
+| Engineering | **Machines & efficiency** (MA, VR, efficiency), **Stress & strain** (stress, strain, Young modulus, and the full tensile-test curve), plus an **Applications** module: Braking systems, Engineered products, Biomedical |
+
+**Verification.** Every computed generator was checked by parsing the numbers back
+out of its own question wording and re-deriving the answer - gas laws, machines,
+stress/strain and thermodynamics all correct across 10,000 samples. All 22
+balancing equations were verified by counting atoms on each side. Across 48,000
+samples there were no errors and no broken multiple-choice. Every new subtopic has
+21+ distinct questions; the computed ones are effectively unlimited (gas laws
+2,563 / stress 1,433 / thermodynamics 676 / machines 476 observed).
+
+Countable question totals are now chemistry 454, engineering 283, software 287,
+physics 168, maths 42 - so a fully-completed history is roughly 45 KB against the
+100 KB prefs cap. Worth re-measuring before the next big content push.
+
+## Streak syncs across devices + a sound that keeps growing
 
 - **The streak now follows you.** It was a session variable that vanished when you
   left the game; it's saved to `tt.rev_<key>_streak`, which rides the existing
