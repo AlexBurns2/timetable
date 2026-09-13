@@ -38,6 +38,32 @@ const MAX_SCORE = 100000000;
    in the environment to your school login; unset ⇒ nobody can wipe. */
 const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
+/* Owner-only engagement view: everyone who has actually used the site.
+ * `prefs` gets a row the first time someone's settings sync after they log in,
+ * so it is the closest thing to a sign-in log; game scores and daily results
+ * fill in anyone who played before settings synced, and give an activity count.
+ * Read-only — it never writes, and it is gated to OWNER_EMAIL by the caller. */
+async function siteUsers() {
+  const out = new Map();
+  const touch = (email, when, key) => {
+    const e = String(email || "").toLowerCase();
+    if (!e) return;
+    let u = out.get(e);
+    if (!u) { u = { email: e, name: nameFromEmail(e), last: null, scores: 0, days: 0 }; out.set(e, u); }
+    if (when && (!u.last || String(when) > u.last)) u.last = String(when);
+    if (key) u[key]++;
+  };
+  const grab = async (table, col) => {
+    const { data, error } = await db.from(table).select("email, " + col).limit(5000);
+    if (error) { console.error("siteUsers " + table + ":", error.message); return []; }
+    return data || [];
+  };
+  (await grab("prefs", "updated_at")).forEach(r => touch(r.email, r.updated_at));
+  (await grab("game_score", "updated_at")).forEach(r => touch(r.email, r.updated_at, "scores"));
+  (await grab("daily_result", "updated_at")).forEach(r => touch(r.email, r.updated_at, "days"));
+  return [...out.values()].sort((a, b) => String(b.last || "").localeCompare(String(a.last || "")));
+}
+
 async function board(game, metric, period, dir, meEmail, withEmail) {
   const asc = dir === "min";
   const { data: top } = await db.from("game_score")
@@ -84,6 +110,14 @@ export default async function handler(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
   const src = req.method === "POST" ? (body || {}) : req.query;
+
+  /* owner-only roster of who has signed in — answered before the game/metric
+     checks below, since it isn't tied to any one board */
+  if (req.method === "GET" && src.users) {
+    if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
+      return res.status(403).json({ error: "Only the owner can see this." });
+    return res.status(200).json({ users: await siteUsers() });
+  }
 
   const game = String(src.game || "");
   const metric = String(src.metric || "");

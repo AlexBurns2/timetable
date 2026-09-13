@@ -1061,7 +1061,89 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Engineering materials content + spaced-repetition selection (latest)
+## Forum, moderator user list, Guess Who hint overhaul (latest)
+
+- **Home-page forum.** New `api/forum.js` + a `forum` section on `home.html` (below
+  the four tiles): post a thread, reply to one, relative timestamps, delete your own
+  (the `OWNER_EMAIL` account can delete anything; deleting a thread takes its replies).
+  Same verified-email identity as everything else — emails are never returned, the
+  display name is derived server-side. **Needs a new table:**
+
+  ```sql
+  create table forum_post (
+    id         text primary key,
+    email      text not null,
+    body       text not null,
+    parent     text,                       -- null = thread, else the thread id
+    created_at timestamptz not null default now()
+  );
+  create index forum_post_parent_idx on forum_post (parent, created_at);
+  ```
+
+- **Moderator user list.** The Admin game opens on a new **Signed-in users** tab:
+  everyone who has used the site, with their last-seen time and how many
+  scores / dailies they have. Served by `GET /api/leaderboard?users=1`, gated to
+  `OWNER_EMAIL`. It unions `prefs` (a row appears the first time someone's settings
+  sync after login — the closest thing we have to a sign-in log) with `game_score`
+  and `daily_result`. Read-only; it never writes.
+
+- **Guess Who hints are no longer a fixed order.** Both the daily and the practice
+  game now group hints by how much they give away (vague → medium → strong →
+  nearly the answer) and **shuffle within each tier**, so the order is fresh every
+  time while the giveaways still land last. The full-name reveal is held out of the
+  shuffle and is always the final hint. The vocabulary is much wider — vowel counts,
+  whole-name length, double letters, vowel/consonant starts, alphabet half, name
+  endings, initials — on top of the original lengths and first letters.
+  - The **daily** seeds its shuffle from `date:year`, so the order changes day to
+    day but is identical for everyone in the year all day (the Wordle property).
+  - It also now gives **real content hints** — *"They take Drama"*, *"One of their
+    teachers is Mr Nguyen"* — by reading the target's own timetable at generation
+    time (`studiesOf()` → `fetchAsOwner('/api/timetable/<email>')`) and storing
+    `subjects`/`teachers` on the puzzle.
+  - **Existing puzzles are untouched.** Hints are recomputed from the stored target
+    on every read, and older rows simply have no `subjects`, so those hints are
+    skipped. No puzzle is regenerated and no answer ever changes.
+  - **My grade / Whole school** in the practice game used to have no class data, which
+    is why they only ever gave name shapes. `withClassInfo()` now folds the
+    shared-class pool into those pools, so they can say *"They take PDHPE"*,
+    *"They are in 2 of your classes"* and *"They have a class with A Smith"*.
+  - A round is ~9 hints (was 7).
+
+- **Microstructure diagrams redrawn** to match the study guide: a **Voronoi grain
+  tessellation** clipped to the circular field, with per-colony hatch directions
+  drawn as real clipped lines (hatching = pearlite, solid fill = graphite), a pale
+  cementite network for hypereutectoid, and spaced flakes / nodules / rosettes.
+  Grains come from a seeded PRNG so each kind always looks the same.
+
+- **Home page tidied:** the footer ("Theme follows you across every page." and
+  "Back to timetable →") is removed.
+
+Deploy: ship `games.html`, `home.html`, `site.css`, redeploy `api/forum.js`,
+`api/leaderboard.js`, `api/_daily.js`, `api/daily.js`, and create the `forum_post`
+table. No existing data is touched.
+
+## Physics/Maths concept questions + steel microstructure diagrams
+
+- **Keyed concept questions for Physics and Maths.** Each Physics module gained a **Concepts**
+  subtopic (`PHYS_KIN`/`PHYS_DYN`/`PHYS_WAVE`/`PHYS_EM` — vectors vs scalars, Newton's laws, wave
+  types, Ohm's law, series/parallel, EM spectrum order, …) and Maths gained a **Concepts** topic
+  (`MATH_CONCEPTS` — power/sum rules, why "+ C", nPr vs nCr, graph-transform directions). These are
+  curated MC banks, so — like the chemistry/engineering banks — they get the spaced-repetition bias
+  (unseen-first, revisit-if-wrong, no back-to-back). The numeric generators in those subjects are
+  unchanged; the concept banks sit alongside them.
+- **Steel & cast-iron microstructure diagrams.** New `microSVG(kind)` draws schematic
+  microscope-field diagrams following the guide's convention (**hatching = pearlite, solid dark =
+  graphite**): low/medium/eutectoid/hypereutectoid steel and grey/nodular/white/malleable cast iron.
+  Eight "identify this microstructure" questions in the Steels and Cast-irons banks embed the SVG in
+  the prompt. They're inline SVG using theme tokens (`--panel`/`--muted`/`--text`/`--line`), so they
+  render correctly in light and dark skins. `rosette()` draws the temper-carbon clusters.
+- Verified in-browser: all concept banks materialise cleanly (answer among four distinct options),
+  all eight diagrams render and are distinguishable in both light and dark, and every revision game
+  still runs with no errors and no back-to-back repeats.
+
+Client-only — ship `games.html`.
+
+## Engineering materials content + spaced-repetition selection
 
 - **Engineering revision rebuilt from the study guide.** The Engineering game now has five
   modules — **Steels, Cast irons, Heat treatment, Structure & properties, Mechanics** — each split

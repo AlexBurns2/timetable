@@ -5,8 +5,10 @@ wants to add server-side state in three phases. This doc is everything you need 
 do it without the prior conversation. A visual version of the plan lives at
 <https://claude.ai/code/artifact/6466d2e1-a842-4f5e-b19e-d59a33dfcf04>.
 
-> **STATUS (2026-09-01):** Phases 0, 1 **and 2** are **built** and browser-tested
-> against mocks:
+> **STATUS (2026-09-12):** Phases 0, 1 and 2 are **built** and browser-tested
+> against mocks, and a lot has been added on top since. See
+> **§8 "Built since the original handoff"** for everything newer — that section is
+> the current picture; §§2–7 are still accurate as background and as the Phase 3 plan.
 > - Phase 1 (settings sync): `api/_supabase.js`, `api/prefs.js`, exported auth
 >   helpers in `api/timetable.js`, sync client in `theme.js` / `index.html`.
 > - Phase 2 (daily Guess Who): `api/_daily.js`, `api/daily.js`,
@@ -15,13 +17,13 @@ do it without the prior conversation. A visual version of the plan lives at
 > - Shared weekly Tetris leaderboard: `api/tetris.js` + `BUILD.tetris` — the
 >   same whoami-verified, service-role pattern (table `tetris_score`).
 >
-> What remains is **provisioning** (create the Supabase project, run the table SQL —
-> `prefs`, `daily_puzzle`, `daily_result`, `tetris_score`, `zen_score`, `game_score`,
-> `game_state`, `sprint_best`, `zen_board` —
-> set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, optionally `CRON_SECRET`,
-> redeploy) — all in SETUP.md. **Phase 3 (realtime boards/multiplayer) is still unbuilt**; the
-> sections below are its plan. The realtime-token bridge there is the natural
-> next build, and a shared Tetris weekly leaderboard would reuse the same pattern.
+> **Tables to create** (SQL in SETUP.md): `prefs`, `daily_puzzle`, `daily_result`,
+> `tetris_score`, `zen_score`, `game_score`, `game_state`, `sprint_best`,
+> `zen_board`, `shared_deck` (public flashcards), **`forum_post`** (home-page forum).
+> Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, `OWNER_EMAIL` (owner-only admin
+> tools), optionally `CRON_SECRET`, then redeploy.
+> **Phase 3 (realtime boards/multiplayer) is still unbuilt**; §6 is its plan. The
+> home-page forum (§8) is a plain request/response board, not the realtime one.
 
 **Golden rules**
 - The browser never gets a database key. All DB access goes through the Vercel
@@ -354,3 +356,124 @@ Add a `hidden boolean` column + a report action before opening a board school-wi
 - Confirm `package.json` deps deploy (Vercel installs them). ESM only (`type:module`).
 - The owner's threat model is low-stakes (a school tool), but the school password
   still lives in `localStorage` in plain text — don't widen that exposure.
+
+---
+
+## 8. Built since the original handoff (current picture)
+
+Everything below is **built and browser-tested against the mock** unless marked
+otherwise. `games.html` is a single self-contained file (all games, one `<script>`);
+`home.html` is the hub. All of it is client-side plus the `api/` routes listed.
+
+### 8.1 New / changed API routes
+
+| Route | What it does | Table |
+|---|---|---|
+| `api/decks.js` | Public flashcard decks — publish, browse by category, import, delete own | `shared_deck` |
+| `api/forum.js` | **New.** Home-page forum: threads + one level of replies, delete own (or owner) | `forum_post` |
+| `api/leaderboard.js` | Generic arcade boards **+ `?users=1`** (owner-only roster of everyone who has used the site) | `game_score` |
+| `api/_daily.js` | Daily Guess Who engine — **hint generation rewritten** (below) | `daily_puzzle` |
+
+`forum_post` SQL:
+
+```sql
+create table forum_post (
+  id         text primary key,
+  email      text not null,
+  body       text not null,
+  parent     text,                       -- null = thread, else the thread id
+  created_at timestamptz not null default now()
+);
+create index forum_post_parent_idx on forum_post (parent, created_at);
+```
+
+**`?users=1`** is the engagement view behind the Admin game's first tab. It unions
+`prefs` (a row appears the first time someone's settings sync after login — the
+closest thing to a sign-in log), `game_score` and `daily_result`, and returns
+`{email, name, last, scores, days}` sorted by last-seen. Gated to `OWNER_EMAIL`;
+read-only, it never writes.
+
+### 8.2 Guess Who hints — randomised, and no longer name-only
+
+The complaint was that the daily and "My grade" games always opened with the same
+hints in the same order (letter counts, then first letters).
+
+- **Tiered + shuffled.** Hints are grouped by how much they give away (vague →
+  medium → strong → nearly the answer) and shuffled *within* each tier, so the
+  order is fresh but the giveaways still land last. The full-name reveal
+  (`Their name reads J o _ d a n L e _`) is kept out of the shuffle entirely and
+  is **always the final hint**.
+- **Much bigger vocabulary:** vowel counts, whole-name length, double letters,
+  vowel/consonant start, alphabet half, name endings, initials — on top of the
+  original lengths/first letters.
+- **Daily (`api/_daily.js`)** seeds its shuffle from `date + ":" + year`, so the
+  order varies day to day but is **identical for everyone in the year all day**
+  and stable across reloads — the Wordle property is preserved.
+- **Real content hints.** `studiesOf()` reads the target's own timetable via
+  `fetchAsOwner('/api/timetable/<email>')` at generation time and stores
+  `subjects` + `teachers` on the puzzle, giving hints like *"They take Drama"* and
+  *"One of their teachers is Mr Nguyen"*. Viewer-independent, so the daily stays shared.
+- **Existing puzzles keep working.** Hints are recomputed from the stored target on
+  every read, and older `daily_puzzle` rows simply have no `subjects` — those
+  hints are skipped and it falls back to name shapes. Nothing is regenerated and
+  no target ever changes.
+- **Infinite Guess Who** (`BUILD.guesswho`) got the same vocabulary, plus
+  `withClassInfo()`, which folds the shared-class pool's subject data into the
+  **My grade** and **Whole school** pools. That's why those modes can now say
+  *"They take PDHPE"*, *"They are in 2 of your classes"* and *"They have a class
+  with A Smith"* (via the new `gwData.subjTeacher` map) instead of only name shapes.
+- A round is ~9 hints (was 7).
+
+### 8.3 Revision games — content + spaced repetition
+
+`revGame(host, opts)` drives every Revision game. A topic is either
+`{id, name, gen}` (a procedural generator) or `{id, name, bank}` (a curated
+array of `{q, a, w}` MC items). Games are either flat (`topics`) or modular
+(`modules: [{id, name, topics}]`, with a module pill row + subtopic multi-select).
+
+- **Subjects:** Maths, Chemistry (4 modules), Physics (4 modules), **Engineering**
+  (5 modules), **Software** (renamed from Python; predict-output + write-code).
+- **Engineering content** is drawn from the Year 11 *Materials & grain structure*
+  study guide: steels, cast irons, heat treatment, structure & properties,
+  mechanics — ~72 curated questions.
+- **Microstructure diagrams** (`microSVG(kind)`): a **Voronoi grain tessellation**
+  clipped to a circle, matching the study guide's drawing style. Hatching =
+  pearlite (each colony gets its own lamellae angle, drawn as real clipped lines,
+  not a `<pattern>`); solid fill = graphite. Kinds: `low`, `med`, `eutectoid`,
+  `high` (pale cementite network), `grey` (flakes), `nodular`, `white`,
+  `malleable` (rosettes). Grains come from a **seeded PRNG** (`mulberry32`) so each
+  kind always looks the same. All theme tokens — works light and dark.
+- **Spaced repetition** (the fix for "it asks the same question repeatedly"):
+  `revGame` keeps `tt.rev_<key>_hist` = `{sig: [seen, wrong]}`, persisted and
+  synced. `nextQ()` picks a **subtopic fairly** (so procedural subtopics aren't
+  starved by a big unseen bank), then biases **which question within it** toward
+  never-seen (big boost) and previously-wrong (revisit boost), decaying ones you
+  keep getting right. A recent-window capped just below the pool size guarantees
+  **no back-to-back repeats**. Curated questions carry a stable `key` (bank index,
+  or an explicit `key:` on the chem/software generators); purely numeric
+  generators stay fresh via new numbers and aren't tracked (which would bloat the
+  history).
+
+### 8.4 Home page
+
+- Four tiles, then a **forum** (post, reply, relative timestamps, delete your own).
+  Styles live in `site.css` under "forum (home page)".
+- The old footer ("Theme follows you across every page." + "Back to timetable →")
+  is **removed**.
+- Gotcha worth remembering: `.freplybox{display:flex}` beats the `[hidden]`
+  attribute, so there is an explicit `.freplybox[hidden]{display:none}`. The same
+  bug bit the Tetris undo/redo buttons earlier — if something won't hide, check
+  for a `display` rule outranking `[hidden]`.
+
+### 8.5 Cautions for the next person
+
+- **Don't regenerate or mutate `daily_puzzle` rows.** Targets must stay put;
+  change hints only through `buildHints`, which is recomputed on read.
+- `studiesOf()` is best-effort and wrapped in try/catch — if the school API
+  changes shape, the daily silently falls back to name-only hints rather than
+  failing to build a puzzle. Keep it that way.
+- `games.html` has one big inline `<script>`; syntax-check it by extracting the
+  script and running it through `new vm.Script(...)` (`node --check` won't take HTML).
+- The mock server used for all of this lives in the scratchpad
+  (`gamesmock.mjs`, port 8792) and mirrors every `/api/*` route including
+  `/api/forum` and `?users=1`. It is not part of the repo — rebuild it if needed.

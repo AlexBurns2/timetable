@@ -60,13 +60,33 @@ a{color:var(--accent)}
 }
 .tile .tdesc{color:var(--muted);font-size:13px;margin-top:auto}
 
-.hubfoot{
-  display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
-  margin-top:32px;padding-top:16px;border-top:1px solid var(--line);
-  color:var(--muted);font-size:12.5px;
+/* ── forum (home page) ───────────────────────────────────────── */
+.forum{margin-top:34px;padding-top:18px;border-top:1px solid var(--line)}
+.forum h2{margin:0 0 12px;font-family:var(--font-display);font-size:20px}
+.fnew{display:flex;gap:10px;align-items:flex-start}
+.fnew textarea,.freplybox textarea{
+  flex:1;min-width:0;resize:vertical;font:inherit;font-size:14px;line-height:1.45;
+  padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);color:var(--text);
 }
-.hubfoot a{color:var(--accent);text-decoration:none;font-weight:700}
-.hubfoot a:hover{text-decoration:underline}
+.fnew textarea:focus,.freplybox textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.fmsg{color:#e5484d;font-size:13px;min-height:18px;margin-top:6px}
+.fposts{margin-top:6px;display:flex;flex-direction:column;gap:10px}
+.fpost{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;
+}
+.fpost.freply{margin-left:26px;background:var(--panel-2)}
+.fmeta{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);margin-bottom:5px}
+.fmeta b{color:var(--text);font-size:13.5px}
+.ftext{font-size:14.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.flink{
+  background:none;border:0;padding:0;margin-top:7px;cursor:pointer;
+  color:var(--accent);font:inherit;font-size:12.5px;font-weight:700;
+}
+.flink:hover{text-decoration:underline}
+.fmeta .flink{margin:0 0 0 auto;color:var(--muted);font-weight:500}
+.freplybox{display:flex;gap:8px;align-items:flex-start;margin-top:9px}
+.freplybox[hidden]{display:none}   /* display:flex would otherwise beat [hidden] */
 
 /* ── inner pages ─────────────────────────────────────────────── */
 .pagehead{

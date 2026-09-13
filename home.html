@@ -51,10 +51,15 @@
     </a>
   </nav>
 
-  <footer class="hubfoot">
-    <span>Theme follows you across every page.</span>
-    <a href="./">Back to timetable →</a>
-  </footer>
+  <section class="forum" id="forum">
+    <h2>Forum</h2>
+    <div class="fnew">
+      <textarea id="fbody" rows="2" maxlength="1000" placeholder="Say something…"></textarea>
+      <button class="btn primary" id="fpost" type="button">Post</button>
+    </div>
+    <div class="fmsg" id="fmsg"></div>
+    <div class="fposts" id="fposts"><p class="how">Loading…</p></div>
+  </section>
 
 </div>
 <script>
@@ -65,6 +70,84 @@ $('mode').onclick = () => {
   TT.set(TT.LS.mode, next);
   TT.apply(Object.assign(st, { mode: next }));
 };
+
+/* ── forum ─────────────────────────────────────────────────────────────── */
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+/* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */
+function ago(iso){
+  const t = new Date(iso).getTime();
+  if (!isFinite(t)) return '';
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  if (s < 604800) return Math.floor(s/86400) + 'd ago';
+  return new Date(t).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+}
+
+const fmsg = m => { $('fmsg').textContent = m || ''; };
+
+function postCard(p, isReply){
+  return '<div class="fpost' + (isReply ? ' freply' : '') + '" data-id="' + esc(p.id) + '">' +
+    '<div class="fmeta"><b>' + esc(p.name) + '</b><span>' + esc(ago(p.at)) + '</span>' +
+      (p.mine ? '<button class="flink fdel" type="button" data-id="' + esc(p.id) + '">delete</button>' : '') +
+    '</div>' +
+    '<div class="ftext">' + esc(p.body) + '</div>' +
+    (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>' +
+      '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
+        '<textarea rows="2" maxlength="1000" placeholder="Write a reply…"></textarea>' +
+        '<button class="btn" type="button" data-id="' + esc(p.id) + '">Send</button></div>') +
+    '</div>';
+}
+
+async function loadForum(){
+  try {
+    const d = await TT.api('/api/forum');
+    const posts = d.posts || [];
+    $('fposts').innerHTML = posts.length
+      ? posts.map(p => postCard(p, false) +
+          (p.replies || []).map(r => postCard(r, true)).join('')).join('')
+      : '<p class="how">Nothing yet — say the first thing.</p>';
+    wireForum();
+  } catch (e){
+    $('fposts').innerHTML = '<p class="how">Couldn\'t load the forum: ' + esc(e.message) + '</p>';
+  }
+}
+
+function wireForum(){
+  document.querySelectorAll('.freplybtn').forEach(b => b.onclick = () => {
+    const box = $('rb-' + b.dataset.id);
+    box.hidden = !box.hidden;
+    if (!box.hidden) box.querySelector('textarea').focus();
+  });
+  document.querySelectorAll('.freplybox .btn').forEach(b => b.onclick = async () => {
+    const ta = b.parentElement.querySelector('textarea'), text = ta.value.trim();
+    if (!text) return;
+    b.disabled = true;
+    try { await TT.api('/api/forum', { method:'POST', body:{ body:text, parent:b.dataset.id } }); ta.value=''; await loadForum(); }
+    catch (e){ fmsg(e.message); b.disabled = false; }
+  });
+  document.querySelectorAll('.fdel').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { await TT.api('/api/forum', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); await loadForum(); }
+    catch (e){ fmsg(e.message); b.disabled = false; }
+  });
+}
+
+$('fpost').onclick = async () => {
+  const ta = $('fbody'), text = ta.value.trim();
+  if (!text) return;
+  fmsg(''); $('fpost').disabled = true;
+  try { await TT.api('/api/forum', { method:'POST', body:{ body:text } }); ta.value=''; await loadForum(); }
+  catch (e){ fmsg(e.message); }
+  $('fpost').disabled = false;
+};
+$('fbody').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('fpost').click();
+});
+loadForum();
 </script>
 <script src="settings.js"></script>
 </body>

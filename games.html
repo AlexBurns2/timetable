@@ -358,6 +358,11 @@ html[data-motion="reduced"] .lbsumcard{transition:none}
   padding:4px 9px;background:var(--panel);font-size:12px}
 .adminrow .del:hover{border-color:#e5484d}
 .adminnote{font-size:12.5px;color:var(--muted);margin:10px 0}
+.userrow .ue{flex:1.4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--muted);font-size:12.5px;font-family:var(--font-num)}
+.userrow .ul{width:92px;text-align:right;color:var(--muted);font-size:12.5px}
+.userrow .uc{width:132px;text-align:right;color:var(--muted);font-size:12.5px}
+@media (max-width:640px){ .userrow .ue,.userrow .uc{display:none} }
 /* category headers in the game grid (span the full width of the grid) */
 .cathd{grid-column:1/-1;font-family:var(--font-display);font-size:13px;font-weight:var(--display-w);
   letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px -2px;opacity:0;
@@ -858,7 +863,15 @@ async function loadGuessData(){
                  teacher: tidyName(tchOf(r)), period: String(r.Period||'').trim() });
   });
 
-  return { email:me, viewer, grade, classPool, rooms, students:null, teachers:null };
+  /* subject → the teacher who takes it for you, so Guess Who can hint
+     "they have a class with Mr X" for any class you share with the target */
+  const subjTeacher = {};
+  rows.forEach(r => {
+    const s = codeSubject[r.ClassCode], t = tidyName(tchOf(r));
+    if (s && t && !subjTeacher[s]) subjTeacher[s] = t;
+  });
+
+  return { email:me, viewer, grade, classPool, rooms, subjTeacher, students:null, teachers:null };
 }
 
 /* the directory doesn't name its year field consistently — pull a year number
@@ -898,6 +911,17 @@ async function loadStudents(){
   gwData.students = all.filter(p => p.email !== gwData.email);
 }
 
+/* the directory knows names and years but not classes; fold in whatever the
+   shared-class pool knows about the same person so "My grade" / "Whole school"
+   can still give subject and teacher hints instead of only name shapes */
+function withClassInfo(list){
+  const byMail = new Map((gwData.classPool||[]).filter(p=>p.email).map(p => [p.email, p]));
+  return list.map(p => {
+    const c = p.email && byMail.get(p.email);
+    return c && c.subjects.length ? Object.assign({}, p, { subjects: c.subjects }) : p;
+  });
+}
+
 async function poolFor(diff){
   if (diff === 'myclasses') return gwData.classPool;
   if (diff === 'teachers'){
@@ -911,9 +935,9 @@ async function poolFor(diff){
   if (diff === 'grade'){
     if (!gwData.grade)
       throw new Error("Couldn't work out which year you're in — try another mode.");
-    return gwData.students.filter(p => p.year && p.year === gwData.grade);
+    return withClassInfo(gwData.students.filter(p => p.year && p.year === gwData.grade));
   }
-  return gwData.students;   /* whole school */
+  return withClassInfo(gwData.students);   /* whole school */
 }
 
 const DIFFS = [
@@ -985,25 +1009,52 @@ BUILD.guesswho = host => {
     const peer = shuffle(pool.filter(p => p !== target &&
         p.subjects.some(s => target.subjects.includes(s) && !namedClasses.has(s))))[0];
 
-    /* hints grouped by how much they give away; revealed weakest-first,
-       shuffled within each tier, so the near-answer hints come last */
+    /* Hints grouped by how much they give away and shuffled inside each tier,
+       so the order is fresh every game but the near-answer ones always land
+       last. Tier 0 is trimmed so a round stays about 8 hints. */
+    const VOW = 'AEIOU', nVow = w => [...w.toUpperCase()].filter(c => VOW.includes(c)).length;
+    const whole = (first + last).replace(/\s/g, '');
+    const teach = subs.map(s => (gwData.subjTeacher||{})[s]).filter(Boolean);
     const T = [[], [], [], []];
+
+    /* what they do — the freshest hints, so use them whenever we know them */
     if (target.year && diff !== 'grade')                    // pointless in My-grade — all one year
       T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
     if (hasClasses){
-      T[0].push(() => 'They are in <b>' + target.subjects.length + '</b> of your classes.');
-      T[0].push(() => 'One of their classes is <b>' + firstClass + '</b>.');
+      T[0].push(() => 'They take <b>' + firstClass + '</b>.');
+      if (diff === 'myclasses' || target.subjects.length > 1)
+        T[0].push(() => 'They are in <b>' + target.subjects.length + '</b> of your classes.');
       if (subs[1]) T[1].push(() => 'They also take <b>' + subs[1] + '</b>.');
+      if (subs[2]) T[1].push(() => 'They take <b>' + subs[2] + '</b> too.');
     }
-    /* first-name and surname length kept in separate tiers — together they give too much away */
-    T[1].push(() => 'Their first name has <b>' + first.length + '</b> letters.');
-    if (last) T[2].push(() => 'Their surname has <b>' + last.length + '</b> letters.');
+    if (teach[0]) T[1].push(() => 'They have a class with <b>' + teach[0] + '</b>.');
+    if (teach[1]) T[2].push(() => 'They also have a class with <b>' + teach[1] + '</b>.');
+    if (peer) T[2].push(() => 'They share a class with <b>' + peer.name + '</b>.');
+
+    /* vague name shape */
+    T[0].push(() => 'Their first name has <b>' + first.length + '</b> letters.');
+    T[0].push(() => 'Their first name has <b>' + nVow(first) + '</b> vowel' + (nVow(first)===1?'':'s') + '.');
+    T[0].push(() => 'Their first name starts with a <b>' + (VOW.includes(first[0].toUpperCase())?'vowel':'consonant') + '</b>.');
+    T[0].push(() => 'Their whole name has <b>' + whole.length + '</b> letters.');
+    T[0].push(() => 'Their name ' + (/(.)\1/i.test(whole) ? 'has a' : 'has no') + ' <b>double letter</b> in it.');
+    if (last){
+      T[0].push(() => 'Their surname has <b>' + last.length + '</b> letters.');
+      T[0].push(() => 'Their surname starts with a letter in the <b>' +
+        (last[0].toUpperCase() <= 'M' ? 'first' : 'second') + ' half</b> of the alphabet.');
+    }
+    /* medium */
+    T[1].push(() => 'Their first name ends with <b>' + first[first.length-1].toUpperCase() + '</b>.');
+    if (last) T[1].push(() => 'Their surname ends with <b>' + last[last.length-1].toUpperCase() + '</b>.');
+    /* strong — an actual letter of the name */
     T[2].push(() => 'Their first name starts with <b>' + first[0].toUpperCase() + '</b>.');
     if (last) T[2].push(() => 'Their surname starts with <b>' + last[0].toUpperCase() + '</b>.');
-    if (peer) T[2].push(() => 'They share a class with <b>' + peer.name + '</b>.');
+    if (last) T[2].push(() => 'Their initials are <b>' + first[0].toUpperCase() + '.' + last[0].toUpperCase() + '.</b>');
+    /* nearly the answer */
     T[3].push(() => 'Their first name looks like <b>' + reveal(first, 0.5) + '</b>.');
     if (last) T[3].push(() => 'Their surname looks like <b>' + reveal(last, 0.45) + '</b>.');
-    const hints = [].concat(...T.map(shuffle));
+
+    const hints = [].concat(shuffle(T[0]).slice(0, 3), shuffle(T[1]).slice(0, 3),
+                            shuffle(T[2]).slice(0, 3), shuffle(T[3]));
     let level = 0;
 
     render();
@@ -2732,7 +2783,9 @@ BUILD.admin = host => {
     { id:'tsurv',      name:'Tetris Survival',           kind:'t', mode:'zen',       fmt:fmtHMS,       valOf:r=>r.time_ms, unit:'ms' },
     { id:'tzen',       name:'Tetris Zen',                kind:'t', mode:'zenscore',  fmt:v=>String(v), valOf:r=>r.best,    unit:'pts' }
   ];
-  const CATS = [...GEN, ...TET];
+  /* not a board — a roster of everyone who has actually used the site */
+  const USERS = { id:'users', name:'👥 Signed-in users', kind:'u' };
+  const CATS = [USERS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -2756,19 +2809,34 @@ BUILD.admin = host => {
   load();
 
   function syncTabsUI(){
-    const gen = cur.kind === 'g';
+    const gen = cur.kind === 'g', users = cur.kind === 'u';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
+    $('admwipe').style.display = users ? 'none' : '';
   }
   async function load(){
     $('admtitle').textContent = cur.name; syncTabsUI();
     const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>'; data = null;
     try {
+      if (cur.kind === 'u'){                       // roster, not a board — no canWipe on it
+        data = await TT.api('/api/leaderboard', { params:{ users:1 } });
+        render(); return;
+      }
       if (cur.kind === 'g') data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.metric, week:wk } });
       else data = await TT.api('/api/tetris', { params:{ mode:cur.mode, week:wk, admin:1 } });
       if (!data.canWipe){ body.innerHTML = '<p class="how">You are not the owner. Set OWNER_EMAIL on the server to your school login.</p>'; return; }
       render();
     } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
+  }
+  /* "3h" / "5d" / a date, for the last-seen column */
+  function seenAgo(iso){
+    const t = new Date(iso).getTime();
+    if (!isFinite(t)) return '—';
+    const s = Math.max(0, (Date.now() - t)/1000);
+    if (s < 3600) return Math.max(1,Math.floor(s/60)) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    if (s < 2592000) return Math.floor(s/86400) + 'd ago';
+    return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'});
   }
   function curRows(){
     if (!data) return [];
@@ -2778,6 +2846,21 @@ BUILD.admin = host => {
   function render(){
     syncTabsUI();
     $('admtitle').textContent = cur.name;
+    if (cur.kind === 'u'){
+      const us = (data && data.users) || [];
+      const active = us.filter(u => u.last && (Date.now() - new Date(u.last).getTime()) < 7*864e5).length;
+      $('admnote').textContent = us.length + ' ' + (us.length===1?'person has':'people have') +
+        ' used the site · ' + active + ' in the last 7 days.';
+      $('admbody').innerHTML = us.length
+        ? us.map((u,i) => '<div class="adminrow userrow">' +
+            '<span class="rk">'+(i+1)+'</span>' +
+            '<span class="nm">'+esc(u.name)+'</span>' +
+            '<span class="ue">'+esc(u.email)+'</span>' +
+            '<span class="uc">'+u.scores+' score'+(u.scores===1?'':'s')+' · '+u.days+' daily</span>' +
+            '<span class="ul">'+esc(seenAgo(u.last))+'</span></div>').join('')
+        : '<p class="how">Nobody has signed in yet.</p>';
+      return;
+    }
     $('admnote').textContent = cur.kind === 'g'
       ? 'Editing the ' + (period==='week' ? 'this-week' : 'all-time') + ' board.'
       : (cur.mode === 'sprint' ? 'Editing this week’s Sprint clears.' : 'Editing the ' + cur.name + ' board.');
@@ -3342,6 +3425,134 @@ function vectorSVG(a,b){
     '<text x="4" y="70" fill="var(--muted)" font-size="12">'+b+' N</text>'+
     '<text x="104" y="60" fill="var(--muted)" font-size="12">R = ?</text></svg>';
 }
+/* ── schematic steel / cast-iron microstructures ──────────────────────────
+   A microscope field of view drawn as a Voronoi grain tessellation, in the
+   style of the Year 11 study guide. Convention: hatching = pearlite (each
+   colony gets its own lamellae direction), solid fill = graphite. Grains are
+   generated from a seeded PRNG so each kind always looks the same.          */
+const mulberry32 = a => () => {
+  a = a + 0x6D2B79F5 | 0;
+  let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+};
+/* keep the half-plane of `poly` nearer seed s than seed t (Sutherland–Hodgman) */
+function clipHalf(poly, nx, ny, c){
+  const out = [], n = poly.length, f = p => nx*p[0] + ny*p[1] - c;
+  for (let i=0;i<n;i++){
+    const a = poly[i], b = poly[(i+1)%n], fa = f(a), fb = f(b);
+    if (fa <= 0) out.push(a);
+    if ((fa < 0 && fb > 0) || (fa > 0 && fb < 0)){
+      const t = fa/(fa-fb);
+      out.push([a[0]+t*(b[0]-a[0]), a[1]+t*(b[1]-a[1])]);
+    }
+  }
+  return out;
+}
+/* parallel lamellae lines across one cell, at `ang` degrees */
+function hatchOf(poly, ang, gap){
+  const rad = ang*Math.PI/180, dx = Math.cos(rad), dy = Math.sin(rad), nx = -dy, ny = dx;
+  const on = poly.map(p=>p[0]*nx+p[1]*ny), od = poly.map(p=>p[0]*dx+p[1]*dy);
+  const mn = Math.min(...on), mx = Math.max(...on), t0 = Math.min(...od)-1, t1 = Math.max(...od)+1;
+  let out = '';
+  for (let o = Math.ceil(mn/gap)*gap; o <= mx; o += gap)
+    out += '<line x1="'+(o*nx+t0*dx).toFixed(1)+'" y1="'+(o*ny+t0*dy).toFixed(1)+
+           '" x2="'+(o*nx+t1*dx).toFixed(1)+'" y2="'+(o*ny+t1*dy).toFixed(1)+'"/>';
+  return out;
+}
+/* a thin curved graphite flake (lens shape) */
+function flakeOf(x, y, ang, L, w){
+  const rad = ang*Math.PI/180, dx = Math.cos(rad), dy = Math.sin(rad), nx = -dy, ny = dx;
+  const ax = x-dx*L/2, ay = y-dy*L/2, bx = x+dx*L/2, by = y+dy*L/2;
+  const f = (o)=>[(x+nx*o).toFixed(1), (y+ny*o).toFixed(1)];
+  const m1 = f(w), m2 = f(-w*0.35);
+  return '<path d="M'+ax.toFixed(1)+' '+ay.toFixed(1)+' Q'+m1[0]+' '+m1[1]+' '+bx.toFixed(1)+' '+by.toFixed(1)+
+         ' Q'+m2[0]+' '+m2[1]+' '+ax.toFixed(1)+' '+ay.toFixed(1)+'Z"/>';
+}
+/* an irregular temper-carbon rosette */
+function rosetteOf(x, y, rad, rnd){
+  const pts = [];
+  for (let i=0;i<9;i++){
+    const a = i/9*Math.PI*2, rr = rad*(0.62+rnd()*0.55);
+    pts.push((x+Math.cos(a)*rr).toFixed(1)+','+(y+Math.sin(a)*rr).toFixed(1));
+  }
+  return '<polygon points="'+pts.join(' ')+'"/>';
+}
+function microSVG(kind){
+  const CFG = {
+    low:       { seed: 7, hatch:0.25, over:null },
+    med:       { seed:23, hatch:0.55, over:null },
+    eutectoid: { seed:37, hatch:1,    over:null },
+    high:      { seed:41, hatch:1,    over:'cementite' },
+    grey:      { seed:53, hatch:1,    over:'flakes' },
+    nodular:   { seed:67, hatch:1,    over:'nodules' },
+    white:     { seed:79, hatch:0.45, over:null },
+    malleable: { seed:89, hatch:0,    over:'rosettes' }
+  }[kind] || { seed:7, hatch:0.3, over:null };
+  const cx=100, cy=100, r=86, uid='m'+kind, rnd = mulberry32(CFG.seed);
+  /* jittered grid of grain seeds, a little beyond the field so edge cells close */
+  const pts = [];
+  for (let x=cx-r-30; x<=cx+r+30; x+=40)
+    for (let y=cy-r-30; y<=cy+r+30; y+=40){
+      const px = x+(rnd()-0.5)*26, py = y+(rnd()-0.5)*26;
+      if (Math.hypot(px-cx, py-cy) < r+28) pts.push([px,py]);
+    }
+  const box = [[cx-r-70,cy-r-70],[cx+r+70,cy-r-70],[cx+r+70,cy+r+70],[cx-r-70,cy+r+70]];
+  const cells = pts.map((s,i) => {
+    let poly = box.slice();
+    for (let j=0;j<pts.length && poly.length;j++){
+      if (j===i) continue;
+      const t = pts[j];
+      poly = clipHalf(poly, 2*(t[0]-s[0]), 2*(t[1]-s[1]),
+                      t[0]*t[0]+t[1]*t[1]-s[0]*s[0]-s[1]*s[1]);
+    }
+    return poly;
+  });
+  const ptStr = p => p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');
+  let defs = '<clipPath id="'+uid+'f"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'"/></clipPath>';
+  let fills = '', hatches = '', strokes = '';
+  cells.forEach((poly,i) => {
+    if (poly.length < 3) return;
+    const s = ptStr(poly);
+    fills += '<polygon points="'+s+'" fill="var(--panel)"/>';
+    strokes += '<polygon points="'+s+'"/>';
+    if (rnd() < CFG.hatch){
+      defs += '<clipPath id="'+uid+'c'+i+'"><polygon points="'+s+'"/></clipPath>';
+      hatches += '<g clip-path="url(#'+uid+'c'+i+')">'+hatchOf(poly, rnd()*170, 4.6)+'</g>';
+    }
+  });
+  /* overlays: graphite and the hypereutectoid cementite network */
+  const scatter = (rMax, n, minDist) => {   // spaced sampling so features never clump
+    const out = [];
+    for (let t=0; t<n*80 && out.length<n; t++){
+      const a = rnd()*Math.PI*2, d = Math.sqrt(rnd())*rMax;
+      const p = [cx+Math.cos(a)*d, cy+Math.sin(a)*d];
+      if (out.every(q => Math.hypot(q[0]-p[0], q[1]-p[1]) >= minDist)) out.push(p);
+    }
+    return out;
+  };
+  let over = '';
+  if (CFG.over === 'cementite')
+    over = '<g fill="none" stroke="var(--panel)" stroke-width="6.5">'+strokes+'</g>';
+  else if (CFG.over === 'flakes')
+    over = '<g fill="var(--text)">'+scatter(r-18, 11, 25)
+      .map(p => flakeOf(p[0], p[1], rnd()*180, 20+rnd()*15, 2.6+rnd()*1.4)).join('')+'</g>';
+  else if (CFG.over === 'nodules')
+    over = '<g fill="var(--text)">'+scatter(r-22, 9, 30)
+      .map(p => '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(5.5+rnd()*2).toFixed(1)+'"/>').join('')+'</g>';
+  else if (CFG.over === 'rosettes')
+    over = '<g fill="var(--text)">'+scatter(r-24, 7, 34)
+      .map(p => rosetteOf(p[0], p[1], 7+rnd()*3, rnd)).join('')+'</g>';
+  return '<svg class="rvdiagram" viewBox="0 0 200 200" width="228" role="img" aria-label="microstructure diagram">'
+    + '<defs>'+defs+'</defs>'
+    + '<g clip-path="url(#'+uid+'f)">'
+    +   fills
+    +   '<g stroke="var(--text)" stroke-width="0.9" opacity="0.5" fill="none">'+hatches+'</g>'
+    +   over
+    +   '<g fill="none" stroke="var(--text)" stroke-width="1.1" opacity="0.75">'+strokes+'</g>'
+    + '</g>'
+    + '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--text)" stroke-width="1.6" opacity="0.85"/></svg>';
+}
 
 /* ══ CHEMISTRY ══ */
 const CHEM_NAMES=[['sodium chloride','NaCl'],['magnesium oxide','MgO'],['calcium fluoride','CaF₂'],['aluminium oxide','Al₂O₃'],
@@ -3447,14 +3658,18 @@ const STEEL_LM = [
   {q:'Which steel is typically used for car-body sheet, rivets and general fabrication?', a:'Low-carbon (mild) steel', w:['High-carbon steel','Eutectoid steel','White cast iron']},
   {q:'Medium-carbon steel (≈0.30–0.60% C) is used for shafts, axles and gears because it offers…', a:'A useful balance of strength and toughness', w:['Maximum ductility','The lowest possible cost','Graphite for self-lubrication']},
   {q:'Medium- and high-carbon steels are commonly strengthened by which pair of treatments?', a:'Quenching and tempering', w:['Carburising then annealing','Galvanising then normalising','Cold rolling then nitriding']},
-  {q:'Compared with mild steel, medium-carbon steel is generally…', a:'Harder and stronger but less ductile', w:['Softer and more ductile','Lower in strength','Unable to be heat treated']}];
+  {q:'Compared with mild steel, medium-carbon steel is generally…', a:'Harder and stronger but less ductile', w:['Softer and more ductile','Lower in strength','Unable to be heat treated']},
+  {q:'This slow-cooled microstructure — light ferrite grains with only a little hatched pearlite — is which steel?'+microSVG('low'), a:'Low-carbon steel', w:['Eutectoid steel','High-carbon steel','White cast iron']},
+  {q:'This slow-cooled steel shows roughly equal ferrite and hatched pearlite. Which steel is it?'+microSVG('med'), a:'Medium-carbon steel', w:['Low-carbon (mild) steel','Eutectoid steel','Grey cast iron']}];
 const STEEL_EH = [
   {q:'The eutectoid composition of plain-carbon steel is about…', a:'0.8% carbon (≈0.76%)', w:['0.2% carbon','1.2% carbon','2.5% carbon']},
   {q:'A slow-cooled steel at the eutectoid composition is essentially…', a:'All pearlite', w:['All ferrite','All cementite','All austenite']},
   {q:'Which steel best holds a cutting edge and is used for knives, files and cutting tools?', a:'High-carbon steel', w:['Low-carbon (mild) steel','Grey cast iron','Wrought iron']},
   {q:'Compared with low-carbon steel, high-carbon steel is generally…', a:'Harder and stronger but less ductile and harder to weld', w:['Softer and more ductile','Easier to weld','Lower in strength and hardness']},
   {q:'A plain-carbon steel above ~0.76% C, with proeutectoid cementite forming at the grain boundaries, is…', a:'Hypereutectoid', w:['Hypoeutectoid','Eutectoid','Austenitic']},
-  {q:'Why can a very hard high-carbon steel still fail suddenly under impact?', a:'Hardness is not toughness — a hard, brittle part can crack', w:['It has too little carbon','It is fully austenitic','It contains graphite flakes']}];
+  {q:'Why can a very hard high-carbon steel still fail suddenly under impact?', a:'Hardness is not toughness — a hard, brittle part can crack', w:['It has too little carbon','It is fully austenitic','It contains graphite flakes']},
+  {q:'This slow-cooled microstructure is essentially all pearlite (hatched colonies). Which steel is it?'+microSVG('eutectoid'), a:'Eutectoid steel (~0.8% C)', w:['Low-carbon steel','Pure ferrite','Grey cast iron']},
+  {q:'This structure is pearlite colonies with a pale proeutectoid cementite network at the boundaries. Which steel is it?'+microSVG('high'), a:'Hypereutectoid (high-carbon) steel', w:['Low-carbon steel','Eutectoid steel','Nodular cast iron']}];
 const STEEL_CP = [
   {q:'For slow-cooled plain-carbon steel below the eutectoid, increasing the carbon content…', a:'Increases the proportion of pearlite', w:['Decreases the proportion of pearlite','Removes all of the ferrite','Has no effect on the structure']},
   {q:'Does adding more carbon always give more pearlite?', a:'Only up to the eutectoid — above it, extra proeutectoid cementite forms', w:['Yes, without limit','No, carbon never affects pearlite','Only in cast iron']},
@@ -3466,19 +3681,25 @@ const IRON_GN = [
   {q:'Grey cast iron is chosen for engine blocks and machine-tool beds mainly for its…', a:'Good vibration damping, castability and machinability', w:['High tensile ductility','Excellent weldability','Immunity to corrosion']},
   {q:'Nodular (ductile / SG) cast iron is produced by treating the melt with…', a:'Magnesium', w:['Silicon','Chromium','Nitrogen']},
   {q:'Why is nodular cast iron tougher and more ductile than grey iron?', a:'Rounded nodules cause less severe stress concentration than sharp flakes', w:['It contains no graphite','It is always quench-hardened','Its matrix is always fully ferritic']},
-  {q:'Typical uses of nodular (ductile) cast iron include…', a:'Pressure pipes, crankshafts and gears', w:['Grinding and crusher liners','Cutting tools and files','Car-body sheet']}];
+  {q:'Typical uses of nodular (ductile) cast iron include…', a:'Pressure pipes, crankshafts and gears', w:['Grinding and crusher liners','Cutting tools and files','Car-body sheet']},
+  {q:'The solid shapes in this iron matrix are graphite flakes. Which cast iron is it?'+microSVG('grey'), a:'Grey cast iron', w:['Nodular cast iron','White cast iron','Malleable cast iron']},
+  {q:'The solid shapes here are rounded graphite nodules. Which cast iron is it?'+microSVG('nodular'), a:'Nodular (ductile) cast iron', w:['Grey cast iron','White cast iron','Eutectoid steel']}];
 const IRON_WM = [
   {q:'In white cast iron, the carbon is mostly present as…', a:'Cementite (carbides)', w:['Graphite flakes','Graphite nodules','Temper carbon']},
   {q:'White cast iron is best suited to…', a:'Abrasive-wear parts such as wear liners and crusher components', w:['Impact-loaded demolition tools','Pressure pipes','Formed sheet-metal parts']},
   {q:'Which cast iron is the hardest and most abrasion-resistant, but also the most brittle?', a:'White cast iron', w:['Grey cast iron','Nodular cast iron','Malleable cast iron']},
   {q:'Malleable cast iron is made by…', a:'Prolonged heat treatment (annealing) of white-iron castings', w:['Adding magnesium to the molten iron','Quenching grey iron','Cold rolling white iron']},
   {q:'The compact graphite clusters formed in malleable cast iron are called…', a:'Temper carbon (rosettes)', w:['Flakes','Mg-formed nodules','Continuous cementite networks']},
-  {q:'Typical applications of malleable cast iron include…', a:'Pipe fittings and brackets', w:['Crusher liners','Cutting tools','Cylinder blocks']}];
+  {q:'Typical applications of malleable cast iron include…', a:'Pipe fittings and brackets', w:['Crusher liners','Cutting tools','Cylinder blocks']},
+  {q:'This iron has pale cementite regions and hatched pearlite, with no graphite. Which cast iron is it?'+microSVG('white'), a:'White cast iron', w:['Grey cast iron','Nodular cast iron','Malleable cast iron']},
+  {q:'The irregular solid clusters (temper-carbon rosettes) in this matrix identify which cast iron?'+microSVG('malleable'), a:'Malleable cast iron', w:['Grey cast iron','White cast iron','Nodular cast iron']}];
 const IRON_CG = [
   {q:'The carbon content of cast iron is typically about…', a:'2.5–4%', w:['up to 0.3%','about 0.8%','about 1.2%']},
   {q:'Which element in cast iron promotes the formation of graphite?', a:'Silicon', w:['Chromium','Nickel','Manganese']},
   {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The surrounding matrix (e.g. ferrite or pearlite)', w:['The graphite alone','The carbon percentage only','The pouring temperature only']},
-  {q:'Cast-iron behaviour depends on…', a:'Both the graphite shape and the surrounding matrix', w:['The graphite shape only','The carbon percentage only','The casting colour only']}];
+  {q:'Cast-iron behaviour depends on…', a:'Both the graphite shape and the surrounding matrix', w:['The graphite shape only','The carbon percentage only','The casting colour only']},
+  {q:'In these microstructure schematics, the hatching represents…', a:'Pearlite', w:['Ferrite','Graphite','Austenite']},
+  {q:'In these microstructure schematics, a solid filled shape in a cast iron represents…', a:'Graphite', w:['Pearlite','Ferrite','Cementite']}];
 const HEAT_AN = [
   {q:'Heating steel to its austenitising temperature and then cooling it slowly in the furnace is…', a:'Full annealing', w:['Normalising','Quench hardening','Tempering']},
   {q:'The main purpose of full annealing is to…', a:'Soften the steel, improve ductility and relieve residual stress', w:['Maximise surface hardness','Form martensite','Add carbon to the surface']},
@@ -3530,10 +3751,59 @@ function genMoments(){ const F=ri(5,50), d=rd(ri(2,20)/10,1), M=rd(F*d,2); const
 function genCouple(){ const F=ri(5,40), d=rd(ri(2,16)/10,1), T=rd(F*d,2); const m=physMC(T,'N·m',[rd(F+d,1), rd(F*d/2,2), 2*F*d]);
   return {q:'A couple is two equal <b>'+F+' N</b> forces acting <b>'+d+' m</b> apart in opposite directions. Find its moment.', choices:m.choices, answer:m.answer, note:'Couple moment = F × d = '+F+'×'+d+' = '+T+' N·m.'}; }
 
+/* ══ CONCEPT BANKS (keyed MC — definitions & laws, biased by the spaced-repetition engine) ══ */
+const PHYS_KIN = [
+  {q:'Which of these is a vector quantity?', a:'Velocity', w:['Speed','Distance','Time']},
+  {q:'Which of these is a scalar quantity?', a:'Speed', w:['Velocity','Acceleration','Displacement']},
+  {q:'Acceleration is defined as the rate of change of…', a:'Velocity', w:['Displacement','Speed only','Force']},
+  {q:'For a projectile (ignoring air resistance), the horizontal velocity…', a:'Stays constant', w:['Increases steadily','Decreases to zero','Equals the vertical velocity']},
+  {q:'For a projectile (ignoring air resistance), the vertical acceleration is…', a:'≈9.8 m/s² downward', w:['Zero','9.8 m/s² upward','Equal to the launch speed']},
+  {q:'The area under a velocity–time graph gives…', a:'Displacement', w:['Acceleration','Force','Speed']},
+  {q:'The gradient (slope) of a displacement–time graph gives…', a:'Velocity', w:['Acceleration','Distance','Momentum']},
+  {q:'The velocity of A relative to B is…', a:'vₐ − v_b', w:['vₐ + v_b','v_b − vₐ','vₐ × v_b']}];
+const PHYS_DYN = [
+  {q:'Newton’s first law says an object stays at rest or constant velocity unless…', a:'Acted on by a net external force', w:['It runs out of energy','Its mass changes','Only friction is removed']},
+  {q:'Newton’s second law is written as…', a:'F = ma', w:['F = mv','F = m/a','a = Fm']},
+  {q:'Newton’s third law states that…', a:'Every action has an equal and opposite reaction', w:['Forces always cancel to zero','Heavier objects fall faster','Momentum is always zero']},
+  {q:'Weight differs from mass because weight is…', a:'The gravitational force on the mass (W = mg)', w:['Measured in kilograms','Constant everywhere','The same as inertia']},
+  {q:'Friction acts…', a:'Opposite to the direction of motion (or attempted motion)', w:['In the direction of motion','Perpendicular to the surface','Toward the centre of mass']},
+  {q:'Momentum is conserved in a collision when…', a:'No net external force acts on the system', w:['The objects have equal mass','Kinetic energy is conserved','The collision is elastic only']},
+  {q:'Work done by a force equals…', a:'Force × distance moved in the force’s direction', w:['Force × time','Mass × velocity','Force ÷ area']},
+  {q:'Which type of collision conserves kinetic energy?', a:'An elastic collision', w:['An inelastic collision','A perfectly inelastic collision','Any collision']}];
+const PHYS_WAVE = [
+  {q:'In a transverse wave, the particles oscillate…', a:'Perpendicular to the direction of energy travel', w:['Parallel to the direction of travel','In circles only','Not at all']},
+  {q:'In a longitudinal wave, the particles oscillate…', a:'Parallel to the direction of energy travel', w:['Perpendicular to the travel','At 45° to the travel','Randomly']},
+  {q:'Sound travelling through air is…', a:'A longitudinal wave', w:['A transverse wave','An electromagnetic wave','A standing wave only']},
+  {q:'The wave equation linking speed, frequency and wavelength is…', a:'v = fλ', w:['v = f/λ','v = λ/f','f = vλ']},
+  {q:'When a wave passes into a slower (denser) medium, it bends…', a:'Toward the normal', w:['Away from the normal','Straight back','Along the surface']},
+  {q:'Constructive interference happens when waves meet…', a:'In phase (crest on crest)', w:['Out of phase (crest on trough)','At right angles','With different speeds']},
+  {q:'Which lists the EM spectrum from low to high frequency?', a:'Radio → infrared → visible → X-rays', w:['X-rays → visible → radio','Visible → radio → gamma','Gamma → X-rays → radio']},
+  {q:'The law of reflection states that…', a:'The angle of incidence equals the angle of reflection', w:['Incidence equals the refraction angle','Light always bends toward the normal','Frequency changes on reflection']}];
+const PHYS_EM = [
+  {q:'Ohm’s law is…', a:'V = IR', w:['V = I/R','P = IR','I = VR']},
+  {q:'Adding resistors in series makes the total resistance…', a:'Larger than any single resistor', w:['Smaller than any single resistor','Equal to the smallest','Zero']},
+  {q:'Adding resistors in parallel makes the total resistance…', a:'Smaller than the smallest single resistor', w:['Larger than the largest','Equal to their sum','Unchanged']},
+  {q:'Electric current is the rate of flow of…', a:'Charge', w:['Voltage','Energy','Resistance']},
+  {q:'Electrical power can be calculated as…', a:'P = VI', w:['P = V/I','P = IR','P = V + I']},
+  {q:'The force on a current-carrying wire in a magnetic field is greatest when the wire is…', a:'Perpendicular to the field', w:['Parallel to the field','At 45° to the field','Stationary']},
+  {q:'Two like electric charges…', a:'Repel each other', w:['Attract each other','Exert no force','Merge together']},
+  {q:'A material that lets charge flow easily is…', a:'A conductor', w:['An insulator','A dielectric','A vacuum']}];
+const MATH_CONCEPTS = [
+  {q:'The power rule: the derivative of xⁿ is…', a:'n·xⁿ⁻¹', w:['xⁿ⁻¹','n·xⁿ⁺¹','(n−1)·xⁿ']},
+  {q:'The derivative of a constant is…', a:'0', w:['1','the constant itself','x']},
+  {q:'The derivative of a sum equals…', a:'The sum of the derivatives', w:['The product of the derivatives','Always zero','The derivative of the first term only']},
+  {q:'Integration is the reverse process of…', a:'Differentiation', w:['Multiplication','Factorising','Taking a limit']},
+  {q:'An indefinite integral includes “+ C” because…', a:'The derivative of a constant is zero, so it is unknown', w:['It makes the answer positive','It marks the upper limit','It is the gradient']},
+  {q:'You use a permutation (ⁿPᵣ) rather than a combination (ⁿCᵣ) when…', a:'Order matters', w:['Order does not matter','The two groups are equal','Repetition is allowed']},
+  {q:'The number of ways to arrange n distinct objects in a line is…', a:'n!', w:['n²','2ⁿ','n(n−1)/2']},
+  {q:'The graph of y = f(x − h), for h > 0, is y = f(x) shifted…', a:'h units to the right', w:['h units to the left','h units up','h units down']},
+  {q:'The graph of y = f(x) + k, for k > 0, is shifted…', a:'k units up', w:['k units down','k units right','k units left']},
+  {q:'The graph of y = −f(x) is a reflection of y = f(x) in the…', a:'x-axis', w:['y-axis','line y = x','origin only']}];
+
 BUILD.software = host => revGame(host, { title:'Software', how:'Read code and write it.', statKey:'software',
   topics:[{id:'out',name:'Predict output',gen:genPython},{id:'write',name:'Write code',gen:genCode}] });
 BUILD.maths = host => revGame(host, { title:'Maths', how:'Procedural practice — pick a topic.', statKey:'maths',
-  topics:[{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
+  topics:[{id:'concepts',name:'Concepts',bank:MATH_CONCEPTS},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
 BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Four modules — pick one, or the whole topic.', statKey:'chem',
   modules:[
     {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape}]},
@@ -3543,10 +3813,10 @@ BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Four modules — pi
   ] });
 BUILD.physics = host => revGame(host, { title:'Physics', how:'Four modules — pick one, or the whole topic.', statKey:'physics',
   modules:[
-    {id:'m1',name:'Kinematics',topics:[{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
-    {id:'m2',name:'Dynamics',topics:[{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
-    {id:'m3',name:'Waves',topics:[{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
-    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
+    {id:'m1',name:'Kinematics',topics:[{id:'p-kc',name:'Concepts',bank:PHYS_KIN},{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
+    {id:'m2',name:'Dynamics',topics:[{id:'p-dc',name:'Concepts',bank:PHYS_DYN},{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
+    {id:'m3',name:'Waves',topics:[{id:'p-wc',name:'Concepts',bank:PHYS_WAVE},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
+    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',bank:PHYS_EM},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
 BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Five modules — pick one, or the whole topic.', statKey:'engineering',
   modules:[

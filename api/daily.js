@@ -108,7 +108,11 @@ export default async function handler(req, res) {
   const t = puzzle.target || {};
   const first = t.first || String(t.name || "").split(" ")[0];
   const last = t.last || String(t.name || "").split(" ").slice(1).join(" ");
-  const hints = buildHints(first, last);      // recomputed each read → always current
+  // recomputed each read → hint changes go live; the seed keeps the order the
+  // same for everyone in the year all day. Older puzzles have no subjects and
+  // simply fall back to name-shape hints.
+  const hints = buildHints(first, last,
+    { seed: date + ":" + year, subjects: t.subjects, teachers: t.teachers });
   const totalHints = hints.length;
   const answerName = t.name;
 
