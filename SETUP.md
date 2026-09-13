@@ -1061,7 +1061,80 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Live syntax checking + a bigger code editor (latest)
+## Streak syncs across devices + a sound that keeps growing (latest)
+
+- **The streak now follows you.** It was a session variable that vanished when you
+  left the game; it's saved to `tt.rev_<key>_streak`, which rides the existing
+  `tt.*` prefs sync, so it survives leaving a game and shows up on your other
+  devices. Verified end-to-end: built a streak of 11, confirmed it reached
+  `/api/prefs`, left the game and came back to find it restored with the bolt
+  still fully charged. `score` deliberately stays per-session. (Per-question
+  progress already synced — `tt.rev_<key>_hist` was never in `SYNC_SKIP`.)
+
+- **Sync headroom checked.** Across all five subjects there are **857 countable
+  questions**; a fully-completed history weighs **~31 KB** against the 100 KB cap
+  `api/prefs.js` enforces (it returns 413 over that, which would break syncing
+  entirely). Comfortable, but worth re-measuring if the question count doubles —
+  packing the values, or hashing the keys, would take it to ~27 KB / ~12 KB.
+
+- **The streak sound no longer tops out.** It used to climb a fixed eight-note
+  ladder and then repeat the same shrill top note forever. Now the fundamental
+  **cycles** through a pentatonic scale (C D E G A) and never climbs away; what
+  grows instead is the **texture** — every five correct adds another voice: a
+  fifth, then a root underneath, an octave shimmer, a major third to complete the
+  chord, and a sub-bass. Every tenth adds a short rising flourish.
+
+  Measured by standing in for `AudioContext` and recording what would be played:
+  voices grow 1 → 3 → 5 → 6 as the streak climbs, and the **highest frequency ever
+  produced is 1760 Hz**, down from 2638 Hz before — so it gets fuller rather than
+  sharper, indefinitely.
+
+## Streak feedback + progress bar in the revision games
+
+One slim strip sits above the question card — bolt, bar, counts — and nothing
+else moved, so the page looks the same as before with a bit more information.
+
+**Streak.** A lightning bolt charges as the streak grows (`--drain` clip-path,
+full at 8) and glows with a slow pulse once it's full. The sound climbs a
+pentatonic ladder with the streak, picking up a fifth at 3 and an octave at 6, so
+a long run genuinely sounds better than a short one. Break a streak of 3+ and the
+bolt **shakes, flashes red and drains** while a descending sawtooth "power down"
+plays (`SFX.discharge()`); breaking a short streak just gets the old blip, so it
+only feels like a loss when there was something to lose.
+
+**Progress bar.** Four states per question, which is also what the coloured dots
+to the right count:
+
+| Colour | Meaning |
+|---|---|
+| green | right, and never once got it wrong |
+| yellow | got it wrong before, came back later and got it right |
+| red | last attempt was wrong — still to review |
+| grey | not tried yet |
+
+`hist[sig]` grew from `[seen, wrongness]` to `[seen, wrongness, lastOk,
+everWrong]`. The first two still drive the spaced-repetition picker; the last two
+drive the colours. Entries saved before this only have two slots and are migrated
+as they're read, so nobody's history resets.
+
+**Knowing the total.** A bank knows its own size. A keyed generator is *sampled*
+until it stops producing new keys (`keySpace()`), which is exact for curated
+content. A purely procedural topic (fresh numbers each time, no key) isn't
+countable, so it contributes nothing and the bar **hides itself** when the whole
+pool is like that — e.g. picking only "Equations of motion" or "Number systems".
+Sampling is cached in a module-level `KEYSPACE` map, not on the topic objects
+(those are rebuilt every time a game opens), so it costs ~170 ms once per page
+load and nothing thereafter.
+
+**Topic progress.** Every module and subtopic pill carries a thin green underline
+showing how much of it is green-or-yellow, so a fully revised topic reads at a
+glance without adding any clutter.
+
+The microstructure diagram questions were given keys as part of this, so they're
+counted in the bar *and* tracked by the spaced-repetition picker like everything
+else (engineering now totals 200 questions).
+
+## Live syntax checking + a bigger code editor
 
 - **Bigger editor.** The write-code textarea went from 132px to **260px** tall
   (320px on screens wider than 900px), and it still drags to resize.

@@ -414,6 +414,41 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 .rvcodeopts .mcopt{font-family:var(--font-num);white-space:pre-wrap;font-size:13px;text-align:left}
 .rvprompt code{font-family:var(--font-num);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
 .rvdiagram{display:block;margin:12px auto 0;max-width:100%}
+
+/* ── progress + streak strip ── */
+.rvstatus{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+.rvbolt{display:inline-flex;align-items:center;gap:5px;flex:none;color:var(--muted);
+  font-family:var(--font-num);font-size:13px;font-weight:700;line-height:1}
+.rvbolt svg{width:19px;height:19px;overflow:visible}
+.rvbolt .bg{fill:var(--line)}
+.rvbolt .fill{fill:#f0a500;clip-path:inset(var(--drain,100%) 0 0 0);transition:clip-path .38s cubic-bezier(.2,.8,.2,1)}
+.rvbolt.full .fill{fill:#ffb703;filter:drop-shadow(0 0 5px rgba(240,165,0,.75));animation:boltpulse 1.3s ease-in-out infinite}
+.rvbolt.full b{color:#f0a500}
+@keyframes boltpulse{0%,100%{opacity:1}50%{opacity:.62}}
+.rvbolt.zap{animation:boltzap .55s ease}
+.rvbolt.zap .fill{fill:#e5484d}
+@keyframes boltzap{0%{transform:translateX(0)}15%{transform:translateX(-3px) rotate(-7deg)}
+  35%{transform:translateX(3px) rotate(6deg)}55%{transform:translateX(-2px) rotate(-4deg)}
+  75%{transform:translateX(1px)}100%{transform:translateX(0)}}
+.rvbar{flex:1;min-width:0;height:7px;border-radius:999px;background:var(--line);
+  display:flex;overflow:hidden}
+.rvbar i{display:block;height:100%;width:0;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.rvbar i.g{background:#2f9e44}
+.rvbar i.y{background:#f0a500}
+.rvbar i.r{background:#e5484d}
+.rvlegend{flex:none;display:flex;align-items:center;gap:3px;font-size:12px;color:var(--muted);
+  font-family:var(--font-num)}
+.rvlegend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:8px}
+.rvlegend i:first-child{margin-left:0}
+.rvlegend i.g{background:#2f9e44}
+.rvlegend i.y{background:#f0a500}
+.rvlegend i.r{background:#e5484d}
+.rvlegend i.n{background:var(--line)}
+@media (max-width:560px){ .rvlegend{display:none} }
+/* how far through a topic you are, drawn under its pill */
+.rvsel .diffpill,.rvsub .diffpill{position:relative;overflow:hidden}
+.rvsel .diffpill::after,.rvsub .diffpill::after{content:'';position:absolute;left:0;right:0;bottom:0;
+  height:3px;background:linear-gradient(to right,#2f9e44 0 var(--done,0%),transparent var(--done,0%))}
 .rvtyped textarea{
   width:100%;box-sizing:border-box;min-height:260px;resize:vertical;margin-bottom:6px;
   font-family:var(--font-num);font-size:13.5px;line-height:1.55;tab-size:4;
@@ -487,6 +522,28 @@ const SFX = (() => {
     place: () => tone(150, 0.09, 'square', 0.14),
     good:  () => { tone(523, 0.08, 'sine', 0.17); tone(784, 0.10, 'sine', 0.17, 0.06); },
     bad:   () => tone(150, 0.22, 'sawtooth', 0.15),
+    /* The note CYCLES through a pentatonic scale rather than climbing away, so it
+       never turns shrill however long the streak runs. What grows instead is the
+       texture: every five correct adds another voice — a fifth, then a root
+       underneath, an octave shimmer, a major third to complete the chord, and
+       finally a sub-bass — so it keeps getting richer indefinitely. Every tenth
+       gets a short rising flourish on top. */
+    streak: n => {
+      n = Math.max(1, n);
+      const PENT = [523.25, 587.33, 659.25, 783.99, 880.00];   // C D E G A
+      const f = PENT[(n - 1) % PENT.length];
+      const tier = Math.min(Math.floor((n - 1) / PENT.length), 5);
+      tone(f, 0.09 + tier * 0.012, 'sine', 0.17);
+      if (tier >= 1) tone(f * 1.5, 0.11, 'sine',     0.10, 0.045);  // a fifth above
+      if (tier >= 2) tone(f / 2,   0.17, 'triangle', 0.12);         // root underneath
+      if (tier >= 3) tone(f * 2,   0.13, 'triangle', 0.06, 0.085);  // octave shimmer
+      if (tier >= 4) tone(f * 1.25,0.12, 'sine',     0.07, 0.02);   // major third
+      if (tier >= 5) tone(f / 4,   0.24, 'sine',     0.09);         // sub-bass
+      if (n % 10 === 0) seq([[f,0.10],[f*1.25,0.17],[f*1.5,0.24],[f*2,0.31]], 'triangle');
+    },
+    /* losing a good streak — power draining away */
+    discharge: () => { seq([[392,0],[330,0.10],[262,0.21],[196,0.33]], 'sawtooth');
+      tone(98, 0.45, 'sine', 0.10, 0.30); },
     win:   () => seq([[523,0],[659,0.09],[784,0.18],[1047,0.28]]),
     lose:  () => seq([[440,0],[349,0.1],[262,0.22]], 'sawtooth'),
     tick:  () => tone(900, 0.04, 'sine', 0.09),
@@ -3086,11 +3143,18 @@ BUILD.flashcards = host => {
    opts = { title, how, statKey (also the game id), topics:[{id,name,gen}] }
    gen() returns { q(html), choices:[str], answer:str } for multiple choice,
    or { q, input:true, answer, accept?:fn } for a typed answer. Optional clue/note. */
+/* topic id → the set of question keys it can ask (null = procedural, uncountable).
+   Sampling a generator costs a few hundred draws, so it is done once per page
+   load rather than every time a game is opened. */
+const KEYSPACE = new Map();
 function revGame(host, opts){
   head(host, opts.title, opts.how, '<div id="rv"></div>');
   const box = $('rv'), sk = opts.statKey;
   const modular = !!opts.modules;
-  let score = 0, streak = 0, cur = null, answered = false, checking = false;
+  let score = 0, cur = null, answered = false, checking = false;
+  /* the streak persists and rides the tt.* prefs sync, so it survives leaving
+     the game and follows you to another device; `score` stays per-session */
+  let streak = Math.max(0, +TT.get('tt.rev_'+sk+'_streak', 0) || 0);
   /* flat mode (Maths/Software): one topic pill row with a Mixed option */
   let topic = modular ? null : TT.get('tt.rev_'+sk, (opts.topics.length>1?'mix':opts.topics[0].id));
   if (!modular && topic!=='mix' && !opts.topics.some(t=>t.id===topic)) topic = opts.topics[0].id;
@@ -3132,18 +3196,109 @@ function revGame(host, opts){
   document.addEventListener('keydown', onEnter);
 
   const curMod = () => opts.modules.find(m=>m.id===modId);
+
+  /* ── progress & streak ──────────────────────────────────────────────────
+     Every question sits in one of four states, which is what the bar shows:
+       correct (green)  right, and never once got it wrong
+       fixed   (yellow) got it wrong before, came back later and got it right
+       wrong   (red)    the last attempt was wrong — still needs another go
+       new     (grey)   not attempted yet
+     hist[sig] = [seen, wrongness, lastOk, everWrong]. The first two drive the
+     spaced-repetition picker; the last two drive these colours. Entries saved
+     before this existed only have two slots and are migrated as they're read. */
+  const STREAK_FULL = 8;
+  function stateOf(sig){
+    const h = hist[sig];
+    if (!h) return 'new';
+    const lastOk    = h.length > 2 ? !!h[2] : !(h[1] > 0);
+    const everWrong = h.length > 3 ? !!h[3] : (h[1] > 0);
+    if (!lastOk) return 'wrong';
+    return everWrong ? 'fixed' : 'correct';
+  }
+  /* Every question a topic can ask. A bank knows exactly; a keyed generator is
+     sampled until it stops yielding new keys; a purely procedural one (fresh
+     numbers every time, no key) isn't countable and stays out of the bar. */
+  function keySpace(t){
+    const cacheId = sk + ':' + t.id;
+    if (KEYSPACE.has(cacheId)) return KEYSPACE.get(cacheId);
+    let val;
+    if (t.bank) val = new Set(t.bank.map((raw,i)=>(raw&&raw.key)||(t.id+'#'+i)));
+    else {
+      const seen = new Set(); let dry = 0;
+      for (let i=0;i<1200 && dry<250;i++){
+        let q; try { q = t.gen(); } catch { break; }
+        const k = q && q.key ? t.id+':'+q.key : null;
+        if (!k || seen.has(k)) dry++; else { seen.add(k); dry = 0; }
+      }
+      val = seen.size ? seen : null;
+    }
+    KEYSPACE.set(cacheId, val);
+    return val;
+  }
+  function statsFor(list){
+    const c = { correct:0, fixed:0, wrong:0, new:0, total:0 };
+    (list||[]).forEach(t => { const ks = keySpace(t); if (!ks) return;
+      ks.forEach(k => { c[stateOf(k)]++; c.total++; }); });
+    return c;
+  }
+  /* the topics a given pill stands for, so its underline can show progress */
+  function topicsFor(id, isModule){
+    if (!modular) return id === 'mix' ? opts.topics : opts.topics.filter(t => t.id === id);
+    if (id === 'all') return opts.modules.flatMap(m => m.topics);
+    if (isModule){ const m = opts.modules.find(x => x.id === id); return m ? m.topics : []; }
+    const m = curMod(); return m ? m.topics.filter(t => t.id === id) : [];
+  }
+  function pillDone(id, isModule){
+    const c = statsFor(topicsFor(id, isModule));
+    if (!c.total) return '';
+    return ' style="--done:' + ((c.correct + c.fixed) / c.total * 100).toFixed(1) + '%"';
+  }
+
+  const BOLT_D = 'M7 2v11h3v9l7-12h-4l3-8z';
+  function statusUI(){
+    return '<div class="rvstatus" id="rvstatus">' +
+      '<span class="rvbolt" id="rvbolt" title="Answer streak"><svg viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path class="bg" d="'+BOLT_D+'"/><path class="fill" d="'+BOLT_D+'"/></svg>' +
+        '<b id="rvstreakn">0</b></span>' +
+      '<div class="rvbar" id="rvbar" hidden><i class="g"></i><i class="y"></i><i class="r"></i></div>' +
+      '<span class="rvlegend" id="rvlegend"></span></div>';
+  }
+  /* `broke` = a streak worth mourning just ended, so play the discharge */
+  function paintStatus(broke){
+    const bolt = $('rvbolt'), bar = $('rvbar'), leg = $('rvlegend');
+    if (!bolt) return;
+    bolt.style.setProperty('--drain', ((1 - Math.min(1, streak / STREAK_FULL)) * 100) + '%');
+    bolt.classList.toggle('full', streak >= STREAK_FULL);
+    const n = $('rvstreakn'); if (n) n.textContent = streak;
+    if (broke){ bolt.classList.remove('zap'); void bolt.offsetWidth; bolt.classList.add('zap'); }
+    const c = statsFor(pool());
+    if (bar){
+      bar.hidden = !c.total;
+      if (c.total){
+        const pct = v => (v / c.total * 100) + '%';
+        bar.children[0].style.width = pct(c.correct);
+        bar.children[1].style.width = pct(c.fixed);
+        bar.children[2].style.width = pct(c.wrong);
+        bar.title = c.correct+' correct · '+c.fixed+' fixed · '+c.wrong+' to review · '+c.new+' not tried yet';
+      }
+    }
+    if (leg) leg.innerHTML = c.total
+      ? '<i class="g" title="correct"></i>'+c.correct+'<i class="y" title="fixed after getting it wrong"></i>'+c.fixed+
+        '<i class="r" title="still to review"></i>'+c.wrong+'<i class="n" title="not tried yet"></i>'+c.new
+      : '';
+  }
   const pool = () => {
     if (!modular) return topic==='mix' ? opts.topics : [opts.topics.find(t=>t.id===topic)];
     if (modId==='all') return opts.modules.flatMap(m=>m.topics);
     const on = curMod().topics.filter(t=>!excl[t.id]); return on.length ? on : curMod().topics;
   };
-  const pill = (id,name,on,multi) => '<button class="diffpill'+(multi?' rvmulti':'')+'" type="button" data-id="'+id+'" aria-pressed="'+on+'">'+esc(name)+'</button>';
+  const pill = (id,name,on,multi,isModule) => '<button class="diffpill'+(multi?' rvmulti':'')+'" type="button" data-id="'+id+'" aria-pressed="'+on+'"'+pillDone(id,isModule)+'>'+esc(name)+'</button>';
   function selUI(){
     if (!modular){
       const all = opts.topics.length>1 ? [{id:'mix',name:'Mixed'},...opts.topics] : opts.topics;
       return '<div class="diffbar rvsel" style="margin-bottom:12px">'+all.map(t=>pill(t.id,t.name,t.id===topic)).join('')+'</div>';
     }
-    let h = '<div class="diffbar rvsel" style="margin-bottom:8px">'+pill('all','Whole topic',modId==='all')+opts.modules.map(m=>pill(m.id,m.name,m.id===modId)).join('')+'</div>';
+    let h = '<div class="diffbar rvsel" style="margin-bottom:8px">'+pill('all','Whole topic',modId==='all',false,true)+opts.modules.map(m=>pill(m.id,m.name,m.id===modId,false,true)).join('')+'</div>';
     if (modId!=='all') h += '<div class="diffbar rvsub" style="margin-bottom:12px">'+curMod().topics.map(t=>pill(t.id,t.name,!excl[t.id],true)).join('')+'</div>';
     return h;
   }
@@ -3163,10 +3318,10 @@ function revGame(host, opts){
   }
   start();
   function start(){
-    box.innerHTML = selUI() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
+    box.innerHTML = selUI() + statusUI() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
       '<div class="rvclue">'+(modular?'Pick a module (or the whole topic), then start.':'Pick a topic, then start.')+' Answers reveal the working.</div></div>' +
       '<div class="gwrow"><button class="btn primary" id="rvstart" type="button">Start</button></div>';
-    wireSel(); $('rvstart').onclick = nextQ;
+    wireSel(); paintStatus(); $('rvstart').onclick = nextQ;
     $('sc').textContent = 'Best streak ' + (statVal(sk,'streak') || 0);
   }
   /* turn a bank entry (a static {q,a,w} object, or a function) into a question */
@@ -3222,7 +3377,7 @@ function revGame(host, opts){
   /* count of distinct question slots in the current pool (bank items + generators) */
   function poolSize(list){ return list.reduce((n,t)=> n + (t.bank ? t.bank.length : 1), 0); }
   function render(){
-    let html = selUI() +
+    let html = selUI() + statusUI() +
       '<div class="rvq"><div class="rvprog">Score '+score+' · streak '+streak+' · '+esc(cur._topic)+'</div>' +
         '<div class="rvprompt">'+cur.q+'</div></div>';   /* no formula shown up front — that's the point */
     html += cur.typed
@@ -3235,7 +3390,7 @@ function revGame(host, opts){
       ? '<div class="gwrow"><input id="rvin" autocomplete="off" placeholder="Your answer…"><button class="btn primary" id="rvgo" type="button">Check</button></div>'
       : '<div class="mcq" id="rvopts"></div>';
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
-    box.innerHTML = html; wireSel();
+    box.innerHTML = html; wireSel(); paintStatus();
     $('sc').textContent = 'Score ' + score;
     if (cur.typed){ const ta = $('rvta'); ta.focus();
       /* Live syntax check, like the exam environment gives you. It only
@@ -3307,13 +3462,18 @@ function revGame(host, opts){
   }
   function finish(ok, gaveUp, detail, btn){
     if (answered) return; answered = true;
-    if (ok){ score++; streak++; SFX.good(); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
-    else { streak = 0; SFX.bad(); }
+    const hadStreak = streak;
+    if (ok){ score++; streak++; SFX.streak(streak); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
+    else { streak = 0; if (hadStreak >= 3) SFX.discharge(); else SFX.bad(); }
     if (cur._keyed){                                          // remember how this one went
       const h = hist[cur._sig] || [0,0];
       h[0]++; if (ok) h[1] = Math.max(0, h[1]-1); else h[1]++;
+      h[2] = ok ? 1 : 0;                                      // was the last go right?
+      if (!ok) h[3] = 1;                                      // has it ever been wrong?
       hist[cur._sig] = h; TT.set('tt.rev_'+sk+'_hist', hist);
     }
+    TT.set('tt.rev_'+sk+'_streak', streak);                   // synced with everything else
+    paintStatus(!ok && hadStreak >= 3);
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');
     if (cur.typed)        // code answers are multi-line — shown as a block below
       fb.innerHTML = (ok ? '✓ Correct' : (gaveUp ? 'One way to write it:' : '✗ Not quite'))
@@ -4547,23 +4707,23 @@ function genCarbonFact(){
 /* the microstructure diagrams — kept as their own subtopic */
 const MICRO_STEEL = [
   () => { const m = mc('Low-carbon steel', ['Eutectoid steel','High-carbon steel','White cast iron']);
-    return { q:'This slow-cooled microstructure — light ferrite grains with only a little hatched pearlite — is which steel?'+microSVG('low'), choices:m.choices, answer:m.answer }; },
+    return { q:'This slow-cooled microstructure — light ferrite grains with only a little hatched pearlite — is which steel?'+microSVG('low'), choices:m.choices, answer:m.answer, key:'micro:low' }; },
   () => { const m = mc('Medium-carbon steel', ['Low-carbon (mild) steel','Eutectoid steel','Grey cast iron']);
-    return { q:'This slow-cooled steel shows roughly equal ferrite and hatched pearlite. Which steel is it?'+microSVG('med'), choices:m.choices, answer:m.answer }; },
+    return { q:'This slow-cooled steel shows roughly equal ferrite and hatched pearlite. Which steel is it?'+microSVG('med'), choices:m.choices, answer:m.answer, key:'micro:med' }; },
   () => { const m = mc('Eutectoid steel (~0.8% C)', ['Low-carbon steel','Pure ferrite','Grey cast iron']);
-    return { q:'This slow-cooled microstructure is essentially all pearlite (hatched colonies). Which steel is it?'+microSVG('eutectoid'), choices:m.choices, answer:m.answer }; },
+    return { q:'This slow-cooled microstructure is essentially all pearlite (hatched colonies). Which steel is it?'+microSVG('eutectoid'), choices:m.choices, answer:m.answer, key:'micro:eutectoid' }; },
   () => { const m = mc('Hypereutectoid (high-carbon) steel', ['Low-carbon steel','Eutectoid steel','Nodular cast iron']);
-    return { q:'This structure is pearlite colonies with a pale proeutectoid cementite network at the boundaries. Which steel is it?'+microSVG('high'), choices:m.choices, answer:m.answer }; }
+    return { q:'This structure is pearlite colonies with a pale proeutectoid cementite network at the boundaries. Which steel is it?'+microSVG('high'), choices:m.choices, answer:m.answer, key:'micro:high' }; }
 ];
 const MICRO_IRON = [
   () => { const m = mc('Grey cast iron', ['Nodular cast iron','White cast iron','Malleable cast iron']);
-    return { q:'The solid shapes in this iron matrix are graphite flakes. Which cast iron is it?'+microSVG('grey'), choices:m.choices, answer:m.answer }; },
+    return { q:'The solid shapes in this iron matrix are graphite flakes. Which cast iron is it?'+microSVG('grey'), choices:m.choices, answer:m.answer, key:'micro:grey' }; },
   () => { const m = mc('Nodular (ductile) cast iron', ['Grey cast iron','White cast iron','Eutectoid steel']);
-    return { q:'The solid shapes here are rounded graphite nodules. Which cast iron is it?'+microSVG('nodular'), choices:m.choices, answer:m.answer }; },
+    return { q:'The solid shapes here are rounded graphite nodules. Which cast iron is it?'+microSVG('nodular'), choices:m.choices, answer:m.answer, key:'micro:nodular' }; },
   () => { const m = mc('White cast iron', ['Grey cast iron','Nodular cast iron','Malleable cast iron']);
-    return { q:'This iron has pale cementite regions and hatched pearlite, with no graphite. Which cast iron is it?'+microSVG('white'), choices:m.choices, answer:m.answer }; },
+    return { q:'This iron has pale cementite regions and hatched pearlite, with no graphite. Which cast iron is it?'+microSVG('white'), choices:m.choices, answer:m.answer, key:'micro:white' }; },
   () => { const m = mc('Malleable cast iron', ['Grey cast iron','White cast iron','Nodular cast iron']);
-    return { q:'The irregular solid clusters (temper-carbon rosettes) in this matrix identify which cast iron?'+microSVG('malleable'), choices:m.choices, answer:m.answer }; }
+    return { q:'The irregular solid clusters (temper-carbon rosettes) in this matrix identify which cast iron?'+microSVG('malleable'), choices:m.choices, answer:m.answer, key:'micro:malleable' }; }
 ];
 
 /* ── physics: quantities, units and vector/scalar ──────────────────────── */
