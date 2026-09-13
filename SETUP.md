@@ -1061,7 +1061,60 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Write-code answers are actually executed (Pyodide) (latest)
+## Software rebuilt on the NSW Software Engineering syllabus (latest)
+
+**Bug fixed — ambiguous distractors.** "Which OOP idea does this show?
+`class Dog(Animal):`" offered both *Inheritance* (the intended answer) and
+*Class* — and `class Dog(Animal):` genuinely **is** a class definition, so the
+question was unfair rather than wrong. Each term row now carries a **`bad`** list
+of terms that would also be a fair answer for its example, and those are never
+offered as distractors. Verified: across 177 `class Dog(Animal):` questions, zero
+offered *Class* or *Generalisation*, and zero `bad` distractors appeared in 12,000
+samples of the OOP and paradigm generators.
+
+**Content re-aimed at the course.** Some of the old material (event-driven,
+declarative and structured paradigms) was extracurricular. The Software game now
+follows the three Year 11 modules from the class notes:
+
+| Module | Subtopics |
+|---|---|
+| **Fundamentals** | Development steps (incl. Waterfall vs Agile) · Algorithms (sequence/selection/iteration, divide and conquer, backtracking, pseudocode, desk checking, procedures vs functions) · Data types & structures (incl. data dictionary, arrays, records, trees, stacks, hash tables, sequential files) · Number systems (binary/decimal/hex and two's complement) · Testing & debugging (error types, test data, breakpoints/watches/stepping, unit/subsystem/system, black/white/grey box) |
+| **OOP** | Key features (objects, classes, encapsulation, abstraction, inheritance, **generalisation**, polymorphism, message passing) · Paradigms (OOP, procedural, imperative, functional, logic) · Design & quality (task definition, top-down/bottom-up, **facade pattern**, agility, class/DFD/structure diagrams, stubs, clear mainline, version control, QA) |
+| **Mechatronics** | Hardware & sensors (microcontroller vs CPU, instruction set, opcodes, address/data registers, motion and light sensors, hydraulic actuators, end effectors, grippers) · Control systems (open vs closed loop, feedback, degrees of freedom, motion constraints, autonomous control, diagnostic data, wiring diagrams, prototypes, simulations, unit tests) |
+| **Read code** | Predict output (unchanged) |
+| **Write code** | Easy / Medium / Hard, executed by Pyodide (unchanged) |
+
+**Generalisation** was missing entirely and is a syllabus dot point — it's in now,
+with `bad` marking it against Inheritance so the two are never offered together.
+
+Distinct questions per subtopic: 20–36, plus number systems which is fully
+computed (1100+ observed). All answered both ways — definition→term and
+term→definition — with a third "which does this example show?" direction where the
+example is unambiguous.
+
+Phrasing note: the term→definition direction asks "Which of these best describes
+**X**?", which stays grammatical for every entry ("What is Refinement diagram?"
+did not).
+
+## Show answer works after a correct answer too
+
+On a write-code question the **Show answer** button used to be disabled once you
+answered, and a correct answer never displayed a sample — so there was no way to
+compare your version with a worked one. Now:
+
+- Answer **correctly** → "✓ Correct" with the sample still hidden, and **Show
+  answer stays enabled**. Clicking it drops a sample solution underneath; the
+  button then disables so it can't be added twice. **Your score is untouched** —
+  revealing after you're already right costs nothing.
+- Answer **wrongly** (or give up before answering) → the sample appears straight
+  away as before, and the button is disabled since there's nothing left to show.
+
+`revealAnswer()` inserts a single `<pre class="rvans">` above the note and is
+idempotent, so the sample can never appear twice. Multiple-choice and numeric
+questions are unaffected — they have no Show answer button and already reveal the
+answer when you get one wrong.
+
+## Write-code answers are actually executed (Pyodide)
 
 Write-code answers are now **run for real** against the task's test cases instead
 of being pattern-matched, so correctness is judged by behaviour.

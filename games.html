@@ -3273,6 +3273,16 @@ function revGame(host, opts){
       : (cur.typed || cur.input) ? (cur.accept ? cur.accept(String(val)) : normEq(val, cur.answer))
       : (val === cur.answer), gaveUp, null, btn);
   }
+  /* drop a sample solution into the feedback, once */
+  function revealAnswer(){
+    const fb = $('rvfb');
+    if (!fb || fb.querySelector('.rvans')) return;
+    const pre = document.createElement('pre');
+    pre.className = 'rvans';
+    pre.textContent = String(cur.answer);
+    const note = fb.querySelector('.rvnote');
+    if (note) fb.insertBefore(pre, note); else fb.appendChild(pre);
+  }
   function finish(ok, gaveUp, detail, btn){
     if (answered) return; answered = true;
     if (ok){ score++; streak++; SFX.good(); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
@@ -3283,14 +3293,23 @@ function revGame(host, opts){
       hist[cur._sig] = h; TT.set('tt.rev_'+sk+'_hist', hist);
     }
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');
-    if (cur.typed)        // code answers are multi-line — show them as a block
+    if (cur.typed)        // code answers are multi-line — shown as a block below
       fb.innerHTML = (ok ? '✓ Correct' : (gaveUp ? 'One way to write it:' : '✗ Not quite'))
         + (detail ? '<div class="rvwhy">' + esc(detail) + '</div>' : '')
-        + (ok ? '' : '<pre class="rvans">' + esc(String(cur.answer)) + '</pre>')
         + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     else
       fb.innerHTML = (ok ? '✓ Correct' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
-    if (cur.typed){ $('rvta').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
+    if (cur.typed){
+      $('rvta').disabled = true; $('rvgo').disabled = true;
+      if (!ok) revealAnswer();                 // got it wrong → show a working version
+      const skip = $('rvskip');
+      if (skip){
+        /* even when you got it right, leave the button working so you can compare
+           your version with a sample one */
+        skip.disabled = !!$('rvfb').querySelector('.rvans');
+        skip.onclick = () => { revealAnswer(); skip.disabled = true; };
+      }
+    }
     else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; }
     else [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.textContent === cur.answer) b.classList.add('right'); if (b===btn && !ok) b.classList.add('wrong'); });
     $('rvnextrow').hidden = false; $('rvnext').focus();
@@ -3627,69 +3646,310 @@ function genWrite(lv){
   };
 }
 
-/* paradigms — what kind of program is this? */
+/* ══ SOFTWARE ENGINEERING (NSW HSC Year 11) ══
+   Content follows the three course modules — Programming fundamentals, The
+   object-oriented paradigm, and Programming mechatronics. Terms live in tables
+   of {n, d, ex?, bad?} and are asked both ways (definition→term and term→
+   definition), plus "which does this example show?" where an example reads
+   unambiguously.
+
+   `bad` matters: it lists terms that would ALSO be a fair answer for that row's
+   example, so they are never offered as distractors. Without it a question like
+   "which idea does `class Dog(Animal):` show?" could offer both Inheritance and
+   Class, and both would be defensible. */
+function termQ(rows, keyp, askDef, askName, askEx){
+  const r = pk(rows);
+  const safe = rows.filter(x => x !== r && !(r.bad || []).includes(x.n));
+  const useEx = askEx && r.ex && Math.random() < 0.34;
+  if (useEx){
+    const m = mc(r.n, shuffle(safe).map(x => x.n));
+    return { q: askEx(r), choices:m.choices, answer:m.answer, key:keyp+'-x:'+r.n };
+  }
+  if (Math.random() < 0.5){
+    const m = mc(r.n, shuffle(safe).map(x => x.n));
+    return { q: askDef(r), choices:m.choices, answer:m.answer, key:keyp+'-d:'+r.n };
+  }
+  const m = mc(r.d, shuffle(rows.filter(x => x !== r)).map(x => x.d));
+  return { q: askName(r), choices:m.choices, answer:m.answer, key:keyp+'-n:'+r.n };
+}
+const exBlock = r => '<pre class="rvans">' + esc(r.ex) + '</pre>';
+
+/* ── the paradigms the course asks you to experiment with ───────────────── */
 const PARADIGMS = [
   { n:'Object-oriented', d:'organises a program around objects that bundle data together with the methods acting on it',
-    ex:'class Account:\n    def deposit(self, n):\n        self.balance += n' },
-  { n:'Procedural', d:'organises a program as an ordered sequence of steps and functions that act on data passed to them',
-    ex:'def main():\n    data = read()\n    show(process(data))' },
-  { n:'Functional', d:'builds a program out of pure functions and avoids changing stored state',
-    ex:'total = reduce(lambda a, b: a + b, map(square, xs))' },
-  { n:'Logic', d:'states facts and rules and lets the system infer the answers',
-    ex:'parent(tom, bob).\ngrandparent(X, Y) :- parent(X, Z), parent(Z, Y).' },
-  { n:'Event-driven', d:'structures a program around handlers that run when something happens',
-    ex:"button.on('click', handle_click)" },
-  { n:'Declarative', d:'describes the result you want rather than the steps to compute it',
-    ex:'SELECT name FROM students WHERE year = 11' },
-  { n:'Imperative', d:'gives an explicit ordered list of commands that change the program’s state as they run',
-    ex:'total = 0\nfor x in xs:\n    total = total + x' },
-  { n:'Structured', d:'builds a program only from sequence, selection and iteration, avoiding jumps like GOTO',
-    ex:'if ready:\n    while queue:\n        serve(queue.pop())' }
+    ex:'class Account:\n    def deposit(self, n):\n        self.balance += n', bad:['Imperative','Procedural'] },
+  { n:'Procedural', d:'organises a program as an ordered set of procedures and functions that act on data passed to them',
+    ex:'def main():\n    data = read()\n    show(process(data))', bad:['Imperative','Object-oriented'] },
+  { n:'Imperative', d:'gives an explicit, ordered list of statements that change the program’s state as they run',
+    ex:'total = 0\nfor x in xs:\n    total = total + x', bad:['Procedural','Object-oriented'] },
+  { n:'Functional', d:'builds a program out of functions that return values and avoid changing stored state',
+    ex:'total = reduce(lambda a, b: a + b, map(square, xs))', bad:['Logic'] },
+  { n:'Logic', d:'states facts and rules and lets the system infer the answers for itself',
+    ex:'parent(tom, bob).\ngrandparent(X, Y) :- parent(X, Z), parent(Z, Y).', bad:['Functional'] }
+];
+const PARA_EXTRA = [
+  {q:'Compared with procedural programming, OOP mainly differs by…', a:'Bundling data together with the methods that act on it', w:['Running faster in every case','Removing the need for loops and branching','Avoiding the use of functions entirely']},
+  {q:'A strength of OOP for large, shared projects is that…', a:'Classes can be developed, reused and tested fairly independently', w:['It removes the need for version control','It makes every program shorter','It avoids the need for testing']},
+  {q:'In procedural programming, data and the code that acts on it are…', a:'Kept separate, with data passed into procedures', w:['Always bundled into one object','Stored only in a database','Hidden from the programmer']},
+  {q:'Which paradigm is Python able to support?', a:'Both object-oriented and procedural', w:['Object-oriented only','Procedural only','Logic only']},
+  {q:'Message passing in OOP means…', a:'Objects interacting by calling each other’s methods', w:['Sending data over a network','Printing messages to the screen','Passing comments between developers']}
 ];
 function genParadigm(){
-  const r = pk(PARADIGMS), others = PARADIGMS.filter(x => x !== r), k = ri(0,2);
-  if (k === 0){ const m = mc(r.n, shuffle(others).map(x => x.n));
-    return { q:'Which paradigm <b>' + r.d + '</b>?', choices:m.choices, answer:m.answer, key:'par-d:'+r.n }; }
-  if (k === 1){ const m = mc(r.d, shuffle(others).map(x => x.d));
-    return { q:'What best describes the <b>' + r.n + '</b> paradigm?', choices:m.choices, answer:m.answer, key:'par-n:'+r.n }; }
-  const m = mc(r.n, shuffle(others).map(x => x.n));
-  return { q:'Which paradigm does this show?<pre class="rvans">' + esc(r.ex) + '</pre>',
-    choices:m.choices, answer:m.answer, key:'par-ex:'+r.n };
+  if (Math.random() < 0.28) return bankQ(PARA_EXTRA, 'parax');
+  return termQ(PARADIGMS, 'par',
+    r => 'Which paradigm <b>' + r.d + '</b>?',
+    r => 'What best describes the <b>' + r.n + '</b> paradigm?',
+    r => 'Which paradigm does this show?' + exBlock(r));
 }
 
-/* OOP vocabulary */
+/* ── OOP key features (objects, classes, encapsulation, abstraction,
+      inheritance, generalisation, polymorphism) ─────────────────────────── */
 const OOPC = [
+  { n:'Object', d:'an instance created from a class, holding its own attribute values',
+    ex:"s = Student('Ana')", bad:['Class'] },
+  { n:'Class', d:'a blueprint that defines the attributes and methods its objects will have',
+    ex:'class Student:', bad:['Object'] },
   { n:'Encapsulation', d:'bundling data with the methods that use it, and restricting direct access to that data',
-    ex:'keeping balance private and only changing it through deposit()' },
-  { n:'Abstraction', d:'exposing only what someone needs to use the object, hiding how it actually works',
-    ex:'calling car.start() without knowing anything about the engine' },
-  { n:'Inheritance', d:'a class taking on the attributes and methods of a parent class',
-    ex:'class Dog(Animal):' },
-  { n:'Polymorphism', d:'the same method call behaving differently depending on the object it is called on',
-    ex:'Dog and Cat each define speak(), and one loop calls speak() on both' },
-  { n:'Class', d:'the blueprint that defines what attributes and methods its objects will have',
-    ex:'class Student:' },
-  { n:'Object', d:'one concrete thing built from a class, holding its own attribute values',
-    ex:"s = Student('Ana')" },
+    ex:'keeping balance private and only changing it through deposit()', bad:['Abstraction'] },
+  { n:'Abstraction', d:'hiding the complicated implementation and exposing only the essential features',
+    ex:'calling car.start() without knowing anything about the engine', bad:['Encapsulation'] },
+  { n:'Inheritance', d:'one class taking on the attributes and methods of a parent class',
+    ex:'class Dog(Animal):', bad:['Class','Generalisation'] },
+  { n:'Generalisation', d:'pulling features shared by several classes up into a common superclass',
+    ex:'moving name and age out of Dog and Cat into a shared Animal class', bad:['Inheritance','Abstraction'] },
+  { n:'Polymorphism', d:'the same method call behaving differently depending on the object it acts on',
+    ex:'Dog and Cat each define speak(), and one loop calls speak() on both', bad:['Overriding','Inheritance'] },
   { n:'Method', d:'a function defined inside a class that acts on the object',
-    ex:'def deposit(self, amount):' },
+    ex:'def deposit(self, amount):', bad:['Constructor'] },
   { n:'Attribute', d:'a named piece of data stored on an object',
     ex:'self.balance' },
   { n:'Constructor', d:'the method that runs as an object is created, setting up its starting state',
-    ex:'def __init__(self):' },
+    ex:'def __init__(self):', bad:['Method'] },
   { n:'Overriding', d:'a subclass replacing an inherited method with its own version',
-    ex:'Dog redefines speak(), which it inherited from Animal' }
+    ex:'Dog redefines speak(), which it inherited from Animal', bad:['Inheritance','Polymorphism'] },
+  { n:'Message passing', d:'objects interacting by calling one another’s methods',
+    ex:'account.deposit(50) sends a message to the account object', bad:['Method'] }
 ];
 function genOOP(){
-  const r = pk(OOPC), others = OOPC.filter(x => x !== r), k = ri(0,2);
-  if (k === 0){ const m = mc(r.n, shuffle(others).map(x => x.n));
-    return { q:'Which OOP idea is <b>' + r.d + '</b>?', choices:m.choices, answer:m.answer, key:'oop-d:'+r.n }; }
-  if (k === 1){ const m = mc(r.d, shuffle(others).map(x => x.d));
-    return { q:'In OOP, what does <b>' + r.n + '</b> mean?', choices:m.choices, answer:m.answer, key:'oop-n:'+r.n }; }
-  const m = mc(r.n, shuffle(others).map(x => x.n));
-  return { q:'Which OOP idea does this show?<pre class="rvans">' + esc(r.ex) + '</pre>',
-    choices:m.choices, answer:m.answer, key:'oop-ex:'+r.n };
+  return termQ(OOPC, 'oop',
+    r => 'Which OOP idea is <b>' + r.d + '</b>?',
+    r => 'In OOP, what does <b>' + r.n + '</b> mean?',
+    r => 'Which OOP idea does this show?' + exBlock(r));
 }
+
+/* ── OOP design, documentation and quality ─────────────────────────────── */
+const OOP_DESIGN = [
+  { n:'Task definition', d:'stating clearly what the program has to do before any design begins' },
+  { n:'Top-down design', d:'starting from the whole problem and breaking it down into smaller subproblems' },
+  { n:'Bottom-up design', d:'building and testing small components first, then combining them into the system' },
+  { n:'Facade pattern', d:'a single simple interface placed in front of a complicated subsystem' },
+  { n:'Agility', d:'working in short cycles and adapting the plan as requirements change' },
+  { n:'Class diagram', d:'a diagram showing classes, their attributes and methods, and how they relate' },
+  { n:'Data flow diagram', d:'a diagram showing how data moves between processes, stores and outside entities' },
+  { n:'Structure chart', d:'a diagram showing the hierarchy of subroutines and the data passed between them' },
+  { n:'Code optimisation', d:'rewriting working code so it runs faster or uses fewer resources' },
+  { n:'Stub', d:'a placeholder subroutine that lets the rest of the program be tested before it is written' },
+  { n:'Clear mainline', d:'a short, uncluttered top level that mostly just calls subroutines' },
+  { n:'One task per subroutine', d:'keeping each subroutine responsible for a single logical job' },
+  { n:'Version control', d:'keeping a history of changes so work can be tracked, shared and rolled back' },
+  { n:'Code commenting', d:'notes in the source that explain the intent to whoever reads it next' },
+  { n:'Quality assurance', d:'the process that checks the product is being built to the required standard' },
+  { n:'Regular backup', d:'keeping spare copies of the project so work is not lost' }
+];
+function genOopDesign(){
+  return termQ(OOP_DESIGN, 'oopd',
+    r => 'Which term means <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── Programming fundamentals: the development steps ───────────────────── */
+const DEV_STEPS = [
+  { n:'Requirements definition', d:'working out what the client actually needs the software to do' },
+  { n:'Determining specifications', d:'turning those needs into precise, testable technical requirements' },
+  { n:'Design', d:'planning the structure, algorithms and interface before any code is written' },
+  { n:'Development', d:'writing the actual program code' },
+  { n:'Integration', d:'combining the separate modules so they work together as one system' },
+  { n:'Testing and debugging', d:'finding faults in the software and correcting them' },
+  { n:'Installation', d:'putting the finished system into its real environment for users' },
+  { n:'Maintenance', d:'fixing and improving the software after it has been released' },
+  { n:'Waterfall model', d:'a sequential approach where each stage is completed before the next begins' },
+  { n:'Agile model', d:'an iterative approach delivering working software in short cycles with frequent feedback' }
+];
+const DEV_EXTRA = [
+  {q:'Which stage comes <b>first</b> in the software development steps?', a:'Requirements definition', w:['Design','Development','Testing and debugging']},
+  {q:'Which stage happens <b>after</b> the software has been released?', a:'Maintenance', w:['Integration','Design','Determining specifications']},
+  {q:'A key advantage of the Agile model over Waterfall is that…', a:'Requirements can change between short cycles', w:['No testing is needed','Documentation is never written','The cost is always lower']},
+  {q:'A weakness of the Waterfall model is that…', a:'Going back to an earlier stage is difficult and costly', w:['It cannot be documented','It has no design stage','It cannot be used for large projects']},
+  {q:'Online code collaboration tools mainly help a team by…', a:'Letting several developers work on the same codebase with a shared history', w:['Writing the code automatically','Removing the need for testing','Making programs run faster']}
+];
+function genDevStep(){
+  if (Math.random() < 0.3) return bankQ(DEV_EXTRA, 'devx');
+  return termQ(DEV_STEPS, 'dev',
+    r => 'Which step is <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── Programming fundamentals: algorithms ──────────────────────────────── */
+const ALGO = [
+  { n:'Sequence', d:'steps carried out one after another, in order' },
+  { n:'Selection', d:'choosing between different paths depending on a condition' },
+  { n:'Iteration', d:'repeating a set of steps while some condition holds' },
+  { n:'Subprogram', d:'a named block of code that can be called from elsewhere in the program' },
+  { n:'Procedure', d:'a subprogram that carries out a task without returning a value' },
+  { n:'Function', d:'a subprogram that returns a value to whatever called it' },
+  { n:'Parameter passing', d:'sending values into a subprogram when it is called' },
+  { n:'Divide and conquer', d:'splitting a problem into smaller independent subproblems, solving each, then combining the results' },
+  { n:'Backtracking', d:'trying one path and, when it fails, undoing the last choice and trying another' },
+  { n:'Pseudocode', d:'a structured, language-independent way of writing an algorithm in near-English' },
+  { n:'Flowchart', d:'a diagram using standard shapes to show an algorithm’s flow of control' },
+  { n:'Desk checking', d:'tracing an algorithm by hand with chosen test values to find logic errors' },
+  { n:'Peer checking', d:'having another programmer review your algorithm or code' },
+  { n:'Refinement diagram', d:'a diagram that breaks each step down into progressively more detailed steps' }
+];
+function genAlgo(){
+  return termQ(ALGO, 'alg',
+    r => 'Which term means <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── Programming fundamentals: data types and structures ───────────────── */
+const DATA_T = [
+  { n:'Boolean', d:'a value that can only be True or False' },
+  { n:'Integer', d:'a whole number, with no fractional part' },
+  { n:'Real (floating point)', d:'a number that may have a fractional part' },
+  { n:'Single precision floating point', d:'a real number stored in 32 bits' },
+  { n:'Char', d:'a single character' },
+  { n:'String', d:'a sequence of characters' },
+  { n:'Date and time', d:'a value holding a calendar date and/or a time of day' },
+  { n:'Array', d:'a fixed-size collection of items of the same type, reached by index' },
+  { n:'Multidimensional array', d:'an array whose elements are themselves arrays, like a grid' },
+  { n:'Record', d:'a group of related fields, possibly of different types, stored as one item' },
+  { n:'List', d:'an ordered collection that can grow and shrink as the program runs' },
+  { n:'Tree', d:'a hierarchical structure of nodes descending from a single root' },
+  { n:'Stack', d:'a last-in, first-out structure — the last item pushed is the first popped' },
+  { n:'Hash table', d:'a structure that maps keys to values using a hash function for fast lookup' },
+  { n:'Sequential file', d:'a file whose records are read one after another from the beginning' },
+  { n:'Data dictionary', d:'a table describing each data item’s name, data type, size, format and purpose' }
+];
+function genDataType(){
+  return termQ(DATA_T, 'dat',
+    r => 'Which one is <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── Programming fundamentals: number systems (fully computed) ─────────── */
+function genNumber(){
+  const k = ri(0, 4);
+  const hex = n => n.toString(16).toUpperCase();
+  if (k === 0){                                     // decimal → binary
+    const n = ri(5, 255), a = n.toString(2);
+    const m = mc(a, [(n+1).toString(2), (n-1).toString(2), (n^0b1010).toString(2)]);
+    return { q:'What is decimal <b>' + n + '</b> in <b>binary</b>?', choices:m.choices, answer:m.answer,
+      note:n + ' = ' + a + ' in binary.' };
+  }
+  if (k === 1){                                     // binary → decimal
+    const n = ri(5, 255), b = n.toString(2);
+    const m = mc(String(n), [String(n+1), String(n-1), String(n*2)]);
+    return { q:'What is binary <b>' + b + '</b> in <b>decimal</b>?', choices:m.choices, answer:m.answer,
+      note:b + ' = ' + n + '.' };
+  }
+  if (k === 2){                                     // decimal → hex
+    const n = ri(10, 255), h = hex(n);
+    const m = mc(h, [hex(n+1), hex(n-1), hex(n+16)]);
+    return { q:'What is decimal <b>' + n + '</b> in <b>hexadecimal</b>?', choices:m.choices, answer:m.answer,
+      note:n + ' = 0x' + h + '.' };
+  }
+  if (k === 3){                                     // hex → decimal
+    const n = ri(10, 255), h = hex(n);
+    const m = mc(String(n), [String(n+1), String(n-1), String(n+16)]);
+    return { q:'What is hexadecimal <b>' + h + '</b> in <b>decimal</b>?', choices:m.choices, answer:m.answer,
+      note:'0x' + h + ' = ' + n + '.' };
+  }
+  const v = ri(1, 120);                             // two's complement of a negative
+  const tc = ((256 - v) >>> 0).toString(2).padStart(8, '0');
+  const m = mc(tc, [v.toString(2).padStart(8,'0'), ((256-v+1)&255).toString(2).padStart(8,'0'),
+                    (((~v)>>>0)&255).toString(2).padStart(8,'0')]);
+  return { q:'How is <b>−' + v + '</b> written as an <b>8-bit two’s complement</b> number?',
+    choices:m.choices, answer:m.answer,
+    note:'Invert the bits of ' + v + ' and add 1 → ' + tc + '.' };
+}
+
+/* ── Programming fundamentals: testing and debugging ───────────────────── */
+const TESTING = [
+  { n:'Syntax error', d:'code that breaks the rules of the language, so it will not run at all' },
+  { n:'Logic error', d:'the program runs to completion but produces the wrong result' },
+  { n:'Runtime error', d:'the program crashes part-way through, such as on a division by zero' },
+  { n:'Boundary values', d:'test data taken from right at the edges of the acceptable range' },
+  { n:'Path coverage', d:'choosing test data so that every branch through the code is executed' },
+  { n:'Faulty or abnormal data', d:'deliberately invalid input used to check the program copes with it' },
+  { n:'Breakpoint', d:'a marker that pauses execution at a chosen line so you can inspect the state' },
+  { n:'Single line stepping', d:'running the program one line at a time to watch what each line does' },
+  { n:'Watch', d:'a variable the debugger keeps displaying as the program runs' },
+  { n:'Debugging output statement', d:'a temporary print added to reveal a value while the program runs' },
+  { n:'Unit testing', d:'testing one subroutine or component on its own' },
+  { n:'Subsystem testing', d:'testing a group of related modules working together' },
+  { n:'System testing', d:'testing the complete, integrated program against its requirements' },
+  { n:'Black box testing', d:'testing against the specification without looking at the code inside' },
+  { n:'White box testing', d:'testing with full knowledge of the internal code and its paths' },
+  { n:'Grey box testing', d:'testing with partial knowledge of how the code works inside' }
+];
+function genTestDebug(){
+  return termQ(TESTING, 'tst',
+    r => 'Which term means <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── Mechatronics: hardware ────────────────────────────────────────────── */
+const MECH_HW = [
+  { n:'Microcontroller', d:'a small self-contained computer on a single chip, with processor, memory and I/O, built into a device' },
+  { n:'CPU', d:'the processor that fetches, decodes and executes a program’s instructions' },
+  { n:'Instruction set', d:'the complete set of machine instructions a particular processor understands' },
+  { n:'Opcode', d:'the part of a machine instruction that says which operation to carry out' },
+  { n:'Address register', d:'a register holding the memory location that an instruction refers to' },
+  { n:'Data register', d:'a register holding a value the processor is currently working with' },
+  { n:'Sensor', d:'an input component that measures something about the environment' },
+  { n:'Motion sensor', d:'a sensor that detects movement nearby' },
+  { n:'Light level sensor', d:'a sensor that measures how bright the surroundings are' },
+  { n:'Actuator', d:'an output component that turns a control signal into physical movement' },
+  { n:'Hydraulic actuator', d:'an actuator driven by pressurised fluid, giving large forces' },
+  { n:'End effector', d:'the tool on the end of a robotic arm that acts on the object' },
+  { n:'Robotic gripper', d:'an end effector that grasps and holds objects' }
+];
+function genMechHw(){
+  return termQ(MECH_HW, 'mhw',
+    r => 'Which component is <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
+/* ── Mechatronics: control ─────────────────────────────────────────────── */
+const MECH_CTL = [
+  { n:'Open loop control', d:'control that acts without checking the result — there is no feedback' },
+  { n:'Closed loop control', d:'control that measures the result and feeds it back to correct the output' },
+  { n:'Feedback', d:'measured output returned to the controller so it can adjust what it is doing' },
+  { n:'Degrees of freedom', d:'the number of independent ways a mechanism is able to move' },
+  { n:'Motion constraint', d:'a physical limit on how far or in what way a part may move' },
+  { n:'Autonomous control', d:'a system that senses its situation and decides for itself, with no operator' },
+  { n:'Diagnostic data', d:'data collected to show how the system is performing or where it is faulting' },
+  { n:'Subsystem', d:'sensors, actuators and effectors combined to carry out one part of the overall job' },
+  { n:'Wiring diagram', d:'a drawing showing how the components are connected for power and data' },
+  { n:'Prototype', d:'an early working model built to test whether the design actually works' },
+  { n:'Simulation', d:'a software model used to test control code without the physical hardware' },
+  { n:'Unit test', d:'a repeatable test of one component’s control algorithm on its own' }
+];
+const MECH_EXTRA = [
+  {q:'A thermostat that measures room temperature and switches the heater on or off is an example of…', a:'Closed loop control', w:['Open loop control','Autonomous navigation','Manual control']},
+  {q:'A toaster that runs for a set time regardless of how brown the bread gets is…', a:'Open loop control', w:['Closed loop control','Feedback control','Adaptive control']},
+  {q:'A robotic arm with three independent joints has how many degrees of freedom?', a:'Three', w:['One','Six','Zero']},
+  {q:'Which field commonly uses mechatronic systems?', a:'All of robotics, automotive and medical devices', w:['Only manufacturing robotics','Only the automotive industry','Only aerospace']},
+  {q:'When designing a mechatronic system for a person with disability, the main extra consideration is…', a:'The specific access needs of the intended user', w:['Making it as fast as possible','Reducing the number of sensors','Using the cheapest possible parts']}
+];
+function genMechControl(){
+  if (Math.random() < 0.28) return bankQ(MECH_EXTRA, 'mecx');
+  return termQ(MECH_CTL, 'mct',
+    r => 'Which term means <b>' + r.d + '</b>?',
+    r => 'Which of these best describes <b>' + r.n + '</b>?');
+}
+
 function genPython(){
   const t = ri(0,4); let code, out, dis = [];
   if (t===0){ const a=ri(6,20), b=ri(2,6); const [op,val] = pk([['+',a+b],['-',a-b],['*',a*b],['//',Math.floor(a/b)],['%',a%b]]);
@@ -4401,16 +4661,26 @@ const MATH_CONCEPTS = [
   {q:'The graph of y = f(x) + k, for k > 0, is shifted…', a:'k units up', w:['k units down','k units right','k units left']},
   {q:'The graph of y = −f(x) is a reflection of y = f(x) in the…', a:'x-axis', w:['y-axis','line y = x','origin only']}];
 
-BUILD.software = host => revGame(host, { title:'Software', how:'Read it, write it, and know the paradigms.', statKey:'software',
+BUILD.software = host => revGame(host, { title:'Software', how:'The three Year 11 modules — pick one, or the whole topic.', statKey:'software',
   modules:[
+    {id:'fund',name:'Fundamentals',topics:[
+      {id:'sf-dev',name:'Development steps',gen:genDevStep},
+      {id:'sf-alg',name:'Algorithms',gen:genAlgo},
+      {id:'sf-data',name:'Data types & structures',gen:genDataType},
+      {id:'sf-num',name:'Number systems',gen:genNumber},
+      {id:'sf-test',name:'Testing & debugging',gen:genTestDebug}]},
+    {id:'oop',name:'OOP',topics:[
+      {id:'so-con',name:'Key features',gen:genOOP},
+      {id:'so-par',name:'Paradigms',gen:genParadigm},
+      {id:'so-des',name:'Design & quality',gen:genOopDesign}]},
+    {id:'mech',name:'Mechatronics',topics:[
+      {id:'sm-hw',name:'Hardware & sensors',gen:genMechHw},
+      {id:'sm-ctl',name:'Control systems',gen:genMechControl}]},
     {id:'read',name:'Read code',topics:[{id:'s-out',name:'Predict output',gen:genPython}]},
     {id:'write',name:'Write code',topics:[
       {id:'s-e',name:'Easy',gen:()=>genWrite(1)},
       {id:'s-m',name:'Medium',gen:()=>genWrite(2)},
-      {id:'s-h',name:'Hard',gen:()=>genWrite(3)}]},
-    {id:'para',name:'Paradigms & OOP',topics:[
-      {id:'s-para',name:'Paradigms',gen:genParadigm},
-      {id:'s-oop',name:'OOP concepts',gen:genOOP}]}
+      {id:'s-h',name:'Hard',gen:()=>genWrite(3)}]}
   ] });
 BUILD.maths = host => revGame(host, { title:'Maths', how:'Procedural practice — pick a topic.', statKey:'maths',
   topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
