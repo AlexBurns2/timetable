@@ -469,8 +469,9 @@ array of `{q, a, w}` MC items). Games are either flat (`topics`) or modular
 - Six tiles (Timetable, Revision, Calendar, Notes, Games, Resources), then a
   **forum** (post, reply, relative timestamps, delete your own). Styles live in
   `site.css` under "forum (home page)".
-- The old footer ("Theme follows you across every page." + "Back to timetable →")
-  and the "Your timetable, your notes…" lede are **removed**.
+- Removed: the old footer ("Theme follows you across every page." + "Back to
+  timetable →"), the "Your timetable, your notes…" lede, and the "What's new"
+  list (its `.features` CSS went with it).
 - Gotcha worth remembering: `.freplybox{display:flex}` beats the `[hidden]`
   attribute, so there is an explicit `.freplybox[hidden]{display:none}`. The same
   bug bit the Tetris undo/redo buttons earlier — if something won't hide, check
