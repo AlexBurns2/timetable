@@ -30,6 +30,8 @@
  *     all_day     boolean not null default false,
  *     repeat      text not null default 'none',
  *     repeat_until text,
+ *     by_day      jsonb not null default '[]',   -- for repeat='bydays': [1,2,5] = Mon/Tue/Fri
+ *                                                --   (JS weekday numbers, Sunday = 0)
  *     colour      text not null default 'blue',
  *     notes       text,
  *     shared_with jsonb not null default '[]',
@@ -51,7 +53,7 @@ function nameFromEmail(email) {
 }
 
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-const REPEATS = new Set(["none", "daily", "weekdays", "weekly", "fortnightly", "monthly", "yearly"]);
+const REPEATS = new Set(["none", "daily", "weekdays", "weekly", "fortnightly", "bydays", "monthly", "yearly"]);
 const COLOURS = new Set(["blue", "green", "red", "orange", "purple", "teal", "pink", "grey"]);
 const MAX_EVENTS = 500;          // per owner, so one account can't fill the table
 const MAX_IMPORT = 200;
@@ -63,17 +65,54 @@ const ICS_HOSTS = new Set(["calendar.google.com", "www.google.com"]);
 const clean = (v, n) => String(v == null ? "" : v).slice(0, n).trim();
 const isDate = v => /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(v || ""));
 
+/* weekday picks for repeat='bydays' — whole numbers 0..6 (Sunday = 0), deduped.
+   The typeof guard matters: Number(null) and Number('') are both 0, so without
+   it a stray null in the array would quietly become "every Sunday". */
+const weekdays = v => [...new Set((Array.isArray(v) ? v : [])
+  .filter(n => typeof n === "number" || (typeof n === "string" && n.trim() !== ""))
+  .map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort();
+
 function shapeEvent(r, me) {
   const mine = r.owner === me;
   return {
     id: r.id, title: r.title, start: r.starts_at, end: r.ends_at,
     allDay: !!r.all_day, repeat: r.repeat || "none", until: r.repeat_until || null,
+    byDay: Array.isArray(r.by_day) ? r.by_day : [],
     colour: r.colour || "blue", notes: r.notes || "", source: r.source || "user",
     mine, owner: mine ? "You" : nameFromEmail(r.owner),
     /* the raw list is the owner's business; everyone else just sees the count */
     sharedWith: mine ? (Array.isArray(r.shared_with) ? r.shared_with : []) : undefined,
     sharedCount: Array.isArray(r.shared_with) ? r.shared_with.length : 0
   };
+}
+
+/* ── time zones ───────────────────────────────────────────────────────────
+   Google writes most events as a wall-clock time plus a TZID, so we have to
+   turn "16:00 in Australia/Sydney" into a real instant before showing it. ICU
+   is built into Node, so Intl can do the whole job and we never ship an offset
+   table (which would rot every time a DST rule changes). */
+const SYDNEY = "Australia/Sydney";
+const pad2 = n => String(n).padStart(2, "0");
+
+/* what a UTC instant reads as on a clock in `zone` */
+function partsIn(ms, zone) {
+  const p = {};
+  for (const x of new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone, hour12: false, year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date(ms))) if (x.type !== "literal") p[x.type] = x.value;
+  return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute };
+}
+const flatten = p => Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi);
+
+/* the instant at which a clock in `zone` reads the given wall-clock time.
+   Two passes: the first uses the offset at roughly the right moment, the second
+   corrects it, which is what makes a DST changeover land on the correct side. */
+function fromZone(y, mo, d, h, mi, zone) {
+  const want = Date.UTC(y, mo - 1, d, h, mi);
+  let ms = want - (flatten(partsIn(want, zone)) - want);
+  ms -= flatten(partsIn(ms, zone)) - want;
+  return ms;
 }
 
 /* ── a deliberately small iCal reader: enough for Google's feeds ────────── */
@@ -101,23 +140,28 @@ function parseICS(text) {
       if (d) return { iso: `${d[1]}-${d[2]}-${d[3]}`, allDay: true };
       const t = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/);   // timed
       if (!t) return null;
-      let date = new Date(Date.UTC(+t[1], +t[2] - 1, +t[3], +t[4], +t[5]));
-      if (!/Z$/.test(v) && !/TZID=/i.test(f.params)) {              // already local
-        return { iso: `${t[1]}-${t[2]}-${t[3]}T${t[4]}:${t[5]}`, allDay: false };
-      }
-      /* UTC (or a named zone we don't carry a database for) → show in Sydney,
-         which is what every reader of this calendar is in */
-      const s = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", hour12: false
-      }).format(date).replace(", ", "T");
-      return { iso: s, allDay: false };
+      const [, Y, M, D, H, Mi] = t;
+      /* a "floating" time carries no zone: it means the same clock reading
+         everywhere, so it is already what we want to display */
+      const asWritten = { iso: `${Y}-${M}-${D}T${H}:${Mi}`, allDay: false };
+
+      const tz = (f.params.match(/TZID="?([^";:]+)/i) || [])[1];
+      let ms;
+      if (/Z$/.test(v)) ms = Date.UTC(+Y, +M - 1, +D, +H, +Mi);     // explicit UTC
+      else if (tz) {
+        /* a zone ICU doesn't know throws — better to show the time as written
+           than to shift it by a guessed offset */
+        try { ms = fromZone(+Y, +M, +D, +H, +Mi, tz); } catch { return asWritten; }
+      } else return asWritten;
+
+      const p = partsIn(ms, SYDNEY);   // everyone reading this calendar is here
+      return { iso: `${p.y}-${pad2(p.mo)}-${pad2(p.d)}T${pad2(p.h)}:${pad2(p.mi)}`, allDay: false };
     };
 
     const st = toLocal(dtstart);
     if (!st) continue;
     const en = toLocal(dtend);
-    let repeat = "none";
+    let repeat = "none", byDay = [];
     if (rrule) {
       const f = (rrule.value.match(/FREQ=([A-Z]+)/i) || [])[1];
       const iv = +((rrule.value.match(/INTERVAL=(\d+)/i) || [])[1] || 1);
@@ -125,11 +169,20 @@ function parseICS(text) {
       else if (/WEEKLY/i.test(f)) repeat = iv === 2 ? "fortnightly" : "weekly";
       else if (/MONTHLY/i.test(f)) repeat = "monthly";
       else if (/YEARLY/i.test(f)) repeat = "yearly";
+      /* a weekly rule listing several days is really "Mon, Wed and Fri" */
+      if (repeat === "weekly") {
+        const ICAL_DAY = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+        const days = (rrule.value.match(/BYDAY=([A-Z,\-+0-9]+)/i) || [])[1];
+        const picked = weekdays((days || "").split(",")
+          .map(d => ICAL_DAY[d.replace(/[^A-Z]/gi, "").toUpperCase()])
+          .filter(n => n !== undefined));
+        if (picked.length > 1) { repeat = "bydays"; byDay = picked; }
+      }
     }
     out.push({
       title: clean(summary.value.replace(/\\,/g, ","), 140) || "(untitled)",
       start: st.iso, end: en ? en.iso : null, allDay: st.allDay,
-      repeat, notes: clean(desc ? desc.value.replace(/\\n/g, " ").replace(/\\,/g, ",") : "", 400)
+      repeat, byDay, notes: clean(desc ? desc.value.replace(/\\n/g, " ").replace(/\\,/g, ",") : "", 400)
     });
     if (out.length >= MAX_IMPORT) break;
   }
@@ -149,7 +202,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     const { data, error } = await db.from("calendar_event")
-      .select("id, owner, title, starts_at, ends_at, all_day, repeat, repeat_until, colour, notes, shared_with, source")
+      .select("id, owner, title, starts_at, ends_at, all_day, repeat, repeat_until, by_day, colour, notes, shared_with, source")
       .or(`owner.eq.${email},shared_with.cs.["${email}"]`)
       .order("starts_at", { ascending: true }).limit(1000);
     if (error) { console.error("calendar read:", error.message); return res.status(502).json({ error: "Couldn't load the calendar." }); }
@@ -195,7 +248,7 @@ export default async function handler(req, res) {
     await db.from("calendar_event").delete().eq("owner", email).eq("source", "google");
     const rows = found.map(e => ({
       id: newId(), owner: email, title: e.title, starts_at: e.start, ends_at: e.end,
-      all_day: e.allDay, repeat: e.repeat, colour: "teal", notes: e.notes,
+      all_day: e.allDay, repeat: e.repeat, by_day: e.byDay || [], colour: "teal", notes: e.notes,
       shared_with: [], source: "google"
     }));
     const { error } = await db.from("calendar_event").insert(rows);
@@ -212,7 +265,9 @@ export default async function handler(req, res) {
   if (!isDate(start)) return res.status(400).json({ error: "That start date isn't valid." });
   const end = ev.end && isDate(clean(ev.end, 20)) ? clean(ev.end, 20) : null;
   const until = ev.until && /^\d{4}-\d{2}-\d{2}$/.test(String(ev.until)) ? String(ev.until) : null;
-  const repeat = REPEATS.has(ev.repeat) ? ev.repeat : "none";
+  let repeat = REPEATS.has(ev.repeat) ? ev.repeat : "none";
+  const byDay = repeat === "bydays" ? weekdays(ev.byDay) : [];
+  if (repeat === "bydays" && !byDay.length) repeat = "weekly";   // no days picked, fall back
   const colour = COLOURS.has(ev.colour) ? ev.colour : "blue";
   const shared = (Array.isArray(ev.sharedWith) ? ev.sharedWith : [])
     .map(x => String(x || "").trim().toLowerCase())
@@ -221,7 +276,7 @@ export default async function handler(req, res) {
 
   const row = {
     owner: email, title, starts_at: start, ends_at: end, all_day: !!ev.allDay,
-    repeat, repeat_until: until, colour, notes: clean(ev.notes, 600),
+    repeat, repeat_until: until, by_day: byDay, colour, notes: clean(ev.notes, 600),
     shared_with: shared, source: "user"
   };
 

@@ -1102,12 +1102,30 @@ create table calendar_event (
   id text primary key, owner text not null, title text not null,
   starts_at text not null, ends_at text, all_day boolean not null default false,
   repeat text not null default 'none', repeat_until text,
+  by_day jsonb not null default '[]',
   colour text not null default 'blue', notes text,
   shared_with jsonb not null default '[]', source text not null default 'user',
   created_at timestamptz not null default now()
 );
 create index calendar_event_owner_idx on calendar_event (owner);
 ```
+
+`by_day` holds the weekday picks for `repeat = 'bydays'` — JS weekday numbers
+with Sunday as 0, so `[1,2,5]` is Mon/Tue/Fri. If you created the table before
+that column existed, add it without touching any rows:
+
+```sql
+alter table calendar_event add column if not exists by_day jsonb not null default '[]';
+```
+
+**Views.** A dropdown picks day, weekdays, week, month or year (remembered in
+`tt.calview`, so it follows you between devices). Day, weekdays and week draw a
+real time grid where each event is positioned and sized by its start and end
+time, with a now-line on today and overlapping events split into columns.
+
+**Time zones.** Google feeds write times as a wall clock plus a zone name. These
+are resolved through ICU rather than assumed to be UTC — an event at 4pm Sydney
+imports as 4pm, including either side of a daylight-saving switch.
 
 ### Revision games
 

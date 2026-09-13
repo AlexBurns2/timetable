@@ -13,47 +13,100 @@
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
 <style>
-.calbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.calbar h2{margin:0;font-family:var(--font-display);font-size:20px;min-width:190px}
+/* ── toolbar ── */
+.calbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.calbar h2{margin:0;font-family:var(--font-display);font-size:20px;min-width:180px}
 .calbar .grow{flex:1}
 .arrowbtn2{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  width:34px;height:34px;cursor:pointer;color:var(--text);font-size:17px;line-height:1}
+  width:34px;height:34px;cursor:pointer;color:var(--text);font-size:17px;line-height:1;flex:none}
 .arrowbtn2:hover{background:var(--panel-2)}
+#viewsel{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--panel);color:var(--text);cursor:pointer}
 
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+/* ── month grid: every cell identical ── */
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .dow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--muted);text-align:center;padding:3px 0}
+  color:var(--muted);text-align:center;padding:3px 0;min-width:0}
 .day{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  min-height:92px;padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;
-  transition:background .12s,border-color .12s}
+  height:108px;padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;
+  min-width:0;overflow:hidden;transition:background .12s,border-color .12s}
 .day:hover{background:var(--panel-2);border-color:var(--accent)}
 .day.out{opacity:.42}
 .day.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.dnum{font-size:12px;font-weight:700;font-family:var(--font-num);color:var(--muted)}
+.dnum{font-size:12px;font-weight:700;font-family:var(--font-num);color:var(--muted);flex:none}
 .day.today .dnum{color:var(--accent)}
-.chip{font-size:11px;line-height:1.3;padding:2px 6px;border-radius:5px;color:#fff;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-.chip.more{background:none;color:var(--muted);padding-left:2px}
-.c-blue{background:#3b6ef0}.c-green{background:#2f9e44}.c-red{background:#e5484d}
-.c-orange{background:#f0801a}.c-purple{background:#8b5cf6}.c-teal{background:#0d9488}
-.c-pink{background:#db2777}.c-grey{background:#6b7280}
+.chip{font-size:11px;line-height:1.3;padding:2px 6px;border-radius:5px;color:#fff;flex:none;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;min-width:0}
+.chip.more{background:none!important;color:var(--muted);padding-left:2px}
 
+/* ── time grid (day / weekdays / week) ── */
+.tgwrap{border:1px solid var(--line);border-radius:var(--card-radius);overflow:hidden;background:var(--panel)}
+.tghead{display:grid;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.tghead .gut{border-right:1px solid var(--line)}
+.tgcol{padding:7px 6px;text-align:center;min-width:0;border-right:1px solid var(--line)}
+.tgcol:last-child{border-right:0}
+.tgcol .dw{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tgcol .dd{font-size:17px;font-weight:700;font-family:var(--font-num);line-height:1.25}
+.tgcol.now .dd{color:#fff;background:var(--accent);border-radius:999px;display:inline-block;
+  min-width:28px;padding:1px 6px}
+.allday{display:grid;border-bottom:1px solid var(--line);min-height:26px;background:var(--panel)}
+.allday .gut{border-right:1px solid var(--line);font-size:10px;color:var(--muted);
+  padding:4px 6px;text-align:right}
+.adcell{padding:3px;border-right:1px solid var(--line);min-width:0;display:flex;flex-direction:column;gap:3px}
+.adcell:last-child{border-right:0}
+.tgbody{position:relative;overflow:auto;max-height:min(62vh,620px)}
+.tginner{display:grid;position:relative}
+.gutter{border-right:1px solid var(--line);position:relative}
+.hrlabel{position:absolute;right:6px;font-size:10.5px;color:var(--muted);transform:translateY(-50%);white-space:nowrap}
+.tgday{position:relative;border-right:1px solid var(--line);min-width:0;cursor:pointer}
+.tgday:last-child{border-right:0}
+.hrline{position:absolute;left:0;right:0;border-top:1px solid var(--line);opacity:.55;pointer-events:none}
+.hrline.half{opacity:.25}
+.tgev{position:absolute;left:2px;right:2px;border-radius:5px;color:#fff;padding:2px 5px;
+  font-size:11px;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.tgev b{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tgev span{opacity:.9;font-size:10px}
+.nowline{position:absolute;left:0;right:0;height:2px;background:#e5484d;pointer-events:none;z-index:4}
+.nowline::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;
+  border-radius:50%;background:#e5484d}
+
+/* ── year view ── */
+.yeargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.ymon{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px}
+.ymon h4{margin:0 0 7px;font-size:13px;font-family:var(--font-display);cursor:pointer}
+.ymon h4:hover{color:var(--accent)}
+.ycells{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.ycells i{font-size:9px;color:var(--muted);text-align:center;font-style:normal}
+.ycell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10.5px;
+  border-radius:5px;cursor:pointer;position:relative;font-family:var(--font-num)}
+.ycell:hover{background:var(--panel-2)}
+.ycell.out{opacity:.3}
+.ycell.today{outline:1.5px solid var(--accent)}
+.ycell.has{font-weight:700}
+.ycell .dot{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%}
+
+/* ── side cards ── */
 .side{display:grid;grid-template-columns:1fr;gap:16px;margin-top:22px}
 @media (min-width:900px){ .side{grid-template-columns:1fr 1fr} }
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius);padding:16px}
-.card h3{margin:0 0 10px;font-size:15px;font-family:var(--font-display)}
+.card h3{margin:0 0 10px;font-size:15px;font-family:var(--font-display);display:flex;align-items:center;gap:8px}
 .card p.hint{margin:0 0 10px;font-size:12.5px;color:var(--muted);line-height:1.5}
-
+.ibtn{width:19px;height:19px;flex:none;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;
+  line-height:1;font-family:var(--font-num)}
+.ibtn:hover,.ibtn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
 .up{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow:auto}
-.uprow{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.uprow{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer}
+.uprow:hover{color:var(--accent)}
 .updot{width:9px;height:9px;border-radius:50%;flex:none}
 .upwhen{color:var(--muted);font-size:12px;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
-
-.exlist{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.exlist{display:flex;flex-direction:column;gap:4px;max-height:270px;overflow:auto}
 .exrow{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:3px 0;cursor:pointer}
 .exrow input{accent-color:var(--accent);cursor:pointer}
 .exwhen{color:var(--muted);font-size:12px;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
 
+/* ── dialog ── */
 .fld{display:block;margin-bottom:10px}
 .fld span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .fld input,.fld select,.fld textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
@@ -61,6 +114,15 @@
   background:var(--panel-2);color:var(--text)}
 .fld textarea{resize:vertical;min-height:56px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.endrow{display:flex;gap:7px;align-items:stretch}
+.endrow input{flex:1;min-width:0}
+.nextday{white-space:nowrap;font-size:12px;padding:0 11px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--muted);cursor:pointer}
+.nextday[aria-pressed="true"]{border-color:var(--accent);color:var(--accent-ink);background:var(--accent)}
+.daypick{display:flex;gap:5px;flex-wrap:wrap;margin:-4px 0 12px}
+.daypick button{width:38px;padding:6px 0;font-size:12px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--text);cursor:pointer}
+.daypick button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .swatches{display:flex;gap:7px;flex-wrap:wrap}
 .sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
 .sw[aria-pressed="true"]{border-color:var(--text);transform:scale(1.12)}
@@ -76,6 +138,27 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
 .del{color:#e5484d;background:none;border:1px solid var(--line);border-radius:var(--radius);
   padding:8px 12px;cursor:pointer}
 .del:hover{border-color:#e5484d}
+
+/* phones: the seven columns still have to fit, so trim the furniture rather
+   than let the grid scroll (the header, all-day and body grids must stay in
+   step with each other) */
+@media (max-width:600px){
+  .day{height:70px;padding:4px 3px;gap:2px}
+  /* seven columns on a phone leaves no room for "4pm Chemistry s…", so the
+     month view becomes an at-a-glance strip per event; tap the day to read it */
+  .chip{height:4px;padding:0;border-radius:2px;text-indent:-999px}
+  .chip.more{display:none}
+  .dow{font-size:10px}
+  .tgcol{padding:5px 2px}
+  .tgcol .dd{font-size:15px}
+  .hrlabel{font-size:9px;right:3px}
+  .tgev{font-size:10px;padding:1px 3px}
+  .tgev span{display:none}
+  .calbar h2{min-width:100%;order:-1}
+}
+.c-blue{background:#3b6ef0}.c-green{background:#2f9e44}.c-red{background:#e5484d}
+.c-orange{background:#f0801a}.c-purple{background:#8b5cf6}.c-teal{background:#0d9488}
+.c-pink{background:#db2777}.c-grey{background:#6b7280}
 </style>
 </head>
 <body>
@@ -90,16 +173,22 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
   </div>
 
   <div class="calbar">
-    <button class="arrowbtn2" id="prev" title="Previous month">&lsaquo;</button>
-    <button class="arrowbtn2" id="next" title="Next month">&rsaquo;</button>
+    <button class="arrowbtn2" id="prev" title="Previous">&lsaquo;</button>
+    <button class="arrowbtn2" id="next" title="Next">&rsaquo;</button>
     <h2 id="mlabel">…</h2>
     <button class="btn" id="today">Today</button>
+    <select id="viewsel" aria-label="View">
+      <option value="day">Day</option>
+      <option value="weekdays">Weekdays</option>
+      <option value="week">Week</option>
+      <option value="month" selected>Month</option>
+      <option value="year">Year</option>
+    </select>
     <span class="grow"></span>
     <button class="btn primary" id="add">+ New event</button>
   </div>
 
-  <div class="grid" id="dows"></div>
-  <div class="grid" id="grid" style="margin-top:5px"></div>
+  <div id="viewhost"></div>
 
   <div class="side">
     <div class="card">
@@ -109,16 +198,16 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
 
     <div class="card">
       <h3>Year 11 final exams</h3>
-      <p class="hint">Ticked automatically from the subjects on your timetable — correct it here if it
-        guessed wrong. Only the ticked exams appear on the calendar.</p>
       <div class="exlist" id="exlist"></div>
     </div>
 
     <div class="card">
-      <h3>Sync from Google Calendar</h3>
-      <p class="hint">In Google Calendar open <b>Settings → your calendar → Integrate calendar</b> and copy
-        the <b>Secret address in iCal format</b>. Paste it below. That address only lets us read that one
-        calendar, it is used for this single fetch and <b>never saved</b>, and no Google password is
+      <h3>Sync from Google Calendar
+        <button class="ibtn" id="ginfo" type="button" aria-expanded="false"
+                title="How to find your iCal address">i</button></h3>
+      <p class="hint" id="ghelp" hidden>In Google Calendar open <b>Settings → your calendar → Integrate
+        calendar</b> and copy the <b>Secret address in iCal format</b>. That address only lets us read that
+        one calendar, it is used for this single fetch and <b>never saved</b>, and no Google password is
         involved. Importing again replaces what was imported before.</p>
       <label class="fld"><span>Secret iCal address</span>
         <input id="gurl" type="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
@@ -143,21 +232,26 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
         <option value="weekdays">Every weekday</option>
         <option value="weekly">Every week</option>
         <option value="fortnightly">Every fortnight</option>
+        <option value="bydays">Certain days each week…</option>
         <option value="monthly">Every month</option>
         <option value="yearly">Every year</option>
       </select></label>
   </div>
+  <div class="daypick" id="daypick" hidden></div>
   <label class="fld" style="margin-bottom:8px">
     <input type="checkbox" id="f-allday" style="width:auto;margin-right:7px">All day</label>
   <div class="row2" id="timerow">
     <label class="fld"><span>Start</span><input id="f-start" type="time"></label>
-    <label class="fld"><span>End</span><input id="f-end" type="time"></label>
+    <label class="fld"><span>End</span>
+      <span class="endrow"><input id="f-end" type="time">
+        <button class="nextday" id="f-nextday" type="button" aria-pressed="false"
+                title="Ends after midnight, on the following day">Next day</button></span></label>
   </div>
   <label class="fld" id="untilrow" hidden><span>Repeat until (optional)</span><input id="f-until" type="date"></label>
   <label class="fld"><span>Colour</span></label>
   <div class="swatches" id="swatches" style="margin:-6px 0 12px"></div>
   <label class="fld"><span>Share with (school emails, comma separated)</span>
-    <input id="f-share" placeholder="jordan.lee3@education.nsw.gov.au"></label>
+    <input id="f-share" placeholder="first.last1@education.nsw.gov.au"></label>
   <label class="fld"><span>Notes</span><textarea id="f-notes" maxlength="600"></textarea></label>
   <div class="dlgbtns">
     <button class="btn primary" id="save">Save</button>
@@ -206,91 +300,242 @@ const EXAMS = [
   { id:'legal',      subj:'Legal Studies',               d:'2026-09-25', s:'08:55', e:'10:00', room:'HAL' }
 ];
 const COLOURS = ['blue','green','red','orange','purple','teal','pink','grey'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];     // Monday-first
+const HOUR = 44;                                             // px per hour in the time views
 
 /* ── dates ─────────────────────────────────────────────────────────────── */
 const pad = n => String(n).padStart(2,'0');
 const iso = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const today = new Date();
-const parseISO = s => { const [d,t] = String(s).split('T'); const [y,m,dd] = d.split('-').map(Number);
-  const [hh,mm] = (t||'00:00').split(':').map(Number); return new Date(y, m-1, dd, hh||0, mm||0); };
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-let view = new Date(today.getFullYear(), today.getMonth(), 1);
+const todayISO = iso(today);
+const dayOf = s => { const [y,m,d] = String(s).split('T')[0].split('-').map(Number); return new Date(y, m-1, d); };
+const timeOf = s => String(s).split('T')[1] || '';
+const minsOf = t => { const [h,m] = String(t||'0:0').split(':').map(Number); return (h||0)*60 + (m||0); };
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const mondayOf = d => addDays(d, -((d.getDay()+6)%7));
+const fmtTime = t => { const [h0,m] = t.split(':').map(Number);
+  const h = h0 % 24;                                   /* an overnight end is 24:00 */
+  const ap = h < 12 ? 'am' : 'pm', hh = h % 12 === 0 ? 12 : h % 12;
+  return hh + (m ? ':'+pad(m) : '') + ap; };
 
 /* ── state ─────────────────────────────────────────────────────────────── */
-let events = [];            // from the server
-let mySubjects = [];        // from the timetable, for guessing which exams apply
-let examPick = null;        // { id: true/false } — your corrections, synced via prefs
-let editing = null;
-let pickedColour = 'blue';
+let events = [], mySubjects = [], examPick = null;
+/* a seven-column week is unreadable on a phone, so start there on the day view
+   — only as a default, whatever you last picked still wins */
+let view = TT.get('tt.calview', window.innerWidth < 600 ? 'day' : 'month');
+let anchor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+let editing = null, pickedColour = 'blue', pickedDays = [], endNextDay = false;
 
 const normSub = s => String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
-function examAuto(ex){
-  const e = normSub(ex.subj);
-  return mySubjects.some(s => { const m = normSub(s); return !!m && (m === e || m.includes(e) || e.includes(m)); });
-}
+const examAuto = ex => { const e = normSub(ex.subj);
+  return mySubjects.some(s => { const m = normSub(s); return !!m && (m === e || m.includes(e) || e.includes(m)); }); };
 const examOn = ex => { const p = examPick || {}; return ex.id in p ? !!p[ex.id] : examAuto(ex); };
 
-/* ── does a repeating event land on this day? ──────────────────────────── */
-function occursOn(ev, dayISO){
+/* ── does an event land on a given day? ────────────────────────────────── */
+function occursOn(ev, dISO){
   const start = String(ev.start).split('T')[0];
-  if (start === dayISO) return true;
+  if (start === dISO) return true;
   if (!ev.repeat || ev.repeat === 'none') return false;
-  if (dayISO < start) return false;
-  if (ev.until && dayISO > ev.until) return false;
-  const a = parseISO(start), b = parseISO(dayISO);
+  if (dISO < start) return false;
+  if (ev.until && dISO > ev.until) return false;
+  const a = dayOf(start), b = dayOf(dISO);
   const days = Math.round((b - a) / 86400000);
   switch (ev.repeat){
     case 'daily':       return true;
     case 'weekdays':    return b.getDay() >= 1 && b.getDay() <= 5;
     case 'weekly':      return days % 7 === 0;
     case 'fortnightly': return days % 14 === 0;
+    case 'bydays':      return (ev.byDay || []).includes(b.getDay());
     case 'monthly':     return b.getDate() === a.getDate();
     case 'yearly':      return b.getDate() === a.getDate() && b.getMonth() === a.getMonth();
   }
   return false;
 }
-
-/* every item shown on a given day: saved events plus the exams you've ticked */
-function itemsOn(dayISO){
+/* everything on a day: your events plus the exams you've ticked */
+function itemsOn(dISO){
   const out = [];
-  events.forEach(ev => { if (occursOn(ev, dayISO))
-    out.push({ kind:'event', id:ev.id, title:ev.title, colour:ev.colour,
-               time: ev.allDay ? '' : (String(ev.start).split('T')[1]||''), ev }); });
-  EXAMS.forEach(ex => { if (ex.d === dayISO && examOn(ex))
-    out.push({ kind:'exam', id:'exam-'+ex.id, title:ex.subj+' exam', colour:'red', time:ex.s, ex }); });
-  return out.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+  events.forEach(ev => { if (occursOn(ev, dISO)){
+    const st = timeOf(ev.start), en = ev.end ? timeOf(ev.end) : '';
+    /* an end on the following day runs to midnight as far as this day is concerned */
+    const overnight = ev.end && String(ev.end).split('T')[0] > String(ev.start).split('T')[0];
+    out.push({ kind:'event', id:ev.id, title:ev.title, colour:ev.colour, allDay:!!ev.allDay,
+      start: st, end: overnight ? '24:00' : en, ev });
+  }});
+  EXAMS.forEach(ex => { if (ex.d === dISO && examOn(ex))
+    out.push({ kind:'exam', id:'exam-'+ex.id, title:ex.subj+' exam', colour:'red',
+      allDay:false, start:ex.s, end:ex.e, ex }); });
+  return out.sort((a,b) => (a.allDay?'':a.start||'').localeCompare(b.allDay?'':b.start||''));
 }
 
-/* ── the month grid ────────────────────────────────────────────────────── */
-function renderGrid(){
-  $('mlabel').textContent = MONTHS[view.getMonth()] + ' ' + view.getFullYear();
-  $('dows').innerHTML = DOW.map(d => '<div class="dow">'+d+'</div>').join('');
-  const first = new Date(view.getFullYear(), view.getMonth(), 1);
-  const lead = (first.getDay() + 6) % 7;                 // weeks start Monday
-  const cells = [];
+/* side-by-side placement for things happening at the same time */
+function layoutDay(items){
+  const timed = items.filter(i => !i.allDay && i.start)
+    .map(i => ({ ...i, s:minsOf(i.start), e:Math.max(minsOf(i.start)+20, minsOf(i.end || i.start)) }))
+    .sort((a,b) => a.s - b.s || a.e - b.e);
+  const out = []; let cluster = [], clusterEnd = -1;
+  const flush = () => {
+    if (!cluster.length) return;
+    const colEnd = [];
+    cluster.forEach(it => { let c = 0; while (c < colEnd.length && colEnd[c] > it.s) c++;
+      it.col = c; colEnd[c] = it.e; });
+    cluster.forEach(it => it.cols = colEnd.length);
+    out.push(...cluster); cluster = []; };
+  timed.forEach(it => { if (cluster.length && it.s >= clusterEnd){ flush(); clusterEnd = -1; }
+    cluster.push(it); clusterEnd = Math.max(clusterEnd, it.e); });
+  flush();
+  return out;
+}
+
+/* ── views ─────────────────────────────────────────────────────────────── */
+function daysInView(){
+  if (view === 'day') return [new Date(anchor)];
+  const mon = mondayOf(anchor);
+  if (view === 'weekdays') return [0,1,2,3,4].map(i => addDays(mon,i));
+  return [0,1,2,3,4,5,6].map(i => addDays(mon,i));           // week
+}
+function label(){
+  if (view === 'year') return String(anchor.getFullYear());
+  if (view === 'month') return MONTHS[anchor.getMonth()] + ' ' + anchor.getFullYear();
+  if (view === 'day') return DOW[(anchor.getDay()+6)%7] + ' ' + anchor.getDate() + ' ' +
+    MONTHS[anchor.getMonth()] + ' ' + anchor.getFullYear();
+  const ds = daysInView(), a = ds[0], b = ds[ds.length-1];
+  return a.getDate() + ' ' + MONTHS[a.getMonth()].slice(0,3) + ' – ' +
+         b.getDate() + ' ' + MONTHS[b.getMonth()].slice(0,3) + ' ' + b.getFullYear();
+}
+
+function renderTime(){
+  const days = daysInView();
+  const cols = '64px repeat(' + days.length + ',minmax(0,1fr))';
+  const head = days.map(d => '<div class="tgcol' + (iso(d)===todayISO?' now':'') + '">' +
+    '<div class="dw">'+DOW[(d.getDay()+6)%7]+'</div><div class="dd">'+d.getDate()+'</div></div>').join('');
+  const adRow = days.map(d => {
+    const all = itemsOn(iso(d)).filter(i => i.allDay);
+    return '<div class="adcell" data-day="'+iso(d)+'">' + all.map(i =>
+      '<span class="chip c-'+esc(i.colour)+'" data-open="'+esc(i.id)+'">'+esc(i.title)+'</span>').join('') + '</div>';
+  }).join('');
+  let gutter = '<div class="gutter" style="height:'+(HOUR*24)+'px">';
+  for (let h = 1; h < 24; h++) gutter += '<div class="hrlabel" style="top:'+(h*HOUR)+'px">'+fmtTime(pad(h)+':00')+'</div>';
+  gutter += '</div>';
+
+  const colHTML = days.map(d => {
+    const dISO = iso(d);
+    let lines = '';
+    for (let h = 1; h < 24; h++) lines += '<div class="hrline" style="top:'+(h*HOUR)+'px"></div>';
+    const placed = layoutDay(itemsOn(dISO)).map(it => {
+      const top = it.s / 60 * HOUR, height = Math.max(16, (it.e - it.s) / 60 * HOUR - 2);
+      const w = 100 / it.cols, left = it.col * w;
+      return '<div class="tgev c-'+esc(it.colour)+'" data-open="'+esc(it.id)+'" title="'+esc(it.title)+'"' +
+        ' style="top:'+top.toFixed(1)+'px;height:'+height.toFixed(1)+'px;left:calc('+left+'% + 2px);width:calc('+w+'% - 4px)">' +
+        '<b>'+esc(it.title)+'</b><span>'+fmtTime(it.start)+(it.end?' – '+fmtTime(it.end):'')+'</span></div>';
+    }).join('');
+    const now = dISO === todayISO
+      ? '<div class="nowline" style="top:'+((today.getHours()*60+today.getMinutes())/60*HOUR).toFixed(1)+'px"></div>' : '';
+    return '<div class="tgday" data-day="'+dISO+'" style="height:'+(HOUR*24)+'px">'+lines+placed+now+'</div>';
+  }).join('');
+
+  $('viewhost').innerHTML =
+    '<div class="tgwrap">' +
+      '<div class="tghead" style="grid-template-columns:'+cols+'"><div class="gut"></div>'+head+'</div>' +
+      '<div class="allday" style="grid-template-columns:'+cols+'"><div class="gut">all day</div>'+adRow+'</div>' +
+      '<div class="tgbody" id="tgbody"><div class="tginner" style="grid-template-columns:'+cols+'">' +
+        gutter + colHTML + '</div></div></div>';
+
+  const body = $('tgbody');
+  if (body) body.scrollTop = Math.max(0, 7 * HOUR - 20);        // open around 7am
+  $('viewhost').querySelectorAll('.tgday,.adcell').forEach(el => el.onclick = e => {
+    const open = e.target.closest('[data-open]');
+    if (open) return openItem(open.dataset.open);
+    if (el.classList.contains('adcell')) return openNew(el.dataset.day, null);
+    const r = el.getBoundingClientRect();
+    const mins = Math.max(0, Math.min(23*60+30, Math.round((e.clientY - r.top) / HOUR * 60 / 30) * 30));
+    openNew(el.dataset.day, pad(Math.floor(mins/60))+':'+pad(mins%60));
+  });
+}
+
+function renderMonth(){
+  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const lead = (first.getDay()+6) % 7;
+  let cells = '';
   for (let i = 0; i < 42; i++){
-    const d = new Date(view.getFullYear(), view.getMonth(), 1 - lead + i);
-    const dISO = iso(d), items = itemsOn(dISO);
+    const d = addDays(first, i - lead), dISO = iso(d), items = itemsOn(dISO);
     const chips = items.slice(0,3).map(it =>
       '<span class="chip c-'+esc(it.colour)+'" data-open="'+esc(it.id)+'" title="'+esc(it.title)+'">' +
-      (it.time ? esc(it.time)+' ' : '') + esc(it.title) + '</span>').join('');
+      (it.allDay || !it.start ? '' : esc(fmtTime(it.start))+' ') + esc(it.title) + '</span>').join('');
     const more = items.length > 3 ? '<span class="chip more">+'+(items.length-3)+' more</span>' : '';
-    cells.push('<div class="day'+(d.getMonth()!==view.getMonth()?' out':'')+(dISO===iso(today)?' today':'')+
-      '" data-day="'+dISO+'"><span class="dnum">'+d.getDate()+'</span>'+chips+more+'</div>');
+    cells += '<div class="day'+(d.getMonth()!==anchor.getMonth()?' out':'')+(dISO===todayISO?' today':'')+
+      '" data-day="'+dISO+'"><span class="dnum">'+d.getDate()+'</span>'+chips+more+'</div>';
   }
-  $('grid').innerHTML = cells.join('');
-  $('grid').querySelectorAll('.day').forEach(el => el.onclick = e => {
-    const chip = e.target.closest('[data-open]');
-    if (chip) return openItem(chip.dataset.open);
-    openNew(el.dataset.day);
+  $('viewhost').innerHTML =
+    '<div class="grid">'+DOW.map(d=>'<div class="dow">'+d+'</div>').join('')+'</div>' +
+    '<div class="grid" style="margin-top:5px">'+cells+'</div>';
+  $('viewhost').querySelectorAll('.day').forEach(el => el.onclick = e => {
+    const open = e.target.closest('[data-open]');
+    if (open) return openItem(open.dataset.open);
+    openNew(el.dataset.day, null);
   });
+}
+
+function renderYear(){
+  const y = anchor.getFullYear();
+  let html = '<div class="yeargrid">';
+  for (let m = 0; m < 12; m++){
+    const first = new Date(y, m, 1), lead = (first.getDay()+6) % 7;
+    let cells = DOW.map(d => '<i>'+d[0]+'</i>').join('');
+    for (let i = 0; i < 42; i++){
+      const d = addDays(first, i - lead), dISO = iso(d);
+      if (d.getMonth() !== m){ cells += '<span class="ycell out"></span>'; continue; }
+      const items = itemsOn(dISO);
+      cells += '<span class="ycell'+(items.length?' has':'')+(dISO===todayISO?' today':'')+'" data-day="'+dISO+'">' +
+        d.getDate() + (items.length ? '<i class="dot c-'+esc(items[0].colour)+'"></i>' : '') + '</span>';
+    }
+    html += '<div class="ymon"><h4 data-month="'+m+'">'+MONTHS[m]+'</h4><div class="ycells">'+cells+'</div></div>';
+  }
+  $('viewhost').innerHTML = html + '</div>';
+  $('viewhost').querySelectorAll('.ycell[data-day]').forEach(el => el.onclick = () => {
+    anchor = dayOf(el.dataset.day); setView('day');
+  });
+  $('viewhost').querySelectorAll('h4[data-month]').forEach(el => el.onclick = () => {
+    anchor = new Date(y, +el.dataset.month, 1); setView('month');
+  });
+}
+
+function render(){
+  $('mlabel').textContent = label();
+  if (view === 'month') renderMonth();
+  else if (view === 'year') renderYear();
+  else renderTime();
+  renderUpcoming();
+}
+function setView(v){
+  /* narrowing to a single day: land on today if it's in what you were looking
+     at, otherwise the first day of it — never silently on the last day */
+  if (v === 'day' && view !== 'day'){
+    const span = view === 'month'
+      ? [iso(new Date(anchor.getFullYear(), anchor.getMonth(), 1))]
+      : view === 'year' ? [iso(new Date(anchor.getFullYear(), 0, 1))]
+      : daysInView().map(iso);
+    const inRange = view === 'month'
+      ? (today.getFullYear() === anchor.getFullYear() && today.getMonth() === anchor.getMonth())
+      : view === 'year' ? today.getFullYear() === anchor.getFullYear()
+      : span.includes(todayISO);
+    anchor = dayOf(inRange ? todayISO : span[0]);
+  }
+  view = v; TT.set('tt.calview', v); $('viewsel').value = v; render();
+}
+function step(dir){
+  if (view === 'day')        anchor = addDays(anchor, dir);
+  else if (view === 'month') anchor = new Date(anchor.getFullYear(), anchor.getMonth()+dir, 1);
+  else if (view === 'year')  anchor = new Date(anchor.getFullYear()+dir, 0, 1);
+  else                       anchor = addDays(anchor, 7*dir);
+  render();
 }
 
 function openItem(id){
   if (id.startsWith('exam-')){
     const ex = EXAMS.find(x => 'exam-'+x.id === id);
-    if (ex) alert(ex.subj + ' exam\n' + parseISO(ex.d).toDateString() + '\n' + ex.s + ' – ' + ex.e + '\nRoom: ' + ex.room);
+    if (ex) alert(ex.subj + ' exam\n' + dayOf(ex.d).toDateString() + '\n' +
+      fmtTime(ex.s) + ' – ' + fmtTime(ex.e) + '\nRoom: ' + ex.room);
     return;
   }
   const ev = events.find(e => e.id === id);
@@ -299,17 +544,26 @@ function openItem(id){
 
 /* ── coming up ─────────────────────────────────────────────────────────── */
 function renderUpcoming(){
-  const out = [];
-  for (let i = 0; i < 60 && out.length < 14; i++){
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    itemsOn(iso(d)).forEach(it => out.push({ ...it, day: d }));
+  const out = [], seen = {};
+  const nowMins = today.getHours() * 60 + today.getMinutes();
+  for (let i = 0; i < 120 && out.length < 20; i++){
+    const d = addDays(today, i), dISO = iso(d);
+    itemsOn(dISO).forEach(it => {
+      /* today's list is about what's still ahead, not what already finished */
+      if (i === 0 && !it.allDay && it.end && minsOf(it.end) < nowMins) return;
+      /* a daily repeat shouldn't push everything else off the list */
+      seen[it.id] = (seen[it.id] || 0) + 1;
+      if (seen[it.id] > 2) return;
+      out.push({ ...it, day: d });
+    });
   }
-  $('up').innerHTML = out.length ? out.slice(0,14).map(it =>
-    '<div class="uprow"><span class="updot c-'+esc(it.colour)+'"></span>' +
+  $('up').innerHTML = out.length ? out.slice(0,20).map(it =>
+    '<div class="uprow" data-open="'+esc(it.id)+'"><span class="updot c-'+esc(it.colour)+'"></span>' +
     '<span>'+esc(it.title)+'</span>' +
     '<span class="upwhen">'+DOW[(it.day.getDay()+6)%7]+' '+it.day.getDate()+' '+MONTHS[it.day.getMonth()].slice(0,3)+
-      (it.time ? ' · '+esc(it.time) : '')+'</span></div>').join('')
-    : '<p class="hint">Nothing in the next two months.</p>';
+      (it.allDay || !it.start ? '' : ' · '+esc(fmtTime(it.start)))+'</span></div>').join('')
+    : '<p class="hint">Nothing in the next four months.</p>';
+  $('up').querySelectorAll('[data-open]').forEach(el => el.onclick = () => openItem(el.dataset.open));
 }
 
 /* ── exam picker ───────────────────────────────────────────────────────── */
@@ -317,12 +571,10 @@ function renderExams(){
   $('exlist').innerHTML = EXAMS.map(ex =>
     '<label class="exrow"><input type="checkbox" data-ex="'+ex.id+'"'+(examOn(ex)?' checked':'')+'>' +
     '<span>'+esc(ex.subj)+'</span>' +
-    '<span class="exwhen">'+parseISO(ex.d).getDate()+' '+MONTHS[parseISO(ex.d).getMonth()].slice(0,3)+' · '+ex.s+'</span></label>').join('');
+    '<span class="exwhen">'+dayOf(ex.d).getDate()+' '+MONTHS[dayOf(ex.d).getMonth()].slice(0,3)+' · '+fmtTime(ex.s)+'</span></label>').join('');
   $('exlist').querySelectorAll('input[data-ex]').forEach(cb => cb.onchange = () => {
-    examPick = examPick || {};
-    examPick[cb.dataset.ex] = cb.checked;
-    TT.set('tt.calexams', examPick);
-    renderGrid(); renderUpcoming();
+    examPick = examPick || {}; examPick[cb.dataset.ex] = cb.checked;
+    TT.set('tt.calexams', examPick); render();
   });
 }
 
@@ -330,31 +582,46 @@ function renderExams(){
 function paintSwatches(){
   $('swatches').innerHTML = COLOURS.map(c =>
     '<button class="sw c-'+c+'" type="button" data-c="'+c+'" aria-pressed="'+(c===pickedColour)+'" title="'+c+'"></button>').join('');
-  $('swatches').querySelectorAll('.sw').forEach(b => b.onclick = () => {
-    pickedColour = b.dataset.c; paintSwatches();
+  $('swatches').querySelectorAll('.sw').forEach(b => b.onclick = () => { pickedColour = b.dataset.c; paintSwatches(); });
+}
+function paintDays(){
+  const order = [1,2,3,4,5,6,0];                      // Mon…Sun, JS weekday numbers
+  $('daypick').innerHTML = order.map((wd,i) =>
+    '<button type="button" data-wd="'+wd+'" aria-pressed="'+(pickedDays.includes(wd))+'">'+DOW[i]+'</button>').join('');
+  $('daypick').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const wd = +b.dataset.wd;
+    pickedDays = pickedDays.includes(wd) ? pickedDays.filter(x => x !== wd) : pickedDays.concat(wd);
+    paintDays();
   });
 }
-function syncTimeRow(){
-  const all = $('f-allday').checked;
+function syncForm(){
+  const all = $('f-allday').checked, rep = $('f-repeat').value;
   $('timerow').style.display = all ? 'none' : '';
-  $('untilrow').hidden = $('f-repeat').value === 'none';
+  $('untilrow').hidden = rep === 'none';
+  $('daypick').hidden = rep !== 'bydays';
 }
-function openNew(dayISO){
+function setNextDay(on){ endNextDay = !!on; $('f-nextday').setAttribute('aria-pressed', String(endNextDay)); }
+
+function openNew(dayISO, atTime){
   editing = null;
   $('dtitle').textContent = 'New event';
-  $('f-title').value = ''; $('f-date').value = dayISO || iso(today);
-  $('f-allday').checked = false; $('f-start').value = '09:00'; $('f-end').value = '10:00';
+  $('f-title').value = ''; $('f-date').value = dayISO || todayISO;
+  $('f-allday').checked = false;
+  const s = atTime || '09:00';
+  const e = Math.min(23*60 + 55, minsOf(s) + 60);              // an hour later, same day
+  $('f-start').value = s;
+  $('f-end').value = pad(Math.floor(e/60)) + ':' + pad(e % 60);
   $('f-repeat').value = 'none'; $('f-until').value = '';
   $('f-share').value = ''; $('f-notes').value = '';
-  pickedColour = 'blue'; paintSwatches(); syncTimeRow();
+  pickedColour = 'blue'; pickedDays = []; setNextDay(false);
+  paintSwatches(); paintDays(); syncForm();
   $('del').hidden = true; $('dmsg').textContent = '';
   $('edlg').showModal(); $('f-title').focus();
 }
 function openEdit(ev){
   if (!ev.mine){
-    alert(ev.title + '\nShared with you by ' + ev.owner + '\n' +
-      parseISO(ev.start).toDateString() + (ev.allDay ? '' : ' · ' + String(ev.start).split('T')[1]) +
-      (ev.notes ? '\n\n' + ev.notes : ''));
+    alert(ev.title + '\nShared with you by ' + ev.owner + '\n' + dayOf(ev.start).toDateString() +
+      (ev.allDay ? '' : ' · ' + fmtTime(timeOf(ev.start))) + (ev.notes ? '\n\n' + ev.notes : ''));
     return;
   }
   editing = ev;
@@ -362,15 +629,17 @@ function openEdit(ev){
   $('f-title').value = ev.title;
   $('f-date').value = String(ev.start).split('T')[0];
   $('f-allday').checked = !!ev.allDay;
-  $('f-start').value = String(ev.start).split('T')[1] || '09:00';
-  $('f-end').value = ev.end ? (String(ev.end).split('T')[1] || '') : '';
+  $('f-start').value = timeOf(ev.start) || '09:00';
+  $('f-end').value = ev.end ? timeOf(ev.end) : '';
+  setNextDay(!!ev.end && String(ev.end).split('T')[0] > String(ev.start).split('T')[0]);
   $('f-repeat').value = ev.repeat || 'none';
   $('f-until').value = ev.until || '';
+  pickedDays = Array.isArray(ev.byDay) ? ev.byDay.slice() : [];
   $('f-share').value = (ev.sharedWith || []).join(', ');
   $('f-notes').value = ev.notes || '';
-  pickedColour = ev.colour || 'blue'; paintSwatches(); syncTimeRow();
-  $('del').hidden = ev.source === 'google';
-  $('dmsg').textContent = '';
+  pickedColour = ev.colour || 'blue';
+  paintSwatches(); paintDays(); syncForm();
+  $('del').hidden = false; $('dmsg').textContent = '';
   $('edlg').showModal(); $('f-title').focus();
 }
 
@@ -378,39 +647,41 @@ async function saveEvent(){
   const title = $('f-title').value.trim(), date = $('f-date').value;
   if (!title) return msg('dmsg','Give the event a name.','bad');
   if (!date)  return msg('dmsg','Pick a date.','bad');
+  const rep = $('f-repeat').value;
+  if (rep === 'bydays' && !pickedDays.length) return msg('dmsg','Pick at least one day of the week.','bad');
   const allDay = $('f-allday').checked;
+  const endDate = endNextDay ? iso(addDays(dayOf(date), 1)) : date;
   const ev = {
     id: editing ? editing.id : undefined,
     title, allDay,
     start: allDay ? date : date + 'T' + ($('f-start').value || '09:00'),
-    end:   allDay ? null : ($('f-end').value ? date + 'T' + $('f-end').value : null),
-    repeat: $('f-repeat').value,
-    until: $('f-repeat').value !== 'none' && $('f-until').value ? $('f-until').value : null,
+    end:   allDay ? null : ($('f-end').value ? endDate + 'T' + $('f-end').value : null),
+    repeat: rep,
+    byDay: rep === 'bydays' ? pickedDays.slice().sort() : [],
+    until: rep !== 'none' && $('f-until').value ? $('f-until').value : null,
     colour: pickedColour,
     notes: $('f-notes').value.trim(),
     sharedWith: $('f-share').value.split(',').map(x => x.trim()).filter(Boolean)
   };
   $('save').disabled = true;
   try { await TT.api('/api/calendar', { method:'POST', body:{ action:'save', event:ev } });
-    $('edlg').close(); await load();
-  } catch (e){ msg('dmsg', e.message, 'bad'); }
+    $('edlg').close(); await load(); }
+  catch (e){ msg('dmsg', e.message, 'bad'); }
   $('save').disabled = false;
 }
 async function deleteEvent(){
   if (!editing || !confirm('Delete "' + editing.title + '"?')) return;
   try { await TT.api('/api/calendar', { method:'POST', body:{ action:'delete', id: editing.id } });
-    $('edlg').close(); await load();
-  } catch (e){ msg('dmsg', e.message, 'bad'); }
+    $('edlg').close(); await load(); }
+  catch (e){ msg('dmsg', e.message, 'bad'); }
 }
 function msg(id, text, cls){ const el = $(id); el.textContent = text; el.className = 'msg ' + (cls||''); }
 
 /* ── load ──────────────────────────────────────────────────────────────── */
 async function load(){
-  try {
-    const d = await TT.api('/api/calendar');
-    events = d.events || [];
-  } catch (e){ events = []; msg('gmsg', 'Could not load your events: ' + e.message, 'bad'); }
-  renderGrid(); renderUpcoming();
+  try { events = (await TT.api('/api/calendar')).events || []; }
+  catch (e){ events = []; msg('gmsg', 'Could not load your events: ' + e.message, 'bad'); }
+  render();
 }
 async function loadSubjects(){
   examPick = TT.get('tt.calexams', null);
@@ -427,34 +698,46 @@ async function loadSubjects(){
     mySubjects = [...seen];
   } catch { mySubjects = []; }
   renderExams();
+  render();            /* subjects decide which exams show, so repaint everything */
 }
 
 /* ── wiring ────────────────────────────────────────────────────────────── */
-$('prev').onclick  = () => { view.setMonth(view.getMonth()-1); renderGrid(); };
-$('next').onclick  = () => { view.setMonth(view.getMonth()+1); renderGrid(); };
-$('today').onclick = () => { view = new Date(today.getFullYear(), today.getMonth(), 1); renderGrid(); };
-$('add').onclick   = () => openNew(iso(today));
+$('prev').onclick  = () => step(-1);
+$('next').onclick  = () => step(1);
+$('today').onclick = () => { anchor = new Date(today.getFullYear(), today.getMonth(), today.getDate()); render(); };
+$('viewsel').onchange = e => setView(e.target.value);
+$('add').onclick   = () => openNew(iso(anchor), null);
 $('save').onclick  = saveEvent;
 $('del').onclick   = deleteEvent;
 $('dclose').onclick = () => $('edlg').close();
-$('f-allday').onchange = syncTimeRow;
-$('f-repeat').onchange = syncTimeRow;
+$('f-allday').onchange = syncForm;
+$('f-repeat').onchange = syncForm;
+$('f-nextday').onclick = () => setNextDay(!endNextDay);
+/* the instructions peek on hover and stay put on click, so they work the same
+   way whether you have a mouse or a phone */
+let ghelpPinned = false;
+const showHelp = on => { $('ghelp').hidden = !on; $('ginfo').setAttribute('aria-expanded', String(on)); };
+$('ginfo').onclick      = () => { ghelpPinned = !ghelpPinned; showHelp(ghelpPinned); };
+$('ginfo').onmouseenter = () => showHelp(true);
+$('ginfo').onmouseleave = () => { if (!ghelpPinned) showHelp(false); };
+$('ginfo').onfocus      = () => showHelp(true);
+$('ginfo').onblur       = () => { if (!ghelpPinned) showHelp(false); };
 $('gimport').onclick = async () => {
   const url = $('gurl').value.trim();
   if (!url) return msg('gmsg','Paste your secret iCal address first.','bad');
-  msg('gmsg','Importing…','');
-  $('gimport').disabled = true;
+  msg('gmsg','Importing…',''); $('gimport').disabled = true;
   try {
     const r = await TT.api('/api/calendar', { method:'POST', body:{ action:'import', url } });
     msg('gmsg', r.imported ? ('Imported ' + r.imported + ' event' + (r.imported===1?'':'s') + '. The address was not saved.')
                            : (r.message || 'Nothing to import.'), 'good');
-    $('gurl').value = '';                      // don't leave the secret sitting in the box
+    $('gurl').value = '';
     await load();
   } catch (e){ msg('gmsg', e.message, 'bad'); }
   $('gimport').disabled = false;
 };
 
-paintSwatches();
+$('viewsel').value = view;
+paintSwatches(); paintDays();
 loadSubjects();
 load();
 </script>

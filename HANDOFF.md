@@ -555,3 +555,63 @@ to preserve if you touch this:
   IPs, localhost, other hosts and plain http are all refused.
 - the re-import path deletes the previous `source='google'` rows first, so
   syncing again updates rather than duplicates.
+
+**Time zones (do not "simplify" this).** Google writes almost every event as a
+wall-clock time plus `TZID=Australia/Sydney`. The first version treated anything
+with a TZID as UTC and converted it to Sydney, which silently added ten hours —
+a 4pm event imported as 2am the next day. `parseICS` now resolves the wall clock
+through `fromZone()`, which asks ICU for the zone's offset via `Intl` and does a
+second pass so a DST changeover lands on the correct side. Handled and tested:
+Sydney either side of the 4 Oct 2026 switch, explicit `Z`, floating times (no
+zone — kept as written), foreign zones, quoted TZIDs, and a zone ICU doesn't
+know (kept as written rather than shifted by a guess).
+
+#### Views
+
+A dropdown picks **day / weekdays / week / month / year**; the choice is stored
+in `tt.calview`, so it syncs. Day, weekdays and week are a real time grid —
+`HOUR` px per hour, each event absolutely positioned by its start and sized by
+its duration, with a red "now" line on today. `layoutDay()` groups overlapping
+events into clusters and assigns each a column, so two things at 4:30pm sit side
+by side instead of on top of each other. Month is the 6×7 grid; year is twelve
+mini-months with a coloured dot on any day that has something.
+
+Cells are deliberately uniform: `grid-template-columns: repeat(7, minmax(0,1fr))`
+(**`minmax(0,1fr)`, not `1fr`** — a bare `1fr` refuses to shrink below its
+content and a long event title made one column wider than the rest) plus a fixed
+`.day` height.
+
+On phones (≤600px) month chips become 4px colour bars rather than text truncated
+to "4p…", and a first visit with nothing stored opens on the day view.
+
+#### Repeats
+
+`repeat` is one of `none, daily, weekdays, weekly, fortnightly, bydays, monthly,
+yearly`. `bydays` means "certain days each week" and reads its weekday list from
+`by_day` (jsonb, JS weekday numbers, Sunday = 0, so `[1,2,5]` is Mon/Tue/Fri).
+If you already created the table, `SETUP.md` has the `alter table … add column
+if not exists` for it. `weekdays()` validates the list server-side and the
+`typeof` guard in it is load-bearing: `Number(null)` is `0`, so without it a
+stray null in the array becomes "every Sunday".
+
+An RRULE like `FREQ=WEEKLY;BYDAY=MO,WE,FR` imports as `bydays`; a single BYDAY
+stays plain `weekly`.
+
+#### Other behaviour worth knowing
+
+- **"Coming up" used to be empty.** `loadSubjects()` and `load()` are fired
+  concurrently, and `loadSubjects()` only re-rendered the exam tick list — so
+  whenever it resolved second, `renderUpcoming()` had already run with an empty
+  `mySubjects`, every `examOn()` was false, and nothing refreshed it. It now
+  calls `render()`. If you add another async source of `mySubjects`, it has to
+  repaint too.
+- The list caps any one repeating event at two rows, so a daily event can't
+  crowd out the exams, and drops things that already finished earlier today.
+- **"Next day" toggle** on the end time writes the end as the following date, so
+  a 10pm–1:30am shift is stored as one event spanning midnight. `itemsOn()`
+  clamps such an event to `24:00` on its start day; `fmtTime` takes `h % 24` so
+  that renders as "12am", not "12pm".
+- The Google instructions sit behind an **"i"** next to the heading: hover peeks,
+  click pins it open. Both are needed — hover alone is useless on a phone, and
+  an earlier version that toggled on click broke with a mouse, because the
+  `mouseenter` fired first and the click then closed what hover had opened.
