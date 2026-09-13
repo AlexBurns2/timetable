@@ -23,7 +23,6 @@
       <p class="lede">Your timetable, your notes, and a place to waste five minutes.</p>
     </div>
     <div class="hubctl">
-      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </header>
@@ -54,9 +53,9 @@
   <section class="features">
     <h2>What&rsquo;s new</h2>
     <ul>
-      <li><span class="fico">🗂️</span> Shareable flashcards</li>
-      <li><span class="fico">✏️</span> Maths, physics, chemistry, engineering and software revision quizzes</li>
-      <li><span class="fico">📚</span> Free textbooks</li>
+      <li>Shareable flashcards</li>
+      <li>Maths, physics, chemistry, engineering and software revision quizzes</li>
+      <li>Free textbooks</li>
     </ul>
   </section>
 
@@ -73,13 +72,6 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
-$('mode').onclick = () => {
-  const st = TT.readState();
-  const next = st.mode === 'dark' ? 'light' : 'dark';
-  TT.set(TT.LS.mode, next);
-  TT.apply(Object.assign(st, { mode: next }));
-};
-
 /* ── forum ─────────────────────────────────────────────────────────────── */
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));

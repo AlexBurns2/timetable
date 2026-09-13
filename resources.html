@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
 <style>
 .reslede{color:var(--muted);font-size:14px;margin:0 0 18px;max-width:60ch}
 .reslede a{color:var(--accent);font-weight:700;text-decoration:none}
@@ -40,9 +41,9 @@ html[data-motion="reduced"] .subjcard{transition:none}
   <div class="pagehead">
     <h1>Resources</h1>
     <div class="crumbs">
-      <a class="btn" href="home.html">🏠 Home</a>
-      <a class="btn" href="./">🗓️ Timetable</a>
-      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </div>
 
@@ -56,12 +57,6 @@ html[data-motion="reduced"] .subjcard{transition:none}
 
 <script>
 const $ = id => document.getElementById(id);
-$('mode').onclick = () => {
-  const st = TT.readState();
-  const next = st.mode === 'dark' ? 'light' : 'dark';
-  TT.set(TT.LS.mode, next);
-  TT.apply(Object.assign(st, { mode: next }));
-};
 
 const DRIVE = 'https://drive.google.com/drive/folders/';
 const LIBRARY = '1vAADiVrKUIR_iApOoBdghSvKU6JhIwKT';
@@ -156,5 +151,6 @@ function renderSubjects(){
 }
 renderYears(); renderSubjects();
 </script>
+<script src="settings.js"></script>
 </body>
 </html>

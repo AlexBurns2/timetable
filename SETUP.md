@@ -1061,7 +1061,27 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Enter drives the revision games (latest)
+## Header and home-page tidy-up (latest)
+
+- **Settings gear everywhere, no separate dark-mode button.** Games, Notes and
+  Resources had a light/dark toggle in the top right; they now have the same
+  **Settings** gear the home page uses. Dark mode hasn't gone — it's the
+  **Dark mode** button at the bottom of the Settings dialog, alongside skins,
+  Access and Display. Those three pages now load `settings.css` + `settings.js`
+  (the script goes at the end of `<body>`; it wires itself to `#themebtn` on load).
+  The home page's duplicate toggle was removed too, so every page has just the gear.
+- **Plain Home / Timetable buttons.** The 🏠 and 🗓️ emoji (and the `⌂` / `←`
+  glyphs Notes used) are gone from the top-right buttons on every page.
+- **What's new is a plain bulleted list** — no emoji, no card widgets, just dot
+  points under the heading.
+
+The timetable page (`index.html`) was left alone: it already had the gear, has no
+Timetable button, and its Home button is icon-only, so stripping the glyph would
+leave a blank button.
+
+Client-only — ship `games.html`, `notes.html`, `resources.html`, `home.html`, `site.css`.
+
+## Enter drives the revision games
 
 **Enter now does the obvious thing**: the first press **checks** your answer (so
 you see whether you got it wrong), and the next press acts as **Next** and moves

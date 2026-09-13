@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
 <style>
 /* card grid */
 .gamegrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
@@ -432,14 +433,14 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
   <div class="pagehead">
     <h1>Games</h1>
     <div class="crumbs">
-      <a class="btn" href="home.html">🏠 Home</a>
-      <a class="btn" href="./">🗓️ Timetable</a>
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
       <button class="btn icon" id="admin" title="Admin" hidden>🛠️</button>
       <span class="volwrap" id="volwrap">
         <button class="btn icon" id="sfx" title="Game sound (hold to set volume)">&#128266;</button>
         <span class="volpop" id="volpop" hidden><input type="range" id="volsl" min="0" max="100" step="5" aria-label="Volume"></span>
       </span>
-      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </div>
 
@@ -454,12 +455,6 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 
 <script>
 const $ = id => document.getElementById(id);
-$('mode').onclick = () => {
-  const st = TT.readState();
-  const next = st.mode === 'dark' ? 'light' : 'dark';
-  TT.set(TT.LS.mode, next);
-  TT.apply(Object.assign(st, { mode: next }));
-};
 
 /* ── game sound & animation ─────────────────────────────────────────
    Synthesised Web-Audio blips — no audio files. Sound defaults OFF,
@@ -4293,5 +4288,6 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Five modul
 
 showGrid();
 </script>
+<script src="settings.js"></script>
 </body>
 </html>

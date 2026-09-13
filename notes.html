@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <style>
 .notebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
@@ -28,9 +29,9 @@
   <div class="pagehead">
     <h1>Notes</h1>
     <div class="crumbs">
-      <a class="btn" href="home.html">&#8962; Home</a>
-      <a class="btn" href="./">&#8592; Timetable</a>
-      <button class="btn icon" id="mode" title="Light / dark">&#9686;</button>
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </div>
 
@@ -50,12 +51,6 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-$('mode').onclick = () => {
-  const st = TT.readState();
-  const next = st.mode === 'dark' ? 'light' : 'dark';
-  TT.set(TT.LS.mode, next);
-  TT.apply(Object.assign(st, { mode: next }));
-};
 
 /* Notes are stored per subject as { subject: text } under tt.subjectnotes, which
    syncs with the rest of your settings. (The old single scratchpad lived at
@@ -133,5 +128,6 @@ $('padclear').onclick = () => {
 
 buildSubjects();
 </script>
+<script src="settings.js"></script>
 </body>
 </html>
