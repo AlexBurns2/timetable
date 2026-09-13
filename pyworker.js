@@ -40,6 +40,18 @@ function boot() {
 const HARNESS = `
 import io, contextlib, json
 
+def __syntax(src):
+    """Compile only — never execute. Catches SyntaxError / IndentationError /
+    TabError, which is exactly what an editor's syntax check reports. A logic
+    error compiles perfectly well, so nothing here will notice one."""
+    try:
+        compile(src, '<answer>', 'exec')
+        return ''
+    except SyntaxError as e:
+        return json.dumps({'msg': e.msg or 'invalid syntax', 'line': e.lineno or 0})
+    except Exception as e:
+        return json.dumps({'msg': str(e), 'line': 0})
+
 def __run(src, check, stdin_json):
     ns = {}
     if stdin_json:
@@ -59,7 +71,7 @@ function lastLine(msg) {
 }
 
 self.onmessage = async (e) => {
-  const { id, src, check, stdin, warm } = e.data || {};
+  const { id, src, check, stdin, warm, syntax } = e.data || {};
   let p;
   try {
     p = await boot();
@@ -68,6 +80,17 @@ self.onmessage = async (e) => {
     return;
   }
   if (warm) { self.postMessage({ id, ready: true }); return; }
+
+  if (syntax !== undefined) {                 // compile-only check, runs nothing
+    const fn = p.globals.get("__syntax");
+    try {
+      const out = fn(syntax);
+      self.postMessage({ id, ok: true, syntaxErr: out ? JSON.parse(out) : null });
+    } catch (err) {
+      self.postMessage({ id, ok: true, syntaxErr: null });
+    } finally { if (fn && fn.destroy) fn.destroy(); }
+    return;
+  }
 
   const run = p.globals.get("__run");
   try {

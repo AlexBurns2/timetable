@@ -1061,7 +1061,28 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Software rebuilt on the NSW Software Engineering syllabus (latest)
+## Live syntax checking + a bigger code editor (latest)
+
+- **Bigger editor.** The write-code textarea went from 132px to **260px** tall
+  (320px on screens wider than 900px), and it still drags to resize.
+- **Live syntax check**, like the exam environment provides. As you type
+  (debounced ~450ms) the code is compiled — never executed — and a line under the
+  editor shows either **"✓ No syntax errors"** or the actual Python message, e.g.
+  *"✗ expected ':' (line 1)"*, *"✗ '(' was never closed (line 1)"*, or even
+  *"✗ invalid syntax. Maybe you meant '==' or ':=' instead of '='? (line 1)"*.
+
+  It uses `compile(src, '<answer>', 'exec')` in the existing Pyodide worker, so it
+  catches `SyntaxError`, `IndentationError` and `TabError` and nothing else. **A
+  logic error compiles perfectly well and is not caught** — confirmed in testing
+  that `return n % 2 == 1` for `is_even` reports no syntax errors, as does a
+  reference to an undefined name (that's a runtime error). The wording is
+  deliberately "No syntax errors" rather than anything implying the answer is
+  right; only pressing **Check** decides that, by running the test cases.
+
+  It stays quiet when the box is empty, when Pyodide hasn't finished loading, and
+  if Pyodide can't load at all — the fallback path is unaffected.
+
+## Software rebuilt on the NSW Software Engineering syllabus
 
 **Bug fixed — ambiguous distractors.** "Which OOP idea does this show?
 `class Dog(Animal):`" offered both *Inheritance* (the intended answer) and

@@ -415,12 +415,16 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 .rvprompt code{font-family:var(--font-num);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
 .rvdiagram{display:block;margin:12px auto 0;max-width:100%}
 .rvtyped textarea{
-  width:100%;box-sizing:border-box;min-height:132px;resize:vertical;margin-bottom:10px;
+  width:100%;box-sizing:border-box;min-height:260px;resize:vertical;margin-bottom:6px;
   font-family:var(--font-num);font-size:13.5px;line-height:1.55;tab-size:4;
   padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--panel-2);color:var(--text);white-space:pre;overflow-wrap:normal;overflow-x:auto;
 }
 .rvtyped textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.rvsyn{min-height:18px;margin-bottom:8px;font-size:12.5px;font-family:var(--font-num);color:var(--muted)}
+.rvsyn.good{color:#2f9e44}
+.rvsyn.bad{color:#e5484d}
+@media (min-width:900px){ .rvtyped textarea{min-height:320px} }
 .rvwhy{font-weight:400;font-size:13px;margin-top:5px;font-family:var(--font-num);color:var(--muted)}
 .rvans{
   font-family:var(--font-num);font-size:13px;line-height:1.55;white-space:pre;overflow-x:auto;
@@ -3224,6 +3228,7 @@ function revGame(host, opts){
     html += cur.typed
       ? '<div class="rvtyped"><textarea id="rvta" spellcheck="false" autocapitalize="off" autocorrect="off"' +
         ' placeholder="Write your code here…">' + esc(cur.stub || '') + '</textarea>' +
+        '<div class="rvsyn" id="rvsyn"></div>' +
         '<div class="gwrow"><button class="btn primary" id="rvgo" type="button">Check</button>' +
         '<button class="btn" id="rvskip" type="button">Show answer</button></div></div>'
       : cur.input
@@ -3233,7 +3238,24 @@ function revGame(host, opts){
     box.innerHTML = html; wireSel();
     $('sc').textContent = 'Score ' + score;
     if (cur.typed){ const ta = $('rvta'); ta.focus();
-      if (typeof PY !== 'undefined' && !PY.ready && !PY.dead) PY.warm();   // pre-download while they type
+      /* Live syntax check, like the exam environment gives you. It only
+         compiles — a logic error compiles fine, so this never claims the answer
+         is right, just that Python can parse it. */
+      let synTimer = null;
+      const syntaxCheck = () => {
+        const out = $('rvsyn');
+        if (!out || $('rvta') !== ta) return;            // moved on to another question
+        if (typeof PY === 'undefined' || PY.dead || !PY.ready) return;
+        if (!ta.value.trim()){ out.textContent = ''; out.className = 'rvsyn'; return; }
+        PY.syntax(ta.value).then(r => {
+          const now = $('rvsyn');
+          if (!now || $('rvta') !== ta) return;
+          if (r.ok){ now.textContent = '✓ No syntax errors'; now.className = 'rvsyn good'; }
+          else { now.textContent = '✗ ' + r.msg + (r.line ? ' (line ' + r.line + ')' : ''); now.className = 'rvsyn bad'; }
+        }).catch(() => {});
+      };
+      ta.addEventListener('input', () => { clearTimeout(synTimer); synTimer = setTimeout(syntaxCheck, 450); });
+      if (typeof PY !== 'undefined' && !PY.ready && !PY.dead) PY.warm().then(syntaxCheck);   // pre-download while they type
       $('rvgo').onclick = () => submit(ta.value);
       $('rvskip').onclick = () => submit('', null, true);      // give up → show the model answer
       ta.addEventListener('keydown', e => {                    // Tab indents instead of leaving the box
@@ -3613,7 +3635,10 @@ const PY = (() => {
     warm(){ return send({ warm:true }, 120000).then(()=>true).catch(()=>false); },
     /* generous while Pyodide is still downloading, tight once it's up so an
        endless loop is caught quickly */
-    run(src, check, stdin){ return send({ src, check, stdin }, ready ? 12000 : 120000); }
+    run(src, check, stdin){ return send({ src, check, stdin }, ready ? 12000 : 120000); },
+    /* compile-only: reports syntax errors without executing anything */
+    syntax(src){ return send({ syntax:src }, 10000)
+      .then(r => r.syntaxErr ? { ok:false, msg:r.syntaxErr.msg, line:r.syntaxErr.line } : { ok:true }); }
   };
 })();
 
