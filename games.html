@@ -444,11 +444,13 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 .rvlegend i.y{background:#f0a500}
 .rvlegend i.r{background:#e5484d}
 .rvlegend i.n{background:var(--line)}
+.rvgoaln{cursor:pointer;border-bottom:1px dashed var(--muted);font-weight:700}
+.rvgoaln:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.rvgoalin{width:66px;font:inherit;font-size:12px;padding:1px 5px;border:1px solid var(--accent);
+  border-radius:6px;background:var(--panel);color:var(--text)}
+.rvnudge{font-size:12.5px;color:var(--muted);align-self:center;margin-left:2px}
 @media (max-width:560px){ .rvlegend{display:none} }
-/* how far through a topic you are, drawn under its pill */
-.rvsel .diffpill,.rvsub .diffpill{position:relative;overflow:hidden}
-.rvsel .diffpill::after,.rvsub .diffpill::after{content:'';position:absolute;left:0;right:0;bottom:0;
-  height:3px;background:linear-gradient(to right,#2f9e44 0 var(--done,0%),transparent var(--done,0%))}
+
 .rvtyped textarea{
   width:100%;box-sizing:border-box;min-height:260px;resize:vertical;margin-bottom:6px;
   font-family:var(--font-num);font-size:13.5px;line-height:1.55;tab-size:4;
@@ -3241,19 +3243,6 @@ function revGame(host, opts){
       ks.forEach(k => { c[stateOf(k)]++; c.total++; }); });
     return c;
   }
-  /* the topics a given pill stands for, so its underline can show progress */
-  function topicsFor(id, isModule){
-    if (!modular) return id === 'mix' ? opts.topics : opts.topics.filter(t => t.id === id);
-    if (id === 'all') return opts.modules.flatMap(m => m.topics);
-    if (isModule){ const m = opts.modules.find(x => x.id === id); return m ? m.topics : []; }
-    const m = curMod(); return m ? m.topics.filter(t => t.id === id) : [];
-  }
-  function pillDone(id, isModule){
-    const c = statsFor(topicsFor(id, isModule));
-    if (!c.total) return '';
-    return ' style="--done:' + ((c.correct + c.fixed) / c.total * 100).toFixed(1) + '%"';
-  }
-
   const BOLT_D = 'M7 2v11h3v9l7-12h-4l3-8z';
   function statusUI(){
     return '<div class="rvstatus" id="rvstatus">' +
@@ -3264,6 +3253,34 @@ function revGame(host, opts){
       '<span class="rvlegend" id="rvlegend"></span></div>';
   }
   /* `broke` = a streak worth mourning just ended, so play the discharge */
+  /* An endlessly-generated pool has no total to work towards, so you can set
+     your own: click the grey number and type a target. The bar then fills with
+     the questions you have completed against it. */
+  const goalOf  = () => Math.max(0, +TT.get('tt.rev_'+sk+'_goal', 0) || 0);
+  const tallyOf = () => { const t = TT.get('tt.rev_'+sk+'_tally', [0,0]); return Array.isArray(t) ? t : [0,0]; };
+  function setGoal(n){
+    TT.set('tt.rev_'+sk+'_goal', Math.max(0, Math.min(9999, n|0)));
+    TT.set('tt.rev_'+sk+'_tally', [0,0]);            // a new target starts a new count
+    paintStatus();
+  }
+  function bumpTally(ok){
+    const t = tallyOf(); t[ok ? 0 : 1]++;
+    TT.set('tt.rev_'+sk+'_tally', t);
+  }
+  function wireGoal(){
+    const el = $('rvgoal'); if (!el) return;
+    el.onclick = () => {
+      const box = $('rvstatus'); if (!box) return;
+      const cur0 = goalOf() || 20;
+      el.outerHTML = '<input class="rvgoalin" id="rvgoalin" type="number" min="1" max="9999" value="'+cur0+'" aria-label="Questions to aim for">';
+      const inp = $('rvgoalin'); if (!inp) return;
+      inp.focus(); inp.select();
+      const done = () => { const v = parseInt(inp.value, 10); setGoal(isFinite(v) && v > 0 ? v : 0); };
+      inp.onblur = done;
+      inp.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); done(); }
+                             if (e.key === 'Escape'){ paintStatus(); } };
+    };
+  }
   function paintStatus(broke){
     const bolt = $('rvbolt'), bar = $('rvbar'), leg = $('rvlegend');
     if (!bolt) return;
@@ -3272,33 +3289,51 @@ function revGame(host, opts){
     const n = $('rvstreakn'); if (n) n.textContent = streak;
     if (broke){ bolt.classList.remove('zap'); void bolt.offsetWidth; bolt.classList.add('zap'); }
     const c = statsFor(pool());
-    if (bar){
-      bar.hidden = !c.total;
-      if (c.total){
+    if (c.total){                                   /* a finite pool — show the real thing */
+      if (bar){
+        bar.hidden = false;
         const pct = v => (v / c.total * 100) + '%';
         bar.children[0].style.width = pct(c.correct);
         bar.children[1].style.width = pct(c.fixed);
         bar.children[2].style.width = pct(c.wrong);
         bar.title = c.correct+' correct · '+c.fixed+' fixed · '+c.wrong+' to review · '+c.new+' not tried yet';
       }
+      if (leg) leg.innerHTML =
+        '<i class="g" title="correct"></i>'+c.correct+'<i class="y" title="fixed after getting it wrong"></i>'+c.fixed+
+        '<i class="r" title="still to review"></i>'+c.wrong+'<i class="n" title="not tried yet"></i>'+c.new;
+      return;
     }
-    if (leg) leg.innerHTML = c.total
-      ? '<i class="g" title="correct"></i>'+c.correct+'<i class="y" title="fixed after getting it wrong"></i>'+c.fixed+
-        '<i class="r" title="still to review"></i>'+c.wrong+'<i class="n" title="not tried yet"></i>'+c.new
-      : '';
+    /* endless pool — fall back to a goal you set yourself */
+    const goal = goalOf(), t = tallyOf(), doneN = t[0] + t[1], left = Math.max(0, goal - doneN);
+    if (bar){
+      bar.hidden = !goal;
+      if (goal){
+        const pct = v => Math.min(100, v / goal * 100) + '%';
+        bar.children[0].style.width = pct(t[0]);
+        bar.children[1].style.width = '0%';
+        bar.children[2].style.width = pct(t[1]);
+        bar.title = t[0]+' right · '+t[1]+' wrong · '+left+' left of your goal of '+goal;
+      }
+    }
+    if (leg) leg.innerHTML = goal
+      ? '<i class="g" title="right"></i>'+t[0]+'<i class="r" title="wrong"></i>'+t[1]+
+        '<i class="n" title="left to go — click to change your goal"></i>' +
+        '<b class="rvgoaln" id="rvgoal" title="Click to change your goal">'+(left || '✓')+'</b>'
+      : '<i class="n"></i><b class="rvgoaln" id="rvgoal" title="Set yourself a target">Set a goal</b>';
+    wireGoal();
   }
   const pool = () => {
     if (!modular) return topic==='mix' ? opts.topics : [opts.topics.find(t=>t.id===topic)];
     if (modId==='all') return opts.modules.flatMap(m=>m.topics);
     const on = curMod().topics.filter(t=>!excl[t.id]); return on.length ? on : curMod().topics;
   };
-  const pill = (id,name,on,multi,isModule) => '<button class="diffpill'+(multi?' rvmulti':'')+'" type="button" data-id="'+id+'" aria-pressed="'+on+'"'+pillDone(id,isModule)+'>'+esc(name)+'</button>';
+  const pill = (id,name,on,multi) => '<button class="diffpill'+(multi?' rvmulti':'')+'" type="button" data-id="'+id+'" aria-pressed="'+on+'">'+esc(name)+'</button>';
   function selUI(){
     if (!modular){
       const all = opts.topics.length>1 ? [{id:'mix',name:'Mixed'},...opts.topics] : opts.topics;
       return '<div class="diffbar rvsel" style="margin-bottom:12px">'+all.map(t=>pill(t.id,t.name,t.id===topic)).join('')+'</div>';
     }
-    let h = '<div class="diffbar rvsel" style="margin-bottom:8px">'+pill('all','Whole topic',modId==='all',false,true)+opts.modules.map(m=>pill(m.id,m.name,m.id===modId,false,true)).join('')+'</div>';
+    let h = '<div class="diffbar rvsel" style="margin-bottom:8px">'+pill('all','Whole topic',modId==='all')+opts.modules.map(m=>pill(m.id,m.name,m.id===modId)).join('')+'</div>';
     if (modId!=='all') h += '<div class="diffbar rvsub" style="margin-bottom:12px">'+curMod().topics.map(t=>pill(t.id,t.name,!excl[t.id],true)).join('')+'</div>';
     return h;
   }
@@ -3385,10 +3420,15 @@ function revGame(host, opts){
         ' placeholder="Write your code here…">' + esc(cur.stub || '') + '</textarea>' +
         '<div class="rvsyn" id="rvsyn"></div>' +
         '<div class="gwrow"><button class="btn primary" id="rvgo" type="button">Check</button>' +
-        '<button class="btn" id="rvskip" type="button">Show answer</button></div></div>'
+        '<button class="btn" id="rvskip" type="button">Show answer</button>' +
+        '<span class="rvnudge" id="rvnudge"></span></div></div>'
       : cur.input
-      ? '<div class="gwrow"><input id="rvin" autocomplete="off" placeholder="Your answer…"><button class="btn primary" id="rvgo" type="button">Check</button></div>'
-      : '<div class="mcq" id="rvopts"></div>';
+      ? '<div class="gwrow"><input id="rvin" autocomplete="off" placeholder="Your answer…">' +
+        '<button class="btn primary" id="rvgo" type="button">Check</button>' +
+        '<button class="btn" id="rvskip" type="button">Skip</button><span class="rvnudge" id="rvnudge"></span></div>'
+      : '<div class="mcq" id="rvopts"></div>' +
+        '<div class="gwrow"><button class="btn" id="rvskip" type="button">Skip</button>' +
+        '<span class="rvnudge" id="rvnudge"></span></div>';
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
     box.innerHTML = html; wireSel(); paintStatus();
     $('sc').textContent = 'Score ' + score;
@@ -3422,11 +3462,42 @@ function revGame(host, opts){
       });
     } else if (cur.input){ const inp = $('rvin'); inp.focus();
       $('rvgo').onclick = () => submit(inp.value);
+      $('rvskip').onclick = skipCur;
     } else { const wrap = $('rvopts'); if (cur.code) wrap.classList.add('rvcodeopts');
       cur.choices.forEach(c => { const b = document.createElement('button'); b.type='button'; b.className='mcopt'; b.textContent = c;
         b.onclick = () => submit(c, b); wrap.appendChild(b); });
+      $('rvskip').onclick = skipCur;
     }
+    startNudge();
     $('rvnext').onclick = nextQ;
+  }
+  /* If a question has sat unanswered for a while, gently point at Skip — a
+     skip costs nothing, whereas a guess can mark the question wrong and break
+     the streak. */
+  const NUDGE_AFTER = 5 * 60 * 1000;
+  let nudgeTimer = null;
+  function clearNudge(){ if (nudgeTimer){ clearTimeout(nudgeTimer); nudgeTimer = null; } }
+  function startNudge(){
+    clearNudge();
+    nudgeTimer = setTimeout(() => {
+      const el = $('rvnudge');
+      if (el && !answered) el.textContent = 'No idea? Skipping costs you nothing — a wrong guess doesn\u2019t.';
+    }, NUDGE_AFTER);
+  }
+  /* Skip: reveal the answer and move on. Deliberately does NOT touch the score,
+     the streak or the saved history — you neither gain nor lose by being honest. */
+  function skipCur(){
+    if (answered || checking) return;
+    answered = true; clearNudge();
+    const fb = $('rvfb'); fb.className = 'rvfb';
+    fb.innerHTML = 'Skipped' + (cur.typed ? ' — one way to write it:' : ' — the answer was <b>' + esc(String(cur.answer)) + '</b>') +
+      (cur.note ? '<div class="rvnote">' + cur.note + '</div>' : '');
+    if (cur.typed) revealAnswer();
+    if (cur.typed){ $('rvta').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
+    else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
+    else { [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.textContent === cur.answer) b.classList.add('right'); });
+           $('rvskip').disabled = true; }
+    $('rvnextrow').hidden = false; $('rvnext').focus();
   }
   function submit(val, btn, gaveUp){
     if (answered || checking) return;
@@ -3461,7 +3532,7 @@ function revGame(host, opts){
     if (note) fb.insertBefore(pre, note); else fb.appendChild(pre);
   }
   function finish(ok, gaveUp, detail, btn){
-    if (answered) return; answered = true;
+    if (answered) return; answered = true; clearNudge();
     const hadStreak = streak;
     if (ok){ score++; streak++; SFX.streak(streak); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
     else { streak = 0; if (hadStreak >= 3) SFX.discharge(); else SFX.bad(); }
@@ -3472,6 +3543,7 @@ function revGame(host, opts){
       if (!ok) h[3] = 1;                                      // has it ever been wrong?
       hist[cur._sig] = h; TT.set('tt.rev_'+sk+'_hist', hist);
     }
+    bumpTally(ok);                                            // feeds the self-set goal
     TT.set('tt.rev_'+sk+'_streak', streak);                   // synced with everything else
     paintStatus(!ok && hadStreak >= 3);
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');

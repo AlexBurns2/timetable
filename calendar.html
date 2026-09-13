@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="classic" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calendar — MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="icon" type="image/x-icon" href="/images/icon.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
+<style>
+.calbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.calbar h2{margin:0;font-family:var(--font-display);font-size:20px;min-width:190px}
+.calbar .grow{flex:1}
+.arrowbtn2{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  width:34px;height:34px;cursor:pointer;color:var(--text);font-size:17px;line-height:1}
+.arrowbtn2:hover{background:var(--panel-2)}
+
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.dow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);text-align:center;padding:3px 0}
+.day{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  min-height:92px;padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;
+  transition:background .12s,border-color .12s}
+.day:hover{background:var(--panel-2);border-color:var(--accent)}
+.day.out{opacity:.42}
+.day.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.dnum{font-size:12px;font-weight:700;font-family:var(--font-num);color:var(--muted)}
+.day.today .dnum{color:var(--accent)}
+.chip{font-size:11px;line-height:1.3;padding:2px 6px;border-radius:5px;color:#fff;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.chip.more{background:none;color:var(--muted);padding-left:2px}
+.c-blue{background:#3b6ef0}.c-green{background:#2f9e44}.c-red{background:#e5484d}
+.c-orange{background:#f0801a}.c-purple{background:#8b5cf6}.c-teal{background:#0d9488}
+.c-pink{background:#db2777}.c-grey{background:#6b7280}
+
+.side{display:grid;grid-template-columns:1fr;gap:16px;margin-top:22px}
+@media (min-width:900px){ .side{grid-template-columns:1fr 1fr} }
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius);padding:16px}
+.card h3{margin:0 0 10px;font-size:15px;font-family:var(--font-display)}
+.card p.hint{margin:0 0 10px;font-size:12.5px;color:var(--muted);line-height:1.5}
+
+.up{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow:auto}
+.uprow{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.updot{width:9px;height:9px;border-radius:50%;flex:none}
+.upwhen{color:var(--muted);font-size:12px;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
+
+.exlist{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.exrow{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:3px 0;cursor:pointer}
+.exrow input{accent-color:var(--accent);cursor:pointer}
+.exwhen{color:var(--muted);font-size:12px;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
+
+.fld{display:block;margin-bottom:10px}
+.fld span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.fld input,.fld select,.fld textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
+  padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text)}
+.fld textarea{resize:vertical;min-height:56px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.swatches{display:flex;gap:7px;flex-wrap:wrap}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.sw[aria-pressed="true"]{border-color:var(--text);transform:scale(1.12)}
+.dlgbtns{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.dlgbtns .grow{flex:1}
+.msg{font-size:13px;min-height:18px;margin-top:6px}
+.msg.bad{color:#e5484d}.msg.good{color:#2f9e44}
+dialog.cdlg{border:none;border-radius:var(--card-radius);padding:18px;max-width:520px;width:calc(100% - 28px);
+  background:var(--panel);color:var(--text);box-shadow:var(--shadow-hi)}
+dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
+.dlgh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.dlgh h3{margin:0;font-size:17px;font-family:var(--font-display);flex:1}
+.del{color:#e5484d;background:none;border:1px solid var(--line);border-radius:var(--radius);
+  padding:8px 12px;cursor:pointer}
+.del:hover{border-color:#e5484d}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Calendar</h1>
+    <div class="crumbs">
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+    </div>
+  </div>
+
+  <div class="calbar">
+    <button class="arrowbtn2" id="prev" title="Previous month">&lsaquo;</button>
+    <button class="arrowbtn2" id="next" title="Next month">&rsaquo;</button>
+    <h2 id="mlabel">…</h2>
+    <button class="btn" id="today">Today</button>
+    <span class="grow"></span>
+    <button class="btn primary" id="add">+ New event</button>
+  </div>
+
+  <div class="grid" id="dows"></div>
+  <div class="grid" id="grid" style="margin-top:5px"></div>
+
+  <div class="side">
+    <div class="card">
+      <h3>Coming up</h3>
+      <div class="up" id="up"><p class="hint">Loading…</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Year 11 final exams</h3>
+      <p class="hint">Ticked automatically from the subjects on your timetable — correct it here if it
+        guessed wrong. Only the ticked exams appear on the calendar.</p>
+      <div class="exlist" id="exlist"></div>
+    </div>
+
+    <div class="card">
+      <h3>Sync from Google Calendar</h3>
+      <p class="hint">In Google Calendar open <b>Settings → your calendar → Integrate calendar</b> and copy
+        the <b>Secret address in iCal format</b>. Paste it below. That address only lets us read that one
+        calendar, it is used for this single fetch and <b>never saved</b>, and no Google password is
+        involved. Importing again replaces what was imported before.</p>
+      <label class="fld"><span>Secret iCal address</span>
+        <input id="gurl" type="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
+      <div class="dlgbtns">
+        <button class="btn primary" id="gimport">Import</button>
+        <span class="msg" id="gmsg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog class="cdlg" id="edlg">
+  <div class="dlgh"><h3 id="dtitle">New event</h3>
+    <button class="btn icon" id="dclose" type="button" title="Close">&#10005;</button></div>
+  <label class="fld"><span>Name</span><input id="f-title" maxlength="140" placeholder="Chemistry study session"></label>
+  <div class="row2">
+    <label class="fld"><span>Date</span><input id="f-date" type="date"></label>
+    <label class="fld"><span>Repeats</span>
+      <select id="f-repeat">
+        <option value="none">Doesn't repeat</option>
+        <option value="daily">Every day</option>
+        <option value="weekdays">Every weekday</option>
+        <option value="weekly">Every week</option>
+        <option value="fortnightly">Every fortnight</option>
+        <option value="monthly">Every month</option>
+        <option value="yearly">Every year</option>
+      </select></label>
+  </div>
+  <label class="fld" style="margin-bottom:8px">
+    <input type="checkbox" id="f-allday" style="width:auto;margin-right:7px">All day</label>
+  <div class="row2" id="timerow">
+    <label class="fld"><span>Start</span><input id="f-start" type="time"></label>
+    <label class="fld"><span>End</span><input id="f-end" type="time"></label>
+  </div>
+  <label class="fld" id="untilrow" hidden><span>Repeat until (optional)</span><input id="f-until" type="date"></label>
+  <label class="fld"><span>Colour</span></label>
+  <div class="swatches" id="swatches" style="margin:-6px 0 12px"></div>
+  <label class="fld"><span>Share with (school emails, comma separated)</span>
+    <input id="f-share" placeholder="jordan.lee3@education.nsw.gov.au"></label>
+  <label class="fld"><span>Notes</span><textarea id="f-notes" maxlength="600"></textarea></label>
+  <div class="dlgbtns">
+    <button class="btn primary" id="save">Save</button>
+    <button class="del" id="del" type="button" hidden>Delete</button>
+    <span class="grow"></span>
+    <span class="msg" id="dmsg"></span>
+  </div>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+/* ── the Year 11 final exam timetable, straight from the school PDF ──────── */
+const EXAMS = [
+  { id:'eng-adv',    subj:'English Advanced',            d:'2026-09-15', s:'08:55', e:'09:45', room:'HAL' },
+  { id:'jpn-cont-m', subj:'Japanese Continuers',         d:'2026-09-15', s:'14:00', e:'15:30', room:'Mackellar' },
+  { id:'mod-hist',   subj:'Modern History',              d:'2026-09-15', s:'14:00', e:'15:35', room:'HAL' },
+  { id:'math-adv',   subj:'Mathematics Advanced',        d:'2026-09-16', s:'08:55', e:'11:35', room:'HAL' },
+  { id:'chem',       subj:'Chemistry',                   d:'2026-09-17', s:'08:55', e:'11:00', room:'HAL' },
+  { id:'bus',        subj:'Business Studies',            d:'2026-09-17', s:'14:00', e:'15:05', room:'HAL' },
+  { id:'eng-stud',   subj:'Engineering Studies',         d:'2026-09-18', s:'08:55', e:'11:00', room:'HAL' },
+  { id:'econ',       subj:'Economics',                   d:'2026-09-18', s:'14:00', e:'14:50', room:'HAL' },
+  { id:'textiles',   subj:'Textiles and Design',         d:'2026-09-21', s:'08:55', e:'10:30', room:'HAL' },
+  { id:'phys',       subj:'Physics',                     d:'2026-09-21', s:'08:55', e:'11:00', room:'HAL' },
+  { id:'jpn-speak',  subj:'Japanese Speaking',           d:'2026-09-21', s:'14:00', e:'15:30', room:'SP4' },
+  { id:'ent-mack',   subj:'Entertainment',               d:'2026-09-21', s:'14:00', e:'15:30', room:'Mackellar' },
+  { id:'german',     subj:'German Beginners',            d:'2026-09-21', s:'14:00', e:'15:30', room:'Freshwater' },
+  { id:'math-ext1',  subj:'Mathematics Extension 1',     d:'2026-09-22', s:'08:55', e:'11:05', room:'HAL' },
+  { id:'french',     subj:'French Continuers',           d:'2026-09-22', s:'14:00', e:'15:30', room:'Mackellar' },
+  { id:'soc-cult',   subj:'Society and Culture',         d:'2026-09-22', s:'14:00', e:'16:05', room:'HAL' },
+  { id:'anc-hist',   subj:'Ancient History',             d:'2026-09-22', s:'14:00', e:'15:35', room:'HAL' },
+  { id:'jpn-beg',    subj:'Japanese Beginners',          d:'2026-09-22', s:'14:00', e:'15:30', room:'Mackellar' },
+  { id:'eng-ext1',   subj:'English Extension 1',         d:'2026-09-23', s:'08:55', e:'10:35', room:'HAL' },
+  { id:'ind-tech',   subj:'Industrial Technology',       d:'2026-09-23', s:'08:55', e:'10:25', room:'HAL' },
+  { id:'ent-balg',   subj:'Entertainment',               d:'2026-09-23', s:'14:00', e:'15:30', room:'Balgowlah' },
+  { id:'software',   subj:'Software Engineering',        d:'2026-09-23', s:'12:00', e:'13:45', room:'HAL' },
+  { id:'dance',      subj:'Dance',                       d:'2026-09-23', s:'14:00', e:'15:30', room:'Mackellar' },
+  { id:'jpn-cont',   subj:'Japanese Continuers',         d:'2026-09-23', s:'14:00', e:'15:45', room:'CRM' },
+  { id:'bio',        subj:'Biology',                     d:'2026-09-24', s:'08:55', e:'11:00', room:'HAL' },
+  { id:'visarts',    subj:'Visual Arts',                 d:'2026-09-24', s:'14:00', e:'15:35', room:'HAL' },
+  { id:'hms',        subj:'Health and Movement Science', d:'2026-09-24', s:'14:00', e:'16:05', room:'HAL' },
+  { id:'drama',      subj:'Drama',                       d:'2026-09-24', s:'14:00', e:'15:00', room:'HAL' },
+  { id:'music2',     subj:'Music 2',                     d:'2026-09-25', s:'08:55', e:'10:30', room:'HAL' },
+  { id:'legal',      subj:'Legal Studies',               d:'2026-09-25', s:'08:55', e:'10:00', room:'HAL' }
+];
+const COLOURS = ['blue','green','red','orange','purple','teal','pink','grey'];
+
+/* ── dates ─────────────────────────────────────────────────────────────── */
+const pad = n => String(n).padStart(2,'0');
+const iso = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today = new Date();
+const parseISO = s => { const [d,t] = String(s).split('T'); const [y,m,dd] = d.split('-').map(Number);
+  const [hh,mm] = (t||'00:00').split(':').map(Number); return new Date(y, m-1, dd, hh||0, mm||0); };
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let view = new Date(today.getFullYear(), today.getMonth(), 1);
+
+/* ── state ─────────────────────────────────────────────────────────────── */
+let events = [];            // from the server
+let mySubjects = [];        // from the timetable, for guessing which exams apply
+let examPick = null;        // { id: true/false } — your corrections, synced via prefs
+let editing = null;
+let pickedColour = 'blue';
+
+const normSub = s => String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+function examAuto(ex){
+  const e = normSub(ex.subj);
+  return mySubjects.some(s => { const m = normSub(s); return !!m && (m === e || m.includes(e) || e.includes(m)); });
+}
+const examOn = ex => { const p = examPick || {}; return ex.id in p ? !!p[ex.id] : examAuto(ex); };
+
+/* ── does a repeating event land on this day? ──────────────────────────── */
+function occursOn(ev, dayISO){
+  const start = String(ev.start).split('T')[0];
+  if (start === dayISO) return true;
+  if (!ev.repeat || ev.repeat === 'none') return false;
+  if (dayISO < start) return false;
+  if (ev.until && dayISO > ev.until) return false;
+  const a = parseISO(start), b = parseISO(dayISO);
+  const days = Math.round((b - a) / 86400000);
+  switch (ev.repeat){
+    case 'daily':       return true;
+    case 'weekdays':    return b.getDay() >= 1 && b.getDay() <= 5;
+    case 'weekly':      return days % 7 === 0;
+    case 'fortnightly': return days % 14 === 0;
+    case 'monthly':     return b.getDate() === a.getDate();
+    case 'yearly':      return b.getDate() === a.getDate() && b.getMonth() === a.getMonth();
+  }
+  return false;
+}
+
+/* every item shown on a given day: saved events plus the exams you've ticked */
+function itemsOn(dayISO){
+  const out = [];
+  events.forEach(ev => { if (occursOn(ev, dayISO))
+    out.push({ kind:'event', id:ev.id, title:ev.title, colour:ev.colour,
+               time: ev.allDay ? '' : (String(ev.start).split('T')[1]||''), ev }); });
+  EXAMS.forEach(ex => { if (ex.d === dayISO && examOn(ex))
+    out.push({ kind:'exam', id:'exam-'+ex.id, title:ex.subj+' exam', colour:'red', time:ex.s, ex }); });
+  return out.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+}
+
+/* ── the month grid ────────────────────────────────────────────────────── */
+function renderGrid(){
+  $('mlabel').textContent = MONTHS[view.getMonth()] + ' ' + view.getFullYear();
+  $('dows').innerHTML = DOW.map(d => '<div class="dow">'+d+'</div>').join('');
+  const first = new Date(view.getFullYear(), view.getMonth(), 1);
+  const lead = (first.getDay() + 6) % 7;                 // weeks start Monday
+  const cells = [];
+  for (let i = 0; i < 42; i++){
+    const d = new Date(view.getFullYear(), view.getMonth(), 1 - lead + i);
+    const dISO = iso(d), items = itemsOn(dISO);
+    const chips = items.slice(0,3).map(it =>
+      '<span class="chip c-'+esc(it.colour)+'" data-open="'+esc(it.id)+'" title="'+esc(it.title)+'">' +
+      (it.time ? esc(it.time)+' ' : '') + esc(it.title) + '</span>').join('');
+    const more = items.length > 3 ? '<span class="chip more">+'+(items.length-3)+' more</span>' : '';
+    cells.push('<div class="day'+(d.getMonth()!==view.getMonth()?' out':'')+(dISO===iso(today)?' today':'')+
+      '" data-day="'+dISO+'"><span class="dnum">'+d.getDate()+'</span>'+chips+more+'</div>');
+  }
+  $('grid').innerHTML = cells.join('');
+  $('grid').querySelectorAll('.day').forEach(el => el.onclick = e => {
+    const chip = e.target.closest('[data-open]');
+    if (chip) return openItem(chip.dataset.open);
+    openNew(el.dataset.day);
+  });
+}
+
+function openItem(id){
+  if (id.startsWith('exam-')){
+    const ex = EXAMS.find(x => 'exam-'+x.id === id);
+    if (ex) alert(ex.subj + ' exam\n' + parseISO(ex.d).toDateString() + '\n' + ex.s + ' – ' + ex.e + '\nRoom: ' + ex.room);
+    return;
+  }
+  const ev = events.find(e => e.id === id);
+  if (ev) openEdit(ev);
+}
+
+/* ── coming up ─────────────────────────────────────────────────────────── */
+function renderUpcoming(){
+  const out = [];
+  for (let i = 0; i < 60 && out.length < 14; i++){
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    itemsOn(iso(d)).forEach(it => out.push({ ...it, day: d }));
+  }
+  $('up').innerHTML = out.length ? out.slice(0,14).map(it =>
+    '<div class="uprow"><span class="updot c-'+esc(it.colour)+'"></span>' +
+    '<span>'+esc(it.title)+'</span>' +
+    '<span class="upwhen">'+DOW[(it.day.getDay()+6)%7]+' '+it.day.getDate()+' '+MONTHS[it.day.getMonth()].slice(0,3)+
+      (it.time ? ' · '+esc(it.time) : '')+'</span></div>').join('')
+    : '<p class="hint">Nothing in the next two months.</p>';
+}
+
+/* ── exam picker ───────────────────────────────────────────────────────── */
+function renderExams(){
+  $('exlist').innerHTML = EXAMS.map(ex =>
+    '<label class="exrow"><input type="checkbox" data-ex="'+ex.id+'"'+(examOn(ex)?' checked':'')+'>' +
+    '<span>'+esc(ex.subj)+'</span>' +
+    '<span class="exwhen">'+parseISO(ex.d).getDate()+' '+MONTHS[parseISO(ex.d).getMonth()].slice(0,3)+' · '+ex.s+'</span></label>').join('');
+  $('exlist').querySelectorAll('input[data-ex]').forEach(cb => cb.onchange = () => {
+    examPick = examPick || {};
+    examPick[cb.dataset.ex] = cb.checked;
+    TT.set('tt.calexams', examPick);
+    renderGrid(); renderUpcoming();
+  });
+}
+
+/* ── the event dialog ──────────────────────────────────────────────────── */
+function paintSwatches(){
+  $('swatches').innerHTML = COLOURS.map(c =>
+    '<button class="sw c-'+c+'" type="button" data-c="'+c+'" aria-pressed="'+(c===pickedColour)+'" title="'+c+'"></button>').join('');
+  $('swatches').querySelectorAll('.sw').forEach(b => b.onclick = () => {
+    pickedColour = b.dataset.c; paintSwatches();
+  });
+}
+function syncTimeRow(){
+  const all = $('f-allday').checked;
+  $('timerow').style.display = all ? 'none' : '';
+  $('untilrow').hidden = $('f-repeat').value === 'none';
+}
+function openNew(dayISO){
+  editing = null;
+  $('dtitle').textContent = 'New event';
+  $('f-title').value = ''; $('f-date').value = dayISO || iso(today);
+  $('f-allday').checked = false; $('f-start').value = '09:00'; $('f-end').value = '10:00';
+  $('f-repeat').value = 'none'; $('f-until').value = '';
+  $('f-share').value = ''; $('f-notes').value = '';
+  pickedColour = 'blue'; paintSwatches(); syncTimeRow();
+  $('del').hidden = true; $('dmsg').textContent = '';
+  $('edlg').showModal(); $('f-title').focus();
+}
+function openEdit(ev){
+  if (!ev.mine){
+    alert(ev.title + '\nShared with you by ' + ev.owner + '\n' +
+      parseISO(ev.start).toDateString() + (ev.allDay ? '' : ' · ' + String(ev.start).split('T')[1]) +
+      (ev.notes ? '\n\n' + ev.notes : ''));
+    return;
+  }
+  editing = ev;
+  $('dtitle').textContent = 'Edit event';
+  $('f-title').value = ev.title;
+  $('f-date').value = String(ev.start).split('T')[0];
+  $('f-allday').checked = !!ev.allDay;
+  $('f-start').value = String(ev.start).split('T')[1] || '09:00';
+  $('f-end').value = ev.end ? (String(ev.end).split('T')[1] || '') : '';
+  $('f-repeat').value = ev.repeat || 'none';
+  $('f-until').value = ev.until || '';
+  $('f-share').value = (ev.sharedWith || []).join(', ');
+  $('f-notes').value = ev.notes || '';
+  pickedColour = ev.colour || 'blue'; paintSwatches(); syncTimeRow();
+  $('del').hidden = ev.source === 'google';
+  $('dmsg').textContent = '';
+  $('edlg').showModal(); $('f-title').focus();
+}
+
+async function saveEvent(){
+  const title = $('f-title').value.trim(), date = $('f-date').value;
+  if (!title) return msg('dmsg','Give the event a name.','bad');
+  if (!date)  return msg('dmsg','Pick a date.','bad');
+  const allDay = $('f-allday').checked;
+  const ev = {
+    id: editing ? editing.id : undefined,
+    title, allDay,
+    start: allDay ? date : date + 'T' + ($('f-start').value || '09:00'),
+    end:   allDay ? null : ($('f-end').value ? date + 'T' + $('f-end').value : null),
+    repeat: $('f-repeat').value,
+    until: $('f-repeat').value !== 'none' && $('f-until').value ? $('f-until').value : null,
+    colour: pickedColour,
+    notes: $('f-notes').value.trim(),
+    sharedWith: $('f-share').value.split(',').map(x => x.trim()).filter(Boolean)
+  };
+  $('save').disabled = true;
+  try { await TT.api('/api/calendar', { method:'POST', body:{ action:'save', event:ev } });
+    $('edlg').close(); await load();
+  } catch (e){ msg('dmsg', e.message, 'bad'); }
+  $('save').disabled = false;
+}
+async function deleteEvent(){
+  if (!editing || !confirm('Delete "' + editing.title + '"?')) return;
+  try { await TT.api('/api/calendar', { method:'POST', body:{ action:'delete', id: editing.id } });
+    $('edlg').close(); await load();
+  } catch (e){ msg('dmsg', e.message, 'bad'); }
+}
+function msg(id, text, cls){ const el = $(id); el.textContent = text; el.className = 'msg ' + (cls||''); }
+
+/* ── load ──────────────────────────────────────────────────────────────── */
+async function load(){
+  try {
+    const d = await TT.api('/api/calendar');
+    events = d.events || [];
+  } catch (e){ events = []; msg('gmsg', 'Could not load your events: ' + e.message, 'bad'); }
+  renderGrid(); renderUpcoming();
+}
+async function loadSubjects(){
+  examPick = TT.get('tt.calexams', null);
+  try {
+    const cached = TT.get('tt.cache', null);
+    let rows = cached && cached.timetable;
+    if (!rows){ const tt = await TT.apiGet({ email: TT.myEmail() }); rows = tt.timetable || []; }
+    const seen = new Set();
+    (rows || []).forEach(r => {
+      const n = String(r.CourseName || '').replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i,'')
+        .replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/,'').trim();
+      if (n) seen.add(n);
+    });
+    mySubjects = [...seen];
+  } catch { mySubjects = []; }
+  renderExams();
+}
+
+/* ── wiring ────────────────────────────────────────────────────────────── */
+$('prev').onclick  = () => { view.setMonth(view.getMonth()-1); renderGrid(); };
+$('next').onclick  = () => { view.setMonth(view.getMonth()+1); renderGrid(); };
+$('today').onclick = () => { view = new Date(today.getFullYear(), today.getMonth(), 1); renderGrid(); };
+$('add').onclick   = () => openNew(iso(today));
+$('save').onclick  = saveEvent;
+$('del').onclick   = deleteEvent;
+$('dclose').onclick = () => $('edlg').close();
+$('f-allday').onchange = syncTimeRow;
+$('f-repeat').onchange = syncTimeRow;
+$('gimport').onclick = async () => {
+  const url = $('gurl').value.trim();
+  if (!url) return msg('gmsg','Paste your secret iCal address first.','bad');
+  msg('gmsg','Importing…','');
+  $('gimport').disabled = true;
+  try {
+    const r = await TT.api('/api/calendar', { method:'POST', body:{ action:'import', url } });
+    msg('gmsg', r.imported ? ('Imported ' + r.imported + ' event' + (r.imported===1?'':'s') + '. The address was not saved.')
+                           : (r.message || 'Nothing to import.'), 'good');
+    $('gurl').value = '';                      // don't leave the secret sitting in the box
+    await load();
+  } catch (e){ msg('gmsg', e.message, 'bad'); }
+  $('gimport').disabled = false;
+};
+
+paintSwatches();
+loadSubjects();
+load();
+</script>
+<script src="settings.js"></script>
+</body>
+</html>

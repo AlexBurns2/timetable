@@ -1061,7 +1061,70 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Chemistry, physics and engineering expanded from the class resources (latest)
+## Calendar, plus skip / goals in the revision games (latest)
+
+### Calendar (new)
+
+`calendar.html` + `api/calendar.js`, with a tile on the home page. Month grid,
+click a day to add, click a chip to open, plus "Coming up".
+
+- **Events**: name, date, all-day or start/end times, **repeats** (daily,
+  weekdays, weekly, fortnightly, monthly, yearly) with an optional "repeat
+  until", **eight colour tags**, notes, and **sharing by school email** — the
+  recipient sees it on their own calendar, owned by you. Only the owner can edit
+  or delete; invalid addresses are dropped server-side.
+- **Exams are seeded** from the Year 11 final timetable (30 exams, including the
+  two handwritten corrections on the PDF — Society & Culture to 16:05, Software
+  Engineering moved to 12:00–13:45). Which ones show is **guessed from the
+  subjects on your timetable** and then fully correctable with tick boxes; the
+  choice lives in `tt.calexams`, so it syncs like every other preference. Exams
+  are client-side seed data, not rows, so they cost nothing to store.
+- **Everything syncs** — events live in Supabase keyed by your verified school
+  email, so they follow you between devices.
+
+**Google sync, and why it asks for an iCal address.** There is no Google login
+and no password: you paste the **"Secret address in iCal format"** from your own
+Google Calendar settings. That address is a read-only feed for one calendar,
+you can regenerate it at any time, and **it is never stored** — it is used for
+the single fetch and dropped, and the page clears the input afterwards. Only the
+resulting events are saved (as `source:'google'`, re-importing replaces them
+rather than duplicating).
+
+The fetch is **allowlisted to `https://calendar.google.com`**, which I checked
+deliberately: internal addresses (`169.254.169.254`), `localhost`, other hosts,
+and plain `http` are all rejected, so the endpoint can't be turned into an SSRF
+probe of the server's own network.
+
+New table:
+
+```sql
+create table calendar_event (
+  id text primary key, owner text not null, title text not null,
+  starts_at text not null, ends_at text, all_day boolean not null default false,
+  repeat text not null default 'none', repeat_until text,
+  colour text not null default 'blue', notes text,
+  shared_with jsonb not null default '[]', source text not null default 'user',
+  created_at timestamptz not null default now()
+);
+create index calendar_event_owner_idx on calendar_event (owner);
+```
+
+### Revision games
+
+- **Topic progress underlines removed** from the module/subtopic pills.
+- **Goals for endless topics.** A procedurally-generated pool has no total to
+  work towards, so the bar used to hide. Now it shows **"Set a goal"** — click it,
+  type a target, and the bar fills with the questions you complete against it
+  (green right, red wrong, grey remaining). Stored in `tt.rev_<key>_goal` /
+  `_tally`, so it syncs. Finite topics are unchanged.
+- **Skip on every question.** Reveals the answer and moves on, and deliberately
+  **costs nothing** — no score change, no streak break, and nothing written to
+  your history. That's the point: skipping honestly should beat guessing.
+- **Idle nudge.** If a question sits unanswered for five minutes, a line appears
+  beside Skip: *"No idea? Skipping costs you nothing — a wrong guess doesn't."*
+  The timer is cleared as soon as you answer or skip.
+
+## Chemistry, physics and engineering expanded from the class resources
 
 Built from the KISS Chemistry PhotoMasters (Modules 1-4), the NSW Physics Stage 6
 syllabus, and the Engineering Studies textbook (Engineering Fundamentals,

@@ -17,7 +17,7 @@ do it without the prior conversation. A visual version of the plan lives at
 > - Shared weekly Tetris leaderboard: `api/tetris.js` + `BUILD.tetris` — the
 >   same whoami-verified, service-role pattern (table `tetris_score`).
 >
-> **Tables to create** (SQL in SETUP.md): `prefs`, `daily_puzzle`, `daily_result`,
+> **Tables to create** (SQL in SETUP.md): `prefs`, `daily_puzzle`, `daily_result`, `calendar_event`,
 > `tetris_score`, `zen_score`, `game_score`, `game_state`, `sprint_best`,
 > `zen_board`, `shared_deck` (public flashcards), **`forum_post`** (home-page forum).
 > Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, `OWNER_EMAIL` (owner-only admin
@@ -534,3 +534,24 @@ Two invariants to keep if you add tasks:
   this — it caught nothing last run, but it is the first thing to break), and
 - test a wrong answer too; it is easy to write a `need` list so loose that
   `return True` passes.
+
+### 8.9 Calendar
+
+`calendar.html` + `api/calendar.js`, table `calendar_event`. Events are owned by a
+verified school email and can be shared to other emails; repeats are stored as a
+rule (`repeat` + `repeat_until`) and expanded client-side by `occursOn()` rather
+than as rows, so a daily event is one row forever.
+
+The Year 11 exam timetable is **client-side seed data** in `calendar.html`, not
+rows — which exams you see is guessed from your timetable subjects and corrected
+with tick boxes stored in `tt.calexams`.
+
+**Google import:** no OAuth, no password. The user pastes the secret iCal address
+from their own Google Calendar; the server fetches it once, parses the VEVENTs,
+saves the events with `source='google'`, and **never stores the URL**. Two things
+to preserve if you touch this:
+- the host allowlist (`ICS_HOSTS`) — without it this endpoint is an SSRF hole,
+  since it fetches a user-supplied URL from the server. Verified that internal
+  IPs, localhost, other hosts and plain http are all refused.
+- the re-import path deletes the previous `source='google'` rows first, so
+  syncing again updates rather than duplicates.
