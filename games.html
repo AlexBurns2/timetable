@@ -421,6 +421,7 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
   background:var(--panel-2);color:var(--text);white-space:pre;overflow-wrap:normal;overflow-x:auto;
 }
 .rvtyped textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.rvwhy{font-weight:400;font-size:13px;margin-top:5px;font-family:var(--font-num);color:var(--muted)}
 .rvans{
   font-family:var(--font-num);font-size:13px;line-height:1.55;white-space:pre;overflow-x:auto;
   margin:8px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
@@ -3085,7 +3086,7 @@ function revGame(host, opts){
   head(host, opts.title, opts.how, '<div id="rv"></div>');
   const box = $('rv'), sk = opts.statKey;
   const modular = !!opts.modules;
-  let score = 0, streak = 0, cur = null, answered = false;
+  let score = 0, streak = 0, cur = null, answered = false, checking = false;
   /* flat mode (Maths/Software): one topic pill row with a Mixed option */
   let topic = modular ? null : TT.get('tt.rev_'+sk, (opts.topics.length>1?'mix':opts.topics[0].id));
   if (!modular && topic!=='mix' && !opts.topics.some(t=>t.id===topic)) topic = opts.topics[0].id;
@@ -3106,7 +3107,7 @@ function revGame(host, opts){
      single press never advances twice. */
   function onEnter(e){
     const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
-    if (!isEnter || e.isComposing || e.altKey) return;
+    if (!isEnter || e.isComposing || e.altKey || checking) return;
     /* a focused module / subtopic pill keeps its own Enter, so keyboard users can
        still toggle topics rather than skipping the question */
     if (e.target && e.target.closest && e.target.closest('.rvsel, .rvsub')) return;
@@ -3116,9 +3117,12 @@ function revGame(host, opts){
          one press always advances exactly once */
       e.preventDefault(); nextQ(); return;
     }
-    if (e.target && e.target.id === 'rvta' && !(e.ctrlKey || e.metaKey)) return;
-    if (cur.typed && $('rvta')){ e.preventDefault(); submit($('rvta').value); }
-    else if (cur.input && $('rvin')){ e.preventDefault(); submit($('rvin').value); }
+    if (cur.typed){                       // you're writing Python — Enter is a newline
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if ($('rvta')){ e.preventDefault(); submit($('rvta').value); }
+      return;
+    }
+    if (cur.input && $('rvin')){ e.preventDefault(); submit($('rvin').value); }
     /* multiple choice has nothing to check until you pick an option */
   }
   document.addEventListener('keydown', onEnter);
@@ -3207,7 +3211,7 @@ function revGame(host, opts){
         if (keyed && !hist[sig] && !recentSet.includes(sig)) break;
       }
     }
-    q._topic = t.name; cur = q; answered = false;
+    q._topic = t.name; cur = q; answered = false; checking = false;
     recent.push(cur._sig); if (recent.length > RECENT_MAX) recent.shift();
     render();
   }
@@ -3229,6 +3233,7 @@ function revGame(host, opts){
     box.innerHTML = html; wireSel();
     $('sc').textContent = 'Score ' + score;
     if (cur.typed){ const ta = $('rvta'); ta.focus();
+      if (typeof PY !== 'undefined' && !PY.ready && !PY.dead) PY.warm();   // pre-download while they type
       $('rvgo').onclick = () => submit(ta.value);
       $('rvskip').onclick = () => submit('', null, true);      // give up → show the model answer
       ta.addEventListener('keydown', e => {                    // Tab indents instead of leaving the box
@@ -3247,10 +3252,29 @@ function revGame(host, opts){
     $('rvnext').onclick = nextQ;
   }
   function submit(val, btn, gaveUp){
-    if (answered) return; answered = true;
-    const ok = gaveUp ? false
+    if (answered || checking) return;
+    if (cur.typed && !gaveUp && !String(val).trim()){   // nothing typed — don't spend the question
+      const ta = $('rvta'); if (ta) ta.focus();
+      return;
+    }
+    /* write-code answers are actually executed, which takes a moment (and the
+       very first one downloads Python), so grade them asynchronously */
+    if (cur.acceptAsync && !gaveUp){
+      checking = true;
+      const fb = $('rvfb'); fb.className = 'rvfb';
+      fb.textContent = PY.ready ? 'Running your code…' : 'Starting Python — the first run downloads it…';
+      $('rvgo').disabled = true; if ($('rvskip')) $('rvskip').disabled = true;
+      cur.acceptAsync(String(val)).then(
+        r => { checking = false; finish(!!r.ok, false, r.detail, btn); },
+        () => { checking = false; finish(false, false, 'That could not be run.', btn); });
+      return;
+    }
+    finish(gaveUp ? false
       : (cur.typed || cur.input) ? (cur.accept ? cur.accept(String(val)) : normEq(val, cur.answer))
-      : (val === cur.answer);
+      : (val === cur.answer), gaveUp, null, btn);
+  }
+  function finish(ok, gaveUp, detail, btn){
+    if (answered) return; answered = true;
     if (ok){ score++; streak++; SFX.good(); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
     else { streak = 0; SFX.bad(); }
     if (cur._keyed){                                          // remember how this one went
@@ -3260,9 +3284,10 @@ function revGame(host, opts){
     }
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');
     if (cur.typed)        // code answers are multi-line — show them as a block
-      fb.innerHTML = (ok ? '✓ Looks right' : (gaveUp ? 'One way to write it:' : '✗ Not quite. One way to write it:')) +
-        '<pre class="rvans">' + esc(String(cur.answer)) + '</pre>' +
-        (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
+      fb.innerHTML = (ok ? '✓ Correct' : (gaveUp ? 'One way to write it:' : '✗ Not quite'))
+        + (detail ? '<div class="rvwhy">' + esc(detail) + '</div>' : '')
+        + (ok ? '' : '<pre class="rvans">' + esc(String(cur.answer)) + '</pre>')
+        + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     else
       fb.innerHTML = (ok ? '✓ Correct' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     if (cur.typed){ $('rvta').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
@@ -3383,89 +3408,223 @@ const normCode = s => String(s || '')
   .replace(/\s*([(),:;=+\-*/%<>\[\]!])\s*/g, '$1')           // tighten around punctuation
   .trim();
 
+/* Each task has:
+     need — parts every valid answer must contain (the signature, a return, …)
+     any  — a list of alternative approaches; ANY ONE fully matching is enough,
+            so `return n % 2 == 0` and an if/else both pass
+     ban  — patterns that defeat the point of the exercise (e.g. max() in the
+            "find the largest without max()" task)                              */
+/* Every write-code task carries `check`: Python assertions run after the
+   student's code, in the same namespace, so they can call what was defined.
+   `OUT` is whatever the student printed; `stdin` feeds a fake input().
+   These are what actually decide right or wrong — `need`/`any` below are only
+   the fallback for when Pyodide can't load, and `ban` still blocks answers that
+   sidestep the point of the exercise (sum() in the "add it with a loop" task). */
 const CODE_TASKS = [
   /* ---- easy: one idea each ---- */
   { id:'e-range', lv:1, task:'Write a loop that prints the numbers <b>0 to 4</b>, one per line.',
-    answer:'for i in range(5):\n    print(i)', need:[/for \w+ in range\(5\):/, /print\(/] },
+    answer:'for i in range(5):\n    print(i)',
+    check:"assert OUT.split() == ['0','1','2','3','4'], 'it printed: ' + repr(OUT.strip())",
+    need:[/print\(/], any:[[/range\(5\)/], [/range\(0,5\)/], [/while/, /<5|<=4/]] },
   { id:'e-double', lv:1, task:'Write a function <code>double(n)</code> that returns <b>n times 2</b>.',
-    answer:'def double(n):\n    return n * 2', need:[/def double\(n\):/, /return (n\*2|2\*n|n\+n)/] },
+    answer:'def double(n):\n    return n * 2',
+    check:"assert double(3) == 6, 'double(3) gave ' + repr(double(3))\nassert double(0) == 0\nassert double(-4) == -8",
+    need:[/def double\(n\):/, /return/], any:[[/n\*2/], [/2\*n/], [/n\+n/]] },
   { id:'e-add', lv:1, task:'Write a function <code>add(a, b)</code> that returns their <b>sum</b>.',
-    answer:'def add(a, b):\n    return a + b', need:[/def add\(a,b\):/, /return (a\+b|b\+a)/] },
+    answer:'def add(a, b):\n    return a + b',
+    check:"assert add(2, 3) == 5, 'add(2, 3) gave ' + repr(add(2, 3))\nassert add(-1, 1) == 0",
+    need:[/def add\(a,b\):/, /return/], any:[[/a\+b/], [/b\+a/], [/sum\(/]] },
   { id:'e-max', lv:1, task:'Write a function <code>largest(xs)</code> that returns the <b>biggest value</b> in the list.',
-    answer:'def largest(xs):\n    return max(xs)', need:[/def largest\(xs\):/, /return max\(xs\)/] },
+    answer:'def largest(xs):\n    return max(xs)',
+    check:"assert largest([3, 9, 2]) == 9, 'largest([3, 9, 2]) gave ' + repr(largest([3, 9, 2]))\nassert largest([-5, -2]) == -2\nassert largest([7]) == 7",
+    need:[/def largest\(xs\):/, /return/], any:[[/max\(xs\)/], [/for \w+ in xs/, /[<>]/], [/sorted\(/]] },
   { id:'e-len', lv:1, task:'Write a function <code>count(xs)</code> that returns <b>how many items</b> the list has.',
-    answer:'def count(xs):\n    return len(xs)', need:[/def count\(xs\):/, /return len\(xs\)/] },
+    answer:'def count(xs):\n    return len(xs)',
+    check:"assert count([1, 2, 3]) == 3, 'count([1, 2, 3]) gave ' + repr(count([1, 2, 3]))\nassert count([]) == 0",
+    need:[/def count\(xs\):/, /return/], any:[[/len\(xs\)/], [/for \w+ in xs/, /\+=1/]] },
   { id:'e-rev', lv:1, task:'Write a function <code>backwards(s)</code> that returns the string <b>reversed</b>.',
-    answer:'def backwards(s):\n    return s[::-1]', need:[/def backwards\(s\):/, /return s\[::-1\]/] },
+    answer:'def backwards(s):\n    return s[::-1]',
+    check:"assert backwards('abc') == 'cba', \"backwards('abc') gave \" + repr(backwards('abc'))\nassert backwards('') == ''\nassert backwards('a') == 'a'",
+    need:[/def backwards\(s\):/, /return/], any:[[/s\[::-1\]/], [/reversed\(s\)/], [/for \w+ in s/]] },
   { id:'e-even', lv:1, task:'Write a function <code>is_even(n)</code> that returns <b>True</b> only when n is even.',
-    answer:'def is_even(n):\n    return n % 2 == 0', need:[/def is_even\(n\):/, /return n%2==0/] },
+    answer:'def is_even(n):\n    return n % 2 == 0',
+    check:"assert is_even(4) == True, 'is_even(4) gave ' + repr(is_even(4))\nassert is_even(7) == False, 'is_even(7) gave ' + repr(is_even(7))\nassert is_even(0) == True\nassert is_even(-3) == False",
+    need:[/def is_even\(n\):/, /return/],
+    any:[[/n%2==0/], [/0==n%2/], [/not n%2/], [/n%2!=1/],
+         [/if n%2==0:/, /return True/, /return False/],
+         [/if n%2!=0:/, /return False/, /return True/],
+         [/if n%2==1:/, /return False/, /return True/]] },
   { id:'e-input', lv:1, task:'Read a name from the user and print <b>Hello</b> followed by that name.',
-    answer:"name = input()\nprint('Hello ' + name)", need:[/=input\(\)/, /print\(/] },
-  { id:'e-sum', lv:1, task:'Write a function <code>total(xs)</code> that returns the <b>sum</b> of the list, using a built-in.',
-    answer:'def total(xs):\n    return sum(xs)', need:[/def total\(xs\):/, /return sum\(xs\)/] },
+    answer:"name = input()\nprint('Hello ' + name)",
+    stdin:['Ana'],
+    check:"assert 'Ana' in OUT, 'it printed: ' + repr(OUT.strip())\nassert 'ello' in OUT, 'it printed: ' + repr(OUT.strip())",
+    need:[/input\(\)/, /print\(/] },
+  { id:'e-sum', lv:1, task:'Write a function <code>total(xs)</code> that returns the <b>sum</b> of the list.',
+    answer:'def total(xs):\n    return sum(xs)',
+    check:"assert total([1, 2, 3]) == 6, 'total([1, 2, 3]) gave ' + repr(total([1, 2, 3]))\nassert total([]) == 0",
+    need:[/def total\(xs\):/, /return/], any:[[/sum\(xs\)/], [/for \w+ in xs/]] },
   { id:'e-area', lv:1, task:'Write a function <code>area(w, h)</code> that returns the <b>area of a rectangle</b>.',
-    answer:'def area(w, h):\n    return w * h', need:[/def area\(w,h\):/, /return (w\*h|h\*w)/] },
+    answer:'def area(w, h):\n    return w * h',
+    check:"assert area(3, 4) == 12, 'area(3, 4) gave ' + repr(area(3, 4))\nassert area(0, 5) == 0",
+    need:[/def area\(w,h\):/, /return/], any:[[/w\*h/], [/h\*w/]] },
 
   /* ---- medium: classes, methods, loops that build something ---- */
   { id:'m-dog', lv:2, task:'Define a class <code>Dog</code> with a method <code>speak()</code> that returns <b>\'Woof\'</b>.',
     answer:"class Dog:\n    def speak(self):\n        return 'Woof'",
+    check:"d = Dog()\nassert d.speak().lower() == 'woof', 'speak() gave ' + repr(d.speak())",
     need:[/class Dog:/, /def speak\(self\):/, /return 'woof'/i] },
   { id:'m-init', lv:2, task:'Define a class <code>Student</code> whose constructor takes a <code>name</code> and stores it on the object.',
     answer:'class Student:\n    def __init__(self, name):\n        self.name = name',
+    check:"s = Student('Ana')\nassert s.name == 'Ana', 'the name was stored as ' + repr(getattr(s, 'name', None))",
     need:[/class Student:/, /def __init__\(self,name\):/, /self.name=name/] },
   { id:'m-loopsum', lv:2, task:'Write <code>total(xs)</code> that adds the list up <b>with a loop</b> — no <code>sum()</code>.',
     answer:'def total(xs):\n    t = 0\n    for x in xs:\n        t += x\n    return t',
-    need:[/def total\(xs\):/, /for \w+ in xs:/, /(\+=|=\w+\+\w+)/, /return/] },
+    check:"assert total([1, 2, 3]) == 6, 'total([1, 2, 3]) gave ' + repr(total([1, 2, 3]))\nassert total([]) == 0",
+    need:[/def total\(xs\):/, /for \w+ in xs:/, /return/], ban:[/sum\(/],
+    any:[[/\+=/], [/=\w+\+\w+/]] },
   { id:'m-vowels', lv:2, task:'Write <code>count_vowels(s)</code> that returns how many vowels the string contains.',
     answer:"def count_vowels(s):\n    n = 0\n    for ch in s:\n        if ch in 'aeiou':\n            n += 1\n    return n",
-    need:[/def count_vowels\(s\):/, /for \w+ in s:/, /aeiou/i, /return/] },
+    check:"assert count_vowels('hello') == 2, \"count_vowels('hello') gave \" + repr(count_vowels('hello'))\nassert count_vowels('xyz') == 0\nassert count_vowels('aeiou') == 5",
+    need:[/def count_vowels\(s\):/, /return/],
+    any:[[/aeiou/i], [/'a','e'/i], [/\['a'/i], [/'a'.*'e'.*'i'/i]] },
   { id:'m-squares', lv:2, task:'Write <code>squares(xs)</code> that returns a <b>new list</b> of every value squared.',
     answer:'def squares(xs):\n    return [x * x for x in xs]',
-    need:[/def squares\(xs\):/, /(for \w+ in xs)/, /return/] },
+    check:"assert squares([1, 2, 3]) == [1, 4, 9], 'squares([1, 2, 3]) gave ' + repr(squares([1, 2, 3]))\nassert squares([]) == []",
+    need:[/def squares\(xs\):/, /return/], any:[[/for \w+ in xs/], [/map\(/]] },
   { id:'m-evens', lv:2, task:'Write <code>evens(xs)</code> that returns a new list of only the <b>even</b> numbers.',
     answer:'def evens(xs):\n    return [x for x in xs if x % 2 == 0]',
-    need:[/def evens\(xs\):/, /%2==0/, /return/] },
+    check:"assert evens([1, 2, 3, 4]) == [2, 4], 'evens([1, 2, 3, 4]) gave ' + repr(evens([1, 2, 3, 4]))\nassert evens([1, 3]) == []",
+    need:[/def evens\(xs\):/, /return/],
+    any:[[/%2==0/], [/%2!=1/], [/not \w+%2/], [/filter\(/]] },
   { id:'m-nomax', lv:2, task:'Write <code>biggest(xs)</code> that finds the largest value <b>without</b> using <code>max()</code>.',
     answer:'def biggest(xs):\n    best = xs[0]\n    for x in xs:\n        if x > best:\n            best = x\n    return best',
-    need:[/def biggest\(xs\):/, /for \w+ in xs:/, /[<>]/, /return/] },
+    check:"assert biggest([3, 9, 2]) == 9, 'biggest([3, 9, 2]) gave ' + repr(biggest([3, 9, 2]))\nassert biggest([-5, -2]) == -2\nassert biggest([7]) == 7",
+    need:[/def biggest\(xs\):/, /return/], ban:[/max\(/],
+    any:[[/for \w+ in xs/, /[<>]/], [/sorted\(/]] },
   { id:'m-rect', lv:2, task:'Define a class <code>Rectangle</code> that stores <code>w</code> and <code>h</code>, with an <code>area()</code> method.',
     answer:'class Rectangle:\n    def __init__(self, w, h):\n        self.w = w\n        self.h = h\n\n    def area(self):\n        return self.w * self.h',
-    need:[/class Rectangle:/, /def __init__\(self,w,h\):/, /def area\(self\):/, /return self\.(w\*self\.h|h\*self\.w)/] },
+    check:"r = Rectangle(3, 4)\nassert r.area() == 12, 'Rectangle(3, 4).area() gave ' + repr(r.area())\nassert Rectangle(0, 5).area() == 0",
+    need:[/class Rectangle:/, /def __init__\(self,w,h\):/, /def area\(self\):/, /self\.w/, /self\.h/, /\*/, /return/] },
   { id:'m-bank', lv:2, task:'Define a class <code>BankAccount</code> starting at a balance of 0, with a <code>deposit(amount)</code> method that adds to it.',
     answer:'class BankAccount:\n    def __init__(self):\n        self.balance = 0\n\n    def deposit(self, amount):\n        self.balance += amount',
-    need:[/class BankAccount:/, /def deposit\(self,\w+\):/, /self.balance(\+=|=self.balance\+)/] },
+    check:"b = BankAccount()\nassert b.balance == 0, 'a new account started at ' + repr(b.balance)\nb.deposit(50)\nassert b.balance == 50, 'after depositing 50 the balance was ' + repr(b.balance)\nb.deposit(25)\nassert b.balance == 75",
+    need:[/class BankAccount:/, /def deposit\(self,\w+\):/],
+    any:[[/self.balance\+=/], [/self.balance=self.balance\+/]] },
   { id:'m-words', lv:2, task:'Write <code>word_count(sentence)</code> that returns <b>how many words</b> the sentence has.',
     answer:'def word_count(sentence):\n    return len(sentence.split())',
-    need:[/def word_count\(sentence\):/, /split\(\)/, /len\(/] },
+    check:"assert word_count('a b c') == 3, \"word_count('a b c') gave \" + repr(word_count('a b c'))\nassert word_count('hello   world') == 2",
+    need:[/def word_count\(sentence\):/, /split\(\)/, /return/],
+    any:[[/len\(/], [/for \w+ in/, /\+=1/]] },
 
   /* ---- hard: several steps held together ---- */
   { id:'h-magic', lv:3, task:'Write <code>is_magic(grid)</code> for a square 2-D list — return <b>True</b> only if every row, every column and both diagonals add to the same total.',
     answer:'def is_magic(grid):\n    n = len(grid)\n    target = sum(grid[0])\n    for row in grid:\n        if sum(row) != target:\n            return False\n    for c in range(n):\n        if sum(grid[r][c] for r in range(n)) != target:\n            return False\n    if sum(grid[i][i] for i in range(n)) != target:\n        return False\n    if sum(grid[i][n - 1 - i] for i in range(n)) != target:\n        return False\n    return True',
-    need:[/def is_magic\(grid\):/, /sum\(/, /for /, /return/] },
+    check:"assert is_magic([[2,7,6],[9,5,1],[4,3,8]]) == True, 'a real magic square was rejected'\nassert is_magic([[1,2,3],[4,5,6],[7,8,9]]) == False, 'rows 6/15/24 are not a magic square'\nassert is_magic([[1,1],[1,1]]) == True\nassert is_magic([[2,7,6],[9,5,1],[4,8,3]]) == False, 'that grid fails on the columns/diagonals'",
+    need:[/def is_magic\(grid\):/, /for/, /return/], any:[[/sum\(/], [/\+=/]] },
   { id:'h-pal', lv:3, task:'Write <code>is_palindrome(s)</code> that ignores <b>spaces and capitals</b> — "Never odd or even" is a palindrome.',
     answer:"def is_palindrome(s):\n    t = s.lower().replace(' ', '')\n    return t == t[::-1]",
-    need:[/def is_palindrome\(s\):/, /lower\(\)/, /\[::-1\]/, /return/] },
+    check:"assert is_palindrome('Never odd or even') == True, 'that one is a palindrome once you drop spaces and capitals'\nassert is_palindrome('hello') == False\nassert is_palindrome('Racecar') == True, 'capitals should be ignored'",
+    need:[/def is_palindrome\(s\):/, /return/, /lower\(\)|upper\(\)/, /replace\(|join\(|split\(\)|isalnum/],
+    any:[[/\[::-1\]/], [/reversed\(/]] },
   { id:'h-fizz', lv:3, task:'Write <code>fizzbuzz(n)</code> that prints 1 to n, but <b>Fizz</b> for multiples of 3, <b>Buzz</b> for 5 and <b>FizzBuzz</b> for both.',
     answer:"def fizzbuzz(n):\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            print('FizzBuzz')\n        elif i % 3 == 0:\n            print('Fizz')\n        elif i % 5 == 0:\n            print('Buzz')\n        else:\n            print(i)",
-    need:[/def fizzbuzz\(n\):/, /%3|%15/, /%5|%15/, /fizz/i, /buzz/i] },
+    check:"import io, contextlib\n_b = io.StringIO()\nwith contextlib.redirect_stdout(_b):\n    fizzbuzz(15)\n_got = [w.strip().lower() for w in _b.getvalue().split()]\n_want = ['1','2','fizz','4','buzz','fizz','7','8','fizz','buzz','11','fizz','13','14','fizzbuzz']\nassert _got == _want, 'fizzbuzz(15) printed ' + repr(_got)",
+    need:[/def fizzbuzz\(n\):/, /fizz/i, /buzz/i, /for/, /%3|%15/, /%5|%15/] },
   { id:'h-bubble', lv:3, task:'Write <code>bubble_sort(xs)</code> that sorts the list <b>in place</b> with nested loops and returns it.',
     answer:'def bubble_sort(xs):\n    for i in range(len(xs)):\n        for j in range(len(xs) - 1 - i):\n            if xs[j] > xs[j + 1]:\n                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n    return xs',
-    need:[/def bubble_sort\(xs\):/, /for .*for /, /[<>]/, /return/] },
+    check:"assert bubble_sort([3, 1, 2]) == [1, 2, 3], 'bubble_sort([3, 1, 2]) gave ' + repr(bubble_sort([3, 1, 2]))\nassert bubble_sort([]) == []\nassert bubble_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]",
+    need:[/def bubble_sort\(xs\):/, /for .*for /, /[<>]/, /return/], ban:[/sorted\(|\.sort\(/] },
   { id:'h-second', lv:3, task:'Write <code>second_largest(xs)</code> that returns the <b>second biggest</b> value in the list.',
     answer:'def second_largest(xs):\n    return sorted(set(xs))[-2]',
-    need:[/def second_largest\(xs\):/, /(sorted|for )/, /return/] },
+    check:"assert second_largest([3, 9, 2]) == 3, 'second_largest([3, 9, 2]) gave ' + repr(second_largest([3, 9, 2]))\nassert second_largest([1, 2]) == 1\nassert second_largest([10, 4, 7]) == 7",
+    need:[/def second_largest\(xs\):/, /return/], any:[[/sorted\(/], [/for \w+ in xs/], [/max\(/]] },
   { id:'h-inherit', lv:3, task:'Define <code>Animal</code> with a <code>speak()</code> method, then <code>Dog</code> which <b>inherits</b> from it and <b>overrides</b> <code>speak()</code> to return \'Woof\'.',
     answer:"class Animal:\n    def speak(self):\n        return '...'\n\nclass Dog(Animal):\n    def speak(self):\n        return 'Woof'",
-    need:[/class Animal:/, /class Dog\(Animal\):/, /def speak\(self\):.*def speak\(self\):/] },
+    check:"d = Dog()\nassert isinstance(d, Animal), 'Dog should inherit from Animal'\nassert d.speak().lower() == 'woof', 'Dog().speak() gave ' + repr(d.speak())\nassert Dog.speak is not Animal.speak, 'Dog should override speak(), not just inherit it'",
+    need:[/class Animal:/, /class Dog\(Animal\):/, /def speak\(self\):.*def speak\(self\):/, /return 'woof'/i] },
   { id:'h-freq', lv:3, task:'Write <code>count_words(text)</code> that returns a <b>dictionary</b> mapping each word to how many times it appears.',
     answer:'def count_words(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 1\n    return counts',
-    need:[/def count_words\(text\):/, /split\(\)/, /(\{\}|dict\(\))/, /return/] }
+    check:"_r = count_words('a b a')\nassert _r['a'] == 2, \"count_words('a b a') gave \" + repr(dict(_r))\nassert _r['b'] == 1\nassert len(_r) == 2",
+    need:[/def count_words\(text\):/, /split\(\)/, /return/],
+    any:[[/\{\}/], [/dict\(\)/], [/Counter\(/], [/setdefault/], [/\.get\(/]] }
 ];
+
+/* ── the Pyodide worker, lazily started ────────────────────────────────
+   Grading runs the student's code for real. The worker keeps the download and
+   any endless loop off the main thread; if it can't load (offline, blocked)
+   `dead` goes true and genWrite falls back to the pattern check. */
+const PY = (() => {
+  let worker = null, seq = 0, ready = false, dead = false;
+  const pending = new Map();
+  function fail(err){
+    [...pending.values()].forEach(p => { clearTimeout(p.timer); p.reject(err); });
+    pending.clear();
+  }
+  function spawn(){
+    try { worker = new Worker('pyworker.js'); }
+    catch { dead = true; return false; }
+    worker.onmessage = e => {
+      const m = e.data || {}, p = pending.get(m.id);
+      if (m.fatal) dead = true;
+      if (!p) return;
+      pending.delete(m.id); clearTimeout(p.timer);
+      if (m.fatal) p.reject(new Error(m.fatal)); else { ready = true; p.resolve(m); }
+    };
+    worker.onerror = () => { dead = true; fail(new Error('python unavailable')); };
+    return true;
+  }
+  function send(msg, ms){
+    if (dead) return Promise.reject(new Error('python unavailable'));
+    if (!worker && !spawn()) return Promise.reject(new Error('python unavailable'));
+    const id = ++seq;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        try { worker.terminate(); } catch {}
+        worker = null; ready = false;            // a fresh one next time
+        reject(new Error('timeout'));
+      }, ms);
+      pending.set(id, { resolve, reject, timer });
+      worker.postMessage(Object.assign({ id }, msg));
+    });
+  }
+  return {
+    get dead(){ return dead; },
+    get ready(){ return ready; },
+    warm(){ return send({ warm:true }, 120000).then(()=>true).catch(()=>false); },
+    /* generous while Pyodide is still downloading, tight once it's up so an
+       endless loop is caught quickly */
+    run(src, check, stdin){ return send({ src, check, stdin }, ready ? 12000 : 120000); }
+  };
+})();
+
 function genWrite(lv){
   const t = pk(CODE_TASKS.filter(x => x.lv === lv));
-  return { q:t.task, typed:true, answer:t.answer, key:'write:'+t.id,
-    accept: v => { const c = normCode(v); return c.length > 4 && t.need.every(re => re.test(c)); },
-    note:'Checked for the key parts of a working answer — names, spacing and quote style are up to you.' };
+  const patternOK = c =>
+    t.need.every(re => re.test(c)) && (!t.any || t.any.some(g => g.every(re => re.test(c))));
+  return {
+    q:t.task, typed:true, answer:t.answer, key:'write:'+t.id,
+    note:'Your code is run against the task\u2019s test cases.',
+    acceptAsync: async v => {
+      const c = normCode(v);
+      if (c.length < 5) return { ok:false, detail:'Write something first.' };
+      if (t.ban && t.ban.some(re => re.test(c)))
+        return { ok:false, detail:'That uses something this task asks you to do without.' };
+      if (t.check && !PY.dead){
+        try {
+          const r = await PY.run(v, t.check, t.stdin || null);
+          return r.ok ? { ok:true, detail:'Every test case passed.' }
+                      : { ok:false, detail:r.err };
+        } catch (e){
+          if (e && e.message === 'timeout')
+            return { ok:false, detail:'That took too long to run — is there a loop that never ends?' };
+          /* Pyodide unavailable — fall through to the pattern check */
+        }
+      }
+      return { ok:patternOK(c),
+        detail:'Python couldn\u2019t load, so this was checked against the shape of an answer instead.' };
+    }
+  };
 }
 
 /* paradigms — what kind of program is this? */

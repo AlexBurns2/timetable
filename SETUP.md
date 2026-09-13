@@ -1061,7 +1061,81 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Header and home-page tidy-up (latest)
+## Write-code answers are actually executed (Pyodide) (latest)
+
+Write-code answers are now **run for real** against the task's test cases instead
+of being pattern-matched, so correctness is judged by behaviour.
+
+- **`pyworker.js`** (new, project root) is a Web Worker that loads **Pyodide
+  0.26.4** from jsdelivr. A worker rather than the main thread for two reasons:
+  the runtime is a ~10 MB download, and a student's `while True:` would otherwise
+  freeze the tab — in a worker we just `terminate()` it. Student code runs inside
+  Pyodide's sandbox with no DOM, network or page access; `input()` is stubbed from
+  the task's `stdin`, and `print()` output is captured into `OUT`.
+- Each task carries a **`check`**: Python assertions run after the student's code
+  in the same namespace, with messages that name the failing case. A wrong answer
+  now reads *"AssertionError: is_even(7) gave True"* rather than "Not quite".
+- Pyodide is **pre-warmed** when a write-code question renders, so the download
+  overlaps with typing. First check shows "Starting Python — the first run
+  downloads it…", later ones "Running your code…". It booted in ~2 s on a warm
+  connection.
+- **Timeout**: 12 s once loaded (120 s while still downloading). An endless loop is
+  killed and reported as *"is there a loop that never ends?"*; the worker is
+  respawned for the next attempt.
+- **Fallback**: if Pyodide can't load (offline, CDN blocked at school) the old
+  `need`/`any` pattern check still grades, and says so in the feedback. `ban`
+  still runs first either way, so "without `max()`" tasks stay honest.
+- Grading is async now, so `revGame` gained a `checking` flag: Enter won't skip
+  past a result that is still being computed, and the question isn't marked
+  answered until the run returns.
+- Two fixes found while testing: pressing Enter with focus **outside** the code box
+  used to submit a blank answer and burn the question — code answers now submit
+  only on **Ctrl/Cmd+Enter** (plain Enter is a newline, as it must be), and a blank
+  answer no longer consumes the question at all.
+
+Verified: all 27 model answers pass when executed; 25 hand-written cases behave,
+including ones **pattern matching got wrong** — `is_magic` that only checks rows,
+`largest` using `max(xs[1:])`, `is_even` that always returns `True`, and a `Dog`
+that inherits without overriding are all now correctly rejected, while a
+`Counter`-based word count, a `while` loop, and both if/else orderings pass.
+Bans, empty input and the infinite-loop timeout all behave.
+
+Deploy: ship `games.html` **and the new `pyworker.js`** (a static root file — not
+an API route). No table or env changes.
+
+## Write-code checker accepts any valid approach
+
+**Bug:** a correct `is_even` written with `if n % 2 == 0: return True else: return
+False` was marked wrong. The checker's `need` list meant *every* pattern must
+appear, which pinned each task to one specific implementation — so any other
+valid way of writing it failed.
+
+**Fix:** tasks now describe several acceptable approaches rather than one.
+
+```js
+need — parts every valid answer must have (the signature, a return, …)
+any  — a list of alternative approaches; ANY ONE fully matching passes
+ban  — patterns that defeat the exercise (max() in "find the largest without max()")
+```
+
+So `return n % 2 == 0`, `return not n % 2`, and both if/else orderings all pass,
+while `return n % 2 == 1` and a renamed function still fail. The same widening was
+applied across every task: `largest` accepts `max()`, a loop or `sorted()`;
+`count` accepts `len()` or a counting loop; `backwards` accepts slicing,
+`reversed()` or a loop; the range loop accepts `while`; `evens` accepts a
+comprehension or an append loop; `count_words` accepts `{}`, `dict()`, `.get()`,
+`setdefault` or `Counter`. `ban` keeps the "no `sum()`" and "no `max()`" tasks
+honest, and `bubble_sort` now rejects `sorted()`.
+
+Regression: 28 cases covering alternative-but-correct answers and wrong answers
+all behave, and all 27 model answers still pass their own checkers.
+
+**Known limit:** this is pattern matching, not execution — there's no Python
+interpreter in the browser. It can still accept a wrong answer that happens to
+contain the right pieces. If that becomes a problem the honest fix is running the
+code for real (Pyodide), which would work on Vercel but costs a multi-MB download.
+
+## Header and home-page tidy-up
 
 - **Settings gear everywhere, no separate dark-mode button.** Games, Notes and
   Resources had a light/dark toggle in the top right; they now have the same
