@@ -190,7 +190,7 @@ select option{ background:#ffffff; color:#16181d; }
 }
 [data-skin="swiss"] .lesson{border-top:5px solid var(--c,var(--accent))}
 [data-skin="swiss"] .lesson:hover{background:var(--panel-2)}
-[data-skin="swiss"] .colhead .dow{text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+[data-skin="swiss"] .colhead .dow{text-transform:uppercase;letter-spacing:.06em;font-size:0.75rem}
 
 /* ── TERMINAL ─ phosphor CRT ───────────────────────────────────── */
 [data-skin="terminal"],[data-skin="terminal"][data-mode="light"]{
@@ -468,13 +468,13 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
   --line:#d9d2c4; --text:#f2ede1; --muted:#a79d8c; --accent:#e0655a;
 }
 [data-skin="newsprint"] .lesson{border-top:3px double var(--line)}
-[data-skin="newsprint"] .lesson .s{font-size:15.5px;line-height:1.1}
+[data-skin="newsprint"] .lesson .s{font-size:0.96875rem;line-height:1.1}
 [data-skin="newsprint"] .lesson .r{
   font-variant:small-caps;letter-spacing:.06em;font-weight:400;
 }
 [data-skin="newsprint"] .lesson .t{font-style:italic}
 [data-skin="newsprint"] .dayhead .dow{
-  font-variant:small-caps;letter-spacing:.09em;font-size:17px;
+  font-variant:small-caps;letter-spacing:.09em;font-size:1.0625rem;
 }
 [data-skin="newsprint"] .dayhead .rule{height:1px;background:var(--line);opacity:1}
 [data-skin="newsprint"] .dayhead.today .rule{height:3px}

@@ -19,7 +19,7 @@ const LS = { skin:'tt.skin', mode:'tt.mode', custom:'tt.custom', creds:'tt.creds
 const apply = () => TTx.apply(TTx.readState());
 const $ = id => document.getElementById(id);
 
-let skin   = get(LS.skin, 'classic');
+let skin   = get(LS.skin, 'plain');
 let custom = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
 let creds  = get(LS.creds, null);
 
@@ -60,7 +60,7 @@ host.innerHTML =
       '</div>' +
     '</div>' +
     '<div class="dlg-f dlg-f2">' +
-      '<div class="tabbtns">' +
+      '<div class="tabbtns" id="moresettings">' +
         '<button class="btn" type="button" id="openA11y">Access</button>' +
         '<button class="btn" type="button" id="openDisplay">Display</button>' +
       '</div>' +
@@ -103,7 +103,7 @@ document.body.appendChild(host);
 
 /* ── appearance ── */
 function renderSkins(){
-  skin = get(LS.skin, 'classic');
+  skin = get(LS.skin, 'plain');
   const box = $('s_skins'); box.innerHTML = '';
   SKINS.forEach(s => {
     const b = document.createElement('button');
@@ -117,7 +117,7 @@ function renderSkins(){
 
 /* ── custom theme ── */
 function renderCustom(){
-  const on = get(LS.skin, 'classic') === 'custom';
+  const on = get(LS.skin, 'plain') === 'custom';
   $('s_customwrap').hidden = !on;
   if (!on) return;
   custom = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
@@ -209,7 +209,12 @@ $('openDisplay').onclick = () => { renderDisplay(); $('setDlg').close(); $('setD
 document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => {
   b.closest('dialog').close(); openSettings(); });
 
-function openSettings(){ renderSkins(); renderCustom(); renderCreds(); renderModeBtn(); $('setDlg').showModal(); }
+function openSettings(){
+  renderSkins(); renderCustom(); renderCreds(); renderModeBtn();
+  $('setDlg').showModal();
+  /* finding Settings on your own retires the step that points at it */
+  if (window.Tour){ Tour.mark('settings'); Tour.start('settings'); }
+}
 
 /* the home page's gear opens Settings now */
 const gear = $('themebtn');

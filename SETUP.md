@@ -1127,6 +1127,71 @@ time, with a now-line on today and overlapping events split into columns.
 are resolved through ICU rather than assumed to be UTC — an event at 4pm Sydney
 imports as 4pm, including either side of a daylight-saving switch.
 
+## Revision has its own page
+
+The revision quizzes and flashcards moved off the games page onto
+**`revision.html`**, linked from a Revision tile on the home page. It shows every
+subject at once in a plain grid, rather than the side-scrolling shelves, because
+when you sit down to revise you want to pick a subject rather than browse.
+
+The games page keeps the shelves for Timetable and Arcade, unchanged.
+
+Under the hood both pages run the same code: `games.html`'s CSS and JS were moved
+into `games.css` and `games.js`, and `revision.html` loads the same two files with
+`<body data-page="revision">`. Nothing was duplicated, and the JS is now cached
+across both pages instead of being re-parsed inline on each visit.
+
+## First-run tutorials
+
+The first time someone uses a part of the site, a short tutorial points at it:
+one highlighted element and a caption. Tap anywhere, press Next, or hit Enter to
+move on; Skip or Escape dismisses the rest.
+
+| Where | Steps |
+|---|---|
+| Timetable | the email box, the current week, the week arrows, Settings, Home |
+| Settings (either page) | the appearance picker, the buttons along the bottom |
+| Home page | Settings, if the timetable hasn't already covered it |
+| Games | one demonstration that the shelves scroll sideways |
+
+Nothing appears until you are signed in. On the timetable it waits for a
+timetable that actually loaded, so it never captions the sign-in screen, and it
+starts straight after a first sign-in through that screen.
+
+Each step is shown **once ever, per person, not per device**, so signing in on a
+school computer doesn't replay them. Progress lives in a new table:
+
+```sql
+create table onboarding (
+  email      text primary key,
+  seen       jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+```
+
+Step ids are merged rather than replaced, which is what lets the Settings step be
+offered from two places and still appear only once. Opening Settings yourself
+counts as having found it, so the tutorial never appears afterwards.
+
+**On the moderator page**, the Signed-in users tab now shows how far each person
+got, as a small bar and an `n/8` count, with a total on the summary line. Useful
+for telling "nobody can find it" apart from "nobody wants it".
+
+## Text size actually does something now
+
+The Text size slider under ⚙ → Access set a root font size, but every size on the
+site was written in pixels, so nothing moved. All of them are now in `rem`, which
+is the unit that responds to it. Rendering at 100% is unchanged.
+
+The compact timetable also grows with the text: its cards are positioned by clock
+time from JavaScript, so bigger type in a card of fixed height would simply
+overflow. The pixels-per-minute figure is scaled by the setting instead.
+
+## Plain is the default theme again
+
+New visitors get Plain, and Plain sits before Classic in the appearance picker.
+If you have already picked a theme, nothing changes.
+
 ### Revision games
 
 - **Topic progress underlines removed** from the module/subtopic pills.

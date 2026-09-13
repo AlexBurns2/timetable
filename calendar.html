@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="classic" data-mode="light">
+<html lang="en" data-skin="plain" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Calendar — MSC Unofficial</title>
+<title>Calendar · MSC Unofficial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -15,17 +15,17 @@
 <style>
 /* ── toolbar ── */
 .calbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}
-.calbar h2{margin:0;font-family:var(--font-display);font-size:20px;min-width:180px}
+.calbar h2{margin:0;font-family:var(--font-display);font-size:1.25rem;min-width:180px}
 .calbar .grow{flex:1}
 .arrowbtn2{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  width:34px;height:34px;cursor:pointer;color:var(--text);font-size:17px;line-height:1;flex:none}
+  width:34px;height:34px;cursor:pointer;color:var(--text);font-size:1.0625rem;line-height:1;flex:none}
 .arrowbtn2:hover{background:var(--panel-2)}
-#viewsel{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);
+#viewsel{font:inherit;font-size:0.875rem;padding:8px 10px;border:1px solid var(--line);
   border-radius:var(--radius);background:var(--panel);color:var(--text);cursor:pointer}
 
 /* ── month grid: every cell identical ── */
 .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.dow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+.dow{font-size:0.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--muted);text-align:center;padding:3px 0;min-width:0}
 .day{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
   height:108px;padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;
@@ -33,9 +33,9 @@
 .day:hover{background:var(--panel-2);border-color:var(--accent)}
 .day.out{opacity:.42}
 .day.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.dnum{font-size:12px;font-weight:700;font-family:var(--font-num);color:var(--muted);flex:none}
+.dnum{font-size:0.75rem;font-weight:700;font-family:var(--font-num);color:var(--muted);flex:none}
 .day.today .dnum{color:var(--accent)}
-.chip{font-size:11px;line-height:1.3;padding:2px 6px;border-radius:5px;color:#fff;flex:none;
+.chip{font-size:0.6875rem;line-height:1.3;padding:2px 6px;border-radius:5px;color:#fff;flex:none;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;min-width:0}
 .chip.more{background:none!important;color:var(--muted);padding-left:2px}
 
@@ -45,27 +45,27 @@
 .tghead .gut{border-right:1px solid var(--line)}
 .tgcol{padding:7px 6px;text-align:center;min-width:0;border-right:1px solid var(--line)}
 .tgcol:last-child{border-right:0}
-.tgcol .dw{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.tgcol .dd{font-size:17px;font-weight:700;font-family:var(--font-num);line-height:1.25}
+.tgcol .dw{font-size:0.65625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tgcol .dd{font-size:1.0625rem;font-weight:700;font-family:var(--font-num);line-height:1.25}
 .tgcol.now .dd{color:#fff;background:var(--accent);border-radius:999px;display:inline-block;
   min-width:28px;padding:1px 6px}
 .allday{display:grid;border-bottom:1px solid var(--line);min-height:26px;background:var(--panel)}
-.allday .gut{border-right:1px solid var(--line);font-size:10px;color:var(--muted);
+.allday .gut{border-right:1px solid var(--line);font-size:0.625rem;color:var(--muted);
   padding:4px 6px;text-align:right}
 .adcell{padding:3px;border-right:1px solid var(--line);min-width:0;display:flex;flex-direction:column;gap:3px}
 .adcell:last-child{border-right:0}
 .tgbody{position:relative;overflow:auto;max-height:min(62vh,620px)}
 .tginner{display:grid;position:relative}
 .gutter{border-right:1px solid var(--line);position:relative}
-.hrlabel{position:absolute;right:6px;font-size:10.5px;color:var(--muted);transform:translateY(-50%);white-space:nowrap}
+.hrlabel{position:absolute;right:6px;font-size:0.65625rem;color:var(--muted);transform:translateY(-50%);white-space:nowrap}
 .tgday{position:relative;border-right:1px solid var(--line);min-width:0;cursor:pointer}
 .tgday:last-child{border-right:0}
 .hrline{position:absolute;left:0;right:0;border-top:1px solid var(--line);opacity:.55;pointer-events:none}
 .hrline.half{opacity:.25}
 .tgev{position:absolute;left:2px;right:2px;border-radius:5px;color:#fff;padding:2px 5px;
-  font-size:11px;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+  font-size:0.6875rem;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .tgev b{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tgev span{opacity:.9;font-size:10px}
+.tgev span{opacity:.9;font-size:0.625rem}
 .nowline{position:absolute;left:0;right:0;height:2px;background:#e5484d;pointer-events:none;z-index:4}
 .nowline::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;
   border-radius:50%;background:#e5484d}
@@ -73,11 +73,11 @@
 /* ── year view ── */
 .yeargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .ymon{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px}
-.ymon h4{margin:0 0 7px;font-size:13px;font-family:var(--font-display);cursor:pointer}
+.ymon h4{margin:0 0 7px;font-size:0.8125rem;font-family:var(--font-display);cursor:pointer}
 .ymon h4:hover{color:var(--accent)}
 .ycells{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-.ycells i{font-size:9px;color:var(--muted);text-align:center;font-style:normal}
-.ycell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10.5px;
+.ycells i{font-size:0.5625rem;color:var(--muted);text-align:center;font-style:normal}
+.ycell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:0.65625rem;
   border-radius:5px;cursor:pointer;position:relative;font-family:var(--font-num)}
 .ycell:hover{background:var(--panel-2)}
 .ycell.out{opacity:.3}
@@ -90,37 +90,37 @@
 .side{display:grid;grid-template-columns:1fr;gap:16px;margin-top:22px}
 @media (min-width:900px){ .side{grid-template-columns:1fr 1fr} }
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius);padding:16px}
-.card h3{margin:0 0 10px;font-size:15px;font-family:var(--font-display);display:flex;align-items:center;gap:8px}
-.card p.hint{margin:0 0 10px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.card h3{margin:0 0 10px;font-size:0.9375rem;font-family:var(--font-display);display:flex;align-items:center;gap:8px}
+.card p.hint{margin:0 0 10px;font-size:0.78125rem;color:var(--muted);line-height:1.5}
 .ibtn{width:19px;height:19px;flex:none;border-radius:50%;border:1px solid var(--line);
-  background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;
+  background:var(--panel-2);color:var(--muted);font-size:0.6875rem;font-weight:700;cursor:pointer;
   line-height:1;font-family:var(--font-num)}
 .ibtn:hover,.ibtn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
 .up{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow:auto}
-.uprow{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer}
+.uprow{display:flex;align-items:center;gap:9px;font-size:0.84375rem;cursor:pointer}
 .uprow:hover{color:var(--accent)}
 .updot{width:9px;height:9px;border-radius:50%;flex:none}
-.upwhen{color:var(--muted);font-size:12px;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
+.upwhen{color:var(--muted);font-size:0.75rem;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
 .exlist{display:flex;flex-direction:column;gap:4px;max-height:270px;overflow:auto}
-.exrow{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:3px 0;cursor:pointer}
+.exrow{display:flex;align-items:center;gap:9px;font-size:0.84375rem;padding:3px 0;cursor:pointer}
 .exrow input{accent-color:var(--accent);cursor:pointer}
-.exwhen{color:var(--muted);font-size:12px;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
+.exwhen{color:var(--muted);font-size:0.75rem;font-family:var(--font-num);margin-left:auto;white-space:nowrap}
 
 /* ── dialog ── */
 .fld{display:block;margin-bottom:10px}
-.fld span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-.fld input,.fld select,.fld textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
+.fld span{display:block;font-size:0.75rem;color:var(--muted);margin-bottom:4px}
+.fld input,.fld select,.fld textarea{width:100%;box-sizing:border-box;font:inherit;font-size:0.875rem;
   padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--panel-2);color:var(--text)}
 .fld textarea{resize:vertical;min-height:56px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .endrow{display:flex;gap:7px;align-items:stretch}
 .endrow input{flex:1;min-width:0}
-.nextday{white-space:nowrap;font-size:12px;padding:0 11px;border:1px solid var(--line);
+.nextday{white-space:nowrap;font-size:0.75rem;padding:0 11px;border:1px solid var(--line);
   border-radius:var(--radius);background:var(--panel-2);color:var(--muted);cursor:pointer}
 .nextday[aria-pressed="true"]{border-color:var(--accent);color:var(--accent-ink);background:var(--accent)}
 .daypick{display:flex;gap:5px;flex-wrap:wrap;margin:-4px 0 12px}
-.daypick button{width:38px;padding:6px 0;font-size:12px;border:1px solid var(--line);
+.daypick button{width:38px;padding:6px 0;font-size:0.75rem;border:1px solid var(--line);
   border-radius:var(--radius);background:var(--panel-2);color:var(--text);cursor:pointer}
 .daypick button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .swatches{display:flex;gap:7px;flex-wrap:wrap}
@@ -128,13 +128,13 @@
 .sw[aria-pressed="true"]{border-color:var(--text);transform:scale(1.12)}
 .dlgbtns{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
 .dlgbtns .grow{flex:1}
-.msg{font-size:13px;min-height:18px;margin-top:6px}
+.msg{font-size:0.8125rem;min-height:18px;margin-top:6px}
 .msg.bad{color:#e5484d}.msg.good{color:#2f9e44}
 dialog.cdlg{border:none;border-radius:var(--card-radius);padding:18px;max-width:520px;width:calc(100% - 28px);
   background:var(--panel);color:var(--text);box-shadow:var(--shadow-hi)}
 dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
 .dlgh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.dlgh h3{margin:0;font-size:17px;font-family:var(--font-display);flex:1}
+.dlgh h3{margin:0;font-size:1.0625rem;font-family:var(--font-display);flex:1}
 .del{color:#e5484d;background:none;border:1px solid var(--line);border-radius:var(--radius);
   padding:8px 12px;cursor:pointer}
 .del:hover{border-color:#e5484d}
@@ -148,11 +148,11 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
      month view becomes an at-a-glance strip per event; tap the day to read it */
   .chip{height:4px;padding:0;border-radius:2px;text-indent:-999px}
   .chip.more{display:none}
-  .dow{font-size:10px}
+  .dow{font-size:0.625rem}
   .tgcol{padding:5px 2px}
-  .tgcol .dd{font-size:15px}
-  .hrlabel{font-size:9px;right:3px}
-  .tgev{font-size:10px;padding:1px 3px}
+  .tgcol .dd{font-size:0.9375rem}
+  .hrlabel{font-size:0.5625rem;right:3px}
+  .tgev{font-size:0.625rem;padding:1px 3px}
   .tgev span{display:none}
   .calbar h2{min-width:100%;order:-1}
 }
@@ -205,10 +205,10 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
       <h3>Sync from Google Calendar
         <button class="ibtn" id="ginfo" type="button" aria-expanded="false"
                 title="How to find your iCal address">i</button></h3>
-      <p class="hint" id="ghelp" hidden>In Google Calendar open <b>Settings → your calendar → Integrate
-        calendar</b> and copy the <b>Secret address in iCal format</b>. That address only lets us read that
-        one calendar, it is used for this single fetch and <b>never saved</b>, and no Google password is
-        involved. Importing again replaces what was imported before.</p>
+      <p class="hint" id="ghelp" hidden>In Google Calendar, open <b>Settings → your calendar → Integrate
+        calendar</b> and copy the <b>Secret address in iCal format</b>. It only lets us read that one
+        calendar, we <b>never save it</b>, and it has nothing to do with your Google password. Importing
+        again replaces whatever came in last time.</p>
       <label class="fld"><span>Secret iCal address</span>
         <input id="gurl" type="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"></label>
       <div class="dlgbtns">

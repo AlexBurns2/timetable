@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Games · MSC Unofficial</title>
+<title>Revision · MSC Unofficial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -15,16 +15,17 @@
 <link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="games.css">
 </head>
-<body data-page="games">
+<!-- Same engine as the games page; data-page switches the grid from the
+     side-scrolling shelves to one plain grid with every subject on screen. -->
+<body data-page="revision">
 <div class="wrap">
   <div class="pagehead">
-    <h1>Games</h1>
+    <h1>Revision</h1>
     <div class="crumbs">
       <a class="btn" href="home.html">Home</a>
       <a class="btn" href="./">Timetable</a>
-      <button class="btn icon" id="admin" title="Admin" hidden>🛠️</button>
       <span class="volwrap" id="volwrap">
-        <button class="btn icon" id="sfx" title="Game sound (hold to set volume)">&#128266;</button>
+        <button class="btn icon" id="sfx" title="Sound (hold to set volume)">&#128266;</button>
         <span class="volpop" id="volpop" hidden><input type="range" id="volsl" min="0" max="100" step="5" aria-label="Volume"></span>
       </span>
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
@@ -35,7 +36,7 @@
   <div class="lbsum" id="lbsum" hidden></div>
 
   <div class="gamestage" id="gamestage" hidden>
-    <button class="btn back" id="back">&#8592; All games</button>
+    <button class="btn back" id="back">&#8592; All subjects</button>
     <div class="stage" id="stage"></div>
   </div>
 </div>

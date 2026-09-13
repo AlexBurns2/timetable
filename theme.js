@@ -28,10 +28,10 @@ const set = (k, v) => {
 
 /* every skin in picker order; `custom` last so it lands bottom-right */
 const SKINS = [
-  { id:'classic',   name:'Classic',   both:true,
-    swatch:'linear-gradient(160deg,#dfe7f2,#f4f7fb 60%),radial-gradient(circle at 78% 22%,#0a84ff55,transparent 60%)' },
   { id:'plain',     name:'Plain',     both:true, border:'#e5e5e8',
     swatch:'linear-gradient(#fff,#fff)' },
+  { id:'classic',   name:'Classic',   both:true,
+    swatch:'linear-gradient(160deg,#dfe7f2,#f4f7fb 60%),radial-gradient(circle at 78% 22%,#0a84ff55,transparent 60%)' },
   { id:'paper',     name:'Notebook',  both:true,
     swatch:'linear-gradient(#f7f3e8,#f7f3e8) padding-box, repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)' },
   { id:'glass',     name:'Glass',     both:true,
@@ -56,7 +56,7 @@ const SKINS = [
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* the four shown before the picker is expanded */
-const QUICK_SKINS = ['classic','plain','custom'];
+const QUICK_SKINS = ['plain','classic','custom'];
 
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
@@ -81,8 +81,8 @@ function inkFor(hex){
 }
 
 function readState(){
-  let skin = get(LS.skin, 'classic');
-  if (SKIN_IDS.indexOf(skin) === -1) skin = 'classic';
+  let skin = get(LS.skin, 'plain');
+  if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
   return {
     skin,
     mode: get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
@@ -314,7 +314,11 @@ addEventListener('pagehide', () => {
 
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush };
+              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush,
+              /* has a school login saved on this device. Note this is not the
+                 same as myEmail(), which is whose timetable you are looking at
+                 and can be set without ever signing in. */
+              signedIn: hasCreds };
 
 /* returning users: pull the server copy on load */
 if (hasCreds()) syncPull();

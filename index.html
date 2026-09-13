@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="classic" data-mode="light" data-view="compact">
+<html lang="en" data-skin="plain" data-mode="light" data-view="compact">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Timetable</title>
+<title>Timetable · MSC Unofficial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <script src="theme.js"></script>
+<script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -19,7 +20,7 @@ body{
   background-color:var(--page-bg, var(--bg));
   background-image:var(--page-img, var(--bg-img));
   background-attachment:fixed; color:var(--text); min-height:100vh;
-  font:15px/1.5 var(--font-ui);
+  font:0.9375rem/1.5 var(--font-ui);
   -webkit-font-smoothing:antialiased; transition:background-color .25s, color .25s;
 }
 button,select,input{font:inherit;color:inherit}
@@ -43,12 +44,12 @@ button,select,input{font:inherit;color:inherit}
 .brand{display:flex;flex-direction:column;justify-content:center;min-width:150px;
   flex:0 1 auto;max-width:min(42%,420px);align-self:center}
 .brand h1{
-  margin:0;font-family:var(--font-display);font-size:clamp(22px,3vw,34px);
+  margin:0;font-family:var(--font-display);font-size:clamp(1.375rem,3vw,2.125rem);
   font-weight:var(--display-w);letter-spacing:var(--display-ls);
   text-transform:var(--display-tt);line-height:1.05;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.brand>span{color:var(--muted);font-size:12px;margin-top:2px;min-height:14px}
+.brand>span{color:var(--muted);font-size:0.75rem;margin-top:2px;min-height:14px}
 .brand>span:empty{display:none}   /* no dead space below the pill when there's no status */
 .brand>span.err{color:#e5484d}
 .idrow{
@@ -58,21 +59,21 @@ button,select,input{font:inherit;color:inherit}
 }
 .idrow:hover,.idrow:focus-within{border-color:var(--accent);opacity:1}
 .idrow input{border:0;background:none;outline:none;padding:0;margin:0;
-  font-size:12px;font-family:var(--font-num);color:var(--text);
+  font-size:0.75rem;font-family:var(--font-num);color:var(--text);
   width:8ch;min-width:3ch;max-width:17ch}
-.idrow .dom{color:var(--muted);font-size:11px;white-space:nowrap;opacity:.7}
+.idrow .dom{color:var(--muted);font-size:0.6875rem;white-space:nowrap;opacity:.7}
 @media (max-width:520px){ .idrow .dom{display:none} }
 .headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 
 /* centred week switch, sits above the middle column */
 .weekswitch{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
 .weeklabel{
-  min-width:96px;text-align:center;font-weight:700;font-size:16px;
+  min-width:96px;text-align:center;font-weight:700;font-size:1rem;
   font-family:var(--font-display);letter-spacing:var(--display-ls);text-transform:var(--display-tt);
 }
 .arrowbtn{
   width:38px;height:38px;border-radius:50%;border:var(--card-border);
-  background:var(--panel);color:var(--text);font-size:17px;font-weight:700;cursor:pointer;
+  background:var(--panel);color:var(--text);font-size:1.0625rem;font-weight:700;cursor:pointer;
   display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
   transition:transform .12s,background .15s;
 }
@@ -98,10 +99,10 @@ button,select,input{font:inherit;color:inherit}
   position:relative;flex:1 1 220px;background:var(--panel-2);border:1px solid var(--line);
   border-radius:var(--radius);padding:11px 14px;min-width:0;overflow:hidden;
 }
-.nowcard .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.nowcard .subj{font-size:17px;font-weight:700;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nowcard .meta{color:var(--muted);font-size:12.5px;margin-top:2px}
-.nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px;font-weight:700}
+.nowcard .lbl{font-size:0.65625rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.nowcard .subj{font-size:1.0625rem;font-weight:700;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nowcard .meta{color:var(--muted);font-size:0.78125rem;margin-top:2px}
+.nowcard .count{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-size:0.78125rem;margin-top:6px;font-weight:700}
 .progrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .prog{flex:1;height:7px;background:color-mix(in srgb,var(--text) 12%,transparent);
       border-radius:99px;overflow:hidden;min-width:0}
@@ -121,12 +122,12 @@ button,select,input{font:inherit;color:inherit}
 .dayhead{padding:4px 2px 9px;text-align:center;width:100%;
          background:none;border:0;cursor:pointer;color:var(--text);font:inherit}
 .dayhead:hover .dow{color:var(--accent)}
-.dayhead .dow{font-weight:700;font-size:14.5px;font-family:var(--font-display);
+.dayhead .dow{font-weight:700;font-size:0.90625rem;font-family:var(--font-display);
             letter-spacing:var(--display-ls);text-transform:var(--display-tt);
             display:block;transition:color .2s}
 .dayhead small{font-size:.72em;letter-spacing:.06em;color:var(--accent);
              margin-left:.35em;font-weight:700;vertical-align:.06em}
-[data-skin="paper"] .dayhead .dow{font-size:21px}
+[data-skin="paper"] .dayhead .dow{font-size:1.3125rem}
 .dayhead .rule{display:block;height:2px;width:100%;margin-top:8px;border-radius:2px;
              background:var(--line);opacity:.5}
 .dayhead.today .dow{color:var(--accent)}
@@ -147,22 +148,22 @@ button,select,input{font:inherit;color:inherit}
 [data-view="full"] .cell{display:flex;min-height:92px}
 [data-view="full"] .cell.brk{min-height:0}
 [data-view="full"] .lesson{height:100%;padding:10px 11px}
-[data-view="full"] .lesson .s{font-size:14.5px}
-[data-view="full"] .lesson .r,[data-view="full"] .lesson .t{font-size:12.5px}
+[data-view="full"] .lesson .s{font-size:0.90625rem}
+[data-view="full"] .lesson .r,[data-view="full"] .lesson .t{font-size:0.78125rem}
 [data-view="full"] .lesson .tm{display:block;margin-top:auto;padding-top:6px}
 [data-view="full"] .breakbar{padding:5px 10px;min-height:24px}
 [data-view="full"] .free{min-height:92px}
 [data-view="full"] .periodcell{
-  color:var(--muted);font-size:12px;text-align:right;padding:14px 9px 0 0;
+  color:var(--muted);font-size:0.75rem;text-align:right;padding:14px 9px 0 0;
   line-height:1.35;font-family:var(--font-num);
 }
-[data-view="full"] .periodcell b{display:block;color:var(--text);font-size:13.5px;font-weight:700}
+[data-view="full"] .periodcell b{display:block;color:var(--text);font-size:0.84375rem;font-weight:700}
 [data-view="full"] .periodcell.brk{padding-top:8px}
 [data-view="full"] .periodcell .approx{opacity:.55;font-style:italic}
 .free{width:100%}
 
 .tcol{position:relative}
-.tmark{position:absolute;right:9px;translate:0 -50%;font-size:11px;color:var(--muted);
+.tmark{position:absolute;right:9px;translate:0 -50%;font-size:0.6875rem;color:var(--muted);
        font-family:var(--font-num);font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}
 .dbody{position:relative;min-width:0}
 
@@ -176,14 +177,14 @@ button,select,input{font:inherit;color:inherit}
   display:flex;flex-direction:column;gap:0;
 }
 .lesson:hover{box-shadow:var(--shadow-hi);z-index:3}
-.lesson .s{font-weight:700;font-size:13.5px;line-height:1.18;overflow-wrap:anywhere;
+.lesson .s{font-weight:700;font-size:0.84375rem;line-height:1.18;overflow-wrap:anywhere;
            font-family:var(--font-display);letter-spacing:var(--display-ls)}
-[data-skin="paper"] .lesson .s{font-size:17px;line-height:1.05}
+[data-skin="paper"] .lesson .s{font-size:1.0625rem;line-height:1.05}
 [data-skin="glass"] .lesson .s,[data-skin="terminal"] .lesson .s{font-family:var(--font-ui)}
-.lesson .r{font-size:11.5px;margin-top:2px;font-weight:700;opacity:.9;
+.lesson .r{font-size:0.71875rem;margin-top:2px;font-weight:700;opacity:.9;
            overflow-wrap:anywhere;font-family:var(--font-num)}
-.lesson .t{color:inherit;opacity:.86;font-size:11.5px;overflow-wrap:anywhere}
-.lesson .tm{display:none;color:inherit;opacity:.85;font-size:11px;margin-top:auto;
+.lesson .t{color:inherit;opacity:.86;font-size:0.71875rem;overflow-wrap:anywhere}
+.lesson .tm{display:none;color:inherit;opacity:.85;font-size:0.6875rem;margin-top:auto;
             font-family:var(--font-num);font-variant-numeric:tabular-nums}
 .lesson.tall .tm{display:block}
 .lesson.current{outline:2.5px solid var(--c,var(--accent));outline-offset:0;z-index:2}
@@ -192,7 +193,7 @@ button,select,input{font:inherit;color:inherit}
   position:relative;width:100%;overflow:hidden;
   background:color-mix(in srgb,var(--text) 6%,transparent);
   border:1px dashed var(--line);border-radius:calc(var(--card-radius) * .6);
-  color:var(--text);font-size:10.5px;font-family:var(--font-num);
+  color:var(--text);font-size:0.65625rem;font-family:var(--font-num);
   display:flex;gap:8px;justify-content:center;align-items:center;
   letter-spacing:.06em;opacity:.8;white-space:nowrap;padding:0 6px;
 }
@@ -223,7 +224,7 @@ button,select,input{font:inherit;color:inherit}
 .dayswitch{display:none;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:5px}
 .dayswitch button{
   flex:0 0 auto;background:var(--panel);border:var(--card-border);border-radius:999px;
-  padding:8px 15px;cursor:pointer;font-size:13px;box-shadow:var(--shadow);
+  padding:8px 15px;cursor:pointer;font-size:0.8125rem;box-shadow:var(--shadow);
 }
 [data-skin="swiss"] .dayswitch button,[data-skin="brutal"] .dayswitch button,
 [data-skin="blueprint"] .dayswitch button,[data-skin="terminal"] .dayswitch button{border-radius:0}
@@ -231,7 +232,7 @@ button,select,input{font:inherit;color:inherit}
 @media (max-width:860px){
   .grid{grid-template-columns:70px minmax(0,1fr)}
   .dayswitch{display:flex}
-  .weeklabel{min-width:0;font-size:12px}
+  .weeklabel{min-width:0;font-size:0.75rem}
   .weeknav{order:3;width:100%;justify-content:space-between}
   [data-skin="paper"] .wrap::before{display:none}
 }
@@ -242,18 +243,18 @@ button,select,input{font:inherit;color:inherit}
 .gate[hidden]{display:none}
 .gatecard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
           box-shadow:var(--shadow-hi);padding:30px;width:min(430px,100%)}
-.gatecard h2{margin:0 0 7px;font-family:var(--font-display);font-size:clamp(24px,5vw,32px);
+.gatecard h2{margin:0 0 7px;font-family:var(--font-display);font-size:clamp(1.5rem,5vw,2rem);
              font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.gatecard p{margin:0 0 20px;color:var(--muted);font-size:13.5px}
+.gatecard p{margin:0 0 20px;color:var(--muted);font-size:0.84375rem}
 .emailrow{display:flex;align-items:center;border:var(--card-border);border-radius:var(--radius);
           background:var(--panel-2);overflow:hidden}
 .emailrow input{flex:1;min-width:0;border:0;background:none;padding:12px 13px;outline:none}
-.emailrow .dom{padding-right:13px;color:var(--muted);font-size:13px;white-space:nowrap}
+.emailrow .dom{padding-right:13px;color:var(--muted);font-size:0.8125rem;white-space:nowrap}
 .gatepass{width:100%;margin-top:10px;padding:12px 13px;border:var(--card-border);
   border-radius:var(--radius);background:var(--panel-2);color:var(--text);outline:none}
 .gatepass:focus{border-color:var(--accent)}
 .gatecard .btn{margin-top:15px;width:100%;font-weight:700}
-.gateerr{color:#e5484d;font-size:13px;margin-top:11px;min-height:19px}
+.gateerr{color:#e5484d;font-size:0.8125rem;margin-top:11px;min-height:19px}
 [data-skin="terminal"] .gateerr,[data-skin="blueprint"] .gateerr{color:#ff8a8a}
 
 /* dialogs */
@@ -263,20 +264,20 @@ dialog{
 }
 dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .dlg-h{display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid var(--line)}
-.dlg-h h2{margin:0;font-size:17px;margin-right:auto;font-family:var(--font-display);
+.dlg-h h2{margin:0;font-size:1.0625rem;margin-right:auto;font-family:var(--font-display);
           font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
 .dlg-b{padding:17px;max-height:66vh;overflow-y:auto;overflow-x:hidden}
 .field{margin-bottom:18px}
-.field>label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+.field>label{display:block;font-size:0.6875rem;letter-spacing:.1em;text-transform:uppercase;
              color:var(--muted);margin-bottom:7px;font-weight:700}
 .field input[type=text]{width:100%;background:var(--panel-2);border:1px solid var(--line);
                         border-radius:var(--radius);padding:10px 12px}
-.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.hint{font-size:0.75rem;color:var(--muted);margin-top:6px}
 .dlg-f{display:flex;gap:9px;justify-content:flex-end;padding:13px 17px;border-top:1px solid var(--line)}
 .dlg-f2{justify-content:space-between;flex-wrap:wrap;gap:9px}
 .tabbtns{display:flex;gap:8px;flex-wrap:wrap}
-.tabbtns .btn{padding:8px 11px;font-size:12.5px}
-.status{margin:0 0 15px;font-size:13px;color:var(--muted)}
+.tabbtns .btn{padding:8px 11px;font-size:0.78125rem}
+.status{margin:0 0 15px;font-size:0.8125rem;color:var(--muted)}
 .status.err{color:#e5484d}
 
 /* skin picker */
@@ -288,31 +289,31 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .skinbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
 .skinbtn.more .sw.plus{
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;font-weight:300;line-height:1;color:var(--muted);
+  font-size:1.375rem;font-weight:300;line-height:1;color:var(--muted);
   background:var(--panel-2);
 }
 .skinbtn.more:hover .sw.plus{color:var(--accent)}
 .skinbtn .sw{height:46px;display:block}
-.skinbtn .nm{display:block;padding:6px 8px;font-size:12px;font-weight:700;background:var(--panel-2)}
+.skinbtn .nm{display:block;padding:6px 8px;font-size:0.75rem;font-weight:700;background:var(--panel-2)}
 .custrow{display:flex;align-items:center;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
 .custrow:last-of-type{border-bottom:0}
-.custrow>span{flex:1;font-size:13px}
+.custrow>span{flex:1;font-size:0.8125rem}
 .custrow input[type=color]{width:36px;height:29px;padding:0;border:1px solid var(--line);
                            border-radius:7px;background:none;cursor:pointer;flex:none}
 .custrow input[type=range]{width:118px;flex:none;accent-color:var(--accent)}
-.custrow b{width:40px;text-align:right;font-size:12px;color:var(--muted);
+.custrow b{width:40px;text-align:right;font-size:0.75rem;color:var(--muted);
            font-variant-numeric:tabular-nums;flex:none}
 .custrow select{background:var(--panel-2);border:1px solid var(--line);
-                border-radius:8px;padding:6px 8px;font-size:13px}
+                border-radius:8px;padding:6px 8px;font-size:0.8125rem}
 .custrow input.sw{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex:none}
 .adv{margin-top:10px;border-top:1px solid var(--line);padding-top:4px}
 .adv>summary{
-  cursor:pointer;list-style:none;padding:7px 0;font-size:12px;font-weight:700;
+  cursor:pointer;list-style:none;padding:7px 0;font-size:0.75rem;font-weight:700;
   letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
   display:flex;align-items:center;gap:7px;
 }
 .adv>summary::-webkit-details-marker{display:none}
-.adv>summary::before{content:"B8";transition:transform .18s;display:inline-block;font-size:11px}
+.adv>summary::before{content:"B8";transition:transform .18s;display:inline-block;font-size:0.6875rem}
 .adv[open]>summary::before{transform:rotate(90deg)}
 .adv>summary:hover{color:var(--text)}
 /* frosted mode for the custom skin */
@@ -325,45 +326,45 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .custrow .btn{width:100%}
 .modes{display:flex;gap:8px}
 .modes button{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-              padding:9px;cursor:pointer;font-size:13px}
+              padding:9px;cursor:pointer;font-size:0.8125rem}
 .modes button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .colrow{display:flex;align-items:center;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
 .colrow:last-child{border-bottom:0}
-.colrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.colrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8125rem}
 .colrow input[type=color]{width:36px;height:29px;padding:0;border:1px solid var(--line);
                           border-radius:7px;background:none;cursor:pointer;flex:none}
 .colrow input[type=color][hidden]{display:none}
 .colsel{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
-        padding:5px 7px;font-size:12px;flex:none;max-width:9.5em}
+        padding:5px 7px;font-size:0.75rem;flex:none;max-width:9.5em}
 /* override .field input[type=text]{width:100%} so email + password match */
 .custrow input.crin{flex:1;min-width:0;width:auto;
       background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
-      padding:7px 10px;font-size:12.5px}
+      padding:7px 10px;font-size:0.78125rem}
 .custrow .btn{flex:1}
 
 /* lesson detail */
 #detail .dlg-b{padding:0}
 .dhead{padding:22px 20px;border-bottom:1px solid var(--line);
        background:color-mix(in srgb,var(--c) 22%,var(--panel))}
-.dhead .dsub{font-family:var(--font-display);font-size:clamp(23px,5vw,31px);font-weight:var(--display-w);
+.dhead .dsub{font-family:var(--font-display);font-size:clamp(1.4375rem,5vw,1.9375rem);font-weight:var(--display-w);
              letter-spacing:var(--display-ls);line-height:1.1;text-transform:var(--display-tt)}
-.dhead .dwhen{color:var(--muted);font-size:13.5px;margin-top:5px;font-family:var(--font-num)}
+.dhead .dwhen{color:var(--muted);font-size:0.84375rem;margin-top:5px;font-family:var(--font-num)}
 .drows{padding:6px 20px 18px}
-.drow{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+.drow{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:0.875rem}
 .drow:last-child{border-bottom:0}
-.drow dt{width:96px;flex:none;color:var(--muted);font-size:11px;letter-spacing:.1em;
+.drow dt{width:96px;flex:none;color:var(--muted);font-size:0.6875rem;letter-spacing:.1em;
          text-transform:uppercase;font-weight:700;padding-top:2px}
 .drow dd{margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
 .classlist{padding:6px 20px 18px}
 .classlist[hidden]{display:none}
-.cltitle{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+.cltitle{font-size:0.6875rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
   color:var(--muted);margin:2px 0 10px}
-.cltitle.err{color:#e5484d;text-transform:none;letter-spacing:0;font-size:13px}
+.cltitle.err{color:#e5484d;text-transform:none;letter-spacing:0;font-size:0.8125rem}
 .clul{list-style:none;margin:0;padding:0;
   display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 14px}
 .clul li{display:flex;align-items:baseline;gap:8px;padding:5px 0;
-  border-bottom:1px solid var(--line);font-size:14px}
-.clul li em{margin-left:auto;font-style:normal;color:var(--muted);font-size:12px}
+  border-bottom:1px solid var(--line);font-size:0.875rem}
+.clul li em{margin-left:auto;font-style:normal;color:var(--muted);font-size:0.75rem}
 .clul li.teacher span{font-weight:700;color:var(--accent)}
 .clperson{display:flex;align-items:baseline;gap:8px;width:100%;
   background:none;border:0;padding:0;cursor:pointer;color:var(--text);font:inherit;text-align:left}
@@ -395,7 +396,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   <header class="topbar">
     <div class="brand">
       <h1 id="title">Timetable</h1>
-      <div class="idrow" title="View any student's timetable — type their username">
+      <div class="idrow" title="Type a username to see anyone's timetable">
         <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
                autocorrect="off" autocomplete="username" placeholder="first.last1"
                aria-label="Whose timetable to show">
@@ -497,7 +498,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
   </div>
   <div class="dlg-f dlg-f2">
-    <div class="tabbtns">
+    <div class="tabbtns" id="moresettings">
       <button class="btn" type="button" id="openA11y" title="Text size, zoom, contrast">Access</button>
       <button class="btn" type="button" id="openDisplay" title="Layout and display">Display</button>
       <button class="btn" type="button" id="openColours" title="Subject colours">Colours</button>
@@ -636,9 +637,9 @@ let zoom           = get(LS.zoom, 1);
 let contrast       = get(LS.contrast, 'normal');
 let motion         = get(LS.motion, 'normal');
 let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
-let skin     = get(LS.skin, 'classic');
+let skin     = get(LS.skin, 'plain');
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-if (SKIN_IDS.indexOf(skin) === -1) skin = 'classic';
+if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
 
 function applyLook(){
   TT.apply({ skin, mode, zen:zenMode, custom,
@@ -1041,7 +1042,7 @@ async function load(useCache){
     const isPage = /^\s*<(!doctype|html)/i.test(text);
     if (!res.ok){
       throw new Error((data && data.error) ||
-        (isPage ? 'The timetable service is not reachable at this address — the site is misconfigured.'
+        (isPage ? 'The timetable service is not reachable at this address. The site is set up wrong.'
                 : res.status + ' ' + res.statusText));
     }
     if (!data) throw new Error('The timetable service returned an unreadable response.');
@@ -1211,7 +1212,10 @@ function lessonCard(e, start, end, isToday, nowMin, date, tall){
 
 /* ── compact: positioned by clock time ─────────────────────────────── */
 function renderCompact(ctx){
-  const PX = 1.45;              /* pixels per minute */
+  /* Pixels per minute. Scaled by the text size setting: the cards are
+     positioned and sized here in JS, so without this bigger text would just
+     overflow a card that stayed the same height. */
+  const PX = 1.45 * (+get(LS.textScale, 1) || 1);
   const GAP = CELL_GAP;         /* same value the CSS grid uses between columns */
   const columns = ctx.idx.map(i => ({ i, cyc: ctx.cycles[i], blocks: blocksFor(ctx.cycles[i]) }));
   const all = columns.flatMap(c => c.blocks);
@@ -1455,6 +1459,11 @@ document.querySelectorAll('dialog').forEach(d => {
 /* ═══ login gate — email + password, mandatory, stored on this device ═══ */
 const gate = $('gate');
 $('gatedomain').textContent = '@' + CONFIG.EMAIL_DOMAIN;
+/* The tutorials point at a loaded timetable, so they wait for one: never over
+   the sign-in gate, and never after a failed load that put the gate back. */
+function startTour(){
+  if (window.Tour && gate.hidden) Tour.start('timetable');
+}
 function showGate(msg){
   $('gateerr').textContent = msg || '';
   $('gateemail').value = String((creds && creds.email) || email || '').split('@')[0];
@@ -1487,6 +1496,7 @@ $('gateform').onsubmit = async ev => {
   }
   gate.hidden = true;
   render();
+  startTour();          /* first sign-in: this is the moment to show them around */
 };
 
 /* ═══ whoami: type a username to view anyone's timetable (your login stays) ═══
@@ -1556,8 +1566,8 @@ function renderSkins(){
     }
   } else {
     /* order: Plain, Classic, +, Custom */
-    host.appendChild(tile(SKINS.find(s => s.id === 'classic')));
     host.appendChild(tile(SKINS.find(s => s.id === 'plain')));
+    host.appendChild(tile(SKINS.find(s => s.id === 'classic')));
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'skinbtn more';
@@ -1748,6 +1758,8 @@ $('settings').onclick = () => {
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
   renderToggles(); renderA11y(); renderCreds(); renderColours();
   dlg.showModal();
+  /* finding Settings on your own retires the step that points at it */
+  if (window.Tour){ Tour.mark('settings'); Tour.start('settings'); }
 };
 
 /* sub-panels stack on top of the main dialog and pop back to it */
@@ -1869,6 +1881,7 @@ addEventListener('resize', render);
   await load(true);
   render();
   if (loadError){ showGate(loadError); return; }
+  startTour();          /* a real timetable is on screen now, so it can be pointed at */
   load(false).then(render);
 })();
 setInterval(render, 30000);

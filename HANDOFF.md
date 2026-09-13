@@ -19,7 +19,8 @@ do it without the prior conversation. A visual version of the plan lives at
 >
 > **Tables to create** (SQL in SETUP.md): `prefs`, `daily_puzzle`, `daily_result`, `calendar_event`,
 > `tetris_score`, `zen_score`, `game_score`, `game_state`, `sprint_best`,
-> `zen_board`, `shared_deck` (public flashcards), **`forum_post`** (home-page forum).
+> `zen_board`, `shared_deck` (public flashcards), `forum_post` (home-page forum),
+> **`onboarding`** (first-run tutorials).
 > Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, `OWNER_EMAIL` (owner-only admin
 > tools), optionally `CRON_SECRET`, then redeploy.
 > **Phase 3 (realtime boards/multiplayer) is still unbuilt**; §6 is its plan. The
@@ -51,7 +52,10 @@ static pages and the `/api/*` function from the same origin.
 | `theme.js` | **shared** theme + settings + a small API helper; loaded by every page |
 | `theme.css` | shared design tokens + all skins |
 | `site.css` | shared furniture for the non-timetable pages |
-| `home.html` `notes.html` `games.html` | hub, scratchpad, games |
+| `home.html` `notes.html` | hub, scratchpad |
+| `games.html` `revision.html` | two pages over the shared `games.css` + `games.js` (see 8.10) |
+| `calendar.html` | shared calendar (see 8.9) |
+| `tour.js` | first-run tutorials, loaded by every page that has one (see 8.11) |
 | `api/timetable.js` | the Vercel serverless proxy (Node, ESM) — **all server code lives here today** |
 | `package.json` | `{"type":"module","private":true}` — add deps here |
 | `SETUP.md` | deploy + feature docs (read it for context) |
@@ -362,8 +366,12 @@ Add a `hidden boolean` column + a report action before opening a board school-wi
 ## 8. Built since the original handoff (current picture)
 
 Everything below is **built and browser-tested against the mock** unless marked
-otherwise. `games.html` is a single self-contained file (all games, one `<script>`);
-`home.html` is the hub. All of it is client-side plus the `api/` routes listed.
+otherwise. `home.html` is the hub. All of it is client-side plus the `api/`
+routes listed.
+
+> **Note on file layout (changed).** `games.html` used to be one self-contained
+> file. Its CSS and JS now live in `games.css` and `games.js`, and **two pages
+> share them**: `games.html` and `revision.html`. See 8.10.
 
 ### 8.1 New / changed API routes
 
@@ -373,6 +381,8 @@ otherwise. `games.html` is a single self-contained file (all games, one `<script
 | `api/forum.js` | **New.** Home-page forum: threads + one level of replies, delete own (or owner) | `forum_post` |
 | `api/leaderboard.js` | Generic arcade boards **+ `?users=1`** (owner-only roster of everyone who has used the site) | `game_score` |
 | `api/_daily.js` | Daily Guess Who engine — **hint generation rewritten** (below) | `daily_puzzle` |
+| `api/calendar.js` | Shared calendar, Google iCal import | `calendar_event` |
+| `api/onboarding.js` | **New.** Which first-run tutorials a person has been shown, **+ `?all=1`** (owner-only roster) | `onboarding` |
 
 `forum_post` SQL:
 
@@ -456,10 +466,11 @@ array of `{q, a, w}` MC items). Games are either flat (`topics`) or modular
 
 ### 8.4 Home page
 
-- Four tiles, then a **forum** (post, reply, relative timestamps, delete your own).
-  Styles live in `site.css` under "forum (home page)".
+- Six tiles (Timetable, Revision, Calendar, Notes, Games, Resources), then a
+  **forum** (post, reply, relative timestamps, delete your own). Styles live in
+  `site.css` under "forum (home page)".
 - The old footer ("Theme follows you across every page." + "Back to timetable →")
-  is **removed**.
+  and the "Your timetable, your notes…" lede are **removed**.
 - Gotcha worth remembering: `.freplybox{display:flex}` beats the `[hidden]`
   attribute, so there is an explicit `.freplybox[hidden]{display:none}`. The same
   bug bit the Tetris undo/redo buttons earlier — if something won't hide, check
@@ -472,11 +483,16 @@ array of `{q, a, w}` MC items). Games are either flat (`topics`) or modular
 - `studiesOf()` is best-effort and wrapped in try/catch — if the school API
   changes shape, the daily silently falls back to name-only hints rather than
   failing to build a puzzle. Keep it that way.
-- `games.html` has one big inline `<script>`; syntax-check it by extracting the
-  script and running it through `new vm.Script(...)` (`node --check` won't take HTML).
+- `games.js` is now a plain `.js` file, so `node --check games.js` works. Pages
+  still carry inline `<script>` blocks; syntax-check those by extracting them and
+  running each through `new vm.Script(...)` (`node --check` won't take HTML). One
+  script does both; keep using it, because it is what catches the classic
+  own-goal of putting an apostrophe inside a single-quoted string while editing
+  copy.
 - The mock server used for all of this lives in the scratchpad
-  (`gamesmock.mjs`, port 8792) and mirrors every `/api/*` route including
-  `/api/forum` and `?users=1`. It is not part of the repo — rebuild it if needed.
+  (`gamesmock.mjs`, port 8792; `calmock.mjs`, port 8793) and mirrors every
+  `/api/*` route including `/api/forum`, `/api/calendar`, `/api/onboarding` and
+  `?users=1`. It is not part of the repo — rebuild it if needed.
 
 ### 8.6 Guess Who hints — the rollback, and why (read before touching hints)
 
@@ -615,3 +631,119 @@ stays plain `weekly`.
   click pins it open. Both are needed — hover alone is useless on a phone, and
   an earlier version that toggled on click broke with a mouse, because the
   `mouseenter` fired first and the click then closed what hover had opened.
+
+### 8.10 Revision split off the games page
+
+`games.html` used to hold everything. Revision now has its own page, because
+picking a subject to study is a different job from browsing for something to
+play, and the side-scrolling shelves actively got in the way of it.
+
+What actually changed is small: `games.html`'s inline `<style>` and `<script>`
+were lifted out verbatim into **`games.css`** and **`games.js`**, and
+**`revision.html`** loads the same two files. Nothing was duplicated and no game
+code moved, so there is one implementation to maintain, not two. It also means
+the 370 KB of JS is now cacheable across both pages instead of being re-parsed
+inline on every visit.
+
+The pages differ by one attribute:
+
+```html
+<body data-page="games">        <!-- games.html -->
+<body data-page="revision">     <!-- revision.html -->
+```
+
+`games.js` reads it into `PAGE` / `REVISION_PAGE`, and `showGrid()` branches:
+the revision page renders every `cat:'Revision'` game into one plain
+`.gamegrid` (all subjects visible at once, no shelves, no leaderboard strip);
+the games page renders `CAT_ORDER` (now just Timetable and Arcade) as
+scrolling shelves. `gameCard()` is shared and only swaps "Play" for "Start".
+
+If you add a page that reuses `games.js`, give it the same element ids
+(`gamegrid`, `lbsum`, `gamestage`, `stage`, `back`, `sfx`, `volpop`, `volsl`,
+`volwrap`, `themebtn`) — `admin` is optional and its absence is handled.
+
+### 8.11 First-run tutorials (`tour.js` + `onboarding` table)
+
+A tour is a list of steps; each spotlights one element and captions it. Steps
+are shown **once ever per person, not per device** — progress lives in the
+`onboarding` table with localStorage as the offline mirror, so signing in on a
+school computer doesn't replay everything.
+
+```sql
+create table onboarding (
+  email      text primary key,
+  seen       jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+```
+
+Step ids are **merged, never replaced**. That is not a detail — it is what lets
+one step be offered from two places. The Settings step is defined on both the
+timetable and the home page; whichever you reach first retires it for both, and
+opening Settings yourself (`Tour.mark('settings')` in both dialogs' open
+handlers) retires it without any tutorial showing at all. Replacing instead of
+merging would let two devices erase each other's progress.
+
+The tours themselves live in `TOURS` at the bottom of `tour.js`, so a caption is
+written once even when two pages can show it. `title` and `text` may each be a
+function, which is how the Settings caption says "and the colour each subject
+gets" on the timetable (where a Colours button exists) and not on the home page.
+
+Things that are the way they are for a reason:
+
+- **Nothing runs until the person is signed in.** `run()` bails on
+  `TT.signedIn()` (which is `hasCreds`, *not* `myEmail()` — that one is whose
+  timetable you are looking at and can be set without ever logging in). Without
+  this the timetable tour captioned the sign-in gate, which is useless, and any
+  progress recorded would belong to nobody, since the table is keyed by email.
+  The guard lives in `tour.js` rather than at each call site so a new page
+  can't forget it.
+- On the timetable there is a second condition: `startTour()` also checks
+  `gate.hidden`, so a *failed* load that put the gate back doesn't trigger it
+  either. It is called from two places — after a successful boot load, and
+  right after a first-time sign-in through the gate, which is the moment a new
+  user most wants showing around.
+- **Advance on a tap anywhere**, plus a Next button, Enter/Space/→, Escape to
+  skip. Skip marks every remaining step seen, so it means "stop showing me this".
+- **A missing target is skipped, not marked seen.** If the element isn't on the
+  page yet, the step waits for a visit where it is, rather than being burned.
+- **The veil is appended inside `dialog[open]` when the target is in one.** A
+  modal `<dialog>` sits in the browser's top layer, so a veil parented to
+  `<body>` renders *underneath* it and the settings tour would be invisible.
+- `Tour.run` waits for the server copy (2.5s cap) before showing anything, so a
+  step you finished on your phone doesn't replay on a slow connection here.
+- The key is `onboard.seen`, deliberately **not** `tt.*`: it syncs through its
+  own table and must not also ride the prefs blob.
+
+The games page's step is a demonstration rather than a caption: `scrollDemo()`
+glides a pointer across the real shelf and scrolls it out and back on a loop, so
+the gesture is shown on the actual cards. It only runs when there is something
+off the right-hand edge, and it restores `scrollLeft` on teardown.
+
+The Admin game's "Signed-in users" tab merges `/api/onboarding?all=1` by email
+and shows an `n/8` bar per person, green once they finish. That fetch is
+optional — if it fails the roster still renders.
+
+### 8.12 Text size actually works now
+
+`theme.css` has always had `html{font-size:calc(16px * var(--text-scale,1))}`,
+but **every size on the site was in px**, so the slider moved nothing. All 229
+`font-size` declarations (plus five `clamp()` bounds and two `font:` shorthands)
+were converted to `rem` at a 16px base, so rendering at 100% is byte-identical
+and the slider now has something to scale.
+
+One place needed more than CSS: the compact timetable positions and sizes every
+card from JS (`PX` pixels per minute in `renderCompact`). Bigger text in a card
+whose height never changed would just overflow, so `PX` is multiplied by
+`tt.textscale` and the whole grid grows with the type.
+
+If you add CSS, **use rem for font sizes.** A px one silently opts out of the
+setting, which is exactly the bug this fixed.
+
+### 8.13 Plain is the default theme again
+
+`data-skin="plain"` on every page's `<html>`, `'plain'` as the fallback in
+`theme.js` `readState()`, `index.html` and `settings.js`. Plain and Classic also
+swapped places in `SKINS`, in `QUICK_SKINS`, and in the timetable's collapsed
+picker, so Plain reads first. Anyone who has already chosen a theme is
+unaffected: these are only defaults for someone with nothing stored.

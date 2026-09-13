@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-skin="classic" data-mode="light">
+<html lang="en" data-skin="plain" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
+<script src="tour.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
@@ -20,7 +21,6 @@
     <div>
       <div class="eyebrow">NBSC Manly Campus &middot; unofficial</div>
       <h1>MSC Unofficial</h1>
-      <p class="lede">Your timetable, your notes, and a place to waste five minutes.</p>
     </div>
     <div class="hubctl">
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
@@ -28,25 +28,30 @@
   </header>
 
   <nav class="tiles">
-    <a class="tile primary" href="./">
-      <span class="ico">🗓️</span>
+    <a class="tile primary" href="./" id="tileTimetable">
+      <span class="ico">📋</span>
       <span class="tname">Timetable</span>
-      <span class="tdesc">Your fortnight, live from the school API</span>
+      <span class="tdesc">Your classes for the fortnight</span>
     </a>
-    <a class="tile" href="notes.html">
-      <span class="ico">📝</span>
-      <span class="tname">Notes</span>
-      <span class="tdesc">Scratchpad that saves as you type</span>
-    </a>
-    <a class="tile" href="games.html">
-      <span class="ico">🎮</span>
-      <span class="tname">Games</span>
-      <span class="tdesc">time wasting</span>
+    <a class="tile" href="revision.html" id="tileRevision">
+      <span class="ico">✏️</span>
+      <span class="tname">Revision</span>
+      <span class="tdesc">Quizzes and flashcards for your subjects</span>
     </a>
     <a class="tile" href="calendar.html">
       <span class="ico">🗓️</span>
       <span class="tname">Calendar</span>
-      <span class="tdesc">Exams, events and anything you add</span>
+      <span class="tdesc">Your exams and anything else you add</span>
+    </a>
+    <a class="tile" href="notes.html">
+      <span class="ico">📝</span>
+      <span class="tname">Notes</span>
+      <span class="tdesc">A scratchpad that saves as you type</span>
+    </a>
+    <a class="tile" href="games.html">
+      <span class="ico">🎮</span>
+      <span class="tname">Games</span>
+      <span class="tdesc">For when you have ten minutes to kill</span>
     </a>
     <a class="tile" href="resources.html">
       <span class="ico">📚</span>
@@ -58,10 +63,10 @@
   <section class="features">
     <h2>What&rsquo;s new</h2>
     <ul>
-      <li>Shareable flashcards</li>
-      <li>Maths, physics, chemistry, engineering and software revision quizzes</li>
-      <li>Free textbooks</li>
-      <li>A shared calendar, seeded with the Year 11 final exams</li>
+      <li>Revision has its own page now, with every subject on one screen</li>
+      <li>The calendar does day, week, month and year views, and can pull in your Google Calendar</li>
+      <li>Your Year 11 final exams are already in there</li>
+      <li>Flashcard decks you can share with anyone in your classes</li>
     </ul>
   </section>
 
@@ -116,7 +121,7 @@ async function loadForum(){
     $('fposts').innerHTML = posts.length
       ? posts.map(p => postCard(p, false) +
           (p.replies || []).map(r => postCard(r, true)).join('')).join('')
-      : '<p class="how">Nothing yet — say the first thing.</p>';
+      : '<p class="how">Nothing here yet. Say the first thing.</p>';
     wireForum();
   } catch (e){
     $('fposts').innerHTML = '<p class="how">Couldn\'t load the forum: ' + esc(e.message) + '</p>';
@@ -155,6 +160,9 @@ $('fbody').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('fpost').click();
 });
 loadForum();
+
+/* First visit: point out Settings, unless the timetable page already did. */
+if (window.Tour) Tour.start('home');
 </script>
 <script src="settings.js"></script>
 </body>
