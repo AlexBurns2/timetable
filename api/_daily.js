@@ -99,16 +99,41 @@ const VOWELS = "AEIOU";
 const countVowels = w => [...w.toUpperCase()].filter(c => VOWELS.includes(c)).length;
 const hasDouble = w => /(.)\1/i.test(w);
 
+/* Puzzles up to this date keep the ORIGINAL hint set, exactly as they were
+   played. The varied hints below only apply from the day after. */
+export const LEGACY_UNTIL = "2026-09-12";
+
+/* The hint set as it shipped originally — do not change it. Past days were
+   played against these, so they have to keep reading the same way. */
+export function legacyHints(first, last) {
+  const H = [];
+  H.push("Their first name has <b>" + first.length + "</b> letters.");
+  H.push("Their first name starts with <b>" + first[0].toUpperCase() + "</b>.");
+  if (last) H.push("Their surname has <b>" + last.length + "</b> letters.");
+  if (last) H.push("Their surname starts with <b>" + last[0].toUpperCase() + "</b>.");
+  H.push("Their first name looks like <b>" + mask(first, 0.5) + "</b>.");
+  if (last) H.push("Their surname looks like <b>" + mask(last, 0.4) + "</b>.");
+  H.push("Their name reads <b>" + mask(first, 0.7) + (last ? " " + mask(last, 0.65) : "") + "</b>.");
+  return H;
+}
+
 /* Hints in tiers by how much they give away — vague first, near-answer last.
    Each tier is shuffled with the day's seed, so the ORDER varies day to day
    while the puzzle stays identical for everyone in the year.
-   `extra` (subjects / teachers) is stored on the target when the puzzle is
-   generated; older puzzles simply don't have it and fall back to name hints. */
+
+   Two safety rules, learned the hard way:
+   - `extra.date` on or before LEGACY_UNTIL ⇒ the original hints, untouched.
+   - subject / teacher hints are used ONLY when the generator could PROVE the
+     timetable it read belongs to the target (`extra.verified`). An unverified
+     read could be somebody else's timetable, which would describe the wrong
+     person entirely — better to fall back to name shapes than to lie. */
 export function buildHints(first, last, extra) {
   extra = extra || {};
+  if (extra.date && String(extra.date) <= LEGACY_UNTIL) return legacyHints(first, last);
   const rnd = rngFrom(hashStr(String(extra.seed || first + "|" + last)));
-  const subjects = Array.isArray(extra.subjects) ? extra.subjects.filter(Boolean) : [];
-  const teachers = Array.isArray(extra.teachers) ? extra.teachers.filter(Boolean) : [];
+  const ok = extra.verified === true;
+  const subjects = ok && Array.isArray(extra.subjects) ? extra.subjects.filter(Boolean) : [];
+  const teachers = ok && Array.isArray(extra.teachers) ? extra.teachers.filter(Boolean) : [];
   const subj = shuffleWith(subjects, rnd), tchs = shuffleWith(teachers, rnd);
   const full = (first + last).replace(/\s/g, "");
 
@@ -129,7 +154,8 @@ export function buildHints(first, last, extra) {
   T[0].push("Their first name has <b>" + countVowels(first) + "</b> vowel" + (countVowels(first) === 1 ? "" : "s") + ".");
   T[0].push("Their first name starts with a <b>" + (VOWELS.includes(first[0].toUpperCase()) ? "vowel" : "consonant") + "</b>.");
   T[0].push("Their whole name has <b>" + full.length + "</b> letters.");
-  T[0].push("Their name " + (hasDouble(full) ? "has a" : "has no") + " <b>double letter</b> in it.");
+  /* check each name separately — first+last would invent a double at the join */
+  T[0].push("Their name " + (hasDouble(first) || (last && hasDouble(last)) ? "has a" : "has no") + " <b>double letter</b> in it.");
   if (last) {
     T[0].push("Their surname has <b>" + last.length + "</b> letters.");
     T[0].push("Their surname starts with a letter in the <b>"
@@ -179,10 +205,12 @@ const tidyTeacher = t => {
    leaves the puzzle with name-shape hints only. */
 async function studiesOf(email) {
   if (!email) return {};
+  const want = String(email).toLowerCase();
   try {
     const raw = await fetchAsOwner("/api/timetable/" + encodeURIComponent(email));
     const rows = Array.isArray(raw) ? raw : (raw && (raw.timetable || raw.Timetable)) || [];
-    const subjects = new Set(), teachers = new Set();
+    if (!rows.length) return {};
+    const subjects = new Set(), teachers = new Set(), codes = [];
     for (const r of rows) {
       const course = String(r.CourseName || r.courseName || r.Course || "");
       const per = String(r.Period || r.period || "");
@@ -191,8 +219,28 @@ async function studiesOf(email) {
       if (s) subjects.add(s);
       const t = tidyTeacher(r.TeacherName || r.TeacherFullName || r.Teacher || r.StaffName || "");
       if (t) teachers.add(t);
+      const code = r.ClassCode || r.classCode;
+      if (code && !codes.includes(code)) codes.push(code);
     }
-    return { subjects: [...subjects].slice(0, 12), teachers: [...teachers].slice(0, 12) };
+    if (!subjects.size || !codes.length) return {};
+
+    /* PROVE it is their timetable. Asking the school API for someone else's
+       timetable as the server account could plausibly hand back the server
+       account's own — which would describe the wrong person. So take a class
+       off the timetable we just read and check the target is actually on its
+       roster. No proof ⇒ no subject hints. */
+    let verified = false;
+    for (const code of codes.slice(0, 3)) {
+      try {
+        const roster = await fetchAsOwner("/api/timetable/class/" + encodeURIComponent(code));
+        const arr = Array.isArray(roster) ? roster : (roster && (roster.roster || roster.students)) || [];
+        if (arr.some(p => String(p.emailAddress || p.Email || p.email || "").toLowerCase() === want)) {
+          verified = true; break;
+        }
+      } catch { /* try the next class */ }
+    }
+    if (!verified) return {};
+    return { subjects: [...subjects].slice(0, 12), teachers: [...teachers].slice(0, 12), verified: true };
   } catch { return {}; }
 }
 
@@ -232,7 +280,8 @@ export async function ensurePuzzle(db, year, date) {
   const studies = await studiesOf(t.email);          // best-effort subject / teacher hints
   const target = { name: t.name, first, last,
     subjects: studies.subjects || [], teachers: studies.teachers || [],
-    hints: buildHints(first, last, { seed: date + ":" + year, ...studies }) };
+    verified: studies.verified === true,     // only then are subject hints trusted
+    hints: buildHints(first, last, { seed: date + ":" + year, date, ...studies }) };
   const candidates = roster.map(p => p.name);
 
   const { error: upErr } = await db.from("daily_puzzle")

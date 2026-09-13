@@ -1061,7 +1061,73 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Forum, moderator user list, Guess Who hint overhaul (latest)
+## Typed code, bigger question pools, Guess Who hint rollback (latest)
+
+- **Guess Who hints rolled back for old days.** The varied hints described below
+  turned out to describe the wrong person on puzzles that already existed, so
+  **every puzzle dated on or before `LEGACY_UNTIL` (2026-09-12) now returns the
+  original hint set, byte for byte** (`legacyHints()` in `api/_daily.js`). Only
+  13 Sep onward uses the new tiered hints. Two underlying bugs were fixed:
+  - **Subject hints could belong to someone else.** Asking the school API for
+    another student's timetable *as the server account* can hand back the server
+    account's own. `studiesOf()` now **proves** the timetable is the target's — it
+    takes a class code off that timetable and checks the target is on that class's
+    roster — and only then stores `verified: true`. `buildHints` ignores subject
+    and teacher hints unless that flag is set, so an unverifiable read silently
+    falls back to name hints instead of lying. Puzzles already stored with
+    unverified subjects are ignored too, since they have no flag.
+  - **False "double letter".** `first + last` was tested as one string, so
+    "Ada Adams" reported a double letter from the a-A join. Each name is checked
+    separately now.
+
+- **Software rebuilt around typing real code.** Three modules — **Read code**
+  (predict output), **Write code** with **Easy / Medium / Hard** subtopics, and
+  **Paradigms & OOP**.
+  - Write-code questions give you a **textarea** (Tab indents, Ctrl/Cmd+Enter
+    submits) and you type actual Python. There is no interpreter in the browser,
+    so each task lists the key parts a working answer must contain and those are
+    matched against a **normalised** version of what you typed — whitespace, quote
+    style, comments and most variable names are free. The model answer is always
+    shown afterwards, and there's a **Show answer** button. 27 tasks: 10 easy
+    (loops, simple functions), 10 medium (classes, constructors, methods,
+    accumulator loops), 7 hard (magic square, palindrome, FizzBuzz, bubble sort,
+    inheritance with overriding, word frequencies).
+  - **Paradigms** (8: OO, procedural, functional, logic, event-driven,
+    declarative, imperative, structured) and **OOP concepts** (10: encapsulation,
+    abstraction, inheritance, polymorphism, class, object, method, attribute,
+    constructor, overriding), each asked three ways — definition→name, name→
+    definition, and "which does this code show?".
+
+- **Far more questions per topic.** Topics were looping after a handful of
+  questions. Facts now live in small curated tables and generators ask about them
+  from several angles in both directions, with distractors drawn from the same
+  table so every wrong option is plausible. Measured distinct questions per
+  subtopic (4000 samples each):
+
+  | Subtopic | Distinct |
+  |---|---|
+  | Engineering — carbon steels / cast irons | 44 each |
+  | Engineering — heat treatment | 48 |
+  | Engineering — carbon & pearlite | 71 |
+  | Engineering — phases / properties | 20 / 24 |
+  | Physics concepts (per module) | 28–36 |
+  | Maths concepts | 42 |
+  | Software — paradigms / OOP | 24 / 30 |
+  | Chemistry — naming / solubility / shapes | 30 / 30 / 24 |
+  | Chemistry — electron config / reaction types / empirical / limiting | 20 / 20 / 20 / 13 |
+
+  Chemistry's numeric generators (moles, calorimetry, Gibbs, dilution) were
+  already procedural and effectively unlimited; their data tables were widened too
+  (bond energies 3→8 reactions, enthalpy of formation 3→8).
+  Write-code is deliberately smaller (10/10/7) — each task takes minutes, not seconds.
+
+- **Home page:** a **What's new** list (shareable flashcards, the revision
+  quizzes, free textbooks) sits above the forum.
+
+Deploy: ship `games.html`, `home.html`, `site.css`, redeploy `api/_daily.js` and
+`api/daily.js`. No table changes, and no puzzle is regenerated or altered.
+
+## Forum, moderator user list, Guess Who hint overhaul
 
 - **Home-page forum.** New `api/forum.js` + a `forum` section on `home.html` (below
   the four tiles): post a thread, reply to one, relative timestamps, delete your own

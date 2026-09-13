@@ -477,3 +477,60 @@ array of `{q, a, w}` MC items). Games are either flat (`topics`) or modular
 - The mock server used for all of this lives in the scratchpad
   (`gamesmock.mjs`, port 8792) and mirrors every `/api/*` route including
   `/api/forum` and `?users=1`. It is not part of the repo — rebuild it if needed.
+
+### 8.6 Guess Who hints — the rollback, and why (read before touching hints)
+
+The varied-hint rewrite in §8.2 shipped a real bug: hints described the **wrong
+person**. Two causes, both now fixed, both worth remembering.
+
+1. **`fetchAsOwner('/api/timetable/<someone-else>')` is not trustworthy.** Read as
+   the server's own account it can return the *server account's* timetable rather
+   than the person you asked about — so "They take Drama" described Alex, not the
+   target. `studiesOf()` now proves ownership before believing the data: it takes a
+   class code off the timetable it just read, fetches that class's roster, and
+   checks the target's email is on it. Only then does it return `verified: true`,
+   and `buildHints` ignores subjects/teachers without that flag. **If you add any
+   other "what do they do" hint, verify it the same way or don't ship it.**
+2. **Concatenating first+last invented letter patterns.** `/(.)/i` on
+   `first + last` matched the join ("Ada"+"Adams" → "aA"), so the double-letter
+   hint lied. Check name parts separately.
+
+**`LEGACY_UNTIL = '2026-09-12'` in `api/_daily.js`.** Any puzzle dated on or before
+it returns `legacyHints()` — the original seven hints, unchanged. Past days were
+played against those, so they must keep reading the same way. **Do not edit
+`legacyHints()`, and do not move the date backwards.** New hint work goes in
+`buildHints` and only affects days after the cutoff.
+
+### 8.7 Question volume — tables, not lists
+
+Topics were looping after a handful of questions. The pattern now used everywhere:
+keep a small **curated table** of rows, and write a generator that asks about one
+field from several angles, in both directions, with distractors taken from the
+same table (`fieldQ()` does exactly this, `bankQ()` wraps a plain `{q,a,w}` list).
+Four steel rows × five fields × two directions = 40 questions from ~20 lines of
+data. That is the cheapest way to add coverage without risking accuracy — the
+facts are written once and checked once.
+
+Measured distinct questions per subtopic: engineering 20–71, physics concepts
+28–36, maths concepts 42, software paradigms/OOP 24/30, chemistry 13–30.
+There is a browser check for this worth re-running after adding content — sample a
+generator a few thousand times, count distinct `key`s, and assert the answer is
+always among the choices.
+
+### 8.8 Typed code answers
+
+`revGame` supports a third answer mode beside multiple-choice and single-line
+input: `typed: true` renders a **textarea** (Tab indents, Ctrl/Cmd+Enter submits,
+plus a *Show answer* button) and grades with `cur.accept(text)`.
+
+There is no Python interpreter in the browser, so `CODE_TASKS` entries carry a
+`need: [regex]` list of the key parts a working answer must contain, matched
+against `normCode(text)` — which strips comments, unifies quotes, collapses all
+whitespace and tightens around punctuation, so the normalised form is one tight
+line. Whitespace, quote style and most variable names are therefore free.
+
+Two invariants to keep if you add tasks:
+- every task's own `answer` must pass its own `need` (there's a browser check for
+  this — it caught nothing last run, but it is the first thing to break), and
+- test a wrong answer too; it is easy to write a `need` list so loose that
+  `return True` passes.

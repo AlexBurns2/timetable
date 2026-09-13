@@ -111,8 +111,10 @@ export default async function handler(req, res) {
   // recomputed each read → hint changes go live; the seed keeps the order the
   // same for everyone in the year all day. Older puzzles have no subjects and
   // simply fall back to name-shape hints.
+  // `date` makes buildHints fall back to the original hint set for days that
+  // were already played; `verified` gates the subject hints (see _daily.js).
   const hints = buildHints(first, last,
-    { seed: date + ":" + year, subjects: t.subjects, teachers: t.teachers });
+    { seed: date + ":" + year, date, subjects: t.subjects, teachers: t.teachers, verified: t.verified });
   const totalHints = hints.length;
   const answerName = t.name;
 

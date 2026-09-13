@@ -413,6 +413,18 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 .rvcodeopts .mcopt{font-family:var(--font-num);white-space:pre-wrap;font-size:13px;text-align:left}
 .rvprompt code{font-family:var(--font-num);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
 .rvdiagram{display:block;margin:12px auto 0;max-width:100%}
+.rvtyped textarea{
+  width:100%;box-sizing:border-box;min-height:132px;resize:vertical;margin-bottom:10px;
+  font-family:var(--font-num);font-size:13.5px;line-height:1.55;tab-size:4;
+  padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);white-space:pre;overflow-wrap:normal;overflow-x:auto;
+}
+.rvtyped textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.rvans{
+  font-family:var(--font-num);font-size:13px;line-height:1.55;white-space:pre;overflow-x:auto;
+  margin:8px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);font-weight:400;
+}
 </style>
 </head>
 <body>
@@ -3186,13 +3198,29 @@ function revGame(host, opts){
     let html = selUI() +
       '<div class="rvq"><div class="rvprog">Score '+score+' · streak '+streak+' · '+esc(cur._topic)+'</div>' +
         '<div class="rvprompt">'+cur.q+'</div></div>';   /* no formula shown up front — that's the point */
-    html += cur.input
+    html += cur.typed
+      ? '<div class="rvtyped"><textarea id="rvta" spellcheck="false" autocapitalize="off" autocorrect="off"' +
+        ' placeholder="Write your code here…">' + esc(cur.stub || '') + '</textarea>' +
+        '<div class="gwrow"><button class="btn primary" id="rvgo" type="button">Check</button>' +
+        '<button class="btn" id="rvskip" type="button">Show answer</button></div></div>'
+      : cur.input
       ? '<div class="gwrow"><input id="rvin" autocomplete="off" placeholder="Your answer…"><button class="btn primary" id="rvgo" type="button">Check</button></div>'
       : '<div class="mcq" id="rvopts"></div>';
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
     box.innerHTML = html; wireSel();
     $('sc').textContent = 'Score ' + score;
-    if (cur.input){ const inp = $('rvin'); inp.focus();
+    if (cur.typed){ const ta = $('rvta'); ta.focus();
+      $('rvgo').onclick = () => submit(ta.value);
+      $('rvskip').onclick = () => submit('', null, true);      // give up → show the model answer
+      ta.addEventListener('keydown', e => {                    // Tab indents instead of leaving the box
+        if (e.key === 'Tab'){ e.preventDefault();
+          const s = ta.selectionStart, t = ta.selectionEnd;
+          ta.value = ta.value.slice(0,s) + '    ' + ta.value.slice(t);
+          ta.selectionStart = ta.selectionEnd = s + 4;
+        }
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(ta.value);
+      });
+    } else if (cur.input){ const inp = $('rvin'); inp.focus();
       const go = () => submit(inp.value); $('rvgo').onclick = go; inp.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
     } else { const wrap = $('rvopts'); if (cur.code) wrap.classList.add('rvcodeopts');
       cur.choices.forEach(c => { const b = document.createElement('button'); b.type='button'; b.className='mcopt'; b.textContent = c;
@@ -3200,9 +3228,11 @@ function revGame(host, opts){
     }
     $('rvnext').onclick = nextQ;
   }
-  function submit(val, btn){
+  function submit(val, btn, gaveUp){
     if (answered) return; answered = true;
-    const ok = cur.input ? (cur.accept ? cur.accept(String(val)) : normEq(val, cur.answer)) : (val === cur.answer);
+    const ok = gaveUp ? false
+      : (cur.typed || cur.input) ? (cur.accept ? cur.accept(String(val)) : normEq(val, cur.answer))
+      : (val === cur.answer);
     if (ok){ score++; streak++; SFX.good(); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
     else { streak = 0; SFX.bad(); }
     if (cur._keyed){                                          // remember how this one went
@@ -3211,8 +3241,14 @@ function revGame(host, opts){
       hist[cur._sig] = h; TT.set('tt.rev_'+sk+'_hist', hist);
     }
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');
-    fb.innerHTML = (ok ? '✓ Correct' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
-    if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; }
+    if (cur.typed)        // code answers are multi-line — show them as a block
+      fb.innerHTML = (ok ? '✓ Looks right' : (gaveUp ? 'One way to write it:' : '✗ Not quite. One way to write it:')) +
+        '<pre class="rvans">' + esc(String(cur.answer)) + '</pre>' +
+        (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
+    else
+      fb.innerHTML = (ok ? '✓ Correct' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
+    if (cur.typed){ $('rvta').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
+    else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; }
     else [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.textContent === cur.answer) b.classList.add('right'); if (b===btn && !ok) b.classList.add('wrong'); });
     $('rvnextrow').hidden = false; $('rvnext').focus();
     $('sc').textContent = 'Score ' + score;
@@ -3317,20 +3353,165 @@ function genGraph(){
   const m = mc(chosen.eq, shuffle(forms.filter(o=>o.eq!==chosen.eq)).map(o=>o.eq));
   return { q:'The graph of <b>y = '+B.n+'</b> undergoes a <b>'+chosen.d.toLowerCase()+'</b>. Which is the new equation?', choices:m.choices, answer:m.answer };
 }
-/* Software: choose the correct code for a task (curated, single-answer) */
-function genCode(){
-  const items = [
-    { q:'Which prints the integers 0 to 4?', a:'for i in range(5): print(i)', w:['for i in range(1, 5): print(i)','for i in range(4): print(i)','print(range(5))'] },
-    { q:'Which gives the largest value in a list <code>xs</code>?', a:'max(xs)', w:['min(xs)','sum(xs)','len(xs)'] },
-    { q:'Which is True only when <code>n</code> is even?', a:'n % 2 == 0', w:['n // 2 == 0','n / 2 == 0','n % 2 == 1'] },
-    { q:'Which reverses the string <code>s</code>?', a:'s[::-1]', w:['s[::1]','s.reverse()','s[1:-1]'] },
-    { q:'Which builds a list of every item in <code>xs</code> plus one?', a:'[x + 1 for x in xs]', w:['xs + 1','[x for x in xs + 1]','xs.append(1)'] },
-    { q:'Which counts how many items are in <code>xs</code>?', a:'len(xs)', w:['count(xs)','xs.length','xs.count()'] },
-    { q:'Which joins a list of strings <code>words</code> with spaces?', a:'" ".join(words)', w:['words.join(" ")','"".join(words)','join(words, " ")'] },
-    { q:'Which reads an integer from the user into <code>n</code>?', a:'n = int(input())', w:['n = input(int)','int(n = input())','n = input().int()'] }
-  ];
-  const it = pk(items);
-  return { q:it.q, choices: mc(it.a, it.w).choices, answer:it.a, code:true, key:'code:'+it.a };
+/* ══ SOFTWARE ══
+   Write-code tasks are typed for real. We can't run Python in the browser, so a
+   task lists the key parts a working answer must contain and we match those
+   against a normalised version of what you typed — whitespace, quote style and
+   variable names are free, and the model answer is always shown afterwards. */
+const normCode = s => String(s || '')
+  .replace(/#[^\n]*/g, '')                                   // comments
+  .replace(/"/g, "'")                                        // quote style
+  .replace(/\s+/g, ' ')                                      // all whitespace → one space
+  .replace(/\s*([(),:;=+\-*/%<>\[\]!])\s*/g, '$1')           // tighten around punctuation
+  .trim();
+
+const CODE_TASKS = [
+  /* ---- easy: one idea each ---- */
+  { id:'e-range', lv:1, task:'Write a loop that prints the numbers <b>0 to 4</b>, one per line.',
+    answer:'for i in range(5):\n    print(i)', need:[/for \w+ in range\(5\):/, /print\(/] },
+  { id:'e-double', lv:1, task:'Write a function <code>double(n)</code> that returns <b>n times 2</b>.',
+    answer:'def double(n):\n    return n * 2', need:[/def double\(n\):/, /return (n\*2|2\*n|n\+n)/] },
+  { id:'e-add', lv:1, task:'Write a function <code>add(a, b)</code> that returns their <b>sum</b>.',
+    answer:'def add(a, b):\n    return a + b', need:[/def add\(a,b\):/, /return (a\+b|b\+a)/] },
+  { id:'e-max', lv:1, task:'Write a function <code>largest(xs)</code> that returns the <b>biggest value</b> in the list.',
+    answer:'def largest(xs):\n    return max(xs)', need:[/def largest\(xs\):/, /return max\(xs\)/] },
+  { id:'e-len', lv:1, task:'Write a function <code>count(xs)</code> that returns <b>how many items</b> the list has.',
+    answer:'def count(xs):\n    return len(xs)', need:[/def count\(xs\):/, /return len\(xs\)/] },
+  { id:'e-rev', lv:1, task:'Write a function <code>backwards(s)</code> that returns the string <b>reversed</b>.',
+    answer:'def backwards(s):\n    return s[::-1]', need:[/def backwards\(s\):/, /return s\[::-1\]/] },
+  { id:'e-even', lv:1, task:'Write a function <code>is_even(n)</code> that returns <b>True</b> only when n is even.',
+    answer:'def is_even(n):\n    return n % 2 == 0', need:[/def is_even\(n\):/, /return n%2==0/] },
+  { id:'e-input', lv:1, task:'Read a name from the user and print <b>Hello</b> followed by that name.',
+    answer:"name = input()\nprint('Hello ' + name)", need:[/=input\(\)/, /print\(/] },
+  { id:'e-sum', lv:1, task:'Write a function <code>total(xs)</code> that returns the <b>sum</b> of the list, using a built-in.',
+    answer:'def total(xs):\n    return sum(xs)', need:[/def total\(xs\):/, /return sum\(xs\)/] },
+  { id:'e-area', lv:1, task:'Write a function <code>area(w, h)</code> that returns the <b>area of a rectangle</b>.',
+    answer:'def area(w, h):\n    return w * h', need:[/def area\(w,h\):/, /return (w\*h|h\*w)/] },
+
+  /* ---- medium: classes, methods, loops that build something ---- */
+  { id:'m-dog', lv:2, task:'Define a class <code>Dog</code> with a method <code>speak()</code> that returns <b>\'Woof\'</b>.',
+    answer:"class Dog:\n    def speak(self):\n        return 'Woof'",
+    need:[/class Dog:/, /def speak\(self\):/, /return 'woof'/i] },
+  { id:'m-init', lv:2, task:'Define a class <code>Student</code> whose constructor takes a <code>name</code> and stores it on the object.',
+    answer:'class Student:\n    def __init__(self, name):\n        self.name = name',
+    need:[/class Student:/, /def __init__\(self,name\):/, /self.name=name/] },
+  { id:'m-loopsum', lv:2, task:'Write <code>total(xs)</code> that adds the list up <b>with a loop</b> — no <code>sum()</code>.',
+    answer:'def total(xs):\n    t = 0\n    for x in xs:\n        t += x\n    return t',
+    need:[/def total\(xs\):/, /for \w+ in xs:/, /(\+=|=\w+\+\w+)/, /return/] },
+  { id:'m-vowels', lv:2, task:'Write <code>count_vowels(s)</code> that returns how many vowels the string contains.',
+    answer:"def count_vowels(s):\n    n = 0\n    for ch in s:\n        if ch in 'aeiou':\n            n += 1\n    return n",
+    need:[/def count_vowels\(s\):/, /for \w+ in s:/, /aeiou/i, /return/] },
+  { id:'m-squares', lv:2, task:'Write <code>squares(xs)</code> that returns a <b>new list</b> of every value squared.',
+    answer:'def squares(xs):\n    return [x * x for x in xs]',
+    need:[/def squares\(xs\):/, /(for \w+ in xs)/, /return/] },
+  { id:'m-evens', lv:2, task:'Write <code>evens(xs)</code> that returns a new list of only the <b>even</b> numbers.',
+    answer:'def evens(xs):\n    return [x for x in xs if x % 2 == 0]',
+    need:[/def evens\(xs\):/, /%2==0/, /return/] },
+  { id:'m-nomax', lv:2, task:'Write <code>biggest(xs)</code> that finds the largest value <b>without</b> using <code>max()</code>.',
+    answer:'def biggest(xs):\n    best = xs[0]\n    for x in xs:\n        if x > best:\n            best = x\n    return best',
+    need:[/def biggest\(xs\):/, /for \w+ in xs:/, /[<>]/, /return/] },
+  { id:'m-rect', lv:2, task:'Define a class <code>Rectangle</code> that stores <code>w</code> and <code>h</code>, with an <code>area()</code> method.',
+    answer:'class Rectangle:\n    def __init__(self, w, h):\n        self.w = w\n        self.h = h\n\n    def area(self):\n        return self.w * self.h',
+    need:[/class Rectangle:/, /def __init__\(self,w,h\):/, /def area\(self\):/, /return self\.(w\*self\.h|h\*self\.w)/] },
+  { id:'m-bank', lv:2, task:'Define a class <code>BankAccount</code> starting at a balance of 0, with a <code>deposit(amount)</code> method that adds to it.',
+    answer:'class BankAccount:\n    def __init__(self):\n        self.balance = 0\n\n    def deposit(self, amount):\n        self.balance += amount',
+    need:[/class BankAccount:/, /def deposit\(self,\w+\):/, /self.balance(\+=|=self.balance\+)/] },
+  { id:'m-words', lv:2, task:'Write <code>word_count(sentence)</code> that returns <b>how many words</b> the sentence has.',
+    answer:'def word_count(sentence):\n    return len(sentence.split())',
+    need:[/def word_count\(sentence\):/, /split\(\)/, /len\(/] },
+
+  /* ---- hard: several steps held together ---- */
+  { id:'h-magic', lv:3, task:'Write <code>is_magic(grid)</code> for a square 2-D list — return <b>True</b> only if every row, every column and both diagonals add to the same total.',
+    answer:'def is_magic(grid):\n    n = len(grid)\n    target = sum(grid[0])\n    for row in grid:\n        if sum(row) != target:\n            return False\n    for c in range(n):\n        if sum(grid[r][c] for r in range(n)) != target:\n            return False\n    if sum(grid[i][i] for i in range(n)) != target:\n        return False\n    if sum(grid[i][n - 1 - i] for i in range(n)) != target:\n        return False\n    return True',
+    need:[/def is_magic\(grid\):/, /sum\(/, /for /, /return/] },
+  { id:'h-pal', lv:3, task:'Write <code>is_palindrome(s)</code> that ignores <b>spaces and capitals</b> — "Never odd or even" is a palindrome.',
+    answer:"def is_palindrome(s):\n    t = s.lower().replace(' ', '')\n    return t == t[::-1]",
+    need:[/def is_palindrome\(s\):/, /lower\(\)/, /\[::-1\]/, /return/] },
+  { id:'h-fizz', lv:3, task:'Write <code>fizzbuzz(n)</code> that prints 1 to n, but <b>Fizz</b> for multiples of 3, <b>Buzz</b> for 5 and <b>FizzBuzz</b> for both.',
+    answer:"def fizzbuzz(n):\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            print('FizzBuzz')\n        elif i % 3 == 0:\n            print('Fizz')\n        elif i % 5 == 0:\n            print('Buzz')\n        else:\n            print(i)",
+    need:[/def fizzbuzz\(n\):/, /%3|%15/, /%5|%15/, /fizz/i, /buzz/i] },
+  { id:'h-bubble', lv:3, task:'Write <code>bubble_sort(xs)</code> that sorts the list <b>in place</b> with nested loops and returns it.',
+    answer:'def bubble_sort(xs):\n    for i in range(len(xs)):\n        for j in range(len(xs) - 1 - i):\n            if xs[j] > xs[j + 1]:\n                xs[j], xs[j + 1] = xs[j + 1], xs[j]\n    return xs',
+    need:[/def bubble_sort\(xs\):/, /for .*for /, /[<>]/, /return/] },
+  { id:'h-second', lv:3, task:'Write <code>second_largest(xs)</code> that returns the <b>second biggest</b> value in the list.',
+    answer:'def second_largest(xs):\n    return sorted(set(xs))[-2]',
+    need:[/def second_largest\(xs\):/, /(sorted|for )/, /return/] },
+  { id:'h-inherit', lv:3, task:'Define <code>Animal</code> with a <code>speak()</code> method, then <code>Dog</code> which <b>inherits</b> from it and <b>overrides</b> <code>speak()</code> to return \'Woof\'.',
+    answer:"class Animal:\n    def speak(self):\n        return '...'\n\nclass Dog(Animal):\n    def speak(self):\n        return 'Woof'",
+    need:[/class Animal:/, /class Dog\(Animal\):/, /def speak\(self\):.*def speak\(self\):/] },
+  { id:'h-freq', lv:3, task:'Write <code>count_words(text)</code> that returns a <b>dictionary</b> mapping each word to how many times it appears.',
+    answer:'def count_words(text):\n    counts = {}\n    for w in text.split():\n        counts[w] = counts.get(w, 0) + 1\n    return counts',
+    need:[/def count_words\(text\):/, /split\(\)/, /(\{\}|dict\(\))/, /return/] }
+];
+function genWrite(lv){
+  const t = pk(CODE_TASKS.filter(x => x.lv === lv));
+  return { q:t.task, typed:true, answer:t.answer, key:'write:'+t.id,
+    accept: v => { const c = normCode(v); return c.length > 4 && t.need.every(re => re.test(c)); },
+    note:'Checked for the key parts of a working answer — names, spacing and quote style are up to you.' };
+}
+
+/* paradigms — what kind of program is this? */
+const PARADIGMS = [
+  { n:'Object-oriented', d:'organises a program around objects that bundle data together with the methods acting on it',
+    ex:'class Account:\n    def deposit(self, n):\n        self.balance += n' },
+  { n:'Procedural', d:'organises a program as an ordered sequence of steps and functions that act on data passed to them',
+    ex:'def main():\n    data = read()\n    show(process(data))' },
+  { n:'Functional', d:'builds a program out of pure functions and avoids changing stored state',
+    ex:'total = reduce(lambda a, b: a + b, map(square, xs))' },
+  { n:'Logic', d:'states facts and rules and lets the system infer the answers',
+    ex:'parent(tom, bob).\ngrandparent(X, Y) :- parent(X, Z), parent(Z, Y).' },
+  { n:'Event-driven', d:'structures a program around handlers that run when something happens',
+    ex:"button.on('click', handle_click)" },
+  { n:'Declarative', d:'describes the result you want rather than the steps to compute it',
+    ex:'SELECT name FROM students WHERE year = 11' },
+  { n:'Imperative', d:'gives an explicit ordered list of commands that change the program’s state as they run',
+    ex:'total = 0\nfor x in xs:\n    total = total + x' },
+  { n:'Structured', d:'builds a program only from sequence, selection and iteration, avoiding jumps like GOTO',
+    ex:'if ready:\n    while queue:\n        serve(queue.pop())' }
+];
+function genParadigm(){
+  const r = pk(PARADIGMS), others = PARADIGMS.filter(x => x !== r), k = ri(0,2);
+  if (k === 0){ const m = mc(r.n, shuffle(others).map(x => x.n));
+    return { q:'Which paradigm <b>' + r.d + '</b>?', choices:m.choices, answer:m.answer, key:'par-d:'+r.n }; }
+  if (k === 1){ const m = mc(r.d, shuffle(others).map(x => x.d));
+    return { q:'What best describes the <b>' + r.n + '</b> paradigm?', choices:m.choices, answer:m.answer, key:'par-n:'+r.n }; }
+  const m = mc(r.n, shuffle(others).map(x => x.n));
+  return { q:'Which paradigm does this show?<pre class="rvans">' + esc(r.ex) + '</pre>',
+    choices:m.choices, answer:m.answer, key:'par-ex:'+r.n };
+}
+
+/* OOP vocabulary */
+const OOPC = [
+  { n:'Encapsulation', d:'bundling data with the methods that use it, and restricting direct access to that data',
+    ex:'keeping balance private and only changing it through deposit()' },
+  { n:'Abstraction', d:'exposing only what someone needs to use the object, hiding how it actually works',
+    ex:'calling car.start() without knowing anything about the engine' },
+  { n:'Inheritance', d:'a class taking on the attributes and methods of a parent class',
+    ex:'class Dog(Animal):' },
+  { n:'Polymorphism', d:'the same method call behaving differently depending on the object it is called on',
+    ex:'Dog and Cat each define speak(), and one loop calls speak() on both' },
+  { n:'Class', d:'the blueprint that defines what attributes and methods its objects will have',
+    ex:'class Student:' },
+  { n:'Object', d:'one concrete thing built from a class, holding its own attribute values',
+    ex:"s = Student('Ana')" },
+  { n:'Method', d:'a function defined inside a class that acts on the object',
+    ex:'def deposit(self, amount):' },
+  { n:'Attribute', d:'a named piece of data stored on an object',
+    ex:'self.balance' },
+  { n:'Constructor', d:'the method that runs as an object is created, setting up its starting state',
+    ex:'def __init__(self):' },
+  { n:'Overriding', d:'a subclass replacing an inherited method with its own version',
+    ex:'Dog redefines speak(), which it inherited from Animal' }
+];
+function genOOP(){
+  const r = pk(OOPC), others = OOPC.filter(x => x !== r), k = ri(0,2);
+  if (k === 0){ const m = mc(r.n, shuffle(others).map(x => x.n));
+    return { q:'Which OOP idea is <b>' + r.d + '</b>?', choices:m.choices, answer:m.answer, key:'oop-d:'+r.n }; }
+  if (k === 1){ const m = mc(r.d, shuffle(others).map(x => x.d));
+    return { q:'In OOP, what does <b>' + r.n + '</b> mean?', choices:m.choices, answer:m.answer, key:'oop-n:'+r.n }; }
+  const m = mc(r.n, shuffle(others).map(x => x.n));
+  return { q:'Which OOP idea does this show?<pre class="rvans">' + esc(r.ex) + '</pre>',
+    choices:m.choices, answer:m.answer, key:'oop-ex:'+r.n };
 }
 function genPython(){
   const t = ri(0,4); let code, out, dis = [];
@@ -3564,7 +3745,11 @@ function genChemName(){ const [name,f]=pk(CHEM_NAMES);
   const m=mc(name, shuffle(CHEM_NAMES.filter(p=>p[0]!==name)).map(p=>p[0])); return {q:'What is the name of <b>'+f+'</b>?', choices:m.choices, answer:m.answer, key:'name-n:'+f}; }
 function genChemIso(){ const m1=ri(10,60), m2=m1+ri(1,3), p=ri(20,80); const ram=rd((m1*p+m2*(100-p))/100,2);
   return {q:'An element has two isotopes: mass <b>'+m1+'</b> ('+p+'%) and mass <b>'+m2+'</b> ('+(100-p)+'%). Find the relative atomic mass.', input:true, answer:ram, accept:v=>Math.abs(Number(v)-ram)<0.05, note:'('+m1+'×'+p+' + '+m2+'×'+(100-p)+')/100 = '+ram+'.'}; }
-const ECONFIG=[[7,'N','1s² 2s² 2p³'],[8,'O','1s² 2s² 2p⁴'],[9,'F','1s² 2s² 2p⁵'],[11,'Na','1s² 2s² 2p⁶ 3s¹'],[12,'Mg','1s² 2s² 2p⁶ 3s²'],[13,'Al','1s² 2s² 2p⁶ 3s² 3p¹'],[15,'P','1s² 2s² 2p⁶ 3s² 3p³'],[16,'S','1s² 2s² 2p⁶ 3s² 3p⁴'],[17,'Cl','1s² 2s² 2p⁶ 3s² 3p⁵'],[18,'Ar','1s² 2s² 2p⁶ 3s² 3p⁶'],[20,'Ca','1s² 2s² 2p⁶ 3s² 3p⁶ 4s²']];
+const ECONFIG=[[1,'H','1s¹'],[2,'He','1s²'],[3,'Li','1s² 2s¹'],[4,'Be','1s² 2s²'],[5,'B','1s² 2s² 2p¹'],
+  [6,'C','1s² 2s² 2p²'],[7,'N','1s² 2s² 2p³'],[8,'O','1s² 2s² 2p⁴'],[9,'F','1s² 2s² 2p⁵'],[10,'Ne','1s² 2s² 2p⁶'],
+  [11,'Na','1s² 2s² 2p⁶ 3s¹'],[12,'Mg','1s² 2s² 2p⁶ 3s²'],[13,'Al','1s² 2s² 2p⁶ 3s² 3p¹'],[14,'Si','1s² 2s² 2p⁶ 3s² 3p²'],
+  [15,'P','1s² 2s² 2p⁶ 3s² 3p³'],[16,'S','1s² 2s² 2p⁶ 3s² 3p⁴'],[17,'Cl','1s² 2s² 2p⁶ 3s² 3p⁵'],[18,'Ar','1s² 2s² 2p⁶ 3s² 3p⁶'],
+  [19,'K','1s² 2s² 2p⁶ 3s² 3p⁶ 4s¹'],[20,'Ca','1s² 2s² 2p⁶ 3s² 3p⁶ 4s²']];
 function genChemEconfig(){ const [z,sym,cfg]=pk(ECONFIG); const m=mc(cfg, shuffle(ECONFIG.filter(e=>e[2]!==cfg)).map(e=>e[2]));
   return {q:'What is the ground-state electron configuration of <b>'+sym+'</b> (Z = '+z+')?', choices:m.choices, answer:m.answer, key:'econf:'+sym}; }
 const VSEPR=[{f:'CH₄',shape:'Tetrahedral',polar:false,imf:'Dispersion',d:'tet'},{f:'NH₃',shape:'Trigonal pyramidal',polar:true,imf:'Hydrogen bonding',d:'pyr'},
@@ -3581,18 +3766,51 @@ const MR=[['H₂O',18.0],['CO₂',44.0],['NaCl',58.5],['CaCO₃',100.1],['H₂SO
 function genChemMoles(){ const [f,mr]=pk(MR);
   if(Math.random()<0.5){ const mass=ri(2,20)*5, n=mass/mr; return {q:'How many moles are in <b>'+mass+' g</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(n,3), accept:v=>Math.abs(Number(v)-n)<0.01, note:'n = m/M = '+mass+'/'+mr+' = '+rd(n,3)+' mol.'}; }
   const n=ri(1,10)/2, mass=n*mr; return {q:'What is the mass of <b>'+n+' mol</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(mass,2), accept:v=>Math.abs(Number(v)-mass)<0.05, note:'m = nM = '+n+'×'+mr+' = '+rd(mass,2)+' g.'}; }
-const LIMRX=[{eq:'N₂ + 3H₂ → 2NH₃',A:['N₂',1],B:['H₂',3]},{eq:'2H₂ + O₂ → 2H₂O',A:['H₂',2],B:['O₂',1]},{eq:'C + O₂ → CO₂',A:['C',1],B:['O₂',1]},{eq:'2Mg + O₂ → 2MgO',A:['Mg',2],B:['O₂',1]}];
+const LIMRX=[{eq:'N₂ + 3H₂ → 2NH₃',A:['N₂',1],B:['H₂',3]},{eq:'2H₂ + O₂ → 2H₂O',A:['H₂',2],B:['O₂',1]},
+  {eq:'C + O₂ → CO₂',A:['C',1],B:['O₂',1]},{eq:'2Mg + O₂ → 2MgO',A:['Mg',2],B:['O₂',1]},
+  {eq:'2Al + 3Cl₂ → 2AlCl₃',A:['Al',2],B:['Cl₂',3]},{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',A:['CH₄',1],B:['O₂',2]},
+  {eq:'4Fe + 3O₂ → 2Fe₂O₃',A:['Fe',4],B:['O₂',3]},{eq:'2Na + 2H₂O → 2NaOH + H₂',A:['Na',2],B:['H₂O',2]},
+  {eq:'N₂ + O₂ → 2NO',A:['N₂',1],B:['O₂',1]},{eq:'Zn + 2HCl → ZnCl₂ + H₂',A:['Zn',1],B:['HCl',2]},
+  {eq:'CaCO₃ + 2HCl → CaCl₂ + H₂O + CO₂',A:['CaCO₃',1],B:['HCl',2]},
+  {eq:'C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',A:['C₃H₈',1],B:['O₂',5]},{eq:'2Mg + CO₂ → 2MgO + C',A:['Mg',2],B:['CO₂',1]}];
 function genChemLimiting(){ const r=pk(LIMRX), nA=ri(2,10), nB=ri(2,10), ra=nA/r.A[1], rb=nB/r.B[1];
   if(ra===rb) return genChemLimiting(); const lim=ra<rb?r.A[0]:r.B[0];
   return {q:'For <b>'+r.eq+'</b>, you have <b>'+nA+' mol '+r.A[0]+'</b> and <b>'+nB+' mol '+r.B[0]+'</b>. Which is the limiting reagent?', choices:[r.A[0],r.B[0]], answer:lim, note:'Compare mol ÷ coefficient: '+r.A[0]+' → '+rd(ra,2)+', '+r.B[0]+' → '+rd(rb,2)+'. Smaller limits.', key:'lim:'+r.eq}; }
-const EMP=[{q:'A compound is 40% C, 6.7% H, 53.3% O by mass. Find its empirical formula.',a:'CH₂O'},{q:'A compound is 52.2% C, 13.0% H, 34.8% O. Find its empirical formula.',a:'C₂H₆O'},
-  {q:'A compound contains 2.4 g C and 0.6 g H. Find its empirical formula.',a:'CH₃'},{q:'A compound is 27.3% C and 72.7% O. Find its empirical formula.',a:'CO₂'},{q:'A compound is 75% C and 25% H. Find its empirical formula.',a:'CH₄'}];
-function genChemEmp(){ const it=pk(EMP); const m=mc(it.a, shuffle(EMP.filter(e=>e.a!==it.a)).map(e=>e.a).concat(['C₂H₄O','CH','C₃H₈'])); return {q:it.q, choices:m.choices, answer:it.a, note:'Divide each mass (or %) by its molar mass, then simplify the ratio.', key:'emp:'+it.a}; }
+const EMP=[{q:'A compound is 40% C, 6.7% H, 53.3% O by mass. Find its empirical formula.',a:'CH₂O'},
+  {q:'A compound is 52.2% C, 13.0% H, 34.8% O. Find its empirical formula.',a:'C₂H₆O'},
+  {q:'A compound contains 2.4 g C and 0.6 g H. Find its empirical formula.',a:'CH₃'},
+  {q:'A compound is 27.3% C and 72.7% O. Find its empirical formula.',a:'CO₂'},
+  {q:'A compound is 75% C and 25% H. Find its empirical formula.',a:'CH₄'},
+  {q:'A compound is 92.3% C and 7.7% H. Find its empirical formula.',a:'CH'},
+  {q:'A compound is 85.7% C and 14.3% H. Find its empirical formula.',a:'CH₂'},
+  {q:'A compound is 80% C and 20% H. Find its empirical formula.',a:'CH₃'},
+  {q:'A compound is 40% S and 60% O. Find its empirical formula.',a:'SO₃'},
+  {q:'A compound is 50% S and 50% O. Find its empirical formula.',a:'SO₂'},
+  {q:'A compound contains 1.2 g C and 3.2 g O. Find its empirical formula.',a:'CO₂'},
+  {q:'A compound is 43.7% P and 56.3% O. Find its empirical formula.',a:'P₂O₅'},
+  {q:'A compound is 63.6% N and 36.4% O. Find its empirical formula.',a:'N₂O'},
+  {q:'A compound is 46.7% N and 53.3% O. Find its empirical formula.',a:'NO'},
+  {q:'A compound is 30.4% N and 69.6% O. Find its empirical formula.',a:'NO₂'},
+  {q:'A compound is 52.9% Al and 47.1% O. Find its empirical formula.',a:'Al₂O₃'},
+  {q:'A compound is 74.2% Na and 25.8% O. Find its empirical formula.',a:'Na₂O'},
+  {q:'A compound is 36.1% Ca and 63.9% Cl. Find its empirical formula.',a:'CaCl₂'},
+  {q:'A compound is 39.3% Na and 60.7% Cl. Find its empirical formula.',a:'NaCl'},
+  {q:'A compound is 60.3% Mg and 39.7% O. Find its empirical formula.',a:'MgO'}];
+function genChemEmp(){ const ix=(Math.random()*EMP.length)|0, it=EMP[ix]; const m=mc(it.a, shuffle(EMP.filter(e=>e.a!==it.a)).map(e=>e.a).concat(['C₂H₄O','CH','C₃H₈'])); return {q:it.q, choices:m.choices, answer:it.a, note:'Divide each mass (or %) by its molar mass, then simplify the ratio.', key:'emp:'+ix}; }
 function genChemSol2(){ const k=ri(0,2);
   if(k===0){ const n=ri(1,10)/2, V=ri(1,5)*0.5, c=n/V; return {q:'Find the concentration of a solution containing <b>'+n+' mol</b> in <b>'+V+' L</b>.', input:true, answer:rd(c,2), accept:v=>Math.abs(Number(v)-c)<0.02, note:'c = n/V = '+n+'/'+V+' = '+rd(c,2)+' mol/L.'}; }
   if(k===1){ const c1=ri(1,4), v1=ri(1,5)*10, v2=v1*ri(2,4), c2=c1*v1/v2; return {q:'<b>'+v1+' mL</b> of <b>'+c1+' mol/L</b> solution is diluted to <b>'+v2+' mL</b>. Find the new concentration.', input:true, answer:rd(c2,3), accept:v=>Math.abs(Number(v)-c2)<0.01, note:'c₁V₁ = c₂V₂ → '+rd(c2,3)+' mol/L.'}; }
   const n=ri(1,5)/2, vol=rd(n*24.79,2); return {q:'What volume does <b>'+n+' mol</b> of gas occupy at 25 °C and 100 kPa? (molar volume 24.79 L/mol)', input:true, answer:vol, accept:v=>Math.abs(Number(v)-vol)<0.1, note:'V = n × 24.79 = '+vol+' L.'}; }
-const RXNTYPE=[['2H₂ + O₂ → 2H₂O','Synthesis'],['CaCO₃ → CaO + CO₂','Decomposition'],['Zn + CuSO₄ → ZnSO₄ + Cu','Displacement'],['CH₄ + 2O₂ → CO₂ + 2H₂O','Combustion'],['HCl + NaOH → NaCl + H₂O','Neutralisation'],['2Na + Cl₂ → 2NaCl','Synthesis'],['AgNO₃ + NaCl → AgCl + NaNO₃','Precipitation']];
+const RXNTYPE=[['2H₂ + O₂ → 2H₂O','Synthesis'],['CaCO₃ → CaO + CO₂','Decomposition'],
+  ['Zn + CuSO₄ → ZnSO₄ + Cu','Displacement'],['CH₄ + 2O₂ → CO₂ + 2H₂O','Combustion'],
+  ['HCl + NaOH → NaCl + H₂O','Neutralisation'],['2Na + Cl₂ → 2NaCl','Synthesis'],
+  ['AgNO₃ + NaCl → AgCl + NaNO₃','Precipitation'],['2KClO₃ → 2KCl + 3O₂','Decomposition'],
+  ['Mg + 2HCl → MgCl₂ + H₂','Displacement'],['C₃H₈ + 5O₂ → 3CO₂ + 4H₂O','Combustion'],
+  ['H₂SO₄ + 2KOH → K₂SO₄ + 2H₂O','Neutralisation'],['Pb(NO₃)₂ + 2KI → PbI₂ + 2KNO₃','Precipitation'],
+  ['2H₂O₂ → 2H₂O + O₂','Decomposition'],['Fe + CuSO₄ → FeSO₄ + Cu','Displacement'],
+  ['N₂ + 3H₂ → 2NH₃','Synthesis'],['BaCl₂ + Na₂SO₄ → BaSO₄ + 2NaCl','Precipitation'],
+  ['2C₂H₆ + 7O₂ → 4CO₂ + 6H₂O','Combustion'],['Cu + 2AgNO₃ → Cu(NO₃)₂ + 2Ag','Displacement'],
+  ['HNO₃ + KOH → KNO₃ + H₂O','Neutralisation'],['S + O₂ → SO₂','Synthesis']];
 function genChemType(){ const [eq,t]=pk(RXNTYPE); const types=['Synthesis','Decomposition','Displacement','Combustion','Neutralisation','Precipitation']; const m=mc(t, shuffle(types.filter(x=>x!==t))); return {q:'Classify this reaction: <b>'+eq+'</b>', choices:m.choices, answer:m.answer, key:'rxntype:'+eq}; }
 const SRP=[['Zn²⁺/Zn',-0.76],['Cu²⁺/Cu',0.34],['Ag⁺/Ag',0.80],['Fe²⁺/Fe',-0.44],['Mg²⁺/Mg',-2.37],['Pb²⁺/Pb',-0.13]];
 function genGalvanic(){ let a=pk(SRP), b=pk(SRP); while(b[0]===a[0]) b=pk(SRP); const [hi,lo]=a[1]>b[1]?[a,b]:[b,a]; const emf=rd(hi[1]-lo[1],2);
@@ -3600,11 +3818,25 @@ function genGalvanic(){ let a=pk(SRP), b=pk(SRP); while(b[0]===a[0]) b=pk(SRP); 
   if(Math.random()<0.5) return {q:'A galvanic cell is built from '+a[0]+' (E° = '+a[1]+' V) and '+b[0]+' (E° = '+b[1]+' V). Find the cell potential.', input:true, answer:emf, accept:v=>Math.abs(Number(v)-emf)<0.01, note:'E°cell = E°cathode − E°anode = '+hi[1]+' − ('+lo[1]+') = '+emf+' V.', key:'galv-emf:'+pair};
   const anode=lo[0].split('/')[1]; return {q:'In a cell of '+a[0]+' (E° = '+a[1]+' V) and '+b[0]+' (E° = '+b[1]+' V), which metal is the <b>anode</b>?', choices:[hi[0].split('/')[1],anode], answer:anode, note:'The more negative E° ('+lo[0]+') is oxidised, so it is the anode.', key:'galv-anode:'+pair}; }
 function genCalor(){ const m=ri(50,300), dT=ri(5,40), q=rd(m*4.18*dT/1000,2); return {q:'How much heat (kJ) warms <b>'+m+' g</b> of water by <b>'+dT+' °C</b>? (c = 4.18 J/g·°C)', input:true, answer:q, accept:v=>Math.abs(Number(v)-q)<0.1, note:'q = mcΔT = '+m+'×4.18×'+dT+' = '+(m*4.18*dT)+' J = '+q+' kJ.'}; }
-const BONDRX=[{eq:'H₂ + Cl₂ → 2HCl',broken:[['H–H',436],['Cl–Cl',242]],formed:[['H–Cl',431,2]]},{eq:'H₂ + Br₂ → 2HBr',broken:[['H–H',436],['Br–Br',193]],formed:[['H–Br',366,2]]},{eq:'N₂ + 3H₂ → 2NH₃',broken:[['N≡N',945],['H–H',436,3]],formed:[['N–H',391,6]]}];
+const BONDRX=[{eq:'H₂ + Cl₂ → 2HCl',broken:[['H–H',436],['Cl–Cl',242]],formed:[['H–Cl',431,2]]},
+  {eq:'H₂ + Br₂ → 2HBr',broken:[['H–H',436],['Br–Br',193]],formed:[['H–Br',366,2]]},
+  {eq:'N₂ + 3H₂ → 2NH₃',broken:[['N≡N',945],['H–H',436,3]],formed:[['N–H',391,6]]},
+  {eq:'H₂ + F₂ → 2HF',broken:[['H–H',436],['F–F',158]],formed:[['H–F',565,2]]},
+  {eq:'CH₄ + Cl₂ → CH₃Cl + HCl',broken:[['C–H',413],['Cl–Cl',242]],formed:[['C–Cl',328],['H–Cl',431]]},
+  {eq:'2HI → H₂ + I₂',broken:[['H–I',298,2]],formed:[['H–H',436],['I–I',151]]},
+  {eq:'C₂H₄ + H₂ → C₂H₆',broken:[['C=C',614],['H–H',436]],formed:[['C–C',348],['C–H',413,2]]},
+  {eq:'2H₂ + O₂ → 2H₂O',broken:[['H–H',436,2],['O=O',498]],formed:[['O–H',463,4]]}];
 function genBondE(){ const r=pk(BONDRX); const sum=arr=>arr.reduce((s,x)=>s+x[1]*(x[2]||1),0); const dH=sum(r.broken)-sum(r.formed);
   const tbl=[...r.broken,...r.formed].map(x=>x[0]+' = '+x[1]).join(', ');
   return {q:'For <b>'+r.eq+'</b>, bond energies (kJ/mol): '+tbl+'. Find ΔH.', input:true, answer:dH, accept:v=>Math.abs(Number(v)-dH)<1, note:'ΔH = Σ(bonds broken) − Σ(bonds formed) = '+sum(r.broken)+' − '+sum(r.formed)+' = '+dH+' kJ/mol.'}; }
-const FORMRX=[{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',t:[['CO₂',-394,1],['H₂O',-286,2],['CH₄',-75,-1],['O₂',0,-2]]},{eq:'2H₂ + O₂ → 2H₂O',t:[['H₂O',-286,2],['H₂',0,-2],['O₂',0,-1]]},{eq:'C + O₂ → CO₂',t:[['CO₂',-394,1],['C',0,-1],['O₂',0,-1]]}];
+const FORMRX=[{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',t:[['CO₂',-394,1],['H₂O',-286,2],['CH₄',-75,-1],['O₂',0,-2]]},
+  {eq:'2H₂ + O₂ → 2H₂O',t:[['H₂O',-286,2],['H₂',0,-2],['O₂',0,-1]]},
+  {eq:'C + O₂ → CO₂',t:[['CO₂',-394,1],['C',0,-1],['O₂',0,-1]]},
+  {eq:'2CO + O₂ → 2CO₂',t:[['CO₂',-394,2],['CO',-111,-2],['O₂',0,-1]]},
+  {eq:'CaCO₃ → CaO + CO₂',t:[['CaO',-635,1],['CO₂',-394,1],['CaCO₃',-1207,-1]]},
+  {eq:'2C₂H₆ + 7O₂ → 4CO₂ + 6H₂O',t:[['CO₂',-394,4],['H₂O',-286,6],['C₂H₆',-84,-2],['O₂',0,-7]]},
+  {eq:'N₂ + 3H₂ → 2NH₃',t:[['NH₃',-46,2],['N₂',0,-1],['H₂',0,-3]]},
+  {eq:'C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',t:[['CO₂',-394,3],['H₂O',-286,4],['C₃H₈',-104,-1],['O₂',0,-5]]}];
 function genFormation(){ const r=pk(FORMRX); const dH=r.t.reduce((s,x)=>s+x[1]*x[2],0); const given=r.t.filter(x=>x[1]!==0).map(x=>'ΔHf('+x[0]+') = '+x[1]).join(', ');
   return {q:'Using standard enthalpies of formation (kJ/mol): '+given+', find ΔH for <b>'+r.eq+'</b>.', input:true, answer:dH, accept:v=>Math.abs(Number(v)-dH)<1, note:'ΔH = ΣΔHf(products) − ΣΔHf(reactants) = '+dH+' kJ/mol.'}; }
 function genGibbs(){ const dH=ri(-100,100), dS=ri(-200,200), T=ri(1,6)*100, dG=rd(dH-T*dS/1000,1);
@@ -3649,103 +3881,295 @@ function genMag(){ const B=[0.1,0.2,0.5,1,2][ri(0,4)], I=ri(1,10), L=ri(1,5), F=
 
 /* ══ ENGINEERING ══
    Content from the Year 11 Engineering Studies "Materials & grain structure"
-   study guide (plain-carbon steels, cast irons, heat treatment, structure &
-   properties). These are curated MC banks — the engine biases toward questions
-   you haven't seen or got wrong, so they don't repeat. */
-const STEEL_LM = [
-  {q:'Plain-carbon steel with up to about 0.25–0.30% carbon, soft and ductile, is known as…', a:'Low-carbon (mild) steel', w:['Eutectoid steel','High-carbon steel','Cast iron']},
-  {q:'“Mild steel” is another name for…', a:'Low-carbon steel', w:['Medium-carbon steel','Eutectoid steel','Malleable iron']},
-  {q:'Which steel is typically used for car-body sheet, rivets and general fabrication?', a:'Low-carbon (mild) steel', w:['High-carbon steel','Eutectoid steel','White cast iron']},
-  {q:'Medium-carbon steel (≈0.30–0.60% C) is used for shafts, axles and gears because it offers…', a:'A useful balance of strength and toughness', w:['Maximum ductility','The lowest possible cost','Graphite for self-lubrication']},
-  {q:'Medium- and high-carbon steels are commonly strengthened by which pair of treatments?', a:'Quenching and tempering', w:['Carburising then annealing','Galvanising then normalising','Cold rolling then nitriding']},
-  {q:'Compared with mild steel, medium-carbon steel is generally…', a:'Harder and stronger but less ductile', w:['Softer and more ductile','Lower in strength','Unable to be heat treated']},
-  {q:'This slow-cooled microstructure — light ferrite grains with only a little hatched pearlite — is which steel?'+microSVG('low'), a:'Low-carbon steel', w:['Eutectoid steel','High-carbon steel','White cast iron']},
-  {q:'This slow-cooled steel shows roughly equal ferrite and hatched pearlite. Which steel is it?'+microSVG('med'), a:'Medium-carbon steel', w:['Low-carbon (mild) steel','Eutectoid steel','Grey cast iron']}];
-const STEEL_EH = [
-  {q:'The eutectoid composition of plain-carbon steel is about…', a:'0.8% carbon (≈0.76%)', w:['0.2% carbon','1.2% carbon','2.5% carbon']},
-  {q:'A slow-cooled steel at the eutectoid composition is essentially…', a:'All pearlite', w:['All ferrite','All cementite','All austenite']},
-  {q:'Which steel best holds a cutting edge and is used for knives, files and cutting tools?', a:'High-carbon steel', w:['Low-carbon (mild) steel','Grey cast iron','Wrought iron']},
-  {q:'Compared with low-carbon steel, high-carbon steel is generally…', a:'Harder and stronger but less ductile and harder to weld', w:['Softer and more ductile','Easier to weld','Lower in strength and hardness']},
-  {q:'A plain-carbon steel above ~0.76% C, with proeutectoid cementite forming at the grain boundaries, is…', a:'Hypereutectoid', w:['Hypoeutectoid','Eutectoid','Austenitic']},
-  {q:'Why can a very hard high-carbon steel still fail suddenly under impact?', a:'Hardness is not toughness — a hard, brittle part can crack', w:['It has too little carbon','It is fully austenitic','It contains graphite flakes']},
-  {q:'This slow-cooled microstructure is essentially all pearlite (hatched colonies). Which steel is it?'+microSVG('eutectoid'), a:'Eutectoid steel (~0.8% C)', w:['Low-carbon steel','Pure ferrite','Grey cast iron']},
-  {q:'This structure is pearlite colonies with a pale proeutectoid cementite network at the boundaries. Which steel is it?'+microSVG('high'), a:'Hypereutectoid (high-carbon) steel', w:['Low-carbon steel','Eutectoid steel','Nodular cast iron']}];
-const STEEL_CP = [
+   study guide. Facts live in small curated tables and the generators below ask
+   about them from several angles (name→fact and fact→name), which is what keeps
+   a subtopic from looping after half a dozen questions. Distractors always come
+   from the same table, so every wrong option is a real, plausible alternative. */
+
+/* turn a curated {q,a,w} list into a keyed MC question */
+function bankQ(list, keyp){
+  const i = (Math.random()*list.length)|0, it = list[i];
+  const m = mc(it.a, it.w);
+  return { q:it.q, choices:m.choices, answer:m.answer, note:it.note, key:keyp+'#'+i };
+}
+/* ask about one field of a row, either direction, distractors from the table */
+function fieldQ(rows, row, field, askName, askField, keyp){
+  const others = rows.filter(x => x !== row);
+  if (Math.random() < 0.5){
+    const m = mc(row.n, shuffle(others).map(x => x.n));
+    return { q:askName(row), choices:m.choices, answer:m.answer, key:keyp+':n:'+field+':'+row.n };
+  }
+  const m = mc(row[field], shuffle(others).map(x => x[field]));
+  return { q:askField(row), choices:m.choices, answer:m.answer, key:keyp+':'+field+':'+row.n };
+}
+
+const MATS_STEEL = [
+  { n:'Low-carbon (mild) steel', c:'up to about 0.25–0.30%',
+    key:'relatively soft and ductile, and it welds easily',
+    use:'car-body sheet, rivets and general fabrication',
+    lim:'low hardness and wear resistance, and it rusts without protection',
+    micro:'mostly ferrite with only a little pearlite' },
+  { n:'Medium-carbon steel', c:'about 0.30–0.60%',
+    key:'a useful balance of strength and toughness, and it can be quenched and tempered',
+    use:'shafts, axles and gears',
+    lim:'harder to form and weld, often needing preheating and controlled cooling',
+    micro:'roughly equal amounts of ferrite and pearlite' },
+  { n:'Eutectoid steel', c:'about 0.76%, usually rounded to 0.8%',
+    key:'comparatively strong and wear resistant, but noticeably less ductile',
+    use:'high-carbon pearlitic wire, including some cables',
+    lim:'much less ductile than lower-carbon steel',
+    micro:'essentially all pearlite' },
+  { n:'High-carbon steel', c:'above about 0.60%, commonly 0.6–1.4%',
+    key:'reaches high hardness after treatment and holds a cutting edge well',
+    use:'knives, files, cutting tools and springs',
+    lim:'brittle conditions crack easily, and it is difficult to weld or form',
+    micro:'pearlite colonies with a proeutectoid cementite network' }
+];
+function genSteelFact(){
+  if (Math.random() < 0.18) return pk(MICRO_STEEL)();     // a diagram question now and then
+  const r = pk(MATS_STEEL), f = pk(['c','key','use','lim','micro']);
+  const ask = {
+    c:     [x=>'Which steel has a carbon content of <b>'+x.c+'</b>?',      x=>'What is the typical carbon content of <b>'+x.n+'</b>?'],
+    key:   [x=>'Which steel is <b>'+x.key+'</b>?',                          x=>'Which best describes the properties of <b>'+x.n+'</b>?'],
+    use:   [x=>'Which steel is typically used for <b>'+x.use+'</b>?',       x=>'What is <b>'+x.n+'</b> typically used for?'],
+    lim:   [x=>'Which steel has this main limitation: <b>'+x.lim+'</b>?',   x=>'What is the main limitation of <b>'+x.n+'</b>?'],
+    micro: [x=>'Which slow-cooled steel shows <b>'+x.micro+'</b>?',         x=>'What does the microstructure of <b>'+x.n+'</b> look like after slow cooling?']
+  }[f];
+  return fieldQ(MATS_STEEL, r, f, ask[0], ask[1], 'steel');
+}
+
+const MATS_IRON = [
+  { n:'Grey cast iron', main:'graphite flakes',
+    key:'good vibration damping, castability and machinability',
+    use:'engine cylinder blocks, machine-tool beds and brake discs',
+    lim:'sharp flake tips concentrate tensile stress, so it is weak in tension',
+    micro:'black graphite flakes in a pearlitic matrix' },
+  { n:'Nodular (ductile) cast iron', main:'rounded graphite nodules',
+    key:'higher tensile ductility and toughness than comparable grey iron',
+    use:'pressure pipes, crankshafts, gears and piston rings',
+    lim:'it needs controlled melt treatment, usually with magnesium',
+    micro:'rounded black graphite nodules in a pearlitic matrix' },
+  { n:'White cast iron', main:'cementite (carbides) rather than free graphite',
+    key:'very hard and highly abrasion resistant',
+    use:'wear liners, grinding components and crusher parts',
+    lim:'low ductility and poor impact toughness, and it is difficult to machine',
+    micro:'pale cementite regions surrounding hatched pearlite' },
+  { n:'Malleable cast iron', main:'temper-carbon rosettes',
+    key:'more ductile and tougher than white iron, so it tolerates shock better',
+    use:'pipe fittings, brackets and small general engineering castings',
+    lim:'the prolonged heat treatment takes time and adds cost',
+    micro:'irregular dark temper-carbon clusters in a ferritic matrix' }
+];
+function genIronFact(){
+  if (Math.random() < 0.18) return pk(MICRO_IRON)();      // a diagram question now and then
+  const r = pk(MATS_IRON), f = pk(['main','key','use','lim','micro']);
+  const ask = {
+    main:  [x=>'In which cast iron is the carbon present mainly as <b>'+x.main+'</b>?', x=>'In <b>'+x.n+'</b>, how is most of the carbon present?'],
+    key:   [x=>'Which cast iron has <b>'+x.key+'</b>?',                                  x=>'Which best describes the properties of <b>'+x.n+'</b>?'],
+    use:   [x=>'Which cast iron is typically used for <b>'+x.use+'</b>?',                x=>'What is <b>'+x.n+'</b> typically used for?'],
+    lim:   [x=>'Which cast iron has this main limitation: <b>'+x.lim+'</b>?',            x=>'What is the main limitation of <b>'+x.n+'</b>?'],
+    micro: [x=>'Which cast iron shows <b>'+x.micro+'</b>?',                              x=>'What does the microstructure of <b>'+x.n+'</b> look like?']
+  }[f];
+  return fieldQ(MATS_IRON, r, f, ask[0], ask[1], 'iron');
+}
+
+const TREATS = [
+  { n:'Full annealing', proc:'heating to the austenitising temperature, holding, then cooling slowly in the furnace',
+    why:'soften the steel, improve ductility and relieve residual stress',
+    out:'relatively coarse ferrite and pearlite' },
+  { n:'Process annealing', proc:'heating a cold-worked steel below the lower critical temperature (A₁), then cooling',
+    why:'restore ductility after cold work without needing to form austenite',
+    out:'new equiaxed ferrite grains formed by recrystallisation' },
+  { n:'Normalising', proc:'austenitising above the upper critical temperature, then cooling in still air',
+    why:'refine a coarse structure and give greater strength than full annealing',
+    out:'finer ferrite and pearlite than furnace cooling gives' },
+  { n:'Quench hardening', proc:'austenitising, then cooling fast enough in oil, water or polymer to suppress diffusion',
+    why:'raise hardness and wear resistance',
+    out:'martensite, commonly described as body-centred tetragonal' },
+  { n:'Tempering', proc:'reheating quenched steel below A₁, holding, then cooling',
+    why:'reduce brittleness and residual stress, improving toughness at some cost in hardness',
+    out:'tempered martensite — fine carbides in a ferritic matrix' },
+  { n:'Carburising', proc:'holding low-carbon steel at high temperature in a carbon-rich environment so carbon diffuses inward',
+    why:'give a hard, wear-resistant case around a tougher, lower-carbon core',
+    out:'a high-carbon case that becomes martensitic after a later quench' },
+  { n:'Nitriding', proc:'treating a suitable steel in a nitrogen-bearing environment below its austenitising temperature',
+    why:'give high surface hardness and better fatigue life with relatively little distortion',
+    out:'hard nitrides in a surface layer and diffusion zone, with no quench needed' },
+  { n:'Induction hardening', proc:'heating selected surfaces rapidly by electromagnetic induction, then quenching them',
+    why:'harden chosen surfaces quickly using the carbon already in the steel',
+    out:'a martensitic surface layer over a largely unchanged core' }
+];
+function genTreatFact(){
+  const r = pk(TREATS), f = pk(['proc','why','out']);
+  const ask = {
+    proc: [x=>'Which process is <b>'+x.proc+'</b>?',        x=>'What does <b>'+x.n+'</b> actually involve?'],
+    why:  [x=>'Which process is done to <b>'+x.why+'</b>?', x=>'Why is <b>'+x.n+'</b> carried out?'],
+    out:  [x=>'Which process produces <b>'+x.out+'</b>?',   x=>'What structure does <b>'+x.n+'</b> produce?']
+  }[f];
+  return fieldQ(TREATS, r, f, ask[0], ask[1], 'treat');
+}
+
+const ENG_PHASE = [
+  { n:'Ferrite', d:'the iron-rich BCC phase — relatively soft and ductile, with low carbon solubility' },
+  { n:'Cementite', d:'iron carbide, Fe₃C — hard and brittle' },
+  { n:'Austenite', d:'the FCC iron phase present at elevated temperature in plain-carbon steel' },
+  { n:'Pearlite', d:'a constituent, not a phase — alternating layers of ferrite and cementite' },
+  { n:'Martensite', d:'the hard, distorted body-centred tetragonal structure formed by fast cooling' },
+  { n:'Temper carbon', d:'compact graphite clusters formed by the prolonged annealing of white iron' },
+  { n:'Graphite', d:'free carbon in a cast iron, appearing as flakes or nodules' },
+  { n:'Grain', d:'a region of the structure with a single crystal orientation' },
+  { n:'Phase', d:'a structurally and chemically distinct region of a material' },
+  { n:'Constituent', d:'a recognisable part of a microstructure, which may contain more than one phase' }
+];
+function genPhaseFact(){
+  const r = pk(ENG_PHASE);
+  return fieldQ(ENG_PHASE, r, 'd',
+    x=>'Which term is <b>'+x.d+'</b>?', x=>'What is <b>'+x.n+'</b>?', 'phase');
+}
+
+const ENG_PROP = [
+  { n:'Strength', d:'the stress a material can withstand under a stated loading mode' },
+  { n:'Stiffness', d:'resistance to elastic deformation, measured in tension by Young’s modulus' },
+  { n:'Elasticity', d:'the ability to return to the original shape once the load is removed' },
+  { n:'Ductility', d:'the capacity for plastic deformation in tension, such as drawing into wire' },
+  { n:'Malleability', d:'the capacity for plastic deformation under compression, such as rolling sheet' },
+  { n:'Hardness', d:'resistance to local indentation or scratching' },
+  { n:'Toughness', d:'the energy absorbed per unit volume before fracture' },
+  { n:'Resilience', d:'the recoverable elastic energy stored per unit volume' },
+  { n:'Brittleness', d:'fracture with little or no plastic deformation first' },
+  { n:'Plasticity', d:'the ability to deform permanently without immediately fracturing' },
+  { n:'Wear resistance', d:'resistance to material being lost from a surface in service' },
+  { n:'Ultimate tensile strength', d:'the maximum engineering tensile stress, based on the original area' }
+];
+function genPropFact(){
+  const r = pk(ENG_PROP);
+  return fieldQ(ENG_PROP, r, 'd',
+    x=>'Which property is <b>'+x.d+'</b>?', x=>'What does <b>'+x.n+'</b> mean?', 'prop');
+}
+
+/* carbon content, pearlite balance and cold work — mixed curated + computed */
+const ENG_CARBON = [
   {q:'For slow-cooled plain-carbon steel below the eutectoid, increasing the carbon content…', a:'Increases the proportion of pearlite', w:['Decreases the proportion of pearlite','Removes all of the ferrite','Has no effect on the structure']},
   {q:'Does adding more carbon always give more pearlite?', a:'Only up to the eutectoid — above it, extra proeutectoid cementite forms', w:['Yes, without limit','No, carbon never affects pearlite','Only in cast iron']},
-  {q:'Welding becomes more difficult as a steel’s carbon content rises because…', a:'It may need preheating and controlled cooling to avoid cracking', w:['Its melting point falls sharply','It contains graphite flakes','It can no longer be formed at all']},
-  {q:'For a slow-cooled 0.30% C steel, the pearlite fraction is closest to…', a:'About 38%', w:['About 62%','About 80%','About 8%'], note:'Lever rule: (0.30 − 0.02)/(0.76 − 0.02) ≈ 0.38 → ≈38% pearlite, ≈62% proeutectoid ferrite.'}];
-const IRON_GN = [
-  {q:'In grey cast iron, most of the carbon is present as…', a:'Graphite flakes', w:['Graphite nodules','Cementite (carbides)','Temper-carbon rosettes']},
-  {q:'Why is grey cast iron weak in tension despite good compressive strength?', a:'Sharp graphite flake tips concentrate tensile stress and start cracks', w:['It contains no carbon at all','Its grains are always coarse','It is fully martensitic']},
-  {q:'Grey cast iron is chosen for engine blocks and machine-tool beds mainly for its…', a:'Good vibration damping, castability and machinability', w:['High tensile ductility','Excellent weldability','Immunity to corrosion']},
-  {q:'Nodular (ductile / SG) cast iron is produced by treating the melt with…', a:'Magnesium', w:['Silicon','Chromium','Nitrogen']},
-  {q:'Why is nodular cast iron tougher and more ductile than grey iron?', a:'Rounded nodules cause less severe stress concentration than sharp flakes', w:['It contains no graphite','It is always quench-hardened','Its matrix is always fully ferritic']},
-  {q:'Typical uses of nodular (ductile) cast iron include…', a:'Pressure pipes, crankshafts and gears', w:['Grinding and crusher liners','Cutting tools and files','Car-body sheet']},
-  {q:'The solid shapes in this iron matrix are graphite flakes. Which cast iron is it?'+microSVG('grey'), a:'Grey cast iron', w:['Nodular cast iron','White cast iron','Malleable cast iron']},
-  {q:'The solid shapes here are rounded graphite nodules. Which cast iron is it?'+microSVG('nodular'), a:'Nodular (ductile) cast iron', w:['Grey cast iron','White cast iron','Eutectoid steel']}];
-const IRON_WM = [
-  {q:'In white cast iron, the carbon is mostly present as…', a:'Cementite (carbides)', w:['Graphite flakes','Graphite nodules','Temper carbon']},
-  {q:'White cast iron is best suited to…', a:'Abrasive-wear parts such as wear liners and crusher components', w:['Impact-loaded demolition tools','Pressure pipes','Formed sheet-metal parts']},
-  {q:'Which cast iron is the hardest and most abrasion-resistant, but also the most brittle?', a:'White cast iron', w:['Grey cast iron','Nodular cast iron','Malleable cast iron']},
-  {q:'Malleable cast iron is made by…', a:'Prolonged heat treatment (annealing) of white-iron castings', w:['Adding magnesium to the molten iron','Quenching grey iron','Cold rolling white iron']},
-  {q:'The compact graphite clusters formed in malleable cast iron are called…', a:'Temper carbon (rosettes)', w:['Flakes','Mg-formed nodules','Continuous cementite networks']},
-  {q:'Typical applications of malleable cast iron include…', a:'Pipe fittings and brackets', w:['Crusher liners','Cutting tools','Cylinder blocks']},
-  {q:'This iron has pale cementite regions and hatched pearlite, with no graphite. Which cast iron is it?'+microSVG('white'), a:'White cast iron', w:['Grey cast iron','Nodular cast iron','Malleable cast iron']},
-  {q:'The irregular solid clusters (temper-carbon rosettes) in this matrix identify which cast iron?'+microSVG('malleable'), a:'Malleable cast iron', w:['Grey cast iron','White cast iron','Nodular cast iron']}];
-const IRON_CG = [
-  {q:'The carbon content of cast iron is typically about…', a:'2.5–4%', w:['up to 0.3%','about 0.8%','about 1.2%']},
-  {q:'Which element in cast iron promotes the formation of graphite?', a:'Silicon', w:['Chromium','Nickel','Manganese']},
-  {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The surrounding matrix (e.g. ferrite or pearlite)', w:['The graphite alone','The carbon percentage only','The pouring temperature only']},
-  {q:'Cast-iron behaviour depends on…', a:'Both the graphite shape and the surrounding matrix', w:['The graphite shape only','The carbon percentage only','The casting colour only']},
-  {q:'In these microstructure schematics, the hatching represents…', a:'Pearlite', w:['Ferrite','Graphite','Austenite']},
-  {q:'In these microstructure schematics, a solid filled shape in a cast iron represents…', a:'Graphite', w:['Pearlite','Ferrite','Cementite']}];
-const HEAT_AN = [
-  {q:'Heating steel to its austenitising temperature and then cooling it slowly in the furnace is…', a:'Full annealing', w:['Normalising','Quench hardening','Tempering']},
-  {q:'The main purpose of full annealing is to…', a:'Soften the steel, improve ductility and relieve residual stress', w:['Maximise surface hardness','Form martensite','Add carbon to the surface']},
-  {q:'Austenitising a steel and then cooling it in still air is…', a:'Normalising', w:['Full annealing','Quench hardening','Process annealing']},
-  {q:'Compared with full annealing of the same steel, normalising usually produces…', a:'Finer ferrite and pearlite, with greater strength', w:['Coarser grains and lower strength','A fully martensitic structure','A hard nitride surface layer']},
-  {q:'A recrystallisation treatment for cold-worked low-carbon steel, carried out below A₁, is…', a:'Process annealing', w:['Full annealing','Quench hardening','Carburising']},
-  {q:'Process annealing restores ductility by…', a:'Forming new equiaxed ferrite grains (recrystallisation), without needing austenite', w:['Forming martensite','Adding carbon to the steel','Producing graphite nodules']}];
-const HEAT_QT = [
-  {q:'Rapidly cooling austenitised steel so that carbon is trapped and martensite forms is…', a:'Quench hardening', w:['Tempering','Process annealing','Normalising']},
-  {q:'Martensite is commonly described as having which crystal structure?', a:'Body-centred tetragonal (BCT)', w:['Face-centred cubic (FCC)','Body-centred cubic (BCC)','Hexagonal close-packed (HCP)']},
-  {q:'Quench hardening is normally followed by tempering because as-quenched steel is…', a:'Hard but brittle, with high residual stress', w:['Too soft to use','Fully recrystallised','Low in carbon']},
-  {q:'Reheating quenched steel below A₁, holding, then cooling is…', a:'Tempering', w:['Quenching','Carburising','Normalising']},
-  {q:'Tempered martensite consists of…', a:'A ferritic matrix containing fine carbide particles', w:['Coarse graphite flakes','Retained austenite only','A single pure cementite phase']},
-  {q:'Tempering a hardened steel generally…', a:'Reduces hardness and brittleness while improving toughness', w:['Increases hardness and brittleness','Adds carbon to the surface','Forms graphite nodules']}];
-const HEAT_SH = [
-  {q:'Which surface treatment adds carbon to the surface and then hardens the carbon-rich case?', a:'Carburising', w:['Nitriding','Induction hardening','Tempering']},
-  {q:'Carburising followed by hardening produces…', a:'A hard, wear-resistant case around a tougher, lower-carbon core', w:['A soft case over a hard core','Uniform hardness throughout','A graphite-rich surface']},
-  {q:'Which surface treatment diffuses nitrogen in to form hard nitrides and usually needs no final quench?', a:'Nitriding', w:['Carburising','Induction hardening','Quench hardening']},
-  {q:'Induction hardening hardens a surface by…', a:'Rapid local heating and quenching, using the carbon already present', w:['Adding carbon to the surface','Diffusing nitrogen inward','Slow cooling in the furnace']},
-  {q:'Which surface treatment adds no extra carbon or nitrogen to the steel?', a:'Induction hardening', w:['Carburising','Nitriding','Cyaniding']},
-  {q:'How do the three surface treatments differ?', a:'Carburising adds carbon; nitriding adds nitrogen; induction adds neither', w:['They are three names for the same process','All three add carbon','All three require slow furnace cooling']}];
-const STR_PH = [
-  {q:'The iron-rich BCC phase that is relatively soft and ductile is…', a:'Ferrite', w:['Cementite','Austenite','Pearlite']},
-  {q:'Iron carbide (Fe₃C), which is hard and brittle, is…', a:'Cementite', w:['Ferrite','Austenite','Pearlite']},
-  {q:'The FCC iron phase present at elevated temperatures in plain-carbon steel is…', a:'Austenite', w:['Ferrite','Cementite','Pearlite']},
-  {q:'Pearlite is best described as…', a:'A constituent: a lamellar mixture of ferrite and cementite', w:['A single phase','Pure iron carbide','A high-temperature FCC phase']},
-  {q:'Is pearlite a phase?', a:'No — it is a constituent made of two phases (ferrite + cementite)', w:['Yes — it is a single phase','Yes — it is pure cementite','No — it is a pure element']},
-  {q:'A region of a microstructure with a single crystal orientation is called a…', a:'Grain', w:['Phase','Constituent','Nodule']},
-  {q:'A structurally and chemically distinct region of a material is called a…', a:'Phase', w:['Grain','Constituent','Lamella']}];
-const STR_MP = [
-  {q:'Toughness is best defined as…', a:'The energy absorbed per unit volume before fracture', w:['Resistance to local indentation','Recoverable elastic energy per volume','Resistance to elastic deformation']},
-  {q:'Resilience is…', a:'The recoverable elastic energy stored per unit volume', w:['The energy absorbed before fracture','Resistance to scratching','The plastic strain at fracture']},
-  {q:'Hardness is…', a:'Resistance to local indentation or scratching', w:['Energy absorbed before fracture','The ability to recover shape on unloading','The capacity for plastic deformation']},
-  {q:'Ductility is plastic deformation in tension; the equivalent under compression (e.g. forming sheet) is…', a:'Malleability', w:['Resilience','Toughness','Hardness']},
-  {q:'Stiffness — resistance to elastic deformation — is measured in tension by…', a:'Young’s modulus', w:['Ultimate tensile strength','The hardness number','Toughness']},
-  {q:'Ultimate tensile strength (UTS) is…', a:'The maximum engineering tensile stress (based on the original area)', w:['The stress at first yield','The recoverable elastic energy','The strain at fracture']},
-  {q:'Brittleness is…', a:'Fracture with little plastic deformation', w:['The ability to deform permanently','High energy absorption before fracture','Resistance to indentation']}];
-const STR_SS = [
-  {q:'On a tensile stress–strain curve, the initial (elastic) slope represents…', a:'Young’s modulus', w:['The UTS','Tensile toughness','The fracture strain']},
-  {q:'On a tensile stress–strain curve, the total area under the curve up to fracture represents…', a:'Tensile toughness', w:['Young’s modulus','Hardness','Resilience only']},
+  {q:'Welding gets harder as a steel’s carbon content rises because…', a:'It may need preheating and controlled cooling to avoid cracking', w:['Its melting point falls sharply','It starts to contain graphite flakes','It can no longer be formed at all']},
+  {q:'A plain-carbon steel above ~0.76% C, with cementite at the grain boundaries, is…', a:'Hypereutectoid', w:['Hypoeutectoid','Eutectoid','Austenitic']},
+  {q:'A plain-carbon steel below ~0.76% C, with proeutectoid ferrite, is…', a:'Hypoeutectoid', w:['Hypereutectoid','Eutectoid','Martensitic']},
+  {q:'Cementite inside pearlite is…', a:'Already present below the eutectoid composition', w:['Only present above the eutectoid','Never present in pearlite','Only present after quenching']},
+  {q:'Cold working a metal raises its dislocation density, which usually…', a:'Increases yield strength and hardness but reduces ductility', w:['Reduces strength and increases ductility','Has no effect on mechanical properties','Simply makes the grains smaller and softer']},
+  {q:'How is cold-rolled steel identified in a longitudinal section?', a:'Elongated, deformed grains aligned with the rolling direction', w:['Rounded graphite nodules','A dark nitride surface layer','Coarse equiaxed grains']},
+  {q:'Work hardening is best explained as…', a:'A higher dislocation density making further slip harder', w:['Grains simply becoming smaller','Carbon being added to the steel','Graphite forming into nodules']},
+  {q:'Ductility lost during cold working can be restored by…', a:'Recrystallisation (process) annealing', w:['Quench hardening','Carburising','Adding magnesium']},
+  {q:'On a tensile stress–strain curve, the initial straight slope represents…', a:'Young’s modulus', w:['The UTS','Tensile toughness','The fracture strain']},
+  {q:'On a tensile stress–strain curve, the total area under it to fracture represents…', a:'Tensile toughness', w:['Young’s modulus','Hardness','Resilience only']},
   {q:'Engineering stress is defined as…', a:'Force divided by the original cross-sectional area (F/A₀)', w:['Force multiplied by length','Change in length over original length','Force divided by the final area']},
   {q:'Engineering strain is defined as…', a:'Change in length divided by the original length (ΔL/L₀)', w:['Force over area','Stress multiplied by modulus','Original length over change in length']},
-  {q:'Cold working a metal raises its dislocation density, which usually…', a:'Increases yield strength and hardness but reduces ductility', w:['Reduces strength and increases ductility','Has no effect on mechanical properties','Simply makes the grains smaller and softer']},
-  {q:'How is cold-rolled steel identified in a longitudinal section?', a:'Elongated / deformed grains aligned with the rolling direction', w:['Rounded graphite nodules','A dark nitride surface layer','Coarse equiaxed grains']},
-  {q:'Work hardening is best explained as…', a:'A higher dislocation density making further slip harder', w:['Grains simply becoming smaller','Carbon being added to the steel','Graphite forming into nodules']},
-  {q:'Ductility lost during cold working can be restored by…', a:'Recrystallisation (process) annealing', w:['Quench hardening','Carburising','Adding magnesium']}];
+  {q:'Necking on a tensile test happens…', a:'After the UTS, as the specimen thins locally before fracture', w:['During the elastic region','Before any yielding','Only in brittle materials']},
+  {q:'Silicon in a cast iron…', a:'Promotes the formation of graphite', w:['Prevents graphite forming','Raises the carbon content','Makes it non-magnetic']},
+  {q:'The carbon content of cast iron is typically about…', a:'2.5–4%', w:['up to 0.3%','about 0.8%','about 1.2%']},
+  {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The surrounding matrix, such as ferrite or pearlite', w:['The graphite alone','The carbon percentage only','The pouring temperature only']},
+  {q:'In these microstructure schematics, the hatching represents…', a:'Pearlite', w:['Ferrite','Graphite','Austenite']},
+  {q:'In these microstructure schematics, a solid filled shape in a cast iron represents…', a:'Graphite', w:['Pearlite','Ferrite','Cementite']}
+];
+function genCarbonFact(){
+  const lever = ri(20, 70) / 100;                 // a computed lever-rule question now and then
+  if (Math.random() < 0.25){
+    const frac = Math.round((lever - 0.02) / (0.76 - 0.02) * 100);
+    const m = mc(frac + '%', [Math.round(100-frac)+'%', Math.round(frac/2)+'%', Math.min(99, Math.round(frac*1.6))+'%']);
+    return { q:'For a slow-cooled <b>' + lever.toFixed(2) + '% C</b> steel, roughly what fraction of the structure is pearlite?',
+      choices:m.choices, answer:m.answer,
+      note:'Lever rule between 0.02% and 0.76% C: (' + lever.toFixed(2) + ' − 0.02) / (0.76 − 0.02) ≈ ' + (frac/100).toFixed(2) + '.' };
+  }
+  return bankQ(ENG_CARBON, 'carb');
+}
+
+/* the microstructure diagrams — kept as their own subtopic */
+const MICRO_STEEL = [
+  () => { const m = mc('Low-carbon steel', ['Eutectoid steel','High-carbon steel','White cast iron']);
+    return { q:'This slow-cooled microstructure — light ferrite grains with only a little hatched pearlite — is which steel?'+microSVG('low'), choices:m.choices, answer:m.answer }; },
+  () => { const m = mc('Medium-carbon steel', ['Low-carbon (mild) steel','Eutectoid steel','Grey cast iron']);
+    return { q:'This slow-cooled steel shows roughly equal ferrite and hatched pearlite. Which steel is it?'+microSVG('med'), choices:m.choices, answer:m.answer }; },
+  () => { const m = mc('Eutectoid steel (~0.8% C)', ['Low-carbon steel','Pure ferrite','Grey cast iron']);
+    return { q:'This slow-cooled microstructure is essentially all pearlite (hatched colonies). Which steel is it?'+microSVG('eutectoid'), choices:m.choices, answer:m.answer }; },
+  () => { const m = mc('Hypereutectoid (high-carbon) steel', ['Low-carbon steel','Eutectoid steel','Nodular cast iron']);
+    return { q:'This structure is pearlite colonies with a pale proeutectoid cementite network at the boundaries. Which steel is it?'+microSVG('high'), choices:m.choices, answer:m.answer }; }
+];
+const MICRO_IRON = [
+  () => { const m = mc('Grey cast iron', ['Nodular cast iron','White cast iron','Malleable cast iron']);
+    return { q:'The solid shapes in this iron matrix are graphite flakes. Which cast iron is it?'+microSVG('grey'), choices:m.choices, answer:m.answer }; },
+  () => { const m = mc('Nodular (ductile) cast iron', ['Grey cast iron','White cast iron','Eutectoid steel']);
+    return { q:'The solid shapes here are rounded graphite nodules. Which cast iron is it?'+microSVG('nodular'), choices:m.choices, answer:m.answer }; },
+  () => { const m = mc('White cast iron', ['Grey cast iron','Nodular cast iron','Malleable cast iron']);
+    return { q:'This iron has pale cementite regions and hatched pearlite, with no graphite. Which cast iron is it?'+microSVG('white'), choices:m.choices, answer:m.answer }; },
+  () => { const m = mc('Malleable cast iron', ['Grey cast iron','White cast iron','Nodular cast iron']);
+    return { q:'The irregular solid clusters (temper-carbon rosettes) in this matrix identify which cast iron?'+microSVG('malleable'), choices:m.choices, answer:m.answer }; }
+];
+
+/* ── physics: quantities, units and vector/scalar ──────────────────────── */
+const PH_QUANT = [
+  { n:'Velocity',     m:'kin',  vec:true,  u:'m/s',      d:'the rate of change of displacement' },
+  { n:'Speed',        m:'kin',  vec:false, u:'m/s',      d:'how fast something moves, with no direction attached' },
+  { n:'Displacement', m:'kin',  vec:true,  u:'m',        d:'the straight-line change in position, with direction' },
+  { n:'Distance',     m:'kin',  vec:false, u:'m',        d:'the total length of the path travelled' },
+  { n:'Acceleration', m:'kin',  vec:true,  u:'m/s²',     d:'the rate of change of velocity' },
+  { n:'Time',         m:'kin',  vec:false, u:'s',        d:'how long something takes' },
+  { n:'Force',        m:'dyn',  vec:true,  u:'N',        d:'a push or pull that can change an object’s motion' },
+  { n:'Mass',         m:'dyn',  vec:false, u:'kg',       d:'the amount of matter in an object' },
+  { n:'Weight',       m:'dyn',  vec:true,  u:'N',        d:'the gravitational force acting on a mass' },
+  { n:'Momentum',     m:'dyn',  vec:true,  u:'kg·m/s',   d:'mass multiplied by velocity' },
+  { n:'Work',         m:'dyn',  vec:false, u:'J',        d:'force multiplied by the distance moved in the force’s direction' },
+  { n:'Energy',       m:'dyn',  vec:false, u:'J',        d:'the capacity to do work' },
+  { n:'Power',        m:'dyn',  vec:false, u:'W',        d:'the rate at which work is done' },
+  { n:'Frequency',    m:'wave', vec:false, u:'Hz',       d:'the number of complete cycles per second' },
+  { n:'Wavelength',   m:'wave', vec:false, u:'m',        d:'the distance between two matching points on a wave' },
+  { n:'Period',       m:'wave', vec:false, u:'s',        d:'the time taken for one complete cycle' },
+  { n:'Amplitude',    m:'wave', vec:false, u:'m',        d:'the maximum displacement from the rest position' },
+  { n:'Wave speed',   m:'wave', vec:false, u:'m/s',      d:'how fast the wave transfers energy through the medium' },
+  { n:'Charge',       m:'em',   vec:false, u:'C',        d:'the property of matter that causes electrical force' },
+  { n:'Current',      m:'em',   vec:false, u:'A',        d:'the rate of flow of electric charge' },
+  { n:'Voltage',      m:'em',   vec:false, u:'V',        d:'the energy transferred per unit of charge' },
+  { n:'Resistance',   m:'em',   vec:false, u:'Ω',        d:'how strongly a component opposes the flow of current' },
+  { n:'Magnetic field strength', m:'em', vec:true, u:'T', d:'the strength of a magnetic field at a point' }
+];
+function genPhysQuant(mod){
+  const rows = PH_QUANT.filter(x => x.m === mod), r = pk(rows), k = ri(0,3);
+  if (k === 0)
+    return { q:'Is <b>' + r.n + '</b> a vector or a scalar?', choices:['Vector','Scalar'],
+      answer: r.vec ? 'Vector' : 'Scalar', key:'phq-v:'+r.n,
+      note: r.vec ? 'A vector has direction as well as size.' : 'A scalar has size only — no direction.' };
+  if (k === 1){
+    const units = [...new Set(PH_QUANT.map(x => x.u))].filter(u => u !== r.u);
+    const m = mc(r.u, shuffle(units));
+    return { q:'What is the SI unit of <b>' + r.n + '</b>?', choices:m.choices, answer:m.answer, key:'phq-u:'+r.n };
+  }
+  return fieldQ(PH_QUANT, r, 'd',
+    x=>'Which quantity is <b>'+x.d+'</b>?', x=>'How is <b>'+x.n+'</b> defined?', 'phq');
+}
+
+/* ── maths: named rules and terms ──────────────────────────────────────── */
+const MATH_TERMS = [
+  { n:'Derivative', d:'the gradient of the tangent — the instantaneous rate of change' },
+  { n:'Definite integral', d:'the signed area between a curve and the x-axis over an interval' },
+  { n:'Stationary point', d:'a point on a curve where the derivative equals zero' },
+  { n:'Second derivative', d:'the rate of change of the gradient, used to test concavity' },
+  { n:'Factorial n!', d:'the product of every whole number from 1 up to n' },
+  { n:'Permutation ⁿPᵣ', d:'the number of ordered arrangements of r items chosen from n' },
+  { n:'Combination ⁿCᵣ', d:'the number of unordered selections of r items chosen from n' },
+  { n:'Domain', d:'the set of inputs a function accepts' },
+  { n:'Range', d:'the set of outputs a function can produce' },
+  { n:'Asymptote', d:'a line that a graph approaches but never quite reaches' },
+  { n:'Gradient', d:'the change in y divided by the change in x' },
+  { n:'Chain rule', d:'the rule for differentiating one function nested inside another' },
+  { n:'Product rule', d:'the rule for differentiating two functions multiplied together' },
+  { n:'Quotient rule', d:'the rule for differentiating one function divided by another' },
+  { n:'Turning point', d:'a stationary point where the gradient changes sign' },
+  { n:'Constant of integration', d:'the unknown constant added to every indefinite integral' }
+];
+function genMathTerm(){
+  const r = pk(MATH_TERMS);
+  return fieldQ(MATH_TERMS, r, 'd',
+    x=>'Which term means <b>'+x.d+'</b>?', x=>'What is <b>'+x.n+'</b>?', 'mterm');
+}
+
 function genMoments(){ const F=ri(5,50), d=rd(ri(2,20)/10,1), M=rd(F*d,2); const m=physMC(M,'N·m',[rd(F+d,1), rd(F/d,2), 2*F*d]);
   return {q:'A force of <b>'+F+' N</b> acts <b>'+d+' m</b> from a pivot (perpendicular). Find the moment.', choices:m.choices, answer:m.answer, note:'M = F × d = '+F+'×'+d+' = '+M+' N·m.'}; }
 function genCouple(){ const F=ri(5,40), d=rd(ri(2,16)/10,1), T=rd(F*d,2); const m=physMC(T,'N·m',[rd(F+d,1), rd(F*d/2,2), 2*F*d]);
@@ -3800,10 +4224,19 @@ const MATH_CONCEPTS = [
   {q:'The graph of y = f(x) + k, for k > 0, is shifted…', a:'k units up', w:['k units down','k units right','k units left']},
   {q:'The graph of y = −f(x) is a reflection of y = f(x) in the…', a:'x-axis', w:['y-axis','line y = x','origin only']}];
 
-BUILD.software = host => revGame(host, { title:'Software', how:'Read code and write it.', statKey:'software',
-  topics:[{id:'out',name:'Predict output',gen:genPython},{id:'write',name:'Write code',gen:genCode}] });
+BUILD.software = host => revGame(host, { title:'Software', how:'Read it, write it, and know the paradigms.', statKey:'software',
+  modules:[
+    {id:'read',name:'Read code',topics:[{id:'s-out',name:'Predict output',gen:genPython}]},
+    {id:'write',name:'Write code',topics:[
+      {id:'s-e',name:'Easy',gen:()=>genWrite(1)},
+      {id:'s-m',name:'Medium',gen:()=>genWrite(2)},
+      {id:'s-h',name:'Hard',gen:()=>genWrite(3)}]},
+    {id:'para',name:'Paradigms & OOP',topics:[
+      {id:'s-para',name:'Paradigms',gen:genParadigm},
+      {id:'s-oop',name:'OOP concepts',gen:genOOP}]}
+  ] });
 BUILD.maths = host => revGame(host, { title:'Maths', how:'Procedural practice — pick a topic.', statKey:'maths',
-  topics:[{id:'concepts',name:'Concepts',bank:MATH_CONCEPTS},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
+  topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
 BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Four modules — pick one, or the whole topic.', statKey:'chem',
   modules:[
     {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape}]},
@@ -3813,18 +4246,26 @@ BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Four modules — pi
   ] });
 BUILD.physics = host => revGame(host, { title:'Physics', how:'Four modules — pick one, or the whole topic.', statKey:'physics',
   modules:[
-    {id:'m1',name:'Kinematics',topics:[{id:'p-kc',name:'Concepts',bank:PHYS_KIN},{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
-    {id:'m2',name:'Dynamics',topics:[{id:'p-dc',name:'Concepts',bank:PHYS_DYN},{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
-    {id:'m3',name:'Waves',topics:[{id:'p-wc',name:'Concepts',bank:PHYS_WAVE},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
-    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',bank:PHYS_EM},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
+    {id:'m1',name:'Kinematics',topics:[{id:'p-kc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_KIN,'kin'):genPhysQuant('kin')},{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
+    {id:'m2',name:'Dynamics',topics:[{id:'p-dc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_DYN,'dyn'):genPhysQuant('dyn')},{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
+    {id:'m3',name:'Waves',topics:[{id:'p-wc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_WAVE,'wave'):genPhysQuant('wave')},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
+    {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_EM,'em'):genPhysQuant('em')},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
 BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Five modules — pick one, or the whole topic.', statKey:'engineering',
   modules:[
-    {id:'steel',name:'Steels',topics:[{id:'e-lm',name:'Low & medium carbon',bank:STEEL_LM},{id:'e-eh',name:'Eutectoid & high carbon',bank:STEEL_EH},{id:'e-cp',name:'Carbon & pearlite',bank:STEEL_CP}]},
-    {id:'iron',name:'Cast irons',topics:[{id:'e-gn',name:'Grey & nodular',bank:IRON_GN},{id:'e-wm',name:'White & malleable',bank:IRON_WM},{id:'e-cg',name:'Composition & graphite',bank:IRON_CG}]},
-    {id:'heat',name:'Heat treatment',topics:[{id:'e-an',name:'Annealing & normalising',bank:HEAT_AN},{id:'e-qt',name:'Quench & temper',bank:HEAT_QT},{id:'e-sh',name:'Surface hardening',bank:HEAT_SH}]},
-    {id:'struct',name:'Structure & properties',topics:[{id:'e-ph',name:'Phases & constituents',bank:STR_PH},{id:'e-mp',name:'Mechanical properties',bank:STR_MP},{id:'e-ss',name:'Stress–strain & cold work',bank:STR_SS}]},
-    {id:'mech',name:'Mechanics',topics:[{id:'e-mom',name:'Moments',gen:genMoments},{id:'e-couple',name:'Couples',gen:genCouple}]}
+    {id:'steel',name:'Steels',topics:[
+      {id:'e-steel',name:'Carbon steels',gen:genSteelFact},
+      {id:'e-carb',name:'Carbon & pearlite',gen:genCarbonFact}]},
+    {id:'iron',name:'Cast irons',topics:[
+      {id:'e-iron',name:'Cast irons',gen:genIronFact}]},
+    {id:'heat',name:'Heat treatment',topics:[
+      {id:'e-treat',name:'Processes',gen:genTreatFact}]},
+    {id:'struct',name:'Structure & properties',topics:[
+      {id:'e-phase',name:'Phases & constituents',gen:genPhaseFact},
+      {id:'e-prop',name:'Mechanical properties',gen:genPropFact}]},
+    {id:'mech',name:'Mechanics',topics:[
+      {id:'e-mom',name:'Moments',gen:genMoments},
+      {id:'e-couple',name:'Couples',gen:genCouple}]}
   ] });
 
 showGrid();
