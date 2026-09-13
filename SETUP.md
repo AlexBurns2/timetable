@@ -1061,7 +1061,28 @@ Deploy: ship `games.html` and redeploy `api/tetris.js`. No new tables.
 Deploy: ship `games.html`, redeploy `api/decks.js`, and create the `shared_deck` table. No existing
 tables touched.
 
-## Typed code, bigger question pools, Guess Who hint rollback (latest)
+## Enter drives the revision games (latest)
+
+**Enter now does the obvious thing**: the first press **checks** your answer (so
+you see whether you got it wrong), and the next press acts as **Next** and moves
+you on. It also starts a game from the topic-picker screen.
+
+Per answer type:
+- **Typed number** — Enter checks, Enter again advances.
+- **Multiple choice** — there's nothing to check until you pick an option, so Enter
+  does nothing before you answer and advances afterwards.
+- **Write code** — a plain Enter still inserts a **newline** (you're writing
+  Python), so **Ctrl/Cmd+Enter** checks there; once checked, Enter advances.
+
+Implementation note: it's a single `keydown` listener on `document`, added in
+`revGame` and removed by the cleanup function the game returns — so it can't stack
+when you re-open a game (verified: a single Enter re-renders the question exactly
+once after opening the same game four times). It handles the advance itself and
+calls `preventDefault()` rather than relying on the focused Next button
+activating, so one press always advances exactly once. A focused module/subtopic
+pill keeps its own Enter so keyboard users can still toggle topics.
+
+## Typed code, bigger question pools, Guess Who hint rollback
 
 - **Guess Who hints rolled back for old days.** The varied hints described below
   turned out to describe the wrong person on puzzles that already existed, so

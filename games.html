@@ -3104,6 +3104,30 @@ function revGame(host, opts){
   const hist = TT.get('tt.rev_'+sk+'_hist', {}) || {};
   const recent = [];
   const RECENT_MAX = 12;
+  /* Enter drives the whole game: the first press checks your answer, the next
+     one moves to the following question. Inside the code box a plain Enter still
+     makes a newline (you're writing Python), so Ctrl/Cmd+Enter checks there.
+     When the Next button already has focus we let it handle its own Enter, so a
+     single press never advances twice. */
+  function onEnter(e){
+    const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
+    if (!isEnter || e.isComposing || e.altKey) return;
+    /* a focused module / subtopic pill keeps its own Enter, so keyboard users can
+       still toggle topics rather than skipping the question */
+    if (e.target && e.target.closest && e.target.closest('.rvsel, .rvsub')) return;
+    if (!cur){ const s = $('rvstart'); if (s){ e.preventDefault(); s.click(); } return; }
+    if (answered){
+      /* handled here rather than letting the focused Next button activate, so
+         one press always advances exactly once */
+      e.preventDefault(); nextQ(); return;
+    }
+    if (e.target && e.target.id === 'rvta' && !(e.ctrlKey || e.metaKey)) return;
+    if (cur.typed && $('rvta')){ e.preventDefault(); submit($('rvta').value); }
+    else if (cur.input && $('rvin')){ e.preventDefault(); submit($('rvin').value); }
+    /* multiple choice has nothing to check until you pick an option */
+  }
+  document.addEventListener('keydown', onEnter);
+
   const curMod = () => opts.modules.find(m=>m.id===modId);
   const pool = () => {
     if (!modular) return topic==='mix' ? opts.topics : [opts.topics.find(t=>t.id===topic)];
@@ -3218,10 +3242,9 @@ function revGame(host, opts){
           ta.value = ta.value.slice(0,s) + '    ' + ta.value.slice(t);
           ta.selectionStart = ta.selectionEnd = s + 4;
         }
-        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(ta.value);
       });
     } else if (cur.input){ const inp = $('rvin'); inp.focus();
-      const go = () => submit(inp.value); $('rvgo').onclick = go; inp.addEventListener('keydown', e => { if (e.key==='Enter') go(); });
+      $('rvgo').onclick = () => submit(inp.value);
     } else { const wrap = $('rvopts'); if (cur.code) wrap.classList.add('rvcodeopts');
       cur.choices.forEach(c => { const b = document.createElement('button'); b.type='button'; b.className='mcopt'; b.textContent = c;
         b.onclick = () => submit(c, b); wrap.appendChild(b); });
@@ -3253,7 +3276,7 @@ function revGame(host, opts){
     $('rvnextrow').hidden = false; $('rvnext').focus();
     $('sc').textContent = 'Score ' + score;
   }
-  return () => {};
+  return () => document.removeEventListener('keydown', onEnter);
 }
 function normEq(val, answer){
   const a = String(answer).trim(), v = String(val).trim();
