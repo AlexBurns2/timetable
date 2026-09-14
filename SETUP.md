@@ -1272,6 +1272,31 @@ create table name_override (
 Until the table exists, the site behaves exactly as before and Rename explains
 that the table is missing.
 
+## Phones and tablets
+
+The whole site now works on a phone. On a computer nothing looks or behaves any
+differently: every change is either limited to narrow screens or only switched on
+for touch screens (a laptop with a touchscreen still counts as a computer).
+
+- **Timetable:** your name and the Settings/Home buttons share the top line,
+  Now and Next get the full width, and the five day buttons fit without scrolling.
+- **Home** and **Revision** show two tiles a row.
+- **Tetris** has on-screen buttons (move, rotate both ways, hold, soft drop, drop).
+  Hold ◀ or ▶ to slide, and tap the board to rotate. The board is about half as
+  wide again as before on a phone, with the stats moved underneath it.
+- **Snake:** swipe on the board or use the arrow buttons; tap the board after a crash.
+- **2048:** swipe. The board shrinks to fit a narrow screen instead of the tiles
+  running off the grid.
+- **Minesweeper:** hold a square to flag it (Flag mode still works too).
+- **Reaction**, the tutorials and the game instructions say "tap" instead of
+  "click" or "press R".
+- **Revision:** long answer options get a row each instead of being squeezed
+  into two columns. The score chart's tooltip stays up after you tap a point.
+- **Moderator page:** names get their own line in the Signed-in users list
+  (before, they were squeezed down to nothing).
+- **Calendar:** the start and end times fit inside the new event box.
+- **iPhone and iPad:** tapping a text box no longer zooms the page in.
+
 ## First-run tutorials
 
 The first time someone uses a part of the site, a short tutorial points at it:

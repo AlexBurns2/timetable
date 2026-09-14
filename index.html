@@ -236,6 +236,20 @@ button,select,input{font:inherit;color:inherit}
   .weeknav{order:3;width:100%;justify-content:space-between}
   [data-skin="paper"] .wrap::before{display:none}
 }
+/* phones: name and buttons share the top line, Now/Next get the full width
+   underneath, and the five day buttons fit without scrolling */
+@media (max-width:600px){
+  .wrap{padding:14px max(14px, env(safe-area-inset-right)) 60px max(14px, env(safe-area-inset-left))}
+  .topbar{padding:14px;gap:12px}
+  .brand{flex:1 1 0;max-width:none;min-width:0;order:1}
+  .headbtns{flex-direction:row;order:2;align-self:flex-start}
+  .now{order:3;flex:1 1 100%}
+  .nowcard{padding:10px 12px}
+  .nowcard .subj{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .dayswitch{scrollbar-width:none}
+  .dayswitch::-webkit-scrollbar{display:none}
+  .dayswitch button{flex:1 0 auto;padding:8px 10px}
+}
 
 /* gate */
 .gate{position:fixed;inset:0;z-index:60;background:var(--bg);background-image:var(--bg-img);

@@ -1070,3 +1070,47 @@ create table name_override (
 everything loads before the table exists, a student gets 403, the rename shows on
 the roster, both boards and the forum, the score rows are untouched, clearing
 restores the email name, and names cap at 40.
+
+### 8.22 Phones and tablets
+
+The brief was "mobile compatible without changing desktop". Two gates keep those
+apart, and anything new should use one of them:
+
+- **Narrow-screen CSS** in `max-width` queries (640, 600, 560, 520, 480px). All
+  the new rules sit at the end of `games.css`, in the existing 640/560 blocks of
+  `site.css`, a new 600px block in `index.html`, and the 600px block in
+  `calendar.html`.
+- **Touch** as `(hover: none) and (pointer: coarse)`: `TOUCH` and `tap(desktop,
+  touch)` in `games.js`, `TOUCH` in `tour.js`, and the matching media query in
+  `games.css`. A touchscreen laptop reports a fine primary pointer, so it keeps
+  the desktop version. On-screen pads are only *rendered* when `TOUCH` is true,
+  and the desktop strings are passed through `tap()` unchanged.
+
+Shared helpers in `games.js`: `onSwipe(el, fn, {step, repeat, tapFn})` (ignores
+mouse pointers) and `wirePad(pad, down, up)` (hold-able buttons with pointer
+capture, so a slide off the button still releases it).
+
+Per game:
+- **Tetris:** the pad's handler mirrors `onKey`/`onKeyUp` rather than calling
+  them, so key handling is untouched. Rotation doesn't auto-repeat on touch.
+  Below 560px `.tgame` becomes a grid (Hold | board | Next, stats underneath)
+  using `display:contents` on `.tleft`, which took the board from ~120px to
+  ~183px wide at 375px. Start scrolls the board into view on touch.
+- **2048:** tiles are placed in pixels, so `fit()` shrinks `CELL` when the
+  wrapper is narrower than 320px (it was 74px tiles on a ~70px grid, visibly
+  misaligned). At desktop widths it computes 74, the original value.
+- **Minesweeper:** hold (380 ms) flags. The click that follows the lift, and
+  Android's own long-press `contextmenu`, are ignored for a moment afterwards,
+  or the flag would be dug or toggled straight back.
+- **Revision:** options over 22 characters get `.rvlong`, which only has an
+  effect below 520px. The score chart ignores `pointerleave` from touch, because
+  a finger "leaves" the moment it lifts.
+- `theme.css` forces text inputs to 16px on iOS only
+  (`@supports (-webkit-touch-callout:none)`), since Safari zooms into anything
+  smaller when tapped.
+
+Checked at 320 and 375px with touch emulated (pads, swipes, hold-to-flag and
+tap-to-rotate driven with real pointer events, no horizontal overflow on any
+page), and at 1280px to confirm the desktop computed styles, strings, board
+sizes and layouts match what was there before. `index2.html` isn't linked from
+anywhere and was left alone.

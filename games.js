@@ -93,6 +93,46 @@ let isAdmin = false;
 })();
 
 /* every game returns a cleanup fn so switching never leaves a timer running */
+/* Phones and tablets get on-screen controls and "tap" wording. A laptop with a
+   touchscreen still has a mouse as its main pointer, so it keeps the desktop
+   version exactly as it was. */
+const TOUCH = (() => { try { return matchMedia('(hover: none) and (pointer: coarse)').matches; } catch { return false; } })();
+const tap = (desktop, touch) => TOUCH ? touch : desktop;
+/* swipe detection for a board: calls fn('l'|'r'|'u'|'d') once per swipe, or on
+   every `step` pixels of travel when `repeat` is set (Snake turns mid-swipe) */
+function onSwipe(el, fn, { step = 26, repeat = false, tapFn = null } = {}){
+  let sx = 0, sy = 0, t0 = 0, active = false, fired = false;
+  el.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return;
+    active = true; fired = false; sx = e.clientX; sy = e.clientY; t0 = Date.now(); });
+  el.addEventListener('pointermove', e => {
+    if (!active || (fired && !repeat)) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < step) return;
+    fn(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'l' : 'r') : (dy < 0 ? 'u' : 'd'));
+    fired = true; sx = e.clientX; sy = e.clientY;
+  });
+  const end = e => { if (!active) return; active = false;
+    if (!fired && tapFn && e.type === 'pointerup' && Date.now() - t0 < 350 &&
+        Math.hypot(e.clientX - sx, e.clientY - sy) < 12) tapFn(); };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+}
+/* a row of hold-able on-screen buttons: down(act) on press, up(act) on release */
+function wirePad(pad, down, up){
+  if (!pad) return;
+  pad.querySelectorAll('button[data-act]').forEach(b => {
+    const act = b.dataset.act; let held = false;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); held = true; b.classList.add('on');
+      try { b.setPointerCapture(e.pointerId); } catch {}
+      down(act); });
+    const release = () => { if (!held) return; held = false; b.classList.remove('on'); if (up) up(act); };
+    b.addEventListener('pointerup', release);
+    b.addEventListener('pointercancel', release);
+    b.addEventListener('lostpointercapture', release);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+}
+
 let stop = null;
 const GAMES = [
   { id:'flashcards', cat:'Revision', ico:'🗂️', name:'Flashcards', blurb:'Make, share and study decks' },
@@ -112,7 +152,7 @@ const GAMES = [
   { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
   { id:'mines',  cat:'Arcade', ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
-  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:'Click the moment it turns green' }
+  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
 const CAT_ORDER = ['Timetable', 'Arcade'];
 
@@ -942,6 +982,14 @@ BUILD.tetris = host => {
         '<div class="tpanel"><div class="tlabel">Next</div><canvas id="tnext" width="80" height="224"></canvas></div>' +
       '</div>' +
     '</div>' +
+    (TOUCH ? '<div class="tpad" id="tpad">' +
+      '<button type="button" data-act="left" aria-label="Move left">◀</button>' +
+      '<button type="button" data-act="right" aria-label="Move right">▶</button>' +
+      '<button type="button" data-act="rotateCCW" aria-label="Rotate anticlockwise">↺</button>' +
+      '<button type="button" data-act="rotateCW" aria-label="Rotate clockwise">↻</button>' +
+      '<button type="button" data-act="hold" class="lbl">Hold</button>' +
+      '<button type="button" data-act="softDrop" aria-label="Soft drop">▼</button>' +
+      '<button type="button" data-act="hardDrop" class="lbl wide">Drop</button></div>' : '') +
     '<div class="tbtns">' +
       '<button class="btn primary" id="tstart" type="button">Start</button>' +
       '<button class="btn" id="tpause" type="button">Pause</button>' +
@@ -1259,13 +1307,13 @@ BUILD.tetris = host => {
     try { await TT.api('/api/gamestate', { method:'DELETE', params:{ mode } }); } catch(e){}
   }
   function togglePause(){
-    if (phase==='playing'){ phase='paused'; pauseAt=Date.now(); $$('tpause').textContent='Resume'; showOver('Paused', 'Press '+keyLabel(cfg.keys.pause)+' to resume'); }
+    if (phase==='playing'){ phase='paused'; pauseAt=Date.now(); $$('tpause').textContent='Resume'; showOver('Paused', tap('Press '+keyLabel(cfg.keys.pause)+' to resume', 'Tap to resume')); }
     else if (phase==='paused'){ phase='playing'; baseTime += Date.now()-pauseAt; lastTick=performance.now(); $$('tpause').textContent='Pause'; hideOver(); }
   }
   function end(won){
     phase='over'; clearInterval(loopId);
     if (won){ SFX.win(); flash('big'); } else { SFX.lose(); flash('redon'); shake(); }
-    const restart = 'Restart ('+keyLabel(cfg.keys.restart)+')';
+    const restart = tap('Restart ('+keyLabel(cfg.keys.restart)+')', 'Tap to restart');
     if (mode==='sprint'){
       if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};
         if (t.best==null||el<t.best) t.best=el; s.tetris={week:wk,best:t.best}; TT.set('tt.stats',s);
@@ -1277,7 +1325,7 @@ BUILD.tetris = host => {
       submitScore(ms); showOver('Survived '+fmtHMS(ms), restart);
       clearState();
     } else if (mode==='practice'){   // nothing tracked — offer undo of the fatal piece
-      showOver('Topped out on '+score, cleared+' lines · Undo the last piece, or '+restart);
+      showOver('Topped out on '+score, cleared+' lines · '+tap('Undo the last piece, or '+restart, 'Undo the last piece, or tap to restart'));
     } else {   // zen — track best score locally + push current/best to the Zen board
       const s=allStats(); const zs=s.tetriszenscore||{best:null};
       if (zs.best==null||score>zs.best) zs.best=score; s.tetriszenscore={best:zs.best}; TT.set('tt.stats',s);
@@ -1374,7 +1422,7 @@ BUILD.tetris = host => {
     renderModes(); renderStatsLabels(); updateStats(); updateSaveBtn(); draw();
     $$('tstart').textContent='Start'; $$('tpause').textContent='Pause';
     const titles = { sprint:'Sprint: 40 lines', survival:'Survival: rising speed', zen:'Zen: endless and relaxed', practice:'Practice: undo and redo' };
-    showOver(titles[mode], 'Press Start or '+keyLabel(cfg.keys.hardDrop));
+    showOver(titles[mode], tap('Press Start or '+keyLabel(cfg.keys.hardDrop), 'Tap to start'));
     loadLB();
     if (saveable() && TT.myEmail()){          // offer to resume a saved game
       const forMode = mode;
@@ -1393,7 +1441,9 @@ BUILD.tetris = host => {
   const ACTIONS=[['left','Move left'],['right','Move right'],['softDrop','Soft drop'],['hardDrop','Hard drop'],
                  ['rotateCW','Rotate CW'],['rotateCCW','Rotate CCW'],['rotate180','Rotate 180'],['hold','Hold'],['pause','Pause'],['restart','Restart']];
   function keyLabel(k){ return k===' '?'Space':k==='ArrowLeft'?'←':k==='ArrowRight'?'→':k==='ArrowUp'?'↑':k==='ArrowDown'?'↓':(k&&k.length===1)?k.toUpperCase():k; }
-  function renderKeyHint(){ const K=cfg.keys; $$('tkeyhint').innerHTML =
+  function renderKeyHint(){ const K=cfg.keys;
+    if (TOUCH){ $$('tkeyhint').textContent = 'Hold ◀ ▶ to slide. Tap the board to rotate.'; return; }
+    $$('tkeyhint').innerHTML =
     keyLabel(K.left)+' '+keyLabel(K.right)+' move · '+keyLabel(K.rotateCW)+' cw · '+keyLabel(K.rotateCCW)+' ccw · '+keyLabel(K.rotate180)+' 180 · '+
     keyLabel(K.softDrop)+' soft · '+keyLabel(K.hardDrop)+' drop · '+keyLabel(K.hold)+' hold · '+keyLabel(K.pause)+' pause · '+keyLabel(K.restart)+' restart'; }
   function slider(k,label,unit,min,max){ return '<div class="tslider"><label>'+label+': <b id="tslv_'+k+'">'+cfg[k]+'</b>'+unit+'</label>'+
@@ -1452,7 +1502,32 @@ BUILD.tetris = host => {
   }
 
   /* ── wire up ── */
-  $$('tstart').onclick = begin;
+  /* ── touch: the pad does what the keys do; tapping the board rotates ── */
+  if (TOUCH){
+    wirePad($$('tpad'), act => {
+      if (phase==='ready' || phase==='over'){ if (act==='hardDrop') begin(); return; }
+      if (phase!=='playing') return;
+      const now=performance.now();
+      if (act==='left' || act==='right'){ const d = act==='left' ? -1 : 1;
+        moveDir=d; dasStart=now; dasCharged=false; if (tryMove(d,now)) SFX.move(); }
+      else if (act==='softDrop'){ dropAcc=0; softHeld=true; }
+      else if (act==='rotateCW'){ if (tryRotate(1,now)) SFX.rotate(); }
+      else if (act==='rotateCCW'){ if (tryRotate(-1,now)) SFX.rotate(); }
+      else if (act==='hardDrop'){ hardDrop(now); }
+      else if (act==='hold'){ doHold(now); }
+      if (phase==='playing') draw();
+    }, act => {
+      if (act==='left' && moveDir===-1){ moveDir=0; dasCharged=false; }
+      else if (act==='right' && moveDir===1){ moveDir=0; dasCharged=false; }
+      else if (act==='softDrop') softHeld=false;
+    });
+    onSwipe(can, () => {}, { step:40, tapFn:() => {
+      if (phase==='playing'){ if (tryRotate(1, performance.now())) SFX.rotate(); draw(); } } });
+  }
+  /* on a phone, starting brings the board and pad into view */
+  const toBoard = () => { if (!TOUCH) return; const g = document.querySelector('#twrap .tgame');
+    if (g && g.scrollIntoView) g.scrollIntoView({ block:'start', behavior: reduced() ? 'auto' : 'smooth' }); };
+  $$('tstart').onclick = () => { begin(); toBoard(); };
   $$('tpause').onclick = () => { if (phase==='playing'||phase==='paused') togglePause(); };
   $$('tundo').onclick = undo;
   $$('tredo').onclick = redo;
@@ -1914,21 +1989,35 @@ BUILD.memory = host => {
 
 /* ── Snake ─────────────────────────────────────────────────────── */
 BUILD.snake = host => {
-  head(host, 'Snake', 'Arrow keys or WASD. Press R after a crash.',
-       '<canvas id="cv" width="320" height="320"></canvas>');
+  head(host, 'Snake', tap('Arrow keys or WASD. Press R after a crash.', 'Swipe on the board or use the arrows. Tap the board after a crash.'),
+       '<canvas id="cv" width="320" height="320"></canvas>' +
+       (TOUCH ? '<div class="tpad dpad" id="snpad">' +
+         '<button type="button" data-act="u" aria-label="Up">▲</button>' +
+         '<button type="button" data-act="l" aria-label="Left">◀</button>' +
+         '<button type="button" data-act="d" aria-label="Down">▼</button>' +
+         '<button type="button" data-act="r" aria-label="Right">▶</button></div>' : ''));
   const ctx = $('cv').getContext('2d'), N = 16, S = 20;
   let snake = [{x:8,y:8}], dir = {x:1,y:0}, next = dir,
       food = {x:4,y:4}, score = 0, dead = false, recorded = false;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
+  const steer = m => {
+    if (m[0] === -dir.x && m[1] === -dir.y) return;   /* no instant reverse */
+    next = {x:m[0], y:m[1]};
+  };
   const key = e => {
     const k = e.key.toLowerCase();
     const m = {arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],
                arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
     if (!m) return;
     e.preventDefault();
-    if (m[0] === -dir.x && m[1] === -dir.y) return;   /* no instant reverse */
-    next = {x:m[0], y:m[1]};
+    steer(m);
   };
+  const DIRS = { u:[0,-1], d:[0,1], l:[-1,0], r:[1,0] };
+  const again = () => { snake=[{x:8,y:8}]; dir={x:1,y:0}; next=dir; score=0; dead=false; recorded=false; };
+  if (TOUCH){
+    onSwipe($('cv'), d => steer(DIRS[d]), { step:22, repeat:true, tapFn:() => { if (dead) again(); } });
+    wirePad($('snpad'), a => { if (dead) again(); else steer(DIRS[a]); });
+  }
   addEventListener('keydown', key);
   const tick = () => {
     if (dead) return;
@@ -1944,7 +2033,7 @@ BUILD.snake = host => {
       } else snake.pop();
     }
     if (dead && !recorded){ recorded = true; SFX.lose(); recordStat('snake', {key:'high', mode:'max', value:score}); }
-    $('sc').textContent = dead ? 'Dead on ' + score + ' (best ' + (statVal('snake','high')||score) + ') · press R'
+    $('sc').textContent = dead ? 'Dead on ' + score + ' (best ' + (statVal('snake','high')||score) + ') · ' + tap('press R', 'tap to restart')
                                : 'Score ' + score + (statVal('snake','high') ? ' · best ' + statVal('snake','high') : '');
     ctx.clearRect(0,0,320,320);
     ctx.fillStyle = css('--accent');
@@ -1954,7 +2043,7 @@ BUILD.snake = host => {
   };
   const restart = e => {
     if (e.key.toLowerCase() !== 'r' || !dead) return;
-    snake=[{x:8,y:8}]; dir={x:1,y:0}; next=dir; score=0; dead=false; recorded=false;
+    again();
   };
   addEventListener('keydown', restart);
   let t = null;                                     /* self-scheduling so pace can ramp with score */
@@ -1967,11 +2056,23 @@ BUILD.snake = host => {
    Tiles are absolutely positioned and keep a stable id, so a move
    transitions each one to its new cell instead of teleporting.       */
 BUILD.g2048 = host => {
-  head(host, '2048', 'Arrow keys or WASD. Combine matching tiles.',
+  head(host, '2048', tap('Arrow keys or WASD. Combine matching tiles.', 'Swipe to slide the tiles. Combine matching ones.'),
        '<div id="g2048wrap"><div id="g2048bg"></div><div id="g2048tiles"></div></div>');
-  const CELL = 74, GAP = 8, STEP = CELL + GAP;
+  const GAP = 8, FULL = 74;
+  let CELL = FULL, STEP = CELL + GAP;
   const wrap = $('g2048wrap'), bg = $('g2048bg'), layer = $('g2048tiles');
   wrap.style.cssText = 'position:relative;width:' + (4*STEP-GAP) + 'px;max-width:100%;aspect-ratio:1';
+  /* tiles are placed in pixels, so on a screen narrower than the board the
+     cells shrink to fit rather than the tiles running off the grid */
+  const fit = () => {
+    wrap.style.width = (4*(FULL+GAP)-GAP) + 'px';
+    const w = wrap.clientWidth, cell = w ? Math.min(FULL, Math.floor((w - 3*GAP) / 4)) : FULL;
+    const changed = cell !== CELL;
+    CELL = cell; STEP = CELL + GAP;
+    wrap.style.width = (4*STEP-GAP) + 'px';
+    return changed;
+  };
+  fit();
   bg.style.cssText = 'position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);gap:' + GAP + 'px';
   for (let i=0;i<16;i++){ const d=document.createElement('div'); d.className='cell2048'; bg.appendChild(d); }
   layer.style.cssText = 'position:absolute;inset:0';
@@ -2003,6 +2104,7 @@ BUILD.g2048 = host => {
                                   {duration:130,easing:'ease'}); }
       }
       el.textContent = t.val;
+      el.style.width = el.style.height = CELL + 'px';
       el.style.background = tint(t.val);
       el.style.fontSize = (t.val>=1000?17:t.val>=100?20:22)+'px';
       el.style.transform = 'translate(' + (t.c*STEP) + 'px,' + (t.r*STEP) + 'px)';
@@ -2080,8 +2182,11 @@ BUILD.g2048 = host => {
     if (!m) return; e.preventDefault(); move(m);
   };
   addEventListener('keydown', key);
+  const refit = () => { if (fit()) paint(); };
+  addEventListener('resize', refit);
+  if (TOUCH) onSwipe(wrap, move, { step:30 });
   spawn(); spawn(); paint();
-  return () => removeEventListener('keydown', key);
+  return () => { removeEventListener('keydown', key); removeEventListener('resize', refit); };
 };
 
 /* ── Minesweeper ───────────────────────────────────────────────── */
@@ -2093,7 +2198,8 @@ BUILD.mines = host => {
   };
   let lvl = TT.get('tt.minesLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   head(host, 'Minesweeper',
-    'Dig to open, right-click (or Flag mode) to flag. Your first dig is always safe. Click a number once its flags match to sweep the rest.',
+    tap('Dig to open, right-click (or Flag mode) to flag. Your first dig is always safe. Click a number once its flags match to sweep the rest.',
+        'Tap to dig, hold a square (or use Flag mode) to flag it. Your first dig is always safe. Tap a number once its flags match to sweep the rest.'),
     '<div class="minesbar"><div class="diffbar" id="mlvl"></div>' +
       '<div class="minesinfo"><span id="mflags">💣 0</span><span id="mtime">⏱ 0</span></div></div>' +
     '<div id="mines"></div>' +
@@ -2101,6 +2207,7 @@ BUILD.mines = host => {
     '<button class="btn" id="mflagmode" type="button" aria-pressed="false">🚩 Flag mode: off</button></div>');
   const grid = $('mines');
   let N, MINES, bomb, open, flag, over, first, tstart, timer = null, flagMode = false;
+  let holdTimer = null, heldAt = 0;
   const idx = (r,c) => r*N+c;
   const around = i => {
     const r=(i/N)|0, c=i%N, out=[];
@@ -2166,8 +2273,18 @@ BUILD.mines = host => {
         else { b.className = 'flag'; b.textContent = '🚩'; }
       }
       const ii = i;
+      if (TOUCH){                                /* hold to flag, since there's no right-click */
+        b.addEventListener('pointerdown', () => { clearTimeout(holdTimer);
+          holdTimer = setTimeout(() => { holdTimer = null;
+            if (over || open[ii]) return;
+            flag[ii] = !flag[ii]; heldAt = Date.now(); SFX.flip();
+            try { if (navigator.vibrate) navigator.vibrate(15); } catch {}
+            paint(); info(); }, 380); });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => b.addEventListener(t, () => clearTimeout(holdTimer)));
+      }
       b.onclick = () => {
         if (over) return;
+        if (TOUCH && Date.now() - heldAt < 700) return;   // the lift after a hold isn't a dig
         if (flagMode && !open[ii]){ flag[ii] = !flag[ii]; SFX.flip(); paint(); info(); return; }
         const wasOpen = open[ii];
         if (wasOpen) chord(ii); else dig(ii);
@@ -2175,6 +2292,7 @@ BUILD.mines = host => {
         paint(); info(); check();
       };
       b.oncontextmenu = e => { e.preventDefault();
+        if (TOUCH && Date.now() - heldAt < 1200) return;  // a phone's long-press menu, already handled
         if (over || open[ii]) return; flag[ii] = !flag[ii]; SFX.flip(); paint(); info(); };
       grid.appendChild(b);
     }
@@ -2272,7 +2390,7 @@ BUILD.typing = host => {
 /* ── Reaction test ─────────────────────────────────────────────── */
 BUILD.react = host => {
   head(host, 'Reaction', 'Best of five.',
-       '<div id="react">Click to start</div>');
+       '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
   const el = $('react');
   let state = 'idle', t = null, at = 0, times = [];
   const show = (cls, text) => { el.className = cls; el.textContent = text; };
@@ -2281,7 +2399,7 @@ BUILD.react = host => {
     state = 'wait';
     /* record the stimulus time on the frame the green is actually painted, using a
        monotonic clock — so the timer starts when you SEE green, not a tick before */
-    t = setTimeout(() => { state = 'go'; show('go', 'CLICK');
+    t = setTimeout(() => { state = 'go'; show('go', tap('CLICK', 'TAP'));
                            requestAnimationFrame(() => { at = performance.now(); }); },
                    900 + Math.random()*2200);
   };
@@ -2290,7 +2408,7 @@ BUILD.react = host => {
   el.addEventListener('pointerdown', e => {
     e.preventDefault();
     if (state === 'idle'){ arm(); return; }
-    if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon. Click to retry.'); return; }
+    if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon. ' + tap('Click', 'Tap') + ' to retry.'); return; }
     if (state === 'go'){
       const ms = Math.max(0, Math.round(performance.now() - at));
       times.push(ms); SFX.good();
@@ -2299,7 +2417,7 @@ BUILD.react = host => {
       $('sc').textContent = ms + ' ms · avg ' + avg + ' · fastest ' + statVal('react','fastest');
       if (times.length >= 5){
         state = 'idle'; times = [];
-        show('', ms + ' ms. Click to go again.');
+        show('', ms + ' ms. ' + tap('Click', 'Tap') + ' to go again.');
       } else { state = 'idle'; setTimeout(arm, 700); show('', ms + ' ms'); }
     }
   });
@@ -3181,7 +3299,8 @@ function revGame(host, opts){
       h.addEventListener('focus', () => show(+h.dataset.i));
       h.addEventListener('blur', hide);
     });
-    plot.addEventListener('pointerleave', hide);
+    /* a finger "leaves" the moment it lifts, so on touch the tip stays until the next tap */
+    plot.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch') hide(); });
   }
 
   /* ── the report ── */
@@ -3436,6 +3555,8 @@ function revGame(host, opts){
         if (cur.optHtml){ b.innerHTML = cur.optHtml[c]; b.setAttribute('aria-label', 'Option ' + 'ABCD'[i]); }
         else b.textContent = c;
         b.onclick = () => submit(c, b); wrap.appendChild(b); });
+      /* sentence-length options get a column each on a phone (see games.css) */
+      if (!cur.optHtml && !cur.code && cur.choices.some(c => String(c).length > 22)) wrap.classList.add('rvlong');
       $('rvskip').onclick = skipCur;
     }
     startNudge();

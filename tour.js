@@ -286,12 +286,14 @@ addEventListener('pagehide', () => {
    Written once here rather than at each call site, because the Settings step
    is offered from two different pages and the wording has to match. */
 const SETTINGS_TEXT = 'Change how the site looks and works. Your settings follow you to other devices.';
+/* phones and tablets say "tap"; anything with a mouse keeps the original wording */
+const TOUCH = (() => { try { return matchMedia('(hover: none) and (pointer: coarse)').matches; } catch { return false; } })();
 const TOURS = {
   timetable: [
     { id:'email',      target:'.idrow',      title:'Anyone’s timetable',
       text:'Enter an email address to see whose classes you like.' },
     { id:'week',       target:'#weeklabel',  title:'Current week' },
-    { id:'weekarrows', target:'.weekswitch', title:'Click to switch week' },
+    { id:'weekarrows', target:'.weekswitch', title:TOUCH ? 'Tap to switch week' : 'Click to switch week' },
     { id:'settings',   target:'#settings',   title:'Settings', text:SETTINGS_TEXT },
     { id:'home',       target:'#homebtn',    title:'Home',
       text:'Notes, revision, your calendar and the rest of the site.' }
@@ -310,7 +312,7 @@ const TOURS = {
   ],
   games: [
     { id:'games-scroll', target:'.gamerow', title:'More this way',
-      text:'Drag the row sideways, or scroll.', demo:'scroll' }
+      text:TOUCH ? 'Swipe the row sideways.' : 'Drag the row sideways, or scroll.', demo:'scroll' }
   ]
 };
 

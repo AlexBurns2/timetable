@@ -593,3 +593,68 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 /* moderator: rename someone */
 .userrow .was{color:var(--muted);font-size:0.75rem}
 .userrow .btn.rename{flex:none;padding:4px 10px;font-size:0.75rem}
+
+/* ═══ phones and touch screens ═══
+   Everything below is either only rendered on touch screens (the pads) or sits
+   inside a narrow-screen / touch-only query, so desktop layouts don't change. */
+
+/* on-screen controls for Tetris and Snake */
+.tpad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px auto 0;max-width:420px}
+.tpad button{height:54px;padding:0;font:inherit;font-size:1.25rem;line-height:1;color:var(--text);cursor:pointer;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.tpad button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tpad .lbl{font-size:0.875rem;font-weight:700}
+.tpad .wide{grid-column:span 2}
+.dpad{grid-template-columns:repeat(3,64px);justify-content:center}
+.dpad [data-act=u]{grid-column:2}
+.dpad [data-act=l]{grid-column:1}
+
+@media (hover:none) and (pointer:coarse){
+  /* swiping these boards plays the game instead of scrolling the page */
+  #cv,#g2048wrap{touch-action:none}
+  #tcan,#mines button,.memcard,#react{touch-action:manipulation}
+  #mines button,.memcard{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  /* "Play →" only appears on hover, which a finger never does */
+  .gamecard .go{opacity:1;transform:none}
+}
+
+@media (max-width:640px){
+  /* the name gets its own line rather than being squeezed to nothing */
+  .userrow{flex-wrap:wrap;row-gap:6px}
+  .userrow .nm{flex:1 1 calc(100% - 40px)}
+  .userrow .ob{margin-left:32px;width:auto}
+  .userrow .ul{margin-left:auto;width:auto}
+}
+
+@media (max-width:560px){
+  /* two subjects a row, so they fit on one screen */
+  body[data-page="revision"] .gamegrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  body[data-page="revision"] .gamecard{min-height:0;padding:14px}
+  body[data-page="revision"] .gamecard h2{font-size:1.0625rem}
+  body[data-page="revision"] .gamecard p{font-size:0.75rem}
+
+  /* Tetris: Hold | board | Next across the top, stats in a row underneath, so
+     the board gets the width instead of the stats column */
+  .tgame{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"hold board next" "stats stats stats";gap:8px;align-items:start;scroll-margin-top:10px}
+  .tside.tleft{display:contents}
+  .tleft>.tpanel{grid-area:hold}
+  .tboardwrap{grid-area:board}
+  .tside.tright{grid-area:next}
+  .tstats{grid-area:stats;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:4px 18px}
+  #tcan{width:100%}
+  #thold{width:46px} #tnext{width:48px}
+  .tmodes{flex-wrap:wrap}
+}
+
+@media (max-width:520px){
+  /* sentence-length answers read better one to a row */
+  .mcq.rvlong{grid-template-columns:1fr}
+}
+
+@media (max-width:480px){
+  .stage{padding:14px 12px}
+  #mines{gap:2px}
+  #mines button{font-size:0.8125rem;border-radius:3px}
+}

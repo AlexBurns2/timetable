@@ -155,6 +155,10 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
   .tgev{font-size:0.625rem;padding:1px 3px}
   .tgev span{display:none}
   .calbar h2{min-width:100%;order:-1}
+  /* date and time pickers have a wide built-in minimum; let them shrink to the dialog */
+  .row2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .fld input,.fld select{min-width:0}
+  dialog.cdlg{padding:16px 14px}
 }
 .c-blue{background:#3b6ef0}.c-green{background:#2f9e44}.c-red{background:#e5484d}
 .c-orange{background:#f0801a}.c-purple{background:#8b5cf6}.c-teal{background:#0d9488}

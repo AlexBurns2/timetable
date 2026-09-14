@@ -282,6 +282,17 @@ html[data-motion="reduced"] *::after{
   transition-duration:.001s !important;animation-duration:.001s !important
 }
 
+/* ── iPhone and iPad ──────────────────────────────────────────────
+   Safari zooms the page into any text box smaller than 16px when it's
+   tapped, and leaves it zoomed. Only iOS understands -webkit-touch-callout,
+   so no other device (desktop included) sees this rule.              */
+@supports (-webkit-touch-callout:none){
+  @media (pointer:coarse){
+    input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=button]):not([type=submit]),
+    textarea,select{font-size:max(16px,1em)!important}
+  }
+}
+
 
 /* ══════════════════════════════════════════════════════════════════
    CLASSIC — a faithful port of the original NBSC timetable: Apple
