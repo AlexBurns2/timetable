@@ -99,7 +99,7 @@ const GAMES = [
   { id:'maths',   cat:'Revision', ico:'➗', name:'Maths', blurb:'Differentiation, integration, combinatorics, graphs' },
   { id:'physics', cat:'Revision', ico:'🔭', name:'Physics', blurb:'Kinematics, dynamics, waves, electricity' },
   { id:'chem',    cat:'Revision', ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
-  { id:'engineering', cat:'Revision', ico:'🔧', name:'Engineering', blurb:'Steels, cast irons, heat treatment, properties' },
+  { id:'engineering', cat:'Revision', ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
   { id:'software', cat:'Revision', ico:'💻', name:'Software', blurb:'Read code and write it' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
@@ -2476,12 +2476,25 @@ BUILD.admin = host => {
       $('admbody').innerHTML = us.length
         ? us.map((u,i) => '<div class="adminrow userrow">' +
             '<span class="rk">'+(i+1)+'</span>' +
-            '<span class="nm">'+esc(u.name)+'</span>' +
+            '<span class="nm">'+esc(u.name)+(u.renamed ? ' <span class="was" title="Name from their email">('+esc(u.auto)+')</span>' : '')+'</span>' +
             '<span class="ue">'+esc(u.email)+'</span>' +
             '<span class="uc">'+u.scores+' score'+(u.scores===1?'':'s')+' · '+u.days+' daily</span>' +
             stage(u.email) +
-            '<span class="ul">'+esc(seenAgo(u.last))+'</span></div>').join('')
+            '<span class="ul">'+esc(seenAgo(u.last))+'</span>' +
+            '<button class="btn rename" type="button" data-email="'+esc(u.email)+'" data-name="'+esc(u.name)+'" data-auto="'+esc(u.auto || u.name)+'">Rename</button></div>').join('')
         : '<p class="how">Nobody has signed in yet.</p>';
+      /* some people go by a different name from the one in their email; this
+         changes what everyone else sees on leaderboards, the forum and shared events */
+      $('admbody').querySelectorAll('.rename').forEach(b => b.onclick = async () => {
+        const next = prompt('What should ' + b.dataset.email + ' be shown as?\nLeave it empty to go back to "' + b.dataset.auto + '".', b.dataset.name);
+        if (next === null) return;
+        b.disabled = true;
+        try {
+          await TT.api('/api/leaderboard', { method:'POST', body:{ action:'rename', email:b.dataset.email, name:next } });
+          lbSumCache = null;
+          load();
+        } catch (e){ alert('Could not rename: ' + e.message); b.disabled = false; }
+      });
       return;
     }
     $('admnote').textContent = cur.kind === 'g'
@@ -2734,12 +2747,13 @@ function revGame(host, opts){
        still toggle topics rather than skipping the question */
     /* same for the practice/test switch and the test's own buttons: without this,
        Enter on "Practice" would also press Start on the screen being left */
-    if (e.target && e.target.closest && e.target.closest('.rvsel, .rvsub, .rvmode, .rvend, .rvtabs, .rvrep, .rvlink')) return;
+    if (e.target && e.target.closest && e.target.closest('.rvsel, .rvsub, .rvmode, .rvend, .rvtabs, .rvrep, .rvlink, .rvhist')) return;
     if (!cur){ const s = $('rvstart'); if (s){ e.preventDefault(); s.click(); } return; }
     if (answered){
       /* handled here rather than letting the focused Next button activate, so
-         one press always advances exactly once */
-      e.preventDefault(); nextQ(); return;
+         one press always advances exactly once. A test moves on by itself, so
+         Enter there would skip the following question. */
+      e.preventDefault(); if (mode !== 'test') nextQ(); return;
     }
     if (cur.typed){                       // you're writing Python — Enter is a newline
       if (!(e.ctrlKey || e.metaKey)) return;
@@ -2755,20 +2769,15 @@ function revGame(host, opts){
 
   /* ── progress & streak ──────────────────────────────────────────────────
      Every question sits in one of four states, which is what the bar shows:
-       correct (green)  right, and never once got it wrong
-       fixed   (yellow) got it wrong before, came back later and got it right
+       correct (green)  right, and never wrong or right twice in a row since the miss
+       fixed   (yellow) was wrong, and right once since; one more right turns it green
        wrong   (red)    the last attempt was wrong — still needs another go
        new     (grey)   not attempted yet
      hist[sig] = [seen, wrongness, lastOk, everWrong]. The first two drive the
      spaced-repetition picker; the last two drive these colours. Entries saved
      before this existed only have two slots and are migrated as they're read. */
   const STREAK_FULL = 8;
-  function stateOf(sig){
-    const h = hist[sig];
-    if (!h) return 'new';
-    if (!lastOkOf(h)) return 'wrong';
-    return everWrongOf(h) ? 'fixed' : 'correct';
-  }
+  const stateOf = sig => stateOfHist(hist[sig]);
   /* Every question a topic can ask. A bank knows exactly; a keyed generator is
      sampled until it stops yielding new keys; a purely procedural one (fresh
      numbers every time, no key) isn't countable and stays out of the bar. */
@@ -2848,10 +2857,10 @@ function revGame(host, opts){
         bar.children[0].style.width = pct(c.correct);
         bar.children[1].style.width = pct(c.fixed);
         bar.children[2].style.width = pct(c.wrong);
-        bar.title = c.correct+' correct · '+c.fixed+' fixed · '+c.wrong+' to review · '+c.new+' not tried yet';
+        bar.title = c.correct+' correct · '+c.fixed+' right once since a miss · '+c.wrong+' to review · '+c.new+' not tried yet';
       }
       if (leg) leg.innerHTML =
-        '<i class="g" title="correct"></i>'+c.correct+'<i class="y" title="fixed after getting it wrong"></i>'+c.fixed+
+        '<i class="g" title="correct"></i>'+c.correct+'<i class="y" title="right once since a miss, get it right again to turn it green"></i>'+c.fixed+
         '<i class="r" title="still to review"></i>'+c.wrong+'<i class="n" title="not tried yet"></i>'+c.new;
       return;
     }
@@ -2973,7 +2982,8 @@ function revGame(host, opts){
       '<div class="rvq"><div class="rvprompt">Test yourself on everything</div>' +
         '<div class="rvclue">' + n + ' questions across ' + scope + ', about ' + mins + ' minutes. ' +
           'Get a topic right and it moves on. Get one wrong and it comes back to it later, to check whether ' +
-          'that was a slip or a gap. You finish with a breakdown and every question you missed.</div>' +
+          'that was a slip or a gap. You won’t see what you got right until the end, so one answer can’t give ' +
+          'away another. Then you get a breakdown and every question you missed.</div>' +
         (last && last.n ? '<div class="rvclue">Last test: <b>' + last.pct + '%</b>, ' + daysAgo(last.d) + '.' +
           (saved && saved.run ? ' <button class="rvlink" id="rvlastrep" type="button">See that report</button>' : '') + '</div>' : '') +
       '</div>' +
@@ -2981,6 +2991,9 @@ function revGame(host, opts){
         ? '<button class="btn primary" id="rvstart" type="button">Carry on from question ' + (run.i + 1) + ' of ' + run.n + '</button>' +
           '<button class="btn" id="rvrestart" type="button">Start again</button>'
         : '<button class="btn primary" id="rvstart" type="button">Start the test</button>') + '</div>';
+    const hist = historyHTML();
+    if (hist) box.insertAdjacentHTML('beforeend', '<div class="rvsec rvintrohist"><h4>Your test scores</h4>' + hist + '</div>');
+    wireHistory();
     wireMode();
     $('rvstart').onclick = canResume ? resumeTest : beginTest;
     if ($('rvrestart')) $('rvrestart').onclick = () => {
@@ -3040,10 +3053,20 @@ function revGame(host, opts){
     test.i++;
     lsSet(RUN_KEY, test);
     paintTestBar();
-    $('sc').textContent = test.log.filter(e => e.result === 'right').length + ' / ' + test.log.length;
-    if (test.i >= test.n){ const nx = $('rvnext'); if (nx) nx.textContent = 'See your results →'; }
   }
-  const segClass = (e, k) => e ? (e.result === 'right' ? 'g' : e.result === 'skip' ? 's' : 'r') : (test && k === test.i ? 'cur' : '');
+  /* In a test an answer is locked in and the test moves on by itself, without
+     saying whether it was right. Showing it would hand you the answer to later
+     questions on the same topic; the report at the end shows everything. */
+  function settleTestQuestion(msg, btn){
+    const fb = $('rvfb'); if (fb){ fb.className = 'rvfb'; fb.textContent = msg; }
+    ['rvta', 'rvin', 'rvgo', 'rvskip'].forEach(id => { const el = $(id); if (el) el.disabled = true; });
+    const opts = $('rvopts');
+    if (opts) [...opts.children].forEach(b => { b.disabled = true; if (b === btn) b.classList.add('picked'); });
+    const q = cur;
+    setTimeout(() => { if (mode === 'test' && cur === q && answered) nextQ(); }, btn ? 320 : 450);
+  }
+  /* answered or skipped, never right or wrong, until the report */
+  const segClass = (e, k) => e ? (e.result === 'skip' ? 's' : 'a') : (test && k === test.i ? 'cur' : '');
   function testBarUI(){
     let segs = '';
     for (let k = 0; k < test.n; k++) segs += '<i class="' + segClass(test.log[k], k) + '"></i>';
@@ -3080,9 +3103,10 @@ function revGame(host, opts){
        only a proper attempt is recorded; the report is still shown */
     if (!ended || run.log.length >= Math.min(10, run.n)){
       /* the newest keeps its per-topic counts (for "since your last test");
-         older ones keep only the score, so this stays a few hundred bytes */
+         older ones keep only the score, for the chart. 20 slim entries is about
+         1 KB a subject, well clear of the sync's 100 KB ceiling. */
       const slim = p => ({ d:p.d, n:p.n, r:p.r, s:p.s, pct:p.pct, ms:p.ms });
-      TT.set('tt.rev_' + sk + '_tests', [rep.summary].concat(list.slice(0, 2).map(slim)));
+      TT.set('tt.rev_' + sk + '_tests', [rep.summary].concat(list.slice(0, TEST_HISTORY - 1).map(slim)));
       let saved = { run, prev };
       try { if (JSON.stringify(saved).length > 1500000)
         saved = { run:Object.assign({}, run, { log:run.log.map(e => Object.assign({}, e, {
@@ -3094,29 +3118,96 @@ function revGame(host, opts){
     renderReport(rep, run);
   }
 
+  /* ── score history ─────────────────────────────────────────────────────
+     One series over time, so a line with a light wash beneath, no legend (the
+     heading says what it is), and a label on the latest point only. Every point
+     has a hover and keyboard tooltip, and the same numbers sit in a table under
+     "Show as a table", so nothing needs a pointer to read. Drawn at the width
+     it will actually occupy, so text is never scaled. */
+  const shortDate = ymd => { const [y, m, d] = String(ymd || '').split('-').map(Number);
+    return d ? d + ' ' + MONTHS_SHORT[m - 1] : ''; };
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function historyHTML(){
+    const past = TT.get('tt.rev_' + sk + '_tests', []);
+    const tests = (Array.isArray(past) ? past : []).filter(t => t && t.n && t.pct != null).slice(0, TEST_HISTORY).reverse();
+    if (tests.length < 2) return '';
+    const W = Math.max(240, Math.min(640, (box.clientWidth || 560) - 28)), H = 150;   // margin for the section's own padding
+    const L = 38, R = 46, T = 16, B = 24, iw = W - L - R, ih = H - T - B;
+    const x = i => L + (tests.length === 1 ? iw / 2 : i * iw / (tests.length - 1));
+    const y = p => T + ih - p / 100 * ih;
+    const pts = tests.map((t, i) => [x(i), y(t.pct)]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    const area = line + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + y(0) + ' L' + pts[0][0].toFixed(1) + ' ' + y(0) + ' Z';
+    const grid = [0, 50, 100].map(v => '<line x1="' + L + '" x2="' + (L + iw) + '" y1="' + y(v) + '" y2="' + y(v) + '" class="g"/>' +
+      '<text x="' + (L - 8) + '" y="' + y(v) + '" class="ax" text-anchor="end" dominant-baseline="central">' + v + '%</text>').join('');
+    const last = tests[tests.length - 1], lp = pts[pts.length - 1];
+    const dots = pts.map((p, i) => '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="4" class="d"/>').join('');
+    const hits = pts.map((p, i) => {
+      const t = tests[i], left = i ? (pts[i - 1][0] + p[0]) / 2 : L - 6, right = i < pts.length - 1 ? (p[0] + pts[i + 1][0]) / 2 : L + iw + 6;
+      return '<rect x="' + left.toFixed(1) + '" y="' + T + '" width="' + (right - left).toFixed(1) + '" height="' + ih + '" class="h" data-i="' + i + '" tabindex="0"' +
+        ' aria-label="' + esc(shortDate(t.d) + ': ' + t.pct + '%, ' + t.r + ' of ' + t.n + ' right') + '"/>';
+    }).join('');
+    const svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Test scores over time">' +
+      grid + '<path d="' + area + '" class="w"/><path d="' + line + '" class="l"/>' +
+      '<line class="x" y1="' + T + '" y2="' + (T + ih) + '" x1="0" x2="0" hidden/>' + dots +
+      '<text x="' + (lp[0] + 9) + '" y="' + lp[1] + '" class="v" dominant-baseline="central">' + last.pct + '%</text>' +
+      '<text x="' + L + '" y="' + (H - 6) + '" class="ax">' + esc(shortDate(tests[0].d)) + '</text>' +
+      '<text x="' + (L + iw) + '" y="' + (H - 6) + '" class="ax" text-anchor="end">' + esc(shortDate(last.d)) + '</text>' +
+      hits + '</svg>';
+    const rows = tests.slice().reverse().map(t => '<tr><td>' + esc(shortDate(t.d)) + '</td><td>' + t.pct + '%</td><td>' + t.r + ' of ' + t.n + '</td></tr>').join('');
+    return '<div class="rvhist" data-tests="' + esc(JSON.stringify(tests.map(t => [t.d, t.pct, t.r, t.n]))) + '">' +
+      '<div class="rvhistplot">' + svg + '<div class="rvtip" hidden></div></div>' +
+      '<details class="rvhisttab"><summary>Show as a table</summary><table><thead><tr><th>Test</th><th>Score</th><th>Right</th></tr></thead><tbody>' + rows + '</tbody></table></details></div>';
+  }
+  function wireHistory(){
+    const wrap = box.querySelector('.rvhist'); if (!wrap) return;
+    const data = JSON.parse(wrap.dataset.tests), plot = wrap.querySelector('.rvhistplot'), tip = wrap.querySelector('.rvtip');
+    const cross = wrap.querySelector('line.x'), dots = [...wrap.querySelectorAll('circle.d')];
+    const show = i => {
+      const [d, pct, r, n] = data[i], c = dots[i], cx = +c.getAttribute('cx'), cy = +c.getAttribute('cy');
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.hidden = false;
+      dots.forEach((el, k) => el.classList.toggle('on', k === i));
+      tip.textContent = '';
+      const b = document.createElement('b'); b.textContent = pct + '%';
+      const s = document.createElement('span'); s.textContent = shortDate(d) + ' · ' + r + ' of ' + n + ' right';
+      tip.append(b, s); tip.hidden = false;
+      const w = tip.offsetWidth, pw = plot.clientWidth;
+      tip.style.left = Math.max(0, Math.min(pw - w, cx - w / 2)) + 'px';
+      tip.style.top = Math.max(0, cy - tip.offsetHeight - 12) + 'px';
+    };
+    const hide = () => { tip.hidden = true; cross.hidden = true; dots.forEach(el => el.classList.remove('on')); };
+    wrap.querySelectorAll('rect.h').forEach(h => {
+      h.addEventListener('pointerenter', () => show(+h.dataset.i));
+      h.addEventListener('focus', () => show(+h.dataset.i));
+      h.addEventListener('blur', hide);
+    });
+    plot.addEventListener('pointerleave', hide);
+  }
+
   /* ── the report ── */
   const bandColour = p => p >= 75 ? '#2f9e44' : p >= 50 ? '#f0a500' : '#e5484d';
   const VERDICT = { top:'You know this really well.', good:'Solid, with a few gaps.',
     mid:'Getting there. A few areas need work.', low:'Some real gaps to fill.', poor:'Plenty to work on. Start with the list below.' };
   const TAG = { gap:'Gap', shaky:'Shaky', miss:'Missed once' };
   const section = (title, body) => '<div class="rvsec"><h4>' + title + '</h4>' + body + '</div>';
+  /* each pattern as a short label, then what it means in plain words */
   function mistakeLine(m){
-    const were = (n, one, many) => n + ' ' + (n === 1 ? one : many);
-    switch (m.type){
-      case 'mixup':   return 'You mixed up <b>' + esc(m.a) + '</b> and <b>' + esc(m.b) + '</b> ' + m.n + ' times.';
-      case 'calc':    return 'Calculations went ' + m.calc.r + '/' + m.calc.n + ', against ' + m.concept.r + '/' + m.concept.n +
-                             ' for the concept questions. You know the ideas, so the marks are going in the working.';
-      case 'concept': return 'Your calculations (' + m.calc.r + '/' + m.calc.n + ') are ahead of the concept questions (' +
-                             m.concept.r + '/' + m.concept.n + '). Worth going back over the definitions.';
-      case 'sign':    return were(m.n, 'answer had', 'answers had') + ' the right size but the wrong sign.';
-      case 'ten':     return were(m.n, 'answer was', 'answers were') + ' out by a power of ten. That is usually a unit conversion or a slipped decimal point.';
-      case 'two':     return were(m.n, 'answer was', 'answers were') + ' exactly double or half the right value. Look for a missing ½, or something counted twice.';
-      case 'close':   return were(m.n, 'answer was', 'answers were') + ' within 10% but not exact. Check your rounding, and keep full precision until the last step.';
-      case 'rushed':  return m.n + ' wrong answers came in under 6 seconds, when your right ones took about ' + m.typical + '. Those look rushed.';
-      case 'tired':   return 'Near the end you missed ' + m.n + ' questions on topics you had already got right earlier. That looks more like tiredness than a gap.';
-      case 'skips':   return 'You skipped ' + m.n + '. Skips count as gaps, so they show up in the list above.';
-    }
-    return '';
+    const answers = n => n + (n === 1 ? ' answer' : ' answers');
+    const lines = {
+      mixup:   ['Mixed up', '<b>' + esc(m.a) + '</b> and <b>' + esc(m.b) + '</b>, ' + m.n + ' times.'],
+      calc:    ['Calculations', (m.calc && m.calc.r) + ' of ' + (m.calc && m.calc.n) + ' right, against ' + (m.concept && m.concept.r) +
+                ' of ' + (m.concept && m.concept.n) + ' for concept questions. You know the ideas; the marks are going in the working.'],
+      concept: ['Concepts', (m.concept && m.concept.r) + ' of ' + (m.concept && m.concept.n) + ' right, against ' + (m.calc && m.calc.r) +
+                ' of ' + (m.calc && m.calc.n) + ' for calculations. Go back over the definitions.'],
+      sign:    ['Wrong sign', answers(m.n) + ' had the right number but the wrong sign.'],
+      ten:     ['Out by a power of ten', answers(m.n) + '. Usually a unit conversion or a misplaced decimal point.'],
+      two:     ['Double or half', answers(m.n) + ' came out at exactly twice or half the right value. Look for a missing ½ or something counted twice.'],
+      close:   ['Rounding', answers(m.n) + (m.n === 1 ? ' was' : ' were') + ' within 10% of the right value but not exact. Keep full precision until the last step.'],
+      rushed:  ['Rushed', m.n + ' wrong answers took under 6 seconds, while your right answers took about ' + m.typical + ' seconds.'],
+      tired:   ['Late slips', m.n + ' questions near the end were wrong on topics you had already answered correctly. Possibly tiredness.'],
+      skips:   ['Skipped', m.n + ' questions. Skips count as gaps, so they are included in the list above.']
+    }[m.type];
+    return lines ? '<b>' + lines[0] + ':</b> ' + lines[1] : '';
   }
   function reviewCard(e, i){
     const res = e.result === 'right' ? ['g', 'Right'] : e.result === 'skip' ? ['s', 'Skipped'] : ['r', 'Wrong'];
@@ -3147,13 +3238,16 @@ function revGame(host, opts){
 
     const ch = rep.change;
     h += '<div class="rvhero"><div class="rvring" style="--p:' + rep.pct + ';--ring:' + bandColour(rep.pct) + '"><b>' + rep.pct + '%</b></div>' +
-      '<div class="rvherot"><h3>' + VERDICT[rep.band] + '</h3>' +
+      '<div class="rvherot"><h3>' + (rep.answered < 10 ? 'Too few answers to judge.' : VERDICT[rep.band]) + '</h3>' +
       '<p>' + rep.right + ' of ' + rep.answered + ' right' + (rep.skip ? ' · ' + rep.skip + ' skipped' : '') + ' · ' + mins + ' min</p>' +
       (rep.ended ? '<p>You ended it after ' + rep.answered + ' of ' + rep.n + ' questions.</p>' : '') +
       (ch ? '<p>' + (ch.delta > 0 ? 'Up ' + ch.delta + ' points on your last test (' + ch.was + '%).'
                    : ch.delta < 0 ? 'Down ' + (-ch.delta) + ' points on your last test (' + ch.was + '%).'
                    : 'The same as your last test.') + '</p>' : '') +
       '</div></div>';
+
+    const hist = historyHTML();
+    if (hist) h += section('Your test scores', hist);
 
     const mods = rep.modules.filter(m => m.asked);
     if (mods.length > 1) h += section('By ' + byTopic, '<div class="rvmods">' + mods.map(m => {
@@ -3172,23 +3266,32 @@ function revGame(host, opts){
         '<b>' + esc(x.name) + '</b>' + (x.gate ? ' (it comes after ' + esc(x.gate) + ')' : '')).join(', ') + '.</p>' : '') +
       (rep.ended && rep.unasked.length ? '<p class="rvsmall">Not asked before you ended: ' + rep.unasked.map(esc).join(', ') + '.</p>' : ''));
 
-    if (rep.wrong || rep.skip) h += section('Common mistakes', rep.mistakes.length
-      ? '<ul class="rvmist">' + rep.mistakes.map(m => '<li>' + mistakeLine(m) + '</li>').join('') + '</ul>'
-      : '<p class="rvsmall">Nothing systematic stood out. The misses look like one-offs.</p>');
+    /* Patterns need enough answers to mean anything, and something right to
+       compare the misses against. Saying "nothing stood out" after three wrong
+       answers would suggest a clean bill of health that nobody has earned. */
+    if (rep.wrong || rep.skip) h += section('Common mistakes',
+      rep.answered < 12
+        ? '<p class="rvsmall">Only ' + rep.answered + ' answer' + (rep.answered === 1 ? '' : 's') + ', which isn’t enough to spot patterns. A full test gives a much clearer picture.</p>'
+      : rep.mistakes.length
+        ? '<ul class="rvmist">' + rep.mistakes.map(m => '<li>' + mistakeLine(m) + '</li>').join('') + '</ul>'
+      : !rep.right
+        ? '<p class="rvsmall">Nothing was answered correctly, so there’s nothing to compare the mistakes against. Start with the list above.</p>'
+        : '<p class="rvsmall">No repeated pattern in the mistakes. They look like one-offs.</p>');
 
-    if (rep.strengths.length || rep.firstTime.length) h += section('Strengths',
-      (rep.strengths.length ? '<ul class="rvlist">' + rep.strengths.map(s =>
+    const strong = rep.strengths.concat(rep.firstTime);
+    if (strong.length) h += section('Strengths',
+      '<ul class="rvlist">' + strong.map(s =>
         '<li><span class="nm">' + esc(s.name) + (modular ? '<span class="sub">' + esc(s.mod) + '</span>' : '') + '</span>' +
-        '<span class="rvtag good">' + s.right + '/' + s.asked + '</span></li>').join('') + '</ul>' : '') +
-      (rep.firstTime.length ? '<p class="rvsmall">Also right first time, so it moved on: ' + rep.firstTime.map(esc).join(', ') + '.</p>' : ''));
+        '<span class="rvtag good">' + s.right + ' of ' + s.asked + ' right</span></li>').join('') + '</ul>' +
+      (rep.firstTime.length ? '<p class="rvsmall">A topic you get right first time isn’t asked again, so “1 of 1” is one question’s worth of evidence.</p>' : ''));
 
     if (rep.slips.length) h += section('Probably slips',
-      '<p class="rvsmall">Missed once, then right after that, so these look like one-offs: ' +
+      '<p class="rvsmall">Wrong once, then right every time after: ' +
       rep.slips.map(s => '<b>' + esc(s.name) + '</b>').join(', ') + '.</p>');
 
     if (ch && (ch.better.length || ch.worse.length)) h += section('Since your last test',
-      (ch.better.length ? '<p class="rvsmall">Better at <b>' + ch.better.map(esc).join('</b>, <b>') + '</b>.</p>' : '') +
-      (ch.worse.length ? '<p class="rvsmall">Not as sure on <b>' + ch.worse.map(esc).join('</b>, <b>') + '</b>.</p>' : ''));
+      (ch.better.length ? '<p class="rvsmall">Better than last time: <b>' + ch.better.map(esc).join('</b>, <b>') + '</b>.</p>' : '') +
+      (ch.worse.length ? '<p class="rvsmall">Weaker than last time: <b>' + ch.worse.map(esc).join('</b>, <b>') + '</b>.</p>' : ''));
 
     const lists = {
       wrong:run.log.map((e, i) => [e, i]).filter(([e]) => e.result === 'wrong'),
@@ -3209,6 +3312,7 @@ function revGame(host, opts){
 
     box.innerHTML = h;
     wireMode();
+    wireHistory();
     const showTab = id => {
       $('rvrev').innerHTML = lists[id].map(([e, i]) => reviewCard(e, i)).join('');
       box.querySelectorAll('#rvtabs [data-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === id)));
@@ -3270,16 +3374,18 @@ function revGame(host, opts){
         ? 'Question ' + (test.i + 1) + ' of ' + test.n + ' · ' + esc(where)
         : 'Score '+score+' · streak '+streak+' · '+esc(cur._topic)) + '</div>' +
         '<div class="rvprompt">'+cur.q+'</div></div>';   /* no formula shown up front — that's the point */
+    /* a test takes your answer without marking it, so the buttons say so */
+    const goLabel = inTest ? 'Submit' : 'Check';
     html += cur.typed
       ? '<div class="rvtyped"><textarea id="rvta" spellcheck="false" autocapitalize="off" autocorrect="off"' +
         ' placeholder="Write your code here…">' + esc(cur.stub || '') + '</textarea>' +
         '<div class="rvsyn" id="rvsyn"></div>' +
-        '<div class="gwrow"><button class="btn primary" id="rvgo" type="button">Check</button>' +
-        '<button class="btn" id="rvskip" type="button">Show answer</button>' +
+        '<div class="gwrow"><button class="btn primary" id="rvgo" type="button">' + goLabel + '</button>' +
+        '<button class="btn" id="rvskip" type="button">' + (inTest ? 'Skip' : 'Show answer') + '</button>' +
         '<span class="rvnudge" id="rvnudge"></span></div></div>'
       : cur.input
       ? '<div class="gwrow"><input id="rvin" autocomplete="off" placeholder="Your answer…">' +
-        '<button class="btn primary" id="rvgo" type="button">Check</button>' +
+        '<button class="btn primary" id="rvgo" type="button">' + goLabel + '</button>' +
         '<button class="btn" id="rvskip" type="button">Skip</button><span class="rvnudge" id="rvnudge"></span></div>'
       : '<div class="mcq" id="rvopts"></div>' +
         '<div class="gwrow"><button class="btn" id="rvskip" type="button">Skip</button>' +
@@ -3289,7 +3395,7 @@ function revGame(host, opts){
     if (inTest){
       wireTestBar();
       cur._shownAt = Date.now();                               // time taken feeds the "rushed" check
-      $('sc').textContent = test.log.filter(e => e.result === 'right').length + ' / ' + test.log.length;
+      $('sc').textContent = '';                                // no running score: it would give answers away
     } else { wireSel(); paintStatus(); $('sc').textContent = 'Score ' + score; }
     if (cur.typed){ const ta = $('rvta'); ta.focus();
       /* Live syntax check, like the exam environment gives you. It only
@@ -3311,7 +3417,7 @@ function revGame(host, opts){
       ta.addEventListener('input', () => { clearTimeout(synTimer); synTimer = setTimeout(syntaxCheck, 450); });
       if (typeof PY !== 'undefined' && !PY.ready && !PY.dead) PY.warm().then(syntaxCheck);   // pre-download while they type
       $('rvgo').onclick = () => submit(ta.value);
-      $('rvskip').onclick = () => submit('', null, true);      // give up → show the model answer
+      $('rvskip').onclick = inTest ? skipCur : () => submit('', null, true);   // practice: give up and see a model answer
       ta.addEventListener('keydown', e => {                    // Tab indents instead of leaving the box
         if (e.key === 'Tab'){ e.preventDefault();
           const s = ta.selectionStart, t = ta.selectionEnd;
@@ -3354,7 +3460,7 @@ function revGame(host, opts){
   function skipCur(){
     if (answered || checking) return;
     answered = true; clearNudge();
-    if (mode === 'test') logAnswer('skip', null);
+    if (mode === 'test'){ logAnswer('skip', null); settleTestQuestion('Skipped.'); return; }
     const fb = $('rvfb'); fb.className = 'rvfb';
     fb.innerHTML = 'Skipped' + (cur.typed ? '. One way to write it:' : cur.optHtml ? '. The right one is outlined in green.' : '. The answer was <b>' + esc(String(cur.answer)) + '</b>') +
       (cur.note ? '<div class="rvnote">' + cur.note + '</div>' : '');
@@ -3401,8 +3507,9 @@ function revGame(host, opts){
   function finish(ok, gaveUp, detail, btn){
     if (answered) return; answered = true; clearNudge();
     const hadStreak = streak, inTest = mode === 'test';
-    /* the streak, score and goal belong to practice; a test keeps its own tally */
-    if (inTest){ if (ok) SFX.good(); else SFX.bad(); }
+    /* the streak, score and goal belong to practice; a test keeps its own tally,
+       and plays the same neutral tick whether you were right or not */
+    if (inTest) SFX.tick();
     else if (ok){ score++; streak++; SFX.streak(streak); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
     else { streak = 0; if (hadStreak >= 3) SFX.discharge(); else SFX.bad(); }
     /* a test answer is real evidence too, so it goes into the same history:
@@ -3411,12 +3518,14 @@ function revGame(host, opts){
       recordAnswer(hist, cur._sig, ok);
       TT.set('tt.rev_'+sk+'_hist', hist);
     }
-    if (inTest) logAnswer(ok ? 'right' : gaveUp ? 'skip' : 'wrong', cur._given, detail);
-    else {
-      bumpTally(ok);                                          // feeds the self-set goal
-      TT.set('tt.rev_'+sk+'_streak', streak);                 // synced with everything else
-      paintStatus(!ok && hadStreak >= 3);
+    if (inTest){
+      logAnswer(ok ? 'right' : gaveUp ? 'skip' : 'wrong', cur._given, detail);
+      settleTestQuestion('Saved.', btn);
+      return;
     }
+    bumpTally(ok);                                            // feeds the self-set goal
+    TT.set('tt.rev_'+sk+'_streak', streak);                   // synced with everything else
+    paintStatus(!ok && hadStreak >= 3);
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');
     if (cur.typed)        // code answers are multi-line — shown as a block below
       fb.innerHTML = (ok ? '✓ Correct' : (gaveUp ? 'One way to write it:' : '✗ Not quite'))
@@ -3471,6 +3580,18 @@ function rightRunOf(h){
      (yellow) is counted as just fixed, so it gets its consolidation turns */
   return !lastOkOf(h) ? 0 : everWrongOf(h) ? 1 : h[0];
 }
+/* The colour a question shows:
+     new      grey    never answered
+     wrong    red     the last answer was wrong
+     fixed    yellow  was wrong, and has been right once since
+     correct  green   never wrong, or right at least twice in a row since the miss
+   A yellow turns green with one more right answer. (It used to stay yellow for
+   good once a question had ever been wrong, so it could never go green.) */
+function stateOfHist(h){
+  if (!h) return 'new';
+  if (!lastOkOf(h)) return 'wrong';
+  return everWrongOf(h) && rightRunOf(h) < 2 ? 'fixed' : 'correct';
+}
 function recordAnswer(hist, sig, ok){
   const prev = hist[sig];
   const everWrong = prev ? everWrongOf(prev) : false, run = prev ? rightRunOf(prev) : 0;
@@ -3500,7 +3621,7 @@ function sigScore(h, keyed, avoided, rand){
   if (!h) return s + 8;                                     // never seen: strongly prefer
   if (!lastOkOf(h)) return s + Math.min(h[1], 4) * 2.5;     // still wrong: revisit soon
   s -= Math.min(rightRunOf(h), 6) * 0.7;
-  if (everWrongOf(h)) s += 1.0 + Math.min(h[1], 4) * 0.5;   // fixed, so consolidate it
+  if (stateOfHist(h) === 'fixed') s += 1.0 + Math.min(h[1], 4) * 0.5;   // yellow: bring it back to confirm
   return s;
 }
 function chooseQuestion(t, hist, avoid, tries, rand){
@@ -3558,6 +3679,7 @@ function chooseQuestion(t, hist, avoid, tries, rand){
    `typed` marks write-code questions, which are capped because each one takes
    minutes rather than seconds. */
 const TEST_TYPED_MAX = 3;
+const TEST_HISTORY = 20;        // tests kept for the score chart
 /* an answer that is a number, optionally followed by a unit: "24", "12.5 m/s".
    Deliberately not "6x² − 4", which starts with a digit but is an expression. */
 const TEST_NUMERIC = /^\s*[−-]?\d+(?:\.\d+)?(?:\s+\S.*)?$/;
@@ -3676,7 +3798,7 @@ function analyseTest(run, topics, prev){
   const asked = topics.filter(t => S[t.id].asked);
   const strengths = asked.filter(t => S[t.id].asked >= 2 && !errsOf(S[t.id]))
     .sort((a, b) => S[b.id].right - S[a.id].right).map(row);
-  const firstTime = asked.filter(t => S[t.id].asked === 1 && S[t.id].right === 1).map(t => t.name);
+  const firstTime = asked.filter(t => S[t.id].asked === 1 && S[t.id].right === 1).map(row);
   const slips = asked.filter(t => isSlip(S[t.id])).map(row);
   const weak = asked.filter(t => errsOf(S[t.id]) && !isSlip(S[t.id]))
     .sort((a, b) => est(S[a.id]) - est(S[b.id]) || S[b.id].asked - S[a.id].asked)
@@ -4143,10 +4265,10 @@ const PARADIGMS = [
     ex:'parent(tom, bob).\ngrandparent(X, Y) :- parent(X, Z), parent(Z, Y).', bad:['Functional'] }
 ];
 const PARA_EXTRA = [
-  {q:'Compared with procedural programming, OOP mainly differs by…', a:'Bundling data together with the methods that act on it', w:['Running faster in every case','Removing the need for loops and branching','Avoiding the use of functions entirely']},
-  {q:'A strength of OOP for large, shared projects is that…', a:'Classes can be developed, reused and tested fairly independently', w:['It removes the need for version control','It makes every program shorter','It avoids the need for testing']},
+  {q:'Compared with procedural programming, OOP mainly differs by…', a:'Bundling data together with the methods that act on it', w:['Running faster in every case','Removing the need for any loops, branching or variables','Avoiding the use of functions entirely']},
+  {q:'A strength of OOP for large, shared projects is that…', a:'Classes can be built and tested separately', w:['It removes the need for version control on the project','It makes every program shorter','It avoids the need for any testing']},
   {q:'In procedural programming, data and the code that acts on it are…', a:'Kept separate, with data passed into procedures', w:['Always bundled into one object','Stored only in a database','Hidden from the programmer']},
-  {q:'Which paradigm is Python able to support?', a:'Both object-oriented and procedural', w:['Object-oriented only','Procedural only','Logic only']},
+  {q:'Which paradigm is Python able to support?', a:'Both object-oriented and procedural', w:['Only object-oriented programming','Only procedural programming','Only logic programming']},
   {q:'Message passing in OOP means…', a:'Objects interacting by calling each other’s methods', w:['Sending data over a network','Printing messages to the screen','Passing comments between developers']}
 ];
 function genParadigm(){
@@ -4233,9 +4355,9 @@ const DEV_STEPS = [
 const DEV_EXTRA = [
   {q:'Which stage comes <b>first</b> in the software development steps?', a:'Requirements definition', w:['Design','Development','Testing and debugging']},
   {q:'Which stage happens <b>after</b> the software has been released?', a:'Maintenance', w:['Integration','Design','Determining specifications']},
-  {q:'A key advantage of the Agile model over Waterfall is that…', a:'Requirements can change between short cycles', w:['No testing is needed','Documentation is never written','The cost is always lower']},
-  {q:'A weakness of the Waterfall model is that…', a:'Going back to an earlier stage is difficult and costly', w:['It cannot be documented','It has no design stage','It cannot be used for large projects']},
-  {q:'Online code collaboration tools mainly help a team by…', a:'Letting several developers work on the same codebase with a shared history', w:['Writing the code automatically','Removing the need for testing','Making programs run faster']}
+  {q:'A key advantage of the Agile model over Waterfall is that…', a:'Requirements can change between short cycles', w:['No testing is needed','Documentation never has to be written or kept up to date','The cost is always lower']},
+  {q:'A weakness of the Waterfall model is that…', a:'Going back to an earlier stage is difficult and costly', w:['It cannot be documented','It has no design stage','It cannot be used for large projects with many developers']},
+  {q:'Online code collaboration tools mainly help a team by…', a:'Letting a team share one codebase', w:['Writing the code automatically','Removing the need for testing','Making programs run faster']}
 ];
 function genDevStep(){
   if (Math.random() < 0.3) return bankQ(DEV_EXTRA, 'devx');
@@ -4395,7 +4517,7 @@ const MECH_EXTRA = [
   {q:'A thermostat that measures room temperature and switches the heater on or off is an example of…', a:'Closed loop control', w:['Open loop control','Autonomous navigation','Manual control']},
   {q:'A toaster that runs for a set time regardless of how brown the bread gets is…', a:'Open loop control', w:['Closed loop control','Feedback control','Adaptive control']},
   {q:'A robotic arm with three independent joints has how many degrees of freedom?', a:'Three', w:['One','Six','Zero']},
-  {q:'Which field commonly uses mechatronic systems?', a:'All of robotics, automotive and medical devices', w:['Only manufacturing robotics','Only the automotive industry','Only aerospace']},
+  {q:'Which of these is <b>not</b> usually a mechatronic system?', a:'A manual hand saw', w:['An industrial robot arm','A car’s anti-lock brakes','An automatic insulin pump']},
   {q:'When designing a mechatronic system for a person with disability, the main extra consideration is…', a:'The specific access needs of the intended user', w:['Making it as fast as possible','Reducing the number of sensors','Using the cheapest possible parts']}
 ];
 function genMechControl(){
@@ -5004,27 +5126,111 @@ const LIMRX=[{eq:'N₂ + 3H₂ → 2NH₃',A:['N₂',1],B:['H₂',3]},{eq:'2H₂
 function genChemLimiting(){ const r=pk(LIMRX), nA=ri(2,10), nB=ri(2,10), ra=nA/r.A[1], rb=nB/r.B[1];
   if(ra===rb) return genChemLimiting(); const lim=ra<rb?r.A[0]:r.B[0];
   return {q:'For <b>'+r.eq+'</b>, you have <b>'+nA+' mol '+r.A[0]+'</b> and <b>'+nB+' mol '+r.B[0]+'</b>. Which is the limiting reagent?', choices:[r.A[0],r.B[0]], answer:lim, note:'Compare mol ÷ coefficient: '+r.A[0]+' → '+rd(ra,2)+', '+r.B[0]+' → '+rd(rb,2)+'. Smaller limits.', key:'lim:'+r.eq}; }
-const EMP=[{q:'A compound is 40% C, 6.7% H, 53.3% O by mass. Find its empirical formula.',a:'CH₂O'},
-  {q:'A compound is 52.2% C, 13.0% H, 34.8% O. Find its empirical formula.',a:'C₂H₆O'},
-  {q:'A compound contains 2.4 g C and 0.6 g H. Find its empirical formula.',a:'CH₃'},
-  {q:'A compound is 27.3% C and 72.7% O. Find its empirical formula.',a:'CO₂'},
-  {q:'A compound is 75% C and 25% H. Find its empirical formula.',a:'CH₄'},
-  {q:'A compound is 92.3% C and 7.7% H. Find its empirical formula.',a:'CH'},
-  {q:'A compound is 85.7% C and 14.3% H. Find its empirical formula.',a:'CH₂'},
-  {q:'A compound is 80% C and 20% H. Find its empirical formula.',a:'CH₃'},
-  {q:'A compound is 40% S and 60% O. Find its empirical formula.',a:'SO₃'},
-  {q:'A compound is 50% S and 50% O. Find its empirical formula.',a:'SO₂'},
-  {q:'A compound contains 1.2 g C and 3.2 g O. Find its empirical formula.',a:'CO₂'},
-  {q:'A compound is 43.7% P and 56.3% O. Find its empirical formula.',a:'P₂O₅'},
-  {q:'A compound is 63.6% N and 36.4% O. Find its empirical formula.',a:'N₂O'},
-  {q:'A compound is 46.7% N and 53.3% O. Find its empirical formula.',a:'NO'},
-  {q:'A compound is 30.4% N and 69.6% O. Find its empirical formula.',a:'NO₂'},
-  {q:'A compound is 52.9% Al and 47.1% O. Find its empirical formula.',a:'Al₂O₃'},
-  {q:'A compound is 74.2% Na and 25.8% O. Find its empirical formula.',a:'Na₂O'},
-  {q:'A compound is 36.1% Ca and 63.9% Cl. Find its empirical formula.',a:'CaCl₂'},
-  {q:'A compound is 39.3% Na and 60.7% Cl. Find its empirical formula.',a:'NaCl'},
-  {q:'A compound is 60.3% Mg and 39.7% O. Find its empirical formula.',a:'MgO'}];
-function genChemEmp(){ const ix=(Math.random()*EMP.length)|0, it=EMP[ix]; const m=mc(it.a, shuffle(EMP.filter(e=>e.a!==it.a)).map(e=>e.a).concat(['C₂H₄O','CH','C₃H₈'])); return {q:it.q, choices:m.choices, answer:it.a, note:'Divide each mass (or %) by its molar mass, then simplify the ratio.', key:'emp:'+ix}; }
+/* ── Empirical formula ────────────────────────────────────────────────────
+   Wrong options used to be the answers to other questions, so they usually
+   contained different elements and gave the answer away. Now every option uses
+   the elements in the question, and each wrong one is a real slip:
+     no ÷ M      using the masses or percentages as if they were moles
+     flipped     dividing molar mass by mass instead of the other way round
+     rounded     rounding 2.5 or 1.33 instead of multiplying up (P₂O₅ → PO₃)
+     not simple  a multiple of the right ratio, which isn't the empirical formula
+     swapped / one off   the subscripts on the wrong elements, or one out
+   The first 20 keep their old keys (emp:0…19), so practice history carries over. */
+const ATOMIC_MASS = { H:1.008, C:12.01, N:14.01, O:16.00, Na:22.99, Mg:24.31, Al:26.98, P:30.97, S:32.07, Cl:35.45,
+  K:39.10, Ca:40.08, Cr:52.00, Mn:54.94, Fe:55.85, Cu:63.55 };
+const ELEMENT_NAME = { H:'hydrogen', C:'carbon', N:'nitrogen', O:'oxygen', Na:'sodium', Mg:'magnesium', Al:'aluminium',
+  P:'phosphorus', S:'sulfur', Cl:'chlorine', K:'potassium', Ca:'calcium', Cr:'chromium', Mn:'manganese', Fe:'iron', Cu:'copper' };
+const EMP_LEGACY = [
+  ['CH₂O','%',[40,6.7,53.3]], ['C₂H₆O','%',[52.2,13.0,34.8]], ['CH₃','g',[2.4,0.6]], ['CO₂','%',[27.3,72.7]], ['CH₄','%',[75,25]],
+  ['CH','%',[92.3,7.7]], ['CH₂','%',[85.7,14.3]], ['CH₃','%',[80,20]], ['SO₃','%',[40,60]], ['SO₂','%',[50,50]],
+  ['CO₂','g',[1.2,3.2]], ['P₂O₅','%',[43.7,56.3]], ['N₂O','%',[63.6,36.4]], ['NO','%',[46.7,53.3]], ['NO₂','%',[30.4,69.6]],
+  ['Al₂O₃','%',[52.9,47.1]], ['Na₂O','%',[74.2,25.8]], ['CaCl₂','%',[36.1,63.9]], ['NaCl','%',[39.3,60.7]], ['MgO','%',[60.3,39.7]]
+];
+const EMP_MORE = ['C₂H₄O','CH₄O','C₃H₈','C₂H₅','C₃H₄O₃','CO','N₂O₅','Fe₂O₃','Fe₃O₄','K₂O','MgCl₂','CuO','Cu₂O',
+  'Na₂SO₄','CaCO₃','Na₂CO₃','C₂H₃Cl','K₂Cr₂O₇'];
+/* 'Na₂SO₄' → [['Na',2],['S',1],['O',4]], keeping the written order */
+function orderedElements(f){
+  const s = String(f).replace(/[₀-₉]/g, c => SUBD.indexOf(c)), out = [];
+  for (const m of s.matchAll(/([A-Z][a-z]?)(\d*)/g)) out.push([m[1], m[2] ? +m[2] : 1]);
+  return out;
+}
+const empFormula = (syms, counts) => syms.map((el, i) => el + subN(counts[i])).join('');
+/* a ratio of amounts → the smallest whole numbers, if a multiplier up to 6 gets there */
+function wholeRatio(amounts, tol){
+  const min = Math.min(...amounts), r = amounts.map(a => a / min);
+  for (let k = 1; k <= 6; k++) if (r.every(x => Math.abs(x * k - Math.round(x * k)) < (tol || 0.1))) return r.map(x => Math.round(x * k));
+  return null;
+}
+function genChemEmp(){
+  let f, unit, values, key;
+  if (Math.random() < 0.5){
+    const ix = (Math.random() * EMP_LEGACY.length) | 0;
+    [f, unit, values] = EMP_LEGACY[ix]; key = 'emp:' + ix;
+  } else {
+    f = pk(EMP_MORE); unit = Math.random() < 0.65 ? '%' : 'g';
+    const els = orderedElements(f), masses = els.map(([el, n]) => n * ATOMIC_MASS[el]), total = masses.reduce((a, b) => a + b, 0);
+    /* the numbers shown are rounded, so check the question can still be solved
+       from them: a small sample rounded to 0.01 g can blur hydrogen too much */
+    const solvable = vals => { const r = wholeRatio(vals.map((v, i) => v / ATOMIC_MASS[els[i][0]])); return !!r && r.every((n, i) => n === els[i][1]); };
+    if (unit === '%') values = masses.map(m => +(m / total * 100).toFixed(1));
+    else {
+      for (const sample of shuffle([2.5, 3, 4, 5, 6, 8, 10])){
+        values = masses.map(m => +(m * sample / total).toFixed(2));
+        if (solvable(values)) break;
+      }
+    }
+    if (!solvable(values)){ unit = '%'; values = masses.map(m => +(m / total * 100).toFixed(2)); }
+    key = 'emp:' + f + ':' + unit;
+  }
+  const els = orderedElements(f), syms = els.map(e => e[0]), right = els.map(e => e[1]);
+  const moles = values.map((v, i) => v / ATOMIC_MASS[syms[i]]);
+  const exact = right.map(n => n / Math.min(...right));
+
+  const wrong = [];
+  const push = (counts, why) => { if (counts && counts.every(n => n >= 1 && n <= 9)) wrong.push([empFormula(syms, counts), why]); };
+  /* where a slip would lead, kept to something a person might actually write
+     down: small multipliers only, otherwise just the rounded ratio */
+  const slip = amounts => {
+    const min = Math.min(...amounts), r = amounts.map(a => a / min);
+    for (let k = 1; k <= 3; k++) if (r.every(x => Math.abs(x * k - Math.round(x * k)) < 0.12)) return r.map(x => Math.round(x * k));
+    return r.map(x => Math.max(1, Math.round(x)));
+  };
+  push(slip(values), 'no-divide');
+  push(slip(syms.map((el, i) => ATOMIC_MASS[el] / values[i])), 'flipped');
+  if (exact.some(x => Math.abs(x - Math.round(x)) > 0.05)){
+    push(exact.map(x => Math.round(x) || 1), 'rounded');
+    push(exact.map(x => Math.floor(x) || 1), 'rounded');
+  }
+  const simple = [];
+  simple.push([empFormula(syms, right.map(n => n * 2)), 'multiple']);
+  if (syms.length > 1){
+    const i = (Math.random() * syms.length) | 0, j = (i + 1 + ((Math.random() * (syms.length - 1)) | 0)) % syms.length;
+    const sw = right.slice(); [sw[i], sw[j]] = [sw[j], sw[i]];
+    if (sw[i] !== sw[j]) simple.push([empFormula(syms, sw), 'swap']);
+  }
+  syms.forEach((_, i) => { const c = right.slice(); c[i]++; simple.push([empFormula(syms, c), 'one-off']); });
+  syms.forEach((_, i) => { const c = right.slice(); if (c[i] > 1){ c[i]--; simple.push([empFormula(syms, c), 'one-off']); } });
+
+  /* the real slips first, then the rest; never two options that are the same compound */
+  const chosen = [], seen = [composition(f)];
+  const take = ([opt]) => { const c = composition(opt); if (seen.includes(c) || chosen.length >= 3) return; seen.push(c); chosen.push(opt); };
+  shuffle(wrong).forEach(take);
+  shuffle(simple.filter(s => s[1] !== 'multiple')).slice(0, 1).forEach(take);
+  if (chosen.length < 3) take(simple.find(s => s[1] === 'multiple'));
+  shuffle(simple).forEach(take);
+  const m = mc(f, chosen);
+
+  const given = syms.map((el, i) => unit === '%' ? values[i] + '% ' + el : values[i] + ' g of ' + ELEMENT_NAME[el]);
+  const list = given.length === 2 ? given.join(' and ') : given.slice(0, -1).join(', ') + ' and ' + given[given.length - 1];
+  const q = unit === '%'
+    ? 'A compound is ' + list + ' by mass. What is its empirical formula?'
+    : 'A sample of a compound contains ' + list + '. What is its empirical formula?';
+  const ratio = moles.map(n => n / Math.min(...moles));
+  const note = 'Moles of each: ' + syms.map((el, i) => el + ' ' + values[i] + ' ÷ ' + ATOMIC_MASS[el] + ' = ' + rd(moles[i], 3)).join(', ') +
+    '. Divide by the smallest: ' + ratio.map(x => rd(x, 2)).join(' : ') +
+    (ratio.some(x => Math.abs(x - Math.round(x)) > 0.1) ? ', then multiply up to whole numbers: ' + right.join(' : ') : '') + ', so ' + f + '.';
+  return { q, choices:m.choices, answer:m.answer, note, key };
+}
 function genChemSol2(){ const k=ri(0,2);
   if(k===0){ const n=ri(1,10)/2, V=ri(1,5)*0.5, c=n/V; return {q:'Find the concentration of a solution containing <b>'+n+' mol</b> in <b>'+V+' L</b>.', input:true, answer:rd(c,2), accept:v=>Math.abs(Number(v)-c)<0.02, note:'c = n/V = '+n+'/'+V+' = '+rd(c,2)+' mol/L.'}; }
   if(k===1){ const c1=ri(1,4), v1=ri(1,5)*10, v2=v1*ri(2,4), c2=c1*v1/v2; return {q:'<b>'+v1+' mL</b> of <b>'+c1+' mol/L</b> solution is diluted to <b>'+v2+' mL</b>. Find the new concentration.', input:true, answer:rd(c2,3), accept:v=>Math.abs(Number(v)-c2)<0.01, note:'c₁V₁ = c₂V₂ → '+rd(c2,3)+' mol/L.'}; }
@@ -5278,23 +5484,23 @@ function genPropFact(){
 /* carbon content, pearlite balance and cold work — mixed curated + computed */
 const ENG_CARBON = [
   {q:'For slow-cooled plain-carbon steel below the eutectoid, increasing the carbon content…', a:'Increases the proportion of pearlite', w:['Decreases the proportion of pearlite','Removes all of the ferrite','Has no effect on the structure']},
-  {q:'Does adding more carbon always give more pearlite?', a:'Only up to the eutectoid. Above it, extra proeutectoid cementite forms', w:['Yes, without limit','No, carbon never affects pearlite','Only in cast iron']},
-  {q:'Welding gets harder as a steel’s carbon content rises because…', a:'It may need preheating and controlled cooling to avoid cracking', w:['Its melting point falls sharply','It starts to contain graphite flakes','It can no longer be formed at all']},
+  {q:'Does adding more carbon always give more pearlite?', a:'Only up to the eutectoid', w:['Yes, with no limit at all','No, carbon has no effect on it','Only in cast irons'], note:'Above about 0.8% C, extra proeutectoid cementite forms instead.'},
+  {q:'Welding gets harder as a steel’s carbon content rises because…', a:'It needs preheating to avoid cracking', w:['Its melting point drops sharply','It starts to form graphite flakes','It can no longer be formed at all']},
   {q:'A plain-carbon steel above ~0.76% C, with cementite at the grain boundaries, is…', a:'Hypereutectoid', w:['Hypoeutectoid','Eutectoid','Austenitic']},
   {q:'A plain-carbon steel below ~0.76% C, with proeutectoid ferrite, is…', a:'Hypoeutectoid', w:['Hypereutectoid','Eutectoid','Martensitic']},
   {q:'Cementite inside pearlite is…', a:'Already present below the eutectoid composition', w:['Only present above the eutectoid','Never present in pearlite','Only present after quenching']},
   {q:'Cold working a metal raises its dislocation density, which usually…', a:'Increases yield strength and hardness but reduces ductility', w:['Reduces strength and increases ductility','Has no effect on mechanical properties','Simply makes the grains smaller and softer']},
-  {q:'How is cold-rolled steel identified in a longitudinal section?', a:'Elongated, deformed grains aligned with the rolling direction', w:['Rounded graphite nodules','A dark nitride surface layer','Coarse equiaxed grains']},
-  {q:'Work hardening is best explained as…', a:'A higher dislocation density making further slip harder', w:['Grains simply becoming smaller','Carbon being added to the steel','Graphite forming into nodules']},
-  {q:'Ductility lost during cold working can be restored by…', a:'Recrystallisation (process) annealing', w:['Quench hardening','Carburising','Adding magnesium']},
+  {q:'How is cold-rolled steel identified in a longitudinal section?', a:'Grains stretched along the rolling direction', w:['Rounded graphite nodules in the grains','A dark nitride layer at the surface','Coarse, evenly shaped equiaxed grains']},
+  {q:'Work hardening is best explained as…', a:'More dislocations that block slip', w:['Grains simply growing larger','Carbon diffusing into the steel','Graphite forming into nodules']},
+  {q:'Ductility lost during cold working can be restored by…', a:'Recrystallisation annealing', w:['Quench hardening','Carburising the surface','Adding magnesium']},
   {q:'On a tensile stress–strain curve, the initial straight slope represents…', a:'Young’s modulus', w:['The UTS','Tensile toughness','The fracture strain']},
   {q:'On a tensile stress–strain curve, the total area under it to fracture represents…', a:'Tensile toughness', w:['Young’s modulus','Hardness','Resilience only']},
   {q:'Engineering stress is defined as…', a:'Force divided by the original cross-sectional area (F/A₀)', w:['Force multiplied by length','Change in length over original length','Force divided by the final area']},
   {q:'Engineering strain is defined as…', a:'Change in length divided by the original length (ΔL/L₀)', w:['Force over area','Stress multiplied by modulus','Original length over change in length']},
-  {q:'Necking on a tensile test happens…', a:'After the UTS, as the specimen thins locally before fracture', w:['During the elastic region','Before any yielding','Only in brittle materials']},
+  {q:'Necking on a tensile test happens…', a:'After the UTS, before fracture', w:['During the elastic region','Before any yielding occurs','Only in brittle materials']},
   {q:'Silicon in a cast iron…', a:'Promotes the formation of graphite', w:['Prevents graphite forming','Raises the carbon content','Makes it non-magnetic']},
   {q:'The carbon content of cast iron is typically about…', a:'2.5–4%', w:['up to 0.3%','about 0.8%','about 1.2%']},
-  {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The surrounding matrix, such as ferrite or pearlite', w:['The graphite alone','The carbon percentage only','The pouring temperature only']},
+  {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The matrix around the graphite', w:['The graphite on its own','The carbon percentage alone','The pouring temperature alone'], note:'For example, a ferrite or pearlite matrix.'},
   {q:'In these microstructure schematics, the hatching represents…', a:'Pearlite', w:['Ferrite','Graphite','Austenite']},
   {q:'In these microstructure schematics, a solid filled shape in a cast iron represents…', a:'Graphite', w:['Pearlite','Ferrite','Cementite']}
 ];
@@ -5416,11 +5622,11 @@ const PHYS_KIN = [
 const PHYS_DYN = [
   {q:'Newton’s first law says an object stays at rest or constant velocity unless…', a:'Acted on by a net external force', w:['It runs out of energy','Its mass changes','Only friction is removed']},
   {q:'Newton’s second law is written as…', a:'F = ma', w:['F = mv','F = m/a','a = Fm']},
-  {q:'Newton’s third law states that…', a:'Every action has an equal and opposite reaction', w:['Forces always cancel to zero','Heavier objects fall faster','Momentum is always zero']},
-  {q:'Weight differs from mass because weight is…', a:'The gravitational force on the mass (W = mg)', w:['Measured in kilograms','Constant everywhere','The same as inertia']},
-  {q:'Friction acts…', a:'Opposite to the direction of motion (or attempted motion)', w:['In the direction of motion','Perpendicular to the surface','Toward the centre of mass']},
-  {q:'Momentum is conserved in a collision when…', a:'No net external force acts on the system', w:['The objects have equal mass','Kinetic energy is conserved','The collision is elastic only']},
-  {q:'Work done by a force equals…', a:'Force × distance moved in the force’s direction', w:['Force × time','Mass × velocity','Force ÷ area']},
+  {q:'Newton’s third law states that…', a:'Every force has an equal, opposite pair', w:['The forces acting on any object always cancel out','Heavier objects fall faster','A force is needed to keep moving']},
+  {q:'Weight differs from mass because weight is…', a:'The gravitational force on the mass', w:['Measured in kilograms','The same on every planet','A measure of how hard the object is to accelerate'], note:'W = mg, measured in newtons.'},
+  {q:'Friction acts…', a:'Against the direction of motion', w:['In the direction of motion','Straight out of the surface','Toward the centre of mass']},
+  {q:'Momentum is conserved in a collision when…', a:'No net external force acts on the system', w:['The objects have equal mass','Kinetic energy is conserved during the collision','The collision is elastic only']},
+  {q:'Work done by a force equals…', a:'Force × distance in its direction', w:['Force × the time it acts for','Mass × velocity','Force ÷ the area it acts on']},
   {q:'Which type of collision conserves kinetic energy?', a:'An elastic collision', w:['An inelastic collision','A perfectly inelastic collision','Any collision']}];
 const PHYS_WAVE = [
   {q:'In a transverse wave, the particles oscillate…', a:'Perpendicular to the direction of energy travel', w:['Parallel to the direction of travel','In circles only','Not at all']},
@@ -5434,7 +5640,7 @@ const PHYS_WAVE = [
 const PHYS_EM = [
   {q:'Ohm’s law is…', a:'V = IR', w:['V = I/R','P = IR','I = VR']},
   {q:'Adding resistors in series makes the total resistance…', a:'Larger than any single resistor', w:['Smaller than any single resistor','Equal to the smallest','Zero']},
-  {q:'Adding resistors in parallel makes the total resistance…', a:'Smaller than the smallest single resistor', w:['Larger than the largest','Equal to their sum','Unchanged']},
+  {q:'Adding resistors in parallel makes the total resistance…', a:'Smaller than the smallest resistor', w:['Larger than the largest resistor','Equal to the sum of them all','Equal to their average value']},
   {q:'Electric current is the rate of flow of…', a:'Charge', w:['Voltage','Energy','Resistance']},
   {q:'Electrical power can be calculated as…', a:'P = VI', w:['P = V/I','P = IR','P = V + I']},
   {q:'The force on a current-carrying wire in a magnetic field is greatest when the wire is…', a:'Perpendicular to the field', w:['Parallel to the field','At 45° to the field','Stationary']},
@@ -5445,7 +5651,7 @@ const MATH_CONCEPTS = [
   {q:'The derivative of a constant is…', a:'0', w:['1','the constant itself','x']},
   {q:'The derivative of a sum equals…', a:'The sum of the derivatives', w:['The product of the derivatives','Always zero','The derivative of the first term only']},
   {q:'Integration is the reverse process of…', a:'Differentiation', w:['Multiplication','Factorising','Taking a limit']},
-  {q:'An indefinite integral includes “+ C” because…', a:'The derivative of a constant is zero, so it is unknown', w:['It makes the answer positive','It marks the upper limit','It is the gradient']},
+  {q:'An indefinite integral includes “+ C” because…', a:'A constant’s derivative is zero', w:['It keeps the answer positive','It marks the upper limit','It is the gradient at x = 0'], note:'So any constant could have been there, and C stands for it.'},
   {q:'You use a permutation (ⁿPᵣ) rather than a combination (ⁿCᵣ) when…', a:'Order matters', w:['Order does not matter','The two groups are equal','Repetition is allowed']},
   {q:'The number of ways to arrange n distinct objects in a line is…', a:'n!', w:['n²','2ⁿ','n(n−1)/2']},
   {q:'The graph of y = f(x − h), for h > 0, is y = f(x) shifted…', a:'h units to the right', w:['h units to the left','h units up','h units down']},
@@ -5474,13 +5680,13 @@ const SEPARATION = [
   { n:'Centrifuging', d:'spins a mixture so the denser component is forced to the bottom' }
 ];
 const MIX_CONCEPT = [
-  {q:'What makes a mixture different from a compound?', a:'Its components keep their own properties and can be separated physically', w:['Its components are chemically bonded','It always contains only one element','It can never be separated again']},
-  {q:'A solution is best described as…', a:'A homogeneous mixture of a solute dissolved in a solvent', w:['A pure substance','A mixture you can see the parts of','A compound of fixed ratio']},
+  {q:'What makes a mixture different from a compound?', a:'Its parts keep their own properties', w:['Its parts are chemically bonded','It always has a fixed ratio','It can only be split chemically'], note:'So a mixture can be separated by physical means.'},
+  {q:'A solution is best described as…', a:'A solute evenly dissolved in a solvent', w:['A pure substance of one element','A mixture with visible parts','A compound in a fixed ratio']},
   {q:'"Homogeneous" means the mixture…', a:'Has a uniform composition throughout', w:['Has visibly separate parts','Contains only one element','Cannot be separated']},
-  {q:'Separation techniques work because they exploit differences in…', a:'Physical properties such as particle size, boiling point or solubility', w:['Chemical formulas','Atomic number','The number of protons']},
-  {q:'Allotropes are…', a:'Different forms of the same element with different structures and properties', w:['Atoms of one element with different masses','Different elements with the same mass','Compounds with the same formula']},
-  {q:'Diamond and graphite are allotropes because they…', a:'Are both carbon, but their atoms are arranged differently', w:['Contain different elements','Have different numbers of protons','Are both compounds of carbon']},
-  {q:'Graphite conducts electricity but diamond does not, because graphite has…', a:'Delocalised electrons free to move between its layers', w:['A higher melting point','More protons per atom','Ionic bonding']},
+  {q:'Separation techniques work because they exploit differences in…', a:'Physical properties', w:['Chemical formulas','Atomic numbers','Numbers of protons'], note:'Such as particle size, boiling point or solubility.'},
+  {q:'Allotropes are…', a:'Different structures of one element', w:['Atoms of one element, different masses','Different elements with equal masses','Compounds sharing one formula']},
+  {q:'Diamond and graphite are allotropes because they…', a:'Are both carbon, arranged differently', w:['Contain different elements','Have different numbers of protons','Are both compounds of carbon']},
+  {q:'Graphite conducts electricity but diamond does not, because graphite has…', a:'Delocalised electrons', w:['A higher melting point','More protons per atom','Ionic bonding'], note:'Each carbon uses three electrons in bonds, leaving one free to move between the layers.'},
   {q:'Isotopes of an element differ in their number of…', a:'Neutrons', w:['Protons','Electrons in a neutral atom','Energy levels']}
 ];
 function genSeparation(){
@@ -5559,18 +5765,18 @@ function genGasLaw(){
 
 /* ── chemistry: reaction rates & collision theory (Module 3) ───────────── */
 const RATE_C = [
-  {q:'Collision theory says a reaction happens only when particles collide…', a:'With enough energy, and in the right orientation', w:['At any speed at all','Exactly head-on every time','Only in the presence of a catalyst']},
+  {q:'Collision theory says a reaction happens only when particles collide…', a:'With enough energy, and in the right orientation', w:['At any speed at all','Exactly head-on every time','Only when a catalyst is present to lower the energy']},
   {q:'The minimum energy a collision needs for a reaction to proceed is the…', a:'Activation energy', w:['Enthalpy of formation','Bond energy','Lattice energy']},
-  {q:'Raising the temperature speeds a reaction up mainly because particles…', a:'Move faster, so collisions are more frequent AND more of them exceed the activation energy', w:['Become larger','Are destroyed faster','Lose their activation energy']},
-  {q:'Raising the concentration of a dissolved reactant speeds the reaction up because…', a:'There are more particles in the same volume, so collisions are more frequent', w:['The particles move faster','The activation energy falls','The temperature rises']},
-  {q:'For a gas, increasing the pressure has the same effect as…', a:'Increasing the concentration, because it forces particles closer together', w:['Lowering the temperature','Adding a catalyst','Increasing the surface area']},
-  {q:'Powdering a solid reactant speeds the reaction up because it…', a:'Increases the surface area exposed to the other reactant', w:['Raises the temperature','Lowers the activation energy','Increases the concentration of the solid']},
-  {q:'A catalyst speeds up a reaction by…', a:'Providing an alternative pathway with a lower activation energy', w:['Raising the temperature of the mixture','Being used up to release energy','Increasing the concentration of reactants']},
+  {q:'Raising the temperature speeds a reaction up mainly because particles…', a:'Collide more often and more energetically', w:['Grow larger as they are heated','Lower their own activation energy as they warm up','Break apart before they collide'], note:'The bigger effect is that more collisions now exceed the activation energy.'},
+  {q:'Raising the concentration of a dissolved reactant speeds the reaction up because…', a:'More particles means more collisions', w:['The particles move faster','The activation energy falls','The temperature rises']},
+  {q:'For a gas, increasing the pressure has the same effect as…', a:'Increasing the concentration', w:['Lowering the temperature','Adding a catalyst','Increasing the surface area'], note:'Squeezing the gas packs the particles closer together.'},
+  {q:'Powdering a solid reactant speeds the reaction up because it…', a:'Increases the surface area exposed to the other reactant', w:['Raises the temperature','Lowers the activation energy','Increases the concentration of the solid reactant present']},
+  {q:'A catalyst speeds up a reaction by…', a:'Providing an alternative pathway with a lower activation energy', w:['Raising the temperature of the whole mixture so particles collide harder','Being used up to release energy','Increasing the concentration of reactants']},
   {q:'After a reaction, a catalyst is…', a:'Chemically unchanged and can be recovered', w:['Consumed and must be replaced','Converted into product','Always a gas']},
-  {q:'Does a catalyst change the enthalpy change (ΔH) of a reaction?', a:'No, it only lowers the activation energy', w:['Yes, it makes ΔH more negative','Yes, it makes ΔH more positive','Yes, it reverses the sign of ΔH']},
+  {q:'Does a catalyst change the enthalpy change (ΔH) of a reaction?', a:'No, it only lowers the activation energy', w:['Yes, it makes ΔH more negative','Yes, it makes ΔH more positive','Yes, it makes an endothermic reaction exothermic']},
   {q:'Which of these is NOT a valid indication that a chemical change has occurred?', a:'The mixture changes shape', w:['A gas is produced','A precipitate forms','The temperature changes without heating']},
-  {q:'A precipitate forming when two solutions are mixed indicates…', a:'A new insoluble solid has been produced, which is a chemical change', w:['The solvent has evaporated','A physical change only','The solution has been diluted']},
-  {q:'In the reaction Mg + 2HCl → MgCl₂ + H₂, the rate could be measured by…', a:'The rate at which hydrogen gas bubbles are produced', w:['The colour of the magnesium','The mass of the test tube','The volume of acid added']}
+  {q:'A precipitate forming when two solutions are mixed indicates…', a:'A new insoluble solid has formed', w:['The solvent has evaporated','Only a physical change','The solution was diluted'], note:'That makes it a chemical change.'},
+  {q:'In the reaction Mg + 2HCl → MgCl₂ + H₂, the rate could be measured by…', a:'How fast hydrogen gas is made', w:['The colour of the magnesium','The mass of the test tube','The volume of acid added']}
 ];
 const RATE_FACTORS = [
   { n:'Temperature', d:'particles move faster, so collisions are both more frequent and more energetic' },
@@ -5608,28 +5814,28 @@ function genActivity(){
 
 /* ── chemistry: energy profiles (Module 4) ─────────────────────────────── */
 const ENERGY_C = [
-  {q:'In an exothermic reaction, the products…', a:'Have less stored chemical energy than the reactants, so energy is released', w:['Have more energy than the reactants','Have exactly the same energy','Always form a gas']},
+  {q:'In an exothermic reaction, the products…', a:'Have less energy than the reactants', w:['Have more energy than the reactants','Have the same energy as the reactants','Always include a gas'], note:'The difference is released as heat.'},
   {q:'The sign of ΔH for an exothermic reaction is…', a:'Negative', w:['Positive','Always zero','Undefined']},
   {q:'In an endothermic reaction the surroundings…', a:'Get colder, because energy is absorbed from them', w:['Get hotter','Stay at exactly the same temperature','Always produce a gas']},
   {q:'Breaking chemical bonds is…', a:'Endothermic, energy must be put in', w:['Exothermic, energy is released','Neither, bonds break freely','Always spontaneous']},
   {q:'Forming chemical bonds is…', a:'Exothermic, energy is released', w:['Endothermic, energy is absorbed','Energy neutral','Only possible with a catalyst']},
-  {q:'A reaction is exothermic overall when…', a:'More energy is released forming bonds than is absorbed breaking them', w:['More energy is absorbed than released','No bonds are broken','The activation energy is zero']},
+  {q:'A reaction is exothermic overall when…', a:'Forming bonds releases more than breaking uses', w:['Breaking bonds uses more than forming releases','No bonds are broken at all','The activation energy is zero']},
   {q:'On an energy profile diagram, the activation energy is the gap between…', a:'The reactants and the peak of the curve', w:['The reactants and the products','The peak and the products','Zero and the products']},
-  {q:'Adding a catalyst changes an energy profile diagram by…', a:'Lowering the peak, without moving the reactant or product levels', w:['Lowering the product level','Raising the reactant level','Removing the peak entirely']},
-  {q:'The heat of combustion of a fuel is the energy released when…', a:'One mole (or a stated mass) of the fuel burns completely in oxygen', w:['A fuel is formed from its elements','A fuel evaporates','One mole of oxygen is consumed']},
-  {q:'Entropy is best described as a measure of…', a:'The disorder, or the number of ways energy and particles can be arranged', w:['The total energy of a system','The rate of a reaction','The strength of the bonds']},
+  {q:'Adding a catalyst changes an energy profile diagram by…', a:'Lowering the peak only', w:['Lowering the product level','Raising the reactant level','Removing the peak entirely'], note:'The reactant and product levels, and so ΔH, stay the same.'},
+  {q:'The heat of combustion of a fuel is the energy released when…', a:'One mole of the fuel burns completely', w:['A mole of fuel forms from its elements','A mole of the fuel evaporates','One mole of oxygen is used up'], note:'It is sometimes given per gram instead of per mole.'},
+  {q:'Entropy is best described as a measure of…', a:'Disorder, or the ways energy can spread', w:['The total energy of a system','How fast a reaction happens','How strong the bonds are']},
   {q:'Which change increases entropy the most?', a:'A solid turning into a gas', w:['A gas turning into a liquid','A liquid freezing','A gas being compressed']},
   {q:'A reaction that produces more moles of gas than it consumes has…', a:'A positive entropy change (ΔS > 0)', w:['A negative entropy change','No entropy change','Zero enthalpy change']},
   {q:'A reaction with negative ΔH and positive ΔS is…', a:'Spontaneous at all temperatures', w:['Never spontaneous','Spontaneous only when hot','Spontaneous only when cold']},
   {q:'A reaction with positive ΔH and negative ΔS is…', a:'Never spontaneous at any temperature', w:['Always spontaneous','Spontaneous only when hot','Spontaneous only when cold']},
-  {q:'Hess’s law says the enthalpy change of a reaction…', a:'Is the same whichever route is taken from reactants to products', w:['Depends on the path taken','Is always negative','Depends on the catalyst used']},
-  {q:'Specific heat capacity is the energy needed to…', a:'Raise the temperature of a fixed mass of a substance by one degree', w:['Melt one mole of a substance','Break one mole of bonds','Raise any mass by one degree']},
-  {q:'Water is used in calorimetry largely because it has…', a:'A high specific heat capacity and well-known properties', w:['The lowest specific heat capacity','No heat capacity at all','A very low boiling point']},
+  {q:'Hess’s law says the enthalpy change of a reaction…', a:'Is the same whatever route is taken', w:['Depends on the route taken','Is always negative','Changes if a catalyst is used']},
+  {q:'Specific heat capacity is the energy needed to…', a:'Heat 1 g of a substance by 1 °C', w:['Melt 1 mol of a substance','Break 1 mol of its bonds','Heat any mass of it by 1 °C']},
+  {q:'Water is used in calorimetry largely because it has…', a:'A high, well-known heat capacity', w:['The lowest heat capacity known','No heat capacity at all','A very low boiling point']},
   {q:'Using bond energies, ΔH is calculated as…', a:'Bonds broken minus bonds formed', w:['Bonds formed minus bonds broken','Bonds broken plus bonds formed','Bonds formed divided by bonds broken']},
   {q:'The standard enthalpy of formation of an element in its standard state is…', a:'Zero, by definition', w:['Always negative','Always positive','Equal to its bond energy']},
   {q:'The Gibbs free energy equation is…', a:'ΔG = ΔH − TΔS', w:['ΔG = ΔH + TΔS','ΔG = TΔS − ΔH','ΔG = ΔH × TΔS']},
   {q:'A reaction is spontaneous when…', a:'ΔG is negative', w:['ΔG is positive','ΔH is positive','ΔS is negative']},
-  {q:'Why must temperature be in kelvin in the Gibbs equation?', a:'It is an absolute scale, so the TΔS term scales correctly', w:['Kelvin values are always smaller','Celsius cannot be negative','It makes ΔG positive']}
+  {q:'Why must temperature be in kelvin in the Gibbs equation?', a:'It is an absolute scale', w:['Kelvin numbers are always smaller','Celsius cannot go below zero','It keeps ΔG positive'], note:'TΔS only scales properly when zero really means zero.'}
 ];
 function genEnergyProfile(){ return bankQ(ENERGY_C, 'enp'); }
 
@@ -5677,31 +5883,31 @@ function genThermo(){
 
 /* extra wave ideas the syllabus names */
 const WAVE_EXTRA = [
-  {q:'A standing wave is produced when…', a:'Two identical waves travel in opposite directions and superpose', w:['A single wave reflects off nothing','Two waves of different frequency meet','A wave slows down']},
+  {q:'A standing wave is produced when…', a:'Identical waves travel opposite ways and overlap', w:['One wave slows down in a medium','Waves of different frequency meet','A wave passes through a narrow gap']},
   {q:'On a standing wave, a point that never moves is called a…', a:'Node', w:['Antinode','Crest','Trough']},
   {q:'On a standing wave, a point of maximum movement is called an…', a:'Antinode', w:['Node','Wavefront','Origin']},
   {q:'Resonance occurs when a system is driven at…', a:'Its natural frequency, giving a large amplitude response', w:['Any frequency at all','A frequency far from its natural one','Zero frequency']},
-  {q:'Diffraction is the…', a:'Spreading of a wave as it passes through a gap or around an obstacle', w:['Bending as it changes speed between media','Bouncing off a surface','Cancelling of two waves']},
+  {q:'Diffraction is the…', a:'Spreading of a wave through a gap', w:['Bending as it changes speed','Bouncing of a wave off a surface','Cancelling of two waves'], note:'It also happens around an obstacle.'},
   {q:'Diffraction is most noticeable when the gap is…', a:'About the same size as the wavelength', w:['Much larger than the wavelength','Much smaller than an atom','Perfectly square']},
-  {q:'The Doppler effect describes the change in observed…', a:'Frequency when the source and observer move relative to each other', w:['Amplitude when a wave reflects','Speed of light in a medium','Wavelength during diffraction']},
-  {q:'As an ambulance siren approaches you, the pitch you hear is…', a:'Higher than the true pitch, and it drops as it passes', w:['Lower, then rises as it passes','Unchanged throughout','Louder but the same pitch']},
-  {q:'Refraction happens because a wave…', a:'Changes speed when it enters a different medium', w:['Loses energy','Changes frequency','Is absorbed']},
+  {q:'The Doppler effect describes the change in observed…', a:'Frequency due to relative motion', w:['Amplitude when a wave reflects','Speed of light in a medium','Wavelength during diffraction']},
+  {q:'As an ambulance siren approaches you, the pitch you hear is…', a:'Higher, then drops as it passes', w:['Lower, then rises as it passes','Unchanged the whole time','Louder but at the same pitch']},
+  {q:'Refraction happens because a wave…', a:'Changes speed in a new medium', w:['Loses energy as it travels','Changes frequency at a boundary','Is absorbed by the medium']},
   {q:'When light refracts, the quantity that stays the same is its…', a:'Frequency', w:['Speed','Wavelength','Direction']},
-  {q:'Progressive (travelling) waves differ from standing waves because they…', a:'Transfer energy from one place to another', w:['Have fixed nodes','Never reflect','Cannot carry sound']},
+  {q:'Progressive (travelling) waves differ from standing waves because they…', a:'Carry energy from place to place', w:['Have fixed nodes and antinodes','Can never be reflected','Cannot travel through air']},
   {q:'The inverse square law means that doubling your distance from a point source…', a:'Reduces the intensity to a quarter', w:['Halves the intensity','Doubles the intensity','Leaves intensity unchanged']}
 ];
 
 /* extra electricity / magnetism ideas */
 const EM_EXTRA = [
   {q:'The magnetic field around a straight current-carrying wire is…', a:'A series of concentric circles around the wire', w:['Straight lines along the wire','A single loop at one end','Zero everywhere']},
-  {q:'The field inside a current-carrying solenoid is…', a:'Strong and nearly uniform, like that of a bar magnet', w:['Zero','Circular around the axis','Always pointing outwards']},
-  {q:'Adding an iron core to a solenoid…', a:'Greatly strengthens the magnetic field', w:['Cancels the field','Reverses the current','Has no effect']},
-  {q:'Reversing the current in a solenoid…', a:'Reverses the direction of its magnetic field', w:['Doubles the field strength','Switches the field off','Has no effect on the field']},
-  {q:'Conventional current is defined as flowing…', a:'From the positive terminal to the negative terminal', w:['From negative to positive','In the direction electrons move','Only in a vacuum']},
+  {q:'The field inside a current-carrying solenoid is…', a:'Strong and nearly uniform', w:['Zero everywhere inside','In circles around the axis','Pointing straight outwards'], note:'Like the field of a bar magnet.'},
+  {q:'Adding an iron core to a solenoid…', a:'Greatly strengthens the field', w:['Cancels the magnetic field','Reverses the current','Has no effect on the field']},
+  {q:'Reversing the current in a solenoid…', a:'Reverses the magnetic field', w:['Doubles the field strength','Switches the field off','Has no effect on the field']},
+  {q:'Conventional current is defined as flowing…', a:'From positive to negative', w:['From negative to positive','The way electrons move','Only through a vacuum']},
   {q:'In a series circuit, the current through each component is…', a:'The same everywhere', w:['Divided between components','Largest at the first component','Zero at the last component']},
   {q:'In a parallel circuit, the potential difference across each branch is…', a:'The same across every branch', w:['Divided between branches','Highest in the longest branch','Always zero']},
-  {q:'An ammeter must be connected…', a:'In series with the component whose current is being measured', w:['In parallel with the component','Across the battery only','Anywhere in the circuit']},
-  {q:'A voltmeter must be connected…', a:'In parallel with the component whose voltage is being measured', w:['In series with the component','Across the ammeter','In place of the battery']},
+  {q:'An ammeter must be connected…', a:'In series with the component', w:['In parallel with the component','Across the battery terminals','Anywhere in the circuit']},
+  {q:'A voltmeter must be connected…', a:'In parallel with the component', w:['In series with the component','In series with the ammeter','In place of the battery']},
   {q:'Electromotive force (emf) is the energy supplied per…', a:'Unit of charge by the source', w:['Second by the resistor','Unit of current','Metre of wire']},
   {q:'The electric field between two parallel charged plates is…', a:'Uniform, and equal to V/d', w:['Strongest near one plate','Zero in the middle','Circular']},
   {q:'Two unlike charges placed near each other will…', a:'Attract', w:['Repel','Exert no force','Neutralise instantly']}
@@ -5729,9 +5935,273 @@ function genMachines(){
       choices:m.choices, answer:m.answer, note:'η = MA/VR, so MA = η × VR = '+(eff/100)+'×'+vr+' = '+ma+'.' };
   }
   const ma = ri(2,6), vr = ma + ri(1,3), eff = rd(ma/vr*100, 1);
-  const m = physMC(eff, '%', [rd(vr/ma*100,1), rd(ma*vr,1), rd(100-eff,1)]);
+  /* was offering VR ÷ MA as a wrong option, which is always over 100% and so ruled out on sight */
+  const m = pctMC(eff, [rd(100-eff,1), rd(ma/(vr+1)*100,1), rd((vr-ma)/vr*100,1)]);
   return { q:'A machine has a mechanical advantage of <b>'+ma+'</b> and a velocity ratio of <b>'+vr+'</b>. What is its efficiency?',
     choices:m.choices, answer:m.answer, note:'η = MA/VR × 100 = '+ma+'/'+vr+' × 100 = '+eff+'%.' };
+}
+
+/* ── engineering: harder mechanics ──────────────────────────────────────
+   Modelled on HSC-style questions: forces at angles, levers held in balance by
+   a cable, pulley and gear efficiency, bicycle drives. Diagrams show only what
+   the question needs. Each wrong option is a specific slip (ignoring the angle,
+   sin for cos, mm left as m, a ratio upside down, efficiency left out), and
+   every question carries `data` so its answer can be re-derived and checked. */
+const G_ACCEL = 9.8;
+const rad = d => d * Math.PI / 180;
+const svgArrow = (x1, y1, x2, y2, cls) => {
+  const a = Math.atan2(y2 - y1, x2 - x1), h = 8, w = 4.5;
+  const p1 = [x2 - h * Math.cos(a) + w * Math.sin(a), y2 - h * Math.sin(a) - w * Math.cos(a)];
+  const p2 = [x2 - h * Math.cos(a) - w * Math.sin(a), y2 - h * Math.sin(a) + w * Math.cos(a)];
+  return '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" class="' + (cls || 'mf') + '"/>' +
+    '<path d="M' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' L' + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1) + ' L' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1) + ' Z" class="' + (cls || 'mf') + 'h"/>';
+};
+const svgText = (x, y, s, anchor, cls) => '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (anchor || 'middle') + '" class="' + (cls || 'mt') + '">' + s + '</text>';
+const mechSVG = (w, h, body, label) => '<svg class="rvdiagram rvmech" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" font-size="13" role="img" aria-label="' + label + '">' + body + '</svg>';
+
+/* a straight lever: fulcrum triangle, load and effort arrows, distances below */
+function leverFig(cls, dL, dE, loadLabel){
+  let xf, xl, xe;
+  if (cls === 1){ const s = 260 / (dL + dE); xf = 40 + dL * s; xl = xf - dL * s; xe = xf + dE * s; }
+  else if (cls === 2){ const s = 260 / dE; xf = 40; xl = xf + dL * s; xe = xf + dE * s; }
+  else { const s = 260 / dL; xf = 40; xe = xf + dE * s; xl = xf + dL * s; }
+  const by = 64;
+  let b = '<line x1="' + (Math.min(xf, xl, xe) - 12) + '" y1="' + by + '" x2="' + (Math.max(xf, xl, xe) + 12) + '" y2="' + by + '" class="mb"/>';
+  b += '<path d="M' + xf + ' ' + (by + 3) + ' L' + (xf - 11) + ' ' + (by + 22) + ' L' + (xf + 11) + ' ' + (by + 22) + ' Z" class="mp"/>';
+  b += svgArrow(xl, by - 44, xl, by - 4) + svgText(xl, by - 50, loadLabel);
+  if (cls === 1){ b += svgArrow(xe, by - 44, xe, by - 4, 'me') + svgText(xe, by - 50, 'E', 'middle', 'mte'); }
+  else { b += svgArrow(xe, by + 42, xe, by + 5, 'me') + svgText(xe + 10, by + 38, 'E', 'start', 'mte'); }
+  const dim = (x1, x2, y, s) => '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" class="md"/>' +
+    '<line x1="' + x1 + '" y1="' + (y - 4) + '" x2="' + x1 + '" y2="' + (y + 4) + '" class="md"/><line x1="' + x2 + '" y1="' + (y - 4) + '" x2="' + x2 + '" y2="' + (y + 4) + '" class="md"/>' +
+    svgText((x1 + x2) / 2, y - 4, s, 'middle', 'mtd');
+  b += dim(Math.min(xf, xl), Math.max(xf, xl), 124, dL + ' mm') + dim(Math.min(xf, xe), Math.max(xf, xe), 150, dE + ' mm');
+  return mechSVG(340, 160, b, 'lever diagram');
+}
+/* a pedal: pivot O, horizontal arm, cable from a post above O, force at an angle to the vertical */
+function pedalFig(a, h, theta, F){
+  const ox = 70, oy = 112, px = 300, qy = 42;
+  let b = '<line x1="' + ox + '" y1="' + oy + '" x2="' + px + '" y2="' + oy + '" class="mb"/>' +
+    '<line x1="' + ox + '" y1="' + oy + '" x2="' + ox + '" y2="' + qy + '" class="mb"/>' +
+    '<circle cx="' + ox + '" cy="' + oy + '" r="6" class="mp"/>' + svgText(ox - 14, oy + 18, 'O');
+  b += svgArrow(ox, qy, ox - 52, qy, 'me') + svgText(ox - 58, qy + 4, 'T', 'end', 'mte');
+  const len = 70, sx = px + len * Math.sin(rad(theta)), sy = oy - len * Math.cos(rad(theta));
+  b += '<line x1="' + px + '" y1="' + oy + '" x2="' + px + '" y2="' + (oy - len - 6) + '" class="md" stroke-dasharray="3 3"/>';
+  b += svgArrow(sx, sy, px + 1.5 * Math.sin(rad(theta)), oy - 2, 'mf') + svgText(sx + 6, sy - 6, F + ' N', 'start');
+  b += svgText(px - 7, oy - 30, theta + '°', 'end', 'mtd');
+  b += svgText((ox + px) / 2, oy + 20, a + ' mm', 'middle', 'mtd') + svgText(ox + 8, (oy + qy) / 2 + 4, h + ' mm', 'start', 'mtd');
+  return mechSVG(380, 132, b, 'pedal diagram');
+}
+/* point A with two arms: a vertical force on one, a perpendicular force on the other */
+function twoArmFig(F1, L1, alpha, F2, L2){
+  const ax = 200, ay = 170, beta = 35, ca = Math.cos(rad(alpha)), sa = Math.sin(rad(alpha)), cb = Math.cos(rad(beta)), sb = Math.sin(rad(beta));
+  const s1 = 105 + L1 * 60, s2 = 115 + L2 * 60;
+  const e1 = [ax - s1 * ca, ay - s1 * sa], e2 = [ax + s2 * cb, ay - s2 * sb];
+  const line = (x1, y1, x2, y2, cls, dash) => '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" class="' + cls + '"' + (dash ? ' stroke-dasharray="3 3"' : '') + '/>';
+  let b = line(ax, ay, e1[0], e1[1], 'mb') + line(ax, ay, e2[0], e2[1], 'mb') +
+    '<circle cx="' + ax + '" cy="' + ay + '" r="5" class="mp"/>' + svgText(ax, ay + 22, 'A');
+  /* the angle, marked against a dashed horizontal and labelled inside it */
+  b += line(ax - 100, ay, ax, ay, 'md', true) + svgText(ax - 44 * Math.cos(rad(alpha / 2)), ay - 44 * Math.sin(rad(alpha / 2)) + 4, alpha + '°', 'middle', 'mtd');
+  /* arm lengths sit just above each arm */
+  b += svgText((ax + e1[0]) / 2 + 12 * sa, (ay + e1[1]) / 2 - 12 * ca, L1 + ' m', 'start', 'mtd');
+  b += svgText((ax + e2[0]) / 2 - 16 * sb, (ay + e2[1]) / 2 - 16 * cb + 4, L2 + ' m', 'middle', 'mtd');
+  /* the vertical force, labelled beside its arrow */
+  b += svgArrow(e1[0], e1[1], e1[0], e1[1] + 56) + svgText(e1[0] - 9, e1[1] + 38, F1 + ' kN', 'end');
+  /* the force at right angles to its arm, with a small square to show it */
+  const d = [sb, cb];
+  b += svgArrow(e2[0], e2[1], e2[0] + d[0] * 56, e2[1] + d[1] * 56) + svgText(e2[0] + d[0] * 56 + 8, e2[1] + d[1] * 56 + 4, F2 + ' kN', 'start');
+  const k = 9, p1 = [e2[0] - cb * k, e2[1] + sb * k], p2 = [p1[0] + d[0] * k, p1[1] + d[1] * k], p3 = [e2[0] + d[0] * k, e2[1] + d[1] * k];
+  b += '<path d="M' + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1) + ' L' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1) + ' L' + p3[0].toFixed(1) + ' ' + p3[1].toFixed(1) + '" class="md" fill="none"/>';
+  return mechSVG(430, 206, b, 'forces about a point');
+}
+function pulleyFig(n, mass){
+  const w = n * 16 + 24, x0 = 110 - w / 2;
+  let b = '<line x1="' + (x0 - 10) + '" y1="12" x2="' + (x0 + w + 10) + '" y2="12" class="mb"/>';
+  for (let i = 0; i < n; i++){ const x = x0 + 12 + i * 16; b += '<line x1="' + x + '" y1="14" x2="' + x + '" y2="92" class="mr"/>'; }
+  b += '<rect x="' + x0 + '" y="92" width="' + w + '" height="14" rx="3" class="mp"/>' +
+    '<rect x="' + (110 - 26) + '" y="116" width="52" height="26" rx="3" class="mbox"/>' + svgText(110, 134, mass + ' kg') +
+    '<line x1="110" y1="106" x2="110" y2="116" class="mr"/>';
+  const ex = x0 + w + 26;
+  b += '<line x1="' + (x0 + w - 4) + '" y1="14" x2="' + ex + '" y2="14" class="mr"/>' + svgArrow(ex, 14, ex, 70, 'me') + svgText(ex + 8, 64, 'Effort', 'start', 'mte');
+  b += svgText(x0 - 8, 58, n + ' ropes', 'end', 'mtd');
+  return mechSVG(230, 150, b, 'pulley system');
+}
+function gearFig(Ta, Tb){
+  const ra = 16 + Ta * 0.9, rb = 16 + Tb * 0.9, ca = 20 + ra, cb = ca + ra + rb + 2, cy = Math.max(ra, rb) + 8;
+  const H = cy + Math.max(ra, rb) + 28;
+  let b = '<circle cx="' + ca + '" cy="' + cy + '" r="' + ra + '" class="mg"/><circle cx="' + cb + '" cy="' + cy + '" r="' + rb + '" class="mg"/>' +
+    '<circle cx="' + ca + '" cy="' + cy + '" r="3" class="mp"/><circle cx="' + cb + '" cy="' + cy + '" r="3" class="mp"/>';
+  b += svgText(ca, cy + ra + 18, 'A: ' + Ta + ' teeth') + svgText(cb, cy + rb + 18, 'B: ' + Tb + ' teeth');
+  return mechSVG(Math.round(cb + rb + 20), Math.round(H), b, 'gear pair');
+}
+const ratioStr = x => rd(x, 2) + ':1';
+/* Efficiency options. A slip that lands above 100% is physically impossible, so
+   anyone can rule it out; those are dropped in favour of near misses. */
+function pctMC(val, wrongs){
+  const real = wrongs.filter(w => isFinite(w) && w > 3 && w < 100 && Math.abs(w - val) >= 2).map(w => rd(w, 1));
+  const near = [val - 12, val + 8, val - 21, val + 14, val - 6].filter(w => w > 3 && w < 100 && Math.abs(w - val) >= 2).map(w => rd(w, 1));
+  return physMC(rd(val, 1), '%', real.concat(near));
+}
+/* ratio options, padded so two slips that happen to agree never leave three */
+const ratioMC = (val, wrongs) => mc(ratioStr(val), wrongs.concat([val * 2, val / 2, val + 1, val * 1.5]).filter(w => isFinite(w) && w > 0).map(ratioStr));
+
+function genMomentsHard(){
+  const k = ri(0, 2);
+  if (k === 0){                                     // spanner, force at an angle to it
+    const F = ri(4, 30) * 10, L = pk([150, 200, 250, 300, 350, 400]), th = pk([30, 40, 45, 50, 60, 70]);
+    const M = F * L / 1000 * Math.sin(rad(th));
+    const m = physMC(rd(M, 2), 'N·m', [rd(F * L / 1000, 2), rd(F * L / 1000 * Math.cos(rad(th)), 2), rd(F * L * Math.sin(rad(th)), 0)]);
+    const fig = '<svg class="rvdiagram rvmech" viewBox="0 0 360 120" width="360" font-size="13" role="img" aria-label="spanner">' +
+      '<circle cx="40" cy="80" r="14" class="mp"/><line x1="54" y1="80" x2="300" y2="80" class="mb"/>' +
+      svgArrow(300 - 70 * Math.cos(rad(th)), 80 - 70 * Math.sin(rad(th)), 298, 79) +
+      svgText(300 - 70 * Math.cos(rad(th)) - 6, 80 - 70 * Math.sin(rad(th)) - 4, F + ' N', 'end') +
+      svgText(250, 74, th + '°', 'middle', 'mtd') + svgText(170, 104, L + ' mm', 'middle', 'mtd') + '</svg>';
+    return { q:'A force of <b>' + F + ' N</b> acts at the end of a <b>' + L + ' mm</b> spanner, at <b>' + th + '°</b> to the spanner. What moment does it apply to the nut?' + fig,
+      choices:m.choices, answer:m.answer, data:{ kind:'spanner', F, L, th },
+      note:'Only the part of the force perpendicular to the spanner turns it: M = F sin θ × d = ' + F + ' × sin ' + th + '° × ' + (L / 1000) + ' = ' + rd(M, 2) + ' N·m.' };
+  }
+  if (k === 1){                                     // pedal held by a cable
+    const F = ri(4, 18) * 50, a = pk([150, 200, 250, 300]), h = pk([50, 60, 80, 100, 120]), th = pk([15, 20, 30, 40, 45]);
+    const T = F * a * Math.cos(rad(th)) / h;
+    const m = physMC(rd(T, 0), 'N', [rd(F * a / h, 0), rd(F * a * Math.sin(rad(th)) / h, 0), rd(F * h / (a * Math.cos(rad(th))), 0)]);
+    return { q:'A pedal pivots at O and its arm is horizontal. A <b>' + F + ' N</b> force is applied at the end of the <b>' + a + ' mm</b> arm, at <b>' + th + '°</b> to the vertical. ' +
+      'A cable fixed <b>' + h + ' mm</b> directly above O pulls horizontally. What cable tension T holds the pedal in balance?' + pedalFig(a, h, th, F),
+      choices:m.choices, answer:m.answer, data:{ kind:'pedal', F, a, h, th },
+      note:'Take moments about O. The force’s horizontal part acts along the arm, so only F cos θ turns it: T × ' + h + ' = ' + F + ' × cos ' + th + '° × ' + a + ', so T = ' + rd(T, 0) + ' N.' };
+  }
+  let F1, L1, al, F2, L2, net;                     // two forces about a point
+  do {
+    F1 = rd(ri(10, 40) / 2, 1); L1 = rd(ri(2, 6) / 10, 1); al = pk([30, 45, 60]);
+    F2 = rd(ri(6, 30) / 2, 1); L2 = rd(ri(4, 9) / 10, 1);
+    net = F1 * L1 * Math.cos(rad(al)) - F2 * L2;          // anticlockwise positive
+  } while (Math.abs(net) < 0.3);
+  const sense = v => rd(Math.abs(v), 2) + ' kN·m ' + (v > 0 ? 'anticlockwise' : 'clockwise');
+  const wrong = [F1 * L1 - F2 * L2, F1 * L1 * Math.cos(rad(al)) + F2 * L2, -net, F1 * L1 * Math.sin(rad(al)) - F2 * L2,
+    -(F1 * L1 * Math.cos(rad(al)) + F2 * L2), F2 * L2, -F1 * L1 * Math.cos(rad(al))]
+    .filter(v => Math.abs(v) > 0.05).map(sense);
+  const m = mc(sense(net), wrong);
+  return { q:'Two forces act on a bracket that pivots at A (see the diagram). The ' + F1 + ' kN force is vertical, on an arm of ' + L1 + ' m at ' + al + '° above the horizontal. ' +
+    'The ' + F2 + ' kN force is perpendicular to its ' + L2 + ' m arm. What is the resultant moment about A?' + twoArmFig(F1, L1, al, F2, L2),
+    choices:m.choices, answer:m.answer, data:{ kind:'twoarm', F1, L1, al, F2, L2 },
+    note:'The vertical force’s perpendicular distance is ' + L1 + ' cos ' + al + '° = ' + rd(L1 * Math.cos(rad(al)), 3) + ' m, giving ' + rd(F1 * L1 * Math.cos(rad(al)), 2) +
+      ' kN·m anticlockwise. The other is already perpendicular: ' + F2 + ' × ' + L2 + ' = ' + rd(F2 * L2, 2) + ' kN·m clockwise. Net: ' + sense(net) + '.' };
+}
+function genMomentsAll(){ return Math.random() < 0.2 ? genMoments() : genMomentsHard(); }
+
+/* ── levers ── */
+const LEVER_EXAMPLES = [['wheelbarrow',2],['nutcracker',2],['bottle opener',2],['crowbar lifting a rock',1],['seesaw',1],
+  ['pair of scissors',1],['pair of pliers',1],['claw hammer pulling a nail',1],['pair of tweezers',3],['fishing rod',3],
+  ['human forearm lifting a weight',3],['pair of kitchen tongs',3]];
+const LEVER_CLASS = ['', 'First class', 'Second class', 'Third class'];
+const LEVER_MIDDLE = ['', 'Fulcrum', 'Load', 'Effort'];
+function genLevers(){
+  const k = ri(0, 6);
+  if (k === 0){
+    const [name, c] = pk(LEVER_EXAMPLES);
+    return { q:'What class of lever is a <b>' + name + '</b>?', choices:[1, 2, 3].map(i => LEVER_CLASS[i]), answer:LEVER_CLASS[c],
+      note:'First class: fulcrum in the middle. Second: load in the middle. Third: effort in the middle.', key:'lever-ex:' + name };
+  }
+  if (k === 1){
+    const c = ri(1, 3);
+    if (Math.random() < 0.5) return { q:'In a <b>' + LEVER_CLASS[c].toLowerCase() + '</b> lever, which sits between the other two?',
+      choices:['Fulcrum', 'Load', 'Effort'], answer:LEVER_MIDDLE[c], key:'lever-mid:' + c };
+    return { q:'A lever has the <b>' + LEVER_MIDDLE[c].toLowerCase() + '</b> between the other two. What class is it?',
+      choices:[1, 2, 3].map(i => LEVER_CLASS[i]), answer:LEVER_CLASS[c], key:'lever-arr:' + c };
+  }
+  if (k === 2){
+    const v = ri(0, 2), ask = ['always has a mechanical advantage less than 1', 'always has a mechanical advantage greater than 1 (ignoring friction)',
+      'can have a mechanical advantage above or below 1, depending on where the fulcrum is'][v];
+    return { q:'Which class of lever ' + ask + '?', choices:[1, 2, 3].map(i => LEVER_CLASS[i]), answer:LEVER_CLASS[[3, 2, 1][v]],
+      note:'MA = effort distance ÷ load distance. The effort is closer in a third-class lever and further in a second-class one; in a first-class lever it depends.', key:'lever-ma:' + v };
+  }
+  if (k === 3 || k === 4){                          // effort to balance, then efficiency
+    const c = ri(1, 3);
+    let dL, dE;
+    if (c === 1){ dL = pk([100, 150, 200, 250]); dE = pk([300, 400, 500, 600, 750]); }
+    else if (c === 2){ dL = pk([100, 150, 200, 300]); dE = dL + pk([200, 300, 450, 600]); }
+    else { dE = pk([50, 75, 100, 150]); dL = dE + pk([150, 250, 300, 450]); }
+    const L = ri(4, 24) * 50, Ei = L * dL / dE;
+    if (k === 3){
+      const other = c === 1 ? dL + dE : Math.abs(dE - dL);
+      const m = physMC(rd(Ei, 1), 'N', [rd(L * dE / dL, 1), rd(L * dL / other, 1), L]);
+      return { q:'This ' + LEVER_CLASS[c].toLowerCase() + ' lever is ideal (no friction). What effort E balances the load?' + leverFig(c, dL, dE, 'L = ' + L + ' N'),
+        choices:m.choices, answer:m.answer, data:{ kind:'lever-effort', L, dL, dE },
+        note:'Moments about the fulcrum: E × ' + dE + ' = ' + L + ' × ' + dL + ', so E = ' + rd(Ei, 1) + ' N.' };
+    }
+    const eff = pk([0.6, 0.7, 0.75, 0.8, 0.85, 0.9]), E = rd(Ei / eff, 0);
+    const ma = L / E, vr = dE / dL, eta = ma / vr * 100;
+    /* slips: measuring a distance from the load instead of the fulcrum, or taking MA as the efficiency */
+    const vrSlip = c === 1 ? (dL + dE) / dL : dE / Math.abs(dE - dL);
+    const m = pctMC(eta, [ma / vrSlip * 100, ma * 100, ma / (dE / Math.abs(dE - dL || dE)) * 100]);
+    return { q:'In practice this lever needs an effort of <b>' + E + ' N</b> to lift the load. What is its efficiency?' + leverFig(c, dL, dE, 'L = ' + L + ' N'),
+      choices:m.choices, answer:m.answer, data:{ kind:'lever-eff', L, dL, dE, E },
+      note:'MA = L ÷ E = ' + L + ' ÷ ' + E + ' = ' + rd(ma, 2) + '. VR = ' + dE + ' ÷ ' + dL + ' = ' + rd(vr, 2) + '. η = MA ÷ VR = ' + rd(eta, 1) + '%.' };
+  }
+  /* compound lever: the load end of lever 1 pushes the effort end of lever 2 */
+  const a1 = pk([200, 300, 400, 500]), b1 = pk([100, 150, 200]), a2 = pk([200, 250, 300, 400]), b2 = pk([50, 100, 150, 200]);
+  if (a1 === b1 || a2 === b2) return genLevers();
+  const vr = (a1 / b1) * (a2 / b2);
+  const m = ratioMC(vr, [(b1 / a1) * (b2 / a2), a1 / b1 + a2 / b2, a1 / b1, (a1 + a2) / (b1 + b2)]);
+  return { q:'A compound lever is two levers in series: the load end of the first pushes the effort end of the second. ' +
+    'Lever 1 has an effort arm of <b>' + a1 + ' mm</b> and a load arm of <b>' + b1 + ' mm</b>; lever 2 has <b>' + a2 + ' mm</b> and <b>' + b2 + ' mm</b>. What is the velocity ratio of the system?',
+    choices:m.choices, answer:m.answer, data:{ kind:'compound', a1, b1, a2, b2 },
+    note:'Velocity ratios multiply through a series: (' + a1 + ' ÷ ' + b1 + ') × (' + a2 + ' ÷ ' + b2 + ') = ' + ratioStr(vr) + '.' };
+}
+
+/* ── pulleys and gears ── */
+function genPulleyGear(){
+  const k = ri(0, 5);
+  if (k === 0 || k === 1){
+    const n = ri(2, 6), mass = ri(3, 30) * 10, eta = pk([0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]);
+    const E = Math.round(mass * G_ACCEL / (eta * n) / 5) * 5;
+    if (k === 0){
+      const ma = mass * G_ACCEL / E, e = ma / n * 100;
+      /* slips: counting pulleys rather than supporting ropes (one more or fewer), or leaving out g */
+      const m = pctMC(e, [ma / (n + 1) * 100, n > 2 ? ma / (n - 1) * 100 : NaN, mass / E / n * 100]);
+      return { q:'A <b>' + E + ' N</b> effort lifts a <b>' + mass + ' kg</b> load with this pulley system. What is its efficiency? (g = 9.8 m/s²)' + pulleyFig(n, mass),
+        choices:m.choices, answer:m.answer, data:{ kind:'pulley-eff', n, mass, E },
+        note:'MA = load ÷ effort = (' + mass + ' × 9.8) ÷ ' + E + ' = ' + rd(ma, 2) + '. VR = the ' + n + ' supporting ropes. η = MA ÷ VR = ' + rd(e, 1) + '%.' };
+    }
+    const need = mass * G_ACCEL / (eta * n);
+    const m = physMC(rd(need, 0), 'N', [rd(mass * G_ACCEL / n, 0), rd(mass * G_ACCEL * eta / n, 0), rd(mass / (eta * n), 1)]);
+    return { q:'This pulley system is <b>' + Math.round(eta * 100) + '%</b> efficient. What effort is needed to lift the <b>' + mass + ' kg</b> load? (g = 9.8 m/s²)' + pulleyFig(n, mass),
+      choices:m.choices, answer:m.answer, data:{ kind:'pulley-effort', n, mass, eta },
+      note:'VR = ' + n + ', so MA = η × VR = ' + rd(eta * n, 2) + '. Effort = load ÷ MA = (' + mass + ' × 9.8) ÷ ' + rd(eta * n, 2) + ' = ' + rd(need, 0) + ' N.' };
+  }
+  if (k === 2 || k === 3){
+    const Ta = pk([12, 15, 18, 20, 24, 25, 30, 36, 40]); let Tb = pk([20, 30, 40, 45, 50, 60, 72, 80]);
+    if (Tb === Ta) Tb += 10;
+    if (k === 2){
+      const eta = pk([0.7, 0.75, 0.8, 0.85, 0.9, 0.95]), vr = Tb / Ta, ma = eta * vr;
+      const m = ratioMC(ma, [vr, eta * Ta / Tb, Ta / Tb, vr / eta]);
+      return { q:'In a simple gear train, driving gear A has <b>' + Ta + ' teeth</b> and driven gear B has <b>' + Tb + ' teeth</b>. The efficiency is <b>' + Math.round(eta * 100) + '%</b>. What is the mechanical advantage?' + gearFig(Ta, Tb),
+        choices:m.choices, answer:m.answer, data:{ kind:'gear-ma', Ta, Tb, eta },
+        note:'VR = driven teeth ÷ driver teeth = ' + Tb + ' ÷ ' + Ta + ' = ' + rd(vr, 2) + '. MA = η × VR = ' + rd(ma, 2) + '.' };
+    }
+    const rpm = ri(6, 36) * 50, out = rpm * Ta / Tb;
+    const m = physMC(rd(out, 1), 'rpm', [rd(rpm * Tb / Ta, 1), rpm, rd(rpm * Ta / Tb / 2, 1)]);
+    return { q:'Gear A (<b>' + Ta + ' teeth</b>) turns at <b>' + rpm + ' rpm</b> and drives gear B (<b>' + Tb + ' teeth</b>). How fast does B turn?' + gearFig(Ta, Tb),
+      choices:m.choices, answer:m.answer, data:{ kind:'gear-speed', Ta, Tb, rpm },
+      note:'Teeth pass at the same rate on both gears, so speed × teeth is the same: ' + rpm + ' × ' + Ta + ' ÷ ' + Tb + ' = ' + rd(out, 1) + ' rpm.' };
+  }
+  if (k === 4){                                     // compound gear train
+    const T1 = pk([10, 12, 15, 20]), T2 = pk([30, 40, 45, 60]), T3 = pk([12, 15, 20, 25]), T4 = pk([36, 40, 50, 60, 75]);
+    const vr = (T2 / T1) * (T4 / T3);
+    const m = ratioMC(vr, [(T1 / T2) * (T3 / T4), T2 / T1 + T4 / T3, (T2 + T4) / (T1 + T3), T4 / T1]);
+    return { q:'In a compound gear train, gear 1 (<b>' + T1 + ' teeth</b>) drives gear 2 (<b>' + T2 + '</b>). Gear 3 (<b>' + T3 + '</b>) is on the same shaft as gear 2 and drives gear 4 (<b>' + T4 + '</b>). What is the velocity ratio?',
+      choices:m.choices, answer:m.answer, data:{ kind:'gear-compound', T1, T2, T3, T4 },
+      note:'Multiply the pairs: (' + T2 + ' ÷ ' + T1 + ') × (' + T4 + ' ÷ ' + T3 + ') = ' + ratioStr(vr) + '.' };
+  }
+  /* bicycle drive: effort on the pedal, resistance at the rim */
+  const r = pk([150, 160, 165, 170, 175]), Tf = pk([38, 42, 44, 46, 48, 50, 52]), Tr = pk([14, 16, 17, 18, 20, 22]), D = pk([600, 622, 650, 675, 700]);
+  const F = ri(30, 50) * 10, vr = 2 * r * Tr / (D * Tf), target = pk([0.8, 0.85, 0.88, 0.9, 0.93, 0.95]);
+  const R = Math.max(1, Math.round(target * vr * F)), ma = R / F, eta = ma / vr * 100;
+  /* slips: leaving the gears out of VR, turning the gear ratio upside down, or quoting MA as a percentage */
+  const m = pctMC(eta, [ma / (2 * r / D) * 100, ma / (2 * r * Tf / (D * Tr)) * 100, ma * 100]);
+  return { q:'On a bicycle, a vertical force of <b>' + F + ' N</b> on a <b>' + r + ' mm</b> pedal crank just turns the rear wheel (diameter <b>' + D + ' mm</b>) against a resistance of <b>' + R + ' N</b>. ' +
+    'The chainwheel has <b>' + Tf + ' teeth</b> and the rear sprocket <b>' + Tr + '</b>. What is the efficiency of the drive?',
+    choices:m.choices, answer:m.answer, data:{ kind:'bike', F, r, D, R, Tf, Tr },
+    note:'MA = ' + R + ' ÷ ' + F + ' = ' + rd(ma, 3) + '. One turn of the pedals moves the effort 2π × ' + r + ' and turns the wheel ' + Tf + ' ÷ ' + Tr + ' times, moving the load π × ' + D + ' × ' + Tf + '/' + Tr +
+      '. VR = (2 × ' + r + ' × ' + Tr + ') ÷ (' + D + ' × ' + Tf + ') = ' + rd(vr, 3) + '. η = MA ÷ VR = ' + rd(eta, 1) + '%.' };
 }
 
 /* ── engineering: stress, strain and the tensile test ──────────────────── */
@@ -5780,75 +6250,75 @@ function genStress(){
 const BRAKES = [
   {q:'A brake works by converting the vehicle’s kinetic energy into…', a:'Heat, through friction', w:['Electrical energy only','Potential energy','Sound alone']},
   {q:'Compared with drum brakes, disc brakes mainly have the advantage of…', a:'Better cooling, so they resist brake fade', w:['Lower cost always','Working without friction','Needing no hydraulic fluid']},
-  {q:'Brake fade is caused by…', a:'Overheating reducing the friction between pad and disc', w:['Too much brake fluid','Cold weather','Excess tyre pressure']},
-  {q:'Hydraulic brakes work on the principle that…', a:'Pressure applied to an enclosed fluid is transmitted equally throughout it', w:['Liquids compress easily','Fluids lose pressure with distance','Gases transmit force better than liquids']},
-  {q:'Hydraulic fluid is used rather than a gas because liquids are…', a:'Practically incompressible, so the pedal movement transmits directly', w:['Lighter than gases','Easier to compress','Better electrical conductors']},
-  {q:'If the master cylinder is smaller in area than the slave cylinder, the system gives…', a:'A force multiplication at the slave cylinder', w:['A force reduction','No change in force','A loss of pressure']},
-  {q:'A brake disc is usually made of cast iron because it…', a:'Has good wear resistance and absorbs and sheds heat well', w:['Is the lightest available material','Cannot rust','Has the highest tensile strength']},
+  {q:'Brake fade is caused by…', a:'Overheating that lowers the pads’ grip', w:['Air bubbles trapped in the brake lines','Worn tyres losing grip on the road','Low tyre pressure adding drag'], note:'Hot pads and discs lose friction, so the same pedal force slows the car less.'},
+  {q:'Hydraulic brakes work on the principle that…', a:'Pressure in an enclosed fluid acts equally throughout', w:['Force in a fluid fades along a long pipe','A fluid gains pressure as it flows faster','Pressure builds only where the fluid is heated']},
+  {q:'Hydraulic fluid is used rather than a gas because liquids are…', a:'Practically incompressible', w:['Much lighter than gases','Easier to compress, for a softer pedal','Better electrical insulators'], note:'So pedal movement goes straight to the brakes instead of squashing the fluid.'},
+  {q:'If the master cylinder is smaller in area than the slave cylinder, the system gives…', a:'More force at the slave cylinder', w:['Less force at the slave cylinder','Higher pressure at the slave cylinder','The same force at both cylinders'], note:'Pressure is the same throughout, and force = pressure × area, so the larger slave piston pushes harder.'},
+  {q:'A brake disc is usually made of cast iron because it…', a:'Resists wear and absorbs heat well', w:['Is lighter than aluminium alloys','Does not rust in wet weather','Has very high tensile strength']},
   {q:'Brake pads must have a high coefficient of friction and also…', a:'Resist fading and wear at high temperature', w:['Melt easily to lubricate the disc','Conduct electricity','Be perfectly elastic']},
   {q:'Ventilated discs improve braking because they…', a:'Increase the surface area for cooling airflow', w:['Reduce the friction available','Make the disc heavier','Remove the need for pads']},
-  {q:'The friction force available at a brake is proportional to…', a:'The normal force pressing the pad against the disc', w:['The speed of the vehicle only','The mass of the pad','The area of contact alone']},
-  {q:'ABS (anti-lock braking) improves safety mainly by…', a:'Preventing the wheels locking, so steering control is retained', w:['Increasing the top speed','Removing the need for brake fluid','Making the brakes silent']},
+  {q:'The friction force available at a brake is proportional to…', a:'The normal force on the pad', w:['The speed of the vehicle','The contact area of the pad','The mass of the brake disc'], note:'F = μN. In this model friction does not depend on contact area or speed.'},
+  {q:'ABS (anti-lock braking) improves safety mainly by…', a:'Stopping the wheels from locking', w:['Braking before the driver reacts','Increasing the grip of the tyres','Cooling the discs on long descents'], note:'A rolling wheel can still steer; a locked, skidding wheel cannot.'},
   {q:'A handbrake is usually mechanical rather than hydraulic so that it…', a:'Still works if the hydraulic system fails', w:['Is cheaper to make','Applies more force than the footbrake','Works only when moving']},
-  {q:'The brake pedal is a lever so that it…', a:'Multiplies the driver’s foot force before the master cylinder', w:['Reduces the force applied','Stores brake fluid','Cools the brake discs']},
-  {q:'Cars use two independent hydraulic circuits so that…', a:'A leak in one circuit still leaves braking on the other', w:['The pedal feels softer','Fluid can be changed while driving','The brakes never get hot']},
-  {q:'A brake booster (servo) uses engine vacuum to…', a:'Reduce the pedal effort the driver must apply', w:['Cool the brake fluid','Lock the wheels faster','Replace the master cylinder']},
-  {q:'A higher coefficient of friction between pad and disc gives…', a:'More braking force for the same pedal pressure', w:['Less braking force','Cooler brakes always','A longer stopping distance']},
-  {q:'Brake discs can warp because…', a:'Uneven heating and cooling causes uneven thermal expansion', w:['The fluid becomes too thick','They are too light','The pads are too soft']},
-  {q:'Regenerative braking in an electric vehicle…', a:'Recovers kinetic energy as electrical energy instead of losing it all as heat', w:['Uses larger friction pads','Removes the need for any friction brakes','Stores energy as heat in the disc']},
+  {q:'The brake pedal is a lever so that it…', a:'Multiplies the driver’s foot force', w:['Shortens how far the pedal moves','Keeps the brake fluid pressurised','Stops the pedal springing back']},
+  {q:'Cars use two independent hydraulic circuits so that…', a:'One leak can’t disable every brake', w:['Each wheel gets a different pressure','The pedal needs half the force','Fluid can be topped up while driving']},
+  {q:'A brake booster (servo) uses engine vacuum to…', a:'Reduce the pedal force needed', w:['Cool the fluid on long descents','Lock the wheels more quickly','Store fluid if a line leaks']},
+  {q:'A higher coefficient of friction between pad and disc gives…', a:'More braking force for the same pedal', w:['Less braking force for the same pedal','A longer stopping distance','Cooler discs under hard braking']},
+  {q:'Brake discs can warp because…', a:'Uneven heating makes them expand unevenly', w:['The brake fluid becomes too thick','The pads are softer than the disc','The disc is too light for the car']},
+  {q:'Regenerative braking in an electric vehicle…', a:'Turns kinetic energy back into electricity', w:['Uses larger pads to absorb more heat','Removes the need for friction brakes','Stores the energy as heat in the disc'], note:'The motor runs as a generator and charges the battery, instead of wasting all of the energy as heat.'},
   {q:'Stopping distance is the sum of…', a:'Reaction distance and braking distance', w:['Braking distance only','Reaction distance only','Speed multiplied by mass']},
-  {q:'Doubling a vehicle’s speed increases its braking distance by roughly…', a:'Four times, since kinetic energy goes with v²', w:['Two times','Half','No change']},
-  {q:'Asbestos was removed from brake linings primarily because…', a:'Its dust is a serious health hazard', w:['It was too expensive','It had no friction','It melted too easily']}
+  {q:'Doubling a vehicle’s speed increases its braking distance by roughly…', a:'Four times', w:['Two times','Three times','Eight times'], note:'Kinetic energy goes with v², so twice the speed means four times the energy to remove.'},
+  {q:'Asbestos was removed from brake linings primarily because…', a:'Its dust is a serious health hazard', w:['It wore down too quickly in use','It gave too little friction when wet','It was too costly to mine']}
 ];
 
 /* ── engineering: engineered products (concepts, not the history) ──────── */
 const PRODUCTS = [
-  {q:'Guarding the moving parts of a machine, for example enclosing a mower blade, is an example of…', a:'Designing safety into the product rather than relying on the user', w:['Reducing manufacturing cost','Improving the appearance','Increasing the power output']},
+  {q:'Guarding the moving parts of a machine, for example enclosing a mower blade, is an example of…', a:'Designing safety into the product', w:['Designing for easier manufacture','Designing for a better appearance','Designing to cut material costs']},
   {q:'A dead-man switch, which stops a machine as soon as the operator lets go, is a…', a:'Fail-safe design feature', w:['Cost-saving measure','Decorative feature','Way to increase speed']},
-  {q:'Ergonomics in product design is concerned with…', a:'Fitting the product to the human body and how people actually use it', w:['The cost of raw materials','The strength of the metal','The speed of manufacture']},
-  {q:'Planned obsolescence means a product is…', a:'Designed to have a limited useful life so it is replaced', w:['Built to last indefinitely','Made from recycled material','Designed for easy repair']},
-  {q:'Life-cycle analysis of a product considers…', a:'Its whole impact from raw material through use to disposal', w:['Only the manufacturing stage','Only the selling price','Only its warranty period']},
-  {q:'Choosing a material for a product is mainly a balance between…', a:'Required properties, cost, and how easily it can be manufactured', w:['Colour and weight only','The designer’s preference','The oldest available process']},
-  {q:'Mass production lowers unit cost mainly because…', a:'Tooling and setup costs are spread over many identical items', w:['Materials become stronger','Workers are paid less','Quality control is skipped']},
-  {q:'Die casting is best suited to…', a:'Producing many identical, detailed metal parts quickly', w:['One-off prototypes','Joining two metals','Hardening a surface']},
-  {q:'Injection moulding is the standard process for…', a:'Forming thermoplastic parts in high volume', w:['Shaping cast iron','Welding steel','Heat treating alloys']},
-  {q:'A prototype is built mainly to…', a:'Test whether the design actually works before committing to production', w:['Sell to the first customer','Replace the final product','Avoid the need for testing']},
-  {q:'Quality control during manufacture exists to…', a:'Check products meet the specification and catch faults early', w:['Increase the production rate','Lower the material grade','Replace the design stage']},
+  {q:'Ergonomics in product design is concerned with…', a:'Fitting the product to the people using it', w:['Choosing the cheapest raw materials','Making the parts as strong as they can possibly be','Speeding up the manufacturing line']},
+  {q:'Planned obsolescence means a product is…', a:'Designed to need replacing after a while', w:['Built to last as long as possible','Made entirely from recycled or recyclable material','Designed so it is easy to repair']},
+  {q:'Life-cycle analysis of a product considers…', a:'Its impact from raw material to disposal', w:['Only the energy used in the factory to make it','Only its selling price over time','Only how long the warranty lasts']},
+  {q:'Choosing a material for a product is mainly a balance between…', a:'Properties, cost and ease of manufacture', w:['Colour, weight and brand image','The designer’s personal preference','Whichever process is the oldest']},
+  {q:'Mass production lowers unit cost mainly because…', a:'Setup costs are spread over many items', w:['The materials get stronger when made in bulk','Workers are paid less per hour','Quality checks can be skipped']},
+  {q:'Die casting is best suited to…', a:'Many identical, detailed metal parts', w:['One-off metal prototypes','Joining two metal parts together','Hardening a metal surface']},
+  {q:'Injection moulding is the standard process for…', a:'Thermoplastic parts in high volume', w:['Cast iron engine blocks','Welded steel frames','Heat-treated alloy gears']},
+  {q:'A prototype is built mainly to…', a:'Test the design before production', w:['Sell to the first customers','Replace the finished product','Avoid needing any testing']},
+  {q:'Quality control during manufacture exists to…', a:'Catch faults and meet the specification', w:['Push the production line to run as fast as possible','Allow a cheaper material grade','Replace the design stage']},
   {q:'Designing a product so it can be taken apart for repair or recycling is called…', a:'Design for disassembly', w:['Planned obsolescence','Mass production','Reverse engineering']},
   {q:'A tolerance on a dimension specifies…', a:'The allowable variation from the stated size', w:['The exact size every part must be','The strength of the material','The surface finish required']},
-  {q:'Standardisation of components means…', a:'Parts are made to agreed common sizes so they are interchangeable', w:['Every part is unique','Parts are made by hand','Designs are never reused']},
-  {q:'Reverse engineering is…', a:'Examining an existing product to work out how it was designed and made', w:['Designing a product backwards','Recycling a product','Running a machine in reverse']},
-  {q:'CAD is mainly valuable in design because it…', a:'Lets a design be modified, tested and shared before anything is built', w:['Removes the need for any testing','Manufactures the part directly','Replaces the designer']},
-  {q:'A jig or fixture is used in manufacture to…', a:'Hold and locate the workpiece so every part is made the same', w:['Cut the material','Harden the surface','Measure the final product']},
-  {q:'Anthropometric data is used in design to…', a:'Match a product to the range of human body sizes', w:['Calculate material strength','Estimate production cost','Choose a colour scheme']},
+  {q:'Standardisation of components means…', a:'Parts come in common, interchangeable sizes', w:['Each part is custom made to fit its own product','Every part is shaped by hand','A design is only ever used once']},
+  {q:'Reverse engineering is…', a:'Taking apart a product to see how it was made', w:['Designing a product in reverse order','Recycling a product into raw material','Running a machine backwards to test how it performs']},
+  {q:'CAD is mainly valuable in design because it…', a:'Lets designs be changed and tested before building', w:['Removes the need to ever build or test a physical model','Manufactures the part directly','Replaces the need for a designer']},
+  {q:'A jig or fixture is used in manufacture to…', a:'Hold the workpiece in the same position', w:['Cut the material to size','Harden the finished surface','Measure each finished part against the drawing']},
+  {q:'Anthropometric data is used in design to…', a:'Size products to fit people’s bodies', w:['Calculate the strength of materials','Estimate the cost of production','Choose a suitable colour scheme']},
   {q:'Surface finish matters on a moving part mainly because it affects…', a:'Friction, wear and fatigue life', w:['Only the appearance','The density of the metal','The melting point']},
-  {q:'Choosing a recycled or recyclable material mainly improves a product’s…', a:'Environmental impact over its life cycle', w:['Tensile strength','Manufacturing speed','Electrical conductivity']},
-  {q:'A factor of safety is applied in design to…', a:'Allow for uncertainty in loads, materials and manufacture', w:['Make the product cheaper','Reduce the material used','Speed up production']}
+  {q:'Choosing a recycled or recyclable material mainly improves a product’s…', a:'Environmental impact', w:['Tensile strength','Production speed','Electrical conductivity']},
+  {q:'A factor of safety is applied in design to…', a:'Allow for uncertainty in loads and materials', w:['Make the product cheaper to build','Reduce the amount of material the product needs','Speed up the production process']}
 ];
 
 /* ── engineering: biomedical ───────────────────────────────────────────── */
 const BIOMED = [
-  {q:'Biocompatibility means a material…', a:'Is not rejected, toxic or harmful when placed in the body', w:['Is biodegradable within days','Conducts electricity','Is always metallic']},
-  {q:'Titanium is widely used for implants mainly because it is…', a:'Biocompatible, corrosion resistant and has a high strength-to-weight ratio', w:['The cheapest metal available','The heaviest metal','A good electrical insulator']},
-  {q:'Osseointegration is…', a:'Bone growing into and bonding directly with an implant surface', w:['Rejection of an implant','Corrosion of an implant','Removal of bone tissue']},
-  {q:'Stainless steel used for implants must be…', a:'Highly corrosion resistant so body fluids do not attack it', w:['As hard as possible','Magnetic','Porous throughout']},
-  {q:'A key requirement of a hip-replacement joint is…', a:'Low friction and high wear resistance over many years of movement', w:['Maximum weight','High electrical conductivity','Complete rigidity of the whole leg']},
+  {q:'Biocompatibility means a material…', a:'Is not harmful or rejected in the body', w:['Breaks down harmlessly in the body within a few days','Conducts electrical signals well','Is metallic so it can be sterilised']},
+  {q:'Titanium is widely used for implants mainly because it is…', a:'Biocompatible, strong and light', w:['The cheapest metal available','Magnetic, so it shows on scans','Softer than the surrounding bone'], note:'It also resists corrosion in body fluids.'},
+  {q:'Osseointegration is…', a:'Bone bonding directly to an implant', w:['The body rejecting an implant','An implant corroding over time','Bone being removed to make space for an implant']},
+  {q:'Stainless steel used for implants must be…', a:'Highly resistant to corrosion', w:['As hard as possible','Strongly magnetic','Porous all the way through']},
+  {q:'A key requirement of a hip-replacement joint is…', a:'Low friction and high wear resistance', w:['High electrical conductivity through the joint','As much weight as possible','A completely rigid joint']},
   {q:'UHMWPE (ultra-high molecular weight polyethylene) is used in joint replacements as the…', a:'Low-friction bearing surface', w:['Load-bearing metal stem','Electrical insulator','Adhesive']},
-  {q:'A material used in a heart valve must above all…', a:'Not cause blood to clot on its surface', w:['Be as stiff as possible','Dissolve slowly','Be magnetic']},
-  {q:'A major design consideration for a prosthetic limb is…', a:'Keeping it light while strong enough for repeated loading', w:['Making it as heavy as possible','Maximising the number of parts','Avoiding all movement']},
-  {q:'Fatigue failure matters in implants because they are…', a:'Loaded and unloaded millions of times over their life', w:['Never subjected to force','Only used once','Made of ceramic always']},
-  {q:'X-ray imaging works because different tissues…', a:'Absorb radiation by different amounts, with bone absorbing most', w:['Emit their own X-rays','Reflect sound waves','Glow under visible light']},
+  {q:'A material used in a heart valve must above all…', a:'Not cause blood to clot', w:['Be as stiff as possible','Dissolve away slowly','Be strongly magnetic']},
+  {q:'A major design consideration for a prosthetic limb is…', a:'Being light but strong enough', w:['Being as heavy as possible','Having as many parts as possible','Allowing no movement at all']},
+  {q:'Fatigue failure matters in implants because they are…', a:'Loaded millions of times', w:['Never put under any force','Only loaded once in their life','Always made from ceramics']},
+  {q:'X-ray imaging works because different tissues…', a:'Absorb X-rays by different amounts', w:['Give off their own X-rays','Reflect X-rays back to the detector at different angles','Glow when struck by visible light'], note:'Bone absorbs the most, so it shows up brightest.'},
   {q:'Ultrasound imaging is generally preferred for a foetus because it…', a:'Uses sound waves rather than ionising radiation', w:['Gives much sharper images than any other method','Is the cheapest possible option','Works through bone easily']},
-  {q:'A biomedical engineer’s designs must satisfy medical regulators mainly to ensure…', a:'The device is safe and effective for patients', w:['It is the cheapest on the market','It looks attractive','It can be mass produced']},
-  {q:'An implant material must tolerate sterilisation, which usually means withstanding…', a:'High temperature, steam or radiation without degrading', w:['Being frozen solid','Being painted','Prolonged sunlight']},
-  {q:'Body fluids are corrosive to metals because they are…', a:'Warm, salty and slightly acidic', w:['Completely inert','Pure water','Strongly alkaline']},
-  {q:'Stress shielding happens when an implant is…', a:'Much stiffer than the bone, so the bone carries less load and weakens', w:['Weaker than the bone','Made of plastic','Too small for the patient']},
-  {q:'Ceramics such as alumina are used in joints because they are…', a:'Extremely hard and wear resistant, though brittle', w:['Very ductile','Electrically conductive','Easily deformed']},
-  {q:'Shape memory alloys such as nitinol are useful in stents because they…', a:'Return to a preset shape at body temperature', w:['Dissolve in the bloodstream','Conduct electricity','Are magnetic']},
-  {q:'A dialysis machine substitutes for the kidneys by…', a:'Filtering waste products out of the blood', w:['Pumping blood around the body','Adding oxygen to the blood','Replacing bone marrow']},
-  {q:'A pacemaker works by…', a:'Delivering timed electrical impulses to regulate the heartbeat', w:['Pumping blood mechanically','Replacing a heart valve','Filtering the blood']},
-  {q:'MRI is often preferred over CT for soft tissue because it…', a:'Gives better soft-tissue contrast without ionising radiation', w:['Is much faster in every case','Uses stronger X-rays','Works only on bone']},
-  {q:'The main reason an implant may be rejected is…', a:'The body’s immune system reacting against the material', w:['The implant being too light','The implant being sterilised','The patient being too young']}
+  {q:'A biomedical engineer’s designs must satisfy medical regulators mainly to ensure…', a:'The device is safe and effective for patients', w:['It is the cheapest option on the market for hospitals','It looks attractive','It can be mass produced']},
+  {q:'An implant material must tolerate sterilisation, which usually means withstanding…', a:'Heat, steam or radiation', w:['Being frozen solid','Being painted over','Long exposure to sunlight']},
+  {q:'Body fluids are corrosive to metals because they are…', a:'Warm, salty and slightly acidic', w:['Completely chemically inert','Almost pure water','Strongly alkaline']},
+  {q:'Stress shielding happens when an implant is…', a:'Much stiffer than the bone', w:['Much weaker than the bone','Made from a soft plastic','Too small for the patient'], note:'The implant carries the load, so the bone around it is under-used and weakens.'},
+  {q:'Ceramics such as alumina are used in joints because they are…', a:'Very hard and wear resistant', w:['Very ductile and tough','Good electrical conductors','Easily shaped when cold'], note:'They are brittle, though, so they can crack under impact.'},
+  {q:'Shape memory alloys such as nitinol are useful in stents because they…', a:'Return to a set shape when warmed', w:['Dissolve in the bloodstream','Conduct electricity to the heart','Stay magnetised in the body']},
+  {q:'A dialysis machine substitutes for the kidneys by…', a:'Filtering waste products out of the blood', w:['Pumping blood around the body in place of the heart','Adding oxygen to the blood','Replacing bone marrow']},
+  {q:'A pacemaker works by…', a:'Sending timed electrical pulses to the heart', w:['Pumping blood with a small motor attached to the heart','Replacing a damaged heart valve','Filtering waste out of the blood']},
+  {q:'MRI is often preferred over CT for soft tissue because it…', a:'Shows soft tissue better, without X-rays', w:['Is always much faster than CT','Uses stronger X-rays than CT to see through tissue','Only produces images of bone']},
+  {q:'The main reason an implant may be rejected is…', a:'The immune system attacking it', w:['The implant being too light','The implant being sterilised','The patient being too young']}
 ];
 function genBrakes(){ return bankQ(BRAKES, 'brk'); }
 function genProducts(){ return bankQ(PRODUCTS, 'prd'); }
@@ -5893,12 +6363,11 @@ BUILD.physics = host => revGame(host, { title:'Physics', how:'Pick a module, or 
     {id:'m3',name:'Waves & thermodynamics',topics:[{id:'p-thermo',name:'Thermodynamics',gen:genThermo},{id:'p-wc',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_WAVE,'wave'):r<0.62?bankQ(WAVE_EXTRA,'wavex'):genPhysQuant('wave');}},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
     {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_EM,'em'):r<0.62?bankQ(EM_EXTRA,'emx'):genPhysQuant('em');}},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
-BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do all six.', statKey:'engineering',
+BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do all five.', statKey:'engineering',
   modules:[
     {id:'steel',name:'Steels',topics:[
       {id:'e-steel',name:'Carbon steels',gen:genSteelFact},
-      {id:'e-carb',name:'Carbon & pearlite',gen:genCarbonFact}]},
-    {id:'iron',name:'Cast irons',topics:[
+      {id:'e-carb',name:'Carbon & pearlite',gen:genCarbonFact},
       {id:'e-iron',name:'Cast irons',gen:genIronFact}]},
     {id:'heat',name:'Heat treatment',topics:[
       {id:'e-treat',name:'Processes',gen:genTreatFact}]},
@@ -5906,8 +6375,10 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
       {id:'e-phase',name:'Phases & constituents',gen:genPhaseFact},
       {id:'e-prop',name:'Mechanical properties',gen:genPropFact}]},
     {id:'mech',name:'Mechanics',topics:[
-      {id:'e-mom',name:'Moments',gen:genMoments},
+      {id:'e-mom',name:'Moments',gen:genMomentsAll},
       {id:'e-couple',name:'Couples',gen:genCouple},
+      {id:'e-lever',name:'Levers',gen:genLevers},
+      {id:'e-gear',name:'Pulleys & gears',gen:genPulleyGear},
       {id:'e-mach',name:'Machines & efficiency',gen:genMachines},
       {id:'e-stress',name:'Stress & strain',gen:genStress}]},
     {id:'app',name:'Applications',topics:[

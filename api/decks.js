@@ -16,6 +16,10 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { nameOverrides, withName } from "./_names.js";
+
+/* display-name overrides, loaded per request (see _names.js) */
+let NAMES = new Map();
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -51,6 +55,7 @@ export default async function handler(req, res) {
   if (!db) return res.status(503).json({ error: "Sharing is not configured on the server." });
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to share decks." });
+  NAMES = await nameOverrides();
 
   if (req.method === "GET") {
     if (req.query.id) {
@@ -59,7 +64,7 @@ export default async function handler(req, res) {
       if (error) return res.status(502).json({ error: "Couldn't load that deck." });
       if (!data) return res.status(404).json({ error: "Deck not found." });
       return res.status(200).json({ id: data.id, name: data.name, category: data.category,
-        author: nameFromEmail(data.email), cards: data.cards || [] });
+        author: withName(NAMES, data.email, nameFromEmail(data.email)), cards: data.cards || [] });
     }
     let q = db.from("shared_deck").select("id, name, category, cards, email, created_at")
       .order("created_at", { ascending: false }).limit(120);
@@ -67,7 +72,7 @@ export default async function handler(req, res) {
     const { data, error } = await q;
     if (error) return res.status(502).json({ error: "Couldn't load the list." });
     return res.status(200).json({ categories: CATEGORIES, decks: (data || []).map(d => ({
-      id: d.id, name: d.name, category: d.category, author: nameFromEmail(d.email),
+      id: d.id, name: d.name, category: d.category, author: withName(NAMES, d.email, nameFromEmail(d.email)),
       count: Array.isArray(d.cards) ? d.cards.length : 0, mine: d.email === me.email || me.email.toLowerCase() === OWNER_EMAIL
     })) });
   }

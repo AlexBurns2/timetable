@@ -1147,8 +1147,10 @@ Maths, Physics, Chemistry, Engineering and Software each have a **Practice | Tes
 switch at the top. A test runs through the whole subject in one go:
 
 - **30 to 50 questions**, depending on how many topics the subject has (Maths 30,
-  Engineering 33, Software 34, Physics and Chemistry 47). Every topic comes up
+  Software 34, Engineering 36, Physics 47, Chemistry 49). Every topic comes up
   at least once.
+- **No marking until the end.** Each answer just says "Saved." and moves on, so
+  seeing one question marked can't give away the next.
 - **It adapts.** Get a topic right and it moves on. Get one wrong and that topic
   comes back a few questions later, to find out whether it was a slip (right the
   next two times, so it lets it go) or a real gap (it keeps digging, up to a cap).
@@ -1206,6 +1208,69 @@ ever served greens. It was penalising a question for how many times it had been
 went wrong first. It now counts only how many times a question has been right
 since its last miss. Fixed questions come back for a couple more goes, then
 rejoin the normal rotation. Grey still comes first, then red.
+
+A yellow question now turns **green** the next time you get it right. Before, a
+question stayed yellow forever once it had ever been wrong.
+
+## Test report: clearer wording, and a score history
+
+- **Common mistakes** are one line each with a bold label, like "**Wrong sign:**
+  2 answers had the right number but the wrong sign."
+- **Not enough data is said plainly.** Ending a test after a handful of answers,
+  or getting everything wrong, now says there aren't enough answers to find
+  patterns, instead of "Nothing systematic stood out".
+- **Strengths** is one list, each topic tagged "3 of 3 right". A topic you get
+  right first time isn't asked again, so "1 of 1" is common, and the report says
+  so.
+- **Your test scores**: once you've done two tests in a subject, a line chart of
+  your last 20 scores appears on the test screen and in the report. Hover or tab
+  onto a point for the date and score, or open the table under it.
+
+The questions in a test are not a fixed list. Which topic comes next depends on
+what you've answered so far: in a check of 300 simulated tests, changing a single
+answer changed the questions that followed every time.
+
+## Harder chemistry and engineering questions
+
+**Empirical formula** questions are generated rather than picked from a list, as
+percentages or as grams in a sample, and every wrong option contains the right
+elements. The wrong ones are the usual slips: forgetting to divide by the
+smallest, rounding 1.5 instead of doubling, a multiple of the answer, or
+subscripts swapped. The working is shown after you answer.
+
+**Fewer giveaway options.** 98 hand-written questions across the subjects had a
+right answer much longer than the others; they were rewritten. The right answer
+is still the longest option more often than chance (45%, down from 74%), so
+there's more to do there. Efficiency questions no longer offer impossible
+answers above 100%.
+
+**Engineering mechanics** now has HSC-style calculations with simple diagrams:
+moments from angled forces (spanners, brake pedals with a cable, a bracket with
+two forces), and two new topics, **Levers** (classes, effort, efficiency,
+compound levers) and **Pulleys & gears** (pulley efficiency, gear train MA with
+efficiency, output speed, compound gears, bicycle drive efficiency). Pulley
+questions use g = 9.8.
+
+**Cast irons** moved into the Steels module, so Engineering has five modules.
+Progress is kept, but an Engineering test that was in progress starts again.
+
+## Moderator: rename someone
+
+On the moderator page's Signed-in users tab, **Rename** sets the name a person is
+shown as everywhere (leaderboards, Tetris, forum, calendar, shared decks, Daily).
+Leave the name empty to go back to the one from their email. Nothing already
+stored is changed, so removing a name puts everything back. It needs one table:
+
+```sql
+create table name_override (
+  email      text primary key,
+  name       text not null,
+  updated_at timestamptz not null default now()
+);
+```
+
+Until the table exists, the site behaves exactly as before and Rename explains
+that the table is missing.
 
 ## First-run tutorials
 

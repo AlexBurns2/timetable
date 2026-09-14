@@ -23,6 +23,10 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { nameOverrides, withName } from "./_names.js";
+
+/* display-name overrides, loaded per request (see _names.js) */
+let NAMES = new Map();
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -46,6 +50,7 @@ export default async function handler(req, res) {
   if (!db) return res.status(503).json({ error: "The forum is not configured on the server." });
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the forum." });
+  NAMES = await nameOverrides();
   const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
 
   if (req.method === "GET") {
@@ -55,7 +60,7 @@ export default async function handler(req, res) {
     if (error) { console.error("forum read:", error.message); return res.status(502).json({ error: "Couldn't load the forum." }); }
 
     const shape = r => ({
-      id: r.id, name: nameFromEmail(r.email), body: r.body, at: r.created_at,
+      id: r.id, name: withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
       mine: r.email === me.email || isOwner
     });
     const rows = data || [];

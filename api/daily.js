@@ -13,6 +13,10 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { nameOverrides, withName } from "./_names.js";
+
+/* display-name overrides, loaded per request (see _names.js) */
+let NAMES = new Map();
 import { ensurePuzzle, resolveYear, computeStreak, sydneyDate, buildHints } from "./_daily.js";
 
 const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -57,7 +61,7 @@ async function summaryFor(year, date, totalHints) {
   const dist = {}, names = {}; for (let i = 1; i <= totalHints; i++){ dist[i] = 0; names[i] = []; }
   names.lost = [];
   let played = 0, wins = 0;
-  const push = (k, email) => { if (names[k].length < 40) names[k].push(nameFromEmail(email)); };
+  const push = (k, email) => { if (names[k].length < 40) names[k].push(withName(NAMES, email, nameFromEmail(email))); };
   for (const r of rows) {
     if (r.done) played++;
     if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= totalHints){ dist[r.guesses]++; push(r.guesses, r.email); } }
@@ -87,6 +91,7 @@ export default async function handler(req, res) {
 
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in with your school account to play." });
+  NAMES = await nameOverrides();
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }

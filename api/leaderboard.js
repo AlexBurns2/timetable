@@ -16,6 +16,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { nameOverrides, withName, forgetNameOverrides } from "./_names.js";
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -44,12 +45,17 @@ const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
  * fill in anyone who played before settings synced, and give an activity count.
  * Read-only — it never writes, and it is gated to OWNER_EMAIL by the caller. */
 async function siteUsers() {
-  const out = new Map();
+  const out = new Map(), names = await nameOverrides();
   const touch = (email, when, key) => {
     const e = String(email || "").toLowerCase();
     if (!e) return;
     let u = out.get(e);
-    if (!u) { u = { email: e, name: nameFromEmail(e), last: null, scores: 0, days: 0 }; out.set(e, u); }
+    if (!u) {
+      const auto = nameFromEmail(e);
+      /* auto is what the email gives; name is what everyone else sees */
+      u = { email: e, auto, name: withName(names, e, auto), renamed: names.has(e), last: null, scores: 0, days: 0 };
+      out.set(e, u);
+    }
     if (when && (!u.last || String(when) > u.last)) u.last = String(when);
     if (key) u[key]++;
   };
@@ -65,7 +71,7 @@ async function siteUsers() {
 }
 
 async function board(game, metric, period, dir, meEmail, withEmail) {
-  const asc = dir === "min";
+  const asc = dir === "min", names = await nameOverrides();
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
     .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit
@@ -80,7 +86,7 @@ async function board(game, metric, period, dir, meEmail, withEmail) {
     const { count } = await q;
     meRank = (count || 0) + 1;
   }
-  return { top: (top || []).map(r => { const o = { name: r.name, score: r.score, you: r.email === meEmail };
+  return { top: (top || []).map(r => { const o = { name: withName(names, r.email, r.name), score: r.score, you: r.email === meEmail };
     if (withEmail) o.email = r.email; return o; }), meBest, meRank };
 }
 
@@ -117,6 +123,26 @@ export default async function handler(req, res) {
     if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
       return res.status(403).json({ error: "Only the owner can see this." });
     return res.status(200).json({ users: await siteUsers() });
+  }
+
+  /* owner-only: set the name someone is shown as, or clear it with an empty name.
+     Kept in this route rather than a new file: the project is near Vercel's
+     per-deployment function limit. */
+  if (req.method === "POST" && src.action === "rename") {
+    if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
+      return res.status(403).json({ error: "Only the owner can rename people." });
+    const email = String(src.email || "").trim().toLowerCase();
+    const name = String(src.name || "").replace(/\s+/g, " ").trim().slice(0, 40);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: "That isn't an email address." });
+    const { error } = name
+      ? await db.from("name_override").upsert({ email, name, updated_at: new Date().toISOString() })
+      : await db.from("name_override").delete().eq("email", email);
+    if (error) {
+      console.error("rename:", error.message);
+      return res.status(502).json({ error: "Couldn't save that. Has the name_override table been created?" });
+    }
+    forgetNameOverrides();
+    return res.status(200).json({ ok: true, name: name || nameFromEmail(email) });
   }
 
   const game = String(src.game || "");

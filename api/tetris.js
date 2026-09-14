@@ -21,6 +21,10 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { nameOverrides, withName } from "./_names.js";
+
+/* display-name overrides, loaded per request (see _names.js) */
+let NAMES = new Map();
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -48,7 +52,7 @@ async function sprintBoard(me, week, adm) {
       .select("*", { count: "exact", head: true }).eq("week", week).lt("time_ms", meBest);
     meRank = (count || 0) + 1;
   }
-  return { mode: "sprint", top: (top || []).map(r => ({ name: r.name, time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
+  return { mode: "sprint", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
 }
 
 async function zenBoard(me, adm) {
@@ -63,7 +67,7 @@ async function zenBoard(me, adm) {
       .select("*", { count: "exact", head: true }).gt("ms", meBest);   // longer is better
     meRank = (count || 0) + 1;
   }
-  return { mode: "zen", top: (top || []).map(r => ({ name: r.name, time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
+  return { mode: "zen", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
 }
 
 /* all-time fastest Sprint clears (separate table from the weekly tetris_score) */
@@ -78,7 +82,7 @@ async function sprintAllBoard(me, adm) {
     const { count } = await db.from("sprint_best").select("*", { count: "exact", head: true }).lt("time_ms", meBest);
     meRank = (count || 0) + 1;
   }
-  return { mode: "sprintall", top: (top || []).map(r => ({ name: r.name, time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
+  return { mode: "sprintall", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
 }
 
 /* Zen scoreboard: each player's most recent score alongside their all-time best */
@@ -93,7 +97,7 @@ async function zenScoreBoard(me, adm) {
     const { count } = await db.from("zen_board").select("*", { count: "exact", head: true }).gt("best", meBest);
     meRank = (count || 0) + 1;
   }
-  return { mode: "zenscore", top: (top || []).map(r => ({ name: r.name, current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meCurrent, meRank, canWipe: adm };
+  return { mode: "zenscore", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meCurrent, meRank, canWipe: adm };
 }
 
 /* pick the right board for a mode (used by admin actions to return fresh data) */
@@ -114,6 +118,7 @@ export default async function handler(req, res) {
 
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the leaderboard." });
+  NAMES = await nameOverrides();
 
   const weekOf = v => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n < 100000 ? n : null; };
 

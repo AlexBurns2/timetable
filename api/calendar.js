@@ -43,6 +43,10 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { nameOverrides, withName } from "./_names.js";
+
+/* display-name overrides, loaded per request (see _names.js) */
+let NAMES = new Map();
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -79,7 +83,7 @@ function shapeEvent(r, me) {
     allDay: !!r.all_day, repeat: r.repeat || "none", until: r.repeat_until || null,
     byDay: Array.isArray(r.by_day) ? r.by_day : [],
     colour: r.colour || "blue", notes: r.notes || "", source: r.source || "user",
-    mine, owner: mine ? "You" : nameFromEmail(r.owner),
+    mine, owner: mine ? "You" : withName(NAMES, r.owner, nameFromEmail(r.owner)),
     /* the raw list is the owner's business; everyone else just sees the count */
     sharedWith: mine ? (Array.isArray(r.shared_with) ? r.shared_with : []) : undefined,
     sharedCount: Array.isArray(r.shared_with) ? r.shared_with.length : 0
@@ -198,6 +202,7 @@ export default async function handler(req, res) {
   if (!db) return res.status(503).json({ error: "The calendar is not configured on the server." });
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the calendar." });
+  NAMES = await nameOverrides();
   const email = String(me.email).toLowerCase();
 
   if (req.method === "GET") {

@@ -913,3 +913,160 @@ no duplicate names or formulas; all 30 old keys still produced; 80,000 questions
 with four distinct options, one right, no disguised duplicates; 84% of wrong
 formulas use the right elements; every correct Lewis structure valid electron by
 electron; no wrong diagram valid; never two wrong diagrams of the same kind.
+
+### 8.17 Tests: no right/wrong until the end, clearer report, score history
+
+**Correctness is hidden during a test.** Showing right or wrong after each
+answer gave away later questions on the same topic. In a test, `finish()` and
+`skipCur()` now log the answer and call `settleTestQuestion`, which shows
+"Saved." or "Skipped.", marks the picked option with a neutral `.picked`, and
+moves on by itself after 320 ms (450 ms for typed answers). The progress bar
+marks segments answered or skipped (`i.a` / `i.s`), never green or red, and the
+running score is blank. Enter does nothing while a question is settling, so a
+held Enter can't skip one. Practice is unchanged.
+
+**The questions still adapt.** Hiding the result from the screen doesn't hide it
+from the engine. `testsim.mjs` checks this directly: two tests with the same
+random seed and the same answers, except one answer flipped from right to wrong.
+In 300 runs they were identical up to that answer 300/300, different after it
+300/300, and the missed topic came back within 7 questions *only because of the
+miss* in 283/300.
+
+**Report wording.**
+- Common mistakes are one line each, with a bold label (Mixed up, Calculations,
+  Concepts, Wrong sign, Out by a power of ten, Double or half, Rounding, Rushed,
+  Late slips, Skipped) and a plain sentence after it.
+- Not enough data is said as such. Fewer than 10 answers: the hero reads "Too few
+  answers to judge." Fewer than 12: common mistakes says there aren't enough
+  answers to see patterns. No right answers at all: it says there's nothing to
+  compare the mistakes against. Only with real data does it say "No repeated
+  pattern in the mistakes." It used to say "Nothing systematic stood out" in all
+  three cases, which read as a clean bill of health after an abandoned test.
+- Strengths merges what used to be two lists (proven strengths, and "Also right
+  first time, so it moved on") into one, each tagged "X of Y right", with a
+  caption explaining why "1 of 1" is common: a topic answered right first time
+  isn't asked again.
+- Slips read "Wrong once, then right every time after". Since your last test
+  reads "Better than last time" / "Weaker than last time".
+
+**Score history.** `historyHTML()` draws an inline SVG line chart of the last
+`TEST_HISTORY` (20) tests from `tt.rev_<sk>_tests`, on the test intro ("Your test
+scores") and in the report under the score. It appears once there are 2 tests.
+Single series, 0/50/100% gridlines, the latest value labelled, a hover and
+keyboard-focus tooltip (`wireHistory()`), and a `<details>` table of the same
+numbers. Width follows the container (`clientWidth − 28`, clamped 240 to 640)
+with `overflow:hidden`, because a 1px overhang put scrollbars on the card.
+
+Only the newest entry in `tt.rev_<sk>_tests` keeps per-topic counts (`t`); the
+rest are slimmed to `{d, n, r, s, pct, ms}`, so 20 tests stay far under the
+100 KB sync limit.
+
+### 8.18 Yellow turns green after one more right answer
+
+`stateOfHist(h)` is now the one place colour is decided: grey if unseen, red if
+the last answer was wrong, yellow if it was ever wrong **and** `rightRun < 2`,
+otherwise green. So wrong then right is yellow, and one more right makes it
+green. Before, `everWrong` alone kept a question yellow forever. The
+consolidation bonus in `sigScore` now applies only while a question is yellow, so
+a question that has turned green competes as a green. The legend's tooltip says
+this. `node yellowbug.mjs after` (12 checks) covers the ordering and old saves.
+
+### 8.19 Empirical formula, and other giveaways
+
+**Empirical formula (`genChemEmp`)** was a fixed list whose wrong options were
+other compounds' formulas, so usually three of the four didn't even contain the
+right elements. It now generates questions from `EMP_LEGACY` (the original 20,
+still keyed `emp:0` to `emp:19`, so history carries over) plus `EMP_MORE` (18
+more, including three-element compounds), with `ATOMIC_MASS` and `ELEMENT_NAME`.
+Questions give either percentages or grams in a sample. Each is checked to be
+solvable from the rounded numbers shown; if a sample size doesn't work it tries
+others, then falls back to percentages to 2 dp.
+
+Every wrong option uses the same elements and is a real slip: not dividing by the
+smallest, the ratio flipped, rounding 1.5 or 1.33 instead of multiplying up, a
+multiple of the right answer, two subscripts swapped, or one subscript out by one.
+Subscripts are capped at 9 and multiples at 3, which stops absurd options such as
+Fe₁₃O₅. The note after answering shows the working. `empcheck.mjs` (5 checks).
+
+**Answer-is-the-longest giveaway.** An audit of the 206 hand-written bank
+questions (BRAKES, PRODUCTS, BIOMED, ENERGY_C, ENG_CARBON, MIX_CONCEPT, PHYS_DYN,
+RATE_C, PHYS_EM, EM_EXTRA, WAVE_EXTRA, PHYS_WAVE, PHYS_KIN, PARA_EXTRA,
+DEV_EXTRA, MATH_CONCEPTS, MECH_EXTRA) found 98 where the right answer was at
+least 1.6× the length of every wrong one (`banklen.mjs`). All 98 were rewritten
+with tighter right answers and fuller, plausible wrong ones. **Items were edited
+in place, never added, removed or reordered**, because bank keys are array
+indices and moving one would hand someone's history to a different question. The
+right answer is still the longest option 45% of the time (`longest.mjs`; it was
+74%, and chance for four options is 25%), so this is better, not solved.
+
+**Efficiency options over 100%.** `genMachines` could offer 117.6% or 836.6%.
+`pctMC(value, wrongs)` now drops anything over 100% or under 3% and fills the gap
+with near misses. Across 19,096 generated options none exceed 100%.
+
+### 8.20 Engineering: harder mechanics, levers, pulleys and gears; cast irons moved
+
+Built to match the HSC-style sheets supplied. Diagrams are deliberately plain
+line drawings (`mechSVG`, `leverFig`, `pedalFig`, `twoArmFig`, `pulleyFig`,
+`gearFig`). Their text is sized with a `font-size="13"` attribute, because CSS
+must stay in `rem`.
+
+- **Moments** (`genMomentsAll`, 20% the old simple ones): a force at an angle on
+  a spanner (`M = F·L·sin θ`); a pedal with an angled force held by a horizontal
+  cable (`T = F·a·cos θ / h`); two forces on a bent bracket, one vertical on an
+  angled arm and one perpendicular to its arm, asking for the resultant moment
+  and its sense.
+- **Levers** (`genLevers`, new topic `e-lever`): classes from real examples
+  (`LEVER_EXAMPLES`), what's in the middle, MA above or below 1, effort from
+  moments, efficiency, compound lever VR.
+- **Pulleys & gears** (`genPulleyGear`, new topic `e-gear`): pulley efficiency
+  and effort (g = 9.8), gear train MA at an efficiency (`η·Tb/Ta`), output speed,
+  compound gear VR, and bicycle drive efficiency with
+  `VR = 2·crank·Tsprocket / (D·Tchainwheel)`.
+- Ratio options always number four (`ratioMC`), and percentages go through
+  `pctMC`.
+
+Each generator returns `data`, and `mechcheck.mjs` (11 checks) recomputes 30,000
+answers with independent physics and reproduces the sheets' own examples: gears
+30/50 at 85% gives MA 1.42:1; bicycle 446 N, 72 N, 168 mm, Ø675, 49/17 gives
+about 93.5%; pulley 120 kg, 400 N, 4 ropes gives 73.5% (75% if the sheet uses
+g = 10); the bracket example gives 3.69 kN·m clockwise.
+
+**Cast irons** (`e-iron`) moved from their own module into Steels. The topic id is
+unchanged, so progress is kept. Engineering is now five modules and 15 topics,
+and a test is 36 questions (was 33). Because the topic list changed, an
+Engineering test that was in progress starts again: `resumeTest` discards a run
+whose saved state lacks any current topic.
+
+### 8.21 Moderator: override someone's display name
+
+For people who go by something other than their email name. On the Signed-in
+users tab each row has a **Rename** button; an empty name clears the override.
+Renamed rows also show the email-derived name in brackets after the new one.
+
+- `api/_names.js`: `nameOverrides()` reads the table into a Map, cached for 60 s
+  per instance. If the table doesn't exist or the read fails it returns an empty
+  Map and logs a warning, so every page keeps working exactly as before.
+  Also `withName(map, email, fallback)` and `forgetNameOverrides()`.
+- The write is `POST /api/leaderboard {action:'rename', email, name}`, owner only
+  (`OWNER_EMAIL`), name trimmed, spaces collapsed, capped at 40 characters. It
+  lives in `leaderboard.js` rather than its own route because the project uses 11
+  of the 12 functions Vercel Hobby allows. Returns 502 with a hint if the table
+  is missing.
+- Names are applied **when read**, never written into other tables:
+  leaderboards, Tetris, the forum, calendar, shared decks and Daily results all
+  wrap their display name in `withName`. Stored rows keep the email name, so
+  removing an override (or the whole table) puts everything back.
+- Other server instances pick up a change within the 60 s cache.
+
+```sql
+create table name_override (
+  email      text primary key,
+  name       text not null,
+  updated_at timestamptz not null default now()
+);
+```
+
+`namestest.mjs` (16 checks) runs the real routes against an in-memory database:
+everything loads before the table exists, a student gets 403, the rename shows on
+the roster, both boards and the forum, the score rows are untouched, clearing
+restores the email name, and names cap at 40.

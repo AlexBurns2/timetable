@@ -475,9 +475,10 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
 .rvtest{display:flex;align-items:center;gap:12px;margin:0 0 14px}
 .rvtbar{flex:1;min-width:0;display:flex;gap:2px;height:7px}
 .rvtbar i{flex:1;min-width:0;border-radius:2px;background:var(--line);transition:background .25s}
-.rvtbar i.g{background:#2f9e44}
-.rvtbar i.r{background:#e5484d}
-.rvtbar i.s{background:color-mix(in srgb,var(--muted) 60%,transparent)}
+/* answered and skipped look different, but right and wrong look the same until the report */
+.rvtbar i.a{background:color-mix(in srgb,var(--text) 55%,transparent)}
+.rvtbar i.s{background:color-mix(in srgb,var(--muted) 30%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--muted) 60%,transparent)}
+.mcopt.picked{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
 .rvtbar i.cur{background:var(--accent)}
 .rvend{flex:none;background:none;border:0;padding:2px 4px;font:inherit;font-size:0.78125rem;
   color:var(--muted);cursor:pointer}
@@ -550,3 +551,45 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .rvcard .ch.pics span{display:flex;align-items:center;justify-content:center;padding:6px;min-width:120px;flex:1 1 40%}
 .rvcard .ch.pics span .rvlewis{margin:0;max-height:120px;width:auto}
 .rvcard .ch.pics span.pick{text-decoration:none}
+
+/* ── test score history ── */
+.rvintrohist{margin-top:18px}
+.rvhistplot{position:relative;overflow:hidden}
+.rvhist svg{display:block;max-width:none}
+.rvhist .g{stroke:var(--line);stroke-width:1}
+.rvhist .ax{fill:var(--muted);font-size:0.6875rem;font-family:var(--font-num)}
+.rvhist .v{fill:var(--text);font-size:0.75rem;font-weight:700;font-family:var(--font-num)}
+.rvhist .l{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.rvhist .w{fill:var(--accent);opacity:.1}
+.rvhist .d{fill:var(--accent);stroke:var(--panel);stroke-width:2}
+.rvhist .d.on{r:5.5}
+.rvhist .x{stroke:var(--muted);stroke-width:1;opacity:.6}
+.rvhist .h{fill:transparent;cursor:default;outline:none}
+.rvtip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:5px 9px;box-shadow:0 4px 14px rgba(0,0,0,.14);white-space:nowrap;display:flex;flex-direction:column;line-height:1.3}
+.rvtip b{font-size:0.875rem;font-family:var(--font-num);color:var(--text)}
+.rvtip span{font-size:0.71875rem;color:var(--muted)}
+.rvhisttab{margin-top:6px;font-size:0.75rem;color:var(--muted)}
+.rvhisttab summary{cursor:pointer;width:max-content}
+.rvhisttab table{border-collapse:collapse;margin-top:6px;font-family:var(--font-num)}
+.rvhisttab th,.rvhisttab td{padding:3px 14px 3px 0;text-align:left;border-bottom:1px solid var(--line)}
+.rvhisttab th{font-weight:700;color:var(--text)}
+
+/* ── mechanics diagrams: only what the question needs ── */
+.rvmech{max-width:100%;height:auto}
+.rvmech .mb{stroke:var(--text);stroke-width:3;stroke-linecap:round}
+.rvmech .mp{fill:var(--panel);stroke:var(--text);stroke-width:1.8}
+.rvmech .mbox{fill:var(--panel-2);stroke:var(--text);stroke-width:1.4}
+.rvmech .mg{fill:none;stroke:var(--text);stroke-width:1.8;stroke-dasharray:5 3}
+.rvmech .mr{stroke:var(--text);stroke-width:1.5}
+.rvmech .mf{stroke:var(--text);stroke-width:2}
+.rvmech .mfh{fill:var(--text)}
+.rvmech .me{stroke:var(--accent);stroke-width:2}
+.rvmech .meh{fill:var(--accent)}
+.rvmech .md{stroke:var(--muted);stroke-width:1}
+.rvmech text{font-family:var(--font-ui);fill:var(--text)}
+.rvmech .mtd{fill:var(--muted);font-size:.92em}
+.rvmech .mte{fill:var(--accent);font-weight:700}
+/* moderator: rename someone */
+.userrow .was{color:var(--muted);font-size:0.75rem}
+.userrow .btn.rename{flex:none;padding:4px 10px;font-size:0.75rem}
