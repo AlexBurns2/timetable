@@ -3032,6 +3032,7 @@ function revGame(host, opts){
       result, note:cur.note || '', detail:detail || '',
       kind:cur.typed ? 'typed' : cur.input ? 'input' : 'mc',
       choices:cur.choices ? cur.choices.slice() : null,
+      pics:cur.optHtml || null,                                // picture options, redrawn in the review
       code:!!(cur.code || cur.typed || /class="rvcode"/.test(cur.q)),
       ms:Math.max(0, Math.min(600000, Date.now() - (cur._shownAt || Date.now())))
     });
@@ -3084,7 +3085,9 @@ function revGame(host, opts){
       TT.set('tt.rev_' + sk + '_tests', [rep.summary].concat(list.slice(0, 2).map(slim)));
       let saved = { run, prev };
       try { if (JSON.stringify(saved).length > 1500000)
-        saved = { run:Object.assign({}, run, { log:run.log.map(e => Object.assign({}, e, { q:e.q.replace(/<svg[\s\S]*?<\/svg>/g, '<i>[diagram]</i>') })) }), prev }; } catch {}
+        saved = { run:Object.assign({}, run, { log:run.log.map(e => Object.assign({}, e, {
+          q:e.q.replace(/<svg[\s\S]*?<\/svg>/g, '<i>[diagram]</i>'),
+          pics:null, choices:e.pics ? null : e.choices })) }), prev }; } catch {}
       lsSet(REPORT_KEY, saved);
     }
     if (rep.pct >= 75) SFX.win();
@@ -3120,13 +3123,14 @@ function revGame(host, opts){
     const where = e.mod && e.mod !== e.tname ? e.mod + ' · ' + e.tname : e.tname;
     let body = '<div class="qq">' + e.q + '</div>';
     if (e.kind === 'mc' && e.choices){
-      body += '<div class="ch' + (e.code ? ' code' : '') + '">' + e.choices.map(c =>
-        '<span class="' + (c === e.answer ? 'ans' : c === e.given ? 'pick' : '') + '">' + esc(c) + '</span>').join('') + '</div>';
+      body += '<div class="ch' + (e.code ? ' code' : '') + (e.pics ? ' pics' : '') + '">' + e.choices.map(c =>
+        '<span class="' + (c === e.answer ? 'ans' : c === e.given ? 'pick' : '') + '">' +
+          (e.pics && e.pics[c] ? e.pics[c] : esc(c)) + '</span>').join('') + '</div>';
     } else if (e.kind === 'typed'){
       if (e.given) body += '<div class="ya">Your code</div><pre class="rvans">' + esc(e.given) + '</pre>';
       if (e.detail && e.result !== 'right') body += '<div class="rvwhy">' + esc(e.detail) + '</div>';
       body += '<div class="ya">One way to write it</div><pre class="rvans">' + esc(e.answer) + '</pre>';
-    } else {
+    } else if (e.kind === 'input'){
       body += '<div class="ya">' + (e.given != null
         ? 'Your answer: <b class="' + (e.result === 'right' ? 'ok' : 'no') + '">' + esc(e.given) + '</b>' : 'Skipped') +
         (e.result !== 'right' ? ' · Answer: <b class="ok">' + esc(e.answer) + '</b>' : '') + '</div>';
@@ -3319,7 +3323,12 @@ function revGame(host, opts){
       $('rvgo').onclick = () => submit(inp.value);
       $('rvskip').onclick = skipCur;
     } else { const wrap = $('rvopts'); if (cur.code) wrap.classList.add('rvcodeopts');
-      cur.choices.forEach(c => { const b = document.createElement('button'); b.type='button'; b.className='mcopt'; b.textContent = c;
+      /* options that are pictures (Lewis diagrams) carry their drawing in optHtml;
+         either way the value lives in data-val, since a picture's text isn't its answer */
+      if (cur.optHtml) wrap.classList.add('rvpicopts');
+      cur.choices.forEach((c, i) => { const b = document.createElement('button'); b.type='button'; b.className='mcopt'; b.dataset.val = c;
+        if (cur.optHtml){ b.innerHTML = cur.optHtml[c]; b.setAttribute('aria-label', 'Option ' + 'ABCD'[i]); }
+        else b.textContent = c;
         b.onclick = () => submit(c, b); wrap.appendChild(b); });
       $('rvskip').onclick = skipCur;
     }
@@ -3347,12 +3356,12 @@ function revGame(host, opts){
     answered = true; clearNudge();
     if (mode === 'test') logAnswer('skip', null);
     const fb = $('rvfb'); fb.className = 'rvfb';
-    fb.innerHTML = 'Skipped' + (cur.typed ? '. One way to write it:' : '. The answer was <b>' + esc(String(cur.answer)) + '</b>') +
+    fb.innerHTML = 'Skipped' + (cur.typed ? '. One way to write it:' : cur.optHtml ? '. The right one is outlined in green.' : '. The answer was <b>' + esc(String(cur.answer)) + '</b>') +
       (cur.note ? '<div class="rvnote">' + cur.note + '</div>' : '');
     if (cur.typed) revealAnswer();
     if (cur.typed){ $('rvta').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
     else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
-    else { [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.textContent === cur.answer) b.classList.add('right'); });
+    else { [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.dataset.val === cur.answer) b.classList.add('right'); });
            $('rvskip').disabled = true; }
     $('rvnextrow').hidden = false; $('rvnext').focus();
   }
@@ -3414,7 +3423,7 @@ function revGame(host, opts){
         + (detail ? '<div class="rvwhy">' + esc(detail) + '</div>' : '')
         + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     else
-      fb.innerHTML = (ok ? '✓ Correct' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
+      fb.innerHTML = (ok ? '✓ Correct' : cur.optHtml ? '✗ Not that one. The right one is outlined in green.' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     if (cur.typed){
       $('rvta').disabled = true; $('rvgo').disabled = true;
       if (!ok) revealAnswer();                 // got it wrong → show a working version
@@ -3427,7 +3436,7 @@ function revGame(host, opts){
       }
     }
     else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; }
-    else [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.textContent === cur.answer) b.classList.add('right'); if (b===btn && !ok) b.classList.add('wrong'); });
+    else [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.dataset.val === cur.answer) b.classList.add('right'); if (b===btn && !ok) b.classList.add('wrong'); });
     $('rvnextrow').hidden = false; $('rvnext').focus();
     if (!inTest) $('sc').textContent = 'Score ' + score;
   }
@@ -3685,7 +3694,7 @@ function analyseTest(run, topics, prev){
   /* the same two options confused more than once */
   const pairs = new Map();
   misses.forEach(e => {
-    if (e.kind !== 'mc' || e.code || !e.given) return;
+    if (e.kind !== 'mc' || e.code || e.pics || !e.given) return;   // picture options have ids, not words
     if (e.given.length > 48 || e.answer.length > 48 || TEST_NUMERIC.test(e.answer)) return;
     const key = [e.given, e.answer].sort().join('');
     const p = pairs.get(key) || { a:e.answer, b:e.given, n:0 };
@@ -4471,13 +4480,159 @@ function genSol(){
 const rd = (x,d) => { const f = Math.pow(10,d||0); return Math.round(x*f)/f; };
 
 /* ── diagrams ── */
-function vseprSVG(kind){
-  const dot=(x,y,r,f)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+f+'" stroke="var(--line)" stroke-width="1.5"/>';
-  const bond=(x,y)=>'<line x1="100" y1="62" x2="'+x+'" y2="'+y+'" stroke="var(--text)" stroke-width="2"/>';
-  const outs={ lin:[[28,62],[172,62]], bent:[[46,96],[154,96]], tri:[[100,16],[38,98],[162,98]],
-    pyr:[[100,104],[46,58],[154,58]], tet:[[46,24],[154,24],[40,102],[160,102]] }[kind]||[];
-  return '<svg class="rvdiagram" viewBox="0 0 200 120" width="210" role="img" aria-label="molecular shape">'+
-    outs.map(p=>bond(p[0],p[1])).join('')+outs.map(p=>dot(p[0],p[1],12,'var(--panel)')).join('')+dot(100,62,16,'var(--accent)')+'</svg>';
+/* ── Lewis dot diagrams ───────────────────────────────────────────────────
+   Drawn the way a textbook does: symbols on a square grid, each shared pair as
+   two dots between atoms (a double bond is two pairs, a triple three), and
+   lone pairs as dots on the free sides. Lone pairs go opposite a bond first,
+   except a pair of them on an end atom, which sit either side for balance.
+
+   A molecule is { f, atoms:[[symbol, x, y]], bonds:[[a, b, order]], lp:[per atom] }.
+   Half values draw a single dot, which is only ever used for a wrong option. */
+const LEWIS_VALENCE = { H:1, B:3, C:4, N:5, O:6, F:7, P:5, S:6, Cl:7 };
+const LEWIS = [
+  { f:'Cl₂',  atoms:[['Cl',0,0],['Cl',1,0]], bonds:[[0,1,1]], lp:[3,3] },
+  { f:'O₂',   atoms:[['O',0,0],['O',1,0]],   bonds:[[0,1,2]], lp:[2,2] },
+  { f:'N₂',   atoms:[['N',0,0],['N',1,0]],   bonds:[[0,1,3]], lp:[1,1] },
+  { f:'HCl',  atoms:[['H',0,0],['Cl',1,0]],  bonds:[[0,1,1]], lp:[0,3] },
+  { f:'H₂O',  atoms:[['H',-1,0],['O',0,0],['H',0,1]], bonds:[[1,0,1],[1,2,1]], lp:[0,2,0] },
+  { f:'NH₃',  atoms:[['N',0,0],['H',-1,0],['H',1,0],['H',0,1]], bonds:[[0,1,1],[0,2,1],[0,3,1]], lp:[1,0,0,0] },
+  { f:'CH₄',  atoms:[['C',0,0],['H',-1,0],['H',1,0],['H',0,-1],['H',0,1]], bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1]], lp:[0,0,0,0,0] },
+  { f:'CO₂',  atoms:[['O',-1,0],['C',0,0],['O',1,0]], bonds:[[1,0,2],[1,2,2]], lp:[2,0,2] },
+  { f:'HCN',  atoms:[['H',-1,0],['C',0,0],['N',1,0]], bonds:[[1,0,1],[1,2,3]], lp:[0,0,1] },
+  { f:'CCl₄', atoms:[['C',0,0],['Cl',-1,0],['Cl',1,0],['Cl',0,-1],['Cl',0,1]], bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1]], lp:[0,3,3,3,3] },
+  { f:'PCl₃', atoms:[['P',0,0],['Cl',-1,0],['Cl',1,0],['Cl',0,1]], bonds:[[0,1,1],[0,2,1],[0,3,1]], lp:[1,3,3,3] },
+  { f:'BF₃',  atoms:[['B',0,0],['F',-1,0],['F',1,0],['F',0,1]], bonds:[[0,1,1],[0,2,1],[0,3,1]], lp:[0,3,3,3] },
+  { f:'HOCl', atoms:[['H',-1,0],['O',0,0],['Cl',1,0]], bonds:[[1,0,1],[1,2,1]], lp:[0,2,3] },
+  { f:'H₂O₂', atoms:[['H',-1,0],['O',0,0],['O',1,0],['H',2,0]], bonds:[[1,0,1],[1,2,1],[2,3,1]], lp:[0,2,2,0] },
+  { f:'CH₂O', atoms:[['C',0,0],['O',1,0],['H',0,-1],['H',0,1]], bonds:[[0,1,2],[0,2,1],[0,3,1]], lp:[0,2,0,0] },
+  { f:'H₂S',  atoms:[['H',-1,0],['S',0,0],['H',0,1]], bonds:[[1,0,1],[1,2,1]], lp:[0,2,0] }
+];
+const LEWIS_BY = Object.fromEntries(LEWIS.map(m => [m.f, m]));
+
+/* electrons in total, and around each atom (shared pairs count for both) */
+function lewisCount(m){
+  const around = m.atoms.map(() => 0);
+  let total = 0;
+  m.bonds.forEach(([a, b, o]) => { total += 2 * o; around[a] += 2 * o; around[b] += 2 * o; });
+  m.lp.forEach((n, i) => { total += 2 * n; around[i] += 2 * n; });
+  return { total, around, want:m.atoms.reduce((s, [el]) => s + LEWIS_VALENCE[el], 0) };
+}
+/* A structure that could be right: the right number of electrons, and every
+   atom full (2 for H, 8 otherwise; boron may stop at 6). Any wrong option has
+   to fail this, so an alternative drawing that is actually valid can never be
+   offered as a wrong answer. */
+function lewisValid(m){
+  const { total, around, want } = lewisCount(m);
+  if (total !== want) return false;
+  return m.atoms.every(([el], i) => el === 'H' ? around[i] === 2 : el === 'B' ? around[i] === 6 || around[i] === 8 : around[i] === 8);
+}
+const LEWIS_SIDES = [[0,-1],[0,1],[-1,0],[1,0]];
+function lewisSides(m, i){
+  const [, x, y] = m.atoms[i];
+  const used = m.bonds.filter(([a, b]) => a === i || b === i)
+    .map(([a, b]) => { const j = a === i ? b : a, [, xj, yj] = m.atoms[j]; return [Math.sign(xj - x), Math.sign(yj - y)]; });
+  const isUsed = s => used.some(u => u[0] === s[0] && u[1] === s[1]);
+  const free = LEWIS_SIDES.filter(s => !isUsed(s));
+  const n = Math.ceil(m.lp[i]);
+  if (n === 2 && used.length === 1) return free.filter(s => s[0] * used[0][0] + s[1] * used[0][1] === 0);
+  const opposite = s => used.some(u => u[0] === -s[0] && u[1] === -s[1]);
+  return free.filter(opposite).concat(free.filter(s => !opposite(s))).slice(0, n);
+}
+const lewisDrawable = m => m.atoms.every((a, i) => {
+  if (m.lp[i] < 0) return false;
+  const dirs = new Set(m.bonds.filter(([p, q]) => p === i || q === i).map(([p, q]) => (p === i ? q : p)));
+  return dirs.size + Math.ceil(m.lp[i]) <= 4;
+});
+function lewisSVG(m, width){
+  const S = 58, pad = 26, xs = m.atoms.map(a => a[1]), ys = m.atoms.map(a => a[2]);
+  const minX = Math.min(...xs), minY = Math.min(...ys);
+  const W = (Math.max(...xs) - minX) * S + pad * 2, H = (Math.max(...ys) - minY) * S + pad * 2;
+  const px = i => (m.atoms[i][1] - minX) * S + pad, py = i => (m.atoms[i][2] - minY) * S + pad;
+  const dot = (x, y) => '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.4"/>';
+  let dots = '';
+  /* shared electrons: pairs spaced along the bond, each pair across it */
+  m.bonds.forEach(([a, b, o]) => {
+    const dx = Math.sign(px(b) - px(a)), dy = Math.sign(py(b) - py(a));
+    const mx = (px(a) + px(b)) / 2, my = (py(a) + py(b)) / 2;
+    const pairs = Math.floor(o), single = o % 1 !== 0, cols = pairs + (single ? 1 : 0);
+    for (let k = 0; k < cols; k++){
+      const t = (k - (cols - 1) / 2) * 7;
+      const cx = mx + dx * t, cy = my + dy * t;
+      if (k < pairs){ dots += dot(cx - dy * 4, cy + dx * 4) + dot(cx + dy * 4, cy - dx * 4); }
+      else dots += dot(cx, cy);
+    }
+  });
+  /* lone pairs, a little further out for two-letter symbols */
+  m.atoms.forEach(([el], i) => {
+    const sides = lewisSides(m, i), pairs = Math.floor(m.lp[i]), single = m.lp[i] % 1 !== 0;
+    sides.forEach(([sx, sy], k) => {
+      const reach = sx ? (el.length > 1 ? 19 : 14) : 15;
+      const cx = px(i) + sx * reach, cy = py(i) + sy * reach;
+      if (k < pairs) dots += dot(cx - sy * 4, cy + sx * 4) + dot(cx + sy * 4, cy - sx * 4);
+      else if (single) dots += dot(cx, cy);
+    });
+  });
+  const labels = m.atoms.map(([el], i) =>
+    '<text x="' + px(i) + '" y="' + py(i) + '" text-anchor="middle" dominant-baseline="central">' + el + '</text>').join('');
+  return '<svg class="rvdiagram rvlewis" viewBox="0 0 ' + W + ' ' + H + '" width="' + Math.min(width || 220, W * 1.25) +
+    '" role="img" aria-label="Lewis dot diagram">' +
+    '<g fill="var(--text)" font-size="19" font-weight="600" font-family="var(--font-ui)">' + labels + '</g>' +
+    '<g fill="var(--text)">' + dots + '</g></svg>';
+}
+
+/* Wrong versions of a structure, one change each. The ones that keep the
+   electron count right but leave an atom short or over are listed first,
+   because they are the ones that actually make you count. */
+function lewisWrong(m){
+  /* `last` holds the more obvious slips on hydrogen, only used when a molecule
+     has nothing better (methane: every bond is to H and carbon is full) */
+  const subtle = [], plain = [], last = [];
+  const H = i => m.atoms[i][0] === 'H', el = i => m.atoms[i][0];
+  const copy = () => ({ f:m.f, atoms:m.atoms, bonds:m.bonds.map(b => b.slice()), lp:m.lp.slice() });
+  /* `kind` names the mistake by what it does and to which elements, so the
+     same slip mirrored onto an identical atom (left Cl vs right Cl) counts as
+     one mistake and isn't offered twice */
+  const add = (c, list, kind) => { if (lewisDrawable(c) && !lewisValid(c)){ c.kind = kind; list.push(c); } };
+  m.bonds.forEach(([a, b, o], k) => {
+    const pair = [el(a), el(b)].sort().join('-');
+    if (!H(a) && !H(b)){
+      [a, b].forEach(e => {
+        if (o < 3 && m.lp[e] >= 1){ const c = copy(); c.bonds[k][2]++; c.lp[e]--; add(c, subtle, 'up:' + pair + ':' + el(e)); }   // extra bond, one lone pair fewer
+        if (o > 1){ const c = copy(); c.bonds[k][2]--; c.lp[e]++; add(c, subtle, 'down:' + pair + ':' + el(e)); }                // bond demoted to a lone pair
+      });
+      if (o < 3){ const c = copy(); c.bonds[k][2]++; add(c, plain, 'up+:' + pair); }
+      if (o > 1){ const c = copy(); c.bonds[k][2]--; add(c, plain, 'down-:' + pair); }
+    } else if (o === 1){ const c = copy(); c.bonds[k][2]++; add(c, last, 'up+:' + pair); }               // a double bond to H
+    const c = copy(); c.bonds[k][2] -= 0.5; add(c, plain, 'half:' + pair);                                                     // a "bond" of one electron
+  });
+  m.lp.forEach((n, i) => {
+    if (H(i)){ const c = copy(); c.lp[i]++; add(c, last, 'lpH'); return; }                                 // H given a lone pair
+    m.atoms.forEach((_, j) => { if (j !== i && !H(j) && n >= 1){ const c = copy(); c.lp[i]--; c.lp[j]++; add(c, subtle, 'move:' + el(i) + '>' + el(j)); } });
+    if (n >= 1){ const c = copy(); c.lp[i]--; add(c, plain, 'lp-:' + el(i)); const d = copy(); d.lp[i] -= 0.5; add(d, plain, 'lp~:' + el(i)); }
+    { const c = copy(); c.lp[i]++; add(c, plain, 'lp+:' + el(i)); }
+  });
+  const sig = c => JSON.stringify([c.bonds.map(b => b[2]), c.lp]);
+  const seen = new Set([sig(m)]), kinds = new Set(), out = [];
+  const take = (list, anyKind) => {
+    for (const c of shuffle(list)){
+      if (seen.has(sig(c)) || (!anyKind && kinds.has(c.kind))) continue;
+      seen.add(sig(c)); kinds.add(c.kind); out.push(c); return true;
+    }
+    return false;
+  };
+  take(subtle); take(subtle);
+  while (out.length < 3 && (take(plain) || take(subtle) || take(last)));
+  while (out.length < 3 && (take(plain, true) || take(subtle, true) || take(last, true)));
+  return out;
+}
+function lewisNote(m){
+  const { total } = lewisCount(m);
+  const bonding = m.bonds.reduce((s, b) => s + b[2], 0), lone = m.lp.reduce((s, n) => s + n, 0);
+  const full = m.atoms.some(a => a[0] === 'B') ? 'Boron ends up with only 6, which it is allowed to do. Every other atom has 8.'
+             : m.atoms.some(a => a[0] === 'H') ? 'Each H has 2 electrons around it and every other atom has 8.'
+             : 'Every atom has 8 electrons around it.';
+  return m.f + ' has ' + total + ' valence electrons: ' + bonding + ' shared pair' + (bonding === 1 ? '' : 's') +
+    ' and ' + lone + ' lone pair' + (lone === 1 ? '' : 's') + '. ' + full;
 }
 function vectorSVG(a,b){
   return '<svg class="rvdiagram" viewBox="0 0 200 135" width="220" role="img" aria-label="vector diagram">'+
@@ -4619,13 +4774,192 @@ function microSVG(kind){
 }
 
 /* ══ CHEMISTRY ══ */
-const CHEM_NAMES=[['sodium chloride','NaCl'],['magnesium oxide','MgO'],['calcium fluoride','CaF₂'],['aluminium oxide','Al₂O₃'],
-  ['sodium sulfate','Na₂SO₄'],['ammonium chloride','NH₄Cl'],['iron(III) oxide','Fe₂O₃'],['copper(II) sulfate','CuSO₄'],
-  ['potassium carbonate','K₂CO₃'],['calcium hydroxide','Ca(OH)₂'],['carbon dioxide','CO₂'],['sulfur trioxide','SO₃'],
-  ['dinitrogen tetroxide','N₂O₄'],['phosphorus trichloride','PCl₃'],['magnesium nitrate','Mg(NO₃)₂']];
-function genChemName(){ const [name,f]=pk(CHEM_NAMES);
-  if(Math.random()<0.5){ const m=mc(f, shuffle(CHEM_NAMES.filter(p=>p[1]!==f)).map(p=>p[1])); return {q:'What is the formula of <b>'+name+'</b>?', choices:m.choices, answer:m.answer, key:'name-f:'+f}; }
-  const m=mc(name, shuffle(CHEM_NAMES.filter(p=>p[0]!==name)).map(p=>p[0])); return {q:'What is the name of <b>'+f+'</b>?', choices:m.choices, answer:m.answer, key:'name-n:'+f}; }
+/* ── Naming compounds ─────────────────────────────────────────────────────
+   Built from the rules rather than a list of answers, so every wrong option is
+   a specific mistake someone actually makes, not a random other compound that
+   anyone who knows the symbols could rule out. Wrong options come mostly from:
+     convention  treating an ionic compound as covalent or the reverse
+                 ("dialuminium trioxide", "nitrogen oxide", AlO for Al₂O₃)
+     counts      the wrong number of atoms or the wrong charge
+                 (Al₃O₂, iron(II) for Fe₂(SO₄)₃ because of the ₂)
+   and less often from a similar ion (sulfate/sulfite/sulfide) or a similar-
+   sounding element (potassium/phosphorus). Formula options are compared by what
+   atoms they contain, so a wrong option can never be the right compound written
+   differently. */
+const SUBD = '₀₁₂₃₄₅₆₇₈₉';
+const subN = n => n === 1 ? '' : String(n).split('').map(d => SUBD[+d]).join('');
+const chargeSup = q => (Math.abs(q) === 1 ? '' : sup(Math.abs(q))) + (q > 0 ? '⁺' : '⁻');
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+const PREFIX = ['', 'mono', 'di', 'tri', 'tetra', 'penta', 'hexa', 'hepta'];
+const gcd2 = (a, b) => b ? gcd2(b, a % b) : Math.abs(a);
+/* "mono" + "oxide" is "monoxide", "tetra" + "oxide" is "tetroxide" */
+const withPrefix = (n, word) => { const p = PREFIX[n]; return /^o/.test(word) && /[ao]$/.test(p) ? p.slice(0, -1) + word : p + word; };
+
+/* what a formula contains, e.g. Al₂(SO₄)₃ → {Al:2, O:12, S:3}, as a string to compare */
+function composition(f){
+  const s = String(f).replace(/[₀-₉]/g, c => SUBD.indexOf(c));
+  let i = 0;
+  const group = () => {
+    const out = {};
+    while (i < s.length && s[i] !== ')'){
+      let part;
+      if (s[i] === '('){ i++; part = group(); i++; }
+      else { const m = /^[A-Z][a-z]?/.exec(s.slice(i)); if (!m) { i++; continue; } part = { [m[0]]: 1 }; i += m[0].length; }
+      const n = /^\d+/.exec(s.slice(i)); const k = n ? +n[0] : 1; if (n) i += n[0].length;
+      for (const e in part) out[e] = (out[e] || 0) + part[e] * k;
+    }
+    return out;
+  };
+  const c = group();
+  return Object.keys(c).sort().map(e => e + c[e]).join(' ');
+}
+
+const CATIONS = {
+  Li:{n:'lithium',s:'Li',q:1}, Na:{n:'sodium',s:'Na',q:1}, K:{n:'potassium',s:'K',q:1}, Ag:{n:'silver',s:'Ag',q:1},
+  NH4:{n:'ammonium',s:'NH₄',q:1,poly:true},
+  Mg:{n:'magnesium',s:'Mg',q:2}, Ca:{n:'calcium',s:'Ca',q:2}, Ba:{n:'barium',s:'Ba',q:2}, Zn:{n:'zinc',s:'Zn',q:2},
+  Al:{n:'aluminium',s:'Al',q:3},
+  Fe2:{n:'iron',s:'Fe',q:2,v:true}, Fe3:{n:'iron',s:'Fe',q:3,v:true},
+  Cu1:{n:'copper',s:'Cu',q:1,v:true}, Cu2:{n:'copper',s:'Cu',q:2,v:true}, Pb:{n:'lead',s:'Pb',q:2,v:true}
+};
+const ANIONS = {
+  F:{n:'fluoride',s:'F',q:-1}, Cl:{n:'chloride',s:'Cl',q:-1}, Br:{n:'bromide',s:'Br',q:-1}, I:{n:'iodide',s:'I',q:-1},
+  O:{n:'oxide',s:'O',q:-2}, S:{n:'sulfide',s:'S',q:-2}, N:{n:'nitride',s:'N',q:-3}, P:{n:'phosphide',s:'P',q:-3},
+  OH:{n:'hydroxide',s:'OH',q:-1,poly:true}, NO3:{n:'nitrate',s:'NO₃',q:-1,poly:true}, NO2:{n:'nitrite',s:'NO₂',q:-1,poly:true},
+  HCO3:{n:'hydrogen carbonate',s:'HCO₃',q:-1,poly:true}, SO4:{n:'sulfate',s:'SO₄',q:-2,poly:true},
+  SO3:{n:'sulfite',s:'SO₃',q:-2,poly:true}, CO3:{n:'carbonate',s:'CO₃',q:-2,poly:true}, PO4:{n:'phosphate',s:'PO₄',q:-3,poly:true}
+};
+/* anions that get mistaken for each other */
+/* anions whose names get mixed up. Not the halides: chloride for bromide is a
+   question of knowing symbols, which is taken as read here. */
+const ANION_KIN = { SO4:['SO3','S'], SO3:['SO4','S'], S:['SO4','SO3'], NO3:['NO2','N'], NO2:['NO3','N'], N:['NO3','NO2'],
+  CO3:['HCO3'], HCO3:['CO3'], OH:['O'], O:['OH'], PO4:['P'], P:['PO4'] };
+/* similar-sounding elements, used sparingly: [name, symbol] it gets confused with */
+const ELEMENT_KIN = { K:['phosphorus','P'], P:['potassium','K'], Na:['sulfur','S'], S:['sodium','Na'], Mg:['manganese','Mn'],
+  Ag:['silicon','Si'], Si:['silver','Ag'], Cu:['cobalt','Co'], Ca:['carbon','C'], C:['calcium','Ca'], Ba:['boron','B'], B:['barium','Ba'] };
+
+const IONIC = [['Na','Cl'],['Mg','O'],['Ca','F'],['Al','O'],['Na','SO4'],['NH4','Cl'],['Fe3','O'],['Cu2','SO4'],['K','CO3'],
+  ['Ca','OH'],['Mg','NO3'],['K','I'],['Li','O'],['Mg','Cl'],['Al','Cl'],['Ca','S'],['Na','S'],['Mg','N'],['Li','N'],['Al','S'],
+  ['Fe2','Cl'],['Fe3','Cl'],['Cu1','O'],['Cu2','O'],['Pb','NO3'],['Na','OH'],['Al','OH'],['Ba','SO4'],['Ca','CO3'],['Na','HCO3'],
+  ['K','NO3'],['Na','NO2'],['K','SO3'],['Ca','PO4'],['NH4','SO4'],['NH4','PO4'],['Al','SO4'],['Fe3','SO4'],['Ag','NO3'],
+  ['Zn','Cl'],['K','PO4'],['Ba','OH'],['Zn','O'],['Fe2','SO4'],['Ca','HCO3']];
+
+const ELEMENTS = { C:['carbon','carbide'], N:['nitrogen','nitride'], O:['oxygen','oxide'], F:['fluorine','fluoride'],
+  P:['phosphorus','phosphide'], S:['sulfur','sulfide'], Cl:['chlorine','chloride'], Si:['silicon','silicide'],
+  B:['boron','boride'], I:['iodine','iodide'], Br:['bromine','bromide'] };
+/* the combining number an element usually shows, for the "criss-cross it like
+   an ionic compound" mistake on a covalent one */
+const USUAL_VALENCY = { C:4, N:3, O:2, F:1, P:3, S:2, Cl:1, Si:4, B:3, I:1, Br:1 };
+const COVALENT = [['C',1,'O',1],['C',1,'O',2],['S',1,'O',2],['S',1,'O',3],['N',1,'O',1],['N',1,'O',2],['N',2,'O',1],
+  ['N',2,'O',3],['N',2,'O',4],['N',2,'O',5],['P',1,'Cl',3],['P',1,'Cl',5],['C',1,'Cl',4],['Si',1,'O',2],['S',1,'F',6],
+  ['N',1,'F',3],['C',1,'S',2],['Si',1,'Cl',4],['B',1,'F',3],['P',2,'O',5],['O',1,'F',2],['Cl',2,'O',1],['S',1,'Cl',2],['I',1,'Cl',1]];
+
+const ionPart = (ion, n) => n === 1 ? ion.s : ion.poly ? '(' + ion.s + ')' + subN(n) : ion.s + subN(n);
+const ionicRatio = (cat, an) => { const g = gcd2(cat.q, -an.q); return [-an.q / g, cat.q / g]; };
+const ionicFormula = (cat, an, nc, na) => { if (nc == null) [nc, na] = ionicRatio(cat, an); return ionPart(cat, nc) + ionPart(an, na); };
+const cationName = (cat, q) => cat.v || q ? cat.n + '(' + ROMAN[q || cat.q] + ')' : cat.n;
+const ionicName = (cat, an) => cationName(cat) + ' ' + an.n;
+const covFormula = (a, na, b, nb) => a + subN(na) + b + subN(nb);
+const covName = (a, na, b, nb) => (na > 1 ? PREFIX[na] : '') + ELEMENTS[a][0] + ' ' + withPrefix(nb, ELEMENTS[b][1]);
+
+/* Choose three wrong options: mostly convention and counts, sometimes a
+   similar ion, now and then a similar element. `same` says whether a candidate
+   is really the right answer in disguise. */
+function pickWrong(right, pools, same){
+  const seen = [right], ok = x => x && !seen.some(s => same(s, x));
+  const from = name => { const list = shuffle((pools[name] || []).slice()); for (const x of list) if (ok(x)){ seen.push(x); return x; } return null; };
+  const out = [];
+  const take = name => { const x = from(name); if (x) out.push(x); return x; };
+  take('conv'); take('count');
+  const r = Math.random();
+  if (!(r < 0.3 && take('swap')) && !(r < 0.7 && take('ion'))) take('count') || take('conv');
+  /* `spare` holds weaker mistakes, only reached when a simple compound has run
+     out of better ones, so every question still gets four options */
+  for (const name of ['count', 'conv', 'ion', 'swap', 'spare']) while (out.length < 3 && take(name));
+  return out.slice(0, 3);
+}
+const sameName = (a, b) => a === b;
+const sameFormula = (a, b) => a === b || composition(a) === composition(b);
+
+function genChemName(){
+  const covalent = Math.random() < 0.35, toFormula = Math.random() < 0.5;
+  if (!covalent){
+    const [ck, ak] = pk(IONIC), cat = CATIONS[ck], an = ANIONS[ak];
+    const [nc, na] = ionicRatio(cat, an), f = ionicFormula(cat, an), name = ionicName(cat, an);
+    const kin = (ANION_KIN[ak] || []).map(k => ANIONS[k]);
+    const swap = ELEMENT_KIN[cat.s];
+    const note = 'Ionic, so no prefixes: ' + cat.s + chargeSup(cat.q) + ' and ' + an.s + chargeSup(an.q) +
+      (nc === 1 && na === 1 ? ' cancel one to one.' : ' balance as ' + nc + ' : ' + na + '.') +
+      (cat.v ? ' The (' + ROMAN[cat.q] + ') is the charge on ' + cat.n + ', not how many there are.' : '');
+    if (toFormula){
+      const counts = [[na, nc], [1, 1], [nc, na + 1], [nc + 1, na]].filter(([x, y]) => gcd2(x, y) === 1)
+        .map(([x, y]) => ionicFormula(cat, an, x, y));
+      if (cat.v){                                          // built from the wrong charge
+        const other = Object.values(CATIONS).find(c => c.s === cat.s && c.q !== cat.q);
+        if (other) counts.push(ionicFormula(other, an));
+      }
+      const conv = [ionicFormula(cat, an, 1, 1)];          // no prefixes read as "one of each"
+      if (ak === 'OH' && na > 1) conv.push(cat.s + subN(nc) + 'OH' + subN(na));   // brackets left off
+      const ion = kin.map(k => ionicFormula(cat, k));
+      if (ck === 'NH4') ion.push(ionPart({ s:'NH₃', poly:true }, nc) + ionPart(an, na));    // ammonia for ammonium
+      const wrong = pickWrong(f, {
+        conv, count:counts, ion,
+        swap: swap ? [swap[1] + subN(nc) + ionPart(an, na)] : [],
+        spare:[[nc, na + 2], [nc + 2, na]].filter(([x, y]) => gcd2(x, y) === 1).map(([x, y]) => ionicFormula(cat, an, x, y))
+      }, sameFormula);
+      const m = mc(f, wrong);
+      return { q:'What is the formula of <b>' + name + '</b>?', choices:m.choices, answer:m.answer, note, key:'name-f:' + f };
+    }
+    const conv = [(nc > 1 ? PREFIX[nc] : '') + cat.n + ' ' + withPrefix(na, an.n)];   // named like a covalent one
+    if (ELEMENTS[an.s]) conv.push(cationName(cat) + ' ' + ELEMENTS[an.s][0]);          // "chlorine" for chloride
+    const counts = [];
+    if (cat.v){
+      conv.push(cat.n + ' ' + an.n);                                                 // the charge left out
+      counts.push(cationName(cat, nc !== cat.q && nc <= 4 ? nc : cat.q === 2 ? 3 : 2) + ' ' + an.n);
+    } else if (!cat.poly){
+      /* a charge numeral on a metal that only has one charge, and the wrong one */
+      [cat.q - 1, cat.q + 1].filter(q => q >= 1 && q <= 4).forEach(q => counts.push(cat.n + '(' + ROMAN[q] + ') ' + an.n));
+    }
+    counts.push((nc > 1 ? PREFIX[nc] : '') + cat.n + ' ' + an.n);
+    const ion = kin.map(k => cationName(cat) + ' ' + k.n);
+    if (ck === 'NH4') ion.push('ammonia ' + an.n);
+    const wrong = pickWrong(name, {
+      conv, count:counts, ion,
+      swap: swap ? [swap[0] + ' ' + an.n] : [],
+      spare:[cationName(cat) + ' ' + withPrefix(na + 1, an.n)]
+    }, sameName);
+    const m = mc(name, wrong);
+    return { q:'What is the name of <b>' + f + '</b>?', choices:m.choices, answer:m.answer, note, key:'name-n:' + f };
+  }
+  const [a, na, b, nb] = pk(COVALENT), f = covFormula(a, na, b, nb), name = covName(a, na, b, nb);
+  const note = 'Covalent, so the prefixes give the number of each atom' +
+    (na === 1 ? ', and the first element never takes mono.' : '.');
+  const inRange = ([x, y]) => x >= 1 && y >= 1 && x <= 7 && y <= 7 && !(x === na && y === nb);
+  const shifts = [[na, nb + 1], [na, nb - 1], [na + 1, nb], [na - 1, nb], [nb, na]].filter(inRange);
+  const spares = [[na, nb + 2], [na + 2, nb]].filter(inRange);
+  const swap = ELEMENT_KIN[a];
+  if (toFormula){
+    const va = USUAL_VALENCY[a], vb = USUAL_VALENCY[b], g = gcd2(va, vb);
+    const wrong = pickWrong(f, {
+      conv:[covFormula(a, vb / g, b, va / g), covFormula(a, 1, b, 1)],              // criss-crossed, or one of each
+      count:shifts.map(([x, y]) => covFormula(a, x, b, y)),
+      swap: swap ? [covFormula(swap[1], na, b, nb)] : [],
+      spare:spares.map(([x, y]) => covFormula(a, x, b, y))
+    }, sameFormula);
+    const m = mc(f, wrong);
+    return { q:'What is the formula of <b>' + name + '</b>?', choices:m.choices, answer:m.answer, note, key:'name-f:' + f };
+  }
+  const conv = [ELEMENTS[a][0] + ' ' + ELEMENTS[b][1]];                            // named like an ionic one
+  if (na === 1) conv.push('mono' + ELEMENTS[a][0] + ' ' + withPrefix(nb, ELEMENTS[b][1]));
+  else conv.push(PREFIX[na] + ELEMENTS[a][0] + ' ' + ELEMENTS[b][1]);
+  const wrong = pickWrong(name, {
+    conv, count:shifts.map(([x, y]) => covName(a, x, b, y)),
+    swap: swap ? [(na > 1 ? PREFIX[na] : '') + swap[0] + ' ' + withPrefix(nb, ELEMENTS[b][1])] : [],
+    spare:spares.map(([x, y]) => covName(a, x, b, y))
+  }, sameName);
+  const m = mc(name, wrong);
+  return { q:'What is the name of <b>' + f + '</b>?', choices:m.choices, answer:m.answer, note, key:'name-n:' + f };
+}
 function genChemIso(){ const m1=ri(10,60), m2=m1+ri(1,3), p=ri(20,80); const ram=rd((m1*p+m2*(100-p))/100,2);
   return {q:'An element has two isotopes: mass <b>'+m1+'</b> ('+p+'%) and mass <b>'+m2+'</b> ('+(100-p)+'%). Find the relative atomic mass.', input:true, answer:ram, accept:v=>Math.abs(Number(v)-ram)<0.05, note:'('+m1+'×'+p+' + '+m2+'×'+(100-p)+')/100 = '+ram+'.'}; }
 const ECONFIG=[[1,'H','1s¹'],[2,'He','1s²'],[3,'Li','1s² 2s¹'],[4,'Be','1s² 2s²'],[5,'B','1s² 2s² 2p¹'],
@@ -4635,16 +4969,27 @@ const ECONFIG=[[1,'H','1s¹'],[2,'He','1s²'],[3,'Li','1s² 2s¹'],[4,'Be','1s²
   [19,'K','1s² 2s² 2p⁶ 3s² 3p⁶ 4s¹'],[20,'Ca','1s² 2s² 2p⁶ 3s² 3p⁶ 4s²']];
 function genChemEconfig(){ const [z,sym,cfg]=pk(ECONFIG); const m=mc(cfg, shuffle(ECONFIG.filter(e=>e[2]!==cfg)).map(e=>e[2]));
   return {q:'What is the ground-state electron configuration of <b>'+sym+'</b> (Z = '+z+')?', choices:m.choices, answer:m.answer, key:'econf:'+sym}; }
-const VSEPR=[{f:'CH₄',shape:'Tetrahedral',polar:false,imf:'Dispersion',d:'tet'},{f:'NH₃',shape:'Trigonal pyramidal',polar:true,imf:'Hydrogen bonding',d:'pyr'},
-  {f:'H₂O',shape:'Bent',polar:true,imf:'Hydrogen bonding',d:'bent'},{f:'CO₂',shape:'Linear',polar:false,imf:'Dispersion',d:'lin'},
-  {f:'BF₃',shape:'Trigonal planar',polar:false,imf:'Dispersion',d:'tri'},{f:'HCl',shape:'Linear',polar:true,imf:'Dipole–dipole',d:'lin'},
-  {f:'CCl₄',shape:'Tetrahedral',polar:false,imf:'Dispersion',d:'tet'},{f:'PCl₃',shape:'Trigonal pyramidal',polar:true,imf:'Dipole–dipole',d:'pyr'}];
+const VSEPR=[{f:'CH₄',shape:'Tetrahedral',polar:false,imf:'Dispersion'},{f:'NH₃',shape:'Trigonal pyramidal',polar:true,imf:'Hydrogen bonding'},
+  {f:'H₂O',shape:'Bent',polar:true,imf:'Hydrogen bonding'},{f:'CO₂',shape:'Linear',polar:false,imf:'Dispersion'},
+  {f:'BF₃',shape:'Trigonal planar',polar:false,imf:'Dispersion'},{f:'HCl',shape:'Linear',polar:true,imf:'Dipole–dipole'},
+  {f:'CCl₄',shape:'Tetrahedral',polar:false,imf:'Dispersion'},{f:'PCl₃',shape:'Trigonal pyramidal',polar:true,imf:'Dipole–dipole'}];
 function genChemShape(){ const v=pk(VSEPR), k=ri(0,2);
+  /* the Lewis diagram rather than a picture of the shape: you work the shape
+     out from the bonding pairs and lone pairs on the central atom */
   if(k===0){ const shapes=['Linear','Bent','Trigonal planar','Trigonal pyramidal','Tetrahedral']; const m=mc(v.shape, shuffle(shapes.filter(s=>s!==v.shape)));
-    return {q:'What is the VSEPR shape of <b>'+v.f+'</b>?'+vseprSVG(v.d), choices:m.choices, answer:m.answer, key:'shape:'+v.f}; }
+    return {q:'Here is the Lewis dot diagram for <b>'+v.f+'</b>. What shape is the molecule?'+lewisSVG(LEWIS_BY[v.f]), choices:m.choices, answer:m.answer, key:'shape:'+v.f}; }
   if(k===1) return {q:'Is <b>'+v.f+'</b> a polar molecule?', choices:['Polar','Non-polar'], answer:v.polar?'Polar':'Non-polar', note:v.f+' is '+(v.polar?'polar':'non-polar')+' overall.', key:'polar:'+v.f};
   const imfs=['Dispersion','Dipole–dipole','Hydrogen bonding']; const m=mc(v.imf, imfs.filter(i=>i!==v.imf));
   return {q:'What is the strongest intermolecular force between <b>'+v.f+'</b> molecules?', choices:m.choices, answer:m.answer, key:'imf:'+v.f}; }
+/* Pick the right Lewis diagram out of four. The options are pictures, so the
+   choices are ids ('ok', 'w0'…) and `optHtml` holds what each one looks like. */
+function genLewis(){
+  const m = pk(LEWIS), wrong = lewisWrong(m);
+  const optHtml = { ok:lewisSVG(m, 170) };
+  wrong.forEach((w, i) => { optHtml['w' + i] = lewisSVG(w, 170); });
+  return { q:'Which is the correct Lewis dot diagram for <b>' + m.f + '</b>?', choices:shuffle(Object.keys(optHtml)),
+    answer:'ok', optHtml, note:lewisNote(m), key:'lewis:' + m.f };
+}
 const MR=[['H₂O',18.0],['CO₂',44.0],['NaCl',58.5],['CaCO₃',100.1],['H₂SO₄',98.1],['C₆H₁₂O₆',180.2],['NaOH',40.0],['NH₃',17.0],['O₂',32.0],['CH₄',16.0],['MgO',40.3],['KCl',74.6]];
 function genChemMoles(){ const [f,mr]=pk(MR);
   if(Math.random()<0.5){ const mass=ri(2,20)*5, n=mass/mr; return {q:'How many moles are in <b>'+mass+' g</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(n,3), accept:v=>Math.abs(Number(v)-n)<0.01, note:'n = m/M = '+mass+'/'+mr+' = '+rd(n,3)+' mol.'}; }
@@ -5536,7 +5881,7 @@ BUILD.maths = host => revGame(host, { title:'Maths', how:'Pick a topic. The ques
   topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
 BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Pick a module, or do all four.', statKey:'chem',
   modules:[
-    {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-mix',name:'Mixtures & separation',gen:genSeparation},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape}]},
+    {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-mix',name:'Mixtures & separation',gen:genSeparation},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape},{id:'c-lewis',name:'Lewis diagrams',gen:genLewis}]},
     {id:'m2',name:'Module 2',topics:[{id:'c-mole',name:'Moles & mass',gen:genChemMoles},{id:'c-bal',name:'Balancing equations',gen:genBalance},{id:'c-gas',name:'Gas laws',gen:genGasLaw},{id:'c-lim',name:'Limiting reagent',gen:genChemLimiting},{id:'c-emp',name:'Empirical formula',gen:genChemEmp},{id:'c-soln',name:'Solutions & gases',gen:genChemSol2}]},
     {id:'m3',name:'Module 3',topics:[{id:'c-type',name:'Reaction types',gen:genChemType},{id:'c-rate',name:'Reaction rates',gen:genRates},{id:'c-act',name:'Activity series',gen:genActivity},{id:'c-redox',name:'Redox',gen:genRedox},{id:'c-galv',name:'Galvanic cells',gen:genGalvanic},{id:'c-sol',name:'Solubility',gen:genSol}]},
     {id:'m4',name:'Module 4',topics:[{id:'c-cal',name:'Calorimetry',gen:genCalor},{id:'c-enp',name:'Energy & entropy',gen:genEnergyProfile},{id:'c-bond',name:'Bond energies',gen:genBondE},{id:'c-form',name:'Enthalpy of formation',gen:genFormation},{id:'c-gibbs',name:'Entropy & Gibbs',gen:genGibbs}]}

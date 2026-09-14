@@ -1174,6 +1174,29 @@ on topics you'd already got right, and lots of skips.
 Test answers also go into your practice history, so anything you miss comes back
 round in Practice mode.
 
+## Chemistry: harder naming options, and Lewis dot diagrams
+
+**Naming** no longer gives itself away. The wrong options used to be other
+compounds entirely, so knowing the symbols was enough. Now they're the mistakes
+people actually make with *this* compound: naming an ionic compound like a
+covalent one ("dialuminium trioxide") or the reverse ("nitrogen oxide"), the
+wrong number of atoms (Al₃O₂), the wrong charge (iron(II) sulfate for
+Fe₂(SO₄)₃), a similar ion (sulfite for sulfate), and now and then a
+similar-sounding element (phosphorus for potassium). There are 69 compounds now,
+up from 15, and progress on the original 15 carries over. After each answer a
+note explains the rule, like "Ionic, so no prefixes: Al³⁺ and SO₄²⁻ balance as
+2 : 3."
+
+**Bonding & shape** shows a Lewis dot diagram instead of a ball-and-stick
+picture, and asks you to work out the shape from it.
+
+**Lewis diagrams** is a new topic in Module 1: pick the correct Lewis dot diagram
+for a molecule out of four. The wrong ones are one mistake each, such as a
+missing lone pair, a double bond where there should be a single, or a lone pair
+moved to the wrong atom. About two in five keep the total number of electrons
+right, so counting dots isn't enough and you have to check each atom has a full
+shell. None of the wrong ones is secretly a valid structure.
+
 ## Fixed questions come back in practice again
 
 Practice was meant to bring back questions you'd got wrong and then fixed (the

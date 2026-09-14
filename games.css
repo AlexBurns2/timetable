@@ -542,3 +542,11 @@ html[data-motion="reduced"] .fcface.flip{animation:none}
   .rvlist li{flex-wrap:wrap}
 }
 html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar i{transition:none}
+
+/* ── picture options (Lewis diagrams) ── */
+.rvlewis{display:block;margin:12px auto 4px;max-width:100%;height:auto}
+.rvpicopts .mcopt{display:flex;align-items:center;justify-content:center;min-height:118px;padding:10px;text-align:center}
+.rvpicopts .mcopt .rvlewis{margin:0;max-height:150px;width:auto}
+.rvcard .ch.pics span{display:flex;align-items:center;justify-content:center;padding:6px;min-width:120px;flex:1 1 40%}
+.rvcard .ch.pics span .rvlewis{margin:0;max-height:120px;width:auto}
+.rvcard .ch.pics span.pick{text-decoration:none}

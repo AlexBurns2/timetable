@@ -852,3 +852,64 @@ yellows in a big topic were rarely even looked at. It still stops early only on
 an unseen question. Stopping on a red too was tried and **broke grey-before-red**,
 because whichever turned up first won; `yellowbug.mjs` checks that ordering
 (grey, red, yellow, green) along with the migrations, 12 checks in all.
+
+### 8.16 Chemistry Module 1: naming, and Lewis diagrams
+
+**Naming (`genChemName`)** used to pick wrong options at random from its own
+list of 15 compounds, so anyone who knew the symbols could rule them out. It is
+now built from the rules: `CATIONS` and `ANIONS` with charges (criss-crossed by
+`ionicFormula`), and `COVALENT` pairs with prefix counts (`covName`). 45 ionic +
+24 covalent = 138 questions. The old 15 build the **exact same formula strings**,
+so their `name-f:` / `name-n:` history keys still match and nobody's progress
+was lost.
+
+Wrong options come from `pickWrong` in pools, in this order of preference:
+- `conv`: the wrong naming system (an ionic compound given prefixes,
+  "dialuminium trioxide"; a covalent one without, "nitrogen oxide"; AlO for
+  Al₂O₃ because no prefix was read as one of each; "zinc chlorine").
+- `count`: the wrong numbers (Al₃O₂; iron(II) for Fe₂(SO₄)₃ because of the ₂;
+  a charge numeral on a fixed-charge metal; the formula from copper's other
+  charge).
+- `ion`: similar ions only (sulfate/sulfite/sulfide, nitrate/nitrite/nitride,
+  carbonate/hydrogen carbonate, hydroxide/oxide, ammonium/ammonia). Not the
+  halides: chloride for bromide is a symbol question, which the brief said to
+  take as known.
+- `swap`: a similar-sounding element (`ELEMENT_KIN`: potassium/phosphorus,
+  sodium/sulfur…), taken about 30% of the time, which lands at ~7% of options.
+- `spare`: weaker count slips, only reached when a simple compound (NH₄Cl, ICl)
+  runs out, so every question has four options.
+
+Wrong **formulas are compared by composition** (`composition()` parses
+subscripts and brackets), so a wrong option can never be the right compound
+written another way. Non-reduced ratios (Mg₂O₂) are never offered, since they
+would be "wrong" only on a technicality.
+
+**Lewis diagrams (`LEWIS`, `lewisSVG`)** replace the ball-and-stick VSEPR
+pictures (`vseprSVG` is gone). Molecules sit on a square grid; shared pairs are
+dots between atoms, lone pairs dots on free sides. The shape question now says
+"here is the Lewis diagram, what shape is it", which is how you actually work a
+shape out. A new subtopic, **Lewis diagrams** (`c-lewis`, `genLewis`), asks you
+to pick the right diagram from four.
+
+Wrong diagrams (`lewisWrong`) are single mutations of the right one, and must
+fail `lewisValid` (right electron total *and* every atom full, boron allowed 6
+or 8). That rule is the guard against offering a genuinely valid resonance form
+as "wrong", e.g. O≡C–O for CO₂ or a B=F form of BF₃. Mutations that keep the
+electron total but break an atom's octet are taken first, because they make you
+count per atom rather than just totting up dots. Each mutation also carries a
+`kind` (what it did, to which elements) so the same slip mirrored onto an
+identical atom isn't offered twice; before that, PCl₃ often showed the left and
+right Cl=P double bond as two separate options.
+
+Picture options are a general mechanism, not Lewis-specific: a question may
+return `optHtml` (choice id → HTML), and the choices are ids. The option buttons
+now keep their value in `data-val`, since matching on `textContent` (as before)
+breaks as soon as an option is a picture. The test log keeps `pics` for the
+review, and the mistake detector skips them (it would otherwise report "you
+mixed up w1 and ok").
+
+`chemcheck.mjs` (scratchpad, 36 checks): 47 compounds hand-written and compared;
+no duplicate names or formulas; all 30 old keys still produced; 80,000 questions
+with four distinct options, one right, no disguised duplicates; 84% of wrong
+formulas use the right elements; every correct Lewis structure valid electron by
+electron; no wrong diagram valid; never two wrong diagrams of the same kind.
