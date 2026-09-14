@@ -1141,6 +1141,49 @@ into `games.css` and `games.js`, and `revision.html` loads the same two files wi
 `<body data-page="revision">`. Nothing was duplicated, and the JS is now cached
 across both pages instead of being re-parsed inline on each visit.
 
+## Tests in each revision subject
+
+Maths, Physics, Chemistry, Engineering and Software each have a **Practice | Test**
+switch at the top. A test runs through the whole subject in one go:
+
+- **30 to 50 questions**, depending on how many topics the subject has (Maths 30,
+  Engineering 33, Software 34, Physics and Chemistry 47). Every topic comes up
+  at least once.
+- **It adapts.** Get a topic right and it moves on. Get one wrong and that topic
+  comes back a few questions later, to find out whether it was a slip (right the
+  next two times, so it lets it go) or a real gap (it keeps digging, up to a cap).
+- **It doesn't stack a topic.** Never the same topic twice running, almost never
+  two apart, and topics from early on come back later so it doesn't feel like a
+  checklist.
+- **Write-code questions** are limited to three per test, never open it, and step
+  up in order: Medium only after Easy is right, Hard only after Medium.
+- **You can leave and carry on.** Progress saves after every answer.
+
+At the end you get a report: your score, a bar for each module, the topics to
+work on (each with a button that drops you straight into practising just that
+topic), common mistakes, strengths, anything that looked like a one-off slip, how
+you've moved since your last test, and every question you got wrong or skipped,
+with your answer next to the right one.
+
+The "common mistakes" are worked out from how you answered rather than written
+per question: mixing up the same two things more than once, calculations lagging
+behind concepts (or the reverse), numbers with the wrong sign, out by a power of
+ten, or exactly double or half, answers that look rushed, misses late in the test
+on topics you'd already got right, and lots of skips.
+
+Test answers also go into your practice history, so anything you miss comes back
+round in Practice mode.
+
+## Fixed questions come back in practice again
+
+Practice was meant to bring back questions you'd got wrong and then fixed (the
+yellow ones), but it had quietly stopped: once nothing was red or grey it only
+ever served greens. It was penalising a question for how many times it had been
+*seen*, and a fixed question has always been seen more than a green because it
+went wrong first. It now counts only how many times a question has been right
+since its last miss. Fixed questions come back for a couple more goes, then
+rejoin the normal rotation. Grey still comes first, then red.
+
 ## First-run tutorials
 
 The first time someone uses a part of the site, a short tutorial points at it:

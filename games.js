@@ -2732,7 +2732,9 @@ function revGame(host, opts){
     if (!isEnter || e.isComposing || e.altKey || checking) return;
     /* a focused module / subtopic pill keeps its own Enter, so keyboard users can
        still toggle topics rather than skipping the question */
-    if (e.target && e.target.closest && e.target.closest('.rvsel, .rvsub')) return;
+    /* same for the practice/test switch and the test's own buttons: without this,
+       Enter on "Practice" would also press Start on the screen being left */
+    if (e.target && e.target.closest && e.target.closest('.rvsel, .rvsub, .rvmode, .rvend, .rvtabs, .rvrep, .rvlink')) return;
     if (!cur){ const s = $('rvstart'); if (s){ e.preventDefault(); s.click(); } return; }
     if (answered){
       /* handled here rather than letting the focused Next button activate, so
@@ -2764,10 +2766,8 @@ function revGame(host, opts){
   function stateOf(sig){
     const h = hist[sig];
     if (!h) return 'new';
-    const lastOk    = h.length > 2 ? !!h[2] : !(h[1] > 0);
-    const everWrong = h.length > 3 ? !!h[3] : (h[1] > 0);
-    if (!lastOk) return 'wrong';
-    return everWrong ? 'fixed' : 'correct';
+    if (!lastOkOf(h)) return 'wrong';
+    return everWrongOf(h) ? 'fixed' : 'correct';
   }
   /* Every question a topic can ask. A bank knows exactly; a keyed generator is
      sampled until it stops yielding new keys; a purely procedural one (fresh
@@ -2903,32 +2903,346 @@ function revGame(host, opts){
       TT.set('tt.rev_'+sk+'_excl',excl); b.setAttribute('aria-pressed',String(!excl[id])); nextQ();
     });
   }
+  /* ── test mode ────────────────────────────────────────────────────────────
+     The picking and the report are the plain functions above revGame; this is
+     the screens. A run in progress is saved after every answer, so leaving
+     halfway (or losing the tab) can be resumed.
+
+     Where things are kept, and why:
+       revtest.<sk>.run      the run in progress. localStorage only, not tt.*,
+       revtest.<sk>.report   the last full report. so they never ride the synced
+                             settings: question text with diagrams in it is far
+                             too big for that, and the sync refuses anything
+                             over 100 KB, which would break it for everything.
+       tt.rev_<sk>_tests     a few bytes per test (score and per-topic counts),
+                             which does sync, so "last test" shows on any device. */
+  let mode = 'practice', test = null, testTops = null;
+  const RUN_KEY = 'revtest.' + sk + '.run', REPORT_KEY = 'revtest.' + sk + '.report';
+  const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
+  const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const resumable = r => !!(r && r.v === 1 && Array.isArray(r.log) && r.i > 0 && r.i < r.n);
+
+  function getTestTopics(){
+    if (testTops) return testTops;
+    const list = modular
+      ? opts.modules.flatMap(m => m.topics.map(t => [t, m.id, m.name]))
+      : opts.topics.map(t => [t, t.id, t.name]);
+    testTops = list.map(([t, mod, modName]) => {
+      let typed = false;
+      try { const q = t.bank ? null : t.gen(); typed = !!(q && q.typed); } catch {}
+      const ks = keySpace(t);
+      return { id:t.id, name:t.name, mod, modName, gate:t.gate || null, typed, size: ks ? ks.size : Infinity, src:t };
+    });
+    return testTops;
+  }
+  function modeUI(){
+    const dot = mode !== 'test' && resumable(lsGet(RUN_KEY));
+    return '<div class="rvmode" role="group" aria-label="Practice or test">' +
+      '<button type="button" data-mode="practice" aria-pressed="' + (mode === 'practice') + '">Practice</button>' +
+      '<button type="button" data-mode="test" aria-pressed="' + (mode === 'test') + '">Test' +
+        (dot ? '<i class="rvdot" title="You have a test in progress"></i>' : '') + '</button></div>';
+  }
+  function wireMode(){
+    /* the line under the title is about picking topics, which a test doesn't do */
+    const how = host.querySelector && host.querySelector('.how');
+    if (how) how.textContent = mode === 'test' ? 'One test across the whole subject, adapting as you answer.' : opts.how;
+    box.querySelectorAll('.rvmode button').forEach(b => b.onclick = () => {
+      if (b.dataset.mode === mode) return;
+      mode = b.dataset.mode; cur = null; clearNudge();
+      if (mode === 'test') testIntro(); else start();
+    });
+  }
+  const localDay = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function daysAgo(ymd){
+    if (!ymd) return '';
+    const [y, m, d] = String(ymd).split('-').map(Number), t = new Date(), then = new Date(y, m - 1, d);
+    const n = Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - then) / 864e5);
+    return n <= 0 ? 'today' : n === 1 ? 'yesterday' : n + ' days ago';
+  }
+
+  function testIntro(){
+    mode = 'test'; cur = null; clearNudge();
+    const tops = getTestTopics(), n = testLength(tops.length);
+    const run = lsGet(RUN_KEY), canResume = resumable(run);
+    const past = TT.get('tt.rev_' + sk + '_tests', []), last = Array.isArray(past) ? past[0] : null;
+    const saved = lsGet(REPORT_KEY);
+    const typedN = Math.min(TEST_TYPED_MAX, tops.filter(t => t.typed).length);
+    const mins = Math.max(5, Math.round(((n - typedN) * 35 + typedN * 240) / 60 / 5) * 5);
+    const scope = modular ? 'all ' + opts.modules.length + ' modules' : 'all ' + tops.length + ' topics';
+    box.innerHTML = modeUI() +
+      '<div class="rvq"><div class="rvprompt">Test yourself on everything</div>' +
+        '<div class="rvclue">' + n + ' questions across ' + scope + ', about ' + mins + ' minutes. ' +
+          'Get a topic right and it moves on. Get one wrong and it comes back to it later, to check whether ' +
+          'that was a slip or a gap. You finish with a breakdown and every question you missed.</div>' +
+        (last && last.n ? '<div class="rvclue">Last test: <b>' + last.pct + '%</b>, ' + daysAgo(last.d) + '.' +
+          (saved && saved.run ? ' <button class="rvlink" id="rvlastrep" type="button">See that report</button>' : '') + '</div>' : '') +
+      '</div>' +
+      '<div class="gwrow">' + (canResume
+        ? '<button class="btn primary" id="rvstart" type="button">Carry on from question ' + (run.i + 1) + ' of ' + run.n + '</button>' +
+          '<button class="btn" id="rvrestart" type="button">Start again</button>'
+        : '<button class="btn primary" id="rvstart" type="button">Start the test</button>') + '</div>';
+    wireMode();
+    $('rvstart').onclick = canResume ? resumeTest : beginTest;
+    if ($('rvrestart')) $('rvrestart').onclick = () => {
+      if (confirm('Throw away the test in progress and start a new one?')){ lsSet(RUN_KEY, null); beginTest(); }
+    };
+    if ($('rvlastrep')) $('rvlastrep').onclick = () => {
+      const s = lsGet(REPORT_KEY); if (s && s.run) renderReport(analyseTest(s.run, getTestTopics(), s.prev), s.run);
+    };
+    $('sc').textContent = '';
+  }
+  function beginTest(){
+    const tops = getTestTopics(), n = testLength(tops.length), S = {};
+    tops.forEach(t => { const p = historyPrior(hist, t.id); S[t.id] = testStat(p.prior, p.conf); });
+    test = { v:1, n, i:0, cap:Math.max(3, Math.ceil(n / tops.length) + 2), ids:tops.map(t => t.id),
+             S, log:[], sigs:[], lastIds:[], typedUsed:0 };
+    lsSet(RUN_KEY, test);
+    mode = 'test';
+    nextTestQ();
+  }
+  function resumeTest(){
+    const r = lsGet(RUN_KEY), tops = getTestTopics();
+    /* the topics have changed since it was saved (an update landed): start
+       fresh rather than resume against a different list */
+    if (!resumable(r) || !r.S || tops.some(t => !r.S[t.id])){ lsSet(RUN_KEY, null); return beginTest(); }
+    test = r; mode = 'test';
+    nextTestQ();
+  }
+  function nextTestQ(){
+    if (!test) return testIntro();
+    if (test.i >= test.n) return completeTest(false);
+    const tops = getTestTopics();
+    const t = testPick(tops, test.S, test.i, test.n, {
+      lastIds:test.lastIds, typedUsed:test.typedUsed,
+      cap:tp => tp.typed ? 2 : Math.max(2, Math.min(test.cap, tp.size)) });
+    if (!t) return completeTest(false);
+    const q = chooseQuestion(t.src, hist, test.sigs, PRACTICE_TRIES);
+    q._topic = t.name; q._tid = t.id; q._mod = t.modName;
+    cur = q; answered = false; checking = false;
+    render();
+  }
+  function logAnswer(result, given, detail){
+    if (!test || !cur) return;
+    const s = test.S[cur._tid]; if (!s) return;
+    s.asked++; s[result]++; s.last = test.i; s.lastOk = result === 'right'; s.seq.push(result);
+    if (cur.typed) test.typedUsed++;
+    test.log.push({
+      topic:cur._tid, tname:cur._topic, mod:cur._mod || '',
+      q:cur.q, answer:String(cur.answer), given:result === 'skip' || given == null ? null : String(given),
+      result, note:cur.note || '', detail:detail || '',
+      kind:cur.typed ? 'typed' : cur.input ? 'input' : 'mc',
+      choices:cur.choices ? cur.choices.slice() : null,
+      code:!!(cur.code || cur.typed || /class="rvcode"/.test(cur.q)),
+      ms:Math.max(0, Math.min(600000, Date.now() - (cur._shownAt || Date.now())))
+    });
+    test.sigs.push(cur._sig); test.lastIds.push(cur._tid);
+    test.i++;
+    lsSet(RUN_KEY, test);
+    paintTestBar();
+    $('sc').textContent = test.log.filter(e => e.result === 'right').length + ' / ' + test.log.length;
+    if (test.i >= test.n){ const nx = $('rvnext'); if (nx) nx.textContent = 'See your results →'; }
+  }
+  const segClass = (e, k) => e ? (e.result === 'right' ? 'g' : e.result === 'skip' ? 's' : 'r') : (test && k === test.i ? 'cur' : '');
+  function testBarUI(){
+    let segs = '';
+    for (let k = 0; k < test.n; k++) segs += '<i class="' + segClass(test.log[k], k) + '"></i>';
+    return '<div class="rvtest"><div class="rvtbar" id="rvtbar" aria-hidden="true">' + segs + '</div>' +
+      '<button class="rvend" id="rvend" type="button">End test</button></div>';
+  }
+  function paintTestBar(){
+    const bar = $('rvtbar'); if (!bar || !test) return;
+    [...bar.children].forEach((el, k) => { el.className = segClass(test.log[k], k); });
+  }
+  function wireTestBar(){
+    const b = $('rvend'); if (!b) return;
+    b.onclick = () => {
+      const n = test ? test.log.length : 0;
+      if (!n){
+        if (confirm('Stop this test? You haven’t answered anything yet.')){ lsSet(RUN_KEY, null); test = null; testIntro(); }
+        return;
+      }
+      if (confirm('End the test now? You’ll get a report on the ' + n + ' question' + (n === 1 ? '' : 's') + ' you’ve answered.'))
+        completeTest(true);
+    };
+  }
+  function completeTest(ended){
+    if (!test) return testIntro();
+    cur = null; clearNudge();
+    const tops = getTestTopics();
+    const past = TT.get('tt.rev_' + sk + '_tests', []), list = Array.isArray(past) ? past : [];
+    const prev = list[0] || null;
+    const run = { log:test.log, n:test.n, ended:!!ended, date:localDay() };
+    lsSet(RUN_KEY, null); test = null;
+    if (!run.log.length) return testIntro();
+    const rep = analyseTest(run, tops, prev);
+    /* a test stopped after a handful of questions would skew "last test", so
+       only a proper attempt is recorded; the report is still shown */
+    if (!ended || run.log.length >= Math.min(10, run.n)){
+      /* the newest keeps its per-topic counts (for "since your last test");
+         older ones keep only the score, so this stays a few hundred bytes */
+      const slim = p => ({ d:p.d, n:p.n, r:p.r, s:p.s, pct:p.pct, ms:p.ms });
+      TT.set('tt.rev_' + sk + '_tests', [rep.summary].concat(list.slice(0, 2).map(slim)));
+      let saved = { run, prev };
+      try { if (JSON.stringify(saved).length > 1500000)
+        saved = { run:Object.assign({}, run, { log:run.log.map(e => Object.assign({}, e, { q:e.q.replace(/<svg[\s\S]*?<\/svg>/g, '<i>[diagram]</i>') })) }), prev }; } catch {}
+      lsSet(REPORT_KEY, saved);
+    }
+    if (rep.pct >= 75) SFX.win();
+    renderReport(rep, run);
+  }
+
+  /* ── the report ── */
+  const bandColour = p => p >= 75 ? '#2f9e44' : p >= 50 ? '#f0a500' : '#e5484d';
+  const VERDICT = { top:'You know this really well.', good:'Solid, with a few gaps.',
+    mid:'Getting there. A few areas need work.', low:'Some real gaps to fill.', poor:'Plenty to work on. Start with the list below.' };
+  const TAG = { gap:'Gap', shaky:'Shaky', miss:'Missed once' };
+  const section = (title, body) => '<div class="rvsec"><h4>' + title + '</h4>' + body + '</div>';
+  function mistakeLine(m){
+    const were = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+    switch (m.type){
+      case 'mixup':   return 'You mixed up <b>' + esc(m.a) + '</b> and <b>' + esc(m.b) + '</b> ' + m.n + ' times.';
+      case 'calc':    return 'Calculations went ' + m.calc.r + '/' + m.calc.n + ', against ' + m.concept.r + '/' + m.concept.n +
+                             ' for the concept questions. You know the ideas, so the marks are going in the working.';
+      case 'concept': return 'Your calculations (' + m.calc.r + '/' + m.calc.n + ') are ahead of the concept questions (' +
+                             m.concept.r + '/' + m.concept.n + '). Worth going back over the definitions.';
+      case 'sign':    return were(m.n, 'answer had', 'answers had') + ' the right size but the wrong sign.';
+      case 'ten':     return were(m.n, 'answer was', 'answers were') + ' out by a power of ten. That is usually a unit conversion or a slipped decimal point.';
+      case 'two':     return were(m.n, 'answer was', 'answers were') + ' exactly double or half the right value. Look for a missing ½, or something counted twice.';
+      case 'close':   return were(m.n, 'answer was', 'answers were') + ' within 10% but not exact. Check your rounding, and keep full precision until the last step.';
+      case 'rushed':  return m.n + ' wrong answers came in under 6 seconds, when your right ones took about ' + m.typical + '. Those look rushed.';
+      case 'tired':   return 'Near the end you missed ' + m.n + ' questions on topics you had already got right earlier. That looks more like tiredness than a gap.';
+      case 'skips':   return 'You skipped ' + m.n + '. Skips count as gaps, so they show up in the list above.';
+    }
+    return '';
+  }
+  function reviewCard(e, i){
+    const res = e.result === 'right' ? ['g', 'Right'] : e.result === 'skip' ? ['s', 'Skipped'] : ['r', 'Wrong'];
+    const where = e.mod && e.mod !== e.tname ? e.mod + ' · ' + e.tname : e.tname;
+    let body = '<div class="qq">' + e.q + '</div>';
+    if (e.kind === 'mc' && e.choices){
+      body += '<div class="ch' + (e.code ? ' code' : '') + '">' + e.choices.map(c =>
+        '<span class="' + (c === e.answer ? 'ans' : c === e.given ? 'pick' : '') + '">' + esc(c) + '</span>').join('') + '</div>';
+    } else if (e.kind === 'typed'){
+      if (e.given) body += '<div class="ya">Your code</div><pre class="rvans">' + esc(e.given) + '</pre>';
+      if (e.detail && e.result !== 'right') body += '<div class="rvwhy">' + esc(e.detail) + '</div>';
+      body += '<div class="ya">One way to write it</div><pre class="rvans">' + esc(e.answer) + '</pre>';
+    } else {
+      body += '<div class="ya">' + (e.given != null
+        ? 'Your answer: <b class="' + (e.result === 'right' ? 'ok' : 'no') + '">' + esc(e.given) + '</b>' : 'Skipped') +
+        (e.result !== 'right' ? ' · Answer: <b class="ok">' + esc(e.answer) + '</b>' : '') + '</div>';
+    }
+    if (e.note) body += '<div class="rvnote">' + e.note + '</div>';
+    return '<div class="rvcard"><div class="hd"><span>Q' + (i + 1) + '</span><span>' + esc(where) + '</span>' +
+      '<span class="res ' + res[0] + '">' + res[1] + '</span></div>' + body + '</div>';
+  }
+  function renderReport(rep, run){
+    mode = 'test'; cur = null; clearNudge();
+    const byTopic = modular ? 'module' : 'topic';
+    const mins = Math.max(1, Math.round(rep.ms / 60000));
+    let h = modeUI() + '<div class="rvrep">';
+
+    const ch = rep.change;
+    h += '<div class="rvhero"><div class="rvring" style="--p:' + rep.pct + ';--ring:' + bandColour(rep.pct) + '"><b>' + rep.pct + '%</b></div>' +
+      '<div class="rvherot"><h3>' + VERDICT[rep.band] + '</h3>' +
+      '<p>' + rep.right + ' of ' + rep.answered + ' right' + (rep.skip ? ' · ' + rep.skip + ' skipped' : '') + ' · ' + mins + ' min</p>' +
+      (rep.ended ? '<p>You ended it after ' + rep.answered + ' of ' + rep.n + ' questions.</p>' : '') +
+      (ch ? '<p>' + (ch.delta > 0 ? 'Up ' + ch.delta + ' points on your last test (' + ch.was + '%).'
+                   : ch.delta < 0 ? 'Down ' + (-ch.delta) + ' points on your last test (' + ch.was + '%).'
+                   : 'The same as your last test.') + '</p>' : '') +
+      '</div></div>';
+
+    const mods = rep.modules.filter(m => m.asked);
+    if (mods.length > 1) h += section('By ' + byTopic, '<div class="rvmods">' + mods.map(m => {
+      const p = Math.round(m.right / m.asked * 100);
+      return '<div class="rvmodrow"><span class="nm">' + esc(m.name) + '</span>' +
+        '<span class="bar"><i style="width:' + Math.max(3, p) + '%;background:' + bandColour(p) + '"></i></span>' +
+        '<span class="n">' + m.right + '/' + m.asked + '</span></div>';
+    }).join('') + '</div>');
+
+    if (rep.weak.length || rep.notReached.length) h += section('Work on these',
+      (rep.weak.length ? '<ul class="rvlist">' + rep.weak.map(w =>
+        '<li><span class="nm">' + esc(w.name) + (modular ? '<span class="sub">' + esc(w.mod) + '</span>' : '') + '</span>' +
+        '<span class="rvtag ' + w.tag + '">' + TAG[w.tag] + ' · ' + w.right + '/' + w.asked + '</span>' +
+        '<button class="btn rvpract" type="button" data-practise="' + esc(w.id) + '">Practise</button></li>').join('') + '</ul>' : '') +
+      (rep.notReached.length ? '<p class="rvsmall">Not reached: ' + rep.notReached.map(x =>
+        '<b>' + esc(x.name) + '</b>' + (x.gate ? ' (it comes after ' + esc(x.gate) + ')' : '')).join(', ') + '.</p>' : '') +
+      (rep.ended && rep.unasked.length ? '<p class="rvsmall">Not asked before you ended: ' + rep.unasked.map(esc).join(', ') + '.</p>' : ''));
+
+    if (rep.wrong || rep.skip) h += section('Common mistakes', rep.mistakes.length
+      ? '<ul class="rvmist">' + rep.mistakes.map(m => '<li>' + mistakeLine(m) + '</li>').join('') + '</ul>'
+      : '<p class="rvsmall">Nothing systematic stood out. The misses look like one-offs.</p>');
+
+    if (rep.strengths.length || rep.firstTime.length) h += section('Strengths',
+      (rep.strengths.length ? '<ul class="rvlist">' + rep.strengths.map(s =>
+        '<li><span class="nm">' + esc(s.name) + (modular ? '<span class="sub">' + esc(s.mod) + '</span>' : '') + '</span>' +
+        '<span class="rvtag good">' + s.right + '/' + s.asked + '</span></li>').join('') + '</ul>' : '') +
+      (rep.firstTime.length ? '<p class="rvsmall">Also right first time, so it moved on: ' + rep.firstTime.map(esc).join(', ') + '.</p>' : ''));
+
+    if (rep.slips.length) h += section('Probably slips',
+      '<p class="rvsmall">Missed once, then right after that, so these look like one-offs: ' +
+      rep.slips.map(s => '<b>' + esc(s.name) + '</b>').join(', ') + '.</p>');
+
+    if (ch && (ch.better.length || ch.worse.length)) h += section('Since your last test',
+      (ch.better.length ? '<p class="rvsmall">Better at <b>' + ch.better.map(esc).join('</b>, <b>') + '</b>.</p>' : '') +
+      (ch.worse.length ? '<p class="rvsmall">Not as sure on <b>' + ch.worse.map(esc).join('</b>, <b>') + '</b>.</p>' : ''));
+
+    const lists = {
+      wrong:run.log.map((e, i) => [e, i]).filter(([e]) => e.result === 'wrong'),
+      skip:run.log.map((e, i) => [e, i]).filter(([e]) => e.result === 'skip'),
+      all:run.log.map((e, i) => [e, i])
+    };
+    const first = lists.wrong.length ? 'wrong' : lists.skip.length ? 'skip' : 'all';
+    const tab = (id, label) => '<button class="diffpill" type="button" data-tab="' + id + '" aria-pressed="' + (id === first) + '">' + label + '</button>';
+    h += section('Go back over the questions',
+      '<div class="diffbar rvtabs" id="rvtabs">' +
+        (lists.wrong.length ? tab('wrong', 'Wrong (' + lists.wrong.length + ')') : '') +
+        (lists.skip.length ? tab('skip', 'Skipped (' + lists.skip.length + ')') : '') +
+        tab('all', 'All (' + lists.all.length + ')') +
+      '</div><div class="rvrev" id="rvrev"></div>');
+
+    h += '<div class="gwrow"><button class="btn primary" id="rvagain" type="button">Take another test</button>' +
+      '<button class="btn" id="rvtopractice" type="button">Back to practice</button></div></div>';
+
+    box.innerHTML = h;
+    wireMode();
+    const showTab = id => {
+      $('rvrev').innerHTML = lists[id].map(([e, i]) => reviewCard(e, i)).join('');
+      box.querySelectorAll('#rvtabs [data-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === id)));
+    };
+    box.querySelectorAll('#rvtabs [data-tab]').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+    showTab(first);
+    box.querySelectorAll('[data-practise]').forEach(b => b.onclick = () => practiseTopic(b.dataset.practise));
+    $('rvagain').onclick = beginTest;
+    $('rvtopractice').onclick = () => { mode = 'practice'; start(); };
+    $('sc').textContent = rep.right + ' / ' + rep.answered;
+    if (host.scrollIntoView) host.scrollIntoView({ block:'start' });
+  }
+  /* from a weak topic in the report straight into practising just that */
+  function practiseTopic(id){
+    mode = 'practice';
+    if (!modular){ topic = id; TT.set('tt.rev_' + sk, topic); }
+    else {
+      const m = opts.modules.find(mm => mm.topics.some(t => t.id === id));
+      if (!m) return start();
+      modId = m.id; TT.set('tt.rev_' + sk + '_mod', modId);
+      excl = {}; m.topics.forEach(t => { if (t.id !== id) excl[t.id] = true; });
+      TT.set('tt.rev_' + sk + '_excl', excl);
+    }
+    nextQ();
+    if (host.scrollIntoView) host.scrollIntoView({ block:'start' });
+  }
+
   start();
   function start(){
-    box.innerHTML = selUI() + statusUI() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
+    mode = 'practice';
+    box.innerHTML = modeUI() + selUI() + statusUI() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
       '<div class="rvclue">'+(modular?'Pick a module (or the whole topic), then start.':'Pick a topic, then start.')+' Answers reveal the working.</div></div>' +
       '<div class="gwrow"><button class="btn primary" id="rvstart" type="button">Start</button></div>';
-    wireSel(); paintStatus(); $('rvstart').onclick = nextQ;
+    wireMode(); wireSel(); paintStatus(); $('rvstart').onclick = nextQ;
     $('sc').textContent = 'Best streak ' + (statVal(sk,'streak') || 0);
   }
-  /* turn a bank entry (a static {q,a,w} object, or a function) into a question */
-  function materialise(raw){
-    if (typeof raw === 'function') return raw();
-    if (raw.w){ const m = mc(raw.a, raw.w); return { q:raw.q, choices:m.choices, answer:m.answer, note:raw.note, code:raw.code }; }
-    return Object.assign({}, raw);
-  }
-  /* score a question signature: unseen ranks highest, then previously-wrong,
-     then least-recently/least-often seen; a recent one is pushed to the back. */
-  function scoreSig(sig, keyed, recentSet){
-    let s = 1 + Math.random()*0.4;
-    if (recentSet.includes(sig)) s -= 50;                     // don't repeat recent ones
-    if (keyed){ const h = hist[sig];
-      if (!h) s += 8;                                         // never seen → strongly prefer
-      else { s -= Math.min(h[0],6)*0.7; s += Math.min(h[1],4)*2.5; }  // seen: decay, wrong: revisit
-    }
-    return s;
-  }
   function nextQ(){
+    if (mode === 'test') return nextTestQ();
     const list = pool();
     /* recent window: never the whole pool, so even a small subtopic always has an
        eligible (non-recent) question and never repeats back-to-back. */
@@ -2937,35 +3251,20 @@ function revGame(host, opts){
     /* pick the subtopic fairly (so every subtopic gets airtime, including the
        procedural ones), then bias which question WITHIN it toward unseen/wrong. */
     const t = list[(Math.random()*list.length)|0];
-    let q;
-    if (t.bank){
-      let bi = 0, bs = -Infinity;
-      for (let idx=0; idx<t.bank.length; idx++){
-        const raw = t.bank[idx], sig = (raw && raw.key) || (t.id+'#'+idx);
-        const s = scoreSig(sig, true, recentSet);
-        if (s > bs){ bs = s; bi = idx; }
-      }
-      const raw = t.bank[bi];
-      q = materialise(raw); q._sig = (raw && raw.key) || (t.id+'#'+bi); q._keyed = true;
-    } else {
-      let bs = -Infinity;                                     // sample the generator a few times
-      for (let i=0;i<6;i++){
-        const c = t.gen(), keyed = !!c.key, sig = t.id+':'+(c.key || c.q);
-        const s = scoreSig(sig, keyed, recentSet);
-        c._sig = sig; c._keyed = keyed;
-        if (s > bs){ bs = s; q = c; }
-        if (keyed && !hist[sig] && !recentSet.includes(sig)) break;
-      }
-    }
-    q._topic = t.name; cur = q; answered = false; checking = false;
+    const q = chooseQuestion(t, hist, recentSet, PRACTICE_TRIES);
+    q._topic = t.name; q._tid = t.id; cur = q; answered = false; checking = false;
     recent.push(cur._sig); if (recent.length > RECENT_MAX) recent.shift();
     render();
   }
   /* count of distinct question slots in the current pool (bank items + generators) */
   function poolSize(list){ return list.reduce((n,t)=> n + (t.bank ? t.bank.length : 1), 0); }
   function render(){
-    let html = selUI() + statusUI() +
-      '<div class="rvq"><div class="rvprog">Score '+score+' · streak '+streak+' · '+esc(cur._topic)+'</div>' +
+    const inTest = mode === 'test' && test;
+    const where = cur._mod && cur._mod !== cur._topic ? cur._mod + ' · ' + cur._topic : cur._topic;
+    let html = (inTest ? modeUI() + testBarUI() : modeUI() + selUI() + statusUI()) +
+      '<div class="rvq"><div class="rvprog">' + (inTest
+        ? 'Question ' + (test.i + 1) + ' of ' + test.n + ' · ' + esc(where)
+        : 'Score '+score+' · streak '+streak+' · '+esc(cur._topic)) + '</div>' +
         '<div class="rvprompt">'+cur.q+'</div></div>';   /* no formula shown up front — that's the point */
     html += cur.typed
       ? '<div class="rvtyped"><textarea id="rvta" spellcheck="false" autocapitalize="off" autocorrect="off"' +
@@ -2982,8 +3281,12 @@ function revGame(host, opts){
         '<div class="gwrow"><button class="btn" id="rvskip" type="button">Skip</button>' +
         '<span class="rvnudge" id="rvnudge"></span></div>';
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
-    box.innerHTML = html; wireSel(); paintStatus();
-    $('sc').textContent = 'Score ' + score;
+    box.innerHTML = html; wireMode();
+    if (inTest){
+      wireTestBar();
+      cur._shownAt = Date.now();                               // time taken feeds the "rushed" check
+      $('sc').textContent = test.log.filter(e => e.result === 'right').length + ' / ' + test.log.length;
+    } else { wireSel(); paintStatus(); $('sc').textContent = 'Score ' + score; }
     if (cur.typed){ const ta = $('rvta'); ta.focus();
       /* Live syntax check, like the exam environment gives you. It only
          compiles — a logic error compiles fine, so this never claims the answer
@@ -3037,10 +3340,12 @@ function revGame(host, opts){
     }, NUDGE_AFTER);
   }
   /* Skip: reveal the answer and move on. Deliberately does NOT touch the score,
-     the streak or the saved history — you neither gain nor lose by being honest. */
+     the streak or the saved history — you neither gain nor lose by being honest.
+     In a test it is logged, though: not knowing is exactly what a test is for. */
   function skipCur(){
     if (answered || checking) return;
     answered = true; clearNudge();
+    if (mode === 'test') logAnswer('skip', null);
     const fb = $('rvfb'); fb.className = 'rvfb';
     fb.innerHTML = 'Skipped' + (cur.typed ? '. One way to write it:' : '. The answer was <b>' + esc(String(cur.answer)) + '</b>') +
       (cur.note ? '<div class="rvnote">' + cur.note + '</div>' : '');
@@ -3057,6 +3362,7 @@ function revGame(host, opts){
       const ta = $('rvta'); if (ta) ta.focus();
       return;
     }
+    cur._given = val == null ? null : String(val);      // kept for the test's review
     /* write-code answers are actually executed, which takes a moment (and the
        very first one downloads Python), so grade them asynchronously */
     if (cur.acceptAsync && !gaveUp){
@@ -3085,19 +3391,23 @@ function revGame(host, opts){
   }
   function finish(ok, gaveUp, detail, btn){
     if (answered) return; answered = true; clearNudge();
-    const hadStreak = streak;
-    if (ok){ score++; streak++; SFX.streak(streak); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
+    const hadStreak = streak, inTest = mode === 'test';
+    /* the streak, score and goal belong to practice; a test keeps its own tally */
+    if (inTest){ if (ok) SFX.good(); else SFX.bad(); }
+    else if (ok){ score++; streak++; SFX.streak(streak); recordStat(opts.statKey, { key:'streak', mode:'max', value:streak }); }
     else { streak = 0; if (hadStreak >= 3) SFX.discharge(); else SFX.bad(); }
-    if (cur._keyed){                                          // remember how this one went
-      const h = hist[cur._sig] || [0,0];
-      h[0]++; if (ok) h[1] = Math.max(0, h[1]-1); else h[1]++;
-      h[2] = ok ? 1 : 0;                                      // was the last go right?
-      if (!ok) h[3] = 1;                                      // has it ever been wrong?
-      hist[cur._sig] = h; TT.set('tt.rev_'+sk+'_hist', hist);
+    /* a test answer is real evidence too, so it goes into the same history:
+       what you miss in a test comes back to you in practice */
+    if (cur._keyed){
+      recordAnswer(hist, cur._sig, ok);
+      TT.set('tt.rev_'+sk+'_hist', hist);
     }
-    bumpTally(ok);                                            // feeds the self-set goal
-    TT.set('tt.rev_'+sk+'_streak', streak);                   // synced with everything else
-    paintStatus(!ok && hadStreak >= 3);
+    if (inTest) logAnswer(ok ? 'right' : gaveUp ? 'skip' : 'wrong', cur._given, detail);
+    else {
+      bumpTally(ok);                                          // feeds the self-set goal
+      TT.set('tt.rev_'+sk+'_streak', streak);                 // synced with everything else
+      paintStatus(!ok && hadStreak >= 3);
+    }
     const fb = $('rvfb'); fb.className = 'rvfb ' + (ok ? 'good' : 'bad');
     if (cur.typed)        // code answers are multi-line — shown as a block below
       fb.innerHTML = (ok ? '✓ Correct' : (gaveUp ? 'One way to write it:' : '✗ Not quite'))
@@ -3119,9 +3429,9 @@ function revGame(host, opts){
     else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; }
     else [...$('rvopts').children].forEach(b => { b.disabled = true; if (b.textContent === cur.answer) b.classList.add('right'); if (b===btn && !ok) b.classList.add('wrong'); });
     $('rvnextrow').hidden = false; $('rvnext').focus();
-    $('sc').textContent = 'Score ' + score;
+    if (!inTest) $('sc').textContent = 'Score ' + score;
   }
-  return () => document.removeEventListener('keydown', onEnter);
+  return () => { document.removeEventListener('keydown', onEnter); clearNudge(); };
 }
 function normEq(val, answer){
   const a = String(answer).trim(), v = String(val).trim();
@@ -3129,6 +3439,333 @@ function normEq(val, answer){
   const nv = Number(v.replace('+','')), na = Number(a);
   if (isFinite(nv) && isFinite(na)) return Math.abs(nv - na) < 1e-9;
   return v.toLowerCase() === a.toLowerCase();
+}
+
+/* ══ CHOOSING A QUESTION WITHIN A TOPIC ═══════════════════════════════════
+   Shared by practice and tests. Kept outside revGame, with the history passed
+   in, so the choice can be checked without a page. */
+const PRACTICE_TRIES = 16;
+/* turn a bank entry (a static {q,a,w} object, or a function) into a question */
+function materialiseBank(raw){
+  if (typeof raw === 'function') return raw();
+  if (raw.w){ const m = mc(raw.a, raw.w); return { q:raw.q, choices:m.choices, answer:m.answer, note:raw.note, code:raw.code }; }
+  return Object.assign({}, raw);
+}
+/* A question's history: hist[sig] = [seen, wrongness, lastOk, everWrong, rightRun].
+   rightRun is how many times in a row it has been right since the last miss.
+   Older saves have fewer slots, so these read each field the way it was meant. */
+const lastOkOf    = h => h.length > 2 ? !!h[2] : !(h[1] > 0);
+const everWrongOf = h => h.length > 3 ? !!h[3] : (h[1] > 0);
+function rightRunOf(h){
+  if (h.length > 4 && h[4] != null) return h[4];
+  /* not recorded yet: never wrong means every view was right; a fixed one
+     (yellow) is counted as just fixed, so it gets its consolidation turns */
+  return !lastOkOf(h) ? 0 : everWrongOf(h) ? 1 : h[0];
+}
+function recordAnswer(hist, sig, ok){
+  const prev = hist[sig];
+  const everWrong = prev ? everWrongOf(prev) : false, run = prev ? rightRunOf(prev) : 0;
+  const h = prev ? prev.slice() : [0, 0];
+  h[0] = (h[0] || 0) + 1;
+  h[1] = ok ? Math.max(0, (h[1] || 0) - 1) : (h[1] || 0) + 1;
+  h[2] = ok ? 1 : 0;                                      // was the last go right?
+  h[3] = everWrong || !ok ? 1 : 0;                        // has it ever been wrong?
+  h[4] = ok ? run + 1 : 0;
+  hist[sig] = h;
+  return h;
+}
+/* How much a question wants asking next. Unseen first, then still-wrong, then
+   recently fixed, then whatever has gone longest without being proven.
+
+   This used to take points off for every time a question had been SEEN. That
+   quietly buried two kinds of question: a fixed one (yellow) had been seen more
+   than a green precisely because it went wrong first, so it always lost to
+   greens and never came back; and a question you kept getting wrong sank
+   further with every miss. Only times it has been right since its last miss
+   count against it now. For a green that is every view, so greens are ordered
+   exactly as before. */
+function sigScore(h, keyed, avoided, rand){
+  let s = 1 + rand()*0.4;
+  if (avoided) s -= 50;                                     // don't repeat recent ones
+  if (!keyed) return s;
+  if (!h) return s + 8;                                     // never seen: strongly prefer
+  if (!lastOkOf(h)) return s + Math.min(h[1], 4) * 2.5;     // still wrong: revisit soon
+  s -= Math.min(rightRunOf(h), 6) * 0.7;
+  if (everWrongOf(h)) s += 1.0 + Math.min(h[1], 4) * 0.5;   // fixed, so consolidate it
+  return s;
+}
+function chooseQuestion(t, hist, avoid, tries, rand){
+  rand = rand || Math.random;
+  const avoided = sig => avoid.includes(sig);
+  let q;
+  if (t.bank){
+    let bi = 0, bs = -Infinity;
+    for (let idx = 0; idx < t.bank.length; idx++){
+      const raw = t.bank[idx], sig = (raw && raw.key) || (t.id+'#'+idx);
+      const s = sigScore(hist[sig], true, avoided(sig), rand);
+      if (s > bs){ bs = s; bi = idx; }
+    }
+    const raw = t.bank[bi];
+    q = materialiseBank(raw); q._sig = (raw && raw.key) || (t.id+'#'+bi); q._keyed = true;
+  } else {
+    /* A generator can't be asked for a particular question, only sampled, so
+       draw several and keep the best. Stop early only on an unseen one, which
+       nothing can beat; stopping on a still-wrong one too would let whichever
+       came up first win, and unseen ones are meant to go first. The draw is
+       bigger than it was because with only a few samples, a handful of yellows
+       in a large pool were rarely even looked at, whatever they scored. */
+    let bs = -Infinity;
+    for (let i = 0; i < tries; i++){
+      const c = t.gen(), keyed = !!c.key, sig = t.id+':'+(c.key || c.q), h = hist[sig];
+      const s = sigScore(h, keyed, avoided(sig), rand);
+      c._sig = sig; c._keyed = keyed;
+      if (s > bs){ bs = s; q = c; }
+      if (keyed && !h && !avoided(sig)) break;
+    }
+  }
+  return q;
+}
+
+/* ══ TESTS ═══════════════════════════════════════════════════════════════
+   A test is a fixed-length run across every topic in a subject that adapts as
+   it goes. Choosing the next topic and making sense of the results are plain
+   functions with no DOM, so they can be checked on their own; revGame
+   supplies the screens.
+
+   What decides the next topic:
+     coverage   every topic is asked at least once. Once the questions left
+                equal the topics still unasked, nothing else is allowed.
+     probing    a mistake raises that topic's weight so it comes back, which is
+                how a slip (right next time) is told apart from a gap.
+     moving on  a topic answered right with no mistakes is pushed back.
+     freshness  the longer since a topic came up, the more it wants to return.
+     spread     never the same topic twice running, rarely two apart, and a
+                push away from whichever module was just asked.
+   The pick is then drawn at random from the best three, weighted by score, so
+   two tests for the same person don't run in the same order.
+
+   Topics here are {id, name, mod, modName, gate, typed, size}. `gate` names a
+   topic that must be answered right first (Hard code waits for Medium), and
+   `typed` marks write-code questions, which are capped because each one takes
+   minutes rather than seconds. */
+const TEST_TYPED_MAX = 3;
+/* an answer that is a number, optionally followed by a unit: "24", "12.5 m/s".
+   Deliberately not "6x² − 4", which starts with a digit but is an expression. */
+const TEST_NUMERIC = /^\s*[−-]?\d+(?:\.\d+)?(?:\s+\S.*)?$/;
+
+function testLength(nTopics){
+  return Math.max(30, Math.min(50, Math.round(12 + nTopics * 1.6)));
+}
+function testStat(prior, conf){
+  return { asked:0, right:0, wrong:0, skip:0, last:-99, lastOk:null, seq:[], prior:prior || 0, conf:conf || 0 };
+}
+/* How shaky a topic looked in practice: the share of its questions whose last
+   attempt was wrong, and how far to trust that (more history, more trust). It
+   only nudges the order a topic first comes up in; the test itself decides. */
+function historyPrior(hist, topicId){
+  let seen = 0, bad = 0;
+  for (const k in hist){
+    if (!(k.startsWith(topicId + ':') || k.startsWith(topicId + '#'))) continue;
+    const h = hist[k]; if (!Array.isArray(h)) continue;
+    seen++;
+    if (!(h.length > 2 ? !!h[2] : !(h[1] > 0))) bad++;
+  }
+  return { prior: seen ? bad / seen : 0, conf: Math.min(seen, 6) / 6 };
+}
+function testEligible(t, S, ctx){
+  const s = S[t.id];
+  if (t.gate && !(S[t.gate] && S[t.gate].right > 0)) return false;
+  if (s.asked >= ctx.cap(t)) return false;
+  if (t.typed){
+    if (s.asked && !(s.wrong + s.skip)) return false;     // one good code answer per level is plenty
+    if (ctx.typedUsed >= TEST_TYPED_MAX) return false;
+  }
+  return true;
+}
+function testWeight(t, s, i, n, unaskedN, ctx){
+  let v = ctx.rand() * 1.5;
+  const since = i - s.last, errs = s.wrong + s.skip;
+  if (!s.asked){
+    v += 6 + 4 * Math.min(1, unaskedN / Math.max(1, n - i));  // pressure rises as questions run out
+    v += s.prior * s.conf * 3;                                // shaky in practice: ask it sooner
+  } else {
+    /* chance of getting this topic right: a Beta(1,1) estimate, leaning a
+       little on practice history while the test has little to go on */
+    const p = (s.right + 1 + (1 - s.prior) * s.conf) / (s.asked + 2 + s.conf);
+    /* right the last two times since a miss: that miss was a slip, so stop
+       chasing it. Without this one early mistake kept a topic "in doubt" for
+       the whole test, and it got probed as hard as a real gap. */
+    const settled = errs && s.seq.length >= 2 && s.seq.slice(-2).every(r => r === 'right');
+    if (errs && !settled){
+      v += 7 * (1 - p);
+      if (s.lastOk === false) v += 2.5;                       // come back after a miss
+    } else v -= s.right >= 2 ? 6 : 2.5;                       // known: move on
+    v += Math.min(since, 12) * 0.3;
+  }
+  /* recently asked: two apart is unlikely, three and four less so. Scaled
+     rather than a single step, because with only a handful of topics (Maths
+     has five) a flat penalty still let it bounce between two of them */
+  if (since >= 2 && since < 5) v -= 6 / since;
+  if (ctx.lastMod != null && t.mod === ctx.lastMod) v -= 1.5;
+  if (t.typed && (i < 5 || ctx.lastTyped)) v -= 4;            // don't open with, or stack, code writing
+  return v;
+}
+/* the next topic to ask, or null when nothing is left to ask */
+function testPick(topics, S, i, n, ctx){
+  const lastId = ctx.lastIds[ctx.lastIds.length - 1];
+  const last = lastId ? topics.find(t => t.id === lastId) : null;
+  const c = Object.assign({ rand:Math.random }, ctx, {
+    lastMod: last ? last.mod : null, lastTyped: !!(last && last.typed) });
+  const open = topics.filter(t => testEligible(t, S, c));
+  if (!open.length) return null;
+  const unasked = open.filter(t => !S[t.id].asked);
+  let pool = unasked.length && n - i <= unasked.length ? unasked : open;
+  /* not either of the last two topics, as long as that still leaves a real
+     choice; failing that, at least not the last one. A penalty alone wasn't
+     enough: with five topics a missed one bounced straight back as A, B, A. */
+  const recentIds = ctx.lastIds.slice(-2);
+  const fresh = pool.filter(t => !recentIds.includes(t.id));
+  if (fresh.length >= 2) pool = fresh;
+  else { const notLast = pool.filter(t => t.id !== lastId); if (notLast.length) pool = notLast; }
+  const scored = pool.map(t => ({ t, v:testWeight(t, S[t.id], i, n, unasked.length, c) }))
+                     .sort((a, b) => b.v - a.v).slice(0, 3);
+  const floor = scored[scored.length - 1].v;
+  const w = scored.map(x => Math.pow(x.v - floor + 1, 2));
+  let r = c.rand() * w.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < scored.length; k++){ r -= w[k]; if (r <= 0) return scored[k].t; }
+  return scored[0].t;
+}
+
+/* Turn a finished run into a report. Everything is recomputed from the answer
+   log rather than trusted from the running totals, so a saved report can be
+   reopened and re-read against the current topic list. `prev` is the compact
+   summary of the test before, for the comparison lines. */
+function analyseTest(run, topics, prev){
+  const log = run.log || [];
+  const S = {};
+  topics.forEach(t => { S[t.id] = { asked:0, right:0, wrong:0, skip:0, seq:[] }; });
+  log.forEach(e => { const s = S[e.topic]; if (!s) return; s.asked++; s[e.result]++; s.seq.push(e.result); });
+
+  const answered = log.length;
+  const right = log.filter(e => e.result === 'right').length;
+  const skip = log.filter(e => e.result === 'skip').length;
+  const pct = answered ? Math.round(right / answered * 100) : 0;
+  const errsOf = s => s.wrong + s.skip;
+  const acc = s => s.asked ? s.right / s.asked : 0;
+  const est = s => (s.right + 1) / (s.asked + 2);
+  /* one miss, then right at least twice and right last: a slip, not a gap */
+  const isSlip = s => errsOf(s) === 1 && s.right >= 2 && s.seq[s.seq.length - 1] === 'right';
+  const row = t => ({ id:t.id, name:t.name, mod:t.modName, right:S[t.id].right, asked:S[t.id].asked });
+
+  const modules = [];
+  topics.forEach(t => {
+    let m = modules.find(x => x.id === t.mod);
+    if (!m){ m = { id:t.mod, name:t.modName, asked:0, right:0 }; modules.push(m); }
+    m.asked += S[t.id].asked; m.right += S[t.id].right;
+  });
+
+  const asked = topics.filter(t => S[t.id].asked);
+  const strengths = asked.filter(t => S[t.id].asked >= 2 && !errsOf(S[t.id]))
+    .sort((a, b) => S[b.id].right - S[a.id].right).map(row);
+  const firstTime = asked.filter(t => S[t.id].asked === 1 && S[t.id].right === 1).map(t => t.name);
+  const slips = asked.filter(t => isSlip(S[t.id])).map(row);
+  const weak = asked.filter(t => errsOf(S[t.id]) && !isSlip(S[t.id]))
+    .sort((a, b) => est(S[a.id]) - est(S[b.id]) || S[b.id].asked - S[a.id].asked)
+    .map(t => { const s = S[t.id];
+      return Object.assign(row(t), { tag: s.asked === 1 ? 'miss' : acc(s) < 0.34 ? 'gap' : 'shaky' }); });
+  const byId = {}; topics.forEach(t => { byId[t.id] = t; });
+  const notReached = topics.filter(t => t.gate && !S[t.id].asked)
+    .map(t => ({ name:t.name, gate:(byId[t.gate] || {}).name || '' }));
+  const unasked = topics.filter(t => !t.gate && !S[t.id].asked).map(t => t.name);
+
+  /* ── patterns across the misses ── */
+  const mistakes = [];
+  const misses = log.filter(e => e.result === 'wrong');
+
+  /* the same two options confused more than once */
+  const pairs = new Map();
+  misses.forEach(e => {
+    if (e.kind !== 'mc' || e.code || !e.given) return;
+    if (e.given.length > 48 || e.answer.length > 48 || TEST_NUMERIC.test(e.answer)) return;
+    const key = [e.given, e.answer].sort().join('');
+    const p = pairs.get(key) || { a:e.answer, b:e.given, n:0 };
+    p.n++; pairs.set(key, p);
+  });
+  [...pairs.values()].filter(p => p.n >= 2).sort((a, b) => b.n - a.n).slice(0, 3)
+    .forEach(p => mistakes.push({ type:'mixup', a:p.a, b:p.b, n:p.n }));
+
+  /* calculations against concept questions */
+  const kindOf = e => e.code ? 'code' : (e.kind === 'input' || TEST_NUMERIC.test(e.answer)) ? 'calc' : 'concept';
+  const tally = k => { const xs = log.filter(e => kindOf(e) === k);
+    return { n:xs.length, r:xs.filter(e => e.result === 'right').length }; };
+  const calc = tally('calc'), concept = tally('concept');
+  if (calc.n >= 4 && concept.n >= 4){
+    const d = calc.r / calc.n - concept.r / concept.n;
+    if (Math.abs(d) >= 0.25) mistakes.push({ type: d < 0 ? 'calc' : 'concept', calc, concept });
+  }
+
+  /* numbers that were nearly right, and in what way */
+  const numOf = s => { const m = String(s).replace(/−/g, '-').replace(/,/g, '').match(/^\s*-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : NaN; };
+  const near = { sign:0, ten:0, two:0, close:0 };
+  misses.forEach(e => {
+    if (e.code || e.given == null || !TEST_NUMERIC.test(e.answer)) return;
+    const a = numOf(e.answer), g = numOf(e.given);
+    if (!isFinite(a) || !isFinite(g) || !a || g === a) return;
+    const r = g / a, l = r > 0 ? Math.log10(r) : NaN;
+    if (Math.abs(r + 1) < 1e-6) near.sign++;
+    else if (isFinite(l) && Math.round(l) !== 0 && Math.abs(l - Math.round(l)) < 0.01) near.ten++;
+    else if (Math.abs(r - 2) < 0.03 || Math.abs(r - 0.5) < 0.015) near.two++;
+    else if (Math.abs(r - 1) <= 0.1) near.close++;
+  });
+  ['sign', 'ten', 'two', 'close'].forEach(k => { if (near[k]) mistakes.push({ type:k, n:near[k] }); });
+
+  /* fast misses, when right answers were taking much longer */
+  const fast = misses.filter(e => !e.code && e.ms > 0 && e.ms < 6000);
+  const rightMs = log.filter(e => e.result === 'right' && !e.code && e.ms > 0).map(e => e.ms).sort((a, b) => a - b);
+  const median = rightMs.length ? rightMs[rightMs.length >> 1] : 0;
+  if (fast.length >= 3 && median >= 12000)
+    mistakes.push({ type:'rushed', n:fast.length, typical:Math.round(median / 1000) });
+
+  /* Late misses on topics already answered right earlier in the test. Simply
+     comparing accuracy early and late would be misleading here: the probing
+     deliberately saves weak topics for later, so the end is harder anyway. */
+  if (answered >= 24){
+    const cut = Math.floor(answered * 2 / 3), gotRight = new Set();
+    let late = 0;
+    log.forEach((e, k) => {
+      if (k >= cut && e.result !== 'right' && gotRight.has(e.topic)) late++;
+      if (e.result === 'right') gotRight.add(e.topic);
+    });
+    if (late >= 3) mistakes.push({ type:'tired', n:late });
+  }
+  if (skip >= 3) mistakes.push({ type:'skips', n:skip });
+
+  let change = null;
+  if (prev && prev.n){
+    const was = prev.pct != null ? prev.pct : Math.round(prev.r / prev.n * 100);
+    const better = [], worse = [];
+    /* only topics with at least two questions both times: one question each
+       way is a coin flip, not a trend */
+    if (prev.t) topics.forEach(t => {
+      const p = prev.t[t.id], s = S[t.id];
+      if (!p || p[0] < 2 || s.asked < 2) return;
+      const pa = p[1] / p[0], na = acc(s);
+      if (na - pa >= 0.4 && na >= 0.6) better.push(t.name);
+      else if (pa - na >= 0.4 && na <= 0.5) worse.push(t.name);
+    });
+    change = { was, delta:pct - was, better, worse };
+  }
+
+  const t = {};
+  asked.forEach(tp => { t[tp.id] = [S[tp.id].asked, S[tp.id].right]; });
+  return {
+    n:run.n || answered, answered, right, skip, wrong:answered - right - skip, pct,
+    ms:log.reduce((a, e) => a + (e.ms || 0), 0), ended:!!run.ended,
+    band: pct >= 90 ? 'top' : pct >= 75 ? 'good' : pct >= 60 ? 'mid' : pct >= 40 ? 'low' : 'poor',
+    modules, strengths, firstTime, slips, weak, notReached, unasked, mistakes, change,
+    summary:{ d:run.date, n:answered, r:right, s:skip, pct, ms:log.reduce((a, e) => a + (e.ms || 0), 0), t }
+  };
 }
 
 /* ── question generators ── */
@@ -4888,10 +5525,12 @@ BUILD.software = host => revGame(host, { title:'Software', how:'Pick one of the 
       {id:'sm-hw',name:'Hardware & sensors',gen:genMechHw},
       {id:'sm-ctl',name:'Control systems',gen:genMechControl}]},
     {id:'read',name:'Read code',topics:[{id:'s-out',name:'Predict output',gen:genPython}]},
+    /* `gate`: in a test, Medium is only set once Easy is right, and Hard once
+       Medium is, so nobody sits through five minutes of a task they can't start */
     {id:'write',name:'Write code',topics:[
       {id:'s-e',name:'Easy',gen:()=>genWrite(1)},
-      {id:'s-m',name:'Medium',gen:()=>genWrite(2)},
-      {id:'s-h',name:'Hard',gen:()=>genWrite(3)}]}
+      {id:'s-m',name:'Medium',gen:()=>genWrite(2),gate:'s-e'},
+      {id:'s-h',name:'Hard',gen:()=>genWrite(3),gate:'s-m'}]}
   ] });
 BUILD.maths = host => revGame(host, { title:'Maths', how:'Pick a topic. The questions are generated, so they never run out.', statKey:'maths',
   topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
@@ -4909,7 +5548,7 @@ BUILD.physics = host => revGame(host, { title:'Physics', how:'Pick a module, or 
     {id:'m3',name:'Waves & thermodynamics',topics:[{id:'p-thermo',name:'Thermodynamics',gen:genThermo},{id:'p-wc',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_WAVE,'wave'):r<0.62?bankQ(WAVE_EXTRA,'wavex'):genPhysQuant('wave');}},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
     {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_EM,'em'):r<0.62?bankQ(EM_EXTRA,'emx'):genPhysQuant('em');}},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
-BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do all five.', statKey:'engineering',
+BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do all six.', statKey:'engineering',
   modules:[
     {id:'steel',name:'Steels',topics:[
       {id:'e-steel',name:'Carbon steels',gen:genSteelFact},

@@ -748,3 +748,107 @@ setting, which is exactly the bug this fixed.
 swapped places in `SKINS`, in `QUICK_SKINS`, and in the timetable's collapsed
 picker, so Plain reads first. Anyone who has already chosen a theme is
 unaffected: these are only defaults for someone with nothing stored.
+
+### 8.14 Tests in every revision subject
+
+Each revision game (Maths, Physics, Chemistry, Engineering, Software) has a
+**Practice | Test** switch. Flashcards doesn't: it is decks, not modules, so
+there is nothing for a test to cover.
+
+A test is 30 to 50 questions (`testLength`: 12 + 1.6 per topic, clamped), covers
+every topic, adapts as it goes, and ends in a report. Everything that decides
+things is a **plain function outside `revGame`**, which is what made it
+checkable: `testPick` (next topic), `testWeight`, `testEligible`,
+`historyPrior`, `analyseTest` (the report), and `chooseQuestion` (which question
+within a topic, shared with practice). `revGame` only draws the screens.
+
+**How the next topic is chosen.** Hard rules first, then a score:
+- Every topic is asked at least once. When the questions left equal the topics
+  still unasked, only unasked ones are allowed.
+- Never either of the last two topics, if that still leaves two to choose from.
+- A topic stops at a cap (`ceil(n / topics) + 2`, and never more than its
+  question pool). Write-code questions are capped at 3 per test, and `gate`
+  means Medium waits for Easy to be right and Hard for Medium.
+
+Then `testWeight` scores what's left: unasked topics score high, with pressure
+rising as questions run out; a topic with a miss gets `7 × (1 − p)` (p is a
+Beta(1,1) estimate of getting it right) plus a bump straight after the miss; a
+topic answered right with no misses is pushed back; and time since it was last
+asked pulls it forward. The pick is drawn from the top three, weighted, so two
+tests don't run in the same order.
+
+**Settled slips.** A topic answered right the last two times since a miss stops
+being probed. Without that rule one early mistake kept a topic "in doubt" all
+test and it was chased as hard as a real gap (both got 5 questions).
+
+**Numbers it was tuned to** (`testsim.mjs` in the scratchpad, 61 checks, run
+against the real `games.js` with every subject's real topics):
+- every topic covered, full length, zero back-to-back, under 3% two apart, in
+  200 runs per subject
+- three weak topics get about 4.5 questions each against about 1.8 for the rest
+- a perfect student never gets more than 3 on one topic
+- a slip is let go at 3 questions, a gap is chased to the cap of 5
+- 30 runs give 30 different openings
+- about 45% of topics from the first third come back in the last third
+- write-code never opens a test, never stacks, Hard never before Medium
+
+**The report** (`analyseTest`) recomputes everything from the answer log, so a
+saved report can be reopened later. It gives: score and verdict, a bar per
+module, **Work on these** (sorted by estimated mastery, tagged Gap / Shaky /
+Missed once, each with a Practise button that jumps straight into practising
+that one topic), **Common mistakes**, **Strengths**, **Probably slips**,
+**Since your last test**, and a review of every question with Wrong / Skipped /
+All tabs showing your answer against the right one.
+
+Common mistakes are detected, not written per question:
+- the same two options confused at least twice (either way round)
+- calculations against concept questions, if 25+ points apart
+- numeric misses that were the wrong sign, out by a power of ten, exactly double
+  or half, or within 10%
+- three or more misses under 6 seconds when right answers took 12+
+- late misses on topics already answered right earlier. **Not** "accuracy fell
+  in the last third": the probing deliberately pushes weak topics later, so the
+  end of an adaptive test is harder anyway and that comparison would always
+  cry tiredness.
+- three or more skips
+
+**Where test data lives, and why it matters.**
+- `revtest.<sk>.run` and `revtest.<sk>.report` are **localStorage, not `tt.*`**.
+  They hold question text, which can include SVG diagrams. The settings sync
+  refuses anything over 100 KB with a 413, and a 413 stops *all* settings from
+  syncing, so these must never become `tt.*` keys.
+- `tt.rev_<sk>_tests` does sync: the newest test's score and per-topic counts
+  (a few hundred bytes), plus just the score for the two before. That is what
+  lets "Last test: 70%" show on any device.
+- A run is saved after every answer and can be resumed. A test ended with fewer
+  than 10 answers still shows its report but isn't recorded as "last test".
+- Test answers **do** go into the practice history, so what you miss in a test
+  comes back in practice. Skips don't, same as practice.
+
+### 8.15 Fixed questions (yellow) never came back in practice
+
+Reported: with no red or grey left, practice only ever served greens.
+
+It was real, and reproduced with the real picker before touching it: across 35
+topics where a third of the questions were yellow, yellows were picked **0.2%**
+of the time. `sigScore` took points off for every time a question had been
+*seen*. A yellow has always been seen more than a green, because it went wrong
+before it went right, so it lost to every green. The same penalty meant a
+question you kept missing sank further with each miss.
+
+History entries gained a fifth slot, `rightRun` (right answers in a row since
+the last miss), and only that counts against a question now. For a green it
+equals every view, so greens order exactly as before. A yellow gets a
+consolidation bonus of 1.0, tuned by playing sessions forward: on a 30-question
+topic, yellows fill nearly the first 15 picks and then settle to about their
+share of the pool once each has been right twice more. Reds no longer take the
+penalty at all. `lastOkOf`, `everWrongOf` and `rightRunOf` read older four-,
+three- and two-slot saves the way they were meant; an old yellow is treated as
+just fixed so it gets its turns.
+
+The generator draw also went from 6 to 16 samples. A generator can only be
+sampled, not asked for a specific question, so with 6 draws a handful of
+yellows in a big topic were rarely even looked at. It still stops early only on
+an unseen question. Stopping on a red too was tried and **broke grey-before-red**,
+because whichever turned up first won; `yellowbug.mjs` checks that ordering
+(grey, red, yellow, green) along with the migrations, 12 checks in all.
