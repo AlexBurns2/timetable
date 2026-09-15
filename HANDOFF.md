@@ -1114,3 +1114,80 @@ tap-to-rotate driven with real pointer events, no horizontal overflow on any
 page), and at 1280px to confirm the desktop computed styles, strings, board
 sizes and layouts match what was there before. `index2.html` isn't linked from
 anywhere and was left alone.
+
+### 8.23 Typed number answers
+
+Before this, 13 typed questions graded with `Math.abs(Number(v) - x) < tol`, so
+`180 g`, `180g`, `−92` (U+2212, which the notes themselves print) and `5,040` were
+all `NaN` and marked wrong. Now:
+
+- `readQuantity(raw)` → `{ value, rest, signed, extra }`. It handles:
+  - thousands (`5,040`, `5 040`) and decimal commas (`0,5`)
+  - `e`, `× 10^n` and superscript notation
+  - simple fractions, a trailing charge sign (`3+`)
+  - a prefix such as `n =` or `about`
+  - `extra` flags a second number in the rest (`720 or 5040`), which is always rejected
+- `qty(answer, { tol, dim, dir })` builds `accept`. `dim` picks a table in
+  `UNIT_TABLES`, each scaled to the unit the questions use. Units are matched by
+  `matchUnit`, longest run of words first, after `unitKey` normalises spellings
+  (`mol·L⁻¹` → `mol/L`, `per`, `litres` → `L`). Matching is case-sensitive first,
+  then case-insensitive only where that isn't ambiguous within the table.
+  - A unit from the expected table is converted.
+  - A unit found only in another table makes the answer wrong.
+  - Unknown words (`of NaCl`, `ways`) are ignored.
+  - Rounding to 3 s.f. is always within tolerance (`sfSlack`), except for exact (tol 0) answers.
+- `oxAccept(ox)` adds Roman numerals. `normEq` (the default for questions with
+  no `accept`, such as Maths counting) uses `readQuantity` for numeric answers.
+- Each question now has a display `unit`. It is shown after "Answer:" and logged
+  with the answer, which `TEST_NUMERIC` still matches. `accept.read` gives the
+  typed value in the question's unit. The test log stores it as `gv`, so the
+  report's wrong-sign and power-of-ten checks see `1.8 kg` for 180 g as ×10
+  rather than as the number 1.8.
+
+To add a typed-number question: `input:true, answer, unit:'mol', accept:qty(x, {tol, dim:'amount'})`.
+Add units to `UNIT_TABLES` rather than special-casing a question.
+
+`qtycheck.mjs` (scratchpad, 3,644 checks) covers:
+- about 200 hand-written accept/reject cases across every table
+- every real typed generator accepting its own shown answer written four ways,
+  and rejecting a different number and the opposite sign (400 draws each)
+- the report reading `gv`
+
+### 8.24 Redox and galvanic cells: more question kinds
+
+`genRedox` keeps its two original kinds, now 30% of draws. The oxidation state
+question keeps the `ox:` key; the change question is still unkeyed. It adds:
+- `rx-ox` / `rx-red`: which element is oxidised or reduced
+- `rx-oa` / `rx-ra`: which reactant is the oxidising or reducing agent (two options)
+- `isredox`: yes or no
+- `half-red` / `half-ox`: pick the reduction or oxidation out of two half-equations
+- `half-kind`: is this half-equation an oxidation or a reduction
+
+The data:
+- `REDOX_RX`: 22 reactions, each with `ox`/`red` as [element, before, after],
+  the agents, and every element present. The wrong options come from `els`, and
+  the other half of the reaction is always one of them.
+- `NOT_REDOX`: the "no" cases.
+- `HALF_EQ`: half-equations stored once as {oxidised form, electrons, reduced
+  form} and written either way by `asReduction`/`asOxidation`, so the electrons
+  can't end up on the wrong side.
+
+`genGalvanic` keeps `galv-emf` and `galv-anode` (37% of draws, same keys). It
+adds `cathode`, `redat`/`oxat`, `redsp`/`oxsp`, `cahalf`/`anhalf`, `eflow`,
+`gain`/`lose`, `positive`, `anions`/`cations` and `overall`, all keyed
+`galv-<kind>:<pair>`. `SRP` entries gained a third field, the ion's charge, used
+to write half-equations and to balance the overall equation by the lowest common
+multiple of the two charges. Al³⁺/Al (−1.68 V) and Ni²⁺/Ni (−0.24 V) were added
+from the NSW data sheet. Mg stays at −2.37 V, as before; the data sheet says −2.36.
+
+`redoxcheck.mjs` (scratchpad, ~42,500 checks) doesn't trust the data. It parses
+every species (subscripts, brackets, charges), and checks that:
+- every equation balances by atoms and charge
+- each claimed oxidation number matches one it works out itself from the usual
+  rules, only the named elements change, and nothing changes in `NOT_REDOX`
+- each agent contains the right element
+- half-equations balance their charge with the electrons
+- over 20,000 draws of each generator, every kind appears and every answer
+  matches an independent derivation (cathode = higher E°, and so on)
+- options are 2 to 4 and distinct, exactly one overall equation is balanced in
+  the right direction, and E° is printed signed to 2 dp

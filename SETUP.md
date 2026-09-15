@@ -1297,6 +1297,56 @@ for touch screens (a laptop with a touchscreen still counts as a computer).
 - **Calendar:** the start and end times fit inside the new event box.
 - **iPhone and iPad:** tapping a text box no longer zooms the page in.
 
+## Typed answers: units and formatting don't cost marks
+
+Questions where you type a number (moles, mass, concentration, gas volume, cell
+potential, heat, ΔH, ΔG, relative atomic mass, oxidation states, relative
+velocity, and the Maths counting questions) now read the answer the way a
+teacher would:
+
+- **Any spacing or spelling of the unit:** `180g`, `180 g`, `180 grams`,
+  `2.5 M`, `2.5 mol/L`, `2.5 mol L⁻¹`, `2.5 mol dm⁻³`, `-92 kJ mol-1`, `-92 kJ per mol`.
+- **A different unit, converted:** `0.18 kg` for 180 g, `83.3 mmol`, `12 400 mL`
+  for 12.4 L, `1100 mV`, `23 410 J` when the question asks for kJ, `-126 km/h`.
+  A number with no unit is read in the question's own unit.
+- **How the number is written:** `5,040` or `5 040`, `0,5`, `.5`, `1/12`,
+  `8.33 × 10⁻² mol`, `8.33e-2`, the `−` minus sign the worked answers use,
+  a leading `+`, and `n = 0.25 mol`.
+- **Oxidation states:** `+3`, `3+`, `3`, `III`; `−2`, `2−`, `-II`.
+- **Relative velocity:** `35 m/s left` counts as −35 m/s.
+- Rounding to three significant figures always counts.
+
+Still marked wrong: a wrong number, a wrong sign, a unit for a different kind of
+quantity (`12.4 g` for a volume, or `0.5 mol` for a concentration), and hedged
+answers like `720 or 5040`. When you get one wrong, the answer is now shown with
+its unit ("Answer: 0.083 mol").
+
+## Chemistry: more redox and galvanic cell questions
+
+**Redox** used to ask only for an oxidation state, or whether a change in
+oxidation number is oxidation or reduction. It now also asks, using 22 real
+reactions:
+- which element is **oxidised** or **reduced** in a full equation
+- which reactant is the **oxidising** or **reducing agent**
+- whether a reaction is **redox at all** (with neutralisation, precipitation and
+  decomposition reactions as the "no" cases)
+- which of two half-equations is the **reduction** (or the oxidation), and
+  whether a single half-equation is an oxidation or a reduction.
+
+**Galvanic cells** used to ask only for the cell potential or the anode. For the
+same pairs of half-cells it now also asks:
+- which metal is the **cathode**, and which electrode is **positive**
+- at which electrode **oxidation** or **reduction** happens
+- which **species** is oxidised or reduced (for example Cu²⁺, not Cu)
+- the **half-equation** at the cathode or the anode
+- which way **electrons** flow, which electrode **gains or loses mass**, and
+  which way **anions and cations** move in the salt bridge
+- the **balanced overall equation** (for example 2Al + 3Cu²⁺ → 2Al³⁺ + 3Cu).
+
+Aluminium and nickel half-cells were added, using the NSW data sheet values,
+and E° values are now printed signed to two decimal places (+0.80 V, −0.24 V).
+Every answer comes with a note explaining it. Progress on the old questions carries over.
+
 ## First-run tutorials
 
 The first time someone uses a part of the site, a short tutorial points at it:

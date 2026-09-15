@@ -3159,7 +3159,9 @@ function revGame(host, opts){
     if (cur.typed) test.typedUsed++;
     test.log.push({
       topic:cur._tid, tname:cur._topic, mod:cur._mod || '',
-      q:cur.q, answer:String(cur.answer), given:result === 'skip' || given == null ? null : String(given),
+      q:cur.q, answer:String(cur.answer) + (cur.unit ? ' ' + cur.unit : ''), given:result === 'skip' || given == null ? null : String(given),
+      /* a typed number as it reads in the question's unit ("0.18 kg" → 180), for the mistake patterns */
+      gv:result !== 'skip' && given != null && cur.accept && cur.accept.read ? cur.accept.read(String(given)) : null,
       result, note:cur.note || '', detail:detail || '',
       kind:cur.typed ? 'typed' : cur.input ? 'input' : 'mc',
       choices:cur.choices ? cur.choices.slice() : null,
@@ -3653,7 +3655,7 @@ function revGame(host, opts){
         + (detail ? '<div class="rvwhy">' + esc(detail) + '</div>' : '')
         + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     else
-      fb.innerHTML = (ok ? '✓ Correct' : cur.optHtml ? '✗ Not that one. The right one is outlined in green.' : '✗ Answer: <b>' + esc(String(cur.answer)) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
+      fb.innerHTML = (ok ? '✓ Correct' : cur.optHtml ? '✗ Not that one. The right one is outlined in green.' : '✗ Answer: <b>' + esc(String(cur.answer) + (cur.unit ? ' ' + cur.unit : '')) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     if (cur.typed){
       $('rvta').disabled = true; $('rvgo').disabled = true;
       if (!ok) revealAnswer();                 // got it wrong → show a working version
@@ -3675,9 +3677,141 @@ function revGame(host, opts){
 function normEq(val, answer){
   const a = String(answer).trim(), v = String(val).trim();
   if (v === a) return true;
-  const nv = Number(v.replace('+','')), na = Number(a);
-  if (isFinite(nv) && isFinite(na)) return Math.abs(nv - na) < 1e-9;
-  return v.toLowerCase() === a.toLowerCase();
+  const na = Number(a);
+  if (a !== '' && isFinite(na)){ const r = readQuantity(v); return !!r && !r.extra && Math.abs(r.value - na) < 1e-9; }
+  const flat = s => s.toLowerCase().replace(/\s+/g, ' ');
+  return flat(v) === flat(a);
+}
+
+/* ══ TYPED NUMBER ANSWERS ═════════════════════════════════════════════════
+   A typed answer shouldn't be marked wrong for how it's written. "180g",
+   "180 g", "180 grams", "m = 180 g", "0.18 kg", "1.8 × 10² g", "−92" (the
+   minus sign the notes use), "5,040", "5 040" and "3+" all read as what they
+   mean. A number on its own is taken in the question's unit, a written unit
+   is converted, and a unit for a different kind of quantity (grams for a
+   volume) is wrong, since that is a real mistake rather than formatting.
+   Each table is in the unit the questions use, so that one has scale 1. */
+const UNIT_TABLES = {
+  mass:    { g:1, gm:1, gms:1, gram:1, grams:1, gramme:1, grammes:1, mg:1e-3, milligram:1e-3, milligrams:1e-3,
+             kg:1e3, kilogram:1e3, kilograms:1e3, kilo:1e3, kilos:1e3, 'µg':1e-6, ug:1e-6, t:1e6, tonne:1e6, tonnes:1e6 },
+  amount:  { mol:1, mols:1, mole:1, moles:1, mmol:1e-3, millimole:1e-3, millimoles:1e-3, kmol:1e3 },
+  volume:  { L:1, litre:1, litres:1, liter:1, liters:1, dm3:1, mL:1e-3, millilitre:1e-3, millilitres:1e-3,
+             milliliter:1e-3, milliliters:1e-3, cm3:1e-3, cc:1e-3, 'µL':1e-6, uL:1e-6, kL:1e3, m3:1e3 },
+  conc:    { 'mol/L':1, 'mol/dm3':1, 'mol L':1, M:1, molar:1, 'mmol/L':1e-3, mM:1e-3, 'mol/mL':1e3, 'mol/cm3':1e3, 'mol/m3':1e-3 },
+  voltage: { V:1, volt:1, volts:1, mV:1e-3, millivolt:1e-3, millivolts:1e-3, kV:1e3 },
+  energy:  { kJ:1, J:1e-3, MJ:1e3, 'kJ/mol':1, 'J/mol':1e-3, 'MJ/mol':1e3,
+             kilojoule:1, kilojoules:1, joule:1e-3, joules:1e-3 },
+  speed:   { 'm/s':1, mps:1, 'km/h':1/3.6, kph:1/3.6, kmh:1/3.6, 'km/hr':1/3.6, 'cm/s':0.01, 'km/s':1e3 },
+  molarmass:{ 'g/mol':1, u:1, amu:1, Da:1, g:1 }
+};
+const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺';
+/* "mol·L⁻¹", "mol dm^-3", "m s-1", "kJ per mol" → "mol/L", "mol/dm3", "m/s", "kJ/mol" */
+function unitKey(s){
+  return String(s).trim()
+    .replace(/μ/g, 'µ')                                        // Greek mu → micro sign
+    .replace(/^ms\s*\^?\s*-\s*1$/i, 'm/s')
+    .replace(/\s+per\s+/gi, '/')
+    .replace(/\b(milli)?lit(?:re|er)s?\b/gi, (w, milli) => milli ? 'mL' : 'L')
+    .replace(/\^/g, '')
+    .replace(/\s*[·.*]\s*(?=[a-zµ])/gi, ' ')
+    .replace(/\s*([a-zµ]+)\s*-\s*1(?![\d])/gi, '/$1')
+    .replace(/\s*([a-zµ]+)\s*-\s*([23])(?![\d])/gi, '/$1$2')
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ')
+    .replace(/[.,;!]+$/, '');
+}
+function unitScale(table, key){
+  if (Object.prototype.hasOwnProperty.call(table, key)) return table[key];
+  const low = key.toLowerCase();
+  const hits = Object.keys(table).filter(k => k.toLowerCase() === low).map(k => table[k]);
+  return hits.length && hits.every(x => x === hits[0]) ? hits[0] : undefined;   // skip anything case makes ambiguous
+}
+/* the unit at the start of `rest`, trying the longest run of words first:
+   { scale } for the expected kind, { wrong:true } for another kind, or null */
+function matchUnit(rest, dim){
+  const words = String(rest).trim().split(/\s+/).filter(Boolean);
+  const own = dim && UNIT_TABLES[dim];
+  let other = false;
+  for (let n = words.length; n >= 1; n--){
+    const key = unitKey(words.slice(0, n).join(' '));
+    if (!key) continue;
+    if (own){ const s = unitScale(own, key); if (s !== undefined) return { scale:s }; }
+    if (Object.keys(UNIT_TABLES).some(d => d !== dim && unitScale(UNIT_TABLES[d], key) !== undefined)) other = true;
+  }
+  return other && own ? { wrong:true } : null;
+}
+/* the number a typed answer starts with: { value, rest, signed, extra } or null.
+   `extra` is set when a second number follows ("720 or 5040"), so a hedge
+   can't be marked right. */
+function readQuantity(raw){
+  let s = String(raw == null ? '' : raw)
+    .replace(/[−–—‒]/g, '-')
+    .replace(new RegExp('[' + SUPERSCRIPT + ']+', 'g'), m => '^' + [...m].map(c => '0123456789-+'[SUPERSCRIPT.indexOf(c)]).join(''))
+    .replace(/\\times/g, '×')
+    .trim();
+  if (s.includes('=')) s = s.slice(s.lastIndexOf('=') + 1).trim();     // "n = 0.25 mol"
+  s = s.replace(/^\D*?(?=[+-]?\s*[.,]?\d)/, '');                     // "about 0.25", "≈0.25"
+  /* 5,040 and 5 040 are thousands; 0,5 and 1,25 are a decimal comma */
+  const m = s.match(/^([+-]?)\s*([1-9]\d{0,2}(?:,\d{3})+(?![\d,])(?:\.\d+)?|[1-9]\d{0,2}(?: \d{3})+(?![\d])(?:[.,]\d+)?|\d+(?:[.,]\d*)?|[.,]\d+)/);
+  if (!m) return null;
+  let body = m[2];
+  if (/^[1-9]\d{0,2}(?:,\d{3})+(?:\.\d+)?$/.test(body)) body = body.replace(/,/g, '');
+  body = body.replace(/ /g, '').replace(',', '.');
+  let value = parseFloat(body.endsWith('.') ? body.slice(0, -1) : body);
+  if (!isFinite(value)) return null;
+  let rest = s.slice(m[0].length), signed = !!m[1];
+  const sci = rest.match(/^\s*(?:[eE]\s*([+-]?\d+)(?![\d.])|[x×*·]\s*10\s*(?:\^|\*\*)?\s*\(?\s*([+-]?\d+)\s*\)?)/);
+  if (sci){ value *= Math.pow(10, +(sci[1] != null ? sci[1] : sci[2])); rest = rest.slice(sci[0].length); }
+  const frac = rest.match(/^\s*\/\s*(\d+(?:\.\d+)?)(?![\d])/);
+  if (frac && +frac[1]){ value /= +frac[1]; rest = rest.slice(frac[0].length); }
+  if (m[1] === '-') value = -value;
+  const trail = rest.match(/^\s*\^?\s*([+-])(?=\s*$|\s+\D)/);         // "3+", "2-", "3⁺" for a charge
+  if (trail && !signed){ if (trail[1] === '-') value = -value; signed = true; rest = rest.slice(trail[0].length); }
+  rest = rest.trim();
+  const extra = /(?:^|[\s(=,;&]|or|and)[+-]?\.?\d/i.test(rest);
+  return { value, rest, signed, extra };
+}
+/* rounding to three significant figures always counts, however tight the tolerance */
+const sfSlack = a => a ? 0.5 * Math.pow(10, Math.floor(Math.log10(Math.abs(a))) - 2) : 0;
+/* build a question's `accept`. dim picks the unit table; tol is how far off
+   still counts (0 = exact); dir reads "left"/"right" as a sign. The returned
+   function also carries .read, the typed value in the question's unit, which
+   the test report uses to spot a wrong sign or a power of ten. */
+function qty(answer, { tol = 0, dim = null, dir = false } = {}){
+  const read = raw => {
+    const r = readQuantity(raw);
+    if (!r || r.extra) return null;
+    let v = r.value;
+    if (r.rest){
+      const u = matchUnit(r.rest, dim);
+      if (u && u.wrong) return null;
+      if (u) v *= u.scale;
+      if (dir && !r.signed && /\b(left|west|backwards?)\b/i.test(r.rest)) v = -v;
+    }
+    return v;
+  };
+  const accept = raw => {
+    const v = read(raw);
+    if (v == null) return false;
+    const slack = tol > 0 ? Math.max(tol, sfSlack(answer)) : 0;
+    return Math.abs(v - answer) <= slack + 1e-9 * Math.max(1, Math.abs(answer));
+  };
+  accept.read = read;
+  return accept;
+}
+/* oxidation states: "+3", "3+", "3", "III", "+III", "−2", "2−" */
+const ROMAN_VALUE = { i:1, ii:2, iii:3, iv:4, v:5, vi:6, vii:7, viii:8 };
+function oxAccept(ox){
+  const read = raw => {
+    const s = String(raw == null ? '' : raw).replace(/[−–—‒]/g, '-').trim();
+    const rm = s.match(/^([+-]?)\s*(viii|vii|vi|iv|v|iii|ii|i)\s*([+-]?)$/i);
+    if (rm) return (rm[1] === '-' || rm[3] === '-' ? -1 : 1) * ROMAN_VALUE[rm[2].toLowerCase()];
+    const r = readQuantity(s);
+    return r && !r.extra && Number.isInteger(r.value) ? r.value : null;
+  };
+  const accept = raw => read(raw) === ox;
+  accept.read = read;
+  return accept;
 }
 
 /* ══ CHOOSING A QUESTION WITHIN A TOPIC ═══════════════════════════════════
@@ -3962,7 +4096,7 @@ function analyseTest(run, topics, prev){
   const near = { sign:0, ten:0, two:0, close:0 };
   misses.forEach(e => {
     if (e.code || e.given == null || !TEST_NUMERIC.test(e.answer)) return;
-    const a = numOf(e.answer), g = numOf(e.given);
+    const a = numOf(e.answer), g = e.gv != null ? e.gv : numOf(e.given);
     if (!isFinite(a) || !isFinite(g) || !a || g === a) return;
     const r = g / a, l = r > 0 ? Math.log10(r) : NaN;
     if (Math.abs(r + 1) < 1e-6) near.sign++;
@@ -4702,14 +4836,97 @@ const OX_STATES = [
   ['Cl','HCl',-1],['Cl','HClO',1],['Fe','Fe₂O₃',3],['Fe','FeCl₂',2],['C','CO₂',4],['C','CH₄',-4],
   ['P','H₃PO₄',5],['Mn','MnO₂',4],['Cu','CuSO₄',2],['Cr','Cr₂O₃',3],['S','H₂S',-2]
 ];
+/* Full redox reactions, checked by hand. ox/red are [element, before, after];
+   oa/ra are the oxidising and reducing agents as written in the equation;
+   els is every element in it, which is where the wrong options come from. */
+const REDOX_RX = [
+  { eq:'Zn + Cu²⁺ → Zn²⁺ + Cu',           ox:['Zn',0,2],  red:['Cu',2,0],  oa:'Cu²⁺',    ra:'Zn',    els:['Zn','Cu'] },
+  { eq:'Cu + 2Ag⁺ → Cu²⁺ + 2Ag',          ox:['Cu',0,2],  red:['Ag',1,0],  oa:'Ag⁺',     ra:'Cu',    els:['Cu','Ag'] },
+  { eq:'Zn + CuSO₄ → ZnSO₄ + Cu',         ox:['Zn',0,2],  red:['Cu',2,0],  oa:'CuSO₄',   ra:'Zn',    els:['Zn','Cu','S','O'] },
+  { eq:'Fe + CuSO₄ → FeSO₄ + Cu',         ox:['Fe',0,2],  red:['Cu',2,0],  oa:'CuSO₄',   ra:'Fe',    els:['Fe','Cu','S','O'] },
+  { eq:'2Mg + O₂ → 2MgO',                 ox:['Mg',0,2],  red:['O',0,-2],  oa:'O₂',      ra:'Mg',    els:['Mg','O'] },
+  { eq:'2Na + Cl₂ → 2NaCl',               ox:['Na',0,1],  red:['Cl',0,-1], oa:'Cl₂',     ra:'Na',    els:['Na','Cl'] },
+  { eq:'Mg + 2HCl → MgCl₂ + H₂',          ox:['Mg',0,2],  red:['H',1,0],   oa:'HCl',     ra:'Mg',    els:['Mg','H','Cl'] },
+  { eq:'Zn + 2HCl → ZnCl₂ + H₂',          ox:['Zn',0,2],  red:['H',1,0],   oa:'HCl',     ra:'Zn',    els:['Zn','H','Cl'] },
+  { eq:'2Al + 3CuCl₂ → 2AlCl₃ + 3Cu',     ox:['Al',0,3],  red:['Cu',2,0],  oa:'CuCl₂',   ra:'Al',    els:['Al','Cu','Cl'] },
+  { eq:'Fe₂O₃ + 3CO → 2Fe + 3CO₂',        ox:['C',2,4],   red:['Fe',3,0],  oa:'Fe₂O₃',   ra:'CO',    els:['Fe','O','C'] },
+  { eq:'2Al + Fe₂O₃ → Al₂O₃ + 2Fe',       ox:['Al',0,3],  red:['Fe',3,0],  oa:'Fe₂O₃',   ra:'Al',    els:['Al','Fe','O'] },
+  { eq:'CuO + H₂ → Cu + H₂O',             ox:['H',0,1],   red:['Cu',2,0],  oa:'CuO',     ra:'H₂',    els:['Cu','O','H'] },
+  { eq:'Cl₂ + 2KBr → 2KCl + Br₂',         ox:['Br',-1,0], red:['Cl',0,-1], oa:'Cl₂',     ra:'KBr',   els:['Cl','K','Br'] },
+  { eq:'Cl₂ + 2KI → 2KCl + I₂',           ox:['I',-1,0],  red:['Cl',0,-1], oa:'Cl₂',     ra:'KI',    els:['Cl','K','I'] },
+  { eq:'Br₂ + 2I⁻ → 2Br⁻ + I₂',           ox:['I',-1,0],  red:['Br',0,-1], oa:'Br₂',     ra:'I⁻',    els:['Br','I'] },
+  { eq:'Cl₂ + 2Fe²⁺ → 2Cl⁻ + 2Fe³⁺',      ox:['Fe',2,3],  red:['Cl',0,-1], oa:'Cl₂',     ra:'Fe²⁺',  els:['Cl','Fe'] },
+  { eq:'2Fe³⁺ + Sn²⁺ → 2Fe²⁺ + Sn⁴⁺',     ox:['Sn',2,4],  red:['Fe',3,2],  oa:'Fe³⁺',    ra:'Sn²⁺',  els:['Fe','Sn'] },
+  { eq:'C + O₂ → CO₂',                    ox:['C',0,4],   red:['O',0,-2],  oa:'O₂',      ra:'C',     els:['C','O'] },
+  { eq:'2H₂ + O₂ → 2H₂O',                 ox:['H',0,1],   red:['O',0,-2],  oa:'O₂',      ra:'H₂',    els:['H','O'] },
+  { eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',           ox:['C',-4,4],  red:['O',0,-2],  oa:'O₂',      ra:'CH₄',   els:['C','H','O'] },
+  { eq:'3CuO + 2NH₃ → 3Cu + N₂ + 3H₂O',   ox:['N',-3,0],  red:['Cu',2,0],  oa:'CuO',     ra:'NH₃',   els:['Cu','O','N','H'] },
+  { eq:'MnO₂ + 4HCl → MnCl₂ + Cl₂ + 2H₂O', ox:['Cl',-1,0], red:['Mn',4,2],  oa:'MnO₂',    ra:'HCl',   els:['Mn','O','H','Cl'] }
+];
+/* nothing changes oxidation number in these */
+const NOT_REDOX = ['HCl + NaOH → NaCl + H₂O', 'AgNO₃ + NaCl → AgCl + NaNO₃', 'CaCO₃ → CaO + CO₂',
+  'BaCl₂ + Na₂SO₄ → BaSO₄ + 2NaCl', 'H₂SO₄ + 2KOH → K₂SO₄ + 2H₂O', 'CaCO₃ + 2HCl → CaCl₂ + H₂O + CO₂',
+  'NH₃ + HCl → NH₄Cl', 'Pb(NO₃)₂ + 2KI → PbI₂ + 2KNO₃'];
+/* half-equations, as { oxidised form, electrons, reduced form } */
+const HALF_EQ = [
+  { o:'Zn²⁺', n:2, r:'Zn' }, { o:'Cu²⁺', n:2, r:'Cu' }, { o:'Ag⁺', n:1, r:'Ag' }, { o:'Mg²⁺', n:2, r:'Mg' },
+  { o:'Al³⁺', n:3, r:'Al' }, { o:'Pb²⁺', n:2, r:'Pb' }, { o:'Fe²⁺', n:2, r:'Fe' }, { o:'Fe³⁺', n:1, r:'Fe²⁺' },
+  { o:'Sn⁴⁺', n:2, r:'Sn²⁺' }, { o:'Cl₂', n:2, r:'2Cl⁻' }, { o:'Br₂', n:2, r:'2Br⁻' }, { o:'I₂', n:2, r:'2I⁻' },
+  { o:'2H⁺', n:2, r:'H₂' }, { o:'O₂ + 4H⁺', n:4, r:'2H₂O' }
+];
+const electrons = n => (n === 1 ? '' : n) + 'e⁻';
+const asReduction = h => h.o + ' + ' + electrons(h.n) + ' → ' + h.r;
+const asOxidation = h => h.r + ' → ' + h.o + ' + ' + electrons(h.n);
+const oxNum = n => n > 0 ? '+' + n : n < 0 ? '−' + (-n) : '0';
 function genRedox(){
-  if (Math.random()<0.5){ const [el,formula,ox] = pk(OX_STATES);
+  const k = Math.random();
+  if (k < 0.2){ const [el,formula,ox] = pk(OX_STATES);
     return { q:'What is the oxidation state of <b>'+el+'</b> in <b>'+formula+'</b>?', input:true, answer:ox,
-      accept:v => Number(String(v).replace('+','').trim()) === ox, note:el+' is '+(ox>0?'+':'')+ox+' in '+formula+'.', key:'ox:'+el+':'+formula }; }
-  let before = nzr(-3,5), after = nzr(-3,6); if (after===before) after = before+1;
-  const rose = after > before;
-  return { q:'An element’s oxidation number changes from <b>'+(before>0?'+':'')+before+'</b> to <b>'+(after>0?'+':'')+after+'</b>. Is it oxidised or reduced?',
-    choices:['Oxidised','Reduced'], answer: rose?'Oxidised':'Reduced', note:'A rise in oxidation number (loss of electrons) is oxidation.' };
+      accept:oxAccept(ox), note:el+' is '+(ox>0?'+':'')+ox+' in '+formula+'.', key:'ox:'+el+':'+formula }; }
+  if (k < 0.3){
+    let before = nzr(-3,5), after = nzr(-3,6); if (after===before) after = before+1;
+    const rose = after > before;
+    return { q:'An element’s oxidation number changes from <b>'+(before>0?'+':'')+before+'</b> to <b>'+(after>0?'+':'')+after+'</b>. Is it oxidised or reduced?',
+      choices:['Oxidised','Reduced'], answer: rose?'Oxidised':'Reduced', note:'A rise in oxidation number (loss of electrons) is oxidation.' };
+  }
+  const r = pk(REDOX_RX);
+  const why = '<b>' + r.ox[0] + '</b> goes from ' + oxNum(r.ox[1]) + ' to ' + oxNum(r.ox[2]) + ', so it loses electrons and is oxidised. <b>' +
+    r.red[0] + '</b> goes from ' + oxNum(r.red[1]) + ' to ' + oxNum(r.red[2]) + ', so it gains electrons and is reduced.';
+  /* which element is oxidised / reduced: the other half of the reaction is always one of the wrong options */
+  if (k < 0.5){
+    const wantOx = Math.random() < 0.5, right = wantOx ? r.ox[0] : r.red[0], other = wantOx ? r.red[0] : r.ox[0];
+    const m = mc(right, [other].concat(shuffle(r.els.filter(e => e !== right && e !== other))));
+    return { q:'In <b>' + r.eq + '</b>, which element is <b>' + (wantOx ? 'oxidised' : 'reduced') + '</b>?',
+      choices:m.choices, answer:m.answer, note:why, key:'rx-' + (wantOx ? 'ox' : 'red') + ':' + r.eq };
+  }
+  /* oxidising / reducing agent: the agent is the reactant that makes the other change */
+  if (k < 0.62){
+    const wantOA = Math.random() < 0.5, right = wantOA ? r.oa : r.ra;
+    const m = mc(right, [wantOA ? r.ra : r.oa]);
+    return { q:'In <b>' + r.eq + '</b>, which is the <b>' + (wantOA ? 'oxidising' : 'reducing') + ' agent</b>?',
+      choices:m.choices, answer:m.answer, key:'rx-' + (wantOA ? 'oa' : 'ra') + ':' + r.eq,
+      note:why + ' The oxidising agent is the one that is reduced (' + r.oa + '); the reducing agent is the one that is oxidised (' + r.ra + ').' };
+  }
+  /* is it redox at all? */
+  if (k < 0.74){
+    if (Math.random() < 0.5){ const eq = pk(NOT_REDOX);
+      return { q:'Is <b>' + eq + '</b> a redox reaction?', choices:['Yes','No'], answer:'No', key:'isredox:' + eq,
+        note:'No element changes oxidation number, so nothing is oxidised or reduced.' }; }
+    return { q:'Is <b>' + r.eq + '</b> a redox reaction?', choices:['Yes','No'], answer:'Yes', key:'isredox:' + r.eq, note:why };
+  }
+  /* half-equations */
+  const [a, b] = shuffle(HALF_EQ.slice()).slice(0, 2);
+  if (k < 0.87){
+    const wantRed = Math.random() < 0.5;
+    const right = wantRed ? asReduction(a) : asOxidation(a), wrong = wantRed ? asOxidation(b) : asReduction(b);
+    return { q:'Which of these half-equations is ' + (wantRed ? 'a <b>reduction</b>' : 'an <b>oxidation</b>') + '?',
+      choices:shuffle([right, wrong]), answer:right, key:'half-' + (wantRed ? 'red' : 'ox') + ':' + a.o + '|' + b.o,
+      note:'Reduction gains electrons, so the electrons are on the left. Oxidation loses them, so they are on the right.' };
+  }
+  const isRed = Math.random() < 0.5, eq = isRed ? asReduction(a) : asOxidation(a);
+  return { q:'Is <b>' + eq + '</b> an oxidation or a reduction?', choices:['Oxidation','Reduction'],
+    answer:isRed ? 'Reduction' : 'Oxidation', key:'half-kind:' + eq,
+    note:isRed ? 'Electrons are gained (on the left), so it is a reduction.' : 'Electrons are lost (on the right), so it is an oxidation.' };
 }
 const SOL_SOLUBLE = ['NaCl','KNO₃','Na₂SO₄','NH₄Cl','KOH','Na₂CO₃','KI','NH₄NO₃','NaOH','K₂SO₄','AgNO₃','Ca(NO₃)₂','Pb(NO₃)₂','Ba(NO₃)₂','(NH₄)₂SO₄','CH₃COONa'];
 const SOL_INSOL   = ['AgCl','BaSO₄','CaCO₃','PbSO₄','Fe(OH)₃','Mg(OH)₂','CuS','PbI₂','Ag₂S','CaSO₄','FeS','ZnCO₃','PbCl₂','Cu(OH)₂'];
@@ -5204,7 +5421,7 @@ function genChemName(){
   return { q:'What is the name of <b>' + f + '</b>?', choices:m.choices, answer:m.answer, note, key:'name-n:' + f };
 }
 function genChemIso(){ const m1=ri(10,60), m2=m1+ri(1,3), p=ri(20,80); const ram=rd((m1*p+m2*(100-p))/100,2);
-  return {q:'An element has two isotopes: mass <b>'+m1+'</b> ('+p+'%) and mass <b>'+m2+'</b> ('+(100-p)+'%). Find the relative atomic mass.', input:true, answer:ram, accept:v=>Math.abs(Number(v)-ram)<0.05, note:'('+m1+'×'+p+' + '+m2+'×'+(100-p)+')/100 = '+ram+'.'}; }
+  return {q:'An element has two isotopes: mass <b>'+m1+'</b> ('+p+'%) and mass <b>'+m2+'</b> ('+(100-p)+'%). Find the relative atomic mass.', input:true, answer:ram, accept:qty(ram,{tol:0.05,dim:'molarmass'}), note:'('+m1+'×'+p+' + '+m2+'×'+(100-p)+')/100 = '+ram+'.'}; }
 const ECONFIG=[[1,'H','1s¹'],[2,'He','1s²'],[3,'Li','1s² 2s¹'],[4,'Be','1s² 2s²'],[5,'B','1s² 2s² 2p¹'],
   [6,'C','1s² 2s² 2p²'],[7,'N','1s² 2s² 2p³'],[8,'O','1s² 2s² 2p⁴'],[9,'F','1s² 2s² 2p⁵'],[10,'Ne','1s² 2s² 2p⁶'],
   [11,'Na','1s² 2s² 2p⁶ 3s¹'],[12,'Mg','1s² 2s² 2p⁶ 3s²'],[13,'Al','1s² 2s² 2p⁶ 3s² 3p¹'],[14,'Si','1s² 2s² 2p⁶ 3s² 3p²'],
@@ -5235,8 +5452,8 @@ function genLewis(){
 }
 const MR=[['H₂O',18.0],['CO₂',44.0],['NaCl',58.5],['CaCO₃',100.1],['H₂SO₄',98.1],['C₆H₁₂O₆',180.2],['NaOH',40.0],['NH₃',17.0],['O₂',32.0],['CH₄',16.0],['MgO',40.3],['KCl',74.6]];
 function genChemMoles(){ const [f,mr]=pk(MR);
-  if(Math.random()<0.5){ const mass=ri(2,20)*5, n=mass/mr; return {q:'How many moles are in <b>'+mass+' g</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(n,3), accept:v=>Math.abs(Number(v)-n)<0.01, note:'n = m/M = '+mass+'/'+mr+' = '+rd(n,3)+' mol.'}; }
-  const n=ri(1,10)/2, mass=n*mr; return {q:'What is the mass of <b>'+n+' mol</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(mass,2), accept:v=>Math.abs(Number(v)-mass)<0.05, note:'m = nM = '+n+'×'+mr+' = '+rd(mass,2)+' g.'}; }
+  if(Math.random()<0.5){ const mass=ri(2,20)*5, n=mass/mr; return {q:'How many moles are in <b>'+mass+' g</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(n,3), unit:'mol', accept:qty(n,{tol:0.01,dim:'amount'}), note:'n = m/M = '+mass+'/'+mr+' = '+rd(n,3)+' mol.'}; }
+  const n=ri(1,10)/2, mass=n*mr; return {q:'What is the mass of <b>'+n+' mol</b> of '+f+'? (M = '+mr+' g/mol)', input:true, answer:rd(mass,2), unit:'g', accept:qty(mass,{tol:0.05,dim:'mass'}), note:'m = nM = '+n+'×'+mr+' = '+rd(mass,2)+' g.'}; }
 const LIMRX=[{eq:'N₂ + 3H₂ → 2NH₃',A:['N₂',1],B:['H₂',3]},{eq:'2H₂ + O₂ → 2H₂O',A:['H₂',2],B:['O₂',1]},
   {eq:'C + O₂ → CO₂',A:['C',1],B:['O₂',1]},{eq:'2Mg + O₂ → 2MgO',A:['Mg',2],B:['O₂',1]},
   {eq:'2Al + 3Cl₂ → 2AlCl₃',A:['Al',2],B:['Cl₂',3]},{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',A:['CH₄',1],B:['O₂',2]},
@@ -5353,9 +5570,9 @@ function genChemEmp(){
   return { q, choices:m.choices, answer:m.answer, note, key };
 }
 function genChemSol2(){ const k=ri(0,2);
-  if(k===0){ const n=ri(1,10)/2, V=ri(1,5)*0.5, c=n/V; return {q:'Find the concentration of a solution containing <b>'+n+' mol</b> in <b>'+V+' L</b>.', input:true, answer:rd(c,2), accept:v=>Math.abs(Number(v)-c)<0.02, note:'c = n/V = '+n+'/'+V+' = '+rd(c,2)+' mol/L.'}; }
-  if(k===1){ const c1=ri(1,4), v1=ri(1,5)*10, v2=v1*ri(2,4), c2=c1*v1/v2; return {q:'<b>'+v1+' mL</b> of <b>'+c1+' mol/L</b> solution is diluted to <b>'+v2+' mL</b>. Find the new concentration.', input:true, answer:rd(c2,3), accept:v=>Math.abs(Number(v)-c2)<0.01, note:'c₁V₁ = c₂V₂ → '+rd(c2,3)+' mol/L.'}; }
-  const n=ri(1,5)/2, vol=rd(n*24.79,2); return {q:'What volume does <b>'+n+' mol</b> of gas occupy at 25 °C and 100 kPa? (molar volume 24.79 L/mol)', input:true, answer:vol, accept:v=>Math.abs(Number(v)-vol)<0.1, note:'V = n × 24.79 = '+vol+' L.'}; }
+  if(k===0){ const n=ri(1,10)/2, V=ri(1,5)*0.5, c=n/V; return {q:'Find the concentration of a solution containing <b>'+n+' mol</b> in <b>'+V+' L</b>.', input:true, answer:rd(c,2), unit:'mol/L', accept:qty(c,{tol:0.02,dim:'conc'}), note:'c = n/V = '+n+'/'+V+' = '+rd(c,2)+' mol/L.'}; }
+  if(k===1){ const c1=ri(1,4), v1=ri(1,5)*10, v2=v1*ri(2,4), c2=c1*v1/v2; return {q:'<b>'+v1+' mL</b> of <b>'+c1+' mol/L</b> solution is diluted to <b>'+v2+' mL</b>. Find the new concentration.', input:true, answer:rd(c2,3), unit:'mol/L', accept:qty(c2,{tol:0.01,dim:'conc'}), note:'c₁V₁ = c₂V₂ → '+rd(c2,3)+' mol/L.'}; }
+  const n=ri(1,5)/2, vol=rd(n*24.79,2); return {q:'What volume does <b>'+n+' mol</b> of gas occupy at 25 °C and 100 kPa? (molar volume 24.79 L/mol)', input:true, answer:vol, unit:'L', accept:qty(vol,{tol:0.1,dim:'volume'}), note:'V = n × 24.79 = '+vol+' L.'}; }
 const RXNTYPE=[['2H₂ + O₂ → 2H₂O','Synthesis'],['CaCO₃ → CaO + CO₂','Decomposition'],
   ['Zn + CuSO₄ → ZnSO₄ + Cu','Displacement'],['CH₄ + 2O₂ → CO₂ + 2H₂O','Combustion'],
   ['HCl + NaOH → NaCl + H₂O','Neutralisation'],['2Na + Cl₂ → 2NaCl','Synthesis'],
@@ -5367,12 +5584,61 @@ const RXNTYPE=[['2H₂ + O₂ → 2H₂O','Synthesis'],['CaCO₃ → CaO + CO₂
   ['2C₂H₆ + 7O₂ → 4CO₂ + 6H₂O','Combustion'],['Cu + 2AgNO₃ → Cu(NO₃)₂ + 2Ag','Displacement'],
   ['HNO₃ + KOH → KNO₃ + H₂O','Neutralisation'],['S + O₂ → SO₂','Synthesis']];
 function genChemType(){ const [eq,t]=pk(RXNTYPE); const types=['Synthesis','Decomposition','Displacement','Combustion','Neutralisation','Precipitation']; const m=mc(t, shuffle(types.filter(x=>x!==t))); return {q:'Classify this reaction: <b>'+eq+'</b>', choices:m.choices, answer:m.answer, key:'rxntype:'+eq}; }
-const SRP=[['Zn²⁺/Zn',-0.76],['Cu²⁺/Cu',0.34],['Ag⁺/Ag',0.80],['Fe²⁺/Fe',-0.44],['Mg²⁺/Mg',-2.37],['Pb²⁺/Pb',-0.13]];
+/* [couple, E° in volts, charge on the ion]. Al and Ni use the NSW data sheet values. */
+const SRP=[['Zn²⁺/Zn',-0.76,2],['Cu²⁺/Cu',0.34,2],['Ag⁺/Ag',0.80,1],['Fe²⁺/Fe',-0.44,2],['Mg²⁺/Mg',-2.37,2],['Pb²⁺/Pb',-0.13,2],
+  ['Al³⁺/Al',-1.68,3],['Ni²⁺/Ni',-0.24,2]];
 function genGalvanic(){ let a=pk(SRP), b=pk(SRP); while(b[0]===a[0]) b=pk(SRP); const [hi,lo]=a[1]>b[1]?[a,b]:[b,a]; const emf=rd(hi[1]-lo[1],2);
   const pair=[a[0],b[0]].sort().join('|');
-  if(Math.random()<0.5) return {q:'A galvanic cell is built from '+a[0]+' (E° = '+a[1]+' V) and '+b[0]+' (E° = '+b[1]+' V). Find the cell potential.', input:true, answer:emf, accept:v=>Math.abs(Number(v)-emf)<0.01, note:'E°cell = E°cathode − E°anode = '+hi[1]+' − ('+lo[1]+') = '+emf+' V.', key:'galv-emf:'+pair};
-  const anode=lo[0].split('/')[1]; return {q:'In a cell of '+a[0]+' (E° = '+a[1]+' V) and '+b[0]+' (E° = '+b[1]+' V), which metal is the <b>anode</b>?', choices:[hi[0].split('/')[1],anode], answer:anode, note:'The more negative E° ('+lo[0]+') is oxidised, so it is the anode.', key:'galv-anode:'+pair}; }
-function genCalor(){ const m=ri(50,300), dT=ri(5,40), q=rd(m*4.18*dT/1000,2); return {q:'How much heat (kJ) warms <b>'+m+' g</b> of water by <b>'+dT+' °C</b>? (c = 4.18 J/g·°C)', input:true, answer:q, accept:v=>Math.abs(Number(v)-q)<0.1, note:'q = mcΔT = '+m+'×4.18×'+dT+' = '+(m*4.18*dT)+' J = '+q+' kJ.'}; }
+  const ev = x => (x < 0 ? '−' : '+') + Math.abs(x).toFixed(2);   // as the data sheet prints E°
+  const k = Math.random();
+  if(k<0.25) return {q:'A galvanic cell is built from '+a[0]+' (E° = '+ev(a[1])+' V) and '+b[0]+' (E° = '+ev(b[1])+' V). Find the cell potential.', input:true, answer:emf, unit:'V', accept:qty(emf,{tol:0.01,dim:'voltage'}), note:'E°cell = E°cathode − E°anode = '+ev(hi[1])+' − ('+ev(lo[1])+') = '+emf.toFixed(2)+' V.', key:'galv-emf:'+pair};
+  const anode=lo[0].split('/')[1];
+  if(k<0.37) return {q:'In a cell of '+a[0]+' (E° = '+ev(a[1])+' V) and '+b[0]+' (E° = '+ev(b[1])+' V), which metal is the <b>anode</b>?', choices:[hi[0].split('/')[1],anode], answer:anode, note:'The more negative E° ('+lo[0]+') is oxidised, so it is the anode.', key:'galv-anode:'+pair};
+  /* everything else about the same cell, worked out from which couple has the higher E° */
+  const cathode = hi[0].split('/')[1], anIon = lo[0].split('/')[0], caIon = hi[0].split('/')[0];
+  const setup = 'A galvanic cell is made from ' + a[0] + ' (E° = ' + ev(a[1]) + ' V) and ' + b[0] + ' (E° = ' + ev(b[1]) + ' V).';
+  const base = 'The higher E° (' + hi[0] + ') is reduced at the cathode; ' + anode + ' is oxidised at the anode.';
+  const two = (q, right, wrong, id, note) => ({ q:setup + ' ' + q, choices:shuffle([right, wrong]), answer:right, note:base + (note ? ' ' + note : ''), key:'galv-' + id + ':' + pair });
+  const redHalf = { o:caIon, n:hi[2], r:cathode }, oxHalf = { o:anIon, n:lo[2], r:anode };
+  const kind = pk(['cathode','where','where','species','species','half','half','electrons','mass','positive','bridge','overall','overall']);
+  if (kind === 'cathode') return two('Which metal is the <b>cathode</b>?', cathode, anode, 'cathode');
+  if (kind === 'where'){ const red = Math.random() < 0.5;
+    return two('At which electrode does <b>' + (red ? 'reduction' : 'oxidation') + '</b> happen?',
+      (red ? cathode : anode) + ' electrode', (red ? anode : cathode) + ' electrode', red ? 'redat' : 'oxat',
+      'Oxidation is always at the anode and reduction at the cathode.'); }
+  if (kind === 'species'){ const red = Math.random() < 0.5, right = red ? caIon : anode;
+    const m = mc(right, red ? [anIon, cathode, anode] : [anIon, cathode, caIon]);
+    return { q:setup + ' Which species is <b>' + (red ? 'reduced' : 'oxidised') + '</b>?', choices:m.choices, answer:m.answer,
+      note:base + ' So ' + (red ? caIon + ' ions gain electrons to become ' + cathode + ' metal.' : anode + ' atoms lose electrons to become ' + anIon + ' ions.'),
+      key:'galv-' + (red ? 'redsp' : 'oxsp') + ':' + pair }; }
+  if (kind === 'half'){ const atCathode = Math.random() < 0.5, right = atCathode ? asReduction(redHalf) : asOxidation(oxHalf);
+    const m = mc(right, shuffle([asReduction(redHalf), asOxidation(redHalf), asReduction(oxHalf), asOxidation(oxHalf)]));
+    return { q:setup + ' Which half-equation happens at the <b>' + (atCathode ? 'cathode' : 'anode') + '</b>?', choices:m.choices, answer:m.answer,
+      note:base + ' Cathode: ' + asReduction(redHalf) + '. Anode: ' + asOxidation(oxHalf) + '.', key:'galv-' + (atCathode ? 'cahalf' : 'anhalf') + ':' + pair }; }
+  if (kind === 'electrons') return two('Which way do electrons flow through the external wire?', 'From ' + anode + ' to ' + cathode, 'From ' + cathode + ' to ' + anode, 'eflow',
+    'Electrons are released by the oxidation at the anode and flow through the wire to the cathode.');
+  if (kind === 'mass'){ const gain = Math.random() < 0.5;
+    return two('Which electrode <b>' + (gain ? 'gains' : 'loses') + ' mass</b> as the cell runs?', gain ? cathode : anode, gain ? anode : cathode, gain ? 'gain' : 'lose',
+      'The anode dissolves as ' + anode + ' becomes ' + anIon + ' ions; ' + cathode + ' metal is deposited on the cathode.'); }
+  if (kind === 'positive') return two('Which electrode is <b>positive</b>?', cathode, anode, 'positive',
+    'In a galvanic cell the cathode is positive: electrons arrive there and are used up by the reduction.');
+  if (kind === 'bridge'){ const anions = Math.random() < 0.5;
+    return two('In the salt bridge, which half-cell do the <b>' + (anions ? 'anions' : 'cations') + '</b> move towards?',
+      'The ' + (anions ? anode : cathode) + ' half-cell', 'The ' + (anions ? cathode : anode) + ' half-cell', anions ? 'anions' : 'cations',
+      'Anions move towards the anode, where positive ions are being made; cations move towards the cathode, where positive ions are being used up.'); }
+  /* the overall equation, balanced for electrons */
+  const L = lo[2] * hi[2] / gcd2(lo[2], hi[2]), cm = L / lo[2], cn = L / hi[2], co = c => c === 1 ? '' : String(c);
+  const right = co(cm) + anode + ' + ' + co(cn) + caIon + ' → ' + co(cm) + anIon + ' + ' + co(cn) + cathode;
+  const m = mc(right, shuffle([
+    co(cn) + cathode + ' + ' + co(cm) + anIon + ' → ' + co(cn) + caIon + ' + ' + co(cm) + anode,     // runs backwards
+    anode + ' + ' + caIon + ' → ' + anIon + ' + ' + cathode,                                        // electrons not balanced (when charges differ)
+    co(cn) + anode + ' + ' + co(cm) + caIon + ' → ' + co(cn) + anIon + ' + ' + co(cm) + cathode,     // coefficients swapped
+    anode + ' + ' + cathode + ' → ' + anIon + ' + ' + caIon,                                        // both oxidised
+    anIon + ' + ' + caIon + ' → ' + anode + ' + ' + cathode                                         // both reduced
+  ]));
+  return { q:setup + ' Which is the balanced overall equation for the cell?', choices:m.choices, answer:m.answer, key:'galv-overall:' + pair,
+    note:base + ' Balance the electrons: ' + (cm === 1 ? '' : cm + ' × ') + '(' + asOxidation(oxHalf) + ') and ' + (cn === 1 ? '' : cn + ' × ') + '(' + asReduction(redHalf) + ').' }; }
+function genCalor(){ const m=ri(50,300), dT=ri(5,40), q=rd(m*4.18*dT/1000,2); return {q:'How much heat (kJ) warms <b>'+m+' g</b> of water by <b>'+dT+' °C</b>? (c = 4.18 J/g·°C)', input:true, answer:q, unit:'kJ', accept:qty(q,{tol:0.1,dim:'energy'}), note:'q = mcΔT = '+m+'×4.18×'+dT+' = '+(m*4.18*dT)+' J = '+q+' kJ.'}; }
 const BONDRX=[{eq:'H₂ + Cl₂ → 2HCl',broken:[['H–H',436],['Cl–Cl',242]],formed:[['H–Cl',431,2]]},
   {eq:'H₂ + Br₂ → 2HBr',broken:[['H–H',436],['Br–Br',193]],formed:[['H–Br',366,2]]},
   {eq:'N₂ + 3H₂ → 2NH₃',broken:[['N≡N',945],['H–H',436,3]],formed:[['N–H',391,6]]},
@@ -5383,7 +5649,7 @@ const BONDRX=[{eq:'H₂ + Cl₂ → 2HCl',broken:[['H–H',436],['Cl–Cl',242]]
   {eq:'2H₂ + O₂ → 2H₂O',broken:[['H–H',436,2],['O=O',498]],formed:[['O–H',463,4]]}];
 function genBondE(){ const r=pk(BONDRX); const sum=arr=>arr.reduce((s,x)=>s+x[1]*(x[2]||1),0); const dH=sum(r.broken)-sum(r.formed);
   const tbl=[...r.broken,...r.formed].map(x=>x[0]+' = '+x[1]).join(', ');
-  return {q:'For <b>'+r.eq+'</b>, bond energies (kJ/mol): '+tbl+'. Find ΔH.', input:true, answer:dH, accept:v=>Math.abs(Number(v)-dH)<1, note:'ΔH = Σ(bonds broken) − Σ(bonds formed) = '+sum(r.broken)+' − '+sum(r.formed)+' = '+dH+' kJ/mol.'}; }
+  return {q:'For <b>'+r.eq+'</b>, bond energies (kJ/mol): '+tbl+'. Find ΔH.', input:true, answer:dH, unit:'kJ/mol', accept:qty(dH,{tol:1,dim:'energy'}), note:'ΔH = Σ(bonds broken) − Σ(bonds formed) = '+sum(r.broken)+' − '+sum(r.formed)+' = '+dH+' kJ/mol.'}; }
 const FORMRX=[{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',t:[['CO₂',-394,1],['H₂O',-286,2],['CH₄',-75,-1],['O₂',0,-2]]},
   {eq:'2H₂ + O₂ → 2H₂O',t:[['H₂O',-286,2],['H₂',0,-2],['O₂',0,-1]]},
   {eq:'C + O₂ → CO₂',t:[['CO₂',-394,1],['C',0,-1],['O₂',0,-1]]},
@@ -5393,16 +5659,16 @@ const FORMRX=[{eq:'CH₄ + 2O₂ → CO₂ + 2H₂O',t:[['CO₂',-394,1],['H₂O
   {eq:'N₂ + 3H₂ → 2NH₃',t:[['NH₃',-46,2],['N₂',0,-1],['H₂',0,-3]]},
   {eq:'C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',t:[['CO₂',-394,3],['H₂O',-286,4],['C₃H₈',-104,-1],['O₂',0,-5]]}];
 function genFormation(){ const r=pk(FORMRX); const dH=r.t.reduce((s,x)=>s+x[1]*x[2],0); const given=r.t.filter(x=>x[1]!==0).map(x=>'ΔHf('+x[0]+') = '+x[1]).join(', ');
-  return {q:'Using standard enthalpies of formation (kJ/mol): '+given+', find ΔH for <b>'+r.eq+'</b>.', input:true, answer:dH, accept:v=>Math.abs(Number(v)-dH)<1, note:'ΔH = ΣΔHf(products) − ΣΔHf(reactants) = '+dH+' kJ/mol.'}; }
+  return {q:'Using standard enthalpies of formation (kJ/mol): '+given+', find ΔH for <b>'+r.eq+'</b>.', input:true, answer:dH, unit:'kJ/mol', accept:qty(dH,{tol:1,dim:'energy'}), note:'ΔH = ΣΔHf(products) − ΣΔHf(reactants) = '+dH+' kJ/mol.'}; }
 function genGibbs(){ const dH=ri(-100,100), dS=ri(-200,200), T=ri(1,6)*100, dG=rd(dH-T*dS/1000,1);
-  if(Math.random()<0.5) return {q:'A reaction has ΔH = <b>'+dH+' kJ</b>, ΔS = <b>'+dS+' J/K</b>, at <b>T = '+T+' K</b>. Find ΔG (kJ).', input:true, answer:dG, accept:v=>Math.abs(Number(v)-dG)<0.5, note:'ΔG = ΔH − TΔS = '+dH+' − '+T+'×'+dS+'/1000 = '+dG+' kJ.'};
+  if(Math.random()<0.5) return {q:'A reaction has ΔH = <b>'+dH+' kJ</b>, ΔS = <b>'+dS+' J/K</b>, at <b>T = '+T+' K</b>. Find ΔG (kJ).', input:true, answer:dG, unit:'kJ', accept:qty(dG,{tol:0.5,dim:'energy'}), note:'ΔG = ΔH − TΔS = '+dH+' − '+T+'×'+dS+'/1000 = '+dG+' kJ.'};
   return {q:'A reaction has ΔG = <b>'+dG+' kJ</b>. Is it spontaneous?', choices:['Spontaneous','Non-spontaneous'], answer:dG<0?'Spontaneous':'Non-spontaneous', note:'A reaction is spontaneous when ΔG < 0.'}; }
 
 /* ══ PHYSICS ══ */
 function genVectors(){ const [a,b,c]=pk([[3,4,5],[6,8,10],[5,12,13],[8,15,17],[9,12,15],[7,24,25]]); const m=physMC(c,'N',[a+b,Math.abs(a-b),rd(Math.sqrt(a*b),1)]);
   return {q:'Two perpendicular forces of <b>'+a+' N</b> and <b>'+b+' N</b> act at a point. Find the magnitude of the resultant.'+vectorSVG(a,b), choices:m.choices, answer:m.answer, note:'R = √('+a+'² + '+b+'²) = '+c+' N.'}; }
 function genRelVel(){ let va=nzr(-30,30), vb=nzr(-30,30); if(va===vb) return genRelVel(); const rel=va-vb;
-  return {q:'Along a straight road (right = positive), car A travels at <b>'+va+' m/s</b> and car B at <b>'+vb+' m/s</b>. Find the velocity of A relative to B.', input:true, answer:rel, accept:v=>Number(v)===rel, note:'v(A rel B) = vA − vB = '+va+' − ('+vb+') = '+rel+' m/s.'}; }
+  return {q:'Along a straight road (right = positive), car A travels at <b>'+va+' m/s</b> and car B at <b>'+vb+' m/s</b>. Find the velocity of A relative to B.', input:true, answer:rel, unit:'m/s', accept:qty(rel,{tol:0.05,dim:'speed',dir:true}), note:'v(A rel B) = vA − vB = '+va+' − ('+vb+') = '+rel+' m/s.'}; }
 function genKinematics(){ const u=ri(0,15), v=ri(16,40), t=ri(2,8), a=rd((v-u)/t,2); const m=physMC(a,'m/s²',[v-u, rd((v+u)/t,2), rd((v-u)/t/2,2)]);
   return {q:'A car speeds up from <b>'+u+' m/s</b> to <b>'+v+' m/s</b> in <b>'+t+' s</b>. Find its acceleration.', choices:m.choices, answer:m.answer, note:'a = Δv/Δt = ('+v+'−'+u+')/'+t+' = '+a+' m/s².'}; }
 function genNewton(){ const mass=ri(2,20), a=ri(1,10), F=mass*a; const m=physMC(F,'N',[mass+a, rd(F/2,1), rd(mass/a,2)]);
