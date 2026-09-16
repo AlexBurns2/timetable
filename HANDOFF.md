@@ -1191,3 +1191,55 @@ every species (subscripts, brackets, charges), and checks that:
   matches an independent derivation (cathode = higher E°, and so on)
 - options are 2 to 4 and distinct, exactly one overall equation is balanced in
   the right direction, and E° is printed signed to 2 dp
+
+### 8.25 Site-wide settings, and turning weekly boards off
+
+The first setting that belongs to the site rather than to a person. The pattern
+to copy for the next one:
+
+- `api/_settings.js` is a helper, not a route (the `_` prefix keeps it off
+  Vercel's function count, which is at 11 of 12). `siteSettings()` reads the
+  `site_setting` table into `{ weeklyBoards }`, cached 60 s per warm instance,
+  and falls back to the defaults if the table is missing or the read fails, so
+  the site behaves exactly as before until the table exists.
+  `setSiteSetting(key, value)` upserts and clears the cache.
+- Both ends live in `leaderboard.js`, again to avoid a new function:
+  `GET ?settings=1` is readable by **anyone signed in** (every page needs it to
+  decide whether to draw the weekly tab), while `POST {action:'settings',
+  weeklyBoards:bool}` is owner-only and rejects a non-boolean. Values are
+  stored as the strings `on` / `off` under the key `weekly_boards`.
+
+Client side (`games.js`): `siteSettings()` fetches once per page load into
+`siteCfg`, `weeklyOn()` reads it, and `forgetSiteSettings()` re-fetches (used by
+the moderator tab). Anything that draws the week/all tabs awaits the fetch
+first, so the tabs are never drawn and then removed:
+- `mountLB` (the panel under a game) omits the tabs and starts on `all`. It also
+  checks `lbSeq`, bumped by `openGame`/`showGrid`, so a slow settings fetch can't
+  append a panel to a game the player has already left.
+- Tetris `loadLB` skips the weekly request entirely and titles the board
+  "Sprint, fastest times (all-time)".
+- `BUILD.leaderboards` folds it into the existing `single` flag (survival and
+  zen were already all-time only) and re-reads its "how" line after the fetch.
+- `BUILD.admin` hides the period tabs, forces `period = 'all'`, and adds the
+  `Site settings` category (`kind:'s'`). That category is gated on `isAdmin` for
+  looks only — the server is what actually refuses a change.
+
+**Scores keep being written to the weekly boards while it is off** (both in
+`lbSubmit` and Tetris's `submitScore`), which is what makes turning it back on
+lossless. The switch is display-only by design.
+
+```sql
+create table site_setting (
+  key        text primary key,
+  value      text not null,
+  updated_at timestamptz not null default now()
+);
+```
+
+`weeklytest.mjs` (scratchpad, 17 checks) runs the real route against an
+in-memory database: defaults and boards before the table exists, the 502 hint,
+a student refused (and nothing written), a non-boolean refused, the owner
+toggling it, everyone else reading the new value, weekly rows surviving and new
+scores still reaching both boards while off, the weekly board coming back
+intact, and the rest of the route unchanged. `namestest.mjs` copies the new
+helper into its temp API folder too.

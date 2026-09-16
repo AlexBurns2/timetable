@@ -17,6 +17,7 @@
 
 import { db, whoami } from "./_supabase.js";
 import { nameOverrides, withName, forgetNameOverrides } from "./_names.js";
+import { siteSettings, setSiteSetting } from "./_settings.js";
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -116,6 +117,24 @@ export default async function handler(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
   const src = req.method === "POST" ? (body || {}) : req.query;
+
+  /* site-wide settings. Readable by anyone signed in, because every page needs
+     to know whether to show the weekly boards; only the owner can change them. */
+  if (req.method === "GET" && src.settings) {
+    return res.status(200).json(await siteSettings());
+  }
+  if (req.method === "POST" && src.action === "settings") {
+    if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
+      return res.status(403).json({ error: "Only the owner can change site settings." });
+    if (typeof src.weeklyBoards !== "boolean")
+      return res.status(400).json({ error: "weeklyBoards must be true or false." });
+    const failed = await setSiteSetting("weekly_boards", src.weeklyBoards ? "on" : "off");
+    if (failed) {
+      console.error("site settings:", failed);
+      return res.status(502).json({ error: "Couldn't save that. Has the site_setting table been created?" });
+    }
+    return res.status(200).json(await siteSettings());
+  }
 
   /* owner-only roster of who has signed in — answered before the game/metric
      checks below, since it isn't tied to any one board */

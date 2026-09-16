@@ -1272,6 +1272,34 @@ create table name_override (
 Until the table exists, the site behaves exactly as before and Rename explains
 that the table is missing.
 
+## Moderator: turning weekly leaderboards off
+
+On the moderator page there is now a **Site settings** tab, with one switch:
+**Weekly leaderboards**. Turn it off when there isn't the traffic to fill a
+weekly board.
+
+With it off, every page shows the all-time board only and the weekly / all-time
+toggle disappears: the leaderboard under each game, the Leaderboards page, the
+Tetris Sprint board and the moderator page itself. Scores still go to the weekly
+boards the whole time it is off, so turning it back on brings them all back.
+Nothing is ever deleted either way.
+
+Only the owner (`OWNER_EMAIL`) can change it, and it applies to the whole site
+for everyone, whoever opens it, because it lives on the server rather than in
+your browser. Other people see the change within a minute, on their next page
+load. It needs one table:
+
+```sql
+create table site_setting (
+  key        text primary key,
+  value      text not null,
+  updated_at timestamptz not null default now()
+);
+```
+
+Until the table exists, weekly boards stay on exactly as before and the switch
+explains that the table is missing.
+
 ## Phones and tablets
 
 The whole site now works on a phone. On a computer nothing looks or behaves any

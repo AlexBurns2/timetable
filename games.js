@@ -177,7 +177,7 @@ function gameCard(g, i){
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
-  lbState = null;
+  lbState = null; lbSeq++;
   $('gamestage').hidden = true;
   const grid = $('gamegrid');
   grid.hidden = false;
@@ -292,7 +292,7 @@ function openGame(id){
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
     stop = BUILD[id]($('stage'));
-    lbState = null;
+    lbState = null; lbSeq++;
     if (LB_GAMES[id]) mountLB(id);
   };
   if (reduced()){ go(); return; }
@@ -373,6 +373,24 @@ const LB_GAMES = {
   chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v) },
   oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) }
 };
+/* ── site-wide settings (api/_settings.js) ────────────────────────────
+   Set by the owner on the moderator page and stored on the server, so they
+   apply to everyone whoever opens the site. Weekly boards can be turned off
+   when there isn't the traffic for them: every page then shows the all-time
+   board only, with no weekly / all-time toggle. Read once per page load, and
+   if the read fails nothing changes from how the site behaved before. */
+let sitePromise = null, siteCfg = { weeklyBoards:true };
+function siteSettings(){
+  if (!sitePromise) sitePromise = TT.api('/api/leaderboard', { params:{ settings:1 } })
+    .then(d => { siteCfg = { weeklyBoards: d && d.weeklyBoards !== false }; return siteCfg; })
+    .catch(() => siteCfg);
+  return sitePromise;
+}
+const weeklyOn = () => siteCfg.weeklyBoards;
+const forgetSiteSettings = () => { sitePromise = null; };
+if (typeof TT !== 'undefined' && TT.myEmail && TT.myEmail()) siteSettings();   // warm before a board is opened
+
+let lbSeq = 0;        // bumped whenever the stage changes, so a slow mount can't land on the wrong game
 let lbState = null;   // { game, period, week, all, canWipe } for the mounted panel
 
 async function lbSubmit(game, score){
@@ -384,17 +402,21 @@ async function lbSubmit(game, score){
     if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){}
 }
-function mountLB(game){
+async function mountLB(game){
   const lb = LB_GAMES[game]; if (!lb) return;
+  const seq = lbSeq;
+  await siteSettings();
+  if (seq !== lbSeq) return;                       // the player has already moved on
+  const weekly = weeklyOn();
   const panel = document.createElement('div');
   panel.className = 'glb'; panel.id = 'glb';
   panel.innerHTML =
     '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
-    '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
-    '<button type="button" class="glbtab" data-p="all">All time</button></div></div>' +
+    (weekly ? '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
+    '<button type="button" class="glbtab" data-p="all">All time</button></div>' : '') + '</div>' +
     '<div id="glbbody"><p class="how">Loading…</p></div>';
   $('stage').appendChild(panel);
-  lbState = { game, period:'week', week:null, all:null };
+  lbState = { game, period: weekly ? 'week' : 'all', week:null, all:null };
   [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
     lbState.period = b.dataset.p;
     [...panel.querySelectorAll('.glbtab')].forEach(t => t.classList.toggle('cur', t===b));
@@ -1346,6 +1368,8 @@ BUILD.tetris = host => {
     try {
       if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{method:'POST',body:{mode:'zen',ms}}), 'Longest survivals (all-time)'); }
       else {
+        /* the weekly board is still written to even while it is hidden, so turning
+           weekly boards back on brings every score back with it */
         const [w,a] = await Promise.all([
           TT.api('/api/tetris',{method:'POST',body:{mode:'sprint',week:wk,timeMs:ms}}),
           TT.api('/api/tetris',{method:'POST',body:{mode:'sprintall',timeMs:ms}})
@@ -1364,6 +1388,9 @@ BUILD.tetris = host => {
     if (!TT.myEmail()){ el.innerHTML=''; return; }
     try {
       if (mode==='sprint'){
+        await siteSettings();
+        if (!weeklyOn()){ sprintTab='all';
+          sprintBoards={week:null,all:await TT.api('/api/tetris',{params:{mode:'sprintall'}})}; renderSprintLB(); return; }
         const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}), TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
         sprintBoards={week:w,all:a}; renderSprintLB();
       } else if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{params:{mode:'zen'}}), 'Longest survivals (all-time)'); }
@@ -1386,12 +1413,13 @@ BUILD.tetris = host => {
   }
   function renderSprintLB(){
     const el=$$('tlb'); if (!el || !alive) return;
+    if (!weeklyOn()) sprintTab='all';
     const d = sprintTab==='week' ? sprintBoards.week : sprintBoards.all;
-    const tabs='<div class="glbtabs"><button type="button" class="glbtab'+(sprintTab==='week'?' cur':'')+'" data-t="week">This week</button>'+
-      '<button type="button" class="glbtab'+(sprintTab==='all'?' cur':'')+'" data-t="all">All time</button></div>';
+    const tabs = weeklyOn() ? '<div class="glbtabs"><button type="button" class="glbtab'+(sprintTab==='week'?' cur':'')+'" data-t="week">This week</button>'+
+      '<button type="button" class="glbtab'+(sprintTab==='all'?' cur':'')+'" data-t="all">All time</button></div>' : '';
     const rows=(d && d.top)||[];
     const body = (!rows.length && (!d||d.meBest==null)) ? '<p class="how">No times yet. Set the first one.</p>' : rowsHTML(d, r=>fmtHMS(r.time_ms));
-    el.innerHTML='<div class="glbhd"><h3>Sprint, fastest times</h3>'+tabs+'</div>'+body;
+    el.innerHTML='<div class="glbhd"><h3>Sprint, fastest times'+(weeklyOn()?'':' (all-time)')+'</h3>'+tabs+'</div>'+body;
     [...el.querySelectorAll('.glbtab')].forEach(b=>b.onclick=()=>{ sprintTab=b.dataset.t; renderSprintLB(); });
   }
   function renderZenLB(d){
@@ -2426,7 +2454,8 @@ BUILD.react = host => {
 
 /* ── Leaderboards (read-only; owner controls live in Admin) ─────────── */
 BUILD.leaderboards = host => {
-  head(host, 'Leaderboards', 'Pick a game. Weekly resets each Monday, all-time never does.', '<div id="lbp"></div>');
+  const howText = () => weeklyOn() ? 'Pick a game. Weekly resets each Monday, all-time never does.' : 'Pick a game. These are all-time boards.';
+  head(host, 'Leaderboards', howText(), '<div id="lbp"></div>');
   const box = $('lbp');
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return () => {}; }
   const wk = tetrisWeek();
@@ -2451,11 +2480,14 @@ BUILD.leaderboards = host => {
     $('lbtitle').textContent = 'Leaderboard · ' + cur.name;
     const body = $('lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
     try {
+      await siteSettings();
+      const how = host.querySelector('.how'); if (how) how.textContent = howText();   // the setting may have landed since
       if (cur.g){
         data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
       } else if (cur.t === 'sprint'){
-        const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}), TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
-        data = { week:{ top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank },
+        const [w,a] = await Promise.all([ weeklyOn() ? TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}) : null,
+                                          TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
+        data = { week:w ? { top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank } : null,
                  all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
       } else if (cur.t === 'zen'){
         const d = await TT.api('/api/tetris',{params:{mode:'zen'}});
@@ -2468,7 +2500,9 @@ BUILD.leaderboards = host => {
     } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
   }
   function syncTabs(){
-    const single = !cur.g && cur.t !== 'sprint';         // survival/zen are all-time only
+    /* survival and zen are all-time only — and so is everything, when the owner
+       has turned weekly boards off */
+    const single = (!cur.g && cur.t !== 'sprint') || !weeklyOn();
     const tabs = [...box.querySelectorAll('.glbtab[data-p]')];
     tabs.forEach(t => { if (t.dataset.p==='week') t.style.display = single ? 'none' : ''; });
     if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
@@ -2504,7 +2538,9 @@ BUILD.admin = host => {
   ];
   /* not a board: a roster of everyone who has actually used the site */
   const USERS = { id:'users', name:'Signed-in users', kind:'u' };
-  const CATS = [USERS, ...GEN, ...TET];
+  /* not a board either: switches that apply to the whole site, for everyone */
+  const SETTINGS = { id:'settings', name:'Site settings', kind:'s' };
+  const CATS = [USERS, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -2528,15 +2564,24 @@ BUILD.admin = host => {
   load();
 
   function syncTabsUI(){
-    const gen = cur.kind === 'g', users = cur.kind === 'u';
+    /* with weekly boards turned off there is only the all-time board to edit */
+    const gen = cur.kind === 'g' && weeklyOn(), plain = cur.kind === 'u' || cur.kind === 's';
+    if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
-    $('admwipe').style.display = users ? 'none' : '';
+    $('admwipe').style.display = plain ? 'none' : '';
   }
   async function load(){
     $('admtitle').textContent = cur.name; syncTabsUI();
     const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>'; data = null;
     try {
+      if (cur.kind === 's'){                       // site-wide switches, read fresh
+        /* the server refuses a change from anyone but the owner; this is only so
+           the switch isn't dangled in front of someone who can't use it */
+        if (!isAdmin){ body.innerHTML = '<p class="how">You are not the owner. Set OWNER_EMAIL on the server to your school login.</p>'; return; }
+        forgetSiteSettings(); await siteSettings();
+        render(); return;
+      }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -2569,6 +2614,24 @@ BUILD.admin = host => {
   function render(){
     syncTabsUI();
     $('admtitle').textContent = cur.name;
+    if (cur.kind === 's'){
+      const on = weeklyOn();
+      $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
+      $('admbody').innerHTML =
+        '<div class="adminrow setrow"><span class="nm"><b>Weekly leaderboards</b><em>' +
+        (on ? 'Every board has a “This week” tab next to “All time”.'
+            : 'Every page shows the all-time board only, with no weekly tab. Scores still go to the weekly boards while it is off, so turning it back on brings them back.') +
+        '</em></span><button class="btn' + (on ? ' primary' : '') + '" id="setweekly" type="button">' + (on ? 'On' : 'Off') + '</button></div>';
+      $('setweekly').onclick = async () => {
+        const b = $('setweekly'); b.disabled = true;
+        try {
+          const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', weeklyBoards:!on } });
+          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false };
+          render();
+        } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
+      };
+      return;
+    }
     if (cur.kind === 'u'){
       const us = (data && data.users) || [];
       const active = us.filter(u => u.last && (Date.now() - new Date(u.last).getTime()) < 7*864e5).length;

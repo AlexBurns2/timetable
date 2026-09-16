@@ -658,3 +658,9 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
   #mines{gap:2px}
   #mines button{font-size:0.8125rem;border-radius:3px}
 }
+
+/* moderator: site-wide switches */
+.adminrow.setrow{align-items:flex-start;gap:12px;padding:11px}
+.setrow .nm{display:flex;flex-direction:column;gap:3px;white-space:normal;overflow:visible}
+.setrow em{font-style:normal;color:var(--muted);font-size:0.78125rem;line-height:1.45}
+.setrow .btn{flex:none;min-width:62px;justify-content:center}
