@@ -1064,11 +1064,16 @@ BUILD.tetris = host => {
   const ncan = $$('tnext'), nctx = ncan.getContext('2d');
   const hcan = $$('thold'), hctx = hcan.getContext('2d');
   const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  /* juice: brief flash overlay + canvas shake, both gated on the animation setting */
+  /* juice: brief flash overlay + a landing bump, both gated on the animation setting */
   function flash(kind){ if (!gameAnim()) return; const f=$$('tflash'); if(!f) return;
     f.className='tflash'; void f.offsetWidth; f.classList.add(kind); }
-  function shake(){ if (!gameAnim()) return; const c=$$('tcan'); if(!c) return;
-    c.classList.remove('tshake'); void c.offsetWidth; c.classList.add('tshake'); }
+  /* placing a piece bumps the whole board down a touch and lets it settle, like
+     tetr.io. A hard drop lands harder than a piece that locks on its own, and
+     topping out is the heaviest; none of them shake side to side. */
+  function thud(px, ms){ if (!gameAnim()) return; const w=can.parentElement; if(!w || !w.animate) return;
+    w.animate([{ transform:'translateY(0)', easing:'cubic-bezier(.3,0,.7,1)' },
+               { transform:'translateY('+px+'px)', offset:.22, easing:'cubic-bezier(.2,.75,.3,1)' },
+               { transform:'translateY(0)' }], { duration:ms||230 }); }
 
   /* SRS spawn states in padded boxes (3×3 for JLSTZ, 4×4 for I, 2×2 for O) */
   const SPAWN = {
@@ -1170,8 +1175,9 @@ BUILD.tetris = host => {
     if (hold==null){ hold=cur; spawnNext(now); } else { const h=hold; hold=cur; spawnFrom(h, now); }
     SFX.hold(); applyDCD(now);
   }
-  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); shake(); commitLock(now); }
-  function commitLock(now){
+  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); commitLock(now, true); }
+  function commitLock(now, hard){
+    thud(hard ? 4 : 1.5);
     piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c]=piece.type; }));
     let lines=0;
     for (let r=ROWS-1;r>=0;r--){ if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; } }
@@ -1260,7 +1266,16 @@ BUILD.tetris = host => {
     for(let i=0;i<4;i++) drawPieceBox(nctx, queue[i], 0, i*slot, ncan.width, slot); }
   function drawHold(){ hctx.clearRect(0,0,hcan.width,hcan.height); drawPieceBox(hctx, hold, 0, 0, hcan.width, hcan.height); }
   function draw(){
-    ctx.fillStyle = cssVar('--panel-2') || '#111'; ctx.fillRect(0,0,can.width,can.height);
+    /* Clear first, then a solid base under the panel tint. Painting a
+       see-through tint straight over the last frame (Glass is 5.5% white)
+       left every frame showing through: falling pieces smeared, and within a
+       couple of seconds the board had built up to near-solid white with thick
+       grey grid lines. Themes with an opaque tint draw exactly as before. */
+    const cs = getComputedStyle(document.documentElement);
+    ctx.clearRect(0,0,can.width,can.height);
+    const base = cs.getPropertyValue('--bg').trim();
+    if (base){ ctx.fillStyle = base; ctx.fillRect(0,0,can.width,can.height); }
+    ctx.fillStyle = cs.getPropertyValue('--panel-2').trim() || '#111'; ctx.fillRect(0,0,can.width,can.height);
     ctx.strokeStyle='rgba(128,128,128,.15)'; ctx.lineWidth=1;
     for (let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,ROWS*CELL); ctx.stroke(); }
     for (let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(COLS*CELL,y*CELL); ctx.stroke(); }
@@ -1369,7 +1384,7 @@ BUILD.tetris = host => {
   }
   function end(won){
     phase='over'; clearInterval(loopId);
-    if (won){ SFX.win(); flash('big'); } else { SFX.lose(); flash('redon'); shake(); }
+    if (won){ SFX.win(); flash('big'); } else { SFX.lose(); flash('redon'); thud(8, 360); }
     const restart = tap('Restart ('+keyLabel(cfg.keys.restart)+')', 'Tap to restart');
     if (mode==='sprint'){
       if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};

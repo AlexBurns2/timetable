@@ -1336,3 +1336,22 @@ keep-the-best rules. It covers:
 
 On the old code 8 of the 13 fail.
 
+### 8.29 Tetris: a soft landing bump, and a readable board on see-through themes
+
+**Landing.** The side-to-side `tshake` CSS animation is gone. `thud(px, ms)` in
+`BUILD.tetris` animates the board wrapper (board, flash and overlay together)
+straight down and back with the Web Animations API: 4 px for a hard drop, 1.5 px
+for a piece that locks on its own (`commitLock(now, hard)`), and 8 px over 360 ms
+on topping out. It is gated on `gameAnim()` like the flash, so reduced motion and
+the game-animation setting still turn it off.
+
+**Board background.** `draw()` used to fill the board with `--panel-2` over the
+previous frame without clearing. Where that colour is see-through, which Glass is
+at 5.5% white, every old frame showed through. Falling pieces left trails, and
+within a couple of seconds the board had built up to near-solid white with thick
+grey grid lines. That was the poor dark-mode visibility. Now `draw()` clears,
+paints `--bg` (the theme's solid page colour), then `--panel-2`. Glass dark
+becomes a dark navy board and Glass light a pale one. Blueprint and the other
+tinted themes get the same solid base. Themes whose `--panel-2` is already
+opaque draw pixel-for-pixel as before (checked on Plain).
+

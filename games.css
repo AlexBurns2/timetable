@@ -139,7 +139,7 @@ html[data-motion="reduced"] .dgbar .dgbt>i{transition:none}
   padding:16px;border-radius:calc(var(--card-radius)*.6);cursor:pointer;
   background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 .tover[hidden]{display:none}
-/* tetris feedback: line-clear flash + hard-drop / top-out shake */
+/* tetris feedback: line-clear flash (the landing bump is animated from games.js) */
 .tflash{position:absolute;inset:0;border-radius:calc(var(--card-radius)*.6);pointer-events:none;opacity:0}
 .tflash.on{animation:tflash .22s ease}
 .tflash.big{animation:tflashbig .5s ease}
@@ -147,9 +147,7 @@ html[data-motion="reduced"] .dgbar .dgbt>i{transition:none}
 @keyframes tflash{0%{opacity:.5;background:#fff}100%{opacity:0;background:#fff}}
 @keyframes tflashbig{0%{opacity:.85;background:linear-gradient(120deg,#f472b6,#38bdf8,#4ade80,#facc15)}100%{opacity:0}}
 @keyframes tflashred{0%{opacity:.6;background:#e5484d}100%{opacity:0;background:#e5484d}}
-#tcan.tshake{animation:tshake .16s ease}
-@keyframes tshake{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-2px,1px)}}
-html[data-motion="reduced"] .tflash,html[data-motion="reduced"] #tcan.tshake{animation:none}
+html[data-motion="reduced"] .tflash{animation:none}
 .tovt{font-family:var(--font-display);font-size:1.1875rem;font-weight:var(--display-w);margin-bottom:6px}
 .tovs{font-size:0.8125rem;color:var(--muted)}
 .tovbtns{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
