@@ -333,8 +333,8 @@ function recordStat(game, { key, mode, value }){
   else if (mode === 'count') s[game][key] = (cur || 0) + (value || 1);
   else s[game][key] = value;
   TT.set('tt.stats', s);
-  const lb = LB_GAMES[game];      // a new personal best also goes to the shared board
-  if (lb && key === lb.metric && (mode === 'max' || mode === 'min') && s[game][key] === value) lbSubmit(game, value);
+  const lb = LB_GAMES[game];      // a score good enough for the shared board goes to it
+  if (lb && key === lb.metric && (mode === 'max' || mode === 'min')) lbConsider(game, value, s[game][key] === value);
   return s[game][key];
 }
 const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
@@ -393,14 +393,48 @@ if (typeof TT !== 'undefined' && TT.myEmail && TT.myEmail()) siteSettings();   /
 let lbSeq = 0;        // bumped whenever the stage changes, so a slow mount can't land on the wrong game
 let lbState = null;   // { game, period, week, all, canWipe } for the mounted panel
 
+/* What the server holds for you on each board: { week, all } (null = no score
+   there). A score is sent when it beats either one, not just when it beats the
+   personal best saved in your settings. Going only by that saved best meant
+   that once a moderator deleted someone's score, nothing they scored below the
+   deleted one was ever sent again, which worked like a permanent ban. It also
+   left the weekly board empty until you beat your all-time best. */
+const lbBest = {}, lbKnowing = {}, lbFlight = {};
+const lbBetter = (game, v, cur) => cur == null || (LB_GAMES[game].dir === 'max' ? v > cur : v < cur);
+function lbRemember(game, d){ if (d && d.week && d.all) lbBest[game] = { wk:tetrisWeek(), week:d.week.meBest, all:d.all.meBest }; }
+/* the server's copy, fetched once per page if the game's panel hasn't loaded it yet */
+function lbKnow(game){
+  if (lbBest[game] && lbBest[game].wk === tetrisWeek()) return Promise.resolve(lbBest[game]);   // a new week means a new weekly board
+  if (!lbKnowing[game]) lbKnowing[game] = TT.api('/api/leaderboard', { params:{ game, metric:LB_GAMES[game].metric, week:tetrisWeek() } })
+    .then(d => { lbRemember(game, d); return lbBest[game] || null; })
+    .catch(() => null)
+    .finally(() => { lbKnowing[game] = null; });
+  return lbKnowing[game];
+}
+async function lbConsider(game, value, newPersonalBest){
+  if (!TT.myEmail() || !LB_GAMES[game]) return;
+  if (newPersonalBest) return lbSubmit(game, value);
+  const b = await lbKnow(game);
+  if (b && (lbBetter(game, value, b.week) || lbBetter(game, value, b.all))) lbSubmit(game, value);
+}
 async function lbSubmit(game, score){
   if (!TT.myEmail()) return;
   const lb = LB_GAMES[game]; if (!lb) return;
+  /* 2048 and Odd One Out record a new score on every merge or answer: while one
+     is being sent, keep only the best of the rest and send that afterwards */
+  const f = lbFlight[game] || (lbFlight[game] = { busy:false, next:null });
+  if (f.busy){ if (f.next == null || lbBetter(game, score, f.next)) f.next = score; return; }
+  f.busy = true;
   try {
     const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score, week:tetrisWeek() } });
     lbSumCache = null;   // summary strip is now stale
+    lbRemember(game, d);
     if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){}
+  f.busy = false;
+  if (f.next != null){ const n = f.next; f.next = null;
+    const b = lbBest[game];
+    if (!b || b.wk !== tetrisWeek() || lbBetter(game, n, b.week) || lbBetter(game, n, b.all)) lbSubmit(game, n); }
 }
 async function mountLB(game){
   const lb = LB_GAMES[game]; if (!lb) return;
@@ -429,6 +463,7 @@ async function loadLBoard(game){
   if (!TT.myEmail()){ if (body) body.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboard.</p>'; return; }
   try {
     const d = await TT.api('/api/leaderboard', { params:{ game, metric:lb.metric, week:tetrisWeek() } });
+    lbRemember(game, d);                            // fresh each time the game opens, so a deletion is noticed
     if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){ if (body) body.innerHTML = ''; }
 }
@@ -5837,7 +5872,7 @@ const MATS_IRON = [
     key:'very hard and highly abrasion resistant',
     use:'wear liners, grinding components and crusher parts',
     lim:'low ductility and poor impact toughness, and it is difficult to machine',
-    micro:'pale cementite regions surrounding hatched pearlite' },
+    micro:'pale cementite regions around pearlite, with no graphite' },
   { n:'Malleable cast iron', main:'temper-carbon rosettes',
     key:'more ductile and tougher than white iron, so it tolerates shock better',
     use:'pipe fittings, brackets and small general engineering castings',
@@ -5951,8 +5986,11 @@ const ENG_CARBON = [
   {q:'Silicon in a cast iron…', a:'Promotes the formation of graphite', w:['Prevents graphite forming','Raises the carbon content','Makes it non-magnetic']},
   {q:'The carbon content of cast iron is typically about…', a:'2.5–4%', w:['up to 0.3%','about 0.8%','about 1.2%']},
   {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The matrix around the graphite', w:['The graphite on its own','The carbon percentage alone','The pouring temperature alone'], note:'For example, a ferrite or pearlite matrix.'},
-  {q:'In these microstructure schematics, the hatching represents…', a:'Pearlite', w:['Ferrite','Graphite','Austenite']},
-  {q:'In these microstructure schematics, a solid filled shape in a cast iron represents…', a:'Graphite', w:['Pearlite','Ferrite','Cementite']}
+  /* these two show their own diagram: they used to refer to "these schematics" with nothing on screen */
+  {q:'In this slow-cooled steel, the striped grains are…'+microSVG('med'), a:'Pearlite', w:['Ferrite','Graphite','Austenite'],
+    note:'Pearlite is fine alternating layers of ferrite and cementite, so it looks striped. The plain grains are ferrite.'},
+  {q:'In this cast iron, the solid dark shapes are…'+microSVG('grey'), a:'Graphite', w:['Pearlite','Ferrite','Cementite'],
+    note:'These are graphite flakes in a striped pearlite matrix, which makes it grey cast iron. Cementite shows up pale, not dark.'}
 ];
 function genCarbonFact(){
   const lever = ri(20, 70) / 100;                 // a computed lever-rule question now and then

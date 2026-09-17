@@ -1268,3 +1268,71 @@ checks over 1,500 draws of every Engineering topic:
 
 The checks were confirmed to fail against a copy with g put back to 9.8.
 
+### 8.27 Bank cards that talked about a picture they didn't show
+
+Reported: "In these microstructure schematics, the hatching represents…" came up
+with no picture. It and the card after it (`ENG_CARBON` 18 and 19, the solid
+dark shapes in a cast iron) were written to sit beside the microstructure
+diagrams, but bank cards are plain text, so they turned up alone and couldn't
+be answered. A White cast iron card also said "hatched pearlite".
+
+- Card 18 now draws `microSVG('med')` and asks what the striped grains are
+  (pearlite). Its note explains why pearlite looks striped: alternating layers of
+  ferrite and cementite.
+- Card 19 draws `microSVG('grey')` and asks what the solid dark shapes are
+  (graphite).
+- White cast iron's `micro` text now reads "pale cementite regions around
+  pearlite, with no graphite".
+
+They were **edited in place**. Bank history is keyed by position (`carb#18`), so
+moving or removing a card would hand someone's progress to a different question.
+
+`picturecheck.mjs` (scratchpad) samples 2,500 draws of every topic in every
+subject. Any question whose wording only makes sense with something on screen
+fails unless it actually carries a diagram, code block or picture options. That
+means "schematic", "hatch", "striped", "this lever/pulley/circuit…", "shown
+below" and the like. Definitions such as "a data flow diagram is…" and maths
+questions like "the graph of y = x²…" deliberately don't count. It found only
+these three, and it fails if the original wording is put back.
+
+### 8.28 Deleted scores no longer lock a player out
+
+Reported: once a moderator removed someone's score, they could never get back
+on the board. It wasn't the server: `api/leaderboard.js` and `api/tetris.js`
+both simply save the next score when there's no row. It was `recordStat`, which
+only sent a score to the board when it beat the **personal best saved in the
+player's settings** (`tt.stats`, synced across devices). Deleting the row on the
+server didn't touch that saved best, so nothing below the removed score was ever
+sent. If the removed score was bogus, that was effectively permanent. The same
+rule also left the weekly board empty each week until you beat your all-time
+best.
+
+Now `recordStat` calls `lbConsider`, which sends a score when it is a new personal
+best (as before) **or** when it beats what the server holds for you on either
+board:
+- `lbBest[game] = { wk, week, all }` is refreshed from every board response
+  (`loadLBoard` each time the game opens, and each submit).
+- If it's missing, `lbKnow` fetches the board once.
+- A new week invalidates it, so this week's empty board is never judged by last
+  week's score.
+- `lbSubmit` sends one request at a time per game, and afterwards sends only the
+  best score that came in meanwhile, so 2048 (every merge) and Odd One Out
+  (every answer) don't fire a request each time.
+
+The saved personal best in settings is untouched; it still drives the "best"
+shown on game cards. Tetris was never affected: it sends every finished game and
+lets the server keep the best.
+
+`resubmitcheck.mjs` (scratchpad, 13 checks) runs the real
+`recordStat`/`lbConsider`/`lbSubmit` against an in-memory server with the same
+keep-the-best rules. It covers:
+- a deleted player's lower score getting back on both boards
+- worse scores not sent, better ones sent
+- the server being asked when the game hadn't been opened
+- the weekly board filling
+- lower-is-better (Reaction)
+- 5 rapid 2048 merges sending at most 2 requests and ending on the right score
+- a week rollover
+
+On the old code 8 of the 13 fail.
+
