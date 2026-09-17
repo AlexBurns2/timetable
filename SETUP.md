@@ -1248,8 +1248,8 @@ answers above 100%.
 moments from angled forces (spanners, brake pedals with a cable, a bracket with
 two forces), and two new topics, **Levers** (classes, effort, efficiency,
 compound levers) and **Pulleys & gears** (pulley efficiency, gear train MA with
-efficiency, output speed, compound gears, bicycle drive efficiency). Pulley
-questions use g = 9.8.
+efficiency, output speed, compound gears, bicycle drive efficiency). Engineering
+uses g = 10 m/s², as the Engineering Studies course does (Physics keeps 9.8).
 
 **Cast irons** moved into the Steels module, so Engineering has five modules.
 Progress is kept, but an Engineering test that was in progress starts again.

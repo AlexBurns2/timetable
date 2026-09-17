@@ -6397,7 +6397,9 @@ function genMachines(){
    the question needs. Each wrong option is a specific slip (ignoring the angle,
    sin for cos, mm left as m, a ratio upside down, efficiency left out), and
    every question carries `data` so its answer can be re-derived and checked. */
-const G_ACCEL = 9.8;
+/* NSW Engineering Studies uses g = 10 m/s² (Physics keeps 9.8 in its own questions).
+   Every Engineering question that turns a mass into a weight reads this. */
+const G_ACCEL = 10;
 const rad = d => d * Math.PI / 180;
 const svgArrow = (x1, y1, x2, y2, cls) => {
   const a = Math.atan2(y2 - y1, x2 - x1), h = 8, w = 4.5;
@@ -6607,15 +6609,15 @@ function genPulleyGear(){
       const ma = mass * G_ACCEL / E, e = ma / n * 100;
       /* slips: counting pulleys rather than supporting ropes (one more or fewer), or leaving out g */
       const m = pctMC(e, [ma / (n + 1) * 100, n > 2 ? ma / (n - 1) * 100 : NaN, mass / E / n * 100]);
-      return { q:'A <b>' + E + ' N</b> effort lifts a <b>' + mass + ' kg</b> load with this pulley system. What is its efficiency? (g = 9.8 m/s²)' + pulleyFig(n, mass),
+      return { q:'A <b>' + E + ' N</b> effort lifts a <b>' + mass + ' kg</b> load with this pulley system. What is its efficiency? (g = ' + G_ACCEL + ' m/s²)' + pulleyFig(n, mass),
         choices:m.choices, answer:m.answer, data:{ kind:'pulley-eff', n, mass, E },
-        note:'MA = load ÷ effort = (' + mass + ' × 9.8) ÷ ' + E + ' = ' + rd(ma, 2) + '. VR = the ' + n + ' supporting ropes. η = MA ÷ VR = ' + rd(e, 1) + '%.' };
+        note:'MA = load ÷ effort = (' + mass + ' × ' + G_ACCEL + ') ÷ ' + E + ' = ' + rd(ma, 2) + '. VR = the ' + n + ' supporting ropes. η = MA ÷ VR = ' + rd(e, 1) + '%.' };
     }
     const need = mass * G_ACCEL / (eta * n);
     const m = physMC(rd(need, 0), 'N', [rd(mass * G_ACCEL / n, 0), rd(mass * G_ACCEL * eta / n, 0), rd(mass / (eta * n), 1)]);
-    return { q:'This pulley system is <b>' + Math.round(eta * 100) + '%</b> efficient. What effort is needed to lift the <b>' + mass + ' kg</b> load? (g = 9.8 m/s²)' + pulleyFig(n, mass),
+    return { q:'This pulley system is <b>' + Math.round(eta * 100) + '%</b> efficient. What effort is needed to lift the <b>' + mass + ' kg</b> load? (g = ' + G_ACCEL + ' m/s²)' + pulleyFig(n, mass),
       choices:m.choices, answer:m.answer, data:{ kind:'pulley-effort', n, mass, eta },
-      note:'VR = ' + n + ', so MA = η × VR = ' + rd(eta * n, 2) + '. Effort = load ÷ MA = (' + mass + ' × 9.8) ÷ ' + rd(eta * n, 2) + ' = ' + rd(need, 0) + ' N.' };
+      note:'VR = ' + n + ', so MA = η × VR = ' + rd(eta * n, 2) + '. Effort = load ÷ MA = (' + mass + ' × ' + G_ACCEL + ') ÷ ' + rd(eta * n, 2) + ' = ' + rd(need, 0) + ' N.' };
   }
   if (k === 2 || k === 3){
     const Ta = pk([12, 15, 18, 20, 24, 25, 30, 36, 40]); let Tb = pk([20, 30, 40, 45, 50, 60, 72, 80]);

@@ -1019,17 +1019,16 @@ must stay in `rem`.
   (`LEVER_EXAMPLES`), what's in the middle, MA above or below 1, effort from
   moments, efficiency, compound lever VR.
 - **Pulleys & gears** (`genPulleyGear`, new topic `e-gear`): pulley efficiency
-  and effort (g = 9.8), gear train MA at an efficiency (`η·Tb/Ta`), output speed,
+  and effort (g = 10, see 8.26), gear train MA at an efficiency (`η·Tb/Ta`), output speed,
   compound gear VR, and bicycle drive efficiency with
   `VR = 2·crank·Tsprocket / (D·Tchainwheel)`.
 - Ratio options always number four (`ratioMC`), and percentages go through
   `pctMC`.
 
-Each generator returns `data`, and `mechcheck.mjs` (11 checks) recomputes 30,000
+Each generator returns `data`, and `mechcheck.mjs` (14 checks, see 8.26) recomputes 30,000
 answers with independent physics and reproduces the sheets' own examples: gears
 30/50 at 85% gives MA 1.42:1; bicycle 446 N, 72 N, 168 mm, Ø675, 49/17 gives
-about 93.5%; pulley 120 kg, 400 N, 4 ropes gives 73.5% (75% if the sheet uses
-g = 10); the bracket example gives 3.69 kN·m clockwise.
+about 93.5%; pulley 120 kg, 400 N, 4 ropes gives 75% (g = 10); the bracket example gives 3.69 kN·m clockwise.
 
 **Cast irons** (`e-iron`) moved from their own module into Steels. The topic id is
 unchanged, so progress is kept. Engineering is now five modules and 15 topics,
@@ -1243,3 +1242,29 @@ toggling it, everyone else reading the new value, weekly rows surviving and new
 scores still reaching both boards while off, the weekly board coming back
 intact, and the rest of the route unchanged. `namestest.mjs` copies the new
 helper into its temp API folder too.
+
+### 8.26 Engineering uses g = 10
+
+The NSW Engineering Studies course takes g = 10 m/s², so every Engineering
+question does too. Physics is deliberately left at 9.8 (its gravitational PE
+question) and so are the Physics concept cards that mention 9.8 m/s².
+
+In Engineering, gravity only comes into the two pulley questions in
+`genPulleyGear` (efficiency, and the effort needed). Both read `G_ACCEL`, now
+`10`, for the arithmetic *and* for the "(g = … m/s²)" in the question and the
+"mass × g" in the working, so the text can't disagree with the answer again. No
+other Engineering generator or bank turns a mass into a weight: moments, levers,
+stress, gears and machines are all given in newtons. The pulley efficiency
+answers stay realistic, and 'forgot g' is still a wrong option, now out by a
+factor of exactly 10.
+
+`mechcheck.mjs` now does its independent physics with g = 10, expects the
+sheet's 120 kg / 400 N / 4-rope example to give exactly 75%, and adds three
+checks over 1,500 draws of every Engineering topic:
+- nothing uses 9.8 as gravity (`g = 9.8`, `× 9.8)`, `9.8 m/s²`), while ordinary
+  answers that happen to be 9.8 N·m don't trip it
+- every "g =" says 10
+- Physics still says g = 9.8
+
+The checks were confirmed to fail against a copy with g put back to 9.8.
+
