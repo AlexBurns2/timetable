@@ -662,3 +662,27 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .setrow .nm{display:flex;flex-direction:column;gap:3px;white-space:normal;overflow:visible}
 .setrow em{font-style:normal;color:var(--muted);font-size:0.78125rem;line-height:1.45}
 .setrow .btn{flex:none;min-width:62px;justify-content:center}
+
+/* ── revision: reset one subtopic's progress ── */
+.rvfoot{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+.rvresetlink{font-size:0.78125rem;color:var(--muted)}
+.rvresetlink:hover{color:#e5484d}
+/* header and buttons stay put; only the middle scrolls, even on a short screen */
+.rvresetdlg[open]{display:flex;flex-direction:column;max-height:calc(100vh - 32px);overflow:hidden}
+.rvresetdlg .dlg-b{max-height:none;flex:1 1 auto;min-height:0;overflow-y:auto}
+.rvrintro{margin:0 0 12px}
+.rvrmod{margin:16px 0 6px;font-size:0.6875rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.rvrmod:first-of-type{margin-top:4px}
+.rvrrow{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);margin-bottom:6px}
+.rvrname{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rvrname b{font-size:0.875rem}
+.rvrname span{font-size:0.75rem;color:var(--muted)}
+.rvrrow .btn{flex:none;padding:5px 12px;font-size:0.78125rem}
+.rvrrow .btn:disabled{opacity:.45;cursor:default}
+.rvrlist{margin:0 0 12px;padding-left:20px;font-size:0.875rem;line-height:1.55}
+.rvrlist li{margin-bottom:6px}
+.rvrdone{margin:0 0 12px;padding:9px 12px;border-radius:var(--radius);font-size:0.84375rem;
+  background:color-mix(in srgb,#2f9e44 14%,var(--panel));border:1px solid color-mix(in srgb,#2f9e44 45%,transparent)}
+.btn.rvdanger{background:#e5484d;border-color:#e5484d;color:#fff}
+.btn.rvdanger:hover{background:#d13d42;border-color:#d13d42}

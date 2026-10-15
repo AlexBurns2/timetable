@@ -1355,3 +1355,98 @@ becomes a dark navy board and Glass light a pale one. Blueprint and the other
 tinted themes get the same solid base. Themes whose `--panel-2` is already
 opaque draw pixel-for-pixel as before (checked on Plain).
 
+### 8.30 Resetting one subtopic's progress
+
+Practice history is `tt.rev_<sk>_hist`, one entry per keyed question, with
+signatures `<topicId>:<key>` (older bank-style ones are `<topicId>#<index>`). So a
+subtopic's share is every entry with its id plus a separator. Three plain
+functions sit next to `historyPrior`, which uses the same prefix rule:
+- `topicSigs(hist, id)` lists that subtopic's entries.
+- `topicProgress(hist, id)` counts them by colour for the confirmation. It counts
+  every saved entry, including any left from retired questions, so the number
+  shown is exactly the number removed. The bar above the questions counts only
+  current questions, so the two can differ slightly.
+- `resetTopic(hist, id)` deletes them in place and returns what it removed.
+
+In `revGame`, `resetUI()` adds a "Reset progress…" link to the bottom of both
+practice screens (never during a test), wired in `wireSel`. `openReset()` builds
+a fresh `<dialog class="setdlg rvresetdlg">` each time, reusing the settings
+dialog styles, with two views:
+- **List:** every subtopic, grouped by module where there are modules.
+- **Confirm:** the exact counts, what is kept, the sync note, and Cancel focused
+  by default.
+
+Resetting saves with `TT.set`, and settings sync replaces the whole value, so
+the deletion reaches other devices. The removed entries stay in memory for
+**Undo** until the box closes. Closing with ✕ or the backdrop tidies up and
+repaints the progress bar directly. The dialog's `close` event is only relied on
+for Escape, because it is queued, and in the preview window it wasn't delivered
+at all. `onEnter` now ignores Enter while any dialog is open, so Enter in the box
+can't press Start or Next behind it.
+
+Two caveats. Another open tab or device with the old history still in memory
+could write it back the next time it saves (settings sync is last writer wins).
+And the goal and tally for endless subjects are subject-wide, so they are left
+alone and the confirmation says so.
+
+`resetcheck.mjs` (scratchpad, 8 checks) covers:
+- exact counts and exactly the right entries removed
+- a neighbouring id that merely starts the same way left alone
+- `historyPrior` seeing the subtopic as fresh, and undo restoring it
+  byte-for-byte
+- across all 79 real subtopics, no reset reaching into another's entries or
+  missing any of its own
+
+### 8.31 Revision progress moved out of the settings blob, and got a schedule
+
+Measured before changing anything: the keyed question pools are 42 (Maths), 168
+(Physics), 1,347 (Chemistry), 304 (Engineering) and 287 (Software), about 86 KB
+of history once answered. `api/prefs.js` rejects a settings payload over 100 KB
+with a 413, and that stops every other setting syncing, so Year 12 subjects
+could not be added until this moved.
+
+**Storage.** New table `revision_progress(email, subject, data, updated_at)`,
+served by `api/prefs.js` under `?rev=` so Vercel's function count is unchanged:
+`GET ?rev=<subject>`, `GET ?rev=*` (for the daily plan), `PUT ?rev=<subject>`.
+Its own cap is 400 KB per subject. A missing table reads as "nothing saved"
+rather than an error, and the PUT says so plainly.
+
+Client side, `RV` in games.js:
+- `RV.load(sk)` returns the subject's history synchronously from
+  `localStorage['rev.<sk>']` — deliberately not a `tt.` key — then pulls the
+  server copy in the background and merges.
+- `RV.save(sk)` writes locally at once and uploads 2 s after you stop, plus on
+  `pagehide` and when the browser comes back `online`.
+- `merge` works per question: the entry with the later answered-on date wins,
+  falling back to more attempts for entries saved before dates existed. Two
+  devices combine instead of one overwriting the other, which was the caveat
+  noted in 8.30.
+- `migrate` folds any old `tt.rev_<sk>_hist` into the new store, removes it and
+  pushes the smaller settings blob. Idempotent, so a stale copy arriving from
+  another device is absorbed the same way.
+
+**Scheduling.** History entries gained two slots:
+`[seen, wrongness, lastOk, everWrong, rightRun, answeredOnDay, dueDay]`, whole
+days since the epoch. `REST_DAYS = [0, 0, 3, 7, 16, 35, 60]` indexed by
+`rightRun`: index 1 is deliberately 0 so a just-fixed (yellow) question still
+comes back in the same session to be confirmed, which is what 8.18 is about.
+`sigScore` keeps its old ordering — unseen, then wrong, then yellow — and adds
+a term for due questions (`+1.5` plus `0.1` per day overdue, capped) against
+`-2.5` for anything resting. Entries with no date, i.e. everything saved before
+this, count as due now. `dueNow(hist, sigs, today)` is the counter the daily
+plan will use.
+
+`schedcheck.mjs` (25 checks): the interval ladder, the ranking (unseen > wrong >
+yellow > due > resting, and more overdue ranks higher), a week of practice on a
+real topic, that practice still serves something when everything is resting, and
+the two-device merge. `prefscheck.mjs` (16 checks): the route before and after
+the table exists, per-subject rows, `?rev=*`, the separate size caps, bad
+subject names, and that settings never contain progress.
+
+Scratchpad note: the earlier sessions' scripts were wiped when Windows cleaned
+the temp folder. `gameharness.mjs`, `checkall.mjs` and `mock.mjs` were rewritten;
+the older suites (testsim, chemcheck, redoxcheck, mechcheck, qtycheck,
+picturecheck, resetcheck, resubmitcheck, weeklytest, namestest, colours,
+empcheck, yellowbug) are gone and would need rewriting if something they cover
+is changed again.
+

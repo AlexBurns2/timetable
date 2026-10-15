@@ -373,6 +373,102 @@ const LB_GAMES = {
   chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v) },
   oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) }
 };
+/* == revision progress ====================================================
+   One entry per question. Chemistry alone is ~1,350 of them (~56 KB), and the
+   Year 11 subjects together ~86 KB, so this cannot ride the tt.* settings blob:
+   api/prefs.js refuses a settings payload over 100 KB, and that refusal stops
+   every other setting syncing too. Each subject gets its own row instead
+   (/api/prefs?rev=<subject>), cached in localStorage under rev.<subject> - a
+   deliberately non-tt. key - so practice opens instantly and works offline.
+
+   Copies merge per question, newest answer wins, rather than one device's copy
+   replacing another's. Two devices used on the same day therefore combine. */
+const RV = (() => {
+  const localKey = sk => 'rev.' + sk;
+  const oldKey   = sk => 'tt.rev_' + sk + '_hist';
+  const mem = {}, pulled = {}, dirty = {}, timers = {}, watchers = {};
+
+  const readLocal = sk => { try { const v = JSON.parse(localStorage.getItem(localKey(sk)));
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; } catch { return {}; } };
+  const writeLocal = (sk, h) => { try { localStorage.setItem(localKey(sk), JSON.stringify(h)); } catch {} };
+
+  /* per question: whichever copy answered it more recently wins; with no dates
+     to compare (entries from before scheduling), the one with more attempts does */
+  function merge(into, from){
+    let changed = false;
+    for (const sig in from){
+      const b = from[sig]; if (!Array.isArray(b)) continue;
+      const a = into[sig];
+      if (!a){ into[sig] = b; changed = true; continue; }
+      const at = lastDayOf(a), bt = lastDayOf(b);
+      const newer = (at != null && bt != null) ? bt > at
+                  : (bt != null && at == null) ? true
+                  : (b[0] || 0) > (a[0] || 0);
+      if (newer){ into[sig] = b; changed = true; }
+    }
+    return changed;
+  }
+
+  /* progress saved before this existed lived in the settings blob; fold it in
+     and take it out of there, which is what frees the 86 KB */
+  function migrate(sk, h){
+    let old = null;
+    try { old = JSON.parse(localStorage.getItem(oldKey(sk))); } catch {}
+    if (!old || typeof old !== 'object' || Array.isArray(old)) return false;
+    merge(h, old);
+    try { localStorage.removeItem(oldKey(sk)); } catch {}
+    if (TT.syncPush) TT.syncPush();            // push the smaller settings blob
+    return true;
+  }
+
+  function load(sk){
+    if (!mem[sk]){
+      const h = readLocal(sk);
+      if (migrate(sk, h)) writeLocal(sk, h);
+      mem[sk] = h;
+      pull(sk);
+    }
+    return mem[sk];
+  }
+
+  async function pull(sk){
+    if (pulled[sk] || !TT.myEmail || !TT.myEmail()) return;
+    pulled[sk] = true;
+    try {
+      const d = await TT.api('/api/prefs', { params:{ rev: sk } });
+      const server = d && d.data;
+      const h = mem[sk] || (mem[sk] = readLocal(sk));
+      const gained = server && typeof server === 'object' ? merge(h, server) : false;
+      if (gained) writeLocal(sk, h);
+      /* the server is behind whenever we hold anything it didn't send back */
+      const ours = Object.keys(h).length, theirs = server ? Object.keys(server).length : 0;
+      if (gained || ours !== theirs || dirty[sk]) push(sk);
+      if (gained && watchers[sk]) watchers[sk].forEach(fn => { try { fn(); } catch {} });
+    } catch (e){ pulled[sk] = false; }          // offline: try again next time
+  }
+
+  /* save now on this device, and to the account shortly after you stop answering */
+  function save(sk){
+    const h = mem[sk]; if (!h) return;
+    writeLocal(sk, h);
+    dirty[sk] = true;
+    clearTimeout(timers[sk]);
+    timers[sk] = setTimeout(() => push(sk), 2000);
+  }
+  async function push(sk){
+    clearTimeout(timers[sk]);
+    const h = mem[sk]; if (!h || !TT.myEmail || !TT.myEmail()) return;
+    try { await TT.api('/api/prefs', { method:'PUT', params:{ rev: sk }, body: h }); dirty[sk] = false; }
+    catch (e){ dirty[sk] = true; }              // offline or table missing: keep the local copy
+  }
+  addEventListener('pagehide', () => { for (const sk in dirty) if (dirty[sk]) push(sk); });
+  addEventListener('online', () => { for (const sk in dirty) if (dirty[sk]) push(sk); });
+
+  return { load, save, pull, merge, dueNow:(sk, sigs, today) => dueNow(load(sk), sigs, today),
+           onMerge: (sk, fn) => { (watchers[sk] = watchers[sk] || []).push(fn); },
+           forget: sk => { delete mem[sk]; delete pulled[sk]; } };
+})();
+
 /* ── site-wide settings (api/_settings.js) ────────────────────────────
    Set by the owner on the moderator page and stored on the server, so they
    apply to everyone whoever opens the site. Weekly boards can be turned off
@@ -2963,7 +3059,8 @@ function revGame(host, opts){
   /* spaced-repetition memory: hist[sig] = [seen, wrong] for keyed questions,
      persisted + synced so we favour ones you haven't done or got wrong.
      `recent` avoids repeating the last few within a session. */
-  const hist = TT.get('tt.rev_'+sk+'_hist', {}) || {};
+  const hist = RV.load(sk);
+  RV.onMerge(sk, () => { try { paintStatus(); } catch {} });   // another device's answers arrived
   const recent = [];
   const RECENT_MAX = 12;
   /* Enter drives the whole game: the first press checks your answer, the next
@@ -2974,6 +3071,7 @@ function revGame(host, opts){
   function onEnter(e){
     const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
     if (!isEnter || e.isComposing || e.altKey || checking) return;
+    if (document.querySelector('dialog[open]')) return;          // e.g. the reset box
     /* a focused module / subtopic pill keeps its own Enter, so keyboard users can
        still toggle topics rather than skipping the question */
     /* same for the practice/test switch and the test's own buttons: without this,
@@ -3136,6 +3234,7 @@ function revGame(host, opts){
       else { modId=b.dataset.id; TT.set('tt.rev_'+sk+'_mod',modId); }
       nextQ();
     });
+    const rs = $('rvreset'); if (rs) rs.onclick = openReset;
     const sub = box.querySelector('.rvsub');
     if (sub) [...sub.children].forEach(b => b.onclick = () => {
       const id=b.dataset.id, isOn=!excl[id], active=curMod().topics.filter(t=>!excl[t.id]).length;
@@ -3143,6 +3242,102 @@ function revGame(host, opts){
       TT.set('tt.rev_'+sk+'_excl',excl); b.setAttribute('aria-pressed',String(!excl[id])); nextQ();
     });
   }
+  /* ── resetting one subtopic ───────────────────────────────────────────────
+     A list of every subtopic with what is saved for it, a Reset button on each,
+     and a second screen that says exactly what goes and what stays before
+     anything is touched. Only that one subtopic's history entries are removed;
+     they are kept in memory so the reset can be undone until the box closes. */
+  const resetUI = () => '<div class="rvfoot"><button type="button" class="rvlink rvresetlink" id="rvreset">Reset progress…</button></div>';
+  const everyTopic = () => modular ? opts.modules.flatMap(m => m.topics.map(t => ({ t, mod:m.name }))) : opts.topics.map(t => ({ t, mod:'' }));
+  const pl = (n, one, many) => n + ' ' + (n === 1 ? one : (many || one + 's'));
+  const summaryOf = c => c.n
+    ? [c.correct && c.correct + ' correct', c.fixed && c.fixed + ' yellow', c.wrong && c.wrong + ' to review'].filter(Boolean).join(' · ')
+    : 'Nothing saved yet';
+  function openReset(){
+    const prev = document.getElementById('rvresetdlg'); if (prev) prev.remove();
+    const dlg = document.createElement('dialog');
+    dlg.id = 'rvresetdlg'; dlg.className = 'setdlg rvresetdlg';
+    dlg.setAttribute('aria-labelledby', 'rvresettitle');
+    document.body.appendChild(dlg);
+    let undo = null;                                   // { name, n, saved } for the last reset in this box
+    /* tidy up straight away rather than waiting on the close event, which is
+       queued and not every browser delivers it promptly; Escape still uses it */
+    let gone = false;
+    const tidy = () => { if (gone) return; gone = true; dlg.remove(); paintStatus(); };
+    const shut = () => { if (dlg.open) dlg.close(); tidy(); };
+    dlg.addEventListener('close', tidy);
+    dlg.addEventListener('click', e => { if (e.target === dlg) shut(); });
+    const head = title => '<div class="dlg-h"><h2 id="rvresettitle">' + title + '</h2>' +
+      '<button class="btn icon" type="button" data-x aria-label="Close">✕</button></div>';
+
+    function list(){
+      const by = {};
+      everyTopic().forEach(r => { (by[r.mod] = by[r.mod] || []).push(r); });
+      let body = '';
+      if (undo) body += '<p class="rvrdone" role="status"><b>' + esc(undo.name) + '</b> has been reset (' + pl(undo.n, 'question') + '). ' +
+        '<button type="button" class="rvlink" data-undo>Undo</button></p>';
+      body += '<p class="hint rvrintro">Pick a subtopic to reset. You’ll see exactly what will be cleared before anything is.</p>';
+      Object.keys(by).forEach(mod => {
+        if (mod) body += '<h4 class="rvrmod">' + esc(mod) + '</h4>';
+        body += by[mod].map(({ t }) => { const c = topicProgress(hist, t.id);
+          return '<div class="rvrrow"><div class="rvrname"><b>' + esc(t.name) + '</b><span>' + summaryOf(c) + '</span></div>' +
+            '<button class="btn" type="button" data-pick="' + esc(t.id) + '"' + (c.n ? '' : ' disabled') + '>Reset…</button></div>'; }).join('');
+      });
+      dlg.innerHTML = head('Reset progress · ' + esc(opts.title)) + '<div class="dlg-b">' + body + '</div>';
+      wire();
+    }
+
+    function confirmOne(id){
+      const r = everyTopic().find(x => x.t.id === id); if (!r) return list();
+      const c = topicProgress(hist, id), others = everyTopic().length - 1;
+      const where = esc(opts.title) + (r.mod ? ' · ' + esc(r.mod) : '');
+      const colours = [c.correct && c.correct + ' green (correct)', c.fixed && c.fixed + ' yellow (right once since a miss)',
+                       c.wrong && c.wrong + ' red (to review)'].filter(Boolean);
+      const best = statVal(sk, 'streak') || 0, goal = goalOf();
+      const kept = [pl(others, 'other subtopic') + ' in ' + esc(opts.title),
+        'your answer streak (' + streak + ') and best streak (' + best + ')',
+        'your test scores and test reports'];
+      if (goal) kept.push('your question goal (' + goal + ')');
+      dlg.innerHTML = head('Reset ' + esc(r.t.name) + '?') +
+        '<div class="dlg-b">' +
+          '<p class="rvrintro">This clears your practice progress on <b>' + esc(r.t.name) + '</b> (' + where + '). Exactly:</p>' +
+          '<ul class="rvrlist">' +
+            '<li><b>' + pl(c.n, 'question') + '</b> you have answered go back to grey, “not tried yet”: ' + colours.join(', ') + '.</li>' +
+            '<li>How many times you’ve seen and missed each of them, which is what decides how often they come back in practice.</li>' +
+            '<li>Your next test’s starting guess about this subtopic, which comes from that same record. It will start from scratch.</li>' +
+          '</ul>' +
+          '<p><b>Not touched:</b> ' + kept.join(', ') + '.</p>' +
+          (TT.signedIn && TT.signedIn() ? '<p class="hint">Your progress syncs to your account, so this clears it on your other devices too.</p>' : '') +
+          '<p class="hint">You can undo it until you close this box.</p>' +
+        '</div>' +
+        '<div class="dlg-f"><button class="btn" type="button" data-back>Cancel</button>' +
+        '<button class="btn rvdanger" type="button" data-go="' + esc(id) + '">Reset ' + esc(r.t.name) + '</button></div>';
+      wire();
+      const cancel = dlg.querySelector('[data-back]'); if (cancel) cancel.focus();   // the safe choice has focus
+    }
+
+    function wire(){
+      dlg.querySelectorAll('[data-x]').forEach(b => b.onclick = shut);
+      dlg.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => confirmOne(b.dataset.pick));
+      dlg.querySelectorAll('[data-back]').forEach(b => b.onclick = list);
+      dlg.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+        const id = b.dataset.go, r = everyTopic().find(x => x.t.id === id);
+        const saved = resetTopic(hist, id);
+        RV.save(sk);
+        undo = { name: r ? r.t.name : id, n: Object.keys(saved).length, saved };
+        list();
+      });
+      dlg.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => {
+        if (!undo) return;
+        Object.assign(hist, undo.saved);
+        RV.save(sk);
+        undo = null; list();
+      });
+    }
+    list();
+    dlg.showModal();
+  }
+
   /* ── test mode ────────────────────────────────────────────────────────────
      The picking and the report are the plain functions above revGame; this is
      the screens. A run in progress is saved after every answer, so leaving
@@ -3580,6 +3775,7 @@ function revGame(host, opts){
     box.innerHTML = modeUI() + selUI() + statusUI() + '<div class="rvq"><div class="rvprompt">'+esc(opts.title)+'</div>' +
       '<div class="rvclue">'+(modular?'Pick a module (or the whole topic), then start.':'Pick a topic, then start.')+' Answers reveal the working.</div></div>' +
       '<div class="gwrow"><button class="btn primary" id="rvstart" type="button">Start</button></div>';
+    box.insertAdjacentHTML('beforeend', resetUI());
     wireMode(); wireSel(); paintStatus(); $('rvstart').onclick = nextQ;
     $('sc').textContent = 'Best streak ' + (statVal(sk,'streak') || 0);
   }
@@ -3625,6 +3821,7 @@ function revGame(host, opts){
         '<div class="gwrow"><button class="btn" id="rvskip" type="button">Skip</button>' +
         '<span class="rvnudge" id="rvnudge"></span></div>';
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
+    if (!inTest) html += resetUI();
     box.innerHTML = html; wireMode();
     if (inTest){
       wireTestBar();
@@ -3752,7 +3949,7 @@ function revGame(host, opts){
        what you miss in a test comes back to you in practice */
     if (cur._keyed){
       recordAnswer(hist, cur._sig, ok);
-      TT.set('tt.rev_'+sk+'_hist', hist);
+      RV.save(sk);
     }
     if (inTest){
       logAnswer(ok ? 'right' : gaveUp ? 'skip' : 'wrong', cur._given, detail);
@@ -3940,6 +4137,20 @@ function materialiseBank(raw){
 /* A question's history: hist[sig] = [seen, wrongness, lastOk, everWrong, rightRun].
    rightRun is how many times in a row it has been right since the last miss.
    Older saves have fewer slots, so these read each field the way it was meant. */
+/* Whole days since the epoch: small to store, and all the scheduling needs. */
+const DAY_MS = 86400000;
+const dayOf = ms => Math.floor((ms == null ? Date.now() : ms) / DAY_MS);
+/* How long a question rests before it is worth asking again, by how many times
+   in a row it has been right since its last miss. Tuned for a year of revision
+   rather than a cram: something you have never missed drifts out to a couple of
+   months, something you keep missing comes back the same day. Index 1 is a
+   question you have just fixed - it stays due today so you confirm it before
+   the session ends, which is what turns it green. */
+const REST_DAYS = [0, 0, 3, 7, 16, 35, 60];
+const restFor = run => REST_DAYS[Math.min(Math.max(0, run), REST_DAYS.length - 1)];
+const lastDayOf = h => (h && h.length > 5 && h[5] != null) ? h[5] : null;
+/* null for anything saved before scheduling existed, which counts as due now */
+const dueDayOf  = h => (h && h.length > 6 && h[6] != null) ? h[6] : null;
 const lastOkOf    = h => h.length > 2 ? !!h[2] : !(h[1] > 0);
 const everWrongOf = h => h.length > 3 ? !!h[3] : (h[1] > 0);
 function rightRunOf(h){
@@ -3960,7 +4171,7 @@ function stateOfHist(h){
   if (!lastOkOf(h)) return 'wrong';
   return everWrongOf(h) && rightRunOf(h) < 2 ? 'fixed' : 'correct';
 }
-function recordAnswer(hist, sig, ok){
+function recordAnswer(hist, sig, ok, now){
   const prev = hist[sig];
   const everWrong = prev ? everWrongOf(prev) : false, run = prev ? rightRunOf(prev) : 0;
   const h = prev ? prev.slice() : [0, 0];
@@ -3969,6 +4180,9 @@ function recordAnswer(hist, sig, ok){
   h[2] = ok ? 1 : 0;                                      // was the last go right?
   h[3] = everWrong || !ok ? 1 : 0;                        // has it ever been wrong?
   h[4] = ok ? run + 1 : 0;
+  const today = dayOf(now);
+  h[5] = today;                                           // answered on
+  h[6] = today + (ok ? restFor(h[4]) : 0);                // next worth asking
   hist[sig] = h;
   return h;
 }
@@ -3982,7 +4196,7 @@ function recordAnswer(hist, sig, ok){
    further with every miss. Only times it has been right since its last miss
    count against it now. For a green that is every view, so greens are ordered
    exactly as before. */
-function sigScore(h, keyed, avoided, rand){
+function sigScore(h, keyed, avoided, rand, today){
   let s = 1 + rand()*0.4;
   if (avoided) s -= 50;                                     // don't repeat recent ones
   if (!keyed) return s;
@@ -3990,17 +4204,37 @@ function sigScore(h, keyed, avoided, rand){
   if (!lastOkOf(h)) return s + Math.min(h[1], 4) * 2.5;     // still wrong: revisit soon
   s -= Math.min(rightRunOf(h), 6) * 0.7;
   if (stateOfHist(h) === 'fixed') s += 1.0 + Math.min(h[1], 4) * 0.5;   // yellow: bring it back to confirm
+  /* Spacing. Something you got right a week ago is worth more now than
+     something you got right an hour ago, and the longer it is overdue the more
+     it is worth. Anything still resting drops below everything else, so a
+     session spends its time on what you are about to forget. Entries saved
+     before scheduling existed have no date and count as due now. */
+  const due = dueDayOf(h);
+  const now = today == null ? dayOf() : today;
+  const over = due == null ? 0 : now - due;
+  s += over >= 0 ? 1.5 + Math.min(over, 60) * 0.1 : -2.5;
   return s;
 }
-function chooseQuestion(t, hist, avoid, tries, rand){
+/* what is worth asking today out of a set of questions: the daily plan counts these */
+function dueNow(hist, sigs, today){
+  const now = today == null ? dayOf() : today;
+  let due = 0, fresh = 0;
+  (sigs || []).forEach(sig => { const h = hist[sig];
+    if (!h){ fresh++; return; }
+    const d = dueDayOf(h);
+    if (d == null || d <= now) due++; });
+  return { due, fresh, total: (sigs || []).length };
+}
+function chooseQuestion(t, hist, avoid, tries, rand, today){
   rand = rand || Math.random;
+  if (today == null) today = dayOf();
   const avoided = sig => avoid.includes(sig);
   let q;
   if (t.bank){
     let bi = 0, bs = -Infinity;
     for (let idx = 0; idx < t.bank.length; idx++){
       const raw = t.bank[idx], sig = (raw && raw.key) || (t.id+'#'+idx);
-      const s = sigScore(hist[sig], true, avoided(sig), rand);
+      const s = sigScore(hist[sig], true, avoided(sig), rand, today);
       if (s > bs){ bs = s; bi = idx; }
     }
     const raw = t.bank[bi];
@@ -4015,7 +4249,7 @@ function chooseQuestion(t, hist, avoid, tries, rand){
     let bs = -Infinity;
     for (let i = 0; i < tries; i++){
       const c = t.gen(), keyed = !!c.key, sig = t.id+':'+(c.key || c.q), h = hist[sig];
-      const s = sigScore(h, keyed, avoided(sig), rand);
+      const s = sigScore(h, keyed, avoided(sig), rand, today);
       c._sig = sig; c._keyed = keyed;
       if (s > bs){ bs = s; q = c; }
       if (keyed && !h && !avoided(sig)) break;
@@ -4061,6 +4295,22 @@ function testStat(prior, conf){
 /* How shaky a topic looked in practice: the share of its questions whose last
    attempt was wrong, and how far to trust that (more history, more trust). It
    only nudges the order a topic first comes up in; the test itself decides. */
+/* One subtopic's share of the practice history: every saved question whose
+   signature starts with the topic id (the same rule historyPrior uses). */
+function topicSigs(hist, topicId){
+  return Object.keys(hist || {}).filter(k => k.startsWith(topicId + ':') || k.startsWith(topicId + '#'));
+}
+function topicProgress(hist, topicId){
+  const c = { correct:0, fixed:0, wrong:0, n:0 };
+  topicSigs(hist, topicId).forEach(k => { const st = stateOfHist(hist[k]); if (st in c) c[st]++; c.n++; });
+  return c;
+}
+/* removes them from hist in place and hands back exactly what was removed, for undo */
+function resetTopic(hist, topicId){
+  const saved = {};
+  topicSigs(hist, topicId).forEach(k => { saved[k] = hist[k]; delete hist[k]; });
+  return saved;
+}
 function historyPrior(hist, topicId){
   let seen = 0, bad = 0;
   for (const k in hist){

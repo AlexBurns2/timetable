@@ -1300,6 +1300,72 @@ create table site_setting (
 Until the table exists, weekly boards stay on exactly as before and the switch
 explains that the table is missing.
 
+## Revision: reset one subtopic's progress
+
+Under the questions in every revision subject there's a **Reset progress…**
+link. It lists every subtopic with what's saved for it ("6 correct · 3 yellow ·
+3 to review"), each with its own **Reset…** button. Subtopics with nothing saved
+have the button greyed out.
+
+Pressing Reset doesn't wipe anything yet. It opens a second screen that says
+exactly what will go and what won't:
+- how many questions go back to grey, and how many of those are green, yellow
+  and red
+- the seen/missed record that decides how often they come back
+- the next test's starting guess for that subtopic
+- what's kept: every other subtopic, your streak and best streak, your test
+  scores and reports, and your question goal if you have one
+- that it also clears on your other devices, since progress syncs
+
+Cancel is the button that's focused, so Enter can't wipe anything by accident.
+After a reset you can **Undo** it until you close the box.
+
+## Revision progress: its own storage, and spaced repetition
+
+**Where progress lives.** Every question you answer is remembered separately,
+which for Chemistry alone is about 1,350 questions (~56 KB) and for all the
+Year 11 subjects about 86 KB. That was riding in the same settings blob as your
+theme and your calendar preferences, which the server refuses over 100 KB — and
+one refusal stops *everything* syncing. Each subject now has its own row
+instead. It needs one table:
+
+```sql
+create table revision_progress (
+  email      text not null,
+  subject    text not null,
+  data       jsonb not null default '{}',
+  updated_at timestamptz not null default now(),
+  primary key (email, subject)
+);
+```
+
+Your existing progress moves across by itself the first time you open a subject,
+and is taken out of the settings blob. Nothing is lost. Until the table exists,
+progress is kept on the device you are using and uploads once you create it.
+
+Two devices now **merge** rather than overwrite: for each question, whichever
+device answered it more recently wins. Practice also opens instantly and works
+with no connection, since the device keeps its own copy.
+
+**Spaced repetition.** Practice used to pick by how wrong you had been, with no
+sense of time, so something you got right an hour ago was as likely as something
+from a month ago. Each question now has a date it is next worth asking:
+
+| Right in a row | Comes back after |
+|---|---|
+| Missed | the same day |
+| 1 (yellow) | the same day, to confirm it |
+| 2 | 3 days |
+| 3 | a week |
+| 4 | 16 days |
+| 5 | 35 days |
+| 6+ | 2 months |
+
+Practice puts questions you have never seen first, then ones you got wrong, then
+whatever is due, longest-overdue first. Anything still resting drops to the
+back, so a session spends its time on what you are closest to forgetting. A
+question you keep missing still comes back the same day, as before.
+
 ## Phones and tablets
 
 The whole site now works on a phone. On a computer nothing looks or behaves any
