@@ -322,4 +322,15 @@ window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
 
 /* returning users: pull the server copy on load */
 if (hasCreds()) syncPull();
+
+/* ── offline ───────────────────────────────────────────────────────────────
+   Register the service worker so the site opens without a network. Pages are
+   network-first inside it, so this can never serve a stale build; /sw-off
+   removes it again if it ever needs undoing. Registration is deliberately
+   quiet: a browser that refuses it just carries on online-only. */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))){
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 })();

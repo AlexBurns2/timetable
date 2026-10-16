@@ -1254,6 +1254,22 @@ uses g = 10 m/s², as the Engineering Studies course does (Physics keeps 9.8).
 **Cast irons** moved into the Steels module, so Engineering has five modules.
 Progress is kept, but an Engineering test that was in progress starts again.
 
+## Offline
+
+The site now installs a small background worker the first time you open it, so
+it opens without a network — on the bus, on bad school wifi, or when the phone
+says it is offline. Pages you have opened before come back from the cache, and
+your timetable is the copy already saved on the device.
+
+- **Pages always try the network first**, so you are never shown an old build.
+  The cache only steps in when the network does not answer.
+- **Nothing personal is cached by the worker.** Timetables, marks, settings and
+  leaderboards always come from the network; they are never written into a
+  shared cache.
+- If anything ever goes wrong with it, open **/sw-off** on the site. That
+  removes the worker and deletes every cached file, and the site goes back to
+  behaving exactly as it did before.
+
 ## If the timetable shows the wrong week
 
 The school's system still reports the cycle as starting in **February 2025**, and

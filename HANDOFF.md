@@ -1755,3 +1755,32 @@ out and that is the user's call. The fix is to require a signed-in site session
 (the `whoami` check `prefs.js` and the others already use) or to set
 `ALLOWED_EMAILS`.
 
+### 8.40 Offline support
+
+`sw.js`, registered from the end of theme.js (so every page gets it) on https
+or a local host. Written to be hard to wedge, because a bad service worker can
+break a site permanently:
+
+- **Pages are network-first.** A deploy always wins; the cache answers only when
+  the network does not. A stale shell can never stick.
+- **Static files are stale-while-revalidate**, so a second visit is instant and
+  never more than one visit behind.
+- **Nothing under `/api` is touched**, and neither are writes or other origins.
+  Timetables, marks and settings are personal and some are per-account; they
+  stay in localStorage, which the pages already manage.
+- The cache name carries `CACHE_VERSION`; `activate` deletes every other cache.
+- **`/sw-off` is the escape hatch** — it unregisters the worker, deletes every
+  cache and says so. Worth remembering if a release ever misbehaves.
+
+The Year 12 question banks are deliberately *not* pre-cached: they are picked up
+on first use, so a first visit is not held up by 400 KB of generators.
+
+`swcheck.mjs` (17 checks) runs the real sw.js in a fake worker global with a
+stub cache and network: that nothing under /api is ever handled or written,
+that POSTs and other origins pass through, that a page comes from the network
+when there is one and from the cache when there is not, that an unvisited page
+offline answers 503 rather than hanging, that static files serve from cache and
+refresh behind you, that /sw-off empties everything, and that activate removes
+old versions. The browser pane refuses to register workers, so this suite is
+how the routing is verified.
+
