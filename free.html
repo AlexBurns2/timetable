@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Free periods · MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
+<link rel="icon" type="image/png" href="/images/icon.png">
+<style>
+.flede{color:var(--muted);margin:-4px 0 12px;font-size:0.9375rem}
+.fstat{font-size:0.875rem;color:var(--muted);margin:0 0 8px;min-height:1.3em}
+.fstat.err{color:#e5484d}
+.fbar{height:4px;border-radius:99px;background:var(--panel-2);overflow:hidden;margin:0 0 14px}
+.fbar span{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.flay{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);grid-template-areas:"group" "main" "people"}
+@media (min-width:900px){
+  .flay{grid-template-columns:minmax(0,1fr) 300px;grid-template-areas:"main group" "main people" "main .";align-items:start}
+}
+.fmain{grid-area:main;min-width:0}
+#group{grid-area:group}
+#people{grid-area:people}
+.fpanel{background:var(--panel);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+.fpanel h2{font-size:1rem;margin:0}
+.fphead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.fme{font-size:0.8125rem;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{display:inline-flex;align-items:center;gap:2px;font:inherit;font-size:0.8125rem;font-weight:600;padding:5px 6px 5px 11px;
+  border-radius:999px;background:var(--accent);color:var(--accent-ink);border:0;cursor:pointer}
+.fchip .x{opacity:.8;font-size:1rem;line-height:1;padding:0 4px}
+.fchip.unk{background:var(--panel-2);color:var(--muted)}
+.fhint{font-size:0.875rem;color:var(--muted);margin:0}
+.fhint.gap{margin-top:10px}
+.fsub{font-size:0.71875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 6px}
+.fsub.first{margin-top:8px}
+.fnext{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fnext li{display:flex;justify-content:space-between;gap:8px;font-size:0.875rem;padding:8px 10px;
+  border-radius:calc(var(--radius) - 4px);background:var(--panel-2)}
+.fnext li span{color:var(--muted);text-align:right}
+.fwl{font-size:0.875rem;line-height:1.6;margin:0}
+#pq{width:100%;box-sizing:border-box;font:inherit;font-size:0.9375rem;color:var(--text);background:var(--panel-2);
+  border:var(--card-border);border-radius:calc(var(--radius) - 4px);padding:9px 12px;margin-bottom:4px}
+.fpeople{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:360px;overflow:auto}
+.fpp{width:100%;text-align:left;font:inherit;color:var(--text);background:transparent;border:1px solid transparent;
+  border-radius:calc(var(--radius) - 4px);padding:7px 10px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center}
+.fpp:hover{background:var(--panel-2)}
+.fpp[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--panel))}
+.fpp .n{font-weight:600;font-size:0.875rem}
+.fpp .c{grid-column:1;font-size:0.75rem;color:var(--muted)}
+.fpp .t{grid-column:2;grid-row:1 / span 2;font-size:0.75rem;font-weight:700;color:var(--muted);text-align:right}
+.fpp[aria-pressed="true"] .t{color:var(--accent)}
+.fweek{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.fweeks{display:flex;gap:6px}
+.fweeks button{font:inherit;font-size:0.8125rem;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;
+  color:var(--text);background:var(--panel);border:var(--card-border)}
+.fweeks button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.fnow{font-size:0.8125rem;color:var(--muted)}
+.fgrid{display:grid;grid-template-columns:52px repeat(5,minmax(0,1fr));gap:5px}
+.fh{font-size:0.75rem;font-weight:700;color:var(--muted);text-align:center;padding:2px 0 4px}
+.fh.today{color:var(--accent)}
+.fh small{display:block;font-weight:500}
+.fp{font-size:0.75rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;justify-content:center;line-height:1.25}
+.fp small{font-weight:500}
+.fc{font:inherit;text-align:left;min-height:66px;border-radius:calc(var(--radius) - 4px);padding:7px 8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;min-width:0}
+.fc.none{background:transparent;border-style:dashed;color:var(--muted);align-items:center;justify-content:center;cursor:default}
+.fc.busy{background:var(--panel-2);color:var(--muted);border-color:transparent}
+.fc.free{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 9%, var(--panel))}
+.fc.all{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.fc.some{border-color:color-mix(in srgb, var(--accent) 40%, var(--line));background:color-mix(in srgb, var(--accent) 4%, var(--panel))}
+.fc.open{outline:2px solid var(--text);outline-offset:1px}
+.fc.now{box-shadow:inset 0 0 0 2px var(--accent)}
+.fc b{font-size:0.8125rem}
+.fc .s{font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.fc .w{font-size:0.71875rem;opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fdetail{margin-top:12px}
+.fdetail h3{margin:0 0 4px;font-size:0.9375rem}
+.fdetail p{margin:0 0 10px;font-size:0.875rem;color:var(--muted)}
+.fwho{display:flex;flex-wrap:wrap;gap:6px}
+.fwho button{font:inherit;font-size:0.8125rem;padding:5px 11px;border-radius:999px;cursor:pointer;color:var(--text);
+  background:var(--panel-2);border:1px solid transparent}
+.fwho button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.fnote{font-size:0.78125rem;color:var(--muted);margin-top:16px;line-height:1.5}
+.fnote button{font:inherit;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+@media (max-width:560px){
+  .fgrid{grid-template-columns:30px repeat(5,minmax(0,1fr));gap:3px}
+  .fc{min-height:50px;padding:5px 3px;align-items:center;justify-content:center;text-align:center}
+  .fc .w, .fc .s.opt{display:none}
+  .fp small, .fh small{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Free periods</h1>
+    <div class="crumbs">
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+    </div>
+  </div>
+  <p class="flede">Your free periods, who else is out of class then, and when a group of you is free together.</p>
+  <p class="fstat" id="stat" role="status" aria-live="polite"></p>
+  <div class="fbar" id="bar" hidden><span id="barfill"></span></div>
+
+  <div class="flay" id="main" hidden>
+    <div class="fmain">
+      <div class="fweek">
+        <div class="fweeks" id="weeks" role="group" aria-label="Week">
+          <button type="button" data-w="a">Week A</button>
+          <button type="button" data-w="b">Week B</button>
+        </div>
+        <span class="fnow" id="nowweek"></span>
+      </div>
+      <div class="fgrid" id="grid"></div>
+      <section class="fpanel fdetail" id="detail" hidden aria-live="polite"></section>
+      <p class="fnote">Recess and lunch are free for everyone, so they aren’t shown. Who’s free comes from the school
+        timetable using your own school login, and the site only asks which periods each person has a class in, never
+        what or where. Your group is saved with your settings. Everyone’s periods are kept on this device for a day
+        (<button type="button" id="refresh">check again now</button>).</p>
+    </div>
+    <section class="fpanel" id="group" aria-live="polite"></section>
+    <section class="fpanel" id="people" aria-labelledby="peopleh">
+      <div class="fphead"><h2 id="peopleh">People</h2></div>
+      <input id="pq" type="search" placeholder="Filter, or search the whole school…" autocomplete="off" spellcheck="false"
+             aria-label="Find people to compare free periods with">
+      <div id="plist"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+/* ═══ logic: pure, no DOM or storage (freecheck lifts this block out) ═══ */
+const CYCLE_DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const pickF = (o, keys) => { for (const k of keys) if (o && o[k] != null && o[k] !== '') return o[k]; return null; };
+const asList = v => Array.isArray(v) ? v : ((v && (v.timetable || v.entries || v.data || v.people)) || []);
+/* "4", "P4" and "Period 4" are all period 4; anything else keeps its label */
+const perKey = v => {
+  const s = String(v == null ? '' : v).trim().toLowerCase();
+  const m = s.match(/^(?:period\s*|p)?(\d+)$/);
+  return m ? m[1] : s;
+};
+const toMin = v => {
+  if (typeof v === 'number') return v;
+  const m = String(v == null ? '' : v).match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?/i);
+  if (!m) return null;
+  let h = +m[1];
+  if (m[3] && /p/i.test(m[3]) && h < 12) h += 12;
+  if (m[3] && /a/i.test(m[3]) && h === 12) h = 0;
+  return h * 60 + (+m[2]);
+};
+const fmtTime = m => m == null ? '' : (((Math.floor(m / 60) + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0');
+const userOf = e => String(e || '').trim().toLowerCase().split('@')[0];
+const validUser = u => /^[a-z0-9][a-z0-9._-]*$/.test(u);
+const keyOf = (day, per) => day + '|' + per;
+const dayIndex = d => CYCLE_DAYS.indexOf(d) % 5;
+const nameFromId = id => String(id).replace(/\d+$/, '').split(/[._-]+/).filter(Boolean)
+  .map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || String(id);
+
+/* the same tidy-up the timetable page does: "11 PHY1 Physics" / "Physics Yr11" -> "Physics" */
+function tidySubject(name, code){
+  let s = String(name || '').trim();
+  s = s.replace(/\s*[-–—,]?\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '');
+  const noCode = s.replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, '');
+  if (noCode !== s && /[A-Za-z]{3,}/.test(noCode)) s = noCode;
+  return s || String(code || '').trim() || 'Class';
+}
+
+/* your own lessons, one per day and period */
+function readEntries(timetable){
+  const out = [];
+  for (const r of asList(timetable)){
+    const day = String(pickF(r, ['DayName','dayName']) || '').trim().toLowerCase();
+    const per = perKey(pickF(r, ['Period','period','PeriodNumber','periodNumber']));
+    if (CYCLE_DAYS.indexOf(day) === -1 || !per) continue;
+    const code = String(pickF(r, ['ClassCode','classCode','Code','code']) || '').trim();
+    out.push({ day, per, key:keyOf(day, per), code,
+      subject: tidySubject(pickF(r, ['CourseName','courseName','SubjectName','Subject','subject','Description','description']), code) });
+  }
+  return out;
+}
+
+/* The lesson periods of each cycle day, from the bell table. Rows typed T are
+   lessons; R is recess and lunch, and O is before and after school, assembly
+   and the sport afternoons, none of which is a "free period". A table with no
+   types falls back to periods 1-6, and no table at all to the periods 1-6 you
+   have a lesson in. Returns day -> Map(period -> { start, end }). */
+function teachingSlots(bellTimes, entries){
+  const rows = asList(bellTimes).map(b => ({
+    day:   String(pickF(b, ['DayName','dayName']) || '').trim().toLowerCase(),
+    per:   perKey(pickF(b, ['Period','period','PeriodNumber','periodNumber'])),
+    type:  String(pickF(b, ['Type','type']) || '').trim().toUpperCase(),
+    start: toMin(pickF(b, ['StartTime','startTime','Start','start','From','from'])),
+    end:   toMin(pickF(b, ['EndTime','endTime','End','end','To','to']))
+  })).filter(r => /^\d+$/.test(r.per));
+  const typed = rows.some(r => r.type);
+  const slots = {};
+  for (const d of CYCLE_DAYS) slots[d] = new Map();
+  const add = (d, per, start, end) => { if (slots[d] && !slots[d].has(per)) slots[d].set(per, { start, end }); };
+  for (const r of rows){
+    if (typed ? r.type !== 'T' : !(+r.per >= 1 && +r.per <= 6)) continue;
+    for (const d of (r.day ? [r.day] : CYCLE_DAYS)) add(d, r.per, r.start, r.end);
+  }
+  if (!rows.length){
+    const pers = [...new Set((entries || []).map(e => e.per).filter(p => /^\d+$/.test(p) && +p >= 1 && +p <= 6))];
+    for (const d of CYCLE_DAYS) for (const p of pers) add(d, p, null, null);
+  }
+  for (const d of CYCLE_DAYS) slots[d] = new Map([...slots[d]].sort((a, b) => a[0] - b[0]));
+  return slots;
+}
+function gridRows(slots){
+  const all = new Set();
+  for (const d of CYCLE_DAYS) for (const p of slots[d].keys()) all.add(p);
+  return [...all].sort((a, b) => a - b);
+}
+
+/* students in a class list: anyone marked as staff, or with a staff address,
+   is skipped, and so is anyone off the student domain (the server could not
+   look them up anyway). */
+function rosterStudents(data, domain){
+  const arr = asList(data && data.roster !== undefined ? data.roster : data);
+  const out = [];
+  for (const r of arr){
+    const groups = Array.isArray(r && r.groups) ? r.groups.map(g => String(g).toLowerCase()) : [];
+    const mail = String(pickF(r, ['emailAddress','EmailAddress','email','Email']) || '').trim().toLowerCase();
+    const role = String(pickF(r, ['Role','role','Type','type']) || '').toLowerCase();
+    if (groups.some(g => /^(teacher|staff|executive|admin)/.test(g)) || /@det\.nsw\.edu\.au$/.test(mail) ||
+        /teacher|staff/.test(role)) continue;
+    const id = userOf(mail);
+    if (!mail.endsWith('@' + domain) || !validUser(id)) continue;
+    const first = String(pickF(r, ['firstname','firstName','FirstName','GivenName','givenName','preferredName']) || '').trim();
+    const last = String(pickF(r, ['lastname','lastName','LastName','Surname','surname']) || '').trim();
+    const name = [first, last].filter(Boolean).join(' ') ||
+                 String(pickF(r, ['FullName','fullName','Name','name']) || '').trim() || nameFromId(id);
+    out.push({ id, name });
+  }
+  return out;
+}
+
+/* busy: id -> Set of "day|period" (known), null (couldn't be read) or
+   undefined (not loaded yet). An empty set means no timetable came back --
+   that is someone who has left, not someone who is always free. */
+const known = (busy, id) => busy[id] instanceof Set && busy[id].size > 0;
+const freeAt = (key, ids, busy) => ids.filter(id => known(busy, id) && !busy[id].has(key));
+
+/* every lesson slot of the fortnight, with who in the group is free in it */
+function groupCells(slots, group, busy){
+  const ids = group.filter(id => known(busy, id));
+  const cells = [];
+  for (const d of CYCLE_DAYS) for (const [per, t] of slots[d]){
+    const key = keyOf(d, per);
+    const free = ids.filter(id => !busy[id].has(key));
+    cells.push({ day:d, per, key, start:t.start, end:t.end, free,
+                 busy: ids.filter(id => busy[id].has(key)),
+                 all: ids.length > 0 && free.length === ids.length });
+  }
+  return { ids, cells };
+}
+
+/* the cycle, exactly as the timetable page counts it: weekdays since the
+   Monday of the school's start date, plus the user's half-cycle correction */
+const startOfWeekF = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+function parseStart(v){
+  const s = typeof v === 'string' ? v : pickF(v || {}, ['startDate','StartDate','date','Date']);
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(+m[1], (+m[2]) - 1, +m[3]) : null;
+}
+function cycleDay(date, start, shift){
+  if (!start) return null;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dow = d.getDay();
+  if (dow === 0 || dow === 6) return null;
+  const s = startOfWeekF(start);
+  if (d < s) return null;
+  let n = 0;
+  const cur = new Date(s);
+  while (cur < d){ cur.setDate(cur.getDate() + 1); const w = cur.getDay(); if (w !== 0 && w !== 6) n++; }
+  return CYCLE_DAYS[(n + (shift || 0)) % 10];
+}
+/* today, or Monday when it is the weekend */
+function refDay(now){
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()), dow = d.getDay();
+  if (dow === 6) d.setDate(d.getDate() + 2);
+  else if (dow === 0) d.setDate(d.getDate() + 1);
+  return d;
+}
+/* the next real dates when a slot that is free for everyone comes round */
+function upcoming(cells, start, shift, now, max){
+  const want = cells.filter(c => c.all);
+  const out = [];
+  if (!want.length || !start) return out;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  for (let i = 0; i < 42 && out.length < max; i++){      // six weeks: three fortnights
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    const cd = cycleDay(d, start, shift);
+    if (!cd) continue;
+    for (const c of want.filter(x => x.day === cd).sort((a, b) => a.per - b.per)){
+      if (i === 0 && c.end != null && c.end <= nowMin) continue;
+      out.push({ date:d, cell:c });
+      if (out.length >= max) break;
+    }
+  }
+  return out;
+}
+/* first names, with a surname initial where two people share one */
+function shortNames(list){
+  const first = p => String(p.name || p.id).split(/\s+/)[0];
+  const count = {};
+  for (const p of list){ const f = first(p).toLowerCase(); count[f] = (count[f] || 0) + 1; }
+  const out = {};
+  for (const p of list){
+    const parts = String(p.name || '').split(/\s+/).filter(Boolean), f = first(p);
+    out[p.id] = count[f.toLowerCase()] > 1 && parts.length > 1 ? f + ' ' + parts[parts.length - 1][0] : f;
+  }
+  return out;
+}
+/* run fn over items, at most n at a time */
+async function eachLimited(items, n, fn){
+  let next = 0;
+  await Promise.all(Array.from({ length:Math.min(n, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]);
+  }));
+}
+/* ═══ end logic ═══ */
+
+const DOMAIN = (window.TT && TT.EMAIL_DOMAIN) || 'education.nsw.gov.au';
+/* Not a tt.* key, so theme.js never syncs it: other people's periods stay on
+   this device. Tagged with whose login fetched it. */
+const CACHE_KEY = 'msc.free';
+const BUSY_TTL = 24 * 3600e3, MISS_TTL = 3600e3, ROSTER_TTL = 24 * 3600e3;
+const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
+const ME = signedIn ? userOf((TT.get('tt.creds', null) || {}).email) : '';
+
+let cache = readCache();
+let slots = null, rows = [], start = null, shift = 0, mine = [];
+const busy = {};                          // id -> Set | null (see `known`)
+const people = new Map();                 // id -> { id, name, classes:[subject] }
+let names = {};
+let picked = signedIn ? (TT.get('tt.freepick', []) || []).filter(validUser) : [];
+let extra = signedIn ? (TT.get('tt.freeextra', []) || []).filter(p => p && validUser(p.id)) : [];
+let includeMe = signedIn ? TT.get('tt.freeme', true) !== false : true;
+let week = 'a', openKey = null, loading = true, searchSeq = 0, searchTimer = null;
+let found = [], foundFor = '';
+
+function readCache(){
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (c && c.owner === ME) return { owner:ME, rosters:c.rosters || {}, busy:c.busy || {} };
+  } catch {}
+  return { owner:ME, rosters:{}, busy:{} };
+}
+function saveCache(){
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); }
+  catch { try { cache.busy = {}; localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {} }
+}
+function status(msg, err){ $('stat').textContent = msg || ''; $('stat').className = 'fstat' + (err ? ' err' : ''); }
+function progress(done, total){
+  $('bar').hidden = done >= total;
+  $('barfill').style.width = (total ? Math.round(100 * done / total) : 0) + '%';
+  if (done < total) status('Checking timetables… ' + done + ' of ' + total);
+}
+const nm = id => id === ME ? 'you' : (names[id] || id);
+const fullName = id => id === ME ? 'You' : ((people.get(id) || {}).name || nameFromId(id));
+const groupIds = () => picked.filter(id => people.has(id)).concat(includeMe ? [ME] : []);
+const savePicks = () => { TT.set('tt.freepick', picked); TT.set('tt.freeextra', extra); TT.set('tt.freeme', includeMe); };
+
+function togglePick(id){
+  const i = picked.indexOf(id);
+  if (i >= 0){
+    picked.splice(i, 1);
+    /* someone added from the school search goes when they're unpicked */
+    const p = people.get(id);
+    if (p && !p.classes.length){ people.delete(id); extra = extra.filter(x => x.id !== id); }
+  } else picked.push(id);
+  savePicks();
+  render();
+}
+function addPerson(p, subject){
+  if (!p || !validUser(p.id) || p.id === ME) return;
+  const cur = people.get(p.id) || { id:p.id, name:p.name || nameFromId(p.id), classes:[] };
+  if (subject && !cur.classes.includes(subject)) cur.classes.push(subject);
+  people.set(p.id, cur);
+}
+
+/* ── rendering ── */
+function weekDates(letter){
+  if (!start) return null;
+  const ref = refDay(new Date()), cd = cycleDay(ref, start, shift);
+  if (!cd) return null;
+  const mon = startOfWeekF(ref);
+  if (cd.slice(-1) !== letter) mon.setDate(mon.getDate() + 7);
+  return [0, 1, 2, 3, 4].map(i => new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i));
+}
+function typicalStart(per){
+  const seen = {};
+  for (const d of CYCLE_DAYS){ const t = slots[d].get(per); if (t && t.start != null) seen[t.start] = (seen[t.start] || 0) + 1; }
+  const best = Object.entries(seen).sort((a, b) => b[1] - a[1])[0];
+  return best ? +best[0] : null;
+}
+function slotTitle(key){
+  const [d, per] = key.split('|'), t = slots[d] && slots[d].get(per);
+  return DAY_NAMES[dayIndex(d)] + ' Week ' + d.slice(-1).toUpperCase() + ' · Period ' + per +
+         (t && t.start != null && t.end != null ? ' · ' + fmtTime(t.start) + '–' + fmtTime(t.end) : '');
+}
+const sortIds = ids => ids.slice().sort((a, b) =>
+  (picked.includes(b) - picked.includes(a)) || fullName(a).localeCompare(fullName(b)));
+
+function cellHtml(d, per, slot, today, nowMin){
+  const key = keyOf(d, per);
+  const mineHere = mine.find(e => e.key === key);
+  const grouped = picked.some(id => people.has(id));
+  let cls, inner, say;
+  if (!grouped){
+    if (mineHere){
+      cls = 'busy'; inner = '<span class="s">' + esc(mineHere.subject) + '</span>';
+      say = 'you have ' + mineHere.subject;
+    } else {
+      const free = sortIds(freeAt(key, [...people.keys()], busy));
+      const shown = free.slice(0, 4).map(nm).join(', ') + (free.length > 4 ? ' +' + (free.length - 4) : '');
+      cls = 'free';
+      inner = '<b>Free</b><span class="s">' + (loading && !free.length ? '…' : free.length + ' other' + (free.length === 1 ? '' : 's')) + '</span>' +
+              (free.length ? '<span class="w">' + esc(shown) + '</span>' : '');
+      say = 'you are free, and ' + free.length + ' other' + (free.length === 1 ? ' is' : 's are') + ' free too';
+    }
+  } else {
+    const ids = groupIds().filter(id => known(busy, id));
+    const free = ids.filter(id => !busy[id].has(key)), out = ids.filter(id => busy[id].has(key));
+    if (ids.length && free.length === ids.length){
+      cls = 'all'; inner = '<b>✓ All free</b><span class="s opt">' + (ids.length === 1 ? esc(fullName(ids[0])) : ids.length + ' of you') + '</span>';
+      say = 'everyone in your group is free';
+    } else if (free.length){
+      cls = 'some'; inner = '<b>' + free.length + ' of ' + ids.length + '</b><span class="w">Busy: ' + esc(out.map(nm).join(', ')) + '</span>';
+      say = free.length + ' of ' + ids.length + ' free; busy: ' + out.map(nm).join(', ');
+    } else {
+      cls = 'busy'; inner = '<span class="s">' + esc(includeMe && mineHere ? mineHere.subject : 'No one free') + '</span>';
+      say = 'no one in your group is free';
+    }
+  }
+  if (key === openKey) cls += ' open';
+  if (d === today && slot.start != null && slot.start <= nowMin && nowMin < slot.end) cls += ' now';
+  return '<button type="button" class="fc ' + cls + '" data-k="' + esc(key) + '" aria-label="' +
+         esc(slotTitle(key) + ': ' + say) + '">' + inner + '</button>';
+}
+
+function renderGrid(){
+  const days = CYCLE_DAYS.filter(d => d.slice(-1) === week);
+  const dates = weekDates(week);
+  const now = new Date(), today = cycleDay(now, start, shift), nowMin = now.getHours() * 60 + now.getMinutes();
+  let h = '<div class="fh"></div>' + days.map((d, i) =>
+    '<div class="fh' + (d === today ? ' today' : '') + '">' + DAY_NAMES[i].slice(0, 3) +
+    (dates ? '<small>' + dates[i].getDate() + ' ' + MONTHS[dates[i].getMonth()] + '</small>' : '') + '</div>').join('');
+  for (const per of rows){
+    const t = typicalStart(per);
+    h += '<div class="fp">P' + esc(per) + (t != null ? '<small>' + fmtTime(t) + '</small>' : '') + '</div>';
+    for (const d of days){
+      const slot = slots[d].get(per);
+      h += slot ? cellHtml(d, per, slot, today, nowMin)
+                : '<div class="fc none" role="img" aria-label="' + esc(DAY_NAMES[dayIndex(d)] + ' period ' + per + ': no lesson') + '">—</div>';
+    }
+  }
+  $('grid').innerHTML = h;
+  $('grid').querySelectorAll('button.fc').forEach(b => b.onclick = () => {
+    openKey = openKey === b.dataset.k ? null : b.dataset.k; render();
+    if (openKey) $('detail').scrollIntoView({ block:'nearest', behavior:'smooth' });
+  });
+  $('weeks').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.w === week)));
+  const ref = refDay(now), cd = cycleDay(ref, start, shift);
+  $('nowweek').textContent = cd ? (ref.getDate() === now.getDate() ? 'This week is ' : 'Next week is ') + 'Week ' + cd.slice(-1).toUpperCase() : '';
+}
+
+function renderDetail(){
+  const el = $('detail');
+  const [d, per] = String(openKey || '').split('|');
+  if (!openKey || !slots[d] || !slots[d].get(per)){ el.hidden = true; return; }
+  const mineHere = mine.find(e => e.key === openKey);
+  const free = sortIds(freeAt(openKey, [...people.keys()], busy));
+  el.innerHTML = '<h3>' + esc(slotTitle(openKey)) + '</h3>' +
+    '<p>' + (mineHere ? 'You have ' + esc(mineHere.subject) + '. ' : 'You’re free. ') +
+    (free.length ? free.length + (free.length === 1 ? ' person' : ' people') + ' you know ' + (free.length === 1 ? 'is' : 'are') +
+       ' free then. Tap a name to add them to your group.'
+     : (loading ? 'Still checking who else is free…' : 'No one else you know is free then.')) + '</p>' +
+    '<div class="fwho">' + free.map(id => '<button type="button" data-id="' + esc(id) + '" aria-pressed="' + picked.includes(id) + '">' +
+      esc(fullName(id)) + '</button>').join('') + '</div>';
+  el.hidden = false;
+  el.querySelectorAll('[data-id]').forEach(b => b.onclick = () => togglePick(b.dataset.id));
+}
+
+function renderGroup(){
+  const el = $('group');
+  const pk = picked.filter(id => people.has(id));
+  let h = '<div class="fphead"><h2>Your group</h2><label class="fme"><input type="checkbox" id="incme"' +
+          (includeMe ? ' checked' : '') + '> Include me</label></div>';
+  if (!pk.length){
+    h += '<p class="fhint">Pick people to see when you’re all free. Tap a free period to see who’s around, or choose from the list.</p>';
+  } else {
+    h += '<div class="fchips">' + pk.map(id => {
+      const unk = busy[id] === null || (busy[id] instanceof Set && !busy[id].size);
+      return '<button type="button" class="fchip' + (unk ? ' unk' : '') + '" data-id="' + esc(id) + '" title="Remove from your group"' +
+             ' aria-label="Remove ' + esc(fullName(id)) + ' from your group">' + esc(fullName(id)) + (unk ? ' ?' : '') +
+             '<span class="x" aria-hidden="true">×</span></button>';
+    }).join('') + '</div>';
+    const waiting = pk.filter(id => busy[id] === undefined);
+    const unknown = pk.filter(id => busy[id] !== undefined && !known(busy, id));
+    const view = groupCells(slots, groupIds(), busy);
+    const all = view.cells.filter(c => c.all);
+    if (waiting.length){
+      h += '<p class="fhint gap">Checking ' + esc(waiting.map(fullName).join(', ')) + '…</p>';
+    } else if (!view.ids.length){
+      h += '<p class="fhint gap">No one left to compare.</p>';
+    } else if (all.length){
+      const next = upcoming(view.cells, start, shift, new Date(), 3);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const when = d => {
+        const n = Math.round((d - today) / 864e5);
+        return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : DAY_NAMES[(d.getDay() + 6) % 7].slice(0, 3) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+      };
+      if (next.length){
+        h += '<p class="fsub">Next time you’re all free</p><ul class="fnext">' + next.map(x =>
+          '<li><b>' + esc(when(x.date)) + ' · P' + esc(x.cell.per) + '</b><span>' +
+          (x.cell.start != null ? fmtTime(x.cell.start) + '–' + fmtTime(x.cell.end) : '') + '</span></li>').join('') + '</ul>';
+      }
+      h += '<p class="fsub">Every fortnight</p>';
+      for (const L of ['a', 'b']){
+        const these = all.filter(c => c.day.slice(-1) === L);
+        h += '<p class="fwl"><b>Week ' + L.toUpperCase() + ':</b> ' +
+             (these.length ? these.map(c => DAY_NAMES[dayIndex(c.day)].slice(0, 3) + ' P' + c.per).join(' · ') : 'none') + '</p>';
+      }
+    } else {
+      const most = Math.max(0, ...view.cells.map(c => c.free.length));
+      const close = most > 0 ? view.cells.filter(c => c.free.length === most).slice(0, 4) : [];
+      h += '<p class="fhint gap">There’s no lesson period when all ' + view.ids.length +
+           ' of you are free. Recess and lunch always work.</p>';
+      if (close.length){
+        h += '<p class="fsub">Closest</p><ul class="fnext">' + close.map(c =>
+          '<li><b>' + DAY_NAMES[dayIndex(c.day)].slice(0, 3) + ' ' + c.day.slice(-1).toUpperCase() + ' · P' + esc(c.per) + '</b>' +
+          '<span>' + esc(c.busy.map(nm).join(', ')) + ' busy</span></li>').join('') + '</ul>';
+      }
+    }
+    if (unknown.length){
+      h += '<p class="fhint gap">Couldn’t read ' + esc(unknown.map(fullName).join(', ')) +
+           (unknown.length === 1 ? '’s timetable' : '’s timetables') + ', so they’re left out.</p>';
+    }
+  }
+  el.innerHTML = h;
+  $('incme').onchange = e => { includeMe = e.target.checked; savePicks(); render(); };
+  el.querySelectorAll('.fchip').forEach(b => b.onclick = () => togglePick(b.dataset.id));
+}
+
+/* how many of your free periods someone shares */
+function sharedFrees(id){
+  if (!known(busy, id) || !known(busy, ME)) return null;
+  let n = 0;
+  for (const d of CYCLE_DAYS) for (const per of slots[d].keys()){
+    const k = keyOf(d, per);
+    if (!busy[ME].has(k) && !busy[id].has(k)) n++;
+  }
+  return n;
+}
+function personRow(p, add){
+  const n = add ? null : sharedFrees(p.id);
+  const sub = p.classes && p.classes.length ? p.classes.join(' · ') : (p.year ? 'Year ' + p.year : 'Added by you');
+  const tag = add ? 'Add' : (n == null ? (busy[p.id] === undefined ? '…' : '?') : n + ' free' + (n === 1 ? '' : 's'));
+  return '<li><button type="button" class="fpp" data-id="' + esc(p.id) + '"' +
+         (add ? ' data-name="' + esc(p.name) + '"' : ' aria-pressed="' + picked.includes(p.id) + '"') + '>' +
+         '<span class="n">' + esc(p.name) + '</span><span class="c">' + esc(sub) + '</span>' +
+         '<span class="t"' + (add ? '' : ' title="Free periods you share each fortnight"') + '>' + esc(tag) + '</span></button></li>';
+}
+function renderPeople(){
+  const q = $('pq').value.trim().toLowerCase().replace(/\s+/g, ' ');
+  const words = q ? q.split(' ') : [];
+  const match = p => words.every(w => p.name.toLowerCase().split(/[\s'-]+/).some(x => x.startsWith(w)) || p.id.startsWith(w));
+  const score = id => { const n = sharedFrees(id); return n == null ? -1 : n; };
+  const list = [...people.values()].filter(match).sort((a, b) => (score(b.id) - score(a.id)) || a.name.localeCompare(b.name));
+  let h = '<p class="fsub first">' + (q ? 'Matching' : 'Classmates, most free periods in common first') + ' · ' + list.length + '</p>';
+  h += list.length ? '<ul class="fpeople">' + list.map(p => personRow(p, false)).join('') + '</ul>'
+                   : '<p class="fhint">' + (loading ? 'Loading…' : (q ? 'None of your classmates match.' : 'No classmates found.')) + '</p>';
+  if (q.length >= 2){
+    const others = found.filter(p => !people.has(p.id) && p.id !== ME);
+    h += '<p class="fsub">Elsewhere in the school</p>' + (others.length
+      ? '<ul class="fpeople">' + others.map(p => personRow(p, true)).join('') + '</ul>'
+      : '<p class="fhint">' + (foundFor === q ? 'No one else matches.' : 'Searching…') + '</p>');
+  }
+  $('plist').innerHTML = h;
+  $('plist').querySelectorAll('.fpp').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    if (b.dataset.name !== undefined){
+      addPerson({ id, name:b.dataset.name });
+      if (!extra.some(x => x.id === id)) extra.push({ id, name:b.dataset.name });
+      if (!picked.includes(id)) picked.push(id);
+      savePicks(); render(); loadBusy([id]);
+    } else togglePick(id);
+  });
+}
+function render(){
+  if (!slots) return;
+  names = shortNames([...people.values()]);
+  renderGrid(); renderDetail(); renderGroup(); renderPeople();
+}
+
+/* ── loading ── */
+async function ownPayload(){
+  const c = TT.get('tt.cache', null);
+  if (c && c.payload && userOf(c.email) === ME && Date.now() - c.at < 6 * 3600e3) return c.payload;
+  return TT.apiGet({});
+}
+async function roster(code){
+  const hit = cache.rosters[code];
+  if (hit && Date.now() - hit.at < ROSTER_TTL) return hit.people;
+  try {
+    const list = rosterStudents(await TT.apiGet({ class:code }), DOMAIN).filter(p => p.id !== ME);
+    cache.rosters[code] = { at:Date.now(), people:list };
+    return list;
+  } catch { return (hit && hit.people) || []; }
+}
+async function loadBusy(ids){
+  const now = Date.now(), todo = [];
+  for (const id of ids){
+    const hit = cache.busy[id];
+    if (hit && now - hit.at < (hit.b ? BUSY_TTL : MISS_TTL)) busy[id] = hit.b ? new Set(hit.b) : null;
+    else todo.push(id);
+  }
+  render();
+  if (!todo.length) return '';
+  const batches = [];
+  for (let i = 0; i < todo.length; i += 25) batches.push(todo.slice(i, i + 25));
+  let done = 0, failed = '';
+  progress(0, todo.length);
+  await eachLimited(batches, 2, async b => {
+    try {
+      const d = await TT.apiGet({ free:b.join(',') });
+      for (const [mail, keys] of Object.entries((d && d.people) || {})){
+        const id = userOf(mail), list = Array.isArray(keys) ? keys : null;
+        busy[id] = list ? new Set(list) : null;
+        cache.busy[id] = { at:Date.now(), b:list };
+      }
+    } catch (e) { failed = e.message || 'The school timetable could not be read.'; }
+    for (const id of b) if (busy[id] === undefined) busy[id] = null;     // asked, but no answer
+    done += b.length;
+    progress(done, todo.length);
+    render();
+  });
+  saveCache();
+  if (failed) status(failed, true);
+  return failed;
+}
+
+async function boot(){
+  if (!signedIn){
+    $('stat').innerHTML = 'Free periods need your school login. <a href="./">Sign in on the timetable page</a> first, then come back.';
+    return;
+  }
+  status('Loading your timetable…');
+  let payload;
+  try { payload = await ownPayload(); }
+  catch (e) { status(e.message || 'Your timetable could not be loaded.', true); return; }
+  mine = readEntries(payload && payload.timetable);
+  if (!mine.length){ status('Your timetable came back empty, so there are no free periods to work out.', true); return; }
+  busy[ME] = new Set(mine.map(e => e.key));
+  slots = teachingSlots(payload.bellTimes, mine);
+  rows = gridRows(slots);
+  start = parseStart(payload.startDate);
+  shift = (+TT.get('tt.cycleshift', 0) === 5) ? 5 : 0;
+  const cd = start && cycleDay(refDay(new Date()), start, shift);
+  week = cd ? cd.slice(-1) : 'a';
+  for (const x of extra) addPerson(x);
+  $('main').hidden = false;
+  render();
+
+  status('Finding your classmates…');
+  const codes = [...new Set(mine.map(e => e.code).filter(Boolean))];
+  await eachLimited(codes, 3, async code => {
+    const subject = (mine.find(e => e.code === code) || {}).subject;
+    for (const p of await roster(code)) addPerson(p, subject);
+  });
+  saveCache();
+  render();
+  const failed = await loadBusy([...people.keys()]);
+  loading = false;
+  const ok = [...people.keys()].filter(id => known(busy, id)).length;
+  const missing = people.size - ok;
+  status(failed ? failed
+    : people.size ? 'Compared with ' + ok + ' ' + (ok === 1 ? 'person' : 'people') +
+        (missing ? ' · ' + missing + ' timetable' + (missing === 1 ? '' : 's') + ' couldn’t be read' : '') + '.'
+    : 'No classmates found in your class lists. Search for people to add them.', !!failed);
+  render();
+}
+
+$('weeks').querySelectorAll('button').forEach(b => b.onclick = () => { week = b.dataset.w; openKey = null; render(); });
+$('pq').addEventListener('input', () => {
+  renderPeople();
+  clearTimeout(searchTimer);
+  const q = $('pq').value.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (q.length < 2){ found = []; foundFor = ''; return; }
+  searchTimer = setTimeout(async () => {
+    const seq = ++searchSeq;
+    let res = [];
+    try {
+      const d = await TT.apiGet({ find:q });
+      res = ((d && d.results) || []).map(p => ({ id:userOf(p.email), name:p.name, year:p.year })).filter(p => validUser(p.id));
+    } catch {}
+    if (seq !== searchSeq) return;                 // a newer search has started
+    found = res; foundFor = q;
+    renderPeople();
+  }, 300);
+});
+$('refresh').onclick = () => {
+  cache = { owner:ME, rosters:{}, busy:{} }; saveCache();
+  location.reload();
+};
+boot();
+</script>
+<script src="settings.js"></script>
+</body>
+</html>

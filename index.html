@@ -1480,9 +1480,7 @@ function rosterPeople(data){
        "yr11", the class's teacher carries "teacher", "staff" or "executive" and
        a staff (@det) address. Role/Type are kept for any older shape. */
     const groups = Array.isArray(r && r.groups) ? r.groups.map(g => String(g).toLowerCase()) : [];
-    const yrGroup = groups.map(g => g.match(/^yr\.?\s*(\d{1,2})$/)).find(Boolean);
-    const year = str(pick(r, ['Year','year','Form','form','Grade','grade','RollClass','rollClass'])) ||
-                 (yrGroup ? 'Year ' + yrGroup[1] : '');
+    const year = str(pick(r, ['Year','year','Form','form','Grade','grade','RollClass','rollClass']));
     const isTeacher = groups.some(g => /^(teacher|staff|executive|admin)/.test(g)) ||
                       /@det\.nsw\.edu\.au$/i.test(mail) ||
                       /teacher|staff/i.test(str(pick(r, ['Role','role','Type','type'])));
@@ -1502,8 +1500,7 @@ $('dclass').onclick = async () => {
           ' &middot; tap a name for their timetable</div>' +
         '<ul class="clul">' + people.map(pn => {
           const uname = pn.mail && !pn.isTeacher ? pn.mail.split('@')[0] : '';
-          const inner = '<span>' + esc(pn.name) + '</span>' +
-                        (pn.year ? '<em>' + esc(pn.year) + '</em>' : '');
+          const inner = '<span>' + esc(pn.name) + '</span>';
           return '<li' + (pn.isTeacher ? ' class="teacher"' : '') + '>' +
             (uname ? '<button type="button" class="clperson" data-user="' + esc(uname) + '">' + inner + '</button>'
                    : inner) + '</li>';

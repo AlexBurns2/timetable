@@ -239,6 +239,50 @@ export function searchStudents(list, q, max) {
   }));
 }
 
+/* ------------------------------------------------------ free-period finder */
+/* Which periods of the fortnight someone has a class in, as "mona|3" keys —
+   nothing about what the class is, where, or who takes it. Kept for six hours
+   per warm instance, so a page of classmates doesn't re-read the school API. */
+const busyCache = new Map();             // email -> { at, busy }
+const BUSY_TTL_MS = 6 * 60 * 60 * 1000;
+export const FREE_MAX = 25;
+export function busyKeys(timetable) {
+  const arr = Array.isArray(timetable) ? timetable
+    : ((timetable && (timetable.timetable || timetable.entries || timetable.data)) || []);
+  const out = new Set();
+  for (const r of Array.isArray(arr) ? arr : []) {
+    const day = String((r && (r.DayName || r.dayName)) || "").trim().toLowerCase();
+    const per = String((r && (r.Period ?? r.period)) ?? "").trim().toLowerCase()
+      .replace(/^(?:period\s*|p)(\d+)$/, "$1");
+    if (!/^(mon|tue|wed|thu|fri)[ab]$/.test(day) || !per) continue;
+    out.add(day + "|" + per);
+  }
+  return [...out].sort();
+}
+async function busyFor(apiBase, authEmail, pw, who) {
+  const hit = busyCache.get(who);
+  if (hit && Date.now() - hit.at < BUSY_TTL_MS) return hit.busy;
+  const path = `/api/timetable/${encodeURIComponent(who)}`;
+  let auth = await getToken(apiBase, authEmail, pw);
+  let tt = await apiGet(apiBase, path, auth);
+  if (tt === null) {                       // token expired → refresh and retry
+    auth = await getToken(apiBase, authEmail, pw);
+    tt = await apiGet(apiBase, path, auth);
+  }
+  if (!tt) throw new Error("No timetable for " + who);
+  const busy = busyKeys(tt);
+  if (busyCache.size >= 3000) busyCache.clear();
+  busyCache.set(who, { at: Date.now(), busy });
+  return busy;
+}
+/* run fn over items, at most n at a time */
+async function eachLimited(items, n, fn) {
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]);
+  }));
+}
+
 /* ------------------------------------------------------------------ handler */
 
 export default async function handler(req, res) {
@@ -358,6 +402,36 @@ export default async function handler(req, res) {
       console.error("Student finder failed:", error.message);
       return res.status(502).json({ error: "Unable to search the school directory right now." });
     }
+  }
+
+  /* ---- ?free=<user>,<user>,… ---------------------------------------------
+   * Free-period finder. For each person named, only the periods they have a
+   * class in ("mona|3" …) — no subjects, rooms or teachers. Like ?find=, it
+   * needs the caller's OWN working school login, it takes at most FREE_MAX
+   * people per call, and nothing is cached on the way out. Addresses are
+   * forced onto the student domain, so staff can't be asked about. Someone
+   * whose timetable can't be read comes back as null, not as "always free".
+   */
+  if (req.query.free !== undefined) {
+    res.setHeader("Cache-Control", "private, no-store");
+    if (!usingOwn) {
+      return res.status(401).json({ error: "Sign in with your school account to compare free periods." });
+    }
+    try { await getToken(apiBase, authEmail, ownPassword); }
+    catch { return res.status(401).json({ error: "Those school sign-in details were not accepted." }); }
+    const wanted = [...new Set(String(req.query.free || "").split(",")
+      .map(s => normaliseEmail(s, domain)).filter(Boolean))];
+    if (!wanted.length) return res.status(400).json({ error: "Name at least one person." });
+    if (wanted.length > FREE_MAX) return res.status(400).json({ error: `At most ${FREE_MAX} people at a time.` });
+    const people = {};
+    await eachLimited(wanted, 5, async who => {
+      try { people[who] = await busyFor(apiBase, authEmail, ownPassword, who); }
+      catch (error) {
+        if (error.hint) console.error("Free periods failed:", error.message);
+        people[who] = null;
+      }
+    });
+    return res.status(200).json({ people });
   }
 
   /* ---- ?class=<code> -----------------------------------------------------

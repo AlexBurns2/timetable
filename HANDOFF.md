@@ -1907,3 +1907,60 @@ shape, the year filter, the cap, the cache — and lifts the real `rosterPeople`
 out of index.html to check the teacher is dropped. Run against the previous
 index.html, that same check lists the teacher.
 
+
+### 8.44 Free periods, and no year in class lists
+
+**`?free=<user>,<user>,…` on /api/timetable** (again no new function; still 11
+of 12). It has the same gate as `?find=`: the caller's own school login, checked
+with `getToken`, or 401. It takes at most `FREE_MAX` = 25 people per call and
+sends `Cache-Control: private, no-store`. Each name goes through
+`normaliseEmail`, so it is forced onto the student domain: path tricks are
+dropped and a staff (`@det`) address is never fetched as staff. For each
+person it reads `/api/timetable/{email}` with the caller's token, five at a
+time (`eachLimited`). It returns only `busyKeys`: sorted `"mona|3"` strings,
+with no subject, room, class code or teacher. A person who can't be read
+comes back `null`. One person's error doesn't fail the call. Answers are kept
+6 h per warm instance in `busyCache` (cleared at 3000 entries).
+
+**`free.html`** has its own home tile.
+- Your own timetable comes from `tt.cache` if it is yours and under 6 h old,
+  otherwise from `TT.apiGet({})`.
+- Lesson slots come from the bell table. Only `Type` `T` rows count, so P0, P7,
+  assembly and the Tue/Thu P6 sport afternoon (`O`), and recess and lunch
+  (`R`), are never "free periods". It falls back to periods 1–6 when the table
+  has no types.
+- Candidates are the students in your classes' rosters (`?class=`, staff
+  dropped by groups or domain, yourself dropped), plus anyone added through
+  `?find=`.
+- Busy sets are fetched in batches of 25, two batches at a time, with a
+  progress bar, and rendered as they arrive.
+- An empty busy list means "no timetable" (someone who has left). It is shown
+  as unknown, never as always free.
+- The A/B week uses the same weekday count and `tt.cycleshift` as
+  `cycleDayFor`.
+- "Next time you're all free" looks six weeks ahead, so a once-a-fortnight slot
+  still shows three dates.
+
+**Storage.**
+- `tt.freepick` (picked usernames), `tt.freeextra` (people added from search)
+  and `tt.freeme` ("Include me") are normal settings and sync.
+- Other people's busy periods and the rosters are cached under `msc.free`.
+  Deliberately not a `tt.*` key, so theme.js never uploads them. The entry is
+  tagged with the signed-in username and discarded if that changes.
+- Busy sets are kept 24 h, unreadable people 1 h, rosters 24 h.
+
+**Class lists.** The `<em>Year NN</em>` beside each name is gone, and so is
+reading the year from `yrNN` in `rosterPeople`. Staff filtering is unchanged.
+
+**Tests.**
+- `freecheck.mjs` (18) runs the real timetable.js against a fake school API. It
+  covers the refusals, path tricks, the 25 cap, duplicates folded, "P2" and
+  "Period 3" normalised, unknown people as `null`, no field leaking, staff
+  addresses, the cache, and at most 5 reads in flight.
+- `freelogic.mjs` (30) lifts the page's logic block. It covers slots from a
+  realistic typed bell table, roster filtering, group cells, the
+  next-occurrence dates, and that `cycleDay` agrees with index.html's
+  `cycleDayFor` on every date for two years at both shift settings.
+- `findercheck` now asserts the year label is gone.
+- The mock server serves the real flat bell-table shape with types, a timetable
+  with gaps, a different roster per class, and a fake `?free=`.

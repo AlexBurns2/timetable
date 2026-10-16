@@ -1284,6 +1284,34 @@ tile and the forum is hidden — on every device you are signed in on. It unlock
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
 
+## Free periods
+
+A new **Free periods** tile on the home page, for finding when to meet people
+outside class.
+
+- **Your fortnight, Week A or B.** Each of your free periods shows how many of
+  your classmates are free then, with their names. Tap a period to see everyone
+  who is free in it.
+- **Your group.** Pick people from the list (or tap them in a period) and the
+  grid switches to showing when you're *all* free: "All free", "2 of 3", or
+  who is busy. Beside it are the next three real dates that work ("Tomorrow ·
+  P3, 11:45–12:50") and every all-free period in the fortnight. Untick
+  **Include me** to find when your friends are free without you.
+- **Who's in the list.** Everyone from your class lists, sorted by how many free
+  periods you share. Type to filter them, or to search the whole school and add
+  someone who isn't in your classes.
+- Only lesson periods are shown. Recess and lunch are free for everyone, and
+  before or after school, assembly and the Tuesday/Thursday sport afternoon
+  aren't lessons.
+- **It needs your school login.** The site only asks which periods each person
+  has a class in, never what the class is, where, or who takes it. Your group
+  is saved with your settings. Everyone's periods stay on this device for a
+  day; "check again now" at the bottom refreshes them.
+- Someone whose timetable can't be read (for example, they've left) shows with
+  a "?" and is left out, rather than looking free all the time.
+
+**Class lists no longer show a year** beside each name.
+
 ## Student finder
 
 A new **Student finder** tile on the home page. Type part of a first or last
@@ -1297,7 +1325,7 @@ narrow it to one year. "sam t" finds Sam Taylor; up to 20 matches show at once.
 - It only ever returns the matches for what you typed, never the whole school.
 
 **Class lists no longer include the teacher.** The list under a lesson is just
-the students, and now shows each one's year.
+the students.
 
 ## Offline
 
