@@ -68,6 +68,10 @@ async function siteUsers() {
   (await grab("prefs", "updated_at")).forEach(r => touch(r.email, r.updated_at));
   (await grab("game_score", "updated_at")).forEach(r => touch(r.email, r.updated_at, "scores"));
   (await grab("daily_result", "updated_at")).forEach(r => touch(r.email, r.updated_at, "days"));
+  /* Anyone with a name set but no activity yet: the owner can name someone
+     before their first visit, so they show up here waiting rather than
+     vanishing until they open the site. */
+  names.forEach((_, email) => { if (!out.has(email)){ touch(email, null); out.get(email).pending = true; } });
   return [...out.values()].sort((a, b) => String(b.last || "").localeCompare(String(a.last || "")));
 }
 

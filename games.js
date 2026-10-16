@@ -135,12 +135,12 @@ function wirePad(pad, down, up){
 
 let stop = null;
 const GAMES = [
-  { id:'flashcards', cat:'Revision', ico:'🗂️', name:'Flashcards', blurb:'Make, share and study decks' },
-  { id:'maths',   cat:'Revision', ico:'➗', name:'Maths', blurb:'Differentiation, integration, combinatorics, graphs' },
-  { id:'physics', cat:'Revision', ico:'🔭', name:'Physics', blurb:'Kinematics, dynamics, waves, electricity' },
-  { id:'chem',    cat:'Revision', ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
-  { id:'engineering', cat:'Revision', ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
-  { id:'software', cat:'Revision', ico:'💻', name:'Software', blurb:'Read code and write it' },
+  { id:'flashcards', cat:'Revision', year:11, ico:'🗂️', name:'Flashcards', blurb:'Make, share and study decks' },
+  { id:'maths',   cat:'Revision', year:11, ico:'➗', name:'Maths', blurb:'Differentiation, integration, combinatorics, graphs' },
+  { id:'physics', cat:'Revision', year:11, ico:'🔭', name:'Physics', blurb:'Kinematics, dynamics, waves, electricity' },
+  { id:'chem',    cat:'Revision', year:11, ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
+  { id:'engineering', cat:'Revision', year:11, ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
+  { id:'software', cat:'Revision', year:11, ico:'💻', name:'Software', blurb:'Read code and write it' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -155,6 +155,15 @@ const GAMES = [
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
 const CAT_ORDER = ['Timetable', 'Arcade'];
+
+/* ── which year's revision you are shown ───────────────────────────────────
+   The HSC course starts in Term 4 of Year 11, so from then on Year 12 is what
+   you want to open; before that, Year 11. Your own choice sticks. */
+const HSC_YEAR = 2027;
+const YEAR12_FROM = new Date(HSC_YEAR - 1, 9, 13);        // Term 4 the year before
+const defaultYear = () => (new Date() >= YEAR12_FROM ? 12 : 11);
+const yearShown = () => { const v = +TT.get('tt.rev_year', 0); return v === 11 || v === 12 ? v : defaultYear(); };
+const setYearShown = y => { TT.set('tt.rev_year', y); showGrid(); };
 
 /* This file runs both pages. games.html gets the side-scrolling shelves;
    revision.html gets every subject on screen at once, because when you sit
@@ -184,8 +193,20 @@ function showGrid(){
   grid.innerHTML = '';
 
   if (REVISION_PAGE){
+    const year = yearShown();
+    const has = y => GAMES.some(g => g.cat === 'Revision' && (g.year || 11) === y);
+    if (has(11) && has(12)){
+      const bar = document.createElement('div');
+      bar.className = 'diffbar rvyear';
+      [11, 12].forEach(y => { const b = document.createElement('button');
+        b.type = 'button'; b.className = 'diffpill'; b.textContent = 'Year ' + y;
+        b.setAttribute('aria-pressed', String(y === year));
+        b.onclick = () => setYearShown(y);
+        bar.appendChild(b); });
+      grid.appendChild(bar);
+    }
     const box = document.createElement('div'); box.className = 'gamegrid';
-    GAMES.filter(g => g.cat === 'Revision').forEach((g, i) => box.appendChild(gameCard(g, i)));
+    GAMES.filter(g => g.cat === 'Revision' && (g.year || 11) === year).forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
     return;
   }
@@ -2787,9 +2808,12 @@ BUILD.admin = host => {
       const doneCount = us.filter(u => steps.length &&
         (byEmail[String(u.email).toLowerCase()] || []).length >= steps.length).length;
 
-      $('admnote').textContent = us.length + ' ' + (us.length===1?'person has':'people have') +
+      const waiting = us.filter(u => u.pending).length;
+      $('admnote').innerHTML = esc((us.length - waiting) + ' ' + (us.length - waiting === 1 ? 'person has' : 'people have') +
         ' used the site, ' + active + ' in the last 7 days' +
-        (steps.length ? ', ' + doneCount + ' through the whole tutorial.' : '.');
+        (steps.length ? ', ' + doneCount + ' through the whole tutorial' : '') +
+        (waiting ? ', and ' + waiting + ' named before their first visit' : '') + '.') +
+        ' <button type="button" class="rvlink" id="admadd">Name someone who hasn’t opened it yet</button>';
 
       const stage = email => {
         if (!steps.length) return '';
@@ -2807,9 +2831,25 @@ BUILD.admin = host => {
             '<span class="ue">'+esc(u.email)+'</span>' +
             '<span class="uc">'+u.scores+' score'+(u.scores===1?'':'s')+' · '+u.days+' daily</span>' +
             stage(u.email) +
-            '<span class="ul">'+esc(seenAgo(u.last))+'</span>' +
+            '<span class="ul">'+esc(u.pending ? 'not yet' : seenAgo(u.last))+'</span>' +
             '<button class="btn rename" type="button" data-email="'+esc(u.email)+'" data-name="'+esc(u.name)+'" data-auto="'+esc(u.auto || u.name)+'">Rename</button></div>').join('')
         : '<p class="how">Nobody has signed in yet.</p>';
+      /* a name can be set before someone's first visit: the override is keyed by
+         email, so it is waiting for them when they arrive */
+      const addBtn = $('admadd');
+      if (addBtn) addBtn.onclick = async () => {
+        const email = prompt('Whose name do you want to set?\nEnter their school email address.');
+        if (email === null) return;
+        const want = String(email).trim().toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(want)) return alert('That doesn’t look like an email address.');
+        const name = prompt('What should ' + want + ' be shown as?');
+        if (name === null || !String(name).trim()) return;
+        try {
+          await TT.api('/api/leaderboard', { method:'POST', body:{ action:'rename', email:want, name:String(name) } });
+          lbSumCache = null;
+          load();
+        } catch (e){ alert('Could not save that: ' + e.message); }
+      };
       /* some people go by a different name from the one in their email; this
          changes what everyone else sees on leaderboards, the forum and shared events */
       $('admbody').querySelectorAll('.rename').forEach(b => b.onclick = async () => {
@@ -4012,6 +4052,15 @@ const UNIT_TABLES = {
   energy:  { kJ:1, J:1e-3, MJ:1e3, 'kJ/mol':1, 'J/mol':1e-3, 'MJ/mol':1e3,
              kilojoule:1, kilojoules:1, joule:1e-3, joules:1e-3 },
   speed:   { 'm/s':1, mps:1, 'km/h':1/3.6, kph:1/3.6, kmh:1/3.6, 'km/hr':1/3.6, 'cm/s':0.01, 'km/s':1e3 },
+  /* physics works in joules; the chemistry table above is kJ-based */
+  work:    { J:1, joule:1, joules:1, mJ:1e-3, kJ:1e3, MJ:1e6, GJ:1e9,
+             eV:1.602e-19, keV:1.602e-16, MeV:1.602e-13, GeV:1.602e-10 },
+  length:  { m:1, metre:1, metres:1, meter:1, meters:1, cm:1e-2, centimetre:1e-2, centimetres:1e-2,
+             mm:1e-3, millimetre:1e-3, millimetres:1e-3, km:1e3, kilometre:1e3, kilometres:1e3,
+             kilometer:1e3, kilometers:1e3 },
+  /* no "ms": too easily meant as m s⁻¹. No "t" either — that is tonnes above. */
+  time:    { s:1, sec:1, secs:1, second:1, seconds:1, min:60, mins:60, minute:60, minutes:60,
+             h:3600, hr:3600, hrs:3600, hour:3600, hours:3600 },
   molarmass:{ 'g/mol':1, u:1, amu:1, Da:1, g:1 }
 };
 const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺';

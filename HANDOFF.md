@@ -1056,6 +1056,14 @@ Renamed rows also show the email-derived name in brackets after the new one.
   wrap their display name in `withName`. Stored rows keep the email name, so
   removing an override (or the whole table) puts everything back.
 - Other server instances pick up a change within the 60 s cache.
+- **Naming someone before their first visit.** The note above the roster ends
+  with *Name someone who hasn't opened it yet*, which asks for a school email and
+  a name and posts the same `rename` action. `siteUsers()` in `leaderboard.js`
+  walks the override map after collecting activity and adds any email it hasn't
+  already seen with `pending: true`; those rows show 0 scores, 0 days and
+  "not yet" in the last-seen column, and the pending flag disappears by itself
+  once the person turns up in prefs, scores, daily results or the forum. The
+  email is checked against `/^[^@\s]+@[^@\s]+\.[^@\s]+$/` on both sides.
 
 ```sql
 create table name_override (
@@ -1449,4 +1457,258 @@ the older suites (testsim, chemcheck, redoxcheck, mechcheck, qtycheck,
 picturecheck, resetcheck, resubmitcheck, weeklytest, namestest, colours,
 empcheck, yellowbug) are gone and would need rewriting if something they cover
 is changed again.
+
+### 8.32 Year 12 content: hsc.js, and Maths Advanced
+
+**Where it lives.** `hsc.js`, loaded after games.js on revision.html only. A
+classic script shares the global lexical scope, so it uses games.js's helpers
+(`mc`, `qty`, `ri`, `pk`, `rd`, `sup`, `gcd2`) and pushes into `GAMES`/`BUILD`
+directly, then calls `showGrid()` because games.js has already drawn the page.
+games.js was 440 KB before this; the HSC subjects would roughly double it.
+
+**The year split.** Revision cards carry `year: 11 | 12`. `showGrid`'s revision
+branch draws a year switch when both exist and filters by `yearShown()`, which
+is `tt.rev_year` if set, else `defaultYear()`: Year 12 from Term 4 of the year
+before the HSC (`HSC_YEAR = 2027`, `YEAR12_FROM`), Year 11 before that. Year 11
+ids and `statKey`s are untouched, so progress carries over; Year 12 subjects use
+new keys (`maths12`), which the per-subject storage in 8.31 keeps apart.
+
+**Maths Advanced.** Seven modules, 17 topics, 56 question kinds, all generated.
+Deliberately unkeyed: parameterised questions have no fixed identity to schedule
+or store, which also keeps the new progress rows small. Conventions worth
+keeping if more subjects are added:
+- `fracStr` for exact coefficients (1/35, not 0.0286), `neg` for the typographic
+  minus, `plusTerm`/`cubicStr` so a zero coefficient prints nothing, `pow` for
+  exponents that are expressions (option buttons are plain text, so `e^(3x + 2)`
+  rather than superscripts).
+- Typed answers go through `qty` from 8.23, so units and `$1,234.56` are read
+  properly; money uses `moneyQ`.
+- Every computed question carries `data`, and the calculus ones also carry `fx`
+  plus `dfx` as plain expressions.
+
+`mathscheck.mjs` (13 checks) does not trust the generators. Over 400 draws of
+each topic it checks the shape (four distinct options including the answer, or a
+typed answer its own marker accepts, with and without its unit), re-derives
+every numeric answer from `data` with independent maths (sums by loop, areas by
+Simpson's rule, loan repayments by bisection rather than the formula), and
+**reads the printed answer back as an expression** (`toJS` handles superscripts,
+implicit multiplication, the typographic minus, ln/sin/cos) to differentiate or
+integrate it numerically and compare it with the function asked about. That last
+check is what caught the antiderivative coefficients being printed as rounded
+decimals.
+
+### 8.33 Maths Extension 1 (Year 12)
+
+Nineteen topics in seven modules, `BUILD.maths12e1` / `GAMES` id `maths12e1`, all
+in hsc.js under the conventions in 8.32. Topic names follow the labels NESA uses
+to tag questions in its own sample HSC materials for the 2024 syllabus, which is
+also where the paper's shape comes from (70 marks, 2 hours, Section I ten
+multiple-choice marks, Section II 60 over four questions). Those materials were
+read for structure only; no question, number or wording is taken from them.
+
+- The **Year 11 in the HSC** module exists because the Extension 1 paper examines
+  Year 11 Extension 1 content (polynomials, parametric and inverse functions,
+  further trigonometry, the binomial theorem) and the Year 11 `maths` game is
+  Advanced-only.
+- Helpers added: `kOff` (writes k, k + 1, k + 2 so no option ever reads
+  "k + 1 + 1"), `vecTerm`/`vecStr` (components with the typographic minus and no
+  "+ 1j"), `E1_SERIES` (each identity carries `termFn` and `termExpr`/`sumExpr`
+  so a checker can re-derive both sides), `E1_DIVS`, `E1_TRIP2`/`E1_TRIP3`
+  (Pythagorean triples, so magnitudes and triangles stay exact), `E1_EXACT`,
+  `E1_TRIGCOUNT`.
+- `sup()` only knows digits. Letter exponents are written `e^(kt)`, never
+  `'e' + sup('kt')`, which silently renders as "ekt".
+
+**New unit tables.** `UNIT_TABLES` gained `length` (m, cm, mm, km and spellings)
+and `time` (s, min, h and spellings). `ms` is deliberately absent — too easily
+meant as m s⁻¹ — and so is `t`, which is tonnes under `mass`. The only behaviour
+change for the eleven existing `dim:` call sites is that a length or time unit
+typed on, say, a mass answer is now rejected as the wrong kind instead of being
+ignored. `unitcheck.mjs` (31 checks) covers both the new dims and the old ones.
+
+`ext1check.mjs` re-derives every numeric answer from the question's own `data`,
+independently of the note: Simpson's rule for integrals, central differences for
+derivatives (including checking a printed antiderivative differentiates back to
+the integrand), stepping the cooling equation rather than solving it, finding the
+roots of a cubic numerically to confirm the sum/product of roots, expanding
+brackets term by term for binomial coefficients, and counting the solutions of
+the trig equations by hunting roots on a fine grid. Every question is also fed
+its own printed answer through its own `accept`. 3040 questions, 6080 checks.
+
+Two bugs it caught in itself rather than the content are worth remembering: a
+comparison tighter than the printed rounding (judge an answer at its own number
+of decimals), and a flat root (tan x − sin x ≈ x³/2 near 0) registering as
+hundreds of separate grid zeros unless roots are clustered.
+
+### 8.34 Maths Extension 2 (Year 12)
+
+Sixteen topics in five modules, `BUILD.maths12e2` / id `maths12e2`, matching the
+2024 syllabus's Year 12 focus areas (the nature of proof, further work with
+vectors, complex numbers, further integration, mechanics). Paper shape from
+NESA's assessment page: 100 marks, 3 hours, Section I ten objective-response
+marks, Section II 90.
+
+- New helpers: `cx(a, b)` writes a complex number the way it is read (`3 − i`,
+  `−2i`, `5`), `E2_CIS` holds the eight exact arguments, `sphTerm` keeps a
+  sphere centred on an axis from printing `(x + 0)²`, `E2_IMPLY` and
+  `E2_INDINEQ` carry the proof statements with the facts needed to mark them.
+- Arguments are in degrees throughout, with the principal range quoted in the
+  question — the alternative is parsing `−3π/4` out of a text box.
+- Cross products are deliberately absent: the NSW course does not have them.
+
+`ext2check.mjs` re-derives everything with maths written separately from the
+generators: complex arithmetic component by component (so `dm-power` is checked
+by repeated multiplication, not by de Moivre), minima by search over a grid plus
+refinement rather than by calculus, Simpson's rule for the integrals, the
+partial-fraction coefficient tested by making the identity hold at three
+arbitrary points, the t-formulae checked numerically at three angles, the
+counterexample questions checked against independently written predicates, and
+**the mechanics by integrating the equation of motion with RK4** — the SHM
+period is measured from zero crossings of the simulated path and the resisted
+speed is stepped from v̇ = g − kv. 2560 questions, 5120 checks.
+
+Two content bugs it caught: n² + n + 11 first fails at n = 10 (121 = 11²), not
+11, and “every number of the form 4k + 1 is prime” is broken by 1 itself unless
+the claim says k ≥ 1.
+
+### 8.35 The mock HSC engine
+
+`mock.js`, loaded after hsc.js on revision.html. It adds one card (`mockhsc`)
+which opens a chooser rather than a practice game, and it needs hsc.js's module
+lists, so those are now named constants (`MODULES_MA12`, `MODULES_ME1`,
+`MODULES_ME2`) with `BUILD.maths12…` built from them.
+
+**Building a paper** (`mockBuild`). Section I draws from the same generators as
+practice, taking only multiple-choice questions with four options and going
+round the modules so the ten are spread. Section II is built question by
+question so each lands on exactly the marks the real paper gives it (15): each
+starts with authored long-response questions from the subject's bank and is
+topped up with two-mark parts made from typed practice questions. A bank
+question may appear twice in a paper but only with different numbers, and one
+`seen` set covers both sections so nothing is ever asked twice.
+
+**Marking.** Every criterion in a `guide` is worth exactly one mark, so a part's
+marks are `guide.length` and self-marking never needs a judgement about halves.
+Section I is marked outright. `mockcheck.mjs` builds 90 papers and checks the
+totals, the spread, that criteria add up to the marks, that the focus-area
+breakdown adds back to the paper total, and that ticking everything gives
+exactly full marks.
+
+**Timing.** Reading time disables every input. The working clock starts when
+reading ends or is skipped — `startWriting()` sets `endsAt` from that moment, so
+skipping reading time cannot hand out extra working time. At zero the paper goes
+to marking by itself. A run is saved to `mk.run` in localStorage (not synced —
+it is too big and only matters on the machine you are sitting at) and the chooser
+offers to carry on. Attempt history is twelve small rows in `tt.mock_hist`, which
+does ride the settings sync.
+
+**The minus-sign repair.** Writing `'y = ' + a + 'x'` with a negative `a` gives
+an ASCII hyphen, which reads wrong next to the typographic minus everywhere
+else. Rather than fixing dozens of call sites, `tidyQ` wraps every Year 12
+generator (one line at the bottom of hsc.js) and `fixMinus` repairs a hyphen
+sitting in front of a number; `x-axis` is left alone. It also de-duplicates
+options, because two that differed only in which minus they used are the same
+option once repaired — which is how a long-standing bug in the Maths Advanced
+`ln(ax + b)` question was found, where the answer and one distractor were the
+same number written two ways.
+
+`typocheck.mjs` scans every Year 12 question, option, note, criterion and model
+answer (about 15,000 a run) for ASCII minus signs, stray `undefined`/`NaN`,
+doubled spaces and dangling operators. It is the permanent guard for this class
+of bug; run it after adding content.
+
+### 8.36 Physics (Year 12), and papers that are not all the same shape
+
+`hsc2.js` holds the Year 12 sciences and loads between hsc.js and mock.js, so
+the mock papers can see `MODULES_PH12` and `LONG_PH12`. Sixteen topics in the
+four HSC modules of the **2017** syllabus — rechecked against NESA, because a
+Physics 11–12 (2025) syllabus exists but is first examined in 2028 (Chemistry's
+is 2029), both after this site's 2027 HSC.
+
+- Constants live at the top (`PH_G`, `PH_LIGHT`, `PH_PLANCK`, `PH_Q`,
+  `PH_MASS_E`, `PH_MU0`, `PH_GRAV`, `PH_M_EARTH`, `PH_R_EARTH`, `PH_WIEN`) with
+  the values from the HSC data sheet. `phSci` prints 3.47 × 10⁵ when that reads
+  better than a long decimal, and `readQuantity` already understands typed
+  answers in that form.
+- `UNIT_TABLES` gained **`work`**, a joule-based table including eV/keV/MeV/GeV.
+  The older `energy` table is kJ-based for chemistry, so physics answers in
+  joules use `dim:'work'` — passing `dim:'energy'` there would have divided by a
+  thousand.
+- Section II shapes are now per paper. `MOCK_PAPERS` entries may carry
+  `shape: [2, 3, 3, …]`, the marks for each Section II question; maths papers
+  keep `group`/`sect2` and get an even run of 15s. An authored bank question may
+  fill a short question exactly rather than always leaving room for a two-mark
+  part.
+
+`physcheck.mjs` re-derives every numeric answer with constants and formulas
+written out again in the test, and **steps projectiles through the air** rather
+than using the range formula. 2400 questions, 4800 checks. It caught a real
+physics bug: a diffraction-grating question could ask for an order where
+sin θ = mλ/d exceeds 1, which does not exist — the generator now picks the order
+from `floor(d/λ)`.
+
+### 8.37 Chemistry (Year 12)
+
+Fifteen topics in the four HSC modules of the 2017 syllabus, in hsc2.js beside
+Physics, with `MODULES_CH12`, `BUILD.chem12` and a `LONG_CH12` bank of twelve
+long-response questions. Its mock paper matches Physics: 100 marks, 20
+multiple-choice marks, the same Section II shape.
+
+`chemcheck.mjs` re-derives the numbers with the chemistry written out again —
+K from the concentrations, K_sp from the ion ratio (checked by feeding the
+printed solubility back through K_sp = (cat·s)^cat(an·s)^an), pH from a
+logarithm, weak-acid pH from √(K_a c), titres from the mole ratio, and **molar
+masses by parsing the formula in the question and adding atomic masses**. The
+qualitative questions are checked where the answer follows from data: a Le
+Chatelier shift must follow from the sign of ΔH or from counting gas molecules,
+and a conjugate pair must differ by one proton. 2250 questions, 4500 checks.
+
+Two things worth remembering:
+
+- **`<` in a note is HTML.** "Q < K means too few products" was being swallowed
+  by the browser's tag parser. Question and note text goes through `innerHTML`,
+  so comparisons must be written `&lt;` and `&gt;`; options are `textContent`
+  and need no escaping. `typocheck.mjs` catches this because the stripped text
+  comes out mangled.
+- **Section II now spreads across modules.** The short generated parts are drawn
+  from whichever module has the fewest marks so far, and the draw tries the whole
+  module rather than one topic. Organic chemistry exposed the need: it is mostly
+  conceptual multiple choice, so before this it could get as little as 6 of the
+  80 marks. Two more authored organic questions and the spread fix bring it to
+  about 16, and every paper now covers all four modules.
+
+### 8.38 Engineering Studies and English Advanced
+
+**Engineering** (`hsc3.js`, `MODULES_EN12`, 17 topics) follows the 2011
+syllabus: the four HSC modules plus a fifth group for drawing and the
+profession, which the syllabus threads through all of them. `EN_G = 10` is
+declared at the top of the file and `engcheck.mjs` has a test of its own that
+re-derives a slope question with g = 10 and fails if 9.8 was used anywhere.
+The beam questions are checked by equilibrium — reactions must sum to the load
+*and* balance moments about the far support — rather than by repeating the
+formula. 2550 questions, 5101 checks. Its paper is
+`shape:[11, 11, 12, 11, 12, 11, 12]`, which is the seven longer questions the
+specifications describe.
+
+**English Advanced** (`hsc4.js`, `MODULES_EN_ADV`, 7 topics) deliberately has
+**no mock paper** — there is no honest way to mark an essay here. It is
+multiple choice throughout, which is what can be marked truthfully.
+
+Two things are load-bearing:
+
+- **Copyright.** Harwood and Ondaatje are in copyright, so nothing of theirs is
+  quoted: `EN_HARWOOD` and `EN_WAR` ask about form, structure, concerns and
+  context. `engadvcheck.mjs` enforces this — it pulls every quoted span out of
+  those questions and fails if any runs past six words, so a future edit cannot
+  quietly paste a stanza in. The unseen extracts in `EN_UNSEEN` are all out of
+  copyright (Owen, Dickinson, Lawson, Rossetti, Arnold, Mansfield), which is why
+  they can be printed in full, and the test checks every extract comes from that
+  list and carries its attribution.
+- **Option length was giving the answer away.** The correct option was the
+  longest one 89% of the time, so the drill could be beaten without reading.
+  `enOptions()` now builds each question's distractors from two of its own wrong
+  options plus a correct answer borrowed from a *different* item in the same
+  bank — same length and register, plainly wrong for the question asked — and
+  the deliberately weak theses and sentences were rewritten to be wordy rather
+  than short. That took it to 49%, and the test fails above 80%.
 

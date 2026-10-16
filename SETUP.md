@@ -1269,6 +1269,11 @@ create table name_override (
 );
 ```
 
+You can also name someone **before they have ever opened the site** — the link
+under the heading, *Name someone who hasn't opened it yet*, asks for their school
+email and a name. They sit on the roster marked "not yet" until they sign in, and
+the name is already waiting on their first score, post or Daily result.
+
 Until the table exists, the site behaves exactly as before and Rename explains
 that the table is missing.
 
@@ -1319,6 +1324,196 @@ exactly what will go and what won't:
 
 Cancel is the button that's focused, so Enter can't wipe anything by accident.
 After a reset you can **Undo** it until you close the box.
+
+## Year 11 and Year 12
+
+The revision page now has a **Year 11 / Year 12** switch. Year 11 keeps all six
+subjects and all your progress exactly as before; Year 12 is the HSC content,
+kept separately so the two never mix. It opens on Year 12 from Term 4 of Year 11
+(when the HSC course starts), and remembers whichever you pick.
+
+Which syllabus each Year 12 subject follows, for the 2027 HSC:
+
+| Subject | Syllabus | Why |
+|---|---|---|
+| Maths Advanced, Ext 1, Ext 2 | Mathematics 11–12 (2024) | first HSC exam 2027 |
+| English Advanced | English 11–12 (2024) | first HSC exam 2027 |
+| Physics | Physics Stage 6 (2017) | the new one is first examined 2028 |
+| Chemistry | Chemistry Stage 6 (2017) | the new one is first examined 2029 |
+| Engineering Studies | Engineering Studies Stage 6 (2011) | no replacement announced |
+
+Questions are written to the syllabus in HSC style. Nothing is copied from a
+past paper, a trial paper or a marking guideline.
+
+### Maths Advanced (Year 12)
+
+All seven focus areas of the 2024 syllabus, with generated questions, so they
+never run out:
+
+- **Graphs & modelling** — transforming trig functions, modelling with functions
+- **Sequences & series** — arithmetic, geometric, limiting sums
+- **Differential calculus** — chain, product and quotient rules; e^x, ln x and trig
+- **Integral calculus** — antiderivatives, definite integrals and area, the trapezoidal rule
+- **Applications of calculus** — stationary points, optimisation, motion
+- **Random variables** — discrete, the normal distribution, continuous
+- **Financial mathematics** — compound interest, annuities and loans
+
+### Maths Extension 1 (Year 12)
+
+All six Year 12 focus areas of the 2024 syllabus, plus a module for the Year 11
+Extension 1 content the HSC paper still examines:
+
+- **Proof by induction** — sums, divisibility, and spotting a proof with no base case
+- **Vectors** — 2D and 3D, dot products and projections, projectile motion
+- **Inverse trig functions** — exact values, domain and range, symmetry
+- **Further calculus skills** — integration by substitution, inverse trig calculus, double angles
+- **Further applications** — differential equations, related rates, areas and volumes
+- **Binomial & sampling** — Bernoulli, binomial, the sampling distribution of the mean
+- **Year 11 in the HSC** — polynomials, inverse and parametric functions, further
+  trigonometry, the binomial theorem
+
+For reference, the Extension 1 HSC paper is 70 marks in 2 hours (plus 10 minutes
+reading): ten multiple-choice marks, then 60 marks over four long questions.
+
+Projectile questions state the value of g they use rather than assuming one.
+Typed answers now also understand lengths and times, so **4.52 s**, **4.52**,
+**1.5 km** and **1500 m** all read the same, while a length typed on a question
+asking for a time is still marked wrong.
+
+### Maths Extension 2 (Year 12)
+
+All five Year 12 focus areas of the 2024 syllabus:
+
+- **The nature of proof** — language and notation, inequalities, further induction
+- **Further work with vectors** — vectors in 3D, lines in space, spheres
+- **Complex numbers** — arithmetic and conjugates, modulus and argument,
+  de Moivre and roots, curves and regions on the Argand diagram
+- **Further integration** — by parts, partial fractions, other techniques
+  (completing the square, trigonometric substitution, the t-formulae)
+- **Mechanics** — simple harmonic motion, resisted motion, acceleration as a
+  function of displacement
+
+The Extension 2 HSC paper is 100 marks in 3 hours (plus 10 minutes reading):
+ten objective-response marks, then 90 marks of longer questions.
+
+Arguments are asked for in **degrees**, and the principal range (−180° < θ ≤ 180°)
+is stated in the question, so there is never any doubt about which answer is
+wanted.
+
+### Mock HSC
+
+A new **Mock HSC** card sits with the Year 12 subjects. Pick a paper and it
+builds a fresh one in the shape of the real thing:
+
+| Paper | Marks | Working time | Reading | Section I | Section II |
+|---|---|---|---|---|---|
+| Mathematics Advanced | 100 | 3 hours | 10 min | 10 multiple choice | 90 marks, six questions |
+| Mathematics Extension 1 | 70 | 2 hours | 10 min | 10 multiple choice | 60 marks, four questions |
+| Mathematics Extension 2 | 100 | 3 hours | 10 min | 10 multiple choice | 90 marks, six questions |
+
+- **Reading time** comes first: you can read the whole paper but not write. The
+  working clock starts when reading ends, or when you press **Start writing** —
+  skipping reading never gives you extra writing time.
+- **Exam conditions** runs the clock down and sends the paper to marking when it
+  hits zero. **No timer** is the same paper with the clock off.
+- Write your working **on paper**, as you would in the exam. The boxes are for
+  your answers and anything you want to look at again when marking.
+- **Section I is marked for you**, with the right answer and the reason shown.
+- **Section II you mark yourself** against criteria worth one mark each, written
+  the way a marking guideline is. Tick what your working earned — the total
+  updates as you go.
+- The report gives the raw mark, the split between sections, how each focus area
+  went, and which two or three are worth a practice session.
+- Leaving mid-paper keeps it: the card offers to carry on where you left off.
+
+**Only raw marks.** Nothing here predicts a band, because a raw mark only
+becomes a band once NESA aligns the whole state's marks.
+
+### Physics (Year 12)
+
+Modules 5 to 8 of the 2017 syllabus — the one the 2027 HSC examines, since the
+2025 replacement is first examined in 2028:
+
+- **Advanced mechanics** — projectile motion, circular motion, torque and work,
+  gravitational fields
+- **Electromagnetism** — charges in electric fields, the motor effect,
+  induction, transformers
+- **The nature of light** — the spectrum and spectra, the wave model, the
+  quantum model, special relativity
+- **Universe to the atom** — the origin of the elements, the structure of the
+  atom, the nucleus, deep inside the atom
+
+Physics keeps **g = 9.8 m s⁻²** (only Engineering uses 10), and every question
+that needs it says so. Answers in joules now read **eV, keV and MeV** as well,
+so "3.2 × 10⁻¹⁹ J" and "2 eV" are both accepted where they mean the same thing.
+
+Its **mock paper** is 100 marks in 3 hours with 5 minutes reading: Section I is
+20 multiple-choice marks and Section II is 80 marks over sixteen separately
+numbered questions worth 2 to 8 marks, with the longest ones carrying extended
+responses and their marking criteria.
+
+### Chemistry (Year 12)
+
+Modules 5 to 8 of the 2017 syllabus (its replacement is first examined in 2029):
+
+- **Equilibrium & acids** — equilibrium and Le Chatelier, the equilibrium
+  constant, solubility equilibria
+- **Acid/base reactions** — pH and strong acids, weak acids and K<sub>a</sub>,
+  titration, conjugates and buffers
+- **Organic chemistry** — naming and isomers, organic reactions, properties and
+  intermolecular forces, polymers
+- **Applying chemical ideas** — inorganic analysis, organic analysis (IR, NMR,
+  mass spectrometry), synthesis and design, quantitative analysis
+
+Chemistry has the same mock paper shape as Physics: 100 marks, 3 hours, 5
+minutes reading, 20 multiple-choice marks and 80 marks of written answers.
+
+### Engineering Studies (Year 12)
+
+The four HSC modules of the 2011 syllabus, plus the parts that run through all
+of them:
+
+- **Civil structures** — materials, beams and trusses, structure types and
+  loads, history and society
+- **Personal & public transport** — materials, vehicle mechanics, electrical
+  systems, history and society
+- **Aeronautical** — forces in flight, materials, performance, history and
+  society
+- **Telecommunications** — systems and signals, electronics, materials
+- **Across the course** — engineering drawing, the profession
+
+Engineering takes **g = 10 m s⁻²** throughout, as the course does — a test
+checks it, so a stray 9.8 cannot creep in. Its mock paper is 100 marks in 3
+hours with 5 minutes reading: 20 objective-response marks and 80 marks over
+seven longer questions, with the four modules weighted roughly equally.
+
+### English Advanced (Year 12)
+
+Built around the set texts being studied, with no mock exam — marking an essay
+against criteria is not something this site can do honestly.
+
+- **Techniques & effects** — name the technique, then say what it *does*, which
+  is where the marks actually are
+- **Thesis & paragraphs** — pick the strongest thesis for a question, spot a
+  topic sentence that is really just a label, and get the order of an analytical
+  paragraph right
+- **Unseen texts** — extracts with the questions the unseen section asks
+- **Texts and human experiences** — Gwen Harwood
+- **Textual conversations** — *The Prince* and *Julius Caesar*
+- **Critical study** — *Warlight*
+- **The craft of writing** — stronger and weaker sentences, narrative terms,
+  and what a reflection statement has to do
+
+**On quoting.** Harwood and Ondaatje are in copyright, so nothing of theirs is
+reproduced — those questions are about form, structure, recurring concerns and
+context, which is what the modules ask about anyway. Shakespeare and Machiavelli
+are out of copyright and are quoted freely, and every unseen extract is out of
+copyright too, which is why it can be printed in full with its attribution.
+
+Questions are generated, so no two papers are the same, and the long-response
+questions come with model answers. Nothing is taken from a past paper, a trial
+paper or a marking guideline — the published examination specifications set the
+shape, and the questions are written for this site.
 
 ## Revision progress: its own storage, and spaced repetition
 

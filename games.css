@@ -686,3 +686,78 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
   background:color-mix(in srgb,#2f9e44 14%,var(--panel));border:1px solid color-mix(in srgb,#2f9e44 45%,transparent)}
 .btn.rvdanger{background:#e5484d;border-color:#e5484d;color:#fff}
 .btn.rvdanger:hover{background:#d13d42;border-color:#d13d42}
+
+/* revision: Year 11 / Year 12 switch above the subjects */
+.rvyear{margin-bottom:16px}
+.rvyear .diffpill{padding:7px 18px;font-size:0.875rem;font-weight:700}
+
+/* ══ mock HSC ══════════════════════════════════════════════════════════════
+   One long scrolling paper with a sticky bar, then the same paper again with
+   marking criteria. Deliberately plain: it should read like a question paper,
+   not like the rest of the games. */
+.mkpick{display:grid;gap:12px;margin-bottom:22px}
+.mkcard{display:flex;flex-direction:column;gap:3px;text-align:left;padding:14px 16px;border:1px solid var(--card-border);
+  border-radius:var(--card-radius);background:var(--panel);cursor:pointer;transition:border-color .15s,transform .15s}
+.mkcard:hover{border-color:var(--accent);transform:translateY(-1px)}
+.mkcn{font-weight:700;font-size:1.0625rem}
+.mkcm{font-size:0.8125rem;color:var(--muted)}
+.mkcd{font-size:0.78125rem;color:var(--muted)}
+.mkresume{border:1px solid var(--accent);border-radius:var(--card-radius);padding:12px 14px;margin-bottom:18px;font-size:0.875rem}
+.mkrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.mkh{margin:26px 0 6px;font-size:1.0625rem;display:flex;align-items:baseline;gap:10px}
+.mkmk{font-size:0.75rem;color:var(--muted);font-weight:600}
+.mktab{width:100%;border-collapse:collapse;font-size:0.875rem;margin:8px 0 4px}
+.mktab th,.mktab td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.mktab th{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.mkintro h3{margin:0 0 4px}
+.mkspec{margin:0 0 10px;font-size:0.9375rem}
+.mklist{margin:0 0 14px;padding-left:20px;font-size:0.875rem;line-height:1.6}
+.mkmode{display:flex;gap:8px;margin-bottom:6px}
+.mkm{padding:7px 16px;border:1px solid var(--card-border);border-radius:999px;background:var(--panel);cursor:pointer;font-size:0.875rem;font-weight:600}
+.mkm.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mkbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:10px 2px;margin-bottom:10px;
+  background:var(--panel);border-bottom:1px solid var(--line)}
+.mkclock{font-family:var(--font-num,inherit);font-variant-numeric:tabular-nums;font-weight:700;font-size:1.125rem;min-width:84px}
+.mkclock.mkwarn{color:#e5484d}
+.mkclock.mkfree{font-size:0.875rem;font-weight:600;color:var(--muted)}
+.mkbarn{flex:1;font-size:0.8125rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mkbtn{padding:5px 12px;font-size:0.8125rem}
+.mknote{font-size:0.875rem;color:var(--muted);margin:0 0 12px}
+.mkreading{opacity:.92}
+.mkgroup{margin:18px 0 0;padding-top:8px;border-top:1px solid var(--line)}
+.mkgroup h4{margin:0 0 6px;font-size:0.9375rem}
+.mkq{padding:10px 0 12px}
+.mkqh{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.mkqh b{min-width:22px}
+.mkqt{font-size:0.9375rem;line-height:1.6}
+.mkopts{display:grid;gap:6px;margin-top:8px}
+.mkopt{display:flex;gap:9px;align-items:flex-start;font-size:0.9375rem;cursor:pointer;padding:4px 2px}
+.mkopt input{margin-top:4px}
+.mkta{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--card-border);border-radius:var(--radius,8px);
+  background:var(--panel-2);color:inherit;font:inherit;font-size:0.9375rem;resize:vertical}
+.mkq.mkright{border-left:3px solid #2e9e5b;padding-left:10px}
+.mkq.mkwrong{border-left:3px solid #e5484d;padding-left:10px}
+.mkq.mkskip{border-left:3px solid var(--line);padding-left:10px}
+.mkans{font-size:0.875rem;margin-top:6px}
+.mkyours,.mkmodel,.mkcrit{margin-top:10px}
+.mkylab{font-size:0.6875rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px}
+.mkpre{margin:0;padding:8px 10px;background:var(--panel-2);border-radius:var(--radius,8px);font-size:0.875rem;
+  white-space:pre-wrap;word-break:break-word}
+.mkmodel{font-size:0.875rem;line-height:1.6}
+.mkc{display:flex;gap:9px;align-items:flex-start;font-size:0.875rem;padding:4px 2px;cursor:pointer}
+.mkc input{margin-top:3px}
+.mkrepbig{text-align:center;padding:18px 0 6px}
+.mkbig{font-size:3rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.mkbig span{font-size:1.25rem;color:var(--muted);font-weight:600}
+.mkadvice{font-size:0.9375rem;margin:12px 0 0}
+@media (max-width:560px){
+  .mkbar{gap:8px}
+  .mkclock{font-size:1rem;min-width:70px}
+  .mkbarn{display:none}
+  .mkbig{font-size:2.5rem}
+}
+
+/* ── English: quoted extracts ── */
+.rvquote{margin:10px 0 12px;padding:10px 14px;border-left:3px solid var(--accent);background:var(--panel-2);
+  border-radius:0 var(--radius,8px) var(--radius,8px) 0;font-size:0.9375rem;line-height:1.7}
+.rvcite{display:block;margin-top:7px;font-size:0.78125rem;color:var(--muted);font-style:normal}
