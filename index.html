@@ -649,6 +649,18 @@ const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 
 const endpoint = CONFIG.ENDPOINT;
 let email    = get(LS.email, '');
+/* ./?user=<username> (the student finder links here): show that person's
+   timetable, exactly as typing their name in the box at the top does, then
+   take it back out of the address bar so a refresh doesn't repeat it. */
+{
+  const asked = new URLSearchParams(location.search).get('user');
+  const user = String(asked || '').trim().toLowerCase().split('@')[0];
+  if (user && /^[a-z0-9][a-z0-9._-]*$/.test(user)){
+    const next = user + '@' + CONFIG.EMAIL_DOMAIN;
+    if (next !== email){ email = next; set(LS.email, email); localStorage.removeItem(LS.cache); }
+  }
+  if (asked !== null){ try { history.replaceState(null, '', location.pathname + location.hash); } catch {} }
+}
 let colours  = get(LS.colours, {});
 /* display settings -- declared before applyLook() runs */
 let roomMode   = get(LS.room, 'full');

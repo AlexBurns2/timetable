@@ -43,7 +43,7 @@ function phMC(val, unit, wrongs, sf){
 
 /* ── Module 5: projectile motion ────────────────────────────────────────── */
 function genPhProj(){
-  const k = ri(0, 4), g = PH_GRAV;
+  const k = ri(0, 6), g = PH_GRAV;
   if (k === 4){                                   // launched horizontally from a height
     const h = ri(10, 80), u = ri(5, 30);
     const t = Math.sqrt(2 * h / g), x = u * t;
@@ -68,6 +68,18 @@ function genPhProj(){
   if (k === 2) return { q:lead + 'Find its <b>range</b>, to 2 decimal places.',
     input:true, answer:rd(R, 2), accept:qty(R, { tol:0.03, dim:'length' }), data:{ kind:'ph-proj', u, deg, ask:'R' },
     note:'R = u_x × T = ' + rd(ux, 2) + ' × ' + rd(T, 2) + ' = ' + rd(R, 2) + ' m. A launch at ' + (90 - deg) + '° would travel the same distance.' };
+  if (k === 5){                                   // greatest height, as multiple choice
+    const m = phMC(H, '', [u * u / (2 * g), 2 * H, ux * ux / (2 * g), u * u * Math.sin(th) / (2 * g), uy * T, u * u / g]);
+    return { q:lead + 'What is the greatest height it reaches, in metres?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-proj', u, deg, ask:'H' },
+      note:'Only the vertical component matters: u_y = ' + u + ' sin ' + deg + '° = ' + rd(uy, 2) + ' m s' + sup(-1) + ', and at the top v_y = 0, so H = u_y²/(2g) = ' + phSci(H) + ' m. Using the full launch speed instead of u_y gives the height of a vertical throw.' };
+  }
+  if (k === 6){                                   // range, as multiple choice
+    const m = phMC(R, '', [u * u / g, u * u * Math.sin(th) / g, R / 2, uy * T, u * T]);
+    return { q:lead + 'How far from the launch point does it land, in metres?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-proj', u, deg, ask:'R' },
+      note:'The time of flight is T = 2u_y/g = ' + rd(T, 3) + ' s, and the horizontal speed u_x = ' + rd(ux, 2) + ' m s' + sup(-1) + ' never changes, so R = u_x T = ' + phSci(R) + ' m. Multiplying the full speed by T ignores the angle.' };
+  }
   const m = mc('The horizontal velocity stays the same and the vertical velocity changes at 9.8 m s' + sup(-2) + ' downwards.',
     ['Both components stay the same throughout.',
      'Both components change at 9.8 m s' + sup(-2) + '.',
@@ -80,7 +92,7 @@ function genPhProj(){
 
 /* ── Module 5: circular motion ──────────────────────────────────────────── */
 function genPhCirc(){
-  const k = ri(0, 4);
+  const k = ri(0, 6);
   if (k === 0){                                   // speed from period
     const r = ri(2, 20), T = rd(ri(5, 60) / 10, 1);
     const v = 2 * Math.PI * r / T;
@@ -110,6 +122,22 @@ function genPhCirc(){
       input:true, answer:rd(T, 3), accept:qty(T, { tol:0.003, dim:'time' }), data:{ kind:'ph-circ-cone', L, deg },
       note:'The vertical component of the tension balances the weight and the horizontal component is the centripetal force, which gives T = 2π√(L cos θ/g) = ' + rd(T, 3) + ' s.' };
   }
+  if (k === 5){                                   // centripetal force, as multiple choice
+    const m2 = ri(1, 50) / (Math.random() < 0.5 ? 1 : 10), v = ri(2, 30), r = ri(2, 40);
+    const F = m2 * v * v / r;
+    const m = phMC(F, '', [m2 * v / r, m2 * v * v * r, v * v / r, m2 * v * v / (2 * r), 2 * F, m2 * v * v]);
+    return { q:'A <b>' + rd(m2, 1) + ' kg</b> object moves at a constant <b>' + v + ' m s' + sup(-1) + '</b> around a circle of radius <b>' + r + ' m</b>. What is the size of the net force on it, in newtons?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-circ-F', m:m2, v, r },
+      note:'The net force is the centripetal force, F = mv²/r = ' + rd(m2, 1) + ' × ' + (v * v) + '/' + r + ' = ' + phSci(F) + ' N. v²/r on its own is the acceleration, not the force.' };
+  }
+  if (k === 6){                                   // speed from the period, as multiple choice
+    const r = rd(ri(5, 60) / 100, 2), T = rd(ri(2, 40) / 100, 2);
+    const v = 2 * Math.PI * r / T;
+    const m = phMC(v, '', [Math.PI * r / T, r / T, 2 * Math.PI * T / r, Math.PI * r * r / T]);
+    return { q:'A point on a spinning wheel is <b>' + r + ' m</b> from the axle and goes round once every <b>' + T + ' s</b>. What is its speed, in m s' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-circ-v', r, T },
+      note:'One turn is a distance of 2πr = ' + rd(2 * Math.PI * r, 3) + ' m, covered in ' + T + ' s, so v = 2πr/T = ' + phSci(v) + ' m s' + sup(-1) + '. Using πr (half a lap) or πr² (an area) is the usual slip.' };
+  }
   const m = mc('towards the centre of the circle', ['along the direction of motion', 'away from the centre of the circle',
     'vertically downwards', 'in whatever direction the object is turning next']);
   return { q:'In uniform circular motion, which way does the <b>net force</b> point?',
@@ -119,7 +147,7 @@ function genPhCirc(){
 
 /* ── Module 5: torque and work ──────────────────────────────────────────── */
 function genPhTorque(){
-  const k = ri(0, 2);
+  const k = ri(0, 4);
   if (k === 0){
     const F = ri(5, 60), r = rd(ri(2, 20) / 10, 1), deg = pk([30, 45, 60, 90]);
     const tau = r * F * Math.sin(deg * Math.PI / 180);
@@ -134,6 +162,23 @@ function genPhTorque(){
       input:true, answer:Math.round(W), accept:qty(W, { tol:Math.max(1, W * 0.002), dim:'work' }), data:{ kind:'ph-torque-work', tau, turns },
       note:'W = τθ with θ in radians: ' + turns + ' turns is ' + rd(turns * 2 * Math.PI, 3) + ' rad, so W = ' + Math.round(W) + ' J.' };
   }
+  if (k === 3){                                   // torque on a spanner, as multiple choice
+    const F = ri(5, 60), r = rd(ri(2, 20) / 10, 1), deg = pk([30, 45, 60, 90]);
+    const s = Math.sin(deg * Math.PI / 180), c = deg === 90 ? 0 : Math.cos(deg * Math.PI / 180);
+    const tau = r * F * s;
+    const m = phMC(tau, '', [r * F * c, r * F, F / r, F * s, 2 * tau, tau / 2]);
+    return { q:'A spanner is <b>' + r + ' m</b> long. A force of <b>' + F + ' N</b> is applied at its end, at <b>' + deg + '°</b> to the handle. What torque does it apply to the nut, in N m?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-torque', F, r, deg },
+      note:'τ = rF sin θ = ' + r + ' × ' + F + ' × sin ' + deg + '° = ' + phSci(tau) + ' N m. Only the part of the force at right angles to the handle turns the nut' + (deg === 90 ? ', and here that is all of it.' : '; using cos θ takes the part along the handle instead.') };
+  }
+  if (k === 4){                                   // work done by a torque, as multiple choice
+    const tau = ri(5, 40), turns = ri(2, 10);
+    const W = tau * turns * 2 * Math.PI;
+    const m = phMC(W, '', [tau * turns, tau * turns * Math.PI, tau * turns * 360, tau * 2 * Math.PI]);
+    return { q:'A motor applies a steady torque of <b>' + tau + ' N m</b> to a shaft, turning it through <b>' + turns + ' revolutions</b>. How much work does it do, in joules?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-torque-work', tau, turns },
+      note:'W = τθ needs θ in radians, and one revolution is 2π rad: W = ' + tau + ' × ' + turns + ' × 2π = ' + phSci(W) + ' J. Multiplying by ' + turns + ' alone, or by ' + (turns * 360) + '°, leaves the angle in the wrong units.' };
+  }
   const m = mc('It is greatest when the force is at right angles to the lever arm.',
     ['It is greatest when the force points along the lever arm.',
      'It does not depend on where the force is applied.',
@@ -146,7 +191,7 @@ function genPhTorque(){
 
 /* ── Module 5: gravitational fields ─────────────────────────────────────── */
 function genPhGrav(){
-  const k = ri(0, 4);
+  const k = ri(0, 6);
   if (k === 0){                                   // field strength above a planet
     const M = rd(ri(10, 90) / 10, 1) * 1e24, r = ri(2, 20) * 1e6;
     const g = PH_G * M / (r * r);
@@ -179,6 +224,22 @@ function genPhGrav(){
       input:true, answer:phSci(U), accept:qty(U, { tol:Math.abs(U) * 0.01, dim:'work' }), data:{ kind:'ph-grav-U', m:m2, r, U },
       note:'U = −GMm/r = ' + phSci(U) + ' J. It is negative because zero potential energy is defined at infinity, and work must be done to get there.' };
   }
+  if (k === 5){                                   // field strength above the surface, as multiple choice
+    const M = rd(ri(10, 90) / 10, 1) * 1e24, R = ri(20, 80) * 1e5, h = ri(5, 60) * 1e5, r = R + h;
+    const g = PH_G * M / (r * r);
+    const m = phMC(g, '', [PH_G * M / (h * h), PH_G * M / (R * R), PH_G * M / r, PH_G * M / (R * R + h * h)]);
+    return { q:'A planet has mass <b>' + phSci(M) + ' kg</b> and radius <b>' + phSci(R) + ' m</b>. What is the gravitational field strength at a height of <b>' + phSci(h) + ' m</b> above its surface, in N kg' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-grav-g', M, r },
+      note:'The distance in g = GM/r² is measured from the centre: r = ' + phSci(R) + ' + ' + phSci(h) + ' = ' + phSci(r) + ' m, so g = ' + phSci(g) + ' N kg' + sup(-1) + '. Using the height alone, or the radius alone, gives the wrong distance.' };
+  }
+  if (k === 6){                                   // Kepler's third law, as multiple choice
+    const T1 = ri(2, 40), f = pk([2, 3, 4]);
+    const T2 = T1 * Math.pow(f, 1.5);
+    const m = phMC(T2, '', [T1 * f, T1 * f * f, T1 * f * f * f, T1 * Math.sqrt(f)]);
+    return { q:'A satellite orbits a planet with a period of <b>' + T1 + ' hours</b>. A second satellite orbits the same planet at <b>' + f + ' times</b> the orbital radius. What is its period, in hours?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-grav-kepler', T1, f },
+      note:'Kepler’s third law says r³/T² is the same for both, so T₂ = T₁ × ' + f + sup(3) + '/² = ' + T1 + ' × ' + rd(Math.pow(f, 1.5), 4) + ' = ' + phSci(T2) + ' hours. The period grows faster than the radius but slower than its square.' };
+  }
   const m = mc('It is the same for every mass, because the mass cancels out of the equation.',
     ['It is larger for a heavier satellite.', 'It is smaller for a heavier satellite.',
      'It depends on the satellite’s mass but not on its altitude.', 'It cannot be worked out without knowing the mass.']);
@@ -189,7 +250,7 @@ function genPhGrav(){
 
 /* ── Module 6: charged particles in electric fields ─────────────────────── */
 function genPhEfield(){
-  const k = ri(0, 4);
+  const k = ri(0, 6);
   if (k === 0){                                   // field between plates
     const V = ri(50, 5000), d = rd(ri(1, 50) / 1000, 3);
     const E = V / d;
@@ -223,6 +284,22 @@ function genPhEfield(){
       choices:m.choices, answer:m.answer, data:{ kind:'ph-E-concept' },
       note:'Mass comes in one sign only, so gravity always pulls. Charge comes in two, so the electric force can go either way. Both follow an inverse square law for point sources.' };
   }
+  if (k === 5){                                   // field between plates, as multiple choice
+    const V = ri(5, 300) * 10, mm = ri(1, 40), d = mm / 1000;
+    const E = V / d;
+    const m = phMC(E, '', [V / mm, V * d, d / V, V / (2 * d)]);
+    return { q:'Two parallel metal plates are <b>' + mm + ' mm</b> apart, with a potential difference of <b>' + V + ' V</b> between them. What is the electric field strength between the plates, in V m' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-E', V, d },
+      note:'E = V/d with d in metres: ' + mm + ' mm = ' + phSci(d) + ' m, so E = ' + V + '/' + phSci(d) + ' = ' + phSci(E) + ' V m' + sup(-1) + '. Leaving d in millimetres gives an answer a thousand times too small.' };
+  }
+  if (k === 6){                                   // speed of an accelerated electron, as multiple choice
+    const V = ri(1, 90) * 100;
+    const W = PH_Q * V, v = Math.sqrt(2 * W / PH_MASS_E);
+    const m = phMC(v, '', [Math.sqrt(W / PH_MASS_E), 2 * W / PH_MASS_E, W / PH_MASS_E, Math.sqrt(2 * V / PH_MASS_E)]);
+    return { q:'An electron starts from rest and is accelerated through a potential difference of <b>' + V + ' V</b>. Ignoring relativity, what is its final speed, in m s' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-Ework', V, ask:'v' },
+      note:'The work done is qV = ' + phSci(W) + ' J, which all becomes kinetic energy: ½mv² = qV, so v = √(2qV/m) = ' + phSci(v) + ' m s' + sup(-1) + '. Forgetting the square root gives v², not v.' };
+  }
   const V = ri(100, 2000), d = rd(ri(2, 20) / 100, 2), L = rd(ri(2, 10) / 100, 2);
   const E = V / d, a = PH_Q * E / PH_MASS_E;
   const v0 = ri(1, 9) * 1e6, t = L / v0, y = 0.5 * a * t * t;
@@ -233,7 +310,7 @@ function genPhEfield(){
 
 /* ── Module 6: the motor effect ─────────────────────────────────────────── */
 function genPhMotor(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   if (k === 0){
     const B = rd(ri(1, 50) / 100, 2), I = rd(ri(5, 100) / 10, 1), L = rd(ri(5, 100) / 100, 2), deg = pk([30, 45, 60, 90]);
     const F = B * I * L * Math.sin(deg * Math.PI / 180);
@@ -255,6 +332,23 @@ function genPhMotor(){
       input:true, answer:rd(tau, 4), accept:qty(tau, { tol:Math.max(0.0005, tau * 0.005) }), data:{ kind:'ph-motor-torque', n, B, I, A },
       note:'τ = nBIA cos θ, and with the plane parallel to the field θ = 0, so τ = ' + n + ' × ' + B + ' × ' + I + ' × ' + A + ' = ' + rd(tau, 4) + ' N m — the largest it gets.' };
   }
+  if (k === 4){                                   // force on a wire, as multiple choice
+    const B = rd(ri(5, 90) / 100, 2), I = rd(ri(10, 200) / 10, 1), L = rd(ri(10, 150) / 100, 2), deg = pk([30, 45, 60, 90]);
+    const s = Math.sin(deg * Math.PI / 180), c = deg === 90 ? 0 : Math.cos(deg * Math.PI / 180);
+    const F = B * I * L * s;
+    const m = phMC(F, '', [B * I * L * c, B * I * L, B * I / L, I * L * s, 2 * F]);
+    return { q:'A straight wire <b>' + L + ' m</b> long carries a current of <b>' + I + ' A</b>. It lies at <b>' + deg + '°</b> to a uniform magnetic field of <b>' + B + ' T</b>. What is the size of the force on the wire, in newtons?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-motor-F', B, I, L, deg },
+      note:'F = BIL sin θ, where θ is the angle between the wire and the field: ' + B + ' × ' + I + ' × ' + L + ' × sin ' + deg + '° = ' + phSci(F) + ' N.' + (deg === 90 ? ' At 90° the whole length counts.' : ' Using cos θ measures the angle from the wrong line.') };
+  }
+  if (k === 5){                                   // force between parallel wires, as multiple choice
+    const I1 = ri(2, 40), I2 = ri(2, 40), cm = ri(1, 30), r = cm / 100;
+    const F = PH_MU0 * I1 * I2 / (2 * Math.PI * r);
+    const m = phMC(F, '', [PH_MU0 * I1 * I2 / (2 * Math.PI * r * r), PH_MU0 * I1 * I2 / (2 * r), PH_MU0 * I1 * I2 / (2 * Math.PI * cm), PH_MU0 * (I1 + I2) / (2 * Math.PI * r)]);
+    return { q:'Two long straight parallel wires are <b>' + cm + ' cm</b> apart and carry currents of <b>' + I1 + ' A</b> and <b>' + I2 + ' A</b>. What is the size of the force on each metre of wire, in N m' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-motor-par', I1, I2, r },
+      note:'F/l = μ₀I₁I₂/(2πr) with r in metres: 4π × 10' + sup(-7) + ' × ' + I1 + ' × ' + I2 + '/(2π × ' + r + ') = ' + phSci(F) + ' N m' + sup(-1) + '. It is the same on both wires, whichever carries more current.' };
+  }
   const m = mc('The force is at right angles to both the current and the field.',
     ['The force is along the current.', 'The force is along the field.',
      'The force is zero whenever the current is at right angles to the field.',
@@ -266,7 +360,7 @@ function genPhMotor(){
 
 /* ── Module 6: electromagnetic induction ────────────────────────────────── */
 function genPhInduct(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   if (k === 0){                                   // flux
     const B = rd(ri(5, 90) / 100, 2), A = rd(ri(5, 200) / 1000, 3), deg = pk([0, 30, 45, 60]);
     const flux = B * A * Math.cos(deg * Math.PI / 180);
@@ -288,6 +382,23 @@ function genPhInduct(){
       input:true, answer:rd(emf, 3), accept:qty(emf, { tol:Math.max(0.002, emf * 0.005), dim:'voltage' }), data:{ kind:'ph-rod', B, L, v },
       note:'ε = BLv = ' + B + ' × ' + L + ' × ' + v + ' = ' + rd(emf, 3) + ' V.' };
   }
+  if (k === 4){                                   // Faraday's law, as multiple choice
+    const n = ri(2, 50) * 10, dm = ri(5, 60), endm = ri(5, 30), dt = rd(ri(5, 80) / 100, 2);
+    const dPhi = dm / 1000, Phi1 = (dm + endm) / 1000, Phi2 = endm / 1000;
+    const emf = n * dPhi / dt;
+    const m = phMC(emf, '', [n * Phi1 / dt, dPhi / dt, n * dPhi, n * dPhi * dt]);
+    return { q:'The magnetic flux through a <b>' + n + '-turn</b> coil falls steadily from <b>' + Phi1 + ' Wb</b> to <b>' + Phi2 + ' Wb</b> in <b>' + dt + ' s</b>. What is the size of the induced emf, in volts?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-faraday', n, dPhi, dt },
+      note:'Only the change in flux counts: ΔΦ = ' + Phi1 + ' − ' + Phi2 + ' = ' + dPhi + ' Wb. Then |ε| = NΔΦ/Δt = ' + n + ' × ' + dPhi + '/' + dt + ' = ' + phSci(emf) + ' V.' };
+  }
+  if (k === 5){                                   // a moving rod, as multiple choice
+    const B = rd(ri(5, 90) / 100, 2), L = rd(ri(5, 40) / 10, 1), v = ri(2, 30);
+    const emf = B * L * v;
+    const m = phMC(emf, '', [B * L / v, B * v / L, B * L * v * v, L * v]);
+    return { q:'A metal rod <b>' + L + ' m</b> long slides along rails at <b>' + v + ' m s' + sup(-1) + '</b>, at right angles to a <b>' + B + ' T</b> magnetic field. What emf is induced between its ends, in volts?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-rod', B, L, v },
+      note:'The rod sweeps out an area Lv every second, so the flux changes at BLv: ε = ' + B + ' × ' + L + ' × ' + v + ' = ' + phSci(emf) + ' V.' };
+  }
   const m = mc('in the direction that opposes the change in flux that caused it',
     ['in the direction that increases the flux that caused it',
      'always clockwise when seen from the magnet',
@@ -300,7 +411,7 @@ function genPhInduct(){
 
 /* ── Module 6: transformers and applications ────────────────────────────── */
 function genPhTrans(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   const Np = ri(10, 100) * 10, Vp = pk([240, 120, 415, 1000, 11000]);
   if (k === 0){
     const Ns = ri(5, 200) * 10;
@@ -321,7 +432,24 @@ function genPhTrans(){
     const P = I * I * R;
     return { q:'A transmission line of resistance <b>' + R + ' Ω</b> carries <b>' + I + ' A</b>. Find the <b>power lost</b> in the line, to 2 decimal places.',
       input:true, answer:rd(P, 2), accept:qty(P, { tol:Math.max(0.02, P * 0.002) }), data:{ kind:'ph-trans-loss', I, R },
-      note:'P = I²R = ' + (I * I) + ' × ' + R + ' = ' + rd(P, 2) + ' W. Because the loss goes as the current squared, power is sent at high voltage and low current.' };
+      note:'P = I²R = ' + rd(I * I, 2) + ' × ' + R + ' = ' + rd(P, 2) + ' W. Because the loss goes as the current squared, power is sent at high voltage and low current.' };
+  }
+  if (k === 4){                                   // turns ratio, as multiple choice
+    let Ns = ri(5, 200) * 10;
+    while (Ns === Np) Ns = ri(5, 200) * 10;
+    const Vs = Vp * Ns / Np;
+    const m = phMC(Vs, '', [Vp * Np / Ns, Vp, Vp * Math.abs(Ns - Np) / Np, 2 * Vs, Vs / 2]);
+    return { q:'An ideal transformer has <b>' + Np + '</b> turns on its primary coil and <b>' + Ns + '</b> on its secondary. The primary is connected to a <b>' + Vp + ' V</b> AC supply. What is the secondary voltage, in volts?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-trans-V', Np, Ns, Vp },
+      note:'V_s/V_p = N_s/N_p, so V_s = ' + Vp + ' × ' + Ns + '/' + Np + ' = ' + phSci(Vs) + ' V. More turns on the secondary steps the voltage up; turning the ratio upside down is the usual slip.' };
+  }
+  if (k === 5){                                   // power lost in a line, as multiple choice
+    const I = rd(ri(10, 400) / 10, 1), R = rd(ri(1, 50) / 10, 1);
+    const P = I * I * R;
+    const m = phMC(P, '', [I * R, I * I / R, I * R * R, I * I * R / 2, I * I, 2 * P]);
+    return { q:'A current of <b>' + I + ' A</b> flows through a transmission line with a total resistance of <b>' + R + ' Ω</b>. How much power is lost as heat in the line, in watts?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-trans-loss', I, R },
+      note:'P = I²R = ' + I + '² × ' + R + ' = ' + phSci(P) + ' W. IR is the voltage dropped along the line, not the power.' };
   }
   const m = mc('Laminating the core, so eddy currents have less room to circulate.',
     ['Using a solid iron core, so the flux is stronger.',
@@ -335,7 +463,7 @@ function genPhTrans(){
 
 /* ── Module 7: the electromagnetic spectrum and spectra ─────────────────── */
 function genPhEM(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   if (k === 0){                                   // c = fλ
     const which = pk(['f', 'lam']);
     const lam = pk([400e-9, 550e-9, 700e-9, 1e-6, 3e-2, 0.1, 1.5]);
@@ -360,6 +488,22 @@ function genPhEM(){
       input:true, answer:phSci(I2), accept:qty(I2, { tol:Math.max(1e-6, I2 * 0.01) }), data:{ kind:'ph-inv2', I1, f2 },
       note:'Intensity falls as 1/r², and the distance is ' + f2 + ' times bigger, so the intensity is ' + (f2 * f2) + ' times smaller: ' + phSci(I2) + ' W m' + sup(-2) + '.' };
   }
+  if (k === 4){                                   // Wien's law, as multiple choice
+    const T = ri(25, 300) * 100;
+    const lam = PH_WIEN / T;
+    const m = phMC(lam, '', [PH_WIEN * T, T / PH_WIEN, PH_WIEN / (T - 273), PH_WIEN / T * 1000]);
+    return { q:'The surface of a star is at <b>' + T + ' K</b>. At what wavelength does it emit most strongly, in metres?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-wien', T },
+      note:'Wien’s law: λ_max = b/T = 2.898 × 10' + sup(-3) + '/' + T + ' = ' + phSci(lam) + ' m. The temperature is already in kelvin, so it goes straight in.' };
+  }
+  if (k === 5){                                   // inverse square law, as multiple choice
+    const I1 = ri(20, 900), r1 = ri(1, 12), f2 = pk([2, 3, 4, 5]);
+    const I2 = I1 / (f2 * f2);
+    const m = phMC(I2, '', [I1 / f2, I1 * f2 * f2, I1 / (f2 * f2 * f2), I1 / (2 * f2)]);
+    return { q:'A small lamp gives an intensity of <b>' + I1 + ' W m' + sup(-2) + '</b> at a distance of <b>' + r1 + ' m</b>. What is the intensity <b>' + (r1 * f2) + ' m</b> from the lamp, in W m' + sup(-2) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-inv2', I1, f2 },
+      note:'The distance has grown by a factor of ' + f2 + ', and intensity goes as 1/r², so it falls by a factor of ' + (f2 * f2) + ': ' + I1 + '/' + (f2 * f2) + ' = ' + phSci(I2) + ' W m' + sup(-2) + '. Dividing by ' + f2 + ' alone forgets the square.' };
+  }
   const e = pk([
     { ask:'a hot, dense object such as a filament', a:'a continuous spectrum', w:['an emission line spectrum', 'an absorption line spectrum', 'no spectrum at all'] },
     { ask:'a hot, thin gas', a:'an emission line spectrum', w:['a continuous spectrum', 'an absorption line spectrum', 'a spectrum with no lines'] },
@@ -373,22 +517,22 @@ function genPhEM(){
 
 /* ── Module 7: the wave model of light ──────────────────────────────────── */
 function genPhWave(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   if (k === 0){                                   // double slit, small angle
-    const lam = pk([450, 500, 550, 600, 650]) * 1e-9, d = pk([0.1, 0.2, 0.25, 0.5]) * 1e-3, L = ri(1, 5), m2 = ri(1, 4);
+    const nm = pk([450, 500, 550, 600, 650]), lam = nm * 1e-9, d = pk([0.1, 0.2, 0.25, 0.5]) * 1e-3, L = ri(1, 5), m2 = ri(1, 4);
     const y = m2 * lam * L / d;
-    return { q:'In a double-slit experiment the slits are <b>' + phSci(d) + ' m</b> apart, the screen is <b>' + L + ' m</b> away and the light has wavelength <b>' + (lam * 1e9) + ' nm</b>. How far from the centre is the <b>' + (m2 === 1 ? 'first' : m2 === 2 ? 'second' : m2 === 3 ? 'third' : 'fourth') + ' bright fringe</b>? Give metres to 4 decimal places.',
+    return { q:'In a double-slit experiment the slits are <b>' + phSci(d) + ' m</b> apart, the screen is <b>' + L + ' m</b> away and the light has wavelength <b>' + nm + ' nm</b>. How far from the centre is the <b>' + (m2 === 1 ? 'first' : m2 === 2 ? 'second' : m2 === 3 ? 'third' : 'fourth') + ' bright fringe</b>? Give metres to 4 decimal places.',
       input:true, answer:rd(y, 4), accept:qty(y, { tol:Math.max(0.0002, y * 0.01), dim:'length' }), data:{ kind:'ph-dslit', lam, d, L, m:m2 },
       note:'For small angles y = mλL/d = ' + m2 + ' × ' + phSci(lam) + ' × ' + L + '/' + phSci(d) + ' = ' + rd(y, 4) + ' m.' };
   }
   if (k === 1){                                   // a diffraction grating
-    const lines = pk([300, 600, 1000]) * 1000, lam = pk([450, 550, 650]) * 1e-9;
+    const lines = pk([300, 600, 1000]) * 1000, nm = pk([450, 550, 650]), lam = nm * 1e-9;
     const d = 1 / lines;
     /* only ask for an order that exists: sin θ = mλ/d can never exceed 1 */
     const m2 = ri(1, Math.max(1, Math.min(3, Math.floor(d / lam))));
     const sinth = m2 * lam / d;
     const th = Math.asin(sinth) * 180 / Math.PI;
-    return { q:'A grating with <b>' + (lines / 1000) + ' lines per mm</b> is lit by <b>' + (lam * 1e9) + ' nm</b> light. At what <b>angle</b> does the order <b>m = ' + m2 + '</b> maximum appear? Give degrees to 2 decimal places.',
+    return { q:'A grating with <b>' + (lines / 1000) + ' lines per mm</b> is lit by <b>' + nm + ' nm</b> light. At what <b>angle</b> does the order <b>m = ' + m2 + '</b> maximum appear? Give degrees to 2 decimal places.',
       input:true, answer:rd(th, 2), accept:qty(th, { tol:0.02 }), data:{ kind:'ph-grating', lines, lam, m:m2 },
       note:'The slit spacing is d = 1/' + lines + ' = ' + phSci(d) + ' m, and d sin θ = mλ gives sin θ = ' + rd(sinth, 4) + ', so θ = ' + rd(th, 2) + '°.' };
   }
@@ -398,6 +542,22 @@ function genPhWave(){
     return { q:'Polarised light of intensity <b>' + I0 + ' W m' + sup(-2) + '</b> passes through a polariser at <b>' + deg + '°</b> to its plane of polarisation. Find the <b>transmitted intensity</b>, to 2 decimal places.',
       input:true, answer:rd(I, 2), accept:qty(I, { tol:Math.max(0.02, I * 0.005) }), data:{ kind:'ph-malus', I0, deg },
       note:'Malus’s law: I = I₀cos²θ = ' + I0 + ' × cos²' + deg + '° = ' + rd(I, 2) + ' W m' + sup(-2) + '.' };
+  }
+  if (k === 4){                                   // Malus's law, as multiple choice
+    const I0 = ri(10, 400), deg = pk([20, 30, 40, 50, 60, 70]);
+    const th = deg * Math.PI / 180, I = I0 * Math.pow(Math.cos(th), 2);
+    const m = phMC(I, '', [I0 * Math.cos(th), I0 * Math.pow(Math.sin(th), 2), I0 / 2, I0 * Math.sin(th)]);
+    return { q:'Polarised light of intensity <b>' + I0 + ' W m' + sup(-2) + '</b> meets a polarising filter whose transmission axis is at <b>' + deg + '°</b> to the light’s plane of polarisation. What intensity gets through, in W m' + sup(-2) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-malus', I0, deg },
+      note:'Malus’s law: I = I₀cos²θ = ' + I0 + ' × cos²' + deg + '° = ' + phSci(I) + ' W m' + sup(-2) + '. The cosine is squared because intensity goes as amplitude squared. Halving only applies to unpolarised light.' };
+  }
+  if (k === 5){                                   // double-slit fringes, as multiple choice
+    const nm = pk([450, 500, 550, 600, 650]), lam = nm * 1e-9, d = pk([0.1, 0.2, 0.25, 0.5]) * 1e-3, L = ri(1, 5), m2 = ri(1, 4);
+    const y = m2 * lam * L / d;
+    const m = phMC(y, '', [(m2 + 0.5) * lam * L / d, m2 * lam * d / L, lam * L / d, 2 * y]);
+    return { q:'Light of wavelength <b>' + nm + ' nm</b> passes through two slits <b>' + phSci(d) + ' m</b> apart onto a screen <b>' + L + ' m</b> away. How far is the <b>' + ['', 'first', 'second', 'third', 'fourth'][m2] + '-order bright fringe</b> from the central maximum, in metres?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-dslit', lam, d, L, m:m2 },
+      note:'Bright fringes sit at y = mλL/d = ' + m2 + ' × ' + phSci(lam) + ' × ' + L + ' ÷ (' + phSci(d) + ') = ' + phSci(y) + ' m. (m + ½)λL/d is where the dark fringes fall.' };
   }
   const m = mc('Light spreads out and interferes, which only a wave can do.',
     ['Light carries energy in lumps of hf.',
@@ -411,22 +571,22 @@ function genPhWave(){
 
 /* ── Module 7: the quantum model of light ───────────────────────────────── */
 function genPhQuantum(){
-  const k = ri(0, 4);
+  const k = ri(0, 6);
   if (k === 0){                                   // photon energy
-    const lam = pk([200, 400, 550, 700]) * 1e-9;
+    const nm = pk([200, 400, 550, 700]), lam = nm * 1e-9;
     const E = PH_PLANCK * PH_LIGHT / lam;
     const ask = pk(['J', 'eV']);
     const val = ask === 'J' ? E : E / PH_Q;
-    return { q:'Find the <b>energy of a photon</b> of wavelength <b>' + (lam * 1e9) + ' nm</b>, in ' + (ask === 'J' ? 'joules' : 'electronvolts') + ', to 3 significant figures.',
+    return { q:'Find the <b>energy of a photon</b> of wavelength <b>' + nm + ' nm</b>, in ' + (ask === 'J' ? 'joules' : 'electronvolts') + ', to 3 significant figures.',
       input:true, answer:phSci(val), accept:qty(val, ask === 'J' ? { tol:val * 0.01, dim:'work' } : { tol:val * 0.01 }),
       data:{ kind:'ph-photon', lam, ask },
       note:'E = hc/λ = (6.626 × 10' + sup(-34) + ' × 3.00 × 10⁸)/' + phSci(lam) + ' = ' + phSci(E) + ' J, which is ' + phSci(E / PH_Q) + ' eV.' };
   }
   if (k === 1){                                   // photoelectric maximum kinetic energy
-    const phi = rd(ri(15, 50) / 10, 1), lam = pk([200, 250, 300, 350]) * 1e-9;
+    const phi = rd(ri(15, 50) / 10, 1), nm = pk([200, 250, 300, 350]), lam = nm * 1e-9;
     const E = PH_PLANCK * PH_LIGHT / lam / PH_Q;
     const K = E - phi;
-    return { q:'A metal has a work function of <b>' + phi + ' eV</b> and is lit by <b>' + (lam * 1e9) + ' nm</b> light. Find the <b>maximum kinetic energy</b> of the photoelectrons, in eV to 3 decimal places. (A negative answer means none are emitted.)',
+    return { q:'A metal has a work function of <b>' + phi + ' eV</b> and is lit by <b>' + nm + ' nm</b> light. Find the <b>maximum kinetic energy</b> of the photoelectrons, in eV to 3 decimal places. (A negative answer means none are emitted.)',
       input:true, answer:rd(K, 3), accept:qty(K, { tol:0.01 }), data:{ kind:'ph-photoelec', phi, lam },
       note:'The photon carries ' + rd(E, 3) + ' eV. K_max = hf − φ = ' + rd(E, 3) + ' − ' + phi + ' = ' + rd(K, 3) + ' eV.' };
   }
@@ -447,16 +607,34 @@ function genPhQuantum(){
       choices:m.choices, answer:m.answer, data:{ kind:'ph-bright' },
       note:'Brightness is photons per second, so more electrons come out. The energy of each photon depends on frequency alone, so K_max does not move — this is exactly what the wave model got wrong.' };
   }
-  const lam = pk([400, 500, 600]) * 1e-9;
+  if (k === 5){                                   // photon energy in eV, as multiple choice
+    const nm = pk([200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700]), lam = nm * 1e-9;
+    const EJ = PH_PLANCK * PH_LIGHT / lam, E = EJ / PH_Q;
+    const m = phMC(E, '', [EJ, E / 2, 2 * E, PH_PLANCK / lam / PH_Q]);
+    return { q:'What is the energy of a photon of wavelength <b>' + nm + ' nm</b>, in electronvolts?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-photon', lam, ask:'eV' },
+      note:'E = hc/λ = (6.626 × 10' + sup(-34) + ' × 3.00 × 10⁸) ÷ (' + phSci(lam) + ') = ' + phSci(EJ) + ' J. Dividing by 1.602 × 10' + sup(-19) + ' J per eV gives ' + phSci(E) + ' eV.' };
+  }
+  if (k === 6){                                   // the photoelectric equation, as multiple choice
+    const nm = pk([200, 250, 300, 350]), lam = nm * 1e-9;
+    const E = PH_PLANCK * PH_LIGHT / lam / PH_Q;
+    const phi = rd(ri(15, Math.floor(E * 10) - 3) / 10, 1);
+    const K = E - phi;
+    const m = phMC(K, '', [E + phi, E, phi - E, phi]);
+    return { q:'Light of wavelength <b>' + nm + ' nm</b> falls on a metal with a work function of <b>' + phi + ' eV</b>. What is the maximum kinetic energy of the emitted photoelectrons, in eV?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-photoelec', phi, lam },
+      note:'Each photon carries hc/λ = ' + rd(E, 3) + ' eV. The work function is spent freeing the electron, so K_max = hf − φ = ' + rd(E, 3) + ' − ' + phi + ' = ' + phSci(K) + ' eV.' };
+  }
+  const nm = pk([400, 500, 600]), lam = nm * 1e-9;
   const p = PH_PLANCK / lam;
-  return { q:'Find the <b>momentum of a photon</b> of wavelength <b>' + (lam * 1e9) + ' nm</b>, to 3 significant figures.',
+  return { q:'Find the <b>momentum of a photon</b> of wavelength <b>' + nm + ' nm</b>, to 3 significant figures.',
     input:true, answer:phSci(p), accept:qty(p, { tol:p * 0.01 }), data:{ kind:'ph-pmom', lam },
     note:'p = h/λ = 6.626 × 10' + sup(-34) + '/' + phSci(lam) + ' = ' + phSci(p) + ' kg m s' + sup(-1) + '. A photon has momentum without having mass.' };
 }
 
 /* ── Module 7: light and special relativity ─────────────────────────────── */
 function genPhRel(){
-  const k = ri(0, 4);
+  const k = ri(0, 6);
   const frac = pk([0.5, 0.6, 0.8, 0.9, 0.95, 0.99]);
   const gamma = 1 / Math.sqrt(1 - frac * frac);
   if (k === 0){
@@ -486,6 +664,22 @@ function genPhRel(){
     return { q:'How much <b>energy</b> is equivalent to a mass of <b>' + mg + ' g</b>? Give 3 significant figures.',
       input:true, answer:phSci(E), accept:qty(E, { tol:E * 0.01, dim:'work' }), data:{ kind:'ph-emc2', mg },
       note:'E = mc² = ' + (mg / 1000) + ' × (3.00 × 10⁸)² = ' + phSci(E) + ' J.' };
+  }
+  if (k === 5){                                   // time dilation, as multiple choice
+    const t0 = rd(ri(5, 60) / 10, 1);
+    const t = gamma * t0;
+    const m = phMC(t, '', [t0 / gamma, t0 * gamma * gamma, t0 * (1 + frac), t0 / (1 - frac)]);
+    return { q:'An unstable particle lives for <b>' + t0 + ' μs</b> in its own rest frame. It travels through a laboratory at <b>' + frac + 'c</b>. How long does it live as measured in the laboratory, in μs?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-dilate', frac, t0 },
+      note:'γ = 1/√(1 − ' + frac + '²) = ' + rd(gamma, 4) + '. The particle’s own clock gives the proper time, and the laboratory measures it stretched: t = γt₀ = ' + phSci(t) + ' μs. Dividing by γ would make a moving clock run fast.' };
+  }
+  if (k === 6){                                   // length contraction, as multiple choice
+    const L0 = ri(20, 300);
+    const L = L0 / gamma;
+    const m = phMC(L, '', [L0 * gamma, L0 * (1 - frac), L0 * frac, L0 / (gamma * gamma)]);
+    return { q:'A spacecraft is <b>' + L0 + ' m</b> long when measured at rest. How long is it measured by an observer it passes at <b>' + frac + 'c</b>, in metres?',
+      choices:m.choices, answer:m.answer, data:{ kind:'ph-contract', frac, L0 },
+      note:'γ = 1/√(1 − ' + frac + '²) = ' + rd(gamma, 4) + ', and a moving object is shorter along its motion: L = L₀/γ = ' + phSci(L) + ' m. Multiplying by γ would make it longer, which never happens.' };
   }
   const m = mc('The laws of physics are the same in every inertial frame, and the speed of light in a vacuum is the same for every observer.',
     ['Everything moves relative to a fixed aether.',
@@ -770,7 +964,7 @@ const LONG_PH12 = [
              '(b) Power lost ' + rd(loss, 2) + ' W',
              '(c) States that for a given power, higher voltage means lower current',
              '(c) Relates this to P_loss = I²R, so the loss falls with the square of the current'],
-      model:'V_s = ' + Vp + ' × ' + Ns + '/' + Np + ' = ' + rd(Vs, 1) + ' V. The line wastes P = I²R = ' + (I * I) + ' × ' + R + ' = ' + rd(loss, 2) + ' W. Since the power delivered is VI, sending it at a high voltage means a small current, and because the loss goes as the current squared, halving the current quarters the waste.' };
+      model:'V_s = ' + Vp + ' × ' + Ns + '/' + Np + ' = ' + rd(Vs, 1) + ' V. The line wastes P = I²R = ' + rd(I * I, 2) + ' × ' + R + ' = ' + rd(loss, 2) + ' W. Since the power delivered is VI, sending it at a high voltage means a small current, and because the loss goes as the current squared, halving the current quarters the waste.' };
   },
   /* induction */
   () => {
@@ -790,11 +984,11 @@ const LONG_PH12 = [
   },
   /* the photoelectric effect */
   () => {
-    const phi = rd(ri(18, 45) / 10, 1), lam = pk([200, 250, 300]) * 1e-9;
+    const phi = rd(ri(18, 45) / 10, 1), nm = pk([200, 250, 300]), lam = nm * 1e-9;
     const E = PH_PLANCK * PH_LIGHT / lam / PH_Q, K = E - phi;
     const f0 = phi * PH_Q / PH_PLANCK;
     return { mod:'ph-m7',
-      q:'Light of wavelength <b>' + (lam * 1e9) + ' nm</b> falls on a metal with a work function of <b>' + phi + ' eV</b>.' +
+      q:'Light of wavelength <b>' + nm + ' nm</b> falls on a metal with a work function of <b>' + phi + ' eV</b>.' +
         '<br>(a) Calculate the maximum kinetic energy of the photoelectrons, in eV. <b>(2 marks)</b>' +
         '<br>(b) Calculate the threshold frequency of the metal. <b>(1 mark)</b>' +
         '<br>(c) The light is made brighter at the same wavelength. Explain what changes and what does not, and why the wave model could not account for this. <b>(3 marks)</b>',

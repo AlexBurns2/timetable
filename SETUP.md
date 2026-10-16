@@ -1284,6 +1284,28 @@ tile and the forum is hidden — on every device you are signed in on. It unlock
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
 
+## Year filter, names, and finder links
+
+- **Free periods has a year-group filter** (All, 7–12) above the grid. It
+  narrows who is counted as free in each period, the list of people, and the
+  school search. Your group is never filtered: the people you picked stay
+  picked. The choice is remembered.
+- **Type people by name.** The box on the free-periods page takes a name any way
+  you type it:
+  - a first name, a surname, or both, either way round ("Taylor, Sam");
+  - without accents or punctuation ("zoe obrien", "smithjones");
+  - a username or a pasted email address.
+
+  Your classmates and everyone else in the school show in one list. **Enter**
+  adds the person when there's only one match, or when exactly one name is
+  what you typed; otherwise it asks you to tap the right one.
+- **Close matches.** If nothing matches exactly, both this box and the student
+  finder show the closest names and say so. That covers a middle name the
+  school doesn't have ("John Michael Smith") or one misspelt word. A close
+  guess is never added without a tap.
+- **Student finder: tap a name to open their timetable.** It opens the timetable
+  page on that person, the same as typing their name in the box at the top.
+
 ## Free periods
 
 A new **Free periods** tile on the home page, for finding when to meet people

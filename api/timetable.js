@@ -216,27 +216,65 @@ async function studentDirectory() {
   directoryCache = { at: Date.now(), list };
   return list;
 }
+/* Names are compared folded: lower case, accents off ("Zoë" is "zoe"), and
+   also squashed to letters and digits so "obrien" finds O'Brien and
+   "smithjones" finds Smith-Jones. */
+const fold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+const squash = s => s.replace(/[^a-z0-9]/g, "");
+/* What was typed, as words: "Smith, John" is two words, and a pasted email
+   address is just its user name. */
+export function queryWords(q) {
+  let s = fold(q);
+  if (s.includes("@")) s = s.split("@")[0];
+  return s.replace(/[,;]+/g, " ").split(/\s+/).filter(Boolean);
+}
+function nameParts(p) {
+  const first = fold(p.first), last = fold(p.last), user = p.email.split("@")[0];
+  const bits = s => s.split(/[\s'’.-]+/).filter(Boolean);
+  return { first, last, parts: [first, last, user, ...bits(first), ...bits(last), ...bits(user),
+                                squash(first), squash(last)] };
+}
+const wordHits = (parts, w) => parts.some(x => x.startsWith(w)) ||
+                               (squash(w) !== "" && parts.some(x => x.startsWith(squash(w))));
+const shapeResult = p => ({
+  name: [p.first, p.last].filter(Boolean).join(" ") || p.email.split("@")[0],
+  email: p.email,
+  year: p.year
+});
 /* Every word typed has to start a first name, a last name or the email user
-   name ("sam t" finds Sam Taylor). Ranked: whole name starts with the search,
-   then first-name matches, then last-name matches, then everything else. */
+   name, in any order ("sam t" and "taylor, sam" both find Sam Taylor).
+   Ranked: the whole name starts with the search (either way round), then
+   first-name matches, then last-name matches, then everything else. */
 export function searchStudents(list, q, max) {
-  const words = q.split(" ").filter(Boolean);
+  const words = queryWords(q), joined = words.join(" ");
+  if (!words.length) return [];
   const scored = [];
   for (const p of list) {
-    const first = p.first.toLowerCase(), last = p.last.toLowerCase();
-    const user = p.email.split("@")[0];
-    const parts = [first, last, user, ...first.split(/[\s'-]+/), ...last.split(/[\s'-]+/)];
-    if (!words.every(w => parts.some(x => x.startsWith(w)))) continue;
+    const { first, last, parts } = nameParts(p);
+    if (!words.every(w => wordHits(parts, w))) continue;
     const full = (first + " " + last).trim();
-    const score = full.startsWith(q) ? 0 : first.startsWith(words[0]) ? 1 : last.startsWith(words[0]) ? 2 : 3;
+    const score = full.startsWith(joined) || (last + " " + first).startsWith(joined) ? 0
+                : first.startsWith(words[0]) ? 1 : last.startsWith(words[0]) ? 2 : 3;
     scored.push({ p, score, full });
   }
   scored.sort((a, b) => a.score - b.score || a.full.localeCompare(b.full));
-  return scored.slice(0, max).map(({ p }) => ({
-    name: [p.first, p.last].filter(Boolean).join(" ") || p.email.split("@")[0],
-    email: p.email,
-    year: p.year
-  }));
+  return scored.slice(0, max).map(({ p }) => shapeResult(p));
+}
+/* When nothing matches every word, the people who match all but one of them:
+   a middle name the school doesn't have ("John Michael Smith"), or one word
+   misspelt ("jon smith" still finds the Smiths). Needs two words or more, so a
+   one-word typo never turns into a list of strangers. */
+export function closeStudents(list, q, max) {
+  const words = queryWords(q);
+  if (words.length < 2) return [];
+  const scored = [];
+  for (const p of list) {
+    const { first, last, parts } = nameParts(p);
+    const hits = words.filter(w => wordHits(parts, w)).length;
+    if (hits >= words.length - 1) scored.push({ p, miss: words.length - hits, full: first + " " + last });
+  }
+  scored.sort((a, b) => a.miss - b.miss || a.full.localeCompare(b.full));
+  return scored.slice(0, max).map(({ p }) => shapeResult(p));
 }
 
 /* ------------------------------------------------------ free-period finder */
@@ -397,7 +435,9 @@ export default async function handler(req, res) {
     try {
       let people = await studentDirectory();
       if (yr >= 7 && yr <= 12) people = people.filter(p => p.year === yr);   // before the cap, so it hides nothing
-      return res.status(200).json({ query: q, results: searchStudents(people, q, 20) });
+      let results = searchStudents(people, q, 20), close = false;
+      if (!results.length) { results = closeStudents(people, q, 20); close = results.length > 0; }
+      return res.status(200).json({ query: q, results, close });
     } catch (error) {
       console.error("Student finder failed:", error.message);
       return res.status(502).json({ error: "Unable to search the school directory right now." });

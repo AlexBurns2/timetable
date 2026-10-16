@@ -60,6 +60,13 @@
   color:var(--text);background:var(--panel);border:var(--card-border)}
 .fweeks button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .fnow{font-size:0.8125rem;color:var(--muted)}
+.fyrbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 12px}
+.fyl{font-size:0.75rem;font-weight:700;color:var(--muted)}
+.fyears{display:flex;gap:4px;flex-wrap:wrap}
+.fyears button{font:inherit;font-size:0.75rem;font-weight:600;min-width:34px;padding:4px 9px;border-radius:999px;cursor:pointer;
+  color:var(--text);background:var(--panel);border:var(--card-border)}
+.fyears button[aria-pressed="true"]{background:var(--text);color:var(--panel);border-color:var(--text)}
+.fclose{font-size:0.75rem;color:var(--muted);margin:2px 0 6px}
 .fgrid{display:grid;grid-template-columns:52px repeat(5,minmax(0,1fr));gap:5px}
 .fh{font-size:0.75rem;font-weight:700;color:var(--muted);text-align:center;padding:2px 0 4px}
 .fh.today{color:var(--accent)}
@@ -118,6 +125,10 @@
         </div>
         <span class="fnow" id="nowweek"></span>
       </div>
+      <div class="fyrbar">
+        <span class="fyl" id="yrlabel">Year group</span>
+        <div class="fyears" id="years" role="group" aria-labelledby="yrlabel"></div>
+      </div>
       <div class="fgrid" id="grid"></div>
       <section class="fpanel fdetail" id="detail" hidden aria-live="polite"></section>
       <p class="fnote">Recess and lunch are free for everyone, so they aren’t shown. Who’s free comes from the school
@@ -128,8 +139,9 @@
     <section class="fpanel" id="group" aria-live="polite"></section>
     <section class="fpanel" id="people" aria-labelledby="peopleh">
       <div class="fphead"><h2 id="peopleh">People</h2></div>
-      <input id="pq" type="search" placeholder="Filter, or search the whole school…" autocomplete="off" spellcheck="false"
-             aria-label="Find people to compare free periods with">
+      <input id="pq" type="search" placeholder="Type a name to add someone…" autocomplete="off" spellcheck="false"
+             enterkeyhint="done" aria-label="Find people by name or email to compare free periods with" aria-describedby="pqhint">
+      <p class="fclose" id="pqhint" role="status" aria-live="polite">Any name, either way round, or an email. Enter adds them if there’s only one match.</p>
       <div id="plist"></div>
     </section>
   </div>
@@ -168,6 +180,31 @@ const keyOf = (day, per) => day + '|' + per;
 const dayIndex = d => CYCLE_DAYS.indexOf(d) % 5;
 const nameFromId = id => String(id).replace(/\d+$/, '').split(/[._-]+/).filter(Boolean)
   .map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || String(id);
+const yearOfGroups = groups => {
+  const m = (Array.isArray(groups) ? groups : []).map(g => String(g).toLowerCase().match(/^yr\.?\s*(\d{1,2})$/)).find(Boolean);
+  return m ? +m[1] : null;
+};
+
+/* Names match the way the server's student search does: lower case, accents
+   off ("zoe" finds Zoë), punctuation squashed ("obrien" finds O'Brien), any
+   order and with a comma ("Taylor, Sam"), and a pasted email is its user name.
+   Every typed word has to start some part of the name or the user name. */
+const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const squash = s => s.replace(/[^a-z0-9]/g, '');
+function queryWords(q){
+  let s = fold(q);
+  if (s.includes('@')) s = s.split('@')[0];
+  return s.replace(/[,;]+/g, ' ').split(/\s+/).filter(Boolean);
+}
+function nameMatches(p, words){
+  const name = fold(p.name), id = String(p.id || '');
+  const bits = s => s.split(/[\s'’.-]+/).filter(Boolean);
+  /* every tail of the name squashed: "smithjones" and "obrien" both start one */
+  const tails = bits(name).map((_, i, a) => squash(a.slice(i).join('')));
+  const parts = [name, id, ...bits(name), ...bits(id), ...tails];
+  return words.length > 0 && words.every(w => parts.some(x => x.startsWith(w)) ||
+    (squash(w) !== '' && parts.some(x => x.startsWith(squash(w)))));
+}
 
 /* the same tidy-up the timetable page does: "11 PHY1 Physics" / "Physics Yr11" -> "Physics" */
 function tidySubject(name, code){
@@ -244,7 +281,7 @@ function rosterStudents(data, domain){
     const last = String(pickF(r, ['lastname','lastName','LastName','Surname','surname']) || '').trim();
     const name = [first, last].filter(Boolean).join(' ') ||
                  String(pickF(r, ['FullName','fullName','Name','name']) || '').trim() || nameFromId(id);
-    out.push({ id, name });
+    out.push({ id, name, year:yearOfGroups(groups) });
   }
   return out;
 }
@@ -339,6 +376,8 @@ const DOMAIN = (window.TT && TT.EMAIL_DOMAIN) || 'education.nsw.gov.au';
 /* Not a tt.* key, so theme.js never syncs it: other people's periods stay on
    this device. Tagged with whose login fetched it. */
 const CACHE_KEY = 'msc.free';
+const CACHE_V = 2;                        // 2: class lists carry each student's year
+const freshCache = () => ({ v:CACHE_V, owner:ME, rosters:{}, busy:{} });
 const BUSY_TTL = 24 * 3600e3, MISS_TTL = 3600e3, ROSTER_TTL = 24 * 3600e3;
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
 const ME = signedIn ? userOf((TT.get('tt.creds', null) || {}).email) : '';
@@ -351,15 +390,17 @@ let names = {};
 let picked = signedIn ? (TT.get('tt.freepick', []) || []).filter(validUser) : [];
 let extra = signedIn ? (TT.get('tt.freeextra', []) || []).filter(p => p && validUser(p.id)) : [];
 let includeMe = signedIn ? TT.get('tt.freeme', true) !== false : true;
+let yearFilter = signedIn ? (+TT.get('tt.freeyear', 0) || 0) : 0;
+if (!(yearFilter >= 7 && yearFilter <= 12)) yearFilter = 0;
 let week = 'a', openKey = null, loading = true, searchSeq = 0, searchTimer = null;
-let found = [], foundFor = '';
+let found = [], foundFor = '', foundClose = false;
 
 function readCache(){
   try {
     const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if (c && c.owner === ME) return { owner:ME, rosters:c.rosters || {}, busy:c.busy || {} };
+    if (c && c.owner === ME && c.v === CACHE_V) return { v:CACHE_V, owner:ME, rosters:c.rosters || {}, busy:c.busy || {} };
   } catch {}
-  return { owner:ME, rosters:{}, busy:{} };
+  return freshCache();
 }
 function saveCache(){
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); }
@@ -374,6 +415,11 @@ function progress(done, total){
 const nm = id => id === ME ? 'you' : (names[id] || id);
 const fullName = id => id === ME ? 'You' : ((people.get(id) || {}).name || nameFromId(id));
 const groupIds = () => picked.filter(id => people.has(id)).concat(includeMe ? [ME] : []);
+/* the year filter narrows who is counted as free and who is listed; the group
+   you picked is yours and is never filtered */
+const inYear = id => !yearFilter || (people.get(id) || {}).year === yearFilter;
+const pool = () => [...people.keys()].filter(inYear);
+const yearWord = () => yearFilter ? 'Year ' + yearFilter + ' ' : '';
 const savePicks = () => { TT.set('tt.freepick', picked); TT.set('tt.freeextra', extra); TT.set('tt.freeme', includeMe); };
 
 function togglePick(id){
@@ -389,8 +435,9 @@ function togglePick(id){
 }
 function addPerson(p, subject){
   if (!p || !validUser(p.id) || p.id === ME) return;
-  const cur = people.get(p.id) || { id:p.id, name:p.name || nameFromId(p.id), classes:[] };
+  const cur = people.get(p.id) || { id:p.id, name:p.name || nameFromId(p.id), classes:[], year:null };
   if (subject && !cur.classes.includes(subject)) cur.classes.push(subject);
+  if (cur.year == null && p.year != null) cur.year = +p.year || null;
   people.set(p.id, cur);
 }
 
@@ -427,7 +474,7 @@ function cellHtml(d, per, slot, today, nowMin){
       cls = 'busy'; inner = '<span class="s">' + esc(mineHere.subject) + '</span>';
       say = 'you have ' + mineHere.subject;
     } else {
-      const free = sortIds(freeAt(key, [...people.keys()], busy));
+      const free = sortIds(freeAt(key, pool(), busy));
       const shown = free.slice(0, 4).map(nm).join(', ') + (free.length > 4 ? ' +' + (free.length - 4) : '');
       cls = 'free';
       inner = '<b>Free</b><span class="s">' + (loading && !free.length ? '…' : free.length + ' other' + (free.length === 1 ? '' : 's')) + '</span>' +
@@ -485,12 +532,13 @@ function renderDetail(){
   const [d, per] = String(openKey || '').split('|');
   if (!openKey || !slots[d] || !slots[d].get(per)){ el.hidden = true; return; }
   const mineHere = mine.find(e => e.key === openKey);
-  const free = sortIds(freeAt(openKey, [...people.keys()], busy));
+  const free = sortIds(freeAt(openKey, pool(), busy));
+  const n = free.length;
+  const noun = yearFilter ? 'Year ' + yearFilter + ' student' + (n === 1 ? '' : 's') : (n === 1 ? 'person' : 'people');
   el.innerHTML = '<h3>' + esc(slotTitle(openKey)) + '</h3>' +
     '<p>' + (mineHere ? 'You have ' + esc(mineHere.subject) + '. ' : 'You’re free. ') +
-    (free.length ? free.length + (free.length === 1 ? ' person' : ' people') + ' you know ' + (free.length === 1 ? 'is' : 'are') +
-       ' free then. Tap a name to add them to your group.'
-     : (loading ? 'Still checking who else is free…' : 'No one else you know is free then.')) + '</p>' +
+    (n ? n + ' ' + noun + ' you know ' + (n === 1 ? 'is' : 'are') + ' free then. Tap a name to add them to your group.'
+     : (loading ? 'Still checking who else is free…' : 'No ' + yearWord() + 'student you know is free then.')) + '</p>' +
     '<div class="fwho">' + free.map(id => '<button type="button" data-id="' + esc(id) + '" aria-pressed="' + picked.includes(id) + '">' +
       esc(fullName(id)) + '</button>').join('') + '</div>';
   el.hidden = false;
@@ -570,43 +618,104 @@ function sharedFrees(id){
 }
 function personRow(p, add){
   const n = add ? null : sharedFrees(p.id);
-  const sub = p.classes && p.classes.length ? p.classes.join(' · ') : (p.year ? 'Year ' + p.year : 'Added by you');
+  const sub = p.classes && p.classes.length ? p.classes.join(' · ')
+            : (p.year ? 'Year ' + p.year : '') + (add ? (p.year ? ' · ' : '') + 'not in your classes' : (p.year ? '' : 'Added by you'));
   const tag = add ? 'Add' : (n == null ? (busy[p.id] === undefined ? '…' : '?') : n + ' free' + (n === 1 ? '' : 's'));
   return '<li><button type="button" class="fpp" data-id="' + esc(p.id) + '"' +
-         (add ? ' data-name="' + esc(p.name) + '"' : ' aria-pressed="' + picked.includes(p.id) + '"') + '>' +
+         (add ? ' data-name="' + esc(p.name) + '" data-year="' + esc(p.year || '') + '"'
+              : ' aria-pressed="' + picked.includes(p.id) + '"') + '>' +
          '<span class="n">' + esc(p.name) + '</span><span class="c">' + esc(sub) + '</span>' +
          '<span class="t"' + (add ? '' : ' title="Free periods you share each fortnight"') + '>' + esc(tag) + '</span></button></li>';
 }
+
+/* ── the people box: a name (any form), a user name or an email ── */
+const searchKey = raw => queryWords(raw).join(' ') + '|' + yearFilter;
+let pendingKey = '', pending = null;
+/* ask the school directory (the student finder's search), year filter applied */
+function runSearch(){
+  const raw = $('pq').value.trim(), key = searchKey(raw);
+  if (raw.length < 2){ found = []; foundFor = ''; foundClose = false; return Promise.resolve(); }
+  if (foundFor === key) return Promise.resolve();
+  if (pendingKey === key) return pending;
+  const seq = ++searchSeq;
+  pendingKey = key;
+  pending = (async () => {
+    let res = [], close = false;
+    try {
+      const params = { find:raw };
+      if (yearFilter) params.year = yearFilter;
+      const d = await TT.apiGet(params);
+      res = ((d && d.results) || []).map(p => ({ id:userOf(p.email), name:p.name, year:p.year })).filter(p => validUser(p.id));
+      close = !!(d && d.close);
+    } catch {}
+    if (pendingKey === key) pendingKey = '';
+    if (seq !== searchSeq) return;               // a newer search has started
+    found = res; foundFor = key; foundClose = close;
+    renderPeople();
+  })();
+  return pending;
+}
+/* who the box currently means: your classmates that match (in the chosen
+   year), then anyone else the school search found */
+function candidates(){
+  const raw = $('pq').value.trim(), words = queryWords(raw);
+  const local = [...people.values()].filter(p => inYear(p.id) && (!words.length || nameMatches(p, words)));
+  const school = words.length && foundFor === searchKey(raw)
+    ? found.filter(p => p.id !== ME && !local.some(x => x.id === p.id)) : [];
+  return { raw, words, local, school };
+}
+function addFromSearch(p){
+  addPerson(p);
+  if (!extra.some(x => x.id === p.id)) extra.push({ id:p.id, name:p.name, year:p.year || null });
+  if (!picked.includes(p.id)) picked.push(p.id);
+  savePicks(); render(); loadBusy([p.id]);
+}
+function pqHint(msg){ $('pqhint').textContent = msg || 'Any name, either way round, or an email. Enter adds them if there’s only one match.'; }
+
 function renderPeople(){
-  const q = $('pq').value.trim().toLowerCase().replace(/\s+/g, ' ');
-  const words = q ? q.split(' ') : [];
-  const match = p => words.every(w => p.name.toLowerCase().split(/[\s'-]+/).some(x => x.startsWith(w)) || p.id.startsWith(w));
+  const { raw, words, local, school } = candidates();
   const score = id => { const n = sharedFrees(id); return n == null ? -1 : n; };
-  const list = [...people.values()].filter(match).sort((a, b) => (score(b.id) - score(a.id)) || a.name.localeCompare(b.name));
-  let h = '<p class="fsub first">' + (q ? 'Matching' : 'Classmates, most free periods in common first') + ' · ' + list.length + '</p>';
-  h += list.length ? '<ul class="fpeople">' + list.map(p => personRow(p, false)).join('') + '</ul>'
-                   : '<p class="fhint">' + (loading ? 'Loading…' : (q ? 'None of your classmates match.' : 'No classmates found.')) + '</p>';
-  if (q.length >= 2){
-    const others = found.filter(p => !people.has(p.id) && p.id !== ME);
-    h += '<p class="fsub">Elsewhere in the school</p>' + (others.length
-      ? '<ul class="fpeople">' + others.map(p => personRow(p, true)).join('') + '</ul>'
-      : '<p class="fhint">' + (foundFor === q ? 'No one else matches.' : 'Searching…') + '</p>');
+  local.sort((a, b) => (score(b.id) - score(a.id)) || a.name.localeCompare(b.name));
+  const yr = yearWord();
+  let h;
+  if (!words.length){
+    h = '<p class="fsub first">' + (yr ? yr + 'classmates' : 'Classmates') + ', most free periods in common first · ' + local.length + '</p>' +
+        (local.length ? '<ul class="fpeople">' + local.map(p => personRow(p, false)).join('') + '</ul>'
+          : '<p class="fhint">' + (loading ? 'Loading…' : (yearFilter ? 'None of your classmates are in Year ' + yearFilter + '.'
+                                                                      : 'No classmates found.') + ' Type a name to find someone.') + '</p>');
+  } else {
+    /* someone the school search found who is in your classes keeps their classmate row */
+    const rowsHtml = local.map(p => personRow(p, false))
+      .concat(school.map(p => people.has(p.id) ? personRow(people.get(p.id), false) : personRow(p, true)));
+    const searching = raw.length >= 2 && foundFor !== searchKey(raw);
+    h = '<p class="fsub first">' + (foundClose && !local.length && rowsHtml.length ? 'No exact match · the closest' : 'Matching') +
+        (yr ? ' in ' + yr.trim() : '') + ' · ' + rowsHtml.length + '</p>' +
+        (rowsHtml.length ? '<ul class="fpeople">' + rowsHtml.join('') + '</ul>' : '') +
+        (searching ? '<p class="fhint">Searching the school…</p>'
+         : rowsHtml.length ? '' : '<p class="fhint">' + (raw.length < 2 ? 'Keep typing…'
+           : 'No ' + yr + 'student matches “' + esc(raw) + '”.' + (yearFilter ? ' Try “All” years.' : '')) + '</p>');
   }
   $('plist').innerHTML = h;
   $('plist').querySelectorAll('.fpp').forEach(b => b.onclick = () => {
-    const id = b.dataset.id;
-    if (b.dataset.name !== undefined){
-      addPerson({ id, name:b.dataset.name });
-      if (!extra.some(x => x.id === id)) extra.push({ id, name:b.dataset.name });
-      if (!picked.includes(id)) picked.push(id);
-      savePicks(); render(); loadBusy([id]);
-    } else togglePick(id);
+    if (b.dataset.name !== undefined) addFromSearch({ id:b.dataset.id, name:b.dataset.name, year:+b.dataset.year || null });
+    else togglePick(b.dataset.id);
+  });
+}
+function renderYears(){
+  $('years').innerHTML = [0, 7, 8, 9, 10, 11, 12].map(y =>
+    '<button type="button" data-y="' + y + '" aria-pressed="' + (y === yearFilter) + '"' +
+    (y ? ' aria-label="Year ' + y + '"' : '') + '>' + (y || 'All') + '</button>').join('');
+  $('years').querySelectorAll('button').forEach(b => b.onclick = () => {
+    yearFilter = +b.dataset.y;
+    TT.set('tt.freeyear', yearFilter);
+    render();
+    runSearch();
   });
 }
 function render(){
   if (!slots) return;
   names = shortNames([...people.values()]);
-  renderGrid(); renderDetail(); renderGroup(); renderPeople();
+  renderYears(); renderGrid(); renderDetail(); renderGroup(); renderPeople();
 }
 
 /* ── loading ── */
@@ -653,7 +762,15 @@ async function loadBusy(ids){
   });
   saveCache();
   if (failed) status(failed, true);
+  else if (!loading) summary();              // someone added later: put the summary back
   return failed;
+}
+function summary(){
+  const ok = [...people.keys()].filter(id => known(busy, id)).length;
+  const missing = people.size - ok;
+  status(people.size ? 'Compared with ' + ok + ' ' + (ok === 1 ? 'person' : 'people') +
+      (missing ? ' · ' + missing + ' timetable' + (missing === 1 ? '' : 's') + ' couldn’t be read' : '') + '.'
+    : 'No classmates found in your class lists. Type a name to add someone.');
 }
 
 async function boot(){
@@ -688,35 +805,49 @@ async function boot(){
   render();
   const failed = await loadBusy([...people.keys()]);
   loading = false;
-  const ok = [...people.keys()].filter(id => known(busy, id)).length;
-  const missing = people.size - ok;
-  status(failed ? failed
-    : people.size ? 'Compared with ' + ok + ' ' + (ok === 1 ? 'person' : 'people') +
-        (missing ? ' · ' + missing + ' timetable' + (missing === 1 ? '' : 's') + ' couldn’t be read' : '') + '.'
-    : 'No classmates found in your class lists. Search for people to add them.', !!failed);
+  if (failed) status(failed, true); else summary();
   render();
 }
 
 $('weeks').querySelectorAll('button').forEach(b => b.onclick = () => { week = b.dataset.w; openKey = null; render(); });
 $('pq').addEventListener('input', () => {
+  pqHint();
+  if ($('pq').value.trim().length < 2){ found = []; foundFor = ''; foundClose = false; }
   renderPeople();
   clearTimeout(searchTimer);
-  const q = $('pq').value.trim().toLowerCase().replace(/\s+/g, ' ');
-  if (q.length < 2){ found = []; foundFor = ''; return; }
-  searchTimer = setTimeout(async () => {
-    const seq = ++searchSeq;
-    let res = [];
-    try {
-      const d = await TT.apiGet({ find:q });
-      res = ((d && d.results) || []).map(p => ({ id:userOf(p.email), name:p.name, year:p.year })).filter(p => validUser(p.id));
-    } catch {}
-    if (seq !== searchSeq) return;                 // a newer search has started
-    found = res; foundFor = q;
-    renderPeople();
-  }, 300);
+  if ($('pq').value.trim().length >= 2) searchTimer = setTimeout(runSearch, 300);
+});
+/* Enter adds the person the box means, when that is clear: the only match,
+   or the only one whose whole name is exactly what was typed (either way
+   round). A close guess is never added without a tap. */
+$('pq').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  clearTimeout(searchTimer);
+  await runSearch();
+  const { raw, words, local, school } = candidates();
+  if (!words.length) return;
+  const all = local.concat(school);
+  const sameName = p => queryWords(p.name).sort().join(' ') === words.slice().sort().join(' ') || p.id === words.join(' ');
+  const exact = all.filter(sameName);
+  const sure = all.length === 1 && (!foundClose || local.length || sameName(all[0]));
+  const p = sure ? all[0] : (exact.length === 1 ? exact[0] : null);
+  if (!p){
+    pqHint(all.length > 1 ? all.length + ' people match “' + raw + '”. Tap the right one.'
+         : all.length ? 'No exact match. Tap ' + all[0].name + ' if that’s who you meant.'
+         : 'No one matches “' + raw + '”.');
+    return;
+  }
+  const already = picked.includes(p.id);
+  if (people.has(p.id)){ if (!already) togglePick(p.id); }
+  else addFromSearch(p);
+  $('pq').value = ''; found = []; foundFor = ''; foundClose = false;
+  const who = people.has(p.id) ? people.get(p.id).name : p.name;
+  pqHint(already ? who + ' is already in your group.' : 'Added ' + who + ' to your group.');
+  renderPeople();
 });
 $('refresh').onclick = () => {
-  cache = { owner:ME, rosters:{}, busy:{} }; saveCache();
+  cache = freshCache(); saveCache();
   location.reload();
 };
 boot();

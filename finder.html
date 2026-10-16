@@ -26,6 +26,8 @@
 .frow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:12px 14px;
   background:var(--panel);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow)}
 .fname{font-weight:700}
+a.fname{color:inherit;text-decoration:none;border-bottom:1px solid transparent}
+a.fname:hover, a.fname:focus-visible{color:var(--accent);border-bottom-color:currentColor}
 .fyear{font-size:0.75rem;font-weight:700;color:var(--muted);margin-left:8px}
 .fmail{grid-column:1;font-size:0.875rem;color:var(--muted);word-break:break-all}
 .facts{grid-column:2;grid-row:1 / span 2;display:flex;gap:6px}
@@ -46,14 +48,14 @@
   </div>
 
   <div class="fsearch">
-    <input id="q" type="search" placeholder="Search a first or last name…" autocomplete="off" spellcheck="false"
+    <input id="q" type="search" placeholder="Search a name, or paste an email…" autocomplete="off" spellcheck="false"
            aria-label="Search students by name" aria-describedby="msg">
   </div>
   <div class="fyears" id="years" role="group" aria-label="Year"></div>
   <p class="fmsg" id="msg" role="status" aria-live="polite">Type at least two letters.</p>
   <ul class="flist" id="list"></ul>
 
-  <p class="fnote">Students only. Searches go to the school’s own directory using your school login, and
+  <p class="fnote">Tap a name to open their timetable. Students only. Searches go to the school’s own directory using your school login, and
     nothing you search for is saved. Up to 20 matches are shown — add a surname or pick a year to narrow it down.</p>
 </div>
 
@@ -74,7 +76,8 @@ function paintYears(){
 
 function show(results){
   $('list').innerHTML = results.map(p =>
-    '<li class="frow"><div><span class="fname">' + esc(p.name) + '</span>' +
+    '<li class="frow"><div><a class="fname" href="./?user=' + esc(encodeURIComponent(String(p.email).split('@')[0])) + '"' +
+      ' title="Open ' + esc(p.name) + '’s timetable">' + esc(p.name) + '</a>' +
       (p.year ? '<span class="fyear">Year ' + esc(p.year) + '</span>' : '') + '</div>' +
     '<div class="fmail">' + esc(p.email) + '</div>' +
     '<div class="facts"><button type="button" class="btn" data-copy="' + esc(p.email) + '">Copy</button>' +
@@ -101,7 +104,8 @@ async function search(){
     const res = (d && d.results) || [];
     show(res);
     msg.textContent = res.length
-      ? res.length + (res.length === 20 ? '+ matches — showing the first 20' : ' match' + (res.length === 1 ? '' : 'es'))
+      ? (d.close ? 'No exact match for “' + q + '”. The closest:'
+        : res.length + (res.length === 20 ? '+ matches — showing the first 20' : ' match' + (res.length === 1 ? '' : 'es')))
       : 'No students match “' + q + '”' + (year ? ' in Year ' + year : '') + '.';
   } catch (err) {
     if (mine !== seq) return;

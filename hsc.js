@@ -195,7 +195,7 @@ function genMaAP(){
 
 /* ── Sequences and series: geometric ───────────────────────────────────── */
 function genMaGP(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   if (k === 0){
     const a = nzr(-6, 8) * 2, r = pk([2, 3, -2, 0.5, -0.5, 1.5]), n = ri(5, 10);
     const T = a * Math.pow(r, n - 1);
@@ -217,6 +217,24 @@ function genMaGP(){
     return { q:'Find the limiting sum of the geometric series with <b>a = ' + a + '</b> and <b>r = ' + rTxt + '</b>.',
       input:true, answer:rd(S, 3), accept:qty(S, { tol:0.01 }), data:{ kind:'gp-lim', a, r },
       note:'A limiting sum exists because |r| < 1: S = a/(1 − r) = ' + a + ' ÷ ' + rd(1 - r, 4) + ' = ' + rd(S, 3) + '.' };
+  }
+  if (k === 4){                                   // a later term, read off the first three
+    const a = nzr(-5, 5), r = pk([2, 3, -2, -3]), n = ri(5, 9);
+    const T = a * Math.pow(r, n - 1);
+    const m = numMC(T, [a * Math.pow(r, n), a * Math.pow(r, n - 2), -T, a + (n - 1) * (a * r - a)]);
+    return { q:'A geometric sequence begins <b>' + neg([a, a * r, a * r * r].join(', ')) + ', …</b>. What is <b>T<sub>' + n + '</sub></b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'gp-T', a, r, n },
+      note:'r = ' + neg(a * r) + ' ÷ ' + neg(a) + ' = ' + neg(r) + ', so Tₙ = arⁿ⁻¹ = ' + neg(a) + ' × (' + neg(r) + ')' + sup(n - 1) + ' = ' + neg(T) + '. Using rⁿ instead of rⁿ⁻¹ lands one term too far along.' };
+  }
+  if (k === 5){                                   // limiting sum from the first two terms
+    const f = pk([[1, 2], [-1, 2], [1, 3], [2, 3], [-1, 3], [-2, 3], [1, 4], [3, 4], [-1, 4], [-3, 4]]);
+    const r = f[0] / f[1], mult = ri(1, 4) * (Math.random() < 0.8 ? 1 : -1);
+    const a = f[1] * (f[1] - f[0]) * mult, T2 = f[0] * (f[1] - f[0]) * mult;
+    const S = f[1] * f[1] * mult;                 // a/(1 − r), kept exact
+    const m = numMC(S, [a / (1 + r), S - a, a + T2, 2 * a, a * r / (1 + r)]);
+    return { q:'A geometric series has first term <b>' + neg(a) + '</b> and second term <b>' + neg(T2) + '</b>. What is its limiting sum?',
+      choices:m.choices, answer:m.answer, data:{ kind:'gp-lim', a, r },
+      note:'r = ' + neg(T2) + ' ÷ ' + neg(a) + ' = ' + fracStr(f[0], f[1]) + ', and |r| < 1, so the limiting sum exists: S = a/(1 − r) = ' + neg(a) + ' ÷ (' + fracStr(f[1] - f[0], f[1]) + ') = ' + neg(S) + '.' };
   }
   const r = pk([2, -3, 1.2, 0.8, -0.5, 1]);
   const has = Math.abs(r) < 1;
@@ -343,7 +361,7 @@ function genMaAnti(){
 
 /* ── Integral calculus: definite integrals and area ────────────────────── */
 function genMaDefInt(){
-  const k = ri(0, 2);
+  const k = ri(0, 4);
   if (k === 0){                                   // a polynomial, chosen to come out tidy
     const a = ri(1, 4) * 3, b = ri(1, 5) * 2, c = ri(-5, 5), u = ri(1, 4);
     const F = x => a * x * x * x / 3 + b * x * x / 2 + c * x;
@@ -358,6 +376,25 @@ function genMaDefInt(){
     return { q:'Find the area between the x-axis and <b>y = (x − ' + p + ')(' + q + ' − x)</b>, between its two x-intercepts.',
       input:true, answer:rd(area, 4), accept:qty(area, { tol:0.02 }), data:{ kind:'parabola', p, q },
       note:'The intercepts are x = ' + p + ' and x = ' + q + '. The area of this shape is (b − a)³/6 = (' + (q - p) + ')³/6 = ' + rd(area, 4) + ' square units.' };
+  }
+  if (k === 3){                                   // the polynomial again, as multiple choice
+    const a = ri(1, 4) * 3, b = ri(1, 5) * 2, c = ri(-5, 5), u = ri(1, 4);
+    const F = x => a * x * x * x / 3 + b * x * x / 2 + c * x;
+    const val = F(u) - F(0);
+    const m = numMC(val, [a * Math.pow(u, 3) + b * u * u + c * u, a * Math.pow(u, 3) / 3 + b * u * u + c * u,
+                          a * u * u + b * u + c, 2 * a * u + b, -val, F(u) - F(1)]);
+    return { q:'What is the value of <b>∫₀' + sup(u) + ' (' + a + 'x² + ' + b + 'x' + plusTerm(c, '') + ') dx</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'poly', a, b, c, u },
+      note:'The antiderivative is ' + xTerm(a / 3, 'x³') + ' + ' + xTerm(b / 2, 'x²') + plusTerm(c, 'x') + '. At x = ' + u + ' it is ' + neg(val) + ', and at x = 0 it is 0, so the integral is ' + neg(val) + '. Forgetting to divide by the new powers is the usual slip.' };
+  }
+  if (k === 4){                                   // a parabola given expanded, so the roots come first
+    const p = ri(1, 5), L = ri(2, 5), q = p + L;
+    const area = Math.pow(L, 3) / 6;
+    const G = x => -x * x * x / 3 + (p + q) * x * x / 2 - p * q * x;
+    const m = numMC(area, [-area, G(q), Math.pow(L, 3) / 3, Math.pow(L, 3) / 2, L * L]);
+    return { q:'What is the area of the region enclosed by <b>y = −x² + ' + (p + q) + 'x − ' + (p * q) + '</b> and the x-axis, in square units?',
+      choices:m.choices, answer:m.answer, data:{ kind:'parabola', p, q },
+      note:'Factorise first: y = (x − ' + p + ')(' + q + ' − x), so the curve cuts the axis at x = ' + p + ' and x = ' + q + ' and is above it in between. ∫' + sub(p) + sup(q) + ' y dx = ' + rd(area, 4) + ' square units. Integrating from 0 instead of from ' + p + ' takes in a piece below the axis.' };
   }
   /* area between a line and a parabola */
   const m0 = ri(1, 4), c0 = ri(1, 6);             // y = x², y = m0 x + c0 meet where x² − m0x − c0 = 0
@@ -383,6 +420,15 @@ function genMaTrap(){
   let est = fn.f(a) + fn.f(b);
   for (let i = 1; i < n; i++) est += 2 * fn.f(a + i * h);
   est *= h / 2;
+  if (Math.random() < 0.3){                       // the estimate, as multiple choice
+    const exact = { '√x':x => 2 / 3 * Math.pow(x, 1.5), 'x²':x => x * x * x / 3, '1/x':Math.log, 'ln x':x => x * Math.log(x) - x }[fn.s];
+    let all = 0;
+    for (let i = 0; i <= n; i++) all += fn.f(a + i * h);
+    const m = numMC(est, [2 * est, all * h / 2, (b - a) / 2 * (fn.f(a) + fn.f(b)), exact(b) - exact(a), all * h], 3);
+    return { q:'The trapezoidal rule with <b>' + n + ' subintervals</b> is used to estimate <b>∫' + sub(a) + sup(b) + ' ' + fn.s + ' dx</b>. What estimate does it give, to 3 decimal places?',
+      choices:m.choices, answer:m.answer, data:{ kind:'trap', fn:fn.s, a, b, n },
+      note:'h = ' + h + '. The end values count once and the ones between count twice, and the total is multiplied by h/2: ' + rd(est, 3) + '. The exact value is ' + rd(exact(b) - exact(a), 3) + ', so the estimate is a little ' + (fn.concaveUp ? 'high, because the curve bends upwards.' : 'low, because the curve bends downwards.') };
+  }
   if (Math.random() < 0.65){
     return { q:'Use the trapezoidal rule with <b>' + n + ' subintervals</b> to estimate <b>∫' + sub(a) + sup(b) + ' ' + fn.s + ' dx</b>, to 3 decimal places.',
       input:true, answer:rd(est, 3), accept:qty(est, { tol:0.005 }), data:{ kind:'trap', fn:fn.s, a, b, n },
@@ -494,7 +540,7 @@ function genMaDiscRV(){
   const E2 = xs.reduce((s, x, i) => s + x * x * ps[i], 0);
   const Var = E2 - E * E;
   const table = '<div class="rvcode">x      ' + xs.join('    ') + '\nP(X=x)  ' + ps.map(p => rd(p, 2)).join(' ') + '</div>';
-  const k = ri(0, 2);
+  const k = ri(0, 4);
   if (k === 0){
     return { q:'A discrete random variable has this distribution. Find <b>E(X)</b>.' + table,
       input:true, answer:rd(E, 3), accept:qty(E, { tol:0.01 }), data:{ kind:'E', xs, ps },
@@ -504,6 +550,19 @@ function genMaDiscRV(){
     return { q:'A discrete random variable has this distribution. Find <b>Var(X)</b>, to 3 decimal places.' + table,
       input:true, answer:rd(Var, 3), accept:qty(Var, { tol:0.01 }), data:{ kind:'Var', xs, ps },
       note:'Var(X) = E(X²) − [E(X)]² = ' + rd(E2, 3) + ' − ' + rd(E * E, 3) + ' = ' + rd(Var, 3) + '.' };
+  }
+  if (k === 3){                                   // the expected value, as multiple choice
+    const m = numMC(E, [1.5, E2, Var, 3 * ps[3], E + ps[0]]);
+    return { q:'The table shows the probability distribution of a discrete random variable X. What is the <b>expected value</b> of X?' + table,
+      choices:m.choices, answer:m.answer, data:{ kind:'E', xs, ps },
+      note:'E(X) = Σ x P(X = x) = ' + xs.map((x, i) => x + '×' + rd(ps[i], 2)).join(' + ') + ' = ' + rd(E, 2) + '. Averaging the x values alone gives 1.5, which ignores how likely each one is.' };
+  }
+  if (k === 4){                                   // the variance, as multiple choice
+    const m = numMC(Var, [E2, Math.sqrt(Var), E2 - E, E * E, E2 + E * E, E,
+                          xs.reduce((s, x) => s + (x - E) * (x - E), 0) / xs.length], 4);
+    return { q:'The table shows the probability distribution of a discrete random variable X. What is the <b>variance</b> of X?' + table,
+      choices:m.choices, answer:m.answer, data:{ kind:'Var', xs, ps },
+      note:'E(X) = ' + rd(E, 2) + ' and E(X²) = ' + rd(E2, 2) + ', so Var(X) = E(X²) − [E(X)]² = ' + rd(E2, 2) + ' − ' + rd(E * E, 4) + ' = ' + rd(Var, 4) + '. E(X²) on its own is not the variance, and its square root is the standard deviation.' };
   }
   const cut = ri(1, 2);
   const p = ps.filter((_, i) => xs[i] >= cut).reduce((s, x) => s + x, 0);
@@ -565,7 +624,7 @@ function genMaContRV(){
 
 /* ── Financial mathematics: compound interest ──────────────────────────── */
 function genMaCompound(){
-  const k = ri(0, 2);
+  const k = ri(0, 4);
   const P = ri(2, 20) * 500, pct = pk([2, 2.5, 3, 4, 5, 6, 7.5]), n = ri(3, 15);
   if (k === 0){
     const A = P * Math.pow(1 + pct / 100, n);
@@ -579,6 +638,21 @@ function genMaCompound(){
       input:true, answer:rd(A, 2), accept:moneyQ(A, Math.max(0.5, A * 0.002)), data:{ kind:'fv-monthly', P, pct, n },
       note:'Use the monthly rate and the number of months: ' + P + ' × (1 + ' + rd(pct / 100 / 12, 6) + ')' + sup(n * 12) + ' = ' + money(A) + '.' };
   }
+  if (k === 3){                                   // monthly compounding, as multiple choice
+    const r = pct / 100, A = P * Math.pow(1 + r / 12, n * 12);
+    const m = moneyMC(A, [P * Math.pow(1 + r, n), P * Math.pow(1 + r / 12, n), P * (1 + r * n), A - P]);
+    return { q:'<b>' + money(P) + '</b> is invested for <b>' + n + ' years</b> at <b>' + pct + '% per annum, compounded monthly</b>. What is the investment worth at the end?',
+      choices:m.choices, answer:m.answer, data:{ kind:'fv-monthly', P, pct, n },
+      note:'Monthly compounding applies ' + pct + '% ÷ 12 in each of ' + (n * 12) + ' months: ' + P + ' × (1 + ' + rd(r / 12, 6) + ')' + sup(n * 12) + ' = ' + money(A) + '. Compounding yearly gives ' + money(P * Math.pow(1 + r, n)) + ', a little less.' };
+  }
+  if (k === 4){                                   // reducing balance, as multiple choice
+    const dep = pk([10, 12.5, 15, 20, 25]), yrs = ri(3, 8);
+    const V = P * Math.pow(1 - dep / 100, yrs);
+    const m = moneyMC(V, [P * (1 - dep / 100 * yrs), P * Math.pow(1 - dep / 100, yrs - 1), P - V, P * Math.pow(1 + dep / 100, yrs)].filter(w => w > 0));
+    return { q:pk(['A car', 'A boat', 'A tractor', 'A printing press']) + ' bought for <b>' + money(P) + '</b> loses <b>' + dep + '%</b> of its value each year, on a reducing balance. What is it worth after <b>' + yrs + ' years</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'dep', P, dep, yrs },
+      note:'S = V₀(1 − r)ⁿ = ' + P + ' × ' + rd(1 - dep / 100, 4) + sup(yrs) + ' = ' + money(V) + '. Taking ' + dep + '% of the original price off every year is straight-line depreciation, which is a different model.' };
+  }
   const dep = pk([10, 12.5, 15, 20, 25]), yrs = ri(3, 8);
   const V = P * Math.pow(1 - dep / 100, yrs);
   return { q:'A machine worth ' + money(P) + ' depreciates by <b>' + dep + '% a year</b>. What is it worth after <b>' + yrs + ' years</b>?',
@@ -588,7 +662,7 @@ function genMaCompound(){
 
 /* ── Financial mathematics: annuities and loans ────────────────────────── */
 function genMaAnnuity(){
-  const k = ri(0, 2);
+  const k = ri(0, 4);
   if (k === 0){                                   // future value of an annuity
     const M = ri(2, 20) * 100, pct = pk([3, 4, 5, 6]), n = ri(5, 25), r = pct / 100;
     const FV = M * (Math.pow(1 + r, n) - 1) / r;
@@ -603,6 +677,23 @@ function genMaAnnuity(){
     return { q:'A ' + money(P) + ' loan is taken over <b>' + n + ' years</b> at <b>' + pct + '% per annum, compounded monthly</b>. What is the monthly repayment?',
       input:true, answer:rd(M, 2), accept:moneyQ(M, Math.max(1, M * 0.005)), data:{ kind:'loan', P, pct, n },
       note:'With r = ' + rd(r, 6) + ' per month over ' + N + ' months, M = Pr(1 + r)ᴺ/[(1 + r)ᴺ − 1] = ' + money(M) + '.' };
+  }
+  if (k === 3){                                   // future value of an annuity, as multiple choice
+    const M = ri(2, 20) * 100, pct = pk([3, 4, 5, 6]), n = ri(5, 25), r = pct / 100;
+    const FV = M * (Math.pow(1 + r, n) - 1) / r;
+    const m = moneyMC(FV, [M * n, FV * (1 + r), M * Math.pow(1 + r, n), M * (Math.pow(1 + r, n - 1) - 1) / r]);
+    return { q:'At the <b>end</b> of each year for <b>' + n + ' years</b>, ' + money(M) + ' is deposited into an account earning <b>' + pct + '% per annum</b>, compounded annually. What is the balance straight after the last deposit?',
+      choices:m.choices, answer:m.answer, data:{ kind:'annuity', M, pct, n },
+      note:'The last deposit earns nothing and the first earns ' + (n - 1) + ' years of interest, so the balance is the geometric series M + M(1.0' + pct + ') + … + M(1.0' + pct + ')' + sup(n - 1) + ' = M[(1 + r)ⁿ − 1]/r = ' + money(FV) + '. Deposits at the start of each year would give ' + money(FV * (1 + r)) + '.' };
+  }
+  if (k === 4){                                   // loan repayment, as multiple choice
+    const P = ri(4, 40) * 10000, pct = pk([4, 5, 6, 7]), n = pk([10, 15, 20, 25]);
+    const r = pct / 100 / 12, N = n * 12;
+    const M = P * r * Math.pow(1 + r, N) / (Math.pow(1 + r, N) - 1);
+    const m = moneyMC(M, [P / N, P * (1 + pct / 100 * n) / N, P * r, M * 12, P * Math.pow(1 + pct / 100, n) / N]);
+    return { q:'A loan of <b>' + money(P) + '</b> is repaid in equal monthly instalments over <b>' + n + ' years</b>, with interest at <b>' + pct + '% per annum</b> compounded monthly. What is each instalment?',
+      choices:m.choices, answer:m.answer, data:{ kind:'loan', P, pct, n },
+      note:'r = ' + pct + '/1200 per month and N = ' + N + ' months, so M = Pr(1 + r)ᴺ/[(1 + r)ᴺ − 1] = ' + money(M) + '. ' + money(P * r) + ' would only cover the first month’s interest.' };
   }
   /* amount still owing partway through */
   const P = ri(2, 20) * 10000, pct = pk([5, 6, 8]), yrs = pk([5, 10]), paid = ri(1, yrs - 1);
@@ -821,7 +912,7 @@ function genE1VecBasic(){
 
 /* ── Vectors: operating with them ───────────────────────────────────────── */
 function genE1VecOps(){
-  const k = ri(0, 4);
+  const k = ri(0, 7);
   const a = [nzr(-6, 6), nzr(-6, 6)], b = [nzr(-6, 6), nzr(-6, 6)];
   while (a[0] * b[1] - a[1] * b[0] === 0) b[1] = nzr(-6, 6);      // never parallel: the angle would be 0° or 180°
   const dot = a[0] * b[0] + a[1] * b[1];
@@ -851,6 +942,36 @@ function genE1VecOps(){
       input:true, answer:lam, accept:qty(lam, { tol:0.01 }), data:{ kind:'para', p, q, s },
       note:'The second is ' + s + ' times the first, so both components scale: λ = ' + s + ' × ' + q + ' = ' + lam + '.' };
   }
+  if (k === 5){                                   // the angle at the origin, as multiple choice
+    const ma = Math.hypot(a[0], a[1]), mb = Math.hypot(b[0], b[1]);
+    const deg = r => Math.acos(Math.max(-1, Math.min(1, r))) * 180 / Math.PI;
+    const ang = deg(dot / (ma * mb));
+    const m = numMC(ang, [180 - ang, ang * Math.PI / 180, deg((a[0] * b[1] + a[1] * b[0]) / (ma * mb)),
+                          deg((a[0] * b[0] - a[1] * b[1]) / (ma * mb)), Math.abs(90 - ang), 360 - ang], 1);
+    return { q:'Points A and B have position vectors <b>OA = ' + vecStr(a[0], a[1]) + '</b> and <b>OB = ' + vecStr(b[0], b[1]) + '</b>. What is the size of <b>∠AOB</b>, in degrees correct to 1 decimal place?',
+      choices:m.choices, answer:m.answer, data:{ kind:'angle', a, b },
+      note:'∠AOB is the angle between OA and OB, so cos θ = (OA · OB)/(|OA||OB|) = ' + neg(dot) + '/(' + rd(ma, 3) + ' × ' + rd(mb, 3) + ') and θ = ' + rd(ang, 1) + '°. '
+        + (dot < 0 ? 'The dot product is negative, so the angle is obtuse.' : dot > 0 ? 'The dot product is positive, so the angle is acute.' : 'The dot product is zero, so OA and OB are perpendicular.')
+        + ' A calculator left in radians gives ' + rd(ang * Math.PI / 180, 1) + ' instead.' };
+  }
+  if (k === 6){                                   // perpendicular, as multiple choice, with a whole-number λ
+    const p = nzr(-5, 5), q = nzr(-4, 4), c = nzr(-3, 3), r = q * c, lam = -p * c;   // pr + qλ = pqc − qpc = 0
+    const m = numMC(lam, [p * c, q * q * c / p, -q * q * c / p, r, -r, -(p + r) / q, (p + r) / q, c, -c,
+                          2 * lam, -2 * lam]);   // the last two only when every slip above lands on ±1
+    return { q:'For which value of λ are the vectors <b>u = ' + vecStr(p, q) + '</b> and <b>v = ' + neg(xTerm(r, 'i')) + ' + λj</b> perpendicular?',
+      choices:m.choices, answer:m.answer, data:{ kind:'perp', p, q, r },
+      note:'Perpendicular means u · v = 0: (' + neg(p) + ')(' + neg(r) + ') + (' + neg(q) + ')λ = 0, so ' + neg(p * r) + plusTerm(q, 'λ') + ' = 0 and λ = ' + neg(lam) + '. '
+        + 'Making the components proportional instead would give the parallel vector.' };
+  }
+  if (k === 7){                                   // scalar projection, as multiple choice
+    while (a[0] * b[0] + a[1] * b[1] === 0 || a[0] * b[1] - a[1] * b[0] === 0) b[1] = nzr(-6, 6);   // a zero dot product collapses the options
+    const d = a[0] * b[0] + a[1] * b[1], ma = Math.hypot(a[0], a[1]), mb = Math.hypot(b[0], b[1]), pr = d / mb;
+    const m = numMC(pr, [d / ma, d / (mb * mb), d, -pr]);
+    return { q:'What is the <b>scalar projection</b> of ' + vecStr(a[0], a[1]) + ' in the direction of ' + vecStr(b[0], b[1]) + ', correct to 2 decimal places?',
+      choices:m.choices, answer:m.answer, data:{ kind:'proj', a, b },
+      note:'Divide the dot product by the length of the vector you are projecting onto: ' + neg(d) + '/|' + vecStr(b[0], b[1]) + '| = ' + neg(d) + '/' + rd(mb, 3) + ' = ' + neg(rd(pr, 2)) + '. '
+        + 'Dividing by ' + rd(mb * mb, 0) + ' instead gives the multiple of b in the vector projection, not its length.' };
+  }
   const mb = Math.sqrt(b[0] * b[0] + b[1] * b[1]);   // scalar projection
   const proj = dot / mb;
   return { q:'Find the <b>scalar projection</b> of a = ' + vecStr(a[0], a[1]) + ' onto b = ' + vecStr(b[0], b[1]) + ', to 2 decimal places.',
@@ -864,7 +985,7 @@ function genE1Proj(){
   const g = 9.8, V = ri(10, 50), deg = pk([15, 20, 25, 30, 35, 40, 45, 50, 60, 65, 70]);
   const th = deg * Math.PI / 180, vx = V * Math.cos(th), vy = V * Math.sin(th);
   const lead = 'A projectile is fired from the ground at <b>' + V + ' m s' + sup(-1) + '</b>, at <b>' + deg + '°</b> to the horizontal. Take g = 9.8 m s' + sup(-2) + '. ';
-  const k = ri(0, 5);
+  const k = ri(0, 7);
   if (k === 0){
     const T = 2 * vy / g;
     return { q:lead + 'How long is it in the <b>air</b>, in seconds to 2 decimal places?',
@@ -895,6 +1016,27 @@ function genE1Proj(){
     return { q:lead + 'What is its <b>speed</b> after <b>' + t + ' s</b>, in m s' + sup(-1) + ' to 2 decimal places?',
       input:true, answer:rd(sp, 2), accept:qty(sp, { tol:0.02, dim:'speed' }), data:{ kind:'speed', V, deg, g, t },
       note:'The horizontal part stays at ' + rd(vx, 3) + '; the vertical part is ' + rd(vy, 3) + ' − 9.8 × ' + t + ' = ' + neg(rd(vyt, 3)) + '. Speed is √(ẋ² + ẏ²) = ' + rd(sp, 2) + '.' };
+  }
+  /* the same launch in an everyday setting, for the multiple-choice versions,
+     with nothing thrown by hand faster than a person could manage */
+  const thing = V <= 25 ? pk(['A golf ball is struck', 'A soccer ball is kicked', 'A stone is thrown'])
+                        : pk(['A golf ball is struck', 'A cricket ball is hit', 'A ball is fired from a launcher']);
+  const ctx = thing + ' from level ground at <b>' + V + ' m s' + sup(-1) + '</b>, at <b>' + deg + '°</b> above the horizontal. Ignore air resistance and take g = 9.8 m s' + sup(-2) + '. ';
+  if (k === 6){                                   // range, as multiple choice
+    const R = V * V * Math.sin(2 * th) / g;
+    const m = numMC(R, [R / 2, V * V * Math.sin(th) / g, 2 * R, V * V / g, V * V * Math.cos(th) / g], 1);
+    return { q:ctx + 'How far from its starting point does it land, in metres correct to 1 decimal place?',
+      choices:m.choices, answer:m.answer, data:{ kind:'range', V, deg, g },
+      note:'It lands when y = 0, at t = 2V sin θ/g = ' + rd(2 * vy / g, 3) + ' s. Then x = V cos θ · t = V²sin 2θ/g = ' + rd(R, 1) + ' m. '
+        + 'Using the time to the top, V sin θ/g, gives only half the range, ' + rd(R / 2, 1) + ' m.' };
+  }
+  if (k === 7){                                   // greatest height, as multiple choice
+    const H = vy * vy / (2 * g);
+    const m = numMC(H, [vy * vy / g, V * V * Math.sin(th) / (2 * g), V * V / (2 * g), vx * vx / (2 * g), H / 2], 1);
+    return { q:ctx + 'What is its <b>greatest height</b>, in metres correct to 1 decimal place?',
+      choices:m.choices, answer:m.answer, data:{ kind:'maxh', V, deg, g },
+      note:'At the top ẏ = 0, so V sin θ = gt and t = ' + rd(vy / g, 3) + ' s. Putting that into y = V sin θ · t − ½gt² gives H = V²sin²θ/(2g) = ' + rd(H, 1) + ' m. '
+        + 'Only the vertical component counts: V²/(2g) = ' + rd(V * V / (2 * g), 1) + ' m would be the height of a throw straight up.' };
   }
   const m = mc('The vertical component of the velocity is zero.',
     ['The speed is zero.', 'The acceleration is zero.', 'The horizontal component of the velocity is zero.',
@@ -1200,7 +1342,7 @@ function genE1DiffEq(){
 
 /* ── Further applications of calculus: related rates ────────────────────── */
 function genE1Rates(){
-  const k = ri(0, 5);
+  const k = ri(0, 7);
   if (k === 0){                                   // a sphere being inflated
     const rate = ri(10, 60), r = ri(2, 9);
     const dr = rate / (4 * Math.PI * r * r);
@@ -1236,6 +1378,24 @@ function genE1Rates(){
     return { q:'A <b>' + L + ' m</b> ladder leans on a wall. Its foot slides away from the wall at <b>' + dx + ' m s' + sup(-1) + '</b>. How fast is the top sliding <b>down</b> when the foot is <b>' + x + ' m</b> from the wall? Give a positive number, in m s' + sup(-1) + ' to 4 decimal places.',
       input:true, answer:rd(-dy, 4), accept:qty(-dy, { tol:0.0005 }), data:{ kind:'rate-ladder', x, y, L, dx },
       note:'x² + y² = ' + (L * L) + ', so 2x dx/dt + 2y dy/dt = 0. With y = ' + y + ', dy/dt = −(' + x + '/' + y + ')(' + dx + ') = ' + neg(rd(dy, 4)) + ', i.e. ' + rd(-dy, 4) + ' downwards.' };
+  }
+  if (k === 6){                                   // a spreading ripple, as multiple choice
+    const dr = rd(ri(5, 30) / 10, 1), r = ri(3, 15);
+    const dA = 2 * Math.PI * r * dr;
+    const m = numMC(dA, [Math.PI * r * r * dr, Math.PI * r * dr, 2 * Math.PI * dr, 2 * r * dr], 1);
+    return { q:'A stone dropped into a still pond sends out a circular ripple whose radius grows at <b>' + dr + ' m s' + sup(-1) + '</b>. How fast is the area inside the ripple growing when the radius is <b>' + r + ' m</b>, in m² s' + sup(-1) + ' correct to 1 decimal place?',
+      choices:m.choices, answer:m.answer, data:{ kind:'rate-circle', dr, r },
+      note:'A = πr², so dA/dr = 2πr and dA/dt = dA/dr × dr/dt = 2π × ' + r + ' × ' + dr + ' = ' + rd(dA, 1) + '. '
+        + 'Multiplying the area itself by dr/dt gives ' + rd(Math.PI * r * r * dr, 1) + ', which skips the derivative.' };
+  }
+  if (k === 7){                                   // the sliding ladder, as multiple choice
+    const t = pk(E1_TRIP2), dx = rd(ri(2, 9) / 10, 1);
+    const x = t[0], y = t[1], L = t[2], down = x / y * dx;
+    const m = numMC(down, [y / x * dx, dx, x / L * dx, L / y * dx, y / L * dx], 3);
+    return { q:'The foot of a <b>' + L + ' m</b> ladder is pulled away from a vertical wall at <b>' + dx + ' m s' + sup(-1) + '</b>, and the top slides down the wall. At what speed is the top moving when the foot is <b>' + x + ' m</b> from the wall, in m s' + sup(-1) + ' correct to 3 decimal places?',
+      choices:m.choices, answer:m.answer, data:{ kind:'rate-ladder', x, y, L, dx },
+      note:'With the foot x m out and the top y m up, x² + y² = ' + (L * L) + ', so 2x dx/dt + 2y dy/dt = 0. When x = ' + x + ', y = ' + y + ', and dy/dt = −(' + x + '/' + y + ') × ' + dx + ' = ' + neg(rd(-down, 3)) + '. '
+        + 'The top moves at ' + rd(down, 3) + ' m s' + sup(-1) + '. Swapping x and y gives ' + rd(y / x * dx, 3) + ', the speed the top would have if the foot were ' + y + ' m out.' };
   }
   const m = mc('dV/dt = dV/dr × dr/dt', ['dV/dt = dV/dr + dr/dt', 'dV/dt = dr/dt ÷ dV/dr',
     'dV/dr = dV/dt × dr/dt', 'dr/dt = dV/dt × dV/dr']);
@@ -1300,7 +1460,7 @@ function genE1Vol(){
 
 /* ── Bernoulli distributions ────────────────────────────────────────────── */
 function genE1Bern(){
-  const k = ri(0, 4), num = ri(1, 9), p = num / 10;
+  const k = ri(0, 6), num = ri(1, 9), p = num / 10;
   if (k === 0){
     return { q:'A Bernoulli random variable has <b>p = ' + p + '</b>. Find its <b>mean</b>.',
       input:true, answer:p, accept:qty(p, { tol:0.005 }), data:{ kind:'bern-mean', p },
@@ -1324,6 +1484,25 @@ function genE1Bern(){
       input:true, answer:rd(q0, 2), accept:qty(q0, { tol:0.005 }), data:{ kind:'bern-fail', p },
       note:'There are only two outcomes, so P(X = 0) = 1 − ' + p + ' = ' + rd(q0, 2) + '.' };
   }
+  if (k === 5){                                   // a variance in context, as multiple choice
+    const pp = pk([ri(2, 45), ri(55, 98)]) / 100, v = pp * (1 - pp);
+    const ctx = pk([
+      'Each item from a production line is faulty with probability <b>' + pp + '</b>. X = 1 if an item chosen at random is faulty, and X = 0 if it is not.',
+      'A basketballer makes a free throw with probability <b>' + pp + '</b>. X = 1 if the next throw goes in, and X = 0 if it misses.',
+      'A seed germinates with probability <b>' + pp + '</b>. X = 1 if a particular seed germinates, and X = 0 if it does not.',
+      'A proportion <b>' + pp + '</b> of voters support a proposal. X = 1 if a voter chosen at random supports it, and X = 0 otherwise.']);
+    const m = numMC(v, [pp, pp * pp, Math.sqrt(v), 1 - pp], 4);
+    return { q:ctx + ' What is <b>Var(X)</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'bern-var', p:pp },
+      note:'X is Bernoulli with p = ' + pp + ', so Var(X) = p(1 − p) = ' + pp + ' × ' + rd(1 - pp, 2) + ' = ' + rd(v, 4) + '. The mean is p itself, and the standard deviation is √' + rd(v, 4) + '.' };
+  }
+  if (k === 6){                                   // p back from the variance
+    const pp = pk([ri(2, 45), ri(55, 98)]) / 100, v = rd(pp * (1 - pp), 4), big = pp > 0.5;
+    const m = numMC(pp, [1 - pp, v, Math.sqrt(v), 1 - v], 4);
+    return { q:'A Bernoulli random variable has variance <b>' + v + '</b>, and its probability of success is ' + (big ? 'more' : 'less') + ' than ½. What is <b>p</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'bern-mean', p:pp },
+      note:'p(1 − p) = ' + v + ' gives p² − p + ' + v + ' = 0, so p = ' + rd(Math.min(pp, 1 - pp), 2) + ' or p = ' + rd(Math.max(pp, 1 - pp), 2) + '. The two roots add to 1, and the condition picks p = ' + pp + '.' };
+  }
   const m = mc('One attempt at a free throw, counting it as in or out.',
     ['The number of free throws made out of twenty.', 'The time taken to make ten free throws.',
      'The number of attempts needed before the first one goes in.', 'The average score over a season.']);
@@ -1334,7 +1513,7 @@ function genE1Bern(){
 
 /* ── The binomial distribution ──────────────────────────────────────────── */
 function genE1Binom(){
-  const k = ri(0, 5), n = ri(5, 20), num = ri(1, 9), p = num / 10, q0 = 1 - p;
+  const k = ri(0, 7), n = ri(5, 20), num = ri(1, 9), p = num / 10, q0 = 1 - p;
   if (k === 0){
     const x = ri(1, Math.min(n - 1, 6));
     const pr = nCr(n, x) * Math.pow(p, x) * Math.pow(q0, n - x);
@@ -1366,6 +1545,33 @@ function genE1Binom(){
       input:true, answer:rd(pr, 4), accept:qty(pr, { tol:0.0005 }), data:{ kind:'binom-atmost1', n, p },
       note:'P(X = 0) + P(X = 1) = ' + rd(q0, 2) + sup(n) + ' + ' + n + '×' + p + '×' + rd(q0, 2) + sup(n - 1) + ' = ' + rd(pr, 4) + '.' };
   }
+  if (k === 6){                                   // an exact count in context, as multiple choice
+    const nn = ri(5, 12), x = Math.max(1, Math.min(nn - 1, Math.round(nn * p) + ri(-1, 1)));
+    const P = j => nCr(nn, j) * Math.pow(p, j) * Math.pow(q0, nn - j);
+    const pr = P(x);
+    const ctx = pk([
+      'Each seed in a packet germinates with probability <b>' + p + '</b>, independently of the others. If <b>' + nn + '</b> seeds are planted, what is the probability that exactly <b>' + x + '</b> germinate?',
+      'A basketballer makes each free throw with probability <b>' + p + '</b>, independently. In <b>' + nn + '</b> throws, what is the probability of making exactly <b>' + x + '</b>?',
+      'Each bulb from a factory is faulty with probability <b>' + p + '</b>, independently. In a box of <b>' + nn + '</b> bulbs, what is the probability that exactly <b>' + x + '</b> are faulty?',
+      'A tennis player wins each point on serve with probability <b>' + p + '</b>, independently. Over <b>' + nn + '</b> service points, what is the probability of winning exactly <b>' + x + '</b>?']);
+    const m = numMC(pr, [nCr(nn, x) * Math.pow(p, x), Math.pow(p, x) * Math.pow(q0, nn - x), nCr(nn, x) * Math.pow(q0, x) * Math.pow(p, nn - x),
+                         P(x + 1), P(x - 1), 1 - pr].filter(w => w <= 1), 4);
+    return { q:ctx + ' Give 4 decimal places.',
+      choices:m.choices, answer:m.answer, data:{ kind:'binom-pmf', n:nn, p, x },
+      note:'X ~ Bin(' + nn + ', ' + p + '), so P(X = ' + x + ') = C(' + nn + ', ' + x + ') × ' + p + sup(x) + ' × ' + rd(q0, 2) + sup(nn - x) + ' = ' + rd(pr, 4) + '. Leaving out C(' + nn + ', ' + x + ') counts only one order of the successes.' };
+  }
+  if (k === 7){                                   // at least one, in context, as multiple choice
+    const pl = pk([0.05, 0.1, 0.15, 0.2, 0.25, 0.3]), ql = rd(1 - pl, 2), nl = ri(3, 12);   // small p, so the answer is not just 1
+    const pr = 1 - Math.pow(ql, nl);
+    const ctx = pk([
+      'Each scratch card wins a prize with probability <b>' + pl + '</b>, independently. If <b>' + nl + '</b> cards are bought, what is the probability of at least one prize?',
+      'Each item made by a machine is defective with probability <b>' + pl + '</b>, independently. In a sample of <b>' + nl + '</b> items, what is the probability that at least one is defective?',
+      'An archer hits the target with probability <b>' + pl + '</b> on each shot, independently. In <b>' + nl + '</b> shots, what is the probability of at least one hit?']);
+    const m = numMC(pr, [Math.pow(ql, nl), 1 - Math.pow(pl, nl), nl * pl * Math.pow(ql, nl - 1), 1 - Math.pow(ql, nl - 1), Math.pow(pl, nl)], 4);
+    return { q:ctx + ' Give 4 decimal places.',
+      choices:m.choices, answer:m.answer, data:{ kind:'binom-atleast1', n:nl, p:pl },
+      note:'Go by the complement: P(X ≥ 1) = 1 − P(X = 0) = 1 − ' + ql + sup(nl) + ' = ' + rd(pr, 4) + '. ' + ql + sup(nl) + ' on its own is the chance of none at all.' };
+  }
   const m = mc('A fixed number of independent trials, each with the same two outcomes and the same probability.',
     ['Trials that continue until the first success.',
      'Trials whose probability of success changes as they go.',
@@ -1378,7 +1584,7 @@ function genE1Binom(){
 
 /* ── The sampling distribution of the mean ──────────────────────────────── */
 function genE1SampMean(){
-  const k = ri(0, 4), mu = ri(20, 120), sd = ri(2, 20), n = pk([4, 9, 16, 25, 36, 49, 64, 100]);
+  const k = ri(0, 6), mu = ri(20, 120), sd = ri(2, 20), n = pk([4, 9, 16, 25, 36, 49, 64, 100]);
   const se = sd / Math.sqrt(n);
   if (k === 0){
     return { q:'A population has mean <b>' + mu + '</b> and standard deviation <b>' + sd + '</b>. Samples of size <b>' + n + '</b> are taken. What is the <b>standard deviation of the sample mean</b>, to 4 decimal places?',
@@ -1403,6 +1609,22 @@ function genE1SampMean(){
     return { q:'A population has standard deviation <b>' + sd + '</b>. How large must a sample be for the <b>standard deviation of the sample mean</b> to be at most <b>' + target + '</b>?',
       input:true, answer:need, accept:qty(need, { tol:0.4 }), data:{ kind:'samp-size', sd, target },
       note:'σ/√n ≤ ' + target + ' means √n ≥ ' + sd + '/' + target + ', so n ≥ ' + rd(Math.pow(sd / target, 2), 2) + ' and the smallest whole sample is ' + need + '.' };
+  }
+  if (k === 5){                                   // the standard error in context, as multiple choice
+    const what = pk(['times taken to finish a puzzle, in seconds,', 'lengths of a species of fish, in millimetres,',
+                     'scores on a test marked out of 150', 'masses of eggs from a farm, in grams,']);
+    const m = numMC(se, [sd / n, sd, sd * Math.sqrt(n), sd * sd / n], 4);
+    return { q:'The ' + what + ' have mean <b>' + mu + '</b> and standard deviation <b>' + sd + '</b>. Random samples of size <b>' + n + '</b> are taken. What is the standard deviation of the distribution of sample means?',
+      choices:m.choices, answer:m.answer, data:{ kind:'samp-se', sd, n },
+      note:'The sample mean has standard deviation σ/√n = ' + sd + '/√' + n + ' = ' + sd + '/' + Math.sqrt(n) + ' = ' + rd(se, 4) + '. Dividing by n instead of √n shrinks it far too much.' };
+  }
+  if (k === 6){                                   // a z-score for a sample mean, as multiple choice
+    const xb = rd(mu + pk([-2, -1.5, -1, 1, 1.5, 2]) * se, 4);
+    const z = (xb - mu) / se;
+    const m = numMC(z, [(xb - mu) / sd, (xb - mu) / (sd / n), -z], 3);
+    return { q:'A population has mean <b>' + mu + '</b> and standard deviation <b>' + sd + '</b>. A random sample of <b>' + n + '</b> has mean <b>' + xb + '</b>. What is the z-score of this sample mean?',
+      choices:m.choices, answer:m.answer, data:{ kind:'samp-z', mu, sd, n, xb },
+      note:'Standardise with the standard error, not σ: z = (x̄ − μ)/(σ/√n) = (' + xb + ' − ' + mu + ')/' + rd(se, 4) + ' = ' + neg(rd(z, 3)) + '. Using σ gives ' + neg(rd((xb - mu) / sd, 3)) + ', which treats the sample mean as if it were one observation.' };
   }
   const m = mc('It clusters more tightly around μ, and its shape gets closer to normal.',
     ['It clusters more tightly around μ, and its spread stays the same.',
@@ -2254,7 +2476,7 @@ function genE2Tech(){
 
 /* ── Mechanics: simple harmonic motion ──────────────────────────────────── */
 function genE2SHM(){
-  const k = ri(0, 5);
+  const k = ri(0, 7);
   const n = ri(2, 6), amp = ri(2, 9);
   if (k === 0){
     const T = 2 * Math.PI / n;
@@ -2288,7 +2510,20 @@ function genE2SHM(){
     const x = amp * Math.cos(n * t);
     return { q:'A particle has <b>x = ' + amp + ' cos(' + n + 't)</b>, with t in seconds. Find <b>x</b> when <b>t = ' + t + '</b>, to 4 decimal places.',
       input:true, answer:rd(x, 4), accept:qty(x, { tol:0.0005 }), data:{ kind:'shm-x', n, amp, t },
-      note:'Work in radians: ' + amp + ' cos(' + (n * t) + ') = ' + neg(rd(x, 4)) + '.' };
+      note:'Work in radians: ' + amp + ' cos(' + rd(n * t, 1) + ') = ' + neg(rd(x, 4)) + '.' };
+  }
+  if (k === 6){                                   // greatest speed, as multiple choice
+    const m = numMC(n * amp, [n * n * amp, n + amp, 2 * n * amp, n * amp * amp, amp, n * n * amp * amp]);
+    return { q:'A particle oscillates between <b>x = −' + amp + '</b> and <b>x = ' + amp + '</b>, with <b>ẍ = −' + (n * n) + 'x</b>. What is its greatest speed?',
+      choices:m.choices, answer:m.answer, data:{ kind:'shm-maxv', n, amp },
+      note:'The amplitude is ' + amp + ' and n = √' + (n * n) + ' = ' + n + '. From v² = n²(a² − x²), the speed is greatest at the centre x = 0, where v = na = ' + (n * amp) + '. Using n² = ' + (n * n) + ' in place of n is the slip to avoid.' };
+  }
+  if (k === 7){                                   // amplitude read out of v², as multiple choice
+    const A = n * n * amp * amp, B = n * n;
+    const m = numMC(amp, [2 * amp, amp * amp, n * amp, B, n, A, A / 2]);
+    return { q:'A particle in simple harmonic motion has <b>v² = ' + A + ' − ' + B + 'x²</b>. What is its <b>amplitude</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'shm-read', n, amp, want:'amp' },
+      note:'The particle turns round where v = 0: ' + B + 'x² = ' + A + ', so x² = ' + (amp * amp) + ' and the amplitude is ' + amp + '. ' + (n * amp) + ' is the greatest speed, not the amplitude.' };
   }
   const m = mc('The acceleration is proportional to the displacement from the centre and points back towards it.',
     ['The acceleration is constant.', 'The speed is constant.',
@@ -2301,7 +2536,7 @@ function genE2SHM(){
 
 /* ── Mechanics: resisted motion ─────────────────────────────────────────── */
 function genE2Resist(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   const g = 9.8, mass = ri(1, 9) * 10, kk = rd(ri(5, 40) / 10, 1);
   if (k === 0){                                   // terminal velocity, resistance proportional to v
     const v = mass * g / kk;
@@ -2323,6 +2558,20 @@ function genE2Resist(){
       input:true, answer:rd(v, 4), accept:qty(v, { tol:0.0005, dim:'speed' }), data:{ kind:'res-vt', k:kr, t, g },
       note:'Separating gives v = (9.8/' + kr + ')(1 − e^(−' + kr + 't)) = ' + rd(vT, 4) + '(1 − e^(−' + rd(kr * t, 4) + ')) = ' + rd(v, 4) + ', still short of the terminal ' + rd(vT, 4) + '.' };
   }
+  if (k === 4){                                   // terminal velocity, resistance kv, as multiple choice
+    const v = mass * g / kk;
+    const m = numMC(v, [g / kk, kk / (mass * g), Math.sqrt(mass * g / kk), mass * g * kk], 3);
+    return { q:'A body of mass <b>' + mass + ' kg</b> falls from rest. Air resistance is <b>' + kk + 'v</b> newtons at speed v m s' + sup(-1) + ', and g = 9.8 m s' + sup(-2) + '. What is its terminal velocity, in m s' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'res-term1', mass, k:kk, g },
+      note:'Newton’s second law gives ' + mass + 'v̇ = ' + mass + 'g − ' + kk + 'v, and the terminal velocity is where v̇ = 0: v = ' + mass + ' × 9.8/' + kk + ' = ' + rd(v, 3) + '. Treating ' + kk + 'v as an acceleration rather than a force gives ' + rd(g / kk, 3) + ' instead.' };
+  }
+  if (k === 5){                                   // terminal velocity, resistance kv², as multiple choice
+    const v = Math.sqrt(mass * g / kk);
+    const m = numMC(v, [mass * g / kk, Math.sqrt(g / kk), Math.sqrt(kk / (mass * g)), mass * g / (kk * kk)], 3);
+    return { q:'A body of mass <b>' + mass + ' kg</b> falls from rest against air resistance of <b>' + kk + 'v²</b> newtons, with g = 9.8 m s' + sup(-2) + '. What is its terminal velocity, in m s' + sup(-1) + '?',
+      choices:m.choices, answer:m.answer, data:{ kind:'res-term2', mass, k:kk, g },
+      note:'At terminal velocity the resistance balances the weight: ' + kk + 'v² = ' + mass + ' × 9.8, so v = √(' + rd(mass * g / kk, 3) + ') = ' + rd(v, 3) + '. Forgetting the square root gives ' + rd(mass * g / kk, 3) + '.' };
+  }
   const m = mc('It approaches a terminal velocity, never quite reaching it.',
     ['It keeps accelerating at a constant rate.', 'It slows down and stops.',
      'It reaches terminal velocity after a fixed time, then stays there exactly.',
@@ -2334,7 +2583,7 @@ function genE2Resist(){
 
 /* ── Mechanics: acceleration as a function of displacement ──────────────── */
 function genE2Mech(){
-  const k = ri(0, 3);
+  const k = ri(0, 5);
   if (k === 0){                                   // ẍ = d(½v²)/dx
     const A = ri(2, 9), B = ri(1, 9), x = ri(1, 5);
     const acc = -A * x;                           // v² = C − A x² ⇒ ½v² = C/2 − Ax²/2 ⇒ ẍ = −Ax
@@ -2355,6 +2604,22 @@ function genE2Mech(){
     return { q:'A particle has constant acceleration <b>' + A + ' m s' + sup(-2) + '</b>. It passes <b>x = ' + x0 + ' m</b> at <b>' + v0 + ' m s' + sup(-1) + '</b>. Find its speed at <b>x = ' + x1 + ' m</b>, to 4 decimal places.',
       input:true, answer:rd(v1, 4), accept:qty(v1, { tol:0.0005, dim:'speed' }), data:{ kind:'mech-vx', A, x0, x1, v0 },
       note:'Use ½v² as the thing that integrates: ½v² − ½(' + v0 + ')² = ' + A + '(' + x1 + ' − ' + x0 + '), so v = ' + rd(v1, 4) + '.' };
+  }
+  if (k === 4){                                   // ẍ = d(½v²)/dx, as multiple choice
+    const A = ri(2, 9), B = ri(1, 9), x = ri(1, 5);
+    const acc = -A * x;
+    const m = numMC(acc, [-2 * A * x, A * x, -A, -A * x * x, 2 * B, -A * x / 2]);
+    return { q:'The velocity of a particle satisfies <b>v² = ' + (A * x * x + 2 * B) + ' − ' + A + 'x²</b>. What is its acceleration when <b>x = ' + x + '</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'mech-accel', A, x },
+      note:'ẍ = d(½v²)/dx = d/dx(' + rd((A * x * x + 2 * B) / 2, 3) + ' − ' + rd(A / 2, 1) + 'x²) = −' + A + 'x, which is ' + neg(acc) + ' at x = ' + x + '. Differentiating v² without the ½ doubles it.' };
+  }
+  if (k === 5){                                   // speed from v dv/dx, as multiple choice
+    const A = ri(2, 6), x0 = ri(1, 3), x1 = x0 + ri(1, 4), v0 = ri(1, 5);
+    const s = x1 - x0, v1 = Math.sqrt(v0 * v0 + 2 * A * s);
+    const m = numMC(v1, [Math.sqrt(v0 * v0 + A * s), Math.sqrt(2 * A * s), v0 * v0 + 2 * A * s, Math.sqrt(v0 * v0 + 2 * A * x1), v0 + A * s], 3);
+    return { q:'A particle moves in a straight line with <b>ẍ = ' + A + '</b>. At <b>x = ' + x0 + '</b> its velocity is <b>' + v0 + '</b>. What is its speed at <b>x = ' + x1 + '</b>?',
+      choices:m.choices, answer:m.answer, data:{ kind:'mech-vx', A, x0, x1, v0 },
+      note:'Write ẍ = d(½v²)/dx = ' + A + ' and integrate from x = ' + x0 + ' to x = ' + x1 + ': ½v² − ½(' + v0 + ')² = ' + A + ' × ' + s + ', so v² = ' + (v0 * v0 + 2 * A * s) + ' and v = ' + rd(v1, 3) + '. The starting point is x = ' + x0 + ', not the origin.' };
   }
   const m = mc('The horizontal speed falls away, so the path is no longer symmetric.',
     ['The path stays a parabola, just a smaller one.',

@@ -534,15 +534,26 @@ function mockBuild(spec){
     return null;
   };
 
+  /* one from each module, then round again, drawing from the whole module so a
+     topic with no multiple choice can't cost the module its turn. A module that
+     has run out of four-option questions drops out of the round instead of
+     giving its turn away, and only once every module has run out does a
+     question come from anywhere. The round starts at a random module: when the
+     questions don't divide evenly (10 over 7 modules), the leftovers would
+     otherwise always go to the first few modules in the list. */
   const sec1 = [];
-  const mods = spec.modules.slice();
+  const addMC = got => sec1.push({ q:got.q.q, choices:got.q.choices, answer:got.q.answer, note:got.q.note,
+                                   mod:got.topic.mod, modName:got.topic.modName, marks:1 });
+  const pools = spec.modules.map(m => topics.filter(t => t.mod === m.id)).filter(p => p.length);
+  const dry = new Set();
+  for (let i = ri(0, pools.length - 1); sec1.length < spec.mcN && dry.size < pools.length; i = (i + 1) % pools.length){
+    if (dry.has(i)) continue;
+    const got = fresh({ mc:true, pool:pools[i] });
+    if (got) addMC(got); else dry.add(i);
+  }
   for (let i = 0; sec1.length < spec.mcN && i < spec.mcN * 4; i++){
-    const mod = mods[sec1.length % mods.length];   // one from each module, then round again
-    const pool = topics.filter(t => t.mod === mod.id);
-    const got = fresh({ mc:true, topic:pk(pool) }) || fresh({ mc:true })
-             || fresh({ mc:true, opts:3, topic:pk(pool) }) || fresh({ mc:true, opts:3 });
-    if (got) sec1.push({ q:got.q.q, choices:got.q.choices, answer:got.q.answer, note:got.q.note,
-                         mod:got.topic.mod, modName:got.topic.modName, marks:1 });
+    const got = fresh({ mc:true }) || fresh({ mc:true, opts:3 });
+    if (got) addMC(got);
   }
 
   /* Section II is built question by question so every one lands on exactly the

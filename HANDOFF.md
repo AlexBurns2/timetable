@@ -1964,3 +1964,55 @@ reading the year from `yrNN` in `rosterPeople`. Staff filtering is unchanged.
 - `findercheck` now asserts the year label is gone.
 - The mock server serves the real flat bell-table shape with types, a timetable
   with gaps, a different roster per class, and a fake `?free=`.
+
+### 8.45 Year filter, name search, and finder links
+
+**Search** (`api/timetable.js`, shared by the finder and free periods):
+- `queryWords` folds case and accents (NFD, combining marks stripped), turns
+  commas and semicolons into spaces, and reduces a pasted email to its user
+  name.
+- `nameParts` adds the hyphen and apostrophe pieces of each name, plus a
+  letters-only squash of first and last. `wordHits` tries each typed word raw
+  and squashed.
+- Ranking now also scores "last first" as a whole-name match.
+- `closeStudents` is the fallback when nothing matches every word: people who
+  match all but one word, needing two words or more.
+- `?find=` returns `close: true` when it falls back. The finder page says "No
+  exact match … The closest:".
+
+**free.html.**
+- **Year filter:** pills (All, 7–12), saved as `tt.freeyear`. `inYear`/`pool()`
+  narrow the grid counts, the detail panel and the people list. `?find=` gets
+  `year=`. Picked people are never filtered.
+- **Years:** rosters now carry `year` (`yearOfGroups`), so the `msc.free` cache
+  went to `v: 2` and older caches are discarded. Extras store `{id, name,
+  year}`.
+- **People box:**
+  - `nameMatches` mirrors the server's rules, using squashed tails of the full
+    name.
+  - Classmates and school results are one list (`candidates()`). A school
+    result who is a classmate keeps the classmate row.
+  - Enter adds only an unambiguous match, never a lone close guess.
+  - `summary()` restores the status line after a later add; it used to stay on
+    "Checking… 0 of 1".
+
+**index.html `?user=<username>`.** This block runs right after `let email` is
+declared, before the first load.
+- It validates the username like `viewUser`, sets `email` and `tt.email`, drops
+  `tt.cache`, then `history.replaceState`s the parameter away.
+- Anything invalid is ignored: the timetable shown and the cache are untouched.
+
+Finder result names link there.
+
+**Tests.**
+- `findercheck` is now 40 checks: names typed every way, the close-match rules
+  and the year filter, plus the `?user=` block lifted out of index.html (valid,
+  a full address, a path trick, absent).
+- `freelogic` is now 39 checks: name matching, years, and parity with the
+  server's `searchStudents` over 16 queries.
+- The mock's `?find=` imports the real `searchStudents`/`closeStudents` over a
+  fake directory with mixed years and awkward names.
+
+**Known flaky test, unrelated:** `mockcheck`'s "Section I is spread over at
+least four focus areas" fails about 6 runs in 20. The Maths Advanced mock paper
+sometimes draws Section I from three areas; that's a mock.js selection issue.
