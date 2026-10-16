@@ -205,12 +205,15 @@ function showGrid(){
         bar.appendChild(b); });
       grid.appendChild(bar);
     }
+    /* the HSC countdown, today's plan and focus mode (study.js) */
+    if (year === 12 && window.Study){ try { grid.appendChild(Study.render()); } catch (e) { console.error(e); } }
     const box = document.createElement('div'); box.className = 'gamegrid';
     GAMES.filter(g => g.cat === 'Revision' && (g.year || 11) === year).forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
     return;
   }
 
+  if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
   CAT_ORDER.forEach(cat => {
     const inCat = GAMES.filter(g => g.cat === cat);
     if (!inCat.length) return;
@@ -305,6 +308,7 @@ async function renderLBSum(){
 }
 const reduced = () => document.documentElement.getAttribute('data-motion') === 'reduced';
 function openGame(id){
+  if (!REVISION_PAGE && window.Focus && Focus.active()){ showGrid(); return; }   // no back door past the lock
   if (stop){ stop(); stop = null; }
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
@@ -327,6 +331,24 @@ $('back').onclick = () => {
   st.classList.add('leaving');
   setTimeout(() => { st.classList.remove('leaving'); showGrid(); }, 130);
 };
+
+/* One polite live region for screen readers. The game boxes are rebuilt for
+   every question, and a live region that arrives already full is not read out,
+   so this one is created once, kept outside them, and written into. Cleared
+   first so the same words twice ("✓ Correct") are announced twice. */
+function say(text){
+  let el = document.getElementById('srsay');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'srsay'; el.className = 'srsay';
+    el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
+  }
+  el.textContent = '';
+  const t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+  setTimeout(() => { el.textContent = t; }, 60);
+}
+const plainText = html => { const d = document.createElement('div'); d.innerHTML = String(html == null ? '' : html); return d.textContent; };
 
 const head = (host, title, how, extra) =>
   host.innerHTML = '<div class="row"><div><h2>' + title + '</h2>' +
@@ -361,8 +383,10 @@ function recordStat(game, { key, mode, value }){
 const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
 const statLine = game => {
   const s = allStats()[game]; if (!s) return '';
-  if (game === 'tetris')                       // weekly best, hidden once the week rolls over
+  if (game === 'tetris'){                      // weekly best, hidden once the week rolls over
+    if (!weeklyOn()){ const a = s.allBest != null ? s.allBest : s.best; return a != null ? 'Best ' + fmtHMS(a*1000) : ''; }
     return (s.week === tetrisWeek() && s.best != null) ? 'Best this week ' + fmtHMS(s.best*1000) : '';
+  }
   return Object.entries(s).map(([k,v]) => STAT_LABEL[k] ? STAT_LABEL[k]+' '+v : '').filter(Boolean).join(' · ');
 };
 const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak', targets:'Best run' };
@@ -1409,7 +1433,9 @@ BUILD.tetris = host => {
 
   /* ── stats / overlay ── */
   function fmtBest(){
-    if (mode==='sprint'){ const s=allStats().tetris; return (s && s.week===wk && s.best!=null) ? fmtHMS(s.best*1000) : '—'; }
+    if (mode==='sprint'){ const s=allStats().tetris;
+      if (!weeklyOn()){ const a = s ? (s.allBest != null ? s.allBest : s.best) : null; return a != null ? fmtHMS(a*1000) : '—'; }
+      return (s && s.week===wk && s.best!=null) ? fmtHMS(s.best*1000) : '—'; }
     if (mode==='survival'){ const z=allStats().tetriszen; return (z && z.best!=null) ? fmtHMS(z.best) : '—'; }
     const zs=allStats().tetriszenscore; return (zs && zs.best!=null) ? String(zs.best) : '—';   // Zen best score
   }
@@ -1418,7 +1444,7 @@ BUILD.tetris = host => {
     $$('ttimelabel').textContent = scored() ? 'Score' : 'Time';
     const bestRow = $$('tbest').closest('.tstat');
     if (bestRow) bestRow.style.display = mode==='practice' ? 'none' : 'flex';   // practice isn't tracked
-    $$('tbestlabel').textContent = mode==='sprint' ? 'Best (wk)' : (mode==='survival' ? 'Best (all-time)' : 'Best score');
+    $$('tbestlabel').textContent = mode==='sprint' ? (weeklyOn() ? 'Best (wk)' : 'Best') : (mode==='survival' ? 'Best (all-time)' : 'Best score');
     $$('tbest').textContent = fmtBest();
     updatePracticeBtns();
   }
@@ -1505,7 +1531,11 @@ BUILD.tetris = host => {
     const restart = tap('Restart ('+keyLabel(cfg.keys.restart)+')', 'Tap to restart');
     if (mode==='sprint'){
       if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};
-        if (t.best==null||el<t.best) t.best=el; s.tetris={week:wk,best:t.best}; TT.set('tt.stats',s);
+        /* the all-time best survives the weekly reset; a record from before it
+           was kept starts from whatever best that record holds */
+        const prevAll = s.tetris ? (s.tetris.allBest != null ? s.tetris.allBest : s.tetris.best) : null;
+        if (t.best==null||el<t.best) t.best=el;
+        s.tetris={week:wk,best:t.best,allBest:(prevAll==null||el<prevAll)?el:prevAll}; TT.set('tt.stats',s);
         submitScore(Math.round(elapsedMs)); showOver('Cleared 40 in '+fmtHMS(elapsedMs)+'!', restart); }
       else showOver('Topped out.', restart);
     } else if (mode==='survival'){
@@ -3863,6 +3893,9 @@ function revGame(host, opts){
     html += '<div class="rvfb" id="rvfb"></div><div class="gwrow" id="rvnextrow" hidden><button class="btn primary" id="rvnext" type="button">Next →</button></div>';
     if (!inTest) html += resetUI();
     box.innerHTML = html; wireMode();
+    { const qt = plainText(cur.q).trim();
+      say((inTest ? 'Question ' + (test.i + 1) + ' of ' + test.n + '. ' : '') + qt +
+          (cur.choices && !cur.optHtml ? (/[.?!:…]$/.test(qt) ? ' ' : '. ') + 'Options: ' + cur.choices.map(plainText).join('; ') : '')); }
     if (inTest){
       wireTestBar();
       cur._shownAt = Date.now();                               // time taken feeds the "rushed" check
@@ -3937,6 +3970,7 @@ function revGame(host, opts){
     const fb = $('rvfb'); fb.className = 'rvfb';
     fb.innerHTML = 'Skipped' + (cur.typed ? '. One way to write it:' : cur.optHtml ? '. The right one is outlined in green.' : '. The answer was <b>' + esc(String(cur.answer)) + '</b>') +
       (cur.note ? '<div class="rvnote">' + cur.note + '</div>' : '');
+    say(fb.innerText);
     if (cur.typed) revealAnswer();
     if (cur.typed){ $('rvta').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
     else if (cur.input){ $('rvin').disabled = true; $('rvgo').disabled = true; $('rvskip').disabled = true; }
@@ -3990,6 +4024,13 @@ function revGame(host, opts){
     if (cur._keyed){
       recordAnswer(hist, cur._sig, ok);
       RV.save(sk);
+    } else if (cur._sig){
+      /* A generated question has no identity of its own to schedule, but its
+         topic does: one entry per topic, kept by the same scheduler, so a topic
+         you got wrong comes back due and one you keep getting right rests. It
+         is what the daily plan reads. */
+      recordAnswer(hist, String(cur._sig).split(':')[0] + ':~topic', ok);
+      RV.save(sk);
     }
     if (inTest){
       logAnswer(ok ? 'right' : gaveUp ? 'skip' : 'wrong', cur._given, detail);
@@ -4006,6 +4047,7 @@ function revGame(host, opts){
         + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
     else
       fb.innerHTML = (ok ? '✓ Correct' : cur.optHtml ? '✗ Not that one. The right one is outlined in green.' : '✗ Answer: <b>' + esc(String(cur.answer) + (cur.unit ? ' ' + cur.unit : '')) + '</b>') + (cur.note ? '<div class="rvnote">'+cur.note+'</div>' : '');
+    say(fb.innerText);
     if (cur.typed){
       $('rvta').disabled = true; $('rvgo').disabled = true;
       if (!ok) revealAnswer();                 // got it wrong → show a working version
@@ -4351,7 +4393,8 @@ function topicSigs(hist, topicId){
 }
 function topicProgress(hist, topicId){
   const c = { correct:0, fixed:0, wrong:0, n:0 };
-  topicSigs(hist, topicId).forEach(k => { const st = stateOfHist(hist[k]); if (st in c) c[st]++; c.n++; });
+  topicSigs(hist, topicId).forEach(k => { if (k.endsWith(':~topic')) return;
+    const st = stateOfHist(hist[k]); if (st in c) c[st]++; c.n++; });
   return c;
 }
 /* removes them from hist in place and hands back exactly what was removed, for undo */
@@ -6106,7 +6149,11 @@ function genOhm(){ const k=ri(0,2), I=ri(1,10), R=ri(1,20), V=I*R;
   const m=physMC(V*I,'W',[V+I, rd(V/I,2), 2*V*I]); return {q:'A device draws <b>'+I+' A</b> at <b>'+V+' V</b>. Find the power.', choices:m.choices, answer:m.answer, note:'P = VI = '+V+'×'+I+' = '+(V*I)+' W.'}; }
 function genResistors(){ const R1=ri(1,12), R2=ri(1,12);
   if(Math.random()<0.5){ const m=physMC(R1+R2,'Ω',[Math.abs(R1-R2), R1*R2, rd(R1*R2/(R1+R2),2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>series</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Series: '+R1+' + '+R2+' = '+(R1+R2)+' Ω.'}; }
-  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[R1+R2, Math.abs(R1-R2), rd((R1+R2)/2,2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
+  /* The wrong options are the mistakes people actually make — adding them as
+     if in series, forgetting to flip 1/R at the end, doubling — so most of them
+     come out as decimals too. With whole-number distractors the one decimal
+     option was the answer every time. */
+  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[rd(1/R1+1/R2,2), rd(2*R1*R2/(R1+R2),2), R1+R2, Math.abs(R1-R2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
 function genEfield(){ const V=ri(10,100)*10, d=ri(2,10)/100, E=rd(V/d,0); const m=physMC(E,'V/m',[V*d, rd(d/V,4), V+d]);
   return {q:'Two plates <b>'+d+' m</b> apart have a potential difference of <b>'+V+' V</b>. Find the electric field strength.', choices:m.choices, answer:m.answer, note:'E = V/d = '+V+'/'+d+' = '+E+' V/m.'}; }
 function genMag(){ const B=[0.1,0.2,0.5,1,2][ri(0,4)], I=ri(1,10), L=ri(1,5), F=rd(B*I*L,2); const m=physMC(F,'N',[rd(B+I+L,2), rd(B*I,2), I*L]);
@@ -6287,17 +6334,17 @@ const ENG_CARBON = [
   {q:'Welding gets harder as a steel’s carbon content rises because…', a:'It needs preheating to avoid cracking', w:['Its melting point drops sharply','It starts to form graphite flakes','It can no longer be formed at all']},
   {q:'A plain-carbon steel above ~0.76% C, with cementite at the grain boundaries, is…', a:'Hypereutectoid', w:['Hypoeutectoid','Eutectoid','Austenitic']},
   {q:'A plain-carbon steel below ~0.76% C, with proeutectoid ferrite, is…', a:'Hypoeutectoid', w:['Hypereutectoid','Eutectoid','Martensitic']},
-  {q:'Cementite inside pearlite is…', a:'Already present below the eutectoid composition', w:['Only present above the eutectoid','Never present in pearlite','Only present after quenching']},
-  {q:'Cold working a metal raises its dislocation density, which usually…', a:'Increases yield strength and hardness but reduces ductility', w:['Reduces strength and increases ductility','Has no effect on mechanical properties','Simply makes the grains smaller and softer']},
-  {q:'How is cold-rolled steel identified in a longitudinal section?', a:'Grains stretched along the rolling direction', w:['Rounded graphite nodules in the grains','A dark nitride layer at the surface','Coarse, evenly shaped equiaxed grains']},
+  {q:'Cementite inside pearlite is…', a:'Already present below the eutectoid composition', w:['Only formed above the eutectoid composition','Never present in a pearlitic structure at all','Only produced once the steel has been quenched']},
+  {q:'Cold working a metal raises its dislocation density, which usually…', a:'Increases yield strength and hardness but reduces ductility', w:['Reduces strength and hardness but increases ductility','Has no lasting effect on any mechanical property','Lowers hardness while leaving yield strength unchanged']},
+  {q:'How is cold-rolled steel identified in a longitudinal section?', a:'Grains stretched along the rolling direction', w:['Rounded graphite nodules scattered through the grains','A dark nitride layer running along the surface','Coarse, evenly shaped equiaxed grains throughout']},
   {q:'Work hardening is best explained as…', a:'More dislocations that block slip', w:['Grains simply growing larger','Carbon diffusing into the steel','Graphite forming into nodules']},
   {q:'Ductility lost during cold working can be restored by…', a:'Recrystallisation annealing', w:['Quench hardening','Carburising the surface','Adding magnesium']},
   {q:'On a tensile stress–strain curve, the initial straight slope represents…', a:'Young’s modulus', w:['The UTS','Tensile toughness','The fracture strain']},
   {q:'On a tensile stress–strain curve, the total area under it to fracture represents…', a:'Tensile toughness', w:['Young’s modulus','Hardness','Resilience only']},
-  {q:'Engineering stress is defined as…', a:'Force divided by the original cross-sectional area (F/A₀)', w:['Force multiplied by length','Change in length over original length','Force divided by the final area']},
-  {q:'Engineering strain is defined as…', a:'Change in length divided by the original length (ΔL/L₀)', w:['Force over area','Stress multiplied by modulus','Original length over change in length']},
+  {q:'Engineering stress is defined as…', a:'Force divided by the original cross-sectional area (F/A₀)', w:['Force multiplied by the original length of the bar (F×L₀)','Change in length divided by the original length (ΔL/L₀)','Force divided by the final, necked cross-section (F/A)']},
+  {q:'Engineering strain is defined as…', a:'Change in length divided by the original length (ΔL/L₀)', w:['Force divided by the original cross-sectional area (F/A₀)','Stress multiplied by the Young’s modulus of the material','Original length divided by the change in length (L₀/ΔL)']},
   {q:'Necking on a tensile test happens…', a:'After the UTS, before fracture', w:['During the elastic region','Before any yielding occurs','Only in brittle materials']},
-  {q:'Silicon in a cast iron…', a:'Promotes the formation of graphite', w:['Prevents graphite forming','Raises the carbon content','Makes it non-magnetic']},
+  {q:'Silicon in a cast iron…', a:'Promotes the formation of graphite', w:['Prevents graphite from forming at all','Raises the carbon content of the iron','Makes the iron completely non-magnetic']},
   {q:'The carbon content of cast iron is typically about…', a:'2.5–4%', w:['up to 0.3%','about 0.8%','about 1.2%']},
   {q:'In a cast iron, much of the strength and hardness is controlled by…', a:'The matrix around the graphite', w:['The graphite on its own','The carbon percentage alone','The pouring temperature alone'], note:'For example, a ferrite or pearlite matrix.'},
   /* these two show their own diagram: they used to refer to "these schematics" with nothing on screen */
@@ -6431,14 +6478,14 @@ const PHYS_DYN = [
   {q:'Work done by a force equals…', a:'Force × distance in its direction', w:['Force × the time it acts for','Mass × velocity','Force ÷ the area it acts on']},
   {q:'Which type of collision conserves kinetic energy?', a:'An elastic collision', w:['An inelastic collision','A perfectly inelastic collision','Any collision']}];
 const PHYS_WAVE = [
-  {q:'In a transverse wave, the particles oscillate…', a:'Perpendicular to the direction of energy travel', w:['Parallel to the direction of travel','In circles only','Not at all']},
-  {q:'In a longitudinal wave, the particles oscillate…', a:'Parallel to the direction of energy travel', w:['Perpendicular to the travel','At 45° to the travel','Randomly']},
+  {q:'In a transverse wave, the particles oscillate…', a:'Perpendicular to the direction of energy travel', w:['Parallel to the direction of energy travel','In circles around a fixed point only','Not at all; only the energy moves along']},
+  {q:'In a longitudinal wave, the particles oscillate…', a:'Parallel to the direction of energy travel', w:['Perpendicular to the direction of energy travel','At 45° to the direction of energy travel','Randomly, with no link to the direction of travel']},
   {q:'Sound travelling through air is…', a:'A longitudinal wave', w:['A transverse wave','An electromagnetic wave','A standing wave only']},
   {q:'The wave equation linking speed, frequency and wavelength is…', a:'v = fλ', w:['v = f/λ','v = λ/f','f = vλ']},
   {q:'When a wave passes into a slower (denser) medium, it bends…', a:'Toward the normal', w:['Away from the normal','Straight back','Along the surface']},
   {q:'Constructive interference happens when waves meet…', a:'In phase (crest on crest)', w:['Out of phase (crest on trough)','At right angles','With different speeds']},
-  {q:'Which lists the EM spectrum from low to high frequency?', a:'Radio → infrared → visible → X-rays', w:['X-rays → visible → radio','Visible → radio → gamma','Gamma → X-rays → radio']},
-  {q:'The law of reflection states that…', a:'The angle of incidence equals the angle of reflection', w:['Incidence equals the refraction angle','Light always bends toward the normal','Frequency changes on reflection']}];
+  {q:'Which lists the EM spectrum from low to high frequency?', a:'Radio → infrared → visible → X-rays', w:['X-rays → visible → infrared → radio','Visible → radio → infrared → X-rays','Infrared → radio → X-rays → visible']},
+  {q:'The law of reflection states that…', a:'The angle of incidence equals the angle of reflection', w:['The angle of incidence equals the angle of refraction','Light always bends towards the normal when reflected','The frequency of the light changes on reflection']}];
 const PHYS_EM = [
   {q:'Ohm’s law is…', a:'V = IR', w:['V = I/R','P = IR','I = VR']},
   {q:'Adding resistors in series makes the total resistance…', a:'Larger than any single resistor', w:['Smaller than any single resistor','Equal to the smallest','Zero']},
@@ -6618,19 +6665,19 @@ function genActivity(){
 const ENERGY_C = [
   {q:'In an exothermic reaction, the products…', a:'Have less energy than the reactants', w:['Have more energy than the reactants','Have the same energy as the reactants','Always include a gas'], note:'The difference is released as heat.'},
   {q:'The sign of ΔH for an exothermic reaction is…', a:'Negative', w:['Positive','Always zero','Undefined']},
-  {q:'In an endothermic reaction the surroundings…', a:'Get colder, because energy is absorbed from them', w:['Get hotter','Stay at exactly the same temperature','Always produce a gas']},
+  {q:'In an endothermic reaction the surroundings…', a:'Get colder, because energy is absorbed from them', w:['Get hotter, because energy is released into them','Stay at exactly the same temperature throughout','Always produce a gas, whatever the reaction is']},
   {q:'Breaking chemical bonds is…', a:'Endothermic, energy must be put in', w:['Exothermic, energy is released','Neither, bonds break freely','Always spontaneous']},
   {q:'Forming chemical bonds is…', a:'Exothermic, energy is released', w:['Endothermic, energy is absorbed','Energy neutral','Only possible with a catalyst']},
   {q:'A reaction is exothermic overall when…', a:'Forming bonds releases more than breaking uses', w:['Breaking bonds uses more than forming releases','No bonds are broken at all','The activation energy is zero']},
-  {q:'On an energy profile diagram, the activation energy is the gap between…', a:'The reactants and the peak of the curve', w:['The reactants and the products','The peak and the products','Zero and the products']},
+  {q:'On an energy profile diagram, the activation energy is the gap between…', a:'The reactants and the peak of the curve', w:['The reactants and the products of the reaction','The peak of the curve and the products','Zero and the energy level of the products']},
   {q:'Adding a catalyst changes an energy profile diagram by…', a:'Lowering the peak only', w:['Lowering the product level','Raising the reactant level','Removing the peak entirely'], note:'The reactant and product levels, and so ΔH, stay the same.'},
   {q:'The heat of combustion of a fuel is the energy released when…', a:'One mole of the fuel burns completely', w:['A mole of fuel forms from its elements','A mole of the fuel evaporates','One mole of oxygen is used up'], note:'It is sometimes given per gram instead of per mole.'},
-  {q:'Entropy is best described as a measure of…', a:'Disorder, or the ways energy can spread', w:['The total energy of a system','How fast a reaction happens','How strong the bonds are']},
+  {q:'Entropy is best described as a measure of…', a:'Disorder, or the ways energy can spread', w:['The total energy stored in a system','How fast a reaction is able to happen','How strong the chemical bonds are']},
   {q:'Which change increases entropy the most?', a:'A solid turning into a gas', w:['A gas turning into a liquid','A liquid freezing','A gas being compressed']},
-  {q:'A reaction that produces more moles of gas than it consumes has…', a:'A positive entropy change (ΔS > 0)', w:['A negative entropy change','No entropy change','Zero enthalpy change']},
+  {q:'A reaction that produces more moles of gas than it consumes has…', a:'A positive entropy change (ΔS > 0)', w:['A negative entropy change (ΔS < 0)','No entropy change at all (ΔS = 0)','A zero enthalpy change (ΔH = 0)']},
   {q:'A reaction with negative ΔH and positive ΔS is…', a:'Spontaneous at all temperatures', w:['Never spontaneous','Spontaneous only when hot','Spontaneous only when cold']},
-  {q:'A reaction with positive ΔH and negative ΔS is…', a:'Never spontaneous at any temperature', w:['Always spontaneous','Spontaneous only when hot','Spontaneous only when cold']},
-  {q:'Hess’s law says the enthalpy change of a reaction…', a:'Is the same whatever route is taken', w:['Depends on the route taken','Is always negative','Changes if a catalyst is used']},
+  {q:'A reaction with positive ΔH and negative ΔS is…', a:'Never spontaneous at any temperature', w:['Always spontaneous at any temperature','Spontaneous only at high temperature','Spontaneous only at low temperature']},
+  {q:'Hess’s law says the enthalpy change of a reaction…', a:'Is the same whatever route is taken', w:['Depends on the route that is taken','Is always negative for any reaction','Changes whenever a catalyst is used']},
   {q:'Specific heat capacity is the energy needed to…', a:'Heat 1 g of a substance by 1 °C', w:['Melt 1 mol of a substance','Break 1 mol of its bonds','Heat any mass of it by 1 °C']},
   {q:'Water is used in calorimetry largely because it has…', a:'A high, well-known heat capacity', w:['The lowest heat capacity known','No heat capacity at all','A very low boiling point']},
   {q:'Using bond energies, ΔH is calculated as…', a:'Bonds broken minus bonds formed', w:['Bonds formed minus bonds broken','Bonds broken plus bonds formed','Bonds formed divided by bonds broken']},
@@ -6685,10 +6732,10 @@ function genThermo(){
 
 /* extra wave ideas the syllabus names */
 const WAVE_EXTRA = [
-  {q:'A standing wave is produced when…', a:'Identical waves travel opposite ways and overlap', w:['One wave slows down in a medium','Waves of different frequency meet','A wave passes through a narrow gap']},
+  {q:'A standing wave is produced when…', a:'Identical waves travel opposite ways and overlap', w:['One wave slows down as it enters a denser medium','Two waves of different frequency meet and overlap','A wave spreads out as it passes through a narrow gap']},
   {q:'On a standing wave, a point that never moves is called a…', a:'Node', w:['Antinode','Crest','Trough']},
   {q:'On a standing wave, a point of maximum movement is called an…', a:'Antinode', w:['Node','Wavefront','Origin']},
-  {q:'Resonance occurs when a system is driven at…', a:'Its natural frequency, giving a large amplitude response', w:['Any frequency at all','A frequency far from its natural one','Zero frequency']},
+  {q:'Resonance occurs when a system is driven at…', a:'Its natural frequency, giving a large amplitude response', w:['Any frequency at all, as long as the force is large','A frequency well away from its natural frequency','Zero frequency, so that the amplitude can build up']},
   {q:'Diffraction is the…', a:'Spreading of a wave through a gap', w:['Bending as it changes speed','Bouncing of a wave off a surface','Cancelling of two waves'], note:'It also happens around an obstacle.'},
   {q:'Diffraction is most noticeable when the gap is…', a:'About the same size as the wavelength', w:['Much larger than the wavelength','Much smaller than an atom','Perfectly square']},
   {q:'The Doppler effect describes the change in observed…', a:'Frequency due to relative motion', w:['Amplitude when a wave reflects','Speed of light in a medium','Wavelength during diffraction']},
@@ -6696,7 +6743,7 @@ const WAVE_EXTRA = [
   {q:'Refraction happens because a wave…', a:'Changes speed in a new medium', w:['Loses energy as it travels','Changes frequency at a boundary','Is absorbed by the medium']},
   {q:'When light refracts, the quantity that stays the same is its…', a:'Frequency', w:['Speed','Wavelength','Direction']},
   {q:'Progressive (travelling) waves differ from standing waves because they…', a:'Carry energy from place to place', w:['Have fixed nodes and antinodes','Can never be reflected','Cannot travel through air']},
-  {q:'The inverse square law means that doubling your distance from a point source…', a:'Reduces the intensity to a quarter', w:['Halves the intensity','Doubles the intensity','Leaves intensity unchanged']}
+  {q:'The inverse square law means that doubling your distance from a point source…', a:'Reduces the intensity to a quarter', w:['Halves the intensity that reaches you','Doubles the intensity that reaches you','Leaves the intensity exactly unchanged']}
 ];
 
 /* extra electricity / magnetism ideas */
@@ -7053,14 +7100,14 @@ function genStress(){
 /* ── engineering: braking systems ──────────────────────────────────────── */
 const BRAKES = [
   {q:'A brake works by converting the vehicle’s kinetic energy into…', a:'Heat, through friction', w:['Electrical energy only','Potential energy','Sound alone']},
-  {q:'Compared with drum brakes, disc brakes mainly have the advantage of…', a:'Better cooling, so they resist brake fade', w:['Lower cost always','Working without friction','Needing no hydraulic fluid']},
+  {q:'Compared with drum brakes, disc brakes mainly have the advantage of…', a:'Better cooling, so they resist brake fade', w:['Lower cost in every type of vehicle','Working with no friction between parts','Needing no hydraulic fluid to operate']},
   {q:'Brake fade is caused by…', a:'Overheating that lowers the pads’ grip', w:['Air bubbles trapped in the brake lines','Worn tyres losing grip on the road','Low tyre pressure adding drag'], note:'Hot pads and discs lose friction, so the same pedal force slows the car less.'},
-  {q:'Hydraulic brakes work on the principle that…', a:'Pressure in an enclosed fluid acts equally throughout', w:['Force in a fluid fades along a long pipe','A fluid gains pressure as it flows faster','Pressure builds only where the fluid is heated']},
+  {q:'Hydraulic brakes work on the principle that…', a:'Pressure in an enclosed fluid acts equally throughout', w:['Force in a fluid fades away along a long brake pipe','A fluid gains pressure the faster it is made to flow','Pressure builds up only where the fluid gets heated']},
   {q:'Hydraulic fluid is used rather than a gas because liquids are…', a:'Practically incompressible', w:['Much lighter than gases','Easier to compress, for a softer pedal','Better electrical insulators'], note:'So pedal movement goes straight to the brakes instead of squashing the fluid.'},
   {q:'If the master cylinder is smaller in area than the slave cylinder, the system gives…', a:'More force at the slave cylinder', w:['Less force at the slave cylinder','Higher pressure at the slave cylinder','The same force at both cylinders'], note:'Pressure is the same throughout, and force = pressure × area, so the larger slave piston pushes harder.'},
   {q:'A brake disc is usually made of cast iron because it…', a:'Resists wear and absorbs heat well', w:['Is lighter than aluminium alloys','Does not rust in wet weather','Has very high tensile strength']},
-  {q:'Brake pads must have a high coefficient of friction and also…', a:'Resist fading and wear at high temperature', w:['Melt easily to lubricate the disc','Conduct electricity','Be perfectly elastic']},
-  {q:'Ventilated discs improve braking because they…', a:'Increase the surface area for cooling airflow', w:['Reduce the friction available','Make the disc heavier','Remove the need for pads']},
+  {q:'Brake pads must have a high coefficient of friction and also…', a:'Resist fading and wear at high temperature', w:['Melt easily so that they lubricate the disc','Conduct electricity to the rest of the car','Stay perfectly elastic under any load']},
+  {q:'Ventilated discs improve braking because they…', a:'Increase the surface area for cooling airflow', w:['Reduce the friction available at the pads','Make the disc heavier so it stores more heat','Remove the need for brake pads altogether']},
   {q:'The friction force available at a brake is proportional to…', a:'The normal force on the pad', w:['The speed of the vehicle','The contact area of the pad','The mass of the brake disc'], note:'F = μN. In this model friction does not depend on contact area or speed.'},
   {q:'ABS (anti-lock braking) improves safety mainly by…', a:'Stopping the wheels from locking', w:['Braking before the driver reacts','Increasing the grip of the tyres','Cooling the discs on long descents'], note:'A rolling wheel can still steer; a locked, skidding wheel cannot.'},
   {q:'A handbrake is usually mechanical rather than hydraulic so that it…', a:'Still works if the hydraulic system fails', w:['Is cheaper to make','Applies more force than the footbrake','Works only when moving']},
@@ -7068,9 +7115,9 @@ const BRAKES = [
   {q:'Cars use two independent hydraulic circuits so that…', a:'One leak can’t disable every brake', w:['Each wheel gets a different pressure','The pedal needs half the force','Fluid can be topped up while driving']},
   {q:'A brake booster (servo) uses engine vacuum to…', a:'Reduce the pedal force needed', w:['Cool the fluid on long descents','Lock the wheels more quickly','Store fluid if a line leaks']},
   {q:'A higher coefficient of friction between pad and disc gives…', a:'More braking force for the same pedal', w:['Less braking force for the same pedal','A longer stopping distance','Cooler discs under hard braking']},
-  {q:'Brake discs can warp because…', a:'Uneven heating makes them expand unevenly', w:['The brake fluid becomes too thick','The pads are softer than the disc','The disc is too light for the car']},
+  {q:'Brake discs can warp because…', a:'Uneven heating makes them expand unevenly', w:['The brake fluid becomes far too thick','The pads are much softer than the disc','The disc is too light for the car’s mass']},
   {q:'Regenerative braking in an electric vehicle…', a:'Turns kinetic energy back into electricity', w:['Uses larger pads to absorb more heat','Removes the need for friction brakes','Stores the energy as heat in the disc'], note:'The motor runs as a generator and charges the battery, instead of wasting all of the energy as heat.'},
-  {q:'Stopping distance is the sum of…', a:'Reaction distance and braking distance', w:['Braking distance only','Reaction distance only','Speed multiplied by mass']},
+  {q:'Stopping distance is the sum of…', a:'Reaction distance and braking distance', w:['Braking distance and nothing else','Reaction distance and nothing else','Speed multiplied by the mass of the car']},
   {q:'Doubling a vehicle’s speed increases its braking distance by roughly…', a:'Four times', w:['Two times','Three times','Eight times'], note:'Kinetic energy goes with v², so twice the speed means four times the energy to remove.'},
   {q:'Asbestos was removed from brake linings primarily because…', a:'Its dust is a serious health hazard', w:['It wore down too quickly in use','It gave too little friction when wet','It was too costly to mine']}
 ];
@@ -7082,20 +7129,20 @@ const PRODUCTS = [
   {q:'Ergonomics in product design is concerned with…', a:'Fitting the product to the people using it', w:['Choosing the cheapest raw materials','Making the parts as strong as they can possibly be','Speeding up the manufacturing line']},
   {q:'Planned obsolescence means a product is…', a:'Designed to need replacing after a while', w:['Built to last as long as possible','Made entirely from recycled or recyclable material','Designed so it is easy to repair']},
   {q:'Life-cycle analysis of a product considers…', a:'Its impact from raw material to disposal', w:['Only the energy used in the factory to make it','Only its selling price over time','Only how long the warranty lasts']},
-  {q:'Choosing a material for a product is mainly a balance between…', a:'Properties, cost and ease of manufacture', w:['Colour, weight and brand image','The designer’s personal preference','Whichever process is the oldest']},
+  {q:'Choosing a material for a product is mainly a balance between…', a:'Properties, cost and ease of manufacture', w:['Colour, weight and the brand image','The designer’s own personal preference','Whichever process is the oldest one']},
   {q:'Mass production lowers unit cost mainly because…', a:'Setup costs are spread over many items', w:['The materials get stronger when made in bulk','Workers are paid less per hour','Quality checks can be skipped']},
   {q:'Die casting is best suited to…', a:'Many identical, detailed metal parts', w:['One-off metal prototypes','Joining two metal parts together','Hardening a metal surface']},
-  {q:'Injection moulding is the standard process for…', a:'Thermoplastic parts in high volume', w:['Cast iron engine blocks','Welded steel frames','Heat-treated alloy gears']},
+  {q:'Injection moulding is the standard process for…', a:'Thermoplastic parts in high volume', w:['Cast iron engine blocks and housings','Welded steel frames for large machines','Heat-treated alloy gears and shafts']},
   {q:'A prototype is built mainly to…', a:'Test the design before production', w:['Sell to the first customers','Replace the finished product','Avoid needing any testing']},
   {q:'Quality control during manufacture exists to…', a:'Catch faults and meet the specification', w:['Push the production line to run as fast as possible','Allow a cheaper material grade','Replace the design stage']},
   {q:'Designing a product so it can be taken apart for repair or recycling is called…', a:'Design for disassembly', w:['Planned obsolescence','Mass production','Reverse engineering']},
-  {q:'A tolerance on a dimension specifies…', a:'The allowable variation from the stated size', w:['The exact size every part must be','The strength of the material','The surface finish required']},
+  {q:'A tolerance on a dimension specifies…', a:'The allowable variation from the stated size', w:['The exact size that every part must be','The strength of the material being used','The surface finish required on the part']},
   {q:'Standardisation of components means…', a:'Parts come in common, interchangeable sizes', w:['Each part is custom made to fit its own product','Every part is shaped by hand','A design is only ever used once']},
   {q:'Reverse engineering is…', a:'Taking apart a product to see how it was made', w:['Designing a product in reverse order','Recycling a product into raw material','Running a machine backwards to test how it performs']},
   {q:'CAD is mainly valuable in design because it…', a:'Lets designs be changed and tested before building', w:['Removes the need to ever build or test a physical model','Manufactures the part directly','Replaces the need for a designer']},
   {q:'A jig or fixture is used in manufacture to…', a:'Hold the workpiece in the same position', w:['Cut the material to size','Harden the finished surface','Measure each finished part against the drawing']},
   {q:'Anthropometric data is used in design to…', a:'Size products to fit people’s bodies', w:['Calculate the strength of materials','Estimate the cost of production','Choose a suitable colour scheme']},
-  {q:'Surface finish matters on a moving part mainly because it affects…', a:'Friction, wear and fatigue life', w:['Only the appearance','The density of the metal','The melting point']},
+  {q:'Surface finish matters on a moving part mainly because it affects…', a:'Friction, wear and fatigue life', w:['Only the appearance of the part','The density of the metal it is made of','The melting point of the material']},
   {q:'Choosing a recycled or recyclable material mainly improves a product’s…', a:'Environmental impact', w:['Tensile strength','Production speed','Electrical conductivity']},
   {q:'A factor of safety is applied in design to…', a:'Allow for uncertainty in loads and materials', w:['Make the product cheaper to build','Reduce the amount of material the product needs','Speed up the production process']}
 ];

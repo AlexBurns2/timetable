@@ -1784,3 +1784,91 @@ refresh behind you, that /sw-off empties everything, and that activate removes
 old versions. The browser pane refuses to register workers, so this suite is
 how the routing is verified.
 
+
+### 8.41 The 16 October outage, and the check that now guards against it
+
+The timetable page went blank in production — header drawn, no grid, no
+sign-in screen. Two bugs, both invisible to a syntax check:
+
+- **Introduced in 8.39:** `cycleShift = …` was written on an earlier line than
+  `let cycleShift`. A `let` cannot be touched before its declaration runs (the
+  temporal dead zone), so the script threw at start-up and nothing after it ran.
+  The saved value is now read on the declaration line itself.
+- **Latent since the Friday message was added:** `render()` called
+  `weekendCard()` on Friday afternoons, but the function was never written, so
+  every Friday after the last lesson the render stopped before drawing the grid.
+  The older GitHub Pages copy has the same call. It now shows "Enjoy the
+  weekend" and what Monday opens with, built on `nowCard`'s existing weekend
+  mode.
+
+Hotfix `bd7224b` (index.html only) was pushed to main and was live about 30
+seconds later; a fresh visitor gets the sign-in screen and the console is clean.
+
+**How this folder deploys:** it *is* a git repo (`origin` is
+AlexBurns2/timetable), and Vercel deploys main on every push — commits are made
+from GitHub Desktop. Anything committed here goes to production.
+
+**`pagecheck.mjs`** runs over every page's inline script and fails on exactly
+these two classes of mistake: a column-0 assignment to a name declared later
+with let/const, and a call to a function defined nowhere the page can see (its
+own scripts plus the shared ones it loads). Strings, comments and regex literals
+are stripped first, so `/\bm(a|x)/` is not mistaken for a call. Run against the
+broken commit it reports precisely `cycleShift` and `weekendCard()`; against the
+current pages it is clean. **Run it before committing any page.**
+
+The service worker shipped in the same 20:03 push. It fetches pages
+network-first, so nobody online is served a cached copy of the broken page.
+
+### 8.42 Study tools: dates, countdown, daily plan, focus mode, and the leftovers
+
+**`study.js`** (loaded straight after theme.js on home, revision, games and
+calendar — it only defines things) holds:
+
+- `HSC_DATES` — **published dates only**: `year`, `start` (null until NESA
+  publishes the 2027 written timetable), `milestones` (currently 3 Nov 2026,
+  entries open) and `exams` (same shape the calendar used). `Study.countdown()`
+  reports days to `start` once set, otherwise the next real milestone.
+- `Study.plan(n)` — ranks every Year 12 topic: due-and-last-wrong (3), due (2),
+  never started (1), done today or resting (0); one per subject first, then up to
+  two; ties broken by a hash of the date so the list is stable for the day.
+  `Study.practise(item)` sets `tt.rev_<sk>_mod`/`_excl` to that one topic and
+  calls `openGame`.
+- `Focus` — `tt.focus = {until}` (syncs). `showGrid()` on the games page renders
+  `Focus.lockCard()` instead of the shelves, and `openGame()` refuses non-revision
+  games while active, so there is no back door. Ending early is a three-second
+  hold (`Focus.holdButton`), keyboard-operable.
+
+**Cross-script reads go through `grab(() => NAME)`.** The module lists, `RV` and
+`dayOf` are top-level consts in other files: not on `window`, and reading one
+before its declaration has run throws *even under `typeof`*. The browser happens
+to load the files in a safe order, but the test harness (one concatenated
+script) did hit the dead zone — so every such read is wrapped in try and
+degrades to "leave that subject out".
+
+**Topic-level history.** Generated questions used to record nothing. `finish()`
+in revGame now records `<topicId>:~topic` through the ordinary `recordAnswer`,
+so topics get the same rest-and-return scheduling as saved questions.
+`topicProgress` skips these entries (they are not questions, so reset counts are
+unchanged); `resetTopic` still removes them.
+
+**Leftovers done:**
+- Tetris shows **Best** (all-time) instead of **Best (wk)** when weekly boards are
+  off; `s.tetris.allBest` is kept alongside the weekly best and seeded from an
+  older record's best.
+- **Longest-option giveaway** in the Year 11 banks: six topics were at 43–55%
+  (chance is ~25%). Parallel resistors offered whole-number distractors against
+  a decimal answer — the distractors are now the real mistakes (series sum,
+  forgetting to invert, doubling), mostly decimal too. 29 bank items had their
+  wrong options rewritten **in place**, so index keys and saved progress are
+  untouched. Worst topic is now 40%; overall 15%.
+- **Accessibility**: an audit found every button and input named, but no live
+  regions anywhere. `say()` writes into one persistent visually-hidden
+  `role=status aria-live=polite` element, so screen readers hear each new
+  question with its options and each result with its explanation. (A live region
+  on the rebuilt question box would not work: one that arrives already full is
+  not announced.)
+
+`plancheck.mjs` (18 checks) covers the ranking rules, determinism, practise()
+targeting, the countdown's published-dates-only rule and focus expiry. All
+seventeen suites pass.
+

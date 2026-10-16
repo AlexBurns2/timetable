@@ -1254,6 +1254,36 @@ uses g = 10 m/s², as the Engineering Studies course does (Physics keeps 9.8).
 **Cast irons** moved into the Steels module, so Engineering has five modules.
 Progress is kept, but an Engineering test that was in progress starts again.
 
+## The HSC countdown, today's revision, and focus mode
+
+**The countdown** sits at the top of the Year 12 revision page and on the home
+page. It only ever uses dates NESA has actually published. The 2027 written exam
+timetable is not out yet (the 2026 one came out in May 2026), so for now it says
+so and counts down to the one confirmed 2027 date — **student entries open on
+3 November 2026**. The day the timetable is published, fill in the start date
+and your papers at the top of `study.js` and the countdown, the calendar and the
+plan all pick it up.
+
+**The calendar** no longer shows the Year 11 final exams. Its exam card is now
+**HSC exams**, empty with an explanation until the timetable is out.
+
+**Today's revision** suggests four topics a day across your Year 12 subjects:
+first anything you got wrong that is due back, then anything due for review,
+then topics you have not started — no more than one per subject until every
+subject has had a turn. Tap one and it opens that subject on exactly that topic.
+Getting one right moves it to "done today". The list stays the same all day.
+
+This works because practice questions now leave a trace per topic: get a topic
+wrong and it comes back soon; get it right a few times in a row and it rests for
+days, then weeks. (Before, generated questions — all of Year 12 maths and the
+sciences — were not remembered at all.)
+
+**Focus mode** — 30 minutes, 1 hour or 2 hours, from the revision page. While it
+is on, the games page is locked, the home page's Games tile turns into a Focus
+tile and the forum is hidden — on every device you are signed in on. It unlocks
+by itself when the time is up. You can end it early, but only by holding the
+button for three seconds.
+
 ## Offline
 
 The site now installs a small background worker the first time you open it, so

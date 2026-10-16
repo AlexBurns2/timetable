@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
+<script src="study.js"></script>
 <script src="tour.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
 <link rel="stylesheet" href="site.css">
@@ -26,6 +27,8 @@
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </header>
+
+  <div class="hscstrip" id="hscstrip" hidden></div>
 
   <nav class="tiles">
     <a class="tile primary" href="./" id="tileTimetable">
@@ -48,7 +51,7 @@
       <span class="tname">Notes</span>
       <span class="tdesc">A scratchpad that saves as you type</span>
     </a>
-    <a class="tile" href="games.html">
+    <a class="tile" href="games.html" id="tileGames">
       <span class="ico">🎮</span>
       <span class="tname">Games</span>
       <span class="tdesc">For when you have ten minutes to kill</span>
@@ -155,5 +158,42 @@ loadForum();
 if (window.Tour) Tour.start('home');
 </script>
 <script src="settings.js"></script>
+<script>
+/* the HSC countdown, how much is waiting today, and focus mode (study.js) */
+(function(){
+  if (!window.Study) return;
+  const strip = document.getElementById('hscstrip');
+  const cd = Study.countdown();
+  let plan = { items:[] };
+  try { plan = Study.plan(4); } catch {}
+  const lead = cd.kind === 'exam' ? '<b>' + cd.days + ' day' + (cd.days === 1 ? '' : 's') + '</b> until the ' + HSC_DATES.year + ' HSC'
+    : cd.kind === 'during' ? '<b>The HSC is under way</b>'
+    : '<b>The ' + cd.year + ' HSC</b> · timetable not published yet' +
+      (cd.next ? ' · entries open in ' + Study.daysUntil(cd.next.d) + ' days' : '');
+  strip.innerHTML = '<span>' + lead + '</span>' +
+    '<a href="revision.html">' + (plan.items.length ? plan.items.length + ' topic' + (plan.items.length === 1 ? '' : 's') + ' to revise today →'
+                                                   : 'Revision →') + '</a>';
+  strip.hidden = false;
+
+  if (window.Focus && Focus.active()){
+    const tile = document.getElementById('tileGames');
+    if (tile){
+      tile.href = 'revision.html';
+      tile.classList.add('locked');
+      tile.querySelector('.ico').textContent = '🎯';
+      tile.querySelector('.tname').textContent = 'Focus mode';
+      tile.querySelector('.tdesc').textContent = 'Games locked for ' + Focus.fmt(Focus.left());
+    }
+    const forum = document.getElementById('forum');
+    if (forum){
+      forum.hidden = true;
+      const note = document.createElement('p');
+      note.className = 'focusnote';
+      note.textContent = 'The forum is hidden while focus mode is on.';
+      forum.parentNode.insertBefore(note, forum);
+    }
+  }
+})();
+</script>
 </body>
 </html>

@@ -170,3 +170,10 @@ a{color:var(--accent)}
 }
 .skinbtn .sw{height:46px;display:block}
 .skinbtn .nm{display:block;padding:6px 8px;font-size:0.75rem;font-weight:700;background:var(--panel-2)}
+
+/* ── home: the HSC countdown strip and focus mode (study.js) ── */
+.hscstrip{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  margin:0 0 14px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;font-size:0.875rem}
+.hscstrip a{font-weight:700;text-decoration:none;color:var(--accent)}
+.tile.locked{opacity:.75}
+.focusnote{font-size:0.875rem;opacity:.7;margin:18px 0}

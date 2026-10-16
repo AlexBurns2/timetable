@@ -19,7 +19,7 @@
      every cache, so a broken release can always be undone from the browser.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = 'msc-' + CACHE_VERSION;
 
 /* The shell: enough to open the timetable and the revision page with no
@@ -30,7 +30,7 @@ const SHELL = [
   '/', '/index.html', '/home.html', '/revision.html', '/games.html',
   '/calendar.html', '/notes.html', '/resources.html',
   '/site.css', '/games.css', '/theme.css', '/settings.css',
-  '/theme.js', '/tour.js', '/settings.js'
+  '/theme.js', '/tour.js', '/settings.js', '/study.js'
 ];
 
 self.addEventListener('install', e => {

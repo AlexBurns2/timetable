@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
+<script src="study.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
@@ -201,7 +202,7 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
     </div>
 
     <div class="card">
-      <h3>Year 11 final exams</h3>
+      <h3>HSC exams</h3>
       <div class="exlist" id="exlist"></div>
     </div>
 
@@ -270,39 +271,11 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-/* ── the Year 11 final exam timetable, straight from the school PDF ──────── */
-const EXAMS = [
-  { id:'eng-adv',    subj:'English Advanced',            d:'2026-09-15', s:'08:55', e:'09:45', room:'HAL' },
-  { id:'jpn-cont-m', subj:'Japanese Continuers',         d:'2026-09-15', s:'14:00', e:'15:30', room:'Mackellar' },
-  { id:'mod-hist',   subj:'Modern History',              d:'2026-09-15', s:'14:00', e:'15:35', room:'HAL' },
-  { id:'math-adv',   subj:'Mathematics Advanced',        d:'2026-09-16', s:'08:55', e:'11:35', room:'HAL' },
-  { id:'chem',       subj:'Chemistry',                   d:'2026-09-17', s:'08:55', e:'11:00', room:'HAL' },
-  { id:'bus',        subj:'Business Studies',            d:'2026-09-17', s:'14:00', e:'15:05', room:'HAL' },
-  { id:'eng-stud',   subj:'Engineering Studies',         d:'2026-09-18', s:'08:55', e:'11:00', room:'HAL' },
-  { id:'econ',       subj:'Economics',                   d:'2026-09-18', s:'14:00', e:'14:50', room:'HAL' },
-  { id:'textiles',   subj:'Textiles and Design',         d:'2026-09-21', s:'08:55', e:'10:30', room:'HAL' },
-  { id:'phys',       subj:'Physics',                     d:'2026-09-21', s:'08:55', e:'11:00', room:'HAL' },
-  { id:'jpn-speak',  subj:'Japanese Speaking',           d:'2026-09-21', s:'14:00', e:'15:30', room:'SP4' },
-  { id:'ent-mack',   subj:'Entertainment',               d:'2026-09-21', s:'14:00', e:'15:30', room:'Mackellar' },
-  { id:'german',     subj:'German Beginners',            d:'2026-09-21', s:'14:00', e:'15:30', room:'Freshwater' },
-  { id:'math-ext1',  subj:'Mathematics Extension 1',     d:'2026-09-22', s:'08:55', e:'11:05', room:'HAL' },
-  { id:'french',     subj:'French Continuers',           d:'2026-09-22', s:'14:00', e:'15:30', room:'Mackellar' },
-  { id:'soc-cult',   subj:'Society and Culture',         d:'2026-09-22', s:'14:00', e:'16:05', room:'HAL' },
-  { id:'anc-hist',   subj:'Ancient History',             d:'2026-09-22', s:'14:00', e:'15:35', room:'HAL' },
-  { id:'jpn-beg',    subj:'Japanese Beginners',          d:'2026-09-22', s:'14:00', e:'15:30', room:'Mackellar' },
-  { id:'eng-ext1',   subj:'English Extension 1',         d:'2026-09-23', s:'08:55', e:'10:35', room:'HAL' },
-  { id:'ind-tech',   subj:'Industrial Technology',       d:'2026-09-23', s:'08:55', e:'10:25', room:'HAL' },
-  { id:'ent-balg',   subj:'Entertainment',               d:'2026-09-23', s:'14:00', e:'15:30', room:'Balgowlah' },
-  { id:'software',   subj:'Software Engineering',        d:'2026-09-23', s:'12:00', e:'13:45', room:'HAL' },
-  { id:'dance',      subj:'Dance',                       d:'2026-09-23', s:'14:00', e:'15:30', room:'Mackellar' },
-  { id:'jpn-cont',   subj:'Japanese Continuers',         d:'2026-09-23', s:'14:00', e:'15:45', room:'CRM' },
-  { id:'bio',        subj:'Biology',                     d:'2026-09-24', s:'08:55', e:'11:00', room:'HAL' },
-  { id:'visarts',    subj:'Visual Arts',                 d:'2026-09-24', s:'14:00', e:'15:35', room:'HAL' },
-  { id:'hms',        subj:'Health and Movement Science', d:'2026-09-24', s:'14:00', e:'16:05', room:'HAL' },
-  { id:'drama',      subj:'Drama',                       d:'2026-09-24', s:'14:00', e:'15:00', room:'HAL' },
-  { id:'music2',     subj:'Music 2',                     d:'2026-09-25', s:'08:55', e:'10:30', room:'HAL' },
-  { id:'legal',      subj:'Legal Studies',               d:'2026-09-25', s:'08:55', e:'10:00', room:'HAL' }
-];
+/* ── this cohort's HSC exams ─────────────────────────────────────────────
+   Read from study.js, which only ever holds dates NESA has published. Until the
+   2027 timetable is out the list is empty and the card says so. (The Year 11
+   final exam timetable that used to live here was for September 2026.) */
+const EXAMS = (window.HSC_DATES && HSC_DATES.exams) || [];
 const COLOURS = ['blue','green','red','orange','purple','teal','pink','grey'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];     // Monday-first
@@ -539,7 +512,7 @@ function openItem(id){
   if (id.startsWith('exam-')){
     const ex = EXAMS.find(x => 'exam-'+x.id === id);
     if (ex) alert(ex.subj + ' exam\n' + dayOf(ex.d).toDateString() + '\n' +
-      fmtTime(ex.s) + ' – ' + fmtTime(ex.e) + '\nRoom: ' + ex.room);
+      fmtTime(ex.s) + ' – ' + fmtTime(ex.e) + (ex.room ? '\nRoom: ' + ex.room : ''));
     return;
   }
   const ev = events.find(e => e.id === id);
@@ -572,6 +545,13 @@ function renderUpcoming(){
 
 /* ── exam picker ───────────────────────────────────────────────────────── */
 function renderExams(){
+  if (!EXAMS.length){
+    const H = window.HSC_DATES || {}, ms = (H.milestones || []).filter(m => window.Study && Study.daysUntil(m.d) >= 0);
+    $('exlist').innerHTML = '<p class="hint">NESA has not published the ' + esc(H.year || '') + ' HSC timetable yet — it usually comes out ' +
+      'around May. Your exams will appear here, and on the calendar, once it does.</p>' +
+      ms.map(m => '<p class="hint"><b>' + esc(Study.longDate(m.d)) + '</b> · ' + esc(m.what) + '</p>').join('');
+    return;
+  }
   $('exlist').innerHTML = EXAMS.map(ex =>
     '<label class="exrow"><input type="checkbox" data-ex="'+ex.id+'"'+(examOn(ex)?' checked':'')+'>' +
     '<span>'+esc(ex.subj)+'</span>' +
