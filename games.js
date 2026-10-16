@@ -649,7 +649,9 @@ const tidyName = t => {
 /* students are @education.nsw.gov.au; staff are @det.nsw.edu.au or role-tagged */
 const isStaff = r => {
   const mail = String(r.Email||r.email||r.emailAddress||'').toLowerCase();
-  return /teacher|staff/i.test(r.Role||r.role||r.Type||r.type||'') ||
+  const groups = Array.isArray(r.groups) ? r.groups.map(g => String(g).toLowerCase()) : [];
+  return groups.some(g => /^(teacher|staff|executive|admin)/.test(g)) ||   // how the school API marks staff
+         /teacher|staff/i.test(r.Role||r.role||r.Type||r.type||'') ||
          /@det\.nsw\.edu\.au$/.test(mail);
 };
 const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; };

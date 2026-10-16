@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Student finder · MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
+<link rel="icon" type="image/png" href="/images/icon.png">
+<style>
+.fsearch{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.fsearch input{flex:1 1 260px;font:inherit;font-size:1rem;color:var(--text);background:var(--panel);
+  border:var(--card-border);border-radius:var(--radius);padding:11px 14px;box-shadow:var(--shadow)}
+.fyears{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.fyears button{font:inherit;font-size:0.8125rem;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;
+  color:var(--text);background:var(--panel);border:var(--card-border)}
+.fyears button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink,#fff);border-color:var(--accent)}
+.fmsg{font-size:0.875rem;color:var(--muted);margin:6px 0 12px}
+.fmsg.err{color:#e5484d}
+.flist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.frow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:12px 14px;
+  background:var(--panel);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.fname{font-weight:700}
+.fyear{font-size:0.75rem;font-weight:700;color:var(--muted);margin-left:8px}
+.fmail{grid-column:1;font-size:0.875rem;color:var(--muted);word-break:break-all}
+.facts{grid-column:2;grid-row:1 / span 2;display:flex;gap:6px}
+.facts .btn{padding:6px 11px;font-size:0.8125rem}
+.fnote{font-size:0.78125rem;color:var(--muted);margin-top:18px;line-height:1.5}
+@media (max-width:520px){ .frow{grid-template-columns:1fr} .facts{grid-column:1;grid-row:auto} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Student finder</h1>
+    <div class="crumbs">
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+    </div>
+  </div>
+
+  <div class="fsearch">
+    <input id="q" type="search" placeholder="Search a first or last name…" autocomplete="off" spellcheck="false"
+           aria-label="Search students by name" aria-describedby="msg">
+  </div>
+  <div class="fyears" id="years" role="group" aria-label="Year"></div>
+  <p class="fmsg" id="msg" role="status" aria-live="polite">Type at least two letters.</p>
+  <ul class="flist" id="list"></ul>
+
+  <p class="fnote">Students only. Searches go to the school’s own directory using your school login, and
+    nothing you search for is saved. Up to 20 matches are shown — add a surname or pick a year to narrow it down.</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+/* the finder needs a working school login — the same one the timetable uses */
+const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
+let year = 0, seq = 0, timer = null;
+
+function paintYears(){
+  $('years').innerHTML = [0, 7, 8, 9, 10, 11, 12].map(y =>
+    '<button type="button" data-y="' + y + '" aria-pressed="' + (y === year) + '">' + (y ? 'Year ' + y : 'Any year') + '</button>').join('');
+  $('years').querySelectorAll('button').forEach(b => b.onclick = () => { year = +b.dataset.y; paintYears(); search(); });
+}
+
+function show(results){
+  $('list').innerHTML = results.map(p =>
+    '<li class="frow"><div><span class="fname">' + esc(p.name) + '</span>' +
+      (p.year ? '<span class="fyear">Year ' + esc(p.year) + '</span>' : '') + '</div>' +
+    '<div class="fmail">' + esc(p.email) + '</div>' +
+    '<div class="facts"><button type="button" class="btn" data-copy="' + esc(p.email) + '">Copy</button>' +
+      '<a class="btn" href="mailto:' + esc(p.email) + '">Email</a></div></li>').join('');
+  $('list').querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied'; }
+    catch { b.textContent = 'Press Ctrl+C'; }
+    setTimeout(() => { b.textContent = 'Copy'; }, 1400);
+  });
+}
+
+async function search(){
+  const q = $('q').value.trim();
+  const msg = $('msg');
+  msg.className = 'fmsg';
+  if (q.length < 2){ show([]); msg.textContent = 'Type at least two letters.'; return; }
+  const mine = ++seq;
+  msg.textContent = 'Searching…';
+  try {
+    const params = { find:q };
+    if (year) params.year = year;
+    const d = await TT.apiGet(params);
+    if (mine !== seq) return;                    // a newer search has started
+    const res = (d && d.results) || [];
+    show(res);
+    msg.textContent = res.length
+      ? res.length + (res.length === 20 ? '+ matches — showing the first 20' : ' match' + (res.length === 1 ? '' : 'es'))
+      : 'No students match “' + q + '”' + (year ? ' in Year ' + year : '') + '.';
+  } catch (err) {
+    if (mine !== seq) return;
+    show([]);
+    msg.className = 'fmsg err';
+    msg.textContent = err.message || 'The search failed.';
+  }
+}
+
+if (!signedIn){
+  $('q').disabled = true;
+  $('msg').innerHTML = 'The student finder needs your school login. <a href="./">Sign in on the timetable page</a> first, then come back.';
+} else {
+  paintYears();
+  $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 250); });
+  $('q').focus();
+}
+</script>
+<script src="settings.js"></script>
+</body>
+</html>

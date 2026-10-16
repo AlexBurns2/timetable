@@ -1872,3 +1872,38 @@ unchanged); `resetTopic` still removes them.
 targeting, the countdown's published-dates-only rule and focus expiry. All
 seventeen suites pass.
 
+### 8.43 Student finder, and teachers out of class lists
+
+**`?find=` on /api/timetable** (no new function — the project is at 11 of 12).
+Requires the caller's own school login in the X-School headers and checks it
+with `getToken`; without one it is 401. Two-letter minimum, at most 20 results,
+`Cache-Control: private, no-store`, optional `year=7..12` applied before the cap.
+The directory is `/api/group/student` read with the server's login
+(`fetchAsOwner`), filtered by `isStudentRecord` and cached an hour per warm
+instance. `searchStudents` needs every typed word to start a first name, a last
+name or the email user name; results are `{name, email, year}` only. The page is
+`finder.html`, linked from a home tile.
+
+**Why the gate:** the directory is 771 students, Years 7–12 — mostly minors. The
+finder is deliberately only for people who can sign in to the school's system,
+and only ever hands back matches.
+
+**Still open, worth deciding:** the older `?group=student` (used by Guess Who)
+returns that whole list — names, school emails and years — to *anyone* who
+requests it, with no sign-in and `Cache-Control: public`. Gating it the same way
+as `?find=` would not break Guess Who for signed-in users.
+
+**Class lists.** The school API marks people with `groups`: students carry
+`student` and `yrNN`; the teacher carries `teacher`/`staff`/`executive` and a
+`@det.nsw.edu.au` address. `rosterPeople` in index.html looked for a `Role` or
+`Type` field that this API never sends, so the teacher was listed as a student.
+It now checks `groups` and the staff domain (keeping Role/Type for any older
+shape), drops staff from the list, and reads the year from `yrNN`. Guess Who's
+`isStaff` checks `groups` too.
+
+`findercheck.mjs` (19 checks) runs the real timetable.js against a fake school
+API — refusals, a staff member named Sam who must never appear, the result
+shape, the year filter, the cap, the cache — and lifts the real `rosterPeople`
+out of index.html to check the teacher is dropped. Run against the previous
+index.html, that same check lists the teacher.
+

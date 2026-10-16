@@ -1476,10 +1476,18 @@ function rosterPeople(data){
     const nm = full || [first, last].filter(Boolean).join(' ');
     const mail = str(pick(r, ['Email','email','emailAddress','EmailAddress']));
     const name = nm || (mail ? nameFromEmail(mail) : '') || str(pick(r, ['username','Username'])) || 'Student';
-    const year = str(pick(r, ['Year','year','Form','form','Grade','grade','RollClass','rollClass']));
-    const isTeacher = /teacher|staff/i.test(str(pick(r, ['Role','role','Type','type'])));
+    /* the school API marks people with `groups`: students carry "student" and
+       "yr11", the class's teacher carries "teacher", "staff" or "executive" and
+       a staff (@det) address. Role/Type are kept for any older shape. */
+    const groups = Array.isArray(r && r.groups) ? r.groups.map(g => String(g).toLowerCase()) : [];
+    const yrGroup = groups.map(g => g.match(/^yr\.?\s*(\d{1,2})$/)).find(Boolean);
+    const year = str(pick(r, ['Year','year','Form','form','Grade','grade','RollClass','rollClass'])) ||
+                 (yrGroup ? 'Year ' + yrGroup[1] : '');
+    const isTeacher = groups.some(g => /^(teacher|staff|executive|admin)/.test(g)) ||
+                      /@det\.nsw\.edu\.au$/i.test(mail) ||
+                      /teacher|staff/i.test(str(pick(r, ['Role','role','Type','type'])));
     return { name, year, mail, isTeacher };
-  }).filter(x => x.name);
+  }).filter(x => x.name && !x.isTeacher);    // a class list is the students; the teacher is on the lesson already
 }
 $('dclass').onclick = async () => {
   if (!detailEntry) return;

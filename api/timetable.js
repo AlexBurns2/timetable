@@ -188,6 +188,57 @@ export async function fetchAsOwner(path) {
   return out;
 }
 
+/* --------------------------------------------------------- student finder */
+/* The whole-school student list, read with the server's own login and kept
+   for an hour per warm instance. Only students: anyone whose groups name them
+   as staff, or whose address is a staff one, is left out. */
+let directoryCache = { at: 0, list: null };
+const DIRECTORY_TTL_MS = 60 * 60 * 1000;
+export function isStudentRecord(r) {
+  const groups = Array.isArray(r && r.groups) ? r.groups.map(g => String(g).toLowerCase()) : [];
+  const mail = String((r && (r.emailAddress || r.email || r.Email)) || "").toLowerCase();
+  if (groups.some(g => /^(teacher|staff|executive|admin)/.test(g))) return false;
+  if (/@det\.nsw\.edu\.au$/.test(mail)) return false;
+  return groups.includes("student") || /@education\.nsw\.gov\.au$/.test(mail);
+}
+export function shapeStudent(r) {
+  const first = String(r.firstname || r.firstName || r.FirstName || "").trim();
+  const last = String(r.lastname || r.lastName || r.LastName || "").trim();
+  const email = String(r.emailAddress || r.email || r.Email || "").trim().toLowerCase();
+  const yr = (Array.isArray(r.groups) ? r.groups : []).map(g => String(g).match(/^yr\.?\s*(\d{1,2})$/i)).find(Boolean);
+  return { first, last, email, year: yr ? +yr[1] : null };
+}
+async function studentDirectory() {
+  if (directoryCache.list && Date.now() - directoryCache.at < DIRECTORY_TTL_MS) return directoryCache.list;
+  const raw = await fetchAsOwner("/api/group/student");
+  const arr = Array.isArray(raw) ? raw : ((raw && (raw.people || raw.users || raw.data)) || []);
+  const list = arr.filter(isStudentRecord).map(shapeStudent).filter(p => p.email);
+  directoryCache = { at: Date.now(), list };
+  return list;
+}
+/* Every word typed has to start a first name, a last name or the email user
+   name ("sam t" finds Sam Taylor). Ranked: whole name starts with the search,
+   then first-name matches, then last-name matches, then everything else. */
+export function searchStudents(list, q, max) {
+  const words = q.split(" ").filter(Boolean);
+  const scored = [];
+  for (const p of list) {
+    const first = p.first.toLowerCase(), last = p.last.toLowerCase();
+    const user = p.email.split("@")[0];
+    const parts = [first, last, user, ...first.split(/[\s'-]+/), ...last.split(/[\s'-]+/)];
+    if (!words.every(w => parts.some(x => x.startsWith(w)))) continue;
+    const full = (first + " " + last).trim();
+    const score = full.startsWith(q) ? 0 : first.startsWith(words[0]) ? 1 : last.startsWith(words[0]) ? 2 : 3;
+    scored.push({ p, score, full });
+  }
+  scored.sort((a, b) => a.score - b.score || a.full.localeCompare(b.full));
+  return scored.slice(0, max).map(({ p }) => ({
+    name: [p.first, p.last].filter(Boolean).join(" ") || p.email.split("@")[0],
+    email: p.email,
+    year: p.year
+  }));
+}
+
 /* ------------------------------------------------------------------ handler */
 
 export default async function handler(req, res) {
@@ -279,6 +330,34 @@ export default async function handler(req, res) {
   if (!usingOwn && allowlist.length) {
     const ok = allowlist.some(e => normaliseEmail(e, domain) === email);
     if (!ok) return res.status(403).json({ error: "That address is not permitted on this site." });
+  }
+
+  /* ---- ?find=<name> ------------------------------------------------------
+   * Student finder. Unlike the class and group lists below, this one needs the
+   * caller's OWN working school login: it searches every student in the school
+   * (Years 7–12, so mostly minors), so it is only for people who can sign in to
+   * the school's own system. It hands back matches only — at most 20, for a
+   * search of at least two letters — never the whole list, and nothing it
+   * returns is cached on the way out. Students only: staff are never included.
+   */
+  if (req.query.find !== undefined) {
+    res.setHeader("Cache-Control", "private, no-store");
+    if (!usingOwn) {
+      return res.status(401).json({ error: "Sign in with your school account to use the student finder." });
+    }
+    try { await getToken(apiBase, authEmail, ownPassword); }
+    catch { return res.status(401).json({ error: "Those school sign-in details were not accepted." }); }
+    const q = String(req.query.find || "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (q.length < 2) return res.status(400).json({ error: "Type at least two letters." });
+    const yr = parseInt(req.query.year, 10);
+    try {
+      let people = await studentDirectory();
+      if (yr >= 7 && yr <= 12) people = people.filter(p => p.year === yr);   // before the cap, so it hides nothing
+      return res.status(200).json({ query: q, results: searchStudents(people, q, 20) });
+    } catch (error) {
+      console.error("Student finder failed:", error.message);
+      return res.status(502).json({ error: "Unable to search the school directory right now." });
+    }
   }
 
   /* ---- ?class=<code> -----------------------------------------------------

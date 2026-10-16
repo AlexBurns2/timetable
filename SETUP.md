@@ -1284,6 +1284,21 @@ tile and the forum is hidden — on every device you are signed in on. It unlock
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
 
+## Student finder
+
+A new **Student finder** tile on the home page. Type part of a first or last
+name (two letters at least) and it lists matching students with their **year
+and school email**, with buttons to copy the address or start an email. You can
+narrow it to one year. "sam t" finds Sam Taylor; up to 20 matches show at once.
+
+- **Students only** — staff are never listed.
+- **It needs your school login**, the same one the timetable uses. Without it
+  the page asks you to sign in, and the server refuses the search anyway.
+- It only ever returns the matches for what you typed, never the whole school.
+
+**Class lists no longer include the teacher.** The list under a lesson is just
+the students, and now shows each one's year.
+
 ## Offline
 
 The site now installs a small background worker the first time you open it, so
