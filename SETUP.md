@@ -1254,6 +1254,19 @@ uses g = 10 m/s², as the Engineering Studies course does (Physics keeps 9.8).
 **Cast irons** moved into the Steels module, so Engineering has five modules.
 Progress is kept, but an Engineering test that was in progress starts again.
 
+## If the timetable shows the wrong week
+
+The school's system still reports the cycle as starting in **February 2025**, and
+the A/B week is counted forward from there — through every school holiday — so it
+can end up a week out.
+
+Open **Settings → Cycle week** and press the week it really is today. That
+correction is remembered and follows you to your other devices, and it fixes the
+"now" and "next" panels as well as the grid.
+
+(The ‹ › arrows beside the week name only change which week you are *looking at*.
+The setting is what tells the page which week it actually is.)
+
 ## Moderator: rename someone
 
 On the moderator page's Signed-in users tab, **Rename** sets the name a person is

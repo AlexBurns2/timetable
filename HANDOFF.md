@@ -1712,3 +1712,46 @@ Two things are load-bearing:
   the deliberately weak theses and sentences were rewritten to be wordy rather
   than short. That took it to 49%, and the test fails above 80%.
 
+### 8.39 The timetable: what was actually wrong
+
+Reported as "the timetable has stopped working". It was not the revision work
+and it was not the school API. What was checked, in order:
+
+- **The page.** `index.html` loads only `theme.js` and `tour.js`; neither was
+  touched. `api/timetable.js` has not been modified since 31 August.
+- **The school API.** Still healthy and unchanged. `POST /api/token` with
+  `{emailAddress, password}` returns a JSON 401 for a bad login, and all four
+  data paths (`/api/timetable/{email}`, `/api/timetable/bell-times`,
+  `/api/timetable/settings/start-date`, `/api/user/{email}`) still answer JSON
+  401 unauthenticated. A first probe that looked like a 404 was a GET on a
+  POST-only route with the wrong field name — `emailAddress`, not `email`.
+- **The deployment.** `timetable-iota-ten.vercel.app` is live and current: it
+  serves the new revision files and `/api/timetable` returns a full payload (50
+  entries, 130 bell times, profile). **`timetable-ivory-nine.vercel.app` is
+  dead** — its root is a 3 KB stub and every other path, including
+  `/api/timetable`, 404s. A bookmark or installed PWA pointing there would look
+  exactly like "the timetable stopped working".
+
+**The real bug: the A/B week drifts.** The school API still reports
+`startDate: "2025-02-03"` — the start of the *2025* school year. `cycleDayFor`
+counts every weekday from there, school holidays included, so the computed week
+slides by roughly a week per two terms of holidays. It is not cosmetic: the
+computed cycle day drives the NOW/NEXT panel and the "today" column, so a wrong
+week means the whole page shows the wrong classes.
+
+Fixed with a correction the student can set rather than by guessing at the
+school's intent: **Settings → Cycle week → "Today is [Week A] [Week B]"**. It
+stores `tt.cycleshift` (0 or 5 — half a cycle), which `cycleDayFor` adds before
+the modulo, so it flips A↔B while keeping the weekday. It rides the `tt.*` sync,
+calibrates against Monday when set at a weekend, and disables itself with an
+explanation when the school sends no start date at all.
+
+**Still open — a privacy hole.** `GET /api/timetable` with no credentials
+returns the owner's full timetable, including teachers' email addresses and room
+numbers. Passing a made-up `X-School-Email` and a wrong password returns the
+same data: the route falls back to the server's own school login rather than
+refusing. Not changed here, because tightening an auth path could lock the owner
+out and that is the user's call. The fix is to require a signed-in site session
+(the `whoami` check `prefs.js` and the others already use) or to set
+`ALLOWED_EMAILS`.
+

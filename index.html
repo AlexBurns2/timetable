@@ -493,6 +493,21 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 
     <div class="field">
+      <label>Cycle week</label>
+      <div class="hint" style="margin-top:0;margin-bottom:9px">
+        The school API reports the cycle starting <b id="cyc_start">—</b>, and the
+        A/B week is counted from there. If the grid is showing the wrong week,
+        set which week it really is: the correction is remembered and follows you
+        to your other devices.
+      </div>
+      <div class="custrow"><span id="cyc_label">Today is</span>
+        <span style="display:flex;gap:6px">
+          <button class="btn" type="button" id="cyc_a">Week A</button>
+          <button class="btn" type="button" id="cyc_b">Week B</button>
+        </span></div>
+    </div>
+
+    <div class="field">
       <label>Login</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
         Your school login, stored <b>only on this device</b> and sent to the
@@ -626,7 +641,7 @@ const inkFor = TT.inkFor;
 const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
              creds:'tt.creds',
              textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
-             weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
   /* mirror settings to the signed-in user (theme.js debounces + skips creds/cache) */
@@ -646,6 +661,7 @@ let zenMode        = get(LS.zen, false);
 /* Optional personal school login. Stored on this device only — see the
    warning shown beside the fields in Settings. */
 let creds          = get(LS.creds, null);
+cycleShift = (+get(LS.cycleshift, 0) === 5) ? 5 : 0;
 let textScale      = get(LS.textScale, 1);
 let zoom           = get(LS.zoom, 1);
 let contrast       = get(LS.contrast, 'normal');
@@ -792,6 +808,11 @@ const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
   .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
 
 /* ═══ cycle mapping ═══ */
+/* The school API's cycle start date can be a year or more old, and counting
+   weekdays through it also counts the holidays, so the A/B week can end up a
+   week out. `cycleShift` (0 or 5, half a cycle) is the user's correction, kept
+   in tt.* so it syncs. */
+let cycleShift = 0;
 function cycleDayFor(date, cycleStart){
   if (!cycleStart) return null;
   /* Day 0 of the cycle is a Monday. If the API's start date lands mid-week,
@@ -804,7 +825,26 @@ function cycleDayFor(date, cycleStart){
   let elapsed = 0;
   const cur = new Date(start);
   while (cur < d){ cur.setDate(cur.getDate()+1); const w = cur.getDay(); if (w !== 0 && w !== 6) elapsed++; }
-  return CYCLE_DAYS[elapsed % 10];
+  return CYCLE_DAYS[(elapsed + cycleShift) % 10];
+}
+/* The weekday the correction is calibrated against: today, or Monday if it is
+   the weekend (the cycle has no Saturday). */
+function cycleRefDay(){
+  const d = midnight(new Date()), dow = d.getDay();
+  if (dow === 6) d.setDate(d.getDate() + 2);
+  else if (dow === 0) d.setDate(d.getDate() + 1);
+  return d;
+}
+/* Set the correction so the reference weekday lands on the chosen week. */
+function setCycleWeek(letter){
+  if (!cycleStart) return;
+  const keep = cycleShift;
+  cycleShift = 0;
+  const base = cycleDayFor(cycleRefDay(), cycleStart);
+  cycleShift = base ? (base.slice(-1) === letter ? 0 : 5) : keep;
+  set(LS.cycleshift, cycleShift);
+  viewWeek = null;
+  render();
 }
 /* Only a bare number ("4", "P4", "Period 4") is a period number. Labels like
    "L1"/"L2" (lunch halves) and "R" (recess) must keep their own identity --
@@ -1636,6 +1676,30 @@ function bindCustom(){
     custom = Object.assign({}, CUSTOM_DEFAULTS);
     set(LS.custom, custom); applyLook(); renderCustom(); render();
   };
+  $('cyc_a').onclick = () => { setCycleWeek('a'); paintCycleRow(); };
+  $('cyc_b').onclick = () => { setCycleWeek('b'); paintCycleRow(); };
+}
+/* Show the cycle start the school API gave us, which week today is, and which
+   of the two buttons is the one currently in force. */
+function paintCycleRow(){
+  if (!$('cyc_start')) return;
+  const ref = cycleRefDay(), isToday = midnight(ref).getTime() === midnight(new Date()).getTime();
+  $('cyc_label').textContent = isToday ? 'Today is' : 'Monday is';
+  $('cyc_start').textContent = cycleStart
+    ? cycleStart.toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' })
+    : 'an unknown date';
+  const now = cycleDayFor(ref, cycleStart);
+  const letter = now ? now.slice(-1) : null;
+  ['a','b'].forEach(x => {
+    const b = $('cyc_' + x);
+    /* With no start date from the school there is no cycle to correct, so say
+       that rather than leaving two buttons that quietly do nothing. */
+    b.disabled = !cycleStart;
+    b.setAttribute('aria-pressed', String(letter === x));
+    b.style.fontWeight = letter === x ? '700' : '';
+    b.style.opacity = !cycleStart ? '.45' : (letter && letter !== x ? '.6' : '');
+  });
+  if (!cycleStart) $('cyc_start').textContent = 'no date — the school API did not send one';
 }
 bindCustom();
 
@@ -1767,6 +1831,7 @@ $('modetoggle').onclick = () => {
   set(LS.mode, mode); applyLook(); renderModes(); render();
 };
 $('settings').onclick = () => {
+  paintCycleRow();
   $('status').textContent = loadError || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
