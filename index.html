@@ -661,7 +661,6 @@ let zenMode        = get(LS.zen, false);
 /* Optional personal school login. Stored on this device only — see the
    warning shown beside the fields in Settings. */
 let creds          = get(LS.creds, null);
-cycleShift = (+get(LS.cycleshift, 0) === 5) ? 5 : 0;
 let textScale      = get(LS.textScale, 1);
 let zoom           = get(LS.zoom, 1);
 let contrast       = get(LS.contrast, 'normal');
@@ -812,7 +811,7 @@ const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
    weekdays through it also counts the holidays, so the A/B week can end up a
    week out. `cycleShift` (0 or 5, half a cycle) is the user's correction, kept
    in tt.* so it syncs. */
-let cycleShift = 0;
+let cycleShift = (+get(LS.cycleshift, 0) === 5) ? 5 : 0;
 function cycleDayFor(date, cycleStart){
   if (!cycleStart) return null;
   /* Day 0 of the cycle is a Monday. If the API's start date lands mid-week,
@@ -1403,6 +1402,18 @@ function nowCard(label, e, nowMin, when, weekend){
       ? '<div class="progrow"><div class="prog"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
         '<span class="count">' + cd + '</span></div>'
       : (cd ? '<div class="count">' + cd + '</div>' : ''));
+  return d;
+}
+/* Friday after the last lesson: the useful thing to say is that the week is
+   over, and what Monday opens with. render() has called this since the Friday
+   message was added, but it was never written — so every Friday afternoon the
+   render stopped here, before the grid was drawn. */
+function weekendCard(next, when){
+  const d = nowCard('Next', null, 0, '', true);
+  if (next){
+    const meta = d.querySelector('.meta');
+    if (meta) meta.innerHTML = 'No more classes this week · <b>' + esc(when || 'Monday') + '</b> starts with ' + esc(next.subject);
+  }
   return d;
 }
 
