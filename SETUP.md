@@ -2467,3 +2467,54 @@ from a built-in faculty palette matched on the course name (Maths pink, Science
 cyan, English yellow, …), with per-mode values and manual overrides in
 ⚙ → Colours. If you'd rather use the school's own `Colour` values, that's a
 small change to `defaultColour()` / `normalise()` — say the word.
+
+---
+
+## The Jim Button (`jim.js`, `api/jim.js`, `jim/`)
+
+A port of the standalone Jim Button. The button is styled exactly as the
+original; the page around it uses the site theme. Audio (name `.wav`s,
+achievement `.m4a`s, `jim.mp3` / `stanley.mp3`, `names.json`) lives in `jim/`.
+To add a name, drop `<name>.wav` into `jim/` and add it to `jim/names.json`
+(the list Random mode picks from). To add an achievement, add the score to
+`JIM_ACH` in `jim.js` and a matching `jim/<score>.m4a`.
+
+Players are just the first name they type, as in the original. There is no
+school login, so it keeps working when the school API is down. Scores moved
+from Firebase to Supabase. The old Firebase database's test-mode rules
+expired, which is why it started answering "Permission denied".
+
+**Setup:** one table and one function, no new env vars. Run this in the
+Supabase SQL editor:
+```sql
+create table jim_score (
+  name text primary key,
+  score bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table jim_score enable row level security;   -- no policies: only the service role (api/) can touch it
+
+create or replace function jim_press(p_name text, p_add int)
+returns bigint language sql as $$
+  insert into jim_score (name, score, updated_at) values (p_name, p_add, now())
+  on conflict (name) do update
+    set score = jim_score.score + excluded.score, updated_at = now()
+  returning score;
+$$;
+revoke execute on function jim_press(text, int) from public, anon, authenticated;
+```
+
+**Bringing the old Firebase scores across:** in the Firebase console go to
+Realtime Database → ⋮ → *Export JSON*. Copy the object under `"scores"` and
+paste it in place of `{…}` below:
+```sql
+insert into jim_score (name, score)
+select key, value::bigint from jsonb_each_text('{…}'::jsonb)
+on conflict (name) do update set score = greatest(jim_score.score, excluded.score);
+```
+
+How it works: the client counts presses locally and sends them in batches
+(`POST /api/jim {name, add}`, about one request per second of pressing; turbo
+mode included). The SQL function does the increment, so two tabs never lose a
+press. The open board refreshes every 4 s (`GET /api/jim`), which stands in for
+Firebase's live listener.

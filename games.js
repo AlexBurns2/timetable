@@ -141,12 +141,13 @@ const GAMES = [
   { id:'chem',    cat:'Revision', year:11, ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
   { id:'engineering', cat:'Revision', year:11, ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
   { id:'software', cat:'Revision', year:11, ico:'💻', name:'Software', blurb:'Read code and write it' },
-  { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year' },
+  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'The button that says the name of the player playing the game', w:2, h:2, isNew:true },
+  { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
   { id:'oddone', cat:'Timetable', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
-  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice' },
+  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
   { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  cat:'Arcade', ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
@@ -154,7 +155,6 @@ const GAMES = [
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
-const CAT_ORDER = ['Timetable', 'Arcade'];
 
 /* ── which year's revision you are shown ───────────────────────────────────
    The HSC course starts in Term 4 of Year 11, so from then on Year 12 is what
@@ -173,10 +173,14 @@ const REVISION_PAGE = PAGE === 'revision';
 
 function gameCard(g, i){
   const c = document.createElement('button');
-  c.type = 'button'; c.className = 'gamecard';
+  c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '') + (g.id === 'jim' ? ' jimcard' : '');
   c.style.animationDelay = (i * 45) + 'ms';
   const stat = statLine(g.id);
-  c.innerHTML = '<span class="ico">' + g.ico + '</span>' +
+  c.innerHTML = (g.isNew ? '<span class="newbanner">New game</span>' : '') +
+    (g.id === 'jim'
+      ? '<span class="jim jimmini" aria-hidden="true"><span class="btn-outer"><span class="btn-ring"><span class="name-btn">JIM</span></span></span></span>'
+      : '<span class="ico">' + g.ico + '</span>') +
+    (REVISION_PAGE ? '' : '<span class="tag">' + g.cat + '</span>') +
     '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
     (stat ? '<span class="stat">' + stat + '</span>' : '') +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : 'Play') + ' &#8594;</span>';
@@ -214,51 +218,15 @@ function showGrid(){
   }
 
   if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
-  CAT_ORDER.forEach(cat => {
-    const inCat = GAMES.filter(g => g.cat === cat);
-    if (!inCat.length) return;
-    const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
-    grid.appendChild(h);
-    const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
-    const row = document.createElement('div'); row.className = 'gamerow';
-    inCat.forEach((g, i) => row.appendChild(gameCard(g, i)));
-    wrap.appendChild(row); grid.appendChild(wrap);
-    dragScroll(row);
-  });
+  const bento = document.createElement('div'); bento.className = 'bento';
+  const games = GAMES.filter(g => g.cat !== 'Revision');
+  const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
+  grid.appendChild(bento);
+  bentoStop = Bento.layout(bento, games.map((g, i) => ({ el:cards[i], w:g.w, h:g.h })));
   renderLBSum();
-  scrollHint();
 }
 
-/* The shelves scroll sideways, which is not obvious from a still screen, so
-   the first visit gets one demonstration on the real cards. Only worth showing
-   if there is actually something off the right-hand edge. */
-function scrollHint(){
-  if (!window.Tour) return;
-  requestAnimationFrame(() => {
-    const row = document.querySelector('.gamerow');
-    if (row && row.scrollWidth > row.clientWidth + 40) Tour.start('games');
-  });
-}
-/* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
-   the browser's own horizontal scroll; a drag swallows the click that follows). */
-function dragScroll(row){
-  row.addEventListener('wheel', e => {
-    if (row.scrollWidth <= row.clientWidth) return;
-    const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-    if (d){ row.scrollLeft += d; e.preventDefault(); }
-  }, { passive:false });
-  let down = false, moved = false, sx = 0, sl = 0;
-  row.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0) return;
-    down = true; moved = false; sx = e.clientX; sl = row.scrollLeft; });
-  row.addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx;
-    if (Math.abs(dx) > 6){ moved = true; row.classList.add('dragging'); }
-    if (moved){ row.scrollLeft = sl - dx; e.preventDefault(); } });
-  const end = () => { if (!down) return; down = false; row.classList.remove('dragging');
-    if (moved){ row.classList.add('nodrag'); setTimeout(() => row.classList.remove('nodrag'), 0); } };
-  row.addEventListener('pointerup', end);
-  row.addEventListener('pointerleave', end);
-  row.addEventListener('click', e => { if (row.classList.contains('nodrag')){ e.stopPropagation(); e.preventDefault(); } }, true);
-}
+let bentoStop = null;
 
 /* ── leaderboard catalogue (shared by the summary strip + the full view) ── */
 const LB_CAT = [
@@ -313,6 +281,7 @@ function openGame(id){
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
+    if (bentoStop){ bentoStop(); bentoStop = null; }
     $('lbsum').hidden = true;
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';

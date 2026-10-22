@@ -11,6 +11,7 @@
 <script src="theme.js"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
+<script src="bento.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
@@ -30,13 +31,14 @@
 
   <div class="hscstrip" id="hscstrip" hidden></div>
 
-  <nav class="tiles">
-    <a class="tile primary" href="./" id="tileTimetable">
+  <nav class="tiles bento" id="tiles">
+    <a class="tile primary" href="./" id="tileTimetable" data-w="2" data-h="2">
       <span class="ico">📋</span>
       <span class="tname">Timetable</span>
       <span class="tdesc">Your classes for the fortnight</span>
+      <span class="tglyph" aria-hidden="true">📋</span>
     </a>
-    <a class="tile" href="revision.html" id="tileRevision">
+    <a class="tile" href="revision.html" id="tileRevision" data-w="2" data-h="1">
       <span class="ico">✏️</span>
       <span class="tname">Revision</span>
       <span class="tdesc">Quizzes and flashcards for your subjects</span>
@@ -51,7 +53,7 @@
       <span class="tname">Notes</span>
       <span class="tdesc">A scratchpad that saves as you type</span>
     </a>
-    <a class="tile" href="games.html" id="tileGames">
+    <a class="tile" href="games.html" id="tileGames" data-w="2" data-h="1">
       <span class="ico">🎮</span>
       <span class="tname">Games</span>
       <span class="tdesc">For when you have ten minutes to kill</span>
@@ -66,7 +68,7 @@
       <span class="tname">Student finder</span>
       <span class="tdesc">Find a student’s school email</span>
     </a>
-    <a class="tile" href="free.html">
+    <a class="tile" href="free.html" data-w="2" data-h="1">
       <span class="ico">🤝</span>
       <span class="tname">Free periods</span>
       <span class="tdesc">When you and your friends are out of class</span>
@@ -86,6 +88,8 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
+/* the hub tiles: a packed grid, sizes from data-w / data-h */
+Bento.layout($('tiles'), [...$('tiles').children].map(el => ({ el, w:+el.dataset.w || 1, h:+el.dataset.h || 1 })));
 /* ── forum ─────────────────────────────────────────────────────────────── */
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));

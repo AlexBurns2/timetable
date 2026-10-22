@@ -269,6 +269,10 @@ button,select,input{font:inherit;color:inherit}
 .gatepass:focus{border-color:var(--accent)}
 .gatecard .btn{margin-top:15px;width:100%;font-weight:700}
 .gateerr{color:#e5484d;font-size:0.8125rem;margin-top:11px;min-height:19px}
+/* the timetable needs the school API; everything else (home, games) does not */
+.gatecard .gateskip{display:flex;justify-content:center;text-align:center;text-decoration:none;font-weight:500;
+  margin-top:4px;font-size:0.8125rem;color:var(--muted);background:transparent;box-shadow:none;border-color:transparent}
+.gatecard .gateskip:hover{color:var(--text)}
 [data-skin="terminal"] .gateerr,[data-skin="blueprint"] .gateerr{color:#ff8a8a}
 
 /* dialogs */
@@ -403,6 +407,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <button class="btn primary" type="submit" id="gatego">Show my timetable</button>
     </form>
     <div class="gateerr" id="gateerr"></div>
+    <a class="btn gateskip" href="home.html">School server down? Go to Home &#8594;</a>
   </div>
 </div>
 

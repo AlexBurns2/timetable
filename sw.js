@@ -19,7 +19,7 @@
      every cache, so a broken release can always be undone from the browser.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE = 'msc-' + CACHE_VERSION;
 
 /* The shell: enough to open the timetable and the revision page with no
@@ -30,7 +30,7 @@ const SHELL = [
   '/', '/index.html', '/home.html', '/revision.html', '/games.html',
   '/calendar.html', '/notes.html', '/resources.html',
   '/site.css', '/games.css', '/theme.css', '/settings.css',
-  '/theme.js', '/tour.js', '/settings.js', '/study.js'
+  '/theme.js', '/tour.js', '/settings.js', '/study.js', '/bento.js'
 ];
 
 self.addEventListener('install', e => {
@@ -58,6 +58,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;        // leave other hosts alone
   if (isApi(url)) return;                                 // personal data: always the network
+  if (url.pathname.startsWith('/jim/')) return;           // Jim Button audio: ranged media requests, leave to the browser
 
   /* the escape hatch */
   if (url.pathname === '/sw-off'){

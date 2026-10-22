@@ -309,10 +309,6 @@ const TOURS = {
   ],
   home: [
     { id:'settings', target:'#themebtn', title:'Settings', text:SETTINGS_TEXT }
-  ],
-  games: [
-    { id:'games-scroll', target:'.gamerow', title:'More this way',
-      text:TOUCH ? 'Swipe the row sideways.' : 'Drag the row sideways, or scroll.', demo:'scroll' }
   ]
 };
 

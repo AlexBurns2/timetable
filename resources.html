@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" href="/images/icon.png">
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
+<script src="bento.js"></script>
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
 <style>
@@ -21,18 +22,27 @@
   padding:8px 18px;font-size:0.875rem;cursor:pointer;color:var(--text);font-weight:700}
 .yeartab:hover{border-color:var(--accent)}
 .yeartab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.subjgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.subjgrid.bento{grid-auto-rows:112px;gap:12px}
 .subjcard{
-  display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);
+  position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--text);
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
-  padding:15px 16px;box-shadow:var(--shadow);
+  padding:14px 16px;box-shadow:var(--shadow);min-width:0;
   transition:transform .14s,box-shadow .14s,background .14s;
 }
 .subjcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
 .subjcard .ico{font-size:1.5rem;line-height:1;flex:none}
-.subjcard .nm{font-weight:700;font-size:0.9375rem;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.subjcard .go{margin-left:auto;color:var(--accent);font-size:0.9375rem;flex:none;opacity:.5;transition:opacity .14s,transform .14s}
-.subjcard:hover .go{opacity:1;transform:translateX(2px)}
+.subjcard .nm{font-weight:700;font-size:0.9375rem;margin-top:auto;min-width:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.subjcard .go{position:absolute;top:12px;right:14px;color:var(--accent);font-size:0.9375rem;opacity:.5;transition:opacity .14s,transform .14s}
+.subjcard:hover .go{opacity:1;transform:translate(2px,-2px)}
+/* the whole library: the big tile */
+.subjcard.lib{border-left:5px solid var(--accent)}
+.subjcard.lib .ico{font-size:2.75rem;margin-bottom:auto}
+.subjcard.lib .nm{font-family:var(--font-display);font-size:clamp(1.25rem,3vw,1.75rem);font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt);margin-top:0}
+.subjcard.lib .sub{color:var(--muted);font-size:0.8125rem}
+.subjcard.lib:not(.tall) .ico{font-size:1.5rem}
+@media (max-width:540px){ .subjgrid.bento{grid-auto-rows:100px;gap:10px} .subjcard{padding:12px 13px} .subjcard .nm{font-size:0.875rem} }
 html[data-motion="reduced"] .subjcard{transition:none}
 </style>
 </head>
@@ -48,11 +58,10 @@ html[data-motion="reduced"] .subjcard{transition:none}
   </div>
 
   <p class="reslede">Textbooks by year and subject, straight from the student-run HSC Textbook Library.
-    Pick your year, then a subject. It opens that folder in Google Drive.
-    <a id="reslib" href="#" target="_blank" rel="noopener">Open the whole library ↗</a></p>
+    Pick your year, then a subject. It opens that folder in Google Drive.</p>
 
   <div class="yeartabs" id="yeartabs"></div>
-  <div class="subjgrid" id="subjgrid"></div>
+  <div class="subjgrid bento" id="subjgrid"></div>
 </div>
 
 <script>
@@ -60,7 +69,6 @@ const $ = id => document.getElementById(id);
 
 const DRIVE = 'https://drive.google.com/drive/folders/';
 const LIBRARY = '1vAADiVrKUIR_iApOoBdghSvKU6JhIwKT';
-$('reslib').href = DRIVE + LIBRARY;
 
 /* Seeded from the HSC Textbook Library on Google Drive (folder ids per subject).
    To add/replace a subject, drop its Drive folder id in here. */
@@ -142,12 +150,21 @@ function renderYears(){
   [...el.children].forEach(b => b.onclick = () => { year = b.dataset.y; TT.set('tt.resyear', year);
     [...el.children].forEach(x => x.setAttribute('aria-pressed', String(x===b))); renderSubjects(); });
 }
+/* a packed grid: the whole library takes the big tile, long subject names a wide one */
+const resCols = w => w >= 900 ? 5 : w >= 680 ? 4 : w >= 440 ? 3 : 2;
 function renderSubjects(){
-  const subs = RES[year] || {};
-  $('subjgrid').innerHTML = Object.keys(subs).map(name =>
+  const subs = RES[year] || {}, grid = $('subjgrid');
+  const names = Object.keys(subs);
+  grid.innerHTML =
+    '<a class="subjcard lib" href="'+DRIVE+LIBRARY+'" target="_blank" rel="noopener">' +
+      '<span class="ico">📚</span><span class="nm">The whole library</span>' +
+      '<span class="sub">Every year and subject in the HSC Textbook Library</span><span class="go">↗</span></a>' +
+    names.map(name =>
     '<a class="subjcard" href="'+DRIVE+subs[name]+'" target="_blank" rel="noopener">' +
       '<span class="ico">'+subjectIcon(name)+'</span>' +
       '<span class="nm">'+esc(name)+'</span><span class="go">↗</span></a>').join('');
+  const els = [...grid.children];
+  Bento.layout(grid, [{ el:els[0], w:2, h:2 }].concat(names.map((n, i) => ({ el:els[i + 1], w:n.length > 18 ? 2 : 1 }))), resCols);
 }
 renderYears(); renderSubjects();
 </script>

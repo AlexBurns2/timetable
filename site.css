@@ -60,6 +60,21 @@ a{color:var(--accent)}
 }
 .tile .tdesc{color:var(--muted);font-size:0.8125rem;margin-top:auto}
 
+/* ── packed tile grid (bento.js places every tile; it is always gap-free) ── */
+.bento{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));grid-auto-rows:150px;gap:14px}
+.bentofill{border:1px dashed var(--line);border-radius:var(--card-radius);opacity:.6}
+@media (max-width:540px){ .bento{gap:10px} }
+
+/* home tiles in the grid: big ones get room to breathe */
+.tiles.bento .tile{min-height:0;overflow:hidden;position:relative}
+.tiles.bento .tile.wide .tdesc{font-size:0.875rem;max-width:36ch}
+.tiles.bento .tile.tall .ico{font-size:3rem;margin-bottom:auto}
+.tiles.bento .tile.tall .tname{font-size:clamp(1.5rem,3.4vw,2.25rem)}
+.tiles.bento .tile.tall .tdesc{font-size:0.9375rem;margin-top:4px}
+.tile .tglyph{position:absolute;right:-14px;bottom:-24px;font-size:7.5rem;line-height:1;opacity:.09;
+  pointer-events:none;transform:rotate(-12deg)}
+.tile:not(.tall) .tglyph{display:none}
+
 /* ── forum (home page) ───────────────────────────────────────── */
 .forum{margin-top:34px;padding-top:18px;border-top:1px solid var(--line)}
 .forum h2{margin:0 0 12px;font-family:var(--font-display);font-size:1.25rem}
@@ -138,7 +153,8 @@ a{color:var(--accent)}
 @media (max-width:560px){
   /* home: two tiles a row, so the whole site fits on one phone screen */
   .hubhead{margin-bottom:20px}
-  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .tiles:not(.bento){grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .tiles.bento{grid-auto-rows:122px}
   .tile{min-height:0;padding:14px;gap:3px}
   .tile .ico{font-size:1.5rem;margin-bottom:4px}
   .tile .tname{font-size:1.0625rem}
