@@ -29,6 +29,21 @@
 .gamegrid.leaving,.gamesections.leaving,.gamestage.leaving{opacity:0;transform:scale(.985);
   transition:opacity .12s ease,transform .12s ease;pointer-events:none}
 .back{margin-bottom:14px}
+/* classic layout (Settings): a horizontal shelf per category, ~3½ cards visible
+   (a peek hints you can scroll). Scroll with the wheel while hovering, or
+   click-and-drag. No visible scrollbar. The row is padded so card shadows have
+   room (never clipped into a dark rectangle); the wrapper's negative margins
+   make it full-bleed so tiles clip cleanly at the page edge. */
+.gamesecrow{position:relative;margin:0 -16px -4px}
+.gamerow{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:28px 16px 32px;
+  cursor:grab;scrollbar-width:none;-ms-overflow-style:none}
+.gamerow::-webkit-scrollbar{display:none}
+.gamerow.dragging{cursor:grabbing}
+.gamerow .gamecard{flex:0 0 calc((100% - 42px) / 3.5);min-width:200px;
+  transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease}
+.gamerow .gamecard:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+@media (max-width:640px){ .gamerow .gamecard{flex-basis:80%;min-width:0} }
+
 /* games page: one packed grid. Tiles are placed by packBento (games.js) with
    explicit grid-row / grid-column, so it is always gap-free. */
 .gamesections[hidden]{display:none}

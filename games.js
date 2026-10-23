@@ -155,6 +155,9 @@ const GAMES = [
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
+/* the shelves of the classic layout, in order */
+const CAT_ORDER = ['Timetable', 'Arcade'];
+const classicLayout = () => !!(window.TT && TT.layout && TT.layout() === 'classic');
 
 /* ── which year's revision you are shown ───────────────────────────────────
    The HSC course starts in Term 4 of Year 11, so from then on Year 12 is what
@@ -180,7 +183,7 @@ function gameCard(g, i){
     (g.id === 'jim'
       ? '<span class="jim jimmini" aria-hidden="true"><span class="btn-outer"><span class="btn-ring"><span class="name-btn">JIM</span></span></span></span>'
       : '<span class="ico">' + g.ico + '</span>') +
-    (REVISION_PAGE ? '' : '<span class="tag">' + g.cat + '</span>') +
+    (REVISION_PAGE || classicLayout() ? '' : '<span class="tag">' + g.cat + '</span>') +   // a shelf is already named
     '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
     (stat ? '<span class="stat">' + stat + '</span>' : '') +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : 'Play') + ' &#8594;</span>';
@@ -190,6 +193,7 @@ function gameCard(g, i){
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
+  if (bentoStop){ bentoStop(); bentoStop = null; }
   lbState = null; lbSeq++;
   $('gamestage').hidden = true;
   const grid = $('gamegrid');
@@ -218,6 +222,24 @@ function showGrid(){
   }
 
   if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
+  /* classic: a shelf per category that scrolls sideways */
+  if (classicLayout()){
+    CAT_ORDER.forEach(cat => {
+      const inCat = GAMES.filter(g => g.cat === cat);
+      if (!inCat.length) return;
+      const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
+      grid.appendChild(h);
+      const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
+      const row = document.createElement('div'); row.className = 'gamerow';
+      inCat.forEach((g, i) => row.appendChild(gameCard(g, i)));
+      wrap.appendChild(row); grid.appendChild(wrap);
+      dragScroll(row);
+    });
+    renderLBSum();
+    scrollHint();
+    return;
+  }
+  /* gallery: one packed grid */
   const bento = document.createElement('div'); bento.className = 'bento';
   const games = GAMES.filter(g => g.cat !== 'Revision');
   const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
@@ -227,6 +249,39 @@ function showGrid(){
 }
 
 let bentoStop = null;
+/* Settings switched the layout: redraw the grid, unless a game is open */
+addEventListener('tt:layout', () => { if (!$('gamegrid').hidden) showGrid(); });
+
+/* The shelves scroll sideways, which is not obvious from a still screen, so
+   the first visit gets one demonstration on the real cards. Only worth showing
+   if there is actually something off the right-hand edge. */
+function scrollHint(){
+  if (!window.Tour) return;
+  requestAnimationFrame(() => {
+    const row = document.querySelector('.gamerow');
+    if (row && row.scrollWidth > row.clientWidth + 40) Tour.start('games');
+  });
+}
+/* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
+   the browser's own horizontal scroll; a drag swallows the click that follows). */
+function dragScroll(row){
+  row.addEventListener('wheel', e => {
+    if (row.scrollWidth <= row.clientWidth) return;
+    const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    if (d){ row.scrollLeft += d; e.preventDefault(); }
+  }, { passive:false });
+  let down = false, moved = false, sx = 0, sl = 0;
+  row.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    down = true; moved = false; sx = e.clientX; sl = row.scrollLeft; });
+  row.addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx;
+    if (Math.abs(dx) > 6){ moved = true; row.classList.add('dragging'); }
+    if (moved){ row.scrollLeft = sl - dx; e.preventDefault(); } });
+  const end = () => { if (!down) return; down = false; row.classList.remove('dragging');
+    if (moved){ row.classList.add('nodrag'); setTimeout(() => row.classList.remove('nodrag'), 0); } };
+  row.addEventListener('pointerup', end);
+  row.addEventListener('pointerleave', end);
+  row.addEventListener('click', e => { if (row.classList.contains('nodrag')){ e.stopPropagation(); e.preventDefault(); } }, true);
+}
 
 /* ── leaderboard catalogue (shared by the summary strip + the full view) ── */
 const LB_CAT = [

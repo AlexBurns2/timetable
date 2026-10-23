@@ -88,8 +88,17 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
-/* the hub tiles: a packed grid, sizes from data-w / data-h */
-Bento.layout($('tiles'), [...$('tiles').children].map(el => ({ el, w:+el.dataset.w || 1, h:+el.dataset.h || 1 })));
+/* the hub tiles: the packed gallery (sizes from data-w / data-h), or the
+   classic even grid -- Settings switches between them */
+function layTiles(){
+  const box = $('tiles');
+  const tiles = [...box.children].filter(el => !el.classList.contains('bentofill'));
+  if (TT.layout() === 'classic'){ Bento.clear(box); box.classList.remove('bento'); return; }
+  box.classList.add('bento');
+  Bento.layout(box, tiles.map(el => ({ el, w:+el.dataset.w || 1, h:+el.dataset.h || 1 })));
+}
+layTiles();
+addEventListener('tt:layout', layTiles);
 /* ── forum ─────────────────────────────────────────────────────────────── */
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));

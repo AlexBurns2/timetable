@@ -309,6 +309,11 @@ const TOURS = {
   ],
   home: [
     { id:'settings', target:'#themebtn', title:'Settings', text:SETTINGS_TEXT }
+  ],
+  /* only started by the classic layout's sideways shelves (games.js scrollHint) */
+  games: [
+    { id:'games-scroll', target:'.gamerow', title:'More this way',
+      text:TOUCH ? 'Swipe the row sideways.' : 'Drag the row sideways, or scroll.', demo:'scroll' }
   ]
 };
 

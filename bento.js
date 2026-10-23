@@ -68,5 +68,17 @@ function layout(box, items, colsFor){
   return box._bentoStop = () => { if (obs) obs.disconnect(); obs = null; box._bentoStop = null; };
 }
 
-window.Bento = { pack, layout };
+/* Undo layout(): stop watching, drop the filler tiles and every placement, so
+   the box falls back to whatever plain grid its own CSS gives it. */
+function clear(box){
+  if (box._bentoStop) box._bentoStop();
+  box.style.removeProperty('--cols');
+  box.querySelectorAll(':scope > .bentofill').forEach(f => f.remove());
+  [...box.children].forEach(el => {
+    el.style.gridColumn = ''; el.style.gridRow = '';
+    el.classList.remove('wide', 'tall');
+  });
+}
+
+window.Bento = { pack, layout, clear };
 })();

@@ -2062,3 +2062,39 @@ was down.
 - The mock server has `/__outage?on=1|0`.
 - `swcheck` now reads `CACHE_VERSION` from sw.js; it had `msc-v2` hard-coded
   and broke when 412fc25 moved to v3.
+
+### 8.47 Gallery or classic layout (a setting)
+
+412fc25 (Pugmeowla) replaced three layouts with the packed `bento.js` gallery:
+the home page's even tile grid, the games page's sideways-scrolling category
+shelves, and the resources page's grid of one-line cards. This entry adds a
+switch between the two.
+
+**The setting.**
+- `tt.layout` is `'gallery'` (the default) or `'classic'`. It syncs like other
+  settings.
+- `TT.layout()` in theme.js reads it. Pages redraw on the `tt:layout` event,
+  which Settings fires on a change and theme.js fires when another tab
+  changes it.
+- It appears as "Home, games & resources: Gallery / Classic" in the shared
+  Settings dialog (settings.js, so the home page and every subpage) and in the
+  timetable page's own Settings.
+- `Bento.clear(box)` undoes a layout: it stops the resize watcher, removes the
+  fillers, and clears placements and the wide/tall classes.
+
+**Per page.**
+- **Home:** `layTiles()` adds or removes `.bento` on `#tiles`. Classic falls
+  back to the existing `.tiles` CSS.
+- **Games:**
+  - In classic, `showGrid()` builds the old shelves again: `CAT_ORDER`
+    (Timetable, Arcade), with `.cathd`, `.gamesecrow` and `.gamerow`.
+  - `dragScroll` and `scrollHint`, plus the "games-scroll" tour step and the
+    shelf CSS, are restored from before 412fc25.
+  - Classic cards leave out the category tag, since the shelf already names
+    it.
+  - `showGrid()` now stops any previous gallery before drawing.
+- **Resources:**
+  - In classic, the grid gets `.classic` instead of `.bento`. The overrides
+    scoped to `.subjgrid.classic` restore the one-line cards.
+  - The "whole library" tile becomes the old link in the intro text
+    (`#reslib`).

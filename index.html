@@ -514,6 +514,15 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
+      <label>Home, games &amp; resources</label>
+      <div class="modes" id="layouts">
+        <button type="button" data-layout="gallery">Gallery</button>
+        <button type="button" data-layout="classic">Classic</button>
+      </div>
+      <div class="hint">Gallery packs the tiles into a mosaic. Classic is the even grid, with the games in rows that scroll sideways.</div>
+    </div>
+
+    <div class="field">
       <label>Login</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
         Your school login, stored <b>only on this device</b> and sent to the
@@ -1820,6 +1829,14 @@ $('a_reset').onclick = () => {
   applyLook(); renderA11y(); render();
 };
 
+/* the tile layout on Home, Games and Resources (theme.js owns the setting) */
+function renderLayouts(){
+  const cur = window.TT && TT.layout ? TT.layout() : 'gallery';
+  [...$('layouts').children].forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.layout === cur));
+    b.onclick = () => { set('tt.layout', b.dataset.layout); renderLayouts(); };
+  });
+}
 function renderViews(){
   [...$('views').children].forEach(b =>
     b.setAttribute('aria-pressed', String(b.dataset.view === viewMode)));
@@ -1892,7 +1909,7 @@ $('settings').onclick = () => {
   paintCycleRow();
   $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
+  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews(); renderLayouts();
   renderToggles(); renderA11y(); renderCreds(); renderColours();
   dlg.showModal();
   /* finding Settings on your own retires the step that points at it */

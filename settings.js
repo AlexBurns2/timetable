@@ -15,7 +15,7 @@ const get = TTx.get, set = TTx.set;
 const LS = { skin:'tt.skin', mode:'tt.mode', custom:'tt.custom', creds:'tt.creds', email:'tt.email', cache:'tt.cache',
   textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
   view:'tt.view', outline:'tt.outline', header:'tt.header', zen:'tt.zen',
-  room:'tt.room', weekletter:'tt.weekletter', progress:'tt.progress' };
+  room:'tt.room', weekletter:'tt.weekletter', progress:'tt.progress', layout:'tt.layout' };
 const apply = () => TTx.apply(TTx.readState());
 const $ = id => document.getElementById(id);
 
@@ -51,6 +51,9 @@ host.innerHTML =
         '</details>' +
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
+      '<div class="field"><label>Home, games &amp; resources</label><div class="modes" id="s_layout">' +
+        '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Classic</button></div>' +
+        '<div class="hint">Gallery packs the tiles into a mosaic. Classic is the even grid, with the games in rows that scroll sideways.</div></div>' +
       '<div class="field"><label>Login</label>' +
         '<div class="hint" style="margin-top:0;margin-bottom:9px">Your school login, stored <b>only on this device</b> and used to fetch your timetable.</div>' +
         '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
@@ -201,6 +204,15 @@ function renderDisplay(){
   toggle('t_progress','progress', true); toggle('t_zen','zen', false);
 }
 
+/* ── tile layout (Home, Games, Resources) ── */
+function renderLayout(){
+  const cur = TTx.layout ? TTx.layout() : 'gallery';
+  [...$('s_layout').children].forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.layout === cur));
+    b.onclick = () => { set(LS.layout, b.dataset.layout); renderLayout(); dispatchEvent(new CustomEvent('tt:layout')); };
+  });
+}
+
 /* ── mode toggle + open/close wiring ── */
 function renderModeBtn(){ $('modetoggle').textContent = get(LS.mode, 'light') === 'dark' ? 'Light mode' : 'Dark mode'; }
 $('modetoggle').onclick = () => { set(LS.mode, get(LS.mode,'light')==='dark'?'light':'dark'); apply(); renderModeBtn(); };
@@ -210,7 +222,7 @@ document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => 
   b.closest('dialog').close(); openSettings(); });
 
 function openSettings(){
-  renderSkins(); renderCustom(); renderCreds(); renderModeBtn();
+  renderSkins(); renderCustom(); renderLayout(); renderCreds(); renderModeBtn();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
   if (window.Tour){ Tour.mark('settings'); Tour.start('settings'); }

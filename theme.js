@@ -181,6 +181,12 @@ apply();
 
 /* a change made in another tab should follow here too */
 addEventListener('storage', ev => { if (ev.key && ev.key.startsWith('tt.')) apply(); });
+/* the tile layout on Home, Games and Resources: 'gallery' (the packed mosaic,
+   the default) or 'classic' (the even grid, with games in sideways rows).
+   Pages re-lay themselves on 'tt:layout', fired by Settings and by a change
+   made in another tab. */
+const layout = () => get('tt.layout', 'gallery') === 'classic' ? 'classic' : 'gallery';
+addEventListener('storage', ev => { if (ev.key === 'tt.layout') dispatchEvent(new CustomEvent('tt:layout')); });
 
 /* ── shared API helper (used by the games page's Guess-Who) ──────────── */
 const API_ENDPOINT = '/api/timetable';
@@ -314,7 +320,7 @@ addEventListener('pagehide', () => {
 
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush,
+              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
                  same as myEmail(), which is whose timetable you are looking at
                  and can be set without ever signing in. */

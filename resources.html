@@ -43,6 +43,12 @@
 .subjcard.lib .sub{color:var(--muted);font-size:0.8125rem}
 .subjcard.lib:not(.tall) .ico{font-size:1.5rem}
 @media (max-width:540px){ .subjgrid.bento{grid-auto-rows:100px;gap:10px} .subjcard{padding:12px 13px} .subjcard .nm{font-size:0.875rem} }
+/* classic layout (Settings): the even grid of one-line cards, as it was */
+.subjgrid.classic{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.subjgrid.classic .subjcard{position:static;flex-direction:row;align-items:center;gap:12px;padding:15px 16px}
+.subjgrid.classic .subjcard .nm{display:block;margin-top:0;overflow:hidden;text-overflow:ellipsis}
+.subjgrid.classic .subjcard .go{position:static;margin-left:auto;flex:none}
+.subjgrid.classic .subjcard:hover .go{transform:translateX(2px)}
 html[data-motion="reduced"] .subjcard{transition:none}
 </style>
 </head>
@@ -58,7 +64,8 @@ html[data-motion="reduced"] .subjcard{transition:none}
   </div>
 
   <p class="reslede">Textbooks by year and subject, straight from the student-run HSC Textbook Library.
-    Pick your year, then a subject. It opens that folder in Google Drive.</p>
+    Pick your year, then a subject. It opens that folder in Google Drive.
+    <a id="reslib" href="#" target="_blank" rel="noopener" hidden>Open the whole library ↗</a></p>
 
   <div class="yeartabs" id="yeartabs"></div>
   <div class="subjgrid bento" id="subjgrid"></div>
@@ -69,6 +76,7 @@ const $ = id => document.getElementById(id);
 
 const DRIVE = 'https://drive.google.com/drive/folders/';
 const LIBRARY = '1vAADiVrKUIR_iApOoBdghSvKU6JhIwKT';
+$('reslib').href = DRIVE + LIBRARY;     // the classic layout's link to it
 
 /* Seeded from the HSC Textbook Library on Google Drive (folder ids per subject).
    To add/replace a subject, drop its Drive folder id in here. */
@@ -155,18 +163,26 @@ const resCols = w => w >= 900 ? 5 : w >= 680 ? 4 : w >= 440 ? 3 : 2;
 function renderSubjects(){
   const subs = RES[year] || {}, grid = $('subjgrid');
   const names = Object.keys(subs);
-  grid.innerHTML =
+  /* classic (Settings): the even grid, and the whole library as a link above it */
+  const classic = !!(window.TT && TT.layout && TT.layout() === 'classic');
+  $('reslib').hidden = !classic;
+  Bento.clear(grid);
+  grid.classList.toggle('bento', !classic);
+  grid.classList.toggle('classic', classic);
+  grid.innerHTML = (classic ? '' :
     '<a class="subjcard lib" href="'+DRIVE+LIBRARY+'" target="_blank" rel="noopener">' +
       '<span class="ico">📚</span><span class="nm">The whole library</span>' +
-      '<span class="sub">Every year and subject in the HSC Textbook Library</span><span class="go">↗</span></a>' +
+      '<span class="sub">Every year and subject in the HSC Textbook Library</span><span class="go">↗</span></a>') +
     names.map(name =>
     '<a class="subjcard" href="'+DRIVE+subs[name]+'" target="_blank" rel="noopener">' +
       '<span class="ico">'+subjectIcon(name)+'</span>' +
       '<span class="nm">'+esc(name)+'</span><span class="go">↗</span></a>').join('');
+  if (classic) return;
   const els = [...grid.children];
   Bento.layout(grid, [{ el:els[0], w:2, h:2 }].concat(names.map((n, i) => ({ el:els[i + 1], w:n.length > 18 ? 2 : 1 }))), resCols);
 }
 renderYears(); renderSubjects();
+addEventListener('tt:layout', renderSubjects);
 </script>
 <script src="settings.js"></script>
 </body>

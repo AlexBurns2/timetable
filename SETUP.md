@@ -1284,6 +1284,19 @@ tile and the forum is hidden — on every device you are signed in on. It unlock
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
 
+## Gallery or classic layout
+
+Settings now has **Home, games & resources: Gallery / Classic**, on the home
+page, every subpage and the timetable.
+
+- **Gallery** (the default) is the new packed mosaic of tiles.
+- **Classic** brings back the old layouts:
+  - the even tile grid on Home;
+  - the games in rows that scroll sideways, one per category;
+  - the list of subjects on Resources.
+
+The switch takes effect straight away and follows you to your other devices.
+
 ## When the school's system is down
 
 Sometimes the Department takes the school intranet down for maintenance. The
