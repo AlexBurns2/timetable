@@ -60,6 +60,33 @@ function listEnv(name) {
 /* --------------------------------------------------------------- school API */
 
 /*
+ * The Department takes school intranets down for maintenance by redirecting
+ * every request to its outage page (education.nsw.gov.au/error/outage-notice
+ * .html, "We're currently performing maintenance…"). fetch follows that
+ * redirect, so spot it by where the response ended up, or by the page itself,
+ * and say so plainly instead of blaming the site's settings.
+ */
+export const OUTAGE_MESSAGE = "The school's system is down for maintenance. Try again later.";
+export function isOutage(res, body) {
+  return !!(res && res.redirected && /outage|maintenance/i.test(String(res.url || ""))) ||
+         /outage-notice|performing maintenance/i.test(String(body || "").slice(0, 20000));
+}
+/* A failed sign-in check. Anything the school actually said no to stays "not
+   accepted"; the school being down or unreachable is reported as that, so
+   nobody is told their password is wrong during an outage. */
+function signInFailed(res, e) {
+  const down = e && (e.hint === "school-outage" || e.hint === "check-api-base" || e.hint === "bad-json");
+  if (!down) return res.status(401).json({ error: "Those school sign-in details were not accepted." });
+  return res.status(e.status === 503 ? 503 : 502).json({ error: e.message, hint: e.hint });
+}
+function outageError() {
+  const err = new Error(OUTAGE_MESSAGE);
+  err.status = 503;
+  err.hint = "school-outage";
+  return err;
+}
+
+/*
  * Read a response as JSON, but explain clearly when it is not JSON.
  * The school intranet answers some misconfigurations with an HTML page and a
  * 200, so `res.json()` alone produces a useless "Unexpected token '<'" error.
@@ -69,6 +96,10 @@ async function readJson(res, url) {
   try {
     return JSON.parse(body);
   } catch {
+    if (isOutage(res, body)) {
+      console.error(`School outage: ${url} ended at ${res.url || "?"} (status ${res.status}).`);
+      throw outageError();
+    }
     const looksHtml = /^\s*<(!doctype|html)/i.test(body);
     console.error(
       `Expected JSON from ${url} but got ${looksHtml ? "an HTML page" : "unparseable data"}. ` +
@@ -104,13 +135,14 @@ export async function getToken(apiBase, emailAddress, password) {
     });
   } catch (e) {
     console.error(`Could not reach ${url}: ${e.message}`);
-    const err = new Error("Could not reach the school API. Check SCHOOL_API_BASE.");
+    const err = new Error("Couldn't reach the school's system. It may be down; try again later.");
     err.status = 502;
     err.hint = "check-api-base";
     throw err;
   }
 
   if (!res.ok) {
+    if (isOutage(res, await res.text().catch(() => ""))) throw outageError();
     console.error(`POST ${url} returned ${res.status}.`);
     const err = new Error(
       res.status === 401
@@ -150,17 +182,19 @@ async function apiGet(apiBase, path, auth, retry = true) {
     });
   } catch (e) {
     console.error(`Could not reach ${apiBase + path}: ${e.message}`);
-    const err = new Error("Could not reach the school API. Check SCHOOL_API_BASE.");
+    const err = new Error("Couldn't reach the school's system. It may be down; try again later.");
     err.status = 502;
     err.hint = "check-api-base";
     throw err;
   }
 
+  if (isOutage(res)) throw outageError();
   if (res.status === 401 && retry) {
     tokenCache.delete(String(auth.email || '').toLowerCase());   // force a re-login
     return null;                                                 // caller retries
   }
   if (!res.ok) {
+    if (isOutage(res, await res.text().catch(() => ""))) throw outageError();
     const err = new Error(`School API returned ${res.status} for ${path}`);
     err.status = res.status;
     throw err;
@@ -428,7 +462,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Sign in with your school account to use the student finder." });
     }
     try { await getToken(apiBase, authEmail, ownPassword); }
-    catch { return res.status(401).json({ error: "Those school sign-in details were not accepted." }); }
+    catch (e) { return signInFailed(res, e); }
     const q = String(req.query.find || "").trim().toLowerCase().replace(/\s+/g, " ");
     if (q.length < 2) return res.status(400).json({ error: "Type at least two letters." });
     const yr = parseInt(req.query.year, 10);
@@ -440,7 +474,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ query: q, results, close });
     } catch (error) {
       console.error("Student finder failed:", error.message);
-      return res.status(502).json({ error: "Unable to search the school directory right now." });
+      return res.status(error.status === 503 ? 503 : 502).json({
+        error: error.hint === "school-outage" ? error.message : "Unable to search the school directory right now." });
     }
   }
 
@@ -458,19 +493,23 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Sign in with your school account to compare free periods." });
     }
     try { await getToken(apiBase, authEmail, ownPassword); }
-    catch { return res.status(401).json({ error: "Those school sign-in details were not accepted." }); }
+    catch (e) { return signInFailed(res, e); }
     const wanted = [...new Set(String(req.query.free || "").split(",")
       .map(s => normaliseEmail(s, domain)).filter(Boolean))];
     if (!wanted.length) return res.status(400).json({ error: "Name at least one person." });
     if (wanted.length > FREE_MAX) return res.status(400).json({ error: `At most ${FREE_MAX} people at a time.` });
     const people = {};
+    let outage = false;
     await eachLimited(wanted, 5, async who => {
       try { people[who] = await busyFor(apiBase, authEmail, ownPassword, who); }
       catch (error) {
-        if (error.hint) console.error("Free periods failed:", error.message);
+        if (error.hint === "school-outage") outage = true;
+        else if (error.hint) console.error("Free periods failed:", error.message);
         people[who] = null;
       }
     });
+    /* the school being down is not "nobody's timetable can be read" */
+    if (outage) return res.status(503).json({ error: OUTAGE_MESSAGE, hint: "school-outage" });
     return res.status(200).json({ people });
   }
 
@@ -497,7 +536,7 @@ export default async function handler(req, res) {
       console.error("Class roster failed:", error.message);
       return res.status(status).json({
         error: status === 404 ? "No class list was found for that class."
-                              : "Unable to load the class list from the school API.",
+                              : error.hint === "school-outage" ? error.message : "Unable to load the class list from the school API.",
         hint: error.hint || undefined
       });
     }
@@ -525,7 +564,7 @@ export default async function handler(req, res) {
       console.error("Group directory failed:", error.message);
       return res.status(status).json({
         error: status === 404 ? "That directory was not found."
-                              : "Unable to load the directory from the school API.",
+                              : error.hint === "school-outage" ? error.message : "Unable to load the directory from the school API.",
         hint: error.hint || undefined
       });
     }

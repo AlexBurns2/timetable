@@ -2016,3 +2016,49 @@ Finder result names link there.
 **Known flaky test, unrelated:** `mockcheck`'s "Section I is spread over at
 least four focus areas" fails about 6 runs in 20. The Maths Advanced mock paper
 sometimes draws Section I from three areas; that's a mock.js selection issue.
+
+### 8.46 School outages, and the saved timetable
+
+**What happened (23 October).** Every request to the intranet, the API and the
+home page alike, came back as a 302 to
+`education.nsw.gov.au/error/outage-notice.html` ("We're currently performing
+maintenance…"). fetch follows the redirect, so `readJson` got HTML and reported
+"returned a web page… check SCHOOL_API_BASE". The code was fine; the school
+was down.
+
+**Server (`api/timetable.js`).**
+- `isOutage(res, body)` is true when the response was *redirected* to an
+  outage/maintenance URL, or the page says "outage-notice" / "performing
+  maintenance". The redirect is required so an address containing
+  "maintenance" can't trip it.
+- `getToken`, `apiGet` and `readJson` check it and throw 503 with hint
+  `school-outage` and `OUTAGE_MESSAGE` ("The school's system is down for
+  maintenance. Try again later.").
+- "Could not reach" now says the school may be down, not to check a setting.
+- `signInFailed` is used by `?find=` and `?free=`. Only a real refusal is 401
+  "not accepted"; an outage or unreachable school is reported as such, so no
+  one is told their password is wrong.
+- `?free=` returns 503 on an outage instead of everyone as `null`.
+- Class and directory errors pass the outage message through.
+
+**Timetable page (`index.html`).**
+- `load()` attaches `status`/`hint` to the error. On failure, if `tt.cache`
+  holds a copy for the person being viewed (any age), it applies that copy
+  and sets `staleNote`, e.g. "Saved copy from yesterday at 1:57 pm. The
+  school's system is down…". The note shows amber in the header and in
+  Settings.
+- A wrong password (`check-credentials`) or an unknown person (404) still
+  fails as before.
+- The 15-minute refresh no longer wipes the timetable on screen when the
+  school drops out.
+- With no saved copy (a new device), the sign-in screen shows the outage
+  message. Saved sign-ins are never cleared by an outage; they only clear by
+  hand.
+
+**Tests.**
+- `outagecheck.mjs` (18): redirect-to-notice, the notice as a 503, an outage
+  starting with a token cached, unreachable, and nothing changing when the
+  school is up (a wrong password is still a wrong password).
+- The mock server has `/__outage?on=1|0`.
+- `swcheck` now reads `CACHE_VERSION` from sw.js; it had `msc-v2` hard-coded
+  and broke when 412fc25 moved to v3.

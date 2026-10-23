@@ -1284,6 +1284,18 @@ tile and the forum is hidden — on every device you are signed in on. It unlock
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
 
+## When the school's system is down
+
+Sometimes the Department takes the school intranet down for maintenance. The
+site now says so ("The school's system is down for maintenance. Try again
+later.") instead of an error about its own settings, and the student finder
+and free periods no longer say your password was wrong when it wasn't.
+
+**Your timetable stays on screen.** If the school can't be reached, the
+timetable shows the last copy saved on your device, with a note such as "Saved
+copy from yesterday at 1:57 pm". It updates by itself once the school is back.
+A device that has never loaded your timetable can't show one until then.
+
 ## Year filter, names, and finder links
 
 - **Free periods has a year-group filter** (All, 7–12) above the grid. It

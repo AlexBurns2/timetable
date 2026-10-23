@@ -52,6 +52,7 @@ button,select,input{font:inherit;color:inherit}
 .brand>span{color:var(--muted);font-size:0.75rem;margin-top:2px;min-height:14px}
 .brand>span:empty{display:none}   /* no dead space below the pill when there's no status */
 .brand>span.err{color:#e5484d}
+.brand>span.stale{color:#b7791f;white-space:normal}   /* showing the saved copy */
 .idrow{
   display:inline-flex;align-items:center;gap:0;margin-top:6px;align-self:flex-start;
   border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);
@@ -899,6 +900,8 @@ let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
 let loadError = '', loading = false;
+/* set when the school can't be reached and the last saved copy is on screen */
+let staleNote = '';
 let focusIdx = null;           /* click a day heading to spotlight it; null = show all */
 
 /* ═══ normalise ═══ */
@@ -1088,7 +1091,7 @@ function endpointUrl(){
   return u.origin === location.origin ? u.pathname + u.search : u.toString();
 }
 async function load(useCache){
-  loadError = '';
+  loadError = ''; staleNote = '';
   if (!endpoint || !email) return;
   if (useCache){
     const c = get(LS.cache, null);
@@ -1111,17 +1114,39 @@ async function load(useCache){
        "404" there is useless -- name the actual problem. */
     const isPage = /^\s*<(!doctype|html)/i.test(text);
     if (!res.ok){
-      throw new Error((data && data.error) ||
+      const e = new Error((data && data.error) ||
         (isPage ? 'The timetable service is not reachable at this address. The site is set up wrong.'
                 : res.status + ' ' + res.statusText));
+      e.status = res.status; e.hint = data && data.hint;
+      throw e;
     }
     if (!data) throw new Error('The timetable service returned an unreadable response.');
     apply(data);
     set(LS.cache, { email, at: Date.now(), payload: data });
   } catch (err) {
-    loadError = err.message;
-    entries = []; slots = [];
+    /* The school (or the network) can't be reached: keep showing the last copy
+       saved for this person, however old, instead of an empty page. A wrong
+       password or an unknown person still fails as before. */
+    const c = get(LS.cache, null);
+    const usable = c && c.payload && c.email === email &&
+                   err.hint !== 'check-credentials' && err.status !== 404;
+    if (usable){
+      apply(c.payload);
+      if (!loadError) staleNote = 'Saved copy from ' + savedWhen(c.at) + '. ' + err.message;
+    } else {
+      loadError = err.message;
+      entries = []; slots = [];
+    }
   } finally { loading = false; }
+}
+/* "today at 3:40 pm", "yesterday at 8:05 am", "Mon 19 Oct" */
+function savedWhen(at){
+  const d = new Date(at), now = new Date();
+  if (!isFinite(d)) return 'earlier';
+  const time = d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  const days = Math.round((midnight(now) - midnight(d)) / 864e5);
+  return days === 0 ? 'today at ' + time : days === 1 ? 'yesterday at ' + time
+       : d.toLocaleDateString([], { weekday:'short', day:'numeric', month:'short' });
 }
 function apply(payload){
   entries = normalise(payload);
@@ -1166,8 +1191,8 @@ function render(){
   const cycles = DAY_KEYS.map(k => k + week);
 
   $('title').textContent = displayName || 'Timetable';
-  $('sub').textContent = loading ? 'Loading…' : (loadError || '');
-  $('sub').className = loadError ? 'err' : '';
+  $('sub').textContent = loading ? 'Loading…' : (loadError || staleNote || '');
+  $('sub').className = loadError ? 'err' : (staleNote && !loading ? 'stale' : '');
   if (document.activeElement !== $('whoami')){
     $('whoami').value = String(email || '').split('@')[0];
     sizeWhoami();
@@ -1865,7 +1890,7 @@ $('modetoggle').onclick = () => {
 };
 $('settings').onclick = () => {
   paintCycleRow();
-  $('status').textContent = loadError || '';
+  $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
   renderToggles(); renderA11y(); renderCreds(); renderColours();
