@@ -18,7 +18,9 @@
 function lookAttrs(){
   const r = document.documentElement;
   const g = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
-  const theme = g("andre.theme") || "auto", skin = g("andre.skin") || "default";
+  const theme = g("andre.theme") || "auto";
+  let skin = g("andre.skin") || "default";
+  if (skin === "plain") skin = "default";              /* the old Plain is the default look now */
   const fixed = ["scifi","terminal","blueprint"].includes(skin);       /* dark-only palettes */
   const dark = fixed || theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
   if (theme === "light" || theme === "dark") r.dataset.theme = theme; else delete r.dataset.theme;
@@ -140,7 +142,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .export-sub.err{color:var(--red)}
 
 /* timetable */
-.tt{min-height:calc(100vh - 60px);padding-block:10px 24px;overflow-x:auto}
+.tt{min-height:calc(100vh - 60px);padding-block:10px 24px}
 .grid{display:grid;grid-template-columns:36px repeat(5,minmax(0,1fr)) 36px;column-gap:8px}
 .arrow{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);align-self:center}
 .arrow:hover{background:var(--fill);color:var(--fg)}
@@ -155,12 +157,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk{position:absolute;left:0;right:0;cursor:pointer}
 .blk.open{z-index:20;cursor:default}
 .blk.closing{z-index:19}
-.blk.asm{cursor:default}
 .blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
   background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));
   transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .55s cubic-bezier(.34,1.4,.64,1)}
 .blk-card>*{position:relative;z-index:1}
-.blk:not(.open):not(.asm):hover .blk-card{filter:brightness(.97)}
+.blk:not(.open):hover .blk-card{filter:brightness(.97)}
 /* closed, the card is exactly its time slot, so the gaps either side stay even */
 .blk:not(.open):not(.closing) .blk-card{height:100%}
 .blk .s{display:block;font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
@@ -207,16 +208,27 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:11.5px;color:var(--fg3);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
+/* assembly: laid out like a free period, a shade darker */
+.gap.asm,.brk.asm{background:color-mix(in srgb,var(--fg) 10%,var(--fill))}
 /* free periods: who in your group is free then */
 .gap .fr,.brk .fr{flex-basis:100%;font-size:11.5px;font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
 .gap.sm .fr{flex-basis:auto;padding:0}
+.gap .fn,.brk .fn{flex-basis:100%;font-size:11px;line-height:1.3;color:var(--fg2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gap .fn{text-align:center;padding:0 8px}
+.brk .fn{font-size:12px;margin-top:2px}
+.gap.none .fr,.brk.none .fr{color:var(--fg2)}
 .gap.all,.brk.all{background:color-mix(in srgb,var(--green) 16%,var(--fill))}
+.gap.some,.brk.some{background:color-mix(in srgb,var(--green) 7%,var(--fill))}
+/* "only who's free": a lesson becomes just its count, so that line leads */
+.gap.fc .fr{font-size:13px}
+.brk.fc .bl{font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg))}
+.brk.fc.none .bl{color:var(--fg2)}
 .backtoday{display:none;height:30px;padding:0 14px;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;white-space:nowrap}
 .off .backtoday{display:block}
 
 /* modules */
-.mods{padding-block:22vh 80px}
+.mods{padding-block:48px 80px}     /* the timetable is a full screen tall, so this stays below the fold */
 .mods h2{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
 .mg{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:150px;gap:16px}
 .mod{border-radius:20px;background:var(--fill);padding:20px;display:flex;flex-direction:column;justify-content:space-between;color:inherit;text-decoration:none;transition:transform .15s}
@@ -283,8 +295,6 @@ button.row:hover{background:var(--fill2)}
   --base:var(--s-base,var(--s-bg)); --tint:var(--s-tint,20%); color-scheme:light;
 }
 :root[data-skin][data-skin][data-mode="dark"]{color-scheme:dark}
-:root[data-skin="plain"]{--s-bg:#fff;--s-panel:#fff;--s-panel2:#f6f6f7;--s-line:#e5e5e8;--s-text:#18181b;--s-muted:#8b8b93;--s-accent:#4f4fd0;--s-font:"DM Sans",system-ui,sans-serif}
-:root[data-skin="plain"][data-mode="dark"]{--s-bg:#161618;--s-panel:#1f1f22;--s-panel2:#27272b;--s-line:#303035;--s-text:#eaeaee;--s-muted:#87878f;--s-accent:#8f8ff2}
 :root[data-skin="classic"]{--s-bg:#e9edf3;--s-panel:rgba(255,255,255,.75);--s-panel2:rgba(255,255,255,.55);--s-line:rgba(0,0,0,.08);--s-text:#1d1d1f;--s-muted:rgba(29,29,31,.55);--s-accent:#0a84ff;
   --s-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,sans-serif;--s-base:var(--s-panel)}
 :root[data-skin="classic"][data-mode="dark"]{--s-bg:#101114;--s-img:radial-gradient(circle at 20% 10%,rgba(255,255,255,.05),transparent 55%);--s-panel:rgba(44,44,48,.62);--s-panel2:rgba(32,32,36,.5);--s-line:rgba(255,255,255,.12);--s-text:#f5f5f7;--s-muted:rgba(245,245,247,.62);--s-accent:#409cff}
@@ -331,7 +341,7 @@ button.row:hover{background:var(--fill2)}
 .daypill .dd{font-size:16px;font-weight:500;color:var(--fg2)}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
 .daypill[aria-pressed="true"]{background:var(--fill2)}
-.list{padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px;min-height:60vh}
+.list{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px}
 .card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
 .card .subj{font-size:17px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
@@ -352,12 +362,12 @@ button.row:hover{background:var(--fill2)}
 
 @media (max-width:760px),(orientation:portrait){
   .tt{display:none}
-  .mob{display:block}
+  .mob{display:block;min-height:calc(100vh - 53px);min-height:calc(100svh - 53px)}
   .in{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .bar{border-bottom:1px solid var(--sep)}
   .bar .in{display:flex;gap:10px;height:52px}
   .term{flex:none}
-  .term .range{display:none}
+  .term .range,.term .tl{display:none}
   .search{flex:1}
   .email{width:100%;height:34px}
   .email input{width:100%!important;min-width:0}
@@ -366,7 +376,7 @@ button.row:hover{background:var(--fill2)}
   .backtoday .lg{display:none}
   .gear{width:32px;height:32px}
   .gear svg{width:18px;height:18px}
-  .mods{padding-block:40px 60px}
+  .mods{padding-block:32px 60px}
   html.zen .daynav{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 }
 </style>
@@ -435,8 +445,8 @@ button.row:hover{background:var(--fill2)}
       <div class="sec-label">Free periods</div>
       <div class="row-group">
         <div class="row">
-          <div class="rl"><strong>Show on timetable</strong><small>Who in your group is free in each free period</small></div>
-          <button class="tog" id="freeshow" role="switch" aria-checked="true" aria-label="Show free friends on the timetable"></button>
+          <div class="rl"><strong>Show on timetable</strong><small>Who in your group is free in each free period, hides other subjects</small></div>
+          <button class="tog" id="freeshow" role="switch" aria-checked="true" aria-label="Show who's free on the timetable"></button>
         </div>
         <div class="row stack">
           <div class="rl"><strong>Your group</strong><small id="freestat"></small></div>
@@ -473,7 +483,6 @@ button.row:hover{background:var(--fill2)}
     <div class="mg" id="mg">
       <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
       <a class="mod" data-m="calendar" href="/calendar.html" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar</h3></a>
-      <a class="mod" data-m="notes" href="/notes.html" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div><h3>Notes</h3></a>
       <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
     </div>
@@ -723,9 +732,14 @@ const entryAt = (cyc, slotKey) => entries.find(e => e.dayKey === cyc && mergeKey
 
 /* A day as the grid draws it: lessons (and assembly) as blocks, free periods
    and breaks as grey gaps, trimmed to the first and last lesson. Neighbouring
-   gaps merge ("Free · Lunch") and a double lesson becomes one block. */
+   gaps merge ("Free · Lunch") and a double lesson becomes one block -- except
+   with the free-period checker on: then breaks stay apart from free periods,
+   and two periods (free or lessons) only merge when the same people are free
+   in both. */
 function itemsFor(cyc){
   if (!cyc) return [];
+  const split = freeActive();
+  const sig = x => split ? freeSet(x.keys).map(p => p.id).join(",") : "";
   let L = [];
   for (const slot of slots){
     const e = entryAt(cyc, slot.key), b = bellFor(cyc, slot.key);
@@ -733,7 +747,7 @@ function itemsFor(cyc){
     const en = (e && e.end != null) ? e.end : (b ? b.end : null);
     if (s == null || en == null || en <= s) continue;
     const kind = e ? e.kind : slot.kind;
-    if (kind === "class" && e) L.push({ s, e:en, lesson:e });
+    if (kind === "class" && e) L.push({ s, e:en, lesson:e, keys:[cyc + "|" + slot.key] });
     else if (kind === "assembly") L.push({ s, e:en, lesson:{ subject:"Assembly", teacher:"", room:"", asm:true } });
     else L.push({ s, e:en, ls:[kind === "class" ? "Free" : (BREAK_NAMES[mergeKey(slot.key)] || titleCase(slot.period))],
                   keys: kind === "class" ? [cyc + "|" + slot.key] : [] });
@@ -745,8 +759,11 @@ function itemsFor(cyc){
   const out = [];
   for (const x of L){
     const p = out.at(-1);
-    if (p && !x.lesson && !p.lesson){ p.e = x.e; p.keys = p.keys.concat(x.keys); if (p.ls.at(-1) !== x.ls[0]) p.ls.push(x.ls[0]); }
-    else if (p && x.lesson && p.lesson && !x.lesson.asm && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5) p.e = x.e;
+    if (p && !x.lesson && !p.lesson && (!split || ((p.keys.length > 0) === (x.keys.length > 0) && sig(p) === sig(x)))){
+      p.e = x.e; p.keys = p.keys.concat(x.keys); if (p.ls.at(-1) !== x.ls[0]) p.ls.push(x.ls[0]);
+    }
+    else if (p && x.lesson && p.lesson && !x.lesson.asm && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5 &&
+             (!split || sig(p) === sig(x))){ p.e = x.e; p.keys = p.keys.concat(x.keys); }
     else out.push(x);
   }
   return out;
@@ -850,6 +867,23 @@ function baseWeek(){
   return addDays(startOfWeek(now), dow === 0 || dow === 6 ? 7 : 0);
 }
 const DAYF = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+/* NSW public school terms, Eastern division (education.nsw.gov.au): the
+   Monday of each term's first week and its last day for students. The school
+   API only gives the A/B cycle, so the week number comes from here. Add each
+   new year's dates; for a year not listed the bar just shows the letter. */
+const TERMS = [
+  ["2026-02-02","2026-04-02"], ["2026-04-20","2026-07-03"], ["2026-07-20","2026-09-25"], ["2026-10-12","2026-12-17"],
+  ["2027-02-01","2027-04-09"], ["2027-04-26","2027-07-02"], ["2027-07-19","2027-09-24"], ["2027-10-11","2027-12-20"]
+];
+/* { term, week } for the week starting this Monday; false in the holidays of
+   a listed year; null for a year with no dates */
+function termWeek(monday){
+  for (let i = 0; i < TERMS.length; i++){
+    const s = toDate(TERMS[i][0]), e = toDate(TERMS[i][1]);
+    if (monday >= s && monday <= e) return { term: i % 4 + 1, week: Math.round((monday - s) / (7 * 864e5)) + 1 };
+  }
+  return TERMS.some(r => +r[0].slice(0, 4) === monday.getFullYear()) ? false : null;
+}
 const arrow = d => `<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} week"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
 
 function render(){
@@ -875,42 +909,61 @@ function render(){
   const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
   const range = dates[0].getDate() + (dates[0].getMonth() !== dates[4].getMonth() ? " " + MON[dates[0].getMonth()] : "") +
                 " – " + dates[4].getDate() + " " + MON[dates[4].getMonth()];
-  document.getElementById("term").innerHTML = (letter ? `<b>Week ${letter}</b><span class="range"> · ${range}</span>` : range) +
+  const tw = termWeek(dates[0]);
+  const label = tw ? `<span class="tl">Term ${tw.term} · </span><b>Week ${tw.week}${letter}</b><span class="range"> · ${range}</span>`
+              : tw === false ? `<b>Holidays</b><span class="range"> · ${range}</span>`
+              : letter ? `<b>Week ${letter}</b><span class="range"> · ${range}</span>` : range;
+  document.getElementById("term").innerHTML = label +
     (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : "");
   document.body.classList.toggle("off", off !== 0);
 }
 
-/* desktop: the five days side by side, blocks placed by clock time */
+/* desktop: the five days side by side, blocks placed by clock time. They
+   fill the window's height, but a lesson is never squeezed until its teacher
+   or time is cut off: after drawing, any card whose text overflows stretches
+   the whole scale, and the grid is drawn again. */
 function renderGrid({ now, dates, days, msg, when, err }){
   const all = days.flat();
   const T0 = all.length ? Math.min(...all.map(x => x.s)) : toMinutes("8:55");
   const T1 = all.length ? Math.max(...all.map(x => x.e)) : toMinutes("15:25");
-  const H = Math.max(560, innerHeight - 60 - 90 - 24), PX = H / (T1 - T0);
-
+  const g = document.getElementById("g");
+  let PX = Math.max(560, innerHeight - 60 - 90 - 24) / (T1 - T0);
+  for (let pass = 0; pass < 4; pass++){
+    g.innerHTML = gridHtml({ now, dates, days, msg, when, err }, T0, (T1 - T0) * PX, PX);
+    if (msg) return;
+    let worst = 1;
+    g.querySelectorAll(".blk:not(.open):not(.closing) .blk-card").forEach(c => {
+      if (c.scrollHeight > c.clientHeight + 1) worst = Math.max(worst, (c.scrollHeight + 8) / (c.clientHeight + 8));
+    });
+    if (worst <= 1) return;
+    PX *= worst;
+  }
+}
+function gridHtml({ now, dates, days, msg, when, err }, T0, H, PX){
   let h = arrow(-1) + dates.map(d => `<div class="dh ${sameDay(d, now) ? "today" : ""}"><span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${d.getDate()} ${MON[d.getMonth()]}</span></div>`).join("") + arrow(1);
   h += "<div></div>";
-  if (msg) h += `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
-  else days.forEach((items, k) => {
+  if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
+  days.forEach((items, k) => {
     h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">`;
     for (const x of items){
       const top = (x.s - T0)*PX + 4, ht = (x.e - x.s)*PX - 8, w = when(dates[k], x);
       const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
-      if (!x.lesson){
-        const fn = freeNote(x);
-        h += `<div class="gap ${w.past ? "past" : ""} ${ht < 44 ? "sm" : ""} ${fn && fn.all ? "all" : ""}" style="top:${top}px;height:${ht}px"${fn && fn.title ? ` title="${esc(fn.title)}"` : ""}>` +
-             `${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}${fn ? `<span class="fr">${esc(fn.text)}</span>` : ""}</div>`;
+      const sm = ht < 44, hideThis = x.lesson && !x.lesson.asm && hideSubjects();
+      if (!x.lesson || x.lesson.asm || hideThis){   /* free periods, breaks, assembly, and lessons when hidden */
+        const fn = x.lesson && !hideThis ? null : freeNote(x);
+        const ls = hideThis ? [] : x.lesson ? ["Assembly"] : x.ls;
+        h += `<div class="gap ${x.lesson && !hideThis ? "asm" : ""} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
+             `${ls.map(esc).join("<i></i>")}${sm && ls.length ? "<i></i>" : ""}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
-      const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[k], x);
-      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${e.asm ? "asm" : ""} ${openKey === id ? "open" : ""}"` +
-           (e.asm ? "" : ` data-k="${id}" data-code="${esc(e.code)}"`) +
-           ` style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
+      const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[k], x);
+      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open" : ""}"` +
+           ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id)}</div></div>`;
     }
     h += "</div>";
   });
-  if (!msg) h += "<div></div>";
-  document.getElementById("g").innerHTML = h;
+  return h + "<div></div>";
 }
 
 /* phone / portrait: a day strip over a list of the chosen day */
@@ -929,12 +982,18 @@ function renderList({ now, dates, days, msg, when, err }){
     const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
     if (!x.lesson){
       const fn = freeNote(x);
-      h += `<div class="brk ${w.past ? "past" : ""} ${fn && fn.all ? "all" : ""}"><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
-           (fn ? `<span class="fr"${fn.title ? ` title="${esc(fn.title)}"` : ""}>${esc(fn.text)}</span>` : "") + `</div>`;
+      h += `<div class="brk ${w.past ? "past" : ""} ${fn ? fn.state : ""}"${fn ? ` title="${esc(fn.title)}"` : ""}><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
+           freeBits(fn, false) + `</div>`;
+      continue;
+    }
+    if (!x.lesson.asm && hideSubjects()){     /* only who's free: the count, then the names */
+      const fn = freeNote(x);
+      h += `<div class="brk fc ${w.past ? "past" : ""} ${fn.state}" title="${esc(fn.title)}"><span class="bl">${esc(fn.count)}</span><span class="bt tnum">${tm}</span>` +
+           (fn.names ? `<span class="fn">${esc(fn.names)}</span>` : "") + `</div>`;
       continue;
     }
     if (x.lesson.asm){        /* a short grey row, like the breaks */
-      h += `<div class="brk ${w.past ? "past" : ""}"><span class="bl">Assembly</span><span class="bt tnum">${tm}</span></div>`;
+      h += `<div class="brk asm ${w.past ? "past" : ""}"><span class="bl">Assembly</span><span class="bt tnum">${tm}</span></div>`;
       continue;
     }
     const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[sel], x);
@@ -972,7 +1031,7 @@ function rosterHtml(code, id, open){
   const inner = r.error ? `<div class="cls-note err">${esc(r.error)}</div>`
               : !r.people ? ""
               : !r.people.length ? `<div class="cls-note">No students are listed for this class.</div>`
-              : `<div class="cls-note">Tap a name for their timetable</div>` + r.people.map(p => p.user
+              : r.people.map(p => p.user
                   ? `<button data-user="${esc(p.user)}" title="${esc(p.name)}">${esc(p.name)}</button>`
                   : `<button disabled title="${esc(p.name)}">${esc(p.name)}</button>`).join("");
   const show = open && (r.people || r.error);
@@ -1195,8 +1254,7 @@ addEventListener("keydown", e => {
 
 /* the main timetable's themes; swatches as its settings show them */
 const SKINS = [
-  { id:"default",   name:"Default",   swatch:"linear-gradient(135deg,#FBFBFD 0 50%,#1D1D1F 50%)" },
-  { id:"plain",     name:"Plain",     swatch:"linear-gradient(#fff,#fff)" },
+  { id:"default",   name:"Plain",     swatch:"linear-gradient(135deg,#FBFBFD 0 50%,#1D1D1F 50%)" },
   { id:"classic",   name:"Classic",   swatch:"linear-gradient(160deg,#dfe7f2,#f4f7fb 60%),radial-gradient(circle at 78% 22%,#0a84ff55,transparent 60%)" },
   { id:"paper",     name:"Notebook",  swatch:"repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)" },
   { id:"glass",     name:"Glass",     swatch:"radial-gradient(circle at 25% 20%,#7a5aff,transparent 60%),radial-gradient(circle at 80% 30%,#00becc,transparent 62%),radial-gradient(circle at 50% 90%,#ff50a0,transparent 60%),#0d1220" },
@@ -1299,16 +1357,30 @@ function shortNames(list){
     return count[first(p).toLowerCase()] > 1 && parts.length > 1 ? first(p) + " " + parts.at(-1)[0] : first(p);
   });
 }
-/* who in the group is free for the whole of a free gap */
+/* the group members whose timetables could be read */
+const knownGroup = () => freeGroup.filter(p => busy[p.id] instanceof Set && busy[p.id].size);
+/* the checker is in play: switched on, signed in, and someone to compare with.
+   Then subjects are hidden and every period shows who's free. */
+const freeActive = () => freeShow && signedIn && knownGroup().length > 0;
+const hideSubjects = freeActive;
+/* who is free for every one of these periods */
+const freeSet = keys => knownGroup().filter(p => keys.every(k => !busy[p.id].has(k)));
+/* "2 of 3 free" and who, for a free period (or any period, with subjects hidden) */
 function freeNote(x){
-  if (!freeShow || !signedIn || !freeGroup.length || !x.keys || !x.keys.length) return null;
-  const known = freeGroup.filter(p => busy[p.id] instanceof Set && busy[p.id].size);
-  if (!known.length) return null;
-  const free = known.filter(p => x.keys.every(k => !busy[p.id].has(k)));
-  const all = free.length === known.length, names = shortNames(free);
-  return { all,
-    text: all ? (known.length === 1 ? names[0] + " is free too" : "Everyone's free") : free.length ? names.join(", ") + " free" : "No one free",
-    title: free.length ? "Free then: " + free.map(p => p.name).join(", ") : "" };
+  if (!freeActive() || !x.keys || !x.keys.length) return null;
+  const known = knownGroup(), free = freeSet(x.keys);
+  return {
+    state: free.length === known.length ? "all" : free.length ? "some" : "none",
+    count: `${free.length} of ${known.length} free`,
+    names: shortNames(free).join(", "),
+    title: free.length ? "Free then: " + free.map(p => p.name).join(", ") : "No one in your group is free then"
+  };
+}
+/* the count on one line and the names under it; a short box gets one line */
+function freeBits(fn, sm){
+  if (!fn) return "";
+  if (sm) return `<span class="fr">${esc(fn.count)}${fn.names ? " · " + esc(fn.names) : ""}</span>`;
+  return `<span class="fr">${esc(fn.count)}</span>` + (fn.names ? `<span class="fn">${esc(fn.names)}</span>` : "");
 }
 function paintFree(){
   const stat = $("freestat"), q = $("freeq");
@@ -1331,7 +1403,7 @@ $("freechips").onclick = e => {
   freeGroup = freeGroup.filter(p => p.id !== b.dataset.id);
   set(LS.group, freeGroup); paintFree(); render();
 };
-$("freeshow").onclick = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); paintFree(); render(); };
+$("freeshow").onclick = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); closeAll(); paintFree(); render(); };
 finder($("freeq"), $("freesugg"), p => {
   const id = String(p.email).split("@")[0].toLowerCase();
   $("freeq").value = "";
@@ -1409,7 +1481,7 @@ $("exportics").onclick = () => {
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["revision","games","calendar","notes","resources"];
+const MOD_WIDEN = ["revision","games","calendar","resources"];
 function layoutMods(){
   const mg = $("mg"), tiles = [...mg.children];
   const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
