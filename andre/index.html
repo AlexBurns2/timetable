@@ -100,6 +100,7 @@ html.zen .bar,html.zen body::before{background:transparent;backdrop-filter:none;
 .sec-label{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 6px}
 .sec-label button{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
 .row-group{background:var(--fill);border-radius:12px;overflow:hidden}
+#freesec .row-group{overflow:visible}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-bottom:1px solid var(--sep);color:inherit;text-decoration:none}
 .row:last-child{border-bottom:none}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
@@ -153,11 +154,15 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .col{position:relative}
 .blk{position:absolute;left:0;right:0;cursor:pointer}
 .blk.open{z-index:20;cursor:default}
+.blk.closing{z-index:19}
+.blk.asm{cursor:default}
 .blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
   background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));
   transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .55s cubic-bezier(.34,1.4,.64,1)}
 .blk-card>*{position:relative;z-index:1}
-.blk:not(.open):hover .blk-card{filter:brightness(.97)}
+.blk:not(.open):not(.asm):hover .blk-card{filter:brightness(.97)}
+/* closed, the card is exactly its time slot, so the gaps either side stay even */
+.blk:not(.open):not(.closing) .blk-card{height:100%}
 .blk .s{display:block;font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
 .blk .m{display:block;font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blk .r{position:absolute;top:10px;right:12px;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
@@ -176,8 +181,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .col.end .blk-card{left:auto;right:0}          /* Friday opens leftwards, staying on screen */
 
 /* the detail inside an opened lesson (desktop block and phone card alike) */
-.blk-detail{max-height:0;overflow:hidden;opacity:0;pointer-events:none;transition:max-height .5s cubic-bezier(.34,1.2,.64,1),opacity .3s ease .08s}
-.open .blk-detail{max-height:900px;opacity:1;pointer-events:auto}
+.blk-detail{max-height:0;overflow:hidden;opacity:0;pointer-events:none;transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .25s ease}
+.open .blk-detail{max-height:900px;opacity:1;pointer-events:auto;transition:max-height .5s cubic-bezier(.34,1.2,.64,1),opacity .3s ease .08s}
 .det{padding:8px 0 4px}
 .det-row{padding:5px 0}
 .det-row .lbl{font-size:10.5px;font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg3));text-transform:uppercase;letter-spacing:.06em}
@@ -471,8 +476,6 @@ button.row:hover{background:var(--fill2)}
       <a class="mod" data-m="notes" href="/notes.html" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div><h3>Notes</h3></a>
       <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
-      <a class="mod" data-m="finder" href="#find" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></div><h3>Student finder</h3></a>
-      <a class="mod" data-m="free" href="#free" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Free periods</h3></a>
     </div>
   </section>
 </main>
@@ -899,7 +902,7 @@ function renderGrid({ now, dates, days, msg, when, err }){
         continue;
       }
       const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[k], x);
-      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open" : ""}"` +
+      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${e.asm ? "asm" : ""} ${openKey === id ? "open" : ""}"` +
            (e.asm ? "" : ` data-k="${id}" data-code="${esc(e.code)}"`) +
            ` style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id)}</div></div>`;
@@ -930,9 +933,13 @@ function renderList({ now, dates, days, msg, when, err }){
            (fn ? `<span class="fr"${fn.title ? ` title="${esc(fn.title)}"` : ""}>${esc(fn.text)}</span>` : "") + `</div>`;
       continue;
     }
-    const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[sel], x);
+    if (x.lesson.asm){        /* a short grey row, like the breaks */
+      h += `<div class="brk ${w.past ? "past" : ""}"><span class="bl">Assembly</span><span class="bt tnum">${tm}</span></div>`;
+      continue;
+    }
+    const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[sel], x);
     h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open" : ""}"` +
-         (e.asm ? "" : ` data-k="${id}" data-code="${esc(e.code)}"`) + ` style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
+         ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
          `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id)}</div>`;
   }
@@ -1015,7 +1022,17 @@ async function toggleRoster(item){
 }
 function closeAll(){
   document.querySelectorAll(".blk.open,.card.open").forEach(b => {
+    /* collapse from the detail's real height, not from its 900px ceiling,
+       so it starts shrinking straight away */
+    const d = b.querySelector(".blk-detail");
+    if (d){ d.style.maxHeight = d.scrollHeight + "px"; d.offsetHeight; }
     b.classList.remove("open");
+    if (d) requestAnimationFrame(() => d.style.maxHeight = "");
+    if (b.matches(".blk")){
+      b.classList.add("closing");
+      clearTimeout(b.closingTimer);
+      b.closingTimer = setTimeout(() => b.classList.remove("closing"), 600);
+    }
     b.querySelectorAll(".cls-btn.open,.cls-list.open").forEach(x => x.classList.remove("open"));
   });
   openKey = null; rosterKey = null;
@@ -1030,6 +1047,7 @@ function onLessonClick(ev){
   if (ev.target.closest("a")) return;                      /* the teacher's email */
   if (item.classList.contains("open")){ if (!ev.target.closest(".blk-detail")) closeAll(); return; }
   closeAll();
+  item.classList.remove("closing");
   item.classList.add("open");
   openKey = item.dataset.k;
 }
@@ -1391,7 +1409,7 @@ $("exportics").onclick = () => {
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["revision","games","free","calendar","notes","resources","finder"];
+const MOD_WIDEN = ["revision","games","calendar","notes","resources"];
 function layoutMods(){
   const mg = $("mg"), tiles = [...mg.children];
   const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
@@ -1405,9 +1423,6 @@ function layoutMods(){
     row.forEach((el, j) => el.style.gridColumn = spans[j] > 1 ? "span " + spans[j] : "");
   }
 }
-/* the finder and free periods live on this page now */
-document.querySelector('[data-m="finder"]').onclick = e => { e.preventDefault(); scrollTo({ top:0, behavior:"smooth" }); input.focus(); input.select(); };
-document.querySelector('[data-m="free"]').onclick = e => { e.preventDefault(); openSettings(true); $("freesec").scrollIntoView({ block:"start" }); };
 
 addEventListener("resize", () => { render(); layoutMods(); });
 setInterval(render, 30000);     /* keep "now" and past lessons current */
