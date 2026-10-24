@@ -17,7 +17,7 @@
 :root{
   --bg:#FBFBFD; --fill:#F0F0F4; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
-  --c1:#0A84FF; --c2:#FF9F0A; --c3:#30C05A; --c4:#AF52DE; --c5:#FF375F; --c6:#5E5CE6;
+  --c1:#0A84FF; --c2:#FF9F0A; --c3:#30C05A; --c4:#AF52DE; --c5:#FF375F; --c6:#5E5CE6; --c7:#32ADE6; --c8:#A2845E;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -87,23 +87,25 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* modules */
 .mods{padding-block:22vh 80px}
-.mods h2{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
-.mg{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;gap:16px}
-.mod{border-radius:20px;background:var(--fill);padding:20px;display:flex;flex-direction:column;justify-content:space-between}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:150px;gap:16px}
+.mod{border-radius:20px;background:var(--fill);padding:20px;display:flex;flex-direction:column;justify-content:space-between;color:inherit;text-decoration:none;transition:transform .15s}
+.mod:hover{transform:translateY(-2px)}
 .mod.w{grid-column:span 2}
 .mod h3{margin:0;font-size:17px;font-weight:600}
-.mod small{color:var(--fg2);font-size:13px}
 .mod .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--c)}
 .mod .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.mod ul{list-style:none;margin:6px 0 0;padding:0;font-size:13px;color:var(--fg2);display:grid;gap:4px}
-.mod li b{color:var(--fg);font-weight:500}
-.mod.add{background:none;border:1.5px dashed var(--fg3);align-items:center;justify-content:center;color:var(--fg2);font-weight:500}
+@media (max-width:700px){.mg{grid-template-columns:repeat(2,1fr)}.mod.w{grid-column:span 1}}
+
+/* status: no email yet, loading, or the school couldn't be reached */
+.msg{grid-column:2/-2;padding:80px 0;text-align:center;color:var(--fg2);font-size:15px}
+.msg.err{color:var(--red)}
+.term .stale{color:var(--fg3);font-weight:400}
 </style>
 
 <header class="bar"><div class="in">
   <div class="term" id="term"></div>
   <label class="email"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
-    <input id="email" value="andre.kwok2" placeholder="Enter first.last" aria-label="Student"><span class="dom">@education.nsw.gov.au</span></label>
+    <input id="email" placeholder="first.last" aria-label="Student" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><span class="dom">@education.nsw.gov.au</span></label>
   <div class="right">
     <button class="backtoday" id="back">Return to Today</button>
     <div class="set"><button class="gear" id="gear" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -114,73 +116,420 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <main>
   <section class="in tt"><div class="grid" id="g"></div></section>
   <section class="in mods">
-    <h2>Modules</h2>
     <div class="mg">
-      <div class="mod w" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div>
-        <div><h3>Notes</h3><ul><li><b>Physics</b> · Projectile motion summary</li><li><b>Chemistry</b> · Titration prac write-up</li></ul></div></div>
-      <div class="mod" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div><div><h3>Resources</h3><small>Past papers, syllabus</small></div></div>
-      <div class="mod" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><div><h3>Games</h3></div></div>
-      <div class="mod" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div><div><h3>Assessments</h3><small>Chemistry task due Fri</small></div></div>
-      <div class="mod" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><div><h3>School calendar</h3></div></div>
-      <div class="mod" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div><h3>Bell times</h3></div></div>
-      <div class="mod add">+ Add module</div>
+      <a class="mod w" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
+      <a class="mod" href="/calendar.html" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar</h3></a>
+      <a class="mod" href="/notes.html" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div><h3>Notes</h3></a>
+      <a class="mod w" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
+      <a class="mod" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
+      <a class="mod" href="/finder.html" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></div><h3>Student finder</h3></a>
+      <a class="mod" href="/free.html" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Free periods</h3></a>
     </div>
   </section>
 </main>
 
 <script>
-const S={EST:["Engineering Studies","Joanne Drew","--c2",166],PHY:["Physics","Richard Crooks","--c1",118],ENA:["English Advanced","Rachele Haigh","--c5",141],
-CHE:["Chemistry","Holly Bolton","--c3",234],MX1:["Mathematics Ext 1","Philippa Blamires","--c6",154],MX2:["Mathematics Ext 2","Steve Bastin","--c4",159],ASM:["Assembly","","--fg2",""]};
-const STD={p:[["8:55","9:50"],["9:50","10:45"],["11:05","12:00"],["12:00","12:55"],["13:35","14:30"],["14:30","15:25"]],b:[["Recess","10:45","11:05"],["Lunch","12:55","13:35"]]};
-const WED={p:[["8:55","9:50"],["9:50","10:45"],["11:05","12:00"],["13:00","13:55"],["13:55","14:50"]],b:[["Assembly","10:45","11:05"],["Lunch","12:00","13:00"]]};
-// 10-day cycle from the .ics: Week A (26–30 Oct), Week B (2–6 Nov). null = free
-const CYC=[
- [null,"EST","PHY","ENA","CHE","EST"],[null,"MX1",null,"CHE","PHY"],[null,"ENA",null,"MX2","MX2"],["PHY","EST","CHE","ENA",null],[["CHE",230],null,"ENA","MX1","PHY","EST"],
- ["EST","ENA",null,"PHY","CHE","EST"],[null,"MX1",null,"CHE","PHY"],["ENA",null,null,"MX2","MX2"],["PHY","EST","ENA","CHE",null],["CHE","ENA",null,"MX1","EST","PHY"]];
-const m=t=>{const[h,x]=t.split(":").map(Number);return h*60+x};
-const DN=["Mon","Tue","Wed","Thu","Fri"], TODAY=1, NOW=m("12:20");
-const dt=i=>new Date(2026,9,26+Math.floor(i/5)*7+((i%5)+5)%5),date=i=>dt(i).getDate(),mon=i=>dt(i).toLocaleString("en-AU",{month:"short"});
-const f=t=>{let[h,x]=t.split(":").map(Number);return(h>12?h-12:h)+":"+String(x).padStart(2,"0")};
-function items(i){
-  const b=i%5===2?WED:STD, day=CYC[i%10];
-  let L=day.map((c,p)=>({s:b.p[p][0],e:b.p[p][1],c,l:c?null:"Free"}));
-  b.b.forEach(([l,s,e])=>L.push({s,e,c:l==="Assembly"?"ASM":null,l}));
-  L.sort((x,y)=>m(x.s)-m(y.s));
-  const f=L.findIndex(x=>x.c),la=L.length-1-[...L].reverse().findIndex(x=>x.c);
-  L=L.slice(f,la+1);
-  const out=[];L.forEach(x=>{const p=out.at(-1);if(!x.c&&p&&!p.c){p.e=x.e;if(p.ls.at(-1)!==x.l)p.ls.push(x.l)}else if(x.c&&p&&p.c&&JSON.stringify(p.c)===JSON.stringify(x.c))p.e=x.e;else out.push(x.c?x:{...x,ls:[x.l]})});
+/* Live timetable: the same /api/timetable call and the same parsing as the main
+   timetable (index.html), drawn as this page's week grid. Parsing helpers are
+   copied from index.html rather than shared so this sandbox stays standalone. */
+const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
+/* own keys, so typing someone's name here doesn't change the main site */
+const LS = { email:"andre.email", cache:"andre.cache" };
+const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
+const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+/* read-only from the main site: its A/B week correction and optional login */
+const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
+const creds = get("tt.creds", null);
+let email = get(LS.email, "") || get("tt.email", "");
+
+/* ═══ dates ═══ */
+const DN = ["Mon","Tue","Wed","Thu","Fri"];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const CYCLE_DAYS = ["mona","tuea","weda","thua","fria","monb","tueb","wedb","thub","frib"];
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const startOfWeek = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; };
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const sameDay = (a,b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+function toMinutes(v){
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") return v > 1440 ? null : v;
+  const s = String(v).trim();
+  const iso = s.match(/T(\d{1,2}):(\d{2})/);
+  if (iso) return (+iso[1])*60 + (+iso[2]);
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp])?/);
+  if (!m) return null;
+  let h = +m[1]; const mi = +m[2]; const ap = m[3] && m[3].toLowerCase();
+  if (ap === "p" && h < 12) h += 12;
+  if (ap === "a" && h === 12) h = 0;
+  return h*60 + mi;
+}
+const f = mins => (((Math.floor(mins/60)+11)%12)+1) + ":" + String(mins%60).padStart(2,"0");
+function toDate(v){
+  if (!v) return null;
+  const s = String(v);
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], (+m[2])-1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], (+m[2])-1, +m[1]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+/* ═══ field pickers ═══ */
+const pick = (o, keys) => {
+  if (o == null || typeof o !== "object") return undefined;
+  const lower = {};
+  for (const k of Object.keys(o)) lower[k.toLowerCase()] = o[k];
+  for (const k of keys){
+    const v = lower[k.toLowerCase()];
+    if (v !== undefined && v !== null && v !== "") return v;
+  }
+  return undefined;
+};
+const deepStr = v => (v && typeof v === "object")
+  ? (pick(v, ["name","fullName","displayName","description","title","shortName","code","text"]) || "")
+  : (v === undefined || v === null ? "" : v);
+const str = v => String(deepStr(v)).trim();
+function asArray(v){
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === "object"){ for (const val of Object.values(v)) if (Array.isArray(val)) return val; }
+  return [];
+}
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
+  .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
+
+/* ═══ tidy-up (same rules as index.html) ═══ */
+function cleanSubject(name, code){
+  const original = String(name || "").trim();
+  let s = original.replace(/\s*[-–—,]?\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, "");
+  const keepsAWord = v => /[A-Za-z]{3,}/.test(v);
+  const noCode = s.replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, "");
+  if (noCode !== s && keepsAWord(noCode)) s = noCode;
+  if (code){
+    const c = String(code).trim();
+    if (c && s.toLowerCase().startsWith(c.toLowerCase())){
+      const rest = s.slice(c.length);
+      if (keepsAWord(rest)) s = rest;
+    }
+  }
+  s = s.replace(/^[\s:\-–—]+/, "").replace(/\s{2,}/g, " ").trim();
+  if (!s) s = original.replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, "").trim();
+  return s || original || String(code || "").trim() || "Class";
+}
+/* "CR1007.118" -> "118" */
+function roomNumber(r){
+  const s = String(r || "").trim(), dot = s.lastIndexOf(".");
+  return dot === -1 ? s : (s.slice(dot + 1).trim() || s);
+}
+function nameFromEmail(e){
+  const parts = String(e || "").split("@")[0].split(".");
+  if (parts.length < 2) return "";
+  return titleCase(parts[0]) + " " + titleCase(parts[1].replace(/\d+$/, ""));
+}
+function tidyTeacher(t){
+  const s = String(t || "").trim();
+  if (!s) return "";
+  if (s.includes("@")) return nameFromEmail(s) || titleCase(s.split("@")[0].replace(/[._]+/g, " ").replace(/\d+$/, ""));
+  const m = s.match(/^([^,]+),\s*(.+)$/);
+  return m ? (m[2] + " " + m[1]).replace(/\s{2,}/g," ").trim() : s;
+}
+
+/* ═══ cycle ═══ */
+function cycleDayFor(date, start){
+  if (!start) return null;
+  const d = midnight(date), s = midnight(startOfWeek(start));
+  const dow = d.getDay();
+  if (dow === 0 || dow === 6 || d < s) return null;
+  let elapsed = 0;
+  const cur = new Date(s);
+  while (cur < d){ cur.setDate(cur.getDate()+1); const w = cur.getDay(); if (w !== 0 && w !== 6) elapsed++; }
+  return CYCLE_DAYS[(elapsed + cycleShift) % 10];
+}
+const periodNumber = v => {
+  const s = String(v == null ? "" : v).trim();
+  const m = s.match(/^(?:period\s*|p)?(\d+)$/i);
+  return m ? m[1] : s;
+};
+const classify = v => {
+  const p = String(v == null ? "" : v).toLowerCase();
+  if (p.includes("assembly")) return "assembly";
+  if (p.includes("recess") || p === "break" || p === "r") return "break";
+  if (p.includes("lunch") || /^l\d*$/.test(p)) return "lunch";
+  return "class";
+};
+function classifyBell(label){
+  const p = String(label || "").toLowerCase();
+  if (p.startsWith("l")) return "lunch";
+  if (p.startsWith("r")) return "break";
+  return classify(label);
+}
+/* both lunch halves collapse into one block */
+const mergeKey = k => {
+  const v = String(k).toLowerCase();
+  if (/^l\d*$/.test(v) || v.includes("lunch")) return "lunch";
+  if (v === "r" || v.includes("recess")) return "recess";
+  return v;
+};
+const BREAK_NAMES = { recess:"Recess", lunch:"Lunch" };
+
+/* ═══ normalise ═══ */
+let entries = [], slots = [], bellRows = [], cycleStart = null, colourOf = {};
+
+function buildBellIndex(bellTimes){
+  const idx = {};
+  bellRows = asArray(bellTimes).map(bt => ({
+    day:   str(pick(bt, ["DayName","dayName"])).toLowerCase(),
+    label: str(pick(bt, ["Period","period","PeriodNumber","periodNumber"])),
+    type:  str(pick(bt, ["Type","type"])).toUpperCase(),
+    start: toMinutes(pick(bt, ["StartTime","startTime","Start","start","From","from"])),
+    end:   toMinutes(pick(bt, ["EndTime","endTime","End","end","To","to"]))
+  })).filter(b => b.label);
+  for (const b of bellRows){
+    if (b.start === null && b.end === null) continue;
+    const per = periodNumber(b.label).toLowerCase();
+    if (b.day) idx[b.day + "|" + per] = b;
+    if (!idx["*|" + per]) idx["*|" + per] = b;
+  }
+  return idx;
+}
+
+function normalise(payload){
+  const bell = buildBellIndex(payload.bellTimes);
+  const out = [];
+  for (const raw of asArray(payload.timetable)){
+    const dayKey = str(pick(raw, ["DayName","dayName"])).toLowerCase();
+    if (CYCLE_DAYS.indexOf(dayKey) === -1) continue;
+    const period = str(pick(raw, ["Period","period","PeriodNumber","periodNumber"]));
+    const kind = classify(period);
+    const pnum = periodNumber(period).toLowerCase();
+    const bt = bell[dayKey + "|" + pnum] || bell["*|" + pnum] || {};
+    const rowStart = toMinutes(pick(raw, ["StartTime","startTime","Start","start"]));
+    const rowEnd   = toMinutes(pick(raw, ["EndTime","endTime","End","end"]));
+    const rawSubject = str(pick(raw, ["CourseName","courseName","SubjectName","Subject","subjectName","subject","Description","description","ClassName","className"]));
+    const code    = str(pick(raw, ["ClassCode","classCode","Code","code"]));
+    const teacher = str(pick(raw, ["TeacherName","teacherName","TeacherFullName","teacherFullName","Teacher","teacher","DefaultTeacher","StaffName","staffName"]));
+    const room    = str(pick(raw, ["RoomCode","roomCode","RoomNumber","roomNumber","RoomName","roomName","Room","room","Location","location"]));
+    out.push({
+      dayKey, period, pnum, kind, code, room,
+      teacher: tidyTeacher(teacher),
+      subject: kind === "class" ? cleanSubject(rawSubject, code) : titleCase(period),
+      start: rowStart != null ? rowStart : bt.start,
+      end:   rowEnd   != null ? rowEnd   : bt.end
+    });
+  }
   return out;
 }
-let off=0;
-function render(){
-  const H=Math.max(560,innerHeight-60-90-24),T0=m("8:55"),T1=m("15:25"),PX=H/(T1-T0);
-  const arrow=d=>`<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} week"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
-  const days=[0,1,2,3,4].map(k=>k+off);
-  let h=arrow(-1)+days.map(i=>`<div class="dh ${i===TODAY?"today":""} ${i===TODAY+1?"next":""}"><span class="d">${DN[(i%5+5)%5]}</span><span class="n tnum">${date(i)} ${mon(i)}</span></div>`).join("")+arrow(1);
-  h+="<div></div>";
-  days.forEach(i=>{
-    h+=`<div class="col" style="height:${H}px">`;
-    items(((i%10)+10)%10).forEach(x=>{
-      const top=(m(x.s)-T0)*PX+4,ht=(m(x.e)-m(x.s))*PX-8,tm=`<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`,past=i<TODAY||(i===TODAY&&m(x.e)<=NOW),now=i===TODAY&&m(x.s)<=NOW&&NOW<m(x.e);
-      if(!x.c){h+=`<div class="gap ${past?"past":""} ${ht<44?"sm":""}" style="top:${top}px;height:${ht}px">${x.ls.join("<i></i>")}${ht<44?"<i></i>":""}${tm}</div>`;return}
-      const[k,room]=Array.isArray(x.c)?x.c:[x.c,S[x.c][3]],s=S[k];
-      h+=`<div class="blk ${past?"past":""} ${now?"now":""} ${ht<50?"sm":""}" style="--c:var(${s[2]});top:${top}px;height:${ht}px;--p:${now?(NOW-m(x.s))/(m(x.e)-m(x.s))*100:0}%"><span class="r tnum">${room}</span><span class="s">${s[0]}</span><span class="m">${s[1]}</span>${tm}</div>`});
-    h+="</div>";
-  });
-  h+="<div></div>";
-  document.getElementById("g").innerHTML=h;
-  document.querySelectorAll(".arrow").forEach(a=>a.onclick=()=>{off+=5*a.dataset.d;render()});
-  const wk=Math.floor((off+2)/5);
-  document.getElementById("term").innerHTML=`Term 4 · <b>Week ${3+wk}${wk%2?"B":"A"}</b>`;
-  document.body.classList.toggle("off",!(TODAY>=off&&TODAY<off+5));
+
+/* one row per bell slot, ordered by average start across the cycle */
+function buildSlots(){
+  const withLesson = new Set(entries.map(e => mergeKey(e.pnum || e.period)));
+  const map = new Map();
+  const note = (key, label, kind, start, end) => {
+    const k = String(key).toLowerCase();
+    const cur = map.get(k) || { key:k, period:label, kind, starts:[] };
+    if (start != null) cur.starts.push(start);
+    if (kind !== "class") cur.kind = kind;
+    map.set(k, cur);
+  };
+  for (const b of bellRows){
+    const key = mergeKey(periodNumber(b.label));
+    note(key, BREAK_NAMES[key] || b.label, b.type === "R" ? classifyBell(b.label) : classify(b.label), b.start, b.end);
+  }
+  for (const e of entries){
+    const key = mergeKey(e.pnum || e.period);
+    if (!map.has(key)) note(key, e.period, e.kind, e.start, e.end);
+  }
+  const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
+  slots = [...map.values()].map(v => ({ key:v.key, period:v.period, kind:v.kind, start:avg(v.starts), hasLesson:withLesson.has(v.key) }))
+    .sort((a,b) => (a.start ?? 1e9) - (b.start ?? 1e9));
 }
-document.getElementById("back").onclick=()=>{off=0;render()};
-const gear=document.getElementById("gear"),menu=document.getElementById("menu");
-const setMenu=o=>{menu.hidden=!o;gear.setAttribute("aria-expanded",o)};
-gear.onclick=e=>{e.stopPropagation();setMenu(menu.hidden)};
-addEventListener("click",e=>{if(!menu.contains(e.target))setMenu(false)});
-addEventListener("keydown",e=>{if(e.key==="Escape")setMenu(false)});
-addEventListener("resize",render);render();
+
+/* that day's actual times for a slot */
+function bellFor(dayKey, slotKey){
+  const k = mergeKey(slotKey);
+  const hits = bellRows.filter(b => b.day === dayKey && mergeKey(periodNumber(b.label)) === k);
+  if (!hits.length) return null;
+  const starts = hits.map(h => h.start).filter(v => v != null);
+  const ends   = hits.map(h => h.end).filter(v => v != null);
+  return { start: starts.length ? Math.min(...starts) : null, end: ends.length ? Math.max(...ends) : null };
+}
+const entryAt = (cyc, slotKey) => entries.find(e => e.dayKey === cyc && mergeKey(e.pnum || e.period) === mergeKey(slotKey));
+
+/* A day as the grid draws it: lessons (and assembly) as blocks, free periods
+   and breaks as grey gaps, trimmed to the first and last lesson. Neighbouring
+   gaps merge ("Free · Lunch") and a double lesson becomes one block. */
+function itemsFor(cyc){
+  if (!cyc) return [];
+  let L = [];
+  for (const slot of slots){
+    const e = entryAt(cyc, slot.key), b = bellFor(cyc, slot.key);
+    const s = (e && e.start != null) ? e.start : (b ? b.start : null);
+    const en = (e && e.end != null) ? e.end : (b ? b.end : null);
+    if (s == null || en == null || en <= s) continue;
+    const kind = e ? e.kind : slot.kind;
+    if (kind === "class" && e) L.push({ s, e:en, lesson:e });
+    else if (kind === "assembly") L.push({ s, e:en, lesson:{ subject:"Assembly", teacher:"", room:"", asm:true } });
+    else L.push({ s, e:en, ls:[kind === "class" ? "Free" : (BREAK_NAMES[mergeKey(slot.key)] || titleCase(slot.period))] });
+  }
+  L.sort((x,y) => x.s - y.s);
+  const first = L.findIndex(x => x.lesson && !x.lesson.asm), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson && !x.lesson.asm);
+  if (first === -1) return [];
+  L = L.slice(first, last + 1);
+  const out = [];
+  for (const x of L){
+    const p = out.at(-1);
+    if (p && !x.lesson && !p.lesson){ p.e = x.e; if (p.ls.at(-1) !== x.ls[0]) p.ls.push(x.ls[0]); }
+    else if (p && x.lesson && p.lesson && !x.lesson.asm && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5) p.e = x.e;
+    else out.push(x);
+  }
+  return out;
+}
+
+/* ═══ load ═══ */
+let loading = false, loadError = "", staleNote = "", reqId = 0;
+
+function apply(payload){
+  entries = normalise(payload);
+  buildSlots();
+  cycleStart = toDate(typeof payload.startDate === "string" ? payload.startDate
+    : pick(payload.startDate || {}, ["startDate","StartDate","date","Date"]));
+  /* a steady colour per subject: alphabetical, round the palette */
+  const subjects = [...new Set(entries.filter(e => e.kind === "class").map(e => e.subject))].sort();
+  colourOf = {};
+  subjects.forEach((s, i) => colourOf[s] = "--c" + (i % 8 + 1));
+  if (!entries.length) loadError = "No lessons were returned for that address.";
+}
+
+async function load(){
+  const id = ++reqId;
+  loadError = ""; staleNote = "";
+  entries = []; slots = []; cycleStart = null;
+  if (!email){ render(); return; }
+  const c = get(LS.cache, null);
+  const cached = c && c.email === email && c.payload;
+  if (cached) apply(c.payload);
+  loading = !cached;
+  render();
+  try {
+    const headers = { Accept:"application/json" };
+    if (creds && creds.email && creds.password){
+      headers["X-School-Email"] = creds.email;
+      headers["X-School-Password"] = creds.password;
+    }
+    const res = await fetch(ENDPOINT + "?email=" + encodeURIComponent(email), { headers, cache:"no-store" });
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
+    if (!res.ok){
+      const isPage = /^\s*<(!doctype|html)/i.test(text);
+      const e = new Error((data && data.error) || (isPage ? "The timetable service is not reachable from this address." : res.status + " " + res.statusText));
+      e.status = res.status; e.hint = data && data.hint;
+      throw e;
+    }
+    if (!data) throw new Error("The timetable service returned an unreadable response.");
+    if (id !== reqId) return;
+    loadError = "";
+    apply(data);
+    set(LS.cache, { email, at: Date.now(), payload: data });
+  } catch (err) {
+    if (id !== reqId) return;
+    /* school or network down: keep the saved copy for this person */
+    if (cached && err.hint !== "check-credentials" && err.status !== 404) staleNote = err.message;
+    else { loadError = err.message; entries = []; slots = []; }
+  } finally {
+    if (id === reqId){ loading = false; render(); }
+  }
+}
+
+/* ═══ render ═══ */
+let off = 0;   /* weeks away from the current one */
+/* on a weekend the useful week is the coming one */
+function baseWeek(){
+  const now = new Date(), dow = now.getDay();
+  return addDays(startOfWeek(now), dow === 0 || dow === 6 ? 7 : 0);
+}
+
+function render(){
+  const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
+  const mon = addDays(baseWeek(), off*7);
+  const dates = [0,1,2,3,4].map(k => addDays(mon, k));
+  const cycs = dates.map(d => cycleDayFor(d, cycleStart));
+  const days = cycs.map(itemsFor);
+
+  const all = days.flat();
+  const T0 = all.length ? Math.min(...all.map(x => x.s)) : toMinutes("8:55");
+  const T1 = all.length ? Math.max(...all.map(x => x.e)) : toMinutes("15:25");
+  const H = Math.max(560, innerHeight - 60 - 90 - 24), PX = H / (T1 - T0);
+
+  const arrow = d => `<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} week"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
+  let h = arrow(-1) + dates.map(d => `<div class="dh ${sameDay(d, now) ? "today" : ""}"><span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${d.getDate()} ${MON[d.getMonth()]}</span></div>`).join("") + arrow(1);
+  h += "<div></div>";
+
+  const msg = !email ? "Enter a school email above to see a timetable."
+            : loading ? "Loading…"
+            : loadError ? loadError
+            : !all.length ? "No classes this week." : "";
+  if (msg) h += `<div class="msg ${loadError && !loading ? "err" : ""}">${esc(msg)}</div>`;
+  else days.forEach((items, k) => {
+    const d = dates[k], today = sameDay(d, now), before = midnight(d) < midnight(now);
+    h += `<div class="col" style="height:${H}px">`;
+    for (const x of items){
+      const top = (x.s - T0)*PX + 4, ht = (x.e - x.s)*PX - 8;
+      const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
+      const past = before || (today && x.e <= nowMin), cur = today && x.s <= nowMin && nowMin < x.e;
+      if (!x.lesson){
+        h += `<div class="gap ${past ? "past" : ""} ${ht < 44 ? "sm" : ""}" style="top:${top}px;height:${ht}px">${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}</div>`;
+        continue;
+      }
+      const e = x.lesson, c = e.asm ? "--fg2" : (colourOf[e.subject] || "--c1");
+      h += `<div class="blk ${past ? "past" : ""} ${cur ? "now" : ""} ${ht < 50 ? "sm" : ""}" style="--c:var(${c});top:${top}px;height:${ht}px;--p:${cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0}%"` +
+           ` title="${esc([e.subject, e.teacher, e.room].filter(Boolean).join(" · "))}">` +
+           `<span class="r tnum">${esc(roomNumber(e.room))}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}</div>`;
+    }
+    h += "</div>";
+  });
+  if (!msg) h += "<div></div>";
+  document.getElementById("g").innerHTML = h;
+  document.querySelectorAll(".arrow").forEach(a => a.onclick = () => { off += +a.dataset.d; render(); });
+
+  const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
+  const range = dates[0].getDate() + (dates[0].getMonth() !== dates[4].getMonth() ? " " + MON[dates[0].getMonth()] : "") +
+                " – " + dates[4].getDate() + " " + MON[dates[4].getMonth()];
+  document.getElementById("term").innerHTML = (letter ? `<b>Week ${letter}</b> · ` : "") + range +
+    (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : "");
+  document.body.classList.toggle("off", off !== 0);
+}
+
+/* ═══ email box ═══ */
+const input = document.getElementById("email");
+const fit = () => input.style.width = Math.max(10, input.value.length + 1) + "ch";
+input.value = email.split("@")[0];
+fit();
+input.addEventListener("input", fit);
+function choose(){
+  const user = input.value.trim().toLowerCase().split("@")[0];
+  if (user && !/^[a-z0-9][a-z0-9._-]*$/.test(user)){ loadError = "That doesn't look like a school email."; entries = []; render(); return; }
+  const next = user ? user + "@" + DOMAIN : "";
+  input.value = user; fit();
+  if (next === email) return;
+  email = next; set(LS.email, email); off = 0;
+  load();
+}
+input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); input.blur(); } });
+input.addEventListener("change", choose);
+
+document.getElementById("back").onclick = () => { off = 0; render(); };
+const gear = document.getElementById("gear"), menu = document.getElementById("menu");
+const setMenu = o => { menu.hidden = !o; gear.setAttribute("aria-expanded", o); };
+gear.onclick = e => { e.stopPropagation(); setMenu(menu.hidden); };
+addEventListener("click", e => { if (!menu.contains(e.target)) setMenu(false); });
+addEventListener("keydown", e => { if (e.key === "Escape") setMenu(false); });
+
+addEventListener("resize", render);
+setInterval(render, 30000);     /* keep "now" and past lessons current */
+load();
 </script>
 
 </body></html>
