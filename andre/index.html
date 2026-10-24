@@ -19,7 +19,9 @@ try { const t = JSON.parse(localStorage.getItem("andre.theme"));
 </script>
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <style>
-/* Layout: one full-viewport week grid (5 school days, arrow-stepped); modules sit a full screen below. */
+/* Layout: one full-viewport week grid (5 school days, arrow-stepped) that stretches to any width,
+   ultrawide included; modules sit a full screen below. Narrow or portrait windows get the
+   phone layout instead: a day strip over a list of that day's lessons. */
 :root{
   --bg:#FBFBFD; --fill:#F0F0F4; --fill2:#E5E5EA; --blue:#0A84FF; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
@@ -37,7 +39,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--mat)}
 button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tnum{font-variant-numeric:tabular-nums}
-.in{max-width:1440px;margin:0 auto;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+.in{margin:0 auto;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
 
 /* bar */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
@@ -117,7 +119,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 
 /* timetable */
 .tt{min-height:calc(100vh - 60px);padding-block:10px 24px;overflow-x:auto}
-.grid{display:grid;grid-template-columns:36px repeat(5,minmax(160px,1fr)) 36px;column-gap:8px;min-width:980px}
+.grid{display:grid;grid-template-columns:36px repeat(5,minmax(0,1fr)) 36px;column-gap:8px}
 .arrow{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);align-self:center}
 .arrow:hover{background:var(--fill);color:var(--fg)}
 .arrow svg{width:16px;height:16px}
@@ -144,7 +146,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:11.5px;color:var(--fg3)}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
-.backtoday{display:none;height:30px;padding:0 14px;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600}
+.backtoday{display:none;height:30px;padding:0 14px;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;white-space:nowrap}
 .off .backtoday{display:block}
 
 /* modules */
@@ -157,11 +159,60 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .mod .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--c)}
 .mod .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 @media (max-width:700px){.mg{grid-template-columns:repeat(2,1fr)}.mod.w{grid-column:span 1}}
+/* wide screens: all seven tiles (nine cells) in one row instead of three giant columns */
+@media (min-width:2000px){.mg{grid-template-columns:repeat(9,1fr)}}
 
 /* status: no email yet, loading, or the school couldn't be reached */
 .msg{grid-column:2/-2;padding:80px 0;text-align:center;color:var(--fg2);font-size:15px}
 .msg.err{color:var(--red)}
 .term .stale{color:var(--fg3);font-weight:400}
+
+/* ── phone / portrait layout ── */
+.mob{display:none}
+.daynav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 52px);z-index:19;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 16px;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--sep)}
+.daynav .arrow{flex:none}
+.daypill{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 12px;border-radius:20px}
+.daypill .dn{font-size:11px;font-weight:500;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em}
+.daypill .dd{font-size:16px;font-weight:500;color:var(--fg2)}
+.daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
+.daypill[aria-pressed="true"]{background:var(--fill2)}
+.list{max-width:640px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px;min-height:60vh}
+.card{border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) 12%,var(--bg));position:relative;overflow:hidden;display:flex;flex-direction:column}
+.card>*{position:relative;z-index:1}
+.card .subj{font-size:17px;font-weight:600;color:color-mix(in srgb,var(--c) 60%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .teacher{font-size:13px;color:color-mix(in srgb,var(--c) 35%,var(--fg2));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .room{position:absolute;top:14px;right:14px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--c) 55%,var(--fg))}
+.card .time{font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg3));padding-top:10px}
+.card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
+.card.now::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
+  backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
+.card.past{filter:saturate(.35);opacity:.6}
+.brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brk .bl{font-size:14px;font-weight:500;color:var(--fg2)}
+.brk .bt{font-size:12px;color:var(--fg3)}
+.brk.past{opacity:.4}
+.lmsg{padding:60px 0;text-align:center;color:var(--fg2);font-size:15px}
+.lmsg.err{color:var(--red)}
+
+@media (max-width:760px),(orientation:portrait){
+  .tt{display:none}
+  .mob{display:block}
+  .in{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .bar{border-bottom:1px solid var(--sep)}
+  .bar .in{display:flex;gap:10px;height:52px}
+  .term{flex:none}
+  .term .range{display:none}
+  .email{flex:1;width:auto;min-width:0;height:34px}
+  .email input{width:100%!important;min-width:0}
+  .email .dom{display:none}
+  .right{gap:6px}
+  .backtoday .lg{display:none}
+  .gear{width:32px;height:32px}
+  .gear svg{width:18px;height:18px}
+  .mods{padding-block:40px 60px}
+  html.zen .daynav{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+}
 </style>
 
 <header class="bar"><div class="in">
@@ -169,7 +220,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
   <label class="email"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
     <input id="email" placeholder="first.last" aria-label="Student" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><span class="dom">@education.nsw.gov.au</span></label>
   <div class="right">
-    <button class="backtoday" id="back">Return to Today</button>
+    <button class="backtoday" id="back"><span class="lg">Return to </span>Today</button>
     <button class="gear" id="gear" aria-label="Settings" aria-controls="panel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </div></header>
@@ -234,6 +285,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 
 <main>
   <section class="in tt"><div class="grid" id="g"></div></section>
+  <section class="mob"><nav class="daynav" id="daynav" aria-label="Day"></nav><div class="list" id="daylist"></div></section>
   <section class="in mods">
     <div class="mg">
       <a class="mod w" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
@@ -576,12 +628,18 @@ async function load(){
 }
 
 /* ═══ render ═══ */
-let off = 0;   /* weeks away from the current one */
+let off = 0;      /* weeks away from the current one */
+let sel = null;   /* phone layout: the day shown (0 = Mon), null = today or Monday */
+/* the phone layout: same breakpoint as the CSS */
+const phone = matchMedia("(max-width: 760px), (orientation: portrait)");
+phone.addEventListener("change", render);
 /* on a weekend the useful week is the coming one */
 function baseWeek(){
   const now = new Date(), dow = now.getDay();
   return addDays(startOfWeek(now), dow === 0 || dow === 6 ? 7 : 0);
 }
+const DAYF = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const arrow = d => `<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} week"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
 
 function render(){
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
@@ -589,34 +647,49 @@ function render(){
   const dates = [0,1,2,3,4].map(k => addDays(mon, k));
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
   const days = cycs.map(itemsFor);
+  const msg = !email ? "Enter a school email above to see a timetable."
+            : loading ? "Loading…"
+            : loadError ? loadError
+            : !days.flat().length ? "No classes this week." : "";
+  /* past / happening now, for one item on one date */
+  const when = (d, x) => {
+    const today = sameDay(d, now), before = midnight(d) < midnight(now);
+    const cur = today && x.s <= nowMin && nowMin < x.e;
+    return { past: before || (today && x.e <= nowMin), cur, p: cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0 };
+  };
+  const ctx = { now, dates, days, msg, when, err: !!loadError && !loading };
+  if (phone.matches) renderList(ctx); else renderGrid(ctx);
+  document.querySelectorAll(".arrow").forEach(a => a.onclick = () => { off += +a.dataset.d; render(); });
 
+  const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
+  const range = dates[0].getDate() + (dates[0].getMonth() !== dates[4].getMonth() ? " " + MON[dates[0].getMonth()] : "") +
+                " – " + dates[4].getDate() + " " + MON[dates[4].getMonth()];
+  document.getElementById("term").innerHTML = (letter ? `<b>Week ${letter}</b><span class="range"> · ${range}</span>` : range) +
+    (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : "");
+  document.body.classList.toggle("off", off !== 0);
+}
+
+/* desktop: the five days side by side, blocks placed by clock time */
+function renderGrid({ now, dates, days, msg, when, err }){
   const all = days.flat();
   const T0 = all.length ? Math.min(...all.map(x => x.s)) : toMinutes("8:55");
   const T1 = all.length ? Math.max(...all.map(x => x.e)) : toMinutes("15:25");
   const H = Math.max(560, innerHeight - 60 - 90 - 24), PX = H / (T1 - T0);
 
-  const arrow = d => `<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} week"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
   let h = arrow(-1) + dates.map(d => `<div class="dh ${sameDay(d, now) ? "today" : ""}"><span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${d.getDate()} ${MON[d.getMonth()]}</span></div>`).join("") + arrow(1);
   h += "<div></div>";
-
-  const msg = !email ? "Enter a school email above to see a timetable."
-            : loading ? "Loading…"
-            : loadError ? loadError
-            : !all.length ? "No classes this week." : "";
-  if (msg) h += `<div class="msg ${loadError && !loading ? "err" : ""}">${esc(msg)}</div>`;
+  if (msg) h += `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   else days.forEach((items, k) => {
-    const d = dates[k], today = sameDay(d, now), before = midnight(d) < midnight(now);
     h += `<div class="col" style="height:${H}px">`;
     for (const x of items){
-      const top = (x.s - T0)*PX + 4, ht = (x.e - x.s)*PX - 8;
+      const top = (x.s - T0)*PX + 4, ht = (x.e - x.s)*PX - 8, w = when(dates[k], x);
       const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
-      const past = before || (today && x.e <= nowMin), cur = today && x.s <= nowMin && nowMin < x.e;
       if (!x.lesson){
-        h += `<div class="gap ${past ? "past" : ""} ${ht < 44 ? "sm" : ""}" style="top:${top}px;height:${ht}px">${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}</div>`;
+        h += `<div class="gap ${w.past ? "past" : ""} ${ht < 44 ? "sm" : ""}" style="top:${top}px;height:${ht}px">${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}</div>`;
         continue;
       }
       const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room);
-      h += `<div class="blk ${past ? "past" : ""} ${cur ? "now" : ""} ${ht < 50 ? "sm" : ""}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0}%"` +
+      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"` +
            ` title="${esc([e.subject, e.teacher, e.room].filter(Boolean).join(" · "))}">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}</div>`;
     }
@@ -624,14 +697,48 @@ function render(){
   });
   if (!msg) h += "<div></div>";
   document.getElementById("g").innerHTML = h;
-  document.querySelectorAll(".arrow").forEach(a => a.onclick = () => { off += +a.dataset.d; render(); });
+}
 
-  const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
-  const range = dates[0].getDate() + (dates[0].getMonth() !== dates[4].getMonth() ? " " + MON[dates[0].getMonth()] : "") +
-                " – " + dates[4].getDate() + " " + MON[dates[4].getMonth()];
-  document.getElementById("term").innerHTML = (letter ? `<b>Week ${letter}</b> · ` : "") + range +
-    (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : "");
-  document.body.classList.toggle("off", off !== 0);
+/* phone / portrait: a day strip over a list of the chosen day */
+function renderList({ now, dates, days, msg, when, err }){
+  if (sel === null){ const i = dates.findIndex(d => sameDay(d, now)); sel = i === -1 ? 0 : i; }
+  const nav = document.getElementById("daynav");
+  nav.innerHTML = arrow(-1) + dates.map((d, k) =>
+    `<button class="daypill ${sameDay(d, now) ? "today" : ""}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${DAYF[k]} ${d.getDate()} ${MON[d.getMonth()]}"><span class="dn">${DN[k]}</span><span class="dd tnum">${d.getDate()}</span></button>`
+  ).join("") + arrow(1);
+  nav.querySelectorAll(".daypill").forEach(b => b.onclick = () => { sel = +b.dataset.k; render(); });
+
+  let h = "";
+  if (msg) h = `<div class="lmsg ${err ? "err" : ""}">${esc(msg)}</div>`;
+  else if (!days[sel].length) h = `<div class="lmsg">No classes on ${DAYF[sel]}.</div>`;
+  else for (const x of days[sel]){
+    const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
+    if (!x.lesson){
+      h += `<div class="brk ${w.past ? "past" : ""}"><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span></div>`;
+      continue;
+    }
+    const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room);
+    h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""}" style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
+         `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
+         `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span></div>`;
+  }
+  document.getElementById("daylist").innerHTML = h;
+}
+
+/* swipe the list sideways for the next / previous day, across weekends */
+{
+  const list = document.getElementById("daylist");
+  let start = null;
+  list.addEventListener("touchstart", e => { const t = e.touches[0]; start = { x:t.clientX, y:t.clientY }; }, { passive:true });
+  list.addEventListener("touchend", e => {
+    if (!start) return;
+    const t = e.changedTouches[0], dx = t.clientX - start.x, dy = t.clientY - start.y;
+    start = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    let k = (sel ?? 0) + (dx < 0 ? 1 : -1);
+    if (k > 4){ k = 0; off++; } else if (k < 0){ k = 4; off--; }
+    sel = k; render();
+  });
 }
 
 /* ═══ email box ═══ */
@@ -646,13 +753,13 @@ function choose(){
   const next = user ? user + "@" + DOMAIN : "";
   input.value = user; fit();
   if (next === email) return;
-  email = next; set(LS.email, email); off = 0;
+  email = next; set(LS.email, email); off = 0; sel = null;
   load();
 }
 input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); input.blur(); } });
 input.addEventListener("change", choose);
 
-document.getElementById("back").onclick = () => { off = 0; render(); };
+document.getElementById("back").onclick = () => { off = 0; sel = null; render(); };
 
 /* ═══ settings panel ═══ */
 const $ = id => document.getElementById(id);
