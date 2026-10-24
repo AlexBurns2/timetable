@@ -1,31 +1,186 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Andre's space · MSC Unofficial</title>
 <link rel="icon" type="image/png" href="/images/icon.png">
 <!--
   Andre's sandbox for the site redesign. Served at /andre/.
   Deliberately standalone: it doesn't load theme.css / site.css / theme.js, so
   nothing here changes the main site and nothing on the main site changes this.
-  Add as many pages and folders as you like inside andre/ — e.g.
-  andre/games/index.html is served at /andre/games/. Use root-relative links
-  ("/andre/...") or relative ones ("games/") between them.
+  Current content: timetable concept art (static demo data, not wired to the API).
 -->
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <style>
-  :root{color-scheme:light dark;--bg:#fafafa;--text:#1a1a1a;--muted:#777}
-  @media (prefers-color-scheme:dark){ :root{--bg:#111;--text:#f2f2f2;--muted:#999} }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px;text-align:center}
-  h1{margin:0;font-size:clamp(1.25rem,4vw,2rem);font-weight:600}
-  a{color:var(--muted);font-size:0.875rem}
+/* Layout: one full-viewport week grid (5 school days, arrow-stepped); modules sit a full screen below. */
+:root{
+  --bg:#FBFBFD; --fill:#F0F0F4; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
+  --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
+  --c1:#0A84FF; --c2:#FF9F0A; --c3:#30C05A; --c4:#AF52DE; --c5:#FF375F; --c6:#5E5CE6;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#000; --fill:#1C1C1E; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000; --fill:#1C1C1E; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--mat)}
+button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.tnum{font-variant-numeric:tabular-nums}
+.in{max-width:1440px;margin:0 auto;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+
+/* bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+.bar .in{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;height:60px}
+.term{font-size:13px;color:var(--fg2);font-weight:500}
+.term b{color:var(--fg);font-weight:600}
+.email{display:flex;align-items:center;gap:8px;width:400px;height:36px;padding:0 12px;border-radius:10px;background:var(--fill);color:var(--fg2);cursor:text}
+.email svg{width:15px;height:15px;flex:none}
+.email input{width:11ch;min-width:3ch;height:100%;outline:none;color:var(--fg);font-size:14px;cursor:text;padding:0}
+.email input::placeholder{color:var(--fg2)}
+.email .dom{color:var(--fg3);font-size:14px;white-space:nowrap}
+.right{display:flex;justify-content:flex-end;align-items:center;gap:14px}
+.clock{font-size:13px;color:var(--fg2)}
+.gear{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--fg2)}
+.gear:hover{background:var(--fill)}
+.gear svg{width:19px;height:19px}
+.set{position:relative}
+.menu{position:absolute;top:calc(100% + 8px);right:0;min-width:200px;padding:6px;border-radius:12px;background:var(--bg);border:1px solid var(--sep);box-shadow:0 10px 30px rgba(0,0,0,.12)}
+.menu a{display:block;padding:9px 12px;border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px;font-weight:500}
+.menu a:hover{background:var(--fill)}
+
+/* timetable */
+.tt{min-height:calc(100vh - 60px);padding-block:10px 24px;overflow-x:auto}
+.grid{display:grid;grid-template-columns:36px repeat(5,minmax(160px,1fr)) 36px;column-gap:8px;min-width:980px}
+.arrow{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);align-self:center}
+.arrow:hover{background:var(--fill);color:var(--fg)}
+.arrow svg{width:16px;height:16px}
+.dh{display:flex;align-items:baseline;justify-content:center;gap:5px;padding:16px 2px 12px;border-bottom:2px solid transparent;margin-bottom:12px;position:relative}
+.dh .d{font-size:17px;color:var(--fg2)}
+.dh .n{font-size:17px;font-weight:500}
+.dh .tag{margin-left:auto;font-size:12px;color:var(--fg3)}
+.dh.today{border-bottom-color:var(--fg)}
+.dh.today .d,.dh.today .n{color:var(--fg);font-weight:700}
+.col{position:relative}
+.blk{position:absolute;left:0;right:0;border-radius:10px;padding:10px 12px;overflow:hidden;background:color-mix(in srgb,var(--c) 14%,var(--bg))}
+.blk>*{position:relative;z-index:1;display:block}
+.blk .s{font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 55%,var(--fg));line-height:1.25;padding-right:36px}
+.blk .m{font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 35%,var(--fg2))}
+.blk .r{position:absolute;top:10px;right:12px;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 55%,var(--fg))}
+.blk .t{position:absolute;left:12px;bottom:9px;font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
+.blk.sm{display:flex;align-items:center;gap:8px;padding:0 12px}
+.blk.sm .t{position:static}
+.blk.sm .m{display:none}
+.blk.past{filter:saturate(.35);opacity:.6}
+.blk.now::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
+.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:12px;color:var(--fg2);font-weight:500}
+.gap i{width:3px;height:3px;border-radius:50%;background:currentColor}
+.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:11.5px;color:var(--fg3)}
+.gap.sm .t{flex-basis:auto}
+.gap.past{opacity:.4}
+.backtoday{display:none;height:30px;padding:0 14px;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600}
+.off .backtoday{display:block}
+
+/* modules */
+.mods{padding-block:22vh 80px}
+.mods h2{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
+.mg{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:150px;gap:16px}
+.mod{border-radius:20px;background:var(--fill);padding:20px;display:flex;flex-direction:column;justify-content:space-between}
+.mod.w{grid-column:span 2}
+.mod h3{margin:0;font-size:17px;font-weight:600}
+.mod small{color:var(--fg2);font-size:13px}
+.mod .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--c)}
+.mod .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mod ul{list-style:none;margin:6px 0 0;padding:0;font-size:13px;color:var(--fg2);display:grid;gap:4px}
+.mod li b{color:var(--fg);font-weight:500}
+.mod.add{background:none;border:1.5px dashed var(--fg3);align-items:center;justify-content:center;color:var(--fg2);font-weight:500}
 </style>
-</head>
-<body>
-  <h1>andre is doing something cool here</h1>
-  <a href="/home.html">← back to the main site</a>
-</body>
-</html>
+
+<header class="bar"><div class="in">
+  <div class="term" id="term"></div>
+  <label class="email"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
+    <input id="email" value="andre.kwok2" placeholder="Enter first.last" aria-label="Student"><span class="dom">@education.nsw.gov.au</span></label>
+  <div class="right">
+    <button class="backtoday" id="back">Return to Today</button>
+    <div class="set"><button class="gear" id="gear" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      <div class="menu" id="menu" role="menu" hidden><a role="menuitem" href="/home.html">← Return to main site</a></div></div>
+  </div>
+</div></header>
+
+<main>
+  <section class="in tt"><div class="grid" id="g"></div></section>
+  <section class="in mods">
+    <h2>Modules</h2>
+    <div class="mg">
+      <div class="mod w" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div>
+        <div><h3>Notes</h3><ul><li><b>Physics</b> · Projectile motion summary</li><li><b>Chemistry</b> · Titration prac write-up</li></ul></div></div>
+      <div class="mod" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></div><div><h3>Resources</h3><small>Past papers, syllabus</small></div></div>
+      <div class="mod" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><div><h3>Games</h3></div></div>
+      <div class="mod" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div><div><h3>Assessments</h3><small>Chemistry task due Fri</small></div></div>
+      <div class="mod" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><div><h3>School calendar</h3></div></div>
+      <div class="mod" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div><h3>Bell times</h3></div></div>
+      <div class="mod add">+ Add module</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const S={EST:["Engineering Studies","Joanne Drew","--c2",166],PHY:["Physics","Richard Crooks","--c1",118],ENA:["English Advanced","Rachele Haigh","--c5",141],
+CHE:["Chemistry","Holly Bolton","--c3",234],MX1:["Mathematics Ext 1","Philippa Blamires","--c6",154],MX2:["Mathematics Ext 2","Steve Bastin","--c4",159],ASM:["Assembly","","--fg2",""]};
+const STD={p:[["8:55","9:50"],["9:50","10:45"],["11:05","12:00"],["12:00","12:55"],["13:35","14:30"],["14:30","15:25"]],b:[["Recess","10:45","11:05"],["Lunch","12:55","13:35"]]};
+const WED={p:[["8:55","9:50"],["9:50","10:45"],["11:05","12:00"],["13:00","13:55"],["13:55","14:50"]],b:[["Assembly","10:45","11:05"],["Lunch","12:00","13:00"]]};
+// 10-day cycle from the .ics: Week A (26–30 Oct), Week B (2–6 Nov). null = free
+const CYC=[
+ [null,"EST","PHY","ENA","CHE","EST"],[null,"MX1",null,"CHE","PHY"],[null,"ENA",null,"MX2","MX2"],["PHY","EST","CHE","ENA",null],[["CHE",230],null,"ENA","MX1","PHY","EST"],
+ ["EST","ENA",null,"PHY","CHE","EST"],[null,"MX1",null,"CHE","PHY"],["ENA",null,null,"MX2","MX2"],["PHY","EST","ENA","CHE",null],["CHE","ENA",null,"MX1","EST","PHY"]];
+const m=t=>{const[h,x]=t.split(":").map(Number);return h*60+x};
+const DN=["Mon","Tue","Wed","Thu","Fri"], TODAY=1, NOW=m("12:20");
+const dt=i=>new Date(2026,9,26+Math.floor(i/5)*7+((i%5)+5)%5),date=i=>dt(i).getDate(),mon=i=>dt(i).toLocaleString("en-AU",{month:"short"});
+const f=t=>{let[h,x]=t.split(":").map(Number);return(h>12?h-12:h)+":"+String(x).padStart(2,"0")};
+function items(i){
+  const b=i%5===2?WED:STD, day=CYC[i%10];
+  let L=day.map((c,p)=>({s:b.p[p][0],e:b.p[p][1],c,l:c?null:"Free"}));
+  b.b.forEach(([l,s,e])=>L.push({s,e,c:l==="Assembly"?"ASM":null,l}));
+  L.sort((x,y)=>m(x.s)-m(y.s));
+  const f=L.findIndex(x=>x.c),la=L.length-1-[...L].reverse().findIndex(x=>x.c);
+  L=L.slice(f,la+1);
+  const out=[];L.forEach(x=>{const p=out.at(-1);if(!x.c&&p&&!p.c){p.e=x.e;if(p.ls.at(-1)!==x.l)p.ls.push(x.l)}else if(x.c&&p&&p.c&&JSON.stringify(p.c)===JSON.stringify(x.c))p.e=x.e;else out.push(x.c?x:{...x,ls:[x.l]})});
+  return out;
+}
+let off=0;
+function render(){
+  const H=Math.max(560,innerHeight-60-90-24),T0=m("8:55"),T1=m("15:25"),PX=H/(T1-T0);
+  const arrow=d=>`<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} week"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
+  const days=[0,1,2,3,4].map(k=>k+off);
+  let h=arrow(-1)+days.map(i=>`<div class="dh ${i===TODAY?"today":""} ${i===TODAY+1?"next":""}"><span class="d">${DN[(i%5+5)%5]}</span><span class="n tnum">${date(i)} ${mon(i)}</span></div>`).join("")+arrow(1);
+  h+="<div></div>";
+  days.forEach(i=>{
+    h+=`<div class="col" style="height:${H}px">`;
+    items(((i%10)+10)%10).forEach(x=>{
+      const top=(m(x.s)-T0)*PX+4,ht=(m(x.e)-m(x.s))*PX-8,tm=`<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`,past=i<TODAY||(i===TODAY&&m(x.e)<=NOW),now=i===TODAY&&m(x.s)<=NOW&&NOW<m(x.e);
+      if(!x.c){h+=`<div class="gap ${past?"past":""} ${ht<44?"sm":""}" style="top:${top}px;height:${ht}px">${x.ls.join("<i></i>")}${ht<44?"<i></i>":""}${tm}</div>`;return}
+      const[k,room]=Array.isArray(x.c)?x.c:[x.c,S[x.c][3]],s=S[k];
+      h+=`<div class="blk ${past?"past":""} ${now?"now":""} ${ht<50?"sm":""}" style="--c:var(${s[2]});top:${top}px;height:${ht}px;--p:${now?(NOW-m(x.s))/(m(x.e)-m(x.s))*100:0}%"><span class="r tnum">${room}</span><span class="s">${s[0]}</span><span class="m">${s[1]}</span>${tm}</div>`});
+    h+="</div>";
+  });
+  h+="<div></div>";
+  document.getElementById("g").innerHTML=h;
+  document.querySelectorAll(".arrow").forEach(a=>a.onclick=()=>{off+=5*a.dataset.d;render()});
+  const wk=Math.floor((off+2)/5);
+  document.getElementById("term").innerHTML=`Term 4 · <b>Week ${3+wk}${wk%2?"B":"A"}</b>`;
+  document.body.classList.toggle("off",!(TODAY>=off&&TODAY<off+5));
+}
+document.getElementById("back").onclick=()=>{off=0;render()};
+const gear=document.getElementById("gear"),menu=document.getElementById("menu");
+const setMenu=o=>{menu.hidden=!o;gear.setAttribute("aria-expanded",o)};
+gear.onclick=e=>{e.stopPropagation();setMenu(menu.hidden)};
+addEventListener("click",e=>{if(!menu.contains(e.target))setMenu(false)});
+addEventListener("keydown",e=>{if(e.key==="Escape")setMenu(false)});
+addEventListener("resize",render);render();
+</script>
+
+</body></html>
