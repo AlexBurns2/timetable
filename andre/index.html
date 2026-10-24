@@ -753,7 +753,13 @@ function itemsFor(cyc){
                   keys: kind === "class" ? [cyc + "|" + slot.key] : [] });
   }
   L.sort((x,y) => x.s - y.s);
-  const first = L.findIndex(x => x.lesson && !x.lesson.asm), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson && !x.lesson.asm);
+  /* the day runs from its first lesson to its last -- and with the checker on,
+     from the earliest to the latest period anyone in the group has a class in,
+     so their early starts and late finishes show too */
+  const known = split ? knownGroup() : [];
+  const occupied = x => (x.lesson && !x.lesson.asm) ||
+    (!x.lesson && x.keys.length > 0 && known.some(p => x.keys.some(k => busy[p.id].has(k))));
+  const first = L.findIndex(occupied), last = L.length - 1 - [...L].reverse().findIndex(occupied);
   if (first === -1) return [];
   L = L.slice(first, last + 1);
   const out = [];
@@ -765,6 +771,13 @@ function itemsFor(cyc){
     else if (p && x.lesson && p.lesson && !x.lesson.asm && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5 &&
              (!split || sig(p) === sig(x))){ p.e = x.e; p.keys = p.keys.concat(x.keys); }
     else out.push(x);
+  }
+  /* a few minutes between two periods (8:50 to 8:55) would leave a wider gap
+     than everywhere else, so the earlier one is drawn down to the next start;
+     its times still read as they are */
+  for (let i = 0; i < out.length - 1; i++){
+    const gap = out[i + 1].s - out[i].e;
+    if (gap > 0 && gap <= 10) out[i].drawEnd = out[i + 1].s;
   }
   return out;
 }
@@ -946,7 +959,7 @@ function gridHtml({ now, dates, days, msg, when, err }, T0, H, PX){
   days.forEach((items, k) => {
     h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">`;
     for (const x of items){
-      const top = (x.s - T0)*PX + 4, ht = (x.e - x.s)*PX - 8, w = when(dates[k], x);
+      const top = (x.s - T0)*PX + 4, ht = ((x.drawEnd || x.e) - x.s)*PX - 8, w = when(dates[k], x);
       const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
       const sm = ht < 44, hideThis = x.lesson && !x.lesson.asm && hideSubjects();
       if (!x.lesson || x.lesson.asm || hideThis){   /* free periods, breaks, assembly, and lessons when hidden */
