@@ -9,22 +9,28 @@
   Andre's sandbox for the site redesign. Served at /andre/.
   Deliberately standalone: it doesn't load theme.css / site.css / theme.js, so
   nothing here changes the main site and nothing on the main site changes this.
-  Current content: timetable concept art (static demo data, not wired to the API).
+  Current content: the timetable redesign, on live data from /api/timetable.
+  Settings live under andre.* keys, separate from the main site's tt.* ones.
 -->
+<script>/* before first paint, so a forced theme never flashes */
+try { const t = JSON.parse(localStorage.getItem("andre.theme"));
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  if (JSON.parse(localStorage.getItem("andre.zen"))) document.documentElement.classList.add("zen"); } catch {}
+</script>
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <style>
 /* Layout: one full-viewport week grid (5 school days, arrow-stepped); modules sit a full screen below. */
 :root{
-  --bg:#FBFBFD; --fill:#F0F0F4; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
+  --bg:#FBFBFD; --fill:#F0F0F4; --fill2:#E5E5EA; --blue:#0A84FF; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
   --c1:#0A84FF; --c2:#FF9F0A; --c3:#30C05A; --c4:#AF52DE; --c5:#FF375F; --c6:#5E5CE6; --c7:#32ADE6; --c8:#A2845E;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#000; --fill:#1C1C1E; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#000; --fill:#1C1C1E; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
@@ -48,10 +54,66 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .gear{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--fg2)}
 .gear:hover{background:var(--fill)}
 .gear svg{width:19px;height:19px}
-.set{position:relative}
-.menu{position:absolute;top:calc(100% + 8px);right:0;min-width:200px;padding:6px;border-radius:12px;background:var(--bg);border:1px solid var(--sep);box-shadow:0 10px 30px rgba(0,0,0,.12)}
-.menu a{display:block;padding:9px 12px;border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px;font-weight:500}
-.menu a:hover{background:var(--fill)}
+
+/* transparent background: drop the page colour so a browser wallpaper (Zen) shows through */
+html.zen,html.zen body{background:transparent}
+html.zen .bar,html.zen body::before{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+
+/* settings panel */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.panel{position:fixed;top:0;right:0;bottom:0;width:min(360px,100%);z-index:50;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(180%) blur(28px);-webkit-backdrop-filter:saturate(180%) blur(28px);
+  border-left:1px solid var(--sep);display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
+.setopen .scrim{opacity:1;pointer-events:auto}
+.setopen .panel{transform:none;visibility:visible;transition:transform .25s ease}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 0;flex:none}
+.ph h2{margin:0;font-size:18px;font-weight:600;letter-spacing:-.02em}
+.ph button{width:28px;height:28px;border-radius:50%;background:var(--fill2);display:grid;place-items:center;color:var(--fg2)}
+.ph button svg{width:13px;height:13px}
+.pbody{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.pbody::-webkit-scrollbar{display:none}
+.sec-label{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 6px}
+.sec-label button{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
+.row-group{background:var(--fill);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-bottom:1px solid var(--sep);color:inherit;text-decoration:none}
+.row:last-child{border-bottom:none}
+.row.stack{flex-direction:column;align-items:stretch;gap:10px}
+.rl strong{display:block;font-size:14px;font-weight:500}
+.rl small{font-size:12px;color:var(--fg2)}
+a.row:hover{background:var(--fill2)}
+a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
+.tog{width:44px;height:26px;border-radius:13px;background:var(--fg3);flex:none;position:relative}
+.tog[aria-checked="true"]{background:var(--blue)}
+.tog::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tog[aria-checked="true"]::after{transform:translateX(18px)}
+.seg{display:flex;background:var(--fill2);border-radius:8px;padding:2px;gap:2px;flex:none}
+.seg button{padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--fg2)}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.rtiles{display:flex;gap:8px}
+.rtile{flex:1 1 auto;min-width:0;border-radius:8px;padding:10px 6px;text-align:center;border:2px solid transparent;background:var(--fill2)}
+.rtile[aria-pressed="true"]{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--fill2))}
+.rtile .rv{display:block;font-weight:600;font-size:13px;color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtile[aria-pressed="true"] .rv{color:var(--blue)}
+.rtile .rl2{display:block;color:var(--fg3);font-size:11px;margin-top:2px}
+.colours{background:var(--fill);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.colours .none{color:var(--fg2);font-size:13px}
+.crow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.crow+.crow{border-top:1px solid var(--sep);padding-top:10px}
+.cname{font-size:13px;font-weight:500}
+.cname small{display:block;font-size:11px;color:var(--fg2);font-weight:400}
+.hexrow{display:flex;align-items:center;gap:7px}
+.dot{width:20px;height:20px;border-radius:50%;flex:none;padding:0;border:0;overflow:hidden;cursor:pointer;-webkit-appearance:none;appearance:none;background:none}
+.dot::-webkit-color-swatch-wrapper{padding:0}
+.dot::-webkit-color-swatch{border:0;border-radius:50%}
+.dot::-moz-color-swatch{border:0;border-radius:50%}
+.hexin{width:82px;background:var(--fill2);border-radius:7px;padding:5px 8px;font-size:12px;color:var(--fg);outline:none;cursor:text;font-family:"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.hexin:focus{box-shadow:0 0 0 2px var(--blue)}
+.export{width:100%;padding:13px;border-radius:12px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.export svg{width:16px;height:16px;flex:none}
+.export-sub{text-align:center;font-size:12px;color:var(--fg3);margin-top:7px}
+.export-sub.err{color:var(--red)}
 
 /* timetable */
 .tt{min-height:calc(100vh - 60px);padding-block:10px 24px;overflow-x:auto}
@@ -68,7 +130,7 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .col{position:relative}
 .blk{position:absolute;left:0;right:0;border-radius:10px;padding:10px 12px;overflow:hidden;background:color-mix(in srgb,var(--c) 14%,var(--bg))}
 .blk>*{position:relative;z-index:1;display:block}
-.blk .s{font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 55%,var(--fg));line-height:1.25;padding-right:36px}
+.blk .s{font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 55%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
 .blk .m{font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 35%,var(--fg2))}
 .blk .r{position:absolute;top:10px;right:12px;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 55%,var(--fg))}
 .blk .t{position:absolute;left:12px;bottom:9px;font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
@@ -108,10 +170,67 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <input id="email" placeholder="first.last" aria-label="Student" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><span class="dom">@education.nsw.gov.au</span></label>
   <div class="right">
     <button class="backtoday" id="back">Return to Today</button>
-    <div class="set"><button class="gear" id="gear" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-      <div class="menu" id="menu" role="menu" hidden><a role="menuitem" href="/home.html">← Return to main site</a></div></div>
+    <button class="gear" id="gear" aria-label="Settings" aria-controls="panel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </div></header>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="ptitle">
+  <div class="ph">
+    <h2 id="ptitle">Settings</h2>
+    <button id="pclose" aria-label="Close"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+  </div>
+  <div class="pbody">
+
+    <div>
+      <div class="sec-label">Appearance</div>
+      <div class="row-group">
+        <div class="row">
+          <div class="rl"><strong>Theme</strong><small>Auto follows your device</small></div>
+          <div class="seg" id="theme">
+            <button data-theme="light">Light</button>
+            <button data-theme="auto">Auto</button>
+            <button data-theme="dark">Dark</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Transparent background</strong><small>Lets a browser wallpaper, like Zen's, show through</small></div>
+          <button class="tog" id="zen" role="switch" aria-checked="false" aria-label="Transparent background"></button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Room numbers</div>
+      <div class="row-group">
+        <div class="row stack">
+          <div class="rl"><strong>Format</strong><small>How rooms show on each lesson</small></div>
+          <div class="rtiles" id="rooms">
+            <button class="rtile" data-room="building"><span class="rv"></span><span class="rl2">New</span></button>
+            <button class="rtile" data-room="number"><span class="rv"></span><span class="rl2">Legacy</span></button>
+            <button class="rtile" data-room="full"><span class="rv"></span><span class="rl2">Full</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">Subject colours <button id="resetcolours">Reset</button></div>
+      <div class="colours" id="colours"></div>
+    </div>
+
+    <div>
+      <div class="sec-label">Export</div>
+      <button class="export" id="exportics"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export timetable as .ics</button>
+      <div class="export-sub" id="exportsub">The next four weeks, for Calendar, Google Calendar or Outlook</div>
+    </div>
+
+    <div class="row-group">
+      <a class="row" href="/home.html"><div class="rl"><strong>Return to main site</strong></div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></a>
+    </div>
+
+  </div>
+</aside>
 
 <main>
   <section class="in tt"><div class="grid" id="g"></div></section>
@@ -134,13 +253,18 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
    copied from index.html rather than shared so this sandbox stays standalone. */
 const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
-const LS = { email:"andre.email", cache:"andre.cache" };
+const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", room:"andre.room", colours:"andre.colours" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction and optional login */
 const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
 const creds = get("tt.creds", null);
 let email = get(LS.email, "") || get("tt.email", "");
+/* display settings, the same choices as the main timetable */
+let theme = get(LS.theme, "auto");          /* light | auto | dark */
+let zen = !!get(LS.zen, false);
+let roomMode = get(LS.room, "number");      /* full CR1007.118 | building CR1007 | number 118 */
+let colours = get(LS.colours, {});          /* subject -> #hex override */
 
 /* ═══ dates ═══ */
 const DN = ["Mon","Tue","Wed","Thu","Fri"];
@@ -218,11 +342,14 @@ function cleanSubject(name, code){
   if (!s) s = original.replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, "").trim();
   return s || original || String(code || "").trim() || "Class";
 }
-/* "CR1007.118" -> "118" */
-function roomNumber(r){
+/* "CR1007.118": the part after the final dot is the room number, the rest
+   the building code. Shown per the room-number setting. */
+function splitRoom(r){
   const s = String(r || "").trim(), dot = s.lastIndexOf(".");
-  return dot === -1 ? s : (s.slice(dot + 1).trim() || s);
+  if (dot === -1) return { building:s, number:s, full:s };
+  return { building:s.slice(0, dot).trim() || s, number:s.slice(dot + 1).trim() || s, full:s };
 }
+const roomLabel = r => splitRoom(r)[roomMode] || "";
 function nameFromEmail(e){
   const parts = String(e || "").split("@")[0].split(".");
   if (parts.length < 2) return "";
@@ -387,6 +514,12 @@ function itemsFor(cyc){
   return out;
 }
 
+const subjectList = () => [...new Set(entries.filter(e => e.kind === "class").map(e => e.subject))].filter(Boolean).sort();
+const paletteHex = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+/* the subject's colour: a custom pick, else its palette slot */
+const colourFor = s => colours[s] || "var(" + (colourOf[s] || "--c1") + ")";
+const hexFor = s => colours[s] || paletteHex(colourOf[s] || "--c1");
+
 /* ═══ load ═══ */
 let loading = false, loadError = "", staleNote = "", reqId = 0;
 
@@ -396,9 +529,8 @@ function apply(payload){
   cycleStart = toDate(typeof payload.startDate === "string" ? payload.startDate
     : pick(payload.startDate || {}, ["startDate","StartDate","date","Date"]));
   /* a steady colour per subject: alphabetical, round the palette */
-  const subjects = [...new Set(entries.filter(e => e.kind === "class").map(e => e.subject))].sort();
   colourOf = {};
-  subjects.forEach((s, i) => colourOf[s] = "--c" + (i % 8 + 1));
+  subjectList().forEach((s, i) => colourOf[s] = "--c" + (i % 8 + 1));
   if (!entries.length) loadError = "No lessons were returned for that address.";
 }
 
@@ -439,7 +571,7 @@ async function load(){
     if (cached && err.hint !== "check-credentials" && err.status !== 404) staleNote = err.message;
     else { loadError = err.message; entries = []; slots = []; }
   } finally {
-    if (id === reqId){ loading = false; render(); }
+    if (id === reqId){ loading = false; render(); if (settingsOpen()) paintSettings(); }
   }
 }
 
@@ -483,10 +615,10 @@ function render(){
         h += `<div class="gap ${past ? "past" : ""} ${ht < 44 ? "sm" : ""}" style="top:${top}px;height:${ht}px">${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}</div>`;
         continue;
       }
-      const e = x.lesson, c = e.asm ? "--fg2" : (colourOf[e.subject] || "--c1");
-      h += `<div class="blk ${past ? "past" : ""} ${cur ? "now" : ""} ${ht < 50 ? "sm" : ""}" style="--c:var(${c});top:${top}px;height:${ht}px;--p:${cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0}%"` +
+      const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room);
+      h += `<div class="blk ${past ? "past" : ""} ${cur ? "now" : ""} ${ht < 50 ? "sm" : ""}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0}%"` +
            ` title="${esc([e.subject, e.teacher, e.room].filter(Boolean).join(" · "))}">` +
-           `<span class="r tnum">${esc(roomNumber(e.room))}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}</div>`;
+           `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}</div>`;
     }
     h += "</div>";
   });
@@ -521,11 +653,112 @@ input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefaul
 input.addEventListener("change", choose);
 
 document.getElementById("back").onclick = () => { off = 0; render(); };
-const gear = document.getElementById("gear"), menu = document.getElementById("menu");
-const setMenu = o => { menu.hidden = !o; gear.setAttribute("aria-expanded", o); };
-gear.onclick = e => { e.stopPropagation(); setMenu(menu.hidden); };
-addEventListener("click", e => { if (!menu.contains(e.target)) setMenu(false); });
-addEventListener("keydown", e => { if (e.key === "Escape") setMenu(false); });
+
+/* ═══ settings panel ═══ */
+const $ = id => document.getElementById(id);
+const gear = $("gear");
+const settingsOpen = () => document.body.classList.contains("setopen");
+function openSettings(o){
+  document.body.classList.toggle("setopen", o);
+  gear.setAttribute("aria-expanded", o);
+  if (o){ paintSettings(); $("pclose").focus(); } else gear.focus();
+}
+gear.onclick = () => openSettings(true);
+$("pclose").onclick = $("scrim").onclick = () => openSettings(false);
+addEventListener("keydown", e => { if (e.key === "Escape" && settingsOpen()) openSettings(false); });
+
+function applyLook(){
+  if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+  else delete document.documentElement.dataset.theme;
+  document.documentElement.classList.toggle("zen", zen);
+}
+function paintSettings(){
+  document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
+  $("zen").setAttribute("aria-checked", zen);
+  /* the format examples use a real room from this timetable */
+  const sample = (entries.find(e => e.kind === "class" && e.room.includes(".")) || {}).room || "CR1007.118";
+  document.querySelectorAll("#rooms .rtile").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.room === roomMode);
+    b.querySelector(".rv").textContent = splitRoom(sample)[b.dataset.room];
+  });
+  paintColours();
+}
+document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
+  theme = b.dataset.theme; set(LS.theme, theme); applyLook(); paintSettings();
+});
+$("zen").onclick = () => { zen = !zen; set(LS.zen, zen); applyLook(); paintSettings(); };
+document.querySelectorAll("#rooms .rtile").forEach(b => b.onclick = () => {
+  roomMode = b.dataset.room; set(LS.room, roomMode); paintSettings(); render();
+});
+
+/* subject colours: the dot is a colour picker, the box takes a hex code */
+const isHex = v => /^#[0-9a-f]{6}$/i.test(v);
+function paintColours(){
+  const host = $("colours"), subs = subjectList();
+  host.innerHTML = subs.length ? "" : '<div class="none">Load a timetable to colour its subjects.</div>';
+  for (const s of subs){
+    const teacher = (entries.find(e => e.subject === s && e.teacher) || {}).teacher || "";
+    const row = document.createElement("div");
+    row.className = "crow";
+    row.innerHTML = `<div class="cname">${esc(s)}<small>${esc(teacher)}</small></div>` +
+      `<div class="hexrow"><input class="dot" type="color" aria-label="${esc(s)} colour">` +
+      `<input class="hexin" type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="${esc(s)} hex code"></div>`;
+    const [dot, hex] = row.querySelectorAll("input");
+    const shown = () => { const v = hexFor(s).toUpperCase(); dot.value = isHex(v) ? v : "#0A84FF"; hex.value = v; };
+    const choose = v => { colours[s] = v.toUpperCase(); set(LS.colours, colours); render(); };
+    shown();
+    dot.oninput = () => { hex.value = dot.value.toUpperCase(); choose(dot.value); };
+    hex.oninput = () => {
+      const v = (hex.value.trim().startsWith("#") ? "" : "#") + hex.value.trim();
+      if (isHex(v)){ dot.value = v; choose(v); }
+    };
+    hex.onblur = shown;
+    hex.onkeydown = e => { if (e.key === "Enter") hex.blur(); };
+    host.appendChild(row);
+  }
+}
+$("resetcolours").onclick = () => { colours = {}; set(LS.colours, colours); paintColours(); render(); };
+
+/* ═══ export .ics ═══ — the cycle mapped onto the next four weeks, as on the main timetable */
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+function icsStamp(date, mins){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(mins/60), mins%60);
+  const p = n => String(n).padStart(2,"0");
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + "T" + p(d.getHours()) + p(d.getMinutes()) + "00";
+}
+function buildICS(){
+  const q = v => String(v || "").replace(/[\\;,]/g, m => "\\" + m).replace(/\n/g, "\\n");
+  const out = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//MSC Unofficial//Timetable//EN","CALSCALE:GREGORIAN"];
+  const now = new Date(), stamp = icsStamp(now, now.getHours()*60 + now.getMinutes());
+  const start = midnight(now);
+  for (let i = 0; i < 28; i++){
+    const day = addDays(start, i), cyc = cycleDayFor(day, cycleStart);
+    if (!cyc) continue;
+    entries.filter(e => e.dayKey === cyc && e.kind === "class" && e.start != null && e.end != null)
+      .forEach((e, n) => out.push("BEGIN:VEVENT",
+        "UID:" + ymd(day) + "-" + e.pnum + "-" + n + "@mscunofficial",
+        "DTSTAMP:" + stamp,
+        "DTSTART:" + icsStamp(day, e.start),
+        "DTEND:" + icsStamp(day, e.end),
+        "SUMMARY:" + q(e.subject),
+        "LOCATION:" + q(roomLabel(e.room)),
+        "DESCRIPTION:" + q([e.teacher, e.code].filter(Boolean).join(" · ")),
+        "END:VEVENT"));
+  }
+  out.push("END:VCALENDAR");
+  return out.join("\r\n");
+}
+$("exportics").onclick = () => {
+  const sub = $("exportsub");
+  if (!entries.length){ sub.textContent = "Load a timetable first."; sub.className = "export-sub err"; return; }
+  sub.textContent = "The next four weeks, for Calendar, Google Calendar or Outlook"; sub.className = "export-sub";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([buildICS()], { type:"text/calendar" }));
+  a.download = "timetable.ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+applyLook();
 
 addEventListener("resize", render);
 setInterval(render, 30000);     /* keep "now" and past lessons current */
