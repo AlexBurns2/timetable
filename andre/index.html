@@ -12,10 +12,29 @@
   Current content: the timetable redesign, on live data from /api/timetable.
   Settings live under andre.* keys, separate from the main site's tt.* ones.
 -->
-<script>/* before first paint, so a forced theme never flashes */
-try { const t = JSON.parse(localStorage.getItem("andre.theme"));
-  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
-  if (JSON.parse(localStorage.getItem("andre.zen"))) document.documentElement.classList.add("zen"); } catch {}
+<script>
+/* Theme, skin and light/dark onto <html> before first paint, so a forced look
+   never flashes. The page script calls this again whenever a setting changes. */
+function lookAttrs(){
+  const r = document.documentElement;
+  const g = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+  const theme = g("andre.theme") || "auto", skin = g("andre.skin") || "default";
+  const fixed = ["scifi","terminal","blueprint"].includes(skin);       /* dark-only palettes */
+  const dark = fixed || theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  if (theme === "light" || theme === "dark") r.dataset.theme = theme; else delete r.dataset.theme;
+  r.dataset.mode = dark ? "dark" : "light";
+  if (skin === "default") delete r.dataset.skin; else r.dataset.skin = skin;
+  r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin));
+  r.classList.toggle("zen", !!g("andre.zen"));
+  /* the old themes' fonts, fetched only once one of them is in use */
+  if (skin !== "default" && !document.getElementById("skinfonts")){
+    const l = document.createElement("link");
+    l.id = "skinfonts"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap";
+    document.head.appendChild(l);
+  }
+}
+lookAttrs();
 </script>
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <style>
@@ -25,7 +44,7 @@ try { const t = JSON.parse(localStorage.getItem("andre.theme"));
 :root{
   --bg:#FBFBFD; --fill:#F0F0F4; --fill2:#E5E5EA; --blue:#0A84FF; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
-  --c1:#0A84FF; --c2:#FF9F0A; --c3:#30C05A; --c4:#AF52DE; --c5:#FF375F; --c6:#5E5CE6; --c7:#32ADE6; --c8:#A2845E;
+  --green:#30C05A; --tint:20%;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -35,7 +54,7 @@ try { const t = JSON.parse(localStorage.getItem("andre.theme"));
   --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+body{background-color:var(--bg);background-image:var(--img,none);background-attachment:fixed;color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--mat)}
 button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tnum{font-variant-numeric:tabular-nums}
@@ -46,11 +65,13 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .bar .in{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;height:60px}
 .term{font-size:13px;color:var(--fg2);font-weight:500}
 .term b{color:var(--fg);font-weight:600}
-.email{display:flex;align-items:center;gap:8px;width:400px;height:36px;padding:0 12px;border-radius:10px;background:var(--fill);color:var(--fg2);cursor:text}
+.search{position:relative;min-width:0}
+.email{display:flex;align-items:center;gap:8px;width:400px;max-width:100%;height:36px;padding:0 12px;border-radius:10px;background:var(--fill);color:var(--fg2);cursor:text}
 .email svg{width:15px;height:15px;flex:none}
 .email input{width:11ch;min-width:3ch;height:100%;outline:none;color:var(--fg);font-size:14px;cursor:text;padding:0}
 .email input::placeholder{color:var(--fg2)}
 .email .dom{color:var(--fg3);font-size:14px;white-space:nowrap}
+.naming .dom{display:none}
 .right{display:flex;justify-content:flex-end;align-items:center;gap:14px}
 .clock{font-size:13px;color:var(--fg2)}
 .gear{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--fg2)}
@@ -130,42 +151,170 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .dh.today{border-bottom-color:var(--fg)}
 .dh.today .d,.dh.today .n{color:var(--fg);font-weight:700}
 .col{position:relative}
-.blk{position:absolute;left:0;right:0;border-radius:10px;padding:10px 12px;overflow:hidden;background:color-mix(in srgb,var(--c) 14%,var(--bg))}
-.blk>*{position:relative;z-index:1;display:block}
-.blk .s{font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 55%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
-.blk .m{font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 35%,var(--fg2))}
-.blk .r{position:absolute;top:10px;right:12px;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 55%,var(--fg))}
-.blk .t{position:absolute;left:12px;bottom:9px;font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
-.blk.sm{display:flex;align-items:center;gap:8px;padding:0 12px}
-.blk.sm .t{position:static}
-.blk.sm .m{display:none}
-.blk.past{filter:saturate(.35);opacity:.6}
-.blk.now::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:12px;color:var(--fg2);font-weight:500}
+.blk{position:absolute;left:0;right:0;cursor:pointer}
+.blk.open{z-index:20;cursor:default}
+.blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
+  background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));
+  transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .55s cubic-bezier(.34,1.4,.64,1)}
+.blk-card>*{position:relative;z-index:1}
+.blk:not(.open):hover .blk-card{filter:brightness(.97)}
+.blk .s{display:block;font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
+.blk .m{display:block;font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk .r{position:absolute;top:10px;right:12px;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.blk .t{display:block;margin-top:auto;padding-top:4px;font-size:12px;white-space:nowrap;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
+.blk.sm .blk-card{flex-direction:row;align-items:center;gap:8px;padding:0 12px}
+.blk.sm .s{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}
+.blk.sm .t{margin:0;padding:0}
+.blk.sm .m,.blk.sm .r{display:none}
+.blk.sm.open .blk-card{flex-direction:column;align-items:stretch;gap:0;padding:10px 12px}
+.blk.sm.open .m,.blk.sm.open .r{display:block}
+.blk.sm.open .s{white-space:normal;padding-right:calc(var(--rw,3ch) + 8px)}
+.blk.sm.open .t{padding-top:4px}
+.blk.past:not(.open) .blk-card{filter:saturate(.35);opacity:.6}
+.blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 50%,transparent);backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
+.blk.open .blk-card{width:165%;box-shadow:0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
+.col.end .blk-card{left:auto;right:0}          /* Friday opens leftwards, staying on screen */
+
+/* the detail inside an opened lesson (desktop block and phone card alike) */
+.blk-detail{max-height:0;overflow:hidden;opacity:0;pointer-events:none;transition:max-height .5s cubic-bezier(.34,1.2,.64,1),opacity .3s ease .08s}
+.open .blk-detail{max-height:900px;opacity:1;pointer-events:auto}
+.det{padding:8px 0 4px}
+.det-row{padding:5px 0}
+.det-row .lbl{font-size:10.5px;font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg3));text-transform:uppercase;letter-spacing:.06em}
+.det-row .val{font-size:13px;color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
+.det-row .val a{color:color-mix(in srgb,var(--c) 65%,var(--fg));text-decoration:none}
+.det-row .val a:hover{text-decoration:underline}
+.cls-btn{display:flex;align-items:center;justify-content:space-between;width:100%;margin:6px 0 4px;padding:9px 10px;border-radius:8px;text-align:left;
+  background:color-mix(in srgb,var(--c) 12%,var(--fill));font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 65%,var(--fg));transition:background .15s}
+.cls-btn:hover{background:color-mix(in srgb,var(--c) 20%,var(--fill))}
+.cls-btn svg{width:13px;height:13px;flex:none;transition:transform .4s cubic-bezier(.34,1.4,.64,1)}
+.cls-btn.open svg{transform:rotate(180deg)}
+.cls-list{overflow:hidden;max-height:0;transition:max-height .5s cubic-bezier(.34,1.2,.64,1)}
+.cls-list.open{max-height:700px}
+.cls-list-inner{padding:2px 0 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:0 6px}
+.cls-list-inner button{font-size:11.5px;color:var(--fg2);padding:3px 2px;border-radius:6px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cls-list-inner button:hover{background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--fg)}
+.cls-note{grid-column:1/-1;font-size:11.5px;color:var(--fg3);padding:2px 0 6px;text-align:center}
+.cls-note.err{color:var(--red)}
+
+.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:12px;color:var(--fg2);font-weight:500;overflow:hidden}
 .gap i{width:3px;height:3px;border-radius:50%;background:currentColor}
-.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:11.5px;color:var(--fg3)}
+.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:11.5px;color:var(--fg3);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
+/* free periods: who in your group is free then */
+.gap .fr,.brk .fr{flex-basis:100%;font-size:11.5px;font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gap .fr{text-align:center;padding:0 8px}
+.gap.sm .fr{flex-basis:auto;padding:0}
+.gap.all,.brk.all{background:color-mix(in srgb,var(--green) 16%,var(--fill))}
 .backtoday{display:none;height:30px;padding:0 14px;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;white-space:nowrap}
 .off .backtoday{display:block}
 
 /* modules */
 .mods{padding-block:22vh 80px}
+.mods h2{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
 .mg{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:150px;gap:16px}
 .mod{border-radius:20px;background:var(--fill);padding:20px;display:flex;flex-direction:column;justify-content:space-between;color:inherit;text-decoration:none;transition:transform .15s}
 .mod:hover{transform:translateY(-2px)}
-.mod.w{grid-column:span 2}
 .mod h3{margin:0;font-size:17px;font-weight:600}
 .mod .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--c)}
 .mod .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-@media (max-width:700px){.mg{grid-template-columns:repeat(2,1fr)}.mod.w{grid-column:span 1}}
-/* wide screens: all seven tiles (nine cells) in one row instead of three giant columns */
+/* the column count is set here; the page then widens tiles so every row is full */
+@media (max-width:700px){.mg{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1400px){.mg{grid-template-columns:repeat(4,1fr)}}
 @media (min-width:2000px){.mg{grid-template-columns:repeat(9,1fr)}}
 
 /* status: no email yet, loading, or the school couldn't be reached */
 .msg{grid-column:2/-2;padding:80px 0;text-align:center;color:var(--fg2);font-size:15px}
 .msg.err{color:var(--red)}
 .term .stale{color:var(--fg3);font-weight:400}
+
+/* search suggestions: the student finder, in the bar and in Free periods */
+.sugg{position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:260px;z-index:35;background:var(--bg);border:1px solid var(--sep);border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,.16);padding:6px;max-height:min(60vh,420px);overflow-y:auto}
+.sugg button{display:grid;grid-template-columns:1fr auto;gap:0 10px;width:100%;text-align:left;padding:8px 10px;border-radius:8px}
+.sugg button b{font-weight:600;font-size:14px;color:var(--fg)}
+.sugg button small{font-size:12px;color:var(--fg2);align-self:center}
+.sugg button span{grid-column:1/-1;font-size:12px;color:var(--fg3)}
+.sugg button[aria-selected="true"],.sugg button:hover{background:var(--fill)}
+.sugg .hint{padding:8px 10px;font-size:13px;color:var(--fg2)}
+.sugg .hint.err{color:var(--red)}
+.sugg a{color:var(--blue)}
+
+/* settings: free periods, theme picker */
+.rl small a{color:var(--blue)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips:empty{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:14px;background:var(--fill2);font-size:13px;font-weight:500}
+.chip i{font-style:normal;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);line-height:1}
+.chip:hover i{background:var(--fg3);color:var(--bg)}
+.chip.unk{color:var(--fg3)}
+.fin{width:100%;background:var(--fill2);border-radius:8px;padding:8px 10px;cursor:text;outline:none}
+.fin:focus{box-shadow:0 0 0 2px var(--blue)}
+.fin:disabled{opacity:.5;cursor:not-allowed}
+button.row{width:100%;text-align:left}
+button.row:hover{background:var(--fill2)}
+.row .val{display:flex;align-items:center;gap:6px;color:var(--fg2);font-size:13px;flex:none}
+.row .val svg{width:14px;height:14px;color:var(--fg3)}
+.seg[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.pview{display:none;flex:1;overflow-y:auto;padding:20px;flex-direction:column;gap:14px}
+.panel.sub .pbody{display:none}
+.panel.sub .pview{display:flex;animation:slidein .28s cubic-bezier(.34,1.2,.64,1)}
+@keyframes slidein{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+.pback{align-self:flex-start;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:500;color:var(--blue);padding:2px}
+.pback svg{width:13px;height:13px}
+.skins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.skin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:10px;border:2px solid transparent;font-size:12px;font-weight:500;color:var(--fg2)}
+.skin i{width:100%;aspect-ratio:4/3;border-radius:8px;box-shadow:inset 0 0 0 1px var(--sep)}
+.skin[aria-pressed="true"]{border-color:var(--blue);color:var(--fg)}
+
+/* ── the old timetable's themes ──
+   Each sets its palette as --s-* (values from theme.css); one rule maps them
+   onto this page's tokens. Specific enough to beat the light/dark defaults. */
+:root[data-skin][data-skin]{
+  --bg:var(--s-bg); --img:var(--s-img,none); --fill:var(--s-panel2); --fill2:color-mix(in srgb,var(--s-text) 9%,var(--s-panel2));
+  --fg:var(--s-text); --fg2:var(--s-muted); --fg3:color-mix(in srgb,var(--s-muted) 55%,var(--s-bg)); --sep:var(--s-sep,var(--s-line));
+  --mat:color-mix(in srgb,var(--s-bg) 84%,transparent); --blue:var(--s-accent); --font:var(--s-font);
+  --base:var(--s-base,var(--s-bg)); --tint:var(--s-tint,20%); color-scheme:light;
+}
+:root[data-skin][data-skin][data-mode="dark"]{color-scheme:dark}
+:root[data-skin="plain"]{--s-bg:#fff;--s-panel:#fff;--s-panel2:#f6f6f7;--s-line:#e5e5e8;--s-text:#18181b;--s-muted:#8b8b93;--s-accent:#4f4fd0;--s-font:"DM Sans",system-ui,sans-serif}
+:root[data-skin="plain"][data-mode="dark"]{--s-bg:#161618;--s-panel:#1f1f22;--s-panel2:#27272b;--s-line:#303035;--s-text:#eaeaee;--s-muted:#87878f;--s-accent:#8f8ff2}
+:root[data-skin="classic"]{--s-bg:#e9edf3;--s-panel:rgba(255,255,255,.75);--s-panel2:rgba(255,255,255,.55);--s-line:rgba(0,0,0,.08);--s-text:#1d1d1f;--s-muted:rgba(29,29,31,.55);--s-accent:#0a84ff;
+  --s-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,sans-serif;--s-base:var(--s-panel)}
+:root[data-skin="classic"][data-mode="dark"]{--s-bg:#101114;--s-img:radial-gradient(circle at 20% 10%,rgba(255,255,255,.05),transparent 55%);--s-panel:rgba(44,44,48,.62);--s-panel2:rgba(32,32,36,.5);--s-line:rgba(255,255,255,.12);--s-text:#f5f5f7;--s-muted:rgba(245,245,247,.62);--s-accent:#409cff}
+:root[data-skin="paper"]{--s-bg:#f7f3e8;--s-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(80,110,160,.13) 31px 32px);--s-panel:#fffdf6;--s-panel2:#f0ead8;--s-line:#ded4bd;--s-text:#2c2519;--s-muted:#8a7f6a;--s-accent:#c2571f;
+  --s-font:"Patrick Hand","Comic Sans MS",cursive;--s-tint:44%;--s-base:var(--s-panel)}
+:root[data-skin="paper"][data-mode="dark"]{--s-bg:#221f1a;--s-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(150,170,210,.09) 31px 32px);--s-panel:#2e2a23;--s-panel2:#282420;--s-line:#413a30;--s-text:#f0e9db;--s-muted:#a2957f;--s-accent:#e8834a;--s-tint:18%}
+:root[data-skin="glass"]{--s-bg:#dfe4f2;--s-img:radial-gradient(58vw 58vw at 8% 2%,rgba(124,92,255,.6),transparent 58%),radial-gradient(52vw 52vw at 92% 12%,rgba(0,196,232,.52),transparent 60%),radial-gradient(60vw 60vw at 50% 98%,rgba(255,96,168,.42),transparent 60%);
+  --s-panel:rgba(255,255,255,.42);--s-panel2:rgba(255,255,255,.28);--s-line:rgba(255,255,255,.9);--s-sep:rgba(18,22,42,.12);--s-text:#12162a;--s-muted:#4a5170;--s-accent:#4a5cf0;--s-font:"Space Grotesk",system-ui,sans-serif;--s-tint:30%;--s-base:var(--s-panel)}
+:root[data-skin="glass"][data-mode="dark"]{--s-bg:#0d1220;--s-img:radial-gradient(60vw 60vw at 12% 8%,rgba(120,90,255,.5),transparent 60%),radial-gradient(55vw 55vw at 88% 18%,rgba(0,190,220,.42),transparent 62%),radial-gradient(60vw 60vw at 50% 96%,rgba(255,80,160,.34),transparent 60%);
+  --s-panel:rgba(255,255,255,.09);--s-panel2:rgba(255,255,255,.055);--s-line:rgba(255,255,255,.2);--s-sep:rgba(255,255,255,.14);--s-text:#f3f5fb;--s-muted:rgba(233,238,250,.66);--s-accent:#8ab4ff;--s-tint:26%}
+:root[data-skin="swiss"]{--s-bg:#fff;--s-panel:#fff;--s-panel2:#f6f6f6;--s-line:#111;--s-sep:rgba(0,0,0,.14);--s-text:#000;--s-muted:#767676;--s-accent:#e8112d;--s-font:"Space Grotesk",Helvetica,Arial,sans-serif;--s-tint:12%}
+:root[data-skin="swiss"][data-mode="dark"]{--s-bg:#000;--s-panel:#000;--s-panel2:#111;--s-line:#fff;--s-sep:rgba(255,255,255,.18);--s-text:#fff;--s-muted:#8c8c8c}
+:root[data-skin="newsprint"]{--s-bg:#f4f1e8;--s-panel:#fbf9f3;--s-panel2:#efebdf;--s-line:#241f18;--s-sep:rgba(36,31,24,.18);--s-text:#171310;--s-muted:#5d564c;--s-accent:#8c1c13;--s-font:"DM Sans",Georgia,serif;--s-tint:14%}
+:root[data-skin="newsprint"][data-mode="dark"]{--s-bg:#14120e;--s-panel:#1c1a15;--s-panel2:#232019;--s-line:#d9d2c4;--s-sep:rgba(217,210,196,.2);--s-text:#f2ede1;--s-muted:#a79d8c;--s-accent:#e0655a}
+:root[data-skin="retro"]{--s-bg:#008080;--s-panel:#d4d0c8;--s-panel2:#c3c0b8;--s-line:#7b7b70;--s-text:#000;--s-muted:#3b3b33;--s-accent:#000080;--s-font:Tahoma,"MS Sans Serif",Verdana,Geneva,sans-serif;--s-tint:22%;--s-base:var(--s-panel)}
+:root[data-skin="retro"][data-mode="dark"]{--s-bg:#003b3b;--s-panel:#333;--s-panel2:#282828;--s-line:#111;--s-text:#f2f2f2;--s-muted:#c9c9c9;--s-accent:#00c8ff;--s-tint:13%}
+:root[data-skin="brutal"]{--s-bg:#ffe94a;--s-panel:#fffdf5;--s-panel2:#fff4c2;--s-line:#000;--s-sep:rgba(0,0,0,.25);--s-text:#000;--s-muted:#4a4a4a;--s-accent:#0047ff;--s-font:"Space Grotesk",system-ui,sans-serif;--s-tint:34%;--s-base:var(--s-panel)}
+:root[data-skin="brutal"][data-mode="dark"]{--s-bg:#12121a;--s-panel:#20202c;--s-panel2:#2a2a38;--s-line:#fff;--s-sep:rgba(255,255,255,.25);--s-text:#fff;--s-muted:#b3b3c4;--s-accent:#ffe94a}
+:root[data-skin="scifi"]{--s-bg:#04070d;--s-img:radial-gradient(80vw 60vh at 50% -10%,rgba(0,190,255,.16),transparent 70%),repeating-linear-gradient(to bottom,rgba(0,229,255,.05) 0 1px,transparent 1px 42px),repeating-linear-gradient(to right,rgba(0,229,255,.05) 0 1px,transparent 1px 42px);
+  --s-panel:rgba(9,26,44,.78);--s-panel2:rgba(13,36,60,.86);--s-line:rgba(0,214,255,.38);--s-text:#dff4ff;--s-muted:#83bdd6;--s-accent:#00e5ff;--s-font:"Space Grotesk",system-ui,sans-serif;--s-base:var(--s-panel)}
+:root[data-skin="terminal"]{--s-bg:#05080a;--s-panel:#0b1114;--s-panel2:#0f171b;--s-line:#265046;--s-text:#b6ffd6;--s-muted:#5fae87;--s-accent:#39ff9e;--s-font:"JetBrains Mono",ui-monospace,monospace;--s-tint:16%}
+:root[data-skin="blueprint"]{--s-bg:#07223d;--s-img:repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 28px);
+  --s-panel:rgba(9,42,74,.82);--s-panel2:rgba(12,52,90,.9);--s-line:rgba(150,210,255,.55);--s-text:#f2f9ff;--s-muted:#a9d2f2;--s-accent:#7ff0ff;--s-font:"Space Mono",monospace;--s-tint:14%;--s-base:var(--s-panel)}
+/* each theme's character, beyond its colours */
+[data-square] :is(.blk-card,.gap,.card,.brk,.mod,.mod .ic,.email,.row-group,.colours,.export,.sugg,.daypill,.chip,.fin,.cls-btn,.skin,.skin i){border-radius:0}
+:is([data-skin="glass"],[data-skin="classic"]) :is(.blk-card,.card,.gap,.brk,.mod){backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)}
+:is([data-skin="swiss"],[data-skin="newsprint"],[data-skin="scifi"]) :is(.blk-card,.card,.mod){border:1px solid var(--s-line)}
+[data-skin="swiss"] :is(.blk-card,.card){border-top:5px solid var(--c)}
+[data-skin="blueprint"] :is(.blk-card,.card,.mod,.gap,.brk){border:1px dashed var(--s-line)}
+[data-skin="brutal"] :is(.blk-card,.card,.mod){border:3px solid var(--s-line);box-shadow:5px 5px 0 var(--s-line)}
+[data-skin="retro"] :is(.blk-card,.card,.mod,.gap,.brk){border:2px solid;border-color:#fff #5a5a52 #5a5a52 #fff}
+[data-skin="scifi"] .dh.today{border-bottom-color:var(--blue);box-shadow:0 6px 14px -8px var(--blue)}
+[data-skin="terminal"] :is(.blk .s,.card .subj)::before{content:"> ";color:var(--blue)}
+[data-skin="terminal"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
+[data-skin="paper"] .blk-card,[data-skin="paper"] .card{box-shadow:2px 3px 7px rgba(60,45,20,.16)}
 
 /* ── phone / portrait layout ── */
 .mob{display:none}
@@ -177,20 +326,21 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .daypill .dd{font-size:16px;font-weight:500;color:var(--fg2)}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
 .daypill[aria-pressed="true"]{background:var(--fill2)}
-.list{max-width:640px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px;min-height:60vh}
-.card{border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) 12%,var(--bg));position:relative;overflow:hidden;display:flex;flex-direction:column}
+.list{padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px;min-height:60vh}
+.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
-.card .subj{font-size:17px;font-weight:600;color:color-mix(in srgb,var(--c) 60%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
-.card .teacher{font-size:13px;color:color-mix(in srgb,var(--c) 35%,var(--fg2));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
-.card .room{position:absolute;top:14px;right:14px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--c) 55%,var(--fg))}
-.card .time{font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg3));padding-top:10px}
+.card .subj{font-size:17px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .teacher{font-size:13px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .room{position:absolute;top:14px;right:14px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.card .time{white-space:nowrap;font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg3));padding-top:10px}
+.card.open{cursor:default}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
-.card.now::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
+.card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.card.past{filter:saturate(.35);opacity:.6}
-.brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card.past:not(.open){filter:saturate(.35);opacity:.6}
+.brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brk .bl{font-size:14px;font-weight:500;color:var(--fg2)}
-.brk .bt{font-size:12px;color:var(--fg3)}
+.brk .bt{white-space:nowrap;font-size:12px;color:var(--fg3)}
 .brk.past{opacity:.4}
 .lmsg{padding:60px 0;text-align:center;color:var(--fg2);font-size:15px}
 .lmsg.err{color:var(--red)}
@@ -203,7 +353,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
   .bar .in{display:flex;gap:10px;height:52px}
   .term{flex:none}
   .term .range{display:none}
-  .email{flex:1;width:auto;min-width:0;height:34px}
+  .search{flex:1}
+  .email{width:100%;height:34px}
   .email input{width:100%!important;min-width:0}
   .email .dom{display:none}
   .right{gap:6px}
@@ -217,8 +368,9 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 
 <header class="bar"><div class="in">
   <div class="term" id="term"></div>
-  <label class="email"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
-    <input id="email" placeholder="first.last" aria-label="Student" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><span class="dom">@education.nsw.gov.au</span></label>
+  <div class="search"><label class="email" id="emailbox"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
+    <input id="email" placeholder="first.last or a name" aria-label="Student: a school email or a name" aria-controls="sugg" aria-autocomplete="list" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><span class="dom">@education.nsw.gov.au</span></label>
+    <div class="sugg" id="sugg" role="listbox" hidden></div></div>
   <div class="right">
     <button class="backtoday" id="back"><span class="lg">Return to </span>Today</button>
     <button class="gear" id="gear" aria-label="Settings" aria-controls="panel" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -236,8 +388,12 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
     <div>
       <div class="sec-label">Appearance</div>
       <div class="row-group">
+        <button class="row" id="openskins">
+          <div class="rl"><strong>Theme</strong><small>The themes from the main timetable</small></div>
+          <span class="val"><span id="skinname"></span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></span>
+        </button>
         <div class="row">
-          <div class="rl"><strong>Theme</strong><small>Auto follows your device</small></div>
+          <div class="rl"><strong>Mode</strong><small id="modehint">Auto follows your device</small></div>
           <div class="seg" id="theme">
             <button data-theme="light">Light</button>
             <button data-theme="auto">Auto</button>
@@ -270,6 +426,22 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
       <div class="colours" id="colours"></div>
     </div>
 
+    <div id="freesec">
+      <div class="sec-label">Free periods</div>
+      <div class="row-group">
+        <div class="row">
+          <div class="rl"><strong>Show on timetable</strong><small>Who in your group is free in each free period</small></div>
+          <button class="tog" id="freeshow" role="switch" aria-checked="true" aria-label="Show free friends on the timetable"></button>
+        </div>
+        <div class="row stack">
+          <div class="rl"><strong>Your group</strong><small id="freestat"></small></div>
+          <div class="chips" id="freechips"></div>
+          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
+            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
+        </div>
+      </div>
+    </div>
+
     <div>
       <div class="sec-label">Export</div>
       <button class="export" id="exportics"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export timetable as .ics</button>
@@ -281,20 +453,26 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
     </div>
 
   </div>
+  <div class="pview" id="skinview">
+    <button class="pback" id="skinback"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Settings</button>
+    <div class="sec-label">Theme</div>
+    <div class="skins" id="skins"></div>
+  </div>
 </aside>
 
 <main>
   <section class="in tt"><div class="grid" id="g"></div></section>
   <section class="mob"><nav class="daynav" id="daynav" aria-label="Day"></nav><div class="list" id="daylist"></div></section>
   <section class="in mods">
-    <div class="mg">
-      <a class="mod w" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
-      <a class="mod" href="/calendar.html" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar</h3></a>
-      <a class="mod" href="/notes.html" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div><h3>Notes</h3></a>
-      <a class="mod w" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
-      <a class="mod" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
-      <a class="mod" href="/finder.html" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></div><h3>Student finder</h3></a>
-      <a class="mod" href="/free.html" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Free periods</h3></a>
+    <h2>MSC Unofficial</h2>
+    <div class="mg" id="mg">
+      <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
+      <a class="mod" data-m="calendar" href="/calendar.html" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar</h3></a>
+      <a class="mod" data-m="notes" href="/notes.html" style="--c:#FFB800"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div><h3>Notes</h3></a>
+      <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
+      <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
+      <a class="mod" data-m="finder" href="#find" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></div><h3>Student finder</h3></a>
+      <a class="mod" data-m="free" href="#free" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Free periods</h3></a>
     </div>
   </section>
 </main>
@@ -305,18 +483,21 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
    copied from index.html rather than shared so this sandbox stays standalone. */
 const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
-const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", room:"andre.room", colours:"andre.colours" };
+const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", room:"andre.room", colours:"andre.colours",
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction and optional login */
 const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
 const creds = get("tt.creds", null);
+const signedIn = !!(creds && creds.email && creds.password);
 let email = get(LS.email, "") || get("tt.email", "");
 /* display settings, the same choices as the main timetable */
 let theme = get(LS.theme, "auto");          /* light | auto | dark */
 let zen = !!get(LS.zen, false);
 let roomMode = get(LS.room, "number");      /* full CR1007.118 | building CR1007 | number 118 */
 let colours = get(LS.colours, {});          /* subject -> #hex override */
+let skin = get(LS.skin, "default");         /* one of SKINS */
 
 /* ═══ dates ═══ */
 const DN = ["Mon","Tue","Wed","Thu","Fri"];
@@ -373,6 +554,7 @@ function asArray(v){
   return [];
 }
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = id => document.getElementById(id);
 const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
   .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
 
@@ -454,7 +636,7 @@ const mergeKey = k => {
 const BREAK_NAMES = { recess:"Recess", lunch:"Lunch" };
 
 /* ═══ normalise ═══ */
-let entries = [], slots = [], bellRows = [], cycleStart = null, colourOf = {};
+let entries = [], slots = [], bellRows = [], cycleStart = null;
 
 function buildBellIndex(bellTimes){
   const idx = {};
@@ -491,7 +673,7 @@ function normalise(payload){
     const teacher = str(pick(raw, ["TeacherName","teacherName","TeacherFullName","teacherFullName","Teacher","teacher","DefaultTeacher","StaffName","staffName"]));
     const room    = str(pick(raw, ["RoomCode","roomCode","RoomNumber","roomNumber","RoomName","roomName","Room","room","Location","location"]));
     out.push({
-      dayKey, period, pnum, kind, code, room,
+      dayKey, period, pnum, kind, code, room, rawTeacher: teacher, rawSubject,
       teacher: tidyTeacher(teacher),
       subject: kind === "class" ? cleanSubject(rawSubject, code) : titleCase(period),
       start: rowStart != null ? rowStart : bt.start,
@@ -550,7 +732,8 @@ function itemsFor(cyc){
     const kind = e ? e.kind : slot.kind;
     if (kind === "class" && e) L.push({ s, e:en, lesson:e });
     else if (kind === "assembly") L.push({ s, e:en, lesson:{ subject:"Assembly", teacher:"", room:"", asm:true } });
-    else L.push({ s, e:en, ls:[kind === "class" ? "Free" : (BREAK_NAMES[mergeKey(slot.key)] || titleCase(slot.period))] });
+    else L.push({ s, e:en, ls:[kind === "class" ? "Free" : (BREAK_NAMES[mergeKey(slot.key)] || titleCase(slot.period))],
+                  keys: kind === "class" ? [cyc + "|" + slot.key] : [] });
   }
   L.sort((x,y) => x.s - y.s);
   const first = L.findIndex(x => x.lesson && !x.lesson.asm), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson && !x.lesson.asm);
@@ -559,7 +742,7 @@ function itemsFor(cyc){
   const out = [];
   for (const x of L){
     const p = out.at(-1);
-    if (p && !x.lesson && !p.lesson){ p.e = x.e; if (p.ls.at(-1) !== x.ls[0]) p.ls.push(x.ls[0]); }
+    if (p && !x.lesson && !p.lesson){ p.e = x.e; p.keys = p.keys.concat(x.keys); if (p.ls.at(-1) !== x.ls[0]) p.ls.push(x.ls[0]); }
     else if (p && x.lesson && p.lesson && !x.lesson.asm && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5) p.e = x.e;
     else out.push(x);
   }
@@ -567,10 +750,38 @@ function itemsFor(cyc){
 }
 
 const subjectList = () => [...new Set(entries.filter(e => e.kind === "class").map(e => e.subject))].filter(Boolean).sort();
-const paletteHex = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-/* the subject's colour: a custom pick, else its palette slot */
-const colourFor = s => colours[s] || "var(" + (colourOf[s] || "--c1") + ")";
-const hexFor = s => colours[s] || paletteHex(colourOf[s] || "--c1");
+/* Default subject colours, the main timetable's: one per faculty, matched on
+   the course name, with light and dark versions; anything unrecognised gets a
+   steady pick from a spread of fallbacks. */
+const CAT_COLOURS = {
+  light:{ math:"#FFA9A6", english:"#FEFB99", technology:"#FFD5F4", music:"#E0C0F4",
+          science:"#A4FEFF", hsie:"#D7CDB3", languages:"#F2884B", va:"#FFADFF", other:"#A5D5FF" },
+  dark: { math:"#FF8582", english:"#FFF06A", technology:"#FF9BDD", music:"#CFA8F4",
+          science:"#76F0F2", hsie:"#D8C99F", languages:"#FF9B63", va:"#E56BE5", other:"#82C5FF" }
+};
+function categoryFor(name){
+  const n = String(name || "").toLowerCase();
+  if (/\bmath/.test(n) || /\bextension\b/.test(n) || /\bm(a|ax|x)\d?\b/.test(n)) return "math";
+  if (n.includes("english")) return "english";
+  if (/engineer|software|technolog|textile|graphic|digital|computing|design|industrial/.test(n)) return "technology";
+  if (/\bmusic\b/.test(n)) return "music";
+  if (/physic|chem|biolog|science|investigat/.test(n)) return "science";
+  if (/history|geograph|business|legal|economic|commerce|society|hsie|studies of religion/.test(n)) return "hsie";
+  if (/french|japanese|chinese|spanish|german|italian|korean|language|latin/.test(n)) return "languages";
+  if (/visual art|visual design|photograph|\bart\b/.test(n)) return "va";
+  return null;
+}
+const PALETTE = ["#e0542e","#3b6ef6","#12a594","#a259e6","#e5a000","#d6409f",
+                 "#2f9e44","#0e7490","#c2410c","#7c3aed","#0891b2","#be123c"];
+const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h*31 + s.charCodeAt(i))|0; return Math.abs(h); };
+function defaultColour(subject){
+  const cat = categoryFor(subject);
+  if (cat) return CAT_COLOURS[document.documentElement.dataset.mode === "dark" ? "dark" : "light"][cat];
+  return PALETTE[hash(String(subject)) % PALETTE.length];
+}
+/* the subject's colour: a custom pick, else the default */
+const colourFor = s => colours[s] || defaultColour(s);
+const hexFor = colourFor;
 
 /* ═══ load ═══ */
 let loading = false, loadError = "", staleNote = "", reqId = 0;
@@ -580,9 +791,6 @@ function apply(payload){
   buildSlots();
   cycleStart = toDate(typeof payload.startDate === "string" ? payload.startDate
     : pick(payload.startDate || {}, ["startDate","StartDate","date","Date"]));
-  /* a steady colour per subject: alphabetical, round the palette */
-  colourOf = {};
-  subjectList().forEach((s, i) => colourOf[s] = "--c" + (i % 8 + 1));
   if (!entries.length) loadError = "No lessons were returned for that address.";
 }
 
@@ -680,18 +888,21 @@ function renderGrid({ now, dates, days, msg, when, err }){
   h += "<div></div>";
   if (msg) h += `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   else days.forEach((items, k) => {
-    h += `<div class="col" style="height:${H}px">`;
+    h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">`;
     for (const x of items){
       const top = (x.s - T0)*PX + 4, ht = (x.e - x.s)*PX - 8, w = when(dates[k], x);
       const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
       if (!x.lesson){
-        h += `<div class="gap ${w.past ? "past" : ""} ${ht < 44 ? "sm" : ""}" style="top:${top}px;height:${ht}px">${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}</div>`;
+        const fn = freeNote(x);
+        h += `<div class="gap ${w.past ? "past" : ""} ${ht < 44 ? "sm" : ""} ${fn && fn.all ? "all" : ""}" style="top:${top}px;height:${ht}px"${fn && fn.title ? ` title="${esc(fn.title)}"` : ""}>` +
+             `${x.ls.map(esc).join("<i></i>")}${ht < 44 ? "<i></i>" : ""}${tm}${fn ? `<span class="fr">${esc(fn.text)}</span>` : ""}</div>`;
         continue;
       }
-      const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room);
-      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"` +
-           ` title="${esc([e.subject, e.teacher, e.room].filter(Boolean).join(" · "))}">` +
-           `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}</div>`;
+      const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[k], x);
+      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open" : ""}"` +
+           (e.asm ? "" : ` data-k="${id}" data-code="${esc(e.code)}"`) +
+           ` style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
+           `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id)}</div></div>`;
     }
     h += "</div>";
   });
@@ -714,16 +925,118 @@ function renderList({ now, dates, days, msg, when, err }){
   else for (const x of days[sel]){
     const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
     if (!x.lesson){
-      h += `<div class="brk ${w.past ? "past" : ""}"><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span></div>`;
+      const fn = freeNote(x);
+      h += `<div class="brk ${w.past ? "past" : ""} ${fn && fn.all ? "all" : ""}"><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
+           (fn ? `<span class="fr"${fn.title ? ` title="${esc(fn.title)}"` : ""}>${esc(fn.text)}</span>` : "") + `</div>`;
       continue;
     }
-    const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room);
-    h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""}" style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
+    const e = x.lesson, c = e.asm ? "var(--fg2)" : colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[sel], x);
+    h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open" : ""}"` +
+         (e.asm ? "" : ` data-k="${id}" data-code="${esc(e.code)}"`) + ` style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
-         `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span></div>`;
+         `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id)}</div>`;
   }
   document.getElementById("daylist").innerHTML = h;
 }
+
+/* ═══ an opened lesson: details, and its class list ═══ */
+let openKey = null;     /* the lesson shown open, kept across re-renders */
+let rosterKey = null;   /* the lesson whose class list is showing */
+const rosters = {};     /* class code -> { loading } | { people } | { error } */
+const itemId = (date, x) => date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate() + "|" + x.s;
+
+function detailHtml(e, id){
+  if (e.asm) return "";
+  const mail = /@/.test(e.rawTeacher || "") ? e.rawTeacher.trim() : "";
+  const rows = [
+    ["Teacher email", mail && `<a href="mailto:${esc(mail)}">${esc(mail)}</a>`],
+    ["Room", esc(e.room)],
+    ["Class code", esc(e.code)],
+    ["Full name", e.rawSubject && e.rawSubject !== e.subject ? esc(e.rawSubject) : ""]
+  ].filter(r => r[1]);
+  return `<div class="blk-detail"><div class="det">` +
+    rows.map(r => `<div class="det-row"><div class="lbl">${r[0]}</div><div class="val">${r[1]}</div></div>`).join("") +
+    (e.code ? `<div class="roster">${rosterHtml(e.code, id, rosterKey === id)}</div>` : "") + `</div></div>`;
+}
+function rosterHtml(code, id, open){
+  const r = rosters[code] || {};
+  const label = r.loading ? "Loading class list…"
+              : r.people ? `View class list · ${r.people.length} student${r.people.length === 1 ? "" : "s"}` : "View class list";
+  const inner = r.error ? `<div class="cls-note err">${esc(r.error)}</div>`
+              : !r.people ? ""
+              : !r.people.length ? `<div class="cls-note">No students are listed for this class.</div>`
+              : `<div class="cls-note">Tap a name for their timetable</div>` + r.people.map(p => p.user
+                  ? `<button data-user="${esc(p.user)}" title="${esc(p.name)}">${esc(p.name)}</button>`
+                  : `<button disabled title="${esc(p.name)}">${esc(p.name)}</button>`).join("");
+  const show = open && (r.people || r.error);
+  return `<button class="cls-btn ${show ? "open" : ""}"><span>${label}</span><svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4.5 4.5L11 4"/></svg></button>` +
+         `<div class="cls-list ${show ? "open" : ""}"><div class="cls-list-inner">${inner}</div></div>`;
+}
+/* the class list's students (not its teacher), as the main timetable reads them */
+function rosterPeople(data){
+  const arr = asArray(data && data.roster !== undefined ? data.roster : data);
+  return arr.map(r => {
+    const full = str(pick(r, ["FullName","fullName","Name","name","displayName"]));
+    const first = str(pick(r, ["FirstName","firstName","GivenName","givenName","preferredName"]));
+    const last  = str(pick(r, ["LastName","lastName","Surname","surname","familyName"]));
+    const mail = str(pick(r, ["Email","email","emailAddress","EmailAddress"])).toLowerCase();
+    const groups = Array.isArray(r && r.groups) ? r.groups.map(g => String(g).toLowerCase()) : [];
+    const isTeacher = groups.some(g => /^(teacher|staff|executive|admin)/.test(g)) || /@det\.nsw\.edu\.au$/.test(mail) ||
+                      /teacher|staff/i.test(str(pick(r, ["Role","role","Type","type"])));
+    const name = full || [first, last].filter(Boolean).join(" ") || nameFromEmail(mail) || "Student";
+    const user = mail.endsWith("@" + DOMAIN) ? mail.split("@")[0] : "";
+    return { name, user, isTeacher };
+  }).filter(p => !p.isTeacher).sort((a, b) => a.name.localeCompare(b.name));
+}
+/* the lesson element for an id, wherever it is drawn now */
+const itemEl = id => document.querySelector(`[data-k="${CSS.escape(id)}"]`);
+function paintRoster(id, code, animate){
+  const host = itemEl(id) && itemEl(id).querySelector(".roster");
+  if (!host) return;
+  host.innerHTML = rosterHtml(code, id, !animate && rosterKey === id);
+  if (animate && rosterKey === id) requestAnimationFrame(() => requestAnimationFrame(() =>
+    host.querySelectorAll(".cls-btn,.cls-list").forEach(x => x.classList.add("open"))));
+}
+async function toggleRoster(item){
+  const id = item.dataset.k, code = item.dataset.code;
+  if (rosterKey === id){            /* close it, animated */
+    rosterKey = null;
+    item.querySelectorAll(".cls-btn.open,.cls-list.open").forEach(x => x.classList.remove("open"));
+    return;
+  }
+  rosterKey = id;
+  if (!rosters[code] || rosters[code].error){
+    rosters[code] = { loading:true };
+    paintRoster(id, code, true);
+    try { rosters[code] = { people: rosterPeople(await api({ class:code })) }; }
+    catch (err) { rosters[code] = { error: err.message || "The class list couldn't be loaded." }; }
+  }
+  paintRoster(id, code, true);
+}
+function closeAll(){
+  document.querySelectorAll(".blk.open,.card.open").forEach(b => {
+    b.classList.remove("open");
+    b.querySelectorAll(".cls-btn.open,.cls-list.open").forEach(x => x.classList.remove("open"));
+  });
+  openKey = null; rosterKey = null;
+}
+function onLessonClick(ev){
+  const who = ev.target.closest("[data-user]");
+  if (who){ ev.stopPropagation(); openUser(who.dataset.user); return; }
+  const item = ev.target.closest("[data-k]");
+  if (!item || !item.matches(".blk,.card")) return;
+  ev.stopPropagation();
+  if (ev.target.closest(".cls-btn")){ toggleRoster(item); return; }
+  if (ev.target.closest("a")) return;                      /* the teacher's email */
+  if (item.classList.contains("open")){ if (!ev.target.closest(".blk-detail")) closeAll(); return; }
+  closeAll();
+  item.classList.add("open");
+  openKey = item.dataset.k;
+}
+document.getElementById("g").addEventListener("click", onLessonClick);
+document.getElementById("daylist").addEventListener("click", onLessonClick);
+document.addEventListener("click", e => { if (openKey && !e.target.closest(".blk.open,.card.open")) closeAll(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && openKey && !document.body.classList.contains("setopen")) closeAll(); });
 
 /* swipe the list sideways for the next / previous day, across weekends */
 {
@@ -741,45 +1054,167 @@ function renderList({ now, dates, days, msg, when, err }){
   });
 }
 
-/* ═══ email box ═══ */
-const input = document.getElementById("email");
+/* ═══ school API calls beyond the timetable: class lists, the finder, free periods ═══ */
+async function api(params){
+  const headers = { Accept:"application/json" };
+  if (signedIn){
+    headers["X-School-Email"] = creds.email;
+    headers["X-School-Password"] = creds.password;
+  }
+  const res = await fetch(ENDPOINT + "?" + new URLSearchParams(params), { headers, cache:"no-store" });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) throw new Error((data && data.error) || (res.status + " " + res.statusText));
+  return data;
+}
+
+/* ═══ student finder ═══
+   Suggestions under a box as you type a name. Searching by name needs the
+   school login from the main timetable, as the finder page did. */
+function finder(inp, box, onPick, opts = {}){
+  let results = [], idx = -1, head = "", timer = null, seq = 0;
+  const hide = () => { clearTimeout(timer); box.hidden = true; box.innerHTML = ""; results = []; idx = -1; inp.removeAttribute("aria-activedescendant"); };
+  const hint = (html, err) => { results = []; idx = -1; box.innerHTML = `<div class="hint ${err ? "err" : ""}">${html}</div>`; box.hidden = false; };
+  const paint = () => {
+    box.innerHTML = (head ? `<div class="hint">${esc(head)}</div>` : "") + results.map((p, i) =>
+      `<button type="button" role="option" id="${box.id}-${i}" aria-selected="${i === idx}" data-i="${i}"><b>${esc(p.name)}</b>` +
+      (p.year ? `<small>Year ${esc(p.year)}</small>` : "") + `<span>${esc(String(p.email || "").split("@")[0])}</span></button>`).join("");
+    box.hidden = false;
+  };
+  const pick = p => { hide(); onPick(p); };
+  async function search(){
+    const q = inp.value.trim(), mine = ++seq;
+    try {
+      const d = await api({ find:q });
+      if (mine !== seq) return;
+      results = ((d && d.results) || []).filter(p => p && p.email); idx = -1;
+      head = d && d.close ? "No exact match. The closest:" : "";
+      if (results.length) paint(); else hint(`No students match “${esc(q)}”.`);
+    } catch (err) { if (mine === seq) hint(esc(err.message || "The search failed."), true); }
+  }
+  inp.addEventListener("input", () => {
+    clearTimeout(timer);
+    const q = inp.value.trim(), naming = /\s/.test(q);
+    if (q.length < 2 || (opts.bar && !naming && !signedIn)) return hide();
+    if (!signedIn) return hint('Searching by name needs your school login. <a href="/">Sign in on the main timetable</a>, then come back.');
+    seq++;
+    hint("Searching…");
+    timer = setTimeout(search, 250);
+  });
+  inp.addEventListener("keydown", e => {
+    if (box.hidden) return;
+    if ((e.key === "ArrowDown" || e.key === "ArrowUp") && results.length){
+      e.preventDefault();
+      idx = (idx + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
+      paint();
+      inp.setAttribute("aria-activedescendant", box.id + "-" + idx);
+      const on = box.querySelector('[aria-selected="true"]');
+      if (on) on.scrollIntoView({ block:"nearest" });
+    } else if (e.key === "Enter"){
+      /* in the bar, Enter on a plain username still means "show this email" */
+      const naming = !opts.bar || /\s/.test(inp.value.trim());
+      if (results.length && (idx >= 0 || naming)){ e.preventDefault(); e.stopImmediatePropagation(); pick(results[Math.max(idx, 0)]); }
+      else if (naming){ e.preventDefault(); e.stopImmediatePropagation(); }
+    } else if (e.key === "Escape"){ e.stopPropagation(); hide(); }
+  });
+  /* mousedown, so the box keeps focus and doesn't blur first */
+  box.addEventListener("mousedown", e => {
+    const b = e.target.closest("[data-i]");
+    if (!b) return;
+    e.preventDefault();
+    pick(results[+b.dataset.i]);
+  });
+  inp.addEventListener("blur", () => setTimeout(hide, 150));
+}
+
+/* ═══ search bar: a school email, or a name ═══ */
+const input = $("email");
 const fit = () => input.style.width = Math.max(10, input.value.length + 1) + "ch";
+const naming = () => $("emailbox").classList.toggle("naming", /\s/.test(input.value));
 input.value = email.split("@")[0];
 fit();
-input.addEventListener("input", fit);
-function choose(){
-  const user = input.value.trim().toLowerCase().split("@")[0];
-  if (user && !/^[a-z0-9][a-z0-9._-]*$/.test(user)){ loadError = "That doesn't look like a school email."; entries = []; render(); return; }
+input.addEventListener("input", () => { fit(); naming(); });
+function setUser(user){
   const next = user ? user + "@" + DOMAIN : "";
-  input.value = user; fit();
+  input.value = user; fit(); naming();
   if (next === email) return;
+  closeAll();
   email = next; set(LS.email, email); off = 0; sel = null;
   load();
 }
+function openUser(user){ setUser(user); scrollTo({ top:0, behavior:"smooth" }); }
+function choose(){
+  const v = input.value.trim().toLowerCase();
+  if (/\s/.test(v)) return;                 /* a name being searched, not an email */
+  const user = v.split("@")[0];
+  if (user && !/^[a-z0-9][a-z0-9._-]*$/.test(user)){ loadError = "That doesn't look like a school email."; entries = []; render(); return; }
+  setUser(user);
+}
+finder(input, $("sugg"), p => setUser(String(p.email).split("@")[0].toLowerCase()), { bar:true });
 input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); input.blur(); } });
 input.addEventListener("change", choose);
+/* leaving a half-typed name puts the current person back */
+input.addEventListener("blur", () => setTimeout(() => {
+  if (/\s/.test(input.value) && document.activeElement !== input){ input.value = email.split("@")[0]; fit(); naming(); }
+}, 160));
 
 document.getElementById("back").onclick = () => { off = 0; sel = null; render(); };
 
 /* ═══ settings panel ═══ */
-const $ = id => document.getElementById(id);
 const gear = $("gear");
 const settingsOpen = () => document.body.classList.contains("setopen");
 function openSettings(o){
   document.body.classList.toggle("setopen", o);
   gear.setAttribute("aria-expanded", o);
+  $("panel").classList.remove("sub");
   if (o){ paintSettings(); $("pclose").focus(); } else gear.focus();
 }
 gear.onclick = () => openSettings(true);
 $("pclose").onclick = $("scrim").onclick = () => openSettings(false);
-addEventListener("keydown", e => { if (e.key === "Escape" && settingsOpen()) openSettings(false); });
+addEventListener("keydown", e => {
+  if (e.key !== "Escape" || !settingsOpen()) return;
+  if ($("panel").classList.contains("sub")) $("panel").classList.remove("sub"); else openSettings(false);
+});
 
-function applyLook(){
-  if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
-  else delete document.documentElement.dataset.theme;
-  document.documentElement.classList.toggle("zen", zen);
+/* the main timetable's themes; swatches as its settings show them */
+const SKINS = [
+  { id:"default",   name:"Default",   swatch:"linear-gradient(135deg,#FBFBFD 0 50%,#1D1D1F 50%)" },
+  { id:"plain",     name:"Plain",     swatch:"linear-gradient(#fff,#fff)" },
+  { id:"classic",   name:"Classic",   swatch:"linear-gradient(160deg,#dfe7f2,#f4f7fb 60%),radial-gradient(circle at 78% 22%,#0a84ff55,transparent 60%)" },
+  { id:"paper",     name:"Notebook",  swatch:"repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)" },
+  { id:"glass",     name:"Glass",     swatch:"radial-gradient(circle at 25% 20%,#7a5aff,transparent 60%),radial-gradient(circle at 80% 30%,#00becc,transparent 62%),radial-gradient(circle at 50% 90%,#ff50a0,transparent 60%),#0d1220" },
+  { id:"swiss",     name:"Swiss",     swatch:"linear-gradient(180deg,#e8112d 0 18%,#fff 18%)" },
+  { id:"newsprint", name:"Newsprint", swatch:"repeating-linear-gradient(45deg,rgba(0,0,0,.08) 0 3px,transparent 3px 6px),#f4f1e8" },
+  { id:"retro",     name:"Retro",     swatch:"linear-gradient(180deg,#3a6ea5 0 34%,#d4d0c8 34%)" },
+  { id:"scifi",     name:"Sci-fi",    swatch:"radial-gradient(circle at 50% 0%,rgba(0,229,255,.5),transparent 65%),repeating-linear-gradient(to bottom,rgba(0,229,255,.22) 0 1px,transparent 1px 8px),#04070d" },
+  { id:"terminal",  name:"Terminal",  swatch:"repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)" },
+  { id:"blueprint", name:"Blueprint", swatch:"repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#07223d" },
+  { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" }
+];
+if (!SKINS.some(s => s.id === skin)) skin = "default";
+const FIXED = ["scifi","terminal","blueprint"];
+function paintSkins(){
+  $("skins").innerHTML = SKINS.map(s =>
+    `<button class="skin" data-id="${s.id}" aria-pressed="${s.id === skin}"><i style="background:${s.swatch}"></i>${esc(s.name)}</button>`).join("");
 }
+$("openskins").onclick = () => { paintSkins(); $("panel").classList.add("sub"); $("skinback").focus(); };
+$("skinback").onclick = () => { $("panel").classList.remove("sub"); $("openskins").focus(); };
+$("skins").onclick = e => {
+  const b = e.target.closest("[data-id]");
+  if (!b) return;
+  skin = b.dataset.id; set(LS.skin, skin);
+  applyLook(); paintSkins(); paintSettings();
+};
+
+/* every look change: attributes on <html>, then a redraw, since the
+   default subject colours have light and dark versions */
+function applyLook(){ lookAttrs(); render(); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { applyLook(); if (settingsOpen()) paintSettings(); });
+
 function paintSettings(){
+  $("skinname").textContent = (SKINS.find(s => s.id === skin) || SKINS[0]).name;
+  const fixed = FIXED.includes(skin);
+  $("theme").setAttribute("aria-disabled", fixed);
+  $("modehint").textContent = fixed ? "This theme is always dark" : "Auto follows your device";
   document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
   $("zen").setAttribute("aria-checked", zen);
   /* the format examples use a real room from this timetable */
@@ -789,6 +1224,7 @@ function paintSettings(){
     b.querySelector(".rv").textContent = splitRoom(sample)[b.dataset.room];
   });
   paintColours();
+  paintFree();
 }
 document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
   theme = b.dataset.theme; set(LS.theme, theme); applyLook(); paintSettings();
@@ -796,6 +1232,93 @@ document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
 $("zen").onclick = () => { zen = !zen; set(LS.zen, zen); applyLook(); paintSettings(); };
 document.querySelectorAll("#rooms .rtile").forEach(b => b.onclick = () => {
   roomMode = b.dataset.room; set(LS.room, roomMode); paintSettings(); render();
+});
+
+/* ═══ free periods ═══
+   Pick a group; each free period on the timetable then says which of them
+   are free for all of it. Uses the same ?free= lookup as the free periods
+   page, which needs the main timetable's school login. Their periods are
+   kept on this device for a day. */
+let freeGroup = (get(LS.group, []) || []).filter(p => p && p.id);
+let freeShow = get(LS.freeshow, true) !== false;
+let freeStatus = "";
+const busy = {};                              /* id -> Set of "mona|3" | null (couldn't be read) */
+const busyCache = get(LS.busy, {}) || {};
+const BUSY_TTL = 24 * 3600e3;
+
+async function loadBusy(){
+  if (!signedIn || !freeGroup.length) return;
+  const now = Date.now(), todo = [];
+  for (const p of freeGroup){
+    const hit = busyCache[p.id];
+    if (hit && now - hit.at < BUSY_TTL) busy[p.id] = hit.b ? new Set(hit.b) : null;
+    else todo.push(p.id);
+  }
+  if (!todo.length){ paintFree(); render(); return; }
+  freeStatus = "Checking their timetables…"; paintFree();
+  try {
+    for (let i = 0; i < todo.length; i += 25){
+      const d = await api({ free: todo.slice(i, i + 25).join(",") });
+      for (const [mail, keys] of Object.entries((d && d.people) || {})){
+        const id = String(mail).split("@")[0].toLowerCase(), list = Array.isArray(keys) ? keys : null;
+        busy[id] = list ? new Set(list) : null;
+        busyCache[id] = { at: Date.now(), b: list };
+      }
+    }
+    for (const id of todo) if (busy[id] === undefined) busy[id] = null;
+    set(LS.busy, busyCache);
+    freeStatus = "";
+  } catch (err) { freeStatus = err.message || "Their timetables couldn't be read."; }
+  paintFree(); render();
+}
+/* first names, with a surname initial where two in the group share one */
+function shortNames(list){
+  const first = p => String(p.name || p.id).split(/\s+/)[0];
+  const count = {};
+  for (const p of freeGroup){ const k = first(p).toLowerCase(); count[k] = (count[k] || 0) + 1; }
+  return list.map(p => {
+    const parts = String(p.name || "").split(/\s+/).filter(Boolean);
+    return count[first(p).toLowerCase()] > 1 && parts.length > 1 ? first(p) + " " + parts.at(-1)[0] : first(p);
+  });
+}
+/* who in the group is free for the whole of a free gap */
+function freeNote(x){
+  if (!freeShow || !signedIn || !freeGroup.length || !x.keys || !x.keys.length) return null;
+  const known = freeGroup.filter(p => busy[p.id] instanceof Set && busy[p.id].size);
+  if (!known.length) return null;
+  const free = known.filter(p => x.keys.every(k => !busy[p.id].has(k)));
+  const all = free.length === known.length, names = shortNames(free);
+  return { all,
+    text: all ? (known.length === 1 ? names[0] + " is free too" : "Everyone's free") : free.length ? names.join(", ") + " free" : "No one free",
+    title: free.length ? "Free then: " + free.map(p => p.name).join(", ") : "" };
+}
+function paintFree(){
+  const stat = $("freestat"), q = $("freeq");
+  $("freeshow").setAttribute("aria-checked", freeShow);
+  if (!signedIn){
+    stat.innerHTML = 'Needs your school login. <a href="/">Sign in on the main timetable</a> first.';
+    q.disabled = true; $("freechips").innerHTML = "";
+    return;
+  }
+  stat.textContent = freeStatus || (freeGroup.length ? "Tap someone to take them off" : "Add friends to see when they're free with you");
+  $("freechips").innerHTML = freeGroup.map(p => {
+    const unk = busy[p.id] === null || (busy[p.id] instanceof Set && !busy[p.id].size);
+    return `<button class="chip ${unk ? "unk" : ""}" data-id="${esc(p.id)}" title="${unk ? "Their timetable couldn't be read. " : ""}Remove ${esc(p.name)}">` +
+           `${esc(p.name)}${unk ? " ?" : ""}<i aria-hidden="true">×</i></button>`;
+  }).join("");
+}
+$("freechips").onclick = e => {
+  const b = e.target.closest("[data-id]");
+  if (!b) return;
+  freeGroup = freeGroup.filter(p => p.id !== b.dataset.id);
+  set(LS.group, freeGroup); paintFree(); render();
+};
+$("freeshow").onclick = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); paintFree(); render(); };
+finder($("freeq"), $("freesugg"), p => {
+  const id = String(p.email).split("@")[0].toLowerCase();
+  $("freeq").value = "";
+  if (!freeGroup.some(x => x.id === id)){ freeGroup.push({ id, name: p.name }); set(LS.group, freeGroup); }
+  paintFree(); loadBusy();
 });
 
 /* subject colours: the dot is a colour picker, the box takes a hex code */
@@ -865,11 +1388,32 @@ $("exportics").onclick = () => {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
-applyLook();
+/* ═══ modules: widen tiles so every row is full ═══
+   The CSS picks the column count; each row then gets an even share of the
+   tiles, and the spare cells go to these, in this order. */
+const MOD_WIDEN = ["revision","games","free","calendar","notes","resources","finder"];
+function layoutMods(){
+  const mg = $("mg"), tiles = [...mg.children];
+  const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
+  const rows = Math.ceil(tiles.length / n);
+  for (let r = 0, i = 0; r < rows; r++){
+    const k = Math.ceil((tiles.length - i) / (rows - r)), row = tiles.slice(i, i + k);
+    i += k;
+    const spans = row.map(() => 1);
+    const order = row.map((_, j) => j).sort((a, b) => MOD_WIDEN.indexOf(row[a].dataset.m) - MOD_WIDEN.indexOf(row[b].dataset.m));
+    for (let extra = n - k, j = 0; extra > 0; extra--, j++) spans[order[j % k]]++;
+    row.forEach((el, j) => el.style.gridColumn = spans[j] > 1 ? "span " + spans[j] : "");
+  }
+}
+/* the finder and free periods live on this page now */
+document.querySelector('[data-m="finder"]').onclick = e => { e.preventDefault(); scrollTo({ top:0, behavior:"smooth" }); input.focus(); input.select(); };
+document.querySelector('[data-m="free"]').onclick = e => { e.preventDefault(); openSettings(true); $("freesec").scrollIntoView({ block:"start" }); };
 
-addEventListener("resize", render);
+addEventListener("resize", () => { render(); layoutMods(); });
 setInterval(render, 30000);     /* keep "now" and past lessons current */
+layoutMods();
 load();
+loadBusy();
 </script>
 
 </body></html>
