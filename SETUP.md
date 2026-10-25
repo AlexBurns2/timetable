@@ -2573,3 +2573,44 @@ create index subject_event_course_idx on subject_event (course, day);
 
 Until the table exists the page still works: personal events (kept on the
 device) are unaffected, and subject events just show that they couldn't load.
+
+## Google Calendar for custom periods (Andre's page at `/andre/`)
+
+The page talks to Google Calendar straight from the browser (Google's sign-in
+window, read-only access), so there is no server code and no client secret. It
+uses its own Google Cloud project, **mscunofficial** (project number
+317306664434). Setting it up, once:
+
+1. **Turn on the Calendar API.** Open
+   <https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project=mscunofficial>
+   and press **Enable**.
+2. **Create the sign-in screen.** Open
+   <https://console.cloud.google.com/auth/overview?project=mscunofficial> and press
+   **Get started**. App name `MSC Unofficial`, support email your Gmail → Next.
+   Audience **External** → Next. Contact email your Gmail → Next. Tick the
+   agreement → **Create**.
+3. **Let your account in.** **Audience** (left menu): leave it on *Testing*.
+   Under **Test users** press **Add users**, add every Google account that will
+   connect (e.g. `andretnk49@gmail.com`) → **Save**.
+4. **Say what it reads.** **Data access** → **Add or remove scopes** → filter for
+   `calendar` and tick `…/auth/calendar.calendarlist.readonly` and
+   `…/auth/calendar.events.readonly` → **Update** → **Save**.
+5. **Branding** (optional): application home page `https://www.mscunofficial.com`,
+   authorised domain `mscunofficial.com` → **Save**.
+6. **Make the client.** **Clients** → **Create client** → type **Web application**,
+   name `MSC Unofficial web`. Under **Authorised JavaScript origins** add:
+   - `https://www.mscunofficial.com`
+   - `https://mscunofficial.com`
+   - `http://localhost:8791` (only for trying it on a local test server)
+
+   Leave **Authorised redirect URIs** empty → **Create**.
+7. **Copy the Client ID** (it starts `317306664434-` and ends
+   `.apps.googleusercontent.com`) into `GOOGLE_CLIENT_ID` in `andre/index.html`.
+   The client ID is public (it's in the page). The client **secret** isn't
+   needed: don't put it anywhere.
+
+New origins can take a few minutes to start working. While the app is in
+*Testing*, only the test users can connect (Google shows "Google hasn't
+verified this app": press **Continue**). Letting anyone connect would mean
+publishing the app and going through Google's verification for the calendar
+scopes.
