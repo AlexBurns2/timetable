@@ -22,6 +22,10 @@
  */
 
 const DEFAULT_ORIGIN = "https://alexburns2.github.io";
+const LOCAL_PREVIEW_ORIGINS = [
+  "http://127.0.0.1:3000",
+  "http://localhost:3000"
+];
 const TOKEN_SKEW_MS = 60 * 60 * 1000;   // refresh an hour before expiry
 
 /* One cached token per account. Visitors may supply their own credentials,
@@ -359,7 +363,7 @@ async function eachLimited(items, n, fn) {
 
 export default async function handler(req, res) {
   const allowed = listEnv("ALLOWED_ORIGIN");
-  const origins = allowed.length ? allowed : [DEFAULT_ORIGIN];
+  const origins = [...new Set([...(allowed.length ? allowed : [DEFAULT_ORIGIN]), ...LOCAL_PREVIEW_ORIGINS])];
   const origin = String(req.headers.origin || "").toLowerCase();
 
   res.setHeader("Vary", "Origin");

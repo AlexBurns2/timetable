@@ -122,7 +122,7 @@ function fromZone(y, mo, d, h, mi, zone) {
 }
 
 /* ── a deliberately small iCal reader: enough for Google's feeds ────────── */
-function parseICS(text) {
+export function parseICS(text) {
   const unfolded = String(text).replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
   const out = [];
   const blocks = unfolded.split("BEGIN:VEVENT").slice(1);
@@ -199,6 +199,10 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-School-Email, X-School-Password");
   res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Origin");
+  const origin = String(req.headers.origin || "").toLowerCase();
+  if (origin === "http://127.0.0.1:3000" || origin === "http://localhost:3000")
+    res.setHeader("Access-Control-Allow-Origin", origin);
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.query && req.query.subject) return subjectHandler(req, res);
 

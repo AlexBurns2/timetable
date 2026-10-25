@@ -777,7 +777,9 @@ select.fin{appearance:auto}
 /* Live timetable: the same /api/timetable call and the same parsing as the main
    timetable (index.html), drawn as this page's week grid. Parsing helpers are
    copied from index.html rather than shared so this sandbox stays standalone. */
-const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
+const API_ORIGIN = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "https://timetable-iota-ten.vercel.app" : "";
+const apiUrl = path => API_ORIGIN + path;
+const ENDPOINT = apiUrl("/api/timetable"), DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
              skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal" };
@@ -2301,7 +2303,7 @@ async function call(path, { query, body } = {}){
   const headers = { Accept:"application/json" };
   if (signedIn){ headers["X-School-Email"] = creds.email; headers["X-School-Password"] = creds.password; }
   if (body) headers["Content-Type"] = "application/json";
-  const res = await fetch(path + (query ? "?" + new URLSearchParams(query) : ""),
+  const res = await fetch(apiUrl(path) + (query ? "?" + new URLSearchParams(query) : ""),
     { method:body ? "POST" : "GET", headers, body:body ? JSON.stringify(body) : undefined, cache:"no-store" });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) throw new Error((data && data.error) || "The server couldn't be reached (" + res.status + ").");
@@ -2389,7 +2391,7 @@ function expandCalendarEvent(ev, from, to){
   }
   return events;
 }
-/* Import through the same server calendar flow used by calendar.html. */
+/* Fetch and parse the feed without saving its secret URL or requiring login. */
 async function importICal(){
   if (gBusy) return;
   const url = $("icalurl").value.trim();
@@ -2397,9 +2399,13 @@ async function importICal(){
   gBusy = true; gNote = ""; paintCustom();
   try {
     const from = addDays(startOfWeek(new Date()), -GWINDOW.back), to = addDays(from, GWINDOW.back + GWINDOW.ahead);
-    await call("/api/calendar", { body:{ action:"import", url } });
-    const data = await call("/api/calendar");
-    const events = (data.events || []).filter(e => e.source === "google")
+    const response = await fetch(apiUrl("/api/ical"), {
+      method:"POST", headers:{ Accept:"application/json", "Content-Type":"application/json" },
+      body:JSON.stringify({ url }), cache:"no-store"
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data) throw new Error((data && data.error) || "The calendar couldn't be imported.");
+    const events = (data.events || [])
       .flatMap(e => expandCalendarEvent(e, from, to));
     gcal = { account:"Google Calendar", calendars:[{ id:"ical", name:"Imported calendar", colour:"#8E8E93", primary:true, on:true }],
       events, at:Date.now() };
@@ -2500,9 +2506,9 @@ function paintCustom(){
   const note = gNote ? `<span class="err">${esc(gNote)}</span>` : "";
   let h = `<div class="row-group">`;
   h += `<div class="row"><div class="rl"><strong>Google Calendar · iCal</strong><small>${gBusy ? "Importing…" : note || (linked ? "Imported " + agoText(gcal.at) : "Import events without signing in to Google")}</small></div></div>` +
-       `<div class="row stack"><div class="rl"><strong>Secret iCal address</strong><small>Google Calendar: Settings → your calendar → Integrate calendar → Secret address in iCal format. The address is not saved.</small></div>` +
+       `<div class="row stack"><div class="rl"><strong>Secret iCal address</strong><small>Google Calendar: Settings → your calendar → Integrate calendar → Secret address in iCal format. The address is not saved; imported events stay on this device.</small></div>` +
        `<input class="fin" type="url" id="icalurl" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off"></div>` +
-       `<div class="row"><div class="rl"><small>Importing requires your school timetable login.</small></div>` +
+       `<div class="row"><div class="rl"><small>No school or Google sign-in is needed.</small></div>` +
        `<button class="btn primary sm" id="gimport" ${gBusy ? "disabled" : ""}>${gBusy ? "Importing…" : "Import"}</button></div>`;
   if (linked) h += `<div class="row stack"><div class="rl"><strong>Calendars</strong><small>Where to look for your periods</small></div><div class="gcals">` +
             gcal.calendars.map(c => `<div class="gcal"><i style="--c:${esc(c.colour)}"></i><span>${esc(c.name)}</span>` +
