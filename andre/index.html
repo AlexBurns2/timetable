@@ -1194,7 +1194,8 @@ function daysShown(){
     const on = shownCals(), weekend = new Set();
     for (const ev of gcal.events){
       const d = new Date(ev.start).getDay();
-      if ((d === 0 || d === 6) && !weekend.has(d) && on.has(ev.cal) && periodFor(ev)) weekend.add(d);
+      const period = periodFor(ev);
+      if ((d === 0 || d === 6) && !weekend.has(d) && on.has(ev.cal) && period && periodVisibleForUser(period)) weekend.add(d);
     }
     if (weekend.has(6)) ks.push(5);
     if (weekend.has(0)) ks.push(6);
@@ -2420,6 +2421,8 @@ async function importICal(){
 
 /* which period an event is: its series was picked, or its name is the period's */
 const periodFor = ev => periods.find(p => (ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)));
+const currentUserKey = () => String(email || "").split("@")[0].trim().toLowerCase();
+const periodVisibleForUser = p => !p.user || p.user === currentUserKey();
 const shownCals = () => new Set(gcal.calendars.filter(c => c.on).map(c => c.id));
 const matchedEvents = p => { const on = shownCals();
   return gcal.events.filter(ev => on.has(ev.cal) && ((ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)))); };
@@ -2432,7 +2435,7 @@ function customOn(date){
     const s = new Date(ev.start), e = new Date(ev.end);
     if (ymd(s) !== day) continue;
     const p = periodFor(ev);
-    if (!p) continue;
+    if (!p || !periodVisibleForUser(p)) continue;
     const sm = minsOf(s), em = sameDay(s, e) ? minsOf(e) : 24 * 60;
     if (em > sm) out.push({ s:sm, e:em, lesson:{ subject:p.name || ev.title, teacher:p.details || "", room:p.room || "", code:"", custom:p, ev } });
   }
@@ -2518,7 +2521,7 @@ function paintCustom(){
   h += `</div>`;
   if (periods.length) h += `<div class="sub-label">Your periods</div><div class="row-group">` + periods.map(p =>
       `<button class="row prow" data-pid="${esc(p.id)}"><span class="pchip cst-${p.style || "tint"}" style="--c:${esc(p.colour)};--ink:${inkOn(p.colour)}">${esc(p.name)}</span>` +
-      `<span class="val"><span>${esc(linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Import a calendar to show these")}</span>${chevron}</span></button>`).join("") + `</div>`;
+      `<span class="val"><span>${esc(p.user ? "For " + p.user + " · " : "")}${esc(linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Import a calendar to show these")}</span>${chevron}</span></button>`).join("") + `</div>`;
   if (linked && !gBusy){
     const sg = suggestions(), shown = moreSugg ? sg : sg.slice(0, 5);
     h += sg.length ? `<div class="sub-label">In your calendar</div><div class="row-group">` + shown.map((s, i) =>
@@ -2561,7 +2564,7 @@ function customDetail(e){
 function openPeriod(id, seed){
   const old = id ? periods.find(p => p.id === id) : null;
   const d = old ? { ...old, series:[...(old.series || [])] }
-    : { name:seed ? seed.title : "", match:seed ? seed.title : "", series:seed && seed.series ? [seed.series] : [], details:"", room:shortPlace(seed && seed.place),
+    : { name:seed ? seed.title : "", match:seed ? seed.title : "", series:seed && seed.series ? [seed.series] : [], details:"", room:shortPlace(seed && seed.place), user:"",
         notes:"", colour:P_COLOURS[hash(seed ? seed.title : String(Date.now())) % P_COLOURS.length], style:"tint" };
   $("evtitle").textContent = old ? "Edit period" : "New period";
   $("evbody").innerHTML = `
@@ -2573,11 +2576,12 @@ function openPeriod(id, seed){
       `<label class="swatch pick" title="Any colour"><input type="color" id="pany" aria-label="Any colour"></label></div></div>
     <div class="fld"><span class="lbl2">Look</span><div class="seg wide" id="pstyle"><button data-s="tint">Tinted</button><button data-s="solid">Solid</button><button data-s="outline">Outline</button></div></div>
     <div class="fld"><label for="pmatch">Calendar events called</label><input class="fin" id="pmatch" maxlength="140" placeholder="The event's name in your calendar"><p class="evnote" id="pfound"></p></div>
+    <div class="fld"><label for="puser">Show only on this student's timetable (optional)</label><input class="fin" id="puser" maxlength="254" autocomplete="off" autocapitalize="off" placeholder="first.last or school email"><p class="evnote">Leave blank to show this period on every timetable.</p></div>
     <div class="fld"><label for="pnotes">Notes</label><textarea class="fin" id="pnotes" maxlength="600" placeholder="Shown when you open it"></textarea></div>
     <p class="everr" id="perr" role="alert"></p>
     <div class="btnrow">${old ? '<button class="btn danger" id="pdel">Delete</button>' : ""}<span class="grow"></span>
       <button class="btn" id="pcancel">Cancel</button><button class="btn primary" id="psave">Save</button></div>`;
-  const fields = { pname:"name", pdet:"details", proom:"room", pmatch:"match", pnotes:"notes" };
+  const fields = { pname:"name", pdet:"details", proom:"room", pmatch:"match", puser:"user", pnotes:"notes" };
   for (const [el, k] of Object.entries(fields)) $(el).value = d[k] || "";
   $("pany").value = /^#[0-9a-f]{6}$/i.test(d.colour) ? d.colour : "#0A84FF";
   const paint = () => {
@@ -2603,8 +2607,15 @@ function openPeriod(id, seed){
   $("psave").onclick = () => {
     paint();
     if (!d.match.trim() && !d.series.length){ $("perr").textContent = "Say which calendar events it is."; return; }
+    const target = String(d.user || "").trim().toLowerCase();
+    const parts = target.split("@");
+    const user = parts[0];
+    if (parts.length > 2 || (parts.length === 2 && parts[1] !== DOMAIN) || (target && !/^[a-z0-9][a-z0-9._-]*$/.test(user))){
+      $("perr").textContent = "Enter a school username or @education.nsw.gov.au email.";
+      return;
+    }
     const rec = { id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name:(d.name.trim() || d.match.trim()).slice(0, 60),
-                  match:d.match.trim(), series:d.series, details:d.details.trim(), room:d.room.trim(), notes:d.notes.trim(), colour:d.colour, style:d.style };
+                  match:d.match.trim(), series:d.series, details:d.details.trim(), room:d.room.trim(), user:target ? user : "", notes:d.notes.trim(), colour:d.colour, style:d.style };
     periods = old ? periods.map(p => p.id === id ? rec : p) : periods.concat(rec);
     savePeriods(); showEvPanel(false); closeAll(); render(); paintCustom();
   };
