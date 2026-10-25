@@ -2367,6 +2367,8 @@ function expandCalendarEvent(ev, from, to){
   const firstDay = new Date(Math.max(baseDay.getTime(), new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime()));
   const lastDay = new Date(to.getFullYear(), to.getMonth(), to.getDate());
   const until = ev.until ? calendarDateTime(ev.until) : null;
+  const seriesId = String(ev.id || (norm(ev.title) + "|" + ev.start));
+  const repeating = ev.repeat && ev.repeat !== "none";
   const events = [];
   for (let day = firstDay; day <= lastDay; day = addDays(day, 1)){
     const days = Math.round((day - baseDay) / 86400000);
@@ -2386,8 +2388,8 @@ function expandCalendarEvent(ev, from, to){
     if (!occurs || (until && day > new Date(until.getFullYear(), until.getMonth(), until.getDate()))) continue;
     const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), base.getHours(), base.getMinutes());
     if (start < from || start > to) continue;
-    events.push({ id:String(ev.id) + ":" + ymd(day), cal:"ical", title:ev.title, start:start.toISOString(),
-      end:new Date(start.getTime() + duration).toISOString(), place:"", notes:ev.notes || "", series:String(ev.id) });
+    events.push({ id:seriesId + ":" + ymd(day), cal:"ical", title:ev.title, start:start.toISOString(),
+      end:new Date(start.getTime() + duration).toISOString(), place:"", notes:ev.notes || "", series:repeating ? seriesId : "" });
   }
   return events;
 }

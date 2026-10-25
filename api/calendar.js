@@ -138,6 +138,7 @@ export function parseICS(text) {
     const summary = field("SUMMARY");
     const dtstart = field("DTSTART");
     if (!summary || !dtstart) continue;
+    const uid = field("UID");
     const dtend = field("DTEND");
     const desc = field("DESCRIPTION");
     const rrule = field("RRULE");
@@ -189,6 +190,7 @@ export function parseICS(text) {
       }
     }
     out.push({
+      id: uid ? clean(uid.value, 255) : "",
       title: clean(summary.value.replace(/\\,/g, ","), 140) || "(untitled)",
       start: st.iso, end: en ? en.iso : null, allDay: st.allDay,
       repeat, byDay, notes: clean(desc ? desc.value.replace(/\\n/g, " ").replace(/\\,/g, ",") : "", 400)
