@@ -2543,3 +2543,29 @@ How it works: the client counts presses locally and sends them in batches
 mode included). The SQL function does the increment, so two tabs never lose a
 press. The open board refreshes every 4 s (`GET /api/jim`), which stands in for
 Firebase's live listener.
+
+## Subject events (`api/subjectcal.js`, used by Andre's page at `/andre/`)
+
+Events that belong to a course instead of a person, e.g. "Physics exam, Thu 5
+Nov, 9:00". Anyone whose timetable has that course sees them in the month view;
+anyone signed in can add one, fix one, or take one down, and the last person to
+change it is shown beside it. Reading needs no login; writing uses the same
+verified school login (`whoami`) as the rest of the site.
+
+A course is the timetable's `CourseName` lowercased ("physics yr11"), so Year 11
+and Year 12 of a subject stay separate.
+
+New table:
+
+```sql
+create table subject_event (
+  id text primary key, course text not null, title text not null,
+  day text not null, starts text, ends text, notes text,
+  created_by text not null, updated_by text not null,
+  updated_at timestamptz not null default now()
+);
+create index subject_event_course_idx on subject_event (course, day);
+```
+
+Until the table exists the page still works: personal events (kept on the
+device) are unaffected, and subject events just show that they couldn't load.

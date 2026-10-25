@@ -29,6 +29,7 @@ function lookAttrs(){
   r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin));
   r.classList.toggle("zen", !!g("andre.zen"));
   r.toggleAttribute("data-still", g("andre.motion") === false);    /* animations off */
+  r.style.setProperty("--fs", +g("andre.fs") || 1);                 /* text size */
   /* the old themes' fonts, fetched only once one of them is in use */
   if (skin !== "default" && !document.getElementById("skinfonts")){
     const l = document.createElement("link");
@@ -47,22 +48,22 @@ lookAttrs();
 :root{
   --bg:#FBFBFD; --fill:#F0F0F4; --fill2:#E5E5EA; --blue:#0A84FF; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
-  --green:#30C05A; --tint:20%;
+  --green:#30C05A; --tint:34%;
   --colmax:320px;   /* widest a day gets; the whole page is sized from it */
   --pagemax:calc(5 * var(--colmax) + 2 * 36px + 6 * 8px + 56px);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --tint:30%; --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --tint:30%; --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}
 *{box-sizing:border-box}
 /* things slide right off the page when the week turns; the page area clips
    them at its edges, so they never make it wider or scrollable sideways */
 html,main{overflow-x:clip}
-body{background-color:var(--bg);background-image:var(--img,none);background-attachment:fixed;color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+body{background-color:var(--bg);background-image:var(--img,none);background-attachment:fixed;color:var(--fg);font-family:var(--font);font-size:calc(14px * var(--fs,1));-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--mat)}
 button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tnum{font-variant-numeric:tabular-nums}
@@ -71,9 +72,10 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* bar */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
 .bar .in{max-width:var(--pagemax);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;height:60px}
-.term{position:relative;perspective:300px;font-size:13px;color:var(--fg2);font-weight:500}
+.term{position:relative;perspective:300px;font-size:calc(13px * var(--fs,1));color:var(--fg2);font-weight:500}
 /* changing text (the week label): each changeable part is a token that
    slides on its own, so unchanged parts stay still */
+.tokg{white-space:pre}
 .tok{display:inline-block;position:relative;white-space:pre}
 .tok .roll-now{display:inline-block}          /* so it can move, not just fade */
 .tok .roll-old{position:absolute;left:0;top:0;white-space:pre;pointer-events:none}
@@ -82,14 +84,14 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .search{position:relative;min-width:0}
 .email{display:flex;align-items:center;gap:8px;width:400px;max-width:100%;height:36px;padding:0 12px;border-radius:10px;background:var(--fill);color:var(--fg2);cursor:text}
 .email svg{width:15px;height:15px;flex:none}
-.email input{width:11ch;min-width:3ch;height:100%;outline:none;color:var(--fg);font-size:14px;cursor:text;padding:0}
+.email input{width:11ch;min-width:3ch;height:100%;outline:none;color:var(--fg);font-size:calc(14px * var(--fs,1));cursor:text;padding:0}
 .email input::placeholder{color:var(--fg2)}
-.email .dom{color:var(--fg3);font-size:14px;white-space:nowrap}
+.email .dom{color:var(--fg3);font-size:calc(14px * var(--fs,1));white-space:nowrap}
 .naming .dom{display:none}
 @keyframes shake{15%,85%{transform:translateX(-2px)}30%,70%{transform:translateX(5px)}45%{transform:translateX(-6px)}60%{transform:translateX(4px)}}
 .email.shake{animation:shake .45s ease}
 .right{display:flex;justify-content:flex-end;align-items:center}
-.clock{font-size:13px;color:var(--fg2)}
+.clock{font-size:calc(13px * var(--fs,1));color:var(--fg2)}
 .gear{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--fg2)}
 .gear:hover{background:var(--fill)}
 .gear svg{width:19px;height:19px}
@@ -106,22 +108,22 @@ html.zen .bar,html.zen body::before{background:transparent;backdrop-filter:none;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
   transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
 .setopen .scrim{opacity:1;pointer-events:auto}
-.setopen .panel{transform:none;visibility:visible;transition:transform .25s ease}
+.setopen #panel{transform:none;visibility:visible;transition:transform .25s ease}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 0;flex:none}
-.ph h2{margin:0;font-size:18px;font-weight:600;letter-spacing:-.02em}
+.ph h2{margin:0;font-size:calc(18px * var(--fs,1));font-weight:600;letter-spacing:-.02em}
 .ph button{width:28px;height:28px;border-radius:50%;background:var(--fill2);display:grid;place-items:center;color:var(--fg2)}
 .ph button svg{width:13px;height:13px}
 .pbody{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
 .pbody::-webkit-scrollbar{display:none}
-.sec-label{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 6px}
-.sec-label button{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
+.sec-label{display:flex;justify-content:space-between;font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 6px}
+.sec-label button{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
 .row-group{background:var(--fill);border-radius:12px;overflow:hidden}
 #freesec .row-group{overflow:visible}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-bottom:1px solid var(--sep);color:inherit;text-decoration:none}
 .row:last-child{border-bottom:none}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
-.rl strong{display:block;font-size:14px;font-weight:500}
-.rl small{font-size:12px;color:var(--fg2)}
+.rl strong{display:block;font-size:calc(14px * var(--fs,1));font-weight:500}
+.rl small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 a.row:hover{background:var(--fill2)}
 a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .tog{width:44px;height:26px;border-radius:13px;background:var(--fg3);flex:none;position:relative}
@@ -129,30 +131,30 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .tog::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .tog[aria-checked="true"]::after{transform:translateX(18px)}
 .seg{display:flex;background:var(--fill2);border-radius:8px;padding:2px;gap:2px;flex:none}
-.seg button{padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--fg2)}
+.seg button{padding:5px 10px;border-radius:6px;font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .seg button[aria-pressed="true"]{background:var(--bg);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .rtiles{display:flex;gap:8px}
 .rtile{flex:1 1 auto;min-width:0;border-radius:8px;padding:10px 6px;text-align:center;border:2px solid transparent;background:var(--fill2)}
 .rtile[aria-pressed="true"]{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--fill2))}
-.rtile .rv{display:block;font-weight:600;font-size:13px;color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtile .rv{display:block;font-weight:600;font-size:calc(13px * var(--fs,1));color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rtile[aria-pressed="true"] .rv{color:var(--blue)}
-.rtile .rl2{display:block;color:var(--fg3);font-size:11px;margin-top:2px}
+.rtile .rl2{display:block;color:var(--fg3);font-size:calc(11px * var(--fs,1));margin-top:2px}
 .colours{background:var(--fill);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.colours .none{color:var(--fg2);font-size:13px}
+.colours .none{color:var(--fg2);font-size:calc(13px * var(--fs,1))}
 .crow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
 .crow+.crow{border-top:1px solid var(--sep);padding-top:10px}
-.cname{font-size:13px;font-weight:500}
-.cname small{display:block;font-size:11px;color:var(--fg2);font-weight:400}
+.cname{font-size:calc(13px * var(--fs,1));font-weight:500}
+.cname small{display:block;font-size:calc(11px * var(--fs,1));color:var(--fg2);font-weight:400}
 .hexrow{display:flex;align-items:center;gap:7px}
 .dot{width:20px;height:20px;border-radius:50%;flex:none;padding:0;border:0;overflow:hidden;cursor:pointer;-webkit-appearance:none;appearance:none;background:none}
 .dot::-webkit-color-swatch-wrapper{padding:0}
 .dot::-webkit-color-swatch{border:0;border-radius:50%}
 .dot::-moz-color-swatch{border:0;border-radius:50%}
-.hexin{width:82px;background:var(--fill2);border-radius:7px;padding:5px 8px;font-size:12px;color:var(--fg);outline:none;cursor:text;font-family:"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.hexin{width:82px;background:var(--fill2);border-radius:7px;padding:5px 8px;font-size:calc(12px * var(--fs,1));color:var(--fg);outline:none;cursor:text;font-family:"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
 .hexin:focus{box-shadow:0 0 0 2px var(--blue)}
-.export{width:100%;padding:13px;border-radius:12px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.export{width:100%;padding:13px;border-radius:12px;background:var(--blue);color:#fff;font-size:calc(14px * var(--fs,1));font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
 .export svg{width:16px;height:16px;flex:none}
-.export-sub{text-align:center;font-size:12px;color:var(--fg3);margin-top:7px}
+.export-sub{text-align:center;font-size:calc(12px * var(--fs,1));color:var(--fg3);margin-top:7px}
 .export-sub.err{color:var(--red)}
 
 /* timetable */
@@ -167,9 +169,9 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .arrow:hover{background:var(--fill);color:var(--fg)}
 .arrow svg{width:16px;height:16px}
 .dh{display:flex;align-items:baseline;justify-content:center;gap:5px;padding:16px 2px 12px;border-bottom:2px solid transparent;margin-bottom:12px;position:relative}
-.dh .d{font-size:17px;color:var(--fg2)}
-.dh .n{font-size:17px;font-weight:500}
-.dh .tag{margin-left:auto;font-size:12px;color:var(--fg3)}
+.dh .d{font-size:calc(17px * var(--fs,1));color:var(--fg2)}
+.dh .n{font-size:calc(17px * var(--fs,1));font-weight:500}
+.dh .tag{margin-left:auto;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
 .dh.today{border-bottom-color:var(--fg)}
 .dh.today .d,.dh.today .n{color:var(--fg);font-weight:700}
 .col{position:relative}
@@ -183,10 +185,10 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk:not(.open):hover .blk-card{filter:brightness(.97)}
 /* closed, the card is exactly its time slot, so the gaps either side stay even */
 .blk:not(.open):not(.closing) .blk-card{height:100%}
-.blk .s{display:block;font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
-.blk .m{display:block;font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.blk .r{position:absolute;top:10px;left:calc(100cqw - 12px);translate:-100% 0;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.blk .t{display:block;margin-top:auto;padding-top:4px;font-size:12px;white-space:nowrap;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
+.blk .s{display:block;font-weight:600;font-size:calc(15px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
+.blk .m{display:block;font-size:calc(13px * var(--fs,1));margin-top:2px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk .r{position:absolute;top:10px;left:calc(100cqw - 12px);translate:-100% 0;font-size:calc(13px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.blk .t{display:block;margin-top:auto;padding-top:4px;font-size:calc(12px * var(--fs,1));white-space:nowrap;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
 .blk.sm .blk-card{flex-direction:row;align-items:center;gap:8px;padding:0 12px}
 .blk.sm .s{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}
 .blk.sm .t{margin:0;padding:0}
@@ -222,7 +224,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 :is(.blk,.card):not(.landed) .det-row.room .rk{opacity:0}
 /* drawn just like the room number on the closed lesson, so the two match exactly */
 .det-row.room .rk{font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.card .det-row.room .rk{font-size:14px;font-weight:700}
+.card .det-row.room .rk{font-size:calc(14px * var(--fs,1));font-weight:700}
 .open:not(.settled) .det-row.room{animation:none}
 .open:not(.settled) .det-row.room .rp{animation:detFade .4s ease .3s both}
 @keyframes detFade{from{opacity:0}to{opacity:1}}
@@ -245,65 +247,76 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .det{padding:8px 0 2px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0 18px}
 .det-row{padding:4px 0;min-width:0}
 .det-row.wide,.det .roster{grid-column:1/-1}
-.det-row .lbl{font-size:10.5px;font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg3));text-transform:uppercase;letter-spacing:.06em}
-.det-row .val{font-size:13px;color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
+.det-row .lbl{font-size:calc(10.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg3));text-transform:uppercase;letter-spacing:.06em}
+.det-row .val{font-size:calc(13px * var(--fs,1));color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
 .det-row .val a{color:color-mix(in srgb,var(--c) 65%,var(--fg));text-decoration:none}
 .det-row .val a:hover{text-decoration:underline}
 .det-row.mail{container-type:inline-size}
-.det-row.mail .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:min(13px,max(10px,calc(100cqi / var(--ew,20))))}
+.det-row.mail .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:min(calc(13px * var(--fs,1)),max(10px,calc(100cqi / var(--ew,20))))}
 .cls-btn{display:flex;align-items:center;justify-content:space-between;width:100%;margin:6px 0 4px;padding:9px 10px;border-radius:8px;text-align:left;
-  background:color-mix(in srgb,var(--c) 12%,var(--fill));font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 65%,var(--fg));transition:background .15s}
+  background:color-mix(in srgb,var(--c) 12%,var(--fill));font-size:calc(13px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 65%,var(--fg));transition:background .15s}
 .cls-btn:hover{background:color-mix(in srgb,var(--c) 20%,var(--fill))}
 .cls-btn svg{width:13px;height:13px;flex:none;transition:transform .4s cubic-bezier(.34,1.4,.64,1)}
 .cls-btn.open svg{transform:rotate(180deg)}
-.cls-list{overflow:hidden;max-height:0;transition:max-height .5s cubic-bezier(.34,1.2,.64,1)}
-.cls-list.open{max-height:700px}
+/* opened and closed by animating its real height (see openList), so it moves
+   at an even pace instead of racing to a fixed ceiling */
+.cls-list{overflow:hidden;max-height:0}
+.cls-list.open{max-height:none}
 .cls-list-inner{padding:2px 0 6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:0 6px}
-.cls-list-inner button{font-size:11.5px;color:var(--fg2);padding:3px 2px;border-radius:6px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cls-list-inner button{font-size:calc(11.5px * var(--fs,1));color:var(--fg2);padding:3px 2px;border-radius:6px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cls-list-inner button:hover{background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--fg)}
-.cls-note{grid-column:1/-1;font-size:11.5px;color:var(--fg3);padding:2px 0 6px;text-align:center}
+.cls-note{grid-column:1/-1;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);padding:2px 0 6px;text-align:center}
 .cls-note.err{color:var(--red)}
 
-.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:12px;color:var(--fg2);font-weight:500;overflow:hidden}
+.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:calc(12px * var(--fs,1));color:var(--fg2);font-weight:500;overflow:hidden}
 .gap i{width:3px;height:3px;border-radius:50%;background:currentColor}
-.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:11.5px;color:var(--fg3);white-space:nowrap}
+.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
+.col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
+  background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
 /* assembly: laid out like a free period, a shade darker */
 .gap.asm,.brk.asm{background:color-mix(in srgb,var(--fg) 10%,var(--fill))}
 /* free periods: who in your group is free then */
-.gap .fr,.brk .fr{flex-basis:100%;font-size:11.5px;font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gap .fr,.brk .fr{flex-basis:100%;font-size:calc(11.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
 .gap.sm .fr{flex-basis:auto;padding:0}
-.gap .fn,.brk .fn{flex-basis:100%;font-size:11px;line-height:1.3;color:var(--fg2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gap .fn,.brk .fn{flex-basis:100%;font-size:calc(11px * var(--fs,1));line-height:1.3;color:var(--fg2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .gap .fn{text-align:center;padding:0 8px}
-.brk .fn{font-size:12px;margin-top:2px}
+.brk .fn{font-size:calc(12px * var(--fs,1));margin-top:2px}
 .gap.none .fr,.brk.none .fr{color:var(--fg2)}
 .gap.all,.brk.all{background:color-mix(in srgb,var(--green) 16%,var(--fill))}
 .gap.some,.brk.some{background:color-mix(in srgb,var(--green) 7%,var(--fill))}
 /* "only who's free": a lesson becomes just its count, so that line leads */
-.gap.fc .fr{font-size:13px}
+.gap.fc .fr{font-size:calc(13px * var(--fs,1))}
 .brk.fc .bl{font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg))}
 .brk.fc.none .bl{color:var(--fg2)}
-.backtoday{height:30px;max-width:0;padding:0;margin-right:0;overflow:hidden;opacity:0;transform:scale(.8);visibility:hidden;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;white-space:nowrap;
+.backtoday{height:30px;max-width:0;padding:0;margin-right:0;overflow:hidden;opacity:0;transform:scale(.8);visibility:hidden;border-radius:15px;background:var(--fg);color:var(--bg);font-size:calc(13px * var(--fs,1));font-weight:600;white-space:nowrap;
   transition:max-width .4s cubic-bezier(.34,1.2,.64,1),padding .4s cubic-bezier(.34,1.2,.64,1),margin .4s,opacity .25s,transform .4s cubic-bezier(.34,1.4,.64,1),visibility 0s .4s}
 .off .backtoday{max-width:180px;padding:0 14px;margin-right:14px;opacity:1;transform:none;visibility:visible;transition-delay:0s}
 
 /* modules */
 .mods{max-width:var(--pagemax);padding-block:48px 80px}     /* the timetable is a full screen tall, so this stays below the fold */
-.mods h2{font-size:28px;font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
-.mg{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:150px;gap:16px}
-.mod{border-radius:20px;background:var(--fill);padding:20px;display:flex;flex-direction:column;justify-content:space-between;color:inherit;text-decoration:none;transition:transform .15s}
-.mod:hover{transform:translateY(-2px)}
-.mod h3{margin:0;font-size:17px;font-weight:600}
-.mod .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--c)}
-.mod .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mods h2{font-size:calc(28px * var(--fs,1));font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:calc(150px * var(--fs,1));gap:16px}
+/* the tiles look like lessons: tinted in their colour, coloured title. A tile
+   that switches something on (Calendar, Free periods) fills with its colour
+   while it's on, easing between the two. */
+.mod{--paint:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));--ink:color-mix(in srgb,var(--c) 40%,var(--fg));
+  border-radius:10px;background:var(--paint);padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;color:inherit;text-decoration:none;
+  transition:transform .15s,background-color .4s ease,color .4s ease}
+.mod:hover{filter:brightness(.97)}
+.mod h3{margin:0;font-size:calc(15px * var(--fs,1));font-weight:600;color:var(--ink);transition:color .4s ease}
+.mod .ic{display:grid;place-items:flex-start;color:var(--ink);transition:color .4s ease}
+.mod .ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mod.on{--paint:var(--c);--ink:#fff}
+.mod .state{font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--ink);opacity:.85;transition:color .4s ease}
 /* the column count is set here; the page then widens tiles so every row is full */
 @media (max-width:700px){.mg{grid-template-columns:repeat(2,1fr)}}
 @media (min-width:1400px){.mg{grid-template-columns:repeat(4,1fr)}}
 
 /* status: no email yet, loading, or the school couldn't be reached */
-.msg{grid-column:2/-2;padding:80px 0;text-align:center;color:var(--fg2);font-size:15px}
+.msg{grid-column:2/-2;padding:80px 0;text-align:center;color:var(--fg2);font-size:calc(15px * var(--fs,1))}
 .msg.err{color:var(--red)}
 .term .stale{color:var(--fg3);font-weight:400}
 
@@ -311,11 +324,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .sugg{position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:260px;z-index:35;background:var(--bg);border:1px solid var(--sep);border-radius:12px;
   box-shadow:0 12px 32px rgba(0,0,0,.16);padding:6px;max-height:min(60vh,420px);overflow-y:auto}
 .sugg button{display:grid;grid-template-columns:1fr auto;gap:0 10px;width:100%;text-align:left;padding:8px 10px;border-radius:8px}
-.sugg button b{font-weight:600;font-size:14px;color:var(--fg)}
-.sugg button small{font-size:12px;color:var(--fg2);align-self:center}
-.sugg button span{grid-column:1/-1;font-size:12px;color:var(--fg3)}
+.sugg button b{font-weight:600;font-size:calc(14px * var(--fs,1));color:var(--fg)}
+.sugg button small{font-size:calc(12px * var(--fs,1));color:var(--fg2);align-self:center}
+.sugg button span{grid-column:1/-1;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
 .sugg button[aria-selected="true"],.sugg button:hover{background:var(--fill)}
-.sugg .hint{padding:8px 10px;font-size:13px;color:var(--fg2)}
+.sugg .hint{padding:8px 10px;font-size:calc(13px * var(--fs,1));color:var(--fg2)}
 .sugg .hint.err{color:var(--red)}
 .sugg a{color:var(--blue)}
 .sugg{transform-origin:top center}
@@ -331,7 +344,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .rl small a{color:var(--blue)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips:empty{display:none}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:14px;background:var(--fill2);font-size:13px;font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:14px;background:var(--fill2);font-size:calc(13px * var(--fs,1));font-weight:500}
 .chip i{font-style:normal;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);line-height:1}
 .chip:hover i{background:var(--fg3);color:var(--bg)}
 .chip.unk{color:var(--fg3)}
@@ -340,17 +353,19 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .fin:disabled{opacity:.5;cursor:not-allowed}
 button.row{width:100%;text-align:left}
 button.row:hover{background:var(--fill2)}
-.row .val{display:flex;align-items:center;gap:6px;color:var(--fg2);font-size:13px;flex:none}
+.row .val{display:flex;align-items:center;gap:6px;color:var(--fg2);font-size:calc(13px * var(--fs,1));flex:none}
 .row .val svg{width:14px;height:14px;color:var(--fg3)}
 .seg[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.seg.wide button{flex:1}
+.monthview #panel [data-for="week"],body:not(.monthview) #panel [data-for="month"]{display:none}
 .pview{display:none;flex:1;overflow-y:auto;padding:20px;flex-direction:column;gap:14px}
 .panel.sub .pbody{display:none}
 .panel.sub .pview{display:flex;animation:slidein .28s cubic-bezier(.34,1.2,.64,1)}
 @keyframes slidein{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
-.pback{align-self:flex-start;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:500;color:var(--blue);padding:2px}
+.pback{align-self:flex-start;display:flex;align-items:center;gap:4px;font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--blue);padding:2px}
 .pback svg{width:13px;height:13px}
 .skins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.skin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:10px;border:2px solid transparent;font-size:12px;font-weight:500;color:var(--fg2)}
+.skin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:10px;border:2px solid transparent;font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .skin i{width:100%;aspect-ratio:4/3;border-radius:8px;box-shadow:inset 0 0 0 1px var(--sep)}
 .skin[aria-pressed="true"]{border-color:var(--blue);color:var(--fg)}
 
@@ -400,43 +415,120 @@ button.row:hover{background:var(--fill2)}
 [data-skin="terminal"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
 [data-skin="paper"] .blk-card,[data-skin="paper"] .card{box-shadow:2px 3px 7px rgba(60,45,20,.16)}
 
+/* ── free periods: a module tile that opens up in place, like a lesson;
+   it grows upwards from the bottom, so it never needs more scrolling ── */
+.mod.modx{position:relative;padding:0;background:none;display:block;cursor:pointer;container-type:inline-size}
+.mod.modx:hover{transform:none}
+.mod-card{--ow:max(100cqw,min(560px,calc(100vw - 32px)));position:absolute;bottom:0;left:0;width:100%;min-height:100%;border-radius:10px;background:var(--paint);padding:14px 16px;
+  transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .4s,transform .15s,background-color .4s ease}
+.mod.modx.right .mod-card{left:auto;right:0}
+.mod.modx:not(.open):hover .mod-card{transform:translateY(-2px)}
+.mod-head{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;width:100%;height:calc(150px * var(--fs,1) - 28px);text-align:left;color:inherit;padding:0}
+.mod.modx.open{--paint:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));--ink:color-mix(in srgb,var(--c) 40%,var(--fg))}   /* opened, it reads as a panel */
+.mod.modx.open{z-index:30;cursor:default}
+.mod.modx.open .mod-card{width:var(--ow);box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.mod-body{width:calc(var(--ow) - 40px);max-height:0;opacity:0;overflow:hidden;visibility:hidden;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .25s,visibility 0s .4s}
+.mod.open .mod-body{max-height:900px;opacity:1;visibility:visible;padding-top:14px;transition:max-height .55s cubic-bezier(.34,1.2,.64,1),opacity .3s .1s}
+.mod.open .mod-body:not(.moving){overflow:visible}       /* lets the name search hang out of it */
+.mod-body .row-group{background:color-mix(in srgb,var(--bg) 65%,var(--fill));overflow:visible}
+
+/* ── month view: the Calendar tile turns the week into a month ── */
+.month{display:none;max-width:var(--pagemax);position:relative;padding-block:10px 24px;min-height:calc(100vh - 60px)}
+.monthview :is(.tt,.mob){display:none!important}
+.monthview .month{display:block}
+.mbar{display:flex;align-items:center;gap:12px;padding:6px 44px 4px}
+.mnote{flex:1;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
+.mnav{display:none;gap:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:16px;background:var(--fill);font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg);white-space:nowrap}
+.pill svg{width:12px;height:12px}
+.pill.primary{background:var(--fg);color:var(--bg)}
+.mgrid{display:grid;grid-template-columns:36px repeat(7,minmax(0,1fr)) 36px;gap:6px 8px}
+.mgrid .arrow{align-self:center}
+.mdow{text-align:center;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg2);padding:10px 0 4px}
+.mcell{position:relative;min-height:max(92px,calc((100vh - 230px) / 6));border-radius:10px;background:var(--fill);padding:6px 7px;display:flex;flex-direction:column;gap:3px;text-align:left;overflow:hidden;color:inherit}
+.mcell:hover{filter:brightness(.97)}
+.mcell.out{opacity:.42}
+.mcell.wkend{background:color-mix(in srgb,var(--fill) 45%,transparent)}
+.mcell.hol{background:repeating-linear-gradient(135deg,var(--fill) 0 8px,color-mix(in srgb,var(--fill) 50%,transparent) 8px 16px)}
+.morph{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:30}
+.mcell.today{box-shadow:inset 0 0 0 2px var(--fg)}
+.mtop{display:flex;align-items:baseline;gap:6px}
+.mnum{font-size:calc(15px * var(--fs,1));font-weight:600;color:var(--fg2)}
+.mcell.today .mnum{color:var(--fg)}
+.mwk{font-size:calc(11px * var(--fs,1));font-weight:500;color:var(--fg3)}
+.chipe{display:block;max-width:100%;font-size:calc(12px * var(--fs,1));font-weight:500;line-height:1.35;padding:1px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:color-mix(in srgb,var(--c) var(--tint),var(--bg));color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+.chipe.sub{box-shadow:inset 3px 0 0 var(--c)}
+.mmore{font-size:calc(11px * var(--fs,1));color:var(--fg3);padding-left:4px}
+/* events on the week view: a dot per event under the date */
+.dh .evd{position:absolute;left:50%;bottom:2px;translate:-50% 0;display:flex;gap:3px}
+.dh .evd i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+.dh[data-day]{cursor:pointer}
+
+/* ── the event editor (same panel as Settings) ── */
+.evopen .scrim{opacity:1;pointer-events:auto}
+.evopen #evpanel{transform:none;visibility:visible;transition:transform .25s ease}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld > label,.fld .lbl2{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em}
+.fld.two{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+textarea.fin{min-height:72px;resize:vertical;font:inherit}
+select.fin{appearance:auto}
+.evnote{font-size:calc(12px * var(--fs,1));color:var(--fg2);margin:0}
+.everr{font-size:calc(13px * var(--fs,1));color:var(--red);margin:0;min-height:1em}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatch{width:24px;height:24px;border-radius:50%;background:var(--c)}
+.swatch[aria-pressed="true"]{outline:2px solid var(--fg);outline-offset:2px}
+.btnrow{display:flex;gap:8px;align-items:center}
+.btnrow .grow{flex:1}
+.btn{height:36px;padding:0 16px;border-radius:10px;background:var(--fill);font-size:calc(14px * var(--fs,1));font-weight:600;color:var(--fg)}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.danger{color:var(--red);background:none;padding:0 6px}
+.btn.wide{width:100%}
+.evlist{display:flex;flex-direction:column;gap:8px}
+.evitem{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;color:inherit;
+  background:color-mix(in srgb,var(--c) var(--tint),var(--bg));box-shadow:inset 3px 0 0 var(--c)}
+.evitem b{font-size:calc(14px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+.evitem span{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.evempty{font-size:calc(13px * var(--fs,1));color:var(--fg2);margin:0}
+
 /* ── phone / portrait layout ── */
-.mob{display:none}
+.mob{display:none;position:relative}
 .daynav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 52px);z-index:19;display:flex;align-items:center;justify-content:center;gap:6px;
   padding:10px 16px;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--sep)}
 .daynav .arrow{flex:none}
 .daypill{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 12px;border-radius:20px}
-.daypill .dn{font-size:11px;font-weight:500;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em}
-.daypill .dd{font-size:16px;font-weight:500;color:var(--fg2)}
+.daypill .dn{font-size:calc(11px * var(--fs,1));font-weight:500;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em}
+.daypill .dd{font-size:calc(16px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
 .daypill[aria-pressed="true"]{background:var(--fill2)}
 .list{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px}
 .card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
-.card .subj{font-size:17px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
-.card .teacher{font-size:13px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
-.card .room{position:absolute;top:14px;right:14px;font-size:14px;font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.card .time{white-space:nowrap;font-size:12px;color:color-mix(in srgb,var(--c) 30%,var(--fg3));padding-top:10px}
+.card .subj{font-size:calc(17px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .teacher{font-size:calc(13px * var(--fs,1));color:color-mix(in srgb,var(--c) 25%,var(--fg2));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .room{position:absolute;top:14px;right:14px;font-size:calc(14px * var(--fs,1));font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.card .time{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:color-mix(in srgb,var(--c) 30%,var(--fg3));padding-top:10px}
 .card.open{cursor:default}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
 .card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 .card.past:not(.open){filter:saturate(.35);opacity:.6}
 .brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
-.brk .bl{font-size:14px;font-weight:500;color:var(--fg2)}
-.brk .bt{white-space:nowrap;font-size:12px;color:var(--fg3)}
+.brk .bl{font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--fg2)}
+.brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
 .brk.past{opacity:.4}
 /* tightened so the whole day fits on the first screen (see fitList) */
 .list.tight{padding-top:10px;gap:6px}
 .list.tight .card{padding:9px 12px 8px}
-.list.tight .card .subj{font-size:16px}
+.list.tight .card .subj{font-size:calc(16px * var(--fs,1))}
 .list.tight .card .room{top:9px;right:12px}
 .list.tight .card .time{padding-top:3px}
 .list.tight .brk{padding:8px 12px;row-gap:2px}
 .list.tighter .card .teacher{display:none}
-.list.tighter .card .subj{font-size:15px}
+.list.tighter .card .subj{font-size:calc(15px * var(--fs,1))}
 .list.tighter .brk .fn{display:none}
-.lmsg{padding:60px 0;text-align:center;color:var(--fg2);font-size:15px}
+.lmsg{padding:60px 0;text-align:center;color:var(--fg2);font-size:calc(15px * var(--fs,1))}
 .lmsg.err{color:var(--red)}
 
 @media (max-width:1000px){.term .range{display:none}}
@@ -458,6 +550,15 @@ button.row:hover{background:var(--fill2)}
   .gear svg{width:18px;height:18px}
   .mods{padding-block:32px 60px}
   html.zen .daynav{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .mbar{padding:6px 0 4px;flex-wrap:wrap}
+  .mnav{display:flex}
+  .mgrid{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+  .mgrid > .arrow,.mgrid > .mpad{display:none}
+  .mcell{min-height:58px;padding:4px 4px}
+  .mnum{font-size:calc(13px * var(--fs,1))}
+  .mwk{display:none}
+  .chipe{font-size:0;height:5px;padding:0;border-radius:3px}
+  .mmore{display:none}
 }
 </style>
 
@@ -495,6 +596,15 @@ button.row:hover{background:var(--fill2)}
             <button data-theme="dark">Dark</button>
           </div>
         </div>
+        <div class="row stack">
+          <div class="rl"><strong>Text size</strong></div>
+          <div class="seg wide" id="fsize">
+            <button data-fs="0.9">Small</button>
+            <button data-fs="1">Default</button>
+            <button data-fs="1.12">Large</button>
+            <button data-fs="1.25">Larger</button>
+          </div>
+        </div>
         <div class="row">
           <div class="rl"><strong>Transparent background</strong><small>Lets a browser wallpaper, like Zen's, show through</small></div>
           <button class="tog" id="zen" role="switch" aria-checked="false" aria-label="Transparent background"></button>
@@ -506,7 +616,7 @@ button.row:hover{background:var(--fill2)}
       </div>
     </div>
 
-    <div>
+    <div data-for="week">
       <div class="sec-label">Room numbers</div>
       <div class="row-group">
         <div class="row stack">
@@ -520,31 +630,37 @@ button.row:hover{background:var(--fill2)}
       </div>
     </div>
 
-    <div>
+    <div data-for="week">
       <div class="sec-label">Subject colours <button id="resetcolours">Reset</button></div>
       <div class="colours" id="colours"></div>
     </div>
 
-    <div id="freesec">
-      <div class="sec-label">Free periods</div>
+    <div data-for="month">
+      <div class="sec-label">Calendar</div>
       <div class="row-group">
         <div class="row">
-          <div class="rl"><strong>Show on timetable</strong><small>Who in your group is free in each free period, hides other subjects</small></div>
-          <button class="tog" id="freeshow" role="switch" aria-checked="true" aria-label="Show who's free on the timetable"></button>
+          <div class="rl"><strong>Subject events</strong><small>Shared events for your subjects, like exams</small></div>
+          <button class="tog" id="showsubj" role="switch" aria-label="Show subject events"></button>
         </div>
-        <div class="row stack">
-          <div class="rl"><strong>Your group</strong><small id="freestat"></small></div>
-          <div class="chips" id="freechips"></div>
-          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
-            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
+        <div class="row">
+          <div class="rl"><strong>Week numbers</strong><small>"Week 3A" on each Monday</small></div>
+          <button class="tog" id="showwk" role="switch" aria-label="Show week numbers"></button>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Week starts on</strong></div>
+          <div class="seg" id="wkstart"><button data-s="1">Monday</button><button data-s="0">Sunday</button></div>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Personal events</strong><small id="perscount"></small></div>
+          <button class="btn danger" id="clearpers">Delete all</button>
         </div>
       </div>
     </div>
 
-    <div>
+    <div data-for="week">
       <div class="sec-label">Export</div>
       <button class="export" id="exportics"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export timetable as .ics</button>
-      <div class="export-sub" id="exportsub">The next four weeks, for Calendar, Google Calendar or Outlook</div>
+      <div class="export-sub" id="exportsub"></div>
     </div>
 
     <div class="row-group">
@@ -559,16 +675,51 @@ button.row:hover{background:var(--fill2)}
   </div>
 </aside>
 
+<aside class="panel" id="evpanel" role="dialog" aria-modal="true" aria-labelledby="evtitle">
+  <div class="ph">
+    <h2 id="evtitle">New event</h2>
+    <button id="evclose" aria-label="Close"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+  </div>
+  <div class="pbody" id="evbody"></div>
+</aside>
+
 <main>
   <section class="in tt"><div class="grid" id="g"></div></section>
   <section class="mob"><nav class="daynav" id="daynav" aria-label="Day"></nav><div class="list" id="daylist"></div></section>
+  <section class="in month" id="month" aria-label="Month">
+    <div class="mbar">
+      <span class="mnote" id="mnote"></span>
+      <span class="mnav"><button class="arrow" data-m="-1" aria-label="Previous month"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button><button class="arrow" data-m="1" aria-label="Next month"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button></span>
+      <button class="pill primary" id="newev">+ New event</button>
+    </div>
+    <div class="mgrid" id="mgrid"></div>
+  </section>
   <section class="in mods">
     <h2>MSC Unofficial</h2>
     <div class="mg" id="mg">
       <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
-      <a class="mod" data-m="calendar" href="/calendar.html" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar</h3></a>
+      <a class="mod" data-m="calendar" href="#calendar" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></a>
       <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
+      <div class="mod modx" data-m="free" style="--c:#30C05A">
+        <div class="mod-card">
+          <button class="mod-head" aria-expanded="false"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Free periods <span class="state" id="freestate"></span></h3></button>
+          <div class="mod-body" id="freesec">
+            <div class="row-group">
+        <div class="row">
+          <div class="rl"><strong>Show on timetable</strong><small>Who in your group is free in each free period, hides other subjects</small></div>
+          <button class="tog" id="freeshow" role="switch" aria-checked="true" aria-label="Show who's free on the timetable"></button>
+        </div>
+        <div class="row stack">
+          <div class="rl"><strong>Your group</strong><small id="freestat"></small></div>
+          <div class="chips" id="freechips"></div>
+          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
+            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
+        </div>
+      </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -579,7 +730,7 @@ button.row:hover{background:var(--fill2)}
    copied from index.html rather than shared so this sandbox stays standalone. */
 const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
-const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", room:"andre.room", colours:"andre.colours",
+const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
              skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -964,7 +1115,10 @@ async function load(){
     } else if (lastGood && lastGood.email !== email) backTo(lastGood);
     else { loadError = err.message; entries = []; slots = []; }
   } finally {
-    if (id === reqId){ loading = false; render(); if (settingsOpen()) paintSettings(); }
+    if (id === reqId){
+      loading = false; render(); if (settingsOpen()) paintSettings();
+      if (entries.length && myCourses().map(c => c.key).join("|") !== subjectFor) loadSubjectEvents();
+    }
   }
 }
 
@@ -980,34 +1134,44 @@ function baseWeek(){
   return addDays(startOfWeek(now), dow === 0 || dow === 6 ? 7 : 0);
 }
 const DAYF = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
-/* NSW public school terms, Eastern division (education.nsw.gov.au): the
-   Monday of each term's first week and its last day for students. The school
-   API only gives the A/B cycle, so the week number comes from here. Add each
-   new year's dates; for a year not listed the bar just shows the letter. */
+/* NSW public school terms, Eastern division (the school is in Sydney): the
+   first and last day for students of each term, from the table in
+   andre/term-dates.md. The school API only gives the A/B cycle, so
+   the week number comes from here. Add each new year's dates (and to that
+   file); for a year not listed the bar just shows the letter. */
 const TERMS = [
-  ["2026-02-02","2026-04-02"], ["2026-04-20","2026-07-03"], ["2026-07-20","2026-09-25"], ["2026-10-12","2026-12-17"],
-  ["2027-02-01","2027-04-09"], ["2027-04-26","2027-07-02"], ["2027-07-19","2027-09-24"], ["2027-10-11","2027-12-20"]
-];
-/* { term, week } for the week starting this Monday; false in the holidays of
-   a listed year; null for a year with no dates */
+  ["2026-02-02","2026-04-02"], ["2026-04-22","2026-07-03"], ["2026-07-21","2026-09-25"], ["2026-10-13","2026-12-17"],
+  ["2027-02-03","2027-04-09"], ["2027-04-29","2027-07-02"], ["2027-07-20","2027-09-24"], ["2027-10-11","2027-12-17"]
+];   /* first and last day for students */
+const termDays = TERMS.map(([a, b]) => [toDate(a), toDate(b)]);
+const yearListed = d => TERMS.some(r => +r[0].slice(0, 4) === d.getFullYear());
+/* { term, week } for the week starting this Monday (a term that starts mid-week
+   counts that whole week as Week 1); false in the holidays of a listed year;
+   null for a year with no dates */
 function termWeek(monday){
-  for (let i = 0; i < TERMS.length; i++){
-    const s = toDate(TERMS[i][0]), e = toDate(TERMS[i][1]);
-    if (monday >= s && monday <= e) return { term: i % 4 + 1, week: Math.round((monday - s) / (7 * 864e5)) + 1 };
+  for (let i = 0; i < termDays.length; i++){
+    const s = startOfWeek(termDays[i][0]);
+    if (monday >= s && monday <= termDays[i][1]) return { term: i % 4 + 1, week: Math.round((monday - s) / (7 * 864e5)) + 1 };
   }
-  return TERMS.some(r => +r[0].slice(0, 4) === monday.getFullYear()) ? false : null;
+  return yearListed(monday) ? false : null;
 }
+/* is the school open for students on this day? (any day, in a year with no dates) */
+const schoolDay = d => !yearListed(d) || termDays.some(([s, e]) => d >= s && d <= e);
 const arrow = (d, unit = "week") => `<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} ${unit}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
 
 function render(){
+  if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   const mon = addDays(baseWeek(), off*7);
   const dates = [0,1,2,3,4].map(k => addDays(mon, k));
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
-  const days = cycs.map(itemsFor);
+  /* holidays (and pupil-free days before a term starts) have no lessons */
+  const days = cycs.map((c, k) => schoolDay(dates[k]) ? itemsFor(c) : []);
+  const holiday = dates.map(d => !schoolDay(d));
   const msg = !email ? "Enter a school email above to see a timetable."
             : loading && !entries.length ? "Loading…"
             : loadError ? loadError
+            : holiday.every(Boolean) ? "School holidays"
             : !days.flat().length ? "No classes this week." : "";
   /* past / happening now, for one item on one date */
   const when = (d, x) => {
@@ -1015,11 +1179,11 @@ function render(){
     const cur = today && x.s <= nowMin && nowMin < x.e;
     return { past: before || (today && x.e <= nowMin), cur, p: cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0 };
   };
-  const ctx = { now, dates, days, msg, when, err: !!loadError && !loading };
+  const ctx = { now, dates, days, holiday, msg, when, err: !!loadError && !loading };
   if (phone.matches) renderList(ctx); else renderGrid(ctx);
   /* desktop arrows turn the week; the phone's step one day */
-  document.querySelectorAll(".arrow").forEach(a => a.onclick = () => {
-    if (phone.matches) stepDay(+a.dataset.d); else goWeek(off + +a.dataset.d);
+  document.querySelectorAll("#g > .arrow, #daynav .arrow").forEach(a => a.onclick = () => {
+    if (phone.matches) stepDay(+a.dataset.d); else stepWeek(+a.dataset.d);
   });
 
   const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
@@ -1038,13 +1202,19 @@ function render(){
    week changes, each token whose text changed slides: the old text up and
    out as the new comes up from below (the other way for an earlier week).
    Unchanged tokens stay still. */
-const tok = (id, text, cls = "") => `<span class="tok ${cls}" data-t="${id}"><span class="roll-now">${text}</span></span>`;
+const tok = (id, text, cls = "") => `<span class="tokg ${cls}">` +
+  [...String(text)].map((ch, i) => `<span class="tok" data-t="${id}.${i}"><span class="roll-now">${esc(ch)}</span></span>`).join("") + `</span>`;
 const tokTexts = root => Object.fromEntries([...root.querySelectorAll(".tok")].map(t => [t.dataset.t, t.querySelector(".roll-now").innerHTML]));
 function rollTokens(root, was, dir){
   if (!dir || noMotion()) return;
   root.querySelectorAll(".tok").forEach(t => {
     const now = t.querySelector(".roll-now"), before = was[t.dataset.t];
-    if (before === undefined || before === now.innerHTML) return;
+    if (before === now.innerHTML) return;
+    if (before === undefined){                      /* a character that wasn't there before: just slides in */
+      now.animate([{ transform:`translateY(${dir * 60}%)`, opacity:0 }, { transform:"translateY(0)", opacity:1 }],
+                  { duration:340, delay:80, easing:"ease-out", fill:"backwards" });
+      return;
+    }
     const old = document.createElement("span");
     old.className = "roll-old"; old.innerHTML = before;
     t.appendChild(old);
@@ -1054,12 +1224,12 @@ function rollTokens(root, was, dir){
                 { duration:340, delay:80, easing:"ease-out", fill:"backwards" });
   });
 }
-/* the week label: only the parts that changed roll ("Term 4" stays put) */
+/* the week label: only the characters that changed roll ("Term 4" stays put, and "26" → "29" only rolls the 6) */
 let shownWeek = null;
-function rollLabel(html){
+function rollLabel(html, monthDir){
   const el = document.getElementById("term");
-  const dir = shownWeek === null ? 0 : Math.sign(off - shownWeek);
-  shownWeek = off;
+  const dir = monthDir !== undefined ? monthDir : shownWeek === null ? 0 : Math.sign(off - shownWeek);
+  if (monthDir === undefined) shownWeek = off;
   if (el.dataset.html === html) return;
   const was = tokTexts(el);
   el.innerHTML = el.dataset.html = html;
@@ -1083,7 +1253,9 @@ function rollLabel(html){
 const sigOf = x => [x.s, x.drawEnd || x.e,
   x.lesson ? (x.lesson.asm ? "asm" : [x.lesson.subject, x.lesson.code, x.lesson.room, x.lesson.teacher].join("/")) : x.ls.join("/"),
   (fn => fn ? fn.count + fn.names : "")(freeNote(x))].join("|");
-const MAZE = { open:160, close:180, speed:2.8 };       /* lane opening (ms), closing (ms), sliding speed (px per ms) */
+/* lane opening and closing (ms), sliding speed (px per ms), and how long a
+   lane stays fully open either side of the traffic through it */
+const MAZE = { open:160, close:180, speed:2.8, margin:90 };
 
 /* How far each of a day's blocks (listed top to bottom) moves down so that
    none sits in any of the lanes. Everything below a lane moves with it, so
@@ -1097,11 +1269,33 @@ function laneShifts(rects, bands){
   });
 }
 
-function goWeek(target){
+/* Turning weeks. The arrows queue one step per press and every step plays
+   (faster while more are waiting), so spamming never skips or overlaps.
+   Return to Today goes straight to this week instead. */
+let turning = null, weekSteps = 0, wantWeek = null;
+/* more presses while one is playing: speed it up rather than skip it */
+const hurry = (...els) => els.forEach(el => el && el.getAnimations({ subtree:true }).forEach(a => { if (a.playbackRate < 1.8) a.updatePlaybackRate(1.8); }));
+function stepWeek(d){ wantWeek = null; weekSteps += d; if (!turning) runWeeks(); else if (weekSteps) hurry(document.querySelector(".tt")); }
+function goWeek(target){ weekSteps = 0; wantWeek = target; if (!turning) runWeeks(); }
+async function runWeeks(){
+  for (;;){
+    let target, quick = false;
+    if (wantWeek !== null){ target = wantWeek; wantWeek = null; }
+    else if (weekSteps){ const d = Math.sign(weekSteps); weekSteps -= d; target = off + d; quick = weekSteps !== 0; }
+    else break;
+    const done = turnWeek(target, quick);
+    if (done){ turning = done; await done; }
+  }
+  turning = null;
+}
+/* one turn; resolves when every piece has stopped moving */
+function turnWeek(target, quick){
+  const q = quick ? .55 : 1;                      /* a queued step runs faster */
+  const M = { open:MAZE.open * q, close:MAZE.close * q, margin:MAZE.margin * q };
   const dir = Math.sign(target - off);
-  if (!dir) return;
+  if (!dir) return null;
   closeAll();
-  if (phone.matches || noMotion()){ off = target; render(); return; }
+  if (phone.matches || noMotion()){ off = target; render(); return null; }
   const g = document.getElementById("g"), host = g.parentElement, hostR = host.getBoundingClientRect();
   host.querySelectorAll(".ghost").forEach(x => x.remove());
   const oldHeads = [...g.querySelectorAll(":scope > .dh")].map(h => ({ html:h.outerHTML, r:h.getBoundingClientRect() }));
@@ -1109,12 +1303,12 @@ function goWeek(target){
     [...col.children].map(el => ({ el, sig:el.dataset.sig, r:el.getBoundingClientRect() })));
   off = target; render();
   const cols = [...g.querySelectorAll(":scope > .col")];
-  if (cols.length !== 5 || before.length !== 5) return;
+  if (cols.length !== 5 || before.length !== 5) return null;
 
   const ghost = document.createElement("div");
   ghost.className = "ghost";
   host.appendChild(ghost);
-  conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR);
+  conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR, q);
 
   /* who stays, who goes, who arrives */
   const kept = [], leaving = [], arriving = [];
@@ -1129,7 +1323,7 @@ function goWeek(target){
       /* the day's scale changed: slide to the new spot */
       if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5)
         el.animate([{ top:(same.r.top - colTop) + "px", height:same.r.height + "px" }, { top:el.style.top, height:el.style.height }],
-                   { duration:500, easing:"cubic-bezier(.3,1.15,.55,1)" });
+                   { duration:500 * q, easing:"cubic-bezier(.3,1.15,.55,1)" });
     }
     for (const o of old) if (!used.has(o)){
       /* a copy of the old block, since the new week is already drawn */
@@ -1156,7 +1350,7 @@ function goWeek(target){
     const crossed = new Map();
     for (const b of bricks) for (let j = 0; j < 5; j++)
       if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
-    const opening = crossed.size ? MAZE.open : 0;
+    const opening = crossed.size ? M.open + M.margin : 0;
     /* arriving lessons wait for their own day to close up first, so they never
        land on a block that's still on its way back */
     if (entering) t0 = Math.max(t0, ...bricks.map(b => laneUntil[b.k] - opening));
@@ -1164,22 +1358,22 @@ function goWeek(target){
     let end = slideAt;
     for (const b of bricks){
       const dx = side < 0 ? -(b.r.right + 24) : W - b.r.left + 24;
-      const D = Math.max(260, Math.min(640, Math.abs(dx) / speed));
+      const D = Math.max(260, Math.min(640, Math.abs(dx) / speed)) * q;
       b.el.animate(entering ? [{ transform:`translateX(${dx}px)` }, { transform:"none" }] : [{ transform:"none" }, { transform:`translateX(${dx}px)` }],
                    { duration:D, delay:slideAt, fill:entering ? "backwards" : "forwards",
                      easing:entering ? "cubic-bezier(.25,.6,.3,1)" : "cubic-bezier(.55,0,.75,.4)" });
       end = Math.max(end, slideAt + D);
     }
-    const total = end - t0 + MAZE.close;
-    for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], end + MAZE.close);
+    const shut = end + M.margin, total = shut - t0 + M.close;
+    for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], shut + M.close);
     for (const [j, bands] of crossed){
       const day = keptIn(j), shifts = laneShifts(day.map(b => b.r), bands);
       day.forEach((b, i) => {
         if (!shifts[i]) return;
         /* the easing is per step (open, hold, close), so each happens exactly in its window */
         b.el.animate([{ transform:"translateY(0)", easing:"ease-in-out" },
-                      { transform:`translateY(${shifts[i]}px)`, offset:MAZE.open / total },
-                      { transform:`translateY(${shifts[i]}px)`, offset:(end - t0) / total, easing:"ease-in-out" },
+                      { transform:`translateY(${shifts[i]}px)`, offset:M.open / total },
+                      { transform:`translateY(${shifts[i]}px)`, offset:(shut - t0) / total, easing:"ease-in-out" },
                       { transform:"translateY(0)" }],
                      { duration:total, delay:t0, composite:"add" });
       });
@@ -1208,14 +1402,15 @@ function goWeek(target){
       t = wave(arriving.filter(b => b.k === k), side, t, true);
     }
   }
-  Promise.all(ghost.getAnimations({ subtree:true }).map(a => a.finished)).then(() => ghost.remove(), () => ghost.remove());
+  const all = [...ghost.getAnimations({ subtree:true }), ...cols.flatMap(c => c.getAnimations({ subtree:true }))];
+  return Promise.all(all.map(a => a.finished.catch(() => {}))).then(() => ghost.remove());
 }
 
 /* A row of labels runs past like a conveyor: the old ones slide out one way
    as the new ones follow them in, a whole row's width, ending where the old
    ones were. Used for the day headings and the phone's strip of days. */
-function conveyor(oldList, newEls, dir, layer, originR){
-  if (noMotion() || oldList.length !== newEls.length || oldList.length < 2) return;
+function conveyor(oldList, newEls, dir, layer, originR, q = 1){
+  if (noMotion() || oldList.length !== newEls.length || oldList.length < 2) return null;
   const span = (oldList[1].r.left - oldList[0].r.left) * oldList.length;
   const strip = document.createElement("div");
   strip.className = "strip";
@@ -1230,23 +1425,24 @@ function conveyor(oldList, newEls, dir, layer, originR){
   newEls.forEach((el, k) => place(el.outerHTML, oldList[k].r, dir * span));
   layer.appendChild(strip);
   newEls.forEach(el => el.style.visibility = "hidden");
-  strip.animate([{ transform:"none" }, { transform:`translateX(${-dir * span}px)` }],
-                { duration:Math.min(950, 320 + span * .35), easing:"cubic-bezier(.6,.05,.3,1)", fill:"forwards" })
-    .finished.then(() => { newEls.forEach(el => el.style.visibility = ""); strip.remove(); });
+  const run = strip.animate([{ transform:"none" }, { transform:`translateX(${-dir * span}px)` }],
+                { duration:Math.min(950, 320 + span * .35) * q, easing:"cubic-bezier(.6,.05,.3,1)", fill:"forwards" });
+  run.finished.then(() => { newEls.forEach(el => el.style.visibility = ""); strip.remove(); }, () => {});
+  return run;
 }
 
 /* desktop: the five days side by side, blocks placed by clock time. They
    fill the window's height, but a lesson is never squeezed until its teacher
    or time is cut off: after drawing, any card whose text overflows stretches
    the whole scale, and the grid is drawn again. */
-function renderGrid({ now, dates, days, msg, when, err }){
+function renderGrid({ now, dates, days, holiday, msg, when, err }){
   const all = days.flat();
   const T0 = all.length ? Math.min(...all.map(x => x.s)) : toMinutes("8:55");
   const T1 = all.length ? Math.max(...all.map(x => x.e)) : toMinutes("15:25");
   const g = document.getElementById("g");
   let PX = Math.max(560, innerHeight - 60 - 90 - 24) / (T1 - T0);
   for (let pass = 0; pass < 4; pass++){
-    g.innerHTML = gridHtml({ now, dates, days, msg, when, err }, T0, (T1 - T0) * PX, PX);
+    g.innerHTML = gridHtml({ now, dates, days, holiday, msg, when, err }, T0, (T1 - T0) * PX, PX);
     if (msg) return;
     let worst = 1;
     g.querySelectorAll(".blk:not(.open):not(.closing) .blk-card").forEach(c => {
@@ -1256,12 +1452,17 @@ function renderGrid({ now, dates, days, msg, when, err }){
     PX *= worst;
   }
 }
-function gridHtml({ now, dates, days, msg, when, err }, T0, H, PX){
-  let h = arrow(-1) + dates.map(d => `<div class="dh ${sameDay(d, now) ? "today" : ""}"><span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${tok("nd", d.getDate())} ${tok("nm", MON[d.getMonth()])}</span></div>`).join("") + arrow(1);
+function gridHtml({ now, dates, days, holiday, msg, when, err }, T0, H, PX){
+  let h = arrow(-1) + dates.map(d => {
+    const evs = eventsOn(ymd(d));
+    return `<div class="dh ${sameDay(d, now) ? "today" : ""}" data-day="${ymd(d)}"${evs.length ? ` title="${esc(evs.map(e => e.title).join(", "))}"` : ""}>` +
+      `<span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${tok("nd", d.getDate())} ${tok("nm", MON[d.getMonth()])}</span>` +
+      (evs.length ? `<span class="evd">${evs.slice(0, 4).map(e => `<i style="--c:${esc(e.colour)}"></i>`).join("")}</span>` : "") + `</div>`;
+  }).join("") + arrow(1);
   h += "<div></div>";
   if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   days.forEach((items, k) => {
-    h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">`;
+    h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">` + (holiday[k] ? `<div class="hol">No school</div>` : "");
     for (const x of items){
       const top = (x.s - T0)*PX + 4, ht = ((x.drawEnd || x.e) - x.s)*PX - 8, w = when(dates[k], x);
       const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
@@ -1284,13 +1485,14 @@ function gridHtml({ now, dates, days, msg, when, err }, T0, H, PX){
 }
 
 /* phone / portrait: a day strip over a list of the chosen day */
-function renderList({ now, dates, days, msg, when, err }){
+function renderList({ now, dates, days, holiday, msg, when, err }){
   if (sel === null){ const i = dates.findIndex(d => sameDay(d, now)); sel = i === -1 ? 0 : i; }
   const nav = document.getElementById("daynav");
   nav.innerHTML = arrow(-1, "day") + dates.map((d, k) =>
     `<button class="daypill ${sameDay(d, now) ? "today" : ""}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${DAYF[k]} ${d.getDate()} ${MON[d.getMonth()]}"><span class="dn">${DN[k]}</span><span class="dd tnum">${tok("d", d.getDate())}</span></button>`
   ).join("") + arrow(1, "day");
   nav.querySelectorAll(".daypill").forEach(b => b.onclick = () => {
+    if (dayRun) return;                            /* let the arrows' queue finish */
     const k = +b.dataset.k, d = Math.sign(k - sel);
     sel = k; closeAll(); render();
     if (d) slideDay(d);
@@ -1298,6 +1500,7 @@ function renderList({ now, dates, days, msg, when, err }){
 
   let h = "";
   if (msg) h = `<div class="lmsg ${err ? "err" : ""}">${esc(msg)}</div>`;
+  else if (holiday[sel]) h = `<div class="lmsg">No school on ${DAYF[sel]}.</div>`;
   else if (!days[sel].length) h = `<div class="lmsg">No classes on ${DAYF[sel]}.</div>`;
   else for (const x of days[sel]){
     const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
@@ -1405,28 +1608,45 @@ function rosterPeople(data){
 }
 /* the lesson element for an id, wherever it is drawn now */
 const itemEl = id => document.querySelector(`[data-k="${CSS.escape(id)}"]`);
-function paintRoster(id, code, animate){
+/* redraw a lesson's class list (button and names), closed */
+function paintRoster(id, code){
   const host = itemEl(id) && itemEl(id).querySelector(".roster");
-  if (!host) return;
-  host.innerHTML = rosterHtml(code, id, !animate && rosterKey === id);
-  if (animate && rosterKey === id) requestAnimationFrame(() => requestAnimationFrame(() =>
-    host.querySelectorAll(".cls-btn,.cls-list").forEach(x => x.classList.add("open"))));
+  if (host) host.innerHTML = rosterHtml(code, id, false);
+}
+/* The list grows from nothing to its real height, and the names drift in;
+   closing, it shrinks back from whatever height it has. */
+function openList(item){
+  const btn = item.querySelector(".cls-btn"), list = item.querySelector(".cls-list");
+  if (!list || list.classList.contains("open")) return;
+  btn.classList.add("open"); list.classList.add("open");
+  if (noMotion()) return;
+  list.getAnimations().forEach(x => x.cancel());
+  list.animate([{ height:"0px" }, { height:list.scrollHeight + "px" }], { duration:420, easing:"cubic-bezier(.25,.8,.3,1)" });
+  list.firstElementChild.animate([{ opacity:0, transform:"translateY(-6px)" }, { opacity:1, transform:"none" }],
+                                 { duration:340, delay:90, easing:"ease-out", fill:"backwards" });
+}
+function closeList(item){
+  const btn = item.querySelector(".cls-btn"), list = item.querySelector(".cls-list");
+  if (!list || !list.classList.contains("open")) return;
+  const h = list.getBoundingClientRect().height;
+  btn.classList.remove("open"); list.classList.remove("open");
+  if (noMotion()) return;
+  list.getAnimations().forEach(x => x.cancel());
+  list.animate([{ height:h + "px", maxHeight:"none" }, { height:"0px", maxHeight:"none" }], { duration:300, easing:"cubic-bezier(.4,0,.2,1)" });
 }
 async function toggleRoster(item){
   const id = item.dataset.k, code = item.dataset.code;
-  if (rosterKey === id){            /* close it, animated */
-    rosterKey = null;
-    item.querySelectorAll(".cls-btn.open,.cls-list.open").forEach(x => x.classList.remove("open"));
-    return;
-  }
+  if (rosterKey === id){ rosterKey = null; closeList(item); return; }
   rosterKey = id;
   if (!rosters[code] || rosters[code].error){
     rosters[code] = { loading:true };
-    paintRoster(id, code, true);
+    paintRoster(id, code);
     try { rosters[code] = { people: rosterPeople(await api({ class:code })) }; }
     catch (err) { rosters[code] = { error: err.message || "The class list couldn't be loaded." }; }
+    paintRoster(id, code);
   }
-  paintRoster(id, code, true);
+  const el = itemEl(id);
+  if (el && rosterKey === id) openList(el);
 }
 /* Opening, the room number flies from its corner into its place in the full
    room code, where that part is drawn exactly like it, and the rest of the
@@ -1499,24 +1719,37 @@ document.getElementById("daylist").addEventListener("click", onLessonClick);
 document.addEventListener("click", e => { if (openKey && !e.target.closest(".blk.open,.card.open")) closeAll(); });
 addEventListener("keydown", e => { if (e.key === "Escape" && openKey && !document.body.classList.contains("setopen")) closeAll(); });
 
-/* the next or previous school day; past Friday or Monday the strip turns to
-   that week, still Monday to Friday */
-function stepDay(d){
+/* The next or previous school day; past Friday or Monday the strip turns to
+   that week, still Monday to Friday. Presses queue and every step plays,
+   faster while more are waiting. */
+let dayRun = null, daySteps = 0;
+function stepDay(d){ daySteps += d; if (!dayRun) runDays(); else if (daySteps) hurry($("daylist"), $("daynav")); }
+async function runDays(){
+  while (daySteps){
+    const d = Math.sign(daySteps); daySteps -= d;
+    dayRun = oneDay(d, daySteps !== 0);
+    await dayRun;
+  }
+  dayRun = null;
+}
+function oneDay(d, quick){
   let k = (sel ?? 0) + d, turned = 0;
   if (k > 4){ k = 0; off++; turned = 1; } else if (k < 0){ k = 4; off--; turned = -1; }
   const nav = document.getElementById("daynav");
   nav.querySelectorAll(".strip").forEach(x => x.remove());
   const was = [...nav.querySelectorAll(".daypill")].map(p => ({ html:p.outerHTML, r:p.getBoundingClientRect() }));
   sel = k; closeAll(); render();
-  slideDay(d);
-  if (turned) conveyor(was, [...nav.querySelectorAll(".daypill")], turned, nav, nav.getBoundingClientRect());
+  const anims = slideDay(d, quick);
+  if (turned){ const c = conveyor(was, [...nav.querySelectorAll(".daypill")], turned, nav, nav.getBoundingClientRect(), quick ? .5 : 1); if (c) anims.push(c); }
+  return Promise.all(anims.map(a => a.finished.catch(() => {})));
 }
 /* the day's lessons slide in from the side they came from */
-function slideDay(dir){
-  if (noMotion()) return;
-  [...document.getElementById("daylist").children].forEach((el, i) =>
+function slideDay(dir, quick){
+  if (noMotion()) return [];
+  const q = quick ? .5 : 1;
+  return [...document.getElementById("daylist").children].map((el, i) =>
     el.animate([{ transform:`translateX(${dir * 28}px)`, opacity:0 }, { transform:"none", opacity:1 }],
-               { duration:380, delay:i * 25, easing:"cubic-bezier(.2,.85,.3,1.1)", fill:"backwards" }));
+               { duration:380 * q, delay:i * 25 * q, easing:"cubic-bezier(.2,.85,.3,1.1)", fill:"backwards" }));
 }
 /* swipe the list sideways for the next / previous day, across weekends */
 {
@@ -1643,12 +1876,13 @@ input.addEventListener("blur", () => setTimeout(() => {
   if (/\s/.test(input.value) && document.activeElement !== input){ input.value = email.split("@")[0]; fit(); naming(); }
 }, 160));
 
-document.getElementById("back").onclick = () => { sel = null; goWeek(0); };
+document.getElementById("back").onclick = () => { if (view === "month") goMonth(0); else { sel = null; goWeek(0); } };
 
 /* ═══ settings panel ═══ */
 const gear = $("gear");
 const settingsOpen = () => document.body.classList.contains("setopen");
 function openSettings(o){
+  $("ptitle").textContent = view === "month" ? "Calendar settings" : "Timetable settings";
   document.body.classList.toggle("setopen", o);
   gear.setAttribute("aria-expanded", o);
   $("panel").classList.remove("sub");
@@ -1703,6 +1937,12 @@ function paintSettings(){
   document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
   $("zen").setAttribute("aria-checked", zen);
   $("motion").setAttribute("aria-checked", motion);
+  $("showsubj").setAttribute("aria-checked", showSubj());
+  $("showwk").setAttribute("aria-checked", get(LS.showwk, true) !== false);
+  document.querySelectorAll("#wkstart button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.s === (+get(LS.wkstart, 1) === 0 ? 0 : 1)));
+  $("perscount").textContent = personal.length ? `${personal.length} saved on this device` : "None saved";
+  const fs = +get(LS.fs, 1) || 1;
+  document.querySelectorAll("#fsize button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.fs === fs));
   /* the format examples use a real room from this timetable */
   const sample = (entries.find(e => e.kind === "class" && e.room.includes(".")) || {}).room || "CR1007.118";
   document.querySelectorAll("#rooms .rtile").forEach(b => {
@@ -1717,6 +1957,9 @@ document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
 });
 $("zen").onclick = () => { zen = !zen; set(LS.zen, zen); applyLook(); paintSettings(); };
 $("motion").onclick = () => { motion = !motion; set(LS.motion, motion); applyLook(); paintSettings(); };
+document.querySelectorAll("#fsize button").forEach(b => b.onclick = () => {
+  set(LS.fs, +b.dataset.fs); applyLook(); layoutMods(); paintSettings();
+});
 document.querySelectorAll("#rooms .rtile").forEach(b => b.onclick = () => {
   roomMode = b.dataset.room; set(LS.room, roomMode); paintSettings(); render();
 });
@@ -1794,6 +2037,7 @@ function freeBits(fn, sm){
   return `<span class="fr">${esc(fn.count)}</span>` + (fn.names ? `<span class="fn">${esc(fn.names)}</span>` : "");
 }
 function paintFree(){
+  paintFreeTile();
   const stat = $("freestat"), q = $("freeq");
   $("freeshow").setAttribute("aria-checked", freeShow);
   if (!signedIn){
@@ -1814,7 +2058,7 @@ $("freechips").onclick = e => {
   freeGroup = freeGroup.filter(p => p.id !== b.dataset.id);
   set(LS.group, freeGroup); paintFree(); render();
 };
-$("freeshow").onclick = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); closeAll(); paintFree(); render(); };
+$("freeshow").onclick = () => crossfade(() => { freeShow = !freeShow; set(LS.freeshow, freeShow); closeAll(); paintFree(); render(); });
 finder($("freeq"), $("freesugg"), p => {
   const id = String(p.email).split("@")[0].toLowerCase();
   $("freeq").value = "";
@@ -1864,7 +2108,7 @@ function buildICS(){
   const start = midnight(now);
   for (let i = 0; i < 28; i++){
     const day = addDays(start, i), cyc = cycleDayFor(day, cycleStart);
-    if (!cyc) continue;
+    if (!cyc || !schoolDay(day)) continue;
     entries.filter(e => e.dayKey === cyc && e.kind === "class" && e.start != null && e.end != null)
       .forEach((e, n) => out.push("BEGIN:VEVENT",
         "UID:" + ymd(day) + "-" + e.pnum + "-" + n + "@mscunofficial",
@@ -1889,10 +2133,449 @@ $("exportics").onclick = () => {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
+/* ═══ events ═══
+   Two kinds. Personal events live only on this device (andre.events). Subject
+   events belong to a course: everyone whose timetable has that course sees
+   them, and anyone signed in can add or fix one (api/subjectcal.js). */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const EV_COLOURS = ["#0A84FF","#30C05A","#FF9F0A","#FF375F","#AF52DE","#5E5CE6","#32ADE6","#8E8E93"];
+let personal = (get(LS.events, []) || []).filter(e => e && e.id && e.day);
+let subjectEvents = [], subjectNote = "", subjectFor = "";
+const courseKey = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+/* the shown timetable's courses, as { key, subject } */
+function myCourses(){
+  const m = new Map();
+  for (const e of entries) if (e.kind === "class" && e.rawSubject && !m.has(courseKey(e.rawSubject))) m.set(courseKey(e.rawSubject), e.subject);
+  return [...m].map(([key, subject]) => ({ key, subject })).sort((a, b) => a.subject.localeCompare(b.subject));
+}
+const subjectOf = key => (myCourses().find(c => c.key === key) || {}).subject || key;
+async function call(path, { query, body } = {}){
+  const headers = { Accept:"application/json" };
+  if (signedIn){ headers["X-School-Email"] = creds.email; headers["X-School-Password"] = creds.password; }
+  if (body) headers["Content-Type"] = "application/json";
+  const res = await fetch(path + (query ? "?" + new URLSearchParams(query) : ""),
+    { method:body ? "POST" : "GET", headers, body:body ? JSON.stringify(body) : undefined, cache:"no-store" });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) throw new Error((data && data.error) || "The server couldn't be reached (" + res.status + ").");
+  return data;
+}
+async function loadSubjectEvents(){
+  const courses = myCourses().map(c => c.key), forKey = courses.join("|");
+  if (!courses.length){ subjectEvents = []; return; }
+  try {
+    const d = await call("/api/subjectcal", { query:{ courses:forKey } });
+    subjectEvents = (d.events || []).filter(e => e && e.id && e.day);
+    subjectNote = ""; subjectFor = forKey;
+  } catch (err) { subjectNote = "Subject events couldn't load: " + err.message; }
+  if (!turning) render();
+}
+const savePersonal = () => set(LS.events, personal);
+const evTime = e => e.start ? f(toMinutes(e.start)) + (e.end ? " – " + f(toMinutes(e.end)) : "") : "All day";
+/* everything on one day, timed ones in order after the all-day ones */
+function eventsOn(day){
+  const courses = new Set(myCourses().map(c => c.key));
+  return [...personal.filter(e => e.day === day).map(e => ({ ...e, kind:"personal", colour:e.colour || EV_COLOURS[0] })),
+          ...(showSubj() ? subjectEvents : []).filter(e => e.day === day && courses.has(e.course)).map(e => ({ ...e, kind:"subject", colour:colourFor(subjectOf(e.course)) }))]
+    .sort((a, b) => (a.start || "") .localeCompare(b.start || ""));
+}
+const findEvent = (id, kind) => kind === "subject" ? subjectEvents.find(e => e.id === id) : personal.find(e => e.id === id);
+
+/* ═══ month view ═══
+   The Calendar tile turns the week into a month, in the same style, and back
+   again; the arrows turn the month. */
+let view = "week", monthOff = 0, shownMonth = 0;
+const showSubj = () => get(LS.showsubj, true) !== false;
+function setViewNow(v){
+  view = v;
+  document.body.classList.toggle("monthview", v === "month");
+  render();
+  paintTiles();
+}
+function renderMonth(){
+  const now = new Date(), first = new Date(now.getFullYear(), now.getMonth() + monthOff, 1);
+  const wkStart = +get(LS.wkstart, 1) === 0 ? 0 : 1, showWk = get(LS.showwk, true) !== false;
+  const lead = (first.getDay() - wkStart + 7) % 7, last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const start = addDays(first, -lead), weeks = Math.ceil((lead + last) / 7);
+  const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  let h = arrow(-1, "month") + [0,1,2,3,4,5,6].map(k => `<div class="mdow">${names[(k + wkStart) % 7]}</div>`).join("") + arrow(1, "month");
+  for (let w = 0; w < weeks; w++){
+    h += `<div class="mpad"></div>`;
+    for (let k = 0; k < 7; k++){
+      const d = addDays(start, w * 7 + k), day = ymd(d), evs = eventsOn(day), weekend = d.getDay() === 0 || d.getDay() === 6;
+      let wk = "";
+      if (showWk && d.getDay() === 1){
+        const tw = termWeek(d), cyc = cycleDayFor(d, cycleStart), letter = cyc ? cyc.slice(-1).toUpperCase() : "";
+        wk = tw ? `Week ${tw.week}${letter}` : tw === false ? "Holidays" : letter ? "Week " + letter : "";
+      }
+      h += `<button class="mcell ${d.getMonth() !== first.getMonth() ? "out" : ""} ${weekend ? "wkend" : !schoolDay(d) ? "hol" : ""} ${sameDay(d, now) ? "today" : ""}" data-day="${day}">` +
+           `<span class="mtop"><span class="mnum tnum">${d.getDate()}</span>${wk ? `<span class="mwk">${wk}</span>` : ""}</span>` +
+           evs.slice(0, 3).map(e => `<span class="chipe ${e.kind === "subject" ? "sub" : ""}" data-ev="${esc(e.id)}" data-kind="${e.kind}" style="--c:${esc(e.colour)}" title="${esc(e.title + " · " + evTime(e))}">${esc(e.title)}</span>`).join("") +
+           (evs.length > 3 ? `<span class="mmore">+${evs.length - 3} more</span>` : "") + `</button>`;
+    }
+    h += `<div class="mpad"></div>`;
+  }
+  $("mgrid").innerHTML = h;
+  $("mgrid").querySelectorAll(":scope > .arrow").forEach(a => a.onclick = () => goMonth((wantMonth ?? monthOff) + +a.dataset.d));
+  $("mnote").textContent = showSubj() ? subjectNote : "";
+  rollLabel(`<b>${tok("mo", MONTHS[first.getMonth()])}</b> ${tok("yr", first.getFullYear())}`, Math.sign(monthOff - shownMonth));
+  shownMonth = monthOff;
+  document.body.classList.toggle("off", monthOff !== 0);
+}
+
+/* ═══ switching between the week and the month ═══
+   Each day's lessons squeeze together into slices that fill that day's cell
+   while the rest of the month slides in from the sides; going back, the other
+   days slide away and the cell splits back out into the lessons. Clicking
+   the tile again mid-switch finishes this one at once and heads straight for
+   wherever you asked for last, like Return to Today. */
+let viewTurn = null, wantView = null, morphing = [];
+function toggleCalendar(){
+  const target = (wantView ?? view) === "month" ? "week" : "month";
+  paintTiles(target);
+  if (viewTurn){ wantView = target; if (target !== view) morphing.forEach(a => a.finish()); return; }
+  switchView(target);
+}
+async function switchView(target){
+  while (target && target !== view){
+    const done = morphTo(target);
+    if (done){ viewTurn = done; await done; }
+    target = wantView; wantView = null;
+  }
+  viewTurn = null; wantView = null; paintTiles();
+}
+const weekDates = () => [0,1,2,3,4].map(k => addDays(addDays(baseWeek(), off * 7), k));
+/* The pieces fly in a layer at the top left of the page, so they scroll with
+   it; rects are measured against that layer. */
+function morphLayer(){
+  document.querySelectorAll(".morph").forEach(x => x.remove());
+  const layer = document.createElement("div");
+  layer.className = "morph";
+  document.body.appendChild(layer);
+  const L = layer.getBoundingClientRect();
+  layer.rel = el => { const r = el.getBoundingClientRect(); return { left:r.left - L.left, top:r.top - L.top, width:r.width, height:r.height }; };
+  return layer;
+}
+const box = (r, more) => ({ left:r.left + "px", top:r.top + "px", width:r.width + "px", height:r.height + "px", ...more });
+function ghostOf(el, r, layer){
+  const g = el.cloneNode(true);
+  g.removeAttribute("id");
+  g.classList.remove("open", "settled", "landed", "closing");
+  g.style.cssText += `;position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;right:auto;margin:0;transform:none;overflow:hidden;border-radius:10px`;
+  layer.appendChild(g);
+  return g;
+}
+/* the words inside a lesson's copy, faded on their own while its box changes shape */
+const words = g => [...(g.matches(".blk") ? g.firstElementChild.children : g.children)];
+/* fade in to what the element's own opacity is (a day from another month is dimmed) */
+const fadeIn = (el, duration, delay) => el.animate([{ opacity:0 }, { opacity:getComputedStyle(el).opacity }], { duration, delay, fill:"backwards" });
+/* lesson j of a day's n, as a slice of that day's cell: together they fill it */
+const slice = (cr, j, n) => { const h = cr.height / n; return { left:cr.left, top:cr.top + j * h, width:cr.width, height:Math.max(2, h - (n > 1 ? 2 : 0)) }; };
+const settle = (anims, layer) => Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => layer.remove());
+/* switching view stops any turning of weeks, days or months where it is */
+function stopTurns(){
+  weekSteps = 0; wantWeek = null; daySteps = 0; wantMonth = null;
+  document.querySelectorAll(".tt, .mob, .month").forEach(s => s.getAnimations({ subtree:true }).forEach(a => a.finish()));
+}
+function morphTo(target){
+  closeAll(); openFreeMod(false); showEvPanel(false); openSettings(false);
+  if (scrollY > 40) scrollTo({ top:0, behavior:noMotion() ? "auto" : "smooth" });
+  if (noMotion()){
+    if (target === "month") monthOff = monthOfWeek();
+    else weekForMonth();
+    setViewNow(target);
+    return null;
+  }
+  stopTurns();
+  morphing = target === "month" ? morphToMonth() : morphToWeek();
+  return settle(morphing, document.querySelector(".morph"));
+}
+/* the month holding the week on show (or the phone's chosen day) */
+function monthOfWeek(){
+  const dates = weekDates(), anchor = phone.matches ? dates[sel ?? 0] : dates[0], now = new Date();
+  return (anchor.getFullYear() - now.getFullYear()) * 12 + anchor.getMonth() - now.getMonth();
+}
+/* coming back from a month: the week on show if it's in that month, else the month's first week */
+function weekForMonth(){
+  const now = new Date(), first = new Date(now.getFullYear(), now.getMonth() + monthOff, 1);
+  const inMonth = weekDates().some(d => d.getMonth() === first.getMonth() && d.getFullYear() === first.getFullYear());
+  if (inMonth) return;
+  let mon = startOfWeek(first);
+  if (first.getDay() === 0 || first.getDay() === 6) mon = addDays(mon, 7);
+  off = Math.round((mon - baseWeek()) / (7 * 864e5)); sel = null;
+}
+const MORPH = 700;          /* how long a lesson takes to become a slice of its cell, or back */
+const sideOf = i => (i % 7) < 3 ? -1 : 1;     /* the left three columns come and go on the left */
+function morphToMonth(){
+  const layer = morphLayer(), dates = weekDates(), src = {};
+  const take = (els, d) => { if (els.length) src[ymd(d)] = els.map(el => ({ el, r:layer.rel(el) })); };
+  if (phone.matches) take([...$("daylist").children].filter(el => el.matches(".card,.brk")), dates[sel ?? 0]);
+  else document.querySelectorAll("#g > .col").forEach((col, k) => take([...col.children].filter(el => el.matches(".blk,.gap")), dates[k]));
+  monthOff = monthOfWeek();
+  shownMonth = monthOff;
+  setViewNow("month");
+  const anims = [], far = Math.min(document.documentElement.clientWidth * .4, 380);
+  const cells = [...$("mgrid").querySelectorAll(".mcell")];
+  const homeRow = Math.floor(Math.max(0, cells.findIndex(c => c.dataset.day === ymd(dates[0]))) / 7);
+  cells.forEach((cell, i) => {
+    const from = src[cell.dataset.day];
+    if (from){
+      /* the day's lessons squeeze into its cell, then the cell shows through */
+      const cr = layer.rel(cell);
+      from.forEach((it, j) => {
+        const g = ghostOf(it.el, it.r, layer), to = slice(cr, j, from.length);
+        anims.push(g.animate([box(it.r, { opacity:1, borderRadius:"10px", easing:"cubic-bezier(.6,0,.25,1)" }),
+                              box(to, { opacity:1, borderRadius:"4px", offset:.8 }), box(to, { opacity:0, borderRadius:"4px" })],
+                             { duration:MORPH, delay:j * 16, fill:"both" }));
+        words(g).forEach(w => anims.push(w.animate([{ opacity:1 }, { opacity:0 }], { duration:200, fill:"forwards" })));
+      });
+      anims.push(fadeIn(cell, 220, MORPH * .72));
+    } else {
+      /* the rest of the month slides in from the sides, rows nearest the week first */
+      const dist = Math.abs(Math.floor(i / 7) - homeRow);
+      anims.push(cell.animate([{ transform:`translateX(${sideOf(i) * far}px)`, opacity:0 }, { transform:"none", opacity:getComputedStyle(cell).opacity }],
+                              { duration:560, delay:140 + dist * 55 + Math.abs((i % 7) - 3) * 14, easing:"cubic-bezier(.2,.8,.3,1)", fill:"backwards" }));
+    }
+  });
+  document.querySelectorAll("#mgrid > .mdow, #mgrid > .arrow, .mbar").forEach(el => anims.push(fadeIn(el, 300, 200)));
+  return anims;
+}
+function morphToWeek(){
+  const layer = morphLayer(), cells = [...$("mgrid").querySelectorAll(".mcell")];
+  const rects = Object.fromEntries(cells.map(c => [c.dataset.day, layer.rel(c)]));
+  const looks = cells.map(c => getComputedStyle(c).opacity);
+  weekForMonth();
+  const dates = weekDates(), keys = dates.map(ymd);
+  if (phone.matches && sel === null){ const i = dates.findIndex(d => sameDay(d, new Date())); sel = i === -1 ? 0 : i; }
+  const stays = new Set(phone.matches ? [keys[sel]] : keys);
+  const anims = [], far = Math.min(document.documentElement.clientWidth * .4, 380);
+  const homeRow = Math.floor(Math.max(0, cells.findIndex(c => c.dataset.day === keys[0])) / 7);
+  cells.forEach((c, i) => {
+    const g = ghostOf(c, rects[c.dataset.day], layer);
+    if (stays.has(c.dataset.day))       /* the week's own cells give way to their lessons */
+      anims.push(g.animate([{ opacity:looks[i] }, { opacity:0 }], { duration:200, delay:80, fill:"forwards" }));
+    else {                              /* the rest slides away to the sides */
+      const dist = Math.abs(Math.floor(i / 7) - homeRow);
+      anims.push(g.animate([{ transform:"none", opacity:looks[i] }, { transform:`translateX(${sideOf(i) * far}px)`, opacity:0 }],
+                           { duration:420, delay:dist * 40, easing:"cubic-bezier(.5,0,.75,.4)", fill:"forwards" }));
+    }
+  });
+  setViewNow("week");
+  /* each cell splits back out into its day's lessons */
+  const groups = phone.matches
+    ? [{ key:keys[sel], items:[...$("daylist").children].filter(el => el.matches(".card,.brk")) }]
+    : [...document.querySelectorAll("#g > .col")].map((col, k) => ({ key:keys[k], items:[...col.children].filter(el => el.matches(".blk,.gap")) }));
+  for (const { key, items } of groups){
+    const cr = rects[key];
+    if (!cr) continue;
+    items.forEach((el, j) => {
+      const r = layer.rel(el), from = slice(cr, j, items.length), g = ghostOf(el, r, layer), at = 100 + j * 16;
+      anims.push(g.animate([box(from, { opacity:0, borderRadius:"4px" }), box(from, { opacity:1, borderRadius:"4px", offset:.12, easing:"cubic-bezier(.4,0,.2,1)" }),
+                            box(r, { opacity:1, borderRadius:"10px" })],
+                           { duration:MORPH, delay:at, fill:"both" }));
+      words(g).forEach(w => anims.push(w.animate([{ opacity:0 }, { opacity:1 }], { duration:240, delay:at + MORPH * .7, fill:"backwards" })));
+      anims.push(fadeIn(el, 60, at + MORPH));
+    });
+  }
+  document.querySelectorAll("#g > .dh, #g > .arrow, #g > .lmsg, #daynav, #daylist > .lmsg").forEach(el => anims.push(fadeIn(el, 320, 260)));
+  return anims;
+}
+
+/* the switch tiles fill with their colour while they're on */
+function paintTiles(calTarget = view){
+  const on = calTarget === "month";
+  document.querySelector('[data-m="calendar"]').classList.toggle("on", on);
+  $("calstate").textContent = on ? "· On" : "";
+  paintFreeTile();
+}
+function paintFreeTile(){
+  const on = freeActive();
+  document.querySelector('[data-m="free"]').classList.toggle("on", on);
+  $("freestate").textContent = on ? "· On" : "";
+}
+/* Swap the timetable for a re-drawn one with a cross-fade, e.g. when the free
+   periods view is switched on or off, so the colours change smoothly. */
+function crossfade(update){
+  const host = phone.matches ? $("daylist") : $("g");
+  if (noMotion() || view !== "week" || turning || dayRun || viewTurn){ update(); return; }
+  const ghost = host.cloneNode(true), hr = host.getBoundingClientRect(), pr = host.parentElement.getBoundingClientRect();
+  ghost.removeAttribute("id");
+  ghost.style.cssText = `position:absolute;left:${hr.left - pr.left}px;top:${hr.top - pr.top}px;width:${hr.width}px;margin:0;pointer-events:none;z-index:4`;
+  host.parentElement.appendChild(ghost);
+  update();
+  ghost.animate([{ opacity:1 }, { opacity:0 }], { duration:480, easing:"ease", fill:"forwards" }).finished.then(() => ghost.remove(), () => ghost.remove());
+  host.animate([{ opacity:0 }, { opacity:1 }], { duration:480, easing:"ease" });
+}
+
+/* turning the month: the old one slides off as the new one slides in; spamming queues */
+let monthTurn = null, wantMonth = null;
+function goMonth(target){
+  if (monthTurn){ wantMonth = target; return; }
+  const dir = Math.sign(target - monthOff);
+  if (!dir) return;
+  const g = $("mgrid");
+  if (noMotion()){ monthOff = target; render(); return; }
+  const ghost = g.cloneNode(true);
+  ghost.removeAttribute("id");
+  ghost.style.cssText = `position:absolute;left:${g.offsetLeft}px;top:${g.offsetTop}px;width:${g.offsetWidth}px;margin:0;pointer-events:none`;
+  g.parentElement.appendChild(ghost);
+  monthOff = target; render();
+  const W = document.documentElement.clientWidth, ease = { duration:560, easing:"cubic-bezier(.6,.05,.3,1)" };
+  ghost.animate([{ transform:"none" }, { transform:`translateX(${-dir * W}px)` }], { ...ease, fill:"forwards" });
+  monthTurn = g.animate([{ transform:`translateX(${dir * W}px)` }, { transform:"none" }], ease).finished.catch(() => {}).then(() => {
+    ghost.remove(); monthTurn = null;
+    if (wantMonth !== null && wantMonth !== monthOff){ const next = wantMonth; wantMonth = null; goMonth(next); } else wantMonth = null;
+  });
+}
+document.querySelectorAll(".mnav .arrow").forEach(a => a.onclick = () => goMonth((wantMonth ?? monthOff) + +a.dataset.m));
+$("newev").onclick = () => openEvent(null, { day:ymd(new Date()) });
+
+/* calendar settings */
+$("showsubj").onclick = () => { set(LS.showsubj, !showSubj()); paintSettings(); render(); };
+$("showwk").onclick = () => { set(LS.showwk, get(LS.showwk, true) === false); paintSettings(); render(); };
+document.querySelectorAll("#wkstart button").forEach(b => b.onclick = () => { set(LS.wkstart, +b.dataset.s); paintSettings(); render(); });
+$("clearpers").onclick = () => {
+  const b = $("clearpers");
+  if (!b.dataset.armed){ b.dataset.armed = "1"; b.textContent = "Tap again to delete"; setTimeout(() => { delete b.dataset.armed; b.textContent = "Delete all"; }, 3000); return; }
+  personal = []; savePersonal(); delete b.dataset.armed; b.textContent = "Delete all"; paintSettings(); render();
+};
+$("mgrid").addEventListener("click", e => {
+  const chip = e.target.closest("[data-ev]");
+  if (chip){ e.stopPropagation(); openEvent(chip.dataset.ev, { kind:chip.dataset.kind }); return; }
+  const cell = e.target.closest(".mcell");
+  if (cell) openDay(cell.dataset.day);
+});
+/* a day heading in the week view opens that day's events */
+$("g").addEventListener("click", e => { const h = e.target.closest(".dh[data-day]"); if (h) openDay(h.dataset.day); });
+
+/* ═══ the event panel ═══ */
+const evOpen = () => document.body.classList.contains("evopen");
+function showEvPanel(o){
+  document.body.classList.toggle("evopen", o);
+  if (o) setTimeout(() => { const f = $("evbody").querySelector("input,button"); if (f) f.focus(); }, 60);
+}
+$("evclose").onclick = () => showEvPanel(false);
+$("scrim").addEventListener("click", () => showEvPanel(false));
+addEventListener("keydown", e => { if (e.key === "Escape" && evOpen()) showEvPanel(false); });
+const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
+
+/* a day: its events, and a button to add one */
+function openDay(day){
+  const evs = eventsOn(day);
+  $("evtitle").textContent = dayTitle(day);
+  $("evbody").innerHTML = (evs.length
+      ? `<div class="evlist">${evs.map(e => `<button class="evitem" data-ev="${esc(e.id)}" data-kind="${e.kind}" style="--c:${esc(e.colour)}"><b>${esc(e.title)}</b>` +
+          `<span>${esc(evTime(e))} · ${e.kind === "subject" ? esc(subjectOf(e.course)) : "Personal"}</span></button>`).join("")}</div>`
+      : `<p class="evempty">Nothing on this day.</p>`) +
+    `<button class="btn primary wide" id="evadd">+ New event</button>`;
+  $("evbody").querySelectorAll("[data-ev]").forEach(b => b.onclick = () => openEvent(b.dataset.ev, { kind:b.dataset.kind }));
+  $("evadd").onclick = () => openEvent(null, { day });
+  showEvPanel(true);
+}
+
+/* the editor: new (id null) or an existing event */
+function openEvent(id, { day, kind } = {}){
+  const old = id ? findEvent(id, kind) : null, isNew = !old;
+  const courses = myCourses();
+  let k = old ? (kind || "personal") : "personal", colour = (old && old.colour) || EV_COLOURS[0];
+  $("evtitle").textContent = isNew ? "New event" : "Edit event";
+  $("evbody").innerHTML = `
+    <div class="seg wide" id="evkind" ${isNew ? "" : 'aria-disabled="true"'}><button data-k="personal">Personal</button><button data-k="subject">Subject</button></div>
+    <p class="evnote" id="evkindnote"></p>
+    <div class="fld subjonly"><label for="evsub">Subject</label><select class="fin" id="evsub">${courses.map(c => `<option value="${esc(c.key)}">${esc(c.subject)}</option>`).join("")}</select></div>
+    <div class="fld"><label for="evname">Name</label><input class="fin" id="evname" maxlength="140" placeholder="e.g. Physics exam"></div>
+    <div class="fld"><label for="evday">Date</label><input class="fin" type="date" id="evday"></div>
+    <div class="fld two"><span class="lbl2">From</span><span class="lbl2">To</span>
+      <input class="fin" type="time" id="evstart" aria-label="From"><input class="fin" type="time" id="evend" aria-label="To"></div>
+    <p class="evnote">Leave the times empty for an all-day event.</p>
+    <div class="fld"><label for="evnotes">Notes</label><textarea class="fin" id="evnotes" maxlength="600" placeholder="Room, what to bring, what's on it…"></textarea></div>
+    <div class="fld persononly"><span class="lbl2">Colour</span><div class="swatches" id="evcol">${EV_COLOURS.map(c => `<button class="swatch" data-c="${c}" style="--c:${c}" aria-label="Colour"></button>`).join("")}</div></div>
+    <p class="evnote" id="evby"></p>
+    <p class="everr" id="everr" role="alert"></p>
+    <div class="btnrow">${isNew ? "" : '<button class="btn danger" id="evdel">Delete</button>'}<span class="grow"></span>
+      <button class="btn" id="evcancel">Cancel</button><button class="btn primary" id="evsave">Save</button></div>`;
+  const body = $("evbody");
+  $("evname").value = old ? old.title : "";
+  $("evday").value = old ? old.day : (day || ymd(new Date()));
+  $("evstart").value = (old && old.start) || "";
+  $("evend").value = (old && old.end) || "";
+  $("evnotes").value = (old && old.notes) || "";
+  if (old && old.course) $("evsub").value = old.course;
+  if (old && kind === "subject" && old.by) $("evby").textContent = "Last changed by " + old.by + ". Anyone with this subject can fix it.";
+  const paint = () => {
+    body.querySelectorAll("#evkind button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+    body.querySelectorAll(".subjonly").forEach(x => x.hidden = k !== "subject");
+    body.querySelectorAll(".persononly").forEach(x => x.hidden = k !== "personal");
+    body.querySelectorAll("#evcol .swatch").forEach(s => s.setAttribute("aria-pressed", s.dataset.c === colour));
+    $("evkindnote").innerHTML = k === "personal" ? "Only on this device."
+      : !courses.length ? "Load a timetable to add a subject event."
+      : signedIn ? "Everyone with this subject sees it, and anyone can fix it if it's wrong."
+      : 'Everyone with this subject sees it. Adding or changing one needs your school login: <a href="/">sign in on the main timetable</a>.';
+  };
+  body.querySelectorAll("#evkind button").forEach(b => b.onclick = () => { if (isNew){ k = b.dataset.k; paint(); } });
+  body.querySelectorAll("#evcol .swatch").forEach(s => s.onclick = () => { colour = s.dataset.c; paint(); });
+  $("evcancel").onclick = () => showEvPanel(false);
+  if (!isNew) $("evdel").onclick = async () => {
+    try {
+      if (k === "subject") await call("/api/subjectcal", { body:{ action:"delete", id } });
+      else { personal = personal.filter(e => e.id !== id); savePersonal(); }
+      if (k === "subject") subjectEvents = subjectEvents.filter(e => e.id !== id);
+      showEvPanel(false); render();
+    } catch (err) { $("everr").textContent = err.message; }
+  };
+  $("evsave").onclick = async () => {
+    const ev = { title:$("evname").value.trim(), day:$("evday").value, start:$("evstart").value || null,
+                 end:$("evstart").value && $("evend").value ? $("evend").value : null, notes:$("evnotes").value.trim() };
+    if (!ev.title){ $("everr").textContent = "Give it a name."; return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ev.day)){ $("everr").textContent = "Pick a date."; return; }
+    try {
+      if (k === "subject"){
+        ev.course = $("evsub").value;
+        if (!ev.course){ $("everr").textContent = "Pick the subject."; return; }
+        $("evsave").disabled = true;
+        await call("/api/subjectcal", { body:{ action:"save", event:{ ...ev, id:old ? id : undefined } } });
+        await loadSubjectEvents();
+      } else {
+        const rec = { ...ev, colour, id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };
+        personal = old ? personal.map(e => e.id === id ? rec : e) : personal.concat(rec);
+        savePersonal();
+      }
+      showEvPanel(false); render();
+    } catch (err) { $("everr").textContent = err.message; $("evsave").disabled = false; }
+  };
+  paint();
+  showEvPanel(true);
+}
+
+/* ═══ free periods module ═══
+   A tile at the bottom that opens up in place, like a lesson, to show the
+   free-period settings; click its heading or anywhere else to close it. */
+const freeMod = document.querySelector('[data-m="free"]');
+function openFreeMod(open){
+  if (open === freeMod.classList.contains("open")) return;
+  if (open){
+    const r = freeMod.getBoundingClientRect(), g = $("mg").getBoundingClientRect();
+    freeMod.classList.toggle("right", r.left + r.width / 2 > g.left + g.width / 2);
+    paintFree();
+  }
+  const body = freeMod.querySelector(".mod-body");
+  body.classList.add("moving");                        /* clip while it grows or shrinks */
+  clearTimeout(body.movingTimer);
+  body.movingTimer = setTimeout(() => body.classList.remove("moving"), 560);
+  freeMod.classList.toggle("open", open);
+  freeMod.querySelector(".mod-head").setAttribute("aria-expanded", open);
+}
+freeMod.addEventListener("click", e => {
+  if (!freeMod.classList.contains("open")) openFreeMod(true);
+  else if (e.target.closest(".mod-head")) openFreeMod(false);
+});
+document.addEventListener("click", e => { if (freeMod.classList.contains("open") && !freeMod.contains(e.target)) openFreeMod(false); });
+addEventListener("keydown", e => { if (e.key === "Escape" && freeMod.classList.contains("open") && !settingsOpen() && !evOpen()) openFreeMod(false); });
+
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["revision","games","calendar","resources"];
+const MOD_WIDEN = ["revision","games","calendar","resources","free"];
 function layoutMods(){
   const mg = $("mg"), tiles = [...mg.children];
   const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
@@ -1908,8 +2591,10 @@ function layoutMods(){
 }
 
 addEventListener("resize", () => { render(); layoutMods(); });
-setInterval(render, 30000);     /* keep "now" and past lessons current */
+document.querySelector('[data-m="calendar"]').onclick = e => { e.preventDefault(); toggleCalendar(); };
+setInterval(() => { if (!turning && !monthTurn && !viewTurn && !dayRun) render(); }, 30000);     /* keep "now" and past lessons current, but never mid-turn */
 layoutMods();
+paintTiles();
 load();
 loadBusy();
 </script>
