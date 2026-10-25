@@ -2329,22 +2329,16 @@ function eventsOn(day){
 const findEvent = (id, kind) => kind === "subject" ? subjectEvents.find(e => e.id === id) : personal.find(e => e.id === id);
 
 /* ═══ custom periods ═══
-   Events from your Google Calendar turned into periods on the timetable. You
-   pick which: every event with a given name (and its repeating series), and
-   how it looks: its name, a details line, a room, a colour and a style.
-   Google is reached straight from this page (Google's sign-in window, read-only
-   access to your calendars); the events it finds are kept on this device, so
-   the periods still show between syncs. Periods are saved in andre.periods.
-   The Google Cloud project is "mscunofficial" (number 317306664434); setting
-   it up is in SETUP.md, and its Web client ID goes here. */
-const GOOGLE_CLIENT_ID = "317306664434-29t9pg3e3a4ocirjq5cacfgjcidvghk1.apps.googleusercontent.com";
-const GOOGLE_SCOPES = "https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly";
-const GWINDOW = { back:14, ahead:150 };          /* days of events fetched either side of this week */
+   Events imported from a Google Calendar iCal address become periods on the
+   timetable. Periods are saved in andre.periods; imported events are cached
+   on this device as well as stored by the calendar API. */
+const GWINDOW = { back:14, ahead:150 };
 const P_COLOURS = ["#0A84FF","#30C05A","#FF9F0A","#FF375F","#AF52DE","#5E5CE6","#32ADE6","#FFD60A","#AC8E68","#8E8E93"];
 let periods = (get(LS.periods, []) || []).filter(p => p && p.id);
 const blankG = () => ({ account:"", calendars:[], events:[], at:0 });
-let gcal = { ...blankG(), ...(get(LS.gcal, null) || {}) };
-let gToken = null, gBusy = false, gNote = "", moreSugg = false;
+const cachedGcal = get(LS.gcal, null);
+let gcal = cachedGcal && cachedGcal.calendars && cachedGcal.calendars.some(c => c.id === "ical") ? cachedGcal : blankG();
+let gBusy = false, gNote = "", moreSugg = false;
 const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 const minsOf = d => d.getHours() * 60 + d.getMinutes();
 const savePeriods = () => set(LS.periods, periods);
@@ -2358,78 +2352,61 @@ function inkOn(hex){
 const agoText = ts => { const m = Math.round((Date.now() - ts) / 60000);
   return !ts ? "never" : m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
 
-/* Google's sign-in, loaded only when first needed */
-let gisReady = null;
-const loadGis = () => gisReady || (gisReady = new Promise((ok, no) => {
-  const s = document.createElement("script");
-  s.src = "https://accounts.google.com/gsi/client"; s.async = true;
-  s.onload = ok;
-  s.onerror = () => { gisReady = null; no(new Error("Google's sign-in couldn't load. Check your connection.")); };
-  document.head.appendChild(s);
-}));
-/* an access token: the one we have, or Google's window asks for one */
-async function googleToken(){
-  if (gToken && gToken.exp > Date.now() + 60e3) return gToken.token;
-  if (!GOOGLE_CLIENT_ID) throw new Error("Google isn't linked to this site yet: the mscunofficial project's client ID needs adding (see SETUP.md).");
-  await loadGis();
-  return new Promise((ok, no) => {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_SCOPES, login_hint: gcal.account || undefined,
-      callback: r => {
-        if (r.error) return no(new Error(r.error === "access_denied" ? "Google said no. Is this account one of the app's test users?" : "Google sign-in failed (" + r.error + ")."));
-        gToken = { token:r.access_token, exp:Date.now() + (+r.expires_in || 3600) * 1000 };
-        ok(gToken.token);
-      },
-      error_callback: e => no(new Error(e && e.type === "popup_failed_to_open" ? "Your browser blocked Google's window. Allow pop-ups for this site and try again."
-                                       : "Google's window closed before it finished."))
-    });
-    client.requestAccessToken({ prompt: gcal.account ? "" : "consent" });
-  });
+function calendarDateTime(value){
+  const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null;
 }
-async function gfetch(path, params){
-  const token = await googleToken();
-  const res = await fetch("https://www.googleapis.com/calendar/v3/" + path + "?" + new URLSearchParams(params || {}),
-                          { headers:{ Authorization:"Bearer " + token } });
-  const data = await res.json().catch(() => null);
-  if (res.status === 401){ gToken = null; throw new Error("Google needs you to sign in again: press Refresh."); }
-  if (!res.ok) throw new Error((data && data.error && data.error.message) || "Google Calendar didn't answer (" + res.status + ").");
-  return data;
+function expandCalendarEvent(ev, from, to){
+  if (ev.allDay) return [];
+  const base = calendarDateTime(ev.start), finish = calendarDateTime(ev.end);
+  if (!base) return [];
+  const duration = finish && finish > base ? finish - base : 60 * 60 * 1000;
+  const baseDay = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const firstDay = new Date(Math.max(baseDay.getTime(), new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime()));
+  const lastDay = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  const until = ev.until ? calendarDateTime(ev.until) : null;
+  const events = [];
+  for (let day = firstDay; day <= lastDay; day = addDays(day, 1)){
+    const days = Math.round((day - baseDay) / 86400000);
+    const weeks = Math.floor((days + (baseDay.getDay() + 6) % 7) / 7);
+    const monthDiff = (day.getFullYear() - baseDay.getFullYear()) * 12 + day.getMonth() - baseDay.getMonth();
+    let occurs = false;
+    switch (ev.repeat || "none"){
+      case "daily": occurs = true; break;
+      case "weekdays": occurs = day.getDay() > 0 && day.getDay() < 6; break;
+      case "weekly": occurs = day.getDay() === baseDay.getDay(); break;
+      case "fortnightly": occurs = day.getDay() === baseDay.getDay() && weeks % 2 === 0; break;
+      case "bydays": occurs = (ev.byDay || []).includes(day.getDay()); break;
+      case "monthly": occurs = monthDiff >= 0 && day.getDate() === baseDay.getDate(); break;
+      case "yearly": occurs = day.getMonth() === baseDay.getMonth() && day.getDate() === baseDay.getDate(); break;
+      default: occurs = days === 0;
+    }
+    if (!occurs || (until && day > new Date(until.getFullYear(), until.getMonth(), until.getDate()))) continue;
+    const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), base.getHours(), base.getMinutes());
+    if (start < from || start > to) continue;
+    events.push({ id:String(ev.id) + ":" + ymd(day), cal:"ical", title:ev.title, start:start.toISOString(),
+      end:new Date(start.getTime() + duration).toISOString(), place:"", notes:ev.notes || "", series:String(ev.id) });
+  }
+  return events;
 }
-const plainText = s => String(s || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").trim().slice(0, 400);
-/* the calendars, then every timed event in the chosen ones over the window */
-async function syncGoogle(){
+/* Import through the same server calendar flow used by calendar.html. */
+async function importICal(){
   if (gBusy) return;
+  const url = $("icalurl").value.trim();
+  if (!url){ gNote = "Paste your secret iCal address first."; paintCustom(); return; }
   gBusy = true; gNote = ""; paintCustom();
   try {
-    const list = await gfetch("users/me/calendarList", { minAccessRole:"reader", maxResults:"250" });
-    const had = new Map(gcal.calendars.map(c => [c.id, c.on]));
-    const cals = (list.items || []).filter(c => !c.deleted).map(c => ({
-      id:c.id, name:c.summaryOverride || c.summary || c.id, colour:c.backgroundColor || "#8E8E93", primary:!!c.primary,
-      on: had.has(c.id) ? had.get(c.id) : !!(c.primary || c.selected) }));
     const from = addDays(startOfWeek(new Date()), -GWINDOW.back), to = addDays(from, GWINDOW.back + GWINDOW.ahead);
-    const events = [];
-    for (const c of cals.filter(c => c.on)){
-      let pageToken = "";
-      do {
-        const d = await gfetch("calendars/" + encodeURIComponent(c.id) + "/events", { timeMin:from.toISOString(), timeMax:to.toISOString(),
-          singleEvents:"true", orderBy:"startTime", maxResults:"2500", ...(pageToken ? { pageToken } : {}) });
-        for (const e of d.items || []){
-          if (e.status === "cancelled" || !e.start || !e.start.dateTime || !e.end || !e.end.dateTime) continue;   /* timed events only */
-          events.push({ id:e.id, cal:c.id, title:(e.summary || "").trim(), start:e.start.dateTime, end:e.end.dateTime,
-                        place:(e.location || "").trim(), notes:plainText(e.description), series:e.recurringEventId || "" });
-        }
-        pageToken = d.nextPageToken || "";
-      } while (pageToken);
-    }
-    gcal = { account:(cals.find(c => c.primary) || {}).id || gcal.account || "Google", calendars:cals, events, at:Date.now() };
+    await call("/api/calendar", { body:{ action:"import", url } });
+    const data = await call("/api/calendar");
+    const events = (data.events || []).filter(e => e.source === "google")
+      .flatMap(e => expandCalendarEvent(e, from, to));
+    gcal = { account:"Google Calendar", calendars:[{ id:"ical", name:"Imported calendar", colour:"#8E8E93", primary:true, on:true }],
+      events, at:Date.now() };
     set(LS.gcal, gcal);
+    $("icalurl").value = "";
   } catch (err) { gNote = err.message; }
   gBusy = false;
-  paintCustom(); render();
-}
-function disconnectGoogle(){
-  if (gToken && window.google) try { google.accounts.oauth2.revoke(gToken.token, () => {}); } catch {}
-  gToken = null; gcal = blankG(); set(LS.gcal, gcal); gNote = "";
   paintCustom(); render();
 }
 
@@ -2522,39 +2499,35 @@ function paintCustom(){
   const linked = !!gcal.account, chevron = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>`;
   const note = gNote ? `<span class="err">${esc(gNote)}</span>` : "";
   let h = `<div class="row-group">`;
-  if (!linked) h += `<div class="row"><div class="rl"><strong>Google Calendar</strong><small>${note || "Turn events in your calendar, like tutoring or training, into periods"}</small></div>` +
-                    `<button class="btn primary sm" id="gconnect" ${gBusy ? "disabled" : ""}>${gBusy ? "Connecting…" : "Connect"}</button></div>`;
-  else h += `<div class="row"><div class="rl"><strong>${esc(gcal.account)}</strong><small>${gBusy ? "Syncing…" : note || "Synced " + agoText(gcal.at)}</small></div>` +
-            `<button class="btn sm" id="gsync" ${gBusy ? "disabled" : ""}>Refresh</button></div>` +
-            `<div class="row stack"><div class="rl"><strong>Calendars</strong><small>Where to look for your periods</small></div><div class="gcals">` +
+  h += `<div class="row"><div class="rl"><strong>Google Calendar · iCal</strong><small>${gBusy ? "Importing…" : note || (linked ? "Imported " + agoText(gcal.at) : "Import events without signing in to Google")}</small></div></div>` +
+       `<div class="row stack"><div class="rl"><strong>Secret iCal address</strong><small>Google Calendar: Settings → your calendar → Integrate calendar → Secret address in iCal format. The address is not saved.</small></div>` +
+       `<input class="fin" type="url" id="icalurl" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off"></div>` +
+       `<div class="row"><div class="rl"><small>Importing requires your school timetable login.</small></div>` +
+       `<button class="btn primary sm" id="gimport" ${gBusy ? "disabled" : ""}>${gBusy ? "Importing…" : "Import"}</button></div>`;
+  if (linked) h += `<div class="row stack"><div class="rl"><strong>Calendars</strong><small>Where to look for your periods</small></div><div class="gcals">` +
             gcal.calendars.map(c => `<div class="gcal"><i style="--c:${esc(c.colour)}"></i><span>${esc(c.name)}</span>` +
-              `<button class="tog sm" role="switch" aria-checked="${c.on}" data-cal="${esc(c.id)}" aria-label="${esc(c.name)}"></button></div>`).join("") + `</div></div>` +
-            `<button class="row" id="gunlink"><div class="rl"><strong class="danger">Disconnect Google</strong></div></button>`;
+              `<button class="tog sm" role="switch" aria-checked="${c.on}" data-cal="${esc(c.id)}" aria-label="${esc(c.name)}"></button></div>`).join("") + `</div></div>`;
   h += `</div>`;
   if (periods.length) h += `<div class="sub-label">Your periods</div><div class="row-group">` + periods.map(p =>
       `<button class="row prow" data-pid="${esc(p.id)}"><span class="pchip cst-${p.style || "tint"}" style="--c:${esc(p.colour)};--ink:${inkOn(p.colour)}">${esc(p.name)}</span>` +
-      `<span class="val"><span>${esc(linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Connect Google to show these")}</span>${chevron}</span></button>`).join("") + `</div>`;
+      `<span class="val"><span>${esc(linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Import a calendar to show these")}</span>${chevron}</span></button>`).join("") + `</div>`;
   if (linked && !gBusy){
     const sg = suggestions(), shown = moreSugg ? sg : sg.slice(0, 5);
     h += sg.length ? `<div class="sub-label">In your calendar</div><div class="row-group">` + shown.map((s, i) =>
         `<button class="row" data-sg="${i}"><div class="rl"><strong>${esc(s.title)}</strong><small>${esc(usually(s.evs))}</small></div><span class="addp">+ Add</span></button>`).join("") +
         (sg.length > shown.length ? `<button class="row more" id="sgmore">Show ${sg.length - shown.length} more</button>` : "") + `</div>`
-      : `<p class="sec-note">Nothing else in these calendars on school days in the next few months.</p>`;
+      : `<p class="sec-note">Nothing else in this calendar on school days in the next few months.</p>`;
     host.sugg = sg;
   }
   host.innerHTML = h;
   paintPeriodsTile();
   const btn = id => host.querySelector("#" + id);
-  for (const id of ["gconnect", "gsync"]) if (btn(id)){
-    btn(id).onpointerenter = btn(id).onfocus = () => loadGis().catch(() => {});      /* ready before the click, so the window isn't blocked */
-    btn(id).onclick = syncGoogle;
-  }
-  if (btn("gunlink")) btn("gunlink").onclick = disconnectGoogle;
+  if (btn("gimport")) btn("gimport").onclick = importICal;
   if (btn("sgmore")) btn("sgmore").onclick = () => { moreSugg = true; paintCustom(); };
   host.querySelectorAll("[data-cal]").forEach(b => b.onclick = () => {
     const c = gcal.calendars.find(x => x.id === b.dataset.cal);
     c.on = !c.on; set(LS.gcal, gcal);
-    if (c.on && !gcal.events.some(ev => ev.cal === c.id)) syncGoogle(); else { paintCustom(); render(); }
+    paintCustom(); render();
   });
   host.querySelectorAll("[data-pid]").forEach(b => b.onclick = () => openPeriod(b.dataset.pid));
   host.querySelectorAll("[data-sg]").forEach(b => b.onclick = () => { const s = host.sugg[+b.dataset.sg]; openPeriod(null, s); });
@@ -2591,7 +2564,7 @@ function openPeriod(id, seed){
     <div class="fld"><span class="lbl2">Colour</span><div class="swatches" id="pcol">${P_COLOURS.map(c => `<button class="swatch" data-c="${c}" style="--c:${c}" aria-label="Colour ${c}"></button>`).join("")}` +
       `<label class="swatch pick" title="Any colour"><input type="color" id="pany" aria-label="Any colour"></label></div></div>
     <div class="fld"><span class="lbl2">Look</span><div class="seg wide" id="pstyle"><button data-s="tint">Tinted</button><button data-s="solid">Solid</button><button data-s="outline">Outline</button></div></div>
-    <div class="fld"><label for="pmatch">Calendar events called</label><input class="fin" id="pmatch" maxlength="140" placeholder="The event's name in Google Calendar"><p class="evnote" id="pfound"></p></div>
+    <div class="fld"><label for="pmatch">Calendar events called</label><input class="fin" id="pmatch" maxlength="140" placeholder="The event's name in your calendar"><p class="evnote" id="pfound"></p></div>
     <div class="fld"><label for="pnotes">Notes</label><textarea class="fin" id="pnotes" maxlength="600" placeholder="Shown when you open it"></textarea></div>
     <p class="everr" id="perr" role="alert"></p>
     <div class="btnrow">${old ? '<button class="btn danger" id="pdel">Delete</button>' : ""}<span class="grow"></span>
@@ -2610,7 +2583,7 @@ function openPeriod(id, seed){
     const pick = $("evbody").querySelector(".swatch.pick");
     pick.setAttribute("aria-pressed", custom); pick.style.setProperty("--c", d.colour);
     $("evbody").querySelectorAll("#pstyle button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === d.style));
-    $("pfound").textContent = !gcal.account ? "Connect Google Calendar in settings to find these."
+    $("pfound").textContent = !gcal.account ? "Import a calendar in settings to find these."
       : evs.length ? "Found: " + usually(evs) : "No events with this name in the next few months. It has to match the whole name.";
   };
   Object.keys(fields).forEach(el => $(el).oninput = paint);
