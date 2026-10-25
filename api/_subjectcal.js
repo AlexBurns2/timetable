@@ -5,9 +5,12 @@
  * take one down. Each row remembers who made it and who last changed it, and
  * that name is shown beside the event.
  *
- * GET  /api/subjectcal?courses=physics yr11|chemistry yr11  → { events:[…] }
- * POST /api/subjectcal {action:'save', event}                → { id }
- * POST /api/subjectcal {action:'delete', id}                 → { ok:true }
+ * Served by /api/calendar (anything with ?subject=1 comes here), so it
+ * doesn't count as a function of its own: the Hobby plan allows twelve.
+ *
+ * GET  /api/calendar?subject=1&courses=physics yr11|chemistry yr11  → { events:[…] }
+ * POST /api/calendar?subject=1 {action:'save', event}                → { id }
+ * POST /api/calendar?subject=1 {action:'delete', id}                 → { ok:true }
  *
  * A course is named the way the school timetable names it (its CourseName,
  * e.g. "Physics Yr11"), lowercased, so Year 11 and Year 12 Physics are kept
@@ -56,7 +59,7 @@ const shape = r => ({
   by: withName(NAMES, r.updated_by, nameFromEmail(r.updated_by)), at: r.updated_at
 });
 
-export default async function handler(req, res) {
+export async function subjectHandler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-School-Email, X-School-Password");
   res.setHeader("Cache-Control", "private, no-store");

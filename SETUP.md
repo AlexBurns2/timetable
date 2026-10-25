@@ -2544,7 +2544,11 @@ mode included). The SQL function does the increment, so two tabs never lose a
 press. The open board refreshes every 4 s (`GET /api/jim`), which stands in for
 Firebase's live listener.
 
-## Subject events (`api/subjectcal.js`, used by Andre's page at `/andre/`)
+## Subject events (`api/_subjectcal.js`, used by Andre's page at `/andre/`)
+
+Served by `/api/calendar?subject=1` rather than as a function of its own:
+Vercel's Hobby plan allows at most 12 functions in `api/` (files starting
+with `_` don't count), and the site is at that limit.
 
 Events that belong to a course instead of a person, e.g. "Physics exam, Thu 5
 Nov, 9:00". Anyone whose timetable has that course sees them in the month view;

@@ -2253,7 +2253,8 @@ $("exportics").onclick = () => {
 /* ═══ events ═══
    Two kinds. Personal events live only on this device (andre.events). Subject
    events belong to a course: everyone whose timetable has that course sees
-   them, and anyone signed in can add or fix one (api/subjectcal.js). */
+   them, and anyone signed in can add or fix one (api/_subjectcal.js, served by
+   /api/calendar?subject=1). */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const EV_COLOURS = ["#0A84FF","#30C05A","#FF9F0A","#FF375F","#AF52DE","#5E5CE6","#32ADE6","#8E8E93"];
 let personal = (get(LS.events, []) || []).filter(e => e && e.id && e.day);
@@ -2280,7 +2281,7 @@ async function loadSubjectEvents(){
   const courses = myCourses().map(c => c.key), forKey = courses.join("|");
   if (!courses.length){ subjectEvents = []; return; }
   try {
-    const d = await call("/api/subjectcal", { query:{ courses:forKey } });
+    const d = await call("/api/calendar", { query:{ subject:1, courses:forKey } });
     subjectEvents = (d.events || []).filter(e => e && e.id && e.day);
     subjectNote = ""; subjectFor = forKey;
   } catch (err) { subjectNote = "Subject events couldn't load: " + err.message; }
@@ -3017,7 +3018,7 @@ function openEvent(id, { day, kind } = {}){
   $("evcancel").onclick = () => showEvPanel(false);
   if (!isNew) $("evdel").onclick = async () => {
     try {
-      if (k === "subject") await call("/api/subjectcal", { body:{ action:"delete", id } });
+      if (k === "subject") await call("/api/calendar", { query:{ subject:1 }, body:{ action:"delete", id } });
       else { personal = personal.filter(e => e.id !== id); savePersonal(); }
       if (k === "subject") subjectEvents = subjectEvents.filter(e => e.id !== id);
       showEvPanel(false); render();
@@ -3033,7 +3034,7 @@ function openEvent(id, { day, kind } = {}){
         ev.course = $("evsub").value;
         if (!ev.course){ $("everr").textContent = "Pick the subject."; return; }
         $("evsave").disabled = true;
-        await call("/api/subjectcal", { body:{ action:"save", event:{ ...ev, id:old ? id : undefined } } });
+        await call("/api/calendar", { query:{ subject:1 }, body:{ action:"save", event:{ ...ev, id:old ? id : undefined } } });
         await loadSubjectEvents();
       } else {
         const rec = { ...ev, colour, id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };

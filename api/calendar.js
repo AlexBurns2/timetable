@@ -6,6 +6,7 @@
  * POST /api/calendar {action:'delete', id}    → remove one (owner only)
  * POST /api/calendar {action:'import', url}   → pull events from a Google Calendar
  *                                               secret iCal address (see below)
+ * …?subject=1                                 → subject events instead (_subjectcal.js)
  *
  * Identity is the same verified school email as everywhere else — whoami()
  * re-checks the credentials already being sent, and raw emails are only ever
@@ -44,6 +45,7 @@
 
 import { db, whoami } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
+import { subjectHandler } from "./_subjectcal.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -198,6 +200,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-School-Email, X-School-Password");
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.query && req.query.subject) return subjectHandler(req, res);
 
   if (!db) return res.status(503).json({ error: "The calendar is not configured on the server." });
   const me = await whoami(req);
