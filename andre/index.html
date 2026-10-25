@@ -119,6 +119,7 @@ html.zen .bar,html.zen body::before{background:transparent;backdrop-filter:none;
 .sec-label button{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
 .row-group{background:var(--fill);border-radius:12px;overflow:hidden}
 #freesec .row-group{overflow:visible}
+#freesec .row.stack{gap:8px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-bottom:1px solid var(--sep);color:inherit;text-decoration:none}
 .row:last-child{border-bottom:none}
 .row.stack{flex-direction:column;align-items:stretch;gap:10px}
@@ -357,7 +358,25 @@ button.row:hover{background:var(--fill2)}
 .row .val svg{width:14px;height:14px;color:var(--fg3)}
 .seg[aria-disabled="true"]{opacity:.45;pointer-events:none}
 .seg.wide button{flex:1}
-.monthview #panel [data-for="week"],body:not(.monthview) #panel [data-for="month"]{display:none}
+/* text size: drag the handle along the bar; it settles on the nearest of seven
+   sizes, and the middle one, the default, is marked under the bar */
+.fsl{display:flex;align-items:center;gap:12px;padding:6px 2px 16px;touch-action:none;outline:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+.fsa{flex:none;font-size:12px;font-weight:600;color:var(--fg2);line-height:1;width:14px;text-align:center}
+.fsa.big{font-size:20px}
+.fstrack{position:relative;flex:1;height:4px;border-radius:2px;background:var(--fill2)}
+.fstick{position:absolute;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--fg3)}
+.fstick.def{width:12px;height:12px;margin:-6px 0 0 -6px;background:var(--fill);box-shadow:inset 0 0 0 2px var(--blue)}
+.fstick.def::after{content:"Default";position:absolute;top:17px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);white-space:nowrap}
+.fsfill{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--blue);transition:left .25s cubic-bezier(.3,1.3,.5,1),width .25s cubic-bezier(.3,1.3,.5,1)}
+.fsthumb{position:absolute;top:50%;left:var(--x,50%);width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.1);transition:left .25s cubic-bezier(.3,1.3,.5,1),transform .15s;cursor:grab}
+.fsl.drag .fsthumb{transition:transform .15s;transform:scale(1.12);cursor:grabbing}
+.fsl.drag .fsfill{transition:none}
+.fsl:focus-visible .fsthumb{box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 45%,transparent),0 1px 4px rgba(0,0,0,.3)}
+/* the gear shows the settings for what's on screen: the timetable, the calendar, or Who's free */
+#panel [data-for]{display:none}
+#panel[data-mode="week"] [data-for~="week"],#panel[data-mode="month"] [data-for~="month"],#panel[data-mode="free"] [data-for~="free"]{display:block}
+.sec-note{font-size:calc(12px * var(--fs,1));color:var(--fg2);margin:8px 4px 0;line-height:1.4}
 .pview{display:none;flex:1;overflow-y:auto;padding:20px;flex-direction:column;gap:14px}
 .panel.sub .pbody{display:none}
 .panel.sub .pview{display:flex;animation:slidein .28s cubic-bezier(.34,1.2,.64,1)}
@@ -415,23 +434,41 @@ button.row:hover{background:var(--fill2)}
 [data-skin="terminal"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
 [data-skin="paper"] .blk-card,[data-skin="paper"] .card{box-shadow:2px 3px 7px rgba(60,45,20,.16)}
 
-/* ── free periods: a module tile that opens up in place, like a lesson;
-   it grows upwards from the bottom, so it never needs more scrolling ── */
-.mod.modx{position:relative;padding:0;background:none;display:block;cursor:pointer;container-type:inline-size}
-.mod.modx:hover{transform:none}
-.mod-card{--ow:max(100cqw,min(560px,calc(100vw - 32px)));position:absolute;bottom:0;left:0;width:100%;min-height:100%;border-radius:10px;background:var(--paint);padding:14px 16px;
-  transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .4s,transform .15s,background-color .4s ease}
-.mod.modx.right .mod-card{left:auto;right:0}
-.mod.modx:not(.open):hover .mod-card{transform:translateY(-2px)}
-.mod-head{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;width:100%;height:calc(150px * var(--fs,1) - 28px);text-align:left;color:inherit;padding:0}
-.mod.modx.open{--paint:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));--ink:color-mix(in srgb,var(--c) 40%,var(--fg))}   /* opened, it reads as a panel */
-.mod.modx.open{z-index:30;cursor:default}
-.mod.modx.open .mod-card{width:var(--ow);box-shadow:0 18px 50px rgba(0,0,0,.2)}
-.mod-body{width:calc(var(--ow) - 40px);max-height:0;opacity:0;overflow:hidden;visibility:hidden;
-  transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .25s,visibility 0s .4s}
-.mod.open .mod-body{max-height:900px;opacity:1;visibility:visible;padding-top:14px;transition:max-height .55s cubic-bezier(.34,1.2,.64,1),opacity .3s .1s}
-.mod.open .mod-body:not(.moving){overflow:visible}       /* lets the name search hang out of it */
-.mod-body .row-group{background:color-mix(in srgb,var(--bg) 65%,var(--fill));overflow:visible}
+/* ── custom periods: events from Google Calendar, drawn as periods ── */
+/* three looks: tinted like a lesson, solid colour, or an outline; open, any of them reads like a lesson */
+.blk.cst-solid:not(.open) .blk-card,.card.cst-solid:not(.open){background:var(--c)}
+.blk.cst-solid:not(.open) :is(.s,.m,.t,.r),.card.cst-solid:not(.open) :is(.subj,.teacher,.room,.time){color:var(--ink)}
+.blk.cst-outline:not(.open) .blk-card,.card.cst-outline:not(.open){background:var(--base,var(--bg));box-shadow:inset 0 0 0 2px var(--c)}
+.cst .r,.card.cst .room{white-space:nowrap}
+.col > .tskip{position:absolute;left:20%;right:20%;height:0;border-top:2px dotted color-mix(in srgb,var(--fg3) 70%,transparent)}
+.cust{display:flex;flex-direction:column;gap:8px}
+.cust .row-group{overflow:visible}
+.sub-label{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 0}
+.rl small .err{color:var(--red)}
+.row .danger{color:var(--red)}
+.btn.sm{height:30px;padding:0 12px;font-size:calc(13px * var(--fs,1));flex:none}
+.btn:disabled{opacity:.5}
+.tog.sm{width:36px;height:22px;border-radius:11px}
+.tog.sm::after{width:16px;height:16px}
+.tog.sm[aria-checked="true"]::after{transform:translateX(14px)}
+.gcals{display:flex;flex-direction:column;gap:8px}
+.gcal{display:flex;align-items:center;gap:9px;font-size:calc(13px * var(--fs,1))}
+.gcal i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.gcal span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pchip{flex:none;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 10px;border-radius:8px;font-size:calc(13px * var(--fs,1));font-weight:600;
+  background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.pchip.cst-solid{background:var(--c);color:var(--ink)}
+.pchip.cst-outline{background:var(--base,var(--bg));box-shadow:inset 0 0 0 2px var(--c)}
+.prow .val{min-width:0;overflow:hidden}
+.prow .val span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.addp{flex:none;color:var(--blue);font-weight:600;font-size:calc(13px * var(--fs,1))}
+.row.more{justify-content:center;color:var(--blue);font-size:calc(13px * var(--fs,1));font-weight:500}
+/* the editor: a live preview of the period, as the timetable will draw it */
+.pprev{position:relative;height:calc(86px * var(--fs,1));flex:none}
+.pprev .blk{cursor:default;top:0;bottom:0}
+.swatch.pick{position:relative;overflow:hidden;background:conic-gradient(#ff453a,#ffd60a,#30d158,#64d2ff,#0a84ff,#bf5af2,#ff453a)}
+.swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.swatch.pick[aria-pressed="true"]{background:var(--c)}
 
 /* ── month view: the Calendar tile turns the week into a month ── */
 .month{display:none;max-width:var(--pagemax);position:relative;padding-block:10px 24px;min-height:calc(100vh - 60px)}
@@ -451,7 +488,10 @@ button.row:hover{background:var(--fill2)}
 .mcell.out{opacity:.42}
 .mcell.wkend{background:color-mix(in srgb,var(--fill) 45%,transparent)}
 .mcell.hol{background:repeating-linear-gradient(135deg,var(--fill) 0 8px,color-mix(in srgb,var(--fill) 50%,transparent) 8px 16px)}
-.morph{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:30}
+.morph{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:15}
+.morph .mp{position:absolute;overflow:hidden;border-radius:10px}
+[data-square] .morph .mp{border-radius:0}
+.morphing :is(#g,#daylist,#daynav,#mgrid,.mbar){visibility:hidden}
 .mcell.today{box-shadow:inset 0 0 0 2px var(--fg)}
 .mtop{display:flex;align-items:baseline;gap:6px}
 .mnum{font-size:calc(15px * var(--fs,1));font-weight:600;color:var(--fg2)}
@@ -597,12 +637,11 @@ select.fin{appearance:auto}
           </div>
         </div>
         <div class="row stack">
-          <div class="rl"><strong>Text size</strong></div>
-          <div class="seg wide" id="fsize">
-            <button data-fs="0.9">Small</button>
-            <button data-fs="1">Default</button>
-            <button data-fs="1.12">Large</button>
-            <button data-fs="1.25">Larger</button>
+          <div class="rl"><strong>Text size</strong><small id="fsname"></small></div>
+          <div class="fsl" id="fsize" role="slider" tabindex="0" aria-label="Text size" aria-valuemin="0" aria-valuemax="6">
+            <span class="fsa" aria-hidden="true">A</span>
+            <div class="fstrack"><div class="fsfill"></div><div class="fsthumb"></div></div>
+            <span class="fsa big" aria-hidden="true">A</span>
           </div>
         </div>
         <div class="row">
@@ -614,6 +653,19 @@ select.fin{appearance:auto}
           <button class="tog" id="motion" role="switch" aria-checked="true" aria-label="Animations"></button>
         </div>
       </div>
+    </div>
+
+    <div data-for="free" id="freesec">
+      <div class="sec-label">Your group</div>
+      <div class="row-group">
+        <div class="row stack">
+          <div class="rl"><small id="freestat"></small></div>
+          <div class="chips" id="freechips"></div>
+          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
+            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
+        </div>
+      </div>
+      <p class="sec-note">Each free period shows who in your group is free for all of it, and other subjects are hidden. Tap <b>Who's free</b> at the bottom of the page to turn it off.</p>
     </div>
 
     <div data-for="week">
@@ -658,6 +710,11 @@ select.fin{appearance:auto}
     </div>
 
     <div data-for="week">
+      <div class="sec-label">Custom periods <button id="newperiod">New</button></div>
+      <div class="cust" id="custom"></div>
+    </div>
+
+    <div data-for="week">
       <div class="sec-label">Export</div>
       <button class="export" id="exportics"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export timetable as .ics</button>
       <div class="export-sub" id="exportsub"></div>
@@ -698,28 +755,10 @@ select.fin{appearance:auto}
     <h2>MSC Unofficial</h2>
     <div class="mg" id="mg">
       <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
-      <a class="mod" data-m="calendar" href="#calendar" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></a>
+      <a class="mod" data-m="calendar" href="#calendar" role="button" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></a>
       <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
-      <div class="mod modx" data-m="free" style="--c:#30C05A">
-        <div class="mod-card">
-          <button class="mod-head" aria-expanded="false"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Free periods <span class="state" id="freestate"></span></h3></button>
-          <div class="mod-body" id="freesec">
-            <div class="row-group">
-        <div class="row">
-          <div class="rl"><strong>Show on timetable</strong><small>Who in your group is free in each free period, hides other subjects</small></div>
-          <button class="tog" id="freeshow" role="switch" aria-checked="true" aria-label="Show who's free on the timetable"></button>
-        </div>
-        <div class="row stack">
-          <div class="rl"><strong>Your group</strong><small id="freestat"></small></div>
-          <div class="chips" id="freechips"></div>
-          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
-            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
-        </div>
-      </div>
-          </div>
-        </div>
-      </div>
+      <a class="mod" data-m="free" href="#whos-free" role="button" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></a>
     </div>
   </section>
 </main>
@@ -731,7 +770,7 @@ select.fin{appearance:auto}
 const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
-             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy" };
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction and optional login */
@@ -1166,12 +1205,12 @@ function render(){
   const dates = [0,1,2,3,4].map(k => addDays(mon, k));
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
   /* holidays (and pupil-free days before a term starts) have no lessons */
-  const days = cycs.map((c, k) => schoolDay(dates[k]) ? itemsFor(c) : []);
+  const days = cycs.map((c, k) => withCustom(schoolDay(dates[k]) ? itemsFor(c) : [], dates[k]));
   const holiday = dates.map(d => !schoolDay(d));
   const msg = !email ? "Enter a school email above to see a timetable."
             : loading && !entries.length ? "Loading…"
             : loadError ? loadError
-            : holiday.every(Boolean) ? "School holidays"
+            : holiday.every(Boolean) && !days.flat().length ? "School holidays"
             : !days.flat().length ? "No classes this week." : "";
   /* past / happening now, for one item on one date */
   const when = (d, x) => {
@@ -1250,7 +1289,7 @@ function rollLabel(html, monthDir){
    lower together, opening a clear lane; it slides through, and the day closes
    up again behind it. The new week's lessons come in the same way in reverse,
    the middle days first, so nothing passes through a lesson that has landed. */
-const sigOf = x => [x.s, x.drawEnd || x.e,
+const sigOf = x => [x.s, x.drawEnd || x.e, x.lanes ? x.lane + "/" + x.lanes : "",
   x.lesson ? (x.lesson.asm ? "asm" : [x.lesson.subject, x.lesson.code, x.lesson.room, x.lesson.teacher].join("/")) : x.ls.join("/"),
   (fn => fn ? fn.count + fn.names : "")(freeNote(x))].join("|");
 /* lane opening and closing (ms), sliding speed (px per ms), and how long a
@@ -1435,14 +1474,31 @@ function conveyor(oldList, newEls, dir, layer, originR, q = 1){
    fill the window's height, but a lesson is never squeezed until its teacher
    or time is cut off: after drawing, any card whose text overflows stretches
    the whole scale, and the grid is drawn again. */
+/* An hour or more with nothing on in any day (school's out until training at
+   five) is drawn as a short dotted break instead of empty space. */
+const SKIP = 28;
+function quietSpans(items, T0){
+  const spans = items.map(x => [x.s, x.drawEnd || x.e]).sort((a, b) => a[0] - b[0]), out = [];
+  let cur = T0;
+  for (const [s, e] of spans){ if (s - cur >= 60) out.push([cur + 10, s - 10]); cur = Math.max(cur, e); }
+  return out;
+}
+/* the height down the day for a time, with those breaks drawn short */
+const timeY = (T0, PX, skips) => t => {
+  let cut = 0, n = 0;
+  for (const [a, b] of skips){ if (t >= b){ cut += b - a; n++; } else if (t > a){ cut += t - a; n += (t - a) / (b - a); } }
+  return (t - T0 - cut) * PX + n * SKIP;
+};
 function renderGrid({ now, dates, days, holiday, msg, when, err }){
   const all = days.flat();
   const T0 = all.length ? Math.min(...all.map(x => x.s)) : toMinutes("8:55");
   const T1 = all.length ? Math.max(...all.map(x => x.e)) : toMinutes("15:25");
+  const skips = quietSpans(all, T0), quiet = skips.reduce((s, [a, b]) => s + b - a, 0);
   const g = document.getElementById("g");
-  let PX = Math.max(560, innerHeight - 60 - 90 - 24) / (T1 - T0);
+  let PX = Math.max(560 - skips.length * SKIP, innerHeight - 60 - 90 - 24 - skips.length * SKIP) / (T1 - T0 - quiet);
   for (let pass = 0; pass < 4; pass++){
-    g.innerHTML = gridHtml({ now, dates, days, holiday, msg, when, err }, T0, (T1 - T0) * PX, PX);
+    const y = timeY(T0, PX, skips);
+    g.innerHTML = gridHtml({ now, dates, days, holiday, msg, when, err }, y, y(T1), skips);
     if (msg) return;
     let worst = 1;
     g.querySelectorAll(".blk:not(.open):not(.closing) .blk-card").forEach(c => {
@@ -1452,7 +1508,7 @@ function renderGrid({ now, dates, days, holiday, msg, when, err }){
     PX *= worst;
   }
 }
-function gridHtml({ now, dates, days, holiday, msg, when, err }, T0, H, PX){
+function gridHtml({ now, dates, days, holiday, msg, when, err }, y, H, skips){
   let h = arrow(-1) + dates.map(d => {
     const evs = eventsOn(ymd(d));
     return `<div class="dh ${sameDay(d, now) ? "today" : ""}" data-day="${ymd(d)}"${evs.length ? ` title="${esc(evs.map(e => e.title).join(", "))}"` : ""}>` +
@@ -1462,11 +1518,14 @@ function gridHtml({ now, dates, days, holiday, msg, when, err }, T0, H, PX){
   h += "<div></div>";
   if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   days.forEach((items, k) => {
-    h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">` + (holiday[k] ? `<div class="hol">No school</div>` : "");
+    h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">` + (holiday[k] ? `<div class="hol">No school</div>` : "") +
+         skips.map(([a]) => `<div class="tskip" style="top:${y(a) + SKIP / 2 - 1}px"></div>`).join("");
     for (const x of items){
-      const top = (x.s - T0)*PX + 4, ht = ((x.drawEnd || x.e) - x.s)*PX - 8, w = when(dates[k], x);
+      const top = y(x.s) + 4, ht = y(x.drawEnd || x.e) - y(x.s) - 8, w = when(dates[k], x);
       const tm = `<span class="t tnum">${f(x.s)} – ${f(x.e)}</span>`;
-      const sm = ht < 44, hideThis = x.lesson && !x.lesson.asm && hideSubjects();
+      const sm = ht < 44, hideThis = x.lesson && !x.lesson.asm && !x.lesson.custom && hideSubjects();
+      /* periods that overlap share the day's width */
+      const lane = x.lanes ? `left:calc(${x.lane / x.lanes * 100}% + ${x.lane ? 3 : 0}px);right:calc(${(x.lanes - 1 - x.lane) / x.lanes * 100}% + ${x.lane < x.lanes - 1 ? 3 : 0}px);` : "";
       if (!x.lesson || x.lesson.asm || hideThis){   /* free periods, breaks, assembly, and lessons when hidden */
         const fn = x.lesson && !hideThis ? null : freeNote(x);
         const ls = hideThis ? [] : x.lesson ? ["Assembly"] : x.ls;
@@ -1474,9 +1533,9 @@ function gridHtml({ now, dates, days, holiday, msg, when, err }, T0, H, PX){
              `${ls.map(esc).join("<i></i>")}${sm && ls.length ? "<i></i>" : ""}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
-      const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[k], x);
-      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
-           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
+      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
+      h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
+           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id)}</div></div>`;
     }
     h += "</div>";
@@ -1510,7 +1569,7 @@ function renderList({ now, dates, days, holiday, msg, when, err }){
            freeBits(fn, false) + `</div>`;
       continue;
     }
-    if (!x.lesson.asm && hideSubjects()){     /* only who's free: the count, then the names */
+    if (!x.lesson.asm && !x.lesson.custom && hideSubjects()){     /* only who's free: the count, then the names */
       const fn = freeNote(x);
       h += `<div class="brk fc ${w.past ? "past" : ""} ${fn.state}" title="${esc(fn.title)}"><span class="bl">${esc(fn.count)}</span><span class="bt tnum">${tm}</span>` +
            (fn.names ? `<span class="fn">${esc(fn.names)}</span>` : "") + `</div>`;
@@ -1520,9 +1579,9 @@ function renderList({ now, dates, days, holiday, msg, when, err }){
       h += `<div class="brk asm ${w.past ? "past" : ""}"><span class="bl">Assembly</span><span class="bt tnum">${tm}</span></div>`;
       continue;
     }
-    const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[sel], x);
-    h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}"` +
-         ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
+    const e = x.lesson, cu = e.custom, c = cu ? cu.colour : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[sel], x);
+    h += `<div class="card ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}"` +
+         ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}--rw:${room.length}ch;--p:${w.p}%">` +
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
          `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id)}</div>`;
   }
@@ -1545,7 +1604,7 @@ function fitList(){
 let openKey = null;     /* the lesson shown open, kept across re-renders */
 let rosterKey = null;   /* the lesson whose class list is showing */
 const rosters = {};     /* class code -> { loading } | { people } | { error } */
-const itemId = (date, x) => date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate() + "|" + x.s;
+const itemId = (date, x) => date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate() + "|" + x.s + (x.lesson && x.lesson.custom ? "|" + x.lesson.custom.id : "");
 
 /* The room as the setting shows it ("154", "BR1011" or all of it) is always
    part of the full code, so the open card writes the full code around it. */
@@ -1564,6 +1623,7 @@ function emWidth(text){
 }
 function detailHtml(e, id){
   if (e.asm) return "";
+  if (e.custom) return customDetail(e);
   const mail = /@/.test(e.rawTeacher || "") ? e.rawTeacher.trim() : "";
   const rows = list => list.filter(r => r[1]).map(([lbl, val, cls, style]) =>
     `<div class="det-row ${cls || ""}"${style ? ` style="${style}"` : ""}><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
@@ -1700,6 +1760,8 @@ function closeAll(){
   openKey = null; rosterKey = null;
 }
 function onLessonClick(ev){
+  const edit = ev.target.closest("[data-pedit]");
+  if (edit){ ev.stopPropagation(); closeAll(); openPeriod(edit.dataset.pedit); return; }
   const who = ev.target.closest("[data-user]");
   if (who){ ev.stopPropagation(); openUser(who.dataset.user); return; }
   const item = ev.target.closest("[data-k]");
@@ -1882,7 +1944,9 @@ document.getElementById("back").onclick = () => { if (view === "month") goMonth(
 const gear = $("gear");
 const settingsOpen = () => document.body.classList.contains("setopen");
 function openSettings(o){
-  $("ptitle").textContent = view === "month" ? "Calendar settings" : "Timetable settings";
+  const mode = view === "month" ? "month" : freeShow ? "free" : "week";
+  $("panel").dataset.mode = mode;
+  $("ptitle").textContent = { month:"Calendar settings", free:"Who's free settings", week:"Timetable settings" }[mode];
   document.body.classList.toggle("setopen", o);
   gear.setAttribute("aria-expanded", o);
   $("panel").classList.remove("sub");
@@ -1891,7 +1955,7 @@ function openSettings(o){
 gear.onclick = () => openSettings(true);
 $("pclose").onclick = $("scrim").onclick = () => openSettings(false);
 addEventListener("keydown", e => {
-  if (e.key !== "Escape" || !settingsOpen()) return;
+  if (e.key !== "Escape" || !settingsOpen() || evOpen()) return;
   if ($("panel").classList.contains("sub")) $("panel").classList.remove("sub"); else openSettings(false);
 });
 
@@ -1941,8 +2005,7 @@ function paintSettings(){
   $("showwk").setAttribute("aria-checked", get(LS.showwk, true) !== false);
   document.querySelectorAll("#wkstart button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.s === (+get(LS.wkstart, 1) === 0 ? 0 : 1)));
   $("perscount").textContent = personal.length ? `${personal.length} saved on this device` : "None saved";
-  const fs = +get(LS.fs, 1) || 1;
-  document.querySelectorAll("#fsize button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.fs === fs));
+  paintFs(fsIndex());
   /* the format examples use a real room from this timetable */
   const sample = (entries.find(e => e.kind === "class" && e.room.includes(".")) || {}).room || "CR1007.118";
   document.querySelectorAll("#rooms .rtile").forEach(b => {
@@ -1951,26 +2014,62 @@ function paintSettings(){
   });
   paintColours();
   paintFree();
+  paintCustom();
 }
 document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
   theme = b.dataset.theme; set(LS.theme, theme); applyLook(); paintSettings();
 });
 $("zen").onclick = () => { zen = !zen; set(LS.zen, zen); applyLook(); paintSettings(); };
 $("motion").onclick = () => { motion = !motion; set(LS.motion, motion); applyLook(); paintSettings(); };
-document.querySelectorAll("#fsize button").forEach(b => b.onclick = () => {
-  set(LS.fs, +b.dataset.fs); applyLook(); layoutMods(); paintSettings();
-});
+/* text size: seven steps with the default in the middle. The handle follows
+   the pointer and the text changes as it passes each step; let go and it
+   settles on the nearest. Arrow keys step it too. */
+const FS = [0.85, 0.9, 0.95, 1, 1.07, 1.15, 1.25];
+const FS_NAMES = ["Smallest", "Smaller", "Small", "Default", "Large", "Larger", "Largest"];
+const fsIndex = (v = +get(LS.fs, 1) || 1) => FS.reduce((b, s, i) => Math.abs(s - v) < Math.abs(FS[b] - v) ? i : b, 3);
+const fsl = $("fsize"), fstrack = fsl.querySelector(".fstrack");
+fstrack.insertAdjacentHTML("afterbegin", FS.map((_, i) => `<i class="fstick ${i === 3 ? "def" : ""}" style="left:${i / 6 * 100}%"></i>`).join(""));
+/* the handle at a step, or (dragging) anywhere along the bar */
+function paintFs(i, x = i / 6){
+  fsl.style.setProperty("--x", x * 100 + "%");
+  const fill = fsl.querySelector(".fsfill");            /* from the default mark to the handle */
+  fill.style.left = Math.min(x, .5) * 100 + "%"; fill.style.width = Math.abs(x - .5) * 100 + "%";
+  fsl.setAttribute("aria-valuenow", i); fsl.setAttribute("aria-valuetext", FS_NAMES[i]);
+  $("fsname").textContent = FS_NAMES[i];
+}
+let fsTimer = 0;
+function chooseFs(i){
+  if (FS[i] === (+get(LS.fs, 1) || 1)) return;
+  set(LS.fs, FS[i]); lookAttrs();
+  clearTimeout(fsTimer); fsTimer = setTimeout(() => { render(); layoutMods(); }, 60);   /* the grid re-fits once it stops */
+}
+{
+  let dragging = false;
+  const at = e => { const r = fstrack.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+  const move = e => { const x = at(e), i = Math.round(x * 6); chooseFs(i); paintFs(i, x); };
+  fsl.addEventListener("pointerdown", e => { dragging = true; fsl.setPointerCapture(e.pointerId); fsl.classList.add("drag"); move(e); });
+  fsl.addEventListener("pointermove", e => { if (dragging) move(e); });
+  const drop = () => { if (!dragging) return; dragging = false; fsl.classList.remove("drag"); paintFs(fsIndex()); };
+  fsl.addEventListener("pointerup", drop);
+  fsl.addEventListener("pointercancel", drop);
+  fsl.addEventListener("keydown", e => {
+    const i = fsIndex(), to = { ArrowLeft:i - 1, ArrowDown:i - 1, ArrowRight:i + 1, ArrowUp:i + 1, Home:0, End:6 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    const j = Math.min(6, Math.max(0, to)); chooseFs(j); paintFs(j);
+  });
+}
 document.querySelectorAll("#rooms .rtile").forEach(b => b.onclick = () => {
   roomMode = b.dataset.room; set(LS.room, roomMode); paintSettings(); render();
 });
 
-/* ═══ free periods ═══
+/* ═══ Who's free ═══
    Pick a group; each free period on the timetable then says which of them
    are free for all of it. Uses the same ?free= lookup as the free periods
    page, which needs the main timetable's school login. Their periods are
    kept on this device for a day. */
 let freeGroup = (get(LS.group, []) || []).filter(p => p && p.id);
-let freeShow = get(LS.freeshow, true) !== false;
+let freeShow = get(LS.freeshow, false) === true;
 let freeStatus = "";
 const busy = {};                              /* id -> Set of "mona|3" | null (couldn't be read) */
 const busyCache = get(LS.busy, {}) || {};
@@ -2039,7 +2138,6 @@ function freeBits(fn, sm){
 function paintFree(){
   paintFreeTile();
   const stat = $("freestat"), q = $("freeq");
-  $("freeshow").setAttribute("aria-checked", freeShow);
   if (!signedIn){
     stat.innerHTML = 'Needs your school login. <a href="/">Sign in on the main timetable</a> first.';
     q.disabled = true; $("freechips").innerHTML = "";
@@ -2058,7 +2156,14 @@ $("freechips").onclick = e => {
   freeGroup = freeGroup.filter(p => p.id !== b.dataset.id);
   set(LS.group, freeGroup); paintFree(); render();
 };
-$("freeshow").onclick = () => crossfade(() => { freeShow = !freeShow; set(LS.freeshow, freeShow); closeAll(); paintFree(); render(); });
+/* The Who's free tile switches it on and off, the timetable cross-fading to
+   its new colours. From the month it also goes back to the week, to show it. */
+function toggleFree(){
+  const flip = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); closeAll(); paintFree(); render(); };
+  if (view === "month"){ flip(); if (freeShow) toggleCalendar(); return; }
+  crossfade(flip);
+}
+document.querySelector('[data-m="free"]').onclick = e => { e.preventDefault(); toggleFree(); };
 finder($("freeq"), $("freesugg"), p => {
   const id = String(p.email).split("@")[0].toLowerCase();
   $("freeq").value = "";
@@ -2180,6 +2285,305 @@ function eventsOn(day){
 }
 const findEvent = (id, kind) => kind === "subject" ? subjectEvents.find(e => e.id === id) : personal.find(e => e.id === id);
 
+/* ═══ custom periods ═══
+   Events from your Google Calendar turned into periods on the timetable. You
+   pick which: every event with a given name (and its repeating series), and
+   how it looks: its name, a details line, a room, a colour and a style.
+   Google is reached straight from this page (Google's sign-in window, read-only
+   access to your calendars); the events it finds are kept on this device, so
+   the periods still show between syncs. Periods are saved in andre.periods. */
+const GOOGLE_CLIENT_ID = "465845020034-ehhaqbma93iqgg647p63uh096cik173h.apps.googleusercontent.com";   /* the dashboard's Google project */
+const GOOGLE_SCOPES = "https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events.readonly";
+const GWINDOW = { back:14, ahead:150 };          /* days of events fetched either side of this week */
+const P_COLOURS = ["#0A84FF","#30C05A","#FF9F0A","#FF375F","#AF52DE","#5E5CE6","#32ADE6","#FFD60A","#AC8E68","#8E8E93"];
+let periods = (get(LS.periods, []) || []).filter(p => p && p.id);
+const blankG = () => ({ account:"", calendars:[], events:[], at:0 });
+let gcal = { ...blankG(), ...(get(LS.gcal, null) || {}) };
+let gToken = null, gBusy = false, gNote = "", moreSugg = false;
+const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+const minsOf = d => d.getHours() * 60 + d.getMinutes();
+const savePeriods = () => set(LS.periods, periods);
+/* text that reads on a solid colour */
+function inkOn(hex){
+  const n = parseInt(String(hex).slice(1), 16);
+  if (isNaN(n)) return "#fff";
+  const [r, g, b] = [n >> 16 & 255, n >> 8 & 255, n & 255];
+  return (r * 299 + g * 587 + b * 114) / 1000 > 165 ? "#1d1d1f" : "#fff";
+}
+const agoText = ts => { const m = Math.round((Date.now() - ts) / 60000);
+  return !ts ? "never" : m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
+
+/* Google's sign-in, loaded only when first needed */
+let gisReady = null;
+const loadGis = () => gisReady || (gisReady = new Promise((ok, no) => {
+  const s = document.createElement("script");
+  s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+  s.onload = ok;
+  s.onerror = () => { gisReady = null; no(new Error("Google's sign-in couldn't load. Check your connection.")); };
+  document.head.appendChild(s);
+}));
+/* an access token: the one we have, or Google's window asks for one */
+async function googleToken(){
+  if (gToken && gToken.exp > Date.now() + 60e3) return gToken.token;
+  await loadGis();
+  return new Promise((ok, no) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_SCOPES, login_hint: gcal.account || undefined,
+      callback: r => {
+        if (r.error) return no(new Error(r.error === "access_denied" ? "Google said no. Is this account one of the app's test users?" : "Google sign-in failed (" + r.error + ")."));
+        gToken = { token:r.access_token, exp:Date.now() + (+r.expires_in || 3600) * 1000 };
+        ok(gToken.token);
+      },
+      error_callback: e => no(new Error(e && e.type === "popup_failed_to_open" ? "Your browser blocked Google's window. Allow pop-ups for this site and try again."
+                                       : "Google's window closed before it finished."))
+    });
+    client.requestAccessToken({ prompt: gcal.account ? "" : "consent" });
+  });
+}
+async function gfetch(path, params){
+  const token = await googleToken();
+  const res = await fetch("https://www.googleapis.com/calendar/v3/" + path + "?" + new URLSearchParams(params || {}),
+                          { headers:{ Authorization:"Bearer " + token } });
+  const data = await res.json().catch(() => null);
+  if (res.status === 401){ gToken = null; throw new Error("Google needs you to sign in again: press Refresh."); }
+  if (!res.ok) throw new Error((data && data.error && data.error.message) || "Google Calendar didn't answer (" + res.status + ").");
+  return data;
+}
+const plainText = s => String(s || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").trim().slice(0, 400);
+/* the calendars, then every timed event in the chosen ones over the window */
+async function syncGoogle(){
+  if (gBusy) return;
+  gBusy = true; gNote = ""; paintCustom();
+  try {
+    const list = await gfetch("users/me/calendarList", { minAccessRole:"reader", maxResults:"250" });
+    const had = new Map(gcal.calendars.map(c => [c.id, c.on]));
+    const cals = (list.items || []).filter(c => !c.deleted).map(c => ({
+      id:c.id, name:c.summaryOverride || c.summary || c.id, colour:c.backgroundColor || "#8E8E93", primary:!!c.primary,
+      on: had.has(c.id) ? had.get(c.id) : !!(c.primary || c.selected) }));
+    const from = addDays(startOfWeek(new Date()), -GWINDOW.back), to = addDays(from, GWINDOW.back + GWINDOW.ahead);
+    const events = [];
+    for (const c of cals.filter(c => c.on)){
+      let pageToken = "";
+      do {
+        const d = await gfetch("calendars/" + encodeURIComponent(c.id) + "/events", { timeMin:from.toISOString(), timeMax:to.toISOString(),
+          singleEvents:"true", orderBy:"startTime", maxResults:"2500", ...(pageToken ? { pageToken } : {}) });
+        for (const e of d.items || []){
+          if (e.status === "cancelled" || !e.start || !e.start.dateTime || !e.end || !e.end.dateTime) continue;   /* timed events only */
+          events.push({ id:e.id, cal:c.id, title:(e.summary || "").trim(), start:e.start.dateTime, end:e.end.dateTime,
+                        place:(e.location || "").trim(), notes:plainText(e.description), series:e.recurringEventId || "" });
+        }
+        pageToken = d.nextPageToken || "";
+      } while (pageToken);
+    }
+    gcal = { account:(cals.find(c => c.primary) || {}).id || gcal.account || "Google", calendars:cals, events, at:Date.now() };
+    set(LS.gcal, gcal);
+  } catch (err) { gNote = err.message; }
+  gBusy = false;
+  paintCustom(); render();
+}
+function disconnectGoogle(){
+  if (gToken && window.google) try { google.accounts.oauth2.revoke(gToken.token, () => {}); } catch {}
+  gToken = null; gcal = blankG(); set(LS.gcal, gcal); gNote = "";
+  paintCustom(); render();
+}
+
+/* which period an event is: its series was picked, or its name is the period's */
+const periodFor = ev => periods.find(p => (ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)));
+const shownCals = () => new Set(gcal.calendars.filter(c => c.on).map(c => c.id));
+const matchedEvents = p => { const on = shownCals();
+  return gcal.events.filter(ev => on.has(ev.cal) && ((ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)))); };
+/* a date's custom periods, as day items */
+function customOn(date){
+  if (!periods.length || !gcal.events.length) return [];
+  const day = ymd(date), on = shownCals(), out = [];
+  for (const ev of gcal.events){
+    if (!on.has(ev.cal)) continue;
+    const s = new Date(ev.start), e = new Date(ev.end);
+    if (ymd(s) !== day) continue;
+    const p = periodFor(ev);
+    if (!p) continue;
+    const sm = minsOf(s), em = sameDay(s, e) ? minsOf(e) : 24 * 60;
+    if (em > sm) out.push({ s:sm, e:em, lesson:{ subject:p.name || ev.title, teacher:p.details || "", room:p.room || "", code:"", custom:p, ev } });
+  }
+  return out.sort((a, b) => a.s - b.s);
+}
+/* A day with its custom periods merged in: a free period or break they cover
+   is cut around them, and lessons they overlap sit beside them, each in its
+   own lane. */
+function withCustom(items, date){
+  const cs = customOn(date);
+  if (!cs.length) return items;
+  let out = items;
+  for (const c of cs) out = out.flatMap(x => {
+    if (x.lesson || x.e <= c.s || x.s >= c.e) return [x];
+    const parts = [];
+    if (c.s - x.s >= 20) parts.push({ ...x, e:c.s });         /* a sliver too short to matter goes */
+    if (x.e - c.e >= 20) parts.push({ ...x, s:c.e });
+    return parts;
+  });
+  const isCustom = x => x.lesson && x.lesson.custom ? 1 : 0;
+  out = out.concat(cs).sort((a, b) => a.s - b.s || isCustom(a) - isCustom(b));
+  out.forEach(x => { delete x.drawEnd; delete x.lane; delete x.lanes; });
+  /* lanes: within each run of overlapping periods, each takes the first free lane */
+  let run = [], end = -1;
+  const close = () => {
+    if (run.length > 1){
+      const lanes = [];
+      for (const x of run){ let i = lanes.findIndex(e => e <= x.s); if (i < 0) i = lanes.push(0) - 1; lanes[i] = x.e; x.lane = i; }
+      run.forEach(x => x.lanes = lanes.length);
+    }
+    run = [];
+  };
+  for (const x of out){ if (x.s >= end) close(); run.push(x); end = Math.max(end, x.e); }
+  close();
+  /* a few minutes between two periods: the earlier one is drawn down to the next */
+  for (let i = 0; i < out.length - 1; i++){
+    const a = out[i], b = out[i + 1], gap = b.s - a.e;
+    if (!a.lanes && !b.lanes && gap > 0 && gap <= 10) a.drawEnd = b.s;
+  }
+  return out;
+}
+/* "Tue, Thu 4:30 – 5:30 · 12 times": the most usual time, and on which days */
+function usually(evs){
+  if (!evs.length) return "";
+  const byTime = new Map();
+  for (const ev of evs){
+    const s = new Date(ev.start), e = new Date(ev.end), k = f(minsOf(s)) + " – " + f(minsOf(e));
+    const t = byTime.get(k) || byTime.set(k, { n:0, days:new Set() }).get(k);
+    t.n++; t.days.add(s.getDay());
+  }
+  const [time, top] = [...byTime].sort((a, b) => b[1].n - a[1].n)[0];
+  const days = [...top.days].sort((a, b) => (a + 6) % 7 - (b + 6) % 7).map(d => WEEKDAYS[d].slice(0, 3));
+  return `${days.join(", ")} ${time}${byTime.size > 1 ? " (mostly)" : ""} · ${evs.length} time${evs.length === 1 ? "" : "s"}`;
+}
+/* events not yet made into periods: one row per repeating series, or per name */
+function suggestions(){
+  const on = shownCals(), groups = new Map();
+  for (const ev of gcal.events){
+    if (!on.has(ev.cal) || !ev.title || periodFor(ev)) continue;
+    const k = ev.series ? "s:" + ev.series : "t:" + norm(ev.title);
+    const g = groups.get(k) || groups.set(k, { title:ev.title, series:ev.series, place:ev.place, cal:ev.cal, evs:[] }).get(k);
+    g.evs.push(ev);
+  }
+  return [...groups.values()].filter(g => g.evs.some(ev => { const d = new Date(ev.start).getDay(); return d > 0 && d < 6; }))
+    .sort((a, b) => !!b.series - !!a.series || b.evs.length - a.evs.length);
+}
+const shortPlace = s => String(s || "").split(",")[0].trim().slice(0, 16);
+
+function paintCustom(){
+  const host = $("custom");
+  if (!host) return;
+  const linked = !!gcal.account, chevron = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>`;
+  const note = gNote ? `<span class="err">${esc(gNote)}</span>` : "";
+  let h = `<div class="row-group">`;
+  if (!linked) h += `<div class="row"><div class="rl"><strong>Google Calendar</strong><small>${note || "Turn events in your calendar, like tutoring or training, into periods"}</small></div>` +
+                    `<button class="btn primary sm" id="gconnect" ${gBusy ? "disabled" : ""}>${gBusy ? "Connecting…" : "Connect"}</button></div>`;
+  else h += `<div class="row"><div class="rl"><strong>${esc(gcal.account)}</strong><small>${gBusy ? "Syncing…" : note || "Synced " + agoText(gcal.at)}</small></div>` +
+            `<button class="btn sm" id="gsync" ${gBusy ? "disabled" : ""}>Refresh</button></div>` +
+            `<div class="row stack"><div class="rl"><strong>Calendars</strong><small>Where to look for your periods</small></div><div class="gcals">` +
+            gcal.calendars.map(c => `<div class="gcal"><i style="--c:${esc(c.colour)}"></i><span>${esc(c.name)}</span>` +
+              `<button class="tog sm" role="switch" aria-checked="${c.on}" data-cal="${esc(c.id)}" aria-label="${esc(c.name)}"></button></div>`).join("") + `</div></div>` +
+            `<button class="row" id="gunlink"><div class="rl"><strong class="danger">Disconnect Google</strong></div></button>`;
+  h += `</div>`;
+  if (periods.length) h += `<div class="sub-label">Your periods</div><div class="row-group">` + periods.map(p =>
+      `<button class="row prow" data-pid="${esc(p.id)}"><span class="pchip cst-${p.style || "tint"}" style="--c:${esc(p.colour)};--ink:${inkOn(p.colour)}">${esc(p.name)}</span>` +
+      `<span class="val"><span>${esc(linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Connect Google to show these")}</span>${chevron}</span></button>`).join("") + `</div>`;
+  if (linked && !gBusy){
+    const sg = suggestions(), shown = moreSugg ? sg : sg.slice(0, 5);
+    h += sg.length ? `<div class="sub-label">In your calendar</div><div class="row-group">` + shown.map((s, i) =>
+        `<button class="row" data-sg="${i}"><div class="rl"><strong>${esc(s.title)}</strong><small>${esc(usually(s.evs))}</small></div><span class="addp">+ Add</span></button>`).join("") +
+        (sg.length > shown.length ? `<button class="row more" id="sgmore">Show ${sg.length - shown.length} more</button>` : "") + `</div>`
+      : `<p class="sec-note">Nothing else in these calendars on school days in the next few months.</p>`;
+    host.sugg = sg;
+  }
+  host.innerHTML = h;
+  const btn = id => host.querySelector("#" + id);
+  for (const id of ["gconnect", "gsync"]) if (btn(id)){
+    btn(id).onpointerenter = btn(id).onfocus = () => loadGis().catch(() => {});      /* ready before the click, so the window isn't blocked */
+    btn(id).onclick = syncGoogle;
+  }
+  if (btn("gunlink")) btn("gunlink").onclick = disconnectGoogle;
+  if (btn("sgmore")) btn("sgmore").onclick = () => { moreSugg = true; paintCustom(); };
+  host.querySelectorAll("[data-cal]").forEach(b => b.onclick = () => {
+    const c = gcal.calendars.find(x => x.id === b.dataset.cal);
+    c.on = !c.on; set(LS.gcal, gcal);
+    if (c.on && !gcal.events.some(ev => ev.cal === c.id)) syncGoogle(); else { paintCustom(); render(); }
+  });
+  host.querySelectorAll("[data-pid]").forEach(b => b.onclick = () => openPeriod(b.dataset.pid));
+  host.querySelectorAll("[data-sg]").forEach(b => b.onclick = () => { const s = host.sugg[+b.dataset.sg]; openPeriod(null, s); });
+}
+
+/* an opened custom period: where, which calendar, the event's own notes */
+function customDetail(e){
+  const ev = e.ev, cal = (gcal.calendars.find(c => c.id === ev.cal) || {}).name || "";
+  const rows = list => list.filter(r => r[1]).map(([lbl, val, cls]) =>
+    `<div class="det-row ${cls || ""}"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
+  const meta = rows([["Room", e.room && `<span class="rk">${esc(e.room)}</span>`, "room"], ["Calendar", esc(cal)]]);
+  const notes = e.custom.notes || ev.notes;
+  const more = rows([["Event", norm(ev.title) !== norm(e.subject) ? esc(ev.title) : "", "wide"],
+                     ["Where", ev.place && ev.place !== e.room ? esc(ev.place) : "", "wide"],
+                     ["Notes", notes && esc(notes).replace(/\n/g, "<br>"), "wide"]]);
+  return (meta ? `<div class="blk-detail blk-meta"><div class="det">${meta}</div></div>` : "") +
+    `<div class="blk-detail blk-more">${more ? `<div class="det">${more}</div>` : ""}` +
+    `<button class="cls-btn" data-pedit="${esc(e.custom.id)}"><span>Edit this period</span></button></div>`;
+}
+
+/* the editor: a live preview on top, then what it's called, how it looks, and
+   which events it is */
+function openPeriod(id, seed){
+  const old = id ? periods.find(p => p.id === id) : null;
+  const d = old ? { ...old, series:[...(old.series || [])] }
+    : { name:seed ? seed.title : "", match:seed ? seed.title : "", series:seed && seed.series ? [seed.series] : [], details:"", room:shortPlace(seed && seed.place),
+        notes:"", colour:P_COLOURS[hash(seed ? seed.title : String(Date.now())) % P_COLOURS.length], style:"tint" };
+  $("evtitle").textContent = old ? "Edit period" : "New period";
+  $("evbody").innerHTML = `
+    <div class="pprev" id="pprev"></div>
+    <div class="fld"><label for="pname">Name</label><input class="fin" id="pname" maxlength="60" placeholder="e.g. Tutoring"></div>
+    <div class="fld"><label for="pdet">Details</label><input class="fin" id="pdet" maxlength="80" placeholder="The line under the name, e.g. with Ms Lee"></div>
+    <div class="fld"><label for="proom">Room</label><input class="fin" id="proom" maxlength="16" placeholder="In the corner, e.g. Library"></div>
+    <div class="fld"><span class="lbl2">Colour</span><div class="swatches" id="pcol">${P_COLOURS.map(c => `<button class="swatch" data-c="${c}" style="--c:${c}" aria-label="Colour ${c}"></button>`).join("")}` +
+      `<label class="swatch pick" title="Any colour"><input type="color" id="pany" aria-label="Any colour"></label></div></div>
+    <div class="fld"><span class="lbl2">Look</span><div class="seg wide" id="pstyle"><button data-s="tint">Tinted</button><button data-s="solid">Solid</button><button data-s="outline">Outline</button></div></div>
+    <div class="fld"><label for="pmatch">Calendar events called</label><input class="fin" id="pmatch" maxlength="140" placeholder="The event's name in Google Calendar"><p class="evnote" id="pfound"></p></div>
+    <div class="fld"><label for="pnotes">Notes</label><textarea class="fin" id="pnotes" maxlength="600" placeholder="Shown when you open it"></textarea></div>
+    <p class="everr" id="perr" role="alert"></p>
+    <div class="btnrow">${old ? '<button class="btn danger" id="pdel">Delete</button>' : ""}<span class="grow"></span>
+      <button class="btn" id="pcancel">Cancel</button><button class="btn primary" id="psave">Save</button></div>`;
+  const fields = { pname:"name", pdet:"details", proom:"room", pmatch:"match", pnotes:"notes" };
+  for (const [el, k] of Object.entries(fields)) $(el).value = d[k] || "";
+  $("pany").value = /^#[0-9a-f]{6}$/i.test(d.colour) ? d.colour : "#0A84FF";
+  const paint = () => {
+    for (const [el, k] of Object.entries(fields)) d[k] = $(el).value;
+    const evs = matchedEvents({ match:d.match, series:d.series }), name = d.name.trim() || d.match.trim() || "New period";
+    const room = d.room.trim(), time = evs.length ? (s => f(minsOf(new Date(s.start))) + " – " + f(minsOf(new Date(s.end))))(evs[0]) : "4:30 – 5:30";
+    $("pprev").innerHTML = `<div class="blk cst cst-${d.style}" style="--c:${esc(d.colour)};--ink:${inkOn(d.colour)};--rw:${room.length}ch"><div class="blk-card">` +
+      `<span class="r tnum">${esc(room)}</span><span class="s">${esc(name)}</span><span class="m">${esc(d.details)}</span><span class="t tnum">${time}</span></div></div>`;
+    const custom = !P_COLOURS.includes(d.colour);
+    $("evbody").querySelectorAll("#pcol .swatch[data-c]").forEach(s => s.setAttribute("aria-pressed", s.dataset.c === d.colour));
+    const pick = $("evbody").querySelector(".swatch.pick");
+    pick.setAttribute("aria-pressed", custom); pick.style.setProperty("--c", d.colour);
+    $("evbody").querySelectorAll("#pstyle button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === d.style));
+    $("pfound").textContent = !gcal.account ? "Connect Google Calendar in settings to find these."
+      : evs.length ? "Found: " + usually(evs) : "No events with this name in the next few months. It has to match the whole name.";
+  };
+  Object.keys(fields).forEach(el => $(el).oninput = paint);
+  $("evbody").querySelectorAll("#pcol .swatch[data-c]").forEach(s => s.onclick = () => { d.colour = s.dataset.c; paint(); });
+  $("pany").oninput = () => { d.colour = $("pany").value.toUpperCase(); paint(); };
+  $("evbody").querySelectorAll("#pstyle button").forEach(b => b.onclick = () => { d.style = b.dataset.s; paint(); });
+  $("pcancel").onclick = () => showEvPanel(false);
+  if (old) $("pdel").onclick = () => { periods = periods.filter(p => p.id !== id); savePeriods(); showEvPanel(false); closeAll(); render(); paintCustom(); };
+  $("psave").onclick = () => {
+    paint();
+    if (!d.match.trim() && !d.series.length){ $("perr").textContent = "Say which calendar events it is."; return; }
+    const rec = { id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name:(d.name.trim() || d.match.trim()).slice(0, 60),
+                  match:d.match.trim(), series:d.series, details:d.details.trim(), room:d.room.trim(), notes:d.notes.trim(), colour:d.colour, style:d.style };
+    periods = old ? periods.map(p => p.id === id ? rec : p) : periods.concat(rec);
+    savePeriods(); showEvPanel(false); closeAll(); render(); paintCustom();
+  };
+  paint();
+  showEvPanel(true);
+}
+
 /* ═══ month view ═══
    The Calendar tile turns the week into a month, in the same style, and back
    again; the arrows turn the month. */
@@ -2223,11 +2627,14 @@ function renderMonth(){
 }
 
 /* ═══ switching between the week and the month ═══
-   Each day's lessons squeeze together into slices that fill that day's cell
-   while the rest of the month slides in from the sides; going back, the other
-   days slide away and the cell splits back out into the lessons. Clicking
-   the tile again mid-switch finishes this one at once and heads straight for
-   wherever you asked for last, like Return to Today. */
+   Each lesson becomes one day of the month. First every lesson slides straight
+   up or down its own day into a square on one row of the month; then each row
+   shuffles sideways into place, the squares turning the colour of a day as
+   they go; the days still missing slide in from the sides, and any lessons
+   left over slide out. Only ever up/down or sideways, never diagonal, and no
+   piece passes through another. Going back plays the same moves in reverse.
+   Clicking the tile again mid-switch finishes this one at once and heads
+   straight for wherever you asked for last, like Return to Today. */
 let viewTurn = null, wantView = null, morphing = [];
 function toggleCalendar(){
   const target = (wantView ?? view) === "month" ? "week" : "month";
@@ -2244,7 +2651,7 @@ async function switchView(target){
   viewTurn = null; wantView = null; paintTiles();
 }
 const weekDates = () => [0,1,2,3,4].map(k => addDays(addDays(baseWeek(), off * 7), k));
-/* The pieces fly in a layer at the top left of the page, so they scroll with
+/* The pieces move in a layer at the top left of the page, so they scroll with
    it; rects are measured against that layer. */
 function morphLayer(){
   document.querySelectorAll(".morph").forEach(x => x.remove());
@@ -2255,21 +2662,7 @@ function morphLayer(){
   layer.rel = el => { const r = el.getBoundingClientRect(); return { left:r.left - L.left, top:r.top - L.top, width:r.width, height:r.height }; };
   return layer;
 }
-const box = (r, more) => ({ left:r.left + "px", top:r.top + "px", width:r.width + "px", height:r.height + "px", ...more });
-function ghostOf(el, r, layer){
-  const g = el.cloneNode(true);
-  g.removeAttribute("id");
-  g.classList.remove("open", "settled", "landed", "closing");
-  g.style.cssText += `;position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;right:auto;margin:0;transform:none;overflow:hidden;border-radius:10px`;
-  layer.appendChild(g);
-  return g;
-}
-/* the words inside a lesson's copy, faded on their own while its box changes shape */
-const words = g => [...(g.matches(".blk") ? g.firstElementChild.children : g.children)];
-/* fade in to what the element's own opacity is (a day from another month is dimmed) */
-const fadeIn = (el, duration, delay) => el.animate([{ opacity:0 }, { opacity:getComputedStyle(el).opacity }], { duration, delay, fill:"backwards" });
-/* lesson j of a day's n, as a slice of that day's cell: together they fill it */
-const slice = (cr, j, n) => { const h = cr.height / n; return { left:cr.left, top:cr.top + j * h, width:cr.width, height:Math.max(2, h - (n > 1 ? 2 : 0)) }; };
+const box = r => ({ left:r.left + "px", top:r.top + "px", width:r.width + "px", height:r.height + "px" });
 const settle = (anims, layer) => Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => layer.remove());
 /* switching view stops any turning of weeks, days or months where it is */
 function stopTurns(){
@@ -2277,7 +2670,7 @@ function stopTurns(){
   document.querySelectorAll(".tt, .mob, .month").forEach(s => s.getAnimations({ subtree:true }).forEach(a => a.finish()));
 }
 function morphTo(target){
-  closeAll(); openFreeMod(false); showEvPanel(false); openSettings(false);
+  closeAll(); showEvPanel(false); openSettings(false);
   if (scrollY > 40) scrollTo({ top:0, behavior:noMotion() ? "auto" : "smooth" });
   if (noMotion()){
     if (target === "month") monthOff = monthOfWeek();
@@ -2286,8 +2679,23 @@ function morphTo(target){
     return null;
   }
   stopTurns();
-  morphing = target === "month" ? morphToMonth() : morphToWeek();
-  return settle(morphing, document.querySelector(".morph"));
+  const layer = morphLayer(), toMonth = target === "month";
+  let week, month;
+  if (toMonth){
+    week = weekSide(layer);
+    monthOff = monthOfWeek(); shownMonth = monthOff;
+    setViewNow("month");
+    month = monthSide(layer);
+  } else {
+    month = monthSide(layer);
+    weekForMonth();
+    setViewNow("week");
+    week = weekSide(layer);
+  }
+  /* the real pages stay hidden under the moving pieces until they land */
+  document.body.classList.add("morphing");
+  morphing = morphPlay(layer, week, month, !toMonth);
+  return settle(morphing, layer).then(() => document.body.classList.remove("morphing"));
 }
 /* the month holding the week on show (or the phone's chosen day) */
 function monthOfWeek(){
@@ -2303,94 +2711,135 @@ function weekForMonth(){
   if (first.getDay() === 0 || first.getDay() === 6) mon = addDays(mon, 7);
   off = Math.round((mon - baseWeek()) / (7 * 864e5)); sel = null;
 }
-const MORPH = 700;          /* how long a lesson takes to become a slice of its cell, or back */
-const sideOf = i => (i % 7) < 3 ? -1 : 1;     /* the left three columns come and go on the left */
-function morphToMonth(){
-  const layer = morphLayer(), dates = weekDates(), src = {};
-  const take = (els, d) => { if (els.length) src[ymd(d)] = els.map(el => ({ el, r:layer.rel(el) })); };
-  if (phone.matches) take([...$("daylist").children].filter(el => el.matches(".card,.brk")), dates[sel ?? 0]);
-  else document.querySelectorAll("#g > .col").forEach((col, k) => take([...col.children].filter(el => el.matches(".blk,.gap")), dates[k]));
-  monthOff = monthOfWeek();
-  shownMonth = monthOff;
-  setViewNow("month");
-  const anims = [], far = Math.min(document.documentElement.clientWidth * .4, 380);
-  const cells = [...$("mgrid").querySelectorAll(".mcell")];
-  const homeRow = Math.floor(Math.max(0, cells.findIndex(c => c.dataset.day === ymd(dates[0]))) / 7);
-  cells.forEach((cell, i) => {
-    const from = src[cell.dataset.day];
-    if (from){
-      /* the day's lessons squeeze into its cell, then the cell shows through */
-      const cr = layer.rel(cell);
-      from.forEach((it, j) => {
-        const g = ghostOf(it.el, it.r, layer), to = slice(cr, j, from.length);
-        anims.push(g.animate([box(it.r, { opacity:1, borderRadius:"10px", easing:"cubic-bezier(.6,0,.25,1)" }),
-                              box(to, { opacity:1, borderRadius:"4px", offset:.8 }), box(to, { opacity:0, borderRadius:"4px" })],
-                             { duration:MORPH, delay:j * 16, fill:"both" }));
-        words(g).forEach(w => anims.push(w.animate([{ opacity:1 }, { opacity:0 }], { duration:200, fill:"forwards" })));
-      });
-      anims.push(fadeIn(cell, 220, MORPH * .72));
-    } else {
-      /* the rest of the month slides in from the sides, rows nearest the week first */
-      const dist = Math.abs(Math.floor(i / 7) - homeRow);
-      anims.push(cell.animate([{ transform:`translateX(${sideOf(i) * far}px)`, opacity:0 }, { transform:"none", opacity:getComputedStyle(cell).opacity }],
-                              { duration:560, delay:140 + dist * 55 + Math.abs((i % 7) - 3) * 14, easing:"cubic-bezier(.2,.8,.3,1)", fill:"backwards" }));
-    }
-  });
-  document.querySelectorAll("#mgrid > .mdow, #mgrid > .arrow, .mbar").forEach(el => anims.push(fadeIn(el, 300, 200)));
-  return anims;
+/* the week's pieces: each day's lessons top to bottom, and what only fades */
+function weekSide(layer){
+  const piece = el => ({ el, r:layer.rel(el) });
+  const cols = phone.matches
+    ? [[...$("daylist").children].filter(el => el.matches(".card,.brk"))]
+    : [...document.querySelectorAll("#g > .col")].map(col => [...col.children].filter(el => el.matches(".blk,.gap")));
+  const fades = phone.matches ? [$("daynav"), ...$("daylist").querySelectorAll(".lmsg")]
+                              : [...document.querySelectorAll("#g > .dh, #g > .arrow, #g > .msg, #g .hol, #g .tskip")];
+  return { cols:cols.map(c => c.map(piece).sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left)), fades:fades.map(piece) };
 }
-function morphToWeek(){
-  const layer = morphLayer(), cells = [...$("mgrid").querySelectorAll(".mcell")];
-  const rects = Object.fromEntries(cells.map(c => [c.dataset.day, layer.rel(c)]));
-  const looks = cells.map(c => getComputedStyle(c).opacity);
-  weekForMonth();
-  const dates = weekDates(), keys = dates.map(ymd);
-  if (phone.matches && sel === null){ const i = dates.findIndex(d => sameDay(d, new Date())); sel = i === -1 ? 0 : i; }
-  const stays = new Set(phone.matches ? [keys[sel]] : keys);
-  const anims = [], far = Math.min(document.documentElement.clientWidth * .4, 380);
-  const homeRow = Math.floor(Math.max(0, cells.findIndex(c => c.dataset.day === keys[0])) / 7);
-  cells.forEach((c, i) => {
-    const g = ghostOf(c, rects[c.dataset.day], layer);
-    if (stays.has(c.dataset.day))       /* the week's own cells give way to their lessons */
-      anims.push(g.animate([{ opacity:looks[i] }, { opacity:0 }], { duration:200, delay:80, fill:"forwards" }));
-    else {                              /* the rest slides away to the sides */
-      const dist = Math.abs(Math.floor(i / 7) - homeRow);
-      anims.push(g.animate([{ transform:"none", opacity:looks[i] }, { transform:`translateX(${sideOf(i) * far}px)`, opacity:0 }],
-                           { duration:420, delay:dist * 40, easing:"cubic-bezier(.5,0,.75,.4)", fill:"forwards" }));
+function monthSide(layer){
+  return { cells:[...$("mgrid").querySelectorAll(".mcell")].map(el => ({ el, r:layer.rel(el) })),
+           fades:[...document.querySelectorAll("#mgrid > .mdow, #mgrid > .arrow, .mbar")].map(el => ({ el, r:layer.rel(el) })) };
+}
+/* a copy of an element that fills whatever box it's put in */
+function filler(el){
+  const c = el.cloneNode(true);
+  c.removeAttribute("id");
+  c.classList.remove("open", "settled", "landed", "closing");
+  c.style.cssText += ";position:absolute;left:0;top:0;right:0;bottom:0;width:auto;height:auto;min-height:0;margin:0;transform:none";
+  return c;
+}
+const MOVE = { v:440, h:440 };                     /* the up/down moves, then the sideways ones */
+const EASE = "cubic-bezier(.45,0,.25,1)";
+/* Builds every piece's moves in the week → month direction, as keyframes on
+   one shared clock, then plays them forwards or (back to the week) reversed. */
+function morphPlay(layer, week, month, back){
+  const W = document.documentElement.clientWidth, speed = Math.max(MAZE.speed, W / 480);
+  const cells = month.cells, R = Math.max(1, Math.ceil(cells.length / 7)), at = (r, c) => cells[r * 7 + c];
+  const pitch = R > 1 ? at(1, 0).r.top - at(0, 0).r.top : at(0, 0).r.height + 8, rowH = at(0, 0).r.height;
+  const rowTop = r => r < R ? at(r, 0).r.top : at(R - 1, 0).r.top + (r - R + 1) * pitch;
+  const mid = r => r.left + r.width / 2;
+  const T1 = MOVE.v, T2 = MOVE.v + MOVE.h, tracks = [];
+  const track = (el, keys) => tracks.push({ el, keys });
+  const shell = r => {
+    const s = document.createElement("div");
+    s.className = "mp";
+    s.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+    layer.appendChild(s);
+    return s;
+  };
+  const opacityOf = el => +getComputedStyle(el).opacity;
+  /* a lesson becoming a day: up or down into its row, then sideways into its
+     cell, the lesson's colour giving way to the day's on the way */
+  const becomeDay = (it, cell) => {
+    const s = it.r, c = cell.r, g = shell(s), lesson = filler(it.el), day = filler(cell.el);
+    g.append(lesson, day);
+    track(g, [{ t:0, ...box(s), easing:EASE }, { t:T1, ...box({ left:s.left, width:s.width, top:c.top, height:c.height }), easing:EASE }, { t:T2, ...box(c) }]);
+    const words = lesson.matches(".blk") ? [...lesson.firstElementChild.children] : [...lesson.children];
+    words.forEach(w => track(w, [{ t:0, opacity:1 }, { t:180, opacity:0 }]));
+    track(lesson, [{ t:T1 + MOVE.h * .45, opacity:1 }, { t:T2, opacity:0 }]);
+    track(day, [{ t:T1, opacity:0 }, { t:T2, opacity:opacityOf(cell.el) }]);
+  };
+  /* days with no lesson to become them slide in along their row from the
+     nearer side, together, like a train: so none passes through another */
+  const train = (pieces, side, t0, coming) => {
+    if (!pieces.length) return;
+    const dx = side < 0 ? -(Math.max(...pieces.map(p => p.r.left + p.r.width)) + 24) : W - Math.min(...pieces.map(p => p.r.left)) + 24;
+    const D = Math.max(300, Math.min(650, Math.abs(dx) / speed));
+    const away = { transform:`translateX(${dx}px)` }, home = { transform:"translateX(0px)" };
+    for (const p of pieces) track(p.g, coming ? [{ t:t0, ...away, easing:"cubic-bezier(.25,.6,.3,1)" }, { t:t0 + D, ...home }]
+                                              : [{ t:t0, ...home, easing:"cubic-bezier(.55,0,.75,.4)" }, { t:t0 + D, ...away }]);
+  };
+  const dayPiece = cell => { const g = shell(cell.r); g.append(filler(cell.el)); return { g, r:cell.r }; };
+  /* lesson j of every day goes to row j of the month */
+  const rows = [];
+  week.cols.forEach(col => col.forEach((it, j) => (rows[j] = rows[j] || []).push(it)));
+  const home = Math.max(0, cells.findIndex(c => c.el.dataset.day === ymd(weekDates()[phone.matches ? sel ?? 0 : 0])));
+  const homeRow = Math.floor(home / 7);
+  for (let r = 0; r < Math.max(rows.length, R); r++){
+    const mem = rows[r] || [], wait = Math.abs(r - homeRow) * 45;
+    if (r < R){
+      /* the run of cells these lessons fill: the least sideways travel */
+      let a = 0, best = Infinity;
+      for (let s = 0; s + mem.length <= 7; s++){
+        const cost = mem.reduce((sum, it, i) => sum + Math.abs(mid(it.r) - mid(at(r, s + i).r)), 0);
+        if (cost < best){ best = cost; a = s; }
+      }
+      mem.forEach((it, i) => becomeDay(it, at(r, a + i)));
+      const left = [], right = [];
+      for (let c = 0; c < 7; c++){
+        if (c >= a && c < a + mem.length) continue;
+        (mem.length ? c < a : mid(at(r, c).r) < W / 2 ? true : false) ? left.push(dayPiece(at(r, c))) : right.push(dayPiece(at(r, c)));
+      }
+      /* a row with lessons in it waits for them to settle; an empty one only for the up/down moves */
+      const t0 = (mem.length ? T2 : T1) + wait;
+      train(left, -1, t0, true); train(right, 1, t0, true);
+    } else {
+      /* more lessons in a day than rows in the month: the extras become
+         squares on rows below it, then slide out to the nearer side */
+      const out = mem.map(it => {
+        const g = shell(it.r), lesson = filler(it.el), r2 = { left:it.r.left, width:it.r.width, top:rowTop(r), height:rowH };
+        g.append(lesson);
+        track(g, [{ t:0, ...box(it.r), easing:EASE }, { t:T1, ...box(r2) }]);
+        const words = lesson.matches(".blk") ? [...lesson.firstElementChild.children] : [...lesson.children];
+        words.forEach(w => track(w, [{ t:0, opacity:1 }, { t:180, opacity:0 }]));
+        return { g, r:r2 };
+      });
+      train(out.filter(p => mid(p.r) < W / 2), -1, T1, false);
+      train(out.filter(p => mid(p.r) >= W / 2), 1, T1, false);
     }
-  });
-  setViewNow("week");
-  /* each cell splits back out into its day's lessons */
-  const groups = phone.matches
-    ? [{ key:keys[sel], items:[...$("daylist").children].filter(el => el.matches(".card,.brk")) }]
-    : [...document.querySelectorAll("#g > .col")].map((col, k) => ({ key:keys[k], items:[...col.children].filter(el => el.matches(".blk,.gap")) }));
-  for (const { key, items } of groups){
-    const cr = rects[key];
-    if (!cr) continue;
-    items.forEach((el, j) => {
-      const r = layer.rel(el), from = slice(cr, j, items.length), g = ghostOf(el, r, layer), at = 100 + j * 16;
-      anims.push(g.animate([box(from, { opacity:0, borderRadius:"4px" }), box(from, { opacity:1, borderRadius:"4px", offset:.12, easing:"cubic-bezier(.4,0,.2,1)" }),
-                            box(r, { opacity:1, borderRadius:"10px" })],
-                           { duration:MORPH, delay:at, fill:"both" }));
-      words(g).forEach(w => anims.push(w.animate([{ opacity:0 }, { opacity:1 }], { duration:240, delay:at + MORPH * .7, fill:"backwards" })));
-      anims.push(fadeIn(el, 60, at + MORPH));
-    });
   }
-  document.querySelectorAll("#g > .dh, #g > .arrow, #g > .lmsg, #daynav, #daylist > .lmsg").forEach(el => anims.push(fadeIn(el, 320, 260)));
-  return anims;
+  /* headings and arrows only fade: the week's out at the start, the month's in */
+  const fadePiece = ({ el, r }) => { const g = shell(r); g.style.overflow = "visible"; g.style.borderRadius = "0"; g.append(filler(el)); return g; };
+  week.fades.forEach(f => track(fadePiece(f), [{ t:0, opacity:1 }, { t:220, opacity:0 }]));
+  month.fades.forEach(f => track(fadePiece(f), [{ t:T2 - 120, opacity:0 }, { t:T2 + 200, opacity:1 }]));
+
+  const T = Math.max(...tracks.flatMap(x => x.keys.map(k => k.t)));
+  return tracks.map(({ el, keys }) => {
+    keys.sort((a, b) => a.t - b.t);
+    if (keys[0].t > 0) keys.unshift({ ...keys[0], t:0, easing:"linear" });
+    if (keys.at(-1).t < T) keys.push({ ...keys.at(-1), t:T });
+    return el.animate(keys.map(({ t, ...k }) => ({ ...k, offset:t / T })), { duration:T, fill:"both", direction:back ? "reverse" : "normal" });
+  });
 }
 
 /* the switch tiles fill with their colour while they're on */
 function paintTiles(calTarget = view){
   const on = calTarget === "month";
   document.querySelector('[data-m="calendar"]').classList.toggle("on", on);
+  document.querySelector('[data-m="calendar"]').setAttribute("aria-pressed", on);
   $("calstate").textContent = on ? "· On" : "";
   paintFreeTile();
 }
 function paintFreeTile(){
-  const on = freeActive();
-  document.querySelector('[data-m="free"]').classList.toggle("on", on);
-  $("freestate").textContent = on ? "· On" : "";
+  const tile = document.querySelector('[data-m="free"]');
+  tile.classList.toggle("on", freeShow);
+  tile.setAttribute("aria-pressed", freeShow);
+  $("freestate").textContent = !freeShow ? "" : freeActive() ? "· On" : signedIn && !freeGroup.length ? "· Add people in settings" : "· On";
 }
 /* Swap the timetable for a re-drawn one with a cross-fade, e.g. when the free
    periods view is switched on or off, so the colours change smoothly. */
@@ -2428,6 +2877,7 @@ function goMonth(target){
 }
 document.querySelectorAll(".mnav .arrow").forEach(a => a.onclick = () => goMonth((wantMonth ?? monthOff) + +a.dataset.m));
 $("newev").onclick = () => openEvent(null, { day:ymd(new Date()) });
+$("newperiod").onclick = () => openPeriod(null);
 
 /* calendar settings */
 $("showsubj").onclick = () => { set(LS.showsubj, !showSubj()); paintSettings(); render(); };
@@ -2546,31 +2996,6 @@ function openEvent(id, { day, kind } = {}){
   paint();
   showEvPanel(true);
 }
-
-/* ═══ free periods module ═══
-   A tile at the bottom that opens up in place, like a lesson, to show the
-   free-period settings; click its heading or anywhere else to close it. */
-const freeMod = document.querySelector('[data-m="free"]');
-function openFreeMod(open){
-  if (open === freeMod.classList.contains("open")) return;
-  if (open){
-    const r = freeMod.getBoundingClientRect(), g = $("mg").getBoundingClientRect();
-    freeMod.classList.toggle("right", r.left + r.width / 2 > g.left + g.width / 2);
-    paintFree();
-  }
-  const body = freeMod.querySelector(".mod-body");
-  body.classList.add("moving");                        /* clip while it grows or shrinks */
-  clearTimeout(body.movingTimer);
-  body.movingTimer = setTimeout(() => body.classList.remove("moving"), 560);
-  freeMod.classList.toggle("open", open);
-  freeMod.querySelector(".mod-head").setAttribute("aria-expanded", open);
-}
-freeMod.addEventListener("click", e => {
-  if (!freeMod.classList.contains("open")) openFreeMod(true);
-  else if (e.target.closest(".mod-head")) openFreeMod(false);
-});
-document.addEventListener("click", e => { if (freeMod.classList.contains("open") && !freeMod.contains(e.target)) openFreeMod(false); });
-addEventListener("keydown", e => { if (e.key === "Escape" && freeMod.classList.contains("open") && !settingsOpen() && !evOpen()) openFreeMod(false); });
 
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
