@@ -50,7 +50,7 @@ lookAttrs();
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
   --green:#30C05A; --tint:34%;
   --colmax:320px;   /* widest a day gets; the whole page is sized from it */
-  --pagemax:calc(5 * var(--colmax) + 2 * 36px + 6 * 8px + 56px);
+  --pagemax:calc(var(--nd,5) * var(--colmax) + 2 * 36px + (var(--nd,5) + 1) * 8px + 56px);   /* --nd: days shown */
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -165,7 +165,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .strip{position:absolute;left:0;top:0;pointer-events:none;z-index:6}
 #g,#daylist{transition:opacity .2s}
 .busy :is(#g,#daylist){opacity:.55}
-.grid{display:grid;grid-template-columns:36px repeat(5,minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px}
+.grid{display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px}
 .arrow{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);align-self:center}
 .arrow:hover{background:var(--fill);color:var(--fg)}
 .arrow svg{width:16px;height:16px}
@@ -507,7 +507,8 @@ button.row:hover{background:var(--fill2)}
 .dh[data-day]{cursor:pointer}
 
 /* ── the event editor (same panel as Settings) ── */
-.evopen .scrim{opacity:1;pointer-events:auto}
+.evopen .scrim,.copen .scrim{opacity:1;pointer-events:auto}
+.copen #cpanel{transform:none;visibility:visible;transition:transform .25s ease}
 .evopen #evpanel{transform:none;visibility:visible;transition:transform .25s ease}
 .fld{display:flex;flex-direction:column;gap:6px}
 .fld > label,.fld .lbl2{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em}
@@ -538,6 +539,8 @@ select.fin{appearance:auto}
   padding:10px 16px;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--sep)}
 .daynav .arrow{flex:none}
 .daypill{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 12px;border-radius:20px}
+.daynav.seven{gap:2px}
+.daynav.seven .daypill{padding:6px 7px}
 .daypill .dn{font-size:calc(11px * var(--fs,1));font-weight:500;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em}
 .daypill .dd{font-size:calc(16px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
@@ -710,11 +713,6 @@ select.fin{appearance:auto}
     </div>
 
     <div data-for="week">
-      <div class="sec-label">Custom periods <button id="newperiod">New</button></div>
-      <div class="cust" id="custom"></div>
-    </div>
-
-    <div data-for="week">
       <div class="sec-label">Export</div>
       <button class="export" id="exportics"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export timetable as .ics</button>
       <div class="export-sub" id="exportsub"></div>
@@ -729,6 +727,17 @@ select.fin{appearance:auto}
     <button class="pback" id="skinback"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Settings</button>
     <div class="sec-label">Theme</div>
     <div class="skins" id="skins"></div>
+  </div>
+</aside>
+
+<aside class="panel" id="cpanel" role="dialog" aria-modal="true" aria-labelledby="ctitle">
+  <div class="ph">
+    <h2 id="ctitle">Custom periods</h2>
+    <button id="cclose" aria-label="Close"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+  </div>
+  <div class="pbody">
+    <div class="cust" id="custom"></div>
+    <button class="btn primary wide" id="newperiod">+ New period</button>
   </div>
 </aside>
 
@@ -759,6 +768,7 @@ select.fin{appearance:auto}
       <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
       <a class="mod" data-m="free" href="#whos-free" role="button" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></a>
+      <a class="mod" data-m="periods" href="#custom-periods" role="button" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5"/></svg></div><h3>Custom periods <span class="state" id="perstate"></span></h3></a>
     </div>
   </section>
 </main>
@@ -787,7 +797,7 @@ let colours = get(LS.colours, {});          /* subject -> #hex override */
 let skin = get(LS.skin, "default");         /* one of SKINS */
 
 /* ═══ dates ═══ */
-const DN = ["Mon","Tue","Wed","Thu","Fri"];
+const DN = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const CYCLE_DAYS = ["mona","tuea","weda","thua","fria","monb","tueb","wedb","thub","frib"];
 const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
@@ -1172,7 +1182,23 @@ function baseWeek(){
   const now = new Date(), dow = now.getDay();
   return addDays(startOfWeek(now), dow === 0 || dow === 6 ? 7 : 0);
 }
-const DAYF = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const DAYF = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const wd = d => (d.getDay() + 6) % 7;            /* 0 = Monday … 6 = Sunday */
+/* the days a week shows: Monday to Friday, plus Saturday and/or Sunday when
+   one of your custom periods falls on one */
+function daysShown(){
+  const ks = [0, 1, 2, 3, 4];
+  if (periods.length && gcal.events.length){
+    const on = shownCals(), weekend = new Set();
+    for (const ev of gcal.events){
+      const d = new Date(ev.start).getDay();
+      if ((d === 0 || d === 6) && !weekend.has(d) && on.has(ev.cal) && periodFor(ev)) weekend.add(d);
+    }
+    if (weekend.has(6)) ks.push(5);
+    if (weekend.has(0)) ks.push(6);
+  }
+  return ks;
+}
 /* NSW public school terms, Eastern division (the school is in Sydney): the
    first and last day for students of each term, from the table in
    andre/term-dates.md. The school API only gives the A/B cycle, so
@@ -1202,15 +1228,16 @@ function render(){
   if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   const mon = addDays(baseWeek(), off*7);
-  const dates = [0,1,2,3,4].map(k => addDays(mon, k));
+  const dates = daysShown().map(k => addDays(mon, k));
+  document.documentElement.style.setProperty("--nd", dates.length);
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
   /* holidays (and pupil-free days before a term starts) have no lessons */
   const days = cycs.map((c, k) => withCustom(schoolDay(dates[k]) ? itemsFor(c) : [], dates[k]));
-  const holiday = dates.map(d => !schoolDay(d));
+  const holiday = dates.map(d => wd(d) < 5 && !schoolDay(d));      /* weekends are never "No school" */
   const msg = !email ? "Enter a school email above to see a timetable."
             : loading && !entries.length ? "Loading…"
             : loadError ? loadError
-            : holiday.every(Boolean) && !days.flat().length ? "School holidays"
+            : dates.every((d, k) => holiday[k] || wd(d) > 4) && !days.flat().length ? "School holidays"
             : !days.flat().length ? "No classes this week." : "";
   /* past / happening now, for one item on one date */
   const when = (d, x) => {
@@ -1226,7 +1253,7 @@ function render(){
   });
 
   const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
-  const tw = termWeek(dates[0]), d0 = dates[0], d4 = dates[4];
+  const tw = termWeek(dates[0]), d0 = dates[0], d4 = dates.at(-1);
   const dates_ = `<span class="range"> · ${tok("sd", d0.getDate())}${tok("sm", d0.getMonth() !== d4.getMonth() ? " " + MON[d0.getMonth()] : "")} – ${tok("ed", d4.getDate())} ${tok("em", MON[d4.getMonth()])}</span>`;
   const label = tw ? `<span class="tl">Term ${tok("tn", tw.term)} · </span><b>Week ${tok("wn", tw.week + letter)}</b>${dates_}`
               : tw === false ? `<b>${tok("wn", "Holidays")}</b>${dates_}`
@@ -1354,7 +1381,8 @@ function turnWeek(target, q = 1){
     [...col.children].map(el => ({ el, sig:el.dataset.sig, r:el.getBoundingClientRect() })));
   off = target; render();
   const cols = [...g.querySelectorAll(":scope > .col")];
-  if (cols.length !== 5 || before.length !== 5) return null;
+  if (!cols.length || cols.length !== before.length) return null;
+  const n = cols.length, m = (n - 1) / 2;          /* the middle day */
 
   const ghost = document.createElement("div");
   ghost.className = "ghost";
@@ -1388,18 +1416,18 @@ function turnWeek(target, q = 1){
   const W = document.documentElement.clientWidth;
   const speed = Math.max(MAZE.speed, W / 480);           /* wider screens, longer trips: faster, so it takes as long */
   const keptIn = k => kept.filter(b => b.k === k).sort((a, b) => a.r.top - b.r.top);
-  const exitSide = k => k < 2 ? -1 : k > 2 ? 1 : -dir;     /* -1 left, 1 right */
-  const entrySide = k => k < 2 ? -1 : k > 2 ? 1 : dir;
-  const dayAt = (side, rank) => side < 0 ? rank : 4 - rank;  /* rank: days between it and its edge */
+  const exitSide = k => k < m ? -1 : k > m ? 1 : -dir;     /* -1 left, 1 right */
+  const entrySide = k => k < m ? -1 : k > m ? 1 : dir;
+  const dayAt = (side, rank) => side < 0 ? rank : n - 1 - rank;  /* rank: days between it and its edge */
 
   /* One wave: a day's lessons crossing to or from one edge together. Lanes
      open through the days in between, they slide, the lanes close. Returns
      when they've finished sliding, so the next wave opens as this closes. */
-  const laneUntil = [0, 0, 0, 0, 0];       /* when each day has closed up after the lanes through it */
+  const laneUntil = Array(n).fill(0);       /* when each day has closed up after the lanes through it */
   const wave = (bricks, side, t0, entering) => {
     if (!bricks.length) return t0;
     const crossed = new Map();
-    for (const b of bricks) for (let j = 0; j < 5; j++)
+    for (const b of bricks) for (let j = 0; j < n; j++)
       if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
     const opening = crossed.size ? M.open + M.margin : 0;
     /* arriving lessons wait for their own day to close up first, so they never
@@ -1436,7 +1464,7 @@ function turnWeek(target, q = 1){
   const doneOut = {};
   for (const side of [-1, 1]){
     let t = 0;
-    for (let rank = 0; rank <= 2; rank++){
+    for (let rank = 0; rank <= Math.floor(m); rank++){
       const k = dayAt(side, rank);
       if (exitSide(k) !== side) continue;
       t = wave(leaving.filter(b => b.k === k), side, t, false);
@@ -1447,7 +1475,7 @@ function turnWeek(target, q = 1){
   const startIn = Math.max(doneOut[-1], doneOut[1]);
   for (const side of [-1, 1]){
     let t = startIn;
-    for (let rank = 2; rank >= 0; rank--){
+    for (let rank = Math.floor(m); rank >= 0; rank--){
       const k = dayAt(side, rank);
       if (entrySide(k) !== side) continue;
       t = wave(arriving.filter(b => b.k === k), side, t, true);
@@ -1530,7 +1558,7 @@ function gridHtml({ now, dates, days, holiday, msg, when, err }, y, H, skips){
   h += "<div></div>";
   if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   days.forEach((items, k) => {
-    h += `<div class="col ${k === 4 ? "end" : ""}" style="height:${H}px">` + (holiday[k] ? `<div class="hol">No school</div>` : "") +
+    h += `<div class="col ${k === dates.length - 1 ? "end" : ""}" style="height:${H}px">` + (holiday[k] ? `<div class="hol">No school</div>` : "") +
          skips.map(([a]) => `<div class="tskip" style="top:${y(a) + SKIP / 2 - 1}px"></div>`).join("");
     for (const x of items){
       const top = y(x.s) + 4, ht = y(x.drawEnd || x.e) - y(x.s) - 8, w = when(dates[k], x);
@@ -1558,9 +1586,11 @@ function gridHtml({ now, dates, days, holiday, msg, when, err }, y, H, skips){
 /* phone / portrait: a day strip over a list of the chosen day */
 function renderList({ now, dates, days, holiday, msg, when, err }){
   if (sel === null){ const i = dates.findIndex(d => sameDay(d, now)); sel = i === -1 ? 0 : i; }
+  sel = Math.min(sel, dates.length - 1);
   const nav = document.getElementById("daynav");
+  nav.classList.toggle("seven", dates.length > 5);
   nav.innerHTML = arrow(-1, "day") + dates.map((d, k) =>
-    `<button class="daypill ${sameDay(d, now) ? "today" : ""}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${DAYF[k]} ${d.getDate()} ${MON[d.getMonth()]}"><span class="dn">${DN[k]}</span><span class="dd tnum">${tok("d", d.getDate())}</span></button>`
+    `<button class="daypill ${sameDay(d, now) ? "today" : ""}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${DAYF[wd(d)]} ${d.getDate()} ${MON[d.getMonth()]}"><span class="dn">${DN[wd(d)]}</span><span class="dd tnum">${tok("d", d.getDate())}</span></button>`
   ).join("") + arrow(1, "day");
   nav.querySelectorAll(".daypill").forEach(b => b.onclick = () => {
     if (dayRun) return;                            /* let the arrows' queue finish */
@@ -1571,8 +1601,8 @@ function renderList({ now, dates, days, holiday, msg, when, err }){
 
   let h = "";
   if (msg) h = `<div class="lmsg ${err ? "err" : ""}">${esc(msg)}</div>`;
-  else if (holiday[sel]) h = `<div class="lmsg">No school on ${DAYF[sel]}.</div>`;
-  else if (!days[sel].length) h = `<div class="lmsg">No classes on ${DAYF[sel]}.</div>`;
+  else if (holiday[sel]) h = `<div class="lmsg">No school on ${DAYF[wd(dates[sel])]}.</div>`;
+  else if (!days[sel].length) h = `<div class="lmsg">${wd(dates[sel]) > 4 ? "Nothing" : "No classes"} on ${DAYF[wd(dates[sel])]}.</div>`;
   else for (const x of days[sel]){
     const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
     if (!x.lesson){
@@ -1808,7 +1838,8 @@ async function runDays(){
 }
 function oneDay(d, quick){
   let k = (sel ?? 0) + d, turned = 0;
-  if (k > 4){ k = 0; off++; turned = 1; } else if (k < 0){ k = 4; off--; turned = -1; }
+  const last = daysShown().length - 1;
+  if (k > last){ k = 0; off++; turned = 1; } else if (k < 0){ k = last; off--; turned = -1; }
   const nav = document.getElementById("daynav");
   nav.querySelectorAll(".strip").forEach(x => x.remove());
   const was = [...nav.querySelectorAll(".daypill")].map(p => ({ html:p.outerHTML, r:p.getBoundingClientRect() }));
@@ -2026,7 +2057,6 @@ function paintSettings(){
   });
   paintColours();
   paintFree();
-  paintCustom();
 }
 document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
   theme = b.dataset.theme; set(LS.theme, theme); applyLook(); paintSettings();
@@ -2481,7 +2511,7 @@ function suggestions(){
     const g = groups.get(k) || groups.set(k, { title:ev.title, series:ev.series, place:ev.place, cal:ev.cal, evs:[] }).get(k);
     g.evs.push(ev);
   }
-  return [...groups.values()].filter(g => g.evs.some(ev => { const d = new Date(ev.start).getDay(); return d > 0 && d < 6; }))
+  return [...groups.values()]
     .sort((a, b) => !!b.series - !!a.series || b.evs.length - a.evs.length);
 }
 const shortPlace = s => String(s || "").split(",")[0].trim().slice(0, 16);
@@ -2513,6 +2543,7 @@ function paintCustom(){
     host.sugg = sg;
   }
   host.innerHTML = h;
+  paintPeriodsTile();
   const btn = id => host.querySelector("#" + id);
   for (const id of ["gconnect", "gsync"]) if (btn(id)){
     btn(id).onpointerenter = btn(id).onfocus = () => loadGis().catch(() => {});      /* ready before the click, so the window isn't blocked */
@@ -2667,7 +2698,7 @@ async function switchView(target){
   }
   viewTurn = null; wantView = null; paintTiles();
 }
-const weekDates = () => [0,1,2,3,4].map(k => addDays(addDays(baseWeek(), off * 7), k));
+const weekDates = () => daysShown().map(k => addDays(addDays(baseWeek(), off * 7), k));
 /* The pieces move in a layer at the top left of the page, so they scroll with
    it; rects are measured against that layer. */
 function morphLayer(){
@@ -2687,7 +2718,7 @@ function stopTurns(){
   document.querySelectorAll(".tt, .mob, .month").forEach(s => s.getAnimations({ subtree:true }).forEach(a => a.finish()));
 }
 function morphTo(target){
-  closeAll(); showEvPanel(false); openSettings(false);
+  closeAll(); showEvPanel(false); openSettings(false); openCustom(false);
   if (scrollY > 40) scrollTo({ top:0, behavior:noMotion() ? "auto" : "smooth" });
   if (noMotion()){
     if (target === "month") monthOff = monthOfWeek();
@@ -2882,7 +2913,11 @@ function morphPlay(layer, week, month, back){
 }
 
 /* the switch tiles fill with their colour while they're on */
+function paintPeriodsTile(){
+  $("perstate").textContent = periods.length ? "· " + periods.length : "";
+}
 function paintTiles(calTarget = view){
+  paintPeriodsTile();
   const on = calTarget === "month";
   document.querySelector('[data-m="calendar"]').classList.toggle("on", on);
   document.querySelector('[data-m="calendar"]').setAttribute("aria-pressed", on);
@@ -3054,7 +3089,19 @@ function openEvent(id, { day, kind } = {}){
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["revision","games","calendar","resources","free"];
+const MOD_WIDEN = ["revision","games","calendar","resources","free","periods"];
+
+/* ═══ custom periods module ═══ — its tile opens their panel */
+const cOpen = () => document.body.classList.contains("copen");
+function openCustom(o){
+  document.body.classList.toggle("copen", o);
+  if (o){ paintCustom(); $("cclose").focus(); }
+}
+document.querySelector('[data-m="periods"]').onclick = e => { e.preventDefault(); openCustom(true); };
+$("cclose").onclick = () => openCustom(false);
+$("scrim").addEventListener("click", () => openCustom(false));
+/* capture, so an editor open on top closes first */
+addEventListener("keydown", e => { if (e.key === "Escape" && cOpen() && !evOpen()) openCustom(false); }, true);
 function layoutMods(){
   const mg = $("mg"), tiles = [...mg.children];
   const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
