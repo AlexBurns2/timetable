@@ -1308,28 +1308,40 @@ function laneShifts(rects, bands){
   });
 }
 
-/* Turning weeks. The arrows queue one step per press and every step plays
-   (faster while more are waiting), so spamming never skips or overlaps.
-   Return to Today goes straight to this week instead. */
-let turning = null, weekSteps = 0, wantWeek = null;
-/* more presses while one is playing: speed it up rather than skip it */
-const hurry = (...els) => els.forEach(el => el && el.getAnimations({ subtree:true }).forEach(a => { if (a.playbackRate < 1.8) a.updatePlaybackRate(1.8); }));
-function stepWeek(d){ wantWeek = null; weekSteps += d; if (!turning) runWeeks(); else if (weekSteps) hurry(document.querySelector(".tt")); }
+/* Turning weeks. The arrows queue one step per press and every step plays,
+   so spamming never skips or overlaps, and it keeps up with you: a press
+   during a turn speeds that turn up to finish within a moment, a week with
+   more presses waiting behind it plays quickly, and the last one settles a
+   little slower. Return to Today goes straight to this week instead. */
+let turning = null, weekSteps = 0, wantWeek = null, rushed = false;
+/* Everything still moving in these, sped up to be done within about `ms`.
+   One rate for all of them, so they stay in step with each other. */
+function hurry(ms, ...els){
+  const anims = els.flatMap(el => el ? el.getAnimations({ subtree:true }) : []);
+  if (!anims.length) return;
+  const left = Math.max(...anims.map(a => a.effect.getComputedTiming().endTime - (a.currentTime || 0)));
+  const rate = Math.min(8, Math.max(1.8, anims[0].playbackRate, left / ms));
+  anims.forEach(a => { if (a.playbackRate !== rate) a.updatePlaybackRate(rate); });
+}
+function stepWeek(d){
+  wantWeek = null; weekSteps += d;
+  if (!turning) runWeeks(); else if (weekSteps){ rushed = true; hurry(300, document.querySelector(".tt")); }
+}
 function goWeek(target){ weekSteps = 0; wantWeek = target; if (!turning) runWeeks(); }
 async function runWeeks(){
   for (;;){
-    let target, quick = false;
+    let target, q = 1;
     if (wantWeek !== null){ target = wantWeek; wantWeek = null; }
-    else if (weekSteps){ const d = Math.sign(weekSteps); weekSteps -= d; target = off + d; quick = weekSteps !== 0; }
+    else if (weekSteps){ const d = Math.sign(weekSteps); weekSteps -= d; target = off + d;
+      q = Math.abs(weekSteps) >= 2 ? .25 : weekSteps ? .35 : rushed ? .65 : 1; if (weekSteps) rushed = true; }
     else break;
-    const done = turnWeek(target, quick);
+    const done = turnWeek(target, q);
     if (done){ turning = done; await done; }
   }
-  turning = null;
+  turning = null; rushed = false;
 }
-/* one turn; resolves when every piece has stopped moving */
-function turnWeek(target, quick){
-  const q = quick ? .55 : 1;                      /* a queued step runs faster */
+/* one turn, at q times its usual length; resolves when every piece has stopped moving */
+function turnWeek(target, q = 1){
   const M = { open:MAZE.open * q, close:MAZE.close * q, margin:MAZE.margin * q };
   const dir = Math.sign(target - off);
   if (!dir) return null;
@@ -1785,7 +1797,7 @@ addEventListener("keydown", e => { if (e.key === "Escape" && openKey && !documen
    that week, still Monday to Friday. Presses queue and every step plays,
    faster while more are waiting. */
 let dayRun = null, daySteps = 0;
-function stepDay(d){ daySteps += d; if (!dayRun) runDays(); else if (daySteps) hurry($("daylist"), $("daynav")); }
+function stepDay(d){ daySteps += d; if (!dayRun) runDays(); else if (daySteps) hurry(150, $("daylist"), $("daynav")); }
 async function runDays(){
   while (daySteps){
     const d = Math.sign(daySteps); daySteps -= d;
@@ -2628,11 +2640,12 @@ function renderMonth(){
 
 /* ═══ switching between the week and the month ═══
    Each lesson becomes one day of the month. First every lesson slides straight
-   up or down its own day into a square on one row of the month; then each row
-   shuffles sideways into place, the squares turning the colour of a day as
-   they go; the days still missing slide in from the sides, and any lessons
-   left over slide out. Only ever up/down or sideways, never diagonal, and no
-   piece passes through another. Going back plays the same moves in reverse.
+   up or down its own day into a square on one row of the month (a day with
+   more lessons than the month has rows first splits into lanes side by side);
+   then each row shuffles sideways into place, the squares turning the colour
+   of a day as they go. Only the days no lesson could become are new: they
+   slide in from the sides. Only ever up/down or sideways, never diagonal, and
+   no piece passes through another. Going back plays the same moves in reverse.
    Clicking the tile again mid-switch finishes this one at once and heads
    straight for wherever you asked for last, like Return to Today. */
 let viewTurn = null, wantView = null, morphing = [];
@@ -2715,11 +2728,11 @@ function weekForMonth(){
 function weekSide(layer){
   const piece = el => ({ el, r:layer.rel(el) });
   const cols = phone.matches
-    ? [[...$("daylist").children].filter(el => el.matches(".card,.brk"))]
-    : [...document.querySelectorAll("#g > .col")].map(col => [...col.children].filter(el => el.matches(".blk,.gap")));
+    ? [{ span:layer.rel($("daylist").firstElementChild || $("daylist")), items:[...$("daylist").children].filter(el => el.matches(".card,.brk")) }]
+    : [...document.querySelectorAll("#g > .col")].map(col => ({ span:layer.rel(col), items:[...col.children].filter(el => el.matches(".blk,.gap")) }));
   const fades = phone.matches ? [$("daynav"), ...$("daylist").querySelectorAll(".lmsg")]
                               : [...document.querySelectorAll("#g > .dh, #g > .arrow, #g > .msg, #g .hol, #g .tskip")];
-  return { cols:cols.map(c => c.map(piece).sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left)), fades:fades.map(piece) };
+  return { cols:cols.map(c => ({ span:c.span, items:c.items.map(piece).sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left) })), fades:fades.map(piece) };
 }
 function monthSide(layer){
   return { cells:[...$("mgrid").querySelectorAll(".mcell")].map(el => ({ el, r:layer.rel(el) })),
@@ -2734,6 +2747,20 @@ function filler(el){
   return c;
 }
 const MOVE = { v:440, h:440 };                     /* the up/down moves, then the sideways ones */
+/* A day's lessons, top to bottom, in as few lanes as let each lane fit the
+   month's rows: the first lane takes the earliest lessons, the next the rest.
+   Lessons drawn side by side (they overlap) never share a lane. */
+function lanesOf(items, R){
+  for (let L = Math.max(1, Math.ceil(items.length / R)); ; L++){
+    const cap = Math.ceil(items.length / L), lanes = Array.from({ length:L }, () => []);
+    const fits = items.every(it => {
+      const lane = lanes.find(l => l.length < cap && (!l.length || l.at(-1).r.top + l.at(-1).r.height <= it.r.top + 1));
+      if (lane) lane.push(it);
+      return !!lane;
+    });
+    if (fits) return lanes.filter(l => l.length);
+  }
+}
 const EASE = "cubic-bezier(.45,0,.25,1)";
 /* Builds every piece's moves in the week → month direction, as keyframes on
    one shared clock, then plays them forwards or (back to the week) reversed. */
@@ -2743,8 +2770,7 @@ function morphPlay(layer, week, month, back){
   const pitch = R > 1 ? at(1, 0).r.top - at(0, 0).r.top : at(0, 0).r.height + 8, rowH = at(0, 0).r.height;
   const rowTop = r => r < R ? at(r, 0).r.top : at(R - 1, 0).r.top + (r - R + 1) * pitch;
   const mid = r => r.left + r.width / 2;
-  const T1 = MOVE.v, T2 = MOVE.v + MOVE.h, tracks = [];
-  const track = (el, keys) => tracks.push({ el, keys });
+  const tracks = [], track = (el, keys) => tracks.push({ el, keys });
   const shell = r => {
     const s = document.createElement("div");
     s.className = "mp";
@@ -2753,64 +2779,88 @@ function morphPlay(layer, week, month, back){
     return s;
   };
   const opacityOf = el => +getComputedStyle(el).opacity;
-  /* a lesson becoming a day: up or down into its row, then sideways into its
-     cell, the lesson's colour giving way to the day's on the way */
-  const becomeDay = (it, cell) => {
-    const s = it.r, c = cell.r, g = shell(s), lesson = filler(it.el), day = filler(cell.el);
+  const fadeWords = lesson => (lesson.matches(".blk") ? [...lesson.firstElementChild.children] : [...lesson.children])
+    .forEach(w => track(w, [{ t:0, opacity:1 }, { t:180, opacity:0 }]));
+
+  /* Each lesson's lane and row. A day with more lessons than the month has
+     rows splits into lanes side by side, its later lessons stepping aside, so
+     every lesson can have a row to itself; rows then fill evenly (seven at
+     most), so every lesson becomes a day of the month. */
+  const GAP = 6, load = Array(R).fill(0), plans = [];
+  let split = false;
+  for (const col of week.cols){
+    const lanes = lanesOf(col.items, R);
+    if (lanes.length > 1) split = true;
+    const lw = (col.span.width - GAP * (lanes.length - 1)) / lanes.length;
+    lanes.forEach((lane, li) => {
+      const rows = [...Array(R).keys()].filter(r => load[r] < 7).sort((a, b) => load[a] - load[b] || a - b).slice(0, lane.length).sort((a, b) => a - b);
+      rows.forEach(r => load[r]++);
+      lane.forEach((it, i) => plans.push({ it, row:i < rows.length ? rows[i] : R + i - rows.length,
+        x:lanes.length > 1 ? { left:col.span.left + li * (lw + GAP), width:lw } : { left:it.r.left, width:it.r.width } }));
+    });
+  }
+  /* first the split days step into their lanes (only sideways), then
+     everything moves up or down, then along the rows */
+  const T0 = split ? 300 : 0, T1 = T0 + MOVE.v, T2 = T1 + MOVE.h;
+  const lanePath = (p, to) => {
+    const s = p.it.r, keys = [{ t:0, ...box(s), easing:EASE }];
+    if (T0) keys.push({ t:T0, ...box({ ...p.x, top:s.top, height:s.height }), easing:EASE });
+    keys.push({ t:T1, ...box({ ...p.x, top:to.top, height:to.height }), easing:EASE });
+    return keys;
+  };
+  /* a lesson becoming a day, the lesson's colour giving way to the day's on the way */
+  const becomeDay = (p, cell) => {
+    const c = cell.r, g = shell(p.it.r), lesson = filler(p.it.el), day = filler(cell.el);
     g.append(lesson, day);
-    track(g, [{ t:0, ...box(s), easing:EASE }, { t:T1, ...box({ left:s.left, width:s.width, top:c.top, height:c.height }), easing:EASE }, { t:T2, ...box(c) }]);
-    const words = lesson.matches(".blk") ? [...lesson.firstElementChild.children] : [...lesson.children];
-    words.forEach(w => track(w, [{ t:0, opacity:1 }, { t:180, opacity:0 }]));
+    track(g, [...lanePath(p, c), { t:T2, ...box(c) }]);
+    fadeWords(lesson);
     track(lesson, [{ t:T1 + MOVE.h * .45, opacity:1 }, { t:T2, opacity:0 }]);
     track(day, [{ t:T1, opacity:0 }, { t:T2, opacity:opacityOf(cell.el) }]);
   };
-  /* days with no lesson to become them slide in along their row from the
-     nearer side, together, like a train: so none passes through another */
+  /* pieces sliding in (or out) along a row from the nearer side, together,
+     like a train, so none passes through another */
   const train = (pieces, side, t0, coming) => {
     if (!pieces.length) return;
     const dx = side < 0 ? -(Math.max(...pieces.map(p => p.r.left + p.r.width)) + 24) : W - Math.min(...pieces.map(p => p.r.left)) + 24;
     const D = Math.max(300, Math.min(650, Math.abs(dx) / speed));
     const away = { transform:`translateX(${dx}px)` }, home = { transform:"translateX(0px)" };
-    for (const p of pieces) track(p.g, coming ? [{ t:t0, ...away, easing:"cubic-bezier(.25,.6,.3,1)" }, { t:t0 + D, ...home }]
+    for (const q of pieces) track(q.g, coming ? [{ t:t0, ...away, easing:"cubic-bezier(.25,.6,.3,1)" }, { t:t0 + D, ...home }]
                                               : [{ t:t0, ...home, easing:"cubic-bezier(.55,0,.75,.4)" }, { t:t0 + D, ...away }]);
   };
   const dayPiece = cell => { const g = shell(cell.r); g.append(filler(cell.el)); return { g, r:cell.r }; };
-  /* lesson j of every day goes to row j of the month */
-  const rows = [];
-  week.cols.forEach(col => col.forEach((it, j) => (rows[j] = rows[j] || []).push(it)));
   const home = Math.max(0, cells.findIndex(c => c.el.dataset.day === ymd(weekDates()[phone.matches ? sel ?? 0 : 0])));
   const homeRow = Math.floor(home / 7);
-  for (let r = 0; r < Math.max(rows.length, R); r++){
-    const mem = rows[r] || [], wait = Math.abs(r - homeRow) * 45;
+  const rowsUsed = Math.max(R, ...plans.map(p => p.row + 1));
+  for (let r = 0; r < rowsUsed; r++){
+    const mem = plans.filter(p => p.row === r).sort((a, b) => a.x.left - b.x.left), wait = Math.abs(r - homeRow) * 45;
     if (r < R){
-      /* the run of cells these lessons fill: the least sideways travel */
+      /* the run of cells this row's lessons become: the least sideways travel */
       let a = 0, best = Infinity;
       for (let s = 0; s + mem.length <= 7; s++){
-        const cost = mem.reduce((sum, it, i) => sum + Math.abs(mid(it.r) - mid(at(r, s + i).r)), 0);
+        const cost = mem.reduce((sum, p, i) => sum + Math.abs(p.x.left + p.x.width / 2 - mid(at(r, s + i).r)), 0);
         if (cost < best){ best = cost; a = s; }
       }
-      mem.forEach((it, i) => becomeDay(it, at(r, a + i)));
+      mem.forEach((p, i) => becomeDay(p, at(r, a + i)));
+      /* the days no lesson could become are the only new ones */
       const left = [], right = [];
       for (let c = 0; c < 7; c++){
         if (c >= a && c < a + mem.length) continue;
-        (mem.length ? c < a : mid(at(r, c).r) < W / 2 ? true : false) ? left.push(dayPiece(at(r, c))) : right.push(dayPiece(at(r, c)));
+        (mem.length ? c < a : mid(at(r, c).r) < W / 2) ? left.push(dayPiece(at(r, c))) : right.push(dayPiece(at(r, c)));
       }
-      /* a row with lessons in it waits for them to settle; an empty one only for the up/down moves */
-      const t0 = (mem.length ? T2 : T1) + wait;
+      const t0 = (mem.length ? T2 : T1) + wait;     /* once the lessons in that row have settled */
       train(left, -1, t0, true); train(right, 1, t0, true);
     } else {
-      /* more lessons in a day than rows in the month: the extras become
-         squares on rows below it, then slide out to the nearer side */
-      const out = mem.map(it => {
-        const g = shell(it.r), lesson = filler(it.el), r2 = { left:it.r.left, width:it.r.width, top:rowTop(r), height:rowH };
+      /* only with more lessons than days in the month: the extras wait on rows
+         below it, then slide out to the nearer side */
+      const out = mem.map(p => {
+        const to = { ...p.x, top:rowTop(r), height:rowH }, g = shell(p.it.r), lesson = filler(p.it.el);
         g.append(lesson);
-        track(g, [{ t:0, ...box(it.r), easing:EASE }, { t:T1, ...box(r2) }]);
-        const words = lesson.matches(".blk") ? [...lesson.firstElementChild.children] : [...lesson.children];
-        words.forEach(w => track(w, [{ t:0, opacity:1 }, { t:180, opacity:0 }]));
-        return { g, r:r2 };
+        track(g, lanePath(p, to));
+        fadeWords(lesson);
+        return { g, r:to };
       });
-      train(out.filter(p => mid(p.r) < W / 2), -1, T1, false);
-      train(out.filter(p => mid(p.r) >= W / 2), 1, T1, false);
+      train(out.filter(q => mid(q.r) < W / 2), -1, T1, false);
+      train(out.filter(q => mid(q.r) >= W / 2), 1, T1, false);
     }
   }
   /* headings and arrows only fade: the week's out at the start, the month's in */
