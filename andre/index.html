@@ -28,6 +28,7 @@ function lookAttrs(){
   if (skin === "default") delete r.dataset.skin; else r.dataset.skin = skin;
   r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin));
   r.classList.toggle("zen", !!g("andre.zen"));
+  r.toggleAttribute("data-still", g("andre.motion") === false);    /* animations off */
   /* the old themes' fonts, fetched only once one of them is in use */
   if (skin !== "default" && !document.getElementById("skinfonts")){
     const l = document.createElement("link");
@@ -58,6 +59,9 @@ lookAttrs();
   --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}
 *{box-sizing:border-box}
+/* things slide right off the page when the week turns; the page area clips
+   them at its edges, so they never make it wider or scrollable sideways */
+html,main{overflow-x:clip}
 body{background-color:var(--bg);background-image:var(--img,none);background-attachment:fixed;color:var(--fg);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--mat)}
 button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -67,7 +71,13 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* bar */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
 .bar .in{max-width:var(--pagemax);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;height:60px}
-.term{font-size:13px;color:var(--fg2);font-weight:500}
+.term{position:relative;perspective:300px;font-size:13px;color:var(--fg2);font-weight:500}
+/* changing text (the week label): each changeable part is a token that
+   slides on its own, so unchanged parts stay still */
+.tok{display:inline-block;position:relative;white-space:pre}
+.tok .roll-now{display:inline-block}          /* so it can move, not just fade */
+.tok .roll-old{position:absolute;left:0;top:0;white-space:pre;pointer-events:none}
+[data-still] *,[data-still] *::before,[data-still] *::after{animation:none!important;transition:none!important}
 .term b{color:var(--fg);font-weight:600}
 .search{position:relative;min-width:0}
 .email{display:flex;align-items:center;gap:8px;width:400px;max-width:100%;height:36px;padding:0 12px;border-radius:10px;background:var(--fill);color:var(--fg2);cursor:text}
@@ -76,7 +86,9 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .email input::placeholder{color:var(--fg2)}
 .email .dom{color:var(--fg3);font-size:14px;white-space:nowrap}
 .naming .dom{display:none}
-.right{display:flex;justify-content:flex-end;align-items:center;gap:14px}
+@keyframes shake{15%,85%{transform:translateX(-2px)}30%,70%{transform:translateX(5px)}45%{transform:translateX(-6px)}60%{transform:translateX(4px)}}
+.email.shake{animation:shake .45s ease}
+.right{display:flex;justify-content:flex-end;align-items:center}
 .clock{font-size:13px;color:var(--fg2)}
 .gear{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--fg2)}
 .gear:hover{background:var(--fill)}
@@ -145,7 +157,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 
 /* timetable */
 .tt{min-height:calc(100vh - 60px);padding-block:10px 24px}
-.tt{max-width:var(--pagemax)}
+.tt{max-width:var(--pagemax);position:relative}
+.ghost{position:absolute;inset:0;pointer-events:none;z-index:5}
+.strip{position:absolute;left:0;top:0;pointer-events:none;z-index:6}
+#g,#daylist{transition:opacity .2s}
+.busy :is(#g,#daylist){opacity:.55}
 .grid{display:grid;grid-template-columns:36px repeat(5,minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px}
 .arrow{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);align-self:center}
 .arrow:hover{background:var(--fill);color:var(--fg)}
@@ -157,7 +173,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .dh.today{border-bottom-color:var(--fg)}
 .dh.today .d,.dh.today .n{color:var(--fg);font-weight:700}
 .col{position:relative}
-.blk{position:absolute;left:0;right:0;cursor:pointer}
+.blk{position:absolute;left:0;right:0;cursor:pointer;container-type:inline-size}   /* 100cqw = the day's width */
 .blk.open{z-index:20;cursor:default}
 .blk.closing{z-index:19}
 .blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
@@ -169,7 +185,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk:not(.open):not(.closing) .blk-card{height:100%}
 .blk .s{display:block;font-weight:600;font-size:15px;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
 .blk .m{display:block;font-size:13px;margin-top:2px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.blk .r{position:absolute;top:10px;right:12px;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.blk .r{position:absolute;top:10px;left:calc(100cqw - 12px);translate:-100% 0;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .blk .t{display:block;margin-top:auto;padding-top:4px;font-size:12px;white-space:nowrap;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
 .blk.sm .blk-card{flex-direction:row;align-items:center;gap:8px;padding:0 12px}
 .blk.sm .s{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}
@@ -181,27 +197,46 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.sm.open .t{padding-top:4px}
 .blk.past:not(.open) .blk-card{filter:saturate(.35);opacity:.6}
 .blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 50%,transparent);backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.blk.open .blk-card{width:150%;box-shadow:0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
-/* Opened, the card becomes two columns: subject, teacher and time on the
-   left, the details beside them (where the room used to sit), and the class
-   list across the bottom. It stays laid out like that while it closes. */
-.blk.open .blk-card,.blk.closing .blk-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);grid-template-rows:auto auto auto 1fr auto;gap:0 16px;align-items:start}
-.blk.open .s,.blk.closing .s{grid-area:1/1;padding-right:0;white-space:normal}
+/* opened, the card grows by half a day, and never by less than room for Room and Class code */
+.blk-card{--xw:max(50cqw,112px)}
+.blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
+/* Opened, the card is laid out at its final size from the first frame, so
+   as it springs wider nothing re-wraps or shuffles: the growing bubble just
+   uncovers it. The left column is exactly the closed card's text width, so
+   the subject, teacher and time keep their line breaks; Room and Class code
+   sit beside them where the room number was; the email, full name and class
+   list run across the bottom. It keeps this layout while it closes. */
+.blk.open .blk-card,.blk.closing .blk-card{display:grid;grid-template-columns:calc(100cqw - 24px) calc(var(--xw) - 16px);
+  grid-template-rows:auto auto auto 1fr auto;gap:0 16px;align-items:start;justify-content:start}
+.blk.open .s,.blk.closing .s{grid-area:1/1}
 .blk.open .m,.blk.closing .m{grid-area:2/1;display:block}
 .blk.open .t,.blk.closing .t{grid-area:3/1;margin:0;padding-top:4px}
 .blk.open .blk-meta,.blk.closing .blk-meta{grid-column:2;grid-row:1/span 4}
 .blk.open .blk-more,.blk.closing .blk-more{grid-column:1/-1;grid-row:5}
-.blk.open .blk-meta .det{padding-top:0;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:0 12px}
-.blk.open .blk-meta .det-row:first-child{padding-top:0}
-.blk .r{transition:opacity .2s}
-.blk.open .r{opacity:0}                            /* the room moves into the details */
-@keyframes detIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
-.open:not(.settled) :is(.det-row,.cls-btn){animation:detIn .5s cubic-bezier(.34,1.35,.64,1) both}
-.open:not(.settled) .det-row:nth-child(1){animation-delay:.06s}
-.open:not(.settled) .det-row:nth-child(2){animation-delay:.11s}
-.open:not(.settled) .det-row:nth-child(3){animation-delay:.16s}
-.open:not(.settled) .det-row:nth-child(4){animation-delay:.21s}
-.open:not(.settled) .cls-btn{animation-delay:.26s}
+.blk.open .blk-meta .det,.blk.closing .blk-meta .det{padding-top:0;grid-template-columns:minmax(0,1fr)}
+.blk-meta .val{overflow-wrap:normal}
+.blk.open .blk-meta .det-row:first-child,.blk.closing .blk-meta .det-row:first-child{padding-top:0}
+.col.end .blk .r{left:auto;right:12px;translate:none}
+/* the room number flies into its place in the full room code (see flyRoom) */
+.open.landed :is(.blk-card > .r,.card > .room){visibility:hidden}
+:is(.blk,.card):not(.landed) .det-row.room .rk{opacity:0}
+/* drawn just like the room number on the closed lesson, so the two match exactly */
+.det-row.room .rk{font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.card .det-row.room .rk{font-size:14px;font-weight:700}
+.open:not(.settled) .det-row.room{animation:none}
+.open:not(.settled) .det-row.room .rp{animation:detFade .4s ease .3s both}
+@keyframes detFade{from{opacity:0}to{opacity:1}}
+/* the details ease in: Room and Class code slide out from where the room
+   number was, then the rows below rise in, one after another */
+@keyframes detIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes detSide{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+.open:not(.settled) :is(.det-row,.cls-btn){animation:detIn .5s cubic-bezier(.34,1.3,.64,1) both}
+.blk.open:not(.settled) .blk-meta .det-row{animation-name:detSide}
+.open:not(.settled) .blk-meta .det-row:nth-child(1){animation-delay:.08s}
+.open:not(.settled) .blk-meta .det-row:nth-child(2){animation-delay:.13s}
+.open:not(.settled) .blk-more .det-row:nth-child(1){animation-delay:.18s}
+.open:not(.settled) .blk-more .det-row:nth-child(2){animation-delay:.23s}
+.open:not(.settled) .cls-btn{animation-delay:.28s}
 .col.end .blk-card{left:auto;right:0}          /* Friday opens leftwards, staying on screen */
 
 /* the detail inside an opened lesson (desktop block and phone card alike) */
@@ -214,6 +249,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .det-row .val{font-size:13px;color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
 .det-row .val a{color:color-mix(in srgb,var(--c) 65%,var(--fg));text-decoration:none}
 .det-row .val a:hover{text-decoration:underline}
+.det-row.mail{container-type:inline-size}
+.det-row.mail .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:min(13px,max(10px,calc(100cqi / var(--ew,20))))}
 .cls-btn{display:flex;align-items:center;justify-content:space-between;width:100%;margin:6px 0 4px;padding:9px 10px;border-radius:8px;text-align:left;
   background:color-mix(in srgb,var(--c) 12%,var(--fill));font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 65%,var(--fg));transition:background .15s}
 .cls-btn:hover{background:color-mix(in srgb,var(--c) 20%,var(--fill))}
@@ -248,8 +285,9 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap.fc .fr{font-size:13px}
 .brk.fc .bl{font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg))}
 .brk.fc.none .bl{color:var(--fg2)}
-.backtoday{display:none;height:30px;padding:0 14px;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;white-space:nowrap}
-.off .backtoday{display:block}
+.backtoday{height:30px;max-width:0;padding:0;margin-right:0;overflow:hidden;opacity:0;transform:scale(.8);visibility:hidden;border-radius:15px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;white-space:nowrap;
+  transition:max-width .4s cubic-bezier(.34,1.2,.64,1),padding .4s cubic-bezier(.34,1.2,.64,1),margin .4s,opacity .25s,transform .4s cubic-bezier(.34,1.4,.64,1),visibility 0s .4s}
+.off .backtoday{max-width:180px;padding:0 14px;margin-right:14px;opacity:1;transform:none;visibility:visible;transition-delay:0s}
 
 /* modules */
 .mods{max-width:var(--pagemax);padding-block:48px 80px}     /* the timetable is a full screen tall, so this stays below the fold */
@@ -280,6 +318,14 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .sugg .hint{padding:8px 10px;font-size:13px;color:var(--fg2)}
 .sugg .hint.err{color:var(--red)}
 .sugg a{color:var(--blue)}
+.sugg{transform-origin:top center}
+.sugg:not([hidden]){animation:suggIn .22s cubic-bezier(.2,.9,.3,1.15)}
+.sugg.out{animation:suggOut .14s ease forwards}
+@keyframes suggIn{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes suggOut{to{opacity:0;transform:translateY(-4px) scale(.98)}}
+.sugg button{transition:background .15s;animation:itemIn .3s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:calc(var(--i,0) * 28ms)}
+.sugg .hint{animation:itemIn .25s ease both}
+@keyframes itemIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 
 /* settings: free periods, theme picker */
 .rl small a{color:var(--blue)}
@@ -393,6 +439,7 @@ button.row:hover{background:var(--fill2)}
 .lmsg{padding:60px 0;text-align:center;color:var(--fg2);font-size:15px}
 .lmsg.err{color:var(--red)}
 
+@media (max-width:1000px){.term .range{display:none}}
 @media (max-width:760px),(orientation:portrait){
   .tt{display:none}
   .mob{display:block;min-height:calc(100vh - 53px);min-height:calc(100svh - 53px)}
@@ -405,7 +452,7 @@ button.row:hover{background:var(--fill2)}
   .email{width:100%;height:34px}
   .email input{width:100%!important;min-width:0}
   .email .dom{display:none}
-  .right{gap:6px}
+  .off .backtoday{margin-right:6px}
   .backtoday .lg{display:none}
   .gear{width:32px;height:32px}
   .gear svg{width:18px;height:18px}
@@ -451,6 +498,10 @@ button.row:hover{background:var(--fill2)}
         <div class="row">
           <div class="rl"><strong>Transparent background</strong><small>Lets a browser wallpaper, like Zen's, show through</small></div>
           <button class="tog" id="zen" role="switch" aria-checked="false" aria-label="Transparent background"></button>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Animations</strong><small>Turn off for slower devices</small></div>
+          <button class="tog" id="motion" role="switch" aria-checked="true" aria-label="Animations"></button>
         </div>
       </div>
     </div>
@@ -528,7 +579,7 @@ button.row:hover{background:var(--fill2)}
    copied from index.html rather than shared so this sandbox stays standalone. */
 const ENDPOINT = "/api/timetable", DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
-const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", room:"andre.room", colours:"andre.colours",
+const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", room:"andre.room", colours:"andre.colours",
              skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -540,6 +591,7 @@ let email = get(LS.email, "") || get("tt.email", "");
 /* display settings, the same choices as the main timetable */
 let theme = get(LS.theme, "auto");          /* light | auto | dark */
 let zen = !!get(LS.zen, false);
+let motion = get(LS.motion, true) !== false;     /* animations on */
 let roomMode = get(LS.room, "number");      /* full CR1007.118 | building CR1007 | number 118 */
 let colours = get(LS.colours, {});          /* subject -> #hex override */
 let skin = get(LS.skin, "default");         /* one of SKINS */
@@ -600,6 +652,8 @@ function asArray(v){
 }
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $ = id => document.getElementById(id);
+/* animations are skipped when switched off in Settings, or when the device asks for less motion */
+const noMotion = () => document.documentElement.hasAttribute("data-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
 const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
   .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
 
@@ -860,15 +914,25 @@ function apply(payload){
   if (!entries.length) loadError = "No lessons were returned for that address.";
 }
 
+/* the last timetable that loaded properly */
+let lastGood = null;
+/* a name that doesn't work: back to the last good timetable, with a shake */
+function backTo(good){
+  email = good.email; set(LS.email, email);
+  apply(good.payload); loadError = "";
+  input.value = email.split("@")[0]; fit(); naming();
+  const box = $("emailbox");
+  box.classList.remove("shake"); box.offsetWidth; box.classList.add("shake");
+}
 async function load(){
   const id = ++reqId;
   loadError = ""; staleNote = "";
-  entries = []; slots = []; cycleStart = null;
-  if (!email){ render(); return; }
+  if (!email){ entries = []; slots = []; cycleStart = null; render(); return; }
   const c = get(LS.cache, null);
   const cached = c && c.email === email && c.payload;
-  if (cached) apply(c.payload);
-  loading = !cached;
+  if (cached){ apply(c.payload); if (!loadError) lastGood = { email, payload:c.payload }; }
+  /* until it arrives, whatever is on screen stays (dimmed) */
+  loading = true;
   render();
   try {
     const headers = { Accept:"application/json" };
@@ -890,11 +954,14 @@ async function load(){
     if (id !== reqId) return;
     loadError = "";
     apply(data);
+    if (loadError) throw Object.assign(new Error(loadError), { status:404 });
+    lastGood = { email, payload:data };
     set(LS.cache, { email, at: Date.now(), payload: data });
   } catch (err) {
     if (id !== reqId) return;
-    /* school or network down: keep the saved copy for this person */
-    if (cached && err.hint !== "check-credentials" && err.status !== 404) staleNote = err.message;
+    if (cached && err.hint !== "check-credentials" && err.status !== 404){
+      apply(c.payload); loadError = ""; staleNote = err.message;      /* school or network down: this person's saved copy */
+    } else if (lastGood && lastGood.email !== email) backTo(lastGood);
     else { loadError = err.message; entries = []; slots = []; }
   } finally {
     if (id === reqId){ loading = false; render(); if (settingsOpen()) paintSettings(); }
@@ -939,7 +1006,7 @@ function render(){
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
   const days = cycs.map(itemsFor);
   const msg = !email ? "Enter a school email above to see a timetable."
-            : loading ? "Loading…"
+            : loading && !entries.length ? "Loading…"
             : loadError ? loadError
             : !days.flat().length ? "No classes this week." : "";
   /* past / happening now, for one item on one date */
@@ -952,19 +1019,220 @@ function render(){
   if (phone.matches) renderList(ctx); else renderGrid(ctx);
   /* desktop arrows turn the week; the phone's step one day */
   document.querySelectorAll(".arrow").forEach(a => a.onclick = () => {
-    if (phone.matches) stepDay(+a.dataset.d); else { off += +a.dataset.d; render(); }
+    if (phone.matches) stepDay(+a.dataset.d); else goWeek(off + +a.dataset.d);
   });
 
   const letter = (cycs.find(Boolean) || "").slice(-1).toUpperCase();
-  const range = dates[0].getDate() + (dates[0].getMonth() !== dates[4].getMonth() ? " " + MON[dates[0].getMonth()] : "") +
-                " – " + dates[4].getDate() + " " + MON[dates[4].getMonth()];
-  const tw = termWeek(dates[0]);
-  const label = tw ? `<span class="tl">Term ${tw.term} · </span><b>Week ${tw.week}${letter}</b><span class="range"> · ${range}</span>`
-              : tw === false ? `<b>Holidays</b><span class="range"> · ${range}</span>`
-              : letter ? `<b>Week ${letter}</b><span class="range"> · ${range}</span>` : range;
-  document.getElementById("term").innerHTML = label +
-    (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : "");
+  const tw = termWeek(dates[0]), d0 = dates[0], d4 = dates[4];
+  const dates_ = `<span class="range"> · ${tok("sd", d0.getDate())}${tok("sm", d0.getMonth() !== d4.getMonth() ? " " + MON[d0.getMonth()] : "")} – ${tok("ed", d4.getDate())} ${tok("em", MON[d4.getMonth()])}</span>`;
+  const label = tw ? `<span class="tl">Term ${tok("tn", tw.term)} · </span><b>Week ${tok("wn", tw.week + letter)}</b>${dates_}`
+              : tw === false ? `<b>${tok("wn", "Holidays")}</b>${dates_}`
+              : letter ? `<b>Week ${tok("wn", letter)}</b>${dates_}` : dates_;
+  rollLabel(label + (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : ""));
   document.body.classList.toggle("off", off !== 0);
+  document.body.classList.toggle("busy", loading && entries.length > 0);
+}
+
+/* ═══ changing text ═══
+   A token is one changeable part of the week label ("3A", "Oct"). When the
+   week changes, each token whose text changed slides: the old text up and
+   out as the new comes up from below (the other way for an earlier week).
+   Unchanged tokens stay still. */
+const tok = (id, text, cls = "") => `<span class="tok ${cls}" data-t="${id}"><span class="roll-now">${text}</span></span>`;
+const tokTexts = root => Object.fromEntries([...root.querySelectorAll(".tok")].map(t => [t.dataset.t, t.querySelector(".roll-now").innerHTML]));
+function rollTokens(root, was, dir){
+  if (!dir || noMotion()) return;
+  root.querySelectorAll(".tok").forEach(t => {
+    const now = t.querySelector(".roll-now"), before = was[t.dataset.t];
+    if (before === undefined || before === now.innerHTML) return;
+    const old = document.createElement("span");
+    old.className = "roll-old"; old.innerHTML = before;
+    t.appendChild(old);
+    old.animate([{ transform:"translateY(0)", opacity:1 }, { transform:`translateY(${-dir * 60}%)`, opacity:0 }],
+                { duration:260, easing:"ease-in", fill:"forwards" }).onfinish = () => old.remove();
+    now.animate([{ transform:`translateY(${dir * 60}%)`, opacity:0 }, { transform:"translateY(0)", opacity:1 }],
+                { duration:340, delay:80, easing:"ease-out", fill:"backwards" });
+  });
+}
+/* the week label: only the parts that changed roll ("Term 4" stays put) */
+let shownWeek = null;
+function rollLabel(html){
+  const el = document.getElementById("term");
+  const dir = shownWeek === null ? 0 : Math.sign(off - shownWeek);
+  shownWeek = off;
+  if (el.dataset.html === html) return;
+  const was = tokTexts(el);
+  el.innerHTML = el.dataset.html = html;
+  rollTokens(el, was, dir);
+}
+
+/* ═══ turning the week ═══
+   The dates along the top run past like a conveyor: the whole week slides
+   off one side, a day's width at a time, as the new week follows it in, until
+   the new Monday sits where the old one did.
+
+   Below, the days rearrange like a maze. Lessons that are the same as last
+   week (same subject, time, day, room and teacher) stay where they are. The
+   others leave by the nearest side of the page (Monday and Tuesday to the
+   left, Thursday and Friday to the right, Wednesday the way you're going),
+   the days nearest the edge first, so nothing waits in anyone's way. Before
+   a lesson crosses a day, everything in that day from its height down steps
+   lower together, opening a clear lane; it slides through, and the day closes
+   up again behind it. The new week's lessons come in the same way in reverse,
+   the middle days first, so nothing passes through a lesson that has landed. */
+const sigOf = x => [x.s, x.drawEnd || x.e,
+  x.lesson ? (x.lesson.asm ? "asm" : [x.lesson.subject, x.lesson.code, x.lesson.room, x.lesson.teacher].join("/")) : x.ls.join("/"),
+  (fn => fn ? fn.count + fn.names : "")(freeNote(x))].join("|");
+const MAZE = { open:160, close:180, speed:2.8 };       /* lane opening (ms), closing (ms), sliding speed (px per ms) */
+
+/* How far each of a day's blocks (listed top to bottom) moves down so that
+   none sits in any of the lanes. Everything below a lane moves with it, so
+   the day keeps its order and spacing, just opened up. */
+function laneShifts(rects, bands){
+  const lanes = bands.map(b => [b.top - 6, b.bottom + 6]).sort((a, b) => a[0] - b[0]);
+  let shift = 0;
+  return rects.map(r => {
+    for (const [lo, hi] of lanes) if (r.top + shift < hi && r.bottom + shift > lo) shift = hi - r.top;
+    return shift;
+  });
+}
+
+function goWeek(target){
+  const dir = Math.sign(target - off);
+  if (!dir) return;
+  closeAll();
+  if (phone.matches || noMotion()){ off = target; render(); return; }
+  const g = document.getElementById("g"), host = g.parentElement, hostR = host.getBoundingClientRect();
+  host.querySelectorAll(".ghost").forEach(x => x.remove());
+  const oldHeads = [...g.querySelectorAll(":scope > .dh")].map(h => ({ html:h.outerHTML, r:h.getBoundingClientRect() }));
+  const before = [...g.querySelectorAll(":scope > .col")].map(col =>
+    [...col.children].map(el => ({ el, sig:el.dataset.sig, r:el.getBoundingClientRect() })));
+  off = target; render();
+  const cols = [...g.querySelectorAll(":scope > .col")];
+  if (cols.length !== 5 || before.length !== 5) return;
+
+  const ghost = document.createElement("div");
+  ghost.className = "ghost";
+  host.appendChild(ghost);
+  conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR);
+
+  /* who stays, who goes, who arrives */
+  const kept = [], leaving = [], arriving = [];
+  cols.forEach((col, k) => {
+    const old = before[k], used = new Set(), colTop = col.getBoundingClientRect().top;
+    for (const el of col.children){
+      const same = old.find(o => o.sig === el.dataset.sig && !used.has(o));
+      const r = el.getBoundingClientRect();
+      if (!same){ arriving.push({ el, k, r }); continue; }
+      used.add(same);
+      kept.push({ el, k, r });
+      /* the day's scale changed: slide to the new spot */
+      if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5)
+        el.animate([{ top:(same.r.top - colTop) + "px", height:same.r.height + "px" }, { top:el.style.top, height:el.style.height }],
+                   { duration:500, easing:"cubic-bezier(.3,1.15,.55,1)" });
+    }
+    for (const o of old) if (!used.has(o)){
+      /* a copy of the old block, since the new week is already drawn */
+      const brick = o.el.cloneNode(true);
+      brick.style.cssText += `;position:absolute;left:${o.r.left - hostR.left}px;top:${o.r.top - hostR.top}px;width:${o.r.width}px;height:${o.r.height}px;right:auto;margin:0`;
+      ghost.appendChild(brick);
+      leaving.push({ el:brick, k, r:o.r });
+    }
+  });
+
+  const W = document.documentElement.clientWidth;
+  const speed = Math.max(MAZE.speed, W / 480);           /* wider screens, longer trips: faster, so it takes as long */
+  const keptIn = k => kept.filter(b => b.k === k).sort((a, b) => a.r.top - b.r.top);
+  const exitSide = k => k < 2 ? -1 : k > 2 ? 1 : -dir;     /* -1 left, 1 right */
+  const entrySide = k => k < 2 ? -1 : k > 2 ? 1 : dir;
+  const dayAt = (side, rank) => side < 0 ? rank : 4 - rank;  /* rank: days between it and its edge */
+
+  /* One wave: a day's lessons crossing to or from one edge together. Lanes
+     open through the days in between, they slide, the lanes close. Returns
+     when they've finished sliding, so the next wave opens as this closes. */
+  const laneUntil = [0, 0, 0, 0, 0];       /* when each day has closed up after the lanes through it */
+  const wave = (bricks, side, t0, entering) => {
+    if (!bricks.length) return t0;
+    const crossed = new Map();
+    for (const b of bricks) for (let j = 0; j < 5; j++)
+      if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
+    const opening = crossed.size ? MAZE.open : 0;
+    /* arriving lessons wait for their own day to close up first, so they never
+       land on a block that's still on its way back */
+    if (entering) t0 = Math.max(t0, ...bricks.map(b => laneUntil[b.k] - opening));
+    const slideAt = t0 + opening;
+    let end = slideAt;
+    for (const b of bricks){
+      const dx = side < 0 ? -(b.r.right + 24) : W - b.r.left + 24;
+      const D = Math.max(260, Math.min(640, Math.abs(dx) / speed));
+      b.el.animate(entering ? [{ transform:`translateX(${dx}px)` }, { transform:"none" }] : [{ transform:"none" }, { transform:`translateX(${dx}px)` }],
+                   { duration:D, delay:slideAt, fill:entering ? "backwards" : "forwards",
+                     easing:entering ? "cubic-bezier(.25,.6,.3,1)" : "cubic-bezier(.55,0,.75,.4)" });
+      end = Math.max(end, slideAt + D);
+    }
+    const total = end - t0 + MAZE.close;
+    for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], end + MAZE.close);
+    for (const [j, bands] of crossed){
+      const day = keptIn(j), shifts = laneShifts(day.map(b => b.r), bands);
+      day.forEach((b, i) => {
+        if (!shifts[i]) return;
+        /* the easing is per step (open, hold, close), so each happens exactly in its window */
+        b.el.animate([{ transform:"translateY(0)", easing:"ease-in-out" },
+                      { transform:`translateY(${shifts[i]}px)`, offset:MAZE.open / total },
+                      { transform:`translateY(${shifts[i]}px)`, offset:(end - t0) / total, easing:"ease-in-out" },
+                      { transform:"translateY(0)" }],
+                     { duration:total, delay:t0, composite:"add" });
+      });
+    }
+    return end;
+  };
+
+  /* out: on each side, the day nearest the edge first */
+  const doneOut = {};
+  for (const side of [-1, 1]){
+    let t = 0;
+    for (let rank = 0; rank <= 2; rank++){
+      const k = dayAt(side, rank);
+      if (exitSide(k) !== side) continue;
+      t = wave(leaving.filter(b => b.k === k), side, t, false);
+    }
+    doneOut[side] = t;
+  }
+  /* in: once everything has gone, the middle days first */
+  const startIn = Math.max(doneOut[-1], doneOut[1]);
+  for (const side of [-1, 1]){
+    let t = startIn;
+    for (let rank = 2; rank >= 0; rank--){
+      const k = dayAt(side, rank);
+      if (entrySide(k) !== side) continue;
+      t = wave(arriving.filter(b => b.k === k), side, t, true);
+    }
+  }
+  Promise.all(ghost.getAnimations({ subtree:true }).map(a => a.finished)).then(() => ghost.remove(), () => ghost.remove());
+}
+
+/* A row of labels runs past like a conveyor: the old ones slide out one way
+   as the new ones follow them in, a whole row's width, ending where the old
+   ones were. Used for the day headings and the phone's strip of days. */
+function conveyor(oldList, newEls, dir, layer, originR){
+  if (noMotion() || oldList.length !== newEls.length || oldList.length < 2) return;
+  const span = (oldList[1].r.left - oldList[0].r.left) * oldList.length;
+  const strip = document.createElement("div");
+  strip.className = "strip";
+  const place = (html, r, x) => {
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+    const el = holder.firstElementChild;
+    el.style.cssText += `;position:absolute;margin:0;left:${r.left - originR.left + x}px;top:${r.top - originR.top}px;width:${r.width}px;height:${r.height}px`;
+    strip.appendChild(el);
+  };
+  oldList.forEach(o => place(o.html, o.r, 0));
+  newEls.forEach((el, k) => place(el.outerHTML, oldList[k].r, dir * span));
+  layer.appendChild(strip);
+  newEls.forEach(el => el.style.visibility = "hidden");
+  strip.animate([{ transform:"none" }, { transform:`translateX(${-dir * span}px)` }],
+                { duration:Math.min(950, 320 + span * .35), easing:"cubic-bezier(.6,.05,.3,1)", fill:"forwards" })
+    .finished.then(() => { newEls.forEach(el => el.style.visibility = ""); strip.remove(); });
 }
 
 /* desktop: the five days side by side, blocks placed by clock time. They
@@ -989,7 +1257,7 @@ function renderGrid({ now, dates, days, msg, when, err }){
   }
 }
 function gridHtml({ now, dates, days, msg, when, err }, T0, H, PX){
-  let h = arrow(-1) + dates.map(d => `<div class="dh ${sameDay(d, now) ? "today" : ""}"><span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${d.getDate()} ${MON[d.getMonth()]}</span></div>`).join("") + arrow(1);
+  let h = arrow(-1) + dates.map(d => `<div class="dh ${sameDay(d, now) ? "today" : ""}"><span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${tok("nd", d.getDate())} ${tok("nm", MON[d.getMonth()])}</span></div>`).join("") + arrow(1);
   h += "<div></div>";
   if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   days.forEach((items, k) => {
@@ -1001,13 +1269,13 @@ function gridHtml({ now, dates, days, msg, when, err }, T0, H, PX){
       if (!x.lesson || x.lesson.asm || hideThis){   /* free periods, breaks, assembly, and lessons when hidden */
         const fn = x.lesson && !hideThis ? null : freeNote(x);
         const ls = hideThis ? [] : x.lesson ? ["Assembly"] : x.ls;
-        h += `<div class="gap ${x.lesson && !hideThis ? "asm" : ""} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
+        h += `<div class="gap ${x.lesson && !hideThis ? "asm" : ""} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" data-sig="${esc(sigOf(x))}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
              `${ls.map(esc).join("<i></i>")}${sm && ls.length ? "<i></i>" : ""}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
       const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[k], x);
-      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled" : ""}"` +
-           ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
+      h += `<div class="blk ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
+           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" style="--c:${esc(c)};top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id)}</div></div>`;
     }
     h += "</div>";
@@ -1020,9 +1288,13 @@ function renderList({ now, dates, days, msg, when, err }){
   if (sel === null){ const i = dates.findIndex(d => sameDay(d, now)); sel = i === -1 ? 0 : i; }
   const nav = document.getElementById("daynav");
   nav.innerHTML = arrow(-1, "day") + dates.map((d, k) =>
-    `<button class="daypill ${sameDay(d, now) ? "today" : ""}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${DAYF[k]} ${d.getDate()} ${MON[d.getMonth()]}"><span class="dn">${DN[k]}</span><span class="dd tnum">${d.getDate()}</span></button>`
+    `<button class="daypill ${sameDay(d, now) ? "today" : ""}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${DAYF[k]} ${d.getDate()} ${MON[d.getMonth()]}"><span class="dn">${DN[k]}</span><span class="dd tnum">${tok("d", d.getDate())}</span></button>`
   ).join("") + arrow(1, "day");
-  nav.querySelectorAll(".daypill").forEach(b => b.onclick = () => { sel = +b.dataset.k; render(); });
+  nav.querySelectorAll(".daypill").forEach(b => b.onclick = () => {
+    const k = +b.dataset.k, d = Math.sign(k - sel);
+    sel = k; closeAll(); render();
+    if (d) slideDay(d);
+  });
 
   let h = "";
   if (msg) h = `<div class="lmsg ${err ? "err" : ""}">${esc(msg)}</div>`;
@@ -1046,7 +1318,7 @@ function renderList({ now, dates, days, msg, when, err }){
       continue;
     }
     const e = x.lesson, c = colourFor(e.subject), room = roomLabel(e.room), id = itemId(dates[sel], x);
-    h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled" : ""}"` +
+    h += `<div class="card ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}"` +
          ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};--rw:${room.length}ch;--p:${w.p}%">` +
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
          `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id)}</div>`;
@@ -1072,18 +1344,34 @@ let rosterKey = null;   /* the lesson whose class list is showing */
 const rosters = {};     /* class code -> { loading } | { people } | { error } */
 const itemId = (date, x) => date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate() + "|" + x.s;
 
+/* The room as the setting shows it ("154", "BR1011" or all of it) is always
+   part of the full code, so the open card writes the full code around it. */
+function roomParts(r){
+  const p = splitRoom(r), key = p[roomMode] || "";
+  const at = roomMode === "number" ? p.full.lastIndexOf(key) : p.full.indexOf(key);
+  if (!key || at < 0) return esc(p.full);
+  return `<span class="rp">${esc(p.full.slice(0, at))}</span><span class="rk">${esc(key)}</span><span class="rp">${esc(p.full.slice(at + key.length))}</span>`;
+}
+/* the width of some text in ems, in the page's font, so a long email can be
+   sized to fit its line exactly */
+const measure = document.createElement("canvas").getContext("2d");
+function emWidth(text){
+  measure.font = "13px " + getComputedStyle(document.body).fontFamily;
+  return (measure.measureText(text).width / 13 * 1.02).toFixed(3);
+}
 function detailHtml(e, id){
   if (e.asm) return "";
   const mail = /@/.test(e.rawTeacher || "") ? e.rawTeacher.trim() : "";
-  const rows = [
-    ["Teacher email", mail && `<a href="mailto:${esc(mail)}">${esc(mail)}</a>`, "wide"],
-    ["Room", esc(e.room)],
-    ["Class code", esc(e.code)],
+  const rows = list => list.filter(r => r[1]).map(([lbl, val, cls, style]) =>
+    `<div class="det-row ${cls || ""}"${style ? ` style="${style}"` : ""}><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
+  const meta = rows([["Room", e.room && roomParts(e.room), "room"], ["Class code", esc(e.code)]]);
+  const more = rows([
+    ["Teacher email", mail && `<a href="mailto:${esc(mail)}">${esc(mail)}</a>`, "wide mail", mail && `--ew:${emWidth(mail)}`],
     ["Full name", e.rawSubject && e.rawSubject !== e.subject ? esc(e.rawSubject) : "", "wide"]
-  ].filter(r => r[1]);
-  return `<div class="blk-detail blk-meta"><div class="det">` +
-    rows.map(r => `<div class="det-row ${r[2] || ""}"><div class="lbl">${r[0]}</div><div class="val">${r[1]}</div></div>`).join("") + `</div></div>` +
-    (e.code ? `<div class="blk-detail blk-more"><div class="roster">${rosterHtml(e.code, id, rosterKey === id)}</div></div>` : "");
+  ]);
+  return (meta ? `<div class="blk-detail blk-meta"><div class="det">${meta}</div></div>` : "") +
+    `<div class="blk-detail blk-more">${more ? `<div class="det">${more}</div>` : ""}` +
+    (e.code ? `<div class="roster">${rosterHtml(e.code, id, rosterKey === id)}</div>` : "") + `</div>`;
 }
 function rosterHtml(code, id, open){
   const r = rosters[code] || {};
@@ -1140,6 +1428,38 @@ async function toggleRoster(item){
   }
   paintRoster(id, code, true);
 }
+/* Opening, the room number flies from its corner into its place in the full
+   room code, where that part is drawn exactly like it, and the rest of the
+   code fills in around it; closing, it flies back. */
+function flyRoom(item, opening){
+  const badge = item.querySelector(":scope .blk-card > .r, :scope > .room"), rk = item.querySelector(".det-row.room .rk");
+  const a = badge && badge.getBoundingClientRect(), b = rk && rk.getBoundingClientRect();
+  item.classList.remove("landed");
+  if (!a || !b || !a.width || noMotion()){ if (opening) item.classList.add("landed"); return; }
+  badge.getAnimations().forEach(x => x.cancel());
+  /* Friday's card grows leftwards, carrying its contents left as it opens */
+  const shift = opening && item.matches(".col.end .blk") ? Math.max(item.offsetWidth / 2, 112) : 0;
+  const there = { transform:`translate(${b.left - a.left - shift}px,${b.top - a.top}px)` }, home = { transform:"none" };
+  /* a smooth glide that stops exactly on its spot: no overshoot to settle back from */
+  const flight = badge.animate(opening ? [home, there] : [there, home],
+    { duration:opening ? 520 : 440, easing:"cubic-bezier(.25,.8,.3,1)" });
+  if (opening) flight.onfinish = () => { if (item.classList.contains("open")) item.classList.add("landed"); };
+}
+/* Run a layout change, then slide each piece of a lesson's text from where it
+   was to where it now is (FLIP), so nothing jumps. */
+function glide(item, change){
+  if (noMotion()){ change(); return; }
+  const els = [...item.querySelectorAll(":scope .blk-card > .s, :scope .blk-card > .m, :scope .blk-card > .t")];
+  const before = els.map(el => el.getBoundingClientRect());
+  change();
+  els.forEach((el, i) => {
+    const a = before[i], b = el.getBoundingClientRect();
+    const dx = a.left - b.left, dy = a.top - b.top;
+    if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
+    el.animate([{ transform:`translate(${dx}px,${dy}px)` }, { transform:"none" }],
+               { duration:480, easing:"cubic-bezier(.3,1.25,.55,1)" });
+  });
+}
 function closeAll(){
   document.querySelectorAll(".blk.open,.card.open").forEach(b => {
     /* collapse from the detail's real height, not from its 900px ceiling,
@@ -1148,11 +1468,12 @@ function closeAll(){
     ds.forEach(d => d.style.maxHeight = d.scrollHeight + "px");
     b.offsetHeight;
     b.classList.remove("open", "settled");
+    if (b.matches(".blk")) b.classList.add("closing");
+    flyRoom(b, false);
     requestAnimationFrame(() => ds.forEach(d => d.style.maxHeight = ""));
     if (b.matches(".blk")){
-      b.classList.add("closing");
       clearTimeout(b.closingTimer);
-      b.closingTimer = setTimeout(() => b.classList.remove("closing"), 600);
+      b.closingTimer = setTimeout(() => glide(b, () => b.classList.remove("closing")), 600);
     }
     b.querySelectorAll(".cls-btn.open,.cls-list.open").forEach(x => x.classList.remove("open"));
   });
@@ -1169,7 +1490,8 @@ function onLessonClick(ev){
   if (item.classList.contains("open")){ if (!ev.target.closest(".blk-detail")) closeAll(); return; }
   closeAll();
   item.classList.remove("closing");
-  item.classList.add("open");
+  glide(item, () => item.classList.add("open"));
+  flyRoom(item, true);
   openKey = item.dataset.k;
 }
 document.getElementById("g").addEventListener("click", onLessonClick);
@@ -1180,9 +1502,21 @@ addEventListener("keydown", e => { if (e.key === "Escape" && openKey && !documen
 /* the next or previous school day; past Friday or Monday the strip turns to
    that week, still Monday to Friday */
 function stepDay(d){
-  let k = (sel ?? 0) + d;
-  if (k > 4){ k = 0; off++; } else if (k < 0){ k = 4; off--; }
+  let k = (sel ?? 0) + d, turned = 0;
+  if (k > 4){ k = 0; off++; turned = 1; } else if (k < 0){ k = 4; off--; turned = -1; }
+  const nav = document.getElementById("daynav");
+  nav.querySelectorAll(".strip").forEach(x => x.remove());
+  const was = [...nav.querySelectorAll(".daypill")].map(p => ({ html:p.outerHTML, r:p.getBoundingClientRect() }));
   sel = k; closeAll(); render();
+  slideDay(d);
+  if (turned) conveyor(was, [...nav.querySelectorAll(".daypill")], turned, nav, nav.getBoundingClientRect());
+}
+/* the day's lessons slide in from the side they came from */
+function slideDay(dir){
+  if (noMotion()) return;
+  [...document.getElementById("daylist").children].forEach((el, i) =>
+    el.animate([{ transform:`translateX(${dir * 28}px)`, opacity:0 }, { transform:"none", opacity:1 }],
+               { duration:380, delay:i * 25, easing:"cubic-bezier(.2,.85,.3,1.1)", fill:"backwards" }));
 }
 /* swipe the list sideways for the next / previous day, across weekends */
 {
@@ -1215,15 +1549,23 @@ async function api(params){
    Suggestions under a box as you type a name. Searching by name needs the
    school login from the main timetable, as the finder page did. */
 function finder(inp, box, onPick, opts = {}){
-  let results = [], idx = -1, head = "", timer = null, seq = 0;
-  const hide = () => { clearTimeout(timer); box.hidden = true; box.innerHTML = ""; results = []; idx = -1; inp.removeAttribute("aria-activedescendant"); };
-  const hint = (html, err) => { results = []; idx = -1; box.innerHTML = `<div class="hint ${err ? "err" : ""}">${html}</div>`; box.hidden = false; };
-  const paint = () => {
-    box.innerHTML = (head ? `<div class="hint">${esc(head)}</div>` : "") + results.map((p, i) =>
-      `<button type="button" role="option" id="${box.id}-${i}" aria-selected="${i === idx}" data-i="${i}"><b>${esc(p.name)}</b>` +
-      (p.year ? `<small>Year ${esc(p.year)}</small>` : "") + `<span>${esc(String(p.email || "").split("@")[0])}</span></button>`).join("");
+  let results = [], idx = -1, head = "", timer = null, seq = 0, shown = "";
+  const show = html => {
+    clearTimeout(box.outTimer); box.classList.remove("out");
+    if (html !== shown || box.hidden){ box.innerHTML = shown = html; }
     box.hidden = false;
   };
+  const hide = () => {
+    clearTimeout(timer); results = []; idx = -1; inp.removeAttribute("aria-activedescendant");
+    if (box.hidden || box.classList.contains("out")) return;
+    box.classList.add("out");                     /* fade, then go */
+    box.outTimer = setTimeout(() => { box.hidden = true; box.classList.remove("out"); box.innerHTML = shown = ""; }, 140);
+  };
+  const hint = (html, err) => { results = []; idx = -1; show(`<div class="hint ${err ? "err" : ""}">${html}</div>`); };
+  const paint = () => show((head ? `<div class="hint">${esc(head)}</div>` : "") + results.map((p, i) =>
+      `<button type="button" role="option" id="${box.id}-${i}" aria-selected="${i === idx}" data-i="${i}" style="--i:${i}"><b>${esc(p.name)}</b>` +
+      (p.year ? `<small>Year ${esc(p.year)}</small>` : "") + `<span>${esc(String(p.email || "").split("@")[0])}</span></button>`).join(""));
+  const select = () => box.querySelectorAll("[data-i]").forEach(b => b.setAttribute("aria-selected", +b.dataset.i === idx));
   const pick = p => { hide(); onPick(p); };
   async function search(){
     const q = inp.value.trim(), mine = ++seq;
@@ -1249,7 +1591,7 @@ function finder(inp, box, onPick, opts = {}){
     if ((e.key === "ArrowDown" || e.key === "ArrowUp") && results.length){
       e.preventDefault();
       idx = (idx + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
-      paint();
+      select();
       inp.setAttribute("aria-activedescendant", box.id + "-" + idx);
       const on = box.querySelector('[aria-selected="true"]');
       if (on) on.scrollIntoView({ block:"nearest" });
@@ -1301,7 +1643,7 @@ input.addEventListener("blur", () => setTimeout(() => {
   if (/\s/.test(input.value) && document.activeElement !== input){ input.value = email.split("@")[0]; fit(); naming(); }
 }, 160));
 
-document.getElementById("back").onclick = () => { off = 0; sel = null; render(); };
+document.getElementById("back").onclick = () => { sel = null; goWeek(0); };
 
 /* ═══ settings panel ═══ */
 const gear = $("gear");
@@ -1360,6 +1702,7 @@ function paintSettings(){
   $("modehint").textContent = fixed ? "This theme is always dark" : "Auto follows your device";
   document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
   $("zen").setAttribute("aria-checked", zen);
+  $("motion").setAttribute("aria-checked", motion);
   /* the format examples use a real room from this timetable */
   const sample = (entries.find(e => e.kind === "class" && e.room.includes(".")) || {}).room || "CR1007.118";
   document.querySelectorAll("#rooms .rtile").forEach(b => {
@@ -1373,6 +1716,7 @@ document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
   theme = b.dataset.theme; set(LS.theme, theme); applyLook(); paintSettings();
 });
 $("zen").onclick = () => { zen = !zen; set(LS.zen, zen); applyLook(); paintSettings(); };
+$("motion").onclick = () => { motion = !motion; set(LS.motion, motion); applyLook(); paintSettings(); };
 document.querySelectorAll("#rooms .rtile").forEach(b => b.onclick = () => {
   roomMode = b.dataset.room; set(LS.room, roomMode); paintSettings(); render();
 });
