@@ -67,6 +67,9 @@ const MAX_IMPORT = 200;
 /* Only these hosts may be fetched, so the import cannot be aimed at an internal
    service. Google's iCal feeds live on calendar.google.com. */
 const ICS_HOSTS = new Set(["calendar.google.com", "www.google.com"]);
+const DEV_ORIGINS = new Set(["http://127.0.0.1:3000", "http://localhost:3000"]);
+const MAX_ICS_BYTES = 2 * 1024 * 1024;
+const MAX_ICS_REDIRECTS = 3;
 
 const clean = (v, n) => String(v == null ? "" : v).slice(0, n).trim();
 const isDate = v => /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(v || ""));
@@ -195,15 +198,85 @@ export function parseICS(text) {
   return out;
 }
 
+function readIcalUrl(raw) {
+  let url;
+  try { url = new URL(String(raw || "").trim()); }
+  catch { throw Object.assign(new Error("That doesn't look like a web address."), { status:400 }); }
+  if (url.protocol !== "https:" || !ICS_HOSTS.has(url.hostname))
+    throw Object.assign(new Error("Only an https address from calendar.google.com is accepted."), { status:400 });
+  return url;
+}
+
+async function readIcalFeed(response) {
+  const size = Number(response.headers.get("content-length"));
+  if (Number.isFinite(size) && size > MAX_ICS_BYTES)
+    throw Object.assign(new Error("That calendar feed is too large to import."), { status:413 });
+  const reader = response.body && response.body.getReader();
+  if (!reader) throw Object.assign(new Error("Google returned an empty calendar feed."), { status:502 });
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_ICS_BYTES) {
+      await reader.cancel();
+      throw Object.assign(new Error("That calendar feed is too large to import."), { status:413 });
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return new TextDecoder().decode(bytes);
+}
+
+async function importIcal(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error:"Method not allowed." });
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); }
+    catch { return res.status(400).json({ error:"The request body isn't valid JSON." }); }
+  }
+  let target;
+  try { target = readIcalUrl(body && body.url); }
+  catch (error) { return res.status(error.status || 400).json({ error:error.message }); }
+
+  try {
+    const signal = AbortSignal.timeout(15000);
+    let response;
+    for (let redirects = 0; redirects <= MAX_ICS_REDIRECTS; redirects++) {
+      response = await fetch(target, { headers:{ "User-Agent":"msc-unofficial-calendar" }, redirect:"manual", signal });
+      if (response.status < 300 || response.status >= 400) break;
+      const location = response.headers.get("location");
+      if (!location || redirects === MAX_ICS_REDIRECTS)
+        return res.status(502).json({ error:"Google redirected the calendar too many times." });
+      try { target = readIcalUrl(new URL(location, target).toString()); }
+      catch { return res.status(502).json({ error:"Google redirected to an unsupported address." }); }
+    }
+    if (!response.ok)
+      return res.status(502).json({ error:"Google refused that address (" + response.status + "). Check it is the secret iCal address." });
+    const text = await readIcalFeed(response);
+    if (!/BEGIN:VCALENDAR/i.test(text))
+      return res.status(400).json({ error:"That address didn't return a calendar." });
+    return res.status(200).json({ events:parseICS(text) });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ error:error.message });
+    console.error("iCal import:", error.message);
+    return res.status(502).json({ error:"Couldn't reach Google to read that calendar." });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-School-Email, X-School-Password");
   res.setHeader("Cache-Control", "private, no-store");
   res.setHeader("Vary", "Origin");
   const origin = String(req.headers.origin || "").toLowerCase();
-  if (origin === "http://127.0.0.1:3000" || origin === "http://localhost:3000")
+  if (DEV_ORIGINS.has(origin))
     res.setHeader("Access-Control-Allow-Origin", origin);
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.query && req.query.ical) return importIcal(req, res);
   if (req.query && req.query.subject) return subjectHandler(req, res);
 
   if (!db) return res.status(503).json({ error: "The calendar is not configured on the server." });

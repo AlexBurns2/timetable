@@ -2399,7 +2399,7 @@ async function importICal(){
   gBusy = true; gNote = ""; paintCustom();
   try {
     const from = addDays(startOfWeek(new Date()), -GWINDOW.back), to = addDays(from, GWINDOW.back + GWINDOW.ahead);
-    const response = await fetch(apiUrl("/api/ical"), {
+    const response = await fetch(apiUrl("/api/calendar?ical=1"), {
       method:"POST", headers:{ Accept:"application/json", "Content-Type":"application/json" },
       body:JSON.stringify({ url }), cache:"no-store"
     });
