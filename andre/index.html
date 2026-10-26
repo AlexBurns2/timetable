@@ -28,7 +28,10 @@ function lookAttrs(){
   if (skin === "default") delete r.dataset.skin; else r.dataset.skin = skin;
   r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin));
   r.classList.toggle("zen", !!g("andre.zen"));
-  r.toggleAttribute("data-still", g("andre.motion") === false);    /* animations off */
+  /* animations: off when switched off, or on Auto when the device asks for less
+     motion (Windows "Animation effects" off, macOS "Reduce motion"); On plays them anyway */
+  const motion = g("andre.motion");
+  r.toggleAttribute("data-still", motion === false || (motion !== true && matchMedia("(prefers-reduced-motion: reduce)").matches));
   r.style.setProperty("--fs", +g("andre.fs") || 1);                 /* text size */
   /* the old themes' fonts, fetched only once one of them is in use */
   if (skin !== "default" && !document.getElementById("skinfonts")){
@@ -250,6 +253,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .det-row .lbl{font-size:calc(10.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg3));text-transform:uppercase;letter-spacing:.06em}
 .det-row .val{font-size:calc(13px * var(--fs,1));color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
 .det-row .val a{color:color-mix(in srgb,var(--c) 65%,var(--fg));text-decoration:none}
+.det-row.left .val{font-weight:700;color:color-mix(in srgb,var(--c) 45%,var(--fg))}
 .det-row .val a:hover{text-decoration:underline}
 .det-row.mail{container-type:inline-size}
 .det-row.mail .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:min(calc(13px * var(--fs,1)),max(10px,calc(100cqi / var(--ew,20))))}
@@ -273,14 +277,14 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
-/* recess, lunch and free periods stay grey; assembly is orange */
-:root{--brkc:#FF9F0A}
+/* recess, lunch and free periods stay grey; assembly is light blue */
+:root{--asmc:#96CBFF}
 .col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
   background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
-/* assembly: laid out like a free period, a darker orange */
-.gap.asm,.brk.asm{background:color-mix(in srgb,var(--brkc) 32%,var(--base,var(--bg)))}
-.gap.asm,.brk.asm .bl{color:color-mix(in srgb,var(--brkc) 55%,var(--fg))}
-.gap.asm .t,.brk.asm .bt{color:color-mix(in srgb,var(--brkc) 45%,var(--fg2))}
+/* assembly: laid out like a free period, in light blue */
+.gap.asm,.brk.asm{background:var(--asmc)}
+.gap.asm,.brk.asm .bl{color:#123660}
+.gap.asm .t,.brk.asm .bt{color:rgba(18,54,96,.7)}
 /* free periods: who in your group is free then */
 .gap .fr,.brk .fr{flex-basis:100%;font-size:calc(11.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
@@ -703,9 +707,9 @@ select.fin{appearance:auto}
           <div class="rl"><strong>Transparent background</strong><small>Lets a browser wallpaper, like Zen's, show through</small></div>
           <button class="tog" id="zen" role="switch" aria-checked="false" aria-label="Transparent background"></button>
         </div>
-        <div class="row">
-          <div class="rl"><strong>Animations</strong><small>Turn off for slower devices</small></div>
-          <button class="tog" id="motion" role="switch" aria-checked="true" aria-label="Animations"></button>
+        <div class="row stack">
+          <div class="rl"><strong>Animations</strong><small id="motionhint"></small></div>
+          <div class="seg wide" id="motion"><button data-m="auto">Auto</button><button data-m="on">On</button><button data-m="off">Off</button></div>
         </div>
       </div>
     </div>
@@ -837,7 +841,8 @@ let email = get(LS.email, "") || get("tt.email", "");
 /* display settings, the same choices as the main timetable */
 let theme = get(LS.theme, "auto");          /* light | auto | dark */
 let zen = !!get(LS.zen, false);
-let motion = get(LS.motion, true) !== false;     /* animations on */
+/* animations: true (always), false (never), or anything else for Auto, which follows the device */
+let motion = get(LS.motion, "auto");
 let roomMode = get(LS.room, "number");      /* full CR1007.118 | building CR1007 | number 118 */
 let colours = get(LS.colours, {});          /* subject -> #hex override */
 let skin = get(LS.skin, "default");         /* one of SKINS */
@@ -898,8 +903,9 @@ function asArray(v){
 }
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $ = id => document.getElementById(id);
-/* animations are skipped when switched off in Settings, or when the device asks for less motion */
-const noMotion = () => document.documentElement.hasAttribute("data-still") || matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* animations are skipped when switched off in Settings, or (on Auto) when the device asks for less motion */
+const noMotion = () => document.documentElement.hasAttribute("data-still");      /* lookAttrs() decides, from the setting and the device */
+const deviceCalm = matchMedia("(prefers-reduced-motion: reduce)");
 const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
   .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
 
@@ -1291,7 +1297,7 @@ function render(){
   const when = (d, x) => {
     const today = sameDay(d, now), before = midnight(d) < midnight(now);
     const cur = today && x.s <= nowMin && nowMin < x.e;
-    return { past: before || (today && x.e <= nowMin), cur, p: cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0 };
+    return { past: before || (today && x.e <= nowMin), cur, p: cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0, left: cur ? x.e - nowMin : null };
   };
   const tasks = msg ? [] : tasksBetween(dates[0], dates.at(-1));
   const ctx = { now, dates, days, holiday, msg, when, tasks, err: !!loadError && !loading };
@@ -1642,7 +1648,7 @@ function gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, H, sk
       const e = x.lesson, cu = e.custom, c = cu ? cu.colour : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
       h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
            ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
-           `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id)}</div></div>`;
+           `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id, w.left)}</div></div>`;
     }
     h += "</div>";
   });
@@ -1691,7 +1697,7 @@ function renderList({ now, dates, days, holiday, msg, when, tasks, err }){
     h += `<div class="card ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}"` +
          ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}--rw:${room.length}ch;--p:${w.p}%">` +
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
-         `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id)}</div>`;
+         `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id, w.left)}</div>`;
   }
   document.getElementById("daylist").innerHTML = h;
   fitList();
@@ -1729,13 +1735,15 @@ function emWidth(text){
   measure.font = "13px " + getComputedStyle(document.body).fontFamily;
   return (measure.measureText(text).width / 13 * 1.02).toFixed(3);
 }
-function detailHtml(e, id){
+/* "35 min", "1 h 20 min": what's left of the period on now */
+const leftText = m => m < 1 ? "Under a minute" : m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "");
+function detailHtml(e, id, left = null){
   if (e.asm) return "";
-  if (e.custom) return customDetail(e);
+  if (e.custom) return customDetail(e, left);
   const mail = /@/.test(e.rawTeacher || "") ? e.rawTeacher.trim() : "";
   const rows = list => list.filter(r => r[1]).map(([lbl, val, cls, style]) =>
     `<div class="det-row ${cls || ""}"${style ? ` style="${style}"` : ""}><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
-  const meta = rows([["Room", e.room && roomParts(e.room), "room"], ["Class code", esc(e.code)]]);
+  const meta = rows([["Time left", left != null && leftText(left), "left"], ["Room", e.room && roomParts(e.room), "room"], ["Class code", esc(e.code)]]);
   const more = rows([
     ["Teacher email", mail && `<a href="mailto:${esc(mail)}">${esc(mail)}</a>`, "wide mail", mail && `--ew:${emWidth(mail)}`],
     ["Full name", e.rawSubject && e.rawSubject !== e.subject ? esc(e.rawSubject) : "", "wide"]
@@ -2109,7 +2117,11 @@ function paintSettings(){
   $("modehint").textContent = fixed ? "This theme is always dark" : "Auto follows your device";
   document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
   $("zen").setAttribute("aria-checked", zen);
-  $("motion").setAttribute("aria-checked", motion);
+  const mode = motion === true ? "on" : motion === false ? "off" : "auto";
+  document.querySelectorAll("#motion button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === mode));
+  $("motionhint").textContent = mode === "on" ? "Always on, even if your device asks for less motion"
+    : mode === "off" ? "Off, for slower devices"
+    : deviceCalm.matches ? "Off now: your device asks for less motion. Choose On to have them anyway." : "Follows your device";
   $("showsubj").setAttribute("aria-checked", showSubj());
   $("showwk").setAttribute("aria-checked", get(LS.showwk, true) !== false);
   document.querySelectorAll("#wkstart button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.s === (+get(LS.wkstart, 1) === 0 ? 0 : 1)));
@@ -2128,7 +2140,10 @@ document.querySelectorAll("#theme button").forEach(b => b.onclick = () => {
   theme = b.dataset.theme; set(LS.theme, theme); applyLook(); paintSettings();
 });
 $("zen").onclick = () => { zen = !zen; set(LS.zen, zen); applyLook(); paintSettings(); };
-$("motion").onclick = () => { motion = !motion; set(LS.motion, motion); applyLook(); paintSettings(); };
+document.querySelectorAll("#motion button").forEach(b => b.onclick = () => {
+  motion = { on:true, off:false, auto:"auto" }[b.dataset.m]; set(LS.motion, motion); applyLook(); paintSettings();
+});
+deviceCalm.addEventListener("change", () => { applyLook(); if (settingsOpen()) paintSettings(); });
 /* text size: seven steps with the default in the middle. The handle follows
    the pointer and the text changes as it passes each step; let go and it
    settles on the nearest. Arrow keys step it too. */
@@ -2635,11 +2650,12 @@ function paintCustom(){
 }
 
 /* an opened custom period: where, which calendar, the event's own notes */
-function customDetail(e){
+function customDetail(e, left = null){
   const ev = e.ev, cal = ev ? (gcal.calendars.find(c => c.id === ev.cal) || {}).name || "" : "";
   const rows = list => list.filter(r => r[1]).map(([lbl, val, cls]) =>
     `<div class="det-row ${cls || ""}"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
-  const meta = rows([["Room", e.room && `<span class="rk">${esc(e.room)}</span>`, "room"], ev ? ["Calendar", esc(cal)] : ["Repeats", esc(ownSummary(e.custom))]]);
+  const meta = rows([["Time left", left != null && leftText(left), "left"], ["Room", e.room && `<span class="rk">${esc(e.room)}</span>`, "room"],
+                     ev ? ["Calendar", esc(cal)] : ["Repeats", esc(ownSummary(e.custom))]]);
   const notes = e.custom.notes || (ev && ev.notes);
   const more = rows([["Event", ev && norm(ev.title) !== norm(e.subject) ? esc(ev.title) : "", "wide"],
                      ["Where", ev && ev.place && ev.place !== e.room ? esc(ev.place) : "", "wide"],
