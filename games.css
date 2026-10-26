@@ -986,3 +986,7 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .jimconfirmbox h3{margin:0 0 8px;font-family:var(--font-display);font-size:1.25rem;color:#e5484d}
 .jimconfirmbox p{margin:0 0 16px;color:var(--muted);font-size:0.8125rem}
 html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{animation:none}
+
+/* shown inside a frame on another page (games.html?play=…&embed=1): just the game */
+.embedded .pagehead,.embedded #back{display:none}
+.embedded .wrap{padding-top:14px}

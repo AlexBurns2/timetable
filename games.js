@@ -7264,4 +7264,14 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
       {id:'e-bio',name:'Biomedical',gen:genBiomed}]}
   ] });
 
-showGrid();
+/* Opened from another page, e.g. Andre's page showing a game in a frame:
+   games.html?play=snake goes straight to that game, and &embed=1 leaves out
+   this page's own header and back button, since the frame has its own. (The
+   check is on GAMES, not BUILD: jim.js adds its game after this file runs,
+   and openGame builds a moment later.) */
+{
+  const q = new URLSearchParams(location.search), play = q.get('play');
+  if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play))) openGame(play); else showGrid();
+}
+

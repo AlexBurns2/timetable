@@ -49,18 +49,19 @@ lookAttrs();
    ultrawide included; modules sit a full screen below. Narrow or portrait windows get the
    phone layout instead: a day strip over a list of that day's lessons. */
 :root{
-  --bg:#FBFBFD; --fill:#F0F0F4; --fill2:#E5E5EA; --blue:#0A84FF; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#AEAEB2; --sep:rgba(0,0,0,.08);
+  --bg:#FBFBFD; --fill:#F0F0F4; --fill2:#E5E5EA; --blue:#0A84FF; --fg:#1D1D1F; --fg2:#6E6E73; --fg3:#808085; --line3:#AEAEB2; --sep:rgba(0,0,0,.08);
   --mat:rgba(251,251,253,.8); --red:#FF3B30; --gap:#F2F2F5; --past:#ECECEF;
   --green:#30C05A; --tint:34%;
+  --bluet:color-mix(in srgb,var(--blue) 80%,var(--fg));   /* blue for text */
   --colmax:320px;   /* widest a day gets; the whole page is sized from it */
   --pagemax:calc(var(--nd,5) * var(--colmax) + 2 * 36px + (var(--nd,5) + 1) * 8px + 56px);   /* --nd: days shown */
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --tint:30%; --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --tint:30%; --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#75757A; --line3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --tint:30%; --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#5A5A5F; --sep:rgba(255,255,255,.1);
+  --tint:30%; --bg:#000; --fill:#1C1C1E; --fill2:#2C2C2E; --blue:#0A84FF; --fg:#F5F5F7; --fg2:#98989D; --fg3:#75757A; --line3:#5A5A5F; --sep:rgba(255,255,255,.1);
   --mat:rgba(0,0,0,.72); --red:#FF453A; --gap:#111113; --past:#1A1A1C; color-scheme:dark}
 *{box-sizing:border-box}
 /* things slide right off the page when the week turns; the page area clips
@@ -89,7 +90,7 @@ button,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .email svg{width:15px;height:15px;flex:none}
 .email input{width:11ch;min-width:3ch;height:100%;outline:none;color:var(--fg);font-size:calc(14px * var(--fs,1));cursor:text;padding:0}
 .email input::placeholder{color:var(--fg2)}
-.email .dom{color:var(--fg3);font-size:calc(14px * var(--fs,1));white-space:nowrap}
+.email .dom{color:var(--fg2);font-size:calc(14px * var(--fs,1));white-space:nowrap}
 .naming .dom{display:none}
 @keyframes shake{15%,85%{transform:translateX(-2px)}30%,70%{transform:translateX(5px)}45%{transform:translateX(-6px)}60%{transform:translateX(4px)}}
 .email.shake{animation:shake .45s ease}
@@ -119,7 +120,7 @@ html.zen .bar,html.zen body::before{background:transparent;backdrop-filter:none;
 .pbody{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
 .pbody::-webkit-scrollbar{display:none}
 .sec-label{display:flex;justify-content:space-between;font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 6px}
-.sec-label button{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
+.sec-label button{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--bluet);text-transform:uppercase;letter-spacing:.06em}
 .row-group{background:var(--fill);border-radius:12px;overflow:hidden}
 #freesec .row-group{overflow:visible}
 #freesec .row.stack{gap:8px}
@@ -130,7 +131,7 @@ html.zen .bar,html.zen body::before{background:transparent;backdrop-filter:none;
 .rl small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 a.row:hover{background:var(--fill2)}
 a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
-.tog{width:44px;height:26px;border-radius:13px;background:var(--fg3);flex:none;position:relative}
+.tog{width:44px;height:26px;border-radius:13px;background:var(--line3);flex:none;position:relative}
 .tog[aria-checked="true"]{background:var(--blue)}
 .tog::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .tog[aria-checked="true"]::after{transform:translateX(18px)}
@@ -141,8 +142,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .rtile{flex:1 1 auto;min-width:0;border-radius:8px;padding:10px 6px;text-align:center;border:2px solid transparent;background:var(--fill2)}
 .rtile[aria-pressed="true"]{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--fill2))}
 .rtile .rv{display:block;font-weight:600;font-size:calc(13px * var(--fs,1));color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rtile[aria-pressed="true"] .rv{color:var(--blue)}
-.rtile .rl2{display:block;color:var(--fg3);font-size:calc(11px * var(--fs,1));margin-top:2px}
+.rtile[aria-pressed="true"] .rv{color:var(--bluet)}
+.rtile .rl2{display:block;color:var(--fg2);font-size:calc(11px * var(--fs,1));margin-top:2px}
 .colours{background:var(--fill);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .colours .none{color:var(--fg2);font-size:calc(13px * var(--fs,1))}
 .crow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
@@ -189,9 +190,9 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 /* closed, the card is exactly its time slot, so the gaps either side stay even */
 .blk:not(.open):not(.closing) .blk-card{height:100%}
 .blk .s{display:block;font-weight:600;font-size:calc(15px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
-.blk .m{display:block;font-size:calc(13px * var(--fs,1));margin-top:2px;color:color-mix(in srgb,var(--c) 25%,var(--fg2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk .m{display:block;font-size:calc(13px * var(--fs,1));margin-top:2px;color:color-mix(in srgb,var(--fg) 72%,var(--c));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blk .r{position:absolute;top:10px;left:calc(100cqw - 12px);translate:-100% 0;font-size:calc(13px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.blk .t{display:block;margin-top:auto;padding-top:4px;font-size:calc(12px * var(--fs,1));white-space:nowrap;color:color-mix(in srgb,var(--c) 30%,var(--fg2))}
+.blk .t{display:block;margin-top:auto;padding-top:4px;font-size:calc(12px * var(--fs,1));white-space:nowrap;color:color-mix(in srgb,var(--fg) 64%,var(--c))}
 .blk.sm .blk-card{flex-direction:row;align-items:center;gap:8px;padding:0 12px}
 .blk.sm .s{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}
 .blk.sm .t{margin:0;padding:0}
@@ -200,7 +201,9 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.sm.open .m,.blk.sm.open .r{display:block}
 .blk.sm.open .s{white-space:normal;padding-right:0}
 .blk.sm.open .t{padding-top:4px}
-.blk.past:not(.open) .blk-card{filter:saturate(.7);opacity:.75}     /* over: faded, but still its colour, unlike the grey breaks */
+/* over: a softer, less saturated colour behind it (still its colour, unlike the
+   grey breaks), with its text left readable */
+.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--c) calc(var(--tint) * .5),var(--base,var(--bg)));filter:saturate(.75)}
 .blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 25%,transparent);backdrop-filter:saturate(.7);-webkit-backdrop-filter:saturate(.7);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 /* opened, the card grows by half a day, and never by less than room for Room and Class code */
 .blk-card{--xw:max(50cqw,112px)}
@@ -250,15 +253,15 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .det{padding:8px 0 2px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0 18px}
 .det-row{padding:4px 0;min-width:0}
 .det-row.wide,.det .roster{grid-column:1/-1}
-.det-row .lbl{font-size:calc(10.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg3));text-transform:uppercase;letter-spacing:.06em}
+.det-row .lbl{font-size:calc(10.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--fg) 62%,var(--c));text-transform:uppercase;letter-spacing:.06em}
 .det-row .val{font-size:calc(13px * var(--fs,1));color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
-.det-row .val a{color:color-mix(in srgb,var(--c) 65%,var(--fg));text-decoration:none}
-.det-row.left .val{font-weight:700;color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+.det-row .val a{color:color-mix(in srgb,var(--fg) 60%,var(--c));text-decoration:none}
+.det-row.left .val{font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .det-row .val a:hover{text-decoration:underline}
 .det-row.mail{container-type:inline-size}
 .det-row.mail .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:min(calc(13px * var(--fs,1)),max(10px,calc(100cqi / var(--ew,20))))}
 .cls-btn{display:flex;align-items:center;justify-content:space-between;width:100%;margin:6px 0 4px;padding:9px 10px;border-radius:8px;text-align:left;
-  background:color-mix(in srgb,var(--c) 12%,var(--fill));font-size:calc(13px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 65%,var(--fg));transition:background .15s}
+  background:color-mix(in srgb,var(--c) 12%,var(--fill));font-size:calc(13px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--fg) 60%,var(--c));transition:background .15s}
 .cls-btn:hover{background:color-mix(in srgb,var(--c) 20%,var(--fill))}
 .cls-btn svg{width:13px;height:13px;flex:none;transition:transform .4s cubic-bezier(.34,1.4,.64,1)}
 .cls-btn.open svg{transform:rotate(180deg)}
@@ -274,17 +277,35 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 
 .gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:calc(12px * var(--fs,1));color:var(--fg2);font-weight:500;overflow:hidden}
 .gap i{width:3px;height:3px;border-radius:50%;background:currentColor}
-.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);white-space:nowrap}
+.gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg2);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
-.gap.past{opacity:.4}
+.gap.past{background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)));color:color-mix(in srgb,var(--fg2) 75%,var(--fg3))}
+.gap.past .t{color:inherit}
 /* recess, lunch and free periods stay grey; assembly is light blue */
 :root{--asmc:#96CBFF}
 .col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
   background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
-/* assembly: laid out like a free period, in light blue */
-.gap.asm,.brk.asm{background:var(--asmc)}
-.gap.asm,.brk.asm .bl{color:#123660}
-.gap.asm .t,.brk.asm .bt{color:rgba(18,54,96,.7)}
+/* assembly: light blue, its name and time centred like a break, no dot
+   between them; it opens like a lesson to show the student's house */
+.blk.asm .blk-card{background:var(--asmc)}
+.blk.asm .s{color:#123660;font-size:calc(13px * var(--fs,1));font-weight:500;padding-right:0}
+.blk.asm .t{color:rgba(18,54,96,.7);font-size:calc(11.5px * var(--fs,1))}
+/* Open or closed it keeps the same centred row; opening only slides the house
+   in underneath (and closing slides it away), so nothing jumps */
+.blk.asm .blk-card,.blk.asm.open .blk-card,.blk.asm.closing .blk-card{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;
+  justify-content:center;column-gap:8px;row-gap:0;padding:0 12px;width:100%}
+/* the name and time sit on one line as tall as the block, so they're centred in
+   it closed and stay exactly put while the house slides in below */
+.blk.asm .s,.blk.asm.open .s,.blk.asm .t,.blk.asm.open .t{line-height:var(--bh);white-space:nowrap;margin:0;padding:0}
+.blk.asm .m,.blk.asm .r,.blk.asm.open .m,.blk.asm.open .r{display:none}
+.blk.asm .blk-detail{flex-basis:100%}
+.blk.asm .blk-meta .det{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;text-align:center;padding-bottom:8px}
+:is(.blk,.card).asm .det-row .lbl{color:rgba(18,54,96,.62)}
+:is(.blk,.card).asm .det-row .val,:is(.blk,.card).asm .det-row.left .val{color:#123660;font-weight:600}
+.card.asm{background:var(--asmc);flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;padding:12px 14px}
+.card.asm .subj{font-size:calc(14px * var(--fs,1));font-weight:500;color:#123660;padding-right:0}
+.card.asm .time{padding-top:0;color:rgba(18,54,96,.7)}
+.card.asm .blk-detail{flex-basis:100%}       /* opening only adds the house underneath */
 /* free periods: who in your group is free then */
 .gap .fr,.brk .fr{flex-basis:100%;font-size:calc(11.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
@@ -317,8 +338,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .mod h3{margin:0;font-size:calc(15px * var(--fs,1));font-weight:600;color:var(--ink);transition:color .4s ease}
 .mod .ic{display:grid;place-items:flex-start;color:var(--ink);transition:color .4s ease}
 .mod .ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.mod.on{--paint:var(--c);--ink:#fff}
-.mod .state{font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--ink);opacity:.85;transition:color .4s ease}
+.mod.on{--paint:color-mix(in srgb,var(--c) 78%,#000);--ink:#fff}
+.mod .state{font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--ink);transition:color .4s ease}
 /* the column count is set here; the page then widens tiles so every row is full */
 @media (max-width:700px){.mg{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1400px){.mg{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -340,7 +361,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .sugg button[aria-selected="true"],.sugg button:hover{background:var(--fill)}
 .sugg .hint{padding:8px 10px;font-size:calc(13px * var(--fs,1));color:var(--fg2)}
 .sugg .hint.err{color:var(--red)}
-.sugg a{color:var(--blue)}
+.sugg a{color:var(--bluet)}
 .sugg{transform-origin:top center}
 .sugg:not([hidden]){animation:suggIn .22s cubic-bezier(.2,.9,.3,1.15)}
 .sugg.out{animation:suggOut .14s ease forwards}
@@ -351,12 +372,12 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 @keyframes itemIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 
 /* settings: free periods, theme picker */
-.rl small a{color:var(--blue)}
+.rl small a{color:var(--bluet)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips:empty{display:none}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:14px;background:var(--fill2);font-size:calc(13px * var(--fs,1));font-weight:500}
 .chip i{font-style:normal;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;color:var(--fg2);line-height:1}
-.chip:hover i{background:var(--fg3);color:var(--bg)}
+.chip:hover i{background:var(--line3);color:var(--bg)}
 .chip.unk{color:var(--fg3)}
 .fin{width:100%;background:var(--fill2);border-radius:8px;padding:8px 10px;cursor:text;outline:none}
 .fin:focus{box-shadow:0 0 0 2px var(--blue)}
@@ -373,9 +394,9 @@ button.row:hover{background:var(--fill2)}
 .fsa{flex:none;font-size:12px;font-weight:600;color:var(--fg2);line-height:1;width:14px;text-align:center}
 .fsa.big{font-size:20px}
 .fstrack{position:relative;flex:1;height:4px;border-radius:2px;background:var(--fill2)}
-.fstick{position:absolute;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--fg3)}
+.fstick{position:absolute;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--line3)}
 .fstick.def{width:12px;height:12px;margin:-6px 0 0 -6px;background:var(--fill);box-shadow:inset 0 0 0 2px var(--blue)}
-.fstick.def::after{content:"Default";position:absolute;top:17px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);white-space:nowrap}
+.fstick.def::after{content:"Default";position:absolute;top:17px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--bluet);white-space:nowrap}
 .fsfill{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--blue);transition:left .25s cubic-bezier(.3,1.3,.5,1),width .25s cubic-bezier(.3,1.3,.5,1)}
 .fsthumb{position:absolute;top:50%;left:var(--x,50%);width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#fff;
   box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.1);transition:left .25s cubic-bezier(.3,1.3,.5,1),transform .15s;cursor:grab}
@@ -390,7 +411,7 @@ button.row:hover{background:var(--fill2)}
 .panel.sub .pbody{display:none}
 .panel.sub .pview{display:flex;animation:slidein .28s cubic-bezier(.34,1.2,.64,1)}
 @keyframes slidein{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
-.pback{align-self:flex-start;display:flex;align-items:center;gap:4px;font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--blue);padding:2px}
+.pback{align-self:flex-start;display:flex;align-items:center;gap:4px;font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--bluet);padding:2px}
 .pback svg{width:13px;height:13px}
 .skins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .skin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:10px;border:2px solid transparent;font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--fg2)}
@@ -402,7 +423,7 @@ button.row:hover{background:var(--fill2)}
    onto this page's tokens. Specific enough to beat the light/dark defaults. */
 :root[data-skin][data-skin]{
   --bg:var(--s-bg); --img:var(--s-img,none); --fill:var(--s-panel2); --fill2:color-mix(in srgb,var(--s-text) 9%,var(--s-panel2));
-  --fg:var(--s-text); --fg2:var(--s-muted); --fg3:color-mix(in srgb,var(--s-muted) 55%,var(--s-bg)); --sep:var(--s-sep,var(--s-line));
+  --fg:var(--s-text); --fg2:var(--s-muted); --fg3:color-mix(in srgb,var(--s-muted) 80%,var(--s-bg)); --line3:color-mix(in srgb,var(--s-muted) 55%,var(--s-bg)); --sep:var(--s-sep,var(--s-line));
   --mat:color-mix(in srgb,var(--s-bg) 84%,transparent); --blue:var(--s-accent); --font:var(--s-font);
   --base:var(--s-base,var(--s-bg)); --tint:var(--s-tint,20%); color-scheme:light;
 }
@@ -444,12 +465,21 @@ button.row:hover{background:var(--fill2)}
 [data-skin="paper"] .blk-card,[data-skin="paper"] .card{box-shadow:2px 3px 7px rgba(60,45,20,.16)}
 
 /* ── the Custom periods tile opens up in place, onto a row of its own ── */
-.mod.modx{display:block;padding:0;overflow:hidden}
+.mod.modx{position:relative;display:block;padding:0;overflow:hidden}
+.mod.modx.open{overflow:visible}        /* lets a name search hang out of it */
+/* the switch tiles: tap the tile to switch it on or off; the gear opens its settings in place */
+.mod.modx .mset{position:absolute;top:10px;right:10px;z-index:2;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  color:var(--ink);background:color-mix(in srgb,var(--ink) 10%,transparent);transition:background-color .2s,transform .35s cubic-bezier(.3,1.3,.5,1),color .4s}
+.mod.modx .mset:hover{background:color-mix(in srgb,var(--ink) 18%,transparent)}
+.mod.modx .mset svg{width:17px;height:17px}
+.mod.modx.open .mset{transform:rotate(90deg)}
+.tilebody{max-width:620px}
+.tilebody .row-group{overflow:visible}
 .mod.modx:not(.open):hover{filter:brightness(.97)}
 .mod.modx.open:hover{filter:none}
-.mod.modx.open{--paint:color-mix(in srgb,var(--c) 12%,var(--base,var(--bg)))}
+.mod.modx.open{--paint:color-mix(in srgb,var(--c) 12%,var(--base,var(--bg)));--ink:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .mod.modx .mod-head{position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;width:100%;height:calc(150px * var(--fs,1));padding:14px 16px;text-align:left;color:inherit;cursor:pointer}
-.mod.modx.open .mod-head{height:auto;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;padding:16px 18px 6px}
+.mod.modx.open .mod-head{height:auto;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;padding:16px 56px 6px 18px}
 .mod.modx .mod-body{display:none;padding:8px 18px 18px}
 .mod.modx.open .mod-body{display:block}
 .mod.modx .row-group{background:color-mix(in srgb,var(--bg) 72%,var(--fill))}
@@ -473,10 +503,10 @@ button.row:hover{background:var(--fill2)}
 .blk.cst-solid:not(.open) :is(.s,.m,.t,.r),.card.cst-solid:not(.open) :is(.subj,.teacher,.room,.time){color:var(--ink)}
 .blk.cst-outline:not(.open) .blk-card,.card.cst-outline:not(.open){background:var(--base,var(--bg));box-shadow:inset 0 0 0 2px var(--c)}
 .cst .r,.card.cst .room{white-space:nowrap}
-.col > .tskip{position:absolute;left:20%;right:20%;height:0;border-top:2px dotted color-mix(in srgb,var(--fg3) 70%,transparent)}
+.col > .tskip{position:absolute;left:20%;right:20%;height:0;border-top:2px dotted color-mix(in srgb,var(--line3) 70%,transparent)}
 .cust{display:flex;flex-direction:column;gap:8px}
 .cust .row-group{overflow:visible}
-.sub-label{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 0}
+.sub-label{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 0}
 .rl small .err{color:var(--red)}
 .row .danger{color:var(--red)}
 .btn.sm{height:30px;padding:0 12px;font-size:calc(13px * var(--fs,1));flex:none}
@@ -494,8 +524,8 @@ button.row:hover{background:var(--fill2)}
 .pchip.cst-outline{background:var(--base,var(--bg));box-shadow:inset 0 0 0 2px var(--c)}
 .prow .val{min-width:0;overflow:hidden}
 .prow .val span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.addp{flex:none;color:var(--blue);font-weight:600;font-size:calc(13px * var(--fs,1))}
-.row.more{justify-content:center;color:var(--blue);font-size:calc(13px * var(--fs,1));font-weight:500}
+.addp{flex:none;color:var(--bluet);font-weight:600;font-size:calc(13px * var(--fs,1))}
+.row.more{justify-content:center;color:var(--bluet);font-size:calc(13px * var(--fs,1));font-weight:500}
 /* the editor: a live preview of the period, as the timetable will draw it */
 .pprev{position:relative;height:calc(86px * var(--fs,1));flex:none}
 .pprev .blk{cursor:default;top:0;bottom:0}
@@ -503,13 +533,36 @@ button.row:hover{background:var(--fill2)}
 .swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swatch.pick[aria-pressed="true"]{background:var(--c)}
 
+/* ── games: the Games tile opens onto every game, with the leaderboards under
+   them; a game's card moves down into the leaderboards' place and plays there ── */
+.gres .sub-label:first-child{margin-top:0}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:10px;margin:6px 0 14px}
+.gcard{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;text-align:left;color:inherit;
+  background:color-mix(in srgb,var(--c) 18%,var(--base,var(--bg)));transition:transform .15s,filter .15s,box-shadow .2s}
+.gcard:hover{filter:brightness(.97);transform:translateY(-1px)}
+.gcard[aria-pressed="true"]{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 70%,var(--fg))}
+.gcard .gico{font-size:26px;line-height:1;flex:none}
+.gcard b{display:block;font-size:calc(14px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg))}
+.gcard small{display:block;font-size:calc(12px * var(--fs,1));color:color-mix(in srgb,var(--c) 12%,var(--fg2));line-height:1.3;margin-top:2px}
+.gcard .gnew{position:absolute;top:6px;right:8px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1d1d1f;background:var(--c);border-radius:6px;padding:1px 6px}
+.gstage{display:flex;flex-direction:column;height:min(78vh,760px);border-radius:12px;overflow:hidden;background:var(--bg);box-shadow:inset 0 0 0 1px var(--sep)}
+.gsbar{flex:none;display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--sep);background:color-mix(in srgb,var(--gc,#FFD60A) 14%,var(--base,var(--bg)))}
+.gsbar b{font-size:calc(15px * var(--fs,1));font-weight:600}
+.gvout{font-size:calc(13px * var(--fs,1));color:var(--bluet);text-decoration:none;white-space:nowrap}
+.gsbody{position:relative;flex:1;min-height:0}
+.gsbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);opacity:0;transition:opacity .3s}
+.gstage.ready iframe{opacity:1}
+.gvico{position:absolute;inset:0;display:grid;place-items:center;font-size:56px}
+.gfly{position:absolute;z-index:16;margin:0;box-shadow:0 18px 40px rgba(0,0,0,.22);pointer-events:none}
+@media (max-width:760px),(orientation:portrait){ .gvout{display:none} .gstage{height:80vh} }
+
 /* ── assessments: the scheduled weeks of the shown student's HSC tasks ── */
 .asst{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-4px 44px 12px}
 .list > .asst{margin:0 0 2px}
 .asst-h{font-size:calc(11px * var(--fs,1));font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);margin-right:4px}
 .apill{display:inline-flex;align-items:baseline;gap:7px;max-width:100%;min-width:0;padding:4px 10px 4px 12px;border-radius:8px;font-size:calc(12.5px * var(--fs,1));white-space:nowrap;
   background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));box-shadow:inset 3px 0 0 var(--c);color:color-mix(in srgb,var(--c) 30%,var(--fg))}
-.apill b{font-weight:700;color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+.apill b{font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .apill .at{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .apill .aw{font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
 .mweek{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;margin:-1px 44px 5px}     /* a whole grid row, lined up with the days */
@@ -540,7 +593,7 @@ button.row:hover{background:var(--fill2)}
 .mcell{--mc:#8E8E93;position:relative;min-height:max(92px,calc((100vh - 230px) / 6));border-radius:10px;
   background:color-mix(in srgb,var(--mc) 15%,var(--base,var(--bg)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mc) 24%,transparent);padding:6px 7px;display:flex;flex-direction:column;gap:3px;text-align:left;overflow:hidden;color:inherit}
 .mcell:hover{filter:brightness(.97)}
-.mcell.out{opacity:.42}
+.mcell.out{opacity:.78}
 .mcell.wa{--mc:#0A84FF}
 .mcell.wb{--mc:#FF3B30}
 .mcell.wkend{--mc:#FF9F0A}
@@ -553,9 +606,9 @@ button.row:hover{background:var(--fill2)}
 .mtop{display:flex;align-items:baseline;gap:6px}
 .mnum{font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--mc) 55%,var(--fg))}
 .mcell.today .mnum{font-weight:800}
-.mwk{font-size:calc(11px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--mc) 65%,var(--fg2))}
+.mwk{font-size:calc(11px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--mc) 50%,var(--fg))}
 .chipe{display:block;max-width:100%;font-size:calc(12px * var(--fs,1));font-weight:500;line-height:1.35;padding:1px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  background:color-mix(in srgb,var(--c) var(--tint),var(--bg));color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+  background:color-mix(in srgb,var(--c) var(--tint),var(--bg));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .chipe.sub{box-shadow:inset 3px 0 0 var(--c)}
 .mmore{font-size:calc(11px * var(--fs,1));color:var(--fg3);padding-left:4px}
 /* events on the week view: a dot per event under the date */
@@ -579,13 +632,13 @@ select.fin{appearance:auto}
 .btnrow{display:flex;gap:8px;align-items:center}
 .btnrow .grow{flex:1}
 .btn{height:36px;padding:0 16px;border-radius:10px;background:var(--fill);font-size:calc(14px * var(--fs,1));font-weight:600;color:var(--fg)}
-.btn.primary{background:var(--blue);color:#fff}
-.btn.danger{color:var(--red);background:none;padding:0 6px}
+.btn.primary{background:color-mix(in srgb,var(--blue) 86%,#000);color:#fff}
+.btn.danger{color:color-mix(in srgb,var(--red) 82%,var(--fg));background:none;padding:0 6px}
 .btn.wide{width:100%}
 .evlist{display:flex;flex-direction:column;gap:8px}
 .evitem{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;color:inherit;
   background:color-mix(in srgb,var(--c) var(--tint),var(--bg));box-shadow:inset 3px 0 0 var(--c)}
-.evitem b{font-size:calc(14px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+.evitem b{font-size:calc(14px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .evitem span{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 .evempty{font-size:calc(13px * var(--fs,1));color:var(--fg2);margin:0}
 
@@ -605,18 +658,19 @@ select.fin{appearance:auto}
 .card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
 .card .subj{font-size:calc(17px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
-.card .teacher{font-size:calc(13px * var(--fs,1));color:color-mix(in srgb,var(--c) 25%,var(--fg2));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
+.card .teacher{font-size:calc(13px * var(--fs,1));color:color-mix(in srgb,var(--fg) 72%,var(--c));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
 .card .room{position:absolute;top:14px;right:14px;font-size:calc(14px * var(--fs,1));font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.card .time{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:color-mix(in srgb,var(--c) 30%,var(--fg3));padding-top:10px}
+.card .time{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:color-mix(in srgb,var(--fg) 64%,var(--c));padding-top:10px}
 .card.open{cursor:default}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
 .card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.card.past:not(.open){filter:saturate(.7);opacity:.75}
+.card.past:not(.open){background:color-mix(in srgb,var(--c) calc(var(--tint) * .5),var(--base,var(--bg)));filter:saturate(.75)}
 .brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brk .bl{font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--fg2)}
-.brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
-.brk.past{opacity:.4}
+.brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.brk.past{background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)))}
+.brk.past :is(.bl,.bt){color:color-mix(in srgb,var(--fg2) 75%,var(--fg3))}
 /* tightened so the whole day fits on the first screen (see fitList) */
 .list.tight{padding-top:10px;gap:6px}
 .list.tight .card{padding:9px 12px 8px}
@@ -714,19 +768,6 @@ select.fin{appearance:auto}
       </div>
     </div>
 
-    <div data-for="free" id="freesec">
-      <div class="sec-label">Your group</div>
-      <div class="row-group">
-        <div class="row stack">
-          <div class="rl"><small id="freestat"></small></div>
-          <div class="chips" id="freechips"></div>
-          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
-            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
-        </div>
-      </div>
-      <p class="sec-note">Each free period shows who in your group is free for all of it, and other subjects are hidden. Tap <b>Who's free</b> at the bottom of the page to turn it off.</p>
-    </div>
-
     <div data-for="week">
       <div class="sec-label">Room numbers</div>
       <div class="row-group">
@@ -744,28 +785,6 @@ select.fin{appearance:auto}
     <div data-for="week">
       <div class="sec-label">Subject colours <button id="resetcolours">Reset</button></div>
       <div class="colours" id="colours"></div>
-    </div>
-
-    <div data-for="month">
-      <div class="sec-label">Calendar</div>
-      <div class="row-group">
-        <div class="row">
-          <div class="rl"><strong>Subject events</strong><small>Shared events for your subjects, like exams</small></div>
-          <button class="tog" id="showsubj" role="switch" aria-label="Show subject events"></button>
-        </div>
-        <div class="row">
-          <div class="rl"><strong>Week numbers</strong><small>"Week 3A" on each Monday</small></div>
-          <button class="tog" id="showwk" role="switch" aria-label="Show week numbers"></button>
-        </div>
-        <div class="row">
-          <div class="rl"><strong>Week starts on</strong></div>
-          <div class="seg" id="wkstart"><button data-s="1">Monday</button><button data-s="0">Sunday</button></div>
-        </div>
-        <div class="row">
-          <div class="rl"><strong>Personal events</strong><small id="perscount"></small></div>
-          <button class="btn danger" id="clearpers">Delete all</button>
-        </div>
-      </div>
     </div>
 
     <div data-for="week">
@@ -808,14 +827,56 @@ select.fin{appearance:auto}
     <h2>MSC Unofficial</h2>
     <div class="mg" id="mg">
       <!-- tiles that work on this page first, then the ones that open another page -->
-      <a class="mod" data-m="calendar" href="#calendar" role="button" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></a>
-      <a class="mod" data-m="free" href="#whos-free" role="button" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></a>
+      <div class="mod modx" data-m="calendar" style="--c:#AF52DE">
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></button>
+        <button class="mset" aria-label="Calendar settings" aria-expanded="false" aria-controls="calbody"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        <div class="mod-body" id="calbody"><div class="tilebody"><div class="row-group">
+        <div class="row">
+          <div class="rl"><strong>Subject events</strong><small>Shared events for your subjects, like exams</small></div>
+          <button class="tog" id="showsubj" role="switch" aria-label="Show subject events"></button>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Week numbers</strong><small>"Week 3A" on each Monday</small></div>
+          <button class="tog" id="showwk" role="switch" aria-label="Show week numbers"></button>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Week starts on</strong></div>
+          <div class="seg" id="wkstart"><button data-s="1">Monday</button><button data-s="0">Sunday</button></div>
+        </div>
+        <div class="row">
+          <div class="rl"><strong>Personal events</strong><small id="perscount"></small></div>
+          <button class="btn danger" id="clearpers">Delete all</button>
+        </div>
+      </div></div></div>
+      </div>
+      <div class="mod modx" data-m="free" style="--c:#30C05A">
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></button>
+        <button class="mset" aria-label="Who's free settings" aria-expanded="false" aria-controls="freebody"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        <div class="mod-body" id="freebody"><div class="tilebody" id="freesec"><div class="row-group">
+        <div class="row stack">
+          <div class="rl"><small id="freestat"></small></div>
+          <div class="chips" id="freechips"></div>
+          <div class="search"><input class="fin" id="freeq" placeholder="Add someone by name…" aria-label="Add someone to your group" aria-controls="freesugg" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="done">
+            <div class="sugg" id="freesugg" role="listbox" hidden></div></div>
+        </div>
+      </div>
+      <p class="sec-note">Each free period shows who in your group is free for all of it, and other subjects are hidden. Tap the tile to switch it on or off.</p></div></div>
+      </div>
       <div class="mod modx" data-m="periods" style="--c:#5E5CE6">
-        <button class="mod-head" aria-expanded="false" aria-controls="perbody"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5"/></svg></div><h3>Custom periods <span class="state" id="perstate"></span></h3></button>
+        <button class="mod-head" aria-pressed="true"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5"/></svg></div><h3>Custom periods <span class="state" id="perstate"></span></h3></button>
+        <button class="mset" aria-label="Custom periods settings" aria-expanded="false" aria-controls="perbody"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
         <div class="mod-body" id="perbody"><div class="cust" id="custom"></div><div class="pedit" id="pedit" hidden></div></div>
       </div>
       <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
-      <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
+      <div class="mod modx" data-m="games" style="--c:#FF375F">
+        <button class="mod-head" aria-expanded="false" aria-controls="gamesbody"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></button>
+        <div class="mod-body" id="gamesbody"><div class="gpick" id="gpick"><div class="gres" id="gres"></div>
+          <div class="gstage" id="gstage">
+            <div class="gsbar"><button class="pback" id="gsback" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Leaderboards</button><b id="gstitle">Leaderboards</b><span class="grow"></span>
+              <a class="gvout" id="gsout" target="_blank" rel="noopener">Open on its own page</a></div>
+            <div class="gsbody"><span class="gvico" id="gsico" aria-hidden="true">🏆</span><iframe id="gsframe" title="Leaderboards"></iframe></div>
+          </div></div></div>
+      </div>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
     </div>
   </section>
@@ -830,7 +891,7 @@ const apiUrl = path => API_ORIGIN + path;
 const ENDPOINT = apiUrl("/api/timetable"), DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
-             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal" };
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction and optional login */
@@ -1058,6 +1119,11 @@ function buildSlots(){
     .sort((a,b) => (a.start ?? 1e9) - (b.start ?? 1e9));
 }
 
+/* the student's house, from their assembly's class code ("Assembly Bayagin") */
+function houseOf(e){
+  const h = String((e && e.code) || "").replace(/^assembly\b[\s_-]*/i, "").replace(/_/g, " ").trim();
+  return h && !/^(assembly|house)$/i.test(h) ? titleCase(h) : "";
+}
 /* that day's actual times for a slot */
 function bellFor(dayKey, slotKey){
   const k = mergeKey(slotKey);
@@ -1087,7 +1153,7 @@ function itemsFor(cyc){
     if (s == null || en == null || en <= s) continue;
     const kind = e ? e.kind : slot.kind;
     if (kind === "class" && e) L.push({ s, e:en, lesson:e, keys:[cyc + "|" + slot.key] });
-    else if (kind === "assembly") L.push({ s, e:en, lesson:{ subject:"Assembly", teacher:"", room:"", asm:true } });
+    else if (kind === "assembly") L.push({ s, e:en, lesson:{ subject:"Assembly", teacher:"", room:"", code:"", asm:true, house:houseOf(e) } });
     else L.push({ s, e:en, ls:[kind === "class" ? "Free" : (BREAK_NAMES[mergeKey(slot.key)] || titleCase(slot.period))],
                   keys: kind === "class" ? [cyc + "|" + slot.key] : [] });
   }
@@ -1240,6 +1306,7 @@ const wd = d => (d.getDay() + 6) % 7;            /* 0 = Monday … 6 = Sunday */
    one of your custom periods falls on one */
 function daysShown(){
   const weekend = new Set();                     /* 5 = Saturday, 6 = Sunday */
+  if (!showCustom) return [0, 1, 2, 3, 4];
   for (const p of periods) if (p.kind === "own" && periodVisibleForUser(p)) for (const k of p.days || []) if (k > 4) weekend.add(k);
   if (periods.length && gcal.events.length){
     const on = shownCals();
@@ -1299,7 +1366,7 @@ function render(){
     const cur = today && x.s <= nowMin && nowMin < x.e;
     return { past: before || (today && x.e <= nowMin), cur, p: cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0, left: cur ? x.e - nowMin : null };
   };
-  const tasks = msg ? [] : tasksBetween(dates[0], dates.at(-1));
+  const tasks = msg || !SHOW_ASSESSMENTS ? [] : tasksBetween(dates[0], dates.at(-1));
   const ctx = { now, dates, days, holiday, msg, when, tasks, err: !!loadError && !loading };
   if (phone.matches) renderList(ctx); else renderGrid(ctx);
   /* desktop arrows turn the week; the phone's step one day */
@@ -1371,6 +1438,9 @@ function rollLabel(html, monthDir){
    lower together, opening a clear lane; it slides through, and the day closes
    up again behind it. The new week's lessons come in the same way in reverse,
    the middle days first, so nothing passes through a lesson that has landed. */
+/* what an item is, whatever its times: a lesson, assembly, a custom period, or a break's names */
+const whoOf = x => x.lesson ? (x.lesson.asm ? "asm" : x.lesson.custom ? "custom:" + x.lesson.custom.id
+                                : [x.lesson.subject, x.lesson.code, x.lesson.room, x.lesson.teacher].join("/")) : (x.ls || []).join("/");
 const sigOf = x => [x.s, x.drawEnd || x.e, x.lanes ? x.lane + "/" + x.lanes : "",
   x.lesson ? (x.lesson.asm ? "asm" : [x.lesson.subject, x.lesson.code, x.lesson.room, x.lesson.teacher].join("/")) : x.ls.join("/"),
   (fn => fn ? fn.count + fn.names : "")(freeNote(x))].join("|");
@@ -1423,20 +1493,24 @@ async function runWeeks(){
   turning = null; rushed = false;
 }
 /* one turn, at q times its usual length; resolves when every piece has stopped moving */
-function turnWeek(target, q = 1){
+/* change: instead of turning, redraw this week after it (e.g. custom periods
+   switched on or off), with the same moves: what's gone slides out, what's
+   left resizes, what's new slides in */
+function turnWeek(target, q = 1, change){
   const M = { open:MAZE.open * q, close:MAZE.close * q, margin:MAZE.margin * q };
-  const dir = Math.sign(target - off);
+  const dir = change ? 1 : Math.sign(target - off);
   if (!dir) return null;
   closeAll();
-  if (phone.matches || noMotion()){ off = target; render(); return null; }
+  const apply = () => { if (change) change(); else off = target; render(); };
+  if (phone.matches || noMotion()){ apply(); return null; }
   const g = document.getElementById("g"), host = g.parentElement, hostR = host.getBoundingClientRect();
   host.querySelectorAll(".ghost").forEach(x => x.remove());
   const oldHeads = [...g.querySelectorAll(":scope > .dh")].map(h => ({ html:h.outerHTML, r:h.getBoundingClientRect() }));
   /* how faded a lesson is drawn (over, or still to come), from its card or the gap itself */
   const lookOf = el => { const s = getComputedStyle(el.matches(".blk") ? el.querySelector(".blk-card") : el); return { filter:s.filter, opacity:s.opacity }; };
   const before = [...g.querySelectorAll(":scope > .col")].map(col =>
-    [...col.children].map(el => ({ el, sig:el.dataset.sig, r:el.getBoundingClientRect(), look:lookOf(el) })));
-  off = target; render();
+    [...col.children].map(el => ({ el, sig:el.dataset.sig, who:el.dataset.who, span:(el.dataset.span || "").split("-").map(Number), r:el.getBoundingClientRect(), look:lookOf(el) })));
+  apply();
   const cols = [...g.querySelectorAll(":scope > .col")];
   if (!cols.length || cols.length !== before.length) return null;
   const n = cols.length, m = (n - 1) / 2;          /* the middle day */
@@ -1444,17 +1518,27 @@ function turnWeek(target, q = 1){
   const ghost = document.createElement("div");
   ghost.className = "ghost";
   host.appendChild(ghost);
-  conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR, q);
+  if (!change) conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR, q);
 
   /* who stays, who goes, who arrives */
   const kept = [], leaving = [], arriving = [], resized = [];
   cols.forEach((col, k) => {
-    const old = before[k], used = new Set(), colTop = col.getBoundingClientRect().top;
+    const old = before[k], used = new Set(), cr = col.getBoundingClientRect(), colTop = cr.top;
+    /* the same thing at the same time; failing that, the same thing at an
+       overlapping time (a break cut short, or a lesson made narrower), which
+       resizes rather than leaving and coming back */
+    const pair = new Map();
+    for (const el of col.children){ const o = old.find(o => o.sig === el.dataset.sig && !used.has(o)); if (o){ used.add(o); pair.set(el, o); } }
     for (const el of col.children){
-      const same = old.find(o => o.sig === el.dataset.sig && !used.has(o));
+      if (pair.has(el)) continue;
+      const [s, e] = (el.dataset.span || "").split("-").map(Number);
+      const o = old.find(o => !used.has(o) && o.who === el.dataset.who && o.span[0] < e && s < o.span[1]);
+      if (o){ used.add(o); pair.set(el, o); }
+    }
+    for (const el of col.children){
+      const same = pair.get(el);
       const r = el.getBoundingClientRect();
       if (!same){ arriving.push({ el, k, r }); continue; }
-      used.add(same);
       kept.push({ el, k, r, r0:same.r });
       /* last week it was over, this week it isn't (or the other way): it fades across while the turn plays */
       const look = lookOf(el);
@@ -1462,8 +1546,9 @@ function turnWeek(target, q = 1){
         (el.matches(".blk") ? el.querySelector(".blk-card") : el).animate([same.look, look], { duration:900 * q, easing:"ease-in-out" });
       /* the day's scale changed: it moves to its new spot, but only once
          everything leaving has gone (below), so it never runs into one */
-      if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5)
-        resized.push({ el, k, from:{ top:(same.r.top - colTop) + "px", height:same.r.height + "px" } });
+      if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5 || Math.abs(same.r.left - r.left) > .5 || Math.abs(same.r.width - r.width) > .5)
+        resized.push({ el, k, from:{ top:(same.r.top - colTop) + "px", height:same.r.height + "px", left:(same.r.left - cr.left) + "px", right:(cr.right - same.r.right) + "px" },
+                              to:{ top:(r.top - colTop) + "px", height:r.height + "px", left:(r.left - cr.left) + "px", right:(cr.right - r.right) + "px" } });
     }
     for (const o of old) if (!used.has(o)){
       /* a copy of the old block, since the new week is already drawn */
@@ -1490,6 +1575,13 @@ function turnWeek(target, q = 1){
     const crossed = new Map();
     for (const b of bricks) for (let j = 0; j < n; j++)
       if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
+    /* a lesson drawn beside it in its own day (they share the time) is in the
+       way too, so a lane opens there as well */
+    for (const b of bricks){
+      const beside = keptIn(b.k).map(o => entering ? o.r : o.r0)
+        .some(r => r.top < b.r.bottom && b.r.top < r.bottom && (side < 0 ? r.left < b.r.left : r.right > b.r.right));
+      if (beside) (crossed.get(b.k) || crossed.set(b.k, []).get(b.k)).push(b.r);
+    }
     const opening = crossed.size ? M.open + M.margin : 0;
     /* a wave waits for the lanes it crosses to have closed after the last one,
        and arriving lessons for their own day too, so nothing slides past or
@@ -1539,7 +1631,7 @@ function turnWeek(target, q = 1){
   const settleAt = Math.max(doneOut[-1], doneOut[1], ...resized.map(s => laneUntil[s.k]));
   const SETTLE = resized.length ? 300 * q : 0;
   for (const s of resized)
-    s.el.animate([s.from, { top:s.el.style.top, height:s.el.style.height }],
+    s.el.animate([s.from, s.to],
                  { duration:SETTLE, delay:settleAt, easing:"cubic-bezier(.4,0,.2,1)", fill:"backwards" });
   /* in: once everything has gone and settled, the middle days first */
   const startIn = resized.length ? settleAt + SETTLE : Math.max(doneOut[-1], doneOut[1]);
@@ -1637,17 +1729,17 @@ function gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, H, sk
       const sm = ht < 44, hideThis = x.lesson && !x.lesson.asm && !x.lesson.custom && hideSubjects();
       /* periods that overlap share the day's width */
       const lane = x.lanes ? `left:calc(${x.lane / x.lanes * 100}% + ${x.lane ? 3 : 0}px);right:calc(${(x.lanes - 1 - x.lane) / x.lanes * 100}% + ${x.lane < x.lanes - 1 ? 3 : 0}px);` : "";
-      if (!x.lesson || x.lesson.asm || hideThis){   /* free periods, breaks, assembly, and lessons when hidden */
-        const fn = x.lesson && !hideThis ? null : freeNote(x);
-        const ls = hideThis ? [] : x.lesson ? ["Assembly"] : x.ls;
+      if (!x.lesson || hideThis){   /* free periods, breaks, and lessons when hidden */
+        const fn = freeNote(x);
+        const ls = hideThis ? [] : x.ls;
         const gk = x.lesson ? "" : x.keys && x.keys.length ? "isfree" : "isbrk";
-        h += `<div class="gap ${gk} ${x.lesson && !hideThis ? "asm" : ""} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" data-sig="${esc(sigOf(x))}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
-             `${ls.map(esc).join("<i></i>")}${sm && ls.length ? "<i></i>" : ""}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
+        h += `<div class="gap ${gk} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
+             `${ls.map(esc).join("<i></i>")}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
-      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
-      h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
-           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
+      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : e.asm ? "#96CBFF" : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
+      h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${e.asm ? "asm" : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
+           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}${e.asm ? `--bh:${ht}px;` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id, w.left)}</div></div>`;
     }
     h += "</div>";
@@ -1689,8 +1781,10 @@ function renderList({ now, dates, days, holiday, msg, when, tasks, err }){
            (fn.names ? `<span class="fn">${esc(fn.names)}</span>` : "") + `</div>`;
       continue;
     }
-    if (x.lesson.asm){        /* a short grey row, like the breaks */
-      h += `<div class="brk asm ${w.past ? "past" : ""}"><span class="bl">Assembly</span><span class="bt tnum">${tm}</span></div>`;
+    if (x.lesson.asm){        /* a light blue row like the breaks, that opens to show the house */
+      const id = itemId(dates[sel], x);
+      h += `<div class="card asm ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}" data-k="${id}" data-code="" style="--c:#96CBFF;--rw:0ch;--p:${w.p}%">` +
+           `<span class="subj">Assembly</span><span class="time tnum">${tm}</span>${detailHtml(x.lesson, id, w.left)}</div>`;
       continue;
     }
     const e = x.lesson, cu = e.custom, c = cu ? cu.colour : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[sel], x);
@@ -1738,11 +1832,14 @@ function emWidth(text){
 /* "35 min", "1 h 20 min": what's left of the period on now */
 const leftText = m => m < 1 ? "Under a minute" : m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "");
 function detailHtml(e, id, left = null){
-  if (e.asm) return "";
   if (e.custom) return customDetail(e, left);
-  const mail = /@/.test(e.rawTeacher || "") ? e.rawTeacher.trim() : "";
   const rows = list => list.filter(r => r[1]).map(([lbl, val, cls, style]) =>
     `<div class="det-row ${cls || ""}"${style ? ` style="${style}"` : ""}><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
+  if (e.asm){
+    const meta = rows([["Time left", left != null && leftText(left), "left"], ["House", esc(e.house) || "Not listed"]]);
+    return `<div class="blk-detail blk-meta"><div class="det">${meta}</div></div>`;
+  }
+  const mail = /@/.test(e.rawTeacher || "") ? e.rawTeacher.trim() : "";
   const meta = rows([["Time left", left != null && leftText(left), "left"], ["Room", e.room && roomParts(e.room), "room"], ["Class code", esc(e.code)]]);
   const more = rows([
     ["Teacher email", mail && `<a href="mailto:${esc(mail)}">${esc(mail)}</a>`, "wide mail", mail && `--ew:${emWidth(mail)}`],
@@ -2061,9 +2158,8 @@ document.getElementById("back").onclick = () => { if (view === "month") goMonth(
 const gear = $("gear");
 const settingsOpen = () => document.body.classList.contains("setopen");
 function openSettings(o){
-  const mode = view === "month" ? "month" : freeShow ? "free" : "week";
-  $("panel").dataset.mode = mode;
-  $("ptitle").textContent = { month:"Calendar settings", free:"Who's free settings", week:"Timetable settings" }[mode];
+  $("panel").dataset.mode = "week";             /* the calendar's and Who's free's settings are in their tiles */
+  $("ptitle").textContent = "Settings";
   document.body.classList.toggle("setopen", o);
   gear.setAttribute("aria-expanded", o);
   $("panel").classList.remove("sub");
@@ -2186,6 +2282,12 @@ document.querySelectorAll("#rooms .rtile").forEach(b => b.onclick = () => {
   roomMode = b.dataset.room; set(LS.room, roomMode); paintSettings(); render();
 });
 
+/* A switch tile's header: closed, it switches the feature on or off; open on
+   its settings, it closes them instead */
+function tileHead(m, act){
+  const tile = document.querySelector(`[data-m="${m}"]`);
+  tile.querySelector(".mod-head").onclick = () => tile.classList.contains("open") ? expandTile(tile, false) : act();
+}
 /* ═══ Who's free ═══
    Pick a group; each free period on the timetable then says which of them
    are free for all of it. Uses the same ?free= lookup as the free periods
@@ -2286,7 +2388,7 @@ function toggleFree(){
   if (view === "month"){ flip(); if (freeShow) toggleCalendar(); return; }
   crossfade(flip);
 }
-document.querySelector('[data-m="free"]').onclick = e => { e.preventDefault(); toggleFree(); };
+tileHead("free", () => toggleFree());
 finder($("freeq"), $("freesugg"), p => {
   const id = String(p.email).split("@")[0].toLowerCase();
   $("freeq").value = "";
@@ -2416,6 +2518,7 @@ const findEvent = (id, kind) => kind === "subject" ? subjectEvents.find(e => e.i
 const GWINDOW = { back:14, ahead:150 };
 const P_COLOURS = ["#0A84FF","#30C05A","#FF9F0A","#FF375F","#AF52DE","#5E5CE6","#32ADE6","#FFD60A","#AC8E68","#8E8E93"];
 let periods = (get(LS.periods, []) || []).filter(p => p && p.id);
+let showCustom = get(LS.showcustom, true) !== false;       /* the Custom periods tile switches them all on and off */
 const blankG = () => ({ account:"", calendars:[], events:[], at:0 });
 const cachedGcal = get(LS.gcal, null);
 let gcal = cachedGcal && cachedGcal.calendars && cachedGcal.calendars.some(c => c.id === "ical") ? cachedGcal : blankG();
@@ -2518,7 +2621,7 @@ function ownSummary(p){
   return days + (s != null && e != null ? ` ${f(s)} – ${f(e)}` : "") + (p.weeks === "A" || p.weeks === "B" ? " · Week " + p.weeks + " only" : "");
 }
 function customOn(date){
-  if (!periods.length) return [];
+  if (!periods.length || !showCustom) return [];
   const day = ymd(date), out = [], k = wd(date);
   /* your own: on their days and times, every week or in Week A or B only */
   for (const p of periods){
@@ -2546,33 +2649,26 @@ function customOn(date){
 function withCustom(items, date){
   const cs = customOn(date);
   if (!cs.length) return items;
+  /* A custom period takes over its time: a lesson, break (or another custom
+     period) it overlaps is cut into the pieces before and after it, never
+     drawn beside it. A sliver too short to matter goes. */
   let out = items;
-  for (const c of cs) out = out.flatMap(x => {
-    if (x.lesson || x.e <= c.s || x.s >= c.e) return [x];
-    const parts = [];
-    if (c.s - x.s >= 20) parts.push({ ...x, e:c.s });         /* a sliver too short to matter goes */
-    if (x.e - c.e >= 20) parts.push({ ...x, s:c.e });
-    return parts;
-  });
-  const isCustom = x => x.lesson && x.lesson.custom ? 1 : 0;
-  out = out.concat(cs).sort((a, b) => a.s - b.s || isCustom(a) - isCustom(b));
+  for (const c of cs){
+    out = out.flatMap(x => {
+      if (x.e <= c.s || x.s >= c.e) return [x];
+      const least = x.lesson ? 10 : 20, parts = [];
+      if (c.s - x.s >= least) parts.push({ ...x, e:c.s });
+      if (x.e - c.e >= least) parts.push({ ...x, s:c.e });
+      return parts;
+    });
+    out.push(c);
+  }
+  out.sort((a, b) => a.s - b.s);
   out.forEach(x => { delete x.drawEnd; delete x.lane; delete x.lanes; });
-  /* lanes: within each run of overlapping periods, each takes the first free lane */
-  let run = [], end = -1;
-  const close = () => {
-    if (run.length > 1){
-      const lanes = [];
-      for (const x of run){ let i = lanes.findIndex(e => e <= x.s); if (i < 0) i = lanes.push(0) - 1; lanes[i] = x.e; x.lane = i; }
-      run.forEach(x => x.lanes = lanes.length);
-    }
-    run = [];
-  };
-  for (const x of out){ if (x.s >= end) close(); run.push(x); end = Math.max(end, x.e); }
-  close();
   /* a few minutes between two periods: the earlier one is drawn down to the next */
   for (let i = 0; i < out.length - 1; i++){
     const a = out[i], b = out[i + 1], gap = b.s - a.e;
-    if (!a.lanes && !b.lanes && gap > 0 && gap <= 10) a.drawEnd = b.s;
+    if (gap > 0 && gap <= 10) a.drawEnd = b.s;
   }
   return out;
 }
@@ -2796,9 +2892,9 @@ function myAssessments(){
   }
   return assessments.filter(a => mine.has(subjKey(a.subject))).map(a => ({ ...a, course:mine.get(subjKey(a.subject)) }));
 }
-/* In the calendar (the month, and a day's list) they're switched off for now;
-   the week's strip still shows them. Set to true to bring them back. */
-const ASSESS_IN_CALENDAR = false;
+/* Switched off for now, in the week's strip and in the calendar alike; the
+   data and code stay. Set to true to bring them back. */
+const SHOW_ASSESSMENTS = false;
 /* the tasks scheduled in any part of these days */
 const tasksBetween = (from, to) => myAssessments().filter(a => a.from <= ymd(to) && a.to >= ymd(from));
 const apill = a => `<span class="apill" style="--c:${esc(colourFor(a.course))}" title="${esc(`${a.course}: ${a.task}${a.weight ? " (" + a.weight + ")" : ""}, scheduled ${a.when}. Your teacher gives the exact day.`)}">` +
@@ -2822,7 +2918,7 @@ function renderMonth(){
   const start = addDays(first, -lead), weeks = Math.ceil((lead + last) / 7);
   const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   let h = arrow(-1, "month") + [0,1,2,3,4,5,6].map(k => `<div class="mdow">${names[(k + wkStart) % 7]}</div>`).join("") + arrow(1, "month");
-  const mine = ASSESS_IN_CALENDAR ? myAssessments() : [];
+  const mine = SHOW_ASSESSMENTS ? myAssessments() : [];
   for (let w = 0; w < weeks; w++){
     h += `<div class="mpad"></div>`;
     for (let k = 0; k < 7; k++){
@@ -3094,20 +3190,40 @@ function morphPlay(layer, week, month, back){
 
 /* the switch tiles fill with their colour while they're on */
 function paintPeriodsTile(){
-  $("perstate").textContent = periods.length ? "· " + periods.length : "";
+  const tile = document.querySelector('[data-m="periods"]');
+  tile.classList.toggle("on", showCustom);
+  tile.querySelector(".mod-head").setAttribute("aria-pressed", showCustom);
+  $("perstate").textContent = showCustom ? "· On" : "";
+}
+function toggleCustomShown(){
+  const flip = () => { showCustom = !showCustom; set(LS.showcustom, showCustom); paintPeriodsTile(); };
+  /* the week grid plays it like a turn: custom periods slide out (or in) through
+     lanes, and what they cut short or squeezed resizes; elsewhere it cross-fades */
+  /* (only when the days on show stay the same: a weekend column coming or going cross-fades) */
+  const days = daysShown().length; showCustom = !showCustom;
+  const sameDays = daysShown().length === days; showCustom = !showCustom;
+  if (view === "week" && !phone.matches && !turning && !viewTurn && sameDays){
+    const done = turnWeek(off, 1, flip);
+    if (done){
+      turning = done;
+      done.then(() => { if (turning === done){ turning = null; if (weekSteps || wantWeek !== null) runWeeks(); } });
+      return;
+    }
+  }
+  crossfade(() => { flip(); closeAll(); render(); });
 }
 function paintTiles(calTarget = view){
   paintPeriodsTile();
   const on = calTarget === "month";
   document.querySelector('[data-m="calendar"]').classList.toggle("on", on);
-  document.querySelector('[data-m="calendar"]').setAttribute("aria-pressed", on);
+  document.querySelector('[data-m="calendar"] .mod-head').setAttribute("aria-pressed", on);
   $("calstate").textContent = on ? "· On" : "";
   paintFreeTile();
 }
 function paintFreeTile(){
   const tile = document.querySelector('[data-m="free"]');
   tile.classList.toggle("on", freeShow);
-  tile.setAttribute("aria-pressed", freeShow);
+  tile.querySelector(".mod-head").setAttribute("aria-pressed", freeShow);
   $("freestate").textContent = !freeShow ? "" : freeActive() ? "· On" : signedIn && !freeGroup.length ? "· Add people in settings" : "· On";
 }
 /* Swap the timetable for a re-drawn one with a cross-fade, e.g. when the free
@@ -3178,7 +3294,7 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
 
 /* a day: its events, and a button to add one */
 function openDay(day){
-  const evs = eventsOn(day), d = toDate(day), tasks = ASSESS_IN_CALENDAR ? tasksBetween(d, d) : [];
+  const evs = eventsOn(day), d = toDate(day), tasks = SHOW_ASSESSMENTS ? tasksBetween(d, d) : [];
   $("evtitle").textContent = dayTitle(day);
   $("evbody").innerHTML = (tasks.length ? `<div class="evlist">${tasks.map(a => `<div class="evitem atask" style="--c:${esc(colourFor(a.course))}"><b>${esc(a.course)}: ${esc(a.task)}</b>` +
       `<span>Assessment ${a.from === a.to ? "" : "window "}${esc(a.when)}${a.weight ? " · " + esc(a.weight) : ""} · your teacher gives the exact day</span></div>`).join("")}</div>` : "") + (evs.length
@@ -3265,6 +3381,91 @@ function openEvent(id, { day, kind } = {}){
   showEvPanel(true);
 }
 
+/* ═══ games ═══
+   The Games tile opens onto every game on the games page, by kind, with the
+   leaderboards open under them. Choosing a game moves its card straight down to
+   the leaderboards, across to fill their width, then grows to their height and
+   plays there, in a frame running the games page's own game
+   (games.html?play=…&embed=1), so every game works just as it does there.
+   The list mirrors GAMES in games.js. */
+const GAME_LIST = [
+  { id:"jim", cat:"Arcade", ico:"🟡", name:"The Jim Button", blurb:"The button that says the name of whoever's playing", isNew:true, c:"#FFB800" },
+  { id:"dailyguess", cat:"Timetable", ico:"📅", name:"Daily Guess Who", blurb:"One mystery student a day, the same for your whole year", c:"#0A84FF" },
+  { id:"guesswho", cat:"Timetable", ico:"🕵️", name:"Guess Who", blurb:"Guess the mystery classmate, grade or teacher", c:"#5E5CE6" },
+  { id:"classroom", cat:"Timetable", ico:"🚪", name:"Classroom", blurb:"Rooms, teachers and classes from your timetable", c:"#32ADE6" },
+  { id:"chain", cat:"Timetable", ico:"🔗", name:"Six Degrees", blurb:"Chain classmate to classmate through shared classes", c:"#30C05A" },
+  { id:"oddone", cat:"Timetable", ico:"🧠", name:"Odd One Out", blurb:"Three share a class of yours, one doesn't", c:"#AF52DE" },
+  { id:"tetris", cat:"Arcade", ico:"🟦", name:"Tetris", blurb:"Sprint, Survival, Zen and Practice", c:"#0A84FF" },
+  { id:"snake", cat:"Arcade", ico:"🐍", name:"Snake", blurb:"Eat the dot, don't bite yourself", c:"#30C05A" },
+  { id:"g2048", cat:"Arcade", ico:"🧩", name:"2048", blurb:"Slide and merge to the big number", c:"#FF9F0A" },
+  { id:"memory", cat:"Arcade", ico:"🃏", name:"Memory", blurb:"Match every pair in the fewest moves", c:"#FF375F" },
+  { id:"mines", cat:"Arcade", ico:"💣", name:"Minesweeper", blurb:"Clear the board, flag the mines", c:"#8E8E93" },
+  { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
+  { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" }
+];
+const LEADERBOARDS = { id:"leaderboards", ico:"🏆", name:"Leaderboards", c:"#FFD60A" };
+let gameNow = null;          /* the game on the stage, or null for the leaderboards */
+const gameCard = g => `<button class="gcard" data-g="${g.id}" style="--c:${g.c}" aria-pressed="${gameNow === g.id}"><span class="gico" aria-hidden="true">${g.ico}</span>` +
+  `<span><b>${esc(g.name)}</b><small>${esc(g.blurb)}</small></span>${g.isNew ? '<span class="gnew">New</span>' : ""}</button>`;
+function paintGames(){
+  $("gres").innerHTML = ["Timetable", "Arcade"].map(cat =>
+    `<div class="sub-label">${cat} games</div><div class="ggrid">${GAME_LIST.filter(g => g.cat === cat).map(gameCard).join("")}</div>`).join("");
+  if (!$("gsframe").getAttribute("src")) showOnStage(gameNow ? GAME_LIST.find(g => g.id === gameNow) : LEADERBOARDS);
+}
+/* put a game (or the leaderboards) on the stage */
+function showOnStage(g){
+  const st = $("gstage"), f = $("gsframe"), lb = g.id === "leaderboards";
+  st.style.setProperty("--gc", g.c);
+  $("gstitle").textContent = g.name; $("gsico").textContent = g.ico; f.title = g.name;
+  $("gsback").hidden = lb;
+  $("gsout").href = "/games.html" + (lb ? "" : "?play=" + encodeURIComponent(g.id));
+  st.classList.remove("ready");
+  f.onload = () => { if (f.src.includes("play=")) setTimeout(() => st.classList.add("ready"), noMotion() ? 0 : 150); };
+  f.src = "/games.html?play=" + encodeURIComponent(g.id) + "&embed=1";
+}
+/* a card flying between its place and the stage, as a copy over the page:
+   down (or up) to the stage's top, across to its width, then to its height;
+   coming back, the same the other way */
+function flyCard(card, toStage){
+  const page = el => { const r = el.getBoundingClientRect(); return { left:r.left + scrollX, top:r.top + scrollY, width:r.width, height:r.height }; };
+  const C = page(card), S = page($("gstage")), T = 760;
+  const copy = card.cloneNode(true);
+  copy.classList.add("gfly");
+  copy.removeAttribute("data-g");
+  document.body.appendChild(copy);
+  const k = (r, ms, more) => ({ left:r.left + "px", top:r.top + "px", width:r.width + "px", height:r.height + "px", offset:ms / T, easing:"cubic-bezier(.45,0,.25,1)", ...more });
+  const keys = toStage
+    ? [k(C, 0), k({ ...C, top:S.top }, 260), k({ ...S, height:C.height }, 500), k(S, T, { opacity:1 })]
+    : [k(S, 0), k({ ...S, height:C.height }, 260), k({ ...C, top:S.top }, 500), k(C, T)];
+  return copy.animate(keys, { duration:T, fill:"forwards" }).finished.then(() => copy, () => copy);
+}
+async function playGame(id, card){
+  const g = GAME_LIST.find(x => x.id === id);
+  if (!g || gameNow === id) return;
+  gameNow = id;
+  $("gres").querySelectorAll(".gcard").forEach(c => c.setAttribute("aria-pressed", c.dataset.g === id));
+  const st = $("gstage");
+  if (noMotion()){ showOnStage(g); return; }
+  st.classList.remove("ready");            /* what was on the stage fades as the card arrives */
+  const copy = await flyCard(card, true);
+  showOnStage(g);
+  copy.animate([{ opacity:1 }, { opacity:0 }], { duration:280, fill:"forwards" }).finished.then(() => copy.remove(), () => copy.remove());
+}
+/* back to the leaderboards: the game folds back into its card */
+async function stageLeaderboards(){
+  const card = gameNow && $("gres").querySelector(`[data-g="${gameNow}"]`);
+  gameNow = null;
+  $("gres").querySelectorAll(".gcard").forEach(c => c.setAttribute("aria-pressed", "false"));
+  if (card && !noMotion()){
+    $("gstage").classList.remove("ready");
+    const copy = await flyCard(card, false);
+    copy.animate([{ opacity:1 }, { opacity:0 }], { duration:200, fill:"forwards" }).finished.then(() => copy.remove(), () => copy.remove());
+  }
+  showOnStage(LEADERBOARDS);
+}
+$("gres").onclick = e => { const c = e.target.closest("[data-g]"); if (c) playGame(c.dataset.g, c); };
+$("gsback").onclick = stageLeaderboards;
+
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
@@ -3278,9 +3479,15 @@ const MOD_WIDEN = ["calendar","revision","free","games","periods","resources"];
    no tile passes over another. */
 const perMod = document.querySelector('[data-m="periods"]');
 const cOpen = () => perMod.classList.contains("open");
+const openTileEl = () => document.querySelector("#mg > .modx.open");
+const PAINT_TILE = { periods:() => paintCustom(), free:() => paintFree(), calendar:() => paintSettings(), games:() => paintGames() };
 const TILE = { v:260, h:320, grow:340 };
-function openCustom(o){
-  if (o === cOpen()) return;
+function openCustom(o){ expandTile(perMod, o); }
+function expandTile(tile, o){
+  if (o === tile.classList.contains("open")) return;
+  /* one open at a time: another closes first, then this one opens */
+  const other = openTileEl();
+  if (o && other){ expandTile(other, false); clearTimeout(expandTile.next); expandTile.next = setTimeout(() => expandTile(tile, true), noMotion() ? 0 : TILE.v + TILE.h + TILE.grow + 40); return; }
   const tiles = [...$("mg").children], T = TILE.v + TILE.h + TILE.grow;
   document.querySelectorAll(".tilefly > *").forEach(c => c.getAnimations().forEach(a => a.finish()));
   /* measured on the page, not the screen: the page may scroll while it moves */
@@ -3289,16 +3496,16 @@ function openCustom(o){
   /* closing makes the page shorter: hold its length until the tiles have
      moved, so the browser doesn't snap the scroll up halfway */
   if (!o && !noMotion()) document.body.style.minHeight = document.documentElement.scrollHeight + "px";
-  if (o) paintCustom(); else showPeriodEditor(false, true);
-  const from = getComputedStyle(perMod).backgroundColor;
-  perMod.classList.toggle("open", o);
-  perMod.querySelector(".mod-head").setAttribute("aria-expanded", o);
-  perMod.style.transition = "none";                  /* its colour now, not partway through easing there */
-  const to = getComputedStyle(perMod).backgroundColor;
-  perMod.style.transition = "";
+  if (o) PAINT_TILE[tile.dataset.m](); else if (tile === perMod) showPeriodEditor(false, true);
+  const from = getComputedStyle(tile).backgroundColor;
+  tile.classList.toggle("open", o);
+  (tile.querySelector(".mset") || tile.querySelector(".mod-head")).setAttribute("aria-expanded", o);
+  tile.style.transition = "none";                    /* its colour now, not partway through easing there */
+  const to = getComputedStyle(tile).backgroundColor;
+  tile.style.transition = "";
   layoutMods();
   const after = tiles.map(onPage);
-  if (!noMotion()) flyTiles(tiles, before, after, o, { el:perMod, from, to });
+  if (!noMotion()) flyTiles(tiles, before, after, o, { el:tile, from, to });
   if (!o && !noMotion()){
     const end = document.querySelector("main").getBoundingClientRect().bottom + scrollY - innerHeight;
     if (scrollY > end) scrollTo({ top:Math.max(0, end), behavior:"smooth" });
@@ -3307,7 +3514,7 @@ function openCustom(o){
   }
   if (o){        /* bring it into view once it's open */
     setTimeout(() => {
-      const r = perMod.getBoundingClientRect();
+      const r = tile.getBoundingClientRect();
       if (r.bottom > innerHeight) scrollBy({ top:Math.min(r.top - 80, r.bottom - innerHeight + 24), behavior:noMotion() ? "auto" : "smooth" });
     }, noMotion() ? 0 : T - 120);
   }
@@ -3362,36 +3569,40 @@ function showPeriodEditor(on, instant){
     if (r.top < 60 || r.top > innerHeight - 200) scrollBy({ top:r.top - 80, behavior:"smooth" });
   }
 }
-perMod.querySelector(".mod-head").onclick = () => openCustom(!cOpen());
-/* Escape: out of the editor first, then the tile closes */
+tileHead("periods", () => toggleCustomShown());
+/* Games isn't a switch: its tile just opens and closes */
+tileHead("games", () => expandTile(document.querySelector('[data-m="games"]'), true));      /* Games isn't a switch: its tile just opens */
+document.querySelectorAll("#mg .mset").forEach(b => b.onclick = e => {
+  e.stopPropagation();
+  const tile = b.closest(".modx");
+  expandTile(tile, !tile.classList.contains("open"));
+});
+/* Escape: out of the editor first, then the open tile closes */
 addEventListener("keydown", e => {
-  if (e.key !== "Escape" || !cOpen() || settingsOpen() || evOpen()) return;
-  if (!$("pedit").hidden) showPeriodEditor(false); else openCustom(false);
+  const tile = openTileEl();
+  if (e.key !== "Escape" || !tile || settingsOpen() || evOpen()) return;
+  if (tile === perMod && !$("pedit").hidden) showPeriodEditor(false); else expandTile(tile, false);
 });
 function layoutMods(){
   const mg = $("mg"), tiles = [...mg.children];
   const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
-  /* full rows of tiles; an open tile takes a row of its own between them */
-  const fill = list => {
-    const rows = Math.ceil(list.length / n);
-    for (let r = 0, i = 0; r < rows; r++){
-      const k = Math.ceil((list.length - i) / (rows - r)), row = list.slice(i, i + k);
-      i += k;
-      const spans = row.map(() => 1);
-      const order = row.map((_, j) => j).sort((a, b) => MOD_WIDEN.indexOf(row[a].dataset.m) - MOD_WIDEN.indexOf(row[b].dataset.m));
-      for (let extra = n - k, j = 0; extra > 0; extra--, j++) spans[order[j % k]]++;
-      row.forEach((el, j) => el.style.gridColumn = spans[j] > 1 ? "span " + spans[j] : "");
-    }
-  };
-  const open = tiles.findIndex(el => el.classList.contains("open"));
-  if (open < 0){ fill(tiles); return; }
-  fill(tiles.slice(0, open));
-  tiles[open].style.gridColumn = "1 / -1";
-  fill(tiles.slice(open + 1));
+  /* the rows as they are with every tile closed; an open tile leaves its row
+     for a row of its own just below it, and the rest of that row widen to fill
+     it, so no other tile ever changes row */
+  const open = tiles.find(el => el.classList.contains("open"));
+  const rows = [], R = Math.ceil(tiles.length / n);
+  for (let r = 0, i = 0; r < R; r++){ const k = Math.ceil((tiles.length - i) / (R - r)); rows.push(tiles.slice(i, i + k)); i += k; }
+  rows.forEach((all, r) => {
+    const row = all.filter(el => el !== open), spans = row.map(() => 1);
+    const order = row.map((_, j) => j).sort((a, b) => MOD_WIDEN.indexOf(row[a].dataset.m) - MOD_WIDEN.indexOf(row[b].dataset.m));
+    for (let extra = n - row.length, j = 0; row.length && extra > 0; extra--, j++) spans[order[j % row.length]]++;
+    row.forEach((el, j) => { el.style.gridColumn = spans[j] > 1 ? "span " + spans[j] : ""; el.style.order = r * 2; });
+    if (open && all.includes(open)){ open.style.gridColumn = "1 / -1"; open.style.order = r * 2 + 1; }
+  });
 }
 
 addEventListener("resize", () => { render(); layoutMods(); });
-document.querySelector('[data-m="calendar"]').onclick = e => { e.preventDefault(); toggleCalendar(); };
+tileHead("calendar", () => toggleCalendar());
 setInterval(() => { if (!turning && !monthTurn && !viewTurn && !dayRun) render(); }, 30000);     /* keep "now" and past lessons current, but never mid-turn */
 layoutMods();
 paintTiles();
