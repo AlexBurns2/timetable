@@ -39,3 +39,9 @@ When a new year's dates come out, add them here and to `TERMS`.
 | 2027 Term 2 | 2027-04-29 | 2027-07-02 |
 | 2027 Term 3 | 2027-07-20 | 2027-09-24 |
 | 2027 Term 4 | 2027-10-11 | 2027-12-17 |
+
+The school numbers its weeks from the week of its first staff development day,
+so in 2027 Term 1 its Week 1 is the week of 25 January, before students start
+on 3 February (from the HSC assessment schedule: T1 W3 begins 8 February 2027).
+`TERMS` gives that Monday as an optional third date, so the page's week numbers
+match the school's.

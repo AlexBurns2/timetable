@@ -1,0 +1,854 @@
+{
+ "about": "HSC assessment schedule for the 2027 HSC (Year 11 in 2026, Year 12 in 2027), from HSC_Assessment_Dates_2026-2027.xlsx. Each task is a scheduled week or two-week window, not an exact day: teachers give the exact date, usually two weeks before.",
+ "hsc": 2027,
+ "tasks": [
+  {
+   "subject": "Health and Movement Science",
+   "task": "Analyse sleep, nutrition and supplementation on movement and performance",
+   "weight": "20%",
+   "when": "T4 W6",
+   "from": "2026-11-16",
+   "to": "2026-11-20"
+  },
+  {
+   "subject": "Legal Studies",
+   "task": "Task 1",
+   "weight": "",
+   "when": "T4 W7",
+   "from": "2026-11-23",
+   "to": "2026-11-27"
+  },
+  {
+   "subject": "Society and Culture",
+   "task": "PIP Methodologies ICT oral presentation",
+   "weight": "10%",
+   "when": "T4 W7",
+   "from": "2026-11-23",
+   "to": "2026-11-27"
+  },
+  {
+   "subject": "Business Studies",
+   "task": "Research-based extended response (operations)",
+   "weight": "15%",
+   "when": "T4 W8",
+   "from": "2026-11-30",
+   "to": "2026-12-04"
+  },
+  {
+   "subject": "Japanese Continuers",
+   "task": "Reading/responding and 150ji writing",
+   "weight": "",
+   "when": "T4 W8",
+   "from": "2026-11-30",
+   "to": "2026-12-04"
+  },
+  {
+   "subject": "Music 2",
+   "task": "Task 1",
+   "weight": "",
+   "when": "T4 W8",
+   "from": "2026-11-30",
+   "to": "2026-12-04"
+  },
+  {
+   "subject": "Music Extension",
+   "task": "Task 1",
+   "weight": "",
+   "when": "T4 W8",
+   "from": "2026-11-30",
+   "to": "2026-12-04"
+  },
+  {
+   "subject": "Visual Arts",
+   "task": "Task 1",
+   "weight": "",
+   "when": "T4 W8",
+   "from": "2026-11-30",
+   "to": "2026-12-04"
+  },
+  {
+   "subject": "Chemistry",
+   "task": "Practical",
+   "weight": "20%",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Drama",
+   "task": "Australian Drama and Theatre",
+   "weight": "15%",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Economics",
+   "task": "In-class test",
+   "weight": "15%",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "English Advanced",
+   "task": "Texts and Human Experiences",
+   "weight": "10%",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "English Extension 2",
+   "task": "Viva Voce",
+   "weight": "20%",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Mathematics Advanced",
+   "task": "Class test",
+   "weight": "",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Mathematics Extension 2",
+   "task": "Class test",
+   "weight": "",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Mathematics Standard 2",
+   "task": "Class test",
+   "weight": "",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Modern History",
+   "task": "Core Study historical analysis/class test",
+   "weight": "",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Physics",
+   "task": "Practical investigation",
+   "weight": "15%",
+   "when": "T4 W9",
+   "from": "2026-12-07",
+   "to": "2026-12-11"
+  },
+  {
+   "subject": "Ancient History",
+   "task": "Descriptive/evaluative historical analysis (Core Study)",
+   "weight": "15%",
+   "when": "T4 W10",
+   "from": "2026-12-14",
+   "to": "2026-12-18"
+  },
+  {
+   "subject": "Biology",
+   "task": "Depth Study",
+   "weight": "20%",
+   "when": "T4 W10",
+   "from": "2026-12-14",
+   "to": "2026-12-18"
+  },
+  {
+   "subject": "Engineering Studies",
+   "task": "Civil Engineering task",
+   "weight": "15%",
+   "when": "T4 W10",
+   "from": "2026-12-14",
+   "to": "2026-12-18"
+  },
+  {
+   "subject": "Mathematics Extension 1",
+   "task": "Class test",
+   "weight": "",
+   "when": "T4 W10",
+   "from": "2026-12-14",
+   "to": "2026-12-18"
+  },
+  {
+   "subject": "Software Engineering",
+   "task": "Secure Software Architecture research task",
+   "weight": "15%",
+   "when": "T4 W10",
+   "from": "2026-12-14",
+   "to": "2026-12-18"
+  },
+  {
+   "subject": "Textiles and Design",
+   "task": "MTP Design Inspiration & Planning Proposal",
+   "weight": "20%",
+   "when": "T4 W10",
+   "from": "2026-12-14",
+   "to": "2026-12-18"
+  },
+  {
+   "subject": "History Extension",
+   "task": "Historical Methodology Analysis",
+   "weight": "20%",
+   "when": "T1 W3",
+   "from": "2027-02-08",
+   "to": "2027-02-12"
+  },
+  {
+   "subject": "Science Extension",
+   "task": "Project Proposal",
+   "weight": "30%",
+   "when": "T1 W3",
+   "from": "2027-02-08",
+   "to": "2027-02-12"
+  },
+  {
+   "subject": "Visual Arts",
+   "task": "Task 2",
+   "weight": "",
+   "when": "T1 W6",
+   "from": "2027-03-01",
+   "to": "2027-03-05"
+  },
+  {
+   "subject": "Health and Movement Science",
+   "task": "Depth Study",
+   "weight": "15%",
+   "when": "T1 W8",
+   "from": "2027-03-15",
+   "to": "2027-03-19"
+  },
+  {
+   "subject": "Music Extension",
+   "task": "Practical examination / task",
+   "weight": "",
+   "when": "T1 W8",
+   "from": "2027-03-15",
+   "to": "2027-03-19"
+  },
+  {
+   "subject": "Ancient History",
+   "task": "Historical period essay (Term 1 Assessment Block)",
+   "weight": "20%",
+   "when": "T1 W9–10",
+   "from": "2027-03-22",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Business Studies",
+   "task": "Term 1 Assessment Block (marketing)",
+   "weight": "20%",
+   "when": "T1 W9–10",
+   "from": "2027-03-22",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Economics",
+   "task": "Term 1 Assessment Block in-class test",
+   "weight": "20%",
+   "when": "T1 W9–10",
+   "from": "2027-03-22",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Engineering Studies",
+   "task": "Topic test: Civil Engineering Mechanics & Transport",
+   "weight": "25%",
+   "when": "T1 W9–10",
+   "from": "2027-03-22",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Legal Studies",
+   "task": "Task 2: Term 1 Assessment Block",
+   "weight": "",
+   "when": "T1 W9–10",
+   "from": "2027-03-22",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Modern History",
+   "task": "Term 1 Assessment Block essay",
+   "weight": "",
+   "when": "T1 W9–10",
+   "from": "2027-03-22",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Society and Culture",
+   "task": "Term 1 Assessment Block in-class test",
+   "weight": "25%",
+   "when": "T1 W9",
+   "from": "2027-03-22",
+   "to": "2027-03-26"
+  },
+  {
+   "subject": "Textiles and Design",
+   "task": "Contemporary Designer Case Report",
+   "weight": "20%",
+   "when": "T1 W9",
+   "from": "2027-03-22",
+   "to": "2027-03-26"
+  },
+  {
+   "subject": "Biology",
+   "task": "Research and Validation task",
+   "weight": "15%",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Chemistry",
+   "task": "Depth Study",
+   "weight": "25%",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "English Advanced",
+   "task": "Critical Study of Literature",
+   "weight": "25%",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "English Extension 1",
+   "task": "Literary Worlds",
+   "weight": "25%",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "English Extension 2",
+   "task": "Literature Review",
+   "weight": "40%",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "History Extension",
+   "task": "Final History Project",
+   "weight": "40%",
+   "when": "T1 W10",
+   "from": "2027-03-29",
+   "to": "2027-04-02"
+  },
+  {
+   "subject": "Japanese Continuers",
+   "task": "Term 1 Assessment Block: listening/responding and speaking",
+   "weight": "",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Mathematics Advanced",
+   "task": "Term 1 Assessment Block end-of-semester test",
+   "weight": "",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Mathematics Extension 1",
+   "task": "Term 1 Assessment Block end-of-semester test",
+   "weight": "",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Mathematics Extension 2",
+   "task": "Term 1 Assessment Block end-of-semester test",
+   "weight": "",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Mathematics Standard 2",
+   "task": "Term 1 Assessment Block end-of-semester test",
+   "weight": "",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Physics",
+   "task": "Research and Validation task",
+   "weight": "15%",
+   "when": "T1 W10–11",
+   "from": "2027-03-29",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Japanese Extension",
+   "task": "Assessment task 1",
+   "weight": "",
+   "when": "T1 W11",
+   "from": "2027-04-05",
+   "to": "2027-04-09"
+  },
+  {
+   "subject": "Drama",
+   "task": "Individual Project",
+   "weight": "30%",
+   "when": "T2 W2",
+   "from": "2027-05-03",
+   "to": "2027-05-07"
+  },
+  {
+   "subject": "Visual Arts",
+   "task": "Task 3",
+   "weight": "",
+   "when": "T2 W3",
+   "from": "2027-05-10",
+   "to": "2027-05-14"
+  },
+  {
+   "subject": "Music 2",
+   "task": "Task 2",
+   "weight": "",
+   "when": "T2 W5",
+   "from": "2027-05-24",
+   "to": "2027-05-28"
+  },
+  {
+   "subject": "Biology",
+   "task": "Data Analysis / Practical",
+   "weight": "25%",
+   "when": "T2 W6",
+   "from": "2027-05-31",
+   "to": "2027-06-04"
+  },
+  {
+   "subject": "English Advanced",
+   "task": "Craft of Writing",
+   "weight": "25%",
+   "when": "T2 W6",
+   "from": "2027-05-31",
+   "to": "2027-06-04"
+  },
+  {
+   "subject": "Health and Movement Science",
+   "task": "Analysis of Australia's health (Focus Area 1)",
+   "weight": "30%",
+   "when": "T2 W6",
+   "from": "2027-05-31",
+   "to": "2027-06-04"
+  },
+  {
+   "subject": "Science Extension",
+   "task": "Data Analysis",
+   "weight": "30%",
+   "when": "T2 W6",
+   "from": "2027-05-31",
+   "to": "2027-06-04"
+  },
+  {
+   "subject": "Software Engineering",
+   "task": "Web Development Project Programming task",
+   "weight": "20%",
+   "when": "T2 W6",
+   "from": "2027-05-31",
+   "to": "2027-06-04"
+  },
+  {
+   "subject": "Ancient History",
+   "task": "Historical personality",
+   "weight": "25%",
+   "when": "T2 W7",
+   "from": "2027-06-07",
+   "to": "2027-06-11"
+  },
+  {
+   "subject": "Business Studies",
+   "task": "In-class test (finance)",
+   "weight": "25%",
+   "when": "T2 W7",
+   "from": "2027-06-07",
+   "to": "2027-06-11"
+  },
+  {
+   "subject": "Chemistry",
+   "task": "Research and Validation task",
+   "weight": "25%",
+   "when": "T2 W7",
+   "from": "2027-06-07",
+   "to": "2027-06-11"
+  },
+  {
+   "subject": "Engineering Studies",
+   "task": "Aeronautical Engineering task",
+   "weight": "25%",
+   "when": "T2 W7",
+   "from": "2027-06-07",
+   "to": "2027-06-11"
+  },
+  {
+   "subject": "Legal Studies",
+   "task": "Task 3",
+   "weight": "",
+   "when": "T2 W7",
+   "from": "2027-06-07",
+   "to": "2027-06-11"
+  },
+  {
+   "subject": "Mathematics Advanced",
+   "task": "Class test",
+   "weight": "",
+   "when": "T2 W7–8",
+   "from": "2027-06-07",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Mathematics Extension 1",
+   "task": "Class test",
+   "weight": "",
+   "when": "T2 W7–8",
+   "from": "2027-06-07",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Mathematics Extension 2",
+   "task": "Class test",
+   "weight": "",
+   "when": "T2 W7–8",
+   "from": "2027-06-07",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Mathematics Standard 2",
+   "task": "Class test",
+   "weight": "",
+   "when": "T2 W7–8",
+   "from": "2027-06-07",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Modern History",
+   "task": "Change in the Modern World in-class test",
+   "weight": "",
+   "when": "T2 W7",
+   "from": "2027-06-07",
+   "to": "2027-06-11"
+  },
+  {
+   "subject": "Economics",
+   "task": "Research-based in-class extended response",
+   "weight": "25%",
+   "when": "T2 W8",
+   "from": "2027-06-14",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "English Extension 1",
+   "task": "Historical Worlds",
+   "weight": "35%",
+   "when": "T2 W8",
+   "from": "2027-06-14",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Physics",
+   "task": "Depth Study",
+   "weight": "30%",
+   "when": "T2 W8",
+   "from": "2027-06-14",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Society and Culture",
+   "task": "Research and Report task (Depth Study)",
+   "weight": "25%",
+   "when": "T2 W8",
+   "from": "2027-06-14",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Textiles and Design",
+   "task": "MTP development and management report",
+   "weight": "30%",
+   "when": "T2 W8",
+   "from": "2027-06-14",
+   "to": "2027-06-18"
+  },
+  {
+   "subject": "Japanese Continuers",
+   "task": "Speaking and 400ji writing",
+   "weight": "",
+   "when": "T2 W9",
+   "from": "2027-06-21",
+   "to": "2027-06-25"
+  },
+  {
+   "subject": "Japanese Extension",
+   "task": "Assessment task 2",
+   "weight": "",
+   "when": "T2 W9",
+   "from": "2027-06-21",
+   "to": "2027-06-25"
+  },
+  {
+   "subject": "Music 2",
+   "task": "Task 3",
+   "weight": "",
+   "when": "T3 W1",
+   "from": "2027-07-19",
+   "to": "2027-07-23"
+  },
+  {
+   "subject": "Music Extension",
+   "task": "Trial HSC / practical examinations",
+   "weight": "",
+   "when": "T3 W1",
+   "from": "2027-07-19",
+   "to": "2027-07-23"
+  },
+  {
+   "subject": "Drama",
+   "task": "Group Performance",
+   "weight": "30%",
+   "when": "T3 W2",
+   "from": "2027-07-26",
+   "to": "2027-07-30"
+  },
+  {
+   "subject": "Software Engineering",
+   "task": "Software Engineering Project",
+   "weight": "30%",
+   "when": "T3 W2",
+   "from": "2027-07-26",
+   "to": "2027-07-30"
+  },
+  {
+   "subject": "Ancient History",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Biology",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Business Studies",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Chemistry",
+   "task": "Trial HSC examination",
+   "weight": "30%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Drama",
+   "task": "Trial HSC examinations",
+   "weight": "25%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Economics",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Engineering Studies",
+   "task": "Trial HSC examination",
+   "weight": "35%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "English Advanced",
+   "task": "Trial examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "English Extension 1",
+   "task": "Trial examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "English Extension 2",
+   "task": "Trial examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Health and Movement Science",
+   "task": "Trial HSC examination",
+   "weight": "35%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "History Extension",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Japanese Continuers",
+   "task": "Trial HSC examination (listening, reading/responding, writing)",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Japanese Extension",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Legal Studies",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Mathematics Advanced",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Mathematics Extension 1",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Mathematics Extension 2",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Mathematics Standard 2",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Modern History",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Music 2",
+   "task": "Trial HSC / practical examinations",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Physics",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Society and Culture",
+   "task": "Trial HSC examination",
+   "weight": "40%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Software Engineering",
+   "task": "Trial HSC examination",
+   "weight": "35%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Textiles and Design",
+   "task": "Trial HSC examination",
+   "weight": "30%",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Visual Arts",
+   "task": "Trial HSC examination",
+   "weight": "",
+   "when": "T3 W3–4",
+   "from": "2027-08-02",
+   "to": "2027-08-13"
+  },
+  {
+   "subject": "Science Extension",
+   "task": "Scientific Research Report",
+   "weight": "40%",
+   "when": "T3 W6",
+   "from": "2027-08-23",
+   "to": "2027-08-27"
+  }
+ ]
+}

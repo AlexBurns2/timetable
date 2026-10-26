@@ -173,7 +173,6 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .dh .d{font-size:calc(17px * var(--fs,1));color:var(--fg2)}
 .dh .n{font-size:calc(17px * var(--fs,1));font-weight:500}
 .dh .tag{margin-left:auto;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
-.dh.today{border-bottom-color:var(--fg)}
 .dh.today .d,.dh.today .n{color:var(--fg);font-weight:700}
 .col{position:relative}
 .blk{position:absolute;left:0;right:0;cursor:pointer;container-type:inline-size}   /* 100cqw = the day's width */
@@ -274,10 +273,18 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
+/* recess, lunch and free periods (and any of them merged) all one warm orange,
+   so none of them reads as a greyed-out past lesson; assembly a darker orange */
+:root{--brkc:#FF9F0A}
+:is(.gap,.brk):is(.isbrk,.isfree){background:color-mix(in srgb,var(--brkc) 17%,var(--base,var(--bg)))}
+.gap:is(.isbrk,.isfree),.brk:is(.isbrk,.isfree) .bl{color:color-mix(in srgb,var(--brkc) 45%,var(--fg))}
+.gap:is(.isbrk,.isfree) .t,.brk:is(.isbrk,.isfree) .bt{color:color-mix(in srgb,var(--brkc) 35%,var(--fg2))}
 .col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
   background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
-/* assembly: laid out like a free period, a shade darker */
-.gap.asm,.brk.asm{background:color-mix(in srgb,var(--fg) 10%,var(--fill))}
+/* assembly: laid out like a free period, a darker orange */
+.gap.asm,.brk.asm{background:color-mix(in srgb,var(--brkc) 32%,var(--base,var(--bg)))}
+.gap.asm,.brk.asm .bl{color:color-mix(in srgb,var(--brkc) 55%,var(--fg))}
+.gap.asm .t,.brk.asm .bt{color:color-mix(in srgb,var(--brkc) 45%,var(--fg2))}
 /* free periods: who in your group is free then */
 .gap .fr,.brk .fr{flex-basis:100%;font-size:calc(11.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
@@ -299,7 +306,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 /* modules */
 .mods{max-width:var(--pagemax);padding-block:48px 80px}     /* the timetable is a full screen tall, so this stays below the fold */
 .mods h2{font-size:calc(28px * var(--fs,1));font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
-.mg{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:calc(150px * var(--fs,1));gap:16px}
+.mg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(calc(150px * var(--fs,1)),auto);gap:16px}
 /* the tiles look like lessons: tinted in their colour, coloured title. A tile
    that switches something on (Calendar, Free periods) fills with its colour
    while it's on, easing between the two. */
@@ -313,8 +320,10 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .mod.on{--paint:var(--c);--ink:#fff}
 .mod .state{font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--ink);opacity:.85;transition:color .4s ease}
 /* the column count is set here; the page then widens tiles so every row is full */
-@media (max-width:700px){.mg{grid-template-columns:repeat(2,1fr)}}
-@media (min-width:1400px){.mg{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:700px){.mg{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1400px){.mg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tilefly{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:15}
+.tilefly > .mod{overflow:hidden}
 
 /* status: no email yet, loading, or the school couldn't be reached */
 .msg{grid-column:2/-2;padding:80px 0;text-align:center;color:var(--fg2);font-size:calc(15px * var(--fs,1))}
@@ -429,12 +438,36 @@ button.row:hover{background:var(--fill2)}
 [data-skin="blueprint"] :is(.blk-card,.card,.mod,.gap,.brk){border:1px dashed var(--s-line)}
 [data-skin="brutal"] :is(.blk-card,.card,.mod){border:3px solid var(--s-line);box-shadow:5px 5px 0 var(--s-line)}
 [data-skin="retro"] :is(.blk-card,.card,.mod,.gap,.brk){border:2px solid;border-color:#fff #5a5a52 #5a5a52 #fff}
-[data-skin="scifi"] .dh.today{border-bottom-color:var(--blue);box-shadow:0 6px 14px -8px var(--blue)}
+[data-skin="scifi"] .dh.today .d,[data-skin="scifi"] .dh.today .n{color:var(--blue)}
 [data-skin="terminal"] :is(.blk .s,.card .subj)::before{content:"> ";color:var(--blue)}
 [data-skin="terminal"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
 [data-skin="paper"] .blk-card,[data-skin="paper"] .card{box-shadow:2px 3px 7px rgba(60,45,20,.16)}
 
-/* ── custom periods: events from Google Calendar, drawn as periods ── */
+/* ── the Custom periods tile opens up in place, onto a row of its own ── */
+.mod.modx{display:block;padding:0;overflow:hidden}
+.mod.modx:not(.open):hover{filter:brightness(.97)}
+.mod.modx.open:hover{filter:none}
+.mod.modx.open{--paint:color-mix(in srgb,var(--c) 12%,var(--base,var(--bg)))}
+.mod.modx .mod-head{position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;width:100%;height:calc(150px * var(--fs,1));padding:14px 16px;text-align:left;color:inherit;cursor:pointer}
+.mod.modx.open .mod-head{height:auto;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;padding:16px 18px 6px}
+.mod.modx .mod-body{display:none;padding:8px 18px 18px}
+.mod.modx.open .mod-body{display:block}
+.mod.modx .row-group{background:color-mix(in srgb,var(--bg) 72%,var(--fill))}
+.mod.modx [hidden]{display:none!important}
+.cust-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px 24px;align-items:start}
+.cust-col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cust-col > .btn{align-self:flex-start}
+.cust-col .sub-label:first-child{margin-top:0}
+.pedhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pedhead h4{margin:0;font-size:calc(16px * var(--fs,1));font-weight:600}
+.pedform{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px 26px;align-items:start}
+.pedcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+.pedit .btnrow{margin-top:14px}
+.daypick{display:flex;gap:6px;flex-wrap:wrap}
+.daypick button{min-width:42px;height:32px;padding:0 8px;border-radius:8px;background:var(--fill2);font-size:calc(12px * var(--fs,1));font-weight:600;color:var(--fg2)}
+.daypick button[aria-pressed="true"]{background:var(--blue);color:#fff}
+
+/* ── custom periods: your own, or events from your calendar, drawn as periods ── */
 /* three looks: tinted like a lesson, solid colour, or an outline; open, any of them reads like a lesson */
 .blk.cst-solid:not(.open) .blk-card,.card.cst-solid:not(.open){background:var(--c)}
 .blk.cst-solid:not(.open) :is(.s,.m,.t,.r),.card.cst-solid:not(.open) :is(.subj,.teacher,.room,.time){color:var(--ink)}
@@ -470,6 +503,24 @@ button.row:hover{background:var(--fill2)}
 .swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swatch.pick[aria-pressed="true"]{background:var(--c)}
 
+/* ── assessments: the scheduled weeks of the shown student's HSC tasks ── */
+.asst{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-4px 44px 12px}
+.list > .asst{margin:0 0 2px}
+.asst-h{font-size:calc(11px * var(--fs,1));font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);margin-right:4px}
+.apill{display:inline-flex;align-items:baseline;gap:7px;max-width:100%;min-width:0;padding:4px 10px 4px 12px;border-radius:8px;font-size:calc(12.5px * var(--fs,1));white-space:nowrap;
+  background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));box-shadow:inset 3px 0 0 var(--c);color:color-mix(in srgb,var(--c) 30%,var(--fg))}
+.apill b{font-weight:700;color:color-mix(in srgb,var(--c) 45%,var(--fg))}
+.apill .at{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.apill .aw{font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
+.mweek{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;margin:-1px 44px 5px}     /* a whole grid row, lined up with the days */
+.adots{margin-top:auto;display:flex;flex-wrap:wrap;gap:3px;padding-top:3px}
+.adots i{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--base,var(--bg)) 70%,transparent)}
+.evitem.atask{cursor:default}
+@media (max-width:760px),(orientation:portrait){
+  .mweek{margin:-1px 0 5px}
+  .apill{font-size:calc(12px * var(--fs,1))}
+}
+
 /* ── month view: the Calendar tile turns the week into a month ── */
 .month{display:none;max-width:var(--pagemax);position:relative;padding-block:10px 24px;min-height:calc(100vh - 60px)}
 .monthview :is(.tt,.mob){display:none!important}
@@ -483,20 +534,26 @@ button.row:hover{background:var(--fill2)}
 .mgrid{display:grid;grid-template-columns:36px repeat(7,minmax(0,1fr)) 36px;gap:6px 8px}
 .mgrid .arrow{align-self:center}
 .mdow{text-align:center;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg2);padding:10px 0 4px}
-.mcell{position:relative;min-height:max(92px,calc((100vh - 230px) / 6));border-radius:10px;background:var(--fill);padding:6px 7px;display:flex;flex-direction:column;gap:3px;text-align:left;overflow:hidden;color:inherit}
+/* each day is tinted: school days by their week (A blue, B violet), weekends
+   warm, holidays green, so the month reads at a glance and stands off the page.
+   (A blue and B red here.) Today has a thick outline in its own colour. */
+.mcell{--mc:#8E8E93;position:relative;min-height:max(92px,calc((100vh - 230px) / 6));border-radius:10px;
+  background:color-mix(in srgb,var(--mc) 15%,var(--base,var(--bg)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mc) 24%,transparent);padding:6px 7px;display:flex;flex-direction:column;gap:3px;text-align:left;overflow:hidden;color:inherit}
 .mcell:hover{filter:brightness(.97)}
 .mcell.out{opacity:.42}
-.mcell.wkend{background:color-mix(in srgb,var(--fill) 45%,transparent)}
-.mcell.hol{background:repeating-linear-gradient(135deg,var(--fill) 0 8px,color-mix(in srgb,var(--fill) 50%,transparent) 8px 16px)}
+.mcell.wa{--mc:#0A84FF}
+.mcell.wb{--mc:#FF3B30}
+.mcell.wkend{--mc:#FF9F0A}
+.mcell.hol{--mc:#30C05A;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--mc) 17%,var(--base,var(--bg))) 0 8px,color-mix(in srgb,var(--mc) 8%,var(--base,var(--bg))) 8px 16px)}
 .morph{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:15}
 .morph .mp{position:absolute;overflow:hidden;border-radius:10px}
 [data-square] .morph .mp{border-radius:0}
 .morphing :is(#g,#daylist,#daynav,#mgrid,.mbar){visibility:hidden}
-.mcell.today{box-shadow:inset 0 0 0 2px var(--fg)}
+.mcell.today{box-shadow:inset 0 0 0 3px var(--mc)}
 .mtop{display:flex;align-items:baseline;gap:6px}
-.mnum{font-size:calc(15px * var(--fs,1));font-weight:600;color:var(--fg2)}
-.mcell.today .mnum{color:var(--fg)}
-.mwk{font-size:calc(11px * var(--fs,1));font-weight:500;color:var(--fg3)}
+.mnum{font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--mc) 55%,var(--fg))}
+.mcell.today .mnum{font-weight:800}
+.mwk{font-size:calc(11px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--mc) 65%,var(--fg2))}
 .chipe{display:block;max-width:100%;font-size:calc(12px * var(--fs,1));font-weight:500;line-height:1.35;padding:1px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   background:color-mix(in srgb,var(--c) var(--tint),var(--bg));color:color-mix(in srgb,var(--c) 45%,var(--fg))}
 .chipe.sub{box-shadow:inset 3px 0 0 var(--c)}
@@ -507,8 +564,7 @@ button.row:hover{background:var(--fill2)}
 .dh[data-day]{cursor:pointer}
 
 /* ── the event editor (same panel as Settings) ── */
-.evopen .scrim,.copen .scrim{opacity:1;pointer-events:auto}
-.copen #cpanel{transform:none;visibility:visible;transition:transform .25s ease}
+.evopen .scrim{opacity:1;pointer-events:auto}
 .evopen #evpanel{transform:none;visibility:visible;transition:transform .25s ease}
 .fld{display:flex;flex-direction:column;gap:6px}
 .fld > label,.fld .lbl2{font-size:calc(11px * var(--fs,1));font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em}
@@ -730,17 +786,6 @@ select.fin{appearance:auto}
   </div>
 </aside>
 
-<aside class="panel" id="cpanel" role="dialog" aria-modal="true" aria-labelledby="ctitle">
-  <div class="ph">
-    <h2 id="ctitle">Custom periods</h2>
-    <button id="cclose" aria-label="Close"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
-  </div>
-  <div class="pbody">
-    <div class="cust" id="custom"></div>
-    <button class="btn primary wide" id="newperiod">+ New period</button>
-  </div>
-</aside>
-
 <aside class="panel" id="evpanel" role="dialog" aria-modal="true" aria-labelledby="evtitle">
   <div class="ph">
     <h2 id="evtitle">New event</h2>
@@ -756,19 +801,22 @@ select.fin{appearance:auto}
     <div class="mbar">
       <span class="mnote" id="mnote"></span>
       <span class="mnav"><button class="arrow" data-m="-1" aria-label="Previous month"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button><button class="arrow" data-m="1" aria-label="Next month"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button></span>
-      <button class="pill primary" id="newev">+ New event</button>
     </div>
     <div class="mgrid" id="mgrid"></div>
   </section>
   <section class="in mods">
     <h2>MSC Unofficial</h2>
     <div class="mg" id="mg">
-      <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
+      <!-- tiles that work on this page first, then the ones that open another page -->
       <a class="mod" data-m="calendar" href="#calendar" role="button" style="--c:#AF52DE"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></a>
+      <a class="mod" data-m="free" href="#whos-free" role="button" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></a>
+      <div class="mod modx" data-m="periods" style="--c:#5E5CE6">
+        <button class="mod-head" aria-expanded="false" aria-controls="perbody"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5"/></svg></div><h3>Custom periods <span class="state" id="perstate"></span></h3></button>
+        <div class="mod-body" id="perbody"><div class="cust" id="custom"></div><div class="pedit" id="pedit" hidden></div></div>
+      </div>
+      <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
       <a class="mod" data-m="games" href="/games.html" style="--c:#FF375F"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></a>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
-      <a class="mod" data-m="free" href="#whos-free" role="button" style="--c:#30C05A"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></a>
-      <a class="mod" data-m="periods" href="#custom-periods" role="button" style="--c:#5E5CE6"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5"/></svg></div><h3>Custom periods <span class="state" id="perstate"></span></h3></a>
     </div>
   </section>
 </main>
@@ -1189,18 +1237,18 @@ const wd = d => (d.getDay() + 6) % 7;            /* 0 = Monday … 6 = Sunday */
 /* the days a week shows: Monday to Friday, plus Saturday and/or Sunday when
    one of your custom periods falls on one */
 function daysShown(){
-  const ks = [0, 1, 2, 3, 4];
+  const weekend = new Set();                     /* 5 = Saturday, 6 = Sunday */
+  for (const p of periods) if (p.kind === "own" && periodVisibleForUser(p)) for (const k of p.days || []) if (k > 4) weekend.add(k);
   if (periods.length && gcal.events.length){
-    const on = shownCals(), weekend = new Set();
+    const on = shownCals();
     for (const ev of gcal.events){
-      const d = new Date(ev.start).getDay();
+      const k = wd(new Date(ev.start));
+      if (k < 5 || weekend.has(k) || !on.has(ev.cal)) continue;
       const period = periodFor(ev);
-      if ((d === 0 || d === 6) && !weekend.has(d) && on.has(ev.cal) && period && periodVisibleForUser(period)) weekend.add(d);
+      if (period && periodVisibleForUser(period)) weekend.add(k);
     }
-    if (weekend.has(6)) ks.push(5);
-    if (weekend.has(0)) ks.push(6);
   }
-  return ks;
+  return [0, 1, 2, 3, 4, ...[5, 6].filter(k => weekend.has(k))];
 }
 /* NSW public school terms, Eastern division (the school is in Sydney): the
    first and last day for students of each term, from the table in
@@ -1209,16 +1257,17 @@ function daysShown(){
    file); for a year not listed the bar just shows the letter. */
 const TERMS = [
   ["2026-02-02","2026-04-02"], ["2026-04-22","2026-07-03"], ["2026-07-21","2026-09-25"], ["2026-10-13","2026-12-17"],
-  ["2027-02-03","2027-04-09"], ["2027-04-29","2027-07-02"], ["2027-07-20","2027-09-24"], ["2027-10-11","2027-12-17"]
-];   /* first and last day for students */
-const termDays = TERMS.map(([a, b]) => [toDate(a), toDate(b)]);
+  ["2027-02-03","2027-04-09","2027-01-25"], ["2027-04-29","2027-07-02"], ["2027-07-20","2027-09-24"], ["2027-10-11","2027-12-17"]
+];   /* first and last day for students, and (when the school counts it differently)
+        the Monday it calls Week 1: in 2027 that's the staff days' week, before students start */
+const termDays = TERMS.map(([a, b, w1]) => [toDate(a), toDate(b), w1 ? toDate(w1) : null]);
 const yearListed = d => TERMS.some(r => +r[0].slice(0, 4) === d.getFullYear());
 /* { term, week } for the week starting this Monday (a term that starts mid-week
    counts that whole week as Week 1); false in the holidays of a listed year;
    null for a year with no dates */
 function termWeek(monday){
   for (let i = 0; i < termDays.length; i++){
-    const s = startOfWeek(termDays[i][0]);
+    const s = startOfWeek(termDays[i][2] || termDays[i][0]);
     if (monday >= s && monday <= termDays[i][1]) return { term: i % 4 + 1, week: Math.round((monday - s) / (7 * 864e5)) + 1 };
   }
   return yearListed(monday) ? false : null;
@@ -1248,7 +1297,8 @@ function render(){
     const cur = today && x.s <= nowMin && nowMin < x.e;
     return { past: before || (today && x.e <= nowMin), cur, p: cur ? (nowMin - x.s)/(x.e - x.s)*100 : 0 };
   };
-  const ctx = { now, dates, days, holiday, msg, when, err: !!loadError && !loading };
+  const tasks = msg ? [] : tasksBetween(dates[0], dates.at(-1));
+  const ctx = { now, dates, days, holiday, msg, when, tasks, err: !!loadError && !loading };
   if (phone.matches) renderList(ctx); else renderGrid(ctx);
   /* desktop arrows turn the week; the phone's step one day */
   document.querySelectorAll("#g > .arrow, #daynav .arrow").forEach(a => a.onclick = () => {
@@ -1393,7 +1443,7 @@ function turnWeek(target, q = 1){
   conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR, q);
 
   /* who stays, who goes, who arrives */
-  const kept = [], leaving = [], arriving = [];
+  const kept = [], leaving = [], arriving = [], resized = [];
   cols.forEach((col, k) => {
     const old = before[k], used = new Set(), colTop = col.getBoundingClientRect().top;
     for (const el of col.children){
@@ -1401,11 +1451,11 @@ function turnWeek(target, q = 1){
       const r = el.getBoundingClientRect();
       if (!same){ arriving.push({ el, k, r }); continue; }
       used.add(same);
-      kept.push({ el, k, r });
-      /* the day's scale changed: slide to the new spot */
+      kept.push({ el, k, r, r0:same.r });
+      /* the day's scale changed: it moves to its new spot, but only once
+         everything leaving has gone (below), so it never runs into one */
       if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5)
-        el.animate([{ top:(same.r.top - colTop) + "px", height:same.r.height + "px" }, { top:el.style.top, height:el.style.height }],
-                   { duration:500 * q, easing:"cubic-bezier(.3,1.15,.55,1)" });
+        resized.push({ el, k, from:{ top:(same.r.top - colTop) + "px", height:same.r.height + "px" } });
     }
     for (const o of old) if (!used.has(o)){
       /* a copy of the old block, since the new week is already drawn */
@@ -1433,9 +1483,10 @@ function turnWeek(target, q = 1){
     for (const b of bricks) for (let j = 0; j < n; j++)
       if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
     const opening = crossed.size ? M.open + M.margin : 0;
-    /* arriving lessons wait for their own day to close up first, so they never
-       land on a block that's still on its way back */
-    if (entering) t0 = Math.max(t0, ...bricks.map(b => laneUntil[b.k] - opening));
+    /* a wave waits for the lanes it crosses to have closed after the last one,
+       and arriving lessons for their own day too, so nothing slides past or
+       lands on a block that's still on its way back */
+    t0 = Math.max(t0, ...[...crossed.keys(), ...(entering ? bricks.map(b => b.k) : [])].map(j => laneUntil[j] - opening));
     const slideAt = t0 + opening;
     let end = slideAt;
     for (const b of bricks){
@@ -1449,7 +1500,8 @@ function turnWeek(target, q = 1){
     const shut = end + M.margin, total = shut - t0 + M.close;
     for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], shut + M.close);
     for (const [j, bands] of crossed){
-      const day = keptIn(j), shifts = laneShifts(day.map(b => b.r), bands);
+      /* lessons both weeks share are still in last week's spots while lessons leave */
+      const day = keptIn(j), shifts = laneShifts(day.map(b => entering ? b.r : b.r0), bands);
       day.forEach((b, i) => {
         if (!shifts[i]) return;
         /* the easing is per step (open, hold, close), so each happens exactly in its window */
@@ -1474,8 +1526,15 @@ function turnWeek(target, q = 1){
     }
     doneOut[side] = t;
   }
-  /* in: once everything has gone, the middle days first */
-  const startIn = Math.max(doneOut[-1], doneOut[1]);
+  /* then, with everything gone and every lane closed, the lessons both weeks
+     share move to their new spots (up or down their own day, all together) */
+  const settleAt = Math.max(doneOut[-1], doneOut[1], ...resized.map(s => laneUntil[s.k]));
+  const SETTLE = resized.length ? 300 * q : 0;
+  for (const s of resized)
+    s.el.animate([s.from, { top:s.el.style.top, height:s.el.style.height }],
+                 { duration:SETTLE, delay:settleAt, easing:"cubic-bezier(.4,0,.2,1)", fill:"backwards" });
+  /* in: once everything has gone and settled, the middle days first */
+  const startIn = resized.length ? settleAt + SETTLE : Math.max(doneOut[-1], doneOut[1]);
   for (const side of [-1, 1]){
     let t = startIn;
     for (let rank = Math.floor(m); rank >= 0; rank--){
@@ -1532,7 +1591,7 @@ const timeY = (T0, PX, skips) => t => {
   for (const [a, b] of skips){ if (t >= b){ cut += b - a; n++; } else if (t > a){ cut += t - a; n += (t - a) / (b - a); } }
   return (t - T0 - cut) * PX + n * SKIP;
 };
-function renderGrid({ now, dates, days, holiday, msg, when, err }){
+function renderGrid({ now, dates, days, holiday, msg, when, tasks, err }){
   const all = days.flat();
   const T0 = all.length ? Math.min(...all.map(x => x.s)) : toMinutes("8:55");
   const T1 = all.length ? Math.max(...all.map(x => x.e)) : toMinutes("15:25");
@@ -1541,7 +1600,7 @@ function renderGrid({ now, dates, days, holiday, msg, when, err }){
   let PX = Math.max(560 - skips.length * SKIP, innerHeight - 60 - 90 - 24 - skips.length * SKIP) / (T1 - T0 - quiet);
   for (let pass = 0; pass < 4; pass++){
     const y = timeY(T0, PX, skips);
-    g.innerHTML = gridHtml({ now, dates, days, holiday, msg, when, err }, y, y(T1), skips);
+    g.innerHTML = gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, y(T1), skips);
     if (msg) return;
     let worst = 1;
     g.querySelectorAll(".blk:not(.open):not(.closing) .blk-card").forEach(c => {
@@ -1551,13 +1610,14 @@ function renderGrid({ now, dates, days, holiday, msg, when, err }){
     PX *= worst;
   }
 }
-function gridHtml({ now, dates, days, holiday, msg, when, err }, y, H, skips){
+function gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, H, skips){
   let h = arrow(-1) + dates.map(d => {
     const evs = eventsOn(ymd(d));
     return `<div class="dh ${sameDay(d, now) ? "today" : ""}" data-day="${ymd(d)}"${evs.length ? ` title="${esc(evs.map(e => e.title).join(", "))}"` : ""}>` +
       `<span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${tok("nd", d.getDate())} ${tok("nm", MON[d.getMonth()])}</span>` +
       (evs.length ? `<span class="evd">${evs.slice(0, 4).map(e => `<i style="--c:${esc(e.colour)}"></i>`).join("")}</span>` : "") + `</div>`;
   }).join("") + arrow(1);
+  if (tasks.length) h += `<div class="asst"><span class="asst-h">Assessments this week</span>${tasks.map(apill).join("")}</div>`;
   h += "<div></div>";
   if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   days.forEach((items, k) => {
@@ -1572,7 +1632,8 @@ function gridHtml({ now, dates, days, holiday, msg, when, err }, y, H, skips){
       if (!x.lesson || x.lesson.asm || hideThis){   /* free periods, breaks, assembly, and lessons when hidden */
         const fn = x.lesson && !hideThis ? null : freeNote(x);
         const ls = hideThis ? [] : x.lesson ? ["Assembly"] : x.ls;
-        h += `<div class="gap ${x.lesson && !hideThis ? "asm" : ""} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" data-sig="${esc(sigOf(x))}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
+        const gk = x.lesson ? "" : x.keys && x.keys.length ? "isfree" : "isbrk";
+        h += `<div class="gap ${gk} ${x.lesson && !hideThis ? "asm" : ""} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" data-sig="${esc(sigOf(x))}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
              `${ls.map(esc).join("<i></i>")}${sm && ls.length ? "<i></i>" : ""}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
@@ -1587,7 +1648,7 @@ function gridHtml({ now, dates, days, holiday, msg, when, err }, y, H, skips){
 }
 
 /* phone / portrait: a day strip over a list of the chosen day */
-function renderList({ now, dates, days, holiday, msg, when, err }){
+function renderList({ now, dates, days, holiday, msg, when, tasks, err }){
   if (sel === null){ const i = dates.findIndex(d => sameDay(d, now)); sel = i === -1 ? 0 : i; }
   sel = Math.min(sel, dates.length - 1);
   const nav = document.getElementById("daynav");
@@ -1602,15 +1663,15 @@ function renderList({ now, dates, days, holiday, msg, when, err }){
     if (d) slideDay(d);
   });
 
-  let h = "";
+  let h = tasks.length ? `<div class="asst"><span class="asst-h">Assessments this week</span>${tasks.map(apill).join("")}</div>` : "";
   if (msg) h = `<div class="lmsg ${err ? "err" : ""}">${esc(msg)}</div>`;
-  else if (holiday[sel]) h = `<div class="lmsg">No school on ${DAYF[wd(dates[sel])]}.</div>`;
-  else if (!days[sel].length) h = `<div class="lmsg">${wd(dates[sel]) > 4 ? "Nothing" : "No classes"} on ${DAYF[wd(dates[sel])]}.</div>`;
+  else if (holiday[sel]) h += `<div class="lmsg">No school on ${DAYF[wd(dates[sel])]}.</div>`;
+  else if (!days[sel].length) h += `<div class="lmsg">${wd(dates[sel]) > 4 ? "Nothing" : "No classes"} on ${DAYF[wd(dates[sel])]}.</div>`;
   else for (const x of days[sel]){
     const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
     if (!x.lesson){
       const fn = freeNote(x);
-      h += `<div class="brk ${w.past ? "past" : ""} ${fn ? fn.state : ""}"${fn ? ` title="${esc(fn.title)}"` : ""}><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
+      h += `<div class="brk ${x.keys && x.keys.length ? "isfree" : "isbrk"} ${w.past ? "past" : ""} ${fn ? fn.state : ""}"${fn ? ` title="${esc(fn.title)}"` : ""}><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
            freeBits(fn, false) + `</div>`;
       continue;
     }
@@ -2420,16 +2481,37 @@ async function importICal(){
 }
 
 /* which period an event is: its series was picked, or its name is the period's */
-const periodFor = ev => periods.find(p => (ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)));
+const periodFor = ev => periods.find(p => p.kind !== "own" && ((ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title))));
 const currentUserKey = () => String(email || "").split("@")[0].trim().toLowerCase();
 const periodVisibleForUser = p => !p.user || p.user === currentUserKey();
 const shownCals = () => new Set(gcal.calendars.filter(c => c.on).map(c => c.id));
 const matchedEvents = p => { const on = shownCals();
   return gcal.events.filter(ev => on.has(ev.cal) && ((ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)))); };
 /* a date's custom periods, as day items */
+/* the A/B letter of the week a date is in ("" if it isn't known) */
+function abWeek(date){
+  const mon = startOfWeek(date);
+  for (let i = 0; i < 5; i++){ const c = cycleDayFor(addDays(mon, i), cycleStart); if (c) return c.slice(-1).toUpperCase(); }
+  return "";
+}
+/* "Tue, Thu 4:30 – 5:30 · Week A": when a period of your own is on */
+function ownSummary(p){
+  const days = [...(p.days || [])].sort((a, b) => a - b).map(k => DN[k]).join(", ") || "No days";
+  const s = toMinutes(p.from), e = toMinutes(p.to);
+  return days + (s != null && e != null ? ` ${f(s)} – ${f(e)}` : "") + (p.weeks === "A" || p.weeks === "B" ? " · Week " + p.weeks + " only" : "");
+}
 function customOn(date){
-  if (!periods.length || !gcal.events.length) return [];
-  const day = ymd(date), on = shownCals(), out = [];
+  if (!periods.length) return [];
+  const day = ymd(date), out = [], k = wd(date);
+  /* your own: on their days and times, every week or in Week A or B only */
+  for (const p of periods){
+    if (p.kind !== "own" || !periodVisibleForUser(p) || !(p.days || []).includes(k)) continue;
+    if (p.weeks === "A" || p.weeks === "B"){ const l = abWeek(date); if (l && l !== p.weeks) continue; }
+    const s = toMinutes(p.from), e = toMinutes(p.to);
+    if (s != null && e != null && e > s) out.push({ s, e, lesson:{ subject:p.name, teacher:p.details || "", room:p.room || "", code:"", custom:p, ev:null } });
+  }
+  /* from your calendar */
+  const on = shownCals();
   for (const ev of gcal.events){
     if (!on.has(ev.cal)) continue;
     const s = new Date(ev.start), e = new Date(ev.end);
@@ -2509,8 +2591,15 @@ function paintCustom(){
   if (!host) return;
   const linked = !!gcal.account, chevron = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>`;
   const note = gNote ? `<span class="err">${esc(gNote)}</span>` : "";
-  let h = `<div class="row-group">`;
-  h += `<div class="row"><div class="rl"><strong>Google Calendar · iCal</strong><small>${gBusy ? "Importing…" : note || (linked ? "Imported " + agoText(gcal.at) : "Import events without signing in to Google")}</small></div></div>` +
+  const when = p => p.kind === "own" ? ownSummary(p) : linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Import a calendar to show these";
+  let h = `<div class="cust-cols"><div class="cust-col"><div class="sub-label">Your periods</div>` +
+    (periods.length ? `<div class="row-group">` + periods.map(p =>
+      `<button class="row prow" data-pid="${esc(p.id)}"><span class="pchip cst-${p.style || "tint"}" style="--c:${esc(p.colour)};--ink:${inkOn(p.colour)}">${esc(p.name)}</span>` +
+      `<span class="val"><span>${esc(p.user ? "For " + p.user + " · " : "")}${esc(when(p))}</span>${chevron}</span></button>`).join("") + `</div>`
+      : `<p class="sec-note">None yet. Make one with its own days and times, or turn something in your calendar into one.</p>`) +
+    `<button class="btn primary" id="newperiod">+ New period</button></div>`;
+  h += `<div class="cust-col"><div class="sub-label">From your calendar</div><div class="row-group">` +
+       `<div class="row"><div class="rl"><strong>Google Calendar · iCal</strong><small>${gBusy ? "Importing…" : note || (linked ? "Imported " + agoText(gcal.at) : "Import events without signing in to Google")}</small></div></div>` +
        `<div class="row stack"><div class="rl"><strong>Secret iCal address</strong><small>Google Calendar: Settings → your calendar → Integrate calendar → Secret address in iCal format. The address is not saved; imported events stay on this device.</small></div>` +
        `<input class="fin" type="url" id="icalurl" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off"></div>` +
        `<div class="row"><div class="rl"><small>No school or Google sign-in is needed.</small></div>` +
@@ -2519,20 +2608,19 @@ function paintCustom(){
             gcal.calendars.map(c => `<div class="gcal"><i style="--c:${esc(c.colour)}"></i><span>${esc(c.name)}</span>` +
               `<button class="tog sm" role="switch" aria-checked="${c.on}" data-cal="${esc(c.id)}" aria-label="${esc(c.name)}"></button></div>`).join("") + `</div></div>`;
   h += `</div>`;
-  if (periods.length) h += `<div class="sub-label">Your periods</div><div class="row-group">` + periods.map(p =>
-      `<button class="row prow" data-pid="${esc(p.id)}"><span class="pchip cst-${p.style || "tint"}" style="--c:${esc(p.colour)};--ink:${inkOn(p.colour)}">${esc(p.name)}</span>` +
-      `<span class="val"><span>${esc(p.user ? "For " + p.user + " · " : "")}${esc(linked ? usually(matchedEvents(p)) || "No events with this name yet" : "Import a calendar to show these")}</span>${chevron}</span></button>`).join("") + `</div>`;
   if (linked && !gBusy){
     const sg = suggestions(), shown = moreSugg ? sg : sg.slice(0, 5);
     h += sg.length ? `<div class="sub-label">In your calendar</div><div class="row-group">` + shown.map((s, i) =>
         `<button class="row" data-sg="${i}"><div class="rl"><strong>${esc(s.title)}</strong><small>${esc(usually(s.evs))}</small></div><span class="addp">+ Add</span></button>`).join("") +
         (sg.length > shown.length ? `<button class="row more" id="sgmore">Show ${sg.length - shown.length} more</button>` : "") + `</div>`
-      : `<p class="sec-note">Nothing else in this calendar on school days in the next few months.</p>`;
+      : `<p class="sec-note">Nothing else in this calendar in the next few months.</p>`;
     host.sugg = sg;
   }
+  h += `</div></div>`;
   host.innerHTML = h;
   paintPeriodsTile();
   const btn = id => host.querySelector("#" + id);
+  btn("newperiod").onclick = () => openPeriod(null);
   if (btn("gimport")) btn("gimport").onclick = importICal;
   if (btn("sgmore")) btn("sgmore").onclick = () => { moreSugg = true; paintCustom(); };
   host.querySelectorAll("[data-cal]").forEach(b => b.onclick = () => {
@@ -2546,82 +2634,157 @@ function paintCustom(){
 
 /* an opened custom period: where, which calendar, the event's own notes */
 function customDetail(e){
-  const ev = e.ev, cal = (gcal.calendars.find(c => c.id === ev.cal) || {}).name || "";
+  const ev = e.ev, cal = ev ? (gcal.calendars.find(c => c.id === ev.cal) || {}).name || "" : "";
   const rows = list => list.filter(r => r[1]).map(([lbl, val, cls]) =>
     `<div class="det-row ${cls || ""}"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
-  const meta = rows([["Room", e.room && `<span class="rk">${esc(e.room)}</span>`, "room"], ["Calendar", esc(cal)]]);
-  const notes = e.custom.notes || ev.notes;
-  const more = rows([["Event", norm(ev.title) !== norm(e.subject) ? esc(ev.title) : "", "wide"],
-                     ["Where", ev.place && ev.place !== e.room ? esc(ev.place) : "", "wide"],
+  const meta = rows([["Room", e.room && `<span class="rk">${esc(e.room)}</span>`, "room"], ev ? ["Calendar", esc(cal)] : ["Repeats", esc(ownSummary(e.custom))]]);
+  const notes = e.custom.notes || (ev && ev.notes);
+  const more = rows([["Event", ev && norm(ev.title) !== norm(e.subject) ? esc(ev.title) : "", "wide"],
+                     ["Where", ev && ev.place && ev.place !== e.room ? esc(ev.place) : "", "wide"],
                      ["Notes", notes && esc(notes).replace(/\n/g, "<br>"), "wide"]]);
   return (meta ? `<div class="blk-detail blk-meta"><div class="det">${meta}</div></div>` : "") +
     `<div class="blk-detail blk-more">${more ? `<div class="det">${more}</div>` : ""}` +
     `<button class="cls-btn" data-pedit="${esc(e.custom.id)}"><span>Edit this period</span></button></div>`;
 }
 
-/* the editor: a live preview on top, then what it's called, how it looks, and
-   which events it is */
+/* The editor, inside the tile: a live preview, what it's called and how it
+   looks; then when it's on, either days and times of your own or the events
+   in your calendar it is. */
 function openPeriod(id, seed){
   const old = id ? periods.find(p => p.id === id) : null;
-  const d = old ? { ...old, series:[...(old.series || [])] }
-    : { name:seed ? seed.title : "", match:seed ? seed.title : "", series:seed && seed.series ? [seed.series] : [], details:"", room:shortPlace(seed && seed.place), user:"",
+  const d = old ? { kind:"calendar", days:[], from:"", to:"", weeks:"all", match:"", user:"", ...old, series:[...(old.series || [])], days:[...(old.days || [])] }
+    : { kind:seed ? "calendar" : "own", name:seed ? seed.title : "", match:seed ? seed.title : "", series:seed && seed.series ? [seed.series] : [],
+        days:[], from:"15:30", to:"16:30", weeks:"all", details:"", room:shortPlace(seed && seed.place), user:"",
         notes:"", colour:P_COLOURS[hash(seed ? seed.title : String(Date.now())) % P_COLOURS.length], style:"tint" };
-  $("evtitle").textContent = old ? "Edit period" : "New period";
-  $("evbody").innerHTML = `
-    <div class="pprev" id="pprev"></div>
-    <div class="fld"><label for="pname">Name</label><input class="fin" id="pname" maxlength="60" placeholder="e.g. Tutoring"></div>
-    <div class="fld"><label for="pdet">Details</label><input class="fin" id="pdet" maxlength="80" placeholder="The line under the name, e.g. with Ms Lee"></div>
-    <div class="fld"><label for="proom">Room</label><input class="fin" id="proom" maxlength="16" placeholder="In the corner, e.g. Library"></div>
-    <div class="fld"><span class="lbl2">Colour</span><div class="swatches" id="pcol">${P_COLOURS.map(c => `<button class="swatch" data-c="${c}" style="--c:${c}" aria-label="Colour ${c}"></button>`).join("")}` +
-      `<label class="swatch pick" title="Any colour"><input type="color" id="pany" aria-label="Any colour"></label></div></div>
-    <div class="fld"><span class="lbl2">Look</span><div class="seg wide" id="pstyle"><button data-s="tint">Tinted</button><button data-s="solid">Solid</button><button data-s="outline">Outline</button></div></div>
-    <div class="fld"><label for="pmatch">Calendar events called</label><input class="fin" id="pmatch" maxlength="140" placeholder="The event's name in your calendar"><p class="evnote" id="pfound"></p></div>
-    <div class="fld"><label for="puser">Show only on this student's timetable (optional)</label><input class="fin" id="puser" maxlength="254" autocomplete="off" autocapitalize="off" placeholder="first.last or school email"><p class="evnote">Leave blank to show this period on every timetable.</p></div>
-    <div class="fld"><label for="pnotes">Notes</label><textarea class="fin" id="pnotes" maxlength="600" placeholder="Shown when you open it"></textarea></div>
+  const host = $("pedit");
+  host.innerHTML = `
+    <div class="pedhead"><button class="pback" id="pback"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>All periods</button></div>
+    <div class="pedform">
+      <div class="pedcol">
+        <div class="pedhead"><h4>${old ? "Edit period" : "New period"}</h4></div>
+        <div class="pprev" id="pprev"></div>
+        <div class="fld"><label for="pname">Name</label><input class="fin" id="pname" maxlength="60" placeholder="e.g. Tutoring"></div>
+        <div class="fld"><label for="pdet">Details</label><input class="fin" id="pdet" maxlength="80" placeholder="The line under the name, e.g. with Ms Lee"></div>
+        <div class="fld"><label for="proom">Room</label><input class="fin" id="proom" maxlength="16" placeholder="In the corner, e.g. Library"></div>
+        <div class="fld"><span class="lbl2">Colour</span><div class="swatches" id="pcol">${P_COLOURS.map(c => `<button class="swatch" data-c="${c}" style="--c:${c}" aria-label="Colour ${c}"></button>`).join("")}` +
+          `<label class="swatch pick" title="Any colour"><input type="color" id="pany" aria-label="Any colour"></label></div></div>
+        <div class="fld"><span class="lbl2">Look</span><div class="seg wide" id="pstyle"><button data-s="tint">Tinted</button><button data-s="solid">Solid</button><button data-s="outline">Outline</button></div></div>
+      </div>
+      <div class="pedcol">
+        <div class="fld"><span class="lbl2">When</span><div class="seg wide" id="pkind"><button data-k="own">Set times</button><button data-k="calendar">From my calendar</button></div></div>
+        <div class="fld ownonly"><span class="lbl2">Days</span><div class="daypick" id="pdays">${DN.map((n, i) => `<button data-d="${i}">${n}</button>`).join("")}</div></div>
+        <div class="fld two ownonly"><span class="lbl2">From</span><span class="lbl2">To</span>
+          <input class="fin" type="time" id="pfrom" aria-label="From"><input class="fin" type="time" id="pto" aria-label="To"></div>
+        <div class="fld ownonly"><span class="lbl2">Weeks</span><div class="seg wide" id="pweeks"><button data-w="all">Every week</button><button data-w="A">Week A</button><button data-w="B">Week B</button></div></div>
+        <div class="fld calonly"><label for="pmatch">Calendar events called</label><input class="fin" id="pmatch" maxlength="140" placeholder="The event's name in your calendar"><p class="evnote" id="pfound"></p></div>
+        <div class="fld"><label for="puser">Show only on this student's timetable (optional)</label><input class="fin" id="puser" maxlength="254" autocomplete="off" autocapitalize="off" placeholder="first.last or school email"><p class="evnote">Leave blank to show this period on every timetable.</p></div>
+        <div class="fld"><label for="pnotes">Notes</label><textarea class="fin" id="pnotes" maxlength="600" placeholder="Shown when you open it"></textarea></div>
+      </div>
+    </div>
     <p class="everr" id="perr" role="alert"></p>
     <div class="btnrow">${old ? '<button class="btn danger" id="pdel">Delete</button>' : ""}<span class="grow"></span>
       <button class="btn" id="pcancel">Cancel</button><button class="btn primary" id="psave">Save</button></div>`;
-  const fields = { pname:"name", pdet:"details", proom:"room", pmatch:"match", puser:"user", pnotes:"notes" };
+  const fields = { pname:"name", pdet:"details", proom:"room", pmatch:"match", puser:"user", pnotes:"notes", pfrom:"from", pto:"to" };
   for (const [el, k] of Object.entries(fields)) $(el).value = d[k] || "";
   $("pany").value = /^#[0-9a-f]{6}$/i.test(d.colour) ? d.colour : "#0A84FF";
+  const all = sel => host.querySelectorAll(sel);
   const paint = () => {
     for (const [el, k] of Object.entries(fields)) d[k] = $(el).value;
-    const evs = matchedEvents({ match:d.match, series:d.series }), name = d.name.trim() || d.match.trim() || "New period";
-    const room = d.room.trim(), time = evs.length ? (s => f(minsOf(new Date(s.start))) + " – " + f(minsOf(new Date(s.end))))(evs[0]) : "4:30 – 5:30";
+    const own = d.kind === "own", evs = own ? [] : matchedEvents({ match:d.match, series:d.series });
+    const name = d.name.trim() || (own ? "" : d.match.trim()) || "New period", room = d.room.trim();
+    const s = toMinutes(d.from), e = toMinutes(d.to);
+    const time = own ? (s != null && e != null ? f(s) + " – " + f(e) : "")
+               : evs.length ? f(minsOf(new Date(evs[0].start))) + " – " + f(minsOf(new Date(evs[0].end))) : "4:30 – 5:30";
     $("pprev").innerHTML = `<div class="blk cst cst-${d.style}" style="--c:${esc(d.colour)};--ink:${inkOn(d.colour)};--rw:${room.length}ch"><div class="blk-card">` +
       `<span class="r tnum">${esc(room)}</span><span class="s">${esc(name)}</span><span class="m">${esc(d.details)}</span><span class="t tnum">${time}</span></div></div>`;
-    const custom = !P_COLOURS.includes(d.colour);
-    $("evbody").querySelectorAll("#pcol .swatch[data-c]").forEach(s => s.setAttribute("aria-pressed", s.dataset.c === d.colour));
-    const pick = $("evbody").querySelector(".swatch.pick");
-    pick.setAttribute("aria-pressed", custom); pick.style.setProperty("--c", d.colour);
-    $("evbody").querySelectorAll("#pstyle button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === d.style));
-    $("pfound").textContent = !gcal.account ? "Import a calendar in settings to find these."
+    all("#pcol .swatch[data-c]").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === d.colour));
+    const pick = host.querySelector(".swatch.pick");
+    pick.setAttribute("aria-pressed", !P_COLOURS.includes(d.colour)); pick.style.setProperty("--c", d.colour);
+    all("#pstyle button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === d.style));
+    all("#pkind button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === d.kind));
+    all("#pdays button").forEach(b => b.setAttribute("aria-pressed", d.days.includes(+b.dataset.d)));
+    all("#pweeks button").forEach(b => b.setAttribute("aria-pressed", b.dataset.w === (d.weeks || "all")));
+    all(".ownonly").forEach(x => x.hidden = !own);
+    all(".calonly").forEach(x => x.hidden = own);
+    $("pfound").textContent = !gcal.account ? "Import a calendar to find these."
       : evs.length ? "Found: " + usually(evs) : "No events with this name in the next few months. It has to match the whole name.";
   };
   Object.keys(fields).forEach(el => $(el).oninput = paint);
-  $("evbody").querySelectorAll("#pcol .swatch[data-c]").forEach(s => s.onclick = () => { d.colour = s.dataset.c; paint(); });
+  all("#pcol .swatch[data-c]").forEach(b => b.onclick = () => { d.colour = b.dataset.c; paint(); });
   $("pany").oninput = () => { d.colour = $("pany").value.toUpperCase(); paint(); };
-  $("evbody").querySelectorAll("#pstyle button").forEach(b => b.onclick = () => { d.style = b.dataset.s; paint(); });
-  $("pcancel").onclick = () => showEvPanel(false);
-  if (old) $("pdel").onclick = () => { periods = periods.filter(p => p.id !== id); savePeriods(); showEvPanel(false); closeAll(); render(); paintCustom(); };
+  all("#pstyle button").forEach(b => b.onclick = () => { d.style = b.dataset.s; paint(); });
+  all("#pkind button").forEach(b => b.onclick = () => { d.kind = b.dataset.k; paint(); });
+  all("#pweeks button").forEach(b => b.onclick = () => { d.weeks = b.dataset.w; paint(); });
+  all("#pdays button").forEach(b => b.onclick = () => {
+    const k = +b.dataset.d;
+    d.days = d.days.includes(k) ? d.days.filter(x => x !== k) : d.days.concat(k).sort((x, y) => x - y);
+    paint();
+  });
+  $("pback").onclick = $("pcancel").onclick = () => showPeriodEditor(false);
+  const done = () => { savePeriods(); showPeriodEditor(false); closeAll(); render(); paintCustom(); };
+  if (old) $("pdel").onclick = () => { periods = periods.filter(p => p.id !== id); done(); };
   $("psave").onclick = () => {
     paint();
-    if (!d.match.trim() && !d.series.length){ $("perr").textContent = "Say which calendar events it is."; return; }
-    const target = String(d.user || "").trim().toLowerCase();
-    const parts = target.split("@");
-    const user = parts[0];
-    if (parts.length > 2 || (parts.length === 2 && parts[1] !== DOMAIN) || (target && !/^[a-z0-9][a-z0-9._-]*$/.test(user))){
-      $("perr").textContent = "Enter a school username or @education.nsw.gov.au email.";
-      return;
-    }
-    const rec = { id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name:(d.name.trim() || d.match.trim()).slice(0, 60),
-                  match:d.match.trim(), series:d.series, details:d.details.trim(), room:d.room.trim(), user:target ? user : "", notes:d.notes.trim(), colour:d.colour, style:d.style };
+    const err = m => { $("perr").textContent = m; };
+    const own = d.kind === "own", s = toMinutes(d.from), e = toMinutes(d.to);
+    if (own && !d.name.trim()) return err("Give it a name.");
+    if (own && !d.days.length) return err("Pick the days it's on.");
+    if (own && (s == null || e == null || e <= s)) return err("It has to finish after it starts.");
+    if (!own && !d.match.trim() && !d.series.length) return err("Say which calendar events it is.");
+    const target = String(d.user || "").trim().toLowerCase(), parts = target.split("@"), user = parts[0];
+    if (parts.length > 2 || (parts.length === 2 && parts[1] !== DOMAIN) || (target && !/^[a-z0-9][a-z0-9._-]*$/.test(user)))
+      return err("Enter a school username or @education.nsw.gov.au email.");
+    const rec = { id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kind:d.kind,
+                  name:(d.name.trim() || d.match.trim()).slice(0, 60), details:d.details.trim(), room:d.room.trim(), user:target ? user : "",
+                  notes:d.notes.trim(), colour:d.colour, style:d.style,
+                  ...(own ? { days:d.days, from:d.from, to:d.to, weeks:d.weeks || "all" } : { match:d.match.trim(), series:d.series }) };
     periods = old ? periods.map(p => p.id === id ? rec : p) : periods.concat(rec);
-    savePeriods(); showEvPanel(false); closeAll(); render(); paintCustom();
+    done();
   };
   paint();
-  showEvPanel(true);
+  /* already open: the list gives way to the editor; closed: it opens onto the editor */
+  if (cOpen()) showPeriodEditor(true);
+  else { showPeriodEditor(true, true); openCustom(true); }
 }
+
+/* ═══ assessments ═══
+   The school's HSC assessment schedule (andre/assessments.json, made from its
+   spreadsheet): each task's scheduled week, or two, and weighting. Only the
+   tasks for the shown student's own courses are shown, and only to the year
+   sitting that HSC: "Physics Yr11" in 2026 sits the 2027 HSC. */
+let assessments = [], assessHsc = 0;
+fetch("/andre/assessments.json").then(r => r.ok ? r.json() : null).then(d => {
+  if (!d) return;
+  assessments = d.tasks || []; assessHsc = +d.hsc || 0;
+  if (!turning && !viewTurn && !dayRun) render();
+}).catch(() => {});
+/* course names as the school's timetable and the schedule both write them */
+const SUBJ_ALIAS = [[/&/g, " and "], [/\bmaths?\b/g, "mathematics"], [/\bext\b/g, "extension"], [/\badv\b/g, "advanced"], [/\bstd\b/g, "standard"],
+  [/\bpdhpe\b/g, "health and movement science"], [/\bsoftware design and development\b|\bsdd\b/g, "software engineering"],
+  [/\bmusic ii\b/g, "music 2"], [/\btextiles(?! and design)\b/g, "textiles and design"]];
+function subjKey(s){
+  let k = String(s || "").toLowerCase().replace(/\b(?:yr|year)\s*1[0-2]\b/g, " ");
+  for (const [re, to] of SUBJ_ALIAS) k = k.replace(re, to);
+  return k.replace(/[^a-z0-9]+/g, " ").trim();
+}
+/* the shown student's tasks, each with their course's name */
+function myAssessments(){
+  if (!assessments.length) return [];
+  const year = new Date().getFullYear(), mine = new Map();
+  for (const c of myCourses()){
+    const y = (c.key.match(/\b(?:yr|year)\s*(11|12)\b/) || [])[1];
+    if (y && year + (y === "11" ? 1 : 0) !== assessHsc) continue;       /* a different year's HSC */
+    mine.set(subjKey(c.subject), c.subject); mine.set(subjKey(c.key), c.subject);
+  }
+  return assessments.filter(a => mine.has(subjKey(a.subject))).map(a => ({ ...a, course:mine.get(subjKey(a.subject)) }));
+}
+/* In the calendar (the month, and a day's list) they're switched off for now;
+   the week's strip still shows them. Set to true to bring them back. */
+const ASSESS_IN_CALENDAR = false;
+/* the tasks scheduled in any part of these days */
+const tasksBetween = (from, to) => myAssessments().filter(a => a.from <= ymd(to) && a.to >= ymd(from));
+const apill = a => `<span class="apill" style="--c:${esc(colourFor(a.course))}" title="${esc(`${a.course}: ${a.task}${a.weight ? " (" + a.weight + ")" : ""}, scheduled ${a.when}. Your teacher gives the exact day.`)}">` +
+  `<b>${esc(a.course)}</b><span class="at">${esc(a.task)}</span><span class="aw">${esc([a.weight, a.when].filter(Boolean).join(" · "))}</span></span>`;
 
 /* ═══ month view ═══
    The Calendar tile turns the week into a month, in the same style, and back
@@ -2641,6 +2804,7 @@ function renderMonth(){
   const start = addDays(first, -lead), weeks = Math.ceil((lead + last) / 7);
   const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   let h = arrow(-1, "month") + [0,1,2,3,4,5,6].map(k => `<div class="mdow">${names[(k + wkStart) % 7]}</div>`).join("") + arrow(1, "month");
+  const mine = ASSESS_IN_CALENDAR ? myAssessments() : [];
   for (let w = 0; w < weeks; w++){
     h += `<div class="mpad"></div>`;
     for (let k = 0; k < 7; k++){
@@ -2650,12 +2814,18 @@ function renderMonth(){
         const tw = termWeek(d), cyc = cycleDayFor(d, cycleStart), letter = cyc ? cyc.slice(-1).toUpperCase() : "";
         wk = tw ? `Week ${tw.week}${letter}` : tw === false ? "Holidays" : letter ? "Week " + letter : "";
       }
-      h += `<button class="mcell ${d.getMonth() !== first.getMonth() ? "out" : ""} ${weekend ? "wkend" : !schoolDay(d) ? "hol" : ""} ${sameDay(d, now) ? "today" : ""}" data-day="${day}">` +
+      const tint = weekend ? "wkend" : !schoolDay(d) ? "hol" : { A:"wa", B:"wb" }[abWeek(d)] || "";
+      h += `<button class="mcell ${d.getMonth() !== first.getMonth() ? "out" : ""} ${tint} ${sameDay(d, now) ? "today" : ""}" data-day="${day}">` +
            `<span class="mtop"><span class="mnum tnum">${d.getDate()}</span>${wk ? `<span class="mwk">${wk}</span>` : ""}</span>` +
            evs.slice(0, 3).map(e => `<span class="chipe ${e.kind === "subject" ? "sub" : ""}" data-ev="${esc(e.id)}" data-kind="${e.kind}" style="--c:${esc(e.colour)}" title="${esc(e.title + " · " + evTime(e))}">${esc(e.title)}</span>`).join("") +
-           (evs.length > 3 ? `<span class="mmore">+${evs.length - 3} more</span>` : "") + `</button>`;
+           (evs.length > 3 ? `<span class="mmore">+${evs.length - 3} more</span>` : "") +
+           (weekend ? "" : (dots => dots.length ? `<span class="adots">${dots.map(a => `<i style="--c:${esc(colourFor(a.course))}" title="${esc(a.course + ": " + a.task)}"></i>`).join("")}</span>` : "")
+             (mine.filter(a => a.from <= day && a.to >= day))) + `</button>`;
     }
     h += `<div class="mpad"></div>`;
+    /* that week's assessments, under it */
+    const wt = mine.filter(a => a.from <= ymd(addDays(start, w * 7 + 6)) && a.to >= ymd(addDays(start, w * 7)));
+    if (wt.length) h += `<div class="mweek">${wt.map(apill).join("")}</div>`;
   }
   $("mgrid").innerHTML = h;
   $("mgrid").querySelectorAll(":scope > .arrow").forEach(a => a.onclick = () => goMonth((wantMonth ?? monthOff) + +a.dataset.d));
@@ -2710,7 +2880,7 @@ function stopTurns(){
   document.querySelectorAll(".tt, .mob, .month").forEach(s => s.getAnimations({ subtree:true }).forEach(a => a.finish()));
 }
 function morphTo(target){
-  closeAll(); showEvPanel(false); openSettings(false); openCustom(false);
+  closeAll(); showEvPanel(false); openSettings(false);
   if (scrollY > 40) scrollTo({ top:0, behavior:noMotion() ? "auto" : "smooth" });
   if (noMotion()){
     if (target === "month") monthOff = monthOfWeek();
@@ -2757,13 +2927,13 @@ function weekSide(layer){
   const cols = phone.matches
     ? [{ span:layer.rel($("daylist").firstElementChild || $("daylist")), items:[...$("daylist").children].filter(el => el.matches(".card,.brk")) }]
     : [...document.querySelectorAll("#g > .col")].map(col => ({ span:layer.rel(col), items:[...col.children].filter(el => el.matches(".blk,.gap")) }));
-  const fades = phone.matches ? [$("daynav"), ...$("daylist").querySelectorAll(".lmsg")]
-                              : [...document.querySelectorAll("#g > .dh, #g > .arrow, #g > .msg, #g .hol, #g .tskip")];
+  const fades = phone.matches ? [$("daynav"), ...$("daylist").querySelectorAll(".lmsg, .asst")]
+                              : [...document.querySelectorAll("#g > .dh, #g > .arrow, #g > .msg, #g > .asst, #g .hol, #g .tskip")];
   return { cols:cols.map(c => ({ span:c.span, items:c.items.map(piece).sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left) })), fades:fades.map(piece) };
 }
 function monthSide(layer){
   return { cells:[...$("mgrid").querySelectorAll(".mcell")].map(el => ({ el, r:layer.rel(el) })),
-           fades:[...document.querySelectorAll("#mgrid > .mdow, #mgrid > .arrow, .mbar")].map(el => ({ el, r:layer.rel(el) })) };
+           fades:[...document.querySelectorAll("#mgrid > .mdow, #mgrid > .arrow, #mgrid > .mweek, .mbar")].map(el => ({ el, r:layer.rel(el) })) };
 }
 /* a copy of an element that fills whatever box it's put in */
 function filler(el){
@@ -2957,8 +3127,6 @@ function goMonth(target){
   });
 }
 document.querySelectorAll(".mnav .arrow").forEach(a => a.onclick = () => goMonth((wantMonth ?? monthOff) + +a.dataset.m));
-$("newev").onclick = () => openEvent(null, { day:ymd(new Date()) });
-$("newperiod").onclick = () => openPeriod(null);
 
 /* calendar settings */
 $("showsubj").onclick = () => { set(LS.showsubj, !showSubj()); paintSettings(); render(); };
@@ -2992,9 +3160,10 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
 
 /* a day: its events, and a button to add one */
 function openDay(day){
-  const evs = eventsOn(day);
+  const evs = eventsOn(day), d = toDate(day), tasks = ASSESS_IN_CALENDAR ? tasksBetween(d, d) : [];
   $("evtitle").textContent = dayTitle(day);
-  $("evbody").innerHTML = (evs.length
+  $("evbody").innerHTML = (tasks.length ? `<div class="evlist">${tasks.map(a => `<div class="evitem atask" style="--c:${esc(colourFor(a.course))}"><b>${esc(a.course)}: ${esc(a.task)}</b>` +
+      `<span>Assessment ${a.from === a.to ? "" : "window "}${esc(a.when)}${a.weight ? " · " + esc(a.weight) : ""} · your teacher gives the exact day</span></div>`).join("")}</div>` : "") + (evs.length
       ? `<div class="evlist">${evs.map(e => `<button class="evitem" data-ev="${esc(e.id)}" data-kind="${e.kind}" style="--c:${esc(e.colour)}"><b>${esc(e.title)}</b>` +
           `<span>${esc(evTime(e))} · ${e.kind === "subject" ? esc(subjectOf(e.course)) : "Personal"}</span></button>`).join("")}</div>`
       : `<p class="evempty">Nothing on this day.</p>`) +
@@ -3081,31 +3250,126 @@ function openEvent(id, { day, kind } = {}){
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["revision","games","calendar","resources","free","periods"];
+const MOD_WIDEN = ["calendar","revision","free","games","periods","resources"];
 
-/* ═══ custom periods module ═══ — its tile opens their panel */
-const cOpen = () => document.body.classList.contains("copen");
+/* ═══ the Custom periods tile ═══
+   It opens up in place, like a lesson, onto a row of its own. First it moves
+   straight down to that row, then the tiles beside it widen to close the gap
+   as it widens to the whole row, then it grows down to show everything.
+   Closing runs the same steps backwards. Only ever up/down or sideways, and
+   no tile passes over another. */
+const perMod = document.querySelector('[data-m="periods"]');
+const cOpen = () => perMod.classList.contains("open");
+const TILE = { v:260, h:320, grow:340 };
 function openCustom(o){
-  document.body.classList.toggle("copen", o);
-  if (o){ paintCustom(); $("cclose").focus(); }
+  if (o === cOpen()) return;
+  const tiles = [...$("mg").children], T = TILE.v + TILE.h + TILE.grow;
+  document.querySelectorAll(".tilefly > *").forEach(c => c.getAnimations().forEach(a => a.finish()));
+  /* measured on the page, not the screen: the page may scroll while it moves */
+  const onPage = el => { const r = el.getBoundingClientRect(); return { left:r.left + scrollX, top:r.top + scrollY, width:r.width, height:r.height }; };
+  const before = tiles.map(onPage);
+  /* closing makes the page shorter: hold its length until the tiles have
+     moved, so the browser doesn't snap the scroll up halfway */
+  if (!o && !noMotion()) document.body.style.minHeight = document.documentElement.scrollHeight + "px";
+  if (o) paintCustom(); else showPeriodEditor(false, true);
+  const from = getComputedStyle(perMod).backgroundColor;
+  perMod.classList.toggle("open", o);
+  perMod.querySelector(".mod-head").setAttribute("aria-expanded", o);
+  perMod.style.transition = "none";                  /* its colour now, not partway through easing there */
+  const to = getComputedStyle(perMod).backgroundColor;
+  perMod.style.transition = "";
+  layoutMods();
+  const after = tiles.map(onPage);
+  if (!noMotion()) flyTiles(tiles, before, after, o, { el:perMod, from, to });
+  if (!o && !noMotion()){
+    const end = document.querySelector("main").getBoundingClientRect().bottom + scrollY - innerHeight;
+    if (scrollY > end) scrollTo({ top:Math.max(0, end), behavior:"smooth" });
+    clearTimeout(openCustom.hold);
+    openCustom.hold = setTimeout(() => { document.body.style.minHeight = ""; }, T + 50);
+  }
+  if (o){        /* bring it into view once it's open */
+    setTimeout(() => {
+      const r = perMod.getBoundingClientRect();
+      if (r.bottom > innerHeight) scrollBy({ top:Math.min(r.top - 80, r.bottom - innerHeight + 24), behavior:noMotion() ? "auto" : "smooth" });
+    }, noMotion() ? 0 : T - 120);
+  }
 }
-document.querySelector('[data-m="periods"]').onclick = e => { e.preventDefault(); openCustom(true); };
-$("cclose").onclick = () => openCustom(false);
-$("scrim").addEventListener("click", () => openCustom(false));
-/* capture, so an editor open on top closes first */
-addEventListener("keydown", e => { if (e.key === "Escape" && cOpen() && !evOpen()) openCustom(false); }, true);
+/* The tiles that change fly as copies over the page, from where they were (A)
+   to where they are now (B), in the three steps. The real ones are already in
+   place underneath, hidden until the copies land; animating the real tiles'
+   size would stretch the grid's rows and columns around them. */
+function flyTiles(tiles, A, B, opening, main){
+  document.querySelectorAll(".tilefly").forEach(x => x.remove());
+  tiles.forEach(el => el.style.visibility = "");
+  const layer = document.createElement("div");
+  layer.className = "tilefly";
+  document.body.appendChild(layer);
+  const L = layer.getBoundingClientRect(), ox = L.left + scrollX, oy = L.top + scrollY;
+  const T = TILE.v + TILE.h + TILE.grow, anims = [], hidden = [];
+  const box = (x, y, w, h, ms) => ({ left:x - ox + "px", top:y - oy + "px", width:w + "px", height:h + "px", offset:ms / T, easing:"cubic-bezier(.45,0,.25,1)" });
+  tiles.forEach((el, i) => {
+    const a = A[i], b = B[i];
+    if (Math.abs(a.left - b.left) < .5 && Math.abs(a.top - b.top) < .5 && Math.abs(a.width - b.width) < .5 && Math.abs(a.height - b.height) < .5) return;
+    const copy = el.cloneNode(true), isMain = main && el === main.el;
+    copy.querySelectorAll("[id]").forEach(x => x.removeAttribute("id"));
+    if (isMain) copy.querySelectorAll(".mod-body").forEach(x => x.remove());     /* its contents only arrive once it's open */
+    copy.style.cssText += ";position:absolute;margin:0";
+    layer.appendChild(copy);
+    const keys = opening
+      ? [box(a.left, a.top, a.width, a.height, 0), box(a.left, b.top, a.width, a.height, TILE.v), box(b.left, b.top, b.width, a.height, TILE.v + TILE.h), box(b.left, b.top, b.width, b.height, T)]
+      : [box(a.left, a.top, a.width, a.height, 0), box(a.left, a.top, a.width, b.height, TILE.grow), box(b.left, a.top, b.width, b.height, TILE.grow + TILE.h), box(b.left, b.top, b.width, b.height, T)];
+    /* its colour changes while it grows (or, closing, while it shrinks) */
+    if (isMain) keys.forEach((k, j) => k.backgroundColor = (opening ? j < 3 : j < 1) ? main.from : main.to);
+    anims.push(copy.animate(keys, { duration:T, fill:"both" }));
+    el.style.visibility = "hidden"; hidden.push(el);
+  });
+  Promise.all(anims.map(x => x.finished.catch(() => {}))).then(() => {
+    if (!layer.isConnected) return;               /* a newer flight took over */
+    hidden.forEach(el => el.style.visibility = ""); layer.remove();
+    const body = opening && main && main.el.querySelector(".mod-body");
+    if (body) body.animate([{ opacity:0, transform:"translateY(6px)" }, { opacity:1, transform:"none" }], { duration:300, easing:"ease-out" });
+  });
+}
+/* inside the open tile: the list of periods, or the editor for one */
+function showPeriodEditor(on, instant){
+  const before = perMod.getBoundingClientRect().height;
+  $("pedit").hidden = !on; $("custom").hidden = on;
+  if (!on) $("pedit").innerHTML = "";
+  if (instant || noMotion() || !cOpen()) return;
+  const after = perMod.getBoundingClientRect().height;
+  perMod.animate([{ height:before + "px" }, { height:after + "px" }], { duration:320, easing:"cubic-bezier(.4,0,.2,1)" });
+  (on ? $("pedit") : $("custom")).animate([{ opacity:0, transform:"translateY(6px)" }, { opacity:1, transform:"none" }], { duration:260, delay:80, fill:"backwards" });
+  if (on){
+    const r = perMod.getBoundingClientRect();
+    if (r.top < 60 || r.top > innerHeight - 200) scrollBy({ top:r.top - 80, behavior:"smooth" });
+  }
+}
+perMod.querySelector(".mod-head").onclick = () => openCustom(!cOpen());
+/* Escape: out of the editor first, then the tile closes */
+addEventListener("keydown", e => {
+  if (e.key !== "Escape" || !cOpen() || settingsOpen() || evOpen()) return;
+  if (!$("pedit").hidden) showPeriodEditor(false); else openCustom(false);
+});
 function layoutMods(){
   const mg = $("mg"), tiles = [...mg.children];
   const n = getComputedStyle(mg).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
-  const rows = Math.ceil(tiles.length / n);
-  for (let r = 0, i = 0; r < rows; r++){
-    const k = Math.ceil((tiles.length - i) / (rows - r)), row = tiles.slice(i, i + k);
-    i += k;
-    const spans = row.map(() => 1);
-    const order = row.map((_, j) => j).sort((a, b) => MOD_WIDEN.indexOf(row[a].dataset.m) - MOD_WIDEN.indexOf(row[b].dataset.m));
-    for (let extra = n - k, j = 0; extra > 0; extra--, j++) spans[order[j % k]]++;
-    row.forEach((el, j) => el.style.gridColumn = spans[j] > 1 ? "span " + spans[j] : "");
-  }
+  /* full rows of tiles; an open tile takes a row of its own between them */
+  const fill = list => {
+    const rows = Math.ceil(list.length / n);
+    for (let r = 0, i = 0; r < rows; r++){
+      const k = Math.ceil((list.length - i) / (rows - r)), row = list.slice(i, i + k);
+      i += k;
+      const spans = row.map(() => 1);
+      const order = row.map((_, j) => j).sort((a, b) => MOD_WIDEN.indexOf(row[a].dataset.m) - MOD_WIDEN.indexOf(row[b].dataset.m));
+      for (let extra = n - k, j = 0; extra > 0; extra--, j++) spans[order[j % k]]++;
+      row.forEach((el, j) => el.style.gridColumn = spans[j] > 1 ? "span " + spans[j] : "");
+    }
+  };
+  const open = tiles.findIndex(el => el.classList.contains("open"));
+  if (open < 0){ fill(tiles); return; }
+  fill(tiles.slice(0, open));
+  tiles[open].style.gridColumn = "1 / -1";
+  fill(tiles.slice(open + 1));
 }
 
 addEventListener("resize", () => { render(); layoutMods(); });
