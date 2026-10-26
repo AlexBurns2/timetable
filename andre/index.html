@@ -533,28 +533,54 @@ button.row:hover{background:var(--fill2)}
 .swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swatch.pick[aria-pressed="true"]{background:var(--c)}
 
-/* ── games: the Games tile opens onto every game, with the leaderboards under
-   them; a game's card moves down into the leaderboards' place and plays there ── */
+/* ── games: the Games tile opens onto every game, with the leaderboards in
+   short under them; a game's own card moves down into their place and plays there ── */
+.gpick{position:relative}
 .gres .sub-label:first-child{margin-top:0}
 .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:10px;margin:6px 0 14px}
 .gcard{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;text-align:left;color:inherit;
-  background:color-mix(in srgb,var(--c) 18%,var(--base,var(--bg)));transition:transform .15s,filter .15s,box-shadow .2s}
+  background:color-mix(in srgb,var(--c) 18%,var(--base,var(--bg)));transition:transform .15s,filter .15s}
 .gcard:hover{filter:brightness(.97);transform:translateY(-1px)}
-.gcard[aria-pressed="true"]{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 70%,var(--fg))}
 .gcard .gico{font-size:26px;line-height:1;flex:none}
 .gcard b{display:block;font-size:calc(14px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 30%,var(--fg))}
 .gcard small{display:block;font-size:calc(12px * var(--fs,1));color:color-mix(in srgb,var(--c) 12%,var(--fg2));line-height:1.3;margin-top:2px}
 .gcard .gnew{position:absolute;top:6px;right:8px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1d1d1f;background:var(--c);border-radius:6px;padding:1px 6px}
-.gstage{display:flex;flex-direction:column;height:min(78vh,760px);border-radius:12px;overflow:hidden;background:var(--bg);box-shadow:inset 0 0 0 1px var(--sep)}
-.gsbar{flex:none;display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--sep);background:color-mix(in srgb,var(--gc,#FFD60A) 14%,var(--base,var(--bg)))}
-.gsbar b{font-size:calc(15px * var(--fs,1));font-weight:600}
-.gvout{font-size:calc(13px * var(--fs,1));color:var(--bluet);text-decoration:none;white-space:nowrap}
+/* where a card lives while it's on the stage; tapping it puts the game away */
+.gcard.away,.gslot{background:none;border-radius:10px;outline:1.5px dashed color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-1.5px}
+.gcard.away{filter:none;transform:none}
+.gcard.away > *{visibility:hidden}
+.glb,.gstage{margin-top:2px}
+.lbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:8px;margin-top:6px}
+.lbcard{display:flex;flex-direction:column;gap:4px;min-width:0;padding:10px 12px;border-radius:10px;
+  background:color-mix(in srgb,var(--c) 10%,var(--base,var(--bg)));box-shadow:inset 3px 0 0 color-mix(in srgb,var(--c) 70%,transparent)}
+.lbn{font-size:calc(11px * var(--fs,1));font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--fg) 62%,var(--c))}
+.lbtop{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:calc(14px * var(--fs,1))}
+.lbtop b{min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbtop span{margin-left:auto;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.lbnone{font-size:calc(13px * var(--fs,1));color:var(--fg2)}
+.glbnote{margin:6px 4px 2px;font-size:calc(13px * var(--fs,1));color:var(--fg2)}
+.gstage{display:flex;flex-direction:column;height:min(78vh,760px);border-radius:10px;overflow:hidden;background:var(--bg);box-shadow:inset 0 0 0 1px var(--sep)}
+.gstage.pending{opacity:0;pointer-events:none}
+.gsbar{flex:none;display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid var(--sep);background:color-mix(in srgb,var(--gc,#FFD60A) 18%,var(--base,var(--bg)))}
+/* the game's name: pressing it puts the game away */
+.gsname{display:flex;align-items:center;gap:10px;padding:5px 10px 5px 6px;border-radius:8px;color:color-mix(in srgb,var(--gc) 30%,var(--fg));transition:background .15s}
+.gsname:hover{background:color-mix(in srgb,var(--gc) 22%,transparent)}
+.gsname .gico{font-size:22px;line-height:1}
+.gsname b{font-size:calc(15px * var(--fs,1));font-weight:600}
+.gsname svg{width:14px;height:14px;opacity:.55;transition:opacity .15s}
+.gsname:hover svg{opacity:1}
 .gsbody{position:relative;flex:1;min-height:0}
 .gsbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);opacity:0;transition:opacity .3s}
 .gstage.ready iframe{opacity:1}
 .gvico{position:absolute;inset:0;display:grid;place-items:center;font-size:56px}
-.gfly{position:absolute;z-index:16;margin:0;box-shadow:0 18px 40px rgba(0,0,0,.22);pointer-events:none}
-@media (max-width:760px),(orientation:portrait){ .gvout{display:none} .gstage{height:80vh} }
+/* while cards move, copies of them do, over the tile as it will end up */
+.gpick.flying > :is(.gres,.glb){visibility:hidden}
+.gflyl{position:absolute;inset:0;pointer-events:none;z-index:3}
+.gflyl > .gfc{position:absolute;margin:0;overflow:hidden}
+.gflyl > .gcard{display:block;padding:0;transition:none;transform:none;filter:none}
+.gflyl .gin{display:flex;align-items:center;gap:12px;padding:12px 14px;position:relative}
+.gflyl > .sub-label{white-space:nowrap;overflow:visible}
+@media (max-width:760px),(orientation:portrait){ .gstage{height:80vh} }
 
 /* ── assessments: the scheduled weeks of the shown student's HSC tasks ── */
 .asst{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-4px 44px 12px}
@@ -870,11 +896,10 @@ select.fin{appearance:auto}
       <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
       <div class="mod modx" data-m="games" style="--c:#FF375F">
         <button class="mod-head" aria-expanded="false" aria-controls="gamesbody"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></button>
-        <div class="mod-body" id="gamesbody"><div class="gpick" id="gpick"><div class="gres" id="gres"></div>
-          <div class="gstage" id="gstage">
-            <div class="gsbar"><button class="pback" id="gsback" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Leaderboards</button><b id="gstitle">Leaderboards</b><span class="grow"></span>
-              <a class="gvout" id="gsout" target="_blank" rel="noopener">Open on its own page</a></div>
-            <div class="gsbody"><span class="gvico" id="gsico" aria-hidden="true">🏆</span><iframe id="gsframe" title="Leaderboards"></iframe></div>
+        <div class="mod-body" id="gamesbody"><div class="gpick" id="gpick"><div class="gres" id="gres"></div><div class="glb" id="glb"></div>
+          <div class="gstage" id="gstage" hidden>
+            <div class="gsbar"><button class="gsname" id="gsname" title="Close the game"><span class="gico" id="gsmini" aria-hidden="true"></span><b id="gstitle"></b><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></button></div>
+            <div class="gsbody"><span class="gvico" id="gsico" aria-hidden="true"></span><iframe id="gsframe" title="Game"></iframe></div>
           </div></div></div>
       </div>
       <a class="mod" data-m="resources" href="/resources.html" style="--c:#0A84FF"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></div><h3>Resources</h3></a>
@@ -2042,13 +2067,13 @@ function slideDay(dir, quick){
 }
 
 /* ═══ school API calls beyond the timetable: class lists, the finder, free periods ═══ */
-async function api(params){
+async function api(params, at = ENDPOINT){
   const headers = { Accept:"application/json" };
   if (signedIn){
     headers["X-School-Email"] = creds.email;
     headers["X-School-Password"] = creds.password;
   }
-  const res = await fetch(ENDPOINT + "?" + new URLSearchParams(params), { headers, cache:"no-store" });
+  const res = await fetch(at + "?" + new URLSearchParams(params), { headers, cache:"no-store" });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) throw new Error((data && data.error) || (res.status + " " + res.statusText));
   return data;
@@ -3382,11 +3407,13 @@ function openEvent(id, { day, kind } = {}){
 }
 
 /* ═══ games ═══
-   The Games tile opens onto every game on the games page, by kind, with the
-   leaderboards open under them. Choosing a game moves its card straight down to
-   the leaderboards, across to fill their width, then grows to their height and
-   plays there, in a frame running the games page's own game
+   The Games tile opens onto every game on the games page, by kind, with a
+   summary of the leaderboards under them. Choosing a game moves its own card
+   (not a copy) straight down to the leaderboards' place, the cards in its way
+   stepping aside to let it through, then it widens and grows into the stage
+   and the game plays there, in a frame running the games page's own game
    (games.html?play=…&embed=1), so every game works just as it does there.
+   Its name on the stage puts it back: the card goes home the same way.
    The list mirrors GAMES in games.js. */
 const GAME_LIST = [
   { id:"jim", cat:"Arcade", ico:"🟡", name:"The Jim Button", blurb:"The button that says the name of whoever's playing", isNew:true, c:"#FFB800" },
@@ -3403,68 +3430,300 @@ const GAME_LIST = [
   { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
   { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" }
 ];
-const LEADERBOARDS = { id:"leaderboards", ico:"🏆", name:"Leaderboards", c:"#FFD60A" };
-let gameNow = null;          /* the game on the stage, or null for the leaderboards */
-const gameCard = g => `<button class="gcard" data-g="${g.id}" style="--c:${g.c}" aria-pressed="${gameNow === g.id}"><span class="gico" aria-hidden="true">${g.ico}</span>` +
-  `<span><b>${esc(g.name)}</b><small>${esc(g.blurb)}</small></span>${g.isNew ? '<span class="gnew">New</span>' : ""}</button>`;
+const gameById = id => GAME_LIST.find(g => g.id === id);
+let gameNow = null, gameWant = null, gameBusy = false, gameRun = 0;   /* the game on the stage, the one asked for */
+const gameCard = g => `<button class="gcard${gameNow === g.id ? " away" : ""}" data-g="${g.id}" style="--c:${g.c}"${gameNow === g.id ? ` aria-label="Close ${esc(g.name)}"` : ""}>` +
+  `<span class="gico" aria-hidden="true">${g.ico}</span><span><b>${esc(g.name)}</b><small>${esc(g.blurb)}</small></span>${g.isNew ? '<span class="gnew">New</span>' : ""}</button>`;
 function paintGames(){
   $("gres").innerHTML = ["Timetable", "Arcade"].map(cat =>
     `<div class="sub-label">${cat} games</div><div class="ggrid">${GAME_LIST.filter(g => g.cat === cat).map(gameCard).join("")}</div>`).join("");
-  if (!$("gsframe").getAttribute("src")) showOnStage(gameNow ? GAME_LIST.find(g => g.id === gameNow) : LEADERBOARDS);
+  paintLeaders();
 }
-/* put a game (or the leaderboards) on the stage */
-function showOnStage(g){
-  const st = $("gstage"), f = $("gsframe"), lb = g.id === "leaderboards";
+
+/* ── the leaderboards, in short: who's on top of each, as on the games page ── */
+const hms = ms => { const t = Math.floor(Math.max(0, +ms || 0) / 1000), p = n => String(n).padStart(2, "0");
+  return p(Math.floor(t / 3600)) + ":" + p(Math.floor(t % 3600 / 60)) + ":" + p(t % 60) + "." + Math.floor(Math.max(0, +ms || 0) % 1000 / 100); };
+const LB_LIST = [
+  { id:"chain", name:"Six Degrees", metric:"targets" }, { id:"oddone", name:"Odd One Out", metric:"high" },
+  { id:"classroom", name:"Classroom", metric:"high" }, { id:"snake", name:"Snake", metric:"high" },
+  { id:"g2048", name:"2048", metric:"high" }, { id:"typing", name:"Typing race", metric:"wpm", fmt:v => v + " wpm" },
+  { id:"react", name:"Reaction", metric:"fastest", fmt:v => v + " ms" },
+  { id:"tetris", name:"Tetris Sprint", tetris:"sprintall", key:"time_ms", fmt:hms },
+  { id:"tetris", name:"Tetris Survival", tetris:"zen", key:"time_ms", fmt:hms },
+  { id:"tetris", name:"Tetris Zen", tetris:"zenscore", key:"best" }
+];
+/* the games page's week: Mondays from 1 Jan 2024, so weekly boards match it */
+const lbWeek = () => { const n = new Date(); return Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024, 0, 1)) / 864e5 / 7); };
+let leaders = null, leadersAt = 0, leadersLoading = null, leadersFailed = false;
+function loadLeaders(){
+  if (leadersLoading) return leadersLoading;
+  const week = lbWeek();
+  return leadersLoading = Promise.all(LB_LIST.map(b =>
+    (b.tetris ? api({ mode:b.tetris }, apiUrl("/api/tetris")) : api({ game:b.id, metric:b.metric, week }, apiUrl("/api/leaderboard")))
+      .then(d => { const r = ((b.tetris ? d.top : d.all && d.all.top) || [])[0]; return r ? { who:r.name, val:(b.fmt || String)(b.tetris ? r[b.key] : r.score) } : null; }, () => undefined)))
+    .then(rows => {
+      leadersLoading = null;
+      leadersFailed = rows.every(r => r === undefined);
+      if (!leadersFailed){ leaders = rows; leadersAt = Date.now(); }
+    });
+}
+function leadersHtml(){
+  const head = `<div class="sub-label">Leaderboards</div>`;
+  if (!signedIn) return head + `<p class="glbnote">Sign in on the main timetable to see who's on top.</p>`;
+  if (!leaders) return head + `<p class="glbnote">${leadersFailed ? "Couldn't load the leaderboards." : "Loading the leaders…"}</p>`;
+  return head + `<div class="lbgrid">${LB_LIST.map((b, i) => `<div class="lbcard" style="--c:${gameById(b.id).c}"><span class="lbn">${esc(b.name)}</span>` +
+    (leaders[i] ? `<span class="lbtop"><b>${esc(leaders[i].who)}</b><span class="tnum">${esc(leaders[i].val)}</span></span>` : `<span class="lbnone">No scores yet</span>`) + `</div>`).join("")}</div>`;
+}
+function paintLeaders(){
+  $("glb").innerHTML = paintLeaders.last = leadersHtml();
+  if (signedIn && Date.now() - leadersAt > 120000) loadLeaders().then(swapLeaders);
+}
+/* new leaders in: the summary grows or shrinks to them, never mid-move */
+function swapLeaders(){
+  const el = $("glb"), html = leadersHtml();
+  if (html === paintLeaders.last) return;
+  if (gameBusy || document.querySelector(".tilefly")){ clearTimeout(swapLeaders.t); swapLeaders.t = setTimeout(swapLeaders, 200); return; }
+  const shown = !el.hidden && !!el.offsetParent, h0 = el.offsetHeight;
+  el.innerHTML = paintLeaders.last = html;
+  if (!shown || noMotion()) return;
+  el.animate([{ height:h0 + "px", overflow:"hidden" }, { height:el.offsetHeight + "px", overflow:"hidden" }], { duration:320, easing:"cubic-bezier(.4,0,.2,1)" });
+  el.lastElementChild.animate([{ opacity:0 }, { opacity:1 }], { duration:300, easing:"ease-out" });
+}
+
+/* ── the stage ── */
+function stageFor(g){
+  const st = $("gstage"), f = $("gsframe");
   st.style.setProperty("--gc", g.c);
-  $("gstitle").textContent = g.name; $("gsico").textContent = g.ico; f.title = g.name;
-  $("gsback").hidden = lb;
-  $("gsout").href = "/games.html" + (lb ? "" : "?play=" + encodeURIComponent(g.id));
+  $("gstitle").textContent = g.name; $("gsmini").textContent = g.ico; $("gsico").textContent = g.ico;
+  $("gsname").setAttribute("aria-label", "Close " + g.name); f.title = g.name;
   st.classList.remove("ready");
   f.onload = () => { if (f.src.includes("play=")) setTimeout(() => st.classList.add("ready"), noMotion() ? 0 : 150); };
   f.src = "/games.html?play=" + encodeURIComponent(g.id) + "&embed=1";
 }
-/* a card flying between its place and the stage, as a copy over the page:
-   down (or up) to the stage's top, across to its width, then to its height;
-   coming back, the same the other way */
-function flyCard(card, toStage){
-  const page = el => { const r = el.getBoundingClientRect(); return { left:r.left + scrollX, top:r.top + scrollY, width:r.width, height:r.height }; };
-  const C = page(card), S = page($("gstage")), T = 760;
-  const copy = card.cloneNode(true);
-  copy.classList.add("gfly");
-  copy.removeAttribute("data-g");
-  document.body.appendChild(copy);
-  const k = (r, ms, more) => ({ left:r.left + "px", top:r.top + "px", width:r.width + "px", height:r.height + "px", offset:ms / T, easing:"cubic-bezier(.45,0,.25,1)", ...more });
-  const keys = toStage
-    ? [k(C, 0), k({ ...C, top:S.top }, 260), k({ ...S, height:C.height }, 500), k(S, T, { opacity:1 })]
-    : [k(S, 0), k({ ...S, height:C.height }, 260), k({ ...C, top:S.top }, 500), k(C, T)];
-  return copy.animate(keys, { duration:T, fill:"forwards" }).finished.then(() => copy, () => copy);
+/* the tile as it stands with this game on the stage (or none), at once */
+function setGames(to){
+  const was = gameNow;
+  gameNow = to;
+  $("gres").querySelectorAll(".gcard").forEach(c => {
+    const away = c.dataset.g === to;
+    c.classList.toggle("away", away);
+    if (away) c.setAttribute("aria-label", "Close " + gameById(to).name); else c.removeAttribute("aria-label");
+  });
+  $("glb").hidden = !!to; $("gstage").hidden = !to;
+  if (to && to !== was) stageFor(gameById(to));
+  if (!to){ const f = $("gsframe"); f.onload = null; f.src = "about:blank"; $("gstage").classList.remove("ready"); }
 }
-async function playGame(id, card){
-  const g = GAME_LIST.find(x => x.id === id);
-  if (!g || gameNow === id) return;
-  gameNow = id;
-  $("gres").querySelectorAll(".gcard").forEach(c => c.setAttribute("aria-pressed", c.dataset.g === id));
-  const st = $("gstage");
-  if (noMotion()){ showOnStage(g); return; }
-  st.classList.remove("ready");            /* what was on the stage fades as the card arrives */
-  const copy = await flyCard(card, true);
-  showOnStage(g);
-  copy.animate([{ opacity:1 }, { opacity:0 }], { duration:280, fill:"forwards" }).finished.then(() => copy.remove(), () => copy.remove());
-}
-/* back to the leaderboards: the game folds back into its card */
-async function stageLeaderboards(){
-  const card = gameNow && $("gres").querySelector(`[data-g="${gameNow}"]`);
-  gameNow = null;
-  $("gres").querySelectorAll(".gcard").forEach(c => c.setAttribute("aria-pressed", "false"));
-  if (card && !noMotion()){
-    $("gstage").classList.remove("ready");
-    const copy = await flyCard(card, false);
-    copy.animate([{ opacity:1 }, { opacity:0 }], { duration:200, fill:"forwards" }).finished.then(() => copy.remove(), () => copy.remove());
+/* the newest choice wins; a move under way finishes first */
+function wantGame(id){ gameWant = id; if (!gameBusy) runGames(); }
+async function runGames(){
+  const run = gameRun;
+  gameBusy = true;
+  while (gameWant !== gameNow && run === gameRun){
+    const to = gameWant;
+    try { await moveGames(gameNow, to, run); } catch (e){ console.error(e); if (run === gameRun) setGames(to); }
   }
-  showOnStage(LEADERBOARDS);
+  if (run === gameRun) gameBusy = false;
 }
-$("gres").onclick = e => { const c = e.target.closest("[data-g]"); if (c) playGame(c.dataset.g, c); };
-$("gsback").onclick = stageLeaderboards;
+/* the tile closing ends the game, with nothing left moving */
+function resetGames(){
+  gameRun++; gameBusy = false; gameWant = null;
+  const pick = $("gpick");
+  pick.querySelectorAll(".gflyl").forEach(x => x.remove());
+  pick.getAnimations().forEach(a => a.cancel());
+  pick.classList.remove("flying"); $("gstage").classList.remove("pending");
+  if (gameNow) setGames(null);
+}
+
+/* A row of cards (and the shelf names) making way for a card going down
+   through the lane a..b: those in the way, and their neighbours as far as
+   needed, slide to either side and narrow only if there isn't room. Each
+   keeps its place in the row, so nothing crosses anything on the way. */
+function laneRow(row, W, a, b, gap){
+  const keep = row.map(it => ({ x:it.x, w:it.w }));
+  if (!row.some(it => it.x < b + gap - .5 && it.x + it.w > a - gap + .5)) return keep;
+  const fitL = (its, to) => {                         /* packed against the lane's left, from its right */
+    if (!its.length) return [];
+    if (to <= 0) return null;
+    const need = its.reduce((s, it) => s + it.w, 0) + (its.length - 1) * gap;
+    if (need > to){ const w = (to - (its.length - 1) * gap) / its.length; return w < 8 ? null : its.map((_, i) => ({ x:i * (w + gap), w })); }
+    const out = []; let lim = to;
+    for (let i = its.length - 1; i >= 0; i--){ const x = Math.min(its[i].x, lim - its[i].w); out[i] = { x, w:its[i].w }; lim = x - gap; }
+    for (let i = 0, lo = 0; i < its.length; i++){ out[i].x = Math.max(out[i].x, lo); lo = out[i].x + out[i].w + gap; }
+    return out;
+  };
+  const fitR = (its, from) => {                       /* and against its right */
+    if (!its.length) return [];
+    if (from >= W) return null;
+    const need = its.reduce((s, it) => s + it.w, 0) + (its.length - 1) * gap;
+    if (need > W - from){ const w = (W - from - (its.length - 1) * gap) / its.length; return w < 8 ? null : its.map((_, i) => ({ x:from + i * (w + gap), w })); }
+    const out = []; let lo = from;
+    for (let i = 0; i < its.length; i++){ const x = Math.max(its[i].x, lo); out[i] = { x, w:its[i].w }; lo = x + its[i].w + gap; }
+    for (let i = its.length - 1, lim = W; i >= 0; i--){ out[i].x = Math.min(out[i].x, lim - out[i].w); lim = out[i].x - gap; }
+    return out;
+  };
+  let best = null;
+  for (let k = 0; k <= row.length; k++){
+    const L = fitL(row.slice(0, k), a - gap), R = fitR(row.slice(k), b + gap);
+    if (!L || !R) continue;
+    const out = [...L, ...R];
+    const score = Math.min(1, ...out.map((p, i) => p.w / row[i].w));
+    const moved = out.reduce((s, p, i) => s + Math.abs(p.x - row[i].x) + Math.abs(p.w - row[i].w), 0);
+    if (!best || score > best.score + 1e-3 || (score > best.score - 1e-3 && moved < best.moved)) best = { out, score, moved };
+  }
+  return best && best.out;
+}
+/* the lane for a card: its own width if the rows below can make that much
+   room comfortably, otherwise the card narrows first, to a lane they can */
+function laneFor(G, rows, W, gap){
+  let best = null;
+  for (const f of [1, .78, .6, .45]) for (const right of [false, true]){
+    if (f === 1 && right) continue;
+    const w = G.w * f, x = right ? G.x + G.w - w : G.x;
+    const placed = rows.map(r => laneRow(r, W, x, x + w, gap));
+    if (placed.some(p => !p)) continue;
+    const score = Math.min(1, ...rows.flatMap((r, i) => r.map((it, j) => placed[i][j].w / it.w)));
+    if (!best || score > best.score + 1e-3) best = { x, w, placed, score };
+    if (score >= .55) return best;
+  }
+  return best;
+}
+const GSTEP = { a:240, c:260, d:300 };
+const travelMs = d => Math.round(220 + Math.min(280, Math.abs(d) * .35));
+/* One move: the game on the stage (from) goes home, then the next (to) goes
+   down, as copies over the tile while the real tile is already as it ends.
+   Every step is straight up/down or sideways, and nothing overlaps. */
+async function moveGames(from, to, run){
+  const pick = $("gpick"), st = $("gstage");
+  if (noMotion() || !pick.offsetParent){ setGames(to); return; }
+  const O = pick.getBoundingClientRect(), W = O.width, gap = 10;
+  const rel = r => ({ x:r.left - O.left, y:r.top - O.top, w:r.width, h:r.height });
+  const items = [...$("gres").querySelectorAll(".gcard")].map(el => ({ key:el.dataset.g, el, ...rel(el.getBoundingClientRect()) }));
+  const labels = [...$("gres").querySelectorAll(".sub-label")].map((el, i) => {
+    const rg = document.createRange(); rg.selectNodeContents(el);
+    const t = rel(rg.getBoundingClientRect()), b = rel(el.getBoundingClientRect());
+    return { key:"label" + i, el, label:true, x:t.x, y:b.y, w:t.w + 1, h:b.h };
+  });
+  const all = [...items, ...labels], home = Object.fromEntries(all.map(it => [it.key, it]));
+  const H0 = O.height, S0 = from ? rel(st.getBoundingClientRect()) : null, lb0 = from ? null : rel($("glb").getBoundingClientRect());
+  const rowsBelow = G => {
+    const by = new Map();
+    for (const it of all) if (it !== G && it.y >= G.y + G.h - 1){ const k = Math.round(it.y); (by.get(k) || by.set(k, []).get(k)).push(it); }
+    return [...by.values()].map(r => r.sort((p, q) => p.x - q.x));
+  };
+  const lanes = {};
+  for (const id of [from, to].filter(Boolean)){
+    const G = home[id], rows = rowsBelow(G), L = laneFor(G, rows, W, gap);
+    if (!L){ setGames(to); return; }
+    lanes[id] = { G, rows, ...L };
+  }
+  /* the copies, on a layer over the tile */
+  pick.querySelectorAll(".gflyl").forEach(x => x.remove());
+  const layer = document.createElement("div"), copies = {};
+  layer.className = "gflyl";
+  const put = (el, r) => Object.assign(el.style, { left:r.x + "px", top:r.y + "px", width:r.w + "px", height:r.h + "px" });
+  for (const it of all){
+    const c = document.createElement("div");
+    if (it.label){ c.className = "sub-label gfc"; c.textContent = it.el.textContent; }
+    else {
+      c.className = "gcard gfc"; c.style.setProperty("--c", it.el.style.getPropertyValue("--c"));
+      c.innerHTML = `<div class="gin" style="width:${it.w}px;height:${it.h}px">${it.el.innerHTML}</div>`;
+    }
+    put(c, it); layer.appendChild(c); copies[it.key] = c;
+  }
+  for (const id of [from, to].filter(Boolean)){          /* where the card lives while it's away */
+    const s = document.createElement("div");
+    s.className = "gslot gfc"; s.style.setProperty("--c", gameById(id).c); put(s, home[id]);
+    s.style.opacity = id === from ? 1 : 0;
+    layer.insertBefore(s, layer.firstChild); copies["slot:" + id] = s;
+  }
+  pick.appendChild(layer);
+  pick.classList.add("flying");
+  /* the playing game's card comes back over it first */
+  if (from){
+    put(copies[from], S0);
+    await copies[from].animate([{ opacity:0 }, { opacity:1 }], { duration:160, easing:"ease-out", fill:"forwards" }).finished.catch(() => {});
+    if (run !== gameRun) return;
+  }
+  /* now the tile as it ends, measured; the copies show the way there */
+  setGames(to);
+  if (to) st.classList.add("pending");
+  const O1 = pick.getBoundingClientRect(), H1 = O1.height;
+  const S1 = to ? rel(st.getBoundingClientRect()) : null;
+  let lb = lb0;
+  if (!to){
+    lb = rel($("glb").getBoundingClientRect());
+    const c = $("glb").cloneNode(true);
+    c.removeAttribute("id"); c.className = "glb gfc"; put(c, lb); c.style.opacity = 0;
+    layer.insertBefore(c, layer.firstChild); copies.lb = c;
+  } else if (!from){
+    const c = $("glb").cloneNode(true);
+    c.hidden = false; c.removeAttribute("id"); c.className = "glb gfc"; put(c, lb0);
+    layer.insertBefore(c, layer.firstChild); copies.lb = c;
+  }
+  const laneOf = id => lanes[id];
+  const s = {}, frames = [];
+  const at = ms => frames.push([ms, JSON.parse(JSON.stringify(s))]);
+  const toBase = () => { for (const it of all) s[it.key] = { x:it.x, y:it.y, w:it.w, h:it.h, o:1 }; };
+  const toLane = L => { toBase(); L.rows.forEach((r, i) => r.forEach((it, j) => Object.assign(s[it.key], L.placed[i][j]))); };
+  toBase();
+  if (copies.lb) s.lb = { ...lb, o:from ? 0 : 1 };
+  if (from) s["slot:" + from] = { ...home[from], o:1 };
+  if (to) s["slot:" + to] = { ...home[to], o:0 };
+  s.H = { h:H0 };
+  const yS = (S1 || S0).y;
+  if (from){                                          /* home: shorter, narrower, up */
+    const G = home[from], L = laneOf(from), pad = H0 - (S0.y + S0.h);
+    s[from] = { ...S0, o:1 }; at(0);
+    s[from] = { x:S0.x, y:yS, w:S0.w, h:G.h, o:1 }; s.H.h = Math.max(to ? 0 : H1, yS + G.h + pad); at(GSTEP.d);
+    toLane(L); s[from] = { x:L.x, y:yS, w:L.w, h:G.h, o:1 }; s["slot:" + from].o = 0; at(GSTEP.c);
+    s[from].y = G.y; at(travelMs(yS - G.y));
+    if (!to){ toBase(); s.lb.o = 1; s.H.h = H1; at(GSTEP.a); }
+  }
+  if (to){                                            /* away: aside, down, wider, taller */
+    const G = home[to], L = laneOf(to), pad = H1 - (S1.y + S1.h);
+    if (!from) at(0);
+    toLane(L); s[to] = { x:L.x, y:G.y, w:L.w, h:G.h, o:1 };
+    if (s.lb) s.lb.o = 0;
+    s.H.h = Math.max(from ? 0 : H0, yS + G.h + pad); at(GSTEP.a);
+    s[to].y = yS; at(travelMs(yS - G.y));
+    toBase(); s[to] = { x:S1.x, y:yS, w:S1.w, h:G.h, o:1 }; s["slot:" + to].o = 1; at(GSTEP.c);
+    s[to] = { ...S1, o:1 }; s.H.h = H1; at(GSTEP.d);
+  }
+  const total = frames.reduce((a, [ms]) => a + ms, 0);
+  let t = 0;
+  const offs = frames.map(([ms]) => (t += ms) / total), ease = "cubic-bezier(.45,0,.25,1)";
+  const anims = Object.entries(copies).map(([k, el]) => {
+    const old = el.getAnimations();
+    const a = el.animate(frames.map(([, f], i) => ({ left:f[k].x + "px", top:f[k].y + "px", width:f[k].w + "px", height:f[k].h + "px", opacity:f[k].o, offset:offs[i], easing:ease })), { duration:total, fill:"forwards" });
+    old.forEach(x => x.cancel());
+    return a;
+  });
+  const hold = pick.animate(frames.map(([, f], i) => ({ height:f.H.h + "px", offset:offs[i], easing:ease })), { duration:total, fill:"forwards" });
+  /* keep it in view: going home, show where it's going; going down, show the stage */
+  const top = O1.top + scrollY;
+  if (from && !to){
+    document.body.style.minHeight = document.documentElement.scrollHeight + "px";
+    const end = document.documentElement.scrollHeight - (H0 - H1) - innerHeight, want = Math.min(scrollY, top + home[from].y - 90, end);
+    if (want < scrollY - 4) scrollTo({ top:Math.max(0, want), behavior:"smooth" });
+  }
+  if (to) setTimeout(() => {
+    if (run !== gameRun) return;
+    const b = top + S1.y + S1.h + 18;
+    if (b > scrollY + innerHeight) scrollTo({ top:Math.min(top + S1.y - 70, b - innerHeight), behavior:"smooth" });
+  }, total - GSTEP.d);
+  await Promise.all(anims.map(a => a.finished.catch(() => {})));
+  if (run !== gameRun) return;
+  pick.classList.remove("flying");
+  hold.cancel();
+  document.body.style.minHeight = "";
+  if (!to){ layer.remove(); return; }
+  /* the card is the stage now: it gives way to the game */
+  st.classList.remove("pending");
+  Object.entries(copies).forEach(([k, el]) => { if (k !== to) el.remove(); });
+  copies[to].animate([{ opacity:1 }, { opacity:0 }], { duration:280, easing:"ease-out", fill:"forwards" }).finished.then(() => layer.remove(), () => layer.remove());
+}
+$("gres").onclick = e => { const c = e.target.closest("[data-g]"); if (c) wantGame(c.classList.contains("away") ? null : c.dataset.g); };
+$("gsname").onclick = () => wantGame(null);
 
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
@@ -3496,7 +3755,7 @@ function expandTile(tile, o){
   /* closing makes the page shorter: hold its length until the tiles have
      moved, so the browser doesn't snap the scroll up halfway */
   if (!o && !noMotion()) document.body.style.minHeight = document.documentElement.scrollHeight + "px";
-  if (o) PAINT_TILE[tile.dataset.m](); else if (tile === perMod) showPeriodEditor(false, true);
+  if (o) PAINT_TILE[tile.dataset.m](); else if (tile === perMod) showPeriodEditor(false, true); else if (tile.dataset.m === "games") resetGames();
   const from = getComputedStyle(tile).backgroundColor;
   tile.classList.toggle("open", o);
   (tile.querySelector(".mset") || tile.querySelector(".mod-head")).setAttribute("aria-expanded", o);
