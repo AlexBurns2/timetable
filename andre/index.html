@@ -197,8 +197,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.sm.open .m,.blk.sm.open .r{display:block}
 .blk.sm.open .s{white-space:normal;padding-right:0}
 .blk.sm.open .t{padding-top:4px}
-.blk.past:not(.open) .blk-card{filter:saturate(.35);opacity:.6}
-.blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 50%,transparent);backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
+.blk.past:not(.open) .blk-card{filter:saturate(.7);opacity:.75}     /* over: faded, but still its colour, unlike the grey breaks */
+.blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 25%,transparent);backdrop-filter:saturate(.7);-webkit-backdrop-filter:saturate(.7);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 /* opened, the card grows by half a day, and never by less than room for Room and Class code */
 .blk-card{--xw:max(50cqw,112px)}
 .blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
@@ -273,12 +273,8 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
 .gap.past{opacity:.4}
-/* recess, lunch and free periods (and any of them merged) all one warm orange,
-   so none of them reads as a greyed-out past lesson; assembly a darker orange */
+/* recess, lunch and free periods stay grey; assembly is orange */
 :root{--brkc:#FF9F0A}
-:is(.gap,.brk):is(.isbrk,.isfree){background:color-mix(in srgb,var(--brkc) 17%,var(--base,var(--bg)))}
-.gap:is(.isbrk,.isfree),.brk:is(.isbrk,.isfree) .bl{color:color-mix(in srgb,var(--brkc) 45%,var(--fg))}
-.gap:is(.isbrk,.isfree) .t,.brk:is(.isbrk,.isfree) .bt{color:color-mix(in srgb,var(--brkc) 35%,var(--fg2))}
 .col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
   background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
 /* assembly: laid out like a free period, a darker orange */
@@ -612,7 +608,7 @@ select.fin{appearance:auto}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
 .card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.card.past:not(.open){filter:saturate(.35);opacity:.6}
+.card.past:not(.open){filter:saturate(.7);opacity:.75}
 .brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brk .bl{font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg3)}
@@ -1430,8 +1426,10 @@ function turnWeek(target, q = 1){
   const g = document.getElementById("g"), host = g.parentElement, hostR = host.getBoundingClientRect();
   host.querySelectorAll(".ghost").forEach(x => x.remove());
   const oldHeads = [...g.querySelectorAll(":scope > .dh")].map(h => ({ html:h.outerHTML, r:h.getBoundingClientRect() }));
+  /* how faded a lesson is drawn (over, or still to come), from its card or the gap itself */
+  const lookOf = el => { const s = getComputedStyle(el.matches(".blk") ? el.querySelector(".blk-card") : el); return { filter:s.filter, opacity:s.opacity }; };
   const before = [...g.querySelectorAll(":scope > .col")].map(col =>
-    [...col.children].map(el => ({ el, sig:el.dataset.sig, r:el.getBoundingClientRect() })));
+    [...col.children].map(el => ({ el, sig:el.dataset.sig, r:el.getBoundingClientRect(), look:lookOf(el) })));
   off = target; render();
   const cols = [...g.querySelectorAll(":scope > .col")];
   if (!cols.length || cols.length !== before.length) return null;
@@ -1452,6 +1450,10 @@ function turnWeek(target, q = 1){
       if (!same){ arriving.push({ el, k, r }); continue; }
       used.add(same);
       kept.push({ el, k, r, r0:same.r });
+      /* last week it was over, this week it isn't (or the other way): it fades across while the turn plays */
+      const look = lookOf(el);
+      if (look.filter !== same.look.filter || look.opacity !== same.look.opacity)
+        (el.matches(".blk") ? el.querySelector(".blk-card") : el).animate([same.look, look], { duration:900 * q, easing:"ease-in-out" });
       /* the day's scale changed: it moves to its new spot, but only once
          everything leaving has gone (below), so it never runs into one */
       if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5)
