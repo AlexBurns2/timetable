@@ -990,3 +990,24 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 /* shown inside a frame on another page (games.html?play=…&embed=1): just the game */
 .embedded .pagehead,.embedded #back{display:none}
 .embedded .wrap{padding-top:14px}
+
+/* ── Mahjong score sheet ── */
+.mjh{margin:22px 0 8px;font-size:1rem}
+.mjerr{color:#d33}
+.mjdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.mjup{color:#2a9d4b}
+.mjdown{color:#d33}
+.mjadd{margin-top:10px}
+.mjround{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.mjround label{display:flex;flex-direction:column;gap:4px;font-size:0.84375rem;font-weight:700}
+.mjround input{padding:9px 11px;border:var(--card-border);border-radius:var(--radius);background:var(--panel);color:var(--text);font:inherit;font-family:var(--font-num);min-width:0}
+.mjround input:focus{outline:none;border-color:var(--accent)}
+.mjsum{flex:1;align-self:center;margin:0}
+.mjgraph{width:100%;height:auto;display:block}
+.mjgraph text{font-size:11px;fill:var(--muted);font-family:var(--font-num)}
+.mjgraph .mjgrid{stroke:var(--line);stroke-width:1}
+.mjgraph .mjstart{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4}
+.mjkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:0.8125rem;margin-top:6px}
+.mjkey i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.mjhist .nm{white-space:normal}
+.lbsumcard .lead.low .val{color:var(--muted)}
