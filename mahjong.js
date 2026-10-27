@@ -83,7 +83,7 @@ function mount(host){
         '<h3 class="mjh">Record a game</h3><p class="how">Points won (+) or lost (−) this game. Leave anyone who didn’t change blank.</p>' +
         '<div class="mjround">' + state.players.map(p =>
           '<label><span><i class="mjdot" style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>' +
-          '<input type="number" step="1" inputmode="numeric" data-id="'+p.id+'" placeholder="0"></label>').join('') + '</div>' +
+          '<input type="number" step="1" data-id="'+p.id+'" placeholder="0"></label>').join('') + '</div>' +
         '<div class="fcrow"><span class="how mjsum" id="mjsum"></span>' +
           '<button class="btn primary" id="mjsave" type="button">Save game</button>' +
           (state.rounds.length ? '<button class="btn" id="mjundo" type="button">Undo last game</button>' : '') + '</div>' +

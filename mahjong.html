@@ -10,6 +10,8 @@
 <link rel="icon" type="image/png" href="/images/icon.png">
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
+<script>/* mahjong.html?embed=1 (a frame on another page): just the score sheet */
+if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("embedded");</script>
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="games.css">
