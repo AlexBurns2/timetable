@@ -74,6 +74,10 @@ a{color:var(--accent)}
 .tile .tglyph{position:absolute;right:-14px;bottom:-24px;font-size:7.5rem;line-height:1;opacity:.09;
   pointer-events:none;transform:rotate(-12deg)}
 .tile:not(.tall) .tglyph{display:none}
+/* a short tile puts its icon beside its name, so the name and description get the height */
+.tiles.bento .tile:not(.tall){display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:10px;align-content:stretch;padding:16px 18px}
+.tiles.bento .tile:not(.tall) .ico{margin:0;align-self:center;font-size:1.5rem}
+.tiles.bento .tile:not(.tall) .tdesc{grid-column:1 / -1;align-self:end;line-height:1.25}
 
 /* ── forum (home page) ───────────────────────────────────────── */
 .forum{margin-top:34px;padding-top:18px;border-top:1px solid var(--line)}
@@ -159,6 +163,12 @@ a{color:var(--accent)}
   .tile .ico{font-size:1.5rem;margin-bottom:4px}
   .tile .tname{font-size:1.0625rem}
   .tile .tdesc{font-size:0.75rem}
+  /* tighter, so every tile fits on one phone screen */
+  .tiles.bento{gap:8px}
+  .tiles.bento .tile:not(.tall){padding:11px 12px;column-gap:8px}
+  .tiles.bento .tile:not(.tall) .ico{font-size:1.25rem}
+  .tiles.bento .tile .tdesc,.tiles.bento .tile.wide .tdesc{font-size:0.75rem;line-height:1.25}
+  .hub .hscstrip{font-size:0.8125rem;padding:8px 12px;margin-bottom:10px;row-gap:2px}     /* .hub: the plain rule comes later in this file */
   .fpost.freply{margin-left:14px}
 }
 
@@ -197,3 +207,7 @@ a{color:var(--accent)}
 /* the Mahjong tile's top and bottom players (home.html) */
 .tile .mjtl{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .mjtl b{font-variant-numeric:tabular-nums;color:var(--text)}
+/* wide, the leaders sit to the right of the name, using the room there instead of a row of their own */
+.tiles.bento #tileMahjong.wide:not(.tall){grid-template-columns:auto auto minmax(0,1fr);grid-template-rows:1fr}
+.tiles.bento #tileMahjong.wide:not(.tall) .tdesc{grid-column:3;grid-row:1;align-self:center;text-align:right;margin:0}
+.tiles.bento #tileMahjong.wide:not(.tall) .tname{align-self:center}

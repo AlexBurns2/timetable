@@ -7,7 +7,8 @@
 
    Bento.layout(box, items, colsFor)
      box      the grid element (give it class "bento" plus a row height)
-     items    [{ el, w, h }] in the order they should appear
+     items    [{ el, w, h }] in the order they should appear; w and h may be
+              functions of the column count, for a tile that changes shape
      colsFor  width → column count (default: 4 / 3 / 2)
    Returns a function that stops watching for resizes. */
 (function(){
@@ -54,7 +55,8 @@ function layout(box, items, colsFor){
     if (n === cols) return; cols = n;
     box.style.setProperty('--cols', n);
     box.querySelectorAll(':scope > .bentofill').forEach(f => f.remove());
-    pack(items.map(it => ({ w:it.w, h:it.h })), n).forEach((t, i) => {
+    const at = v => typeof v === 'function' ? v(n) : v;
+    pack(items.map(it => ({ w:at(it.w), h:at(it.h) })), n).forEach((t, i) => {
       let el = t.filler ? null : items[i].el;
       if (!el){ el = document.createElement('div'); el.className = 'bentofill'; box.appendChild(el); }
       el.style.gridColumn = (t.c + 1) + ' / span ' + t.w;

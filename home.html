@@ -33,13 +33,13 @@
   <div class="hscstrip" id="hscstrip" hidden></div>
 
   <nav class="tiles bento" id="tiles">
-    <a class="tile primary" href="./" id="tileTimetable" data-w="2" data-h="2">
+    <a class="tile primary" href="./" id="tileTimetable" data-size="4:2x2 3:2x1 2:2x1">
       <span class="ico">📋</span>
       <span class="tname">Timetable</span>
       <span class="tdesc">Your classes for the fortnight</span>
       <span class="tglyph" aria-hidden="true">📋</span>
     </a>
-    <a class="tile" href="revision.html" id="tileRevision" data-w="2" data-h="1">
+    <a class="tile" href="revision.html" id="tileRevision" data-size="4:2x1">
       <span class="ico">✏️</span>
       <span class="tname">Revision</span>
       <span class="tdesc">Quizzes and flashcards for your subjects</span>
@@ -54,12 +54,12 @@
       <span class="tname">Notes</span>
       <span class="tdesc">A scratchpad that saves as you type</span>
     </a>
-    <a class="tile" href="games.html" id="tileGames" data-w="2" data-h="1">
+    <a class="tile" href="games.html" id="tileGames">
       <span class="ico">🎮</span>
       <span class="tname">Games</span>
       <span class="tdesc">For when you have ten minutes to kill</span>
     </a>
-    <a class="tile" href="mahjong.html" id="tileMahjong">
+    <a class="tile" href="mahjong.html" id="tileMahjong" data-size="4:2x1 3:2x1 2:2x1">
       <span class="ico">🀄</span>
       <span class="tname">Mahjong</span>
       <span class="tdesc" id="mjlead">Scores from our real games</span>
@@ -69,17 +69,17 @@
       <span class="tname">Resources</span>
       <span class="tdesc">Textbooks by year and subject</span>
     </a>
-    <a class="tile" href="finder.html">
+    <a class="tile" href="finder.html" data-size="2:2x1">
       <span class="ico">🔎</span>
       <span class="tname">Student finder</span>
       <span class="tdesc">Find a student’s school email</span>
     </a>
-    <a class="tile" href="free.html" data-w="2" data-h="1">
+    <a class="tile" href="free.html" data-size="4:1x1 3:2x1 2:1x1">
       <span class="ico">🤝</span>
       <span class="tname">Free periods</span>
       <span class="tdesc">When you and your friends are out of class</span>
     </a>
-    <a class="tile" href="/andre/" id="tileAndre">
+    <a class="tile" href="/andre/" id="tileAndre" data-size="4:2x1 3:1x1 2:2x1">
       <span class="ico">🧪</span>
       <span class="tname">New Website Beta WIP</span>
       <span class="tdesc">Something new is being built here</span>
@@ -99,17 +99,41 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
-/* the hub tiles: the packed gallery (sizes from data-w / data-h), or the
-   classic even grid -- Settings switches between them */
+/* the hub tiles: the packed gallery, or the classic even grid -- Settings
+   switches between them. A tile's shape can change with the column count:
+   data-size="4:2x2 3:2x1 2:2x1" is columns:widthxheight, 1x1 when not listed. */
 function layTiles(){
   const box = $('tiles');
   const tiles = [...box.children].filter(el => !el.classList.contains('bentofill'));
-  if (TT.layout() === 'classic'){ Bento.clear(box); box.classList.remove('bento'); return; }
+  if (TT.layout() === 'classic'){ Bento.clear(box); box.classList.remove('bento'); fitRows(); return; }
   box.classList.add('bento');
-  Bento.layout(box, tiles.map(el => ({ el, w:+el.dataset.w || 1, h:+el.dataset.h || 1 })));
+  const size = (el, n, i) => { const m = (el.dataset.size || '').match(new RegExp('\\b' + n + ':(\\d)x(\\d)')); return m ? +m[i] : 1; };
+  Bento.layout(box, tiles.map(el => ({ el, w:n => size(el, n, 1), h:n => size(el, n, 2) })));
+  fitRows();
+}
+/* Rows as tall as the screen allows, so every tile is on screen without
+   scrolling, but never so short that a tile's text is cut off. */
+function fitRows(){
+  const box = $('tiles');
+  box.style.gridAutoRows = '';
+  if (!box.classList.contains('bento')) return;
+  const tiles = [...box.children];
+  const rows = Math.max(1, ...tiles.map(el => { const m = /(\d+) \/ span (\d+)/.exec(el.style.gridRow); return m ? +m[1] + +m[2] - 1 : 1; }));
+  const gap = parseFloat(getComputedStyle(box).rowGap) || 0;
+  const room = innerHeight - (box.getBoundingClientRect().top + scrollY) - 16;
+  let h = Math.round(Math.min(190, Math.max(80, (room - gap * (rows - 1)) / rows)));
+  const set = () => { box.style.gridAutoRows = h + 'px'; };
+  set();
+  /* cut off = its description runs past the padding (scrollHeight would count the decorative glyph) */
+  const cut = el => { const d = el.querySelector('.tdesc'); if (!d) return false;
+    return d.getBoundingClientRect().bottom > el.getBoundingClientRect().bottom - parseFloat(getComputedStyle(el).paddingBottom) + 1; };
+  for (let i = 0; i < 60 && tiles.some(cut); i++){ h += 4; set(); }
 }
 layTiles();
 addEventListener('tt:layout', layTiles);
+/* after the grid has re-packed for the new width */
+addEventListener('resize', () => requestAnimationFrame(fitRows));
+if (document.fonts) document.fonts.ready.then(fitRows);
 /* ── forum ─────────────────────────────────────────────────────────────── */
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -194,6 +218,7 @@ if (TT.myEmail()) Mahjong.leaders().then(L => {
   $('mjlead').innerHTML = L.low
     ? '<span class="mjtl">↑ ' + esc(L.who) + ' <b>' + esc(L.val) + '</b></span><span class="mjtl">↓ ' + esc(L.low.who) + ' <b>' + esc(L.low.val) + '</b></span>'
     : '<span class="mjtl">' + esc(L.who) + ' <b>' + esc(L.val) + '</b></span>';
+  fitRows();
 }, () => {});
 
 /* First visit: point out Settings, unless the timetable page already did. */
