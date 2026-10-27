@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mahjong · MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/images/icon.png">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="games.css">
+</head>
+<body data-page="mahjong">
+<div class="wrap">
+  <div class="pagehead">
+    <h1>Mahjong</h1>
+    <div class="crumbs">
+      <a class="btn" href="home.html">Home</a>
+      <a class="btn" href="./">Timetable</a>
+      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+    </div>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+<script src="mahjong.js"></script>
+<script>Mahjong.mount(document.getElementById('stage'));</script>
+<script src="settings.js"></script>
+</body>
+</html>

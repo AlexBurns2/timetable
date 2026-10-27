@@ -1010,4 +1010,3 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .mjkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:0.8125rem;margin-top:6px}
 .mjkey i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .mjhist .nm{white-space:normal}
-.lbsumcard .lead.low .val{color:var(--muted)}

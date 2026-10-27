@@ -3428,8 +3428,7 @@ const GAME_LIST = [
   { id:"memory", cat:"Arcade", ico:"🃏", name:"Memory", blurb:"Match every pair in the fewest moves", c:"#FF375F" },
   { id:"mines", cat:"Arcade", ico:"💣", name:"Minesweeper", blurb:"Clear the board, flag the mines", c:"#8E8E93" },
   { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
-  { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" },
-  { id:"mahjong", cat:"Arcade", ico:"🀄", name:"Mahjong", blurb:"Scores, rankings and history from our real games", isNew:true, c:"#E0303A" }
+  { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" }
 ];
 const gameById = id => GAME_LIST.find(g => g.id === id);
 let gameNow = null, gameWant = null, gameBusy = false, gameRun = 0;   /* the game on the stage, the one asked for */
@@ -3451,16 +3450,8 @@ const LB_LIST = [
   { id:"react", name:"Reaction", metric:"fastest", fmt:v => v + " ms" },
   { id:"tetris", name:"Tetris Sprint", tetris:"sprintall", key:"time_ms", fmt:hms },
   { id:"tetris", name:"Tetris Survival", tetris:"zen", key:"time_ms", fmt:hms },
-  { id:"tetris", name:"Tetris Zen", tetris:"zenscore", key:"best" },
-  { id:"mahjong", name:"Mahjong", mahjong:true }
+  { id:"tetris", name:"Tetris Zen", tetris:"zenscore", key:"best" }
 ];
-/* Mahjong's board is the shared score sheet: everyone starts on 4096 (as in games.js) */
-function mjLeaders(state){
-  const pts = {}; (state.players || []).forEach(p => pts[p.id] = 4096);
-  (state.rounds || []).forEach(r => { for (const id in r.d) if (id in pts) pts[id] += r.d[id]; });
-  const s = (state.players || []).map(p => ({ who:p.name, val:pts[p.id].toLocaleString() })).sort((a, b) => pts[b.id] - pts[a.id]);
-  return s.length ? Object.assign({}, s[0], { low: s.length > 1 ? s[s.length - 1] : null }) : null;
-}
 /* the games page's week: Mondays from 1 Jan 2024, so weekly boards match it */
 const lbWeek = () => { const n = new Date(); return Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024, 0, 1)) / 864e5 / 7); };
 let leaders = null, leadersAt = 0, leadersLoading = null, leadersFailed = false;
@@ -3468,7 +3459,6 @@ function loadLeaders(){
   if (leadersLoading) return leadersLoading;
   const week = lbWeek();
   return leadersLoading = Promise.all(LB_LIST.map(b =>
-    b.mahjong ? api({ mode:"mahjong" }, apiUrl("/api/gamestate")).then(d => mjLeaders(d.state), () => undefined) :
     (b.tetris ? api({ mode:b.tetris }, apiUrl("/api/tetris")) : api({ game:b.id, metric:b.metric, week }, apiUrl("/api/leaderboard")))
       .then(d => { const r = ((b.tetris ? d.top : d.all && d.all.top) || [])[0]; return r ? { who:r.name, val:(b.fmt || String)(b.tetris ? r[b.key] : r.score) } : null; }, () => undefined)))
     .then(rows => {
@@ -3482,8 +3472,7 @@ function leadersHtml(){
   if (!signedIn) return head + `<p class="glbnote">Sign in on the main timetable to see who's on top.</p>`;
   if (!leaders) return head + `<p class="glbnote">${leadersFailed ? "Couldn't load the leaderboards." : "Loading the leaders…"}</p>`;
   return head + `<div class="lbgrid">${LB_LIST.map((b, i) => `<div class="lbcard" style="--c:${gameById(b.id).c}"><span class="lbn">${esc(b.name)}</span>` +
-    (leaders[i] ? `<span class="lbtop"><b>${leaders[i].low ? "↑ " : ""}${esc(leaders[i].who)}</b><span class="tnum">${esc(leaders[i].val)}</span></span>` +
-      (leaders[i].low ? `<span class="lbtop"><b>↓ ${esc(leaders[i].low.who)}</b><span class="tnum">${esc(leaders[i].low.val)}</span></span>` : "") : `<span class="lbnone">No scores yet</span>`) + `</div>`).join("")}</div>`;
+    (leaders[i] ? `<span class="lbtop"><b>${esc(leaders[i].who)}</b><span class="tnum">${esc(leaders[i].val)}</span></span>` : `<span class="lbnone">No scores yet</span>`) + `</div>`).join("")}</div>`;
 }
 function paintLeaders(){
   $("glb").innerHTML = paintLeaders.last = leadersHtml();

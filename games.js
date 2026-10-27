@@ -153,8 +153,7 @@ const GAMES = [
   { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
   { id:'mines',  cat:'Arcade', ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
-  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' },
-  { id:'mahjong', cat:'Arcade', ico:'🀄', name:'Mahjong', blurb:'Scores, rankings and history from our real games', isNew:true }
+  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
 /* the shelves of the classic layout, in order */
 const CAT_ORDER = ['Timetable', 'Arcade'];
@@ -295,8 +294,7 @@ const LB_CAT = [
   { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
   { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
-  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) },
-  { id:'mahjong',   name:'Mahjong',        mj:true,      fmt:v=>v.toLocaleString() }
+  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
 ];
 let lbFocus = null;          // which board the full view should open on
 let lbSumCache = null;       // cached leaders for the summary strip (per session)
@@ -310,8 +308,6 @@ async function fetchLeaders(){
       if (cat.t==='sprint'){   const d = await TT.api('/api/tetris',{params:{mode:'sprintall'}}); const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
       if (cat.t==='zen'){      const d = await TT.api('/api/tetris',{params:{mode:'zen'}});       const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
       if (cat.t==='zenscore'){ const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});  const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.best)}:null; }
-      if (cat.mj){ const s = mjStandings((await mjFetch()).state), hi = s[0], lo = s[s.length-1];
-        return hi ? { who:hi.name, val:cat.fmt(hi.pts), low: s.length > 1 ? { who:lo.name, val:cat.fmt(lo.pts) } : null } : null; }
     } catch(e){ return null; }
     return null;
   }));
@@ -327,8 +323,7 @@ async function renderLBSum(){
   if ($('gamegrid').hidden) return;               // user already opened a game
   const cards = LB_CAT.map((cat,i) => { const L = leaders[i];
     return '<button class="lbsumcard" data-i="'+i+'"><div class="g">'+esc(cat.name)+'</div>' +
-      (L ? '<div class="lead"><span class="who">'+(L.low?'↑ ':'')+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>' +
-           (L.low ? '<div class="lead low"><span class="who">↓ '+esc(L.low.who)+'</span><span class="val">'+esc(L.low.val)+'</span></div>' : '')
+      (L ? '<div class="lead"><span class="who">'+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>'
          : '<div class="empty">No scores yet</div>') + '</button>'; }).join('');
   el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><div class="lbsumgrid">'+cards+'</div>';
   $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
@@ -2680,103 +2675,6 @@ BUILD.react = host => {
   return () => clearTimeout(t);
 };
 
-/* ── Mahjong ────────────────────────────────────────────────────────
-   Not a game you play here: the score sheet for our real games. Everyone
-   starts on MJ_START; each game recorded adds to or takes from people, and the
-   sheet is shared by everyone (api/gamestate.js, mode=mahjong). */
-const MJ_START = 4096;
-const MJ_COLORS = ['#0A84FF','#FF375F','#30C05A','#FF9F0A','#AF52DE','#32ADE6','#FFB800','#8E8E93','#AC8E68','#5E5CE6'];
-const mjFetch = () => TT.api('/api/gamestate', { params:{ mode:'mahjong' } });
-const mjSend = body => TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'mahjong' }, body) });
-/* players with their points now, most to least */
-function mjStandings(state){
-  const pts = {}; (state.players || []).forEach(p => pts[p.id] = MJ_START);
-  (state.rounds || []).forEach(r => { for (const id in r.d) if (id in pts) pts[id] += r.d[id]; });
-  return (state.players || []).map(p => ({ id:p.id, name:p.name, pts:pts[p.id] })).sort((a, b) => b.pts - a.pts);
-}
-
-BUILD.mahjong = host => {
-  head(host, 'Mahjong', 'Everyone starts on ' + MJ_START.toLocaleString() + '. After each game, add points to whoever won and take them from whoever paid.', '<div id="mj"><p class="how">Loading…</p></div>');
-  const box = $('mj');
-  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the scores.</p>'; return () => {}; }
-  let state = null, busy = false, live = true;
-  const color = id => MJ_COLORS[(id - 1) % MJ_COLORS.length];
-  const fmt = v => v.toLocaleString();
-  const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
-
-  /* every player's points after each game, for the graph: [game][player] */
-  function series(){
-    const cur = {}; state.players.forEach(p => cur[p.id] = MJ_START);
-    const out = [Object.assign({}, cur)];
-    state.rounds.forEach(r => { for (const id in r.d) if (id in cur) cur[id] += r.d[id]; out.push(Object.assign({}, cur)); });
-    return out;
-  }
-  function graph(){
-    const pts = series(), n = pts.length - 1;
-    if (!n) return '<p class="how">The graph starts after the first game.</p>';
-    const W = 640, H = 220, L = 52, R = 10, T = 10, B = 22;
-    const all = pts.flatMap(o => Object.values(o));
-    let lo = Math.min(...all), hi = Math.max(...all); if (lo === hi){ lo -= 100; hi += 100; }
-    const x = i => L + (W - L - R) * i / n, y = v => T + (H - T - B) * (hi - v) / (hi - lo);
-    const ticks = [hi, (hi + lo) / 2, lo].map(v => Math.round(v));
-    return '<svg class="mjgraph" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Points after each game">' +
-      ticks.map(v => '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" class="mjgrid"/><text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fmt(v)+'</text>').join('') +
-      (lo < MJ_START && hi > MJ_START ? '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(MJ_START)+'" y2="'+y(MJ_START)+'" class="mjstart"/>' : '') +
-      '<text x="'+L+'" y="'+(H-6)+'">Start</text><text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end">Game '+n+'</text>' +
-      state.players.map(p => '<polyline fill="none" stroke="'+color(p.id)+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="' +
-        pts.map((o, i) => x(i).toFixed(1)+','+y(o[p.id]).toFixed(1)).join(' ')+'"><title>'+esc(p.name)+'</title></polyline>').join('') +
-      '</svg><div class="mjkey">' + state.players.map(p => '<span><i style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>').join('') + '</div>';
-  }
-  function paint(err){
-    if (!live) return;
-    const st = mjStandings(state), last = state.rounds[state.rounds.length - 1];
-    $('sc').textContent = state.rounds.length + ' game' + (state.rounds.length === 1 ? '' : 's');
-    box.innerHTML =
-      (err ? '<p class="how mjerr">' + esc(err) + '</p>' : '') +
-      '<h3 class="mjh">Standings</h3>' +
-      (st.length ? '<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Last game</span><span class="tm">Points</span></div>' +
-        st.map((p, i) => { const d = last && last.d[p.id];
-          return '<div class="tlbrow"><span class="rk">'+(i+1)+'</span><span class="nm"><i class="mjdot" style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>' +
-            '<span class="tm '+(d > 0 ? 'mjup' : d < 0 ? 'mjdown' : '')+'">'+(d ? signed(d) : '')+'</span><span class="tm"><b>'+fmt(p.pts)+'</b></span></div>'; }).join('')
-        : '<p class="how">No players yet. Add everyone at the table.</p>') +
-      '<div class="fcrow mjadd"><input id="mjname" placeholder="New player’s name…" maxlength="30" autocomplete="off">' +
-        '<button class="btn" id="mjaddp" type="button">Add player</button></div>' +
-      (st.length > 1 ?
-        '<h3 class="mjh">Record a game</h3><p class="how">Points won (+) or lost (−) this game. Leave anyone who didn’t change blank.</p>' +
-        '<div class="mjround">' + state.players.map(p =>
-          '<label><span><i class="mjdot" style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>' +
-          '<input type="number" step="1" inputmode="numeric" data-id="'+p.id+'" placeholder="0"></label>').join('') + '</div>' +
-        '<div class="fcrow"><span class="how mjsum" id="mjsum"></span>' +
-          '<button class="btn primary" id="mjsave" type="button">Save game</button>' +
-          (state.rounds.length ? '<button class="btn" id="mjundo" type="button">Undo last game</button>' : '') + '</div>' +
-        '<h3 class="mjh">Points over time</h3>' + graph() +
-        (state.rounds.length ? '<h3 class="mjh">History</h3><div class="mjhist">' + state.rounds.map((r, i) => ({ r, i })).reverse().map(({ r, i }) =>
-          '<div class="tlbrow"><span class="rk">'+(i+1)+'</span><span class="nm">' +
-          Object.keys(r.d).sort((a, b) => r.d[b] - r.d[a]).map(id => { const p = state.players.find(q => q.id === +id);
-            return p ? '<span class="'+(r.d[id] > 0 ? 'mjup' : 'mjdown')+'">'+esc(p.name)+' '+signed(r.d[id])+'</span>' : ''; }).join(' · ') +
-          '</span><span class="tm">'+new Date(r.t).toLocaleDateString([], { day:'numeric', month:'short' })+'</span></div>').join('') + '</div>' : '')
-        : '');
-    const addP = () => { const v = $('mjname').value.trim(); if (v) act({ action:'player', name:v }); };
-    $('mjaddp').onclick = addP;
-    $('mjname').onkeydown = e => { if (e.key === 'Enter') addP(); };
-    const inputs = [...box.querySelectorAll('.mjround input')];
-    const sum = () => { const t = inputs.reduce((a, i) => a + (Math.round(+i.value) || 0), 0);
-      $('mjsum').textContent = t ? 'Adds up to ' + signed(t) + ' (usually 0)' : ''; };
-    inputs.forEach(i => i.oninput = sum);
-    if ($('mjsave')) $('mjsave').onclick = () => { const d = {}; inputs.forEach(i => { const v = Math.round(+i.value); if (v) d[i.dataset.id] = v; });
-      if (Object.keys(d).length) act({ action:'round', d }); };
-    if ($('mjundo')) $('mjundo').onclick = () => { if (confirm('Undo the last game?')) act({ action:'undo' }); };
-  }
-  async function act(body){
-    if (busy) return; busy = true;
-    try { state = (await mjSend(body)).state; lbSumCache = null; SFX.good(); paint(); }
-    catch (e){ paint(e.message); }
-    busy = false;
-  }
-  mjFetch().then(d => { state = d.state; paint(); }, e => { if (live) box.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; });
-  return () => { live = false; };
-};
-
 /* ── Leaderboards (read-only; owner controls live in Admin) ─────────── */
 BUILD.leaderboards = host => {
   const howText = () => weeklyOn() ? 'Pick a game. Weekly resets each Monday, all-time never does.' : 'Pick a game. These are all-time boards.';
@@ -2820,8 +2718,6 @@ BUILD.leaderboards = host => {
       } else if (cur.t === 'zenscore'){
         const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
         const b = { top:remap(d.top,'best'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
-      } else if (cur.mj){
-        const b = { top:mjStandings((await mjFetch()).state).map(p => ({ name:p.name, score:p.pts })), meBest:null }; data = { week:b, all:b };
       }
       syncTabs(); paint();
     } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }

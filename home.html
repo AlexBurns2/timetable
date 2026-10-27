@@ -12,6 +12,7 @@
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="bento.js"></script>
+<script src="mahjong.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="settings.css">
@@ -57,6 +58,11 @@
       <span class="ico">🎮</span>
       <span class="tname">Games</span>
       <span class="tdesc">For when you have ten minutes to kill</span>
+    </a>
+    <a class="tile" href="mahjong.html" id="tileMahjong">
+      <span class="ico">🀄</span>
+      <span class="tname">Mahjong</span>
+      <span class="tdesc" id="mjlead">Scores from our real games</span>
     </a>
     <a class="tile" href="resources.html">
       <span class="ico">📚</span>
@@ -181,6 +187,14 @@ $('fbody').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('fpost').click();
 });
 loadForum();
+
+/* ── the Mahjong tile: who's on top and bottom, under its name ── */
+if (TT.myEmail()) Mahjong.leaders().then(L => {
+  if (!L) return;
+  $('mjlead').innerHTML = L.low
+    ? '<span class="mjtl">↑ ' + esc(L.who) + ' <b>' + esc(L.val) + '</b></span><span class="mjtl">↓ ' + esc(L.low.who) + ' <b>' + esc(L.low.val) + '</b></span>'
+    : '<span class="mjtl">' + esc(L.who) + ' <b>' + esc(L.val) + '</b></span>';
+}, () => {});
 
 /* First visit: point out Settings, unless the timetable page already did. */
 if (window.Tour) Tour.start('home');
