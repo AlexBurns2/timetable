@@ -1860,8 +1860,8 @@ function cleanName(s) { return censor(String(s || '').replace(/[\u0000-\u001f\u0
 
 // ---------- settings form ----------
 const SETTING_DEFS = [
-  ['minFaan', 'Minimum faan to win', [[0, '0 (chicken hand)'], [1, '1'], [3, '3 (standard)']]],
-  ['maxFaan', 'Faan limit (maximum)', [[8, '8'], [10, '10'], [13, '13 (standard)']]],
+  ['minFaan', 'Minimum faan to win', [0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => [n, n === 0 ? '0 (chicken hand)' : n === 3 ? '3 (standard)' : String(n)])],
+  ['maxFaan', 'Faan limit (maximum)', [5, 6, 7, 8, 9, 10, 11, 12, 13].map(n => [n, n === 13 ? '13 (standard)' : String(n)])],   /* the points tables stop at 13 */
   ['rounds', 'Game length', [[1, 'East round only'], [2, 'East + South rounds'], [4, 'Full game (4 winds)']]],
   ['spicy', 'Points table', [['half', 'Half spicy'], ['full', 'Full spicy']]],
   ['payment', 'Paying for a discard win', [['all', 'Discarder pays all'], ['half', 'Discarder pays half']]],
@@ -1875,7 +1875,13 @@ function settingsHTML(S, editable) {
 function bindSettings(root, S, onChange) {
   root.querySelectorAll('select[data-k]').forEach(sel => sel.onchange = () => {
     const def = SETTING_DEFS.find(d => d[0] === sel.dataset.k); const opt = def[2].find(o => String(o[0]) === sel.value);
-    S[sel.dataset.k] = opt[0]; onChange && onChange();
+    S[sel.dataset.k] = opt[0];
+    /* a minimum above the limit would make every hand unwinnable, so one pushes the other */
+    if (S.minFaan > S.maxFaan) {
+      if (sel.dataset.k === 'minFaan') S.maxFaan = S.minFaan; else S.minFaan = S.maxFaan;
+      root.querySelectorAll('select[data-k="minFaan"],select[data-k="maxFaan"]').forEach(x => x.value = String(S[x.dataset.k]));
+    }
+    onChange && onChange();
   });
 }
 
