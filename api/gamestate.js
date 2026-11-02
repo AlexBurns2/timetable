@@ -13,14 +13,17 @@
  * so two people recording at once don't overwrite each other's games.
  *   state = { players:[{id, name}], rounds:[{t, d:{playerId: points}}] }
  *
+ * Hong Kong Mahjong (mode=hkmj) saves one small row of stats per person, written
+ * once per finished game, so it is held to MAX_HKMJ.
+ *
  * Table:
  *   game_state(email, mode, state jsonb, updated_at, primary key (email, mode))
  */
 
 import { db, whoami } from "./_supabase.js";
 
-const MODES = new Set(["zen", "survival", "mahjong"]);
-const MAX_BYTES = 200000;
+const MODES = new Set(["zen", "survival", "mahjong", "hkmj"]);
+const MAX_BYTES = 200000, MAX_HKMJ = 8000;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS");
@@ -49,7 +52,7 @@ export default async function handler(req, res) {
   if (req.method === "PUT") {
     const state = body && body.state;
     if (!state || typeof state !== "object") return res.status(400).json({ error: "No state to save." });
-    if (JSON.stringify(state).length > MAX_BYTES) return res.status(413).json({ error: "Saved game is too large." });
+    if (JSON.stringify(state).length > (mode === "hkmj" ? MAX_HKMJ : MAX_BYTES)) return res.status(413).json({ error: "Saved game is too large." });
     const { error } = await db.from("game_state")
       .upsert({ email: me.email, mode, state, updated_at: new Date().toISOString() });
     if (error) { console.error("gamestate put:", error.message); return res.status(502).json({ error: "Couldn't save your game." }); }

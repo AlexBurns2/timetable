@@ -147,6 +147,7 @@ const GAMES = [
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
   { id:'oddone', cat:'Timetable', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
+  { id:'hkmj',   cat:'Arcade', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play bots to Hong Kong rules, Easy to Pro', w:2, isNew:true },
   { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
   { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  cat:'Arcade', ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
@@ -292,6 +293,7 @@ const LB_CAT = [
   { id:'g2048',     name:'2048',           g:{metric:'high'},    fmt:v=>String(v) },
   { id:'typing',    name:'Typing race',    g:{metric:'wpm'},     fmt:v=>v+' wpm' },
   { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
+  { id:'hkmj',      name:'Hong Kong Mahjong', g:{metric:'high'}, fmt:v=>String(v) },
   { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
@@ -440,7 +442,8 @@ const LB_GAMES = {
   react:     { metric:'fastest', dir:'min', label:'Reaction',        fmt:v=>v+' ms' },
   classroom: { metric:'high',    dir:'max', label:'Correct',         fmt:v=>String(v) },
   chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v) },
-  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) }
+  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) },
+  hkmj:      { metric:'high',    dir:'max', label:'Best game',       fmt:v=>String(v) }
 };
 /* == revision progress ====================================================
    One entry per question. Chemistry alone is ~1,350 of them (~56 KB), and the
@@ -7263,6 +7266,20 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
       {id:'e-prd',name:'Engineered products',gen:genProducts},
       {id:'e-bio',name:'Biomedical',gen:genBiomed}]}
   ] });
+
+/* Hong Kong Mahjong is its own page in a frame: it's big, and its styles would clash
+   with this page's. It tells this page each finished game's score for the leaderboard. */
+BUILD.hkmj = host => {
+  host.innerHTML = '<iframe class="hkmj" src="/hkmahjong.html" title="Hong Kong Mahjong"></iframe>';
+  const frame = host.firstChild;
+  const onScore = e => {
+    if (e.origin !== location.origin || e.source !== frame.contentWindow) return;
+    const score = e.data && e.data.hkmjScore;
+    if (Number.isInteger(score) && score > 0) recordStat('hkmj', { key:'high', mode:'max', value:score });
+  };
+  addEventListener('message', onScore);
+  return () => removeEventListener('message', onScore);
+};
 
 /* Opened from another page, e.g. Andre's page showing a game in a frame:
    games.html?play=snake goes straight to that game, and &embed=1 leaves out

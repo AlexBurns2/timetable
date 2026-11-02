@@ -96,6 +96,9 @@ html[data-motion="reduced"] .gamestage{animation:none}
 .stage h2{margin:0 0 4px;font-family:var(--font-display);font-size:1.25rem;
   font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
 .stage .how{color:var(--muted);font-size:0.8125rem;margin:0 0 14px}
+/* wider than the page: under 981px across, the game stacks its table and side panel */
+.stage:has(iframe.hkmj){position:relative;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),1400px);padding:6px}
+.stage iframe.hkmj{display:block;width:100%;height:max(680px,calc(100vh - 150px));border:0;border-radius:calc(var(--card-radius) - 4px)}
 .score{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700;
   margin-left:auto;font-size:0.875rem}
 .row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
