@@ -100,5 +100,5 @@ morphing.forEach(a => { a.pause(); a.currentTime = 600; });
 
 Then compare the rectangles of `.morph .mp`, skipping pieces with no height and the
 headings (their inline `border-radius` reads `0px`). Cut a sliding piece down to its
-`.mw` parent first. No two should overlap by more than 1px. Check Who's free, Custom periods and Mahjong in both directions, plus saving
+`.mw` parent first. No two should overlap by more than 1px. Check Who's free, Custom periods, Mahjong and Games in both directions, plus saving
 a game that changes the ranks.

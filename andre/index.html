@@ -534,6 +534,28 @@ button.row:hover{background:var(--fill2)}
 .swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swatch.pick[aria-pressed="true"]{background:var(--c)}
 
+/* ── the Games view: modules down the days, leaderboards in the last ── */
+.gmb{background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.gmgo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;height:100%;padding:10px 12px;overflow:hidden;text-align:left;color:inherit}
+.gmgo:hover{filter:brightness(.97)}
+.gmgo .gico{font-size:calc(24px * var(--fs,1));line-height:1.2;margin-bottom:auto}
+.gmgo b{font-size:calc(15px * var(--fs,1));font-weight:600;line-height:1.25;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.gmgo small{font-size:calc(12px * var(--fs,1));line-height:1.3;color:color-mix(in srgb,var(--fg) 72%,var(--c))}
+.gmlb{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 12px;background:color-mix(in srgb,var(--c) calc(var(--tint) * .35),var(--base,var(--bg)))}
+.gmln{font-size:calc(11px * var(--fs,1));font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--fg) 62%,var(--c));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gmtop{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:calc(13px * var(--fs,1));color:var(--fg2)}
+.gmtop b{min-width:0;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gmtop span{margin-left:auto;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.gmstage{display:flex;flex-direction:column;background:var(--bg);box-shadow:inset 0 0 0 1px var(--sep)}
+.list .gmstage{height:80vh}
+.gsbar{flex:none;display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid var(--sep);background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.gsname{display:flex;align-items:center;gap:10px;padding:5px 10px 5px 6px;border-radius:8px;color:color-mix(in srgb,var(--c) 30%,var(--fg));transition:background .15s}
+.gsname:hover{background:color-mix(in srgb,var(--c) 22%,transparent)}
+.gsname .gico{font-size:22px;line-height:1}
+.gsname b{font-size:calc(15px * var(--fs,1));font-weight:600}
+.gsname svg{width:14px;height:14px;opacity:.55}
+.gmbody{position:relative;flex:1;min-height:0}
+.gmbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
 /* ── Mahjong: the top and bottom players on the closed tile; the score sheet when open ── */
 .mod .mjst{display:block;margin-top:4px;line-height:1.35}
 /* the Mahjong tile turns the week into the standings: a block per player, its fill
@@ -548,6 +570,12 @@ button.row:hover{background:var(--fill2)}
 .mjnm{font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mjpts{font-size:calc(15px * var(--fs,1));font-weight:700}
 .mjpl .mjin{width:84px;padding:7px 8px;text-align:right;background:color-mix(in srgb,var(--bg) 70%,transparent)}
+.mjbox{display:flex;align-items:center;gap:4px}
+.mjin::-webkit-inner-spin-button,.mjin::-webkit-outer-spin-button{appearance:none;margin:0}
+.mjin{appearance:textfield;-moz-appearance:textfield}
+.mjar{display:flex;flex-direction:column;gap:2px}
+.mjar button{width:24px;height:15px;display:grid;place-items:center;border-radius:4px;font-size:11px;line-height:1;color:var(--fg2);background:color-mix(in srgb,var(--bg) 70%,transparent)}
+.mjar button:hover{color:var(--fg)}
 .mjctl{background:var(--fill);display:flex;align-items:center;gap:8px;padding:8px 10px}
 .mjsv{flex-direction:column;align-items:stretch;justify-content:center;gap:6px}
 .mjsum{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
@@ -877,7 +905,7 @@ select.fin{appearance:auto}
       </div>
       <a class="mod" data-m="revision" href="/revision.html" style="--c:#FF9F0A"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><h3>Revision</h3></a>
       <div class="mod modx" data-m="games" style="--c:#FF375F">
-        <button class="mod-head"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games</h3></button>
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games <span class="state" id="gmstate"></span></h3></button>
       </div>
       <div class="mod modx" data-m="mahjong" style="--c:#E0303A">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/></svg></div><h3>Mahjong <span class="state mjst" id="mjstate"></span></h3></button>
@@ -1297,6 +1325,7 @@ async function load(){
 /* ═══ render ═══ */
 let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
+let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the game being played, and once its frame is in */
 let sel = null;   /* phone layout: the day shown (0 = Mon), null = today or Monday */
 /* the phone layout: same breakpoint as the CSS */
 const phone = matchMedia("(max-width: 760px), (orientation: portrait)");
@@ -1354,13 +1383,15 @@ const arrow = (d, unit = "week") => `<button class="arrow" data-d="${d}" aria-la
 function render(){
   /* typed points survive redraws, but not losing the box (a phone keyboard opening resizes too) */
   if (mjShow && document.activeElement.matches(".mjb input")) return;
-  document.body.classList.toggle("mjview", mjShow);
+  if (gameNow && $(phone.matches ? "daylist" : "g").querySelector("#gsframe")) return;      /* a redraw would restart the game */
+  document.body.classList.toggle("mjview", mjShow || gmShow);
   if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   const mon = addDays(baseWeek(), off*7);
   const dates = daysShown().map(k => addDays(mon, k));
   document.documentElement.style.setProperty("--nd", dates.length);
   if (mjShow){ renderMj(dates.length); return; }
+  if (gmShow){ renderGames(dates.length); return; }
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
   /* holidays (and pupil-free days before a term starts) have no lessons */
   const days = cycs.map((c, k) => withCustom(schoolDay(dates[k]) ? itemsFor(c) : [], dates[k]));
@@ -2980,7 +3011,7 @@ function renderMonth(){
    straight for wherever you asked for last, like Return to Today. */
 let viewTurn = null, wantView = null, morphing = [];
 function toggleCalendar(){
-  if (mjShow){ mjLeave(); render(); }
+  if (mjShow || gmShow){ mjLeave(); render(); }
   const target = (wantView ?? view) === "month" ? "week" : "month";
   paintTiles(target);
   if (viewTurn){ wantView = target; if (target !== view) morphing.forEach(a => a.finish()); return; }
@@ -3074,6 +3105,7 @@ function filler(el){
   const c = el.cloneNode(true);
   c.removeAttribute("id");
   c.classList.remove("open", "settled", "landed", "closing");
+  c.querySelectorAll("iframe").forEach(f => f.remove());          /* a copy of a game would start playing */
   c.style.cssText += ";position:absolute;left:0;top:0;right:0;bottom:0;width:auto;height:auto;min-height:0;margin:0;transform:none";
   return c;
 }
@@ -3473,6 +3505,106 @@ function openEvent(id, { day, kind } = {}){
   showEvPanel(true);
 }
 
+/* ═══ games ═══
+   The Games tile turns the week into every game, as modules down the days, with
+   the last day's column the leaderboards. Choosing a game grows its module over
+   the days, and it plays there in a frame running the games page's own game
+   (games.html?play=…&embed=1). To take a game out, take it out of this list.
+   The list mirrors GAMES in games.js. */
+const GAME_LIST = [
+  { id:"jim", cat:"Arcade", ico:"🟡", name:"The Jim Button", blurb:"The button that says the name of whoever's playing", isNew:true, c:"#FFB800" },
+  { id:"dailyguess", cat:"Timetable", ico:"📅", name:"Daily Guess Who", blurb:"One mystery student a day, the same for your whole year", c:"#0A84FF" },
+  { id:"guesswho", cat:"Timetable", ico:"🕵️", name:"Guess Who", blurb:"Guess the mystery classmate, grade or teacher", c:"#5E5CE6" },
+  { id:"classroom", cat:"Timetable", ico:"🚪", name:"Classroom", blurb:"Rooms, teachers and classes from your timetable", c:"#32ADE6" },
+  { id:"chain", cat:"Timetable", ico:"🔗", name:"Six Degrees", blurb:"Chain classmate to classmate through shared classes", c:"#30C05A" },
+  { id:"oddone", cat:"Timetable", ico:"🧠", name:"Odd One Out", blurb:"Three share a class of yours, one doesn't", c:"#AF52DE" },
+  { id:"tetris", cat:"Arcade", ico:"🟦", name:"Tetris", blurb:"Sprint, Survival, Zen and Practice", c:"#0A84FF" },
+  { id:"snake", cat:"Arcade", ico:"🐍", name:"Snake", blurb:"Eat the dot, don't bite yourself", c:"#30C05A" },
+  { id:"g2048", cat:"Arcade", ico:"🧩", name:"2048", blurb:"Slide and merge to the big number", c:"#FF9F0A" },
+  { id:"memory", cat:"Arcade", ico:"🃏", name:"Memory", blurb:"Match every pair in the fewest moves", c:"#FF375F" },
+  { id:"mines", cat:"Arcade", ico:"💣", name:"Minesweeper", blurb:"Clear the board, flag the mines", c:"#8E8E93" },
+  { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
+  { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" }
+];
+const gameById = id => GAME_LIST.find(g => g.id === id);
+const hms = ms => { const t = Math.floor(Math.max(0, +ms || 0) / 1000), p = n => String(n).padStart(2, "0");
+  return p(Math.floor(t / 3600)) + ":" + p(Math.floor(t % 3600 / 60)) + ":" + p(t % 60) + "." + Math.floor(Math.max(0, +ms || 0) % 1000 / 100); };
+const LB_LIST = [
+  { id:"chain", name:"Six Degrees", metric:"targets" }, { id:"oddone", name:"Odd One Out", metric:"high" },
+  { id:"classroom", name:"Classroom", metric:"high" }, { id:"snake", name:"Snake", metric:"high" },
+  { id:"g2048", name:"2048", metric:"high" }, { id:"typing", name:"Typing race", metric:"wpm", fmt:v => v + " wpm" },
+  { id:"react", name:"Reaction", metric:"fastest", fmt:v => v + " ms" },
+  { id:"tetris", name:"Tetris Sprint", tetris:"sprintall", key:"time_ms", fmt:hms },
+  { id:"tetris", name:"Tetris Survival", tetris:"zen", key:"time_ms", fmt:hms },
+  { id:"tetris", name:"Tetris Zen", tetris:"zenscore", key:"best" }
+];
+/* the games page's week: Mondays from 1 Jan 2024, so weekly boards match it */
+const lbWeek = () => { const n = new Date(); return Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024, 0, 1)) / 864e5 / 7); };
+let leaders = null, leadersAt = 0, leadersLoading = null, leadersFailed = false;
+function loadLeaders(){
+  if (leadersLoading) return leadersLoading;
+  const week = lbWeek();
+  return leadersLoading = Promise.all(LB_LIST.map(b =>
+    (b.tetris ? api({ mode:b.tetris }, apiUrl("/api/tetris")) : api({ game:b.id, metric:b.metric, week }, apiUrl("/api/leaderboard")))
+      .then(d => { const r = ((b.tetris ? d.top : d.all && d.all.top) || [])[0]; return r ? { who:r.name, val:(b.fmt || String)(b.tetris ? r[b.key] : r.score) } : null; }, () => undefined)))
+    .then(rows => {
+      leadersLoading = null;
+      leadersFailed = rows.every(r => r === undefined);
+      if (!leadersFailed){ leaders = rows; leadersAt = Date.now(); }
+    });
+}
+function paintGmTile(){
+  const tile = document.querySelector('[data-m="games"]');
+  tile.classList.toggle("on", gmShow);
+  tile.querySelector(".mod-head").setAttribute("aria-pressed", gmShow);
+  $("gmstate").textContent = gmShow ? "· On" : "";
+}
+function toggleGames(){
+  document.activeElement.blur();
+  const flip = () => { const on = !gmShow; mjLeave(); gmShow = on; paintGmTile(); }, go = () => shiftWeek(flip);
+  if (signedIn && Date.now() - leadersAt > 120000) loadLeaders().then(() => (turning || Promise.resolve()).then(() => { if (gmShow) render(); }));
+  if (view !== "month"){ go(); return; }
+  toggleCalendar();
+  if (viewTurn) viewTurn.then(go); else go();
+}
+/* the module grows first: a copy of the frame mid-move would load a second game */
+function playGame(id){
+  gameLive = null;
+  shiftWeek(() => gameNow = id);
+  (turning || Promise.resolve()).then(() => { if (gameNow === id){ gameLive = id; gameFrame(); } });
+}
+function gameFrame(){
+  const g = gameById(gameLive), body = document.querySelector(".gmbody");
+  if (!g || !body || body.firstChild) return;
+  const f = document.createElement("iframe");
+  f.id = "gsframe"; f.title = g.name; f.src = "/games.html?play=" + encodeURIComponent(g.id) + "&embed=1";
+  body.append(f);
+}
+const leaderLine = i => !signedIn ? "Sign in to see" : leadersFailed ? "Couldn't load" : !leaders ? "Loading…" : leaders[i] ?
+  `<b>${esc(leaders[i].who)}</b><span class="tnum">${esc(leaders[i].val)}</span>` : "No scores yet";
+function renderGames(nd){
+  const list = phone.matches, host = $(list ? "daylist" : "g"), cols = Math.max(1, nd - 1), GAP = 8;
+  const tall = Math.max(560, innerHeight - 174), H = Math.max(tall, 4 + LB_LIST.length * 64);
+  const block = (cls, who, c, body, y, h, span = 1) => `<div class="mjb gmb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
+  /* a stack down a column, filling it, like a day of lessons */
+  const stack = (items, draw) => { const h = (H - 8 - GAP * (items.length - 1)) / items.length; return items.map((it, i) => draw(it, 4 + i * (h + GAP), h)).join(""); };
+  const module = g => (y, h) => block("", "gm:" + g.id, g.c, `<button class="gmgo" data-g="${g.id}"><span class="gico" aria-hidden="true">${g.ico}</span><b>${esc(g.name)}</b><small>${esc(g.blurb)}</small></button>`, y, h);
+  const g = gameNow && gameById(gameNow);
+  const stage = g && block("gmstage", "gm:" + g.id, g.c, `<div class="gsbar"><button class="gsname" id="gsname" title="Close the game" aria-label="Close ${esc(g.name)}"><span class="gico" aria-hidden="true">${g.ico}</span><b>${esc(g.name)}</b><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div class="gmbody"></div>`, 4, H - 8, cols);
+  const boards = stack(LB_LIST, (b, y, h) => block("gmlb", "lb:" + LB_LIST.indexOf(b), gameById(b.id).c, `<span class="gmln">${esc(b.name)}</span><span class="gmtop">${leaderLine(LB_LIST.indexOf(b))}</span>`, y, h));
+  if (list) host.innerHTML = (stage || GAME_LIST.map(x => module(x)(0, 0)).join("")) + `<div class="sub-label">Leaderboards</div>` + boards;
+  else {
+    const shown = Array.from({ length:cols }, (_, k) => GAME_LIST.slice(Math.floor(k * GAME_LIST.length / cols), Math.floor((k + 1) * GAME_LIST.length / cols)));
+    const body = stage ? [stage, ...Array(cols - 1).fill("")] : shown.map(c => c.length ? stack(c, (x, y, h) => module(x)(y, h)) : "");
+    const head = (t, span) => `<div class="dh" style="grid-column:span ${span}"><span class="n">${t}</span></div>`;
+    host.innerHTML = `<div></div>` + head("Games", cols) + head("Leaderboards", 1) + `<div></div><div></div>` +
+      [...body, boards].map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+  }
+  host.querySelectorAll(".gmgo").forEach(b => b.onclick = () => playGame(b.dataset.g));
+  if ($("gsname")) $("gsname").onclick = () => { gameLive = null; shiftWeek(() => gameNow = null); };
+  if (gameLive) gameFrame();
+}
+
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
@@ -3577,6 +3709,7 @@ function showPeriodEditor(on, instant){
   }
 }
 tileHead("periods", () => toggleCustomShown());
+tileHead("games", () => toggleGames());
 document.querySelectorAll("#mg .mset").forEach(b => b.onclick = e => {
   e.stopPropagation();
   const tile = b.closest(".modx");
@@ -3623,10 +3756,11 @@ async function mjAct(body){
   if (mjShow) shiftWeek(() => {});        /* blocks move to their new ranks */
 }
 function paintMj(){ paintMjTile(); if (mjShow) render(); }
-function mjLeave(){ mjShow = false; paintMjTile(); }
+/* back to the week, from Mahjong or Games */
+function mjLeave(){ mjShow = gmShow = false; gameNow = gameLive = null; paintMjTile(); paintGmTile(); }
 function toggleMj(){
   document.activeElement.blur();
-  const flip = () => { mjShow = !mjShow; paintMjTile(); }, go = () => shiftWeek(flip);
+  const flip = () => { const on = !mjShow; mjLeave(); mjShow = on; paintMjTile(); }, go = () => shiftWeek(flip);
   if (!mj) loadMj();
   if (view !== "month"){ go(); return; }
   toggleCalendar();
@@ -3642,8 +3776,6 @@ function paintMjTile(){
     return esc(who.length === 1 ? who[0] : who.length === 2 ? who.join(" & ") + " tied" : who.length + " tied") + " · " + mjFmt(n); };
   $("mjstate").innerHTML = hi === lo ? (s.length > 1 ? "Everyone tied" : esc(s[0].name)) + " · " + mjFmt(hi) : "↑ " + at(hi) + "<br>↓ " + at(lo);
 }
-/* 0 to 1 on an exponential curve, so gaps near the top show biggest */
-const mjCurve = t => (Math.exp(3 * t) - 1) / (Math.exp(3) - 1);
 /* every player's points after each game, as a line each, in their block's colour */
 function mjGraph(W, H){
   const cur = {}; mj.players.forEach(p => cur[p.id] = MJ_START);
@@ -3651,15 +3783,24 @@ function mjGraph(W, H){
   mj.rounds.forEach(r => { for (const id in r.d) if (id in cur) cur[id] += r.d[id]; pts.push({ ...cur }); });
   const n = pts.length - 1, L = 48, R = 8, T = 8, B = 20;
   const all = pts.flatMap(o => Object.values(o));
-  let lo = Math.min(...all), hi = Math.max(...all); if (lo === hi){ lo -= 100; hi += 100; }
-  const x = i => L + (W - L - R) * i / n, y = v => T + (H - T - B) * (1 - mjCurve((v - lo) / (hi - lo)));
+  /* points double, so the axis does too: equal heights are equal ratios. It reaches
+     a power of 2 either side of the start, with room spare so scores sit close. */
+  const step = 2 ** Math.max(9, Math.ceil(Math.log2(Math.max(...all.map(v => Math.abs(v - MJ_START)), 1))) + 1);
+  const lo = Math.max(MJ_START - step, Math.min(...all) / 2, 1), hi = MJ_START + step;
+  const x = i => L + (W - L - R) * i / n, y = v => T + (H - T - B) * Math.log2(hi / Math.max(v, 1)) / Math.log2(hi / lo);
   const line = (v, dash) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" ${dash ? `stroke="var(--line3)" stroke-dasharray="4 4"` : `stroke="var(--sep)"`}/>`;
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Points after each game">` +
-    [hi, Math.round((hi + lo) / 2), lo].map(v => line(v) + `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${mjFmt(v)}</text>`).join("") +
-    (lo < MJ_START && hi > MJ_START ? line(MJ_START, true) : "") +
+    [hi, (hi + MJ_START) / 2, (lo + MJ_START) / 2, lo].map(Math.round).map(v => line(v) + `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${mjFmt(v)}</text>`).join("") +
+    line(MJ_START, true) + `<text x="${L - 6}" y="${y(MJ_START) + 4}" text-anchor="end">${mjFmt(MJ_START)}</text>` +
     `<text x="${L}" y="${H - 4}">Start</text><text x="${W - R}" y="${H - 4}" text-anchor="end">Game ${n}</text>` +
     mj.players.map(p => `<polyline fill="none" stroke="${mjColor(p.id)}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1" stroke-dasharray="1" points="` +
       pts.map((o, i) => x(i).toFixed(1) + "," + y(o[p.id]).toFixed(1)).join(" ") + `"><title>${esc(p.name)}</title></polyline>`).join("") + `</svg>`;
+}
+/* the next point value along …−4, −2, 0, 2, 4, 8…; a typed value goes to the nearest power of 2 that way */
+function mjStep(v, d){
+  if (!v) return 2 * d;
+  const a = Math.abs(v), s = Math.sign(v);
+  return s === d ? s * 2 ** (Math.floor(Math.log2(a)) + 1) : a <= 2 ? 0 : s * 2 ** (Math.ceil(Math.log2(a)) - 1);
 }
 const mjHint = () => { const t = Object.values(mjDraft).reduce((a, v) => a + (Math.round(+v) || 0), 0);
   return t ? "Adds up to " + mjSigned(t) + " (usually 0)" : "+ for winners, − for whoever paid"; };
@@ -3670,9 +3811,9 @@ function renderMj(nd){
   const pts = mjPoints(), st = [...mj.players].sort((a, b) => pts[b.id] - pts[a.id]), n = st.length;
   /* the blocks, placed down a day when there's a grid */
   const block = (cls, who, c, body, y, h, span = 2) => `<div class="mjb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
-  /* scores sit close together, so a fill runs from a little under the lowest score, not from zero */
-  const v = st.map(p => pts[p.id]), hi = Math.max(...v), lo = Math.min(...v), floor = lo - (hi - lo) * .35;
-  const fill = n => hi === lo ? 100 : mjCurve((n - floor) / (hi - floor)) * 100;
+  /* a fill runs up from half the lowest score, by doublings like the graph, so a gap in the scores is a gap in the fills at any size */
+  const v = st.map(p => pts[p.id]), hi = Math.max(...v), floor = Math.min(MJ_START, Math.max(1, v.at(-1))) / 2;
+  const fill = n => Math.log2(Math.max(n, 1) / floor) / Math.log2(Math.max(hi, 1) / floor) * 100;
   const SAVE = n > 1 ? 82 : 0, ADD = 52, tall = Math.max(560, innerHeight - 174);
   const each = Math.min(150, Math.max(56, (tall - 12 - (SAVE && SAVE + 8) - ADD - 8) / (n || 1) - 8));
   const H = Math.max(tall, 4 + n * (each + 8) + (SAVE && SAVE + 8) + ADD + 8);
@@ -3680,7 +3821,8 @@ function renderMj(nd){
   const players = st.map(p => { const rank = 1 + st.filter(q => pts[q.id] > pts[p.id]).length;   /* equal points, equal rank */
     return block("mjpl", "mj:" + p.id, mjColor(p.id),
       `<i class="mjfill" style="width:${fill(pts[p.id])}%"></i><span class="mjrk tnum">${rank}</span><span class="mjnm">${esc(p.name)}</span><b class="mjpts tnum">${mjFmt(pts[p.id])}</b>` +
-      `<input class="fin mjin tnum" type="number" step="1" data-id="${p.id}" value="${esc(mjDraft[p.id] ?? "")}" placeholder="+ / −" aria-label="${esc(p.name)}'s points this game">`, y += each + 8, each); }).join("");
+      `<span class="mjbox"><input class="fin mjin tnum" type="number" step="1" data-id="${p.id}" value="${esc(mjDraft[p.id] ?? "")}" placeholder="+ / −" aria-label="${esc(p.name)}'s points this game">` +
+      `<span class="mjar"><button data-d="1" aria-label="More points for ${esc(p.name)}">▴</button><button data-d="-1" aria-label="Fewer points for ${esc(p.name)}">▾</button></span></span>`, y += each + 8, each); }).join("");
   y += each + 8;
   const save = n < 2 ? "" : block("mjctl mjsv", "mj:save", "#E0303A",
     `<span class="mjsum ${mjNote ? "mjerr" : ""}" id="mjsum">${esc(mjNote || mjHint())}</span><div class="mjbtns">` +
@@ -3705,7 +3847,9 @@ function renderMj(nd){
   $("mjname").onkeydown = e => { if (e.key === "Enter") addP(); };
   host.querySelectorAll(".mjin").forEach(i => {
     i.oninput = () => { mjDraft[i.dataset.id] = i.value; $("mjsum").classList.remove("mjerr"); $("mjsum").textContent = mjHint(); };
-    i.onkeydown = e => { if (e.key === "Enter") saveGame(); };
+    const bump = d => { i.value = mjStep(Math.round(+i.value) || 0, d); i.oninput(); };
+    i.onkeydown = e => { if (e.key === "Enter") saveGame(); else if (e.key === "ArrowUp" || e.key === "ArrowDown"){ e.preventDefault(); bump(e.key === "ArrowUp" ? 1 : -1); } };
+    i.nextElementSibling.querySelectorAll("button").forEach(b => b.onclick = () => bump(+b.dataset.d));
   });
   if ($("mjsave")) $("mjsave").onclick = saveGame;
   if ($("mjundo")) $("mjundo").onclick = () => { if (confirm("Undo the last game?")) mjAct({ action:"undo" }); };
