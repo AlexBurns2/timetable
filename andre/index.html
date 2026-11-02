@@ -1490,12 +1490,13 @@ const MAZE = { open:160, close:180, speed:2.8, margin:90 };
 /* How far each of a day's blocks (listed top to bottom) moves down so that
    none sits in any of the lanes. Everything below a lane moves with it, so
    the day keeps its order and spacing, just opened up. */
-function laneShifts(rects, bands){
+function laneShifts(rects, bands, pageEnd){
   const lanes = bands.map(b => [b.top - 6, b.bottom + 6]).sort((a, b) => a[0] - b[0]);
   let shift = 0;
   return rects.map(r => {
     for (const [lo, hi] of lanes) if (r.top + shift < hi && r.bottom + shift > lo) shift = hi - r.top;
-    return shift;
+    /* never left half off the page: what wouldn't fit goes all the way off */
+    return shift && r.top < pageEnd && r.bottom + shift > pageEnd ? pageEnd - r.top + 24 : shift;
   });
 }
 
@@ -1637,7 +1638,7 @@ function turnWeek(target, q = 1){
     for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], shut + M.close);
     for (const [j, bands] of crossed){
       /* lessons both weeks share are still in last week's spots while lessons leave */
-      const day = keptIn(j), shifts = laneShifts(day.map(b => entering ? b.r : b.r0), bands);
+      const day = keptIn(j), shifts = laneShifts(day.map(b => entering ? b.r : b.r0), bands, innerHeight);
       day.forEach((b, i) => {
         if (!shifts[i]) return;
         /* the easing is per step (open, hold, close), so each happens exactly in its window */
@@ -2251,7 +2252,7 @@ $("skins").onclick = e => {
 
 /* every look change: attributes on <html>, then a redraw, since the
    default subject colours have light and dark versions */
-function applyLook(){ lookAttrs(); render(); }
+function applyLook(){ lookAttrs(); render(); if ($("gmframe")) $("gmframe").contentWindow.andreLook(); }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { applyLook(); if (settingsOpen()) paintSettings(); });
 
 function paintSettings(){
@@ -3307,7 +3308,7 @@ function morphWeekPlay(layer, from, to){
     const beside = r => bands.some(b => r.top < b.bottom && b.top < r.top + r.height) && (side < 0 ? r.left < blocks[0].r.left : r.left + r.width > blocks[0].r.left + blocks[0].r.width);
     const days = [...Array(n).keys()].map(j => {
       const day = stays.filter(x => x.k === j).sort((a, b) => a.r.top - b.r.top);
-      const shifts = (side < 0 ? j < k : j > k) || (j === k && day.some(x => beside(x.r))) ? laneShifts(day.map(x => ({ top:x.r.top, bottom:x.r.top + x.r.height })), bands) : [];
+      const shifts = (side < 0 ? j < k : j > k) || (j === k && day.some(x => beside(x.r))) ? laneShifts(day.map(x => ({ top:x.r.top, bottom:x.r.top + x.r.height })), bands, innerHeight) : [];
       return { j, day, shifts };
     }).filter(d => d.shifts.some(Boolean));
     const opening = days.length ? MAZE.open + MAZE.margin : 0;
@@ -3554,7 +3555,7 @@ const GAME_LIST = [
   { id:"mines", cat:"Arcade", ico:"💣", name:"Minesweeper", blurb:"Clear the board, flag the mines", c:"#8E8E93" },
   { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
   { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" },
-  { id:"hkmj", cat:"Arcade", ico:"🀄", name:"Hong Kong Mahjong", blurb:"Play bots to Hong Kong rules, Easy to Pro", c:"#E0303A", frame:"/hkmahjong.html" }
+  { id:"hkmj", cat:"Arcade", ico:"🀄", name:"Hong Kong Mahjong", blurb:"Play bots to Hong Kong rules, Easy to Pro", c:"#E0303A", frame:"/hkmahjong.html?andre=1" }
 ];
 const gameById = id => GAME_LIST.find(g => g.id === id);
 const hms = ms => { const t = Math.floor(Math.max(0, +ms || 0) / 1000), p = n => String(n).padStart(2, "0");
@@ -3615,13 +3616,6 @@ function gameFrame(){
   if (!g || !g.frame || !body || body.firstChild) return;
   const f = document.createElement("iframe");
   f.id = "gmframe"; f.title = g.name; f.src = g.frame;
-  f.onload = () => {        /* in this page's colours and type, not the main site's skin */
-    const cs = getComputedStyle(document.documentElement), to = f.contentDocument.documentElement.style;
-    const line = cs.getPropertyValue("--fill2").trim(), font = getComputedStyle(document.body).fontFamily;
-    Object.entries({ "--bg":cs.getPropertyValue("--bg").trim(), "--bg-img":"none", "--panel":cs.getPropertyValue("--fill").trim(), "--panel-2":line, "--line":line,
-      "--text":cs.getPropertyValue("--fg").trim(), "--muted":cs.getPropertyValue("--fg2").trim(), "--accent":cs.getPropertyValue("--blue").trim(), "--accent-ink":"#fff",
-      "--font-ui":font, "--font-display":font, "--font-num":font, "--radius":"10px", "--card-radius":"10px", "--card-border":`1px solid ${line}`, "--shadow":"none", "--shadow-hi":"none" }).forEach(([k, v]) => to.setProperty(k, v));
-  };
   body.append(f);
 }
 function renderGames(nd){

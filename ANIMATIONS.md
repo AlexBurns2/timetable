@@ -36,7 +36,8 @@ it, with `MAZE` timing. Nothing fades, shrinks or gets cut off.
 - A block goes to the side with the fewest staying blocks in its way, else the nearer
   side, with the rest of its day. So a block that's opening out is left where it is.
 - Lanes open: in every day it crosses, the blocks in the way and everything below them
-  move down, then move back once it has passed.
+  move down, then move back once it has passed. A block that wouldn't fit on the page
+  goes all the way off, so nothing waits half off the edge.
 - Going off, the day nearest the edge goes first. Coming on, the middle days come first.
 
 ## Which block becomes which

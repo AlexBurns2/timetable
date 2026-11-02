@@ -10,6 +10,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <script src="theme.js"></script>
+<script>
+/* In a Games module on Andre's page: that page's colours and type, on the module's own colour */
+const ANDRE = new URLSearchParams(location.search).has('andre');
+function andreLook() {
+  const top = parent.document.documentElement, cs = parent.getComputedStyle(top), box = parent.document.querySelector('.gmstage');
+  const v = k => cs.getPropertyValue(k).trim(), to = document.documentElement.style, font = parent.getComputedStyle(parent.document.body).fontFamily;
+  const set = { '--bg': box ? parent.getComputedStyle(box).backgroundColor : v('--bg'), '--bg-img': 'none', '--panel': v('--base') || v('--bg'), '--panel-2': v('--fill'), '--line': v('--fill2'),
+    '--text': v('--fg'), '--muted': v('--fg2'), '--accent': v('--blue'), '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
+    '--radius': '10px', '--card-radius': '10px', '--card-border': '0 solid transparent', '--shadow': 'none', '--shadow-hi': 'none', '--display-w': '600', '--display-ls': '0', '--display-tt': 'none' };
+  for (const k in set) to.setProperty(k, set[k]);
+}
+if (ANDRE) { document.documentElement.classList.add('andre'); andreLook(); }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E4%B8%80%E4%BA%8C%E4%B8%89%E5%9B%9B%E4%BA%94%E5%85%AD%E4%B8%83%E5%85%AB%E4%B9%9D%E8%90%AC%E6%9D%B1%E5%8D%97%E8%A5%BF%E5%8C%97%E4%B8%AD%E7%99%BC%E6%A2%85%E8%98%AD%E8%8F%8A%E7%AB%B9%E6%98%A5%E5%A4%8F%E7%A7%8B%E5%86%AC%E9%BA%BB%E9%9B%80%E6%A9%9F%E9%96%8B%E5%85%A5%E6%9B%B8&display=block" rel="stylesheet">
 <style>
 :root{
@@ -675,6 +688,23 @@ select option{color:var(--ink);background:var(--panel)}
 .felt3 .tile.match{filter:brightness(.72) saturate(.55)}
 
 
+/* ===== On Andre's page: flat blocks in the module's red, not wood and felt ===== */
+html.andre{--mj:#E0303A;--back1:#E0303A!important;--back2:#c8202c!important;--backborder:#a81621!important}
+html.andre :is(.rk,.nplate,.rack,.compass){background:var(--panel)!important;border:0!important;box-shadow:none!important;color:var(--text)}
+html.andre .felt3{background:color-mix(in srgb,var(--mj) 12%,var(--panel))!important;border:0!important;box-shadow:none!important;border-radius:10px}
+html.andre :is(.nplate,.rk,.rack,.compass){border-radius:10px}
+html.andre .nplate.turn{box-shadow:0 0 0 2px var(--mj)!important}
+html.andre .np-name{color:var(--text)}
+html.andre .np-score,html.andre .sp-score{background:var(--panel-2);color:var(--text)}
+html.andre :is(.cround,.cround small,.chand){color:var(--text)!important}
+html.andre .cled{background:none;border:0;color:var(--mj);text-shadow:none}
+html.andre .cedge{color:var(--muted)}
+html.andre .cedge.dl{color:var(--mj)}
+html.andre .cedge.on{color:#fff;background:var(--mj);box-shadow:none}
+html.andre .act{box-shadow:none;border-radius:10px}
+html.andre .act.win{background:var(--mj)}
+html.andre .mymelds{border-right-color:var(--line)}
+html.andre .tag.you{background:var(--panel-2);color:var(--text)}
 /* ===== The site's look, from theme.css. Only the table and tiles keep their own colours ===== */
 :root{--tw:clamp(32px,min(3.9vw,9vh),66px)}     /* a full hand fits the rack beside the side panel */
 /* everything fits the frame, and the rack is always one row: fitRack shrinks the tiles to fit */
@@ -2406,14 +2436,14 @@ function showAppearance(keepScroll) {
     ${sw('swAnim', Fx.anim, 'Motion', 'Discards slide into place and calls fade in beside the player.')}
     <h3 class="aph">Tiles</h3>
     <div class="themes">${Object.entries(THEMES).map(([id, t]) => `<div class="theme ${Look.theme === id ? 'on' : ''}" data-theme="${id}" style="${themeStyle(id)}"><div class="tiles">${sample.map(x => tileHTML(x)).join('')}${backHTML()}</div><b>${t.name}${id === 'classic' ? ' <span class="tag">standard</span>' : ''}</b><small>${t.desc}</small></div>`).join('')}</div>
-    <p class="sub" style="margin:10px 0 6px">Backs</p>
+    ${ANDRE ? '' : `    <p class="sub" style="margin:10px 0 6px">Backs</p>
     <div class="backpicks">${Object.entries(BACK_DESIGNS).map(([k, n]) => `<button class="backpick ${Fx.back === k ? 'on' : ''}" data-back="${k}"><span class="tiles back-${k}" style="--w:34px">${backHTML()}${backHTML()}</span><small>${n}</small></button>`).join('')}</div>
-    <div class="chips">${chips(BACK_COLOURS, Fx.backCol, 'data-backcol')}</div>
+    <div class="chips">${chips(BACK_COLOURS, Fx.backCol, 'data-backcol')}</div>`}
     ${sw('swShiny', Fx.shiny, 'Glossy tiles', 'A soft sheen on the tile faces.')}
     ${sw('swLabels', Look.labels, 'English values in the corner', 'Shows 1–9, E/S/W/N and C/F/B in the top-left of each tile.')}
-    <h3 class="aph">Table</h3>
+    ${ANDRE ? '' : `    <h3 class="aph">Table</h3>
     <p class="sub" style="margin:0 0 6px">Cloth</p><div class="chips">${chips(FELTS, Fx.felt, 'data-felt')}</div>
-    <p class="sub" style="margin:10px 0 6px">Wood</p><div class="chips">${Object.entries(WOODS).map(([k, n]) => `<button class="chip ${Fx.wood === k ? 'on' : ''}" data-wood="${k}"><i class="woodsw wood-${k}"></i>${n}</button>`).join('')}</div>
+    <p class="sub" style="margin:10px 0 6px">Wood</p><div class="chips">${Object.entries(WOODS).map(([k, n]) => `<button class="chip ${Fx.wood === k ? 'on' : ''}" data-wood="${k}"><i class="woodsw wood-${k}"></i>${n}</button>`).join('')}</div>`}
     <h3 class="aph">Sound</h3><div class="chips">${chips(SOUND_PACKS, Fx.pack, 'data-pack')}</div>
     <p class="sub" style="font-size:13px;margin-top:6px">Spoken calls use your device's built-in voices, in Cantonese where available.</p>
 `);
