@@ -729,6 +729,24 @@ html,body{font-family:var(--font-ui);background:var(--bg);background-image:var(-
 :focus-visible{outline:2px solid var(--accent)}
 .sign{display:none}
 .iconbtn{color:var(--muted)}
+/* the discards' grid */
+.pgrid{position:absolute;inset:0;margin:auto;width:calc(var(--u)*var(--cols));height:calc(var(--u)*1.32*var(--rows));display:grid;grid-template-columns:repeat(var(--cols),var(--u));grid-template-rows:repeat(var(--rows),calc(var(--u)*1.32))}
+.pgrid .pool3{position:static;transform:none;width:auto;min-width:0;--w:calc(var(--u) - 2px);gap:2px;display:flex;flex-wrap:wrap;align-content:flex-start}
+.pgrid .pz2{flex-direction:row-reverse;flex-wrap:wrap-reverse}
+.pgrid .pz3{flex-direction:row-reverse}
+/* nothing see-through: everything solid, so it stays easy to read */
+.btn:disabled{opacity:1;background:var(--panel-2);color:var(--muted)}
+.act:disabled{opacity:1;background:#8a94a3}
+.hints .bad{opacity:1;filter:grayscale(1)}
+.ach{opacity:1;color:var(--muted)}
+.overlay{background:var(--bg)}
+.modal{box-shadow:none}
+.plate .psc,.sp-score,.np-score{background:#2a1a0e}
+.timerbar{background:#c9ced6}
+.kbd{background:var(--panel-2);border-color:var(--line)}
+.act .kbd{background:#fff;border-color:#fff;color:#1d2330}
+.callpop{background:#0e1613;border-color:#e2b13c}
+.cedge{color:#d6e2dc}
 .iconbtn:hover{border-color:var(--line);color:var(--text)}
 .btn{border:var(--card-border);border-radius:var(--radius);background:var(--panel);color:var(--text)}
 .btn:hover{background:var(--panel-2)}
@@ -1631,7 +1649,8 @@ const fmt = x => (Math.round(x * 100) / 100).toString();
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const LEVELS = ['easy', 'medium', 'hard', 'pro'];
 const BOT_NAMES = ['Bot Alpha', 'Bot Bravo', 'Bot Charlie', 'Bot Delta', 'Bot Echo', 'Bot Foxtrot', 'Bot Hotel'];
-const SPEED = { fast: 320, normal: 750, slow: 1300 };
+const SPEED = { instant: 0, fast: 320, normal: 750, slow: 1300 };
+const SPEED_NAMES = { instant: 'Instant', fast: 'Fast', normal: 'Normal', slow: 'Slow' };
 const store = {
   get(k, d) { try { const v = localStorage.getItem('hkmj.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('hkmj.' + k, JSON.stringify(v)); } catch (e) { } }
@@ -1759,7 +1778,7 @@ const SITE_NAME = (() => {
 })();
 const App = {
   screen: 'home', name: SITE_NAME || store.get('name', ''), role: null, ctl: null, view: null, priv: null, seat: 0, sel: -1, selKey: '',
-  tab: 'table', logs: [], lastLogId: 0, chat: [], hints: store.get('hints', true), avatar: store.get('avatar', ''), avatars: {},
+  tab: 'table', logs: [], lastLogId: 0, chat: [], hints: store.get('hintsAll', false), avatar: store.get('avatar', ''), avatars: {},
   botLevels: store.get('botLevels', ['medium', 'medium', 'medium']),
   botS: Object.assign({}, DEFAULT_SETTINGS, store.get('botS', {})),
   lobby: null, deadline: 0, deadlineTotal: 0, resultShown: 0, discardsSeen: -1, onlineOk: null
@@ -1819,11 +1838,11 @@ function renderHome() {
     <button class="mode" data-mode="daily"><b>Daily deal</b><span>Same deal for everyone today vs Hard bots${store.get('daily', {})[dailyKey()] != null ? ` · your best ${fmt(store.get('daily', {})[dailyKey()])}` : ''}</span></button>
     <button class="mode" data-mode="practice"><b>Practice</b><span>See the bots' hands and the Pro bot's advice</span></button>
     <button class="mode" data-mode="speed"><b>Quick turns</b><span>5-second turns against faster bots</span></button>
-    <button class="mode" id="lookBtn"><b>Appearance</b><span>Tiles, table and sound</span></button>
+    <button class="mode" id="lookBtn"><b>Settings</b><span>Speed, hints, tiles and sound</span></button>
     <button class="mode" id="statsBtn"><b>Stats</b><span>Your wins and best hands</span></button>
   </div>
   <div id="homeErr" class="err" style="text-align:center"></div>
-  <p class="homefoot">Played to Hong Kong rules with flowers, seasons and faan scoring. Tile colours and corner numbers are under Appearance.</p>`;
+  <p class="homefoot">Played to Hong Kong rules with flowers, seasons and faan scoring. Tile colours and corner numbers are under Settings.</p>`;
   $('#nameIn').oninput = e => { App.name = cleanName(e.target.value) || App.name; store.set('name', App.name); };
   $('#quickPlay').onclick = startBotGame;
   $('#homeAv').onclick = showProfile;
@@ -1850,7 +1869,7 @@ const SETTING_DEFS = [
   ['sevenPairs', 'Seven Pairs (4 faan)', [[true, 'Allowed'], [false, 'Not allowed']]],
   ['turnTime', 'Turn timer', [[0, 'Off'], [15, '15 s'], [30, '30 s'], [60, '60 s']]],
   ['claimTime', 'Claim timer', [[0, 'Off'], [8, '8 s'], [12, '12 s'], [20, '20 s']]],
-  ['speed', 'Bot speed', [['fast', 'Fast'], ['normal', 'Normal'], ['slow', 'Slow']]]
+  ['speed', 'Bot speed', Object.entries(SPEED_NAMES)]
 ];
 function settingsHTML(S, editable) {
   return `<div class="settings">${SETTING_DEFS.map(([k, label, opts]) => `<label>${label}<select data-k="${k}" ${editable ? '' : 'disabled'}>${opts.map(([v, l]) => `<option value="${String(v)}" ${String(S[k]) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`).join('')}</div>`;
@@ -1912,7 +1931,7 @@ class HostCtl {
     const g = this.g, h = g.h, S = g.S;
     const key = [g.handNo, h.phase, h.turn, h.discardCount, h.claimTile, h.claimKind, h.melds.map(m => m.length).join('')].join('|');
     if (key !== this.key) { for (const id of this.tasks.values()) clearTimeout(id); this.tasks.clear(); this.key = key; h.deadline = 0; this.deadlineSet = false; }
-    const delay = SPEED[S.speed] || 750;
+    const delay = SPEED[S.speed] ?? 750;
     if (!g.over && h.phase === 'discard') {
       const s = h.turn;
       if (this.isAuto(s)) this.task('bot' + s, () => this.act(s, Bot.turn(g, s, this.lvl(s))), delay);
@@ -1984,7 +2003,7 @@ function buildGameSkeleton() {
        <div class="pl pl2" id="plate2"></div><div class="rk rk2" id="rk2"></div>
        <div class="pl pl3" id="plate3"></div><div class="rk rk3" id="rk3"></div>
        <div class="felt3" id="mjtable">
-         <div class="pool3 pz2" id="pool2"></div><div class="pool3 pz3" id="pool3"></div><div class="pool3 pz1" id="pool1"></div><div class="pool3 pz0" id="pool0"></div>
+         <div class="pgrid"><div class="pool3 pz2" id="pool2"></div><div class="pool3 pz3" id="pool3"></div><div class="pool3 pz1" id="pool1"></div><div class="pool3 pz0" id="pool0"></div></div>
          <div class="compass" id="center"></div>
        </div>
        <div class="rk rk1" id="rk1"></div><div class="pl pl1" id="plate1"></div>
@@ -1994,15 +2013,30 @@ function buildGameSkeleton() {
    <aside class="side"><div class="tabs" id="tabs"></div><div class="tabbody" id="tabbody"></div><div id="chatform"></div></aside>
   </div>`;
   $('#game').addEventListener('click', onGameClick);
+  new ResizeObserver(fitPools).observe($('#mjtable'));
   $('#game').addEventListener('mouseover', onGameHover);
   $('#game').addEventListener('mouseleave', () => setMatch(App.sel >= 0 ? selectedTile() ?? -1 : -1));
-  $('#game').addEventListener('dblclick', e => {
-    const tEl = e.target.closest('.hand .tile'); if (!tEl) return;
-    if (App.priv && App.priv.my && App.view.ph === 'discard') doAction({ a: 'discard', t: +tEl.dataset.t });
-  });
+}
+// ---------- the grid on the table ----------
+/* Every discard sits on one grid of tile-sized cells: a block for each player around
+   the compass, each with room for a whole hand's discards, so none can ever overlap.
+   Tries each way of dividing the table and keeps the one that gives the biggest tiles. */
+function fitPools() {
+  const felt = $('#mjtable'), W = felt && felt.clientWidth, H = felt && felt.clientHeight; if (!W || !H) return;
+  const ROOM = 26, TALL = 1.32; let best = null;
+  for (let t = 1; t <= 5; t++) for (let c = 2; c <= 5; c++) {
+    const rows = 2 * t + c, mid = Math.max(Math.ceil(ROOM / t), Math.ceil(c * TALL)), side = Math.ceil(ROOM / rows);
+    const u = Math.min(W / (2 * side + mid), H / (rows * TALL));
+    if (!best || u > best.u) best = { u, t, c, rows, mid, side };
+  }
+  const { u, t, c, rows, mid, side } = best, cols = 2 * side + mid, area = (id, r0, r1, c0, c1) => $('#pool' + id).style.gridArea = `${r0} / ${c0} / ${r1} / ${c1}`;
+  felt.style.setProperty('--u', Math.min(u, 62) + 'px'); felt.style.setProperty('--cols', cols); felt.style.setProperty('--rows', rows);
+  felt.style.setProperty('--td', Math.min(u, 62) * c * TALL / 4.6 + 'px');
+  area(2, 1, t + 1, side + 1, side + mid + 1); area(0, rows - t + 1, rows + 1, side + 1, side + mid + 1);
+  area(3, 1, rows + 1, 1, side + 1); area(1, 1, rows + 1, side + mid + 1, cols + 1);
 }
 // ---------- matching-tile highlight ----------
-const Match = { on: store.get('matchHi', true), t: -1 };
+const Match = { get on() { return App.hints; }, t: -1 };
 function setMatch(t) {
   if (t === Match.t) return; Match.t = t;
   document.querySelectorAll('#game .tile.match').forEach(e => e.classList.remove('match'));
@@ -2036,7 +2070,7 @@ function onGameClick(e) {
     else if (a === 'chat') { App.chatOpen = !App.chatOpen; if (App.chatOpen) App.unread = 0; renderChat(); renderActions(); }
     else if (a === 'replay') showReplay(App.lastHandView || App.view);
     else if (a === 'quick') Net.sendChat(QUICK_LINES[+b.dataset.i]);
-    else if (a === 'hints') { App.hints = !App.hints; store.set('hints', App.hints); renderGame(); }
+    else if (a === 'settings') showAppearance();
     return;
   }
   const tb = e.target.closest('#tabs button');
@@ -2045,7 +2079,7 @@ function onGameClick(e) {
   if (tEl) {
     const i = +tEl.dataset.i;
     const myTurn = App.priv && App.priv.my && App.view.ph === 'discard';
-    if (myTurn && App.sel === i) { doAction({ a: 'discard', t: +tEl.dataset.t }); return; }
+    if (myTurn) { doAction({ a: 'discard', t: +tEl.dataset.t }); return; }
     App.sel = App.sel === i ? -1 : i; renderMine(); renderActions(); renderHints(); Match.t = -2; setMatch(App.sel >= 0 ? +tEl.dataset.t : -1);
   }
 }
@@ -2071,6 +2105,7 @@ function seatPlateHTML(V, s) {
 `;
 }
 function renderGame() {
+  fitPools(); setTimeout(fitPools);      /* again once this render has moved things */
   const V = App.view; if (!V || App.screen !== 'game') return;
   for (let s = 0; s < 4; s++) {
     const p = posOf(s), P = V.P[s];
@@ -2165,7 +2200,8 @@ function renderActions() {
     h = '';
     if (pv.ts) h += `<button class="act win" data-act="tsumo">Win, self-drawn (${pv.ts} faan)<span class="kbd">W</span></button>`;
     for (const k of pv.kg || []) h += `<button class="act kong" data-act="${k.a}" data-t="${k.t}">${k.a === 'ckong' ? 'Concealed kong' : 'Add to kong'} ${tilesHTML([k.t])}</button>`;
-    h += `<button class="act disc" data-act="discard" ${sel == null ? 'disabled' : ''}>Discard${sel != null ? ' ' + tilesHTML([sel]) : ''}<span class="kbd">Enter</span></button>${timer}`;
+    /* a click on a tile discards it; this is for picking one with the arrow keys */
+    h += (sel != null ? `<button class="act disc" data-act="discard">Discard ${tilesHTML([sel])}<span class="kbd">Enter</span></button>` : '<span class="msg">Click a tile to discard it</span>') + timer;
   } else {
     const tn = V.tn;
     h = `<span class="msg">${V.ph === 'claim' ? 'Players are deciding on the discard…' : `Waiting for <b>${esc(nameOf(tn))}</b>…`}</span>${timer}`;
@@ -2186,7 +2222,7 @@ function waitsFor(tiles, melds, V, s) {
 }
 function renderHints() {
   const el = $('#hints'), V = App.view; if (!V) return;
-  const toggle = `<button class="iconbtn" data-act="hints" title="Show or hide winning-tile hints">${App.hints ? 'Hide waits' : 'Show waits'}</button><button class="iconbtn phleave" data-act="leave">Leave game</button>`;
+  const toggle = `<button class="iconbtn" data-act="settings">⚙ Settings</button><button class="iconbtn phleave" data-act="leave">Leave game</button>`;
   const tip = practiceTip();
   const tipHTML = tip ? `<span class="tipline">${esc(tip.text)}</span>` : '';
   if (!App.hints || App.seat < 0 || !App.priv || V.ph === 'over') { el.innerHTML = toggle + tipHTML; return; }
@@ -2340,7 +2376,11 @@ function showAppearance(keepScroll) {
   const sample = [0, 13, 26, 27, 31, 37];
   const chips = (obj, cur, attr) => Object.entries(obj).map(([k, v]) => `<button class="chip ${cur === k ? 'on' : ''}" ${attr}="${k}">${Array.isArray(v) && v[1] && typeof v[1] === 'string' ? `<i style="background:${v[1]}"></i>` : Array.isArray(v) && Array.isArray(v[1]) ? `<i style="background:linear-gradient(${v[1][0]},${v[1][1]})"></i>` : ''}${esc(Array.isArray(v) ? v[0] : v)}</button>`).join('');
   const sw = (id, on, title, desc) => `<div class="toggle"><div><b>${title}</b><br><small>${desc}</small></div><button class="switch ${on ? 'on' : ''}" id="${id}" aria-label="${esc(title)}"></button></div>`;
-  const o = modal(`<h2>Appearance &amp; settings</h2><p class="sub">Saved on this device.</p>
+  const o = modal(`<h2>Settings</h2><p class="sub">Saved on this device.</p>
+    <h3 class="aph">Bot speed</h3><p class="sub" style="margin:0 0 6px">Instant still stops to ask when you can win, kong, pung or chow.</p>
+    <div class="chips">${Object.entries(SPEED_NAMES).map(([k, n]) => `<button class="chip ${(App.ctl ? App.ctl.g.S.speed : App.botS.speed) === k ? 'on' : ''}" data-speed="${k}">${n}</button>`).join('')}</div>
+    <h3 class="aph">Hints</h3>
+    ${sw('swHints', App.hints, 'Show hints', 'Point at a tile to light up every copy, and see what your hand is waiting for.')}
     <h3 class="aph">Tile colours</h3>
     <div class="themes">${Object.entries(THEMES).map(([id, t]) => `<div class="theme ${Look.theme === id ? 'on' : ''}" data-theme="${id}" style="${themeStyle(id)}"><div class="tiles">${sample.map(x => tileHTML(x)).join('')}${backHTML()}</div><b>${t.name}${id === 'classic' ? ' <span class="tag">standard</span>' : ''}</b><small>${t.desc}</small></div>`).join('')}</div>
     <h3 class="aph">Tile backs</h3>
@@ -2353,8 +2393,6 @@ function showAppearance(keepScroll) {
     ${sw('swShiny', Fx.shiny, 'Glossy tiles', 'A soft sheen on the tile faces.')}
     ${sw('swAnim', Fx.anim, 'Motion', 'Discards slide into place and calls fade in beside the player.')}
     ${sw('swLabels', Look.labels, 'English values in the corner', 'Shows 1–9, E/S/W/N and C/F/B in the top-left of each tile.')}
-    ${sw('swMatch', Match.on, 'Highlight matching tiles', 'Point at any tile (or select one in your hand) to light up every copy already discarded or in a set.')}
-    ${sw('swHints', App.hints, 'Hints', 'Show which tiles would complete your hand.')}
     <h3 class="aph">Sound</h3><div class="chips">${chips(SOUND_PACKS, Fx.pack, 'data-pack')}</div>
     <p class="sub" style="font-size:13px;margin-top:6px">Spoken calls use your device's built-in voices, in Cantonese where available.</p>
     <div class="btnrow"><button class="btn red" id="lookDone">Done</button></div>`);
@@ -2371,8 +2409,11 @@ function showAppearance(keepScroll) {
   tg('swShiny', () => { Fx.shiny = !Fx.shiny; store.set('shiny', Fx.shiny); redo(); });
   tg('swAnim', () => { Fx.anim = !Fx.anim; store.set('anim', Fx.anim); redo(); });
   tg('swLabels', () => { Look.labels = !Look.labels; store.set('labels', Look.labels); buildFaces(); refreshScreen(); showAppearance(true); });
-  tg('swMatch', () => { Match.on = !Match.on; store.set('matchHi', Match.on); Match.t = -2; setMatch(-1); showAppearance(true); });
-  tg('swHints', () => { App.hints = !App.hints; store.set('hints', App.hints); if (App.screen === 'game') renderGame(); showAppearance(true); });
+  tg('swHints', () => { App.hints = !App.hints; store.set('hintsAll', App.hints); Match.t = -2; setMatch(-1); if (App.screen === 'game') renderGame(); showAppearance(true); });
+  o.querySelectorAll('[data-speed]').forEach(c => c.onclick = () => {
+    App.botS.speed = c.dataset.speed; store.set('botS', App.botS);
+    if (App.ctl) { App.ctl.g.S.speed = c.dataset.speed; App.ctl.after(); }
+    showAppearance(true); });
   o.querySelector('#lookDone').onclick = closeModal;
 }
 
@@ -2500,12 +2541,12 @@ const GUIDE = {
     ['Limit hand', 'A rare hand worth a fixed, high faan'], ['Chicken hand 雞糊', 'A winning shape worth 0 faan — only allowed with a 0 minimum'],
     ['Half / full spicy', 'The two faan-to-points tables']].map(([a, b]) => `<tr><td><b>${a}</b></td><td>${b}</td></tr>`).join('')}</table>`],
   app: ['Using this app', () => `
-    <h3>Playing</h3><ul><li>Click a tile to lift it, then click it again (or press <b>Discard</b>). Double-clicking also discards.</li>
+    <h3>Playing</h3><ul><li>Click a tile to discard it. You can also pick one with ← and → and press Enter.</li>
       <li>When you can claim a discard, Win / Kong / Pung / Chow / Pass buttons appear above your hand.</li>
       <li>On your turn, <b>Win — self-drawn</b> and kong buttons appear when they're possible. The app only offers wins that meet the minimum faan, so you can't make a false win.</li>
       <li><b>Hints</b> show which tiles would complete your hand; faded ones wouldn't reach the minimum faan on a discard.</li></ul>
     <h3>Keyboard</h3><p>On your turn, ← and → move along your hand and Enter discards. When a discard can be claimed: W win, P pung, K kong, C chow, Esc pass. W also declares a self-drawn win.</p>
-    <h3>Appearance</h3><p>Use <b>Appearance</b> in the top bar to switch tile colours and turn the English corner values on or off.</p>
+    <h3>Settings</h3><p>Use <b>Settings</b> on the menu or at the table to change bot speed, hints, tile colours and sound.</p>
     ${MULTIPLAYER ? `<h3>Online rooms</h3><p>Create a Game gives you a 5-character code; friends choose Join a Game on this same page and type it in. The host runs the game, so it ends if the host closes the page. A player who drops out is replaced by a bot until they rejoin.</p>` : ''}`]
 };
 function showGuide(section) {
