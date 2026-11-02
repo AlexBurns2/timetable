@@ -7270,24 +7270,23 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
 /* Hong Kong Mahjong is its own page in a frame: it's big, and its styles would clash
    with this page's. It tells this page each finished game's score for the leaderboard. */
 BUILD.hkmj = host => {
-  /* the whole window, so nothing needs scrolling. Sized here, not in games.css: a
-     cached stylesheet left it at a browser's default 300x150. */
-  host.style.cssText = 'position:fixed;inset:0;z-index:50;padding:0;border:0;border-radius:0;overflow:hidden';
-  host.parentElement.style.animation = 'none';       /* while it runs, its transform would trap this inside the page */
-  host.innerHTML = '<iframe src="/hkmahjong.html" title="Hong Kong Mahjong" style="display:block;width:100%;height:100%;border:0"></iframe>';
+  /* a wider box than the other games, as under 981px across the game stacks its table
+     and side panel. Sized here, not in games.css: a cached stylesheet left the frame at
+     a browser's default 300x150. */
+  host.style.cssText = 'position:relative;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),1400px);padding:6px';
+  host.innerHTML = '<iframe src="/hkmahjong.html" title="Hong Kong Mahjong" style="display:block;width:100%;border:0;border-radius:10px"></iframe>';
   const frame = host.firstChild;
-  /* the leaderboard panel sits under the frame until the game's Scores button floats it over */
-  const floatBoard = () => { const b = $('glb'); if (b) b.style.cssText = b.style.cssText ? '' :
-    'position:fixed;top:60px;right:12px;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 72px);overflow:auto;margin:0;padding:16px;background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow-hi)'; };
+  /* down to just above the bottom of the window, so the whole table is on screen */
+  const fit = () => { frame.style.height = Math.max(500, innerHeight - frame.getBoundingClientRect().top - scrollY - 18) + 'px'; };
+  fit();
+  addEventListener('resize', fit);
   const onScore = e => {
     if (e.origin !== location.origin || e.source !== frame.contentWindow) return;
-    if (e.data && e.data.hkmj === 'back') $('back').click();
-    if (e.data && e.data.hkmj === 'board') floatBoard();
     const score = e.data && e.data.hkmjScore;
     if (Number.isInteger(score) && score > 0) recordStat('hkmj', { key:'high', mode:'max', value:score });
   };
   addEventListener('message', onScore);
-  return () => { removeEventListener('message', onScore); host.innerHTML = ''; host.style.cssText = ''; host.parentElement.style.animation = ''; };
+  return () => { removeEventListener('message', onScore); removeEventListener('resize', fit); host.innerHTML = ''; host.style.cssText = ''; };
 };
 
 /* Opened from another page, e.g. Andre's page showing a game in a frame:

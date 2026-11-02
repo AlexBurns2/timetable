@@ -675,14 +675,17 @@ select option{color:var(--ink);background:var(--panel)}
 
 /* ===== The site's look, from theme.css. Only the table and tiles keep their own colours ===== */
 :root{--tw:clamp(32px,min(3.9vw,9vh),66px)}     /* a full hand fits the rack beside the side panel */
-/* everything fits the screen: the game page gives this frame the whole window */
-html,body{overflow:hidden}
-main{height:calc(100dvh - 54px);min-height:0;overflow:auto}
+/* everything fits the frame, and the rack always shows every tile: it wraps, and the table gives way */
+html,body{overflow:hidden;overscroll-behavior:none}
+main{height:calc(100dvh - 54px);min-height:0;overflow:auto;overscroll-behavior:none}
 #game{height:100%}
 .game{height:100%;min-height:0;padding:8px 12px;grid-template-rows:minmax(0,1fr)}
+.mine,.rack{flex:none}
+.rack{flex-wrap:wrap;overflow:visible}
+.hand{flex-wrap:wrap}
 .screen{padding:14px 20px}
 @media (max-width:980px){
-  :root{--tw:calc((100vw - 44px)/15.5)}
+  :root{--tw:min(calc((100vw - 44px)/15.5),9vh)}
   .game{grid-template-columns:minmax(0,1fr)}
   .side{display:none}
   .table2,.tablewrap{height:auto;flex:1;min-height:0}
@@ -693,8 +696,6 @@ main{height:calc(100dvh - 54px);min-height:0;overflow:auto}
 @media (max-width:600px){
   header.top{gap:6px;padding:0 8px}
   .nav button{padding:8px 4px;font-size:13px}
-  #backBtn{font-size:0}
-  #backBtn::before{content:"←";font-size:16px}
   #leaveTop{white-space:nowrap}
   .screen{padding:10px 12px}
   .choices{gap:8px}
@@ -763,7 +764,7 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 <body>
 <header class="top">
   <div class="logo" id="logoBtn" role="button" tabindex="0" aria-label="Home"><span class="badge">麻雀</span><span class="wm">HK Mahjong</span></div>
-  <nav class="nav" aria-label="Main"><button id="backBtn" aria-label="All games">← Games</button><button id="homeBtn">Play</button><button id="guideBtn">Rules</button><button id="lookBtn">Look</button><button id="statsBtn">Stats</button><button id="boardBtn">Scores</button></nav>
+  <nav class="nav" aria-label="Main"><button id="homeBtn">Play</button><button id="guideBtn">Rules</button><button id="lookBtn">Appearance</button><button id="statsBtn">Stats</button></nav>
   <div class="status" id="netStatus"></div>
   <div class="spacer"></div>
   <button class="btn red small hidden" id="leaveTop">Leave table</button>
@@ -2874,8 +2875,6 @@ function boot() {
   document.addEventListener('keydown', onKey);
   $('#soundBtn').onclick = () => { if (Fx.pack === 'off') { Fx.pack = store.get('lastPack', 'classic'); } else { store.set('lastPack', Fx.pack); Fx.pack = 'off'; } Sound.on = Fx.pack !== 'off'; store.set('pack', Fx.pack); updateHeader(); };
   $('#statsBtn').onclick = showStats;
-  $('#backBtn').onclick = () => parent.postMessage({ hkmj: 'back' }, location.origin);
-  $('#boardBtn').onclick = () => parent.postMessage({ hkmj: 'board' }, location.origin);
   applyFx(); Sound.on = Fx.pack !== 'off';
   show('home');
   Cloud.pull();
