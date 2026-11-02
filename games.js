@@ -7270,7 +7270,10 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
 /* Hong Kong Mahjong is its own page in a frame: it's big, and its styles would clash
    with this page's. It tells this page each finished game's score for the leaderboard. */
 BUILD.hkmj = host => {
-  host.innerHTML = '<iframe class="hkmj" src="/hkmahjong.html" title="Hong Kong Mahjong"></iframe>';
+  /* sized here, not in games.css: a cached stylesheet left it at a browser's default 300x150.
+     Wider than the page, as under 981px across the game stacks its table and side panel. */
+  host.style.cssText = 'position:relative;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),1400px);padding:6px';
+  host.innerHTML = '<iframe src="/hkmahjong.html" title="Hong Kong Mahjong" style="display:block;width:100%;height:max(680px,calc(100vh - 150px));border:0;border-radius:10px"></iframe>';
   const frame = host.firstChild;
   const onScore = e => {
     if (e.origin !== location.origin || e.source !== frame.contentWindow) return;
@@ -7278,7 +7281,7 @@ BUILD.hkmj = host => {
     if (Number.isInteger(score) && score > 0) recordStat('hkmj', { key:'high', mode:'max', value:score });
   };
   addEventListener('message', onScore);
-  return () => removeEventListener('message', onScore);
+  return () => { removeEventListener('message', onScore); host.style.cssText = ''; };
 };
 
 /* Opened from another page, e.g. Andre's page showing a game in a frame:

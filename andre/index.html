@@ -534,28 +534,24 @@ button.row:hover{background:var(--fill2)}
 .swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .swatch.pick[aria-pressed="true"]{background:var(--c)}
 
-/* ── the Games view: modules down the days, leaderboards in the last ── */
-.gmb{background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
-.gmgo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;height:100%;padding:10px 12px;overflow:hidden;text-align:left;color:inherit}
-.gmgo:hover{filter:brightness(.97)}
-.gmgo .gico{font-size:calc(24px * var(--fs,1));line-height:1.2;margin-bottom:auto}
-.gmgo b{font-size:calc(15px * var(--fs,1));font-weight:600;line-height:1.25;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.gmgo small{font-size:calc(12px * var(--fs,1));line-height:1.3;color:color-mix(in srgb,var(--fg) 72%,var(--c))}
-.gmlb{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 12px;background:color-mix(in srgb,var(--c) calc(var(--tint) * .35),var(--base,var(--bg)))}
-.gmln{font-size:calc(11px * var(--fs,1));font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:color-mix(in srgb,var(--fg) 62%,var(--c));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gmtop{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:calc(13px * var(--fs,1));color:var(--fg2)}
-.gmtop b{min-width:0;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gmtop span{margin-left:auto;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.gmstage{display:flex;flex-direction:column;background:var(--bg);box-shadow:inset 0 0 0 1px var(--sep)}
-.list .gmstage{height:80vh}
-.gsbar{flex:none;display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid var(--sep);background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
-.gsname{display:flex;align-items:center;gap:10px;padding:5px 10px 5px 6px;border-radius:8px;color:color-mix(in srgb,var(--c) 30%,var(--fg));transition:background .15s}
-.gsname:hover{background:color-mix(in srgb,var(--c) 22%,transparent)}
-.gsname .gico{font-size:22px;line-height:1}
-.gsname b{font-size:calc(15px * var(--fs,1));font-weight:600}
-.gsname svg{width:14px;height:14px;opacity:.55}
-.gmbody{position:relative;flex:1;min-height:0}
-.gmbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
+/* ── the Games view: a module for each game, down the days ── */
+.gmb{container-type:size;background:radial-gradient(120% 90% at 85% 10%,color-mix(in srgb,var(--c) 55%,var(--base,var(--bg))),color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg))) 70%)}
+.list .gmb{height:150px}
+.list .gmb.gmstage{height:70vh}
+.gmgo{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:12px;overflow:hidden;text-align:left;color:inherit}
+/* the emoji is the cover: far too big for the block, tipped and running off the corner */
+.gmgo .gico{position:absolute;right:-12cqmin;top:-10cqmin;font-size:82cqmin;line-height:1;transform:rotate(12deg);filter:drop-shadow(0 6px 14px rgba(0,0,0,.18));transition:transform .35s cubic-bezier(.34,1.4,.64,1);pointer-events:none}
+.gmgo:hover .gico{transform:rotate(4deg) scale(1.07)}
+.gmgo b,.gmgo small,.gmlead{position:relative}
+.gmgo b{font-size:max(calc(19px * var(--fs,1)),9cqmin);font-weight:800;line-height:1.05;letter-spacing:-.01em;color:color-mix(in srgb,var(--c) 30%,var(--fg));text-shadow:0 0 12px var(--base,var(--bg)),0 0 3px var(--base,var(--bg))}
+.gmgo small{font-size:max(calc(13px * var(--fs,1)),3.4cqmin);line-height:1.3;color:var(--fg)}
+/* who's on top, on the cover */
+.gmlead{display:flex;flex-direction:column;gap:2px;padding:5px 8px;border-radius:8px;background:color-mix(in srgb,var(--base,var(--bg)) 78%,transparent)}
+.gmtop{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.gmtop i{font-style:normal;font-weight:600;white-space:nowrap}
+.gmtop u{text-decoration:none;min-width:0;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gmtop em{font-style:normal;margin-left:auto;font-weight:700;white-space:nowrap;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.gmx{position:absolute;right:12px;top:12px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font-size:15px;background:color-mix(in srgb,var(--base,var(--bg)) 78%,transparent)}
 /* ── Mahjong: the top and bottom players on the closed tile; the score sheet when open ── */
 .mod .mjst{display:block;margin-top:4px;line-height:1.35}
 /* the Mahjong tile turns the week into the standings: a block per player, its fill
@@ -1324,7 +1320,7 @@ async function load(){
 /* ═══ render ═══ */
 let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
-let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the game being played, and once its frame is in */
+let gmShow = false, gameNow = null;   /* the Games tile: the week shows the games; the one opened out */
 let sel = null;   /* phone layout: the day shown (0 = Mon), null = today or Monday */
 /* the phone layout: same breakpoint as the CSS */
 const phone = matchMedia("(max-width: 760px), (orientation: portrait)");
@@ -1382,7 +1378,6 @@ const arrow = (d, unit = "week") => `<button class="arrow" data-d="${d}" aria-la
 function render(){
   /* typed points survive redraws, but not losing the box (a phone keyboard opening resizes too) */
   if (mjShow && document.activeElement.matches(".mjb input")) return;
-  if (gameNow && $(phone.matches ? "daylist" : "g").querySelector("#gsframe")) return;      /* a redraw would restart the game */
   document.body.classList.toggle("mjview", mjShow || gmShow);
   if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
@@ -3104,7 +3099,6 @@ function filler(el){
   const c = el.cloneNode(true);
   c.removeAttribute("id");
   c.classList.remove("open", "settled", "landed", "closing");
-  c.querySelectorAll("iframe").forEach(f => f.remove());          /* a copy of a game would start playing */
   c.style.cssText += ";position:absolute;left:0;top:0;right:0;bottom:0;width:auto;height:auto;min-height:0;margin:0;transform:none";
   return c;
 }
@@ -3312,7 +3306,8 @@ function morphWeekPlay(layer, from, to){
       return { j, day, shifts };
     }).filter(d => d.shifts.some(Boolean));
     const opening = days.length ? MAZE.open + MAZE.margin : 0;
-    t0 = Math.max(t0, ...days.map(d => closedAt[d.j] - opening), coming ? closedAt[k] - opening : 0);
+    /* every day it crosses, lane or not: one still closing from the last wave is in the way */
+    t0 = Math.max(t0, ...closedAt.filter((_, j) => side < 0 ? j <= k : j >= k).map(t => t - opening));
     const at = t0 + opening;
     let end = at;
     for (const b of blocks){
@@ -3532,10 +3527,9 @@ function openEvent(id, { day, kind } = {}){
 }
 
 /* ═══ games ═══
-   The Games tile turns the week into every game, as modules down the days, with
-   the last day's column the leaderboards. Choosing a game grows its module over
-   the days, and it plays there in a frame running the games page's own game
-   (games.html?play=…&embed=1). To take a game out, take it out of this list.
+   The Games tile turns the week into every game, as modules down the days, each
+   with who's on top of its leaderboards on the cover. Pressing one opens it out over
+   the days in its own colour. To take a game out, take it out of this list.
    The list mirrors GAMES in games.js. */
 const GAME_LIST = [
   { id:"jim", cat:"Arcade", ico:"🟡", name:"The Jim Button", blurb:"The button that says the name of whoever's playing", isNew:true, c:"#FFB800" },
@@ -3550,7 +3544,8 @@ const GAME_LIST = [
   { id:"memory", cat:"Arcade", ico:"🃏", name:"Memory", blurb:"Match every pair in the fewest moves", c:"#FF375F" },
   { id:"mines", cat:"Arcade", ico:"💣", name:"Minesweeper", blurb:"Clear the board, flag the mines", c:"#8E8E93" },
   { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
-  { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" }
+  { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" },
+  { id:"hkmj", cat:"Arcade", ico:"🀄", name:"Hong Kong Mahjong", blurb:"Play bots to Hong Kong rules, Easy to Pro", c:"#E0303A" }
 ];
 const gameById = id => GAME_LIST.find(g => g.id === id);
 const hms = ms => { const t = Math.floor(Math.max(0, +ms || 0) / 1000), p = n => String(n).padStart(2, "0");
@@ -3560,6 +3555,7 @@ const LB_LIST = [
   { id:"classroom", name:"Classroom", metric:"high" }, { id:"snake", name:"Snake", metric:"high" },
   { id:"g2048", name:"2048", metric:"high" }, { id:"typing", name:"Typing race", metric:"wpm", fmt:v => v + " wpm" },
   { id:"react", name:"Reaction", metric:"fastest", fmt:v => v + " ms" },
+  { id:"hkmj", name:"Hong Kong Mahjong", metric:"high" },
   { id:"tetris", name:"Tetris Sprint", tetris:"sprintall", key:"time_ms", fmt:hms },
   { id:"tetris", name:"Tetris Survival", tetris:"zen", key:"time_ms", fmt:hms },
   { id:"tetris", name:"Tetris Zen", tetris:"zenscore", key:"best" }
@@ -3593,42 +3589,31 @@ function toggleGames(){
   toggleCalendar();
   if (viewTurn) viewTurn.then(go); else go();
 }
-/* the module grows first: a copy of the frame mid-move would load a second game */
-function playGame(id){
-  gameLive = null;
-  shiftWeek(() => gameNow = id);
-  (turning || Promise.resolve()).then(() => { if (gameNow === id){ gameLive = id; gameFrame(); } });
+/* who's on top of a game's boards: a line each, named when it has more than one */
+function leaderLines(g){
+  const rows = LB_LIST.map((b, i) => ({ b, i })).filter(x => x.b.id === g.id);
+  if (!rows.length) return "";
+  const line = ({ b, i }) => !signedIn ? "Sign in to see" : leadersFailed ? "Couldn't load" : !leaders ? "Loading…" : leaders[i] ?
+    `<u>${esc(leaders[i].who)}</u><em class="tnum">${esc(leaders[i].val)}</em>` : "No scores yet";
+  return `<span class="gmlead">` + rows.map(x => `<span class="gmtop">${rows.length > 1 ? `<i>${esc(x.b.name.replace(g.name, "").trim())}</i>` : "🏆"} ${line(x)}</span>`).join("") + `</span>`;
 }
-function gameFrame(){
-  const g = gameById(gameLive), body = document.querySelector(".gmbody");
-  if (!g || !body || body.firstChild) return;
-  const f = document.createElement("iframe");
-  f.id = "gsframe"; f.title = g.name; f.src = "/games.html?play=" + encodeURIComponent(g.id) + "&embed=1";
-  body.append(f);
-}
-const leaderLine = i => !signedIn ? "Sign in to see" : leadersFailed ? "Couldn't load" : !leaders ? "Loading…" : leaders[i] ?
-  `<b>${esc(leaders[i].who)}</b><span class="tnum">${esc(leaders[i].val)}</span>` : "No scores yet";
 function renderGames(nd){
-  const list = phone.matches, host = $(list ? "daylist" : "g"), cols = Math.max(1, nd - 1), GAP = 8;
-  const tall = Math.max(560, innerHeight - 174), H = Math.max(tall, 4 + LB_LIST.length * 64);
-  const block = (cls, who, c, body, y, h, span = 1) => `<div class="mjb gmb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
-  /* a stack down a column, filling it, like a day of lessons */
-  const stack = (items, draw) => { const h = (H - 8 - GAP * (items.length - 1)) / items.length; return items.map((it, i) => draw(it, 4 + i * (h + GAP), h)).join(""); };
-  const module = g => (y, h) => block("", "gm:" + g.id, g.c, `<button class="gmgo" data-g="${g.id}"><span class="gico" aria-hidden="true">${g.ico}</span><b>${esc(g.name)}</b><small>${esc(g.blurb)}</small></button>`, y, h);
-  const g = gameNow && gameById(gameNow);
-  const stage = g && block("gmstage", "gm:" + g.id, g.c, `<div class="gsbar"><button class="gsname" id="gsname" title="Close the game" aria-label="Close ${esc(g.name)}"><span class="gico" aria-hidden="true">${g.ico}</span><b>${esc(g.name)}</b><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div class="gmbody"></div>`, 4, H - 8, cols);
-  const boards = stack(LB_LIST, (b, y, h) => block("gmlb", "lb:" + LB_LIST.indexOf(b), gameById(b.id).c, `<span class="gmln">${esc(b.name)}</span><span class="gmtop">${leaderLine(LB_LIST.indexOf(b))}</span>`, y, h));
-  if (list) host.innerHTML = (stage || GAME_LIST.map(x => module(x)(0, 0)).join("")) + `<div class="sub-label">Leaderboards</div>` + boards;
+  const list = phone.matches, host = $(list ? "daylist" : "g"), GAP = 8, H = Math.max(560, innerHeight - 174);
+  const block = (g, cls, y, h, span = 1) => `<div class="mjb gmb ${cls}" data-sig="gm:${g.id}" data-who="gm:${g.id}" style="--c:${g.c};${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">` +
+    `<button class="gmgo" data-g="${g.id}"${cls ? ` aria-label="Close ${esc(g.name)}"` : ""}><span class="gico" aria-hidden="true">${g.ico}</span>${cls ? `<span class="gmx" aria-hidden="true">✕</span>` : ""}` +
+    `<b>${esc(g.name)}</b>${cls ? `<small>${esc(g.blurb)}</small>` : ""}${leaderLines(g)}</button></div>`;
+  /* a stack down a day, filling it, like a day of lessons */
+  const stack = games => { const h = (H - 8 - GAP * (games.length - 1)) / games.length; return games.map((g, i) => block(g, "", 4 + i * (h + GAP), h)).join(""); };
+  const open = gameNow && gameById(gameNow);
+  const stage = open && block(open, "gmstage", 4, H - 8, nd);
+  if (list) host.innerHTML = stage || GAME_LIST.map(g => block(g, "")).join("");
   else {
-    const shown = Array.from({ length:cols }, (_, k) => GAME_LIST.slice(Math.floor(k * GAME_LIST.length / cols), Math.floor((k + 1) * GAME_LIST.length / cols)));
-    const body = stage ? [stage, ...Array(cols - 1).fill("")] : shown.map(c => c.length ? stack(c, (x, y, h) => module(x)(y, h)) : "");
-    const head = (t, span) => `<div class="dh" style="grid-column:span ${span}"><span class="n">${t}</span></div>`;
-    host.innerHTML = `<div></div>` + head("Games", cols) + head("Leaderboards", 1) + `<div></div><div></div>` +
-      [...body, boards].map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+    const days = Array.from({ length:nd }, (_, k) => GAME_LIST.slice(Math.floor(k * GAME_LIST.length / nd), Math.floor((k + 1) * GAME_LIST.length / nd)));
+    const body = stage ? [stage, ...Array(nd - 1).fill("")] : days.map(d => d.length ? stack(d) : "");
+    host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Games</span></div><div></div><div></div>` +
+      body.map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
   }
-  host.querySelectorAll(".gmgo").forEach(b => b.onclick = () => playGame(b.dataset.g));
-  if ($("gsname")) $("gsname").onclick = () => { gameLive = null; shiftWeek(() => gameNow = null); };
-  if (gameLive) gameFrame();
+  host.querySelectorAll(".gmgo").forEach(b => b.onclick = () => shiftWeek(() => gameNow = gameNow ? null : b.dataset.g));
 }
 
 /* ═══ modules: widen tiles so every row is full ═══
@@ -3783,7 +3768,7 @@ async function mjAct(body){
 }
 function paintMj(){ paintMjTile(); if (mjShow) render(); }
 /* back to the week, from Mahjong or Games */
-function mjLeave(){ mjShow = gmShow = false; gameNow = gameLive = null; paintMjTile(); paintGmTile(); }
+function mjLeave(){ mjShow = gmShow = false; gameNow = null; paintMjTile(); paintGmTile(); }
 function toggleMj(){
   document.activeElement.blur();
   const flip = () => { const on = !mjShow; mjLeave(); mjShow = on; paintMjTile(); }, go = () => shiftWeek(flip);

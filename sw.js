@@ -19,7 +19,7 @@
      every cache, so a broken release can always be undone from the browser.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE = 'msc-' + CACHE_VERSION;
 
 /* The shell: enough to open the timetable and the revision page with no

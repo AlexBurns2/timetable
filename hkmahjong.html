@@ -3109,7 +3109,7 @@ function showStats() {
   const d = Stats.data, pct = (a, b) => b ? Math.round(100 * a / b) + '%' : '—';
   const pats = Object.entries(d.patterns).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const lv = ['easy', 'medium', 'hard', 'pro', 'online'].filter(k => d.byLevel[k]);
-  const o = modal(`<h2>Your stats</h2><p class="sub">Saved on this device.</p>
+  const o = modal(`<h2>Your stats</h2><p class="sub">${Cloud.on ? 'Saved to your account.' : 'Saved on this device.'}</p>
     <div class="statgrid">
       <div><b>${d.games}</b><span>games</span></div><div><b>${d.hands}</b><span>hands</span></div><div><b>${d.wins}</b><span>hands won</span></div>
       <div><b>${pct(d.wins, d.hands)}</b><span>win rate</span></div><div><b>${d.selfDraws}</b><span>self-drawn wins</span></div><div><b>${d.bestFaan || '—'}</b><span>biggest hand (faan)</span></div>
