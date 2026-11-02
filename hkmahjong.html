@@ -693,7 +693,6 @@ main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none}
   .side{display:none}
   .table2,.tablewrap{height:auto;flex:1;min-height:0}
   .felt3{min-height:0}
-  .phleave{margin-left:auto}
   .rack{padding:12px 6px 6px;gap:6px;min-height:0}
   .hand{gap:1px}
 }
@@ -703,8 +702,8 @@ main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none}
   .choice,.mode{padding:10px}
   .choice .face{display:none}
   .homefoot{display:none}
-  .modes{grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-  .mode span,.choice small{display:none}
+  .choices{grid-template-columns:1fr 1fr}
+  .modes{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
   .table2{min-height:0}
   .np-meta .tag{display:none}
   .np-name{max-width:58px}
@@ -763,7 +762,7 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .playas{color:var(--muted)}
 .playas input{background:var(--panel-2);border:var(--card-border);color:var(--text)}
 .playas input[readonly]{cursor:default}
-.choices{grid-template-columns:repeat(2,1fr);gap:12px}
+.choices{grid-template-columns:repeat(4,1fr);gap:12px}
 .choice,.mode{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);padding:16px;text-align:left;color:var(--text);transition:transform .15s,border-color .15s}
 .choice:hover,.mode:hover{background:var(--panel);border-color:var(--accent);transform:translateY(-2px)}
 .choice .face{width:52px;border-radius:8px;box-shadow:0 2px 0 var(--line);margin:0 0 10px}
@@ -771,8 +770,9 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .choice .face b{font-size:30px}
 .choice strong,.mode b{font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt);font-size:1.0625rem;color:var(--text)}
 .choice small,.mode span,.homefoot{color:var(--muted);font-size:.8125rem}
-.modes{margin-top:12px;gap:12px;grid-template-columns:repeat(5,1fr)}
-@media (min-width:981px){.phleave{display:none}}
+.modes{margin-top:12px;gap:12px;grid-template-columns:repeat(3,1fr)}
+.mode{padding:10px 16px;text-align:center}
+.gleave{margin-left:auto}
 .homefoot{margin-top:18px}
 .hints,.hints .iconbtn{color:var(--muted)}
 .hints .iconbtn{border-color:var(--line)}
@@ -1823,33 +1823,32 @@ function renderHome() {
     <div class="sign" aria-hidden="true"><span>麻</span><span>雀</span></div>
     <div class="home-copy">
       <h1>Hong Kong Mahjong</h1>
-      <p>Four players, 144 tiles, 3 faan to win, against bots from Easy to Pro.</p>
+      <p>Hong Kong rules against bots, from Easy to Pro.</p>
  <div class="playas"><button class="avbtn" id="homeAv" title="Change your picture">${avatarHTML(App.avatar, App.name)}</button><label for="nameIn">Playing as</label><input id="nameIn" type="text" maxlength="16" value="${esc(App.name)}" autocomplete="nickname"${SITE_NAME ? ' readonly title="From your timetable"' : ''}>
-        <button class="btn red quick" id="quickPlay">Quick game vs ${cap(lv)} bots</button></div>
+        <button class="btn red quick" id="quickPlay">Play now vs ${cap(lv)} bots</button></div>
     </div>
   </section>
-  <nav class="choices" aria-label="Game modes">
-    <button class="choice" data-go="bots"><span class="face"><b>機</b></span><strong>Play bots</strong><small>Pick Easy, Medium, Hard or Pro</small></button>
+  <nav class="choices" aria-label="Ways to play">
+    <button class="choice" data-go="bots"><span class="face"><b>機</b></span><strong>Choose bots</strong><small>Pick each bot's level and the rules</small></button>
+    <button class="choice" data-mode="daily"><span class="face"><b>日</b></span><strong>Daily deal</strong><small>${store.get('daily', {})[dailyKey()] != null ? `Your best today: ${fmt(store.get('daily', {})[dailyKey()])}` : 'Same deal for everyone today'}</small></button>
+    <button class="choice" data-mode="speed"><span class="face"><b>快</b></span><strong>Quick turns</strong><small>5 seconds a turn</small></button>
+    <button class="choice" data-mode="practice"><span class="face"><b>練</b></span><strong>Practice</strong><small>See the bots' hands and advice</small></button>
     ${MULTIPLAYER ? `<button class="choice" data-go="create"><span class="face"><b>開</b></span><strong>Open a room</strong><small>Get a code for up to 3 friends</small></button>
     <button class="choice" data-go="join"><span class="face"><b>入</b></span><strong>Join a room</strong><small>Type the code a friend sent you</small></button>` : ''}
-    <button class="choice" data-go="guide"><span class="face"><b>書</b></span><strong>Learn the rules</strong><small>Every set and scoring hand</small></button>
   </nav>
   <div class="modes">
-    <button class="mode" data-mode="daily"><b>Daily deal</b><span>Same deal for everyone today vs Hard bots${store.get('daily', {})[dailyKey()] != null ? ` · your best ${fmt(store.get('daily', {})[dailyKey()])}` : ''}</span></button>
-    <button class="mode" data-mode="practice"><b>Practice</b><span>See the bots' hands and the Pro bot's advice</span></button>
-    <button class="mode" data-mode="speed"><b>Quick turns</b><span>5-second turns against faster bots</span></button>
-    <button class="mode" id="lookBtn"><b>Settings</b><span>Speed, hints, tiles and sound</span></button>
-    <button class="mode" id="statsBtn"><b>Stats</b><span>Your wins and best hands</span></button>
+    <button class="mode" data-go="guide"><b>Rules</b></button>
+    <button class="mode" id="statsBtn"><b>Stats</b></button>
+    <button class="mode" id="lookBtn"><b>Settings</b></button>
   </div>
-  <div id="homeErr" class="err" style="text-align:center"></div>
-  <p class="homefoot">Played to Hong Kong rules with flowers, seasons and faan scoring. Tile colours and corner numbers are under Settings.</p>`;
+  <div id="homeErr" class="err" style="text-align:center"></div>`;
   $('#nameIn').oninput = e => { App.name = cleanName(e.target.value) || App.name; store.set('name', App.name); };
   $('#quickPlay').onclick = startBotGame;
   $('#homeAv').onclick = showProfile;
   $('#lookBtn').onclick = () => showAppearance();
   $('#statsBtn').onclick = showStats;
   $('#home').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => startBotGame(b.dataset.mode));
-  $('#home').querySelectorAll('.choice').forEach(c => c.onclick = () => {
+  $('#home').querySelectorAll('[data-go]').forEach(c => c.onclick = () => {
     const g = c.dataset.go;
     if (g === 'bots') show('botsetup');
     else if (g === 'create') createRoom();
@@ -1868,8 +1867,7 @@ const SETTING_DEFS = [
   ['payment', 'Paying for a discard win', [['all', 'Discarder pays all'], ['half', 'Discarder pays half']]],
   ['sevenPairs', 'Seven Pairs (4 faan)', [[true, 'Allowed'], [false, 'Not allowed']]],
   ['turnTime', 'Turn timer', [[0, 'Off'], [15, '15 s'], [30, '30 s'], [60, '60 s']]],
-  ['claimTime', 'Claim timer', [[0, 'Off'], [8, '8 s'], [12, '12 s'], [20, '20 s']]],
-  ['speed', 'Bot speed', Object.entries(SPEED_NAMES)]
+  ['claimTime', 'Claim timer', [[0, 'Off'], [8, '8 s'], [12, '12 s'], [20, '20 s']]]
 ];
 function settingsHTML(S, editable) {
   return `<div class="settings">${SETTING_DEFS.map(([k, label, opts]) => `<label>${label}<select data-k="${k}" ${editable ? '' : 'disabled'}>${opts.map(([v, l]) => `<option value="${String(v)}" ${String(S[k]) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`).join('')}</div>`;
@@ -1885,7 +1883,7 @@ function bindSettings(root, S, onChange) {
 function renderBotSetup() {
   const el = $('#botsetup');
   el.innerHTML = `<div class="grid2">
-   <div class="panel"><h2>Play bots</h2><p class="sub">Pick a difficulty for each opponent.</p>
+   <div class="panel"><h2>Choose bots</h2><p class="sub">Pick a level for each opponent.</p>
      <div class="seatrow"><div class="seatno">1</div><div class="nm">${esc(App.name)} <small>(you)</small></div></div>
      ${[0, 1, 2].map(i => `<div class="seatrow"><div class="seatno">${i + 2}</div><div class="nm">${BOT_NAMES[i]}</div><div class="lvls" data-i="${i}">${LEVELS.map(l => `<button class="lvl ${App.botLevels[i] === l ? 'on' : ''}" data-l="${l}">${cap(l)}</button>`).join('')}</div></div>`).join('')}
      <h3>Set all bots to</h3><div class="lvls" id="allLv">${LEVELS.map(l => `<button class="lvl" data-l="${l}">${cap(l)}</button>`).join('')}</div>
@@ -2071,6 +2069,7 @@ function onGameClick(e) {
     else if (a === 'replay') showReplay(App.lastHandView || App.view);
     else if (a === 'quick') Net.sendChat(QUICK_LINES[+b.dataset.i]);
     else if (a === 'settings') showAppearance();
+    else if (a === 'rules') showGuide();
     return;
   }
   const tb = e.target.closest('#tabs button');
@@ -2206,7 +2205,7 @@ function renderActions() {
     const tn = V.tn;
     h = `<span class="msg">${V.ph === 'claim' ? 'Players are deciding on the discard…' : `Waiting for <b>${esc(nameOf(tn))}</b>…`}</span>${timer}`;
   }
-  h += `<span class="reacts" aria-label="Reactions">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}" title="Send a reaction">${e}</button>`).join('')}<button class="chatbtn ${App.chatOpen ? 'on' : ''}" data-act="chat" title="Open table chat">💬 Chat<span class="badge" ${App.unread ? '' : 'hidden'}>${App.unread || ''}</span></button></span>`;
+  h += `<span class="reacts" aria-label="Reactions">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}" title="Send a reaction">${e}</button>`).join('')}${MULTIPLAYER ? `<button class="chatbtn ${App.chatOpen ? 'on' : ''}" data-act="chat" title="Open table chat">💬 Chat<span class="badge" ${App.unread ? '' : 'hidden'}>${App.unread || ''}</span></button>` : ''}</span>`;
   el.innerHTML = `<div class="myplate">${seatPlateHTML(V, mySeatIdx())}</div>` + h; tickTimer();
 }
 function myCtx(V, s, extra) {
@@ -2222,10 +2221,11 @@ function waitsFor(tiles, melds, V, s) {
 }
 function renderHints() {
   const el = $('#hints'), V = App.view; if (!V) return;
-  const toggle = `<button class="iconbtn" data-act="settings">⚙ Settings</button><button class="iconbtn phleave" data-act="leave">Leave game</button>`;
+  const toggle = `<button class="iconbtn" data-act="settings">⚙ Settings</button><button class="iconbtn" data-act="rules">Rules</button>`;
+  const leave = `<button class="iconbtn gleave" data-act="leave">Leave game</button>`;
   const tip = practiceTip();
   const tipHTML = tip ? `<span class="tipline">${esc(tip.text)}</span>` : '';
-  if (!App.hints || App.seat < 0 || !App.priv || V.ph === 'over') { el.innerHTML = toggle + tipHTML; return; }
+  if (!App.hints || App.seat < 0 || !App.priv || V.ph === 'over') { el.innerHTML = toggle + tipHTML + leave; return; }
   const s = mySeatIdx(), melds = V.P[s].m.map(meldObj), all = dec(App.priv.h);
   let base = null, label = '';
   const need = 4 - melds.length;
@@ -2240,7 +2240,7 @@ function renderHints() {
     if (w.length) txt = `<span>${label}:</span>` + w.map(x => `<span class="${x.ok ? '' : 'bad'}" title="${x.ok ? x.faan + ' faan' : (x.sdOk ? 'Only enough faan if self-drawn' : 'Not enough faan to win')}">${tilesHTML([x.t])}</span>`).join('') + (w.some(x => !x.ok) ? '<span style="color:#8a94a3">(faded = not enough faan on a discard)</span>' : '');
     else { const sh = shantenAll(counts(base), melds.length, V.S.sevenPairs && melds.length === 0); const pre = label === 'Waiting for' ? 'You are ' : 'That discard leaves you '; txt = `<span>${sh <= 0 ? 'Ready, but no winning tile meets the minimum faan' : pre + sh + ' tile' + (sh > 1 ? 's' : '') + ' away from ready'}</span>`; }
   } else if (App.priv.my) txt = '<span>Select a tile to see what you would be waiting for.</span>';
-  el.innerHTML = toggle + tipHTML + txt;
+  el.innerHTML = toggle + tipHTML + txt + leave;
 }
 function tickTimer() {
   if (!App.deadline) return;
@@ -2255,7 +2255,7 @@ setInterval(tickTimer, 250);
 function renderSide() {
   const V = App.view; if (!V) return;
   const online = App.role === 'host' || App.role === 'client';
-  const tabs = [['table', 'Table'], ['log', 'Game Log'], ['scoring', 'Scoring']];
+  const tabs = [['table', 'Table'], ['log', 'Game Log']];
   if (!tabs.some(t => t[0] === App.tab)) App.tab = 'table';
   $('#tabs').innerHTML = tabs.map(([k, l]) => `<button data-tab="${k}" class="${App.tab === k ? 'on' : ''}">${l}</button>`).join('');
   const body = $('#tabbody');
@@ -2270,16 +2270,13 @@ function renderSide() {
       <div class="kv"><span>Limit</span><b>${S.maxFaan} faan</b></div>
       <div class="kv"><span>Points</span><b>${S.spicy === 'full' ? 'Full' : 'Half'} spicy</b></div>
       <div class="kv"><span>Discard win</span><b>${S.payment === 'all' ? 'Discarder pays all' : 'Discarder pays half'}</b></div>
-      ${online ? `<div class="kv"><span>Room code</span><b>${esc(Net.code)}</b></div>` : ''}
-      <div class="btnrow" style="justify-content:center"><button class="btn red" data-act="leave">Leave game</button></div>`;
+      ${online ? `<div class="kv"><span>Room code</span><b>${esc(Net.code)}</b></div>` : ''}`;
     $('#chatform').innerHTML = '';
   } else if (App.tab === 'log') {
     body.innerHTML = `${App.lastHandView ? '<div class="btnrow" style="margin:0 0 10px"><button class="btn small" data-act="replay">Replay last hand</button></div>' : ''}<div class="log">${App.logs.map(l => `<div class="k-${l.k}">${esc(l.m)}</div>`).join('')}</div>`;
     body.scrollTop = body.scrollHeight; $('#chatform').innerHTML = '';
   } else if (App.tab === 'chat') {
     renderChat();
-  } else {
-    body.innerHTML = scoringRefHTML(); $('#chatform').innerHTML = '';
   }
 }
 function renderChat() {
@@ -2353,20 +2350,6 @@ function leaveGame(force) {
 }
 
 // ---------- guide / scoring reference ----------
-function scoringRefHTML() {
-  const rows = (arr) => arr.map(([a, b, c]) => `<tr><td><b>${a}</b>${c ? `<br><span style="color:#6b7484">${c}</span>` : ''}</td><td>${b}</td></tr>`).join('');
-  return `<table class="reftable"><tr><th>Hand pattern</th><th>Faan</th></tr>${rows([
-    ['Common Hand', 1, 'Every set is a chow'], ['All in Triplets', 3, 'Every set is a pung or kong'], ['Mixed One Suit', 3, 'One suit plus honours'], ['All One Suit', 7, 'One suit, no honours'],
-    ['Mixed Orphans', '1', '1s, 9s and honours only (+3 for All in Triplets)'], ['Seven Pairs', 4, 'Optional rule'],
-    ['Small Dragons', 3, 'Two dragon pungs + dragon pair'], ['Great Dragons', 5, 'All three dragon pungs'], ['Small Winds', 6, 'Three wind pungs + wind pair'],
-    ['Dragon pung', 1, 'Each'], ['Seat / Prevailing wind pung', 1, 'Each (2 if both)']])}
-    <tr><th>Bonus tiles</th><th></th></tr>${rows([['No flowers or seasons', 1], ['Own flower / own season', 1, 'Each'], ['All four flowers / seasons', 2, 'Each set']])}
-    <tr><th>How you won</th><th></th></tr>${rows([['Self-drawn', 1], ['Concealed hand', 1, 'No claimed sets'], ['Robbing the kong', 1], ['Win by last catch', 1, 'Last wall tile or last discard'], ['Win by kong', 1, 'On a kong replacement tile'], ['Win by double kong', 8]])}
-    <tr><th>Limit hands</th><th></th></tr>${rows([['Heavenly / Earthly Hand', 13], ['Thirteen Orphans', 13], ['Great Winds', 13], ['All Kongs', 13], ['Self Triplets', 10, 'Four concealed pungs'], ['All Honor Tiles', 10], ['Orphans', 10, 'Only 1s and 9s'], ['Nine Gates', 10]])}
-    </table><h4 style="margin:14px 0 6px">Faan → points</h4><table class="reftable"><tr><th>Faan</th><th>Half</th><th>Full</th></tr>${HALF_SPICY.map((v, i) => `<tr><td>${i}</td><td>${v}</td><td>${FULL_SPICY[i]}</td></tr>`).join('')}</table>
-    <div class="btnrow"><button class="btn" onclick="showGuide('hands')">Full rules with examples</button></div>
-    <p style="font-size:12.5px;color:#6b7484">Self-drawn: each other player pays half the table value. Discard: the discarder pays the full value (or half, with the other two paying a quarter each, if that rule is chosen).</p>`;
-}
 // ---------- appearance ----------
 function refreshScreen() {
   if (App.screen === 'game') renderGame(); else show(App.screen);
@@ -2376,26 +2359,24 @@ function showAppearance(keepScroll) {
   const sample = [0, 13, 26, 27, 31, 37];
   const chips = (obj, cur, attr) => Object.entries(obj).map(([k, v]) => `<button class="chip ${cur === k ? 'on' : ''}" ${attr}="${k}">${Array.isArray(v) && v[1] && typeof v[1] === 'string' ? `<i style="background:${v[1]}"></i>` : Array.isArray(v) && Array.isArray(v[1]) ? `<i style="background:linear-gradient(${v[1][0]},${v[1][1]})"></i>` : ''}${esc(Array.isArray(v) ? v[0] : v)}</button>`).join('');
   const sw = (id, on, title, desc) => `<div class="toggle"><div><b>${title}</b><br><small>${desc}</small></div><button class="switch ${on ? 'on' : ''}" id="${id}" aria-label="${esc(title)}"></button></div>`;
-  const o = modal(`<h2>Settings</h2><p class="sub">Saved on this device.</p>
-    <h3 class="aph">Bot speed</h3><p class="sub" style="margin:0 0 6px">Instant still stops to ask when you can win, kong, pung or chow.</p>
+  const o = modal(`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h2 style="margin:0">Settings</h2><button class="btn primary" id="lookDone">Done</button></div>
+    <h3 class="aph">Game</h3><p class="sub" style="margin:0 0 6px">Bot speed. Instant still stops to ask when you can win, kong, pung or chow.</p>
     <div class="chips">${Object.entries(SPEED_NAMES).map(([k, n]) => `<button class="chip ${(App.ctl ? App.ctl.g.S.speed : App.botS.speed) === k ? 'on' : ''}" data-speed="${k}">${n}</button>`).join('')}</div>
-    <h3 class="aph">Hints</h3>
     ${sw('swHints', App.hints, 'Show hints', 'Point at a tile to light up every copy, and see what your hand is waiting for.')}
-    <h3 class="aph">Tile colours</h3>
+    ${sw('swAnim', Fx.anim, 'Motion', 'Discards slide into place and calls fade in beside the player.')}
+    <h3 class="aph">Tiles</h3>
     <div class="themes">${Object.entries(THEMES).map(([id, t]) => `<div class="theme ${Look.theme === id ? 'on' : ''}" data-theme="${id}" style="${themeStyle(id)}"><div class="tiles">${sample.map(x => tileHTML(x)).join('')}${backHTML()}</div><b>${t.name}${id === 'classic' ? ' <span class="tag">standard</span>' : ''}</b><small>${t.desc}</small></div>`).join('')}</div>
-    <h3 class="aph">Tile backs</h3>
+    <p class="sub" style="margin:10px 0 6px">Backs</p>
     <div class="backpicks">${Object.entries(BACK_DESIGNS).map(([k, n]) => `<button class="backpick ${Fx.back === k ? 'on' : ''}" data-back="${k}"><span class="tiles back-${k}" style="--w:34px">${backHTML()}${backHTML()}</span><small>${n}</small></button>`).join('')}</div>
     <div class="chips">${chips(BACK_COLOURS, Fx.backCol, 'data-backcol')}</div>
+    ${sw('swShiny', Fx.shiny, 'Glossy tiles', 'A soft sheen on the tile faces.')}
+    ${sw('swLabels', Look.labels, 'English values in the corner', 'Shows 1–9, E/S/W/N and C/F/B in the top-left of each tile.')}
     <h3 class="aph">Table</h3>
     <p class="sub" style="margin:0 0 6px">Cloth</p><div class="chips">${chips(FELTS, Fx.felt, 'data-felt')}</div>
     <p class="sub" style="margin:10px 0 6px">Wood</p><div class="chips">${Object.entries(WOODS).map(([k, n]) => `<button class="chip ${Fx.wood === k ? 'on' : ''}" data-wood="${k}"><i class="woodsw wood-${k}"></i>${n}</button>`).join('')}</div>
-    <h3 class="aph">Effects</h3>
-    ${sw('swShiny', Fx.shiny, 'Glossy tiles', 'A soft sheen on the tile faces.')}
-    ${sw('swAnim', Fx.anim, 'Motion', 'Discards slide into place and calls fade in beside the player.')}
-    ${sw('swLabels', Look.labels, 'English values in the corner', 'Shows 1–9, E/S/W/N and C/F/B in the top-left of each tile.')}
     <h3 class="aph">Sound</h3><div class="chips">${chips(SOUND_PACKS, Fx.pack, 'data-pack')}</div>
     <p class="sub" style="font-size:13px;margin-top:6px">Spoken calls use your device's built-in voices, in Cantonese where available.</p>
-    <div class="btnrow"><button class="btn red" id="lookDone">Done</button></div>`);
+`);
   o.querySelector('.modal').classList.add('wide');
   o.querySelector('.modal').scrollTop = prevScroll;
   const redo = () => { applyFx(); refreshScreen(); showAppearance(true); };
