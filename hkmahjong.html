@@ -735,6 +735,7 @@ html.andre .act:not(.win):not(.disc):not(.pung):not(.chow):not(.kong):not(.pass)
 html.andre .nplate{border-radius:10px;padding:10px 16px;gap:12px}
 html.andre .myplate .nplate{padding:8px 16px 8px 10px}
 html.andre :is(.pl1,.pl3) .nplate{padding:12px 8px;gap:6px}
+html.andre :is(.pl1,.pl3) .np-name{white-space:normal;overflow:visible;text-align:center;line-height:1.15}
 /* the rack, the top row and the row under it, all centred */
 html.andre .rack{padding:12px;align-items:center}
 html.andre .rk2{align-items:center}
@@ -1762,7 +1763,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fmt = x => (Math.round(x * 100) / 100).toString();
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const LEVELS = ['easy', 'medium', 'hard', 'pro'];
-const BOT_NAMES = ['Bot Alpha', 'Bot Bravo', 'Bot Charlie', 'Bot Delta', 'Bot Echo', 'Bot Foxtrot', 'Bot Hotel'];
+const BOT_NAMES = ['Andy Lau', 'Stephen Chow', 'Donnie Yen', 'Bot Delta', 'Bot Echo', 'Bot Foxtrot', 'Bot Hotel'];
 const SPEED = { instant: 0, fast: 320, normal: 750, slow: 1300 };
 const SPEED_NAMES = { instant: 'Instant', fast: 'Fast', normal: 'Normal', slow: 'Slow' };
 const store = {
@@ -1795,6 +1796,7 @@ const AV_COLS = ['#c8102e', '#17694f', '#1c2b5a', '#b45309', '#7c3aed', '#0e7490
 const PHOTO_RE = /^i:data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
 function cleanAvatar(a) {
   if (typeof a !== 'string') return '';
+  if (BOT_AV.includes(a)) return a;      /* the bots' photos, which are files rather than an uploaded picture */
   if (a.startsWith('i:')) return (a.length < 4000 && PHOTO_RE.test(a)) ? a : '';
   if (/^e:\d{1,2}$/.test(a) && AV_PRESETS[+a.slice(2)]) return a;
   return '';
@@ -1806,7 +1808,7 @@ function avatarHTML(av, name, cls) {
   const n = String(name || '?').trim(); let h = 0; for (const ch of n) h = (h * 31 + ch.codePointAt(0)) >>> 0;
   return `<span class="av ini ${cls || ''}" style="background:${AV_COLS[h % AV_COLS.length]}">${esc(([...n][0] || '?').toUpperCase())}</span>`;
 }
-const BOT_AV = ['e:0', 'e:2', 'e:1', 'e:3', 'e:9', 'e:11', 'e:8'];
+const BOT_AV = ['i:/images/bots/andy-lau.jpg', 'i:/images/bots/stephen-chow.jpg', 'i:/images/bots/donnie-yen.jpg', 'e:3', 'e:9', 'e:11', 'e:8'];
 const botAvatar = name => { const i = BOT_NAMES.indexOf(name); return i >= 0 ? BOT_AV[i] : 'e:7'; };
 function seatAvatar(V, s) {
   const P = V.P[s];
@@ -2680,6 +2682,7 @@ const GUIDE = {
       <li><b>Hints</b> show which tiles would complete your hand; faded ones wouldn't reach the minimum faan on a discard.</li></ul>
     <h3>Keyboard</h3><p>On your turn, ← and → move along your hand and Enter discards. When a discard can be claimed: W win, P pung, K kong, C chow, Esc pass. W also declares a self-drawn win.</p>
     <h3>Settings</h3><p>Use <b>Settings</b> on the menu or at the table to change bot speed, hints, tile colours and sound.</p>
+    <h3>Photo credits</h3><p>Andy Lau: mR.Hom, CC BY 2.5. Stephen Chow: Kit Liew, CC BY 3.0. Donnie Yen: Will629, CC0. All from Wikimedia Commons, cropped.</p>
     ${MULTIPLAYER ? `<h3>Online rooms</h3><p>Create a Game gives you a 5-character code; friends choose Join a Game on this same page and type it in. The host runs the game, so it ends if the host closes the page. A player who drops out is replaced by a bot until they rejoin.</p>` : ''}`]
 };
 function showGuide(section) {
