@@ -19,34 +19,45 @@ A week change plays on one shared clock, starting the moment the button is press
 | When | What happens |
 |---|---|
 | 0 | Everything starts. Don't wait for anything, including the page scrolling up. |
-| 0 to 180ms | The text on a block that's changing fades out. |
 | 0 to 220ms | Headings that are changing fade out. |
-| 0 to 440ms | Blocks move up or down to their new height. Blocks with nothing to become close up. |
-| 440 to 880ms | Blocks move sideways. Colour and content change: the new look fades in across the whole step, and the old look fades out over the last 55%. Score fills and graph lines grow. |
-| 760 to 1080ms | Headings that are changing fade in. |
-| 880 to 1320ms | New blocks open up. |
+| 0 to 440ms | Blocks with nothing to become slide off. Skipped if there are none, and everything below starts 440ms sooner. |
+| 440 to 620ms | The text on a block that's changing fades out. |
+| 440 to 880ms | Blocks move up or down to their new height. |
+| 880 to 1320ms | Blocks move sideways. Colour and content change: the new look fades in across the whole step, and the old look fades out over the last 55%. Score fills and graph lines grow. |
+| 1200 to 1520ms | Headings that are changing fade in. |
+| 1320 to 1760ms | New blocks slide on. |
+
+## Which block becomes which
+
+`matchBlocks` pairs old blocks with new ones, closest first and in any day:
+
+1. The same block (`data-sig`).
+2. The same thing at an overlapping time (`data-who` and `data-span`).
+3. Whatever's closest. Inside a block's own width counts as no distance, so a two-day
+   Mahjong block is as near to a lesson in either day.
+
+A pair is only taken if it can make its moves without touching a pair already taken.
+Anything left over slides off or on.
 
 ## No block touches another
 
 No block may overlap another at any moment, at any step of an animation. This is
 why the order above can't change:
 
-1. **Blocks never cross.** Pairs that would swap places aren't moved. `keepOrder`
-   keeps the most blocks it can in their order, and the rest close up in one place
-   and open up in the other. For example, when a game changes the ranks, a player
-   who jumps up closes and reopens.
-2. **Blocks with nothing to become close up inside their own day.** They shrink to
-   nothing between their neighbours while those neighbours move. They never slide
-   across another day.
-3. **Everything leaves before anything spreads.** Blocks that are closing finish by
-   440ms, and sideways moves start after that. A block getting wider always has
-   clear space.
-4. **New blocks open last,** once everything else has stopped, into space that's
-   already clear.
+1. **Blocks never cross.** `matchBlocks` turns down a pair whose path touches another,
+   so `pathsClash` has to match what the blocks really do. For example, when a game
+   changes the ranks, a player who jumps up slides off and on again.
+2. **Blocks slide off before anything else moves.** Nothing is in their way but blocks
+   standing still.
+3. **Blocks slide off the top or bottom if no staying block is in the way.** Otherwise
+   they slide to the side inside their own slot, cut off at its edge, so they never
+   cross another day. Sliding off the top or bottom is cut off at the edge of the
+   timetable, and every block going the same way travels the same distance.
+4. **New blocks slide on last,** once everything else has stopped, by the same routes,
+   into space that's already clear.
 
-Rules 1 and 2 work because every block moves on the same clock with the same easing.
-Two blocks in order at the start and end stay in order the whole way. Give one block
-a different delay, duration or easing and this breaks.
+Rule 1 works because every block moves on the same clock with the same easing. Give
+one block a different delay, duration or easing and this breaks.
 
 ## Adding an animation
 
@@ -54,8 +65,7 @@ To change what the week shows, change the state inside `shiftWeek`:
 
 ```js
 const flip = () => { myThing = !myThing; paintMyTile(); };
-shiftWeek(flip);        // a block stays the same block: same subject, same period
-shiftWeek(flip, true);  // loose: any overlapping blocks can turn into each other
+shiftWeek(flip);
 ```
 
 `shiftWeek` measures the week before and after and works out every move itself. It
@@ -76,7 +86,7 @@ Anything that draws blocks needs:
 - **Week arrows** use `turnWeek`, with lanes that open to let blocks through. It's a
   different animation, and a press can speed it up, so it keeps its own timing.
 - **Calendar** uses `morphPlay`. It plays on the same clock but sends days out
-  sideways along rows. Don't copy that for a new animation: rule 2 above applies.
+  sideways along rows. Don't copy that for a new animation: rule 3 above applies.
 - **Opening a tile** (`flyTiles`) and **opening a lesson** only move the thing you
   pressed.
 
@@ -89,6 +99,6 @@ morphing.forEach(a => { a.pause(); a.currentTime = 600; });
 ```
 
 Then compare the rectangles of `.morph .mp`, skipping pieces with no height and the
-headings (their inline `border-radius` reads `0px`). No two should overlap by more
-than 1px. Check Who's free, Custom periods and Mahjong in both directions, plus saving
+headings (their inline `border-radius` reads `0px`). Cut a sliding piece down to its
+`.mw` parent first. No two should overlap by more than 1px. Check Who's free, Custom periods and Mahjong in both directions, plus saving
 a game that changes the ranks.
