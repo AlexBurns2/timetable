@@ -17,7 +17,7 @@ function andreLook() {
   const top = parent.document.documentElement, cs = parent.getComputedStyle(top), box = parent.document.querySelector('.gmstage');
   const v = k => cs.getPropertyValue(k).trim(), font = parent.getComputedStyle(parent.document.body).fontFamily;
   const set = { '--bg': box ? parent.getComputedStyle(box).backgroundColor : v('--bg'), '--bg-img': 'none', '--panel': v('--base') || v('--bg'), '--panel-2': v('--fill'), '--line': v('--fill2'),
-    '--text': v('--fg'), '--muted': v('--fg2'), '--accent': v('--blue'), '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
+    '--text': v('--fg'), '--muted': v('--fg2'), '--accent': '#BC1F2A', '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
     '--radius': '10px', '--card-radius': '10px', '--card-border': '0 solid transparent', '--shadow': 'none', '--shadow-hi': 'none', '--display-w': '600', '--display-ls': '0', '--display-tt': 'none' };
   /* a stylesheet, not inline: theme.js clears inline colours whenever it reapplies the site's skin */
   const sheet = document.getElementById('andreLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'andreLook' }));
@@ -712,7 +712,42 @@ html.andre .modal{background:var(--bg);color:var(--text);box-shadow:none}
 html.andre .modal :is(.pay,.wintiles,.chip,.theme,.backpick,.statgrid div,.ach),html.andre .modal .btn:not(.primary):not(.red){background:var(--mj-box);color:var(--text);border-color:transparent}
 html.andre .modal :is(.sub,small){color:var(--text)}
 html.andre .reacts{border-left:0}
-html.andre .nplate{border-radius:10px}
+/* menus: no white, shades of red */
+html.andre :is(.choice,.mode,.panel,.playas input){background:var(--mj-box);color:var(--text);border:0;box-shadow:none}
+html.andre :is(.choice,.mode):hover{background:color-mix(in srgb,#fff 48%,var(--bg))}
+html.andre :is(.choice small,.mode span,.panel .sub,.playas,.home-copy p,.settings label){color:var(--text)}
+html.andre :is(select,.lvl,.seatno){background:var(--bg);color:var(--text);border:0}
+html.andre .panel .note{background:var(--bg);color:var(--text);border:0}
+html.andre .panel .btn:not(.primary):not(.red){background:var(--bg);color:var(--text);border:0}
+html.andre .gnav button{color:var(--text)}
+html.andre .gnav button.on{background:var(--mj-box);color:var(--text)}
+html.andre .modal .note{background:var(--mj-box);color:var(--text);border:0}
+html.andre .modal .gtable :is(td,th){border-color:var(--mj-box)}
+/* no blue: red, white or black */
+html.andre{--in:#111!important;--ik:#111!important}
+html.andre .av{background:#BC1F2A!important;color:#fff;border-color:transparent}
+html.andre .choice .face b{color:#BC1F2A!important}
+html.andre :is(.plate .wb,.sp-wind){color:#111}
+html.andre .log :is(.k-c,.k-h,.k-w){color:var(--text)}
+html.andre input[type=text]:focus{outline-color:#BC1F2A;border-color:transparent}
+html.andre .theme:hover{border-color:#BC1F2A}
+html.andre .act:not(.win):not(.disc):not(.pung):not(.chow):not(.kong):not(.pass){background:#BC1F2A}
+html.andre .nplate{border-radius:10px;padding:10px 16px;gap:12px}
+html.andre .myplate .nplate{padding:8px 16px 8px 10px}
+html.andre :is(.pl1,.pl3) .nplate{padding:12px 8px;gap:6px}
+/* the rack, the top row and the row under it, all centred */
+html.andre .rack{padding:12px;align-items:center}
+html.andre .rk2{align-items:center}
+html.andre .rk2 .rk-melds{align-items:center}
+html.andre :is(.pl1,.pl3){align-self:center}
+html.andre .hints{justify-content:center;gap:16px;padding:4px 0}
+html.andre .hints .iconbtn{padding:7px 22px}
+html.andre .gleave{margin-left:0}
+@media (min-width:601px){
+  html.andre .table2{grid-template-rows:auto minmax(0,1fr)}
+  html.andre .pl2{align-self:stretch}
+  html.andre .pl2 .nplate{height:100%;align-items:center}
+}
 html.andre .nplate.turn{background:var(--mj-box)!important;box-shadow:none!important}
 html.andre .np-name{color:var(--text)}
 html.andre :is(.np-score,.sp-score,.tag,.tag.you){background:var(--bg);color:var(--text)}
@@ -723,6 +758,13 @@ html.andre .cedge.dl{color:var(--mj)}
 html.andre .cedge.on{color:#fff;background:var(--mj);box-shadow:none}
 html.andre .act{box-shadow:none;border-radius:10px}
 html.andre .act.win{background:var(--mj)}
+/* red in place of the game's blues */
+html.andre :is(.act.disc,.act.pung){background:#BC1F2A}
+html.andre .act.chow{background:#A31A24}
+html.andre .act.kong{background:#8A141D}
+html.andre .act.pass{background:var(--mj-box);color:var(--text)}
+html.andre .lvl.on{background:#BC1F2A!important;border-color:#BC1F2A!important;color:#fff}
+html.andre .hand .tile.sel{box-shadow:0 calc(var(--w)*.075) 0 var(--tileedge),0 0 0 3px #BC1F2A!important}
 html.andre .mymelds{border-right:2px solid var(--bg)!important}
 html.andre :is(.actions .msg,.hints,.side,.kv span,.tabs button){color:var(--text)}
 html.andre .tabs{border-bottom-color:var(--bg)}
@@ -741,6 +783,13 @@ html,body{overflow:hidden;overscroll-behavior:none}
 body{display:flex;flex-direction:column}
 main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none}
 .modal{max-height:calc(100% - 32px)}
+/* popups start at the top, and the big ones keep one size, so nothing shifts between them */
+.overlay{place-items:start center}
+.modal.wide{height:calc(100% - 32px);scrollbar-gutter:stable}
+.modal:has(.guidewrap){overflow:hidden}
+.guidewrap{height:100%}
+.gnav{position:static;overflow:auto}
+.gbody{min-width:0;overflow:auto;scrollbar-gutter:stable}
 #game{height:100%}
 .game{height:100%;min-height:0;padding:8px 12px;grid-template-rows:minmax(0,1fr)}
 .mine,.rack{flex:none}
@@ -2148,7 +2197,7 @@ function onGameClick(e) {
     else if (a === 'claim') doAction({ a: 'claim', c: b.dataset.c, start: b.dataset.s != null ? +b.dataset.s : undefined });
     else if (a === 'next') App.ctl && App.ctl.next();
     else if (a === 'showres') { if (App.view && App.view.ov) { App.finalDismissed = false; showFinal(); } else { App.resultShown = 0; renderGame(); } }
-    else if (a === 'leave') leaveGame();
+    else if (a === 'leave') armLeave();
     else if (a === 'rx') sendReaction(+b.dataset.i);
     else if (a === 'chat') { App.chatOpen = !App.chatOpen; if (App.chatOpen) App.unread = 0; renderChat(); renderActions(); }
     else if (a === 'replay') showReplay(App.lastHandView || App.view);
@@ -2308,7 +2357,7 @@ function waitsFor(tiles, melds, V, s) {
 function renderHints() {
   const el = $('#hints'), V = App.view; if (!V) return;
   const toggle = `<button class="iconbtn" data-act="settings">⚙ Settings</button><button class="iconbtn" data-act="rules">Rules</button>`;
-  const leave = `<button class="iconbtn gleave" data-act="leave">Leave game</button>`;
+  const leave = `<button class="iconbtn gleave" data-act="leave">${App.leaveAt > Date.now() ? 'Are you sure?' : 'Leave game'}</button>`;
   const tip = practiceTip();
   const tipHTML = tip ? `<span class="tipline">${esc(tip.text)}</span>` : '';
   if (!App.hints || App.seat < 0 || !App.priv || V.ph === 'over') { el.innerHTML = toggle + tipHTML + leave; return; }
@@ -2435,16 +2484,21 @@ function showFinal() {
   o.dataset.final = '1';
   const a = o.querySelector('#fnAgain'); if (a) a.onclick = () => { closeModal(); startBotGame(App.mode); };
   const l = o.querySelector('#fnLobby'); if (l) l.onclick = () => { closeModal(); hostBackToLobby(); };
-  o.querySelector('#fnHome').onclick = () => { closeModal(); leaveGame(true); };
+  o.querySelector('#fnHome').onclick = () => { closeModal(); leaveGame(); };
   o.querySelector('#fnClose').onclick = () => { closeModal(); App.finalDismissed = true; };
 }
-function leaveGame(force) {
-  const go = () => {
-    stopController();
-    if (App.role === 'host' || App.role === 'client') Net.leave();
-    App.role = null; App.view = null; App.priv = null; closeModal(); show('home');
-  };
-  if (force || (App.view && App.view.ov)) go(); else confirmBox('Leave this game?', 'Leave', go);
+function leaveGame() {
+  App.leaveAt = 0;
+  stopController();
+  if (App.role === 'host' || App.role === 'client') Net.leave();
+  App.role = null; App.view = null; App.priv = null; closeModal(); show('home');
+}
+/* the button asks "Are you sure?" itself, and a second click within 3 seconds leaves */
+function armLeave() {
+  if ((App.view && App.view.ov) || App.leaveAt > Date.now()) return leaveGame();
+  App.leaveAt = Date.now() + 3000;
+  renderHints();
+  setTimeout(() => { if (App.screen === 'game') renderHints(); }, 3000);
 }
 
 // ---------- guide / scoring reference ----------
@@ -2630,6 +2684,13 @@ const GUIDE = {
 };
 function showGuide(section) {
   section = GUIDE[section] ? section : 'basics';
+  /* already open: only the page changes, so the side bar never moves */
+  const open = document.querySelector('.guidewrap');
+  if (open) {
+    open.querySelectorAll('[data-g]').forEach(b => b.classList.toggle('on', b.dataset.g === section));
+    const body = open.querySelector('.gbody'); body.innerHTML = GUIDE[section][1](); body.scrollTop = 0;
+    return;
+  }
   const o = modal(`<div class="guidewrap"><nav class="gnav">${Object.entries(GUIDE).map(([k, v]) => `<button data-g="${k}" class="${k === section ? 'on' : ''}">${v[0]}</button>`).join('')}<button onclick="closeModal()" style="margin-top:10px">✕ Close</button></nav><div class="gbody">${GUIDE[section][1]()}</div></div>`);
   o.querySelector('.modal').classList.add('wide');
   o.querySelectorAll('[data-g]').forEach(b => b.onclick = () => showGuide(b.dataset.g));
@@ -3091,7 +3152,7 @@ function celebrate(level) {
   if (!animOn()) return;
   const cv = document.createElement('canvas'); cv.className = 'fxcanvas'; document.body.appendChild(cv);
   const W = cv.width = innerWidth, H = cv.height = innerHeight, ctx = cv.getContext('2d');
-  const cols = ['#c8102e', '#e2b13c', '#17694f', '#2563b8', '#ff7ab6', '#fff6dc'];
+  const cols = ANDRE ? ['#c8102e', '#BC1F2A', '#ffffff', '#111111'] : ['#c8102e', '#e2b13c', '#17694f', '#2563b8', '#ff7ab6', '#fff6dc'];
   const parts = [];
   const confetti = n => { for (let i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: -20 - Math.random() * H * .3, vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 3, r: 4 + Math.random() * 5, a: Math.random() * 6, va: (Math.random() - .5) * .3, c: cols[i % cols.length], t: 'c' }); };
   const burst = (x, y) => { const c = cols[Math.floor(Math.random() * cols.length)]; for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 5; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 2.4, c, t: 'f', life: 1 }); } };
