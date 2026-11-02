@@ -33,7 +33,8 @@ A week change plays on one shared clock, starting the moment the button is press
 Blocks only ever slide on or off the side of the screen, the way the week arrows do
 it, with `MAZE` timing. Nothing fades, shrinks or gets cut off.
 
-- A block goes to the nearer side, with the rest of its day.
+- A block goes to the side with the fewest staying blocks in its way, else the nearer
+  side, with the rest of its day. So a block that's opening out is left where it is.
 - Lanes open: in every day it crosses, the blocks in the way and everything below them
   move down, then move back once it has passed.
 - Going off, the day nearest the edge goes first. Coming on, the middle days come first.

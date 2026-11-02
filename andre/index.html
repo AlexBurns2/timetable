@@ -3334,7 +3334,10 @@ function morphWeekPlay(layer, from, to){
   };
   /* each side's blocks, a day at a time: out from the edge inwards, in from the middle outwards */
   const waves = (list, t0, coming, stays) => Math.max(t0, ...[-1, 1].map(side => {
-    const mine = list.filter(b => (b.r.left + b.r.width / 2 < W / 2 ? -1 : 1) === side);
+    /* the side with the fewest blocks to push out of the way, else the nearer one, so a block that's staying is left alone if it can be */
+    const crossing = (b, way) => stays.filter(x => (way < 0 ? x.k < b.k : x.k > b.k) && x.r.top < b.r.top + b.r.height && b.r.top < x.r.top + x.r.height).length;
+    const sideOf = b => { const l = crossing(b, -1), r = crossing(b, 1); return l !== r ? (l < r ? -1 : 1) : b.r.left + b.r.width / 2 < W / 2 ? -1 : 1; };
+    const mine = list.filter(b => sideOf(b) === side);
     const order = [...new Set(mine.map(b => b.k))].sort((a, b) => (coming ? -side : side) * (b - a));
     return order.reduce((t, k) => wave(mine.filter(b => b.k === k), side, t, coming, stays), t0);
   }));
