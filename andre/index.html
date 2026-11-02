@@ -1554,18 +1554,12 @@ async function runWeeks(){
   turning = null; rushed = false;
 }
 /* one turn, at q times its usual length; resolves when every piece has stopped moving */
-/* change: instead of turning, redraw this week after it (e.g. custom periods
-   switched on or off), with the same moves: what's gone slides out, what's
-   left resizes, what's new slides in. A block whose content changed transforms:
-   it takes its new shape as the old one fades into it, one after another across
-   the days. loose: blocks that overlap count as the same block, so a lesson
-   can turn into something else entirely. */
-function turnWeek(target, q = 1, change, loose){
+function turnWeek(target, q = 1){
   const M = { open:MAZE.open * q, close:MAZE.close * q, margin:MAZE.margin * q };
-  const dir = change ? 1 : Math.sign(target - off);
+  const dir = Math.sign(target - off);
   if (!dir) return null;
   closeAll();
-  const apply = () => { if (change) change(); else off = target; render(); };
+  const apply = () => { off = target; render(); };
   if (phone.matches || noMotion()){ apply(); return null; }
   const g = document.getElementById("g"), host = g.parentElement, hostR = host.getBoundingClientRect();
   host.querySelectorAll(".ghost").forEach(x => x.remove());
@@ -1573,7 +1567,7 @@ function turnWeek(target, q = 1, change, loose){
   /* how faded a lesson is drawn (over, or still to come), from its card or the gap itself */
   const lookOf = el => { const s = getComputedStyle(el.matches(".blk") ? el.querySelector(".blk-card") : el); return { filter:s.filter, opacity:s.opacity }; };
   const before = [...g.querySelectorAll(":scope > .col")].map(col =>
-    [...col.children].map(el => ({ el, sig:el.dataset.sig, who:el.dataset.who, span:(el.dataset.span || "").split("-").map(Number), r:el.getBoundingClientRect(), look:lookOf(el), html:el.className + el.innerHTML })));
+    [...col.children].map(el => ({ el, sig:el.dataset.sig, who:el.dataset.who, span:(el.dataset.span || "").split("-").map(Number), r:el.getBoundingClientRect(), look:lookOf(el) })));
   apply();
   const cols = [...g.querySelectorAll(":scope > .col")];
   if (!cols.length || cols.length !== before.length) return null;
@@ -1582,17 +1576,10 @@ function turnWeek(target, q = 1, change, loose){
   const ghost = document.createElement("div");
   ghost.className = "ghost";
   host.appendChild(ghost);
-  if (!change) conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR, q);
+  conveyor(oldHeads, [...g.querySelectorAll(":scope > .dh")], dir, ghost, hostR, q);
 
-  /* a copy of an old block, since the new week is already drawn */
-  const copyOf = o => {
-    const brick = o.el.cloneNode(true);
-    brick.style.cssText += `;position:absolute;left:${o.r.left - hostR.left}px;top:${o.r.top - hostR.top}px;width:${o.r.width}px;height:${o.r.height}px;right:auto;margin:0`;
-    ghost.appendChild(brick);
-    return brick;
-  };
   /* who stays, who goes, who arrives */
-  const kept = [], leaving = [], arriving = [], resized = [], morphs = [];
+  const kept = [], leaving = [], arriving = [], resized = [];
   cols.forEach((col, k) => {
     const old = before[k], used = new Set(), cr = col.getBoundingClientRect(), colTop = cr.top;
     /* the same thing at the same time; failing that, the same thing at an
@@ -1606,31 +1593,28 @@ function turnWeek(target, q = 1, change, loose){
       const o = old.find(o => !used.has(o) && o.who === el.dataset.who && o.span[0] < e && s < o.span[1]);
       if (o){ used.add(o); pair.set(el, o); }
     }
-    if (loose) for (const el of col.children){
-      if (pair.has(el) || !el.dataset.sig) continue;
-      const r = el.getBoundingClientRect(), o = old.find(o => !used.has(o) && o.sig && o.r.top < r.bottom && r.top < o.r.bottom);
-      if (o){ used.add(o); pair.set(el, o); }
-    }
     for (const el of col.children){
       const same = pair.get(el);
       const r = el.getBoundingClientRect();
       if (!same){ arriving.push({ el, k, r }); continue; }
-      const b = { el, k, r, r0:same.r };
-      kept.push(b);
-      if (change && same.html !== el.className + el.innerHTML){
-        b.i = morphs.filter(m => m.k === k).length; b.twin = copyOf(same); morphs.push(b);
-      }
+      kept.push({ el, k, r, r0:same.r });
       /* last week it was over, this week it isn't (or the other way): it fades across while the turn plays */
       const look = lookOf(el);
-      if (!b.twin && (look.filter !== same.look.filter || look.opacity !== same.look.opacity))
+      if (look.filter !== same.look.filter || look.opacity !== same.look.opacity)
         (el.matches(".blk") ? el.querySelector(".blk-card") : el).animate([same.look, look], { duration:900 * q, easing:"ease-in-out" });
       /* the day's scale changed: it moves to its new spot, but only once
          everything leaving has gone (below), so it never runs into one */
       if (Math.abs(same.r.top - r.top) > .5 || Math.abs(same.r.height - r.height) > .5 || Math.abs(same.r.left - r.left) > .5 || Math.abs(same.r.width - r.width) > .5)
-        resized.push({ el, k, b, from:{ top:(same.r.top - colTop) + "px", height:same.r.height + "px", left:(same.r.left - cr.left) + "px", right:(cr.right - same.r.right) + "px" },
+        resized.push({ el, k, from:{ top:(same.r.top - colTop) + "px", height:same.r.height + "px", left:(same.r.left - cr.left) + "px", right:(cr.right - same.r.right) + "px" },
                               to:{ top:(r.top - colTop) + "px", height:r.height + "px", left:(r.left - cr.left) + "px", right:(cr.right - r.right) + "px" } });
     }
-    for (const o of old) if (!used.has(o)) leaving.push({ el:copyOf(o), k, r:o.r });
+    for (const o of old) if (!used.has(o)){
+      /* a copy of the old block, since the new week is already drawn */
+      const brick = o.el.cloneNode(true);
+      brick.style.cssText += `;position:absolute;left:${o.r.left - hostR.left}px;top:${o.r.top - hostR.top}px;width:${o.r.width}px;height:${o.r.height}px;right:auto;margin:0`;
+      ghost.appendChild(brick);
+      leaving.push({ el:brick, k, r:o.r });
+    }
   });
 
   const W = document.documentElement.clientWidth;
@@ -1679,12 +1663,11 @@ function turnWeek(target, q = 1, change, loose){
       day.forEach((b, i) => {
         if (!shifts[i]) return;
         /* the easing is per step (open, hold, close), so each happens exactly in its window */
-        for (const piece of b.twin ? [b.el, b.twin] : [b.el])
-          piece.animate([{ transform:"translateY(0)", easing:"ease-in-out" },
-                         { transform:`translateY(${shifts[i]}px)`, offset:M.open / total },
-                         { transform:`translateY(${shifts[i]}px)`, offset:(shut - t0) / total, easing:"ease-in-out" },
-                         { transform:"translateY(0)" }],
-                        { duration:total, delay:t0, composite:"add" });
+        b.el.animate([{ transform:"translateY(0)", easing:"ease-in-out" },
+                      { transform:`translateY(${shifts[i]}px)`, offset:M.open / total },
+                      { transform:`translateY(${shifts[i]}px)`, offset:(shut - t0) / total, easing:"ease-in-out" },
+                      { transform:"translateY(0)" }],
+                     { duration:total, delay:t0, composite:"add" });
       });
     }
     return end;
@@ -1703,27 +1686,13 @@ function turnWeek(target, q = 1, change, loose){
   }
   /* then, with everything gone and every lane closed, the lessons both weeks
      share move to their new spots (up or down their own day, all together) */
-  const settleAt = Math.max(doneOut[-1], doneOut[1], ...[...resized, ...morphs].map(s => laneUntil[s.k]));
-  const SETTLE = resized.length ? 300 * q : 0, MORPH = 460 * q;
-  const late = b => (b.k * 60 + b.i * 24) * q;       /* across the days, then down each */
+  const settleAt = Math.max(doneOut[-1], doneOut[1], ...resized.map(s => laneUntil[s.k]));
+  const SETTLE = resized.length ? 300 * q : 0;
   for (const s of resized)
     s.el.animate([s.from, s.to],
-                 { duration:s.b.twin ? MORPH : SETTLE, delay:settleAt + (s.b.twin ? late(s.b) : 0), easing:"cubic-bezier(.4,0,.2,1)", fill:"backwards" });
-  const box = r => ({ left:r.left - hostR.left + "px", top:r.top - hostR.top + "px", width:r.width + "px", height:r.height + "px" });
-  for (const b of morphs){
-    const at = { duration:MORPH, delay:settleAt + late(b), easing:"cubic-bezier(.4,0,.2,1)" };
-    b.twin.animate([{ ...box(b.r0), opacity:1 }, { ...box(b.r), opacity:0 }], { ...at, fill:"both" });
-    b.el.animate([{ opacity:0 }, { opacity:1 }], { ...at, fill:"backwards" });
-    if (loose) b.el.querySelectorAll(".mjfill,.mjline polyline").forEach(x => x.animate(x.matches(".mjfill") ? [{ transform:"scaleX(0)" }, { transform:"none" }] : [{ strokeDashoffset:1 }, { strokeDashoffset:0 }],
-      { duration:700 * q, delay:at.delay + 120 * q, easing:"cubic-bezier(.25,.8,.3,1)", fill:"backwards" }));
-  }
-  /* headings that changed fade across */
-  if (change) g.querySelectorAll(":scope > .dh").forEach((h, i) => {
-    if (!oldHeads[i] || oldHeads[i].html !== h.outerHTML) h.animate([{ opacity:0 }, { opacity:1 }], { duration:400, easing:"ease" });
-  });
+                 { duration:SETTLE, delay:settleAt, easing:"cubic-bezier(.4,0,.2,1)", fill:"backwards" });
   /* in: once everything has gone and settled, the middle days first */
-  const startIn = morphs.length ? settleAt + Math.max(SETTLE, MORPH + Math.max(...morphs.map(late)))
-                : resized.length ? settleAt + SETTLE : Math.max(doneOut[-1], doneOut[1]);
+  const startIn = resized.length ? settleAt + SETTLE : Math.max(doneOut[-1], doneOut[1]);
   for (const side of [-1, 1]){
     let t = startIn;
     for (let rank = Math.floor(m); rank >= 0; rank--){
@@ -1736,30 +1705,16 @@ function turnWeek(target, q = 1, change, loose){
   return Promise.all(all.map(a => a.finished.catch(() => {}))).then(() => ghost.remove());
 }
 
-/* A change to this week, played like a turn where there's a week grid to shift
-   (the phone's list slides in; anything mid-turn, or the month, cross-fades) */
+/* A change to this week, played like the calendar (morphWeek) */
 function shiftWeek(change, loose){
-  if (view === "week" && !phone.matches && !noMotion() && !turning && !viewTurn){
-    const done = turnWeek(off, loose ? .65 : 1, change, loose);
-    if (done){
-      turning = done;
-      done.then(() => { if (turning === done){ turning = null; if (weekSteps || wantWeek !== null) runWeeks(); } });
-    }
+  if (view !== "week" || viewTurn || dayRun || noMotion()){
+    if (scrollY > 40) scrollTo(0, 0);
+    closeAll(); change(); render();
     return;
   }
-  if (view === "week" && phone.matches && !noMotion() && !dayRun){ closeAll(); change(); render(); slideDay(1); return; }
-  crossfade(() => { change(); closeAll(); render(); });
-}
-/* The tiles sit below the timetable: bring it back up before changing it, or the
-   change plays off screen */
-function toTimetable(act){
-  if (scrollY < 80){ act(); return; }
-  if (noMotion()){ scrollTo(0, 0); act(); return; }
-  let t;
-  const go = () => { removeEventListener("scrollend", go); clearTimeout(t); act(); };
-  addEventListener("scrollend", go);
-  t = setTimeout(go, 800);                      /* no scrollend in older Safari */
-  scrollTo({ top:0, behavior:"smooth" });
+  if (turning){ stopTurns(); morphing.forEach(a => a.finish()); turning.then(() => shiftWeek(change, loose)); return; }
+  const done = turning = morphWeek(change, loose);
+  done.then(() => { if (turning === done){ turning = null; if (weekSteps || wantWeek !== null) runWeeks(); } });
 }
 
 /* A row of labels runs past like a conveyor: the old ones slide out one way
@@ -2501,7 +2456,7 @@ $("freechips").onclick = e => {
 function toggleFree(){
   const flip = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); mjLeave(); paintFree(); };
   if (view === "month"){ flip(); closeAll(); render(); if (freeShow) toggleCalendar(); return; }
-  toTimetable(() => shiftWeek(flip, true));
+  shiftWeek(flip, true);
 }
 tileHead("free", () => toggleFree());
 finder($("freeq"), $("freesugg"), p => {
@@ -3155,8 +3110,8 @@ function weekForMonth(){
 function weekSide(layer){
   const piece = el => ({ el, r:layer.rel(el) });
   const cols = phone.matches
-    ? [{ span:layer.rel($("daylist").firstElementChild || $("daylist")), items:[...$("daylist").children].filter(el => el.matches(".card,.brk")) }]
-    : [...document.querySelectorAll("#g > .col")].map(col => ({ span:layer.rel(col), items:[...col.children].filter(el => el.matches(".blk,.gap")) }));
+    ? [{ span:layer.rel($("daylist").firstElementChild || $("daylist")), items:[...$("daylist").children].filter(el => el.matches(".card,.brk,.mjb")) }]
+    : [...document.querySelectorAll("#g > .col")].map(col => ({ span:layer.rel(col), items:[...col.children].filter(el => el.matches(".blk,.gap,.mjb")) }));
   const fades = phone.matches ? [$("daynav"), ...$("daylist").querySelectorAll(".lmsg, .asst")]
                               : [...document.querySelectorAll("#g > .dh, #g > .arrow, #g > .msg, #g > .asst, #g .hol, #g .tskip")];
   return { cols:cols.map(c => ({ span:c.span, items:c.items.map(piece).sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left) })), fades:fades.map(piece) };
@@ -3189,14 +3144,10 @@ function lanesOf(items, R){
   }
 }
 const EASE = "cubic-bezier(.45,0,.25,1)";
-/* Builds every piece's moves in the week → month direction, as keyframes on
-   one shared clock, then plays them forwards or (back to the week) reversed. */
-function morphPlay(layer, week, month, back){
+/* What every morph is built from: moving pieces in the layer, each with keyframes
+   on one shared clock */
+function morphKit(layer){
   const W = document.documentElement.clientWidth, speed = Math.max(MAZE.speed, W / 480);
-  const cells = month.cells, R = Math.max(1, Math.ceil(cells.length / 7)), at = (r, c) => cells[r * 7 + c];
-  const pitch = R > 1 ? at(1, 0).r.top - at(0, 0).r.top : at(0, 0).r.height + 8, rowH = at(0, 0).r.height;
-  const rowTop = r => r < R ? at(r, 0).r.top : at(R - 1, 0).r.top + (r - R + 1) * pitch;
-  const mid = r => r.left + r.width / 2;
   const tracks = [], track = (el, keys) => tracks.push({ el, keys });
   const shell = r => {
     const s = document.createElement("div");
@@ -3205,9 +3156,40 @@ function morphPlay(layer, week, month, back){
     layer.appendChild(s);
     return s;
   };
-  const opacityOf = el => +getComputedStyle(el).opacity;
   const fadeWords = lesson => (lesson.matches(".blk") ? [...lesson.firstElementChild.children] : [...lesson.children])
     .forEach(w => track(w, [{ t:0, opacity:1 }, { t:180, opacity:0 }]));
+  /* pieces sliding in (or out) along a row from the nearer side, together,
+     like a train, so none passes through another */
+  const train = (pieces, side, t0, coming) => {
+    if (!pieces.length) return;
+    const dx = side < 0 ? -(Math.max(...pieces.map(p => p.r.left + p.r.width)) + 24) : W - Math.min(...pieces.map(p => p.r.left)) + 24;
+    const D = Math.max(300, Math.min(650, Math.abs(dx) / speed));
+    const away = { transform:`translateX(${dx}px)` }, home = { transform:"translateX(0px)" };
+    for (const q of pieces) track(q.g, coming ? [{ t:t0, ...away, easing:"cubic-bezier(.25,.6,.3,1)" }, { t:t0 + D, ...home }]
+                                              : [{ t:t0, ...home, easing:"cubic-bezier(.55,0,.75,.4)" }, { t:t0 + D, ...away }]);
+  };
+  const fadePiece = ({ el, r }) => { const g = shell(r); g.style.overflow = "visible"; g.style.borderRadius = "0"; g.append(filler(el)); return g; };
+  const play = back => {
+    if (!tracks.length) return [];
+    const T = Math.max(...tracks.flatMap(x => x.keys.map(k => k.t)));
+    return tracks.map(({ el, keys }) => {
+      keys.sort((a, b) => a.t - b.t);
+      if (keys[0].t > 0) keys.unshift({ ...keys[0], t:0, easing:"linear" });
+      if (keys.at(-1).t < T) keys.push({ ...keys.at(-1), t:T });
+      return el.animate(keys.map(({ t, ...k }) => ({ ...k, offset:t / T })), { duration:T, fill:"both", direction:back ? "reverse" : "normal" });
+    });
+  };
+  return { W, track, shell, fadeWords, train, fadePiece, play };
+}
+/* Builds every piece's moves in the week → month direction, as keyframes on
+   one shared clock, then plays them forwards or (back to the week) reversed. */
+function morphPlay(layer, week, month, back){
+  const { W, track, shell, fadeWords, train, fadePiece, play } = morphKit(layer);
+  const cells = month.cells, R = Math.max(1, Math.ceil(cells.length / 7)), at = (r, c) => cells[r * 7 + c];
+  const pitch = R > 1 ? at(1, 0).r.top - at(0, 0).r.top : at(0, 0).r.height + 8, rowH = at(0, 0).r.height;
+  const rowTop = r => r < R ? at(r, 0).r.top : at(R - 1, 0).r.top + (r - R + 1) * pitch;
+  const mid = r => r.left + r.width / 2;
+  const opacityOf = el => +getComputedStyle(el).opacity;
 
   /* Each lesson's lane and row. A day with more lessons than the month has
      rows splits into lanes side by side, its later lessons stepping aside, so
@@ -3243,16 +3225,6 @@ function morphPlay(layer, week, month, back){
     fadeWords(lesson);
     track(lesson, [{ t:T1 + MOVE.h * .45, opacity:1 }, { t:T2, opacity:0 }]);
     track(day, [{ t:T1, opacity:0 }, { t:T2, opacity:opacityOf(cell.el) }]);
-  };
-  /* pieces sliding in (or out) along a row from the nearer side, together,
-     like a train, so none passes through another */
-  const train = (pieces, side, t0, coming) => {
-    if (!pieces.length) return;
-    const dx = side < 0 ? -(Math.max(...pieces.map(p => p.r.left + p.r.width)) + 24) : W - Math.min(...pieces.map(p => p.r.left)) + 24;
-    const D = Math.max(300, Math.min(650, Math.abs(dx) / speed));
-    const away = { transform:`translateX(${dx}px)` }, home = { transform:"translateX(0px)" };
-    for (const q of pieces) track(q.g, coming ? [{ t:t0, ...away, easing:"cubic-bezier(.25,.6,.3,1)" }, { t:t0 + D, ...home }]
-                                              : [{ t:t0, ...home, easing:"cubic-bezier(.55,0,.75,.4)" }, { t:t0 + D, ...away }]);
   };
   const dayPiece = cell => { const g = shell(cell.r); g.append(filler(cell.el)); return { g, r:cell.r }; };
   const home = Math.max(0, cells.findIndex(c => c.el.dataset.day === ymd(weekDates()[phone.matches ? sel ?? 0 : 0])));
@@ -3291,17 +3263,72 @@ function morphPlay(layer, week, month, back){
     }
   }
   /* headings and arrows only fade: the week's out at the start, the month's in */
-  const fadePiece = ({ el, r }) => { const g = shell(r); g.style.overflow = "visible"; g.style.borderRadius = "0"; g.append(filler(el)); return g; };
   week.fades.forEach(f => track(fadePiece(f), [{ t:0, opacity:1 }, { t:220, opacity:0 }]));
   month.fades.forEach(f => track(fadePiece(f), [{ t:T2 - 120, opacity:0 }, { t:T2 + 200, opacity:1 }]));
+  return play(back);
+}
 
-  const T = Math.max(...tracks.flatMap(x => x.keys.map(k => k.t)));
-  return tracks.map(({ el, keys }) => {
-    keys.sort((a, b) => a.t - b.t);
-    if (keys[0].t > 0) keys.unshift({ ...keys[0], t:0, easing:"linear" });
-    if (keys.at(-1).t < T) keys.push({ ...keys.at(-1), t:T });
-    return el.animate(keys.map(({ t, ...k }) => ({ ...k, offset:t / T })), { duration:T, fill:"both", direction:back ? "reverse" : "normal" });
+/* A change to the week, with the calendar's moves and timing: the week as it was
+   and as it will be are measured, then every block moves up or down, then sideways,
+   changing into what it's becoming on the way. What has no block to become slides
+   out behind the others, and what's new slides in last. loose: blocks that overlap
+   count as the same block, so a lesson can become something else entirely. */
+function morphWeek(change, loose){
+  closeAll();
+  if (scrollY > 40) scrollTo({ top:0, behavior:"smooth" });      /* the tiles sit below the timetable */
+  stopTurns();
+  const layer = morphLayer(), from = weekSide(layer);
+  change(); render();
+  const to = weekSide(layer);
+  document.body.classList.add("morphing");
+  morphing = morphWeekPlay(layer, from, to, loose || phone.matches);    /* the phone's cards are told apart by place */
+  return settle(morphing, layer).then(() => document.body.classList.remove("morphing"));
+}
+function morphWeekPlay(layer, from, to, loose){
+  const { W, track, shell, fadeWords, train, fadePiece, play } = morphKit(layer);
+  const T1 = MOVE.v, T2 = T1 + MOVE.h;
+  const same = (a, b) => a.el.className + a.el.innerHTML === b.el.className + b.el.innerHTML;
+  const spanOf = it => (it.el.dataset.span || "").split("-").map(Number);
+  const pairs = [], gone = from.cols.slice(to.cols.length).flatMap(c => c.items), fresh = [];
+  to.cols.forEach((col, k) => {
+    const left = [...(from.cols[k] ? from.cols[k].items : [])], found = new Map();
+    const take = fits => { for (const it of col.items) if (!found.has(it)){
+      const o = left.find(o => fits(o, it));
+      if (o){ left.splice(left.indexOf(o), 1); found.set(it, o); } } };
+    /* the same block; the same thing at an overlapping time; anything in the way */
+    take((o, n) => n.el.dataset.sig && o.el.dataset.sig === n.el.dataset.sig);
+    take((o, n) => { const a = spanOf(o), b = spanOf(n); return n.el.dataset.who && o.el.dataset.who === n.el.dataset.who && a[0] < b[1] && b[0] < a[1]; });
+    if (loose) take((o, n) => o.r.top < n.r.top + n.r.height && n.r.top < o.r.top + o.r.height);
+    for (const it of col.items) if (found.has(it)) pairs.push([found.get(it), it]); else fresh.push(it);
+    gone.push(...left);
   });
+  /* made first, so they pass behind the blocks that stay */
+  const half = list => [list.filter(q => q.r.left + q.r.width / 2 < W / 2), list.filter(q => q.r.left + q.r.width / 2 >= W / 2)];
+  const out = gone.map(it => { const g = shell(it.r), c = filler(it.el); g.append(c); fadeWords(c); return { g, r:it.r }; });
+  const inn = fresh.map(it => { const g = shell(it.r); g.append(filler(it.el)); return { g, r:it.r }; });
+  half(out).forEach((q, i) => train(q, i ? 1 : -1, T1, false));
+  half(inn).forEach((q, i) => train(q, i ? 1 : -1, T2, true));
+  for (const [o, n] of pairs){
+    const g = shell(o.r), now = filler(n.el), a = o.r, b = n.r, was = same(o, n);
+    if (was) g.append(now);
+    else {
+      const old = filler(o.el);
+      g.append(old, now);
+      fadeWords(old);
+      track(old, [{ t:T1 + MOVE.h * .45, opacity:1 }, { t:T2, opacity:0 }]);
+      track(now, [{ t:T1, opacity:0 }, { t:T2, opacity:1 }]);
+      if (loose) now.querySelectorAll(".mjfill,polyline").forEach(x => track(x, x.matches(".mjfill")
+        ? [{ t:T1, transform:"scaleX(0)", easing:EASE }, { t:T2, transform:"scaleX(1)" }] : [{ t:T1, strokeDashoffset:1, easing:EASE }, { t:T2, strokeDashoffset:0 }]));
+    }
+    if (!was || a.left !== b.left || a.top !== b.top || a.width !== b.width || a.height !== b.height)
+      track(g, [{ t:0, ...box(a), easing:EASE }, { t:T1, ...box({ left:a.left, width:a.width, top:b.top, height:b.height }), easing:EASE }, { t:T2, ...box(b) }]);
+  }
+  /* headings only fade, and only the ones that change */
+  const key = f => [f.r.left, f.r.top, f.r.width, f.el.outerHTML].join("|");
+  const had = new Set(from.fades.map(key)), keep = new Set(to.fades.map(key));
+  from.fades.forEach(f => { const g = fadePiece(f); if (!keep.has(key(f))) track(g, [{ t:0, opacity:1 }, { t:220, opacity:0 }]); });
+  to.fades.filter(f => !had.has(key(f))).forEach(f => track(fadePiece(f), [{ t:T2 - 120, opacity:0 }, { t:T2 + 200, opacity:1 }]));
+  return play(false);
 }
 
 /* the switch tiles fill with their colour while they're on */
@@ -3313,12 +3340,7 @@ function paintPeriodsTile(){
 }
 function toggleCustomShown(){
   const flip = () => { showCustom = !showCustom; set(LS.showcustom, showCustom); mjLeave(); paintPeriodsTile(); };
-  /* the week grid plays it like a turn: custom periods slide out (or in) through
-     lanes, and what they cut short or squeezed resizes; elsewhere it cross-fades */
-  /* (only when the days on show stay the same: a weekend column coming or going cross-fades) */
-  const days = daysShown().length; showCustom = !showCustom;
-  const sameDays = daysShown().length === days; showCustom = !showCustom;
-  toTimetable(() => sameDays ? shiftWeek(flip) : crossfade(() => { flip(); closeAll(); render(); }));
+  shiftWeek(flip);
 }
 function paintTiles(calTarget = view){
   paintPeriodsTile();
@@ -3334,20 +3356,6 @@ function paintFreeTile(){
   tile.querySelector(".mod-head").setAttribute("aria-pressed", freeShow);
   $("freestate").textContent = !freeShow ? "" : freeActive() ? "· On" : signedIn && !freeGroup.length ? "· Add people in settings" : "· On";
 }
-/* Swap the timetable for a re-drawn one with a cross-fade, e.g. when the free
-   periods view is switched on or off, so the colours change smoothly. */
-function crossfade(update){
-  const host = phone.matches ? $("daylist") : $("g");
-  if (noMotion() || view !== "week" || turning || dayRun || viewTurn){ update(); return; }
-  const ghost = host.cloneNode(true), hr = host.getBoundingClientRect(), pr = host.parentElement.getBoundingClientRect();
-  ghost.removeAttribute("id");
-  ghost.style.cssText = `position:absolute;left:${hr.left - pr.left}px;top:${hr.top - pr.top}px;width:${hr.width}px;margin:0;pointer-events:none;z-index:4`;
-  host.parentElement.appendChild(ghost);
-  update();
-  ghost.animate([{ opacity:1 }, { opacity:0 }], { duration:480, easing:"ease", fill:"forwards" }).finished.then(() => ghost.remove(), () => ghost.remove());
-  host.animate([{ opacity:0 }, { opacity:1 }], { duration:480, easing:"ease" });
-}
-
 /* turning the month: the old one slides off as the new one slides in; spamming queues */
 let monthTurn = null, wantMonth = null;
 function goMonth(target){
@@ -3963,7 +3971,7 @@ function paintMj(){ paintMjTile(); if (mjShow) render(); }
 function mjLeave(){ mjShow = false; paintMjTile(); }
 function toggleMj(){
   document.activeElement.blur();
-  const flip = () => { mjShow = !mjShow; paintMjTile(); }, go = () => toTimetable(() => shiftWeek(flip, true));
+  const flip = () => { mjShow = !mjShow; paintMjTile(); }, go = () => shiftWeek(flip, true);
   if (!mj) loadMj();
   if (view !== "month"){ go(); return; }
   toggleCalendar();
@@ -4024,7 +4032,7 @@ function renderMj(nd){
   const add = block("mjctl", "mj:add", "#E0303A",
     `<input class="fin" id="mjname" placeholder="${n ? "Add a player" : "Add everyone at the table"}" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="New player's name"><button class="btn sm" id="mjadd">Add</button>`, y, ADD);
   const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` +
-    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, H - 8, nd - 2);
+    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, y + ADD - 4, nd - 2);
   if (list) host.innerHTML = players + save + add + graph;
   else {
     const head = (t, span) => `<div class="dh" style="grid-column:span ${span}"><span class="n">${t}</span></div>`;
