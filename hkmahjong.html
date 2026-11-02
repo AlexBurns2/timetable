@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hong Kong Mahjong</title>
-<script>/* only ever a frame on the games page, which has the focus lock and the leaderboard */ if (window.top === window) location.replace("/games.html?play=hkmj");</script>
+<script>/* only ever a frame, on the games page (which has the focus lock) or Andre's page */ if (window.top === window) location.replace("/games.html?play=hkmj");</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -186,6 +186,8 @@ select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8
 .modal h2{margin:0 0 4px}
 .wintiles{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:14px 0;--w:36px;background:var(--panel-2);border-radius:8px;padding:12px}
 .wintiles .meld{gap:1px}
+.wintiles .tile.claimed{transform:none}
+.wintiles .tiles{gap:1px}
 .faanrow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f2f5}
 .faantotal{display:flex;justify-content:space-between;padding:8px 0;font-weight:800;font-size:17px}
 .pays{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
@@ -675,7 +677,7 @@ select option{color:var(--ink);background:var(--panel)}
 
 /* ===== The site's look, from theme.css. Only the table and tiles keep their own colours ===== */
 :root{--tw:clamp(32px,min(3.9vw,9vh),66px)}     /* a full hand fits the rack beside the side panel */
-/* everything fits the frame, and the rack always shows every tile: it wraps, and the table gives way */
+/* everything fits the frame, and the rack is always one row: fitRack shrinks the tiles to fit */
 /* heights come from the frame itself, not vh or dvh, which can measure the whole browser window instead of a frame */
 html,body{overflow:hidden;overscroll-behavior:none}
 body{display:flex;flex-direction:column}
@@ -684,8 +686,7 @@ main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none}
 #game{height:100%}
 .game{height:100%;min-height:0;padding:8px 12px;grid-template-rows:minmax(0,1fr)}
 .mine,.rack{flex:none}
-.rack{flex-wrap:wrap;overflow:visible}
-.hand{flex-wrap:wrap}
+.rack{flex-wrap:nowrap;overflow:visible}
 .screen{padding:14px 20px}
 @media (max-width:980px){
   :root{--tw:min(calc((100vw - 44px)/15.5),9vh)}
@@ -693,7 +694,7 @@ main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none}
   .side{display:none}
   .table2,.tablewrap{height:auto;flex:1;min-height:0}
   .felt3{min-height:0}
-  .rack{padding:12px 6px 6px;gap:6px;min-height:0}
+  .rack{padding:12px 6px 6px;gap:6px;min-height:0;flex-wrap:nowrap}
   .hand{gap:1px}
 }
 @media (max-width:600px){
@@ -902,11 +903,12 @@ function evaluateWin(conc, melds, ctx) {
       if (d.pair === ctx.winTile) choices.push('pair');
       if (!choices.length) choices = [null];
     }
-    for (const ch of choices) cands.push(scoreDecomp(d, ch, melds, ctx, fItems, wItems));
+    for (const ch of choices) cands.push(Object.assign(scoreDecomp(d, ch, melds, ctx, fItems, wItems), { d, ch }));
   }
   if (!cands.length) return null;
-  if (ctx.heavenly) return { limit: true, items: [['Heavenly Hand', 13]], faan: Math.min(13, S.maxFaan) };
-  if (ctx.earthly) return { limit: true, items: [['Earthly Hand', 13]], faan: Math.min(13, S.maxFaan) };
+  const anyD = (cands.find(x => x.d) || {}).d;      /* so the win screen can still lay the hand out */
+  if (ctx.heavenly) return { limit: true, items: [['Heavenly Hand', 13]], faan: Math.min(13, S.maxFaan), d: anyD };
+  if (ctx.earthly) return { limit: true, items: [['Earthly Hand', 13]], faan: Math.min(13, S.maxFaan), d: anyD };
   let best = null;
   for (const cd of cands) {
     const raw = cd.limit ? Math.max(...cd.items.map(x => x[1])) : cd.items.reduce((a, x) => a + x[1], 0);
@@ -1049,13 +1051,13 @@ class Game {
     h.drawn = t; h.kongDraw = !!kong; h.turn = s; h.phase = 'discard';
   }
 
-  canTsumo(s) {
+  tsumoEval(s) {
     const h = this.h;
     if (h.phase !== 'discard' || h.turn !== s || h.drawn == null) return null;
     const heavenly = s === this.dealer && h.discardCount === 0 && !h.anyClaim && h.melds[s].length === 0;
-    const r = evaluateWin(h.hands[s], h.melds[s], this.ctxFor(s, { selfDraw: true, winTile: h.drawn, kongWin: h.kongDraw, doubleKong: h.kongDraw && h.kongChain >= 2, lastCatch: h.wall.length === 0, heavenly }));
-    return r && r.faan >= this.S.minFaan ? r : null;
+    return evaluateWin(h.hands[s], h.melds[s], this.ctxFor(s, { selfDraw: true, winTile: h.drawn, kongWin: h.kongDraw, doubleKong: h.kongDraw && h.kongChain >= 2, lastCatch: h.wall.length === 0, heavenly }));
   }
+  canTsumo(s) { const r = this.tsumoEval(s); return r && r.faan >= this.S.minFaan ? r : null; }
   ronEval(s, t, kind) {
     const h = this.h;
     const earthly = kind === 'discard' && h.discardCount === 1 && h.claimFrom === this.dealer && !h.anyClaim && s !== this.dealer;
@@ -1072,11 +1074,13 @@ class Game {
 
   openClaims(t, from, kind) {
     const h = this.h, opts = {};
-    h.claimTile = t; h.claimFrom = from; h.claimKind = kind;
+    h.claimTile = t; h.claimFrom = from; h.claimKind = kind; h.lowRon = null;
     for (let i = 1; i < 4; i++) {
       const s = (from + i) % 4, o = {}, c = counts(h.hands[s]);
       const r = this.ronEval(s, t, kind);
+      const human = this.seats[s].type !== 'bot';
       if (r && r.faan >= this.S.minFaan) o.win = r.faan;
+      else if (r && human) h.lowRon = { s, t, faan: r.faan };
       if (kind === 'discard' && h.wall.length > 0) {
         if (c[t] >= 2) o.pung = 1;
         if (c[t] >= 3) o.kong = 1;
@@ -1090,6 +1094,8 @@ class Game {
           if (ch.length) o.chow = ch;
         }
       }
+      /* a person who can win is only asked that: a chow here would use up the winning hand */
+      if (o.win && human) { delete o.pung; delete o.kong; delete o.chow; }
       if (Object.keys(o).length) opts[s] = o;
     }
     if (!Object.keys(opts).length) {
@@ -1197,7 +1203,7 @@ class Game {
     else { for (let o = 0; o < 4; o++) if (o !== w) pay[o] -= (o === x.from ? base / 2 : base / 4); pay[w] += base; }
     pay.forEach((p, i) => { this.seats[i].score = round2(this.seats[i].score + p); });
     const stays = w === this.dealer;
-    h.result = { ty: 'win', w, fr: x.selfDraw ? -1 : x.from, sd: x.selfDraw ? 1 : 0, faan: r.faan, it: r.items, lim: r.limit ? 1 : 0,
+    h.result = { ty: 'win', w, fr: x.selfDraw ? -1 : x.from, sd: x.selfDraw ? 1 : 0, faan: r.faan, it: r.items, lim: r.limit ? 1 : 0, ds: r.d || null, dc: r.ch ?? null,
       base, pay: pay.map(round2), wt: x.winTile, hands: h.hands.map(enc), st: stays ? 1 : 0, fin: this.isFinalAfter(stays) ? 1 : 0 };
     h.phase = 'over'; h.claimOpts = null; h.claims = null;
     this.H(x.selfDraw ? 'z' : 'w', w, x.winTile);
@@ -1232,7 +1238,8 @@ class Game {
   privateView(s) {
     const h = this.h;
     const pv = { h: enc(h.hands[s]), dr: (h.turn === s && h.phase === 'discard' && h.drawn != null) ? h.drawn : -1 };
-    if (h.phase === 'discard' && h.turn === s) { pv.my = 1; const r = this.canTsumo(s); if (r) pv.ts = r.faan; pv.kg = this.kongOptions(s); }
+    if (h.phase === 'discard' && h.turn === s) { pv.my = 1; const r = this.tsumoEval(s); if (r && r.faan >= this.S.minFaan) pv.ts = r.faan; else if (r) pv.low = r.faan; pv.kg = this.kongOptions(s); }
+    if (h.lowRon && h.lowRon.s === s) pv.lr = [h.lowRon.t, h.lowRon.faan, h.discardCount];
     if (h.phase === 'claim' && h.claimOpts && h.claimOpts[s]) { if (h.claims[s]) pv.cd = h.claims[s].c; else pv.co = h.claimOpts[s]; }
     return pv;
   }
@@ -1988,6 +1995,11 @@ function setView(pub, priv) {
     Stats.onHand(pub);
   }
   if (pub.ov && prev && !prev.ov) Stats.onGame(pub);
+  /* a discard that would finish the hand, but not for enough faan */
+  if (priv && priv.lr && priv.lr[2] !== App.lrSeen) {
+    App.lrSeen = priv.lr[2];
+    toast(`${esc(tileName(priv.lr[0]))} would win, but only ${priv.lr[1]} faan. This table needs ${pub.S.minFaan}.`);
+  }
   const hk = priv ? priv.h + '/' + priv.dr : '';
   if (hk !== App.selKey) { App.sel = -1; App.selKey = hk; }
   if (App.screen === 'game') renderGame();
@@ -2017,7 +2029,7 @@ function buildGameSkeleton() {
    <aside class="side"><div class="tabs" id="tabs"></div><div class="tabbody" id="tabbody"></div><div id="chatform"></div></aside>
   </div>`;
   $('#game').addEventListener('click', onGameClick);
-  new ResizeObserver(fitPools).observe($('#mjtable'));
+  new ResizeObserver(() => { fitPools(); fitRack(); }).observe($('#mjtable'));
   $('#game').addEventListener('mouseover', onGameHover);
   $('#game').addEventListener('mouseleave', () => setMatch(App.sel >= 0 ? selectedTile() ?? -1 : -1));
 }
@@ -2038,6 +2050,15 @@ function fitPools() {
   felt.style.setProperty('--td', Math.min(u, 62) * c * TALL / 4.6 + 'px');
   area(2, 1, t + 1, side + 1, side + mid + 1); area(0, rows - t + 1, rows + 1, side + 1, side + mid + 1);
   area(3, 1, rows + 1, 1, side + 1); area(1, 1, rows + 1, side + mid + 1, cols + 1);
+}
+/* the rack stays one row: a kong or lots of flowers shrink its tiles instead of wrapping */
+function fitRack() {
+  const rack = $('#rack'); if (!rack || !rack.clientWidth) return;
+  rack.style.removeProperty('--tw');
+  for (let pass = 0; pass < 3 && rack.scrollWidth > rack.clientWidth; pass++) {
+    const tile = rack.querySelector('.hand .tile'), now = tile ? tile.offsetWidth : 0; if (!now) return;
+    rack.style.setProperty('--tw', Math.floor(now * rack.clientWidth / rack.scrollWidth) + 'px');
+  }
 }
 // ---------- matching-tile highlight ----------
 const Match = { get on() { return App.hints; }, t: -1 };
@@ -2155,6 +2176,7 @@ function renderMine() {
   else handHTML = `<div class="hand ${myTurn ? 'active' : ''}">${hand.map((t, i) => tileHTML(t, App.sel === i ? 'sel' : '', `data-i="${i}"`)).join('')}</div>` +
     (drawn >= 0 ? `<div class="hand drawn ${myTurn ? 'active' : ''}">${tileHTML(drawn, App.sel === hand.length ? 'sel' : '', `data-i="${hand.length}"`)}</div>` : '');
   $('#rack').innerHTML = (App.myMeldsHTML ? `<div class="mymelds">${App.myMeldsHTML}</div>` : '') + handHTML;
+  fitRack();
   const tip = practiceTip();
   if (tip && tip.t != null) { const els = [...document.querySelectorAll('#rack .tile[data-t="' + tip.t + '"]')]; const el = els[els.length - 1]; if (el) el.classList.add('tip'); }
 }
@@ -2206,7 +2228,7 @@ function renderActions() {
     if (pv.ts) h += `<button class="act win" data-act="tsumo">Win, self-drawn (${pv.ts} faan)<span class="kbd">W</span></button>`;
     for (const k of pv.kg || []) h += `<button class="act kong" data-act="${k.a}" data-t="${k.t}">${k.a === 'ckong' ? 'Concealed kong' : 'Add to kong'} ${tilesHTML([k.t])}</button>`;
     /* a click on a tile discards it; this is for picking one with the arrow keys */
-    h += (sel != null ? `<button class="act disc" data-act="discard">Discard ${tilesHTML([sel])}<span class="kbd">Enter</span></button>` : '<span class="msg">Click a tile to discard it</span>') + timer;
+    h += (sel != null ? `<button class="act disc" data-act="discard">Discard ${tilesHTML([sel])}<span class="kbd">Enter</span></button>` : `<span class="msg">${pv.low != null ? `Winning hand, but only ${pv.low} faan. This table needs ${V.S.minFaan}. Click a tile to discard it` : 'Click a tile to discard it'}</span>`) + timer;
   } else {
     const tn = V.tn;
     h = `<span class="msg">${V.ph === 'claim' ? 'Players are deciding on the discard…' : `Waiting for <b>${esc(nameOf(tn))}</b>…`}</span>${timer}`;
@@ -2308,6 +2330,18 @@ function renderChat() {
 }
 
 // ---------- result / final ----------
+/* The winner's concealed tiles as they won: each set, then the pair, with the winning
+   tile marked in the group it finished. Seven Pairs go in twos; Thirteen Orphans stay in a row. */
+function winGroups(conc, r) {
+  const all = [...conc, r.wt].sort((a, b) => a - b);
+  let groups;
+  if (r.ds) groups = [...r.ds.sets.map(s => s.k === 'chow' ? [s.t, s.t + 1, s.t + 2] : [s.t, s.t, s.t]), [r.ds.pair, r.ds.pair]];
+  else if (all.length === 14 && all.every((t, i) => all[i ^ 1] === t)) groups = all.filter((_, i) => i % 2 === 0).map(t => [t, t]);
+  else groups = [all];
+  const home = r.dc === 'pair' ? groups.length - 1 : Number.isInteger(r.dc) ? r.dc : groups.findIndex(g => g.includes(r.wt));
+  return groups.map((g, i) => { let marked = i !== home;
+    return `<div class="tiles">${g.map(t => { const on = !marked && t === r.wt; if (on) marked = true; return tileHTML(t, on ? 'win' : ''); }).join('')}</div>`; }).join('');
+}
 function showResult() {
   const V = App.view, r = V.rs; if (!r) return;
   const hostCtl = App.role !== 'client';
@@ -2318,7 +2352,7 @@ function showResult() {
     const how = r.sd ? 'by self-draw' : (V.cw && V.cw[2] === 'r' ? `by robbing ${esc(V.P[r.fr].n)}'s kong` : `on ${esc(V.P[r.fr].n)}'s discard`);
     const conc = hands[w].slice(); if (r.sd) { const i = conc.indexOf(r.wt); if (i >= 0) conc.splice(i, 1); }
     html += `<h2>${esc(P.n)} wins ${how}!</h2><p class="sub">${r.lim ? 'Limit hand · ' : ''}${r.faan} faan → ${r.base} points</p>
-      <div class="wintiles"><div class="tiles">${conc.map(t => tileHTML(t)).join('')}</div><div class="tiles">${tileHTML(r.wt, 'win')}</div>${P.m.map(m => meldHTML(m, false)).join('')}<div class="tiles" style="--w:26px">${dec(P.f).map(t => tileHTML(t)).join('')}</div></div>
+      <div class="wintiles">${P.m.map(m => meldHTML(m, false)).join('')}${winGroups(conc, r)}${P.f.length ? `<div class="tiles" style="--w:26px">${dec(P.f).map(t => tileHTML(t)).join('')}</div>` : ''}</div>
       ${r.it.map(([n, f]) => `<div class="faanrow"><span>${esc(n)}</span><b>${f}</b></div>`).join('')}
       <div class="faantotal"><span>Total${r.faan < r.it.reduce((a, x) => a + x[1], 0) && !r.lim ? ' (capped at limit)' : ''}</span><span>${r.faan} faan</span></div>`;
   } else {
@@ -3114,8 +3148,6 @@ const Stats = {
     }
     if (App.mode === 'speed') this.unlock('speedy');
     this.save(); Cloud.push();
-    /* the games page keeps the leaderboard; Practice shows the bots' hands, so it doesn't count */
-    if (App.role === 'local' && App.mode !== 'practice' && V.P[me].sc > 0) parent.postMessage({ hkmjScore: Math.round(V.P[me].sc) }, location.origin);
   }
 };
 /* Stats follow the school login, in the site's game_state table. To stay well inside

@@ -33,8 +33,7 @@ const DIRS = {
   "react:fastest": "min", "classroom:high": "max",
   "chain:best": "min",         // legacy single-puzzle Six Degrees (kept readable)
   "chain:targets": "max",      // new Six Degrees gauntlet — most targets in a run
-  "oddone:high": "max",        // Odd One Out — best score in a run
-  "hkmj:high": "max"           // Hong Kong Mahjong — best final score in a game
+  "oddone:high": "max"         // Odd One Out — best score in a run
 };
 const MAX_SCORE = 100000000;
 /* who may clear a board (server-side, never trust the client). Set OWNER_EMAIL

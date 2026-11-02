@@ -293,7 +293,6 @@ const LB_CAT = [
   { id:'g2048',     name:'2048',           g:{metric:'high'},    fmt:v=>String(v) },
   { id:'typing',    name:'Typing race',    g:{metric:'wpm'},     fmt:v=>v+' wpm' },
   { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
-  { id:'hkmj',      name:'Hong Kong Mahjong', g:{metric:'high'}, fmt:v=>String(v) },
   { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
@@ -442,8 +441,7 @@ const LB_GAMES = {
   react:     { metric:'fastest', dir:'min', label:'Reaction',        fmt:v=>v+' ms' },
   classroom: { metric:'high',    dir:'max', label:'Correct',         fmt:v=>String(v) },
   chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v) },
-  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) },
-  hkmj:      { metric:'high',    dir:'max', label:'Best game',       fmt:v=>String(v) }
+  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) }
 };
 /* == revision progress ====================================================
    One entry per question. Chemistry alone is ~1,350 of them (~56 KB), and the
@@ -7268,7 +7266,7 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
   ] });
 
 /* Hong Kong Mahjong is its own page in a frame: it's big, and its styles would clash
-   with this page's. It tells this page each finished game's score for the leaderboard. */
+   with this page's. */
 BUILD.hkmj = host => {
   /* a wider box than the other games, as under 981px across the game stacks its table
      and side panel. Sized here, not in games.css: a cached stylesheet left the frame at
@@ -7280,13 +7278,7 @@ BUILD.hkmj = host => {
   const fit = () => { frame.style.height = Math.max(500, innerHeight - frame.getBoundingClientRect().top - scrollY - 18) + 'px'; };
   fit();
   addEventListener('resize', fit);
-  const onScore = e => {
-    if (e.origin !== location.origin || e.source !== frame.contentWindow) return;
-    const score = e.data && e.data.hkmjScore;
-    if (Number.isInteger(score) && score > 0) recordStat('hkmj', { key:'high', mode:'max', value:score });
-  };
-  addEventListener('message', onScore);
-  return () => { removeEventListener('message', onScore); removeEventListener('resize', fit); host.innerHTML = ''; host.style.cssText = ''; };
+  return () => { removeEventListener('resize', fit); host.innerHTML = ''; host.style.cssText = ''; };
 };
 
 /* Opened from another page, e.g. Andre's page showing a game in a frame:
