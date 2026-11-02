@@ -3268,11 +3268,13 @@ function morphPlay(layer, week, month, back){
   return play(back);
 }
 
-/* A change to the week, with the calendar's moves and timing: the week as it was
-   and as it will be are measured, then every block moves up or down, then sideways,
-   changing into what it's becoming on the way. What has no block to become slides
-   out behind the others, and what's new slides in last. loose: blocks that overlap
-   count as the same block, so a lesson can become something else entirely. */
+/* A change to the week, with the calendar's moves and timing (ANIMATIONS.md has the
+   rules): the week as it was and as it will be are measured, then every block moves
+   up or down, then sideways, changing into what it's becoming on the way. No block
+   ever touches another: what has no block to become closes up in its own day while
+   the blocks around it move, and what's new opens last, into space already clear.
+   loose: blocks that overlap count as the same block, so a lesson can become
+   something else entirely. */
 function morphWeek(change, loose){
   closeAll();
   if (scrollY > 40) scrollTo({ top:0, behavior:"smooth" });      /* the tiles sit below the timetable */
@@ -3284,12 +3286,22 @@ function morphWeek(change, loose){
   morphing = morphWeekPlay(layer, from, to, loose || phone.matches);    /* the phone's cards are told apart by place */
   return settle(morphing, layer).then(() => document.body.classList.remove("morphing"));
 }
+/* The most pairs that keep their order down the day. Only those can move together
+   without one crossing another; the rest close up here and open up there. */
+function keepOrder(pairs){
+  const s = [...pairs].sort((a, b) => a[1].r.top - b[1].r.top || a[1].r.left - b[1].r.left);
+  const best = s.map(() => 1), prev = s.map(() => -1);
+  s.forEach((p, i) => { for (let j = 0; j < i; j++) if (s[j][0].r.top <= p[0].r.top && best[j] + 1 > best[i]){ best[i] = best[j] + 1; prev[i] = j; } });
+  const keep = [];
+  for (let i = best.indexOf(Math.max(...best)); i >= 0; i = prev[i]) keep.unshift(s[i]);
+  return keep;
+}
 function morphWeekPlay(layer, from, to, loose){
-  const { W, track, shell, fadeWords, train, fadePiece, play } = morphKit(layer);
-  const T1 = MOVE.v, T2 = T1 + MOVE.h;
+  const { track, shell, fadeWords, fadePiece, play } = morphKit(layer);
+  const T1 = MOVE.v, T2 = T1 + MOVE.h, T3 = T2 + MOVE.v;
   const same = (a, b) => a.el.className + a.el.innerHTML === b.el.className + b.el.innerHTML;
   const spanOf = it => (it.el.dataset.span || "").split("-").map(Number);
-  const pairs = [], gone = from.cols.slice(to.cols.length).flatMap(c => c.items), fresh = [];
+  const pairs = [], gone = from.cols.slice(to.cols.length).flatMap(c => c.items.map(it => ({ ...it, to:it.r.top }))), fresh = [];
   to.cols.forEach((col, k) => {
     const left = [...(from.cols[k] ? from.cols[k].items : [])], found = new Map();
     const take = fits => { for (const it of col.items) if (!found.has(it)){
@@ -3299,15 +3311,26 @@ function morphWeekPlay(layer, from, to, loose){
     take((o, n) => n.el.dataset.sig && o.el.dataset.sig === n.el.dataset.sig);
     take((o, n) => { const a = spanOf(o), b = spanOf(n); return n.el.dataset.who && o.el.dataset.who === n.el.dataset.who && a[0] < b[1] && b[0] < a[1]; });
     if (loose) take((o, n) => o.r.top < n.r.top + n.r.height && n.r.top < o.r.top + o.r.height);
-    for (const it of col.items) if (found.has(it)) pairs.push([found.get(it), it]); else fresh.push(it);
-    gone.push(...left);
+    const keep = keepOrder([...found].map(([n, o]) => [o, n]));
+    pairs.push(...keep);
+    for (const it of col.items) if (!keep.some(p => p[1] === it)) fresh.push(it);
+    left.push(...[...found.values()].filter(o => !keep.some(p => p[0] === o)));
+    /* it closes to where the next block is going, so it stays between its neighbours */
+    for (const it of left){
+      const next = keep.find(p => p[0].r.top >= it.r.top), last = keep.filter(p => p[0].r.top < it.r.top).at(-1);
+      gone.push({ ...it, to:next ? next[1].r.top : last ? last[1].r.top + last[1].r.height : it.r.top });
+    }
   });
-  /* made first, so they pass behind the blocks that stay */
-  const half = list => [list.filter(q => q.r.left + q.r.width / 2 < W / 2), list.filter(q => q.r.left + q.r.width / 2 >= W / 2)];
-  const out = gone.map(it => { const g = shell(it.r), c = filler(it.el); g.append(c); fadeWords(c); return { g, r:it.r }; });
-  const inn = fresh.map(it => { const g = shell(it.r); g.append(filler(it.el)); return { g, r:it.r }; });
-  half(out).forEach((q, i) => train(q, i ? 1 : -1, T1, false));
-  half(inn).forEach((q, i) => train(q, i ? 1 : -1, T2, true));
+  for (const it of gone){
+    const g = shell(it.r), c = filler(it.el);
+    g.append(c); fadeWords(c);
+    track(g, [{ t:0, ...box(it.r), easing:EASE }, { t:T1, ...box({ ...it.r, top:it.to, height:0 }) }]);
+  }
+  for (const it of fresh){
+    const shut = { ...it.r, height:0 }, g = shell(shut);
+    g.append(filler(it.el));
+    track(g, [{ t:T2, ...box(shut), easing:EASE }, { t:T3, ...box(it.r) }]);
+  }
   for (const [o, n] of pairs){
     const g = shell(o.r), now = filler(n.el), a = o.r, b = n.r, was = same(o, n);
     if (was) g.append(now);
