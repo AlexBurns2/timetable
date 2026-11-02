@@ -23,7 +23,16 @@ function andreLook() {
   const sheet = document.getElementById('andreLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'andreLook' }));
   sheet.textContent = `html.andre{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
 }
-if (ANDRE) { document.documentElement.classList.add('andre'); andreLook(); }
+if (ANDRE) {
+  document.documentElement.classList.add('andre'); andreLook();
+  /* stays hidden on the module's colour until it has really painted, and again across the reload after saved settings arrive */
+  addEventListener('load', () => {
+    const show = () => { frameElement.style.visibility = ''; };
+    requestAnimationFrame(() => requestAnimationFrame(show));
+    setTimeout(show, 400);      /* animation frames wait while the tab is hidden */
+  });
+  addEventListener('pagehide', () => { frameElement.style.visibility = 'hidden'; });
+}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=%E4%B8%80%E4%BA%8C%E4%B8%89%E5%9B%9B%E4%BA%94%E5%85%AD%E4%B8%83%E5%85%AB%E4%B9%9D%E8%90%AC%E6%9D%B1%E5%8D%97%E8%A5%BF%E5%8C%97%E4%B8%AD%E7%99%BC%E6%A2%85%E8%98%AD%E8%8F%8A%E7%AB%B9%E6%98%A5%E5%A4%8F%E7%A7%8B%E5%86%AC%E9%BA%BB%E9%9B%80%E6%A9%9F%E9%96%8B%E5%85%A5%E6%9B%B8&display=block" rel="stylesheet">
 <style>
@@ -692,22 +701,34 @@ select option{color:var(--ink);background:var(--panel)}
 
 /* ===== On Andre's page: flat blocks in the module's red, not wood and felt ===== */
 html.andre,html.andre body{background:var(--bg)!important;background-image:none!important}      /* even with the site's Zen mode, which makes pages see-through */
-html.andre{--mj:#E0303A;--back1:#E0303A!important;--back2:#c8202c!important;--backborder:#a81621!important}
-html.andre :is(.rk,.nplate,.rack,.compass){background:var(--panel)!important;border:0!important;box-shadow:none!important;color:var(--text)}
-html.andre .felt3{background:color-mix(in srgb,var(--mj) 12%,var(--panel))!important;border:0!important;box-shadow:none!important;border-radius:10px}
-html.andre :is(.nplate,.rk,.rack,.compass){border-radius:10px}
-html.andre .nplate.turn{box-shadow:0 0 0 2px var(--mj)!important}
+html.andre{--mj:#E0303A;--mj-dark:color-mix(in srgb,#000 9%,var(--bg));--back1:#E0303A!important;--back2:#c8202c!important;--backborder:#a81621!important}
+/* at the table nothing gets a white box: it all sits on the module's colour */
+html.andre :is(.rk,.nplate,.rack,.felt3,.actions,.mymelds){background:none!important;border:0!important;box-shadow:none!important;color:var(--text)}
+html.andre .felt3{border-radius:10px}
+/* a slightly darker red for what needs separating */
+html.andre :is(.compass,.side){background:var(--mj-dark)!important;border:0!important;box-shadow:none!important;color:var(--text);border-radius:10px}
+html.andre .nplate{border-radius:10px}
+html.andre .nplate.turn{background:var(--mj-dark)!important;box-shadow:none!important}
 html.andre .np-name{color:var(--text)}
-html.andre .np-score,html.andre .sp-score{background:var(--panel-2);color:var(--text)}
+html.andre :is(.np-score,.sp-score,.tag){background:var(--mj-dark);color:var(--text)}
+html.andre .tag.you{background:var(--mj-dark);color:var(--text)}
 html.andre :is(.cround,.cround small,.chand){color:var(--text)!important}
-html.andre .cled{background:none;border:0;color:var(--mj);text-shadow:none}
-html.andre .cedge{color:var(--muted)}
+html.andre .cled{background:none;border:0;color:var(--text);text-shadow:none}
+html.andre .cedge{color:var(--text)}
 html.andre .cedge.dl{color:var(--mj)}
 html.andre .cedge.on{color:#fff;background:var(--mj);box-shadow:none}
 html.andre .act{box-shadow:none;border-radius:10px}
 html.andre .act.win{background:var(--mj)}
-html.andre .mymelds{border-right-color:var(--line)}
-html.andre .tag.you{background:var(--panel-2);color:var(--text)}
+html.andre .mymelds{border-right:2px solid var(--mj-dark)!important}
+html.andre :is(.actions .msg,.hints,.side,.kv span,.tabs button){color:var(--text)}
+html.andre .tabs{border-bottom-color:var(--bg)}
+html.andre .tabs button.on{color:var(--text);border-bottom-color:var(--text)}
+html.andre .scores td,html.andre .kv{border-color:var(--bg)}
+html.andre .hints .iconbtn{border:0;background:var(--mj-dark);color:var(--text);border-radius:8px}
+html.andre .hints .iconbtn:hover{background:color-mix(in srgb,#000 16%,var(--bg))}
+@media (min-width:981px){html.andre .game{grid-template-columns:minmax(0,1fr) 200px}}
+html.andre .side{font-size:13px}
+html.andre .kv{flex-wrap:wrap}
 /* ===== The site's look, from theme.css. Only the table and tiles keep their own colours ===== */
 :root{--tw:clamp(32px,min(3.9vw,9vh),66px)}     /* a full hand fits the rack beside the side panel */
 /* everything fits the frame, and the rack is always one row: fitRack shrinks the tiles to fit */

@@ -3616,8 +3616,7 @@ function gameFrame(){
   if (!g || !g.frame || !body || body.firstChild) return;
   const f = document.createElement("iframe");
   f.id = "gmframe"; f.title = g.name; f.src = g.frame;
-  f.style.visibility = "hidden";                      /* the module's colour until the game has its own */
-  f.onload = () => f.style.visibility = "";
+  f.style.visibility = "hidden";                      /* the module's colour until the game shows itself */
   body.append(f);
 }
 function renderGames(nd){
