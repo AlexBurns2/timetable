@@ -635,7 +635,6 @@ button.row:hover{background:var(--fill2)}
 .mcell.hol{--mc:#30C05A;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--mc) 17%,var(--base,var(--bg))) 0 8px,color-mix(in srgb,var(--mc) 8%,var(--base,var(--bg))) 8px 16px)}
 .morph{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:15}
 .morph .mp{position:absolute;overflow:hidden;border-radius:10px}
-.morph .mw{position:absolute;overflow:hidden;border-radius:0}
 [data-square] .morph .mp{border-radius:0}
 .morphing :is(#g,#daylist,#daynav,#mgrid,.mbar){visibility:hidden}
 .mcell.today{box-shadow:inset 0 0 0 3px var(--mc)}
@@ -3129,7 +3128,7 @@ const EASE = "cubic-bezier(.45,0,.25,1)";
    on one shared clock */
 function morphKit(layer){
   const W = document.documentElement.clientWidth, speed = Math.max(MAZE.speed, W / 480);
-  const tracks = [], track = (el, keys) => tracks.push({ el, keys });
+  const tracks = [], track = (el, keys, composite = "replace") => tracks.push({ el, keys, composite });
   const shell = r => {
     const s = document.createElement("div");
     s.className = "mp";
@@ -3153,14 +3152,14 @@ function morphKit(layer){
   const play = back => {
     if (!tracks.length) return [];
     const T = Math.max(...tracks.flatMap(x => x.keys.map(k => k.t)));
-    return tracks.map(({ el, keys }) => {
+    return tracks.map(({ el, keys, composite }) => {
       keys.sort((a, b) => a.t - b.t);
       if (keys[0].t > 0) keys.unshift({ ...keys[0], t:0, easing:"linear" });
       if (keys.at(-1).t < T) keys.push({ ...keys.at(-1), t:T });
-      return el.animate(keys.map(({ t, ...k }) => ({ ...k, offset:t / T })), { duration:T, fill:"both", direction:back ? "reverse" : "normal" });
+      return el.animate(keys.map(({ t, ...k }) => ({ ...k, offset:t / T })), { duration:T, fill:"both", composite, direction:back ? "reverse" : "normal" });
     });
   };
-  return { W, track, shell, fadeWords, train, fadePiece, play };
+  return { W, speed, track, shell, fadeWords, train, fadePiece, play };
 }
 /* Builds every piece's moves in the week → month direction, as keyframes on
    one shared clock, then plays them forwards or (back to the week) reversed. */
@@ -3251,8 +3250,9 @@ function morphPlay(layer, week, month, back){
 
 /* A change to the week, with the calendar's moves and timing (ANIMATIONS.md has the
    rules): the week as it was and as it will be are measured. What has no block to
-   become slides off, then every block moves up or down, then sideways, changing into
-   what it's becoming on the way, then what's new slides on, into space already clear.
+   become slides off the side through lanes, like the week arrows, then every block
+   moves up or down, then sideways, changing into what it's becoming on the way, then
+   what's new slides on the same way.
    No block ever touches another. */
 function morphWeek(change){
   closeAll();
@@ -3293,31 +3293,57 @@ function matchBlocks(olds, news){
   return pairs;
 }
 function morphWeekPlay(layer, from, to){
-  const { W, track, shell, fadeWords, fadePiece, play } = morphKit(layer);
+  const { W, speed, track, shell, fadeWords, fadePiece, play } = morphKit(layer);
   const same = (a, b) => a.el.className + a.el.innerHTML === b.el.className + b.el.innerHTML;
-  const olds = from.cols.flatMap(c => c.items), news = to.cols.flatMap(c => c.items);
+  const inCol = cols => cols.flatMap((c, k) => c.items.map(it => ({ ...it, k })));
+  const olds = inCol(from.cols), news = inCol(to.cols), n = Math.max(from.cols.length, to.cols.length);
   const pairs = matchBlocks(olds, news);
   const gone = olds.filter(o => !pairs.some(p => p[0] === o)), fresh = news.filter(n => !pairs.some(p => p[1] === n));
-  const T0 = gone.length ? MOVE.v : 0, T1 = T0 + MOVE.v, T2 = T1 + MOVE.h, T3 = T2 + MOVE.v;
-  const rs = [...olds, ...news].map(it => it.r), top = Math.min(...rs.map(r => r.top)), bottom = Math.max(...rs.map(r => r.top + r.height));
-  /* Off the top or bottom if no block stays in the way, else out to the side inside
-     its own slot. Each is cut off at the edge of the timetable, and those going the
-     same way travel the same distance, so they stay apart. */
-  const slide = (it, stay, t0, coming) => {
-    const r = it.r, inLine = s => s.left < r.left + r.width - 1 && r.left < s.left + s.width - 1;
-    const up = !stay.some(s => inLine(s) && s.top < r.top), down = !stay.some(s => inLine(s) && s.top + s.height > r.top + r.height);
-    const wayUp = up && (!down || r.top - top <= bottom - r.top - r.height);
-    const win = up || down ? { ...r, top, height:bottom - top } : r;
-    const off = up || down ? `translate(0px,${(wayUp ? top - bottom : bottom - top)}px)` : `translate(${r.left + r.width / 2 < W / 2 ? -r.width : r.width}px,0px)`;
-    const w = shell(win), g = shell({ ...r, left:0, top:r.top - win.top }), home = "translate(0px,0px)";
-    w.className = "mw";
-    w.append(g); g.append(filler(it.el));
-    track(g, [{ t:t0, transform:coming ? off : home, easing:EASE }, { t:t0 + MOVE.v, transform:coming ? home : off }]);
+  /* One wave, as the week arrows do it: a day's blocks crossing to or from one edge
+     together. Lanes open through the days in between, they slide, the lanes close. */
+  const closedAt = Array(n).fill(0), lanes = new Map();      /* when each day has closed up; each pair's moves out of the way, which can overlap, so they add up */
+  const wave = (blocks, side, t0, coming, stays) => {
+    if (!blocks.length) return t0;
+    const k = blocks[0].k, bands = blocks.map(b => ({ top:b.r.top, bottom:b.r.top + b.r.height }));
+    const beside = r => bands.some(b => r.top < b.bottom && b.top < r.top + r.height) && (side < 0 ? r.left < blocks[0].r.left : r.left + r.width > blocks[0].r.left + blocks[0].r.width);
+    const days = [...Array(n).keys()].map(j => {
+      const day = stays.filter(x => x.k === j).sort((a, b) => a.r.top - b.r.top);
+      const shifts = (side < 0 ? j < k : j > k) || (j === k && day.some(x => beside(x.r))) ? laneShifts(day.map(x => ({ top:x.r.top, bottom:x.r.top + x.r.height })), bands) : [];
+      return { j, day, shifts };
+    }).filter(d => d.shifts.some(Boolean));
+    const opening = days.length ? MAZE.open + MAZE.margin : 0;
+    t0 = Math.max(t0, ...days.map(d => closedAt[d.j] - opening), coming ? closedAt[k] - opening : 0);
+    const at = t0 + opening;
+    let end = at;
+    for (const b of blocks){
+      const g = shell(b.r), dx = side < 0 ? -(b.r.left + b.r.width + 24) : W - b.r.left + 24, D = Math.max(260, Math.min(640, Math.abs(dx) / speed));
+      const out = `translateX(${dx}px)`, home = "translateX(0px)";
+      g.append(filler(b.el));
+      track(g, coming ? [{ t:at, transform:out, easing:"cubic-bezier(.25,.6,.3,1)" }, { t:at + D, transform:home }]
+                      : [{ t:at, transform:home, easing:"cubic-bezier(.55,0,.75,.4)" }, { t:at + D, transform:out }]);
+      end = Math.max(end, at + D);
+    }
+    const shut = end + MAZE.margin;
+    for (const { j, day, shifts } of days){
+      closedAt[j] = shut + MAZE.close;
+      day.forEach((x, i) => { if (!shifts[i]) return;
+        const down = `translateY(${shifts[i]}px)`, up = "translateY(0px)";
+        (lanes.get(x.p) || lanes.set(x.p, []).get(x.p)).push([{ t:t0, transform:up, easing:"ease-in-out" }, { t:t0 + MAZE.open, transform:down }, { t:shut, transform:down, easing:"ease-in-out" }, { t:shut + MAZE.close, transform:up }]); });
+    }
+    return end;
   };
-  gone.forEach(it => slide(it, pairs.map(p => p[0].r), 0, false));
-  fresh.forEach(it => slide(it, pairs.map(p => p[1].r), T2, true));
-  for (const [o, n] of pairs){
-    const g = shell(o.r), now = filler(n.el), a = o.r, b = n.r, was = same(o, n);
+  /* each side's blocks, a day at a time: out from the edge inwards, in from the middle outwards */
+  const waves = (list, t0, coming, stays) => Math.max(t0, ...[-1, 1].map(side => {
+    const mine = list.filter(b => (b.r.left + b.r.width / 2 < W / 2 ? -1 : 1) === side);
+    const order = [...new Set(mine.map(b => b.k))].sort((a, b) => (coming ? -side : side) * (b - a));
+    return order.reduce((t, k) => wave(mine.filter(b => b.k === k), side, t, coming, stays), t0);
+  }));
+  const out = waves(gone, 0, false, pairs.map(p => ({ p, r:p[0].r, k:p[0].k })));
+  const T0 = Math.max(out, ...closedAt), T1 = T0 + MOVE.v, T2 = T1 + MOVE.h;
+  waves(fresh, T2, true, pairs.map(p => ({ p, r:p[1].r, k:p[1].k })));
+  for (const pair of pairs){
+    const [o, n] = pair, g = shell(o.r), now = filler(n.el), a = o.r, b = n.r, was = same(o, n);
+    (lanes.get(pair) || []).forEach(keys => track(g, keys, "add"));
     if (was) g.append(now);
     else {
       const old = filler(o.el);
@@ -3777,21 +3803,30 @@ function paintMjTile(){
   $("mjstate").innerHTML = hi === lo ? (s.length > 1 ? "Everyone tied" : esc(s[0].name)) + " · " + mjFmt(hi) : "↑ " + at(hi) + "<br>↓ " + at(lo);
 }
 /* every player's points after each game, as a line each, in their block's colour */
+/* Where a score sits, for the fills and the graph. Points double, so each doubling
+   of the distance from the middle score gets about the same room: small gaps near
+   the middle stay easy to see, and a big win doesn't flatten everyone else. The
+   typical gap between players sets the size, so it fits scores close or far apart. */
+function mjScale(now){
+  const s = [...now].sort((a, b) => a - b), gaps = s.slice(1).map((v, i) => v - s[i]).sort((a, b) => a - b);
+  const mid = s[s.length >> 1], size = Math.max(8, gaps[gaps.length >> 1] || 0);
+  return v => Math.asinh((v - mid) / size);
+}
 function mjGraph(W, H){
   const cur = {}; mj.players.forEach(p => cur[p.id] = MJ_START);
   const pts = [{ ...cur }];
   mj.rounds.forEach(r => { for (const id in r.d) if (id in cur) cur[id] += r.d[id]; pts.push({ ...cur }); });
   const n = pts.length - 1, L = 48, R = 8, T = 8, B = 20;
   const all = pts.flatMap(o => Object.values(o));
-  /* points double, so the axis does too: equal heights are equal ratios. It reaches
-     a power of 2 either side of the start, with room spare so scores sit close. */
-  const step = 2 ** Math.max(9, Math.ceil(Math.log2(Math.max(...all.map(v => Math.abs(v - MJ_START)), 1))) + 1);
-  const lo = Math.max(MJ_START - step, Math.min(...all) / 2, 1), hi = MJ_START + step;
-  const x = i => L + (W - L - R) * i / n, y = v => T + (H - T - B) * Math.log2(hi / Math.max(v, 1)) / Math.log2(hi / lo);
+  const at = mjScale(Object.values(cur)), lo = Math.min(...all.map(at)), hi = Math.max(...all.map(at));
+  const x = i => L + (W - L - R) * i / n, y = v => T + (H - T - B) * (hi - at(v)) / ((hi - lo) || 1);
+  /* labels a power of 2 from the start, nearest first, wherever there's room */
+  const ticks = [];
+  for (const v of [MJ_START, ...[...Array(13).keys()].slice(1).flatMap(k => [MJ_START + 2 ** k, MJ_START - 2 ** k])])
+    if (at(v) >= lo && at(v) <= hi && ticks.every(u => Math.abs(y(u) - y(v)) >= 20)) ticks.push(v);
   const line = (v, dash) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" ${dash ? `stroke="var(--line3)" stroke-dasharray="4 4"` : `stroke="var(--sep)"`}/>`;
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Points after each game">` +
-    [hi, (hi + MJ_START) / 2, (lo + MJ_START) / 2, lo].map(Math.round).map(v => line(v) + `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${mjFmt(v)}</text>`).join("") +
-    line(MJ_START, true) + `<text x="${L - 6}" y="${y(MJ_START) + 4}" text-anchor="end">${mjFmt(MJ_START)}</text>` +
+    ticks.map(v => line(v, v === MJ_START) + `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${mjFmt(v)}</text>`).join("") +
     `<text x="${L}" y="${H - 4}">Start</text><text x="${W - R}" y="${H - 4}" text-anchor="end">Game ${n}</text>` +
     mj.players.map(p => `<polyline fill="none" stroke="${mjColor(p.id)}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1" stroke-dasharray="1" points="` +
       pts.map((o, i) => x(i).toFixed(1) + "," + y(o[p.id]).toFixed(1)).join(" ") + `"><title>${esc(p.name)}</title></polyline>`).join("") + `</svg>`;
@@ -3811,9 +3846,9 @@ function renderMj(nd){
   const pts = mjPoints(), st = [...mj.players].sort((a, b) => pts[b.id] - pts[a.id]), n = st.length;
   /* the blocks, placed down a day when there's a grid */
   const block = (cls, who, c, body, y, h, span = 2) => `<div class="mjb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
-  /* a fill runs up from half the lowest score, by doublings like the graph, so a gap in the scores is a gap in the fills at any size */
-  const v = st.map(p => pts[p.id]), hi = Math.max(...v), floor = Math.min(MJ_START, Math.max(1, v.at(-1))) / 2;
-  const fill = n => Math.log2(Math.max(n, 1) / floor) / Math.log2(Math.max(hi, 1) / floor) * 100;
+  /* the lowest score still has some fill, so its colour shows */
+  const at = mjScale(st.map(p => pts[p.id])), hi = st.length ? at(pts[st[0].id]) : 0, lo = st.length ? at(pts[st.at(-1).id]) : 0;
+  const fill = n => hi === lo ? 100 : 12 + 88 * (at(n) - lo) / (hi - lo);
   const SAVE = n > 1 ? 82 : 0, ADD = 52, tall = Math.max(560, innerHeight - 174);
   const each = Math.min(150, Math.max(56, (tall - 12 - (SAVE && SAVE + 8) - ADD - 8) / (n || 1) - 8));
   const H = Math.max(tall, 4 + n * (each + 8) + (SAVE && SAVE + 8) + ADD + 8);
