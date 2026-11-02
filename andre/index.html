@@ -554,7 +554,7 @@ button.row:hover{background:var(--fill2)}
 .gmbody .gico{font-size:clamp(48px,14cqmin,96px);line-height:1}
 .gmbody small{font-size:calc(14px * var(--fs,1));color:var(--fg2)}
 .gmframe{padding:0}
-.gmframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
+.gmframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent}
 /* ── Mahjong: the top and bottom players on the closed tile; the score sheet when open ── */
 .mod .mjst{display:block;margin-top:4px;line-height:1.35}
 /* the Mahjong tile turns the week into the standings: a block per player, its fill
@@ -1379,6 +1379,7 @@ const schoolDay = d => !yearListed(d) || termDays.some(([s, e]) => d >= s && d <
 const arrow = (d, unit = "week") => `<button class="arrow" data-d="${d}" aria-label="${d<0?"Previous":"Next"} ${unit}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?"M10 3 5 8l5 5":"M6 3l5 5-5 5"}"/></svg></button>`;
 
 function render(){
+  document.body.classList.toggle("busy", loading && entries.length > 0);      /* first: the views below return early */
   /* typed points survive redraws, but not losing the box (a phone keyboard opening resizes too) */
   if (mjShow && document.activeElement.matches(".mjb input")) return;
   if (gameNow && $(phone.matches ? "daylist" : "g").querySelector("#gmframe")) return;      /* a redraw would restart the game */
@@ -1421,7 +1422,6 @@ function render(){
               : letter ? `<b>Week ${tok("wn", letter)}</b>${dates_}` : dates_;
   rollLabel(label + (staleNote ? ` <span class="stale" title="${esc(staleNote)}">· saved copy</span>` : ""));
   document.body.classList.toggle("off", off !== 0);
-  document.body.classList.toggle("busy", loading && entries.length > 0);
 }
 
 /* ═══ changing text ═══
@@ -3616,6 +3616,8 @@ function gameFrame(){
   if (!g || !g.frame || !body || body.firstChild) return;
   const f = document.createElement("iframe");
   f.id = "gmframe"; f.title = g.name; f.src = g.frame;
+  f.style.visibility = "hidden";                      /* the module's colour until the game has its own */
+  f.onload = () => f.style.visibility = "";
   body.append(f);
 }
 function renderGames(nd){
