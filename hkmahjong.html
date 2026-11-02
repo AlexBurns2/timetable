@@ -712,6 +712,8 @@ html.andre .modal{background:var(--bg);color:var(--text);box-shadow:none}
 html.andre .modal :is(.pay,.wintiles,.chip,.theme,.backpick,.statgrid div,.ach),html.andre .modal .btn:not(.primary):not(.red){background:var(--mj-box);color:var(--text);border-color:transparent}
 html.andre .modal :is(.sub,small){color:var(--text)}
 html.andre .reacts{border-left:0}
+html.andre .code{background:var(--bg);color:var(--text);border:0}
+html.andre :is(.chatwin,.cw-log){background:var(--mj-box);color:var(--text)}
 /* menus: no white, shades of red */
 html.andre :is(.choice,.mode,.panel,.playas input){background:var(--mj-box);color:var(--text);border:0;box-shadow:none}
 html.andre :is(.choice,.mode):hover{background:color-mix(in srgb,#fff 48%,var(--bg))}
@@ -871,7 +873,7 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .playas{color:var(--muted)}
 .playas input{background:var(--panel-2);border:var(--card-border);color:var(--text)}
 .playas input[readonly]{cursor:default}
-.choices{grid-template-columns:repeat(4,1fr);gap:12px}
+.choices{grid-template-columns:repeat(3,1fr);gap:12px}
 .choice,.mode{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);padding:16px;text-align:left;color:var(--text);transition:transform .15s,border-color .15s}
 .choice:hover,.mode:hover{background:var(--panel);border-color:var(--accent);transform:translateY(-2px)}
 .choice .face{width:52px;border-radius:8px;box-shadow:0 2px 0 var(--line);margin:0 0 10px}
@@ -895,10 +897,17 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
   <section id="game" class="hidden"></section>
 </main>
 <script>
-/* Multiplayer is off for now, so nothing here talks to Firebase. To bring it back,
-   put the Firebase config here and set MULTIPLAYER to true. */
-const MULTIPLAYER = false;
-window.HKMJ_FIREBASE_CONFIG = null;
+/* Online rooms run on this Firebase project, not the site's own server. */
+const MULTIPLAYER = true;
+window.HKMJ_FIREBASE_CONFIG = window.HKMJ_FIREBASE_CONFIG || {
+  apiKey: "AIzaSyACB58WZ04Xw0bGpFs8ZsZ67EI34kDJhI0",
+  authDomain: "mscunofficialmahjong.firebaseapp.com",
+  databaseURL: "https://mscunofficialmahjong-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mscunofficialmahjong",
+  storageBucket: "mscunofficialmahjong.firebasestorage.app",
+  messagingSenderId: "179376283673",
+  appId: "1:179376283673:web:fcd31b35ae68f7081f4a88"
+};
 </script>
 <script>
 // ===================== Hong Kong Mahjong engine =====================
@@ -1939,18 +1948,18 @@ function renderHome() {
     <div class="sign" aria-hidden="true"><span>麻</span><span>雀</span></div>
     <div class="home-copy">
       <h1>Hong Kong Mahjong</h1>
-      <p>Hong Kong rules against bots, from Easy to Pro.</p>
+      <p>Hong Kong rules, with friends or against bots.</p>
  <div class="playas"><button class="avbtn" id="homeAv" title="Change your picture">${avatarHTML(App.avatar, App.name)}</button><label for="nameIn">Playing as</label><input id="nameIn" type="text" maxlength="16" value="${esc(App.name)}" autocomplete="nickname"${SITE_NAME ? ' readonly title="From your timetable"' : ''}>
         <button class="btn red quick" id="quickPlay">Play now vs ${cap(lv)} bots</button></div>
     </div>
   </section>
   <nav class="choices" aria-label="Ways to play">
     <button class="choice" data-go="bots"><span class="face"><b>機</b></span><strong>Choose bots</strong><small>Pick each bot's level and the rules</small></button>
+    ${MULTIPLAYER ? `<button class="choice" data-go="create"><span class="face"><b>開</b></span><strong>Open a room</strong><small>Get a code for up to 3 friends</small></button>
+    <button class="choice" data-go="join"><span class="face"><b>入</b></span><strong>Join a room</strong><small>Type the code a friend sent you</small></button>` : ''}
     <button class="choice" data-mode="daily"><span class="face"><b>日</b></span><strong>Daily deal</strong><small>${store.get('daily', {})[dailyKey()] != null ? `Your best today: ${fmt(store.get('daily', {})[dailyKey()])}` : 'Same deal for everyone today'}</small></button>
     <button class="choice" data-mode="speed"><span class="face"><b>快</b></span><strong>Quick turns</strong><small>5 seconds a turn</small></button>
     <button class="choice" data-mode="practice"><span class="face"><b>練</b></span><strong>Practice</strong><small>See the bots' hands and advice</small></button>
-    ${MULTIPLAYER ? `<button class="choice" data-go="create"><span class="face"><b>開</b></span><strong>Open a room</strong><small>Get a code for up to 3 friends</small></button>
-    <button class="choice" data-go="join"><span class="face"><b>入</b></span><strong>Join a room</strong><small>Type the code a friend sent you</small></button>` : ''}
   </nav>
   <div class="modes">
     <button class="mode" data-go="guide"><b>Rules</b></button>
@@ -2997,7 +3006,7 @@ function renderLobby() {
   if (host) {
     bindSettings(el, L.S, () => { store.set('roomS', L.S); Net.sendLobby(); });
     const cc = $('#copyCode'); cc.onclick = () => { navigator.clipboard.writeText(L.code).then(() => cc.textContent = 'Copied!', () => cc.textContent = 'Copy failed'); };
-    el.querySelectorAll('[data-addbot]').forEach(s => s.onchange = () => { if (!s.value) return; const i = +s.dataset.addbot; L.seats[i] = { n: BOT_NAMES[i], ty: 'b', lv: s.value, on: 1 }; Net.sendLobby(); renderLobby(); });
+    el.querySelectorAll('[data-addbot]').forEach(s => s.onchange = () => { if (!s.value) return; const i = +s.dataset.addbot; L.seats[i] = { n: BOT_NAMES[i - 1], ty: 'b', lv: s.value, on: 1 }; Net.sendLobby(); renderLobby(); });
     el.querySelectorAll('[data-botlv]').forEach(s => s.onchange = () => { L.seats[+s.dataset.botlv].lv = s.value; Net.sendLobby(); });
     el.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { L.seats[+b.dataset.rm] = null; Net.sendLobby(); renderLobby(); });
     el.querySelectorAll('[data-kick]').forEach(b => b.onclick = () => { const i = +b.dataset.kick; if (L.seats[i] && L.seats[i].p) Net.banned.add(L.seats[i].p); L.seats[i] = null; Net.sendLobby(); renderLobby(); });
@@ -3008,7 +3017,7 @@ function renderLobby() {
 }
 function startRoomGame() {
   const L = App.lobby;
-  L.seats = L.seats.map((x, i) => x || { n: BOT_NAMES[i], ty: 'b', lv: L.fill, on: 1 });
+  L.seats = L.seats.map((x, i) => x || { n: BOT_NAMES[i - 1], ty: 'b', lv: L.fill, on: 1 });      /* seat 0 is always the host */
   L.started = true;
   const seats = L.seats.map(x => ({ name: x.n, type: x.ty === 'b' ? 'bot' : 'human', level: x.ty === 'b' ? x.lv : undefined, on: !!x.on, av: x.ty === 'b' ? botAvatar(x.n) : (x.a || '') }));
   stopController(); resetGameUI();
