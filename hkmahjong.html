@@ -676,8 +676,11 @@ select option{color:var(--ink);background:var(--panel)}
 /* ===== The site's look, from theme.css. Only the table and tiles keep their own colours ===== */
 :root{--tw:clamp(32px,min(3.9vw,9vh),66px)}     /* a full hand fits the rack beside the side panel */
 /* everything fits the frame, and the rack always shows every tile: it wraps, and the table gives way */
+/* heights come from the frame itself, not vh or dvh, which can measure the whole browser window instead of a frame */
 html,body{overflow:hidden;overscroll-behavior:none}
-main{height:calc(100dvh - 54px);min-height:0;overflow:auto;overscroll-behavior:none}
+body{display:flex;flex-direction:column}
+main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none}
+.modal{max-height:calc(100% - 32px)}
 #game{height:100%}
 .game{height:100%;min-height:0;padding:8px 12px;grid-template-rows:minmax(0,1fr)}
 .mine,.rack{flex:none}
@@ -690,18 +693,18 @@ main{height:calc(100dvh - 54px);min-height:0;overflow:auto;overscroll-behavior:n
   .side{display:none}
   .table2,.tablewrap{height:auto;flex:1;min-height:0}
   .felt3{min-height:0}
+  .phleave{margin-left:auto}
   .rack{padding:12px 6px 6px;gap:6px;min-height:0}
   .hand{gap:1px}
 }
 @media (max-width:600px){
-  header.top{gap:6px;padding:0 8px}
-  .nav button{padding:8px 4px;font-size:13px}
-  #leaveTop{white-space:nowrap}
-  .screen{padding:10px 12px}
+   .screen{padding:10px 12px}
   .choices{gap:8px}
   .choice,.mode{padding:10px}
   .choice .face{display:none}
   .homefoot{display:none}
+  .modes{grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .mode span,.choice small{display:none}
   .table2{min-height:0}
   .np-meta .tag{display:none}
   .np-name{max-width:58px}
@@ -724,13 +727,8 @@ main{height:calc(100dvh - 54px);min-height:0;overflow:auto;overscroll-behavior:n
 }
 html,body{font-family:var(--font-ui);background:var(--bg);background-image:var(--bg-img);background-size:auto;color:var(--text)}
 :focus-visible{outline:2px solid var(--accent)}
-header.top{background:var(--panel);border-bottom:var(--card-border);color:var(--text);height:54px}
-.logo,.status,.sign{display:none}
-.nav{margin-left:0}
-.nav button{color:var(--muted)}
-.nav button:hover{background:var(--panel-2);color:var(--text)}
-.nav button.on{color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
-.who,.iconbtn{color:var(--muted)}
+.sign{display:none}
+.iconbtn{color:var(--muted)}
 .iconbtn:hover{border-color:var(--line);color:var(--text)}
 .btn{border:var(--card-border);border-radius:var(--radius);background:var(--panel);color:var(--text)}
 .btn:hover{background:var(--panel-2)}
@@ -755,22 +753,14 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .choice .face b{font-size:30px}
 .choice strong,.mode b{font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt);font-size:1.0625rem;color:var(--text)}
 .choice small,.mode span,.homefoot{color:var(--muted);font-size:.8125rem}
-.modes{margin-top:12px;gap:12px}
+.modes{margin-top:12px;gap:12px;grid-template-columns:repeat(5,1fr)}
+@media (min-width:981px){.phleave{display:none}}
 .homefoot{margin-top:18px}
 .hints,.hints .iconbtn{color:var(--muted)}
 .hints .iconbtn{border-color:var(--line)}
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="logo" id="logoBtn" role="button" tabindex="0" aria-label="Home"><span class="badge">麻雀</span><span class="wm">HK Mahjong</span></div>
-  <nav class="nav" aria-label="Main"><button id="homeBtn">Play</button><button id="guideBtn">Rules</button><button id="lookBtn">Appearance</button><button id="statsBtn">Stats</button></nav>
-  <div class="status" id="netStatus"></div>
-  <div class="spacer"></div>
-  <button class="btn red small hidden" id="leaveTop">Leave table</button>
-  <button class="iconbtn" id="soundBtn" title="Sound on/off">🔊</button>
-  <button class="who" id="whoBtn" title="Your profile"><span id="whoAv"></span><span id="whoName"></span></button>
-</header>
 <main>
   <section id="home" class="screen"></section>
   <section id="botsetup" class="screen hidden"></section>
@@ -1728,7 +1718,7 @@ function showProfile() {
   o.querySelector('#profDone').onclick = () => { const n = cleanName(o.querySelector('#profName').value); if (n) { App.name = n; store.set('name', n); onProfileChanged(); } closeModal(); };
 }
 function onProfileChanged() {
-  updateHeader();
+
   if (App.screen === 'home') renderHome();
   if (App.role === 'local' && App.ctl) { App.ctl.g.seats[0].av = App.avatar; App.ctl.g.seats[0].name = App.name; App.ctl.publish(); }
   if (App.role === 'host' || App.role === 'client') Net.shareProfile();
@@ -1783,27 +1773,8 @@ function show(screen) {
   if (screen === 'botsetup') renderBotSetup();
   if (screen === 'lobby') renderLobby();
   if (screen === 'game') { buildGameSkeleton(); renderGame(); }
-  updateHeader();
-}
-function updateHeader() {
-  $('#whoName').textContent = App.name;
-  $('#whoAv').innerHTML = avatarHTML(App.avatar, App.name, 'mini');
-  $('#homeBtn').classList.toggle('on', ['home', 'botsetup'].includes(App.screen));
-  const lt = $('#leaveTop');
-  lt.classList.toggle('hidden', !(App.screen === 'game' || App.screen === 'lobby'));
-  lt.textContent = App.screen === 'lobby' ? 'Leave room' : 'Leave table';
-  $('#soundBtn').textContent = Fx.pack !== 'off' ? '🔊' : '🔇';
-  const st = $('#netStatus');
-  const fbSet = !!(window.HKMJ_FIREBASE_CONFIG && window.HKMJ_FIREBASE_CONFIG.databaseURL);
-  let txt = fbSet ? 'Firebase not connected (tap for why)' : 'Offline (bots only)', cls = fbSet ? 'dot warn' : 'dot';
-  if (App.onlineOk === null) { txt = 'Checking online…'; cls = 'dot warn'; }
-  else if (App.onlineOk) { txt = Net.provider === 'firebase' ? 'Online ready (Firebase)' : 'Online ready'; cls = 'dot ok'; }
-  if (App.role === 'host' || App.role === 'client') { txt = 'Room ' + (Net.code || ''); cls = 'dot ok'; }
-  st.innerHTML = `<span class="${cls}"></span>${esc(txt)}`;
-  st.style.cursor = App.onlineOk === false ? 'pointer' : '';
-  st.onclick = App.onlineOk === false ? showNetDiag : null;
-}
 
+}
 // ---------- modal ----------
 function modal(html, opts) {
   closeModal();
@@ -1848,12 +1819,16 @@ function renderHome() {
     <button class="mode" data-mode="daily"><b>Daily deal</b><span>Same deal for everyone today vs Hard bots${store.get('daily', {})[dailyKey()] != null ? ` · your best ${fmt(store.get('daily', {})[dailyKey()])}` : ''}</span></button>
     <button class="mode" data-mode="practice"><b>Practice</b><span>See the bots' hands and the Pro bot's advice</span></button>
     <button class="mode" data-mode="speed"><b>Quick turns</b><span>5-second turns against faster bots</span></button>
+    <button class="mode" id="lookBtn"><b>Appearance</b><span>Tiles, table and sound</span></button>
+    <button class="mode" id="statsBtn"><b>Stats</b><span>Your wins and best hands</span></button>
   </div>
   <div id="homeErr" class="err" style="text-align:center"></div>
   <p class="homefoot">Played to Hong Kong rules with flowers, seasons and faan scoring. Tile colours and corner numbers are under Appearance.</p>`;
-  $('#nameIn').oninput = e => { App.name = cleanName(e.target.value) || App.name; store.set('name', App.name); updateHeader(); };
+  $('#nameIn').oninput = e => { App.name = cleanName(e.target.value) || App.name; store.set('name', App.name); };
   $('#quickPlay').onclick = startBotGame;
   $('#homeAv').onclick = showProfile;
+  $('#lookBtn').onclick = () => showAppearance();
+  $('#statsBtn').onclick = showStats;
   $('#home').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => startBotGame(b.dataset.mode));
   $('#home').querySelectorAll('.choice').forEach(c => c.onclick = () => {
     const g = c.dataset.go;
@@ -2211,7 +2186,7 @@ function waitsFor(tiles, melds, V, s) {
 }
 function renderHints() {
   const el = $('#hints'), V = App.view; if (!V) return;
-  const toggle = `<button class="iconbtn" data-act="hints" title="Show or hide winning-tile hints">${App.hints ? 'Hide waits' : 'Show waits'}</button>`;
+  const toggle = `<button class="iconbtn" data-act="hints" title="Show or hide winning-tile hints">${App.hints ? 'Hide waits' : 'Show waits'}</button><button class="iconbtn phleave" data-act="leave">Leave game</button>`;
   const tip = practiceTip();
   const tipHTML = tip ? `<span class="tipline">${esc(tip.text)}</span>` : '';
   if (!App.hints || App.seat < 0 || !App.priv || V.ph === 'over') { el.innerHTML = toggle + tipHTML; return; }
@@ -2391,7 +2366,7 @@ function showAppearance(keepScroll) {
   o.querySelectorAll('[data-backcol]').forEach(c => c.onclick = () => { Fx.backCol = c.dataset.backcol; store.set('backCol', Fx.backCol); redo(); });
   o.querySelectorAll('[data-felt]').forEach(c => c.onclick = () => { Fx.felt = c.dataset.felt; store.set('felt', Fx.felt); redo(); });
   o.querySelectorAll('[data-wood]').forEach(c => c.onclick = () => { Fx.wood = c.dataset.wood; store.set('wood', Fx.wood); redo(); });
-  o.querySelectorAll('[data-pack]').forEach(c => c.onclick = () => { Fx.pack = c.dataset.pack; store.set('pack', Fx.pack); Sound.on = Fx.pack !== 'off'; updateHeader(); Sfx.call('p'); showAppearance(true); });
+  o.querySelectorAll('[data-pack]').forEach(c => c.onclick = () => { Fx.pack = c.dataset.pack; store.set('pack', Fx.pack); Sound.on = Fx.pack !== 'off'; Sfx.call('p'); showAppearance(true); });
   const tg = (id, fn) => o.querySelector('#' + id).onclick = fn;
   tg('swShiny', () => { Fx.shiny = !Fx.shiny; store.set('shiny', Fx.shiny); redo(); });
   tg('swAnim', () => { Fx.anim = !Fx.anim; store.set('anim', Fx.anim); redo(); });
@@ -2659,7 +2634,7 @@ function showNetDiag() {
   else if (e.startsWith('CONFIG')) { what = 'Firebase rejected the settings in this file.'; fix = 'Copy the firebaseConfig again from Project settings and check each value has no extra brackets or links.'; }
   else { what = 'Something unexpected went wrong.'; fix = 'Open the browser console (right-click, Inspect, Console) and send the red error messages.'; }
   const o = modal(`<h2>Why online isn't working</h2><p><b>${what}</b></p><p>${fix}</p>${e && e !== 'NOCONFIG' ? `<div class="note" style="word-break:break-word">Details: ${esc(e)}</div>` : ''}<p class="sub">Page address: ${esc(location.protocol)}//${esc(location.host || '(local file)')} · Firebase project: ${esc(cfg && cfg.projectId || 'none')}</p><div class="btnrow"><button class="btn red" id="ndRetry">Try again</button><button class="btn" onclick="closeModal()">Close</button></div>`);
-  o.querySelector('#ndRetry').onclick = () => { closeModal(); Net._r = null; App.onlineOk = null; updateHeader(); Net.ready().then(r => { App.onlineOk = !!r; updateHeader(); if (!r) showNetDiag(); }); };
+  o.querySelector('#ndRetry').onclick = () => { closeModal(); Net._r = null; App.onlineOk = null; Net.ready().then(r => { App.onlineOk = !!r; if (!r) showNetDiag(); }); };
 }
 function onlineUnavailable() {
   return showNetDiag();
@@ -2865,20 +2840,11 @@ function hostBackToLobby() {
 
 // ---------- boot ----------
 function boot() {
-  $('#logoBtn').onclick = () => { if (App.screen === 'game' && App.view && !App.view.ov) leaveGame(); else if (App.screen === 'lobby') { Net.leave(); App.role = null; show('home'); } else show('home'); };
-  $('#guideBtn').onclick = showGuide;
-  $('#homeBtn').onclick = () => $('#logoBtn').onclick();
-  $('#lookBtn').onclick = showAppearance;
-  $('#whoBtn').onclick = showProfile;
-  $('#leaveTop').onclick = () => { if (App.screen === 'lobby') { Net.leave(); App.role = null; App.lobby = null; show('home'); } else leaveGame(); };
-  $('#logoBtn').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#logoBtn').onclick(); } };
   document.addEventListener('keydown', onKey);
-  $('#soundBtn').onclick = () => { if (Fx.pack === 'off') { Fx.pack = store.get('lastPack', 'classic'); } else { store.set('lastPack', Fx.pack); Fx.pack = 'off'; } Sound.on = Fx.pack !== 'off'; store.set('pack', Fx.pack); updateHeader(); };
-  $('#statsBtn').onclick = showStats;
   applyFx(); Sound.on = Fx.pack !== 'off';
   show('home');
   Cloud.pull();
-  Net.ready().then(r => { App.onlineOk = !!r; updateHeader(); });
+  Net.ready().then(r => { App.onlineOk = !!r; });
 }
 
 // ---------- keyboard ----------
