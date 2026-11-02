@@ -572,15 +572,18 @@ button.row:hover{background:var(--fill2)}
 .gsbody{position:relative;flex:1;min-height:0}
 /* ── Mahjong: the top and bottom players on the closed tile; the score sheet when open ── */
 .mod .mjst{display:block;margin-top:4px;line-height:1.35}
-/* the Mahjong tile turns the week into the standings: a block per player, then bar graphs */
+/* the Mahjong tile turns the week into the standings: a block per player, its fill
+   showing their points, then a line graph */
 .mjview #daynav{display:none}
 .mjb{position:absolute;left:0;right:0;border-radius:10px;overflow:hidden;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
-.list .mjb{position:static}
-.mjpl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;align-content:center;gap:4px 8px;padding:8px 12px}
+.list .mjb{position:relative}
+.mjpl{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:8px 12px;background:color-mix(in srgb,var(--c) calc(var(--tint) * .35),var(--base,var(--bg)))}
+.mjfill{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));transform-origin:left}
+.mjpl > :not(.mjfill){position:relative}
 .mjrk{font-size:calc(17px * var(--fs,1));font-weight:700;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.mjnm{grid-column:2/-1;font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mjpts{grid-column:1/3;font-size:calc(15px * var(--fs,1));font-weight:700}
-.mjpl .mjin{grid-column:3;width:68px;padding:3px 8px;text-align:right;background:color-mix(in srgb,var(--bg) 70%,transparent)}
+.mjnm{font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mjpts{font-size:calc(15px * var(--fs,1));font-weight:700}
+.mjpl .mjin{width:68px;padding:3px 8px;text-align:right;background:color-mix(in srgb,var(--bg) 70%,transparent)}
 .mjctl{background:var(--fill);display:flex;align-items:center;gap:8px;padding:8px 10px}
 .mjsv{flex-direction:column;align-items:stretch;justify-content:center;gap:6px}
 .mjsum{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
@@ -588,27 +591,13 @@ button.row:hover{background:var(--fill2)}
 .mjbtns .btn{flex:1;padding:0 8px}
 .mjerr{color:var(--red)}
 .mjchart{background:var(--fill);padding:12px;display:flex;flex-direction:column;gap:8px}
-.list .mjchart{height:280px}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
 .mjnone{margin:auto;font-size:calc(13px * var(--fs,1));color:var(--fg3);text-align:center}
-.mjc{flex:1;min-height:0;display:flex;gap:4px}
-.mjcl{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative}
-.mjbar{display:block;position:relative;font-style:normal;overflow:hidden;min-height:2px;border-radius:6px;background:color-mix(in srgb,var(--c) 62%,var(--base,var(--bg)));transform-origin:bottom}
-.mjbar span{position:absolute;left:50%;bottom:8px;translate:-50% 0;rotate:180deg;writing-mode:vertical-rl;white-space:nowrap;font-size:calc(12px * var(--fs,1));font-weight:600}
-.mjdiv{justify-content:stretch;gap:0}
-.mjhi,.mjlo{flex:1;min-height:0;display:flex;flex-direction:column}
-.mjhi{justify-content:flex-end}
-.mjlo{border-top:1px solid var(--line3)}
-.mjlo .mjbar{transform-origin:top}
-.mjname2{position:absolute;left:50%;translate:-50% 0;rotate:180deg;writing-mode:vertical-rl;white-space:nowrap;font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
-.mjname2.up{bottom:calc(50% + 6px)}
-.mjname2.dn{top:calc(50% + 6px)}
-.mjg{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:center;font-size:calc(11px * var(--fs,1));color:var(--fg3)}
-.mjgb{flex:1;min-height:0;display:flex;gap:1px}
-.mjkey{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.mjkey span{display:inline-flex;align-items:center;gap:6px}
-.mjkey i{width:12px;height:3px;border-radius:2px;background:var(--c)}
+.mjline{flex:1;min-height:0}
+.list .mjline{min-height:220px}
+.mjline svg{display:block;width:100%;height:100%}
+.mjline text{font-size:11px;fill:var(--fg3)}
 .gsbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);opacity:0;transition:opacity .3s}
 .gstage.ready iframe{opacity:1}
 .gvico{position:absolute;inset:0;display:grid;place-items:center;font-size:56px}
@@ -1725,8 +1714,8 @@ function turnWeek(target, q = 1, change, loose){
     const at = { duration:MORPH, delay:settleAt + late(b), easing:"cubic-bezier(.4,0,.2,1)" };
     b.twin.animate([{ ...box(b.r0), opacity:1 }, { ...box(b.r), opacity:0 }], { ...at, fill:"both" });
     b.el.animate([{ opacity:0 }, { opacity:1 }], { ...at, fill:"backwards" });
-    b.el.querySelectorAll(".mjbar").forEach((bar, i) => bar.animate([{ transform:"scaleY(0)" }, { transform:"none" }],
-      { duration:520 * q, delay:at.delay + 120 * q + i * 16 * q, easing:"cubic-bezier(.25,.8,.3,1)", fill:"backwards" }));
+    if (loose) b.el.querySelectorAll(".mjfill,.mjline polyline").forEach(x => x.animate(x.matches(".mjfill") ? [{ transform:"scaleX(0)" }, { transform:"none" }] : [{ strokeDashoffset:1 }, { strokeDashoffset:0 }],
+      { duration:700 * q, delay:at.delay + 120 * q, easing:"cubic-bezier(.25,.8,.3,1)", fill:"backwards" }));
   }
   /* headings that changed fade across */
   if (change) g.querySelectorAll(":scope > .dh").forEach((h, i) => {
@@ -3937,7 +3926,7 @@ tileHead("mahjong", () => toggleMj());
    scores and anyone signed in can change them. Everyone starts on 4096 (as in
    mahjong.js); each game adds to or takes from people. The tile names who's on
    top and bottom, and switches the week's blocks to the sheet: a column with a
-   block per player, where a game is recorded too, and bar graphs beside it. */
+   block per player, where a game is recorded too, and a line graph beside it. */
 const MJ_START = 4096;
 const MJ_COLORS = ["#0A84FF","#FF375F","#30C05A","#FF9F0A","#AF52DE","#32ADE6","#FFB800","#8E8E93","#AC8E68","#5E5CE6"];   /* as mahjong.js, so a player keeps their colour */
 let mj = null, mjBusy = false, mjNote = "", mjDraft = {};     /* mjDraft: points typed, by player id */
@@ -3990,30 +3979,22 @@ function paintMjTile(){
     return esc(who.length === 1 ? who[0] : who.length === 2 ? who.join(" & ") + " tied" : who.length + " tied") + " · " + mjFmt(n); };
   $("mjstate").innerHTML = hi === lo ? (s.length > 1 ? "Everyone tied" : esc(s[0].name)) + " · " + mjFmt(hi) : "↑ " + at(hi) + "<br>↓ " + at(lo);
 }
-/* A bar each way from a line; label: the name, on the side away from the bar */
-function mjBar(c, v, max, title, label){
-  const bar = `<i class="mjbar" style="--c:${c};height:${Math.abs(v) / max * 100}%"></i>`;
-  return `<div class="mjcl mjdiv" title="${esc(title)}"><div class="mjhi">${v > 0 ? bar : ""}</div><div class="mjlo">${v < 0 ? bar : ""}</div>` +
-    (label ? `<span class="mjname2 ${v < 0 ? "up" : "dn"}">${esc(label)}</span>` : "") + `</div>`;
-}
-/* [title, html] of each graph: points now, the last game, and each player's
-   running gain or loss over the last ten games */
-function mjCharts(st, pts){
-  const top = Math.max(1, ...st.map(p => pts[p.id])), games = mj.rounds.length, none = `<p class="mjnone">Nothing here until the first game</p>`;
-  const points = `<div class="mjc">` + st.map(p => `<div class="mjcl" title="${esc(p.name)}: ${mjFmt(pts[p.id])}">` +
-    `<i class="mjbar" style="--c:${mjColor(p.id)};height:${Math.max(0, pts[p.id]) / top * 100}%"><span>${esc(p.name)} · ${mjFmt(pts[p.id])}</span></i></div>`).join("") + `</div>`;
-  if (!games) return [["Points", points], ["Last game", none], ["Over time", none]];
-  const last = mj.rounds[games - 1].d, most = Math.max(1, ...st.map(p => Math.abs(last[p.id] || 0)));
-  const lastGame = `<div class="mjc">` + st.map(p => { const v = last[p.id] || 0;
-    return mjBar(mjColor(p.id), v, most, `${p.name}: ${v ? mjSigned(v) : "no change"}`, p.name); }).join("") + `</div>`;
-  const run = {}; mj.players.forEach(p => run[p.id] = 0);
-  const after = mj.rounds.map(r => { for (const id in r.d) if (id in run) run[id] += r.d[id]; return { ...run }; });
-  const from = Math.max(0, games - 10), far = Math.max(1, ...after.slice(from).flatMap(o => Object.values(o).map(Math.abs)));
-  const over = `<div class="mjc">` + after.slice(from).map((o, i) => { const g = from + i + 1, day = new Date(mj.rounds[g - 1].t).toLocaleDateString([], { day:"numeric", month:"short" });
-    return `<div class="mjg"><div class="mjgb">` + mj.players.map(p =>
-      mjBar(mjColor(p.id), o[p.id], far, `Game ${g}, ${day}. ${p.name}: ${o[p.id] ? mjSigned(o[p.id]) : "even"}`)).join("") + `</div>${g}</div>`; }).join("") + `</div>` +
-    `<div class="mjkey">` + mj.players.map(p => `<span><i style="--c:${mjColor(p.id)}"></i>${esc(p.name)}</span>`).join("") + `</div>`;
-  return [["Points", points], ["Last game", lastGame], ["Over time", over]];
+/* every player's points after each game, as a line each, in their block's colour */
+function mjGraph(W, H){
+  const cur = {}; mj.players.forEach(p => cur[p.id] = MJ_START);
+  const pts = [{ ...cur }];
+  mj.rounds.forEach(r => { for (const id in r.d) if (id in cur) cur[id] += r.d[id]; pts.push({ ...cur }); });
+  const n = pts.length - 1, L = 48, R = 8, T = 8, B = 20;
+  const all = pts.flatMap(o => Object.values(o));
+  let lo = Math.min(...all), hi = Math.max(...all); if (lo === hi){ lo -= 100; hi += 100; }
+  const x = i => L + (W - L - R) * i / n, y = v => T + (H - T - B) * (hi - v) / (hi - lo);
+  const line = (v, dash) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" ${dash ? `stroke="var(--line3)" stroke-dasharray="4 4"` : `stroke="var(--sep)"`}/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Points after each game">` +
+    [hi, Math.round((hi + lo) / 2), lo].map(v => line(v) + `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${mjFmt(v)}</text>`).join("") +
+    (lo < MJ_START && hi > MJ_START ? line(MJ_START, true) : "") +
+    `<text x="${L}" y="${H - 4}">Start</text><text x="${W - R}" y="${H - 4}" text-anchor="end">Game ${n}</text>` +
+    mj.players.map(p => `<polyline fill="none" stroke="${mjColor(p.id)}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1" stroke-dasharray="1" points="` +
+      pts.map((o, i) => x(i).toFixed(1) + "," + y(o[p.id]).toFixed(1)).join(" ") + `"><title>${esc(p.name)}</title></polyline>`).join("") + `</svg>`;
 }
 const mjHint = () => { const t = Object.values(mjDraft).reduce((a, v) => a + (Math.round(+v) || 0), 0);
   return t ? "Adds up to " + mjSigned(t) + " (usually 0)" : "+ for winners, − for whoever paid"; };
@@ -4023,14 +4004,17 @@ function renderMj(nd){
   if (note){ host.innerHTML = `<div class="${list ? "lmsg" : "msg"}">${esc(note)}</div>`; return; }
   const pts = mjPoints(), st = [...mj.players].sort((a, b) => pts[b.id] - pts[a.id]), n = st.length;
   /* the blocks, placed down a day when there's a grid */
-  const block = (cls, who, c, body, y, h, wide = "") => `<div class="mjb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};${list ? "" : `top:${y}px;height:${h}px;${wide}`}">${body}</div>`;
-  const SAVE = n > 1 ? 88 : 0, ADD = 52, tall = Math.max(560, innerHeight - 174);
-  const each = Math.min(150, Math.max(72, (tall - 12 - (SAVE && SAVE + 8) - ADD - 8) / (n || 1) - 8));
+  const block = (cls, who, c, body, y, h, span = 2) => `<div class="mjb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
+  /* scores sit close together, so a fill runs from a little under the lowest score, not from zero */
+  const v = st.map(p => pts[p.id]), hi = Math.max(...v), lo = Math.min(...v), floor = lo - (hi - lo) * .35;
+  const fill = n => hi === lo ? 100 : (n - floor) / (hi - floor) * 100;
+  const SAVE = n > 1 ? 82 : 0, ADD = 52, tall = Math.max(560, innerHeight - 174);
+  const each = Math.min(150, Math.max(56, (tall - 12 - (SAVE && SAVE + 8) - ADD - 8) / (n || 1) - 8));
   const H = Math.max(tall, 4 + n * (each + 8) + (SAVE && SAVE + 8) + ADD + 8);
   let y = 4 - each - 8;
   const players = st.map(p => { const rank = 1 + st.filter(q => pts[q.id] > pts[p.id]).length;   /* equal points, equal rank */
     return block("mjpl", "mj:" + p.id, mjColor(p.id),
-      `<span class="mjrk tnum">${rank}</span><span class="mjnm">${esc(p.name)}</span><b class="mjpts tnum">${mjFmt(pts[p.id])}</b>` +
+      `<i class="mjfill" style="width:${fill(pts[p.id])}%"></i><span class="mjrk tnum">${rank}</span><span class="mjnm">${esc(p.name)}</span><b class="mjpts tnum">${mjFmt(pts[p.id])}</b>` +
       `<input class="fin mjin tnum" type="number" step="1" data-id="${p.id}" value="${esc(mjDraft[p.id] ?? "")}" placeholder="+ / −" aria-label="${esc(p.name)}'s points this game">`, y += each + 8, each); }).join("");
   y += each + 8;
   const save = n < 2 ? "" : block("mjctl mjsv", "mj:save", "#E0303A",
@@ -4039,14 +4023,16 @@ function renderMj(nd){
   if (save) y += SAVE + 8;
   const add = block("mjctl", "mj:add", "#E0303A",
     `<input class="fin" id="mjname" placeholder="${n ? "Add a player" : "Add everyone at the table"}" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="New player's name"><button class="btn sm" id="mjadd">Add</button>`, y, ADD);
-  const charts = mjCharts(st, pts).map(([t, html], i) => block("mjchart", "mj:chart" + i, "#E0303A", `<b class="mjct">${t}</b>${html}`, 4, H - 8,
-    i === 2 && nd > 4 ? `right:calc(${4 - nd} * (100% + 8px));` : ""));
-  if (list) host.innerHTML = players + save + add + charts.join("");
+  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` +
+    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, H - 8, nd - 2);
+  if (list) host.innerHTML = players + save + add + graph;
   else {
-    const head = t => `<div class="dh"><span class="n">${t}</span></div>`;
-    host.innerHTML = `<div></div>` + head("Standings") + head("Points") + head("Last game") + head("Over time").replace(`"dh"`, `"dh" style="grid-column:span ${nd - 3}"`) + `<div></div><div></div>` +
-      [players + save + add, ...charts, ...Array(nd - 4).fill("")].map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+    const head = (t, span) => `<div class="dh" style="grid-column:span ${span}"><span class="n">${t}</span></div>`;
+    host.innerHTML = `<div></div>` + head("Standings", 2) + head("Over time", nd - 2) + `<div></div><div></div>` +
+      [players + save + add, "", graph, ...Array(nd - 3).fill("")].map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
   }
+  const box = host.querySelector(".mjline");       /* once it's on the page, to measure it */
+  if (box) box.innerHTML = mjGraph(box.clientWidth, box.clientHeight);
   const addP = () => { const v = $("mjname").value.trim(); if (v) mjAct({ action:"player", name:v }); };
   const saveGame = () => { const d = {}; for (const id in mjDraft){ const v = Math.round(+mjDraft[id]); if (v) d[id] = v; }
     if (Object.keys(d).length) mjAct({ action:"round", d }); };
