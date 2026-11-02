@@ -15,11 +15,13 @@
 const ANDRE = new URLSearchParams(location.search).has('andre');
 function andreLook() {
   const top = parent.document.documentElement, cs = parent.getComputedStyle(top), box = parent.document.querySelector('.gmstage');
-  const v = k => cs.getPropertyValue(k).trim(), to = document.documentElement.style, font = parent.getComputedStyle(parent.document.body).fontFamily;
+  const v = k => cs.getPropertyValue(k).trim(), font = parent.getComputedStyle(parent.document.body).fontFamily;
   const set = { '--bg': box ? parent.getComputedStyle(box).backgroundColor : v('--bg'), '--bg-img': 'none', '--panel': v('--base') || v('--bg'), '--panel-2': v('--fill'), '--line': v('--fill2'),
     '--text': v('--fg'), '--muted': v('--fg2'), '--accent': v('--blue'), '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
     '--radius': '10px', '--card-radius': '10px', '--card-border': '0 solid transparent', '--shadow': 'none', '--shadow-hi': 'none', '--display-w': '600', '--display-ls': '0', '--display-tt': 'none' };
-  for (const k in set) to.setProperty(k, set[k]);
+  /* a stylesheet, not inline: theme.js clears inline colours whenever it reapplies the site's skin */
+  const sheet = document.getElementById('andreLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'andreLook' }));
+  sheet.textContent = `html.andre{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
 }
 if (ANDRE) { document.documentElement.classList.add('andre'); andreLook(); }
 </script>
