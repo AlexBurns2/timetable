@@ -657,15 +657,14 @@ button.row:hover{background:var(--fill2)}
 .dh[data-day]{cursor:pointer}
 
 /* ── the birthday register, inside the Calendar tile: missing birthdays in colour, filled ones grey ── */
-/* the register sits beside the settings when there's room, under them when not */
-.mod.modx.open #calbody{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px 24px}
-#calbody > .tilebody{flex:1 1 380px}
-.bdreg{flex:1 1 380px;display:flex;flex-direction:column;gap:10px}
+/* the settings float left and the register's modules flow beside them, then under them */
+.mod.modx.open #calbody{display:flow-root}
+#calbody > .tilebody{float:left;width:min(620px,100%);margin:0 20px 12px 0}
 .bdreg[hidden]{display:none}
-.bdreg .search{max-width:420px}
-.bdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.bdm{border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));box-shadow:inset 3px 0 0 var(--c);min-width:0}
-.bdm.done{background:var(--fill);box-shadow:none;opacity:.6}
+.bdreg .search{display:flow-root;max-width:420px;margin-bottom:8px}
+.bdreg .evnote{margin:0 0 10px}
+.bdm{display:inline-block;vertical-align:top;width:160px;margin:0 8px 8px 0;border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.bdm.done{background:var(--fill);opacity:.6}
 .bdm.done b{color:var(--fg2)}
 .bdm > button.bdn{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:10px 12px;color:inherit}
 .bdm b{font-size:calc(13.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -916,8 +915,7 @@ select.fin{appearance:auto}
         </div>
       </div></div>
       <div class="bdreg" id="bdreg" hidden>
-        <div class="search"><input class="fin" id="bdq" placeholder="Filter, or find anyone by name…" aria-label="Find someone" aria-controls="bdsugg" aria-autocomplete="list" autocomplete="off" spellcheck="false">
-          <div class="sugg" id="bdsugg" role="listbox" hidden></div></div>
+        <div class="search"><input class="fin" id="bdq" placeholder="Search names…" aria-label="Search names" autocomplete="off" spellcheck="false"></div>
         <p class="evnote" id="bdnote"></p>
         <div class="bdgrid" id="bdgrid"></div>
       </div></div>
@@ -969,7 +967,7 @@ const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
 const creds = get("tt.creds", null);
 const signedIn = !!(creds && creds.email && creds.password);
 /* the birthday register: [{ email, name, day:"MM-DD" }], and the class of 2027 */
-let bdays = get(LS.bdays, []) || [], bdPeople = [], bdExtra = [], bdNote = "";
+let bdays = get(LS.bdays, []) || [], bdPeople = [], bdNote = "";
 let email = get(LS.email, "") || get("tt.email", "");
 /* display settings, the same choices as the main timetable */
 let theme = get(LS.theme, "auto");          /* light | auto | dark */
@@ -3493,7 +3491,7 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
 /* ═══ birthday register ═══
    A grid of the class of 2027 (and anyone found by name) to fill in birthdays,
    shared with everyone signed in; they show at the top of the week and month. */
-function bpill(b){ return `<span class="apill" style="--c:#FF375F"><b>🎂 ${esc(b.name)}</b><span class="aw">${DN[wd(b.date)]} ${b.date.getDate()} ${MON[b.date.getMonth()]}</span></span>`; }
+function bpill(b){ return `<span class="apill" style="--c:#FF375F"><b>${esc(b.name)}</b><span class="aw">${DN[wd(b.date)]} ${b.date.getDate()} ${MON[b.date.getMonth()]}</span></span>`; }
 function bstrip(list, head, cls = "asst"){ return list.length ? `<div class="${cls}"><span class="asst-h">${head}</span>${list.map(bpill).join("")}</div>` : ""; }
 /* shortcut: a 29 Feb birthday only shows in leap years */
 function bdaysBetween(from, to){
@@ -3523,21 +3521,23 @@ function parseMd(v){
 const bdOpen = () => !$("bdreg").hidden;
 const CAL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
 let bdEdit = null;
+/* the colours of the tiles on this page */
+const BD_COLOURS = [...new Set([...document.querySelectorAll("#mg > .mod")].map(m => m.style.getPropertyValue("--c").trim()).filter(Boolean))];
 function paintBdNote(){
   const has = new Set(bdays.map(b => b.email)), filled = bdPeople.filter(p => has.has(p.email)).length;
   $("bdnote").textContent = !signedIn ? "Sign in on the main timetable to see and add birthdays."
-    : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in the class of 2027 done. The coloured ones are still missing: tap one to add their birthday.` : "Loading…");
+    : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in the class of 2027 done. The coloured ones are still missing: tap one to add their birthday as day/month.` : "Loading…");
 }
 function paintBdays(){
   const day = new Map(bdays.map(b => [b.email, b.day])), q = norm($("bdq").value);
-  const list = [...bdExtra, ...bdPeople, ...bdays].filter((p, i, a) => a.findIndex(x => x.email === p.email) === i);
+  const list = [...bdPeople, ...bdays].filter((p, i, a) => a.findIndex(x => x.email === p.email) === i);
   paintBdNote();
   $("bdgrid").innerHTML = list.filter(p => !q || norm(p.name).includes(q)).map((p, i) => {
-    const d = day.get(p.email), c = `style="--c:${P_COLOURS[i % 8]}" data-email="${esc(p.email)}"`;
+    const d = day.get(p.email), c = `style="--c:${BD_COLOURS[i % BD_COLOURS.length]}" data-email="${esc(p.email)}"`;
     return p.email === bdEdit
       ? `<div class="bdm edit" ${c}><b>${esc(p.name)}</b><span class="bdrow"><input class="fin bdin" inputmode="decimal" placeholder="27/10" value="${esc(mdText(d))}" aria-label="${esc(p.name)}'s birthday, day/month">` +
         `<button class="bdcal" aria-label="Pick from a calendar">${CAL_ICON}</button><input type="date" class="bdpick" tabindex="-1" aria-hidden="true"></span></div>`
-      : `<div class="bdm ${d ? "done" : ""}" ${c}><button class="bdn"><b>${esc(p.name)}</b><small>${d ? "🎂 " + mdText(d) : "Add birthday"}</small></button></div>`;
+      : `<div class="bdm ${d ? "done" : ""}" ${c}><button class="bdn"><b>${esc(p.name)}</b>${d ? `<small>${+d.slice(3)} ${MONTHS[+d.slice(0, 2) - 1]}</small>` : ""}</button></div>`;
   }).join("");
   const inp = $("bdgrid").querySelector(".bdin");
   if (inp){ inp.focus(); inp.select(); }
@@ -3550,11 +3550,6 @@ function showBdReg(o){
 }
 $("bdopen").onclick = () => showBdReg(!bdOpen());
 $("bdq").addEventListener("input", paintBdays);
-finder($("bdq"), $("bdsugg"), p => {
-  const email = String(p.email).toLowerCase();
-  if (!bdExtra.some(x => x.email === email)) bdExtra.unshift({ email, name:p.name });
-  $("bdq").value = ""; bdEdit = email; paintBdays();
-});
 async function saveBday(cell, day){
   const email = cell.dataset.email;
   try {
