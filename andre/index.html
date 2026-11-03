@@ -659,17 +659,20 @@ button.row:hover{background:var(--fill2)}
 /* ── the birthday register, inside the Calendar tile: missing birthdays in colour, filled ones grey ── */
 /* the settings float left and the register's modules flow beside them, then under them */
 .mod.modx.open #calbody{display:flow-root}
-#calbody > .tilebody{float:left;width:min(620px,100%);margin:0 20px 12px 0}
+/* exactly four module columns wide, so the modules beside it line up with the ones under it */
+#calbody{--bdp:168px}
+#calbody > .tilebody{float:left;width:min(calc(var(--bdp) * 4 - 8px),100%);max-width:none;margin:0 8px 8px 0}
 .bdreg[hidden]{display:none}
 .bdreg .search{display:flow-root;max-width:420px;margin-bottom:8px}
 .bdreg .evnote{margin:0 0 10px}
-.bdm{display:inline-block;vertical-align:top;width:160px;margin:0 8px 8px 0;border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+/* one fixed size, tall enough for the date box, so nothing moves when one opens */
+.bdm{display:inline-block;vertical-align:top;width:calc(var(--bdp) - 8px);height:calc(78px * var(--fs,1));box-sizing:border-box;overflow:hidden;margin:0 8px 8px 0;border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
 .bdm.done{background:var(--fill);opacity:.6}
 .bdm.done b{color:var(--fg2)}
-.bdm > button.bdn{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:10px 12px;color:inherit}
+.bdm > button.bdn{display:flex;flex-direction:column;justify-content:flex-start;gap:6px;width:100%;height:100%;text-align:left;padding:10px 12px;color:inherit}
 .bdm b{font-size:calc(13.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bdm small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.bdm.edit{opacity:1;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.bdm.edit{opacity:1;padding:10px 12px;display:inline-flex;flex-direction:column;gap:6px}
 .bdrow{display:flex;gap:6px;position:relative}
 .bdrow .fin{padding:6px 8px;min-width:0}
 .bdrow .fin[aria-invalid="true"]{box-shadow:inset 0 0 0 1.5px var(--red)}
@@ -3521,8 +3524,9 @@ function parseMd(v){
 const bdOpen = () => !$("bdreg").hidden;
 const CAL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
 let bdEdit = null;
-/* the colours of the tiles on this page */
+/* the colours of the tiles on this page; each person keeps one, picked from their email, so columns don't stripe */
 const BD_COLOURS = [...new Set([...document.querySelectorAll("#mg > .mod")].map(m => m.style.getPropertyValue("--c").trim()).filter(Boolean))];
+const bdColour = email => BD_COLOURS[([...email].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261) >>> 0) % BD_COLOURS.length];
 function paintBdNote(){
   const has = new Set(bdays.map(b => b.email)), filled = bdPeople.filter(p => has.has(p.email)).length;
   $("bdnote").textContent = !signedIn ? "Sign in on the main timetable to see and add birthdays."
@@ -3533,20 +3537,34 @@ function paintBdays(){
   const list = [...bdPeople, ...bdays].filter((p, i, a) => a.findIndex(x => x.email === p.email) === i);
   paintBdNote();
   $("bdgrid").innerHTML = list.filter(p => !q || norm(p.name).includes(q)).map((p, i) => {
-    const d = day.get(p.email), c = `style="--c:${BD_COLOURS[i % BD_COLOURS.length]}" data-email="${esc(p.email)}"`;
+    const d = day.get(p.email), c = `style="--c:${bdColour(p.email)}" data-email="${esc(p.email)}"`;
     return p.email === bdEdit
       ? `<div class="bdm edit" ${c}><b>${esc(p.name)}</b><span class="bdrow"><input class="fin bdin" inputmode="decimal" placeholder="27/10" value="${esc(mdText(d))}" aria-label="${esc(p.name)}'s birthday, day/month">` +
         `<button class="bdcal" aria-label="Pick from a calendar">${CAL_ICON}</button><input type="date" class="bdpick" tabindex="-1" aria-hidden="true"></span></div>`
       : `<div class="bdm ${d ? "done" : ""}" ${c}><button class="bdn"><b>${esc(p.name)}</b>${d ? `<small>${+d.slice(3)} ${MONTHS[+d.slice(0, 2) - 1]}</small>` : ""}</button></div>`;
   }).join("");
+  snapBd();
   const inp = $("bdgrid").querySelector(".bdin");
   if (inp){ inp.focus(); inp.select(); }
 }
+/* The modules under the settings box should start one gap below it, the same
+   gap as beside it, so its rows grow a little until its bottom meets a module row. */
+function snapBd(){
+  const rows = [...$("calbody").querySelectorAll(".tilebody .row")], box = rows[0].parentNode;
+  rows.forEach(r => r.style.paddingBlock = "");
+  const first = $("bdgrid").querySelector(".bdm");
+  if (!bdOpen() || !first || !first.offsetParent || first.getBoundingClientRect().left < box.getBoundingClientRect().right) return;      /* nothing beside it */
+  const gap = 8, pitch = first.offsetHeight + gap, top = first.getBoundingClientRect().top, bottom = box.getBoundingClientRect().bottom;
+  const extra = top + Math.ceil((bottom + gap - top) / pitch) * pitch - gap - bottom;
+  const pad = parseFloat(getComputedStyle(rows[0]).paddingTop) + extra / rows.length / 2;
+  rows.forEach(r => r.style.paddingBlock = pad + "px");
+}
+new ResizeObserver(() => snapBd()).observe($("calbody"));     /* the tile opening, the window, text size */
 function showBdReg(o){
   $("bdreg").hidden = !o; bdEdit = null;
   $("bdopen").textContent = o ? "Done" : "Register";
   $("bdopen").setAttribute("aria-expanded", o);
-  if (o){ paintBdays(); loadBirthdays(); }
+  if (o){ paintBdays(); loadBirthdays(); } else snapBd();
 }
 $("bdopen").onclick = () => showBdReg(!bdOpen());
 $("bdq").addEventListener("input", paintBdays);
