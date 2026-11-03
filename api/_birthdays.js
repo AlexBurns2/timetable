@@ -23,7 +23,7 @@
 
 import { db, whoami } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
-import { studentDirectory } from "./timetable.js";
+import { studentDirectory, fetchAsOwner } from "./timetable.js";
 
 /* The class of 2027 is whatever year group the owner is in, so the grid stays
    right while the directory still calls them yr11 and after it moves them to yr12.
@@ -43,6 +43,30 @@ export function isMonthDay(v) {
   return mo >= 1 && mo <= 12 && d >= 1 && d <= new Date(2024, mo, 0).getDate();
 }
 
+/* The directory still lists students who have left (same groups as everyone
+   else), but their timetable is empty. Checked once a day per warm instance. */
+const ENROLLED_TTL_MS = 24 * 60 * 60 * 1000;
+let enrolled = { at: 0, key: "", set: null };
+async function withClasses(people) {
+  const key = people.map(p => p.email).join("|");
+  if (enrolled.set && enrolled.key === key && Date.now() - enrolled.at < ENROLLED_TTL_MS) return enrolled.set;
+  const set = new Set();
+  let i = 0;
+  const worker = async () => {
+    while (i < people.length) {
+      const p = people[i++];
+      try {
+        const t = await fetchAsOwner(`/api/timetable/${encodeURIComponent(p.email)}`);
+        if (!Array.isArray(t) || t.length) set.add(p.email);
+      } catch { set.add(p.email); }      // couldn't tell: keep them rather than hide someone by mistake
+    }
+  };
+  await Promise.all(Array.from({ length: 8 }, worker));
+  if (!set.size) return new Set(people.map(p => p.email));      // nobody has classes: the check is wrong, not the year
+  enrolled = { at: Date.now(), key, set };
+  return set;
+}
+
 const fullName = (names, p) => withName(names, p.email, [p.first, p.last].filter(Boolean).join(" ") || p.email.split("@")[0]);
 
 export async function birthdayHandler(req, res) {
@@ -60,7 +84,8 @@ export async function birthdayHandler(req, res) {
     const { data, error } = await db.from("birthday").select("email, day").limit(5000);
     if (error) console.error("birthdays read:", error.message);       // still send the grid, so names show
     const cohort = (byEmail.get(ANCHOR) || {}).year || 12;
-    const people = dir.filter(p => p.year === cohort)
+    const year = dir.filter(p => p.year === cohort), current = await withClasses(year);
+    const people = year.filter(p => current.has(p.email))
       .sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first))
       .map(p => ({ email: p.email, name: fullName(names, p) }));
     const birthdays = (data || []).filter(r => byEmail.has(r.email) && isMonthDay(r.day))

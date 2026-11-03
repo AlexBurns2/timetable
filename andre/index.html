@@ -650,6 +650,8 @@ button.row:hover{background:var(--fill2)}
 .chipe{display:block;max-width:100%;font-size:calc(12px * var(--fs,1));font-weight:500;line-height:1.35;padding:1px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   background:color-mix(in srgb,var(--c) var(--tint),var(--bg));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .chipe.sub{box-shadow:inset 3px 0 0 var(--c)}
+/* a birthday on a day with nothing else takes the whole day */
+.chipe.bday.fill{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal;font-size:calc(14px * var(--fs,1));font-weight:600;border-radius:7px}
 .mmore{font-size:calc(11px * var(--fs,1));color:var(--fg3);padding-left:4px}
 /* events on the week view: a dot per event under the date */
 .dh .evd{position:absolute;left:50%;bottom:2px;translate:-50% 0;display:flex;gap:3px}
@@ -3012,7 +3014,6 @@ function renderMonth(){
   const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   let h = arrow(-1, "month") + [0,1,2,3,4,5,6].map(k => `<div class="mdow">${names[(k + wkStart) % 7]}</div>`).join("") + arrow(1, "month");
   const mine = SHOW_ASSESSMENTS ? myAssessments() : [];
-  h += bstrip(bdaysBetween(first, new Date(first.getFullYear(), first.getMonth() + 1, 0)), "Birthdays this month", "asst mweek");
   for (let w = 0; w < weeks; w++){
     h += `<div class="mpad"></div>`;
     for (let k = 0; k < 7; k++){
@@ -3025,6 +3026,7 @@ function renderMonth(){
       const tint = weekend ? "wkend" : !schoolDay(d) ? "hol" : { A:"wa", B:"wb" }[abWeek(d)] || "";
       h += `<button class="mcell ${d.getMonth() !== first.getMonth() ? "out" : ""} ${tint} ${sameDay(d, now) ? "today" : ""}" data-day="${day}">` +
            `<span class="mtop"><span class="mnum tnum">${d.getDate()}</span>${wk ? `<span class="mwk">${wk}</span>` : ""}</span>` +
+           bdays.filter(b => b.day === day.slice(5)).map(b => `<span class="chipe bday ${evs.length ? "" : "fill"}" style="--c:#FF375F" title="${esc(b.name)}'s birthday">${esc(b.name)}</span>`).join("") +
            evs.slice(0, 3).map(e => `<span class="chipe ${e.kind === "subject" ? "sub" : ""}" data-ev="${esc(e.id)}" data-kind="${e.kind}" style="--c:${esc(e.colour)}" title="${esc(e.title + " · " + evTime(e))}">${esc(e.title)}</span>`).join("") +
            (evs.length > 3 ? `<span class="mmore">+${evs.length - 3} more</span>` : "") +
            (weekend ? "" : (dots => dots.length ? `<span class="adots">${dots.map(a => `<i style="--c:${esc(colourFor(a.course))}" title="${esc(a.course + ": " + a.task)}"></i>`).join("")}</span>` : "")
@@ -3495,7 +3497,7 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
    A grid of the class of 2027 (and anyone found by name) to fill in birthdays,
    shared with everyone signed in; they show at the top of the week and month. */
 function bpill(b){ return `<span class="apill" style="--c:#FF375F"><b>${esc(b.name)}</b><span class="aw">${DN[wd(b.date)]} ${b.date.getDate()} ${MON[b.date.getMonth()]}</span></span>`; }
-function bstrip(list, head, cls = "asst"){ return list.length ? `<div class="${cls}"><span class="asst-h">${head}</span>${list.map(bpill).join("")}</div>` : ""; }
+function bstrip(list, head){ return list.length ? `<div class="asst"><span class="asst-h">${head}</span>${list.map(bpill).join("")}</div>` : ""; }
 /* shortcut: a 29 Feb birthday only shows in leap years */
 function bdaysBetween(from, to){
   const out = [];
