@@ -650,6 +650,9 @@ button.row:hover{background:var(--fill2)}
 .chipe{display:block;max-width:100%;font-size:calc(12px * var(--fs,1));font-weight:500;line-height:1.35;padding:1px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   background:color-mix(in srgb,var(--c) var(--tint),var(--bg));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .chipe.sub{box-shadow:inset 3px 0 0 var(--c)}
+/* birthdays wrap onto as many lines as the name needs; "Birthday!" never splits */
+.chipe.bday{white-space:normal;overflow-wrap:break-word;line-height:1.25;padding:3px 6px}
+.chipe.bday i{font-style:normal;display:inline-block;white-space:nowrap}
 /* a birthday on a day with nothing else takes the whole day */
 .chipe.bday.fill{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal;font-size:calc(14px * var(--fs,1));font-weight:600;border-radius:7px}
 .mmore{font-size:calc(11px * var(--fs,1));color:var(--fg3);padding-left:4px}
@@ -3499,7 +3502,7 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
    shared with everyone signed in; they show at the top of the week and month. */
 /* shortcut: a 29 Feb birthday only shows in leap years */
 const bdaysOn = day => bdays.filter(b => b.day === day.slice(5));
-const bdChip = (b, cls = "") => `<span class="chipe bday ${cls}" style="--c:#FF375F">${esc(b.name)}'s Birthday!</span>`;
+const bdChip = (b, cls = "") => `<span class="chipe bday ${cls}" style="--c:#FF375F"><span>${esc(b.name)}'s <i>Birthday!</i></span></span>`;
 async function loadBirthdays(){
   if (!signedIn) return;
   try {
