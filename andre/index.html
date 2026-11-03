@@ -665,7 +665,7 @@ button.row:hover{background:var(--fill2)}
 
 /* ── the birthday register, inside the Calendar tile: missing birthdays in colour, filled ones grey ── */
 /* the settings float left and the register's modules flow beside them, then under them */
-.mod.modx.open #calbody{display:flow-root}
+.mod.modx.open #calbody{display:flow-root;position:relative}
 /* exactly four module columns wide, so the modules beside it line up with the ones under it */
 #calbody{--bdp:168px}
 #calbody > .tilebody{float:left;width:min(calc(var(--bdp) * 4 - 8px),100%);max-width:none;margin:0 8px 8px 0}
@@ -3063,6 +3063,11 @@ let viewTurn = null, wantView = null, morphing = [];
 function toggleCalendar(){
   if (mjShow || gmShow){ mjLeave(); render(); }
   const target = (wantView ?? view) === "month" ? "week" : "month";
+  /* the month has no periods, so Who's free and Custom periods can't be on with it */
+  if (target === "month"){
+    if (freeShow){ freeShow = false; set(LS.freeshow, false); paintFree(); }
+    if (showCustom){ showCustom = false; set(LS.showcustom, false); }
+  }
   paintTiles(target);
   if (viewTurn){ wantView = target; if (target !== view) morphing.forEach(a => a.finish()); return; }
   switchView(target);
@@ -3429,6 +3434,7 @@ function paintPeriodsTile(){
 }
 function toggleCustomShown(){
   const flip = () => { showCustom = !showCustom; set(LS.showcustom, showCustom); mjLeave(); paintPeriodsTile(); };
+  if (view === "month"){ flip(); closeAll(); render(); if (showCustom) toggleCalendar(); return; }
   shiftWeek(flip);
 }
 function paintTiles(calTarget = view){
@@ -3551,13 +3557,19 @@ function snapBd(){
   const rows = [...$("calbody").querySelectorAll(".tilebody .row")], box = rows[0].parentNode;
   rows.forEach(r => r.style.paddingBlock = "");
   const first = $("bdgrid").querySelector(".bdm");
-  if (!bdOpen() || !first || !first.offsetParent || first.getBoundingClientRect().left < box.getBoundingClientRect().right) return;      /* nothing beside it */
-  const gap = 8, pitch = first.offsetHeight + gap, top = first.getBoundingClientRect().top, bottom = box.getBoundingClientRect().bottom;
-  const extra = top + Math.ceil((bottom + gap - top) / pitch) * pitch - gap - bottom;
+  if (!bdOpen() || !first || !first.offsetParent) return;
+  /* layout offsets, not screen rects: the tile may be mid-animation (scaled) */
+  const at = el => { let x = 0, y = 0; for (; el && el !== $("calbody"); el = el.offsetParent){ x += el.offsetLeft; y += el.offsetTop; } return { x, y }; };
+  const f = at(first), b = at(box);
+  if (f.x < b.x + box.offsetWidth) return;      /* nothing beside it */
+  const gap = 8, pitch = first.offsetHeight + gap, top = f.y, bottom = b.y + box.offsetHeight;
+  /* 1px short: offsets are rounded, and a box even 0.4px too tall keeps the next row beside it */
+  const extra = top + Math.ceil((bottom + gap - top) / pitch) * pitch - gap - bottom - 1;
   const pad = parseFloat(getComputedStyle(rows[0]).paddingTop) + extra / rows.length / 2;
   rows.forEach(r => r.style.paddingBlock = pad + "px");
 }
 new ResizeObserver(() => snapBd()).observe($("calbody"));     /* the tile opening, the window, text size */
+document.fonts.ready.then(snapBd);      /* a late font changes the rows' height without resizing the tile */
 function showBdReg(o){
   $("bdreg").hidden = !o; bdEdit = null;
   $("bdopen").textContent = o ? "Done" : "Register";
