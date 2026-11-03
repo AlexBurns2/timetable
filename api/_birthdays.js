@@ -25,9 +25,15 @@ import { db, whoami } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
 import { studentDirectory } from "./timetable.js";
 
-/* shortcut: Year 12 as the directory labels it, which is the 2027 leavers until
-   their HSC ends; after that it is the next year group's grid */
-const COHORT_YEAR = 12;
+/* The class of 2027 is whatever year group the owner is in, so the grid stays
+   right while the directory still calls them yr11 and after it moves them to yr12.
+   shortcut: after the 2027 HSC this needs another anchor */
+const ANCHOR = "andre.kwok2@education.nsw.gov.au";
+/* the table not existing yet is the usual cause of a failed read or write */
+const missing = e => /does not exist|could not find the table|42P01|PGRST205/i.test(String(e && (e.code + " " + e.message)));
+const failed = (e, what) => missing(e)
+  ? "The birthday table isn't in Supabase yet: run the SQL in SETUP.md (Birthday register)."
+  : "Couldn't " + what + ".";
 
 /* MM-DD that exists in some year, so 02-29 is fine */
 export function isMonthDay(v) {
@@ -52,13 +58,14 @@ export async function birthdayHandler(req, res) {
   if (req.method === "GET") {
     const names = await nameOverrides();
     const { data, error } = await db.from("birthday").select("email, day").limit(5000);
-    if (error) { console.error("birthdays read:", error.message); return res.status(502).json({ error: "Couldn't load birthdays." }); }
-    const people = dir.filter(p => p.year === COHORT_YEAR)
+    if (error) console.error("birthdays read:", error.message);       // still send the grid, so names show
+    const cohort = (byEmail.get(ANCHOR) || {}).year || 12;
+    const people = dir.filter(p => p.year === cohort)
       .sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first))
       .map(p => ({ email: p.email, name: fullName(names, p) }));
     const birthdays = (data || []).filter(r => byEmail.has(r.email) && isMonthDay(r.day))
       .map(r => ({ email: r.email, day: r.day, name: fullName(names, byEmail.get(r.email)) }));
-    return res.status(200).json({ people, birthdays });
+    return res.status(200).json({ people, birthdays, warning: error ? failed(error, "load birthdays") : undefined });
   }
 
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -70,13 +77,13 @@ export async function birthdayHandler(req, res) {
 
   if (!body.day) {
     const { error } = await db.from("birthday").delete().eq("email", email);
-    if (error) return res.status(502).json({ error: "Couldn't clear that." });
+    if (error) return res.status(502).json({ error: failed(error, "clear that") });
     return res.status(200).json({ ok: true });
   }
   if (!isMonthDay(body.day)) return res.status(400).json({ error: "That date isn't valid." });
   const { error } = await db.from("birthday").upsert({
     email, day: body.day, updated_by: String(me.email).toLowerCase(), updated_at: new Date().toISOString()
   });
-  if (error) { console.error("birthdays save:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
+  if (error) { console.error("birthdays save:", error.message); return res.status(502).json({ error: failed(error, "save that") }); }
   return res.status(200).json({ ok: true });
 }

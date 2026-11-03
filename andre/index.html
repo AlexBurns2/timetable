@@ -657,7 +657,11 @@ button.row:hover{background:var(--fill2)}
 .dh[data-day]{cursor:pointer}
 
 /* ── the birthday register, inside the Calendar tile: missing birthdays in colour, filled ones grey ── */
-.bdreg{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+/* the register sits beside the settings when there's room, under them when not */
+.mod.modx.open #calbody{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px 24px}
+#calbody > .tilebody{flex:1 1 380px}
+.bdreg{flex:1 1 380px;display:flex;flex-direction:column;gap:10px}
+.bdreg[hidden]{display:none}
 .bdreg .search{max-width:420px}
 .bdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .bdm{border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));box-shadow:inset 3px 0 0 var(--c);min-width:0}
@@ -3504,7 +3508,7 @@ async function loadBirthdays(){
   if (!signedIn) return;
   try {
     const d = await call("/api/calendar", { query:{ birthdays:1 } });
-    bdays = d.birthdays || []; bdPeople = d.people || []; bdNote = ""; set(LS.bdays, bdays);
+    bdays = d.birthdays || []; bdPeople = d.people || []; bdNote = d.warning || ""; set(LS.bdays, bdays);
   } catch (err) { bdNote = "Birthdays couldn't load: " + err.message; }
   if (bdOpen()) paintBdays();
   if (settingsOpen()) paintSettings();
@@ -3522,7 +3526,7 @@ let bdEdit = null;
 function paintBdNote(){
   const has = new Set(bdays.map(b => b.email)), filled = bdPeople.filter(p => has.has(p.email)).length;
   $("bdnote").textContent = !signedIn ? "Sign in on the main timetable to see and add birthdays."
-    : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in Year 12 done. The coloured ones are still missing: tap one to add their birthday.` : "Loading…");
+    : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in the class of 2027 done. The coloured ones are still missing: tap one to add their birthday.` : "Loading…");
 }
 function paintBdays(){
   const day = new Map(bdays.map(b => [b.email, b.day])), q = norm($("bdq").value);
