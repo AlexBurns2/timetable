@@ -1,6 +1,6 @@
 /*
  * Birthday register: day and month only (never the year), filled in by anyone
- * signed in, for the people graduating in 2027 and anyone else found by name.
+ * signed in, for Year 12 (graduating 2027) and anyone else found by name.
  *
  * Served by /api/calendar (anything with ?birthdays=1 comes here), so it
  * doesn't count as a function of its own: the Hobby plan allows twelve.
@@ -25,10 +25,9 @@ import { db, whoami } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
 import { studentDirectory } from "./timetable.js";
 
-const GRAD_YEAR = 2027;
-/* the year group the 2027 leavers are in now, as the directory labels it
-   (it moves up with the calendar year: yr11 in 2026, yr12 in 2027) */
-export const cohortYear = (now = new Date()) => 12 - (GRAD_YEAR - now.getFullYear());
+/* shortcut: Year 12 as the directory labels it, which is the 2027 leavers until
+   their HSC ends; after that it is the next year group's grid */
+const COHORT_YEAR = 12;
 
 /* MM-DD that exists in some year, so 02-29 is fine */
 export function isMonthDay(v) {
@@ -54,8 +53,7 @@ export async function birthdayHandler(req, res) {
     const names = await nameOverrides();
     const { data, error } = await db.from("birthday").select("email, day").limit(5000);
     if (error) { console.error("birthdays read:", error.message); return res.status(502).json({ error: "Couldn't load birthdays." }); }
-    const yr = cohortYear();
-    const people = dir.filter(p => p.year === yr)
+    const people = dir.filter(p => p.year === COHORT_YEAR)
       .sort((a, b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first))
       .map(p => ({ email: p.email, name: fullName(names, p) }));
     const birthdays = (data || []).filter(r => byEmail.has(r.email) && isMonthDay(r.day))

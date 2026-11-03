@@ -656,16 +656,23 @@ button.row:hover{background:var(--fill2)}
 .dh .evd i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 .dh[data-day]{cursor:pointer}
 
-/* ── the birthday register: the same panel, wide enough for a grid of the year ── */
-#bdpanel{width:min(980px,100%)}
-.bdopen .scrim{opacity:1;pointer-events:auto}
-.bdopen #bdpanel{transform:none;visibility:visible;transition:transform .25s ease}
-.bdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
-.bdcell{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:12px;background:var(--fill)}
-.bdcell b{font-size:calc(13.5px * var(--fs,1));font-weight:600}
-.bdcell.has{background:color-mix(in srgb,#FF375F var(--tint),var(--bg));box-shadow:inset 3px 0 0 #FF375F}
-.bdcell .fin{padding:6px 8px}
-.bdcell .fin[aria-invalid="true"]{box-shadow:inset 0 0 0 1.5px var(--red)}
+/* ── the birthday register, inside the Calendar tile: missing birthdays in colour, filled ones grey ── */
+.bdreg{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.bdreg .search{max-width:420px}
+.bdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.bdm{border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));box-shadow:inset 3px 0 0 var(--c);min-width:0}
+.bdm.done{background:var(--fill);box-shadow:none;opacity:.6}
+.bdm.done b{color:var(--fg2)}
+.bdm > button.bdn{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;padding:10px 12px;color:inherit}
+.bdm b{font-size:calc(13.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdm small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.bdm.edit{opacity:1;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.bdrow{display:flex;gap:6px;position:relative}
+.bdrow .fin{padding:6px 8px;min-width:0}
+.bdrow .fin[aria-invalid="true"]{box-shadow:inset 0 0 0 1.5px var(--red)}
+.bdcal{flex:none;width:32px;border-radius:8px;background:var(--fill2);display:grid;place-items:center;color:var(--fg2)}
+.bdcal svg{width:16px;height:16px}
+.bdpick{position:absolute;right:0;bottom:0;width:32px;height:0;opacity:0;pointer-events:none;border:0;padding:0}
 
 /* ── the event editor (same panel as Settings) ── */
 .evopen .scrim{opacity:1;pointer-events:auto}
@@ -864,18 +871,6 @@ select.fin{appearance:auto}
   <div class="pbody" id="evbody"></div>
 </aside>
 
-<aside class="panel" id="bdpanel" role="dialog" aria-modal="true" aria-labelledby="bdtitle">
-  <div class="ph">
-    <h2 id="bdtitle">Birthday register</h2>
-    <button id="bdclose" aria-label="Close"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
-  </div>
-  <div class="pbody">
-    <div class="search"><input class="fin" id="bdq" placeholder="Filter, or find anyone by name…" aria-label="Find someone" aria-controls="bdsugg" aria-autocomplete="list" autocomplete="off" spellcheck="false">
-      <div class="sugg" id="bdsugg" role="listbox" hidden></div></div>
-    <p class="evnote" id="bdnote"></p>
-    <div class="bdgrid" id="bdgrid"></div>
-  </div>
-</aside>
 
 <main>
   <section class="in tt"><div class="grid" id="g"></div></section>
@@ -913,9 +908,15 @@ select.fin{appearance:auto}
         </div>
         <div class="row">
           <div class="rl"><strong>Birthdays</strong><small id="bdcount"></small></div>
-          <button class="btn sm" id="bdopen">Register</button>
+          <button class="btn sm" id="bdopen" aria-expanded="false" aria-controls="bdreg">Register</button>
         </div>
-      </div></div></div>
+      </div></div>
+      <div class="bdreg" id="bdreg" hidden>
+        <div class="search"><input class="fin" id="bdq" placeholder="Filter, or find anyone by name…" aria-label="Find someone" aria-controls="bdsugg" aria-autocomplete="list" autocomplete="off" spellcheck="false">
+          <div class="sugg" id="bdsugg" role="listbox" hidden></div></div>
+        <p class="evnote" id="bdnote"></p>
+        <div class="bdgrid" id="bdgrid"></div>
+      </div></div>
       </div>
       <div class="mod modx" data-m="free" style="--c:#30C05A">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div><h3>Who's free <span class="state" id="freestate"></span></h3></button>
@@ -3488,7 +3489,6 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
 /* ═══ birthday register ═══
    A grid of the class of 2027 (and anyone found by name) to fill in birthdays,
    shared with everyone signed in; they show at the top of the week and month. */
-const bdOpen = () => document.body.classList.contains("bdopen");
 function bpill(b){ return `<span class="apill" style="--c:#FF375F"><b>🎂 ${esc(b.name)}</b><span class="aw">${DN[wd(b.date)]} ${b.date.getDate()} ${MON[b.date.getMonth()]}</span></span>`; }
 function bstrip(list, head, cls = "asst"){ return list.length ? `<div class="${cls}"><span class="asst-h">${head}</span>${list.map(bpill).join("")}</div>` : ""; }
 /* shortcut: a 29 Feb birthday only shows in leap years */
@@ -3511,50 +3511,87 @@ async function loadBirthdays(){
   if (!turning) render();
 }
 const mdText = md => md ? +md.slice(3) + "/" + +md.slice(0, 2) : "";
+/* "27/10", "27.10" or "27 10" → "10-27"; null when it can't be a day and month */
+function parseMd(v){
+  const m = String(v).trim().match(/^(\d{1,2})\s*[\/.\- ]\s*(\d{1,2})$/);
+  return m ? m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0") : null;
+}
+const bdOpen = () => !$("bdreg").hidden;
+const CAL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
+let bdEdit = null;
 function paintBdNote(){
   const has = new Set(bdays.map(b => b.email)), filled = bdPeople.filter(p => has.has(p.email)).length;
   $("bdnote").textContent = !signedIn ? "Sign in on the main timetable to see and add birthdays."
-    : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in the class of 2027 filled in. Type a birthday as day/month; it saves when you leave the box.` : "Loading…");
+    : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in Year 12 done. The coloured ones are still missing: tap one to add their birthday.` : "Loading…");
 }
 function paintBdays(){
   const day = new Map(bdays.map(b => [b.email, b.day])), q = norm($("bdq").value);
-  const list = [...bdExtra, ...bdays, ...bdPeople].filter((p, i, a) => a.findIndex(x => x.email === p.email) === i);
+  const list = [...bdExtra, ...bdPeople, ...bdays].filter((p, i, a) => a.findIndex(x => x.email === p.email) === i);
   paintBdNote();
-  $("bdgrid").innerHTML = list.filter(p => !q || norm(p.name).includes(q)).map(p =>
-    `<label class="bdcell ${day.has(p.email) ? "has" : ""}" data-email="${esc(p.email)}"><b>${esc(p.name)}</b>` +
-    `<input class="fin" inputmode="numeric" placeholder="dd/mm" value="${esc(mdText(day.get(p.email)))}" aria-label="${esc(p.name)}'s birthday"></label>`).join("");
+  $("bdgrid").innerHTML = list.filter(p => !q || norm(p.name).includes(q)).map((p, i) => {
+    const d = day.get(p.email), c = `style="--c:${P_COLOURS[i % 8]}" data-email="${esc(p.email)}"`;
+    return p.email === bdEdit
+      ? `<div class="bdm edit" ${c}><b>${esc(p.name)}</b><span class="bdrow"><input class="fin bdin" inputmode="decimal" placeholder="27/10" value="${esc(mdText(d))}" aria-label="${esc(p.name)}'s birthday, day/month">` +
+        `<button class="bdcal" aria-label="Pick from a calendar">${CAL_ICON}</button><input type="date" class="bdpick" tabindex="-1" aria-hidden="true"></span></div>`
+      : `<div class="bdm ${d ? "done" : ""}" ${c}><button class="bdn"><b>${esc(p.name)}</b><small>${d ? "🎂 " + mdText(d) : "Add birthday"}</small></button></div>`;
+  }).join("");
+  const inp = $("bdgrid").querySelector(".bdin");
+  if (inp){ inp.focus(); inp.select(); }
 }
-function showBdPanel(o){
-  document.body.classList.toggle("bdopen", o);
-  if (o){ paintBdays(); loadBirthdays(); setTimeout(() => $("bdq").focus(), 60); }
+function showBdReg(o){
+  $("bdreg").hidden = !o; bdEdit = null;
+  $("bdopen").textContent = o ? "Done" : "Register";
+  $("bdopen").setAttribute("aria-expanded", o);
+  if (o){ paintBdays(); loadBirthdays(); }
 }
-$("bdopen").onclick = () => showBdPanel(true);
-$("bdclose").onclick = () => showBdPanel(false);
-$("scrim").addEventListener("click", () => showBdPanel(false));
-addEventListener("keydown", e => { if (e.key === "Escape" && bdOpen()) showBdPanel(false); });
+$("bdopen").onclick = () => showBdReg(!bdOpen());
 $("bdq").addEventListener("input", paintBdays);
 finder($("bdq"), $("bdsugg"), p => {
   const email = String(p.email).toLowerCase();
   if (!bdExtra.some(x => x.email === email)) bdExtra.unshift({ email, name:p.name });
-  $("bdq").value = ""; paintBdays();
-  const inp = $("bdgrid").querySelector(`[data-email="${CSS.escape(email)}"] input`);
-  if (inp){ inp.scrollIntoView({ block:"center" }); inp.focus(); }
+  $("bdq").value = ""; bdEdit = email; paintBdays();
 });
-/* saves on change; the grid isn't redrawn, so focus stays on the next box */
-$("bdgrid").addEventListener("change", async e => {
-  const inp = e.target, cell = inp.closest(".bdcell");
-  if (!cell) return;
-  const v = inp.value.trim(), m = v.match(/^(\d{1,2})\s*[\/.\- ]\s*(\d{1,2})$/);
-  if (v && !m) return inp.setAttribute("aria-invalid", "true");
-  const day = m ? m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0") : "", email = cell.dataset.email;
+async function saveBday(cell, day){
+  const email = cell.dataset.email;
   try {
     await call("/api/calendar", { query:{ birthdays:1 }, body:{ email, day } });
-    inp.removeAttribute("aria-invalid"); bdNote = "";
+    bdNote = "";
     bdays = bdays.filter(b => b.email !== email);
     if (day) bdays.push({ email, day, name:cell.querySelector("b").textContent });
-    set(LS.bdays, bdays); cell.classList.toggle("has", !!day); inp.value = mdText(day);
-    paintBdNote(); render();
-  } catch (err) { inp.setAttribute("aria-invalid", "true"); bdNote = err.message; paintBdNote(); }
+    set(LS.bdays, bdays);
+    bdEdit = null; paintBdays(); render();
+  } catch (err) { const i = cell.querySelector(".bdin"); if (i) i.setAttribute("aria-invalid", "true"); bdNote = err.message; paintBdNote(); }
+}
+function commitBday(cell){
+  const v = cell.querySelector(".bdin").value, day = v.trim() ? parseMd(v) : "";
+  if (day === null) return cell.querySelector(".bdin").setAttribute("aria-invalid", "true");
+  const had = (bdays.find(b => b.email === cell.dataset.email) || {}).day || "";
+  if (day === had){ bdEdit = null; paintBdays(); return; }
+  saveBday(cell, day);
+}
+$("bdgrid").addEventListener("click", e => {
+  const open = e.target.closest(".bdn"), cal = e.target.closest(".bdcal");
+  if (open){ bdEdit = open.parentNode.dataset.email; paintBdays(); }
+  else if (cal){
+    const pick = cal.parentNode.querySelector(".bdpick"), md = parseMd(cal.parentNode.querySelector(".bdin").value);
+    pick.value = md ? new Date().getFullYear() + "-" + md : "";
+    try { pick.showPicker(); } catch { pick.style.pointerEvents = "auto"; pick.focus(); }
+  }
+});
+/* a day picked from the calendar saves at once; only its day and month are kept */
+$("bdgrid").addEventListener("change", e => {
+  if (e.target.matches(".bdpick") && e.target.value) saveBday(e.target.closest(".bdm"), e.target.value.slice(5));
+});
+$("bdgrid").addEventListener("keydown", e => {
+  if (!e.target.matches(".bdin")) return;
+  if (e.key === "Enter"){ e.preventDefault(); commitBday(e.target.closest(".bdm")); }
+  else if (e.key === "Escape"){ e.stopPropagation(); bdEdit = null; paintBdays(); }
+});
+/* leaving the box saves what's typed, unless it went to the calendar button */
+$("bdgrid").addEventListener("focusout", e => {
+  if (!e.target.matches(".bdin")) return;
+  const cell = e.target.closest(".bdm");
+  setTimeout(() => { if (bdEdit === cell.dataset.email && cell.isConnected && !cell.contains(document.activeElement)) commitBday(cell); }, 120);
 });
 loadBirthdays();
 

@@ -2618,7 +2618,7 @@ scopes.
 ## Birthday register
 
 Calendar settings on `/andre/` → **Birthday register** opens a grid of everyone
-graduating in 2027 (and a name search for anyone else). Anyone signed in can
+in Year 12, the class of 2027 (and a name search for anyone else). Anyone signed in can
 fill in a day and month; they show at the top of the week and month views.
 Served by `/api/calendar?birthdays=1` (`api/_birthdays.js`). New table:
 
