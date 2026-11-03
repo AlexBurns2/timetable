@@ -998,6 +998,7 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .mjup{color:#2a9d4b}
 .mjdown{color:#d33}
 .mjadd{margin-top:10px}
+.mjmove{margin:10px 0 0}
 .mjround{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
 .mjround label{display:flex;flex-direction:column;gap:4px;font-size:0.84375rem;font-weight:700}
 .mjround input{padding:9px 11px;border:var(--card-border);border-radius:var(--radius);background:var(--panel);color:var(--text);font:inherit;font-family:var(--font-num);min-width:0}

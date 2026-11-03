@@ -20,7 +20,7 @@
  *   zen_board(email primary key, name, current, best, updated_at)
  */
 
-import { db, whoami } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
@@ -36,8 +36,6 @@ function nameFromEmail(email) {
 
 const SPRINT_MIN = 3000, SPRINT_MAX = 3600000;   // 3s … 1h
 const ZEN_MIN = 2000, ZEN_MAX = 7200000;         // 2s … 2h
-/* owner (from the environment) may edit/reset any board; unset ⇒ nobody */
-const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
 async function sprintBoard(me, week, adm) {
   const { data: top } = await db.from("tetris_score")
@@ -122,7 +120,7 @@ export default async function handler(req, res) {
 
   const weekOf = v => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n < 100000 ? n : null; };
 
-  const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
+  const isOwner = isAdmin(me.email);
 
   if (req.method === "GET") {
     const mode = req.query.mode;

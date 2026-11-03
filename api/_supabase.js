@@ -32,6 +32,15 @@ export const db = (SUPABASE_URL && SERVICE_KEY)
     })
   : null;
 
+/* Who gets the moderator page and owner powers (server-side, never trust the
+   client): these logins, plus OWNER_EMAIL in the environment if it's set. */
+const ADMINS = new Set([
+  "andre.kwok2@education.nsw.gov.au",
+  "alex.burns6@education.nsw.gov.au",
+  String(process.env.OWNER_EMAIL || "").trim().toLowerCase()
+].filter(Boolean));
+export const isAdmin = email => ADMINS.has(String(email).toLowerCase());
+
 /*
  * Returns { email, year, groups } for a verified caller, or null when the
  * credentials are missing or the school rejects them.

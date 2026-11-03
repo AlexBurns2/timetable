@@ -8,7 +8,7 @@
 window.Mahjong = (() => {
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const MJ_START = 4096;
+const MJ_START = 4096, MJ_RECENT = 5;
 const MJ_COLORS = ['#0A84FF','#FF375F','#30C05A','#FF9F0A','#AF52DE','#32ADE6','#FFB800','#8E8E93','#AC8E68','#5E5CE6'];
 const mjFetch = () => TT.api('/api/gamestate', { params:{ mode:'mahjong' } });
 const mjSend = body => TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'mahjong' }, body) });
@@ -26,9 +26,20 @@ function mjLeaders(state){
   const s = mjStandings(state); if (!s.length) return null;
   const hi = s[0].pts, lo = s[s.length-1].pts, fmt = v => v.toLocaleString();
   if (hi === lo) return { who: s.length > 1 ? 'Everyone tied' : s[0].name, val:fmt(hi) };
-  const at = v => { const n = s.filter(p => p.pts === v).map(p => p.name);
-    return { who: n.length === 1 ? n[0] : n.length === 2 ? n.join(' & ') + ' tied' : n.length + ' tied', val:fmt(v) }; };
+  const at = v => ({ who: mjNames(s.filter(p => p.pts === v)), val:fmt(v) });
   return Object.assign(at(hi), { low:at(lo) });
+}
+const mjNames = l => l.length === 1 ? l[0].name : l.length === 2 ? l[0].name + ' & ' + l[1].name + ' tied' : l.length + ' tied';
+
+/* points a game over the last MJ_RECENT games, top and bottom: { games, up, down }
+   with up and down as { who, rate }, or null until the rates differ. All-time
+   rates would only repeat the standings, since everyone starts level. */
+function mjMovers(state){
+  const recent = state.rounds.slice(-MJ_RECENT); if (!recent.length) return null;
+  const rates = state.players.map(p => ({ name:p.name, rate:Math.round(recent.reduce((a, r) => a + (r.d[p.id] || 0), 0) / recent.length) }));
+  const v = rates.map(p => p.rate), hi = Math.max(...v), lo = Math.min(...v); if (hi === lo) return null;
+  const at = n => ({ who:mjNames(rates.filter(p => p.rate === n)), rate:n });
+  return { games:recent.length, up:at(hi), down:at(lo) };
 }
 
 /* the score sheet itself, into host (mahjong.html) */
@@ -67,7 +78,7 @@ function mount(host){
       '</svg><div class="mjkey">' + state.players.map(p => '<span><i style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>').join('') + '</div>';
   }
   function paint(err){
-    const st = mjStandings(state), last = state.rounds[state.rounds.length - 1];
+    const st = mjStandings(state), last = state.rounds[state.rounds.length - 1], mv = mjMovers(state);
     $('sc').textContent = state.rounds.length + ' game' + (state.rounds.length === 1 ? '' : 's');
     box.innerHTML =
       (err ? '<p class="how mjerr">' + esc(err) + '</p>' : '') +
@@ -77,6 +88,8 @@ function mount(host){
           return '<div class="tlbrow"><span class="rk">'+(i+1)+'</span><span class="nm"><i class="mjdot" style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>' +
             '<span class="tm '+(d > 0 ? 'mjup' : d < 0 ? 'mjdown' : '')+'">'+(d ? signed(d) : '')+'</span><span class="tm"><b>'+fmt(p.pts)+'</b></span></div>'; }).join('')
         : '<p class="how">No players yet. Add everyone at the table.</p>') +
+      (mv ? '<p class="how mjmove">Highest riser: <b>' + esc(mv.up.who) + '</b> ' + signed(mv.up.rate) + ' a game<br>Lowest rate of change: <b>' + esc(mv.down.who) + '</b> ' + signed(mv.down.rate) +
+        ' a game<br>Last ' + (mv.games === 1 ? 'game' : mv.games + ' games') + '</p>' : '') +
       '<div class="fcrow mjadd"><input id="mjname" placeholder="New player’s name…" maxlength="30" autocomplete="off">' +
         '<button class="btn" id="mjaddp" type="button">Add player</button></div>' +
       (st.length > 1 ?

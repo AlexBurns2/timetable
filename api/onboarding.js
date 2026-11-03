@@ -19,9 +19,8 @@
  *   );
  */
 
-import { db, whoami } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 
-const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
 /* The full tour, in the order people meet it. The roster reports progress
    against this list, so keep it in step with tour.js. */
@@ -47,7 +46,7 @@ export default async function handler(req, res) {
 
   /* ---- the roster, for the owner's admin panel ---- */
   if (req.method === "GET" && req.query && req.query.all) {
-    if (!OWNER_EMAIL || email !== OWNER_EMAIL)
+    if (!isAdmin(email))
       return res.status(403).json({ error: "Owner only." });
     const { data, error } = await db.from("onboarding")
       .select("email, seen, updated_at").limit(2000);

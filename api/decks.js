@@ -15,7 +15,7 @@
  *   RLS off (service-role only).
  */
 
-import { db, whoami } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
@@ -31,7 +31,6 @@ function nameFromEmail(email) {
 
 export const CATEGORIES = ["Maths", "Physics", "Chemistry", "Biology", "English",
   "History", "Geography", "Languages", "Business", "Other"];
-const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
 function cleanCards(raw) {
@@ -73,7 +72,7 @@ export default async function handler(req, res) {
     if (error) return res.status(502).json({ error: "Couldn't load the list." });
     return res.status(200).json({ categories: CATEGORIES, decks: (data || []).map(d => ({
       id: d.id, name: d.name, category: d.category, author: withName(NAMES, d.email, nameFromEmail(d.email)),
-      count: Array.isArray(d.cards) ? d.cards.length : 0, mine: d.email === me.email || me.email.toLowerCase() === OWNER_EMAIL
+      count: Array.isArray(d.cards) ? d.cards.length : 0, mine: d.email === me.email || isAdmin(me.email)
     })) });
   }
 
@@ -86,7 +85,7 @@ export default async function handler(req, res) {
       const id = String(body.id || "");
       const { data: row } = await db.from("shared_deck").select("email").eq("id", id).maybeSingle();
       if (!row) return res.status(404).json({ error: "Deck not found." });
-      const isOwner = !!OWNER_EMAIL && me.email.toLowerCase() === OWNER_EMAIL;
+      const isOwner = isAdmin(me.email);
       if (row.email !== me.email && !isOwner) return res.status(403).json({ error: "You can only delete your own decks." });
       const { error } = await db.from("shared_deck").delete().eq("id", id);
       if (error) return res.status(502).json({ error: "Couldn't delete." });

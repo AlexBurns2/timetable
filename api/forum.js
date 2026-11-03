@@ -4,7 +4,7 @@
  * GET  /api/forum                        → { posts:[ {id,name,body,at,mine,replies:[…]} ] }
  * POST /api/forum {body}                 → new thread, returns { id }
  * POST /api/forum {body, parent}         → reply on that thread
- * POST /api/forum {action:'delete', id}  → author (or OWNER_EMAIL) removes a post
+ * POST /api/forum {action:'delete', id}  → author (or an admin) removes a post
  *
  * Same identity model as the rest of the site: whoami() re-verifies the school
  * credentials already being sent, the display name is derived server-side, and
@@ -22,7 +22,7 @@
  *   -- RLS off: the service-role key is the only thing that touches it.
  */
 
-import { db, whoami } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
@@ -36,7 +36,6 @@ function nameFromEmail(email) {
   return cap(local.replace(/\d+$/, "")) || "Someone";
 }
 
-const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const MAX_BODY = 1000;
 const MAX_THREADS = 60;
@@ -51,7 +50,7 @@ export default async function handler(req, res) {
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the forum." });
   NAMES = await nameOverrides();
-  const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
+  const isOwner = isAdmin(me.email);
 
   if (req.method === "GET") {
     const { data, error } = await db.from("forum_post")

@@ -585,6 +585,8 @@ button.row:hover{background:var(--fill2)}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
 .mjnone{margin:auto;font-size:calc(13px * var(--fs,1));color:var(--fg3);text-align:center}
+.mjmove{font-size:calc(13px * var(--fs,1));line-height:1.45;color:var(--fg2)}
+.mjmove b{color:var(--fg)}
 .mjline{flex:1;min-height:0}
 .list .mjline{min-height:220px}
 .mjline svg{display:block;width:100%;height:100%}
@@ -3758,17 +3760,27 @@ tileHead("mahjong", () => toggleMj());
    mahjong.js); each game adds to or takes from people. The tile names who's on
    top and bottom, and switches the week's blocks to the sheet: a column with a
    block per player, where a game is recorded too, and a line graph beside it. */
-const MJ_START = 4096;
-const MJ_COLORS = ["#0A84FF","#FF375F","#30C05A","#FF9F0A","#AF52DE","#32ADE6","#FFB800","#8E8E93","#AC8E68","#5E5CE6"];   /* as mahjong.js, so a player keeps their colour */
+const MJ_START = 4096, MJ_RECENT = 5;
+const MJ_COLORS =["#0A84FF","#FF375F","#30C05A","#FF9F0A","#AF52DE","#32ADE6","#FFB800","#8E8E93","#AC8E68","#5E5CE6"];   /* as mahjong.js, so a player keeps their colour */
 let mj = null, mjBusy = false, mjNote = "", mjDraft = {};     /* mjDraft: points typed, by player id */
 const mjTile = document.querySelector('[data-m="mahjong"]');
 const mjColor = id => MJ_COLORS[(id - 1) % MJ_COLORS.length];
 const mjFmt = n => n.toLocaleString();
-const mjSigned = v => (v > 0 ? "+" : "−") + mjFmt(Math.abs(v));
+const mjSigned = v => (v > 0 ? "+" : v < 0 ? "−" : "") + mjFmt(Math.abs(v));
+const mjNames = l => esc(l.length === 1 ? l[0].name : l.length === 2 ? l[0].name + " & " + l[1].name + " tied" : l.length + " tied");
 function mjPoints(){
   const pts = {}; mj.players.forEach(p => pts[p.id] = MJ_START);
   mj.rounds.forEach(r => { for (const id in r.d) if (id in pts) pts[id] += r.d[id]; });
   return pts;
+}
+/* points a game over the last MJ_RECENT games, top and bottom, as HTML; "" until the
+   rates differ. All-time rates would only repeat the standings, since everyone starts level. */
+function mjMovers(){
+  const recent = mj.rounds.slice(-MJ_RECENT); if (!recent.length) return "";
+  const rates = mj.players.map(p => ({ name:p.name, rate:Math.round(recent.reduce((a, r) => a + (r.d[p.id] || 0), 0) / recent.length) }));
+  const v = rates.map(p => p.rate), hi = Math.max(...v), lo = Math.min(...v); if (hi === lo) return "";
+  const at = n => `<b>${mjNames(rates.filter(p => p.rate === n))}</b> ${mjSigned(n)} a game`;
+  return `<p class="mjmove">Highest riser: ${at(hi)}<br>Lowest rate of change: ${at(lo)}<br>Last ${recent.length === 1 ? "game" : recent.length + " games"}</p>`;
 }
 /* read the sheet, or (with a body) change it: { action:"player"|"round"|"undo", … } */
 async function mjCall(body){
@@ -3807,8 +3819,7 @@ function paintMjTile(){
   mjTile.querySelector(".mod-head").setAttribute("aria-pressed", mjShow);
   if (!mj || !mj.players.length){ $("mjstate").textContent = ""; return; }
   const pts = mjPoints(), s = mj.players, v = s.map(p => pts[p.id]), hi = Math.max(...v), lo = Math.min(...v);
-  const at = n => { const who = s.filter(p => pts[p.id] === n).map(p => p.name);
-    return esc(who.length === 1 ? who[0] : who.length === 2 ? who.join(" & ") + " tied" : who.length + " tied") + " · " + mjFmt(n); };
+  const at = n => mjNames(s.filter(p => pts[p.id] === n)) + " · " + mjFmt(n);
   $("mjstate").innerHTML = hi === lo ? (s.length > 1 ? "Everyone tied" : esc(s[0].name)) + " · " + mjFmt(hi) : "↑ " + at(hi) + "<br>↓ " + at(lo);
 }
 /* every player's points after each game, as a line each, in their block's colour */
@@ -3874,7 +3885,7 @@ function renderMj(nd){
   if (save) y += SAVE + 8;
   const add = block("mjctl", "mj:add", "#E0303A",
     `<input class="fin" id="mjname" placeholder="${n ? "Add a player" : "Add everyone at the table"}" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="New player's name"><button class="btn sm" id="mjadd">Add</button>`, y, ADD);
-  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` +
+  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` + mjMovers() +
     (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, y + ADD - 4, nd - 2);
   if (list) host.innerHTML = players + save + add + graph;
   else {

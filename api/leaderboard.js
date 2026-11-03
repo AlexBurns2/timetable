@@ -15,7 +15,7 @@
  *   period is 'all' or 'w<week>'.
  */
 
-import { db, whoami } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, withName, forgetNameOverrides } from "./_names.js";
 import { siteSettings, setSiteSetting } from "./_settings.js";
 
@@ -36,15 +36,12 @@ const DIRS = {
   "oddone:high": "max"         // Odd One Out — best score in a run
 };
 const MAX_SCORE = 100000000;
-/* who may clear a board (server-side, never trust the client). Set OWNER_EMAIL
-   in the environment to your school login; unset ⇒ nobody can wipe. */
-const OWNER_EMAIL = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
 
 /* Owner-only engagement view: everyone who has actually used the site.
  * `prefs` gets a row the first time someone's settings sync after they log in,
  * so it is the closest thing to a sign-in log; game scores and daily results
  * fill in anyone who played before settings synced, and give an activity count.
- * Read-only — it never writes, and it is gated to OWNER_EMAIL by the caller. */
+ * Read-only — it never writes, and it is gated to admins by the caller. */
 async function siteUsers() {
   const out = new Map(), names = await nameOverrides();
   const touch = (email, when, key) => {
@@ -128,7 +125,7 @@ export default async function handler(req, res) {
     return res.status(200).json(await siteSettings());
   }
   if (req.method === "POST" && src.action === "settings") {
-    if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
+    if (!isAdmin(me.email))
       return res.status(403).json({ error: "Only the owner can change site settings." });
     if (typeof src.weeklyBoards !== "boolean")
       return res.status(400).json({ error: "weeklyBoards must be true or false." });
@@ -143,7 +140,7 @@ export default async function handler(req, res) {
   /* owner-only roster of who has signed in — answered before the game/metric
      checks below, since it isn't tied to any one board */
   if (req.method === "GET" && src.users) {
-    if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
+    if (!isAdmin(me.email))
       return res.status(403).json({ error: "Only the owner can see this." });
     return res.status(200).json({ users: await siteUsers() });
   }
@@ -152,7 +149,7 @@ export default async function handler(req, res) {
      Kept in this route rather than a new file: the project is near Vercel's
      per-deployment function limit. */
   if (req.method === "POST" && src.action === "rename") {
-    if (!OWNER_EMAIL || String(me.email).toLowerCase() !== OWNER_EMAIL)
+    if (!isAdmin(me.email))
       return res.status(403).json({ error: "Only the owner can rename people." });
     const email = String(src.email || "").trim().toLowerCase();
     const name = String(src.name || "").replace(/\s+/g, " ").trim().slice(0, 40);
@@ -175,7 +172,7 @@ export default async function handler(req, res) {
   const week = weekOf(src.week);
   if (week === null) return res.status(400).json({ error: "A valid week is required." });
   const wperiod = "w" + week;
-  const isOwner = !!OWNER_EMAIL && String(me.email).toLowerCase() === OWNER_EMAIL;
+  const isOwner = isAdmin(me.email);
 
   const validPeriod = p => p === "all" || p === wperiod;
 
