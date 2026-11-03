@@ -104,7 +104,7 @@ select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8
 .note{background:#f5f8fc;border:1px solid #dce6f3;border-radius:8px;padding:10px 12px;color:#3a4a62;font-size:13.5px;margin-top:12px}
 .err{color:var(--accent);font-weight:600;margin-top:10px;min-height:1.2em}
 .tag{font-size:11px;font-weight:700;letter-spacing:.1px;padding:2px 7px;border-radius:5px;background:#eef1f5;color:#556}
-.tag.easy{background:#e4f6ea;color:#1f7a44}.tag.medium{background:#e6f0fc;color:#245ea8}.tag.hard{background:#fdf0dc;color:#a35a00}.tag.pro{background:#fbe3e4;color:#a31c25}
+.tag.easy{background:#e4f6ea;color:#1f7a44}.tag.medium{background:#e6f0fc;color:#245ea8}.tag.hard{background:#fdf0dc;color:#a35a00}.tag.pro{background:#fbe3e4;color:#a31c25}.tag.master{background:#ece3fb;color:#5b2aa3}
 .tag.off{background:#ffe9c7;color:#8a5200}.tag.you{background:#1d2330;color:#fff}
 
 /* ---------- Tiles ---------- */
@@ -307,7 +307,7 @@ header.top{background:#082c24;border-bottom:3px solid var(--brass);color:#f3ead2
 .sub{color:var(--muted)}
 .lvl{border-radius:6px;border:1.5px solid var(--line);background:var(--panel);font-weight:600}
 .lvl.on{background:var(--jade);border-color:var(--jade);color:#fff}
-.lvl[data-l=easy].on{background:#2f8f4e;border-color:#2f8f4e}.lvl[data-l=medium].on{background:#1f5fae;border-color:#1f5fae}.lvl[data-l=hard].on{background:#c06a00;border-color:#c06a00}.lvl[data-l=pro].on{background:var(--lacquer);border-color:var(--lacquer)}
+.lvl[data-l=easy].on{background:#2f8f4e;border-color:#2f8f4e}.lvl[data-l=medium].on{background:#1f5fae;border-color:#1f5fae}.lvl[data-l=hard].on{background:#c06a00;border-color:#c06a00}.lvl[data-l=pro].on{background:var(--lacquer);border-color:var(--lacquer)}.lvl[data-l=master].on{background:#5b2aa3;border-color:#5b2aa3}
 .note{background:#eef6f1;border:0;border-left:4px solid var(--jade);border-radius:4px;color:#24453a}
 .code{color:var(--lacquer);background:var(--panel);border:2px solid var(--brass);font-family:var(--font-num);font-size:52px;letter-spacing:10px}
 .seatno{background:var(--jade-soft);color:var(--jade-night)}
@@ -1499,6 +1499,50 @@ function applyTheme(id) { const v = themeVars(id); for (const k in v) document.d
 // Bots only read public table information plus their own hand.
 const Bot = (() => {
   const R = Math.random;
+  /* same answer as shantenAll, but each suit's (sets, partial sets, pair) options are worked out once and reused:
+     shanten is the hot spot and the Master search asks about the same hands many times */
+  const partMemo = new Map();
+  function partOpts(c, lo, len, seq) {
+    let key = seq ? 's' : 'h'; for (let i = 0; i < len; i++) key += c[lo + i];
+    let r = partMemo.get(key); if (r) return r;
+    if (partMemo.size > 200000) partMemo.clear();
+    const a = c.slice(lo, lo + len), seen = new Set(); r = [];
+    (function rec(i, s, t, p) {
+      while (i < len && !a[i]) i++;
+      if (i >= len) { const k = s * 100 + t * 10 + p; if (!seen.has(k)) { seen.add(k); r.push([s, t, p]); } return; }
+      // a hand never uses more than 4 sets and partial sets, so stop there (the skip branch keeps the smaller options)
+      if (a[i] >= 3 && s < 4) { a[i] -= 3; rec(i, s + 1, t, p); a[i] += 3; }
+      if (seq && s < 4 && i <= len - 3 && a[i + 1] && a[i + 2]) { a[i]--; a[i + 1]--; a[i + 2]--; rec(i, s + 1, t, p); a[i]++; a[i + 1]++; a[i + 2]++; }
+      if (a[i] >= 2) { a[i] -= 2; if (!p) rec(i, s, t, 1); if (s + t < 4) rec(i, s, t + 1, p); a[i] += 2; }
+      const tw = s + t < 4;
+      if (tw && seq && i <= len - 2 && a[i + 1]) { a[i]--; a[i + 1]--; rec(i, s, t + 1, p); a[i]++; a[i + 1]++; }
+      if (tw && seq && i <= len - 3 && a[i + 2]) { a[i]--; a[i + 2]--; rec(i, s, t + 1, p); a[i]++; a[i + 2]++; }
+      const k = a[i]; a[i] = 0; rec(i + 1, s, t, p); a[i] = k;
+    })(0, 0, 0, 0);
+    r = front(r); partMemo.set(key, r); return r;
+  }
+  // more sets or partial sets never raise shanten, so drop options another beats on both
+  const front = l => l.filter(([s, t, p]) => !l.some(([s2, t2, p2]) => p2 === p && s2 >= s && t2 >= t && (s2 > s || t2 > t)));
+  function shan(c, m, spOn) {
+    const need = 4 - m; let acc = [[0, 0, 0]];
+    for (const part of [partOpts(c, 0, 9, 1), partOpts(c, 9, 9, 1), partOpts(c, 18, 9, 1), partOpts(c, 27, 7, 0)]) {
+      const nx = new Map();
+      for (const [s1, t1, p1] of acc) for (const [s2, t2, p2] of part) {
+        if (p1 + p2 > 1) continue;
+        const s = Math.min(s1 + s2, need), t = Math.min(t1 + t2, need), p = p1 + p2;
+        nx.set(s * 100 + t * 10 + p, [s, t, p]);
+      }
+      acc = front([...nx.values()]);
+    }
+    let best = 8; for (const [s, t, p] of acc) best = Math.min(best, 8 - 2 * (s + m) - Math.min(t, need - s) - p);
+    if (m === 0) {
+      let pairs = 0, kinds = 0; for (let t = 0; t < 34; t++) { if (c[t] >= 2) pairs++; if (c[t]) kinds++; }
+      if (spOn) best = Math.min(best, 6 - pairs + Math.max(0, 7 - kinds));
+      let k = 0, hp = 0; for (const t of ORPHANS) { if (c[t]) k++; if (c[t] >= 2) hp = 1; }
+      best = Math.min(best, 13 - k - hp);
+    }
+    return best;
+  }
   function visible(g, s) {
     const h = g.h, v = new Array(34).fill(0);
     for (const t of h.hands[s]) if (t < 34) v[t]++;
@@ -1510,10 +1554,10 @@ const Bot = (() => {
   }
   const sp = (g, m) => g.S.sevenPairs && m === 0;
   function ukeire(c, m, v, spOn) {
-    const cur = shantenAll(c, m, spOn); let n = 0;
+    const cur = shan(c, m, spOn); let n = 0;
     for (let t = 0; t < 34; t++) {
       const un = 4 - v[t]; if (un <= 0 || c[t] >= 4) continue;
-      c[t]++; if (shantenAll(c, m, spOn) < cur) n += un; c[t]--;
+      c[t]++; if (shan(c, m, spOn) < cur) n += un; c[t]--;
     }
     return n;
   }
@@ -1598,7 +1642,7 @@ const Bot = (() => {
     const uniq = [...new Set(hand)];
     if (level === 'easy') return R() < 0.35 ? hand[Math.floor(R() * hand.length)] : simplePick(g, s, uniq);
     const c = counts(hand);
-    const ev = uniq.map(t => { c[t]--; const sh = shantenAll(c, m, spOn); c[t]++; return { t, sh }; });
+    const ev = uniq.map(t => { c[t]--; const sh = shan(c, m, spOn); c[t]++; return { t, sh }; });
     const minSh = Math.min(...ev.map(e => e.sh));
     if (level === 'medium') return simplePick(g, s, ev.filter(e => e.sh === minSh).map(e => e.t));
     const v = visible(g, s), th = level === 'pro' ? threats(g, s) : [];
@@ -1621,7 +1665,7 @@ const Bot = (() => {
   }
   function bestAfterDiscard(c, m, spOn) {
     let b = 99;
-    for (let t = 0; t < 34; t++) if (c[t]) { c[t]--; b = Math.min(b, shantenAll(c, m, spOn)); c[t]++; }
+    for (let t = 0; t < 34; t++) if (c[t]) { c[t]--; b = Math.min(b, shan(c, m, spOn)); c[t]++; }
     return b;
   }
   function turn(g, s, level) {
@@ -1633,8 +1677,8 @@ const Bot = (() => {
       if (level === 'medium') return k;
       const c = counts(h.hands[s]); const before = bestAfterDiscard(c, m, spOn);
       let after;
-      if (k.a === 'ckong') { c[k.t] -= 4; after = shantenAll(c, m + 1, false); }
-      else { c[k.t] -= 1; after = shantenAll(c, m, false); }
+      if (k.a === 'ckong') { c[k.t] -= 4; after = shan(c, m + 1, false); }
+      else { c[k.t] -= 1; after = shan(c, m, false); }
       if (after <= before) return k;
     }
     return { a: 'discard', t: chooseDiscard(g, s, level) };
@@ -1650,14 +1694,14 @@ const Bot = (() => {
       return pass;
     }
     const melds = h.melds[s], m = melds.length, c0 = counts(h.hands[s]);
-    const s0 = shantenAll(c0, m, sp(g, m));
+    const s0 = shan(c0, m, sp(g, m));
     const isValue = !!valueWeights(g, s)[t];
     const evalClaim = (kind, st) => {
       const c = c0.slice(); let nm;
       if (kind === 'chow') { for (let x = st; x < st + 3; x++) if (x !== t) c[x]--; nm = { k: 'chow', t: st, c: false }; }
       else { c[t] -= kind === 'kong' ? 3 : 2; nm = { k: kind, t, c: false }; }
       const ml = melds.concat([nm]);
-      const sAfter = kind === 'kong' ? shantenAll(c, m + 1, false) : bestAfterDiscard(c, m + 1, false);
+      const sAfter = kind === 'kong' ? shan(c, m + 1, false) : bestAfterDiscard(c, m + 1, false);
       return { sAfter, fp: faanPotential(g, s, c, ml) };
     };
     if (level === 'medium') {
@@ -1676,7 +1720,135 @@ const Bot = (() => {
     }
     return pass;
   }
-  return { turn, claim, shantenAll };
+
+  // ---- Master: expected points from the tiles it can see ----
+  // Unseen = 4 minus copies in its own hand, all discards and all melds, so it never
+  // reads other hands or the wall order. Each draw of tile t has chance unseen[t]/N.
+  // A hand's value is the points it should win before the wall runs out or someone
+  // else wins: exact over waits when ready, one draw ahead when one tile off,
+  // a rough chain over tile acceptance further out.
+  /* RON: three opponents, each discard roughly half as likely as a draw to be a wait. HZ0/HZM: chance per turn
+     someone else ends the hand, plus more per exposed meld. HOLD/CLAIM: margins against the model's own error. */
+  const RON = 1.5, HZ0 = 0.06, HZM = 0.015, HOLD = 2, CLAIM = 1.1, CLAIM_SH = 2, SPAN = 0, DEAL = 2;
+  const baseOf = (g, f) => (g.S.spicy === 'full' ? FULL_SPICY : HALF_SPICY)[Math.min(f, 13)];
+  const near = (c, t) => c[t] > 0 || (t < 27 && [-2, -1, 1, 2].some(d => { const x = t + d; return x >= 0 && suitOf(x) === suitOf(t) && c[x] > 0; }));
+  function mctx(g, s) {
+    const h = g.h, v = visible(g, s); let N = 0, hz = HZ0;
+    for (let t = 0; t < 34; t++) N += 4 - v[t];
+    for (let o = 0; o < 4; o++) if (o !== s) hz += HZM * Math.min(3, h.melds[o].filter(m => !m.c).length);
+    return { g, s, v, N: Math.max(N, 1), T: Math.floor(h.wall.length / 4), hz: Math.min(hz, 0.2), memo: new Map(), th: threats(g, s) };
+  }
+  const mkey = (c, melds) => melds.map(m => m.k[0] + m.t + (m.c ? 'c' : '')).join('') + '|' + c.join('');
+  // per-turn chance and points of winning with this ready hand
+  function waits(M, c, melds) {
+    const key = 'w' + mkey(c, melds); if (M.memo.has(key)) return M.memo.get(key);
+    const { g, s, v, N } = M, min = g.S.minFaan; let w = 0, gain = 0;
+    for (let t = 0; t < 34; t++) {
+      const u = 4 - v[t]; if (u <= 0 || c[t] >= 4 || !near(c, t)) continue;
+      c[t]++; const conc = fromCounts(c);
+      const r = evaluateWin(conc, melds, g.ctxFor(s, { selfDraw: false, winTile: t }));
+      const rt = r && evaluateWin(conc, melds, g.ctxFor(s, { selfDraw: true, winTile: t }));
+      c[t]--;
+      if (rt && rt.faan >= min) { w += u / N; gain += u / N * 1.5 * baseOf(g, rt.faan); }
+      if (r && r.faan >= min) { w += RON * u / N; gain += RON * u / N * baseOf(g, r.faan); }
+    }
+    const o = { w: Math.min(w, 0.95), gain }; M.memo.set(key, o); return o;
+  }
+  // value of staying ready with these waits for k more turns
+  function v0(M, p, k) { const S = (1 - p.w) * (1 - M.hz); return S >= 1 ? 0 : p.gain * (1 - Math.pow(S, k)) / (1 - S); }
+  function value(M, c, melds, k) {
+    if (k <= 0) return 0;
+    const key = k + mkey(c, melds); if (M.memo.has(key)) return M.memo.get(key);
+    const { g, s, v, N } = M, m = melds.length, spOn = sp(g, m), sh = shan(c, m, spOn);
+    let out;
+    if (sh <= 1) {
+      // draw t, then keep the best ready hand it allows; otherwise throw t back
+      const p0 = sh === 0 ? waits(M, c, melds) : { w: 0, gain: 0 }, sw = [];
+      for (let t = 0; t < 34; t++) {
+        const u = 4 - v[t]; if (u <= 0 || c[t] >= 4) continue;
+        if (sh === 0 && !near(c, t)) continue;
+        c[t]++;
+        const s14 = shan(c, m, spOn);
+        if (s14 === 0) {
+          let best = sh === 0 ? v0(M, p0, k - 1) : 0, bp = null;
+          for (let d = 0; d < 34; d++) {
+            if (!c[d] || d === t) continue;
+            c[d]--; if (shan(c, m, spOn) === 0) { const p = waits(M, c, melds), x = v0(M, p, k - 1); if (x > best) { best = x; bp = p; } } c[d]++;
+          }
+          if (bp) sw.push({ q: u / N, p: bp });
+        }
+        c[t]--;
+      }
+      const q = sw.reduce((a, x) => a + x.q, 0), stay = Math.max(0, 1 - p0.w - q);
+      let V = 0;
+      for (let i = 1; i <= k; i++) V = (1 - M.hz) * (p0.gain + sw.reduce((a, x) => a + x.q * v0(M, x.p, i - 1), 0) + stay * V);
+      out = V;
+    } else {
+      // rough: move one step closer at the tile-acceptance rate, then wait on about five tiles
+      const q = Math.min(0.9, ukeire(c, m, v, spOn) / N), fp = faanPotential(g, s, c, melds), min = g.S.minFaan;
+      const pay = baseOf(g, Math.max(min, Math.round(fp))) * Math.max(0, fp >= min ? 1 : 1 - (min - fp) * 0.5);
+      const w = Math.min(0.9, (1 + RON) * 5 / N), gain = (1.5 + RON) * 5 / N * pay;
+      let dp = new Array(sh + 1).fill(0); dp[sh] = 1; out = 0;
+      for (let i = 0; i < k; i++) {
+        out += dp[0] * gain;
+        const nx = dp.map((x, j) => (j === 0 ? x * (1 - w) : x * (1 - q)) + (j < sh ? dp[j + 1] * q : 0));
+        dp = nx.map(x => x * (1 - M.hz));
+      }
+    }
+    M.memo.set(key, out); return out;
+  }
+  // points lost by maybe feeding a ready opponent
+  const dealCost = (M, t) => M.th.length ? danger(M.g, t, M.th, M.v) * 0.013 * baseOf(M.g, M.g.S.minFaan + 1) : 0;
+  // best discard from a hand one tile over, by expected points
+  function bestDiscard(M, c, melds, k) {
+    const m = melds.length, spOn = sp(M.g, m), sh = [];
+    for (let t = 0; t < 34; t++) if (c[t]) { c[t]--; sh[t] = shan(c, m, spOn); c[t]++; }
+    const lim = Math.max(1, Math.min(...sh.filter(x => x != null)) + SPAN);
+    let best = null;
+    for (let t = 0; t < 34; t++) {
+      if (!c[t]) continue;
+      // further than one tile off, the rough estimate misleads, so such a discard only counts as folding
+      c[t]--; const x = (sh[t] > lim ? 0 : value(M, c, melds, k)) - DEAL * dealCost(M, t); c[t]++;
+      if (!best || x > best.x) best = { t, x };
+    }
+    return best;
+  }
+  function masterTurn(g, s) {
+    const h = g.h, melds = h.melds[s], m = melds.length, spOn = sp(g, m), c = counts(h.hands[s]);
+    if (bestAfterDiscard(c, m, spOn) >= 2) return turn(g, s, 'pro');   /* far from ready: Pro's tile efficiency is cheap and good enough */
+    const M = mctx(g, s), best = bestDiscard(M, c, melds, M.T);
+    const r = g.canTsumo(s);
+    // take the win unless holding on is clearly worth more
+    if (r && (r.faan >= g.S.maxFaan || 1.5 * baseOf(g, r.faan) * HOLD >= best.x)) return { a: 'tsumo' };
+    for (const k of g.kongOptions(s)) {
+      const c2 = c.slice(), ml = melds.map(x => Object.assign({}, x));
+      if (k.a === 'ckong') { c2[k.t] -= 4; ml.push({ k: 'kong', t: k.t, c: true }); }
+      else { c2[k.t] -= 1; ml.find(x => x.k === 'pung' && x.t === k.t).k = 'kong'; }
+      if (value(M, c2, ml, M.T) >= best.x) return k;
+    }
+    return { a: 'discard', t: best.t };
+  }
+  function masterClaim(g, s, o) {
+    const h = g.h, t = h.claimTile, melds = h.melds[s], m = melds.length, c0 = counts(h.hands[s]);
+    const s0 = shan(c0, m, sp(g, m));
+    if (s0 >= CLAIM_SH) return claim(g, s, 'pro', o);
+    const M = mctx(g, s), vp = value(M, c0, melds, M.T);
+    if (o.win && (o.win >= g.S.maxFaan || baseOf(g, o.win) * HOLD >= vp)) return { a: 'claim', c: 'win' };
+    let best = { x: vp * CLAIM + 0.01, a: { a: 'claim', c: 'pass' } };
+    const tryClaim = (kind, st) => {
+      const c = c0.slice(); let nm;
+      if (kind === 'chow') { for (let x = st; x < st + 3; x++) if (x !== t) c[x]--; nm = { k: 'chow', t: st, c: false }; }
+      else { c[t] -= kind === 'kong' ? 3 : 2; nm = { k: kind, t, c: false }; }
+      const ml = melds.concat([nm]);
+      const x = kind === 'kong' ? value(M, c, ml, M.T) : bestDiscard(M, c, ml, M.T).x;
+      if (x > best.x) best = { x, a: { a: 'claim', c: kind, start: st } };
+    };
+    if (o.kong) tryClaim('kong');
+    if (o.pung) tryClaim('pung');
+    if (o.chow) for (const st of o.chow) tryClaim('chow', st);
+    return best.a;
+  }
+  return { turn: (g, s, l) => l === 'master' ? masterTurn(g, s) : turn(g, s, l), claim: (g, s, l, o) => l === 'master' ? masterClaim(g, s, o) : claim(g, s, l, o), shantenAll, shan };
 })();
 
 // ===================== Online provider: Firebase Realtime Database =====================
@@ -1771,7 +1943,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fmt = x => (Math.round(x * 100) / 100).toString();
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
-const LEVELS = ['easy', 'medium', 'hard', 'pro'];
+const LEVELS = ['easy', 'medium', 'hard', 'pro', 'master'];
 const BOT_NAMES = ['Andy Lau', 'Stephen Chow', 'Donnie Yen', 'Bot Delta', 'Bot Echo', 'Bot Foxtrot', 'Bot Hotel'];
 const SPEED = { instant: 0, fast: 320, normal: 750, slow: 1300 };
 const SPEED_NAMES = { instant: 'Instant', fast: 'Fast', normal: 'Normal', slow: 'Slow' };
@@ -2018,7 +2190,7 @@ function renderBotSetup() {
      <div class="seatrow"><div class="seatno">1</div><div class="nm">${esc(App.name)} <small>(you)</small></div></div>
      ${[0, 1, 2].map(i => `<div class="seatrow"><div class="seatno">${i + 2}</div><div class="nm">${BOT_NAMES[i]}</div><div class="lvls" data-i="${i}">${LEVELS.map(l => `<button class="lvl ${App.botLevels[i] === l ? 'on' : ''}" data-l="${l}">${cap(l)}</button>`).join('')}</div></div>`).join('')}
      <h3>Set all bots to</h3><div class="lvls" id="allLv">${LEVELS.map(l => `<button class="lvl" data-l="${l}">${cap(l)}</button>`).join('')}</div>
-     <div class="note"><b>Easy</b> plays loosely and claims at random. <b>Medium</b> builds sensible hands. <b>Hard</b> counts tile efficiency and steers toward enough faan to win. <b>Pro</b> adds hand-value planning and reads the table to defend against dangerous discards.</div>
+     <div class="note"><b>Easy</b> plays loosely and claims at random. <b>Medium</b> builds sensible hands. <b>Hard</b> counts tile efficiency and steers toward enough faan to win. <b>Pro</b> adds hand-value planning and reads the table to defend against dangerous discards. <b>Master</b> counts every tile it can see to work out the odds and expected faan of each discard, claim and win, and will pass up a small win for a likely bigger one.</div>
    </div>
    <div class="panel"><h2>Table rules</h2><p class="sub">Hong Kong rules. Defaults are standard.</p>${settingsHTML(App.botS, true)}
      <div class="btnrow"><button class="btn primary" id="startBots">Start game</button><button class="btn" id="backHome">Back to menu</button></div></div>
@@ -3225,7 +3397,7 @@ const ACHIEVEMENTS = [
   ['kong_win', '🌸', 'Blossom on the kong', 'Win on a kong replacement tile'],
   ['rob', '🦝', 'Kong thief', 'Win by robbing a kong'],
   ['beat_hard', '🥋', 'Black belt', 'Finish first in a game with a Hard bot'],
-  ['beat_pro', '🐲', 'Pro slayer', 'Finish first in a game with a Pro bot'],
+  ['beat_pro', '🐲', 'Pro slayer', 'Finish first in a game with a Pro or Master bot'],
   ['online_win', '🌏', 'Table champion', 'Finish first in an online game'],
   ['clean', '🧤', 'Clean hands', 'Finish a game without paying for anyone\'s discard win'],
   ['daily', '📅', 'Daily player', 'Finish a daily challenge'],
@@ -3270,7 +3442,7 @@ const Stats = {
     const d = this.data, lk = this.levelKey(); d.games++;
     const bl = d.byLevel[lk] = d.byLevel[lk] || { hands: 0, wins: 0, games: 0, firsts: 0 }; bl.games++;
     const top = Math.max(...V.P.map(p => p.sc)), first = V.P[me].sc === top && top > 0;
-    if (first) { d.gamesFirst++; bl.firsts++; if (lk === 'hard' || lk === 'pro') this.unlock('beat_hard'); if (lk === 'pro') this.unlock('beat_pro'); if (lk === 'online') this.unlock('online_win'); }
+    if (first) { d.gamesFirst++; bl.firsts++; if (lk === 'hard' || lk === 'pro' || lk === 'master') this.unlock('beat_hard'); if (lk === 'pro' || lk === 'master') this.unlock('beat_pro'); if (lk === 'online') this.unlock('online_win'); }
     if (!App.gameDealIns && V.hn >= 4) this.unlock('clean');
     if (App.mode === 'daily') {
       this.unlock('daily');
@@ -3312,7 +3484,7 @@ function toast(html) {
 function showStats() {
   const d = Stats.data, pct = (a, b) => b ? Math.round(100 * a / b) + '%' : '—';
   const pats = Object.entries(d.patterns).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const lv = ['easy', 'medium', 'hard', 'pro', 'online'].filter(k => d.byLevel[k]);
+  const lv = ['easy', 'medium', 'hard', 'pro', 'master', 'online'].filter(k => d.byLevel[k]);
   const o = modal(`<h2>Your stats</h2><p class="sub">${Cloud.on ? 'Saved to your account.' : 'Saved on this device.'}</p>
     <div class="statgrid">
       <div><b>${d.games}</b><span>games</span></div><div><b>${d.hands}</b><span>hands</span></div><div><b>${d.wins}</b><span>hands won</span></div>
