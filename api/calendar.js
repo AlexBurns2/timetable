@@ -7,6 +7,7 @@
  * POST /api/calendar {action:'import', url}   → pull events from a Google Calendar
  *                                               secret iCal address (see below)
  * …?subject=1                                 → subject events instead (_subjectcal.js)
+ * …?birthdays=1                               → the birthday register (_birthdays.js)
  *
  * Identity is the same verified school email as everywhere else — whoami()
  * re-checks the credentials already being sent, and raw emails are only ever
@@ -46,6 +47,7 @@
 import { db, whoami } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
 import { subjectHandler } from "./_subjectcal.js";
+import { birthdayHandler } from "./_birthdays.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -280,6 +282,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.query && req.query.ical) return importIcal(req, res);
   if (req.query && req.query.subject) return subjectHandler(req, res);
+  if (req.query && req.query.birthdays) return birthdayHandler(req, res);
 
   if (!db) return res.status(503).json({ error: "The calendar is not configured on the server." });
   const me = await whoami(req);

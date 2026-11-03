@@ -2614,3 +2614,18 @@ New origins can take a few minutes to start working. While the app is in
 verified this app": press **Continue**). Letting anyone connect would mean
 publishing the app and going through Google's verification for the calendar
 scopes.
+
+## Birthday register
+
+Calendar settings on `/andre/` → **Birthday register** opens a grid of everyone
+graduating in 2027 (and a name search for anyone else). Anyone signed in can
+fill in a day and month; they show at the top of the week and month views.
+Served by `/api/calendar?birthdays=1` (`api/_birthdays.js`). New table:
+
+```sql
+create table birthday (
+  email text primary key, day text not null,   -- MM-DD
+  updated_by text not null,
+  updated_at timestamptz not null default now()
+);
+```

@@ -246,7 +246,7 @@ export function shapeStudent(r) {
   const yr = (Array.isArray(r.groups) ? r.groups : []).map(g => String(g).match(/^yr\.?\s*(\d{1,2})$/i)).find(Boolean);
   return { first, last, email, year: yr ? +yr[1] : null };
 }
-async function studentDirectory() {
+export async function studentDirectory() {
   if (directoryCache.list && Date.now() - directoryCache.at < DIRECTORY_TTL_MS) return directoryCache.list;
   const raw = await fetchAsOwner("/api/group/student");
   const arr = Array.isArray(raw) ? raw : ((raw && (raw.people || raw.users || raw.data)) || []);
