@@ -657,6 +657,8 @@ button.row:hover{background:var(--fill2)}
 .dh .evd{position:absolute;left:50%;bottom:2px;translate:-50% 0;display:flex;gap:3px}
 .dh .evd i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 .dh[data-day]{cursor:pointer}
+.dh{flex-wrap:wrap}
+.dh .chipe.bday{align-self:center;font-weight:600}
 
 /* ── the birthday register, inside the Calendar tile: missing birthdays in colour, filled ones grey ── */
 /* the settings float left and the register's modules flow beside them, then under them */
@@ -776,7 +778,7 @@ select.fin{appearance:auto}
   .mcell{min-height:58px;padding:4px 4px}
   .mnum{font-size:calc(13px * var(--fs,1))}
   .mwk{display:none}
-  .chipe{font-size:0;height:5px;padding:0;border-radius:3px}
+  .mcell .chipe{font-size:0;height:5px;padding:0;border-radius:3px}
   .mmore{display:none}
 }
 </style>
@@ -1807,11 +1809,10 @@ function gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, H, sk
   let h = arrow(-1) + dates.map(d => {
     const evs = eventsOn(ymd(d));
     return `<div class="dh ${sameDay(d, now) ? "today" : ""}" data-day="${ymd(d)}"${evs.length ? ` title="${esc(evs.map(e => e.title).join(", "))}"` : ""}>` +
-      `<span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${tok("nd", d.getDate())} ${tok("nm", MON[d.getMonth()])}</span>` +
+      `<span class="d">${DN[(d.getDay()+6)%7]}</span><span class="n tnum">${tok("nd", d.getDate())} ${tok("nm", MON[d.getMonth()])}</span>` + bdaysOn(ymd(d)).map(b => bdChip(b)).join("") +
       (evs.length ? `<span class="evd">${evs.slice(0, 4).map(e => `<i style="--c:${esc(e.colour)}"></i>`).join("")}</span>` : "") + `</div>`;
   }).join("") + arrow(1);
   if (tasks.length) h += `<div class="asst"><span class="asst-h">Assessments this week</span>${tasks.map(apill).join("")}</div>`;
-  h += bstrip(bdaysBetween(dates[0], dates.at(-1)), "Birthdays this week");
   h += "<div></div>";
   if (msg) return h + `<div class="msg ${err ? "err" : ""}">${esc(msg)}</div>`;
   days.forEach((items, k) => {
@@ -1887,7 +1888,7 @@ function renderList({ now, dates, days, holiday, msg, when, tasks, err }){
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
          `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id, w.left)}</div>`;
   }
-  document.getElementById("daylist").innerHTML = bstrip(bdaysBetween(dates[0], dates.at(-1)), "Birthdays this week") + h;
+  document.getElementById("daylist").innerHTML = (b => b ? `<div class="asst">${b}</div>` : "")(bdaysOn(ymd(dates[sel])).map(b => bdChip(b)).join("")) + h;
   fitList();
 }
 /* At the top of the page the chosen day should be whole on screen: if it runs
@@ -3026,7 +3027,7 @@ function renderMonth(){
       const tint = weekend ? "wkend" : !schoolDay(d) ? "hol" : { A:"wa", B:"wb" }[abWeek(d)] || "";
       h += `<button class="mcell ${d.getMonth() !== first.getMonth() ? "out" : ""} ${tint} ${sameDay(d, now) ? "today" : ""}" data-day="${day}">` +
            `<span class="mtop"><span class="mnum tnum">${d.getDate()}</span>${wk ? `<span class="mwk">${wk}</span>` : ""}</span>` +
-           bdays.filter(b => b.day === day.slice(5)).map(b => `<span class="chipe bday ${evs.length ? "" : "fill"}" style="--c:#FF375F" title="${esc(b.name)}'s birthday">${esc(b.name)}</span>`).join("") +
+           bdaysOn(day).map(b => bdChip(b, evs.length ? "" : "fill")).join("") +
            evs.slice(0, 3).map(e => `<span class="chipe ${e.kind === "subject" ? "sub" : ""}" data-ev="${esc(e.id)}" data-kind="${e.kind}" style="--c:${esc(e.colour)}" title="${esc(e.title + " · " + evTime(e))}">${esc(e.title)}</span>`).join("") +
            (evs.length > 3 ? `<span class="mmore">+${evs.length - 3} more</span>` : "") +
            (weekend ? "" : (dots => dots.length ? `<span class="adots">${dots.map(a => `<i style="--c:${esc(colourFor(a.course))}" title="${esc(a.course + ": " + a.task)}"></i>`).join("")}</span>` : "")
@@ -3496,17 +3497,9 @@ const dayTitle = day => { const d = toDate(day); return `${WEEKDAYS[d.getDay()]}
 /* ═══ birthday register ═══
    A grid of the class of 2027 (and anyone found by name) to fill in birthdays,
    shared with everyone signed in; they show at the top of the week and month. */
-function bpill(b){ return `<span class="apill" style="--c:#FF375F"><b>${esc(b.name)}</b><span class="aw">${DN[wd(b.date)]} ${b.date.getDate()} ${MON[b.date.getMonth()]}</span></span>`; }
-function bstrip(list, head){ return list.length ? `<div class="asst"><span class="asst-h">${head}</span>${list.map(bpill).join("")}</div>` : ""; }
 /* shortcut: a 29 Feb birthday only shows in leap years */
-function bdaysBetween(from, to){
-  const out = [];
-  for (let d = midnight(from); d <= to; d = addDays(d, 1)){
-    const md = ymd(d).slice(5);
-    for (const b of bdays) if (b.day === md) out.push({ ...b, date:d });
-  }
-  return out;
-}
+const bdaysOn = day => bdays.filter(b => b.day === day.slice(5));
+const bdChip = (b, cls = "") => `<span class="chipe bday ${cls}" style="--c:#FF375F">${esc(b.name)}'s Birthday!</span>`;
 async function loadBirthdays(){
   if (!signedIn) return;
   try {
