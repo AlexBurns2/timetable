@@ -484,6 +484,31 @@ button.row:hover{background:var(--fill2)}
 .mod.modx .mod-body{display:none;padding:8px 18px 18px}
 .mod.modx.open .mod-body{display:block}
 .mod.modx .row-group{background:color-mix(in srgb,var(--bg) 72%,var(--fill))}
+/* a tile's settings: each row is its own card in the tile's colour, filling the width; controls take the tile's colour too */
+.mod.modx .tilebody{max-width:none}
+.mod.modx .tilebody .row-group{display:block;columns:3 340px;column-gap:10px;background:none;border-radius:0}   /* flowing columns: no gaps under short cards */
+.mod.modx .tilebody .row-group > *{break-inside:avoid;margin-bottom:10px}
+.mod.modx .tilebody .row-group > .row{display:flex}
+.mod.modx .tilebody .row{border:0;border-radius:12px;background:color-mix(in srgb,var(--c) 18%,var(--base,var(--bg)));flex-wrap:wrap;min-width:0}
+.mod.modx .tilebody .row .rl{flex:1 1 180px;min-width:0;overflow-wrap:anywhere}   /* text wraps; controls drop under it when the card is narrow */
+.mod.modx .tilebody .row > :not(.rl){flex:none;max-width:100%}
+.mod.modx .tilebody .row .seg{flex-wrap:wrap}
+.mod.modx .tilebody .row.stack{flex-wrap:nowrap}            /* a stacked card's parts sit one under the other, no gaps */
+.mod.modx .tilebody .row.stack > .rl{flex:none}              /* (a flex-basis there would be a height) */
+.mod.modx .tilebody .row > svg{width:14px;height:14px;color:var(--fg3)}
+.mod.modx .tilebody .row.stack{column-span:all}
+.mod.modx .tilebody .row-group > .row.stack:not(:first-child){margin-top:10px}   /* the card before a full-width one loses its margin at the column break */
+.mod.modx .tilebody .row strong{color:var(--ink)}
+.mod.modx .tilebody .row small{color:color-mix(in srgb,var(--ink) 70%,var(--fg2))}
+.mod.modx .tilebody .fin{background:color-mix(in srgb,var(--c) 10%,var(--base,var(--bg)))}
+.mod.modx .tilebody .fin:focus{box-shadow:0 0 0 2px var(--c)}
+.mod.modx .tilebody .btn{background:color-mix(in srgb,var(--c) 28%,var(--base,var(--bg)));color:var(--ink)}
+.mod.modx .tilebody .btn.primary{background:var(--c);color:#fff}
+.mod.modx .tilebody .btn.danger{background:none;color:color-mix(in srgb,var(--red) 82%,var(--fg))}
+.mod.modx .tilebody .seg{background:color-mix(in srgb,var(--c) 22%,var(--base,var(--bg)))}
+.mod.modx .tilebody .seg button[aria-pressed="true"]{background:var(--c);color:#fff}
+.mod.modx .tilebody .tog[aria-checked="true"]{background:var(--c)}
+.mod.modx .tilebody .sec-note{color:color-mix(in srgb,var(--ink) 70%,var(--fg2))}
 .mod.modx [hidden]{display:none!important}
 .cust-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px 24px;align-items:start}
 .cust-col{display:flex;flex-direction:column;gap:8px;min-width:0}
