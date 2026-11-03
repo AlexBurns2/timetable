@@ -31,17 +31,6 @@ function mjLeaders(state){
 }
 const mjNames = l => l.length === 1 ? l[0].name : l.length === 2 ? l[0].name + ' & ' + l[1].name + ' tied' : l.length + ' tied';
 
-/* points a game over the last MJ_RECENT games, top and bottom: { games, up, down }
-   with up and down as { who, rate }, or null until the rates differ. All-time
-   rates would only repeat the standings, since everyone starts level. */
-function mjMovers(state){
-  const recent = state.rounds.slice(-MJ_RECENT); if (!recent.length) return null;
-  const rates = state.players.map(p => ({ name:p.name, rate:Math.round(recent.reduce((a, r) => a + (r.d[p.id] || 0), 0) / recent.length) }));
-  const v = rates.map(p => p.rate), hi = Math.max(...v), lo = Math.min(...v); if (hi === lo) return null;
-  const at = n => ({ who:mjNames(rates.filter(p => p.rate === n)), rate:n });
-  return { games:recent.length, up:at(hi), down:at(lo) };
-}
-
 /* the score sheet itself, into host (mahjong.html) */
 function mount(host){
   host.innerHTML = '<div class="row"><div><h2>Mahjong</h2><p class="how">Everyone starts on ' + MJ_START.toLocaleString() +
@@ -77,8 +66,35 @@ function mount(host){
         pts.map((o, i) => x(i).toFixed(1)+','+y(o[p.id]).toFixed(1)).join(' ')+'"><title>'+esc(p.name)+'</title></polyline>').join('') +
       '</svg><div class="mjkey">' + state.players.map(p => '<span><i style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>').join('') + '</div>';
   }
+  /* award cards, as Kahoot does between questions; an award nobody has earned is left
+     out. Rates and places cover the last MJ_RECENT games, as all-time ones would only
+     repeat the standings. A streak ignores games a player sat out. */
+  function awards(){
+    const { players, rounds } = state, n = Math.min(rounds.length, MJ_RECENT);
+    if (!n) return '';
+    const span = n === 1 ? 'last game' : 'last ' + n + ' games';
+    const total = rs => { const t = {}; players.forEach(p => t[p.id] = MJ_START);
+      rs.forEach(r => { for (const id in r.d) if (id in t) t[id] += r.d[id]; }); return t; };
+    const before = total(rounds.slice(0, -n)), now = total(rounds);
+    const rank = (t, p) => 1 + players.filter(q => t[q.id] > t[p.id]).length;
+    const rate = p => Math.round((now[p.id] - before[p.id]) / n);
+    const streak = (p, sign) => { let s = 0;
+      for (let i = rounds.length - 1; i >= 0; i--){ const v = Math.sign(rounds[i].d[p.id] || 0);
+        if (!v) continue; if (v !== sign) break; s++; }
+      return s; };
+    const cards = [
+      ['🚀', 'Fastest climber', '#0A84FF', 1, p => rank(before, p) - rank(now, p), v => 'Up ' + v + (v === 1 ? ' place, ' : ' places, ') + span],
+      ['🔥', 'On fire', '#FF9F0A', 2, p => streak(p, 1), v => v + ' wins in a row'],
+      ['📈', 'Highest riser', '#30C05A', 1, rate, v => signed(v) + ' a game, ' + span],
+      ['🥶', 'Ice cold', '#32ADE6', 2, p => streak(p, -1), v => v + ' losses in a row'],
+      ['📉', 'Lowest rate of change', '#FF375F', 1, p => -rate(p), v => signed(-v) + ' a game, ' + span]
+    ].map(([ico, title, c, min, score, say]) => { const v = players.map(score), best = Math.max(...v, 0);
+      return best < min ? '' : '<div class="mjaward" style="--c:'+c+'"><i aria-hidden="true">'+ico+'</i><small>'+title+'</small><b>' +
+        esc(mjNames(players.filter((p, i) => v[i] === best)))+'</b><small>'+say(best)+'</small></div>'; }).filter(Boolean);
+    return '<div class="mjawards" style="--n:'+cards.length+';--r:'+Math.ceil(cards.length / 2)+'">' + cards.join('') + '</div>';
+  }
   function paint(err){
-    const st = mjStandings(state), last = state.rounds[state.rounds.length - 1], mv = mjMovers(state);
+    const st = mjStandings(state), last = state.rounds[state.rounds.length - 1];
     $('sc').textContent = state.rounds.length + ' game' + (state.rounds.length === 1 ? '' : 's');
     box.innerHTML =
       (err ? '<p class="how mjerr">' + esc(err) + '</p>' : '') +
@@ -88,8 +104,7 @@ function mount(host){
           return '<div class="tlbrow"><span class="rk">'+(i+1)+'</span><span class="nm"><i class="mjdot" style="background:'+color(p.id)+'"></i>'+esc(p.name)+'</span>' +
             '<span class="tm '+(d > 0 ? 'mjup' : d < 0 ? 'mjdown' : '')+'">'+(d ? signed(d) : '')+'</span><span class="tm"><b>'+fmt(p.pts)+'</b></span></div>'; }).join('')
         : '<p class="how">No players yet. Add everyone at the table.</p>') +
-      (mv ? '<p class="how mjmove">Highest riser: <b>' + esc(mv.up.who) + '</b> ' + signed(mv.up.rate) + ' a game<br>Lowest rate of change: <b>' + esc(mv.down.who) + '</b> ' + signed(mv.down.rate) +
-        ' a game<br>Last ' + (mv.games === 1 ? 'game' : mv.games + ' games') + '</p>' : '') +
+      awards() +
       '<div class="fcrow mjadd"><input id="mjname" placeholder="New player’s name…" maxlength="30" autocomplete="off">' +
         '<button class="btn" id="mjaddp" type="button">Add player</button></div>' +
       (st.length > 1 ?

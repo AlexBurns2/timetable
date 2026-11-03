@@ -998,7 +998,12 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .mjup{color:#2a9d4b}
 .mjdown{color:#d33}
 .mjadd{margin-top:10px}
-.mjmove{margin:10px 0 0}
+/* one row if all --n cards fit, else --r a row so two rows come out even; narrower, as many as fit */
+.mjawards{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.mjaward{flex:1 1 clamp(170px,calc((var(--n) * 178px - 100%) * 999),calc(100% / var(--r) - 8px));min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:center;padding:10px 12px;border-radius:var(--radius);background:color-mix(in srgb,var(--c) 16%,var(--panel))}
+.mjaward i{grid-row:1/4;font-style:normal;font-size:1.5rem}
+.mjaward small{font-size:0.75rem;color:var(--muted)}
+.mjaward b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mjround{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
 .mjround label{display:flex;flex-direction:column;gap:4px;font-size:0.84375rem;font-weight:700}
 .mjround input{padding:9px 11px;border:var(--card-border);border-radius:var(--radius);background:var(--panel);color:var(--text);font:inherit;font-family:var(--font-num);min-width:0}

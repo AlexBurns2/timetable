@@ -585,8 +585,12 @@ button.row:hover{background:var(--fill2)}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
 .mjnone{margin:auto;font-size:calc(13px * var(--fs,1));color:var(--fg3);text-align:center}
-.mjmove{font-size:calc(13px * var(--fs,1));line-height:1.45;color:var(--fg2)}
-.mjmove b{color:var(--fg)}
+/* one row if all --n cards fit, else --r a row so two rows come out even; narrower, as many as fit */
+.mjawards{display:flex;flex-wrap:wrap;gap:6px}
+.mjaward{flex:1 1 clamp(150px,calc((var(--n) * 156px - 100%) * 999),calc(100% / var(--r) - 6px));min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:center;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.mjaward i{grid-row:1/4;font-style:normal;font-size:calc(22px * var(--fs,1))}
+.mjaward small{font-size:calc(11.5px * var(--fs,1));color:color-mix(in srgb,var(--c) 30%,var(--fg))}
+.mjaward b{font-size:calc(14px * var(--fs,1));font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mjline{flex:1;min-height:0}
 .list .mjline{min-height:220px}
 .mjline svg{display:block;width:100%;height:100%}
@@ -3773,14 +3777,31 @@ function mjPoints(){
   mj.rounds.forEach(r => { for (const id in r.d) if (id in pts) pts[id] += r.d[id]; });
   return pts;
 }
-/* points a game over the last MJ_RECENT games, top and bottom, as HTML; "" until the
-   rates differ. All-time rates would only repeat the standings, since everyone starts level. */
-function mjMovers(){
-  const recent = mj.rounds.slice(-MJ_RECENT); if (!recent.length) return "";
-  const rates = mj.players.map(p => ({ name:p.name, rate:Math.round(recent.reduce((a, r) => a + (r.d[p.id] || 0), 0) / recent.length) }));
-  const v = rates.map(p => p.rate), hi = Math.max(...v), lo = Math.min(...v); if (hi === lo) return "";
-  const at = n => `<b>${mjNames(rates.filter(p => p.rate === n))}</b> ${mjSigned(n)} a game`;
-  return `<p class="mjmove">Highest riser: ${at(hi)}<br>Lowest rate of change: ${at(lo)}<br>Last ${recent.length === 1 ? "game" : recent.length + " games"}</p>`;
+/* award cards, as Kahoot does between questions (as mahjong.js); an award nobody has
+   earned is left out. Rates and places cover the last MJ_RECENT games, as all-time ones
+   would only repeat the standings. A streak ignores games a player sat out. */
+function mjAwards(){
+  const { players, rounds } = mj, n = Math.min(rounds.length, MJ_RECENT);
+  if (!n) return "";
+  const span = n === 1 ? "last game" : "last " + n + " games";
+  const total = rs => { const t = {}; players.forEach(p => t[p.id] = MJ_START);
+    rs.forEach(r => { for (const id in r.d) if (id in t) t[id] += r.d[id]; }); return t; };
+  const before = total(rounds.slice(0, -n)), now = total(rounds);
+  const rank = (t, p) => 1 + players.filter(q => t[q.id] > t[p.id]).length;
+  const rate = p => Math.round((now[p.id] - before[p.id]) / n);
+  const streak = (p, sign) => { let s = 0;
+    for (let i = rounds.length - 1; i >= 0; i--){ const v = Math.sign(rounds[i].d[p.id] || 0);
+      if (!v) continue; if (v !== sign) break; s++; }
+    return s; };
+  const cards = [
+    ["🚀", "Fastest climber", "#0A84FF", 1, p => rank(before, p) - rank(now, p), v => "Up " + v + (v === 1 ? " place, " : " places, ") + span],
+    ["🔥", "On fire", "#FF9F0A", 2, p => streak(p, 1), v => v + " wins in a row"],
+    ["📈", "Highest riser", "#30C05A", 1, rate, v => mjSigned(v) + " a game, " + span],
+    ["🥶", "Ice cold", "#32ADE6", 2, p => streak(p, -1), v => v + " losses in a row"],
+    ["📉", "Lowest rate of change", "#FF375F", 1, p => -rate(p), v => mjSigned(-v) + " a game, " + span]
+  ].map(([ico, title, c, min, score, say]) => { const v = players.map(score), best = Math.max(...v, 0);
+    return best < min ? "" : `<div class="mjaward" style="--c:${c}"><i aria-hidden="true">${ico}</i><small>${title}</small><b>${mjNames(players.filter((p, i) => v[i] === best))}</b><small>${say(best)}</small></div>`; }).filter(Boolean);
+  return `<div class="mjawards" style="--n:${cards.length};--r:${Math.ceil(cards.length / 2)}">${cards.join("")}</div>`;
 }
 /* read the sheet, or (with a body) change it: { action:"player"|"round"|"undo", … } */
 async function mjCall(body){
@@ -3885,7 +3906,7 @@ function renderMj(nd){
   if (save) y += SAVE + 8;
   const add = block("mjctl", "mj:add", "#E0303A",
     `<input class="fin" id="mjname" placeholder="${n ? "Add a player" : "Add everyone at the table"}" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="New player's name"><button class="btn sm" id="mjadd">Add</button>`, y, ADD);
-  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` + mjMovers() +
+  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` + mjAwards() +
     (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, y + ADD - 4, nd - 2);
   if (list) host.innerHTML = players + save + add + graph;
   else {
