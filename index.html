@@ -63,6 +63,11 @@ button,select,input{font:inherit;color:inherit}
   font-size:0.75rem;font-family:var(--font-num);color:var(--text);
   width:8ch;min-width:3ch;max-width:17ch}
 .idrow .dom{color:var(--muted);font-size:0.6875rem;white-space:nowrap;opacity:.7}
+/* viewing someone else: a small way back to your own timetable */
+.whoback{border:0;background:none;color:var(--muted);padding:0 6px 0 0;margin:0;cursor:pointer;
+  font-size:0.9375rem;font-weight:700;line-height:1}
+.whoback:hover{color:var(--accent)}
+.whoback[hidden]{display:none}
 @media (max-width:520px){ .idrow .dom{display:none} }
 .headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 
@@ -428,9 +433,12 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="brand">
       <h1 id="title">Timetable</h1>
       <div class="idrow" title="Type a username to see anyone's timetable">
+        <button type="button" class="whoback" id="whoback" title="Back to your timetable"
+                aria-label="Back to your timetable" hidden>&lsaquo;</button>
         <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
-               autocorrect="off" autocomplete="username" placeholder="first.last1"
-               aria-label="Whose timetable to show">
+               autocorrect="off" autocomplete="off" placeholder="first.last1"
+               aria-label="Whose timetable to show" list="whoamilist">
+        <datalist id="whoamilist"></datalist>
         <span class="dom" id="whoamidom"></span>
       </div>
       <span id="sub"></span>
@@ -1219,6 +1227,9 @@ function render(){
     $('whoami').value = String(email || '').split('@')[0];
     sizeWhoami();
   }
+  /* the back button shows while you are looking at someone else's timetable */
+  const ownUser = creds && creds.email ? String(creds.email).split('@')[0].toLowerCase() : '';
+  $('whoback').hidden = !ownUser || String(email || '').split('@')[0].toLowerCase() === ownUser;
   $('weeklabel').textContent = 'Week ' + week.toUpperCase();
 
   const ds = $('dayswitch');
@@ -1656,6 +1667,36 @@ async function viewUser(){
   render();
 }
 $('whoami').addEventListener('input', sizeWhoami);
+$('whoback').onclick = () => {
+  if (!creds || !creds.email) return;
+  $('whoami').value = String(creds.email).split('@')[0];
+  sizeWhoami();
+  viewUser();
+};
+/* Suggestions as you type: students whose name or username matches, from the
+   student finder's search (it needs your own school login). Picking one opens
+   their timetable straight away. */
+let findTimer = null, findSeq = 0;
+$('whoami').addEventListener('input', () => {
+  const v = $('whoami').value.trim().toLowerCase();
+  if ([...$('whoamilist').options].some(o => o.value === v)){ $('whoami').blur(); return; }   // picked one
+  clearTimeout(findTimer);
+  if (v.length < 2 || !creds || !creds.email || !creds.password) return;
+  findTimer = setTimeout(async () => {
+    const seq = ++findSeq;
+    try {
+      const u = new URL(endpoint, location.href);
+      u.searchParams.set('find', v);
+      const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+      const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
+        'X-School-Email':creds.email, 'X-School-Password':creds.password } });
+      const d = await res.json().catch(() => null);
+      if (seq !== findSeq || !res.ok || !d) return;
+      $('whoamilist').innerHTML = (d.results || []).map(p =>
+        '<option value="' + esc(String(p.email || '').split('@')[0]) + '">' + esc(p.name) + '</option>').join('');
+    } catch {}
+  }, 250);
+});
 $('whoami').addEventListener('keydown', ev => {
   if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }
 });
@@ -1847,7 +1888,7 @@ $('a_reset').onclick = () => {
 
 /* the tile layout on Home, Games and Resources (theme.js owns the setting) */
 function renderLayouts(){
-  const cur = window.TT && TT.layout ? TT.layout() : 'gallery';
+  const cur = window.TT && TT.layout ? TT.layout() : 'classic';
   [...$('layouts').children].forEach(b => {
     b.setAttribute('aria-pressed', String(b.dataset.layout === cur));
     b.onclick = () => { set('tt.layout', b.dataset.layout); renderLayouts(); };

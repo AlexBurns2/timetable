@@ -2176,3 +2176,47 @@ design reference: a panel header, small-caps labels, Now/Next cards.
 - The timetable grid itself.
 - The timetable page's separate Settings dialog. Merging it with settings.js
   is the next consistency step; it is larger and riskier.
+
+### 8.49 Moderator page, hidden games, Mahjong club, name suggestions
+
+**Moderators.** `isAdmin` in `api/_supabase.js` hard-codes
+alex.burns6@education.nsw.gov.au and andre.kwok2@education.nsw.gov.au, plus
+an optional `OWNER_EMAIL` env var.
+- `GET /api/leaderboard?settings=1` now also returns `isMod`, which pages use
+  only to show the way in. Every action is still checked on the server.
+- Ways in: the 🛠️ "Moderator" button on Games (`initAdmin`, now called from
+  the start-up block, because reading `siteCfg` earlier throws a TDZ error),
+  a Moderator tile on Home (`#tileMod`, hidden until `isMod`), and
+  `games.html?play=admin`.
+
+**The moderator page (`BUILD.admin`).** New tabs:
+- **Overview**: `GET /api/leaderboard?stats=1`, moderators only. These are
+  read-only counts of users, forum, decks, calendar, players per board,
+  Tetris, Daily Guess Who, saved games by mode, Mahjong club, Jim presses,
+  revision and birthdays. A missing table reads as 0 or null.
+- **Forum** and **Shared decks**: list everything with Delete, using the
+  existing delete routes (moderators already had permission).
+- **Site settings**: one Shown/Hidden switch per game, stored as
+  `site_setting.hidden_games` (a comma list).
+  - `_settings.js` defaults to `["jim"]`, so the Jim Button stays hidden until
+    it's switched on.
+  - `games.js` `gameHidden()` checks this and the `hidden:true` flag. `?play=`
+    waits for the settings, so a hidden game can't be opened by link.
+- The existing tabs (users, renames, weekly boards, every board) are
+  unchanged.
+
+**Mahjong club.** The tile is in Home → More, and the page is titled "Mahjong
+club". The link was removed from the Games leaderboards.
+
+**Layout default.** `TT.layout()` now defaults to `classic` (Grid).
+
+**Timetable name box (index.html).**
+- `<datalist id="whoamilist">` is filled from `?find=` as you type (2+ letters,
+  250ms debounce, signed-in only). Picking a suggestion blurs the box, which
+  runs `viewUser`.
+- `#whoback` (‹) shows while the timetable on screen isn't yours, and takes
+  you back to your own.
+
+**Tests.** `modcheck.mjs` (21 checks, in the scratchpad) runs
+leaderboard.js against a fake database. It covers who is a moderator, the
+stats being moderator-only and read-only, and hiding games.

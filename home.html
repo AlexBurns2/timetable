@@ -96,6 +96,12 @@
         <span class="tname">Mahjong club</span>
         <span class="tdesc">Scores from our games</span>
       </a>
+      <!-- moderators only: shown once the server says so (and it checks every action again) -->
+      <a class="tile" href="games.html?play=admin" id="tileMod" hidden>
+        <span class="ico">🛠️</span>
+        <span class="tname">Moderator</span>
+        <span class="tdesc">Stats, people, posts and settings</span>
+      </a>
     </nav>
   </section>
 
@@ -253,7 +259,7 @@ paintHub();
    data-size="4:2x2 3:2x1" is columns:widthxheight, 1x1 when not listed. */
 function layTiles(){
   document.querySelectorAll('.hubsec .tiles').forEach(box => {
-    const tiles = [...box.children].filter(el => !el.classList.contains('bentofill'));
+    const tiles = [...box.children].filter(el => !el.classList.contains('bentofill') && !el.hidden);
     if (TT.layout() === 'classic'){ Bento.clear(box); box.classList.remove('bento'); return; }
     box.classList.add('bento');
     const size = (el, n, i) => { const m = (el.dataset.size || '').match(new RegExp('\\b' + n + ':(\\d)x(\\d)')); return m ? +m[i] : 1; };
@@ -262,6 +268,10 @@ function layTiles(){
 }
 layTiles();
 addEventListener('tt:layout', layTiles);
+/* the Moderator tile, for moderators */
+if (signedIn) TT.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
+  if (d && d.isMod){ $('tileMod').hidden = false; layTiles(); }
+}, () => {});
 
 /* ── forum ─────────────────────────────────────────────────────────────── */
 /* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */

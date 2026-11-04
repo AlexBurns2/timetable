@@ -230,7 +230,7 @@ function renderDisplay(){
 
 /* ── tile layout (Home, Games, Resources) ── */
 function renderLayout(){
-  const cur = TTx.layout ? TTx.layout() : 'gallery';
+  const cur = TTx.layout ? TTx.layout() : 'classic';
   [...$('s_layout').children].forEach(b => {
     b.setAttribute('aria-pressed', String(b.dataset.layout === cur));
     b.onclick = () => { set(LS.layout, b.dataset.layout); renderLayout(); dispatchEvent(new CustomEvent('tt:layout')); };

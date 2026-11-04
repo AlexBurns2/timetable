@@ -1035,3 +1035,16 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .mjkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:0.8125rem;margin-top:6px}
 .mjkey i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .mjhist .nm{white-space:normal}
+
+/* moderator page: overview cards, sub-headings, forum rows */
+.admstats{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:6px}
+.admstats.small{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.admstat{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.admstat-h{font-size:0.75rem;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.admstat-n{font-size:1.375rem;font-weight:700;margin:2px 0 4px;font-variant-numeric:tabular-nums}
+.admstats.small .admstat-n{font-size:1.125rem;margin-bottom:0}
+.admstat-l{font-size:0.8125rem;color:var(--muted)}
+.admsub{margin:18px 0 8px;font-size:0.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.modpost .nm{display:flex;flex-direction:column;gap:2px;min-width:0}
+.modpost .pb{white-space:pre-wrap;overflow-wrap:anywhere;font-size:0.875rem}
+.modpost.reply{margin-left:22px}

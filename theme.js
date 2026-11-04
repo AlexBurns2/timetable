@@ -181,11 +181,11 @@ apply();
 
 /* a change made in another tab should follow here too */
 addEventListener('storage', ev => { if (ev.key && ev.key.startsWith('tt.')) apply(); });
-/* the tile layout on Home, Games and Resources: 'gallery' (the packed mosaic,
-   the default) or 'classic' (the even grid, with games in sideways rows).
+/* the tile layout on Home, Games and Resources: 'classic' (the even grid, with
+   games in sideways rows; the default) or 'gallery' (the packed mosaic).
    Pages re-lay themselves on 'tt:layout', fired by Settings and by a change
    made in another tab. */
-const layout = () => get('tt.layout', 'gallery') === 'classic' ? 'classic' : 'gallery';
+const layout = () => get('tt.layout', 'classic') === 'gallery' ? 'gallery' : 'classic';
 addEventListener('storage', ev => { if (ev.key === 'tt.layout') dispatchEvent(new CustomEvent('tt:layout')); });
 
 /* ── shared API helper (used by the games page's Guess-Who) ──────────── */

@@ -83,14 +83,17 @@ const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
   document.addEventListener('pointerdown', e => { if (!pop.hidden && !wrap.contains(e.target)) pop.hidden = true; });
   icon();
 })();
-/* the Admin button appears only for the owner (server says canWipe) */
+/* the Moderator button appears only for moderators (the server says isMod;
+   every moderator action is checked again on the server) */
 let isAdmin = false;
-(async function initAdmin(){
+/* called from the start-up block at the end of this file: siteSettings' state
+   is declared further down, and reading it from here at load time would throw */
+async function initAdmin(){
   if (!TT.myEmail() || !$('admin')) return;
-  try { const d = await TT.api('/api/leaderboard', { params:{ game:'chain', metric:'targets', week:tetrisWeek() } });
-    if (d && d.canWipe){ isAdmin = true; const a = $('admin'); if (a){ a.hidden = false; a.onclick = () => openGame('admin'); } }
+  try { const c = await siteSettings();
+    if (c && c.isMod){ isAdmin = true; const a = $('admin'); if (a){ a.hidden = false; a.onclick = () => openGame('admin'); } }
   } catch(e){}
-})();
+}
 
 /* every game returns a cleanup fn so switching never leaves a timer running */
 /* Phones and tablets get on-screen controls and "tap" wording. A laptop with a
@@ -141,8 +144,11 @@ const GAMES = [
   { id:'chem',    cat:'Revision', year:11, ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
   { id:'engineering', cat:'Revision', year:11, ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
   { id:'software', cat:'Revision', year:11, ico:'💻', name:'Software', blurb:'Read code and write it' },
-  /* hidden: true takes a game off the page and out of ?play= links; its code stays (jim.js) */
-  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name', isNew:true, hidden:true },
+  /* Moderators hide or show any game in the moderator page's Site settings
+     (hiddenGames); a hidden game is off the page and out of ?play= links, and
+     its code stays. The Jim Button starts hidden. hidden:true here hides one
+     for good. */
+  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name', isNew:true },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -231,7 +237,7 @@ function showGrid(){
   /* classic: a shelf per category that scrolls sideways */
   if (classicLayout()){
     SECTIONS.forEach(sec => {
-      const inCat = GAMES.filter(g => g.cat === sec.cat && !g.hidden);
+      const inCat = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
       if (!inCat.length) return;
       grid.appendChild(sectionHead(sec));
       const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
@@ -249,7 +255,7 @@ function showGrid(){
   bentoStop = null;
   const stops = [];
   SECTIONS.forEach(sec => {
-    const games = GAMES.filter(g => g.cat === sec.cat && !g.hidden);
+    const games = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
     if (!games.length) return;
     grid.appendChild(sectionHead(sec));
     const bento = document.createElement('div'); bento.className = 'bento';
@@ -587,13 +593,17 @@ const RV = (() => {
    when there isn't the traffic for them: every page then shows the all-time
    board only, with no weekly / all-time toggle. Read once per page load, and
    if the read fails nothing changes from how the site behaved before. */
-let sitePromise = null, siteCfg = { weeklyBoards:true };
+let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false };
 function siteSettings(){
   if (!sitePromise) sitePromise = TT.api('/api/leaderboard', { params:{ settings:1 } })
-    .then(d => { siteCfg = { weeklyBoards: d && d.weeklyBoards !== false }; return siteCfg; })
+    .then(d => { siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
+                             hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
+                             isMod: !!(d && d.isMod) }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
 }
+/* off the games page: hidden in code, or by a moderator (site settings) */
+function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id); }
 const weeklyOn = () => siteCfg.weeklyBoards;
 const forgetSiteSettings = () => { sitePromise = null; };
 if (typeof TT !== 'undefined' && TT.myEmail && TT.myEmail()) siteSettings();   // warm before a board is opened
@@ -2788,9 +2798,10 @@ BUILD.leaderboards = host => {
   return () => {};
 };
 
-/* ── Admin (owner only): reset a board, or edit/delete individual scores ── */
+/* ── Moderator page (moderators only, checked on the server): how the site is
+   used, the people, the forum and shared decks, site settings, and every board ── */
 BUILD.admin = host => {
-  head(host, 'Admin', 'Owner tools for the game boards. Changes happen straight away and everyone sees them.', '<div id="adm"></div>');
+  head(host, 'Moderator', 'Changes happen straight away and everyone sees them.', '<div id="adm"></div>');
   const box = $('adm');
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable first.</p>'; return () => {}; }
   const wk = tetrisWeek();
@@ -2806,7 +2817,12 @@ BUILD.admin = host => {
   const USERS = { id:'users', name:'Signed-in users', kind:'u' };
   /* not a board either: switches that apply to the whole site, for everyone */
   const SETTINGS = { id:'settings', name:'Site settings', kind:'s' };
-  const CATS = [USERS, SETTINGS, ...GEN, ...TET];
+  /* how much each part of the site is used (counts only), and the two kinds of
+     things students post that a moderator may need to take down */
+  const OVERVIEW = { id:'overview', name:'Overview', kind:'o' };
+  const FORUM = { id:'forum', name:'Forum', kind:'f' };
+  const DECKS = { id:'decks', name:'Shared decks', kind:'d' };
+  const CATS = [OVERVIEW, USERS, FORUM, DECKS, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -2831,7 +2847,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = cur.kind === 'u' || cur.kind === 's';
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofd'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -2848,6 +2864,9 @@ BUILD.admin = host => {
         forgetSiteSettings(); await siteSettings();
         render(); return;
       }
+      if (cur.kind === 'o'){ data = await TT.api('/api/leaderboard', { params:{ stats:1 } }); render(); return; }
+      if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
+      if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -2880,6 +2899,9 @@ BUILD.admin = host => {
   function render(){
     syncTabsUI();
     $('admtitle').textContent = cur.name;
+    if (cur.kind === 'o') return renderOverview();
+    if (cur.kind === 'f') return renderForum();
+    if (cur.kind === 'd') return renderDecks();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -2887,12 +2909,27 @@ BUILD.admin = host => {
         '<div class="adminrow setrow"><span class="nm"><b>Weekly leaderboards</b><em>' +
         (on ? 'Every board has a “This week” tab next to “All time”.'
             : 'Every page shows the all-time board only, with no weekly tab. Scores still go to the weekly boards while it is off, so turning it back on brings them back.') +
-        '</em></span><button class="btn' + (on ? ' primary' : '') + '" id="setweekly" type="button">' + (on ? 'On' : 'Off') + '</button></div>';
+        '</em></span><button class="btn' + (on ? ' primary' : '') + '" id="setweekly" type="button">' + (on ? 'On' : 'Off') + '</button></div>' +
+        '<h4 class="admsub">Games on the games page</h4>' +
+        GAMES.filter(g => g.cat !== 'Revision' && !g.href && !g.hidden).map(g => { const shown = !(siteCfg.hiddenGames || []).includes(g.id);
+          return '<div class="adminrow setrow"><span class="nm"><b>' + g.ico + ' ' + esc(g.name) + '</b><em>' +
+            (shown ? 'On the games page.' : 'Hidden: not on the games page, and links to it open the games page instead.') + '</em></span>' +
+            '<button class="btn' + (shown ? ' primary' : '') + '" type="button" data-game="' + g.id + '">' + (shown ? 'Shown' : 'Hidden') + '</button></div>'; }).join('');
+      $('admbody').querySelectorAll('[data-game]').forEach(b => b.onclick = async () => {
+        const id = b.dataset.game, hidden = new Set(siteCfg.hiddenGames || []);
+        if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
+        b.disabled = true;
+        try {
+          const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', hiddenGames:[...hidden] } });
+          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || [...hidden], isMod: true };
+          render();
+        } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
+      });
       $('setweekly').onclick = async () => {
         const b = $('setweekly'); b.disabled = true;
         try {
           const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', weeklyBoards:!on } });
-          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false };
+          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || siteCfg.hiddenGames, isMod: true };
           render();
         } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
       };
@@ -2978,6 +3015,62 @@ BUILD.admin = host => {
       const email = row.dataset.email;
       row.querySelector('[data-act=save]').onclick = () => edit('set', email, +row.querySelector('.sc').value);
       row.querySelector('[data-act=del]').onclick  = () => { if (confirm('Delete this score?')) edit('delete', email); };
+    });
+  }
+  /* ── Overview: one card per part of the site ── */
+  function renderOverview(){
+    const d = data || {}, n = v => v == null ? '—' : Number(v).toLocaleString();
+    const gameName = id => { const g = GAMES.find(x => x.id === id) || LB_CAT.find(x => x.id === id); return g ? g.name : id; };
+    const card = (ico, title, big, lines) => '<div class="admstat"><div class="admstat-h">' + ico + ' ' + esc(title) + '</div>' +
+      '<div class="admstat-n">' + big + '</div>' + lines.filter(Boolean).map(l => '<div class="admstat-l">' + l + '</div>').join('') + '</div>';
+    const u = d.users || {}, f = d.forum || {}, dl = d.daily || {}, t = d.tetris || {}, c = d.calendar || {}, mj = d.mahjongClub || {};
+    const games = Object.entries(d.games || {}).sort((a, b) => b[1] - a[1]);
+    const saved = d.saved || {};
+    $('admnote').textContent = 'Counts from the database, as of now.';
+    $('admbody').innerHTML = '<div class="admstats">' +
+      card('👥', 'People', n(u.total), [n(u.day) + ' today', n(u.week) + ' this week', n(u.tutorialStarted) + ' started the tutorial', n(u.settingsSaved) + ' saved settings', n(u.named) + ' renamed']) +
+      card('💬', 'Forum', n(f.posts) + ' posts', [n(f.week) + ' in the last 7 days']) +
+      card('📅', 'Daily Guess Who', n(dl.plays) + ' plays', [n(dl.today) + ' today', n(dl.wins) + ' solved']) +
+      card('🟦', 'Tetris', n(t.scores) + ' games', [n(t.sprintPlayers) + ' Sprint players', n(t.zenPlayers) + ' Zen players']) +
+      card('🀄', 'Mahjong club', n(mj.games) + ' games', [n(mj.players) + ' players', saved.hkmj != null ? n(saved.hkmj) + ' Hong Kong Mahjong games saved' : '']) +
+      card('🗂️', 'Shared decks', n((d.decks || {}).shared), [d.revision ? n(d.revision.students) + ' students tracking revision' : '']) +
+      card('🗓️', 'Calendar', n(c.events) + ' events', [n(c.subjectEvents) + ' subject events', d.birthdays != null ? n(d.birthdays) + ' birthdays' : '']) +
+      (d.jim ? card('🟡', 'The Jim Button', n(d.jim.presses) + ' presses', [n(d.jim.names) + ' names', (siteCfg.hiddenGames || []).includes('jim') ? 'Hidden from the games page' : '']) : '') +
+      '</div>' +
+      (games.length ? '<h4 class="admsub">Players per leaderboard (all-time)</h4><div class="admstats small">' +
+        games.map(([g, k]) => card('', gameName(g), n(k), [])).join('') + '</div>' : '');
+  }
+  /* ── Forum: every thread and reply, newest first, each removable ── */
+  function renderForum(){
+    const posts = (data && data.posts) || [];
+    const all = [];
+    posts.forEach(p => { all.push({ ...p, reply:false }); (p.replies || []).forEach(r => all.push({ ...r, reply:true })); });
+    $('admnote').textContent = posts.length + ' thread' + (posts.length === 1 ? '' : 's') + '. Deleting a thread removes its replies too.';
+    $('admbody').innerHTML = all.length ? all.map(p => '<div class="adminrow modpost' + (p.reply ? ' reply' : '') + '">' +
+        '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' })) +
+        '</em><span class="pb">' + esc(p.body) + '</span></span>' +
+        '<button class="del" type="button" data-id="' + esc(p.id) + '">Delete</button></div>').join('')
+      : '<p class="how">No posts.</p>';
+    $('admbody').querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this post for everyone?')) return;
+      b.disabled = true;
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); load(); }
+      catch (e){ alert('Could not delete: ' + e.message); b.disabled = false; }
+    });
+  }
+  /* ── Shared decks: every deck, newest first, each removable ── */
+  function renderDecks(){
+    const decks = (data && data.decks) || [];
+    $('admnote').textContent = decks.length + ' shared deck' + (decks.length === 1 ? '' : 's') + '.';
+    $('admbody').innerHTML = decks.length ? decks.map(dk => '<div class="adminrow">' +
+        '<span class="nm"><b>' + esc(dk.name) + '</b> <em>' + esc(dk.category) + ' · ' + dk.count + ' card' + (dk.count === 1 ? '' : 's') + ' · by ' + esc(dk.author) + '</em></span>' +
+        '<button class="del" type="button" data-id="' + esc(dk.id) + '">Delete</button></div>').join('')
+      : '<p class="how">No shared decks.</p>';
+    $('admbody').querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this deck for everyone?')) return;
+      b.disabled = true;
+      try { await TT.api('/api/decks', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); load(); }
+      catch (e){ alert('Could not delete: ' + e.message); b.disabled = false; }
     });
   }
   async function edit(action, email, value){
@@ -7331,6 +7424,12 @@ BUILD.hkmj = host => {
 {
   const q = new URLSearchParams(location.search), play = q.get('play');
   if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
-  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play && !g.href && !g.hidden))) openGame(play); else showGrid();
+  initAdmin();
+  const known = () => play === 'leaderboards' || play === 'admin' || GAMES.some(g => g.id === play && !g.href && !gameHidden(g));
+  /* wait for the site settings before following a ?play= link, so a hidden game stays hidden */
+  if (play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (known()) openGame(play); else showGrid(); });
+  else if (play && known()) openGame(play); else showGrid();
+  /* a moderator may have shown or hidden a game: redraw once the settings arrive */
+  if (!play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (!$('gamegrid').hidden) showGrid(); });
 }
 

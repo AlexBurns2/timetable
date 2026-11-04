@@ -54,6 +54,7 @@ a{color:var(--accent)}
   transition:transform .15s,box-shadow .15s,background .15s;min-height:150px;
 }
 .tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.tile[hidden]{display:none}   /* display:flex would otherwise beat [hidden] */
 .tile.primary{border-left:5px solid var(--accent)}
 .tile.soon{opacity:.55;cursor:default}
 .tile.soon:hover{transform:none;box-shadow:var(--shadow);background:var(--panel)}
