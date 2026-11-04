@@ -2156,6 +2156,12 @@ function turnWeek(apply, dir){
                                Math.abs(o.r.top - b.r.top) < 1 && Math.abs(o.r.height - b.r.height) < 1);
     if (o){ used.add(o); kept.push({ ...b, r0:o.r }); } else arriving.push(b);
   }
+  /* recess, lunch and assembly bars belong to their day too: they step aside
+     with the lessons when a lane opens, so nothing slides into them */
+  for (const el of grid.querySelectorAll('.breakbar')){
+    const r = el.getBoundingClientRect();
+    if (r.height) kept.push({ el, sig:'', r, r0:r, k:dayOf(r, hs1) });
+  }
   for (const o of before) if (!used.has(o)){
     /* a copy of the old card, since the new week is already drawn */
     const brick = o.el.cloneNode(true);

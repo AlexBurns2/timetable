@@ -88,14 +88,17 @@ export default async function handler(req, res) {
       if (!rxErr) for (const x of rx || []) {
         const list = reacts.get(x.post_id) || reacts.set(x.post_id, []).get(x.post_id);
         let e = list.find(o => o.emoji === x.emoji);
-        if (!e) { e = { emoji: x.emoji, count: 0, mine: false, first: String(x.created_at) }; list.push(e); }
-        e.count++; if (x.email === me.email) e.mine = true;
+        if (!e) { e = { emoji: x.emoji, count: 0, mine: false, who: [], first: String(x.created_at) }; list.push(e); }
+        e.count++;
+        /* who reacted, by display name (never email); you are "mine", not a name */
+        if (x.email === me.email) e.mine = true;
+        else if (e.who.length < 30) e.who.push(withName(NAMES, x.email, nameFromEmail(x.email)));
         if (String(x.created_at) < e.first) e.first = String(x.created_at);
       }
     }
     const reactionsOf = id => (reacts.get(id) || [])
       .sort((a, b) => b.count - a.count || a.first.localeCompare(b.first))
-      .map(({ emoji, count, mine }) => ({ emoji, count, mine }));
+      .map(({ emoji, count, mine, who }) => ({ emoji, count, mine, who }));
     const shape = r => ({
       id: r.id, name: withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
       mine: r.email === me.email || isOwner, reactions: reactionsOf(r.id)

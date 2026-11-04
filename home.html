@@ -296,11 +296,19 @@ function postCard(p, isReply){
    + for any other. Changes show at once and are put back if the save fails. */
 const RX_PICK = ['❤️','😂','👍','😮','😢','🔥','🎉','💀','👀','🙏','💯','😭'];
 const POSTS = new Map();                 // id -> post, for its reactions
+/* "Ava One, Ben Two and you" for a chip's hover */
+function rxWho(r){
+  const names = (r.who || []).slice();
+  if (r.mine) names.push('you');
+  const more = r.count - names.length;            // past the 30 names the server sends
+  if (more > 0) names.push(more + ' more');
+  return names.length <= 1 ? (names[0] || '') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+}
 function rxBar(p){
   const rx = p.reactions || [];
   const hearted = rx.some(r => r.emoji === '❤️' && r.mine);
   return rx.map(r => '<button type="button" class="rx' + (r.mine ? ' mine' : '') + '" data-e="' + esc(r.emoji) + '"' +
-      ' aria-pressed="' + r.mine + '" aria-label="' + esc(r.emoji) + ' ' + r.count + (r.mine ? ', including you' : '') + '">' +
+      ' title="' + esc(rxWho(r)) + '" aria-pressed="' + r.mine + '" aria-label="' + esc(r.emoji) + ' from ' + esc(rxWho(r)) + '">' +
       '<span>' + esc(r.emoji) + '</span><b>' + r.count + '</b></button>').join('') +
     (hearted ? '' : '<button type="button" class="rxadd rxheart" data-e="❤️" title="Heart" aria-label="React with a heart">♡</button>') +
     '<button type="button" class="rxadd rxmore" title="React" aria-label="Choose a reaction">+</button>';
@@ -316,7 +324,7 @@ async function toggleRx(id, emoji){
   const r = rx.find(x => x.emoji === emoji);
   if (r && r.mine){ r.count--; r.mine = false; if (!r.count) rx.splice(rx.indexOf(r), 1); }
   else if (r){ r.count++; r.mine = true; }
-  else rx.push({ emoji, count:1, mine:true });
+  else rx.push({ emoji, count:1, mine:true, who:[] });
   paintRx(id);
   try { await TT.api('/api/forum', { method:'POST', body:{ action:'react', id, emoji } }); }
   catch (e){ p.reactions = before; paintRx(id); fmsg(e.message); }
