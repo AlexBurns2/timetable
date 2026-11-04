@@ -141,7 +141,8 @@ const GAMES = [
   { id:'chem',    cat:'Revision', year:11, ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
   { id:'engineering', cat:'Revision', year:11, ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
   { id:'software', cat:'Revision', year:11, ico:'💻', name:'Software', blurb:'Read code and write it' },
-  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name', isNew:true },
+  /* hidden: true takes a game off the page and out of ?play= links; its code stays (jim.js) */
+  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name', isNew:true, hidden:true },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -230,7 +231,7 @@ function showGrid(){
   /* classic: a shelf per category that scrolls sideways */
   if (classicLayout()){
     SECTIONS.forEach(sec => {
-      const inCat = GAMES.filter(g => g.cat === sec.cat);
+      const inCat = GAMES.filter(g => g.cat === sec.cat && !g.hidden);
       if (!inCat.length) return;
       grid.appendChild(sectionHead(sec));
       const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
@@ -248,7 +249,7 @@ function showGrid(){
   bentoStop = null;
   const stops = [];
   SECTIONS.forEach(sec => {
-    const games = GAMES.filter(g => g.cat === sec.cat);
+    const games = GAMES.filter(g => g.cat === sec.cat && !g.hidden);
     if (!games.length) return;
     grid.appendChild(sectionHead(sec));
     const bento = document.createElement('div'); bento.className = 'bento';
@@ -354,7 +355,7 @@ async function fetchLeaders(){
 async function renderLBSum(){
   const el = $('lbsum'); if (!el) return;
   el.hidden = false;
-  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><span class="lbsumlinks"><a href="mahjong.html">Mahjong scoreboard →</a></span></div>' +
+  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2></div>' +
     '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
   el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><p class="how">Loading leaders…</p>';
   $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
@@ -365,7 +366,7 @@ async function renderLBSum(){
     return '<button class="lbsumcard" data-i="'+i+'"><div class="g">'+esc(cat.name)+'</div>' +
       (L ? '<div class="lead"><span class="who">'+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>'
          : '<div class="empty">No scores yet</div>') + '</button>'; }).join('');
-  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><span class="lbsumlinks"><a href="mahjong.html">Mahjong scoreboard →</a>' +
+  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><span class="lbsumlinks">' +
     '<a id="lbsumall">View all →</a></span></div><div class="lbsumgrid">'+cards+'</div>';
   $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
   [...el.querySelectorAll('.lbsumcard')].forEach(c => c.onclick = () => { lbFocus = LB_CAT[+c.dataset.i].id; openGame('leaderboards'); });
@@ -7330,6 +7331,6 @@ BUILD.hkmj = host => {
 {
   const q = new URLSearchParams(location.search), play = q.get('play');
   if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
-  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play && !g.href))) openGame(play); else showGrid();
+  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play && !g.href && !g.hidden))) openGame(play); else showGrid();
 }
 
