@@ -7,7 +7,7 @@
   padding:20px;box-shadow:var(--shadow);color:var(--text);min-height:160px;
   display:flex;flex-direction:column;gap:5px;
   opacity:0;transform:translateY(12px);
-  animation:cardIn .45s cubic-bezier(.2,.7,.2,1) forwards;
+  animation:cardIn .28s cubic-bezier(.2,.7,.2,1) forwards;
   transition:transform .16s ease, box-shadow .16s ease, background .15s;
 }
 .gamecard:hover{transform:translateY(-4px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
@@ -43,13 +43,27 @@
   transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease}
 .gamerow .gamecard:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
 @media (max-width:640px){ .gamerow .gamecard{flex-basis:80%;min-width:0} }
+/* the classic shelves: ‹ › at each end for a mouse (touch just swipes) */
+.shelfbtn{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border-radius:50%;
+  border:var(--card-border);background:var(--panel);color:var(--text);font-size:1.25rem;font-weight:700;line-height:1;
+  box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.shelfbtn:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.shelfbtn:disabled{opacity:0;pointer-events:none}
+.shelfbtn.prev{left:4px}
+.shelfbtn.next{right:4px}
+@media (hover:none){ .shelfbtn{display:none} }
+/* a shelf already has room above it, so the next section's heading sits closer */
+.gamesecrow + .gsec{margin-top:4px}
 
 /* games page: one packed grid. Tiles are placed by packBento (games.js) with
    explicit grid-row / grid-column, so it is always gap-free. */
 .gamesections[hidden]{display:none}
 .bento{grid-auto-rows:176px}
 .bento .gamecard{min-height:0;transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease,background .15s}
-.bento .gamecard p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bento .gamecard p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-bottom:1px}
+/* "Play →" floats in the corner on hover, so it never takes a line from the description */
+.bento .gamecard .go{position:absolute;right:16px;bottom:14px;margin:0}
+.bento .gamecard.wide p{-webkit-line-clamp:3}
 .bento .gamecard.wide h2{font-size:1.3125rem}
 .bento .gamecard.wide p{font-size:0.875rem;max-width:34ch}
 .bento .gamecard.tall .ico{font-size:3rem;margin-bottom:auto}
@@ -57,19 +71,17 @@
 .gamecard .tag{position:absolute;top:14px;right:14px;font-size:0.625rem;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 @media (max-width:540px){
-  .bento{grid-auto-rows:150px;gap:10px}
+  .bento{grid-auto-rows:156px;gap:10px}
+  .bento .gamecard .go{display:none}      /* no hover on a phone; the whole card is the button */
   .bento .gamecard{padding:14px}
   .bento .gamecard h2{font-size:1.0625rem}
-  .bento .gamecard p{font-size:0.75rem}
-  .bento .gamecard:not(.wide):not(.tall) p{-webkit-line-clamp:1}
+  .bento .gamecard p{font-size:0.8125rem}
+  .bento .gamecard:not(.wide):not(.tall) p{-webkit-line-clamp:2}
   .gamecard .tag{display:none}
 }
-/* NEW GAME banner: a ribbon across the top-right corner */
-.gamecard.isnew{border-color:var(--accent);box-shadow:var(--shadow),0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
-.gamecard .newbanner{position:absolute;top:20px;right:-44px;transform:rotate(38deg);z-index:2;
-  width:170px;text-align:center;padding:5px 0;background:#f5c518;color:#1a1a1a;
-  font-family:'Bangers',var(--font-display),cursive;font-size:0.9375rem;letter-spacing:.14em;text-transform:uppercase;
-  box-shadow:0 2px 8px rgba(0,0,0,.25);border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a}
+/* a new game: a small pill in the corner */
+.gamecard .newbanner{position:absolute;top:14px;right:14px;z-index:2;padding:2px 9px;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);font-size:0.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .gamecard.isnew .tag{display:none}
 /* the Jim card shows the real button, and a faint grid like the game's panel */
 .gamecard.jimcard{background-image:linear-gradient(color-mix(in srgb,var(--line) 60%,transparent) 1px,transparent 1px),
@@ -363,6 +375,7 @@ html[data-motion="reduced"] .chopt.chflip{animation:none}
 .lbsumhd h2{margin:0;font-family:var(--font-display);font-size:1.0625rem;font-weight:var(--display-w);
   letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
 .lbsumhd a{color:var(--accent);font-weight:700;text-decoration:none;font-size:0.8125rem;cursor:pointer}
+.lbsumlinks{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
 .lbsumhd a:hover{text-decoration:underline}
 .lbsumgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .lbsumcard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
@@ -401,6 +414,13 @@ html[data-motion="reduced"] .lbsumcard{transition:none}
   letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px -2px;opacity:0;
   animation:cardIn .4s ease forwards}
 .cathd:first-child{margin-top:0}
+/* a section of the games page: its heading and one line about it */
+.gsec{margin:26px 2px 12px}
+.gsec:first-child{margin-top:0}
+.gsec .cathd{margin:0;font-size:0.8125rem}
+.gseclede{margin:3px 0 0;color:var(--muted);font-size:0.875rem}
+/* revision: the study panel sits under the subjects */
+.rvstudy{margin-top:22px}
 html[data-motion="reduced"] .cathd{animation:none;opacity:1}
 /* flashcards */
 .fcdecks{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
@@ -988,7 +1008,7 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{animation:none}
 
 /* shown inside a frame on another page (games.html?play=…&embed=1): just the game */
-.embedded .pagehead,.embedded #back{display:none}
+.embedded .pagehead,.embedded .pagelede,.embedded #back{display:none}
 .embedded .wrap{padding-top:14px}
 
 /* ── Mahjong score sheet ── */

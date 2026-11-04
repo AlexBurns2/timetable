@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261104">
 <script src="theme.js"></script>
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="site.css?v=20261104">
+<link rel="stylesheet" href="settings.css?v=20261104">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <style>
 .flede{color:var(--muted);margin:-4px 0 12px;font-size:0.9375rem}
@@ -65,7 +65,7 @@
 .fyears{display:flex;gap:4px;flex-wrap:wrap}
 .fyears button{font:inherit;font-size:0.75rem;font-weight:600;min-width:34px;padding:4px 9px;border-radius:999px;cursor:pointer;
   color:var(--text);background:var(--panel);border:var(--card-border)}
-.fyears button[aria-pressed="true"]{background:var(--text);color:var(--panel);border-color:var(--text)}
+.fyears button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .fclose{font-size:0.75rem;color:var(--muted);margin:2px 0 6px}
 .fgrid{display:grid;grid-template-columns:52px repeat(5,minmax(0,1fr));gap:5px}
 .fh{font-size:0.75rem;font-weight:700;color:var(--muted);text-align:center;padding:2px 0 4px}
@@ -105,10 +105,10 @@
 <body>
 <div class="wrap">
   <div class="pagehead">
-    <h1>Free periods</h1>
+    <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Free periods</h1></div>
     <div class="crumbs">
-      <a class="btn" href="home.html">Home</a>
-      <a class="btn" href="./">Timetable</a>
+      <a class="btn" href="home.html" title="Home"><span class="bi" aria-hidden="true">&#8962;</span><span class="bl">Home</span></a>
+      <a class="btn" href="./" title="Timetable"><span class="bi" aria-hidden="true">&#128203;</span><span class="bl">Timetable</span></a>
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </div>
@@ -131,9 +131,8 @@
       </div>
       <div class="fgrid" id="grid"></div>
       <section class="fpanel fdetail" id="detail" hidden aria-live="polite"></section>
-      <p class="fnote">Recess and lunch are free for everyone, so they aren’t shown. Who’s free comes from the school
-        timetable using your own school login, and the site only asks which periods each person has a class in, never
-        what or where. Your group is saved with your settings. Everyone’s periods are kept on this device for a day
+      <p class="fnote">Recess and lunch aren’t shown, since everyone is free then. A dash means no lesson (sport, or no class
+        that period). The site only checks which periods people have a class in, never what or where
         (<button type="button" id="refresh">check again now</button>).</p>
     </div>
     <section class="fpanel" id="group" aria-live="polite"></section>
@@ -464,6 +463,10 @@ function slotTitle(key){
 const sortIds = ids => ids.slice().sort((a, b) =>
   (picked.includes(b) - picked.includes(a)) || fullName(a).localeCompare(fullName(b)));
 
+/* a subject short enough for a grid cell: "Software Engineering" -> "Software",
+   "Mathematics Advanced" -> "Maths"; the full name is in the cell's label */
+const shortSubj = s => { const w = String(s).split(/\s+/)[0]; const t = String(s).length <= 12 ? String(s) : w;
+  return /^mathematics$/i.test(t) ? 'Maths' : t; };
 function cellHtml(d, per, slot, today, nowMin){
   const key = keyOf(d, per);
   const mineHere = mine.find(e => e.key === key);
@@ -471,7 +474,7 @@ function cellHtml(d, per, slot, today, nowMin){
   let cls, inner, say;
   if (!grouped){
     if (mineHere){
-      cls = 'busy'; inner = '<span class="s">' + esc(mineHere.subject) + '</span>';
+      cls = 'busy'; inner = '<span class="s" title="' + esc(mineHere.subject) + '">' + esc(shortSubj(mineHere.subject)) + '</span>';
       say = 'you have ' + mineHere.subject;
     } else {
       const free = sortIds(freeAt(key, pool(), busy));
@@ -491,7 +494,7 @@ function cellHtml(d, per, slot, today, nowMin){
       cls = 'some'; inner = '<b>' + free.length + ' of ' + ids.length + '</b><span class="w">Busy: ' + esc(out.map(nm).join(', ')) + '</span>';
       say = free.length + ' of ' + ids.length + ' free; busy: ' + out.map(nm).join(', ');
     } else {
-      cls = 'busy'; inner = '<span class="s">' + esc(includeMe && mineHere ? mineHere.subject : 'No one free') + '</span>';
+      cls = 'busy'; inner = '<span class="s">' + esc(includeMe && mineHere ? shortSubj(mineHere.subject) : 'No one free') + '</span>';
       say = 'no one in your group is free';
     }
   }
@@ -514,7 +517,7 @@ function renderGrid(){
     for (const d of days){
       const slot = slots[d].get(per);
       h += slot ? cellHtml(d, per, slot, today, nowMin)
-                : '<div class="fc none" role="img" aria-label="' + esc(DAY_NAMES[dayIndex(d)] + ' period ' + per + ': no lesson') + '">—</div>';
+                : '<div class="fc none" role="img" title="No lesson (sport, or not a class period)" aria-label="' + esc(DAY_NAMES[dayIndex(d)] + ' period ' + per + ': no lesson') + '">—</div>';
     }
   }
   $('grid').innerHTML = h;
@@ -852,6 +855,6 @@ $('refresh').onclick = () => {
 };
 boot();
 </script>
-<script src="settings.js"></script>
+<script src="settings.js?v=20261104"></script>
 </body>
 </html>

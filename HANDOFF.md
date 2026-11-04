@@ -2098,3 +2098,81 @@ switch between the two.
     scoped to `.subjgrid.classic` restore the one-line cards.
   - The "whole library" tile becomes the old link in the intro text
     (`#reslib`).
+
+### 8.48 Cleanup after a new-user audit (Home, Games, headers, Settings)
+
+**How it was decided.** A role-played Year 10 newcomer audited every page
+except `/andre/`. They scored clarity, readability, friendliness and
+aesthetics, and the changes follow their comments. The timetable page is the
+design reference: a panel header, small-caps labels, Now/Next cards.
+
+**Home (`home.html`).**
+- `.hubbar` uses the timetable's header panel and honours `[data-header=split]`.
+  It holds a greeting (the first name from the cached profile), the date and
+  week, Now/Next cards built from `tt.cache`, and ⚙.
+  - Only your own cache is used (its email must match `tt.creds`).
+  - The cycle is counted the same way as `cycleDayFor`, with `tt.cycleshift`.
+- Signed out, the panel shows what the site is and a Sign in button, and the
+  forum composer is disabled.
+- Tiles are in three `.hubsec` groups. Each `.tiles` gets its own `Bento.layout`
+  in gallery mode, or the plain grid in classic. The `data-size` format is
+  unchanged.
+- The beta tile moved to `.hubfoot`. The Mahjong tile moved to Games, so
+  mahjong.js is no longer loaded on Home. No home tour.
+- In gallery mode the 2×2 Timetable tile lists the day's classes
+  (`paintDay`, `.ttday`; hidden when the tile isn't tall).
+- The HSC strip shows only for `yr11`/`yr12` profiles. `.hscstrip[hidden]`
+  needed its own rule, because `display:flex` beat the attribute.
+
+**Shared header (`site.css .pagehead`).**
+- Every subpage now has `.phtitle` (an `a.sitename` link plus h1) and crumbs
+  with `.bi` icon and `.bl` label spans.
+- Under 600px only the icons show, so the header stays on one row.
+- It's a panel like `.topbar`, and `[data-header=split]` removes the panel.
+- `.btn[hidden]{display:none}` fixes the owner-only Admin button, which had
+  been visible to everyone.
+
+**Games (`games.js`).**
+- `SECTIONS` (title plus one-line lede) replaces `CAT_ORDER`. Both layouts
+  render a `.gsec` heading per section; gallery mode uses one bento per
+  section, and `bentoStop` stops them all.
+- Category tags are gone, and `.newbanner` is a small pill. The Jim Button is
+  a normal 1×1 card.
+- `gameCard` navigates for an entry with `href` (none at present), and `?play=`
+  ignores such entries. The Mahjong scoreboard link lives in the leaderboard
+  strip header (`.lbsumlinks`).
+- In gallery cards `.go` is absolutely positioned (hidden on phones), so it
+  never takes a line from the description. Wide cards clamp to 3 lines and
+  phone rows are 156px.
+- Classic shelves get `shelfArrows` (‹ ›, hidden on touch, disabled at the
+  ends). `dragScroll`'s wheel handler lets the page scroll once the row is at
+  its end.
+- The card fade-in is 0.28s with a stagger capped at 180ms. The leaderboard
+  strip shows the first 4 boards. Revision draws its subjects before
+  `Study.render()`.
+
+**Settings.**
+- settings.js collapses the themes like the timetable does (Plain, Classic,
+  More, Custom).
+- Labels are now Gallery/**Grid**, **Panel**/Separated and **Accessibility**.
+  Sign in is `.btn.primary`; Sign out is the new `.btn.danger`.
+- `Tour.start('settings')` was removed from both dialogs; `Tour.mark` stays.
+
+**Contrast.** Plain's `--muted` went from #8b8b93 (about 3.4:1) to #696972
+(about 5.4:1).
+
+**Cache busting.**
+- Pages link site.css, games.css, settings.css, theme.css, games.js,
+  settings.js and mahjong.js with `?v=20261104`. sw.js pre-caches the same
+  URLs (`ASSET_V`), and CACHE_VERSION is v5.
+- Bump `ASSET_V` and the `?v=` together whenever those files change in a way
+  new HTML depends on.
+- Pages are network-first but static files are stale-while-revalidate, so
+  without this the first visit after a deploy pairs new HTML with old CSS.
+
+**Not changed.**
+- `/andre/` and Pugmeowla's game code (hkmahjong.html only had its links
+  versioned).
+- The timetable grid itself.
+- The timetable page's separate Settings dialog. Merging it with settings.js
+  is the next consistency step; it is larger and riskier.

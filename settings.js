@@ -52,19 +52,19 @@ host.innerHTML =
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
       '<div class="field"><label>Home, games &amp; resources</label><div class="modes" id="s_layout">' +
-        '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Classic</button></div>' +
-        '<div class="hint">Gallery packs the tiles into a mosaic. Classic is the even grid, with the games in rows that scroll sideways.</div></div>' +
+        '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Grid</button></div>' +
+        '<div class="hint">Gallery packs the tiles into a mosaic. Grid lines them up evenly, with the games in rows that scroll sideways.</div></div>' +
       '<div class="field"><label>Login</label>' +
         '<div class="hint" style="margin-top:0;margin-bottom:9px">Your school login, stored <b>only on this device</b> and used to fetch your timetable.</div>' +
         '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
         '<div class="custrow"><span>Password</span><input type="password" id="cr_pass" class="crin" autocomplete="off" placeholder="••••••••"></div>' +
-        '<div class="custrow"><button class="btn" type="button" id="cr_save">Save login</button><button class="btn" type="button" id="cr_clear">Sign out</button></div>' +
+        '<div class="custrow"><button class="btn primary" type="button" id="cr_save">Sign in</button><button class="btn danger" type="button" id="cr_clear">Sign out</button></div>' +
         '<div class="hint" id="cr_state"></div>' +
       '</div>' +
     '</div>' +
     '<div class="dlg-f dlg-f2">' +
       '<div class="tabbtns" id="moresettings">' +
-        '<button class="btn" type="button" id="openA11y">Access</button>' +
+        '<button class="btn" type="button" id="openA11y">Accessibility</button>' +
         '<button class="btn" type="button" id="openDisplay">Display</button>' +
       '</div>' +
       '<div class="tabbtns"><button class="btn" type="button" id="modetoggle"></button></div>' +
@@ -87,11 +87,13 @@ host.innerHTML =
     '<form method="dialog" class="dlg-h"><h2>Display</h2><button class="btn icon" value="close">&#10005;</button></form>' +
     '<div class="dlg-b">' +
       '<div class="field"><label>Header</label><div class="modes" id="headers">' +
-        '<button type="button" data-header="unified">Classic</button><button type="button" data-header="split">Separated</button></div></div>' +
+        '<button type="button" data-header="unified">Panel</button><button type="button" data-header="split">Separated</button></div>' +
+        '<div class="hint">Panel keeps each page’s title and buttons in a card. Separated leaves them on the page.</div></div>' +
       '<div class="field"><label>Layout</label><div class="modes" id="views">' +
         '<button type="button" data-view="compact">Compact</button><button type="button" data-view="full">Full</button></div></div>' +
       '<div class="field"><label>Room numbers</label><div class="modes" id="rooms">' +
-        '<button type="button" data-room="full">Full</button><button type="button" data-room="building">New</button><button type="button" data-room="number">Legacy</button></div></div>' +
+        '<button type="button" data-room="full">Full</button><button type="button" data-room="building">New</button><button type="button" data-room="number">Legacy</button></div>' +
+        '<div class="hint">How a room shows: Full is CR1007.118, New is CR1007, Legacy is 118.</div></div>' +
       '<div class="field"><label>Options</label>' +
         '<div class="custrow"><span>Week letter on day names</span><input type="checkbox" id="t_weekletter" class="sw"></div>' +
         '<div class="custrow"><span>Coloured subject outlines</span><input type="checkbox" id="t_outline" class="sw"></div>' +
@@ -105,17 +107,36 @@ host.innerHTML =
 document.body.appendChild(host);
 
 /* ── appearance ── */
+/* Collapsed, like the timetable's Settings: Plain, Classic, "More" and Custom.
+   Twelve swatches at once was the first thing a new visitor met. */
+let skinsExpanded = false;
 function renderSkins(){
   skin = get(LS.skin, 'plain');
   const box = $('s_skins'); box.innerHTML = '';
-  SKINS.forEach(s => {
+  const tile = s => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('aria-pressed', String(s.id === skin));
     b.innerHTML = '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
     b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); };
-    box.appendChild(b);
-  });
+    return b;
+  };
+  const extra = (sign, label, title, open) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'skinbtn more'; if (title) b.title = title;
+    b.innerHTML = '<span class="sw plus">' + sign + '</span><span class="nm">' + label + '</span>';
+    b.onclick = () => { skinsExpanded = open; renderSkins(); };
+    return b;
+  };
+  const quick = TTx.QUICK_SKINS || ['plain', 'classic', 'custom'];
+  if (skinsExpanded || quick.indexOf(skin) === -1){
+    SKINS.forEach(s => box.appendChild(tile(s)));
+    if (skinsExpanded) box.appendChild(extra('&minus;', 'Fewer', '', false));
+  } else {
+    ['plain', 'classic'].forEach(id => { const s = SKINS.find(x => x.id === id); if (s) box.appendChild(tile(s)); });
+    box.appendChild(extra('+', 'More', 'Show every theme', true));
+    const c = SKINS.find(x => x.id === 'custom'); if (c) box.appendChild(tile(c));
+  }
 }
 
 /* ── custom theme ── */
@@ -154,6 +175,9 @@ function renderCreds(){
   $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_pass').value  = creds ? creds.password : '';
   $('cr_state').textContent = creds ? 'Signed in as ' + creds.email : 'Not signed in.';
+  /* signed in, the button saves a changed password; signed out, it signs you in */
+  $('cr_save').textContent = creds ? 'Update login' : 'Sign in';
+  $('cr_save').classList.toggle('primary', !creds);
 }
 $('cr_save').onclick = () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
@@ -225,7 +249,8 @@ function openSettings(){
   renderSkins(); renderCustom(); renderLayout(); renderCreds(); renderModeBtn();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
-  if (window.Tour){ Tour.mark('settings'); Tour.start('settings'); }
+  /* finding Settings retires the bubble that points at it; no more bubbles inside */
+  if (window.Tour) Tour.mark('settings');
 }
 
 /* the home page's gear opens Settings now */

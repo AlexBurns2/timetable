@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261104">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <script src="theme.js"></script>
 <script src="tour.js"></script>
@@ -93,6 +93,9 @@ button,select,input{font:inherit;color:inherit}
 .btn:active{transform:translateY(1px)}
 .btn.icon{width:40px;padding:8px 0;text-align:center}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* a destructive action, such as Sign out */
+.btn.danger{color:#c62f45}
+[data-mode="dark"] .btn.danger{color:#ff7d8c}
 [data-skin="brutal"] .btn.primary,[data-skin="swiss"] .btn.primary{border-color:var(--line)}
 /* now / next — sit inside the topbar, simple flat cards, no colour bar */
 .now{display:flex;gap:12px;flex:3 1 320px;min-width:0}
@@ -260,7 +263,10 @@ button,select,input{font:inherit;color:inherit}
           box-shadow:var(--shadow-hi);padding:30px;width:min(430px,100%)}
 .gatecard h2{margin:0 0 7px;font-family:var(--font-display);font-size:clamp(1.5rem,5vw,2rem);
              font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.gatecard p{margin:0 0 20px;color:var(--muted);font-size:0.84375rem}
+.gatecard p{margin:0 0 10px;color:var(--muted);font-size:0.875rem}
+.gatebrand{font-size:0.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.gatefacts{margin:0 0 18px;padding-left:18px;color:var(--muted);font-size:0.8125rem;line-height:1.45}
+.gatefacts li+li{margin-top:3px}
 .emailrow{display:flex;align-items:center;border:var(--card-border);border-radius:var(--radius);
           background:var(--panel-2);overflow:hidden}
 .emailrow input{flex:1;min-width:0;border:0;background:none;padding:12px 13px;outline:none}
@@ -394,9 +400,14 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 <div class="gate" id="gate" hidden>
   <div class="gatecard">
+    <div class="gatebrand">MSC Unofficial</div>
     <h2>Sign in</h2>
-    <p>Your timetable loads with your own school login. Both are stored
-      <b>only on this device</b> and sent straight to the timetable service.</p>
+    <p>Use your school username and password to see your own timetable.</p>
+    <ul class="gatefacts">
+      <li>Your login is saved <b>only on this device</b>.</li>
+      <li>It is passed to the school’s own timetable system to fetch your classes, and never stored anywhere else.</li>
+      <li>This site is made by students. It isn’t run by the school or the Department.</li>
+    </ul>
     <form id="gateform">
       <div class="emailrow">
         <input type="text" id="gateemail" autocomplete="username" autocapitalize="none"
@@ -408,7 +419,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <button class="btn primary" type="submit" id="gatego">Show my timetable</button>
     </form>
     <div class="gateerr" id="gateerr"></div>
-    <a class="btn gateskip" href="home.html">School server down? Go to Home &#8594;</a>
+    <a class="btn gateskip" href="home.html">Look around first &#8594;</a>
   </div>
 </div>
 
@@ -517,9 +528,9 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <label>Home, games &amp; resources</label>
       <div class="modes" id="layouts">
         <button type="button" data-layout="gallery">Gallery</button>
-        <button type="button" data-layout="classic">Classic</button>
+        <button type="button" data-layout="classic">Grid</button>
       </div>
-      <div class="hint">Gallery packs the tiles into a mosaic. Classic is the even grid, with the games in rows that scroll sideways.</div>
+      <div class="hint">Gallery packs the tiles into a mosaic. Grid lines them up evenly, with the games in rows that scroll sideways.</div>
     </div>
 
     <div class="field">
@@ -535,15 +546,15 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="password" id="cr_pass" class="crin" autocomplete="off"
                placeholder="••••••••"></div>
       <div class="custrow">
-        <button class="btn" type="button" id="cr_save">Save login</button>
-        <button class="btn" type="button" id="cr_clear">Sign out</button>
+        <button class="btn primary" type="button" id="cr_save">Sign in</button>
+        <button class="btn danger" type="button" id="cr_clear">Sign out</button>
       </div>
       <div class="hint" id="cr_state"></div>
     </div>
   </div>
   <div class="dlg-f dlg-f2">
     <div class="tabbtns" id="moresettings">
-      <button class="btn" type="button" id="openA11y" title="Text size, zoom, contrast">Access</button>
+      <button class="btn" type="button" id="openA11y" title="Text size, zoom, contrast">Accessibility</button>
       <button class="btn" type="button" id="openDisplay" title="Layout and display">Display</button>
       <button class="btn" type="button" id="openColours" title="Subject colours">Colours</button>
     </div>
@@ -582,9 +593,10 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="field">
       <label>Header</label>
       <div class="modes" id="headers">
-        <button type="button" data-header="unified" title="Everything in one widget">Classic</button>
+        <button type="button" data-header="unified" title="Everything in one widget">Panel</button>
         <button type="button" data-header="split" title="Now/Next in their own boxes">Separated</button>
       </div>
+      <div class="hint">Panel keeps each page’s title and buttons in a card. Separated leaves them on the page.</div>
     </div>
     <div class="field">
       <label>Layout</label>
@@ -600,6 +612,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <button type="button" data-room="building" title="CR1007">New</button>
         <button type="button" data-room="number" title="118">Legacy</button>
       </div>
+      <div class="hint">How a room shows: Full is CR1007.118, New is CR1007, Legacy is 118.</div>
     </div>
     <div class="field">
       <label>Options</label>
@@ -1776,6 +1789,9 @@ function renderCreds(){
   $('cr_state').textContent = creds
     ? 'Signed in as ' + creds.email
     : 'Not signed in.';
+  /* signed in, the button saves a changed password; signed out, it signs you in */
+  $('cr_save').textContent = creds ? 'Update login' : 'Sign in';
+  $('cr_save').classList.toggle('primary', !creds);
 }
 $('cr_save').onclick = async () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
@@ -1913,7 +1929,8 @@ $('settings').onclick = () => {
   renderToggles(); renderA11y(); renderCreds(); renderColours();
   dlg.showModal();
   /* finding Settings on your own retires the step that points at it */
-  if (window.Tour){ Tour.mark('settings'); Tour.start('settings'); }
+  /* finding Settings retires the bubble that points at it; no more bubbles inside */
+  if (window.Tour) Tour.mark('settings');
 };
 
 /* sub-panels stack on top of the main dialog and pop back to it */

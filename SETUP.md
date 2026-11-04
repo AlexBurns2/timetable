@@ -1284,6 +1284,53 @@ tile and the forum is hidden — on every device you are signed in on. It unlock
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
 
+## A cleaner, friendlier site (November)
+
+The site was tidied up after a "new student" walk-through. The timetable page
+is the model for everything else.
+
+- **Home** has a header like the timetable's: a greeting with your name and
+  today's date and week, and your **next class** (from your saved timetable).
+  The tiles sit in three labelled groups: *Your week*, *Study* and *More*.
+  Signed out, it says what the site is and offers a **Sign in** button. The
+  forum explains itself in one line.
+- **The new website beta** is now a link at the bottom of Home, as an add-on.
+  It is no longer a tile in the main grid.
+- **Mahjong scores** moved off Home. The *Mahjong scoreboard* link now sits
+  next to the leaderboards on the Games page.
+- In the **Gallery** layout, the big Timetable tile on Home lists the day's
+  classes: today's while any are left, otherwise the next school day's.
+- **Every page** has the same header: the site name (a link Home), the page
+  name, and Home / Timetable / ⚙. On a phone those become icons, so the header
+  stays on one row. The timetable's *Separated* header setting applies to
+  every page.
+- **Games** has two labelled sections, *Play with your year* and *Arcade*,
+  each with one line saying what it is. Category tags and the diagonal ribbon
+  are gone ("New" is now a small pill), the leaderboard strip shows four
+  boards, and cards fade in faster. Descriptions are no longer cut off.
+- In the **Grid** layout, each games row has ‹ › arrows for a mouse. Once a row
+  reaches its end, the mouse wheel goes back to scrolling the page.
+- **Revision** shows the subjects first; the study planner is below them.
+- **Sign-in screen** shows the site's name and says plainly where your login
+  goes and that the site is student-made. The way out is now *Look around
+  first →*.
+- **Settings**: four theme choices (Plain, Classic, More, Custom) instead of
+  twelve. The layout options are *Gallery / Grid*, and the header options are
+  *Panel / Separated*. *Accessibility* is spelled out, Sign out is shown in
+  red, and opening Settings no longer starts more tour bubbles. Once you're
+  signed in, the button says *Update login*. Header and Room numbers each have
+  a one-line explanation.
+- **Year 11 and 12 only**: the HSC countdown on Home and the HSC exams box in
+  the Calendar.
+- **Readability**: grey text on the Plain theme is darker (it was below the
+  contrast small text needs), and tile descriptions are bigger.
+- **Fixes**:
+  - The owner-only Admin 🛠️ button was showing for everyone; it's hidden
+    again.
+  - A phone grid with an odd number of tiles no longer leaves one tile alone.
+  - Free periods uses short subject names in the grid, explains the dash, and
+    has a shorter note.
+
 ## Gallery or classic layout
 
 Settings now has **Home, games & resources: Gallery / Classic**, on the home

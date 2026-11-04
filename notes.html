@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261104">
 <script src="theme.js"></script>
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="site.css?v=20261104">
+<link rel="stylesheet" href="settings.css?v=20261104">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <style>
 .notebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
@@ -27,10 +27,10 @@
 <body>
 <div class="wrap">
   <div class="pagehead">
-    <h1>Notes</h1>
+    <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Notes</h1></div>
     <div class="crumbs">
-      <a class="btn" href="home.html">Home</a>
-      <a class="btn" href="./">Timetable</a>
+      <a class="btn" href="home.html" title="Home"><span class="bi" aria-hidden="true">&#8962;</span><span class="bl">Home</span></a>
+      <a class="btn" href="./" title="Timetable"><span class="bi" aria-hidden="true">&#128203;</span><span class="bl">Timetable</span></a>
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </div>
@@ -44,7 +44,7 @@
   <div class="padbar">
     <span id="padstate">Saved</span>
     <span><span id="padcount">0</span> characters &middot;
-      <button class="btn" id="padclear" style="padding:5px 10px;font-size:0.75rem">Clear subject</button></span>
+      <button class="btn danger" id="padclear" style="padding:5px 10px;font-size:0.75rem">Clear this subject</button></span>
   </div>
 </div>
 <script>
@@ -128,6 +128,6 @@ $('padclear').onclick = () => {
 
 buildSubjects();
 </script>
-<script src="settings.js"></script>
+<script src="settings.js?v=20261104"></script>
 </body>
 </html>

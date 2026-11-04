@@ -141,13 +141,13 @@ const GAMES = [
   { id:'chem',    cat:'Revision', year:11, ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
   { id:'engineering', cat:'Revision', year:11, ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
   { id:'software', cat:'Revision', year:11, ico:'💻', name:'Software', blurb:'Read code and write it' },
-  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'The button that says the name of the player playing the game', w:2, h:2, isNew:true },
+  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name', isNew:true },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
   { id:'oddone', cat:'Timetable', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
-  { id:'hkmj',   cat:'Arcade', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play bots to Hong Kong rules, Easy to Master', w:2, isNew:true },
+  { id:'hkmj',   cat:'Arcade', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2, isNew:true },
   { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
   { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
   { id:'g2048',  cat:'Arcade', ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
@@ -156,8 +156,12 @@ const GAMES = [
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
-/* the shelves of the classic layout, in order */
-const CAT_ORDER = ['Timetable', 'Arcade'];
+/* The games page in two labelled sections, in order, each with one line to
+   say what it is (both layouts use them: the gallery and the classic shelves). */
+const SECTIONS = [
+  { cat:'Timetable', title:'Play with your year', lede:'These use your timetable, so the people and rooms are ones you know.' },
+  { cat:'Arcade', title:'Arcade', lede:'Quick classics. Your best scores go on the leaderboards.' }
+];
 const classicLayout = () => !!(window.TT && TT.layout && TT.layout() === 'classic');
 
 /* ── which year's revision you are shown ───────────────────────────────────
@@ -177,18 +181,16 @@ const REVISION_PAGE = PAGE === 'revision';
 
 function gameCard(g, i){
   const c = document.createElement('button');
-  c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '') + (g.id === 'jim' ? ' jimcard' : '');
-  c.style.animationDelay = (i * 45) + 'ms';
+  c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '');
+  c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
   const stat = statLine(g.id);
-  c.innerHTML = (g.isNew ? '<span class="newbanner">New game</span>' : '') +
-    (g.id === 'jim'
-      ? '<span class="jim jimmini" aria-hidden="true"><span class="btn-outer"><span class="btn-ring"><span class="name-btn">JIM</span></span></span></span>'
-      : '<span class="ico">' + g.ico + '</span>') +
-    (REVISION_PAGE || classicLayout() ? '' : '<span class="tag">' + g.cat + '</span>') +   // a shelf is already named
+  /* the section heading names the category, so no tag on the card */
+  c.innerHTML = (g.isNew ? '<span class="newbanner">New</span>' : '') +
+    '<span class="ico">' + g.ico + '</span>' +
     '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
     (stat ? '<span class="stat">' + stat + '</span>' : '') +
-    '<span class="go">' + (REVISION_PAGE ? 'Start' : 'Play') + ' &#8594;</span>';
-  c.onclick = () => openGame(g.id);
+    '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
+  c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
   return c;
 }
 
@@ -197,6 +199,7 @@ function showGrid(){
   if (bentoStop){ bentoStop(); bentoStop = null; }
   lbState = null; lbSeq++;
   $('gamestage').hidden = true;
+  if ($('gameslede')) $('gameslede').hidden = false;
   const grid = $('gamegrid');
   grid.hidden = false;
   grid.innerHTML = '';
@@ -214,39 +217,53 @@ function showGrid(){
         bar.appendChild(b); });
       grid.appendChild(bar);
     }
-    /* the HSC countdown, today's plan and focus mode (study.js) */
-    if (year === 12 && window.Study){ try { grid.appendChild(Study.render()); } catch (e) { console.error(e); } }
+    /* the subjects first, so picking one never needs a scroll; then the HSC
+       countdown, today's plan and focus mode (study.js) */
     const box = document.createElement('div'); box.className = 'gamegrid';
     GAMES.filter(g => g.cat === 'Revision' && (g.year || 11) === year).forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
+    if (year === 12 && window.Study){ try { const st = Study.render(); st.classList.add('rvstudy'); grid.appendChild(st); } catch (e) { console.error(e); } }
     return;
   }
 
   if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
   /* classic: a shelf per category that scrolls sideways */
   if (classicLayout()){
-    CAT_ORDER.forEach(cat => {
-      const inCat = GAMES.filter(g => g.cat === cat);
+    SECTIONS.forEach(sec => {
+      const inCat = GAMES.filter(g => g.cat === sec.cat);
       if (!inCat.length) return;
-      const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
-      grid.appendChild(h);
+      grid.appendChild(sectionHead(sec));
       const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
       const row = document.createElement('div'); row.className = 'gamerow';
       inCat.forEach((g, i) => row.appendChild(gameCard(g, i)));
       wrap.appendChild(row); grid.appendChild(wrap);
       dragScroll(row);
+      shelfArrows(wrap, row);
     });
     renderLBSum();
     scrollHint();
     return;
   }
-  /* gallery: one packed grid */
-  const bento = document.createElement('div'); bento.className = 'bento';
-  const games = GAMES.filter(g => g.cat !== 'Revision');
-  const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
-  grid.appendChild(bento);
-  bentoStop = Bento.layout(bento, games.map((g, i) => ({ el:cards[i], w:g.w, h:g.h })));
+  /* gallery: a packed grid per section */
+  bentoStop = null;
+  const stops = [];
+  SECTIONS.forEach(sec => {
+    const games = GAMES.filter(g => g.cat === sec.cat);
+    if (!games.length) return;
+    grid.appendChild(sectionHead(sec));
+    const bento = document.createElement('div'); bento.className = 'bento';
+    const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
+    grid.appendChild(bento);
+    stops.push(Bento.layout(bento, games.map((g, i) => ({ el:cards[i], w:g.w, h:g.h }))));
+  });
+  bentoStop = () => stops.forEach(f => f());
   renderLBSum();
+}
+/* a section's heading and its one line */
+function sectionHead(sec){
+  const h = document.createElement('div'); h.className = 'gsec';
+  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2><p class="gseclede">' + sec.lede + '</p>';
+  return h;
 }
 
 let bentoStop = null;
@@ -263,12 +280,32 @@ function scrollHint(){
     if (row && row.scrollWidth > row.clientWidth + 40) Tour.start('games');
   });
 }
+/* ‹ › buttons at the ends of a shelf (mouse only; touch swipes), each greyed
+   out when there is nothing more that way */
+function shelfArrows(wrap, row){
+  const mk = (cls, sign, label, dir) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'shelfbtn ' + cls; b.innerHTML = sign; b.setAttribute('aria-label', label);
+    b.onclick = () => row.scrollBy({ left:dir * row.clientWidth * 0.8, behavior:reduced() ? 'auto' : 'smooth' });
+    wrap.appendChild(b); return b;
+  };
+  const prev = mk('prev', '&lsaquo;', 'Scroll left', -1), next = mk('next', '&rsaquo;', 'Scroll right', 1);
+  const sync = () => {
+    prev.disabled = row.scrollLeft <= 2;
+    next.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 2;
+  };
+  row.addEventListener('scroll', sync, { passive:true });
+  sync(); requestAnimationFrame(sync);      // now, and again once the cards have laid out
+}
 /* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
    the browser's own horizontal scroll; a drag swallows the click that follows). */
 function dragScroll(row){
   row.addEventListener('wheel', e => {
     if (row.scrollWidth <= row.clientWidth) return;
     const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    /* at either end, let the wheel carry on scrolling the page */
+    const atStart = row.scrollLeft <= 0, atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 1;
+    if ((d < 0 && atStart) || (d > 0 && atEnd)) return;
     if (d){ row.scrollLeft += d; e.preventDefault(); }
   }, { passive:false });
   let down = false, moved = false, sx = 0, sl = 0;
@@ -322,11 +359,13 @@ async function renderLBSum(){
   $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
   const leaders = await fetchLeaders();
   if ($('gamegrid').hidden) return;               // user already opened a game
-  const cards = LB_CAT.map((cat,i) => { const L = leaders[i];
+  /* the first four boards; "View all" has the rest */
+  const cards = LB_CAT.slice(0, 4).map((cat,i) => { const L = leaders[i];
     return '<button class="lbsumcard" data-i="'+i+'"><div class="g">'+esc(cat.name)+'</div>' +
       (L ? '<div class="lead"><span class="who">'+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>'
          : '<div class="empty">No scores yet</div>') + '</button>'; }).join('');
-  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><div class="lbsumgrid">'+cards+'</div>';
+  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><span class="lbsumlinks"><a href="mahjong.html">Mahjong scoreboard →</a>' +
+    '<a id="lbsumall">View all →</a></span></div><div class="lbsumgrid">'+cards+'</div>';
   $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
   [...el.querySelectorAll('.lbsumcard')].forEach(c => c.onclick = () => { lbFocus = LB_CAT[+c.dataset.i].id; openGame('leaderboards'); });
 }
@@ -337,6 +376,7 @@ function openGame(id){
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
+    if ($('gameslede')) $('gameslede').hidden = true;
     if (bentoStop){ bentoStop(); bentoStop = null; }
     $('lbsum').hidden = true;
     st.hidden = false;
@@ -7289,6 +7329,6 @@ BUILD.hkmj = host => {
 {
   const q = new URLSearchParams(location.search), play = q.get('play');
   if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
-  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play))) openGame(play); else showGrid();
+  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play && !g.href))) openGame(play); else showGrid();
 }
 
