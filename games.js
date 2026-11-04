@@ -400,6 +400,8 @@ function openGame(id){
 $('back').onclick = () => {
   const grid = $('gamegrid'), st = $('gamestage');
   if (stop){ stop(); stop = null; }
+  /* opened from a link (?play=admin and the like): back is the plain games page */
+  if (/[?&]play=/.test(location.search)){ try { history.replaceState(null, '', location.pathname); } catch {} }
   if (reduced()){ showGrid(); return; }
   st.classList.add('leaving');
   setTimeout(() => { st.classList.remove('leaving'); showGrid(); }, 130);
@@ -2822,7 +2824,8 @@ BUILD.admin = host => {
   const OVERVIEW = { id:'overview', name:'Overview', kind:'o' };
   const FORUM = { id:'forum', name:'Forum', kind:'f' };
   const DECKS = { id:'decks', name:'Shared decks', kind:'d' };
-  const CATS = [OVERVIEW, USERS, FORUM, DECKS, SETTINGS, ...GEN, ...TET];
+  const MJ = { id:'mahjong', name:'Mahjong club', kind:'m' };
+  const CATS = [OVERVIEW, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -2847,7 +2850,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofd'.includes(cur.kind);
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdm'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -2867,6 +2870,7 @@ BUILD.admin = host => {
       if (cur.kind === 'o'){ data = await TT.api('/api/leaderboard', { params:{ stats:1 } }); render(); return; }
       if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
+      if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -2902,6 +2906,7 @@ BUILD.admin = host => {
     if (cur.kind === 'o') return renderOverview();
     if (cur.kind === 'f') return renderForum();
     if (cur.kind === 'd') return renderDecks();
+    if (cur.kind === 'm') return renderMahjong();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -3057,6 +3062,35 @@ BUILD.admin = host => {
       try { await TT.api('/api/forum', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); load(); }
       catch (e){ alert('Could not delete: ' + e.message); b.disabled = false; }
     });
+  }
+  /* ── Mahjong club: rename or remove players, delete any game ── */
+  function renderMahjong(){
+    const st = (data && data.state) || { players:[], rounds:[] };
+    const players = st.players || [], rounds = (st.rounds || []).slice().reverse();
+    const nameOf = id => (players.find(p => p.id === +id) || {}).name || 'Removed';
+    const send = async (body, ask) => {
+      if (ask && !confirm(ask)) return;
+      try { data = await TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'mahjong' }, body) }); render(); }
+      catch (e){ alert('Could not save that: ' + e.message); }
+    };
+    $('admnote').innerHTML = esc(players.length + ' player' + (players.length === 1 ? '' : 's') + ', ' + rounds.length + ' game' + (rounds.length === 1 ? '' : 's') + '.') +
+      ' <a class="rvlink" href="mahjong.html">Open the Mahjong club page</a>';
+    $('admbody').innerHTML = '<h4 class="admsub">Players</h4>' + (players.length ? players.map(p =>
+        '<div class="adminrow"><span class="nm"><b>' + esc(p.name) + '</b></span>' +
+        '<button class="btn" type="button" data-ren="' + p.id + '">Rename</button>' +
+        '<button class="del" type="button" data-rm="' + p.id + '">Remove</button></div>').join('') : '<p class="how">No players yet.</p>') +
+      '<h4 class="admsub">Games, newest first</h4>' + (rounds.length ? rounds.map(r =>
+        '<div class="adminrow"><span class="nm"><b>' + esc(new Date(r.t).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' })) + '</b><em>' +
+        esc(Object.entries(r.d || {}).map(([id, v]) => nameOf(id) + ' ' + (v > 0 ? '+' : '') + v).join(' · ')) + '</em></span>' +
+        '<button class="del" type="button" data-t="' + r.t + '">Delete</button></div>').join('') : '<p class="how">No games yet.</p>');
+    $('admbody').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => {
+      const now = nameOf(b.dataset.ren), next = prompt('Rename ' + now + ' to:', now);
+      if (next && next.trim() && next.trim() !== now) send({ action:'renamePlayer', id:+b.dataset.ren, name:next });
+    });
+    $('admbody').querySelectorAll('[data-rm]').forEach(b => b.onclick = () =>
+      send({ action:'removePlayer', id:+b.dataset.rm }, 'Remove ' + nameOf(b.dataset.rm) + ' from the Mahjong club? Their points go with them.'));
+    $('admbody').querySelectorAll('[data-t]').forEach(b => b.onclick = () =>
+      send({ action:'deleteRound', t:+b.dataset.t }, 'Delete this game for everyone?'));
   }
   /* ── Shared decks: every deck, newest first, each removable ── */
   function renderDecks(){

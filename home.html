@@ -96,12 +96,6 @@
         <span class="tname">Mahjong club</span>
         <span class="tdesc">Scores from our games</span>
       </a>
-      <!-- moderators only: shown once the server says so (and it checks every action again) -->
-      <a class="tile" href="games.html?play=admin" id="tileMod" hidden>
-        <span class="ico">🛠️</span>
-        <span class="tname">Moderator</span>
-        <span class="tdesc">Stats, people, posts and settings</span>
-      </a>
     </nav>
   </section>
 
@@ -268,10 +262,6 @@ function layTiles(){
 }
 layTiles();
 addEventListener('tt:layout', layTiles);
-/* the Moderator tile, for moderators */
-if (signedIn) TT.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
-  if (d && d.isMod){ $('tileMod').hidden = false; layTiles(); }
-}, () => {});
 
 /* ── forum ─────────────────────────────────────────────────────────────── */
 /* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */
@@ -294,6 +284,7 @@ function postCard(p, isReply){
       (p.mine ? '<button class="flink fdel" type="button" data-id="' + esc(p.id) + '">delete</button>' : '') +
     '</div>' +
     '<div class="ftext">' + esc(p.body) + '</div>' +
+    '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
     (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>' +
       '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
         '<textarea rows="2" maxlength="1000" placeholder="Write a reply…"></textarea>' +
@@ -301,10 +292,65 @@ function postCard(p, isReply){
     '</div>';
 }
 
+/* ── reactions: a chip per emoji (yours highlighted), ♡ for a quick heart,
+   + for any other. Changes show at once and are put back if the save fails. */
+const RX_PICK = ['❤️','😂','👍','😮','😢','🔥','🎉','💀','👀','🙏','💯','😭'];
+const POSTS = new Map();                 // id -> post, for its reactions
+function rxBar(p){
+  const rx = p.reactions || [];
+  const hearted = rx.some(r => r.emoji === '❤️' && r.mine);
+  return rx.map(r => '<button type="button" class="rx' + (r.mine ? ' mine' : '') + '" data-e="' + esc(r.emoji) + '"' +
+      ' aria-pressed="' + r.mine + '" aria-label="' + esc(r.emoji) + ' ' + r.count + (r.mine ? ', including you' : '') + '">' +
+      '<span>' + esc(r.emoji) + '</span><b>' + r.count + '</b></button>').join('') +
+    (hearted ? '' : '<button type="button" class="rxadd rxheart" data-e="❤️" title="Heart" aria-label="React with a heart">♡</button>') +
+    '<button type="button" class="rxadd rxmore" title="React" aria-label="Choose a reaction">+</button>';
+}
+function paintRx(id){
+  const bar = document.querySelector('.frx[data-id="' + CSS.escape(id) + '"]');
+  if (bar){ bar.innerHTML = rxBar(POSTS.get(id)); wireRx(bar); }
+}
+async function toggleRx(id, emoji){
+  const p = POSTS.get(id); if (!p) return;
+  const before = JSON.parse(JSON.stringify(p.reactions || []));
+  const rx = p.reactions = p.reactions || [];
+  const r = rx.find(x => x.emoji === emoji);
+  if (r && r.mine){ r.count--; r.mine = false; if (!r.count) rx.splice(rx.indexOf(r), 1); }
+  else if (r){ r.count++; r.mine = true; }
+  else rx.push({ emoji, count:1, mine:true });
+  paintRx(id);
+  try { await TT.api('/api/forum', { method:'POST', body:{ action:'react', id, emoji } }); }
+  catch (e){ p.reactions = before; paintRx(id); fmsg(e.message); }
+}
+function pickRx(bar, id){
+  document.querySelectorAll('.rxpick').forEach(x => x.remove());
+  const pop = document.createElement('div');
+  pop.className = 'rxpick'; pop.setAttribute('role', 'menu');
+  pop.innerHTML = RX_PICK.map(e => '<button type="button" role="menuitem" data-e="' + e + '">' + e + '</button>').join('') +
+    '<button type="button" class="rxother" role="menuitem">Other…</button>';
+  bar.appendChild(pop);
+  pop.querySelectorAll('[data-e]').forEach(b => b.onclick = ev => { ev.stopPropagation(); pop.remove(); toggleRx(id, b.dataset.e); });
+  pop.querySelector('.rxother').onclick = ev => {
+    ev.stopPropagation(); pop.remove();
+    const e = (prompt('React with any emoji:') || '').trim();
+    if (e) toggleRx(id, e);
+  };
+  setTimeout(() => document.addEventListener('click', function off(ev){
+    if (!pop.contains(ev.target)){ pop.remove(); document.removeEventListener('click', off); }
+  }), 0);
+}
+function wireRx(bar){
+  const id = bar.dataset.id;
+  bar.querySelectorAll('[data-e]').forEach(b => { if (!b.closest('.rxpick')) b.onclick = () => toggleRx(id, b.dataset.e); });
+  const more = bar.querySelector('.rxmore');
+  if (more) more.onclick = ev => { ev.stopPropagation(); pickRx(bar, id); };
+}
+
 async function loadForum(){
   try {
     const d = await TT.api('/api/forum');
     const posts = d.posts || [];
+    POSTS.clear();
+    posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
     $('fposts').innerHTML = posts.length
       ? posts.map(p => postCard(p, false) +
           (p.replies || []).map(r => postCard(r, true)).join('')).join('')
@@ -316,6 +362,7 @@ async function loadForum(){
 }
 
 function wireForum(){
+  document.querySelectorAll('.frx').forEach(wireRx);
   document.querySelectorAll('.freplybtn').forEach(b => b.onclick = () => {
     const box = $('rb-' + b.dataset.id);
     box.hidden = !box.hidden;

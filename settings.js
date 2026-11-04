@@ -15,7 +15,7 @@ const get = TTx.get, set = TTx.set;
 const LS = { skin:'tt.skin', mode:'tt.mode', custom:'tt.custom', creds:'tt.creds', email:'tt.email', cache:'tt.cache',
   textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
   view:'tt.view', outline:'tt.outline', header:'tt.header', zen:'tt.zen',
-  room:'tt.room', weekletter:'tt.weekletter', progress:'tt.progress', layout:'tt.layout' };
+  room:'tt.room', weekletter:'tt.weekletter', progress:'tt.progress', layout:'tt.layout', anim:'tt.anim' };
 const apply = () => TTx.apply(TTx.readState());
 const $ = id => document.getElementById(id);
 
@@ -99,6 +99,7 @@ host.innerHTML =
         '<div class="custrow"><span>Coloured subject outlines</span><input type="checkbox" id="t_outline" class="sw"></div>' +
         '<div class="custrow"><span>Progress bar on Now</span><input type="checkbox" id="t_progress" class="sw"></div>' +
         '<div class="custrow"><span>Transparent background</span><input type="checkbox" id="t_zen" class="sw"></div>' +
+        '<div class="custrow"><span>Animations</span><input type="checkbox" id="t_anim" class="sw"></div>' +
         '<div class="hint">These apply to your timetable. Subject colours and .ics export live on the timetable page.</div>' +
       '</div>' +
     '</div>' +
@@ -225,7 +226,7 @@ function toggle(id, key, def){
 function renderDisplay(){
   group('headers','header','unified'); group('views','view','compact'); group('rooms','room','full');
   toggle('t_weekletter','weekletter', false); toggle('t_outline','outline', true);
-  toggle('t_progress','progress', true); toggle('t_zen','zen', false);
+  toggle('t_progress','progress', true); toggle('t_zen','zen', false); toggle('t_anim','anim', false);
 }
 
 /* ── tile layout (Home, Games, Resources) ── */
@@ -256,4 +257,17 @@ function openSettings(){
 /* the home page's gear opens Settings now */
 const gear = $('themebtn');
 if (gear){ gear.onclick = openSettings; gear.title = 'Settings'; }
+
+/* Moderators get a small 🛠️ button beside the gear, on every page, and
+   nothing else about the page changes for them. The games page has its own
+   (#admin). The server answers isMod and checks every moderator action again. */
+if (gear && !$('admin') && TTx.signedIn && TTx.signedIn() && TTx.api){
+  TTx.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
+    if (!d || !d.isMod) return;
+    const b = document.createElement('a');
+    b.className = 'btn icon modbtn'; b.href = 'games.html?play=admin'; b.title = 'Moderator';
+    b.setAttribute('aria-label', 'Moderator'); b.textContent = '🛠️';
+    gear.parentNode.insertBefore(b, gear);
+  }, () => {});
+}
 })();

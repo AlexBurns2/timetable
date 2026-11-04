@@ -20,7 +20,7 @@
  *   game_state(email, mode, state jsonb, updated_at, primary key (email, mode))
  */
 
-import { db, whoami } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 
 const MODES = new Set(["zen", "survival", "mahjong", "hkmj"]);
 const MAX_BYTES = 200000, MAX_HKMJ = 8000;
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
   const mode = String((req.method === "PUT" ? (body && body.mode) : req.query.mode) || "");
   if (!MODES.has(mode)) return res.status(400).json({ error: "That mode can't be saved." });
-  if (mode === "mahjong") return mahjong(req, res, body);
+  if (mode === "mahjong") return mahjong(req, res, body, me);
 
   if (req.method === "GET") {
     const { data, error } = await db.from("game_state")
@@ -80,7 +80,7 @@ async function mjLoad() {
   return { players: Array.isArray(s.players) ? s.players : [], rounds: Array.isArray(s.rounds) ? s.rounds : [] };
 }
 
-async function mahjong(req, res, body) {
+async function mahjong(req, res, body, me) {
   let state;
   try { state = await mjLoad(); }
   catch (e) { console.error("mahjong get:", e.message); return res.status(502).json({ error: "Couldn't load the scores." }); }
@@ -109,6 +109,31 @@ async function mahjong(req, res, body) {
   } else if (action === "undo") {
     if (!state.rounds.length) return res.status(400).json({ error: "No games to undo." });
     state.rounds.pop();
+  } else if (["renamePlayer", "removePlayer", "deleteRound"].includes(action)) {
+    /* moderator clean-up: tidy a name, take someone off the sheet, or delete
+       any one game (not just the last). A removed player's points leave the
+       totals with them; everyone else's stay as they were. */
+    if (!isAdmin(me && me.email)) return res.status(403).json({ error: "Only moderators can do that." });
+    if (action === "deleteRound") {
+      const at = Number(body.t);
+      const i = state.rounds.findIndex(r => r.t === at);
+      if (i < 0) return res.status(404).json({ error: "That game is already gone." });
+      state.rounds.splice(i, 1);
+    } else {
+      const p = state.players.find(x => x.id === Number(body.id));
+      if (!p) return res.status(404).json({ error: "That player is already gone." });
+      if (action === "removePlayer") {
+        state.players = state.players.filter(x => x !== p);
+        state.rounds = state.rounds.map(r => { const d = { ...r.d }; delete d[p.id]; return { ...r, d }; })
+                                   .filter(r => Object.keys(r.d).length);
+      } else {
+        const name = String(body.name || "").replace(/\s+/g, " ").trim().slice(0, 30);
+        if (!name) return res.status(400).json({ error: "Give the player a name." });
+        if (state.players.some(x => x !== p && x.name.toLowerCase() === name.toLowerCase()))
+          return res.status(400).json({ error: name + " is already playing." });
+        p.name = name;
+      }
+    }
   } else {
     return res.status(400).json({ error: "Unknown action." });
   }

@@ -2220,3 +2220,47 @@ club". The link was removed from the Games leaderboards.
 **Tests.** `modcheck.mjs` (21 checks, in the scratchpad) runs
 leaderboard.js against a fake database. It covers who is a moderator, the
 stats being moderator-only and read-only, and hiding games.
+
+### 8.50 Forum reactions, Mahjong club moderation, animated mode, moderator button
+
+**Forum reactions (`api/forum.js`, `home.html`).**
+- New table `forum_reaction (post_id, email, emoji, created_at, primary key
+  (post_id, email, emoji))`; the SQL is in the file's header comment. Until it
+  exists, the forum works without reactions.
+- `POST {action:'react', id, emoji}` toggles a reaction. It accepts exactly one
+  emoji grapheme (checked with `\p{Extended_Pictographic}` and
+  `Intl.Segmenter`), at most 6 different emoji per person per post.
+- `GET` returns `reactions: [{emoji, count, mine}]` per post and reply, most
+  used first, never emails.
+- Deleting a thread removes its reactions and its replies' reactions.
+- In the page: chips toggle, ♡ is a one-tap heart, and + opens a palette with
+  "Other…" (any emoji). Changes show optimistically and roll back if the save
+  fails.
+
+**Mahjong club moderation (`api/gamestate.js` plus a moderator tab).**
+- New moderator-only actions: `renamePlayer`, `removePlayer` (takes only that
+  player's points; a game left empty goes) and `deleteRound` by its `t` (any
+  game, not just the last).
+- Add, record and undo stay open to everyone.
+
+**Moderator button.**
+- The Home tile is gone. settings.js adds a small 🛠️ before ⚙ on every page
+  with the shared Settings when `isMod`; Games keeps `#admin`.
+- The page layout is otherwise the same for moderators.
+- "← All games" removes `?play=` from the address.
+
+**Animated mode (index.html, off by default).**
+- `tt.anim` is set in Settings → Display → Animations, on both dialogs.
+- `turnWeek` is ported from andre/index.html, with the same MAZE timings,
+  waves, lanes and `composite:'add'`. A week change clones the old `.lesson`
+  cards into `.ttghost`, which slide off; the new ones slide on, middle days
+  first. A lesson with the same `data-sig` in the same spot stays put.
+- `laneShifts` also keeps a day's cards in order when one is pushed off the
+  bottom of the page (the beta can overlap there).
+- `growFrom` grows the detail sheet out of the pressed card.
+- It is skipped on phones, with reduced motion, or when off.
+- Checked by freezing every 25ms: no visible overlap in Compact or Full, in
+  either direction.
+
+**Tests (scratchpad):** `reactcheck.mjs` (25 checks: reactions and Mahjong
+moderation against a fake database), `modcheck.mjs` (21) and `pagecheck.mjs`.

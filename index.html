@@ -186,6 +186,9 @@ button,select,input{font:inherit;color:inherit}
   display:flex;flex-direction:column;gap:0;
 }
 .lesson:hover{box-shadow:var(--shadow-hi);z-index:3}
+/* animated mode: last week's cards slide off in this layer while the new week is drawn underneath */
+.ttghost{position:absolute;inset:0;pointer-events:none;z-index:4}
+html.turning,html.turning body{overflow-x:clip}
 .lesson .s{font-weight:700;font-size:0.84375rem;line-height:1.18;overflow-wrap:anywhere;
            font-family:var(--font-display);letter-spacing:var(--display-ls)}
 [data-skin="paper"] .lesson .s{font-size:1.0625rem;line-height:1.05}
@@ -632,6 +635,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_progress" class="sw"></div>
       <div class="custrow"><span>Transparent background</span>
         <input type="checkbox" id="t_zen" class="sw"></div>
+      <div class="custrow"><span>Animations</span>
+        <input type="checkbox" id="t_anim" class="sw"></div>
       <div class="hint">Transparent drops the page background for custom
         browser wallpapers like Zen.</div>
     </div>
@@ -677,7 +682,7 @@ const inkFor = TT.inkFor;
 const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
              creds:'tt.creds',
              textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
-             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', anim:'tt.anim', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
   /* mirror settings to the signed-in user (theme.js debounces + skips creds/cache) */
@@ -703,6 +708,7 @@ let roomMode   = get(LS.room, 'full');
 let showWeekLetter = get(LS.weekletter, false);
 let showOutline    = get(LS.outline, true);
 let showProgress   = get(LS.progress, true);
+let animMode       = get(LS.anim, false);      /* animated mode: off unless switched on */
 let viewMode       = get(LS.view, 'compact');
 let headerMode     = get(LS.header, 'unified');
 let zenMode        = get(LS.zen, false);
@@ -1334,7 +1340,8 @@ function lessonCard(e, start, end, isToday, nowMin, date, tall){
     (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
     (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
     '<div class="tm">' + fmtTime(start) + '–' + fmtTime(end) + '</div>';
-  box.onclick = () => showDetail(e, date);
+  box.dataset.sig = [e.subject, start, end, e.room, e.teacher].join('|');
+  box.onclick = () => showDetail(e, date, box);
   return box;
 }
 
@@ -1493,7 +1500,7 @@ function weekendCard(next, when){
 }
 
 /* ═══ lesson detail ═══ */
-function showDetail(e, date){
+function showDetail(e, date, origin){
   const c = colourFor(e.subject);
   const head = $('dhead');
   head.style.setProperty('--c', c);
@@ -1522,6 +1529,7 @@ function showDetail(e, date){
   btn.textContent = 'View class list';
   btn.disabled = false;
   $('detail').showModal();
+  if (origin) growFrom(origin, $('detail'));
 }
 
 /* ═══ class roster ═══ */
@@ -1920,7 +1928,9 @@ function renderToggles(){
   $('t_outline').checked    = showOutline;
   $('t_progress').checked   = showProgress;
   $('t_zen').checked        = zenMode;
+  $('t_anim').checked       = animMode;
 }
+$('t_anim').addEventListener('change', ev => { animMode = ev.target.checked; set(LS.anim, animMode); });
 $('t_zen').addEventListener('change', ev => {
   zenMode = ev.target.checked;
   set(LS.zen, zenMode);
@@ -2071,19 +2081,171 @@ function renderColours(){
 $('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colours, colours); renderColours(); render(); };
 
 /* ═══ controls ═══ */
-function toggleWeek(){
+function toggleWeek(dir){
   const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
-  viewWeek = shown === 'a' ? 'b' : 'a';
-  render();
+  turnWeek(() => { viewWeek = shown === 'a' ? 'b' : 'a'; render(); }, dir === -1 ? -1 : 1);
 }
-$('weekprev').onclick = toggleWeek;
-$('weeknext').onclick = toggleWeek;
+$('weekprev').onclick = () => toggleWeek(-1);
+$('weeknext').onclick = () => toggleWeek(1);
 addEventListener('keydown', e => {
   if (dlg.open || $('detail').open || !gate.hidden) return;
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek(e.key === 'ArrowLeft' ? -1 : 1);
   if (e.key === 'S') $('settings').click();
 });
 addEventListener('resize', render);
+
+/* ═══ animated mode (Settings → Display → Animations; off by default) ═══
+   Ported from Pugmeowla's beta (andre/index.html: turnWeek, with the timings
+   in ANIMATIONS.md). Changing week slides each day's lessons off the side in
+   waves, the day nearest the edge first, with lanes opening through the days
+   they cross so no block ever runs over another; then the new week's lessons
+   slide on, the middle days first. A lesson that is the same in both weeks
+   stays where it is. Opening a lesson grows its card into the detail sheet.
+   Phones, reduced motion and the setting being off just change instantly. */
+const MAZE = { open:160, close:180, speed:2.8, margin:90 };
+const MOVE_MS = 440, EASE = 'cubic-bezier(.45,0,.25,1)';
+let turning = null;
+function animOn(){
+  return !!animMode && !!document.body.animate && !matchMedia('(max-width:860px)').matches &&
+    document.documentElement.getAttribute('data-motion') !== 'reduced' &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+/* how far each of a day's blocks (top to bottom) moves down so none sits in a
+   lane; everything below a lane moves with it, and what wouldn't fit on the
+   page goes all the way off rather than waiting half off the edge */
+function laneShifts(rects, bands, pageEnd){
+  const lanes = bands.map(b => [b.top - 6, b.bottom + 6]).sort((a, b) => a[0] - b[0]);
+  let shift = 0;
+  const out = rects.map(r => {
+    for (const [lo, hi] of lanes) if (r.top + shift < hi && r.bottom + shift > lo) shift = hi - r.top;
+    return shift && r.top < pageEnd && r.bottom + shift > pageEnd ? pageEnd - r.top + 24 : shift;
+  });
+  /* a block sent off the page moves further than the ones under it would:
+     push those down too, so the day keeps its order and gaps and none touch */
+  for (let i = 1; i < rects.length; i++){
+    const need = rects[i - 1].bottom + out[i - 1] + (rects[i].top - rects[i - 1].bottom) - rects[i].top;
+    if (out[i] < need) out[i] = need;
+  }
+  return out;
+}
+function turnWeek(apply, dir){
+  /* a press mid-turn finishes the last one at once */
+  if (turning){ turning.forEach(a => { try { a.finish(); } catch {} }); turning = null; }
+  document.querySelectorAll('.ttghost').forEach(g => g.remove());
+  if (!animOn()){ apply(); return; }
+  const grid = $('grid');
+  const heads = () => [...grid.querySelectorAll('.dayhead')].map(h => h.getBoundingClientRect());
+  const dayOf = (r, hs) => { const x = (r.left + r.right) / 2; const k = hs.findIndex(h => x >= h.left - 4 && x <= h.right + 4); return k < 0 ? 0 : k; };
+  const snap = hs => [...grid.querySelectorAll('.lesson')].map(el => { const r = el.getBoundingClientRect(); return { el, sig:el.dataset.sig || '', r, k:dayOf(r, hs) }; });
+  const hs0 = heads(), before = snap(hs0);
+  apply();
+  const hs1 = heads();
+  if (!hs1.length || hs1.length !== hs0.length) return;
+  const n = hs1.length, m = (n - 1) / 2;
+  $('weeklabel').animate([{ opacity:0, transform:'translateX(' + (dir * 14) + 'px)' }, { opacity:1, transform:'none' }],
+                         { duration:MOVE_MS, easing:EASE });
+
+  /* who stays (same lesson, same day, same spot), who goes, who arrives */
+  const host = document.querySelector('.wrap'), hostR = host.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  ghost.className = 'ttghost';
+  host.appendChild(ghost);
+  const kept = [], leaving = [], arriving = [], used = new Set();
+  for (const b of snap(hs1)){
+    const o = before.find(o => !used.has(o) && o.k === b.k && o.sig === b.sig &&
+                               Math.abs(o.r.top - b.r.top) < 1 && Math.abs(o.r.height - b.r.height) < 1);
+    if (o){ used.add(o); kept.push({ ...b, r0:o.r }); } else arriving.push(b);
+  }
+  for (const o of before) if (!used.has(o)){
+    /* a copy of the old card, since the new week is already drawn */
+    const brick = o.el.cloneNode(true);
+    brick.classList.remove('current');
+    brick.style.cssText += ';position:absolute;left:' + (o.r.left - hostR.left) + 'px;top:' + (o.r.top - hostR.top) +
+      'px;width:' + o.r.width + 'px;height:' + o.r.height + 'px;right:auto;margin:0';
+    ghost.appendChild(brick);
+    leaving.push({ el:brick, k:o.k, r:o.r });
+  }
+
+  const W = document.documentElement.clientWidth;
+  const speed = Math.max(MAZE.speed, W / 480);
+  const keptIn = k => kept.filter(b => b.k === k).sort((a, b) => a.r.top - b.r.top);
+  const exitSide = k => k < m ? -1 : k > m ? 1 : -dir;
+  const entrySide = k => k < m ? -1 : k > m ? 1 : dir;
+  const dayAt = (side, rank) => side < 0 ? rank : n - 1 - rank;
+  const laneUntil = Array(n).fill(0);
+  /* one wave: a day's lessons crossing to or from one edge together */
+  const wave = (bricks, side, t0, entering) => {
+    if (!bricks.length) return t0;
+    const crossed = new Map();
+    for (const b of bricks) for (let j = 0; j < n; j++)
+      if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
+    const opening = crossed.size ? MAZE.open + MAZE.margin : 0;
+    t0 = Math.max(t0, ...[...crossed.keys(), ...(entering ? bricks.map(b => b.k) : [])].map(j => laneUntil[j] - opening));
+    const slideAt = t0 + opening;
+    let end = slideAt;
+    for (const b of bricks){
+      const dx = side < 0 ? -(b.r.right + 24) : W - b.r.left + 24;
+      const D = Math.max(260, Math.min(640, Math.abs(dx) / speed));
+      b.el.animate(entering ? [{ transform:'translateX(' + dx + 'px)' }, { transform:'none' }]
+                            : [{ transform:'none' }, { transform:'translateX(' + dx + 'px)' }],
+                   { duration:D, delay:slideAt, fill:entering ? 'backwards' : 'forwards',
+                     easing:entering ? 'cubic-bezier(.25,.6,.3,1)' : 'cubic-bezier(.55,0,.75,.4)' });
+      end = Math.max(end, slideAt + D);
+    }
+    const shut = end + MAZE.margin, total = shut - t0 + MAZE.close;
+    for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], shut + MAZE.close);
+    for (const [j, bands] of crossed){
+      const day = keptIn(j), shifts = laneShifts(day.map(b => entering ? b.r : b.r0), bands, innerHeight);
+      day.forEach((b, i) => {
+        if (!shifts[i]) return;
+        b.el.animate([{ transform:'translateY(0)', easing:'ease-in-out' },
+                      { transform:'translateY(' + shifts[i] + 'px)', offset:MAZE.open / total },
+                      { transform:'translateY(' + shifts[i] + 'px)', offset:(shut - t0) / total, easing:'ease-in-out' },
+                      { transform:'translateY(0)' }],
+                     { duration:total, delay:t0, composite:'add' });   // two waves through one day add up
+      });
+    }
+    return end;
+  };
+  /* out: on each side, the day nearest the edge first */
+  const doneOut = {};
+  for (const side of [-1, 1]){
+    let t = 0;
+    for (let rank = 0; rank <= Math.floor(m); rank++){
+      const k = dayAt(side, rank);
+      if (exitSide(k) !== side) continue;
+      t = wave(leaving.filter(b => b.k === k), side, t, false);
+    }
+    doneOut[side] = t;
+  }
+  /* in: once everything has gone, the middle days first */
+  const startIn = Math.max(doneOut[-1], doneOut[1]);
+  for (const side of [-1, 1]){
+    let t = startIn;
+    for (let rank = Math.floor(m); rank >= 0; rank--){
+      const k = dayAt(side, rank);
+      if (entrySide(k) !== side) continue;
+      t = wave(arriving.filter(b => b.k === k), side, t, true);
+    }
+  }
+  document.documentElement.classList.add('turning');
+  const all = [...ghost.getAnimations({ subtree:true }), ...grid.getAnimations({ subtree:true })];
+  turning = all;
+  Promise.all(all.map(a => a.finished.catch(() => {}))).then(() => {
+    ghost.remove();
+    if (turning === all){ turning = null; document.documentElement.classList.remove('turning'); }
+  });
+}
+/* opening a lesson: the sheet grows out of the card you pressed */
+function growFrom(origin, sheet){
+  if (!animOn() || !origin.isConnected) return;
+  const a = origin.getBoundingClientRect(), b = sheet.getBoundingClientRect();
+  if (!a.width || !b.width) return;
+  sheet.animate([{ transformOrigin:'top left', opacity:.35,
+                   transform:'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')' },
+                 { transformOrigin:'top left', opacity:1, transform:'none' }],
+                { duration:MOVE_MS, easing:EASE });
+}
 
 /* ═══ boot ═══ */
 (async () => {
