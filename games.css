@@ -418,7 +418,6 @@ html[data-motion="reduced"] .lbsumcard{transition:none}
 .gsec{margin:26px 2px 12px}
 .gsec:first-child{margin-top:0}
 .gsec .cathd{margin:0;font-size:0.8125rem}
-.gseclede{margin:3px 0 0;color:var(--muted);font-size:0.875rem}
 /* revision: the study panel sits under the subjects */
 .rvstudy{margin-top:22px}
 html[data-motion="reduced"] .cathd{animation:none;opacity:1}

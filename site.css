@@ -118,9 +118,16 @@ a.nowcard:hover{border-color:var(--accent)}
 .ttday i{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;display:inline-block;min-width:3.4em}
 .ttday .more{color:var(--muted)}
 .tiles.bento .tile.tall.hasday .tdesc{display:none}
+/* with the day's classes in it, the big tile reads like the short ones: icon
+   beside a normal-size name, no decorative glyph, and the list gets the room */
+.tiles.bento .tile.tall.hasday{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);
+  column-gap:10px;align-content:stretch;padding:16px 18px}
+.tiles.bento .tile.tall.hasday .ico{font-size:1.5rem;margin:0;align-self:center}
+.tiles.bento .tile.tall.hasday .tname{font-size:1.25rem;align-self:center}
+.tiles.bento .tile.tall.hasday .ttday{grid-column:1 / -1;margin-top:12px;overflow:hidden}
+.tiles.bento .tile.tall.hasday .tglyph{display:none}
 .sechd{margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .hubsec .tiles.bento{grid-auto-rows:118px}
-.forumlede{margin:-6px 0 12px;color:var(--muted);font-size:0.875rem}
 .hubfoot{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap;
   margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:0.8125rem}
 .hubfoot a{color:var(--muted);text-decoration:none;font-weight:700}

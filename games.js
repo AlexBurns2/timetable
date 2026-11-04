@@ -156,11 +156,11 @@ const GAMES = [
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
-/* The games page in two labelled sections, in order, each with one line to
-   say what it is (both layouts use them: the gallery and the classic shelves). */
+/* The games page in two labelled sections, in order (both layouts use them:
+   the gallery and the classic shelves). */
 const SECTIONS = [
-  { cat:'Timetable', title:'Play with your year', lede:'These use your timetable, so the people and rooms are ones you know.' },
-  { cat:'Arcade', title:'Arcade', lede:'Quick classics. Your best scores go on the leaderboards.' }
+  { cat:'Timetable', title:'Play with your year' },
+  { cat:'Arcade', title:'Arcade' }
 ];
 const classicLayout = () => !!(window.TT && TT.layout && TT.layout() === 'classic');
 
@@ -259,10 +259,10 @@ function showGrid(){
   bentoStop = () => stops.forEach(f => f());
   renderLBSum();
 }
-/* a section's heading and its one line */
+/* a section's heading */
 function sectionHead(sec){
   const h = document.createElement('div'); h.className = 'gsec';
-  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2><p class="gseclede">' + sec.lede + '</p>';
+  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2>';
   return h;
 }
 
@@ -354,7 +354,8 @@ async function fetchLeaders(){
 async function renderLBSum(){
   const el = $('lbsum'); if (!el) return;
   el.hidden = false;
-  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2></div><p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
+  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><span class="lbsumlinks"><a href="mahjong.html">Mahjong scoreboard →</a></span></div>' +
+    '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
   el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><p class="how">Loading leaders…</p>';
   $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
   const leaders = await fetchLeaders();
