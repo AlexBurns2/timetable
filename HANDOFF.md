@@ -2278,19 +2278,43 @@ moderation against a fake database), `modcheck.mjs` (21) and `pagecheck.mjs`.
 **v3 engine.**
 - A pool of candidate hints, each with a tier (1 vague … 4 near giveaway), a
   "fun" weight, `tags` (the facts it reveals) and a `kind`.
-- Eight slots with tiers `[1,1,1,2,2,3,3,4]`, a weighted pick by fun²,
-  adjacent swaps (p = 0.3) only where `fits()` allows (tier ≥ 3 not before
-  slot 4, tier 4 not before slot 7), then "Their name reads …" is always 9th.
+- Eight slots with tiers `[1,1,1,2,2,3,3,4]` and a weighted pick by fun².
+  Only the gentle slots swap (p = 0.3, one place, no cascades); `fits()`
+  keeps tier 3 (first letters, "share four classes") at hints 6–7 and tier 4
+  (masks, initials) at hint 8, so a strong hint is never followed by a weaker
+  one. "Their name reads …" is always 9th.
 - A hint whose tags are all already known is skipped; `IMPLIES` covers the
-  name masks and initials. `who:` tags stop the same classmate or teacher
-  appearing twice. Soft caps per kind (`teacher:1, subject:2, trivia:2,
-  ending:1`) apply unless nothing else fits a slot.
+  name masks. `fresh` lists facts that must still be unknown (initials only
+  while neither letter is out; "both A and B" only while neither is named).
+  `who:` tags stop the same classmate or teacher appearing twice. Soft caps
+  per kind (`teacher:1, subject:3, trivia:2, ending:1`; every course hint is
+  `subject`).
+- A "sparse" round (fewer than 4 timetable hints: no verified timetable, or a
+  junior who takes only the common subjects) relaxes a cap before giving more
+  away, gets two extra gentle hints (surname length, "first name is shorter
+  than their surname"), and may give a first letter at hint 5. Every round is
+  9 hints.
+- Removed as frustrating: vowel counts, "starts with a consonant", surname
+  length (except sparse rounds), "no double letter", subject counts.
+- Names: letters are counted with accents (`\p{L}`), "starts with" uses the
+  plain letter (Élise → E). `maskV3` keeps hyphens, apostrophes and spaces,
+  never shows a whole name, and the final reveal always shows more than the
+  earlier mask; an em space separates first name and surname.
+- Years 7–8 also treat music, visual arts, technology and languages as
+  common subjects (`STAGE4_CORE`). Extension subjects are tier 2.
 - Social hints: "They share four classes with X", "They're in Physics with X",
   "They have two classes with Mr Y", "One of their teachers is Mr Y". Course
   hints: sciences, no maths, extensions (Years 11–12 only), "They take X".
   Name hints come later. Timetable hints need `verified`, as before.
 - New puzzles store `email`, `classes` (≤ 12) and `classmates` (top 60
-  students by shared classes, from up to 10 class rosters) in `target`.
+  students by shared classes) in `target`. Classmates come from up to 10
+  class rosters (real subjects first), count real subjects only, and are
+  limited to the same year (a combined class can hold other years).
+- The server's `tidyTeacher` now matches index.html's, so hints name teachers
+  as the timetable shows them. The directory's own FirstName / LastName are
+  used for the split when they make up the full name exactly.
+- An independent audit (scratchpad `audit/`) checked every hint type for how
+  knowable and how fun it is, plus ordering; its fixes are all in.
   `withV3Details` adds those fields once to a v3-era row made by older code
   (additive update of `target` only; nothing else in the row changes).
 

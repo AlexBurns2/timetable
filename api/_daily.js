@@ -63,7 +63,12 @@ function yearOf(r) {
 function toPerson(r) {
   const name = personName(r);
   const email = String(r.emailAddress || r.Email || r.email || "").toLowerCase();
-  return name ? { name, email, year: yearOf(r) } : null;
+  if (!name) return null;
+  const p = { name, email, year: yearOf(r) };
+  const first = String(r.FirstName || r.firstName || r.firstname || r.GivenName || r.preferredName || "").trim();
+  const last = String(r.LastName || r.lastName || r.lastname || r.Surname || r.surname || "").trim();
+  if (first && last && name === first + " " + last) { p.first = first; p.last = last; }   // only when they make up the name exactly
+  return p;
 }
 
 /* normalise the raw /api/group/* payload (bare array, or wrapped) to people */
@@ -151,30 +156,71 @@ export function buildHints(first, last, extra) {
    - a hint is skipped if what it says is already known (initials after "their
      surname starts with C", a letter count after the name's been masked), and
      no person or teacher is the subject of two hints. */
-const lettersOf = s => String(s || "").replace(/[^A-Za-z]/g, "");
+/* letters only, accents included (Zoë has three), and a letter's plain form
+   for "starts with" / "ends in" (Élise starts with E) */
+const lettersOf = s => String(s || "").normalize("NFC").replace(/[^\p{L}]/gu, "");
+const plainLetter = ch => String(ch || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 const SCIENCE = /\b(physics|chemistry|biology|earth (?:and|&) environmental|investigating science|science extension)\b/i;
 const MATHS = /\bmath/i;
 const EXTENSION = /\bextension\b|\bext\.?\s?[12]\b/i;
 const NOT_A_SUBJECT = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch)\b/i;
 /* the subjects everyone in Years 7–10 takes: saying someone takes one says nothing */
 const JUNIOR_CORE = /^(english|mathematics|maths?|science|history|geography|pdhpe|pd\s*\/?\s*h\s*\/?\s*pe|health|religion)\b/i;
+/* ...and in Years 7–8, also music, visual arts, technology and a language */
+const STAGE4_CORE = /^(music|visual arts?|art|technology|tech(?:nology)? mandatory|french|japanese|chinese|mandarin|italian|german|spanish|indonesian|korean|latin|greek|arabic|vietnamese|languages?)\b/i;
 const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 const word = n => WORDS[n] || String(n);
 /* what knowing one fact also tells you */
 const IMPLIES = { F1: ["Fvs"], Fmask: ["F1", "Flen", "Fvs"], Lmask: ["L1", "Llen"] };
 
+/* v3's partial reveal. Same letters as mask() at the same fraction (so a later,
+   bigger reveal always contains an earlier one), but hyphens, apostrophes and
+   spaces stay visible, so Mia-Rose reads "M i _ _ - R _ s e". mask() itself is
+   left alone: the frozen hint sets use it. */
+function maskV3(w, frac, more) {
+  const chars = [...String(w || "")];
+  const hidden = [];
+  const out = chars.map((ch, i) => {
+    if (!/\p{L}/u.test(ch) || i === 0 || (hashStr(w + ":" + i) % 100) < Math.round(frac * 100)) return ch;
+    hidden.push(i); return "_";
+  });
+  /* never the whole name: a short one ("Ng") keeps its last-ranked letter hidden */
+  if (!hidden.length) {
+    const letters = chars.map((ch, i) => i).filter(i => i > 0 && /\p{L}/u.test(chars[i]));
+    if (letters.length) {
+      const i = letters.sort((x, y) => hashStr(w + ":" + y) % 100 - hashStr(w + ":" + x) % 100)[0];
+      out[i] = "_"; hidden.push(i);
+    }
+  }
+  /* `more`: show this many extra letters (lowest hash first), but always leave one hidden */
+  if (more && hidden.length > 1)
+    hidden.sort((x, y) => hashStr(w + ":" + x) % 100 - hashStr(w + ":" + y) % 100)
+      .slice(0, Math.min(more, hidden.length - 1)).forEach(i => { out[i] = chars[i]; });
+  return out.join(" ");
+}
+/* the final hint shows more of each name than its earlier "looks like" hint did */
+const finalMask = (w, earlier, frac) => {
+  const m = maskV3(w, frac);
+  return m === maskV3(w, earlier) ? maskV3(w, frac, 1) : m;
+};
+
 export function v3Hints(first, last, extra) {
   extra = extra || {};
   const rnd = rngFrom(hashStr("v3|" + String(extra.seed || first + "|" + last)));
   const ok = extra.verified === true;
-  const senior = Number(extra.year) >= 11;
+  const year = Number(extra.year);
+  const senior = year >= 11;
+  /* a subject everyone in their year takes tells you nothing */
+  const common = s => !senior && (JUNIOR_CORE.test(s) || (year <= 8 && STAGE4_CORE.test(s)));
   const nameOf = typeof extra.nameOf === "function" ? extra.nameOf : (email, name) => name;
-  const up = s => String(s).toUpperCase();
   const F = lettersOf(first), L = lettersOf(last);
+  const FL = [...F], LL = [...L];
   const pool = [];
-  const add = (tier, fun, tags, text, kind) => pool.push({ tier, fun, tags, text, kind: kind || "" });
+  /* `fresh`: facts that must all still be unknown for the hint to be worth giving
+     (no "initials R.C." after "starts with R"; no "both A and B" after "takes A") */
+  const add = (tier, fun, tags, text, kind, fresh) => pool.push({ tier, fun, tags, text, kind: kind || "", fresh: fresh || null });
   /* at most this many of a kind in one round, so it never reads as a list */
-  const CAP = { teacher: 1, subject: 2, trivia: 2, ending: 1 };
+  const CAP = { teacher: 1, subject: 3, trivia: 2, ending: 1 };
 
   /* ── what they take (verified timetables only) ── */
   const classes = ok && Array.isArray(extra.classes)
@@ -184,18 +230,22 @@ export function v3Hints(first, last, extra) {
     const ext = subjects.filter(s => EXTENSION.test(s)).length;
     if (senior) {
       const sci = subjects.filter(s => SCIENCE.test(s)).length;
-      if (sci >= 2) add(1, 3, ["sci"], "They study <b>" + word(sci) + " sciences</b>.");
-      else if (sci === 0) add(1, 3, ["sci"], "They don't study <b>any science</b>.");
-      if (!subjects.some(s => MATHS.test(s))) add(1, 3, ["maths"], "They don't study <b>any maths</b>.");
-      if (ext === 1) add(1, 3, ["ext"], "They take an <b>extension</b> subject.");
-      if (ext >= 2) add(2, 3, ["ext"], "They take <b>" + word(ext) + " extension</b> subjects.");
+      if (sci >= 2) add(1, 3, ["sci"], "They study <b>" + word(sci) + " sciences</b>.", "subject");
+      else if (sci === 0) add(1, 3, ["sci"], "They don't study <b>any science</b>.", "subject");
+      if (!subjects.some(s => MATHS.test(s))) add(1, 3, ["maths"], "They don't study <b>any maths</b>.", "subject");
+      if (ext === 1) add(1, 3, ["ext"], "They take an <b>extension</b> subject.", "subject");
+      if (ext >= 2) add(2, 3, ["ext"], "They take <b>" + word(ext) + " extension</b> subjects.", "subject");
     }
-    const telling = shuffleWith(subjects.filter(s => senior || !JUNIOR_CORE.test(s)), rnd);
-    /* naming their one extension subject also says they take an extension subject */
+    const telling = shuffleWith(subjects.filter(s => !common(s)), rnd);
+    /* an extension course narrows it to a handful, so it isn't an opener; naming
+       their one extension subject also says they take an extension subject */
     for (const s of telling.slice(0, 4))
-      add(1, 2, ["subj:" + s].concat(ext === 1 && EXTENSION.test(s) ? ["ext"] : []), "They take <b>" + s + "</b>.", "subject");
+      add(EXTENSION.test(s) ? 2 : 1, 2, ["subj:" + s].concat(ext === 1 && EXTENSION.test(s) ? ["ext"] : []),
+        "They take <b>" + s + "</b>.", "subject");
     if (telling.length >= 2)
-      add(2, 2, ["subj:" + telling[0], "subj:" + telling[1]], "They take both <b>" + telling[0] + "</b> and <b>" + telling[1] + "</b>.");
+      add(2, 2, ["subj:" + telling[0], "subj:" + telling[1]],
+        "They take both <b>" + telling[0] + "</b> and <b>" + telling[1] + "</b>.", "subject",
+        ["subj:" + telling[0], "subj:" + telling[1]]);
   }
 
   /* ── who teaches them ── */
@@ -209,50 +259,69 @@ export function v3Hints(first, last, extra) {
   /* ── who they sit with ── */
   const mates = ok && Array.isArray(extra.classmates) ? extra.classmates.filter(m => m && m.name && m.email) : [];
   const most = mates.filter(m => m.shared >= 2).sort((a, b) => b.shared - a.shared);
+  let sharer = "";
   if (most.length) {
     const tied = most.filter(m => m.shared === most[0].shared);
     const m = tied[Math.floor(rnd() * tied.length)];
+    sharer = m.email;
     add(3, 5, ["who:" + m.email], "They share <b>" + word(m.shared) + " classes</b> with <b>" + nameOf(m.email, m.name) + "</b>.");
   }
-  const inOne = mates.filter(m => Array.isArray(m.subjects) && m.subjects.some(s => !NOT_A_SUBJECT.test(s) && (senior || !JUNIOR_CORE.test(s))));
+  const telling2 = s => !NOT_A_SUBJECT.test(s) && !common(s);
+  const inOne = mates.filter(m => m.email !== sharer && Array.isArray(m.subjects) && m.subjects.some(telling2));
   if (inOne.length) {
     const m = inOne[Math.floor(rnd() * inOne.length)];
-    const ss = m.subjects.filter(s => !NOT_A_SUBJECT.test(s) && (senior || !JUNIOR_CORE.test(s)));
+    const ss = m.subjects.filter(telling2);
     const s = ss[Math.floor(rnd() * ss.length)];
-    add(2, 4, ["who:" + m.email], "They're in <b>" + s + "</b> with <b>" + nameOf(m.email, m.name) + "</b>.");
+    add(2, 4, ["who:" + m.email, "subj:" + s], "They're in <b>" + s + "</b> with <b>" + nameOf(m.email, m.name) + "</b>.");
   }
 
-  /* ── name shapes: filler early, giveaways late. Ambiguous ones are left out
-     (vowels when there's a y; "starts with a vowel" for a Y name). ── */
-  if (F) {
-    add(1, 1, ["Flen"], "Their first name has <b>" + F.length + "</b> letters.", "trivia");
-    if (!/y/i.test(F)) { const v = countVowels(F); add(1, 1, ["Fvow"], "Their first name has <b>" + word(v) + "</b> vowel" + (v === 1 ? "" : "s") + ".", "trivia"); }
-    if (!/^y/i.test(F)) add(1, 1, ["Fvs"], "Their first name starts with a <b>" + (VOWELS.includes(up(F[0])) ? "vowel" : "consonant") + "</b>.", "trivia");
-    add(2, 2, ["Fend"], "Their first name ends in <b>" + up(F[F.length - 1]) + "</b>.", "ending");
-    add(3, 2, ["F1"], "Their first name starts with <b>" + up(F[0]) + "</b>.");
-    const fm = mask(first, 0.5);
+  /* little or nothing from a timetable (no verified timetable, or a junior who
+     takes only what everyone takes): the round is mostly name shapes, so it is
+     paced differently below and keeps two extra gentle ones */
+  const sparse = pool.length < 4;
+
+  /* ── name shapes: filler early, giveaways late. No vowel counts, no "starts
+     with a consonant", no surname length when there is anything better: those
+     are guesswork, not fun. ── */
+  if (FL.length) {
+    add(1, 1, ["Flen"], "Their first name has <b>" + FL.length + "</b> letters.", "trivia");
+    add(2, 2, ["Fend"], "Their first name ends in <b>" + plainLetter(FL[FL.length - 1]) + "</b>.", "ending");
+    add(3, 2, ["F1"], "Their first name starts with <b>" + plainLetter(FL[0]) + "</b>.");
+    const fm = maskV3(first, 0.5);
     add(4, 1, ["Fmask", "F1", "Flen"].concat(/_$/.test(fm) ? [] : ["Fend"]), "Their first name looks like <b>" + fm + "</b>.");
   }
-  if (L) {
-    add(1, 1, ["Llen"], "Their surname has <b>" + L.length + "</b> letters.", "trivia");
-    add(2, 2, ["Lend"], "Their surname ends in <b>" + up(L[L.length - 1]) + "</b>.", "ending");
-    add(3, 2, ["L1"], "Their surname starts with <b>" + up(L[0]) + "</b>.");
-    if (F) add(4, 2, ["F1", "L1"], "Their initials are <b>" + up(F[0]) + "." + up(L[0]) + ".</b>");
-    const lm = mask(last, 0.45);
+  if (LL.length) {
+    if (sparse) {
+      add(1, 1, ["Llen"], "Their surname has <b>" + LL.length + "</b> letters.", "trivia");
+      /* easy to check against the list of names; pointless once both lengths are out */
+      if (FL.length) add(1, 1, ["Lcmp"], FL.length === LL.length ? "Their first name and surname are the <b>same length</b>."
+        : "Their first name is <b>" + (FL.length < LL.length ? "shorter" : "longer") + "</b> than their surname.", "trivia", ["Llen"]);
+    }
+    add(2, 1, ["Lend"], "Their surname ends in <b>" + plainLetter(LL[LL.length - 1]) + "</b>.", "ending");
+    add(3, 2, ["L1"], "Their surname starts with <b>" + plainLetter(LL[0]) + "</b>.");
+    /* initials: a late hint, and only while neither letter has been given */
+    if (FL.length) add(4, 2, ["F1", "L1"], "Their initials are <b>" + plainLetter(FL[0]) + "." + plainLetter(LL[0]) + ".</b>", "", ["F1", "L1"]);
+    const lm = maskV3(last, 0.45);
     add(4, 1, ["Lmask", "L1", "Llen"].concat(/_$/.test(lm) ? [] : ["Lend"]), "Their surname looks like <b>" + lm + "</b>.");
   }
 
-  /* ── the order: 8 slots, nudged around a little, giveaways kept late ── */
+  /* ── the order: 8 slots, gentle → strong. The gentle ones swap now and then
+     (one place at most, no cascades) so no two days run alike; the strong ones
+     stay at the end, so a letter or a mask is never followed by a weaker hint. */
   const slots = [1, 1, 1, 2, 2, 3, 3, 4];
-  const fits = (tier, i) => !(tier >= 3 && i < 3) && !(tier >= 4 && i < 6);
-  for (let i = 0; i < slots.length - 1; i++)
-    if (rnd() < 0.3 && slots[i] !== slots[i + 1] && fits(slots[i + 1], i) && fits(slots[i], i + 1))
+  /* a sparse round has only so many gentle hints, so its first letter may come at the 5th */
+  const fits = (tier, i) => !(tier >= 3 && i < (sparse ? 4 : 5)) && !(tier >= 4 && i < (sparse ? 6 : 7));
+  for (let i = 0; i < 4; i++)
+    if (rnd() < 0.3 && slots[i] !== slots[i + 1]) {
       [slots[i], slots[i + 1]] = [slots[i + 1], slots[i]];
+      i++;
+    }
 
   const known = new Set(), used = new Set(), out = [], kinds = {};
   const learn = tags => tags.forEach(t => { known.add(t); (IMPLIES[t] || []).forEach(x => known.add(x)); });
   const usable = (h, capped) => !used.has(h) && !h.tags.every(t => known.has(t)) &&
     !h.tags.some(t => t.startsWith("who:") && known.has(t)) &&
+    !(h.fresh && h.fresh.some(t => known.has(t))) &&
     !(capped && h.kind && (kinds[h.kind] || 0) >= (CAP[h.kind] || 99));
   const pick = list => {
     const w = list.map(h => h.fun * h.fun);                      // fun hints win most of the time, not always
@@ -260,21 +329,25 @@ export function v3Hints(first, last, extra) {
     for (let i = 0; i < list.length; i++) { r -= w[i]; if (r <= 0) return list[i]; }
     return list[list.length - 1];
   };
-  /* the caps give way only when nothing else would fill the slot (a name-only
-     puzzle), so the giveaways never slide earlier */
+  /* The caps give way only when nothing else fills the slot. With a timetable,
+     a stronger social hint is better than a third subject, so the tier moves
+     first; a sparse round relaxes the cap first, so its letters stay late. */
   slots.forEach((tier, i) => {
-    for (const capped of [true, false])
-      for (const t of [tier, tier - 1, tier + 1, tier - 2, tier + 2]) {
-        if (t < 1 || t > 4 || !fits(t, i)) continue;
-        const list = pool.filter(h => h.tier === t && usable(h, capped));
-        if (!list.length) continue;
-        const h = pick(list);
-        used.add(h); learn(h.tags); out.push(h.text);
-        if (h.kind) kinds[h.kind] = (kinds[h.kind] || 0) + 1;
-        return;
-      }
+    const tiers = [tier, tier - 1, tier + 1, tier - 2, tier + 2];
+    const tries = sparse ? tiers.flatMap(t => [[t, true], [t, false]])
+                           : [true, false].flatMap(c => tiers.map(t => [t, c]));
+    for (const [t, capped] of tries) {
+      if (t < 1 || t > 4 || !fits(t, i)) continue;
+      const list = pool.filter(h => h.tier === t && usable(h, capped));
+      if (!list.length) continue;
+      const h = pick(list);
+      used.add(h); learn(h.tags); out.push(h.text);
+      if (h.kind) kinds[h.kind] = (kinds[h.kind] || 0) + 1;
+      return;
+    }
   });
-  out.push("Their name reads <b>" + mask(first, 0.7) + (last ? " " + mask(last, 0.65) : "") + "</b>.");
+  /* the reveal: more of each name than before, with a clear gap between them */
+  out.push("Their name reads <b>" + finalMask(first, 0.5, 0.7) + (last ? "&emsp;" + finalMask(last, 0.45, 0.65) : "") + "</b>.");
   return out;
 }
 
@@ -343,18 +416,27 @@ const cleanSubject = name => String(name || "")
   .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, "")
   .replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, "")
   .replace(/^[\s:\-–—]+/, "").trim();
+/* the same as index.html's tidyTeacher, so a hint names a teacher the way the
+   timetable shows them: "stephen.henne@det…" -> "Stephen Henne", "Doyle, Mr R"
+   -> "Mr R Doyle", anything else as it came */
+const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
+  .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
 const tidyTeacher = t => {
-  t = String(t || "").trim();
-  if (!t) return "";
-  if (t.includes("@")) t = t.split("@")[0];
-  if (/[.,]/.test(t)) return t.split(/[.,]\s*/).filter(Boolean).map(cap).join(" ").replace(/\s+\d+/g, "").trim();
-  return t;
+  const s = String(t || "").trim();
+  if (!s) return "";
+  if (s.includes("@")) {
+    const parts = s.split("@")[0].split(".");
+    if (parts.length >= 2) return titleCase(parts[0]) + " " + titleCase(parts[1].replace(/\d+$/, ""));
+    return titleCase(s.split("@")[0].replace(/[._]+/g, " ").replace(/\d+$/, ""));
+  }
+  const m = s.match(/^([^,]+),\s*(.+)$/);
+  return m ? (m[2] + " " + m[1]).replace(/\s{2,}/g, " ").trim() : s;
 };
 
 /* Subjects + teachers for one person, read as the server's own account so the
    hints are the same for everyone in the year. Best-effort: any failure just
    leaves the puzzle with name-shape hints only. */
-async function studiesOf(email) {
+async function studiesOf(email, sameYear) {
   if (!email) return {};
   const want = String(email).toLowerCase();
   try {
@@ -381,9 +463,13 @@ async function studiesOf(email) {
        target is actually on the roster of a class off the timetable we just
        read. No proof ⇒ no subject hints. The same rosters say who they sit
        with: how many of their classes each classmate shares, and which. */
+    /* Classmates count real subjects only (not sport, study or mentor groups),
+       and only people in the same year: a combined class can hold others.
+       Real subjects are read first; at most 10 rosters per puzzle. */
     let verified = false;
     const mates = new Map();
-    for (const c of classes.slice(0, 10)) {
+    const real = c => !NOT_A_SUBJECT.test(c.subject);
+    for (const c of classes.filter(real).concat(classes.filter(c => !real(c))).slice(0, 10)) {
       try {
         const roster = await fetchAsOwner("/api/timetable/class/" + encodeURIComponent(c.code));
         const arr = Array.isArray(roster) ? roster : (roster && (roster.roster || roster.students)) || [];
@@ -393,6 +479,7 @@ async function studiesOf(email) {
           const groups = (Array.isArray(p.groups) ? p.groups : []).map(g => String(g).toLowerCase());
           if (!email || email === want || /@det\.nsw\.edu\.au$/.test(email) ||
               groups.some(g => /^(teacher|staff|executive|admin)/.test(g))) continue;      // students only
+          if (!real(c) || (sameYear && sameYear.size && !sameYear.has(email))) continue;
           const name = personName(p);
           if (!name) continue;
           const m = mates.get(email) || mates.set(email, { email, name, shared: 0, subjects: [] }).get(email);
@@ -439,8 +526,9 @@ export async function ensurePuzzle(db, year, date) {
 
   const t = roster[hashStr(date + ":" + year) % roster.length];
   const parts = t.name.split(/\s+/);
-  const first = parts[0], last = parts.slice(1).join(" ");
-  const studies = await studiesOf(t.email);          // best-effort subject / teacher / classmate hints
+  const first = t.first || parts[0], last = t.first ? t.last : parts.slice(1).join(" ");
+  const sameYear = new Set(roster.map(p => p.email).filter(Boolean));
+  const studies = await studiesOf(t.email, sameYear);   // best-effort subject / teacher / classmate hints
   const target = { name: t.name, first, last, email: t.email || "",
     subjects: studies.subjects || [], teachers: studies.teachers || [],
     classes: studies.classes || [], classmates: studies.classmates || [], v3: true,
@@ -465,11 +553,12 @@ async function withV3Details(db, row, year) {
   if (t.v3) return row;
   let email = t.email || "";
   try {
+    const roster = await loadYear(year);
     if (!email) {
-      const same = (await loadYear(year)).filter(p => p.name === t.name);
+      const same = roster.filter(p => p.name === t.name);
       if (same.length === 1) email = same[0].email || "";            // only when the name is unambiguous
     }
-    const studies = email ? await studiesOf(email) : {};
+    const studies = email ? await studiesOf(email, new Set(roster.map(p => p.email).filter(Boolean))) : {};
     const target = { ...t, email, v3: true };
     if (studies.verified) Object.assign(target, { subjects: studies.subjects, teachers: studies.teachers,
       classes: studies.classes || [], classmates: studies.classmates || [], verified: true });
