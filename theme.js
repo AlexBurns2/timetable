@@ -103,6 +103,7 @@ function apply(state){
   const root = document.documentElement;
 
   root.setAttribute('data-skin', st.skin);
+  root.setAttribute('data-tileicons', get('tt.tileicons', 'tile') === 'accent' ? 'accent' : 'tile');   // Home's tile icons
   root.setAttribute('data-mode', st.mode);
   /* Keep native controls (the datalist autocomplete popup, text inputs,
      scrollbars) in step with the effective palette. Without this a dark page
@@ -339,4 +340,28 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+})();
+
+/* ── a Back button at the start of the header, only where Home isn't enough:
+   the games and revision pages, while a game or subject is open (games.js shows
+   and hides it). It goes back if you came from another page of this site,
+   otherwise to Home; a page can handle it first (window.TTBack returning true). */
+(function(){
+  function addBack(){
+    const crumbs = document.querySelector('.pagehead .crumbs');
+    const page = document.body && document.body.dataset.page;
+    if (!crumbs || document.getElementById('hdrback') || (page !== 'games' && page !== 'revision')) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn icon'; b.id = 'hdrback'; b.title = 'Back'; b.setAttribute('aria-label', 'Back');
+    b.innerHTML = window.Icon ? Icon.svg('arrow-left') : '&#8592;';
+    b.onclick = () => {
+      if (typeof window.TTBack === 'function' && window.TTBack()) return;
+      let fromHere = false;
+      try { fromHere = !!document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1; } catch {}
+      if (fromHere) history.back(); else location.href = 'home.html';
+    };
+    b.hidden = !(window.TTBackOn && window.TTBackOn());
+    crumbs.insertBefore(b, crumbs.firstChild);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBack); else addBack();
 })();

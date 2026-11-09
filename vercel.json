@@ -1,5 +1,8 @@
 {
   "crons": [
     { "path": "/api/daily-generate", "schedule": "0 14 * * *" }
+  ],
+  "rewrites": [
+    { "source": "/poll", "destination": "/api/forum?og=1" }
   ]
 }

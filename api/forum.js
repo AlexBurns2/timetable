@@ -8,6 +8,11 @@
  * POST /api/forum {action:'react', id, emoji} → add that reaction, or take it
  *                                         back if you'd already added it
  *
+ * The weekly anonymous poll on Home rides on this route too (see _poll.js):
+ *   GET  /api/forum?poll=1 | history | admin
+ *   POST /api/forum {action:'pollvote' | 'pollsuggest' | 'pollset' | 'pollsubjects' | 'polldel' | 'suggestdel', …}
+ *   GET  /poll  (rewritten to /api/forum?og=1) → the share link's preview page
+ *
  * Same identity model as the rest of the site: whoami() re-verifies the school
  * credentials already being sent, the display name is derived server-side, and
  * emails are never returned to the browser.
@@ -37,6 +42,19 @@
 
 import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, withName } from "./_names.js";
+import { pollGet, pollPost, pollPreview, pollClock } from "./_poll.js";
+import { resolveYear } from "./_daily.js";
+import { studentDirectory } from "./timetable.js";
+/* a student's year when the login didn't carry it: the (cached) directory first,
+   so staff, who aren't in it, cost nothing; the slower lookup only if needed */
+async function yearOf(me) {
+  try {
+    const p = (await studentDirectory()).find(x => x.email === me.email);
+    if (!p) return null;
+    if (p.year) return String(p.year);
+  } catch {}
+  return resolveYear(me).catch(() => null);
+}
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -65,11 +83,34 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
 
+  /* the poll's share link: a page with the question in its preview, then on to Home */
+  if ((req.method === "GET" || req.method === "HEAD") && req.query.og) return pollPreview(req, res);
+
   if (!db) return res.status(503).json({ error: "The forum is not configured on the server." });
   const me = await whoami(req);
+  /* signed out (someone opening a friend's link): the question only, to sign in for */
+  if (!me && req.method === "GET" && req.query.poll === "1") {
+    try {
+      const clock = pollClock();
+      const { data } = await db.from("poll").select("week, question, kind, anim, celebrate, reveal").eq("week", clock.week).maybeSingle();
+      /* how many people have voted, all years together: a count, nothing more */
+      let total = 0;
+      if (data) {
+        const { data: t } = await db.from("poll_tally").select("votes").eq("week", data.week).eq("choice", "__n");
+        total = (t || []).reduce((a, r) => a + (r.votes || 0), 0);
+      }
+      return res.status(200).json({ clock, poll: data ? { week: data.week, question: data.question, kind: data.kind,
+        anim: data.anim || "surprise", celebrate: data.celebrate || "surprise", reveal: data.reveal || "", total, phase: clock.phase, signedOut: true } : null });
+    } catch { return res.status(200).json({ poll: null }); }
+  }
   if (!me) return res.status(401).json({ error: "Sign in to use the forum." });
   NAMES = await nameOverrides();
   const isOwner = isAdmin(me.email);
+
+  if (req.method === "GET" && req.query.poll) {
+    if (!me.year) me.year = await yearOf(me);
+    return pollGet(req, res, me, NAMES);
+  }
 
   if (req.method === "GET") {
     const { data, error } = await db.from("forum_post")
@@ -101,7 +142,9 @@ export default async function handler(req, res) {
       .map(({ emoji, count, mine, who }) => ({ emoji, count, mine, who }));
     const shape = r => ({
       id: r.id, name: withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
-      mine: r.email === me.email || isOwner, reactions: reactionsOf(r.id)
+      /* mine: yours. canDelete: yours, or anyone's for a moderator (the page
+         shows a moderator's delete on other people's posts only on hover) */
+      mine: r.email === me.email, canDelete: r.email === me.email || isOwner, reactions: reactionsOf(r.id)
     });
     const rows = data || [];
     const threads = rows.filter(r => !r.parent).slice(0, MAX_THREADS).map(shape);
@@ -123,6 +166,11 @@ export default async function handler(req, res) {
     let body = req.body;
     if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
     body = body || {};
+
+    if (/^(poll|suggestdel$)/.test(String(body.action || ""))) {
+      if (!me.year) me.year = await yearOf(me);
+      return pollPost(body, res, me, NAMES);
+    }
 
     if (body.action === "react") {
       const id = String(body.id || ""), emoji = String(body.emoji || "");

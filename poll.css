@@ -1,0 +1,323 @@
+/* ═══ The weekly poll on Home (poll.js) ═══════════════════════════════
+   Built only from the theme's tokens, so every skin and custom theme
+   carries it: --accent for the energy, --panel / --line for the card. */
+
+.pollwrap{position:relative;margin:0 0 18px}
+.pollwrap[hidden],#poll[hidden]{display:none}
+.pcard{position:relative;isolation:isolate;overflow:hidden;padding:20px 22px 16px;border-radius:calc(var(--card-radius) + 4px);
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb,var(--accent) 16%,transparent) 0%, transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, color-mix(in srgb,var(--accent) 9%,transparent) 0%, transparent 60%),
+    var(--panel);
+  border:1.5px solid color-mix(in srgb,var(--accent) 38%,var(--line));
+  box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 10%,transparent), 0 14px 40px -18px color-mix(in srgb,var(--accent) 55%,transparent), var(--shadow)}
+@keyframes pspin{to{transform:rotate(1turn)}}
+
+.phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.pchip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:0.75rem;font-weight:700;
+  letter-spacing:.02em;color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.pchip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 60%,transparent);animation:ppulse 2s ease-out infinite}
+@keyframes ppulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.pwhen{font-size:0.8125rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.pwhen b{color:var(--text)}
+.pq{margin:0 0 16px;font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);
+  text-transform:var(--display-tt);font-size:clamp(1.5rem,3.6vw,2.125rem);line-height:1.12;text-wrap:balance}
+.pbody{display:flex;flex-direction:column;gap:12px}
+.pnote{margin:0;color:var(--muted);font-size:0.9375rem}
+.pmeta{margin:0;color:var(--muted);font-size:0.8125rem}
+.pmeta b{color:var(--text)}
+.perr{color:#e5484d}
+
+/* voting */
+.pvote{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.pchips{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+.popt{font:inherit;font-size:0.9375rem;font-weight:600;padding:9px 15px;border-radius:999px;cursor:pointer;color:var(--text);
+  background:var(--panel-2);border:1.5px solid var(--line);transition:transform .12s,border-color .12s,background .12s}
+.popt:hover{border-color:var(--accent);transform:translateY(-1px)}
+.popt[aria-checked="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);transform:scale(1.04)}
+.pinwrap{flex:1 1 240px;min-width:0}
+.pinwrap .sgwrap{width:100%}
+.pin{width:100%;box-sizing:border-box;font:inherit;font-size:1rem;padding:12px 14px;border-radius:var(--radius,12px);outline:none;
+  color:var(--text);background:var(--panel-2);border:1.5px solid var(--line);transition:border-color .15s,box-shadow .15s}
+.pin:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.pin.ok{border-color:var(--accent)}
+.pgo{min-width:96px;padding:12px 22px;font-weight:800;font-size:1rem;transition:transform .15s,opacity .15s}
+.pchips + .pgo{margin-left:auto}
+.pgo:disabled{opacity:.45;cursor:default}
+.pgo:not(:disabled){animation:pready .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes pready{from{transform:scale(.9)}}
+.pgo.pok{transform:scale(1.1)}
+
+/* blurred stand-in bars before you vote */
+.ptease{position:relative;display:flex;flex-direction:column;gap:6px;margin-top:2px;user-select:none}
+.ptease .pbar{filter:blur(5px);opacity:.75}
+.plock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.plock span{padding:7px 14px;border-radius:999px;font-size:0.8125rem;font-weight:700;color:var(--text);
+  background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);box-shadow:var(--shadow)}
+
+/* bars (results, the teaser, past polls) */
+.pbars{display:flex;flex-direction:column;gap:6px}
+.pbar{position:relative;display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:10px;overflow:hidden;
+  background:var(--panel-2);border:1px solid var(--line)}
+.pfill{position:absolute;left:0;top:0;bottom:0;z-index:0;border-radius:inherit;
+  background:linear-gradient(90deg, color-mix(in srgb,var(--accent) 30%,transparent), color-mix(in srgb,var(--accent) 18%,transparent))}
+.pbar:first-child .pfill{background:linear-gradient(90deg, color-mix(in srgb,var(--accent) 48%,transparent), color-mix(in srgb,var(--accent) 28%,transparent))}
+.pbl{position:relative;z-index:1;flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-weight:600;font-size:0.9375rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbl em{font-style:normal;color:var(--accent);font-weight:800}
+.prk{font-style:normal;flex:none;width:1.4em;font-size:0.75rem;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.ppc{position:relative;z-index:1;flex:none;margin-left:10px;font-weight:800;font-variant-numeric:tabular-nums;font-size:0.9375rem}
+.pbar.mine{border-color:var(--accent)}
+.pbar.extra{display:none}
+.pbar.hid .pbl{opacity:0}
+
+/* the winner */
+.pwin{position:relative;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;column-gap:14px;align-items:center;
+  padding:14px 16px;border-radius:14px;background:linear-gradient(135deg, color-mix(in srgb,var(--accent) 20%,var(--panel)), var(--panel-2));
+  border:1.5px solid color-mix(in srgb,var(--accent) 50%,var(--line))}
+.pwinico{grid-row:1 / 3;font-size:2.25rem;line-height:1;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18))}
+.pwinl{font-size:0.6875rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.pwinn{grid-column:2;font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);
+  font-size:clamp(1.25rem,3vw,1.625rem);line-height:1.15;overflow-wrap:anywhere}
+.pwinp{grid-column:3;grid-row:1 / 3;font-size:0.8125rem;color:var(--muted);text-align:right;max-width:9em}
+.pcard.pcelebrate{animation:pthump .5s ease-out}
+@keyframes pthump{30%{transform:scale(1.015)}}
+
+/* after voting */
+.pdone{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.ptick{flex:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;
+  font-size:1.125rem;color:var(--accent-ink);background:var(--accent);box-shadow:0 6px 16px -6px var(--accent)}
+.pdone div{display:flex;flex-direction:column;gap:2px;font-size:0.875rem;color:var(--muted)}
+.pdone div b{color:var(--text);font-size:1rem}
+.pmine i{font-style:normal;opacity:.75;font-size:0.75rem}
+.pmine b{color:var(--text)}
+.pshare{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border-radius:14px;
+  border:1.5px dashed color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.pshare.small{padding:0;border:0;background:none;justify-content:flex-end}
+.pshtxt{display:flex;flex-direction:column;gap:2px;font-size:0.8125rem;color:var(--muted)}
+.pshtxt b{font-size:1rem;color:var(--text)}
+.pshbtns{display:flex;gap:8px}
+
+/* footer, suggest form */
+.pfoot{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.plink{font:inherit;font-size:0.8125rem;font-weight:700;color:var(--accent);background:none;border:0;padding:0;cursor:pointer}
+.plink:hover{text-decoration:underline}
+.pskip{margin-left:auto;color:var(--muted)}
+.psug{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.psug[hidden]{display:none}
+.psug input,.psug select{font:inherit;font-size:0.875rem;padding:9px 11px;border-radius:10px;color:var(--text);background:var(--panel-2);
+  border:1px solid var(--line);outline:none}
+.psug input{flex:1 1 220px;min-width:0}
+.psug input:focus,.psug select:focus{border-color:var(--accent)}
+.psugmsg{flex:1 1 100%;font-size:0.8125rem;color:var(--muted)}
+.psugmsg:empty{display:none}
+
+/* signed out */
+.psignp{margin:0;color:var(--muted);font-size:0.9375rem}
+.psign{display:flex;gap:8px;flex-wrap:wrap}
+.psign input{flex:1 1 160px;min-width:0;font:inherit;padding:11px 13px;border-radius:10px;color:var(--text);background:var(--panel-2);
+  border:1.5px solid var(--line);outline:none}
+.psign input:focus{border-color:var(--accent)}
+.psign .btn{flex:none}
+
+
+/* past polls (in the sheet) */
+.phist{padding:14px 0;border-bottom:1px solid var(--line)}
+.phist:last-child{border-bottom:0}
+.phwk{font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.phist h3{margin:2px 0 10px;font-family:var(--font-display);font-weight:var(--display-w);font-size:1.125rem}
+.phist .pmeta{margin-top:6px}
+
+@media (max-width:560px){
+  .pcard{padding:16px 15px 13px}
+  .pgo{flex:1 1 100%}
+  .pchips + .pgo{margin-left:0}
+  .pwin{grid-template-columns:auto 1fr;padding:12px 13px}
+  .pwinp{grid-column:2;grid-row:auto;text-align:left;max-width:none}
+  .pshare{flex-direction:column;align-items:stretch}
+  .pshbtns .btn{flex:1}
+}
+html[data-motion="reduced"] .pchip::before{animation:none}
+
+/* ── arriving from a friend's link: the poll first, the rest after you vote ── */
+.pollfocus .hubrest{display:none}
+.pollfocus .pollwrap{margin-top:6px}
+.hubrest.pin-in > *{animation:prest .5s cubic-bezier(.2,.7,.2,1) both}
+.hubrest.pin-in > *:nth-child(2){animation-delay:.08s}
+.hubrest.pin-in > *:nth-child(3){animation-delay:.16s}
+@keyframes prest{from{opacity:0;transform:translateY(16px)}}
+
+/* pick-several: the chosen ones as tokens above the box */
+.ptoks{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.ptoks:empty{display:none}
+.ptok{display:inline-flex;align-items:center;gap:4px;padding:5px 6px 5px 11px;border-radius:999px;font-size:0.875rem;font-weight:700;
+  color:var(--accent-ink);background:var(--accent)}
+.ptok button{font:inherit;font-size:0.75rem;width:20px;height:20px;border-radius:50%;border:0;cursor:pointer;
+  color:inherit;background:color-mix(in srgb,var(--accent-ink) 22%,transparent)}
+.popt.full{opacity:.45}
+.pin:disabled{opacity:.6}
+
+.pright{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+/* the vote count: only shown once you've voted */
+.pcount{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-size:0.8125rem;color:var(--muted);
+  background:var(--panel-2);border:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pcount[hidden]{display:none}
+.pcount b{color:var(--text);font-weight:800}
+.pcomeback{margin:0;padding:11px 14px;border-radius:12px;font-size:0.9375rem;font-weight:600;color:var(--text);
+  background:var(--panel-2);border:1px dashed color-mix(in srgb,var(--accent) 40%,var(--line))}
+.pfake{color:var(--muted)}
+.pblank{height:120px}
+
+/* ═══ the show (poll.js) ═══════════════════════════════════════════════ */
+.pfx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:90}
+body.pshow{overflow-x:hidden}
+/* while a show plays, the rest of the page waits (Skip still works) */
+.plockui .hubbar,.plockui .hubrest,.plockui .hubfoot,.plockui .pollskip{pointer-events:none;user-select:none}
+
+/* Monday: the card as it was, over the new one */
+.pold{position:absolute;left:0;right:0;top:0;z-index:5;pointer-events:none}
+.pshard{position:absolute;left:0;right:0;top:0;z-index:7;pointer-events:none;will-change:transform}
+.pcracks{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:visible}
+.pcracks path{fill:none;stroke:rgba(18,16,26,.8);stroke-width:2.2px;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(1px 1px 0 rgba(255,255,255,.55))}
+@keyframes pcrack{to{stroke-dashoffset:0}}
+.pchain{position:absolute;left:50%;bottom:100%;width:8px;margin-left:-4px;z-index:-1;border-radius:4px;
+  background:repeating-linear-gradient(180deg,#9a9aa3 0 9px,#3f3f47 9px 11px,#c9c9d1 11px 20px,#3f3f47 20px 22px);
+  box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.preelwin{position:absolute;left:0;right:0;top:0;z-index:7;overflow:hidden;border-radius:calc(var(--card-radius) + 4px);
+  box-shadow:inset 0 14px 18px -12px rgba(0,0,0,.4),inset 0 -14px 18px -12px rgba(0,0,0,.4)}
+.preelstrip{will-change:transform}
+.preelcell{overflow:hidden}
+.preelcell > .pcard{height:100%;box-sizing:border-box}
+.pfiller .pfq{height:30px;width:72%;margin:10px 0 6px;border-radius:9px;background:color-mix(in srgb,var(--text) 10%,transparent)}
+.pfiller .pfq.s{width:44%;margin-bottom:16px}
+.pfiller .pfb{height:40px;margin-top:8px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line)}
+
+/* Friday: the stage over the card; the page behind goes dark but stays where it is */
+.pollwrap.pstaged{z-index:82}
+.pstage{position:absolute;inset:0;min-height:100%;z-index:30;display:grid;place-items:center;overflow:hidden;cursor:pointer;
+  border-radius:calc(var(--card-radius) + 4px);container-type:size;isolation:isolate;
+  box-shadow:0 0 0 200vmax rgba(6,5,12,.62);background:#07060c}
+.pbg{position:absolute;inset:0;z-index:0}
+/* the words: a full-size layer, so a line pinned to the top spans the stage */
+.pstagein{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 7%;text-align:center}
+.pstskip{position:absolute;right:16px;bottom:14px;z-index:9;font:inherit;font-size:0.8125rem;font-weight:700;letter-spacing:.06em;
+  color:rgba(255,255,255,.8);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:7px 15px;cursor:pointer}
+.pstskip:hover{background:rgba(255,255,255,.22)}
+.pbulbs{position:absolute;inset:7px;z-index:5;pointer-events:none;border-radius:calc(var(--card-radius) + 6px);
+  background:
+    radial-gradient(circle,#ffe066 0 3.5px,transparent 5px) 0 0/26px 14px repeat-x,
+    radial-gradient(circle,#ffe066 0 3.5px,transparent 5px) 13px 100%/26px 14px repeat-x,
+    radial-gradient(circle,#ffe066 0 3.5px,transparent 5px) 0 13px/14px 26px repeat-y,
+    radial-gradient(circle,#ffe066 0 3.5px,transparent 5px) 100% 0/14px 26px repeat-y;
+  filter:drop-shadow(0 0 5px #ffd43b) drop-shadow(0 0 12px rgba(255,180,0,.6));animation:pchase .45s steps(2) infinite}
+@keyframes pchase{50%{opacity:.45}}
+.pdrum .pbulbs{animation-duration:.11s}
+.pc-spotlight .pbulbs,.pc-curtain .pbulbs{display:none}
+/* every word on stage is bright and sits in front of the effects */
+.pbig{color:#fff;font-family:var(--font-display);font-weight:900;line-height:1.08;text-wrap:balance;
+  text-shadow:0 0 2px rgba(0,0,0,.9),0 2px 0 rgba(0,0,0,.6),0 0 26px rgba(255,255,255,.35)}
+.pkick{font-size:clamp(.8rem,3cqw,1.25rem);letter-spacing:.22em;text-transform:uppercase;font-weight:800;color:#ffe8a3}
+.pline{font-size:clamp(1.35rem,5.6cqw,2.9rem)}
+.pline.top{position:absolute;top:9%;left:6%;right:6%;font-size:clamp(1.1rem,4.2cqw,2.1rem)}
+.plet{display:inline-block}
+.pword{display:inline-block;white-space:nowrap}
+.pwinner{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pwinner .pname{font-size:clamp(2.2rem,10cqw,5.5rem);line-height:1.02;overflow-wrap:anywhere;text-shadow:none;
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe066 38%,#f5a300 66%,#ffe58a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 0 #8a4500) drop-shadow(0 0 26px rgba(255,200,60,.65))}
+.pwinner .pname small{font-size:.38em;letter-spacing:.18em;text-transform:uppercase}
+.pwinner .pnsub{font-size:clamp(.9rem,2.8cqw,1.25rem);font-weight:700;letter-spacing:.04em}
+.pnamewrap{position:relative;display:inline-block}
+/* medals: gold on the winner's corner, silver and bronze rising in underneath */
+.pmedal{position:absolute;right:-.3em;top:-.45em;font-size:clamp(1.6rem,5.5cqw,3rem);line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
+.prunners{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:8px}
+.prun{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:clamp(1rem,3.4cqw,1.5rem);font-weight:800;color:#fff;
+  padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+.prun .pmedal{position:static;font-size:1.15em}
+.pflash{position:absolute;inset:0;z-index:8;pointer-events:none;background:#fff}
+
+/* Spotlight: a dark stage, two beams, a pool of light */
+.pc-spotlight .pbg{background:radial-gradient(ellipse at 50% 120%,#1b1630 0%,#07060c 65%)}
+.pbeam{position:absolute;bottom:-12%;width:60%;height:150%;z-index:2;pointer-events:none;transform-origin:50% 100%;
+  background:linear-gradient(to top,rgba(255,248,214,.62),rgba(255,248,214,.1) 72%,transparent);
+  clip-path:polygon(43% 100%,57% 100%,100% 0,0 0);filter:blur(5px);mix-blend-mode:screen}
+.pbeam.l{left:-14%}
+.pbeam.r{right:-14%}
+.ppool{position:absolute;left:50%;bottom:6%;width:70%;height:30%;transform:translateX(-50%);z-index:1;border-radius:50%;opacity:0;
+  background:radial-gradient(ellipse at center,rgba(255,240,190,.55),transparent 70%);transition:opacity .5s}
+.ppool.on{opacity:1}
+
+/* Countdown: a bright game-show set, nothing like the spotlight */
+.pc-countdown .pbg{inset:-60%;opacity:0;background:
+  radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 0 22%,rgba(10,0,30,.6) 60%),
+  repeating-conic-gradient(from 0deg at 50% 50%,#ff2d87 0deg 12deg,#7a1fff 12deg 24deg,#ff8a00 24deg 36deg)}
+.pring{position:absolute;inset:18% 0 0 0;margin:auto;opacity:0;width:min(56cqw,52cqh);height:min(56cqw,52cqh);z-index:4;filter:drop-shadow(0 0 14px rgba(255,255,255,.7))}
+.pseg{fill:none;stroke:#fff;stroke-width:9;stroke-linecap:round}
+.pnum{position:absolute;inset:18% 0 0 0;margin:auto;height:max-content;z-index:6;font-size:clamp(4.5rem,30cqh,10rem);line-height:1;color:#fff;
+  text-shadow:0 5px 0 #4b0f6b,0 0 30px rgba(255,255,255,.7)}
+.pc-countdown .pline{text-shadow:0 3px 0 #3d0c58,0 0 18px rgba(0,0,0,.5)}
+
+/* Curtain: velvet with folds, a valance, gold tie-backs */
+.pc-curtain .pbg{background:#07060c}
+.pstagelit{position:absolute;inset:0;z-index:1;opacity:0;transition:opacity .8s;
+  background:radial-gradient(ellipse 60% 70% at 50% 60%,rgba(255,236,190,.38),transparent 70%),linear-gradient(#120a10,#2a1416)}
+.pstagelit.on{opacity:1}
+.pcurtain{position:absolute;top:0;bottom:0;width:51%;z-index:3;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 18%,transparent 72%,rgba(0,0,0,.6) 100%),
+    radial-gradient(ellipse 80% 60% at 50% 45%,rgba(255,90,90,.18),transparent 70%),
+    linear-gradient(90deg,#3d0009 0%,#7d0718 12%,#c4142a 24%,#ff3a4c 30%,#d0182e 36%,#80091a 50%,#3d0009 60%,#8e0e20 72%,#e0283a 81%,#a60c22 90%,#3d0009 100%);
+  background-size:100% 100%,100% 100%,64px 100%;box-shadow:inset 0 0 50px rgba(0,0,0,.55)}
+.pcurtain.l{left:0}
+.pcurtain.r{right:0}
+.pvalance{position:absolute;left:-2%;right:-2%;top:0;height:15%;z-index:4;
+  background:radial-gradient(ellipse 50% 100% at 50% 0,#b3122a 0 60%,transparent 62%) 0 100%/90px 60% repeat-x,linear-gradient(#5e0010,#a0101f);
+  border-bottom:5px solid #e8b230;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+.pline.oncurtain{color:#ffe7a1;text-shadow:0 2px 0 #4a0008,0 0 22px rgba(255,200,80,.5)}
+
+/* Envelope: black and gold */
+.pc-envelope .pbg{background:radial-gradient(circle at 50% 60%,#2a2010,#07060c 70%)}
+.penv{position:absolute;left:50%;top:56%;width:min(64cqw,360px);aspect-ratio:1.55;transform-origin:50% 50%;transform:translateY(150%);margin-left:calc(min(64cqw,360px) / -2);z-index:4;perspective:900px}
+.penvback,.penvfront{position:absolute;inset:0;border-radius:6px}
+.penvback{z-index:1;background:linear-gradient(#a87c14,#6e4e0c)}
+.penvfront{z-index:3;background:linear-gradient(160deg,#f2c94c,#d4a12a);clip-path:polygon(0 0,50% 55%,100% 0,100% 100%,0 100%);
+  box-shadow:inset 0 -6px 14px rgba(0,0,0,.2)}
+.penvflap{position:absolute;left:0;right:0;top:0;height:58%;z-index:4;transform-origin:50% 0;backface-visibility:visible;
+  background:linear-gradient(#e6b43a,#c99320);clip-path:polygon(0 0,100% 0,50% 100%)}
+.penvseal{position:absolute;left:50%;top:44%;width:44px;height:44px;margin:-22px 0 0 -22px;z-index:5;border-radius:50%;display:grid;place-items:center;
+  color:#ffd9d9;font-size:20px;background:radial-gradient(circle at 35% 35%,#e84a5f,#9c1426);box-shadow:0 3px 8px rgba(0,0,0,.4)}
+.pletter{position:absolute;left:7%;right:7%;top:8%;height:84%;z-index:2;border-radius:4px;display:grid;place-items:center;padding:8px;
+  background:#fffaf0;color:#3a2a10;font-family:var(--font-display);font-weight:800;font-size:clamp(1rem,3.4cqw,1.5rem);text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+
+/* Slot machine: a chrome box with one window */
+.pc-slot .pbg{background:radial-gradient(circle at 50% 40%,#2b0f45,#07060c 70%)}
+.pslotbox{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);z-index:4;padding:14px;border-radius:18px;width:min(78cqw,460px);
+  background:linear-gradient(#f4f4f6,#9a9aa3 45%,#e8e8ec 55%,#7c7c86);box-shadow:0 10px 30px rgba(0,0,0,.6),inset 0 2px 0 #fff}
+.pslotwin{height:72px;overflow:hidden;border-radius:10px;background:linear-gradient(#ddd,#fff 30%,#fff 70%,#ccc);
+  box-shadow:inset 0 10px 14px -8px rgba(0,0,0,.6),inset 0 -10px 14px -8px rgba(0,0,0,.6)}
+.pslotrow{height:72px;display:grid;place-items:center;padding:0 12px;color:#1d1530;font-family:var(--font-display);font-weight:900;
+  font-size:clamp(1.1rem,4cqw,1.8rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pspinning .pbulbs{animation-duration:.09s}
+
+
+
+/* minimise: a small round button in the corner; minimised, the card is one line */
+.pminbtn{flex:none;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  padding:0;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);transition:color .15s,border-color .15s}
+.pminbtn:hover,.pminbtn:focus-visible{color:var(--accent);border-color:var(--accent)}
+.pminbtn svg{width:15px;height:15px;transition:transform .25s}
+.pcard.pmin .pminbtn svg{transform:rotate(180deg)}
+.pcard.pmin{padding-top:12px;padding-bottom:12px;cursor:pointer}
+.pcard.pmin .pbody,.pcard.pmin .pfoot,.pcard.pmin .psug,.pcard.pmin .pwhen{display:none}
+.pcard.pmin .phead{margin-bottom:4px}
+.pcard.pmin .pq{margin:0;font-size:1.0625rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard.pmin:hover{border-color:var(--accent)}
+
+/* the reel's gibberish cards, and the slot machine's blur layer */
+.pfiller .pq{margin:0 0 14px;opacity:.85}
+.pfiller .pbars{gap:6px}
+.pslotblur{will-change:filter}
+.penvflap.back{z-index:1;filter:brightness(.8)}
+.pletterstar{font-size:2rem;color:#c9a227;opacity:.5}

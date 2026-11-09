@@ -2681,3 +2681,71 @@ create table birthday (
   updated_at timestamptz not null default now()
 );
 ```
+
+## Weekly anonymous poll (Home)
+
+Run this in Supabase → SQL Editor. It's safe to run again (say, after an
+update adds a column): it only creates what's missing. Nothing existing is
+dropped or rewritten. Until it runs, Home shows no poll.
+
+```sql
+-- Safe to run more than once: it only creates what's missing and adds missing
+-- columns. Nothing is dropped or rewritten (except the old one-answer version
+-- of the poll_bump function, which is replaced).
+create table if not exists poll (
+  week       date primary key,          -- the Monday it opens
+  question   text not null,
+  kind       text not null,
+  created_by text not null,
+  created_at timestamptz not null default now()
+);
+alter table poll add column if not exists choices   jsonb;                                -- the answers, for a custom question
+alter table poll add column if not exists pick      int not null default 1;               -- how many people pick (1 to 3)
+alter table poll add column if not exists pickexact boolean not null default false;       -- exactly `pick`, not up to it
+alter table poll add column if not exists anim      text not null default 'surprise';     -- Monday: how the question takes over the card
+alter table poll add column if not exists celebrate text not null default 'surprise';     -- Friday: the winner's celebration
+alter table poll add column if not exists reveal    text;                                 -- Friday's line, e.g. "The person most likely to … is…"
+alter table poll drop constraint if exists poll_kind_check;
+alter table poll add constraint poll_kind_check check (kind in ('period','student','teacher','class','custom'));
+alter table poll drop constraint if exists poll_pick_check;
+alter table poll add constraint poll_pick_check check (pick between 1 and 3);
+
+create table if not exists poll_voter (
+  week  date not null,
+  email text not null,
+  primary key (week, email)
+);
+create table if not exists poll_tally (
+  week   date not null,
+  scope  text not null,                 -- 'all', or the year ('11') for student polls
+  choice text not null,
+  votes  int  not null default 0,
+  primary key (week, scope, choice)
+);
+create table if not exists poll_suggestion (
+  id         text primary key,
+  email      text not null,
+  question   text not null,
+  kind       text,
+  created_at timestamptz not null default now()
+);
+alter table poll enable row level security;
+alter table poll_voter enable row level security;
+alter table poll_tally enable row level security;
+alter table poll_suggestion enable row level security;
+
+-- one vote: every pick, and the voter count, in a single statement
+drop function if exists poll_bump(date, text, text);
+create or replace function poll_bump(p_week date, p_scope text, p_choices text[])
+returns void language sql security definer set search_path = public as $$
+  insert into poll_tally (week, scope, choice, votes)
+  select p_week, p_scope, c, 1 from unnest(p_choices) as c
+  on conflict (week, scope, choice) do update set votes = poll_tally.votes + 1;
+$$;
+revoke execute on function poll_bump(date, text, text[]) from public, anon, authenticated;
+grant execute on function poll_bump(date, text, text[]) to service_role;
+```
+
+Then set the first question on the moderator page (Games → Moderator → Polls).
+The share link `https://www.mscunofficial.com/poll` needs the `rewrites` entry
+in `vercel.json` (already there), which deploys with the site.

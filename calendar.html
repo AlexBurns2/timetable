@@ -7,12 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261104">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <script src="theme.js"></script>
+<script src="icons.js?v=20261109"></script>
 <script src="study.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
-<link rel="stylesheet" href="site.css?v=20261104">
-<link rel="stylesheet" href="settings.css?v=20261104">
+<link rel="stylesheet" href="site.css?v=20261109">
+<link rel="stylesheet" href="settings.css?v=20261109">
 <style>
 /* ── toolbar ── */
 .calbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}
@@ -171,15 +172,15 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
   <div class="pagehead">
     <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Calendar</h1></div>
     <div class="crumbs">
-      <a class="btn" href="home.html" title="Home"><span class="bi" aria-hidden="true">&#8962;</span><span class="bl">Home</span></a>
-      <a class="btn" href="./" title="Timetable"><span class="bi" aria-hidden="true">&#128203;</span><span class="bl">Timetable</span></a>
-      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+      <a class="btn icon" href="home.html" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <a class="btn icon" href="./" title="Timetable" aria-label="Timetable"><span data-icon="table"></span></a>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
     </div>
   </div>
 
   <div class="calbar">
-    <button class="arrowbtn2" id="prev" title="Previous">&lsaquo;</button>
-    <button class="arrowbtn2" id="next" title="Next">&rsaquo;</button>
+    <button class="arrowbtn2" id="prev" title="Previous" aria-label="Previous"><span data-icon="caret-left"></span></button>
+    <button class="arrowbtn2" id="next" title="Next" aria-label="Next"><span data-icon="caret-right"></span></button>
     <h2 id="mlabel">…</h2>
     <button class="btn" id="today">Today</button>
     <select id="viewsel" aria-label="View">
@@ -226,7 +227,7 @@ dialog.cdlg::backdrop{background:rgba(0,0,0,.45)}
 
 <dialog class="cdlg" id="edlg">
   <div class="dlgh"><h3 id="dtitle">New event</h3>
-    <button class="btn icon" id="dclose" type="button" title="Close">&#10005;</button></div>
+    <button class="btn icon" id="dclose" type="button" title="Close" aria-label="Close"><span data-icon="x"></span></button></div>
   <label class="fld"><span>Name</span><input id="f-title" maxlength="140" placeholder="Chemistry study session"></label>
   <div class="row2">
     <label class="fld"><span>Date</span><input id="f-date" type="date"></label>
@@ -737,6 +738,6 @@ paintSwatches(); paintDays();
 loadSubjects();
 load();
 </script>
-<script src="settings.js?v=20261104"></script>
+<script src="settings.js?v=20261109"></script>
 </body>
 </html>

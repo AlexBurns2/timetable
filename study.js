@@ -185,8 +185,7 @@ function render(){
     : cd.kind === 'during'
     ? '<div class="cdlbl">' + esc(cd.label) + '</div>'
     : '<div class="cdlbl">The ' + cd.year + ' HSC</div>' +
-      '<div class="cdsub">NESA has not published the ' + cd.year + ' exam timetable yet — it usually comes out around May. ' +
-      'The countdown starts the day it does.</div>' +
+      '<div class="cdsub">Exam timetable out around May. The countdown starts then.</div>' +
       (cd.next ? '<div class="cdnext"><b>' + daysUntil(cd.next.d) + ' day' + (daysUntil(cd.next.d) === 1 ? '' : 's') + '</b> until ' +
                  esc(cd.next.what.charAt(0).toLowerCase() + cd.next.what.slice(1)) + ' (' + esc(longDate(cd.next.d)) + ')</div>' : '');
   const p = plan(4);
@@ -211,7 +210,7 @@ function render(){
   wrap.innerHTML =
     '<div class="sp-cd">' + cdHtml + '</div>' +
     '<div class="sp-plan"><h3>Today’s revision</h3>' + list + doneTxt + '</div>' +
-    '<div class="sp-focus">' + focusHtml + '<p class="sp-hint">Locks the games and hides the forum until the time is up — on every device you are signed in on.</p></div>';
+    '<div class="sp-focus">' + focusHtml + '<p class="sp-hint">Locks the games and forum until the time’s up.</p></div>';
 
   wrap.querySelectorAll('.planitem').forEach(b => { b.onclick = () => practise(p.items[+b.dataset.i]); });
   wrap.querySelectorAll('[data-focus]').forEach(b => { b.onclick = () => {

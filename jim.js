@@ -1,5 +1,5 @@
 /* ── The Jim Button ───────────────────────────────────────────────────
-   A port of the standalone Jim Button (github.com/Pugmeowla/jim_button):
+   A port of the standalone Jim Button:
    press the button, it says your name. Players are just the first name they
    type — no school login, so it works even when the school API is down.
    Scores live in Supabase behind /api/jim (the original used Firebase).

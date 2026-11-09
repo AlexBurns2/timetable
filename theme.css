@@ -495,3 +495,15 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
   border-radius:0;
 }
 [data-skin="newsprint"] .weekbtn{border:1px solid var(--line)}
+
+/* ── icons (icons.js: Phosphor, inlined); here because every page loads theme.css ── */
+.ph{display:inline-block;width:1em;height:1em;vertical-align:-.14em;flex:none}
+[data-icon]{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+.btn.icon .ph,.btn.icon [data-icon] .ph{width:1.2em;height:1.2em}
+.btn .ph + *,.btn [data-icon] + *{margin-left:0}
+.btn:not(.icon) > .ph:first-child{margin-right:.4em}
+.arrowbtn .ph,.arrowbtn2 .ph,.whoback .ph{width:1.1em;height:1.1em}
+.btn > [data-icon]:first-child:not(:only-child){margin-right:.4em}
+
+#hdrback[hidden]{display:none}
+#openMod[hidden]{display:none}

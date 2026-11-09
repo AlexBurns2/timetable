@@ -297,7 +297,7 @@ const TOURS = {
     { id:'weekarrows', target:'.weekswitch', title:TOUCH ? 'Tap to switch week' : 'Click to switch week' },
     { id:'settings',   target:'#settings',   title:'Settings', text:SETTINGS_TEXT },
     { id:'home',       target:'#homebtn',    title:'Home',
-      text:'Notes, revision, your calendar and the rest of the site.' }
+      text:'This week’s poll, the forum, revision, your calendar and the rest of the site.' }
   ],
   /* both settings dialogs use these ids, so one tour covers both pages */
   settings: [

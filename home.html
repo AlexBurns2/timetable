@@ -7,14 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261104">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <script src="theme.js"></script>
+<script src="icons.js?v=20261109"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
-<script src="bento.js"></script>
+<script src="suggest.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
-<link rel="stylesheet" href="site.css?v=20261104">
-<link rel="stylesheet" href="settings.css?v=20261104">
+<link rel="stylesheet" href="site.css?v=20261109">
+<link rel="stylesheet" href="settings.css?v=20261109">
+<link rel="stylesheet" href="poll.css?v=20261109">
 </head>
 <body>
 <div class="wrap hub">
@@ -28,89 +30,40 @@
     </div>
     <div class="hubnow" id="hubnow"></div>
     <div class="headbtns">
-      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
     </div>
   </header>
 
-  <div class="hscstrip" id="hscstrip" hidden></div>
+  <!-- the weekly anonymous poll (poll.js): the one thing that changes every week -->
+  <section class="pollwrap" id="poll" hidden aria-live="polite"></section>
+  <a class="pollskip" id="pollskip" href="#" hidden>Skip to the site</a>
 
-  <section class="hubsec" aria-labelledby="h-week">
-    <h2 class="sechd" id="h-week">Your week</h2>
-    <nav class="tiles bento" aria-labelledby="h-week">
-      <a class="tile primary" href="./" id="tileTimetable" data-size="4:2x2 3:2x2 2:2x1">
-        <span class="ico">📋</span>
-        <span class="tname">Timetable</span>
-        <span class="tdesc"></span>
-        <span class="ttday" id="ttday" hidden></span>
-        <span class="tglyph" aria-hidden="true">📋</span>
-      </a>
-      <a class="tile" href="calendar.html" data-size="4:2x1">
-        <span class="ico">🗓️</span>
-        <span class="tname">Calendar</span>
-        <span class="tdesc"></span>
-      </a>
-      <a class="tile" href="free.html" data-size="4:2x1">
-        <span class="ico">🤝</span>
-        <span class="tname">Free periods</span>
-        <span class="tdesc"></span>
-      </a>
-    </nav>
-  </section>
-
-  <section class="hubsec" aria-labelledby="h-study">
-    <h2 class="sechd" id="h-study">Study</h2>
-    <nav class="tiles bento" aria-labelledby="h-study">
-      <a class="tile" href="revision.html" id="tileRevision" data-size="4:2x1 2:2x1">
-        <span class="ico">✏️</span>
-        <span class="tname">Revision</span>
-        <span class="tdesc"></span>
-      </a>
-      <a class="tile" href="notes.html">
-        <span class="ico">📝</span>
-        <span class="tname">Notes</span>
-        <span class="tdesc"></span>
-      </a>
-      <a class="tile" href="resources.html">
-        <span class="ico">📚</span>
-        <span class="tname">Resources</span>
-        <span class="tdesc"></span>
-      </a>
-    </nav>
-  </section>
-
-  <section class="hubsec" aria-labelledby="h-more">
-    <h2 class="sechd" id="h-more">More</h2>
-    <nav class="tiles bento" aria-labelledby="h-more">
-      <a class="tile" href="games.html" id="tileGames" data-size="4:2x1 2:2x1">
-        <span class="ico">🎮</span>
-        <span class="tname">Games</span>
-        <span class="tdesc"></span>
-      </a>
-      <a class="tile" href="finder.html">
-        <span class="ico">🔎</span>
-        <span class="tname">Student finder</span>
-        <span class="tdesc"></span>
-      </a>
-      <a class="tile" href="mahjong.html" id="tileMahjong">
-        <span class="ico">🀄</span>
-        <span class="tname">Mahjong club</span>
-        <span class="tdesc"></span>
-      </a>
-    </nav>
-  </section>
+  <div class="hubrest" id="hubrest">
+  <nav class="qtiles" aria-label="Pages">
+    <a class="qtile" href="./" id="tileTimetable" style="--tc:#e5484d"><span class="ico" data-icon="d:table"></span><span class="tname">Timetable</span></a>
+    <a class="qtile" href="calendar.html" style="--tc:#f76b15"><span class="ico" data-icon="d:calendar-dots"></span><span class="tname">Calendar</span></a>
+    <a class="qtile" href="free.html" style="--tc:#ffb224"><span class="ico" data-icon="d:users-three"></span><span class="tname">Free periods</span></a>
+    <a class="qtile" href="revision.html" id="tileRevision" style="--tc:#30a46c"><span class="ico" data-icon="d:pencil-simple-line"></span><span class="tname">Revision</span></a>
+    <a class="qtile" href="resources.html" style="--tc:#12a594"><span class="ico" data-icon="d:books"></span><span class="tname">Resources</span></a>
+    <a class="qtile" href="games.html" id="tileGames" style="--tc:#8e4ec6"><span class="ico" data-icon="d:game-controller"></span><span class="tname">Games</span></a>
+    <a class="qtile" href="finder.html" style="--tc:#0090ff"><span class="ico" data-icon="d:magnifying-glass"></span><span class="tname">Student finder</span></a>
+    <a class="qtile" href="mahjong.html" id="tileMahjong" style="--tc:#d6409f"><span class="ico" data-icon="d:cards-three"></span><span class="tname">Mahjong club</span></a>
+  </nav>
 
   <section class="forum" id="forum">
     <h2>Forum</h2>
-    <div class="fnew">
-      <textarea id="fbody" rows="2" maxlength="1000" placeholder="Say something…"></textarea>
+    <div class="fnew" id="fnew">
+      <textarea id="fbody" rows="1" maxlength="1000" placeholder="Say something…" aria-label="Write a post"></textarea>
       <button class="btn primary" id="fpost" type="button">Post</button>
     </div>
     <div class="fmsg" id="fmsg"></div>
     <div class="fposts" id="fposts"><p class="how">Loading…</p></div>
+    <button class="flink fmore" id="fmore" type="button" hidden></button>
   </section>
+  </div>
 
   <footer class="hubfoot">
-    <span>Made by students at NBSC Manly Campus. Not run by the school or the Department.</span>
+    <span>Made by <span class="glitchy" id="glitchy">students</span> at NBSC Manly Campus. Not run by the school or the Department.</span>
     <!-- Andre's redesign sandbox lives on its own at /andre/: an add-on, not part of this site -->
     <a href="/andre/">Try the new website beta (work in progress) →</a>
   </footer>
@@ -220,48 +173,13 @@ function paintHub(){
   }
   const nn = nowNext(payload);
   $('hubsub').textContent = date + (nn.week ? ' · Week ' + nn.week : '');
-  paintDay(payload);
   let h = '';
   if (nn.cur) h += card('Now', nn.cur, 'until ' + fmtTime(nn.cur.end));
   if (nn.next) h += card(nn.when === 'Today' ? 'Next' : 'Next · ' + nn.when, nn.next, fmtTime(nn.next.start));
   $('hubnow').innerHTML = h || '<a class="nowcard hubsign" href="./"><div class="lbl">Timetable</div>' +
     '<div class="subj">No classes coming up</div><div class="meta">Open your timetable</div></a>';
 }
-/* the big gallery Timetable tile lists the day's classes: today's while any
-   are left, otherwise the next school day's (the tile's own CSS shows it only
-   when the tile is big) */
-function paintDay(payload){
-  const start = parseStart(payload.startDate), shift = +TT.get('tt.cycleshift', 0) === 5 ? 5 : 0;
-  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
-  let when = '', lessons = [];
-  for (let i = 0; i <= 14 && !lessons.length; i++){
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i), k = cycleDay(d, start, shift);
-    const ls = k ? lessonsOn(payload, k) : [];
-    if (ls.length && !(i === 0 && ls[ls.length - 1].end <= mins)){ lessons = ls; when = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAYS[d.getDay()]; }
-  }
-  if (!lessons.length) return;
-  const shown = lessons.slice(0, 5);
-  $('ttday').innerHTML = '<b>' + esc(when) + '</b>' + shown.map(l =>
-    '<span><i>' + fmtTime(l.start) + '</i>' + esc(l.name) + (l.room ? ' · ' + esc(l.room) : '') + '</span>').join('') +
-    (lessons.length > shown.length ? '<span class="more">+' + (lessons.length - shown.length) + ' more</span>' : '');
-  $('ttday').hidden = false;
-  $('tileTimetable').classList.add('hasday');
-}
 paintHub();
-
-/* ── the tiles: the packed gallery, or the even grid (Settings switches) ──
-   data-size="4:2x2 3:2x1" is columns:widthxheight, 1x1 when not listed. */
-function layTiles(){
-  document.querySelectorAll('.hubsec .tiles').forEach(box => {
-    const tiles = [...box.children].filter(el => !el.classList.contains('bentofill') && !el.hidden);
-    if (TT.layout() === 'classic'){ Bento.clear(box); box.classList.remove('bento'); return; }
-    box.classList.add('bento');
-    const size = (el, n, i) => { const m = (el.dataset.size || '').match(new RegExp('\\b' + n + ':(\\d)x(\\d)')); return m ? +m[i] : 1; };
-    Bento.layout(box, tiles.map(el => ({ el, w:n => size(el, n, 1), h:n => size(el, n, 2) })));
-  });
-}
-layTiles();
-addEventListener('tt:layout', layTiles);
 
 /* ── forum ─────────────────────────────────────────────────────────────── */
 /* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */
@@ -281,7 +199,8 @@ const fmsg = m => { $('fmsg').textContent = m || ''; };
 function postCard(p, isReply){
   return '<div class="fpost' + (isReply ? ' freply' : '') + '" data-id="' + esc(p.id) + '">' +
     '<div class="fmeta"><b>' + esc(p.name) + '</b><span>' + esc(ago(p.at)) + '</span>' +
-      (p.mine ? '<button class="flink fdel" type="button" data-id="' + esc(p.id) + '">delete</button>' : '') +
+      (p.mine || p.canDelete ? '<button class="flink fdel' + (p.mine ? '' : ' fmod') + '" type="button" data-id="' + esc(p.id) + '"' +
+        (p.mine ? '' : ' title="Delete (moderator)"') + '>delete</button>' : '') +
     '</div>' +
     '<div class="ftext">' + esc(p.body) + '</div>' +
     '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
@@ -353,16 +272,23 @@ function wireRx(bar){
   if (more) more.onclick = ev => { ev.stopPropagation(); pickRx(bar, id); };
 }
 
+/* only the newest thread until you ask for the rest */
+let forumOpen = false;
+$('fmore').onclick = () => { forumOpen = !forumOpen; loadForum(); if (!forumOpen) $('forum').scrollIntoView({ block:'nearest' }); };
 async function loadForum(){
   try {
     const d = await TT.api('/api/forum');
     const posts = d.posts || [];
     POSTS.clear();
     posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
+    const shown = forumOpen ? posts : posts.slice(0, 1);
     $('fposts').innerHTML = posts.length
-      ? posts.map(p => postCard(p, false) +
+      ? shown.map(p => postCard(p, false) +
           (p.replies || []).map(r => postCard(r, true)).join('')).join('')
       : '<p class="how">Nothing here yet. Say the first thing.</p>';
+    const more = posts.length - shown.length;
+    $('fmore').hidden = !more && !forumOpen || posts.length < 2;
+    $('fmore').textContent = forumOpen ? 'Show less' : 'Show ' + more + ' more post' + (more === 1 ? '' : 's');
     wireForum();
   } catch (e){
     $('fposts').innerHTML = '<p class="how">Couldn\'t load the forum: ' + esc(e.message) + '</p>';
@@ -401,43 +327,72 @@ $('fpost').onclick = async () => {
 $('fbody').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('fpost').click();
 });
+/* one line until you click into it; it closes again if you leave it empty */
+$('fbody').addEventListener('focus', () => { $('fnew').classList.add('open'); $('fbody').rows = 3; });
+$('fbody').addEventListener('blur', () => setTimeout(() => {
+  if (!$('fbody').value.trim() && document.activeElement !== $('fpost')){ $('fnew').classList.remove('open'); $('fbody').rows = 1; }
+}, 150));
 if (!signedIn){
   /* posting needs a school login: the button takes you to sign in instead */
   $('fbody').placeholder = 'Sign in to post';
   $('fbody').disabled = true;
   $('fpost').textContent = 'Sign in';
+  $('fpost').style.display = 'inline-flex';          // the box can't be focused, so the button shows on its own
   $('fpost').onclick = () => { location.href = './'; };
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261104"></script>
+<script src="settings.js?v=20261109"></script>
+<script src="poll.js?v=20261109"></script>
 <script>
-/* the HSC countdown and how much is waiting today (study.js): Year 11 and 12
-   only. Focus mode locks the games tile and hides the forum. */
+/* a small easter egg: hover "students" in the footer and it scrambles into
+   random letters, like obfuscated text, until you move away */
+(function(){
+  const g = document.getElementById('glitchy'); if (!g) return;
+  const word = g.textContent, CH = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$*?!';
+  let t = null;
+  const scramble = () => { g.textContent = [...word].map(() => CH[Math.floor(Math.random() * CH.length)]).join(''); };
+  const start = () => { if (t) return; g.style.width = g.offsetWidth + 'px'; g.classList.add('on'); scramble(); t = setInterval(scramble, 55); };
+  const stop = () => { clearInterval(t); t = null; g.classList.remove('on'); g.textContent = word; g.style.width = ''; };
+  g.addEventListener('mouseenter', start);
+  g.addEventListener('mouseleave', stop);
+  g.addEventListener('touchstart', () => { start(); setTimeout(stop, 1400); }, { passive:true });
+})();
+</script>
+<script>
+/* The poll. Someone arriving from a shared link (/poll → home.html?poll=1)
+   sees the poll on its own first; the rest of Home slides in once they've
+   voted, or if they skip it. */
+(function(){
+  const fromLink = /[?&]poll=/.test(location.search);
+  const rest = document.getElementById('hubrest'), skip = document.getElementById('pollskip');
+  const open = () => {
+    if (!document.body.classList.contains('pollfocus')) return;
+    document.body.classList.remove('pollfocus'); skip.hidden = true;
+    rest.classList.add('pin-in'); setTimeout(() => rest.classList.remove('pin-in'), 900);
+  };
+  if (fromLink){ document.body.classList.add('pollfocus'); skip.hidden = false; }
+  skip.onclick = e => { e.preventDefault(); open(); };
+  if (!window.Poll) { open(); return; }
+  Poll.mount(document.getElementById('poll'), {
+    signedIn,
+    onVoted: () => setTimeout(open, 1400),
+    onDraw: p => { if (!p || p.voted || (!p.signedOut && !p.canVote)) open(); }
+  });
+})();
+</script>
+<script>
+/* Focus mode (study.js) locks the games tile and hides the forum. */
 (function(){
   if (!window.Study) return;
-  if (signedIn && senior(ownPayload())){
-    const strip = document.getElementById('hscstrip');
-    const cd = Study.countdown();
-    let plan = { items:[] };
-    try { plan = Study.plan(4); } catch {}
-    const lead = cd.kind === 'exam' ? '<b>' + cd.days + ' day' + (cd.days === 1 ? '' : 's') + '</b> until the ' + HSC_DATES.year + ' HSC'
-      : cd.kind === 'during' ? '<b>The HSC is under way</b>'
-      : '<b>The ' + cd.year + ' HSC</b> · exam timetable not out yet';
-    strip.innerHTML = '<span>' + lead + '</span>' +
-      '<a href="revision.html">' + (plan.items.length ? plan.items.length + ' topic' + (plan.items.length === 1 ? '' : 's') + ' to revise today →'
-                                                     : 'Revision →') + '</a>';
-    strip.hidden = false;
-  }
-
   if (window.Focus && Focus.active()){
     const tile = document.getElementById('tileGames');
     if (tile){
       tile.href = 'revision.html';
       tile.classList.add('locked');
-      tile.querySelector('.ico').textContent = '🎯';
+      const ic = tile.querySelector('.ico'); ic.dataset.icon = 'd:target'; if (window.Icon) Icon.fill(tile);
       tile.querySelector('.tname').textContent = 'Focus mode';
-      tile.querySelector('.tdesc').textContent = 'Games locked for ' + Focus.fmt(Focus.left());
+      tile.title = 'Games locked for ' + Focus.fmt(Focus.left());
     }
     const forum = document.getElementById('forum');
     if (forum){

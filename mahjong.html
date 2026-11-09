@@ -8,28 +8,29 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="/images/icon.png">
-<link rel="stylesheet" href="theme.css?v=20261104">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <script src="theme.js"></script>
+<script src="icons.js?v=20261109"></script>
 <script>/* mahjong.html?embed=1 (a frame on another page): just the score sheet */
 if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("embedded");</script>
-<link rel="stylesheet" href="site.css?v=20261104">
-<link rel="stylesheet" href="settings.css?v=20261104">
-<link rel="stylesheet" href="games.css?v=20261104">
+<link rel="stylesheet" href="site.css?v=20261109">
+<link rel="stylesheet" href="settings.css?v=20261109">
+<link rel="stylesheet" href="games.css?v=20261109">
 </head>
 <body data-page="mahjong">
 <div class="wrap">
   <div class="pagehead">
     <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Mahjong club</h1></div>
     <div class="crumbs">
-      <a class="btn" href="home.html" title="Home"><span class="bi" aria-hidden="true">&#8962;</span><span class="bl">Home</span></a>
-      <a class="btn" href="./" title="Timetable"><span class="bi" aria-hidden="true">&#128203;</span><span class="bl">Timetable</span></a>
-      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+      <a class="btn icon" href="home.html" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <a class="btn icon" href="./" title="Timetable" aria-label="Timetable"><span data-icon="table"></span></a>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
     </div>
   </div>
   <div class="stage" id="stage"></div>
 </div>
-<script src="mahjong.js?v=20261104"></script>
+<script src="mahjong.js?v=20261109"></script>
 <script>Mahjong.mount(document.getElementById('stage'));</script>
-<script src="settings.js?v=20261104"></script>
+<script src="settings.js?v=20261109"></script>
 </body>
 </html>

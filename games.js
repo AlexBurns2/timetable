@@ -68,7 +68,8 @@ const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
   const b = $('sfx'), pop = $('volpop'), sl = $('volsl'), wrap = $('volwrap');
   if (!b || !sl) return;
   const icon = () => { const on = TT.get('tt.gamesfx', false), v = +TT.get('tt.gamevol', 0.7);
-    b.textContent = !on ? '🔇' : (v < 0.34 ? '🔈' : v < 0.67 ? '🔉' : '🔊');
+    const ic = !on ? 'speaker-x' : v < 0.34 ? 'speaker-none' : v < 0.67 ? 'speaker-low' : 'speaker-high';
+    b.innerHTML = window.Icon ? Icon.svg(ic) : (on ? '♪' : '×');
     b.setAttribute('aria-pressed', String(on)); };
   sl.value = Math.round((+TT.get('tt.gamevol', 0.7)) * 100);
   let held = false, timer = null;
@@ -88,12 +89,12 @@ const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
 let isAdmin = false;
 /* called from the start-up block at the end of this file: siteSettings' state
    is declared further down, and reading it from here at load time would throw */
+/* moderators open their page from Settings (settings.js); here we just note it */
 async function initAdmin(){
-  if (!TT.myEmail() || !$('admin')) return;
-  try { const c = await siteSettings();
-    if (c && c.isMod){ isAdmin = true; const a = $('admin'); if (a){ a.hidden = false; a.onclick = () => openGame('admin'); } }
-  } catch(e){}
+  if (!TT.myEmail()) return;
+  try { const c = await siteSettings(); if (c && c.isMod) isAdmin = true; } catch(e){}
 }
+
 
 /* every game returns a cleanup fn so switching never leaves a timer running */
 /* Phones and tablets get on-screen controls and "tap" wording. A laptop with a
@@ -190,9 +191,8 @@ function gameCard(g, i){
   const c = document.createElement('button');
   c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '');
   c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
-  /* under the name, a short live summary (fillSums): the top two on its board,
-     how today's daily went, or your own best. No description: the name and
-     the icon say what it is. */
+  /* under the name, just your own record (localSum, then fillSums for the
+     daily). The leaderboards are at the bottom of the page. */
   c.innerHTML = (g.isNew ? '<span class="newbanner">New</span>' : '') +
     '<span class="ico">' + g.ico + '</span>' +
     '<h2>' + g.name + '</h2><div class="sum" data-sum="' + g.id + '">' + localSum(g.id) + '</div>' +
@@ -206,6 +206,7 @@ function showGrid(){
   if (bentoStop){ bentoStop(); bentoStop = null; }
   lbState = null; lbSeq++;
   $('gamestage').hidden = true;
+  if (typeof syncBack === 'function') syncBack();
   if ($('gameslede')) $('gameslede').hidden = false;
   const grid = $('gamegrid');
   grid.hidden = false;
@@ -234,47 +235,62 @@ function showGrid(){
   }
 
   if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
-  /* classic: a shelf per category that scrolls sideways */
+  /* classic: an even grid of small cards per section (no sideways shelves) */
   if (classicLayout()){
-    let first = true;
     SECTIONS.forEach(sec => {
       const inCat = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
       if (!inCat.length) return;
-      grid.appendChild(sectionHead(sec, first)); first = false;
-      const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
-      const row = document.createElement('div'); row.className = 'gamerow';
-      inCat.forEach((g, i) => row.appendChild(gameCard(g, i)));
-      wrap.appendChild(row); grid.appendChild(wrap);
-      dragScroll(row);
-      shelfArrows(wrap, row);
+      grid.appendChild(sectionHead(sec));
+      const box = document.createElement('div'); box.className = 'gamegrid gcompact';
+      inCat.forEach((g, i) => box.appendChild(gameCard(g, i)));
+      grid.appendChild(box);
     });
+    boardsSection(grid);
     fillSums();
-    scrollHint();
     return;
   }
   /* gallery: a packed grid per section */
   bentoStop = null;
   const stops = [];
-  let first = true;
   SECTIONS.forEach(sec => {
     const games = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
     if (!games.length) return;
-    grid.appendChild(sectionHead(sec, first)); first = false;
+    grid.appendChild(sectionHead(sec));
     const bento = document.createElement('div'); bento.className = 'bento';
     const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
     grid.appendChild(bento);
     stops.push(Bento.layout(bento, games.map((g, i) => ({ el:cards[i], w:g.w, h:g.h }))));
   });
   bentoStop = () => stops.forEach(f => f());
+  boardsSection(grid);
   fillSums();
 }
-/* a section's heading; the first one also carries the leaderboards button */
-function sectionHead(sec, first){
+/* a section's heading */
+function sectionHead(sec){
   const h = document.createElement('div'); h.className = 'gsec';
-  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2>' +
-    (first && TT.myEmail && TT.myEmail() ? '<button type="button" class="lbopen">Leaderboards</button>' : '');
-  const b = h.querySelector('.lbopen'); if (b) b.onclick = () => openLBSheet();
+  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2>';
   return h;
+}
+/* the leaderboards, back at the bottom: every board's top three; a board
+   opens the full one in the sheet */
+function boardsSection(grid){
+  if (!TT.myEmail || !TT.myEmail()) return;
+  const sec = document.createElement('section'); sec.className = 'lbboards';
+  sec.innerHTML = '<div class="gsec"><h2 class="cathd">Leaderboards</h2><button type="button" class="lbopen">View all</button></div>' +
+    '<div class="lbbgrid">' + LB_CAT.map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
+      '<span class="lbbrows"><span class="lbbempty">Loading…</span></span></button>').join('') + '</div>';
+  grid.appendChild(sec);
+  sec.querySelector('.lbopen').onclick = () => openLBSheet();
+  sec.querySelectorAll('.lbbcard').forEach(b => b.onclick = () => openLBSheet(b.dataset.b));
+  fetchLeaders().then(leaders => {
+    sec.querySelectorAll('.lbbcard').forEach(b => {
+      const L = leaders[b.dataset.b], rows = b.querySelector('.lbbrows');
+      if (!L){ rows.innerHTML = '<span class="lbbempty">Couldn’t load</span>'; return; }
+      rows.innerHTML = L.rows.length ? L.rows.map((r, i) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (i + 1) + '</i><span class="w">' +
+          esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('')
+        : '<span class="lbbempty">No scores yet</span>';
+    });
+  });
 }
 
 let bentoStop = null;
@@ -346,25 +362,21 @@ const LB_CAT = [
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
 ];
 let lbFocus = null;          // which board ?play=leaderboards opens on
-/* The card that shows each board's leaders (Tetris shows its Sprint board;
-   Survival and Zen are in the leaderboards sheet only). */
-const CARD_BOARD = { chain:'chain', oddone:'oddone', classroom:'classroom', snake:'snake', g2048:'g2048',
-                     typing:'typing', react:'react', tetris:'tsprint' };
-let lbSumCache = null;       // the top two on each card's board, once per page (a new score clears it)
+let lbSumCache = null;       // every board's top three, once per page (a new score clears it)
+const shortHMS = v => fmtHMS(v).replace(/^00:/, '');     // 01:23.4, not 00:01:23.4
 function fetchLeaders(){
   if (lbSumCache) return lbSumCache;
   const wk = tetrisWeek();
-  const top2 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 2).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
-  const short = v => fmtHMS(v).replace(/^00:/, '');      // 01:23.4, not 00:01:23.4
-  lbSumCache = Promise.all(Object.entries(CARD_BOARD).map(async ([card, id]) => {
-    const cat = LB_CAT.find(c => c.id === id);
+  const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
+  lbSumCache = Promise.all(LB_CAT.map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } });
-        return [card, top2(d.all && d.all.top, 'score', cat.fmt)]; }
-      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } });
-        return [card, top2(d.top, 'time_ms', short)]; }
+        return [cat.id, top3(d.all && d.all.top, 'score', cat.fmt)]; }
+      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:{ mode:'zen' } }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:{ mode:'zenscore' } }); return [cat.id, top3(d.top, 'best', cat.fmt)]; }
     } catch (e){}
-    return [card, null];                                  // could not load: the card keeps your own best
+    return [cat.id, null];
   })).then(Object.fromEntries);
   return lbSumCache;
 }
@@ -377,6 +389,9 @@ const sumNote = html => '<span class="sl note">' + html + '</span>';
 function localSum(id){
   const s = allStats()[id] || {};
   if (id === 'dailyguess') return s.streak ? sumNote('🔥 <b>' + s.streak + '</b> day streak') : '';
+  const lb = LB_GAMES[id];
+  if (lb) return s[lb.metric] != null ? sumLine('Your best', lb.fmt(s[lb.metric])) : '';
+  if (id === 'tetris'){ const b = s.allBest != null ? s.allBest : s.best; return b != null ? sumLine('Sprint best', shortHMS(b * 1000)) : ''; }
   if (id === 'guesswho') return s.best != null ? sumLine('Your best', s.best + (s.best === 1 ? ' guess' : ' guesses')) : '';
   if (GAMES.some(g => g.id === id && g.cat === 'Revision')){
     let done = 0;
@@ -389,35 +404,23 @@ function localSum(id){
   const line = statLine(id);
   return line ? sumNote(esc(line)) : '';
 }
-/* the Daily Guess Who card: how the year is going today, then you (or one
-   person worth a mention, if you haven't played yet) */
+/* the Daily Guess Who card: how you went today, and your streak */
 let dgSumP = null;
 function dailySum(){
   if (!dgSumP) dgSumP = TT.api('/api/daily', { params:{ summary:1 } }).catch(() => { dgSumP = null; return null; });
   return dgSumP;
 }
 function dailyCardSum(d){
-  if (!d || !d.summary) return '';
-  const s = d.summary, m = d.mine || {}, lines = [];
-  lines.push(s.played ? sumNote('<b>' + s.played + '</b> played today · <b>' + Math.round(s.wins / s.played * 100) + '%</b> solved')
-                      : sumNote('No one has played today’s yet'));
-  if (m.done) lines.push(sumNote(m.won ? 'You got it in <b>' + m.guesses + '</b>' : 'You missed today’s'));
-  else {
-    const sp = (s.spotlight || []).filter(p => p.kind === 'streak' || p.kind === 'best' || p.kind === 'first');
-    if (sp.length) lines.push(sumNote(dgSpotLine(sp[Math.floor(Math.random() * sp.length)])));
-  }
-  return lines.join('');
+  if (!d) return '';
+  const m = d.mine || {}, st = (allStats().dailyguess || {}).streak;
+  return sumNote(m.done ? (m.won ? 'Solved today in <b>' + m.guesses + '</b>' : 'Missed today’s') : 'Not played today') +
+    (st ? sumNote('🔥 <b>' + st + '</b> day streak') : '');
 }
-/* after the cards are drawn: the boards' leaders and today's daily */
+/* after the cards are drawn: today's daily (the rest come from this device) */
 async function fillSums(){
   if (REVISION_PAGE || !TT.myEmail || !TT.myEmail()) return;
   const put = (id, html) => { const el = document.querySelector('.sum[data-sum="' + id + '"]'); if (el && html) el.innerHTML = html; };
   dailySum().then(d => put('dailyguess', dailyCardSum(d)));
-  const leaders = await fetchLeaders();
-  for (const card in leaders){
-    const L = leaders[card]; if (!L) continue;
-    put(card, L.rows.length ? L.rows.map(r => sumLine(r.who, r.val, r.you)).join('') : sumNote('No scores yet'));
-  }
 }
 
 /* ── a sheet that slides up from the bottom (the leaderboards) ─────────
@@ -431,7 +434,7 @@ function openSheet(title, fill){
   sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-label', title);
   sh.innerHTML = '<div class="sheetgrab" aria-hidden="true"><i></i></div>' +
     '<div class="sheethd"><h2>' + esc(title) + '</h2>' +
-    '<button class="btn icon sheetx" type="button" aria-label="Close">&#10005;</button></div>' +
+    '<button class="btn icon sheetx" type="button" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' +
     '<div class="sheetbody"></div>';
   document.body.append(back, sh);
   document.documentElement.classList.add('sheetopen');
@@ -482,6 +485,7 @@ function openGame(id){
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
+    setTimeout(syncBack, 0);
     if ($('gameslede')) $('gameslede').hidden = true;
     if (bentoStop){ bentoStop(); bentoStop = null; }
     st.hidden = false;
@@ -494,6 +498,10 @@ function openGame(id){
   grid.classList.add('leaving');           /* fade the grid away, then swap in */
   setTimeout(go, 130);
 }
+/* the header's Back (theme.js): with a game open, back to the list of games */
+window.TTBack = () => { if ($('gamestage') && !$('gamestage').hidden){ $('back').click(); return true; } return false; };
+window.TTBackOn = () => !!($('gamestage') && !$('gamestage').hidden);
+const syncBack = () => { const b = document.getElementById('hdrback'); if (b) b.hidden = !window.TTBackOn(); };
 $('back').onclick = () => {
   const grid = $('gamegrid'), st = $('gamestage');
   if (stop){ stop(); stop = null; }
@@ -2973,7 +2981,9 @@ BUILD.admin = host => {
   const FORUM = { id:'forum', name:'Forum', kind:'f' };
   const DECKS = { id:'decks', name:'Shared decks', kind:'d' };
   const MJ = { id:'mahjong', name:'Mahjong club', kind:'m' };
-  const CATS = [OVERVIEW, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
+  /* the weekly poll on Home: questions, the show each week, suggestions */
+  const POLLS = { id:'polls', name:'Polls', kind:'p' };
+  const CATS = [OVERVIEW, POLLS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -2998,7 +3008,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdm'.includes(cur.kind);
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmp'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -3019,6 +3029,7 @@ BUILD.admin = host => {
       if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
+      if (cur.kind === 'p'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -3055,6 +3066,7 @@ BUILD.admin = host => {
     if (cur.kind === 'f') return renderForum();
     if (cur.kind === 'd') return renderDecks();
     if (cur.kind === 'm') return renderMahjong();
+    if (cur.kind === 'p') return renderPolls();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -3212,6 +3224,126 @@ BUILD.admin = host => {
     });
   }
   /* ── Mahjong club: rename or remove players, delete any game ── */
+  /* ── the weekly poll ── */
+  function renderPolls(){
+    const KINDS = { period:'A period (0 to 7)', student:'A student in their year', teacher:'A teacher', class:'A subject in their year', custom:'Your own answers' };
+    /* Monday: how the new question takes over the card. Friday: the winner's celebration. */
+    const SHOWS = { surprise:'Surprise me', drop:'The Drop', wreck:'Wrecking ball', topple:'Topple', explode:'Explode', flip:'Flip', slot:'Slot reel' };
+    const CELEBS = { surprise:'Surprise me', spotlight:'Spotlight', countdown:'Countdown', curtain:'Curtain', envelope:'Envelope', slot:'Slot machine' };
+    /* the same default line Home uses when none is written (poll.js revealLine) */
+    const autoLine = (q, kind) => {
+      q = String(q || '').trim().replace(/[?!.\s]+$/, '');
+      const noun = { student:'person', teacher:'teacher', class:'class', period:'period', custom:'answer' }[kind] || 'winner';
+      let m;
+      if ((m = q.match(/^(?:who(?:'s| is)? )?most likely to (.+)$/i))) return 'The ' + noun + ' most likely to ' + m[1] + ' is…';
+      if ((m = q.match(/^(?:who(?:'s| is| has)? (?:the )?)?(best|worst|funniest|smartest|nicest|loudest|quietest|biggest|hardest|easiest|coolest|scariest|most \w+|least \w+)\s+(.+)$/i)))
+        return 'The ' + m[1].toLowerCase() + ' ' + m[2] + ' is…';
+      return 'And the winner is…';
+    };
+    const polls = data.polls || [], byWeek = new Map(polls.map(p => [p.week, p]));
+    const day = w => new Date(w + 'T00:00:00').toLocaleDateString(undefined, { day:'numeric', month:'short' });
+    const weeks = (data.weeks || []).map((w, i) => '<option value="' + w + '">' + (i === 0 ? 'This week (' + day(w) + ')' : 'Week of ' + day(w)) +
+      (byWeek.has(w) ? ' · set' : '') + '</option>').join('');
+    const opts = (o, sel) => Object.entries(o).map(([k, v]) => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(v) + '</option>').join('');
+    $('admnote').textContent = 'A new question opens every Monday at 9:30. Voters see the live results; the winner is announced Friday at noon, when voting closes. Votes are anonymous: nobody, moderators included, can see who picked what.';
+    $('admbody').innerHTML =
+      '<div class="pollform">' +
+        '<h4>Set a question</h4>' +
+        '<label>Week<select id="pfweek">' + weeks + '</select></label>' +
+        '<label class="wide">Question<input id="pfq" maxlength="120" placeholder="Most likely to become state rank?" autocomplete="off"></label>' +
+        '<label>People answer with<select id="pfkind">' + opts(KINDS, 'student') + '</select></label>' +
+        '<label>How many they pick<select id="pfpick"><option value="1">One</option><option value="2">Up to two</option><option value="2x">Exactly two</option>' +
+          '<option value="3">Up to three</option><option value="3x">Exactly three</option></select></label>' +
+        '<label class="wide" id="pfcwrap" hidden>Answers, one per line (2 to 8)<textarea id="pfchoices" rows="4" placeholder="Pizza\nNoodles\nSushi"></textarea></label>' +
+        '<label>Monday reveal<select id="pfanim">' + opts(SHOWS, 'surprise') + '</select></label>' +
+        '<label>Friday celebration<select id="pfcel">' + opts(CELEBS, 'surprise') + '</select></label>' +
+        '<label class="wide">Friday’s line, before the winner<input id="pfline" maxlength="140" autocomplete="off"></label>' +
+        '<div class="pfrow wide"><button class="btn" type="button" id="pfprev">Preview Monday</button>' +
+          '<button class="btn" type="button" id="pfprevr">Preview Friday</button>' +
+          '<span class="pfhint">Opens Home in a new tab and plays it. A preview doesn’t count as seeing it.</span></div>' +
+        '<p class="pfhint wide" id="pfkindhint"></p>' +
+        '<div class="pfrow wide"><button class="btn primary" type="button" id="pfsave">Save</button><span class="pfmsg" id="pfmsg"></span></div>' +
+      '</div>' +
+      '<h4 class="pollh">Scheduled and past</h4>' +
+      (polls.length ? polls.map(p => '<div class="adminrow pollrow">' +
+          '<span class="wk">' + esc(day(p.week)) + '</span>' +
+          '<span class="nm"><b>' + esc(p.question) + '</b><em>' + esc(KINDS[p.kind] || p.kind) + (p.pick > 1 ? (p.exact ? ' · exactly ' : ' · up to ') + p.pick : '') +
+            (p.kind === 'custom' ? ': ' + esc((p.choices || []).join(', ')) : '') +
+            (p.kind === 'class' ? ' · subjects: ' + ((p.subjectsDone || []).length ? 'Years ' + esc(p.subjectsDone.slice().sort((a, b) => a - b).join(', ')) : 'not collected yet (Save again)') : '') + ' · ' + esc(SHOWS[p.anim] || p.anim) + ' / ' + esc(CELEBS[p.celebrate] || p.celebrate || '') + '</em></span>' +
+          '<span class="vt">' + p.voters + ' voted</span>' +
+          (p.week >= (data.weeks || [''])[0] ? '<button class="btn" type="button" data-edit="' + p.week + '">Edit</button>' : '') +
+          (!p.voters && p.week >= (data.weeks || [''])[0] ? '<button class="del" type="button" data-pdel="' + p.week + '">Remove</button>' : '') +
+        '</div>').join('') : '<p class="how">Nothing scheduled yet.</p>') +
+      '<h4 class="pollh">Suggestions from students</h4>' +
+      ((data.suggestions || []).length ? data.suggestions.map(sg => '<div class="adminrow pollrow">' +
+          '<span class="nm"><b>' + esc(sg.question) + '</b><em>' + esc(KINDS[sg.kind] || 'No answer type given') + ' · ' + esc(sg.by) + ' · ' + esc(seenAgo(sg.at)) + '</em></span>' +
+          '<button class="btn" type="button" data-use="' + esc(sg.id) + '">Use</button>' +
+          '<button class="del" type="button" data-sdel="' + esc(sg.id) + '">Dismiss</button></div>').join('')
+        : '<p class="how">None yet.</p>');
+
+    const kindHint = () => {
+      const k = $('pfkind').value;
+      $('pfcwrap').hidden = k !== 'custom';
+      $('pfkindhint').textContent = k === 'student' ? 'Results name real people to their whole year. Keep it kind: nothing anyone would be upset to win.'
+        : k === 'class' ? 'Each year picks from every subject in that year, with results by year. Saving collects the subjects from the year’s timetables (a minute or two).'
+        : k === 'teacher' ? 'Any teacher in the school directory.' : '';
+    };
+    const fill = p => {
+      $('pfweek').value = p.week; $('pfq').value = p.question; $('pfkind').value = p.kind;
+      $('pfpick').value = String(p.pick || 1) + (p.exact && p.pick > 1 ? 'x' : ''); $('pfanim').value = SHOWS[p.anim] ? p.anim : 'surprise';
+      $('pfcel').value = CELEBS[p.celebrate] ? p.celebrate : 'surprise'; $('pfline').value = p.reveal || '';
+      $('pfchoices').value = (p.choices || []).join('\n'); kindHint(); lineHint();
+    };
+    /* the line's placeholder is what Home would say if it's left empty */
+    const lineHint = () => { $('pfline').placeholder = autoLine($('pfq').value, $('pfkind').value) + '  (left empty, it says this)'; };
+    $('pfq').addEventListener('input', lineHint); $('pfkind').addEventListener('change', lineHint); lineHint();
+    $('pfkind').onchange = kindHint; kindHint();
+    $('pfweek').onchange = () => { const p = byWeek.get($('pfweek').value); if (p) fill(p); };
+    { const p = byWeek.get($('pfweek').value); if (p) fill(p); }
+    const pick = (sel, all) => sel.value === 'surprise' ? Object.keys(all)[1 + Math.floor(Math.random() * (Object.keys(all).length - 1))] : sel.value;
+    $('pfprev').onclick = () => window.open('home.html?pollpreview=intro&from=final&anim=' + encodeURIComponent(pick($('pfanim'), SHOWS)), '_blank');
+    $('pfprevr').onclick = () => window.open('home.html?pollpreview=reveal&anim=' + encodeURIComponent(pick($('pfcel'), CELEBS)) +
+      '&kind=' + encodeURIComponent($('pfkind').value) + '&q=' + encodeURIComponent($('pfq').value) + '&line=' + encodeURIComponent($('pfline').value), '_blank');
+    $('pfsave').onclick = async () => {
+      const b = $('pfsave'); b.disabled = true; $('pfmsg').textContent = '';
+      try {
+        await TT.api('/api/forum', { method:'POST', body:{ action:'pollset', week:$('pfweek').value, question:$('pfq').value,
+          kind:$('pfkind').value, pick:parseInt($('pfpick').value, 10), exact:/x$/.test($('pfpick').value), anim:$('pfanim').value, celebrate:$('pfcel').value, reveal:$('pfline').value,
+          choices:$('pfchoices').value.split('\n').map(x => x.trim()).filter(Boolean) } });
+        /* a class question: gather every subject each year takes (a slice at a time; years already done are skipped) */
+        if ($('pfkind').value === 'class'){
+          const week = $('pfweek').value, missed = [];
+          for (let y = 7; y <= 12; y++){
+            let from = 0;
+            try {
+              while (from !== null){
+                $('pfmsg').textContent = 'Saved. Collecting Year ' + y + ' subjects…';
+                const r = await TT.api('/api/forum', { method:'POST', body:{ action:'pollsubjects', week, year:y, from } });
+                from = r.next;
+              }
+            } catch (e){ missed.push(y); }
+          }
+          $('pfmsg').textContent = missed.length ? 'Saved, but Year ' + missed.join(', ') + ' subjects didn’t collect (they’ll pick from their own until you Save again).' : 'Saved, with every year’s subjects.';
+        } else $('pfmsg').textContent = 'Saved.';
+        await load();
+      } catch (e){ $('pfmsg').textContent = e.message; b.disabled = false; }
+    };
+    $('admbody').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { fill(byWeek.get(b.dataset.edit)); $('pfq').focus(); });
+    $('admbody').querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
+      if (!confirm('Remove this question? Nobody has voted on it yet.')) return;
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'polldel', week:b.dataset.pdel } }); await load(); }
+      catch (e){ alert(e.message); }
+    });
+    $('admbody').querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
+      const sg = (data.suggestions || []).find(x => x.id === b.dataset.use); if (!sg) return;
+      $('pfq').value = sg.question; if (sg.kind) $('pfkind').value = sg.kind; kindHint(); $('pfq').focus();
+    });
+    $('admbody').querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => {
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.sdel } }); await load(); }
+      catch (e){ alert(e.message); }
+    });
+  }
+
   function renderMahjong(){
     const st = (data && data.state) || { players:[], rounds:[] };
     const players = st.players || [], rounds = (st.rounds || []).slice().reverse();
@@ -3682,7 +3814,7 @@ function revGame(host, opts){
     dlg.addEventListener('close', tidy);
     dlg.addEventListener('click', e => { if (e.target === dlg) shut(); });
     const head = title => '<div class="dlg-h"><h2 id="rvresettitle">' + title + '</h2>' +
-      '<button class="btn icon" type="button" data-x aria-label="Close">✕</button></div>';
+      '<button class="btn icon" type="button" data-x aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>';
 
     function list(){
       const by = {};

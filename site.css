@@ -315,3 +315,72 @@ a.nowcard:hover{border-color:var(--accent)}
 .tiles.bento #tileMahjong.wide:not(.tall){grid-template-columns:auto auto minmax(0,1fr);grid-template-rows:1fr}
 .tiles.bento #tileMahjong.wide:not(.tall) .tdesc{grid-column:3;grid-row:1;align-self:center;text-align:right;margin:0}
 .tiles.bento #tileMahjong.wide:not(.tall) .tname{align-self:center}
+
+/* a sheet that slides up from the bottom (leaderboards, past polls; games.js and poll.js) */
+.sheetback{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.36);opacity:0;transition:opacity .28s ease}
+.sheetback.in{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:81;margin:0 auto;width:min(720px,100%);max-height:min(82vh,760px);
+  display:flex;flex-direction:column;box-sizing:border-box;background:var(--panel);color:var(--text);
+  border:var(--card-border);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.24);
+  padding-bottom:env(safe-area-inset-bottom);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.sheet.in{transform:none}
+/* always the same height when it opens; long boards scroll inside it */
+.sheet{height:min(78vh,700px)}
+.sheetbody{flex:1;min-height:0}
+.sheet.drag{transition:none}
+.sheetgrab{display:flex;justify-content:center;padding:9px 0 3px;cursor:grab;touch-action:none}
+.sheetgrab i{width:42px;height:4px;border-radius:2px;background:var(--line)}
+.sheethd{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 8px 20px;touch-action:none}
+.sheethd h2{margin:0;font-family:var(--font-display);font-size:1.125rem;font-weight:var(--display-w);
+  letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.sheetbody{overflow:auto;overscroll-behavior:contain;padding:2px 20px 22px}
+.sheetbody .lbpick{margin-bottom:12px}
+html.sheetopen,html.sheetopen body{overflow:hidden}
+html[data-motion="reduced"] .sheet,html[data-motion="reduced"] .sheetback{transition:none}
+@media (max-width:640px){ .sheetbody{padding:2px 14px 18px} .sheethd{padding-left:14px} }
+
+/* ── Home: eight small tiles, four by two (phones too) ─────────── */
+.qtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 4px}
+.qtile{display:flex;align-items:center;gap:10px;min-width:0;padding:12px 14px;border-radius:var(--radius);text-decoration:none;
+  color:var(--text);background:var(--panel);border:var(--card-border);box-shadow:var(--shadow);
+  transition:transform .14s,box-shadow .14s,border-color .14s,background .14s}
+.qtile:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.qtile .ico{font-size:1.25rem;line-height:1;flex:none}
+.qtile .tname{font-weight:600;font-size:0.9375rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qtile.locked{opacity:.75}
+@media (max-width:560px){
+  .qtiles{gap:7px}
+  .qtile{flex-direction:column;justify-content:center;gap:5px;padding:10px 4px;text-align:center}
+  .qtile .ico{font-size:1.375rem}
+  .qtile .tname{font-size:0.71875rem;white-space:normal;line-height:1.15;overflow-wrap:anywhere}
+}
+/* the forum's composer: one line until you click into it */
+.forum{margin-top:24px}
+.fnew textarea{resize:none;transition:min-height .18s ease}
+.fnew #fpost{display:none}
+.fnew.open #fpost{display:inline-flex}
+.fnew.open textarea{min-height:76px;resize:vertical}
+.fmore{display:block;margin:10px auto 0}
+.fmore[hidden]{display:none}
+/* a moderator's delete on someone else's post: there, but only on hover */
+.fmeta .fdel.fmod{opacity:0;transition:opacity .15s}
+.fpost:hover .fdel.fmod,.fdel.fmod:focus-visible{opacity:1}
+@media (hover:none){ .fmeta .fdel.fmod{opacity:.5} }
+/* arriving from a shared poll link */
+.pollskip{display:block;width:max-content;margin:-6px auto 16px;font-size:0.8125rem;font-weight:700;color:var(--muted);text-decoration:none}
+.pollskip:hover{color:var(--accent)}
+.pollskip[hidden]{display:none}
+
+/* the footer's easter egg: "students" scrambles on hover (home.html) */
+.glitchy{display:inline-block;cursor:default;white-space:nowrap;vertical-align:bottom}
+.glitchy.on{overflow:hidden;text-align:center;color:var(--accent)}
+
+/* ── icons (icons.js: Phosphor, inlined) ───────────────────────── */
+/* (the basic icon sizing lives in theme.css, which every page loads) */
+.pminbtn .ph{width:15px;height:15px;transition:transform .25s}
+.pcard.pmin .pminbtn .ph{transform:rotate(180deg)}
+/* Home tiles: duotone, a colour each (Settings → Home icons → Theme colour uses the accent) */
+.qtile .ico{color:var(--tc,var(--accent))}
+.qtile .ico .ph{width:1.55rem;height:1.55rem}
+html[data-tileicons="accent"] .qtile .ico{color:var(--accent)}
+@media (max-width:560px){ .qtile .ico .ph{width:1.6rem;height:1.6rem} }

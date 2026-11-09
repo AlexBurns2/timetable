@@ -1,0 +1,7 @@
+# Kept in the repo, never deployed: notes for whoever works on the site, and
+# old copies of pages. These name the people behind the site.
+*.md
+index2.html
+backup
+graphify-out
+.preview

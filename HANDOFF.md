@@ -2363,3 +2363,263 @@ free periods, finder, resources and Settings descriptions are cut to a line.
 **Tests (scratchpad):** `hintcheck.mjs` (12 checks plus sample rounds),
 `pagecheck.mjs`, `modcheck.mjs` (21), `reactcheck.mjs` (25). The mock server
 `mock.mjs` (port 8793) runs the real hint engine.
+
+### 8.52 The weekly anonymous poll, Home and Games cleanup, revision spacing
+
+**The poll (`api/_poll.js` via `/api/forum`, `poll.js`, `poll.css`).**
+- Served through the forum route (`?poll=1|history|admin`, POST actions
+  `pollvote`, `pollsuggest`, `pollset`, `polldel`, `suggestdel`), so it costs
+  no Vercel function. `/poll` is a rewrite (vercel.json) to `/api/forum?og=1`:
+  a page whose link preview shows the question (never results), which then
+  sends you on to `home.html?poll=1`.
+- The week, Sydney time: a moderator-set question opens Monday 00:00. Once
+  you've voted you see the live results. Friday 12:00 voting closes and the
+  winner is announced; the final results are then shown to everyone until the
+  next Monday, when it moves to "Past polls".
+- Kinds: `period` (0–7), `student` (your own year only; results are per year),
+  `teacher` (school directory), `class` (your own subjects, from your
+  timetable), `custom` (2–8 moderator answers). `pick` lets people choose up
+  to 3; results are then the share of voters who picked each.
+- Answers are always checked on the server against that list. The box on the
+  page only accepts an answer from the list (Suggest), and a short list shows
+  as buttons instead.
+- **Anonymity is in the data model.** `poll_voter (week, email)` records that
+  you voted and nothing else. `poll_tally (week, scope, choice, votes)` holds
+  counts with no names or times, bumped by one `poll_bump()` call per vote
+  (every pick plus a hidden `__n` voter count). Nothing links a voter to an
+  answer, and the server never logs one. Results stay hidden until a scope has
+  5 voters. Your own pick is kept only on your device (`poll.mine.<week>`, not
+  a synced `tt.` key).
+- Signed out (a friend's link): the card shows the question and a sign-in form
+  (saves the same `tt.creds` as Settings), and Home shows only the poll until
+  you vote or skip.
+- The live "N votes" counter refreshes every 45 s (count only).
+- A round button in the card's corner minimises it to one line (the question);
+  clicking the card opens it again. Remembered per week (`tt.poll_min`), so a
+  new question arrives open, and Friday's winner announcement opens it too.
+- **The show.** Each week has an `anim`, chosen on the moderator Polls tab:
+  The Drop, Explode (last week's card blows up, the new one rises out of the
+  smoke), Spotlight, Countdown, Curtain, Slot machine, or Surprise me (picked
+  from the week). It plays once per person (`tt.poll_seen`) when they first
+  see the new question. Friday noon has one shared celebration (stage, chasing
+  lights, drumroll, the winner in gold, fireworks, confetti), once per person
+  (`tt.poll_revealed`).
+- Shows play over the card (a stage just bigger than it); the page dims, but
+  nothing else is covered or blocked. Click, Skip or Escape ends one, and
+  reduced motion turns them off.
+- `home.html?pollpreview=intro&anim=curtain` (or `=reveal`) replays one without
+  marking it seen; the moderator tab's Preview buttons open these.
+- Moderators: set a question per week (this week or later; kind, picks and
+  answers lock once anyone has voted, but wording and show can still change),
+  see voter counts, and use or dismiss student suggestions (3 per person a
+  week).
+- SQL: in the header of `api/_poll.js` and in SETUP.md. Until it's run, Home
+  simply shows no poll.
+
+**Home.** The HSC strip is gone. The poll sits under the header. The tiles are
+eight small ones in a 4 × 2 grid on every screen (Notes removed; the page
+still exists). The forum shows the newest thread with "Show N more", and the
+composer is one line until clicked. The server now sends `mine` (yours) and
+`canDelete` (yours, or a moderator's); a moderator's delete on other people's
+posts shows only on hover.
+
+**Games.** No sideways shelves: small cards (emoji, name, your own best). The
+leaderboards are back at the bottom, as a card per board with its top three
+that opens the sheet. `.sheet` styles now live in site.css (shared with the
+poll's Past polls).
+
+**Revision.** The study panel's margin was being overridden (it sat flush
+against the subjects). It now has room, theme borders and shadow, and plan
+items put the topic on its own line. The countdown and focus text is shorter.
+
+**Assets.** `?v=` bumped to 20261109 and the service worker cache to v6, so the
+new CSS loads on the first visit after deploy.
+
+**Tests (scratchpad):** `pollcheck.mjs` (33 checks against a fake database:
+one vote each, no answer in the voter row, no names in the tally, the 5-voter
+minimum, per-year student polls, pick-several percentages, Friday noon
+closing, history, suggestions limit, moderator locks, preview escaping).
+`reactcheck.mjs` now stubs the poll imports.
+
+### 8.53 Poll shows reworked, Monday 9:30 opening, traceability cleanup
+
+**Timing.** Questions open **Monday 09:30** Sydney (not before school), voting
+closes and the winner is announced **Friday 12:00**. `pollClock()` works in
+wall-clock seconds and returns exact instants (`resultsAt`, `nextAt`, `now`;
+correct across daylight-saving changes). Every open Home page sets a timer for
+the next change, refreshes then (with a little jitter), and starts the moment 6
+seconds after it by the server's clock, so everyone with Home open sees it at
+the same time.
+
+**What people see.** The vote count only shows once you've voted. The corner
+says "Closes in …" (open) or "Opens in …" (closed). After voting there are just
+"Your vote is in" and the live bars. Not voted and closed: the final results
+with "Come back on Monday for the next question", and no show.
+
+**Monday reveals (`anim`)** move the card itself, from exactly how it looked
+last time (`tt.poll_view`: the question, state and top results) to the new
+question:
+- **drop:** falls onto the old card;
+- **wreck:** swings in on a chain and knocks the old card away;
+- **topple:** the old card tips over forwards;
+- **explode:** jagged cracks, irregular shards, spark streaks, lumpy smoke, and
+  the new card fades in with its question;
+- **flip:** turns over like a sign;
+- **slot:** the card spins like a reel.
+
+A person's very first poll gets `first`, a drop that pushes the page down.
+
+**Friday celebrations (`celebrate`)**, for people who voted:
+- **spotlight:** smooth damped sweeps;
+- **countdown:** a bright game-show set with a ring timer;
+- **curtain:** velvet folds that draw up into swags with gold tie-backs;
+- **envelope;**
+- **slot:** a reel of the answers with a near miss.
+
+Each builds up, says the reveal line (`reveal`, or one made from the question:
+"The person most likely to … is…"), drumrolls, names the winner, then confetti,
+and the leaderboard grows on the card.
+
+**Rules for every show:** shows wait for the page to finish loading and to be
+on screen. The rest of Home is locked while one plays (25 s safety release).
+Skip, a click or Escape ends one. They're off with reduced motion. The page
+behind a celebration is darkened by the stage's own shadow (`.pstage`
+box-shadow), not an overlay.
+
+**Moderator form:** "Monday reveal", "Friday celebration" and "Friday's line"
+(its placeholder is the automatic line). The preview buttons pass the show,
+question and line to `home.html?pollpreview=…`.
+
+**Traceability.** `.vercelignore` keeps the `.md` docs, `index2.html`,
+`backup` and `graphify-out` out of the deployment (they named the people
+behind the site). Names are also out of the comments in served files (index.html,
+jim.js). The GitHub repo is still public with author emails in its history:
+make it private (GitHub → Settings → Change visibility); Vercel keeps
+deploying from a private repo.
+
+**Footer easter egg:** hovering "students" scrambles it into random characters.
+
+### 8.54 Icons: Phosphor, inlined
+
+`icons.js` holds the 24 Phosphor Icons (2.1.1, MIT) the site uses, as path
+data. No icon font or CDN script loads on the live site.
+- `Icon.svg(name)` returns an `<svg>`, and `<span data-icon="name">` is filled
+  in on load (`Icon.fill(root)` after drawing new markup).
+- Regular weight for small UI: the header's Home (house) and Timetable (table)
+  buttons, now icon-only with aria-label and title on every page; Settings
+  (gear); Moderator (wrench); sound (speaker-high/low/none/x); close (x); week
+  and month arrows; back; the poll's minimise, Share and Copy link.
+- Duotone for the eight Home tiles, a colour each. Settings → Home icons →
+  "Theme colour" switches them to the accent (`tt.tileicons`, applied by
+  theme.js as `html[data-tileicons]`). Focus mode swaps the Games tile to the
+  duotone target.
+- Emoji stay where they're fun: game icons, reactions, the crown, flame and
+  trophy.
+- To add an icon: copy its `<path>`s from
+  `@phosphor-icons/core/assets/<weight>/<name>.svg` into `icons.js`.
+- Base sizing is in theme.css (the timetable page doesn't load site.css).
+- **Back.** theme.js adds a Back button (arrow-left, icon-only) at the start
+  of every sub-page header (`.pagehead .crumbs`, so not Home or the
+  timetable). It runs `history.back()` when the last page was this site,
+  otherwise it goes to Home. A page can handle it first through
+  `window.TTBack()`: games.js closes an open game. The timetable's "back to
+  your timetable" button (`#whoback`) uses the same arrow.
+
+### 8.55 Show polish (round 2)
+
+- Explode: the cracks are now jagged rays from the centre with a few branches,
+  each racing outwards.
+- Wreck: the chain length is worked out from the card's position, so the
+  swing always starts fully off the page, on any monitor.
+- Topple: it rocks back, teeters, then falls with gravity and a small bounce
+  (2.3 s).
+- Flip: it lifts, winds back, spins and lands with a thud (about 2 s).
+- Slot reel: 9 gibberish cards (made-up question and answers), a 3.6 s spin
+  that slows right down, then a clunk.
+- First poll: after landing, the question decodes letter by letter and the
+  rest of the card fades in.
+- Celebrations: the stage is exactly the card (not bigger). There's no
+  percentage under the name. The winner gets a gold medal on the corner, and
+  2nd and 3rd rise in with silver and bronze. The gold tie-backs are gone.
+- Countdown: the background spin eases up and down (`rampRate` on the
+  animation's playback rate); no sudden starts.
+- Envelope: it starts hidden below, so it no longer appears, drops and rises
+  again.
+- Slot machine: the server sends `reel`, a shuffled set of up to 30 of the
+  possible answers (people from the year for a student poll), on Fridays only.
+  The reel slows and almost stops on the runner-up, then clicks onto the
+  winner.
+- Back only shows on the games and revision pages while a game or subject is
+  open (`TTBackOn`). Other pages have Home.
+- Game cards lift 2px on hover like the Home tiles. The entrance animation
+  used to pin their transform.
+- The sheet (leaderboards, past polls) always opens at `min(78vh, 700px)` and
+  scrolls inside.
+- Account vs device: voting, "seen", "revealed", the saved card view and the
+  minimised state follow the account (server, or synced `tt.` keys). Only
+  "You picked X" stays on the device, on purpose: syncing it would store your
+  answer against your login.
+
+### 8.56 Show polish (round 3), moderator page via Settings
+
+- Topple: wobbles that start small and grow until it goes over. Flip: a quick
+  spin, then a settling wobble.
+- Winner medal: it now sits beside the gold name (`.pnamewrap`), not inside
+  its background-clipped text, where it was invisible.
+- Countdown: one long, smooth build to full speed, then it eases to a slow,
+  steady turn as the winner appears.
+- Envelope: rises; the seal lifts; the flap opens slowly to upright, then
+  falls behind the card; the card (face down, a star) slides out; then the
+  name. Layers, back to front: inside, card, pocket, flap.
+- Moderator page: it's now a "Moderator" button in Settings (shared Settings
+  and the timetable's), only for moderators. The header wrench buttons are
+  gone, so the pages look exactly as everyone else sees them.
+  `games.html?play=admin` still works.
+- Poll load errors (tables missing, server hiccup) hide the card instead of
+  showing an error on everyone's Home.
+
+### 8.57 Exact picks, share image, Monday height easing
+
+- `pickexact`: moderators choose "Up to two/three" or "Exactly two/three". The
+  server refuses any other number, and Vote stays off until it's right. New
+  column in the poll SQL; SETUP.md is regenerated from `_poll.js`.
+- Share link: `images/poll-og.png` (1200 × 630, made for this) is the preview
+  image, with `summary_large_image`. The question is the preview's title; the
+  results are never in it. `.preview/share-preview.html` (git-ignored) mocks
+  how it looks in iMessage, WhatsApp and Instagram.
+- Monday reveals keep the card at the old card's height during the show, then
+  ease to the new height, so the page below doesn't jump.
+  `?pollpreview=intro` now ends on a fresh, unanswered question, like a real
+  Monday.
+
+### 8.58 Pre-push audit fixes
+- Poll: after a Monday show, the click-to-skip listener is removed (it used to
+  pin `#poll` to the old height on the next click). Skipping a Friday show also
+  skips the confetti.
+- Poll: if the noon/9:30 refresh fails, the card stays and retries in 15–30 s
+  instead of disappearing. A draw error hides the card instead of leaving
+  "from a link" visitors stuck.
+- Poll: signed-out visitors after Friday noon see "Voting's closed". There's no
+  Monday-style show over a final card that has too few votes, and no
+  background polling once voting has closed.
+- Server: "Opens in / Closes in" are right across daylight-saving changes.
+  Moderator voter counts come from the `__n` tally rows (no 1,000-row cap). The
+  signed-out count reads only `__n`. HEAD works on `/poll`. The suggestion limit
+  counts from 9:30 Monday. Staff's missing year comes from the cached directory
+  (`yearOf` in forum.js).
+- Site: the signed-out forum "Sign in" button shows. "Show N more" hides
+  properly. The timetable page's Home icons setting works. Icon-only buttons are
+  centred again (`.btn:not(.icon) > .ph`).
+
+### 8.59 Class polls: every subject in the year
+- Class questions are now per year, like student ones (`scopeOf`). Voters pick
+  from every subject taken in their year, not just their own; staff can't vote
+  on them.
+- No list of a year's subjects exists, so saving a class question in the
+  moderator page builds one. The page calls `pollsubjects {week, year, from}`
+  for Years 7–12, 24 timetables at a time, and the server merges the subjects
+  into `poll.choices` as `{ years:{ "9":[…] }, done:["9"] }`. Years already
+  done are skipped, and saving again finishes any that failed.
+- Until a year is collected, its students pick from their own subjects. Your own
+  subjects are always included either way. Re-saving keeps the collected
+  lists. The moderator list shows which years are collected.

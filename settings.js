@@ -27,7 +27,7 @@ let creds  = get(LS.creds, null);
 const host = document.createElement('div');
 host.innerHTML =
   '<dialog id="setDlg" class="setdlg">' +
-    '<form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close">&#10005;</button></form>' +
+    '<form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b">' +
       '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div></div>' +
       '<div class="field" id="s_customwrap" hidden>' +
@@ -53,6 +53,8 @@ host.innerHTML =
       '</div>' +
       '<div class="field"><label>Home, games &amp; resources</label><div class="modes" id="s_layout">' +
         '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Grid</button></div></div>' +
+      '<div class="field"><label>Home icons</label><div class="modes" id="s_tileic">' +
+        '<button type="button" data-ti="tile">Colourful</button><button type="button" data-ti="accent">Theme colour</button></div></div>' +
       '<div class="field"><label>Login</label>' +
         '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
         '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
@@ -65,12 +67,13 @@ host.innerHTML =
       '<div class="tabbtns" id="moresettings">' +
         '<button class="btn" type="button" id="openA11y">Accessibility</button>' +
         '<button class="btn" type="button" id="openDisplay">Display</button>' +
+        '<button class="btn" type="button" id="openMod" hidden>Moderator</button>' +
       '</div>' +
       '<div class="tabbtns"><button class="btn" type="button" id="modetoggle"></button></div>' +
     '</div>' +
   '</dialog>' +
   '<dialog id="setA11y" class="setdlg">' +
-    '<form method="dialog" class="dlg-h"><h2>Accessibility</h2><button class="btn icon" value="close">&#10005;</button></form>' +
+    '<form method="dialog" class="dlg-h"><h2>Accessibility</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b"><div class="field">' +
       '<div class="custrow"><span>Text size</span><input type="range" id="a_text" min="80" max="150" step="5"><b id="a_text_v"></b></div>' +
       '<div class="custrow"><span>Zoom</span><input type="range" id="a_zoom" min="70" max="150" step="5"><b id="a_zoom_v"></b></div>' +
@@ -83,7 +86,7 @@ host.innerHTML =
     '<div class="dlg-f"><button class="btn primary" type="button" data-back>Done</button></div>' +
   '</dialog>' +
   '<dialog id="setDisplay" class="setdlg">' +
-    '<form method="dialog" class="dlg-h"><h2>Display</h2><button class="btn icon" value="close">&#10005;</button></form>' +
+    '<form method="dialog" class="dlg-h"><h2>Display</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b">' +
       '<div class="field"><label>Header</label><div class="modes" id="headers">' +
         '<button type="button" data-header="unified">Panel</button><button type="button" data-header="split">Separated</button></div>' +
@@ -237,6 +240,15 @@ function renderLayout(){
   });
 }
 
+/* ── the Home tile icons: a colour each (default), or the theme's accent ── */
+function renderTileIcons(){
+  const cur = get('tt.tileicons', 'tile');
+  [...$('s_tileic').children].forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.ti === cur));
+    b.onclick = () => { set('tt.tileicons', b.dataset.ti); document.documentElement.setAttribute('data-tileicons', b.dataset.ti); renderTileIcons(); };
+  });
+}
+
 /* ── mode toggle + open/close wiring ── */
 function renderModeBtn(){ $('modetoggle').textContent = get(LS.mode, 'light') === 'dark' ? 'Light mode' : 'Dark mode'; }
 $('modetoggle').onclick = () => { set(LS.mode, get(LS.mode,'light')==='dark'?'light':'dark'); apply(); renderModeBtn(); };
@@ -246,7 +258,7 @@ document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => 
   b.closest('dialog').close(); openSettings(); });
 
 function openSettings(){
-  renderSkins(); renderCustom(); renderLayout(); renderCreds(); renderModeBtn();
+  renderSkins(); renderCustom(); renderLayout(); renderTileIcons(); renderCreds(); renderModeBtn();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
   /* finding Settings retires the bubble that points at it; no more bubbles inside */
@@ -257,16 +269,19 @@ function openSettings(){
 const gear = $('themebtn');
 if (gear){ gear.onclick = openSettings; gear.title = 'Settings'; }
 
-/* Moderators get a small 🛠️ button beside the gear, on every page, and
-   nothing else about the page changes for them. The games page has its own
-   (#admin). The server answers isMod and checks every moderator action again. */
-if (gear && !$('admin') && TTx.signedIn && TTx.signedIn() && TTx.api){
+/* Moderators find the moderator page in Settings (it used to be a header
+   button, which changed how the page looked for them). The server answers
+   isMod and checks every moderator action again. */
+if (TTx.signedIn && TTx.signedIn() && TTx.api){
   TTx.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
     if (!d || !d.isMod) return;
-    const b = document.createElement('a');
-    b.className = 'btn icon modbtn'; b.href = 'games.html?play=admin'; b.title = 'Moderator';
-    b.setAttribute('aria-label', 'Moderator'); b.textContent = '🛠️';
-    gear.parentNode.insertBefore(b, gear);
+    const b = $('openMod'); if (!b) return;
+    b.hidden = false;
+    b.onclick = () => {
+      $('setDlg').close();
+      if (document.body.dataset.page === 'games' && typeof window.openGame === 'function') window.openGame('admin');
+      else location.href = 'games.html?play=admin';
+    };
   }, () => {});
 }
 })();
