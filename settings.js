@@ -51,8 +51,6 @@ host.innerHTML =
         '</details>' +
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
-      '<div class="field"><label>Home, games &amp; resources</label><div class="modes" id="s_layout">' +
-        '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Grid</button></div></div>' +
       '<div class="field"><label>Home icons</label><div class="modes" id="s_tileic">' +
         '<button type="button" data-ti="tile">Colourful</button><button type="button" data-ti="accent">Theme colour</button></div></div>' +
       '<div class="field"><label>Login</label>' +
@@ -231,14 +229,6 @@ function renderDisplay(){
   toggle('t_progress','progress', true); toggle('t_zen','zen', false); toggle('t_anim','anim', false);
 }
 
-/* ── tile layout (Home, Games, Resources) ── */
-function renderLayout(){
-  const cur = TTx.layout ? TTx.layout() : 'classic';
-  [...$('s_layout').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.layout === cur));
-    b.onclick = () => { set(LS.layout, b.dataset.layout); renderLayout(); dispatchEvent(new CustomEvent('tt:layout')); };
-  });
-}
 
 /* ── the Home tile icons: a colour each (default), or the theme's accent ── */
 function renderTileIcons(){
@@ -258,7 +248,7 @@ document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => 
   b.closest('dialog').close(); openSettings(); });
 
 function openSettings(){
-  renderSkins(); renderCustom(); renderLayout(); renderTileIcons(); renderCreds(); renderModeBtn();
+  renderSkins(); renderCustom(); renderTileIcons(); renderCreds(); renderModeBtn();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
   /* finding Settings retires the bubble that points at it; no more bubbles inside */

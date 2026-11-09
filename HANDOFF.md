@@ -2623,3 +2623,41 @@ data. No icon font or CDN script loads on the live site.
 - Until a year is collected, its students pick from their own subjects. Your own
   subjects are always included either way. Re-saving keeps the collected
   lists. The moderator list shows which years are collected.
+
+### 8.60 One tile height, no layout toggle, multiplayer Tetris and Snake
+- **Layout setting removed.** The Grid / Gallery choice is gone from both
+  Settings dialogs. `TT.layout()` always returns `'classic'`. The games page's
+  gallery branch and the resources page's bento layout were removed;
+  `bento.js` stays, but nothing uses it.
+- **Tile height.** `--tile-h` is defined in theme.css:
+  `clamp(96px,12vh,132px)`, or `clamp(92px,11.5vh,112px)` up to 560px wide.
+  Home tiles, game cards, revision cards and resource cards all use it, so
+  they're the same height on every page and grow a little on taller screens.
+  Cards show the icon on top and the name at the bottom (two lines at most).
+  Revision cards no longer show progress under the name.
+- **Multiplayer tag.** The NEW pill is now MULTIPLAYER (`mp:true` in `GAMES`)
+  on Hong Kong Mahjong, Tetris and Snake. The Jim Button lost its NEW tag.
+- **Online rooms.** `rooms.js` is loaded only when someone opens Versus or
+  Online. It uses the same Firebase Realtime Database as Hong Kong Mahjong's
+  rooms, under `rooms/tt-<code>` and `rooms/sn-<code>`. It stores only the
+  name each player types, messages delete themselves after 30 s, and a
+  player's entry goes when they close the page.
+  - `mpLobby()` in games.js is the shared lobby: your name, Make a room or Join
+    by code, and the host starts a round. After the round, everyone returns to
+    the room for a rematch.
+- **Tetris Versus** (the 5th mode), for 2–4 players:
+  - Everyone gets the same seeded piece order.
+  - Clearing 2/3/4 lines sends 1/2/4 garbage rows, plus a bit more for combos
+    and a clear board, to a random opponent who's still in. Your own clears
+    cancel incoming garbage first, which shows as a red bar on the left edge.
+  - Gravity speeds up every 30 s. Each placement sends your board for the mini
+    views. The last one standing wins.
+- **Snake Online** (Solo / Online switch), for 2–4 snakes on a 24×24 arena:
+  - The host runs the game and sends the arena out every 140 ms; the others
+    only send their turns.
+  - Hitting any snake, or a head-on, puts you out, and your body becomes food.
+    The last snake left wins.
+  - Players other than the host see their own turns a moment late.
+- **Testing without the real database:** `.preview/rooms-mock.js` is a stand-in
+  `window.Rooms` that links two tabs locally. Load it on the page before
+  opening Versus or Online.

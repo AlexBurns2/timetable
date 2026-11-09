@@ -507,3 +507,8 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 
 #hdrback[hidden]{display:none}
 #openMod[hidden]{display:none}
+
+/* tiles (Home, Games, Revision, Resources): one height on every page, a little
+   taller on a taller screen, within a range */
+:root{--tile-h:clamp(96px,12vh,132px)}
+@media (max-width:560px){ :root{--tile-h:clamp(92px,11.5vh,112px)} }

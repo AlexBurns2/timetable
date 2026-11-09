@@ -443,8 +443,7 @@ html[data-motion="reduced"] .chopt.chflip{animation:none}
 /* revision: the study panel sits under the subjects, with room between */
 .rvstudy{margin-top:22px}
 body[data-page="revision"] .rvyear{margin-bottom:16px}
-body[data-page="revision"] .gamegrid{gap:16px}
-body[data-page="revision"] .gamecard{padding:18px 20px;line-height:1.3}
+body[data-page="revision"] .gamegrid{gap:10px}
 html[data-motion="reduced"] .cathd{animation:none;opacity:1}
 /* flashcards */
 .fcdecks{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
@@ -715,8 +714,6 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 @media (max-width:560px){
   /* two subjects a row, so they fit on one screen */
   body[data-page="revision"] .gamegrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  body[data-page="revision"] .gamecard{min-height:0;padding:14px}
-  body[data-page="revision"] .gamecard h2{font-size:1.0625rem}
   body[data-page="revision"] .gamecard p{font-size:0.75rem}
 
   /* Tetris: Hold | board | Next across the top, stats in a row underneath, so
@@ -1100,15 +1097,46 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 @media (max-width:560px){ .pollform{grid-template-columns:1fr} }
 
 /* games: small cards, the name and your own best (classic grid) */
-.gcompact{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.gcompact{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+/* online rooms (Tetris versus, Snake online) */
+.mppanel{margin:0 0 14px}
+.mpbox{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:var(--radius);background:var(--panel-2);border:1px solid var(--line)}
+.mpname{display:flex;flex-direction:column;gap:4px;font-size:0.75rem;font-weight:700;color:var(--muted);max-width:240px}
+.mpbox input{font:inherit;font-size:0.9375rem;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 11px;min-width:0}
+.mpbox input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.mprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mprow #mpcode{width:7.5em;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.mpor{color:var(--muted);font-size:0.8125rem}
+.mpmsg{margin:0;color:var(--muted);font-size:0.8125rem}
+.mphead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mplabel{display:block;font-size:0.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mpcode{font-family:var(--font-num);font-size:1.75rem;letter-spacing:.14em}
+.mpbtns{display:flex;gap:6px}
+.mplist{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.mplist li{display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-weight:700;font-size:0.875rem}
+.mplist li.me{border-color:var(--accent)}
+.mplist li span{font-size:0.6875rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mpbox > .btn.primary{align-self:flex-start}
+.mpon{flex-direction:row;align-items:center;justify-content:space-between;padding:9px 12px;font-size:0.875rem}
+.topps{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:12px 0 0}
+.topp{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:0.75rem;font-weight:700}
+.topp canvas{image-rendering:pixelated;width:60px;height:120px}
+.topp.out{opacity:.35}
+.tmodes{flex-wrap:wrap}
+.snmodes{margin-bottom:12px}
+.snp{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-weight:700}
+.snp i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.snp.out{opacity:.4;text-decoration:line-through}
 .gcompact .gamecard,.bento .gamecard{padding:13px 15px;gap:3px}
-.gcompact .gamecard{min-height:76px}
+.gcompact .gamecard{height:var(--tile-h);min-height:0}
+.gcompact .gamecard h2{margin-top:auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2}
+
 .gcompact .gamecard .ico,.bento .gamecard:not(.tall) .ico{font-size:1.5rem;margin-bottom:2px}
 .gcompact .gamecard h2,.bento .gamecard:not(.wide) h2{font-size:1rem}
 .gcompact .gamecard .go{display:none}
-.gcompact .gamecard .sum{margin-top:auto}
+.gcompact .gamecard .sum{margin-top:2px}
 .gsec{margin:18px 2px 9px}
-@media (max-width:560px){ .gcompact{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .gcompact .gamecard{min-height:70px;padding:11px 12px} }
+@media (max-width:560px){ .gcompact{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .gcompact .gamecard{padding:11px 12px} .gcompact .gamecard h2{font-size:0.9375rem} }
 /* the leaderboards at the bottom */
 .lbboards{margin-top:26px}
 .lbboards .gsec{display:flex;align-items:center;justify-content:space-between}
