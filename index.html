@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="theme.css?v=20261104">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <script src="theme.js"></script>
+<script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -440,8 +441,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
                 aria-label="Back to your timetable" hidden>&lsaquo;</button>
         <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
                autocorrect="off" autocomplete="off" placeholder="first.last1"
-               aria-label="Whose timetable to show" list="whoamilist">
-        <datalist id="whoamilist"></datalist>
+               aria-label="Whose timetable to show">
         <span class="dom" id="whoamidom"></span>
       </div>
       <span id="sub"></span>
@@ -523,10 +523,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="field">
       <label>Cycle week</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
-        The school API reports the cycle starting <b id="cyc_start">—</b>, and the
-        A/B week is counted from there. If the grid is showing the wrong week,
-        set which week it really is: the correction is remembered and follows you
-        to your other devices.
+        Cycle starts <b id="cyc_start">—</b>. Wrong A/B week? Set it here.
       </div>
       <div class="custrow"><span id="cyc_label">Today is</span>
         <span style="display:flex;gap:6px">
@@ -541,14 +538,12 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <button type="button" data-layout="gallery">Gallery</button>
         <button type="button" data-layout="classic">Grid</button>
       </div>
-      <div class="hint">Gallery packs the tiles into a mosaic. Grid lines them up evenly, with the games in rows that scroll sideways.</div>
     </div>
 
     <div class="field">
       <label>Login</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
-        Your school login, stored <b>only on this device</b> and sent to the
-        timetable service to fetch your timetable.
+        Stored <b>only on this device</b>.
       </div>
       <div class="custrow"><span>School email</span>
         <input type="text" id="cr_email" class="crin" spellcheck="false"
@@ -637,8 +632,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_zen" class="sw"></div>
       <div class="custrow"><span>Animations</span>
         <input type="checkbox" id="t_anim" class="sw"></div>
-      <div class="hint">Transparent drops the page background for custom
-        browser wallpapers like Zen.</div>
+      <div class="hint">Transparent is for browser wallpapers like Zen.</div>
     </div>
   </div>
   <div class="dlg-f"><button class="btn primary" type="button" data-back>Done</button></div>
@@ -1681,29 +1675,25 @@ $('whoback').onclick = () => {
   sizeWhoami();
   viewUser();
 };
-/* Suggestions as you type: students whose name or username matches, from the
-   student finder's search (it needs your own school login). Picking one opens
-   their timetable straight away. */
-let findTimer = null, findSeq = 0;
-$('whoami').addEventListener('input', () => {
-  const v = $('whoami').value.trim().toLowerCase();
-  if ([...$('whoamilist').options].some(o => o.value === v)){ $('whoami').blur(); return; }   // picked one
-  clearTimeout(findTimer);
-  if (v.length < 2 || !creds || !creds.email || !creds.password) return;
-  findTimer = setTimeout(async () => {
-    const seq = ++findSeq;
-    try {
-      const u = new URL(endpoint, location.href);
-      u.searchParams.set('find', v);
-      const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
-      const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
-        'X-School-Email':creds.email, 'X-School-Password':creds.password } });
-      const d = await res.json().catch(() => null);
-      if (seq !== findSeq || !res.ok || !d) return;
-      $('whoamilist').innerHTML = (d.results || []).map(p =>
-        '<option value="' + esc(String(p.email || '').split('@')[0]) + '">' + esc(p.name) + '</option>').join('');
-    } catch {}
-  }, 250);
+/* Suggestions as you type (suggest.js): students whose name or username
+   matches, from the student finder's search (it needs your own school login),
+   each with their name and username. Picking one opens their timetable. The
+   box never offers saved sign-in details. */
+if (window.Suggest) Suggest.attach($('whoami'), {
+  min: 2, max: 8, delay: 200,
+  async source(q){
+    if (!creds || !creds.email || !creds.password) return [];
+    const u = new URL(endpoint, location.href);
+    u.searchParams.set('find', q.toLowerCase());
+    const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+    const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
+      'X-School-Email':creds.email, 'X-School-Password':creds.password } });
+    const d = await res.json().catch(() => null);
+    if (!res.ok || !d) return [];
+    return (d.results || []).map(p => { const user = String(p.email || '').split('@')[0];
+      return { value:user, label:p.name || user, sub:user }; });
+  },
+  onPick(){ sizeWhoami(); $('whoami').blur(); }      // blur runs viewUser
 });
 $('whoami').addEventListener('keydown', ev => {
   if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }

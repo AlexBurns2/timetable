@@ -52,10 +52,9 @@ host.innerHTML =
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
       '<div class="field"><label>Home, games &amp; resources</label><div class="modes" id="s_layout">' +
-        '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Grid</button></div>' +
-        '<div class="hint">Gallery packs the tiles into a mosaic. Grid lines them up evenly, with the games in rows that scroll sideways.</div></div>' +
+        '<button type="button" data-layout="gallery">Gallery</button><button type="button" data-layout="classic">Grid</button></div></div>' +
       '<div class="field"><label>Login</label>' +
-        '<div class="hint" style="margin-top:0;margin-bottom:9px">Your school login, stored <b>only on this device</b> and used to fetch your timetable.</div>' +
+        '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
         '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
         '<div class="custrow"><span>Password</span><input type="password" id="cr_pass" class="crin" autocomplete="off" placeholder="••••••••"></div>' +
         '<div class="custrow"><button class="btn primary" type="button" id="cr_save">Sign in</button><button class="btn danger" type="button" id="cr_clear">Sign out</button></div>' +

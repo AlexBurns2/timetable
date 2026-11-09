@@ -2264,3 +2264,78 @@ stats being moderator-only and read-only, and hiding games.
 
 **Tests (scratchpad):** `reactcheck.mjs` (25 checks: reactions and Mahjong
 moderation against a fake database), `modcheck.mjs` (21) and `pagecheck.mjs`.
+
+### 8.51 Daily Guess Who hints v3, results spotlight, archive calendar, name suggestions, card summaries, leaderboards sheet
+
+**Hints by date (`api/_daily.js`).** Hints are still recomputed from the stored
+`daily_puzzle.target` on every read, so the set is chosen by the puzzle's date:
+- up to `LEGACY_UNTIL` (2026-09-12): `legacyHints`;
+- up to `V2_UNTIL` (2026-11-09): `v2Hints`, a frozen copy of the previous
+  engine. Don't edit it: past days must keep the hints people played with
+  (checked by `hintcheck.mjs` against 3,000 old puzzles from git `HEAD`);
+- from 2026-11-10: `v3Hints`.
+
+**v3 engine.**
+- A pool of candidate hints, each with a tier (1 vague … 4 near giveaway), a
+  "fun" weight, `tags` (the facts it reveals) and a `kind`.
+- Eight slots with tiers `[1,1,1,2,2,3,3,4]`, a weighted pick by fun²,
+  adjacent swaps (p = 0.3) only where `fits()` allows (tier ≥ 3 not before
+  slot 4, tier 4 not before slot 7), then "Their name reads …" is always 9th.
+- A hint whose tags are all already known is skipped; `IMPLIES` covers the
+  name masks and initials. `who:` tags stop the same classmate or teacher
+  appearing twice. Soft caps per kind (`teacher:1, subject:2, trivia:2,
+  ending:1`) apply unless nothing else fits a slot.
+- Social hints: "They share four classes with X", "They're in Physics with X",
+  "They have two classes with Mr Y", "One of their teachers is Mr Y". Course
+  hints: sciences, no maths, extensions (Years 11–12 only), "They take X".
+  Name hints come later. Timetable hints need `verified`, as before.
+- New puzzles store `email`, `classes` (≤ 12) and `classmates` (top 60
+  students by shared classes, from up to 10 class rosters) in `target`.
+  `withV3Details` adds those fields once to a v3-era row made by older code
+  (additive update of `target` only; nothing else in the row changes).
+
+**Results and archive (`api/daily.js`, `games.js`).**
+- `?summary=1` also returns `spotlight` (best guesser, first solver, stumped,
+  longest recent streak, most improved: display names only) and `mine`
+  (`{done, won, guesses}`, for the games-page card).
+- `?archive=1` returns `{epoch, today, archive, mine}`; the page draws one
+  month calendar (✓ won, ✗ lost, small player count), loaded once. This
+  replaces the two lists that used to race each other.
+- The results panel shows one spotlight line at a time (rotating every 4.5 s),
+  "N played · X% solved" and the guess histogram.
+- Buttons are plain words: Archive, Results, Unlimited →.
+
+**Name suggestions (`suggest.js`).** `Suggest.attach(input, {source, onPick,
+min, max, delay})`: its own list (bold match, optional second line), keyboard
+and ARIA combobox. It sets `type=search`, `autocomplete=off`, a random `name`
+and `data-lpignore` / `data-1p-ignore` / `data-bwignore` /
+`data-form-type=other`, so browsers and password managers don't offer the
+saved school login. Used by the timetable name box (`?find=` search), Daily
+Guess Who and Guess Who. The finder and free-periods search boxes carry the
+same ignore attributes.
+
+**Games page.**
+- Cards have no description. Under the name: the top two on that game's
+  all-time board (Tetris: Sprint), today's Daily Guess Who ("N played today ·
+  X% solved", then your result or one spotlight line), or your own best from
+  this device. `fillSums` fills them after drawing; `localSum` is the instant
+  fallback.
+- The leaderboards strip is gone. A "Leaderboards" button on the first section
+  heading opens `openLBSheet()`: a sheet that slides up from the bottom (✕,
+  Escape, tap outside, or drag the top edge down to close; Tab stays inside).
+  `lbBoard(box, focus)` draws the boards and is shared with
+  `?play=leaderboards&embed=1`. A plain `?play=leaderboards` opens the sheet
+  over the games.
+- `head()` leaves out the "how" line when it is empty; each game's line is one
+  short sentence.
+- `#lbsum` stays in games.html and revision.html (hidden by CSS) only so a
+  browser still running a cached older games.js doesn't throw.
+
+**Site-wide.** No emojis in buttons or headings; emoji as icons (game and tile
+icons, the streak flame, spotlight markers) are fine. Home tiles have no
+descriptions (the span is kept for the focus-lock text) and are shorter; the
+free periods, finder, resources and Settings descriptions are cut to a line.
+
+**Tests (scratchpad):** `hintcheck.mjs` (12 checks plus sample rounds),
+`pagecheck.mjs`, `modcheck.mjs` (21), `reactcheck.mjs` (25). The mock server
+`mock.mjs` (port 8793) runs the real hint engine.

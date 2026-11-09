@@ -112,7 +112,7 @@
       <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
     </div>
   </div>
-  <p class="flede">Your free periods, who else is out of class then, and when a group of you is free together.</p>
+  <p class="flede">Who’s free when you are.</p>
   <p class="fstat" id="stat" role="status" aria-live="polite"></p>
   <div class="fbar" id="bar" hidden><span id="barfill"></span></div>
 
@@ -131,16 +131,15 @@
       </div>
       <div class="fgrid" id="grid"></div>
       <section class="fpanel fdetail" id="detail" hidden aria-live="polite"></section>
-      <p class="fnote">Recess and lunch aren’t shown, since everyone is free then. A dash means no lesson (sport, or no class
-        that period). The site only checks which periods people have a class in, never what or where
-        (<button type="button" id="refresh">check again now</button>).</p>
+      <p class="fnote">A dash means no lesson. <button type="button" id="refresh">Check again</button></p>
     </div>
     <section class="fpanel" id="group" aria-live="polite"></section>
     <section class="fpanel" id="people" aria-labelledby="peopleh">
       <div class="fphead"><h2 id="peopleh">People</h2></div>
       <input id="pq" type="search" placeholder="Type a name to add someone…" autocomplete="off" spellcheck="false"
+             data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"
              enterkeyhint="done" aria-label="Find people by name or email to compare free periods with" aria-describedby="pqhint">
-      <p class="fclose" id="pqhint" role="status" aria-live="polite">Any name, either way round, or an email. Enter adds them if there’s only one match.</p>
+      <p class="fclose" id="pqhint" role="status" aria-live="polite">A name or an email.</p>
       <div id="plist"></div>
     </section>
   </div>
@@ -554,7 +553,7 @@ function renderGroup(){
   let h = '<div class="fphead"><h2>Your group</h2><label class="fme"><input type="checkbox" id="incme"' +
           (includeMe ? ' checked' : '') + '> Include me</label></div>';
   if (!pk.length){
-    h += '<p class="fhint">Pick people to see when you’re all free. Tap a free period to see who’s around, or choose from the list.</p>';
+    h += '<p class="fhint">Add people to see when you’re all free.</p>';
   } else {
     h += '<div class="fchips">' + pk.map(id => {
       const unk = busy[id] === null || (busy[id] instanceof Set && !busy[id].size);
@@ -673,7 +672,7 @@ function addFromSearch(p){
   if (!picked.includes(p.id)) picked.push(p.id);
   savePicks(); render(); loadBusy([p.id]);
 }
-function pqHint(msg){ $('pqhint').textContent = msg || 'Any name, either way round, or an email. Enter adds them if there’s only one match.'; }
+function pqHint(msg){ $('pqhint').textContent = msg || 'A name or an email.'; }
 
 function renderPeople(){
   const { raw, words, local, school } = candidates();

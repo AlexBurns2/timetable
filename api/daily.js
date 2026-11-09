@@ -4,6 +4,10 @@
  *        guesses, done, won, streak, history:[{date,done,won}], answer? }
  * POST /api/daily {guess, date?}       → grade one guess (answer stays server-side)
  *      { correct, done, won, guesses, totalHints, streak, nextHint?, answer? }
+ * GET  /api/daily?archive=1           → every day since the epoch that has results,
+ *      with how many played and solved it, plus your own result per day
+ * GET  /api/daily?date=…&summary=1     → how the year went that day, and a
+ *      "spotlight": best guesser, first to solve, stumped, longest streak, most improved
  *
  * The mystery person is chosen and stored server-side (see _daily.js); the
  * browser only ever receives the candidate name list and the hints unlocked so
@@ -56,7 +60,7 @@ function nameFromEmail(email) {
    and the names in each bucket (for the hover tooltip; capped so it stays small) */
 async function summaryFor(year, date, totalHints) {
   const { data } = await db.from("daily_result")
-    .select("email, guesses, won, done").eq("year", String(year)).eq("date", date);
+    .select("email, guesses, won, done, updated_at").eq("year", String(year)).eq("date", date);
   const rows = data || [];
   const dist = {}, names = {}; for (let i = 1; i <= totalHints; i++){ dist[i] = 0; names[i] = []; }
   names.lost = [];
@@ -67,18 +71,64 @@ async function summaryFor(year, date, totalHints) {
     if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= totalHints){ dist[r.guesses]++; push(r.guesses, r.email); } }
     else if (r.done) push("lost", r.email);
   }
-  return { played, wins, losses: played - wins, totalHints, dist, names };
+  return { played, wins, losses: played - wins, totalHints, dist, names,
+           spotlight: await spotlightFor(year, date, rows) };
 }
-/* every past day (from EPOCH) that actually has results, newest first */
-async function archiveFor(year, today) {
-  const { data } = await db.from("daily_result")
-    .select("date, won, done").eq("year", String(year)).gte("date", EPOCH).lte("date", today);
+/* One person at a time for the summary, Kahoot-style: who did best that day,
+   who solved it first, who was stumped, who has the longest streak going, and
+   who has improved most. Names only (display names), never emails. */
+async function spotlightFor(year, date, dayRows) {
+  const nm = email => withName(NAMES, email, nameFromEmail(email));
+  const out = [];
+  const won = dayRows.filter(r => r.won && r.guesses >= 1);
+  if (won.length) {
+    const best = won.slice().sort((a, b) => a.guesses - b.guesses || String(a.updated_at).localeCompare(String(b.updated_at)))[0];
+    out.push({ kind: "best", name: nm(best.email), n: best.guesses });
+    const first = won.slice().sort((a, b) => String(a.updated_at).localeCompare(String(b.updated_at)))[0];
+    if (first.email !== best.email) out.push({ kind: "first", name: nm(first.email) });
+  }
+  const lost = dayRows.filter(r => r.done && !r.won).sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+  if (lost.length) out.push({ kind: "stumped", name: nm(lost[0].email) });
+
+  /* streaks and improvement, from the year's last few weeks */
+  const today = sydneyDate();
+  const { data } = await db.from("daily_result").select("email, date, guesses, won")
+    .eq("year", String(year)).gte("date", shiftDate(today, -60)).lte("date", today).limit(20000);
+  const byEmail = new Map();
+  for (const r of data || []) (byEmail.get(r.email) || byEmail.set(r.email, []).get(r.email)).push(r);
+  let streak = null, improved = null;
+  for (const [email, rs] of byEmail) {
+    const s = computeStreak(rs.filter(r => r.won).map(r => r.date), today);
+    if (s >= 2 && (!streak || s > streak.n)) streak = { email, n: s };
+    /* fewer guesses on average this week than the fortnight before, with enough games in each */
+    const avg = list => list.reduce((a, r) => a + r.guesses, 0) / list.length;
+    const recent = rs.filter(r => r.won && r.date > shiftDate(today, -7));
+    const before = rs.filter(r => r.won && r.date <= shiftDate(today, -7) && r.date > shiftDate(today, -21));
+    if (recent.length >= 3 && before.length >= 3) {
+      const gain = avg(before) - avg(recent);
+      if (gain >= 0.75 && (!improved || gain > improved.gain))
+        improved = { email, gain, from: Math.round(avg(before) * 10) / 10, to: Math.round(avg(recent) * 10) / 10 };
+    }
+  }
+  if (streak) out.push({ kind: "streak", name: nm(streak.email), n: streak.n });
+  if (improved) out.push({ kind: "improved", name: nm(improved.email), from: improved.from, to: improved.to });
+  return out;
+}
+/* every past day (from EPOCH) that actually has results, newest first, with
+   how many in the year finished and solved it, and how you went (for the calendar) */
+async function archiveFor(year, today, email) {
+  const [{ data }, { data: mineRows }] = await Promise.all([
+    db.from("daily_result").select("date, won, done").eq("year", String(year)).gte("date", EPOCH).lte("date", today).limit(50000),
+    db.from("daily_result").select("date, won, done, guesses").eq("email", email).gte("date", EPOCH).lte("date", today)
+  ]);
   const by = {};
   for (const r of (data || [])) {
     const d = by[r.date] || (by[r.date] = { date: r.date, played: 0, wins: 0 });
     if (r.done) d.played++; if (r.won) d.wins++;
   }
-  return Object.values(by).sort((a, b) => b.date.localeCompare(a.date));
+  const mine = {};
+  for (const r of (mineRows || [])) mine[r.date] = { won: !!r.won, done: !!r.done, guesses: r.guesses || 0 };
+  return { days: Object.values(by).sort((a, b) => b.date.localeCompare(a.date)), mine };
 }
 
 export default async function handler(req, res) {
@@ -119,7 +169,9 @@ export default async function handler(req, res) {
   // `date` makes buildHints fall back to the original hint set for days that
   // were already played; `verified` gates the subject hints (see _daily.js).
   const hints = buildHints(first, last,
-    { seed: date + ":" + year, date, subjects: t.subjects, teachers: t.teachers, verified: t.verified });
+    { seed: date + ":" + year, date, year, subjects: t.subjects, teachers: t.teachers, verified: t.verified,
+      classes: t.classes, classmates: t.classmates,
+      nameOf: (email, name) => withName(NAMES, email, name) });   // classmates by the name people know them by
   const totalHints = hints.length;
   const answerName = t.name;
 
@@ -130,8 +182,11 @@ export default async function handler(req, res) {
   let won = !!(result && result.won);
 
   if (req.method === "GET") {
-    if (req.query.archive) return res.status(200).json({ epoch: EPOCH, today, archive: await archiveFor(year, today) });
-    if (req.query.summary) return res.status(200).json({ date, summary: await summaryFor(year, date, totalHints) });
+    if (req.query.archive) { const a = await archiveFor(year, today, me.email);
+      return res.status(200).json({ epoch: EPOCH, today, archive: a.days, mine: a.mine }); }
+    // `mine`: your own result that day, for the Daily Guess Who card on the games page
+    if (req.query.summary) return res.status(200).json({ date, summary: await summaryFor(year, date, totalHints),
+      mine: { done, won, guesses } });
     // how many hints the player has already seen (one per wrong guess).
     const shown = done ? Math.min(guesses, totalHints) : Math.min(guesses + 1, totalHints);
     const streak = computeStreak(await wonDatesFor(me.email), today);

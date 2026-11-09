@@ -757,6 +757,11 @@ the directory fetch.
 > roster (names only) — the same data the practice game's grade mode already
 > exposes. It's fetched fresh behind the verified login and marked
 > `private, no-store`; the target's identity is never sent until the round ends.
+>
+> From 10 Nov 2026 (hints v3) the server-only `target` also holds the person's
+> email, their classes and the classmates they share the most classes with
+> (names only). No new SQL: it's the same `jsonb` column, and older rows are
+> only ever added to, never rewritten.
 
 ### Past puzzles, Unlimited, and live hints
 

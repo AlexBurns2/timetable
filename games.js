@@ -190,12 +190,12 @@ function gameCard(g, i){
   const c = document.createElement('button');
   c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '');
   c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
-  const stat = statLine(g.id);
-  /* the section heading names the category, so no tag on the card */
+  /* under the name, a short live summary (fillSums): the top two on its board,
+     how today's daily went, or your own best. No description: the name and
+     the icon say what it is. */
   c.innerHTML = (g.isNew ? '<span class="newbanner">New</span>' : '') +
     '<span class="ico">' + g.ico + '</span>' +
-    '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
-    (stat ? '<span class="stat">' + stat + '</span>' : '') +
+    '<h2>' + g.name + '</h2><div class="sum" data-sum="' + g.id + '">' + localSum(g.id) + '</div>' +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
   c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
   return c;
@@ -236,10 +236,11 @@ function showGrid(){
   if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
   /* classic: a shelf per category that scrolls sideways */
   if (classicLayout()){
+    let first = true;
     SECTIONS.forEach(sec => {
       const inCat = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
       if (!inCat.length) return;
-      grid.appendChild(sectionHead(sec));
+      grid.appendChild(sectionHead(sec, first)); first = false;
       const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
       const row = document.createElement('div'); row.className = 'gamerow';
       inCat.forEach((g, i) => row.appendChild(gameCard(g, i)));
@@ -247,29 +248,32 @@ function showGrid(){
       dragScroll(row);
       shelfArrows(wrap, row);
     });
-    renderLBSum();
+    fillSums();
     scrollHint();
     return;
   }
   /* gallery: a packed grid per section */
   bentoStop = null;
   const stops = [];
+  let first = true;
   SECTIONS.forEach(sec => {
     const games = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
     if (!games.length) return;
-    grid.appendChild(sectionHead(sec));
+    grid.appendChild(sectionHead(sec, first)); first = false;
     const bento = document.createElement('div'); bento.className = 'bento';
     const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
     grid.appendChild(bento);
     stops.push(Bento.layout(bento, games.map((g, i) => ({ el:cards[i], w:g.w, h:g.h }))));
   });
   bentoStop = () => stops.forEach(f => f());
-  renderLBSum();
+  fillSums();
 }
-/* a section's heading */
-function sectionHead(sec){
+/* a section's heading; the first one also carries the leaderboards button */
+function sectionHead(sec, first){
   const h = document.createElement('div'); h.className = 'gsec';
-  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2>';
+  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2>' +
+    (first && TT.myEmail && TT.myEmail() ? '<button type="button" class="lbopen">Leaderboards</button>' : '');
+  const b = h.querySelector('.lbopen'); if (b) b.onclick = () => openLBSheet();
   return h;
 }
 
@@ -328,7 +332,7 @@ function dragScroll(row){
   row.addEventListener('click', e => { if (row.classList.contains('nodrag')){ e.stopPropagation(); e.preventDefault(); } }, true);
 }
 
-/* ── leaderboard catalogue (shared by the summary strip + the full view) ── */
+/* ── leaderboard catalogue (shared by the cards and the leaderboards sheet) ── */
 const LB_CAT = [
   { id:'chain',     name:'Six Degrees',    g:{metric:'targets'}, fmt:v=>String(v) },
   { id:'oddone',    name:'Odd One Out',    g:{metric:'high'},    fmt:v=>String(v) },
@@ -341,52 +345,145 @@ const LB_CAT = [
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
 ];
-let lbFocus = null;          // which board the full view should open on
-let lbSumCache = null;       // cached leaders for the summary strip (per session)
-async function fetchLeaders(){
+let lbFocus = null;          // which board ?play=leaderboards opens on
+/* The card that shows each board's leaders (Tetris shows its Sprint board;
+   Survival and Zen are in the leaderboards sheet only). */
+const CARD_BOARD = { chain:'chain', oddone:'oddone', classroom:'classroom', snake:'snake', g2048:'g2048',
+                     typing:'typing', react:'react', tetris:'tsprint' };
+let lbSumCache = null;       // the top two on each card's board, once per page (a new score clears it)
+function fetchLeaders(){
   if (lbSumCache) return lbSumCache;
   const wk = tetrisWeek();
-  lbSumCache = await Promise.all(LB_CAT.map(async cat => {
+  const top2 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 2).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
+  const short = v => fmtHMS(v).replace(/^00:/, '');      // 01:23.4, not 00:01:23.4
+  lbSumCache = Promise.all(Object.entries(CARD_BOARD).map(async ([card, id]) => {
+    const cat = LB_CAT.find(c => c.id === id);
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } });
-        const r = (d.all.top||[])[0]; return r ? { who:r.name, val:cat.fmt(r.score) } : null; }
-      if (cat.t==='sprint'){   const d = await TT.api('/api/tetris',{params:{mode:'sprintall'}}); const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
-      if (cat.t==='zen'){      const d = await TT.api('/api/tetris',{params:{mode:'zen'}});       const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
-      if (cat.t==='zenscore'){ const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});  const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.best)}:null; }
-    } catch(e){ return null; }
-    return null;
-  }));
+        return [card, top2(d.all && d.all.top, 'score', cat.fmt)]; }
+      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } });
+        return [card, top2(d.top, 'time_ms', short)]; }
+    } catch (e){}
+    return [card, null];                                  // could not load: the card keeps your own best
+  })).then(Object.fromEntries);
   return lbSumCache;
 }
-async function renderLBSum(){
-  const el = $('lbsum'); if (!el) return;
-  el.hidden = false;
-  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2></div>' +
-    '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
-  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><p class="how">Loading leaders…</p>';
-  $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
-  const leaders = await fetchLeaders();
-  if ($('gamegrid').hidden) return;               // user already opened a game
-  /* the first four boards; "View all" has the rest */
-  const cards = LB_CAT.slice(0, 4).map((cat,i) => { const L = leaders[i];
-    return '<button class="lbsumcard" data-i="'+i+'"><div class="g">'+esc(cat.name)+'</div>' +
-      (L ? '<div class="lead"><span class="who">'+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>'
-         : '<div class="empty">No scores yet</div>') + '</button>'; }).join('');
-  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><span class="lbsumlinks">' +
-    '<a id="lbsumall">View all →</a></span></div><div class="lbsumgrid">'+cards+'</div>';
-  $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
-  [...el.querySelectorAll('.lbsumcard')].forEach(c => c.onclick = () => { lbFocus = LB_CAT[+c.dataset.i].id; openGame('leaderboards'); });
+
+/* ── what each card says under its name ──────────────────────────────── */
+const sumLine = (who, val, you) => '<span class="sl' + (you ? ' me' : '') + '"><span class="w">' + esc(who) + '</span>' +
+  (val != null ? '<span class="v">' + esc(val) + '</span>' : '') + '</span>';
+const sumNote = html => '<span class="sl note">' + html + '</span>';
+/* straight away, from this device: your own record */
+function localSum(id){
+  const s = allStats()[id] || {};
+  if (id === 'dailyguess') return s.streak ? sumNote('🔥 <b>' + s.streak + '</b> day streak') : '';
+  if (id === 'guesswho') return s.best != null ? sumLine('Your best', s.best + (s.best === 1 ? ' guess' : ' guesses')) : '';
+  if (GAMES.some(g => g.id === id && g.cat === 'Revision')){
+    let done = 0;
+    try { const h = JSON.parse(localStorage.getItem('rev.' + id)); if (h && typeof h === 'object') done = Object.keys(h).length; } catch {}
+    const lines = [];
+    if (done) lines.push(sumLine('Questions done', String(done)));
+    if (s.streak) lines.push(sumLine('Best streak', String(s.streak)));
+    return lines.join('');
+  }
+  const line = statLine(id);
+  return line ? sumNote(esc(line)) : '';
 }
+/* the Daily Guess Who card: how the year is going today, then you (or one
+   person worth a mention, if you haven't played yet) */
+let dgSumP = null;
+function dailySum(){
+  if (!dgSumP) dgSumP = TT.api('/api/daily', { params:{ summary:1 } }).catch(() => { dgSumP = null; return null; });
+  return dgSumP;
+}
+function dailyCardSum(d){
+  if (!d || !d.summary) return '';
+  const s = d.summary, m = d.mine || {}, lines = [];
+  lines.push(s.played ? sumNote('<b>' + s.played + '</b> played today · <b>' + Math.round(s.wins / s.played * 100) + '%</b> solved')
+                      : sumNote('No one has played today’s yet'));
+  if (m.done) lines.push(sumNote(m.won ? 'You got it in <b>' + m.guesses + '</b>' : 'You missed today’s'));
+  else {
+    const sp = (s.spotlight || []).filter(p => p.kind === 'streak' || p.kind === 'best' || p.kind === 'first');
+    if (sp.length) lines.push(sumNote(dgSpotLine(sp[Math.floor(Math.random() * sp.length)])));
+  }
+  return lines.join('');
+}
+/* after the cards are drawn: the boards' leaders and today's daily */
+async function fillSums(){
+  if (REVISION_PAGE || !TT.myEmail || !TT.myEmail()) return;
+  const put = (id, html) => { const el = document.querySelector('.sum[data-sum="' + id + '"]'); if (el && html) el.innerHTML = html; };
+  dailySum().then(d => put('dailyguess', dailyCardSum(d)));
+  const leaders = await fetchLeaders();
+  for (const card in leaders){
+    const L = leaders[card]; if (!L) continue;
+    put(card, L.rows.length ? L.rows.map(r => sumLine(r.who, r.val, r.you)).join('') : sumNote('No scores yet'));
+  }
+}
+
+/* ── a sheet that slides up from the bottom (the leaderboards) ─────────
+   Closes on ✕, Escape, a tap outside it, or dragging its top edge down. */
+let sheetClose = null;
+function openSheet(title, fill){
+  if (sheetClose) sheetClose(true);
+  const opener = document.activeElement;
+  const back = document.createElement('div'); back.className = 'sheetback';
+  const sh = document.createElement('section'); sh.className = 'sheet';
+  sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-label', title);
+  sh.innerHTML = '<div class="sheetgrab" aria-hidden="true"><i></i></div>' +
+    '<div class="sheethd"><h2>' + esc(title) + '</h2>' +
+    '<button class="btn icon sheetx" type="button" aria-label="Close">&#10005;</button></div>' +
+    '<div class="sheetbody"></div>';
+  document.body.append(back, sh);
+  document.documentElement.classList.add('sheetopen');
+  const close = instant => {
+    if (sheetClose !== close) return;
+    sheetClose = null;
+    removeEventListener('keydown', onKey, true);
+    document.documentElement.classList.remove('sheetopen');
+    const gone = () => { back.remove(); sh.remove(); };
+    if (instant === true || reduced()) gone();
+    else { back.classList.remove('in'); sh.classList.remove('in'); sh.style.transform = ''; setTimeout(gone, 300); }
+    if (instant !== true && opener && opener.focus && document.contains(opener)) try { opener.focus({ preventScroll:true }); } catch {}
+  };
+  const onKey = e => {
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (e.key !== 'Tab') return;                             // keep Tab inside the sheet
+    const f = [...sh.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent);
+    if (!f.length) return;
+    if (e.shiftKey && document.activeElement === f[0]){ e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]){ e.preventDefault(); f[0].focus(); }
+    else if (!sh.contains(document.activeElement)){ e.preventDefault(); f[0].focus(); }
+  };
+  addEventListener('keydown', onKey, true);
+  back.onclick = () => close();
+  sh.querySelector('.sheetx').onclick = () => close();
+  [sh.querySelector('.sheetgrab'), sh.querySelector('.sheethd')].forEach(g => {
+    let y0 = null, dy = 0;
+    g.addEventListener('pointerdown', e => { if (e.button || e.target.closest('button')) return;
+      y0 = e.clientY; dy = 0; sh.classList.add('drag'); try { g.setPointerCapture(e.pointerId); } catch {} });
+    g.addEventListener('pointermove', e => { if (y0 == null) return;
+      dy = Math.max(0, e.clientY - y0); sh.style.transform = 'translateY(' + dy + 'px)'; });
+    const up = () => { if (y0 == null) return; y0 = null; sh.classList.remove('drag');
+      if (dy > 80) close(); else sh.style.transform = ''; };
+    g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+  });
+  sheetClose = close;
+  fill(sh.querySelector('.sheetbody'));
+  requestAnimationFrame(() => requestAnimationFrame(() => { back.classList.add('in'); sh.classList.add('in'); }));
+  try { sh.querySelector('.sheetx').focus({ preventScroll:true }); } catch {}
+  return close;
+}
+const openLBSheet = focus => openSheet('Leaderboards', box => lbBoard(box, focus));
 const reduced = () => document.documentElement.getAttribute('data-motion') === 'reduced';
 function openGame(id){
   if (!REVISION_PAGE && window.Focus && Focus.active()){ showGrid(); return; }   // no back door past the lock
+  if (sheetClose) sheetClose(true);
   if (stop){ stop(); stop = null; }
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
     if ($('gameslede')) $('gameslede').hidden = true;
     if (bentoStop){ bentoStop(); bentoStop = null; }
-    $('lbsum').hidden = true;
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
     stop = BUILD[id]($('stage'));
@@ -427,10 +524,21 @@ const plainText = html => { const d = document.createElement('div'); d.innerHTML
 
 const head = (host, title, how, extra) =>
   host.innerHTML = '<div class="row"><div><h2>' + title + '</h2>' +
-                   '<p class="how">' + how + '</p></div>' +
+                   (how ? '<p class="how">' + how + '</p>' : '') + '</div>' +
                    '<span class="score" id="sc"></span></div>' + (extra || '');
 
 const BUILD = {};
+
+/* one line about one person, for the Daily Guess Who results and its card */
+function dgSpotLine(p){
+  const who = '<b>' + esc(p.name) + '</b>';
+  if (p.kind === 'best')     return '🏆 ' + who + ' got it in <b>' + p.n + '</b> guess' + (p.n === 1 ? '' : 'es');
+  if (p.kind === 'first')    return '⚡ ' + who + ' solved it first';
+  if (p.kind === 'stumped')  return '😵 ' + who + ' was stumped';
+  if (p.kind === 'streak')   return '🔥 ' + who + ' is on a <b>' + p.n + ' day</b> streak';
+  if (p.kind === 'improved') return '📈 ' + who + ' is improving fastest (<b>' + p.from + '</b> → <b>' + p.to + '</b> guesses)';
+  return '';
+}
 
 /* ── Guess Who ─────────────────────────────────────────────────────
    Picks a random person from your combined classmates and drips hints
@@ -982,12 +1090,12 @@ BUILD.guesswho = host => {
       body.innerHTML =
         '<div class="gwhints" id="gwhints"></div>' +
         '<div class="gwrow">' +
-          '<input id="gwin" list="gwlist" autocomplete="off" placeholder="Name the mystery person…">' +
-          '<datalist id="gwlist">' + names.map(n => '<option value="' + n.replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+          '<input id="gwin" placeholder="Type a name…" aria-label="Your guess">' +
           '<button class="btn primary" id="gwguess" type="button">Guess</button>' +
         '</div><div class="gwlog" id="gwlog"></div>';
       paintHints();
       document.getElementById('gwguess').onclick = guess;
+      if (window.Suggest) Suggest.attach(document.getElementById('gwin'), { source: Suggest.names(names, 8) });
       document.getElementById('gwin').addEventListener('keydown', e => { if (e.key==='Enter') guess(); });
       document.getElementById('gwin').focus();
     }
@@ -1040,12 +1148,12 @@ BUILD.guesswho = host => {
    feedback is instant. A "how others did" summary and a Sept-1 archive
    sit under the game. */
 BUILD.dailyguess = host => {
-  head(host, 'Daily Guess Who', 'One mystery student from your year, the same one for everyone. You can replay past days too.', '<div id="dg"></div>');
+  head(host, 'Daily Guess Who', 'Guess the person from your year.', '<div id="dg"></div>');
   const box = document.getElementById('dg');
-  let alive = true;
+  let alive = true, spotTimer = null, arch = null, calMonth = null, cur = null;
   const norm = x => String(x==null?'':x).trim().toLowerCase().replace(/\s+/g,' ');
-  const shiftISO = (d, delta) => { const x=new Date(d+'T00:00:00Z'); x.setUTCDate(x.getUTCDate()+delta); return x.toISOString().slice(0,10); };
   const shortDate = d => new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{month:'short',day:'numeric',timeZone:'UTC'});
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   async function loadDay(date){       // date=null → today
     box.innerHTML = '<p class="how">Loading…</p>';
@@ -1057,36 +1165,40 @@ BUILD.dailyguess = host => {
   loadDay(null);
 
   function render(s){
-    const isToday = s.date === s.today, epoch = s.epoch || '2026-09-01';
+    cur = s;
+    clearInterval(spotTimer);
+    const isToday = s.date === s.today;
     const answer = s.answer, total = s.totalHints;
     let guesses = s.guesses||0, done = !!s.done, won = !!s.won, streak = s.streak||0;
     let shown = s.shown != null ? s.shown : Math.min(guesses+1, total);
+    const calOpen = !!(document.getElementById('dgcalbox') && !document.getElementById('dgcalbox').hidden);
 
     box.innerHTML =
-      '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></div>' +
-      '<div style="margin-left:auto;display:flex;gap:10px;align-items:center">' +
-        '<span class="gwyou" style="margin:0">Streak <b id="dgstreak">' + streak + '</b></span>' +
-        '<button class="btn" id="dgunlimited" type="button">Unlimited →</button></div></div>' +
-      '<div class="dgtoolbar"><button class="dgtool" id="dgarchbtn" type="button">Show archive</button>' +
-        '<button class="dgtool" id="dgsumbtn" type="button">Show summary</button></div>' +
-      '<div id="dgdayswrap" hidden><div class="dgdays" id="dgdays"></div><div class="dgarch" id="dgarch"></div></div>' +
+      '<div class="dgbar">' +
+        '<span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></span>' +
+        '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="dgstreak">' + streak + '</b></span>' +
+        '<span class="dgsp"></span>' +
+        '<button class="dgchip" id="dgcal" type="button" aria-expanded="' + calOpen + '" aria-controls="dgcalbox">Archive</button>' +
+        '<button class="dgchip" id="dgsumbtn" type="button" aria-expanded="false" aria-controls="dgsummary">Results</button>' +
+        '<button class="dgchip" id="dgunlimited" type="button">Unlimited →</button>' +
+      '</div>' +
+      '<div class="dgcal" id="dgcalbox"' + (calOpen ? '' : ' hidden') + '></div>' +
       '<div class="gwhints" id="dghints"></div>' +
       '<div class="gwrow" id="dgrow">' +
-        '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name the mystery student…">' +
-        '<datalist id="dglist">' + (s.candidates||[]).map(n => '<option value="' + esc(n).replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+        '<input id="dgin" placeholder="Type a name…" aria-label="Your guess">' +
         '<button class="btn primary" id="dgguess" type="button">Guess</button>' +
       '</div><div class="gwlog" id="dglog"></div>' +
-      '<div id="dgsummary" hidden></div>';
+      '<div class="dgresults" id="dgsummary" hidden></div>';
 
     document.getElementById('dgunlimited').onclick = () => openGame('guesswho');
-    document.getElementById('dgarchbtn').onclick = toggleDays;
+    document.getElementById('dgcal').onclick = toggleCal;
     document.getElementById('dgsumbtn').onclick = () => toggleSummary(s.date);
-    renderDays(s);
+    if (calOpen) paintCal();
 
     const hintsEl = document.getElementById('dghints');
     const allHints = s.hints || [];
     const paint = fresh => hintsEl.innerHTML = allHints.slice(0, shown).map((h,i) =>
-      '<div class="gwhint' + (i===fresh?' fresh':'') + '">' + h + '</div>').join('');
+      '<div class="gwhint' + (i===fresh?' fresh':'') + '"><span class="dghn">' + (i + 1) + '</span>' + h + '</div>').join('');
     paint(-1);
 
     const sc = document.getElementById('sc');
@@ -1101,24 +1213,17 @@ BUILD.dailyguess = host => {
       const banner = document.createElement('div');
       banner.className = 'gwhint ' + (won ? 'win' : 'lose');
       banner.innerHTML = won
-        ? 'You got it in <b>' + guesses + '</b>! It was <b>' + esc(answer) + '</b>.'
+        ? 'You got it in <b>' + guesses + '</b>. It was <b>' + esc(answer) + '</b>.'
         : 'Out of guesses. It was <b>' + esc(answer) + '</b>.';
       hintsEl.appendChild(banner);
-      const chip = document.querySelector('.dgday.cur');
-      if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(won?'won':'lost');
-        let ic = chip.querySelector('.dgi'); if(!ic){ ic=document.createElement('span'); ic.className='dgi'; chip.appendChild(ic); }
-        ic.textContent = won ? '✓' : '✗'; }
-      const note = document.createElement('p');
-      note.className = 'gwyou'; note.style.marginTop = '12px';
-      note.innerHTML = (isToday ? 'Come back tomorrow for a new one. ' : 'Pick another day above. ') +
-                       'Current streak: <b id="dgstreaknote">' + streak + '</b>.';
-      hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
+      if (arch){ arch.mine[s.date] = { won, done:true, guesses }; if (!document.getElementById('dgcalbox').hidden) paintCal(); }
       openSummary(s.date);
     }
 
     if (done){ finish(); return; }
 
     const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
+    if (window.Suggest) Suggest.attach(input, { source: Suggest.names(s.candidates || [], 8) });
     function doGuess(){
       const v = input.value.trim(); if (!v || done) return;
       guesses++;
@@ -1135,8 +1240,8 @@ BUILD.dailyguess = host => {
       TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } })
         .then(r => { if (!alive || !r) return; streak = r.streak != null ? r.streak : streak;
           const a=document.getElementById('dgstreak'); if(a) a.textContent = streak;
-          const b=document.getElementById('dgstreaknote'); if(b) b.textContent = streak;
-          recordStat('dailyguess', { key:'streak', mode:'set', value:streak }); })
+          recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
+          if (done) loadSummary(s.date); })
         .catch(()=>{});
       if (done) finish(); else { setScore(); input.focus(); }
     }
@@ -1145,58 +1250,85 @@ BUILD.dailyguess = host => {
     input.focus();
   }
 
-  /* a chip per day for the last two weeks (never before the epoch) */
-  function renderDays(s){
-    const daysEl = document.getElementById('dgdays');
-    const hist = {}; (s.history||[]).forEach(h => hist[h.date] = h);
-    const epoch = s.epoch || '2026-09-01';
-    let html = '';
-    for (let i=0;i<14;i++){
-      const d = shiftISO(s.today, -i); if (d < epoch) break;
-      const h = hist[d];
-      const status = h && h.won ? 'won' : (h && h.done ? 'lost' : 'open');
-      const icon = h && h.won ? '✓' : (h && h.done ? '✗' : '');
-      html += '<button class="dgday ' + status + (d===s.date ? ' cur' : '') + '" data-date="' + d + '">' +
-        '<span class="dgd">' + (i===0 ? 'Today' : esc(shortDate(d))) + '</span>' +
-        (icon ? '<span class="dgi">' + icon + '</span>' : '') + '</button>';
+  /* ── past days: a small month calendar. Each day shows how you went (✓ or
+     ✗) and how many in your year played it; pick any day to play it. ── */
+  async function toggleCal(){
+    const el = document.getElementById('dgcalbox'), btn = document.getElementById('dgcal');
+    const open = el.hidden;
+    el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    if (!arch){
+      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      try {
+        const d = await TT.api('/api/daily', { params:{ archive:1 } });
+        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch || '2026-09-01' };
+        (d.archive || []).forEach(a => arch.days[a.date] = a);
+      } catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load past days.</p>'; return; }
     }
-    daysEl.innerHTML = html;
-    [...daysEl.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
+    if (!alive) return;
+    calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    paintCal();
+  }
+  function paintCal(){
+    const el = document.getElementById('dgcalbox'); if (!el || !arch) return;
+    if (!calMonth) calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    const [y, m] = calMonth.split('-').map(Number);
+    const iso = d => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const firstDow = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;      // Monday first
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const minMonth = arch.epoch.slice(0, 7), maxMonth = arch.today.slice(0, 7);
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
+    for (let d = 1; d <= dim; d++){
+      const date = iso(d), mine = arch.mine[date], day = arch.days[date];
+      const off = date < arch.epoch || date > arch.today;
+      const state = mine && mine.won ? 'won' : mine && mine.done ? 'lost' : 'open';
+      const tip = off ? '' : shortDate(date) + (mine && mine.won ? ': you got it in ' + mine.guesses : mine && mine.done ? ': you missed it' : ': not played') +
+        (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
+      cells += off ? '<span class="dgc off"><span class="dgcn">' + d + '</span></span>'
+        : '<button type="button" class="dgc ' + state + (cur && date === cur.date ? ' cur' : '') + (date === arch.today ? ' today' : '') +
+          '" data-date="' + date + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+          '<span class="dgcn">' + d + '</span><span class="dgcm">' + (state === 'won' ? '✓' : state === 'lost' ? '✗' : '') + '</span>' +
+          '<span class="dgcp">' + (day && day.played ? day.played : '') + '</span></button>';
+    }
+    el.innerHTML =
+      '<div class="dgcalhd"><button type="button" class="dgcnav" data-step="-1" aria-label="Previous month"' + (calMonth <= minMonth ? ' disabled' : '') + '>‹</button>' +
+        '<b>' + MONTHS[m - 1] + ' ' + y + '</b>' +
+        '<button type="button" class="dgcnav" data-step="1" aria-label="Next month"' + (calMonth >= maxMonth ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="dgcgrid"><span class="dgcw">M</span><span class="dgcw">T</span><span class="dgcw">W</span><span class="dgcw">T</span>' +
+        '<span class="dgcw">F</span><span class="dgcw">S</span><span class="dgcw">S</span>' + cells + '</div>' +
+      '<div class="dgclegend"><span class="won">✓</span> solved <span class="lost">✗</span> missed <span class="dgcp">12</span> played in your year</div>';
+    el.querySelectorAll('.dgcnav').forEach(b => b.onclick = () => {
+      const dt = new Date(Date.UTC(y, m - 1 + (+b.dataset.step), 1));
+      calMonth = dt.toISOString().slice(0, 7); paintCal();
+    });
+    el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
   }
 
-  /* day picker: recent chips + every past day since the epoch that has results */
-  let archLoaded = false;
-  async function toggleDays(){
-    const wrap = document.getElementById('dgdayswrap'), btn = document.getElementById('dgarchbtn');
-    if (!wrap.hidden){ wrap.hidden = true; btn.textContent = 'Show archive'; return; }
-    wrap.hidden = false; btn.textContent = 'Hide archive';
-    if (archLoaded) return;
-    const el = document.getElementById('dgarch');
-    try {
-      const d = await TT.api('/api/daily', { params:{ archive:1 } });
-      const arr = d.archive || [];
-      el.innerHTML = arr.map(a => '<button class="dgday" data-date="'+a.date+'" title="'+a.wins+' of '+a.played+' solved it">' +
-        '<span class="dgd">'+esc(shortDate(a.date))+'</span><span class="dgi">'+a.wins+'/'+a.played+'</span></button>').join('');
-      [...el.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
-      archLoaded = true;
-    } catch(e){}
+  /* ── results: one spotlight line at a time, then how the year went ── */
+  async function openSummary(date){
+    const el = document.getElementById('dgsummary'), b = document.getElementById('dgsumbtn');
+    if (!el) return;
+    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    await loadSummary(date);
   }
-
-  /* "how others did": win/loss + guess-count histogram for the loaded day */
-  async function openSummary(date){ document.getElementById('dgsummary').hidden = false;
-    document.getElementById('dgsumbtn').textContent = 'Hide summary'; await loadSummary(date); }
-  async function toggleSummary(date){ const el = document.getElementById('dgsummary');
-    if (!el.hidden){ el.hidden = true; document.getElementById('dgsumbtn').textContent = 'Show summary'; return; }
-    await openSummary(date); }
+  async function toggleSummary(date){
+    const el = document.getElementById('dgsummary');
+    if (!el.hidden){ el.hidden = true; clearInterval(spotTimer); document.getElementById('dgsumbtn').setAttribute('aria-expanded', 'false'); return; }
+    await openSummary(date);
+  }
   async function loadSummary(date){
-    const el = document.getElementById('dgsummary'); el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
-    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); renderSummary(el, d.summary); }
-    catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the summary.</p>'; }
+    const el = document.getElementById('dgsummary'); if (!el) return;
+    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); if (alive) renderSummary(el, d.summary); }
+    catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
+  const spotLine = dgSpotLine;
   function renderSummary(el, sum){
-    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet. Be the first.</p>'; return; }
+    clearInterval(spotTimer);
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const rate = Math.round(sum.wins / sum.played * 100);
-    const names = sum.names || {};                       // {bucket: [names]} for hover
+    const names = sum.names || {};
     const max = Math.max(1, sum.losses, ...Object.keys(sum.dist).map(k => sum.dist[k]));
     const tip = key => { const list = names[key]; return list && list.length ? ' title="' + esc(list.join(', ')) + '"' : ''; };
     const bar = (label, n, key, miss) => '<div class="dgbar' + (miss?' miss':'') + '"' + tip(key) + '><span class="dgbl">' + label + '</span>' +
@@ -1204,14 +1336,25 @@ BUILD.dailyguess = host => {
     let rows = '';
     for (let i=1;i<=sum.totalHints;i++) rows += bar(i, sum.dist[i]||0, String(i), false);
     rows += bar('✗', sum.losses, 'lost', true);
+    const lines = (sum.spotlight || []).map(spotLine).filter(Boolean);
     el.innerHTML =
-      '<div class="dgsumhd"><span class="big">' + sum.played + '</span> played · <span class="big">' + rate + '%</span> solved · ' +
-        '<b>' + sum.wins + '</b> won, <b>' + sum.losses + '</b> lost</div>' +
-      '<div class="dgbars">' + rows + '</div>' +
-      '<p class="how" style="margin:8px 0 0">Guesses taken to solve it. Hover a row to see who.</p>';
+      (lines.length ? '<div class="dgspot" id="dgspot" aria-live="polite">' + lines[0] + '</div>' : '') +
+      '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
+      '<div class="dgbars">' + rows + '</div>';
+    /* one person at a time, a few seconds each */
+    if (lines.length > 1){
+      let i = 0;
+      spotTimer = setInterval(() => {
+        const sp = document.getElementById('dgspot');
+        if (!alive || !sp){ clearInterval(spotTimer); return; }
+        i = (i + 1) % lines.length;
+        sp.classList.remove('in'); void sp.offsetWidth;
+        sp.innerHTML = lines[i]; sp.classList.add('in');
+      }, 4500);
+    }
   }
 
-  return () => { alive = false; };
+  return () => { alive = false; clearInterval(spotTimer); };
 };
 
 /* ── Tetris ────────────────────────────────────────────────────────
@@ -1240,7 +1383,7 @@ BUILD.tetris = host => {
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
   let mode = TT.get('tt.tetrismode', 'sprint');
 
-  head(host, 'Tetris', 'Sprint, Survival, Zen and Practice. Keys and handling under Controls.', '<div id="twrap"></div>');
+  head(host, 'Tetris', 'Clear lines. Keys are under Controls.', '<div id="twrap"></div>');
   document.getElementById('twrap').innerHTML =
     '<div class="tmodes" id="tmodes"></div>' +
     '<div class="tgame">' +
@@ -1854,7 +1997,7 @@ BUILD.tetris = host => {
    you type which room it runs in. Self-contained — no directory calls. */
 BUILD.classroom = host => {
   head(host, 'Classroom',
-    'Multiple choice from your own timetable: rooms, teachers and classes. It speeds up as you go, three slips and the run ends.',
+    'Questions from your own timetable. Three slips ends the run.',
     '<div id="cr"></div>');
   const box = $('cr');
   let alive = true, timer = null;
@@ -2018,7 +2161,7 @@ BUILD.classroom = host => {
    away as your score climbs, so a lucky short hop can't carry the board.  */
 BUILD.chain = host => {
   head(host, 'Six Degrees',
-    'Chain classmate to classmate through a shared class. How many targets can you reach before the clock runs out?',
+    'Chain classmate to classmate through shared classes.',
     '<div id="ch"></div>');
   const box = document.getElementById('ch');
   let alive = true, timer = null;
@@ -2148,7 +2291,7 @@ BUILD.chain = host => {
    of yours, one isn't — spot the outsider before the bar empties.     */
 BUILD.oddone = host => {
   head(host, 'Odd One Out',
-    'Three of the four share a class of yours. Tap the one who doesn’t before the bar empties. Three misses ends the run.',
+    'Three share a class of yours. Pick the one who doesn’t.',
     '<div id="oo"></div>');
   const box = $('oo');
   let alive = true, timer = null;
@@ -2231,7 +2374,7 @@ BUILD.memory = host => {
   const LV = { easy:{r:3,c:4,label:'Easy'}, med:{r:4,c:4,label:'Medium'}, hard:{r:4,c:6,label:'Hard'} };
   let lvl = TT.get('tt.memLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   const FACES = ['🐶','🐱','🦊','🐼','🐧','🦉','🐢','🐙','🦋','🌵','🍩','🍕','⚽','🎸','🚀','🎲','🔥','🌈','⭐','🍉','🐝','🦕','🎧','🧩'];
-  head(host, 'Memory', 'Flip two cards a turn. Clear every pair in as few moves as you can.',
+  head(host, 'Memory', 'Match every pair in as few moves as you can.',
     '<div class="minesbar"><div class="diffbar" id="memlvl"></div>' +
       '<div class="minesinfo"><span id="memmoves">Moves 0</span><span id="memtime">⏱ 0</span></div></div>' +
     '<div id="memgrid"></div>' +
@@ -2295,7 +2438,7 @@ BUILD.memory = host => {
 
 /* ── Snake ─────────────────────────────────────────────────────── */
 BUILD.snake = host => {
-  head(host, 'Snake', tap('Arrow keys or WASD. Press R after a crash.', 'Swipe on the board or use the arrows. Tap the board after a crash.'),
+  head(host, 'Snake', tap('Arrow keys or WASD. R to restart.', 'Swipe or use the arrows.'),
        '<canvas id="cv" width="320" height="320"></canvas>' +
        (TOUCH ? '<div class="tpad dpad" id="snpad">' +
          '<button type="button" data-act="u" aria-label="Up">▲</button>' +
@@ -2362,7 +2505,7 @@ BUILD.snake = host => {
    Tiles are absolutely positioned and keep a stable id, so a move
    transitions each one to its new cell instead of teleporting.       */
 BUILD.g2048 = host => {
-  head(host, '2048', tap('Arrow keys or WASD. Combine matching tiles.', 'Swipe to slide the tiles. Combine matching ones.'),
+  head(host, '2048', tap('Arrow keys or WASD. Merge matching tiles.', 'Swipe to merge matching tiles.'),
        '<div id="g2048wrap"><div id="g2048bg"></div><div id="g2048tiles"></div></div>');
   const GAP = 8, FULL = 74;
   let CELL = FULL, STEP = CELL + GAP;
@@ -2504,13 +2647,12 @@ BUILD.mines = host => {
   };
   let lvl = TT.get('tt.minesLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   head(host, 'Minesweeper',
-    tap('Dig to open, right-click (or Flag mode) to flag. Your first dig is always safe. Click a number once its flags match to sweep the rest.',
-        'Tap to dig, hold a square (or use Flag mode) to flag it. Your first dig is always safe. Tap a number once its flags match to sweep the rest.'),
+    tap('Click to dig, right-click to flag.', 'Tap to dig, hold to flag.'),
     '<div class="minesbar"><div class="diffbar" id="mlvl"></div>' +
       '<div class="minesinfo"><span id="mflags">💣 0</span><span id="mtime">⏱ 0</span></div></div>' +
     '<div id="mines"></div>' +
     '<div class="minesfoot"><button class="btn primary" id="mnew" type="button">New game</button>' +
-    '<button class="btn" id="mflagmode" type="button" aria-pressed="false">🚩 Flag mode: off</button></div>');
+    '<button class="btn" id="mflagmode" type="button" aria-pressed="false">Flag mode: off</button></div>');
   const grid = $('mines');
   let N, MINES, bomb, open, flag, over, first, tstart, timer = null, flagMode = false;
   let holdTimer = null, heldAt = 0;
@@ -2621,14 +2763,14 @@ BUILD.mines = host => {
   $('mnew').onclick = reset;
   const fm = $('mflagmode');
   fm.onclick = () => { flagMode = !flagMode; fm.setAttribute('aria-pressed', flagMode);
-    fm.textContent = '🚩 Flag mode: ' + (flagMode ? 'on' : 'off'); fm.classList.toggle('primary', flagMode); };
+    fm.textContent = 'Flag mode: ' + (flagMode ? 'on' : 'off'); fm.classList.toggle('primary', flagMode); };
   reset();
   return () => stopTimer();
 };
 
 /* ── Typing race ───────────────────────────────────────────────── */
 BUILD.typing = host => {
-  head(host, 'Typing race', 'A fresh random line every time. The clock starts on your first keystroke.',
+  head(host, 'Typing race', 'Type the line as fast as you can.',
        '<div id="typetext"></div><input id="typein" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Start typing…">' +
        '<div class="minesfoot"><button class="btn" id="typenew" type="button">New text</button></div>');
   /* random-word lines so nothing can be memorised or looked up */
@@ -2731,20 +2873,20 @@ BUILD.react = host => {
 };
 
 /* ── Leaderboards (read-only; owner controls live in Admin) ─────────── */
-BUILD.leaderboards = host => {
-  const howText = () => weeklyOn() ? 'Pick a game. Weekly resets each Monday, all-time never does.' : 'Pick a game. These are all-time boards.';
-  head(host, 'Leaderboards', howText(), '<div id="lbp"></div>');
-  const box = $('lbp');
-  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return () => {}; }
+/* Every board in one place: pick a game, then this week or all time. Drawn
+   into the leaderboards sheet, or the page ?play=leaderboards&embed=1 opens. */
+function lbBoard(box, focusId){
+  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
   const wk = tetrisWeek();
-  let cur = LB_CAT.find(c => c.id === lbFocus) || LB_CAT[0], period = 'all', data = null;
+  let cur = LB_CAT.find(c => c.id === focusId) || LB_CAT[0], period = 'all', data = null, seq = 0;
   box.innerHTML =
-    '<div class="diffbar" id="lbpick" style="margin-bottom:14px"></div>' +
-    '<div class="glbhd"><h3 id="lbtitle"></h3>' +
+    '<div class="diffbar lbpick"></div>' +
+    '<div class="glbhd"><h3 class="lbtitle"></h3>' +
       '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
       '<button type="button" class="glbtab cur" data-p="all">All time</button></div></div>' +
-    '<div id="lbbody"><p class="how">Loading…</p></div>';
-  const pick = $('lbpick');
+    '<div class="lbbody"><p class="how">Loading…</p></div>';
+  const q = sel => box.querySelector(sel);
+  const pick = q('.lbpick');
   LB_CAT.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
     b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
@@ -2755,27 +2897,29 @@ BUILD.leaderboards = host => {
 
   const remap = (arr, key) => (arr||[]).map(r => ({ name:r.name, score:r[key], you:r.you }));
   async function load(){
-    $('lbtitle').textContent = 'Leaderboard · ' + cur.name;
-    const body = $('lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
+    const my = ++seq;                         // a slow board can't land over the one picked after it
+    q('.lbtitle').textContent = cur.name;
+    const body = q('.lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
     try {
       await siteSettings();
-      const how = host.querySelector('.how'); if (how) how.textContent = howText();   // the setting may have landed since
+      let d;
       if (cur.g){
-        data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
+        d = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
       } else if (cur.t === 'sprint'){
         const [w,a] = await Promise.all([ weeklyOn() ? TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}) : null,
                                           TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
-        data = { week:w ? { top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank } : null,
-                 all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
+        d = { week:w ? { top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank } : null,
+              all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
       } else if (cur.t === 'zen'){
-        const d = await TT.api('/api/tetris',{params:{mode:'zen'}});
-        const b = { top:remap(d.top,'time_ms'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
+        const r = await TT.api('/api/tetris',{params:{mode:'zen'}});
+        const b = { top:remap(r.top,'time_ms'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b };
       } else if (cur.t === 'zenscore'){
-        const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
-        const b = { top:remap(d.top,'best'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
+        const r = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
+        const b = { top:remap(r.top,'best'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b };
       }
-      syncTabs(); paint();
-    } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
+      if (my !== seq) return;
+      data = d; syncTabs(); paint();
+    } catch(e){ if (my === seq) body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
   }
   function syncTabs(){
     /* survival and zen are all-time only — and so is everything, when the owner
@@ -2786,7 +2930,7 @@ BUILD.leaderboards = host => {
     if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
   }
   function paint(){
-    const body = $('lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
+    const body = q('.lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
     const b = period==='week' ? data.week : data.all;
     if (!b){ body.innerHTML='<p class="how">No board.</p>'; return; }
     const rows = b.top || [];
@@ -2797,6 +2941,10 @@ BUILD.leaderboards = host => {
       html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(cur.fmt(b.meBest))+'</span></div>';
     body.innerHTML = html;
   }
+}
+BUILD.leaderboards = host => {
+  head(host, 'Leaderboards', '', '<div id="lbp"></div>');
+  lbBoard($('lbp'), lbFocus);
   return () => {};
 };
 
@@ -3140,7 +3288,7 @@ BUILD.admin = host => {
 
 /* ── Flashcards (revision): make decks and study them; saved to your account ── */
 BUILD.flashcards = host => {
-  head(host, 'Flashcards', 'Make your own decks and study them. Saved to your account and synced across devices.', '<div id="fc"></div>');
+  head(host, 'Flashcards', 'Make decks and study them.', '<div id="fc"></div>');
   const box = $('fc');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   let decks = TT.get('tt.flashcards', []); if (!Array.isArray(decks)) decks = [];
@@ -3150,7 +3298,7 @@ BUILD.flashcards = host => {
   list();
 
   function list(){
-    let html = '<div class="fcrow"><button class="btn" id="fcbrowse" type="button">🌐 Browse public decks</button></div><div class="fcdecks">';
+    let html = '<div class="fcrow"><button class="btn" id="fcbrowse" type="button">Browse public decks</button></div><div class="fcdecks">';
     html += decks.length ? decks.map(d => '<div class="fcdeck" data-id="'+d.id+'">' +
         '<span class="nm">'+esc(d.name)+'</span><span class="ct">'+d.cards.length+' card'+(d.cards.length===1?'':'s')+'</span>' +
         '<button class="btn" type="button" data-act="study">Study</button>' +
@@ -7371,7 +7519,7 @@ function genBrakes(){ return bankQ(BRAKES, 'brk'); }
 function genProducts(){ return bankQ(PRODUCTS, 'prd'); }
 function genBiomed(){ return bankQ(BIOMED, 'bio'); }
 
-BUILD.software = host => revGame(host, { title:'Software', how:'Pick one of the three Year 11 modules, or do the lot.', statKey:'software',
+BUILD.software = host => revGame(host, { title:'Software', how:'Pick a module, or do them all.', statKey:'software',
   modules:[
     {id:'fund',name:'Fundamentals',topics:[
       {id:'sf-dev',name:'Development steps',gen:genDevStep},
@@ -7394,23 +7542,23 @@ BUILD.software = host => revGame(host, { title:'Software', how:'Pick one of the 
       {id:'s-m',name:'Medium',gen:()=>genWrite(2),gate:'s-e'},
       {id:'s-h',name:'Hard',gen:()=>genWrite(3),gate:'s-m'}]}
   ] });
-BUILD.maths = host => revGame(host, { title:'Maths', how:'Pick a topic. The questions are generated, so they never run out.', statKey:'maths',
+BUILD.maths = host => revGame(host, { title:'Maths', how:'Pick a topic.', statKey:'maths',
   topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
-BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Pick a module, or do all four.', statKey:'chem',
+BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Pick a module, or do them all.', statKey:'chem',
   modules:[
     {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-mix',name:'Mixtures & separation',gen:genSeparation},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape},{id:'c-lewis',name:'Lewis diagrams',gen:genLewis}]},
     {id:'m2',name:'Module 2',topics:[{id:'c-mole',name:'Moles & mass',gen:genChemMoles},{id:'c-bal',name:'Balancing equations',gen:genBalance},{id:'c-gas',name:'Gas laws',gen:genGasLaw},{id:'c-lim',name:'Limiting reagent',gen:genChemLimiting},{id:'c-emp',name:'Empirical formula',gen:genChemEmp},{id:'c-soln',name:'Solutions & gases',gen:genChemSol2}]},
     {id:'m3',name:'Module 3',topics:[{id:'c-type',name:'Reaction types',gen:genChemType},{id:'c-rate',name:'Reaction rates',gen:genRates},{id:'c-act',name:'Activity series',gen:genActivity},{id:'c-redox',name:'Redox',gen:genRedox},{id:'c-galv',name:'Galvanic cells',gen:genGalvanic},{id:'c-sol',name:'Solubility',gen:genSol}]},
     {id:'m4',name:'Module 4',topics:[{id:'c-cal',name:'Calorimetry',gen:genCalor},{id:'c-enp',name:'Energy & entropy',gen:genEnergyProfile},{id:'c-bond',name:'Bond energies',gen:genBondE},{id:'c-form',name:'Enthalpy of formation',gen:genFormation},{id:'c-gibbs',name:'Entropy & Gibbs',gen:genGibbs}]}
   ] });
-BUILD.physics = host => revGame(host, { title:'Physics', how:'Pick a module, or do all four.', statKey:'physics',
+BUILD.physics = host => revGame(host, { title:'Physics', how:'Pick a module, or do them all.', statKey:'physics',
   modules:[
     {id:'m1',name:'Kinematics',topics:[{id:'p-kc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_KIN,'kin'):genPhysQuant('kin')},{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
     {id:'m2',name:'Dynamics',topics:[{id:'p-dc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_DYN,'dyn'):genPhysQuant('dyn')},{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
     {id:'m3',name:'Waves & thermodynamics',topics:[{id:'p-thermo',name:'Thermodynamics',gen:genThermo},{id:'p-wc',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_WAVE,'wave'):r<0.62?bankQ(WAVE_EXTRA,'wavex'):genPhysQuant('wave');}},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
     {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_EM,'em'):r<0.62?bankQ(EM_EXTRA,'emx'):genPhysQuant('em');}},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
-BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do all five.', statKey:'engineering',
+BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do them all.', statKey:'engineering',
   modules:[
     {id:'steel',name:'Steels',topics:[
       {id:'e-steel',name:'Carbon steels',gen:genSteelFact},
@@ -7460,9 +7608,13 @@ BUILD.hkmj = host => {
   if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
   initAdmin();
   const known = () => play === 'leaderboards' || play === 'admin' || GAMES.some(g => g.id === play && !g.href && !gameHidden(g));
+  const follow = () => {
+    if (play === 'leaderboards' && q.get('embed') !== '1'){ showGrid(); openLBSheet(); }
+    else if (known()) openGame(play); else showGrid();
+  };
   /* wait for the site settings before following a ?play= link, so a hidden game stays hidden */
-  if (play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (known()) openGame(play); else showGrid(); });
-  else if (play && known()) openGame(play); else showGrid();
+  if (play && TT.myEmail && TT.myEmail()) siteSettings().then(follow);
+  else if (play) follow(); else showGrid();
   /* a moderator may have shown or hidden a game: redraw once the settings arrive */
   if (!play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (!$('gamegrid').hidden) showGrid(); });
 }

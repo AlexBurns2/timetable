@@ -117,19 +117,170 @@ export function legacyHints(first, last) {
   return H;
 }
 
-/* Hints in tiers by how much they give away — vague first, near-answer last.
-   Each tier is shuffled with the day's seed, so the ORDER varies day to day
-   while the puzzle stays identical for everyone in the year.
+/* Days up to and including this one keep the second hint set (v2Hints, below),
+   exactly as they were played; the third (v3Hints) starts the day after. */
+export const V2_UNTIL = "2026-11-09";
+
+/* Which hint set a day uses. Archived days always read the way they were
+   played: hints are recomputed from the stored puzzle on every read, so each
+   set is frozen once its last day has passed.
 
    Two safety rules, learned the hard way:
-   - `extra.date` on or before LEGACY_UNTIL ⇒ the original hints, untouched.
-   - subject / teacher hints are used ONLY when the generator could PROVE the
-     timetable it read belongs to the target (`extra.verified`). An unverified
-     read could be somebody else's timetable, which would describe the wrong
-     person entirely — better to fall back to name shapes than to lie. */
+   - `extra.date` decides the set; anything undated gets the newest.
+   - subject / teacher / classmate hints are used ONLY when the generator could
+     PROVE the timetable it read belongs to the target (`extra.verified`). An
+     unverified read could be somebody else's timetable, which would describe
+     the wrong person entirely — better to fall back to name shapes than lie. */
 export function buildHints(first, last, extra) {
   extra = extra || {};
   if (extra.date && String(extra.date) <= LEGACY_UNTIL) return legacyHints(first, last);
+  if (extra.date && String(extra.date) <= V2_UNTIL) return v2Hints(first, last, extra);
+  return v3Hints(first, last, extra);
+}
+
+/* ── the third hint set (from the day after V2_UNTIL) ───────────────────────
+   Lean on things people actually know about each other (who they sit with,
+   who teaches them, what they take) and keep name trivia as filler. Every
+   hint has a tier (how much it gives away: 1 gentle … 4 nearly the answer), a
+   fun weight, and the facts it reveals. A round is 8 hints plus the final
+   reveal:
+   - slots run gentle → strong, with a little shuffling across neighbouring
+     tiers so no two days feel the same, but a strong hint never lands in the
+     first three and a near-giveaway never before the seventh;
+   - inside a slot the pick is random, weighted towards the fun ones;
+   - a hint is skipped if what it says is already known (initials after "their
+     surname starts with C", a letter count after the name's been masked), and
+     no person or teacher is the subject of two hints. */
+const lettersOf = s => String(s || "").replace(/[^A-Za-z]/g, "");
+const SCIENCE = /\b(physics|chemistry|biology|earth (?:and|&) environmental|investigating science|science extension)\b/i;
+const MATHS = /\bmath/i;
+const EXTENSION = /\bextension\b|\bext\.?\s?[12]\b/i;
+const NOT_A_SUBJECT = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch)\b/i;
+/* the subjects everyone in Years 7–10 takes: saying someone takes one says nothing */
+const JUNIOR_CORE = /^(english|mathematics|maths?|science|history|geography|pdhpe|pd\s*\/?\s*h\s*\/?\s*pe|health|religion)\b/i;
+const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const word = n => WORDS[n] || String(n);
+/* what knowing one fact also tells you */
+const IMPLIES = { F1: ["Fvs"], Fmask: ["F1", "Flen", "Fvs"], Lmask: ["L1", "Llen"] };
+
+export function v3Hints(first, last, extra) {
+  extra = extra || {};
+  const rnd = rngFrom(hashStr("v3|" + String(extra.seed || first + "|" + last)));
+  const ok = extra.verified === true;
+  const senior = Number(extra.year) >= 11;
+  const nameOf = typeof extra.nameOf === "function" ? extra.nameOf : (email, name) => name;
+  const up = s => String(s).toUpperCase();
+  const F = lettersOf(first), L = lettersOf(last);
+  const pool = [];
+  const add = (tier, fun, tags, text, kind) => pool.push({ tier, fun, tags, text, kind: kind || "" });
+  /* at most this many of a kind in one round, so it never reads as a list */
+  const CAP = { teacher: 1, subject: 2, trivia: 2, ending: 1 };
+
+  /* ── what they take (verified timetables only) ── */
+  const classes = ok && Array.isArray(extra.classes)
+    ? extra.classes.filter(c => c && c.subject && !NOT_A_SUBJECT.test(c.subject)) : [];
+  const subjects = [...new Set(classes.map(c => c.subject))];
+  if (subjects.length) {
+    const ext = subjects.filter(s => EXTENSION.test(s)).length;
+    if (senior) {
+      const sci = subjects.filter(s => SCIENCE.test(s)).length;
+      if (sci >= 2) add(1, 3, ["sci"], "They study <b>" + word(sci) + " sciences</b>.");
+      else if (sci === 0) add(1, 3, ["sci"], "They don't study <b>any science</b>.");
+      if (!subjects.some(s => MATHS.test(s))) add(1, 3, ["maths"], "They don't study <b>any maths</b>.");
+      if (ext === 1) add(1, 3, ["ext"], "They take an <b>extension</b> subject.");
+      if (ext >= 2) add(2, 3, ["ext"], "They take <b>" + word(ext) + " extension</b> subjects.");
+    }
+    const telling = shuffleWith(subjects.filter(s => senior || !JUNIOR_CORE.test(s)), rnd);
+    /* naming their one extension subject also says they take an extension subject */
+    for (const s of telling.slice(0, 4))
+      add(1, 2, ["subj:" + s].concat(ext === 1 && EXTENSION.test(s) ? ["ext"] : []), "They take <b>" + s + "</b>.", "subject");
+    if (telling.length >= 2)
+      add(2, 2, ["subj:" + telling[0], "subj:" + telling[1]], "They take both <b>" + telling[0] + "</b> and <b>" + telling[1] + "</b>.");
+  }
+
+  /* ── who teaches them ── */
+  const byTeacher = new Map();
+  for (const c of classes) if (c.teacher) byTeacher.set(c.teacher, (byTeacher.get(c.teacher) || 0) + 1);
+  for (const [t, n] of shuffleWith([...byTeacher], rnd).slice(0, 4)) {
+    if (n >= 2) add(2, 4, ["who:" + t], "They have <b>" + word(n) + " classes</b> with <b>" + t + "</b>.");
+    else add(1, 2, ["who:" + t], "One of their teachers is <b>" + t + "</b>.", "teacher");
+  }
+
+  /* ── who they sit with ── */
+  const mates = ok && Array.isArray(extra.classmates) ? extra.classmates.filter(m => m && m.name && m.email) : [];
+  const most = mates.filter(m => m.shared >= 2).sort((a, b) => b.shared - a.shared);
+  if (most.length) {
+    const tied = most.filter(m => m.shared === most[0].shared);
+    const m = tied[Math.floor(rnd() * tied.length)];
+    add(3, 5, ["who:" + m.email], "They share <b>" + word(m.shared) + " classes</b> with <b>" + nameOf(m.email, m.name) + "</b>.");
+  }
+  const inOne = mates.filter(m => Array.isArray(m.subjects) && m.subjects.some(s => !NOT_A_SUBJECT.test(s) && (senior || !JUNIOR_CORE.test(s))));
+  if (inOne.length) {
+    const m = inOne[Math.floor(rnd() * inOne.length)];
+    const ss = m.subjects.filter(s => !NOT_A_SUBJECT.test(s) && (senior || !JUNIOR_CORE.test(s)));
+    const s = ss[Math.floor(rnd() * ss.length)];
+    add(2, 4, ["who:" + m.email], "They're in <b>" + s + "</b> with <b>" + nameOf(m.email, m.name) + "</b>.");
+  }
+
+  /* ── name shapes: filler early, giveaways late. Ambiguous ones are left out
+     (vowels when there's a y; "starts with a vowel" for a Y name). ── */
+  if (F) {
+    add(1, 1, ["Flen"], "Their first name has <b>" + F.length + "</b> letters.", "trivia");
+    if (!/y/i.test(F)) { const v = countVowels(F); add(1, 1, ["Fvow"], "Their first name has <b>" + word(v) + "</b> vowel" + (v === 1 ? "" : "s") + ".", "trivia"); }
+    if (!/^y/i.test(F)) add(1, 1, ["Fvs"], "Their first name starts with a <b>" + (VOWELS.includes(up(F[0])) ? "vowel" : "consonant") + "</b>.", "trivia");
+    add(2, 2, ["Fend"], "Their first name ends in <b>" + up(F[F.length - 1]) + "</b>.", "ending");
+    add(3, 2, ["F1"], "Their first name starts with <b>" + up(F[0]) + "</b>.");
+    const fm = mask(first, 0.5);
+    add(4, 1, ["Fmask", "F1", "Flen"].concat(/_$/.test(fm) ? [] : ["Fend"]), "Their first name looks like <b>" + fm + "</b>.");
+  }
+  if (L) {
+    add(1, 1, ["Llen"], "Their surname has <b>" + L.length + "</b> letters.", "trivia");
+    add(2, 2, ["Lend"], "Their surname ends in <b>" + up(L[L.length - 1]) + "</b>.", "ending");
+    add(3, 2, ["L1"], "Their surname starts with <b>" + up(L[0]) + "</b>.");
+    if (F) add(4, 2, ["F1", "L1"], "Their initials are <b>" + up(F[0]) + "." + up(L[0]) + ".</b>");
+    const lm = mask(last, 0.45);
+    add(4, 1, ["Lmask", "L1", "Llen"].concat(/_$/.test(lm) ? [] : ["Lend"]), "Their surname looks like <b>" + lm + "</b>.");
+  }
+
+  /* ── the order: 8 slots, nudged around a little, giveaways kept late ── */
+  const slots = [1, 1, 1, 2, 2, 3, 3, 4];
+  const fits = (tier, i) => !(tier >= 3 && i < 3) && !(tier >= 4 && i < 6);
+  for (let i = 0; i < slots.length - 1; i++)
+    if (rnd() < 0.3 && slots[i] !== slots[i + 1] && fits(slots[i + 1], i) && fits(slots[i], i + 1))
+      [slots[i], slots[i + 1]] = [slots[i + 1], slots[i]];
+
+  const known = new Set(), used = new Set(), out = [], kinds = {};
+  const learn = tags => tags.forEach(t => { known.add(t); (IMPLIES[t] || []).forEach(x => known.add(x)); });
+  const usable = (h, capped) => !used.has(h) && !h.tags.every(t => known.has(t)) &&
+    !h.tags.some(t => t.startsWith("who:") && known.has(t)) &&
+    !(capped && h.kind && (kinds[h.kind] || 0) >= (CAP[h.kind] || 99));
+  const pick = list => {
+    const w = list.map(h => h.fun * h.fun);                      // fun hints win most of the time, not always
+    let r = rnd() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < list.length; i++) { r -= w[i]; if (r <= 0) return list[i]; }
+    return list[list.length - 1];
+  };
+  /* the caps give way only when nothing else would fill the slot (a name-only
+     puzzle), so the giveaways never slide earlier */
+  slots.forEach((tier, i) => {
+    for (const capped of [true, false])
+      for (const t of [tier, tier - 1, tier + 1, tier - 2, tier + 2]) {
+        if (t < 1 || t > 4 || !fits(t, i)) continue;
+        const list = pool.filter(h => h.tier === t && usable(h, capped));
+        if (!list.length) continue;
+        const h = pick(list);
+        used.add(h); learn(h.tags); out.push(h.text);
+        if (h.kind) kinds[h.kind] = (kinds[h.kind] || 0) + 1;
+        return;
+      }
+  });
+  out.push("Their name reads <b>" + mask(first, 0.7) + (last ? " " + mask(last, 0.65) : "") + "</b>.");
+  return out;
+}
+
+/* ── the second hint set (2026-09-13 to V2_UNTIL) — frozen, do not change ── */
+export function v2Hints(first, last, extra) {
+  extra = extra || {};
   const rnd = rngFrom(hashStr(String(extra.seed || first + "|" + last)));
   const ok = extra.verified === true;
   const subjects = ok && Array.isArray(extra.subjects) ? extra.subjects.filter(Boolean) : [];
@@ -210,7 +361,7 @@ async function studiesOf(email) {
     const raw = await fetchAsOwner("/api/timetable/" + encodeURIComponent(email));
     const rows = Array.isArray(raw) ? raw : (raw && (raw.timetable || raw.Timetable)) || [];
     if (!rows.length) return {};
-    const subjects = new Set(), teachers = new Set(), codes = [];
+    const subjects = new Set(), teachers = new Set(), codes = [], classes = [];
     for (const r of rows) {
       const course = String(r.CourseName || r.courseName || r.Course || "");
       const per = String(r.Period || r.period || "");
@@ -220,27 +371,39 @@ async function studiesOf(email) {
       const t = tidyTeacher(r.TeacherName || r.TeacherFullName || r.Teacher || r.StaffName || "");
       if (t) teachers.add(t);
       const code = r.ClassCode || r.classCode;
-      if (code && !codes.includes(code)) codes.push(code);
+      if (code && !codes.includes(code)) { codes.push(code); if (s) classes.push({ code, subject: s, teacher: t || "" }); }
     }
     if (!subjects.size || !codes.length) return {};
 
     /* PROVE it is their timetable. Asking the school API for someone else's
        timetable as the server account could plausibly hand back the server
-       account's own — which would describe the wrong person. So take a class
-       off the timetable we just read and check the target is actually on its
-       roster. No proof ⇒ no subject hints. */
+       account's own — which would describe the wrong person. So check the
+       target is actually on the roster of a class off the timetable we just
+       read. No proof ⇒ no subject hints. The same rosters say who they sit
+       with: how many of their classes each classmate shares, and which. */
     let verified = false;
-    for (const code of codes.slice(0, 3)) {
+    const mates = new Map();
+    for (const c of classes.slice(0, 10)) {
       try {
-        const roster = await fetchAsOwner("/api/timetable/class/" + encodeURIComponent(code));
+        const roster = await fetchAsOwner("/api/timetable/class/" + encodeURIComponent(c.code));
         const arr = Array.isArray(roster) ? roster : (roster && (roster.roster || roster.students)) || [];
-        if (arr.some(p => String(p.emailAddress || p.Email || p.email || "").toLowerCase() === want)) {
-          verified = true; break;
+        if (arr.some(p => String(p.emailAddress || p.Email || p.email || "").toLowerCase() === want)) verified = true;
+        for (const p of arr) {
+          const email = String(p.emailAddress || p.Email || p.email || "").toLowerCase();
+          const groups = (Array.isArray(p.groups) ? p.groups : []).map(g => String(g).toLowerCase());
+          if (!email || email === want || /@det\.nsw\.edu\.au$/.test(email) ||
+              groups.some(g => /^(teacher|staff|executive|admin)/.test(g))) continue;      // students only
+          const name = personName(p);
+          if (!name) continue;
+          const m = mates.get(email) || mates.set(email, { email, name, shared: 0, subjects: [] }).get(email);
+          m.shared++; if (!m.subjects.includes(c.subject)) m.subjects.push(c.subject);
         }
       } catch { /* try the next class */ }
     }
     if (!verified) return {};
-    return { subjects: [...subjects].slice(0, 12), teachers: [...teachers].slice(0, 12), verified: true };
+    const classmates = [...mates.values()].sort((a, b) => b.shared - a.shared || a.email.localeCompare(b.email)).slice(0, 60);
+    return { subjects: [...subjects].slice(0, 12), teachers: [...teachers].slice(0, 12), verified: true,
+             classes: classes.slice(0, 12), classmates };
   } catch { return {}; }
 }
 
@@ -269,7 +432,7 @@ export async function ensurePuzzle(db, year, date) {
 
   let { data: row, error } = await sel();
   if (error) throw new Error("puzzle read: " + error.message);
-  if (row) return row;
+  if (row) return date > V2_UNTIL ? withV3Details(db, row, year) : row;
 
   const roster = await loadYear(year);
   if (roster.length < 5) throw new Error("Not enough students in year " + year + " to build a puzzle.");
@@ -277,11 +440,12 @@ export async function ensurePuzzle(db, year, date) {
   const t = roster[hashStr(date + ":" + year) % roster.length];
   const parts = t.name.split(/\s+/);
   const first = parts[0], last = parts.slice(1).join(" ");
-  const studies = await studiesOf(t.email);          // best-effort subject / teacher hints
-  const target = { name: t.name, first, last,
+  const studies = await studiesOf(t.email);          // best-effort subject / teacher / classmate hints
+  const target = { name: t.name, first, last, email: t.email || "",
     subjects: studies.subjects || [], teachers: studies.teachers || [],
+    classes: studies.classes || [], classmates: studies.classmates || [], v3: true,
     verified: studies.verified === true,     // only then are subject hints trusted
-    hints: buildHints(first, last, { seed: date + ":" + year, date, ...studies }) };
+    hints: buildHints(first, last, { seed: date + ":" + year, date, year, ...studies }) };
   const candidates = roster.map(p => p.name);
 
   const { error: upErr } = await db.from("daily_puzzle")
@@ -290,6 +454,29 @@ export async function ensurePuzzle(db, year, date) {
 
   ({ data: row } = await sel());                 // re-read: race-safe if two writers collided
   return row || { date, year, target, candidates };
+}
+
+/* A day after V2_UNTIL whose puzzle was made before the third hint set
+   existed has no classes or classmates stored. Add them once: the same person,
+   the same candidates, only extra fields on `target`. Marked v3 either way, so
+   a failed lookup is not retried on every read. */
+async function withV3Details(db, row, year) {
+  const t = row.target || {};
+  if (t.v3) return row;
+  let email = t.email || "";
+  try {
+    if (!email) {
+      const same = (await loadYear(year)).filter(p => p.name === t.name);
+      if (same.length === 1) email = same[0].email || "";            // only when the name is unambiguous
+    }
+    const studies = email ? await studiesOf(email) : {};
+    const target = { ...t, email, v3: true };
+    if (studies.verified) Object.assign(target, { subjects: studies.subjects, teachers: studies.teachers,
+      classes: studies.classes || [], classmates: studies.classmates || [], verified: true });
+    const { error } = await db.from("daily_puzzle").update({ target }).eq("date", row.date).eq("year", String(year));
+    if (error) { console.error("puzzle details:", error.message); return row; }
+    return { ...row, target };
+  } catch (e) { console.error("puzzle details:", e.message); return row; }
 }
 
 /* consecutive won days ending today (or yesterday, if today isn't won yet) */

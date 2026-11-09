@@ -2523,7 +2523,7 @@ function renderActions() {
     const tn = V.tn;
     h = `<span class="msg">${V.ph === 'claim' ? 'Players are deciding on the discard…' : `Waiting for <b>${esc(nameOf(tn))}</b>…`}</span>${timer}`;
   }
-  h += `<span class="reacts" aria-label="Reactions">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}" title="Send a reaction">${e}</button>`).join('')}${MULTIPLAYER ? `<button class="chatbtn ${App.chatOpen ? 'on' : ''}" data-act="chat" title="Open table chat">💬 Chat<span class="badge" ${App.unread ? '' : 'hidden'}>${App.unread || ''}</span></button>` : ''}</span>`;
+  h += `<span class="reacts" aria-label="Reactions">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}" title="Send a reaction">${e}</button>`).join('')}${MULTIPLAYER ? `<button class="chatbtn ${App.chatOpen ? 'on' : ''}" data-act="chat" title="Open table chat">Chat<span class="badge" ${App.unread ? '' : 'hidden'}>${App.unread || ''}</span></button>` : ''}</span>`;
   el.innerHTML = `<div class="myplate">${seatPlateHTML(V, mySeatIdx())}</div>` + h; tickTimer();
 }
 function myCtx(V, s, extra) {
@@ -2539,7 +2539,7 @@ function waitsFor(tiles, melds, V, s) {
 }
 function renderHints() {
   const el = $('#hints'), V = App.view; if (!V) return;
-  const toggle = `<button class="iconbtn" data-act="settings">⚙ Settings</button><button class="iconbtn" data-act="rules">Rules</button>`;
+  const toggle = `<button class="iconbtn" data-act="settings">Settings</button><button class="iconbtn" data-act="rules">Rules</button>`;
   const leave = `<button class="iconbtn gleave" data-act="leave">${App.leaveAt > Date.now() ? 'Are you sure?' : 'Leave game'}</button>`;
   const tip = practiceTip();
   const tipHTML = tip ? `<span class="tipline">${esc(tip.text)}</span>` : '';
@@ -2875,7 +2875,7 @@ function showGuide(section) {
     const body = open.querySelector('.gbody'); body.innerHTML = GUIDE[section][1](); body.scrollTop = 0;
     return;
   }
-  const o = modal(`<div class="guidewrap"><nav class="gnav">${Object.entries(GUIDE).map(([k, v]) => `<button data-g="${k}" class="${k === section ? 'on' : ''}">${v[0]}</button>`).join('')}<button onclick="closeModal()" style="margin-top:10px">✕ Close</button></nav><div class="gbody">${GUIDE[section][1]()}</div></div>`);
+  const o = modal(`<div class="guidewrap"><nav class="gnav">${Object.entries(GUIDE).map(([k, v]) => `<button data-g="${k}" class="${k === section ? 'on' : ''}">${v[0]}</button>`).join('')}<button onclick="closeModal()" style="margin-top:10px">Close</button></nav><div class="gbody">${GUIDE[section][1]()}</div></div>`);
   o.querySelector('.modal').classList.add('wide');
   o.querySelectorAll('[data-g]').forEach(b => b.onclick = () => showGuide(b.dataset.g));
 }

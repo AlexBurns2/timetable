@@ -4,7 +4,7 @@
 .gamecard{
   position:relative;overflow:hidden;text-align:left;cursor:pointer;
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
-  padding:20px;box-shadow:var(--shadow);color:var(--text);min-height:160px;
+  padding:16px 18px;box-shadow:var(--shadow);color:var(--text);min-height:132px;
   display:flex;flex-direction:column;gap:5px;
   opacity:0;transform:translateY(12px);
   animation:cardIn .28s cubic-bezier(.2,.7,.2,1) forwards;
@@ -58,25 +58,23 @@
 /* games page: one packed grid. Tiles are placed by packBento (games.js) with
    explicit grid-row / grid-column, so it is always gap-free. */
 .gamesections[hidden]{display:none}
-.bento{grid-auto-rows:176px}
+.bento{grid-auto-rows:148px}
 .bento .gamecard{min-height:0;transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease,background .15s}
-.bento .gamecard p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-bottom:1px}
-/* "Play →" floats in the corner on hover, so it never takes a line from the description */
-.bento .gamecard .go{position:absolute;right:16px;bottom:14px;margin:0}
-.bento .gamecard.wide p{-webkit-line-clamp:3}
+/* the summary sits at the foot of the tile; the whole tile is the button, so
+   no "Play →" (it would sit on top of the scores) */
+.bento .gamecard .sum{margin-top:auto}
+.bento .gamecard .go{display:none}
 .bento .gamecard.wide h2{font-size:1.3125rem}
-.bento .gamecard.wide p{font-size:0.875rem;max-width:34ch}
+.bento .gamecard.wide .sum{max-width:36ch}
 .bento .gamecard.tall .ico{font-size:3rem;margin-bottom:auto}
-.bento .gamecard.tall p{-webkit-line-clamp:4}
 .gamecard .tag{position:absolute;top:14px;right:14px;font-size:0.625rem;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 @media (max-width:540px){
-  .bento{grid-auto-rows:156px;gap:10px}
+  .bento{grid-auto-rows:132px;gap:10px}
   .bento .gamecard .go{display:none}      /* no hover on a phone; the whole card is the button */
   .bento .gamecard{padding:14px}
   .bento .gamecard h2{font-size:1.0625rem}
-  .bento .gamecard p{font-size:0.8125rem}
-  .bento .gamecard:not(.wide):not(.tall) p{-webkit-line-clamp:2}
+  .bento .gamecard .sum{font-size:0.75rem}
   .gamecard .tag{display:none}
 }
 /* a new game: a small pill in the corner */
@@ -119,28 +117,66 @@ canvas{
 .cell2048{background:var(--panel-2);border:1px solid var(--line);
   border-radius:calc(var(--card-radius) * .5)}
 .tile2048{box-shadow:var(--shadow)}
-/* card stat line */
-.gamecard .stat{font-size:0.6875rem;color:var(--muted);font-family:var(--font-num);
-  font-variant-numeric:tabular-nums}
+/* a card's live summary: two leaders, today's daily, or your own best */
+.gamecard .sum{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:0.8125rem;color:var(--muted)}
+.gamecard .sum:empty{display:none}
+.gamecard .sl{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.gamecard .sl .w{overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600}
+.gamecard .sl .v{margin-left:auto;flex:none;font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent)}
+.gamecard .sl.me .w{color:var(--accent)}
+.gamecard .sl.note{display:block;overflow:hidden;text-overflow:ellipsis}
+.gamecard .sl.note b{color:var(--text);font-weight:700}
 .gwyou{font-size:0.75rem;color:var(--muted);margin-bottom:10px}
 .gwyou b{color:var(--text)}
-/* daily past-puzzle chips */
-.dgdays{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.dgday{display:flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);
-  border-radius:999px;padding:5px 11px;font-size:0.75rem;cursor:pointer;color:var(--text);white-space:nowrap}
-.dgday:hover{border-color:var(--accent)}
-.dgday.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
-.dgday .dgi{font-weight:700}
-.dgday.won .dgi{color:#2f9e44}
-.dgday.lost .dgi{color:#e5484d}
-/* daily: toolbar, archive, and the "how others did" summary bars */
-.dgtoolbar{display:flex;gap:14px;flex-wrap:wrap;margin:2px 0 12px}
-.dgtool{background:none;border:0;padding:0;color:var(--muted);font-size:0.78125rem;font-weight:700;
-  cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
-.dgtool:hover{color:var(--accent)}
-.dgarch{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* daily: the bar along the top */
+.dgbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 12px}
+.dgwhen{font-size:0.8125rem;color:var(--muted)}
+.dgwhen b{color:var(--text)}
+.dgstreak{font-size:0.8125rem;color:var(--muted);white-space:nowrap}
+.dgstreak b{color:var(--text);font-variant-numeric:tabular-nums}
+.dgsp{flex:1}
+/* a phone: the day and streak on one line, the three buttons together on the next */
+@media (max-width:480px){ .dgsp{flex-basis:100%;height:0} }
+.dgchip,.lbopen{font:inherit;font-size:0.78125rem;font-weight:600;color:var(--text);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;white-space:nowrap}
+.dgchip:hover,.lbopen:hover{border-color:var(--accent)}
+.dgchip[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
+/* daily: past days as a small month calendar */
+.dgcal{max-width:340px;margin:0 0 14px;padding:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius)}
+.dgcal[hidden]{display:none}
+.dgcalhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:0.875rem}
+.dgcnav{font:inherit;font-size:1.0625rem;font-weight:700;width:30px;height:30px;border-radius:50%;cursor:pointer;
+  color:var(--text);background:var(--panel);border:1px solid var(--line)}
+.dgcnav:hover{border-color:var(--accent)}
+.dgcnav:disabled{opacity:.3;cursor:default}
+.dgcgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dgcw{text-align:center;font-size:0.6875rem;font-weight:700;color:var(--muted);padding-bottom:2px}
+.dgc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:40px;
+  border-radius:8px;font:inherit;font-size:0.75rem;color:var(--text);background:var(--panel);border:1px solid transparent;padding:0}
+.dgc.blank{background:none}
+.dgc.off{background:none;color:var(--muted);opacity:.4}
+button.dgc{cursor:pointer}
+button.dgc:hover{border-color:var(--accent)}
+.dgc .dgcn{font-weight:600;line-height:1}
+.dgc .dgcm{font-weight:800;font-size:0.75rem;line-height:1;min-height:0.75rem}
+.dgc .dgcp{position:absolute;right:3px;bottom:2px;font-size:0.5625rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.dgc.won{background:color-mix(in srgb,#2f9e44 14%,var(--panel))}
+.dgc.won .dgcm{color:#2f9e44}
+.dgc.lost{background:color-mix(in srgb,#e5484d 11%,var(--panel))}
+.dgc.lost .dgcm{color:#e5484d}
+.dgc.today .dgcn{color:var(--accent)}
+.dgc.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.dgclegend{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px;font-size:0.6875rem;color:var(--muted)}
+.dgclegend .won{color:#2f9e44;font-weight:800}
+.dgclegend .lost{color:#e5484d;font-weight:800;margin-left:6px}
+.dgclegend .dgcp{margin-left:6px;font-weight:700;color:var(--text)}
+/* daily: numbered hints, the spotlight line */
+.dghn{display:inline-block;min-width:1.4em;margin-right:6px;font-size:0.75rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.dgspot{font-size:0.9375rem;margin-bottom:10px;min-height:1.4em}
+.dgspot.in{animation:hintIn .35s cubic-bezier(.2,.7,.2,1)}
+html[data-motion="reduced"] .dgspot.in{animation:none}
 #dgsummary{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
-  padding:14px;margin-bottom:14px}
+  padding:12px 14px;margin:12px 0}
 #dgsummary[hidden]{display:none}
 .dgsumhd{font-size:0.8125rem;color:var(--muted);margin-bottom:10px}
 .dgsumhd .big{font-family:var(--font-num);font-weight:700;font-size:1.1875rem;color:var(--text)}
@@ -317,17 +353,19 @@ html[data-motion="reduced"] .memcard,html[data-motion="reduced"] .memcard .face{
   padding:6px 13px;font-size:0.78125rem;cursor:pointer;color:var(--text)}
 .gwdiff[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .gwtop .gwyou{margin:0 0 0 auto}
-.gwhints{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.gwhints{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .gwhint{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
-  padding:10px 13px;font-size:0.875rem}
+  padding:9px 12px;font-size:0.9375rem}
 .gwhint.fresh{animation:hintIn .4s cubic-bezier(.2,.7,.2,1)}
 .gwhint.win{border-color:#2f9e44;background:color-mix(in srgb,#2f9e44 14%,var(--panel))}
 .gwhint.lose{border-color:#e5484d;background:color-mix(in srgb,#e5484d 12%,var(--panel))}
 @keyframes hintIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .gwrow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-#gwin{flex:1;min-width:160px;padding:11px 13px;border:var(--card-border);border-radius:var(--radius);
-  background:var(--panel-2);color:var(--text);outline:none}
-#gwin:focus{border-color:var(--accent)}
+#gwin,#dgin{flex:1;min-width:160px;width:100%;box-sizing:border-box;padding:11px 13px;border:var(--card-border);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--text);outline:none;font:inherit}
+#gwin:focus,#dgin:focus{border-color:var(--accent)}
+/* the suggestion list's wrapper takes the box's place in the row */
+.gwrow .sgwrap{flex:1;min-width:160px}
 .gwlog{display:flex;flex-direction:column;gap:5px}
 .gwguessrow{padding:6px 11px;border-radius:var(--radius);font-size:0.84375rem;font-weight:600;
   animation:hintIn .25s ease}
@@ -370,23 +408,27 @@ html[data-motion="reduced"] .chopt.chflip{animation:none}
 .volpop[hidden]{display:none}
 .volpop input[type=range]{width:120px;accent-color:var(--accent);vertical-align:middle}
 /* leaderboard summary strip beneath the game grid */
-.lbsum{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
-.lbsumhd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
-.lbsumhd h2{margin:0;font-family:var(--font-display);font-size:1.0625rem;font-weight:var(--display-w);
+/* the old leaderboards strip: gone, kept invisible for a cached older games.js */
+.lbsum{display:none}
+/* a sheet that slides up from the bottom (the leaderboards) */
+.sheetback{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.36);opacity:0;transition:opacity .28s ease}
+.sheetback.in{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:81;margin:0 auto;width:min(720px,100%);max-height:min(82vh,760px);
+  display:flex;flex-direction:column;box-sizing:border-box;background:var(--panel);color:var(--text);
+  border:var(--card-border);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.24);
+  padding-bottom:env(safe-area-inset-bottom);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.sheet.in{transform:none}
+.sheet.drag{transition:none}
+.sheetgrab{display:flex;justify-content:center;padding:9px 0 3px;cursor:grab;touch-action:none}
+.sheetgrab i{width:42px;height:4px;border-radius:2px;background:var(--line)}
+.sheethd{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 8px 20px;touch-action:none}
+.sheethd h2{margin:0;font-family:var(--font-display);font-size:1.125rem;font-weight:var(--display-w);
   letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.lbsumhd a{color:var(--accent);font-weight:700;text-decoration:none;font-size:0.8125rem;cursor:pointer}
-.lbsumlinks{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
-.lbsumhd a:hover{text-decoration:underline}
-.lbsumgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-.lbsumcard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
-  box-shadow:var(--shadow);padding:12px 14px;cursor:pointer;transition:transform .14s,box-shadow .14s}
-.lbsumcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi)}
-.lbsumcard .g{font-size:0.71875rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-.lbsumcard .lead{display:flex;align-items:baseline;gap:8px;font-size:0.875rem}
-.lbsumcard .lead .who{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lbsumcard .lead .val{margin-left:auto;font-family:var(--font-num);font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
-.lbsumcard .empty{font-size:0.8125rem;color:var(--muted)}
-html[data-motion="reduced"] .lbsumcard{transition:none}
+.sheetbody{overflow:auto;overscroll-behavior:contain;padding:2px 20px 22px}
+.sheetbody .lbpick{margin-bottom:12px}
+html.sheetopen,html.sheetopen body{overflow:hidden}
+html[data-motion="reduced"] .sheet,html[data-motion="reduced"] .sheetback{transition:none}
+@media (max-width:640px){ .sheetbody{padding:2px 14px 18px} .sheethd{padding-left:14px} }
 /* admin panel */
 .adminrow{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:var(--radius);font-size:0.875rem}
 .adminrow:nth-child(even){background:var(--panel-2)}
@@ -415,7 +457,7 @@ html[data-motion="reduced"] .lbsumcard{transition:none}
   animation:cardIn .4s ease forwards}
 .cathd:first-child{margin-top:0}
 /* a section of the games page: its heading and one line about it */
-.gsec{margin:26px 2px 12px}
+.gsec{margin:22px 2px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
 .gsec:first-child{margin-top:0}
 .gsec .cathd{margin:0;font-size:0.8125rem}
 /* revision: the study panel sits under the subjects */

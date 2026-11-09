@@ -111,7 +111,7 @@ BUILD.jim = host => {
           jimButtonHTML(playerName, 'jimbtn') + '</div>' +
           '<div class="jimcount" id="jimcount"><span class="lbl">Times pressed</span><span class="num" id="jimnum">' + myScore + '</span></div>' +
           '<div class="jimctl">' +
-            '<button class="btn" type="button" id="jimmode">🔊 Playing: <b id="jimmodelbl"></b></button>' +
+            '<button class="btn" type="button" id="jimmode">Playing: <b id="jimmodelbl"></b></button>' +
             '<button class="btn jimreset" type="button" id="jimreset">↺ Reset progress</button>' +
           '</div>' +
           '<div class="jimachwrap"><div class="jimachhd">Achievements</div><div class="jimach" id="jimach"></div></div>' +

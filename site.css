@@ -64,6 +64,9 @@ a{color:var(--accent)}
   letter-spacing:var(--display-ls);text-transform:var(--display-tt);
 }
 .tile .tdesc{color:var(--muted);font-size:0.875rem;line-height:1.35;margin-top:auto}
+/* tiles carry no description; the span is only filled with live text (focus lock) */
+.tile .tdesc:empty{display:none}
+.hubsec .tiles:not(.bento) .tile{min-height:112px}
 
 /* ── packed tile grid (bento.js places every tile; it is always gap-free) ── */
 .bento{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));grid-auto-rows:150px;gap:14px}
@@ -83,6 +86,8 @@ a{color:var(--accent)}
 .tiles.bento .tile:not(.tall){display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:10px;align-content:stretch;padding:16px 18px}
 .tiles.bento .tile:not(.tall) .ico{margin:0;align-self:center;font-size:1.5rem}
 .tiles.bento .tile:not(.tall) .tdesc{grid-column:1 / -1;align-self:end;line-height:1.25}
+/* with nothing under the name, the icon and name sit in the middle of the tile */
+.tiles.bento .tile:not(.tall):has(.tdesc:empty){grid-template-rows:auto;align-content:center}
 
 /* ── home: the timetable's header panel, then labelled groups ─── */
 .hubbar{
@@ -128,7 +133,7 @@ a.nowcard:hover{border-color:var(--accent)}
 .tiles.bento .tile.tall.hasday .ttday{grid-column:1 / -1;margin-top:12px;overflow:hidden}
 .tiles.bento .tile.tall.hasday .tglyph{display:none}
 .sechd{margin:0 0 10px;font-size:0.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.hubsec .tiles.bento{grid-auto-rows:118px}
+.hubsec .tiles.bento{grid-auto-rows:88px}
 .hubfoot{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap;
   margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:0.8125rem}
 .hubfoot a{color:var(--muted);text-decoration:none;font-weight:700}
@@ -262,7 +267,7 @@ a.nowcard:hover{border-color:var(--accent)}
   .tiles.bento .tile:not(.tall){padding:11px 12px;column-gap:8px}
   .tiles.bento .tile:not(.tall) .ico{font-size:1.25rem}
   .tiles.bento .tile .tdesc,.tiles.bento .tile.wide .tdesc{font-size:0.8125rem;line-height:1.25}
-  .hubsec .tiles.bento{grid-auto-rows:104px}
+  .hubsec .tiles.bento{grid-auto-rows:68px}
   .hubbar{padding:14px;gap:12px}
   .hubnow{flex-basis:100%;order:3}
   .hubid{flex-basis:0}

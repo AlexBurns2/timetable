@@ -50,13 +50,14 @@ a.fname:hover, a.fname:focus-visible{color:var(--accent);border-bottom-color:cur
 
   <div class="fsearch">
     <input id="q" type="search" placeholder="Search a name, or paste an email…" autocomplete="off" spellcheck="false"
+           data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"
            aria-label="Search students by name" aria-describedby="msg">
   </div>
   <div class="fyears" id="years" role="group" aria-label="Year"></div>
   <p class="fmsg" id="msg" role="status" aria-live="polite">Type at least two letters.</p>
   <ul class="flist" id="list"></ul>
 
-  <p class="fnote">Students only. Tap a name to see their timetable. Nothing you search for is saved.</p>
+  <p class="fnote">Students only. Searches aren’t saved.</p>
 </div>
 
 <script>
