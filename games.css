@@ -1102,13 +1102,13 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 /* games: small cards, the name and your own best (classic grid) */
 .gcompact{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .gcompact .gamecard,.bento .gamecard{padding:13px 15px;gap:3px}
-.gcompact .gamecard{min-height:94px}
+.gcompact .gamecard{min-height:76px}
 .gcompact .gamecard .ico,.bento .gamecard:not(.tall) .ico{font-size:1.5rem;margin-bottom:2px}
 .gcompact .gamecard h2,.bento .gamecard:not(.wide) h2{font-size:1rem}
 .gcompact .gamecard .go{display:none}
 .gcompact .gamecard .sum{margin-top:auto}
 .gsec{margin:18px 2px 9px}
-@media (max-width:560px){ .gcompact{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .gcompact .gamecard{min-height:84px;padding:11px 12px} }
+@media (max-width:560px){ .gcompact{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .gcompact .gamecard{min-height:70px;padding:11px 12px} }
 /* the leaderboards at the bottom */
 .lbboards{margin-top:26px}
 .lbboards .gsec{display:flex;align-items:center;justify-content:space-between}

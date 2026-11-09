@@ -191,11 +191,11 @@ function gameCard(g, i){
   const c = document.createElement('button');
   c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '');
   c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
-  /* under the name, just your own record (localSum, then fillSums for the
-     daily). The leaderboards are at the bottom of the page. */
+  /* games: just the icon and the name (your records are in each game, and the
+     leaderboards at the bottom of the page). Revision keeps its progress line. */
   c.innerHTML = (g.isNew ? '<span class="newbanner">New</span>' : '') +
     '<span class="ico">' + g.ico + '</span>' +
-    '<h2>' + g.name + '</h2><div class="sum" data-sum="' + g.id + '">' + localSum(g.id) + '</div>' +
+    '<h2>' + g.name + '</h2>' + (REVISION_PAGE ? '<div class="sum" data-sum="' + g.id + '">' + localSum(g.id) + '</div>' : '') +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
   c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
   return c;
