@@ -624,7 +624,7 @@ button.row:hover{background:var(--fill2)}
 .mjbtns .btn{flex:1;padding:0 8px}
 .mjerr{color:var(--red)}
 /* ── sign-in modules, the Forum chat and the Poll: blocks like Mahjong's ── */
-.list :is(.lgb,.plb,.fmb){height:var(--h);margin-bottom:8px}
+.list :is(.lgb,.plb){height:var(--h);margin-bottom:8px}
 .lgb,.plb{background:var(--fill)}
 .lgin{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
 .lgin b{font-size:calc(20px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
@@ -639,20 +639,20 @@ button.row:hover{background:var(--fill2)}
 .lggo:disabled{opacity:.7;cursor:default}
 /* signed out: the tiles below are greyed and can't be used */
 .signedout #mg{opacity:.45;filter:grayscale(1)}
-.fmb{display:flex;flex-direction:column;background:var(--fill)}
-.fmlist{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
-.fmmsg{max-width:min(560px,86%);align-self:flex-start;padding:7px 11px;border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
-.fmmsg.me{align-self:flex-end}
-.fmmsg.rp{margin-left:22px}
+/* the Forum: one block per message, flowing down the page (not placed by time) */
+.fmm{position:relative;margin-bottom:8px;padding:10px 14px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.fmm.rp{margin-left:32px}
+.fmnew{display:flex;flex-direction:column;gap:6px;background:var(--fill)}
+.fmrow{display:flex;gap:8px}
+.fmrep{display:flex;justify-content:space-between;align-items:center;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 .fmmeta{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.fmmeta b{color:var(--fg);font-weight:600;margin-right:6px}
-.fmtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(14px * var(--fs,1))}
-.fmact{display:flex;gap:10px}
+.fmmeta b{color:color-mix(in srgb,var(--c) 40%,var(--fg));font-weight:600;margin-right:6px}
+.fmtxt{margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(14px * var(--fs,1))}
+.fmact{display:flex;gap:12px;margin-top:4px}
+.fmact:empty{display:none}
 .fmact button{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 .fmact button:hover{color:var(--fg)}
-.fmnone{margin:auto;color:var(--fg3);font-size:calc(13px * var(--fs,1));text-align:center}
-.fmrep{flex:none;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;font-size:calc(12px * var(--fs,1));color:var(--fg2);border-top:1px solid var(--sep)}
-.fmbar{flex:none;display:flex;gap:8px;padding:8px 10px;border-top:1px solid var(--sep)}
+.fmnone{color:var(--fg3);font-size:calc(13px * var(--fs,1))}
 .plq{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
 .plq b{font-size:calc(19px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .plq small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
@@ -1504,7 +1504,7 @@ async function load(){
 /* ═══ render ═══ */
 let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
-let fm = null, fmNote = "", fmReply = null, fmDraft = "", fmStick = true, pl = null, plAt = 0, plChosen = [], plQuery = "", plNote = "", plBusy = false;
+let fm = null, fmNote = "", fmReply = null, fmDraft = "", pl = null, plAt = 0, plChosen = [], plQuery = "", plNote = "", plBusy = false;
 let loginNote = "", loginBusy = false, loginUser = "", loginPass = "";
 let fmShow = false, plShow = false, loginShow = !signedIn;   /* Forum chat, Poll, and the sign-in modules (shown until there is a login) */
 let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the one opened out, and once its frame is in */
@@ -4360,22 +4360,26 @@ const fmAgo = iso => {
   return !isFinite(s) ? "" : s < 60 ? "just now" : s < 3600 ? Math.floor(s / 60) + "m ago" : s < 86400 ? Math.floor(s / 3600) + "h ago" : s < 604800 ? Math.floor(s / 86400) + "d ago"
     : new Date(iso).toLocaleDateString(undefined, { day:"numeric", month:"short" });
 };
-function fmListHtml(){
-  if (fmNote) return `<p class="fmnone">${esc(fmNote)}</p>`;
-  if (!fm) return `<p class="fmnone">Loading…</p>`;
-  if (!fm.length) return `<p class="fmnone">Nothing here yet. Say the first thing.</p>`;
-  const msg = (p, rp, t) => `<div class="fmmsg${p.mine ? " me" : ""}${rp ? " rp" : ""}"><div class="fmmeta"><b>${esc(p.name)}</b>${esc(fmAgo(p.at))}</div><div class="fmtxt">${esc(p.body)}</div>` +
-    `<div class="fmact">${rp ? "" : `<button data-reply="${esc(t.id)}" data-name="${esc(t.name)}">Reply</button>`}${p.mine ? `<button data-del="${esc(p.id)}">Delete</button>` : ""}</div></div>`;
-  return [...fm].reverse().map(t => msg(t, false, t) + (t.replies || []).map(r => msg(r, true, t)).join("")).join("");
+/* the forum's blocks, newest thread first, each reply under its thread; w = the width a block takes across the days */
+let fmW = "";
+function fmBlocks(){
+  const box = (cls, who, c, body, rp) => `<div class="mjb fmm${cls}" data-sig="fm:${who}" data-who="fm:${who}" style="--c:${c};${fmW && `width:calc(${fmW} - ${rp ? 32 : 0}px)`}">${body}</div>`;
+  const note = t => box(" fmmsg", "note", "#8E8E93", `<p class="fmnone">${esc(t)}</p>`);
+  if (fmNote) return note(fmNote);
+  if (!fm) return note("Loading…");
+  if (!fm.length) return note("Nothing here yet. Say the first thing.");
+  const msg = (p, t, rp) => box(" fmmsg" + (rp ? " rp" : ""), p.id, bdColour(p.name || "?"),
+    `<div class="fmmeta"><b>${esc(p.name)}</b>${esc(fmAgo(p.at))}</div><div class="fmtxt">${esc(p.body)}</div>` +
+    `<div class="fmact">${rp ? "" : `<button data-reply="${esc(t.id)}" data-name="${esc(t.name)}">Reply</button>`}${p.mine ? `<button data-del="${esc(p.id)}">Delete</button>` : ""}</div>`, rp);
+  return fm.map(t => msg(t, t, false) + (t.replies || []).map(r => msg(r, t, true)).join("")).join("");
 }
+/* new posts: swap the message blocks under the box you type in, leaving it (and what's typed) alone */
 function paintForum(){
   if (!fmShow) return;
-  const box = document.querySelector(".fmlist");
-  if (!box){ render(); return; }
-  const near = fmStick || box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  box.innerHTML = fmListHtml();
-  if (near) box.scrollTop = box.scrollHeight;
-  fmStick = false;
+  const top = $("fmnew");
+  if (!top){ render(); return; }
+  top.parentElement.querySelectorAll(".fmmsg").forEach(el => el.remove());
+  top.insertAdjacentHTML("afterend", fmBlocks());
 }
 function paintReply(){
   const r = $("fmrep"); if (!r) return;
@@ -4389,19 +4393,23 @@ async function sendForum(){
   $("fmsend").disabled = true;
   try {
     await call("/api/forum", { body:{ body:text, parent:fmReply ? fmReply.id : undefined } });
-    fmDraft = ""; $("fmin").value = ""; fmReply = null; paintReply(); fmStick = true;
+    fmDraft = ""; $("fmin").value = ""; fmReply = null; paintReply();
     await loadForum();
   } catch (e){ fmNote = e.message; paintForum(); }
   if ($("fmsend")) $("fmsend").disabled = false;
 }
 function renderForum(nd){
-  const H = viewH(), list = phone.matches;
-  const host = blockHost(nd, "Forum", H, block => [block("fmb", "fm:chat", "#30B0C7", 4, H - 8,
-    `<div class="fmlist"></div><div class="fmrep" id="fmrep" hidden><span></span><button class="btn sm" id="fmcancel" type="button">Cancel</button></div>` +
-    `<div class="fmbar"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Say something…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div>`)], nd, 0);
-  if (list) host.querySelector(".fmb").style.setProperty("--h", "calc(100dvh - 130px)");
-  host.querySelector(".fmlist").onclick = e => {
-    const b = e.target.closest("button");
+  const list = phone.matches, host = $(list ? "daylist" : "g"), span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
+  fmW = list ? "" : `${span} * (100% + 8px) - 8px`;
+  const top = `<div class="mjb fmm fmnew" id="fmnew" data-sig="fm:new" data-who="fm:new" style="--c:#30B0C7;${fmW && `width:calc(${fmW})`}">` +
+    `<div class="fmrep" id="fmrep" hidden><span></span><button class="btn sm" id="fmcancel" type="button">Cancel</button></div>` +
+    `<div class="fmrow"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Say something…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div></div>`;
+  const cells = top + fmBlocks();
+  if (list) host.innerHTML = cells;
+  else host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Forum</span></div><div></div><div></div>` +
+    Array.from({ length:nd }, (_, k) => `<div class="col" style="min-height:${viewH()}px">${k === at ? cells : ""}</div>`).join("") + `<div></div>`;
+  host.onclick = e => {
+    const b = e.target.closest(".fmmsg button");
     if (!b) return;
     if (b.dataset.reply){ fmReply = { id:b.dataset.reply, name:b.dataset.name }; paintReply(); $("fmin").focus(); }
     else if (b.dataset.del){ b.disabled = true; call("/api/forum", { body:{ action:"delete", id:b.dataset.del } }).then(loadForum, e2 => { fmNote = e2.message; paintForum(); }); }
@@ -4410,7 +4418,7 @@ function renderForum(nd){
   $("fmin").onkeydown = e => { if (e.key === "Enter") sendForum(); };
   $("fmsend").onclick = sendForum;
   $("fmcancel").onclick = () => { fmReply = null; paintReply(); };
-  fmStick = true; paintForum(); paintReply();
+  paintReply();
 }
 setInterval(() => { if (fmShow && !loginShow) loadForum(); }, 15000);
 
