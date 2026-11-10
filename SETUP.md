@@ -2764,7 +2764,7 @@ and only creates what's missing; nothing existing is touched.
 create table if not exists conn_puzzle (
   date       date not null,
   year       text not null,
-  groups     jsonb not null,          -- [{lv, label, kind, names, how}], or [] if no puzzle could be made that day
+  groups     jsonb not null,          -- [{lv, id, label, kind, names, emails}], or [] if no puzzle could be made that day
   created_at timestamptz not null default now(),
   primary key (date, year)
 );

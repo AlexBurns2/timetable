@@ -1340,17 +1340,22 @@ BUILD.dailyguess = host => {
 };
 
 /* ── Quartets ──────────────────────────────────────────────────────
-   Sixteen people from your year and four hidden groups of four, from
-   level 1 (a plain name theme) to level 4 (wordplay). Pick four and check
-   them; four mistakes and it's over. The puzzle and its answers come from
-   /api/daily?conn=1 (see api/_conn.js); guesses are marked here, instantly,
-   and saved in the background for the streak and the past days. */
+   Sixteen people from your year and four hidden groups of four, levels 1
+   (easiest) to 4. Pick four and check them; four mistakes and it's over.
+   Laid out like Daily Guess Who: your streak, the Archive calendar of past
+   days, and Results for how your year went (which opens when you finish and
+   closes again so you can look at your board). The puzzle and its answers
+   come from /api/daily?conn=1 (api/_connroute.js); guesses are marked here,
+   instantly, and saved in the background. */
+const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
 const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
 BUILD.quartets = host => {
-  head(host, 'Quartets', 'Find the four groups of four. Level 1 is the easiest, level 4 the trickiest.', '<div id="qt"></div>');
+  head(host, 'Quartets', 'Find the four groups of four from your year. Level 1 is the easiest, level 4 the trickiest.', '<div id="qt"></div>');
   const box = $('qt');
-  let alive = true, arch = null, cur = null;
-  const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', timeZone:'UTC' });
+  let alive = true, arch = null, calMonth = null, cur = null;
+  const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
+  const longDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', timeZone:'UTC' });
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const seeded = (list, seed) => { let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const a = list.slice(); for (let i = a.length - 1; i > 0; i--){ h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -1364,15 +1369,22 @@ BUILD.quartets = host => {
   loadDay(null);
 
   function topBar(s, streak){
-    return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : shortDate(s.date)) + '</b></span>' +
+    const calOpen = !!(document.getElementById('qtcal') && !document.getElementById('qtcal').hidden);
+    return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : longDate(s.date)) + '</b></span>' +
       '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="qtstreak">' + (streak || 0) + '</b></span><span class="dgsp"></span>' +
-      '<button class="dgchip" id="qtpast" type="button" aria-expanded="false" aria-controls="qtcal">Past days</button></div>' +
-      '<div class="qtcal" id="qtcal" hidden></div>';
+      '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button>' +
+      '<button class="dgchip" id="qtsumbtn" type="button" aria-expanded="false" aria-controls="qtsummary"' + (s.none ? ' hidden' : '') + '>Results</button></div>' +
+      '<div class="dgcal" id="qtcal"' + (calOpen ? '' : ' hidden') + '></div>';
   }
+  function wireBar(s){
+    $('qtcalbtn').onclick = toggleCal;
+    if ($('qtsumbtn')) $('qtsumbtn').onclick = () => toggleSummary(s.date);
+    if (!$('qtcal').hidden) paintCal();
+  }
+
   function play(s){
     cur = s;
-    if (s.none){ box.innerHTML = topBar(s, 0) + '<p class="how">No Quartets for this day: there weren’t enough clear groups to make a fair one.</p>';
-      $('qtpast').onclick = togglePast; return; }
+    if (s.none){ box.innerHTML = topBar(s, 0) + '<p class="how">No Quartets for this day: there weren’t enough clear groups to make a fair one.</p>'; wireBar(s); return; }
     const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
     const lvOf = new Map(), howOf = new Map();
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
@@ -1389,10 +1401,11 @@ BUILD.quartets = host => {
         '<button class="btn" type="button" id="qtclear">Deselect all</button>' +
         '<button class="btn primary" type="button" id="qtgo" disabled>Submit</button></div>' +
       '<div class="qtmsg" id="qtmsg" role="status" aria-live="polite"></div>' +
-      '<div class="qtdone" id="qtdone"></div>';
-    $('qtpast').onclick = togglePast;
+      '<div class="qtdone" id="qtdone"></div>' +
+      '<div class="dgresults" id="qtsummary" hidden></div>';
+    wireBar(s);
 
-    const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + '</span><b>' + esc(g.label) + '</b>' +
+    const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + (missed ? ' · missed' : '') + '</span><b>' + esc(g.label) + '</b>' +
       '<span class="qtnames">' + g.names.map(n => esc(n) + (howOf.get(n) ? ' <i>(' + esc(howOf.get(n)) + ')</i>' : '')).join(', ') + '</span></div>';
     const paintSolved = () => {
       const missed = done && found.length < 4 ? groups.filter(g => !found.includes(g.lv)) : [];
@@ -1417,21 +1430,54 @@ BUILD.quartets = host => {
     };
     const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
     const save = () => TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, found, log, mistakes } })
-      .then(r => { if (alive && r && r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; } }).catch(() => {});
-    const shareText = () => 'Quartets ' + s.date + '\n' + log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n');
+      .then(r => { if (!alive || !r) return;
+        if (r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; }
+        if (done) loadSummary(s.date); }).catch(() => {});
+
+    /* the share card: an image of how you went (no names, no answers), and the same as text */
+    const won = () => found.length === 4 && mistakes < 4;
+    const verdict = () => won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it';
+    const shareText = () => 'Quartets · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
+      log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=quartets';
+    const drawCard = () => {
+      const S = 2, W = 360, sq = 34, gap = 7, rows = Math.max(1, log.length);
+      const H = 168 + rows * (sq + gap);
+      const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+      const g = c.getContext('2d'); g.scale(S, S);
+      const font = (getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif');
+      const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+      const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#1b1930'); bg.addColorStop(1, '#2b2350');
+      rr(0, 0, W, H, 22); g.fillStyle = bg; g.fill();
+      g.textAlign = 'center'; g.fillStyle = '#fff';
+      g.font = '800 26px ' + font; g.fillText('Quartets', W / 2, 46);
+      g.fillStyle = 'rgba(255,255,255,.65)'; g.font = '600 13px ' + font; g.fillText('Year ' + s.year + ' · ' + longDate(s.date), W / 2, 68);
+      g.fillStyle = won() ? '#ffe08a' : '#ffb3c0'; g.font = '700 16px ' + font; g.fillText(verdict(), W / 2, 98);
+      const gx = (W - (4 * sq + 3 * gap)) / 2;
+      log.forEach((r, i) => r.forEach((l, j) => { rr(gx + j * (sq + gap), 116 + i * (sq + gap), sq, sq, 8); g.fillStyle = QT_COL[l]; g.fill(); }));
+      g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '600 12px ' + font; g.fillText('mscunofficial.com', W / 2, H - 18);
+      return c;
+    };
     const paintDone = () => {
       const el = $('qtdone'); if (!done){ el.innerHTML = ''; return; }
-      const won = found.length === 4 && mistakes < 4;
-      el.innerHTML = '<p class="qtend">' + (won ? 'Solved' + (mistakes ? ' with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : ' with no mistakes') + '.' : 'Out of mistakes. Here’s how it went.') + '</p>' +
-        (log.length ? '<div class="qtgridshare" aria-hidden="true">' + log.map(g => '<div>' + g.map(l => '<i class="lv' + l + '"></i>').join('') + '</div>').join('') + '</div>' : '') +
-        '<button class="btn" type="button" id="qtshare">Share</button>';
-      $('qtshare').onclick = async () => {
-        const t = shareText();
-        try { if (navigator.share && TOUCH) await navigator.share({ text:t }); else { await navigator.clipboard.writeText(t); $('qtshare').textContent = 'Copied'; } } catch {}
-      };
+      const card = drawCard();
+      el.innerHTML = '<div class="qtcard"></div><div class="qtcardbtns"><button class="btn primary" type="button" id="qtshare">Share</button>' +
+        '<button class="btn" type="button" id="qtcopy">Copy as text</button></div>';
+      card.className = 'qtcardimg'; card.setAttribute('role', 'img'); card.setAttribute('aria-label', 'Your result: ' + verdict());
+      el.querySelector('.qtcard').appendChild(card);
+      $('qtcopy').onclick = async () => { try { await navigator.clipboard.writeText(shareText()); $('qtcopy').textContent = 'Copied'; } catch {} };
+      $('qtshare').onclick = () => card.toBlob(async blob => {
+        const file = blob && new File([blob], 'quartets-' + s.date + '.png', { type:'image/png' });
+        try {
+          if (file && navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], text:shareText() });
+          else if (navigator.share && TOUCH) await navigator.share({ text:shareText() });
+          else if (blob && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); $('qtshare').textContent = 'Image copied'; }
+          else { await navigator.clipboard.writeText(shareText()); $('qtshare').textContent = 'Copied'; }
+        } catch {}
+      }, 'image/png');
     };
     const paint = () => { paintSolved(); paintGrid(); paintLives(); paintDone(); };
     paint();
+    if (done) openSummary(s.date);
 
     $('qtshuf').onclick = () => { order = seeded(order, Math.random().toString(36)); paintGrid(); };
     $('qtclear').onclick = () => { sel.clear(); paintGrid(); };
@@ -1455,29 +1501,105 @@ BUILD.quartets = host => {
           { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
         if (mistakes >= 4){ done = true; SFX.lose(); }
       }
-      if (arch && done) arch.mine[s.date] = { solved:found.length === 4 && mistakes < 4, done:true, mistakes };
+      if (arch && done){ arch.mine[s.date] = { solved:won(), done:true, mistakes }; if (!$('qtcal').hidden) paintCal(); }
       save();
-      setTimeout(paint, right || done ? 0 : 280);
+      setTimeout(() => { paint(); if (done) openSummary(s.date); }, right || done ? 0 : 280);
     };
   }
 
-  /* past days: every day since the first, newest first, and how you went */
-  async function togglePast(){
-    const el = $('qtcal'), btn = $('qtpast');
-    el.hidden = !el.hidden; btn.setAttribute('aria-expanded', String(!el.hidden));
-    if (el.hidden) return;
+  /* ── Results: how your year went that day ── */
+  async function openSummary(date){
+    const el = $('qtsummary'), b = $('qtsumbtn'); if (!el) return;
+    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    await loadSummary(date);
+  }
+  async function toggleSummary(date){
+    const el = $('qtsummary');
+    if (!el.hidden){ el.hidden = true; $('qtsumbtn').setAttribute('aria-expanded', 'false'); return; }
+    await openSummary(date);
+  }
+  async function loadSummary(date){
+    const el = $('qtsummary'); if (!el) return;
+    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    try { const d = await TT.api('/api/daily', { params:{ conn:1, date, summary:1 } }); if (alive && el.isConnected) renderSummary(el, d.summary, d.mine || {}); }
+    catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
+  }
+  function renderSummary(el, sum, mine){
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
+    const rate = Math.round(sum.solved / sum.played * 100);
+    const max = Math.max(1, ...['0', '1', '2', '3', 'lost'].map(k => sum.dist[k] || 0));
+    const tip = k => { const l = (sum.names || {})[k]; return l && l.length ? ' title="' + esc(l.join(', ')) + '"' : ''; };
+    const bar = (label, k, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"' + tip(k) + '><span class="dgbl">' + label + '</span>' +
+      '<span class="dgbt"><i style="width:' + ((sum.dist[k] || 0) / max * 100) + '%"></i></span><span class="dgbn">' + (sum.dist[k] || 0) + '</span></div>';
+    const sp = sum.spotlight;
+    const spot = sp ? (sp.kind === 'perfect' ? '⭐ <b>' + esc(sp.name) + '</b> was first to solve it with no mistakes'
+      : '⚡ <b>' + esc(sp.name) + '</b> was first to solve it') : '';
+    /* the groups: what they were only once you've finished, so Results never gives the answers away */
+    const told = !!mine.done;
+    const groupRows = (sum.found || []).slice().sort((a, b) => a.lv - b.lv).map(g => {
+      const pct = Math.round(g.found / sum.played * 100);
+      return '<div class="qtfound"><span class="qtfdot" style="background:' + QT_COL[g.lv] + '"></span><span class="qtfl">' + (told ? esc(g.label) : 'Level ' + g.lv) + '</span>' +
+        '<span class="dgbt"><i style="width:' + pct + '%;background:' + QT_COL[g.lv] + '"></i></span><span class="dgbn">' + pct + '%</span></div>';
+    }).join('');
+    el.innerHTML = (spot ? '<div class="dgspot">' + spot + '</div>' : '') +
+      '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
+      '<div class="qtsumcap">Mistakes</div>' +
+      '<div class="dgbars">' + bar('0', '0') + bar('1', '1') + bar('2', '2') + bar('3', '3') + bar('✗', 'lost', true) + '</div>' +
+      '<div class="qtsumcap">Who found each group</div><div class="qtfounds">' + groupRows + '</div>';
+  }
+
+  /* ── Archive: a month calendar, like Daily Guess Who's ── */
+  async function toggleCal(){
+    const el = $('qtcal'), btn = $('qtcalbtn');
+    const open = el.hidden;
+    el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+    if (!open) return;
     if (!arch){
       el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
-      try { const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } }); arch = { days:d.days || [], mine:d.mine || {} }; }
-      catch (e){ el.innerHTML = '<p class="how" style="margin:0">Couldn’t load past days.</p>'; return; }
+      try {
+        const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } });
+        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch };
+        (d.archive || []).forEach(a => arch.days[a.date] = a);
+      } catch (e){ el.innerHTML = '<p class="how" style="margin:0">Couldn’t load past days.</p>'; return; }
     }
     if (!alive) return;
-    el.innerHTML = arch.days.length ? arch.days.map(d => { const m = arch.mine[d];
-      const st = m && m.solved ? 'won' : m && m.done ? 'lost' : 'open';
-      return '<button type="button" class="qtday ' + st + (cur && d === cur.date ? ' cur' : '') + '" data-d="' + d + '">' + esc(shortDate(d)) +
-        '<span>' + (st === 'won' ? '✓' : st === 'lost' ? '✗' : '') + '</span></button>'; }).join('')
-      : '<p class="how" style="margin:0">No past days yet.</p>';
-    el.querySelectorAll('.qtday').forEach(b => b.onclick = () => loadDay(b.dataset.d));
+    calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    paintCal();
+  }
+  function paintCal(){
+    const el = $('qtcal'); if (!el || !arch) return;
+    if (!calMonth) calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    const [y, m] = calMonth.split('-').map(Number);
+    const iso = d => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const firstDow = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const minMonth = arch.epoch.slice(0, 7), maxMonth = arch.today.slice(0, 7);
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
+    for (let d = 1; d <= dim; d++){
+      const date = iso(d), mine = arch.mine[date], day = arch.days[date];
+      const off = date < arch.epoch || date > arch.today;
+      const state = mine && mine.solved ? 'won' : mine && mine.done ? 'lost' : 'open';
+      const tip = off ? '' : shortDate(date) + (mine && mine.solved ? ': solved with ' + mine.mistakes + ' mistake' + (mine.mistakes === 1 ? '' : 's') : mine && mine.done ? ': you missed it' : ': not played') +
+        (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
+      cells += off ? '<span class="dgc off"><span class="dgcn">' + d + '</span></span>'
+        : '<button type="button" class="dgc ' + state + (cur && date === cur.date ? ' cur' : '') + (date === arch.today ? ' today' : '') +
+          '" data-date="' + date + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+          '<span class="dgcn">' + d + '</span><span class="dgcm">' + (state === 'won' ? '✓' : state === 'lost' ? '✗' : '') + '</span>' +
+          '<span class="dgcp">' + (day && day.played ? day.played : '') + '</span></button>';
+    }
+    el.innerHTML =
+      '<div class="dgcalhd"><button type="button" class="dgcnav" data-step="-1" aria-label="Previous month"' + (calMonth <= minMonth ? ' disabled' : '') + '>‹</button>' +
+        '<b>' + MONTHS[m - 1] + ' ' + y + '</b>' +
+        '<button type="button" class="dgcnav" data-step="1" aria-label="Next month"' + (calMonth >= maxMonth ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="dgcgrid"><span class="dgcw">M</span><span class="dgcw">T</span><span class="dgcw">W</span><span class="dgcw">T</span>' +
+        '<span class="dgcw">F</span><span class="dgcw">S</span><span class="dgcw">S</span>' + cells + '</div>' +
+      '<div class="dgclegend"><span class="won">✓</span> solved <span class="lost">✗</span> missed <span class="dgcp">12</span> played in your year</div>';
+    el.querySelectorAll('.dgcnav').forEach(b => b.onclick = () => {
+      const dt = new Date(Date.UTC(y, m - 1 + (+b.dataset.step), 1));
+      calMonth = dt.toISOString().slice(0, 7); paintCal();
+    });
+    el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
   }
   return () => { alive = false; };
 };

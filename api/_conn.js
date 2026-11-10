@@ -36,8 +36,6 @@ const PLACES = new Set(L('london paris york sydney perth darwin hobart brisbane 
 /* everyday words that are also surnames (Smart, Field, Ball) or first names (Grace, Sunny) */
 const WORDY = new Set(L('smart full field fields ball buck lamb host cannon sparks spark ward park song rich hung burns young long short small stone wood woods hill hills green white brown black gray grey king bird fox hall bell lane day love hope price hunt best wise read page rice cash gold silver bush banks booth bond rock rocks brook brooks bridge bridges castle chamber church cross dean dove drake east west north south ford fort frost gale glass good grant hart heath holland house hope hunter jewel joy knight lake law lord mark marsh may meadow mill mills moon morning new noble oak park pearl pierce pike pool pope power rain rains ray reed ridge rivers rose rush salt sharp short sparrow spring steel sterling stone storm street summer summers swift thorn tower vine waters wells west wild winter wolf wood worth wren sands stamp sage cook coy bright bush chance cole crane dale dash dew fair free friend gay gentle gill glad hale hardy hay heart hood hook horn jolly kind lamb lock love lucky major marsh mason mayor meek merry mild moss nice page pardon parsons peck penny plum prince pride proud read reed rich rose sale sea shore silk sly snow spear star sweet tall tidy toy trim true vale wade warren wing wise yeo'));
 const WORD_FIRST = new Set(L('grace sunny tiger ruby bill will rose hope joy faith sky river storm summer autumn honey jack mark pat rob sue star dawn eve ivy lily daisy holly hazel amber jade pearl april may june august art bob chance chase clay cole crystal dale dean drew faith frank gene gil glen grant guy harmony hunter iris jay jewel king lane lark lee mason max melody miles neil nick noble page penny pierce piper ray reed rich river robin rock rocky rusty sage scout skye sterling sterling summer tucker victor wade will willow win wren'));
-/* first names that are just as common as surnames */
-const SURNAME_FIRST = new Set(L('taylor jordan ryan james henry thomas jackson harrison mason cooper hunter parker morgan kelly grant scott lee marley wyatt rhys tyler riley harper carter spencer elliott elliot lewis owen davies dennis hayden bailey quinn jamie reese cameron campbell murray stuart stewart russell douglas howard mitchell nelson preston warren bradley chester clark clarke connor dylan ellis evans fletcher foster gordon graham hamilton hudson kennedy lincoln logan mackenzie madison marshall maxwell miller morris neil palmer reid ross sawyer sullivan travis turner walker wallace watson wesley'));
 /* names hidden inside longer first names: Hannah has Anna, William has Liam, Isabella has Bella
    (four letters or more, with at least two letters left over, so it's a find, not a nickname) */
 const NICK = L('anna bella ella elle chris liam alex theo tina nina rita lena mina leah leon noel dean anne andy rick nick mark ivan eric rose lily ruby emma emily sara sarah dana dina gina jane joan june kate mary maya nora rosa rosie tess tom thom matt dave dan beth anna ella gabe jack jake joel john josh luke mike paul pete ross ryan sean will zach adam alan amos axel bert carl cole drew eden evan finn gail hope iris jade jean jess judy kyle lara lars leo levi lisa lois lola luca lucy luna mae mara max mila milo neil nell nico noah ollie omar otto owen remy rene rory ruth ryan saul seth stan tara tess toby tony vera wade yael zane zara zoe kian liv nate sian amie');
@@ -69,7 +67,6 @@ export function nameFeatures(first, last){
   if (PLACES.has(l)) add(1, 'place', 'Surnames that are places');
   if (WORDY.has(l) && !JOBS.has(l) && !COLOURS.has(l) && !ANIMALS.has(l)) add(1, 'wordsur', 'Surnames that are everyday words');
   if (WORD_FIRST.has(f) && !FLOWERS.has(f) && !GEMS.has(f) && !MONTHS.has(f)) add(1, 'wordfirst', 'First names that are also everyday words');
-  if (SURNAME_FIRST.has(f)) add(1, 'surfirst', 'First names that could be surnames');
   /* wordplay */
   /* inside the name (Gil-bert, Wil-liam), or at the start with a good part left over (Chris-topher) */
   const nick = NICK.find(n => n.length >= 4 && f.includes(n) && f.length - n.length >= (f.startsWith(n) ? 4 : 2));
@@ -87,6 +84,16 @@ export function nameFeatures(first, last){
   return out;
 }
 
+/* the short reason one person is in a name group ("emu", "G.G."), worked out
+   when the puzzle is shown, from the name they go by then; nothing is stored.
+   Empty if the group isn't a wordplay one, or the name no longer fits. */
+export function howFor(groupId, name){
+  const id = String(groupId || '').replace(/^n:/, '');
+  const parts = String(name || '').trim().split(/\s+/);
+  const f = nameFeatures(parts[0], parts.slice(1).join(' ')).find(x => x.id === id);
+  return f && f.how ? f.how : '';
+}
+
 /* ── the timetable side ─────────────────────────────────────────── */
 const NOT_A_SUBJECT = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch|break|private)\b/i;
 const TOO_COMMON = /^english\b|^mathematics$|^maths?$|^religion|^studies of religion/i;
@@ -94,6 +101,19 @@ export const cleanSubject = name => String(name || '')
   .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '')
   .replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, '')
   .replace(/^[\s:\-–—]+/, '').trim();
+/* what a whole timetable says about someone, like Daily Guess Who's hints (Years 11 and 12) */
+const SCIENCE = /\b(physics|chemistry|biology|earth (?:and|&) environmental|investigating science|science extension)\b/i;
+const MATHS = /\bmath/i;
+const EXTENSION = /\bextension\b|\bext\.?\s?[12]\b/i;
+const LANGUAGE = /\b(french|japanese|chinese|mandarin|italian|german|spanish|indonesian|korean|latin|greek|arabic|vietnamese|hindi|modern greek)\b/i;
+const PROFILES = {
+  'p:nomaths': { label: "Don't take any maths",              about: MATHS,     test: s => !s.some(x => MATHS.test(x)) },
+  'p:nosci':   { label: "Don't take any science",            about: SCIENCE,   test: s => !s.some(x => SCIENCE.test(x)) },
+  'p:sci3':    { label: 'Take three sciences',               about: SCIENCE,   test: s => s.filter(x => SCIENCE.test(x)).length >= 3 },
+  'p:ext2':    { label: 'Take two or more extension subjects', about: EXTENSION, test: s => s.filter(x => EXTENSION.test(x)).length >= 2 },
+  'p:lang':    { label: 'Take a language',                   about: LANGUAGE,  test: s => s.some(x => LANGUAGE.test(x)) }
+};
+const profileHas = (t, id) => PROFILES[id].test([...t.subjects]);
 /* one timetable → { subjects:Set, codes:Set, teachers:Set, classes:[{code, subject, teacher}] } */
 export function readTimetable(raw){
   const rows = Array.isArray(raw) ? raw : (raw && (raw.timetable || raw.Timetable)) || [];
@@ -125,7 +145,8 @@ async function eachLimited(list, n, fn){ let i = 0; await Promise.all(Array.from
  *   seed     a number (from the date and year)
  * Returns { groups:[{ lv, label, kind, names:[...], how:[...] }] } or null.
  */
-export async function makeQuartets({ people, getTT, getRoster, seed, avoid = new Set(), sampleSize = 24, rosterMax = 8, fetchMax = 120 }){
+export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), sampleSize = 36, rosterMax = 8, fetchMax = 150 }){
+  const senior = Number(year) >= 11;
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   const n = people.length;
   if (n < 24) return null;
@@ -153,6 +174,14 @@ export async function makeQuartets({ people, getTT, getRoster, seed, avoid = new
   /* rosters for a spread of subjects */
   const bySubj = new Map(); for (const c of classes.values()) (bySubj.get(c.subject) || bySubj.set(c.subject, []).get(c.subject)).push(c);
   const pickCls = []; for (const list of shuffle([...bySubj.values()], r)){ pickCls.push(shuffle(list, r)[0]); if (pickCls.length >= rosterMax) break; }
+  /* seniors: the science, extension and language classes too (common or not), so
+     "three sciences" and "two extensions" can be read straight off the class lists */
+  if (senior){
+    const extra = new Map();
+    got.forEach(t => t.classes.forEach(c => { if ((SCIENCE.test(c.subject) || EXTENSION.test(c.subject) || LANGUAGE.test(c.subject)) &&
+      !pickCls.some(x => x.code === c.code) && !extra.has(c.code)) extra.set(c.code, { ...c }); }));
+    pickCls.push(...shuffle([...extra.values()], r).slice(0, 8));
+  }
   await eachLimited(pickCls, 6, async c => { fetches++;
     try { c.members = new Set((await getRoster(c.code)).map(e => String(e).toLowerCase()).filter(e => inYear.has(e))); } catch { c.members = new Set(); } });
 
@@ -163,13 +192,31 @@ export async function makeQuartets({ people, getTT, getRoster, seed, avoid = new
     const c = cat('n:' + f.id, f.lv, f.label, 'name'); c.members.add(p.email); if (f.how) c.how.set(p.email, f.how);
   }
   for (const c of pickCls){
-    if (!c.members || c.members.size < 5) continue;
+    if (!c.members || c.members.size < 5 || !okSubject(c.subject) && !EXTENSION.test(c.subject)) continue;
     const sc = cat('s:' + c.subject, 2, 'Take ' + c.subject, 'subject', { subject: c.subject }); c.members.forEach(e => sc.members.add(e));
     cat('c:' + c.code, 3, 'In the same ' + c.subject + ' class', 'class', { code: c.code, subject: c.subject, members: c.members });
     if (c.teacher){ const tc = cat('t:' + c.teacher, 3, 'Taught by ' + c.teacher, 'teacher', { teacher: c.teacher, subjects: new Set() });
       tc.subjects.add(c.subject); c.members.forEach(e => tc.members.add(e)); }
   }
-  const usable = [...cats.values()].filter(c => c.members.size >= (c.kind === 'name' ? 5 : 6) && c.members.size <= n * 0.45);
+  /* seniors: what whole timetables say. Everyone whose timetable has been read
+     counts, and the class lists add more: someone on three science lists takes
+     three sciences. How common each is comes from the timetables read. */
+  if (senior){
+    const read = [...tts.entries()].filter(([, t]) => t && t.subjects.size);
+    const onLists = (re, k) => { const m = new Map();
+      pickCls.forEach(c => { if (c.members && re.test(c.subject)) c.members.forEach(e => { const s = m.get(e) || new Set(); s.add(c.subject); m.set(e, s); }); });
+      return [...m].filter(([, s]) => s.size >= k).map(([e]) => e); };
+    for (const [id, pf] of Object.entries(PROFILES)){
+      const c = cat(id, 3, pf.label, 'profile', { about: pf.about });
+      read.forEach(([e, t]) => { if (profileHas(t, id)) c.members.add(e); });
+      if (id === 'p:sci3') onLists(SCIENCE, 3).forEach(e => c.members.add(e));
+      if (id === 'p:ext2') onLists(EXTENSION, 2).forEach(e => c.members.add(e));
+      if (id === 'p:lang') onLists(LANGUAGE, 1).forEach(e => c.members.add(e));
+      c.share = read.length ? read.filter(([, t]) => profileHas(t, id)).length / read.length : 1;
+    }
+  }
+  const usable = [...cats.values()].filter(c => c.kind === 'profile' ? c.members.size >= 5 && c.share <= 0.45 && c.share > 0
+    : c.members.size >= (c.kind === 'name' ? 5 : 6) && c.members.size <= n * 0.45);
   if (usable.length < 4) return null;
 
   /* does this person fit this category? names exactly; timetables from their own timetable */
@@ -180,6 +227,7 @@ export async function makeQuartets({ people, getTT, getRoster, seed, avoid = new
     if (c.kind === 'subject') return t.subjects.has(c.subject);
     if (c.kind === 'class') return t.codes.has(c.code);
     if (c.kind === 'teacher') return t.teachers.has(c.teacher);
+    if (c.kind === 'profile') return profileHas(t, c.id);
     return false;
   };
   const first = e => lc(byEmail.get(e).first), last = e => lc(byEmail.get(e).last);
@@ -242,10 +290,12 @@ export async function makeQuartets({ people, getTT, getRoster, seed, avoid = new
    teacher, another a subject, a class and two kinds of wordplay), but every
    day lands in the same difficulty band, with at least one way in. */
 const HARD = { 'n:flower': 1, 'n:gem': 1, 'n:month': 1, 'n:colour': 1.25, 'n:job': 1.5, 'n:animal': 1.5, 'n:bird': 1.5, 'n:place': 2,
-  'n:wordsur': 1.5, 'n:wordfirst': 1.5, 'n:surfirst': 2,
+  'n:wordsur': 1.5, 'n:wordfirst': 1.5,
   'n:alliter': 2.5, 'n:palindrome': 3, 'n:abc': 3.5, 'n:element': 3.5, 'n:hiddenname': 3.5, 'n:anagram': 4, 'n:hiddenanimal': 4 };
-export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'class' ? 3 : c.kind === 'teacher' ? 2.75 : HARD[c.id] || 3;
-const family = c => c.kind !== 'name' ? 'timetable' : hardness(c) <= 2 ? 'theme' : 'wordplay';
+const PROFILE_HARD = { 'p:nomaths': 2.5, 'p:nosci': 2.5, 'p:lang': 2.25, 'p:sci3': 3, 'p:ext2': 3 };
+export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'class' ? 3 : c.kind === 'teacher' ? 2.75
+  : c.kind === 'profile' ? PROFILE_HARD[c.id] || 3 : HARD[c.id] || 3;
+const family = c => c.kind === 'profile' ? 'profile' : c.kind !== 'name' ? 'timetable' : hardness(c) <= 2 ? 'theme' : 'wordplay';
 export const BAND = [9.25, 11.5];                     // the four together (1 + 2.25 + 3 + 4 is 10.25)
 function pickFour(usable, r, avoid){
   const chosen = [], fam = {};
@@ -257,6 +307,10 @@ function pickFour(usable, r, avoid){
     /* two timetable groups mustn't overlap: "Physics" and "a Physics class", or a Physics teacher */
     const subj = x => x.kind === 'teacher' ? [...x.subjects] : x.subject ? [x.subject] : [];
     if (c.kind !== 'name' && chosen.some(o => o.kind !== 'name' && subj(o).some(s => subj(c).includes(s)))) continue;
+    /* nor a whole-timetable group with one about the same thing ("three sciences" and "Take Physics") */
+    const clashes = (a, b) => a.kind === 'profile' && (b.kind === 'profile' ? a.about === b.about : subj(b).some(s => a.about.test(s)));
+    if (chosen.some(o => clashes(c, o) || clashes(o, c))) continue;
+    if (c.kind !== 'name' && chosen.filter(o => o.kind !== 'name').length >= 3) continue;   // at least one name group
     chosen.push(c); fam[f] = (fam[f] || 0) + 1;
     if (chosen.length === 4) break;
   }

@@ -1,23 +1,26 @@
 /*
  * Quartets, the route (served by api/daily.js for ?conn=1 / {conn:1}).
  *
- * GET  /api/daily?conn=1[&date=YYYY-MM-DD]  → { date, today, epoch, year, groups:[{lv, label, kind, names, how}],
- *                                              result:{ found, log, mistakes, solved, done }, streak }
+ * GET  /api/daily?conn=1[&date=YYYY-MM-DD]  → that day's puzzle for your year:
+ *      { date, today, epoch, year, groups:[{lv, label, kind, names, how}], result:{ found, log, mistakes, solved, done }, streak }
  *      (the answers come with the puzzle so the page can mark a guess instantly,
- *       as Daily Guess Who does; nothing in them is private)
- *      { none:true } when no puzzle could be made for the day
- * GET  /api/daily?conn=1&archive=1          → { epoch, today, days:[dates], mine:{ date:{ solved, done, mistakes } } }
+ *       as Daily Guess Who does; nothing in them is private. `how` is worked out
+ *       now, from the names people go by today.)
+ *      { none:true } when no fair puzzle could be made that day
+ * GET  /api/daily?conn=1&archive=1          → every day with a puzzle: how many in the year played and solved it, and how you went
+ * GET  /api/daily?conn=1&summary=1&date=…   → how the year went that day (see summaryFor)
  * POST /api/daily {conn:1, date, found:[levels], log:[[lv,lv,lv,lv]…], mistakes}  → { ok, streak }
  *
- * The puzzle is made by _conn.js the first time anyone in the year asks for a
- * day, then stored; a day that couldn't be made is stored as no groups, so it
- * isn't retried on every visit.
+ * Each day's puzzle is made by _conn.js the first time anyone in the year opens
+ * it, then kept, so past days can be played from the calendar; a day that
+ * couldn't be made is kept as no groups, so it isn't retried every visit. A
+ * puzzle is kept as it was made: there's no older-version handling to carry.
  */
 import { db } from "./_supabase.js";
 import { withName } from "./_names.js";
 import { fetchAsOwner, studentDirectory } from "./timetable.js";
 import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
-import { makeQuartets, hashStr } from "./_conn.js";
+import { makeQuartets, hashStr, howFor } from "./_conn.js";
 
 export const CONN_EPOCH = "2026-11-10";        // the first day of Quartets
 const MAX_MISTAKES = 4;
@@ -56,15 +59,45 @@ async function ensureConn(year, date, NAMES) {
   const { data: recent } = await db.from("conn_puzzle").select("groups").eq("year", year).lt("date", date)
     .order("date", { ascending: false }).limit(3);
   (recent || []).forEach(r => (Array.isArray(r.groups) ? r.groups : []).forEach(g => g && g.id && avoid.add(g.id)));
-  let made = await makeQuartets({ people, getTT, getRoster, seed, avoid });
-  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, avoid });
-  const groups = made ? made.groups : [];
+  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid });
+  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid });
+  /* kept: the categories and who's in them (emails stay on the server) */
+  const groups = made ? made.groups.map(g => ({ lv: g.lv, id: g.id, label: g.label, kind: g.kind, names: g.names, emails: g.emails })) : [];
 
   const { error: upErr } = await db.from("conn_puzzle")
     .upsert({ date, year, groups }, { onConflict: "date,year", ignoreDuplicates: true });
   if (upErr) throw new Error("quartets write: " + upErr.message);
   ({ data: row } = await sel());                 // whoever wrote first wins
   return row ? row.groups : groups;
+}
+
+const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
+const nameFromEmail = email => {
+  const p = String(email).split("@")[0].split(".").filter(Boolean);
+  return p.length >= 2 ? cap(p[0]) + " " + cap(p[1].replace(/\d+$/, "")) : cap(String(p[0] || "").replace(/\d+$/, "")) || "Someone";
+};
+
+/* How the year went on one day: how many finished and solved it, a bar per
+   number of mistakes (with who, for the hover), how many found each group,
+   and one person to mention. Names only, by the names people go by. */
+async function summaryFor(year, date, groups, NAMES) {
+  const { data } = await db.from("conn_result").select("email, found, mistakes, solved, done, updated_at")
+    .eq("year", year).eq("date", date).eq("done", true).limit(2000);
+  const rows = data || [];
+  const nm = e => withName(NAMES, e, nameFromEmail(e));
+  const dist = { 0: 0, 1: 0, 2: 0, 3: 0, lost: 0 }, names = { 0: [], 1: [], 2: [], 3: [], lost: [] };
+  for (const r of rows) {
+    const k = r.solved ? String(Math.min(3, r.mistakes || 0)) : "lost";
+    dist[k]++; if (names[k].length < 40) names[k].push(nm(r.email));
+  }
+  const found = (groups || []).map(g => ({ lv: g.lv, label: g.label,
+    found: rows.filter(r => Array.isArray(r.found) && r.found.includes(g.lv)).length }));
+  /* one person for the day: the first to solve it without a mistake, or else the first to solve it */
+  const solvedRows = rows.filter(r => r.solved).sort((a, b) => String(a.updated_at).localeCompare(String(b.updated_at)));
+  const perfect = solvedRows.find(r => !r.mistakes);
+  const spotlight = perfect ? { kind: "perfect", name: nm(perfect.email) }
+    : solvedRows[0] ? { kind: "first", name: nm(solvedRows[0].email), n: solvedRows[0].mistakes || 0 } : null;
+  return { played: rows.length, solved: solvedRows.length, dist, names, found, spotlight };
 }
 
 async function streakFor(email, today) {
@@ -81,13 +114,16 @@ export async function connRoute(req, res, me, body, NAMES) {
   year = String(year);
   try {
     if (req.method === "GET" && req.query.archive) {
-      const [{ data: days }, { data: mine }] = await Promise.all([
-        db.from("conn_puzzle").select("date, groups").eq("year", year).gte("date", CONN_EPOCH).lte("date", today).order("date", { ascending: false }).limit(400),
+      const [{ data: days }, { data: plays }, { data: mine }] = await Promise.all([
+        db.from("conn_puzzle").select("date, groups").eq("year", year).gte("date", CONN_EPOCH).lte("date", today).limit(1000),
+        db.from("conn_result").select("date, solved").eq("year", year).eq("done", true).gte("date", CONN_EPOCH).limit(50000),
         db.from("conn_result").select("date, solved, done, mistakes").eq("email", me.email).gte("date", CONN_EPOCH)
       ]);
+      const by = {};
+      (days || []).filter(d => Array.isArray(d.groups) && d.groups.length === 4).forEach(d => by[d.date] = { date: d.date, played: 0, wins: 0 });
+      (plays || []).forEach(r => { const d = by[r.date]; if (d) { d.played++; if (r.solved) d.wins++; } });
       const m = {}; (mine || []).forEach(r => m[r.date] = { solved: !!r.solved, done: !!r.done, mistakes: r.mistakes || 0 });
-      return res.status(200).json({ epoch: CONN_EPOCH, today,
-        days: (days || []).filter(d => Array.isArray(d.groups) && d.groups.length === 4).map(d => d.date), mine: m });
+      return res.status(200).json({ epoch: CONN_EPOCH, today, archive: Object.values(by).sort((a, b) => b.date.localeCompare(a.date)), mine: m });
     }
     const date = cleanDate(req.method === "POST" ? body && body.date : req.query.date, today);
     if (!date) return res.status(400).json({ error: "That day isn't available." });
@@ -96,14 +132,16 @@ export async function connRoute(req, res, me, body, NAMES) {
     /* by the names people go by today; emails stay on the server */
     const groups = stored.map(g => {
       const names = (g.names || []).map((n, i) => withName(NAMES, (g.emails || [])[i], n));
-      /* someone renamed since: their "how" was worked out from the old name, so it goes */
-      return { lv: g.lv, label: g.label, kind: g.kind, names, how: (g.how || []).map((h, i) => names[i] === g.names[i] ? h : '') };
+      return { lv: g.lv, label: g.label, kind: g.kind, names, how: names.map(n => g.kind === "name" ? howFor(g.id, n) : "") };
     });
 
     const { data: had } = await db.from("conn_result").select("found, log, mistakes, solved, done").eq("email", me.email).eq("date", date).maybeSingle();
     const result = had ? { found: had.found || [], log: had.log || [], mistakes: had.mistakes || 0, solved: !!had.solved, done: !!had.done }
                        : { found: [], log: [], mistakes: 0, solved: false, done: false };
 
+    if (req.method === "GET" && req.query.summary) {
+      return res.status(200).json({ date, summary: await summaryFor(year, date, groups, NAMES), mine: result });
+    }
     if (req.method === "GET") {
       return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, groups, result, streak: await streakFor(me.email, today) });
     }

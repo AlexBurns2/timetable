@@ -2754,3 +2754,47 @@ data. No icon font or CDN script loads on the live site.
 - **Tested** on a real Year 11 name list with made-up timetables: 120/120 days
   made, every one correct, difficulty totals 9.25–11.5 (average 10.9). The name
   list was used in the scratchpad only, and deleted afterwards.
+
+### 8.63 Quartets: fewer cheesy themes, nothing extra stored
+- "First names that could be surnames" is gone; the user found it too cheesy.
+- The per-person "why" text ("emu", "G.G.") is no longer stored. `conn_puzzle`
+  keeps `{lv, id, label, kind, names, emails}`, and `howFor(id, name)` in
+  `_conn.js` works the text out each time the puzzle is shown, from the name
+  the person goes by then. If that name no longer fits the category, the text
+  is left blank.
+
+### 8.64 Quartets: whole-timetable groups, a Guess Who-style page, a share card
+- **New groups from whole timetables** (Years 11–12 only, `PROFILES` in
+  `_conn.js`):
+  - Don't take any maths (2.5)
+  - Don't take any science (2.5)
+  - Take three sciences (3)
+  - Take two or more extension subjects (3)
+  - Take a language (2.25)
+
+  Members come from every timetable read (the sample is now 36) and from the
+  science, extension and language class lists, which are now always read for
+  seniors. How common each one is comes from the timetables read, and it must
+  be at most 45%.
+
+  A whole-timetable group is never paired with one about the same thing (for
+  example, "three sciences" with "Take Physics"). There are at most three
+  non-name groups, and the fetch cap is now 150.
+
+  Rare subjects such as Maths Extension 2 become plain subject groups once
+  their class list is read.
+- **Puzzles are kept** (like Daily Guess Who's) so past days can be played.
+  There's no older-version handling: a puzzle is shown as it was made.
+- **The page now matches Daily Guess Who:**
+  - The streak, an **Archive** month calendar (✓/✗, played counts, any day
+    playable) and a **Results** button. Results opens when you finish and
+    closes again to show your board.
+  - Results shows a spotlight line (first to solve with no mistakes, or first
+    to solve), played and solved %, a bar per mistakes count (0–3 and missed)
+    with names on hover, and the % who found each group.
+  - Group labels appear in Results only once you've finished.
+  - New route reads: `?conn=1&archive=1` and `?conn=1&summary=1&date=`.
+- **Share card:** a drawn image (title, year and date, verdict, the colour grid
+  of your guesses; no names or answers). **Share** sends the image where the
+  device can, or copies it, or falls back to text. **Copy as text** gives the
+  emoji grid and a link.
