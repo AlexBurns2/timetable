@@ -7,9 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <script src="theme.js"></script>
+<script src="icons.js?v=20261109"></script>
+<script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -63,6 +65,11 @@ button,select,input{font:inherit;color:inherit}
   font-size:0.75rem;font-family:var(--font-num);color:var(--text);
   width:8ch;min-width:3ch;max-width:17ch}
 .idrow .dom{color:var(--muted);font-size:0.6875rem;white-space:nowrap;opacity:.7}
+/* viewing someone else: a small way back to your own timetable */
+.whoback{border:0;background:none;color:var(--muted);padding:0 6px 0 0;margin:0;cursor:pointer;
+  font-size:0.9375rem;font-weight:700;line-height:1}
+.whoback:hover{color:var(--accent)}
+.whoback[hidden]{display:none}
 @media (max-width:520px){ .idrow .dom{display:none} }
 .headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 
@@ -93,6 +100,9 @@ button,select,input{font:inherit;color:inherit}
 .btn:active{transform:translateY(1px)}
 .btn.icon{width:40px;padding:8px 0;text-align:center}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* a destructive action, such as Sign out */
+.btn.danger{color:#c62f45}
+[data-mode="dark"] .btn.danger{color:#ff7d8c}
 [data-skin="brutal"] .btn.primary,[data-skin="swiss"] .btn.primary{border-color:var(--line)}
 /* now / next — sit inside the topbar, simple flat cards, no colour bar */
 .now{display:flex;gap:12px;flex:3 1 320px;min-width:0}
@@ -178,6 +188,9 @@ button,select,input{font:inherit;color:inherit}
   display:flex;flex-direction:column;gap:0;
 }
 .lesson:hover{box-shadow:var(--shadow-hi);z-index:3}
+/* animated mode: last week's cards slide off in this layer while the new week is drawn underneath */
+.ttghost{position:absolute;inset:0;pointer-events:none;z-index:4}
+html.turning,html.turning body{overflow-x:clip}
 .lesson .s{font-weight:700;font-size:0.84375rem;line-height:1.18;overflow-wrap:anywhere;
            font-family:var(--font-display);letter-spacing:var(--display-ls)}
 [data-skin="paper"] .lesson .s{font-size:1.0625rem;line-height:1.05}
@@ -260,7 +273,10 @@ button,select,input{font:inherit;color:inherit}
           box-shadow:var(--shadow-hi);padding:30px;width:min(430px,100%)}
 .gatecard h2{margin:0 0 7px;font-family:var(--font-display);font-size:clamp(1.5rem,5vw,2rem);
              font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.gatecard p{margin:0 0 20px;color:var(--muted);font-size:0.84375rem}
+.gatecard p{margin:0 0 10px;color:var(--muted);font-size:0.875rem}
+.gatebrand{font-size:0.6875rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.gatefacts{margin:0 0 18px;padding-left:18px;color:var(--muted);font-size:0.8125rem;line-height:1.45}
+.gatefacts li+li{margin-top:3px}
 .emailrow{display:flex;align-items:center;border:var(--card-border);border-radius:var(--radius);
           background:var(--panel-2);overflow:hidden}
 .emailrow input{flex:1;min-width:0;border:0;background:none;padding:12px 13px;outline:none}
@@ -394,9 +410,14 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 <div class="gate" id="gate" hidden>
   <div class="gatecard">
+    <div class="gatebrand">MSC Unofficial</div>
     <h2>Sign in</h2>
-    <p>Your timetable loads with your own school login. Both are stored
-      <b>only on this device</b> and sent straight to the timetable service.</p>
+    <p>Use your school username and password to see your own timetable.</p>
+    <ul class="gatefacts">
+      <li>Your login is saved <b>only on this device</b>.</li>
+      <li>It is passed to the school’s own timetable system to fetch your classes, and never stored anywhere else.</li>
+      <li>This site is made by students. It isn’t run by the school or the Department.</li>
+    </ul>
     <form id="gateform">
       <div class="emailrow">
         <input type="text" id="gateemail" autocomplete="username" autocapitalize="none"
@@ -408,7 +429,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <button class="btn primary" type="submit" id="gatego">Show my timetable</button>
     </form>
     <div class="gateerr" id="gateerr"></div>
-    <a class="btn gateskip" href="home.html">School server down? Go to Home &#8594;</a>
+    <a class="btn gateskip" href="home.html">Look around first &#8594;</a>
   </div>
 </div>
 
@@ -417,8 +438,10 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="brand">
       <h1 id="title">Timetable</h1>
       <div class="idrow" title="Type a username to see anyone's timetable">
+        <button type="button" class="whoback" id="whoback" title="Back to your timetable"
+                aria-label="Back to your timetable" hidden><span data-icon="arrow-left"></span></button>
         <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
-               autocorrect="off" autocomplete="username" placeholder="first.last1"
+               autocorrect="off" autocomplete="off" placeholder="first.last1"
                aria-label="Whose timetable to show">
         <span class="dom" id="whoamidom"></span>
       </div>
@@ -426,15 +449,15 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
     <div class="now" id="now"></div>
     <div class="headbtns">
-      <button class="btn icon" id="settings" title="Settings">&#9881;</button>
-      <a class="btn icon" href="home.html" id="homebtn" title="Home">&#8962;</a>
+      <button class="btn icon" id="settings" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
+      <a class="btn icon" href="home.html" id="homebtn" title="Home" aria-label="Home"><span data-icon="house"></span></a>
     </div>
   </header>
 
   <div class="weekswitch">
-    <button class="arrowbtn" id="weekprev" title="Previous week">&lsaquo;</button>
+    <button class="arrowbtn" id="weekprev" title="Previous week" aria-label="Previous week"><span data-icon="caret-left"></span></button>
     <div class="weeklabel" id="weeklabel">Week A</div>
-    <button class="arrowbtn" id="weeknext" title="Next week">&rsaquo;</button>
+    <button class="arrowbtn" id="weeknext" title="Next week" aria-label="Next week"><span data-icon="caret-right"></span></button>
   </div>
 
   <div class="dayswitch" id="dayswitch"></div>
@@ -454,7 +477,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 </dialog>
 
 <dialog id="dlg">
-  <form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close" aria-label="Close"><span data-icon="x"></span></button></form>
   <div class="dlg-b">
     <p class="status" id="status"></p>
 
@@ -501,10 +524,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="field">
       <label>Cycle week</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
-        The school API reports the cycle starting <b id="cyc_start">—</b>, and the
-        A/B week is counted from there. If the grid is showing the wrong week,
-        set which week it really is: the correction is remembered and follows you
-        to your other devices.
+        Cycle starts <b id="cyc_start">—</b>. Wrong A/B week? Set it here.
       </div>
       <div class="custrow"><span id="cyc_label">Today is</span>
         <span style="display:flex;gap:6px">
@@ -513,20 +533,19 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         </span></div>
     </div>
 
+
     <div class="field">
-      <label>Home, games &amp; resources</label>
-      <div class="modes" id="layouts">
-        <button type="button" data-layout="gallery">Gallery</button>
-        <button type="button" data-layout="classic">Classic</button>
+      <label>Home icons</label>
+      <div class="modes" id="tileicons">
+        <button type="button" data-ti="tile">Colourful</button>
+        <button type="button" data-ti="accent">Theme colour</button>
       </div>
-      <div class="hint">Gallery packs the tiles into a mosaic. Classic is the even grid, with the games in rows that scroll sideways.</div>
     </div>
 
     <div class="field">
       <label>Login</label>
       <div class="hint" style="margin-top:0;margin-bottom:9px">
-        Your school login, stored <b>only on this device</b> and sent to the
-        timetable service to fetch your timetable.
+        Stored <b>only on this device</b>.
       </div>
       <div class="custrow"><span>School email</span>
         <input type="text" id="cr_email" class="crin" spellcheck="false"
@@ -535,16 +554,17 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="password" id="cr_pass" class="crin" autocomplete="off"
                placeholder="••••••••"></div>
       <div class="custrow">
-        <button class="btn" type="button" id="cr_save">Save login</button>
-        <button class="btn" type="button" id="cr_clear">Sign out</button>
+        <button class="btn primary" type="button" id="cr_save">Sign in</button>
+        <button class="btn danger" type="button" id="cr_clear">Sign out</button>
       </div>
       <div class="hint" id="cr_state"></div>
     </div>
   </div>
   <div class="dlg-f dlg-f2">
     <div class="tabbtns" id="moresettings">
-      <button class="btn" type="button" id="openA11y" title="Text size, zoom, contrast">Access</button>
+      <button class="btn" type="button" id="openA11y" title="Text size, zoom, contrast">Accessibility</button>
       <button class="btn" type="button" id="openDisplay" title="Layout and display">Display</button>
+      <button class="btn" type="button" id="openMod" hidden>Moderator</button>
       <button class="btn" type="button" id="openColours" title="Subject colours">Colours</button>
     </div>
     <div class="tabbtns">
@@ -555,7 +575,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 </dialog>
 
 <dialog id="dlgA11y">
-  <form method="dialog" class="dlg-h"><h2>Accessibility</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <form method="dialog" class="dlg-h"><h2>Accessibility</h2><button class="btn icon" value="close" aria-label="Close"><span data-icon="x"></span></button></form>
   <div class="dlg-b">
     <div class="field">
       <div class="custrow"><span>Text size</span>
@@ -577,14 +597,15 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 </dialog>
 
 <dialog id="dlgDisplay">
-  <form method="dialog" class="dlg-h"><h2>Display</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <form method="dialog" class="dlg-h"><h2>Display</h2><button class="btn icon" value="close" aria-label="Close"><span data-icon="x"></span></button></form>
   <div class="dlg-b">
     <div class="field">
       <label>Header</label>
       <div class="modes" id="headers">
-        <button type="button" data-header="unified" title="Everything in one widget">Classic</button>
+        <button type="button" data-header="unified" title="Everything in one widget">Panel</button>
         <button type="button" data-header="split" title="Now/Next in their own boxes">Separated</button>
       </div>
+      <div class="hint">Panel keeps each page’s title and buttons in a card. Separated leaves them on the page.</div>
     </div>
     <div class="field">
       <label>Layout</label>
@@ -600,6 +621,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <button type="button" data-room="building" title="CR1007">New</button>
         <button type="button" data-room="number" title="118">Legacy</button>
       </div>
+      <div class="hint">How a room shows: Full is CR1007.118, New is CR1007, Legacy is 118.</div>
     </div>
     <div class="field">
       <label>Options</label>
@@ -611,15 +633,16 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_progress" class="sw"></div>
       <div class="custrow"><span>Transparent background</span>
         <input type="checkbox" id="t_zen" class="sw"></div>
-      <div class="hint">Transparent drops the page background for custom
-        browser wallpapers like Zen.</div>
+      <div class="custrow"><span>Animations</span>
+        <input type="checkbox" id="t_anim" class="sw"></div>
+      <div class="hint">Transparent is for browser wallpapers like Zen.</div>
     </div>
   </div>
   <div class="dlg-f"><button class="btn primary" type="button" data-back>Done</button></div>
 </dialog>
 
 <dialog id="dlgColours">
-  <form method="dialog" class="dlg-h"><h2>Subject colours</h2><button class="btn icon" value="close">&#10005;</button></form>
+  <form method="dialog" class="dlg-h"><h2>Subject colours</h2><button class="btn icon" value="close" aria-label="Close"><span data-icon="x"></span></button></form>
   <div class="dlg-b">
     <div class="field">
       <div id="colours"></div>
@@ -656,7 +679,7 @@ const inkFor = TT.inkFor;
 const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
              creds:'tt.creds',
              textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
-             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', anim:'tt.anim', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
   /* mirror settings to the signed-in user (theme.js debounces + skips creds/cache) */
@@ -682,6 +705,7 @@ let roomMode   = get(LS.room, 'full');
 let showWeekLetter = get(LS.weekletter, false);
 let showOutline    = get(LS.outline, true);
 let showProgress   = get(LS.progress, true);
+let animMode       = get(LS.anim, false);      /* animated mode: off unless switched on */
 let viewMode       = get(LS.view, 'compact');
 let headerMode     = get(LS.header, 'unified');
 let zenMode        = get(LS.zen, false);
@@ -1206,6 +1230,9 @@ function render(){
     $('whoami').value = String(email || '').split('@')[0];
     sizeWhoami();
   }
+  /* the back button shows while you are looking at someone else's timetable */
+  const ownUser = creds && creds.email ? String(creds.email).split('@')[0].toLowerCase() : '';
+  $('whoback').hidden = !ownUser || String(email || '').split('@')[0].toLowerCase() === ownUser;
   $('weeklabel').textContent = 'Week ' + week.toUpperCase();
 
   const ds = $('dayswitch');
@@ -1310,7 +1337,8 @@ function lessonCard(e, start, end, isToday, nowMin, date, tall){
     (e.room    ? '<div class="r">' + esc(roomLabel(e)) + '</div>' : '') +
     (e.teacher ? '<div class="t">' + esc(e.teacher) + '</div>' : '') +
     '<div class="tm">' + fmtTime(start) + '–' + fmtTime(end) + '</div>';
-  box.onclick = () => showDetail(e, date);
+  box.dataset.sig = [e.subject, start, end, e.room, e.teacher].join('|');
+  box.onclick = () => showDetail(e, date, box);
   return box;
 }
 
@@ -1469,7 +1497,7 @@ function weekendCard(next, when){
 }
 
 /* ═══ lesson detail ═══ */
-function showDetail(e, date){
+function showDetail(e, date, origin){
   const c = colourFor(e.subject);
   const head = $('dhead');
   head.style.setProperty('--c', c);
@@ -1498,6 +1526,7 @@ function showDetail(e, date){
   btn.textContent = 'View class list';
   btn.disabled = false;
   $('detail').showModal();
+  if (origin) growFrom(origin, $('detail'));
 }
 
 /* ═══ class roster ═══ */
@@ -1643,6 +1672,32 @@ async function viewUser(){
   render();
 }
 $('whoami').addEventListener('input', sizeWhoami);
+$('whoback').onclick = () => {
+  if (!creds || !creds.email) return;
+  $('whoami').value = String(creds.email).split('@')[0];
+  sizeWhoami();
+  viewUser();
+};
+/* Suggestions as you type (suggest.js): students whose name or username
+   matches, from the student finder's search (it needs your own school login),
+   each with their name and username. Picking one opens their timetable. The
+   box never offers saved sign-in details. */
+if (window.Suggest) Suggest.attach($('whoami'), {
+  min: 2, max: 8, delay: 200,
+  async source(q){
+    if (!creds || !creds.email || !creds.password) return [];
+    const u = new URL(endpoint, location.href);
+    u.searchParams.set('find', q.toLowerCase());
+    const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+    const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
+      'X-School-Email':creds.email, 'X-School-Password':creds.password } });
+    const d = await res.json().catch(() => null);
+    if (!res.ok || !d) return [];
+    return (d.results || []).map(p => { const user = String(p.email || '').split('@')[0];
+      return { value:user, label:p.name || user, sub:user }; });
+  },
+  onPick(){ sizeWhoami(); $('whoami').blur(); }      // blur runs viewUser
+});
 $('whoami').addEventListener('keydown', ev => {
   if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }
 });
@@ -1776,6 +1831,9 @@ function renderCreds(){
   $('cr_state').textContent = creds
     ? 'Signed in as ' + creds.email
     : 'Not signed in.';
+  /* signed in, the button saves a changed password; signed out, it signs you in */
+  $('cr_save').textContent = creds ? 'Update login' : 'Sign in';
+  $('cr_save').classList.toggle('primary', !creds);
 }
 $('cr_save').onclick = async () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
@@ -1829,12 +1887,12 @@ $('a_reset').onclick = () => {
   applyLook(); renderA11y(); render();
 };
 
-/* the tile layout on Home, Games and Resources (theme.js owns the setting) */
-function renderLayouts(){
-  const cur = window.TT && TT.layout ? TT.layout() : 'gallery';
-  [...$('layouts').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.layout === cur));
-    b.onclick = () => { set('tt.layout', b.dataset.layout); renderLayouts(); };
+/* the Home tile icons: a colour each, or the theme's accent (theme.js applies it) */
+function renderTileIcons(){
+  const cur = window.TT ? TT.get('tt.tileicons', 'tile') : 'tile';
+  [...$('tileicons').children].forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.ti === cur));
+    b.onclick = () => { set('tt.tileicons', b.dataset.ti); document.documentElement.setAttribute('data-tileicons', b.dataset.ti); renderTileIcons(); };
   });
 }
 function renderViews(){
@@ -1863,7 +1921,9 @@ function renderToggles(){
   $('t_outline').checked    = showOutline;
   $('t_progress').checked   = showProgress;
   $('t_zen').checked        = zenMode;
+  $('t_anim').checked       = animMode;
 }
+$('t_anim').addEventListener('change', ev => { animMode = ev.target.checked; set(LS.anim, animMode); });
 $('t_zen').addEventListener('change', ev => {
   zenMode = ev.target.checked;
   set(LS.zen, zenMode);
@@ -1907,18 +1967,23 @@ $('modetoggle').onclick = () => {
 };
 $('settings').onclick = () => {
   paintCycleRow();
+  renderTileIcons();
   $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
-  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews(); renderLayouts();
+  renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
   renderToggles(); renderA11y(); renderCreds(); renderColours();
   dlg.showModal();
   /* finding Settings on your own retires the step that points at it */
-  if (window.Tour){ Tour.mark('settings'); Tour.start('settings'); }
+  /* finding Settings retires the bubble that points at it; no more bubbles inside */
+  if (window.Tour) Tour.mark('settings');
 };
 
 /* sub-panels stack on top of the main dialog and pop back to it */
 $('openA11y').onclick    = () => { renderA11y(); $('dlgA11y').showModal(); };
 $('openDisplay').onclick = () => { renderViews(); renderRooms(); renderHeaders(); renderToggles(); $('dlgDisplay').showModal(); };
+/* moderators: the moderator page, from here (the server checks again) */
+if (window.TT && TT.signedIn && TT.signedIn() && TT.api) TT.api('/api/leaderboard', { params:{ settings:1 } })
+  .then(d => { if (d && d.isMod){ $('openMod').hidden = false; $('openMod').onclick = () => { location.href = 'games.html?play=admin'; }; } }, () => {});
 $('openColours').onclick = () => { renderColours(); $('dlgColours').showModal(); };
 document.querySelectorAll('dialog [data-back]').forEach(b =>
   b.onclick = () => b.closest('dialog').close());
@@ -2013,19 +2078,177 @@ function renderColours(){
 $('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colours, colours); renderColours(); render(); };
 
 /* ═══ controls ═══ */
-function toggleWeek(){
+function toggleWeek(dir){
   const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
-  viewWeek = shown === 'a' ? 'b' : 'a';
-  render();
+  turnWeek(() => { viewWeek = shown === 'a' ? 'b' : 'a'; render(); }, dir === -1 ? -1 : 1);
 }
-$('weekprev').onclick = toggleWeek;
-$('weeknext').onclick = toggleWeek;
+$('weekprev').onclick = () => toggleWeek(-1);
+$('weeknext').onclick = () => toggleWeek(1);
 addEventListener('keydown', e => {
   if (dlg.open || $('detail').open || !gate.hidden) return;
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') toggleWeek(e.key === 'ArrowLeft' ? -1 : 1);
   if (e.key === 'S') $('settings').click();
 });
 addEventListener('resize', render);
+
+/* ═══ animated mode (Settings → Display → Animations; off by default) ═══
+   Ported from the beta (andre/index.html: turnWeek, with the timings
+   in ANIMATIONS.md). Changing week slides each day's lessons off the side in
+   waves, the day nearest the edge first, with lanes opening through the days
+   they cross so no block ever runs over another; then the new week's lessons
+   slide on, the middle days first. A lesson that is the same in both weeks
+   stays where it is. Opening a lesson grows its card into the detail sheet.
+   Phones, reduced motion and the setting being off just change instantly. */
+const MAZE = { open:160, close:180, speed:2.8, margin:90 };
+const MOVE_MS = 440, EASE = 'cubic-bezier(.45,0,.25,1)';
+let turning = null;
+function animOn(){
+  return !!animMode && !!document.body.animate && !matchMedia('(max-width:860px)').matches &&
+    document.documentElement.getAttribute('data-motion') !== 'reduced' &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+/* how far each of a day's blocks (top to bottom) moves down so none sits in a
+   lane; everything below a lane moves with it, and what wouldn't fit on the
+   page goes all the way off rather than waiting half off the edge */
+function laneShifts(rects, bands, pageEnd){
+  const lanes = bands.map(b => [b.top - 6, b.bottom + 6]).sort((a, b) => a[0] - b[0]);
+  let shift = 0;
+  const out = rects.map(r => {
+    for (const [lo, hi] of lanes) if (r.top + shift < hi && r.bottom + shift > lo) shift = hi - r.top;
+    return shift && r.top < pageEnd && r.bottom + shift > pageEnd ? pageEnd - r.top + 24 : shift;
+  });
+  /* a block sent off the page moves further than the ones under it would:
+     push those down too, so the day keeps its order and gaps and none touch */
+  for (let i = 1; i < rects.length; i++){
+    const need = rects[i - 1].bottom + out[i - 1] + (rects[i].top - rects[i - 1].bottom) - rects[i].top;
+    if (out[i] < need) out[i] = need;
+  }
+  return out;
+}
+function turnWeek(apply, dir){
+  /* a press mid-turn finishes the last one at once */
+  if (turning){ turning.forEach(a => { try { a.finish(); } catch {} }); turning = null; }
+  document.querySelectorAll('.ttghost').forEach(g => g.remove());
+  if (!animOn()){ apply(); return; }
+  const grid = $('grid');
+  const heads = () => [...grid.querySelectorAll('.dayhead')].map(h => h.getBoundingClientRect());
+  const dayOf = (r, hs) => { const x = (r.left + r.right) / 2; const k = hs.findIndex(h => x >= h.left - 4 && x <= h.right + 4); return k < 0 ? 0 : k; };
+  const snap = hs => [...grid.querySelectorAll('.lesson')].map(el => { const r = el.getBoundingClientRect(); return { el, sig:el.dataset.sig || '', r, k:dayOf(r, hs) }; });
+  const hs0 = heads(), before = snap(hs0);
+  apply();
+  const hs1 = heads();
+  if (!hs1.length || hs1.length !== hs0.length) return;
+  const n = hs1.length, m = (n - 1) / 2;
+  $('weeklabel').animate([{ opacity:0, transform:'translateX(' + (dir * 14) + 'px)' }, { opacity:1, transform:'none' }],
+                         { duration:MOVE_MS, easing:EASE });
+
+  /* who stays (same lesson, same day, same spot), who goes, who arrives */
+  const host = document.querySelector('.wrap'), hostR = host.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  ghost.className = 'ttghost';
+  host.appendChild(ghost);
+  const kept = [], leaving = [], arriving = [], used = new Set();
+  for (const b of snap(hs1)){
+    const o = before.find(o => !used.has(o) && o.k === b.k && o.sig === b.sig &&
+                               Math.abs(o.r.top - b.r.top) < 1 && Math.abs(o.r.height - b.r.height) < 1);
+    if (o){ used.add(o); kept.push({ ...b, r0:o.r }); } else arriving.push(b);
+  }
+  /* recess, lunch and assembly bars belong to their day too: they step aside
+     with the lessons when a lane opens, so nothing slides into them */
+  for (const el of grid.querySelectorAll('.breakbar')){
+    const r = el.getBoundingClientRect();
+    if (r.height) kept.push({ el, sig:'', r, r0:r, k:dayOf(r, hs1) });
+  }
+  for (const o of before) if (!used.has(o)){
+    /* a copy of the old card, since the new week is already drawn */
+    const brick = o.el.cloneNode(true);
+    brick.classList.remove('current');
+    brick.style.cssText += ';position:absolute;left:' + (o.r.left - hostR.left) + 'px;top:' + (o.r.top - hostR.top) +
+      'px;width:' + o.r.width + 'px;height:' + o.r.height + 'px;right:auto;margin:0';
+    ghost.appendChild(brick);
+    leaving.push({ el:brick, k:o.k, r:o.r });
+  }
+
+  const W = document.documentElement.clientWidth;
+  const speed = Math.max(MAZE.speed, W / 480);
+  const keptIn = k => kept.filter(b => b.k === k).sort((a, b) => a.r.top - b.r.top);
+  const exitSide = k => k < m ? -1 : k > m ? 1 : -dir;
+  const entrySide = k => k < m ? -1 : k > m ? 1 : dir;
+  const dayAt = (side, rank) => side < 0 ? rank : n - 1 - rank;
+  const laneUntil = Array(n).fill(0);
+  /* one wave: a day's lessons crossing to or from one edge together */
+  const wave = (bricks, side, t0, entering) => {
+    if (!bricks.length) return t0;
+    const crossed = new Map();
+    for (const b of bricks) for (let j = 0; j < n; j++)
+      if (side < 0 ? j < b.k : j > b.k) (crossed.get(j) || crossed.set(j, []).get(j)).push(b.r);
+    const opening = crossed.size ? MAZE.open + MAZE.margin : 0;
+    t0 = Math.max(t0, ...[...crossed.keys(), ...(entering ? bricks.map(b => b.k) : [])].map(j => laneUntil[j] - opening));
+    const slideAt = t0 + opening;
+    let end = slideAt;
+    for (const b of bricks){
+      const dx = side < 0 ? -(b.r.right + 24) : W - b.r.left + 24;
+      const D = Math.max(260, Math.min(640, Math.abs(dx) / speed));
+      b.el.animate(entering ? [{ transform:'translateX(' + dx + 'px)' }, { transform:'none' }]
+                            : [{ transform:'none' }, { transform:'translateX(' + dx + 'px)' }],
+                   { duration:D, delay:slideAt, fill:entering ? 'backwards' : 'forwards',
+                     easing:entering ? 'cubic-bezier(.25,.6,.3,1)' : 'cubic-bezier(.55,0,.75,.4)' });
+      end = Math.max(end, slideAt + D);
+    }
+    const shut = end + MAZE.margin, total = shut - t0 + MAZE.close;
+    for (const j of crossed.keys()) laneUntil[j] = Math.max(laneUntil[j], shut + MAZE.close);
+    for (const [j, bands] of crossed){
+      const day = keptIn(j), shifts = laneShifts(day.map(b => entering ? b.r : b.r0), bands, innerHeight);
+      day.forEach((b, i) => {
+        if (!shifts[i]) return;
+        b.el.animate([{ transform:'translateY(0)', easing:'ease-in-out' },
+                      { transform:'translateY(' + shifts[i] + 'px)', offset:MAZE.open / total },
+                      { transform:'translateY(' + shifts[i] + 'px)', offset:(shut - t0) / total, easing:'ease-in-out' },
+                      { transform:'translateY(0)' }],
+                     { duration:total, delay:t0, composite:'add' });   // two waves through one day add up
+      });
+    }
+    return end;
+  };
+  /* out: on each side, the day nearest the edge first */
+  const doneOut = {};
+  for (const side of [-1, 1]){
+    let t = 0;
+    for (let rank = 0; rank <= Math.floor(m); rank++){
+      const k = dayAt(side, rank);
+      if (exitSide(k) !== side) continue;
+      t = wave(leaving.filter(b => b.k === k), side, t, false);
+    }
+    doneOut[side] = t;
+  }
+  /* in: once everything has gone, the middle days first */
+  const startIn = Math.max(doneOut[-1], doneOut[1]);
+  for (const side of [-1, 1]){
+    let t = startIn;
+    for (let rank = Math.floor(m); rank >= 0; rank--){
+      const k = dayAt(side, rank);
+      if (entrySide(k) !== side) continue;
+      t = wave(arriving.filter(b => b.k === k), side, t, true);
+    }
+  }
+  document.documentElement.classList.add('turning');
+  const all = [...ghost.getAnimations({ subtree:true }), ...grid.getAnimations({ subtree:true })];
+  turning = all;
+  Promise.all(all.map(a => a.finished.catch(() => {}))).then(() => {
+    ghost.remove();
+    if (turning === all){ turning = null; document.documentElement.classList.remove('turning'); }
+  });
+}
+/* opening a lesson: the sheet grows out of the card you pressed */
+function growFrom(origin, sheet){
+  if (!animOn() || !origin.isConnected) return;
+  const a = origin.getBoundingClientRect(), b = sheet.getBoundingClientRect();
+  if (!a.width || !b.width) return;
+  sheet.animate([{ transformOrigin:'top left', opacity:.35,
+                   transform:'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')' },
+                 { transformOrigin:'top left', opacity:1, transform:'none' }],
+                { duration:MOVE_MS, easing:EASE });
+}
 
 /* ═══ boot ═══ */
 (async () => {

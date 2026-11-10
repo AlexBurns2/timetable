@@ -291,12 +291,13 @@ const TOUCH = (() => { try { return matchMedia('(hover: none) and (pointer: coar
 const TOURS = {
   timetable: [
     { id:'email',      target:'.idrow',      title:'Anyone’s timetable',
-      text:'Enter an email address to see whose classes you like.' },
-    { id:'week',       target:'#weeklabel',  title:'Current week' },
+      text:'Type a student’s username here to see their timetable.' },
+    { id:'week',       target:'#weeklabel',  title:'Week A or B',
+      text:'The school timetable runs over two weeks. This is the week you’re looking at.' },
     { id:'weekarrows', target:'.weekswitch', title:TOUCH ? 'Tap to switch week' : 'Click to switch week' },
     { id:'settings',   target:'#settings',   title:'Settings', text:SETTINGS_TEXT },
     { id:'home',       target:'#homebtn',    title:'Home',
-      text:'Notes, revision, your calendar and the rest of the site.' }
+      text:'This week’s poll, the forum, revision, your calendar and the rest of the site.' }
   ],
   /* both settings dialogs use these ids, so one tour covers both pages */
   settings: [

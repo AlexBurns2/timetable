@@ -22,7 +22,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 import { studentDirectory, fetchAsOwner } from "./timetable.js";
 
 /* The class of 2027 is whatever year group the owner is in, so the grid stays
@@ -80,7 +80,7 @@ export async function birthdayHandler(req, res) {
   const byEmail = new Map(dir.map(p => [p.email, p]));
 
   if (req.method === "GET") {
-    const names = await nameOverrides();
+    const names = await displayNames();
     const { data, error } = await db.from("birthday").select("email, day").limit(5000);
     if (error) console.error("birthdays read:", error.message);       // still send the grid, so names show
     const cohort = (byEmail.get(ANCHOR) || {}).year || 12;

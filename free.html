@@ -7,10 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <script src="theme.js"></script>
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="settings.css">
+<script src="icons.js?v=20261109"></script>
+<link rel="stylesheet" href="site.css?v=20261109">
+<link rel="stylesheet" href="settings.css?v=20261109">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <style>
 .flede{color:var(--muted);margin:-4px 0 12px;font-size:0.9375rem}
@@ -65,7 +66,7 @@
 .fyears{display:flex;gap:4px;flex-wrap:wrap}
 .fyears button{font:inherit;font-size:0.75rem;font-weight:600;min-width:34px;padding:4px 9px;border-radius:999px;cursor:pointer;
   color:var(--text);background:var(--panel);border:var(--card-border)}
-.fyears button[aria-pressed="true"]{background:var(--text);color:var(--panel);border-color:var(--text)}
+.fyears button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .fclose{font-size:0.75rem;color:var(--muted);margin:2px 0 6px}
 .fgrid{display:grid;grid-template-columns:52px repeat(5,minmax(0,1fr));gap:5px}
 .fh{font-size:0.75rem;font-weight:700;color:var(--muted);text-align:center;padding:2px 0 4px}
@@ -105,14 +106,14 @@
 <body>
 <div class="wrap">
   <div class="pagehead">
-    <h1>Free periods</h1>
+    <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Free periods</h1></div>
     <div class="crumbs">
-      <a class="btn" href="home.html">Home</a>
-      <a class="btn" href="./">Timetable</a>
-      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+      <a class="btn icon" href="home.html" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <a class="btn icon" href="./" title="Timetable" aria-label="Timetable"><span data-icon="table"></span></a>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
     </div>
   </div>
-  <p class="flede">Your free periods, who else is out of class then, and when a group of you is free together.</p>
+  <p class="flede">Who’s free when you are.</p>
   <p class="fstat" id="stat" role="status" aria-live="polite"></p>
   <div class="fbar" id="bar" hidden><span id="barfill"></span></div>
 
@@ -131,17 +132,15 @@
       </div>
       <div class="fgrid" id="grid"></div>
       <section class="fpanel fdetail" id="detail" hidden aria-live="polite"></section>
-      <p class="fnote">Recess and lunch are free for everyone, so they aren’t shown. Who’s free comes from the school
-        timetable using your own school login, and the site only asks which periods each person has a class in, never
-        what or where. Your group is saved with your settings. Everyone’s periods are kept on this device for a day
-        (<button type="button" id="refresh">check again now</button>).</p>
+      <p class="fnote">A dash means no lesson. <button type="button" id="refresh">Check again</button></p>
     </div>
     <section class="fpanel" id="group" aria-live="polite"></section>
     <section class="fpanel" id="people" aria-labelledby="peopleh">
       <div class="fphead"><h2 id="peopleh">People</h2></div>
       <input id="pq" type="search" placeholder="Type a name to add someone…" autocomplete="off" spellcheck="false"
+             data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"
              enterkeyhint="done" aria-label="Find people by name or email to compare free periods with" aria-describedby="pqhint">
-      <p class="fclose" id="pqhint" role="status" aria-live="polite">Any name, either way round, or an email. Enter adds them if there’s only one match.</p>
+      <p class="fclose" id="pqhint" role="status" aria-live="polite">A name or an email.</p>
       <div id="plist"></div>
     </section>
   </div>
@@ -201,7 +200,10 @@ function nameMatches(p, words){
   const bits = s => s.split(/[\s'’.-]+/).filter(Boolean);
   /* every tail of the name squashed: "smithjones" and "obrien" both start one */
   const tails = bits(name).map((_, i, a) => squash(a.slice(i).join('')));
-  const parts = [name, id, ...bits(name), ...bits(id), ...tails];
+  /* the user name only counts when what's typed looks like one ("sam.taylor3"): an
+     email can carry a name someone no longer uses, and typing that name must not find them */
+  const byUser = words.some(w => /[.\d]/.test(w));
+  const parts = [name, ...(byUser ? [id, ...bits(id)] : []), ...bits(name), ...tails];
   return words.length > 0 && words.every(w => parts.some(x => x.startsWith(w)) ||
     (squash(w) !== '' && parts.some(x => x.startsWith(squash(w)))));
 }
@@ -376,7 +378,7 @@ const DOMAIN = (window.TT && TT.EMAIL_DOMAIN) || 'education.nsw.gov.au';
 /* Not a tt.* key, so theme.js never syncs it: other people's periods stay on
    this device. Tagged with whose login fetched it. */
 const CACHE_KEY = 'msc.free';
-const CACHE_V = 2;                        // 2: class lists carry each student's year
+const CACHE_V = 3;                        // 2: class lists carry each student’s year; 3: names as people go by (overrides)
 const freshCache = () => ({ v:CACHE_V, owner:ME, rosters:{}, busy:{} });
 const BUSY_TTL = 24 * 3600e3, MISS_TTL = 3600e3, ROSTER_TTL = 24 * 3600e3;
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
@@ -464,6 +466,10 @@ function slotTitle(key){
 const sortIds = ids => ids.slice().sort((a, b) =>
   (picked.includes(b) - picked.includes(a)) || fullName(a).localeCompare(fullName(b)));
 
+/* a subject short enough for a grid cell: "Software Engineering" -> "Software",
+   "Mathematics Advanced" -> "Maths"; the full name is in the cell's label */
+const shortSubj = s => { const w = String(s).split(/\s+/)[0]; const t = String(s).length <= 12 ? String(s) : w;
+  return /^mathematics$/i.test(t) ? 'Maths' : t; };
 function cellHtml(d, per, slot, today, nowMin){
   const key = keyOf(d, per);
   const mineHere = mine.find(e => e.key === key);
@@ -471,7 +477,7 @@ function cellHtml(d, per, slot, today, nowMin){
   let cls, inner, say;
   if (!grouped){
     if (mineHere){
-      cls = 'busy'; inner = '<span class="s">' + esc(mineHere.subject) + '</span>';
+      cls = 'busy'; inner = '<span class="s" title="' + esc(mineHere.subject) + '">' + esc(shortSubj(mineHere.subject)) + '</span>';
       say = 'you have ' + mineHere.subject;
     } else {
       const free = sortIds(freeAt(key, pool(), busy));
@@ -491,7 +497,7 @@ function cellHtml(d, per, slot, today, nowMin){
       cls = 'some'; inner = '<b>' + free.length + ' of ' + ids.length + '</b><span class="w">Busy: ' + esc(out.map(nm).join(', ')) + '</span>';
       say = free.length + ' of ' + ids.length + ' free; busy: ' + out.map(nm).join(', ');
     } else {
-      cls = 'busy'; inner = '<span class="s">' + esc(includeMe && mineHere ? mineHere.subject : 'No one free') + '</span>';
+      cls = 'busy'; inner = '<span class="s">' + esc(includeMe && mineHere ? shortSubj(mineHere.subject) : 'No one free') + '</span>';
       say = 'no one in your group is free';
     }
   }
@@ -514,7 +520,7 @@ function renderGrid(){
     for (const d of days){
       const slot = slots[d].get(per);
       h += slot ? cellHtml(d, per, slot, today, nowMin)
-                : '<div class="fc none" role="img" aria-label="' + esc(DAY_NAMES[dayIndex(d)] + ' period ' + per + ': no lesson') + '">—</div>';
+                : '<div class="fc none" role="img" title="No lesson (sport, or not a class period)" aria-label="' + esc(DAY_NAMES[dayIndex(d)] + ' period ' + per + ': no lesson') + '">—</div>';
     }
   }
   $('grid').innerHTML = h;
@@ -551,7 +557,7 @@ function renderGroup(){
   let h = '<div class="fphead"><h2>Your group</h2><label class="fme"><input type="checkbox" id="incme"' +
           (includeMe ? ' checked' : '') + '> Include me</label></div>';
   if (!pk.length){
-    h += '<p class="fhint">Pick people to see when you’re all free. Tap a free period to see who’s around, or choose from the list.</p>';
+    h += '<p class="fhint">Add people to see when you’re all free.</p>';
   } else {
     h += '<div class="fchips">' + pk.map(id => {
       const unk = busy[id] === null || (busy[id] instanceof Set && !busy[id].size);
@@ -670,7 +676,7 @@ function addFromSearch(p){
   if (!picked.includes(p.id)) picked.push(p.id);
   savePicks(); render(); loadBusy([p.id]);
 }
-function pqHint(msg){ $('pqhint').textContent = msg || 'Any name, either way round, or an email. Enter adds them if there’s only one match.'; }
+function pqHint(msg){ $('pqhint').textContent = msg || 'A name or an email.'; }
 
 function renderPeople(){
   const { raw, words, local, school } = candidates();
@@ -852,6 +858,6 @@ $('refresh').onclick = () => {
 };
 boot();
 </script>
-<script src="settings.js"></script>
+<script src="settings.js?v=20261109"></script>
 </body>
 </html>

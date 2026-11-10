@@ -757,6 +757,11 @@ the directory fetch.
 > roster (names only) — the same data the practice game's grade mode already
 > exposes. It's fetched fresh behind the verified login and marked
 > `private, no-store`; the target's identity is never sent until the round ends.
+>
+> From 10 Nov 2026 (hints v3) the server-only `target` also holds the person's
+> email, their classes and the classmates they share the most classes with
+> (names only). No new SQL: it's the same `jsonb` column, and older rows are
+> only ever added to, never rewritten.
 
 ### Past puzzles, Unlimited, and live hints
 
@@ -1283,6 +1288,53 @@ is on, the games page is locked, the home page's Games tile turns into a Focus
 tile and the forum is hidden — on every device you are signed in on. It unlocks
 by itself when the time is up. You can end it early, but only by holding the
 button for three seconds.
+
+## A cleaner, friendlier site (November)
+
+The site was tidied up after a "new student" walk-through. The timetable page
+is the model for everything else.
+
+- **Home** has a header like the timetable's: a greeting with your name and
+  today's date and week, and your **next class** (from your saved timetable).
+  The tiles sit in three labelled groups: *Your week*, *Study* and *More*.
+  Signed out, it says what the site is and offers a **Sign in** button. The
+  forum explains itself in one line.
+- **The new website beta** is now a link at the bottom of Home, as an add-on.
+  It is no longer a tile in the main grid.
+- **Mahjong scores** moved off Home. The *Mahjong scoreboard* link now sits
+  next to the leaderboards on the Games page.
+- In the **Gallery** layout, the big Timetable tile on Home lists the day's
+  classes: today's while any are left, otherwise the next school day's.
+- **Every page** has the same header: the site name (a link Home), the page
+  name, and Home / Timetable / ⚙. On a phone those become icons, so the header
+  stays on one row. The timetable's *Separated* header setting applies to
+  every page.
+- **Games** has two labelled sections, *Play with your year* and *Arcade*,
+  each with one line saying what it is. Category tags and the diagonal ribbon
+  are gone ("New" is now a small pill), the leaderboard strip shows four
+  boards, and cards fade in faster. Descriptions are no longer cut off.
+- In the **Grid** layout, each games row has ‹ › arrows for a mouse. Once a row
+  reaches its end, the mouse wheel goes back to scrolling the page.
+- **Revision** shows the subjects first; the study planner is below them.
+- **Sign-in screen** shows the site's name and says plainly where your login
+  goes and that the site is student-made. The way out is now *Look around
+  first →*.
+- **Settings**: four theme choices (Plain, Classic, More, Custom) instead of
+  twelve. The layout options are *Gallery / Grid*, and the header options are
+  *Panel / Separated*. *Accessibility* is spelled out, Sign out is shown in
+  red, and opening Settings no longer starts more tour bubbles. Once you're
+  signed in, the button says *Update login*. Header and Room numbers each have
+  a one-line explanation.
+- **Year 11 and 12 only**: the HSC countdown on Home and the HSC exams box in
+  the Calendar.
+- **Readability**: grey text on the Plain theme is darker (it was below the
+  contrast small text needs), and tile descriptions are bigger.
+- **Fixes**:
+  - The owner-only Admin 🛠️ button was showing for everyone; it's hidden
+    again.
+  - A phone grid with an odd number of tiles no longer leaves one tile alone.
+  - Free periods uses short subject names in the grid, explains the dash, and
+    has a shorter note.
 
 ## Gallery or classic layout
 
@@ -2628,4 +2680,106 @@ create table birthday (
   updated_by text not null,
   updated_at timestamptz not null default now()
 );
+```
+
+## Weekly anonymous poll (Home)
+
+Run this in Supabase → SQL Editor. It's safe to run again (say, after an
+update adds a column): it only creates what's missing. Nothing existing is
+dropped or rewritten. Until it runs, Home shows no poll.
+
+```sql
+-- Safe to run more than once: it only creates what's missing and adds missing
+-- columns. Nothing is dropped or rewritten (except the old one-answer version
+-- of the poll_bump function, which is replaced).
+create table if not exists poll (
+  week       date primary key,          -- the Monday it opens
+  question   text not null,
+  kind       text not null,
+  created_by text not null,
+  created_at timestamptz not null default now()
+);
+alter table poll add column if not exists choices   jsonb;                                -- the answers, for a custom question
+alter table poll add column if not exists pick      int not null default 1;               -- how many people pick (1 to 3)
+alter table poll add column if not exists pickexact boolean not null default false;       -- exactly `pick`, not up to it
+alter table poll add column if not exists anim      text not null default 'surprise';     -- Monday: how the question takes over the card
+alter table poll add column if not exists celebrate text not null default 'surprise';     -- Friday: the winner's celebration
+alter table poll add column if not exists reveal    text;                                 -- Friday's line, e.g. "The person most likely to … is…"
+alter table poll drop constraint if exists poll_kind_check;
+alter table poll add constraint poll_kind_check check (kind in ('period','student','teacher','class','custom'));
+alter table poll drop constraint if exists poll_pick_check;
+alter table poll add constraint poll_pick_check check (pick between 1 and 3);
+
+create table if not exists poll_voter (
+  week  date not null,
+  email text not null,
+  primary key (week, email)
+);
+create table if not exists poll_tally (
+  week   date not null,
+  scope  text not null,                 -- 'all', or the year ('11') for student polls
+  choice text not null,
+  votes  int  not null default 0,
+  primary key (week, scope, choice)
+);
+create table if not exists poll_suggestion (
+  id         text primary key,
+  email      text not null,
+  question   text not null,
+  kind       text,
+  created_at timestamptz not null default now()
+);
+alter table poll enable row level security;
+alter table poll_voter enable row level security;
+alter table poll_tally enable row level security;
+alter table poll_suggestion enable row level security;
+
+-- one vote: every pick, and the voter count, in a single statement
+drop function if exists poll_bump(date, text, text);
+create or replace function poll_bump(p_week date, p_scope text, p_choices text[])
+returns void language sql security definer set search_path = public as $$
+  insert into poll_tally (week, scope, choice, votes)
+  select p_week, p_scope, c, 1 from unnest(p_choices) as c
+  on conflict (week, scope, choice) do update set votes = poll_tally.votes + 1;
+$$;
+revoke execute on function poll_bump(date, text, text[]) from public, anon, authenticated;
+grant execute on function poll_bump(date, text, text[]) to service_role;
+```
+
+Then set the first question on the moderator page (Games → Moderator → Polls).
+The share link `https://www.mscunofficial.com/poll` needs the `rewrites` entry
+in `vercel.json` (already there), which deploys with the site.
+
+---
+
+## Quartets (`api/_conn.js`, `api/_connroute.js`, served by `/api/daily?conn=1`)
+
+A daily puzzle for each year: sixteen people, and four groups of four to find.
+Each puzzle is made the first time someone in the year opens that day, then
+stored. Results are kept per person, for the streak and the past-days list.
+
+**Setup:** run this in Supabase, SQL Editor. It's safe to run more than once
+and only creates what's missing; nothing existing is touched.
+```sql
+create table if not exists conn_puzzle (
+  date       date not null,
+  year       text not null,           -- the year and the generator version, e.g. "11#v4"
+  groups     jsonb not null,          -- [{lv, id, label, kind, names, emails}], or [] if no puzzle could be made that day
+  created_at timestamptz not null default now(),
+  primary key (date, year)
+);
+create table if not exists conn_result (
+  email      text not null,
+  date       date not null,
+  year       text not null,           -- as above: a new generator version starts afresh
+  found      jsonb not null default '[]',   -- the levels solved, e.g. [1,3]
+  log        jsonb not null default '[]',   -- each guess as four levels, for the share grid
+  mistakes   int  not null default 0,
+  solved     boolean not null default false,
+  done       boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (email, date)
+);
+alter table conn_puzzle enable row level security;   -- no policies: only the server (service role) reads or writes
+alter table conn_result enable row level security;
 ```

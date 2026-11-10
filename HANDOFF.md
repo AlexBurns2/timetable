@@ -2098,3 +2098,863 @@ switch between the two.
     scoped to `.subjgrid.classic` restore the one-line cards.
   - The "whole library" tile becomes the old link in the intro text
     (`#reslib`).
+
+### 8.48 Cleanup after a new-user audit (Home, Games, headers, Settings)
+
+**How it was decided.** A role-played Year 10 newcomer audited every page
+except `/andre/`. They scored clarity, readability, friendliness and
+aesthetics, and the changes follow their comments. The timetable page is the
+design reference: a panel header, small-caps labels, Now/Next cards.
+
+**Home (`home.html`).**
+- `.hubbar` uses the timetable's header panel and honours `[data-header=split]`.
+  It holds a greeting (the first name from the cached profile), the date and
+  week, Now/Next cards built from `tt.cache`, and ⚙.
+  - Only your own cache is used (its email must match `tt.creds`).
+  - The cycle is counted the same way as `cycleDayFor`, with `tt.cycleshift`.
+- Signed out, the panel shows what the site is and a Sign in button, and the
+  forum composer is disabled.
+- Tiles are in three `.hubsec` groups. Each `.tiles` gets its own `Bento.layout`
+  in gallery mode, or the plain grid in classic. The `data-size` format is
+  unchanged.
+- The beta tile moved to `.hubfoot`. The Mahjong tile moved to Games, so
+  mahjong.js is no longer loaded on Home. No home tour.
+- In gallery mode the 2×2 Timetable tile lists the day's classes
+  (`paintDay`, `.ttday`; hidden when the tile isn't tall).
+- The HSC strip shows only for `yr11`/`yr12` profiles. `.hscstrip[hidden]`
+  needed its own rule, because `display:flex` beat the attribute.
+
+**Shared header (`site.css .pagehead`).**
+- Every subpage now has `.phtitle` (an `a.sitename` link plus h1) and crumbs
+  with `.bi` icon and `.bl` label spans.
+- Under 600px only the icons show, so the header stays on one row.
+- It's a panel like `.topbar`, and `[data-header=split]` removes the panel.
+- `.btn[hidden]{display:none}` fixes the owner-only Admin button, which had
+  been visible to everyone.
+
+**Games (`games.js`).**
+- `SECTIONS` (title plus one-line lede) replaces `CAT_ORDER`. Both layouts
+  render a `.gsec` heading per section; gallery mode uses one bento per
+  section, and `bentoStop` stops them all.
+- Category tags are gone, and `.newbanner` is a small pill. The Jim Button is
+  a normal 1×1 card.
+- `gameCard` navigates for an entry with `href` (none at present), and `?play=`
+  ignores such entries. The Mahjong scoreboard link lives in the leaderboard
+  strip header (`.lbsumlinks`).
+- In gallery cards `.go` is absolutely positioned (hidden on phones), so it
+  never takes a line from the description. Wide cards clamp to 3 lines and
+  phone rows are 156px.
+- Classic shelves get `shelfArrows` (‹ ›, hidden on touch, disabled at the
+  ends). `dragScroll`'s wheel handler lets the page scroll once the row is at
+  its end.
+- The card fade-in is 0.28s with a stagger capped at 180ms. The leaderboard
+  strip shows the first 4 boards. Revision draws its subjects before
+  `Study.render()`.
+
+**Settings.**
+- settings.js collapses the themes like the timetable does (Plain, Classic,
+  More, Custom).
+- Labels are now Gallery/**Grid**, **Panel**/Separated and **Accessibility**.
+  Sign in is `.btn.primary`; Sign out is the new `.btn.danger`.
+- `Tour.start('settings')` was removed from both dialogs; `Tour.mark` stays.
+
+**Contrast.** Plain's `--muted` went from #8b8b93 (about 3.4:1) to #696972
+(about 5.4:1).
+
+**Cache busting.**
+- Pages link site.css, games.css, settings.css, theme.css, games.js,
+  settings.js and mahjong.js with `?v=20261104`. sw.js pre-caches the same
+  URLs (`ASSET_V`), and CACHE_VERSION is v5.
+- Bump `ASSET_V` and the `?v=` together whenever those files change in a way
+  new HTML depends on.
+- Pages are network-first but static files are stale-while-revalidate, so
+  without this the first visit after a deploy pairs new HTML with old CSS.
+
+**Not changed.**
+- `/andre/` and Pugmeowla's game code (hkmahjong.html only had its links
+  versioned).
+- The timetable grid itself.
+- The timetable page's separate Settings dialog. Merging it with settings.js
+  is the next consistency step; it is larger and riskier.
+
+### 8.49 Moderator page, hidden games, Mahjong club, name suggestions
+
+**Moderators.** `isAdmin` in `api/_supabase.js` hard-codes
+alex.burns6@education.nsw.gov.au and andre.kwok2@education.nsw.gov.au, plus
+an optional `OWNER_EMAIL` env var.
+- `GET /api/leaderboard?settings=1` now also returns `isMod`, which pages use
+  only to show the way in. Every action is still checked on the server.
+- Ways in: the 🛠️ "Moderator" button on Games (`initAdmin`, now called from
+  the start-up block, because reading `siteCfg` earlier throws a TDZ error),
+  a Moderator tile on Home (`#tileMod`, hidden until `isMod`), and
+  `games.html?play=admin`.
+
+**The moderator page (`BUILD.admin`).** New tabs:
+- **Overview**: `GET /api/leaderboard?stats=1`, moderators only. These are
+  read-only counts of users, forum, decks, calendar, players per board,
+  Tetris, Daily Guess Who, saved games by mode, Mahjong club, Jim presses,
+  revision and birthdays. A missing table reads as 0 or null.
+- **Forum** and **Shared decks**: list everything with Delete, using the
+  existing delete routes (moderators already had permission).
+- **Site settings**: one Shown/Hidden switch per game, stored as
+  `site_setting.hidden_games` (a comma list).
+  - `_settings.js` defaults to `["jim"]`, so the Jim Button stays hidden until
+    it's switched on.
+  - `games.js` `gameHidden()` checks this and the `hidden:true` flag. `?play=`
+    waits for the settings, so a hidden game can't be opened by link.
+- The existing tabs (users, renames, weekly boards, every board) are
+  unchanged.
+
+**Mahjong club.** The tile is in Home → More, and the page is titled "Mahjong
+club". The link was removed from the Games leaderboards.
+
+**Layout default.** `TT.layout()` now defaults to `classic` (Grid).
+
+**Timetable name box (index.html).**
+- `<datalist id="whoamilist">` is filled from `?find=` as you type (2+ letters,
+  250ms debounce, signed-in only). Picking a suggestion blurs the box, which
+  runs `viewUser`.
+- `#whoback` (‹) shows while the timetable on screen isn't yours, and takes
+  you back to your own.
+
+**Tests.** `modcheck.mjs` (21 checks, in the scratchpad) runs
+leaderboard.js against a fake database. It covers who is a moderator, the
+stats being moderator-only and read-only, and hiding games.
+
+### 8.50 Forum reactions, Mahjong club moderation, animated mode, moderator button
+
+**Forum reactions (`api/forum.js`, `home.html`).**
+- New table `forum_reaction (post_id, email, emoji, created_at, primary key
+  (post_id, email, emoji))`; the SQL is in the file's header comment. Until it
+  exists, the forum works without reactions.
+- `POST {action:'react', id, emoji}` toggles a reaction. It accepts exactly one
+  emoji grapheme (checked with `\p{Extended_Pictographic}` and
+  `Intl.Segmenter`), at most 6 different emoji per person per post.
+- `GET` returns `reactions: [{emoji, count, mine}]` per post and reply, most
+  used first, never emails.
+- Deleting a thread removes its reactions and its replies' reactions.
+- In the page: chips toggle, ♡ is a one-tap heart, and + opens a palette with
+  "Other…" (any emoji). Changes show optimistically and roll back if the save
+  fails.
+
+**Mahjong club moderation (`api/gamestate.js` plus a moderator tab).**
+- New moderator-only actions: `renamePlayer`, `removePlayer` (takes only that
+  player's points; a game left empty goes) and `deleteRound` by its `t` (any
+  game, not just the last).
+- Add, record and undo stay open to everyone.
+
+**Moderator button.**
+- The Home tile is gone. settings.js adds a small 🛠️ before ⚙ on every page
+  with the shared Settings when `isMod`; Games keeps `#admin`.
+- The page layout is otherwise the same for moderators.
+- "← All games" removes `?play=` from the address.
+
+**Animated mode (index.html, off by default).**
+- `tt.anim` is set in Settings → Display → Animations, on both dialogs.
+- `turnWeek` is ported from andre/index.html, with the same MAZE timings,
+  waves, lanes and `composite:'add'`. A week change clones the old `.lesson`
+  cards into `.ttghost`, which slide off; the new ones slide on, middle days
+  first. A lesson with the same `data-sig` in the same spot stays put.
+- `laneShifts` also keeps a day's cards in order when one is pushed off the
+  bottom of the page (the beta can overlap there).
+- `growFrom` grows the detail sheet out of the pressed card.
+- It is skipped on phones, with reduced motion, or when off.
+- Checked by freezing every 25ms: no visible overlap in Compact or Full, in
+  either direction.
+
+**Tests (scratchpad):** `reactcheck.mjs` (25 checks: reactions and Mahjong
+moderation against a fake database), `modcheck.mjs` (21) and `pagecheck.mjs`.
+
+### 8.51 Daily Guess Who hints v3, results spotlight, archive calendar, name suggestions, card summaries, leaderboards sheet
+
+**Hints by date (`api/_daily.js`).** Hints are still recomputed from the stored
+`daily_puzzle.target` on every read, so the set is chosen by the puzzle's date:
+- up to `LEGACY_UNTIL` (2026-09-12): `legacyHints`;
+- up to `V2_UNTIL` (2026-11-09): `v2Hints`, a frozen copy of the previous
+  engine. Don't edit it: past days must keep the hints people played with
+  (checked by `hintcheck.mjs` against 3,000 old puzzles from git `HEAD`);
+- from 2026-11-10: `v3Hints`.
+
+**v3 engine.**
+- A pool of candidate hints, each with a tier (1 vague … 4 near giveaway), a
+  "fun" weight, `tags` (the facts it reveals) and a `kind`.
+- Eight slots with tiers `[1,1,1,2,2,3,3,4]` and a weighted pick by fun².
+  Only the gentle slots swap (p = 0.3, one place, no cascades); `fits()`
+  keeps tier 3 (first letters, "share four classes") at hints 6–7 and tier 4
+  (masks, initials) at hint 8, so a strong hint is never followed by a weaker
+  one. "Their name reads …" is always 9th.
+- A hint whose tags are all already known is skipped; `IMPLIES` covers the
+  name masks. `fresh` lists facts that must still be unknown (initials only
+  while neither letter is out; "both A and B" only while neither is named).
+  `who:` tags stop the same classmate or teacher appearing twice. Soft caps
+  per kind (`teacher:1, subject:3, trivia:2, ending:1`; every course hint is
+  `subject`).
+- A "sparse" round (fewer than 4 timetable hints: no verified timetable, or a
+  junior who takes only the common subjects) relaxes a cap before giving more
+  away, gets two extra gentle hints (surname length, "first name is shorter
+  than their surname"), and may give a first letter at hint 5. Every round is
+  9 hints.
+- Removed as frustrating: vowel counts, "starts with a consonant", surname
+  length (except sparse rounds), "no double letter", subject counts.
+- Names: letters are counted with accents (`\p{L}`), "starts with" uses the
+  plain letter (Élise → E). `maskV3` keeps hyphens, apostrophes and spaces,
+  never shows a whole name, and the final reveal always shows more than the
+  earlier mask; an em space separates first name and surname.
+- Years 7–8 also treat music, visual arts, technology and languages as
+  common subjects (`STAGE4_CORE`). Extension subjects are tier 2.
+- Social hints: "They share four classes with X", "They're in Physics with X",
+  "They have two classes with Mr Y", "One of their teachers is Mr Y". Course
+  hints: sciences, no maths, extensions (Years 11–12 only), "They take X".
+  Name hints come later. Timetable hints need `verified`, as before.
+- New puzzles store `email`, `classes` (≤ 12) and `classmates` (top 60
+  students by shared classes) in `target`. Classmates come from up to 10
+  class rosters (real subjects first), count real subjects only, and are
+  limited to the same year (a combined class can hold other years).
+- The server's `tidyTeacher` now matches index.html's, so hints name teachers
+  as the timetable shows them. The directory's own FirstName / LastName are
+  used for the split when they make up the full name exactly.
+- An independent audit (scratchpad `audit/`) checked every hint type for how
+  knowable and how fun it is, plus ordering; its fixes are all in.
+  `withV3Details` adds those fields once to a v3-era row made by older code
+  (additive update of `target` only; nothing else in the row changes).
+
+**Results and archive (`api/daily.js`, `games.js`).**
+- `?summary=1` also returns `spotlight` (best guesser, first solver, stumped,
+  longest recent streak, most improved: display names only) and `mine`
+  (`{done, won, guesses}`, for the games-page card).
+- `?archive=1` returns `{epoch, today, archive, mine}`; the page draws one
+  month calendar (✓ won, ✗ lost, small player count), loaded once. This
+  replaces the two lists that used to race each other.
+- The results panel shows one spotlight line at a time (rotating every 4.5 s),
+  "N played · X% solved" and the guess histogram.
+- Buttons are plain words: Archive, Results, Unlimited →.
+
+**Name suggestions (`suggest.js`).** `Suggest.attach(input, {source, onPick,
+min, max, delay})`: its own list (bold match, optional second line), keyboard
+and ARIA combobox. It sets `type=search`, `autocomplete=off`, a random `name`
+and `data-lpignore` / `data-1p-ignore` / `data-bwignore` /
+`data-form-type=other`, so browsers and password managers don't offer the
+saved school login. Used by the timetable name box (`?find=` search), Daily
+Guess Who and Guess Who. The finder and free-periods search boxes carry the
+same ignore attributes.
+
+**Games page.**
+- Cards have no description. Under the name: the top two on that game's
+  all-time board (Tetris: Sprint), today's Daily Guess Who ("N played today ·
+  X% solved", then your result or one spotlight line), or your own best from
+  this device. `fillSums` fills them after drawing; `localSum` is the instant
+  fallback.
+- The leaderboards strip is gone. A "Leaderboards" button on the first section
+  heading opens `openLBSheet()`: a sheet that slides up from the bottom (✕,
+  Escape, tap outside, or drag the top edge down to close; Tab stays inside).
+  `lbBoard(box, focus)` draws the boards and is shared with
+  `?play=leaderboards&embed=1`. A plain `?play=leaderboards` opens the sheet
+  over the games.
+- `head()` leaves out the "how" line when it is empty; each game's line is one
+  short sentence.
+- `#lbsum` stays in games.html and revision.html (hidden by CSS) only so a
+  browser still running a cached older games.js doesn't throw.
+
+**Site-wide.** No emojis in buttons or headings; emoji as icons (game and tile
+icons, the streak flame, spotlight markers) are fine. Home tiles have no
+descriptions (the span is kept for the focus-lock text) and are shorter; the
+free periods, finder, resources and Settings descriptions are cut to a line.
+
+**Tests (scratchpad):** `hintcheck.mjs` (12 checks plus sample rounds),
+`pagecheck.mjs`, `modcheck.mjs` (21), `reactcheck.mjs` (25). The mock server
+`mock.mjs` (port 8793) runs the real hint engine.
+
+### 8.52 The weekly anonymous poll, Home and Games cleanup, revision spacing
+
+**The poll (`api/_poll.js` via `/api/forum`, `poll.js`, `poll.css`).**
+- Served through the forum route (`?poll=1|history|admin`, POST actions
+  `pollvote`, `pollsuggest`, `pollset`, `polldel`, `suggestdel`), so it costs
+  no Vercel function. `/poll` is a rewrite (vercel.json) to `/api/forum?og=1`:
+  a page whose link preview shows the question (never results), which then
+  sends you on to `home.html?poll=1`.
+- The week, Sydney time: a moderator-set question opens Monday 00:00. Once
+  you've voted you see the live results. Friday 12:00 voting closes and the
+  winner is announced; the final results are then shown to everyone until the
+  next Monday, when it moves to "Past polls".
+- Kinds: `period` (0–7), `student` (your own year only; results are per year),
+  `teacher` (school directory), `class` (your own subjects, from your
+  timetable), `custom` (2–8 moderator answers). `pick` lets people choose up
+  to 3; results are then the share of voters who picked each.
+- Answers are always checked on the server against that list. The box on the
+  page only accepts an answer from the list (Suggest), and a short list shows
+  as buttons instead.
+- **Anonymity is in the data model.** `poll_voter (week, email)` records that
+  you voted and nothing else. `poll_tally (week, scope, choice, votes)` holds
+  counts with no names or times, bumped by one `poll_bump()` call per vote
+  (every pick plus a hidden `__n` voter count). Nothing links a voter to an
+  answer, and the server never logs one. Results stay hidden until a scope has
+  5 voters. Your own pick is kept only on your device (`poll.mine.<week>`, not
+  a synced `tt.` key).
+- Signed out (a friend's link): the card shows the question and a sign-in form
+  (saves the same `tt.creds` as Settings), and Home shows only the poll until
+  you vote or skip.
+- The live "N votes" counter refreshes every 45 s (count only).
+- A round button in the card's corner minimises it to one line (the question);
+  clicking the card opens it again. Remembered per week (`tt.poll_min`), so a
+  new question arrives open, and Friday's winner announcement opens it too.
+- **The show.** Each week has an `anim`, chosen on the moderator Polls tab:
+  The Drop, Explode (last week's card blows up, the new one rises out of the
+  smoke), Spotlight, Countdown, Curtain, Slot machine, or Surprise me (picked
+  from the week). It plays once per person (`tt.poll_seen`) when they first
+  see the new question. Friday noon has one shared celebration (stage, chasing
+  lights, drumroll, the winner in gold, fireworks, confetti), once per person
+  (`tt.poll_revealed`).
+- Shows play over the card (a stage just bigger than it); the page dims, but
+  nothing else is covered or blocked. Click, Skip or Escape ends one, and
+  reduced motion turns them off.
+- `home.html?pollpreview=intro&anim=curtain` (or `=reveal`) replays one without
+  marking it seen; the moderator tab's Preview buttons open these.
+- Moderators: set a question per week (this week or later; kind, picks and
+  answers lock once anyone has voted, but wording and show can still change),
+  see voter counts, and use or dismiss student suggestions (3 per person a
+  week).
+- SQL: in the header of `api/_poll.js` and in SETUP.md. Until it's run, Home
+  simply shows no poll.
+
+**Home.** The HSC strip is gone. The poll sits under the header. The tiles are
+eight small ones in a 4 × 2 grid on every screen (Notes removed; the page
+still exists). The forum shows the newest thread with "Show N more", and the
+composer is one line until clicked. The server now sends `mine` (yours) and
+`canDelete` (yours, or a moderator's); a moderator's delete on other people's
+posts shows only on hover.
+
+**Games.** No sideways shelves: small cards (emoji, name, your own best). The
+leaderboards are back at the bottom, as a card per board with its top three
+that opens the sheet. `.sheet` styles now live in site.css (shared with the
+poll's Past polls).
+
+**Revision.** The study panel's margin was being overridden (it sat flush
+against the subjects). It now has room, theme borders and shadow, and plan
+items put the topic on its own line. The countdown and focus text is shorter.
+
+**Assets.** `?v=` bumped to 20261109 and the service worker cache to v6, so the
+new CSS loads on the first visit after deploy.
+
+**Tests (scratchpad):** `pollcheck.mjs` (33 checks against a fake database:
+one vote each, no answer in the voter row, no names in the tally, the 5-voter
+minimum, per-year student polls, pick-several percentages, Friday noon
+closing, history, suggestions limit, moderator locks, preview escaping).
+`reactcheck.mjs` now stubs the poll imports.
+
+### 8.53 Poll shows reworked, Monday 9:30 opening, traceability cleanup
+
+**Timing.** Questions open **Monday 09:30** Sydney (not before school), voting
+closes and the winner is announced **Friday 12:00**. `pollClock()` works in
+wall-clock seconds and returns exact instants (`resultsAt`, `nextAt`, `now`;
+correct across daylight-saving changes). Every open Home page sets a timer for
+the next change, refreshes then (with a little jitter), and starts the moment 6
+seconds after it by the server's clock, so everyone with Home open sees it at
+the same time.
+
+**What people see.** The vote count only shows once you've voted. The corner
+says "Closes in …" (open) or "Opens in …" (closed). After voting there are just
+"Your vote is in" and the live bars. Not voted and closed: the final results
+with "Come back on Monday for the next question", and no show.
+
+**Monday reveals (`anim`)** move the card itself, from exactly how it looked
+last time (`tt.poll_view`: the question, state and top results) to the new
+question:
+- **drop:** falls onto the old card;
+- **wreck:** swings in on a chain and knocks the old card away;
+- **topple:** the old card tips over forwards;
+- **explode:** jagged cracks, irregular shards, spark streaks, lumpy smoke, and
+  the new card fades in with its question;
+- **flip:** turns over like a sign;
+- **slot:** the card spins like a reel.
+
+A person's very first poll gets `first`, a drop that pushes the page down.
+
+**Friday celebrations (`celebrate`)**, for people who voted:
+- **spotlight:** smooth damped sweeps;
+- **countdown:** a bright game-show set with a ring timer;
+- **curtain:** velvet folds that draw up into swags with gold tie-backs;
+- **envelope;**
+- **slot:** a reel of the answers with a near miss.
+
+Each builds up, says the reveal line (`reveal`, or one made from the question:
+"The person most likely to … is…"), drumrolls, names the winner, then confetti,
+and the leaderboard grows on the card.
+
+**Rules for every show:** shows wait for the page to finish loading and to be
+on screen. The rest of Home is locked while one plays (25 s safety release).
+Skip, a click or Escape ends one. They're off with reduced motion. The page
+behind a celebration is darkened by the stage's own shadow (`.pstage`
+box-shadow), not an overlay.
+
+**Moderator form:** "Monday reveal", "Friday celebration" and "Friday's line"
+(its placeholder is the automatic line). The preview buttons pass the show,
+question and line to `home.html?pollpreview=…`.
+
+**Traceability.** `.vercelignore` keeps the `.md` docs, `index2.html`,
+`backup` and `graphify-out` out of the deployment (they named the people
+behind the site). Names are also out of the comments in served files (index.html,
+jim.js). The GitHub repo is still public with author emails in its history:
+make it private (GitHub → Settings → Change visibility); Vercel keeps
+deploying from a private repo.
+
+**Footer easter egg:** hovering "students" scrambles it into random characters.
+
+### 8.54 Icons: Phosphor, inlined
+
+`icons.js` holds the 24 Phosphor Icons (2.1.1, MIT) the site uses, as path
+data. No icon font or CDN script loads on the live site.
+- `Icon.svg(name)` returns an `<svg>`, and `<span data-icon="name">` is filled
+  in on load (`Icon.fill(root)` after drawing new markup).
+- Regular weight for small UI: the header's Home (house) and Timetable (table)
+  buttons, now icon-only with aria-label and title on every page; Settings
+  (gear); Moderator (wrench); sound (speaker-high/low/none/x); close (x); week
+  and month arrows; back; the poll's minimise, Share and Copy link.
+- Duotone for the eight Home tiles, a colour each. Settings → Home icons →
+  "Theme colour" switches them to the accent (`tt.tileicons`, applied by
+  theme.js as `html[data-tileicons]`). Focus mode swaps the Games tile to the
+  duotone target.
+- Emoji stay where they're fun: game icons, reactions, the crown, flame and
+  trophy.
+- To add an icon: copy its `<path>`s from
+  `@phosphor-icons/core/assets/<weight>/<name>.svg` into `icons.js`.
+- Base sizing is in theme.css (the timetable page doesn't load site.css).
+- **Back.** theme.js adds a Back button (arrow-left, icon-only) at the start
+  of every sub-page header (`.pagehead .crumbs`, so not Home or the
+  timetable). It runs `history.back()` when the last page was this site,
+  otherwise it goes to Home. A page can handle it first through
+  `window.TTBack()`: games.js closes an open game. The timetable's "back to
+  your timetable" button (`#whoback`) uses the same arrow.
+
+### 8.55 Show polish (round 2)
+
+- Explode: the cracks are now jagged rays from the centre with a few branches,
+  each racing outwards.
+- Wreck: the chain length is worked out from the card's position, so the
+  swing always starts fully off the page, on any monitor.
+- Topple: it rocks back, teeters, then falls with gravity and a small bounce
+  (2.3 s).
+- Flip: it lifts, winds back, spins and lands with a thud (about 2 s).
+- Slot reel: 9 gibberish cards (made-up question and answers), a 3.6 s spin
+  that slows right down, then a clunk.
+- First poll: after landing, the question decodes letter by letter and the
+  rest of the card fades in.
+- Celebrations: the stage is exactly the card (not bigger). There's no
+  percentage under the name. The winner gets a gold medal on the corner, and
+  2nd and 3rd rise in with silver and bronze. The gold tie-backs are gone.
+- Countdown: the background spin eases up and down (`rampRate` on the
+  animation's playback rate); no sudden starts.
+- Envelope: it starts hidden below, so it no longer appears, drops and rises
+  again.
+- Slot machine: the server sends `reel`, a shuffled set of up to 30 of the
+  possible answers (people from the year for a student poll), on Fridays only.
+  The reel slows and almost stops on the runner-up, then clicks onto the
+  winner.
+- Back only shows on the games and revision pages while a game or subject is
+  open (`TTBackOn`). Other pages have Home.
+- Game cards lift 2px on hover like the Home tiles. The entrance animation
+  used to pin their transform.
+- The sheet (leaderboards, past polls) always opens at `min(78vh, 700px)` and
+  scrolls inside.
+- Account vs device: voting, "seen", "revealed", the saved card view and the
+  minimised state follow the account (server, or synced `tt.` keys). Only
+  "You picked X" stays on the device, on purpose: syncing it would store your
+  answer against your login.
+
+### 8.56 Show polish (round 3), moderator page via Settings
+
+- Topple: wobbles that start small and grow until it goes over. Flip: a quick
+  spin, then a settling wobble.
+- Winner medal: it now sits beside the gold name (`.pnamewrap`), not inside
+  its background-clipped text, where it was invisible.
+- Countdown: one long, smooth build to full speed, then it eases to a slow,
+  steady turn as the winner appears.
+- Envelope: rises; the seal lifts; the flap opens slowly to upright, then
+  falls behind the card; the card (face down, a star) slides out; then the
+  name. Layers, back to front: inside, card, pocket, flap.
+- Moderator page: it's now a "Moderator" button in Settings (shared Settings
+  and the timetable's), only for moderators. The header wrench buttons are
+  gone, so the pages look exactly as everyone else sees them.
+  `games.html?play=admin` still works.
+- Poll load errors (tables missing, server hiccup) hide the card instead of
+  showing an error on everyone's Home.
+
+### 8.57 Exact picks, share image, Monday height easing
+
+- `pickexact`: moderators choose "Up to two/three" or "Exactly two/three". The
+  server refuses any other number, and Vote stays off until it's right. New
+  column in the poll SQL; SETUP.md is regenerated from `_poll.js`.
+- Share link: `images/poll-og.png` (1200 × 630, made for this) is the preview
+  image, with `summary_large_image`. The question is the preview's title; the
+  results are never in it. `.preview/share-preview.html` (git-ignored) mocks
+  how it looks in iMessage, WhatsApp and Instagram.
+- Monday reveals keep the card at the old card's height during the show, then
+  ease to the new height, so the page below doesn't jump.
+  `?pollpreview=intro` now ends on a fresh, unanswered question, like a real
+  Monday.
+
+### 8.58 Pre-push audit fixes
+- Poll: after a Monday show, the click-to-skip listener is removed (it used to
+  pin `#poll` to the old height on the next click). Skipping a Friday show also
+  skips the confetti.
+- Poll: if the noon/9:30 refresh fails, the card stays and retries in 15–30 s
+  instead of disappearing. A draw error hides the card instead of leaving
+  "from a link" visitors stuck.
+- Poll: signed-out visitors after Friday noon see "Voting's closed". There's no
+  Monday-style show over a final card that has too few votes, and no
+  background polling once voting has closed.
+- Server: "Opens in / Closes in" are right across daylight-saving changes.
+  Moderator voter counts come from the `__n` tally rows (no 1,000-row cap). The
+  signed-out count reads only `__n`. HEAD works on `/poll`. The suggestion limit
+  counts from 9:30 Monday. Staff's missing year comes from the cached directory
+  (`yearOf` in forum.js).
+- Site: the signed-out forum "Sign in" button shows. "Show N more" hides
+  properly. The timetable page's Home icons setting works. Icon-only buttons are
+  centred again (`.btn:not(.icon) > .ph`).
+
+### 8.59 Class polls: every subject in the year
+- Class questions are now per year, like student ones (`scopeOf`). Voters pick
+  from every subject taken in their year, not just their own; staff can't vote
+  on them.
+- No list of a year's subjects exists, so saving a class question in the
+  moderator page builds one. The page calls `pollsubjects {week, year, from}`
+  for Years 7–12, 24 timetables at a time, and the server merges the subjects
+  into `poll.choices` as `{ years:{ "9":[…] }, done:["9"] }`. Years already
+  done are skipped, and saving again finishes any that failed.
+- Until a year is collected, its students pick from their own subjects. Your own
+  subjects are always included either way. Re-saving keeps the collected
+  lists. The moderator list shows which years are collected.
+
+### 8.60 One tile height, no layout toggle, multiplayer Tetris and Snake
+- **Layout setting removed.** The Grid / Gallery choice is gone from both
+  Settings dialogs. `TT.layout()` always returns `'classic'`. The games page's
+  gallery branch and the resources page's bento layout were removed;
+  `bento.js` stays, but nothing uses it.
+- **Tile height.** `--tile-h` is defined in theme.css:
+  `clamp(96px,12vh,132px)`, or `clamp(92px,11.5vh,112px)` up to 560px wide.
+  Home tiles, game cards, revision cards and resource cards all use it, so
+  they're the same height on every page and grow a little on taller screens.
+  Cards show the icon on top and the name at the bottom (two lines at most).
+  Revision cards no longer show progress under the name.
+- **Multiplayer tag.** The NEW pill is now MULTIPLAYER (`mp:true` in `GAMES`)
+  on Hong Kong Mahjong, Tetris and Snake. The Jim Button lost its NEW tag.
+- **Online rooms.** `rooms.js` is loaded only when someone opens Versus or
+  Online. It uses the same Firebase Realtime Database as Hong Kong Mahjong's
+  rooms, under `rooms/tt-<code>` and `rooms/sn-<code>`. It stores only the
+  name each player types, messages delete themselves after 30 s, and a
+  player's entry goes when they close the page.
+  - `mpLobby()` in games.js is the shared lobby: your name, Make a room or Join
+    by code, and the host starts a round. After the round, everyone returns to
+    the room for a rematch.
+- **Tetris Versus** (the 5th mode), for 2–4 players:
+  - Everyone gets the same seeded piece order.
+  - Clearing 2/3/4 lines sends 1/2/4 garbage rows, plus a bit more for combos
+    and a clear board, to a random opponent who's still in. Your own clears
+    cancel incoming garbage first, which shows as a red bar on the left edge.
+  - Gravity speeds up every 30 s. Each placement sends your board for the mini
+    views. The last one standing wins.
+- **Snake Online** (Solo / Online switch), for 2–4 snakes on a 24×24 arena:
+  - The host runs the game and sends the arena out every 140 ms; the others
+    only send their turns.
+  - Hitting any snake, or a head-on, puts you out, and your body becomes food.
+    The last snake left wins.
+  - Players other than the host see their own turns a moment late.
+- **Testing without the real database:** `.preview/rooms-mock.js` is a stand-in
+  `window.Rooms` that links two tabs locally. Load it on the page before
+  opening Versus or Online.
+
+### 8.61 Quartets, a daily four-groups-of-four puzzle
+- **What it is.** Each day, everyone in a year gets the same sixteen people,
+  split into four hidden groups of four, levels 1 to 4:
+  1. a plain name theme (first names that are flowers, gems or months; surnames
+     that are jobs, colours, animals, birds or places)
+  2. a subject they take
+  3. a class or a teacher they share
+  4. wordplay (another name hidden in a first name, an animal hidden across the
+     name, a first name that's an anagram of a word, a palindrome, matching or
+     consecutive initials, initials that spell a chemical symbol)
+
+  It's called Quartets, with its own colours. I didn't use the NYT game's name
+  or look.
+- **Files.**
+  - `api/_conn.js` is the pure generator and its word lists (about 19 KB).
+  - `api/_connroute.js` is the route, served by `api/daily.js` under `?conn=1`
+    / `{conn:1}`, so there's no new function. `daily.js` now sets
+    `config.maxDuration = 60`.
+  - The client is `BUILD.quartets` in games.js, plus the `.qt*` styles in
+    games.css.
+- **How a puzzle is made** (`makeQuartets`):
+  - It reads 24 sample timetables to find the common subjects. Subjects in more
+    than 35% of the sample are skipped, as are English, plain Maths and
+    Religion. Then it reads up to 8 class rosters.
+  - It picks one category per level. Each person must fit only their own group
+    among the four, checked against their own timetable. People in different
+    groups can't share a first name or surname.
+  - It rejects a puzzle if another name theme covers four of the sixteen, or the
+    same first initial appears four times. It prefers 2 or 3 red herrings.
+  - A second seed is tried if the first fails. It uses at most 120 school-API
+    calls per try. If the sampled timetables look identical (the API giving one
+    account's timetable for everyone), it stops.
+  - A day that can't be made is stored as `groups: []`.
+- **Storage.** Only display names, labels and the "how" text (e.g. "(emu)") are
+  stored. Answers go to the page with the puzzle, the same as Daily Guess Who.
+  Results (`found`, `log`, `mistakes`) are saved per person for the streak, the
+  past days and the share grid. The server only lets mistakes and found groups
+  go up.
+- **Tables.** `conn_puzzle` and `conn_result`; the idempotent SQL is in
+  SETUP.md under Quartets.
+- **Tests.** Synthetic years (`.preview/synth.mjs`, from the side session's
+  prototype) power the mock's `?conn=1`. Across 120 synthetic days, 115 made a
+  puzzle, and an independent check found nobody fitting another group's
+  category.
+- **Also:** poll previews (`?pollpreview=…`) now play even when no poll has
+  ever been set, or the poll table is missing. The mock's
+  `/mock/poll?none=2` covers this.
+
+### 8.62 Names as people go by, everywhere; Quartets on real-shaped data
+- **One name source on the server.** `displayNames()` in `_names.js` merges:
+  1. the moderator's override, if set
+  2. otherwise the school directory's name, which already carries the name a
+     student goes by (the directory says "Ari" where the email says arianna)
+  3. a name made from the email only as a last resort (staff, or people who
+     have left)
+
+  Every route that shows names now loads `NAMES = await displayNames()`:
+  forum, polls, daily, Quartets, calendar, subject events, decks, Tetris,
+  leaderboards and birthdays. `nameOverrides()` is only the overrides now, for
+  the moderator editor.
+- **School data sent to pages** goes through `renamePerson` / `renameRoster` in
+  `api/timetable.js`. That covers class lists (`?class=`), the directory
+  (`?group=`), your own profile, and the student finder (`?find=`), which
+  searches and shows by the override. Every page and game that reads these
+  (Guess Who, Six Degrees, Odd One Out, timetable class lists, free periods,
+  the Home greeting) therefore shows the override.
+- **Search never matches an old name.** The finder (server) and free periods
+  (client) only match the email username when the search looks like one
+  (contains `.` or a digit, or is a pasted address). So typing an old name that
+  appears only in an email finds no one.
+- **Stored names are re-mapped when read.** Daily Guess Who's answer, its hints
+  (worked out from the current name) and its name list (rebuilt from the
+  directory) follow renames. Quartets stores emails beside names on the server
+  and shows current names; a renamed person's "how" text is dropped, since it
+  came from the old name. Free periods' cached class lists were bumped
+  (`CACHE_V` 3).
+- **Quartets is now random, with steady difficulty.**
+  - Any four categories can be drawn (`pickFour`): at most two of a family
+    (theme, wordplay or timetable), at most one teacher, and no two timetable
+    groups about the same subject.
+  - Each category has a `hardness` score. The four must total within `BAND`
+    (9.25–11.5), and at least one must be easy (2.25 or under). Levels 1–4 are
+    the four sorted by hardness.
+  - Categories from the last 3 days are mostly skipped (85%).
+  - New themes fit the real year: surnames that are everyday words, first names
+    that are everyday words, and first names that could be surnames. Hidden
+    names must be 4+ letters, and a name only counts as hidden at the start
+    when 4+ letters are left over, so Christopher → Chris counts but Joshua →
+    Josh doesn't.
+- **Tested** on a real Year 11 name list with made-up timetables: 120/120 days
+  made, every one correct, difficulty totals 9.25–11.5 (average 10.9). The name
+  list was used in the scratchpad only, and deleted afterwards.
+
+### 8.63 Quartets: fewer cheesy themes, nothing extra stored
+- "First names that could be surnames" is gone; the user found it too cheesy.
+- The per-person "why" text ("emu", "G.G.") is no longer stored. `conn_puzzle`
+  keeps `{lv, id, label, kind, names, emails}`, and `howFor(id, name)` in
+  `_conn.js` works the text out each time the puzzle is shown, from the name
+  the person goes by then. If that name no longer fits the category, the text
+  is left blank.
+
+### 8.64 Quartets: whole-timetable groups, a Guess Who-style page, a share card
+- **New groups from whole timetables** (Years 11–12 only, `PROFILES` in
+  `_conn.js`):
+  - Don't take any maths (2.5)
+  - Don't take any science (2.5)
+  - Take three sciences (3)
+  - Take two or more extension subjects (3)
+  - Take a language (2.25)
+
+  Members come from every timetable read (the sample is now 36) and from the
+  science, extension and language class lists, which are now always read for
+  seniors. How common each one is comes from the timetables read, and it must
+  be at most 45%.
+
+  A whole-timetable group is never paired with one about the same thing (for
+  example, "three sciences" with "Take Physics"). There are at most three
+  non-name groups, and the fetch cap is now 150.
+
+  Rare subjects such as Maths Extension 2 become plain subject groups once
+  their class list is read.
+- **Puzzles are kept** (like Daily Guess Who's) so past days can be played.
+  There's no older-version handling: a puzzle is shown as it was made.
+- **The page now matches Daily Guess Who:**
+  - The streak, an **Archive** month calendar (✓/✗, played counts, any day
+    playable) and a **Results** button. Results opens when you finish and
+    closes again to show your board.
+  - Results shows a spotlight line (first to solve with no mistakes, or first
+    to solve), played and solved %, a bar per mistakes count (0–3 and missed)
+    with names on hover, and the % who found each group.
+  - Group labels appear in Results only once you've finished.
+  - New route reads: `?conn=1&archive=1` and `?conn=1&summary=1&date=`.
+- **Share card:** a drawn image (title, year and date, verdict, the colour grid
+  of your guesses; no names or answers). **Share** sends the image where the
+  device can, or copies it, or falls back to text. **Copy as text** gives the
+  emoji grid and a link.
+
+### 8.65 Quartets: generator versions, 6 chances, more groups
+- **Versions.** `QUARTETS_VERSION` (currently 4) in `_conn.js`. Puzzles and
+  results are stored under `year` = `"11#v4"`. On a year's first request per
+  warm instance, `dropOldVersions` deletes that year's puzzles and results
+  from any other version, including the unversioned ones made by the first
+  generator, and each day is made again on demand. Bump the version whenever
+  categories or rules change. This was the user's explicit request: games from
+  older generators are not kept.
+- **6 chances** (`MAX_MISTAKES` = 6). Results bars run 0–5 plus missed.
+  The description is now "Find the four similar groups of four from your year."
+- **Teachers** are named from the staff directory ("Ms Kubo"), with any
+  override, never an email address (`staffNames`, `tidyTeacher`).
+- **Not subjects:** band, choir, ensembles, clubs, co-curricular, and anything
+  named after a weekday ("Friday Band").
+- **New groups:**
+  - A body part hidden in their name (Victoria Pearson: ear)
+  - First name ends with the letter their surname starts with
+  - Initials spell a word (O.H., A.S.)
+  - Take an arts subject
+  - Take a technology subject
+- **The name.** Still "Quartets": I won't name it after the NYT game. It's
+  just the title in the `GAMES` entry and `head()` in games.js.
+
+### 8.66 An email address is never shown as a name
+- `stripEmails(text)` in `_names.js` turns any address into a name: everything
+  from the @ on goes, and the rest is tidied ("kiyoka.kubo@det.nsw.edu.au" →
+  "Kiyoka Kubo").
+- `withName()` now runs every name it returns through it, so every route that
+  shows a name has the guard.
+- Quartets labels and Daily Guess Who hints are also run through it when
+  they're sent.
+- The pages already tidied teacher emails (index.html `tidyTeacher`, games.js
+  `tidyName`). The email in the user's screenshot came from the first Quartets
+  generator, whose puzzles version 4 deletes.
+
+### 8.67 Reaction: autoclickers can't score
+- Anything under 100 ms doesn't count: the page refuses it ("faster than anyone
+  can react"), and `api/leaderboard.js` refuses a `react:fastest` score under
+  `MIN_REACTION_MS`.
+- Rapid clicking (4 presses inside 400 ms), or 6 presses at a machine-steady
+  rhythm (gaps within 4 ms of each other), stops the round, wipes the run of
+  five and locks the box for 3 s.
+- Scripted clicks (`!e.isTrusted`) are ignored.
+- Existing leaderboard scores under 100 ms aren't removed automatically; the
+  moderator page can delete them.
+
+### 8.68 Quartets hints
+- 3 wrong guesses in a row highlight two people from the easiest group still
+  unsolved; a 4th in a row highlights a third from that group. That's all:
+  two hints per puzzle at most, and if the hinted group is solved first, the
+  second hint is used up.
+- `hintNames()` works the hints out from the saved guess log, so nothing new is
+  stored and they survive a reload. The people are picked by the date, so
+  everyone gets the same hint.
+- Highlighted tiles are `.qttile.hint` (gold outline), and a message says when
+  a hint unlocks.
+
+### 8.69 Poll: results from the first vote; a loading placeholder
+- `MIN_SHOW` is now 1 in `_poll.js`, so results show from the first vote. This
+  was the owner's choice; the anonymity threshold of 5 is gone. The "Only N
+  votes so far…" note went with it; with no votes it just says "No votes yet."
+- **Loading placeholder.** While the poll loads, Home shows an empty card with
+  soft shimmering bars, at the height the card had on this device last time
+  (`localStorage` `msc.pollh`), so the tiles below don't jump.
+  - The height is saved after each draw, after minimising, and as 0 when
+    there's no card, so then nothing is held open.
+  - `/mock/poll?slow=3000` slows the mock to show it.
+
+### 8.70 Poll shows never cover the widgets below
+- **Measured, not guessed:** `.preview/clipcheck.js` steps every animation
+  forward by hand (8 ms at a time) and reports how far anything visible of the
+  poll reaches below the top of `#hubrest`. Run it on a page opened with
+  `&rafshim=1`, which the mock uses to drive frames from a timer so shows run
+  in a hidden pane. It follows shard triangles through their 3D transforms and
+  ignores anything inside a container that clips its contents.
+- **Every Monday reveal** (first, drop, wreck, topple, explode, flip, slot),
+  starting from a short card and from a tall one, and **every Friday
+  celebration** were measured at desktop width, and the risky ones at 375 px
+  too. Nothing reaches the widgets any more; the closest is about 9 px above
+  them.
+- **Fixes:**
+  - When the new card is taller than the old one, the widgets slide down to
+    make room before the show starts. A shorter new card still closes the gap
+    afterwards.
+  - Wrecking ball: the widgets are pushed down ahead of the swinging card's low
+    corner, jolt on impact, stay clear through the wobble, then settle. The
+    knocked-off old card now flies sideways and up instead of down over the
+    widgets.
+  - Explode: shards spin about their own middles and burst outwards and up,
+    fading before they could come down. (They used to fall more than 1,000 px
+    over the page.)
+  - Flip: a deeper perspective (3000 px) and a slight shrink mid-turn
+    (`scale(.84)`) keep the looming near edge inside its space.
+
+### 8.71 Quartets v5: more name groups, rescored difficulty
+- `QUARTETS_VERSION` = 5, so older puzzles are deleted and made again.
+- **New name groups** (checked against a real Year 11 list; most have 5+
+  people, though the prime-minister one may be thin in some years):
+  - First name shared with a famous singer (Taylor, Billie, Ariana, Sia, Ed…)
+  - First name shared with a Harry Potter character
+  - Shares a name with an Australian prime minister (first name or surname)
+  - Three-letter first names
+  - Two-letter surnames
+  - First name starts and ends with the same letter
+  - A double letter in the first name
+
+  The "how" text names the singer, character or PM.
+- **Mostly name groups:** usually 2 timetable-type groups per puzzle, 3 about
+  15% of the time, and at most one "same class" or "same teacher" group.
+- **Difficulty (hardness):**
+  - Easy, about 1–1.5: matching initials (was 2.5), short names, double
+    letters, surnames that are everyday words, and a kind of subject (arts,
+    technology, language, no maths, no science).
+  - Middling, 2–2.5: one subject, Harry Potter, PM.
+  - Hard, 3+: wordplay, same teacher (3.5), same class (3.75).
+  - The four must total 8.5–11, the easiest at most 1.75 and the hardest at
+    least 3.
+- **One answer:** class and teacher groups are still exclusive, so nobody in
+  another group shares that class or teacher (checked against their own
+  timetable). A stricter rule (no *other* class or teacher shared by four of
+  the sixteen) was tried and dropped: it removed every class and teacher group.
+- **Tested:** the real name list with made-up timetables made 120/120 days,
+  every one correct. Timetable groups per puzzle: 2 in 104 days, 1 in 8, 3 in 8.
+
+### 8.72 Daily Guess Who: name hints show at most two letters and never the length
+- The current hint set (`v3Hints`, used from 10 Nov) no longer has:
+  - "has N letters" (first name or surname)
+  - "same length / shorter / longer than"
+  - the "looks like E m _ _ y" patterns
+  - the final "Their name reads…"
+- The strongest name hints are now "starts with **Em**", via `startOf()`: the
+  first two letters, or just the first letter for a name under 3 letters. Only
+  one of first name and surname gets this before the last hint (kind
+  `start2`, kept apart by `fresh`).
+- The last hint is "Their name starts **Em… Ch…**".
+- A round with no verified timetable now has about 6 hints instead of 9. Its
+  padding was the letter counts, and the alternatives (double letters,
+  alphabet halves) were banned earlier.
+- The frozen earlier sets (`legacyHints`, `v2Hints`, for days before 10 Nov)
+  are unchanged, so those past days read as they were played.
+- `hintcheck.mjs` now bans lengths, masks and more than two letters
+  (13/13 pass).
+
+### 8.73 Follow-ups to 8.71 and 8.72
+- **Quartets v6:**
+  - The Harry Potter group is gone.
+  - The prime-minister group now covers every PM's first name and its
+    everyday forms: Billy, Bill and Billie for Billy Hughes; William for
+    William McMahon; Ben for Ben Chifley; Chris and Christopher for Chris
+    Watson; Edmund, Alfred, George, Andrew, Joseph, Stanley, James, Earle,
+    Robert, Bob, Arthur, John, Frank, Harold, Gough, Malcolm, Paul, Kevin,
+    Julia, Tony, Anthony and Scott. PM surnames still count too.
+  - On the real Year 11 list that matches 8 people.
+- **Daily Guess Who:** the letter-count hints are back. The user only wants
+  hints that give several things at once removed, like the length plus three
+  letters in "E m _ _ y". So "has N letters", "same length / shorter /
+  longer", "starts with Em" and the final "Their name starts Em… Ch…" are all
+  allowed. Rounds without a timetable have 9 hints again (8 if a name is too
+  short for a two-letter hint).

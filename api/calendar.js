@@ -45,7 +45,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 import { subjectHandler } from "./_subjectcal.js";
 import { birthdayHandler } from "./_birthdays.js";
 
@@ -287,7 +287,7 @@ export default async function handler(req, res) {
   if (!db) return res.status(503).json({ error: "The calendar is not configured on the server." });
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the calendar." });
-  NAMES = await nameOverrides();
+  NAMES = await displayNames();
   const email = String(me.email).toLowerCase();
 
   if (req.method === "GET") {

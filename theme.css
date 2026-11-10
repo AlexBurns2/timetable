@@ -37,7 +37,7 @@ select option{ background:#ffffff; color:#16181d; }
 /* ── PLAIN ─ the quiet default: white on white, grey on grey ────── */
 [data-skin="plain"]{
   --bg:#ffffff; --bg-img:none; --panel:#ffffff; --panel-2:#f6f6f7;
-  --line:#e5e5e8; --text:#18181b; --muted:#8b8b93; --accent:#4f4fd0; --accent-ink:#fff;
+  --line:#e5e5e8; --text:#18181b; --muted:#696972; --accent:#4f4fd0; --accent-ink:#fff;
   --font-ui:"DM Sans",system-ui,sans-serif;
   --font-display:"DM Sans",system-ui,sans-serif;
   --font-num:"DM Sans",system-ui,sans-serif;
@@ -495,3 +495,20 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
   border-radius:0;
 }
 [data-skin="newsprint"] .weekbtn{border:1px solid var(--line)}
+
+/* ── icons (icons.js: Phosphor, inlined); here because every page loads theme.css ── */
+.ph{display:inline-block;width:1em;height:1em;vertical-align:-.14em;flex:none}
+[data-icon]{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+.btn.icon .ph,.btn.icon [data-icon] .ph{width:1.2em;height:1.2em}
+.btn .ph + *,.btn [data-icon] + *{margin-left:0}
+.btn:not(.icon) > .ph:first-child{margin-right:.4em}
+.arrowbtn .ph,.arrowbtn2 .ph,.whoback .ph{width:1.1em;height:1.1em}
+.btn > [data-icon]:first-child:not(:only-child){margin-right:.4em}
+
+#hdrback[hidden]{display:none}
+#openMod[hidden]{display:none}
+
+/* tiles (Home, Games, Revision, Resources): one height on every page, a little
+   taller on a taller screen, within a range */
+:root{--tile-h:clamp(96px,12vh,132px)}
+@media (max-width:560px){ :root{--tile-h:clamp(92px,11.5vh,112px)} }

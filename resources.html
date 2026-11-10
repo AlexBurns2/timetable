@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="/images/icon.png">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <script src="theme.js"></script>
-<script src="bento.js"></script>
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="settings.css">
+<script src="icons.js?v=20261109"></script>
+<link rel="stylesheet" href="site.css?v=20261109">
+<link rel="stylesheet" href="settings.css?v=20261109">
 <style>
 .reslede{color:var(--muted);font-size:0.875rem;margin:0 0 18px;max-width:60ch}
 .reslede a{color:var(--accent);font-weight:700;text-decoration:none}
@@ -44,31 +44,29 @@
 .subjcard.lib:not(.tall) .ico{font-size:1.5rem}
 @media (max-width:540px){ .subjgrid.bento{grid-auto-rows:100px;gap:10px} .subjcard{padding:12px 13px} .subjcard .nm{font-size:0.875rem} }
 /* classic layout (Settings): the even grid of one-line cards, as it was */
-.subjgrid.classic{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-.subjgrid.classic .subjcard{position:static;flex-direction:row;align-items:center;gap:12px;padding:15px 16px}
-.subjgrid.classic .subjcard .nm{display:block;margin-top:0;overflow:hidden;text-overflow:ellipsis}
-.subjgrid.classic .subjcard .go{position:static;margin-left:auto;flex:none}
-.subjgrid.classic .subjcard:hover .go{transform:translateX(2px)}
+/* the grid: the same tiles and height as Home and Games */
+.subjgrid.classic{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.subjgrid.classic .subjcard{height:var(--tile-h);padding:12px 15px;gap:4px}
+@media (max-width:560px){ .subjgrid.classic{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .subjgrid.classic .subjcard{padding:11px 12px} }
 html[data-motion="reduced"] .subjcard{transition:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="pagehead">
-    <h1>Resources</h1>
+    <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Resources</h1></div>
     <div class="crumbs">
-      <a class="btn" href="home.html">Home</a>
-      <a class="btn" href="./">Timetable</a>
-      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+      <a class="btn icon" href="home.html" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <a class="btn icon" href="./" title="Timetable" aria-label="Timetable"><span data-icon="table"></span></a>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
     </div>
   </div>
 
-  <p class="reslede">Textbooks by year and subject, straight from the student-run HSC Textbook Library.
-    Pick your year, then a subject. It opens that folder in Google Drive.
-    <a id="reslib" href="#" target="_blank" rel="noopener" hidden>Open the whole library ↗</a></p>
+  <p class="reslede">From the student-run HSC Textbook Library.
+    <a id="reslib" href="#" target="_blank" rel="noopener">Open the whole library ↗</a></p>
 
   <div class="yeartabs" id="yeartabs"></div>
-  <div class="subjgrid bento" id="subjgrid"></div>
+  <div class="subjgrid classic" id="subjgrid"></div>
 </div>
 
 <script>
@@ -158,32 +156,15 @@ function renderYears(){
   [...el.children].forEach(b => b.onclick = () => { year = b.dataset.y; TT.set('tt.resyear', year);
     [...el.children].forEach(x => x.setAttribute('aria-pressed', String(x===b))); renderSubjects(); });
 }
-/* a packed grid: the whole library takes the big tile, long subject names a wide one */
-const resCols = w => w >= 900 ? 5 : w >= 680 ? 4 : w >= 440 ? 3 : 2;
 function renderSubjects(){
   const subs = RES[year] || {}, grid = $('subjgrid');
-  const names = Object.keys(subs);
-  /* classic (Settings): the even grid, and the whole library as a link above it */
-  const classic = !!(window.TT && TT.layout && TT.layout() === 'classic');
-  $('reslib').hidden = !classic;
-  Bento.clear(grid);
-  grid.classList.toggle('bento', !classic);
-  grid.classList.toggle('classic', classic);
-  grid.innerHTML = (classic ? '' :
-    '<a class="subjcard lib" href="'+DRIVE+LIBRARY+'" target="_blank" rel="noopener">' +
-      '<span class="ico">📚</span><span class="nm">The whole library</span>' +
-      '<span class="sub">Every year and subject in the HSC Textbook Library</span><span class="go">↗</span></a>') +
-    names.map(name =>
+  grid.innerHTML = Object.keys(subs).map(name =>
     '<a class="subjcard" href="'+DRIVE+subs[name]+'" target="_blank" rel="noopener">' +
       '<span class="ico">'+subjectIcon(name)+'</span>' +
       '<span class="nm">'+esc(name)+'</span><span class="go">↗</span></a>').join('');
-  if (classic) return;
-  const els = [...grid.children];
-  Bento.layout(grid, [{ el:els[0], w:2, h:2 }].concat(names.map((n, i) => ({ el:els[i + 1], w:n.length > 18 ? 2 : 1 }))), resCols);
 }
 renderYears(); renderSubjects();
-addEventListener('tt:layout', renderSubjects);
 </script>
-<script src="settings.js"></script>
+<script src="settings.js?v=20261109"></script>
 </body>
 </html>

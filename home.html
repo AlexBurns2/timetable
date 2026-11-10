@@ -7,137 +7,181 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=20261109">
 <script src="theme.js"></script>
+<script src="icons.js?v=20261109"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
-<script src="bento.js"></script>
-<script src="mahjong.js"></script>
+<script src="suggest.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="site.css?v=20261109">
+<link rel="stylesheet" href="settings.css?v=20261109">
+<link rel="stylesheet" href="poll.css?v=20261109">
 </head>
 <body>
 <div class="wrap hub">
 
-  <header class="hubhead">
-    <div>
-      <div class="eyebrow">NBSC Manly Campus &middot; unofficial</div>
-      <h1>MSC Unofficial</h1>
+  <!-- the same header panel as the timetable: who you are, your next class, settings -->
+  <header class="hubbar">
+    <div class="hubid">
+      <div class="eyebrow">MSC Unofficial</div>
+      <h1 id="hello">Welcome</h1>
+      <p class="hubsub" id="hubsub">Your timetable, revision and games.</p>
     </div>
-    <div class="hubctl">
-      <button class="btn icon" id="themebtn" title="Settings">&#9881;</button>
+    <div class="hubnow" id="hubnow"></div>
+    <div class="headbtns">
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
     </div>
   </header>
 
-  <div class="hscstrip" id="hscstrip" hidden></div>
+  <!-- the weekly anonymous poll (poll.js): the one thing that changes every week -->
+  <section class="pollwrap" id="poll" hidden aria-live="polite"></section>
+  <a class="pollskip" id="pollskip" href="#" hidden>Skip to the site</a>
 
-  <nav class="tiles bento" id="tiles">
-    <a class="tile primary" href="./" id="tileTimetable" data-size="4:2x2 3:2x1 2:2x1">
-      <span class="ico">📋</span>
-      <span class="tname">Timetable</span>
-      <span class="tdesc">Your classes for the fortnight</span>
-      <span class="tglyph" aria-hidden="true">📋</span>
-    </a>
-    <a class="tile" href="revision.html" id="tileRevision" data-size="4:2x1">
-      <span class="ico">✏️</span>
-      <span class="tname">Revision</span>
-      <span class="tdesc">Quizzes and flashcards for your subjects</span>
-    </a>
-    <a class="tile" href="calendar.html">
-      <span class="ico">🗓️</span>
-      <span class="tname">Calendar</span>
-      <span class="tdesc">Your exams and anything else you add</span>
-    </a>
-    <a class="tile" href="notes.html">
-      <span class="ico">📝</span>
-      <span class="tname">Notes</span>
-      <span class="tdesc">A scratchpad that saves as you type</span>
-    </a>
-    <a class="tile" href="games.html" id="tileGames">
-      <span class="ico">🎮</span>
-      <span class="tname">Games</span>
-      <span class="tdesc">For when you have ten minutes to kill</span>
-    </a>
-    <a class="tile" href="mahjong.html" id="tileMahjong" data-size="4:2x1 3:2x1 2:2x1">
-      <span class="ico">🀄</span>
-      <span class="tname">Mahjong</span>
-      <span class="tdesc" id="mjlead">Scores from our real games</span>
-    </a>
-    <a class="tile" href="resources.html">
-      <span class="ico">📚</span>
-      <span class="tname">Resources</span>
-      <span class="tdesc">Textbooks by year and subject</span>
-    </a>
-    <a class="tile" href="finder.html" data-size="2:2x1">
-      <span class="ico">🔎</span>
-      <span class="tname">Student finder</span>
-      <span class="tdesc">Find a student’s school email</span>
-    </a>
-    <a class="tile" href="free.html" data-size="4:1x1 3:2x1 2:1x1">
-      <span class="ico">🤝</span>
-      <span class="tname">Free periods</span>
-      <span class="tdesc">When you and your friends are out of class</span>
-    </a>
-    <a class="tile" href="/andre/" id="tileAndre" data-size="4:2x1 3:1x1 2:2x1">
-      <span class="ico">🧪</span>
-      <span class="tname">New Website Beta WIP</span>
-      <span class="tdesc">Something new is being built here</span>
-    </a>
+  <div class="hubrest" id="hubrest">
+  <nav class="qtiles" aria-label="Pages">
+    <a class="qtile" href="./" id="tileTimetable" style="--tc:#e5484d"><span class="ico" data-icon="d:table"></span><span class="tname">Timetable</span></a>
+    <a class="qtile" href="calendar.html" style="--tc:#f76b15"><span class="ico" data-icon="d:calendar-dots"></span><span class="tname">Calendar</span></a>
+    <a class="qtile" href="free.html" style="--tc:#ffb224"><span class="ico" data-icon="d:users-three"></span><span class="tname">Free periods</span></a>
+    <a class="qtile" href="revision.html" id="tileRevision" style="--tc:#30a46c"><span class="ico" data-icon="d:pencil-simple-line"></span><span class="tname">Revision</span></a>
+    <a class="qtile" href="resources.html" style="--tc:#12a594"><span class="ico" data-icon="d:books"></span><span class="tname">Resources</span></a>
+    <a class="qtile" href="games.html" id="tileGames" style="--tc:#8e4ec6"><span class="ico" data-icon="d:game-controller"></span><span class="tname">Games</span></a>
+    <a class="qtile" href="finder.html" style="--tc:#0090ff"><span class="ico" data-icon="d:magnifying-glass"></span><span class="tname">Student finder</span></a>
+    <a class="qtile" href="mahjong.html" id="tileMahjong" style="--tc:#d6409f"><span class="ico" data-icon="d:cards-three"></span><span class="tname">Mahjong club</span></a>
   </nav>
 
   <section class="forum" id="forum">
     <h2>Forum</h2>
-    <div class="fnew">
-      <textarea id="fbody" rows="2" maxlength="1000" placeholder="Say something…"></textarea>
+    <div class="fnew" id="fnew">
+      <textarea id="fbody" rows="1" maxlength="1000" placeholder="Say something…" aria-label="Write a post"></textarea>
       <button class="btn primary" id="fpost" type="button">Post</button>
     </div>
     <div class="fmsg" id="fmsg"></div>
     <div class="fposts" id="fposts"><p class="how">Loading…</p></div>
+    <button class="flink fmore" id="fmore" type="button" hidden></button>
   </section>
+  </div>
+
+  <footer class="hubfoot">
+    <span>Made by <span class="glitchy" id="glitchy">students</span> at NBSC Manly Campus. Not run by the school or the Department.</span>
+    <!-- Andre's redesign sandbox lives on its own at /andre/: an add-on, not part of this site -->
+    <a href="/andre/">Try the new website beta (work in progress) →</a>
+  </footer>
 
 </div>
 <script>
 const $ = id => document.getElementById(id);
-/* the hub tiles: the packed gallery, or the classic even grid -- Settings
-   switches between them. A tile's shape can change with the column count:
-   data-size="4:2x2 3:2x1 2:2x1" is columns:widthxheight, 1x1 when not listed. */
-function layTiles(){
-  const box = $('tiles');
-  const tiles = [...box.children].filter(el => !el.classList.contains('bentofill'));
-  if (TT.layout() === 'classic'){ Bento.clear(box); box.classList.remove('bento'); fitRows(); return; }
-  box.classList.add('bento');
-  const size = (el, n, i) => { const m = (el.dataset.size || '').match(new RegExp('\\b' + n + ':(\\d)x(\\d)')); return m ? +m[i] : 1; };
-  Bento.layout(box, tiles.map(el => ({ el, w:n => size(el, n, 1), h:n => size(el, n, 2) })));
-  fitRows();
-}
-/* Rows as tall as the screen allows, so every tile is on screen without
-   scrolling, but never so short that a tile's text is cut off. */
-function fitRows(){
-  const box = $('tiles');
-  box.style.gridAutoRows = '';
-  if (!box.classList.contains('bento')) return;
-  const tiles = [...box.children];
-  const rows = Math.max(1, ...tiles.map(el => { const m = /(\d+) \/ span (\d+)/.exec(el.style.gridRow); return m ? +m[1] + +m[2] - 1 : 1; }));
-  const gap = parseFloat(getComputedStyle(box).rowGap) || 0;
-  const room = innerHeight - (box.getBoundingClientRect().top + scrollY) - 16;
-  let h = Math.round(Math.min(190, Math.max(80, (room - gap * (rows - 1)) / rows)));
-  const set = () => { box.style.gridAutoRows = h + 'px'; };
-  set();
-  /* cut off = its description runs past the padding (scrollHeight would count the decorative glyph) */
-  const cut = el => { const d = el.querySelector('.tdesc'); if (!d) return false;
-    return d.getBoundingClientRect().bottom > el.getBoundingClientRect().bottom - parseFloat(getComputedStyle(el).paddingBottom) + 1; };
-  for (let i = 0; i < 60 && tiles.some(cut); i++){ h += 4; set(); }
-}
-layTiles();
-addEventListener('tt:layout', layTiles);
-/* after the grid has re-packed for the new width */
-addEventListener('resize', () => requestAnimationFrame(fitRows));
-if (document.fonts) document.fonts.ready.then(fitRows);
-/* ── forum ─────────────────────────────────────────────────────────────── */
 const esc = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
+/* ── who you are and your next class, from the copy the timetable saved ──
+   Only your own copy: the timetable page can show someone else's, and that
+   is never what Home should greet you with. */
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CYCLE = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
+const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
+const userOf = e => String(e || '').toLowerCase().split('@')[0];
+function ownPayload(){
+  const c = TT.get('tt.cache', null), cr = TT.get('tt.creds', null);
+  if (!c || !c.payload || !cr || !cr.email) return null;
+  return userOf(c.email) === userOf(cr.email) ? c.payload : null;
+}
+const toMin = v => { const m = String(v == null ? '' : v).match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+const fmtTime = m => (((Math.floor(m / 60) + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0');
+function parseStart(v){
+  const s = typeof v === 'string' ? v : (v && (v.startDate || v.StartDate || v.date || v.Date));
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(+m[1], (+m[2]) - 1, +m[3]) : null;
+}
+/* the A/B day, counted exactly as the timetable page counts it */
+function cycleDay(date, start, shift){
+  if (!start) return null;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()), dow = d.getDay();
+  if (dow === 0 || dow === 6) return null;
+  const s = new Date(start); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - ((s.getDay() + 6) % 7));
+  if (d < s) return null;
+  let n = 0; const cur = new Date(s);
+  while (cur < d){ cur.setDate(cur.getDate() + 1); const w = cur.getDay(); if (w !== 0 && w !== 6) n++; }
+  return CYCLE[(n + (shift || 0)) % 10];
+}
+/* "11 PHY1 Physics" / "Physics Yr11" -> "Physics", as the timetable shows it */
+function tidy(name, code){
+  let s = String(name || '').trim().replace(/\s*[-–—,]?\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '');
+  const noCode = s.replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, '');
+  if (noCode !== s && /[A-Za-z]{3,}/.test(noCode)) s = noCode;
+  return s || String(code || '').trim() || 'Class';
+}
+function lessonsOn(payload, key){
+  return (Array.isArray(payload.timetable) ? payload.timetable : [])
+    .filter(r => String(r.DayName || '').toLowerCase() === key &&
+                 /^(?:period\s*|p)?\d+$/i.test(String(r.Period || '').trim()) && (r.CourseName || r.ClassCode))
+    .map(r => ({ name:tidy(r.CourseName, r.ClassCode), room:String(r.RoomCode || '').trim(),
+                 start:toMin(r.StartTime), end:toMin(r.EndTime) }))
+    .filter(l => l.start != null && l.end != null).sort((a, b) => a.start - b.start);
+}
+function nowNext(payload){
+  const start = parseStart(payload.startDate), shift = +TT.get('tt.cycleshift', 0) === 5 ? 5 : 0;
+  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  const today = cycleDay(now, start, shift);
+  const todays = today ? lessonsOn(payload, today) : [];
+  const cur = todays.find(l => l.start <= mins && mins < l.end) || null;
+  let next = todays.find(l => l.start > mins) || null, when = 'Today';
+  for (let i = 1; i <= 14 && !next; i++){
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i), k = cycleDay(d, start, shift);
+    const ls = k ? lessonsOn(payload, k) : [];
+    if (ls.length){ next = ls[0]; when = i === 1 ? 'Tomorrow' : DAYS[d.getDay()]; }
+  }
+  /* the week letter of today, or of Monday at the weekend */
+  const ref = new Date(now); if (ref.getDay() === 6) ref.setDate(ref.getDate() + 2); else if (ref.getDay() === 0) ref.setDate(ref.getDate() + 1);
+  const rk = cycleDay(ref, start, shift);
+  return { cur, next, when, week:rk ? rk.slice(-1).toUpperCase() : '' };
+}
+function profileOf(payload){ return (payload && payload.profile) || {}; }
+/* Year 11 and 12 sit the HSC; nobody else needs to hear about it on Home */
+function senior(payload){
+  const g = (profileOf(payload).groups || []).map(x => String(x).toLowerCase());
+  return g.includes('yr11') || g.includes('yr12');
+}
+
+function card(lbl, l, extra){
+  return '<div class="nowcard"><div class="lbl">' + esc(lbl) + '</div>' +
+    '<div class="subj">' + esc(l.name) + '</div>' +
+    '<div class="meta">' + esc([l.room, extra].filter(Boolean).join(' · ')) + '</div></div>';
+}
+function paintHub(){
+  const now = new Date();
+  const part = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const payload = signedIn ? ownPayload() : null;
+  const first = String(profileOf(payload).firstname || '').trim();
+  const date = DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
+  if (!signedIn){
+    $('hello').textContent = 'Welcome';
+    $('hubnow').innerHTML =
+      '<div class="nowcard hubsign"><div class="lbl">Get started</div>' +
+      '<div class="subj">See your own timetable</div>' +
+      '<div class="meta">Sign in with your school account. Your login is saved only on this device.</div>' +
+      '<a class="btn primary" href="./">Sign in</a></div>';
+    return;
+  }
+  $('hello').textContent = part + (first ? ', ' + first : '');
+  if (!payload){
+    $('hubsub').textContent = date;
+    $('hubnow').innerHTML = '<a class="nowcard hubsign" href="./"><div class="lbl">Next class</div>' +
+      '<div class="subj">Open your timetable</div><div class="meta">Your next class shows here once it has loaded.</div></a>';
+    return;
+  }
+  const nn = nowNext(payload);
+  $('hubsub').textContent = date + (nn.week ? ' · Week ' + nn.week : '');
+  let h = '';
+  if (nn.cur) h += card('Now', nn.cur, 'until ' + fmtTime(nn.cur.end));
+  if (nn.next) h += card(nn.when === 'Today' ? 'Next' : 'Next · ' + nn.when, nn.next, fmtTime(nn.next.start));
+  $('hubnow').innerHTML = h || '<a class="nowcard hubsign" href="./"><div class="lbl">Timetable</div>' +
+    '<div class="subj">No classes coming up</div><div class="meta">Open your timetable</div></a>';
+}
+paintHub();
+
+/* ── forum ─────────────────────────────────────────────────────────────── */
 /* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */
 function ago(iso){
   const t = new Date(iso).getTime();
@@ -155,9 +199,11 @@ const fmsg = m => { $('fmsg').textContent = m || ''; };
 function postCard(p, isReply){
   return '<div class="fpost' + (isReply ? ' freply' : '') + '" data-id="' + esc(p.id) + '">' +
     '<div class="fmeta"><b>' + esc(p.name) + '</b><span>' + esc(ago(p.at)) + '</span>' +
-      (p.mine ? '<button class="flink fdel" type="button" data-id="' + esc(p.id) + '">delete</button>' : '') +
+      (p.mine || p.canDelete ? '<button class="flink fdel' + (p.mine ? '' : ' fmod') + '" type="button" data-id="' + esc(p.id) + '"' +
+        (p.mine ? '' : ' title="Delete (moderator)"') + '>delete</button>' : '') +
     '</div>' +
     '<div class="ftext">' + esc(p.body) + '</div>' +
+    '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
     (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>' +
       '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
         '<textarea rows="2" maxlength="1000" placeholder="Write a reply…"></textarea>' +
@@ -165,21 +211,104 @@ function postCard(p, isReply){
     '</div>';
 }
 
+/* ── reactions: a chip per emoji (yours highlighted), ♡ for a quick heart,
+   + for any other. Changes show at once and are put back if the save fails. */
+const RX_PICK = ['❤️','😂','👍','😮','😢','🔥','🎉','💀','👀','🙏','💯','😭'];
+const POSTS = new Map();                 // id -> post, for its reactions
+/* "Ava One, Ben Two and you" for a chip's hover */
+function rxWho(r){
+  const names = (r.who || []).slice();
+  if (r.mine) names.push('you');
+  const more = r.count - names.length;            // past the 30 names the server sends
+  if (more > 0) names.push(more + ' more');
+  return names.length <= 1 ? (names[0] || '') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+}
+function rxBar(p){
+  const rx = p.reactions || [];
+  const hearted = rx.some(r => r.emoji === '❤️' && r.mine);
+  return rx.map(r => '<button type="button" class="rx' + (r.mine ? ' mine' : '') + '" data-e="' + esc(r.emoji) + '"' +
+      ' title="' + esc(rxWho(r)) + '" aria-pressed="' + r.mine + '" aria-label="' + esc(r.emoji) + ' from ' + esc(rxWho(r)) + '">' +
+      '<span>' + esc(r.emoji) + '</span><b>' + r.count + '</b></button>').join('') +
+    (hearted ? '' : '<button type="button" class="rxadd rxheart" data-e="❤️" title="Heart" aria-label="React with a heart">♡</button>') +
+    '<button type="button" class="rxadd rxmore" title="React" aria-label="Choose a reaction">+</button>';
+}
+function paintRx(id){
+  const bar = document.querySelector('.frx[data-id="' + CSS.escape(id) + '"]');
+  if (bar){ bar.innerHTML = rxBar(POSTS.get(id)); wireRx(bar); }
+}
+async function toggleRx(id, emoji){
+  const p = POSTS.get(id); if (!p) return;
+  const before = JSON.parse(JSON.stringify(p.reactions || []));
+  const rx = p.reactions = p.reactions || [];
+  const r = rx.find(x => x.emoji === emoji);
+  if (r && r.mine){ r.count--; r.mine = false; if (!r.count) rx.splice(rx.indexOf(r), 1); }
+  else if (r){ r.count++; r.mine = true; }
+  else rx.push({ emoji, count:1, mine:true, who:[] });
+  paintRx(id);
+  try { await TT.api('/api/forum', { method:'POST', body:{ action:'react', id, emoji } }); }
+  catch (e){ p.reactions = before; paintRx(id); fmsg(e.message); }
+}
+function pickRx(bar, id){
+  document.querySelectorAll('.rxpick').forEach(x => x.remove());
+  const pop = document.createElement('div');
+  pop.className = 'rxpick'; pop.setAttribute('role', 'menu');
+  pop.innerHTML = RX_PICK.map(e => '<button type="button" role="menuitem" data-e="' + e + '">' + e + '</button>').join('') +
+    '<button type="button" class="rxother" role="menuitem">Other…</button>';
+  bar.appendChild(pop);
+  pop.querySelectorAll('[data-e]').forEach(b => b.onclick = ev => { ev.stopPropagation(); pop.remove(); toggleRx(id, b.dataset.e); });
+  pop.querySelector('.rxother').onclick = ev => {
+    ev.stopPropagation(); pop.remove();
+    const e = (prompt('React with any emoji:') || '').trim();
+    if (e) toggleRx(id, e);
+  };
+  setTimeout(() => document.addEventListener('click', function off(ev){
+    if (!pop.contains(ev.target)){ pop.remove(); document.removeEventListener('click', off); }
+  }), 0);
+}
+function wireRx(bar){
+  const id = bar.dataset.id;
+  bar.querySelectorAll('[data-e]').forEach(b => { if (!b.closest('.rxpick')) b.onclick = () => toggleRx(id, b.dataset.e); });
+  const more = bar.querySelector('.rxmore');
+  if (more) more.onclick = ev => { ev.stopPropagation(); pickRx(bar, id); };
+}
+
+/* only the newest thread until you ask for the rest */
+let forumOpen = false;
+/* showing more or fewer redraws the posts already loaded: instant, no fetch */
+let lastPosts = null;
+$('fmore').onclick = () => {
+  forumOpen = !forumOpen;
+  if (lastPosts) renderForum(lastPosts);
+  else { $('fmore').textContent = 'Loading…'; $('fmore').disabled = true; loadForum(); }
+  if (!forumOpen) $('forum').scrollIntoView({ block:'nearest' });
+};
 async function loadForum(){
   try {
     const d = await TT.api('/api/forum');
-    const posts = d.posts || [];
-    $('fposts').innerHTML = posts.length
-      ? posts.map(p => postCard(p, false) +
-          (p.replies || []).map(r => postCard(r, true)).join('')).join('')
-      : '<p class="how">Nothing here yet. Say the first thing.</p>';
-    wireForum();
+    lastPosts = d.posts || [];
+    renderForum(lastPosts);
   } catch (e){
     $('fposts').innerHTML = '<p class="how">Couldn\'t load the forum: ' + esc(e.message) + '</p>';
+    $('fmore').disabled = false;
   }
+}
+function renderForum(posts){
+  POSTS.clear();
+  posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
+  const shown = forumOpen ? posts : posts.slice(0, 1);
+  $('fposts').innerHTML = posts.length
+    ? shown.map(p => postCard(p, false) +
+        (p.replies || []).map(r => postCard(r, true)).join('')).join('')
+    : '<p class="how">Nothing here yet. Say the first thing.</p>';
+  const more = posts.length - shown.length;
+  $('fmore').hidden = !more && !forumOpen || posts.length < 2;
+  $('fmore').textContent = forumOpen ? 'Show less' : 'Show ' + more + ' more post' + (more === 1 ? '' : 's');
+  $('fmore').disabled = false;
+  wireForum();
 }
 
 function wireForum(){
+  document.querySelectorAll('.frx').forEach(wireRx);
   document.querySelectorAll('.freplybtn').forEach(b => b.onclick = () => {
     const box = $('rb-' + b.dataset.id);
     box.hidden = !box.hidden;
@@ -210,46 +339,72 @@ $('fpost').onclick = async () => {
 $('fbody').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('fpost').click();
 });
+/* one line until you click into it; it closes again if you leave it empty */
+$('fbody').addEventListener('focus', () => { $('fnew').classList.add('open'); $('fbody').rows = 3; });
+$('fbody').addEventListener('blur', () => setTimeout(() => {
+  if (!$('fbody').value.trim() && document.activeElement !== $('fpost')){ $('fnew').classList.remove('open'); $('fbody').rows = 1; }
+}, 150));
+if (!signedIn){
+  /* posting needs a school login: the button takes you to sign in instead */
+  $('fbody').placeholder = 'Sign in to post';
+  $('fbody').disabled = true;
+  $('fpost').textContent = 'Sign in';
+  $('fpost').style.display = 'inline-flex';          // the box can't be focused, so the button shows on its own
+  $('fpost').onclick = () => { location.href = './'; };
+}
 loadForum();
-
-/* ── the Mahjong tile: who's on top and bottom, under its name ── */
-if (TT.myEmail()) Mahjong.leaders().then(L => {
-  if (!L) return;
-  $('mjlead').innerHTML = L.low
-    ? '<span class="mjtl">↑ ' + esc(L.who) + ' <b>' + esc(L.val) + '</b></span><span class="mjtl">↓ ' + esc(L.low.who) + ' <b>' + esc(L.low.val) + '</b></span>'
-    : '<span class="mjtl">' + esc(L.who) + ' <b>' + esc(L.val) + '</b></span>';
-  fitRows();
-}, () => {});
-
-/* First visit: point out Settings, unless the timetable page already did. */
-if (window.Tour) Tour.start('home');
 </script>
-<script src="settings.js"></script>
+<script src="settings.js?v=20261109"></script>
+<script src="poll.js?v=20261109"></script>
 <script>
-/* the HSC countdown, how much is waiting today, and focus mode (study.js) */
+/* a small easter egg: hover "students" in the footer and it scrambles into
+   random letters, like obfuscated text, until you move away */
+(function(){
+  const g = document.getElementById('glitchy'); if (!g) return;
+  const word = g.textContent, CH = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$*?!';
+  let t = null;
+  const scramble = () => { g.textContent = [...word].map(() => CH[Math.floor(Math.random() * CH.length)]).join(''); };
+  const start = () => { if (t) return; g.style.width = g.offsetWidth + 'px'; g.classList.add('on'); scramble(); t = setInterval(scramble, 55); };
+  const stop = () => { clearInterval(t); t = null; g.classList.remove('on'); g.textContent = word; g.style.width = ''; };
+  g.addEventListener('mouseenter', start);
+  g.addEventListener('mouseleave', stop);
+  g.addEventListener('touchstart', () => { start(); setTimeout(stop, 1400); }, { passive:true });
+})();
+</script>
+<script>
+/* The poll. Someone arriving from a shared link (/poll → home.html?poll=1)
+   sees the poll on its own first; the rest of Home slides in once they've
+   voted, or if they skip it. */
+(function(){
+  const fromLink = /[?&]poll=/.test(location.search);
+  const rest = document.getElementById('hubrest'), skip = document.getElementById('pollskip');
+  const open = () => {
+    if (!document.body.classList.contains('pollfocus')) return;
+    document.body.classList.remove('pollfocus'); skip.hidden = true;
+    rest.classList.add('pin-in'); setTimeout(() => rest.classList.remove('pin-in'), 900);
+  };
+  if (fromLink){ document.body.classList.add('pollfocus'); skip.hidden = false; }
+  skip.onclick = e => { e.preventDefault(); open(); };
+  if (!window.Poll) { open(); return; }
+  Poll.mount(document.getElementById('poll'), {
+    signedIn,
+    onVoted: () => setTimeout(open, 1400),
+    onDraw: p => { if (!p || p.voted || (!p.signedOut && !p.canVote)) open(); }
+  });
+})();
+</script>
+<script>
+/* Focus mode (study.js) locks the games tile and hides the forum. */
 (function(){
   if (!window.Study) return;
-  const strip = document.getElementById('hscstrip');
-  const cd = Study.countdown();
-  let plan = { items:[] };
-  try { plan = Study.plan(4); } catch {}
-  const lead = cd.kind === 'exam' ? '<b>' + cd.days + ' day' + (cd.days === 1 ? '' : 's') + '</b> until the ' + HSC_DATES.year + ' HSC'
-    : cd.kind === 'during' ? '<b>The HSC is under way</b>'
-    : '<b>The ' + cd.year + ' HSC</b> · timetable not published yet' +
-      (cd.next ? ' · entries open in ' + Study.daysUntil(cd.next.d) + ' days' : '');
-  strip.innerHTML = '<span>' + lead + '</span>' +
-    '<a href="revision.html">' + (plan.items.length ? plan.items.length + ' topic' + (plan.items.length === 1 ? '' : 's') + ' to revise today →'
-                                                   : 'Revision →') + '</a>';
-  strip.hidden = false;
-
   if (window.Focus && Focus.active()){
     const tile = document.getElementById('tileGames');
     if (tile){
       tile.href = 'revision.html';
       tile.classList.add('locked');
-      tile.querySelector('.ico').textContent = '🎯';
+      const ic = tile.querySelector('.ico'); ic.dataset.icon = 'd:target'; if (window.Icon) Icon.fill(tile);
       tile.querySelector('.tname').textContent = 'Focus mode';
-      tile.querySelector('.tdesc').textContent = 'Games locked for ' + Focus.fmt(Focus.left());
+      tile.title = 'Games locked for ' + Focus.fmt(Focus.left());
     }
     const forum = document.getElementById('forum');
     if (forum){

@@ -16,7 +16,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, withName, forgetNameOverrides } from "./_names.js";
+import { nameOverrides, displayNames, withName, forgetNameOverrides } from "./_names.js";
 import { siteSettings, setSiteSetting } from "./_settings.js";
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
@@ -43,7 +43,7 @@ const MAX_SCORE = 100000000;
  * fill in anyone who played before settings synced, and give an activity count.
  * Read-only — it never writes, and it is gated to admins by the caller. */
 async function siteUsers() {
-  const out = new Map(), names = await nameOverrides();
+  const out = new Map(), names = await displayNames();
   const touch = (email, when, key) => {
     const e = String(email || "").toLowerCase();
     if (!e) return;
@@ -73,7 +73,7 @@ async function siteUsers() {
 }
 
 async function board(game, metric, period, dir, meEmail, withEmail) {
-  const asc = dir === "min", names = await nameOverrides();
+  const asc = dir === "min", names = await displayNames();
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
     .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit
@@ -102,6 +102,72 @@ async function writeBest(game, metric, period, email, name, score, dir) {
   }
 }
 
+/* ── moderator stats: counts only, every query a read ─────────────────────── */
+async function countOf(table, narrow) {
+  let q = db.from(table).select("*", { count: "exact", head: true });
+  if (narrow) q = narrow(q);
+  const { count, error } = await q;
+  return error ? null : count;              // null: that table isn't there (yet)
+}
+async function rowsOf(table, cols, narrow, limit = 20000) {
+  let q = db.from(table).select(cols).limit(limit);
+  if (narrow) q = narrow(q);
+  const { data, error } = await q;
+  return error ? null : (data || []);
+}
+async function siteStats() {
+  const now = Date.now(), iso = t => new Date(t).toISOString();
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date());
+  const [users, forum, forumWeek, decks, events, scores, daily, dailyToday, dailyWins, states, mj, jim,
+         sprint, tetris, zenBoard, onboard, prefs, revision, renamed, birthdays, subjectEvents] = await Promise.all([
+    siteUsers().catch(() => []),
+    countOf("forum_post"),
+    countOf("forum_post", q => q.gte("created_at", iso(now - 7 * 864e5))),
+    countOf("shared_deck"),
+    countOf("calendar_event"),
+    rowsOf("game_score", "game, email", q => q.eq("period", "all")),
+    countOf("daily_result"),
+    countOf("daily_result", q => q.eq("date", today)),
+    countOf("daily_result", q => q.eq("won", true)),
+    rowsOf("game_state", "mode, email, updated_at", null, 5000),
+    rowsOf("game_state", "state", q => q.eq("email", "mahjong").eq("mode", "mahjong"), 1),
+    rowsOf("jim_score", "score", null, 5000),
+    countOf("sprint_best"),
+    countOf("tetris_score"),
+    countOf("zen_board"),
+    countOf("onboarding"),
+    countOf("prefs"),
+    rowsOf("revision_progress", "email", null, 20000),
+    countOf("name_override"),
+    countOf("birthday"),
+    countOf("subject_event")
+  ]);
+  const seen = ms => users.filter(u => u.last && now - new Date(u.last).getTime() < ms).length;
+  const perGame = {};
+  for (const r of scores || []) (perGame[r.game] = perGame[r.game] || new Set()).add(r.email);
+  const perMode = {};
+  for (const r of states || []) if (r.email !== "mahjong") perMode[r.mode] = (perMode[r.mode] || 0) + 1;
+  const mjState = (mj && mj[0] && mj[0].state) || {};
+  return {
+    users: { total: users.filter(u => !u.pending).length, day: seen(864e5), week: seen(7 * 864e5),
+             named: renamed, tutorialStarted: onboard, settingsSaved: prefs },
+    forum: { posts: forum, week: forumWeek },
+    decks: { shared: decks },
+    calendar: { events, subjectEvents },
+    games: Object.fromEntries(Object.entries(perGame).map(([g, s]) => [g, s.size])),
+    tetris: { sprintPlayers: sprint, scores: tetris, zenPlayers: zenBoard },
+    daily: { plays: daily, today: dailyToday, wins: dailyWins },
+    saved: perMode,
+    mahjongClub: { players: Array.isArray(mjState.players) ? mjState.players.length : 0,
+                   games: Array.isArray(mjState.rounds) ? mjState.rounds.length : 0 },
+    jim: jim ? { names: jim.length, presses: jim.reduce((a, r) => a + (+r.score || 0), 0) } : null,
+    revision: revision ? { students: new Set(revision.map(r => r.email)).size } : null,
+    birthdays
+  };
+}
+
+const MIN_REACTION_MS = 100;             // under this isn't a human reaction (the page refuses it too)
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-School-Email, X-School-Password");
@@ -122,19 +188,34 @@ export default async function handler(req, res) {
   /* site-wide settings. Readable by anyone signed in, because every page needs
      to know whether to show the weekly boards; only the owner can change them. */
   if (req.method === "GET" && src.settings) {
-    return res.status(200).json(await siteSettings());
+    /* isMod only decides whether pages show the way in to the moderator page;
+       every moderator action is still checked here on the server */
+    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email) });
   }
   if (req.method === "POST" && src.action === "settings") {
     if (!isAdmin(me.email))
       return res.status(403).json({ error: "Only the owner can change site settings." });
-    if (typeof src.weeklyBoards !== "boolean")
+    const hasWeekly = src.weeklyBoards !== undefined, hasHidden = src.hiddenGames !== undefined;
+    if (!hasWeekly && !hasHidden) return res.status(400).json({ error: "Nothing to change." });
+    if (hasWeekly && typeof src.weeklyBoards !== "boolean")
       return res.status(400).json({ error: "weeklyBoards must be true or false." });
-    const failed = await setSiteSetting("weekly_boards", src.weeklyBoards ? "on" : "off");
+    if (hasHidden && (!Array.isArray(src.hiddenGames) || src.hiddenGames.length > 60 ||
+                      !src.hiddenGames.every(g => /^[a-z0-9]{1,24}$/.test(String(g)))))
+      return res.status(400).json({ error: "hiddenGames must be a list of game ids." });
+    const failed = (hasWeekly && await setSiteSetting("weekly_boards", src.weeklyBoards ? "on" : "off")) ||
+                   (hasHidden && await setSiteSetting("hidden_games", [...new Set(src.hiddenGames.map(String))].join(",")));
     if (failed) {
       console.error("site settings:", failed);
       return res.status(502).json({ error: "Couldn't save that. Has the site_setting table been created?" });
     }
-    return res.status(200).json(await siteSettings());
+    return res.status(200).json({ ...(await siteSettings()), isMod: true });
+  }
+
+  /* moderator-only: how much each part of the site is used. Read-only counts. */
+  if (req.method === "GET" && src.stats) {
+    if (!isAdmin(me.email))
+      return res.status(403).json({ error: "Only moderators can see this." });
+    return res.status(200).json(await siteStats());
   }
 
   /* owner-only roster of who has signed in — answered before the game/metric
@@ -198,6 +279,8 @@ export default async function handler(req, res) {
   } else if (req.method === "POST") {
     const score = Math.round(Number(src.score));
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
+    /* faster than a person can react: an autoclicker or a script, not a score */
+    if (game === "react" && metric === "fastest" && score < MIN_REACTION_MS) return res.status(400).json({ error: "That's faster than anyone can react." });
     const name = nameFromEmail(me.email);
     try {
       await writeBest(game, metric, "all", me.email, name, score, dir);

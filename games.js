@@ -68,7 +68,8 @@ const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
   const b = $('sfx'), pop = $('volpop'), sl = $('volsl'), wrap = $('volwrap');
   if (!b || !sl) return;
   const icon = () => { const on = TT.get('tt.gamesfx', false), v = +TT.get('tt.gamevol', 0.7);
-    b.textContent = !on ? '🔇' : (v < 0.34 ? '🔈' : v < 0.67 ? '🔉' : '🔊');
+    const ic = !on ? 'speaker-x' : v < 0.34 ? 'speaker-none' : v < 0.67 ? 'speaker-low' : 'speaker-high';
+    b.innerHTML = window.Icon ? Icon.svg(ic) : (on ? '♪' : '×');
     b.setAttribute('aria-pressed', String(on)); };
   sl.value = Math.round((+TT.get('tt.gamevol', 0.7)) * 100);
   let held = false, timer = null;
@@ -83,14 +84,17 @@ const gameAnim = () => TT.get('tt.gameanim', true) && !reduced();
   document.addEventListener('pointerdown', e => { if (!pop.hidden && !wrap.contains(e.target)) pop.hidden = true; });
   icon();
 })();
-/* the Admin button appears only for the owner (server says canWipe) */
+/* the Moderator button appears only for moderators (the server says isMod;
+   every moderator action is checked again on the server) */
 let isAdmin = false;
-(async function initAdmin(){
-  if (!TT.myEmail() || !$('admin')) return;
-  try { const d = await TT.api('/api/leaderboard', { params:{ game:'chain', metric:'targets', week:tetrisWeek() } });
-    if (d && d.canWipe){ isAdmin = true; const a = $('admin'); if (a){ a.hidden = false; a.onclick = () => openGame('admin'); } }
-  } catch(e){}
-})();
+/* called from the start-up block at the end of this file: siteSettings' state
+   is declared further down, and reading it from here at load time would throw */
+/* moderators open their page from Settings (settings.js); here we just note it */
+async function initAdmin(){
+  if (!TT.myEmail()) return;
+  try { const c = await siteSettings(); if (c && c.isMod) isAdmin = true; } catch(e){}
+}
+
 
 /* every game returns a cleanup fn so switching never leaves a timer running */
 /* Phones and tablets get on-screen controls and "tap" wording. A laptop with a
@@ -141,23 +145,32 @@ const GAMES = [
   { id:'chem',    cat:'Revision', year:11, ico:'⚗️', name:'Chemistry', blurb:'Bonding, moles, reactions, energy' },
   { id:'engineering', cat:'Revision', year:11, ico:'🔧', name:'Engineering', blurb:'Steels, heat treatment, levers, gears and mechanics' },
   { id:'software', cat:'Revision', year:11, ico:'💻', name:'Software', blurb:'Read code and write it' },
-  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'The button that says the name of the player playing the game', w:2, h:2, isNew:true },
+  /* Moderators hide or show any game in the moderator page's Site settings
+     (hiddenGames); a hidden game is off the page and out of ?play= links, and
+     its code stays. The Jim Button starts hidden. hidden:true here hides one
+     for good. */
+  { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
+  { id:'quartets', cat:'Timetable', ico:'🧩', name:'Quartets', blurb:'Find the four similar groups of four from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
   { id:'oddone', cat:'Timetable', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
-  { id:'hkmj',   cat:'Arcade', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play bots to Hong Kong rules, Easy to Master', w:2, isNew:true },
-  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
-  { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself' },
+  { id:'hkmj',   cat:'Arcade', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2, mp:true },
+  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen, Practice and Versus', w:2, mp:true },
+  { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself. Solo or online', mp:true },
   { id:'g2048',  cat:'Arcade', ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
   { id:'mines',  cat:'Arcade', ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
 ];
-/* the shelves of the classic layout, in order */
-const CAT_ORDER = ['Timetable', 'Arcade'];
+/* The games page in two labelled sections, in order (both layouts use them:
+   the gallery and the classic shelves). */
+const SECTIONS = [
+  { cat:'Timetable', title:'Play with your year' },
+  { cat:'Arcade', title:'Arcade' }
+];
 const classicLayout = () => !!(window.TT && TT.layout && TT.layout() === 'classic');
 
 /* ── which year's revision you are shown ───────────────────────────────────
@@ -177,18 +190,15 @@ const REVISION_PAGE = PAGE === 'revision';
 
 function gameCard(g, i){
   const c = document.createElement('button');
-  c.type = 'button'; c.className = 'gamecard' + (g.isNew ? ' isnew' : '') + (g.id === 'jim' ? ' jimcard' : '');
-  c.style.animationDelay = (i * 45) + 'ms';
-  const stat = statLine(g.id);
-  c.innerHTML = (g.isNew ? '<span class="newbanner">New game</span>' : '') +
-    (g.id === 'jim'
-      ? '<span class="jim jimmini" aria-hidden="true"><span class="btn-outer"><span class="btn-ring"><span class="name-btn">JIM</span></span></span></span>'
-      : '<span class="ico">' + g.ico + '</span>') +
-    (REVISION_PAGE || classicLayout() ? '' : '<span class="tag">' + g.cat + '</span>') +   // a shelf is already named
-    '<h2>' + g.name + '</h2><p>' + g.blurb + '</p>' +
-    (stat ? '<span class="stat">' + stat + '</span>' : '') +
-    '<span class="go">' + (REVISION_PAGE ? 'Start' : 'Play') + ' &#8594;</span>';
-  c.onclick = () => openGame(g.id);
+  c.type = 'button'; c.className = 'gamecard' + (g.isNew || g.mp ? ' isnew' : '');
+  c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
+  /* just the icon and the name, the same height everywhere (your records are
+     inside each game, and the leaderboards at the bottom of the games page) */
+  c.innerHTML = (g.mp ? '<span class="newbanner">Multiplayer</span>' : g.isNew ? '<span class="newbanner">New</span>' : '') +
+    '<span class="ico">' + g.ico + '</span>' +
+    '<h2>' + g.name + '</h2>' +
+    '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
+  c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
   return c;
 }
 
@@ -197,6 +207,8 @@ function showGrid(){
   if (bentoStop){ bentoStop(); bentoStop = null; }
   lbState = null; lbSeq++;
   $('gamestage').hidden = true;
+  if (typeof syncBack === 'function') syncBack();
+  if ($('gameslede')) $('gameslede').hidden = false;
   const grid = $('gamegrid');
   grid.hidden = false;
   grid.innerHTML = '';
@@ -214,44 +226,57 @@ function showGrid(){
         bar.appendChild(b); });
       grid.appendChild(bar);
     }
-    /* the HSC countdown, today's plan and focus mode (study.js) */
-    if (year === 12 && window.Study){ try { grid.appendChild(Study.render()); } catch (e) { console.error(e); } }
-    const box = document.createElement('div'); box.className = 'gamegrid';
+    /* the subjects first, so picking one never needs a scroll; then the HSC
+       countdown, today's plan and focus mode (study.js) */
+    const box = document.createElement('div'); box.className = 'gamegrid gcompact';
     GAMES.filter(g => g.cat === 'Revision' && (g.year || 11) === year).forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
+    if (year === 12 && window.Study){ try { const st = Study.render(); st.classList.add('rvstudy'); grid.appendChild(st); } catch (e) { console.error(e); } }
     return;
   }
 
   if (window.Focus && Focus.active()){ grid.appendChild(Focus.lockCard()); return; }
-  /* classic: a shelf per category that scrolls sideways */
-  if (classicLayout()){
-    CAT_ORDER.forEach(cat => {
-      const inCat = GAMES.filter(g => g.cat === cat);
-      if (!inCat.length) return;
-      const h = document.createElement('div'); h.className = 'cathd'; h.textContent = cat;
-      grid.appendChild(h);
-      const wrap = document.createElement('div'); wrap.className = 'gamesecrow';
-      const row = document.createElement('div'); row.className = 'gamerow';
-      inCat.forEach((g, i) => row.appendChild(gameCard(g, i)));
-      wrap.appendChild(row); grid.appendChild(wrap);
-      dragScroll(row);
+  /* an even grid of cards per section */
+  SECTIONS.forEach(sec => {
+    const inCat = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
+    if (!inCat.length) return;
+    grid.appendChild(sectionHead(sec));
+    const box = document.createElement('div'); box.className = 'gamegrid gcompact';
+    inCat.forEach((g, i) => box.appendChild(gameCard(g, i)));
+    grid.appendChild(box);
+  });
+  boardsSection(grid);
+  fillSums();
+}
+/* a section's heading */
+function sectionHead(sec){
+  const h = document.createElement('div'); h.className = 'gsec';
+  h.innerHTML = '<h2 class="cathd">' + sec.title + '</h2>';
+  return h;
+}
+/* the leaderboards, back at the bottom: every board's top three; a board
+   opens the full one in the sheet */
+function boardsSection(grid){
+  if (!TT.myEmail || !TT.myEmail()) return;
+  const sec = document.createElement('section'); sec.className = 'lbboards';
+  sec.innerHTML = '<div class="gsec"><h2 class="cathd">Leaderboards</h2><button type="button" class="lbopen">View all</button></div>' +
+    '<div class="lbbgrid">' + LB_CAT.map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
+      '<span class="lbbrows"><span class="lbbempty">Loading…</span></span></button>').join('') + '</div>';
+  grid.appendChild(sec);
+  sec.querySelector('.lbopen').onclick = () => openLBSheet();
+  sec.querySelectorAll('.lbbcard').forEach(b => b.onclick = () => openLBSheet(b.dataset.b));
+  fetchLeaders().then(leaders => {
+    sec.querySelectorAll('.lbbcard').forEach(b => {
+      const L = leaders[b.dataset.b], rows = b.querySelector('.lbbrows');
+      if (!L){ rows.innerHTML = '<span class="lbbempty">Couldn’t load</span>'; return; }
+      rows.innerHTML = L.rows.length ? L.rows.map((r, i) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (i + 1) + '</i><span class="w">' +
+          esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('')
+        : '<span class="lbbempty">No scores yet</span>';
     });
-    renderLBSum();
-    scrollHint();
-    return;
-  }
-  /* gallery: one packed grid */
-  const bento = document.createElement('div'); bento.className = 'bento';
-  const games = GAMES.filter(g => g.cat !== 'Revision');
-  const cards = games.map((g, i) => bento.appendChild(gameCard(g, i)));
-  grid.appendChild(bento);
-  bentoStop = Bento.layout(bento, games.map((g, i) => ({ el:cards[i], w:g.w, h:g.h })));
-  renderLBSum();
+  });
 }
 
 let bentoStop = null;
-/* Settings switched the layout: redraw the grid, unless a game is open */
-addEventListener('tt:layout', () => { if (!$('gamegrid').hidden) showGrid(); });
 
 /* The shelves scroll sideways, which is not obvious from a still screen, so
    the first visit gets one demonstration on the real cards. Only worth showing
@@ -263,12 +288,32 @@ function scrollHint(){
     if (row && row.scrollWidth > row.clientWidth + 40) Tour.start('games');
   });
 }
+/* ‹ › buttons at the ends of a shelf (mouse only; touch swipes), each greyed
+   out when there is nothing more that way */
+function shelfArrows(wrap, row){
+  const mk = (cls, sign, label, dir) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'shelfbtn ' + cls; b.innerHTML = sign; b.setAttribute('aria-label', label);
+    b.onclick = () => row.scrollBy({ left:dir * row.clientWidth * 0.8, behavior:reduced() ? 'auto' : 'smooth' });
+    wrap.appendChild(b); return b;
+  };
+  const prev = mk('prev', '&lsaquo;', 'Scroll left', -1), next = mk('next', '&rsaquo;', 'Scroll right', 1);
+  const sync = () => {
+    prev.disabled = row.scrollLeft <= 2;
+    next.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 2;
+  };
+  row.addEventListener('scroll', sync, { passive:true });
+  sync(); requestAnimationFrame(sync);      // now, and again once the cards have laid out
+}
 /* mouse-wheel and click-drag horizontal scrolling for a card row (touch uses
    the browser's own horizontal scroll; a drag swallows the click that follows). */
 function dragScroll(row){
   row.addEventListener('wheel', e => {
     if (row.scrollWidth <= row.clientWidth) return;
     const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    /* at either end, let the wheel carry on scrolling the page */
+    const atStart = row.scrollLeft <= 0, atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 1;
+    if ((d < 0 && atStart) || (d > 0 && atEnd)) return;
     if (d){ row.scrollLeft += d; e.preventDefault(); }
   }, { passive:false });
   let down = false, moved = false, sx = 0, sl = 0;
@@ -284,7 +329,7 @@ function dragScroll(row){
   row.addEventListener('click', e => { if (row.classList.contains('nodrag')){ e.stopPropagation(); e.preventDefault(); } }, true);
 }
 
-/* ── leaderboard catalogue (shared by the summary strip + the full view) ── */
+/* ── leaderboard catalogue (shared by the cards and the leaderboards sheet) ── */
 const LB_CAT = [
   { id:'chain',     name:'Six Degrees',    g:{metric:'targets'}, fmt:v=>String(v) },
   { id:'oddone',    name:'Odd One Out',    g:{metric:'high'},    fmt:v=>String(v) },
@@ -297,48 +342,133 @@ const LB_CAT = [
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
 ];
-let lbFocus = null;          // which board the full view should open on
-let lbSumCache = null;       // cached leaders for the summary strip (per session)
-async function fetchLeaders(){
+let lbFocus = null;          // which board ?play=leaderboards opens on
+let lbSumCache = null;       // every board's top three, once per page (a new score clears it)
+const shortHMS = v => fmtHMS(v).replace(/^00:/, '');     // 01:23.4, not 00:01:23.4
+function fetchLeaders(){
   if (lbSumCache) return lbSumCache;
   const wk = tetrisWeek();
-  lbSumCache = await Promise.all(LB_CAT.map(async cat => {
+  const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
+  lbSumCache = Promise.all(LB_CAT.map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } });
-        const r = (d.all.top||[])[0]; return r ? { who:r.name, val:cat.fmt(r.score) } : null; }
-      if (cat.t==='sprint'){   const d = await TT.api('/api/tetris',{params:{mode:'sprintall'}}); const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
-      if (cat.t==='zen'){      const d = await TT.api('/api/tetris',{params:{mode:'zen'}});       const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.time_ms)}:null; }
-      if (cat.t==='zenscore'){ const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});  const r=(d.top||[])[0]; return r?{who:r.name,val:cat.fmt(r.best)}:null; }
-    } catch(e){ return null; }
-    return null;
-  }));
+        return [cat.id, top3(d.all && d.all.top, 'score', cat.fmt)]; }
+      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:{ mode:'zen' } }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:{ mode:'zenscore' } }); return [cat.id, top3(d.top, 'best', cat.fmt)]; }
+    } catch (e){}
+    return [cat.id, null];
+  })).then(Object.fromEntries);
   return lbSumCache;
 }
-async function renderLBSum(){
-  const el = $('lbsum'); if (!el) return;
-  el.hidden = false;
-  if (!TT.myEmail()){ el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2></div><p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
-  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><p class="how">Loading leaders…</p>';
-  $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
-  const leaders = await fetchLeaders();
-  if ($('gamegrid').hidden) return;               // user already opened a game
-  const cards = LB_CAT.map((cat,i) => { const L = leaders[i];
-    return '<button class="lbsumcard" data-i="'+i+'"><div class="g">'+esc(cat.name)+'</div>' +
-      (L ? '<div class="lead"><span class="who">'+esc(L.who)+'</span><span class="val">'+esc(L.val)+'</span></div>'
-         : '<div class="empty">No scores yet</div>') + '</button>'; }).join('');
-  el.innerHTML = '<div class="lbsumhd"><h2>Leaderboards</h2><a id="lbsumall">View all →</a></div><div class="lbsumgrid">'+cards+'</div>';
-  $('lbsumall').onclick = () => { lbFocus = null; openGame('leaderboards'); };
-  [...el.querySelectorAll('.lbsumcard')].forEach(c => c.onclick = () => { lbFocus = LB_CAT[+c.dataset.i].id; openGame('leaderboards'); });
+
+/* ── what each card says under its name ──────────────────────────────── */
+const sumLine = (who, val, you) => '<span class="sl' + (you ? ' me' : '') + '"><span class="w">' + esc(who) + '</span>' +
+  (val != null ? '<span class="v">' + esc(val) + '</span>' : '') + '</span>';
+const sumNote = html => '<span class="sl note">' + html + '</span>';
+/* straight away, from this device: your own record */
+function localSum(id){
+  const s = allStats()[id] || {};
+  if (id === 'dailyguess') return s.streak ? sumNote('🔥 <b>' + s.streak + '</b> day streak') : '';
+  const lb = LB_GAMES[id];
+  if (lb) return s[lb.metric] != null ? sumLine('Your best', lb.fmt(s[lb.metric])) : '';
+  if (id === 'tetris'){ const b = s.allBest != null ? s.allBest : s.best; return b != null ? sumLine('Sprint best', shortHMS(b * 1000)) : ''; }
+  if (id === 'guesswho') return s.best != null ? sumLine('Your best', s.best + (s.best === 1 ? ' guess' : ' guesses')) : '';
+  if (GAMES.some(g => g.id === id && g.cat === 'Revision')){
+    let done = 0;
+    try { const h = JSON.parse(localStorage.getItem('rev.' + id)); if (h && typeof h === 'object') done = Object.keys(h).length; } catch {}
+    const lines = [];
+    if (done) lines.push(sumLine('Questions done', String(done)));
+    if (s.streak) lines.push(sumLine('Best streak', String(s.streak)));
+    return lines.join('');
+  }
+  const line = statLine(id);
+  return line ? sumNote(esc(line)) : '';
 }
+/* the Daily Guess Who card: how you went today, and your streak */
+let dgSumP = null;
+function dailySum(){
+  if (!dgSumP) dgSumP = TT.api('/api/daily', { params:{ summary:1 } }).catch(() => { dgSumP = null; return null; });
+  return dgSumP;
+}
+function dailyCardSum(d){
+  if (!d) return '';
+  const m = d.mine || {}, st = (allStats().dailyguess || {}).streak;
+  return sumNote(m.done ? (m.won ? 'Solved today in <b>' + m.guesses + '</b>' : 'Missed today’s') : 'Not played today') +
+    (st ? sumNote('🔥 <b>' + st + '</b> day streak') : '');
+}
+/* after the cards are drawn: today's daily (the rest come from this device) */
+async function fillSums(){
+  if (REVISION_PAGE || !TT.myEmail || !TT.myEmail()) return;
+  const put = (id, html) => { const el = document.querySelector('.sum[data-sum="' + id + '"]'); if (el && html) el.innerHTML = html; };
+  dailySum().then(d => put('dailyguess', dailyCardSum(d)));
+}
+
+/* ── a sheet that slides up from the bottom (the leaderboards) ─────────
+   Closes on ✕, Escape, a tap outside it, or dragging its top edge down. */
+let sheetClose = null;
+function openSheet(title, fill){
+  if (sheetClose) sheetClose(true);
+  const opener = document.activeElement;
+  const back = document.createElement('div'); back.className = 'sheetback';
+  const sh = document.createElement('section'); sh.className = 'sheet';
+  sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-label', title);
+  sh.innerHTML = '<div class="sheetgrab" aria-hidden="true"><i></i></div>' +
+    '<div class="sheethd"><h2>' + esc(title) + '</h2>' +
+    '<button class="btn icon sheetx" type="button" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' +
+    '<div class="sheetbody"></div>';
+  document.body.append(back, sh);
+  document.documentElement.classList.add('sheetopen');
+  const close = instant => {
+    if (sheetClose !== close) return;
+    sheetClose = null;
+    removeEventListener('keydown', onKey, true);
+    document.documentElement.classList.remove('sheetopen');
+    const gone = () => { back.remove(); sh.remove(); };
+    if (instant === true || reduced()) gone();
+    else { back.classList.remove('in'); sh.classList.remove('in'); sh.style.transform = ''; setTimeout(gone, 300); }
+    if (instant !== true && opener && opener.focus && document.contains(opener)) try { opener.focus({ preventScroll:true }); } catch {}
+  };
+  const onKey = e => {
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (e.key !== 'Tab') return;                             // keep Tab inside the sheet
+    const f = [...sh.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent);
+    if (!f.length) return;
+    if (e.shiftKey && document.activeElement === f[0]){ e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]){ e.preventDefault(); f[0].focus(); }
+    else if (!sh.contains(document.activeElement)){ e.preventDefault(); f[0].focus(); }
+  };
+  addEventListener('keydown', onKey, true);
+  back.onclick = () => close();
+  sh.querySelector('.sheetx').onclick = () => close();
+  [sh.querySelector('.sheetgrab'), sh.querySelector('.sheethd')].forEach(g => {
+    let y0 = null, dy = 0;
+    g.addEventListener('pointerdown', e => { if (e.button || e.target.closest('button')) return;
+      y0 = e.clientY; dy = 0; sh.classList.add('drag'); try { g.setPointerCapture(e.pointerId); } catch {} });
+    g.addEventListener('pointermove', e => { if (y0 == null) return;
+      dy = Math.max(0, e.clientY - y0); sh.style.transform = 'translateY(' + dy + 'px)'; });
+    const up = () => { if (y0 == null) return; y0 = null; sh.classList.remove('drag');
+      if (dy > 80) close(); else sh.style.transform = ''; };
+    g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+  });
+  sheetClose = close;
+  fill(sh.querySelector('.sheetbody'));
+  requestAnimationFrame(() => requestAnimationFrame(() => { back.classList.add('in'); sh.classList.add('in'); }));
+  try { sh.querySelector('.sheetx').focus({ preventScroll:true }); } catch {}
+  return close;
+}
+const openLBSheet = focus => openSheet('Leaderboards', box => lbBoard(box, focus));
 const reduced = () => document.documentElement.getAttribute('data-motion') === 'reduced';
 function openGame(id){
   if (!REVISION_PAGE && window.Focus && Focus.active()){ showGrid(); return; }   // no back door past the lock
+  if (sheetClose) sheetClose(true);
   if (stop){ stop(); stop = null; }
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
+    setTimeout(syncBack, 0);
+    if ($('gameslede')) $('gameslede').hidden = true;
     if (bentoStop){ bentoStop(); bentoStop = null; }
-    $('lbsum').hidden = true;
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
     stop = BUILD[id]($('stage'));
@@ -349,9 +479,15 @@ function openGame(id){
   grid.classList.add('leaving');           /* fade the grid away, then swap in */
   setTimeout(go, 130);
 }
+/* the header's Back (theme.js): with a game open, back to the list of games */
+window.TTBack = () => { if ($('gamestage') && !$('gamestage').hidden){ $('back').click(); return true; } return false; };
+window.TTBackOn = () => !!($('gamestage') && !$('gamestage').hidden);
+const syncBack = () => { const b = document.getElementById('hdrback'); if (b) b.hidden = !window.TTBackOn(); };
 $('back').onclick = () => {
   const grid = $('gamegrid'), st = $('gamestage');
   if (stop){ stop(); stop = null; }
+  /* opened from a link (?play=admin and the like): back is the plain games page */
+  if (/[?&]play=/.test(location.search)){ try { history.replaceState(null, '', location.pathname); } catch {} }
   if (reduced()){ showGrid(); return; }
   st.classList.add('leaving');
   setTimeout(() => { st.classList.remove('leaving'); showGrid(); }, 130);
@@ -377,10 +513,21 @@ const plainText = html => { const d = document.createElement('div'); d.innerHTML
 
 const head = (host, title, how, extra) =>
   host.innerHTML = '<div class="row"><div><h2>' + title + '</h2>' +
-                   '<p class="how">' + how + '</p></div>' +
+                   (how ? '<p class="how">' + how + '</p>' : '') + '</div>' +
                    '<span class="score" id="sc"></span></div>' + (extra || '');
 
 const BUILD = {};
+
+/* one line about one person, for the Daily Guess Who results and its card */
+function dgSpotLine(p){
+  const who = '<b>' + esc(p.name) + '</b>';
+  if (p.kind === 'best')     return '🏆 ' + who + ' got it in <b>' + p.n + '</b> guess' + (p.n === 1 ? '' : 'es');
+  if (p.kind === 'first')    return '⚡ ' + who + ' solved it first';
+  if (p.kind === 'stumped')  return '😵 ' + who + ' was stumped';
+  if (p.kind === 'streak')   return '🔥 ' + who + ' is on a <b>' + p.n + ' day</b> streak';
+  if (p.kind === 'improved') return '📈 ' + who + ' is improving fastest (<b>' + p.from + '</b> → <b>' + p.to + '</b> guesses)';
+  return '';
+}
 
 /* ── Guess Who ─────────────────────────────────────────────────────
    Picks a random person from your combined classmates and drips hints
@@ -545,13 +692,17 @@ const RV = (() => {
    when there isn't the traffic for them: every page then shows the all-time
    board only, with no weekly / all-time toggle. Read once per page load, and
    if the read fails nothing changes from how the site behaved before. */
-let sitePromise = null, siteCfg = { weeklyBoards:true };
+let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false };
 function siteSettings(){
   if (!sitePromise) sitePromise = TT.api('/api/leaderboard', { params:{ settings:1 } })
-    .then(d => { siteCfg = { weeklyBoards: d && d.weeklyBoards !== false }; return siteCfg; })
+    .then(d => { siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
+                             hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
+                             isMod: !!(d && d.isMod) }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
 }
+/* off the games page: hidden in code, or by a moderator (site settings) */
+function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id); }
 const weeklyOn = () => siteCfg.weeklyBoards;
 const forgetSiteSettings = () => { sitePromise = null; };
 if (typeof TT !== 'undefined' && TT.myEmail && TT.myEmail()) siteSettings();   // warm before a board is opened
@@ -928,12 +1079,12 @@ BUILD.guesswho = host => {
       body.innerHTML =
         '<div class="gwhints" id="gwhints"></div>' +
         '<div class="gwrow">' +
-          '<input id="gwin" list="gwlist" autocomplete="off" placeholder="Name the mystery person…">' +
-          '<datalist id="gwlist">' + names.map(n => '<option value="' + n.replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+          '<input id="gwin" placeholder="Type a name…" aria-label="Your guess">' +
           '<button class="btn primary" id="gwguess" type="button">Guess</button>' +
         '</div><div class="gwlog" id="gwlog"></div>';
       paintHints();
       document.getElementById('gwguess').onclick = guess;
+      if (window.Suggest) Suggest.attach(document.getElementById('gwin'), { source: Suggest.names(names, 8) });
       document.getElementById('gwin').addEventListener('keydown', e => { if (e.key==='Enter') guess(); });
       document.getElementById('gwin').focus();
     }
@@ -986,12 +1137,12 @@ BUILD.guesswho = host => {
    feedback is instant. A "how others did" summary and a Sept-1 archive
    sit under the game. */
 BUILD.dailyguess = host => {
-  head(host, 'Daily Guess Who', 'One mystery student from your year, the same one for everyone. You can replay past days too.', '<div id="dg"></div>');
+  head(host, 'Daily Guess Who', 'Guess the person from your year.', '<div id="dg"></div>');
   const box = document.getElementById('dg');
-  let alive = true;
+  let alive = true, spotTimer = null, arch = null, calMonth = null, cur = null;
   const norm = x => String(x==null?'':x).trim().toLowerCase().replace(/\s+/g,' ');
-  const shiftISO = (d, delta) => { const x=new Date(d+'T00:00:00Z'); x.setUTCDate(x.getUTCDate()+delta); return x.toISOString().slice(0,10); };
   const shortDate = d => new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{month:'short',day:'numeric',timeZone:'UTC'});
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   async function loadDay(date){       // date=null → today
     box.innerHTML = '<p class="how">Loading…</p>';
@@ -1003,36 +1154,40 @@ BUILD.dailyguess = host => {
   loadDay(null);
 
   function render(s){
-    const isToday = s.date === s.today, epoch = s.epoch || '2026-09-01';
+    cur = s;
+    clearInterval(spotTimer);
+    const isToday = s.date === s.today;
     const answer = s.answer, total = s.totalHints;
     let guesses = s.guesses||0, done = !!s.done, won = !!s.won, streak = s.streak||0;
     let shown = s.shown != null ? s.shown : Math.min(guesses+1, total);
+    const calOpen = !!(document.getElementById('dgcalbox') && !document.getElementById('dgcalbox').hidden);
 
     box.innerHTML =
-      '<div class="gwtop"><div class="gwyou">Year <b>' + esc(s.year) + '</b> · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></div>' +
-      '<div style="margin-left:auto;display:flex;gap:10px;align-items:center">' +
-        '<span class="gwyou" style="margin:0">Streak <b id="dgstreak">' + streak + '</b></span>' +
-        '<button class="btn" id="dgunlimited" type="button">Unlimited →</button></div></div>' +
-      '<div class="dgtoolbar"><button class="dgtool" id="dgarchbtn" type="button">Show archive</button>' +
-        '<button class="dgtool" id="dgsumbtn" type="button">Show summary</button></div>' +
-      '<div id="dgdayswrap" hidden><div class="dgdays" id="dgdays"></div><div class="dgarch" id="dgarch"></div></div>' +
+      '<div class="dgbar">' +
+        '<span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(isToday ? 'Today' : shortDate(s.date)) + '</b></span>' +
+        '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="dgstreak">' + streak + '</b></span>' +
+        '<span class="dgsp"></span>' +
+        '<button class="dgchip" id="dgcal" type="button" aria-expanded="' + calOpen + '" aria-controls="dgcalbox">Archive</button>' +
+        '<button class="dgchip" id="dgsumbtn" type="button" aria-expanded="false" aria-controls="dgsummary">Results</button>' +
+        '<button class="dgchip" id="dgunlimited" type="button">Unlimited →</button>' +
+      '</div>' +
+      '<div class="dgcal" id="dgcalbox"' + (calOpen ? '' : ' hidden') + '></div>' +
       '<div class="gwhints" id="dghints"></div>' +
       '<div class="gwrow" id="dgrow">' +
-        '<input id="dgin" list="dglist" autocomplete="off" placeholder="Name the mystery student…">' +
-        '<datalist id="dglist">' + (s.candidates||[]).map(n => '<option value="' + esc(n).replace(/"/g,'&quot;') + '">').join('') + '</datalist>' +
+        '<input id="dgin" placeholder="Type a name…" aria-label="Your guess">' +
         '<button class="btn primary" id="dgguess" type="button">Guess</button>' +
       '</div><div class="gwlog" id="dglog"></div>' +
-      '<div id="dgsummary" hidden></div>';
+      '<div class="dgresults" id="dgsummary" hidden></div>';
 
     document.getElementById('dgunlimited').onclick = () => openGame('guesswho');
-    document.getElementById('dgarchbtn').onclick = toggleDays;
+    document.getElementById('dgcal').onclick = toggleCal;
     document.getElementById('dgsumbtn').onclick = () => toggleSummary(s.date);
-    renderDays(s);
+    if (calOpen) paintCal();
 
     const hintsEl = document.getElementById('dghints');
     const allHints = s.hints || [];
     const paint = fresh => hintsEl.innerHTML = allHints.slice(0, shown).map((h,i) =>
-      '<div class="gwhint' + (i===fresh?' fresh':'') + '">' + h + '</div>').join('');
+      '<div class="gwhint' + (i===fresh?' fresh':'') + '"><span class="dghn">' + (i + 1) + '</span>' + h + '</div>').join('');
     paint(-1);
 
     const sc = document.getElementById('sc');
@@ -1047,24 +1202,17 @@ BUILD.dailyguess = host => {
       const banner = document.createElement('div');
       banner.className = 'gwhint ' + (won ? 'win' : 'lose');
       banner.innerHTML = won
-        ? 'You got it in <b>' + guesses + '</b>! It was <b>' + esc(answer) + '</b>.'
+        ? 'You got it in <b>' + guesses + '</b>. It was <b>' + esc(answer) + '</b>.'
         : 'Out of guesses. It was <b>' + esc(answer) + '</b>.';
       hintsEl.appendChild(banner);
-      const chip = document.querySelector('.dgday.cur');
-      if (chip){ chip.classList.remove('open','won','lost'); chip.classList.add(won?'won':'lost');
-        let ic = chip.querySelector('.dgi'); if(!ic){ ic=document.createElement('span'); ic.className='dgi'; chip.appendChild(ic); }
-        ic.textContent = won ? '✓' : '✗'; }
-      const note = document.createElement('p');
-      note.className = 'gwyou'; note.style.marginTop = '12px';
-      note.innerHTML = (isToday ? 'Come back tomorrow for a new one. ' : 'Pick another day above. ') +
-                       'Current streak: <b id="dgstreaknote">' + streak + '</b>.';
-      hintsEl.parentNode.insertBefore(note, hintsEl.nextSibling);
+      if (arch){ arch.mine[s.date] = { won, done:true, guesses }; if (!document.getElementById('dgcalbox').hidden) paintCal(); }
       openSummary(s.date);
     }
 
     if (done){ finish(); return; }
 
     const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
+    if (window.Suggest) Suggest.attach(input, { source: Suggest.names(s.candidates || [], 8) });
     function doGuess(){
       const v = input.value.trim(); if (!v || done) return;
       guesses++;
@@ -1081,8 +1229,8 @@ BUILD.dailyguess = host => {
       TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } })
         .then(r => { if (!alive || !r) return; streak = r.streak != null ? r.streak : streak;
           const a=document.getElementById('dgstreak'); if(a) a.textContent = streak;
-          const b=document.getElementById('dgstreaknote'); if(b) b.textContent = streak;
-          recordStat('dailyguess', { key:'streak', mode:'set', value:streak }); })
+          recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
+          if (done) loadSummary(s.date); })
         .catch(()=>{});
       if (done) finish(); else { setScore(); input.focus(); }
     }
@@ -1091,58 +1239,85 @@ BUILD.dailyguess = host => {
     input.focus();
   }
 
-  /* a chip per day for the last two weeks (never before the epoch) */
-  function renderDays(s){
-    const daysEl = document.getElementById('dgdays');
-    const hist = {}; (s.history||[]).forEach(h => hist[h.date] = h);
-    const epoch = s.epoch || '2026-09-01';
-    let html = '';
-    for (let i=0;i<14;i++){
-      const d = shiftISO(s.today, -i); if (d < epoch) break;
-      const h = hist[d];
-      const status = h && h.won ? 'won' : (h && h.done ? 'lost' : 'open');
-      const icon = h && h.won ? '✓' : (h && h.done ? '✗' : '');
-      html += '<button class="dgday ' + status + (d===s.date ? ' cur' : '') + '" data-date="' + d + '">' +
-        '<span class="dgd">' + (i===0 ? 'Today' : esc(shortDate(d))) + '</span>' +
-        (icon ? '<span class="dgi">' + icon + '</span>' : '') + '</button>';
+  /* ── past days: a small month calendar. Each day shows how you went (✓ or
+     ✗) and how many in your year played it; pick any day to play it. ── */
+  async function toggleCal(){
+    const el = document.getElementById('dgcalbox'), btn = document.getElementById('dgcal');
+    const open = el.hidden;
+    el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    if (!arch){
+      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      try {
+        const d = await TT.api('/api/daily', { params:{ archive:1 } });
+        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch || '2026-09-01' };
+        (d.archive || []).forEach(a => arch.days[a.date] = a);
+      } catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load past days.</p>'; return; }
     }
-    daysEl.innerHTML = html;
-    [...daysEl.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
+    if (!alive) return;
+    calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    paintCal();
+  }
+  function paintCal(){
+    const el = document.getElementById('dgcalbox'); if (!el || !arch) return;
+    if (!calMonth) calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    const [y, m] = calMonth.split('-').map(Number);
+    const iso = d => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const firstDow = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;      // Monday first
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const minMonth = arch.epoch.slice(0, 7), maxMonth = arch.today.slice(0, 7);
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
+    for (let d = 1; d <= dim; d++){
+      const date = iso(d), mine = arch.mine[date], day = arch.days[date];
+      const off = date < arch.epoch || date > arch.today;
+      const state = mine && mine.won ? 'won' : mine && mine.done ? 'lost' : 'open';
+      const tip = off ? '' : shortDate(date) + (mine && mine.won ? ': you got it in ' + mine.guesses : mine && mine.done ? ': you missed it' : ': not played') +
+        (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
+      cells += off ? '<span class="dgc off"><span class="dgcn">' + d + '</span></span>'
+        : '<button type="button" class="dgc ' + state + (cur && date === cur.date ? ' cur' : '') + (date === arch.today ? ' today' : '') +
+          '" data-date="' + date + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+          '<span class="dgcn">' + d + '</span><span class="dgcm">' + (state === 'won' ? '✓' : state === 'lost' ? '✗' : '') + '</span>' +
+          '<span class="dgcp">' + (day && day.played ? day.played : '') + '</span></button>';
+    }
+    el.innerHTML =
+      '<div class="dgcalhd"><button type="button" class="dgcnav" data-step="-1" aria-label="Previous month"' + (calMonth <= minMonth ? ' disabled' : '') + '>‹</button>' +
+        '<b>' + MONTHS[m - 1] + ' ' + y + '</b>' +
+        '<button type="button" class="dgcnav" data-step="1" aria-label="Next month"' + (calMonth >= maxMonth ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="dgcgrid"><span class="dgcw">M</span><span class="dgcw">T</span><span class="dgcw">W</span><span class="dgcw">T</span>' +
+        '<span class="dgcw">F</span><span class="dgcw">S</span><span class="dgcw">S</span>' + cells + '</div>' +
+      '<div class="dgclegend"><span class="won">✓</span> solved <span class="lost">✗</span> missed <span class="dgcp">12</span> played in your year</div>';
+    el.querySelectorAll('.dgcnav').forEach(b => b.onclick = () => {
+      const dt = new Date(Date.UTC(y, m - 1 + (+b.dataset.step), 1));
+      calMonth = dt.toISOString().slice(0, 7); paintCal();
+    });
+    el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
   }
 
-  /* day picker: recent chips + every past day since the epoch that has results */
-  let archLoaded = false;
-  async function toggleDays(){
-    const wrap = document.getElementById('dgdayswrap'), btn = document.getElementById('dgarchbtn');
-    if (!wrap.hidden){ wrap.hidden = true; btn.textContent = 'Show archive'; return; }
-    wrap.hidden = false; btn.textContent = 'Hide archive';
-    if (archLoaded) return;
-    const el = document.getElementById('dgarch');
-    try {
-      const d = await TT.api('/api/daily', { params:{ archive:1 } });
-      const arr = d.archive || [];
-      el.innerHTML = arr.map(a => '<button class="dgday" data-date="'+a.date+'" title="'+a.wins+' of '+a.played+' solved it">' +
-        '<span class="dgd">'+esc(shortDate(a.date))+'</span><span class="dgi">'+a.wins+'/'+a.played+'</span></button>').join('');
-      [...el.querySelectorAll('.dgday')].forEach(b => b.onclick = () => loadDay(b.dataset.date));
-      archLoaded = true;
-    } catch(e){}
+  /* ── results: one spotlight line for the day, then how the year went ── */
+  async function openSummary(date){
+    const el = document.getElementById('dgsummary'), b = document.getElementById('dgsumbtn');
+    if (!el) return;
+    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    await loadSummary(date);
   }
-
-  /* "how others did": win/loss + guess-count histogram for the loaded day */
-  async function openSummary(date){ document.getElementById('dgsummary').hidden = false;
-    document.getElementById('dgsumbtn').textContent = 'Hide summary'; await loadSummary(date); }
-  async function toggleSummary(date){ const el = document.getElementById('dgsummary');
-    if (!el.hidden){ el.hidden = true; document.getElementById('dgsumbtn').textContent = 'Show summary'; return; }
-    await openSummary(date); }
+  async function toggleSummary(date){
+    const el = document.getElementById('dgsummary');
+    if (!el.hidden){ el.hidden = true; clearInterval(spotTimer); document.getElementById('dgsumbtn').setAttribute('aria-expanded', 'false'); return; }
+    await openSummary(date);
+  }
   async function loadSummary(date){
-    const el = document.getElementById('dgsummary'); el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
-    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); renderSummary(el, d.summary); }
-    catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the summary.</p>'; }
+    const el = document.getElementById('dgsummary'); if (!el) return;
+    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); if (alive) renderSummary(el, d.summary, date); }
+    catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
-  function renderSummary(el, sum){
-    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet. Be the first.</p>'; return; }
+  const spotLine = dgSpotLine;
+  function renderSummary(el, sum, date){
+    clearInterval(spotTimer);
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const rate = Math.round(sum.wins / sum.played * 100);
-    const names = sum.names || {};                       // {bucket: [names]} for hover
+    const names = sum.names || {};
     const max = Math.max(1, sum.losses, ...Object.keys(sum.dist).map(k => sum.dist[k]));
     const tip = key => { const list = names[key]; return list && list.length ? ' title="' + esc(list.join(', ')) + '"' : ''; };
     const bar = (label, n, key, miss) => '<div class="dgbar' + (miss?' miss':'') + '"' + tip(key) + '><span class="dgbl">' + label + '</span>' +
@@ -1150,13 +1325,306 @@ BUILD.dailyguess = host => {
     let rows = '';
     for (let i=1;i<=sum.totalHints;i++) rows += bar(i, sum.dist[i]||0, String(i), false);
     rows += bar('✗', sum.losses, 'lost', true);
+    const lines = (sum.spotlight || []).map(spotLine).filter(Boolean);
+    /* one person for the day: picked by the date, so everyone in the year sees the same one */
+    const day = date || new Date().toLocaleDateString('en-CA', { timeZone:'Australia/Sydney' });
+    let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const pick = lines.length ? lines[h % lines.length] : '';
     el.innerHTML =
-      '<div class="dgsumhd"><span class="big">' + sum.played + '</span> played · <span class="big">' + rate + '%</span> solved · ' +
-        '<b>' + sum.wins + '</b> won, <b>' + sum.losses + '</b> lost</div>' +
-      '<div class="dgbars">' + rows + '</div>' +
-      '<p class="how" style="margin:8px 0 0">Guesses taken to solve it. Hover a row to see who.</p>';
+      (pick ? '<div class="dgspot" id="dgspot">' + pick + '</div>' : '') +
+      '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
+      '<div class="dgbars">' + rows + '</div>';
   }
 
+  return () => { alive = false; clearInterval(spotTimer); };
+};
+
+/* ── Quartets ──────────────────────────────────────────────────────
+   Sixteen people from your year and four hidden groups of four, levels 1
+   (easiest) to 4. Pick four and check them; four mistakes and it's over.
+   Laid out like Daily Guess Who: your streak, the Archive calendar of past
+   days, and Results for how your year went (which opens when you finish and
+   closes again so you can look at your board). The puzzle and its answers
+   come from /api/daily?conn=1 (api/_connroute.js); guesses are marked here,
+   instantly, and saved in the background. */
+const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
+const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
+BUILD.quartets = host => {
+  head(host, 'Quartets', 'Find the four similar groups of four from your year.', '<div id="qt"></div>');
+  const box = $('qt');
+  let alive = true, arch = null, calMonth = null, cur = null;
+  const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
+  const longDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', timeZone:'UTC' });
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const seeded = (list, seed) => { let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    const a = list.slice(); for (let i = a.length - 1; i > 0; i--){ h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  async function loadDay(date){
+    box.innerHTML = '<p class="how">' + (date ? 'Loading…' : 'Loading today’s puzzle. The first one each day takes a few seconds to make.') + '</p>';
+    let s;
+    try { s = await TT.api('/api/daily', { params: Object.assign({ conn:1 }, date ? { date } : {}) }); }
+    catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message || 'Couldn’t load Quartets.') + '</p>'; return; }
+    if (alive) play(s);
+  }
+  loadDay(null);
+
+  function topBar(s, streak){
+    const calOpen = !!(document.getElementById('qtcal') && !document.getElementById('qtcal').hidden);
+    return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : longDate(s.date)) + '</b></span>' +
+      '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="qtstreak">' + (streak || 0) + '</b></span><span class="dgsp"></span>' +
+      '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button>' +
+      '<button class="dgchip" id="qtsumbtn" type="button" aria-expanded="false" aria-controls="qtsummary"' + (s.none ? ' hidden' : '') + '>Results</button></div>' +
+      '<div class="dgcal" id="qtcal"' + (calOpen ? '' : ' hidden') + '></div>';
+  }
+  function wireBar(s){
+    $('qtcalbtn').onclick = toggleCal;
+    if ($('qtsumbtn')) $('qtsumbtn').onclick = () => toggleSummary(s.date);
+    if (!$('qtcal').hidden) paintCal();
+  }
+
+  function play(s){
+    cur = s;
+    if (s.none){ box.innerHTML = topBar(s, 0) + '<p class="how">No Quartets for this day: there weren’t enough clear groups to make a fair one.</p>'; wireBar(s); return; }
+    const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
+    const lvOf = new Map(), howOf = new Map();
+    groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
+    const r0 = s.result || {};
+    let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
+    const CH = s.chances || 6;                       // mistakes allowed
+    const sel = new Set(), tried = new Set();
+    /* Hints, worked out from the guesses so far (so a reload keeps them):
+       3 wrong in a row lights up two people from the easiest group still
+       unsolved; a 4th wrong in a row lights up a third from that group. That's
+       all: two hints a day at most, and if the group is solved before the
+       second, the second is used up. */
+    const hintNames = () => {
+      let run = 0, step = 0, hg = null; const got = [];
+      for (const g of log){
+        if (g.every(l => l === g[0])){ got.push(g[0]); run = 0; continue; }
+        run++;
+        if (run === 3 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
+        else if (run === 4 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
+      }
+      if (!hg || found.includes(hg.lv) || step === 3) return [];
+      return seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
+    };
+    let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
+
+    box.innerHTML = topBar(s, streak) +
+      '<div class="qtsolved" id="qtsolved"></div>' +
+      '<div class="qtgrid" id="qtgrid" role="group" aria-label="The sixteen people"></div>' +
+      '<div class="qtlives" id="qtlives"></div>' +
+      '<div class="qtbtns" id="qtbtns"><button class="btn" type="button" id="qtshuf">Shuffle</button>' +
+        '<button class="btn" type="button" id="qtclear">Deselect all</button>' +
+        '<button class="btn primary" type="button" id="qtgo" disabled>Submit</button></div>' +
+      '<div class="qtmsg" id="qtmsg" role="status" aria-live="polite"></div>' +
+      '<div class="qtdone" id="qtdone"></div>' +
+      '<div class="dgresults" id="qtsummary" hidden></div>';
+    wireBar(s);
+
+    const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + (missed ? ' · missed' : '') + '</span><b>' + esc(g.label) + '</b>' +
+      '<span class="qtnames">' + g.names.map(n => esc(n) + (howOf.get(n) ? ' <i>(' + esc(howOf.get(n)) + ')</i>' : '')).join(', ') + '</span></div>';
+    const paintSolved = () => {
+      const missed = done && found.length < 4 ? groups.filter(g => !found.includes(g.lv)) : [];
+      $('qtsolved').innerHTML = found.map(lv => row(groups.find(g => g.lv === lv), false)).join('') + missed.map(g => row(g, true)).join('');
+    };
+    const paintGrid = () => {
+      const grid = $('qtgrid');
+      grid.hidden = done;
+      const hinted = new Set(hintNames());
+      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (hinted.has(n) ? ' hint' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
+        (hinted.has(n) ? ' title="A hint: the highlighted people are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
+      grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
+        if (done) return;
+        const n = b.dataset.n;
+        if (sel.has(n)) sel.delete(n); else if (sel.size < 4) sel.add(n); else return;
+        SFX.tick(); b.classList.toggle('on', sel.has(n)); b.setAttribute('aria-pressed', String(sel.has(n)));
+        $('qtgo').disabled = sel.size !== 4;
+      });
+      $('qtgo').disabled = sel.size !== 4;
+    };
+    const paintLives = () => {
+      $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:CH }, (_, i) => '<i class="' + (i < CH - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
+      $('qtbtns').hidden = done;
+    };
+    const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
+    const save = () => TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, found, log, mistakes } })
+      .then(r => { if (!alive || !r) return;
+        if (r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; }
+        if (done) loadSummary(s.date); }).catch(() => {});
+
+    /* the share card: an image of how you went (no names, no answers), and the same as text */
+    const won = () => found.length === 4 && mistakes < CH;
+    const verdict = () => won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it';
+    const shareText = () => 'Quartets · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
+      log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=quartets';
+    const drawCard = () => {
+      const S = 2, W = 360, sq = 34, gap = 7, rows = Math.max(1, log.length);
+      const H = 168 + rows * (sq + gap);
+      const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+      const g = c.getContext('2d'); g.scale(S, S);
+      const font = (getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif');
+      const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+      const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#1b1930'); bg.addColorStop(1, '#2b2350');
+      rr(0, 0, W, H, 22); g.fillStyle = bg; g.fill();
+      g.textAlign = 'center'; g.fillStyle = '#fff';
+      g.font = '800 26px ' + font; g.fillText('Quartets', W / 2, 46);
+      g.fillStyle = 'rgba(255,255,255,.65)'; g.font = '600 13px ' + font; g.fillText('Year ' + s.year + ' · ' + longDate(s.date), W / 2, 68);
+      g.fillStyle = won() ? '#ffe08a' : '#ffb3c0'; g.font = '700 16px ' + font; g.fillText(verdict(), W / 2, 98);
+      const gx = (W - (4 * sq + 3 * gap)) / 2;
+      log.forEach((r, i) => r.forEach((l, j) => { rr(gx + j * (sq + gap), 116 + i * (sq + gap), sq, sq, 8); g.fillStyle = QT_COL[l]; g.fill(); }));
+      g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '600 12px ' + font; g.fillText('mscunofficial.com', W / 2, H - 18);
+      return c;
+    };
+    const paintDone = () => {
+      const el = $('qtdone'); if (!done){ el.innerHTML = ''; return; }
+      const card = drawCard();
+      el.innerHTML = '<div class="qtcard"></div><div class="qtcardbtns"><button class="btn primary" type="button" id="qtshare">Share</button>' +
+        '<button class="btn" type="button" id="qtcopy">Copy as text</button></div>';
+      card.className = 'qtcardimg'; card.setAttribute('role', 'img'); card.setAttribute('aria-label', 'Your result: ' + verdict());
+      el.querySelector('.qtcard').appendChild(card);
+      $('qtcopy').onclick = async () => { try { await navigator.clipboard.writeText(shareText()); $('qtcopy').textContent = 'Copied'; } catch {} };
+      $('qtshare').onclick = () => card.toBlob(async blob => {
+        const file = blob && new File([blob], 'quartets-' + s.date + '.png', { type:'image/png' });
+        try {
+          if (file && navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], text:shareText() });
+          else if (navigator.share && TOUCH) await navigator.share({ text:shareText() });
+          else if (blob && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); $('qtshare').textContent = 'Image copied'; }
+          else { await navigator.clipboard.writeText(shareText()); $('qtshare').textContent = 'Copied'; }
+        } catch {}
+      }, 'image/png');
+    };
+    const paint = () => { paintSolved(); paintGrid(); paintLives(); paintDone(); };
+    paint();
+    if (done) openSummary(s.date);
+
+    $('qtshuf').onclick = () => { order = seeded(order, Math.random().toString(36)); paintGrid(); };
+    $('qtclear').onclick = () => { sel.clear(); paintGrid(); };
+    $('qtgo').onclick = () => {
+      if (done || sel.size !== 4) return;
+      const pick = [...sel], key = pick.slice().sort().join('|');
+      if (tried.has(key)){ say('You’ve tried those four already.'); return; }
+      tried.add(key);
+      const lvs = pick.map(n => lvOf.get(n));
+      const right = lvs.every(l => l === lvs[0]);
+      const before = hintNames().length;              // to tell if this guess unlocks a hint
+      log.push(lvs);
+      if (right){
+        found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
+        SFX.line(found.length);
+        if (found.length === 4){ done = true; SFX.win(); }
+      } else {
+        mistakes++;
+        const most = Math.max(...[1, 2, 3, 4].map(l => lvs.filter(x => x === l).length));
+        say(most === 3 ? 'One away…' : 'Not a group.', true);
+        /* a hint just unlocked: say so (after the shake) */
+        setTimeout(() => { const now = hintNames().length;
+          if (!done && now > before) say(now === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
+        $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
+          { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
+        if (mistakes >= CH){ done = true; SFX.lose(); }
+      }
+      if (arch && done){ arch.mine[s.date] = { solved:won(), done:true, mistakes }; if (!$('qtcal').hidden) paintCal(); }
+      save();
+      setTimeout(() => { paint(); if (done) openSummary(s.date); }, right || done ? 0 : 280);
+    };
+  }
+
+  /* ── Results: how your year went that day ── */
+  async function openSummary(date){
+    const el = $('qtsummary'), b = $('qtsumbtn'); if (!el) return;
+    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    await loadSummary(date);
+  }
+  async function toggleSummary(date){
+    const el = $('qtsummary');
+    if (!el.hidden){ el.hidden = true; $('qtsumbtn').setAttribute('aria-expanded', 'false'); return; }
+    await openSummary(date);
+  }
+  async function loadSummary(date){
+    const el = $('qtsummary'); if (!el) return;
+    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    try { const d = await TT.api('/api/daily', { params:{ conn:1, date, summary:1 } }); if (alive && el.isConnected) renderSummary(el, d.summary, d.mine || {}); }
+    catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
+  }
+  function renderSummary(el, sum, mine){
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
+    const rate = Math.round(sum.solved / sum.played * 100);
+    const keys = Array.from({ length:sum.chances || 6 }, (_, i) => String(i)).concat('lost');
+    const max = Math.max(1, ...keys.map(k => sum.dist[k] || 0));
+    const tip = k => { const l = (sum.names || {})[k]; return l && l.length ? ' title="' + esc(l.join(', ')) + '"' : ''; };
+    const bar = (label, k, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"' + tip(k) + '><span class="dgbl">' + label + '</span>' +
+      '<span class="dgbt"><i style="width:' + ((sum.dist[k] || 0) / max * 100) + '%"></i></span><span class="dgbn">' + (sum.dist[k] || 0) + '</span></div>';
+    const sp = sum.spotlight;
+    const spot = sp ? (sp.kind === 'perfect' ? '⭐ <b>' + esc(sp.name) + '</b> was first to solve it with no mistakes'
+      : '⚡ <b>' + esc(sp.name) + '</b> was first to solve it') : '';
+    /* the groups: what they were only once you've finished, so Results never gives the answers away */
+    const told = !!mine.done;
+    const groupRows = (sum.found || []).slice().sort((a, b) => a.lv - b.lv).map(g => {
+      const pct = Math.round(g.found / sum.played * 100);
+      return '<div class="qtfound"><span class="qtfdot" style="background:' + QT_COL[g.lv] + '"></span><span class="qtfl">' + (told ? esc(g.label) : 'Level ' + g.lv) + '</span>' +
+        '<span class="dgbt"><i style="width:' + pct + '%;background:' + QT_COL[g.lv] + '"></i></span><span class="dgbn">' + pct + '%</span></div>';
+    }).join('');
+    el.innerHTML = (spot ? '<div class="dgspot">' + spot + '</div>' : '') +
+      '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
+      '<div class="qtsumcap">Mistakes</div>' +
+      '<div class="dgbars">' + keys.map(k => k === 'lost' ? bar('✗', 'lost', true) : bar(k, k)).join('') + '</div>' +
+      '<div class="qtsumcap">Who found each group</div><div class="qtfounds">' + groupRows + '</div>';
+  }
+
+  /* ── Archive: a month calendar, like Daily Guess Who's ── */
+  async function toggleCal(){
+    const el = $('qtcal'), btn = $('qtcalbtn');
+    const open = el.hidden;
+    el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    if (!arch){
+      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      try {
+        const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } });
+        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch };
+        (d.archive || []).forEach(a => arch.days[a.date] = a);
+      } catch (e){ el.innerHTML = '<p class="how" style="margin:0">Couldn’t load past days.</p>'; return; }
+    }
+    if (!alive) return;
+    calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    paintCal();
+  }
+  function paintCal(){
+    const el = $('qtcal'); if (!el || !arch) return;
+    if (!calMonth) calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    const [y, m] = calMonth.split('-').map(Number);
+    const iso = d => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const firstDow = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const minMonth = arch.epoch.slice(0, 7), maxMonth = arch.today.slice(0, 7);
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
+    for (let d = 1; d <= dim; d++){
+      const date = iso(d), mine = arch.mine[date], day = arch.days[date];
+      const off = date < arch.epoch || date > arch.today;
+      const state = mine && mine.solved ? 'won' : mine && mine.done ? 'lost' : 'open';
+      const tip = off ? '' : shortDate(date) + (mine && mine.solved ? ': solved with ' + mine.mistakes + ' mistake' + (mine.mistakes === 1 ? '' : 's') : mine && mine.done ? ': you missed it' : ': not played') +
+        (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
+      cells += off ? '<span class="dgc off"><span class="dgcn">' + d + '</span></span>'
+        : '<button type="button" class="dgc ' + state + (cur && date === cur.date ? ' cur' : '') + (date === arch.today ? ' today' : '') +
+          '" data-date="' + date + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+          '<span class="dgcn">' + d + '</span><span class="dgcm">' + (state === 'won' ? '✓' : state === 'lost' ? '✗' : '') + '</span>' +
+          '<span class="dgcp">' + (day && day.played ? day.played : '') + '</span></button>';
+    }
+    el.innerHTML =
+      '<div class="dgcalhd"><button type="button" class="dgcnav" data-step="-1" aria-label="Previous month"' + (calMonth <= minMonth ? ' disabled' : '') + '>‹</button>' +
+        '<b>' + MONTHS[m - 1] + ' ' + y + '</b>' +
+        '<button type="button" class="dgcnav" data-step="1" aria-label="Next month"' + (calMonth >= maxMonth ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="dgcgrid"><span class="dgcw">M</span><span class="dgcw">T</span><span class="dgcw">W</span><span class="dgcw">T</span>' +
+        '<span class="dgcw">F</span><span class="dgcw">S</span><span class="dgcw">S</span>' + cells + '</div>' +
+      '<div class="dgclegend"><span class="won">✓</span> solved <span class="lost">✗</span> missed <span class="dgcp">12</span> played in your year</div>';
+    el.querySelectorAll('.dgcnav').forEach(b => b.onclick = () => {
+      const dt = new Date(Date.UTC(y, m - 1 + (+b.dataset.step), 1));
+      calMonth = dt.toISOString().slice(0, 7); paintCal();
+    });
+    el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
+  }
   return () => { alive = false; };
 };
 
@@ -1164,6 +1632,104 @@ BUILD.dailyguess = host => {
    Two modes — Sprint (clear 40 lines; deterministic weekly pieces; best
    time per week) and Zen (survive as long as you can; gravity ramps with
    time; all-time board). tetr.io-style layout, rebindable keys + handling. */
+/* ── online rooms (Tetris versus, Snake online): the lobby ────────────
+   rooms.js, loaded the first time someone opens one, talks to the same
+   online-room database Hong Kong Mahjong uses. The lobby: your name, make a
+   room or type a friend's code, and the host starts. The game is handed
+   { room, players, seed, at, isHost, me, hostId } and calls back() when the
+   round is over, which returns everyone to the lobby for another. */
+let roomsLoad = null;
+function loadRooms(){
+  if (window.Rooms) return Promise.resolve(window.Rooms);
+  return roomsLoad || (roomsLoad = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261109';
+    s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
+    s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
+    document.head.appendChild(s);
+  }));
+}
+function playName(){
+  const saved = TT.get('tt.mpname', '');
+  if (saved) return saved;
+  const e = TT.myEmail && TT.myEmail();
+  return e ? cap(e.split('@')[0].split('.')[0].replace(/\d+$/, '')) : '';
+}
+const typing = e => !!(e && e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
+function mpLobby(box, o){
+  let room = null, code = '', isHost = false, busy = false, inMatch = false, offs = [], closed = false;
+  const nameOf = p => (p && p.presence && p.presence.n) || 'Player';
+  const unwire = () => { offs.forEach(f => { try { f(); } catch {} }); offs = []; };
+  async function leave(){ unwire(); inMatch = false; const r = room; room = null; if (r) await r.leave().catch(() => {}); }
+  function menu(msg){
+    if (closed) return;
+    inMatch = false;
+    box.innerHTML = '<div class="mpbox">' +
+      '<label class="mpname">Your name<input id="mpn" maxlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore value="' + esc(playName()) + '"></label>' +
+      '<div class="mprow"><button class="btn primary" type="button" id="mpmake">Make a room</button>' +
+        '<span class="mpor">or</span>' +
+        '<input id="mpcode" maxlength="5" placeholder="Code" autocomplete="off" data-lpignore="true" data-1p-ignore autocapitalize="characters" spellcheck="false" aria-label="Room code">' +
+        '<button class="btn" type="button" id="mpjoin">Join</button></div>' +
+      '<p class="mpmsg" id="mpmsg" role="status">' + esc(msg || 'Up to ' + o.max + ' players. Make a room and send your friends the code.') + '</p></div>';
+    const name = () => { const n = $('mpn').value.trim().slice(0, 16); if (n) TT.set('tt.mpname', n); return n || 'Player'; };
+    const go = async fn => {
+      if (busy) return; busy = true; $('mpmsg').textContent = 'Connecting…';
+      try { const Rm = await loadRooms(); const r = await fn(Rm, name()); if (closed){ r.room.leave(); return; } room = r.room; code = r.code; wire(); lobby(); }
+      catch (e){ if ($('mpmsg')) $('mpmsg').textContent = e.message || 'Couldn’t connect.'; }
+      finally { busy = false; }
+    };
+    $('mpmake').onclick = () => go((Rm, n) => { isHost = true; return Rm.host(o.game, n, o.max); });
+    $('mpjoin').onclick = () => go((Rm, n) => { isHost = false; return Rm.join(o.game, $('mpcode').value, n); });
+    $('mpcode').onkeydown = e => { if (e.key === 'Enter') $('mpjoin').click(); };
+  }
+  function lobby(){
+    if (!room || closed) return menu();
+    const peers = room.peers().slice().sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0));
+    const n = Math.min(peers.length, o.max);
+    box.innerHTML = '<div class="mpbox"><div class="mphead"><div><span class="mplabel">Room code</span><b class="mpcode">' + esc(code) + '</b></div>' +
+        '<span class="mpbtns"><button class="btn" type="button" id="mpcopy">Copy code</button><button class="btn" type="button" id="mpleave">Leave</button></span></div>' +
+      '<ul class="mplist">' + peers.map(p => '<li' + (p.isMe ? ' class="me"' : '') + '>' + esc(nameOf(p)) +
+        (p.presence.h ? '<span>host</span>' : '') + (p.isMe ? '<span>you</span>' : '') + '</li>').join('') + '</ul>' +
+      (isHost ? '<button class="btn primary" type="button" id="mpstart"' + (n < 2 ? ' disabled' : '') + '>' + (n < 2 ? 'Waiting for someone to join…' : 'Start with ' + n + ' players') + '</button>'
+              : '<p class="mpmsg">Waiting for the host to start…</p>') + '</div>';
+    $('mpcopy').onclick = () => { try { navigator.clipboard.writeText(code); $('mpcopy').textContent = 'Copied'; } catch {} };
+    $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
+    if (isHost && $('mpstart')) $('mpstart').onclick = start;
+  }
+  async function start(){
+    const peers = room.peers().slice().sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0)).slice(0, o.max);
+    if (peers.length < 2) return;
+    await room.presence({ playing: 1 });
+    room.emit('start', { players: peers.map(p => ({ id: p.id, n: nameOf(p) })), seed: (Math.random() * 4294967296) >>> 0, at: room.now() + 3500 });
+  }
+  function wire(){
+    unwire();
+    offs.push(room.onPeers(peers => {
+      if (!peers.some(p => p.presence.h)){                    // the host has gone: so has the room
+        leave().then(() => menu('The host left, so the room closed.')); if (o.onLeft) o.onLeft(); return;
+      }
+      if (inMatch){ if (o.onPeers) o.onPeers(peers); } else lobby();
+    }));
+    offs.push(room.on('start', m => {
+      const d = m.data || {}, h = room.peers().find(p => p.presence.h);
+      if (!h || h.id !== m.peer || !Array.isArray(d.players)) return;    // only the host starts a round
+      if (!d.players.some(p => p.id === room.id)){ inMatch = true;
+        box.innerHTML = '<div class="mpbox"><p class="mpmsg">A round is on. You’ll be in the next one.</p></div>'; return; }
+      inMatch = true;
+      box.innerHTML = '<div class="mpbox mpon"><span>Room <b>' + esc(code) + '</b> · ' + d.players.map(p => esc(p.n)).join(', ') + '</span>' +
+        '<button class="btn" type="button" id="mpleave">Leave</button></div>';
+      $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
+      o.onStart({ room, players: d.players.map(p => ({ id: String(p.id), n: Rooms.cleanName(p.n) })), seed: d.seed >>> 0,
+                  at: +d.at || room.now(), isHost, me: room.id, hostId: m.peer });
+    }));
+  }
+  menu();
+  return {
+    back(){ if (!room) return; inMatch = false; if (isHost) room.presence({ playing: 0 }); lobby(); },
+    close(){ closed = true; leave(); },
+    live: () => !!room
+  };
+}
+
 BUILD.tetris = host => {
   const COLS = 10, ROWS = 20, CELL = 24, TARGET = 40, LOCK_DELAY = 500, MAX_RESETS = 15, ROT_DAS = 250, ROT_ARR = 130;
   const wk = tetrisWeek();
@@ -1186,9 +1752,10 @@ BUILD.tetris = host => {
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
   let mode = TT.get('tt.tetrismode', 'sprint');
 
-  head(host, 'Tetris', 'Sprint, Survival, Zen and Practice. Keys and handling under Controls.', '<div id="twrap"></div>');
+  head(host, 'Tetris', 'Clear lines. Keys are under Controls.', '<div id="twrap"></div>');
   document.getElementById('twrap').innerHTML =
     '<div class="tmodes" id="tmodes"></div>' +
+    '<div class="mppanel" id="tmp" hidden></div>' +
     '<div class="tgame">' +
       '<div class="tside tleft">' +
         '<div class="tpanel"><div class="tlabel">Hold</div><canvas id="thold" width="80" height="60"></canvas></div>' +
@@ -1207,6 +1774,7 @@ BUILD.tetris = host => {
         '<div class="tpanel"><div class="tlabel">Next</div><canvas id="tnext" width="80" height="224"></canvas></div>' +
       '</div>' +
     '</div>' +
+    '<div class="topps" id="topps" hidden></div>' +
     (TOUCH ? '<div class="tpad" id="tpad">' +
       '<button type="button" data-act="left" aria-label="Move left">◀</button>' +
       '<button type="button" data-act="right" aria-label="Move right">▶</button>' +
@@ -1253,7 +1821,7 @@ BUILD.tetris = host => {
     J:[[1,0,0],[1,1,1],[0,0,0]],
     L:[[0,0,1],[1,1,1],[0,0,0]]
   };
-  const COLORS = { I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c' };
+  const COLORS = { I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c', G:'#7c8494' };   // G: versus garbage
   const KEYS = Object.keys(SPAWN);
 
   /* SRS kick tables — offsets in SRS coords (y up); applied with y negated for the
@@ -1282,7 +1850,7 @@ BUILD.tetris = host => {
     t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   let rnd, bag = [], queue = [];
   let undoStack = [], redoStack = [];        // practice mode only — history of committed states
-  function newRng(){ rnd = mode==='sprint' ? mulberry32(0x9e3779b9 ^ wk) : mulberry32((Math.random()*4294967296)>>>0); bag = []; }
+  function newRng(){ rnd = mode==='sprint' ? mulberry32(0x9e3779b9 ^ wk) : mode==='versus' && vs ? mulberry32(vs.seed) : mulberry32((Math.random()*4294967296)>>>0); bag = []; }
   function nextType(){
     if (!bag.length){ bag = KEYS.slice();
       for (let i=bag.length-1;i>0;i--){ const j=(rnd()*(i+1))|0; [bag[i],bag[j]]=[bag[j],bag[i]]; } }
@@ -1297,6 +1865,7 @@ BUILD.tetris = host => {
   let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
   let grounded = false, lockStart = 0, lockResets = 0;
   let rebinding = null, savedState = null, saveFlashTimer = null;
+  let vs = null, lobbyUI = null;   // versus: the round, and the room's lobby
 
   /* ── piece mechanics (SRS) ── */
   function collides(cells, px, py){
@@ -1352,6 +1921,7 @@ BUILD.tetris = host => {
     if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800;
       if (lines>=4){ SFX.tetris(); flash('big'); } else { SFX.line(lines); flash('on'); } }
     else SFX.lock();
+    if (mode==='versus' && vs && !vsAfterLock(lines)) return;
     if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
     holdUsed=false; spawnNext(now); updateStats();
     if (mode==='practice') pushHistory();          // snapshot each placement so it can be undone
@@ -1362,10 +1932,11 @@ BUILD.tetris = host => {
      stay tense and don't drag; Sprint/Zen use the player's chosen gravity. */
   const gravityMs = () => mode==='survival'
     ? Math.max(17, 700 * Math.pow(0.55, (elapsedMs/1000)/12))
+    : mode==='versus' ? Math.max(60, 800 * Math.pow(0.8, elapsedMs/30000))   // everyone the same, a bit faster every 30s
     : cfg.grav;
   const saveable = () => mode==='zen' || mode==='survival';
   const scored = () => mode==='zen' || mode==='practice';    // score-based (not a clock)
-  const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen',practice:'Practice'}[mode] || mode);
+  const modeName = () => ({sprint:'Sprint',survival:'Survival',zen:'Zen',practice:'Practice',versus:'Versus'}[mode] || mode);
   /* ── practice: undo / redo of committed placements (nothing is tracked) ── */
   function pushHistory(){ undoStack.push(serialize()); if (undoStack.length>300) undoStack.shift(); redoStack.length=0; updatePracticeBtns(); }
   function restoreInto(s){
@@ -1455,6 +2026,8 @@ BUILD.tetris = host => {
       ctx.lineWidth=1;
       piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if(v && piece.y+r>=0) cellPx((piece.x+c)*CELL,(piece.y+r)*CELL,piece.type,ctx); }));
     }
+    /* versus: the garbage on its way, as a red bar up the left edge */
+    if (mode==='versus' && vs && vs.pending){ const h=Math.min(ROWS, vs.pending)*CELL; ctx.fillStyle='#e5484d'; ctx.fillRect(0, ROWS*CELL-h, 5, h); }
     drawNext(); drawHold();
   }
 
@@ -1470,7 +2043,7 @@ BUILD.tetris = host => {
     $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
     $$('ttimelabel').textContent = scored() ? 'Score' : 'Time';
     const bestRow = $$('tbest').closest('.tstat');
-    if (bestRow) bestRow.style.display = mode==='practice' ? 'none' : 'flex';   // practice isn't tracked
+    if (bestRow) bestRow.style.display = mode==='practice' || mode==='versus' ? 'none' : 'flex';   // practice and versus aren't tracked
     $$('tbestlabel').textContent = mode==='sprint' ? (weeklyOn() ? 'Best (wk)' : 'Best') : (mode==='survival' ? 'Best (all-time)' : 'Best score');
     $$('tbest').textContent = fmtBest();
     updatePracticeBtns();
@@ -1556,6 +2129,11 @@ BUILD.tetris = host => {
     phase='over'; clearInterval(loopId);
     if (won){ SFX.win(); flash('big'); } else { SFX.lose(); flash('redon'); thud(8, 360); }
     const restart = tap('Restart ('+keyLabel(cfg.keys.restart)+')', 'Tap to restart');
+    if (mode==='versus'){                 // knocked out: tell the room (our own echo knocks us out here too)
+      if (vs){ const place = vs.alive.size; vs.room.emit('bd', { g: boardStr() }); vs.room.emit('out', {});
+        showOver('Knocked out', place > 1 ? ordinal(place) + ' place. Watch the others finish.' : ''); }
+      renderStatsLabels(); draw(); return;
+    }
     if (mode==='sprint'){
       if (won){ const el=elapsedMs/1000; const s=allStats(); const t=(s.tetris&&s.tetris.week===wk)?s.tetris:{week:wk,best:null};
         /* the all-time best survives the weekly reset; a record from before it
@@ -1608,7 +2186,7 @@ BUILD.tetris = host => {
   }
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
-    if (mode==='practice'){ el.innerHTML=''; return; }   // practice has no board
+    if (mode==='practice' || mode==='versus'){ el.innerHTML=''; return; }   // practice and versus have no board
     if (!TT.myEmail()){ el.innerHTML=''; return; }
     try {
       if (mode==='sprint'){
@@ -1663,7 +2241,8 @@ BUILD.tetris = host => {
     ['sprint','Sprint','Clear 40 lines as fast as you can. Weekly board.'],
     ['survival','Survival','Endless, and it gets faster. All-time board.'],
     ['zen','Zen','Endless and relaxed. No clock, no leaderboard.'],
-    ['practice','Practice','Undo and redo as much as you like. Nothing is tracked.']
+    ['practice','Practice','Undo and redo as much as you like. Nothing is tracked.'],
+    ['versus','Versus','Play friends online. Clearing lines sends them garbage.']
   ];
   function renderModes(){
     $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+'</button>').join('');
@@ -1671,10 +2250,12 @@ BUILD.tetris = host => {
   }
   async function toReady(){
     phase='ready'; clearInterval(loopId); emptyBoard(); newRng();
+    if (mode==='versus') vsOpen(); else vsClose();
     renderModes(); renderStatsLabels(); updateStats(); updateSaveBtn(); draw();
     $$('tstart').textContent='Start'; $$('tpause').textContent='Pause';
-    const titles = { sprint:'Sprint: 40 lines', survival:'Survival: rising speed', zen:'Zen: endless and relaxed', practice:'Practice: undo and redo' };
-    showOver(titles[mode], tap('Press Start or '+keyLabel(cfg.keys.hardDrop), 'Tap to start'));
+    $$('tstart').style.display = $$('tpause').style.display = mode==='versus' ? 'none' : '';
+    const titles = { sprint:'Sprint: 40 lines', survival:'Survival: rising speed', zen:'Zen: endless and relaxed', practice:'Practice: undo and redo', versus:'Versus: play friends online' };
+    showOver(titles[mode], mode==='versus' ? 'Make a room above, or join a friend’s' : tap('Press Start or '+keyLabel(cfg.keys.hardDrop), 'Tap to start'));
     loadLB();
     if (saveable() && TT.myEmail()){          // offer to resume a saved game
       const forMode = mode;
@@ -1687,6 +2268,96 @@ BUILD.tetris = host => {
         }
       } catch(e){}
     }
+  }
+
+  /* ── versus: 2 to 4 players online, the same pieces in the same order.
+     Clearing 2/3/4 lines sends 1/2/4 rows of garbage (more for a combo or a
+     clear board) to someone still in; garbage on its way is cancelled by your
+     own clears first, and lands when you place a piece without clearing. The
+     last one standing wins. Each placement sends your board for the little
+     views of everyone else's. ── */
+  const OPP_CELL = 6;
+  const ordinal = n => n + (n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
+  const boardStr = () => grid.map(r => r.map(c => c ? (c === 'G' ? 'g' : c) : '.').join('')).join('');
+  function vsOpen(){
+    $$('tmp').hidden = false;
+    if (!lobbyUI) lobbyUI = mpLobby($$('tmp'), { game:'tt', max:4, onStart:vsStart, onLeft:vsLeft, onPeers:vsPeers });
+  }
+  function vsClose(){
+    const p = $$('tmp'); if (p){ p.hidden = true; p.innerHTML = ''; }
+    if (lobbyUI){ lobbyUI.close(); lobbyUI = null; }
+    vsStop(); renderOpps();
+  }
+  function vsStop(){ if (vs){ vs.offs.forEach(f => { try { f(); } catch {} }); clearTimeout(vs.cd); vs = null; } }
+  function vsLeft(){ vsStop(); renderOpps(); if (mode==='versus'){ phase='ready'; clearInterval(loopId); emptyBoard(); draw(); showOver('Versus: play friends online', 'Make a room above, or join a friend’s'); } }
+  function vsStart(m){
+    vsStop();
+    const v = vs = Object.assign({}, m, { alive: new Set(m.players.map(p => p.id)), boards: new Map(), pending: 0, combo: 0, done: false, offs: [], cd: null });
+    v.offs.push(m.room.on('atk', msg => { const d = msg.data || {};
+      if (vs !== v || msg.isMe || d.to !== v.me || phase !== 'playing') return;
+      v.pending = Math.min(24, v.pending + Math.max(0, Math.min(10, d.n | 0))); draw(); }));
+    v.offs.push(m.room.on('bd', msg => { if (vs !== v || msg.isMe) return; v.boards.set(msg.peer, String((msg.data || {}).g || '')); drawOpps(); }));
+    v.offs.push(m.room.on('out', msg => { if (vs === v) vsKnock(msg.peer); }));
+    renderOpps();
+    phase='ready'; clearInterval(loopId); emptyBoard(); renderStatsLabels(); updateStats(); draw();
+    const count = () => {
+      if (vs !== v) return;
+      const left = Math.ceil((v.at - v.room.now()) / 1000);
+      if (left > 0){ showOver(String(left), v.players.map(p => esc(p.n)).join(' · ')); v.cd = setTimeout(count, 150); }
+      else { begin(); toBoard(); }
+    };
+    count();
+  }
+  function vsPeers(peers){ if (!vs) return; [...vs.alive].forEach(id => { if (!peers.some(p => p.id === id)) vsKnock(id); }); }
+  function vsKnock(id){
+    const v = vs; if (!v || !v.alive.has(id)) return;
+    v.alive.delete(id); drawOpps();
+    if (v.alive.size > 1 || v.done) return;
+    v.done = true;
+    const w = [...v.alive][0], who = w && (v.players.find(p => p.id === w) || {}).n;
+    if (w === v.me){ if (phase === 'playing'){ phase = 'over'; clearInterval(loopId); } SFX.win(); flash('big'); showOver('You win!', 'Last one standing'); }
+    else showOver(who ? esc(who) + ' wins' : 'Round over', 'Back to the room in a moment');
+    setTimeout(() => { if (vs === v && lobbyUI) lobbyUI.back(); }, 3000);
+  }
+  function addGarbage(n){
+    const hole = (Math.random() * COLS) | 0; let ok = true;
+    for (let i = 0; i < n; i++){
+      if (grid[0].some(Boolean)) ok = false;                  // pushed over the top
+      grid.shift(); const row = new Array(COLS).fill('G'); row[hole] = null; grid.push(row);
+    }
+    thud(3);
+    return ok;
+  }
+  /* after each placement: attack, cancel, take garbage, send the board. false: topped out */
+  function vsAfterLock(lines){
+    const v = vs;
+    v.combo = lines ? v.combo + 1 : 0;
+    let atk = lines ? [0, 0, 1, 2, 4][lines] + [0, 0, 1, 1, 2, 2, 3, 3, 4][Math.min(8, v.combo - 1)] : 0;
+    if (lines && grid.every(r => r.every(c => !c))) atk += 6;             // a clear board
+    const cancel = Math.min(atk, v.pending); atk -= cancel; v.pending -= cancel;
+    if (atk > 0){ const opp = [...v.alive].filter(id => id !== v.me);
+      if (opp.length) v.room.emit('atk', { to: opp[(Math.random() * opp.length) | 0], n: atk }); }
+    if (!lines && v.pending > 0){ const n = Math.min(8, v.pending); v.pending -= n; if (!addGarbage(n)){ end(false); return false; } }
+    v.room.emit('bd', { g: boardStr() });
+    return true;
+  }
+  function renderOpps(){
+    const el = $$('topps'); if (!el) return;
+    if (!vs){ el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = vs.players.filter(p => p.id !== vs.me).map(p => '<div class="topp" data-id="' + esc(p.id) + '">' +
+      '<canvas width="' + COLS * OPP_CELL + '" height="' + ROWS * OPP_CELL + '"></canvas><span>' + esc(p.n) + '</span></div>').join('');
+    drawOpps();
+  }
+  function drawOpps(){
+    if (!vs) return;
+    $$('topps').querySelectorAll('.topp').forEach(d => {
+      const id = d.dataset.id, g = vs.boards.get(id) || '', c = d.querySelector('canvas').getContext('2d');
+      c.clearRect(0, 0, COLS * OPP_CELL, ROWS * OPP_CELL);
+      for (let i = 0; i < g.length && i < COLS * ROWS; i++){ const ch = g[i]; if (ch === '.') continue;
+        c.fillStyle = ch === 'g' ? COLORS.G : (COLORS[ch] || '#888'); c.fillRect((i % COLS) * OPP_CELL, ((i / COLS) | 0) * OPP_CELL, OPP_CELL - 1, OPP_CELL - 1); }
+      d.classList.toggle('out', !vs.alive.has(id));
+    });
   }
 
   /* ── controls / config panel ── */
@@ -1722,16 +2393,17 @@ BUILD.tetris = host => {
   /* ── input ── */
   const keyMatch = (e, bound) => !!bound && (e.key===bound || (e.key.length===1 && e.key.toLowerCase()===String(bound).toLowerCase()));
   function onKey(e){
+    if (typing(e)) return;                                   // the versus name and code boxes
     if (rebinding){ if (e.key!=='Escape'){ cfg.keys[rebinding]=e.key; saveCfg(); } rebinding=null; renderCfg(); renderKeyHint(); e.preventDefault(); return; }
     const K=cfg.keys;
-    if (keyMatch(e,K.restart)){ begin(); e.preventDefault(); return; }
-    if (keyMatch(e,K.pause) && (phase==='playing'||phase==='paused')){ togglePause(); e.preventDefault(); return; }
+    if (keyMatch(e,K.restart)){ if (mode!=='versus') begin(); e.preventDefault(); return; }
+    if (keyMatch(e,K.pause) && mode!=='versus' && (phase==='playing'||phase==='paused')){ togglePause(); e.preventDefault(); return; }
     if (mode==='practice'){                                  // U / Ctrl+Z = undo, Y / Ctrl+Y = redo, any time
       const k = e.key.toLowerCase();
       if (k==='u' || (k==='z' && (e.ctrlKey||e.metaKey) && !e.shiftKey)){ undo(); e.preventDefault(); return; }
       if (k==='y' || ((e.ctrlKey||e.metaKey) && (k==='y' || (k==='z' && e.shiftKey)))){ redo(); e.preventDefault(); return; }
     }
-    if (phase==='ready' || phase==='over'){ if (keyMatch(e,K.hardDrop)){ begin(); e.preventDefault(); } return; }
+    if (phase==='ready' || phase==='over'){ if (keyMatch(e,K.hardDrop) && mode!=='versus'){ begin(); e.preventDefault(); } return; }
     if (phase!=='playing') return;
     const now=performance.now();
     if (keyMatch(e,K.left)){ if(!e.repeat){ moveDir=-1; dasStart=now; dasCharged=false; if (tryMove(-1,now)) SFX.move(); } }
@@ -1746,6 +2418,7 @@ BUILD.tetris = host => {
     e.preventDefault(); draw();
   }
   function onKeyUp(e){
+    if (typing(e)) return;
     const K=cfg.keys;
     if (keyMatch(e,K.left)){ if (moveDir===-1){ moveDir=0; dasCharged=false; } }
     else if (keyMatch(e,K.right)){ if (moveDir===1){ moveDir=0; dasCharged=false; } }
@@ -1757,7 +2430,7 @@ BUILD.tetris = host => {
   /* ── touch: the pad does what the keys do; tapping the board rotates ── */
   if (TOUCH){
     wirePad($$('tpad'), act => {
-      if (phase==='ready' || phase==='over'){ if (act==='hardDrop') begin(); return; }
+      if (phase==='ready' || phase==='over'){ if (act==='hardDrop' && mode!=='versus') begin(); return; }
       if (phase!=='playing') return;
       const now=performance.now();
       if (act==='left' || act==='right'){ const d = act==='left' ? -1 : 1;
@@ -1785,13 +2458,13 @@ BUILD.tetris = host => {
   $$('tredo').onclick = redo;
   $$('tsave').onclick = saveGame;
   $$('tcontrols').onclick = () => { const c=$$('tcfg'); c.hidden=!c.hidden; if (!c.hidden) renderCfg(); };
-  $$('tover').onclick = () => { if ($$('tover')._actions) return; if (phase==='paused') togglePause(); else begin(); };
+  $$('tover').onclick = () => { if ($$('tover')._actions || mode==='versus') return; if (phase==='paused') togglePause(); else begin(); };
   document.addEventListener('keydown', onKey);
   document.addEventListener('keyup', onKeyUp);
 
   renderModes(); renderKeyHint(); toReady();   // ready, NOT auto-started
 
-  return () => { alive=false; clearInterval(loopId);
+  return () => { alive=false; clearInterval(loopId); vsClose();
                  document.removeEventListener('keydown', onKey); document.removeEventListener('keyup', onKeyUp); };
 };
 
@@ -1800,7 +2473,7 @@ BUILD.tetris = host => {
    you type which room it runs in. Self-contained — no directory calls. */
 BUILD.classroom = host => {
   head(host, 'Classroom',
-    'Multiple choice from your own timetable: rooms, teachers and classes. It speeds up as you go, three slips and the run ends.',
+    'Questions from your own timetable. Three slips ends the run.',
     '<div id="cr"></div>');
   const box = $('cr');
   let alive = true, timer = null;
@@ -1964,7 +2637,7 @@ BUILD.classroom = host => {
    away as your score climbs, so a lucky short hop can't carry the board.  */
 BUILD.chain = host => {
   head(host, 'Six Degrees',
-    'Chain classmate to classmate through a shared class. How many targets can you reach before the clock runs out?',
+    'Chain classmate to classmate through shared classes.',
     '<div id="ch"></div>');
   const box = document.getElementById('ch');
   let alive = true, timer = null;
@@ -2094,7 +2767,7 @@ BUILD.chain = host => {
    of yours, one isn't — spot the outsider before the bar empties.     */
 BUILD.oddone = host => {
   head(host, 'Odd One Out',
-    'Three of the four share a class of yours. Tap the one who doesn’t before the bar empties. Three misses ends the run.',
+    'Three share a class of yours. Pick the one who doesn’t.',
     '<div id="oo"></div>');
   const box = $('oo');
   let alive = true, timer = null;
@@ -2177,7 +2850,7 @@ BUILD.memory = host => {
   const LV = { easy:{r:3,c:4,label:'Easy'}, med:{r:4,c:4,label:'Medium'}, hard:{r:4,c:6,label:'Hard'} };
   let lvl = TT.get('tt.memLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   const FACES = ['🐶','🐱','🦊','🐼','🐧','🦉','🐢','🐙','🦋','🌵','🍩','🍕','⚽','🎸','🚀','🎲','🔥','🌈','⭐','🍉','🐝','🦕','🎧','🧩'];
-  head(host, 'Memory', 'Flip two cards a turn. Clear every pair in as few moves as you can.',
+  head(host, 'Memory', 'Match every pair in as few moves as you can.',
     '<div class="minesbar"><div class="diffbar" id="memlvl"></div>' +
       '<div class="minesinfo"><span id="memmoves">Moves 0</span><span id="memtime">⏱ 0</span></div></div>' +
     '<div id="memgrid"></div>' +
@@ -2241,7 +2914,10 @@ BUILD.memory = host => {
 
 /* ── Snake ─────────────────────────────────────────────────────── */
 BUILD.snake = host => {
-  head(host, 'Snake', tap('Arrow keys or WASD. Press R after a crash.', 'Swipe on the board or use the arrows. Tap the board after a crash.'),
+  head(host, 'Snake', tap('Arrow keys or WASD. R to restart.', 'Swipe or use the arrows.'),
+       '<div class="diffbar snmodes" id="snmodes"><button type="button" class="diffpill" data-m="solo" aria-pressed="true">Solo</button>' +
+         '<button type="button" class="diffpill" data-m="online" aria-pressed="false">Online</button></div>' +
+       '<div class="mppanel" id="snmp" hidden></div>' +
        '<canvas id="cv" width="320" height="320"></canvas>' +
        (TOUCH ? '<div class="tpad dpad" id="snpad">' +
          '<button type="button" data-act="u" aria-label="Up">▲</button>' +
@@ -2253,10 +2929,12 @@ BUILD.snake = host => {
       food = {x:4,y:4}, score = 0, dead = false, recorded = false;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
   const steer = m => {
+    if (online){ mtSteer(m); return; }
     if (m[0] === -dir.x && m[1] === -dir.y) return;   /* no instant reverse */
     next = {x:m[0], y:m[1]};
   };
   const key = e => {
+    if (typing(e)) return;
     const k = e.key.toLowerCase();
     const m = {arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],
                arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
@@ -2267,12 +2945,12 @@ BUILD.snake = host => {
   const DIRS = { u:[0,-1], d:[0,1], l:[-1,0], r:[1,0] };
   const again = () => { snake=[{x:8,y:8}]; dir={x:1,y:0}; next=dir; score=0; dead=false; recorded=false; };
   if (TOUCH){
-    onSwipe($('cv'), d => steer(DIRS[d]), { step:22, repeat:true, tapFn:() => { if (dead) again(); } });
-    wirePad($('snpad'), a => { if (dead) again(); else steer(DIRS[a]); });
+    onSwipe($('cv'), d => steer(DIRS[d]), { step:22, repeat:true, tapFn:() => { if (dead && !online) again(); } });
+    wirePad($('snpad'), a => { if (dead && !online) again(); else steer(DIRS[a]); });
   }
   addEventListener('keydown', key);
   const tick = () => {
-    if (dead) return;
+    if (dead || online) return;
     dir = next;
     const h = {x:(snake[0].x+dir.x+N)%N, y:(snake[0].y+dir.y+N)%N};
     if (snake.some(p => p.x===h.x && p.y===h.y)){ dead = true; }
@@ -2294,21 +2972,141 @@ BUILD.snake = host => {
     ctx.fillRect(food.x*S+3, food.y*S+3, S-6, S-6);
   };
   const restart = e => {
-    if (e.key.toLowerCase() !== 'r' || !dead) return;
+    if (typing(e) || online || e.key.toLowerCase() !== 'r' || !dead) return;
     again();
   };
   addEventListener('keydown', restart);
   let t = null;                                     /* self-scheduling so pace can ramp with score */
   const loop = () => { tick(); t = setTimeout(loop, dead ? 130 : Math.max(55, 112 - score*4)); };
+
+  /* ── online: 2 to 4 snakes in one arena. The host runs it and sends the
+     arena out every step; everyone else only sends their turns. Running
+     into any snake (or a head-on) is out; an out snake leaves food behind.
+     The last one moving wins. ── */
+  const ON = { N:24, S:14, STEP:140 }, SNCOL = ['#22c55e', '#3b82f6', '#ec4899', '#f59e0b'];
+  const cv = $('cv');
+  let online = false, lobbyUI = null, mt = null;
+  const sizeCanvas = px => { if (cv.width !== px){ cv.width = cv.height = px; } };
+  const enc = cells => cells.map(c => (c.y * ON.N + c.x).toString(36).padStart(2, '0')).join('');
+  const dec = s => { const out = []; for (let i = 0; i + 1 < s.length; i += 2){ const v = parseInt(s.slice(i, i + 2), 36);
+    if (v >= 0 && v < ON.N * ON.N) out.push({ x: v % ON.N, y: (v / ON.N) | 0 }); } return out; };
+  function setMode(m){
+    online = m === 'online';
+    [...$('snmodes').children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
+    $('snmp').hidden = !online;
+    if (online){ if (!lobbyUI) lobbyUI = mpLobby($('snmp'), { game:'sn', max:4, onStart:mtStart, onLeft:mtLeft, onPeers:mtPeers }); mtIdle(); }
+    else { if (lobbyUI){ lobbyUI.close(); lobbyUI = null; } mtStop(); $('snmp').innerHTML = ''; sizeCanvas(320); again(); }
+  }
+  [...$('snmodes').children].forEach(b => b.onclick = () => { if ((b.dataset.m === 'online') !== online) setMode(b.dataset.m); });
+  function mtIdle(){
+    sizeCanvas(ON.N * ON.S); ctx.clearRect(0, 0, cv.width, cv.height);
+    $('sc').textContent = 'Make a room above, or join a friend’s.';
+  }
+  function mtStop(){ if (mt){ mt.offs.forEach(f => { try { f(); } catch {} }); clearInterval(mt.timer); clearTimeout(mt.cd); mt = null; } }
+  function mtLeft(){ mtStop(); if (online) mtIdle(); }
+  function freeCell(){
+    const busy = new Set(); mt.snakes.forEach(s => s.alive && s.body.forEach(c => busy.add(c.x + ',' + c.y))); mt.food.forEach(f => busy.add(f.x + ',' + f.y));
+    for (let i = 0; i < 200; i++){ const c = { x: (Math.random() * ON.N) | 0, y: (Math.random() * ON.N) | 0 }; if (!busy.has(c.x + ',' + c.y)) return c; }
+    return { x: 0, y: 0 };
+  }
+  function mtStart(m){
+    mtStop();
+    const N = ON.N, starts = [[4, 4, 1, 0], [N - 5, N - 5, -1, 0], [N - 5, 4, 0, 1], [4, N - 5, 0, -1]];
+    const g = mt = Object.assign({}, m, { food: [], k: 0, over: false, offs: [], timer: null, cd: null,
+      snakes: m.players.map((p, i) => { const [x, y, dx, dy] = starts[i];
+        return { id: p.id, n: p.n, col: SNCOL[i], dir: { x: dx, y: dy }, q: [], alive: true,
+                 body: [{ x, y }, { x: x - dx, y: y - dy }, { x: x - 2 * dx, y: y - 2 * dy }] }; }) });
+    sizeCanvas(N * ON.S);
+    if (g.isHost){
+      for (let i = 0; i < 3; i++) g.food.push(freeCell());
+      g.offs.push(m.room.on('dir', msg => { const s = mt === g && g.snakes.find(x => x.id === msg.peer); if (s && !msg.isMe) qTurn(s, (msg.data || {}).d); }));
+    } else g.offs.push(m.room.on('st', msg => { if (mt !== g || msg.peer !== g.hostId) return; unpack(msg.data || {}); drawOnline(); }));
+    g.offs.push(m.room.on('end', msg => { if (mt === g && msg.peer === g.hostId && !g.isHost) finish((msg.data || {}).w); }));
+    drawOnline();
+    const count = () => {
+      if (mt !== g) return;
+      const left = Math.ceil((g.at - g.room.now()) / 1000);
+      if (left > 0){ $('sc').textContent = 'Starting in ' + left + '…'; g.cd = setTimeout(count, 150); return; }
+      if (g.isHost) g.timer = setInterval(step, ON.STEP);
+    };
+    count();
+  }
+  function qTurn(s, d){
+    if (!Array.isArray(d) || Math.abs(d[0]) + Math.abs(d[1]) !== 1) return;
+    const last = s.q.length ? s.q[s.q.length - 1] : s.dir;
+    if ((d[0] === -last.x && d[1] === -last.y) || (d[0] === last.x && d[1] === last.y)) return;
+    if (s.q.length < 3) s.q.push({ x: d[0], y: d[1] });
+  }
+  function mtSteer(m){
+    if (!mt || mt.over) return;
+    if (mt.isHost){ const s = mt.snakes.find(x => x.id === mt.me); if (s) qTurn(s, m); }
+    else mt.room.emit('dir', { d: m });
+  }
+  function mtPeers(peers){ if (!mt || !mt.isHost) return; mt.snakes.forEach(s => { if (s.alive && !peers.some(p => p.id === s.id)) s.alive = false; }); }
+  function step(){
+    const g = mt; if (!g || g.over) return;
+    const N = ON.N, live = g.snakes.filter(s => s.alive), key = c => c.x + ',' + c.y;
+    live.forEach(s => { if (s.q.length) s.dir = s.q.shift();
+      s.head = { x: (s.body[0].x + s.dir.x + N) % N, y: (s.body[0].y + s.dir.y + N) % N };
+      s.eats = g.food.findIndex(f => f.x === s.head.x && f.y === s.head.y); });
+    const occ = new Set();
+    live.forEach(s => { const keep = s.eats >= 0 ? s.body.length : s.body.length - 1; for (let i = 0; i < keep; i++) occ.add(key(s.body[i])); });
+    const heads = new Map(); live.forEach(s => heads.set(key(s.head), (heads.get(key(s.head)) || 0) + 1));
+    const out = live.filter(s => occ.has(key(s.head)) || heads.get(key(s.head)) > 1);
+    const eaten = new Set();
+    live.forEach(s => { if (out.includes(s)) return; s.body.unshift(s.head); if (s.eats >= 0) eaten.add(s.eats); else s.body.pop(); });
+    if (eaten.size){ SFX.tick(); g.food = g.food.filter((f, i) => !eaten.has(i)); }
+    out.forEach(s => { s.alive = false; s.body.filter((c, i) => i % 2 === 0).slice(0, 8).forEach(c => g.food.push({ x: c.x, y: c.y })); });
+    if (out.some(s => s.id === g.me)) SFX.lose();
+    while (g.food.length < 3) g.food.push(freeCell());
+    g.k++;
+    g.room.emit('st', { k: g.k, s: g.snakes.map(s => [s.alive ? 1 : 0, enc(s.body)]), f: enc(g.food) });
+    drawOnline();
+    const still = g.snakes.filter(s => s.alive);
+    if (still.length <= 1){
+      const w = still[0] || out.slice().sort((a, b) => b.body.length - a.body.length)[0];
+      const win = still[0] || (out.length > 1 && out[0].body.length === out[1].body.length ? null : w);
+      g.room.emit('end', { w: win ? win.id : null });
+      finish(win ? win.id : null);
+    }
+  }
+  function unpack(d){
+    if (!mt || !Array.isArray(d.s)) return;
+    if (typeof d.k === 'number'){ if (d.k <= mt.k) return; mt.k = d.k; }
+    d.s.forEach((row, i) => { const s = mt.snakes[i]; if (!s || !Array.isArray(row)) return;
+      if (s.alive && !row[0] && s.id === mt.me) SFX.lose();
+      s.alive = !!row[0]; const b = dec(String(row[1] || '')); if (b.length) s.body = b; });
+    mt.food = dec(String(d.f || ''));
+  }
+  function drawOnline(){
+    if (!mt) return;
+    const S = ON.S;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#e5484d'; mt.food.forEach(f => ctx.fillRect(f.x * S + 3, f.y * S + 3, S - 6, S - 6));
+    mt.snakes.forEach(s => { if (!s.alive) return; ctx.fillStyle = s.col;
+      s.body.forEach((p, i) => { ctx.globalAlpha = i === 0 ? 1 : .82; ctx.fillRect(p.x * S + 1, p.y * S + 1, S - 2, S - 2); }); });
+    ctx.globalAlpha = 1;
+    if (!mt.over) $('sc').innerHTML = mt.snakes.map(s => '<span class="snp' + (s.alive ? '' : ' out') + '"><i style="background:' + s.col + '"></i>' +
+      esc(s.id === mt.me ? 'You' : s.n) + ' ' + s.body.length + '</span>').join('');
+  }
+  function finish(w){
+    const g = mt; if (!g || g.over) return;
+    g.over = true; clearInterval(g.timer);
+    const who = w && g.snakes.find(s => s.id === w);
+    if (w === g.me){ SFX.win(); $('sc').textContent = 'You win!'; }
+    else $('sc').textContent = who ? who.n + ' wins' : 'A draw';
+    setTimeout(() => { if (mt === g && lobbyUI) lobbyUI.back(); }, 3000);
+  }
   loop();
-  return () => { clearTimeout(t); removeEventListener('keydown', key); removeEventListener('keydown', restart); };
+  return () => { clearTimeout(t); mtStop(); if (lobbyUI) lobbyUI.close();
+                 removeEventListener('keydown', key); removeEventListener('keydown', restart); };
 };
 
 /* ── 2048 (animated) ───────────────────────────────────────────────
    Tiles are absolutely positioned and keep a stable id, so a move
    transitions each one to its new cell instead of teleporting.       */
 BUILD.g2048 = host => {
-  head(host, '2048', tap('Arrow keys or WASD. Combine matching tiles.', 'Swipe to slide the tiles. Combine matching ones.'),
+  head(host, '2048', tap('Arrow keys or WASD. Merge matching tiles.', 'Swipe to merge matching tiles.'),
        '<div id="g2048wrap"><div id="g2048bg"></div><div id="g2048tiles"></div></div>');
   const GAP = 8, FULL = 74;
   let CELL = FULL, STEP = CELL + GAP;
@@ -2450,13 +3248,12 @@ BUILD.mines = host => {
   };
   let lvl = TT.get('tt.minesLvl', 'easy'); if (!LV[lvl]) lvl = 'easy';
   head(host, 'Minesweeper',
-    tap('Dig to open, right-click (or Flag mode) to flag. Your first dig is always safe. Click a number once its flags match to sweep the rest.',
-        'Tap to dig, hold a square (or use Flag mode) to flag it. Your first dig is always safe. Tap a number once its flags match to sweep the rest.'),
+    tap('Click to dig, right-click to flag.', 'Tap to dig, hold to flag.'),
     '<div class="minesbar"><div class="diffbar" id="mlvl"></div>' +
       '<div class="minesinfo"><span id="mflags">💣 0</span><span id="mtime">⏱ 0</span></div></div>' +
     '<div id="mines"></div>' +
     '<div class="minesfoot"><button class="btn primary" id="mnew" type="button">New game</button>' +
-    '<button class="btn" id="mflagmode" type="button" aria-pressed="false">🚩 Flag mode: off</button></div>');
+    '<button class="btn" id="mflagmode" type="button" aria-pressed="false">Flag mode: off</button></div>');
   const grid = $('mines');
   let N, MINES, bomb, open, flag, over, first, tstart, timer = null, flagMode = false;
   let holdTimer = null, heldAt = 0;
@@ -2567,14 +3364,14 @@ BUILD.mines = host => {
   $('mnew').onclick = reset;
   const fm = $('mflagmode');
   fm.onclick = () => { flagMode = !flagMode; fm.setAttribute('aria-pressed', flagMode);
-    fm.textContent = '🚩 Flag mode: ' + (flagMode ? 'on' : 'off'); fm.classList.toggle('primary', flagMode); };
+    fm.textContent = 'Flag mode: ' + (flagMode ? 'on' : 'off'); fm.classList.toggle('primary', flagMode); };
   reset();
   return () => stopTimer();
 };
 
 /* ── Typing race ───────────────────────────────────────────────── */
 BUILD.typing = host => {
-  head(host, 'Typing race', 'A fresh random line every time. The clock starts on your first keystroke.',
+  head(host, 'Typing race', 'Type the line as fast as you can.',
        '<div id="typetext"></div><input id="typein" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Start typing…">' +
        '<div class="minesfoot"><button class="btn" id="typenew" type="button">New text</button></div>');
   /* random-word lines so nothing can be memorised or looked up */
@@ -2644,7 +3441,14 @@ BUILD.react = host => {
   head(host, 'Reaction', 'Best of five.',
        '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
   const el = $('react');
-  let state = 'idle', t = null, at = 0, times = [];
+  let state = 'idle', t = null, at = 0, times = [], lockUntil = 0;
+  /* Autoclickers can't win:
+     - under 100 ms isn't a human reaction (it's anticipation, or a bot
+       watching the screen), so it doesn't count; the server refuses it too
+     - a burst of presses (4 inside 400 ms) or a run of presses at a machine-
+       steady rhythm stops the round, wipes the run and locks the box briefly
+     - clicks a script fakes (not from a real mouse or finger) are ignored */
+  const MIN_MS = 100, presses = [];
   const show = (cls, text) => { el.className = cls; el.textContent = text; };
   const arm = () => {
     show('wait', 'Wait for green…');
@@ -2655,14 +3459,36 @@ BUILD.react = host => {
                            requestAnimationFrame(() => { at = performance.now(); }); },
                    900 + Math.random()*2200);
   };
+  const lockOut = why => {
+    clearTimeout(t); state = 'idle'; times = []; presses.length = 0;
+    lockUntil = performance.now() + 3000; SFX.bad();
+    show('', why + ' Wait a moment, then ' + tap('click', 'tap') + ' to start again.');
+  };
+  /* too many presses too fast, or presses evenly spaced like a machine */
+  const autoclicking = now => {
+    presses.push(now); while (presses.length > 8) presses.shift();
+    if (presses.filter(p => now - p < 400).length >= 4) return true;
+    if (presses.length >= 6){
+      const gaps = presses.slice(1).map((p, i) => p - presses[i]);
+      const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+      const spread = Math.sqrt(gaps.reduce((a, g) => a + (g - mean) * (g - mean), 0) / gaps.length);
+      if (mean < 1500 && spread < 4) return true;           // no hand is that regular
+    }
+    return false;
+  };
   /* measure on pointerDOWN (the press), not click — click fires on release, which
      added the press-to-release time and inflated every reading */
   el.addEventListener('pointerdown', e => {
     e.preventDefault();
+    if (!e.isTrusted) return;                               // a scripted click
+    const now = performance.now();
+    if (now < lockUntil) return;
+    if (autoclicking(now)){ lockOut('That’s a lot of clicking.'); return; }
     if (state === 'idle'){ arm(); return; }
     if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon. ' + tap('Click', 'Tap') + ' to retry.'); return; }
     if (state === 'go'){
-      const ms = Math.max(0, Math.round(performance.now() - at));
+      const ms = Math.max(0, Math.round(now - at));
+      if (ms < MIN_MS){ state = 'idle'; SFX.bad(); show('', ms + ' ms is faster than anyone can react, so it doesn’t count. ' + tap('Click', 'Tap') + ' to retry.'); return; }
       times.push(ms); SFX.good();
       const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
       recordStat('react', {key:'fastest', mode:'min', value:ms});
@@ -2677,20 +3503,20 @@ BUILD.react = host => {
 };
 
 /* ── Leaderboards (read-only; owner controls live in Admin) ─────────── */
-BUILD.leaderboards = host => {
-  const howText = () => weeklyOn() ? 'Pick a game. Weekly resets each Monday, all-time never does.' : 'Pick a game. These are all-time boards.';
-  head(host, 'Leaderboards', howText(), '<div id="lbp"></div>');
-  const box = $('lbp');
-  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return () => {}; }
+/* Every board in one place: pick a game, then this week or all time. Drawn
+   into the leaderboards sheet, or the page ?play=leaderboards&embed=1 opens. */
+function lbBoard(box, focusId){
+  if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
   const wk = tetrisWeek();
-  let cur = LB_CAT.find(c => c.id === lbFocus) || LB_CAT[0], period = 'all', data = null;
+  let cur = LB_CAT.find(c => c.id === focusId) || LB_CAT[0], period = 'all', data = null, seq = 0;
   box.innerHTML =
-    '<div class="diffbar" id="lbpick" style="margin-bottom:14px"></div>' +
-    '<div class="glbhd"><h3 id="lbtitle"></h3>' +
+    '<div class="diffbar lbpick"></div>' +
+    '<div class="glbhd"><h3 class="lbtitle"></h3>' +
       '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
       '<button type="button" class="glbtab cur" data-p="all">All time</button></div></div>' +
-    '<div id="lbbody"><p class="how">Loading…</p></div>';
-  const pick = $('lbpick');
+    '<div class="lbbody"><p class="how">Loading…</p></div>';
+  const q = sel => box.querySelector(sel);
+  const pick = q('.lbpick');
   LB_CAT.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
     b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
@@ -2701,27 +3527,29 @@ BUILD.leaderboards = host => {
 
   const remap = (arr, key) => (arr||[]).map(r => ({ name:r.name, score:r[key], you:r.you }));
   async function load(){
-    $('lbtitle').textContent = 'Leaderboard · ' + cur.name;
-    const body = $('lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
+    const my = ++seq;                         // a slow board can't land over the one picked after it
+    q('.lbtitle').textContent = cur.name;
+    const body = q('.lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
     try {
       await siteSettings();
-      const how = host.querySelector('.how'); if (how) how.textContent = howText();   // the setting may have landed since
+      let d;
       if (cur.g){
-        data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
+        d = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
       } else if (cur.t === 'sprint'){
         const [w,a] = await Promise.all([ weeklyOn() ? TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}) : null,
                                           TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
-        data = { week:w ? { top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank } : null,
-                 all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
+        d = { week:w ? { top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank } : null,
+              all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
       } else if (cur.t === 'zen'){
-        const d = await TT.api('/api/tetris',{params:{mode:'zen'}});
-        const b = { top:remap(d.top,'time_ms'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
+        const r = await TT.api('/api/tetris',{params:{mode:'zen'}});
+        const b = { top:remap(r.top,'time_ms'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b };
       } else if (cur.t === 'zenscore'){
-        const d = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
-        const b = { top:remap(d.top,'best'), meBest:d.meBest, meRank:d.meRank }; data = { week:b, all:b };
+        const r = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
+        const b = { top:remap(r.top,'best'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b };
       }
-      syncTabs(); paint();
-    } catch(e){ body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
+      if (my !== seq) return;
+      data = d; syncTabs(); paint();
+    } catch(e){ if (my === seq) body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
   }
   function syncTabs(){
     /* survival and zen are all-time only — and so is everything, when the owner
@@ -2732,7 +3560,7 @@ BUILD.leaderboards = host => {
     if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
   }
   function paint(){
-    const body = $('lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
+    const body = q('.lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
     const b = period==='week' ? data.week : data.all;
     if (!b){ body.innerHTML='<p class="how">No board.</p>'; return; }
     const rows = b.top || [];
@@ -2743,12 +3571,17 @@ BUILD.leaderboards = host => {
       html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(cur.fmt(b.meBest))+'</span></div>';
     body.innerHTML = html;
   }
+}
+BUILD.leaderboards = host => {
+  head(host, 'Leaderboards', '', '<div id="lbp"></div>');
+  lbBoard($('lbp'), lbFocus);
   return () => {};
 };
 
-/* ── Admin (owner only): reset a board, or edit/delete individual scores ── */
+/* ── Moderator page (moderators only, checked on the server): how the site is
+   used, the people, the forum and shared decks, site settings, and every board ── */
 BUILD.admin = host => {
-  head(host, 'Admin', 'Owner tools for the game boards. Changes happen straight away and everyone sees them.', '<div id="adm"></div>');
+  head(host, 'Moderator', 'Changes happen straight away and everyone sees them.', '<div id="adm"></div>');
   const box = $('adm');
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable first.</p>'; return () => {}; }
   const wk = tetrisWeek();
@@ -2764,7 +3597,15 @@ BUILD.admin = host => {
   const USERS = { id:'users', name:'Signed-in users', kind:'u' };
   /* not a board either: switches that apply to the whole site, for everyone */
   const SETTINGS = { id:'settings', name:'Site settings', kind:'s' };
-  const CATS = [USERS, SETTINGS, ...GEN, ...TET];
+  /* how much each part of the site is used (counts only), and the two kinds of
+     things students post that a moderator may need to take down */
+  const OVERVIEW = { id:'overview', name:'Overview', kind:'o' };
+  const FORUM = { id:'forum', name:'Forum', kind:'f' };
+  const DECKS = { id:'decks', name:'Shared decks', kind:'d' };
+  const MJ = { id:'mahjong', name:'Mahjong club', kind:'m' };
+  /* the weekly poll on Home: questions, the show each week, suggestions */
+  const POLLS = { id:'polls', name:'Polls', kind:'p' };
+  const CATS = [OVERVIEW, POLLS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -2789,7 +3630,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = cur.kind === 'u' || cur.kind === 's';
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmp'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -2806,6 +3647,11 @@ BUILD.admin = host => {
         forgetSiteSettings(); await siteSettings();
         render(); return;
       }
+      if (cur.kind === 'o'){ data = await TT.api('/api/leaderboard', { params:{ stats:1 } }); render(); return; }
+      if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
+      if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
+      if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
+      if (cur.kind === 'p'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -2838,6 +3684,11 @@ BUILD.admin = host => {
   function render(){
     syncTabsUI();
     $('admtitle').textContent = cur.name;
+    if (cur.kind === 'o') return renderOverview();
+    if (cur.kind === 'f') return renderForum();
+    if (cur.kind === 'd') return renderDecks();
+    if (cur.kind === 'm') return renderMahjong();
+    if (cur.kind === 'p') return renderPolls();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -2845,12 +3696,27 @@ BUILD.admin = host => {
         '<div class="adminrow setrow"><span class="nm"><b>Weekly leaderboards</b><em>' +
         (on ? 'Every board has a “This week” tab next to “All time”.'
             : 'Every page shows the all-time board only, with no weekly tab. Scores still go to the weekly boards while it is off, so turning it back on brings them back.') +
-        '</em></span><button class="btn' + (on ? ' primary' : '') + '" id="setweekly" type="button">' + (on ? 'On' : 'Off') + '</button></div>';
+        '</em></span><button class="btn' + (on ? ' primary' : '') + '" id="setweekly" type="button">' + (on ? 'On' : 'Off') + '</button></div>' +
+        '<h4 class="admsub">Games on the games page</h4>' +
+        GAMES.filter(g => g.cat !== 'Revision' && !g.href && !g.hidden).map(g => { const shown = !(siteCfg.hiddenGames || []).includes(g.id);
+          return '<div class="adminrow setrow"><span class="nm"><b>' + g.ico + ' ' + esc(g.name) + '</b><em>' +
+            (shown ? 'On the games page.' : 'Hidden: not on the games page, and links to it open the games page instead.') + '</em></span>' +
+            '<button class="btn' + (shown ? ' primary' : '') + '" type="button" data-game="' + g.id + '">' + (shown ? 'Shown' : 'Hidden') + '</button></div>'; }).join('');
+      $('admbody').querySelectorAll('[data-game]').forEach(b => b.onclick = async () => {
+        const id = b.dataset.game, hidden = new Set(siteCfg.hiddenGames || []);
+        if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
+        b.disabled = true;
+        try {
+          const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', hiddenGames:[...hidden] } });
+          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || [...hidden], isMod: true };
+          render();
+        } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
+      });
       $('setweekly').onclick = async () => {
         const b = $('setweekly'); b.disabled = true;
         try {
           const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', weeklyBoards:!on } });
-          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false };
+          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || siteCfg.hiddenGames, isMod: true };
           render();
         } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
       };
@@ -2938,6 +3804,211 @@ BUILD.admin = host => {
       row.querySelector('[data-act=del]').onclick  = () => { if (confirm('Delete this score?')) edit('delete', email); };
     });
   }
+  /* ── Overview: one card per part of the site ── */
+  function renderOverview(){
+    const d = data || {}, n = v => v == null ? '—' : Number(v).toLocaleString();
+    const gameName = id => { const g = GAMES.find(x => x.id === id) || LB_CAT.find(x => x.id === id); return g ? g.name : id; };
+    const card = (ico, title, big, lines) => '<div class="admstat"><div class="admstat-h">' + ico + ' ' + esc(title) + '</div>' +
+      '<div class="admstat-n">' + big + '</div>' + lines.filter(Boolean).map(l => '<div class="admstat-l">' + l + '</div>').join('') + '</div>';
+    const u = d.users || {}, f = d.forum || {}, dl = d.daily || {}, t = d.tetris || {}, c = d.calendar || {}, mj = d.mahjongClub || {};
+    const games = Object.entries(d.games || {}).sort((a, b) => b[1] - a[1]);
+    const saved = d.saved || {};
+    $('admnote').textContent = 'Counts from the database, as of now.';
+    $('admbody').innerHTML = '<div class="admstats">' +
+      card('👥', 'People', n(u.total), [n(u.day) + ' today', n(u.week) + ' this week', n(u.tutorialStarted) + ' started the tutorial', n(u.settingsSaved) + ' saved settings', n(u.named) + ' renamed']) +
+      card('💬', 'Forum', n(f.posts) + ' posts', [n(f.week) + ' in the last 7 days']) +
+      card('📅', 'Daily Guess Who', n(dl.plays) + ' plays', [n(dl.today) + ' today', n(dl.wins) + ' solved']) +
+      card('🟦', 'Tetris', n(t.scores) + ' games', [n(t.sprintPlayers) + ' Sprint players', n(t.zenPlayers) + ' Zen players']) +
+      card('🀄', 'Mahjong club', n(mj.games) + ' games', [n(mj.players) + ' players', saved.hkmj != null ? n(saved.hkmj) + ' Hong Kong Mahjong games saved' : '']) +
+      card('🗂️', 'Shared decks', n((d.decks || {}).shared), [d.revision ? n(d.revision.students) + ' students tracking revision' : '']) +
+      card('🗓️', 'Calendar', n(c.events) + ' events', [n(c.subjectEvents) + ' subject events', d.birthdays != null ? n(d.birthdays) + ' birthdays' : '']) +
+      (d.jim ? card('🟡', 'The Jim Button', n(d.jim.presses) + ' presses', [n(d.jim.names) + ' names', (siteCfg.hiddenGames || []).includes('jim') ? 'Hidden from the games page' : '']) : '') +
+      '</div>' +
+      (games.length ? '<h4 class="admsub">Players per leaderboard (all-time)</h4><div class="admstats small">' +
+        games.map(([g, k]) => card('', gameName(g), n(k), [])).join('') + '</div>' : '');
+  }
+  /* ── Forum: every thread and reply, newest first, each removable ── */
+  function renderForum(){
+    const posts = (data && data.posts) || [];
+    const all = [];
+    posts.forEach(p => { all.push({ ...p, reply:false }); (p.replies || []).forEach(r => all.push({ ...r, reply:true })); });
+    $('admnote').textContent = posts.length + ' thread' + (posts.length === 1 ? '' : 's') + '. Deleting a thread removes its replies too.';
+    $('admbody').innerHTML = all.length ? all.map(p => '<div class="adminrow modpost' + (p.reply ? ' reply' : '') + '">' +
+        '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' })) +
+        '</em><span class="pb">' + esc(p.body) + '</span></span>' +
+        '<button class="del" type="button" data-id="' + esc(p.id) + '">Delete</button></div>').join('')
+      : '<p class="how">No posts.</p>';
+    $('admbody').querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this post for everyone?')) return;
+      b.disabled = true;
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); load(); }
+      catch (e){ alert('Could not delete: ' + e.message); b.disabled = false; }
+    });
+  }
+  /* ── Mahjong club: rename or remove players, delete any game ── */
+  /* ── the weekly poll ── */
+  function renderPolls(){
+    const KINDS = { period:'A period (0 to 7)', student:'A student in their year', teacher:'A teacher', class:'A subject in their year', custom:'Your own answers' };
+    /* Monday: how the new question takes over the card. Friday: the winner's celebration. */
+    const SHOWS = { surprise:'Surprise me', drop:'The Drop', wreck:'Wrecking ball', topple:'Topple', explode:'Explode', flip:'Flip', slot:'Slot reel' };
+    const CELEBS = { surprise:'Surprise me', spotlight:'Spotlight', countdown:'Countdown', curtain:'Curtain', envelope:'Envelope', slot:'Slot machine' };
+    /* the same default line Home uses when none is written (poll.js revealLine) */
+    const autoLine = (q, kind) => {
+      q = String(q || '').trim().replace(/[?!.\s]+$/, '');
+      const noun = { student:'person', teacher:'teacher', class:'class', period:'period', custom:'answer' }[kind] || 'winner';
+      let m;
+      if ((m = q.match(/^(?:who(?:'s| is)? )?most likely to (.+)$/i))) return 'The ' + noun + ' most likely to ' + m[1] + ' is…';
+      if ((m = q.match(/^(?:who(?:'s| is| has)? (?:the )?)?(best|worst|funniest|smartest|nicest|loudest|quietest|biggest|hardest|easiest|coolest|scariest|most \w+|least \w+)\s+(.+)$/i)))
+        return 'The ' + m[1].toLowerCase() + ' ' + m[2] + ' is…';
+      return 'And the winner is…';
+    };
+    const polls = data.polls || [], byWeek = new Map(polls.map(p => [p.week, p]));
+    const day = w => new Date(w + 'T00:00:00').toLocaleDateString(undefined, { day:'numeric', month:'short' });
+    const weeks = (data.weeks || []).map((w, i) => '<option value="' + w + '">' + (i === 0 ? 'This week (' + day(w) + ')' : 'Week of ' + day(w)) +
+      (byWeek.has(w) ? ' · set' : '') + '</option>').join('');
+    const opts = (o, sel) => Object.entries(o).map(([k, v]) => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(v) + '</option>').join('');
+    $('admnote').textContent = 'A new question opens every Monday at 9:30. Voters see the live results; the winner is announced Friday at noon, when voting closes. Votes are anonymous: nobody, moderators included, can see who picked what.';
+    $('admbody').innerHTML =
+      '<div class="pollform">' +
+        '<h4>Set a question</h4>' +
+        '<label>Week<select id="pfweek">' + weeks + '</select></label>' +
+        '<label class="wide">Question<input id="pfq" maxlength="120" placeholder="Most likely to become state rank?" autocomplete="off"></label>' +
+        '<label>People answer with<select id="pfkind">' + opts(KINDS, 'student') + '</select></label>' +
+        '<label>How many they pick<select id="pfpick"><option value="1">One</option><option value="2">Up to two</option><option value="2x">Exactly two</option>' +
+          '<option value="3">Up to three</option><option value="3x">Exactly three</option></select></label>' +
+        '<label class="wide" id="pfcwrap" hidden>Answers, one per line (2 to 8)<textarea id="pfchoices" rows="4" placeholder="Pizza\nNoodles\nSushi"></textarea></label>' +
+        '<label>Monday reveal<select id="pfanim">' + opts(SHOWS, 'surprise') + '</select></label>' +
+        '<label>Friday celebration<select id="pfcel">' + opts(CELEBS, 'surprise') + '</select></label>' +
+        '<label class="wide">Friday’s line, before the winner<input id="pfline" maxlength="140" autocomplete="off"></label>' +
+        '<div class="pfrow wide"><button class="btn" type="button" id="pfprev">Preview Monday</button>' +
+          '<button class="btn" type="button" id="pfprevr">Preview Friday</button>' +
+          '<span class="pfhint">Opens Home in a new tab and plays it. A preview doesn’t count as seeing it.</span></div>' +
+        '<p class="pfhint wide" id="pfkindhint"></p>' +
+        '<div class="pfrow wide"><button class="btn primary" type="button" id="pfsave">Save</button><span class="pfmsg" id="pfmsg"></span></div>' +
+      '</div>' +
+      '<h4 class="pollh">Scheduled and past</h4>' +
+      (polls.length ? polls.map(p => '<div class="adminrow pollrow">' +
+          '<span class="wk">' + esc(day(p.week)) + '</span>' +
+          '<span class="nm"><b>' + esc(p.question) + '</b><em>' + esc(KINDS[p.kind] || p.kind) + (p.pick > 1 ? (p.exact ? ' · exactly ' : ' · up to ') + p.pick : '') +
+            (p.kind === 'custom' ? ': ' + esc((p.choices || []).join(', ')) : '') +
+            (p.kind === 'class' ? ' · subjects: ' + ((p.subjectsDone || []).length ? 'Years ' + esc(p.subjectsDone.slice().sort((a, b) => a - b).join(', ')) : 'not collected yet (Save again)') : '') + ' · ' + esc(SHOWS[p.anim] || p.anim) + ' / ' + esc(CELEBS[p.celebrate] || p.celebrate || '') + '</em></span>' +
+          '<span class="vt">' + p.voters + ' voted</span>' +
+          (p.week >= (data.weeks || [''])[0] ? '<button class="btn" type="button" data-edit="' + p.week + '">Edit</button>' : '') +
+          (!p.voters && p.week >= (data.weeks || [''])[0] ? '<button class="del" type="button" data-pdel="' + p.week + '">Remove</button>' : '') +
+        '</div>').join('') : '<p class="how">Nothing scheduled yet.</p>') +
+      '<h4 class="pollh">Suggestions from students</h4>' +
+      ((data.suggestions || []).length ? data.suggestions.map(sg => '<div class="adminrow pollrow">' +
+          '<span class="nm"><b>' + esc(sg.question) + '</b><em>' + esc(KINDS[sg.kind] || 'No answer type given') + ' · ' + esc(sg.by) + ' · ' + esc(seenAgo(sg.at)) + '</em></span>' +
+          '<button class="btn" type="button" data-use="' + esc(sg.id) + '">Use</button>' +
+          '<button class="del" type="button" data-sdel="' + esc(sg.id) + '">Dismiss</button></div>').join('')
+        : '<p class="how">None yet.</p>');
+
+    const kindHint = () => {
+      const k = $('pfkind').value;
+      $('pfcwrap').hidden = k !== 'custom';
+      $('pfkindhint').textContent = k === 'student' ? 'Results name real people to their whole year. Keep it kind: nothing anyone would be upset to win.'
+        : k === 'class' ? 'Each year picks from every subject in that year, with results by year. Saving collects the subjects from the year’s timetables (a minute or two).'
+        : k === 'teacher' ? 'Any teacher in the school directory.' : '';
+    };
+    const fill = p => {
+      $('pfweek').value = p.week; $('pfq').value = p.question; $('pfkind').value = p.kind;
+      $('pfpick').value = String(p.pick || 1) + (p.exact && p.pick > 1 ? 'x' : ''); $('pfanim').value = SHOWS[p.anim] ? p.anim : 'surprise';
+      $('pfcel').value = CELEBS[p.celebrate] ? p.celebrate : 'surprise'; $('pfline').value = p.reveal || '';
+      $('pfchoices').value = (p.choices || []).join('\n'); kindHint(); lineHint();
+    };
+    /* the line's placeholder is what Home would say if it's left empty */
+    const lineHint = () => { $('pfline').placeholder = autoLine($('pfq').value, $('pfkind').value) + '  (left empty, it says this)'; };
+    $('pfq').addEventListener('input', lineHint); $('pfkind').addEventListener('change', lineHint); lineHint();
+    $('pfkind').onchange = kindHint; kindHint();
+    $('pfweek').onchange = () => { const p = byWeek.get($('pfweek').value); if (p) fill(p); };
+    { const p = byWeek.get($('pfweek').value); if (p) fill(p); }
+    const pick = (sel, all) => sel.value === 'surprise' ? Object.keys(all)[1 + Math.floor(Math.random() * (Object.keys(all).length - 1))] : sel.value;
+    $('pfprev').onclick = () => window.open('home.html?pollpreview=intro&from=final&anim=' + encodeURIComponent(pick($('pfanim'), SHOWS)), '_blank');
+    $('pfprevr').onclick = () => window.open('home.html?pollpreview=reveal&anim=' + encodeURIComponent(pick($('pfcel'), CELEBS)) +
+      '&kind=' + encodeURIComponent($('pfkind').value) + '&q=' + encodeURIComponent($('pfq').value) + '&line=' + encodeURIComponent($('pfline').value), '_blank');
+    $('pfsave').onclick = async () => {
+      const b = $('pfsave'); b.disabled = true; $('pfmsg').textContent = '';
+      try {
+        await TT.api('/api/forum', { method:'POST', body:{ action:'pollset', week:$('pfweek').value, question:$('pfq').value,
+          kind:$('pfkind').value, pick:parseInt($('pfpick').value, 10), exact:/x$/.test($('pfpick').value), anim:$('pfanim').value, celebrate:$('pfcel').value, reveal:$('pfline').value,
+          choices:$('pfchoices').value.split('\n').map(x => x.trim()).filter(Boolean) } });
+        /* a class question: gather every subject each year takes (a slice at a time; years already done are skipped) */
+        if ($('pfkind').value === 'class'){
+          const week = $('pfweek').value, missed = [];
+          for (let y = 7; y <= 12; y++){
+            let from = 0;
+            try {
+              while (from !== null){
+                $('pfmsg').textContent = 'Saved. Collecting Year ' + y + ' subjects…';
+                const r = await TT.api('/api/forum', { method:'POST', body:{ action:'pollsubjects', week, year:y, from } });
+                from = r.next;
+              }
+            } catch (e){ missed.push(y); }
+          }
+          $('pfmsg').textContent = missed.length ? 'Saved, but Year ' + missed.join(', ') + ' subjects didn’t collect (they’ll pick from their own until you Save again).' : 'Saved, with every year’s subjects.';
+        } else $('pfmsg').textContent = 'Saved.';
+        await load();
+      } catch (e){ $('pfmsg').textContent = e.message; b.disabled = false; }
+    };
+    $('admbody').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { fill(byWeek.get(b.dataset.edit)); $('pfq').focus(); });
+    $('admbody').querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
+      if (!confirm('Remove this question? Nobody has voted on it yet.')) return;
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'polldel', week:b.dataset.pdel } }); await load(); }
+      catch (e){ alert(e.message); }
+    });
+    $('admbody').querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
+      const sg = (data.suggestions || []).find(x => x.id === b.dataset.use); if (!sg) return;
+      $('pfq').value = sg.question; if (sg.kind) $('pfkind').value = sg.kind; kindHint(); $('pfq').focus();
+    });
+    $('admbody').querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => {
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.sdel } }); await load(); }
+      catch (e){ alert(e.message); }
+    });
+  }
+
+  function renderMahjong(){
+    const st = (data && data.state) || { players:[], rounds:[] };
+    const players = st.players || [], rounds = (st.rounds || []).slice().reverse();
+    const nameOf = id => (players.find(p => p.id === +id) || {}).name || 'Removed';
+    const send = async (body, ask) => {
+      if (ask && !confirm(ask)) return;
+      try { data = await TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'mahjong' }, body) }); render(); }
+      catch (e){ alert('Could not save that: ' + e.message); }
+    };
+    $('admnote').innerHTML = esc(players.length + ' player' + (players.length === 1 ? '' : 's') + ', ' + rounds.length + ' game' + (rounds.length === 1 ? '' : 's') + '.') +
+      ' <a class="rvlink" href="mahjong.html">Open the Mahjong club page</a>';
+    $('admbody').innerHTML = '<h4 class="admsub">Players</h4>' + (players.length ? players.map(p =>
+        '<div class="adminrow"><span class="nm"><b>' + esc(p.name) + '</b></span>' +
+        '<button class="btn" type="button" data-ren="' + p.id + '">Rename</button>' +
+        '<button class="del" type="button" data-rm="' + p.id + '">Remove</button></div>').join('') : '<p class="how">No players yet.</p>') +
+      '<h4 class="admsub">Games, newest first</h4>' + (rounds.length ? rounds.map(r =>
+        '<div class="adminrow"><span class="nm"><b>' + esc(new Date(r.t).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' })) + '</b><em>' +
+        esc(Object.entries(r.d || {}).map(([id, v]) => nameOf(id) + ' ' + (v > 0 ? '+' : '') + v).join(' · ')) + '</em></span>' +
+        '<button class="del" type="button" data-t="' + r.t + '">Delete</button></div>').join('') : '<p class="how">No games yet.</p>');
+    $('admbody').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => {
+      const now = nameOf(b.dataset.ren), next = prompt('Rename ' + now + ' to:', now);
+      if (next && next.trim() && next.trim() !== now) send({ action:'renamePlayer', id:+b.dataset.ren, name:next });
+    });
+    $('admbody').querySelectorAll('[data-rm]').forEach(b => b.onclick = () =>
+      send({ action:'removePlayer', id:+b.dataset.rm }, 'Remove ' + nameOf(b.dataset.rm) + ' from the Mahjong club? Their points go with them.'));
+    $('admbody').querySelectorAll('[data-t]').forEach(b => b.onclick = () =>
+      send({ action:'deleteRound', t:+b.dataset.t }, 'Delete this game for everyone?'));
+  }
+  /* ── Shared decks: every deck, newest first, each removable ── */
+  function renderDecks(){
+    const decks = (data && data.decks) || [];
+    $('admnote').textContent = decks.length + ' shared deck' + (decks.length === 1 ? '' : 's') + '.';
+    $('admbody').innerHTML = decks.length ? decks.map(dk => '<div class="adminrow">' +
+        '<span class="nm"><b>' + esc(dk.name) + '</b> <em>' + esc(dk.category) + ' · ' + dk.count + ' card' + (dk.count === 1 ? '' : 's') + ' · by ' + esc(dk.author) + '</em></span>' +
+        '<button class="del" type="button" data-id="' + esc(dk.id) + '">Delete</button></div>').join('')
+      : '<p class="how">No shared decks.</p>';
+    $('admbody').querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this deck for everyone?')) return;
+      b.disabled = true;
+      try { await TT.api('/api/decks', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); load(); }
+      catch (e){ alert('Could not delete: ' + e.message); b.disabled = false; }
+    });
+  }
   async function edit(action, email, value){
     try {
       if (cur.kind === 'g'){
@@ -2971,7 +4042,7 @@ BUILD.admin = host => {
 
 /* ── Flashcards (revision): make decks and study them; saved to your account ── */
 BUILD.flashcards = host => {
-  head(host, 'Flashcards', 'Make your own decks and study them. Saved to your account and synced across devices.', '<div id="fc"></div>');
+  head(host, 'Flashcards', 'Make decks and study them.', '<div id="fc"></div>');
   const box = $('fc');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   let decks = TT.get('tt.flashcards', []); if (!Array.isArray(decks)) decks = [];
@@ -2981,7 +4052,7 @@ BUILD.flashcards = host => {
   list();
 
   function list(){
-    let html = '<div class="fcrow"><button class="btn" id="fcbrowse" type="button">🌐 Browse public decks</button></div><div class="fcdecks">';
+    let html = '<div class="fcrow"><button class="btn" id="fcbrowse" type="button">Browse public decks</button></div><div class="fcdecks">';
     html += decks.length ? decks.map(d => '<div class="fcdeck" data-id="'+d.id+'">' +
         '<span class="nm">'+esc(d.name)+'</span><span class="ct">'+d.cards.length+' card'+(d.cards.length===1?'':'s')+'</span>' +
         '<button class="btn" type="button" data-act="study">Study</button>' +
@@ -3365,7 +4436,7 @@ function revGame(host, opts){
     dlg.addEventListener('close', tidy);
     dlg.addEventListener('click', e => { if (e.target === dlg) shut(); });
     const head = title => '<div class="dlg-h"><h2 id="rvresettitle">' + title + '</h2>' +
-      '<button class="btn icon" type="button" data-x aria-label="Close">✕</button></div>';
+      '<button class="btn icon" type="button" data-x aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>';
 
     function list(){
       const by = {};
@@ -7202,7 +8273,7 @@ function genBrakes(){ return bankQ(BRAKES, 'brk'); }
 function genProducts(){ return bankQ(PRODUCTS, 'prd'); }
 function genBiomed(){ return bankQ(BIOMED, 'bio'); }
 
-BUILD.software = host => revGame(host, { title:'Software', how:'Pick one of the three Year 11 modules, or do the lot.', statKey:'software',
+BUILD.software = host => revGame(host, { title:'Software', how:'Pick a module, or do them all.', statKey:'software',
   modules:[
     {id:'fund',name:'Fundamentals',topics:[
       {id:'sf-dev',name:'Development steps',gen:genDevStep},
@@ -7225,23 +8296,23 @@ BUILD.software = host => revGame(host, { title:'Software', how:'Pick one of the 
       {id:'s-m',name:'Medium',gen:()=>genWrite(2),gate:'s-e'},
       {id:'s-h',name:'Hard',gen:()=>genWrite(3),gate:'s-m'}]}
   ] });
-BUILD.maths = host => revGame(host, { title:'Maths', how:'Pick a topic. The questions are generated, so they never run out.', statKey:'maths',
+BUILD.maths = host => revGame(host, { title:'Maths', how:'Pick a topic.', statKey:'maths',
   topics:[{id:'concepts',name:'Concepts',gen:()=>Math.random()<0.35?bankQ(MATH_CONCEPTS,'mcn'):genMathTerm()},{id:'diff',name:'Differentiation',gen:genDiff},{id:'int',name:'Integration',gen:genInt},{id:'comb',name:'Combinatorics',gen:genComb},{id:'graph',name:'Graph transforms',gen:genGraph}] });
-BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Pick a module, or do all four.', statKey:'chem',
+BUILD.chem = host => revGame(host, { title:'Chemistry', how:'Pick a module, or do them all.', statKey:'chem',
   modules:[
     {id:'m1',name:'Module 1',topics:[{id:'c-name',name:'Naming',gen:genChemName},{id:'c-mix',name:'Mixtures & separation',gen:genSeparation},{id:'c-iso',name:'Isotopes & Ar',gen:genChemIso},{id:'c-econf',name:'Electron config',gen:genChemEconfig},{id:'c-shape',name:'Bonding & shape',gen:genChemShape},{id:'c-lewis',name:'Lewis diagrams',gen:genLewis}]},
     {id:'m2',name:'Module 2',topics:[{id:'c-mole',name:'Moles & mass',gen:genChemMoles},{id:'c-bal',name:'Balancing equations',gen:genBalance},{id:'c-gas',name:'Gas laws',gen:genGasLaw},{id:'c-lim',name:'Limiting reagent',gen:genChemLimiting},{id:'c-emp',name:'Empirical formula',gen:genChemEmp},{id:'c-soln',name:'Solutions & gases',gen:genChemSol2}]},
     {id:'m3',name:'Module 3',topics:[{id:'c-type',name:'Reaction types',gen:genChemType},{id:'c-rate',name:'Reaction rates',gen:genRates},{id:'c-act',name:'Activity series',gen:genActivity},{id:'c-redox',name:'Redox',gen:genRedox},{id:'c-galv',name:'Galvanic cells',gen:genGalvanic},{id:'c-sol',name:'Solubility',gen:genSol}]},
     {id:'m4',name:'Module 4',topics:[{id:'c-cal',name:'Calorimetry',gen:genCalor},{id:'c-enp',name:'Energy & entropy',gen:genEnergyProfile},{id:'c-bond',name:'Bond energies',gen:genBondE},{id:'c-form',name:'Enthalpy of formation',gen:genFormation},{id:'c-gibbs',name:'Entropy & Gibbs',gen:genGibbs}]}
   ] });
-BUILD.physics = host => revGame(host, { title:'Physics', how:'Pick a module, or do all four.', statKey:'physics',
+BUILD.physics = host => revGame(host, { title:'Physics', how:'Pick a module, or do them all.', statKey:'physics',
   modules:[
     {id:'m1',name:'Kinematics',topics:[{id:'p-kc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_KIN,'kin'):genPhysQuant('kin')},{id:'p-suvat',name:'Equations of motion',gen:genSuvat},{id:'p-kin',name:'Acceleration',gen:genKinematics},{id:'p-vec',name:'Vectors',gen:genVectors},{id:'p-rel',name:'Relative velocity',gen:genRelVel}]},
     {id:'m2',name:'Dynamics',topics:[{id:'p-dc',name:'Concepts',gen:()=>Math.random()<0.4?bankQ(PHYS_DYN,'dyn'):genPhysQuant('dyn')},{id:'p-newt',name:'Newton’s 2nd law',gen:genNewton},{id:'p-fric',name:'Friction',gen:genFriction},{id:'p-energy',name:'Energy & work',gen:genEnergy},{id:'p-mom',name:'Momentum',gen:genMomentum}]},
     {id:'m3',name:'Waves & thermodynamics',topics:[{id:'p-thermo',name:'Thermodynamics',gen:genThermo},{id:'p-wc',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_WAVE,'wave'):r<0.62?bankQ(WAVE_EXTRA,'wavex'):genPhysQuant('wave');}},{id:'p-wave',name:'Wave equation',gen:genWaves},{id:'p-sound',name:'Sound & echoes',gen:genSound},{id:'p-super',name:'Superposition',gen:genSuper},{id:'p-snell',name:'Reflection & refraction',gen:genSnell},{id:'p-em',name:'EM spectrum',gen:genEM}]},
     {id:'m4',name:'Electricity & magnetism',topics:[{id:'p-ec',name:'Concepts',gen:()=>{const r=Math.random();return r<0.3?bankQ(PHYS_EM,'em'):r<0.62?bankQ(EM_EXTRA,'emx'):genPhysQuant('em');}},{id:'p-ohm',name:'Ohm’s law & power',gen:genOhm},{id:'p-res',name:'Resistors',gen:genResistors},{id:'p-efield',name:'Electric fields',gen:genEfield},{id:'p-mag',name:'Magnetism',gen:genMag}]}
   ] });
-BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do all five.', statKey:'engineering',
+BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a module, or do them all.', statKey:'engineering',
   modules:[
     {id:'steel',name:'Steels',topics:[
       {id:'e-steel',name:'Carbon steels',gen:genSteelFact},
@@ -7289,6 +8360,16 @@ BUILD.hkmj = host => {
 {
   const q = new URLSearchParams(location.search), play = q.get('play');
   if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
-  if (play && (play === 'leaderboards' || GAMES.some(g => g.id === play))) openGame(play); else showGrid();
+  initAdmin();
+  const known = () => play === 'leaderboards' || play === 'admin' || GAMES.some(g => g.id === play && !g.href && !gameHidden(g));
+  const follow = () => {
+    if (play === 'leaderboards' && q.get('embed') !== '1'){ showGrid(); openLBSheet(); }
+    else if (known()) openGame(play); else showGrid();
+  };
+  /* wait for the site settings before following a ?play= link, so a hidden game stays hidden */
+  if (play && TT.myEmail && TT.myEmail()) siteSettings().then(follow);
+  else if (play) follow(); else showGrid();
+  /* a moderator may have shown or hidden a game: redraw once the settings arrive */
+  if (!play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (!$('gamegrid').hidden) showGrid(); });
 }
 

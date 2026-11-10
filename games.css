@@ -4,13 +4,12 @@
 .gamecard{
   position:relative;overflow:hidden;text-align:left;cursor:pointer;
   background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
-  padding:20px;box-shadow:var(--shadow);color:var(--text);min-height:160px;
+  padding:16px 18px;box-shadow:var(--shadow);color:var(--text);min-height:132px;
   display:flex;flex-direction:column;gap:5px;
-  opacity:0;transform:translateY(12px);
-  animation:cardIn .45s cubic-bezier(.2,.7,.2,1) forwards;
+  animation:cardIn .28s cubic-bezier(.2,.7,.2,1) backwards;
   transition:transform .16s ease, box-shadow .16s ease, background .15s;
 }
-.gamecard:hover{transform:translateY(-4px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.gamecard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
 .gamecard:active{transform:translateY(-1px)}
 .gamecard .ico{font-size:1.875rem;line-height:1;margin-bottom:4px;
   transition:transform .3s cubic-bezier(.2,.7,.2,1)}
@@ -21,7 +20,7 @@
 .gamecard .go{margin-top:auto;font-size:0.75rem;font-weight:700;color:var(--accent);
   opacity:0;transform:translateX(-6px);transition:opacity .18s,transform .18s}
 .gamecard:hover .go{opacity:1;transform:none}
-@keyframes cardIn{to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}}
 
 .gamestage{animation:stageIn .3s cubic-bezier(.2,.7,.2,1)}
 .gamestage[hidden]{display:none}
@@ -43,33 +42,43 @@
   transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease}
 .gamerow .gamecard:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
 @media (max-width:640px){ .gamerow .gamecard{flex-basis:80%;min-width:0} }
+/* the classic shelves: ‹ › at each end for a mouse (touch just swipes) */
+.shelfbtn{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border-radius:50%;
+  border:var(--card-border);background:var(--panel);color:var(--text);font-size:1.25rem;font-weight:700;line-height:1;
+  box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.shelfbtn:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.shelfbtn:disabled{opacity:0;pointer-events:none}
+.shelfbtn.prev{left:4px}
+.shelfbtn.next{right:4px}
+@media (hover:none){ .shelfbtn{display:none} }
+/* a shelf already has room above it, so the next section's heading sits closer */
+.gamesecrow + .gsec{margin-top:4px}
 
 /* games page: one packed grid. Tiles are placed by packBento (games.js) with
    explicit grid-row / grid-column, so it is always gap-free. */
 .gamesections[hidden]{display:none}
-.bento{grid-auto-rows:176px}
+.bento{grid-auto-rows:104px}
 .bento .gamecard{min-height:0;transition:transform .16s cubic-bezier(.2,.7,.2,1),box-shadow .16s ease,background .15s}
-.bento .gamecard p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* the summary sits at the foot of the tile; the whole tile is the button, so
+   no "Play →" (it would sit on top of the scores) */
+.bento .gamecard .sum{margin-top:auto}
+.bento .gamecard .go{display:none}
 .bento .gamecard.wide h2{font-size:1.3125rem}
-.bento .gamecard.wide p{font-size:0.875rem;max-width:34ch}
+.bento .gamecard.wide .sum{max-width:36ch}
 .bento .gamecard.tall .ico{font-size:3rem;margin-bottom:auto}
-.bento .gamecard.tall p{-webkit-line-clamp:4}
 .gamecard .tag{position:absolute;top:14px;right:14px;font-size:0.625rem;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 @media (max-width:540px){
-  .bento{grid-auto-rows:150px;gap:10px}
+  .bento{grid-auto-rows:96px;gap:10px}
+  .bento .gamecard .go{display:none}      /* no hover on a phone; the whole card is the button */
   .bento .gamecard{padding:14px}
   .bento .gamecard h2{font-size:1.0625rem}
-  .bento .gamecard p{font-size:0.75rem}
-  .bento .gamecard:not(.wide):not(.tall) p{-webkit-line-clamp:1}
+  .bento .gamecard .sum{font-size:0.75rem}
   .gamecard .tag{display:none}
 }
-/* NEW GAME banner: a ribbon across the top-right corner */
-.gamecard.isnew{border-color:var(--accent);box-shadow:var(--shadow),0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
-.gamecard .newbanner{position:absolute;top:20px;right:-44px;transform:rotate(38deg);z-index:2;
-  width:170px;text-align:center;padding:5px 0;background:#f5c518;color:#1a1a1a;
-  font-family:'Bangers',var(--font-display),cursive;font-size:0.9375rem;letter-spacing:.14em;text-transform:uppercase;
-  box-shadow:0 2px 8px rgba(0,0,0,.25);border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a}
+/* a new game: a small pill in the corner */
+.gamecard .newbanner{position:absolute;top:14px;right:14px;z-index:2;padding:2px 9px;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);font-size:0.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .gamecard.isnew .tag{display:none}
 /* the Jim card shows the real button, and a faint grid like the game's panel */
 .gamecard.jimcard{background-image:linear-gradient(color-mix(in srgb,var(--line) 60%,transparent) 1px,transparent 1px),
@@ -107,28 +116,66 @@ canvas{
 .cell2048{background:var(--panel-2);border:1px solid var(--line);
   border-radius:calc(var(--card-radius) * .5)}
 .tile2048{box-shadow:var(--shadow)}
-/* card stat line */
-.gamecard .stat{font-size:0.6875rem;color:var(--muted);font-family:var(--font-num);
-  font-variant-numeric:tabular-nums}
+/* a card's live summary: two leaders, today's daily, or your own best */
+.gamecard .sum{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:0.8125rem;color:var(--muted)}
+.gamecard .sum:empty{display:none}
+.gamecard .sl{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.gamecard .sl .w{overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600}
+.gamecard .sl .v{margin-left:auto;flex:none;font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent)}
+.gamecard .sl.me .w{color:var(--accent)}
+.gamecard .sl.note{display:block;overflow:hidden;text-overflow:ellipsis}
+.gamecard .sl.note b{color:var(--text);font-weight:700}
 .gwyou{font-size:0.75rem;color:var(--muted);margin-bottom:10px}
 .gwyou b{color:var(--text)}
-/* daily past-puzzle chips */
-.dgdays{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.dgday{display:flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);
-  border-radius:999px;padding:5px 11px;font-size:0.75rem;cursor:pointer;color:var(--text);white-space:nowrap}
-.dgday:hover{border-color:var(--accent)}
-.dgday.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
-.dgday .dgi{font-weight:700}
-.dgday.won .dgi{color:#2f9e44}
-.dgday.lost .dgi{color:#e5484d}
-/* daily: toolbar, archive, and the "how others did" summary bars */
-.dgtoolbar{display:flex;gap:14px;flex-wrap:wrap;margin:2px 0 12px}
-.dgtool{background:none;border:0;padding:0;color:var(--muted);font-size:0.78125rem;font-weight:700;
-  cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit}
-.dgtool:hover{color:var(--accent)}
-.dgarch{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* daily: the bar along the top */
+.dgbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 12px}
+.dgwhen{font-size:0.8125rem;color:var(--muted)}
+.dgwhen b{color:var(--text)}
+.dgstreak{font-size:0.8125rem;color:var(--muted);white-space:nowrap}
+.dgstreak b{color:var(--text);font-variant-numeric:tabular-nums}
+.dgsp{flex:1}
+/* a phone: the day and streak on one line, the three buttons together on the next */
+@media (max-width:480px){ .dgsp{flex-basis:100%;height:0} }
+.dgchip,.lbopen{font:inherit;font-size:0.78125rem;font-weight:600;color:var(--text);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;white-space:nowrap}
+.dgchip:hover,.lbopen:hover{border-color:var(--accent)}
+.dgchip[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
+/* daily: past days as a small month calendar */
+.dgcal{max-width:340px;margin:0 0 14px;padding:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius)}
+.dgcal[hidden]{display:none}
+.dgcalhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:0.875rem}
+.dgcnav{font:inherit;font-size:1.0625rem;font-weight:700;width:30px;height:30px;border-radius:50%;cursor:pointer;
+  color:var(--text);background:var(--panel);border:1px solid var(--line)}
+.dgcnav:hover{border-color:var(--accent)}
+.dgcnav:disabled{opacity:.3;cursor:default}
+.dgcgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dgcw{text-align:center;font-size:0.6875rem;font-weight:700;color:var(--muted);padding-bottom:2px}
+.dgc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:40px;
+  border-radius:8px;font:inherit;font-size:0.75rem;color:var(--text);background:var(--panel);border:1px solid transparent;padding:0}
+.dgc.blank{background:none}
+.dgc.off{background:none;color:var(--muted);opacity:.4}
+button.dgc{cursor:pointer}
+button.dgc:hover{border-color:var(--accent)}
+.dgc .dgcn{font-weight:600;line-height:1}
+.dgc .dgcm{font-weight:800;font-size:0.75rem;line-height:1;min-height:0.75rem}
+.dgc .dgcp{position:absolute;right:3px;bottom:2px;font-size:0.5625rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.dgc.won{background:color-mix(in srgb,#2f9e44 14%,var(--panel))}
+.dgc.won .dgcm{color:#2f9e44}
+.dgc.lost{background:color-mix(in srgb,#e5484d 11%,var(--panel))}
+.dgc.lost .dgcm{color:#e5484d}
+.dgc.today .dgcn{color:var(--accent)}
+.dgc.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.dgclegend{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px;font-size:0.6875rem;color:var(--muted)}
+.dgclegend .won{color:#2f9e44;font-weight:800}
+.dgclegend .lost{color:#e5484d;font-weight:800;margin-left:6px}
+.dgclegend .dgcp{margin-left:6px;font-weight:700;color:var(--text)}
+/* daily: numbered hints, the spotlight line */
+.dghn{display:inline-block;min-width:1.4em;margin-right:6px;font-size:0.75rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.dgspot{font-size:0.9375rem;margin-bottom:10px;min-height:1.4em}
+.dgspot.in{animation:hintIn .35s cubic-bezier(.2,.7,.2,1)}
+html[data-motion="reduced"] .dgspot.in{animation:none}
 #dgsummary{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
-  padding:14px;margin-bottom:14px}
+  padding:12px 14px;margin:12px 0}
 #dgsummary[hidden]{display:none}
 .dgsumhd{font-size:0.8125rem;color:var(--muted);margin-bottom:10px}
 .dgsumhd .big{font-family:var(--font-num);font-weight:700;font-size:1.1875rem;color:var(--text)}
@@ -305,17 +352,19 @@ html[data-motion="reduced"] .memcard,html[data-motion="reduced"] .memcard .face{
   padding:6px 13px;font-size:0.78125rem;cursor:pointer;color:var(--text)}
 .gwdiff[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .gwtop .gwyou{margin:0 0 0 auto}
-.gwhints{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.gwhints{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .gwhint{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
-  padding:10px 13px;font-size:0.875rem}
+  padding:9px 12px;font-size:0.9375rem}
 .gwhint.fresh{animation:hintIn .4s cubic-bezier(.2,.7,.2,1)}
 .gwhint.win{border-color:#2f9e44;background:color-mix(in srgb,#2f9e44 14%,var(--panel))}
 .gwhint.lose{border-color:#e5484d;background:color-mix(in srgb,#e5484d 12%,var(--panel))}
 @keyframes hintIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .gwrow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-#gwin{flex:1;min-width:160px;padding:11px 13px;border:var(--card-border);border-radius:var(--radius);
-  background:var(--panel-2);color:var(--text);outline:none}
-#gwin:focus{border-color:var(--accent)}
+#gwin,#dgin{flex:1;min-width:160px;width:100%;box-sizing:border-box;padding:11px 13px;border:var(--card-border);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--text);outline:none;font:inherit}
+#gwin:focus,#dgin:focus{border-color:var(--accent)}
+/* the suggestion list's wrapper takes the box's place in the row */
+.gwrow .sgwrap{flex:1;min-width:160px}
 .gwlog{display:flex;flex-direction:column;gap:5px}
 .gwguessrow{padding:6px 11px;border-radius:var(--radius);font-size:0.84375rem;font-weight:600;
   animation:hintIn .25s ease}
@@ -358,22 +407,8 @@ html[data-motion="reduced"] .chopt.chflip{animation:none}
 .volpop[hidden]{display:none}
 .volpop input[type=range]{width:120px;accent-color:var(--accent);vertical-align:middle}
 /* leaderboard summary strip beneath the game grid */
-.lbsum{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
-.lbsumhd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
-.lbsumhd h2{margin:0;font-family:var(--font-display);font-size:1.0625rem;font-weight:var(--display-w);
-  letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
-.lbsumhd a{color:var(--accent);font-weight:700;text-decoration:none;font-size:0.8125rem;cursor:pointer}
-.lbsumhd a:hover{text-decoration:underline}
-.lbsumgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-.lbsumcard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);
-  box-shadow:var(--shadow);padding:12px 14px;cursor:pointer;transition:transform .14s,box-shadow .14s}
-.lbsumcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi)}
-.lbsumcard .g{font-size:0.71875rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-.lbsumcard .lead{display:flex;align-items:baseline;gap:8px;font-size:0.875rem}
-.lbsumcard .lead .who{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lbsumcard .lead .val{margin-left:auto;font-family:var(--font-num);font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
-.lbsumcard .empty{font-size:0.8125rem;color:var(--muted)}
-html[data-motion="reduced"] .lbsumcard{transition:none}
+/* the old leaderboards strip: gone, kept invisible for a cached older games.js */
+.lbsum{display:none}
 /* admin panel */
 .adminrow{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:var(--radius);font-size:0.875rem}
 .adminrow:nth-child(even){background:var(--panel-2)}
@@ -398,9 +433,17 @@ html[data-motion="reduced"] .lbsumcard{transition:none}
 @media (max-width:640px){ .userrow .ue,.userrow .uc{display:none} }
 /* category headers in the game grid (span the full width of the grid) */
 .cathd{grid-column:1/-1;font-family:var(--font-display);font-size:0.8125rem;font-weight:var(--display-w);
-  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px -2px;opacity:0;
-  animation:cardIn .4s ease forwards}
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px -2px;
+  animation:cardIn .4s ease backwards}
 .cathd:first-child{margin-top:0}
+/* a section of the games page: its heading and one line about it */
+.gsec{margin:22px 2px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
+.gsec:first-child{margin-top:0}
+.gsec .cathd{margin:0;font-size:0.8125rem}
+/* revision: the study panel sits under the subjects, with room between */
+.rvstudy{margin-top:22px}
+body[data-page="revision"] .rvyear{margin-bottom:16px}
+body[data-page="revision"] .gamegrid{gap:10px}
 html[data-motion="reduced"] .cathd{animation:none;opacity:1}
 /* flashcards */
 .fcdecks{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
@@ -671,8 +714,6 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 @media (max-width:560px){
   /* two subjects a row, so they fit on one screen */
   body[data-page="revision"] .gamegrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  body[data-page="revision"] .gamecard{min-height:0;padding:14px}
-  body[data-page="revision"] .gamecard h2{font-size:1.0625rem}
   body[data-page="revision"] .gamecard p{font-size:0.75rem}
 
   /* Tetris: Hold | board | Next across the top, stats in a row underneath, so
@@ -806,18 +847,21 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .rvcite{display:block;margin-top:7px;font-size:0.78125rem;color:var(--muted);font-style:normal}
 
 /* ══ study panel: HSC countdown, today's plan, focus mode (study.js) ═════════ */
-.studypanel{display:grid;grid-template-columns:minmax(150px,.8fr) 2fr 1.1fr;gap:14px;margin:0 0 18px;
-  padding:14px 16px;border:1px solid var(--card-border);border-radius:var(--card-radius);background:var(--panel)}
-.studypanel h3{margin:0 0 8px;font-size:0.9375rem}
-.sp-cd{display:flex;flex-direction:column;justify-content:center;gap:3px;padding-right:12px;border-right:1px solid var(--line)}
+.studypanel{display:grid;grid-template-columns:minmax(170px,.9fr) minmax(0,2fr) minmax(190px,1fr);gap:22px;margin:0 0 18px;
+  padding:18px 20px;border:var(--card-border);border-radius:var(--card-radius);background:var(--panel);box-shadow:var(--shadow);line-height:1.4}
+.studypanel.rvstudy{margin-top:22px}
+.studypanel h3{margin:0 0 10px;font-size:0.9375rem}
+.sp-cd{display:flex;flex-direction:column;justify-content:center;gap:5px;padding-right:20px;border-right:1px solid var(--line)}
 .cdbig{font-size:2.6rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
 .cdlbl{font-weight:700;font-size:0.9375rem}
 .cdsub{font-size:0.78125rem;color:var(--muted);line-height:1.45}
 .cdnext{font-size:0.8125rem;margin-top:4px}
-.planlist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.planitem{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:10px;text-align:left;
-  padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius,8px);background:var(--panel-2);cursor:pointer;
+.planlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+/* subject and status on top, the topic underneath: never squeezed onto one line */
+.planitem{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:3px 10px;text-align:left;
+  padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius,8px);background:var(--panel-2);cursor:pointer;
   font:inherit;color:inherit}
+.planitem .plantopic{grid-column:1 / -1;grid-row:2}
 .planitem:hover{border-color:var(--accent)}
 .plansubj{font-size:0.75rem;font-weight:700;color:var(--muted);white-space:nowrap}
 .plantopic{font-size:0.875rem;font-weight:600}
@@ -825,7 +869,7 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .planwhy.pw-weak{color:#e5484d}
 .planwhy.pw-due{color:var(--accent)}
 .planempty,.plandone{font-size:0.8125rem;color:var(--muted);margin:6px 0 0}
-.sp-focus{display:flex;flex-direction:column;gap:8px;padding-left:12px;border-left:1px solid var(--line)}
+.sp-focus{display:flex;flex-direction:column;gap:10px;padding-left:20px;border-left:1px solid var(--line)}
 .focusstart{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .focusstart span{font-weight:700;font-size:0.875rem;width:100%}
 .focusstart .btn{padding:5px 10px;font-size:0.8125rem}
@@ -843,8 +887,9 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .focusrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 @media (max-width:760px){
   .studypanel{grid-template-columns:1fr}
-  .sp-cd{border-right:0;padding-right:0;padding-bottom:10px;border-bottom:1px solid var(--line)}
-  .sp-focus{border-left:0;padding-left:0;padding-top:10px;border-top:1px solid var(--line)}
+  .studypanel{gap:14px;padding:16px}
+  .sp-cd{border-right:0;padding-right:0;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .sp-focus{border-left:0;padding-left:0;padding-top:14px;border-top:1px solid var(--line)}
 }
 
 /* screen-reader announcer (games.js say()): read aloud, never seen */
@@ -988,7 +1033,7 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{animation:none}
 
 /* shown inside a frame on another page (games.html?play=…&embed=1): just the game */
-.embedded .pagehead,.embedded #back{display:none}
+.embedded .pagehead,.embedded .pagelede,.embedded #back{display:none}
 .embedded .wrap{padding-top:14px}
 
 /* ── Mahjong score sheet ── */
@@ -1016,3 +1061,156 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .mjkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:0.8125rem;margin-top:6px}
 .mjkey i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .mjhist .nm{white-space:normal}
+
+/* moderator page: overview cards, sub-headings, forum rows */
+.admstats{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:6px}
+.admstats.small{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.admstat{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.admstat-h{font-size:0.75rem;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.admstat-n{font-size:1.375rem;font-weight:700;margin:2px 0 4px;font-variant-numeric:tabular-nums}
+.admstats.small .admstat-n{font-size:1.125rem;margin-bottom:0}
+.admstat-l{font-size:0.8125rem;color:var(--muted)}
+.admsub{margin:18px 0 8px;font-size:0.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.modpost .nm{display:flex;flex-direction:column;gap:2px;min-width:0}
+.modpost .pb{white-space:pre-wrap;overflow-wrap:anywhere;font-size:0.875rem}
+.modpost.reply{margin-left:22px}
+
+/* moderator: the weekly poll */
+.pollform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:14px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--panel-2);margin-bottom:18px}
+.pollform h4,.pollh{margin:0;grid-column:1/-1;font-size:0.9375rem}
+.pollh{margin:16px 0 8px}
+.pollform label{display:flex;flex-direction:column;gap:4px;font-size:0.8125rem;font-weight:600;color:var(--muted)}
+.pollform label[hidden]{display:none}
+.pollform .wide{grid-column:1/-1}
+.pollform input,.pollform select,.pollform textarea{font:inherit;font-size:0.9375rem;padding:8px 10px;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:400}
+.pfrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pfhint{margin:0;font-size:0.78125rem;color:var(--muted);font-weight:400}
+.pfhint:empty{display:none}
+.pfmsg{font-size:0.8125rem;color:var(--muted)}
+.pollrow{align-items:flex-start}
+.pollrow .nm{white-space:normal;display:flex;flex-direction:column;gap:2px}
+.pollrow .nm em{font-style:normal;font-size:0.78125rem;color:var(--muted)}
+.pollrow .wk{width:58px;flex:none;font-size:0.8125rem;color:var(--muted)}
+.pollrow .vt{flex:none;font-size:0.8125rem;color:var(--muted)}
+@media (max-width:560px){ .pollform{grid-template-columns:1fr} }
+
+/* games: small cards, the name and your own best (classic grid) */
+.gcompact{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+/* online rooms (Tetris versus, Snake online) */
+.mppanel{margin:0 0 14px}
+.mpbox{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:var(--radius);background:var(--panel-2);border:1px solid var(--line)}
+.mpname{display:flex;flex-direction:column;gap:4px;font-size:0.75rem;font-weight:700;color:var(--muted);max-width:240px}
+.mpbox input{font:inherit;font-size:0.9375rem;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 11px;min-width:0}
+.mpbox input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.mprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mprow #mpcode{width:7.5em;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.mpor{color:var(--muted);font-size:0.8125rem}
+.mpmsg{margin:0;color:var(--muted);font-size:0.8125rem}
+.mphead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mplabel{display:block;font-size:0.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mpcode{font-family:var(--font-num);font-size:1.75rem;letter-spacing:.14em}
+.mpbtns{display:flex;gap:6px}
+.mplist{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.mplist li{display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-weight:700;font-size:0.875rem}
+.mplist li.me{border-color:var(--accent)}
+.mplist li span{font-size:0.6875rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mpbox > .btn.primary{align-self:flex-start}
+.mpon{flex-direction:row;align-items:center;justify-content:space-between;padding:9px 12px;font-size:0.875rem}
+.topps{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:12px 0 0}
+.topp{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:0.75rem;font-weight:700}
+.topp canvas{image-rendering:pixelated;width:60px;height:120px}
+.topp.out{opacity:.35}
+.tmodes{flex-wrap:wrap}
+.snmodes{margin-bottom:12px}
+.snp{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-weight:700}
+.snp i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.snp.out{opacity:.4;text-decoration:line-through}
+.gcompact .gamecard,.bento .gamecard{padding:13px 15px;gap:3px}
+.gcompact .gamecard{height:var(--tile-h);min-height:0}
+.gcompact .gamecard h2{margin-top:auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2}
+
+.gcompact .gamecard .ico,.bento .gamecard:not(.tall) .ico{font-size:1.5rem;margin-bottom:2px}
+.gcompact .gamecard h2,.bento .gamecard:not(.wide) h2{font-size:1rem}
+.gcompact .gamecard .go{display:none}
+.gcompact .gamecard .sum{margin-top:2px}
+.gsec{margin:18px 2px 9px}
+@media (max-width:560px){ .gcompact{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .gcompact .gamecard{padding:11px 12px} .gcompact .gamecard h2{font-size:0.9375rem} }
+/* the leaderboards at the bottom */
+.lbboards{margin-top:26px}
+.lbboards .gsec{display:flex;align-items:center;justify-content:space-between}
+.lbbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.lbbcard{display:flex;flex-direction:column;gap:7px;text-align:left;font:inherit;color:var(--text);cursor:pointer;padding:12px 14px;
+  background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);transition:transform .14s,box-shadow .14s}
+.lbbcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi)}
+.lbbt{font-size:0.71875rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.lbbrows{display:flex;flex-direction:column;gap:3px}
+.lbbr{display:flex;align-items:baseline;gap:7px;font-size:0.84375rem;min-width:0}
+.lbbr i{font-style:normal;width:1em;font-size:0.71875rem;font-weight:800;color:var(--muted)}
+.lbbr .w{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.lbbr .v{flex:none;font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent)}
+.lbbr.me .w{color:var(--accent)}
+.lbbr:first-child .w::after{content:" 👑";font-size:.8em}
+.lbbempty{font-size:0.8125rem;color:var(--muted)}
+@media (max-width:560px){ .lbbgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .lbbcard{padding:10px 11px} }
+
+/* Quartets */
+.qtsolved{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.qtsolved:empty{display:none}
+.qtrow{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:12px 14px;border-radius:var(--radius);color:#17171c}
+.qtrow b{font-size:0.9375rem;text-transform:uppercase;letter-spacing:.04em}
+.qtrow .qtlv{font-size:0.6875rem;font-weight:700;opacity:.65;text-transform:uppercase;letter-spacing:.08em}
+.qtrow .qtnames{font-size:0.875rem}
+.qtrow .qtnames i{font-style:normal;opacity:.7}
+.qtrow.missed{opacity:.8;outline:2px dashed rgba(0,0,0,.25);outline-offset:-4px}
+.qtrow.lv1,.qtgridshare .lv1{background:#5cc08b}
+.qtrow.lv2,.qtgridshare .lv2{background:#6aa1f0}
+.qtrow.lv3,.qtgridshare .lv3{background:#f2a65a}
+.qtrow.lv4,.qtgridshare .lv4{background:#e5718b}
+.qtgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.qtgrid[hidden]{display:none}
+.qttile{font:inherit;font-weight:700;font-size:0.875rem;line-height:1.2;min-height:68px;padding:8px 6px;border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);border:1px solid var(--line);cursor:pointer;overflow-wrap:anywhere;
+  transition:background .12s,color .12s,transform .12s}
+.qttile:hover{border-color:var(--accent)}
+.qttile.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.qtlives{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 10px;font-size:0.8125rem;color:var(--muted)}
+.qtlives:empty{display:none}
+.qtlives span{display:inline-flex;gap:5px}
+.qtlives i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.qtlives i.on{background:var(--text)}
+.qtbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.qtbtns[hidden]{display:none}
+.qtmsg{min-height:1.4em;text-align:center;margin-top:10px;font-weight:700;font-size:0.875rem}
+.qtmsg.bad{color:#e5484d}
+.qtdone{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6px}
+.qtdone:empty{display:none}
+.qtend{margin:0;font-weight:700}
+.qtgridshare{display:flex;flex-direction:column;gap:4px}
+.qtgridshare div{display:flex;gap:4px}
+.qtgridshare i{width:18px;height:18px;border-radius:4px}
+.qtcal{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.qtcal[hidden]{display:none}
+.qtday{font:inherit;font-size:0.8125rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--text);cursor:pointer}
+.qtday.cur{border-color:var(--accent)}
+.qtday.won span{color:#2f9e5f}
+.qtday.lost span{color:#e5484d}
+@media (max-width:560px){ .qtgrid{gap:6px} .qttile{min-height:58px;font-size:0.75rem;padding:6px 4px} }
+html[data-motion="reduced"] .qttile{transition:none}
+/* Quartets: the share card and the Results panel */
+.qtcard{display:flex;justify-content:center}
+.qtcardimg{width:min(300px,100%);height:auto;border:0;border-radius:18px;box-shadow:var(--shadow-hi);image-rendering:auto;background:none}
+.qtcardbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.qtsumcap{font-size:0.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px}
+.qtfounds{display:flex;flex-direction:column;gap:6px}
+.qtfound{display:flex;align-items:center;gap:8px;font-size:0.8125rem}
+.qtfdot{width:10px;height:10px;border-radius:3px;flex:none}
+.qtfl{width:min(46%,240px);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qtfound .dgbt{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:999px;overflow:hidden;height:14px}
+.qtfound .dgbt>i{display:block;height:100%;border-radius:999px;min-width:3px}
+.qtfound .dgbn{width:40px;text-align:right;font-family:var(--font-num);font-variant-numeric:tabular-nums}
+/* Quartets: a hint (the highlighted people share a group) */
+.qttile.hint{box-shadow:0 0 0 2px #f5c542 inset;background:color-mix(in srgb,#f5c542 16%,var(--panel-2))}
+.qttile.hint.on{box-shadow:0 0 0 2px #f5c542 inset,0 0 0 2px var(--text)}

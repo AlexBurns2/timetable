@@ -22,23 +22,25 @@
 import { db } from "./_supabase.js";
 
 const TTL = 60_000;          // a warm function instance re-reads at most once a minute
-const DEFAULTS = { weeklyBoards: true };
+/* hiddenGames: game ids taken off the games page (and out of ?play= links) for everyone */
+const DEFAULTS = { weeklyBoards: true, hiddenGames: ["jim"] };   // Jim stays off until a moderator turns it on
 let cache = null, cachedAt = 0;
 
 export async function siteSettings() {
-  if (!db) return { ...DEFAULTS };
+  if (!db) return { ...DEFAULTS, hiddenGames: [...DEFAULTS.hiddenGames] };
   if (cache && Date.now() - cachedAt < TTL) return cache;
   try {
     const { data, error } = await db.from("site_setting").select("key, value").limit(100);
     if (error) throw new Error(error.message);
-    const out = { ...DEFAULTS };
+    const out = { ...DEFAULTS, hiddenGames: [...DEFAULTS.hiddenGames] };
     (data || []).forEach(r => {
       if (r.key === "weekly_boards") out.weeklyBoards = String(r.value) !== "off";
+      if (r.key === "hidden_games") out.hiddenGames = String(r.value).split(",").map(s => s.trim()).filter(s => /^[a-z0-9]{1,24}$/.test(s));
     });
     cache = out;
   } catch (e) {
     if (!cache) console.warn("site settings unavailable, using defaults:", e.message);
-    cache = { ...DEFAULTS };
+    cache = { ...DEFAULTS, hiddenGames: [...DEFAULTS.hiddenGames] };
   }
   cachedAt = Date.now();
   return cache;
