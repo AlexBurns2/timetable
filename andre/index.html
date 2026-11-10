@@ -657,7 +657,23 @@ button.row:hover{background:var(--fill2)}
 .plo.mine{font-weight:700}
 .plo > :not(.mjfill){position:relative}
 .plb .mjfill{transition:width .5s ease}
+.plr{cursor:default}.plr:hover{filter:none}
 .mjchart{background:var(--fill);padding:12px;display:flex;flex-direction:column;gap:8px}
+.mjawb{background:none;overflow:visible}
+.mjawb .mjawards{height:100%}
+.mjawb .mjaward{align-content:center}
+.mjhist{background:var(--fill);display:flex;flex-direction:column}
+.mjhbar{flex:none;display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 14px;font-size:calc(14px * var(--fs,1));font-weight:600;color:var(--fg)}
+.mjhbar small{margin-left:auto;font-weight:400;color:var(--fg2)}
+.mjhbar:hover{background:var(--fill2)}
+.mjhlist{flex:1;min-height:0;overflow:auto;padding:4px 14px 12px;display:flex;flex-direction:column}
+.mjhrow{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:4px 12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--sep);font-size:calc(13px * var(--fs,1))}
+.mjhrow small{color:var(--fg3)}
+.mjhd{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:flex-end}
+.mjhd em{font-style:normal;color:var(--fg2)}
+.mjhd em.up b{color:var(--green)}
+.mjhd em.dn b{color:var(--red)}
+.list .mjhist.open{height:320px}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
 .mjnone{margin:auto;font-size:calc(13px * var(--fs,1));color:var(--fg3);text-align:center}
@@ -999,7 +1015,7 @@ select.fin{appearance:auto}
     <div class="mg" id="mg">
       <!-- tiles that work on this page first, then the ones that open another page -->
       <div class="mod modx" data-m="calendar" style="--c:#AF52DE">
-        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></button>
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span><span class="state mjst" id="calnote"></span></h3></button>
         <button class="mset" aria-label="Calendar settings" aria-expanded="false" aria-controls="calbody"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
         <div class="mod-body" id="calbody"><div class="tilebody"><div class="row-group">
         <div class="row">
@@ -1055,7 +1071,7 @@ select.fin{appearance:auto}
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>Forum <span class="state" id="fmstate"></span></h3></button>
       </div>
       <div class="mod modx" data-m="poll" style="--c:#FF9F0A">
-        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div><h3>Daily poll <span class="state" id="plstate"></span></h3></button>
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div><h3>Poll <span class="state" id="plstate"></span></h3></button>
       </div>
       <div class="mod modx" data-m="mahjong" style="--c:#E0303A">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/></svg></div><h3>Mahjong <span class="state mjst" id="mjstate"></span></h3></button>
@@ -1084,7 +1100,7 @@ let creds = get(LS.creds, null);
 let signedIn = !!(creds && creds.email && creds.password);
 const syncSigned = () => signedIn = !!(creds && creds.email && creds.password);
 /* the birthday register: [{ email, name, day:"MM-DD" }], and the class of 2027 */
-let bdays = get(LS.bdays, []) || [], bdPeople = [], bdNote = "";
+let bdays = get(LS.bdays, []) || [], bdPeople = [], bdNote = "", bdReady = bdays.length > 0;
 let email = get(LS.email, "") || get("tt.email", "");
 /* display settings, the same choices as the main timetable */
 let theme = get(LS.theme, "auto");          /* light | auto | dark */
@@ -1479,7 +1495,7 @@ async function load(){
 /* ═══ render ═══ */
 let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
-let fm = null, fmNote = "", fmReply = null, fmDraft = "", fmStick = true, pl = null, plNote = "", plBusy = false;
+let fm = null, fmNote = "", fmReply = null, fmDraft = "", fmStick = true, pl = null, plAt = 0, plChosen = [], plQuery = "", plNote = "", plBusy = false;
 let loginNote = "", loginBusy = false, loginUser = "", loginPass = "";
 let fmShow = false, plShow = false, loginShow = !signedIn;   /* Forum chat, Daily poll, and the sign-in modules (shown until there is a login) */
 let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the one opened out, and once its frame is in */
@@ -3574,6 +3590,9 @@ function paintTiles(calTarget = view){
   document.querySelector('[data-m="calendar"]').classList.toggle("on", on);
   document.querySelector('[data-m="calendar"] .mod-head').setAttribute("aria-pressed", on);
   $("calstate").textContent = on ? "· On" : "";
+  /* known from the sign-in: who is using this, and whether their birthday is on the register yet */
+  const me = signedIn && String(creds.email).toLowerCase();
+  $("calnote").textContent = me && bdReady && !bdays.some(b => String(b.email).toLowerCase() === me) ? "Please register your birthday" : "";
   paintFreeTile();
 }
 function paintFreeTile(){
@@ -3644,10 +3663,11 @@ async function loadBirthdays(){
   if (!signedIn) return;
   try {
     const d = await call("/api/calendar", { query:{ birthdays:1 } });
-    bdays = d.birthdays || []; bdPeople = d.people || []; bdNote = d.warning || ""; set(LS.bdays, bdays);
+    bdays = d.birthdays || []; bdPeople = d.people || []; bdNote = d.warning || ""; set(LS.bdays, bdays); bdReady = true;
   } catch (err) { bdNote = "Birthdays couldn't load: " + err.message; }
   if (bdOpen()) paintBdays();
   if (settingsOpen()) paintSettings();
+  paintTiles();
   if (!turning) render();
 }
 const mdText = md => md ? +md.slice(3) + "/" + +md.slice(0, 2) : "";
@@ -3697,7 +3717,7 @@ async function saveBday(cell, day){
     bdays = bdays.filter(b => b.email !== email);
     if (day) bdays.push({ email, day, name:cell.querySelector("b").textContent });
     set(LS.bdays, bdays);
-    bdEdit = null; paintBdays(); render();
+    bdEdit = null; paintBdays(); paintTiles(); render();
   } catch (err) { const i = cell.querySelector(".bdin"); if (i) i.setAttribute("aria-invalid", "true"); bdNote = err.message; paintBdNote(); }
 }
 function commitBday(cell){
@@ -4047,6 +4067,7 @@ tileHead("mahjong", () => toggleMj());
    top and bottom, and switches the week's blocks to the sheet: a column with a
    block per player, where a game is recorded too, and a line graph beside it. */
 const MJ_START = 4096, MJ_RECENT = 5;
+let mjHist = false;       /* the History box under the graph: open, or shrunk to its bar */
 const MJ_COLORS =["#0A84FF","#FF375F","#30C05A","#FF9F0A","#AF52DE","#32ADE6","#FFB800","#8E8E93","#AC8E68","#5E5CE6"];   /* as mahjong.js, so a player keeps their colour */
 let mj = null, mjBusy = false, mjNote = "", mjDraft = {};     /* mjDraft: points typed, by player id */
 const mjTile = document.querySelector('[data-m="mahjong"]');
@@ -4062,6 +4083,18 @@ function mjPoints(){
 /* award cards, as Kahoot does between questions (as mahjong.js); an award nobody has
    earned is left out. Rates and places cover the last MJ_RECENT games, as all-time ones
    would only repeat the standings. A streak ignores games a player sat out. */
+/* every game so far, newest first: when, and what each player won or lost */
+function mjHistHtml(){
+  const rs = mj.rounds, name = id => (mj.players.find(p => p.id === id) || { name:"?" }).name;
+  const rows = rs.map((r, i) => {
+    const when = r.t ? new Date(r.t).toLocaleDateString(undefined, { day:"numeric", month:"short" }) + " " + new Date(r.t).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) : "";
+    const d = Object.entries(r.d).filter(([id, v]) => v).sort((a, b) => b[1] - a[1]);
+    return `<div class="mjhrow"><b>Game ${i + 1}</b><small>${esc(when)}</small><span class="mjhd">` +
+      d.map(([id, v]) => `<em class="${v > 0 ? "up" : "dn"}">${esc(name(id))} <b class="tnum">${mjSigned(v)}</b></em>`).join("") + `</span></div>`;
+  }).reverse();
+  return `<button class="mjhbar" aria-expanded="${mjHist}"><span>History</span><small>${rs.length} ${rs.length === 1 ? "game" : "games"}</small><i aria-hidden="true">${mjHist ? "▾" : "▸"}</i></button>` +
+    (mjHist ? `<div class="mjhlist">${rows.join("") || `<p class="mjnone">No games yet</p>`}</div>` : "");
+}
 function mjAwards(){
   const { players, rounds } = mj, n = Math.min(rounds.length, MJ_RECENT);
   if (!n) return "";
@@ -4189,19 +4222,27 @@ function renderMj(nd){
   if (save) y += SAVE + 8;
   const add = block("mjctl", "mj:add", "#E0303A",
     `<input class="fin" id="mjname" placeholder="${n ? "Add a player" : "Add everyone at the table"}" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="New player's name"><button class="btn sm" id="mjadd">Add</button>`, y, ADD);
-  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` + mjAwards() +
-    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, y + ADD - 4, nd - 2);
-  if (list) host.innerHTML = players + save + add + graph;
+  /* the awards sit above the graph, each in a rectangle of its own; then the graph; then the History box */
+  const awards = mjAwards(), AW = awards ? 116 : 0, GT = 4 + (AW && AW + 8);
+  const awardsB = awards ? block("mjawb", "mj:awards", "#E0303A", awards, 4, AW, nd - 2) : "";
+  const GH = Math.max(y + ADD - GT, 260), HB = 40, HO = 280;
+  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` +
+    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), GT, GH, nd - 2);
+  const hist = block("mjhist" + (mjHist ? " open" : ""), "mj:history", "#E0303A", mjHistHtml(), GT + GH + 8, mjHist ? HO : HB, nd - 2);
+  const colH = Math.max(H, GT + GH + 8 + (mjHist ? HO : HB) + 8);
+  if (list) host.innerHTML = players + save + add + awardsB + graph + hist;
   else {
     const head = (t, span) => `<div class="dh" style="grid-column:span ${span}"><span class="n">${t}</span></div>`;
     host.innerHTML = `<div></div>` + head("Standings", 2) + head("Over time", nd - 2) + `<div></div><div></div>` +
-      [players + save + add, "", graph, ...Array(nd - 3).fill("")].map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+      [players + save + add, "", awardsB + graph + hist, ...Array(nd - 3).fill("")].map(c => `<div class="col" style="height:${colH}px">${c}</div>`).join("") + `<div></div>`;
   }
   const box = host.querySelector(".mjline");       /* once it's on the page, to measure it */
   if (box) box.innerHTML = mjGraph(box.clientWidth, box.clientHeight);
   const addP = () => { const v = $("mjname").value.trim(); if (v) mjAct({ action:"player", name:v }); };
   const saveGame = () => { const d = {}; for (const id in mjDraft){ const v = Math.round(+mjDraft[id]); if (v) d[id] = v; }
     if (Object.keys(d).length) mjAct({ action:"round", d }); };
+  const hb = host.querySelector(".mjhbar");
+  if (hb) hb.onclick = () => { mjHist = !mjHist; shiftWeek(() => {}); };       /* the box opens or shrinks like the other blocks move */
   $("mjadd").onclick = addP;
   $("mjname").onkeydown = e => { if (e.key === "Enter") addP(); };
   host.querySelectorAll(".mjin").forEach(i => {
@@ -4235,6 +4276,7 @@ function blockHost(nd, title, H, mk, span, startCol){
   if (list) host.innerHTML = cells.join("");
   else {
     const cols = Array.from({ length:nd }, (_, k) => k === startCol ? cells.join("") : "");
+    if (typeof H === "function") H = H();
     host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">${title}</span></div><div></div><div></div>` +
       cols.map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
   }
@@ -4365,49 +4407,85 @@ function renderForum(nd){
 }
 setInterval(() => { if (fmShow && !loginShow) loadForum(); }, 15000);
 
-/* ═══ Daily poll: a question a day, the same for everyone; votes live on the server (/api/poll) ═══ */
-const POLLS = [
-  ["Best day of the school week?", ["Monday", "Wednesday", "Thursday", "Friday"]],
-  ["Where do you eat at lunch?", ["Canteen", "Oval", "Library", "Classroom"]],
-  ["Morning person or night owl?", ["Morning", "Night", "Neither"]],
-  ["Best subject right now?", ["Maths", "Science", "English", "Something else"]],
-  ["How's your sleep this week?", ["Great", "Fine", "Bad", "What sleep?"]],
-  ["Study with music?", ["Always", "Sometimes", "Never"]],
-  ["Hot or cold weather?", ["Hot", "Cold", "Mild"]],
-  ["Best canteen food?", ["Toastie", "Pie", "Sushi", "Chips"]],
-  ["Phones in class?", ["Ban them", "Allow them", "Depends"]],
-  ["How early do you leave for school?", ["Before 7", "7 to 7:30", "After 7:30", "Right on time"]],
-  ["Best way to revise?", ["Past papers", "Flashcards", "Notes", "Videos"]],
-  ["Cats or dogs?", ["Cats", "Dogs", "Both", "Neither"]],
-  ["Best break length?", ["Shorter", "As is", "Longer"]],
-  ["Homework before or after dinner?", ["Before", "After", "Not at all"]],
-  ["Favourite season?", ["Summer", "Autumn", "Winter", "Spring"]],
-  ["Do you check the timetable the night before?", ["Always", "Sometimes", "Never"]],
-  ["Best study spot?", ["Home", "Library", "Cafe", "Anywhere"]],
-  ["Coffee?", ["Yes", "No", "Only when desperate"]],
-  ["Easiest day this week?", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]],
-  ["Group work?", ["Love it", "Hate it", "Depends who's in it"]]
-];
-const plDay = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-const plQ = () => { const n = new Date(); return POLLS[Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5) % POLLS.length]; };
-const loadPoll = () => schoolFetch("/api/poll?day=" + plDay()).then(d => { pl = d; plNote = ""; if (plShow) render(); }, e => { plNote = e.message; if (plShow) render(); });
-async function votePoll(i){
-  if (plBusy) return;
-  plBusy = true;
-  try { pl = await schoolFetch("/api/poll", { day:plDay(), choice:i }); plNote = ""; } catch (e){ plNote = e.message; }
+/* ═══ Poll: the main site's weekly anonymous poll, from the same server data
+   (/api/forum?poll=1), so questions, votes and results are the same on both.
+   Left to the main site: the Monday/Friday shows, past polls, suggesting a question. ═══ */
+const plMineKey = w => "poll.mine." + w;        /* the main site's own device-only key, so "your pick" matches */
+const plFold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+const plDur = sec => { sec = Math.max(0, sec | 0); const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.max(1, Math.floor(sec % 3600 / 60)); return d ? d + "d " + h + "h" : h ? h + "h " + m + "m" : m + "m"; };
+const plLeft = k => Math.max(0, ((pl && pl.clock && pl.clock[k]) || 0) - (Date.now() - plAt) / 1000);
+const plMine = w => { try { const v = JSON.parse(localStorage.getItem(plMineKey(w))); return (Array.isArray(v) ? v : v ? [String(v)] : []).map(plFold); } catch { return []; } };
+const loadPoll = () => schoolFetch("/api/forum?poll=1").then(d => {
+  if (!pl || !pl.poll || !d.poll || pl.poll.week !== d.poll.week) plChosen = [];
+  pl = d; plAt = Date.now(); plNote = ""; if (plShow) render();
+}, e => { plNote = e.message; if (plShow) render(); });
+async function votePoll(){
+  const p = pl && pl.poll;
+  if (plBusy || !p || !plChosen.length) return;
+  plBusy = true; plNote = "";
+  const labels = plChosen.map(id => (p.options.find(o => o.id === id) || {}).label);
+  try {
+    const r = await schoolFetch("/api/forum", { action:"pollvote", week:p.week, choice:(p.pick || 1) > 1 ? plChosen : plChosen[0] });
+    try { localStorage.setItem(plMineKey(p.week), JSON.stringify(labels)); } catch {}
+    p.voted = true; p.total = r.total || p.total + 1; p.results = r.results || null; p.others = r.others || 0; plChosen = [];
+  } catch (e){ plNote = e.message; if (/already/i.test(e.message)) loadPoll(); }
   plBusy = false; render();
 }
+const CHIPS_UP_TO = 12;
+let plNd = 5;
 function renderPoll(nd){
-  const [q, opts] = plQ(), voted = pl && Number.isInteger(pl.mine), counts = (pl && pl.counts) || [], total = opts.reduce((a, _, i) => a + (counts[i] || 0), 0);
-  const OH = 64, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
-  const host = blockHost(nd, "Daily poll", viewH(), block => [
-    block("plb", "pl:q", "#FF9F0A", 4, 96, `<div class="plq"><b>${esc(q)}</b><small>${plNote ? esc(plNote) : voted ? total + (total === 1 ? " vote" : " votes") + " today" : pl ? "Pick one to see how everyone voted" : "Loading…"}</small></div>`),
-    ...opts.map((o, i) => { const n = counts[i] || 0, pct = total ? Math.round(100 * n / total) : 0;
-      return block("plb", "pl:o" + i, ["#FF9F0A", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"][i % 5], 108 + i * (OH + 8), OH,
-        `<button class="plo${voted && pl.mine === i ? " mine" : ""}" data-i="${i}">` + (voted ? `<i class="mjfill" style="width:${pct}%"></i>` : "") +
-        `<span>${esc(o)}${voted && pl.mine === i ? " ✓" : ""}</span>` + (voted ? `<b class="tnum">${pct}%</b>` : "") + `</button>`); })
-  ], span, at);
-  host.querySelectorAll(".plo").forEach(b => b.onclick = () => votePoll(+b.dataset.i));
+  plNd = nd;
+  const d = pl, p = d && d.poll, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1), COLS = ["#FF9F0A", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"];
+  let y = 4, k = 0;
+  const host = blockHost(nd, "Poll", () => Math.max(viewH(), y + 4), block => {
+    const out = [], add = (cls, who, h, body) => { out.push(block(cls, who, COLS[k++ % 5], y, h, body)); y += h + 8; };
+    const head = (q, sub) => add("plb", "pl:q", 96, `<div class="plq"><b>${esc(q)}</b><small>${esc(sub)}</small></div>`);
+    const bars = (results, mine, win) => (results || []).slice(0, 6).forEach((r, i) =>
+      add("plb", "pl:r" + i, 52, `<div class="plo plr${mine.includes(plFold(r.label)) ? " mine" : ""}"><i class="mjfill" style="width:${r.pct}%"></i><span>${win && !i ? "🏆 " : ""}${esc(r.label)}${mine.includes(plFold(r.label)) ? " ✓" : ""}</span><b class="tnum">${r.pct}%</b></div>`));
+    if (!d) return head("Poll", plNote || "Loading…"), out;
+    if (!p){
+      const l = d.last;
+      if (!l) return head("No poll right now", plNote || (d.clock ? "A new question opens in " + plDur(plLeft("nextIn")) : "Check back Monday")), out;
+      head("Last poll: " + l.question, (l.total || 0) + (l.total === 1 ? " voter" : " voters") + " · next question in " + plDur(plLeft("nextIn")));
+      bars(l.results, [], true);
+      return out;
+    }
+    const open = p.phase === "open", many = (p.pick || 1) > 1;
+    head(p.question, plNote || (open ? "Closes in " + plDur(plLeft("resultsIn")) : "Voting's closed · next question in " + plDur(plLeft("nextIn"))) + (p.voted || !p.canVote ? "" : " · anonymous") + (p.total ? " · " + p.total + (p.total === 1 ? " voter" : " voters") : ""));
+    if (p.results){ bars(p.results, plMine(p.week), !open); return out; }
+    if (!p.canVote){ add("plb", "pl:n", 64, `<div class="plq"><small>${esc(p.optionsError ? "Couldn't load the answers. Try again soon." : open ? "This poll isn't open to you." : "Voting's closed. Come back on Monday for the next question.")}</small></div>`); return out; }
+    const opts = p.options || [], chip = opts.length <= CHIPS_UP_TO;
+    let shown = opts;
+    if (!chip){
+      add("plb", "pl:in", 60, `<label class="lgf"><input class="fin" id="plin" type="search" value="${esc(plQuery)}" placeholder="Type a ${p.kind === "teacher" ? "teacher's" : p.kind === "class" ? "class" : p.kind === "period" ? "period" : "name"}…" autocomplete="off" spellcheck="false" aria-label="Your answer"></label>`);
+      const words = plFold(plQuery).split(/\s+/).filter(Boolean);
+      shown = words.length ? opts.filter(o => { const parts = plFold(o.label).split(/[\s'’-]+/); return words.every(w => parts.some(x => x.startsWith(w))); }).slice(0, 5) : [];
+      shown = [...opts.filter(o => plChosen.includes(o.id) && !shown.includes(o)), ...shown];
+    }
+    shown.forEach((o, i) => add("plb", "pl:o" + o.id, 52, `<button class="plo${plChosen.includes(o.id) ? " mine" : ""}" data-id="${esc(o.id)}"><span>${esc(o.label)}${plChosen.includes(o.id) ? " ✓" : ""}</span></button>`));
+    add("plb", "pl:go", 64, `<div class="lgg"><button class="btn primary" id="plgo" type="button"${plChosen.length && (!p.exact || plChosen.length === p.pick) ? "" : " disabled"}>${many ? "Vote (" + plChosen.length + " of " + p.pick + ")" : "Vote"}</button></div>`);
+    return out;
+  }, span, at);
+  const p2 = p && p.canVote && !p.voted && p.phase === "open" ? p : null;
+  if (!p2) return;
+  const most = p2.pick || 1;
+  host.querySelectorAll(".plo[data-id]").forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    plChosen = most === 1 ? [id] : plChosen.includes(id) ? plChosen.filter(x => x !== id) : plChosen.length < most ? [...plChosen, id] : plChosen;
+    plRedraw();
+  });
+  if ($("plgo")) $("plgo").onclick = votePoll;
+  const box = $("plin");
+  if (box){
+    box.oninput = () => { plQuery = box.value; plRedraw(true); };
+    box.onkeydown = e => { if (e.key === "Enter" && plChosen.length) votePoll(); };
+  }
+}
+/* a redraw that keeps the typing box (render() leaves the page alone while one is focused) */
+function plRedraw(typing){
+  const box = $("plin"), pos = box ? box.selectionStart : 0;
+  renderPoll(plNd);
+  if (typing && $("plin")){ $("plin").focus(); $("plin").setSelectionRange(pos, pos); }
 }
 
 function paintFpTiles(){
