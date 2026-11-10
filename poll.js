@@ -1226,7 +1226,9 @@ async function preview(kind, q){
    page below doesn't jump when the real one arrives. (This device only; 0 means
    there was no card, so nothing is held open.) */
 const HEIGHT = 'msc.pollh';
-function rememberHeight(){
+function rememberHeight(tries){
+  /* not mid-show: a show holds the card at another height (the first one starts it at 0) */
+  if (document.body.classList.contains('pshow') && (tries || 0) < 30){ setTimeout(() => rememberHeight((tries || 0) + 1), 1000); return; }
   requestAnimationFrame(() => { try { localStorage.setItem(HEIGHT, String(el.hidden ? 0 : Math.round(el.offsetHeight))); } catch {} });
 }
 function placeholder(){
