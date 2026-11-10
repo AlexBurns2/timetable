@@ -321,3 +321,13 @@ body.pshow{overflow-x:hidden}
 .pslotblur{will-change:filter}
 .penvflap.back{z-index:1;filter:brightness(.8)}
 .pletterstar{font-size:2rem;color:#c9a227;opacity:.5}
+
+/* the loading placeholder: the card's outline and a few soft bars */
+.pcard.pskel{display:flex;flex-direction:column;gap:12px;overflow:hidden;box-sizing:border-box}
+.pskl{display:block;height:12px;border-radius:999px;background:color-mix(in srgb,var(--text) 8%,transparent);
+  background-image:linear-gradient(90deg,transparent,color-mix(in srgb,var(--text) 7%,transparent),transparent);background-size:200% 100%;
+  animation:pskl 1.4s ease-in-out infinite}
+.pskl.big{height:24px;margin:2px 0 6px}
+.pskl.w30{width:30%}.pskl.w60{width:60%}.pskl.w70{width:70%}.pskl.w90{width:90%}
+@keyframes pskl{from{background-position:100% 0}to{background-position:-100% 0}}
+html[data-motion="reduced"] .pskl{animation:none}

@@ -2855,3 +2855,14 @@ data. No icon font or CDN script loads on the live site.
   everyone gets the same hint.
 - Highlighted tiles are `.qttile.hint` (gold outline), and a message says when
   a hint unlocks.
+
+### 8.69 Poll: results from the first vote; a loading placeholder
+- `MIN_SHOW` is now 1 in `_poll.js`, so results show from the first vote. This
+  was the owner's choice; the anonymity threshold of 5 is gone. The "Only N
+  votes so far…" note went with it; with no votes it just says "No votes yet."
+- **Loading placeholder.** While the poll loads, Home shows an empty card with
+  soft shimmering bars, at the height the card had on this device last time
+  (`localStorage` `msc.pollh`), so the tiles below don't jump.
+  - The height is saved after each draw, after minimising, and as 0 when
+    there's no card, so then nothing is held open.
+  - `/mock/poll?slow=3000` slows the mock to show it.

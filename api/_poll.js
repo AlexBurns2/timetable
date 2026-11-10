@@ -15,8 +15,8 @@
  *   poll_tally  says HOW MANY votes each answer has, with no names and no
  *               times: it is a running count, bumped by poll_bump().
  * Nothing stored links a voter to an answer, and the server never logs one.
- * Results are only shown once a scope has MIN_SHOW votes, so a lone vote
- * can't be worked out from the numbers.
+ * Results show from the first vote (MIN_SHOW is 1, the owner's choice): with
+ * very few votes, someone who knows who voted could work out a pick.
  *
  * Four kinds of question, and what an answer can be (always checked on the
  * server against a list, never free text):
@@ -99,7 +99,7 @@ const VOTERS = "__n";                   // the tally row that counts people, not
    how the winner is revealed on Friday. "surprise" picks one from the week. */
 export const ANIMS = ["surprise", "drop", "wreck", "topple", "explode", "flip", "slot"];
 export const CELEBS = ["surprise", "spotlight", "countdown", "curtain", "envelope", "slot"];
-const MIN_SHOW = 5;                 // votes in a scope before any result is shown
+const MIN_SHOW = 1;                 // results show from the first vote (was 5; the owner chose to always show them)
 const OPENS_AT = 9 * 3600 + 30 * 60;           // Monday 09:30, in seconds after Monday 00:00: the question opens
 const RESULTS_AT = 4 * 86400 + 12 * 3600;      // Friday 12:00: voting closes, the winner is out
 const WEEK_ENDS = 7 * 86400 + OPENS_AT;        // next Monday 09:30

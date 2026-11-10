@@ -95,7 +95,7 @@ async function refresh(first, startAt, again){
   catch (e){ console.error('poll draw:', e); if (first) hideCard(); }
 }
 const previewing = () => new URLSearchParams(location.search).has('pollpreview');
-function hideCard(){ el.hidden = true; el.innerHTML = ''; if (opts.onDraw) try { opts.onDraw(null); } catch {} }
+function hideCard(){ el.hidden = true; el.innerHTML = ''; rememberHeight(); if (opts.onDraw) try { opts.onDraw(null); } catch {} }
 const left = k => Math.max(0, ((data.clock && data.clock[k]) || 0) - (Date.now() - data.loadedAt) / 1000);
 
 /* where this person is with this week's poll */
@@ -157,7 +157,7 @@ function draw(first, startAt){
     /* no question has ever been set: no card at all, so the site can go live before the first one */
     if (!data.last){
       if (first && previewing()){ el.innerHTML = ''; afterDraw(first, startAt); return; }   // the preview draws its own card
-      el.hidden = true; el.innerHTML = ''; if (opts.onDraw) try { opts.onDraw(null); } catch {} return;
+      el.hidden = true; el.innerHTML = ''; rememberHeight(); if (opts.onDraw) try { opts.onDraw(null); } catch {} return;
     }
     el.innerHTML = frame(bodyFor('last', data.last), data.last, { chip:chipFor('last') });
     saveView(data.last, 'last');
@@ -225,6 +225,7 @@ function schedule(){
 
 function afterDraw(first, startAt){
   const p = data.poll;
+  if (first) setTimeout(rememberHeight, 400);          // once it's settled (not mid-show: a show holds its own height)
   setCount(p && typeof p.total === 'number' ? p.total : null, first);
   if (first){ keepLive(); schedule(); }
   if (opts.onDraw) try { opts.onDraw(p); } catch {}
@@ -373,8 +374,7 @@ function barRow(r, i, m, extra){
     '<span class="pfill" style="width:' + r.pct + '%"></span><span class="ppc">' + r.pct + '%</span></div>';
 }
 function resultsHtml(results, total, others, mine, pick, live){
-  if (!results || !results.length) return '<p class="pnote">' + (total ? 'Only ' + plural(total, 'vote') + ' so far. Results show once there are enough that nobody can be picked out.'
-                                                                      : 'No votes yet.') + '</p>';
+  if (!results || !results.length) return '<p class="pnote">No votes yet.</p>';
   const m = mineList(mine).map(fold);
   if (live) return '<div class="pbars" id="pbars">' + results.slice(0, 6).map((r, i) => barRow(r, i, m)).join('') + '</div>';
   const [w, ...rest] = results;
@@ -461,6 +461,7 @@ function setMin(on){
   TT.set(MIN, on ? curKey : '');
   applyMin();
   if (!reduced() && card.animate){ const h1 = card.offsetHeight; card.animate([{ height:h0 + 'px' }, { height:h1 + 'px' }], { duration:280, easing:'cubic-bezier(.2,.7,.2,1)' }); }
+  setTimeout(rememberHeight, 320);                     // a minimised card loads minimised-size next time
 }
 
 /* ── the footer: past polls, and suggesting one ───────────────────────── */
@@ -1221,8 +1222,23 @@ async function preview(kind, q){
   intro(INTRO_SHOWS.includes(anim) ? anim : 'drop', demo);
 }
 
+/* While it loads, an empty card the height the poll was last time, so the
+   page below doesn't jump when the real one arrives. (This device only; 0 means
+   there was no card, so nothing is held open.) */
+const HEIGHT = 'msc.pollh';
+function rememberHeight(){
+  requestAnimationFrame(() => { try { localStorage.setItem(HEIGHT, String(el.hidden ? 0 : Math.round(el.offsetHeight))); } catch {} });
+}
+function placeholder(){
+  let h = 0; try { h = +localStorage.getItem(HEIGHT) || 0; } catch {}
+  if (h < 60 || previewing()) return;
+  el.hidden = false;
+  el.innerHTML = '<div class="pcard pskel" style="height:' + h + 'px" aria-hidden="true">' +
+    '<span class="pskl w30"></span><span class="pskl w70 big"></span><span class="pskl w90"></span><span class="pskl w60"></span></div>';
+}
+
 window.Poll = {
-  mount(host, o){ el = host; opts = o || {}; prevView = TT.get(VIEW, null); refresh(true); },
+  mount(host, o){ el = host; opts = o || {}; prevView = TT.get(VIEW, null); placeholder(); refresh(true); },
   refresh:() => refresh(false), INTRO_SHOWS, CELEB_SHOWS, revealLine
 };
 })();
