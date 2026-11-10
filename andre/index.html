@@ -1094,13 +1094,18 @@ const apiUrl = path => API_ORIGIN + path;
 const ENDPOINT = apiUrl("/api/timetable"), DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
-             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"andre.creds", custom:"andre.custom" };
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"tt.creds", custom:"andre.custom" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction */
 const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
-/* this page's own login (andre.creds), set from the sign-in modules or Settings */
-let creds = get(LS.creds, null);
+/* the login is the main site's own (tt.creds), so signing in or out on either site does both;
+   an andre.creds from before that is adopted once */
+let creds = get(LS.creds, null) || get("andre.creds", null);
+if (creds && !get(LS.creds, null)) set(LS.creds, creds);
+localStorage.removeItem("andre.creds");
+/* signed in or out on the main site in another tab: start again with that login */
+addEventListener("storage", e => { if (e.key === LS.creds) location.reload(); });
 let signedIn = !!(creds && creds.email && creds.password);
 const syncSigned = () => signedIn = !!(creds && creds.email && creds.password);
 /* the birthday register: [{ email, name, day:"MM-DD" }], and the class of 2027 */
@@ -2396,7 +2401,7 @@ function openSettings(o){
   document.body.classList.toggle("setopen", o);
   gear.setAttribute("aria-expanded", o);
   $("panel").classList.remove("sub");
-  if (o){ paintSettings(); $("pclose").focus(); } else gear.focus();
+  if (o){ paintSettings(); renderCreds(); $("pclose").focus(); } else gear.focus();
 }
 gear.onclick = () => openSettings(true);
 $("pclose").onclick = $("scrim").onclick = () => openSettings(false);
@@ -4264,7 +4269,7 @@ function renderMj(nd){
 /* ═══ sign-in modules ═══
    Until there is a login, the week is a few modules: a username, a password
    and a button. Signing in turns them into the timetable, like any other
-   switch of the week. The login is kept on this device (andre.creds) and
+   switch of the week. The login is the main site's (tt.creds), kept on this device, and
    changed from Settings afterwards. */
 /* a view made of placed blocks: mk gets block(cls, who, colour, y, h, body) and returns the blocks; they go in column startCol, spanning `span` days */
 function blockHost(nd, title, H, mk, span, startCol){
