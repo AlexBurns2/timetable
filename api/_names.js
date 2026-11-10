@@ -38,10 +38,21 @@ export async function nameOverrides() {
   return cache;
 }
 
+/* An email address is never shown as a name: "kiyoka.kubo@det.nsw.edu.au"
+   becomes "Kiyoka Kubo" (everything from the @ on goes, the rest is tidied).
+   Any text can be run through this; it only touches what looks like an address. */
+const EMAIL = /([A-Za-z0-9._%+'-]+)@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
+const cap = w => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w;
+export const nameFromLocal = local => String(local || "").split(/[._]+/).filter(Boolean)
+  .map(w => cap(w.replace(/\d+$/, ""))).filter(Boolean).join(" ") || "Someone";
+export function stripEmails(text) {
+  return text == null ? text : String(text).replace(EMAIL, (m, local) => nameFromLocal(local));
+}
+
 /* the override for this email if there is one, otherwise the name it would have had */
 export function withName(map, email, fallback) {
   const hit = email && map && map.get(String(email).toLowerCase());
-  return hit || fallback;
+  return stripEmails(hit || fallback);
 }
 
 export function forgetNameOverrides() { cache = null; cachedAt = 0; }

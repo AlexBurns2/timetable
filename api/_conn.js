@@ -23,6 +23,10 @@
  *   conn_result(email, date, year, found jsonb, mistakes, solved, done, updated_at)  pk (email, date)
  */
 
+/* The generator's version. Puzzles made by an older one are deleted and made
+   again (see _connroute.js); bump this whenever the categories or rules change. */
+export const QUARTETS_VERSION = 4;
+
 /* ── small word lists (lower case) ─────────────────────────────────── */
 const L = s => s.split(' ');
 const FLOWERS = new Set(L('lily rose ivy violet daisy poppy iris jasmine willow hazel holly heather fern rosie primrose marigold lavender magnolia azalea camellia dahlia flora flower blossom lotus olive laurel saffron sage juniper rowan aspen briar clover posy myrtle petal acacia cassia linnea zinnia tansy bryony ash oak cedar birch alder'));
@@ -43,6 +47,8 @@ const NICK = L('anna bella ella elle chris liam alex theo tina nina rita lena mi
 const WORDS = L('aim air and arm army art ate bury bale bean bear beat bird blue boat bone care cart cast cat clam coal cola dale dare date deal dean dear den dial dine dirt done door dote earl earn east ease edit end evil fare fear fire flea fold gale game gear glee hale heal hear heat hint hire horn idle inch item jar keen kale lace lair lake lame lane last late lead lean leap liar lied lies lime line lion lips list live loan lone lore lose lost lure mail male mane mare mate meal mean meat mile mine mint mire mist mite moat mode more name near neat nest nice nile nose note oath oils omen once oral ores pale pane pear pine plea poem pose race rail rain rang rate read real rein rest rice ride rile rind rise road roam robe role rose rude rule safe sail sale same sane save scar seal sear seat sent shoe silo sine sire site slab slay slot snag sole some sore spar spin star stem stop tale tame tea teak team tear tide tile time tins tire toes tone tore tram tray tree trim urn vale veil vile vine wane ware wear wine wire wore yarn year ales alert angel angle arise baker bread cider cried crate eager early earth hated heart hoser ideal inert lemon liner liver loser male malt manor meant miser moral needs noted onset opera other petal plate pleas ranged reins resin rinse risen serene siren slate snare stale steal tales tears teams tenor toner trace vowel wider');
 const ANIMALS_HIDDEN = L('cat rat ant bee owl emu ape hen eel cod ram pig dog bat elk yak gnu cow doe ewe fox kid koi asp boar crow dove duck frog goat hare lamb lion mole moth mule newt seal slug swan toad wasp wolf worm bear deer mink orca puma');
 /* only the symbols people remember from school */
+const BODY_HIDDEN = L('arm leg ear eye lip hip toe chin shin knee nose hand neck back heel nail skin hair lung brow cheek palm wrist ankle thumb');
+const TWO_WORDS = new Set(L('am an as at be by do go he hi if in is it me my no of oh ok on or so to up us we ox ax'));
 const SYMBOLS = new Set(L('He Li Be Ne Na Mg Al Si Cl Ar Ca Fe Co Ni Cu Zn Ag Sn Au Hg Pb Pt Ra Rn Kr Xe Br Mn Cr Ti'));
 
 const sortKey = w => w.split('').sort().join('');
@@ -81,6 +87,11 @@ export function nameFeatures(first, last){
   if (l.charCodeAt(0) - f.charCodeAt(0) === 1) add(4, 'abc', 'Initials are next to each other in the alphabet', f[0].toUpperCase() + l[0].toUpperCase());
   const sym = f[0].toUpperCase() + l[0];
   if (SYMBOLS.has(sym)) add(4, 'element', 'Initials spell a chemical symbol', sym);
+  const body = BODY_HIDDEN.find(b => { const i = whole.indexOf(b); return i >= 0 && b !== f && b !== l; });
+  if (body) add(4, 'hiddenbody', 'A body part hidden in their name', body);
+  if (f.length >= 3 && f[f.length - 1] === l[0]) add(4, 'chain', 'First name ends with the letter their surname starts with',
+    f[f.length - 1].toUpperCase());
+  if (TWO_WORDS.has(f[0] + l[0])) add(4, 'initword', 'Initials spell a word', (f[0] + l[0]).toUpperCase());
   return out;
 }
 
@@ -95,7 +106,7 @@ export function howFor(groupId, name){
 }
 
 /* ── the timetable side ─────────────────────────────────────────── */
-const NOT_A_SUBJECT = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch|break|private)\b/i;
+const NOT_A_SUBJECT = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch|break|private|band|choir|ensemble|orchestra|club|co-?curricular|extra-?curricular|enrichment|homework|support|carnival|excursion|camp|monday|tuesday|wednesday|thursday|friday)\b/i;
 const TOO_COMMON = /^english\b|^mathematics$|^maths?$|^religion|^studies of religion/i;
 export const cleanSubject = name => String(name || '')
   .replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, '')
@@ -105,13 +116,17 @@ export const cleanSubject = name => String(name || '')
 const SCIENCE = /\b(physics|chemistry|biology|earth (?:and|&) environmental|investigating science|science extension)\b/i;
 const MATHS = /\bmath/i;
 const EXTENSION = /\bextension\b|\bext\.?\s?[12]\b/i;
+const ARTS = /\b(visual arts?|music|drama|dance|photograph|ceramics|visual design)\b/i;
+const TECH = /\b(software|engineering studies|design and technology|design & technology|food technology|industrial technology|information|computing|enterprise computing|textiles)\b/i;
 const LANGUAGE = /\b(french|japanese|chinese|mandarin|italian|german|spanish|indonesian|korean|latin|greek|arabic|vietnamese|hindi|modern greek)\b/i;
 const PROFILES = {
   'p:nomaths': { label: "Don't take any maths",              about: MATHS,     test: s => !s.some(x => MATHS.test(x)) },
   'p:nosci':   { label: "Don't take any science",            about: SCIENCE,   test: s => !s.some(x => SCIENCE.test(x)) },
   'p:sci3':    { label: 'Take three sciences',               about: SCIENCE,   test: s => s.filter(x => SCIENCE.test(x)).length >= 3 },
   'p:ext2':    { label: 'Take two or more extension subjects', about: EXTENSION, test: s => s.filter(x => EXTENSION.test(x)).length >= 2 },
-  'p:lang':    { label: 'Take a language',                   about: LANGUAGE,  test: s => s.some(x => LANGUAGE.test(x)) }
+  'p:lang':    { label: 'Take a language',                   about: LANGUAGE,  test: s => s.some(x => LANGUAGE.test(x)) },
+  'p:arts':    { label: 'Take an arts subject (art, music, drama or dance)', about: ARTS, test: s => s.some(x => ARTS.test(x)) },
+  'p:tech':    { label: 'Take a technology subject',          about: TECH,      test: s => s.some(x => TECH.test(x)) }
 };
 const profileHas = (t, id) => PROFILES[id].test([...t.subjects]);
 /* one timetable → { subjects:Set, codes:Set, teachers:Set, classes:[{code, subject, teacher}] } */
@@ -145,7 +160,16 @@ async function eachLimited(list, n, fn){ let i = 0; await Promise.all(Array.from
  *   seed     a number (from the date and year)
  * Returns { groups:[{ lv, label, kind, names:[...], how:[...] }] } or null.
  */
-export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), sampleSize = 36, rosterMax = 8, fetchMax = 150 }){
+/* a teacher as a timetable gives them ("kiyoka.kubo@det…", "Doyle, Mr R") as a name to show */
+const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean).map(p => p[0].toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+export function tidyTeacher(t){
+  const s = String(t || '').trim();
+  if (s.includes('@')){ const p = s.split('@')[0].split('.').filter(Boolean);
+    return p.length >= 2 ? titleCase(p[0]) + ' ' + titleCase(p[1].replace(/\d+$/, '')) : titleCase(s.split('@')[0].replace(/[._]+/g, ' ').replace(/\d+$/, '')); }
+  const m = s.match(/^([^,]+),\s*(.+)$/);
+  return m ? m[2].trim() + ' ' + m[1].trim() : s;
+}
+export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, sampleSize = 36, rosterMax = 8, fetchMax = 150 }){
   const senior = Number(year) >= 11;
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   const n = people.length;
@@ -195,7 +219,7 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
     if (!c.members || c.members.size < 5 || !okSubject(c.subject) && !EXTENSION.test(c.subject)) continue;
     const sc = cat('s:' + c.subject, 2, 'Take ' + c.subject, 'subject', { subject: c.subject }); c.members.forEach(e => sc.members.add(e));
     cat('c:' + c.code, 3, 'In the same ' + c.subject + ' class', 'class', { code: c.code, subject: c.subject, members: c.members });
-    if (c.teacher){ const tc = cat('t:' + c.teacher, 3, 'Taught by ' + c.teacher, 'teacher', { teacher: c.teacher, subjects: new Set() });
+    if (c.teacher){ const tc = cat('t:' + c.teacher, 3, 'Taught by ' + teacherName(c.teacher), 'teacher', { teacher: c.teacher, subjects: new Set() });
       tc.subjects.add(c.subject); c.members.forEach(e => tc.members.add(e)); }
   }
   /* seniors: what whole timetables say. Everyone whose timetable has been read
@@ -291,8 +315,9 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
    day lands in the same difficulty band, with at least one way in. */
 const HARD = { 'n:flower': 1, 'n:gem': 1, 'n:month': 1, 'n:colour': 1.25, 'n:job': 1.5, 'n:animal': 1.5, 'n:bird': 1.5, 'n:place': 2,
   'n:wordsur': 1.5, 'n:wordfirst': 1.5,
-  'n:alliter': 2.5, 'n:palindrome': 3, 'n:abc': 3.5, 'n:element': 3.5, 'n:hiddenname': 3.5, 'n:anagram': 4, 'n:hiddenanimal': 4 };
-const PROFILE_HARD = { 'p:nomaths': 2.5, 'p:nosci': 2.5, 'p:lang': 2.25, 'p:sci3': 3, 'p:ext2': 3 };
+  'n:alliter': 2.5, 'n:palindrome': 3, 'n:abc': 3.5, 'n:element': 3.5, 'n:hiddenname': 3.5, 'n:anagram': 4, 'n:hiddenanimal': 4,
+  'n:hiddenbody': 4, 'n:chain': 3.5, 'n:initword': 3.5 };
+const PROFILE_HARD = { 'p:nomaths': 2.5, 'p:nosci': 2.5, 'p:lang': 2.25, 'p:sci3': 3, 'p:ext2': 3, 'p:arts': 2.25, 'p:tech': 2.25 };
 export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'class' ? 3 : c.kind === 'teacher' ? 2.75
   : c.kind === 'profile' ? PROFILE_HARD[c.id] || 3 : HARD[c.id] || 3;
 const family = c => c.kind === 'profile' ? 'profile' : c.kind !== 'name' ? 'timetable' : hardness(c) <= 2 ? 'theme' : 'wordplay';

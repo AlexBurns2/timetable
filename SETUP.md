@@ -2763,7 +2763,7 @@ and only creates what's missing; nothing existing is touched.
 ```sql
 create table if not exists conn_puzzle (
   date       date not null,
-  year       text not null,
+  year       text not null,           -- the year and the generator version, e.g. "11#v4"
   groups     jsonb not null,          -- [{lv, id, label, kind, names, emails}], or [] if no puzzle could be made that day
   created_at timestamptz not null default now(),
   primary key (date, year)
@@ -2771,7 +2771,7 @@ create table if not exists conn_puzzle (
 create table if not exists conn_result (
   email      text not null,
   date       date not null,
-  year       text not null,
+  year       text not null,           -- as above: a new generator version starts afresh
   found      jsonb not null default '[]',   -- the levels solved, e.g. [1,3]
   log        jsonb not null default '[]',   -- each guess as four levels, for the share grid
   mistakes   int  not null default 0,

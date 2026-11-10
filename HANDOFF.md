@@ -2798,3 +2798,38 @@ data. No icon font or CDN script loads on the live site.
   of your guesses; no names or answers). **Share** sends the image where the
   device can, or copies it, or falls back to text. **Copy as text** gives the
   emoji grid and a link.
+
+### 8.65 Quartets: generator versions, 6 chances, more groups
+- **Versions.** `QUARTETS_VERSION` (currently 4) in `_conn.js`. Puzzles and
+  results are stored under `year` = `"11#v4"`. On a year's first request per
+  warm instance, `dropOldVersions` deletes that year's puzzles and results
+  from any other version, including the unversioned ones made by the first
+  generator, and each day is made again on demand. Bump the version whenever
+  categories or rules change. This was the user's explicit request: games from
+  older generators are not kept.
+- **6 chances** (`MAX_MISTAKES` = 6). Results bars run 0–5 plus missed.
+  The description is now "Find the four similar groups of four from your year."
+- **Teachers** are named from the staff directory ("Ms Kubo"), with any
+  override, never an email address (`staffNames`, `tidyTeacher`).
+- **Not subjects:** band, choir, ensembles, clubs, co-curricular, and anything
+  named after a weekday ("Friday Band").
+- **New groups:**
+  - A body part hidden in their name (Victoria Pearson: ear)
+  - First name ends with the letter their surname starts with
+  - Initials spell a word (O.H., A.S.)
+  - Take an arts subject
+  - Take a technology subject
+- **The name.** Still "Quartets": I won't name it after the NYT game. It's
+  just the title in the `GAMES` entry and `head()` in games.js.
+
+### 8.66 An email address is never shown as a name
+- `stripEmails(text)` in `_names.js` turns any address into a name: everything
+  from the @ on goes, and the rest is tidied ("kiyoka.kubo@det.nsw.edu.au" →
+  "Kiyoka Kubo").
+- `withName()` now runs every name it returns through it, so every route that
+  shows a name has the guard.
+- Quartets labels and Daily Guess Who hints are also run through it when
+  they're sent.
+- The pages already tidied teacher emails (index.html `tidyTeacher`, games.js
+  `tidyName`). The email in the user's screenshot came from the first Quartets
+  generator, whose puzzles version 4 deletes.

@@ -151,7 +151,7 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'quartets', cat:'Timetable', ico:'🧩', name:'Quartets', blurb:'Four groups of four from your year, new every day' },
+  { id:'quartets', cat:'Timetable', ico:'🧩', name:'Quartets', blurb:'Find the four similar groups of four from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -1350,7 +1350,7 @@ BUILD.dailyguess = host => {
 const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
 const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
 BUILD.quartets = host => {
-  head(host, 'Quartets', 'Find the four groups of four from your year. Level 1 is the easiest, level 4 the trickiest.', '<div id="qt"></div>');
+  head(host, 'Quartets', 'Find the four similar groups of four from your year.', '<div id="qt"></div>');
   const box = $('qt');
   let alive = true, arch = null, calMonth = null, cur = null;
   const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
@@ -1390,6 +1390,7 @@ BUILD.quartets = host => {
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
     const r0 = s.result || {};
     let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
+    const CH = s.chances || 6;                       // mistakes allowed
     const sel = new Set(), tried = new Set();
     let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
 
@@ -1425,7 +1426,7 @@ BUILD.quartets = host => {
       $('qtgo').disabled = sel.size !== 4;
     };
     const paintLives = () => {
-      $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:4 }, (_, i) => '<i class="' + (i < 4 - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
+      $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:CH }, (_, i) => '<i class="' + (i < CH - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
       $('qtbtns').hidden = done;
     };
     const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
@@ -1435,7 +1436,7 @@ BUILD.quartets = host => {
         if (done) loadSummary(s.date); }).catch(() => {});
 
     /* the share card: an image of how you went (no names, no answers), and the same as text */
-    const won = () => found.length === 4 && mistakes < 4;
+    const won = () => found.length === 4 && mistakes < CH;
     const verdict = () => won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it';
     const shareText = () => 'Quartets · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
       log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=quartets';
@@ -1499,7 +1500,7 @@ BUILD.quartets = host => {
         say(most === 3 ? 'One away…' : 'Not a group.', true);
         $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
           { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
-        if (mistakes >= 4){ done = true; SFX.lose(); }
+        if (mistakes >= CH){ done = true; SFX.lose(); }
       }
       if (arch && done){ arch.mine[s.date] = { solved:won(), done:true, mistakes }; if (!$('qtcal').hidden) paintCal(); }
       save();
@@ -1527,7 +1528,8 @@ BUILD.quartets = host => {
   function renderSummary(el, sum, mine){
     if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const rate = Math.round(sum.solved / sum.played * 100);
-    const max = Math.max(1, ...['0', '1', '2', '3', 'lost'].map(k => sum.dist[k] || 0));
+    const keys = Array.from({ length:sum.chances || 6 }, (_, i) => String(i)).concat('lost');
+    const max = Math.max(1, ...keys.map(k => sum.dist[k] || 0));
     const tip = k => { const l = (sum.names || {})[k]; return l && l.length ? ' title="' + esc(l.join(', ')) + '"' : ''; };
     const bar = (label, k, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"' + tip(k) + '><span class="dgbl">' + label + '</span>' +
       '<span class="dgbt"><i style="width:' + ((sum.dist[k] || 0) / max * 100) + '%"></i></span><span class="dgbn">' + (sum.dist[k] || 0) + '</span></div>';
@@ -1544,7 +1546,7 @@ BUILD.quartets = host => {
     el.innerHTML = (spot ? '<div class="dgspot">' + spot + '</div>' : '') +
       '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
       '<div class="qtsumcap">Mistakes</div>' +
-      '<div class="dgbars">' + bar('0', '0') + bar('1', '1') + bar('2', '2') + bar('3', '3') + bar('✗', 'lost', true) + '</div>' +
+      '<div class="dgbars">' + keys.map(k => k === 'lost' ? bar('✗', 'lost', true) : bar(k, k)).join('') + '</div>' +
       '<div class="qtsumcap">Who found each group</div><div class="qtfounds">' + groupRows + '</div>';
   }
 

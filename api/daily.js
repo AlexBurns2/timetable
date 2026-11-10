@@ -18,7 +18,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
-import { displayNames, withName } from "./_names.js";
+import { displayNames, withName, stripEmails } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -196,6 +196,7 @@ export default async function handler(req, res) {
     { seed: date + ":" + year, date, year, subjects: t.subjects, teachers: t.teachers, verified: t.verified,
       classes: t.classes, classmates: t.classmates,
       nameOf: (email, name) => withName(NAMES, email, name) });   // classmates by the name people know them by
+  for (let i = 0; i < hints.length; i++) hints[i] = stripEmails(hints[i]);     // never an email address in a hint
   const totalHints = hints.length;
   const answerName = shownName;
 
