@@ -4307,7 +4307,9 @@ async function tryLogin(user, pass){
   localStorage.removeItem(LS.cache);
   await load();
   if (loadError){
-    const msg = loadError;
+    /* local copies call the live API, which only lets in port 3000 (api/timetable.js LOCAL_PREVIEW_ORIGINS) */
+    const msg = API_ORIGIN && /failed to fetch|load failed|networkerror/i.test(loadError)
+      ? "The timetable service won't answer " + location.origin + ". Open this page on port 3000, or on the live site." : loadError;
     creds = prev.creds; email = prev.email; syncSigned(); loadError = "";
     if (signedIn) load();             /* a wrong one typed in Settings: the old login's timetable back */
     throw new Error(msg);
