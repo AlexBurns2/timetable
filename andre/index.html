@@ -1074,7 +1074,7 @@ select.fin{appearance:auto}
       <div class="mod modx" data-m="forum" style="--c:#30B0C7">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>Forum <span class="state" id="fmstate"></span></h3></button>
       </div>
-      <div class="mod modx" data-m="poll" style="--c:#FF9F0A">
+      <div class="mod modx" data-m="poll" style="--c:#FFCC00">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div><h3>Poll <span class="state" id="plstate"></span></h3></button>
       </div>
       <div class="mod modx" data-m="mahjong" style="--c:#E0303A">
@@ -4442,7 +4442,7 @@ const CHIPS_UP_TO = 12;
 let plNd = 5;
 function renderPoll(nd){
   plNd = nd;
-  const d = pl, p = d && d.poll, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1), COLS = ["#FF9F0A", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"];
+  const d = pl, p = d && d.poll, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1), COLS = ["#FFCC00", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"];
   let y = 4, k = 0;
   const host = blockHost(nd, "Poll", () => Math.max(viewH(), y + 4), block => {
     const out = [], add = (cls, who, h, body) => { out.push(block(cls, who, COLS[k++ % 5], y, h, body)); y += h + 8; };
