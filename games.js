@@ -1293,7 +1293,7 @@ BUILD.dailyguess = host => {
     el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
   }
 
-  /* ── results: one spotlight line at a time, then how the year went ── */
+  /* ── results: one spotlight line for the day, then how the year went ── */
   async function openSummary(date){
     const el = document.getElementById('dgsummary'), b = document.getElementById('dgsumbtn');
     if (!el) return;
@@ -1308,11 +1308,11 @@ BUILD.dailyguess = host => {
   async function loadSummary(date){
     const el = document.getElementById('dgsummary'); if (!el) return;
     if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
-    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); if (alive) renderSummary(el, d.summary); }
+    try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); if (alive) renderSummary(el, d.summary, date); }
     catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
   const spotLine = dgSpotLine;
-  function renderSummary(el, sum){
+  function renderSummary(el, sum, date){
     clearInterval(spotTimer);
     if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const rate = Math.round(sum.wins / sum.played * 100);
@@ -1325,21 +1325,14 @@ BUILD.dailyguess = host => {
     for (let i=1;i<=sum.totalHints;i++) rows += bar(i, sum.dist[i]||0, String(i), false);
     rows += bar('✗', sum.losses, 'lost', true);
     const lines = (sum.spotlight || []).map(spotLine).filter(Boolean);
+    /* one person for the day: picked by the date, so everyone in the year sees the same one */
+    const day = date || new Date().toLocaleDateString('en-CA', { timeZone:'Australia/Sydney' });
+    let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const pick = lines.length ? lines[h % lines.length] : '';
     el.innerHTML =
-      (lines.length ? '<div class="dgspot" id="dgspot" aria-live="polite">' + lines[0] + '</div>' : '') +
+      (pick ? '<div class="dgspot" id="dgspot">' + pick + '</div>' : '') +
       '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
       '<div class="dgbars">' + rows + '</div>';
-    /* one person at a time, a few seconds each */
-    if (lines.length > 1){
-      let i = 0;
-      spotTimer = setInterval(() => {
-        const sp = document.getElementById('dgspot');
-        if (!alive || !sp){ clearInterval(spotTimer); return; }
-        i = (i + 1) % lines.length;
-        sp.classList.remove('in'); void sp.offsetWidth;
-        sp.innerHTML = lines[i]; sp.classList.add('in');
-      }, 4500);
-    }
   }
 
   return () => { alive = false; clearInterval(spotTimer); };
