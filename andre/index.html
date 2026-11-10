@@ -632,9 +632,13 @@ button.row:hover{background:var(--fill2)}
 .lgf{position:absolute;inset:0;display:flex;align-items:center;gap:8px;padding:0 12px}
 .lgf .fin{flex:1;min-width:0}
 .lgf span{color:var(--fg2);font-size:calc(13px * var(--fs,1));white-space:nowrap}
-.lgg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px 12px}
-.lgg .btn{width:100%}
-.lgerr{min-height:1.3em;font-size:calc(12px * var(--fs,1));color:var(--red);text-align:center}
+.lgin .lgerr{color:var(--red)}
+.lgin .lgerr:empty{display:none}
+.lggo{position:absolute;inset:0;background:color-mix(in srgb,var(--blue) 86%,#000);color:#fff;font-size:calc(15px * var(--fs,1));font-weight:600}
+.lggo:hover{filter:brightness(1.08)}
+.lggo:disabled{opacity:.7;cursor:default}
+/* signed out: the tiles below are greyed and can't be used */
+.signedout #mg{opacity:.45;filter:grayscale(1)}
 .fmb{display:flex;flex-direction:column;background:var(--fill)}
 .fmlist{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
 .fmmsg{max-width:min(560px,86%);align-self:flex-start;padding:7px 11px;border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
@@ -1559,6 +1563,8 @@ function render(){
   if ((mjShow || fmShow || plShow || loginShow) && document.activeElement.matches(".mjb input")) return;
   if (gameNow && $(phone.matches ? "daylist" : "g").querySelector("#gmframe")) return;      /* a redraw would restart the game */
   document.body.classList.toggle("mjview", mjShow || gmShow || fmShow || plShow || loginShow);
+  document.body.classList.toggle("signedout", loginShow);
+  $("mg").inert = loginShow;
   if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   const mon = addDays(baseWeek(), off*7);
@@ -4282,10 +4288,10 @@ function loginPaint(){
 function renderLogin(nd){
   const span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
   const host = blockHost(nd, "Sign in", viewH(), block => [
-    block("lgb", "lg:head", "#0A84FF", 4, 112, `<div class="lgin"><b>Sign in</b><small>Your timetable loads with your own school login. It stays on this device and goes straight to the timetable service.</small></div>`),
+    block("lgb", "lg:head", "#0A84FF", 4, 112, `<div class="lgin"><b>Sign in</b><small>Your timetable loads with your own school login. It stays on this device and goes straight to the timetable service.</small><small class="lgerr" id="lgnote" role="alert"></small></div>`),
     block("lgb", "lg:user", "#5E5CE6", 124, 60, `<label class="lgf"><input class="fin" id="lgu" value="${esc(loginUser)}" placeholder="first.last1" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="School username"><span>@${DOMAIN}</span></label>`),
     block("lgb", "lg:pass", "#30B0C7", 192, 60, `<label class="lgf"><input class="fin" id="lgp" type="password" value="${esc(loginPass)}" placeholder="School password" autocomplete="current-password" aria-label="School password"></label>`),
-    block("lgb", "lg:go", "#30C05A", 260, 92, `<div class="lgg"><button class="btn primary" id="lggo" type="button">Show my timetable</button><div class="lgerr" id="lgnote" role="alert"></div></div>`)
+    block("lgb", "lg:go", "#0A84FF", 260, 56, `<button class="lggo" id="lggo" type="button">Show my timetable</button>`)
   ], span, at);
   loginPaint();
   $("lgu").oninput = e => loginUser = e.target.value;
@@ -4457,7 +4463,7 @@ function renderPoll(nd){
       shown = [...opts.filter(o => plChosen.includes(o.id) && !shown.includes(o)), ...shown];
     }
     shown.forEach(o => add("plb", "pl:o" + o.id, 52, `<button class="plo${plChosen.includes(o.id) ? " mine" : ""}" data-id="${esc(o.id)}"><span>${esc(o.label)}${plChosen.includes(o.id) ? " ✓" : ""}</span></button>`));
-    add("plb", "pl:go", 64, `<div class="lgg"><button class="btn primary" id="plgo" type="button"${plChosen.length && (!p.exact || plChosen.length === p.pick) ? "" : " disabled"}>${many ? "Vote (" + plChosen.length + " of " + p.pick + ")" : "Vote"}</button></div>`);
+    add("plb", "pl:go", 56, `<button class="lggo" id="plgo" type="button"${plChosen.length && (!p.exact || plChosen.length === p.pick) ? "" : " disabled"}>${many ? "Vote (" + plChosen.length + " of " + p.pick + ")" : "Vote"}</button>`);
     return out;
   }, span, at);
   if (!p || !p.canVote || p.voted || p.phase !== "open") return;
