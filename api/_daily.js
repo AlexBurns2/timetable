@@ -171,7 +171,11 @@ const STAGE4_CORE = /^(music|visual arts?|art|technology|tech(?:nology)? mandato
 const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 const word = n => WORDS[n] || String(n);
 /* what knowing one fact also tells you */
-const IMPLIES = { F1: ["Fvs"], Fmask: ["F1", "Flen", "Fvs"], Lmask: ["L1", "Llen"] };
+const IMPLIES = { F1: ["Fvs"], Fmask: ["F1", "Flen", "Fvs"], Lmask: ["L1", "Llen"], F2: ["F1"], L2: ["L1"] };
+/* how much of a name a hint may show: its first two letters, or just the first
+   for a short name; never more, and never how long it is */
+const startOf = w => { const ch = [...lettersOf(w)]; if (!ch.length) return "";
+  return ch.length >= 3 ? plainLetter(ch[0]) + ch[1].toLowerCase() : plainLetter(ch[0]); };
 
 /* v3's partial reveal. Same letters as mask() at the same fraction (so a later,
    bigger reveal always contains an earlier one), but hyphens, apostrophes and
@@ -220,7 +224,7 @@ export function v3Hints(first, last, extra) {
      (no "initials R.C." after "starts with R"; no "both A and B" after "takes A") */
   const add = (tier, fun, tags, text, kind, fresh) => pool.push({ tier, fun, tags, text, kind: kind || "", fresh: fresh || null });
   /* at most this many of a kind in one round, so it never reads as a list */
-  const CAP = { teacher: 1, subject: 3, trivia: 2, ending: 1 };
+  const CAP = { teacher: 1, subject: 3, trivia: 2, ending: 1, start2: 1 };   // one "starts with Em" before the last hint, which gives both
 
   /* ── what they take (verified timetables only) ── */
   const classes = ok && Array.isArray(extra.classes)
@@ -283,12 +287,13 @@ export function v3Hints(first, last, extra) {
   /* ── name shapes: filler early, giveaways late. No vowel counts, no "starts
      with a consonant", no surname length when there is anything better: those
      are guesswork, not fun. ── */
+  /* one fact at a time: a letter count is fine; "looks like E m _ _ y" (the length
+     and three letters at once) isn't, so the most a hint shows is two letters */
   if (FL.length) {
     add(1, 1, ["Flen"], "Their first name has <b>" + FL.length + "</b> letters.", "trivia");
     add(2, 2, ["Fend"], "Their first name ends in <b>" + plainLetter(FL[FL.length - 1]) + "</b>.", "ending");
     add(3, 2, ["F1"], "Their first name starts with <b>" + plainLetter(FL[0]) + "</b>.");
-    const fm = maskV3(first, 0.5);
-    add(4, 1, ["Fmask", "F1", "Flen"].concat(/_$/.test(fm) ? [] : ["Fend"]), "Their first name looks like <b>" + fm + "</b>.");
+    if (FL.length >= 3) add(4, 1, ["F2", "F1"], "Their first name starts with <b>" + startOf(first) + "</b>.", "start2", ["L2"]);
   }
   if (LL.length) {
     if (sparse) {
@@ -301,8 +306,7 @@ export function v3Hints(first, last, extra) {
     add(3, 2, ["L1"], "Their surname starts with <b>" + plainLetter(LL[0]) + "</b>.");
     /* initials: a late hint, and only while neither letter has been given */
     if (FL.length) add(4, 2, ["F1", "L1"], "Their initials are <b>" + plainLetter(FL[0]) + "." + plainLetter(LL[0]) + ".</b>", "", ["F1", "L1"]);
-    const lm = maskV3(last, 0.45);
-    add(4, 1, ["Lmask", "L1", "Llen"].concat(/_$/.test(lm) ? [] : ["Lend"]), "Their surname looks like <b>" + lm + "</b>.");
+    if (LL.length >= 3) add(4, 1, ["L2", "L1"], "Their surname starts with <b>" + startOf(last) + "</b>.", "start2", ["F2"]);
   }
 
   /* ── the order: 8 slots, gentle → strong. The gentle ones swap now and then
@@ -346,8 +350,8 @@ export function v3Hints(first, last, extra) {
       return;
     }
   });
-  /* the reveal: more of each name than before, with a clear gap between them */
-  out.push("Their name reads <b>" + finalMask(first, 0.5, 0.7) + (last ? "&emsp;" + finalMask(last, 0.45, 0.65) : "") + "</b>.");
+  /* the last hint: how each name starts (two letters at most, no length) */
+  out.push("Their name starts <b>" + startOf(first) + "…" + (last ? "&emsp;" + startOf(last) + "…" : "") + "</b>");
   return out;
 }
 

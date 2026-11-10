@@ -2892,3 +2892,69 @@ data. No icon font or CDN script loads on the live site.
     over the page.)
   - Flip: a deeper perspective (3000 px) and a slight shrink mid-turn
     (`scale(.84)`) keep the looming near edge inside its space.
+
+### 8.71 Quartets v5: more name groups, rescored difficulty
+- `QUARTETS_VERSION` = 5, so older puzzles are deleted and made again.
+- **New name groups** (checked against a real Year 11 list; most have 5+
+  people, though the prime-minister one may be thin in some years):
+  - First name shared with a famous singer (Taylor, Billie, Ariana, Sia, Ed…)
+  - First name shared with a Harry Potter character
+  - Shares a name with an Australian prime minister (first name or surname)
+  - Three-letter first names
+  - Two-letter surnames
+  - First name starts and ends with the same letter
+  - A double letter in the first name
+
+  The "how" text names the singer, character or PM.
+- **Mostly name groups:** usually 2 timetable-type groups per puzzle, 3 about
+  15% of the time, and at most one "same class" or "same teacher" group.
+- **Difficulty (hardness):**
+  - Easy, about 1–1.5: matching initials (was 2.5), short names, double
+    letters, surnames that are everyday words, and a kind of subject (arts,
+    technology, language, no maths, no science).
+  - Middling, 2–2.5: one subject, Harry Potter, PM.
+  - Hard, 3+: wordplay, same teacher (3.5), same class (3.75).
+  - The four must total 8.5–11, the easiest at most 1.75 and the hardest at
+    least 3.
+- **One answer:** class and teacher groups are still exclusive, so nobody in
+  another group shares that class or teacher (checked against their own
+  timetable). A stricter rule (no *other* class or teacher shared by four of
+  the sixteen) was tried and dropped: it removed every class and teacher group.
+- **Tested:** the real name list with made-up timetables made 120/120 days,
+  every one correct. Timetable groups per puzzle: 2 in 104 days, 1 in 8, 3 in 8.
+
+### 8.72 Daily Guess Who: name hints show at most two letters and never the length
+- The current hint set (`v3Hints`, used from 10 Nov) no longer has:
+  - "has N letters" (first name or surname)
+  - "same length / shorter / longer than"
+  - the "looks like E m _ _ y" patterns
+  - the final "Their name reads…"
+- The strongest name hints are now "starts with **Em**", via `startOf()`: the
+  first two letters, or just the first letter for a name under 3 letters. Only
+  one of first name and surname gets this before the last hint (kind
+  `start2`, kept apart by `fresh`).
+- The last hint is "Their name starts **Em… Ch…**".
+- A round with no verified timetable now has about 6 hints instead of 9. Its
+  padding was the letter counts, and the alternatives (double letters,
+  alphabet halves) were banned earlier.
+- The frozen earlier sets (`legacyHints`, `v2Hints`, for days before 10 Nov)
+  are unchanged, so those past days read as they were played.
+- `hintcheck.mjs` now bans lengths, masks and more than two letters
+  (13/13 pass).
+
+### 8.73 Follow-ups to 8.71 and 8.72
+- **Quartets v6:**
+  - The Harry Potter group is gone.
+  - The prime-minister group now covers every PM's first name and its
+    everyday forms: Billy, Bill and Billie for Billy Hughes; William for
+    William McMahon; Ben for Ben Chifley; Chris and Christopher for Chris
+    Watson; Edmund, Alfred, George, Andrew, Joseph, Stanley, James, Earle,
+    Robert, Bob, Arthur, John, Frank, Harold, Gough, Malcolm, Paul, Kevin,
+    Julia, Tony, Anthony and Scott. PM surnames still count too.
+  - On the real Year 11 list that matches 8 people.
+- **Daily Guess Who:** the letter-count hints are back. The user only wants
+  hints that give several things at once removed, like the length plus three
+  letters in "E m _ _ y". So "has N letters", "same length / shorter /
+  longer", "starts with Em" and the final "Their name starts Em… Ch…" are all
+  allowed. Rounds without a timetable have 9 hints again (8 if a name is too
+  short for a two-letter hint).

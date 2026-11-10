@@ -25,7 +25,7 @@
 
 /* The generator's version. Puzzles made by an older one are deleted and made
    again (see _connroute.js); bump this whenever the categories or rules change. */
-export const QUARTETS_VERSION = 4;
+export const QUARTETS_VERSION = 6;
 
 /* ── small word lists (lower case) ─────────────────────────────────── */
 const L = s => s.split(' ');
@@ -47,6 +47,28 @@ const NICK = L('anna bella ella elle chris liam alex theo tina nina rita lena mi
 const WORDS = L('aim air and arm army art ate bury bale bean bear beat bird blue boat bone care cart cast cat clam coal cola dale dare date deal dean dear den dial dine dirt done door dote earl earn east ease edit end evil fare fear fire flea fold gale game gear glee hale heal hear heat hint hire horn idle inch item jar keen kale lace lair lake lame lane last late lead lean leap liar lied lies lime line lion lips list live loan lone lore lose lost lure mail male mane mare mate meal mean meat mile mine mint mire mist mite moat mode more name near neat nest nice nile nose note oath oils omen once oral ores pale pane pear pine plea poem pose race rail rain rang rate read real rein rest rice ride rile rind rise road roam robe role rose rude rule safe sail sale same sane save scar seal sear seat sent shoe silo sine sire site slab slay slot snag sole some sore spar spin star stem stop tale tame tea teak team tear tide tile time tins tire toes tone tore tram tray tree trim urn vale veil vile vine wane ware wear wine wire wore yarn year ales alert angel angle arise baker bread cider cried crate eager early earth hated heart hoser ideal inert lemon liner liver loser male malt manor meant miser moral needs noted onset opera other petal plate pleas ranged reins resin rinse risen serene siren slate snare stale steal tales tears teams tenor toner trace vowel wider');
 const ANIMALS_HIDDEN = L('cat rat ant bee owl emu ape hen eel cod ram pig dog bat elk yak gnu cow doe ewe fox kid koi asp boar crow dove duck frog goat hare lamb lion mole moth mule newt seal slug swan toad wasp wolf worm bear deer mink orca puma');
 /* only the symbols people remember from school */
+/* first names shared with someone famous: the "how" is who */
+const POP = { taylor:'Taylor Swift', billie:'Billie Eilish', ariana:'Ariana Grande', sia:'Sia', ed:'Ed Sheeran', harry:'Harry Styles',
+  olivia:'Olivia Rodrigo', selena:'Selena Gomez', justin:'Justin Bieber', shawn:'Shawn Mendes', bruno:'Bruno Mars', troye:'Troye Sivan',
+  dua:'Dua Lipa', kylie:'Kylie Minogue', adele:'Adele', rihanna:'Rihanna', miley:'Miley Cyrus', katy:'Katy Perry', charli:'Charli XCX',
+  doja:'Doja Cat', lewis:'Lewis Capaldi', niall:'Niall Horan', zayn:'Zayn Malik', louis:'Louis Tomlinson', sabrina:'Sabrina Carpenter',
+  conan:'Conan Gray', benson:'Benson Boone', gracie:'Gracie Abrams', tate:'Tate McRae', beyonce:'Beyoncé', demi:'Demi Lovato',
+  camila:'Camila Cabello', halsey:'Halsey', lorde:'Lorde', khalid:'Khalid', drake:'Drake', britney:'Britney Spears', avril:'Avril Lavigne',
+  delta:'Delta Goodrem', hayley:'Hayley Williams', nicki:'Nicki Minaj', cardi:'Cardi B', kendrick:'Kendrick Lamar', calvin:'Calvin Harris',
+  zara:'Zara Larsson', rita:'Rita Ora', chappell:'Chappell Roan', elton:'Elton John', freddie:'Freddie Mercury', whitney:'Whitney Houston',
+  shakira:'Shakira', lizzo:'Lizzo', tones:'Tones and I', guy:'Guy Sebastian', jessica:'Jessica Mauboy', keith:'Keith Urban' };
+/* Australian prime ministers people would know, by first name or surname */
+const PM_FIRST = { edmund:'Edmund Barton', alfred:'Alfred Deakin', chris:'Chris Watson', christopher:'Chris Watson', christian:'Chris Watson',
+  george:'George Reid', andrew:'Andrew Fisher', joseph:'Joseph Lyons', joe:'Joseph Lyons', billy:'Billy Hughes', billie:'Billy Hughes', bill:'Billy Hughes',
+  william:'William McMahon', stanley:'Stanley Bruce', stan:'Stanley Bruce', james:'James Scullin', earle:'Earle Page', earl:'Earle Page',
+  robert:'Robert Menzies', rob:'Robert Menzies', bob:'Bob Hawke', arthur:'Arthur Fadden', john:'John Howard', frank:'Frank Forde',
+  ben:'Ben Chifley', benjamin:'Ben Chifley', harold:'Harold Holt', gough:'Gough Whitlam', malcolm:'Malcolm Turnbull', paul:'Paul Keating',
+  kevin:'Kevin Rudd', julia:'Julia Gillard', tony:'Tony Abbott', anthony:'Anthony Albanese', scott:'Scott Morrison' };
+const PM_LAST = { rudd:'Kevin Rudd', gillard:'Julia Gillard', abbott:'Tony Abbott', turnbull:'Malcolm Turnbull', morrison:'Scott Morrison',
+  albanese:'Anthony Albanese', howard:'John Howard', keating:'Paul Keating', hawke:'Bob Hawke', fraser:'Malcolm Fraser', whitlam:'Gough Whitlam',
+  holt:'Harold Holt', menzies:'Robert Menzies', mcmahon:'William McMahon', gorton:'John Gorton', chifley:'Ben Chifley', curtin:'John Curtin',
+  lyons:'Joseph Lyons', hughes:'Billy Hughes', deakin:'Alfred Deakin', barton:'Edmund Barton', cook:'Joseph Cook', fisher:'Andrew Fisher',
+  reid:'George Reid', watson:'Chris Watson', bruce:'Stanley Bruce', scullin:'James Scullin', page:'Earle Page', fadden:'Arthur Fadden', mcewen:'John McEwen' };
 const BODY_HIDDEN = L('arm leg ear eye lip hip toe chin shin knee nose hand neck back heel nail skin hair lung brow cheek palm wrist ankle thumb');
 const TWO_WORDS = new Set(L('am an as at be by do go he hi if in is it me my no of oh ok on or so to up us we ox ax'));
 const SYMBOLS = new Set(L('He Li Be Ne Na Mg Al Si Cl Ar Ca Fe Co Ni Cu Zn Ag Sn Au Hg Pb Pt Ra Rn Kr Xe Br Mn Cr Ti'));
@@ -71,6 +93,12 @@ export function nameFeatures(first, last){
   if (BIRDS.has(l)) add(1, 'bird', 'Surnames that are birds');
   else if (ANIMALS.has(l)) add(1, 'animal', 'Surnames that are animals');
   if (PLACES.has(l)) add(1, 'place', 'Surnames that are places');
+  if (POP[f]) add(1, 'pop', 'First name shared with a famous singer', POP[f]);
+  if (PM_FIRST[f] || PM_LAST[l]) add(1, 'pm', 'Share a name with an Australian prime minister', PM_LAST[l] || PM_FIRST[f]);
+  if (f.length === 3) add(1, 'three', 'Three-letter first names');
+  if (l.length <= 2) add(1, 'shortsur', 'Two-letter surnames');
+  if (f.length >= 4 && f[0] === f[f.length - 1]) add(4, 'bookend', 'First name starts and ends with the same letter', f[0].toUpperCase() + '…' + f[0]);
+  if (/(.)\1/.test(f)) add(1, 'double', 'A double letter in their first name', (f.match(/(.)\1/) || [''])[0]);
   if (WORDY.has(l) && !JOBS.has(l) && !COLOURS.has(l) && !ANIMALS.has(l)) add(1, 'wordsur', 'Surnames that are everyday words');
   if (WORD_FIRST.has(f) && !FLOWERS.has(f) && !GEMS.has(f) && !MONTHS.has(f)) add(1, 'wordfirst', 'First names that are also everyday words');
   /* wordplay */
@@ -169,7 +197,7 @@ export function tidyTeacher(t){
   const m = s.match(/^([^,]+),\s*(.+)$/);
   return m ? m[2].trim() + ' ' + m[1].trim() : s;
 }
-export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, sampleSize = 36, rosterMax = 8, fetchMax = 150 }){
+export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, sampleSize = 36, rosterMax = 8, fetchMax = 200 }){
   const senior = Number(year) >= 11;
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   const n = people.length;
@@ -313,17 +341,23 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
    Any mix, so there's no pattern to learn (one day two name themes and a
    teacher, another a subject, a class and two kinds of wordplay), but every
    day lands in the same difficulty band, with at least one way in. */
-const HARD = { 'n:flower': 1, 'n:gem': 1, 'n:month': 1, 'n:colour': 1.25, 'n:job': 1.5, 'n:animal': 1.5, 'n:bird': 1.5, 'n:place': 2,
-  'n:wordsur': 1.5, 'n:wordfirst': 1.5,
-  'n:alliter': 2.5, 'n:palindrome': 3, 'n:abc': 3.5, 'n:element': 3.5, 'n:hiddenname': 3.5, 'n:anagram': 4, 'n:hiddenanimal': 4,
-  'n:hiddenbody': 4, 'n:chain': 3.5, 'n:initword': 3.5 };
-const PROFILE_HARD = { 'p:nomaths': 2.5, 'p:nosci': 2.5, 'p:lang': 2.25, 'p:sci3': 3, 'p:ext2': 3, 'p:arts': 2.25, 'p:tech': 2.25 };
-export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'class' ? 3 : c.kind === 'teacher' ? 2.75
-  : c.kind === 'profile' ? PROFILE_HARD[c.id] || 3 : HARD[c.id] || 3;
+const HARD = {
+  /* easy: you can see it in the name */
+  'n:shortsur': 1, 'n:three': 1, 'n:alliter': 1.25, 'n:flower': 1.25, 'n:gem': 1.25, 'n:month': 1.25, 'n:colour': 1.25, 'n:double': 1.5,
+  'n:wordsur': 1.5, 'n:wordfirst': 1.5, 'n:job': 1.75, 'n:animal': 1.75, 'n:bird': 1.75, 'n:pop': 1.75,
+  /* medium: a bit of knowledge, or a second look */
+  'n:place': 2.25, 'n:pm': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
+  /* hard: wordplay */
+  'n:abc': 3, 'n:element': 3.25, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:hiddenanimal': 3.75, 'n:hiddenbody': 3.75, 'n:anagram': 4 };
+/* a broad kind of subject is easy; one subject is middling; one class or one teacher is the hardest */
+const PROFILE_HARD = { 'p:tech': 1.25, 'p:arts': 1.25, 'p:lang': 1.25, 'p:nomaths': 1.5, 'p:nosci': 1.5, 'p:sci3': 2, 'p:ext2': 2 };
+export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'teacher' ? 3.5 : c.kind === 'class' ? 3.75
+  : c.kind === 'profile' ? PROFILE_HARD[c.id] || 2 : HARD[c.id] || 3;
 const family = c => c.kind === 'profile' ? 'profile' : c.kind !== 'name' ? 'timetable' : hardness(c) <= 2 ? 'theme' : 'wordplay';
-export const BAND = [9.25, 11.5];                     // the four together (1 + 2.25 + 3 + 4 is 10.25)
+export const BAND = [8.5, 11];                        // the four together (e.g. 1.25 + 2.25 + 3.25 + 3.75 is 10.5)
 function pickFour(usable, r, avoid){
-  const chosen = [], fam = {};
+  const chosen = [], fam = {}, maxTT = r() < .15 ? 3 : 2;              // timetable groups: usually two, now and then three
+  const tt = x => x.kind !== 'name', specific = x => x.kind === 'class' || x.kind === 'teacher';
   for (const c of shuffle(usable, r)){
     if (avoid && avoid.has(c.id) && r() < 0.85) continue;                   // used in the last few days: mostly skipped
     const f = family(c);
@@ -335,12 +369,14 @@ function pickFour(usable, r, avoid){
     /* nor a whole-timetable group with one about the same thing ("three sciences" and "Take Physics") */
     const clashes = (a, b) => a.kind === 'profile' && (b.kind === 'profile' ? a.about === b.about : subj(b).some(s => a.about.test(s)));
     if (chosen.some(o => clashes(c, o) || clashes(o, c))) continue;
-    if (c.kind !== 'name' && chosen.filter(o => o.kind !== 'name').length >= 3) continue;   // at least one name group
+    if (tt(c) && chosen.filter(tt).length >= maxTT) continue;
+    if (specific(c) && chosen.some(specific)) continue;                    // one "same class" or "same teacher" at most
     chosen.push(c); fam[f] = (fam[f] || 0) + 1;
     if (chosen.length === 4) break;
   }
   if (chosen.length < 4) return null;
   const total = chosen.reduce((a, c) => a + hardness(c), 0), easiest = Math.min(...chosen.map(hardness));
-  if (total < BAND[0] || total > BAND[1] || easiest > 2.25) return null;    // too easy, too hard, or nowhere to start
+  const hardest = Math.max(...chosen.map(hardness));
+  if (total < BAND[0] || total > BAND[1] || easiest > 1.75 || hardest < 3) return null;   // a way in, and a real level 4
   return chosen;
 }
