@@ -2866,3 +2866,29 @@ data. No icon font or CDN script loads on the live site.
   - The height is saved after each draw, after minimising, and as 0 when
     there's no card, so then nothing is held open.
   - `/mock/poll?slow=3000` slows the mock to show it.
+
+### 8.70 Poll shows never cover the widgets below
+- **Measured, not guessed:** `.preview/clipcheck.js` steps every animation
+  forward by hand (8 ms at a time) and reports how far anything visible of the
+  poll reaches below the top of `#hubrest`. Run it on a page opened with
+  `&rafshim=1`, which the mock uses to drive frames from a timer so shows run
+  in a hidden pane. It follows shard triangles through their 3D transforms and
+  ignores anything inside a container that clips its contents.
+- **Every Monday reveal** (first, drop, wreck, topple, explode, flip, slot),
+  starting from a short card and from a tall one, and **every Friday
+  celebration** were measured at desktop width, and the risky ones at 375 px
+  too. Nothing reaches the widgets any more; the closest is about 9 px above
+  them.
+- **Fixes:**
+  - When the new card is taller than the old one, the widgets slide down to
+    make room before the show starts. A shorter new card still closes the gap
+    afterwards.
+  - Wrecking ball: the widgets are pushed down ahead of the swinging card's low
+    corner, jolt on impact, stay clear through the wobble, then settle. The
+    knocked-off old card now flies sideways and up instead of down over the
+    widgets.
+  - Explode: shards spin about their own middles and burst outwards and up,
+    fading before they could come down. (They used to fall more than 1,000 px
+    over the page.)
+  - Flip: a deeper perspective (3000 px) and a slight shrink mid-turn
+    (`scale(.84)`) keep the looming near edge inside its space.

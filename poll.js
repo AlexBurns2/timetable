@@ -711,9 +711,17 @@ function intro(show, from, startAt){
   (async () => {
     await pageReady(); await untilServer(startAt); await toView();
     lock(true);                                       // (again: a long wait may have let the first lock lapse)
+    /* a taller new card: the widgets below slide down to make room first, so
+       nothing of the show ever lands on them */
+    let fromH = old ? oldH : newH;
+    if (old && newH > oldH + 2){
+      await done(play(el, [{ height:oldH + 'px' }, { height:newH + 'px' }], { duration:skipping ? 1 : 420, easing:'cubic-bezier(.3,.7,.2,1)', keep:true }));
+      el.style.height = newH + 'px'; fromH = newH;
+    }
     card.style.visibility = '';
+    el.dataset.oldh = String(fromH); el.dataset.newh = String(newH);
     await (INTROS[show] || INTROS.drop)(card, old ? old.firstElementChild : null);
-    if (old && Math.abs(oldH - newH) > 2)
+    if (old && oldH - newH > 2 && el.dataset.grown !== '1')            // a shorter new card: close the gap after
       await done(play(el, [{ height:oldH + 'px' }, { height:newH + 'px' }], { duration:skipping ? 1 : 450, easing:'cubic-bezier(.3,.7,.2,1)', keep:true }));
   })().catch(e => console.error(e)).finally(() => {
     stop(); lock(false);
@@ -721,10 +729,19 @@ function intro(show, from, startAt){
     ['visibility', 'zIndex', 'transformOrigin', 'opacity', 'filter', 'overflow'].forEach(k => card.style[k] = '');
     el.getAnimations().forEach(a => { try { a.cancel(); } catch {} });
     el.style.height = ''; el.style.marginBottom = ''; el.style.perspective = ''; el.style.overflow = '';
+    delete el.dataset.oldh; delete el.dataset.newh; delete el.dataset.grown;
+    pushed.forEach(a => { try { a.cancel(); } catch {} }); pushed.length = 0;
     el.querySelectorAll('.pchain,.pshard,.preelwin').forEach(x => x.remove());
   });
 }
 const front = (card, z) => { card.style.zIndex = String(z); };
+const pushed = [];                                     // animations on the widgets below, undone when a show ends
+/* a cubic-bezier easing as a function, to know where an eased animation is at time t */
+const bezier = (x1, y1, x2, y2) => t => {
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 24; i++){ const u = (lo + hi) / 2, x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u; if (x < t) lo = u; else hi = u; }
+  const u = (lo + hi) / 2; return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+};
 const squash = card => play(card, [{ transform:'scale(1.03,.9)', transformOrigin:'50% 100%' }, { transform:'scale(.99,1.03)', transformOrigin:'50% 100%', offset:.45 },
   { transform:'none', transformOrigin:'50% 100%' }], { duration:420, easing:'cubic-bezier(.2,.8,.3,1)' });
 
@@ -771,20 +788,41 @@ const INTROS = {
     card.style.transformOrigin = '50% ' + -L + 'px';
     card.style.overflow = 'visible';                   // so the chain above it shows
     const chain = document.createElement('div'); chain.className = 'pchain'; chain.style.height = L + 'px'; card.appendChild(chain);
-    const D = 900;
-    const swing = play(card, [{ transform:'rotate(' + A + 'deg)' }, { transform:'rotate(0deg)' }], { duration:D, easing:'cubic-bezier(.42,0,.78,.55)' });
+    const D = 900, EASE = [.42, 0, .78, .55];
+    const swing = play(card, [{ transform:'rotate(' + A + 'deg)' }, { transform:'rotate(0deg)' }], { duration:D, easing:'cubic-bezier(' + EASE + ')' });
+    /* The widgets below get out of the way: a tilted card's low corner reaches
+       below where it will sit, so they're pushed down ahead of it (never
+       overlapped), jolted on impact, kept clear through the wobble, then
+       settle as the card takes its own height. */
+    const rest = document.getElementById('hubrest');
+    const oldH = +el.dataset.oldh || r.height, newH = +el.dataset.newh || r.height, w = r.width, h = r.height;
+    const dip = deg => { const t = deg * Math.PI / 180; return w / 2 * Math.abs(Math.sin(t)) + h / 2 * Math.cos(t) - h / 2 - L * (1 - Math.cos(t)); };
+    const room = deg => Math.max(0, newH + dip(deg) + 12 - oldH - 18);     // 18: the gap under the poll
+    const ease = bezier(...EASE), N = 24, frames = []; let most = 0;
+    for (let k = 0; k <= N; k++){ most = Math.max(most, room(A * (1 - ease(k / N)))); frames.push({ transform:'translateY(' + most.toFixed(1) + 'px)', offset:k / N }); }
+    const hold = Math.max(most, room(6.5));                                  // the wobble tilts it 6° the other way
+    if (rest && hold > 0) pushed.push(play(rest, frames, { duration:D, easing:'linear', keep:true }));
     await beat(D * .82);
     if (old){
       const o = old.getBoundingClientRect();
-      play(old, [{ transform:'none', opacity:1 }, { transform:'translate(' + innerWidth * .6 + 'px,-40px) rotate(24deg)', opacity:1, offset:.6 },
-        { transform:'translate(' + innerWidth * 1.1 + 'px,' + innerHeight * .4 + 'px) rotate(55deg)', opacity:0 }], { duration:1000, easing:'cubic-bezier(.12,.6,.3,1)', keep:true });
+      /* knocked off to the side and up a little: it never comes down over the widgets below */
+      play(old, [{ transform:'none', opacity:1 }, { transform:'translate(' + innerWidth * .55 + 'px,-80px) rotate(10deg)', opacity:1, offset:.6 },
+        { transform:'translate(' + innerWidth * 1.15 + 'px,-170px) rotate(22deg)', opacity:0 }], { duration:1000, easing:'cubic-bezier(.12,.6,.3,1)', keep:true });
       particles(() => Array.from({ length:28 }, () => ({ x:o.left + rand(0, 30), y:o.top + rand(0, o.height), vx:rand(2, 9), vy:rand(-5, 2), g:.3, drag:.98,
         rot:rand(0, 6), vr:rand(-.3, .3), w:rand(4, 8), h:rand(3, 7), c:'#b8b8c0', life:900 })), 1000);
     }
     await done(swing);
     shake(el, 7, 320);
+    if (rest && hold > 0) pushed.push(play(rest, [{ transform:'translateY(' + most + 'px)' }, { transform:'translateY(' + (hold + 16) + 'px)', offset:.35 },
+      { transform:'translateY(' + hold + 'px)' }], { duration:skipping ? 1 : 360, easing:'cubic-bezier(.2,.8,.3,1)', keep:true }));
     await done(play(card, [{ transform:'rotate(0)' }, { transform:'rotate(-6deg)', offset:.3 }, { transform:'rotate(2.5deg)', offset:.6 },
       { transform:'rotate(-.8deg)', offset:.85 }, { transform:'rotate(0)' }], { duration:1000, easing:'ease-out' }));
+    /* settle: the poll takes its own height while the widgets come back up to sit under it */
+    if (rest && hold > 0){
+      const settle = { duration:skipping ? 1 : 520, easing:'cubic-bezier(.3,.7,.2,1)', keep:true };
+      if (Math.abs(newH - oldH) > 2){ pushed.push(play(el, [{ height:oldH + 'px' }, { height:newH + 'px' }], settle)); el.dataset.grown = '1'; }
+      pushed.push(play(rest, [{ transform:'translateY(' + hold + 'px)' }, { transform:'translateY(0)' }], settle));
+    }
     await done(play(chain, [{ opacity:1, transform:'translateY(0)' }, { opacity:0, transform:'translateY(-60px)' }], { duration:400, keep:true }));
   },
   /* Topple: the old card wobbles, a little at first, then more and more, until
@@ -867,10 +905,13 @@ const INTROS = {
       el.appendChild(s);
       const mx = (t[0][0] + t[1][0] + t[2][0]) / 3, my = (t[0][1] + t[1][1] + t[2][1]) / 3;
       const dx = (mx - 50) / 50, dy = (my - 50) / 50, sp = rand(.8, 1.3);
-      const tx = dx * W * .55 * sp, ty = dy * H * .5 * sp, rz = rand(-120, 120), rx = rand(-140, 140), ry = rand(-90, 90);
+      /* out to the sides and up, each spinning about its own middle, gone before
+         it could come down over the widgets below */
+      s.style.transformOrigin = mx + '% ' + my + '%';
+      const tx = dx * W * .7 * sp, ty = Math.min(0, dy) * H * .5 * sp - rand(70, 170), rz = rand(-70, 70), rx = rand(-55, 55), ry = rand(-55, 55);
       play(s, [{ transform:'none', opacity:1 },
-        { transform:'perspective(900px) translate3d(' + tx * .6 + 'px,' + (ty * .6 - 40) + 'px,' + rand(40, 160) + 'px) rotateX(' + rx * .5 + 'deg) rotateY(' + ry * .5 + 'deg) rotateZ(' + rz * .5 + 'deg)', opacity:1, offset:.35 },
-        { transform:'perspective(900px) translate3d(' + tx + 'px,' + (ty + H * .9) + 'px,' + rand(-60, 120) + 'px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) rotateZ(' + rz + 'deg)', opacity:0 }],
+        { transform:'perspective(900px) translate3d(' + tx * .55 + 'px,' + (ty * .55 - 20) + 'px,' + rand(40, 140) + 'px) rotateX(' + rx * .5 + 'deg) rotateY(' + ry * .5 + 'deg) rotateZ(' + rz * .5 + 'deg)', opacity:1, offset:.35 },
+        { transform:'perspective(900px) translate3d(' + tx + 'px,' + ty + 'px,' + rand(-40, 100) + 'px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) rotateZ(' + rz + 'deg)', opacity:0 }],
         { duration:rand(1100, 1500), easing:'cubic-bezier(.2,.6,.4,1)', keep:true });
       return s;
     });
@@ -894,14 +935,16 @@ const INTROS = {
     if (!old) return INTROS.drop(card, old);
     const wrap = old.parentElement;
     wrap.style.zIndex = '6'; front(card, 4);
-    el.style.perspective = '1500px'; wrap.style.perspective = '1500px';
+    /* edge-on, the near side of a turning card looms bigger; a deeper perspective
+       and a slight shrink mid-turn keep it inside its own space */
+    el.style.perspective = '3000px'; wrap.style.perspective = '3000px';
     card.style.visibility = 'hidden';
-    await done(play(old, [{ transform:'rotateY(0deg)' }, { transform:'rotateY(90deg)', filter:'brightness(.7)' }], { duration:260, easing:'cubic-bezier(.5,0,1,.6)', keep:true }));
+    await done(play(old, [{ transform:'rotateY(0deg) scale(1)' }, { transform:'rotateY(90deg) scale(.84)', filter:'brightness(.7)' }], { duration:260, easing:'cubic-bezier(.5,0,1,.6)', keep:true }));
     old.style.visibility = 'hidden';
     card.style.visibility = '';
     await done(play(card, [
-      { transform:'rotateY(-90deg)', filter:'brightness(.7)', easing:'cubic-bezier(0,.5,.4,1)' },
-      { transform:'rotateY(14deg)', offset:.4, easing:'cubic-bezier(.45,0,.55,1)' },
+      { transform:'rotateY(-90deg) scale(.84)', filter:'brightness(.7)', easing:'cubic-bezier(0,.5,.4,1)' },
+      { transform:'rotateY(14deg) scale(1)', offset:.4, easing:'cubic-bezier(.45,0,.55,1)' },
       { transform:'rotateY(-6deg)', offset:.65, easing:'cubic-bezier(.45,0,.55,1)' },
       { transform:'rotateY(2deg)', offset:.85, easing:'cubic-bezier(.45,0,.55,1)' },
       { transform:'rotateY(0deg)' }], { duration:1100 }));
