@@ -623,7 +623,7 @@ button.row:hover{background:var(--fill2)}
 .mjbtns{display:flex;gap:6px}
 .mjbtns .btn{flex:1;padding:0 8px}
 .mjerr{color:var(--red)}
-/* ── sign-in modules, the Forum chat and the Daily poll: blocks like Mahjong's ── */
+/* ── sign-in modules, the Forum chat and the Poll: blocks like Mahjong's ── */
 .list :is(.lgb,.plb,.fmb){height:var(--h);margin-bottom:8px}
 .lgb,.plb{background:var(--fill)}
 .lgin{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
@@ -673,7 +673,7 @@ button.row:hover{background:var(--fill2)}
 .mjhd em{font-style:normal;color:var(--fg2)}
 .mjhd em.up b{color:var(--green)}
 .mjhd em.dn b{color:var(--red)}
-.list .mjhist.open{height:320px}
+.list .mjhist.hopen{height:320px}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
 .mjnone{margin:auto;font-size:calc(13px * var(--fs,1));color:var(--fg3);text-align:center}
@@ -983,8 +983,8 @@ select.fin{appearance:auto}
         <div class="row"><div class="rl"><strong>Text</strong></div><input type="color" data-k="text" aria-label="Text colour"></div>
         <div class="row"><div class="rl"><strong>Accent</strong></div><input type="color" data-k="accent" aria-label="Accent colour"></div>
         <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="8" max="60" step="1" data-k="tint" aria-label="Colour strength"></div>
-        <div class="row"><div class="rl"><strong>Font</strong></div><select class="fin cfsel" data-k="font" aria-label="Font"><option>System</option><option>DM Sans</option><option>Space Grotesk</option><option>JetBrains Mono</option><option>Space Mono</option><option>Patrick Hand</option></select></div>
-        <div class="row"><div class="rl"><strong>Backdrop</strong></div><select class="fin cfsel" data-k="backdrop" aria-label="Backdrop"><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="mesh">Mesh</option></select></div>
+        <div class="row"><div class="rl"><strong>Font</strong></div><select class="fin" data-k="font" aria-label="Font"><option>System</option><option>DM Sans</option><option>Space Grotesk</option><option>JetBrains Mono</option><option>Space Mono</option><option>Patrick Hand</option></select></div>
+        <div class="row"><div class="rl"><strong>Backdrop</strong></div><select class="fin" data-k="backdrop" aria-label="Backdrop"><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="mesh">Mesh</option></select></div>
         <div class="row"><div class="rl"><strong>Square corners</strong></div><input type="checkbox" data-k="square" aria-label="Square corners"></div>
       </div>
     </div>
@@ -1093,7 +1093,7 @@ const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:
              skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"andre.creds", custom:"andre.custom" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-/* read-only from the main site: its A/B week correction and optional login */
+/* read-only from the main site: its A/B week correction */
 const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
 /* this page's own login (andre.creds), set from the sign-in modules or Settings */
 let creds = get(LS.creds, null);
@@ -1497,7 +1497,7 @@ let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
 let fm = null, fmNote = "", fmReply = null, fmDraft = "", fmStick = true, pl = null, plAt = 0, plChosen = [], plQuery = "", plNote = "", plBusy = false;
 let loginNote = "", loginBusy = false, loginUser = "", loginPass = "";
-let fmShow = false, plShow = false, loginShow = !signedIn;   /* Forum chat, Daily poll, and the sign-in modules (shown until there is a login) */
+let fmShow = false, plShow = false, loginShow = !signedIn;   /* Forum chat, Poll, and the sign-in modules (shown until there is a login) */
 let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the one opened out, and once its frame is in */
 let sel = null;   /* phone layout: the day shown (0 = Mon), null = today or Monday */
 /* the phone layout: same breakpoint as the CSS */
@@ -2283,7 +2283,7 @@ async function api(params, at = ENDPOINT){
 
 /* ═══ student finder ═══
    Suggestions under a box as you type a name. Searching by name needs the
-   school login from the main timetable, as the finder page did. */
+   school login, as the finder page did. */
 function finder(inp, box, onPick, opts = {}){
   let results = [], idx = -1, head = "", timer = null, seq = 0, shown = "";
   const show = html => {
@@ -2317,7 +2317,7 @@ function finder(inp, box, onPick, opts = {}){
     clearTimeout(timer);
     const q = inp.value.trim(), naming = /\s/.test(q);
     if (q.length < 2 || (opts.bar && !naming && !signedIn)) return hide();
-    if (!signedIn) return hint('Searching by name needs your school login. <a href="/">Sign in on the main timetable</a>, then come back.');
+    if (!signedIn) return hint('Searching by name needs your school login. Sign in under Settings first.');
     seq++;
     hint("Searching…");
     timer = setTimeout(search, 250);
@@ -2466,7 +2466,7 @@ function paintSettings(){
   $("showsubj").setAttribute("aria-checked", showSubj());
   $("showwk").setAttribute("aria-checked", get(LS.showwk, true) !== false);
   document.querySelectorAll("#wkstart button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.s === (+get(LS.wkstart, 1) === 0 ? 0 : 1)));
-  $("bdcount").textContent = signedIn ? (bdays.length ? `${bdays.length} saved` : "None yet") : "Sign in on the main timetable";
+  $("bdcount").textContent = signedIn ? (bdays.length ? `${bdays.length} saved` : "None yet") : "Sign in first";
   $("perscount").textContent = personal.length ? `${personal.length} saved on this device` : "None saved";
   paintFs(fsIndex());
   /* the format examples use a real room from this timetable */
@@ -2537,7 +2537,7 @@ function tileHead(m, act){
 /* ═══ Who's free ═══
    Pick a group; each free period on the timetable then says which of them
    are free for all of it. Uses the same ?free= lookup as the free periods
-   page, which needs the main timetable's school login. Their periods are
+   page, which needs the school login. Their periods are
    kept on this device for a day. */
 let freeGroup = (get(LS.group, []) || []).filter(p => p && p.id);
 let freeShow = get(LS.freeshow, false) === true;
@@ -2610,7 +2610,7 @@ function paintFree(){
   paintFreeTile();
   const stat = $("freestat"), q = $("freeq");
   if (!signedIn){
-    stat.innerHTML = 'Needs your school login. <a href="/">Sign in on the main timetable</a> first.';
+    stat.textContent = 'Needs your school login. Sign in under Settings first.';
     q.disabled = true; $("freechips").innerHTML = "";
     return;
   }
@@ -3208,7 +3208,8 @@ function renderMonth(){
    straight for wherever you asked for last, like Return to Today. */
 let viewTurn = null, wantView = null, morphing = [];
 function toggleCalendar(){
-  if (mjShow || gmShow){ mjLeave(); render(); }
+  if (loginShow) return;
+  if (mjShow || gmShow || fmShow || plShow){ mjLeave(); render(); }
   const target = (wantView ?? view) === "month" ? "week" : "month";
   /* the month has no periods, so Who's free and Custom periods can't be on with it */
   if (target === "month"){
@@ -3684,7 +3685,7 @@ const BD_COLOURS = [...new Set([...document.querySelectorAll("#mg > .mod")].map(
 const bdColour = email => BD_COLOURS[([...email].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261) >>> 0) % BD_COLOURS.length];
 function paintBdNote(){
   const has = new Set(bdays.map(b => b.email)), filled = bdPeople.filter(p => has.has(p.email)).length;
-  $("bdnote").textContent = !signedIn ? "Sign in on the main timetable to see and add birthdays."
+  $("bdnote").textContent = !signedIn ? "Sign in to see and add birthdays."
     : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in the class of 2027 done. The coloured ones are still missing: tap one to add their birthday as day/month.` : "Loading…");
 }
 function paintBdays(){
@@ -3805,7 +3806,7 @@ function openEvent(id, { day, kind } = {}){
     $("evkindnote").innerHTML = k === "personal" ? "Only on this device."
       : !courses.length ? "Load a timetable to add a subject event."
       : signedIn ? "Everyone with this subject sees it, and anyone can fix it if it's wrong."
-      : 'Everyone with this subject sees it. Adding or changing one needs your school login: <a href="/">sign in on the main timetable</a>.';
+      : 'Everyone with this subject sees it. Adding or changing one needs your school login: sign in under Settings.';
   };
   body.querySelectorAll("#evkind button").forEach(b => b.onclick = () => { if (isNew){ k = b.dataset.k; paint(); } });
   body.querySelectorAll("#evcol .swatch").forEach(s => s.onclick = () => { colour = s.dataset.c; paint(); });
@@ -4198,7 +4199,7 @@ const mjHint = () => { const t = Object.values(mjDraft).reduce((a, v) => a + (Ma
   return t ? "Adds up to " + mjSigned(t) + " (usually 0)" : "+ for winners, − for whoever paid"; };
 function renderMj(nd){
   const list = phone.matches, host = $(list ? "daylist" : "g");
-  const note = !signedIn ? "Sign in on the main timetable to see the scores." : !mj ? (mjNote ? "Couldn't load the scores: " + mjNote : "Loading…") : "";
+  const note = !signedIn ? "Sign in to see the scores." : !mj ? (mjNote ? "Couldn't load the scores: " + mjNote : "Loading…") : "";
   if (note){ host.innerHTML = `<div class="${list ? "lmsg" : "msg"}">${esc(note)}</div>`; return; }
   const pts = mjPoints(), st = [...mj.players].sort((a, b) => pts[b.id] - pts[a.id]), n = st.length;
   /* the blocks, placed down a day when there's a grid */
@@ -4228,7 +4229,7 @@ function renderMj(nd){
   const GH = Math.max(y + ADD - GT, 260), HB = 40, HO = 280;
   const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` +
     (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), GT, GH, nd - 2);
-  const hist = block("mjhist" + (mjHist ? " open" : ""), "mj:history", "#E0303A", mjHistHtml(), GT + GH + 8, mjHist ? HO : HB, nd - 2);
+  const hist = block("mjhist" + (mjHist ? " hopen" : ""), "mj:history", "#E0303A", mjHistHtml(), GT + GH + 8, mjHist ? HO : HB, nd - 2);
   const colH = Math.max(H, GT + GH + 8 + (mjHist ? HO : HB) + 8);
   if (list) host.innerHTML = players + save + add + awardsB + graph + hist;
   else {
@@ -4259,15 +4260,6 @@ function renderMj(nd){
    and a button. Signing in turns them into the timetable, like any other
    switch of the week. The login is kept on this device (andre.creds) and
    changed from Settings afterwards. */
-const schoolFetch = async (path, body) => {
-  const headers = { Accept:"application/json" };
-  if (signedIn){ headers["X-School-Email"] = creds.email; headers["X-School-Password"] = creds.password; }
-  if (body) headers["Content-Type"] = "application/json";
-  const res = await fetch(apiUrl(path), { method:body ? "POST" : "GET", headers, cache:"no-store", body:body ? JSON.stringify(body) : undefined });
-  const data = await res.json().catch(() => null);
-  if (!res.ok || !data) throw new Error((data && data.error) || (res.status + " " + res.statusText));
-  return data;
-};
 /* a view made of placed blocks: mk gets block(cls, who, colour, y, h, body) and returns the blocks; they go in column startCol, spanning `span` days */
 function blockHost(nd, title, H, mk, span, startCol){
   const list = phone.matches, host = $(list ? "daylist" : "g");
@@ -4311,6 +4303,7 @@ async function tryLogin(user, pass){
   if (loadError){
     const msg = loadError;
     creds = prev.creds; email = prev.email; syncSigned(); loadError = "";
+    if (signedIn) load();             /* a wrong one typed in Settings: the old login's timetable back */
     throw new Error(msg);
   }
   set(LS.creds, creds); set(LS.email, email);
@@ -4344,6 +4337,7 @@ $("cr_clear").onclick = () => {
   creds = null; set(LS.creds, null); syncSigned(); localStorage.removeItem(LS.cache);
   entries = []; slots = []; fm = pl = null;
   openSettings(false); renderCreds();
+  if (view === "month") setViewNow("week");
   shiftWeek(() => { mjLeave(); loginShow = true; });
 };
 
@@ -4375,13 +4369,13 @@ function paintReply(){
   r.hidden = !fmReply;
   if (fmReply) r.querySelector("span").textContent = "Replying to " + fmReply.name;
 }
-const loadForum = () => schoolFetch("/api/forum").then(d => { fm = d.posts || []; fmNote = ""; paintForum(); }, e => { fmNote = e.message; paintForum(); });
+const loadForum = () => call("/api/forum").then(d => { fm = d.posts || []; fmNote = ""; paintForum(); }, e => { fmNote = e.message; paintForum(); });
 async function sendForum(){
   const text = fmDraft.trim();
   if (!text) return;
   $("fmsend").disabled = true;
   try {
-    await schoolFetch("/api/forum", { body:text, parent:fmReply ? fmReply.id : undefined });
+    await call("/api/forum", { body:{ body:text, parent:fmReply ? fmReply.id : undefined } });
     fmDraft = ""; $("fmin").value = ""; fmReply = null; paintReply(); fmStick = true;
     await loadForum();
   } catch (e){ fmNote = e.message; paintForum(); }
@@ -4397,7 +4391,7 @@ function renderForum(nd){
     const b = e.target.closest("button");
     if (!b) return;
     if (b.dataset.reply){ fmReply = { id:b.dataset.reply, name:b.dataset.name }; paintReply(); $("fmin").focus(); }
-    else if (b.dataset.del){ b.disabled = true; schoolFetch("/api/forum", { action:"delete", id:b.dataset.del }).then(loadForum, e2 => { fmNote = e2.message; paintForum(); }); }
+    else if (b.dataset.del){ b.disabled = true; call("/api/forum", { body:{ action:"delete", id:b.dataset.del } }).then(loadForum, e2 => { fmNote = e2.message; paintForum(); }); }
   };
   $("fmin").oninput = e => fmDraft = e.target.value;
   $("fmin").onkeydown = e => { if (e.key === "Enter") sendForum(); };
@@ -4415,7 +4409,7 @@ const plFold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 const plDur = sec => { sec = Math.max(0, sec | 0); const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.max(1, Math.floor(sec % 3600 / 60)); return d ? d + "d " + h + "h" : h ? h + "h " + m + "m" : m + "m"; };
 const plLeft = k => Math.max(0, ((pl && pl.clock && pl.clock[k]) || 0) - (Date.now() - plAt) / 1000);
 const plMine = w => { try { const v = JSON.parse(localStorage.getItem(plMineKey(w))); return (Array.isArray(v) ? v : v ? [String(v)] : []).map(plFold); } catch { return []; } };
-const loadPoll = () => schoolFetch("/api/forum?poll=1").then(d => {
+const loadPoll = () => call("/api/forum", { query:{ poll:1 } }).then(d => {
   if (!pl || !pl.poll || !d.poll || pl.poll.week !== d.poll.week) plChosen = [];
   pl = d; plAt = Date.now(); plNote = ""; if (plShow) render();
 }, e => { plNote = e.message; if (plShow) render(); });
@@ -4425,7 +4419,7 @@ async function votePoll(){
   plBusy = true; plNote = "";
   const labels = plChosen.map(id => (p.options.find(o => o.id === id) || {}).label);
   try {
-    const r = await schoolFetch("/api/forum", { action:"pollvote", week:p.week, choice:(p.pick || 1) > 1 ? plChosen : plChosen[0] });
+    const r = await call("/api/forum", { body:{ action:"pollvote", week:p.week, choice:(p.pick || 1) > 1 ? plChosen : plChosen[0] } });
     try { localStorage.setItem(plMineKey(p.week), JSON.stringify(labels)); } catch {}
     p.voted = true; p.total = r.total || p.total + 1; p.results = r.results || null; p.others = r.others || 0; plChosen = [];
   } catch (e){ plNote = e.message; if (/already/i.test(e.message)) loadPoll(); }
@@ -4462,13 +4456,12 @@ function renderPoll(nd){
       shown = words.length ? opts.filter(o => { const parts = plFold(o.label).split(/[\s'’-]+/); return words.every(w => parts.some(x => x.startsWith(w))); }).slice(0, 5) : [];
       shown = [...opts.filter(o => plChosen.includes(o.id) && !shown.includes(o)), ...shown];
     }
-    shown.forEach((o, i) => add("plb", "pl:o" + o.id, 52, `<button class="plo${plChosen.includes(o.id) ? " mine" : ""}" data-id="${esc(o.id)}"><span>${esc(o.label)}${plChosen.includes(o.id) ? " ✓" : ""}</span></button>`));
+    shown.forEach(o => add("plb", "pl:o" + o.id, 52, `<button class="plo${plChosen.includes(o.id) ? " mine" : ""}" data-id="${esc(o.id)}"><span>${esc(o.label)}${plChosen.includes(o.id) ? " ✓" : ""}</span></button>`));
     add("plb", "pl:go", 64, `<div class="lgg"><button class="btn primary" id="plgo" type="button"${plChosen.length && (!p.exact || plChosen.length === p.pick) ? "" : " disabled"}>${many ? "Vote (" + plChosen.length + " of " + p.pick + ")" : "Vote"}</button></div>`);
     return out;
   }, span, at);
-  const p2 = p && p.canVote && !p.voted && p.phase === "open" ? p : null;
-  if (!p2) return;
-  const most = p2.pick || 1;
+  if (!p || !p.canVote || p.voted || p.phase !== "open") return;
+  const most = p.pick || 1;
   host.querySelectorAll(".plo[data-id]").forEach(b => b.onclick = () => {
     const id = b.dataset.id;
     plChosen = most === 1 ? [id] : plChosen.includes(id) ? plChosen.filter(x => x !== id) : plChosen.length < most ? [...plChosen, id] : plChosen;
