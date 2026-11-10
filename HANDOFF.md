@@ -2844,3 +2844,14 @@ data. No icon font or CDN script loads on the live site.
 - Scripted clicks (`!e.isTrusted`) are ignored.
 - Existing leaderboard scores under 100 ms aren't removed automatically; the
   moderator page can delete them.
+
+### 8.68 Quartets hints
+- 3 wrong guesses in a row highlight two people from the easiest group still
+  unsolved; a 4th in a row highlights a third from that group. That's all:
+  two hints per puzzle at most, and if the hinted group is solved first, the
+  second hint is used up.
+- `hintNames()` works the hints out from the saved guess log, so nothing new is
+  stored and they survive a reload. The people are picked by the date, so
+  everyone gets the same hint.
+- Highlighted tiles are `.qttile.hint` (gold outline), and a message says when
+  a hint unlocks.

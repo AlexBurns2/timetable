@@ -1392,6 +1392,22 @@ BUILD.quartets = host => {
     let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
     const CH = s.chances || 6;                       // mistakes allowed
     const sel = new Set(), tried = new Set();
+    /* Hints, worked out from the guesses so far (so a reload keeps them):
+       3 wrong in a row lights up two people from the easiest group still
+       unsolved; a 4th wrong in a row lights up a third from that group. That's
+       all: two hints a day at most, and if the group is solved before the
+       second, the second is used up. */
+    const hintNames = () => {
+      let run = 0, step = 0, hg = null; const got = [];
+      for (const g of log){
+        if (g.every(l => l === g[0])){ got.push(g[0]); run = 0; continue; }
+        run++;
+        if (run === 3 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
+        else if (run === 4 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
+      }
+      if (!hg || found.includes(hg.lv) || step === 3) return [];
+      return seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
+    };
     let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
 
     box.innerHTML = topBar(s, streak) +
@@ -1415,7 +1431,9 @@ BUILD.quartets = host => {
     const paintGrid = () => {
       const grid = $('qtgrid');
       grid.hidden = done;
-      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '">' + esc(n) + '</button>').join('');
+      const hinted = new Set(hintNames());
+      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (hinted.has(n) ? ' hint' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
+        (hinted.has(n) ? ' title="A hint: the highlighted people are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
       grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
         if (done) return;
         const n = b.dataset.n;
@@ -1489,6 +1507,7 @@ BUILD.quartets = host => {
       tried.add(key);
       const lvs = pick.map(n => lvOf.get(n));
       const right = lvs.every(l => l === lvs[0]);
+      const before = hintNames().length;              // to tell if this guess unlocks a hint
       log.push(lvs);
       if (right){
         found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
@@ -1498,6 +1517,9 @@ BUILD.quartets = host => {
         mistakes++;
         const most = Math.max(...[1, 2, 3, 4].map(l => lvs.filter(x => x === l).length));
         say(most === 3 ? 'One away…' : 'Not a group.', true);
+        /* a hint just unlocked: say so (after the shake) */
+        setTimeout(() => { const now = hintNames().length;
+          if (!done && now > before) say(now === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
         $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
           { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
         if (mistakes >= CH){ done = true; SFX.lose(); }
