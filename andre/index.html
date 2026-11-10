@@ -15,6 +15,7 @@
 <script>
 /* Theme, skin and light/dark onto <html> before first paint, so a forced look
    never flashes. The page script calls this again whenever a setting changes. */
+const CUSTOM_DEFAULTS = { bg:"#f2f4f8", panel:"#ffffff", text:"#16181d", accent:"#6d4aff", tint:30, font:"DM Sans", backdrop:"solid", square:false };
 function lookAttrs(){
   const r = document.documentElement;
   const g = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
@@ -22,11 +23,27 @@ function lookAttrs(){
   let skin = g("andre.skin") || "default";
   if (skin === "plain") skin = "default";              /* the old Plain is the default look now */
   const fixed = ["scifi","terminal","blueprint"].includes(skin);       /* dark-only palettes */
-  const dark = fixed || theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-  if (theme === "light" || theme === "dark") r.dataset.theme = theme; else delete r.dataset.theme;
+  /* the custom theme: its own colours, and light or dark by how dark its background is */
+  const c = skin === "custom" ? Object.assign({}, CUSTOM_DEFAULTS, g("andre.custom") || {}) : null;
+  const lum = h => { const n = parseInt(String(h).slice(1), 16) || 0; return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255; };
+  const dark = c ? lum(c.bg) < .5 : fixed || theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  if (c) r.dataset.theme = dark ? "dark" : "light";
+  else if (theme === "light" || theme === "dark") r.dataset.theme = theme; else delete r.dataset.theme;
+  ["--bg","--fg","--fg2","--fg3","--line3","--fill","--fill2","--blue","--sep","--mat","--gap","--past","--tint","--font","--img"].forEach(v => r.style.removeProperty(v));
+  r.style.colorScheme = "";
+  if (c){
+    const S = (k, v) => r.style.setProperty(k, v), mix = (a, p, b) => `color-mix(in srgb,${a} ${p}%,${b})`;
+    S("--bg", c.bg); S("--fg", c.text); S("--fg2", mix(c.text, 62, c.bg)); S("--fg3", mix(c.text, 48, c.bg)); S("--line3", mix(c.text, 32, c.bg));
+    S("--fill", c.panel); S("--fill2", mix(c.panel, 88, c.text)); S("--blue", c.accent); S("--sep", mix(c.text, 14, "transparent"));
+    S("--mat", mix(c.bg, 80, "transparent")); S("--gap", mix(c.bg, 94, c.text)); S("--past", mix(c.bg, 92, c.text)); S("--tint", c.tint + "%");
+    if (c.font !== "System") S("--font", `"${c.font}",system-ui,sans-serif`);
+    if (c.backdrop === "gradient") S("--img", `linear-gradient(160deg,${c.accent}33,transparent 55%),linear-gradient(20deg,${c.text}14,transparent 60%)`);
+    if (c.backdrop === "mesh") S("--img", `radial-gradient(58vw 58vw at 12% 8%,${c.accent}66,transparent 60%),radial-gradient(52vw 52vw at 88% 16%,${c.accent}40,transparent 62%),radial-gradient(56vw 56vw at 50% 96%,${c.accent}40,transparent 60%)`);
+    r.style.colorScheme = dark ? "dark" : "light";
+  }
   r.dataset.mode = dark ? "dark" : "light";
   if (skin === "default") delete r.dataset.skin; else r.dataset.skin = skin;
-  r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin));
+  r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin) || !!(c && c.square));
   r.classList.toggle("zen", !!g("andre.zen"));
   /* animations: off when switched off, or on Auto when the device asks for less
      motion (Windows "Animation effects" off, macOS "Reduce motion"); On plays them anyway */
@@ -606,6 +623,40 @@ button.row:hover{background:var(--fill2)}
 .mjbtns{display:flex;gap:6px}
 .mjbtns .btn{flex:1;padding:0 8px}
 .mjerr{color:var(--red)}
+/* ── sign-in modules, the Forum chat and the Daily poll: blocks like Mahjong's ── */
+.list :is(.lgb,.plb,.fmb){height:var(--h);margin-bottom:8px}
+.lgb,.plb{background:var(--fill)}
+.lgin{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.lgin b{font-size:calc(20px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.lgin small{font-size:calc(13px * var(--fs,1));color:var(--fg2)}
+.lgf{position:absolute;inset:0;display:flex;align-items:center;gap:8px;padding:0 12px}
+.lgf .fin{flex:1;min-width:0}
+.lgf span{color:var(--fg2);font-size:calc(13px * var(--fs,1));white-space:nowrap}
+.lgg{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px 12px}
+.lgg .btn{width:100%}
+.lgerr{min-height:1.3em;font-size:calc(12px * var(--fs,1));color:var(--red);text-align:center}
+.fmb{display:flex;flex-direction:column;background:var(--fill)}
+.fmlist{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.fmmsg{max-width:min(560px,86%);align-self:flex-start;padding:7px 11px;border-radius:12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.fmmsg.me{align-self:flex-end}
+.fmmsg.rp{margin-left:22px}
+.fmmeta{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.fmmeta b{color:var(--fg);font-weight:600;margin-right:6px}
+.fmtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(14px * var(--fs,1))}
+.fmact{display:flex;gap:10px}
+.fmact button{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.fmact button:hover{color:var(--fg)}
+.fmnone{margin:auto;color:var(--fg3);font-size:calc(13px * var(--fs,1));text-align:center}
+.fmrep{flex:none;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;font-size:calc(12px * var(--fs,1));color:var(--fg2);border-top:1px solid var(--sep)}
+.fmbar{flex:none;display:flex;gap:8px;padding:8px 10px;border-top:1px solid var(--sep)}
+.plq{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.plq b{font-size:calc(19px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.plq small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.plo{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;text-align:left;font-size:calc(15px * var(--fs,1));font-weight:500}
+.plo:hover{filter:brightness(.97)}
+.plo.mine{font-weight:700}
+.plo > :not(.mjfill){position:relative}
+.plb .mjfill{transition:width .5s ease}
 .mjchart{background:var(--fill);padding:12px;display:flex;flex-direction:column;gap:8px}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
@@ -887,6 +938,18 @@ select.fin{appearance:auto}
       <div class="export-sub" id="exportsub"></div>
     </div>
 
+    <div>
+      <div class="sec-label">School login</div>
+      <div class="row-group">
+        <div class="row stack">
+          <div class="rl"><strong>Sign-in</strong><small id="cr_state"></small></div>
+          <input class="fin" id="cr_email" placeholder="first.last1" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="School username">
+          <input class="fin" id="cr_pass" type="password" placeholder="School password" autocomplete="current-password" aria-label="School password">
+          <div class="mjbtns"><button class="btn primary sm" id="cr_save" type="button">Save</button><button class="btn sm" id="cr_clear" type="button">Sign out</button></div>
+        </div>
+      </div>
+    </div>
+
     <div class="row-group">
       <a class="row" href="/home.html"><div class="rl"><strong>Return to main site</strong></div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></a>
     </div>
@@ -896,6 +959,19 @@ select.fin{appearance:auto}
     <button class="pback" id="skinback"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Settings</button>
     <div class="sec-label">Theme</div>
     <div class="skins" id="skins"></div>
+    <div id="custed" hidden>
+      <div class="sec-label">Custom theme <button id="c_reset" type="button">Reset</button></div>
+      <div class="row-group">
+        <div class="row"><div class="rl"><strong>Background</strong></div><input type="color" data-k="bg" aria-label="Background colour"></div>
+        <div class="row"><div class="rl"><strong>Cards</strong></div><input type="color" data-k="panel" aria-label="Card colour"></div>
+        <div class="row"><div class="rl"><strong>Text</strong></div><input type="color" data-k="text" aria-label="Text colour"></div>
+        <div class="row"><div class="rl"><strong>Accent</strong></div><input type="color" data-k="accent" aria-label="Accent colour"></div>
+        <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="8" max="60" step="1" data-k="tint" aria-label="Colour strength"></div>
+        <div class="row"><div class="rl"><strong>Font</strong></div><select class="fin cfsel" data-k="font" aria-label="Font"><option>System</option><option>DM Sans</option><option>Space Grotesk</option><option>JetBrains Mono</option><option>Space Mono</option><option>Patrick Hand</option></select></div>
+        <div class="row"><div class="rl"><strong>Backdrop</strong></div><select class="fin cfsel" data-k="backdrop" aria-label="Backdrop"><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="mesh">Mesh</option></select></div>
+        <div class="row"><div class="rl"><strong>Square corners</strong></div><input type="checkbox" data-k="square" aria-label="Square corners"></div>
+      </div>
+    </div>
   </div>
 </aside>
 
@@ -975,6 +1051,12 @@ select.fin{appearance:auto}
       <div class="mod modx" data-m="games" style="--c:#FF375F">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games <span class="state" id="gmstate"></span></h3></button>
       </div>
+      <div class="mod modx" data-m="forum" style="--c:#30B0C7">
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>Forum <span class="state" id="fmstate"></span></h3></button>
+      </div>
+      <div class="mod modx" data-m="poll" style="--c:#FF9F0A">
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div><h3>Daily poll <span class="state" id="plstate"></span></h3></button>
+      </div>
       <div class="mod modx" data-m="mahjong" style="--c:#E0303A">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/></svg></div><h3>Mahjong <span class="state mjst" id="mjstate"></span></h3></button>
       </div>
@@ -992,13 +1074,15 @@ const apiUrl = path => API_ORIGIN + path;
 const ENDPOINT = apiUrl("/api/timetable"), DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
-             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays" };
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"andre.creds", custom:"andre.custom" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction and optional login */
 const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
-const creds = get("tt.creds", null);
-const signedIn = !!(creds && creds.email && creds.password);
+/* this page's own login (andre.creds), set from the sign-in modules or Settings */
+let creds = get(LS.creds, null);
+let signedIn = !!(creds && creds.email && creds.password);
+const syncSigned = () => signedIn = !!(creds && creds.email && creds.password);
 /* the birthday register: [{ email, name, day:"MM-DD" }], and the class of 2027 */
 let bdays = get(LS.bdays, []) || [], bdPeople = [], bdNote = "";
 let email = get(LS.email, "") || get("tt.email", "");
@@ -1395,6 +1479,9 @@ async function load(){
 /* ═══ render ═══ */
 let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
+let fm = null, fmNote = "", fmReply = null, fmDraft = "", fmStick = true, pl = null, plNote = "", plBusy = false;
+let loginNote = "", loginBusy = false, loginUser = "", loginPass = "";
+let fmShow = false, plShow = false, loginShow = !signedIn;   /* Forum chat, Daily poll, and the sign-in modules (shown until there is a login) */
 let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the one opened out, and once its frame is in */
 let sel = null;   /* phone layout: the day shown (0 = Mon), null = today or Monday */
 /* the phone layout: same breakpoint as the CSS */
@@ -1453,14 +1540,17 @@ const arrow = (d, unit = "week") => `<button class="arrow" data-d="${d}" aria-la
 function render(){
   document.body.classList.toggle("busy", loading && entries.length > 0);      /* first: the views below return early */
   /* typed points survive redraws, but not losing the box (a phone keyboard opening resizes too) */
-  if (mjShow && document.activeElement.matches(".mjb input")) return;
+  if ((mjShow || fmShow || plShow || loginShow) && document.activeElement.matches(".mjb input")) return;
   if (gameNow && $(phone.matches ? "daylist" : "g").querySelector("#gmframe")) return;      /* a redraw would restart the game */
-  document.body.classList.toggle("mjview", mjShow || gmShow);
+  document.body.classList.toggle("mjview", mjShow || gmShow || fmShow || plShow || loginShow);
   if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   const mon = addDays(baseWeek(), off*7);
   const dates = daysShown().map(k => addDays(mon, k));
   document.documentElement.style.setProperty("--nd", dates.length);
+  if (loginShow){ renderLogin(dates.length); return; }
+  if (fmShow){ renderForum(dates.length); return; }
+  if (plShow){ renderPoll(dates.length); return; }
   if (mjShow){ renderMj(dates.length); return; }
   if (gmShow){ renderGames(dates.length); return; }
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
@@ -2305,11 +2395,29 @@ const SKINS = [
   { id:"scifi",     name:"Sci-fi",    swatch:"radial-gradient(circle at 50% 0%,rgba(0,229,255,.5),transparent 65%),repeating-linear-gradient(to bottom,rgba(0,229,255,.22) 0 1px,transparent 1px 8px),#04070d" },
   { id:"terminal",  name:"Terminal",  swatch:"repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)" },
   { id:"blueprint", name:"Blueprint", swatch:"repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#07223d" },
-  { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" }
+  { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" },
+  { id:"custom",    name:"Custom",    swatch:"conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)" }
 ];
 if (!SKINS.some(s => s.id === skin)) skin = "default";
-const FIXED = ["scifi","terminal","blueprint"];
+const FIXED = ["scifi","terminal","blueprint","custom"];
+const customCfg = () => Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
+function paintCust(){
+  $("custed").hidden = skin !== "custom";
+  if (skin !== "custom") return;
+  const c = customCfg();
+  document.querySelectorAll("#custed [data-k]").forEach(el => { if (el.type === "checkbox") el.checked = !!c[el.dataset.k]; else el.value = c[el.dataset.k]; });
+  $("c_tint_v").textContent = c.tint + "%";
+}
+$("custed").oninput = e => {
+  const k = e.target.dataset.k;
+  if (!k) return;
+  const v = e.target.type === "checkbox" ? e.target.checked : e.target.type === "range" ? +e.target.value : e.target.value;
+  const c = Object.assign(customCfg(), { [k]:v });
+  set(LS.custom, c); applyLook(); $("c_tint_v").textContent = c.tint + "%";
+};
+$("c_reset").onclick = () => { set(LS.custom, null); applyLook(); paintCust(); };
 function paintSkins(){
+  paintCust();
   $("skins").innerHTML = SKINS.map(s =>
     `<button class="skin" data-id="${s.id}" aria-pressed="${s.id === skin}"><i style="background:${s.swatch}"></i>${esc(s.name)}</button>`).join("");
 }
@@ -2331,7 +2439,7 @@ function paintSettings(){
   $("skinname").textContent = (SKINS.find(s => s.id === skin) || SKINS[0]).name;
   const fixed = FIXED.includes(skin);
   $("theme").setAttribute("aria-disabled", fixed);
-  $("modehint").textContent = fixed ? "This theme is always dark" : "Auto follows your device";
+  $("modehint").textContent = skin === "custom" ? "Light or dark follows your custom background" : fixed ? "This theme is always dark" : "Auto follows your device";
   document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
   $("zen").setAttribute("aria-checked", zen);
   const mode = motion === true ? "on" : motion === false ? "off" : "auto";
@@ -3770,6 +3878,7 @@ function paintGmTile(){
   $("gmstate").textContent = gmShow ? "· On" : "";
 }
 function toggleGames(){
+  if (loginShow) return;
   document.activeElement.blur();
   const flip = () => { const on = !gmShow; mjLeave(); gmShow = on; paintGmTile(); }, go = () => shiftWeek(flip);
   if (signedIn && Date.now() - leadersAt > 120000) loadLeaders().then(() => (turning || Promise.resolve()).then(() => { if (gmShow) render(); }));
@@ -3822,7 +3931,7 @@ function renderGames(nd){
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["calendar","revision","free","games","mahjong","periods","resources"];
+const MOD_WIDEN = ["calendar","revision","free","games","forum","poll","mahjong","periods","resources"];
 
 /* ═══ the Custom periods tile ═══
    It opens up in place, like a lesson, onto a row of its own. First it moves
@@ -3998,8 +4107,9 @@ async function mjAct(body){
 }
 function paintMj(){ paintMjTile(); if (mjShow) render(); }
 /* back to the week, from Mahjong or Games */
-function mjLeave(){ mjShow = gmShow = false; gameNow = gameLive = null; paintMjTile(); paintGmTile(); }
+function mjLeave(){ mjShow = gmShow = fmShow = plShow = false; gameNow = gameLive = null; paintMjTile(); paintGmTile(); paintFpTiles(); }
 function toggleMj(){
+  if (loginShow) return;
   document.activeElement.blur();
   const flip = () => { const on = !mjShow; mjLeave(); mjShow = on; paintMjTile(); }, go = () => shiftWeek(flip);
   if (!mj) loadMj();
@@ -4103,6 +4213,223 @@ function renderMj(nd){
   if ($("mjsave")) $("mjsave").onclick = saveGame;
   if ($("mjundo")) $("mjundo").onclick = () => { if (confirm("Undo the last game?")) mjAct({ action:"undo" }); };
 }
+/* ═══ sign-in modules ═══
+   Until there is a login, the week is a few modules: a username, a password
+   and a button. Signing in turns them into the timetable, like any other
+   switch of the week. The login is kept on this device (andre.creds) and
+   changed from Settings afterwards. */
+const schoolFetch = async (path, body) => {
+  const headers = { Accept:"application/json" };
+  if (signedIn){ headers["X-School-Email"] = creds.email; headers["X-School-Password"] = creds.password; }
+  if (body) headers["Content-Type"] = "application/json";
+  const res = await fetch(apiUrl(path), { method:body ? "POST" : "GET", headers, cache:"no-store", body:body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) throw new Error((data && data.error) || (res.status + " " + res.statusText));
+  return data;
+};
+/* a view made of placed blocks: mk gets block(cls, who, colour, y, h, body) and returns the blocks; they go in column startCol, spanning `span` days */
+function blockHost(nd, title, H, mk, span, startCol){
+  const list = phone.matches, host = $(list ? "daylist" : "g");
+  const block = (cls, who, c, y, h, body) => `<div class="mjb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};--h:${h}px;${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
+  const cells = mk(block);
+  if (list) host.innerHTML = cells.join("");
+  else {
+    const cols = Array.from({ length:nd }, (_, k) => k === startCol ? cells.join("") : "");
+    host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">${title}</span></div><div></div><div></div>` +
+      cols.map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+  }
+  return host;
+}
+const viewH = () => Math.max(560, innerHeight - 174);
+function loginPaint(){
+  if ($("lgnote")) $("lgnote").textContent = loginNote;
+  if ($("lggo")){ $("lggo").textContent = loginBusy ? "Signing in…" : "Show my timetable"; $("lggo").disabled = loginBusy; }
+}
+function renderLogin(nd){
+  const span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
+  const host = blockHost(nd, "Sign in", viewH(), block => [
+    block("lgb", "lg:head", "#0A84FF", 4, 112, `<div class="lgin"><b>Sign in</b><small>Your timetable loads with your own school login. It stays on this device and goes straight to the timetable service.</small></div>`),
+    block("lgb", "lg:user", "#5E5CE6", 124, 60, `<label class="lgf"><input class="fin" id="lgu" value="${esc(loginUser)}" placeholder="first.last1" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="School username"><span>@${DOMAIN}</span></label>`),
+    block("lgb", "lg:pass", "#30B0C7", 192, 60, `<label class="lgf"><input class="fin" id="lgp" type="password" value="${esc(loginPass)}" placeholder="School password" autocomplete="current-password" aria-label="School password"></label>`),
+    block("lgb", "lg:go", "#30C05A", 260, 92, `<div class="lgg"><button class="btn primary" id="lggo" type="button">Show my timetable</button><div class="lgerr" id="lgnote" role="alert"></div></div>`)
+  ], span, at);
+  loginPaint();
+  $("lgu").oninput = e => loginUser = e.target.value;
+  $("lgp").oninput = e => loginPass = e.target.value;
+  host.querySelectorAll(".lgb input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") doLogin(); });
+  $("lggo").onclick = doLogin;
+}
+/* try a login; throws the school's message if it isn't accepted */
+async function tryLogin(user, pass){
+  const prev = { creds, email };
+  creds = { email:user + "@" + DOMAIN, password:pass }; syncSigned();
+  if (!email){ email = creds.email; input.value = user; fit(); naming(); }
+  localStorage.removeItem(LS.cache);
+  await load();
+  if (loadError){
+    const msg = loadError;
+    creds = prev.creds; email = prev.email; syncSigned(); loadError = "";
+    throw new Error(msg);
+  }
+  set(LS.creds, creds); set(LS.email, email);
+  fm = pl = mj = null; loadMj(); loadBusy(); loadBirthdays();
+}
+async function doLogin(){
+  if (loginBusy) return;
+  const user = loginUser.trim().toLowerCase().split("@")[0];
+  if (!/^[a-z0-9][a-z0-9._-]*$/.test(user)){ loginNote = "That does not look like a school username."; loginPaint(); return; }
+  if (!loginPass){ loginNote = "Enter your school password."; loginPaint(); return; }
+  loginBusy = true; loginNote = ""; loginPaint();
+  try { await tryLogin(user, loginPass); }
+  catch (e){ loginBusy = false; loginNote = e.message; loginPaint(); return; }
+  loginBusy = false; loginPass = "";
+  document.activeElement.blur();
+  shiftWeek(() => loginShow = false);           /* the sign-in modules leave, the timetable arrives */
+}
+function renderCreds(){
+  $("cr_email").value = creds ? String(creds.email || "").split("@")[0] : "";
+  $("cr_pass").value = creds ? creds.password : "";
+  $("cr_state").textContent = signedIn ? "Signed in as " + creds.email : "Not signed in";
+}
+$("cr_save").onclick = async () => {
+  const user = $("cr_email").value.trim().toLowerCase().split("@")[0], pass = $("cr_pass").value;
+  if (!user || !pass){ $("cr_state").textContent = "Enter both a username and a password."; return; }
+  $("cr_state").textContent = "Checking…";
+  try { await tryLogin(user, pass); renderCreds(); }
+  catch (e){ $("cr_state").textContent = e.message; }
+};
+$("cr_clear").onclick = () => {
+  creds = null; set(LS.creds, null); syncSigned(); localStorage.removeItem(LS.cache);
+  entries = []; slots = []; fm = pl = null;
+  openSettings(false); renderCreds();
+  shiftWeek(() => { mjLeave(); loginShow = true; });
+};
+
+/* ═══ Forum: the home-page forum (/api/forum) as a chat ═══ */
+const fmAgo = iso => {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  return !isFinite(s) ? "" : s < 60 ? "just now" : s < 3600 ? Math.floor(s / 60) + "m ago" : s < 86400 ? Math.floor(s / 3600) + "h ago" : s < 604800 ? Math.floor(s / 86400) + "d ago"
+    : new Date(iso).toLocaleDateString(undefined, { day:"numeric", month:"short" });
+};
+function fmListHtml(){
+  if (fmNote) return `<p class="fmnone">${esc(fmNote)}</p>`;
+  if (!fm) return `<p class="fmnone">Loading…</p>`;
+  if (!fm.length) return `<p class="fmnone">Nothing here yet. Say the first thing.</p>`;
+  const msg = (p, rp, t) => `<div class="fmmsg${p.mine ? " me" : ""}${rp ? " rp" : ""}"><div class="fmmeta"><b>${esc(p.name)}</b>${esc(fmAgo(p.at))}</div><div class="fmtxt">${esc(p.body)}</div>` +
+    `<div class="fmact">${rp ? "" : `<button data-reply="${esc(t.id)}" data-name="${esc(t.name)}">Reply</button>`}${p.mine ? `<button data-del="${esc(p.id)}">Delete</button>` : ""}</div></div>`;
+  return [...fm].reverse().map(t => msg(t, false, t) + (t.replies || []).map(r => msg(r, true, t)).join("")).join("");
+}
+function paintForum(){
+  if (!fmShow) return;
+  const box = document.querySelector(".fmlist");
+  if (!box){ render(); return; }
+  const near = fmStick || box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = fmListHtml();
+  if (near) box.scrollTop = box.scrollHeight;
+  fmStick = false;
+}
+function paintReply(){
+  const r = $("fmrep"); if (!r) return;
+  r.hidden = !fmReply;
+  if (fmReply) r.querySelector("span").textContent = "Replying to " + fmReply.name;
+}
+const loadForum = () => schoolFetch("/api/forum").then(d => { fm = d.posts || []; fmNote = ""; paintForum(); }, e => { fmNote = e.message; paintForum(); });
+async function sendForum(){
+  const text = fmDraft.trim();
+  if (!text) return;
+  $("fmsend").disabled = true;
+  try {
+    await schoolFetch("/api/forum", { body:text, parent:fmReply ? fmReply.id : undefined });
+    fmDraft = ""; $("fmin").value = ""; fmReply = null; paintReply(); fmStick = true;
+    await loadForum();
+  } catch (e){ fmNote = e.message; paintForum(); }
+  if ($("fmsend")) $("fmsend").disabled = false;
+}
+function renderForum(nd){
+  const H = viewH(), list = phone.matches;
+  const host = blockHost(nd, "Forum", H, block => [block("fmb", "fm:chat", "#30B0C7", 4, H - 8,
+    `<div class="fmlist"></div><div class="fmrep" id="fmrep" hidden><span></span><button class="btn sm" id="fmcancel" type="button">Cancel</button></div>` +
+    `<div class="fmbar"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Say something…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div>`)], nd, 0);
+  if (list) host.querySelector(".fmb").style.setProperty("--h", "calc(100dvh - 130px)");
+  host.querySelector(".fmlist").onclick = e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.reply){ fmReply = { id:b.dataset.reply, name:b.dataset.name }; paintReply(); $("fmin").focus(); }
+    else if (b.dataset.del){ b.disabled = true; schoolFetch("/api/forum", { action:"delete", id:b.dataset.del }).then(loadForum, e2 => { fmNote = e2.message; paintForum(); }); }
+  };
+  $("fmin").oninput = e => fmDraft = e.target.value;
+  $("fmin").onkeydown = e => { if (e.key === "Enter") sendForum(); };
+  $("fmsend").onclick = sendForum;
+  $("fmcancel").onclick = () => { fmReply = null; paintReply(); };
+  fmStick = true; paintForum(); paintReply();
+}
+setInterval(() => { if (fmShow && !loginShow) loadForum(); }, 15000);
+
+/* ═══ Daily poll: a question a day, the same for everyone; votes live on the server (/api/poll) ═══ */
+const POLLS = [
+  ["Best day of the school week?", ["Monday", "Wednesday", "Thursday", "Friday"]],
+  ["Where do you eat at lunch?", ["Canteen", "Oval", "Library", "Classroom"]],
+  ["Morning person or night owl?", ["Morning", "Night", "Neither"]],
+  ["Best subject right now?", ["Maths", "Science", "English", "Something else"]],
+  ["How's your sleep this week?", ["Great", "Fine", "Bad", "What sleep?"]],
+  ["Study with music?", ["Always", "Sometimes", "Never"]],
+  ["Hot or cold weather?", ["Hot", "Cold", "Mild"]],
+  ["Best canteen food?", ["Toastie", "Pie", "Sushi", "Chips"]],
+  ["Phones in class?", ["Ban them", "Allow them", "Depends"]],
+  ["How early do you leave for school?", ["Before 7", "7 to 7:30", "After 7:30", "Right on time"]],
+  ["Best way to revise?", ["Past papers", "Flashcards", "Notes", "Videos"]],
+  ["Cats or dogs?", ["Cats", "Dogs", "Both", "Neither"]],
+  ["Best break length?", ["Shorter", "As is", "Longer"]],
+  ["Homework before or after dinner?", ["Before", "After", "Not at all"]],
+  ["Favourite season?", ["Summer", "Autumn", "Winter", "Spring"]],
+  ["Do you check the timetable the night before?", ["Always", "Sometimes", "Never"]],
+  ["Best study spot?", ["Home", "Library", "Cafe", "Anywhere"]],
+  ["Coffee?", ["Yes", "No", "Only when desperate"]],
+  ["Easiest day this week?", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]],
+  ["Group work?", ["Love it", "Hate it", "Depends who's in it"]]
+];
+const plDay = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const plQ = () => { const n = new Date(); return POLLS[Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5) % POLLS.length]; };
+const loadPoll = () => schoolFetch("/api/poll?day=" + plDay()).then(d => { pl = d; plNote = ""; if (plShow) render(); }, e => { plNote = e.message; if (plShow) render(); });
+async function votePoll(i){
+  if (plBusy) return;
+  plBusy = true;
+  try { pl = await schoolFetch("/api/poll", { day:plDay(), choice:i }); plNote = ""; } catch (e){ plNote = e.message; }
+  plBusy = false; render();
+}
+function renderPoll(nd){
+  const [q, opts] = plQ(), voted = pl && Number.isInteger(pl.mine), counts = (pl && pl.counts) || [], total = opts.reduce((a, _, i) => a + (counts[i] || 0), 0);
+  const OH = 64, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
+  const host = blockHost(nd, "Daily poll", viewH(), block => [
+    block("plb", "pl:q", "#FF9F0A", 4, 96, `<div class="plq"><b>${esc(q)}</b><small>${plNote ? esc(plNote) : voted ? total + (total === 1 ? " vote" : " votes") + " today" : pl ? "Pick one to see how everyone voted" : "Loading…"}</small></div>`),
+    ...opts.map((o, i) => { const n = counts[i] || 0, pct = total ? Math.round(100 * n / total) : 0;
+      return block("plb", "pl:o" + i, ["#FF9F0A", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"][i % 5], 108 + i * (OH + 8), OH,
+        `<button class="plo${voted && pl.mine === i ? " mine" : ""}" data-i="${i}">` + (voted ? `<i class="mjfill" style="width:${pct}%"></i>` : "") +
+        `<span>${esc(o)}${voted && pl.mine === i ? " ✓" : ""}</span>` + (voted ? `<b class="tnum">${pct}%</b>` : "") + `</button>`); })
+  ], span, at);
+  host.querySelectorAll(".plo").forEach(b => b.onclick = () => votePoll(+b.dataset.i));
+}
+
+function paintFpTiles(){
+  for (const [m, on, st] of [["forum", fmShow, "fmstate"], ["poll", plShow, "plstate"]]){
+    const tile = document.querySelector(`[data-m="${m}"]`);
+    tile.classList.toggle("on", on);
+    tile.querySelector(".mod-head").setAttribute("aria-pressed", on);
+    $(st).textContent = on ? "· On" : "";
+  }
+}
+function toggleFp(which){
+  if (loginShow) return;
+  document.activeElement.blur();
+  const flip = () => { const on = which === "fm" ? !fmShow : !plShow; mjLeave(); if (which === "fm") fmShow = on; else plShow = on; paintFpTiles(); }, go = () => shiftWeek(flip);
+  if (which === "fm") loadForum(); else loadPoll();
+  if (view !== "month"){ go(); return; }
+  toggleCalendar();
+  if (viewTurn) viewTurn.then(go); else go();
+}
+tileHead("forum", () => toggleFp("fm"));
+tileHead("poll", () => toggleFp("pl"));
+renderCreds();
 loadMj();
 /* Escape: out of the editor first, then the open tile closes */
 addEventListener("keydown", e => {
@@ -4133,8 +4460,7 @@ tileHead("calendar", () => toggleCalendar());
 setInterval(() => { if (!turning && !monthTurn && !viewTurn && !dayRun) render(); }, 30000);     /* keep "now" and past lessons current, but never mid-turn */
 layoutMods();
 paintTiles();
-load();
-loadBusy();
+if (signedIn){ load(); loadBusy(); } else render();   /* no login yet: the sign-in modules */
 </script>
 
 </body></html>
