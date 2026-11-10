@@ -151,6 +151,7 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
+  { id:'quartets', cat:'Timetable', ico:'🧩', name:'Quartets', blurb:'Four groups of four from your year, new every day' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -1336,6 +1337,149 @@ BUILD.dailyguess = host => {
   }
 
   return () => { alive = false; clearInterval(spotTimer); };
+};
+
+/* ── Quartets ──────────────────────────────────────────────────────
+   Sixteen people from your year and four hidden groups of four, from
+   level 1 (a plain name theme) to level 4 (wordplay). Pick four and check
+   them; four mistakes and it's over. The puzzle and its answers come from
+   /api/daily?conn=1 (see api/_conn.js); guesses are marked here, instantly,
+   and saved in the background for the streak and the past days. */
+const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
+BUILD.quartets = host => {
+  head(host, 'Quartets', 'Find the four groups of four. Level 1 is the easiest, level 4 the trickiest.', '<div id="qt"></div>');
+  const box = $('qt');
+  let alive = true, arch = null, cur = null;
+  const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', timeZone:'UTC' });
+  const seeded = (list, seed) => { let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    const a = list.slice(); for (let i = a.length - 1; i > 0; i--){ h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  async function loadDay(date){
+    box.innerHTML = '<p class="how">' + (date ? 'Loading…' : 'Loading today’s puzzle. The first one each day takes a few seconds to make.') + '</p>';
+    let s;
+    try { s = await TT.api('/api/daily', { params: Object.assign({ conn:1 }, date ? { date } : {}) }); }
+    catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message || 'Couldn’t load Quartets.') + '</p>'; return; }
+    if (alive) play(s);
+  }
+  loadDay(null);
+
+  function topBar(s, streak){
+    return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : shortDate(s.date)) + '</b></span>' +
+      '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="qtstreak">' + (streak || 0) + '</b></span><span class="dgsp"></span>' +
+      '<button class="dgchip" id="qtpast" type="button" aria-expanded="false" aria-controls="qtcal">Past days</button></div>' +
+      '<div class="qtcal" id="qtcal" hidden></div>';
+  }
+  function play(s){
+    cur = s;
+    if (s.none){ box.innerHTML = topBar(s, 0) + '<p class="how">No Quartets for this day: there weren’t enough clear groups to make a fair one.</p>';
+      $('qtpast').onclick = togglePast; return; }
+    const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
+    const lvOf = new Map(), howOf = new Map();
+    groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
+    const r0 = s.result || {};
+    let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
+    const sel = new Set(), tried = new Set();
+    let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
+
+    box.innerHTML = topBar(s, streak) +
+      '<div class="qtsolved" id="qtsolved"></div>' +
+      '<div class="qtgrid" id="qtgrid" role="group" aria-label="The sixteen people"></div>' +
+      '<div class="qtlives" id="qtlives"></div>' +
+      '<div class="qtbtns" id="qtbtns"><button class="btn" type="button" id="qtshuf">Shuffle</button>' +
+        '<button class="btn" type="button" id="qtclear">Deselect all</button>' +
+        '<button class="btn primary" type="button" id="qtgo" disabled>Submit</button></div>' +
+      '<div class="qtmsg" id="qtmsg" role="status" aria-live="polite"></div>' +
+      '<div class="qtdone" id="qtdone"></div>';
+    $('qtpast').onclick = togglePast;
+
+    const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + '</span><b>' + esc(g.label) + '</b>' +
+      '<span class="qtnames">' + g.names.map(n => esc(n) + (howOf.get(n) ? ' <i>(' + esc(howOf.get(n)) + ')</i>' : '')).join(', ') + '</span></div>';
+    const paintSolved = () => {
+      const missed = done && found.length < 4 ? groups.filter(g => !found.includes(g.lv)) : [];
+      $('qtsolved').innerHTML = found.map(lv => row(groups.find(g => g.lv === lv), false)).join('') + missed.map(g => row(g, true)).join('');
+    };
+    const paintGrid = () => {
+      const grid = $('qtgrid');
+      grid.hidden = done;
+      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '">' + esc(n) + '</button>').join('');
+      grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
+        if (done) return;
+        const n = b.dataset.n;
+        if (sel.has(n)) sel.delete(n); else if (sel.size < 4) sel.add(n); else return;
+        SFX.tick(); b.classList.toggle('on', sel.has(n)); b.setAttribute('aria-pressed', String(sel.has(n)));
+        $('qtgo').disabled = sel.size !== 4;
+      });
+      $('qtgo').disabled = sel.size !== 4;
+    };
+    const paintLives = () => {
+      $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:4 }, (_, i) => '<i class="' + (i < 4 - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
+      $('qtbtns').hidden = done;
+    };
+    const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
+    const save = () => TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, found, log, mistakes } })
+      .then(r => { if (alive && r && r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; } }).catch(() => {});
+    const shareText = () => 'Quartets ' + s.date + '\n' + log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n');
+    const paintDone = () => {
+      const el = $('qtdone'); if (!done){ el.innerHTML = ''; return; }
+      const won = found.length === 4 && mistakes < 4;
+      el.innerHTML = '<p class="qtend">' + (won ? 'Solved' + (mistakes ? ' with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : ' with no mistakes') + '.' : 'Out of mistakes. Here’s how it went.') + '</p>' +
+        (log.length ? '<div class="qtgridshare" aria-hidden="true">' + log.map(g => '<div>' + g.map(l => '<i class="lv' + l + '"></i>').join('') + '</div>').join('') + '</div>' : '') +
+        '<button class="btn" type="button" id="qtshare">Share</button>';
+      $('qtshare').onclick = async () => {
+        const t = shareText();
+        try { if (navigator.share && TOUCH) await navigator.share({ text:t }); else { await navigator.clipboard.writeText(t); $('qtshare').textContent = 'Copied'; } } catch {}
+      };
+    };
+    const paint = () => { paintSolved(); paintGrid(); paintLives(); paintDone(); };
+    paint();
+
+    $('qtshuf').onclick = () => { order = seeded(order, Math.random().toString(36)); paintGrid(); };
+    $('qtclear').onclick = () => { sel.clear(); paintGrid(); };
+    $('qtgo').onclick = () => {
+      if (done || sel.size !== 4) return;
+      const pick = [...sel], key = pick.slice().sort().join('|');
+      if (tried.has(key)){ say('You’ve tried those four already.'); return; }
+      tried.add(key);
+      const lvs = pick.map(n => lvOf.get(n));
+      const right = lvs.every(l => l === lvs[0]);
+      log.push(lvs);
+      if (right){
+        found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
+        SFX.line(found.length);
+        if (found.length === 4){ done = true; SFX.win(); }
+      } else {
+        mistakes++;
+        const most = Math.max(...[1, 2, 3, 4].map(l => lvs.filter(x => x === l).length));
+        say(most === 3 ? 'One away…' : 'Not a group.', true);
+        $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
+          { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
+        if (mistakes >= 4){ done = true; SFX.lose(); }
+      }
+      if (arch && done) arch.mine[s.date] = { solved:found.length === 4 && mistakes < 4, done:true, mistakes };
+      save();
+      setTimeout(paint, right || done ? 0 : 280);
+    };
+  }
+
+  /* past days: every day since the first, newest first, and how you went */
+  async function togglePast(){
+    const el = $('qtcal'), btn = $('qtpast');
+    el.hidden = !el.hidden; btn.setAttribute('aria-expanded', String(!el.hidden));
+    if (el.hidden) return;
+    if (!arch){
+      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      try { const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } }); arch = { days:d.days || [], mine:d.mine || {} }; }
+      catch (e){ el.innerHTML = '<p class="how" style="margin:0">Couldn’t load past days.</p>'; return; }
+    }
+    if (!alive) return;
+    el.innerHTML = arch.days.length ? arch.days.map(d => { const m = arch.mine[d];
+      const st = m && m.solved ? 'won' : m && m.done ? 'lost' : 'open';
+      return '<button type="button" class="qtday ' + st + (cur && d === cur.date ? ' cur' : '') + '" data-d="' + d + '">' + esc(shortDate(d)) +
+        '<span>' + (st === 'won' ? '✓' : st === 'lost' ? '✗' : '') + '</span></button>'; }).join('')
+      : '<p class="how" style="margin:0">No past days yet.</p>';
+    el.querySelectorAll('.qtday').forEach(b => b.onclick = () => loadDay(b.dataset.d));
+  }
+  return () => { alive = false; };
 };
 
 /* ── Tetris ────────────────────────────────────────────────────────

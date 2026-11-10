@@ -81,6 +81,8 @@ async function refresh(first, startAt, again){
     console.warn('poll:', e.message);
     /* at noon Friday / 9:30 Monday everyone asks at once: keep the card and try again shortly */
     if (again && data){ clearTimeout(timer); timer = setTimeout(() => refresh(true, null, true), rand(15000, 30000)); return; }
+    /* a moderator's preview still plays with nothing set (or the table not there yet) */
+    if (first && previewing()){ data = { poll:null, last:null, clock:null, loadedAt:Date.now() }; draw(true, startAt); return; }
     /* not set up yet, or the server had a moment: no card, rather than an error on everyone's Home */
     if (first) hideCard();
     return;
@@ -92,6 +94,7 @@ async function refresh(first, startAt, again){
   try { draw(first, startAt); }
   catch (e){ console.error('poll draw:', e); if (first) hideCard(); }
 }
+const previewing = () => new URLSearchParams(location.search).has('pollpreview');
 function hideCard(){ el.hidden = true; el.innerHTML = ''; if (opts.onDraw) try { opts.onDraw(null); } catch {} }
 const left = k => Math.max(0, ((data.clock && data.clock[k]) || 0) - (Date.now() - data.loadedAt) / 1000);
 
@@ -152,7 +155,10 @@ function draw(first, startAt){
   curKey = p ? p.week : data.last ? 'last:' + data.last.week : 'none';
   if (!p){
     /* no question has ever been set: no card at all, so the site can go live before the first one */
-    if (!data.last){ el.hidden = true; el.innerHTML = ''; if (opts.onDraw) try { opts.onDraw(null); } catch {} return; }
+    if (!data.last){
+      if (first && previewing()){ el.innerHTML = ''; afterDraw(first, startAt); return; }   // the preview draws its own card
+      el.hidden = true; el.innerHTML = ''; if (opts.onDraw) try { opts.onDraw(null); } catch {} return;
+    }
     el.innerHTML = frame(bodyFor('last', data.last), data.last, { chip:chipFor('last') });
     saveView(data.last, 'last');
     wire(); afterDraw(first, startAt); return;

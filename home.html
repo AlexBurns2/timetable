@@ -274,25 +274,37 @@ function wireRx(bar){
 
 /* only the newest thread until you ask for the rest */
 let forumOpen = false;
-$('fmore').onclick = () => { forumOpen = !forumOpen; loadForum(); if (!forumOpen) $('forum').scrollIntoView({ block:'nearest' }); };
+/* showing more or fewer redraws the posts already loaded: instant, no fetch */
+let lastPosts = null;
+$('fmore').onclick = () => {
+  forumOpen = !forumOpen;
+  if (lastPosts) renderForum(lastPosts);
+  else { $('fmore').textContent = 'Loading…'; $('fmore').disabled = true; loadForum(); }
+  if (!forumOpen) $('forum').scrollIntoView({ block:'nearest' });
+};
 async function loadForum(){
   try {
     const d = await TT.api('/api/forum');
-    const posts = d.posts || [];
-    POSTS.clear();
-    posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
-    const shown = forumOpen ? posts : posts.slice(0, 1);
-    $('fposts').innerHTML = posts.length
-      ? shown.map(p => postCard(p, false) +
-          (p.replies || []).map(r => postCard(r, true)).join('')).join('')
-      : '<p class="how">Nothing here yet. Say the first thing.</p>';
-    const more = posts.length - shown.length;
-    $('fmore').hidden = !more && !forumOpen || posts.length < 2;
-    $('fmore').textContent = forumOpen ? 'Show less' : 'Show ' + more + ' more post' + (more === 1 ? '' : 's');
-    wireForum();
+    lastPosts = d.posts || [];
+    renderForum(lastPosts);
   } catch (e){
     $('fposts').innerHTML = '<p class="how">Couldn\'t load the forum: ' + esc(e.message) + '</p>';
+    $('fmore').disabled = false;
   }
+}
+function renderForum(posts){
+  POSTS.clear();
+  posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
+  const shown = forumOpen ? posts : posts.slice(0, 1);
+  $('fposts').innerHTML = posts.length
+    ? shown.map(p => postCard(p, false) +
+        (p.replies || []).map(r => postCard(r, true)).join('')).join('')
+    : '<p class="how">Nothing here yet. Say the first thing.</p>';
+  const more = posts.length - shown.length;
+  $('fmore').hidden = !more && !forumOpen || posts.length < 2;
+  $('fmore').textContent = forumOpen ? 'Show less' : 'Show ' + more + ' more post' + (more === 1 ? '' : 's');
+  $('fmore').disabled = false;
+  wireForum();
 }
 
 function wireForum(){

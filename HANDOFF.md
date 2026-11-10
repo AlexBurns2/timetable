@@ -2661,3 +2661,96 @@ data. No icon font or CDN script loads on the live site.
 - **Testing without the real database:** `.preview/rooms-mock.js` is a stand-in
   `window.Rooms` that links two tabs locally. Load it on the page before
   opening Versus or Online.
+
+### 8.61 Quartets, a daily four-groups-of-four puzzle
+- **What it is.** Each day, everyone in a year gets the same sixteen people,
+  split into four hidden groups of four, levels 1 to 4:
+  1. a plain name theme (first names that are flowers, gems or months; surnames
+     that are jobs, colours, animals, birds or places)
+  2. a subject they take
+  3. a class or a teacher they share
+  4. wordplay (another name hidden in a first name, an animal hidden across the
+     name, a first name that's an anagram of a word, a palindrome, matching or
+     consecutive initials, initials that spell a chemical symbol)
+
+  It's called Quartets, with its own colours. I didn't use the NYT game's name
+  or look.
+- **Files.**
+  - `api/_conn.js` is the pure generator and its word lists (about 19 KB).
+  - `api/_connroute.js` is the route, served by `api/daily.js` under `?conn=1`
+    / `{conn:1}`, so there's no new function. `daily.js` now sets
+    `config.maxDuration = 60`.
+  - The client is `BUILD.quartets` in games.js, plus the `.qt*` styles in
+    games.css.
+- **How a puzzle is made** (`makeQuartets`):
+  - It reads 24 sample timetables to find the common subjects. Subjects in more
+    than 35% of the sample are skipped, as are English, plain Maths and
+    Religion. Then it reads up to 8 class rosters.
+  - It picks one category per level. Each person must fit only their own group
+    among the four, checked against their own timetable. People in different
+    groups can't share a first name or surname.
+  - It rejects a puzzle if another name theme covers four of the sixteen, or the
+    same first initial appears four times. It prefers 2 or 3 red herrings.
+  - A second seed is tried if the first fails. It uses at most 120 school-API
+    calls per try. If the sampled timetables look identical (the API giving one
+    account's timetable for everyone), it stops.
+  - A day that can't be made is stored as `groups: []`.
+- **Storage.** Only display names, labels and the "how" text (e.g. "(emu)") are
+  stored. Answers go to the page with the puzzle, the same as Daily Guess Who.
+  Results (`found`, `log`, `mistakes`) are saved per person for the streak, the
+  past days and the share grid. The server only lets mistakes and found groups
+  go up.
+- **Tables.** `conn_puzzle` and `conn_result`; the idempotent SQL is in
+  SETUP.md under Quartets.
+- **Tests.** Synthetic years (`.preview/synth.mjs`, from the side session's
+  prototype) power the mock's `?conn=1`. Across 120 synthetic days, 115 made a
+  puzzle, and an independent check found nobody fitting another group's
+  category.
+- **Also:** poll previews (`?pollpreview=…`) now play even when no poll has
+  ever been set, or the poll table is missing. The mock's
+  `/mock/poll?none=2` covers this.
+
+### 8.62 Names as people go by, everywhere; Quartets on real-shaped data
+- **One name source on the server.** `displayNames()` in `_names.js` merges:
+  1. the moderator's override, if set
+  2. otherwise the school directory's name, which already carries the name a
+     student goes by (the directory says "Ari" where the email says arianna)
+  3. a name made from the email only as a last resort (staff, or people who
+     have left)
+
+  Every route that shows names now loads `NAMES = await displayNames()`:
+  forum, polls, daily, Quartets, calendar, subject events, decks, Tetris,
+  leaderboards and birthdays. `nameOverrides()` is only the overrides now, for
+  the moderator editor.
+- **School data sent to pages** goes through `renamePerson` / `renameRoster` in
+  `api/timetable.js`. That covers class lists (`?class=`), the directory
+  (`?group=`), your own profile, and the student finder (`?find=`), which
+  searches and shows by the override. Every page and game that reads these
+  (Guess Who, Six Degrees, Odd One Out, timetable class lists, free periods,
+  the Home greeting) therefore shows the override.
+- **Search never matches an old name.** The finder (server) and free periods
+  (client) only match the email username when the search looks like one
+  (contains `.` or a digit, or is a pasted address). So typing an old name that
+  appears only in an email finds no one.
+- **Stored names are re-mapped when read.** Daily Guess Who's answer, its hints
+  (worked out from the current name) and its name list (rebuilt from the
+  directory) follow renames. Quartets stores emails beside names on the server
+  and shows current names; a renamed person's "how" text is dropped, since it
+  came from the old name. Free periods' cached class lists were bumped
+  (`CACHE_V` 3).
+- **Quartets is now random, with steady difficulty.**
+  - Any four categories can be drawn (`pickFour`): at most two of a family
+    (theme, wordplay or timetable), at most one teacher, and no two timetable
+    groups about the same subject.
+  - Each category has a `hardness` score. The four must total within `BAND`
+    (9.25–11.5), and at least one must be easy (2.25 or under). Levels 1–4 are
+    the four sorted by hardness.
+  - Categories from the last 3 days are mostly skipped (85%).
+  - New themes fit the real year: surnames that are everyday words, first names
+    that are everyday words, and first names that could be surnames. Hidden
+    names must be 4+ letters, and a name only counts as hidden at the start
+    when 4+ letters are left over, so Christopher → Chris counts but Joshua →
+    Josh doesn't.
+- **Tested** on a real Year 11 name list with made-up timetables: 120/120 days
+  made, every one correct, difficulty totals 9.25–11.5 (average 10.9). The name
+  list was used in the scratchpad only, and deleted afterwards.

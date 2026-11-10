@@ -41,7 +41,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 import { pollGet, pollPost, pollPreview, pollClock } from "./_poll.js";
 import { resolveYear } from "./_daily.js";
 import { studentDirectory } from "./timetable.js";
@@ -104,7 +104,7 @@ export default async function handler(req, res) {
     } catch { return res.status(200).json({ poll: null }); }
   }
   if (!me) return res.status(401).json({ error: "Sign in to use the forum." });
-  NAMES = await nameOverrides();
+  NAMES = await displayNames();
   const isOwner = isAdmin(me.email);
 
   if (req.method === "GET" && req.query.poll) {

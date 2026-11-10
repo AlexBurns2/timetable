@@ -20,6 +20,10 @@
  *                               looked up. Unset = anyone may look up anyone.
  *   EMAIL_DOMAIN      optional  default: the domain of SCHOOL_EMAIL
  */
+import { nameOverrides, renamePerson, renameList } from "./_names.js";
+/* a class list or directory, wrapped or bare, with overrides written over the names */
+const renameRoster = (map, x) => Array.isArray(x) ? renameList(map, x)
+  : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, Array.isArray(v) ? renameList(map, v) : v])) : x;
 
 const DEFAULT_ORIGIN = "https://alexburns2.github.io";
 const LOCAL_PREVIEW_ORIGINS = [
@@ -266,16 +270,20 @@ export function queryWords(q) {
   if (s.includes("@")) s = s.split("@")[0];
   return s.replace(/[,;]+/g, " ").split(/\s+/).filter(Boolean);
 }
-function nameParts(p) {
+/* The email user name only counts when what's typed looks like one
+   ("sam.taylor3", or a pasted address): an email can carry a name someone no
+   longer uses, and typing that name must never find them. */
+const looksLikeUser = words => words.some(w => /[.\d]/.test(w));
+function nameParts(p, byUser) {
   const first = fold(p.first), last = fold(p.last), user = p.email.split("@")[0];
   const bits = s => s.split(/[\s'’.-]+/).filter(Boolean);
-  return { first, last, parts: [first, last, user, ...bits(first), ...bits(last), ...bits(user),
+  return { first, last, parts: [first, last, ...(byUser ? [user, ...bits(user)] : []), ...bits(first), ...bits(last),
                                 squash(first), squash(last)] };
 }
 const wordHits = (parts, w) => parts.some(x => x.startsWith(w)) ||
                                (squash(w) !== "" && parts.some(x => x.startsWith(squash(w))));
 const shapeResult = p => ({
-  name: [p.first, p.last].filter(Boolean).join(" ") || p.email.split("@")[0],
+  name: [p.first, p.last].filter(Boolean).join(" ") || "Student",
   email: p.email,
   year: p.year
 });
@@ -284,11 +292,11 @@ const shapeResult = p => ({
    Ranked: the whole name starts with the search (either way round), then
    first-name matches, then last-name matches, then everything else. */
 export function searchStudents(list, q, max) {
-  const words = queryWords(q), joined = words.join(" ");
+  const words = queryWords(q), joined = words.join(" "), byUser = looksLikeUser(words);
   if (!words.length) return [];
   const scored = [];
   for (const p of list) {
-    const { first, last, parts } = nameParts(p);
+    const { first, last, parts } = nameParts(p, byUser);
     if (!words.every(w => wordHits(parts, w))) continue;
     const full = (first + " " + last).trim();
     const score = full.startsWith(joined) || (last + " " + first).startsWith(joined) ? 0
@@ -303,11 +311,11 @@ export function searchStudents(list, q, max) {
    misspelt ("jon smith" still finds the Smiths). Needs two words or more, so a
    one-word typo never turns into a list of strangers. */
 export function closeStudents(list, q, max) {
-  const words = queryWords(q);
+  const words = queryWords(q), byUser = looksLikeUser(words);
   if (words.length < 2) return [];
   const scored = [];
   for (const p of list) {
-    const { first, last, parts } = nameParts(p);
+    const { first, last, parts } = nameParts(p, byUser);
     const hits = words.filter(w => wordHits(parts, w)).length;
     if (hits >= words.length - 1) scored.push({ p, miss: words.length - hits, full: first + " " + last });
   }
@@ -471,7 +479,11 @@ export default async function handler(req, res) {
     if (q.length < 2) return res.status(400).json({ error: "Type at least two letters." });
     const yr = parseInt(req.query.year, 10);
     try {
-      let people = await studentDirectory();
+      const over = await nameOverrides();
+      let people = (await studentDirectory()).map(p => {           // an override replaces the name, for searching and showing
+        const hit = over.get(p.email); if (!hit) return p;
+        const parts = hit.trim().split(/\s+/); return { ...p, first: parts[0], last: parts.slice(1).join(" ") };
+      });
       if (yr >= 7 && yr <= 12) people = people.filter(p => p.year === yr);   // before the cap, so it hides nothing
       let results = searchStudents(people, q, 20), close = false;
       if (!results.length) { results = closeStudents(people, q, 20); close = results.length > 0; }
@@ -534,7 +546,7 @@ export default async function handler(req, res) {
       }
       res.setHeader("Cache-Control", usingOwn ? "private, no-store"
                                               : "public, s-maxage=900, stale-while-revalidate=3600");
-      return res.status(200).json({ class: code, roster });
+      return res.status(200).json({ class: code, roster: renameRoster(await nameOverrides(), roster) });
     } catch (error) {
       const status = error.status || 502;
       console.error("Class roster failed:", error.message);
@@ -562,7 +574,7 @@ export default async function handler(req, res) {
       }
       res.setHeader("Cache-Control", usingOwn ? "private, no-store"
                                               : "public, s-maxage=3600, stale-while-revalidate=86400");
-      return res.status(200).json({ group: g, people: list });
+      return res.status(200).json({ group: g, people: renameRoster(await nameOverrides(), list) });
     } catch (error) {
       const status = error.status || 502;
       console.error("Group directory failed:", error.message);
@@ -600,7 +612,7 @@ export default async function handler(req, res) {
       ? "private, no-store"                       // never cache a personal login
       : "public, s-maxage=900, stale-while-revalidate=3600");
 
-    return res.status(200).json({ email, timetable, bellTimes, startDate, profile,
+    return res.status(200).json({ email, timetable, bellTimes, startDate, profile: renamePerson(await nameOverrides(), profile),
                                   ownLogin: usingOwn });
   } catch (error) {
     const status = error.status || 502;

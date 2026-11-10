@@ -16,7 +16,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
   if (!db) return res.status(503).json({ error: "Sharing is not configured on the server." });
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to share decks." });
-  NAMES = await nameOverrides();
+  NAMES = await displayNames();
 
   if (req.method === "GET") {
     if (req.query.id) {

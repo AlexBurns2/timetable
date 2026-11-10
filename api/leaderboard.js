@@ -16,7 +16,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, withName, forgetNameOverrides } from "./_names.js";
+import { nameOverrides, displayNames, withName, forgetNameOverrides } from "./_names.js";
 import { siteSettings, setSiteSetting } from "./_settings.js";
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
@@ -43,7 +43,7 @@ const MAX_SCORE = 100000000;
  * fill in anyone who played before settings synced, and give an activity count.
  * Read-only — it never writes, and it is gated to admins by the caller. */
 async function siteUsers() {
-  const out = new Map(), names = await nameOverrides();
+  const out = new Map(), names = await displayNames();
   const touch = (email, when, key) => {
     const e = String(email || "").toLowerCase();
     if (!e) return;
@@ -73,7 +73,7 @@ async function siteUsers() {
 }
 
 async function board(game, metric, period, dir, meEmail, withEmail) {
-  const asc = dir === "min", names = await nameOverrides();
+  const asc = dir === "min", names = await displayNames();
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
     .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit

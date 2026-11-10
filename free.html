@@ -200,7 +200,10 @@ function nameMatches(p, words){
   const bits = s => s.split(/[\s'’.-]+/).filter(Boolean);
   /* every tail of the name squashed: "smithjones" and "obrien" both start one */
   const tails = bits(name).map((_, i, a) => squash(a.slice(i).join('')));
-  const parts = [name, id, ...bits(name), ...bits(id), ...tails];
+  /* the user name only counts when what's typed looks like one ("sam.taylor3"): an
+     email can carry a name someone no longer uses, and typing that name must not find them */
+  const byUser = words.some(w => /[.\d]/.test(w));
+  const parts = [name, ...(byUser ? [id, ...bits(id)] : []), ...bits(name), ...tails];
   return words.length > 0 && words.every(w => parts.some(x => x.startsWith(w)) ||
     (squash(w) !== '' && parts.some(x => x.startsWith(squash(w)))));
 }
@@ -375,7 +378,7 @@ const DOMAIN = (window.TT && TT.EMAIL_DOMAIN) || 'education.nsw.gov.au';
 /* Not a tt.* key, so theme.js never syncs it: other people's periods stay on
    this device. Tagged with whose login fetched it. */
 const CACHE_KEY = 'msc.free';
-const CACHE_V = 2;                        // 2: class lists carry each student's year
+const CACHE_V = 3;                        // 2: class lists carry each student’s year; 3: names as people go by (overrides)
 const freshCache = () => ({ v:CACHE_V, owner:ME, rosters:{}, busy:{} });
 const BUSY_TTL = 24 * 3600e3, MISS_TTL = 3600e3, ROSTER_TTL = 24 * 3600e3;
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());

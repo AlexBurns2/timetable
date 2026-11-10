@@ -35,7 +35,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 
 let NAMES = new Map();
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
@@ -65,7 +65,7 @@ export async function subjectHandler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!db) return res.status(503).json({ error: "Subject events aren't set up on the server yet." });
-  NAMES = await nameOverrides();
+  NAMES = await displayNames();
 
   if (req.method === "GET") {
     const courses = [...new Set(String(req.query.courses || "").split("|").map(course).filter(Boolean))].slice(0, MAX_COURSES);

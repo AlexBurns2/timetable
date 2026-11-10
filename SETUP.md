@@ -2749,3 +2749,37 @@ grant execute on function poll_bump(date, text, text[]) to service_role;
 Then set the first question on the moderator page (Games → Moderator → Polls).
 The share link `https://www.mscunofficial.com/poll` needs the `rewrites` entry
 in `vercel.json` (already there), which deploys with the site.
+
+---
+
+## Quartets (`api/_conn.js`, `api/_connroute.js`, served by `/api/daily?conn=1`)
+
+A daily puzzle for each year: sixteen people, and four groups of four to find.
+Each puzzle is made the first time someone in the year opens that day, then
+stored. Results are kept per person, for the streak and the past-days list.
+
+**Setup:** run this in Supabase, SQL Editor. It's safe to run more than once
+and only creates what's missing; nothing existing is touched.
+```sql
+create table if not exists conn_puzzle (
+  date       date not null,
+  year       text not null,
+  groups     jsonb not null,          -- [{lv, label, kind, names, how}], or [] if no puzzle could be made that day
+  created_at timestamptz not null default now(),
+  primary key (date, year)
+);
+create table if not exists conn_result (
+  email      text not null,
+  date       date not null,
+  year       text not null,
+  found      jsonb not null default '[]',   -- the levels solved, e.g. [1,3]
+  log        jsonb not null default '[]',   -- each guess as four levels, for the share grid
+  mistakes   int  not null default 0,
+  solved     boolean not null default false,
+  done       boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (email, date)
+);
+alter table conn_puzzle enable row level security;   -- no policies: only the server (service role) reads or writes
+alter table conn_result enable row level security;
+```

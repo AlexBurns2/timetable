@@ -6,6 +6,7 @@
  *      { correct, done, won, guesses, totalHints, streak, nextHint?, answer? }
  * GET  /api/daily?archive=1           → every day since the epoch that has results,
  *      with how many played and solved it, plus your own result per day
+ * GET/POST …?conn=1 / {conn:1}         → Quartets (see _connroute.js)
  * GET  /api/daily?date=…&summary=1     → how the year went that day, and a
  *      "spotlight": best guesser, first to solve, stumped, longest streak, most improved
  *
@@ -17,11 +18,15 @@
  */
 
 import { db, whoami } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
 import { ensurePuzzle, resolveYear, computeStreak, sydneyDate, buildHints } from "./_daily.js";
+import { connRoute } from "./_connroute.js";
+
+/* making a day's Quartets reads a sample of the year's timetables, which can take a while */
+export const config = { maxDuration: 60 };
 
 const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 const shiftDate = (d, delta) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + delta); return x.toISOString().slice(0, 10); };
@@ -55,6 +60,19 @@ function nameFromEmail(email) {
   const parts = local.split(".").filter(Boolean);
   if (parts.length >= 2) return cap(parts[0]) + " " + cap(parts[1].replace(/\d+$/, ""));
   return cap(local.replace(/\d+$/, "")) || "Someone";
+}
+/* the names to pick from: the year as it is now, by the names people go by
+   (the stored list is only a fallback, if the directory can't be reached) */
+async function candidatesFor(year, stored, answer) {
+  let list = null;
+  try {
+    const { studentDirectory } = await import("./timetable.js");
+    list = (await studentDirectory()).filter(p => String(p.year) === String(year) && p.first && p.last)
+      .map(p => withName(NAMES, p.email, p.first + " " + p.last));
+  } catch { list = null; }
+  if (!list || !list.length) list = (stored || []).slice();
+  if (answer && !list.some(n => norm(n) === norm(answer))) list.push(answer);
+  return [...new Set(list)].sort((a, b) => a.localeCompare(b));
 }
 /* how everyone in the year went on one day: win/loss, a guess-count histogram,
    and the names in each bucket (for the hover tooltip; capped so it stays small) */
@@ -141,10 +159,12 @@ export default async function handler(req, res) {
 
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in with your school account to play." });
-  NAMES = await nameOverrides();
+  NAMES = await displayNames();
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
+  /* Quartets (?conn=1, or {conn:1}) lives here too, so it needs no function of its own */
+  if (req.query.conn || (body && body.conn)) return connRoute(req, res, me, body || {}, NAMES);
   const rawDate = req.method === "POST" ? (body && body.date) : req.query.date;
 
   let year, today, date, puzzle;
@@ -161,8 +181,12 @@ export default async function handler(req, res) {
   }
 
   const t = puzzle.target || {};
-  const first = t.first || String(t.name || "").split(" ")[0];
-  const last = t.last || String(t.name || "").split(" ").slice(1).join(" ");
+  /* the person by the name they go by today: if it changed after the puzzle was
+     made, the hints are worked out from the new name, never the old one */
+  const shownName = withName(NAMES, t.email, t.name);
+  const renamed = shownName !== t.name;
+  const first = renamed ? shownName.split(" ")[0] : t.first || String(t.name || "").split(" ")[0];
+  const last = renamed ? shownName.split(" ").slice(1).join(" ") : t.last || String(t.name || "").split(" ").slice(1).join(" ");
   // recomputed each read → hint changes go live; the seed keeps the order the
   // same for everyone in the year all day. Older puzzles have no subjects and
   // simply fall back to name-shape hints.
@@ -173,7 +197,7 @@ export default async function handler(req, res) {
       classes: t.classes, classmates: t.classmates,
       nameOf: (email, name) => withName(NAMES, email, name) });   // classmates by the name people know them by
   const totalHints = hints.length;
-  const answerName = t.name;
+  const answerName = shownName;
 
   const { data: result } = await db.from("daily_result")
     .select("guesses, won, done").eq("email", me.email).eq("date", date).maybeSingle();
@@ -191,7 +215,7 @@ export default async function handler(req, res) {
     const shown = done ? Math.min(guesses, totalHints) : Math.min(guesses + 1, totalHints);
     const streak = computeStreak(await wonDatesFor(me.email), today);
     return res.status(200).json({
-      date, today, epoch: EPOCH, year, candidates: puzzle.candidates || [],
+      date, today, epoch: EPOCH, year, candidates: await candidatesFor(year, puzzle.candidates, answerName),
       hints, shown, totalHints, guesses, done, won, streak,   // full hints + how many are already unlocked
       history: await historyFor(me.email, today),
       answer: answerName                                       // sent so the browser can grade instantly

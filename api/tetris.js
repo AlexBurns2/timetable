@@ -21,7 +21,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, withName } from "./_names.js";
+import { displayNames, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
 
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the leaderboard." });
-  NAMES = await nameOverrides();
+  NAMES = await displayNames();
 
   const weekOf = v => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n < 100000 ? n : null; };
 
