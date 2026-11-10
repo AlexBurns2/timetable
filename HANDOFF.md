@@ -2833,3 +2833,14 @@ data. No icon font or CDN script loads on the live site.
 - The pages already tidied teacher emails (index.html `tidyTeacher`, games.js
   `tidyName`). The email in the user's screenshot came from the first Quartets
   generator, whose puzzles version 4 deletes.
+
+### 8.67 Reaction: autoclickers can't score
+- Anything under 100 ms doesn't count: the page refuses it ("faster than anyone
+  can react"), and `api/leaderboard.js` refuses a `react:fastest` score under
+  `MIN_REACTION_MS`.
+- Rapid clicking (4 presses inside 400 ms), or 6 presses at a machine-steady
+  rhythm (gaps within 4 ms of each other), stops the round, wipes the run of
+  five and locks the box for 3 s.
+- Scripted clicks (`!e.isTrusted`) are ignored.
+- Existing leaderboard scores under 100 ms aren't removed automatically; the
+  moderator page can delete them.

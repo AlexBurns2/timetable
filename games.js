@@ -3419,7 +3419,14 @@ BUILD.react = host => {
   head(host, 'Reaction', 'Best of five.',
        '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
   const el = $('react');
-  let state = 'idle', t = null, at = 0, times = [];
+  let state = 'idle', t = null, at = 0, times = [], lockUntil = 0;
+  /* Autoclickers can't win:
+     - under 100 ms isn't a human reaction (it's anticipation, or a bot
+       watching the screen), so it doesn't count; the server refuses it too
+     - a burst of presses (4 inside 400 ms) or a run of presses at a machine-
+       steady rhythm stops the round, wipes the run and locks the box briefly
+     - clicks a script fakes (not from a real mouse or finger) are ignored */
+  const MIN_MS = 100, presses = [];
   const show = (cls, text) => { el.className = cls; el.textContent = text; };
   const arm = () => {
     show('wait', 'Wait for green…');
@@ -3430,14 +3437,36 @@ BUILD.react = host => {
                            requestAnimationFrame(() => { at = performance.now(); }); },
                    900 + Math.random()*2200);
   };
+  const lockOut = why => {
+    clearTimeout(t); state = 'idle'; times = []; presses.length = 0;
+    lockUntil = performance.now() + 3000; SFX.bad();
+    show('', why + ' Wait a moment, then ' + tap('click', 'tap') + ' to start again.');
+  };
+  /* too many presses too fast, or presses evenly spaced like a machine */
+  const autoclicking = now => {
+    presses.push(now); while (presses.length > 8) presses.shift();
+    if (presses.filter(p => now - p < 400).length >= 4) return true;
+    if (presses.length >= 6){
+      const gaps = presses.slice(1).map((p, i) => p - presses[i]);
+      const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+      const spread = Math.sqrt(gaps.reduce((a, g) => a + (g - mean) * (g - mean), 0) / gaps.length);
+      if (mean < 1500 && spread < 4) return true;           // no hand is that regular
+    }
+    return false;
+  };
   /* measure on pointerDOWN (the press), not click — click fires on release, which
      added the press-to-release time and inflated every reading */
   el.addEventListener('pointerdown', e => {
     e.preventDefault();
+    if (!e.isTrusted) return;                               // a scripted click
+    const now = performance.now();
+    if (now < lockUntil) return;
+    if (autoclicking(now)){ lockOut('That’s a lot of clicking.'); return; }
     if (state === 'idle'){ arm(); return; }
     if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon. ' + tap('Click', 'Tap') + ' to retry.'); return; }
     if (state === 'go'){
-      const ms = Math.max(0, Math.round(performance.now() - at));
+      const ms = Math.max(0, Math.round(now - at));
+      if (ms < MIN_MS){ state = 'idle'; SFX.bad(); show('', ms + ' ms is faster than anyone can react, so it doesn’t count. ' + tap('Click', 'Tap') + ' to retry.'); return; }
       times.push(ms); SFX.good();
       const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
       recordStat('react', {key:'fastest', mode:'min', value:ms});

@@ -166,6 +166,8 @@ async function siteStats() {
   };
 }
 
+const MIN_REACTION_MS = 100;             // under this isn't a human reaction (the page refuses it too)
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-School-Email, X-School-Password");
@@ -277,6 +279,8 @@ export default async function handler(req, res) {
   } else if (req.method === "POST") {
     const score = Math.round(Number(src.score));
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
+    /* faster than a person can react: an autoclicker or a script, not a score */
+    if (game === "react" && metric === "fastest" && score < MIN_REACTION_MS) return res.status(400).json({ error: "That's faster than anyone can react." });
     const name = nameFromEmail(me.email);
     try {
       await writeBest(game, metric, "all", me.email, name, score, dir);
