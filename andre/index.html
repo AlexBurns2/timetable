@@ -15,6 +15,7 @@
 <script>
 /* Theme, skin and light/dark onto <html> before first paint, so a forced look
    never flashes. The page script calls this again whenever a setting changes. */
+const CUSTOM_DEFAULTS = { bg:"#f2f4f8", panel:"#ffffff", text:"#16181d", accent:"#6d4aff", tint:30, font:"DM Sans", backdrop:"solid", square:false };
 function lookAttrs(){
   const r = document.documentElement;
   const g = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
@@ -22,11 +23,27 @@ function lookAttrs(){
   let skin = g("andre.skin") || "default";
   if (skin === "plain") skin = "default";              /* the old Plain is the default look now */
   const fixed = ["scifi","terminal","blueprint"].includes(skin);       /* dark-only palettes */
-  const dark = fixed || theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-  if (theme === "light" || theme === "dark") r.dataset.theme = theme; else delete r.dataset.theme;
+  /* the custom theme: its own colours, and light or dark by how dark its background is */
+  const c = skin === "custom" ? Object.assign({}, CUSTOM_DEFAULTS, g("andre.custom") || {}) : null;
+  const lum = h => { const n = parseInt(String(h).slice(1), 16) || 0; return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255; };
+  const dark = c ? lum(c.bg) < .5 : fixed || theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  if (c) r.dataset.theme = dark ? "dark" : "light";
+  else if (theme === "light" || theme === "dark") r.dataset.theme = theme; else delete r.dataset.theme;
+  ["--bg","--fg","--fg2","--fg3","--line3","--fill","--fill2","--blue","--sep","--mat","--gap","--past","--tint","--font","--img"].forEach(v => r.style.removeProperty(v));
+  r.style.colorScheme = "";
+  if (c){
+    const S = (k, v) => r.style.setProperty(k, v), mix = (a, p, b) => `color-mix(in srgb,${a} ${p}%,${b})`;
+    S("--bg", c.bg); S("--fg", c.text); S("--fg2", mix(c.text, 62, c.bg)); S("--fg3", mix(c.text, 48, c.bg)); S("--line3", mix(c.text, 32, c.bg));
+    S("--fill", c.panel); S("--fill2", mix(c.panel, 88, c.text)); S("--blue", c.accent); S("--sep", mix(c.text, 14, "transparent"));
+    S("--mat", mix(c.bg, 80, "transparent")); S("--gap", mix(c.bg, 94, c.text)); S("--past", mix(c.bg, 92, c.text)); S("--tint", c.tint + "%");
+    if (c.font !== "System") S("--font", `"${c.font}",system-ui,sans-serif`);
+    if (c.backdrop === "gradient") S("--img", `linear-gradient(160deg,${c.accent}33,transparent 55%),linear-gradient(20deg,${c.text}14,transparent 60%)`);
+    if (c.backdrop === "mesh") S("--img", `radial-gradient(58vw 58vw at 12% 8%,${c.accent}66,transparent 60%),radial-gradient(52vw 52vw at 88% 16%,${c.accent}40,transparent 62%),radial-gradient(56vw 56vw at 50% 96%,${c.accent}40,transparent 60%)`);
+    r.style.colorScheme = dark ? "dark" : "light";
+  }
   r.dataset.mode = dark ? "dark" : "light";
   if (skin === "default") delete r.dataset.skin; else r.dataset.skin = skin;
-  r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin));
+  r.toggleAttribute("data-square", ["paper","swiss","newsprint","retro","scifi","terminal","blueprint","brutal"].includes(skin) || !!(c && c.square));
   r.classList.toggle("zen", !!g("andre.zen"));
   /* animations: off when switched off, or on Auto when the device asks for less
      motion (Windows "Animation effects" off, macOS "Reduce motion"); On plays them anyway */
@@ -606,7 +623,61 @@ button.row:hover{background:var(--fill2)}
 .mjbtns{display:flex;gap:6px}
 .mjbtns .btn{flex:1;padding:0 8px}
 .mjerr{color:var(--red)}
+/* ── sign-in modules, the Forum chat and the Poll: blocks like Mahjong's ── */
+.list :is(.lgb,.plb){height:var(--h);margin-bottom:8px}
+.lgb,.plb{background:var(--fill)}
+.lgin{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.lgin b{font-size:calc(20px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.lgin small{font-size:calc(13px * var(--fs,1));color:var(--fg2)}
+.lgf{position:absolute;inset:0;display:flex;align-items:center;gap:8px;padding:0 12px}
+.lgf .fin{flex:1;min-width:0}
+.lgf span{color:var(--fg2);font-size:calc(13px * var(--fs,1));white-space:nowrap}
+.lgin .lgerr{color:var(--red)}
+.lgin .lgerr:empty{display:none}
+.lggo{position:absolute;inset:0;background:color-mix(in srgb,var(--blue) 86%,#000);color:#fff;font-size:calc(15px * var(--fs,1));font-weight:600}
+.lggo:hover{filter:brightness(1.08)}
+.lggo:disabled{opacity:.7;cursor:default}
+/* signed out: the tiles below are greyed and can't be used */
+.signedout #mg{opacity:.45;filter:grayscale(1)}
+/* the Forum: one block per message, flowing down the page (not placed by time) */
+.fmm{position:relative;margin-bottom:8px;padding:10px 14px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.fmm.rp{margin-left:32px}
+.fmnew{display:flex;flex-direction:column;gap:6px;background:var(--fill)}
+.fmrow{display:flex;gap:8px}
+.fmrep{display:flex;justify-content:space-between;align-items:center;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.fmmeta{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.fmmeta b{color:color-mix(in srgb,var(--c) 40%,var(--fg));font-weight:600;margin-right:6px}
+.fmtxt{margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(14px * var(--fs,1))}
+.fmact{display:flex;gap:12px;margin-top:4px}
+.fmact:empty{display:none}
+.fmact button{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.fmact button:hover{color:var(--fg)}
+.fmnone{color:var(--fg3);font-size:calc(13px * var(--fs,1))}
+.plq{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
+.plq b{font-size:calc(19px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+.plq small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
+.plo{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;text-align:left;font-size:calc(15px * var(--fs,1));font-weight:500}
+.plo:hover{filter:brightness(.97)}
+.plo.mine{font-weight:700}
+.plo > :not(.mjfill){position:relative}
+.plb .mjfill{transition:width .5s ease}
+.plr{cursor:default}.plr:hover{filter:none}
 .mjchart{background:var(--fill);padding:12px;display:flex;flex-direction:column;gap:8px}
+.mjawb{background:none;overflow:visible}
+.mjawb .mjawards{height:100%}
+.mjawb .mjaward{align-content:center}
+.mjhist{background:var(--fill);display:flex;flex-direction:column}
+.mjhbar{flex:none;display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 14px;font-size:calc(14px * var(--fs,1));font-weight:600;color:var(--fg)}
+.mjhbar small{margin-left:auto;font-weight:400;color:var(--fg2)}
+.mjhbar:hover{background:var(--fill2)}
+.mjhlist{flex:1;min-height:0;overflow:auto;padding:4px 14px 12px;display:flex;flex-direction:column}
+.mjhrow{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:4px 12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--sep);font-size:calc(13px * var(--fs,1))}
+.mjhrow small{color:var(--fg3)}
+.mjhd{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:flex-end}
+.mjhd em{font-style:normal;color:var(--fg2)}
+.mjhd em.up b{color:var(--green)}
+.mjhd em.dn b{color:var(--red)}
+.list .mjhist.hopen{height:320px}
 .mjct{font-size:calc(13px * var(--fs,1));font-weight:600;color:var(--fg2)}
 .col .mjct{display:none}
 .mjnone{margin:auto;font-size:calc(13px * var(--fs,1));color:var(--fg3);text-align:center}
@@ -887,6 +958,18 @@ select.fin{appearance:auto}
       <div class="export-sub" id="exportsub"></div>
     </div>
 
+    <div>
+      <div class="sec-label">School login</div>
+      <div class="row-group">
+        <div class="row stack">
+          <div class="rl"><strong>Sign-in</strong><small id="cr_state"></small></div>
+          <input class="fin" id="cr_email" placeholder="first.last1" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="School username">
+          <input class="fin" id="cr_pass" type="password" placeholder="School password" autocomplete="current-password" aria-label="School password">
+          <div class="mjbtns"><button class="btn primary sm" id="cr_save" type="button">Save</button><button class="btn sm" id="cr_clear" type="button">Sign out</button></div>
+        </div>
+      </div>
+    </div>
+
     <div class="row-group">
       <a class="row" href="/home.html"><div class="rl"><strong>Return to main site</strong></div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></a>
     </div>
@@ -896,6 +979,19 @@ select.fin{appearance:auto}
     <button class="pback" id="skinback"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Settings</button>
     <div class="sec-label">Theme</div>
     <div class="skins" id="skins"></div>
+    <div id="custed" hidden>
+      <div class="sec-label">Custom theme <button id="c_reset" type="button">Reset</button></div>
+      <div class="row-group">
+        <div class="row"><div class="rl"><strong>Background</strong></div><input type="color" data-k="bg" aria-label="Background colour"></div>
+        <div class="row"><div class="rl"><strong>Cards</strong></div><input type="color" data-k="panel" aria-label="Card colour"></div>
+        <div class="row"><div class="rl"><strong>Text</strong></div><input type="color" data-k="text" aria-label="Text colour"></div>
+        <div class="row"><div class="rl"><strong>Accent</strong></div><input type="color" data-k="accent" aria-label="Accent colour"></div>
+        <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="8" max="60" step="1" data-k="tint" aria-label="Colour strength"></div>
+        <div class="row"><div class="rl"><strong>Font</strong></div><select class="fin" data-k="font" aria-label="Font"><option>System</option><option>DM Sans</option><option>Space Grotesk</option><option>JetBrains Mono</option><option>Space Mono</option><option>Patrick Hand</option></select></div>
+        <div class="row"><div class="rl"><strong>Backdrop</strong></div><select class="fin" data-k="backdrop" aria-label="Backdrop"><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="mesh">Mesh</option></select></div>
+        <div class="row"><div class="rl"><strong>Square corners</strong></div><input type="checkbox" data-k="square" aria-label="Square corners"></div>
+      </div>
+    </div>
   </div>
 </aside>
 
@@ -923,7 +1019,7 @@ select.fin{appearance:auto}
     <div class="mg" id="mg">
       <!-- tiles that work on this page first, then the ones that open another page -->
       <div class="mod modx" data-m="calendar" style="--c:#AF52DE">
-        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span></h3></button>
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Calendar <span class="state" id="calstate"></span><span class="state mjst" id="calnote"></span></h3></button>
         <button class="mset" aria-label="Calendar settings" aria-expanded="false" aria-controls="calbody"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
         <div class="mod-body" id="calbody"><div class="tilebody"><div class="row-group">
         <div class="row">
@@ -975,6 +1071,12 @@ select.fin{appearance:auto}
       <div class="mod modx" data-m="games" style="--c:#FF375F">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></div><h3>Games <span class="state" id="gmstate"></span></h3></button>
       </div>
+      <div class="mod modx" data-m="forum" style="--c:#30B0C7">
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3>Forum <span class="state" id="fmstate"></span></h3></button>
+      </div>
+      <div class="mod modx" data-m="poll" style="--c:#FFCC00">
+        <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div><h3>Poll <span class="state" id="plstate"></span></h3></button>
+      </div>
       <div class="mod modx" data-m="mahjong" style="--c:#E0303A">
         <button class="mod-head" aria-pressed="false"><div class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/></svg></div><h3>Mahjong <span class="state mjst" id="mjstate"></span></h3></button>
       </div>
@@ -992,15 +1094,22 @@ const apiUrl = path => API_ORIGIN + path;
 const ENDPOINT = apiUrl("/api/timetable"), DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
-             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays" };
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"tt.creds", custom:"andre.custom" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-/* read-only from the main site: its A/B week correction and optional login */
+/* read-only from the main site: its A/B week correction */
 const cycleShift = (+get("tt.cycleshift", 0) === 5) ? 5 : 0;
-const creds = get("tt.creds", null);
-const signedIn = !!(creds && creds.email && creds.password);
+/* the login is the main site's own (tt.creds), so signing in or out on either site does both;
+   an andre.creds from before that is adopted once */
+let creds = get(LS.creds, null) || get("andre.creds", null);
+if (creds && !get(LS.creds, null)) set(LS.creds, creds);
+localStorage.removeItem("andre.creds");
+/* signed in or out on the main site in another tab: start again with that login */
+addEventListener("storage", e => { if (e.key === LS.creds) location.reload(); });
+let signedIn = !!(creds && creds.email && creds.password);
+const syncSigned = () => signedIn = !!(creds && creds.email && creds.password);
 /* the birthday register: [{ email, name, day:"MM-DD" }], and the class of 2027 */
-let bdays = get(LS.bdays, []) || [], bdPeople = [], bdNote = "";
+let bdays = get(LS.bdays, []) || [], bdPeople = [], bdNote = "", bdReady = bdays.length > 0;
 let email = get(LS.email, "") || get("tt.email", "");
 /* display settings, the same choices as the main timetable */
 let theme = get(LS.theme, "auto");          /* light | auto | dark */
@@ -1395,6 +1504,9 @@ async function load(){
 /* ═══ render ═══ */
 let off = 0;      /* weeks away from the current one */
 let mjShow = false;   /* the Mahjong tile: the week shows the standings instead */
+let fm = null, fmNote = "", fmReply = null, fmDraft = "", pl = null, plAt = 0, plChosen = [], plQuery = "", plNote = "", plBusy = false;
+let loginNote = "", loginBusy = false, loginUser = "", loginPass = "";
+let fmShow = false, plShow = false, loginShow = !signedIn;   /* Forum chat, Poll, and the sign-in modules (shown until there is a login) */
 let gmShow = false, gameNow = null, gameLive = null;   /* the Games tile: the week shows the games; the one opened out, and once its frame is in */
 let sel = null;   /* phone layout: the day shown (0 = Mon), null = today or Monday */
 /* the phone layout: same breakpoint as the CSS */
@@ -1453,14 +1565,19 @@ const arrow = (d, unit = "week") => `<button class="arrow" data-d="${d}" aria-la
 function render(){
   document.body.classList.toggle("busy", loading && entries.length > 0);      /* first: the views below return early */
   /* typed points survive redraws, but not losing the box (a phone keyboard opening resizes too) */
-  if (mjShow && document.activeElement.matches(".mjb input")) return;
+  if ((mjShow || fmShow || plShow || loginShow) && document.activeElement.matches(".mjb input")) return;
   if (gameNow && $(phone.matches ? "daylist" : "g").querySelector("#gmframe")) return;      /* a redraw would restart the game */
-  document.body.classList.toggle("mjview", mjShow || gmShow);
+  document.body.classList.toggle("mjview", mjShow || gmShow || fmShow || plShow || loginShow);
+  document.body.classList.toggle("signedout", loginShow);
+  $("mg").inert = loginShow;
   if (view === "month"){ renderMonth(); return; }
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   const mon = addDays(baseWeek(), off*7);
   const dates = daysShown().map(k => addDays(mon, k));
   document.documentElement.style.setProperty("--nd", dates.length);
+  if (loginShow){ renderLogin(dates.length); return; }
+  if (fmShow){ renderForum(dates.length); return; }
+  if (plShow){ renderPoll(dates.length); return; }
   if (mjShow){ renderMj(dates.length); return; }
   if (gmShow){ renderGames(dates.length); return; }
   const cycs = dates.map(d => cycleDayFor(d, cycleStart));
@@ -2177,7 +2294,7 @@ async function api(params, at = ENDPOINT){
 
 /* ═══ student finder ═══
    Suggestions under a box as you type a name. Searching by name needs the
-   school login from the main timetable, as the finder page did. */
+   school login, as the finder page did. */
 function finder(inp, box, onPick, opts = {}){
   let results = [], idx = -1, head = "", timer = null, seq = 0, shown = "";
   const show = html => {
@@ -2211,7 +2328,7 @@ function finder(inp, box, onPick, opts = {}){
     clearTimeout(timer);
     const q = inp.value.trim(), naming = /\s/.test(q);
     if (q.length < 2 || (opts.bar && !naming && !signedIn)) return hide();
-    if (!signedIn) return hint('Searching by name needs your school login. <a href="/">Sign in on the main timetable</a>, then come back.');
+    if (!signedIn) return hint('Searching by name needs your school login. Sign in under Settings first.');
     seq++;
     hint("Searching…");
     timer = setTimeout(search, 250);
@@ -2284,7 +2401,7 @@ function openSettings(o){
   document.body.classList.toggle("setopen", o);
   gear.setAttribute("aria-expanded", o);
   $("panel").classList.remove("sub");
-  if (o){ paintSettings(); $("pclose").focus(); } else gear.focus();
+  if (o){ paintSettings(); renderCreds(); $("pclose").focus(); } else gear.focus();
 }
 gear.onclick = () => openSettings(true);
 $("pclose").onclick = $("scrim").onclick = () => openSettings(false);
@@ -2305,11 +2422,29 @@ const SKINS = [
   { id:"scifi",     name:"Sci-fi",    swatch:"radial-gradient(circle at 50% 0%,rgba(0,229,255,.5),transparent 65%),repeating-linear-gradient(to bottom,rgba(0,229,255,.22) 0 1px,transparent 1px 8px),#04070d" },
   { id:"terminal",  name:"Terminal",  swatch:"repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)" },
   { id:"blueprint", name:"Blueprint", swatch:"repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#07223d" },
-  { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" }
+  { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" },
+  { id:"custom",    name:"Custom",    swatch:"conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)" }
 ];
 if (!SKINS.some(s => s.id === skin)) skin = "default";
-const FIXED = ["scifi","terminal","blueprint"];
+const FIXED = ["scifi","terminal","blueprint","custom"];
+const customCfg = () => Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
+function paintCust(){
+  $("custed").hidden = skin !== "custom";
+  if (skin !== "custom") return;
+  const c = customCfg();
+  document.querySelectorAll("#custed [data-k]").forEach(el => { if (el.type === "checkbox") el.checked = !!c[el.dataset.k]; else el.value = c[el.dataset.k]; });
+  $("c_tint_v").textContent = c.tint + "%";
+}
+$("custed").oninput = e => {
+  const k = e.target.dataset.k;
+  if (!k) return;
+  const v = e.target.type === "checkbox" ? e.target.checked : e.target.type === "range" ? +e.target.value : e.target.value;
+  const c = Object.assign(customCfg(), { [k]:v });
+  set(LS.custom, c); applyLook(); $("c_tint_v").textContent = c.tint + "%";
+};
+$("c_reset").onclick = () => { set(LS.custom, null); applyLook(); paintCust(); };
 function paintSkins(){
+  paintCust();
   $("skins").innerHTML = SKINS.map(s =>
     `<button class="skin" data-id="${s.id}" aria-pressed="${s.id === skin}"><i style="background:${s.swatch}"></i>${esc(s.name)}</button>`).join("");
 }
@@ -2331,7 +2466,7 @@ function paintSettings(){
   $("skinname").textContent = (SKINS.find(s => s.id === skin) || SKINS[0]).name;
   const fixed = FIXED.includes(skin);
   $("theme").setAttribute("aria-disabled", fixed);
-  $("modehint").textContent = fixed ? "This theme is always dark" : "Auto follows your device";
+  $("modehint").textContent = skin === "custom" ? "Light or dark follows your custom background" : fixed ? "This theme is always dark" : "Auto follows your device";
   document.querySelectorAll("#theme button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theme === theme));
   $("zen").setAttribute("aria-checked", zen);
   const mode = motion === true ? "on" : motion === false ? "off" : "auto";
@@ -2342,7 +2477,7 @@ function paintSettings(){
   $("showsubj").setAttribute("aria-checked", showSubj());
   $("showwk").setAttribute("aria-checked", get(LS.showwk, true) !== false);
   document.querySelectorAll("#wkstart button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.s === (+get(LS.wkstart, 1) === 0 ? 0 : 1)));
-  $("bdcount").textContent = signedIn ? (bdays.length ? `${bdays.length} saved` : "None yet") : "Sign in on the main timetable";
+  $("bdcount").textContent = signedIn ? (bdays.length ? `${bdays.length} saved` : "None yet") : "Sign in first";
   $("perscount").textContent = personal.length ? `${personal.length} saved on this device` : "None saved";
   paintFs(fsIndex());
   /* the format examples use a real room from this timetable */
@@ -2413,7 +2548,7 @@ function tileHead(m, act){
 /* ═══ Who's free ═══
    Pick a group; each free period on the timetable then says which of them
    are free for all of it. Uses the same ?free= lookup as the free periods
-   page, which needs the main timetable's school login. Their periods are
+   page, which needs the school login. Their periods are
    kept on this device for a day. */
 let freeGroup = (get(LS.group, []) || []).filter(p => p && p.id);
 let freeShow = get(LS.freeshow, false) === true;
@@ -2486,7 +2621,7 @@ function paintFree(){
   paintFreeTile();
   const stat = $("freestat"), q = $("freeq");
   if (!signedIn){
-    stat.innerHTML = 'Needs your school login. <a href="/">Sign in on the main timetable</a> first.';
+    stat.textContent = 'Needs your school login. Sign in under Settings first.';
     q.disabled = true; $("freechips").innerHTML = "";
     return;
   }
@@ -3084,7 +3219,8 @@ function renderMonth(){
    straight for wherever you asked for last, like Return to Today. */
 let viewTurn = null, wantView = null, morphing = [];
 function toggleCalendar(){
-  if (mjShow || gmShow){ mjLeave(); render(); }
+  if (loginShow) return;
+  if (mjShow || gmShow || fmShow || plShow){ mjLeave(); render(); }
   const target = (wantView ?? view) === "month" ? "week" : "month";
   /* the month has no periods, so Who's free and Custom periods can't be on with it */
   if (target === "month"){
@@ -3466,6 +3602,9 @@ function paintTiles(calTarget = view){
   document.querySelector('[data-m="calendar"]').classList.toggle("on", on);
   document.querySelector('[data-m="calendar"] .mod-head').setAttribute("aria-pressed", on);
   $("calstate").textContent = on ? "· On" : "";
+  /* known from the sign-in: who is using this, and whether their birthday is on the register yet */
+  const me = signedIn && String(creds.email).toLowerCase();
+  $("calnote").textContent = me && bdReady && !bdays.some(b => String(b.email).toLowerCase() === me) ? "Please register your birthday" : "";
   paintFreeTile();
 }
 function paintFreeTile(){
@@ -3536,10 +3675,11 @@ async function loadBirthdays(){
   if (!signedIn) return;
   try {
     const d = await call("/api/calendar", { query:{ birthdays:1 } });
-    bdays = d.birthdays || []; bdPeople = d.people || []; bdNote = d.warning || ""; set(LS.bdays, bdays);
+    bdays = d.birthdays || []; bdPeople = d.people || []; bdNote = d.warning || ""; set(LS.bdays, bdays); bdReady = true;
   } catch (err) { bdNote = "Birthdays couldn't load: " + err.message; }
   if (bdOpen()) paintBdays();
   if (settingsOpen()) paintSettings();
+  paintTiles();
   if (!turning) render();
 }
 const mdText = md => md ? +md.slice(3) + "/" + +md.slice(0, 2) : "";
@@ -3556,7 +3696,7 @@ const BD_COLOURS = [...new Set([...document.querySelectorAll("#mg > .mod")].map(
 const bdColour = email => BD_COLOURS[([...email].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261) >>> 0) % BD_COLOURS.length];
 function paintBdNote(){
   const has = new Set(bdays.map(b => b.email)), filled = bdPeople.filter(p => has.has(p.email)).length;
-  $("bdnote").textContent = !signedIn ? "Sign in on the main timetable to see and add birthdays."
+  $("bdnote").textContent = !signedIn ? "Sign in to see and add birthdays."
     : bdNote || (bdPeople.length ? `${filled} of ${bdPeople.length} in the class of 2027 done. The coloured ones are still missing: tap one to add their birthday as day/month.` : "Loading…");
 }
 function paintBdays(){
@@ -3589,7 +3729,7 @@ async function saveBday(cell, day){
     bdays = bdays.filter(b => b.email !== email);
     if (day) bdays.push({ email, day, name:cell.querySelector("b").textContent });
     set(LS.bdays, bdays);
-    bdEdit = null; paintBdays(); render();
+    bdEdit = null; paintBdays(); paintTiles(); render();
   } catch (err) { const i = cell.querySelector(".bdin"); if (i) i.setAttribute("aria-invalid", "true"); bdNote = err.message; paintBdNote(); }
 }
 function commitBday(cell){
@@ -3677,7 +3817,7 @@ function openEvent(id, { day, kind } = {}){
     $("evkindnote").innerHTML = k === "personal" ? "Only on this device."
       : !courses.length ? "Load a timetable to add a subject event."
       : signedIn ? "Everyone with this subject sees it, and anyone can fix it if it's wrong."
-      : 'Everyone with this subject sees it. Adding or changing one needs your school login: <a href="/">sign in on the main timetable</a>.';
+      : 'Everyone with this subject sees it. Adding or changing one needs your school login: sign in under Settings.';
   };
   body.querySelectorAll("#evkind button").forEach(b => b.onclick = () => { if (isNew){ k = b.dataset.k; paint(); } });
   body.querySelectorAll("#evcol .swatch").forEach(s => s.onclick = () => { colour = s.dataset.c; paint(); });
@@ -3770,6 +3910,7 @@ function paintGmTile(){
   $("gmstate").textContent = gmShow ? "· On" : "";
 }
 function toggleGames(){
+  if (loginShow) return;
   document.activeElement.blur();
   const flip = () => { const on = !gmShow; mjLeave(); gmShow = on; paintGmTile(); }, go = () => shiftWeek(flip);
   if (signedIn && Date.now() - leadersAt > 120000) loadLeaders().then(() => (turning || Promise.resolve()).then(() => { if (gmShow) render(); }));
@@ -3822,7 +3963,7 @@ function renderGames(nd){
 /* ═══ modules: widen tiles so every row is full ═══
    The CSS picks the column count; each row then gets an even share of the
    tiles, and the spare cells go to these, in this order. */
-const MOD_WIDEN = ["calendar","revision","free","games","mahjong","periods","resources"];
+const MOD_WIDEN = ["calendar","revision","free","games","forum","poll","mahjong","periods","resources"];
 
 /* ═══ the Custom periods tile ═══
    It opens up in place, like a lesson, onto a row of its own. First it moves
@@ -3938,6 +4079,7 @@ tileHead("mahjong", () => toggleMj());
    top and bottom, and switches the week's blocks to the sheet: a column with a
    block per player, where a game is recorded too, and a line graph beside it. */
 const MJ_START = 4096, MJ_RECENT = 5;
+let mjHist = false;       /* the History box under the graph: open, or shrunk to its bar */
 const MJ_COLORS =["#0A84FF","#FF375F","#30C05A","#FF9F0A","#AF52DE","#32ADE6","#FFB800","#8E8E93","#AC8E68","#5E5CE6"];   /* as mahjong.js, so a player keeps their colour */
 let mj = null, mjBusy = false, mjNote = "", mjDraft = {};     /* mjDraft: points typed, by player id */
 const mjTile = document.querySelector('[data-m="mahjong"]');
@@ -3953,6 +4095,18 @@ function mjPoints(){
 /* award cards, as Kahoot does between questions (as mahjong.js); an award nobody has
    earned is left out. Rates and places cover the last MJ_RECENT games, as all-time ones
    would only repeat the standings. A streak ignores games a player sat out. */
+/* every game so far, newest first: when, and what each player won or lost */
+function mjHistHtml(){
+  const rs = mj.rounds, name = id => (mj.players.find(p => p.id === id) || { name:"?" }).name;
+  const rows = rs.map((r, i) => {
+    const when = r.t ? new Date(r.t).toLocaleDateString(undefined, { day:"numeric", month:"short" }) + " " + new Date(r.t).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) : "";
+    const d = Object.entries(r.d).filter(([id, v]) => v).sort((a, b) => b[1] - a[1]);
+    return `<div class="mjhrow"><b>Game ${i + 1}</b><small>${esc(when)}</small><span class="mjhd">` +
+      d.map(([id, v]) => `<em class="${v > 0 ? "up" : "dn"}">${esc(name(id))} <b class="tnum">${mjSigned(v)}</b></em>`).join("") + `</span></div>`;
+  }).reverse();
+  return `<button class="mjhbar" aria-expanded="${mjHist}"><span>History</span><small>${rs.length} ${rs.length === 1 ? "game" : "games"}</small><i aria-hidden="true">${mjHist ? "▾" : "▸"}</i></button>` +
+    (mjHist ? `<div class="mjhlist">${rows.join("") || `<p class="mjnone">No games yet</p>`}</div>` : "");
+}
 function mjAwards(){
   const { players, rounds } = mj, n = Math.min(rounds.length, MJ_RECENT);
   if (!n) return "";
@@ -3998,8 +4152,9 @@ async function mjAct(body){
 }
 function paintMj(){ paintMjTile(); if (mjShow) render(); }
 /* back to the week, from Mahjong or Games */
-function mjLeave(){ mjShow = gmShow = false; gameNow = gameLive = null; paintMjTile(); paintGmTile(); }
+function mjLeave(){ mjShow = gmShow = fmShow = plShow = false; gameNow = gameLive = null; paintMjTile(); paintGmTile(); paintFpTiles(); }
 function toggleMj(){
+  if (loginShow) return;
   document.activeElement.blur();
   const flip = () => { const on = !mjShow; mjLeave(); mjShow = on; paintMjTile(); }, go = () => shiftWeek(flip);
   if (!mj) loadMj();
@@ -4055,7 +4210,7 @@ const mjHint = () => { const t = Object.values(mjDraft).reduce((a, v) => a + (Ma
   return t ? "Adds up to " + mjSigned(t) + " (usually 0)" : "+ for winners, − for whoever paid"; };
 function renderMj(nd){
   const list = phone.matches, host = $(list ? "daylist" : "g");
-  const note = !signedIn ? "Sign in on the main timetable to see the scores." : !mj ? (mjNote ? "Couldn't load the scores: " + mjNote : "Loading…") : "";
+  const note = !signedIn ? "Sign in to see the scores." : !mj ? (mjNote ? "Couldn't load the scores: " + mjNote : "Loading…") : "";
   if (note){ host.innerHTML = `<div class="${list ? "lmsg" : "msg"}">${esc(note)}</div>`; return; }
   const pts = mjPoints(), st = [...mj.players].sort((a, b) => pts[b.id] - pts[a.id]), n = st.length;
   /* the blocks, placed down a day when there's a grid */
@@ -4079,19 +4234,27 @@ function renderMj(nd){
   if (save) y += SAVE + 8;
   const add = block("mjctl", "mj:add", "#E0303A",
     `<input class="fin" id="mjname" placeholder="${n ? "Add a player" : "Add everyone at the table"}" maxlength="30" autocomplete="off" enterkeyhint="done" aria-label="New player's name"><button class="btn sm" id="mjadd">Add</button>`, y, ADD);
-  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` + mjAwards() +
-    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), 4, y + ADD - 4, nd - 2);
-  if (list) host.innerHTML = players + save + add + graph;
+  /* the awards sit above the graph, each in a rectangle of its own; then the graph; then the History box */
+  const awards = mjAwards(), AW = awards ? 116 : 0, GT = 4 + (AW && AW + 8);
+  const awardsB = awards ? block("mjawb", "mj:awards", "#E0303A", awards, 4, AW, nd - 2) : "";
+  const GH = Math.max(y + ADD - GT, 260), HB = 40, HO = 280;
+  const graph = block("mjchart", "mj:graph", "#E0303A", `<b class="mjct">Over time</b>` +
+    (mj.rounds.length ? `<div class="mjline"></div>` : `<p class="mjnone">Nothing here until the first game</p>`), GT, GH, nd - 2);
+  const hist = block("mjhist" + (mjHist ? " hopen" : ""), "mj:history", "#E0303A", mjHistHtml(), GT + GH + 8, mjHist ? HO : HB, nd - 2);
+  const colH = Math.max(H, GT + GH + 8 + (mjHist ? HO : HB) + 8);
+  if (list) host.innerHTML = players + save + add + awardsB + graph + hist;
   else {
     const head = (t, span) => `<div class="dh" style="grid-column:span ${span}"><span class="n">${t}</span></div>`;
     host.innerHTML = `<div></div>` + head("Standings", 2) + head("Over time", nd - 2) + `<div></div><div></div>` +
-      [players + save + add, "", graph, ...Array(nd - 3).fill("")].map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+      [players + save + add, "", awardsB + graph + hist, ...Array(nd - 3).fill("")].map(c => `<div class="col" style="height:${colH}px">${c}</div>`).join("") + `<div></div>`;
   }
   const box = host.querySelector(".mjline");       /* once it's on the page, to measure it */
   if (box) box.innerHTML = mjGraph(box.clientWidth, box.clientHeight);
   const addP = () => { const v = $("mjname").value.trim(); if (v) mjAct({ action:"player", name:v }); };
   const saveGame = () => { const d = {}; for (const id in mjDraft){ const v = Math.round(+mjDraft[id]); if (v) d[id] = v; }
     if (Object.keys(d).length) mjAct({ action:"round", d }); };
+  const hb = host.querySelector(".mjhbar");
+  if (hb) hb.onclick = () => { mjHist = !mjHist; shiftWeek(() => {}); };       /* the box opens or shrinks like the other blocks move */
   $("mjadd").onclick = addP;
   $("mjname").onkeydown = e => { if (e.key === "Enter") addP(); };
   host.querySelectorAll(".mjin").forEach(i => {
@@ -4103,6 +4266,262 @@ function renderMj(nd){
   if ($("mjsave")) $("mjsave").onclick = saveGame;
   if ($("mjundo")) $("mjundo").onclick = () => { if (confirm("Undo the last game?")) mjAct({ action:"undo" }); };
 }
+/* ═══ sign-in modules ═══
+   Until there is a login, the week is a few modules: a username, a password
+   and a button. Signing in turns them into the timetable, like any other
+   switch of the week. The login is the main site's (tt.creds), kept on this device, and
+   changed from Settings afterwards. */
+/* a view made of placed blocks: mk gets block(cls, who, colour, y, h, body) and returns the blocks; they go in column startCol, spanning `span` days */
+function blockHost(nd, title, H, mk, span, startCol){
+  const list = phone.matches, host = $(list ? "daylist" : "g");
+  const block = (cls, who, c, y, h, body) => `<div class="mjb ${cls}" data-sig="${who}" data-who="${who}" style="--c:${c};--h:${h}px;${list ? "" : `top:${y}px;height:${h}px;right:calc(${1 - span} * (100% + 8px))`}">${body}</div>`;
+  const cells = mk(block);
+  if (list) host.innerHTML = cells.join("");
+  else {
+    const cols = Array.from({ length:nd }, (_, k) => k === startCol ? cells.join("") : "");
+    if (typeof H === "function") H = H();
+    host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">${title}</span></div><div></div><div></div>` +
+      cols.map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
+  }
+  return host;
+}
+const viewH = () => Math.max(560, innerHeight - 174);
+function loginPaint(){
+  if ($("lgnote")) $("lgnote").textContent = loginNote;
+  if ($("lggo")){ $("lggo").textContent = loginBusy ? "Signing in…" : "Show my timetable"; $("lggo").disabled = loginBusy; }
+}
+function renderLogin(nd){
+  const span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
+  const host = blockHost(nd, "Sign in", viewH(), block => [
+    block("lgb", "lg:head", "#0A84FF", 4, 112, `<div class="lgin"><b>Sign in</b><small>Your timetable loads with your own school login. It stays on this device and goes straight to the timetable service.</small><small class="lgerr" id="lgnote" role="alert"></small></div>`),
+    block("lgb", "lg:user", "#5E5CE6", 124, 60, `<label class="lgf"><input class="fin" id="lgu" value="${esc(loginUser)}" placeholder="first.last1" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="School username"><span>@${DOMAIN}</span></label>`),
+    block("lgb", "lg:pass", "#30B0C7", 192, 60, `<label class="lgf"><input class="fin" id="lgp" type="password" value="${esc(loginPass)}" placeholder="School password" autocomplete="current-password" aria-label="School password"></label>`),
+    block("lgb", "lg:go", "#0A84FF", 260, 56, `<button class="lggo" id="lggo" type="button">Show my timetable</button>`)
+  ], span, at);
+  loginPaint();
+  $("lgu").oninput = e => loginUser = e.target.value;
+  $("lgp").oninput = e => loginPass = e.target.value;
+  host.querySelectorAll(".lgb input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") doLogin(); });
+  $("lggo").onclick = doLogin;
+}
+/* try a login; throws the school's message if it isn't accepted */
+async function tryLogin(user, pass){
+  const prev = { creds, email };
+  creds = { email:user + "@" + DOMAIN, password:pass }; syncSigned();
+  if (!email){ email = creds.email; input.value = user; fit(); naming(); }
+  localStorage.removeItem(LS.cache);
+  await load();
+  if (loadError){
+    /* local copies call the live API, which only lets in port 3000 (api/timetable.js LOCAL_PREVIEW_ORIGINS) */
+    const msg = API_ORIGIN && /failed to fetch|load failed|networkerror/i.test(loadError)
+      ? "The timetable service won't answer " + location.origin + ". Open this page on port 3000, or on the live site." : loadError;
+    creds = prev.creds; email = prev.email; syncSigned(); loadError = "";
+    if (signedIn) load();             /* a wrong one typed in Settings: the old login's timetable back */
+    throw new Error(msg);
+  }
+  set(LS.creds, creds); set(LS.email, email);
+  fm = pl = mj = null; loadMj(); loadBusy(); loadBirthdays();
+}
+async function doLogin(){
+  if (loginBusy) return;
+  const user = loginUser.trim().toLowerCase().split("@")[0];
+  if (!/^[a-z0-9][a-z0-9._-]*$/.test(user)){ loginNote = "That does not look like a school username."; loginPaint(); return; }
+  if (!loginPass){ loginNote = "Enter your school password."; loginPaint(); return; }
+  loginBusy = true; loginNote = ""; loginPaint();
+  try { await tryLogin(user, loginPass); }
+  catch (e){ loginBusy = false; loginNote = e.message; loginPaint(); return; }
+  loginBusy = false; loginPass = "";
+  document.activeElement.blur();
+  shiftWeek(() => loginShow = false);           /* the sign-in modules leave, the timetable arrives */
+}
+function renderCreds(){
+  $("cr_email").value = creds ? String(creds.email || "").split("@")[0] : "";
+  $("cr_pass").value = creds ? creds.password : "";
+  $("cr_state").textContent = signedIn ? "Signed in as " + creds.email : "Not signed in";
+}
+$("cr_save").onclick = async () => {
+  const user = $("cr_email").value.trim().toLowerCase().split("@")[0], pass = $("cr_pass").value;
+  if (!user || !pass){ $("cr_state").textContent = "Enter both a username and a password."; return; }
+  $("cr_state").textContent = "Checking…";
+  try { await tryLogin(user, pass); renderCreds(); }
+  catch (e){ $("cr_state").textContent = e.message; }
+};
+$("cr_clear").onclick = () => {
+  creds = null; set(LS.creds, null); syncSigned(); localStorage.removeItem(LS.cache);
+  entries = []; slots = []; fm = pl = null;
+  openSettings(false); renderCreds();
+  if (view === "month") setViewNow("week");
+  shiftWeek(() => { mjLeave(); loginShow = true; });
+};
+
+/* ═══ Forum: the home-page forum (/api/forum) as a chat ═══ */
+const fmAgo = iso => {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  return !isFinite(s) ? "" : s < 60 ? "just now" : s < 3600 ? Math.floor(s / 60) + "m ago" : s < 86400 ? Math.floor(s / 3600) + "h ago" : s < 604800 ? Math.floor(s / 86400) + "d ago"
+    : new Date(iso).toLocaleDateString(undefined, { day:"numeric", month:"short" });
+};
+/* the forum's blocks, newest thread first, each reply under its thread; w = the width a block takes across the days */
+let fmW = "";
+function fmBlocks(){
+  const box = (cls, who, c, body, rp) => `<div class="mjb fmm${cls}" data-sig="fm:${who}" data-who="fm:${who}" style="--c:${c};${fmW && `width:calc(${fmW} - ${rp ? 32 : 0}px)`}">${body}</div>`;
+  const note = t => box(" fmmsg", "note", "#8E8E93", `<p class="fmnone">${esc(t)}</p>`);
+  if (fmNote) return note(fmNote);
+  if (!fm) return note("Loading…");
+  if (!fm.length) return note("Nothing here yet. Say the first thing.");
+  const msg = (p, t, rp) => box(" fmmsg" + (rp ? " rp" : ""), p.id, bdColour(p.name || "?"),
+    `<div class="fmmeta"><b>${esc(p.name)}</b>${esc(fmAgo(p.at))}</div><div class="fmtxt">${esc(p.body)}</div>` +
+    `<div class="fmact">${rp ? "" : `<button data-reply="${esc(t.id)}" data-name="${esc(t.name)}">Reply</button>`}${p.mine ? `<button data-del="${esc(p.id)}">Delete</button>` : ""}</div>`, rp);
+  return fm.map(t => msg(t, t, false) + (t.replies || []).map(r => msg(r, t, true)).join("")).join("");
+}
+/* new posts: swap the message blocks under the box you type in, leaving it (and what's typed) alone */
+function paintForum(){
+  if (!fmShow) return;
+  const top = $("fmnew");
+  if (!top){ render(); return; }
+  top.parentElement.querySelectorAll(".fmmsg").forEach(el => el.remove());
+  top.insertAdjacentHTML("afterend", fmBlocks());
+}
+function paintReply(){
+  const r = $("fmrep"); if (!r) return;
+  r.hidden = !fmReply;
+  if (fmReply) r.querySelector("span").textContent = "Replying to " + fmReply.name;
+}
+const loadForum = () => call("/api/forum").then(d => { fm = d.posts || []; fmNote = ""; paintForum(); }, e => { fmNote = e.message; paintForum(); });
+async function sendForum(){
+  const text = fmDraft.trim();
+  if (!text) return;
+  $("fmsend").disabled = true;
+  try {
+    await call("/api/forum", { body:{ body:text, parent:fmReply ? fmReply.id : undefined } });
+    fmDraft = ""; $("fmin").value = ""; fmReply = null; paintReply();
+    await loadForum();
+  } catch (e){ fmNote = e.message; paintForum(); }
+  if ($("fmsend")) $("fmsend").disabled = false;
+}
+function renderForum(nd){
+  const list = phone.matches, host = $(list ? "daylist" : "g"), span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
+  fmW = list ? "" : `${span} * (100% + 8px) - 8px`;
+  const top = `<div class="mjb fmm fmnew" id="fmnew" data-sig="fm:new" data-who="fm:new" style="--c:#30B0C7;${fmW && `width:calc(${fmW})`}">` +
+    `<div class="fmrep" id="fmrep" hidden><span></span><button class="btn sm" id="fmcancel" type="button">Cancel</button></div>` +
+    `<div class="fmrow"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Say something…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div></div>`;
+  const cells = top + fmBlocks();
+  if (list) host.innerHTML = cells;
+  else host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Forum</span></div><div></div><div></div>` +
+    Array.from({ length:nd }, (_, k) => `<div class="col" style="min-height:${viewH()}px">${k === at ? cells : ""}</div>`).join("") + `<div></div>`;
+  host.onclick = e => {
+    const b = e.target.closest(".fmmsg button");
+    if (!b) return;
+    if (b.dataset.reply){ fmReply = { id:b.dataset.reply, name:b.dataset.name }; paintReply(); $("fmin").focus(); }
+    else if (b.dataset.del){ b.disabled = true; call("/api/forum", { body:{ action:"delete", id:b.dataset.del } }).then(loadForum, e2 => { fmNote = e2.message; paintForum(); }); }
+  };
+  $("fmin").oninput = e => fmDraft = e.target.value;
+  $("fmin").onkeydown = e => { if (e.key === "Enter") sendForum(); };
+  $("fmsend").onclick = sendForum;
+  $("fmcancel").onclick = () => { fmReply = null; paintReply(); };
+  paintReply();
+}
+setInterval(() => { if (fmShow && !loginShow) loadForum(); }, 15000);
+
+/* ═══ Poll: the main site's weekly anonymous poll, from the same server data
+   (/api/forum?poll=1), so questions, votes and results are the same on both.
+   Left to the main site: the Monday/Friday shows, past polls, suggesting a question. ═══ */
+const plMineKey = w => "poll.mine." + w;        /* the main site's own device-only key, so "your pick" matches */
+const plFold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+const plDur = sec => { sec = Math.max(0, sec | 0); const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.max(1, Math.floor(sec % 3600 / 60)); return d ? d + "d " + h + "h" : h ? h + "h " + m + "m" : m + "m"; };
+const plLeft = k => Math.max(0, ((pl && pl.clock && pl.clock[k]) || 0) - (Date.now() - plAt) / 1000);
+const plMine = w => { try { const v = JSON.parse(localStorage.getItem(plMineKey(w))); return (Array.isArray(v) ? v : v ? [String(v)] : []).map(plFold); } catch { return []; } };
+const loadPoll = () => call("/api/forum", { query:{ poll:1 } }).then(d => {
+  if (!pl || !pl.poll || !d.poll || pl.poll.week !== d.poll.week) plChosen = [];
+  pl = d; plAt = Date.now(); plNote = ""; if (plShow) render();
+}, e => { plNote = e.message; if (plShow) render(); });
+async function votePoll(){
+  const p = pl && pl.poll;
+  if (plBusy || !p || !plChosen.length) return;
+  plBusy = true; plNote = "";
+  const labels = plChosen.map(id => (p.options.find(o => o.id === id) || {}).label);
+  try {
+    const r = await call("/api/forum", { body:{ action:"pollvote", week:p.week, choice:(p.pick || 1) > 1 ? plChosen : plChosen[0] } });
+    try { localStorage.setItem(plMineKey(p.week), JSON.stringify(labels)); } catch {}
+    p.voted = true; p.total = r.total || p.total + 1; p.results = r.results || null; p.others = r.others || 0; plChosen = [];
+  } catch (e){ plNote = e.message; if (/already/i.test(e.message)) loadPoll(); }
+  plBusy = false; render();
+}
+const CHIPS_UP_TO = 12;
+let plNd = 5;
+function renderPoll(nd){
+  plNd = nd;
+  const d = pl, p = d && d.poll, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1), COLS = ["#FFCC00", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"];
+  let y = 4, k = 0;
+  const host = blockHost(nd, "Poll", () => Math.max(viewH(), y + 4), block => {
+    const out = [], add = (cls, who, h, body) => { out.push(block(cls, who, COLS[k++ % 5], y, h, body)); y += h + 8; };
+    const head = (q, sub) => add("plb", "pl:q", 96, `<div class="plq"><b>${esc(q)}</b><small>${esc(sub)}</small></div>`);
+    const bars = (results, mine, win) => (results || []).slice(0, 6).forEach((r, i) =>
+      add("plb", "pl:r" + i, 52, `<div class="plo plr${mine.includes(plFold(r.label)) ? " mine" : ""}"><i class="mjfill" style="width:${r.pct}%"></i><span>${win && !i ? "🏆 " : ""}${esc(r.label)}${mine.includes(plFold(r.label)) ? " ✓" : ""}</span><b class="tnum">${r.pct}%</b></div>`));
+    if (!d) return head("Poll", plNote || "Loading…"), out;
+    if (!p){
+      const l = d.last;
+      if (!l) return head("No poll right now", plNote || (d.clock ? "A new question opens in " + plDur(plLeft("nextIn")) : "Check back Monday")), out;
+      head("Last poll: " + l.question, (l.total || 0) + (l.total === 1 ? " voter" : " voters") + " · next question in " + plDur(plLeft("nextIn")));
+      bars(l.results, [], true);
+      return out;
+    }
+    const open = p.phase === "open", many = (p.pick || 1) > 1;
+    head(p.question, plNote || (open ? "Closes in " + plDur(plLeft("resultsIn")) : "Voting's closed · next question in " + plDur(plLeft("nextIn"))) + (p.voted || !p.canVote ? "" : " · anonymous") + (p.total ? " · " + p.total + (p.total === 1 ? " voter" : " voters") : ""));
+    if (p.results){ bars(p.results, plMine(p.week), !open); return out; }
+    if (!p.canVote){ add("plb", "pl:n", 64, `<div class="plq"><small>${esc(p.optionsError ? "Couldn't load the answers. Try again soon." : open ? "This poll isn't open to you." : "Voting's closed. Come back on Monday for the next question.")}</small></div>`); return out; }
+    const opts = p.options || [], chip = opts.length <= CHIPS_UP_TO;
+    let shown = opts;
+    if (!chip){
+      add("plb", "pl:in", 60, `<label class="lgf"><input class="fin" id="plin" type="search" value="${esc(plQuery)}" placeholder="Type a ${p.kind === "teacher" ? "teacher's" : p.kind === "class" ? "class" : p.kind === "period" ? "period" : "name"}…" autocomplete="off" spellcheck="false" aria-label="Your answer"></label>`);
+      const words = plFold(plQuery).split(/\s+/).filter(Boolean);
+      shown = words.length ? opts.filter(o => { const parts = plFold(o.label).split(/[\s'’-]+/); return words.every(w => parts.some(x => x.startsWith(w))); }).slice(0, 5) : [];
+      shown = [...opts.filter(o => plChosen.includes(o.id) && !shown.includes(o)), ...shown];
+    }
+    shown.forEach(o => add("plb", "pl:o" + o.id, 52, `<button class="plo${plChosen.includes(o.id) ? " mine" : ""}" data-id="${esc(o.id)}"><span>${esc(o.label)}${plChosen.includes(o.id) ? " ✓" : ""}</span></button>`));
+    add("plb", "pl:go", 56, `<button class="lggo" id="plgo" type="button"${plChosen.length && (!p.exact || plChosen.length === p.pick) ? "" : " disabled"}>${many ? "Vote (" + plChosen.length + " of " + p.pick + ")" : "Vote"}</button>`);
+    return out;
+  }, span, at);
+  if (!p || !p.canVote || p.voted || p.phase !== "open") return;
+  const most = p.pick || 1;
+  host.querySelectorAll(".plo[data-id]").forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    plChosen = most === 1 ? [id] : plChosen.includes(id) ? plChosen.filter(x => x !== id) : plChosen.length < most ? [...plChosen, id] : plChosen;
+    plRedraw();
+  });
+  if ($("plgo")) $("plgo").onclick = votePoll;
+  const box = $("plin");
+  if (box){
+    box.oninput = () => { plQuery = box.value; plRedraw(true); };
+    box.onkeydown = e => { if (e.key === "Enter" && plChosen.length) votePoll(); };
+  }
+}
+/* a redraw that keeps the typing box (render() leaves the page alone while one is focused) */
+function plRedraw(typing){
+  const box = $("plin"), pos = box ? box.selectionStart : 0;
+  renderPoll(plNd);
+  if (typing && $("plin")){ $("plin").focus(); $("plin").setSelectionRange(pos, pos); }
+}
+
+function paintFpTiles(){
+  for (const [m, on, st] of [["forum", fmShow, "fmstate"], ["poll", plShow, "plstate"]]){
+    const tile = document.querySelector(`[data-m="${m}"]`);
+    tile.classList.toggle("on", on);
+    tile.querySelector(".mod-head").setAttribute("aria-pressed", on);
+    $(st).textContent = on ? "· On" : "";
+  }
+}
+function toggleFp(which){
+  if (loginShow) return;
+  document.activeElement.blur();
+  const flip = () => { const on = which === "fm" ? !fmShow : !plShow; mjLeave(); if (which === "fm") fmShow = on; else plShow = on; paintFpTiles(); }, go = () => shiftWeek(flip);
+  if (which === "fm") loadForum(); else loadPoll();
+  if (view !== "month"){ go(); return; }
+  toggleCalendar();
+  if (viewTurn) viewTurn.then(go); else go();
+}
+tileHead("forum", () => toggleFp("fm"));
+tileHead("poll", () => toggleFp("pl"));
+renderCreds();
 loadMj();
 /* Escape: out of the editor first, then the open tile closes */
 addEventListener("keydown", e => {
@@ -4133,8 +4552,7 @@ tileHead("calendar", () => toggleCalendar());
 setInterval(() => { if (!turning && !monthTurn && !viewTurn && !dayRun) render(); }, 30000);     /* keep "now" and past lessons current, but never mid-turn */
 layoutMods();
 paintTiles();
-load();
-loadBusy();
+if (signedIn){ load(); loadBusy(); } else render();   /* no login yet: the sign-in modules */
 </script>
 
 </body></html>
