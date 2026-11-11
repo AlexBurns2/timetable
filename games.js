@@ -1361,12 +1361,25 @@ BUILD.quartets = host => {
   const seeded = (list, seed) => { let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const a = list.slice(); for (let i = a.length - 1; i > 0; i--){ h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-  async function loadDay(date){
-    box.innerHTML = LD(date ? 'Loading that day…' : 'Loading today’s puzzle…', date ? '' : 'The first one each day takes a few seconds to make.');
-    let s;
+  /* If the puzzle isn't there yet (or the request fails), it asks again by
+     itself, a little later each time, with the loader still showing; there's
+     nothing for the player to press. */
+  let retryTimer = null, tries = 0;
+  async function loadDay(date, again){
+    clearTimeout(retryTimer);
+    if (!again){ tries = 0; box.innerHTML = LD(date ? 'Loading that day…' : 'Loading today’s puzzle…', date ? '' : 'The first one each day takes a few seconds to make.'); }
+    let s = null;
     try { s = await TT.api('/api/daily', { params: Object.assign({ conn:1 }, date ? { date } : {}) }); }
-    catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message || 'Couldn’t load Quartets.') + '</p>'; return; }
-    if (alive) play(s);
+    catch (e){ s = null; }
+    if (!alive) return;
+    if (!s || s.none){
+      tries++;
+      if (tries === 1 && !document.querySelector('#qt .ld'))
+        box.innerHTML = LD(date ? 'Making that day’s puzzle…' : 'Making today’s puzzle…', 'Still working on it…');
+      retryTimer = setTimeout(() => { if (alive) loadDay(date, true); }, Math.min(30000, 2500 * tries));
+      return;
+    }
+    play(s);
   }
   loadDay(null);
 
@@ -1384,11 +1397,6 @@ BUILD.quartets = host => {
 
   function play(s){
     cur = s;
-    /* only if it couldn't be made just now (nothing was kept, so trying again makes it) */
-    if (s.none){
-      box.innerHTML = topBar(s, 0) + '<p class="how">This puzzle couldn’t be made just now.</p><button type="button" class="dgchip" id="qtretry">Try again</button>';
-      wireBar(s); $('qtretry').onclick = () => loadDay(s.date === s.today ? null : s.date); return;
-    }
     const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
     const lvOf = new Map(), howOf = new Map();
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
@@ -1630,7 +1638,7 @@ BUILD.quartets = host => {
     });
     el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
   }
-  return () => { alive = false; };
+  return () => { alive = false; clearTimeout(retryTimer); };
 };
 
 /* ── Tetris ────────────────────────────────────────────────────────

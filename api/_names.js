@@ -75,26 +75,34 @@ let roster = null, rosterAt = 0;
 const ROSTER_TTL = 15 * 60e3, ROSTER_STALE = 36 * 3600e3;
 export async function rosterList() {
   if (roster && Date.now() - rosterAt < ROSTER_TTL) return roster;
+  let rows = [];
   if (db) {
     try {
-      const rows = [];
       for (let from = 0; from < 10000; from += 1000) {           // a page at a time (the database hands back 1,000 at most)
         const { data, error } = await db.from("student_cache").select("email, first, last, year, has_classes, updated_at").order("email").range(from, from + 999);
         if (error) throw new Error(error.message);
         rows.push(...(data || []));
         if (!data || data.length < 1000) break;
       }
-      const newest = rows.reduce((a, r) => Math.max(a, Date.parse(r.updated_at) || 0), 0);
-      if (rows.length && Date.now() - newest < ROSTER_STALE) {
-        roster = rows.map(r => ({ email: r.email, first: r.first || "", last: r.last || "", year: r.year == null ? null : +r.year,
-                                  hasClasses: r.has_classes == null ? null : !!r.has_classes }));
-        rosterAt = Date.now();
-        return roster;
-      }
-    } catch (e) { /* no table yet, or it failed: the school directory instead */ }
+    } catch (e) { rows = []; /* no table yet, or it failed: the school directory instead */ }
   }
+  /* Only rows the nightly job filled (a name and a year) make a roster, and only
+     when there are enough of them and they're recent. (A row can exist with just
+     an email: an older version noted who has classes before the table was
+     filled. Taking those as the roster left every year empty.) */
+  const full = rows.filter(r => r.email && r.first && r.last && r.year != null);
+  const newest = full.reduce((a, r) => Math.max(a, Date.parse(r.updated_at) || 0), 0);
+  if (full.length >= 50 && Date.now() - newest < ROSTER_STALE) {
+    roster = full.map(r => ({ email: r.email, first: r.first, last: r.last, year: +r.year,
+                              hasClasses: r.has_classes == null ? null : !!r.has_classes }));
+    rosterAt = Date.now();
+    return roster;
+  }
+  /* the school directory, with whatever's known about classes from the table */
   const { studentDirectory } = await import("./timetable.js");
-  roster = await studentDirectory(); rosterAt = Date.now();
+  const has = new Map(rows.filter(r => r.has_classes != null).map(r => [r.email, !!r.has_classes]));
+  roster = (await studentDirectory()).map(p => has.has(p.email) ? { ...p, hasClasses: has.get(p.email) } : p);
+  rosterAt = Date.now();
   return roster;
 }
 /* the nightly job: copy the school directory into student_cache (adds and updates; never deletes) */
@@ -121,19 +129,30 @@ export const hasClassesIn = raw => {
   return Array.isArray(rows) ? rows.length > 0 : null;                  // can't tell: don't guess
 };
 export async function noClassesSet() {
-  try { return new Set((await rosterList()).filter(p => p.hasClasses === false).map(p => p.email)); }
-  catch { return new Set(); }
+  try {
+    const all = await rosterList(), none = all.filter(p => p.hasClasses === false).map(p => p.email);
+    if (none.length > all.length * 0.3) { console.warn("no-classes list ignored: " + none.length + " of " + all.length); return new Set(); }   // can't be right
+    return new Set(none);
+  } catch { return new Set(); }
 }
-/* remember what timetables showed: Map(email → true / false) */
+/* remember what timetables showed: Map(email → true / false). Only updates
+   students already in the table (the nightly job adds them, with their names);
+   it never adds a row. If most came back empty, the school's system was
+   probably having a moment: the "no classes" ones aren't saved. */
 export async function markClasses(marks) {
   if (!db || !marks || !marks.size) return;
   const now = new Date().toISOString();
-  const rows = [...marks].filter(([, v]) => v === true || v === false).map(([email, has]) => ({ email, has_classes: has, classes_checked: now }));
-  for (let i = 0; i < rows.length; i += 500) {
-    const { error } = await db.from("student_cache").upsert(rows.slice(i, i + 500), { onConflict: "email" });
-    if (error) { console.warn("class check save:", error.message); return; }
+  const yes = [...marks].filter(([, v]) => v === true).map(([e]) => e);
+  let no = [...marks].filter(([, v]) => v === false).map(([e]) => e);
+  if (no.length >= 5 && no.length > (yes.length + no.length) / 2) { console.warn("class check: " + no.length + " empty timetables, not saved"); no = []; }
+  for (const [list, has] of [[yes, true], [no, false]]) {
+    for (let i = 0; i < list.length; i += 150) {
+      const { error } = await db.from("student_cache").update({ has_classes: has, classes_checked: now }).in("email", list.slice(i, i + 150));
+      if (error) { console.warn("class check save:", error.message); return; }
+    }
   }
-  if (roster) roster.forEach(p => { if (marks.has(p.email) && marks.get(p.email) != null) p.hasClasses = marks.get(p.email); });
+  const saved = new Map([...yes.map(e => [e, true]), ...no.map(e => [e, false])]);
+  if (roster) roster.forEach(p => { if (saved.has(p.email)) p.hasClasses = saved.get(p.email); });
 }
 /* the nightly job: check a batch of students not checked lately (never, or over two weeks ago) */
 export async function checkSomeClasses(budgetMs) {
