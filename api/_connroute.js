@@ -142,6 +142,14 @@ async function summaryFor(year, date, groups, NAMES) {
   return { played: rows.length, solved: solvedRows.length, chances: MAX_MISTAKES, dist, names, found, spotlight };
 }
 
+/* the nightly job (api/daily-generate.js) makes each year's puzzle ahead of time,
+   so the first player of the day doesn't wait while it's made */
+export async function prebuildQuartets(year, date, NAMES) {
+  await dropOldVersions(String(year));
+  const groups = await ensureConn(String(year), date, NAMES);
+  return Array.isArray(groups) && groups.length === 4 ? "ok" : "none";
+}
+
 async function streakFor(email, today) {
   const { data } = await db.from("conn_result").select("date").eq("email", email).eq("solved", true)
     .order("date", { ascending: false }).limit(120);

@@ -65,14 +65,58 @@ export function forgetNameOverrides() { cache = null; cachedAt = 0; }
    name the person no longer uses. Routes load this once per request:
      NAMES = await displayNames();  …  withName(NAMES, email, fallback)
    If the school directory can't be reached, it is overrides only, as before. */
+/* The year lists, fast: a copy of the school's student directory kept in the
+   student_cache table and refreshed by the nightly job (refreshRosterCache), so
+   a function waking up reads one table instead of asking the school's system.
+   Falls back to the school directory itself if the copy is missing (the table
+   not made yet) or more than a day and a half old.
+   Returns [{ email, first, last, year }], the same shape as studentDirectory(). */
+let roster = null, rosterAt = 0;
+const ROSTER_TTL = 15 * 60e3, ROSTER_STALE = 36 * 3600e3;
+export async function rosterList() {
+  if (roster && Date.now() - rosterAt < ROSTER_TTL) return roster;
+  if (db) {
+    try {
+      const rows = [];
+      for (let from = 0; from < 10000; from += 1000) {           // a page at a time (the database hands back 1,000 at most)
+        const { data, error } = await db.from("student_cache").select("email, first, last, year, updated_at").order("email").range(from, from + 999);
+        if (error) throw new Error(error.message);
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      const newest = rows.reduce((a, r) => Math.max(a, Date.parse(r.updated_at) || 0), 0);
+      if (rows.length && Date.now() - newest < ROSTER_STALE) {
+        roster = rows.map(r => ({ email: r.email, first: r.first || "", last: r.last || "", year: r.year == null ? null : +r.year }));
+        rosterAt = Date.now();
+        return roster;
+      }
+    } catch (e) { /* no table yet, or it failed: the school directory instead */ }
+  }
+  const { studentDirectory } = await import("./timetable.js");
+  roster = await studentDirectory(); rosterAt = Date.now();
+  return roster;
+}
+/* the nightly job: copy the school directory into student_cache (adds and updates; never deletes) */
+export async function refreshRosterCache() {
+  if (!db) return 0;
+  const { studentDirectory } = await import("./timetable.js");
+  const list = await studentDirectory(), now = new Date().toISOString();
+  for (let i = 0; i < list.length; i += 500) {
+    const { error } = await db.from("student_cache").upsert(list.slice(i, i + 500)
+      .map(p => ({ email: p.email, first: p.first || "", last: p.last || "", year: p.year || null, updated_at: now })), { onConflict: "email" });
+    if (error) throw new Error(error.message);
+  }
+  roster = list; rosterAt = Date.now();
+  return list.length;
+}
+
 let dirNames = null, dirAt = 0, dirFailAt = 0;
 const DIR_TTL = 6 * 3600e3;
 async function directoryNames() {
   if (dirNames && Date.now() - dirAt < DIR_TTL) return dirNames;
   if (Date.now() - dirFailAt < 60_000) return dirNames || new Map();
   try {
-    const { studentDirectory } = await import("./timetable.js");
-    const list = await Promise.race([studentDirectory(),
+    const list = await Promise.race([rosterList(),
       new Promise((_, rej) => setTimeout(() => rej(new Error("directory timed out")), 4000))]);
     dirNames = new Map((list || []).filter(p => p.email && (p.first || p.last))
       .map(p => [String(p.email).toLowerCase(), [p.first, p.last].filter(Boolean).join(" ")]));

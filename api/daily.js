@@ -18,7 +18,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
-import { displayNames, withName, stripEmails } from "./_names.js";
+import { displayNames, withName, stripEmails, rosterList } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -66,8 +66,7 @@ function nameFromEmail(email) {
 async function candidatesFor(year, stored, answer) {
   let list = null;
   try {
-    const { studentDirectory } = await import("./timetable.js");
-    list = (await studentDirectory()).filter(p => String(p.year) === String(year) && p.first && p.last)
+    list = (await rosterList()).filter(p => String(p.year) === String(year) && p.first && p.last)
       .map(p => withName(NAMES, p.email, p.first + " " + p.last));
   } catch { list = null; }
   if (!list || !list.length) list = (stored || []).slice();

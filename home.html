@@ -81,6 +81,10 @@ const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Satur
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CYCLE = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
+/* the forum and this week's poll in one trip, started straight away; the forum
+   and the poll card each take their half the first time they load */
+const firstLoad = signedIn ? { at: Date.now(), p: TT.api('/api/forum', { params:{ withpoll:1 } }) } : null;
+if (firstLoad) firstLoad.p.catch(() => {});
 const userOf = e => String(e || '').toLowerCase().split('@')[0];
 function ownPayload(){
   const c = TT.get('tt.cache', null), cr = TT.get('tt.creds', null);
@@ -284,7 +288,7 @@ $('fmore').onclick = () => {
 };
 async function loadForum(){
   try {
-    const d = await TT.api('/api/forum');
+    const d = firstLoad && !firstLoad.forumUsed ? (firstLoad.forumUsed = true, await firstLoad.p) : await TT.api('/api/forum');
     lastPosts = d.posts || [];
     renderForum(lastPosts);
   } catch (e){
@@ -388,6 +392,8 @@ loadForum();
   if (!window.Poll) { open(); return; }
   Poll.mount(document.getElementById('poll'), {
     signedIn,
+    /* its first load comes with the forum's (see firstLoad); null means it failed */
+    initial: firstLoad ? { at: firstLoad.at, p: firstLoad.p.then(d => d && d.poll ? d.poll : Promise.reject(new Error('no poll'))) } : null,
     onVoted: () => setTimeout(open, 1400),
     onDraw: p => { if (!p || p.voted || (!p.signedOut && !p.canVote)) open(); }
   });

@@ -25,7 +25,7 @@
 
 /* The generator's version. Puzzles made by an older one are deleted and made
    again (see _connroute.js); bump this whenever the categories or rules change. */
-export const QUARTETS_VERSION = 6;
+export const QUARTETS_VERSION = 7;
 
 /* ── small word lists (lower case) ─────────────────────────────────── */
 const L = s => s.split(' ');
@@ -69,6 +69,20 @@ const PM_LAST = { rudd:'Kevin Rudd', gillard:'Julia Gillard', abbott:'Tony Abbot
   holt:'Harold Holt', menzies:'Robert Menzies', mcmahon:'William McMahon', gorton:'John Gorton', chifley:'Ben Chifley', curtin:'John Curtin',
   lyons:'Joseph Lyons', hughes:'Billy Hughes', deakin:'Alfred Deakin', barton:'Edmund Barton', cook:'Joseph Cook', fisher:'Andrew Fisher',
   reid:'George Reid', watson:'Chris Watson', bruce:'Stanley Bruce', scullin:'James Scullin', page:'Earle Page', fadden:'Arthur Fadden', mcewen:'John McEwen' };
+/* British kings and queens, by the name people know (Charlie for Charles) */
+const MONARCH = { william:'King William', henry:'King Henry VIII', edward:'King Edward', richard:'King Richard III', john:'King John',
+  george:'King George', james:'King James', charles:'King Charles III', charlie:'King Charles III', victoria:'Queen Victoria',
+  elizabeth:'Queen Elizabeth II', mary:'Queen Mary', anne:'Queen Anne', matilda:'Empress Matilda', stephen:'King Stephen',
+  harold:'King Harold', alfred:'Alfred the Great' };
+/* first names that are also places people would know */
+const FPLACE = { georgia:'a country and a US state', victoria:'an Australian state', jordan:'a country', sydney:'a city', adelaide:'a city',
+  perth:'a city', darwin:'a city', hobart:'a city', florence:'a city in Italy', paris:'a city', london:'a city', rome:'a city', milan:'a city in Italy',
+  york:'a city in England', brooklyn:'part of New York', austin:'a city in Texas', dallas:'a city in Texas', phoenix:'a city in Arizona',
+  denver:'a city in Colorado', madison:'a city in Wisconsin', dakota:'two US states', carolina:'two US states', virginia:'a US state',
+  savannah:'a city in Georgia, USA', india:'a country', kenya:'a country', chelsea:'part of London', camden:'part of London',
+  vienna:'a city in Austria', sofia:'a city in Bulgaria', santiago:'a city in Chile', lima:'a city in Peru', cairo:'a city in Egypt',
+  lincoln:'a city in England', chester:'a city in England', preston:'a city in England', kent:'a county in England', devon:'a county in England',
+  kerry:'a county in Ireland', shannon:'a river in Ireland', asia:'a continent', africa:'a continent', america:'a continent' };
 const BODY_HIDDEN = L('arm leg ear eye lip hip toe chin shin knee nose hand neck back heel nail skin hair lung brow cheek palm wrist ankle thumb');
 const TWO_WORDS = new Set(L('am an as at be by do go he hi if in is it me my no of oh ok on or so to up us we ox ax'));
 const SYMBOLS = new Set(L('He Li Be Ne Na Mg Al Si Cl Ar Ca Fe Co Ni Cu Zn Ag Sn Au Hg Pb Pt Ra Rn Kr Xe Br Mn Cr Ti'));
@@ -94,6 +108,8 @@ export function nameFeatures(first, last){
   else if (ANIMALS.has(l)) add(1, 'animal', 'Surnames that are animals');
   if (PLACES.has(l)) add(1, 'place', 'Surnames that are places');
   if (POP[f]) add(1, 'pop', 'First name shared with a famous singer', POP[f]);
+  if (MONARCH[f]) add(1, 'monarch', 'Share a first name with a British king or queen', MONARCH[f]);
+  if (FPLACE[f]) add(1, 'fplace', 'First names that are also places', FPLACE[f]);
   if (PM_FIRST[f] || PM_LAST[l]) add(1, 'pm', 'Share a name with an Australian prime minister', PM_LAST[l] || PM_FIRST[f]);
   if (f.length === 3) add(1, 'three', 'Three-letter first names');
   if (l.length <= 2) add(1, 'shortsur', 'Two-letter surnames');
@@ -346,7 +362,7 @@ const HARD = {
   'n:shortsur': 1, 'n:three': 1, 'n:alliter': 1.25, 'n:flower': 1.25, 'n:gem': 1.25, 'n:month': 1.25, 'n:colour': 1.25, 'n:double': 1.5,
   'n:wordsur': 1.5, 'n:wordfirst': 1.5, 'n:job': 1.75, 'n:animal': 1.75, 'n:bird': 1.75, 'n:pop': 1.75,
   /* medium: a bit of knowledge, or a second look */
-  'n:place': 2.25, 'n:pm': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
+  'n:place': 2.25, 'n:fplace': 1.75, 'n:monarch': 2.25, 'n:pm': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
   /* hard: wordplay */
   'n:abc': 3, 'n:element': 3.25, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:hiddenanimal': 3.75, 'n:hiddenbody': 3.75, 'n:anagram': 4 };
 /* a broad kind of subject is easy; one subject is middling; one class or one teacher is the hardest */

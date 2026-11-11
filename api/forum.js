@@ -10,6 +10,7 @@
  *
  * The weekly anonymous poll on Home rides on this route too (see _poll.js):
  *   GET  /api/forum?poll=1 | history | admin
+ *   GET  /api/forum?withpoll=1  → the posts and this week's poll together (Home's first load)
  *   POST /api/forum {action:'pollvote' | 'pollsuggest' | 'pollset' | 'pollsubjects' | 'polldel' | 'suggestdel', …}
  *   GET  /poll  (rewritten to /api/forum?og=1) → the share link's preview page
  *
@@ -41,15 +42,14 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { displayNames, withName } from "./_names.js";
+import { displayNames, withName, rosterList } from "./_names.js";
 import { pollGet, pollPost, pollPreview, pollClock } from "./_poll.js";
 import { resolveYear } from "./_daily.js";
-import { studentDirectory } from "./timetable.js";
 /* a student's year when the login didn't carry it: the (cached) directory first,
    so staff, who aren't in it, cost nothing; the slower lookup only if needed */
 async function yearOf(me) {
   try {
-    const p = (await studentDirectory()).find(x => x.email === me.email);
+    const p = (await rosterList()).find(x => x.email === me.email);
     if (!p) return null;
     if (p.year) return String(p.year);
   } catch {}
@@ -111,6 +111,18 @@ export default async function handler(req, res) {
     if (!me.year) me.year = await yearOf(me);
     return pollGet(req, res, me, NAMES);
   }
+  /* Home asks for the forum and this week's poll together (?withpoll=1): one trip
+     instead of two. The poll is worked out alongside the posts; if it fails, the
+     posts still come back and the poll is null (Home then shows no poll card). */
+  let pollAlong = null;
+  if (req.method === "GET" && req.query.withpoll) pollAlong = (async () => {
+    try {
+      if (!me.year) me.year = await yearOf(me);
+      const cap = { code: 200, body: null, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; }, setHeader() {} };
+      await pollGet({ query: { poll: "1" } }, cap, me, NAMES);
+      return cap.code === 200 ? cap.body : null;
+    } catch (e) { console.error("poll with forum:", e.message); return null; }
+  })();
 
   if (req.method === "GET") {
     const { data, error } = await db.from("forum_post")
@@ -159,7 +171,7 @@ export default async function handler(req, res) {
         .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
         .map(shape);
     });
-    return res.status(200).json({ posts: threads });
+    return res.status(200).json(pollAlong ? { posts: threads, poll: await pollAlong } : { posts: threads });
   }
 
   if (req.method === "POST") {

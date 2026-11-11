@@ -2783,3 +2783,28 @@ create table if not exists conn_result (
 alter table conn_puzzle enable row level security;   -- no policies: only the server (service role) reads or writes
 alter table conn_result enable row level security;
 ```
+
+---
+
+## Student cache (`api/_names.js` `rosterList`, refreshed by `/api/daily-generate`)
+
+A copy of the school's student directory (email, first name, surname, year),
+refreshed every night. Pages that need names or years read this one table
+instead of asking the school's system, which made the first request after a
+quiet spell slow. Without the table (or if it's more than a day and a half
+old), the site falls back to asking the school, as before.
+
+**Setup:** run this in Supabase, SQL Editor. It's safe to run more than once
+and only creates what's missing.
+```sql
+create table if not exists student_cache (
+  email      text primary key,
+  first      text not null default '',
+  last       text not null default '',
+  year       int,
+  updated_at timestamptz not null default now()
+);
+alter table student_cache enable row level security;   -- no policies: only the server (service role) reads or writes
+```
+It fills itself at the next nightly run, or you can trigger it from
+**Vercel → Settings → Cron Jobs → Run**.

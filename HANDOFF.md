@@ -2958,3 +2958,45 @@ data. No icon font or CDN script loads on the live site.
   longer", "starts with Em" and the final "Their name starts Em… Ch…" are all
   allowed. Rounds without a timetable have 9 hints again (8 if a name is too
   short for a two-letter hint).
+
+### 8.74 Quartets v7: British monarchs and first names that are places
+- **"Share a first name with a British king or queen"** (`MONARCH`, hardness
+  2.25): Henry, William, James, Victoria, Charlie/Charles, George, Edward,
+  Elizabeth, Mary, Anne… The "how" names the monarch. It matches 8 people on
+  the real Year 11 list.
+- **"First names that are also places"** (`FPLACE`, hardness 1.75): Georgia,
+  Victoria, Jordan, Sydney, Florence, Brooklyn, Austin… The "how" says what
+  the place is. It matches 4 people on that list, so it's only used in years
+  with 5 or more.
+- **Considered and not added:** Wiggles names, and surnames that could be first
+  names (the user's call).
+
+### 8.75 Quartets made overnight
+- The nightly cron (`api/daily-generate.js`, 14:00 UTC, which is just after
+  midnight in Sydney) now also makes each year's Quartets via
+  `prebuildQuartets` in `_connroute.js`, after Daily Guess Who.
+- It works on two years at a time, with a 45 s budget inside
+  `maxDuration: 60`. Any year it doesn't reach is made by that year's first
+  player, as before. The response lists each year as `ok`, `none`, `skip` or
+  `later`.
+- The cron needs `CRON_SECRET` set in Vercel, as it already did.
+
+### 8.76 Faster loads: a student cache, and one request for Home
+- **`student_cache`** is a copy of the school student directory: email, first
+  name, surname, year. The SQL is in SETUP.md.
+  - The nightly cron refreshes it first (`refreshRosterCache`). It adds and
+    updates rows and never deletes.
+  - `rosterList()` in `_names.js` reads it a page of 1,000 at a time, with a
+    15 min in-memory cache. If the table is missing or more than 36 h old, it
+    falls back to `studentDirectory()` (the school's system).
+  - It's used by `displayNames()` (every route's names), the poll's year lists
+    (`yearMates`), forum's `yearOf`, and Daily Guess Who's candidate list. A
+    function waking up now reads one table instead of the school's whole
+    directory.
+- **Home's first load is one request:** `GET /api/forum?withpoll=1` returns the
+  posts and the poll payload together. The poll part is worked out alongside
+  the posts; if it fails, it's null and the card stays hidden.
+  - home.html starts it straight away (`firstLoad`). `loadForum` takes the posts
+    the first time, and `Poll.mount({ initial })` takes the poll, measuring the
+    server's clock from when the shared request was sent.
+  - Later refreshes are separate, as before, and so is the signed-out view.
