@@ -5438,7 +5438,7 @@ function chooseQuestion(t, hist, avoid, tries, rand, today){
        in a large pool were rarely even looked at, whatever they scored. */
     let bs = -Infinity;
     for (let i = 0; i < tries; i++){
-      const c = t.gen(), keyed = !!c.key, sig = t.id+':'+(c.key || c.q), h = hist[sig];
+      const c = tidyStem(t.gen()), keyed = !!c.key, sig = t.id+':'+(c.key || c.q), h = hist[sig];
       const s = sigScore(h, keyed, avoided(sig), rand, today);
       c._sig = sig; c._keyed = keyed;
       if (s > bs){ bs = s; q = c; }
@@ -6043,6 +6043,27 @@ function genWrite(lv){
    example, so they are never offered as distractors. Without it a question like
    "which idea does `class Dog(Animal):` show?" could offer both Inheritance and
    Class, and both would be defensible. */
+
+/* A row's name is written to head its own option ("Filtration", "CPU",
+   "Quotient rule"). Inside a sentence it wants a lower-case first letter,
+   unless it is an acronym or a proper name, and often an article the word
+   alone can't supply. `midTerm` does the case; a row that needs an article
+   carries it in `as` ("a catalyst"), and `termIn` prefers that. Stems that
+   name a term without either say "the term …", which never needs one. */
+const midTerm = n => /^(?:[A-Z]{2,}|Agile|Waterfall|Boolean|Python)\b/.test(n) ? n : n[0].toLowerCase() + n.slice(1);
+const termIn = r => r.as || midTerm(r.n);
+const capFirst = s => s[0].toUpperCase() + s.slice(1);
+/* "a 8 kg mass" should be "an 8 kg mass". A template writes 'a <b>' + m + ' kg'
+   without knowing the range, so the article is repaired afterwards: a number
+   said with a vowel sound first (8…, 11, 18, eleven or eighteen thousand)
+   takes "an". 1100 is read "one thousand one hundred" and keeps "a". */
+const fixArticles = s => typeof s !== 'string' ? s : s.replace(/\b([Aa])((?:\s|<[^>]*>)+)(\d[\d,]*(?:\.\d+)?(?:[\u00a0\u2009 ]\d{3}(?!\d))*)/g,
+  (all, a, gap, num) => {
+    const whole = num.split('.')[0].replace(/[^\d]/g, '');
+    const an = /^8/.test(whole) || /^1[18]$/.test(whole) || /^1[18]\d{3}$/.test(whole);
+    return (an ? a + 'n' : a) + gap + num;
+  });
+const tidyStem = q => { if (q){ q.q = fixArticles(q.q); if (q.note) q.note = fixArticles(q.note); } return q; };
 function termQ(rows, keyp, askDef, askName, askEx){
   const r = pk(rows);
   const safe = rows.filter(x => x !== r && !(r.bad || []).includes(x.n));
@@ -6084,7 +6105,7 @@ function genParadigm(){
   if (Math.random() < 0.28) return bankQ(PARA_EXTRA, 'parax');
   return termQ(PARADIGMS, 'par',
     r => 'Which paradigm <b>' + r.d + '</b>?',
-    r => 'What best describes the <b>' + r.n + '</b> paradigm?',
+    r => 'What best describes the <b>' + midTerm(r.n) + '</b> paradigm?',
     r => 'Which paradigm does this show?' + exBlock(r));
 }
 
@@ -6119,7 +6140,7 @@ const OOPC = [
 function genOOP(){
   return termQ(OOPC, 'oop',
     r => 'Which OOP idea is <b>' + r.d + '</b>?',
-    r => 'In OOP, what does <b>' + r.n + '</b> mean?',
+    r => 'In OOP, what does the term <b>' + midTerm(r.n) + '</b> mean?',
     r => 'Which OOP idea does this show?' + exBlock(r));
 }
 
@@ -6145,7 +6166,7 @@ const OOP_DESIGN = [
 function genOopDesign(){
   return termQ(OOP_DESIGN, 'oopd',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: the development steps ───────────────────── */
@@ -6172,7 +6193,7 @@ function genDevStep(){
   if (Math.random() < 0.3) return bankQ(DEV_EXTRA, 'devx');
   return termQ(DEV_STEPS, 'dev',
     r => 'Which step is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: algorithms ──────────────────────────────── */
@@ -6195,7 +6216,7 @@ const ALGO = [
 function genAlgo(){
   return termQ(ALGO, 'alg',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: data types and structures ───────────────── */
@@ -6220,7 +6241,7 @@ const DATA_T = [
 function genDataType(){
   return termQ(DATA_T, 'dat',
     r => 'Which one is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: number systems (fully computed) ─────────── */
@@ -6282,7 +6303,7 @@ const TESTING = [
 function genTestDebug(){
   return termQ(TESTING, 'tst',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Mechatronics: hardware ────────────────────────────────────────────── */
@@ -6304,7 +6325,7 @@ const MECH_HW = [
 function genMechHw(){
   return termQ(MECH_HW, 'mhw',
     r => 'Which component is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Mechatronics: control ─────────────────────────────────────────────── */
@@ -6333,7 +6354,7 @@ function genMechControl(){
   if (Math.random() < 0.28) return bankQ(MECH_EXTRA, 'mecx');
   return termQ(MECH_CTL, 'mct',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 function genPython(){
@@ -7247,12 +7268,12 @@ function genOhm(){ const k=ri(0,2), I=ri(1,10), R=ri(1,20), V=I*R;
   if(k===1){ const m=physMC(I,'A',[V, rd(R/V,2), V*R]); return {q:'A <b>'+V+' V</b> supply is across a <b>'+R+' Ω</b> resistor. Find the current.', choices:m.choices, answer:m.answer, note:'I = V/R = '+V+'/'+R+' = '+I+' A.'}; }
   const m=physMC(V*I,'W',[V+I, rd(V/I,2), 2*V*I]); return {q:'A device draws <b>'+I+' A</b> at <b>'+V+' V</b>. Find the power.', choices:m.choices, answer:m.answer, note:'P = VI = '+V+'×'+I+' = '+(V*I)+' W.'}; }
 function genResistors(){ const R1=ri(1,12), R2=ri(1,12);
-  if(Math.random()<0.5){ const m=physMC(R1+R2,'Ω',[Math.abs(R1-R2), R1*R2, rd(R1*R2/(R1+R2),2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>series</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Series: '+R1+' + '+R2+' = '+(R1+R2)+' Ω.'}; }
+  if(Math.random()<0.5){ const m=physMC(R1+R2,'Ω',[Math.abs(R1-R2), R1*R2, rd(R1*R2/(R1+R2),2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> are connected in <b>series</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Series: '+R1+' + '+R2+' = '+(R1+R2)+' Ω.'}; }
   /* The wrong options are the mistakes people actually make — adding them as
      if in series, forgetting to flip 1/R at the end, doubling — so most of them
      come out as decimals too. With whole-number distractors the one decimal
      option was the answer every time. */
-  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[rd(1/R1+1/R2,2), rd(2*R1*R2/(R1+R2),2), R1+R2, Math.abs(R1-R2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
+  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[rd(1/R1+1/R2,2), rd(2*R1*R2/(R1+R2),2), R1+R2, Math.abs(R1-R2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> are connected in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
 function genEfield(){ const V=ri(10,100)*10, d=ri(2,10)/100, E=rd(V/d,0); const m=physMC(E,'V/m',[V*d, rd(d/V,4), V+d]);
   return {q:'Two plates <b>'+d+' m</b> apart have a potential difference of <b>'+V+' V</b>. Find the electric field strength.', choices:m.choices, answer:m.answer, note:'E = V/d = '+V+'/'+d+' = '+E+' V/m.'}; }
 function genMag(){ const B=[0.1,0.2,0.5,1,2][ri(0,4)], I=ri(1,10), L=ri(1,5), F=rd(B*I*L,2); const m=physMC(F,'N',[rd(B+I+L,2), rd(B*I,2), I*L]);
@@ -7308,11 +7329,11 @@ function genSteelFact(){
   if (Math.random() < 0.18) return pk(MICRO_STEEL)();     // a diagram question now and then
   const r = pk(MATS_STEEL), f = pk(['c','key','use','lim','micro']);
   const ask = {
-    c:     [x=>'Which steel has a carbon content of <b>'+x.c+'</b>?',      x=>'What is the typical carbon content of <b>'+x.n+'</b>?'],
-    key:   [x=>'Which steel is <b>'+x.key+'</b>?',                          x=>'Which best describes the properties of <b>'+x.n+'</b>?'],
-    use:   [x=>'Which steel is typically used for <b>'+x.use+'</b>?',       x=>'What is <b>'+x.n+'</b> typically used for?'],
-    lim:   [x=>'Which steel has this main limitation: <b>'+x.lim+'</b>?',   x=>'What is the main limitation of <b>'+x.n+'</b>?'],
-    micro: [x=>'Which slow-cooled steel shows <b>'+x.micro+'</b>?',         x=>'What does the microstructure of <b>'+x.n+'</b> look like after slow cooling?']
+    c:     [x=>'Which steel has a carbon content of <b>'+x.c+'</b>?',      x=>'What is the typical carbon content of <b>'+midTerm(x.n)+'</b>?'],
+    key:   [x=>'Which steel has these properties? <b>'+capFirst(x.key)+'</b>.', x=>'Which best describes the properties of <b>'+midTerm(x.n)+'</b>?'],
+    use:   [x=>'Which steel is typically used for <b>'+x.use+'</b>?',       x=>'What is <b>'+midTerm(x.n)+'</b> typically used for?'],
+    lim:   [x=>'Which steel has this main limitation? <b>'+capFirst(x.lim)+'</b>.', x=>'What is the main limitation of <b>'+midTerm(x.n)+'</b>?'],
+    micro: [x=>'Which slow-cooled steel shows <b>'+x.micro+'</b>?',         x=>'What does the microstructure of <b>'+midTerm(x.n)+'</b> look like after slow cooling?']
   }[f];
   return fieldQ(MATS_STEEL, r, f, ask[0], ask[1], 'steel');
 }
@@ -7343,11 +7364,11 @@ function genIronFact(){
   if (Math.random() < 0.18) return pk(MICRO_IRON)();      // a diagram question now and then
   const r = pk(MATS_IRON), f = pk(['main','key','use','lim','micro']);
   const ask = {
-    main:  [x=>'In which cast iron is the carbon present mainly as <b>'+x.main+'</b>?', x=>'In <b>'+x.n+'</b>, how is most of the carbon present?'],
-    key:   [x=>'Which cast iron has <b>'+x.key+'</b>?',                                  x=>'Which best describes the properties of <b>'+x.n+'</b>?'],
-    use:   [x=>'Which cast iron is typically used for <b>'+x.use+'</b>?',                x=>'What is <b>'+x.n+'</b> typically used for?'],
-    lim:   [x=>'Which cast iron has this main limitation: <b>'+x.lim+'</b>?',            x=>'What is the main limitation of <b>'+x.n+'</b>?'],
-    micro: [x=>'Which cast iron shows <b>'+x.micro+'</b>?',                              x=>'What does the microstructure of <b>'+x.n+'</b> look like?']
+    main:  [x=>'In which cast iron is the carbon present mainly as <b>'+x.main+'</b>?', x=>'In <b>'+midTerm(x.n)+'</b>, how is most of the carbon present?'],
+    key:   [x=>'Which cast iron has these properties? <b>'+capFirst(x.key)+'</b>.',       x=>'Which best describes the properties of <b>'+midTerm(x.n)+'</b>?'],
+    use:   [x=>'Which cast iron is typically used for <b>'+x.use+'</b>?',                x=>'What is <b>'+midTerm(x.n)+'</b> typically used for?'],
+    lim:   [x=>'Which cast iron has this main limitation? <b>'+capFirst(x.lim)+'</b>.',   x=>'What is the main limitation of <b>'+midTerm(x.n)+'</b>?'],
+    micro: [x=>'Which cast iron shows <b>'+x.micro+'</b>?',                              x=>'What does the microstructure of <b>'+midTerm(x.n)+'</b> look like?']
   }[f];
   return fieldQ(MATS_IRON, r, f, ask[0], ask[1], 'iron');
 }
@@ -7381,9 +7402,9 @@ const TREATS = [
 function genTreatFact(){
   const r = pk(TREATS), f = pk(['proc','why','out']);
   const ask = {
-    proc: [x=>'Which process is <b>'+x.proc+'</b>?',        x=>'What does <b>'+x.n+'</b> actually involve?'],
-    why:  [x=>'Which process is done to <b>'+x.why+'</b>?', x=>'Why is <b>'+x.n+'</b> carried out?'],
-    out:  [x=>'Which process produces <b>'+x.out+'</b>?',   x=>'What structure does <b>'+x.n+'</b> produce?']
+    proc: [x=>'Which process is <b>'+x.proc+'</b>?',        x=>'What does <b>'+midTerm(x.n)+'</b> actually involve?'],
+    why:  [x=>'Which process is done to <b>'+x.why+'</b>?', x=>'Why is <b>'+midTerm(x.n)+'</b> carried out?'],
+    out:  [x=>'Which process produces <b>'+x.out+'</b>?',   x=>'What structure does <b>'+midTerm(x.n)+'</b> produce?']
   }[f];
   return fieldQ(TREATS, r, f, ask[0], ask[1], 'treat');
 }
@@ -7396,14 +7417,14 @@ const ENG_PHASE = [
   { n:'Martensite', d:'the hard, distorted body-centred tetragonal structure formed by fast cooling' },
   { n:'Temper carbon', d:'compact graphite clusters formed by the prolonged annealing of white iron' },
   { n:'Graphite', d:'free carbon in a cast iron, appearing as flakes or nodules' },
-  { n:'Grain', d:'a region of the structure with a single crystal orientation' },
-  { n:'Phase', d:'a structurally and chemically distinct region of a material' },
-  { n:'Constituent', d:'a recognisable part of a microstructure, which may contain more than one phase' }
+  { n:'Grain', as:'a grain', d:'a region of the structure with a single crystal orientation' },
+  { n:'Phase', as:'a phase', d:'a structurally and chemically distinct region of a material' },
+  { n:'Constituent', as:'a constituent', d:'a recognisable part of a microstructure, which may contain more than one phase' }
 ];
 function genPhaseFact(){
   const r = pk(ENG_PHASE);
   return fieldQ(ENG_PHASE, r, 'd',
-    x=>'Which term is <b>'+x.d+'</b>?', x=>'What is <b>'+x.n+'</b>?', 'phase');
+    x=>'Which term is <b>'+x.d+'</b>?', x=>'What is <b>'+termIn(x)+'</b>?', 'phase');
 }
 
 const ENG_PROP = [
@@ -7423,7 +7444,7 @@ const ENG_PROP = [
 function genPropFact(){
   const r = pk(ENG_PROP);
   return fieldQ(ENG_PROP, r, 'd',
-    x=>'Which property is <b>'+x.d+'</b>?', x=>'What does <b>'+x.n+'</b> mean?', 'prop');
+    x=>'Which property is <b>'+x.d+'</b>?', x=>'What does <b>'+midTerm(x.n)+'</b> mean?', 'prop');
 }
 
 /* carbon content, pearlite balance and cold work — mixed curated + computed */
@@ -7515,41 +7536,41 @@ const PH_QUANT = [
 function genPhysQuant(mod){
   const rows = PH_QUANT.filter(x => x.m === mod), r = pk(rows), k = ri(0,3);
   if (k === 0)
-    return { q:'Is <b>' + r.n + '</b> a vector or a scalar?', choices:['Vector','Scalar'],
+    return { q:'Is <b>' + midTerm(r.n) + '</b> a vector or a scalar?', choices:['Vector','Scalar'],
       answer: r.vec ? 'Vector' : 'Scalar', key:'phq-v:'+r.n,
       note: r.vec ? 'A vector has direction as well as size.' : 'A scalar has size only, with no direction.' };
   if (k === 1){
     const units = [...new Set(PH_QUANT.map(x => x.u))].filter(u => u !== r.u);
     const m = mc(r.u, shuffle(units));
-    return { q:'What is the SI unit of <b>' + r.n + '</b>?', choices:m.choices, answer:m.answer, key:'phq-u:'+r.n };
+    return { q:'What is the SI unit of <b>' + midTerm(r.n) + '</b>?', choices:m.choices, answer:m.answer, key:'phq-u:'+r.n };
   }
   return fieldQ(PH_QUANT, r, 'd',
-    x=>'Which quantity is <b>'+x.d+'</b>?', x=>'How is <b>'+x.n+'</b> defined?', 'phq');
+    x=>'Which quantity is <b>'+x.d+'</b>?', x=>'How is <b>'+midTerm(x.n)+'</b> defined?', 'phq');
 }
 
 /* ── maths: named rules and terms ──────────────────────────────────────── */
 const MATH_TERMS = [
-  { n:'Derivative', d:'the gradient of the tangent: the instantaneous rate of change' },
-  { n:'Definite integral', d:'the signed area between a curve and the x-axis over an interval' },
-  { n:'Stationary point', d:'a point on a curve where the derivative equals zero' },
-  { n:'Second derivative', d:'the rate of change of the gradient, used to test concavity' },
-  { n:'Factorial n!', d:'the product of every whole number from 1 up to n' },
-  { n:'Permutation ⁿPᵣ', d:'the number of ordered arrangements of r items chosen from n' },
-  { n:'Combination ⁿCᵣ', d:'the number of unordered selections of r items chosen from n' },
-  { n:'Domain', d:'the set of inputs a function accepts' },
-  { n:'Range', d:'the set of outputs a function can produce' },
-  { n:'Asymptote', d:'a line that a graph approaches but never quite reaches' },
-  { n:'Gradient', d:'the change in y divided by the change in x' },
-  { n:'Chain rule', d:'the rule for differentiating one function nested inside another' },
-  { n:'Product rule', d:'the rule for differentiating two functions multiplied together' },
-  { n:'Quotient rule', d:'the rule for differentiating one function divided by another' },
-  { n:'Turning point', d:'a stationary point where the gradient changes sign' },
-  { n:'Constant of integration', d:'the unknown constant added to every indefinite integral' }
+  { n:'Derivative', as:'the derivative', d:'the gradient of the tangent: the instantaneous rate of change' },
+  { n:'Definite integral', as:'a definite integral', d:'the signed area between a curve and the x-axis over an interval' },
+  { n:'Stationary point', as:'a stationary point', d:'a point on a curve where the derivative equals zero' },
+  { n:'Second derivative', as:'the second derivative', d:'the rate of change of the gradient, used to test concavity' },
+  { n:'Factorial n!', as:'n factorial (n!)', d:'the product of every whole number from 1 up to n' },
+  { n:'Permutation ⁿPᵣ', as:'the permutation ⁿPᵣ', d:'the number of ordered arrangements of r items chosen from n' },
+  { n:'Combination ⁿCᵣ', as:'the combination ⁿCᵣ', d:'the number of unordered selections of r items chosen from n' },
+  { n:'Domain', as:'the domain', d:'the set of inputs a function accepts' },
+  { n:'Range', as:'the range', d:'the set of outputs a function can produce' },
+  { n:'Asymptote', as:'an asymptote', d:'a line that a graph approaches but never quite reaches' },
+  { n:'Gradient', as:'the gradient', d:'the change in y divided by the change in x' },
+  { n:'Chain rule', as:'the chain rule', d:'the rule for differentiating one function nested inside another' },
+  { n:'Product rule', as:'the product rule', d:'the rule for differentiating two functions multiplied together' },
+  { n:'Quotient rule', as:'the quotient rule', d:'the rule for differentiating one function divided by another' },
+  { n:'Turning point', as:'a turning point', d:'a stationary point where the gradient changes sign' },
+  { n:'Constant of integration', as:'the constant of integration', d:'the unknown constant added to every indefinite integral' }
 ];
 function genMathTerm(){
   const r = pk(MATH_TERMS);
   return fieldQ(MATH_TERMS, r, 'd',
-    x=>'Which term means <b>'+x.d+'</b>?', x=>'What is <b>'+x.n+'</b>?', 'mterm');
+    x=>'Which term means <b>'+x.d+'</b>?', x=>'What is <b>'+termIn(x)+'</b>?', 'mterm');
 }
 
 function genMoments(){ const F=ri(5,50), d=rd(ri(2,20)/10,1), M=rd(F*d,2); const m=physMC(M,'N·m',[rd(F+d,1), rd(F/d,2), 2*F*d]);
@@ -7641,7 +7662,7 @@ function genSeparation(){
   if (Math.random() < 0.4) return bankQ(MIX_CONCEPT, 'mixc');
   return termQ(SEPARATION, 'sep',
     r => 'Which technique <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── chemistry: balancing equations (Module 2), computed ───────────────── */
@@ -7731,13 +7752,13 @@ const RATE_FACTORS = [
   { n:'Concentration', d:'more particles are packed into the same volume, so collisions happen more often' },
   { n:'Gas pressure', d:'the same particles are forced into a smaller space, raising the collision frequency' },
   { n:'Surface area', d:'more of the solid is exposed, so more particles are available to be hit' },
-  { n:'Catalyst', d:'an alternative reaction pathway with a lower activation energy is provided' }
+  { n:'Catalyst', as:'a catalyst', d:'an alternative reaction pathway with a lower activation energy is provided' }
 ];
 function genRates(){
   if (Math.random() < 0.45)
     return termQ(RATE_FACTORS, 'ratef',
       r => 'Which factor speeds a reaction up because <b>' + r.d + '</b>?',
-      r => 'How does <b>' + r.n + '</b> increase the rate of a reaction?');
+      r => 'How does <b>' + termIn(r) + '</b> increase the rate of a reaction?');
   return bankQ(RATE_C, 'ratec');
 }
 
@@ -7748,16 +7769,16 @@ function genActivity(){
   let i = ri(0, ACTIVITY.length-2), j = ri(i+1, ACTIVITY.length-1);
   const more = ACTIVITY[i], less = ACTIVITY[j];          // earlier in the list = more reactive
   if (k === 0)
-    return { q:'Which metal is <b>more reactive</b>: '+more+' or '+less+'?', choices:shuffle([more,less]),
+    return { q:'Which metal is <b>more reactive</b>: '+more.toLowerCase()+' or '+less.toLowerCase()+'?', choices:shuffle([more,less]),
       answer:more, key:'act-cmp:'+more+'|'+less,
       note:'Activity series (most → least reactive): '+ACTIVITY.join(' > ')+'.' };
   if (k === 1)
-    return { q:'Will <b>'+more+'</b> displace <b>'+less+'</b> from a solution of its salt?', choices:['Yes','No'],
+    return { q:'Will <b>'+more.toLowerCase()+'</b> displace <b>'+less.toLowerCase()+'</b> from a solution of its salt?', choices:['Yes','No'],
       answer:'Yes', key:'act-dis:'+more+'|'+less,
-      note:more+' is above '+less+' in the activity series, so it displaces it.' };
-  return { q:'Will <b>'+less+'</b> displace <b>'+more+'</b> from a solution of its salt?', choices:['Yes','No'],
+      note:more+' is above '+less.toLowerCase()+' in the activity series, so it displaces it.' };
+  return { q:'Will <b>'+less.toLowerCase()+'</b> displace <b>'+more.toLowerCase()+'</b> from a solution of its salt?', choices:['Yes','No'],
     answer:'No', key:'act-nod:'+less+'|'+more,
-    note:less+' is below '+more+' in the activity series, so no reaction occurs.' };
+    note:less+' is below '+more.toLowerCase()+' in the activity series, so no reaction occurs.' };
 }
 
 /* ── chemistry: energy profiles (Module 4) ─────────────────────────────── */
@@ -7826,7 +7847,7 @@ function genThermo(){
   if (Math.random() < 0.45) return genThermoCalc();
   return termQ(THERMO_C, 'thm',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* extra wave ideas the syllabus names */
@@ -8193,7 +8214,7 @@ function genStress(){
   if (Math.random() < 0.45) return genStressCalc();
   return termQ(TENSILE_C, 'ten',
     r => 'On a stress–strain curve, which point or term is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── engineering: braking systems ──────────────────────────────────────── */

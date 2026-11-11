@@ -696,25 +696,25 @@ function genPhStars(){
   const k = ri(0, 3);
   if (k === 0){
     const e = pk([
-      { ask:'a main sequence star like the Sun', a:'the proton–proton chain', w:['the CNO cycle', 'the triple alpha process', 'neutron capture in a supernova'] },
-      { ask:'a massive main sequence star, hotter in its core', a:'the CNO cycle', w:['the proton–proton chain', 'the triple alpha process', 'nuclear fission'] },
-      { ask:'a red giant fusing helium into carbon', a:'the triple alpha process', w:['the proton–proton chain', 'the CNO cycle', 'nuclear fission'] },
-      { ask:'elements heavier than iron', a:'neutron capture, mostly in supernovae', w:['the proton–proton chain', 'the CNO cycle', 'the triple alpha process'] }
+      { ask:'a main sequence star like the Sun', q:'Which process makes the energy or the elements in <b>a main sequence star like the Sun</b>?', a:'the proton–proton chain', w:['the CNO cycle', 'the triple alpha process', 'neutron capture in a supernova'] },
+      { ask:'a massive main sequence star, hotter in its core', q:'Which process makes the energy or the elements in <b>a massive main sequence star, hotter in its core</b>?', a:'the CNO cycle', w:['the proton–proton chain', 'the triple alpha process', 'nuclear fission'] },
+      { ask:'a red giant fusing helium into carbon', q:'Which process makes the energy or the elements in <b>a red giant fusing helium into carbon</b>?', a:'the triple alpha process', w:['the proton–proton chain', 'the CNO cycle', 'nuclear fission'] },
+      { ask:'elements heavier than iron', q:'Which process makes the <b>elements heavier than iron</b>?', a:'neutron capture, mostly in supernovae', w:['the proton–proton chain', 'the CNO cycle', 'the triple alpha process'] }
     ]);
     const m = mc(e.a, e.w);
-    return { q:'Which process makes the energy or the elements in <b>' + e.ask + '</b>?',
+    return { q:e.q,
       choices:m.choices, answer:m.answer, data:{ kind:'ph-nucleo', ask:e.ask },
       note:'Fusion runs up to iron, where binding energy per nucleon peaks. Past that, fusion costs energy, so heavier elements are built by neutron capture instead.' };
   }
   if (k === 1){
     const e = pk([
-      { ask:'hot and very luminous, top left', a:'a blue main sequence star', w:['a red giant', 'a white dwarf', 'a red dwarf'] },
-      { ask:'cool but very luminous, top right', a:'a red giant', w:['a blue main sequence star', 'a white dwarf', 'the Sun'] },
-      { ask:'hot but very dim, bottom left', a:'a white dwarf', w:['a red giant', 'a blue main sequence star', 'a red dwarf'] },
-      { ask:'cool and dim, bottom right of the main sequence', a:'a red dwarf', w:['a white dwarf', 'a red giant', 'a blue supergiant'] }
+      { ask:'hot and very luminous, at the top left', a:'a blue main sequence star', w:['a red giant', 'a white dwarf', 'a red dwarf'] },
+      { ask:'cool but very luminous, at the top right', a:'a red giant', w:['a blue main sequence star', 'a white dwarf', 'the Sun'] },
+      { ask:'hot but very dim, at the bottom left', a:'a white dwarf', w:['a red giant', 'a blue main sequence star', 'a red dwarf'] },
+      { ask:'cool and dim, at the bottom right of the main sequence', a:'a red dwarf', w:['a white dwarf', 'a red giant', 'a blue supergiant'] }
     ]);
     const m = mc(e.a, e.w);
-    return { q:'On a Hertzsprung–Russell diagram, what sits <b>' + e.ask + '</b>?',
+    return { q:'On a Hertzsprung–Russell diagram, what is <b>' + e.ask + '</b>?',
       choices:m.choices, answer:m.answer, data:{ kind:'ph-hr', ask:e.ask },
       note:'The axes are temperature (increasing to the left) against luminosity. The main sequence runs from hot and bright at the top left down to cool and dim at the bottom right.' };
   }
@@ -1251,7 +1251,7 @@ function genChKa(){
   const a = pk(CH_WEAK), k = ri(0, 3);
   if (k === 0){
     const pKa = -Math.log10(a.ka);
-    return { q:'<b>' + a.n + '</b> has K<sub>a</sub> = <b>' + phSci(a.ka, 3) + '</b>. Find its <b>pK<sub>a</sub></b>, to 2 decimal places.',
+    return { q:'<b>' + a.n[0].toUpperCase() + a.n.slice(1) + '</b> has K<sub>a</sub> = <b>' + phSci(a.ka, 3) + '</b>. Find its <b>pK<sub>a</sub></b>, to 2 decimal places.',
       input:true, answer:rd(pKa, 2), accept:qty(pKa, { tol:0.02 }), data:{ kind:'ch-pka', ka:a.ka },
       note:'pK_a = −log₁₀K_a = ' + rd(pKa, 2) + '. A smaller pK_a means a stronger acid.' };
   }
@@ -1457,7 +1457,7 @@ function genChOrgRxn(){
       why:'the –COOH group is acidic enough to react with a base, which is what separates carboxylic acids from alcohols' }
   ]);
   const m = mc(e.a, e.w);
-  return { q:'What happens when <b>' + e.q + '</b> react?',
+  return { q:'What happens when you react <b>' + e.q + '</b>?',
     choices:m.choices, answer:m.answer, data:{ kind:'ch-rxn', ask:e.q },
     note:'This is ' + e.why + '.' };
 }
@@ -1522,7 +1522,7 @@ function genChPoly(){
       [add ? 'A small molecule such as water is lost at every link.' : 'The monomers have a C=C that opens, and no atoms are lost.',
        'The polymer always has a higher melting point than its monomer only in this type.',
        'Only this type can be recycled.']);
-    return { q:'What makes a polymer an <b>' + (add ? 'addition' : 'condensation') + '</b> polymer?',
+    return { q:'What makes a polymer ' + (add ? 'an <b>addition' : 'a <b>condensation') + '</b> polymer?',
       choices:m.choices, answer:m.answer, data:{ kind:'ch-polytype', add },
       note:'Addition keeps every atom of every monomer; condensation loses a small molecule each time, so the repeating unit is lighter than the monomers it came from.' };
   }
@@ -1866,7 +1866,7 @@ const LONG_CH12 = [
                   { p:'polypropene', m:'propene', t:'addition' }]);
     const n = ri(200, 4000), M = pk([28, 42, 62.5]);
     return { mod:'ch-m7',
-      q:'<b>' + e.p + '</b> is made from <b>' + e.m + '</b>.' +
+      q:'<b>' + e.p[0].toUpperCase() + e.p.slice(1) + '</b> is made from <b>' + e.m + '</b>.' +
         '<br>(a) Name the type of polymerisation and explain what happens to the monomer. <b>(2 marks)</b>' +
         '<br>(b) A chain contains ' + n + ' repeating units of molar mass ' + M + ' g mol' + sup(-1) + '. Calculate the molar mass of the chain. <b>(2 marks)</b>' +
         '<br>(c) Explain why this polymer softens on heating, while a cross-linked polymer does not. <b>(2 marks)</b>',

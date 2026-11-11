@@ -60,6 +60,11 @@ const EN_TECH = [
 const EN_TECH_NAMES = ['metaphor', 'simile', 'personification', 'alliteration', 'onomatopoeia', 'irony',
   'rhetorical question', 'repetition', 'tricolon', 'oxymoron', 'paradox', 'juxtaposition', 'allusion',
   'exclamation', 'hyperbole', 'symbolism', 'enjambment', 'caesura'];
+/* "This line uses a metaphor" but "uses irony": a technique that is one
+   countable thing takes an article; the rest are uncountable. */
+const EN_COUNTABLE = ['metaphor', 'simile', 'rhetorical question', 'tricolon', 'oxymoron', 'paradox', 'allusion',
+  'exclamation', 'caesura', 'motif'];
+const enTerm = t => EN_COUNTABLE.includes(t) ? (/^[aeiou]/.test(t) ? 'an ' : 'a ') + t : t;
 
 const EN_DEFS = [
   { t:'enjambment', d:'a sentence running past the end of a line without a pause' },
@@ -83,13 +88,13 @@ function genEnTechnique(){
     const m = mc(e.t, shuffle(EN_TECH_NAMES.filter(x => x !== e.t)).slice(0, 4));
     return { q:'Which technique is used here?<div class="rvquote">“' + e.line + '”<span class="rvcite">' + e.src + '</span></div>',
       choices:m.choices, answer:m.answer, data:{ kind:'en-tech-name', t:e.t },
-      note:'It is ' + e.t + ': ' + e.why + '. In an exam the name alone earns almost nothing — the effect is the mark.' };
+      note:'It is ' + enTerm(e.t) + ': ' + e.why + '. In an exam the name alone earns almost nothing — the effect is the mark.' };
   }
   if (k === 1){                                   // the effect, which is where the marks are
     const e = pk(EN_TECH);
     const others = shuffle(EN_TECH.filter(x => x.t !== e.t && x.why !== e.why)).slice(0, 3).map(x => x.why[0].toUpperCase() + x.why.slice(1) + '.');
     const m = mc(e.why[0].toUpperCase() + e.why.slice(1) + '.', others.concat(['It makes the writing sound more interesting.']));
-    return { q:'This line uses <b>' + e.t + '</b>. What is its <b>effect</b>?<div class="rvquote">“' + e.line + '”<span class="rvcite">' + e.src + '</span></div>',
+    return { q:'This line uses <b>' + enTerm(e.t) + '</b>. What is its <b>effect</b>?<div class="rvquote">“' + e.line + '”<span class="rvcite">' + e.src + '</span></div>',
       choices:m.choices, answer:m.answer, data:{ kind:'en-tech-effect', t:e.t },
       note:'“It makes it more interesting” is the answer that never earns a mark: an effect has to say what the reader is made to think or feel, and why that matters to the text.' };
   }
@@ -214,18 +219,22 @@ function genEnCraft(){
       note:'Module C rewards using a device deliberately and then being able to say why you used it. Naming it precisely is how you talk about your own choices in the reflection.' };
   }
   const e = pk([
-    { ask:'a reflection statement', a:'explain the deliberate choices you made and the effect you intended, with reference to your own writing',
+    { ask:'a reflection statement', q:'what should you do in <b>a reflection statement</b>?', a:'explain the deliberate choices you made and the effect you intended, with reference to your own writing',
       w:['summarise the plot of what you wrote', 'apologise for what you could not finish', 'describe how long the piece took to write'] },
-    { ask:'writing in response to a stimulus', a:'use the stimulus as a point of departure that is visibly present in the finished piece',
+    { ask:'writing in response to a stimulus', q:'what should you do when <b>writing in response to a stimulus</b>?', a:'use the stimulus as a point of departure that is visibly present in the finished piece',
       w:['copy the stimulus into the opening line', 'ignore the stimulus and write what you prepared', 'explain the stimulus before starting'] },
-    { ask:'the strongest way to end a short piece', a:'return to an earlier image with its meaning changed by what has happened',
+    { ask:'the strongest way to end a short piece', q:'what is <b>the strongest way to end a short piece</b>?', a:'return to an earlier image with its meaning changed by what has happened',
       w:['explain the message of the piece', 'finish with a rhetorical question', 'summarise everything that has happened'] }
   ]);
   const m = mc(e.a, e.w);
-  return { q:'In the Craft of Writing, what should you do with <b>' + e.ask + '</b>?',
+  return { q:'In the Craft of Writing, ' + e.q,
     choices:m.choices, answer:m.answer, data:{ kind:'en-craft-module', ask:e.ask },
     note:'The reflection is marked on the link between intention and effect — it is analysis of your own text, not a summary of it.' };
 }
+
+/* The set-text banks below hold each prompt as a whole question (`q`), not a
+   noun phrase with "?" stuck on the end — "Why “The Violets” moves…?" is how
+   that went wrong. */
 
 /* Distractors that are all shorter than the answer turn a drill into a
    length-spotting exercise. These mix the item's own wrong options with a
@@ -241,35 +250,35 @@ function enOptions(bank, item){
    questions are about form, structure, recurring concerns and context —
    which is what the module asks about anyway. */
 const EN_HARWOOD = [
-  { ask:'the two-sonnet structure of “Father and Child”', a:'the pair sets a child’s first encounter with killing against an adult’s reckoning with a father’s death, so the form itself spans a lifetime',
+  { q:'What does the two-sonnet structure of “Father and Child” achieve?', a:'the pair sets a child’s first encounter with killing against an adult’s reckoning with a father’s death, so the form itself spans a lifetime',
     w:['the second sonnet retells the same night from the father’s point of view, so the reader hears both sides of one argument',
        'the two sonnets use opposite rhyme schemes in order to show that childhood and adulthood have nothing in common',
        'the poems were written years apart and were only printed together because they share a setting'] },
-  { ask:'why “The Violets” moves between two times at once', a:'a present-day moment of scent and memory opens into a childhood scene, so the poem enacts how memory intrudes on the present',
+  { q:'Why does “The Violets” move between two times at once?', a:'a present-day moment of scent and memory opens into a childhood scene, so the poem enacts how memory intrudes on the present',
     w:['the poem runs strictly forward from childhood to the present, so the reader watches the speaker grow up in order',
        'the childhood section is marked out as a dream, which lets the poem avoid claiming it really happened',
        'the two time frames are kept carefully separate, so neither is allowed to colour the other'] },
-  { ask:'the significance of music in Harwood’s poetry', a:'music stands for an order and transcendence that ordinary life keeps interrupting, and Harwood was a trained musician',
+  { q:'What is the significance of music in Harwood’s poetry?', a:'music stands for an order and transcendence that ordinary life keeps interrupting, and Harwood was a trained musician',
     w:['music is a background detail that fixes the period, in the way a reference to a radio programme would',
        'music always signals contentment in her work, so a poem that mentions it is always a happy one',
        'music appears only in the late poems, after she had given up writing about memory'] },
-  { ask:'what “In the Park” does with the sonnet form', a:'it uses a form associated with love and elevation to deliver a flat, bitter admission about motherhood, and the mismatch is the point',
+  { q:'What does “In the Park” do with the sonnet form?', a:'it uses a form associated with love and elevation to deliver a flat, bitter admission about motherhood, and the mismatch is the point',
     w:['it abandons the sonnet entirely in favour of free verse, so the lack of form mirrors a life without shape',
        'it uses the elevated form sincerely, to celebrate motherhood as the subject love poetry has always deserved',
        'it keeps the sonnet form only because the poem was written for a competition that required one'] },
-  { ask:'a recurring concern across Harwood’s poetry', a:'the way memory, mortality and the self are bound together, so that remembering is both consolation and loss',
+  { q:'What is a recurring concern across Harwood’s poetry?', a:'the way memory, mortality and the self are bound together, so that remembering is both consolation and loss',
     w:['a steady contrast between the corruption of the city and the innocence of the country she grew up in',
        'an insistence that the future will redeem the losses of the past, which gives the poems their optimism',
        'a rejection of religious imagery in favour of a purely scientific account of experience'] },
-  { ask:'why context matters for reading “In the Park”', a:'it was written when a woman’s identity was widely assumed to be exhausted by motherhood, which the poem quietly refuses',
+  { q:'Why does context matter for reading “In the Park”?', a:'it was written when a woman’s identity was widely assumed to be exhausted by motherhood, which the poem quietly refuses',
     w:['it was written during the war, and the children in the park are refugees from the bombing',
        'it was written for a children’s anthology, which explains the simplicity of its language',
        'the context is irrelevant, because the poem is about a private moment rather than a public one'] },
-  { ask:'what the “human experiences” module asks you to notice in a text like this', a:'the anomalies and paradoxes in human behaviour, and how they are represented, not just the themes listed',
+  { q:'What does the “human experiences” module ask you to notice in a text like this?', a:'the anomalies and paradoxes in human behaviour, and how they are represented, not just the themes listed',
     w:['the details of the composer’s life, so that the poems can be read as records of what happened to her',
        'the number and variety of techniques used, since range of technique is what the module is assessing',
        'the moral lesson the reader is meant to take away and apply to their own conduct'] },
-  { ask:'how Harwood uses the natural world', a:'landscape and weather carry emotional states and the passing of time, rather than being described for their own sake',
+  { q:'How does Harwood use the natural world?', a:'landscape and weather carry emotional states and the passing of time, rather than being described for their own sake',
     w:['nature is consistently hostile in her poetry, a threat the speaker has to survive rather than inhabit',
        'she avoids natural imagery almost entirely, preferring interiors and domestic objects',
        'natural images are chosen mainly for their sound, to fill out the rhyme scheme of the stanza'] }
@@ -277,50 +286,50 @@ const EN_HARWOOD = [
 function genEnHarwood(){
   const e = pk(EN_HARWOOD);
   const m = mc(e.a, enOptions(EN_HARWOOD, e));
-  return { q:'Gwen Harwood — <b>Texts and Human Experiences</b>.<br>' + e.ask[0].toUpperCase() + e.ask.slice(1) + '?',
-    choices:m.choices, answer:m.answer, data:{ kind:'en-harwood', ask:e.ask },
+  return { q:'Gwen Harwood — <b>Texts and Human Experiences</b>.<br>' + e.q,
+    choices:m.choices, answer:m.answer, data:{ kind:'en-harwood', q:e.q },
     note:'The module rewards writing about how the text represents experience — form, structure and voice doing the work — rather than retelling what happens in the poem.' };
 }
 
 /* ── Textual conversations: The Prince and Julius Caesar ─────────────────
    Both texts are out of copyright, so they can be quoted here. */
 const EN_CONV = [
-  { ask:'Machiavelli’s argument about being feared or loved', a:'it is safer to be feared than loved, because love is held by obligation that people break when it suits them',
+  { q:'What is Machiavelli’s argument about being feared or loved?', a:'it is safer to be feared than loved, because love is held by obligation that people break when it suits them',
     w:['it is safer to be loved than feared, because fear breeds the resentment that ends in rebellion',
        'a prince should aim to be neither, staying obscure enough that no one has reason to move against him',
        'fear and love are equally reliable, so a prince may choose whichever suits his temperament'],
     why:'the claim is practical, not moral — Machiavelli judges a ruler by what works, which is exactly what made the book notorious' },
-  { ask:'how Antony’s funeral oration works on the crowd', a:'he repeats that Brutus is “an honourable man” until the repetition turns the phrase into its opposite',
+  { q:'How does Antony’s funeral oration work on the crowd?', a:'he repeats that Brutus is “an honourable man” until the repetition turns the phrase into its opposite',
     w:['he accuses the conspirators of murder in his opening line, and the crowd turns on them at once',
        'he reads out the will first, so that the crowd is already angry before Brutus is mentioned',
        'he avoids any mention of the body or the wounds, keeping the speech to abstract principle'],
     why:'it is verbal irony built by repetition, and it shows rhetoric doing precisely what Machiavelli describes: managing appearances to secure power' },
-  { ask:'the Machiavellian idea Brutus most clearly lacks', a:'the willingness to finish what the seizure of power requires, rather than acting on principle and trusting his enemies',
+  { q:'Which Machiavellian idea does Brutus most clearly lack?', a:'the willingness to finish what the seizure of power requires, rather than acting on principle and trusting his enemies',
     w:['the ability to speak persuasively in public, which is why the crowd never listens to him at all',
        'any real interest in the future of Rome, since he acts only out of personal rivalry with Caesar',
        'the loyalty of the other conspirators, who abandon him before the assassination is carried out'],
     why:'Machiavelli warns that half-measures are fatal; Brutus spares Antony and lets him speak, and the play turns on that decision' },
-  { ask:'what the two texts share in their view of appearance and reality', a:'both treat the public performance of virtue as a political instrument separable from actual virtue',
+  { q:'What do the two texts share in their view of appearance and reality?', a:'both treat the public performance of virtue as a political instrument separable from actual virtue',
     w:['both argue that a ruler’s true character always shows itself in the end, however well it is hidden',
        'neither is much interested in how rulers are seen, since both are concerned with what they actually do',
        'both insist that a ruler who dissembles will forfeit the support that keeps him in power'],
     why:'Machiavelli advises a prince to seem merciful and faithful; Shakespeare stages conspirators who look like friends, and an orator who claims not to be one' },
-  { ask:'a key dissonance between the two texts', a:'The Prince is untroubled by the cost of power, while the play exacts a tragic price from everyone who reaches for it',
+  { q:'What is a key dissonance between the two texts?', a:'The Prince is untroubled by the cost of power, while the play exacts a tragic price from everyone who reaches for it',
     w:['the two texts give incompatible accounts of the historical Caesar and his reign',
        'The Prince is a work of fiction while the play is based closely on the historical record',
        'neither text is finally concerned with politics, which is only the setting for a moral argument'],
     why:'genre carries the values: a treatise can recommend, but a tragedy has to show consequences' },
-  { ask:'how context shapes the difference between them', a:'Machiavelli wrote for the fractured city-states of Renaissance Italy, while Shakespeare wrote under a late Elizabethan anxiety about succession and legitimacy',
+  { q:'How does context shape the difference between them?', a:'Machiavelli wrote for the fractured city-states of Renaissance Italy, while Shakespeare wrote under a late Elizabethan anxiety about succession and legitimacy',
     w:['both were written within a few years of each other for the same European court audience',
        'Shakespeare wrote first, and Machiavelli set out to answer the questions the play had raised',
        'both were written in periods of settled, uncontested rule, which is why neither fears disorder'],
     why:'Elizabeth had no heir, and staging the assassination of a ruler was risky enough that the Roman setting was a kind of cover' },
-  { ask:'what “textual conversation” means in this module', a:'reading one text in the light of the other, so each reframes the ideas and values of its counterpart',
+  { q:'What does “textual conversation” mean in this module?', a:'reading one text in the light of the other, so each reframes the ideas and values of its counterpart',
     w:['establishing which text came first and showing what the later one borrowed from it',
        'judging which of the two texts is the more accomplished piece of writing, and defending that view',
        'analysing each text thoroughly in turn, then noting the similarities in a final paragraph'],
     why:'the marks are for the reframing, which is why a paragraph that treats each text in turn without connecting them loses them' },
-  { ask:'the function of the crowd in Julius Caesar', a:'it is shown as moveable by whoever speaks last, which makes popular support look like a resource to be won rather than a judgement to be trusted',
+  { q:'What is the function of the crowd in Julius Caesar?', a:'it is shown as moveable by whoever speaks last, which makes popular support look like a resource to be won rather than a judgement to be trusted',
     w:['it is shown as a steady moral centre, so the audience can measure the conspirators against it',
        'it is kept offstage throughout, and we learn what the people think only from what the nobles report',
        'it decides nothing of consequence, since the outcome is settled entirely on the battlefield'],
@@ -329,43 +338,43 @@ const EN_CONV = [
 function genEnConv(){
   const e = pk(EN_CONV);
   const m = mc(e.a, enOptions(EN_CONV, e));
-  return { q:'<b>Textual Conversations</b> — <i>The Prince</i> and <i>Julius Caesar</i>.<br>' + e.ask[0].toUpperCase() + e.ask.slice(1) + '?',
-    choices:m.choices, answer:m.answer, data:{ kind:'en-conv', ask:e.ask },
+  return { q:'<b>Textual Conversations</b> — <i>The Prince</i> and <i>Julius Caesar</i>.<br>' + e.q,
+    choices:m.choices, answer:m.answer, data:{ kind:'en-conv', q:e.q },
     note:e.why[0].toUpperCase() + e.why.slice(1) + '.' };
 }
 
 /* ── Critical study of literature: Warlight ─────────────────────────────
    In copyright, so discussed rather than quoted. */
 const EN_WAR = [
-  { ask:'the effect of Nathaniel narrating from much later in life', a:'the adult reconstruction keeps admitting what it cannot know, so the reader is made to assemble the past the same way he does',
+  { q:'What is the effect of Nathaniel narrating from much later in life?', a:'the adult reconstruction keeps admitting what it cannot know, so the reader is made to assemble the past the same way he does',
     w:['the distance of years lets him set the record straight, so the account we get is complete and reliable',
        'telling it afterwards removes any suspense, since the reader knows from the first page how it ends',
        'the retrospective frame means the novel is narrated in the present tense as events happen'] },
-  { ask:'what the novel’s two-part structure does', a:'the first part lives inside a child’s partial understanding, and the second re-reads the same events with adult knowledge, which changes their meaning without undoing the uncertainty',
+  { q:'What does the novel’s two-part structure do?', a:'the first part lives inside a child’s partial understanding, and the second re-reads the same events with adult knowledge, which changes their meaning without undoing the uncertainty',
     w:['the two parts follow two unrelated sets of characters, and the connection between them is never made',
        'the second part repeats the first almost exactly, so the reader can check the details for themselves',
        'both parts run in strict chronological order, so nothing is ever revisited or reinterpreted'] },
-  { ask:'the significance of the title’s “warlight”', a:'it names the dimmed, partial light of wartime blackout, and stands for a way of seeing that is never fully illuminated',
+  { q:'What is the significance of the title’s “warlight”?', a:'it names the dimmed, partial light of wartime blackout, and stands for a way of seeing that is never fully illuminated',
     w:['it refers to the searchlights used to find aircraft, and so to the idea of being hunted from above',
        'it is the name of the boat the characters use to move cargo along the river at night',
        'it is a phrase from a wartime poem the characters quote to each other, with no wider meaning'] },
-  { ask:'how the novel treats the end of the war', a:'it shows the aftermath as unfinished business — secrecy, reprisal and consequence continuing long after the declared peace',
+  { q:'How does the novel treat the end of the war?', a:'it shows the aftermath as unfinished business — secrecy, reprisal and consequence continuing long after the declared peace',
     w:['it presents 1945 as a clean break, after which the characters are free to start their lives again',
        'the war is kept entirely offstage, so the novel could be set in any period of upheaval',
        'the aftermath is covered in a short epilogue that ties up what the main narrative left open'] },
-  { ask:'why Module B asks about “textual integrity”', a:'it asks how the parts of the text — form, structure, language, ideas — work together as a whole, which is what makes a reading of it defensible',
+  { q:'Why does Module B ask about “textual integrity”?', a:'it asks how the parts of the text — form, structure, language, ideas — work together as a whole, which is what makes a reading of it defensible',
     w:['it asks whether the composer’s own account of the work matches what the text actually does',
        'it asks whether the historical detail in the text is accurate enough to be relied on',
        'it asks how well the text has held its reputation, measured by sales and later editions'] },
-  { ask:'the role of concealment in the novel', a:'characters withhold their histories and their purposes, so trust and knowledge are always partial — the condition the narrator writes from',
+  { q:'What is the role of concealment in the novel?', a:'characters withhold their histories and their purposes, so trust and knowledge are always partial — the condition the narrator writes from',
     w:['the characters are unusually open with each other, which is what makes the later betrayals land',
        'concealment is confined to the final chapter, where the earlier events are explained at last',
        'the narrator explains each secret as soon as it arises, so the reader is always a step ahead'] },
-  { ask:'what an informed personal response means in Module B', a:'a judgement of your own about the text’s value, supported by close analysis and aware of how others have read it',
+  { q:'What does an informed personal response mean in Module B?', a:'a judgement of your own about the text’s value, supported by close analysis and aware of how others have read it',
     w:['an account of how the text made you feel, written honestly and in the first person',
        'a survey of what published critics have said, presented fairly and without taking sides',
        'a thorough catalogue of the composer’s techniques, with an example of each from the text'] },
-  { ask:'how landscape and the river work in the novel', a:'they carry the narrative’s concealments — routes used at night, places that hold what people will not say',
+  { q:'How do landscape and the river work in the novel?', a:'they carry the narrative’s concealments — routes used at night, places that hold what people will not say',
     w:['they are description for its own sake, giving the reader a rest between the scenes that matter',
        'they appear only in the second half, once the narrator has left London behind for good',
        'they are there to establish historical accuracy, and carry no thematic weight of their own'] }
@@ -373,8 +382,8 @@ const EN_WAR = [
 function genEnWarlight(){
   const e = pk(EN_WAR);
   const m = mc(e.a, enOptions(EN_WAR, e));
-  return { q:'<b>Critical Study of Literature</b> — <i>Warlight</i>.<br>' + e.ask[0].toUpperCase() + e.ask.slice(1) + '?',
-    choices:m.choices, answer:m.answer, data:{ kind:'en-warlight', ask:e.ask },
+  return { q:'<b>Critical Study of Literature</b> — <i>Warlight</i>.<br>' + e.q,
+    choices:m.choices, answer:m.answer, data:{ kind:'en-warlight', q:e.q },
     note:'Module B wants a sustained reading of the whole text, held together by how it is made — so structure and narration are usually the strongest ground to argue from.' };
 }
 

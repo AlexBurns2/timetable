@@ -143,10 +143,10 @@ function genEnCivHist(){
     { ask:'the Bessemer process', a:'it made steel cheap enough for large structures', w:['it made concrete set faster', 'it produced the first aluminium alloys', 'it replaced riveting with welding'] },
     { ask:'the move from riveting to welding', a:'it produced lighter, stiffer joints with fewer stress concentrations', w:['it made joints heavier but cheaper', 'it removed the need for inspection', 'it made steel immune to fatigue'] },
     { ask:'computer-aided design and analysis', a:'it allowed complex structures to be modelled and optimised before building', w:['it removed the need for factors of safety', 'it made materials stronger', 'it replaced site inspection'] },
-    { ask:'a social impact of a major bridge', a:'it reshapes where people live and work by cutting travel time', w:['it has no effect beyond the engineering', 'it only matters to the people who build it', 'it reduces the population of a city'] }
+    { ask:'a social impact of a major bridge', q:'What is a social impact of <b>a major bridge</b>?', a:'it reshapes where people live and work by cutting travel time', w:['it has no effect beyond the engineering', 'it only matters to the people who build it', 'it reduces the population of a city'] }
   ]);
   const m = mc(e.a, e.w);
-  return { q:'What was the significance of <b>' + e.ask + '</b>?',
+  return { q:e.q || 'What was the significance of <b>' + e.ask + '</b>?',
     choices:m.choices, answer:m.answer, data:{ kind:'en-civhist', ask:e.ask },
     note:'Engineering Studies asks for the link between a technological change and its effect on society, not just the date — material, method and consequence together.' };
 }
@@ -162,7 +162,7 @@ function genEnTraMat(){
       { ask:'rubber in tyres', a:'high friction and the ability to absorb shock through elastic deformation', w:['high stiffness so the tyre keeps its shape', 'high melting point', 'electrical conductivity'] }
     ]);
     const m = mc(e.a, e.w);
-    return { q:'Why are <b>' + e.ask + '</b> used?',
+    return { q:'Why use <b>' + e.ask + '</b>?',
       choices:m.choices, answer:m.answer, data:{ kind:'en-tramat', ask:e.ask },
       note:'Material choice in a vehicle is a trade-off between strength, weight, cost, formability and how it behaves in a crash.' };
   }
@@ -265,7 +265,7 @@ function genEnTraHist(){
     { ask:'the catalytic converter', a:'it cut carbon monoxide, hydrocarbon and nitrogen oxide emissions', w:['it increased engine power', 'it reduced the weight of the exhaust', 'it replaced the muffler'] },
     { ask:'the seatbelt and later the airbag', a:'they spread the force of a crash over a longer time and a wider area of the body', w:['they make the car stiffer', 'they reduce the mass of the car', 'they stop the car crumpling'] },
     { ask:'the shift to electric vehicles', a:'it moves the emissions from the vehicle to wherever the electricity is generated', w:['it removes all environmental impact', 'it makes vehicles lighter', 'it removes the need for brakes'] },
-    { ask:'mass car ownership for cities', a:'it spread cities outwards and made them depend on road networks', w:['it had no effect on how cities grew', 'it made cities more compact', 'it ended public transport everywhere'] }
+    { ask:'mass car ownership on cities', a:'it spread cities outwards and made them depend on road networks', w:['it had no effect on how cities grew', 'it made cities more compact', 'it ended public transport everywhere'] }
   ]);
   const m = mc(e.a, e.w);
   return { q:'What was the effect of <b>' + e.ask + '</b>?',
@@ -422,7 +422,7 @@ function genEnTelElec(){
       { g:'NOR', a:'1 only when both inputs are 0', w:['1 when either input is 1', '1 only when both inputs are 1', '1 when the inputs differ'] }
     ]);
     const m = mc(e.a, e.w);
-    return { q:'What does a <b>' + e.g + '</b> gate output?',
+    return { q:'What does ' + (/^(AND|OR|XOR|XNOR)$/.test(e.g) ? 'an' : 'a') + ' <b>' + e.g + '</b> gate output?',
       choices:m.choices, answer:m.answer, data:{ kind:'en-gate', g:e.g },
       note:'The truth table is the quickest way to tell them apart, and NAND on its own can be wired to make any of the others.' };
   }
@@ -466,10 +466,10 @@ function genEnDraw(){
     { ask:'a hidden detail line', a:'a dashed line showing an edge that cannot be seen from that view', w:['a solid thick line for a visible edge', 'a chain line for a centre', 'a thin line for a dimension'] },
     { ask:'a centre line', a:'a long-dash short-dash chain line marking the axis of a round feature', w:['a dashed line for a hidden edge', 'a thick line for a visible edge', 'a wavy line for a break'] },
     { ask:'an isometric drawing', a:'a pictorial view with the three axes at 120° and no perspective convergence', w:['a view with vanishing points', 'a flat view from directly above', 'a cut-away view'] },
-    { ask:'why a drawing carries a scale and a title block', a:'so anyone reading it knows the size, the part, the revision and who approved it', w:['so it looks professional', 'so it can be copied more easily', 'so the drawing can be printed in colour'] }
+    { ask:'why a drawing carries a scale and a title block', q:'In engineering drawing, why does <b>a drawing carry a scale and a title block</b>?', a:'so anyone reading it knows the size, the part, the revision and who approved it', w:['so it looks professional', 'so it can be copied more easily', 'so the drawing can be printed in colour'] }
   ]);
   const m = mc(e.a, e.w);
-  return { q:'In engineering drawing, what is <b>' + e.ask + '</b>?',
+  return { q:e.q || 'In engineering drawing, what is <b>' + e.ask + '</b>?',
     choices:m.choices, answer:m.answer, data:{ kind:'en-draw', ask:e.ask },
     note:'Drawing conventions exist so a drawing means exactly one thing to everyone who reads it, anywhere.' };
 }

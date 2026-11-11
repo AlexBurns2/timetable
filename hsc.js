@@ -28,11 +28,15 @@
    without anyone having to remember. */
 const MINUS_RE = /(^|[\s(>=,\[:+×÷\/−-])-(?=[\d.])/g;
 const fixMinus = s => (typeof s === 'string' ? s.replace(MINUS_RE, '$1−') : s);
+/* fixArticles ("a 8 kg" → "an 8 kg") lives in games.js. The service worker can
+   pair this file with a games.js cached from before it existed, so it is read
+   inside try, the way study.js's grab() reads other scripts' globals. */
+const hscArticles = s => { try { return fixArticles(s); } catch { return s; } };
 function tidyQ(gen){
   return function(){
     const q = gen();
-    q.q = fixMinus(q.q);
-    if (q.note) q.note = fixMinus(q.note);
+    q.q = hscArticles(fixMinus(q.q));
+    if (q.note) q.note = hscArticles(fixMinus(q.note));
     if (q.choices){                       // the answer must stay identical to its option
       const was = q.choices.slice();
       let fixed = was.map(fixMinus);
