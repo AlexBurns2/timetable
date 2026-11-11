@@ -25,7 +25,7 @@
 
 /* The generator's version. Puzzles made by an older one are deleted and made
    again (see _connroute.js); bump this whenever the categories or rules change. */
-export const QUARTETS_VERSION = 7;
+export const QUARTETS_VERSION = 8;
 
 /* ── small word lists (lower case) ─────────────────────────────────── */
 const L = s => s.split(' ');
@@ -213,7 +213,7 @@ export function tidyTeacher(t){
   const m = s.match(/^([^,]+),\s*(.+)$/);
   return m ? m[2].trim() + ' ' + m[1].trim() : s;
 }
-export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, sampleSize = 36, rosterMax = 8, fetchMax = 200 }){
+export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200 }){
   const senior = Number(year) >= 11;
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   const n = people.length;
@@ -223,7 +223,7 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
   const loadTT = async emails => {
     const want = emails.filter(e => !tts.has(e)).slice(0, Math.max(0, fetchMax - fetches));
     fetches += want.length;
-    await eachLimited(want, 8, async e => { try { tts.set(e, readTimetable(await getTT(e))); } catch { tts.set(e, null); } });
+    await eachLimited(want, 8, async e => { try { const raw = await getTT(e); tts.set(e, readTimetable(raw)); if (onTimetable) onTimetable(e, raw); } catch { tts.set(e, null); } });
   };
 
   /* 1. a sample of timetables: which subjects are common, which classes to read */
@@ -320,7 +320,7 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
         if (chosen.some(o => o.kind !== 'name')) await loadTT(batch);
         for (const e of batch){
           if (picked.length >= 4) break;
-          if (!tts.get(e)) continue;                                         // need their timetable to be sure
+          if (!tts.get(e) || !tts.get(e).subjects.size) continue;            // need their timetable, and real classes in it
           if (chosen.some(o => o !== c && fits(e, o) !== false)) continue;
           if (picked.some(x => first(x) === first(e) || last(x) === last(e))) continue;
           picked.push(e);

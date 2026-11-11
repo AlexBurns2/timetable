@@ -17,8 +17,8 @@
  * puzzle is kept as it was made: there's no older-version handling to carry.
  */
 import { db } from "./_supabase.js";
-import { withName, stripEmails } from "./_names.js";
-import { fetchAsOwner, studentDirectory } from "./timetable.js";
+import { withName, stripEmails, rosterList, markClasses, hasClassesIn } from "./_names.js";
+import { fetchAsOwner } from "./timetable.js";
 import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
 import { makeQuartets, hashStr, howFor, tidyTeacher, QUARTETS_VERSION } from "./_conn.js";
 
@@ -77,8 +77,8 @@ async function ensureConn(year, date, NAMES) {
 
   /* the year, by the names people know them by (two people with the same name are left out) */
   const seen = new Map();
-  for (const p of await studentDirectory()) {
-    if (String(p.year) !== String(year) || !p.first || !p.last || !p.email) continue;
+  for (const p of await rosterList()) {
+    if (String(p.year) !== String(year) || !p.first || !p.last || !p.email || p.hasClasses === false) continue;   // no classes here: not in the game
     const name = withName(NAMES, p.email, p.first + " " + p.last).replace(/\s+/g, " ").trim();
     const parts = name.split(" ");
     const k = name.toLowerCase();
@@ -100,8 +100,10 @@ async function ensureConn(year, date, NAMES) {
   const { data: recent } = await db.from("conn_puzzle").select("groups").eq("year", key).lt("date", date)
     .order("date", { ascending: false }).limit(3);
   (recent || []).forEach(r => (Array.isArray(r.groups) ? r.groups : []).forEach(g => g && g.id && avoid.add(g.id)));
-  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, teacherName });
-  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, teacherName });
+  const checked = new Map(), onTimetable = (e, raw) => checked.set(e, hasClassesIn(raw));   // everyone whose timetable was read
+  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, teacherName, onTimetable });
+  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, teacherName, onTimetable });
+  markClasses(checked).catch(() => {});
   /* kept: the categories and who's in them (emails stay on the server) */
   const groups = made ? made.groups.map(g => ({ lv: g.lv, id: g.id, label: g.label, kind: g.kind, names: g.names, emails: g.emails })) : [];
 

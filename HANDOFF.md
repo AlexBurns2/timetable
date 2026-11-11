@@ -3000,3 +3000,26 @@ data. No icon font or CDN script loads on the live site.
     the first time, and `Poll.mount({ initial })` takes the poll, measuring the
     server's clock from when the shared request was sent.
   - Later refreshes are separate, as before, and so is the signed-out view.
+
+### 8.77 Only students who have classes; Quartets icon
+- **No-classes list:** `student_cache.has_classes` marks students the directory
+  lists but whose timetable comes back empty (left, or an old second account,
+  e.g. william.logan3). `null` means not checked yet and counts as having
+  classes. Two more columns are needed; the SQL is in SETUP.md.
+- **How it fills:**
+  - Every night `checkSomeClasses(10 s)` checks a batch: never-checked students
+    first, then anyone not checked in 14 days.
+  - It also learns from Quartets generation (every timetable it reads) and from
+    Daily Guess Who's pick.
+  - `markClasses()` saves results; `hasClassesIn(raw)` decides (an empty array
+    means no classes; an error or odd shape means unknown).
+- **Left out wherever people are picked:**
+  - Quartets: people are filtered, and members need a timetable with real
+    subjects.
+  - Daily Guess Who: the mystery person is checked; if they have no classes,
+    the next in a fixed order is used, up to 6 tries. Their name list is
+    filtered too.
+  - The poll's student options.
+  - `?group=student` (the Guess Who games) and the student finder.
+  - `QUARTETS_VERSION` is now 8.
+- **Icon:** Quartets uses 🍀 (2048 has 🧩).

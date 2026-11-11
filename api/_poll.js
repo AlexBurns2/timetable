@@ -220,7 +220,7 @@ async function eachLimited(list, n, fn) {
 /* students in one year, by the name people know them by */
 async function yearMates(year, NAMES) {
   const all = await rosterList();
-  return all.filter(p => String(p.year) === String(year))
+  return all.filter(p => String(p.year) === String(year) && p.hasClasses !== false)
     .map(p => ({ id: userOf(p.email), label: withName(NAMES, p.email, [p.first, p.last].filter(Boolean).join(" ") || userOf(p.email)),
                  email: p.email }))
     .sort((a, b) => a.label.localeCompare(b.label));

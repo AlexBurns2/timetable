@@ -2804,6 +2804,8 @@ create table if not exists student_cache (
   year       int,
   updated_at timestamptz not null default now()
 );
+alter table student_cache add column if not exists has_classes     boolean;       -- false: no classes here (left, or an old account); null: not checked yet
+alter table student_cache add column if not exists classes_checked timestamptz;
 alter table student_cache enable row level security;   -- no policies: only the server (service role) reads or writes
 ```
 It fills itself at the next nightly run, or you can trigger it from

@@ -20,7 +20,7 @@
  *                               looked up. Unset = anyone may look up anyone.
  *   EMAIL_DOMAIN      optional  default: the domain of SCHOOL_EMAIL
  */
-import { nameOverrides, renamePerson, renameList } from "./_names.js";
+import { nameOverrides, renamePerson, renameList, noClassesSet } from "./_names.js";
 /* a class list or directory, wrapped or bare, with overrides written over the names */
 const renameRoster = (map, x) => Array.isArray(x) ? renameList(map, x)
   : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, Array.isArray(v) ? renameList(map, v) : v])) : x;
@@ -485,6 +485,7 @@ export default async function handler(req, res) {
         const parts = hit.trim().split(/\s+/); return { ...p, first: parts[0], last: parts.slice(1).join(" ") };
       });
       if (yr >= 7 && yr <= 12) people = people.filter(p => p.year === yr);   // before the cap, so it hides nothing
+      const none = await noClassesSet(); people = people.filter(p => !none.has(p.email));   // no classes here: not findable
       let results = searchStudents(people, q, 20), close = false;
       if (!results.length) { results = closeStudents(people, q, 20); close = results.length > 0; }
       return res.status(200).json({ query: q, results, close });
@@ -574,7 +575,12 @@ export default async function handler(req, res) {
       }
       res.setHeader("Cache-Control", usingOwn ? "private, no-store"
                                               : "public, s-maxage=3600, stale-while-revalidate=86400");
-      return res.status(200).json({ group: g, people: renameRoster(await nameOverrides(), list) });
+      /* students with no classes here (left, or an old account) aren't in the games */
+      const none = g === "student" ? await noClassesSet() : new Set();
+      const keep = arr => arr.filter(p => !none.has(String(p.emailAddress || p.Email || p.email || "").toLowerCase()));
+      const shown = Array.isArray(list) ? keep(list) : list && typeof list === "object"
+        ? Object.fromEntries(Object.entries(list).map(([k, v]) => [k, Array.isArray(v) ? keep(v) : v])) : list;
+      return res.status(200).json({ group: g, people: renameRoster(await nameOverrides(), shown) });
     } catch (error) {
       const status = error.status || 502;
       console.error("Group directory failed:", error.message);

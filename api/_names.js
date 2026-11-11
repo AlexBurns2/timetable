@@ -79,14 +79,15 @@ export async function rosterList() {
     try {
       const rows = [];
       for (let from = 0; from < 10000; from += 1000) {           // a page at a time (the database hands back 1,000 at most)
-        const { data, error } = await db.from("student_cache").select("email, first, last, year, updated_at").order("email").range(from, from + 999);
+        const { data, error } = await db.from("student_cache").select("email, first, last, year, has_classes, updated_at").order("email").range(from, from + 999);
         if (error) throw new Error(error.message);
         rows.push(...(data || []));
         if (!data || data.length < 1000) break;
       }
       const newest = rows.reduce((a, r) => Math.max(a, Date.parse(r.updated_at) || 0), 0);
       if (rows.length && Date.now() - newest < ROSTER_STALE) {
-        roster = rows.map(r => ({ email: r.email, first: r.first || "", last: r.last || "", year: r.year == null ? null : +r.year }));
+        roster = rows.map(r => ({ email: r.email, first: r.first || "", last: r.last || "", year: r.year == null ? null : +r.year,
+                                  hasClasses: r.has_classes == null ? null : !!r.has_classes }));
         rosterAt = Date.now();
         return roster;
       }
@@ -108,6 +109,50 @@ export async function refreshRosterCache() {
   }
   roster = list; rosterAt = Date.now();
   return list.length;
+}
+
+/* Students the directory lists who have no classes at the school (left, or an
+   old account, like a second login for the same person). Their timetable comes
+   back empty; they're remembered in student_cache.has_classes and left out of
+   everything that picks people: Quartets, Daily Guess Who, the poll's names and
+   the Guess Who lists. null means not checked yet, and counts as having classes. */
+export const hasClassesIn = raw => {
+  const rows = Array.isArray(raw) ? raw : raw && (raw.timetable || raw.Timetable);
+  return Array.isArray(rows) ? rows.length > 0 : null;                  // can't tell: don't guess
+};
+export async function noClassesSet() {
+  try { return new Set((await rosterList()).filter(p => p.hasClasses === false).map(p => p.email)); }
+  catch { return new Set(); }
+}
+/* remember what timetables showed: Map(email → true / false) */
+export async function markClasses(marks) {
+  if (!db || !marks || !marks.size) return;
+  const now = new Date().toISOString();
+  const rows = [...marks].filter(([, v]) => v === true || v === false).map(([email, has]) => ({ email, has_classes: has, classes_checked: now }));
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await db.from("student_cache").upsert(rows.slice(i, i + 500), { onConflict: "email" });
+    if (error) { console.warn("class check save:", error.message); return; }
+  }
+  if (roster) roster.forEach(p => { if (marks.has(p.email) && marks.get(p.email) != null) p.hasClasses = marks.get(p.email); });
+}
+/* the nightly job: check a batch of students not checked lately (never, or over two weeks ago) */
+export async function checkSomeClasses(budgetMs) {
+  if (!db) return 0;
+  const { fetchAsOwner } = await import("./timetable.js");
+  const since = new Date(Date.now() - 14 * 864e5).toISOString(), until = Date.now() + (budgetMs || 10000);
+  const { data, error } = await db.from("student_cache").select("email").or("has_classes.is.null,classes_checked.lt." + since)
+    .order("classes_checked", { ascending: true, nullsFirst: true }).limit(600);
+  if (error) throw new Error(error.message);
+  const todo = (data || []).map(r => r.email), marks = new Map();
+  let i = 0;
+  await Promise.all(Array.from({ length: 8 }, async () => {
+    while (i < todo.length && Date.now() < until) {
+      const e = todo[i++];
+      try { marks.set(e, hasClassesIn(await fetchAsOwner("/api/timetable/" + encodeURIComponent(e)))); } catch { /* unknown: next time */ }
+    }
+  }));
+  await markClasses(marks);
+  return marks.size;
 }
 
 let dirNames = null, dirAt = 0, dirFailAt = 0;

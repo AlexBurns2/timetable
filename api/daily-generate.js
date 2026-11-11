@@ -12,7 +12,7 @@
 import { db } from "./_supabase.js";
 import { ensurePuzzle, sydneyDate } from "./_daily.js";
 import { prebuildQuartets } from "./_connroute.js";
-import { displayNames, refreshRosterCache } from "./_names.js";
+import { displayNames, refreshRosterCache, checkSomeClasses } from "./_names.js";
 
 /* making six years of Quartets reads a lot of timetables */
 export const config = { maxDuration: 60 };
@@ -29,6 +29,9 @@ export default async function handler(req, res) {
   /* first, the copy of the student directory every route reads its names and years from */
   let roster;
   try { roster = await refreshRosterCache(); } catch (e) { roster = "skip"; console.error("roster cache:", e.message); }
+  /* then who actually has classes, a batch a night (people with none are left out of the games) */
+  let checked;
+  try { checked = await checkSomeClasses(10000); } catch (e) { checked = "skip"; console.error("class check:", e.message); }
   for (const year of ["7", "8", "9", "10", "11", "12"]) {
     try { await ensurePuzzle(db, year, date); out[year] = "ok"; }
     catch (e) { out[year] = "skip"; console.error(`daily-generate ${year}:`, e.message); }
@@ -41,5 +44,5 @@ export default async function handler(req, res) {
     try { quartets[y] = await prebuildQuartets(y, date, NAMES); } catch (e) { quartets[y] = "skip"; console.error(`quartets ${y}:`, e.message); } } };
   await Promise.all([one(), one()]);
   years.forEach(y => quartets[y] = "later");
-  res.status(200).json({ date, roster, generated: out, quartets });
+  res.status(200).json({ date, roster, checked, generated: out, quartets });
 }

@@ -66,7 +66,7 @@ function nameFromEmail(email) {
 async function candidatesFor(year, stored, answer) {
   let list = null;
   try {
-    list = (await rosterList()).filter(p => String(p.year) === String(year) && p.first && p.last)
+    list = (await rosterList()).filter(p => String(p.year) === String(year) && p.first && p.last && p.hasClasses !== false)
       .map(p => withName(NAMES, p.email, p.first + " " + p.last));
   } catch { list = null; }
   if (!list || !list.length) list = (stored || []).slice();
