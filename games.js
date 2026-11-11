@@ -1343,8 +1343,7 @@ BUILD.dailyguess = host => {
    Sixteen people from your year and four hidden groups of four, levels 1
    (easiest) to 4. Pick four and check them; four mistakes and it's over.
    Laid out like Daily Guess Who: your streak, the Archive calendar of past
-   days, and Results for how your year went (which opens when you finish and
-   closes again so you can look at your board). The puzzle and its answers
+   days, and how your year went, shown under your board once you finish. The puzzle and its answers
    come from /api/daily?conn=1 (api/_connroute.js); guesses are marked here,
    instantly, and saved in the background. */
 const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
@@ -1372,13 +1371,11 @@ BUILD.quartets = host => {
     const calOpen = !!(document.getElementById('qtcal') && !document.getElementById('qtcal').hidden);
     return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : longDate(s.date)) + '</b></span>' +
       '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="qtstreak">' + (streak || 0) + '</b></span><span class="dgsp"></span>' +
-      '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button>' +
-      '<button class="dgchip" id="qtsumbtn" type="button" aria-expanded="false" aria-controls="qtsummary"' + (s.none ? ' hidden' : '') + '>Results</button></div>' +
+      '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button></div>' +
       '<div class="dgcal" id="qtcal"' + (calOpen ? '' : ' hidden') + '></div>';
   }
   function wireBar(s){
     $('qtcalbtn').onclick = toggleCal;
-    if ($('qtsumbtn')) $('qtsumbtn').onclick = () => toggleSummary(s.date);
     if (!$('qtcal').hidden) paintCal();
   }
 
@@ -1390,23 +1387,27 @@ BUILD.quartets = host => {
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
     const r0 = s.result || {};
     let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
-    const CH = s.chances || 6;                       // mistakes allowed
+    const CH = s.chances || 7;                       // mistakes allowed
     const sel = new Set(), tried = new Set();
     /* Hints, worked out from the guesses so far (so a reload keeps them):
-       3 wrong in a row lights up two people from the easiest group still
-       unsolved; a 4th wrong in a row lights up a third from that group. That's
+       2 wrong in a row lights up two people from the easiest group still
+       unsolved; a 3rd wrong in a row lights up a third from that group. That's
        all: two hints a day at most, and if the group is solved before the
        second, the second is used up. */
-    const hintNames = () => {
-      let run = 0, step = 0, hg = null; const got = [];
+    /* and with one mistake left, a last one: two people from another group still
+       unsolved, outlined in blue so it's clear they're a different pair */
+    const hints = () => {
+      let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];
       for (const g of log){
         if (g.every(l => l === g[0])){ got.push(g[0]); run = 0; continue; }
-        run++;
-        if (run === 3 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
-        else if (run === 4 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
+        run++; wrong++;
+        if (run === 2 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
+        else if (run === 3 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
+        if (wrong === CH - 1 && !lg) lg = groups.find(x => !got.includes(x.lv) && x !== hg) || null;
       }
-      if (!hg || found.includes(hg.lv) || step === 3) return [];
-      return seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
+      const gold = !hg || found.includes(hg.lv) || step === 3 ? [] : seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
+      const blue = !lg || found.includes(lg.lv) ? [] : seeded(lg.names, s.date + ':last').slice(0, 2);
+      return { gold, blue, n: gold.length + blue.length };
     };
     let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
 
@@ -1423,7 +1424,8 @@ BUILD.quartets = host => {
     wireBar(s);
 
     const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + (missed ? ' · missed' : '') + '</span><b>' + esc(g.label) + '</b>' +
-      '<span class="qtnames">' + g.names.map(n => esc(n) + (howOf.get(n) ? ' <i>(' + esc(howOf.get(n)) + ')</i>' : '')).join(', ') + '</span></div>';
+      /* each person as a chip, with why they fit beside the name (not small grey text) */
+      '<span class="qtnames">' + g.names.map(n => '<span class="qtp">' + esc(n) + (howOf.get(n) ? '<em>' + esc(howOf.get(n)) + '</em>' : '') + '</span>').join('') + '</span></div>';
     const paintSolved = () => {
       const missed = done && found.length < 4 ? groups.filter(g => !found.includes(g.lv)) : [];
       $('qtsolved').innerHTML = found.map(lv => row(groups.find(g => g.lv === lv), false)).join('') + missed.map(g => row(g, true)).join('');
@@ -1431,9 +1433,9 @@ BUILD.quartets = host => {
     const paintGrid = () => {
       const grid = $('qtgrid');
       grid.hidden = done;
-      const hinted = new Set(hintNames());
-      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (hinted.has(n) ? ' hint' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
-        (hinted.has(n) ? ' title="A hint: the highlighted people are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
+      const h = hints(), gold = new Set(h.gold), blue = new Set(h.blue);
+      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (gold.has(n) ? ' hint' : blue.has(n) ? ' hint hint2' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
+        (gold.has(n) || blue.has(n) ? ' title="A hint: the people outlined in the same colour are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
       grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
         if (done) return;
         const n = b.dataset.n;
@@ -1507,7 +1509,7 @@ BUILD.quartets = host => {
       tried.add(key);
       const lvs = pick.map(n => lvOf.get(n));
       const right = lvs.every(l => l === lvs[0]);
-      const before = hintNames().length;              // to tell if this guess unlocks a hint
+      const before = hints();                         // to tell if this guess unlocks a hint
       log.push(lvs);
       if (right){
         found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
@@ -1518,8 +1520,9 @@ BUILD.quartets = host => {
         const most = Math.max(...[1, 2, 3, 4].map(l => lvs.filter(x => x === l).length));
         say(most === 3 ? 'One away…' : 'Not a group.', true);
         /* a hint just unlocked: say so (after the shake) */
-        setTimeout(() => { const now = hintNames().length;
-          if (!done && now > before) say(now === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
+        setTimeout(() => { const now = hints(); if (done || now.n <= before.n) return;
+          if (now.blue.length > before.blue.length) say('Last chance: the two people outlined in blue are in the same group.');
+          else say(now.gold.length === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
         $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
           { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
         if (mistakes >= CH){ done = true; SFX.lose(); }
@@ -1530,16 +1533,11 @@ BUILD.quartets = host => {
     };
   }
 
-  /* ── Results: how your year went that day ── */
+  /* ── Results: how your year went that day, under your board once you've finished ── */
   async function openSummary(date){
-    const el = $('qtsummary'), b = $('qtsumbtn'); if (!el) return;
-    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    const el = $('qtsummary'); if (!el) return;
+    el.hidden = false;
     await loadSummary(date);
-  }
-  async function toggleSummary(date){
-    const el = $('qtsummary');
-    if (!el.hidden){ el.hidden = true; $('qtsumbtn').setAttribute('aria-expanded', 'false'); return; }
-    await openSummary(date);
   }
   async function loadSummary(date){
     const el = $('qtsummary'); if (!el) return;
@@ -1550,7 +1548,7 @@ BUILD.quartets = host => {
   function renderSummary(el, sum, mine){
     if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const rate = Math.round(sum.solved / sum.played * 100);
-    const keys = Array.from({ length:sum.chances || 6 }, (_, i) => String(i)).concat('lost');
+    const keys = Array.from({ length:sum.chances || 7 }, (_, i) => String(i)).concat('lost');
     const max = Math.max(1, ...keys.map(k => sum.dist[k] || 0));
     const tip = k => { const l = (sum.names || {})[k]; return l && l.length ? ' title="' + esc(l.join(', ')) + '"' : ''; };
     const bar = (label, k, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"' + tip(k) + '><span class="dgbl">' + label + '</span>' +

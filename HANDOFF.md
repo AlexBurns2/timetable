@@ -3023,3 +3023,32 @@ data. No icon font or CDN script loads on the live site.
   - `?group=student` (the Guess Who games) and the student finder.
   - `QUARTETS_VERSION` is now 8.
 - **Icon:** Quartets uses 🍀 (2048 has 🧩).
+
+### 8.78 Quartets: easier-to-read hints
+- **Solved and missed rows:** each person is a chip (dark text on a pale
+  backing, `.qtp`). The "why" (emu, Mg, Kevin Rudd) is a small dark label
+  inside the chip (`.qtp em`), instead of 70%-opacity grey text in brackets.
+- **Missed groups** stay at full strength, marked by a dashed edge (they used to
+  be faded to 80%).
+- **Hinted tiles** get a solid gold outline and a gold dot in the corner. The
+  tile's own background and text are unchanged, so it reads in every theme.
+  The old version was a faint gold tint behind the text.
+
+### 8.79 Quartets: friendlier for newcomers
+- 7 mistakes allowed (`MAX_MISTAKES` = 7; the page's fallback is 7 too).
+  Results bars run 0–6 plus missed.
+- Hints come sooner: 2 wrong guesses in a row highlight two people from the
+  easiest group still unsolved, and a 3rd in a row highlights a third. It's
+  still two hints at most per puzzle.
+
+### 8.80 Quartets: a last-chance hint; results always shown
+- **Last-chance hint.** With one mistake left (after the 6th), two people from
+  another group still unsolved, the easiest one not already hinted, are
+  outlined in blue (`.qttile.hint2`). The message says "Last chance: the two
+  people outlined in blue are in the same group."
+  - `hints()` works out both kinds from the guess log and returns
+    `{ gold, blue, n }`.
+  - The gold hints are unchanged: two people after 2 wrong in a row, a third
+    after 3 in a row.
+- **No Results button.** How the year went is shown under your board once
+  you've finished, and isn't shown before.

@@ -23,7 +23,7 @@ import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
 import { makeQuartets, hashStr, howFor, tidyTeacher, QUARTETS_VERSION } from "./_conn.js";
 
 export const CONN_EPOCH = "2026-11-10";        // the first day of Quartets
-const MAX_MISTAKES = 6;
+const MAX_MISTAKES = 7;
 /* Puzzles and results are kept under "<year>#v<version>". A new version of the
    generator starts afresh: the year's puzzles and results from any older one
    are deleted (once per warm instance) and each day is made again on demand. */
