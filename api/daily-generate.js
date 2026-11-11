@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const NAMES = await displayNames();
   const years = ["12", "11", "10", "9", "8", "7"];
   const one = async () => { while (years.length && Date.now() - started < 45000) { const y = years.shift();
-    try { quartets[y] = await prebuildQuartets(y, date, NAMES); } catch (e) { quartets[y] = "skip"; console.error(`quartets ${y}:`, e.message); } } };
+    try { quartets[y] = await prebuildQuartets(y, date, NAMES, started + 52000); } catch (e) { quartets[y] = "skip"; console.error(`quartets ${y}:`, e.message); } } };
   await Promise.all([one(), one()]);
   years.forEach(y => quartets[y] = "later");
   res.status(200).json({ date, roster, checked, generated: out, quartets });

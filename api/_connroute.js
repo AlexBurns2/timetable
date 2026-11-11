@@ -6,15 +6,18 @@
  *      (the answers come with the puzzle so the page can mark a guess instantly,
  *       as Daily Guess Who does; nothing in them is private. `how` is worked out
  *       now, from the names people go by today.)
- *      { none:true } when no fair puzzle could be made that day
+ *      { none:true, retry:true } if it couldn't be made just now (nothing is kept, so
+ *      the next visit tries again; with the fallbacks in _conn.js this needs a
+ *      year of under ~40 people or the database failing)
  * GET  /api/daily?conn=1&archive=1          → every day with a puzzle: how many in the year played and solved it, and how you went
  * GET  /api/daily?conn=1&summary=1&date=…   → how the year went that day (see summaryFor)
  * POST /api/daily {conn:1, date, found:[levels], log:[[lv,lv,lv,lv]…], mistakes}  → { ok, streak }
  *
  * Each day's puzzle is made by _conn.js the first time anyone in the year opens
- * it, then kept, so past days can be played from the calendar; a day that
- * couldn't be made is kept as no groups, so it isn't retried every visit. A
- * puzzle is kept as it was made: there's no older-version handling to carry.
+ * it, then kept, so past days can be played from the calendar. A day is only
+ * kept once it has a puzzle. (Earlier, a day that couldn't be made was kept as
+ * no groups; such a day is made now, the next time it's opened or by the
+ * nightly job, and only that empty marker is replaced.)
  */
 import { db } from "./_supabase.js";
 import { withName, stripEmails, rosterList, markClasses, hasClassesIn } from "./_names.js";
@@ -68,12 +71,14 @@ function cleanDate(d, today) {
   return d > today || d < CONN_EPOCH ? null : d;
 }
 
-async function ensureConn(year, date, NAMES) {
+const isPuzzle = g => Array.isArray(g) && g.length === 4;
+async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
   const key = keyFor(year);
   const sel = () => db.from("conn_puzzle").select("groups").eq("date", date).eq("year", key).maybeSingle();
   let { data: row, error } = await sel();
   if (error) throw new Error("quartets read: " + error.message);
-  if (row) return row.groups;
+  if (row && isPuzzle(row.groups)) return row.groups;
+  const emptyBefore = !!row;                     // kept as "couldn't be made" by an earlier version: make it now
 
   /* the year, by the names people know them by (two people with the same name are left out) */
   const seen = new Map();
@@ -101,17 +106,31 @@ async function ensureConn(year, date, NAMES) {
     .order("date", { ascending: false }).limit(3);
   (recent || []).forEach(r => (Array.isArray(r.groups) ? r.groups : []).forEach(g => g && g.id && avoid.add(g.id)));
   const checked = new Map(), onTimetable = (e, raw) => checked.set(e, hasClassesIn(raw));   // everyone whose timetable was read
-  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, teacherName, onTimetable });
-  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, teacherName, onTimetable });
+  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, teacherName, onTimetable, deadline });
+  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, teacherName, onTimetable,
+                                         deadline: Math.max(deadline, Date.now() + 3000) });
   markClasses(checked).catch(() => {});
+  if (!made) { console.error("quartets: couldn't make", year, date, "from", people.length, "people"); return null; }   // not kept: tried again next visit
+  if (made.tier > 0) console.warn("quartets:", year, date, "made with fallback tier", made.tier);
   /* kept: the categories and who's in them (emails stay on the server) */
-  const groups = made ? made.groups.map(g => ({ lv: g.lv, id: g.id, label: g.label, kind: g.kind, names: g.names, emails: g.emails })) : [];
+  const groups = made.groups.map(g => ({ lv: g.lv, id: g.id, label: g.label, kind: g.kind, names: g.names, emails: g.emails }));
 
-  const { error: upErr } = await db.from("conn_puzzle")
-    .upsert({ date, year: key, groups }, { onConflict: "date,year", ignoreDuplicates: true });
-  if (upErr) throw new Error("quartets write: " + upErr.message);
+  if (emptyBefore) {
+    /* replace only the empty marker, never a puzzle someone else has just made */
+    const { error: e1 } = await db.from("conn_puzzle").update({ groups }).eq("date", date).eq("year", key).filter("groups", "eq", "[]");
+    if (e1) console.warn("quartets: replacing an empty day:", e1.message);
+    ({ data: row } = await sel());
+    if (row && !isPuzzle(row.groups)) {           // still the marker (the filter didn't match it): replace it by its key
+      const { error: e2 } = await db.from("conn_puzzle").update({ groups }).eq("date", date).eq("year", key);
+      if (e2) throw new Error("quartets write: " + e2.message);
+    }
+  } else {
+    const { error: upErr } = await db.from("conn_puzzle")
+      .upsert({ date, year: key, groups }, { onConflict: "date,year", ignoreDuplicates: true });
+    if (upErr) throw new Error("quartets write: " + upErr.message);
+  }
   ({ data: row } = await sel());                 // whoever wrote first wins
-  return row ? row.groups : groups;
+  return row && isPuzzle(row.groups) ? row.groups : groups;
 }
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
@@ -146,10 +165,16 @@ async function summaryFor(year, date, groups, NAMES) {
 
 /* the nightly job (api/daily-generate.js) makes each year's puzzle ahead of time,
    so the first player of the day doesn't wait while it's made */
-export async function prebuildQuartets(year, date, NAMES) {
+export async function prebuildQuartets(year, date, NAMES, deadline = Date.now() + 40000) {
   await dropOldVersions(String(year));
-  const groups = await ensureConn(String(year), date, NAMES);
-  return Array.isArray(groups) && groups.length === 4 ? "ok" : "none";
+  const groups = await ensureConn(String(year), date, NAMES, deadline);
+  /* and any earlier day kept empty (by an older version of this code), a few a night */
+  const { data: days } = await db.from("conn_puzzle").select("date, groups").eq("year", keyFor(year)).gte("date", CONN_EPOCH).lt("date", date).limit(1000);
+  for (const d of (days || []).filter(d => !isPuzzle(d.groups)).slice(0, 3)) {
+    if (Date.now() > deadline - 8000) break;
+    try { await ensureConn(String(year), d.date, NAMES, Math.min(deadline, Date.now() + 15000)); } catch (e) { console.error("quartets repair:", e.message); }
+  }
+  return isPuzzle(groups) ? "ok" : "none";
 }
 
 async function streakFor(email, today) {
@@ -174,7 +199,7 @@ export async function connRoute(req, res, me, body, NAMES) {
         db.from("conn_result").select("date, solved, done, mistakes").eq("email", me.email).eq("year", key).gte("date", CONN_EPOCH)
       ]);
       const by = {};
-      (days || []).filter(d => Array.isArray(d.groups) && d.groups.length === 4).forEach(d => by[d.date] = { date: d.date, played: 0, wins: 0 });
+      (days || []).forEach(d => by[d.date] = { date: d.date, played: 0, wins: 0 });   // a day kept empty is made when it's opened
       (plays || []).forEach(r => { const d = by[r.date]; if (d) { d.played++; if (r.solved) d.wins++; } });
       const m = {}; (mine || []).forEach(r => m[r.date] = { solved: !!r.solved, done: !!r.done, mistakes: r.mistakes || 0 });
       return res.status(200).json({ epoch: CONN_EPOCH, today, archive: Object.values(by).sort((a, b) => b.date.localeCompare(a.date)), mine: m });
@@ -182,7 +207,7 @@ export async function connRoute(req, res, me, body, NAMES) {
     const date = cleanDate(req.method === "POST" ? body && body.date : req.query.date, today);
     if (!date) return res.status(400).json({ error: "That day isn't available." });
     const stored = await ensureConn(year, date, NAMES);
-    if (!Array.isArray(stored) || stored.length !== 4) return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, none: true });
+    if (!isPuzzle(stored)) return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, none: true, retry: true });
     /* by the names people go by today; emails stay on the server */
     const groups = stored.map(g => {
       const names = (g.names || []).map((n, i) => withName(NAMES, (g.emails || [])[i], n));

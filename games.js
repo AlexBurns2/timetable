@@ -1384,7 +1384,11 @@ BUILD.quartets = host => {
 
   function play(s){
     cur = s;
-    if (s.none){ box.innerHTML = topBar(s, 0) + '<p class="how">No Quartets for this day: there weren’t enough clear groups to make a fair one.</p>'; wireBar(s); return; }
+    /* only if it couldn't be made just now (nothing was kept, so trying again makes it) */
+    if (s.none){
+      box.innerHTML = topBar(s, 0) + '<p class="how">This puzzle couldn’t be made just now.</p><button type="button" class="dgchip" id="qtretry">Try again</button>';
+      wireBar(s); $('qtretry').onclick = () => loadDay(s.date === s.today ? null : s.date); return;
+    }
     const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
     const lvOf = new Map(), howOf = new Map();
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
