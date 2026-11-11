@@ -3052,3 +3052,9 @@ data. No icon font or CDN script loads on the live site.
     after 3 in a row.
 - **No Results button.** How the year went is shown under your board once
   you've finished, and isn't shown before.
+
+### 8.81 Loading indicators everywhere
+- One loader for the whole site: `TT.loader(text, late, { sm })` in theme.js writes it, styles `.ld*` at the end of theme.css. A spinner and what's loading; after 6 s a "still loading" line (or the `late` text); after 20 s "This is taking much longer than usual… wait a little, or reload". Pure CSS timing, so it keeps going while the page is busy. `.ldinline` puts a small spinner in front of a line or button (index's subtitle and Now/Next cards, Home's "more posts", the class-list button, free periods' status line).
+- Used in games.js (`LD()`, hoisted; leaderboard cards, Quartets "Loading today's puzzle…", Guess Who, admin, flashcards), poll.js history, jim.js, mahjong.js, home.html forum, calendar.html. home.html and calendar.html write the same markup statically.
+- `TT.api` now gives up after 70 s (AbortController; `opts.timeout` to change) with "The server took too long to answer", and a failed fetch says "Couldn't reach the server". index.html's timetable fetch does the same, so a stall falls back to the saved copy like any other failure; its subtitle turns to "Still loading. The school's system is slow right now…" after 8 s, and Now/Next say "Loading…" instead of "Nothing scheduled" while there's nothing yet.
+- Preview: `/mock/lag?ms=…&match=…` delays every /api/ answer (or those whose URL contains `match`).

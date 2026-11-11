@@ -495,7 +495,7 @@ function wire(){
 }
 function history(){
   openSheet('Past polls', async body => {
-    body.innerHTML = '<p class="pnote">Loading…</p>';
+    body.innerHTML = TT.loader ? TT.loader('Loading past polls…') : '<p class="pnote">Loading…</p>';
     try {
       const d = await TT.api('/api/forum', { params:{ poll:'history' } });
       const polls = d.polls || [];

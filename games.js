@@ -261,7 +261,7 @@ function boardsSection(grid){
   const sec = document.createElement('section'); sec.className = 'lbboards';
   sec.innerHTML = '<div class="gsec"><h2 class="cathd">Leaderboards</h2><button type="button" class="lbopen">View all</button></div>' +
     '<div class="lbbgrid">' + LB_CAT.map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
-      '<span class="lbbrows"><span class="lbbempty">Loading…</span></span></button>').join('') + '</div>';
+      '<span class="lbbrows">' + LD('Loading…', '', { sm:true }) + '</span></button>').join('') + '</div>';
   grid.appendChild(sec);
   sec.querySelector('.lbopen').onclick = () => openLBSheet();
   sec.querySelectorAll('.lbbcard').forEach(b => b.onclick = () => openLBSheet(b.dataset.b));
@@ -765,7 +765,7 @@ async function mountLB(game){
     '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
     (weekly ? '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
     '<button type="button" class="glbtab" data-p="all">All time</button></div>' : '') + '</div>' +
-    '<div id="glbbody"><p class="how">Loading…</p></div>';
+    '<div id="glbbody">' + LD() + '</div>';
   $('stage').appendChild(panel);
   lbState = { game, period: weekly ? 'week' : 'all', week:null, all:null };
   [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
@@ -788,7 +788,7 @@ function paintLB(){
   const body = $('glbbody'); if (!body || !lbState) return;
   const lb = LB_GAMES[lbState.game];
   const b = lbState.period === 'week' ? lbState.week : lbState.all;
-  if (!b){ body.innerHTML = '<p class="how">Loading…</p>'; return; }
+  if (!b){ body.innerHTML = LD(); return; }
   const rows = b.top || [];
   if (!rows.length && b.meBest == null){ body.innerHTML = '<p class="how">No scores yet. Be the first.</p>'; return; }
   let html = rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
@@ -970,7 +970,7 @@ BUILD.guesswho = host => {
   let alive = true, diff = TT.get('tt.gwdiff', 'myclasses');
 
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
@@ -984,7 +984,7 @@ BUILD.guesswho = host => {
     box.innerHTML =
       '<div class="gwtop"><div class="gwdiffs" id="gwdiffs"></div>' +
       '<div class="gwyou">as <b>' + esc(gwData.viewer) + '</b></div></div>' +
-      '<div id="gwbody"><p class="how">Loading people…</p></div>';
+      '<div id="gwbody">' + LD('Loading people…') + '</div>';
     const dd = document.getElementById('gwdiffs');
     DIFFS.forEach(d => {
       const b = document.createElement('button');
@@ -999,7 +999,7 @@ BUILD.guesswho = host => {
 
   async function load(){
     const body = document.getElementById('gwbody');
-    body.innerHTML = '<p class="how">Loading people…</p>';
+    body.innerHTML = LD('Loading people…');
     let pool;
     try { pool = await poolFor(diff); } catch(err){ body.innerHTML = '<p class="how">Could not load: '+esc(err.message)+'</p>'; return; }
     if (!alive) return;
@@ -1145,7 +1145,7 @@ BUILD.dailyguess = host => {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   async function loadDay(date){       // date=null → today
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     let s;
     try { s = await TT.api('/api/daily', { params: date ? { date } : {} }); }
     catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; return; }
@@ -1247,7 +1247,7 @@ BUILD.dailyguess = host => {
     el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
     if (!open) return;
     if (!arch){
-      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      el.innerHTML = LD();
       try {
         const d = await TT.api('/api/daily', { params:{ archive:1 } });
         arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch || '2026-09-01' };
@@ -1308,7 +1308,7 @@ BUILD.dailyguess = host => {
   }
   async function loadSummary(date){
     const el = document.getElementById('dgsummary'); if (!el) return;
-    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    if (!el.innerHTML) el.innerHTML = LD();
     try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); if (alive) renderSummary(el, d.summary, date); }
     catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
@@ -1339,6 +1339,9 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
+/* the loading indicator from theme.js (plain text if it's missing) */
+function LD(text, late, opts){ return window.TT && TT.loader ? TT.loader(text, late, opts) : '<p class="how">' + esc(text || 'Loading…') + '</p>'; }
+
 /* ── Quartets ──────────────────────────────────────────────────────
    Sixteen people from your year and four hidden groups of four, levels 1
    (easiest) to 4. Pick four and check them; four mistakes and it's over.
@@ -1359,7 +1362,7 @@ BUILD.quartets = host => {
     const a = list.slice(); for (let i = a.length - 1; i > 0; i--){ h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
   async function loadDay(date){
-    box.innerHTML = '<p class="how">' + (date ? 'Loading…' : 'Loading today’s puzzle. The first one each day takes a few seconds to make.') + '</p>';
+    box.innerHTML = LD(date ? 'Loading that day…' : 'Loading today’s puzzle…', date ? '' : 'The first one each day takes a few seconds to make.');
     let s;
     try { s = await TT.api('/api/daily', { params: Object.assign({ conn:1 }, date ? { date } : {}) }); }
     catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message || 'Couldn’t load Quartets.') + '</p>'; return; }
@@ -1541,7 +1544,7 @@ BUILD.quartets = host => {
   }
   async function loadSummary(date){
     const el = $('qtsummary'); if (!el) return;
-    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    if (!el.innerHTML) el.innerHTML = LD();
     try { const d = await TT.api('/api/daily', { params:{ conn:1, date, summary:1 } }); if (alive && el.isConnected) renderSummary(el, d.summary, d.mine || {}); }
     catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
@@ -1577,7 +1580,7 @@ BUILD.quartets = host => {
     el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
     if (!open) return;
     if (!arch){
-      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      el.innerHTML = LD();
       try {
         const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } });
         arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch };
@@ -2476,7 +2479,7 @@ BUILD.classroom = host => {
   const box = $('cr');
   let alive = true, timer = null;
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
@@ -2642,7 +2645,7 @@ BUILD.chain = host => {
   const RUN_TIME = 90000;
   const clearTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
@@ -2770,7 +2773,7 @@ BUILD.oddone = host => {
   const box = $('oo');
   let alive = true, timer = null;
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try { if (!gwData) gwData = await loadGuessData(); if (!alive) return; start(); }
     catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; }
   })();
@@ -3512,7 +3515,7 @@ function lbBoard(box, focusId){
     '<div class="glbhd"><h3 class="lbtitle"></h3>' +
       '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
       '<button type="button" class="glbtab cur" data-p="all">All time</button></div></div>' +
-    '<div class="lbbody"><p class="how">Loading…</p></div>';
+    '<div class="lbbody">' + LD() + '</div>';
   const q = sel => box.querySelector(sel);
   const pick = q('.lbpick');
   LB_CAT.forEach(c => { const b = document.createElement('button');
@@ -3527,7 +3530,7 @@ function lbBoard(box, focusId){
   async function load(){
     const my = ++seq;                         // a slow board can't land over the one picked after it
     q('.lbtitle').textContent = cur.name;
-    const body = q('.lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
+    const body = q('.lbbody'); body.innerHTML = LD(); data=null;
     try {
       await siteSettings();
       let d;
@@ -3558,7 +3561,7 @@ function lbBoard(box, focusId){
     if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
   }
   function paint(){
-    const body = q('.lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
+    const body = q('.lbbody'); if (!data){ body.innerHTML=LD(); return; }
     const b = period==='week' ? data.week : data.all;
     if (!b){ body.innerHTML='<p class="how">No board.</p>'; return; }
     const rows = b.top || [];
@@ -3614,7 +3617,7 @@ BUILD.admin = host => {
         '<button type="button" class="glbtab" id="admsync" hidden>Sync weekly → all-time</button>' +
         '<button type="button" class="glbtab glbwipe" id="admwipe">Reset board</button></div></div>' +
     '<p class="adminnote" id="admnote"></p>' +
-    '<div id="admbody"><p class="how">Loading…</p></div>';
+    '<div id="admbody">' + LD() + '</div>';
   const pick = $('admpick');
   CATS.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
@@ -3636,7 +3639,7 @@ BUILD.admin = host => {
   }
   async function load(){
     $('admtitle').textContent = cur.name; syncTabsUI();
-    const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>'; data = null;
+    const body = $('admbody'); body.innerHTML = LD(); data = null;
     try {
       if (cur.kind === 's'){                       // site-wide switches, read fresh
         /* the server refuses a change from anyone but the owner; this is only so
@@ -4102,7 +4105,7 @@ BUILD.flashcards = host => {
     box.innerHTML =
       '<div class="fcrow"><button class="btn" id="fcback" type="button">← My decks</button></div>' +
       '<div class="diffbar" id="fccats" style="margin-bottom:12px"></div>' +
-      '<div id="fcpublist"><p class="how">Loading…</p></div>';
+      '<div id="fcpublist">' + LD() + '</div>';
     $('fcback').onclick = list;
     let data;
     try { data = await TT.api('/api/decks', { params: browseCat ? { category:browseCat } : {} }); }

@@ -408,7 +408,7 @@ function saveCache(){
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); }
   catch { try { cache.busy = {}; localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {} }
 }
-function status(msg, err){ $('stat').textContent = msg || ''; $('stat').className = 'fstat' + (err ? ' err' : ''); }
+function status(msg, err){ $('stat').textContent = msg || ''; $('stat').className = 'fstat' + (err ? ' err' : '') + (msg && !err && /…$/.test(msg) ? ' ldinline' : ''); }
 function progress(done, total){
   $('bar').hidden = done >= total;
   $('barfill').style.width = (total ? Math.round(100 * done / total) : 0) + '%';
@@ -687,6 +687,7 @@ function renderPeople(){
   if (!words.length){
     h = '<p class="fsub first">' + (yr ? yr + 'classmates' : 'Classmates') + ', most free periods in common first · ' + local.length + '</p>' +
         (local.length ? '<ul class="fpeople">' + local.map(p => personRow(p, false)).join('') + '</ul>'
+          : loading && window.TT && TT.loader ? TT.loader('Loading your classmates…')
           : '<p class="fhint">' + (loading ? 'Loading…' : (yearFilter ? 'None of your classmates are in Year ' + yearFilter + '.'
                                                                       : 'No classmates found.') + ' Type a name to find someone.') + '</p>');
   } else {

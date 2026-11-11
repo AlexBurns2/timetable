@@ -66,7 +66,7 @@ BUILD.jim = host => {
     TT.set('tt.jimname', raw);
     nameAudio.src = JIM_DIR + raw.toLowerCase().replace(/\s+/g, '') + '.wav';
     nameAudio.load();
-    $('jimerr').textContent = 'Loading…';
+    $('jimerr').innerHTML = window.TT && TT.loader ? TT.loader('Loading the scoreboard…', '', { sm:true }) : 'Loading…';
     let rows = null;
     try { rows = (await jimApi()).scores || []; }
     catch(e){ if (!alive) return;
@@ -118,7 +118,7 @@ BUILD.jim = host => {
         '</div>' +
         '<div class="glb jimlb"><div class="glbhd"><h3>Hall of Pressers</h3>' +
           '<span class="jimlive"><i></i>live</span></div>' +
-          '<div id="jimlbrows"><p class="how">Loading…</p></div></div>' +
+          '<div id="jimlbrows">' + (window.TT && TT.loader ? TT.loader() : '<p class="how">Loading…</p>') + '</div></div>' +
       '</div>' +
       '<div class="jimconfirm" id="jimconfirm" hidden><div class="jimconfirmbox">' +
         '<h3>Are you sure?</h3><p>This will reset your click count back to zero. This cannot be undone.</p>' +

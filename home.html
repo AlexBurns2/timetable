@@ -57,7 +57,7 @@
       <button class="btn primary" id="fpost" type="button">Post</button>
     </div>
     <div class="fmsg" id="fmsg"></div>
-    <div class="fposts" id="fposts"><p class="how">Loading…</p></div>
+    <div class="fposts" id="fposts"><div class="ld" role="status"><span class="ldspin" aria-hidden="true"></span><span><span class="ldt">Loading the forum…</span><span class="ldlate">Still loading…</span><span class="ldslow"><b>This is taking much longer than usual.</b> Wait a little, or reload the page.</span></span></div></div>
     <button class="flink fmore" id="fmore" type="button" hidden></button>
   </section>
   </div>
@@ -283,7 +283,7 @@ let lastPosts = null;
 $('fmore').onclick = () => {
   forumOpen = !forumOpen;
   if (lastPosts) renderForum(lastPosts);
-  else { $('fmore').textContent = 'Loading…'; $('fmore').disabled = true; loadForum(); }
+  else { $('fmore').textContent = 'Loading…'; $('fmore').classList.add('ldinline'); $('fmore').disabled = true; loadForum(); }
   if (!forumOpen) $('forum').scrollIntoView({ block:'nearest' });
 };
 async function loadForum(){
@@ -307,6 +307,7 @@ function renderForum(posts){
   const more = posts.length - shown.length;
   $('fmore').hidden = !more && !forumOpen || posts.length < 2;
   $('fmore').textContent = forumOpen ? 'Show less' : 'Show ' + more + ' more post' + (more === 1 ? '' : 's');
+  $('fmore').classList.remove('ldinline');
   $('fmore').disabled = false;
   wireForum();
 }
