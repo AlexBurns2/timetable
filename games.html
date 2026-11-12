@@ -16,6 +16,46 @@
 <link rel="stylesheet" href="site.css?v=20261109">
 <link rel="stylesheet" href="settings.css?v=20261109">
 <link rel="stylesheet" href="games.css?v=20261109">
+<script>
+/* In a Games module on Andre's page (games.html?play=<id>&embed=1&andre=1): that page's colours,
+   type and corners on the module's own colour, like hkmahjong.html?andre=1. The parent calls
+   andreLook() again whenever its look changes. */
+if (new URLSearchParams(location.search).has('andre') && window.frameElement) {
+  const root = document.documentElement;
+  window.andreLook = () => {
+    const top = parent.document.documentElement, cs = parent.getComputedStyle(top), box = parent.document.querySelector('.gmstage');
+    const v = k => cs.getPropertyValue(k).trim(), font = parent.getComputedStyle(parent.document.body).fontFamily;
+    const mode = top.dataset.mode === 'dark' ? 'dark' : 'light', r = top.hasAttribute('data-square') ? '0' : '10px';
+    const set = { '--bg': box ? parent.getComputedStyle(box).backgroundColor : v('--bg'), '--bg-img': 'none', '--panel': v('--base') || v('--bg'), '--panel-2': v('--fill'), '--line': v('--fill2'),
+      '--text': v('--fg'), '--muted': v('--fg2'), '--accent': v('--blue'), '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
+      '--radius': r, '--card-radius': r, '--card-border': '0 solid transparent', '--shadow': 'none', '--shadow-hi': 'none', '--display-w': '600', '--display-ls': '0', '--display-tt': 'none', 'color-scheme': mode };
+    /* a stylesheet, not inline: theme.js clears inline colours whenever it reapplies the site's skin */
+    const sheet = document.getElementById('andreLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'andreLook' }));
+    sheet.textContent = `html.andre{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
+    /* the plain skin in Andre's light or dark, whatever the main site is set to */
+    if (root.dataset.skin !== 'plain') root.dataset.skin = 'plain';
+    if (root.dataset.mode !== mode) root.dataset.mode = mode;
+  };
+  root.classList.add('andre'); andreLook();
+  new MutationObserver(andreLook).observe(root, { attributes: true, attributeFilter: ['data-skin', 'data-mode'] });
+  /* stays hidden on the module's colour until it has really painted */
+  addEventListener('load', () => {
+    const show = () => { frameElement.style.visibility = ''; };
+    requestAnimationFrame(() => requestAnimationFrame(show));
+    setTimeout(show, 400);      /* animation frames wait while the tab is hidden */
+  });
+  addEventListener('pagehide', () => { frameElement.style.visibility = 'hidden'; });
+}
+</script>
+<style>
+html.andre,html.andre body{background:var(--bg)!important;background-image:none!important;font-family:var(--font-ui)}      /* even with the site's Zen mode */
+html.andre{scrollbar-color:var(--line) transparent}
+html.andre .wrap{padding:8px 12px 24px}
+html.andre .stage{background:none;box-shadow:none}
+/* the board in the middle of the module, with its controls and leaderboard under it */
+html.andre :is(#g2048wrap,#mines,#cv,#glb){margin-inline:auto}
+html.andre :is(#snmodes,.minesbar,.minesfoot){justify-content:center}
+</style>
 </head>
 <body data-page="games">
 <div class="wrap">

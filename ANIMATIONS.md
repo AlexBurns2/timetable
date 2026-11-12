@@ -33,6 +33,12 @@ A week change plays on one shared clock, starting the moment the button is press
 Blocks only ever slide on or off the side of the screen, the way the week arrows do
 it, with `MAZE` timing. Nothing fades, shrinks or gets cut off.
 
+Only a true surplus slides. If the week before and after have the same number of
+blocks, none slide: every one turns into another. With more before than after, only
+the extras slide off, first, and the rest then rearrange. With more after, the
+blocks there are rearrange first, and only the missing ones slide on, last. This is
+how the Calendar does it.
+
 - A block goes to the side with the fewest staying blocks in its way, else the nearer
   side, with the rest of its day. So a block that's opening out is left where it is.
 - Lanes open: in every day it crosses, the blocks in the way and everything below them
@@ -42,24 +48,30 @@ it, with `MAZE` timing. Nothing fades, shrinks or gets cut off.
 
 ## Which block becomes which
 
-`matchBlocks` pairs old blocks with new ones, closest first and in any day:
+`matchBlocks` pairs old blocks with new ones, closest first and in any day. The
+closest block always becomes the closest block, never a random one:
 
 1. The same block (`data-sig`).
 2. The same thing at an overlapping time (`data-who` and `data-span`).
 3. Whatever's closest. Inside a block's own width counts as no distance, so a two-day
    Mahjong block is as near to a lesson in either day.
 
-A pair is only taken if it can make its moves without touching a pair already taken.
-Anything left over slides off or on.
+It takes pairs in two passes. The first only takes a pair that can make its moves
+without touching a pair already taken. The second pairs whatever is left, nearest
+first, even if its path touches another. So every block that can become something
+does, and only the surplus (more before than after, or after than before) slides
+off or on.
 
 ## No block touches another
 
 No block may overlap another at any moment, at any step of an animation. This is
 why the order above can't change:
 
-1. **Blocks never cross.** `matchBlocks` turns down a pair whose path touches another,
-   so `pathsClash` has to match what the blocks really do. For example, when a game
-   changes the ranks, a player who jumps up slides off and on again.
+1. **Blocks avoid crossing.** `matchBlocks` prefers pairs whose paths don't touch,
+   so `pathsClash` has to match what the blocks really do. It no longer sends a block
+   off and on to avoid a crossing: sliding is only for a surplus (see Waves). A
+   pair from the second pass may brush another block for a moment; that is the
+   price of not flying blocks that have something to become.
 2. **Blocks slide off before anything else moves.** Nothing is in their way but
    blocks standing still, and those step aside.
 3. **A wave waits for the lanes it crosses to close.** A day's blocks are only ever in
@@ -91,6 +103,13 @@ Anything that draws blocks needs:
 - A class listed in `weekSide`, currently `.blk`, `.gap` and `.mjb` (phone: `.card`,
   `.brk` and `.mjb`). Anything else isn't animated.
 
+If a view fetches its data (Forum, Poll, Mahjong), don't animate into "Loading…":
+wait for the data first with `dataReady(load)`, which gives up after 1.5s. Otherwise
+the blocks morph into one loading block and the real ones pop in unanimated.
+
+A column that scrolls (the Forum) only animates the blocks in view. `weekSide` skips
+anything scrolled out of its column.
+
 ## Other animations
 
 - **Week arrows** use `turnWeek`, with lanes that open to let blocks through. It's a
@@ -109,5 +128,7 @@ morphing.forEach(a => { a.pause(); a.currentTime = 600; });
 ```
 
 Then compare the rectangles of `.morph .mp`, skipping pieces with no height and the
-headings (their inline `border-radius` reads `0px`). No two should overlap by more than 1px. Check Who's free, Custom periods, Mahjong and Games in both directions, plus saving
+headings (their inline `border-radius` reads `0px`). Pairs from the first pass should
+never overlap by more than 1px. Also count the blocks that slide: it should be exactly
+the difference between the before and after counts. Check Who's free, Custom periods, Mahjong and Games in both directions, plus saving
 a game that changes the ranks.
