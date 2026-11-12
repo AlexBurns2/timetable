@@ -211,6 +211,43 @@ export default async function handler(req, res) {
     return res.status(200).json({ ...(await siteSettings()), isMod: true });
   }
 
+  /* moderator-only: which themes people use, from their synced settings (prefs).
+     Only the few keys it needs are read, not whole settings. "Active" is anyone
+     whose settings synced in the last 30 days. */
+  if (req.method === "GET" && src.themes) {
+    if (!isAdmin(me.email))
+      return res.status(403).json({ error: "Only moderators can see this." });
+    let rows, error;
+    ({ data: rows, error } = await db.from("prefs")
+      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen"')
+      .limit(5000));
+    if (error) {                                      // the keys couldn't be picked out: read the settings whole instead
+      console.warn("themes (picked):", error.message);
+      ({ data: rows, error } = await db.from("prefs").select("updated_at, data").limit(5000));
+      if (error) return res.status(502).json({ error: "Couldn't read the settings." });
+      rows = rows.map(r => { const d = r.data || {}, s = v => v == null ? null : String(v);
+        return { updated_at: r.updated_at, skin: s(d["tt.skin"]), mode: s(d["tt.mode"]), glassanim: s(d["tt.glassanim"]), gameicons: s(d["tt.gameicons"]),
+                 tileicons: s(d["tt.tileicons"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]) }; });
+    }
+    const since = Date.now() - 30 * 864e5, skins = {}, tally = (o, k, act) => { const t = o[k] || (o[k] = { all: 0, active: 0 }); t.all++; if (act) t.active++; };
+    const flags = { dark: {}, glassAnim: {}, emoji: {}, accentIcons: {}, clouds: {}, zen: {} };
+    let active = 0;
+    for (const r of rows || []) {
+      const act = Date.parse(r.updated_at) > since; if (act) active++;
+      tally(skins, r.skin || "plain", act);
+      if (r.mode === "dark") tally(flags.dark, "n", act);
+      if (r.skin === "glass" && r.glassanim === "on") tally(flags.glassAnim, "n", act);
+      if (r.gameicons === "emoji") tally(flags.emoji, "n", act);
+      if (r.tileicons === "accent") tally(flags.accentIcons, "n", act);
+      if (r.skin === "custom" && r.backdrop === "clouds") tally(flags.clouds, "n", act);
+      if (r.zen === "true") tally(flags.zen, "n", act);
+    }
+    const f = k => flags[k].n || { all: 0, active: 0 };
+    return res.status(200).json({ total: (rows || []).length, active,
+      skins: Object.entries(skins).map(([id, c]) => ({ id, ...c })).sort((a, b) => b.active - a.active || b.all - a.all),
+      dark: f("dark"), glassAnim: f("glassAnim"), emoji: f("emoji"), accentIcons: f("accentIcons"), clouds: f("clouds"), zen: f("zen") });
+  }
+
   /* moderator-only: how much each part of the site is used. Read-only counts. */
   if (req.method === "GET" && src.stats) {
     if (!isAdmin(me.email))

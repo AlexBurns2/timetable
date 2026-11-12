@@ -3166,3 +3166,7 @@ data. No icon font or CDN script loads on the live site.
 ### 8.100 Reaction: the floor is 60 ms
 - `MIN_REACTION_MS` (api/leaderboard.js) and the page's `MIN_MS` (games.js BUILD.react) are now 60 ms (were 100). Only checked when a score is saved; nothing on the board is filtered when it's read. What's new has an entry (`reactfix`): times under 100 ms were culled from the leaderboard to fix a bug, and from now on anything from 60 ms counts.
 - (8.100, later) The Reaction game shows a small note above the box: "Missing a time? While fixing a bug we cleared every reaction time under 100 ms, so yours may have gone with them." with a × (`.gnote` in games.css). Closing it is remembered with the account (`tt.react_cullnote`); it stops showing by itself after 19 Dec 2026.
+
+### 8.101 Moderator page → Themes
+- `GET /api/leaderboard?themes=1` (moderators only) reads just the theme keys from everyone's synced settings (`prefs`: `data->>"tt.skin"`, `tt.mode`, `tt.glassanim`, `tt.gameicons`, `tt.tileicons`, `tt.zen`, and `tt.custom`'s backdrop), not whole settings, so it's one small query. If the database won't pick keys out that way it reads the settings whole instead (same answer, slower). "Active" = settings synced in the last 30 days; never having picked a theme counts as Plain.
+- The tab: each theme with its colour swatch, a bar for active people, the count and share, and the all-time count; then Dark mode, Glass animated, Emoji icons, Icons in theme colour, Custom with clouds and Transparent background as shares of the active.

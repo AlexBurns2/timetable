@@ -1262,3 +1262,20 @@ html[data-motion="reduced"] .qtdcaret{transition:none}
 .gnote button{flex:none;background:none;border:0;padding:3px;border-radius:999px;color:var(--muted);cursor:pointer;line-height:0}
 .gnote button:hover{color:var(--text);background:var(--panel)}
 .gnote .ph{width:14px;height:14px}
+
+/* moderator page → Themes */
+.thlist{display:flex;flex-direction:column;gap:6px}
+.threw{display:grid;grid-template-columns:22px minmax(0,7.5rem) minmax(0,1fr) 5.5rem 4.5rem;gap:10px;align-items:center;font-size:0.875rem}
+.thsw{width:22px;height:22px;border-radius:6px;box-shadow:inset 0 0 0 1px var(--line)}
+.thname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thbar{height:10px;border-radius:999px;background:var(--panel-2);overflow:hidden}
+.thbar i{display:block;height:100%;border-radius:999px;background:var(--accent);min-width:2px}
+.thn{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.thn em,.thall{font-style:normal;font-weight:400;color:var(--muted);font-size:0.78125rem}
+.thall{text-align:right}
+.thflags{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:16px}
+.thflag{padding:10px 12px;border-radius:var(--radius);background:var(--panel-2);display:flex;flex-direction:column;gap:2px}
+.thflag b{font-family:var(--font-num);font-size:1.25rem}
+.thflag span{font-weight:700;font-size:0.8125rem}
+.thflag em{font-style:normal;color:var(--muted);font-size:0.75rem}
+@media (max-width:560px){ .threw{grid-template-columns:18px minmax(0,1fr) 4.5rem} .thbar,.thall{display:none} }

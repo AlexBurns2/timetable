@@ -3682,7 +3682,9 @@ BUILD.admin = host => {
   const IDEAS = { id:'ideas', name:'Feature ideas', kind:'i' };
   /* scans of the printed QR codes (q.html), one row per code */
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
-  const CATS = [OVERVIEW, POLLS, IDEAS, SCANS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
+  /* which themes people use (from their synced settings) */
+  const THEMES = { id:'themes', name:'Themes', kind:'x' };
+  const CATS = [OVERVIEW, POLLS, IDEAS, SCANS, THEMES, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -3707,7 +3709,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpiq'.includes(cur.kind);
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpiqx'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -3730,6 +3732,7 @@ BUILD.admin = host => {
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
       if (cur.kind === 'p' || cur.kind === 'i'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
       if (cur.kind === 'q'){ data = await TT.api('/api/forum', { params:{ scans:1 } }); render(); return; }
+      if (cur.kind === 'x'){ data = await TT.api('/api/leaderboard', { params:{ themes:1 } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -3769,6 +3772,7 @@ BUILD.admin = host => {
     if (cur.kind === 'p') return renderPolls();
     if (cur.kind === 'i') return renderIdeas();
     if (cur.kind === 'q') return renderScans();
+    if (cur.kind === 'x') return renderThemes();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -3927,6 +3931,22 @@ BUILD.admin = host => {
   }
   /* ── Mahjong club: rename or remove players, delete any game ── */
   /* ── the weekly poll ── */
+  function renderThemes(){
+    const d = data || {}, act = d.active || 0, all = d.total || 0;
+    const nameOf = id => ((window.TT && TT.SKINS || []).find(s => s.id === id) || {}).name || id;
+    const swatch = id => ((window.TT && TT.SKINS || []).find(s => s.id === id) || {}).swatch || 'var(--line)';
+    const pct = (n, of) => of ? Math.round(n / of * 100) + '%' : '–';
+    $('admnote').innerHTML = 'From everyone’s synced settings: <b>' + act + '</b> active in the last 30 days, <b>' + all + '</b> in all. ' +
+      'Bars are the active people; someone who never picked a theme counts as Plain.';
+    const max = Math.max(1, ...(d.skins || []).map(s => s.active));
+    const flag = (label, c) => '<div class="thflag"><b>' + pct(c.active, act) + '</b><span>' + label + '</span><em>' + c.active + ' active · ' + c.all + ' in all</em></div>';
+    $('admbody').innerHTML = !(d.skins || []).length ? '<p class="how">No synced settings yet.</p>' :
+      '<div class="thlist">' + d.skins.map(s => '<div class="threw"><span class="thsw" style="background:' + swatch(s.id) + '"></span>' +
+        '<span class="thname">' + esc(nameOf(s.id)) + '</span><span class="thbar"><i style="width:' + (s.active / max * 100) + '%"></i></span>' +
+        '<span class="thn">' + s.active + '<em> · ' + pct(s.active, act) + '</em></span><span class="thall">' + s.all + ' in all</span></div>').join('') + '</div>' +
+      '<div class="thflags">' + flag('Dark mode', d.dark || {}) + flag('Glass, animated', d.glassAnim || {}) + flag('Emoji icons', d.emoji || {}) +
+        flag('Icons in theme colour', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>';
+  }
   function renderScans(){
     const codes = (data && data.codes) || [], days = (data && data.days) || [];
     $('admnote').innerHTML = 'Each QR code points at <b>mscunofficial.com/q/<i>name</i></b>, so every name is counted on its own ' +
