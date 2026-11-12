@@ -3115,3 +3115,7 @@ data. No icon font or CDN script loads on the live site.
 - `POST /api/forum {action:'featuresuggest', idea}` (api/_poll.js): up to 300 characters, three a week each. Stored in `poll_suggestion` with `kind = 'feature'`, so there's no new table; the weekly question-suggestion limit and the Polls tab's suggestion list leave them out.
 - The moderator page has a **Feature ideas** tab (games.js `renderIdeas`): each idea, who sent it, when, and Dismiss (`suggestdel`).
 - The social/groups idea was dropped.
+
+### 8.90 A Timetable button on Home's header
+- Home's header has Timetable (`#ttbtn`, the table icon, to `./`) under Settings, as the timetable page has Home under its Settings. Wide: the two stack and the class box stretches to their height, so the edges line up. Narrow (two-row layout): side by side beside the greeting.
+- `fitHello()` now re-runs from a ResizeObserver on `.hubid` (after layout), not the window's resize event, so the greeting refits correctly when the space changes either way.

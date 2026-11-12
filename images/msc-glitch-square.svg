@@ -1,22 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="MSC">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="MSCU">
   <defs>
-    <!-- the same word, squeezed to 62% width and set taller -->
-    <text id="w" x="0" y="0" text-anchor="middle" font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="230" letter-spacing="-6"
-          transform="translate(200 282) scale(.62 1)">MSC</text>
-    <clipPath id="top"><rect x="0" y="0" width="400" height="168"/></clipPath>
-    <clipPath id="mid"><rect x="0" y="168" width="400" height="34"/></clipPath>
-    <clipPath id="low"><rect x="0" y="202" width="400" height="20"/></clipPath>
-    <clipPath id="bot"><rect x="0" y="222" width="400" height="178"/></clipPath>
+    <!-- MS over CU, each row forced to 340 wide (textLength); font size sets the
+         cap height (~70%). 30px border all round. -->
+    <g id="w" font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="236">
+      <text x="30" y="196" textLength="340" lengthAdjust="spacingAndGlyphs">MS</text>
+      <text x="30" y="370" textLength="340" lengthAdjust="spacingAndGlyphs">CU</text>
+    </g>
+    <!-- one slipped band through each row -->
+    <clipPath id="a"><rect x="0" y="0" width="400" height="92"/></clipPath>
+    <clipPath id="b"><rect x="0" y="92" width="400" height="26"/></clipPath>
+    <clipPath id="c"><rect x="0" y="118" width="400" height="168"/></clipPath>
+    <clipPath id="d"><rect x="0" y="286" width="400" height="18"/></clipPath>
+    <clipPath id="e"><rect x="0" y="304" width="400" height="96"/></clipPath>
+    <clipPath id="box"><rect width="400" height="400"/></clipPath>
   </defs>
   <rect width="400" height="400" fill="#111"/>
-  <g clip-path="url(#mid)">
-    <use href="#w" x="-26" fill="#ff2e63" opacity=".9"/>
-    <use href="#w" x="28" fill="#08d9d6" opacity=".9"/>
+  <g clip-path="url(#box)">
+    <g clip-path="url(#b)">
+      <use href="#w" x="-20" fill="#ff2e63" opacity=".9"/>
+      <use href="#w" x="22" fill="#08d9d6" opacity=".9"/>
+    </g>
+    <g clip-path="url(#d)">
+      <use href="#w" x="16" fill="#ff2e63" opacity=".9"/>
+      <use href="#w" x="-18" fill="#08d9d6" opacity=".9"/>
+    </g>
+    <use href="#w" fill="#fff" clip-path="url(#a)"/>
+    <use href="#w" x="14" fill="#fff" clip-path="url(#b)"/>
+    <use href="#w" fill="#fff" clip-path="url(#c)"/>
+    <use href="#w" x="-10" fill="#fff" clip-path="url(#d)"/>
+    <use href="#w" fill="#fff" clip-path="url(#e)"/>
+    <rect x="44" y="300" width="70" height="4" fill="#fff" opacity=".85"/>
+    <rect x="280" y="112" width="56" height="4" fill="#08d9d6" opacity=".8"/>
   </g>
-  <use href="#w" fill="#fff" clip-path="url(#top)"/>
-  <use href="#w" x="18" fill="#fff" clip-path="url(#mid)"/>
-  <use href="#w" x="-10" fill="#fff" clip-path="url(#low)"/>
-  <use href="#w" fill="#fff" clip-path="url(#bot)"/>
-  <rect x="64" y="236" width="90" height="5" fill="#fff" opacity=".85"/>
-  <rect x="250" y="120" width="70" height="4" fill="#08d9d6" opacity=".8"/>
 </svg>

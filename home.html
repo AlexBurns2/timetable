@@ -32,6 +32,8 @@
       <div class="hubnow" id="hubnow"></div>
       <div class="headbtns">
         <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
+        <!-- the timetable, under Settings, as the timetable page has Home under its Settings -->
+        <a class="btn icon" href="./" id="ttbtn" title="Timetable" aria-label="Timetable"><span data-icon="table"></span></a>
       </div>
     </div>
   </header>
@@ -271,7 +273,10 @@ function fitHello(){
 }
 fitHello();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHello);
-let fitT = 0; addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(fitHello, 120); });
+/* again whenever the greeting's space changes (a rotated phone, a resized window, the
+   text size): watched on its own box, so it runs after the layout has settled */
+if (window.ResizeObserver){ let lastW = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w !== lastW){ lastW = w; fitHello(); } }).observe(document.querySelector('.hubid')); }
+else { let fitT = 0; addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(fitHello, 120); }); }
 
 /* ── forum ─────────────────────────────────────────────────────────────── */
 /* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */
