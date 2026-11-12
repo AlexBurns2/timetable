@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" role="img" aria-label="MSC">
+  <style>
+    /* mostly still; a short twitch every 4 s */
+    .s1{animation:s1 4s steps(1) infinite}
+    .s2{animation:s2 4s steps(1) infinite}
+    .g{animation:g 4s steps(1) infinite}
+    .ln{animation:ln 4s steps(1) infinite}
+    @keyframes s1{0%,70%{transform:translateX(22px)}72%{transform:translateX(-30px)}75%{transform:translateX(44px)}78%{transform:translateX(6px)}82%,100%{transform:translateX(22px)}}
+    @keyframes s2{0%,70%{transform:translateX(-12px)}73%{transform:translateX(28px)}77%{transform:translateX(-36px)}81%,100%{transform:translateX(-12px)}}
+    @keyframes g{0%,70%{transform:translateX(0);opacity:1}72%{transform:translateX(-18px)}75%{transform:translateX(16px);opacity:.6}79%{transform:translateX(-6px);opacity:1}82%,100%{transform:translateX(0)}}
+    @keyframes ln{0%,70%{transform:translateY(0)}73%{transform:translateY(-40px)}77%{transform:translateY(30px)}81%,100%{transform:translateY(0)}}
+    @media (prefers-reduced-motion:reduce){.s1,.s2,.g,.ln{animation:none}}
+  </style>
+  <defs>
+    <text id="w" x="300" y="178" text-anchor="middle" font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="170" letter-spacing="-4">MSC</text>
+    <clipPath id="top"><rect x="0" y="0" width="600" height="98"/></clipPath>
+    <clipPath id="mid"><rect x="0" y="98" width="600" height="26"/></clipPath>
+    <clipPath id="low"><rect x="0" y="124" width="600" height="16"/></clipPath>
+    <clipPath id="bot"><rect x="0" y="140" width="600" height="100"/></clipPath>
+  </defs>
+  <rect width="600" height="240" fill="#111"/>
+  <g clip-path="url(#mid)"><g class="g">
+    <use href="#w" x="-34" fill="#ff2e63" opacity=".9"/>
+    <use href="#w" x="38" fill="#08d9d6" opacity=".9"/>
+  </g></g>
+  <use href="#w" fill="#fff" clip-path="url(#top)"/>
+  <g clip-path="url(#mid)"><use class="s1" href="#w" fill="#fff"/></g>
+  <g clip-path="url(#low)"><use class="s2" href="#w" fill="#fff"/></g>
+  <use href="#w" fill="#fff" clip-path="url(#bot)"/>
+  <g class="ln">
+    <rect x="70" y="150" width="120" height="4" fill="#fff" opacity=".85"/>
+    <rect x="380" y="62" width="90" height="3" fill="#08d9d6" opacity=".8"/>
+  </g>
+</svg>

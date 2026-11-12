@@ -523,3 +523,10 @@ html[data-motion="reduced"] .crby span,html[data-motion="reduced"] .crfoot,html[
 .sitemark.tick{animation:marktick .35s ease}
 @keyframes marktick{50%{letter-spacing:.17em;color:var(--text)}}
 html[data-motion="reduced"] .sitemark.tick{animation:none}
+
+/* Home's footer: "Suggest a feature" opens a line to write in (styles shared with the poll's .psug) */
+.ideaform{flex:1 1 100%;margin-top:2px}
+.ideaform[hidden]{display:none}
+.footbtn[aria-expanded="true"]{color:var(--accent)}
+.newsfoot{margin:0;padding:12px 18px 16px;border-top:1px solid var(--line);font-size:0.8125rem;color:var(--muted)}
+.newsfoot .footbtn{color:var(--accent);font-size:inherit}

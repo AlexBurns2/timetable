@@ -3109,3 +3109,9 @@ data. No icon font or CDN script loads on the live site.
 - **Clues, sparse on purpose**: (1) Home, about one load in thirty, 5–14 s in, "MSC Unofficial" scrambles into "/vault" and back; (2) in Credits, after 14 s, "/vault" fades in among the stars for ~3.5 s every ~28 s, away from the names; (3) the new 404.html ("Nothing here. Not everything is where you'd expect it.") has `title="/vault"` on its "· · ·"; (4) Home's console: "· · ·  not everything is on the map" (no path).
 - **Greetings** (home.html `greeting()`): usually "Good morning/afternoon/evening"; sometimes "Morning", "Afternoon", "Evening", "Good to see you"; "Still up"/"Late one" (before 5), "Early start"/"Up early" (5–7), "New week" (Monday morning), "Nearly the weekend" (Friday afternoon), "Happy Saturday/Sunday", "Welcome back" (7+ days since the last visit, `tt.hello_last`). Picked once per part of the day.
 - Cache stamps bumped to `?v=20261112`, sw.js `ASSET_V` 20261112 and `CACHE_VERSION` v7.
+
+### 8.89 Suggest a feature
+- Home's footer: What's new · **Suggest a feature** (signed in only), opening a one-line form under it like the poll's "Suggest next week's question" (shares its `.psug` styles). Also linked from the bottom of the What's new sheet ("Something missing?").
+- `POST /api/forum {action:'featuresuggest', idea}` (api/_poll.js): up to 300 characters, three a week each. Stored in `poll_suggestion` with `kind = 'feature'`, so there's no new table; the weekly question-suggestion limit and the Polls tab's suggestion list leave them out.
+- The moderator page has a **Feature ideas** tab (games.js `renderIdeas`): each idea, who sent it, when, and Dismiss (`suggestdel`).
+- The social/groups idea was dropped.

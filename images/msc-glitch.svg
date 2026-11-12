@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" role="img" aria-label="MSC">
+  <defs>
+    <!-- the word, drawn once and reused in slices -->
+    <text id="w" x="300" y="178" text-anchor="middle" font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="170" letter-spacing="-4">MSC</text>
+    <clipPath id="top"><rect x="0" y="0" width="600" height="98"/></clipPath>
+    <clipPath id="mid"><rect x="0" y="98" width="600" height="26"/></clipPath>
+    <clipPath id="low"><rect x="0" y="124" width="600" height="16"/></clipPath>
+    <clipPath id="bot"><rect x="0" y="140" width="600" height="100"/></clipPath>
+  </defs>
+  <rect width="600" height="240" fill="#111"/>
+  <!-- colour ghosts behind the slipped slice -->
+  <g clip-path="url(#mid)">
+    <use href="#w" x="-34" fill="#ff2e63" opacity=".9"/>
+    <use href="#w" x="38" fill="#08d9d6" opacity=".9"/>
+  </g>
+  <!-- the word in four slices, two of them knocked sideways -->
+  <use href="#w" fill="#fff" clip-path="url(#top)"/>
+  <use href="#w" x="22" fill="#fff" clip-path="url(#mid)"/>
+  <use href="#w" x="-12" fill="#fff" clip-path="url(#low)"/>
+  <use href="#w" fill="#fff" clip-path="url(#bot)"/>
+  <!-- a couple of scan lines -->
+  <rect x="70" y="150" width="120" height="4" fill="#fff" opacity=".85"/>
+  <rect x="380" y="62" width="90" height="3" fill="#08d9d6" opacity=".8"/>
+</svg>

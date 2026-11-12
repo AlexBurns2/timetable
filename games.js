@@ -3671,7 +3671,9 @@ BUILD.admin = host => {
   const MJ = { id:'mahjong', name:'Mahjong club', kind:'m' };
   /* the weekly poll on Home: questions, the show each week, suggestions */
   const POLLS = { id:'polls', name:'Polls', kind:'p' };
-  const CATS = [OVERVIEW, POLLS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
+  /* ideas for the site, sent from Home's footer */
+  const IDEAS = { id:'ideas', name:'Feature ideas', kind:'i' };
+  const CATS = [OVERVIEW, POLLS, IDEAS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -3696,7 +3698,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmp'.includes(cur.kind);
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpi'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -3717,7 +3719,7 @@ BUILD.admin = host => {
       if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
-      if (cur.kind === 'p'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
+      if (cur.kind === 'p' || cur.kind === 'i'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -3755,6 +3757,7 @@ BUILD.admin = host => {
     if (cur.kind === 'd') return renderDecks();
     if (cur.kind === 'm') return renderMahjong();
     if (cur.kind === 'p') return renderPolls();
+    if (cur.kind === 'i') return renderIdeas();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -3913,6 +3916,19 @@ BUILD.admin = host => {
   }
   /* ── Mahjong club: rename or remove players, delete any game ── */
   /* ── the weekly poll ── */
+  function renderIdeas(){
+    const list = (data && data.features) || [];
+    $('admnote').textContent = 'Ideas students sent from the "Suggest a feature" link on Home. Dismiss one once it’s done or decided against.';
+    $('admbody').innerHTML = list.length ? list.map(f => '<div class="adminrow pollrow">' +
+        '<span class="nm"><b>' + esc(f.idea) + '</b><em>' + esc(f.by) + ' · ' + esc(seenAgo(f.at)) + '</em></span>' +
+        '<button class="del" type="button" data-idel="' + esc(f.id) + '">Dismiss</button></div>').join('')
+      : '<p class="how">No ideas yet.</p>';
+    $('admbody').querySelectorAll('[data-idel]').forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.idel } }); await load(); }
+      catch (e){ b.disabled = false; alert(e.message); }
+    });
+  }
   function renderPolls(){
     const KINDS = { period:'A period (0 to 7)', student:'A student in their year', teacher:'A teacher', class:'A subject in their year', custom:'Your own answers' };
     /* Monday: how the new question takes over the card. Friday: the winner's celebration. */

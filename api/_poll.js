@@ -105,6 +105,7 @@ const RESULTS_AT = 4 * 86400 + 12 * 3600;      // Friday 12:00: voting closes, t
 const WEEK_ENDS = 7 * 86400 + OPENS_AT;        // next Monday 09:30
 const MAX_Q = 120;
 const MAX_SUGGEST_A_WEEK = 3;
+const MAX_IDEA = 300, MAX_IDEAS_A_WEEK = 3;
 
 /* ── the week, in Sydney ─────────────────────────────────────────────── */
 function sydney(d = new Date()) {
@@ -311,7 +312,7 @@ export async function pollGet(req, res, me, NAMES) {
       if (!isAdmin(me.email)) return res.status(403).json({ error: "Moderators only." });
       const [{ data: polls }, { data: sugg }, { data: voters }] = await Promise.all([
         db.from("poll").select("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by").order("week", { ascending: false }).limit(60),
-        db.from("poll_suggestion").select("id, email, question, kind, created_at").order("created_at", { ascending: false }).limit(100),
+        db.from("poll_suggestion").select("id, email, question, kind, created_at").order("created_at", { ascending: false }).limit(300),
         db.from("poll_tally").select("week, votes").eq("choice", VOTERS).gte("week", addDays(clock.week, -7 * 60)).limit(1000)
       ]);
       const count = new Map();
@@ -324,7 +325,10 @@ export async function pollGet(req, res, me, NAMES) {
           choices: Array.isArray(p.choices) ? p.choices : [], pick: p.pick || 1, exact: !!p.pickexact, voters: count.get(p.week) || 0,
           subjectsDone: p.kind === "class" && p.choices && Array.isArray(p.choices.done) ? p.choices.done : undefined,
           by: withName(NAMES, p.created_by, userOf(p.created_by)) })),
-        suggestions: (sugg || []).map(s => ({ id: s.id, question: s.question, kind: s.kind || "", at: s.created_at,
+        suggestions: (sugg || []).filter(s => s.kind !== "feature").map(s => ({ id: s.id, question: s.question, kind: s.kind || "", at: s.created_at,
+          by: withName(NAMES, s.email, titleCase(userOf(s.email).replace(/[._]+/g, " ").replace(/\d+$/, ""))) })),
+        /* ideas for the site, from Home's footer */
+        features: (sugg || []).filter(s => s.kind === "feature").map(s => ({ id: s.id, idea: s.question, at: s.created_at,
           by: withName(NAMES, s.email, titleCase(userOf(s.email).replace(/[._]+/g, " ").replace(/\d+$/, ""))) }))
       });
     }
@@ -433,12 +437,27 @@ export async function pollPost(body, res, me, NAMES) {
     const question = String(body.question || "").replace(/\s+/g, " ").trim().slice(0, MAX_Q);
     const kind = KINDS.includes(body.kind) ? body.kind : "";
     if (question.length < 5) return res.status(400).json({ error: "Write a question first." });
-    const { data: mine } = await db.from("poll_suggestion").select("id").eq("email", me.email)
-      .gte("created_at", new Date(clock.openedAt).toISOString());   // since this week's poll opened
+    const { data: mine } = await db.from("poll_suggestion").select("id").eq("email", me.email).or("kind.is.null,kind.neq.feature")
+      .gte("created_at", new Date(clock.openedAt).toISOString());   // since this week's poll opened (feature ideas don't count)
     if ((mine || []).length >= MAX_SUGGEST_A_WEEK) return res.status(429).json({ error: "That's plenty for this week. Thanks!" });
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     const { error } = await db.from("poll_suggestion").insert({ id, email: me.email, question, kind: kind || null });
     if (error) { console.error("poll suggest:", error.message); return res.status(502).json({ error: "Couldn't send that." }); }
+    return res.status(200).json({ ok: true });
+  }
+
+  /* an idea for the site (Home's footer, "Suggest a feature"). Kept with the poll
+     suggestions as kind 'feature', so no table of its own; the moderator page
+     lists them under Feature ideas. Three a week each. */
+  if (action === "featuresuggest") {
+    const idea = String(body.idea || "").replace(/\s+/g, " ").trim().slice(0, MAX_IDEA);
+    if (idea.length < 5) return res.status(400).json({ error: "Write your idea first." });
+    const { data: mine } = await db.from("poll_suggestion").select("id").eq("email", me.email).eq("kind", "feature")
+      .gte("created_at", new Date(Date.now() - 7 * 864e5).toISOString());
+    if ((mine || []).length >= MAX_IDEAS_A_WEEK) return res.status(429).json({ error: "That's plenty for this week. Thanks!" });
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const { error } = await db.from("poll_suggestion").insert({ id, email: me.email, question: idea, kind: "feature" });
+    if (error) { console.error("feature idea:", error.message); return res.status(502).json({ error: "Couldn't send that." }); }
     return res.status(200).json({ ok: true });
   }
 

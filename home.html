@@ -71,15 +71,23 @@
   <footer class="hubfoot">
     <span class="footlinks">
       <button type="button" class="footbtn" id="newsbtn">What’s new<span class="newsdot" id="newsdot" hidden></span></button>
+      <button type="button" class="footbtn" id="ideabtn" aria-expanded="false" aria-controls="ideaform" hidden>Suggest a feature</button>
     </span>
     <!-- the redesign beta lives on its own at /beta/: an add-on, not part of this site -->
     <a href="/beta/">Try the new website beta (work in progress) →</a>
+    <form class="psug ideaform" id="ideaform" hidden>
+      <input id="ideaq" maxlength="300" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore
+        placeholder="What should the site have?" aria-label="Your idea">
+      <button type="submit" class="btn">Send</button>
+      <span class="psugmsg" id="ideamsg" role="status"></span>
+    </form>
   </footer>
 
   <dialog class="newsdlg" id="newsdlg" aria-labelledby="newshd">
     <div class="newshead"><h2 id="newshd">What’s new</h2>
       <button type="button" class="btn icon" id="newsx" aria-label="Close"><span data-icon="x"></span></button></div>
     <ul class="newslist" id="newslist"></ul>
+    <p class="newsfoot" id="newsfoot" hidden>Something missing? <button type="button" class="footbtn" id="newsidea">Suggest a feature</button></p>
   </dialog>
   <dialog class="credits" id="credits" aria-label="Credits">
     <div class="craura" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -497,6 +505,33 @@ loadForum();
   try { console.log('%c· · ·   not everything is on the map', 'color:#8d877b;font:12px ui-monospace,monospace;letter-spacing:.05em'); } catch {}
 })();
 
+/* ── Suggest a feature: like the poll's "Suggest next week's question" ─────
+   A line of text to the moderators (the moderator page, Feature ideas). */
+(function(){
+  const btn = document.getElementById('ideabtn'), form = document.getElementById('ideaform');
+  if (!btn || !form || !signedIn) return;
+  btn.hidden = false;
+  const box = document.getElementById('ideaq'), msg = document.getElementById('ideamsg');
+  const toggle = open => {
+    form.hidden = open == null ? !form.hidden : !open;
+    btn.setAttribute('aria-expanded', String(!form.hidden));
+    if (!form.hidden){ msg.textContent = ''; box.focus(); }
+  };
+  window.openIdea = () => { toggle(true); form.scrollIntoView({ block:'nearest', behavior:'smooth' }); };
+  btn.onclick = () => toggle();
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const idea = box.value.trim();
+    if (idea.length < 5){ msg.textContent = 'Write your idea first.'; return; }
+    const send = form.querySelector('button'); send.disabled = true;
+    try {
+      await TT.api('/api/forum', { method:'POST', body:{ action:'featuresuggest', idea } });
+      box.value = ''; msg.textContent = 'Sent. Every idea gets read.';
+    } catch (err){ msg.textContent = err.message; }
+    send.disabled = false;
+  };
+})();
+
 /* ── What's new (the list is in theme.js) ─────────────────────────────── */
 (function(){
   const dlg = document.getElementById('newsdlg'), btn = document.getElementById('newsbtn'), dot = document.getElementById('newsdot');
@@ -514,6 +549,10 @@ loadForum();
     TT.newsRead(); dot.hidden = true;
   };
   document.getElementById('newsx').onclick = () => dlg.close();
+  if (signedIn && document.getElementById('newsfoot')){
+    document.getElementById('newsfoot').hidden = false;
+    document.getElementById('newsidea').onclick = () => { dlg.close(); if (window.openIdea) window.openIdea(); };
+  }
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });     // a click on the backdrop
 })();
 </script>

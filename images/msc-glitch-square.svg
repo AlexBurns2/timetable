@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="MSC">
+  <defs>
+    <!-- the same word, squeezed to 62% width and set taller -->
+    <text id="w" x="0" y="0" text-anchor="middle" font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="230" letter-spacing="-6"
+          transform="translate(200 282) scale(.62 1)">MSC</text>
+    <clipPath id="top"><rect x="0" y="0" width="400" height="168"/></clipPath>
+    <clipPath id="mid"><rect x="0" y="168" width="400" height="34"/></clipPath>
+    <clipPath id="low"><rect x="0" y="202" width="400" height="20"/></clipPath>
+    <clipPath id="bot"><rect x="0" y="222" width="400" height="178"/></clipPath>
+  </defs>
+  <rect width="400" height="400" fill="#111"/>
+  <g clip-path="url(#mid)">
+    <use href="#w" x="-26" fill="#ff2e63" opacity=".9"/>
+    <use href="#w" x="28" fill="#08d9d6" opacity=".9"/>
+  </g>
+  <use href="#w" fill="#fff" clip-path="url(#top)"/>
+  <use href="#w" x="18" fill="#fff" clip-path="url(#mid)"/>
+  <use href="#w" x="-10" fill="#fff" clip-path="url(#low)"/>
+  <use href="#w" fill="#fff" clip-path="url(#bot)"/>
+  <rect x="64" y="236" width="90" height="5" fill="#fff" opacity=".85"/>
+  <rect x="250" y="120" width="70" height="4" fill="#08d9d6" opacity=".8"/>
+</svg>

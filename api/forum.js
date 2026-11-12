@@ -11,7 +11,7 @@
  * The weekly anonymous poll on Home rides on this route too (see _poll.js):
  *   GET  /api/forum?poll=1 | history | admin
  *   GET  /api/forum?withpoll=1  → the posts and this week's poll together (Home's first load)
- *   POST /api/forum {action:'pollvote' | 'pollsuggest' | 'pollset' | 'pollsubjects' | 'polldel' | 'suggestdel', …}
+ *   POST /api/forum {action:'pollvote' | 'pollsuggest' | 'pollset' | 'pollsubjects' | 'polldel' | 'suggestdel' | 'featuresuggest', …}
  *   GET  /poll  (rewritten to /api/forum?og=1) → the share link's preview page
  *
  * Same identity model as the rest of the site: whoami() re-verifies the school
@@ -220,7 +220,7 @@ export default async function handler(req, res) {
     if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
     body = body || {};
 
-    if (/^(poll|suggestdel$)/.test(String(body.action || ""))) {
+    if (/^(poll|suggestdel$|featuresuggest$)/.test(String(body.action || ""))) {
       if (!me.year) me.year = await yearOf(me);
       return pollPost(body, res, me, NAMES);
     }
