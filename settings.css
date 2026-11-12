@@ -60,3 +60,7 @@ dialog.setdlg::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 .setdlg .custrow input.crin{flex:1;min-width:0;width:auto;
       background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
       padding:7px 10px;font-size:0.78125rem}
+
+/* Custom theme → Clouds: four colour wells in a row */
+.cswatches{display:inline-flex;gap:6px}
+.cswatches input[type=color]{width:34px}

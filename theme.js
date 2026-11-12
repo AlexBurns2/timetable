@@ -64,7 +64,10 @@ const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
                           accent:'#6d4aff', line:'#d9dde5',
                           radius:12, tint:22, font:'DM Sans',
                           glass:false, backdrop:'solid', shadow:'soft',
-                          border:1, accent2:'#00c2c7' };
+                          border:1, accent2:'#00c2c7',
+                          /* the Clouds backdrop: four colours, how strong, how big, moving or not */
+                          cloud1:'#7a5cff', cloud2:'#00c2dc', cloud3:'#ff4fa3', cloud4:'#3a52f2',
+                          cloudStrength:55, cloudSize:100, cloudAnim:false };
 
 const CUSTOM_VARS = ['--bg','--bg-img','--panel','--panel-2','--line','--text','--muted',
                      '--accent','--accent-ink','--card-radius','--radius','--tint',
@@ -111,20 +114,37 @@ const GLASS = {
 /* however the seeds fall, never more colour than this (dark keeps its dark, so
    text and icons stay readable) */
 const GLASS_CAP = { dark: .5, light: .62 };
-const glassMemo = {};
-function glassClouds(mode, half){
-  const key = mode + half; if (glassMemo[key]) return glassMemo[key];
-  const cols = GLASS[mode].slice(half * 2, half * 2 + 2), rnd = (a, b) => a + Math.random() * (b - a);
-  const f = () => rnd(0.0013, 0.0021).toFixed(4);
-  const parts = cols.map(([r, g, b, k], i) =>
-    "<feTurbulence type='fractalNoise' baseFrequency='" + f() + ' ' + f() + "' numOctaves='2' seed='" + Math.floor(rnd(1, 99999)) + "' result='n" + i + "'/>" +
-    "<feColorMatrix in='n" + i + "' type='matrix' values='0 0 0 0 " + r + ' 0 0 0 0 ' + g + ' 0 0 0 0 ' + b + ' ' + k.toFixed(2) + ' 0 0 0 ' + (-(mode === 'dark' ? 0.45 : 0.47) * k).toFixed(2) + "' result='c" + i + "'/>").join('');
-  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'><filter id='f' x='0' y='0' width='100%' height='100%'>" +
-    parts + "<feMerge result='m'><feMergeNode in='c0'/><feMergeNode in='c1'/></feMerge><feGaussianBlur in='m' stdDeviation='10'/>" +
-    "<feComponentTransfer><feFuncA type='table' tableValues='0 " + GLASS_CAP[mode] + "'/></feComponentTransfer></filter>" +
-    "<rect width='100%' height='100%' filter='url(#f)'/></svg>";
-  return (glassMemo[key] = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
+/* The random part, chosen once per page open: each of the four colour fields
+   gets its own seed and stretch. Kept for the page's life, so changing a
+   custom theme's colours recolours the same clouds rather than reshuffling. */
+const CLOUD_RND = Array.from({ length: 4 }, () => ({
+  fx: 0.0013 + Math.random() * 0.0008, fy: 0.0013 + Math.random() * 0.0008, seed: 1 + Math.floor(Math.random() * 99998) }));
+const cloudMemo = {};
+/* fields: four [r, g, b (0–1), k (how sharply it shows)]; cap: the most colour
+   ever; thr: where a field starts to show; size: 1 normal, 2 twice as big.
+   Gives the two layers' backgrounds (fields 1–2 and 3–4). */
+function cloudLayers(fields, cap, thr, size){
+  const key = JSON.stringify([fields, cap, thr, size]); if (cloudMemo[key]) return cloudMemo[key];
+  const one = from => {
+    const parts = [0, 1].map(i => {
+      const [r, g, b, k] = fields[from + i], rnd = CLOUD_RND[from + i];
+      return "<feTurbulence type='fractalNoise' baseFrequency='" + (rnd.fx / size).toFixed(5) + ' ' + (rnd.fy / size).toFixed(5) + "' numOctaves='2' seed='" + rnd.seed + "' result='n" + i + "'/>" +
+        "<feColorMatrix in='n" + i + "' type='matrix' values='0 0 0 0 " + r.toFixed(3) + ' 0 0 0 0 ' + g.toFixed(3) + ' 0 0 0 0 ' + b.toFixed(3) + ' ' + k.toFixed(2) + ' 0 0 0 ' + (-thr * k).toFixed(2) + "' result='c" + i + "'/>";
+    }).join('');
+    const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'><filter id='f' x='0' y='0' width='100%' height='100%'>" +
+      parts + "<feMerge result='m'><feMergeNode in='c0'/><feMergeNode in='c1'/></feMerge><feGaussianBlur in='m' stdDeviation='10'/>" +
+      "<feComponentTransfer><feFuncA type='table' tableValues='0 " + cap.toFixed(2) + "'/></feComponentTransfer></filter>" +
+      "<rect width='100%' height='100%' filter='url(#f)'/></svg>";
+    return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  };
+  return (cloudMemo[key] = [one(0), one(2)]);
 }
+const hex01 = h => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h || '')); const n = m ? parseInt(m[1], 16) : 0x7a5cff;
+  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+/* a fine grain over the clouds, light on a dark page and dark on a light one */
+const cloudGrain = dark => 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'>" +
+  "<feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 " + (dark ? '1 0 0 0 0 1 0 0 0 0 1 0 0 0 .09 0' : '.1 0 0 0 0 .1 0 0 0 0 .25 0 0 0 .07 0') +
+  "'/></filter><rect width='100%' height='100%' filter='url(#g)'/></svg>") + '")';
 
 /* ── The favicon in the theme's colours ───────────────────────────────
    The pages link a fixed one (images/favicon-*.png: the MSCU square in its
@@ -215,13 +235,23 @@ function apply(state){
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-tileicons', get('tt.tileicons', 'tile') === 'accent' ? 'accent' : 'tile');   // Home's tile icons
   root.setAttribute('data-gameicons', get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons');   // games: icons or emoji
-  root.setAttribute('data-glassanim', get('tt.glassanim', '') === 'on' ? 'on' : 'off');               // glass: moving background
-  /* glass: its colour clouds, a new pattern each time a page opens */
+  /* the colour clouds behind everything (theme.css): Glass always, a custom
+     theme with the Clouds backdrop. data-clouds: off | still | move */
+  let clouds = 'off';
+  root.style.removeProperty('--glass-a'); root.style.removeProperty('--glass-b');
   if (st.skin === 'glass'){
-    const m = st.mode === 'light' ? 'light' : 'dark';
-    root.style.setProperty('--glass-a', glassClouds(m, 0));
-    root.style.setProperty('--glass-b', glassClouds(m, 1));
-  } else { root.style.removeProperty('--glass-a'); root.style.removeProperty('--glass-b'); }
+    const m = st.mode === 'light' ? 'light' : 'dark', [a, b] = cloudLayers(GLASS[m], GLASS_CAP[m], m === 'dark' ? 0.45 : 0.47, 1);
+    root.style.setProperty('--glass-a', a); root.style.setProperty('--glass-b', b);
+    clouds = get('tt.glassanim', '') === 'on' ? 'move' : 'still';
+  }
+  if (st.skin === 'custom' && st.custom.backdrop === 'clouds'){
+    const c = st.custom, K = [3.4, 3.2, 3.0, 2.6];
+    const fields = [c.cloud1, c.cloud2, c.cloud3, c.cloud4].map((h, i) => hex01(h).concat(K[i]));
+    const [a, b] = cloudLayers(fields, Math.max(.1, Math.min(.95, (+c.cloudStrength || 55) / 100)), 0.46, Math.max(.5, Math.min(2, (+c.cloudSize || 100) / 100)));
+    root.style.setProperty('--glass-a', a); root.style.setProperty('--glass-b', b);
+    clouds = c.cloudAnim ? 'move' : 'still';
+  }
+  root.setAttribute('data-clouds', clouds);
   root.setAttribute('data-mode', st.mode);
   /* Keep native controls (the datalist autocomplete popup, text inputs,
      scrollbars) in step with the effective palette. Without this a dark page
@@ -255,6 +285,8 @@ function apply(state){
       c.backdrop === 'gradient'
         ? 'linear-gradient(160deg, ' + c.accent + '22, transparent 55%), ' +
           'linear-gradient(20deg, ' + c.accent2 + '1f, transparent 60%)'
+    : c.backdrop === 'clouds'
+        ? cloudGrain(inkFor(c.bg) === '#fff')
     : c.backdrop === 'mesh'
         ? 'radial-gradient(58vw 58vw at 12% 8%, ' + c.accent + '66, transparent 60%),' +
           'radial-gradient(52vw 52vw at 88% 16%, ' + c.accent2 + '5c, transparent 62%),' +

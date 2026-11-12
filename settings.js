@@ -45,7 +45,14 @@ host.innerHTML =
           '<div class="custrow"><span>Border colour</span><input type="color" id="c_line"></div>' +
           '<div class="custrow"><span>Second colour</span><input type="color" id="c_accent2"></div>' +
           '<div class="custrow"><span>Backdrop</span><select id="c_backdrop">' +
-            '<option value="solid">Solid</option><option value="gradient">Soft gradient</option><option value="mesh">Colour mesh</option></select></div>' +
+            '<option value="solid">Solid</option><option value="gradient">Soft gradient</option><option value="mesh">Colour mesh</option><option value="clouds">Clouds</option></select></div>' +
+          '<div id="c_cloudopts" hidden>' +
+            '<div class="custrow"><span>Cloud colours</span><span class="cswatches"><input type="color" id="c_cl1" aria-label="Cloud colour 1">' +
+              '<input type="color" id="c_cl2" aria-label="Cloud colour 2"><input type="color" id="c_cl3" aria-label="Cloud colour 3"><input type="color" id="c_cl4" aria-label="Cloud colour 4"></span></div>' +
+            '<div class="custrow"><span>Cloud strength</span><input type="range" id="c_clstr" min="15" max="90" step="5"><b id="c_clstr_v"></b></div>' +
+            '<div class="custrow"><span>Cloud size</span><input type="range" id="c_clsize" min="50" max="200" step="10"><b id="c_clsize_v"></b></div>' +
+            '<div class="custrow"><span>Animated</span><input type="checkbox" id="c_clanim" class="sw"></div>' +
+          '</div>' +
           '<div class="custrow"><span>Frosted glass</span><input type="checkbox" id="c_glass" class="sw"></div>' +
           '<div class="custrow"><span>Shadow</span><select id="c_shadow">' +
             '<option value="none">None</option><option value="soft">Soft</option><option value="hard">Hard offset</option></select></div>' +
@@ -159,6 +166,15 @@ function renderCustom(){
   $('c_tint').value = custom.tint; $('c_tint_v').textContent = custom.tint + '%';
   $('c_border').value = custom.border; $('c_border_v').textContent = custom.border + 'px';
   sel.value = custom.font;
+  renderClouds();
+}
+/* the Clouds backdrop's own options, shown only with it chosen */
+function renderClouds(){
+  $('c_cloudopts').hidden = custom.backdrop !== 'clouds';
+  ['cloud1', 'cloud2', 'cloud3', 'cloud4'].forEach((k, i) => $('c_cl' + (i + 1)).value = custom[k]);
+  $('c_clstr').value = custom.cloudStrength; $('c_clstr_v').textContent = custom.cloudStrength + '%';
+  $('c_clsize').value = custom.cloudSize; $('c_clsize_v').textContent = (custom.cloudSize / 100).toFixed(1) + '×';
+  $('c_clanim').checked = !!custom.cloudAnim;
 }
 (function bindCustom(){
   const touch = (id, key, after) => $(id).addEventListener('input', ev => {
@@ -167,7 +183,12 @@ function renderCustom(){
   });
   touch('c_bg','bg'); touch('c_panel','panel'); touch('c_text','text');
   touch('c_accent','accent'); touch('c_accent2','accent2'); touch('c_line','line'); touch('c_font','font');
-  touch('c_backdrop','backdrop'); touch('c_shadow','shadow');
+  touch('c_backdrop','backdrop', renderClouds); touch('c_shadow','shadow');
+  ['cloud1', 'cloud2', 'cloud3', 'cloud4'].forEach((k, i) => touch('c_cl' + (i + 1), k));
+  const num = (id, key, after) => $(id).addEventListener('input', ev => { custom[key] = +ev.target.value; set(LS.custom, custom); apply(); after(); });
+  num('c_clstr', 'cloudStrength', () => { $('c_clstr_v').textContent = custom.cloudStrength + '%'; });
+  num('c_clsize', 'cloudSize', () => { $('c_clsize_v').textContent = (custom.cloudSize / 100).toFixed(1) + '×'; });
+  $('c_clanim').addEventListener('change', ev => { custom.cloudAnim = ev.target.checked; set(LS.custom, custom); apply(); });
   touch('c_radius','radius', () => { $('c_radius_v').textContent = custom.radius + 'px'; });
   touch('c_tint','tint',     () => { $('c_tint_v').textContent   = custom.tint + '%'; });
   touch('c_border','border', () => { $('c_border_v').textContent = custom.border + 'px'; });

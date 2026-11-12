@@ -131,19 +131,22 @@ select option{ background:#ffffff; color:#16181d; }
    (480×300) and stretched to the window on a fixed layer, which is cheap and
    smooth; the fine grain on top (--bg-img) keeps it from looking like a blur.
    Zen mode shows its own wallpaper, so the layer goes there. */
-[data-skin="glass"] body::before,[data-skin="glass"] body::after{content:'';position:fixed;inset:-14%;z-index:-1;pointer-events:none;
+/* The clouds are on whenever theme.js says so (html[data-clouds] still or move):
+   Glass, and a custom theme with the Clouds backdrop. */
+html:is([data-clouds="still"],[data-clouds="move"]) body::before,
+html:is([data-clouds="still"],[data-clouds="move"]) body::after{content:'';position:fixed;inset:-14%;z-index:-1;pointer-events:none;
   background:center/cover no-repeat;transform:translateZ(0)}
-[data-skin="glass"] body::before{background-image:var(--glass-a)}
-[data-skin="glass"] body::after{background-image:var(--glass-b)}
-html.zen[data-skin="glass"] body::before,html.zen[data-skin="glass"] body::after{display:none}
-/* Settings → Glass → Animated background: the two layers drift, turn and swell
-   slowly against each other, so the colours move like weather. */
-html[data-glassanim="on"][data-skin="glass"] body::before{animation:glassdriftA 26s ease-in-out infinite alternate}
-html[data-glassanim="on"][data-skin="glass"] body::after{animation:glassdriftB 33s ease-in-out infinite alternate}
+html:is([data-clouds="still"],[data-clouds="move"]) body::before{background-image:var(--glass-a)}
+html:is([data-clouds="still"],[data-clouds="move"]) body::after{background-image:var(--glass-b)}
+html.zen:is([data-clouds="still"],[data-clouds="move"]) body::before,html.zen:is([data-clouds="still"],[data-clouds="move"]) body::after{display:none}
+/* Animated background (Glass's switch, or the custom theme's): the two layers
+   drift, turn and swell slowly against each other, so the colours move like weather. */
+html[data-clouds="move"] body::before{animation:glassdriftA 26s ease-in-out infinite alternate}
+html[data-clouds="move"] body::after{animation:glassdriftB 33s ease-in-out infinite alternate}
 @keyframes glassdriftA{0%{transform:translate3d(0,0,0) scale(1) rotate(0)}50%{transform:translate3d(9%,-7%,0) scale(1.18) rotate(7deg)}100%{transform:translate3d(-8%,7%,0) scale(1.06) rotate(-5deg)}}
 @keyframes glassdriftB{0%{transform:translate3d(0,0,0) scale(1.1) rotate(0)}50%{transform:translate3d(-10%,6%,0) scale(1) rotate(-8deg)}100%{transform:translate3d(7%,-9%,0) scale(1.2) rotate(5deg)}}
-html[data-motion="reduced"][data-skin="glass"] body::before,html[data-motion="reduced"][data-skin="glass"] body::after{animation:none}
-@media (prefers-reduced-motion:reduce){ [data-skin="glass"] body::before,[data-skin="glass"] body::after{animation:none} }
+html[data-motion="reduced"] body::before,html[data-motion="reduced"][data-clouds] body::after{animation:none}
+@media (prefers-reduced-motion:reduce){ html[data-clouds] body::before,html[data-clouds] body::after{animation:none} }
 [data-skin="glass"] .lesson,[data-skin="glass"] .nowcard,
 [data-skin="glass"] .breakbar,[data-skin="glass"] .btn,
 [data-skin="glass"] .topbar,[data-skin="glass"] .arrowbtn,
