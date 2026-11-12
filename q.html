@@ -9,26 +9,41 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <!-- without JavaScript: straight on to the timetable after a moment -->
-<noscript><meta http-equiv="refresh" content="0;url=/"></noscript>
+<noscript><meta http-equiv="refresh" content="2;url=/"></noscript>
 <!--
   The QR landing page. Every printed QR code points at /q/<name> (vercel.json
   rewrites that here), e.g. /q/library or /q/canteen, so each one is counted
   on its own. It notes the scan (POST /api/forum?scan=<name>: the name, the
   time, phone / tablet / computer, whether this device has scanned one before,
   whether it's already signed in to the site; nothing about who) and goes on
-  to the timetable. For now that's all it does; later it can show something
-  first. The counts are in the moderator page, under QR scans.
+  to the timetable, after a short, calm welcome (the logo, then "Welcome to
+  MSC Unofficial", about 3 s in all, so it doesn't read as a flash of some
+  redirect). Tap to go straight on. The counts are in the moderator page,
+  under QR scans.
 -->
 <style>
-html,body{margin:0;height:100%;background:#1244a3}
-body{display:grid;place-items:center}
-img{width:96px;height:96px;border-radius:22px;animation:in .4s ease both}
-@keyframes in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){ img{animation:none} }
+html,body{margin:0;height:100%;background:#1244a3;color:#fff}
+body{display:grid;place-items:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;cursor:pointer}
+main{display:flex;flex-direction:column;align-items:center;transition:opacity .4s ease}
+img{width:104px;height:104px;border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,.25);animation:in .6s cubic-bezier(.2,.8,.3,1) both;transition:transform .7s cubic-bezier(.2,.8,.3,1)}
+.hello{margin-top:22px;text-align:center;opacity:0;transform:translateY(8px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.8,.3,1)}
+.hello small{display:block;font-size:13px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;opacity:.7}
+.hello b{display:block;margin-top:6px;font-size:28px;font-weight:800;letter-spacing:-.01em}
+.site{position:fixed;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));text-align:center;font-size:12px;letter-spacing:.06em;opacity:0;transition:opacity .6s ease}
+body.two img{transform:translateY(-6px)}
+body.two .hello{opacity:1;transform:none}
+body.two .site{opacity:.55}
+body.go main,body.go .site{opacity:0}
+@keyframes in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){ img{animation:none} img,.hello,.site,main{transition:none} }
 </style>
 </head>
 <body>
-<img src="/images/favicon-192.png" alt="MSC Unofficial">
+<main>
+  <img src="/images/favicon-192.png" alt="">
+  <div class="hello"><small>Welcome to</small><b>MSC Unofficial</b></div>
+</main>
+<div class="site">mscunofficial.com</div>
 <script>
 (function(){
   const code = (decodeURIComponent(location.pathname.split('/q/')[1] || new URLSearchParams(location.search).get('c') || 'none')
@@ -41,7 +56,12 @@ img{width:96px;height:96px;border-radius:22px;animation:in .4s ease both}
   const url = '/api/forum?scan=' + encodeURIComponent(code) + '&device=' + device + '&first=' + (first ? 1 : 0) + '&signedin=' + (signedIn ? 1 : 0);
   /* send it in a way that survives leaving the page, then go */
   try { if (!(navigator.sendBeacon && navigator.sendBeacon(url))) fetch(url, { method:'POST', keepalive:true }).catch(() => {}); } catch {}
-  setTimeout(() => location.replace('/'), 120);
+  /* the logo, then the welcome, a moment to read it, then on (a tap skips ahead) */
+  let gone = false;
+  const go = () => { if (gone) return; gone = true; document.body.classList.add('go'); setTimeout(() => location.replace('/'), 400); };
+  setTimeout(() => document.body.classList.add('two'), 900);
+  setTimeout(go, 2700);
+  addEventListener('click', go); addEventListener('keydown', go);
 })();
 </script>
 </body>
