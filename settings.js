@@ -54,9 +54,9 @@ host.innerHTML =
         '</details>' +
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
-      '<div class="field"><label>Home icons</label><div class="modes" id="s_tileic">' +
+      '<div class="field"><label>Icon colour</label><div class="modes" id="s_tileic">' +
         '<button type="button" data-ti="tile">Colourful</button><button type="button" data-ti="accent">Theme colour</button></div></div>' +
-      '<div class="field"><label>Game icons</label><div class="modes" id="s_gameic">' +
+      '<div class="field"><label>Icon style</label><div class="modes" id="s_gameic">' +
         '<button type="button" data-gi="icons">Icons</button><button type="button" data-gi="emoji">Emoji</button></div></div>' +
       '<div class="field"><label>Login</label>' +
         '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +

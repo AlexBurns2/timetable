@@ -126,9 +126,91 @@ function glassClouds(mode, half){
   return (glassMemo[key] = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
 }
 
+/* ── The favicon in the theme's colours ───────────────────────────────
+   The pages link a fixed one (images/favicon-*.png: the MSCU square in its
+   own blue, rounded). Here it's redrawn in the theme's accent with the letters
+   in its accent ink (and drawn in the theme's way, FAV_STYLE), whenever the
+   look changes. Browsers that don't take a favicon from a script (Safari)
+   keep the fixed one. */
+let favImg = null, favTimer = 0, favLast = '';
+/* The letters get a little of each theme's character: rounded for Classic,
+   refracted for Glass, pixels for Terminal and Retro, an outline for
+   Blueprint, a hard shadow for Brutal, a glow for Sci-fi, a tilt for Notebook.
+   The rest keep the logo's letters as they are. */
+const FAV_STYLE = { classic:'round', glass:'glass', terminal:'pixel', retro:'pixel', blueprint:'outline', brutal:'shadow', scifi:'glow', paper:'tilt' };
+function favThreshold(x, n, cut, soft){            // alpha: a soft step at `cut` (rounds or squares off the edges)
+  const d = x.getImageData(0, 0, n, n), a = d.data, h = (soft || 1) / 2;
+  for (let i = 3; i < a.length; i += 4) a[i] = Math.max(0, Math.min(255, (a[i] - (cut - h)) / (2 * h) * 255));
+  x.putImageData(d, 0, 0);
+}
+function paintFavicon(){
+  try {
+    const root = document.documentElement, cs = getComputedStyle(root);
+    const bg = cs.getPropertyValue('--accent').trim(), ink = cs.getPropertyValue('--accent-ink').trim() || '#fff';
+    const style = FAV_STYLE[root.getAttribute('data-skin')] || 'plain';
+    if (!bg || bg + ink + style === favLast) return;
+    const draw = () => {
+      const N = 64, mk = n => { const c = document.createElement('canvas'); c.width = c.height = n || N; return c; };
+      /* the letters, in a colour (or a gradient, made by fill(x)), in a shape */
+      const letters = (fill, shape) => {
+        const c = mk(), x = c.getContext('2d');
+        if (shape === 'pixel'){
+          const s = mk(23), sx = s.getContext('2d'); sx.drawImage(favImg, 0, 0, 23, 23); favThreshold(sx, 23, 112);
+          x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, N, N);
+        } else if (shape === 'round'){
+          x.filter = 'blur(2.4px)'; x.drawImage(favImg, 0, 0, N, N); x.filter = 'none'; favThreshold(x, N, 128, 40);
+        } else x.drawImage(favImg, 0, 0, N, N);
+        x.globalCompositeOperation = 'source-in';
+        x.fillStyle = typeof fill === 'function' ? fill(x) : fill; x.fillRect(0, 0, N, N);
+        return c;
+      };
+      const c = mk(), x = c.getContext('2d'), r = N * 0.22;
+      x.beginPath(); x.moveTo(r, 0); x.arcTo(N, 0, N, N, r); x.arcTo(N, N, 0, N, r); x.arcTo(0, N, 0, 0, r); x.arcTo(0, 0, N, 0, r); x.closePath();
+      x.fillStyle = bg; x.fill();
+      x.save(); x.clip();
+      if (style === 'glass'){
+        /* a pane: a sheen across the top, the letters with light through them and a colour fringe */
+        const g = x.createLinearGradient(0, 0, N * .7, N); g.addColorStop(0, 'rgba(255,255,255,.38)'); g.addColorStop(.45, 'rgba(255,255,255,.06)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = g; x.fillRect(0, 0, N, N);
+        x.globalAlpha = .7; x.drawImage(letters('#00d6ff'), -1.6, 0); x.drawImage(letters('#ff4fc0'), 1.6, 0); x.globalAlpha = 1;
+        /* a diagonal band where the letters thin out, as if light passes through them */
+        const L = letters(ink), lx = L.getContext('2d'), band = lx.createLinearGradient(0, 0, N * .45, N);
+        band.addColorStop(.38, 'rgba(0,0,0,0)'); band.addColorStop(.5, 'rgba(0,0,0,.5)'); band.addColorStop(.62, 'rgba(0,0,0,0)');
+        lx.globalCompositeOperation = 'destination-out'; lx.fillStyle = band; lx.fillRect(0, 0, N, N);
+        x.drawImage(L, 0, 0);
+      } else if (style === 'outline'){
+        const o = mk(), ox = o.getContext('2d'), L = letters(ink);
+        for (let a = 0; a < 16; a++) ox.drawImage(L, Math.cos(a / 8 * Math.PI) * 2.2, Math.sin(a / 8 * Math.PI) * 2.2);
+        ox.globalCompositeOperation = 'destination-out'; ox.drawImage(L, 0, 0);
+        x.drawImage(o, 0, 0);
+      } else if (style === 'shadow'){
+        x.drawImage(letters('rgba(0,0,0,.85)'), 3, 3); x.drawImage(letters(ink), 0, 0);
+      } else if (style === 'glow'){
+        /* neon: a white glow behind the letters */
+        x.shadowColor = 'rgba(255,255,255,.95)'; x.shadowBlur = 6; const L = letters(ink); x.drawImage(L, 0, 0); x.drawImage(L, 0, 0); x.shadowBlur = 0;
+      } else if (style === 'tilt'){
+        x.translate(N / 2, N / 2); x.rotate(-0.1); x.scale(.92, .92); x.translate(-N / 2, -N / 2); x.drawImage(letters(ink, 'round'), 0, 0);
+      } else x.drawImage(letters(ink, style === 'round' || style === 'pixel' ? style : ''), 0, 0);
+      x.restore();
+      const url = c.toDataURL('image/png');
+      document.querySelectorAll('link[rel~="icon"]').forEach(l => { l.type = 'image/png'; l.href = url; });
+      favLast = bg + ink + style;
+    };
+    if (favImg && favImg.complete && favImg.naturalWidth) draw();
+    else if (!favImg){ favImg = new Image(); favImg.onload = draw; favImg.src = '/images/msc-letters.png'; }
+  } catch { /* no canvas: the fixed icon stays */ }
+}
+/* after the look has settled and the page's <link>s exist */
+function queueFavicon(){
+  clearTimeout(favTimer);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paintFavicon, { once:true });
+  else favTimer = setTimeout(paintFavicon, 0);
+}
+
 function apply(state){
   const st = state || readState();
   const root = document.documentElement;
+  queueFavicon();
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-tileicons', get('tt.tileicons', 'tile') === 'accent' ? 'accent' : 'tile');   // Home's tile icons

@@ -69,7 +69,9 @@ function svg(name, cls){
 function fill(root){
   (root || document).querySelectorAll('[data-icon]').forEach(el => {
     if (el.dataset.iconDone === el.dataset.icon) return;
-    el.innerHTML = svg(el.dataset.icon); el.dataset.iconDone = el.dataset.icon;
+    /* data-emoji: the emoji as well, for Settings → Icon style: Emoji (CSS picks one) */
+    el.innerHTML = svg(el.dataset.icon) + (el.dataset.emoji ? '<span class="ie">' + el.dataset.emoji + '</span>' : '');
+    el.dataset.iconDone = el.dataset.icon;
   });
 }
 /* Each game's and subject's icon, in the same duotone set and style as Home's

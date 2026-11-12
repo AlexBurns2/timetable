@@ -13,7 +13,9 @@
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
-<link rel="icon" type="image/x-icon" href="/images/icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <link rel="stylesheet" href="site.css?v=20261112">
 <link rel="stylesheet" href="settings.css?v=20261112">
 <link rel="stylesheet" href="poll.css?v=20261112">
@@ -45,14 +47,14 @@
   <div class="hubrest" id="hubrest">
   <div class="hubnav">
   <nav class="qtiles" aria-label="Pages">
-    <a class="qtile" href="./" id="tileTimetable" style="--tc:#e5484d"><span class="ico" data-icon="d:table"></span><span class="tname">Timetable</span></a>
-    <a class="qtile" href="calendar.html" style="--tc:#f76b15"><span class="ico" data-icon="d:calendar-dots"></span><span class="tname">Calendar</span></a>
-    <a class="qtile" href="free.html" style="--tc:#ffb224"><span class="ico" data-icon="d:users-three"></span><span class="tname">Free periods</span></a>
-    <a class="qtile" href="revision.html" id="tileRevision" style="--tc:#30a46c"><span class="ico" data-icon="d:pencil-simple-line"></span><span class="tname">Revision</span></a>
-    <a class="qtile" href="resources.html" style="--tc:#12a594"><span class="ico" data-icon="d:books"></span><span class="tname">Resources</span></a>
-    <a class="qtile" href="games.html" id="tileGames" style="--tc:#8e4ec6"><span class="ico" data-icon="d:game-controller"></span><span class="tname">Games</span></a>
-    <a class="qtile" href="finder.html" style="--tc:#0090ff"><span class="ico" data-icon="d:magnifying-glass"></span><span class="tname">Student finder</span></a>
-    <a class="qtile" href="mahjong.html" id="tileMahjong" style="--tc:#d6409f"><span class="ico" data-icon="d:cards-three"></span><span class="tname">Mahjong club</span></a>
+    <a class="qtile" href="./" id="tileTimetable" style="--tc:#e5484d"><span class="ico" data-icon="d:table" data-emoji="📋"></span><span class="tname">Timetable</span></a>
+    <a class="qtile" href="calendar.html" style="--tc:#f76b15"><span class="ico" data-icon="d:calendar-dots" data-emoji="📅"></span><span class="tname">Calendar</span></a>
+    <a class="qtile" href="free.html" style="--tc:#ffb224"><span class="ico" data-icon="d:users-three" data-emoji="☕"></span><span class="tname">Free periods</span></a>
+    <a class="qtile" href="revision.html" id="tileRevision" style="--tc:#30a46c"><span class="ico" data-icon="d:pencil-simple-line" data-emoji="📝"></span><span class="tname">Revision</span></a>
+    <a class="qtile" href="resources.html" style="--tc:#12a594"><span class="ico" data-icon="d:books" data-emoji="📚"></span><span class="tname">Resources</span></a>
+    <a class="qtile" href="games.html" id="tileGames" style="--tc:#8e4ec6"><span class="ico" data-icon="d:game-controller" data-emoji="🎮"></span><span class="tname">Games</span></a>
+    <a class="qtile" href="finder.html" style="--tc:#0090ff"><span class="ico" data-icon="d:magnifying-glass" data-emoji="🔎"></span><span class="tname">Student finder</span></a>
+    <a class="qtile" href="mahjong.html" id="tileMahjong" style="--tc:#d6409f"><span class="ico" data-icon="d:cards-three" data-emoji="🀄"></span><span class="tname">Mahjong club</span></a>
   </nav>
   <!-- today's daily games, and whether you've played them (filled below) -->
   <nav class="hubtoday" id="hubtoday" aria-label="Today’s daily games" hidden></nav>
@@ -594,7 +596,7 @@ loadForum();
     if (tile){
       tile.href = 'revision.html';
       tile.classList.add('locked');
-      const ic = tile.querySelector('.ico'); ic.dataset.icon = 'd:target'; if (window.Icon) Icon.fill(tile);
+      const ic = tile.querySelector('.ico'); ic.dataset.icon = 'd:target'; ic.dataset.emoji = '🎯'; if (window.Icon) Icon.fill(tile);
       tile.querySelector('.tname').textContent = 'Focus mode';
       tile.title = 'Games locked for ' + Focus.fmt(Focus.left());
     }
