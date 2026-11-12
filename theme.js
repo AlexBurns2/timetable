@@ -546,6 +546,8 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'reactfix', date:'2026-11-12', title:'Reaction leaderboard fixed',
+    text:'Reaction times under 80 ms were culled from the leaderboard to fix a bug.', href:'games.html?play=react' },
   { id:'qtdiff', date:'2026-11-12', key:'game:quartets', title:'How hard was today?',
     text:'Quartets results now show how hard the day was for your year, group by group.', href:'games.html?play=quartets' },
   { id:'quartets', date:'2026-11-10', key:'game:quartets', title:'Quartets',

@@ -1254,3 +1254,11 @@ html[data-motion="reduced"] .qtdcaret{transition:none}
 .qrbars{display:flex;align-items:flex-end;gap:2px;height:28px}
 .qrbars i{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px;opacity:.85}
 @media (max-width:640px){ .qrhead{display:none} .qrrow{grid-template-columns:1fr 1fr 1fr;row-gap:6px} .qrrow .nm,.qrrow .qrbars{grid-column:1 / -1} }
+
+/* a small dismissable note above a game (e.g. Reaction's note about cleared times) */
+.gnote{display:flex;align-items:flex-start;gap:10px;margin:0 0 12px;padding:10px 8px 10px 14px;border-radius:var(--radius);
+  background:var(--panel-2);border:1px solid var(--line);color:var(--muted);font-size:0.84375rem;line-height:1.45}
+.gnote span{flex:1;min-width:0}
+.gnote button{flex:none;background:none;border:0;padding:3px;border-radius:999px;color:var(--muted);cursor:pointer;line-height:0}
+.gnote button:hover{color:var(--text);background:var(--panel)}
+.gnote .ph{width:14px;height:14px}

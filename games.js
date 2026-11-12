@@ -3504,17 +3504,24 @@ BUILD.typing = host => {
 
 /* ── Reaction test ─────────────────────────────────────────────── */
 BUILD.react = host => {
+  /* a note about the times cleared in the bug fix (8.100): until it's closed
+     (tt.react_cullnote, so it stays closed on other devices) or the end of term */
+  const cullNote = !(window.TT && TT.get('tt.react_cullnote', '')) && Date.now() < Date.parse('2026-12-19')
+    ? '<div class="gnote" id="cullnote"><span>Missing a time? While fixing a bug we cleared every reaction time under 80 ms, so yours may have gone with them.</span>' +
+      '<button type="button" id="cullx" aria-label="Dismiss">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' : '';
   head(host, 'Reaction', 'Best of five.',
-       '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
+       cullNote + '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
+  const cx = $('cullx');
+  if (cx) cx.onclick = () => { TT.set('tt.react_cullnote', '1'); const n = $('cullnote'); if (n) n.remove(); };
   const el = $('react');
   let state = 'idle', t = null, at = 0, times = [], lockUntil = 0;
   /* Autoclickers can't win:
-     - under 100 ms isn't a human reaction (it's anticipation, or a bot
+     - under 60 ms isn't a human reaction (it's anticipation, or a bot
        watching the screen), so it doesn't count; the server refuses it too
      - a burst of presses (4 inside 400 ms) or a run of presses at a machine-
        steady rhythm stops the round, wipes the run and locks the box briefly
      - clicks a script fakes (not from a real mouse or finger) are ignored */
-  const MIN_MS = 100, presses = [];
+  const MIN_MS = 60, presses = [];
   const show = (cls, text) => { el.className = cls; el.textContent = text; };
   const arm = () => {
     show('wait', 'Wait for green…');

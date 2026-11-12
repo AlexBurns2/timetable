@@ -166,7 +166,7 @@ async function siteStats() {
   };
 }
 
-const MIN_REACTION_MS = 100;             // under this isn't a human reaction (the page refuses it too)
+const MIN_REACTION_MS = 60;              // under this isn't a human reaction (the page refuses it too)
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
