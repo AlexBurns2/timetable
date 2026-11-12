@@ -21,6 +21,14 @@
     {
       "source": "/vault",
       "destination": "/vault.html"
+    },
+    {
+      "source": "/q/:code",
+      "destination": "/q.html"
+    },
+    {
+      "source": "/q",
+      "destination": "/q.html"
     }
   ],
   "redirects": [

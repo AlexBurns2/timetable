@@ -3673,7 +3673,9 @@ BUILD.admin = host => {
   const POLLS = { id:'polls', name:'Polls', kind:'p' };
   /* ideas for the site, sent from Home's footer */
   const IDEAS = { id:'ideas', name:'Feature ideas', kind:'i' };
-  const CATS = [OVERVIEW, POLLS, IDEAS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
+  /* scans of the printed QR codes (q.html), one row per code */
+  const SCANS = { id:'scans', name:'QR scans', kind:'q' };
+  const CATS = [OVERVIEW, POLLS, IDEAS, SCANS, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -3698,7 +3700,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpi'.includes(cur.kind);
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpiq'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -3720,6 +3722,7 @@ BUILD.admin = host => {
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
       if (cur.kind === 'p' || cur.kind === 'i'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
+      if (cur.kind === 'q'){ data = await TT.api('/api/forum', { params:{ scans:1 } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -3758,6 +3761,7 @@ BUILD.admin = host => {
     if (cur.kind === 'm') return renderMahjong();
     if (cur.kind === 'p') return renderPolls();
     if (cur.kind === 'i') return renderIdeas();
+    if (cur.kind === 'q') return renderScans();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -3916,6 +3920,20 @@ BUILD.admin = host => {
   }
   /* ── Mahjong club: rename or remove players, delete any game ── */
   /* ── the weekly poll ── */
+  function renderScans(){
+    const codes = (data && data.codes) || [], days = (data && data.days) || [];
+    $('admnote').innerHTML = 'Each QR code points at <b>mscunofficial.com/q/<i>name</i></b>, so every name is counted on its own ' +
+      '(e.g. /q/library, /q/canteen). Scanning one goes straight to the timetable. Nothing about who scanned is kept.';
+    if (data && data.missing){ $('admbody').innerHTML = '<p class="how">The qr_scan table isn’t set up yet (SQL in SETUP.md).</p>'; return; }
+    if (!codes.length){ $('admbody').innerHTML = '<p class="how">No scans yet.</p>'; return; }
+    const max = Math.max(1, ...codes.flatMap(c => c.days));
+    const pct = (n, d) => d ? Math.round(n / d * 100) + '%' : '–';
+    $('admbody').innerHTML = '<div class="qrhead"><span>Code</span><span>Scans</span><span>New devices</span><span>Signed in</span><span>On a phone</span><span>Last 14 days</span></div>' +
+      codes.map(c => '<div class="adminrow qrrow"><span class="nm"><b>/q/' + esc(c.code) + '</b><em>last ' + esc(seenAgo(c.last)) + '</em></span>' +
+        '<span class="qrn">' + c.scans + '</span><span class="qrn">' + c.firsts + '</span><span class="qrn">' + pct(c.signedIn, c.scans) + '</span><span class="qrn">' + pct(c.phone, c.scans) + '</span>' +
+        '<span class="qrbars" title="' + esc(days[0] + ' to ' + days[days.length - 1]) + '">' + c.days.map((n, i) =>
+          '<i style="height:' + Math.max(2, Math.round(n / max * 100)) + '%" title="' + esc(days[i]) + ': ' + n + '"></i>').join('') + '</span></div>').join('');
+  }
   function renderIdeas(){
     const list = (data && data.features) || [];
     $('admnote').textContent = 'Ideas students sent from the "Suggest a feature" link on Home. Dismiss one once it’s done or decided against.';

@@ -3156,3 +3156,8 @@ data. No icon font or CDN script loads on the live site.
 
 ### 8.98 Credits close as they opened, backwards
 - Closing (click away, ×, Esc) plays the opening in reverse over 0.9 s (credits.js `close()`, `closingAt`, `CLOSE_MS`): the names keep orbiting while they spiral back into the middle, blurring and fading (the same spiral, slow at first then quicker); the track, trails and stars fade with them; "Made by" drops its letters from the end back (`.credits.closing`, `crletterout`); the note and any message fade. The overlay and its backdrop then fade (`.out`, .38 s) and it closes (about 1 s in all). Taps and sparkles are ignored while closing. Instant with reduced motion.
+
+### 8.99 QR codes: /q/<name>
+- Every printed QR code points at `mscunofficial.com/q/<name>` (vercel.json rewrites `/q/:code` and `/q` to **q.html**), e.g. `/q/library`, `/q/canteen`; any name (a–z, 0–9, hyphen, up to 32) works and is counted on its own. q.html shows the MSCU square for a moment, notes the scan (`navigator.sendBeacon` → `POST /api/forum?scan=<name>&device=phone|tablet|computer&first=0|1&signedin=0|1`, no sign-in needed, bots skipped) and goes to the timetable (`/`). Without JavaScript it goes straight there. Later it can show something first.
+- Nothing about who: the code, the time, the kind of device, whether that device had scanned one before (`msc.qrseen` in its localStorage) and whether it's signed in to the site. Table **qr_scan** (SQL in SETUP.md); without it scans still go through, uncounted.
+- Moderator page → **QR scans** (`GET /api/forum?scans=1`, moderators only): each code's scans, new devices, % already signed in, % on a phone, last scan, and the last 14 days as bars.

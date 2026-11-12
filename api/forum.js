@@ -11,6 +11,8 @@
  * The weekly anonymous poll on Home rides on this route too (see _poll.js):
  *   GET  /api/forum?poll=1 | history | admin
  *   GET  /api/forum?withpoll=1  → the posts and this week's poll together (Home's first load)
+ *   POST /api/forum?scan=<name>&device=&first=&signedin=  → a QR scan noted (q.html; no sign-in)
+ *   GET  /api/forum?scans=1     → moderators: QR scans by code
  *   POST /api/forum {action:'pollvote' | 'pollsuggest' | 'pollset' | 'pollsubjects' | 'polldel' | 'suggestdel' | 'featuresuggest', …}
  *   GET  /poll  (rewritten to /api/forum?og=1) → the share link's preview page
  *
@@ -87,6 +89,17 @@ export default async function handler(req, res) {
   if ((req.method === "GET" || req.method === "HEAD") && req.query.og) return pollPreview(req, res);
 
   if (!db) return res.status(503).json({ error: "The forum is not configured on the server." });
+  /* a QR code was scanned (q.html, from /q/<name>): note it. Nothing about who:
+     the name, the time, the kind of device, whether that device had scanned one
+     before and whether it's signed in to the site. Table qr_scan (SETUP.md). */
+  if (req.method === "POST" && req.query.scan) {
+    const code = String(req.query.scan).toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 32) || "none";
+    const device = ["phone", "tablet", "computer"].includes(req.query.device) ? req.query.device : null;
+    if (/bot|crawl|spider|preview|facebookexternalhit|slurp/i.test(String(req.headers["user-agent"] || ""))) return res.status(204).end();
+    const { error } = await db.from("qr_scan").insert({ code, device, first: req.query.first === "1", signed_in: req.query.signedin === "1" });
+    if (error) console.error("qr scan:", error.message);
+    return res.status(204).end();
+  }
   const t0 = Date.now();
   const me = await whoami(req);
   /* the credits on Home: only for someone signed in (not in any page's source) */
@@ -142,6 +155,22 @@ export default async function handler(req, res) {
   }
   NAMES = await displayNames();
   const isOwner = isAdmin(me.email);
+  /* moderators: QR scans by code, all time, with the last 14 days day by day */
+  if (req.method === "GET" && req.query.scans) {
+    if (!isOwner) return res.status(403).json({ error: "Moderators only." });
+    const { data, error } = await db.from("qr_scan").select("code, at, device, first, signed_in").order("at", { ascending: false }).limit(20000);
+    if (error) return res.status(200).json({ codes: [], missing: /does not exist|relation|schema cache/i.test(error.message) });
+    const today = new Date(Date.now() + 10 * 3600e3).toISOString().slice(0, 10);           // roughly Sydney's day
+    const dayOf = iso => new Date(new Date(iso).getTime() + 10 * 3600e3).toISOString().slice(0, 10);
+    const days = Array.from({ length: 14 }, (_, i) => new Date(Date.parse(today) - (13 - i) * 864e5).toISOString().slice(0, 10));
+    const by = new Map();
+    for (const r of data || []) {
+      const c = by.get(r.code) || by.set(r.code, { code: r.code, scans: 0, firsts: 0, signedIn: 0, phone: 0, last: r.at, days: Object.fromEntries(days.map(d => [d, 0])) }).get(r.code);
+      c.scans++; if (r.first) c.firsts++; if (r.signed_in) c.signedIn++; if (r.device === "phone") c.phone++;
+      const d = dayOf(r.at); if (d in c.days) c.days[d]++;
+    }
+    return res.status(200).json({ days, codes: [...by.values()].map(c => ({ ...c, days: days.map(d => c.days[d]) })).sort((a, b) => b.scans - a.scans) });
+  }
 
   if (req.method === "GET" && req.query.poll) {
     if (!me.year) me.year = await yearOf(me);

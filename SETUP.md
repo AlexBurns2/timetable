@@ -2824,3 +2824,22 @@ alter table vault_visit enable row level security;   -- no policies: only the se
 ```
 
 Until it exists the page says "The vault is sealed for now." Nothing else depends on it.
+
+## QR scans (`q.html` at `/q/<name>`)
+
+Each printed QR code points at `mscunofficial.com/q/<name>` (e.g. `/q/library`), so every name is counted on its own; the moderator page shows them under QR scans. Run once:
+
+```sql
+create table if not exists qr_scan (
+  id         bigserial primary key,
+  code       text not null,
+  at         timestamptz not null default now(),
+  device     text,       -- phone / tablet / computer
+  first      boolean,    -- the first QR scan on that device
+  signed_in  boolean     -- already signed in to the site on that device
+);
+create index if not exists qr_scan_at on qr_scan (at desc);
+alter table qr_scan enable row level security;   -- no policies: only the server (service role) reads or writes
+```
+
+Until it exists scans still go straight to the timetable; they just aren't counted.

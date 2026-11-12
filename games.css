@@ -1243,3 +1243,14 @@ html[data-motion="reduced"] .qtdcaret{transition:none}
 .qttile.hint2{border-color:#2f7bf0;box-shadow:0 0 0 2px #2f7bf0 inset}
 .qttile.hint2::after{background:#2f7bf0}
 .qttile.hint2.on{box-shadow:0 0 0 3px #2f7bf0 inset}
+
+/* moderator page → QR scans */
+.qrhead,.qrrow{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,.8fr)) minmax(0,1.6fr);gap:10px;align-items:center}
+.qrhead{font-size:0.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 12px 6px}
+.qrrow .nm{display:flex;flex-direction:column;min-width:0}
+.qrrow .nm b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qrrow .nm em{font-style:normal;font-size:0.75rem;color:var(--muted)}
+.qrn{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700}
+.qrbars{display:flex;align-items:flex-end;gap:2px;height:28px}
+.qrbars i{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px;opacity:.85}
+@media (max-width:640px){ .qrhead{display:none} .qrrow{grid-template-columns:1fr 1fr 1fr;row-gap:6px} .qrrow .nm,.qrrow .qrbars{grid-column:1 / -1} }
