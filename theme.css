@@ -140,11 +140,13 @@ html:is([data-clouds="still"],[data-clouds="move"]) body::before{background-imag
 html:is([data-clouds="still"],[data-clouds="move"]) body::after{background-image:var(--glass-b)}
 html.zen:is([data-clouds="still"],[data-clouds="move"]) body::before,html.zen:is([data-clouds="still"],[data-clouds="move"]) body::after{display:none}
 /* Animated background (Glass's switch, or the custom theme's): the two layers
-   drift, turn and swell slowly against each other, so the colours move like weather. */
+   drift and swell slowly against each other, so the colours move like weather.
+   No turning (a few degrees shows a layer's edge on a wide screen), and the
+   drift stays inside each layer's 14% margin. */
 html[data-clouds="move"] body::before{animation:glassdriftA 26s ease-in-out infinite alternate}
 html[data-clouds="move"] body::after{animation:glassdriftB 33s ease-in-out infinite alternate}
-@keyframes glassdriftA{0%{transform:translate3d(0,0,0) scale(1) rotate(0)}50%{transform:translate3d(9%,-7%,0) scale(1.18) rotate(7deg)}100%{transform:translate3d(-8%,7%,0) scale(1.06) rotate(-5deg)}}
-@keyframes glassdriftB{0%{transform:translate3d(0,0,0) scale(1.1) rotate(0)}50%{transform:translate3d(-10%,6%,0) scale(1) rotate(-8deg)}100%{transform:translate3d(7%,-9%,0) scale(1.2) rotate(5deg)}}
+@keyframes glassdriftA{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(8%,-6%,0) scale(1.2)}100%{transform:translate3d(-7%,6%,0) scale(1.06)}}
+@keyframes glassdriftB{0%{transform:translate3d(0,0,0) scale(1.1)}50%{transform:translate3d(-8%,5%,0) scale(1.02)}100%{transform:translate3d(6%,-8%,0) scale(1.22)}}
 html[data-motion="reduced"] body::before,html[data-motion="reduced"][data-clouds] body::after{animation:none}
 @media (prefers-reduced-motion:reduce){ html[data-clouds] body::before,html[data-clouds] body::after{animation:none} }
 [data-skin="glass"] .lesson,[data-skin="glass"] .nowcard,

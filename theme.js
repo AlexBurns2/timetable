@@ -139,6 +139,57 @@ function cloudLayers(fields, cap, thr, size){
   };
   return (cloudMemo[key] = [one(0), one(2)]);
 }
+/* Some draws put a big cloud right in the middle, which washes out the page
+   (and the point of dark mode). So before the clouds show, the page draws its
+   draw small, measures how much colour lands in the middle, and rerolls (up to
+   ten times) until the middle stays clear and there's still some colour about.
+   The layers fade in once it's settled (theme.css, data-clouds-ready). Only
+   once per page open; if the browser won't let the page read the drawing back
+   (some Safari versions), the first draw is kept. */
+let cloudArgs = null, cloudVet = 'todo';
+function setCloudVars(root){
+  const [a, b] = cloudLayers(cloudArgs.fields, cloudArgs.cap, cloudArgs.thr, cloudArgs.size);
+  root.style.setProperty('--glass-a', a); root.style.setProperty('--glass-b', b);
+}
+function vetClouds(root){
+  if (cloudVet !== 'todo') return; cloudVet = 'busy';
+  root.setAttribute('data-clouds-ready', '0');
+  const load = u => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = u.replace(/^url\("|"\)$/g, ''); });
+  const W = 72, H = Math.max(20, Math.round(72 * innerHeight / Math.max(1, innerWidth)));
+  const measure = async () => {
+    const [a, b] = cloudLayers(cloudArgs.fields, cloudArgs.cap, cloudArgs.thr, cloudArgs.size);
+    const imgs = await Promise.all([load(a), load(b)]);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), lw = W * 1.28, lh = H * 1.28, sc = Math.max(lw / 480, lh / 300);   // as the layers: 14% over each edge, cover
+    imgs.forEach(im => x.drawImage(im, (W - 480 * sc) / 2, (H - 300 * sc) / 2, 480 * sc, 300 * sc));
+    const d = x.getImageData(0, 0, W, H).data;
+    let mid = 0, nm = 0, all = 0;
+    for (let y = 0; y < H; y++) for (let i = 0; i < W; i++){
+      const al = d[(y * W + i) * 4 + 3] / 255; all += al;
+      if (Math.abs(i / W - .5) < .3 && Math.abs(y / H - .45) < .33){ mid += al; nm++; }
+    }
+    return { mid: mid / nm, all: all / (W * H), edge: (all - mid) / (W * H - nm) };
+  };
+  const dark = cloudArgs.dark, okMid = dark ? .12 : .2, okAll = .08;
+  (async () => {
+    let best = null;
+    try {
+      for (let t = 0; t < 10; t++){
+        const m = await measure();
+        const score = m.mid - (m.edge - m.mid) * .5 + (m.all < okAll ? 1 : 0);   // a clear middle, colour round the edges
+        if (!best || score < best.score) best = { score, rnd: CLOUD_RND.map(r => Object.assign({}, r)) };
+        if (m.mid <= okMid && m.all >= okAll && m.edge >= m.mid + .05) break;
+        CLOUD_RND.forEach(r => { r.fx = 0.0013 + Math.random() * 0.0008; r.fy = 0.0013 + Math.random() * 0.0008; r.seed = 1 + Math.floor(Math.random() * 99998); });
+        for (const k in cloudMemo) delete cloudMemo[k];                        // new seeds: draw afresh
+      }
+      best.rnd.forEach((r, i) => Object.assign(CLOUD_RND[i], r));
+      for (const k in cloudMemo) delete cloudMemo[k];
+      if (cloudArgs) setCloudVars(root);
+    } catch { /* can't read the drawing back: keep the first */ }
+    cloudVet = 'done';
+    root.setAttribute('data-clouds-ready', '1');
+  })();
+}
 const hex01 = h => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h || '')); const n = m ? parseInt(m[1], 16) : 0x7a5cff;
   return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
 /* a fine grain over the clouds, light on a dark page and dark on a light one */
@@ -240,17 +291,18 @@ function apply(state){
   let clouds = 'off';
   root.style.removeProperty('--glass-a'); root.style.removeProperty('--glass-b');
   if (st.skin === 'glass'){
-    const m = st.mode === 'light' ? 'light' : 'dark', [a, b] = cloudLayers(GLASS[m], GLASS_CAP[m], m === 'dark' ? 0.45 : 0.47, 1);
-    root.style.setProperty('--glass-a', a); root.style.setProperty('--glass-b', b);
+    const m = st.mode === 'light' ? 'light' : 'dark';
+    cloudArgs = { fields: GLASS[m], cap: GLASS_CAP[m], thr: m === 'dark' ? 0.55 : 0.52, size: 1, dark: m === 'dark' };   // only the higher peaks show
     clouds = get('tt.glassanim', '') === 'on' ? 'move' : 'still';
   }
   if (st.skin === 'custom' && st.custom.backdrop === 'clouds'){
     const c = st.custom, K = [3.4, 3.2, 3.0, 2.6];
     const fields = [c.cloud1, c.cloud2, c.cloud3, c.cloud4].map((h, i) => hex01(h).concat(K[i]));
-    const [a, b] = cloudLayers(fields, Math.max(.1, Math.min(.95, (+c.cloudStrength || 55) / 100)), 0.46, Math.max(.5, Math.min(2, (+c.cloudSize || 100) / 100)));
-    root.style.setProperty('--glass-a', a); root.style.setProperty('--glass-b', b);
+    cloudArgs = { fields, cap: Math.max(.1, Math.min(.95, (+c.cloudStrength || 55) / 100)), thr: 0.53,
+                  size: Math.max(.5, Math.min(2, (+c.cloudSize || 100) / 100)), dark: inkFor(c.bg) === '#fff' };
     clouds = c.cloudAnim ? 'move' : 'still';
   }
+  if (clouds !== 'off'){ setCloudVars(root); vetClouds(root); }
   root.setAttribute('data-clouds', clouds);
   root.setAttribute('data-mode', st.mode);
   /* Keep native controls (the datalist autocomplete popup, text inputs,
