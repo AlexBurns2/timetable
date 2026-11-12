@@ -103,6 +103,13 @@ Anything that draws blocks needs:
 - A class listed in `weekSide`, currently `.blk`, `.gap` and `.mjb` (phone: `.card`,
   `.brk` and `.mjb`). Anything else isn't animated.
 
+If a view fetches its data (Forum, Poll, Mahjong), don't animate into "Loading…":
+wait for the data first with `dataReady(load)`, which gives up after 1.5s. Otherwise
+the blocks morph into one loading block and the real ones pop in unanimated.
+
+A column that scrolls (the Forum) only animates the blocks in view. `weekSide` skips
+anything scrolled out of its column.
+
 ## Other animations
 
 - **Week arrows** use `turnWeek`, with lanes that open to let blocks through. It's a

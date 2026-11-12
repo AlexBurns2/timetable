@@ -640,24 +640,26 @@ button.row:hover{background:var(--fill2)}
 .signedout #mg{opacity:.45;filter:grayscale(1)}
 /* the Forum, like iMessage: one bubble (block) per message, yours on the right in blue,
    flowing down one column as wide as the week; the box you type in stays at the bottom */
-.fmcol{display:flex;flex-direction:column;gap:6px}
-.fmm{position:relative;left:auto;right:auto;flex:none;width:fit-content;max-width:min(70%,620px);padding:8px 14px;border-radius:18px;background:var(--fill2);color:var(--fg)}
+.fmcol{display:flex;flex-direction:column;gap:8px;overflow-y:auto;overscroll-behavior:contain}
+.fmcol > :first-child{margin-top:auto}      /* few messages: they sit at the bottom, by the box */
+.list .fmcol{height:calc(100dvh - 130px)}
+.fmm{position:relative;left:auto;right:auto;flex:none;width:fit-content;max-width:min(75%,760px);padding:12px 18px;border-radius:22px;background:var(--fill2);color:var(--fg)}
 .fmm.me{align-self:flex-end;background:var(--blue);color:#fff}
 .fmm.rp:not(.me){margin-left:36px}
 .fmm.rp.me{margin-right:36px}
-.fmmeta{font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
+.fmmeta{font-size:calc(13px * var(--fs,1));color:var(--fg2)}
 .fmmeta b{font-weight:600;margin-right:6px;color:var(--fg)}
 .fmm.me .fmmeta,.fmm.me .fmmeta b,.fmm.me .fmact button{color:rgba(255,255,255,.85)}
-.fmtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(15px * var(--fs,1));line-height:1.35}
+.fmtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(18px * var(--fs,1));line-height:1.35}
 .fmact{display:flex;gap:12px;margin-top:2px}
 .fmact:empty{display:none}
-.fmact button{font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
+.fmact button{font-size:calc(13px * var(--fs,1));color:var(--fg2)}
 .fmact button:hover{text-decoration:underline}
 .fmnone{margin:0;color:var(--fg3);font-size:calc(13px * var(--fs,1))}
 .fmm.fmnew{position:sticky;bottom:12px;z-index:3;align-self:stretch;width:auto;max-width:none;margin-top:6px;padding:6px 6px 6px 14px;border-radius:22px;
   background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);box-shadow:0 0 0 1px var(--sep)}
 .fmrow{display:flex;gap:8px;align-items:center}
-.fmrow .fin{background:none;padding:6px 0;box-shadow:none}
+.fmrow .fin{background:none;padding:8px 0;box-shadow:none;font-size:calc(17px * var(--fs,1))}
 .fmrow .btn{border-radius:16px}
 .fmrep{display:flex;justify-content:space-between;align-items:center;padding:2px 0 4px;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 .plq{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
@@ -3314,7 +3316,8 @@ function weekSide(layer){
   const piece = el => ({ el, r:layer.rel(el) });
   const cols = phone.matches
     ? [{ span:layer.rel($("daylist").firstElementChild || $("daylist")), items:[...$("daylist").children].filter(el => el.matches(".card,.brk,.mjb")) }]
-    : [...document.querySelectorAll("#g > .col")].map(col => ({ span:layer.rel(col), items:[...col.children].filter(el => el.matches(".blk,.gap,.mjb")) }));
+    : [...document.querySelectorAll("#g > .col")].map(col => { const c = col.getBoundingClientRect();     /* a scrolled column (the Forum): only what's in view moves */
+        return { span:layer.rel(col), items:[...col.children].filter(el => { const r = el.getBoundingClientRect(); return el.matches(".blk,.gap,.mjb") && r.bottom > c.top && r.top < c.bottom; }) }; });
   const fades = phone.matches ? [$("daynav"), ...$("daylist").querySelectorAll(".lmsg, .asst")]
                               : [...document.querySelectorAll("#g > .dh, #g > .arrow, #g > .msg, #g > .asst, #g .hol, #g .tskip")];
   return { cols:cols.map(c => ({ span:c.span, items:c.items.map(piece).sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left) })), fades:fades.map(piece) };
@@ -4155,7 +4158,10 @@ async function mjCall(body){
   if (!res.ok || !data) throw new Error((data && data.error) || (res.status + " " + res.statusText));
   mj = data.state;
 }
-function loadMj(){ if (signedIn) mjCall().then(() => { mjNote = ""; paintMj(); }, e => { mjNote = e.message; paintMj(); }); }
+function loadMj(){ return signedIn ? mjCall().then(() => { mjNote = ""; paintMj(); }, e => { mjNote = e.message; paintMj(); }) : Promise.resolve(); }
+/* opening a view whose data isn't here yet: wait for it (a moment at most), so the blocks
+   turn into the real thing instead of "Loading…" and then popping in unanimated */
+const dataReady = p => Promise.race([p, new Promise(r => setTimeout(r, 1500))]);
 async function mjAct(body){
   if (mjBusy) return;
   document.activeElement.blur();
@@ -4171,10 +4177,8 @@ function toggleMj(){
   if (loginShow) return;
   document.activeElement.blur();
   const flip = () => { const on = !mjShow; mjLeave(); mjShow = on; paintMjTile(); }, go = () => shiftWeek(flip);
-  if (!mj) loadMj();
-  if (view !== "month"){ go(); return; }
-  toggleCalendar();
-  if (viewTurn) viewTurn.then(go); else go();
+  const start = () => { if (view !== "month"){ go(); return; } toggleCalendar(); if (viewTurn) viewTurn.then(go); else go(); };
+  if (!mj && !mjShow) dataReady(loadMj()).then(start); else start();
 }
 /* Everyone on the same score gets one line; a shared top or bottom names everyone on it */
 function paintMjTile(){
@@ -4388,8 +4392,10 @@ function paintForum(){
   if (!fmShow) return;
   const box = $("fmnew");
   if (!box){ render(); return; }
-  box.parentElement.querySelectorAll(".fmmsg").forEach(el => el.remove());
+  const col = box.parentElement, atEnd = col.scrollHeight - col.scrollTop - col.clientHeight < 80;
+  col.querySelectorAll(".fmmsg").forEach(el => el.remove());
   box.insertAdjacentHTML("beforebegin", fmBlocks());
+  if (atEnd) col.scrollTop = col.scrollHeight;       /* reading older ones: stay put */
 }
 function paintReply(){
   const r = $("fmrep"); if (!r) return;
@@ -4415,7 +4421,7 @@ function renderForum(nd){
     `<div class="fmrow"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Message" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div></div>`;
   /* one column across every day, so the bubbles can sit left and right of the whole week */
   host.innerHTML = list ? `<div class="fmcol">${cells}</div>` : `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Forum</span></div><div></div><div></div>` +
-    `<div class="col fmcol" style="grid-column:span ${nd};min-height:${viewH()}px;justify-content:flex-end">${cells}</div><div></div>`;
+    `<div class="col fmcol" style="grid-column:span ${nd};height:${viewH()}px">${cells}</div><div></div>`;
   host.onclick = e => {
     const b = e.target.closest(".fmmsg button");
     if (!b) return;
@@ -4427,6 +4433,7 @@ function renderForum(nd){
   $("fmsend").onclick = sendForum;
   $("fmcancel").onclick = () => { fmReply = null; paintReply(); };
   paintReply();
+  const col = $("fmnew").parentElement; col.scrollTop = col.scrollHeight;      /* open on the newest */
 }
 setInterval(() => { if (fmShow && !loginShow) loadForum(); }, 15000);
 
@@ -4530,10 +4537,9 @@ function toggleFp(which){
   if (loginShow) return;
   document.activeElement.blur();
   const flip = () => { const on = which === "fm" ? !fmShow : !plShow; mjLeave(); if (which === "fm") fmShow = on; else plShow = on; paintFpTiles(); }, go = () => shiftWeek(flip);
-  if (which === "fm") loadForum(); else loadPoll();
-  if (view !== "month"){ go(); return; }
-  toggleCalendar();
-  if (viewTurn) viewTurn.then(go); else go();
+  const start = () => { if (view !== "month"){ go(); return; } toggleCalendar(); if (viewTurn) viewTurn.then(go); else go(); };
+  const opening = which === "fm" ? !fmShow : !plShow, had = which === "fm" ? fm : pl, load = which === "fm" ? loadForum() : loadPoll();
+  if (opening && !had) dataReady(load).then(start); else start();       /* already loaded: go now, the refresh lands in place */
 }
 tileHead("forum", () => toggleFp("fm"));
 tileHead("poll", () => toggleFp("pl"));
