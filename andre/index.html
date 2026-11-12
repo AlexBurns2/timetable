@@ -201,7 +201,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.open{z-index:20;cursor:default}
 .blk.closing{z-index:19}
 .blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
-  background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));
+  background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.6),var(--base,var(--bg)));      /* still to come: strong, so it stands apart from what's over */
   transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .55s cubic-bezier(.34,1.4,.64,1)}
 .blk-card>*{position:relative;z-index:1}
 .blk:not(.open):hover .blk-card{filter:brightness(.97)}
@@ -221,7 +221,7 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.sm.open .t{padding-top:4px}
 /* over: a softer, less saturated colour behind it (still its colour, unlike the
    grey breaks), with its text left readable */
-.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--c) calc(var(--tint) * .5),var(--base,var(--bg)));filter:saturate(.75)}
+.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--c) calc(var(--tint) * .45),var(--base,var(--bg)));filter:saturate(.6)}
 .blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 25%,transparent);backdrop-filter:saturate(.7);-webkit-backdrop-filter:saturate(.7);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 /* opened, the card grows by half a day, and never by less than room for Room and Class code */
 .blk-card{--xw:max(50cqw,112px)}
@@ -344,8 +344,9 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 
 /* modules */
 .mods{max-width:var(--pagemax);padding-block:48px 80px}     /* the timetable is a full screen tall, so this stays below the fold */
-.mods h2{font-size:calc(28px * var(--fs,1));font-weight:600;letter-spacing:-.02em;margin:0 0 24px}
-.mg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(calc(150px * var(--fs,1)),auto);gap:16px}
+.mods h2{font-size:calc(28px * var(--fs,1));font-weight:600;letter-spacing:-.02em;margin:0 0 24px 44px}
+/* the tiles sit on the timetable's day columns: same widths, same 8px gaps, inside its 36px arrows */
+.mg{display:grid;grid-template-columns:repeat(var(--nd,5),minmax(0,var(--colmax)));justify-content:center;grid-auto-rows:minmax(calc(150px * var(--fs,1)),auto);gap:8px;margin-inline:44px}
 /* the tiles look like lessons: tinted in their colour, coloured title. A tile
    that switches something on (Calendar, Free periods) fills with its colour
    while it's on, easing between the two. */
@@ -359,8 +360,6 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .mod.on{--paint:color-mix(in srgb,var(--c) 78%,#000);--ink:#fff}
 .mod .state{font-size:calc(12px * var(--fs,1));font-weight:500;color:var(--ink);transition:color .4s ease}
 /* the column count is set here; the page then widens tiles so every row is full */
-@media (max-width:700px){.mg{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (min-width:1400px){.mg{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .tilefly{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:15}
 .tilefly > .mod{overflow:hidden}
 
@@ -581,10 +580,10 @@ button.row:hover{background:var(--fill2)}
 .list .gmb{height:130px}
 .list .gmb.gmstage{height:calc(100dvh - 130px)}
 /* every cover is the same: emoji in the middle, then the name, then a line for the leader, kept even when empty */
-.gmgo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 12px;overflow:hidden;text-align:center;color:inherit}
+.gmgo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 12px 14px;overflow:hidden;text-align:center;color:inherit}
 .gmgo:hover{filter:brightness(.97)}
-.gmgo .gico{flex:1;min-height:0;display:grid;place-items:center;font-size:clamp(32px,30cqmin,60px);line-height:1}
-.gmgo b{max-width:100%;font-size:calc(15px * var(--fs,1));font-weight:600;line-height:1.25;color:color-mix(in srgb,var(--c) 40%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gmgo .gico{flex:1;min-height:0;display:grid;place-items:center;font-size:clamp(32px,34cqmin,96px);line-height:1}
+.gmgo b{max-width:100%;font-size:calc(clamp(15px,7cqmin,19px) * var(--fs,1));font-weight:600;line-height:1.25;color:color-mix(in srgb,var(--c) 40%,var(--fg));display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .gmlead{display:flex;justify-content:center;gap:6px;max-width:100%;height:calc(18px * var(--fs,1));font-size:calc(12px * var(--fs,1));line-height:calc(18px * var(--fs,1));color:var(--fg2);white-space:nowrap;overflow:hidden}
 .gmlead u{text-decoration:none;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
 .gmlead em{font-style:normal;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
@@ -639,20 +638,28 @@ button.row:hover{background:var(--fill2)}
 .lggo:disabled{opacity:.7;cursor:default}
 /* signed out: the tiles below are greyed and can't be used */
 .signedout #mg{opacity:.45;filter:grayscale(1)}
-/* the Forum: one block per message, flowing down the page (not placed by time) */
-.fmm{position:relative;margin-bottom:8px;padding:10px 14px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
-.fmm.rp{margin-left:32px}
-.fmnew{display:flex;flex-direction:column;gap:6px;background:var(--fill)}
-.fmrow{display:flex;gap:8px}
-.fmrep{display:flex;justify-content:space-between;align-items:center;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.fmmeta{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.fmmeta b{color:color-mix(in srgb,var(--c) 40%,var(--fg));font-weight:600;margin-right:6px}
-.fmtxt{margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(14px * var(--fs,1))}
-.fmact{display:flex;gap:12px;margin-top:4px}
+/* the Forum, like iMessage: one bubble (block) per message, yours on the right in blue,
+   flowing down one column as wide as the week; the box you type in stays at the bottom */
+.fmcol{display:flex;flex-direction:column;gap:6px}
+.fmm{position:relative;left:auto;right:auto;flex:none;width:fit-content;max-width:min(70%,620px);padding:8px 14px;border-radius:18px;background:var(--fill2);color:var(--fg)}
+.fmm.me{align-self:flex-end;background:var(--blue);color:#fff}
+.fmm.rp:not(.me){margin-left:36px}
+.fmm.rp.me{margin-right:36px}
+.fmmeta{font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
+.fmmeta b{font-weight:600;margin-right:6px;color:var(--fg)}
+.fmm.me .fmmeta,.fmm.me .fmmeta b,.fmm.me .fmact button{color:rgba(255,255,255,.85)}
+.fmtxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(15px * var(--fs,1));line-height:1.35}
+.fmact{display:flex;gap:12px;margin-top:2px}
 .fmact:empty{display:none}
-.fmact button{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.fmact button:hover{color:var(--fg)}
-.fmnone{color:var(--fg3);font-size:calc(13px * var(--fs,1))}
+.fmact button{font-size:calc(11.5px * var(--fs,1));color:var(--fg2)}
+.fmact button:hover{text-decoration:underline}
+.fmnone{margin:0;color:var(--fg3);font-size:calc(13px * var(--fs,1))}
+.fmm.fmnew{position:sticky;bottom:12px;z-index:3;align-self:stretch;width:auto;max-width:none;margin-top:6px;padding:6px 6px 6px 14px;border-radius:22px;
+  background:var(--mat);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);box-shadow:0 0 0 1px var(--sep)}
+.fmrow{display:flex;gap:8px;align-items:center}
+.fmrow .fin{background:none;padding:6px 0;box-shadow:none}
+.fmrow .btn{border-radius:16px}
+.fmrep{display:flex;justify-content:space-between;align-items:center;padding:2px 0 4px;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 .plq{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 16px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)))}
 .plq b{font-size:calc(19px * var(--fs,1));color:color-mix(in srgb,var(--c) 40%,var(--fg))}
 .plq small{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
@@ -820,7 +827,7 @@ select.fin{appearance:auto}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
 .daypill[aria-pressed="true"]{background:var(--fill2)}
 .list{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px}
-.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) var(--tint),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
+.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.6),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
 .card .subj{font-size:calc(17px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
 .card .teacher{font-size:calc(13px * var(--fs,1));color:color-mix(in srgb,var(--fg) 72%,var(--c));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
@@ -830,7 +837,7 @@ select.fin{appearance:auto}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
 .card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.card.past:not(.open){background:color-mix(in srgb,var(--c) calc(var(--tint) * .5),var(--base,var(--bg)));filter:saturate(.75)}
+.card.past:not(.open){background:color-mix(in srgb,var(--c) calc(var(--tint) * .45),var(--base,var(--bg)));filter:saturate(.6)}
 .brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brk .bl{font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
@@ -867,6 +874,8 @@ select.fin{appearance:auto}
   .gear{width:32px;height:32px}
   .gear svg{width:18px;height:18px}
   .mods{padding-block:32px 60px}
+  .mg{grid-template-columns:repeat(2,minmax(0,1fr));margin-inline:0}
+  .mods h2{margin-left:0}
   html.zen .daynav{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
   .mbar{padding:6px 0 4px;flex-wrap:wrap}
   .mnav{display:flex}
@@ -3489,8 +3498,8 @@ const touching = (a, b) => a.left < b.left + b.width - 1 && b.left < a.left + a.
 /* every block moves on one clock, so 40 steps is under a thin block's height each */
 const pathsClash = (p, q) => [...Array(41).keys()].some(i => touching(pathAt(p, i / 40), pathAt(q, i / 40)));
 /* Which block becomes which: the same block first, then the same thing at an
-   overlapping time, then whatever's closest, in any day. A pair is only taken if it
-   can make its moves without touching a pair already taken. */
+   overlapping time, then whatever's closest, in any day. Pairs whose moves touch a
+   pair already taken wait for a second pass; every block that can pair, does. */
 function matchBlocks(olds, news){
   const spanOf = it => (it.el.dataset.span || "").split("-").map(Number);
   const kin = (o, n) => {
@@ -3505,6 +3514,9 @@ function matchBlocks(olds, news){
   for (const { p } of all) if (!usedO.has(p[0]) && !usedN.has(p[1]) && !pairs.some(q => pathsClash(p, q))){
     pairs.push(p); usedO.add(p[0]); usedN.add(p[1]);
   }
+  /* then whatever's left becomes its nearest leftover, clash or not: only blocks
+     there are too many or too few of slide off or on */
+  for (const { p } of all) if (!usedO.has(p[0]) && !usedN.has(p[1])){ pairs.push(p); usedO.add(p[0]); usedN.add(p[1]); }
   return pairs;
 }
 function morphWeekPlay(layer, from, to){
@@ -3861,7 +3873,6 @@ function openEvent(id, { day, kind } = {}){
    a frame plays there. To take a game out, take it out of this list.
    The list mirrors GAMES in games.js. */
 const GAME_LIST = [
-  { id:"jim", cat:"Arcade", ico:"🟡", name:"The Jim Button", blurb:"The button that says the name of whoever's playing", isNew:true, c:"#FFB800" },
   { id:"dailyguess", cat:"Timetable", ico:"📅", name:"Daily Guess Who", blurb:"One mystery student a day, the same for your whole year", c:"#0A84FF" },
   { id:"guesswho", cat:"Timetable", ico:"🕵️", name:"Guess Who", blurb:"Guess the mystery classmate, grade or teacher", c:"#5E5CE6" },
   { id:"classroom", cat:"Timetable", ico:"🚪", name:"Classroom", blurb:"Rooms, teachers and classes from your timetable", c:"#32ADE6" },
@@ -3876,6 +3887,8 @@ const GAME_LIST = [
   { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" },
   { id:"hkmj", cat:"Arcade", ico:"🀄", name:"Hong Kong Mahjong", blurb:"Play bots to Hong Kong rules, Easy to Pro", c:"#E0303A", frame:"/hkmahjong.html?andre=1" }
 ];
+/* every other game is the games page's own, one at a time in andre's look, so scores and saves stay shared */
+GAME_LIST.forEach(g => g.frame = g.frame || `/games.html?play=${g.id}&embed=1&andre=1`);
 const gameById = id => GAME_LIST.find(g => g.id === id);
 const hms = ms => { const t = Math.floor(Math.max(0, +ms || 0) / 1000), p = n => String(n).padStart(2, "0");
   return p(Math.floor(t / 3600)) + ":" + p(Math.floor(t % 3600 / 60)) + ":" + p(t % 60) + "." + Math.floor(Math.max(0, +ms || 0) % 1000 / 100); };
@@ -3946,11 +3959,12 @@ function renderGames(nd){
   const open = gameNow && gameById(gameNow);
   const stage = open && box(open, "gmstage", 4, H - 8, nd, `<button class="gmbar" title="Close" aria-label="Close ${esc(open.name)}"><span aria-hidden="true">${open.ico}</span>${esc(open.name)}</button>` +
     (open.frame ? `<div class="gmbody gmframe"></div>` : `<div class="gmbody"><span class="gico" aria-hidden="true">${open.ico}</span><small>${esc(open.blurb)}</small>${leaderLines(open)}</div>`));
-  /* one size of module, in a grid: every day takes the same rows, and the last may run short */
-  const rows = Math.ceil(GAME_LIST.length / nd), h = (H - 8 - GAP * (rows - 1)) / rows;
+  /* every day full top to bottom: the games shared out as evenly as they go, the first days taking one more, and each module as tall as its day allows */
+  const L = GAME_LIST.length, per = k => Math.floor(L / nd) + (k < L % nd ? 1 : 0), from = k => k * Math.floor(L / nd) + Math.min(k, L % nd);
   if (list) host.innerHTML = stage || GAME_LIST.map(g => cover(g)).join("");
   else {
-    const days = Array.from({ length:nd }, (_, k) => GAME_LIST.slice(k * rows, (k + 1) * rows).map((g, i) => cover(g, 4 + i * (h + GAP), h)).join(""));
+    const days = Array.from({ length:nd }, (_, k) => { const n = per(k), h = (H - 8 - GAP * (n - 1)) / n;
+      return GAME_LIST.slice(from(k), from(k) + n).map((g, i) => cover(g, 4 + i * (h + GAP), h)).join(""); });
     const body = stage ? [stage, ...Array(nd - 1).fill("")] : days;
     host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Games</span></div><div></div><div></div>` +
       body.map(c => `<div class="col" style="height:${H}px">${c}</div>`).join("") + `<div></div>`;
@@ -4097,7 +4111,7 @@ function mjPoints(){
    would only repeat the standings. A streak ignores games a player sat out. */
 /* every game so far, newest first: when, and what each player won or lost */
 function mjHistHtml(){
-  const rs = mj.rounds, name = id => (mj.players.find(p => p.id === id) || { name:"?" }).name;
+  const rs = mj.rounds, name = id => (mj.players.find(p => String(p.id) === id) || { name:"?" }).name;      /* round keys are strings, ids may be numbers */
   const rows = rs.map((r, i) => {
     const when = r.t ? new Date(r.t).toLocaleDateString(undefined, { day:"numeric", month:"short" }) + " " + new Date(r.t).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) : "";
     const d = Object.entries(r.d).filter(([id, v]) => v).sort((a, b) => b[1] - a[1]);
@@ -4360,26 +4374,22 @@ const fmAgo = iso => {
   return !isFinite(s) ? "" : s < 60 ? "just now" : s < 3600 ? Math.floor(s / 60) + "m ago" : s < 86400 ? Math.floor(s / 3600) + "h ago" : s < 604800 ? Math.floor(s / 86400) + "d ago"
     : new Date(iso).toLocaleDateString(undefined, { day:"numeric", month:"short" });
 };
-/* the forum's blocks, newest thread first, each reply under its thread; w = the width a block takes across the days */
-let fmW = "";
+/* the forum's bubbles: oldest thread at the top, newest just above the box you type in, each reply under its thread */
 function fmBlocks(){
-  const box = (cls, who, c, body, rp) => `<div class="mjb fmm${cls}" data-sig="fm:${who}" data-who="fm:${who}" style="--c:${c};${fmW && `width:calc(${fmW} - ${rp ? 32 : 0}px)`}">${body}</div>`;
-  const note = t => box(" fmmsg", "note", "#8E8E93", `<p class="fmnone">${esc(t)}</p>`);
-  if (fmNote) return note(fmNote);
-  if (!fm) return note("Loading…");
-  if (!fm.length) return note("Nothing here yet. Say the first thing.");
-  const msg = (p, t, rp) => box(" fmmsg" + (rp ? " rp" : ""), p.id, bdColour(p.name || "?"),
+  const box = (cls, who, body) => `<div class="mjb fmm fmmsg${cls}" data-sig="fm:${who}" data-who="fm:${who}">${body}</div>`;
+  if (fmNote || !fm || !fm.length) return box("", "note", `<p class="fmnone">${esc(fmNote || (!fm ? "Loading…" : "Nothing here yet. Say the first thing."))}</p>`);
+  const msg = (p, t, rp) => box((p.mine ? " me" : "") + (rp ? " rp" : ""), p.id,
     `<div class="fmmeta"><b>${esc(p.name)}</b>${esc(fmAgo(p.at))}</div><div class="fmtxt">${esc(p.body)}</div>` +
-    `<div class="fmact">${rp ? "" : `<button data-reply="${esc(t.id)}" data-name="${esc(t.name)}">Reply</button>`}${p.mine ? `<button data-del="${esc(p.id)}">Delete</button>` : ""}</div>`, rp);
-  return fm.map(t => msg(t, t, false) + (t.replies || []).map(r => msg(r, t, true)).join("")).join("");
+    `<div class="fmact">${rp ? "" : `<button data-reply="${esc(t.id)}" data-name="${esc(t.name)}">Reply</button>`}${p.mine ? `<button data-del="${esc(p.id)}">Delete</button>` : ""}</div>`);
+  return [...fm].reverse().map(t => msg(t, t, false) + (t.replies || []).map(r => msg(r, t, true)).join("")).join("");
 }
-/* new posts: swap the message blocks under the box you type in, leaving it (and what's typed) alone */
+/* new posts: swap the bubbles above the box you type in, leaving it (and what's typed) alone */
 function paintForum(){
   if (!fmShow) return;
-  const top = $("fmnew");
-  if (!top){ render(); return; }
-  top.parentElement.querySelectorAll(".fmmsg").forEach(el => el.remove());
-  top.insertAdjacentHTML("afterend", fmBlocks());
+  const box = $("fmnew");
+  if (!box){ render(); return; }
+  box.parentElement.querySelectorAll(".fmmsg").forEach(el => el.remove());
+  box.insertAdjacentHTML("beforebegin", fmBlocks());
 }
 function paintReply(){
   const r = $("fmrep"); if (!r) return;
@@ -4399,15 +4409,13 @@ async function sendForum(){
   if ($("fmsend")) $("fmsend").disabled = false;
 }
 function renderForum(nd){
-  const list = phone.matches, host = $(list ? "daylist" : "g"), span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1);
-  fmW = list ? "" : `${span} * (100% + 8px) - 8px`;
-  const top = `<div class="mjb fmm fmnew" id="fmnew" data-sig="fm:new" data-who="fm:new" style="--c:#30B0C7;${fmW && `width:calc(${fmW})`}">` +
+  const list = phone.matches, host = $(list ? "daylist" : "g");
+  const cells = fmBlocks() + `<div class="mjb fmm fmnew" id="fmnew" data-sig="fm:new" data-who="fm:new">` +
     `<div class="fmrep" id="fmrep" hidden><span></span><button class="btn sm" id="fmcancel" type="button">Cancel</button></div>` +
-    `<div class="fmrow"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Say something…" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div></div>`;
-  const cells = top + fmBlocks();
-  if (list) host.innerHTML = cells;
-  else host.innerHTML = `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Forum</span></div><div></div><div></div>` +
-    Array.from({ length:nd }, (_, k) => `<div class="col" style="min-height:${viewH()}px">${k === at ? cells : ""}</div>`).join("") + `<div></div>`;
+    `<div class="fmrow"><input class="fin" id="fmin" value="${esc(fmDraft)}" maxlength="1000" placeholder="Message" autocomplete="off" enterkeyhint="send" aria-label="Message"><button class="btn primary sm" id="fmsend" type="button">Send</button></div></div>`;
+  /* one column across every day, so the bubbles can sit left and right of the whole week */
+  host.innerHTML = list ? `<div class="fmcol">${cells}</div>` : `<div></div><div class="dh" style="grid-column:span ${nd}"><span class="n">Forum</span></div><div></div><div></div>` +
+    `<div class="col fmcol" style="grid-column:span ${nd};min-height:${viewH()}px;justify-content:flex-end">${cells}</div><div></div>`;
   host.onclick = e => {
     const b = e.target.closest(".fmmsg button");
     if (!b) return;
@@ -4450,25 +4458,26 @@ const CHIPS_UP_TO = 12;
 let plNd = 5;
 function renderPoll(nd){
   plNd = nd;
-  const d = pl, p = d && d.poll, span = Math.min(3, nd), at = Math.max(0, (nd - span) >> 1), COLS = ["#FFCC00", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"];
-  let y = 4, k = 0;
-  const host = blockHost(nd, "Poll", () => Math.max(viewH(), y + 4), block => {
-    const out = [], add = (cls, who, h, body) => { out.push(block(cls, who, COLS[k++ % 5], y, h, body)); y += h + 8; };
+  const d = pl, p = d && d.poll, COLS = ["#FFCC00", "#30B0C7", "#AF52DE", "#30C05A", "#FF375F"];
+  let y = 4;
+  /* each block's height is collected first, then all are stretched (up to double) to fill the page */
+  const rows = [], add = (cls, who, h, body) => rows.push([cls, who, h, body]);
+  (() => {
     const head = (q, sub) => add("plb", "pl:q", 96, `<div class="plq"><b>${esc(q)}</b><small>${esc(sub)}</small></div>`);
     const bars = (results, mine, win) => (results || []).slice(0, 6).forEach((r, i) =>
       add("plb", "pl:r" + i, 52, `<div class="plo plr${mine.includes(plFold(r.label)) ? " mine" : ""}"><i class="mjfill" style="width:${r.pct}%"></i><span>${win && !i ? "🏆 " : ""}${esc(r.label)}${mine.includes(plFold(r.label)) ? " ✓" : ""}</span><b class="tnum">${r.pct}%</b></div>`));
-    if (!d) return head("Poll", plNote || "Loading…"), out;
+    if (!d) return head("Poll", plNote || "Loading…");
     if (!p){
       const l = d.last;
-      if (!l) return head("No poll right now", plNote || (d.clock ? "A new question opens in " + plDur(plLeft("nextIn")) : "Check back Monday")), out;
+      if (!l) return head("No poll right now", plNote || (d.clock ? "A new question opens in " + plDur(plLeft("nextIn")) : "Check back Monday"));
       head("Last poll: " + l.question, (l.total || 0) + (l.total === 1 ? " voter" : " voters") + " · next question in " + plDur(plLeft("nextIn")));
       bars(l.results, [], true);
-      return out;
+      return;
     }
     const open = p.phase === "open", many = (p.pick || 1) > 1;
     head(p.question, plNote || (open ? "Closes in " + plDur(plLeft("resultsIn")) : "Voting's closed · next question in " + plDur(plLeft("nextIn"))) + (p.voted || !p.canVote ? "" : " · anonymous") + (p.total ? " · " + p.total + (p.total === 1 ? " voter" : " voters") : ""));
-    if (p.results){ bars(p.results, plMine(p.week), !open); return out; }
-    if (!p.canVote){ add("plb", "pl:n", 64, `<div class="plq"><small>${esc(p.optionsError ? "Couldn't load the answers. Try again soon." : open ? "This poll isn't open to you." : "Voting's closed. Come back on Monday for the next question.")}</small></div>`); return out; }
+    if (p.results){ bars(p.results, plMine(p.week), !open); return; }
+    if (!p.canVote){ add("plb", "pl:n", 64, `<div class="plq"><small>${esc(p.optionsError ? "Couldn't load the answers. Try again soon." : open ? "This poll isn't open to you." : "Voting's closed. Come back on Monday for the next question.")}</small></div>`); return; }
     const opts = p.options || [], chip = opts.length <= CHIPS_UP_TO;
     let shown = opts;
     if (!chip){
@@ -4479,8 +4488,15 @@ function renderPoll(nd){
     }
     shown.forEach(o => add("plb", "pl:o" + o.id, 52, `<button class="plo${plChosen.includes(o.id) ? " mine" : ""}" data-id="${esc(o.id)}"><span>${esc(o.label)}${plChosen.includes(o.id) ? " ✓" : ""}</span></button>`));
     add("plb", "pl:go", 56, `<button class="lggo" id="plgo" type="button"${plChosen.length && (!p.exact || plChosen.length === p.pick) ? "" : " disabled"}>${many ? "Vote (" + plChosen.length + " of " + p.pick + ")" : "Vote"}</button>`);
-    return out;
-  }, span, at);
+    return;
+  })();
+  const fill = Math.min(2, Math.max(1, (viewH() - 4 - 8 * rows.length) / rows.reduce((a, r) => a + r[2], 0)));
+  let k = 0;
+  const host = blockHost(nd, "Poll", () => Math.max(viewH(), y + 4), block => rows.map(([cls, who, h, body]) => {
+    const el = block(cls, who, COLS[k++ % 5], y, Math.round(h * fill), body);
+    y += Math.round(h * fill) + 8;
+    return el;
+  }), nd, 0);
   if (!p || !p.canVote || p.voted || p.phase !== "open") return;
   const most = p.pick || 1;
   host.querySelectorAll(".plo[data-id]").forEach(b => b.onclick = () => {
