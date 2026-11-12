@@ -510,8 +510,8 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 
 /* tiles (Home, Games, Revision, Resources): one height on every page, a little
    taller on a taller screen, within a range */
-:root{--tile-h:clamp(96px,12vh,132px)}
-@media (max-width:560px){ :root{--tile-h:clamp(92px,11.5vh,112px)} }
+:root{--tile-h:clamp(6rem,12vh,8.25rem)}                  /* rem: taller with bigger text (the same as before at 100%) */
+@media (max-width:560px){ :root{--tile-h:clamp(5.75rem,11.5vh,7rem)} }
 
 /* Loading: a spinner so it's clearly working; after 6 s "still loading", and
    after 20 s a plain note that something may be wrong. Pure CSS, so it keeps

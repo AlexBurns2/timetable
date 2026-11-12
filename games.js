@@ -190,11 +190,13 @@ const REVISION_PAGE = PAGE === 'revision';
 
 function gameCard(g, i){
   const c = document.createElement('button');
-  c.type = 'button'; c.className = 'gamecard' + (g.isNew || g.mp ? ' isnew' : '');
+  /* NEW: from the What's-new list (theme.js), until you open it */
+  const fresh = !g.mp && !REVISION_PAGE && !!(window.TT && TT.newsActive && TT.newsActive('game:' + g.id));
+  c.type = 'button'; c.className = 'gamecard' + (g.isNew || g.mp || fresh ? ' isnew' : '');
   c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
   /* just the icon and the name, the same height everywhere (your records are
      inside each game, and the leaderboards at the bottom of the games page) */
-  c.innerHTML = (g.mp ? '<span class="newbanner">Multiplayer</span>' : g.isNew ? '<span class="newbanner">New</span>' : '') +
+  c.innerHTML = (g.mp ? '<span class="newbanner">Multiplayer</span>' : g.isNew || fresh ? '<span class="newbanner">New</span>' : '') +
     '<span class="ico">' + g.ico + '</span>' +
     '<h2>' + g.name + '</h2>' +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
@@ -461,6 +463,7 @@ const openLBSheet = focus => openSheet('Leaderboards', box => lbBoard(box, focus
 const reduced = () => document.documentElement.getAttribute('data-motion') === 'reduced';
 function openGame(id){
   if (!REVISION_PAGE && window.Focus && Focus.active()){ showGrid(); return; }   // no back door past the lock
+  if (window.TT && TT.newsSeen) TT.newsSeen('game:' + id);                        // its NEW tag goes
   if (sheetClose) sheetClose(true);
   if (stop){ stop(); stop = null; }
   const grid = $('gamegrid'), st = $('gamestage');
@@ -1160,6 +1163,7 @@ BUILD.dailyguess = host => {
     const answer = s.answer, total = s.totalHints;
     let guesses = s.guesses||0, done = !!s.done, won = !!s.won, streak = s.streak||0;
     let shown = s.shown != null ? s.shown : Math.min(guesses+1, total);
+    markDay('dailyguess', s, { done, won, streak });
     const calOpen = !!(document.getElementById('dgcalbox') && !document.getElementById('dgcalbox').hidden);
 
     box.innerHTML =
@@ -1206,6 +1210,7 @@ BUILD.dailyguess = host => {
         : 'Out of guesses. It was <b>' + esc(answer) + '</b>.';
       hintsEl.appendChild(banner);
       if (arch){ arch.mine[s.date] = { won, done:true, guesses }; if (!document.getElementById('dgcalbox').hidden) paintCal(); }
+      markDay('dailyguess', s, { done:true, won, streak });
       openSummary(s.date);
     }
 
@@ -1230,6 +1235,7 @@ BUILD.dailyguess = host => {
         .then(r => { if (!alive || !r) return; streak = r.streak != null ? r.streak : streak;
           const a=document.getElementById('dgstreak'); if(a) a.textContent = streak;
           recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
+          markDay('dailyguess', s, { done, won, streak });
           if (done) loadSummary(s.date); })
         .catch(()=>{});
       if (done) finish(); else { setScore(); input.focus(); }
@@ -1339,6 +1345,13 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
+/* Home's "Today" strip shows where you are with today's daily games from these
+   (tt. keys, so they follow your account to other devices). Today's only. */
+function markDay(game, s, st){
+  if (!s || !s.today || s.date !== s.today || !window.TT) return;
+  const v = { date:s.today, done:!!st.done, won:!!st.won, streak:st.streak || 0 };
+  if (JSON.stringify(TT.get('tt.day_' + game, null)) !== JSON.stringify(v)) TT.set('tt.day_' + game, v);
+}
 /* the loading indicator from theme.js (plain text if it's missing) */
 function LD(text, late, opts){ return window.TT && TT.loader ? TT.loader(text, late, opts) : '<p class="how">' + esc(text || 'Loading…') + '</p>'; }
 
@@ -1402,6 +1415,7 @@ BUILD.quartets = host => {
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
     const r0 = s.result || {};
     let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
+    markDay('quartets', s, { done, won: found.length === 4 && mistakes < (s.chances || 7), streak });
     const CH = s.chances || 7;                       // mistakes allowed
     const sel = new Set(), tried = new Set();
     /* Hints, worked out from the guesses so far (so a reload keeps them):
@@ -1465,10 +1479,11 @@ BUILD.quartets = host => {
       $('qtbtns').hidden = done;
     };
     const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
-    const save = () => TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, found, log, mistakes } })
+    const save = () => { markDay('quartets', s, { done, won: won(), streak });
+      return TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, found, log, mistakes } })
       .then(r => { if (!alive || !r) return;
-        if (r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; }
-        if (done) loadSummary(s.date); }).catch(() => {});
+        if (r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; markDay('quartets', s, { done, won: won(), streak }); }
+        if (done) loadSummary(s.date); }).catch(() => {}); };
 
     /* the share card: an image of how you went (no names, no answers), and the same as text */
     const won = () => found.length === 4 && mistakes < CH;

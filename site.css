@@ -96,14 +96,14 @@ a{color:var(--accent)}
   background:var(--panel);border:var(--card-border);box-shadow:var(--shadow);
 }
 [data-header="split"] .hubbar{background:none;border:0;box-shadow:none;padding:2px 0 8px}
-.hubid{flex:1 1 260px;min-width:0;align-self:center}
+.hubid{min-width:0;align-self:center}
 .hubid .eyebrow{margin-bottom:4px}
 .hubid h1{
   margin:0;font-family:var(--font-display);font-size:clamp(1.5rem,3.4vw,2.25rem);
   font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt);line-height:1.08;
 }
 .hubsub{margin:6px 0 0;color:var(--muted);font-size:0.9375rem;max-width:52ch}
-.hubnow{display:flex;gap:12px;flex:2 1 320px;min-width:0}
+.hubnow{display:flex;gap:12px;min-width:0}
 .headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 /* the Now / Next cards, exactly as the timetable draws them */
 .nowcard{
@@ -138,6 +138,11 @@ a.nowcard:hover{border-color:var(--accent)}
   margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:0.8125rem}
 .hubfoot a{color:var(--muted);text-decoration:none;font-weight:700}
 .hubfoot a:hover{color:var(--accent)}
+.footlinks{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap}
+.footbtn{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.footbtn:hover{color:var(--accent)}
+.newsdot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.newsdot[hidden]{display:none}
 
 /* ── forum (home page) ───────────────────────────────────────── */
 .forum{margin-top:34px;padding-top:18px;border-top:1px solid var(--line)}
@@ -204,6 +209,15 @@ a.nowcard:hover{border-color:var(--accent)}
   letter-spacing:var(--display-ls);text-transform:var(--display-tt);overflow-wrap:anywhere;
 }
 .crumbs{display:flex;gap:8px;align-items:center;flex:none}
+/* big text on a narrow screen: the buttons go to their own row under the title
+   (measured in em of the header's text, so it follows the Text size setting) */
+.pagehead{flex-wrap:wrap;container:pagehead / inline-size}
+.sitename{max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+@container pagehead (max-width:19em){
+  .phtitle{flex:1 1 100%}
+  .crumbs{margin-left:auto}
+  .pagehead h1{overflow-wrap:normal;hyphens:auto}
+}
 /* one plain sentence under the header: what this page is for */
 .pagelede{margin:-6px 2px 18px;color:var(--muted);font-size:0.9375rem;max-width:62ch}
 .pagelede[hidden]{display:none}
@@ -268,9 +282,7 @@ a.nowcard:hover{border-color:var(--accent)}
   .tiles.bento .tile:not(.tall) .ico{font-size:1.25rem}
   .tiles.bento .tile .tdesc,.tiles.bento .tile.wide .tdesc{font-size:0.8125rem;line-height:1.25}
   .hubsec .tiles.bento{grid-auto-rows:68px}
-  .hubbar{padding:14px;gap:12px}
-  .hubnow{flex-basis:100%;order:3}
-  .hubid{flex-basis:0}
+  .hubbar{padding:14px}
   .hub .hscstrip{font-size:0.8125rem;padding:8px 12px;margin-bottom:10px;row-gap:2px}     /* .hub: the plain rule comes later in this file */
   .fpost.freply{margin-left:14px}
 }
@@ -384,3 +396,124 @@ html[data-motion="reduced"] .sheet,html[data-motion="reduced"] .sheetback{transi
 .qtile .ico .ph{width:2rem;height:2rem}
 html[data-tileicons="accent"] .qtile .ico{color:var(--accent)}
 @media (max-width:560px){ .qtile .ico .ph{width:1.6rem;height:1.6rem} }
+
+/* ── Home: today's daily games, a slim row under the tiles ──────────── */
+.hubtoday{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 4px}
+.hubtoday[hidden]{display:none}
+.tday{display:flex;align-items:center;gap:12px;min-width:0;padding:11px 16px;border-radius:var(--radius);text-decoration:none;
+  color:var(--text);background:var(--panel);border:var(--card-border);box-shadow:var(--shadow);
+  transition:transform .14s,box-shadow .14s,background .14s}
+.tday:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+.tdico{font-size:1.25rem;line-height:1;flex:none}
+.tdtext{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tdname{display:flex;align-items:center;gap:7px;min-width:0;font-weight:700;font-size:0.875rem}
+.tdn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tdstat{font-size:0.75rem;color:var(--accent);font-weight:700}
+.tday.done .tdstat{color:var(--muted);font-weight:500}
+@media (max-width:560px){ .hubtoday{gap:7px} .tday{position:relative;padding:9px 11px;gap:9px} .tdname{font-size:0.8125rem} .tdstat{font-size:0.71875rem}
+  .tday .newpill{position:absolute;top:-6px;right:8px;padding:0 6px;font-size:0.5625rem} }
+.newpill{flex:none;padding:1px 7px;border-radius:999px;background:var(--accent);color:var(--accent-ink);
+  font-size:0.625rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.5}
+.qtile{position:relative}
+.tilepill{position:absolute;top:10px;right:10px}
+@media (max-width:560px){ .tilepill{top:5px;right:5px;padding:0 5px;font-size:0.5625rem} }
+
+/* ── What's new ─────────────────────────────────────────────────── */
+.newsdlg{width:min(440px,calc(100vw - 32px));max-height:min(620px,calc(100dvh - 48px));padding:0;border:var(--card-border);border-radius:var(--radius);
+  background:var(--panel);color:var(--text);box-shadow:var(--shadow-hi);overflow:auto}
+.newsdlg::backdrop{background:rgba(12,12,20,.32);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.newshead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 6px;position:sticky;top:0;background:var(--panel)}
+.newshead h2{margin:0;font-size:1.125rem}
+.newslist{list-style:none;margin:0;padding:4px 18px 16px}
+.newslist li{padding:12px 0;border-top:1px solid var(--line)}
+.newslist li:first-child{border-top:0}
+.nwhead{display:flex;align-items:center;gap:8px}
+.nwdate{margin-left:auto;font-size:0.75rem;color:var(--muted);white-space:nowrap}
+.newslist p{margin:4px 0 6px;font-size:0.84375rem;color:var(--muted);line-height:1.45}
+.newslist a{font-size:0.8125rem;font-weight:700;color:var(--accent);text-decoration:none}
+.newslist a:hover{text-decoration:underline}
+
+/* ── Home's header: one shape, whatever's in it ────────────────────
+   The greeting, one box for your classes (always the same size: Now and
+   Next side by side, one card, or signing in), and Settings. One row when
+   there's room, two rows when there isn't. "Room" is measured in em of the
+   header's own text (a container query), so bigger text gets the narrow
+   layout sooner instead of squashing. */
+.hubbar{display:block;container:hubbar / inline-size}
+.hubin{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto;grid-template-areas:"id now btn";align-items:center;gap:12px 16px}
+.hubid{grid-area:id}
+.hubnow{grid-area:now;height:5rem}
+.hubin>.headbtns{grid-area:btn}
+.hubid h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(1.375rem,5cqi,2.25rem)}
+.hubsub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hubnow .nowcard{flex:1 1 0;height:100%;display:flex;flex-direction:column;justify-content:center;padding:.65rem .9rem}
+.hubnow .nowcard .meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hubnow .hubsign{flex-direction:row;align-items:center;justify-content:flex-start;gap:12px}
+.hubsign .hstext{flex:1;min-width:0}
+.hubnow .hubsign .btn{margin:0;flex:none}
+@container hubbar (max-width:44em){
+  .hubin{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id btn" "now now"}
+  .hubid h1{font-size:clamp(1.375rem,7.5cqi,2rem)}
+}
+/* narrow, or big text on a phone: Now and Next as two lines in one card */
+@container hubbar (max-width:26em){
+  .hubnow.pair{flex-direction:column;justify-content:center;gap:2px;padding:0 .9rem;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius)}
+  .hubnow.pair .nowcard{flex:0 0 auto;height:auto;flex-direction:row;align-items:baseline;gap:.5em;padding:0;background:none;border:0;border-radius:0;box-shadow:none;overflow:visible}
+  .hubnow.pair .nowcard::after{display:none}
+  .hubnow.pair .lbl{flex:none;width:2.9em}
+  .hubnow.pair .subj{flex:1 1 auto;min-width:0;margin:0;font-size:.9375rem}
+  .hubnow.pair .meta{flex:none;margin:0;max-width:45%}
+  .hubnow.pair .mroom,.hubnow.pair .msep{display:none}            /* just the time here */
+  .hubnow .hubsign .meta{display:none}
+  .hubnow .hubsign .subj{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+
+/* ── Home's tiles and Today, with big text ─────────────────────────
+   Measured in em too: when the tiles would be too narrow for their names,
+   they turn into a two-column list (icon beside the name), and Today stacks. */
+.hubnav{container:hubnav / inline-size}
+@container hubnav (max-width:19em){
+  .qtiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .qtile{height:auto;min-height:3.25rem;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding:10px;text-align:left}
+  .qtile .tname{font-size:.8125rem;white-space:normal;line-height:1.2;overflow-wrap:normal;word-break:normal;hyphens:manual}   /* whole words only */
+  .qtile .ico .ph{width:1.375rem;height:1.375rem}
+}
+@container hubnav (max-width:20em){ .hubtoday{grid-template-columns:minmax(0,1fr)} }
+
+/* ── Credits: a frosted night sky, names going round "Made by" ─────── */
+.credits{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;
+  background:transparent;color:var(--text);overflow:hidden}
+.credits::backdrop{background:color-mix(in srgb,var(--bg) 66%,transparent);backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15)}
+.credits.in{animation:crin .5s ease both}
+@keyframes crin{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:none}}
+.craura{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.craura i{position:absolute;width:52vmax;height:52vmax;border-radius:50%;filter:blur(70px);opacity:.28;mix-blend-mode:normal}
+html[data-mode="dark"] .craura i{opacity:.4}
+.craura i:nth-child(1){left:-14vmax;top:-18vmax;background:radial-gradient(circle,var(--cr1,var(--accent)),transparent 65%);animation:crdrift1 19s ease-in-out infinite alternate}
+.craura i:nth-child(2){right:-16vmax;bottom:-20vmax;background:radial-gradient(circle,var(--cr2,var(--accent)),transparent 65%);animation:crdrift2 23s ease-in-out infinite alternate}
+.craura i:nth-child(3){left:30%;top:35%;width:34vmax;height:34vmax;opacity:.16;background:radial-gradient(circle,var(--cr1,var(--accent)),transparent 70%);animation:crdrift3 17s ease-in-out infinite alternate}
+@keyframes crdrift1{to{transform:translate(18vmax,14vmax) scale(1.15)}}
+@keyframes crdrift2{to{transform:translate(-16vmax,-12vmax) scale(1.2)}}
+@keyframes crdrift3{to{transform:translate(-10vmax,8vmax) scale(.85)}}
+.crsky{position:absolute;inset:0;pointer-events:none}
+.crstage{position:absolute;inset:0;cursor:pointer}
+.crmid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.crby{font-size:0.875rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);animation:crbreathe 4.5s ease-in-out 1.4s infinite}
+.crby span{display:inline-block;animation:crletter .5s cubic-bezier(.2,.9,.3,1.4) both}
+@keyframes crletter{from{opacity:0;transform:translateY(10px) scale(.6)}to{opacity:1;transform:none}}
+@keyframes crbreathe{50%{color:var(--text);text-shadow:0 0 18px color-mix(in srgb,var(--cr1,var(--accent)) 55%,transparent)}}
+.crwait{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:0.875rem;color:var(--muted)}
+.crwait .btn{margin-top:2px}
+.crspin{width:16px;height:16px;border-radius:50%;border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
+.crname{position:absolute;left:50%;top:50%;white-space:nowrap;font-family:var(--font-display);font-weight:700;cursor:pointer;
+  font-size:clamp(1.25rem,4.2vw,2rem);letter-spacing:-.01em;will-change:transform;user-select:none;-webkit-user-select:none;
+  text-shadow:0 0 22px color-mix(in srgb,var(--glow,var(--accent)) 45%,transparent),0 0 2px color-mix(in srgb,var(--glow,var(--accent)) 30%,transparent)}
+.crname.pop{animation:crpop .45s cubic-bezier(.2,.9,.3,1.5)}
+@keyframes crpop{40%{letter-spacing:.06em}}
+.crfoot{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));margin:0;padding:0 16px;text-align:center;
+  font-size:0.78125rem;color:var(--muted);animation:crfade .8s ease 1.4s both}
+@keyframes crfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.crx{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px}
+html[data-motion="reduced"] .credits.in,html[data-motion="reduced"] .craura i,html[data-motion="reduced"] .crby,
+html[data-motion="reduced"] .crby span,html[data-motion="reduced"] .crfoot,html[data-motion="reduced"] .crname.pop{animation:none}
+@media (prefers-reduced-motion:reduce){ .credits.in,.craura i,.crby,.crby span,.crfoot,.crname.pop{animation:none} }

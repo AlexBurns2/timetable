@@ -337,7 +337,42 @@ addEventListener('pagehide', () => {
   flushPush(true);
 });
 
+/* ── What's new ──────────────────────────────────────────────────────
+   One list for the "What's new" sheet (Home's footer) and the NEW tags.
+   Newest first. key: the thing a NEW tag sits on ('game:<id>'), cleared when
+   you open it; no key, no tag (just the list). A tag also stops after
+   NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
+   To announce something: add a line at the top. */
+const NEWS = [
+  { id:'qtdiff', date:'2026-11-12', key:'game:quartets', title:'How hard was today?',
+    text:'Quartets results now show how hard the day was for your year, group by group.', href:'games.html?play=quartets' },
+  { id:'quartets', date:'2026-11-10', key:'game:quartets', title:'Quartets',
+    text:'A new daily puzzle: sort 16 people from your year into four groups of four.', href:'games.html?play=quartets' },
+  { id:'multiplayer', date:'2026-11-10', title:'Multiplayer Tetris and Snake',
+    text:'Play Tetris Versus or Snake online against a friend.', href:'games.html?play=tetris' },
+  { id:'poll', date:'2026-11-09', title:'The weekly poll',
+    text:'An anonymous question for your year every week, at the top of Home. Results on Friday at noon.', href:'home.html' },
+  { id:'dgarchive', date:'2026-11-09', key:'game:dailyguess', title:'Daily Guess Who archive',
+    text:'Play past days from the calendar, and see how your year went each day.', href:'games.html?play=dailyguess' }
+];
+const NEWS_DAYS = 21;
+const ymd = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const recent = n => Date.now() - Date.parse(n.date + 'T00:00:00') < NEWS_DAYS * 864e5;
+/* a NEW tag on this key? (something newer than the day you last opened it) */
+function newsActive(key){
+  const seen = (get('tt.news_seen', {}) || {})[key] || '';
+  return NEWS.some(n => n.key === key && recent(n) && n.date > seen);
+}
+function newsSeen(key){
+  if (!newsActive(key)) return;
+  const m = Object.assign({}, get('tt.news_seen', {}) || {}); m[key] = ymd(); set('tt.news_seen', m);
+}
+/* the sheet: anything recent you haven't seen there yet */
+const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
+function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
+
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
+              NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the

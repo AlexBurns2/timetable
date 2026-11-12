@@ -344,20 +344,33 @@ export async function pollGet(req, res, me, NAMES) {
       }
       return res.status(200).json({ clock, poll: null, last: lastOut });
     }
-    const scope = scopeOf(poll.kind, me);
-    const voted = await hasVoted(poll.week, me.email);
+    const scope = scopeOf(poll.kind, me), open = clock.phase === "open";
+    /* everything the card might need, asked for at once rather than one after
+       another (the answers or the results are dropped if it turns out they
+       aren't needed) */
+    const settle = pr => pr.then(v => ({ v }), e => ({ e }));
+    const t0 = Date.now();
+    const [votedR, totalR, optsR, resR] = await Promise.all([
+      settle(hasVoted(poll.week, me.email)),
+      scope ? settle(totalOf(poll.week, scope)) : { v: 0 },
+      scope && open ? settle(optionsFor(poll, me, NAMES)) : null,
+      scope && !open ? settle(resultsOf(poll, scope, NAMES, 12)) : null
+    ]);
+    if (votedR.e) throw votedR.e;
+    const voted = votedR.v;
     const out = { week: poll.week, question: poll.question, kind: poll.kind, anim: poll.anim || "surprise",
                   celebrate: poll.celebrate || "surprise", reveal: poll.reveal || "", pick: poll.pick || 1, exact: !!poll.pickexact, voted, phase: clock.phase,
-                  canVote: !!scope, total: scope ? await totalOf(poll.week, scope) : 0, minShow: MIN_SHOW };
-    if (!voted && scope && clock.phase === "open") {
-      try { out.options = await optionsFor(poll, me, NAMES); }
-      catch (e) { console.error("poll options:", e.message); out.options = []; out.optionsError = true; }
+                  canVote: !!scope, total: scope ? totalR.v || 0 : 0, minShow: MIN_SHOW };
+    if (!voted && scope && open) {
+      if (optsR.e) { console.error("poll options:", optsR.e.message); out.options = []; out.optionsError = true; }
+      else out.options = optsR.v || [];
       if (!out.options.length) out.canVote = false;
     }
-    if (clock.phase !== "open") out.canVote = false;
+    if (!open) out.canVote = false;
     /* results: live once you've voted; final, for everyone, from Friday noon */
-    if (scope && (voted || clock.phase === "results")) {
-      const r = await resultsOf(poll, scope, NAMES, 12);
+    if (scope && (voted || !open)) {
+      if (resR && resR.e) throw resR.e;
+      const r = resR ? resR.v : await resultsOf(poll, scope, NAMES, 12);
       out.results = r.results; out.others = r.others || 0; out.total = r.total;
     }
     /* Friday's slot machine spins through people from the year (or the other
@@ -369,6 +382,8 @@ export async function pollGet(req, res, me, NAMES) {
         out.reel = all.slice(0, 30);
       } catch { /* the reel just uses the results */ }
     }
+    const ms = Date.now() - t0;
+    if (ms > 1500) console.warn("poll slow: " + ms + "ms (" + poll.kind + ")");
     return res.status(200).json({ clock, poll: out });
   } catch (e) {
     console.error("poll read:", e.message);

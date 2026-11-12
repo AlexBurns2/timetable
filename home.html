@@ -23,14 +23,16 @@
 
   <!-- the same header panel as the timetable: who you are, your next class, settings -->
   <header class="hubbar">
-    <div class="hubid">
-      <div class="eyebrow">MSC Unofficial</div>
-      <h1 id="hello">Welcome</h1>
-      <p class="hubsub" id="hubsub">Your timetable, revision and games.</p>
-    </div>
-    <div class="hubnow" id="hubnow"></div>
-    <div class="headbtns">
-      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
+    <div class="hubin">
+      <div class="hubid">
+        <div class="eyebrow">MSC Unofficial</div>
+        <h1 id="hello">Welcome</h1>
+        <p class="hubsub" id="hubsub">Your timetable, revision and games.</p>
+      </div>
+      <div class="hubnow" id="hubnow"></div>
+      <div class="headbtns">
+        <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
+      </div>
     </div>
   </header>
 
@@ -39,6 +41,7 @@
   <a class="pollskip" id="pollskip" href="#" hidden>Skip to the site</a>
 
   <div class="hubrest" id="hubrest">
+  <div class="hubnav">
   <nav class="qtiles" aria-label="Pages">
     <a class="qtile" href="./" id="tileTimetable" style="--tc:#e5484d"><span class="ico" data-icon="d:table"></span><span class="tname">Timetable</span></a>
     <a class="qtile" href="calendar.html" style="--tc:#f76b15"><span class="ico" data-icon="d:calendar-dots"></span><span class="tname">Calendar</span></a>
@@ -49,6 +52,9 @@
     <a class="qtile" href="finder.html" style="--tc:#0090ff"><span class="ico" data-icon="d:magnifying-glass"></span><span class="tname">Student finder</span></a>
     <a class="qtile" href="mahjong.html" id="tileMahjong" style="--tc:#d6409f"><span class="ico" data-icon="d:cards-three"></span><span class="tname">Mahjong club</span></a>
   </nav>
+  <!-- today's daily games, and whether you've played them (filled below) -->
+  <nav class="hubtoday" id="hubtoday" aria-label="Today’s daily games" hidden></nav>
+  </div>
 
   <section class="forum" id="forum">
     <h2>Forum</h2>
@@ -63,10 +69,28 @@
   </div>
 
   <footer class="hubfoot">
-    <span>Made by <span class="glitchy" id="glitchy">students</span> at NBSC Manly Campus. Not run by the school or the Department.</span>
+    <span class="footlinks">
+      <button type="button" class="footbtn" id="newsbtn">What’s new<span class="newsdot" id="newsdot" hidden></span></button>
+      <button type="button" class="footbtn" id="creditsbtn">Credits</button>
+    </span>
     <!-- Andre's redesign sandbox lives on its own at /andre/: an add-on, not part of this site -->
     <a href="/andre/">Try the new website beta (work in progress) →</a>
   </footer>
+
+  <dialog class="newsdlg" id="newsdlg" aria-labelledby="newshd">
+    <div class="newshead"><h2 id="newshd">What’s new</h2>
+      <button type="button" class="btn icon" id="newsx" aria-label="Close"><span data-icon="x"></span></button></div>
+    <ul class="newslist" id="newslist"></ul>
+  </dialog>
+  <dialog class="credits" id="credits" aria-label="Credits">
+    <div class="craura" aria-hidden="true"><i></i><i></i><i></i></div>
+    <canvas class="crsky" id="crsky" aria-hidden="true"></canvas>
+    <div class="crstage" id="crstage">
+      <div class="crmid"><span class="crby" id="crby">Made by</span><span class="crwait" id="crwait"></span></div>
+    </div>
+    <p class="crfoot">Not run by the school or the Department.</p>
+    <button type="button" class="btn icon crx" id="crx" aria-label="Close"><span data-icon="x"></span></button>
+  </dialog>
 
 </div>
 <script>
@@ -151,8 +175,14 @@ function senior(payload){
 function card(lbl, l, extra){
   return '<div class="nowcard"><div class="lbl">' + esc(lbl) + '</div>' +
     '<div class="subj">' + esc(l.name) + '</div>' +
-    '<div class="meta">' + esc([l.room, extra].filter(Boolean).join(' · ')) + '</div></div>';
+    '<div class="meta">' + (l.room ? '<span class="mroom">' + esc(l.room) + '</span>' + (extra ? '<span class="msep"> · </span>' : '') : '') +
+      (extra ? '<span class="mwhen">' + esc(extra) + '</span>' : '') + '</div></div>';
 }
+/* the greeting and the date, each with a shorter version for when the full one won't fit (fitHello) */
+function setHello(full, short){ const h = $('hello'); h.dataset.full = full; h.dataset.short = short || full; h.textContent = full; }
+function setSub(full, short){ const h = $('hubsub'); h.dataset.full = full; h.dataset.short = short || full; h.textContent = full; }
+const DAY3 = d => DAYS[d.getDay()].slice(0, 3);
+const MON3 = d => MONTHS[d.getMonth()].slice(0, 3);
 function paintHub(){
   const now = new Date();
   const part = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
@@ -160,30 +190,52 @@ function paintHub(){
   const first = String(profileOf(payload).firstname || '').trim();
   const date = DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
   if (!signedIn){
-    $('hello').textContent = 'Welcome';
+    setHello('Welcome');
+    $('hubnow').className = 'hubnow';
     $('hubnow').innerHTML =
-      '<div class="nowcard hubsign"><div class="lbl">Get started</div>' +
-      '<div class="subj">See your own timetable</div>' +
-      '<div class="meta">Sign in with your school account. Your login is saved only on this device.</div>' +
+      '<div class="nowcard hubsign"><div class="hstext"><div class="lbl">Get started</div>' +
+      '<div class="subj">See your timetable</div>' +
+      '<div class="meta">Sign in with your school account. Your login is saved only on this device.</div></div>' +
       '<a class="btn primary" href="./">Sign in</a></div>';
     return;
   }
-  $('hello').textContent = part + (first ? ', ' + first : '');
+  setHello(part + (first ? ', ' + first : ''), part.replace(/^Good (\w)/, (m, c) => c.toUpperCase()) + (first ? ', ' + first : ''));
+  const shortDate = DAY3(now) + ' ' + now.getDate() + ' ' + MON3(now);
   if (!payload){
-    $('hubsub').textContent = date;
+    setSub(date, shortDate);
+    $('hubnow').className = 'hubnow';
     $('hubnow').innerHTML = '<a class="nowcard hubsign" href="./"><div class="lbl">Next class</div>' +
       '<div class="subj">Open your timetable</div><div class="meta">Your next class shows here once it has loaded.</div></a>';
     return;
   }
   const nn = nowNext(payload);
-  $('hubsub').textContent = date + (nn.week ? ' · Week ' + nn.week : '');
+  setSub(date + (nn.week ? ' · Week ' + nn.week : ''), shortDate + (nn.week ? ' · Week ' + nn.week : ''));
   let h = '';
   if (nn.cur) h += card('Now', nn.cur, 'until ' + fmtTime(nn.cur.end));
   if (nn.next) h += card(nn.when === 'Today' ? 'Next' : 'Next · ' + nn.when, nn.next, fmtTime(nn.next.start));
+  $('hubnow').className = 'hubnow' + (nn.cur && nn.next ? ' pair' : '');
   $('hubnow').innerHTML = h || '<a class="nowcard hubsign" href="./"><div class="lbl">Timetable</div>' +
     '<div class="subj">No classes coming up</div><div class="meta">Open your timetable</div></a>';
 }
 paintHub();
+/* The greeting stays on one line: if it's too long for the space (a long
+   name, big text, a narrow phone) it's set a little smaller, down to a floor,
+   and only then cut short. */
+function fitHello(){
+  const h = $('hello'), sub = $('hubsub'); if (!h) return;
+  const over = el => el.scrollWidth > el.clientWidth + 1;
+  const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const shrink = () => { h.style.fontSize = ''; if (!over(h)) return;
+    const now = parseFloat(getComputedStyle(h).fontSize);
+    h.style.fontSize = Math.max(root * 1.15, now * (h.clientWidth / h.scrollWidth) * 0.97) + 'px'; };
+  if (h.dataset.full) h.textContent = h.dataset.full;
+  shrink();
+  if (over(h) && h.dataset.short && h.dataset.short !== h.dataset.full){ h.textContent = h.dataset.short; shrink(); }
+  if (sub && sub.dataset.full){ sub.textContent = sub.dataset.full; if (over(sub)) sub.textContent = sub.dataset.short; }
+}
+fitHello();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHello);
+let fitT = 0; addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(fitHello, 120); });
 
 /* ── forum ─────────────────────────────────────────────────────────────── */
 /* "just now" / "12m" / "3h" / "5d", falling back to a date after a week */
@@ -361,19 +413,50 @@ loadForum();
 </script>
 <script src="settings.js?v=20261109"></script>
 <script src="poll.js?v=20261109"></script>
+<script src="credits.js?v=20261112"></script>
 <script>
-/* a small easter egg: hover "students" in the footer and it scrambles into
-   random letters, like obfuscated text, until you move away */
+/* ── Today: the two daily games, and where you are with them ─────────────
+   From what the games remember (games.js markDay, synced with your account),
+   so it needs no request. Signed in only; not in focus mode. */
 (function(){
-  const g = document.getElementById('glitchy'); if (!g) return;
-  const word = g.textContent, CH = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$*?!';
-  let t = null;
-  const scramble = () => { g.textContent = [...word].map(() => CH[Math.floor(Math.random() * CH.length)]).join(''); };
-  const start = () => { if (t) return; g.style.width = g.offsetWidth + 'px'; g.classList.add('on'); scramble(); t = setInterval(scramble, 55); };
-  const stop = () => { clearInterval(t); t = null; g.classList.remove('on'); g.textContent = word; g.style.width = ''; };
-  g.addEventListener('mouseenter', start);
-  g.addEventListener('mouseleave', stop);
-  g.addEventListener('touchstart', () => { start(); setTimeout(stop, 1400); }, { passive:true });
+  const box = document.getElementById('hubtoday'); if (!box || !window.TT) return;
+  if (!signedIn || (window.Focus && Focus.active())) return;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone:'Australia/Sydney' }).format(new Date());
+  const DAILY = [{ id:'dailyguess', name:'Daily Guess Who', ico:'📅' }, { id:'quartets', name:'Quartets', ico:'🍀' }];
+  box.innerHTML = DAILY.map(g => {
+    const v = TT.get('tt.day_' + g.id, null), t = v && v.date === today ? v : null;
+    const stat = !t || !t.done ? 'Play today’s' : t.won ? 'Solved' + (t.streak > 1 ? ' · 🔥 ' + t.streak : '') : 'Done for today';
+    const fresh = TT.newsActive && TT.newsActive('game:' + g.id);
+    return '<a class="tday' + (t && t.done ? ' done' : '') + '" href="games.html?play=' + g.id + '">' +
+      '<span class="tdico" aria-hidden="true">' + g.ico + '</span>' +
+      '<span class="tdtext"><span class="tdname"><span class="tdn">' + g.name + '</span>' + (fresh ? '<span class="newpill">New</span>' : '') + '</span>' +
+      '<span class="tdstat">' + stat + '</span></span></a>';
+  }).join('');
+  box.hidden = false;
+  /* a NEW tag on the Games tile, for a new game that isn't already in the strip */
+  const tile = document.getElementById('tileGames');
+  const other = (TT.NEWS || []).some(n => n.key && /^game:/.test(n.key) && !DAILY.some(g => 'game:' + g.id === n.key) && TT.newsActive(n.key));
+  if (tile && other && !tile.classList.contains('locked')) tile.insertAdjacentHTML('beforeend', '<span class="newpill tilepill">New</span>');
+})();
+
+/* ── What's new (the list is in theme.js) ─────────────────────────────── */
+(function(){
+  const dlg = document.getElementById('newsdlg'), btn = document.getElementById('newsbtn'), dot = document.getElementById('newsdot');
+  if (!dlg || !btn || !window.TT || !TT.NEWS) { if (btn) btn.hidden = true; return; }
+  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day:'numeric', month:'short' });
+  dot.hidden = !TT.newsUnread().length;
+  btn.onclick = () => {
+    const unread = new Set(TT.newsUnread().map(n => n.id));
+    document.getElementById('newslist').innerHTML = TT.NEWS.map(n =>
+      '<li><div class="nwhead"><b>' + esc(n.title) + '</b>' + (unread.has(n.id) ? '<span class="newpill">New</span>' : '') +
+        '<span class="nwdate">' + fmt(n.date) + '</span></div>' +
+      '<p>' + esc(n.text) + '</p>' + (n.href && n.href !== 'home.html' ? '<a href="' + esc(n.href) + '">Have a look →</a>' : '') + '</li>').join('');
+    if (window.Icon) Icon.fill(dlg);
+    dlg.showModal();
+    TT.newsRead(); dot.hidden = true;
+  };
+  document.getElementById('newsx').onclick = () => dlg.close();
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });     // a click on the backdrop
 })();
 </script>
 <script>

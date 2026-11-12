@@ -87,7 +87,13 @@ export default async function handler(req, res) {
   if ((req.method === "GET" || req.method === "HEAD") && req.query.og) return pollPreview(req, res);
 
   if (!db) return res.status(503).json({ error: "The forum is not configured on the server." });
+  const t0 = Date.now();
   const me = await whoami(req);
+  /* the credits on Home: only for someone signed in (not in any page's source) */
+  if (req.method === "GET" && req.query.credits) {
+    if (!me) return res.status(401).json({ error: "Sign in to see the credits." });
+    return res.status(200).json({ by: ["Alex Burns", "Andre Kwok"] });
+  }
   /* signed out (someone opening a friend's link): the question only, to sign in for */
   if (!me && req.method === "GET" && req.query.poll === "1") {
     try {
@@ -171,7 +177,12 @@ export default async function handler(req, res) {
         .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
         .map(shape);
     });
-    return res.status(200).json(pollAlong ? { posts: threads, poll: await pollAlong } : { posts: threads });
+    if (pollAlong) {
+      const poll = await pollAlong, ms = Date.now() - t0;
+      if (ms > 2500) console.warn("home load slow: " + ms + "ms");          // to see in the logs if it's still slow
+      return res.status(200).json({ posts: threads, poll });
+    }
+    return res.status(200).json({ posts: threads });
   }
 
   if (req.method === "POST") {

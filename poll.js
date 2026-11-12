@@ -82,6 +82,8 @@ async function refresh(first, startAt, again){
   try { d = await (shared ? shared.p : TT.api('/api/forum', { params:{ poll:1 } })); if (!d || typeof d !== 'object') throw new Error('empty answer'); }
   catch (e){
     console.warn('poll:', e.message);
+    /* showing the saved copy: keep it, and ask again in a little while */
+    if (first && snapShown){ snapShown = false; clearTimeout(timer); timer = setTimeout(() => refresh(true, null, true), rand(8000, 15000)); return; }
     /* at noon Friday / 9:30 Monday everyone asks at once: keep the card and try again shortly */
     if (again && data){ clearTimeout(timer); timer = setTimeout(() => refresh(true, null, true), rand(15000, 30000)); return; }
     /* a moderator's preview still plays with nothing set (or the table not there yet) */
@@ -90,12 +92,64 @@ async function refresh(first, startAt, again){
     if (first) hideCard();
     return;
   }
-  data = d;
   const t1 = Date.now();
-  if (data.clock && typeof data.clock.now === 'number') offset = data.clock.now - (t0 + t1) / 2;   // the server's clock, for syncing
-  data.loadedAt = t1;
-  try { draw(first, startAt); }
+  if (d.clock && typeof d.clock.now === 'number') offset = d.clock.now - (t0 + t1) / 2;   // the server's clock, for syncing
+  d.loadedAt = t1;
+  /* The card is up already, from the saved copy. If it's the same card, keep it
+     as it is (nothing typed is lost) and just take the fresh numbers; if you
+     voted on it meanwhile, your vote's answer is newer than this one. */
+  const fromSnap = first && !again && snapShown;
+  snapShown = false;
+  if (fromSnap && (votedHere || sameCard(data, d))){
+    if (!votedHere) Object.assign(data.poll, d.poll);
+    data.clock = d.clock; data.last = d.last; data.loadedAt = t1;
+    whenText(); setCount(data.poll.total, false); keepLive(); schedule(); setTimeout(rememberHeight, 400);
+    if (opts.onDraw) try { opts.onDraw(data.poll); } catch {}
+    saveSnap();
+    return;
+  }
+  data = d;
+  try { draw(first, startAt); saveSnap(); }
   catch (e){ console.error('poll draw:', e); if (first) hideCard(); }
+}
+/* ── the saved copy ──────────────────────────────────────────────────
+   This week's card as it last came from the server, kept on this device
+   (not synced), so Home can draw it the moment it opens instead of waiting.
+   Only used while nothing can have changed underneath it: the same account,
+   before the next noon-Friday / 9:30-Monday change, and with no show due
+   (a show always waits for the server). The server's answer replaces it. */
+const SNAP = 'msc.pollsnap';
+let snapShown = false, votedHere = false;
+const account = () => String(((TT.get('tt.creds', null) || {}).email) || '').toLowerCase();
+function saveSnap(){
+  try {
+    const p = data && data.poll;
+    if (!opts.signedIn || previewing() || !p || p.signedOut || !data.clock || !account()) { localStorage.removeItem(SNAP); return; }
+    localStorage.setItem(SNAP, JSON.stringify({ who:account(), at:Date.now(), offset, d:{ clock:data.clock, poll:p, last:data.last || null } }));
+  } catch {}
+}
+function drawSnap(){
+  if (!opts.signedIn || previewing()) return false;
+  let s = null; try { s = JSON.parse(localStorage.getItem(SNAP) || 'null'); } catch {}
+  if (!s || !s.d || !s.d.poll || !s.d.clock || !s.who || s.who !== account()) return false;
+  const p = s.d.poll, c = s.d.clock, now = Date.now() + (s.offset || 0);
+  const until = c.phase === 'open' ? c.resultsAt : c.nextAt;
+  if (!until || now > until - 60000 || Date.now() - s.at > 8 * 864e5) return false;   // a change is due: wait for the server
+  if (TT.get(SEEN, '') !== p.week) return false;                                       // Monday's show is due
+  if (stateOf(p) === 'final' && TT.get(REVEALED, '') !== p.week) return false;         // so is Friday's
+  offset = s.offset || 0;
+  c.resultsIn = Math.max(0, Math.round((c.resultsAt - now) / 1000)); c.nextIn = Math.max(0, Math.round((c.nextAt - now) / 1000));
+  data = { clock:c, poll:p, last:s.d.last, loadedAt:Date.now() };
+  try { draw(false); snapShown = true; return true; }
+  catch (e){ data = null; return false; }
+}
+/* the same card: same question, still to vote on, with the same answers to pick from */
+function sameCard(a, b){
+  const p = a && a.poll, q = b && b.poll;
+  if (!p || !q || p.week !== q.week || p.question !== q.question || p.kind !== q.kind) return false;
+  if (stateOf(p) !== 'vote' || stateOf(q) !== 'vote' || !!p.canVote !== !!q.canVote) return false;
+  const ids = x => (x.options || []).map(o => o.id + '=' + o.label).join('|');
+  return ids(p) === ids(q);
 }
 const previewing = () => new URLSearchParams(location.search).has('pollpreview');
 function hideCard(){ el.hidden = true; el.innerHTML = ''; rememberHeight(); if (opts.onDraw) try { opts.onDraw(null); } catch {} }
@@ -329,6 +383,7 @@ function wireVote(){
   }
   go.onclick = async () => {
     if (!chosen.length) return;
+    votedHere = true;
     const labels = chosen.map(labelOf);
     go.disabled = true; go.textContent = 'Voting…';
     try {
@@ -350,6 +405,7 @@ async function voted(){
   const g = document.getElementById('pgo');
   if (!reduced() && g){ g.classList.add('pok'); g.textContent = '✓'; await wait(320); }
   draw(false);
+  saveSnap();                                          // next time it opens as voted
   setCount(data.poll.total, true);
   if (!reduced()){
     const done = el.querySelector('.pdone'), share = el.querySelector('.pshare');
@@ -1286,7 +1342,7 @@ function placeholder(){
 }
 
 window.Poll = {
-  mount(host, o){ el = host; opts = o || {}; prevView = TT.get(VIEW, null); placeholder(); refresh(true); },
+  mount(host, o){ el = host; opts = o || {}; prevView = TT.get(VIEW, null); if (!drawSnap()) placeholder(); refresh(true); },
   refresh:() => refresh(false), INTRO_SHOWS, CELEB_SHOWS, revealLine
 };
 })();
