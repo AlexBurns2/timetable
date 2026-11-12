@@ -500,6 +500,12 @@ html[data-mode="dark"] .crsky{position:absolute;inset:0;pointer-events:none}
 .crby{font-size:0.875rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);animation:crbreathe 4.5s ease-in-out 1.4s infinite}
 .crby span{display:inline-block;animation:crletter .5s cubic-bezier(.2,.9,.3,1.4) both}
 @keyframes crletter{from{opacity:0;transform:translateY(10px) scale(.6)}to{opacity:1;transform:none}}
+/* closing: the letters drop away (from the end back), the note and any message fade */
+.credits.closing .crby{animation:none}
+.credits.closing .crby span{animation:crletterout .32s cubic-bezier(.6,0,.8,.4) both}
+@keyframes crletterout{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.6)}}
+.credits.closing :is(.crfoot,.crwait){animation:crfadeout .35s ease both}
+@keyframes crfadeout{to{opacity:0;transform:translateY(4px)}}
 @keyframes crbreathe{50%{color:var(--text)}}
 .crwait{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:0.875rem;color:var(--muted)}
 .crwait .btn{margin-top:2px}

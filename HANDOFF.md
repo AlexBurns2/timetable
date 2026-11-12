@@ -3153,3 +3153,6 @@ data. No icon font or CDN script loads on the live site.
 ### 8.97 Credits: plainer, and a fade on the way out
 - The coloured aurora blobs behind the credits are gone (it read as romantic), the names have no coloured glow, "Made by" only brightens, and the trails and sparks are in the page's text colour (fainter). What's left: the frosted page, a few stars, the faint orbit track, the two names.
 - Closing (click away, ×, or Esc via the dialog's `cancel` event) fades the overlay and its backdrop out over .38 s (`.credits.out`, then `close()`); the backdrop also fades in on open. Instant with reduced motion.
+
+### 8.98 Credits close as they opened, backwards
+- Closing (click away, ×, Esc) plays the opening in reverse over 0.9 s (credits.js `close()`, `closingAt`, `CLOSE_MS`): the names keep orbiting while they spiral back into the middle, blurring and fading (the same spiral, slow at first then quicker); the track, trails and stars fade with them; "Made by" drops its letters from the end back (`.credits.closing`, `crletterout`); the note and any message fade. The overlay and its backdrop then fade (`.out`, .38 s) and it closes (about 1 s in all). Taps and sparkles are ignored while closing. Instant with reduced motion.

@@ -30,6 +30,8 @@ const ease = k => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 let names = null, els = [], raf = 0, opened = 0, W = 0, H = 0, dpr = 1;
 let stars = [], sparks = [], trails = [[], []], hues = ['#4f4fd0', '#d6409f'], dark = false;
 let px = 0, py = 0, tx = 0, ty = 0, lastSparkle = 0, lastBurst = 0, clue = null, lastClue = 0;
+let closingAt = 0;                        // when closing began (the opening, played backwards)
+const CLOSE_MS = 900;
 
 /* "Made by", a letter at a time */
 by.innerHTML = [...'Made by'].map((c, i) => '<span style="animation-delay:' + (120 + i * 45) + 'ms">' + (c === ' ' ? '&nbsp;' : c) + '</span>').join('');
@@ -78,7 +80,10 @@ function frame(now){
   raf = 0;
   if (!dlg.open) return;
   const t = now - opened, calm = still();
-  const e = calm ? 1 : ease(t / 1500);
+  let e = calm ? 1 : ease(t / 1500);
+  /* closing: the same spiral in reverse, slow at first then quicker into the middle */
+  const shut = closingAt ? Math.min(1, (now - closingAt) / CLOSE_MS) : 0;
+  if (closingAt) e = Math.min(e, 1 - Math.pow(shut, 2.2));
   /* the scene leans towards the pointer a little */
   px += (tx - px) * .06; py += (ty - py) * .06;
   const cx = W / 2 + px, cy = H / 2 + py;
@@ -90,7 +95,7 @@ function frame(now){
   /* stars */
   for (const s of stars){
     if (!calm){ s.y -= s.vy / 60; if (s.y < -4){ s.y = H + 4; s.x = rand(0, W); } }
-    const a = calm ? .35 : .18 + .45 * (0.5 + 0.5 * Math.sin(now / 1000 * s.sp + s.ph));
+    const a = (calm ? .35 : .18 + .45 * (0.5 + 0.5 * Math.sin(now / 1000 * s.sp + s.ph))) * (1 - shut);
     ctx.fillStyle = dark ? 'rgba(255,255,255,' + a + ')' : 'rgba(40,40,80,' + a * .55 + ')';
     ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
   }
@@ -162,7 +167,7 @@ function showNames(list){
   list.forEach((nm, i) => {
     const s = document.createElement('span');
     s.className = 'crname'; s.textContent = nm;
-    s.onclick = ev => { ev.stopPropagation(); const r = s.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, i, 34);
+    s.onclick = ev => { ev.stopPropagation(); if (closingAt) return; const r = s.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, i, 34);
       s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); kick(); };
     stage.appendChild(s); els.push(s);
   });
@@ -190,19 +195,28 @@ window.Credits = { open };
 if (btn) btn.onclick = open;
 /* closing fades it (and the frosted backdrop) out rather than snapping shut */
 let closing = 0;
-const finish = () => { clearTimeout(closing); closing = 0; dlg.classList.remove('out'); cancelAnimationFrame(raf); raf = 0; if (dlg.open) dlg.close(); };
+const finish = () => {
+  clearTimeout(closing); closing = 0; closingAt = 0;
+  dlg.classList.remove('out', 'closing');
+  [...by.children].forEach((sp, i) => sp.style.animationDelay = (120 + i * 45) + 'ms');   // ready to open again
+  cancelAnimationFrame(raf); raf = 0; if (dlg.open) dlg.close();
+};
 const close = () => {
   if (!dlg.open || closing) return;
   if (still()) return finish();
-  dlg.classList.add('out');
-  closing = setTimeout(finish, 380);
+  closingAt = performance.now();
+  /* "Made by" lets go of its letters from the end back */
+  const ls = [...by.children]; ls.forEach((sp, i) => sp.style.animationDelay = ((ls.length - 1 - i) * 35) + 'ms');
+  dlg.classList.add('closing');
+  sparks = []; kick();
+  closing = setTimeout(() => { dlg.classList.add('out'); closing = setTimeout(finish, 380); }, CLOSE_MS - 280);
 };
 dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });      // Esc: the same fade
 document.getElementById('crx').onclick = e => { e.stopPropagation(); close(); };
 dlg.addEventListener('click', e => { if (!e.target.closest('a, .crname, .crx')) close(); });
 dlg.addEventListener('close', () => { if (!dlg.open){ cancelAnimationFrame(raf); raf = 0; } });   // (not if it was opened again straight away)
 dlg.addEventListener('pointermove', e => {
-  if (still()) return;
+  if (still() || closingAt) return;
   tx = (e.clientX - W / 2) / (W / 2) * -12; ty = (e.clientY - H / 2) / (H / 2) * -8;
   const now = performance.now();
   if (e.pointerType === 'mouse' && now - lastSparkle > 45){
