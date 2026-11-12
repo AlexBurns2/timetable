@@ -503,6 +503,12 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="skins" id="skins"></div>
     </div>
 
+    <div class="field" id="glasswrap" hidden>
+      <label>Glass</label>
+      <div class="custrow"><span>Animated background</span><input type="checkbox" id="glassanim" class="sw"></div>
+      <div class="hint" style="margin-top:4px">The colours drift slowly. Uses a little more battery.</div>
+    </div>
+
     <div class="field" id="customwrap" hidden>
       <label>Custom theme</label>
       <div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>
@@ -556,6 +562,14 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="modes" id="tileicons">
         <button type="button" data-ti="tile">Colourful</button>
         <button type="button" data-ti="accent">Theme colour</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Game icons</label>
+      <div class="modes" id="gameicons">
+        <button type="button" data-gi="icons">Icons</button>
+        <button type="button" data-gi="emoji">Emoji</button>
       </div>
     </div>
 
@@ -1754,7 +1768,7 @@ function renderSkins(){
                   (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
     b.onclick = () => { skin = s.id; set(LS.skin, skin); applyLook();
-                        renderSkins(); renderModes(); renderCustom(); render(); };
+                        renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); };
     return b;
   };
 
@@ -1915,6 +1929,19 @@ $('a_reset').onclick = () => {
   applyLook(); renderA11y(); render();
 };
 
+/* Glass: the moving background (only offered with Glass on); game icons: icons or emoji */
+function renderGlass(){
+  $('glasswrap').hidden = skin !== 'glass';
+  $('glassanim').checked = !!(window.TT && TT.get('tt.glassanim', '') === 'on');
+}
+$('glassanim').addEventListener('change', ev => { set('tt.glassanim', ev.target.checked ? 'on' : ''); applyLook(); });
+function renderGameIcons(){
+  const cur = window.TT && TT.get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons';
+  [...$('gameicons').children].forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.gi === cur));
+    b.onclick = () => { set('tt.gameicons', b.dataset.gi); document.documentElement.setAttribute('data-gameicons', b.dataset.gi); renderGameIcons(); };
+  });
+}
 /* the Home tile icons: a colour each, or the theme's accent (theme.js applies it) */
 function renderTileIcons(){
   const cur = window.TT ? TT.get('tt.tileicons', 'tile') : 'tile';
@@ -1995,7 +2022,7 @@ $('modetoggle').onclick = () => {
 };
 $('settings').onclick = () => {
   paintCycleRow();
-  renderTileIcons();
+  renderTileIcons(); renderGlass(); renderGameIcons();
   $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();

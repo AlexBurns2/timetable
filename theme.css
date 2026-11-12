@@ -99,10 +99,10 @@ select option{ background:#ffffff; color:#16181d; }
 /* ── GLASS ─ frosted tiles over a colour mesh ──────────────────── */
 [data-skin="glass"]{
   --bg:#0d1220;
-  --bg-img:
-    radial-gradient(60vw 60vw at 12% 8%,rgba(120,90,255,.5),transparent 60%),
-    radial-gradient(55vw 55vw at 88% 18%,rgba(0,190,220,.42),transparent 62%),
-    radial-gradient(60vw 60vw at 50% 96%,rgba(255,80,160,.34),transparent 60%);
+  /* a fine grain over colour clouds made from noise (see the note under the glass skin) */
+  --bg-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23g%29'/%3E%3C/svg%3E");
+  --glass-a:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0016 0.0019' numOctaves='2' seed='7' result='n0'/%3E%3CfeColorMatrix in='n0' type='matrix' values='0 0 0 0 0.47 0 0 0 0 0.35 0 0 0 0 1 3.40 0 0 0 -1.70' result='c0'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0018 0.0015' numOctaves='2' seed='19' result='n1'/%3E%3CfeColorMatrix in='n1' type='matrix' values='0 0 0 0 0 0 0 0 0 0.74 0 0 0 0 0.86 3.20 0 0 0 -1.60' result='c1'/%3E%3CfeMerge result='m'%3E%3CfeMergeNode in='c0'/%3E%3CfeMergeNode in='c1'/%3E%3C/feMerge%3E%3CfeGaussianBlur in='m' stdDeviation='10'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");
+  --glass-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0017 0.0017' numOctaves='2' seed='31' result='n0'/%3E%3CfeColorMatrix in='n0' type='matrix' values='0 0 0 0 1 0 0 0 0 0.31 0 0 0 0 0.63 3.00 0 0 0 -1.50' result='c0'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.0018' numOctaves='2' seed='43' result='n1'/%3E%3CfeColorMatrix in='n1' type='matrix' values='0 0 0 0 0.22 0 0 0 0 0.32 0 0 0 0 0.96 2.60 0 0 0 -1.30' result='c1'/%3E%3CfeMerge result='m'%3E%3CfeMergeNode in='c0'/%3E%3CfeMergeNode in='c1'/%3E%3C/feMerge%3E%3CfeGaussianBlur in='m' stdDeviation='10'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");
   --panel:rgba(255,255,255,.09); --panel-2:rgba(255,255,255,.055);
   --line:rgba(255,255,255,.2);
   --text:#f3f5fb; --muted:rgba(233,238,250,.66); --accent:#8ab4ff; --accent-ink:#0a1020;
@@ -117,15 +117,33 @@ select option{ background:#ffffff; color:#16181d; }
 }
 [data-skin="glass"][data-mode="light"]{
   --bg:#dfe4f2;
-  --bg-img:
-    radial-gradient(58vw 58vw at 8% 2%,rgba(124,92,255,.6),transparent 58%),
-    radial-gradient(52vw 52vw at 92% 12%,rgba(0,196,232,.52),transparent 60%),
-    radial-gradient(60vw 60vw at 50% 98%,rgba(255,96,168,.42),transparent 60%);
+  --bg-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.25 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23g%29'/%3E%3C/svg%3E");
+  --glass-a:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0016 0.0019' numOctaves='2' seed='7' result='n0'/%3E%3CfeColorMatrix in='n0' type='matrix' values='0 0 0 0 0.49 0 0 0 0 0.36 0 0 0 0 1 3.40 0 0 0 -1.70' result='c0'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0018 0.0015' numOctaves='2' seed='19' result='n1'/%3E%3CfeColorMatrix in='n1' type='matrix' values='0 0 0 0 0 0 0 0 0 0.77 0 0 0 0 0.91 3.20 0 0 0 -1.60' result='c1'/%3E%3CfeMerge result='m'%3E%3CfeMergeNode in='c0'/%3E%3CfeMergeNode in='c1'/%3E%3C/feMerge%3E%3CfeGaussianBlur in='m' stdDeviation='10'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.62'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");
+  --glass-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0017 0.0017' numOctaves='2' seed='31' result='n0'/%3E%3CfeColorMatrix in='n0' type='matrix' values='0 0 0 0 1 0 0 0 0 0.38 0 0 0 0 0.66 3.00 0 0 0 -1.50' result='c0'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.0018' numOctaves='2' seed='43' result='n1'/%3E%3CfeColorMatrix in='n1' type='matrix' values='0 0 0 0 0.35 0 0 0 0 0.45 0 0 0 0 1 2.60 0 0 0 -1.30' result='c1'/%3E%3CfeMerge result='m'%3E%3CfeMergeNode in='c0'/%3E%3CfeMergeNode in='c1'/%3E%3C/feMerge%3E%3CfeGaussianBlur in='m' stdDeviation='10'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.62'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");
   --panel:rgba(255,255,255,.42); --panel-2:rgba(255,255,255,.28);
   --line:rgba(255,255,255,.9);
   --text:#12162a; --muted:#4a5170; --accent:#4a5cf0; --accent-ink:#fff;
   --tint:30%;
 }
+/* Glass: the colour behind everything is clouds of fractal noise (each colour its own
+   SVG turbulence field, only its peaks showing), not round gradients, so on a wide
+   screen it reads as something random rather than three circles. Drawn small
+   (480×300) and stretched to the window on a fixed layer, which is cheap and
+   smooth; the fine grain on top (--bg-img) keeps it from looking like a blur.
+   Zen mode shows its own wallpaper, so the layer goes there. */
+[data-skin="glass"] body::before,[data-skin="glass"] body::after{content:'';position:fixed;inset:-14%;z-index:-1;pointer-events:none;
+  background:center/cover no-repeat;transform:translateZ(0)}
+[data-skin="glass"] body::before{background-image:var(--glass-a)}
+[data-skin="glass"] body::after{background-image:var(--glass-b)}
+html.zen[data-skin="glass"] body::before,html.zen[data-skin="glass"] body::after{display:none}
+/* Settings → Glass → Animated background: the two layers drift, turn and swell
+   slowly against each other, so the colours move like weather. */
+html[data-glassanim="on"][data-skin="glass"] body::before{animation:glassdriftA 26s ease-in-out infinite alternate}
+html[data-glassanim="on"][data-skin="glass"] body::after{animation:glassdriftB 33s ease-in-out infinite alternate}
+@keyframes glassdriftA{0%{transform:translate3d(0,0,0) scale(1) rotate(0)}50%{transform:translate3d(9%,-7%,0) scale(1.18) rotate(7deg)}100%{transform:translate3d(-8%,7%,0) scale(1.06) rotate(-5deg)}}
+@keyframes glassdriftB{0%{transform:translate3d(0,0,0) scale(1.1) rotate(0)}50%{transform:translate3d(-10%,6%,0) scale(1) rotate(-8deg)}100%{transform:translate3d(7%,-9%,0) scale(1.2) rotate(5deg)}}
+html[data-motion="reduced"][data-skin="glass"] body::before,html[data-motion="reduced"][data-skin="glass"] body::after{animation:none}
+@media (prefers-reduced-motion:reduce){ [data-skin="glass"] body::before,[data-skin="glass"] body::after{animation:none} }
 [data-skin="glass"] .lesson,[data-skin="glass"] .nowcard,
 [data-skin="glass"] .breakbar,[data-skin="glass"] .btn,
 [data-skin="glass"] .topbar,[data-skin="glass"] .arrowbtn,

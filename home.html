@@ -469,7 +469,7 @@ loadForum();
     const stat = !t || !t.done ? 'Play today’s' : t.won ? 'Solved' + (t.streak > 1 ? ' · 🔥 ' + t.streak : '') : 'Done for today';
     const fresh = TT.newsActive && TT.newsActive('game:' + g.id);
     return '<a class="tday' + (t && t.done ? ' done' : '') + '" href="games.html?play=' + g.id + '">' +
-      '<span class="tdico" aria-hidden="true">' + g.ico + '</span>' +
+      '<span class="tdico" aria-hidden="true">' + (window.Icon && Icon.game ? Icon.game(g.id, g.ico) : g.ico) + '</span>' +
       '<span class="tdtext"><span class="tdname"><span class="tdn">' + g.name + '</span>' + (fresh ? '<span class="newpill">New</span>' : '') + '</span>' +
       '<span class="tdstat">' + stat + '</span></span></a>';
   }).join('');

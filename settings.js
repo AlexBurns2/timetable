@@ -30,6 +30,9 @@ host.innerHTML =
     '<form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b">' +
       '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div></div>' +
+      '<div class="field" id="s_glasswrap" hidden><label>Glass</label>' +
+        '<div class="custrow"><span>Animated background</span><input type="checkbox" id="g_glassanim" class="sw"></div>' +
+        '<div class="hint" style="margin-top:4px">The colours drift slowly. Uses a little more battery.</div></div>' +
       '<div class="field" id="s_customwrap" hidden>' +
         '<label>Custom theme</label>' +
         '<div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>' +
@@ -53,6 +56,8 @@ host.innerHTML =
       '</div>' +
       '<div class="field"><label>Home icons</label><div class="modes" id="s_tileic">' +
         '<button type="button" data-ti="tile">Colourful</button><button type="button" data-ti="accent">Theme colour</button></div></div>' +
+      '<div class="field"><label>Game icons</label><div class="modes" id="s_gameic">' +
+        '<button type="button" data-gi="icons">Icons</button><button type="button" data-gi="emoji">Emoji</button></div></div>' +
       '<div class="field"><label>Login</label>' +
         '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
         '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
@@ -119,7 +124,7 @@ function renderSkins(){
     b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('aria-pressed', String(s.id === skin));
     b.innerHTML = '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
-    b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); };
+    b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); renderGlass(); };
     return b;
   };
   const extra = (sign, label, title, open) => {
@@ -239,6 +244,21 @@ function renderTileIcons(){
   });
 }
 
+/* ── glass: the moving background (only shown with Glass on) ── */
+function renderGlass(){
+  $('s_glasswrap').hidden = get(LS.skin, 'plain') !== 'glass';
+  $('g_glassanim').checked = get('tt.glassanim', '') === 'on';
+}
+$('g_glassanim').addEventListener('change', ev => { set('tt.glassanim', ev.target.checked ? 'on' : ''); apply(); });
+/* ── game icons: the duotone set (default) or emoji ── */
+function renderGameIcons(){
+  const cur = get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons';
+  [...$('s_gameic').children].forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.gi === cur));
+    b.onclick = () => { set('tt.gameicons', b.dataset.gi); document.documentElement.setAttribute('data-gameicons', b.dataset.gi); renderGameIcons(); };
+  });
+}
+
 /* ── mode toggle + open/close wiring ── */
 function renderModeBtn(){ $('modetoggle').textContent = get(LS.mode, 'light') === 'dark' ? 'Light mode' : 'Dark mode'; }
 $('modetoggle').onclick = () => { set(LS.mode, get(LS.mode,'light')==='dark'?'light':'dark'); apply(); renderModeBtn(); };
@@ -248,7 +268,7 @@ document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => 
   b.closest('dialog').close(); openSettings(); });
 
 function openSettings(){
-  renderSkins(); renderCustom(); renderTileIcons(); renderCreds(); renderModeBtn();
+  renderSkins(); renderCustom(); renderGlass(); renderTileIcons(); renderGameIcons(); renderCreds(); renderModeBtn();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
   /* finding Settings retires the bubble that points at it; no more bubbles inside */

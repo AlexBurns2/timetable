@@ -98,12 +98,48 @@ function readState(){
   };
 }
 
+/* ── Glass: the colour behind everything ─────────────────────────────
+   Four fields of fractal noise (SVG feTurbulence), one per colour, each showing
+   only where it peaks, softened, drawn small (480×300) and stretched over the
+   window on two fixed layers (theme.css). Low frequency, so each cloud is
+   bigger than the screen and runs off its edges: no centres or outlines to
+   spot. Seeded at random once per page open, so it's never quite the same. */
+const GLASS = {
+  dark:  [[.47, .35, 1, 3.4], [0, .74, .86, 3.2], [1, .31, .63, 3.0], [.22, .32, .96, 2.6]],
+  light: [[.49, .36, 1, 3.4], [0, .77, .91, 3.2], [1, .38, .66, 3.0], [.35, .45, 1, 2.6]]
+};
+/* however the seeds fall, never more colour than this (dark keeps its dark, so
+   text and icons stay readable) */
+const GLASS_CAP = { dark: .5, light: .62 };
+const glassMemo = {};
+function glassClouds(mode, half){
+  const key = mode + half; if (glassMemo[key]) return glassMemo[key];
+  const cols = GLASS[mode].slice(half * 2, half * 2 + 2), rnd = (a, b) => a + Math.random() * (b - a);
+  const f = () => rnd(0.0013, 0.0021).toFixed(4);
+  const parts = cols.map(([r, g, b, k], i) =>
+    "<feTurbulence type='fractalNoise' baseFrequency='" + f() + ' ' + f() + "' numOctaves='2' seed='" + Math.floor(rnd(1, 99999)) + "' result='n" + i + "'/>" +
+    "<feColorMatrix in='n" + i + "' type='matrix' values='0 0 0 0 " + r + ' 0 0 0 0 ' + g + ' 0 0 0 0 ' + b + ' ' + k.toFixed(2) + ' 0 0 0 ' + (-(mode === 'dark' ? 0.45 : 0.47) * k).toFixed(2) + "' result='c" + i + "'/>").join('');
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'><filter id='f' x='0' y='0' width='100%' height='100%'>" +
+    parts + "<feMerge result='m'><feMergeNode in='c0'/><feMergeNode in='c1'/></feMerge><feGaussianBlur in='m' stdDeviation='10'/>" +
+    "<feComponentTransfer><feFuncA type='table' tableValues='0 " + GLASS_CAP[mode] + "'/></feComponentTransfer></filter>" +
+    "<rect width='100%' height='100%' filter='url(#f)'/></svg>";
+  return (glassMemo[key] = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
+}
+
 function apply(state){
   const st = state || readState();
   const root = document.documentElement;
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-tileicons', get('tt.tileicons', 'tile') === 'accent' ? 'accent' : 'tile');   // Home's tile icons
+  root.setAttribute('data-gameicons', get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons');   // games: icons or emoji
+  root.setAttribute('data-glassanim', get('tt.glassanim', '') === 'on' ? 'on' : 'off');               // glass: moving background
+  /* glass: its colour clouds, a new pattern each time a page opens */
+  if (st.skin === 'glass'){
+    const m = st.mode === 'light' ? 'light' : 'dark';
+    root.style.setProperty('--glass-a', glassClouds(m, 0));
+    root.style.setProperty('--glass-b', glassClouds(m, 1));
+  } else { root.style.removeProperty('--glass-a'); root.style.removeProperty('--glass-b'); }
   root.setAttribute('data-mode', st.mode);
   /* Keep native controls (the datalist autocomplete popup, text inputs,
      scrollbars) in step with the effective palette. Without this a dark page

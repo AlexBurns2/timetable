@@ -197,7 +197,7 @@ function gameCard(g, i){
   /* just the icon and the name, the same height everywhere (your records are
      inside each game, and the leaderboards at the bottom of the games page) */
   c.innerHTML = (g.mp ? '<span class="newbanner">Multiplayer</span>' : g.isNew || fresh ? '<span class="newbanner">New</span>' : '') +
-    '<span class="ico">' + g.ico + '</span>' +
+    '<span class="ico">' + (window.Icon && Icon.game ? Icon.game(g.id, g.ico) : g.ico) + '</span>' +
     '<h2>' + g.name + '</h2>' +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
   c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };

@@ -1,35 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="MSCU">
-  <defs>
-    <!-- MS over CU, each row forced to 340 wide (textLength); font size sets the
-         cap height (~70%). 30px border all round. -->
-    <g id="w" font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="236">
-      <text x="30" y="196" textLength="340" lengthAdjust="spacingAndGlyphs">MS</text>
-      <text x="30" y="370" textLength="340" lengthAdjust="spacingAndGlyphs">CU</text>
-    </g>
-    <!-- one slipped band through each row -->
-    <clipPath id="a"><rect x="0" y="0" width="400" height="92"/></clipPath>
-    <clipPath id="b"><rect x="0" y="92" width="400" height="26"/></clipPath>
-    <clipPath id="c"><rect x="0" y="118" width="400" height="168"/></clipPath>
-    <clipPath id="d"><rect x="0" y="286" width="400" height="18"/></clipPath>
-    <clipPath id="e"><rect x="0" y="304" width="400" height="96"/></clipPath>
-    <clipPath id="box"><rect width="400" height="400"/></clipPath>
-  </defs>
-  <rect width="400" height="400" fill="#111"/>
-  <g clip-path="url(#box)">
-    <g clip-path="url(#b)">
-      <use href="#w" x="-20" fill="#ff2e63" opacity=".9"/>
-      <use href="#w" x="22" fill="#08d9d6" opacity=".9"/>
-    </g>
-    <g clip-path="url(#d)">
-      <use href="#w" x="16" fill="#ff2e63" opacity=".9"/>
-      <use href="#w" x="-18" fill="#08d9d6" opacity=".9"/>
-    </g>
-    <use href="#w" fill="#fff" clip-path="url(#a)"/>
-    <use href="#w" x="14" fill="#fff" clip-path="url(#b)"/>
-    <use href="#w" fill="#fff" clip-path="url(#c)"/>
-    <use href="#w" x="-10" fill="#fff" clip-path="url(#d)"/>
-    <use href="#w" fill="#fff" clip-path="url(#e)"/>
-    <rect x="44" y="300" width="70" height="4" fill="#fff" opacity=".85"/>
-    <rect x="280" y="112" width="56" height="4" fill="#08d9d6" opacity=".8"/>
+  <!-- MS over CU, white on steel blue. Each row forced to 356 wide (textLength);
+       a white stroke of the same colour thickens the letters into blocks and
+       closes up the gaps between them. -->
+  <rect width="400" height="400" fill="#3b5f82"/>
+  <g font-family="Archivo Black, Arial Black, Impact, sans-serif" font-size="252" fill="#fff"
+     stroke="#fff" stroke-width="7" stroke-linejoin="miter" letter-spacing="-8">
+    <text x="22" y="196" textLength="356" lengthAdjust="spacingAndGlyphs">MS</text>
+    <text x="22" y="378" textLength="356" lengthAdjust="spacingAndGlyphs">CU</text>
   </g>
 </svg>

@@ -532,3 +532,18 @@ html[data-motion="reduced"] .sitemark.tick{animation:none}
 .footbtn[aria-expanded="true"]{color:var(--accent)}
 .newsfoot{margin:0;padding:12px 18px 16px;border-top:1px solid var(--line);font-size:0.8125rem;color:var(--muted)}
 .newsfoot .footbtn{color:var(--accent);font-size:inherit}
+
+/* Game and subject icons (icons.js Icon.game): the duotone icon, or the emoji
+   (Settings → Game icons). In a colour each, or the accent with Home icons set
+   to Theme colour. On dark backgrounds every icon is mixed a third of the way
+   to white, so the deep blues and violets don't sink into the page. */
+.gi{color:var(--gc,var(--accent))}
+html:not([data-gameicons="emoji"]) .ie{display:none}
+html[data-gameicons="emoji"] .gi{display:none!important}
+html[data-tileicons="accent"] .gi{color:var(--accent)}
+.gamecard .ico .gi{width:2.1rem;height:2.1rem;display:block}
+.tdico .gi{width:1.5rem;height:1.5rem;display:block}
+html[data-mode="dark"]:not([data-tileicons="accent"]) .gi,
+[data-skin="glass"]:not([data-mode="light"]):not([data-tileicons="accent"]) .gi{color:color-mix(in srgb,var(--gc) 64%,#fff)}
+html[data-mode="dark"]:not([data-tileicons="accent"]) .qtile .ico,
+[data-skin="glass"]:not([data-mode="light"]):not([data-tileicons="accent"]) .qtile .ico{color:color-mix(in srgb,var(--tc,var(--accent)) 64%,#fff)}
