@@ -151,7 +151,7 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'quartets', cat:'Timetable', ico:'🧩', name:'Quartets', blurb:'Find the four similar groups of four from your year.' },
+  { id:'quartets', cat:'Timetable', ico:'🍀', name:'Quartets', blurb:'Find the four similar groups of four from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -261,7 +261,7 @@ function boardsSection(grid){
   const sec = document.createElement('section'); sec.className = 'lbboards';
   sec.innerHTML = '<div class="gsec"><h2 class="cathd">Leaderboards</h2><button type="button" class="lbopen">View all</button></div>' +
     '<div class="lbbgrid">' + LB_CAT.map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
-      '<span class="lbbrows"><span class="lbbempty">Loading…</span></span></button>').join('') + '</div>';
+      '<span class="lbbrows">' + LD('Loading…', '', { sm:true }) + '</span></button>').join('') + '</div>';
   grid.appendChild(sec);
   sec.querySelector('.lbopen').onclick = () => openLBSheet();
   sec.querySelectorAll('.lbbcard').forEach(b => b.onclick = () => openLBSheet(b.dataset.b));
@@ -765,7 +765,7 @@ async function mountLB(game){
     '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
     (weekly ? '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
     '<button type="button" class="glbtab" data-p="all">All time</button></div>' : '') + '</div>' +
-    '<div id="glbbody"><p class="how">Loading…</p></div>';
+    '<div id="glbbody">' + LD() + '</div>';
   $('stage').appendChild(panel);
   lbState = { game, period: weekly ? 'week' : 'all', week:null, all:null };
   [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
@@ -788,7 +788,7 @@ function paintLB(){
   const body = $('glbbody'); if (!body || !lbState) return;
   const lb = LB_GAMES[lbState.game];
   const b = lbState.period === 'week' ? lbState.week : lbState.all;
-  if (!b){ body.innerHTML = '<p class="how">Loading…</p>'; return; }
+  if (!b){ body.innerHTML = LD(); return; }
   const rows = b.top || [];
   if (!rows.length && b.meBest == null){ body.innerHTML = '<p class="how">No scores yet. Be the first.</p>'; return; }
   let html = rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
@@ -970,7 +970,7 @@ BUILD.guesswho = host => {
   let alive = true, diff = TT.get('tt.gwdiff', 'myclasses');
 
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
@@ -984,7 +984,7 @@ BUILD.guesswho = host => {
     box.innerHTML =
       '<div class="gwtop"><div class="gwdiffs" id="gwdiffs"></div>' +
       '<div class="gwyou">as <b>' + esc(gwData.viewer) + '</b></div></div>' +
-      '<div id="gwbody"><p class="how">Loading people…</p></div>';
+      '<div id="gwbody">' + LD('Loading people…') + '</div>';
     const dd = document.getElementById('gwdiffs');
     DIFFS.forEach(d => {
       const b = document.createElement('button');
@@ -999,7 +999,7 @@ BUILD.guesswho = host => {
 
   async function load(){
     const body = document.getElementById('gwbody');
-    body.innerHTML = '<p class="how">Loading people…</p>';
+    body.innerHTML = LD('Loading people…');
     let pool;
     try { pool = await poolFor(diff); } catch(err){ body.innerHTML = '<p class="how">Could not load: '+esc(err.message)+'</p>'; return; }
     if (!alive) return;
@@ -1145,7 +1145,7 @@ BUILD.dailyguess = host => {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   async function loadDay(date){       // date=null → today
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     let s;
     try { s = await TT.api('/api/daily', { params: date ? { date } : {} }); }
     catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; return; }
@@ -1247,7 +1247,7 @@ BUILD.dailyguess = host => {
     el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
     if (!open) return;
     if (!arch){
-      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      el.innerHTML = LD();
       try {
         const d = await TT.api('/api/daily', { params:{ archive:1 } });
         arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch || '2026-09-01' };
@@ -1308,7 +1308,7 @@ BUILD.dailyguess = host => {
   }
   async function loadSummary(date){
     const el = document.getElementById('dgsummary'); if (!el) return;
-    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    if (!el.innerHTML) el.innerHTML = LD();
     try { const d = await TT.api('/api/daily', { params:{ date, summary:1 } }); if (alive) renderSummary(el, d.summary, date); }
     catch(e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
@@ -1339,12 +1339,14 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
+/* the loading indicator from theme.js (plain text if it's missing) */
+function LD(text, late, opts){ return window.TT && TT.loader ? TT.loader(text, late, opts) : '<p class="how">' + esc(text || 'Loading…') + '</p>'; }
+
 /* ── Quartets ──────────────────────────────────────────────────────
    Sixteen people from your year and four hidden groups of four, levels 1
    (easiest) to 4. Pick four and check them; four mistakes and it's over.
    Laid out like Daily Guess Who: your streak, the Archive calendar of past
-   days, and Results for how your year went (which opens when you finish and
-   closes again so you can look at your board). The puzzle and its answers
+   days, and how your year went, shown under your board once you finish. The puzzle and its answers
    come from /api/daily?conn=1 (api/_connroute.js); guesses are marked here,
    instantly, and saved in the background. */
 const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
@@ -1359,12 +1361,25 @@ BUILD.quartets = host => {
   const seeded = (list, seed) => { let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const a = list.slice(); for (let i = a.length - 1; i > 0; i--){ h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-  async function loadDay(date){
-    box.innerHTML = '<p class="how">' + (date ? 'Loading…' : 'Loading today’s puzzle. The first one each day takes a few seconds to make.') + '</p>';
-    let s;
+  /* If the puzzle isn't there yet (or the request fails), it asks again by
+     itself, a little later each time, with the loader still showing; there's
+     nothing for the player to press. */
+  let retryTimer = null, tries = 0;
+  async function loadDay(date, again){
+    clearTimeout(retryTimer);
+    if (!again){ tries = 0; box.innerHTML = LD(date ? 'Loading that day…' : 'Loading today’s puzzle…', date ? '' : 'The first one each day takes a few seconds to make.'); }
+    let s = null;
     try { s = await TT.api('/api/daily', { params: Object.assign({ conn:1 }, date ? { date } : {}) }); }
-    catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message || 'Couldn’t load Quartets.') + '</p>'; return; }
-    if (alive) play(s);
+    catch (e){ s = null; }
+    if (!alive) return;
+    if (!s || s.none){
+      tries++;
+      if (tries === 1 && !document.querySelector('#qt .ld'))
+        box.innerHTML = LD(date ? 'Making that day’s puzzle…' : 'Making today’s puzzle…', 'Still working on it…');
+      retryTimer = setTimeout(() => { if (alive) loadDay(date, true); }, Math.min(30000, 2500 * tries));
+      return;
+    }
+    play(s);
   }
   loadDay(null);
 
@@ -1372,41 +1387,42 @@ BUILD.quartets = host => {
     const calOpen = !!(document.getElementById('qtcal') && !document.getElementById('qtcal').hidden);
     return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : longDate(s.date)) + '</b></span>' +
       '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="qtstreak">' + (streak || 0) + '</b></span><span class="dgsp"></span>' +
-      '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button>' +
-      '<button class="dgchip" id="qtsumbtn" type="button" aria-expanded="false" aria-controls="qtsummary"' + (s.none ? ' hidden' : '') + '>Results</button></div>' +
+      '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button></div>' +
       '<div class="dgcal" id="qtcal"' + (calOpen ? '' : ' hidden') + '></div>';
   }
   function wireBar(s){
     $('qtcalbtn').onclick = toggleCal;
-    if ($('qtsumbtn')) $('qtsumbtn').onclick = () => toggleSummary(s.date);
     if (!$('qtcal').hidden) paintCal();
   }
 
   function play(s){
     cur = s;
-    if (s.none){ box.innerHTML = topBar(s, 0) + '<p class="how">No Quartets for this day: there weren’t enough clear groups to make a fair one.</p>'; wireBar(s); return; }
     const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
     const lvOf = new Map(), howOf = new Map();
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
     const r0 = s.result || {};
     let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
-    const CH = s.chances || 6;                       // mistakes allowed
+    const CH = s.chances || 7;                       // mistakes allowed
     const sel = new Set(), tried = new Set();
     /* Hints, worked out from the guesses so far (so a reload keeps them):
-       3 wrong in a row lights up two people from the easiest group still
-       unsolved; a 4th wrong in a row lights up a third from that group. That's
+       2 wrong in a row lights up two people from the easiest group still
+       unsolved; a 3rd wrong in a row lights up a third from that group. That's
        all: two hints a day at most, and if the group is solved before the
        second, the second is used up. */
-    const hintNames = () => {
-      let run = 0, step = 0, hg = null; const got = [];
+    /* and with one mistake left, a last one: two people from another group still
+       unsolved, outlined in blue so it's clear they're a different pair */
+    const hints = () => {
+      let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];
       for (const g of log){
         if (g.every(l => l === g[0])){ got.push(g[0]); run = 0; continue; }
-        run++;
-        if (run === 3 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
-        else if (run === 4 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
+        run++; wrong++;
+        if (run === 2 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
+        else if (run === 3 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
+        if (wrong === CH - 1 && !lg) lg = groups.find(x => !got.includes(x.lv) && x !== hg) || null;
       }
-      if (!hg || found.includes(hg.lv) || step === 3) return [];
-      return seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
+      const gold = !hg || found.includes(hg.lv) || step === 3 ? [] : seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
+      const blue = !lg || found.includes(lg.lv) ? [] : seeded(lg.names, s.date + ':last').slice(0, 2);
+      return { gold, blue, n: gold.length + blue.length };
     };
     let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
 
@@ -1423,7 +1439,8 @@ BUILD.quartets = host => {
     wireBar(s);
 
     const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + (missed ? ' · missed' : '') + '</span><b>' + esc(g.label) + '</b>' +
-      '<span class="qtnames">' + g.names.map(n => esc(n) + (howOf.get(n) ? ' <i>(' + esc(howOf.get(n)) + ')</i>' : '')).join(', ') + '</span></div>';
+      /* each person as a chip, with why they fit beside the name (not small grey text) */
+      '<span class="qtnames">' + g.names.map(n => '<span class="qtp">' + esc(n) + (howOf.get(n) ? '<em>' + esc(howOf.get(n)) + '</em>' : '') + '</span>').join('') + '</span></div>';
     const paintSolved = () => {
       const missed = done && found.length < 4 ? groups.filter(g => !found.includes(g.lv)) : [];
       $('qtsolved').innerHTML = found.map(lv => row(groups.find(g => g.lv === lv), false)).join('') + missed.map(g => row(g, true)).join('');
@@ -1431,9 +1448,9 @@ BUILD.quartets = host => {
     const paintGrid = () => {
       const grid = $('qtgrid');
       grid.hidden = done;
-      const hinted = new Set(hintNames());
-      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (hinted.has(n) ? ' hint' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
-        (hinted.has(n) ? ' title="A hint: the highlighted people are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
+      const h = hints(), gold = new Set(h.gold), blue = new Set(h.blue);
+      grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (gold.has(n) ? ' hint' : blue.has(n) ? ' hint hint2' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
+        (gold.has(n) || blue.has(n) ? ' title="A hint: the people outlined in the same colour are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
       grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
         if (done) return;
         const n = b.dataset.n;
@@ -1507,7 +1524,7 @@ BUILD.quartets = host => {
       tried.add(key);
       const lvs = pick.map(n => lvOf.get(n));
       const right = lvs.every(l => l === lvs[0]);
-      const before = hintNames().length;              // to tell if this guess unlocks a hint
+      const before = hints();                         // to tell if this guess unlocks a hint
       log.push(lvs);
       if (right){
         found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
@@ -1518,8 +1535,9 @@ BUILD.quartets = host => {
         const most = Math.max(...[1, 2, 3, 4].map(l => lvs.filter(x => x === l).length));
         say(most === 3 ? 'One away…' : 'Not a group.', true);
         /* a hint just unlocked: say so (after the shake) */
-        setTimeout(() => { const now = hintNames().length;
-          if (!done && now > before) say(now === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
+        setTimeout(() => { const now = hints(); if (done || now.n <= before.n) return;
+          if (now.blue.length > before.blue.length) say('Last chance: the two people outlined in blue are in the same group.');
+          else say(now.gold.length === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
         $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
           { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
         if (mistakes >= CH){ done = true; SFX.lose(); }
@@ -1530,27 +1548,22 @@ BUILD.quartets = host => {
     };
   }
 
-  /* ── Results: how your year went that day ── */
+  /* ── Results: how your year went that day, under your board once you've finished ── */
   async function openSummary(date){
-    const el = $('qtsummary'), b = $('qtsumbtn'); if (!el) return;
-    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    const el = $('qtsummary'); if (!el) return;
+    el.hidden = false;
     await loadSummary(date);
-  }
-  async function toggleSummary(date){
-    const el = $('qtsummary');
-    if (!el.hidden){ el.hidden = true; $('qtsumbtn').setAttribute('aria-expanded', 'false'); return; }
-    await openSummary(date);
   }
   async function loadSummary(date){
     const el = $('qtsummary'); if (!el) return;
-    if (!el.innerHTML) el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+    if (!el.innerHTML) el.innerHTML = LD();
     try { const d = await TT.api('/api/daily', { params:{ conn:1, date, summary:1 } }); if (alive && el.isConnected) renderSummary(el, d.summary, d.mine || {}); }
     catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
   function renderSummary(el, sum, mine){
     if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const rate = Math.round(sum.solved / sum.played * 100);
-    const keys = Array.from({ length:sum.chances || 6 }, (_, i) => String(i)).concat('lost');
+    const keys = Array.from({ length:sum.chances || 7 }, (_, i) => String(i)).concat('lost');
     const max = Math.max(1, ...keys.map(k => sum.dist[k] || 0));
     const tip = k => { const l = (sum.names || {})[k]; return l && l.length ? ' title="' + esc(l.join(', ')) + '"' : ''; };
     const bar = (label, k, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"' + tip(k) + '><span class="dgbl">' + label + '</span>' +
@@ -1579,7 +1592,7 @@ BUILD.quartets = host => {
     el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
     if (!open) return;
     if (!arch){
-      el.innerHTML = '<p class="how" style="margin:0">Loading…</p>';
+      el.innerHTML = LD();
       try {
         const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } });
         arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch };
@@ -1625,7 +1638,7 @@ BUILD.quartets = host => {
     });
     el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
   }
-  return () => { alive = false; };
+  return () => { alive = false; clearTimeout(retryTimer); };
 };
 
 /* ── Tetris ────────────────────────────────────────────────────────
@@ -2478,7 +2491,7 @@ BUILD.classroom = host => {
   const box = $('cr');
   let alive = true, timer = null;
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
@@ -2644,7 +2657,7 @@ BUILD.chain = host => {
   const RUN_TIME = 90000;
   const clearTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try {
       if (!gwData) gwData = await loadGuessData();
       if (!alive) return;
@@ -2772,7 +2785,7 @@ BUILD.oddone = host => {
   const box = $('oo');
   let alive = true, timer = null;
   (async () => {
-    box.innerHTML = '<p class="how">Loading…</p>';
+    box.innerHTML = LD();
     try { if (!gwData) gwData = await loadGuessData(); if (!alive) return; start(); }
     catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; }
   })();
@@ -3514,7 +3527,7 @@ function lbBoard(box, focusId){
     '<div class="glbhd"><h3 class="lbtitle"></h3>' +
       '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
       '<button type="button" class="glbtab cur" data-p="all">All time</button></div></div>' +
-    '<div class="lbbody"><p class="how">Loading…</p></div>';
+    '<div class="lbbody">' + LD() + '</div>';
   const q = sel => box.querySelector(sel);
   const pick = q('.lbpick');
   LB_CAT.forEach(c => { const b = document.createElement('button');
@@ -3529,7 +3542,7 @@ function lbBoard(box, focusId){
   async function load(){
     const my = ++seq;                         // a slow board can't land over the one picked after it
     q('.lbtitle').textContent = cur.name;
-    const body = q('.lbbody'); body.innerHTML = '<p class="how">Loading…</p>'; data=null;
+    const body = q('.lbbody'); body.innerHTML = LD(); data=null;
     try {
       await siteSettings();
       let d;
@@ -3560,7 +3573,7 @@ function lbBoard(box, focusId){
     if (single){ period='all'; tabs.forEach(t=>t.classList.toggle('cur', t.dataset.p==='all')); }
   }
   function paint(){
-    const body = q('.lbbody'); if (!data){ body.innerHTML='<p class="how">Loading…</p>'; return; }
+    const body = q('.lbbody'); if (!data){ body.innerHTML=LD(); return; }
     const b = period==='week' ? data.week : data.all;
     if (!b){ body.innerHTML='<p class="how">No board.</p>'; return; }
     const rows = b.top || [];
@@ -3616,7 +3629,7 @@ BUILD.admin = host => {
         '<button type="button" class="glbtab" id="admsync" hidden>Sync weekly → all-time</button>' +
         '<button type="button" class="glbtab glbwipe" id="admwipe">Reset board</button></div></div>' +
     '<p class="adminnote" id="admnote"></p>' +
-    '<div id="admbody"><p class="how">Loading…</p></div>';
+    '<div id="admbody">' + LD() + '</div>';
   const pick = $('admpick');
   CATS.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
@@ -3638,7 +3651,7 @@ BUILD.admin = host => {
   }
   async function load(){
     $('admtitle').textContent = cur.name; syncTabsUI();
-    const body = $('admbody'); body.innerHTML = '<p class="how">Loading…</p>'; data = null;
+    const body = $('admbody'); body.innerHTML = LD(); data = null;
     try {
       if (cur.kind === 's'){                       // site-wide switches, read fresh
         /* the server refuses a change from anyone but the owner; this is only so
@@ -4104,7 +4117,7 @@ BUILD.flashcards = host => {
     box.innerHTML =
       '<div class="fcrow"><button class="btn" id="fcback" type="button">← My decks</button></div>' +
       '<div class="diffbar" id="fccats" style="margin-bottom:12px"></div>' +
-      '<div id="fcpublist"><p class="how">Loading…</p></div>';
+      '<div id="fcpublist">' + LD() + '</div>';
     $('fcback').onclick = list;
     let data;
     try { data = await TT.api('/api/decks', { params: browseCat ? { category:browseCat } : {} }); }
@@ -5437,7 +5450,7 @@ function chooseQuestion(t, hist, avoid, tries, rand, today){
        in a large pool were rarely even looked at, whatever they scored. */
     let bs = -Infinity;
     for (let i = 0; i < tries; i++){
-      const c = t.gen(), keyed = !!c.key, sig = t.id+':'+(c.key || c.q), h = hist[sig];
+      const c = tidyStem(t.gen()), keyed = !!c.key, sig = t.id+':'+(c.key || c.q), h = hist[sig];
       const s = sigScore(h, keyed, avoided(sig), rand, today);
       c._sig = sig; c._keyed = keyed;
       if (s > bs){ bs = s; q = c; }
@@ -6042,6 +6055,27 @@ function genWrite(lv){
    example, so they are never offered as distractors. Without it a question like
    "which idea does `class Dog(Animal):` show?" could offer both Inheritance and
    Class, and both would be defensible. */
+
+/* A row's name is written to head its own option ("Filtration", "CPU",
+   "Quotient rule"). Inside a sentence it wants a lower-case first letter,
+   unless it is an acronym or a proper name, and often an article the word
+   alone can't supply. `midTerm` does the case; a row that needs an article
+   carries it in `as` ("a catalyst"), and `termIn` prefers that. Stems that
+   name a term without either say "the term …", which never needs one. */
+const midTerm = n => /^(?:[A-Z]{2,}|Agile|Waterfall|Boolean|Python)\b/.test(n) ? n : n[0].toLowerCase() + n.slice(1);
+const termIn = r => r.as || midTerm(r.n);
+const capFirst = s => s[0].toUpperCase() + s.slice(1);
+/* "a 8 kg mass" should be "an 8 kg mass". A template writes 'a <b>' + m + ' kg'
+   without knowing the range, so the article is repaired afterwards: a number
+   said with a vowel sound first (8…, 11, 18, eleven or eighteen thousand)
+   takes "an". 1100 is read "one thousand one hundred" and keeps "a". */
+const fixArticles = s => typeof s !== 'string' ? s : s.replace(/\b([Aa])((?:\s|<[^>]*>)+)(\d[\d,]*(?:\.\d+)?(?:[\u00a0\u2009 ]\d{3}(?!\d))*)/g,
+  (all, a, gap, num) => {
+    const whole = num.split('.')[0].replace(/[^\d]/g, '');
+    const an = /^8/.test(whole) || /^1[18]$/.test(whole) || /^1[18]\d{3}$/.test(whole);
+    return (an ? a + 'n' : a) + gap + num;
+  });
+const tidyStem = q => { if (q){ q.q = fixArticles(q.q); if (q.note) q.note = fixArticles(q.note); } return q; };
 function termQ(rows, keyp, askDef, askName, askEx){
   const r = pk(rows);
   const safe = rows.filter(x => x !== r && !(r.bad || []).includes(x.n));
@@ -6083,7 +6117,7 @@ function genParadigm(){
   if (Math.random() < 0.28) return bankQ(PARA_EXTRA, 'parax');
   return termQ(PARADIGMS, 'par',
     r => 'Which paradigm <b>' + r.d + '</b>?',
-    r => 'What best describes the <b>' + r.n + '</b> paradigm?',
+    r => 'What best describes the <b>' + midTerm(r.n) + '</b> paradigm?',
     r => 'Which paradigm does this show?' + exBlock(r));
 }
 
@@ -6118,7 +6152,7 @@ const OOPC = [
 function genOOP(){
   return termQ(OOPC, 'oop',
     r => 'Which OOP idea is <b>' + r.d + '</b>?',
-    r => 'In OOP, what does <b>' + r.n + '</b> mean?',
+    r => 'In OOP, what does the term <b>' + midTerm(r.n) + '</b> mean?',
     r => 'Which OOP idea does this show?' + exBlock(r));
 }
 
@@ -6144,7 +6178,7 @@ const OOP_DESIGN = [
 function genOopDesign(){
   return termQ(OOP_DESIGN, 'oopd',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: the development steps ───────────────────── */
@@ -6171,7 +6205,7 @@ function genDevStep(){
   if (Math.random() < 0.3) return bankQ(DEV_EXTRA, 'devx');
   return termQ(DEV_STEPS, 'dev',
     r => 'Which step is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: algorithms ──────────────────────────────── */
@@ -6194,7 +6228,7 @@ const ALGO = [
 function genAlgo(){
   return termQ(ALGO, 'alg',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: data types and structures ───────────────── */
@@ -6219,7 +6253,7 @@ const DATA_T = [
 function genDataType(){
   return termQ(DATA_T, 'dat',
     r => 'Which one is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Programming fundamentals: number systems (fully computed) ─────────── */
@@ -6281,7 +6315,7 @@ const TESTING = [
 function genTestDebug(){
   return termQ(TESTING, 'tst',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Mechatronics: hardware ────────────────────────────────────────────── */
@@ -6303,7 +6337,7 @@ const MECH_HW = [
 function genMechHw(){
   return termQ(MECH_HW, 'mhw',
     r => 'Which component is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── Mechatronics: control ─────────────────────────────────────────────── */
@@ -6332,7 +6366,7 @@ function genMechControl(){
   if (Math.random() < 0.28) return bankQ(MECH_EXTRA, 'mecx');
   return termQ(MECH_CTL, 'mct',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 function genPython(){
@@ -7246,12 +7280,12 @@ function genOhm(){ const k=ri(0,2), I=ri(1,10), R=ri(1,20), V=I*R;
   if(k===1){ const m=physMC(I,'A',[V, rd(R/V,2), V*R]); return {q:'A <b>'+V+' V</b> supply is across a <b>'+R+' Ω</b> resistor. Find the current.', choices:m.choices, answer:m.answer, note:'I = V/R = '+V+'/'+R+' = '+I+' A.'}; }
   const m=physMC(V*I,'W',[V+I, rd(V/I,2), 2*V*I]); return {q:'A device draws <b>'+I+' A</b> at <b>'+V+' V</b>. Find the power.', choices:m.choices, answer:m.answer, note:'P = VI = '+V+'×'+I+' = '+(V*I)+' W.'}; }
 function genResistors(){ const R1=ri(1,12), R2=ri(1,12);
-  if(Math.random()<0.5){ const m=physMC(R1+R2,'Ω',[Math.abs(R1-R2), R1*R2, rd(R1*R2/(R1+R2),2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>series</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Series: '+R1+' + '+R2+' = '+(R1+R2)+' Ω.'}; }
+  if(Math.random()<0.5){ const m=physMC(R1+R2,'Ω',[Math.abs(R1-R2), R1*R2, rd(R1*R2/(R1+R2),2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> are connected in <b>series</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Series: '+R1+' + '+R2+' = '+(R1+R2)+' Ω.'}; }
   /* The wrong options are the mistakes people actually make — adding them as
      if in series, forgetting to flip 1/R at the end, doubling — so most of them
      come out as decimals too. With whole-number distractors the one decimal
      option was the answer every time. */
-  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[rd(1/R1+1/R2,2), rd(2*R1*R2/(R1+R2),2), R1+R2, Math.abs(R1-R2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
+  const rp=rd(R1*R2/(R1+R2),2); const m=physMC(rp,'Ω',[rd(1/R1+1/R2,2), rd(2*R1*R2/(R1+R2),2), R1+R2, Math.abs(R1-R2)]); return {q:'Resistors of <b>'+R1+' Ω</b> and <b>'+R2+' Ω</b> are connected in <b>parallel</b>. Find the total resistance.', choices:m.choices, answer:m.answer, note:'Parallel: R₁R₂/(R₁+R₂) = '+rp+' Ω.'}; }
 function genEfield(){ const V=ri(10,100)*10, d=ri(2,10)/100, E=rd(V/d,0); const m=physMC(E,'V/m',[V*d, rd(d/V,4), V+d]);
   return {q:'Two plates <b>'+d+' m</b> apart have a potential difference of <b>'+V+' V</b>. Find the electric field strength.', choices:m.choices, answer:m.answer, note:'E = V/d = '+V+'/'+d+' = '+E+' V/m.'}; }
 function genMag(){ const B=[0.1,0.2,0.5,1,2][ri(0,4)], I=ri(1,10), L=ri(1,5), F=rd(B*I*L,2); const m=physMC(F,'N',[rd(B+I+L,2), rd(B*I,2), I*L]);
@@ -7307,11 +7341,11 @@ function genSteelFact(){
   if (Math.random() < 0.18) return pk(MICRO_STEEL)();     // a diagram question now and then
   const r = pk(MATS_STEEL), f = pk(['c','key','use','lim','micro']);
   const ask = {
-    c:     [x=>'Which steel has a carbon content of <b>'+x.c+'</b>?',      x=>'What is the typical carbon content of <b>'+x.n+'</b>?'],
-    key:   [x=>'Which steel is <b>'+x.key+'</b>?',                          x=>'Which best describes the properties of <b>'+x.n+'</b>?'],
-    use:   [x=>'Which steel is typically used for <b>'+x.use+'</b>?',       x=>'What is <b>'+x.n+'</b> typically used for?'],
-    lim:   [x=>'Which steel has this main limitation: <b>'+x.lim+'</b>?',   x=>'What is the main limitation of <b>'+x.n+'</b>?'],
-    micro: [x=>'Which slow-cooled steel shows <b>'+x.micro+'</b>?',         x=>'What does the microstructure of <b>'+x.n+'</b> look like after slow cooling?']
+    c:     [x=>'Which steel has a carbon content of <b>'+x.c+'</b>?',      x=>'What is the typical carbon content of <b>'+midTerm(x.n)+'</b>?'],
+    key:   [x=>'Which steel has these properties? <b>'+capFirst(x.key)+'</b>.', x=>'Which best describes the properties of <b>'+midTerm(x.n)+'</b>?'],
+    use:   [x=>'Which steel is typically used for <b>'+x.use+'</b>?',       x=>'What is <b>'+midTerm(x.n)+'</b> typically used for?'],
+    lim:   [x=>'Which steel has this main limitation? <b>'+capFirst(x.lim)+'</b>.', x=>'What is the main limitation of <b>'+midTerm(x.n)+'</b>?'],
+    micro: [x=>'Which slow-cooled steel shows <b>'+x.micro+'</b>?',         x=>'What does the microstructure of <b>'+midTerm(x.n)+'</b> look like after slow cooling?']
   }[f];
   return fieldQ(MATS_STEEL, r, f, ask[0], ask[1], 'steel');
 }
@@ -7342,11 +7376,11 @@ function genIronFact(){
   if (Math.random() < 0.18) return pk(MICRO_IRON)();      // a diagram question now and then
   const r = pk(MATS_IRON), f = pk(['main','key','use','lim','micro']);
   const ask = {
-    main:  [x=>'In which cast iron is the carbon present mainly as <b>'+x.main+'</b>?', x=>'In <b>'+x.n+'</b>, how is most of the carbon present?'],
-    key:   [x=>'Which cast iron has <b>'+x.key+'</b>?',                                  x=>'Which best describes the properties of <b>'+x.n+'</b>?'],
-    use:   [x=>'Which cast iron is typically used for <b>'+x.use+'</b>?',                x=>'What is <b>'+x.n+'</b> typically used for?'],
-    lim:   [x=>'Which cast iron has this main limitation: <b>'+x.lim+'</b>?',            x=>'What is the main limitation of <b>'+x.n+'</b>?'],
-    micro: [x=>'Which cast iron shows <b>'+x.micro+'</b>?',                              x=>'What does the microstructure of <b>'+x.n+'</b> look like?']
+    main:  [x=>'In which cast iron is the carbon present mainly as <b>'+x.main+'</b>?', x=>'In <b>'+midTerm(x.n)+'</b>, how is most of the carbon present?'],
+    key:   [x=>'Which cast iron has these properties? <b>'+capFirst(x.key)+'</b>.',       x=>'Which best describes the properties of <b>'+midTerm(x.n)+'</b>?'],
+    use:   [x=>'Which cast iron is typically used for <b>'+x.use+'</b>?',                x=>'What is <b>'+midTerm(x.n)+'</b> typically used for?'],
+    lim:   [x=>'Which cast iron has this main limitation? <b>'+capFirst(x.lim)+'</b>.',   x=>'What is the main limitation of <b>'+midTerm(x.n)+'</b>?'],
+    micro: [x=>'Which cast iron shows <b>'+x.micro+'</b>?',                              x=>'What does the microstructure of <b>'+midTerm(x.n)+'</b> look like?']
   }[f];
   return fieldQ(MATS_IRON, r, f, ask[0], ask[1], 'iron');
 }
@@ -7380,9 +7414,9 @@ const TREATS = [
 function genTreatFact(){
   const r = pk(TREATS), f = pk(['proc','why','out']);
   const ask = {
-    proc: [x=>'Which process is <b>'+x.proc+'</b>?',        x=>'What does <b>'+x.n+'</b> actually involve?'],
-    why:  [x=>'Which process is done to <b>'+x.why+'</b>?', x=>'Why is <b>'+x.n+'</b> carried out?'],
-    out:  [x=>'Which process produces <b>'+x.out+'</b>?',   x=>'What structure does <b>'+x.n+'</b> produce?']
+    proc: [x=>'Which process is <b>'+x.proc+'</b>?',        x=>'What does <b>'+midTerm(x.n)+'</b> actually involve?'],
+    why:  [x=>'Which process is done to <b>'+x.why+'</b>?', x=>'Why is <b>'+midTerm(x.n)+'</b> carried out?'],
+    out:  [x=>'Which process produces <b>'+x.out+'</b>?',   x=>'What structure does <b>'+midTerm(x.n)+'</b> produce?']
   }[f];
   return fieldQ(TREATS, r, f, ask[0], ask[1], 'treat');
 }
@@ -7395,14 +7429,14 @@ const ENG_PHASE = [
   { n:'Martensite', d:'the hard, distorted body-centred tetragonal structure formed by fast cooling' },
   { n:'Temper carbon', d:'compact graphite clusters formed by the prolonged annealing of white iron' },
   { n:'Graphite', d:'free carbon in a cast iron, appearing as flakes or nodules' },
-  { n:'Grain', d:'a region of the structure with a single crystal orientation' },
-  { n:'Phase', d:'a structurally and chemically distinct region of a material' },
-  { n:'Constituent', d:'a recognisable part of a microstructure, which may contain more than one phase' }
+  { n:'Grain', as:'a grain', d:'a region of the structure with a single crystal orientation' },
+  { n:'Phase', as:'a phase', d:'a structurally and chemically distinct region of a material' },
+  { n:'Constituent', as:'a constituent', d:'a recognisable part of a microstructure, which may contain more than one phase' }
 ];
 function genPhaseFact(){
   const r = pk(ENG_PHASE);
   return fieldQ(ENG_PHASE, r, 'd',
-    x=>'Which term is <b>'+x.d+'</b>?', x=>'What is <b>'+x.n+'</b>?', 'phase');
+    x=>'Which term is <b>'+x.d+'</b>?', x=>'What is <b>'+termIn(x)+'</b>?', 'phase');
 }
 
 const ENG_PROP = [
@@ -7422,7 +7456,7 @@ const ENG_PROP = [
 function genPropFact(){
   const r = pk(ENG_PROP);
   return fieldQ(ENG_PROP, r, 'd',
-    x=>'Which property is <b>'+x.d+'</b>?', x=>'What does <b>'+x.n+'</b> mean?', 'prop');
+    x=>'Which property is <b>'+x.d+'</b>?', x=>'What does <b>'+midTerm(x.n)+'</b> mean?', 'prop');
 }
 
 /* carbon content, pearlite balance and cold work — mixed curated + computed */
@@ -7514,41 +7548,41 @@ const PH_QUANT = [
 function genPhysQuant(mod){
   const rows = PH_QUANT.filter(x => x.m === mod), r = pk(rows), k = ri(0,3);
   if (k === 0)
-    return { q:'Is <b>' + r.n + '</b> a vector or a scalar?', choices:['Vector','Scalar'],
+    return { q:'Is <b>' + midTerm(r.n) + '</b> a vector or a scalar?', choices:['Vector','Scalar'],
       answer: r.vec ? 'Vector' : 'Scalar', key:'phq-v:'+r.n,
       note: r.vec ? 'A vector has direction as well as size.' : 'A scalar has size only, with no direction.' };
   if (k === 1){
     const units = [...new Set(PH_QUANT.map(x => x.u))].filter(u => u !== r.u);
     const m = mc(r.u, shuffle(units));
-    return { q:'What is the SI unit of <b>' + r.n + '</b>?', choices:m.choices, answer:m.answer, key:'phq-u:'+r.n };
+    return { q:'What is the SI unit of <b>' + midTerm(r.n) + '</b>?', choices:m.choices, answer:m.answer, key:'phq-u:'+r.n };
   }
   return fieldQ(PH_QUANT, r, 'd',
-    x=>'Which quantity is <b>'+x.d+'</b>?', x=>'How is <b>'+x.n+'</b> defined?', 'phq');
+    x=>'Which quantity is <b>'+x.d+'</b>?', x=>'How is <b>'+midTerm(x.n)+'</b> defined?', 'phq');
 }
 
 /* ── maths: named rules and terms ──────────────────────────────────────── */
 const MATH_TERMS = [
-  { n:'Derivative', d:'the gradient of the tangent: the instantaneous rate of change' },
-  { n:'Definite integral', d:'the signed area between a curve and the x-axis over an interval' },
-  { n:'Stationary point', d:'a point on a curve where the derivative equals zero' },
-  { n:'Second derivative', d:'the rate of change of the gradient, used to test concavity' },
-  { n:'Factorial n!', d:'the product of every whole number from 1 up to n' },
-  { n:'Permutation ⁿPᵣ', d:'the number of ordered arrangements of r items chosen from n' },
-  { n:'Combination ⁿCᵣ', d:'the number of unordered selections of r items chosen from n' },
-  { n:'Domain', d:'the set of inputs a function accepts' },
-  { n:'Range', d:'the set of outputs a function can produce' },
-  { n:'Asymptote', d:'a line that a graph approaches but never quite reaches' },
-  { n:'Gradient', d:'the change in y divided by the change in x' },
-  { n:'Chain rule', d:'the rule for differentiating one function nested inside another' },
-  { n:'Product rule', d:'the rule for differentiating two functions multiplied together' },
-  { n:'Quotient rule', d:'the rule for differentiating one function divided by another' },
-  { n:'Turning point', d:'a stationary point where the gradient changes sign' },
-  { n:'Constant of integration', d:'the unknown constant added to every indefinite integral' }
+  { n:'Derivative', as:'the derivative', d:'the gradient of the tangent: the instantaneous rate of change' },
+  { n:'Definite integral', as:'a definite integral', d:'the signed area between a curve and the x-axis over an interval' },
+  { n:'Stationary point', as:'a stationary point', d:'a point on a curve where the derivative equals zero' },
+  { n:'Second derivative', as:'the second derivative', d:'the rate of change of the gradient, used to test concavity' },
+  { n:'Factorial n!', as:'n factorial (n!)', d:'the product of every whole number from 1 up to n' },
+  { n:'Permutation ⁿPᵣ', as:'the permutation ⁿPᵣ', d:'the number of ordered arrangements of r items chosen from n' },
+  { n:'Combination ⁿCᵣ', as:'the combination ⁿCᵣ', d:'the number of unordered selections of r items chosen from n' },
+  { n:'Domain', as:'the domain', d:'the set of inputs a function accepts' },
+  { n:'Range', as:'the range', d:'the set of outputs a function can produce' },
+  { n:'Asymptote', as:'an asymptote', d:'a line that a graph approaches but never quite reaches' },
+  { n:'Gradient', as:'the gradient', d:'the change in y divided by the change in x' },
+  { n:'Chain rule', as:'the chain rule', d:'the rule for differentiating one function nested inside another' },
+  { n:'Product rule', as:'the product rule', d:'the rule for differentiating two functions multiplied together' },
+  { n:'Quotient rule', as:'the quotient rule', d:'the rule for differentiating one function divided by another' },
+  { n:'Turning point', as:'a turning point', d:'a stationary point where the gradient changes sign' },
+  { n:'Constant of integration', as:'the constant of integration', d:'the unknown constant added to every indefinite integral' }
 ];
 function genMathTerm(){
   const r = pk(MATH_TERMS);
   return fieldQ(MATH_TERMS, r, 'd',
-    x=>'Which term means <b>'+x.d+'</b>?', x=>'What is <b>'+x.n+'</b>?', 'mterm');
+    x=>'Which term means <b>'+x.d+'</b>?', x=>'What is <b>'+termIn(x)+'</b>?', 'mterm');
 }
 
 function genMoments(){ const F=ri(5,50), d=rd(ri(2,20)/10,1), M=rd(F*d,2); const m=physMC(M,'N·m',[rd(F+d,1), rd(F/d,2), 2*F*d]);
@@ -7640,7 +7674,7 @@ function genSeparation(){
   if (Math.random() < 0.4) return bankQ(MIX_CONCEPT, 'mixc');
   return termQ(SEPARATION, 'sep',
     r => 'Which technique <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── chemistry: balancing equations (Module 2), computed ───────────────── */
@@ -7730,13 +7764,13 @@ const RATE_FACTORS = [
   { n:'Concentration', d:'more particles are packed into the same volume, so collisions happen more often' },
   { n:'Gas pressure', d:'the same particles are forced into a smaller space, raising the collision frequency' },
   { n:'Surface area', d:'more of the solid is exposed, so more particles are available to be hit' },
-  { n:'Catalyst', d:'an alternative reaction pathway with a lower activation energy is provided' }
+  { n:'Catalyst', as:'a catalyst', d:'an alternative reaction pathway with a lower activation energy is provided' }
 ];
 function genRates(){
   if (Math.random() < 0.45)
     return termQ(RATE_FACTORS, 'ratef',
       r => 'Which factor speeds a reaction up because <b>' + r.d + '</b>?',
-      r => 'How does <b>' + r.n + '</b> increase the rate of a reaction?');
+      r => 'How does <b>' + termIn(r) + '</b> increase the rate of a reaction?');
   return bankQ(RATE_C, 'ratec');
 }
 
@@ -7747,16 +7781,16 @@ function genActivity(){
   let i = ri(0, ACTIVITY.length-2), j = ri(i+1, ACTIVITY.length-1);
   const more = ACTIVITY[i], less = ACTIVITY[j];          // earlier in the list = more reactive
   if (k === 0)
-    return { q:'Which metal is <b>more reactive</b>: '+more+' or '+less+'?', choices:shuffle([more,less]),
+    return { q:'Which metal is <b>more reactive</b>: '+more.toLowerCase()+' or '+less.toLowerCase()+'?', choices:shuffle([more,less]),
       answer:more, key:'act-cmp:'+more+'|'+less,
       note:'Activity series (most → least reactive): '+ACTIVITY.join(' > ')+'.' };
   if (k === 1)
-    return { q:'Will <b>'+more+'</b> displace <b>'+less+'</b> from a solution of its salt?', choices:['Yes','No'],
+    return { q:'Will <b>'+more.toLowerCase()+'</b> displace <b>'+less.toLowerCase()+'</b> from a solution of its salt?', choices:['Yes','No'],
       answer:'Yes', key:'act-dis:'+more+'|'+less,
-      note:more+' is above '+less+' in the activity series, so it displaces it.' };
-  return { q:'Will <b>'+less+'</b> displace <b>'+more+'</b> from a solution of its salt?', choices:['Yes','No'],
+      note:more+' is above '+less.toLowerCase()+' in the activity series, so it displaces it.' };
+  return { q:'Will <b>'+less.toLowerCase()+'</b> displace <b>'+more.toLowerCase()+'</b> from a solution of its salt?', choices:['Yes','No'],
     answer:'No', key:'act-nod:'+less+'|'+more,
-    note:less+' is below '+more+' in the activity series, so no reaction occurs.' };
+    note:less+' is below '+more.toLowerCase()+' in the activity series, so no reaction occurs.' };
 }
 
 /* ── chemistry: energy profiles (Module 4) ─────────────────────────────── */
@@ -7825,7 +7859,7 @@ function genThermo(){
   if (Math.random() < 0.45) return genThermoCalc();
   return termQ(THERMO_C, 'thm',
     r => 'Which term means <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* extra wave ideas the syllabus names */
@@ -8192,7 +8226,7 @@ function genStress(){
   if (Math.random() < 0.45) return genStressCalc();
   return termQ(TENSILE_C, 'ten',
     r => 'On a stress–strain curve, which point or term is <b>' + r.d + '</b>?',
-    r => 'Which of these best describes <b>' + r.n + '</b>?');
+    r => 'Which of these best describes the term <b>' + midTerm(r.n) + '</b>?');
 }
 
 /* ── engineering: braking systems ──────────────────────────────────────── */

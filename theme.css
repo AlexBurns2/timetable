@@ -512,3 +512,24 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
    taller on a taller screen, within a range */
 :root{--tile-h:clamp(96px,12vh,132px)}
 @media (max-width:560px){ :root{--tile-h:clamp(92px,11.5vh,112px)} }
+
+/* Loading: a spinner so it's clearly working; after 6 s "still loading", and
+   after 20 s a plain note that something may be wrong. Pure CSS, so it keeps
+   moving even while the page is busy. (TT.loader() in theme.js writes it.) */
+.ld{display:flex;align-items:flex-start;gap:11px;padding:14px 2px;color:var(--muted);font-size:0.875rem;line-height:1.35}
+.ld.sm{padding:2px 0;font-size:0.8125rem;gap:8px}
+.ldspin{flex:none;width:18px;height:18px;margin-top:1px;border-radius:50%;
+  border:2.5px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
+.ld.sm .ldspin{width:14px;height:14px;border-width:2px}
+.ldt{color:var(--text);font-weight:600}
+.ldlate,.ldslow{display:block;font-size:0.78125rem;opacity:0;max-height:0;overflow:hidden}
+.ldlate{animation:ldshow .35s 6s forwards,ldhide .2s 20s forwards}
+.ldslow{animation:ldshow .35s 20s forwards}
+.ldslow b{color:var(--text)}
+@keyframes ldspin{to{transform:rotate(360deg)}}
+@keyframes ldshow{to{opacity:1;max-height:4em;margin-top:3px}}
+@keyframes ldhide{to{opacity:0;max-height:0;margin-top:0}}
+html[data-motion="reduced"] .ldspin{animation-duration:2.4s}
+/* a heading or line that's loading: a small spinner in front of it */
+.ldinline::before{content:'';display:inline-block;vertical-align:-2px;width:12px;height:12px;margin-right:7px;border-radius:50%;
+  border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}

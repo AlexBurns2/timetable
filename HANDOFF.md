@@ -2958,3 +2958,117 @@ data. No icon font or CDN script loads on the live site.
   longer", "starts with Em" and the final "Their name starts Em… Ch…" are all
   allowed. Rounds without a timetable have 9 hints again (8 if a name is too
   short for a two-letter hint).
+
+### 8.74 Quartets v7: British monarchs and first names that are places
+- **"Share a first name with a British king or queen"** (`MONARCH`, hardness
+  2.25): Henry, William, James, Victoria, Charlie/Charles, George, Edward,
+  Elizabeth, Mary, Anne… The "how" names the monarch. It matches 8 people on
+  the real Year 11 list.
+- **"First names that are also places"** (`FPLACE`, hardness 1.75): Georgia,
+  Victoria, Jordan, Sydney, Florence, Brooklyn, Austin… The "how" says what
+  the place is. It matches 4 people on that list, so it's only used in years
+  with 5 or more.
+- **Considered and not added:** Wiggles names, and surnames that could be first
+  names (the user's call).
+
+### 8.75 Quartets made overnight
+- The nightly cron (`api/daily-generate.js`, 14:00 UTC, which is just after
+  midnight in Sydney) now also makes each year's Quartets via
+  `prebuildQuartets` in `_connroute.js`, after Daily Guess Who.
+- It works on two years at a time, with a 45 s budget inside
+  `maxDuration: 60`. Any year it doesn't reach is made by that year's first
+  player, as before. The response lists each year as `ok`, `none`, `skip` or
+  `later`.
+- The cron needs `CRON_SECRET` set in Vercel, as it already did.
+
+### 8.76 Faster loads: a student cache, and one request for Home
+- **`student_cache`** is a copy of the school student directory: email, first
+  name, surname, year. The SQL is in SETUP.md.
+  - The nightly cron refreshes it first (`refreshRosterCache`). It adds and
+    updates rows and never deletes.
+  - `rosterList()` in `_names.js` reads it a page of 1,000 at a time, with a
+    15 min in-memory cache. If the table is missing or more than 36 h old, it
+    falls back to `studentDirectory()` (the school's system).
+  - It's used by `displayNames()` (every route's names), the poll's year lists
+    (`yearMates`), forum's `yearOf`, and Daily Guess Who's candidate list. A
+    function waking up now reads one table instead of the school's whole
+    directory.
+- **Home's first load is one request:** `GET /api/forum?withpoll=1` returns the
+  posts and the poll payload together. The poll part is worked out alongside
+  the posts; if it fails, it's null and the card stays hidden.
+  - home.html starts it straight away (`firstLoad`). `loadForum` takes the posts
+    the first time, and `Poll.mount({ initial })` takes the poll, measuring the
+    server's clock from when the shared request was sent.
+  - Later refreshes are separate, as before, and so is the signed-out view.
+
+### 8.77 Only students who have classes; Quartets icon
+- **No-classes list:** `student_cache.has_classes` marks students the directory
+  lists but whose timetable comes back empty (left, or an old second account,
+  e.g. william.logan3). `null` means not checked yet and counts as having
+  classes. Two more columns are needed; the SQL is in SETUP.md.
+- **How it fills:**
+  - Every night `checkSomeClasses(10 s)` checks a batch: never-checked students
+    first, then anyone not checked in 14 days.
+  - It also learns from Quartets generation (every timetable it reads) and from
+    Daily Guess Who's pick.
+  - `markClasses()` saves results; `hasClassesIn(raw)` decides (an empty array
+    means no classes; an error or odd shape means unknown).
+- **Left out wherever people are picked:**
+  - Quartets: people are filtered, and members need a timetable with real
+    subjects.
+  - Daily Guess Who: the mystery person is checked; if they have no classes,
+    the next in a fixed order is used, up to 6 tries. Their name list is
+    filtered too.
+  - The poll's student options.
+  - `?group=student` (the Guess Who games) and the student finder.
+  - `QUARTETS_VERSION` is now 8.
+- **Icon:** Quartets uses 🍀 (2048 has 🧩).
+
+### 8.78 Quartets: easier-to-read hints
+- **Solved and missed rows:** each person is a chip (dark text on a pale
+  backing, `.qtp`). The "why" (emu, Mg, Kevin Rudd) is a small dark label
+  inside the chip (`.qtp em`), instead of 70%-opacity grey text in brackets.
+- **Missed groups** stay at full strength, marked by a dashed edge (they used to
+  be faded to 80%).
+- **Hinted tiles** get a solid gold outline and a gold dot in the corner. The
+  tile's own background and text are unchanged, so it reads in every theme.
+  The old version was a faint gold tint behind the text.
+
+### 8.79 Quartets: friendlier for newcomers
+- 7 mistakes allowed (`MAX_MISTAKES` = 7; the page's fallback is 7 too).
+  Results bars run 0–6 plus missed.
+- Hints come sooner: 2 wrong guesses in a row highlight two people from the
+  easiest group still unsolved, and a 3rd in a row highlights a third. It's
+  still two hints at most per puzzle.
+
+### 8.80 Quartets: a last-chance hint; results always shown
+- **Last-chance hint.** With one mistake left (after the 6th), two people from
+  another group still unsolved, the easiest one not already hinted, are
+  outlined in blue (`.qttile.hint2`). The message says "Last chance: the two
+  people outlined in blue are in the same group."
+  - `hints()` works out both kinds from the guess log and returns
+    `{ gold, blue, n }`.
+  - The gold hints are unchanged: two people after 2 wrong in a row, a third
+    after 3 in a row.
+- **No Results button.** How the year went is shown under your board once
+  you've finished, and isn't shown before.
+
+### 8.81 Loading indicators everywhere
+- One loader for the whole site: `TT.loader(text, late, { sm })` in theme.js writes it, styles `.ld*` at the end of theme.css. A spinner and what's loading; after 6 s a "still loading" line (or the `late` text); after 20 s "This is taking much longer than usual… wait a little, or reload". Pure CSS timing, so it keeps going while the page is busy. `.ldinline` puts a small spinner in front of a line or button (index's subtitle and Now/Next cards, Home's "more posts", the class-list button, free periods' status line).
+- Used in games.js (`LD()`, hoisted; leaderboard cards, Quartets "Loading today's puzzle…", Guess Who, admin, flashcards), poll.js history, jim.js, mahjong.js, home.html forum, calendar.html. home.html and calendar.html write the same markup statically.
+- `TT.api` now gives up after 70 s (AbortController; `opts.timeout` to change) with "The server took too long to answer", and a failed fetch says "Couldn't reach the server". index.html's timetable fetch does the same, so a stall falls back to the saved copy like any other failure; its subtitle turns to "Still loading. The school's system is slow right now…" after 8 s, and Now/Next say "Loading…" instead of "Nothing scheduled" while there's nothing yet.
+- Preview: `/mock/lag?ms=…&match=…` delays every /api/ answer (or those whose URL contains `match`).
+
+### 8.82 Quartets: a puzzle every day
+- Why "No Quartets for this day" showed: the search gave up after 160 draws (most rejected by the difficulty band, especially with the "skip recent categories" rule) or when its 200-timetable allowance ran out, and the route then **kept the failure** (`groups: []`), so that day stayed empty for good.
+- `_conn.js` now searches tier by tier (`TIERS`): the proper band; the same band ignoring recent categories; two looser bands; any four that work together; name themes only; and name themes trusting the roster when timetables can't be read (school system down, or one timetable for everyone). Each tier keeps the fairness rules (each person fits only their own group, no overlapping groups, no fifth theme in the sixteen). `deadline` (default 40 s) bounds the timetable reading; the last tier reads nothing and always runs. `made.tier` says which tier was used (logged when > 0).
+- Synthetic years: 120/120 made (119 in the proper band, 0 wrong); school API down, half the timetables failing, one timetable for everyone: 20/20 each. Only a year under ~40 people can still fail.
+- `_connroute.js` never keeps a failure: it answers `{ none, retry }` and the page shows "This puzzle couldn't be made just now" with Try again. A day kept empty by the old code is remade when opened (only that empty row is replaced: `update … filter groups eq []`, falling back to its key if the filter doesn't match), is listed in the archive, and the nightly job repairs up to 3 such days per year. `QUARTETS_VERSION` is unchanged, so existing puzzles and results stay.
+- Preview: `/mock/connnone?on=1` makes the mock answer `none`.
+
+### 8.83 Quartets "from 0 people", and nothing is deleted any more
+- Cause: `markClasses` **upserted** `{email, has_classes}` rows into `student_cache` before the nightly job had filled it, and `rosterList()` took any fresh rows as the whole school, so every year came out empty (Quartets made from 0 people; the poll's names and the forum's year lookups were affected too).
+- `rosterList()` now uses only complete rows (name and year), needs at least 50 and a recent `updated_at`; otherwise the school directory, with any `has_classes` known merged in. `markClasses()` only **updates** existing rows (never inserts), and won't save "no classes" when most of a batch came back empty. `noClassesSet()` ignores a list covering over 30% of the school. The stray email-only rows are harmless: they're ignored, and the nightly roster refresh fills in their names.
+- `ensureConn` falls back to the school directory if the roster gives under 40 people in the year.
+- Nothing in Quartets deletes any more (`dropOldVersions` is gone). A day that already has a puzzle, from this version of the generator or an older one, is played as it was made, and its results are read and saved under that day's own key (`pickDay`: a real puzzle, newest version first). The archive, summary and POST all use the day's key. New days are made under the current `QUARTETS_VERSION`.
+- The page never shows a button: if the puzzle isn't there (or the request fails) it asks again by itself, every 2.5 s, then 5 s, and so on up to every 30 s, with the loader showing.

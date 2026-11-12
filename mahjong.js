@@ -35,7 +35,7 @@ const mjNames = l => l.length === 1 ? l[0].name : l.length === 2 ? l[0].name + '
 function mount(host){
   host.innerHTML = '<div class="row"><div><h2>Mahjong</h2><p class="how">Everyone starts on ' + MJ_START.toLocaleString() +
     '. After each game, add points to whoever won and take them from whoever paid.</p></div><span class="score" id="sc"></span></div>' +
-    '<div id="mj"><p class="how">Loading…</p></div>';
+    '<div id="mj">' + (window.TT && TT.loader ? TT.loader('Loading the scores…') : '<p class="how">Loading…</p>') + '</div>';
   const box = $('mj');
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the scores.</p>'; return; }
   let state = null, busy = false;

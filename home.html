@@ -57,7 +57,7 @@
       <button class="btn primary" id="fpost" type="button">Post</button>
     </div>
     <div class="fmsg" id="fmsg"></div>
-    <div class="fposts" id="fposts"><p class="how">Loading…</p></div>
+    <div class="fposts" id="fposts"><div class="ld" role="status"><span class="ldspin" aria-hidden="true"></span><span><span class="ldt">Loading the forum…</span><span class="ldlate">Still loading…</span><span class="ldslow"><b>This is taking much longer than usual.</b> Wait a little, or reload the page.</span></span></div></div>
     <button class="flink fmore" id="fmore" type="button" hidden></button>
   </section>
   </div>
@@ -81,6 +81,10 @@ const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Satur
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CYCLE = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
+/* the forum and this week's poll in one trip, started straight away; the forum
+   and the poll card each take their half the first time they load */
+const firstLoad = signedIn ? { at: Date.now(), p: TT.api('/api/forum', { params:{ withpoll:1 } }) } : null;
+if (firstLoad) firstLoad.p.catch(() => {});
 const userOf = e => String(e || '').toLowerCase().split('@')[0];
 function ownPayload(){
   const c = TT.get('tt.cache', null), cr = TT.get('tt.creds', null);
@@ -279,12 +283,12 @@ let lastPosts = null;
 $('fmore').onclick = () => {
   forumOpen = !forumOpen;
   if (lastPosts) renderForum(lastPosts);
-  else { $('fmore').textContent = 'Loading…'; $('fmore').disabled = true; loadForum(); }
+  else { $('fmore').textContent = 'Loading…'; $('fmore').classList.add('ldinline'); $('fmore').disabled = true; loadForum(); }
   if (!forumOpen) $('forum').scrollIntoView({ block:'nearest' });
 };
 async function loadForum(){
   try {
-    const d = await TT.api('/api/forum');
+    const d = firstLoad && !firstLoad.forumUsed ? (firstLoad.forumUsed = true, await firstLoad.p) : await TT.api('/api/forum');
     lastPosts = d.posts || [];
     renderForum(lastPosts);
   } catch (e){
@@ -303,6 +307,7 @@ function renderForum(posts){
   const more = posts.length - shown.length;
   $('fmore').hidden = !more && !forumOpen || posts.length < 2;
   $('fmore').textContent = forumOpen ? 'Show less' : 'Show ' + more + ' more post' + (more === 1 ? '' : 's');
+  $('fmore').classList.remove('ldinline');
   $('fmore').disabled = false;
   wireForum();
 }
@@ -388,6 +393,8 @@ loadForum();
   if (!window.Poll) { open(); return; }
   Poll.mount(document.getElementById('poll'), {
     signedIn,
+    /* its first load comes with the forum's (see firstLoad); null means it failed */
+    initial: firstLoad ? { at: firstLoad.at, p: firstLoad.p.then(d => d && d.poll ? d.poll : Promise.reject(new Error('no poll'))) } : null,
     onVoted: () => setTimeout(open, 1400),
     onDraw: p => { if (!p || p.voted || (!p.signedOut && !p.canVote)) open(); }
   });

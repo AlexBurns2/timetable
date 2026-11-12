@@ -218,10 +218,30 @@ async function api(path, opts){
   const headers = Object.assign({}, apiHeaders());
   const init = { method: opts.method || 'GET', headers, cache: 'no-store' };
   if (opts.body !== undefined){ headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(opts.body); }
-  const res = await fetch(url, init);
+  /* never hang for ever: give up after 70 s (the server's own limit is 60) */
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), opts.timeout || 70000) : null;
+  if (ctl) init.signal = ctl.signal;
+  let res;
+  try { res = await fetch(url, init); }
+  catch (e){
+    throw new Error(e && e.name === 'AbortError' ? 'The server took too long to answer. Try again in a moment.'
+                                                 : 'Couldn’t reach the server. Check your connection and try again.');
+  } finally { if (timer) clearTimeout(timer); }
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((data && data.error) || (res.status + ' ' + res.statusText));
+  if (!res.ok) throw new Error((data && data.error) || (res.status === 504 ? 'The server took too long to answer. Try again in a moment.' : res.status + ' ' + res.statusText));
   return data;
+}
+/* the loading indicator (styles in theme.css): what's loading, then "still
+   loading" after 6 s and a plain note after 20 s. sm: a compact one. */
+const escHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+function loader(text, late, opts){
+  opts = opts || {};
+  return '<span class="ld' + (opts.sm ? ' sm' : '') + '" role="status" aria-live="polite"><span class="ldspin" aria-hidden="true"></span><span>' +
+    '<span class="ldt">' + escHtml(text || 'Loading…') + '</span>' +
+    (opts.sm ? '' : '<span class="ldlate">' + escHtml(late || 'Still loading…') + '</span>' +
+      '<span class="ldslow"><b>This is taking much longer than usual.</b> The school’s system may be slow right now. Wait a little, or reload the page.</span>') +
+    '</span></span>';
 }
 const myEmail = () => {
   const c = get('tt.creds', null);
@@ -319,7 +339,7 @@ addEventListener('pagehide', () => {
 
 window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
+              apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
                  same as myEmail(), which is whose timetable you are looking at
                  and can be set without ever signing in. */

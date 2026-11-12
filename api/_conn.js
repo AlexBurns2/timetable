@@ -25,7 +25,7 @@
 
 /* The generator's version. Puzzles made by an older one are deleted and made
    again (see _connroute.js); bump this whenever the categories or rules change. */
-export const QUARTETS_VERSION = 6;
+export const QUARTETS_VERSION = 8;
 
 /* ── small word lists (lower case) ─────────────────────────────────── */
 const L = s => s.split(' ');
@@ -69,6 +69,20 @@ const PM_LAST = { rudd:'Kevin Rudd', gillard:'Julia Gillard', abbott:'Tony Abbot
   holt:'Harold Holt', menzies:'Robert Menzies', mcmahon:'William McMahon', gorton:'John Gorton', chifley:'Ben Chifley', curtin:'John Curtin',
   lyons:'Joseph Lyons', hughes:'Billy Hughes', deakin:'Alfred Deakin', barton:'Edmund Barton', cook:'Joseph Cook', fisher:'Andrew Fisher',
   reid:'George Reid', watson:'Chris Watson', bruce:'Stanley Bruce', scullin:'James Scullin', page:'Earle Page', fadden:'Arthur Fadden', mcewen:'John McEwen' };
+/* British kings and queens, by the name people know (Charlie for Charles) */
+const MONARCH = { william:'King William', henry:'King Henry VIII', edward:'King Edward', richard:'King Richard III', john:'King John',
+  george:'King George', james:'King James', charles:'King Charles III', charlie:'King Charles III', victoria:'Queen Victoria',
+  elizabeth:'Queen Elizabeth II', mary:'Queen Mary', anne:'Queen Anne', matilda:'Empress Matilda', stephen:'King Stephen',
+  harold:'King Harold', alfred:'Alfred the Great' };
+/* first names that are also places people would know */
+const FPLACE = { georgia:'a country and a US state', victoria:'an Australian state', jordan:'a country', sydney:'a city', adelaide:'a city',
+  perth:'a city', darwin:'a city', hobart:'a city', florence:'a city in Italy', paris:'a city', london:'a city', rome:'a city', milan:'a city in Italy',
+  york:'a city in England', brooklyn:'part of New York', austin:'a city in Texas', dallas:'a city in Texas', phoenix:'a city in Arizona',
+  denver:'a city in Colorado', madison:'a city in Wisconsin', dakota:'two US states', carolina:'two US states', virginia:'a US state',
+  savannah:'a city in Georgia, USA', india:'a country', kenya:'a country', chelsea:'part of London', camden:'part of London',
+  vienna:'a city in Austria', sofia:'a city in Bulgaria', santiago:'a city in Chile', lima:'a city in Peru', cairo:'a city in Egypt',
+  lincoln:'a city in England', chester:'a city in England', preston:'a city in England', kent:'a county in England', devon:'a county in England',
+  kerry:'a county in Ireland', shannon:'a river in Ireland', asia:'a continent', africa:'a continent', america:'a continent' };
 const BODY_HIDDEN = L('arm leg ear eye lip hip toe chin shin knee nose hand neck back heel nail skin hair lung brow cheek palm wrist ankle thumb');
 const TWO_WORDS = new Set(L('am an as at be by do go he hi if in is it me my no of oh ok on or so to up us we ox ax'));
 const SYMBOLS = new Set(L('He Li Be Ne Na Mg Al Si Cl Ar Ca Fe Co Ni Cu Zn Ag Sn Au Hg Pb Pt Ra Rn Kr Xe Br Mn Cr Ti'));
@@ -94,6 +108,8 @@ export function nameFeatures(first, last){
   else if (ANIMALS.has(l)) add(1, 'animal', 'Surnames that are animals');
   if (PLACES.has(l)) add(1, 'place', 'Surnames that are places');
   if (POP[f]) add(1, 'pop', 'First name shared with a famous singer', POP[f]);
+  if (MONARCH[f]) add(1, 'monarch', 'Share a first name with a British king or queen', MONARCH[f]);
+  if (FPLACE[f]) add(1, 'fplace', 'First names that are also places', FPLACE[f]);
   if (PM_FIRST[f] || PM_LAST[l]) add(1, 'pm', 'Share a name with an Australian prime minister', PM_LAST[l] || PM_FIRST[f]);
   if (f.length === 3) add(1, 'three', 'Three-letter first names');
   if (l.length <= 2) add(1, 'shortsur', 'Two-letter surnames');
@@ -197,7 +213,7 @@ export function tidyTeacher(t){
   const m = s.match(/^([^,]+),\s*(.+)$/);
   return m ? m[2].trim() + ' ' + m[1].trim() : s;
 }
-export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, sampleSize = 36, rosterMax = 8, fetchMax = 200 }){
+export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000 }){
   const senior = Number(year) >= 11;
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   const n = people.length;
@@ -207,28 +223,29 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
   const loadTT = async emails => {
     const want = emails.filter(e => !tts.has(e)).slice(0, Math.max(0, fetchMax - fetches));
     fetches += want.length;
-    await eachLimited(want, 8, async e => { try { tts.set(e, readTimetable(await getTT(e))); } catch { tts.set(e, null); } });
+    await eachLimited(want, 8, async e => { try { const raw = await getTT(e); tts.set(e, readTimetable(raw)); if (onTimetable) onTimetable(e, raw); } catch { tts.set(e, null); } });
   };
 
   /* 1. a sample of timetables: which subjects are common, which classes to read */
   const sample = shuffle(people.map(p => p.email), r).slice(0, sampleSize);
   await loadTT(sample);
   const got = sample.map(e => tts.get(e)).filter(t => t && t.subjects.size);
-  if (got.length < 8) return null;
-  /* if the school API ever handed back one account's timetable for everyone, stop */
+  /* Too few timetables to go on (the school's system is down), or the school API
+     handed back one account's timetable for everyone: no timetable groups today,
+     only name themes, which need no timetables at all. */
   const sigs = new Map(); got.forEach(t => { const k = [...t.codes].sort().join(); sigs.set(k, (sigs.get(k) || 0) + 1); });
-  if (Math.max(...sigs.values()) > got.length / 2) return null;
+  const ttOK = got.length >= 8 && Math.max(...sigs.values()) <= got.length / 2;
   const share = new Map();
   got.forEach(t => t.subjects.forEach(s => share.set(s, (share.get(s) || 0) + 1)));
   const okSubject = s => !TOO_COMMON.test(s) && (share.get(s) || 0) / got.length <= 0.35;
   const classes = new Map();
-  got.forEach(t => t.classes.forEach(c => { if (okSubject(c.subject) && !classes.has(c.code)) classes.set(c.code, c); }));
+  if (ttOK) got.forEach(t => t.classes.forEach(c => { if (okSubject(c.subject) && !classes.has(c.code)) classes.set(c.code, c); }));
   /* rosters for a spread of subjects */
   const bySubj = new Map(); for (const c of classes.values()) (bySubj.get(c.subject) || bySubj.set(c.subject, []).get(c.subject)).push(c);
   const pickCls = []; for (const list of shuffle([...bySubj.values()], r)){ pickCls.push(shuffle(list, r)[0]); if (pickCls.length >= rosterMax) break; }
   /* seniors: the science, extension and language classes too (common or not), so
      "three sciences" and "two extensions" can be read straight off the class lists */
-  if (senior){
+  if (senior && ttOK){
     const extra = new Map();
     got.forEach(t => t.classes.forEach(c => { if ((SCIENCE.test(c.subject) || EXTENSION.test(c.subject) || LANGUAGE.test(c.subject)) &&
       !pickCls.some(x => x.code === c.code) && !extra.has(c.code)) extra.set(c.code, { ...c }); }));
@@ -253,7 +270,7 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
   /* seniors: what whole timetables say. Everyone whose timetable has been read
      counts, and the class lists add more: someone on three science lists takes
      three sciences. How common each is comes from the timetables read. */
-  if (senior){
+  if (senior && ttOK){
     const read = [...tts.entries()].filter(([, t]) => t && t.subjects.size);
     const onLists = (re, k) => { const m = new Map();
       pickCls.forEach(c => { if (c.members && re.test(c.subject)) c.members.forEach(e => { const s = m.get(e) || new Set(); s.add(c.subject); m.set(e, s); }); });
@@ -284,10 +301,40 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
   };
   const first = e => lc(byEmail.get(e).first), last = e => lc(byEmail.get(e).last);
 
+  /* Look for a puzzle tier by tier (TIERS, below): the proper difficulty band
+     first, then looser ones, then any four that work together, and last of all
+     name themes only, which need no timetables. The last always finds one in a
+     real year, so there's a puzzle every day. Each tier gets a fresh fetch
+     allowance on top of what's been read so far, within the time limit. */
+  let best = null, tierUsed = -1;
+  for (let ti = 0; ti < TIERS.length && !best; ti++){
+    const tier = TIERS[ti];
+    if (!tier.names && !ttOK) continue;                                // timetable tiers need timetables
+    const budget = fetches + (ti === 0 ? fetchMax : Math.round(fetchMax / 2));
+    best = await search(tier, budget);
+    if (best) tierUsed = ti;
+  }
+  if (!best) return null;
+  /* level 1 to 4 by how hard each group is */
+  const ordered = best.groups.slice().sort((a, b) => hardness(a.c) - hardness(b.c));
+  return { herrings: best.score, tier: tierUsed, hardness: ordered.reduce((a, g) => a + hardness(g.c), 0), groups: ordered.map((g, i) => ({
+    lv: i + 1, id: g.c.id, label: g.c.label, kind: g.c.kind,
+    emails: g.m,                                                    // kept on the server only, so a later name change shows
+    names: g.m.map(e => byEmail.get(e).name),
+    how: g.m.map(e => g.c.how.get(e) || '')
+  })) };
+
+  async function search(tier, budget){
+  /* names-only, as a last resort: if a timetable can't be read, the roster (which
+     already leaves out anyone known to have no classes) is trusted */
+  const trust = !!tier.trust, late = () => !trust && Date.now() > deadline;   // the last resort runs whatever the time (it reads nothing new)
   let best = null;
-  for (let attempt = 0; attempt < 160 && fetches < fetchMax; attempt++){
-    const chosen = pickFour(usable, r, avoid);
+  const maxTries = trust ? 4000 : tier.any ? 400 : 160;                // the last resort reads nothing, so it can try far more
+  for (let draw = 0, tries = 0; draw < maxTries * 40 && tries < maxTries && !late(); draw++){
+    if (fetches >= budget && !trust) break;
+    const chosen = pickFour(usable, r, avoid, tier);
     if (!chosen) continue;
+    tries++;
     /* four people each, who fit their own group and none of the other three */
     const taken = new Set(), groups = [];
     let ok = true;
@@ -301,15 +348,16 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
       const picked = [];
       for (let i = 0; i < pool.length && picked.length < 4; i += 8){
         const batch = pool.slice(i, i + 8);
-        if (chosen.some(o => o.kind !== 'name')) await loadTT(batch);
+        if (ttOK && fetches < budget && Date.now() < deadline) await loadTT(batch.slice(0, Math.max(0, budget - fetches)));
         for (const e of batch){
           if (picked.length >= 4) break;
-          if (!tts.get(e)) continue;                                         // need their timetable to be sure
+          const t = tts.get(e);
+          if (t ? !t.subjects.size : !trust) continue;                       // need their timetable, and real classes in it
           if (chosen.some(o => o !== c && fits(e, o) !== false)) continue;
           if (picked.some(x => first(x) === first(e) || last(x) === last(e))) continue;
           picked.push(e);
         }
-        if (fetches >= fetchMax) break;
+        if (fetches >= budget && !trust) break;
       }
       if (picked.length < 4){ ok = false; break; }
       picked.forEach(e => taken.add(e)); groups.push({ c, m: picked });
@@ -326,15 +374,8 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
     if (!best || score > best.score) best = { groups, score };
     if (best.score >= 2) break;
   }
-  if (!best) return null;
-  /* level 1 to 4 by how hard each group is */
-  const ordered = best.groups.slice().sort((a, b) => hardness(a.c) - hardness(b.c));
-  return { herrings: best.score, hardness: ordered.reduce((a, g) => a + hardness(g.c), 0), groups: ordered.map((g, i) => ({
-    lv: i + 1, id: g.c.id, label: g.c.label, kind: g.c.kind,
-    emails: g.m,                                                    // kept on the server only, so a later name change shows
-    names: g.m.map(e => byEmail.get(e).name),
-    how: g.m.map(e => g.c.how.get(e) || '')
-  })) };
+  return best;
+  }
 }
 
 /* ── choosing four categories ─────────────────────────────────────
@@ -346,7 +387,7 @@ const HARD = {
   'n:shortsur': 1, 'n:three': 1, 'n:alliter': 1.25, 'n:flower': 1.25, 'n:gem': 1.25, 'n:month': 1.25, 'n:colour': 1.25, 'n:double': 1.5,
   'n:wordsur': 1.5, 'n:wordfirst': 1.5, 'n:job': 1.75, 'n:animal': 1.75, 'n:bird': 1.75, 'n:pop': 1.75,
   /* medium: a bit of knowledge, or a second look */
-  'n:place': 2.25, 'n:pm': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
+  'n:place': 2.25, 'n:fplace': 1.75, 'n:monarch': 2.25, 'n:pm': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
   /* hard: wordplay */
   'n:abc': 3, 'n:element': 3.25, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:hiddenanimal': 3.75, 'n:hiddenbody': 3.75, 'n:anagram': 4 };
 /* a broad kind of subject is easy; one subject is middling; one class or one teacher is the hardest */
@@ -355,13 +396,27 @@ export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'teacher' 
   : c.kind === 'profile' ? PROFILE_HARD[c.id] || 2 : HARD[c.id] || 3;
 const family = c => c.kind === 'profile' ? 'profile' : c.kind !== 'name' ? 'timetable' : hardness(c) <= 2 ? 'theme' : 'wordplay';
 export const BAND = [8.5, 11];                        // the four together (e.g. 1.25 + 2.25 + 3.25 + 3.75 is 10.5)
-function pickFour(usable, r, avoid){
-  const chosen = [], fam = {}, maxTT = r() < .15 ? 3 : 2;              // timetable groups: usually two, now and then three
+/* how picky to be, in order; a day uses the first that finds a puzzle (almost
+   always the first). Even the loosest keeps the rules that make a puzzle fair:
+   each person fits only their own group, no two groups about the same thing,
+   no fifth theme hiding in the sixteen. */
+export const TIERS = [
+  { band: BAND, easiest: 1.75, hardest: 3, avoid: true },               // the proper one
+  { band: BAND, easiest: 1.75, hardest: 3, avoid: false },              // the same, even if a category was used lately
+  { band: [8, 11.5], easiest: 2, hardest: 2.75, avoid: false },
+  { band: [7.5, 12], easiest: 2.25, hardest: 2.5, avoid: false },
+  { any: true, avoid: false },                                          // any four that work together
+  { any: true, avoid: false, names: true },                             // name themes only
+  { any: true, avoid: false, names: true, trust: true }                 // …trusting the roster if timetables can't be read
+];
+function pickFour(usable, r, avoid, tier = TIERS[0]){
+  const chosen = [], fam = {}, maxTT = tier.names ? 0 : r() < .15 ? 3 : 2;   // timetable groups: usually two, now and then three
   const tt = x => x.kind !== 'name', specific = x => x.kind === 'class' || x.kind === 'teacher';
   for (const c of shuffle(usable, r)){
-    if (avoid && avoid.has(c.id) && r() < 0.85) continue;                   // used in the last few days: mostly skipped
+    if (tier.names && c.kind !== 'name') continue;
+    if (tier.avoid && avoid && avoid.has(c.id) && r() < 0.85) continue;     // used in the last few days: mostly skipped
     const f = family(c);
-    if ((fam[f] || 0) >= 2) continue;                                       // no more than two of a kind
+    if ((fam[f] || 0) >= (tier.any ? 3 : 2)) continue;                      // no more than two of a kind
     if (c.kind === 'teacher' && chosen.some(o => o.kind === 'teacher')) continue;
     /* two timetable groups mustn't overlap: "Physics" and "a Physics class", or a Physics teacher */
     const subj = x => x.kind === 'teacher' ? [...x.subjects] : x.subject ? [x.subject] : [];
@@ -375,8 +430,9 @@ function pickFour(usable, r, avoid){
     if (chosen.length === 4) break;
   }
   if (chosen.length < 4) return null;
+  if (tier.any) return chosen;
   const total = chosen.reduce((a, c) => a + hardness(c), 0), easiest = Math.min(...chosen.map(hardness));
   const hardest = Math.max(...chosen.map(hardness));
-  if (total < BAND[0] || total > BAND[1] || easiest > 1.75 || hardest < 3) return null;   // a way in, and a real level 4
+  if (total < tier.band[0] || total > tier.band[1] || easiest > tier.easiest || hardest < tier.hardest) return null;   // a way in, and a real level 4
   return chosen;
 }

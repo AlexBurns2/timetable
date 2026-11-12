@@ -16,6 +16,7 @@
  */
 
 import { fetchAsOwner } from "./timetable.js";
+import { noClassesSet, markClasses, hasClassesIn } from "./_names.js";
 
 /* current date in Sydney as YYYY-MM-DD (the puzzle rolls over at local midnight) */
 export function sydneyDate(d = new Date()) {
@@ -525,10 +526,22 @@ export async function ensurePuzzle(db, year, date) {
   if (error) throw new Error("puzzle read: " + error.message);
   if (row) return date > V2_UNTIL ? withV3Details(db, row, year) : row;
 
-  const roster = await loadYear(year);
+  const none = await noClassesSet();
+  const roster = (await loadYear(year)).filter(p => !none.has(p.email));     // only people with classes here
   if (roster.length < 5) throw new Error("Not enough students in year " + year + " to build a puzzle.");
 
-  const t = roster[hashStr(date + ":" + year) % roster.length];
+  /* the day's person, checked to have classes; if not, the next in a fixed order
+     (the same for whoever gets here first, as the check is remembered) */
+  let t = null; const marks = new Map();
+  for (let k = 0; k < 6 && !t; k++) {
+    const c = roster[(hashStr(date + ":" + year) + k * 7919) % roster.length];
+    let has = null;
+    try { has = hasClassesIn(await fetchAsOwner("/api/timetable/" + encodeURIComponent(c.email))); } catch {}
+    if (has !== null) marks.set(c.email, has);
+    if (has !== false) t = c;
+  }
+  markClasses(marks).catch(() => {});
+  if (!t) t = roster[hashStr(date + ":" + year) % roster.length];
   const parts = t.name.split(/\s+/);
   const first = t.first || parts[0], last = t.first ? t.last : parts.slice(1).join(" ");
   const sameYear = new Set(roster.map(p => p.email).filter(Boolean));

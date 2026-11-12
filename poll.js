@@ -74,9 +74,12 @@ function revealLine(p){
 
 /* ── loading ─────────────────────────────────────────────────────────── */
 async function refresh(first, startAt, again){
-  const t0 = Date.now();
+  let t0 = Date.now();
   let d;
-  try { d = await TT.api('/api/forum', { params:{ poll:1 } }); if (!d || typeof d !== 'object') throw new Error('empty answer'); }
+  /* Home's first load arrives with the forum's (one trip for both) */
+  const shared = first && !again && opts.initial && !opts.initial.used ? opts.initial : null;
+  if (shared){ shared.used = true; t0 = shared.at; }
+  try { d = await (shared ? shared.p : TT.api('/api/forum', { params:{ poll:1 } })); if (!d || typeof d !== 'object') throw new Error('empty answer'); }
   catch (e){
     console.warn('poll:', e.message);
     /* at noon Friday / 9:30 Monday everyone asks at once: keep the card and try again shortly */
@@ -492,7 +495,7 @@ function wire(){
 }
 function history(){
   openSheet('Past polls', async body => {
-    body.innerHTML = '<p class="pnote">Loading…</p>';
+    body.innerHTML = TT.loader ? TT.loader('Loading past polls…') : '<p class="pnote">Loading…</p>';
     try {
       const d = await TT.api('/api/forum', { params:{ poll:'history' } });
       const polls = d.polls || [];

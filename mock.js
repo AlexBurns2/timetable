@@ -517,6 +517,8 @@ const mockSpec = id => MOCK_PAPERS.find(p => p.id === id);
 /* Section I is drawn from the same generators as practice, taking only the
    multiple-choice ones and spreading them across the modules. Section II is
    the authored bank, topped up with short generated parts worth two marks. */
+/* games.js's fixArticles, read inside try for the same reason as hsc.js's hscArticles */
+const mockArticles = s => { try { return fixArticles(s); } catch { return s; } };
 function mockBuild(spec){
   const topics = spec.modules.flatMap(m => m.topics.map(t => ({ gen:t.gen, name:t.name, mod:m.id, modName:m.name })));
   const seen = new Set();
@@ -601,7 +603,7 @@ function mockBuild(spec){
         seen.add(text); it = cand;
       }
       if (!it) continue;
-      it.q = fixMinus(it.q); it.model = fixMinus(it.model); it.guide = it.guide.map(fixMinus);
+      it.q = mockArticles(fixMinus(it.q)); it.model = mockArticles(fixMinus(it.model)); it.guide = it.guide.map(fixMinus);
       it.marks = it.guide.length;
       if (g.marks + it.marks > target) continue;            // never overshoot the question
       used.set(f, (used.get(f) || 0) + 1);

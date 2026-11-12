@@ -932,7 +932,7 @@ let viewWeek = null;           /* 'a' | 'b' -- which cycle week is on screen */
 let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
-let loadError = '', loading = false;
+let loadError = '', loading = false, loadingAt = 0;
 /* set when the school can't be reached and the last saved copy is on screen */
 let staleNote = '';
 let focusIdx = null;           /* click a day heading to spotlight it; null = show all */
@@ -1130,7 +1130,11 @@ async function load(useCache){
     const c = get(LS.cache, null);
     if (c && c.email === email && Date.now() - c.at < 6*60*60*1000){ apply(c.payload); return; }
   }
-  loading = true;
+  loading = true; loadingAt = Date.now();
+  try { render(); } catch {}                                                  // show that it's loading straight away
+  const slowTimer = setTimeout(() => { if (loading) render(); }, 8000);     // "still loading"
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const stall = ctl ? setTimeout(() => ctl.abort(), 70000) : null;        // never wait for ever
   try {
     /* no-store: the browser must always revalidate, otherwise a stale timetable
        can stick around for hours. Vercel's s-maxage still shields the school API. */
@@ -1139,7 +1143,9 @@ async function load(useCache){
       headers['X-School-Email'] = creds.email;
       headers['X-School-Password'] = creds.password;
     }
-    const res = await fetch(endpointUrl(), { headers, cache:'no-store' });
+    let res;
+    try { res = await fetch(endpointUrl(), { headers, cache:'no-store', signal: ctl ? ctl.signal : undefined }); }
+    catch (e){ throw new Error(e && e.name === 'AbortError' ? 'The school’s system took too long to answer.' : 'Couldn’t reach the server. Check your connection.'); }
     const text = await res.text();
     let data = null;
     try { data = JSON.parse(text); } catch {}
@@ -1170,7 +1176,7 @@ async function load(useCache){
       loadError = err.message;
       entries = []; slots = [];
     }
-  } finally { loading = false; }
+  } finally { loading = false; clearTimeout(slowTimer); if (stall) clearTimeout(stall); }
 }
 /* "today at 3:40 pm", "yesterday at 8:05 am", "Mon 19 Oct" */
 function savedWhen(at){
@@ -1224,8 +1230,9 @@ function render(){
   const cycles = DAY_KEYS.map(k => k + week);
 
   $('title').textContent = displayName || 'Timetable';
-  $('sub').textContent = loading ? 'Loading…' : (loadError || staleNote || '');
-  $('sub').className = loadError ? 'err' : (staleNote && !loading ? 'stale' : '');
+  $('sub').textContent = !loading ? (loadError || staleNote || '')
+    : Date.now() - loadingAt > 7900 ? 'Still loading. The school’s system is slow right now…' : 'Loading…';
+  $('sub').className = loading ? 'ldinline' : loadError ? 'err' : (staleNote ? 'stale' : '');
   if (document.activeElement !== $('whoami')){
     $('whoami').value = String(email || '').split('@')[0];
     sizeWhoami();
@@ -1457,6 +1464,10 @@ function renderFull(ctx){
 
 function nowCard(label, e, nowMin, when, weekend){
   const d = el('div','nowcard');
+  if (!e && loading && !entries.length){                     // still fetching: don't claim a free period
+    d.innerHTML = '<div class="lbl">' + label + '</div><div class="subj ldinline">Loading…</div><div class="meta">&nbsp;</div>';
+    return d;
+  }
   if (!e){
     d.innerHTML = '<div class="lbl">' + label + '</div>' +
       '<div class="subj">' + (weekend ? 'Enjoy the weekend' : 'Nothing scheduled') + '</div>' +
@@ -1571,7 +1582,7 @@ $('dclass').onclick = async () => {
   if (!detailEntry) return;
   const btn = $('dclass'), cl = $('classlist');
   if (!cl.hidden){ cl.hidden = true; cl.innerHTML = ''; btn.textContent = 'View class list'; return; }
-  btn.disabled = true; btn.textContent = 'Loading…';
+  btn.disabled = true; btn.textContent = 'Loading…'; btn.classList.add('ldinline');
   try {
     const data = await loadClass(detailEntry.code);
     const people = rosterPeople(data).sort((a,b) => a.name.localeCompare(b.name));
@@ -1598,7 +1609,7 @@ $('dclass').onclick = async () => {
     cl.innerHTML = '<div class="cltitle err">' + esc(err.message) + '</div>';
     cl.hidden = false;
     btn.textContent = 'View class list';
-  } finally { btn.disabled = false; }
+  } finally { btn.disabled = false; btn.classList.remove('ldinline'); }
 };
 $('dclose').onclick = () => $('detail').close();
 /* click the backdrop (outside the card) to close any dialog */
