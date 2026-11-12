@@ -2,12 +2,12 @@
    Credits (Home's footer → a full-screen overlay).
 
    "Made by" in the middle; the two names go round it on an ellipse,
-   opposite each other and always the same size (equal parts), each
-   trailing a little comet of light in its own colour. Behind: slow aurora
-   blobs, twinkling stars drifting up, and the orbit drawn as a faint
-   track. The names spiral out from the middle when it opens. Tap a name
-   for a burst of sparks; moving the mouse tilts the scene a little and
-   leaves a few sparkles. Click anywhere else, the ×, or Esc to close.
+   opposite each other and always the same size (equal parts), each with a
+   faint trail in the page's text colour. Behind: the frosted page, a few
+   stars drifting up and the orbit drawn as a faint track. Clean on purpose:
+   no coloured glows. The names spiral out from the middle when it opens.
+   Tap a name for a burst of sparks; moving the mouse tilts the scene a
+   little. Click anywhere else, the ×, or Esc to close.
 
    The names come from the server (GET /api/forum?credits=1) and only for
    someone signed in, so they aren't in any page's source. Reduced motion:
@@ -44,7 +44,9 @@ function colours(){
   let h = 0, s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
   if (d){ const R = r / 255, G = g / 255, B = b / 255;
     h = mx === R ? ((G - B) / d) % 6 : mx === G ? (B - R) / d + 2 : (R - G) / d + 4; h *= 60; }
-  hues = [a, 'hsl(' + Math.round((h + 150) % 360) + ',' + Math.round(Math.max(.55, s) * 100) + '%,' + Math.round(Math.min(.62, Math.max(.45, l)) * 100) + '%)'];
+  /* one colour for both: the page's text colour (clean, and the same for each name) */
+  ctx.fillStyle = cs.getPropertyValue('--text').trim() || '#fff';
+  hues = [ctx.fillStyle, ctx.fillStyle];
   dark = document.documentElement.getAttribute('data-mode') === 'dark';
   dlg.style.setProperty('--cr1', hues[0]); dlg.style.setProperty('--cr2', hues[1]);
 }
@@ -114,7 +116,7 @@ function frame(now){
       const dx = tr[j].x - x, dy = tr[j].y - y;
       if (Math.abs(dx) < clear && Math.abs(dy) < room) continue;
       const k = 1 - (now - tr[j].t) / 3200;
-      ctx.globalAlpha = Math.max(0, k) * (dark ? .6 : .5) * e; ctx.fillStyle = hues[i % 2];
+      ctx.globalAlpha = Math.max(0, k) * (dark ? .32 : .26) * e; ctx.fillStyle = hues[i % 2];
       ctx.beginPath(); ctx.arc(tr[j].x, tr[j].y, 1.2 + k * 4.5, 0, 6.283); ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -159,7 +161,7 @@ function showNames(list){
   wait.textContent = '';
   list.forEach((nm, i) => {
     const s = document.createElement('span');
-    s.className = 'crname'; s.textContent = nm; s.style.setProperty('--glow', 'var(--cr' + (i % 2 + 1) + ')');
+    s.className = 'crname'; s.textContent = nm;
     s.onclick = ev => { ev.stopPropagation(); const r = s.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, i, 34);
       s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); kick(); };
     stage.appendChild(s); els.push(s);
@@ -186,7 +188,16 @@ async function open(){
 }
 window.Credits = { open };
 if (btn) btn.onclick = open;
-const close = () => { cancelAnimationFrame(raf); raf = 0; if (dlg.open) dlg.close(); };
+/* closing fades it (and the frosted backdrop) out rather than snapping shut */
+let closing = 0;
+const finish = () => { clearTimeout(closing); closing = 0; dlg.classList.remove('out'); cancelAnimationFrame(raf); raf = 0; if (dlg.open) dlg.close(); };
+const close = () => {
+  if (!dlg.open || closing) return;
+  if (still()) return finish();
+  dlg.classList.add('out');
+  closing = setTimeout(finish, 380);
+};
+dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });      // Esc: the same fade
 document.getElementById('crx').onclick = e => { e.stopPropagation(); close(); };
 dlg.addEventListener('click', e => { if (!e.target.closest('a, .crname, .crx')) close(); });
 dlg.addEventListener('close', () => { if (!dlg.open){ cancelAnimationFrame(raf); raf = 0; } });   // (not if it was opened again straight away)

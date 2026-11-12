@@ -3149,3 +3149,7 @@ data. No icon font or CDN script loads on the live site.
 - The clouds are sparser: a field shows only where its noise is above .55 (dark), .52 (light), .53 (custom), so most draws leave the page mostly its own colour with clouds round the edges.
 - **Moving without showing an edge**: the drift no longer turns (a few degrees tips a layer's edge into view on a wide screen); it drifts at most 8% of the layer (inside its 14% margin) and swells.
 - A centre "veil" was tried and removed (it showed as a ring).
+
+### 8.97 Credits: plainer, and a fade on the way out
+- The coloured aurora blobs behind the credits are gone (it read as romantic), the names have no coloured glow, "Made by" only brightens, and the trails and sparks are in the page's text colour (fainter). What's left: the frosted page, a few stars, the faint orbit track, the two names.
+- Closing (click away, ×, or Esc via the dialog's `cancel` event) fades the overlay and its backdrop out over .38 s (`.credits.out`, then `close()`); the backdrop also fades in on open. Instant with reduced motion.

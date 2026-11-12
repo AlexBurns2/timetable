@@ -482,43 +482,40 @@ html[data-tileicons="accent"] .qtile .ico{color:var(--accent)}
 }
 @container hubnav (max-width:20em){ .hubtoday{grid-template-columns:minmax(0,1fr)} }
 
-/* ── Credits: a frosted night sky, names going round "Made by" ─────── */
+/* ── Credits: frosted and plain, names going round "Made by" ─────── */
 .credits{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;
   background:transparent;color:var(--text);overflow:hidden}
 .credits::backdrop{background:color-mix(in srgb,var(--bg) 66%,transparent);backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15)}
 .credits.in{animation:crin .5s ease both}
 @keyframes crin{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:none}}
-.craura{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.craura i{position:absolute;width:52vmax;height:52vmax;border-radius:50%;filter:blur(70px);opacity:.28;mix-blend-mode:normal}
-html[data-mode="dark"] .craura i{opacity:.4}
-.craura i:nth-child(1){left:-14vmax;top:-18vmax;background:radial-gradient(circle,var(--cr1,var(--accent)),transparent 65%);animation:crdrift1 19s ease-in-out infinite alternate}
-.craura i:nth-child(2){right:-16vmax;bottom:-20vmax;background:radial-gradient(circle,var(--cr2,var(--accent)),transparent 65%);animation:crdrift2 23s ease-in-out infinite alternate}
-.craura i:nth-child(3){left:30%;top:35%;width:34vmax;height:34vmax;opacity:.16;background:radial-gradient(circle,var(--cr1,var(--accent)),transparent 70%);animation:crdrift3 17s ease-in-out infinite alternate}
-@keyframes crdrift1{to{transform:translate(18vmax,14vmax) scale(1.15)}}
-@keyframes crdrift2{to{transform:translate(-16vmax,-12vmax) scale(1.2)}}
-@keyframes crdrift3{to{transform:translate(-10vmax,8vmax) scale(.85)}}
-.crsky{position:absolute;inset:0;pointer-events:none}
+.credits[open]::backdrop{animation:crbackin .5s ease both}
+.credits.out{animation:crout .38s ease forwards}
+.credits.out::backdrop{animation:crbackout .38s ease forwards}
+@keyframes crout{from{opacity:1;transform:none}to{opacity:0;transform:scale(.97)}}
+@keyframes crbackin{from{opacity:0}to{opacity:1}}
+@keyframes crbackout{from{opacity:1}to{opacity:0}}
+html[data-mode="dark"] .crsky{position:absolute;inset:0;pointer-events:none}
 .crstage{position:absolute;inset:0;cursor:pointer}
 .crmid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
 .crby{font-size:0.875rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);animation:crbreathe 4.5s ease-in-out 1.4s infinite}
 .crby span{display:inline-block;animation:crletter .5s cubic-bezier(.2,.9,.3,1.4) both}
 @keyframes crletter{from{opacity:0;transform:translateY(10px) scale(.6)}to{opacity:1;transform:none}}
-@keyframes crbreathe{50%{color:var(--text);text-shadow:0 0 18px color-mix(in srgb,var(--cr1,var(--accent)) 55%,transparent)}}
+@keyframes crbreathe{50%{color:var(--text)}}
 .crwait{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:0.875rem;color:var(--muted)}
 .crwait .btn{margin-top:2px}
 .crspin{width:16px;height:16px;border-radius:50%;border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
 .crname{position:absolute;left:50%;top:50%;white-space:nowrap;font-family:var(--font-display);font-weight:700;cursor:pointer;
   font-size:clamp(1.25rem,4.2vw,2rem);letter-spacing:-.01em;will-change:transform;user-select:none;-webkit-user-select:none;
-  text-shadow:0 0 22px color-mix(in srgb,var(--glow,var(--accent)) 45%,transparent),0 0 2px color-mix(in srgb,var(--glow,var(--accent)) 30%,transparent)}
+  text-shadow:none}
 .crname.pop{animation:crpop .45s cubic-bezier(.2,.9,.3,1.5)}
 @keyframes crpop{40%{letter-spacing:.06em}}
 .crfoot{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));margin:0;padding:0 16px;text-align:center;
   font-size:0.78125rem;color:var(--muted);animation:crfade .8s ease 1.4s both}
 @keyframes crfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .crx{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px}
-html[data-motion="reduced"] .credits.in,html[data-motion="reduced"] .craura i,html[data-motion="reduced"] .crby,
+html[data-motion="reduced"] .credits.in,html[data-motion="reduced"] .credits.out,html[data-motion="reduced"] .credits::backdrop,html[data-motion="reduced"] .crby,
 html[data-motion="reduced"] .crby span,html[data-motion="reduced"] .crfoot,html[data-motion="reduced"] .crname.pop{animation:none}
-@media (prefers-reduced-motion:reduce){ .credits.in,.craura i,.crby,.crby span,.crfoot,.crname.pop{animation:none} }
+@media (prefers-reduced-motion:reduce){ .credits.in,.crby,.crby span,.crfoot,.crname.pop{animation:none} }
 
 /* Home: "MSC Unofficial" (the credits are three quick taps away; it shouldn't look like a button) */
 .sitemark{display:inline-block;cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;white-space:nowrap}
