@@ -24,7 +24,7 @@ import { db } from "./_supabase.js";
 import { withName, stripEmails, rosterList, markClasses, hasClassesIn } from "./_names.js";
 import { fetchAsOwner } from "./timetable.js";
 import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
-import { makeQuartets, hashStr, howFor, tidyTeacher, QUARTETS_VERSION } from "./_conn.js";
+import { makeQuartets, hashStr, howFor, tidyTeacher, hardness, QUARTETS_VERSION } from "./_conn.js";
 
 export const CONN_EPOCH = "2026-11-10";        // the first day of Quartets
 const MAX_MISTAKES = 7;
@@ -154,7 +154,16 @@ const nameFromEmail = email => {
 /* How the year went on one day: how many finished and solved it, a bar per
    number of mistakes (with who, for the hover), how many found each group,
    and one person to mention. Names only, by the names people go by. */
-async function summaryFor(pk, date, groups, NAMES) {
+/* How hard each group was meant to be, in words only (1 easy, 2 medium, 3 hard,
+   4 very hard), and the day as a whole against the usual (-1 easier, 0 about
+   usual, 1 harder). No scores or category kinds go out. */
+const rateGroup = h => h <= 1.5 ? 1 : h <= 2.25 ? 2 : h <= 3.25 ? 3 : 4;
+function designOf(stored) {
+  const hs = new Map((stored || []).map(g => [g.lv, hardness({ kind: g.kind, id: g.id })]));
+  const total = [...hs.values()].reduce((a, b) => a + b, 0);
+  return { rated: lv => hs.has(lv) ? rateGroup(hs.get(lv)) : null, day: hs.size === 4 ? (total < 9 ? -1 : total > 10.5 ? 1 : 0) : null };
+}
+async function summaryFor(pk, date, groups, NAMES, stored) {
   const { data } = await db.from("conn_result").select("email, found, mistakes, solved, done, updated_at")
     .eq("year", pk).eq("date", date).eq("done", true).limit(2000);
   const rows = data || [];
@@ -165,14 +174,15 @@ async function summaryFor(pk, date, groups, NAMES) {
     const k = r.solved ? String(Math.min(MAX_MISTAKES - 1, r.mistakes || 0)) : "lost";
     dist[k]++; if (names[k].length < 40) names[k].push(nm(r.email));
   }
-  const found = (groups || []).map(g => ({ lv: g.lv, label: g.label,
+  const design = designOf(stored);
+  const found = (groups || []).map(g => ({ lv: g.lv, label: g.label, rated: design.rated(g.lv),
     found: rows.filter(r => Array.isArray(r.found) && r.found.includes(g.lv)).length }));
   /* one person for the day: the first to solve it without a mistake, or else the first to solve it */
   const solvedRows = rows.filter(r => r.solved).sort((a, b) => String(a.updated_at).localeCompare(String(b.updated_at)));
   const perfect = solvedRows.find(r => !r.mistakes);
   const spotlight = perfect ? { kind: "perfect", name: nm(perfect.email) }
     : solvedRows[0] ? { kind: "first", name: nm(solvedRows[0].email), n: solvedRows[0].mistakes || 0 } : null;
-  return { played: rows.length, solved: solvedRows.length, chances: MAX_MISTAKES, dist, names, found, spotlight };
+  return { played: rows.length, solved: solvedRows.length, chances: MAX_MISTAKES, dist, names, found, spotlight, design: design.day };
 }
 
 /* the nightly job (api/daily-generate.js) makes each year's puzzle ahead of time,
@@ -234,7 +244,7 @@ export async function connRoute(req, res, me, body, NAMES) {
                        : { found: [], log: [], mistakes: 0, solved: false, done: false };
 
     if (req.method === "GET" && req.query.summary) {
-      return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES), mine: result });
+      return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored), mine: result });
     }
     if (req.method === "GET") {
       return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, chances: MAX_MISTAKES, groups, result, streak: await streakFor(me.email, today) });

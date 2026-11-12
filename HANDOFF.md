@@ -3072,3 +3072,17 @@ data. No icon font or CDN script loads on the live site.
 - `ensureConn` falls back to the school directory if the roster gives under 40 people in the year.
 - Nothing in Quartets deletes any more (`dropOldVersions` is gone). A day that already has a puzzle, from this version of the generator or an older one, is played as it was made, and its results are read and saved under that day's own key (`pickDay`: a real puzzle, newest version first). The archive, summary and POST all use the day's key. New days are made under the current `QUARTETS_VERSION`.
 - The page never shows a button: if the puzzle isn't there (or the request fails) it asks again by itself, every 2.5 s, then 5 s, and so on up to every 30 s, with the loader showing.
+
+### 8.85 Quartets results: how hard the day was
+- Results has a folded section (`<details class="qtdiff">`) under "N played · X% solved": "Today's challenge was **hard** on average", which opens to a note and each group with 4 pips and a word (Easy / Medium / Hard / Very hard).
+- With 5 or more finished in the year it's from how they went: the day from solve rate + average mistakes (`(1 - solved) + avg/7`), each group from the share who found it. With fewer, from the design (so it never points at one or two people): `summaryFor` sends `rated` (1–4) per group from `hardness()` and `design` (-1 / 0 / 1) for the day against the usual band. Only these words go out: no scores, ids or kinds. Group names show only once you've finished, as before.
+- Preview: `/mock/connsum?few=1` gives a 3-player summary.
+
+### 8.84 More Quartets name groups
+- Ten new name categories in `api/_conn.js` (word lists, `nameFeatures`, `HARD`); `howFor` picks up their reasons automatically. `QUARTETS_VERSION` unchanged, so they show up on days made from now on.
+  - Easy: `n:long` First names with eight or more letters (1.25), `n:ie` First names ending in -ie (1.5), `n:yend` First names ending in -y (1.5; a deliberate red herring for -ie), `n:son` Surnames ending in -son (1.5).
+  - Knowledge: `n:f1` Share a name with a 2026 F1 driver (2.5). `F1_FIRST`/`F1_LAST` is the 2026 grid: update it (and the label's year) each season.
+  - Wordplay, found anywhere in first + surname: `n:food` A food or drink in their name (3.5), `n:monthhid` A month (Jan, Feb…) hidden in their name (3.5; not for someone actually named a month), `n:schoolhid` A school subject hidden in their name (art, geo, maths…, 3.5), `n:trig` sin, cos, tan or log in their name (3.75), `n:backwards` A name that spells a word backwards (3.75; curated `BACKWARDS` list, e.g. Leon/noel, Reed/deer).
+- Then `n:country` Initials are a country code (3), from `COUNTRY_INIT`: 34 codes that look like the country's English name (AU, NZ, JP, IT, BR...; no DE or CH). The reason shown is e.g. "JP (Japan)". With it: synthetic 120/120, wrong 0, tier 0 85; real year 120/120 in tier 0, wrong 0; names-only 60/60.
+- Checked: synthetic years 120/120, wrong 0, tier 0 unchanged (88); a real year's names 120/120 all in tier 0, wrong 0; names-only fallback 60/60, wrong 0.
+- Tried and left out: four-letter first names (too common, so the "no fifth theme" rule pushed synthetic tier-0 days from 88 to 70); hidden Aussie slang, Aussie animals, Gen Z slang, car brands, numbers, Greek letters; Matildas, Bluey, award, Aussie suburb and brand names (too few matches, or too fuzzy to be exact).

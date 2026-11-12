@@ -1580,9 +1580,47 @@ BUILD.quartets = host => {
     }).join('');
     el.innerHTML = (spot ? '<div class="dgspot">' + spot + '</div>' : '') +
       '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + rate + '%</b> solved</div>' +
+      difficulty(sum, told) +
       '<div class="qtsumcap">Mistakes</div>' +
       '<div class="dgbars">' + keys.map(k => k === 'lost' ? bar('✗', 'lost', true) : bar(k, k)).join('') + '</div>' +
       '<div class="qtsumcap">Who found each group</div><div class="qtfounds">' + groupRows + '</div>';
+  }
+
+  /* How hard the day was, folded away under one line. From how the year went
+     once at least 5 have finished (so it never points at anyone), otherwise from
+     how the puzzle was put together. Words and pips only: no scores, and the
+     groups are only named once you've finished. */
+  function difficulty(sum, told){
+    const CH = sum.chances || 7, n = sum.played || 0, enough = n >= 5;
+    const WORD = ['', 'Easy', 'Medium', 'Hard', 'Very hard'];
+    const day = cur && cur.date === cur.today ? 'Today’s' : 'This day’s';
+    const setAs = { '-1':'set on the easier side', 0:'set at about the usual difficulty', 1:'set on the harder side' }[sum.design];
+    let head, note;
+    if (enough){
+      let m = (sum.dist.lost || 0) * CH;
+      for (let k = 0; k < CH; k++) m += k * (sum.dist[k] || 0);
+      const avg = m / n, solved = sum.solved / n, idx = (1 - solved) + avg / CH;
+      const word = idx < .12 ? 'very easy' : idx < .3 ? 'easy' : idx < .7 ? 'medium' : idx < 1.1 ? 'hard' : 'very hard';
+      head = day + ' challenge was <b>' + word + '</b> on average';
+      note = 'Your year averaged ' + (Math.round(avg * 10) / 10) + ' mistake' + (Math.round(avg * 10) === 10 ? '' : 's') + ', and ' +
+        Math.round(solved * 100) + '% solved it.' + (setAs ? ' It was ' + setAs + '.' : '');
+    } else {
+      head = setAs ? day + ' puzzle was <b>' + setAs.replace(/^set /, '') + '</b>' : day + ' difficulty';
+      note = 'How hard each group was meant to be. Once 5 people have finished, this shows how your year actually went.';
+    }
+    /* each group: from the share who found it when there are enough, else as it was set */
+    const rateOf = g => enough ? (g.found / n >= .85 ? 1 : g.found / n >= .6 ? 2 : g.found / n >= .35 ? 3 : 4) : g.rated;
+    const rows = (sum.found || []).slice().sort((a, b) => a.lv - b.lv).map(g => {
+      const r = rateOf(g);
+      if (!r) return '';
+      return '<div class="qtdrow"><span class="qtfdot" style="background:' + QT_COL[g.lv] + '"></span>' +
+        '<span class="qtfl">' + (told ? esc(g.label) : 'Group ' + g.lv) + '</span>' +
+        '<span class="qtpips" aria-hidden="true">' + [1, 2, 3, 4].map(i => '<i' + (i <= r ? ' class="on" style="background:' + QT_COL[g.lv] + '"' : '') + '></i>').join('') + '</span>' +
+        '<span class="qtdword">' + WORD[r] + '</span></div>';
+    }).join('');
+    const caret = window.Icon && Icon.svg ? Icon.svg('caret-right', 'qtdcaret') : '<span class="qtdcaret qtdtri"></span>';
+    return '<details class="qtdiff"><summary>' + caret + '<span>' + head + '</span></summary>' +
+      '<div class="qtdbody"><div class="qtdnote">' + note + '</div>' + rows + '</div></details>';
   }
 
   /* ── Archive: a month calendar, like Daily Guess Who's ── */

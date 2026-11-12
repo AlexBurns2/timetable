@@ -86,6 +86,35 @@ const FPLACE = { georgia:'a country and a US state', victoria:'an Australian sta
 const BODY_HIDDEN = L('arm leg ear eye lip hip toe chin shin knee nose hand neck back heel nail skin hair lung brow cheek palm wrist ankle thumb');
 const TWO_WORDS = new Set(L('am an as at be by do go he hi if in is it me my no of oh ok on or so to up us we ox ax'));
 const SYMBOLS = new Set(L('He Li Be Ne Na Mg Al Si Cl Ar Ca Fe Co Ni Cu Zn Ag Sn Au Hg Pb Pt Ra Rn Kr Xe Br Mn Cr Ti'));
+/* foods and drinks found inside a name (Graham has ham, Oliver has olive); longest
+   first, so Pearce is pear rather than pea */
+const FOOD_HIDDEN = L('ham egg pea pear bun tea jam rice corn bean lime fig nut oat plum kiwi taco cake tart beef pork chip bread toast honey milk salt mint naan roti pho sushi ramen udon soy tofu kale leek yam olive melon lemon mango apple berry grape peach curry pasta pizza soup stew nori miso fudge scone bagel bacon chilli bao laksa satay pie avo parma snag milo boba chai cola soda latte mocha')
+  .sort((a, b) => b.length - a.length);
+/* the calculator buttons everyone knows from Year 9 */
+const TRIG = L('sin cos tan log');
+const MONTH_SHORT = L('jan feb mar apr may jun jul aug sep oct nov dec');
+/* school subjects the way people say them (George has geo, Stuart has art) */
+const SUBJECT_HIDDEN = L('art geo bio chem math music drama dance latin french');
+/* names that are a word spelled backwards: Leon is noel, Reed is deer, Kramer is remark */
+const BACKWARDS = new Set(L('mia liam leon kay may lia ria pam pat don dom ned nat tam rae tod ewa lee yan nam enid emil neve nevaeh tao dennis kees lin wang ward reed smart tang gan pan yap wolf pool keel bard moor kramer gal mart'));
+/* the 2026 Formula 1 grid, by the names people know them by (update each season) */
+const F1_FIRST = { max:'Max Verstappen', isack:'Isack Hadjar', liam:'Liam Lawson', arvid:'Arvid Lindblad', charles:'Charles Leclerc',
+  lewis:'Lewis Hamilton', george:'George Russell', kimi:'Kimi Antonelli', lando:'Lando Norris', oscar:'Oscar Piastri',
+  fernando:'Fernando Alonso', lance:'Lance Stroll', pierre:'Pierre Gasly', franco:'Franco Colapinto', alex:'Alex Albon',
+  alexander:'Alex Albon', carlos:'Carlos Sainz', esteban:'Esteban Ocon', ollie:'Ollie Bearman', oliver:'Ollie Bearman',
+  nico:'Nico Hülkenberg', gabriel:'Gabriel Bortoleto', sergio:'Sergio Pérez', valtteri:'Valtteri Bottas' };
+const F1_LAST = { verstappen:'Max Verstappen', hadjar:'Isack Hadjar', lawson:'Liam Lawson', lindblad:'Arvid Lindblad',
+  leclerc:'Charles Leclerc', hamilton:'Lewis Hamilton', russell:'George Russell', antonelli:'Kimi Antonelli', norris:'Lando Norris',
+  piastri:'Oscar Piastri', alonso:'Fernando Alonso', stroll:'Lance Stroll', gasly:'Pierre Gasly', colapinto:'Franco Colapinto',
+  albon:'Alex Albon', sainz:'Carlos Sainz', ocon:'Esteban Ocon', bearman:'Ollie Bearman', hulkenberg:'Nico Hülkenberg',
+  bortoleto:'Gabriel Bortoleto', perez:'Sergio Pérez', bottas:'Valtteri Bottas' };
+/* two-letter country codes (.jp, the flag emoji) people would recognise: ones that
+   look like the country's English name, so no DE for Germany or CH for Switzerland */
+const COUNTRY_INIT = { au:'Australia', nz:'New Zealand', us:'USA', uk:'United Kingdom', ca:'Canada', fr:'France', it:'Italy',
+  in:'India', br:'Brazil', jp:'Japan', cn:'China', kr:'South Korea', mx:'Mexico', nl:'Netherlands', sg:'Singapore',
+  ph:'Philippines', th:'Thailand', vn:'Vietnam', pk:'Pakistan', gr:'Greece', pt:'Portugal', pl:'Poland', ar:'Argentina',
+  eg:'Egypt', fj:'Fiji', id:'Indonesia', my:'Malaysia', ng:'Nigeria', ke:'Kenya', cl:'Chile', co:'Colombia', ru:'Russia',
+  tr:'Turkey', ie:'Ireland' };
 
 const sortKey = w => w.split('').sort().join('');
 const WORD_KEYS = new Map(); for (const w of WORDS) if (!WORD_KEYS.has(sortKey(w))) WORD_KEYS.set(sortKey(w), w);
@@ -111,7 +140,13 @@ export function nameFeatures(first, last){
   if (MONARCH[f]) add(1, 'monarch', 'Share a first name with a British king or queen', MONARCH[f]);
   if (FPLACE[f]) add(1, 'fplace', 'First names that are also places', FPLACE[f]);
   if (PM_FIRST[f] || PM_LAST[l]) add(1, 'pm', 'Share a name with an Australian prime minister', PM_LAST[l] || PM_FIRST[f]);
+  if (F1_FIRST[f] || F1_LAST[l]) add(1, 'f1', 'Share a name with a 2026 F1 driver', F1_LAST[l] || F1_FIRST[f]);
   if (f.length === 3) add(1, 'three', 'Three-letter first names');
+  if (f.length >= 8) add(1, 'long', 'First names with eight or more letters', f.length + ' letters');
+  /* the same sound, spelt two ways: a nice pair of red herrings */
+  if (f.length >= 3 && f.endsWith('ie')) add(1, 'ie', 'First names ending in -ie');
+  else if (f.length >= 3 && f.endsWith('y')) add(1, 'yend', 'First names ending in -y');
+  if (l.length >= 5 && l.endsWith('son')) add(1, 'son', 'Surnames ending in -son');
   if (l.length <= 2) add(1, 'shortsur', 'Two-letter surnames');
   if (f.length >= 4 && f[0] === f[f.length - 1]) add(4, 'bookend', 'First name starts and ends with the same letter', f[0].toUpperCase() + '…' + f[0]);
   if (/(.)\1/.test(f)) add(1, 'double', 'A double letter in their first name', (f.match(/(.)\1/) || [''])[0]);
@@ -136,6 +171,19 @@ export function nameFeatures(first, last){
   if (f.length >= 3 && f[f.length - 1] === l[0]) add(4, 'chain', 'First name ends with the letter their surname starts with',
     f[f.length - 1].toUpperCase());
   if (TWO_WORDS.has(f[0] + l[0])) add(4, 'initword', 'Initials spell a word', (f[0] + l[0]).toUpperCase());
+  const country = COUNTRY_INIT[f[0] + l[0]];
+  if (country) add(4, 'country', 'Initials are a country code', (f[0] + l[0]).toUpperCase() + ' (' + country + ')');
+  /* more things to find inside the whole name */
+  const food = FOOD_HIDDEN.find(w => whole.includes(w));
+  if (food) add(4, 'food', 'A food or drink in their name', food);
+  const trig = TRIG.find(w => whole.includes(w));
+  if (trig) add(4, 'trig', 'sin, cos, tan or log in their name', trig);
+  const mon = !MONTHS.has(f) && !MONTHS.has(l) && MONTH_SHORT.find(m => whole.includes(m));
+  if (mon) add(4, 'monthhid', 'A month (Jan, Feb…) hidden in their name', mon[0].toUpperCase() + mon.slice(1));
+  const subj = SUBJECT_HIDDEN.find(s => whole.includes(s));
+  if (subj) add(4, 'schoolhid', 'A school subject hidden in their name', subj);
+  const back = [f, l].find(x => BACKWARDS.has(x));
+  if (back) add(4, 'backwards', 'A name that spells a word backwards', rev(back));
   return out;
 }
 
@@ -386,10 +434,12 @@ const HARD = {
   /* easy: you can see it in the name */
   'n:shortsur': 1, 'n:three': 1, 'n:alliter': 1.25, 'n:flower': 1.25, 'n:gem': 1.25, 'n:month': 1.25, 'n:colour': 1.25, 'n:double': 1.5,
   'n:wordsur': 1.5, 'n:wordfirst': 1.5, 'n:job': 1.75, 'n:animal': 1.75, 'n:bird': 1.75, 'n:pop': 1.75,
+  'n:long': 1.25, 'n:ie': 1.5, 'n:yend': 1.5, 'n:son': 1.5,
   /* medium: a bit of knowledge, or a second look */
-  'n:place': 2.25, 'n:fplace': 1.75, 'n:monarch': 2.25, 'n:pm': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
+  'n:place': 2.25, 'n:fplace': 1.75, 'n:monarch': 2.25, 'n:pm': 2.5, 'n:f1': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
   /* hard: wordplay */
-  'n:abc': 3, 'n:element': 3.25, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:hiddenanimal': 3.75, 'n:hiddenbody': 3.75, 'n:anagram': 4 };
+  'n:abc': 3, 'n:country': 3, 'n:element': 3.25, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:food': 3.5, 'n:monthhid': 3.5, 'n:schoolhid': 3.5,
+  'n:hiddenanimal': 3.75, 'n:hiddenbody': 3.75, 'n:trig': 3.75, 'n:backwards': 3.75, 'n:anagram': 4 };
 /* a broad kind of subject is easy; one subject is middling; one class or one teacher is the hardest */
 const PROFILE_HARD = { 'p:tech': 1.25, 'p:arts': 1.25, 'p:lang': 1.25, 'p:nomaths': 1.5, 'p:nosci': 1.5, 'p:sci3': 2, 'p:ext2': 2 };
 export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'teacher' ? 3.5 : c.kind === 'class' ? 3.75
