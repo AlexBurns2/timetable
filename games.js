@@ -8439,7 +8439,7 @@ BUILD.hkmj = host => {
   return () => { removeEventListener('resize', fit); host.innerHTML = ''; host.style.cssText = ''; };
 };
 
-/* Opened from another page, e.g. Andre's page showing a game in a frame:
+/* Opened from another page, e.g. the beta page showing a game in a frame:
    games.html?play=snake goes straight to that game, and &embed=1 leaves out
    this page's own header and back button, since the frame has its own. (The
    check is on GAMES, not BUILD: jim.js adds its game after this file runs,

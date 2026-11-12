@@ -7,16 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261109">
+<link rel="stylesheet" href="theme.css?v=20261112">
 <script src="theme.js"></script>
-<script src="icons.js?v=20261109"></script>
+<script src="icons.js?v=20261112"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/x-icon" href="/images/icon.png">
-<link rel="stylesheet" href="site.css?v=20261109">
-<link rel="stylesheet" href="settings.css?v=20261109">
-<link rel="stylesheet" href="poll.css?v=20261109">
+<link rel="stylesheet" href="site.css?v=20261112">
+<link rel="stylesheet" href="settings.css?v=20261112">
+<link rel="stylesheet" href="poll.css?v=20261112">
 </head>
 <body>
 <div class="wrap hub">
@@ -25,7 +25,7 @@
   <header class="hubbar">
     <div class="hubin">
       <div class="hubid">
-        <div class="eyebrow">MSC Unofficial</div>
+        <div class="eyebrow sitemark" id="sitemark">MSC Unofficial</div>
         <h1 id="hello">Welcome</h1>
         <p class="hubsub" id="hubsub">Your timetable, revision and games.</p>
       </div>
@@ -71,10 +71,9 @@
   <footer class="hubfoot">
     <span class="footlinks">
       <button type="button" class="footbtn" id="newsbtn">What’s new<span class="newsdot" id="newsdot" hidden></span></button>
-      <button type="button" class="footbtn" id="creditsbtn">Credits</button>
     </span>
-    <!-- Andre's redesign sandbox lives on its own at /andre/: an add-on, not part of this site -->
-    <a href="/andre/">Try the new website beta (work in progress) →</a>
+    <!-- the redesign beta lives on its own at /beta/: an add-on, not part of this site -->
+    <a href="/beta/">Try the new website beta (work in progress) →</a>
   </footer>
 
   <dialog class="newsdlg" id="newsdlg" aria-labelledby="newshd">
@@ -183,9 +182,37 @@ function setHello(full, short){ const h = $('hello'); h.dataset.full = full; h.d
 function setSub(full, short){ const h = $('hubsub'); h.dataset.full = full; h.dataset.short = short || full; h.textContent = full; }
 const DAY3 = d => DAYS[d.getDay()].slice(0, 3);
 const MON3 = d => MONTHS[d.getMonth()].slice(0, 3);
+/* ── the greeting ─────────────────────────────────────────────────────
+   Usually "Good morning". Now and then something else, short and plain:
+   "Morning", "Early start", "Still up", "New week" on a Monday morning,
+   "Nearly the weekend" on a Friday afternoon, "Welcome back" after a week
+   away. Picked once for each part of the day, so it doesn't change on every
+   reload. When you last came is kept with your account (tt.hello_last). */
+const hashStr = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h; };
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function greeting(now){
+  const h = now.getHours(), dow = now.getDay(), today = ymd(now);
+  const last = TT.get('tt.hello_last', '') || '';
+  const dayN = s => { const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? Date.UTC(+m[1], m[2] - 1, +m[3]) / 864e5 : null; };
+  const away = dayN(last) == null ? null : dayN(today) - dayN(last);
+  if (last !== today) TT.set('tt.hello_last', today);
+  const slot = h < 5 ? 'n' : h < 12 ? 'm' : h < 17 ? 'a' : 'e';
+  const pick = list => list[hashStr(today + slot) % list.length];
+  const good = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  if (away != null && away >= 7) return 'Welcome back';
+  if (h < 5) return pick(['Still up', 'Late one']);
+  if (h < 7) return pick(['Early start', 'Up early']);
+  if ((dow === 0 || dow === 6) && h < 18) return pick([good, good, 'Happy ' + DAYS[dow]]);
+  if (dow === 1 && h < 12) return pick([good, 'New week']);
+  if (dow === 5 && h >= 12 && h < 17) return pick([good, 'Nearly the weekend']);
+  if (h < 12) return pick([good, good, 'Morning', 'Good to see you']);
+  if (h < 17) return pick([good, good, 'Afternoon']);
+  if (h < 22) return pick([good, good, 'Evening']);
+  return pick([good, 'Late one']);
+}
 function paintHub(){
   const now = new Date();
-  const part = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const part = signedIn ? greeting(now) : 'Welcome';
   const payload = signedIn ? ownPayload() : null;
   const first = String(profileOf(payload).firstname || '').trim();
   const date = DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
@@ -199,7 +226,8 @@ function paintHub(){
       '<a class="btn primary" href="./">Sign in</a></div>';
     return;
   }
-  setHello(part + (first ? ', ' + first : ''), part.replace(/^Good (\w)/, (m, c) => c.toUpperCase()) + (first ? ', ' + first : ''));
+  setHello(part + (first ? ', ' + first : ''),
+           /^Good /.test(part) ? part.replace(/^Good (\w)/, (m, c) => c.toUpperCase()) + (first ? ', ' + first : '') : part);
   const shortDate = DAY3(now) + ' ' + now.getDate() + ' ' + MON3(now);
   if (!payload){
     setSub(date, shortDate);
@@ -411,8 +439,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261109"></script>
-<script src="poll.js?v=20261109"></script>
+<script src="settings.js?v=20261112"></script>
+<script src="poll.js?v=20261112"></script>
 <script src="credits.js?v=20261112"></script>
 <script>
 /* ── Today: the two daily games, and where you are with them ─────────────
@@ -437,6 +465,36 @@ loadForum();
   const tile = document.getElementById('tileGames');
   const other = (TT.NEWS || []).some(n => n.key && /^game:/.test(n.key) && !DAILY.some(g => 'game:' + g.id === n.key) && TT.newsActive(n.key));
   if (tile && other && !tile.classList.contains('locked')) tile.insertAdjacentHTML('beforeend', '<span class="newpill tilepill">New</span>');
+})();
+
+/* ── for those who look ───────────────────────────────────────────────
+   "MSC Unofficial" at the top, tapped three times quickly: the credits (it
+   doesn't look like a button, and isn't one). Once in a while, a few seconds
+   in, the same words flicker into something else and back. */
+(function(){
+  const mark = document.getElementById('sitemark'); if (!mark) return;
+  const calm = () => document.documentElement.getAttribute('data-motion') === 'reduced' ||
+    (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let taps = [];
+  mark.addEventListener('click', () => {
+    const t = Date.now(); taps = taps.filter(x => t - x < 1300); taps.push(t);
+    mark.classList.remove('tick'); void mark.offsetWidth; mark.classList.add('tick');
+    if (taps.length >= 3){ taps = []; if (window.Credits) Credits.open(); }
+  });
+  const word = mark.textContent, CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/#·';
+  const noise = n => Array.from({ length:n }, () => CH[Math.floor(Math.random() * CH.length)]).join('');
+  function flicker(){
+    if (document.hidden) return;
+    mark.style.minWidth = mark.offsetWidth + 'px';
+    let i = 0;
+    const steps = [() => noise(word.length), () => noise(8), () => '/vault', () => '/vault', () => '/vault', () => noise(8), () => noise(word.length)];
+    const t = setInterval(() => {
+      if (i < steps.length) mark.textContent = steps[i++];
+      else { clearInterval(t); mark.textContent = word; mark.style.minWidth = ''; }
+    }, 110);
+  }
+  if (!calm() && Math.random() < 1 / 30) setTimeout(flicker, 5000 + Math.random() * 9000);
+  try { console.log('%c· · ·   not everything is on the map', 'color:#8d877b;font:12px ui-monospace,monospace;letter-spacing:.05em'); } catch {}
 })();
 
 /* ── What's new (the list is in theme.js) ─────────────────────────────── */

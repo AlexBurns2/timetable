@@ -8,21 +8,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="/images/icon.png">
-<link rel="stylesheet" href="theme.css?v=20261109">
+<link rel="stylesheet" href="theme.css?v=20261112">
 <script src="theme.js"></script>
-<script src="icons.js?v=20261109"></script>
+<script src="icons.js?v=20261112"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
-<link rel="stylesheet" href="site.css?v=20261109">
-<link rel="stylesheet" href="settings.css?v=20261109">
-<link rel="stylesheet" href="games.css?v=20261109">
+<link rel="stylesheet" href="site.css?v=20261112">
+<link rel="stylesheet" href="settings.css?v=20261112">
+<link rel="stylesheet" href="games.css?v=20261112">
 <script>
-/* In a Games module on Andre's page (games.html?play=<id>&embed=1&andre=1): that page's colours,
-   type and corners on the module's own colour, like hkmahjong.html?andre=1. The parent calls
-   andreLook() again whenever its look changes. */
-if (new URLSearchParams(location.search).has('andre') && window.frameElement) {
+/* In a Games module on the beta page (/beta/, in its frame #gmframe): that page's colours,
+   type and corners on the module's own colour, like hkmahjong.html. The parent calls the
+   look function again whenever its look changes. */
+if (window.frameElement && (window.frameElement.id === 'gmframe' || new URLSearchParams(location.search).has('beta'))) {
   const root = document.documentElement;
-  window.andreLook = () => {
+  window.betaLook = () => {
     const top = parent.document.documentElement, cs = parent.getComputedStyle(top), box = parent.document.querySelector('.gmstage');
     const v = k => cs.getPropertyValue(k).trim(), font = parent.getComputedStyle(parent.document.body).fontFamily;
     const mode = top.dataset.mode === 'dark' ? 'dark' : 'light', r = top.hasAttribute('data-square') ? '0' : '10px';
@@ -30,14 +30,15 @@ if (new URLSearchParams(location.search).has('andre') && window.frameElement) {
       '--text': v('--fg'), '--muted': v('--fg2'), '--accent': v('--blue'), '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
       '--radius': r, '--card-radius': r, '--card-border': '0 solid transparent', '--shadow': 'none', '--shadow-hi': 'none', '--display-w': '600', '--display-ls': '0', '--display-tt': 'none', 'color-scheme': mode };
     /* a stylesheet, not inline: theme.js clears inline colours whenever it reapplies the site's skin */
-    const sheet = document.getElementById('andreLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'andreLook' }));
-    sheet.textContent = `html.andre{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
-    /* the plain skin in Andre's light or dark, whatever the main site is set to */
+    const sheet = document.getElementById('betaLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'betaLook' }));
+    sheet.textContent = `html.beta{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
+    /* the plain skin in the beta page's light or dark, whatever the main site is set to */
     if (root.dataset.skin !== 'plain') root.dataset.skin = 'plain';
     if (root.dataset.mode !== mode) root.dataset.mode = mode;
   };
-  root.classList.add('andre'); andreLook();
-  new MutationObserver(andreLook).observe(root, { attributes: true, attributeFilter: ['data-skin', 'data-mode'] });
+  window.andreLook = window.betaLook;          // the older name the beta page still calls; drop once it calls betaLook()
+  root.classList.add('beta'); betaLook();
+  new MutationObserver(betaLook).observe(root, { attributes: true, attributeFilter: ['data-skin', 'data-mode'] });
   /* stays hidden on the module's colour until it has really painted */
   addEventListener('load', () => {
     const show = () => { frameElement.style.visibility = ''; };
@@ -48,13 +49,13 @@ if (new URLSearchParams(location.search).has('andre') && window.frameElement) {
 }
 </script>
 <style>
-html.andre,html.andre body{background:var(--bg)!important;background-image:none!important;font-family:var(--font-ui)}      /* even with the site's Zen mode */
-html.andre{scrollbar-color:var(--line) transparent}
-html.andre .wrap{padding:8px 12px 24px}
-html.andre .stage{background:none;box-shadow:none}
+html.beta,html.beta body{background:var(--bg)!important;background-image:none!important;font-family:var(--font-ui)}      /* even with the site's Zen mode */
+html.beta{scrollbar-color:var(--line) transparent}
+html.beta .wrap{padding:8px 12px 24px}
+html.beta .stage{background:none;box-shadow:none}
 /* the board in the middle of the module, with its controls and leaderboard under it */
-html.andre :is(#g2048wrap,#mines,#cv,#glb){margin-inline:auto}
-html.andre :is(#snmodes,.minesbar,.minesfoot){justify-content:center}
+html.beta :is(#g2048wrap,#mines,#cv,#glb){margin-inline:auto}
+html.beta :is(#snmodes,.minesbar,.minesfoot){justify-content:center}
 </style>
 </head>
 <body data-page="games">
@@ -84,8 +85,8 @@ html.andre :is(#snmodes,.minesbar,.minesfoot){justify-content:center}
 
 <script src="bento.js"></script>
 <script src="suggest.js"></script>
-<script src="games.js?v=20261109"></script>
+<script src="games.js?v=20261112"></script>
 <script src="jim.js"></script>
-<script src="settings.js?v=20261109"></script>
+<script src="settings.js?v=20261112"></script>
 </body>
 </html>

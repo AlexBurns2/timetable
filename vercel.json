@@ -1,8 +1,33 @@
 {
   "crons": [
-    { "path": "/api/daily-generate", "schedule": "0 14 * * *" }
+    {
+      "path": "/api/daily-generate",
+      "schedule": "0 14 * * *"
+    }
   ],
   "rewrites": [
-    { "source": "/poll", "destination": "/api/forum?og=1" }
+    {
+      "source": "/poll",
+      "destination": "/api/forum?og=1"
+    },
+    {
+      "source": "/beta/",
+      "destination": "/andre/index.html"
+    },
+    {
+      "source": "/beta/:path*",
+      "destination": "/andre/:path*"
+    },
+    {
+      "source": "/vault",
+      "destination": "/vault.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/beta",
+      "destination": "/beta/",
+      "permanent": false
+    }
   ]
 }

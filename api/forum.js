@@ -110,6 +110,36 @@ export default async function handler(req, res) {
     } catch { return res.status(200).json({ poll: null }); }
   }
   if (!me) return res.status(401).json({ error: "Sign in to use the forum." });
+  /* the timetable page's small "new poll" note: is there a poll this week, and
+     have you voted. Nothing else, so it stays cheap. */
+  if (req.method === "GET" && req.query.pollpeek) {
+    try {
+      const clock = pollClock();
+      const { data: p } = await db.from("poll").select("week").eq("week", clock.week).maybeSingle();
+      if (!p) return res.status(200).json({ week: clock.week, has: false });
+      const { data: v } = await db.from("poll_voter").select("email").eq("week", p.week).eq("email", me.email).maybeSingle();
+      return res.status(200).json({ week: p.week, has: true, open: clock.phase === "open", voted: !!v });
+    } catch { return res.status(200).json({ has: false }); }
+  }
+  /* the vault (vault.html, linked from nowhere): POST notes that you found it
+     (the first time only) and answers with everyone who has, in order, by the
+     names people go by. Table vault_visit (SETUP.md). */
+  if (req.query.vault) {
+    try {
+      if (req.method === "POST") {
+        const { error: e1 } = await db.from("vault_visit").upsert({ email: me.email }, { onConflict: "email", ignoreDuplicates: true });
+        if (e1) throw new Error(e1.message);
+      }
+      const { data, error } = await db.from("vault_visit").select("email, at").order("at", { ascending: true }).order("email").limit(5000);
+      if (error) throw new Error(error.message);
+      const names = await displayNames();
+      const list = (data || []).map(r => ({ n: withName(names, r.email, nameFromEmail(r.email)), at: r.at, me: r.email === me.email }));
+      return res.status(200).json({ rank: list.findIndex(x => x.me) + 1, total: list.length, list });
+    } catch (e) {
+      console.error("vault:", e.message);
+      return res.status(503).json({ error: "Sealed for now." });
+    }
+  }
   NAMES = await displayNames();
   const isOwner = isAdmin(me.email);
 

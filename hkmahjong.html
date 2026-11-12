@@ -4,27 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hong Kong Mahjong</title>
-<script>/* only ever a frame, on the games page (which has the focus lock) or Andre's page */ if (window.top === window) location.replace("/games.html?play=hkmj");</script>
+<script>/* only ever a frame, on the games page (which has the focus lock) or the beta page */ if (window.top === window) location.replace("/games.html?play=hkmj");</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261109">
+<link rel="stylesheet" href="theme.css?v=20261112">
 <script src="theme.js"></script>
 <script>
-/* In a Games module on Andre's page: that page's colours and type, on the module's own colour */
-const ANDRE = new URLSearchParams(location.search).has('andre');
-function andreLook() {
+/* In a Games module on the beta page (/beta/, in its frame #gmframe): that page's colours and type, on the module's own colour */
+const BETA = !!window.frameElement && (window.frameElement.id === 'gmframe' || new URLSearchParams(location.search).has('beta'));
+function betaLook() {
   const top = parent.document.documentElement, cs = parent.getComputedStyle(top), box = parent.document.querySelector('.gmstage');
   const v = k => cs.getPropertyValue(k).trim(), font = parent.getComputedStyle(parent.document.body).fontFamily;
   const set = { '--bg': box ? parent.getComputedStyle(box).backgroundColor : v('--bg'), '--bg-img': 'none', '--panel': v('--base') || v('--bg'), '--panel-2': v('--fill'), '--line': v('--fill2'),
     '--text': v('--fg'), '--muted': v('--fg2'), '--accent': '#BC1F2A', '--accent-ink': '#fff', '--font-ui': font, '--font-display': font, '--font-num': font,
     '--radius': '10px', '--card-radius': '10px', '--card-border': '0 solid transparent', '--shadow': 'none', '--shadow-hi': 'none', '--display-w': '600', '--display-ls': '0', '--display-tt': 'none' };
   /* a stylesheet, not inline: theme.js clears inline colours whenever it reapplies the site's skin */
-  const sheet = document.getElementById('andreLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'andreLook' }));
-  sheet.textContent = `html.andre{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
+  const sheet = document.getElementById('betaLook') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'betaLook' }));
+  sheet.textContent = `html.beta{${Object.entries(set).map(([k, val]) => `${k}:${val}!important`).join(';')}}`;
 }
-if (ANDRE) {
-  document.documentElement.classList.add('andre'); andreLook();
+window.andreLook = betaLook;                  // the older name the beta page still calls; drop once it calls betaLook()
+if (BETA) {
+  document.documentElement.classList.add('beta'); betaLook();
   /* stays hidden on the module's colour until it has really painted, and again across the reload after saved settings arrive */
   addEventListener('load', () => {
     const show = () => { frameElement.style.visibility = ''; };
@@ -699,85 +700,85 @@ select option{color:var(--ink);background:var(--panel)}
 .felt3 .tile.match{filter:brightness(.72) saturate(.55)}
 
 
-/* ===== On Andre's page: flat blocks in the module's red, not wood and felt ===== */
-html.andre,html.andre body{background:var(--bg)!important;background-image:none!important}      /* even with the site's Zen mode, which makes pages see-through */
-html.andre{--mj:#E0303A;--mj-box:color-mix(in srgb,#fff 34%,var(--bg));--back1:#E0303A!important;--back2:#c8202c!important;--backborder:#a81621!important}
+/* ===== On the beta page: flat blocks in the module's red, not wood and felt ===== */
+html.beta,html.beta body{background:var(--bg)!important;background-image:none!important}      /* even with the site's Zen mode, which makes pages see-through */
+html.beta{--mj:#E0303A;--mj-box:color-mix(in srgb,#fff 34%,var(--bg));--back1:#E0303A!important;--back2:#c8202c!important;--backborder:#a81621!important}
 /* at the table nothing is white: it all sits on the module's colour, with a lighter red for each box */
-html.andre :is(.nplate,.actions,.mymelds){background:none!important;border:0!important;box-shadow:none!important;color:var(--text)}
-html.andre :is(.rk,.felt3,.rack,.side){background:var(--mj-box)!important;border:0!important;box-shadow:none!important;color:var(--text);border-radius:10px}
-html.andre .compass{background:var(--bg)!important;border:0!important;box-shadow:none!important;color:var(--text);border-radius:10px}
+html.beta :is(.nplate,.actions,.mymelds){background:none!important;border:0!important;box-shadow:none!important;color:var(--text)}
+html.beta :is(.rk,.felt3,.rack,.side){background:var(--mj-box)!important;border:0!important;box-shadow:none!important;color:var(--text);border-radius:10px}
+html.beta .compass{background:var(--bg)!important;border:0!important;box-shadow:none!important;color:var(--text);border-radius:10px}
 /* results and settings are the same red */
-html.andre .overlay{background:var(--bg)}
-html.andre .modal{background:var(--bg);color:var(--text);box-shadow:none}
-html.andre .modal :is(.pay,.wintiles,.chip,.theme,.backpick,.statgrid div,.ach),html.andre .modal .btn:not(.primary):not(.red){background:var(--mj-box);color:var(--text);border-color:transparent}
-html.andre .modal :is(.sub,small){color:var(--text)}
-html.andre .reacts{border-left:0}
-html.andre .code{background:var(--bg);color:var(--text);border:0}
-html.andre :is(.chatwin,.cw-log){background:var(--mj-box);color:var(--text)}
+html.beta .overlay{background:var(--bg)}
+html.beta .modal{background:var(--bg);color:var(--text);box-shadow:none}
+html.beta .modal :is(.pay,.wintiles,.chip,.theme,.backpick,.statgrid div,.ach),html.beta .modal .btn:not(.primary):not(.red){background:var(--mj-box);color:var(--text);border-color:transparent}
+html.beta .modal :is(.sub,small){color:var(--text)}
+html.beta .reacts{border-left:0}
+html.beta .code{background:var(--bg);color:var(--text);border:0}
+html.beta :is(.chatwin,.cw-log){background:var(--mj-box);color:var(--text)}
 /* menus: no white, shades of red */
-html.andre :is(.choice,.mode,.panel,.playas input){background:var(--mj-box);color:var(--text);border:0;box-shadow:none}
-html.andre :is(.choice,.mode):hover{background:color-mix(in srgb,#fff 48%,var(--bg))}
-html.andre :is(.choice small,.mode span,.panel .sub,.playas,.home-copy p,.settings label){color:var(--text)}
-html.andre :is(select,.lvl,.seatno){background:var(--bg);color:var(--text);border:0}
-html.andre .panel .note{background:var(--bg);color:var(--text);border:0}
-html.andre .panel .btn:not(.primary):not(.red){background:var(--bg);color:var(--text);border:0}
-html.andre .gnav button{color:var(--text)}
-html.andre .gnav button.on{background:var(--mj-box);color:var(--text)}
-html.andre .modal .note{background:var(--mj-box);color:var(--text);border:0}
-html.andre .modal .gtable :is(td,th){border-color:var(--mj-box)}
+html.beta :is(.choice,.mode,.panel,.playas input){background:var(--mj-box);color:var(--text);border:0;box-shadow:none}
+html.beta :is(.choice,.mode):hover{background:color-mix(in srgb,#fff 48%,var(--bg))}
+html.beta :is(.choice small,.mode span,.panel .sub,.playas,.home-copy p,.settings label){color:var(--text)}
+html.beta :is(select,.lvl,.seatno){background:var(--bg);color:var(--text);border:0}
+html.beta .panel .note{background:var(--bg);color:var(--text);border:0}
+html.beta .panel .btn:not(.primary):not(.red){background:var(--bg);color:var(--text);border:0}
+html.beta .gnav button{color:var(--text)}
+html.beta .gnav button.on{background:var(--mj-box);color:var(--text)}
+html.beta .modal .note{background:var(--mj-box);color:var(--text);border:0}
+html.beta .modal .gtable :is(td,th){border-color:var(--mj-box)}
 /* no blue: red, white or black */
-html.andre{--in:#111!important;--ik:#111!important}
-html.andre .av{background:#BC1F2A!important;color:#fff;border-color:transparent}
-html.andre .choice .face b{color:#BC1F2A!important}
-html.andre :is(.plate .wb,.sp-wind){color:#111}
-html.andre .log :is(.k-c,.k-h,.k-w){color:var(--text)}
-html.andre input[type=text]:focus{outline-color:#BC1F2A;border-color:transparent}
-html.andre .theme:hover{border-color:#BC1F2A}
-html.andre .act:not(.win):not(.disc):not(.pung):not(.chow):not(.kong):not(.pass){background:#BC1F2A}
-html.andre .nplate{border-radius:10px;padding:10px 16px;gap:12px}
-html.andre .myplate .nplate{padding:8px 16px 8px 10px}
-html.andre :is(.pl1,.pl3) .nplate{padding:12px 8px;gap:6px}
-html.andre :is(.pl1,.pl3) .np-name{white-space:normal;overflow:visible;text-align:center;line-height:1.15}
+html.beta{--in:#111!important;--ik:#111!important}
+html.beta .av{background:#BC1F2A!important;color:#fff;border-color:transparent}
+html.beta .choice .face b{color:#BC1F2A!important}
+html.beta :is(.plate .wb,.sp-wind){color:#111}
+html.beta .log :is(.k-c,.k-h,.k-w){color:var(--text)}
+html.beta input[type=text]:focus{outline-color:#BC1F2A;border-color:transparent}
+html.beta .theme:hover{border-color:#BC1F2A}
+html.beta .act:not(.win):not(.disc):not(.pung):not(.chow):not(.kong):not(.pass){background:#BC1F2A}
+html.beta .nplate{border-radius:10px;padding:10px 16px;gap:12px}
+html.beta .myplate .nplate{padding:8px 16px 8px 10px}
+html.beta :is(.pl1,.pl3) .nplate{padding:12px 8px;gap:6px}
+html.beta :is(.pl1,.pl3) .np-name{white-space:normal;overflow:visible;text-align:center;line-height:1.15}
 /* the rack, the top row and the row under it, all centred */
-html.andre .rack{padding:12px;align-items:center}
-html.andre .rk2{align-items:center}
-html.andre .rk2 .rk-melds{align-items:center}
-html.andre :is(.pl1,.pl3){align-self:center}
-html.andre .hints{justify-content:center;gap:16px;padding:4px 0}
-html.andre .hints .iconbtn{padding:7px 22px}
-html.andre .gleave{margin-left:0}
+html.beta .rack{padding:12px;align-items:center}
+html.beta .rk2{align-items:center}
+html.beta .rk2 .rk-melds{align-items:center}
+html.beta :is(.pl1,.pl3){align-self:center}
+html.beta .hints{justify-content:center;gap:16px;padding:4px 0}
+html.beta .hints .iconbtn{padding:7px 22px}
+html.beta .gleave{margin-left:0}
 @media (min-width:601px){
-  html.andre .table2{grid-template-rows:auto minmax(0,1fr)}
-  html.andre .pl2{align-self:stretch}
-  html.andre .pl2 .nplate{height:100%;align-items:center}
+  html.beta .table2{grid-template-rows:auto minmax(0,1fr)}
+  html.beta .pl2{align-self:stretch}
+  html.beta .pl2 .nplate{height:100%;align-items:center}
 }
-html.andre .nplate.turn{background:var(--mj-box)!important;box-shadow:none!important}
-html.andre .np-name{color:var(--text)}
-html.andre :is(.np-score,.sp-score,.tag,.tag.you){background:var(--bg);color:var(--text)}
-html.andre :is(.cround,.cround small,.chand){color:var(--text)!important}
-html.andre .cled{background:none;border:0;color:var(--text);text-shadow:none}
-html.andre .cedge{color:var(--text)}
-html.andre .cedge.dl{color:var(--mj)}
-html.andre .cedge.on{color:#fff;background:var(--mj);box-shadow:none}
-html.andre .act{box-shadow:none;border-radius:10px}
-html.andre .act.win{background:var(--mj)}
+html.beta .nplate.turn{background:var(--mj-box)!important;box-shadow:none!important}
+html.beta .np-name{color:var(--text)}
+html.beta :is(.np-score,.sp-score,.tag,.tag.you){background:var(--bg);color:var(--text)}
+html.beta :is(.cround,.cround small,.chand){color:var(--text)!important}
+html.beta .cled{background:none;border:0;color:var(--text);text-shadow:none}
+html.beta .cedge{color:var(--text)}
+html.beta .cedge.dl{color:var(--mj)}
+html.beta .cedge.on{color:#fff;background:var(--mj);box-shadow:none}
+html.beta .act{box-shadow:none;border-radius:10px}
+html.beta .act.win{background:var(--mj)}
 /* red in place of the game's blues */
-html.andre :is(.act.disc,.act.pung){background:#BC1F2A}
-html.andre .act.chow{background:#A31A24}
-html.andre .act.kong{background:#8A141D}
-html.andre .act.pass{background:var(--mj-box);color:var(--text)}
-html.andre .lvl.on{background:#BC1F2A!important;border-color:#BC1F2A!important;color:#fff}
-html.andre .hand .tile.sel{box-shadow:0 calc(var(--w)*.075) 0 var(--tileedge),0 0 0 3px #BC1F2A!important}
-html.andre .mymelds{border-right:2px solid var(--bg)!important}
-html.andre :is(.actions .msg,.hints,.side,.kv span,.tabs button){color:var(--text)}
-html.andre .tabs{border-bottom-color:var(--bg)}
-html.andre .tabs button.on{color:var(--text);border-bottom-color:var(--text)}
-html.andre .scores td,html.andre .kv{border-color:var(--bg)}
-html.andre .hints .iconbtn{border:0;background:var(--mj-box);color:var(--text);border-radius:8px}
-html.andre .hints .iconbtn:hover{background:color-mix(in srgb,#fff 48%,var(--bg))}
-@media (min-width:981px){html.andre .game{grid-template-columns:minmax(0,1fr) 200px}}
-html.andre .side{font-size:13px}
-html.andre .kv{flex-wrap:wrap}
+html.beta :is(.act.disc,.act.pung){background:#BC1F2A}
+html.beta .act.chow{background:#A31A24}
+html.beta .act.kong{background:#8A141D}
+html.beta .act.pass{background:var(--mj-box);color:var(--text)}
+html.beta .lvl.on{background:#BC1F2A!important;border-color:#BC1F2A!important;color:#fff}
+html.beta .hand .tile.sel{box-shadow:0 calc(var(--w)*.075) 0 var(--tileedge),0 0 0 3px #BC1F2A!important}
+html.beta .mymelds{border-right:2px solid var(--bg)!important}
+html.beta :is(.actions .msg,.hints,.side,.kv span,.tabs button){color:var(--text)}
+html.beta .tabs{border-bottom-color:var(--bg)}
+html.beta .tabs button.on{color:var(--text);border-bottom-color:var(--text)}
+html.beta .scores td,html.beta .kv{border-color:var(--bg)}
+html.beta .hints .iconbtn{border:0;background:var(--mj-box);color:var(--text);border-radius:8px}
+html.beta .hints .iconbtn:hover{background:color-mix(in srgb,#fff 48%,var(--bg))}
+@media (min-width:981px){html.beta .game{grid-template-columns:minmax(0,1fr) 200px}}
+html.beta .side{font-size:13px}
+html.beta .kv{flex-wrap:wrap}
 /* ===== The site's look, from theme.css. Only the table and tiles keep their own colours ===== */
 :root{--tw:clamp(32px,min(3.9vw,9vh),66px)}     /* a full hand fits the rack beside the side panel */
 /* everything fits the frame, and the rack is always one row: fitRack shrinks the tiles to fit */
@@ -2701,12 +2702,12 @@ function showAppearance(keepScroll) {
     ${sw('swAnim', Fx.anim, 'Motion', 'Discards slide into place and calls fade in beside the player.')}
     <h3 class="aph">Tiles</h3>
     <div class="themes">${Object.entries(THEMES).map(([id, t]) => `<div class="theme ${Look.theme === id ? 'on' : ''}" data-theme="${id}" style="${themeStyle(id)}"><div class="tiles">${sample.map(x => tileHTML(x)).join('')}${backHTML()}</div><b>${t.name}${id === 'classic' ? ' <span class="tag">standard</span>' : ''}</b><small>${t.desc}</small></div>`).join('')}</div>
-    ${ANDRE ? '' : `    <p class="sub" style="margin:10px 0 6px">Backs</p>
+    ${BETA ? '' : `    <p class="sub" style="margin:10px 0 6px">Backs</p>
     <div class="backpicks">${Object.entries(BACK_DESIGNS).map(([k, n]) => `<button class="backpick ${Fx.back === k ? 'on' : ''}" data-back="${k}"><span class="tiles back-${k}" style="--w:34px">${backHTML()}${backHTML()}</span><small>${n}</small></button>`).join('')}</div>
     <div class="chips">${chips(BACK_COLOURS, Fx.backCol, 'data-backcol')}</div>`}
     ${sw('swShiny', Fx.shiny, 'Glossy tiles', 'A soft sheen on the tile faces.')}
     ${sw('swLabels', Look.labels, 'English values in the corner', 'Shows 1–9, E/S/W/N and C/F/B in the top-left of each tile.')}
-    ${ANDRE ? '' : `    <h3 class="aph">Table</h3>
+    ${BETA ? '' : `    <h3 class="aph">Table</h3>
     <p class="sub" style="margin:0 0 6px">Cloth</p><div class="chips">${chips(FELTS, Fx.felt, 'data-felt')}</div>
     <p class="sub" style="margin:10px 0 6px">Wood</p><div class="chips">${Object.entries(WOODS).map(([k, n]) => `<button class="chip ${Fx.wood === k ? 'on' : ''}" data-wood="${k}"><i class="woodsw wood-${k}"></i>${n}</button>`).join('')}</div>`}
     <h3 class="aph">Sound</h3><div class="chips">${chips(SOUND_PACKS, Fx.pack, 'data-pack')}</div>
@@ -3336,7 +3337,7 @@ function celebrate(level) {
   if (!animOn()) return;
   const cv = document.createElement('canvas'); cv.className = 'fxcanvas'; document.body.appendChild(cv);
   const W = cv.width = innerWidth, H = cv.height = innerHeight, ctx = cv.getContext('2d');
-  const cols = ANDRE ? ['#c8102e', '#BC1F2A', '#ffffff', '#111111'] : ['#c8102e', '#e2b13c', '#17694f', '#2563b8', '#ff7ab6', '#fff6dc'];
+  const cols = BETA ? ['#c8102e', '#BC1F2A', '#ffffff', '#111111'] : ['#c8102e', '#e2b13c', '#17694f', '#2563b8', '#ff7ab6', '#fff6dc'];
   const parts = [];
   const confetti = n => { for (let i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: -20 - Math.random() * H * .3, vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 3, r: 4 + Math.random() * 5, a: Math.random() * 6, va: (Math.random() - .5) * .3, c: cols[i % cols.length], t: 'c' }); };
   const burst = (x, y) => { const c = cols[Math.floor(Math.random() * cols.length)]; for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 5; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 2.4, c, t: 'f', life: 1 }); } };

@@ -517,3 +517,9 @@ html[data-mode="dark"] .craura i{opacity:.4}
 html[data-motion="reduced"] .credits.in,html[data-motion="reduced"] .craura i,html[data-motion="reduced"] .crby,
 html[data-motion="reduced"] .crby span,html[data-motion="reduced"] .crfoot,html[data-motion="reduced"] .crname.pop{animation:none}
 @media (prefers-reduced-motion:reduce){ .credits.in,.craura i,.crby,.crby span,.crfoot,.crname.pop{animation:none} }
+
+/* Home: "MSC Unofficial" (the credits are three quick taps away; it shouldn't look like a button) */
+.sitemark{display:inline-block;cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.sitemark.tick{animation:marktick .35s ease}
+@keyframes marktick{50%{letter-spacing:.17em;color:var(--text)}}
+html[data-motion="reduced"] .sitemark.tick{animation:none}

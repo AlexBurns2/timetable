@@ -375,8 +375,7 @@ export default async function handler(req, res) {
   const origin = String(req.headers.origin || "").toLowerCase();
 
   res.setHeader("Vary", "Origin");
-  if (origins.includes(origin)) res.setHeader("Access-Control-Allow-Origin", origin);
-  else res.setHeader("Access-Control-Allow-Origin", origins[0]);
+  if (origins.includes(origin)) res.setHeader("Access-Control-Allow-Origin", origin);   // otherwise none: the site's own pages don't need it
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers",
                 "Content-Type, X-School-Email, X-School-Password");

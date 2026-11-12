@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261109">
+<link rel="stylesheet" href="theme.css?v=20261112">
 <link rel="icon" type="image/png" href="/images/icon.png">
 <script src="theme.js"></script>
-<script src="icons.js?v=20261109"></script>
+<script src="icons.js?v=20261112"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -71,7 +71,22 @@ button,select,input{font:inherit;color:inherit}
 .whoback:hover{color:var(--accent)}
 .whoback[hidden]{display:none}
 @media (max-width:520px){ .idrow .dom{display:none} }
-.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
+.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center;position:relative}
+/* under Home: "New poll this week", small, until you vote, open Home, or close it */
+.pollnote{position:absolute;top:calc(100% + 9px);right:0;z-index:20;display:flex;align-items:center;gap:2px;white-space:nowrap;
+  padding:3px 3px 3px 11px;border-radius:999px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-hi);
+  font-size:0.75rem;animation:pnin .45s cubic-bezier(.2,.9,.3,1.2) both}
+.pollnote[hidden]{display:none}
+.pollnote::before{content:'';position:absolute;top:-5px;right:15px;width:8px;height:8px;background:var(--panel);
+  border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg)}
+.pollnote a{color:var(--text);text-decoration:none;font-weight:700}
+.pollnote a::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:1px}
+.pollnote a:hover{color:var(--accent)}
+.pollnote button{background:none;border:0;padding:4px 6px;line-height:0;color:var(--muted);cursor:pointer;border-radius:999px}
+.pollnote button:hover{color:var(--text);background:var(--panel-2)}
+.pollnote .ph{width:12px;height:12px}
+@keyframes pnin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+html[data-motion="reduced"] .pollnote{animation:none}
 
 /* centred week switch, sits above the middle column */
 .weekswitch{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
@@ -451,6 +466,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="headbtns">
       <button class="btn icon" id="settings" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
       <a class="btn icon" href="home.html" id="homebtn" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <div class="pollnote" id="pollnote" role="status" hidden><a href="home.html">New poll this week</a>
+        <button type="button" id="pollnoteX" aria-label="Dismiss"><span data-icon="x"></span></button></div>
     </div>
   </header>
 
@@ -2103,7 +2120,7 @@ addEventListener('keydown', e => {
 addEventListener('resize', render);
 
 /* ═══ animated mode (Settings → Display → Animations; off by default) ═══
-   Ported from the beta (andre/index.html: turnWeek, with the timings
+   Ported from the beta page (its index.html: turnWeek, with the timings
    in ANIMATIONS.md). Changing week slides each day's lessons off the side in
    waves, the day nearest the edge first, with lanes opening through the days
    they cross so no block ever runs over another; then the new week's lessons
@@ -2274,6 +2291,25 @@ function growFrom(origin, sheet){
 })();
 setInterval(render, 30000);
 setInterval(() => { if (endpoint && creds) load(false).then(render); }, 15*60*1000);
+})();
+</script>
+<script>
+/* People open the timetable first, not Home, so a new week's poll is easy to
+   miss. A small note under the Home button says there is one, until you've
+   voted, seen it on Home, or closed it (closing is remembered for the week,
+   with your account). One small request: /api/forum?pollpeek=1. */
+(function(){
+  if (!(window.TT && TT.signedIn && TT.signedIn())) return;
+  const note = document.getElementById('pollnote'); if (!note) return;
+  setTimeout(async () => {
+    let d = null;
+    try { d = await TT.api('/api/forum', { params:{ pollpeek:1 } }); } catch { return; }
+    if (!d || !d.has || !d.open || d.voted) return;
+    if (TT.get('tt.poll_seen', '') === d.week || TT.get('tt.pollnote_off', '') === d.week) return;
+    if (window.Icon) Icon.fill(note);
+    note.hidden = false;
+    document.getElementById('pollnoteX').onclick = () => { TT.set('tt.pollnote_off', d.week); note.hidden = true; };
+  }, 1200);
 })();
 </script>
 </body>

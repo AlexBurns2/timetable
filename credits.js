@@ -15,8 +15,9 @@
    ═══════════════════════════════════════════════════════════════════ */
 (function(){
 "use strict";
+/* opened by Credits.open() (Home: "MSC Unofficial" tapped three times), or a #creditsbtn if a page has one */
 const dlg = document.getElementById('credits'), btn = document.getElementById('creditsbtn');
-if (!dlg || !btn) return;
+if (!dlg) return;
 const stage = document.getElementById('crstage'), wait = document.getElementById('crwait'), by = document.getElementById('crby');
 const sky = document.getElementById('crsky'), ctx = sky.getContext('2d');
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
@@ -28,7 +29,7 @@ const ease = k => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 
 let names = null, els = [], raf = 0, opened = 0, W = 0, H = 0, dpr = 1;
 let stars = [], sparks = [], trails = [[], []], hues = ['#4f4fd0', '#d6409f'], dark = false;
-let px = 0, py = 0, tx = 0, ty = 0, lastSparkle = 0, lastBurst = 0;
+let px = 0, py = 0, tx = 0, ty = 0, lastSparkle = 0, lastBurst = 0, clue = null, lastClue = 0;
 
 /* "Made by", a letter at a time */
 by.innerHTML = [...'Made by'].map((c, i) => '<span style="animation-delay:' + (120 + i * 45) + 'ms">' + (c === ' ' ? '&nbsp;' : c) + '</span>').join('');
@@ -123,6 +124,23 @@ function frame(now){
     lastBurst = now;
     els.forEach((n, i) => { const a = turn + i * Math.PI; burst(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, i, 14); });
   }
+  /* now and then, for whoever's still watching, a word among the stars, barely there */
+  if (!calm && els.length && t > 14000 && !clue && now - lastClue > 28000){
+    for (let k = 0; k < 12 && !clue; k++){
+      const x = rand(W * .08, W * .92), y = rand(H * .1, H * .9);
+      if (Math.abs(x - cx) > rx + 90 || Math.abs(y - cy) > ry + 50) clue = { x, y, t0:now };
+    }
+    lastClue = now;
+  }
+  if (clue){
+    const k = (now - clue.t0) / 3600;
+    if (k >= 1) clue = null;
+    else {
+      ctx.globalAlpha = Math.sin(Math.PI * k) * (dark ? .32 : .26);
+      ctx.fillStyle = dark ? '#fff' : '#222'; ctx.font = '11px ui-monospace,Menlo,Consolas,monospace';
+      ctx.fillText('/vault', clue.x, clue.y); ctx.globalAlpha = 1;
+    }
+  }
   /* sparks */
   for (let i = sparks.length - 1; i >= 0; i--){
     const s = sparks[i];
@@ -151,11 +169,12 @@ function showNames(list){
   kick();
 }
 
-btn.onclick = async () => {
+async function open(){
+  if (dlg.open) return;
   if (window.Icon) Icon.fill(dlg);
   dlg.showModal();
   colours(); size();
-  px = py = tx = ty = 0; sparks = []; lastBurst = performance.now();
+  px = py = tx = ty = 0; sparks = []; clue = null; lastBurst = lastClue = performance.now();
   opened = performance.now();
   dlg.classList.remove('in'); void dlg.offsetWidth; dlg.classList.add('in');
   kick();
@@ -164,7 +183,9 @@ btn.onclick = async () => {
   wait.innerHTML = '<span class="crspin" aria-hidden="true"></span>';
   try { const d = await TT.api('/api/forum', { params:{ credits:1 } }); names = (d && d.by) || []; if (dlg.open) showNames(names); }
   catch (e){ wait.textContent = 'Couldn’t load the credits.'; }
-};
+}
+window.Credits = { open };
+if (btn) btn.onclick = open;
 const close = () => { cancelAnimationFrame(raf); raf = 0; if (dlg.open) dlg.close(); };
 document.getElementById('crx').onclick = e => { e.stopPropagation(); close(); };
 dlg.addEventListener('click', e => { if (!e.target.closest('a, .crname, .crx')) close(); });

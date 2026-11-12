@@ -2810,3 +2810,17 @@ alter table student_cache enable row level security;   -- no policies: only the 
 ```
 It fills itself at the next nightly run, or you can trigger it from
 **Vercel → Settings → Cron Jobs → Run**.
+
+## The vault (`vault.html` at `/vault`, linked from nowhere)
+
+Who has found the page, in the order they found it. Run once in the Supabase SQL editor:
+
+```sql
+create table if not exists vault_visit (
+  email text primary key,
+  at    timestamptz not null default now()
+);
+alter table vault_visit enable row level security;   -- no policies: only the server (service role) reads or writes
+```
+
+Until it exists the page says "The vault is sealed for now." Nothing else depends on it.
