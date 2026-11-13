@@ -163,7 +163,8 @@ const GAMES = [
   { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
   { id:'mines',  cat:'Arcade', ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
-  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' }
+  { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' },
+  { id:'chess',  cat:'Arcade', ico:'♟️', name:'Chess', blurb:'Play the bot from Easy to Hard, or a friend online', mp:true }
 ];
 /* The games page in two labelled sections, in order (both layouts use them:
    the gallery and the classic shelves). */
@@ -1708,7 +1709,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261109';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261113';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -1723,77 +1724,123 @@ function playName(){
 const typing = e => !!(e && e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
 function mpLobby(box, o){
   let room = null, code = '', isHost = false, busy = false, inMatch = false, offs = [], closed = false;
+  let watching = false, isPub = false, pub = null, pubLoad = null, myName = '', roundMine = false;
   const nameOf = p => (p && p.presence && p.presence.n) || 'Player';
+  const players = () => room.peers().filter(p => !p.presence.w).sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0));
   const unwire = () => { offs.forEach(f => { try { f(); } catch {} }); offs = []; };
-  async function leave(){ unwire(); inMatch = false; const r = room; room = null; if (r) await r.leave().catch(() => {}); }
+  async function leave(){ unwire(); inMatch = false; watching = false; const r = room; room = null; announce(); if (r) await r.leave().catch(() => {}); }
+  /* the public list: everyone on the menu sees it; a public host keeps its row up to date */
+  function openPub(){
+    return pubLoad || (pubLoad = loadRooms().then(Rm => Rm.lobby(o.game)).then(p => {
+      if (closed){ p.leave(); return; }
+      pub = p; pub.onPeers(list); announce();
+    }).catch(() => { pubLoad = null; if ($('mppub')) $('mppub').innerHTML = '<p class="mpmsg">Couldn’t load the public rooms.</p>'; }));
+  }
+  function announce(){
+    if (!pub) return;
+    const on = room && isHost && isPub;
+    pub.presence(on ? { code, n: myName, players: players().length, max: o.max, playing: inMatch ? 1 : 0 } : { code: '' }).catch(() => {});
+  }
+  function list(){
+    const el = $('mppub'); if (!el || !pub) return;
+    const rows = pub.peers().filter(p => !p.isMe && p.presence.code);
+    el.innerHTML = rows.length ? '<ul class="mplist chgames">' + rows.map(p => { const x = p.presence, full = x.players >= (x.max || o.max);
+      return '<li><span>' + esc(Rooms.cleanName(x.n)) + '’s room<small>' + (x.players | 0) + '/' + (x.max || o.max) + ' players · ' + (x.playing ? 'playing' : full ? 'full' : 'waiting') + '</small></span>' +
+        '<span class="mpbtns">' + (x.playing || full ? '' : '<button class="btn primary" type="button" data-code="' + esc(x.code) + '">Join</button>') +
+        '<button class="btn" type="button" data-code="' + esc(x.code) + '" data-watch="1">Watch</button></span></li>'; }).join('') + '</ul>'
+      : '<p class="mpmsg">No public rooms right now.</p>';
+    el.querySelectorAll('[data-code]').forEach(b => b.onclick = () => joinCode(b.dataset.code, !!b.dataset.watch));
+  }
+  let joinCode = () => {};
   function menu(msg){
     if (closed) return;
     inMatch = false;
     box.innerHTML = '<div class="mpbox">' +
       '<label class="mpname">Your name<input id="mpn" maxlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore value="' + esc(playName()) + '"></label>' +
       '<div class="mprow"><button class="btn primary" type="button" id="mpmake">Make a room</button>' +
+        '<label class="chpub"><input type="checkbox" id="mppubin"' + (TT.get('tt.mpPub', true) ? ' checked' : '') + '> Public</label>' +
         '<span class="mpor">or</span>' +
         '<input id="mpcode" maxlength="5" placeholder="Code" autocomplete="off" data-lpignore="true" data-1p-ignore autocapitalize="characters" spellcheck="false" aria-label="Room code">' +
-        '<button class="btn" type="button" id="mpjoin">Join</button></div>' +
-      '<p class="mpmsg" id="mpmsg" role="status">' + esc(msg || 'Up to ' + o.max + ' players. Make a room and send your friends the code.') + '</p></div>';
-    const name = () => { const n = $('mpn').value.trim().slice(0, 16); if (n) TT.set('tt.mpname', n); return n || 'Player'; };
+        '<button class="btn" type="button" id="mpjoin">Join</button><button class="btn" type="button" id="mpwatch">Watch</button></div>' +
+      '<p class="mpmsg" id="mpmsg" role="status">' + esc(msg || 'Up to ' + o.max + ' players. Public rooms show up below for anyone to join or watch; private ones need the code.') + '</p>' +
+      '<div class="chlist" id="mppub">' + LD('Finding rooms…', '', { sm:true }) + '</div></div>';
+    const name = () => { const n = $('mpn').value.trim().slice(0, 16); if (n) TT.set('tt.mpname', n); return myName = n || 'Player'; };
     const go = async fn => {
       if (busy) return; busy = true; $('mpmsg').textContent = 'Connecting…';
-      try { const Rm = await loadRooms(); const r = await fn(Rm, name()); if (closed){ r.room.leave(); return; } room = r.room; code = r.code; wire(); lobby(); }
+      try { const Rm = await loadRooms(); const r = await fn(Rm, name()); if (closed){ r.room.leave(); return; } room = r.room; code = r.code; wire(); lobby(); announce();
+        const h = room.peers().find(p => p.presence.h);
+        if (watching && h && h.presence.playing && Array.isArray(h.presence.pl)) enter({ players: h.presence.pl, at: h.presence.at }, h.id); }
       catch (e){ if ($('mpmsg')) $('mpmsg').textContent = e.message || 'Couldn’t connect.'; }
       finally { busy = false; }
     };
-    $('mpmake').onclick = () => go((Rm, n) => { isHost = true; return Rm.host(o.game, n, o.max); });
-    $('mpjoin').onclick = () => go((Rm, n) => { isHost = false; return Rm.join(o.game, $('mpcode').value, n); });
+    joinCode = (c, w) => go((Rm, n) => { isHost = false; watching = w; return Rm.join(o.game, c, n, w); });
+    $('mppubin').onchange = () => TT.set('tt.mpPub', $('mppubin').checked);
+    $('mpmake').onclick = () => go((Rm, n) => { isHost = true; watching = false; isPub = $('mppubin').checked; return Rm.host(o.game, n, o.max); });
+    $('mpjoin').onclick = () => joinCode($('mpcode').value, false);
+    $('mpwatch').onclick = () => joinCode($('mpcode').value, true);
     $('mpcode').onkeydown = e => { if (e.key === 'Enter') $('mpjoin').click(); };
+    openPub(); list();
   }
   function lobby(){
     if (!room || closed) return menu();
-    const peers = room.peers().slice().sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0));
-    const n = Math.min(peers.length, o.max);
-    box.innerHTML = '<div class="mpbox"><div class="mphead"><div><span class="mplabel">Room code</span><b class="mpcode">' + esc(code) + '</b></div>' +
+    const peers = room.peers().slice().sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0) || (a.presence.w ? 1 : 0) - (b.presence.w ? 1 : 0));
+    const n = Math.min(players().length, o.max);
+    box.innerHTML = '<div class="mpbox"><div class="mphead"><div><span class="mplabel">' + (isHost ? (isPub ? 'Public' : 'Private') + ' room' : 'Room code') + '</span><b class="mpcode">' + esc(code) + '</b></div>' +
         '<span class="mpbtns"><button class="btn" type="button" id="mpcopy">Copy code</button><button class="btn" type="button" id="mpleave">Leave</button></span></div>' +
       '<ul class="mplist">' + peers.map(p => '<li' + (p.isMe ? ' class="me"' : '') + '>' + esc(nameOf(p)) +
-        (p.presence.h ? '<span>host</span>' : '') + (p.isMe ? '<span>you</span>' : '') + '</li>').join('') + '</ul>' +
+        (p.presence.h ? '<span>host</span>' : '') + (p.presence.w ? '<span>watching</span>' : '') + (p.isMe ? '<span>you</span>' : '') + '</li>').join('') + '</ul>' +
       (isHost ? '<button class="btn primary" type="button" id="mpstart"' + (n < 2 ? ' disabled' : '') + '>' + (n < 2 ? 'Waiting for someone to join…' : 'Start with ' + n + ' players') + '</button>'
-              : '<p class="mpmsg">Waiting for the host to start…</p>') + '</div>';
+              : '<p class="mpmsg">' + (watching ? 'Watching. The next round shows here when the host starts it.' : 'Waiting for the host to start…') + '</p>') + '</div>';
     $('mpcopy').onclick = () => { try { navigator.clipboard.writeText(code); $('mpcopy').textContent = 'Copied'; } catch {} };
     $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
     if (isHost && $('mpstart')) $('mpstart').onclick = start;
   }
   async function start(){
-    const peers = room.peers().slice().sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0)).slice(0, o.max);
-    if (peers.length < 2) return;
-    await room.presence({ playing: 1 });
-    room.emit('start', { players: peers.map(p => ({ id: p.id, n: nameOf(p) })), seed: (Math.random() * 4294967296) >>> 0, at: room.now() + 3500 });
+    const ps = players().slice(0, o.max);
+    if (ps.length < 2) return;
+    const pl = ps.map(p => ({ id: p.id, n: nameOf(p) })), at = room.now() + 3500;
+    await room.presence({ playing: 1, pl, at });      // pl: so someone who comes to watch mid-round knows who's playing
+    room.emit('start', { players: pl, seed: (Math.random() * 4294967296) >>> 0, at });
+  }
+  /* a round starts (or is already on, for a watcher who just came in) */
+  function enter(d, hostId){
+    const mine = roundMine = d.players.some(p => p.id === room.id);
+    inMatch = true;
+    if (isHost) announce();
+    if (!mine && !watching){ box.innerHTML = '<div class="mpbox"><p class="mpmsg">A round is on. You’ll be in the next one.</p></div>'; return; }
+    box.innerHTML = '<div class="mpbox mpon"><span>' + (watching ? 'Watching room' : 'Room') + ' <b>' + esc(code) + '</b> · ' + d.players.map(p => esc(p.n)).join(', ') + '</span>' +
+      '<button class="btn" type="button" id="mpleave">Leave</button></div>';
+    $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
+    o.onStart({ room, players: d.players.map(p => ({ id: String(p.id), n: Rooms.cleanName(p.n) })), seed: d.seed >>> 0,
+                at: +d.at || room.now(), isHost, me: room.id, hostId, watch: !mine });
   }
   function wire(){
     unwire();
     offs.push(room.onPeers(peers => {
-      if (!peers.some(p => p.presence.h)){                    // the host has gone: so has the room
+      const h = peers.find(p => p.presence.h);
+      if (!h){                    // the host has gone: so has the room
         leave().then(() => menu('The host left, so the room closed.')); if (o.onLeft) o.onLeft(); return;
       }
-      if (inMatch){ if (o.onPeers) o.onPeers(peers); } else lobby();
+      if (inMatch){
+        if (o.onPeers) o.onPeers(peers);
+        // not playing this round: back to the room once the host is
+        if (!h.presence.playing && !roundMine) api.back();
+      } else lobby();
+      if (isHost) announce();
     }));
     offs.push(room.on('start', m => {
       const d = m.data || {}, h = room.peers().find(p => p.presence.h);
       if (!h || h.id !== m.peer || !Array.isArray(d.players)) return;    // only the host starts a round
-      if (!d.players.some(p => p.id === room.id)){ inMatch = true;
-        box.innerHTML = '<div class="mpbox"><p class="mpmsg">A round is on. You’ll be in the next one.</p></div>'; return; }
-      inMatch = true;
-      box.innerHTML = '<div class="mpbox mpon"><span>Room <b>' + esc(code) + '</b> · ' + d.players.map(p => esc(p.n)).join(', ') + '</span>' +
-        '<button class="btn" type="button" id="mpleave">Leave</button></div>';
-      $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
-      o.onStart({ room, players: d.players.map(p => ({ id: String(p.id), n: Rooms.cleanName(p.n) })), seed: d.seed >>> 0,
-                  at: +d.at || room.now(), isHost, me: room.id, hostId: m.peer });
+      enter(d, m.peer);
     }));
   }
   menu();
-  return {
-    back(){ if (!room) return; inMatch = false; if (isHost) room.presence({ playing: 0 }); lobby(); },
-    close(){ closed = true; leave(); },
+  const api = {
+    back(){ if (!room) return; inMatch = false; if (isHost){ room.presence({ playing: 0 }); announce(); } lobby(); },
+    close(){ closed = true; leave(); if (pub){ pub.leave(); pub = null; } },
     live: () => !!room
   };
+  return api;
 }
 
 BUILD.tetris = host => {
@@ -2342,7 +2389,7 @@ BUILD.tetris = host => {
      own clears first, and lands when you place a piece without clearing. The
      last one standing wins. Each placement sends your board for the little
      views of everyone else's. ── */
-  const OPP_CELL = 6;
+  const oppCell = () => vs && vs.watch ? 12 : 6;   // a watcher's views are the whole show, so bigger
   const ordinal = n => n + (n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
   const boardStr = () => grid.map(r => r.map(c => c ? (c === 'G' ? 'g' : c) : '.').join('')).join('');
   function vsOpen(){
@@ -2366,6 +2413,7 @@ BUILD.tetris = host => {
     v.offs.push(m.room.on('out', msg => { if (vs === v) vsKnock(msg.peer); }));
     renderOpps();
     phase='ready'; clearInterval(loopId); emptyBoard(); renderStatsLabels(); updateStats(); draw();
+    if (v.watch){ showOver('Watching', v.players.map(p => esc(p.n)).join(' · ')); return; }   // their boards are the views beside this one
     const count = () => {
       if (vs !== v) return;
       const left = Math.ceil((v.at - v.room.now()) / 1000);
@@ -2410,15 +2458,15 @@ BUILD.tetris = host => {
   function renderOpps(){
     const el = $$('topps'); if (!el) return;
     if (!vs){ el.hidden = true; el.innerHTML = ''; return; }
-    el.hidden = false;
+    el.hidden = false; el.classList.toggle('watch', !!vs.watch);
     el.innerHTML = vs.players.filter(p => p.id !== vs.me).map(p => '<div class="topp" data-id="' + esc(p.id) + '">' +
-      '<canvas width="' + COLS * OPP_CELL + '" height="' + ROWS * OPP_CELL + '"></canvas><span>' + esc(p.n) + '</span></div>').join('');
+      '<canvas width="' + COLS * oppCell() + '" height="' + ROWS * oppCell() + '"></canvas><span>' + esc(p.n) + '</span></div>').join('');
     drawOpps();
   }
   function drawOpps(){
     if (!vs) return;
     $$('topps').querySelectorAll('.topp').forEach(d => {
-      const id = d.dataset.id, g = vs.boards.get(id) || '', c = d.querySelector('canvas').getContext('2d');
+      const id = d.dataset.id, g = vs.boards.get(id) || '', c = d.querySelector('canvas').getContext('2d'), OPP_CELL = oppCell();
       c.clearRect(0, 0, COLS * OPP_CELL, ROWS * OPP_CELL);
       for (let i = 0; i < g.length && i < COLS * ROWS; i++){ const ch = g[i]; if (ch === '.') continue;
         c.fillStyle = ch === 'g' ? COLORS.G : (COLORS[ch] || '#888'); c.fillRect((i % COLS) * OPP_CELL, ((i / COLS) | 0) * OPP_CELL, OPP_CELL - 1, OPP_CELL - 1); }
@@ -3104,7 +3152,7 @@ BUILD.snake = host => {
     if (s.q.length < 3) s.q.push({ x: d[0], y: d[1] });
   }
   function mtSteer(m){
-    if (!mt || mt.over) return;
+    if (!mt || mt.over || mt.watch) return;
     if (mt.isHost){ const s = mt.snakes.find(x => x.id === mt.me); if (s) qTurn(s, m); }
     else mt.room.emit('dir', { d: m });
   }
@@ -8483,6 +8531,325 @@ BUILD.engineering = host => revGame(host, { title:'Engineering', how:'Pick a mod
       {id:'e-prd',name:'Engineered products',gen:genProducts},
       {id:'e-bio',name:'Biomedical',gen:genBiomed}]}
   ] });
+
+/* ── Chess ─────────────────────────────────────────────────────────
+   The rules and the bot are chess.js (shared with the server, which checks
+   every online move). Against the bot: Easy to Hard, undo, optional clocks.
+   Online: make a public or private game, or join one from the list or with a
+   code; anyone can watch a public game. Moves sync through
+   /api/gamestate?mode=chess by polling every 2 s. */
+let chessLoad = null;
+const loadChess = () => window.Chess ? Promise.resolve(window.Chess) : chessLoad || (chessLoad = new Promise((res, rej) => {
+  const s = document.createElement('script'); s.src = 'chess.js?v=20261113';
+  s.onload = () => res(window.Chess); s.onerror = () => { chessLoad = null; rej(new Error('Couldn’t load chess.')); };
+  document.head.appendChild(s);
+}));
+BUILD.chess = host => {
+  head(host, 'Chess', tap('Click', 'Tap') + ' a piece, then where it goes.',
+    '<div class="minesbar"><div class="diffbar" id="chmode"></div><div class="diffbar" id="chlvl"></div></div>' +
+    '<div class="chsets"><label>Play as <select id="chcol"><option value="w">White</option><option value="b">Black</option><option value="r">Random</option></select></label>' +
+      '<label>Clock <select id="chclk"><option value="0">None</option><option value="3+2">3 + 2</option><option value="5+0">5 min</option><option value="10+0">10 min</option><option value="15+10">15 + 10</option></select></label></div>' +
+    '<div class="chwrap"><div class="chcol">' +
+      '<div class="chstrip" id="chtop"></div><div class="chboard" id="chboard"></div><div class="chstrip" id="chbot"></div></div>' +
+      '<div class="chside"><div id="chnet"></div><ol class="chmoves" id="chmoves"></ol>' +
+      '<div class="minesfoot" id="chbtns"></div></div></div>');
+  $('sc').textContent = 'Loading…';
+  const GLYPH = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' }, VAL = { p:1, n:3, b:3, r:5, q:9, k:0 };
+  const NAME = { k:'king', q:'queen', r:'rook', b:'bishop', n:'knight', p:'pawn' };
+  const LV = { easy:'Easy', medium:'Medium', hard:'Hard' };
+  let C, alive = true, mode = TT.get('tt.chessMode', 'bot') === 'online' ? 'online' : 'bot';
+  let lvl = TT.get('tt.chessLvl', 'medium'); if (!LV[lvl]) lvl = 'medium';
+  $('chcol').value = TT.get('tt.chessCol', 'w'); $('chclk').value = TT.get('tt.chessClk', '0');
+  if (!$('chcol').value) $('chcol').value = 'w'; if (!$('chclk').value) $('chclk').value = '0';
+  $('chcol').onchange = () => TT.set('tt.chessCol', $('chcol').value);
+  $('chclk').onchange = () => TT.set('tt.chessClk', $('chclk').value);
+
+  /* the game on the board */
+  let g = null;          // { moves:[uci], me:'w'|'b'|null, result, reason, clock:{w,b,inc}|null, at, online, code, … }
+  let view = null, sel = -1, flip = false, promo = null, thinking = 0, tick = null;
+  const turn = () => view.states.length % 2 ? 'w' : 'b';
+  const pos = () => view.states[view.states.length - 1];
+  const myTurn = () => g && !g.result && g.me === turn() && !thinking && (!g.online || (g.white && g.black));
+  function load(moves){ view = C.replay(moves); }
+  const clockOn = () => g.clock && !g.result && g.moves.length >= 2;
+  const left = side => !g.clock ? null : g.clock[side] - (clockOn() && turn() === side ? Date.now() + (g.skew || 0) - g.at : 0);
+
+  /* ── drawing ── */
+  const glyph = p => '<span class="chp ' + (p === p.toUpperCase() ? 'w' : 'b') + '">' + GLYPH[p.toLowerCase()] + '︎</span>';
+  function draw(){
+    if (!alive || !view) return;
+    const s = pos(), bottom = (g.me || 'w') === 'w' ? !flip : flip;    // true: white at the bottom
+    const last = g.moves.length ? g.moves[g.moves.length - 1] : '';
+    const lastSq = last ? [C.sqIndex(last.slice(0, 2)), C.sqIndex(last.slice(2, 4))] : [];
+    const legal = sel >= 0 ? C.moves(s).filter(m => m.from === sel) : [];
+    const chk = C.inCheck(s) ? s.b.indexOf(s.t === 'w' ? 'K' : 'k') : -1;
+    let h = '';
+    for (let k = 0; k < 64; k++){
+      const i = bottom ? k : 63 - k, r = i >> 3, f = i & 7, p = s.b[i], tgt = legal.find(m => m.to === i);
+      const cls = 'chsq ' + ((r + f) % 2 ? 'dk' : 'lt') + (lastSq.includes(i) ? ' last' : '') + (i === sel ? ' sel' : '') +
+        (tgt ? (p || (s.b[sel] && s.b[sel].toLowerCase() === 'p' && (i & 7) !== (sel & 7)) ? ' cap' : ' tgt') : '') + (i === chk ? ' chk' : '');
+      const coord = ((k & 7) === 0 ? '<i class="rk">' + (8 - r) + '</i>' : '') + (k >= 56 ? '<i class="fl">' + 'abcdefgh'[f] + '</i>' : '');
+      h += '<button type="button" class="' + cls + '" data-i="' + i + '" aria-label="' + C.sqName(i) + (p ? ' ' + (p === p.toUpperCase() ? 'white ' : 'black ') + NAME[p.toLowerCase()] : '') + '">' +
+           coord + (p ? glyph(p) : '') + '</button>';
+    }
+    if (promo){
+      const col = s.t, opts = 'qrbn'.split('').map(x => '<button type="button" data-pr="' + x + '" aria-label="' + NAME[x] + '">' + glyph(col === 'w' ? x.toUpperCase() : x) + '</button>').join('');
+      h += '<div class="chpromo" role="dialog" aria-label="Promote to">' + opts + '</div>';
+    }
+    $('chboard').innerHTML = h;
+    strips(bottom); moveList(); status();
+  }
+  function strips(bottom){
+    const taken = { w:[], b:[] };                         // what each side has taken
+    view.states.forEach((st, i) => { if (st.x) taken[i % 2 ? 'w' : 'b'].push(st.x.toLowerCase()); });
+    const score = c => taken[c].reduce((a, p) => a + VAL[p], 0);
+    const strip = c => {
+      const name = g.online ? (c === 'w' ? g.white : g.black) || 'Waiting…' : c === g.me ? 'You' : 'Bot · ' + LV[g.lvl];
+      const diff = score(c) - score(c === 'w' ? 'b' : 'w'), t = left(c);
+      const caps = taken[c].sort((a, b) => VAL[b] - VAL[a]).map(p => glyph(c === 'w' ? p : p.toUpperCase())).join('');
+      return '<span class="chname">' + esc(name) + (turn() === c && !g.result ? ' <i class="chturn" aria-label="to move"></i>' : '') + '</span>' +
+        '<span class="chcaps">' + caps + (diff > 0 ? '<b>+' + diff + '</b>' : '') + '</span>' +
+        (t == null ? '' : '<span class="chclock' + (clockOn() && turn() === c ? ' run' : '') + (t < 20000 ? ' low' : '') + '">' + clockText(t) + '</span>');
+    };
+    $('chbot').innerHTML = strip(bottom ? 'w' : 'b');
+    $('chtop').innerHTML = strip(bottom ? 'b' : 'w');
+  }
+  const clockText = ms => { ms = Math.max(0, ms); const s = Math.ceil(ms / 1000);
+    return ms < 10000 ? (ms / 1000).toFixed(1) : Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function moveList(){
+    const ol = $('chmoves'); let h = '';
+    for (let i = 0; i < view.sans.length; i += 2)
+      h += '<li><span>' + view.sans[i] + '</span><span>' + (view.sans[i + 1] || '') + '</span></li>';
+    ol.innerHTML = h || '<li class="chempty">No moves yet</li>';
+    ol.scrollTop = ol.scrollHeight;
+  }
+  const WHO = { w:'White', b:'Black' };
+  function status(){
+    let t;
+    if (g.result){
+      const win = g.result === '1-0' ? 'w' : g.result === '0-1' ? 'b' : null;
+      t = (win ? WHO[win] + ' wins' : 'Draw') + ' · ' + (g.reason === 'resignation' ? WHO[win === 'w' ? 'b' : 'w'] + ' resigned' : g.reason === 'time' ? WHO[win === 'w' ? 'b' : 'w'] + ' ran out of time' : g.reason);
+    } else if (g.online && !(g.white && g.black)) t = 'Waiting for someone to join';
+    else if (thinking) t = 'Bot is thinking…';
+    else t = (g.me === turn() ? 'Your move' : WHO[turn()] + ' to move') + (C.inCheck(pos()) ? ' · Check!' : '');
+    $('sc').textContent = t;
+    buttons();
+  }
+  function buttons(){
+    const b = [];
+    if (g.online){
+      if (g.me && !g.result && g.white && g.black){
+        if (g.offer && g.offer !== g.me) b.push(['chacc', 'Accept draw', 1], ['chdec', 'Decline']);
+        else b.push(['chdraw', g.offer === g.me ? 'Draw offered' : 'Offer draw']);
+        b.push(['chres', 'Resign']);
+      }
+      b.push(['chleave', g.me && !g.result ? 'Back to games' : 'Leave']);
+    } else {
+      b.push(['chnew', 'New game', 1], ['chundo', 'Undo']);
+      if (!g.result && g.moves.length) b.push(['chres', 'Resign']);
+    }
+    b.push(['chflip', 'Flip board']);
+    $('chbtns').innerHTML = b.map(([id, t, pri]) => '<button class="btn' + (pri ? ' primary' : '') + '" type="button" id="' + id + '">' + t + '</button>').join('');
+    const on = (id, fn) => { if ($(id)) $(id).onclick = fn; };
+    on('chflip', () => { flip = !flip; draw(); });
+    on('chnew', newBotGame);
+    on('chundo', undo);
+    on('chres', () => { if (!confirm('Resign this game?')) return; g.online ? send('resign') : over(g.me === 'w' ? '0-1' : '1-0', 'resignation'); });
+    on('chdraw', () => { if (g.offer !== g.me) send('draw'); });
+    on('chacc', () => send('draw'));
+    on('chdec', () => send('decline'));
+    on('chleave', () => { stopPoll(); TT.set('tt.chessCode', ''); g = null; lobby(); });
+    if ($('chundo')) $('chundo').disabled = !g.moves.length;
+  }
+
+  /* ── input ── */
+  $('chboard').onclick = e => {
+    const pr = e.target.closest('[data-pr]');
+    if (pr && promo){ const m = promo; promo = null; play({ ...m, promo: pr.dataset.pr }); return; }
+    if (promo){ promo = null; draw(); return; }
+    const sq = e.target.closest('.chsq'); if (!sq || !g || !myTurn()) return;
+    const i = +sq.dataset.i, s = pos(), m = sel >= 0 && C.moves(s).find(x => x.from === sel && x.to === i);
+    if (m){
+      sel = -1;
+      if (m.promo){ promo = { from:m.from, to:m.to }; draw(); return; }
+      play(m); return;
+    }
+    sel = s.b[i] && C.colorOf(s.b[i]) === s.t && i !== sel ? i : -1;
+    draw();
+  };
+  addEventListener('keydown', esc_);
+  function esc_(e){ if (e.key === 'Escape' && (promo || sel >= 0)){ promo = null; sel = -1; draw(); } }
+
+  /* a move by whoever is to move */
+  function play(m){
+    const s = pos(), side = s.t, u = C.uci(m), cap = s.b[m.to] || (s.b[m.from].toLowerCase() === 'p' && m.to === s.ep);
+    if (g.clock && clockOn()) g.clock[side] = Math.max(0, left(side)) + g.clock.inc;
+    if (g.clock) g.at = Date.now() + (g.skew || 0);
+    g.moves.push(u); load(g.moves); sel = -1;
+    SFX[cap ? 'place' : 'flip']();
+    const end = C.outcome(view.states);
+    if (end && !g.online) return over(end.result, end.reason);
+    draw();
+    if (g.online){ if (side === g.me) send('move', { uci:u, ply:g.moves.length - 1 }); }
+    else if (side === g.me) botTurn();
+  }
+  function over(result, reason){
+    g.result = result; g.reason = reason; thinking = 0; draw();
+    const win = result === '1-0' ? 'w' : result === '0-1' ? 'b' : null;
+    if (win === g.me) SFX.win(); else if (win) SFX.lose();
+    if (!g.online && win === g.me) recordStat('chess', { key:'wins' + lvl, mode:'count', value:1 });
+  }
+
+  /* ── against the bot ── */
+  let worker = null, ask = 0;
+  try { worker = new Worker('chess.js?v=20261113'); worker.onmessage = e => botReply(e.data.id, e.data.move); worker.onerror = () => { worker = null; }; } catch { worker = null; }
+  function botTurn(){
+    if (g.result || g.online || turn() === g.me) return;
+    const id = ++ask, at = Date.now(); thinking = id; status();
+    const reply = mv => setTimeout(() => botReply(id, mv), Math.max(0, 350 - (Date.now() - at)));
+    if (worker) worker.postMessage({ id, moves:g.moves.slice(), level:lvl, at });
+    else setTimeout(() => reply(C.botMove(g.moves, lvl)), 30);
+  }
+  function botReply(id, mv){
+    if (!alive || id !== thinking || !g || g.online) return;
+    thinking = 0;
+    const m = mv && C.fromUci(pos(), mv);
+    if (m) play(m); else draw();
+  }
+  function newBotGame(){
+    ask++; thinking = 0; promo = null; sel = -1; flip = false;
+    let me = $('chcol').value; if (me === 'r') me = Math.random() < 0.5 ? 'w' : 'b';
+    const [mins, inc] = $('chclk').value.split('+').map(Number);
+    g = { moves:[], me, lvl, result:null, clock: mins ? { w:mins * 60000, b:mins * 60000, inc:(inc || 0) * 1000 } : null, at:Date.now() };
+    load([]); draw(); botTurn();
+  }
+  function undo(){
+    if (!g.moves.length) return;
+    ask++; thinking = 0; promo = null; sel = -1;
+    g.moves.pop();
+    if (g.moves.length && (g.moves.length % 2 ? 'b' : 'w') !== g.me) g.moves.pop();   // back to your move
+    g.result = null; g.reason = null; g.at = Date.now();
+    load(g.moves); draw(); botTurn();
+  }
+
+  /* ── online ── */
+  let poll = null, busy = false;
+  const stopPoll = () => { if (poll){ clearInterval(poll); poll = null; } };
+  const signedIn = () => { const c = TT.get('tt.creds', null); return !!(c && c.email && c.password); };
+  function take(d){                      // a game from the server
+    const keepFlip = g && g.code === d.code ? flip : false;
+    const before = g && g.code === d.code ? g.moves.length : -1;
+    g = { online:true, code:d.code, me:d.you, pub:d.pub, tc:d.tc, white:d.white, black:d.black, moves:d.moves.slice(), result:d.result, reason:d.reason,
+          offer:d.offer, clock:d.clock, at:d.at, skew:d.now - Date.now() };
+    flip = keepFlip;
+    if (before !== g.moves.length){ load(g.moves); if (before >= 0 && g.moves.length > before) SFX.flip(); }
+    if (g.result && before >= 0) stopPoll();
+    netBox(); draw();
+  }
+  async function send(action, extra){
+    if (busy) return; busy = true;
+    try { const d = await TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'chess', action, code:g && g.code }, extra || {}) }); if (alive) take(d.game); }
+    catch (e){ if (alive){ $('sc').textContent = e.message; if (g && g.code) refresh(); } }
+    finally { busy = false; }
+  }
+  async function refresh(){
+    if (!g || !g.online || busy || document.hidden) return;
+    try { const d = await TT.api('/api/gamestate', { params:{ mode:'chess', code:g.code } }); if (alive && g && g.code === d.game.code) take(d.game); } catch {}
+  }
+  async function open(code, join){
+    code = String(code || '').trim().toUpperCase(); if (!code) return;
+    $('chnet').innerHTML = '<p class="mpmsg">Opening ' + esc(code) + '…</p>';
+    try {
+      const d = join ? await TT.api('/api/gamestate', { method:'PUT', body:{ mode:'chess', action:'join', code } })
+                     : await TT.api('/api/gamestate', { params:{ mode:'chess', code } });
+      if (!alive) return;
+      TT.set('tt.chessCode', d.game.code); g = null; take(d.game);
+      stopPoll(); if (!g.result) poll = setInterval(refresh, 2000);
+    } catch (e){ if (alive) lobby(e.message); }
+  }
+  function netBox(){
+    if (!g || !g.online){ $('chnet').innerHTML = ''; return; }
+    const link = location.origin + location.pathname.replace(/[^/]*$/, '') + 'games.html?play=chess&code=' + g.code;
+    $('chnet').innerHTML = '<div class="mpbox chnetbox"><div class="mphead"><div><span class="mplabel">' + (g.pub ? 'Public' : 'Private') + ' game' + (g.tc ? ' · ' + esc(g.tc.replace('+', ' + ')) : '') +
+      (g.me ? '' : ' · watching') + '</span><b class="mpcode">' + esc(g.code) + '</b></div>' +
+      '<span class="mpbtns"><button class="btn" type="button" id="chcopy">Copy link</button></span></div>' +
+      (g.offer && g.offer !== g.me && g.me && !g.result ? '<p class="mpmsg">' + WHO[g.offer] + ' offers a draw.</p>' : '') + '</div>';
+    $('chcopy').onclick = () => { try { navigator.clipboard.writeText(link); $('chcopy').textContent = 'Copied'; } catch {} };
+  }
+  /* make, join or watch: public games listed, private ones by code */
+  async function lobby(msg){
+    stopPoll(); ask++; thinking = 0; g = null; view = null;
+    $('chboard').innerHTML = $('chtop').innerHTML = $('chbot').innerHTML = $('chmoves').innerHTML = $('chbtns').innerHTML = '';
+    $('sc').textContent = 'Online';
+    if (!signedIn()){ $('chnet').innerHTML = '<div class="mpbox"><p class="mpmsg">Sign in on the timetable to play online.</p></div>'; return; }
+    $('chnet').innerHTML = '<div class="mpbox">' +
+      '<div class="mprow"><button class="btn primary" type="button" id="chmake">Make a game</button>' +
+        '<label class="chpub"><input type="checkbox" id="chpubin"' + (TT.get('tt.chessPub', true) ? ' checked' : '') + '> Public</label></div>' +
+      '<div class="mprow"><input id="chcode" maxlength="8" placeholder="Code" autocomplete="off" data-lpignore="true" data-1p-ignore autocapitalize="characters" spellcheck="false" aria-label="Game code">' +
+        '<button class="btn" type="button" id="chjoin">Join</button></div>' +
+      '<p class="mpmsg" role="status">' + esc(msg || 'Public games show up below for anyone to join or watch. Private ones need the code.') + '</p>' +
+      '<div class="chlist" id="chlist">' + LD('Finding games…', '', { sm:true }) + '</div></div>';
+    $('chpubin').onchange = () => TT.set('tt.chessPub', $('chpubin').checked);
+    $('chmake').onclick = async () => {
+      const [mins, inc] = $('chclk').value.split('+').map(Number), c = $('chcol').value;
+      try { const d = await TT.api('/api/gamestate', { method:'PUT', body:{ mode:'chess', action:'create', color:c === 'r' ? '' : c, mins, inc, pub:$('chpubin').checked } });
+        open(d.game.code); } catch (e){ lobby(e.message); }
+    };
+    $('chjoin').onclick = () => open($('chcode').value, true);
+    $('chcode').onkeydown = e => { if (e.key === 'Enter') $('chjoin').click(); };
+    listGames();
+    poll = setInterval(listGames, 5000);
+  }
+  async function listGames(){
+    if (document.hidden || !$('chlist')) return;
+    let d; try { d = await TT.api('/api/gamestate', { params:{ mode:'chess', list:1 } }); } catch (e){ if ($('chlist')) $('chlist').innerHTML = '<p class="mpmsg">' + esc(e.message) + '</p>'; return; }
+    if (!alive || !$('chlist') || g) return;
+    const row = x => {
+      const open_ = !(x.white && x.black);
+      return '<li><span>' + esc(x.white || '?') + ' <i>vs</i> ' + esc(x.black || '?') + '<small>' + (x.tc ? esc(x.tc.replace('+', ' + ')) + ' · ' : '') +
+        (open_ ? 'waiting' : 'move ' + (Math.floor(x.ply / 2) + 1)) + '</small></span>' +
+        '<button class="btn' + (open_ && !x.mine ? ' primary' : '') + '" type="button" data-code="' + esc(x.code) + '" data-join="' + (open_ || x.mine ? 1 : '') + '">' +
+        (x.mine ? 'Resume' : open_ ? 'Join' : 'Watch') + '</button></li>';
+    };
+    $('chlist').innerHTML = d.games.length ? '<ul class="mplist chgames">' + d.games.map(row).join('') + '</ul>' : '<p class="mpmsg">No public games right now.</p>';
+    $('chlist').querySelectorAll('[data-code]').forEach(b => b.onclick = () => open(b.dataset.code, !!b.dataset.join));
+  }
+
+  /* ── mode and level pills ── */
+  const pills = (bar, opts, cur, set) => {
+    $(bar).innerHTML = '';
+    Object.entries(opts).forEach(([k, label]) => {
+      const p = document.createElement('button'); p.type = 'button'; p.className = 'diffpill'; p.textContent = label;
+      p.setAttribute('aria-pressed', k === cur);
+      p.onclick = () => { [...$(bar).children].forEach(c => c.setAttribute('aria-pressed', c === p)); set(k); };
+      $(bar).appendChild(p);
+    });
+  };
+  function setMode(m){
+    mode = m; TT.set('tt.chessMode', m);
+    $('chlvl').style.display = m === 'bot' ? '' : 'none';
+    if (m === 'bot'){ stopPoll(); $('chnet').innerHTML = ''; newBotGame(); }
+    else { const c = new URLSearchParams(location.search).get('code') || TT.get('tt.chessCode', ''); c ? open(c, true) : lobby(); }
+  }
+  pills('chmode', { bot:'vs Bot', online:'Online' }, mode, setMode);
+  pills('chlvl', LV, lvl, k => { lvl = k; TT.set('tt.chessLvl', k); if (g && !g.online){ g.lvl = k; draw(); } });
+
+  tick = setInterval(() => {
+    if (!g || !g.clock || g.result || !clockOn()) return;
+    const side = turn();
+    if (left(side) <= 0){
+      if (g.online) refresh(); else { g.clock[side] = 0; over(side === 'w' ? '0-1' : '1-0', 'time'); }
+    } else strips((g.me || 'w') === 'w' ? !flip : flip);
+  }, 200);
+
+  loadChess().then(x => {
+    if (!alive) return; C = x;
+    if (new URLSearchParams(location.search).get('code')){ mode = 'online'; pills('chmode', { bot:'vs Bot', online:'Online' }, mode, setMode); }
+    setMode(mode);
+  }).catch(e => { $('sc').textContent = e.message; });
+
+  return () => { alive = false; stopPoll(); clearInterval(tick); removeEventListener('keydown', esc_); if (worker) worker.terminate(); };
+};
 
 /* Hong Kong Mahjong is its own page in a frame: it's big, and its styles would clash
    with this page's. */

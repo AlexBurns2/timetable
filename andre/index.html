@@ -1508,6 +1508,7 @@ async function load(){
     if (id === reqId){
       loading = false; render(); if (settingsOpen()) paintSettings();
       if (entries.length && myCourses().map(c => c.key).join("|") !== subjectFor) loadSubjectEvents();
+      if (entries.length && freeShow && !freeGroup.length && matesFor !== email) loadBusy();      /* Who's free on, nobody picked: this timetable's classmates */
     }
   }
 }
@@ -2568,10 +2569,26 @@ const busy = {};                              /* id -> Set of "mona|3" | null (c
 const busyCache = get(LS.busy, {}) || {};
 const BUSY_TTL = 24 * 3600e3;
 
+/* nobody picked: compare with the shown timetable's classmates instead, as the free periods page does */
+let mates = [], matesFor = "";
+const freePeople = () => freeGroup.length ? freeGroup : mates;
+async function loadMates(){
+  const codes = [...new Set(entries.filter(e => e.kind === "class" && e.code).map(e => e.code))];
+  if (matesFor === email || !codes.length) return;
+  const me = email.split("@")[0], seen = new Map();
+  for (const code of codes){
+    try {
+      if (!rosters[code] || !rosters[code].people) rosters[code] = { people: rosterPeople(await api({ class:code })) };
+      for (const p of rosters[code].people) if (p.user && p.user !== me && !seen.has(p.user)) seen.set(p.user, { id:p.user, name:p.name });
+    } catch {}
+  }
+  mates = [...seen.values()]; matesFor = email;
+}
 async function loadBusy(){
-  if (!signedIn || !freeGroup.length) return;
+  if (!signedIn) return;
+  if (!freeGroup.length){ freeStatus = "Finding your classmates…"; paintFree(); await loadMates(); freeStatus = ""; }
   const now = Date.now(), todo = [];
-  for (const p of freeGroup){
+  for (const p of freePeople()){
     const hit = busyCache[p.id];
     if (hit && now - hit.at < BUSY_TTL) busy[p.id] = hit.b ? new Set(hit.b) : null;
     else todo.push(p.id);
@@ -2597,14 +2614,14 @@ async function loadBusy(){
 function shortNames(list){
   const first = p => String(p.name || p.id).split(/\s+/)[0];
   const count = {};
-  for (const p of freeGroup){ const k = first(p).toLowerCase(); count[k] = (count[k] || 0) + 1; }
+  for (const p of freePeople()){ const k = first(p).toLowerCase(); count[k] = (count[k] || 0) + 1; }
   return list.map(p => {
     const parts = String(p.name || "").split(/\s+/).filter(Boolean);
     return count[first(p).toLowerCase()] > 1 && parts.length > 1 ? first(p) + " " + parts.at(-1)[0] : first(p);
   });
 }
 /* the group members whose timetables could be read */
-const knownGroup = () => freeGroup.filter(p => busy[p.id] instanceof Set && busy[p.id].size);
+const knownGroup = () => freePeople().filter(p => busy[p.id] instanceof Set && busy[p.id].size);
 /* the checker is in play: switched on, signed in, and someone to compare with.
    Then subjects are hidden and every period shows who's free. */
 const freeActive = () => freeShow && signedIn && knownGroup().length > 0;
@@ -2618,7 +2635,8 @@ function freeNote(x){
   return {
     state: free.length === known.length ? "all" : free.length ? "some" : "none",
     count: `${free.length} of ${known.length} free`,
-    names: shortNames(free).join(", "),
+    /* classmates can be dozens: the first few, then how many more */
+    names: (n => n.length > 6 ? n.slice(0, 6).join(", ") + " +" + (n.length - 6) : n.join(", "))(shortNames(free)),
     title: free.length ? "Free then: " + free.map(p => p.name).join(", ") : "No one in your group is free then"
   };
 }
@@ -2636,7 +2654,7 @@ function paintFree(){
     q.disabled = true; $("freechips").innerHTML = "";
     return;
   }
-  stat.textContent = freeStatus || (freeGroup.length ? "Tap someone to take them off" : "Add friends to see when they're free with you");
+  stat.textContent = freeStatus || (freeGroup.length ? "Tap someone to take them off" : mates.length ? `Nobody picked, so it's your ${mates.length} classmates. Add friends to narrow it down.` : "Add friends to see when they're free with you");
   $("freechips").innerHTML = freeGroup.map(p => {
     const unk = busy[p.id] === null || (busy[p.id] instanceof Set && !busy[p.id].size);
     return `<button class="chip ${unk ? "unk" : ""}" data-id="${esc(p.id)}" title="${unk ? "Their timetable couldn't be read. " : ""}Remove ${esc(p.name)}">` +
@@ -2648,13 +2666,15 @@ $("freechips").onclick = e => {
   if (!b) return;
   freeGroup = freeGroup.filter(p => p.id !== b.dataset.id);
   set(LS.group, freeGroup); paintFree(); render();
+  if (!freeGroup.length) loadBusy();          /* back to the classmates */
 };
 /* The Who's free tile switches it on and off, the lessons transforming into
    who's free then (and back). From the month it also goes back to the week, to show it. */
 function toggleFree(){
   const flip = () => { freeShow = !freeShow; set(LS.freeshow, freeShow); mjLeave(); paintFree(); };
   if (view === "month"){ flip(); closeAll(); render(); if (freeShow) toggleCalendar(); return; }
-  shiftWeek(flip);
+  /* turning on with nobody picked: the classmates' timetables first, so the lessons turn straight into who's free */
+  if (!freeShow && !freeGroup.length && matesFor !== email) dataReady(loadBusy()).then(() => shiftWeek(flip)); else shiftWeek(flip);
 }
 tileHead("free", () => toggleFree());
 finder($("freeq"), $("freesugg"), p => {
@@ -3626,7 +3646,7 @@ function paintFreeTile(){
   const tile = document.querySelector('[data-m="free"]');
   tile.classList.toggle("on", freeShow);
   tile.querySelector(".mod-head").setAttribute("aria-pressed", freeShow);
-  $("freestate").textContent = !freeShow ? "" : freeActive() ? "· On" : signedIn && !freeGroup.length ? "· Add people in settings" : "· On";
+  $("freestate").textContent = freeShow ? "· On" : "";
 }
 /* turning the month: the old one slides off as the new one slides in; spamming queues */
 let monthTurn = null, wantMonth = null;
@@ -3888,6 +3908,7 @@ const GAME_LIST = [
   { id:"mines", cat:"Arcade", ico:"💣", name:"Minesweeper", blurb:"Clear the board, flag the mines", c:"#8E8E93" },
   { id:"typing", cat:"Arcade", ico:"⌨️", name:"Typing race", blurb:"How fast can you type it?", c:"#AC8E68" },
   { id:"react", cat:"Arcade", ico:"🎯", name:"Reaction", blurb:"Tap the moment it turns green", c:"#FF453A" },
+  { id:"chess", cat:"Arcade", ico:"♟️", name:"Chess", blurb:"Play the bot from Easy to Hard, or a friend online", c:"#AC8E68" },
   { id:"hkmj", cat:"Arcade", ico:"🀄", name:"Hong Kong Mahjong", blurb:"Play bots to Hong Kong rules, Easy to Pro", c:"#E0303A", frame:"/hkmahjong.html?andre=1" }
 ];
 /* every other game is the games page's own, one at a time in andre's look, so scores and saves stay shared */

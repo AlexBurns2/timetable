@@ -93,6 +93,8 @@ input[type=text]:focus{outline:2px solid #9cc0f0;border-color:#7aa7e6}
 .lvl{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 13px;font-size:14px}
 .lvl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .seatrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pubrooms{max-width:1000px;margin:22px auto 0}.pubrooms .nm{flex:1}.pubrooms small{color:var(--muted);font-weight:400}
+.pubtog{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:600}.pubtog input{width:auto}
 .seatrow:last-child{border-bottom:0}
 .seatrow .nm{flex:1;font-weight:600}
 .seatrow .nm small{font-weight:400;color:var(--muted)}
@@ -2134,6 +2136,7 @@ function renderHome() {
     <button class="choice" data-mode="speed"><span class="face"><b>快</b></span><strong>Quick turns</strong><small>5 seconds a turn</small></button>
     <button class="choice" data-mode="practice"><span class="face"><b>練</b></span><strong>Practice</strong><small>See the bots' hands and advice</small></button>
   </nav>
+  ${MULTIPLAYER ? '<section class="pubrooms"><h3>Public rooms</h3><div id="pubRooms"><p class="sub">Looking for rooms…</p></div></section>' : ''}
   <div class="modes">
     <button class="mode" data-go="guide"><b>Rules</b></button>
     <button class="mode" id="statsBtn"><b>Stats</b></button>
@@ -2146,6 +2149,7 @@ function renderHome() {
   $('#lookBtn').onclick = () => showAppearance();
   $('#statsBtn').onclick = showStats;
   $('#home').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => startBotGame(b.dataset.mode));
+  if (MULTIPLAYER) { renderPubRooms(); Net.pubOpen().then(h => { if (!h && $('#pubRooms')) $('#pubRooms').innerHTML = '<p class="sub">Couldn’t load the public rooms.</p>'; }); }
   $('#home').querySelectorAll('[data-go]').forEach(c => c.onclick = () => {
     const g = c.dataset.go;
     if (g === 'bots') show('botsetup');
@@ -2153,6 +2157,16 @@ function renderHome() {
     else if (g === 'join') joinPrompt();
     else showGuide('basics');
   });
+}
+function renderPubRooms() {
+  const el = $('#pubRooms'); if (!el || !Net.pubH) return;
+  const rows = Net.pubH.peers().filter(p => !p.isMe && p.presence && typeof p.presence.code === 'string' && /^[A-Z0-9]{5}$/.test(p.presence.code));
+  el.innerHTML = rows.length ? rows.map(p => { const x = p.presence, full = (x.players | 0) >= 4;
+    return `<div class="seatrow"><div class="nm">${esc(cleanName(x.n) || 'Someone')}’s room <small>${x.players | 0}/4 players · ${x.playing ? 'playing' : full ? 'full' : 'waiting'}</small></div>
+      ${x.playing || full ? '' : `<button class="btn primary" data-pj="${x.code}">Join</button>`}<button class="btn" data-pw="${x.code}">Watch</button></div>`; }).join('')
+    : '<p class="sub">No public rooms right now. Open one and tick Public.</p>';
+  el.querySelectorAll('[data-pj]').forEach(b => b.onclick = () => joinRoom(b.dataset.pj));
+  el.querySelectorAll('[data-pw]').forEach(b => b.onclick = () => joinRoom(b.dataset.pw, true));
 }
 function cleanName(s) { return censor(String(s || '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g, '').trim().slice(0, 16)); }
 
@@ -2944,12 +2958,27 @@ const Net = {
     this.hostPeer = null; this.keys = {}; this.hostKeyP = null; this.seq = 0; this.lastSeq = 0; this.gotLobby = false; this.banned = new Set(); this.isHost = false;
   },
   leave() {
-    const n = this.named; this.reset(); this.named = null; this.code = null;
+    const n = this.named; this.reset(); this.named = null; this.code = null; App.watching = false; this.announce();
     if (n) n.leave().catch(() => { });
   },
   emit(topic, data) { if (this.named) return this.named.emit(topic, data).catch(e => { if (e && e.code === 'not_permitted') netError('Your access to this page does not allow sending moves. Ask the owner to share it with you as a Contributor or Editor.'); }); },
+  /* the public list: rooms/mj-public, where each public host's presence is { code, n, players, playing } */
+  pubH: null, pubP: null, pubLast: '',
+  pubOpen() {
+    return this.pubP || (this.pubP = this.ready().then(r => r && r.join('mj-public')).then(h => {
+      if (!h) { this.pubP = null; return null; }
+      this.pubH = h; h.onPeers(() => renderPubRooms()); this.announce(); return h;
+    }).catch(() => { this.pubP = null; return null; }));
+  },
+  announce() {
+    const L = App.lobby, on = this.isHost && L && L.pub;
+    const p = on ? { code: this.code, n: App.name, players: L.seats.filter(x => x && x.ty === 'h').length, playing: L.started ? 1 : 0 } : { code: null, n: null, players: null, playing: null };
+    const k = JSON.stringify(p); if (k === this.pubLast) return; this.pubLast = k;
+    if (this.pubH) this.pubH.presence(p).catch(() => { }); else if (on) this.pubOpen();
+  },
   sendLobby() {
     const L = App.lobby; if (!L || !this.isHost) return;
+    this.announce();
     this.emit('lob', { code: this.code, st: L.started ? 1 : 0, seats: L.seats.map(x => x && { n: x.n, ty: x.ty, lv: x.lv || '', p: x.p || null, on: x.on ? 1 : 0, a: x.a || '' }), S: L.S, hk: this.pubB64 });
   },
   async broadcastState(ctl) {
@@ -3024,7 +3053,7 @@ async function createRoom() {
       await Net.named.leave(); Net.named = null;
     }
     Net.reset(); Net.isHost = true; App.role = 'host'; App.seat = 0;
-    App.lobby = { code, started: false, seats: [{ n: App.name, ty: 'h', p: Net.myPeer, on: 1, a: Net.presetAv() }, null, null, null], S: Object.assign({}, DEFAULT_SETTINGS, { turnTime: 30, claimTime: 12 }, store.get('roomS', {})), fill: 'medium' };
+    App.lobby = { code, pub: store.get('roomPub', true), started: false, seats: [{ n: App.name, ty: 'h', p: Net.myPeer, on: 1, a: Net.presetAv() }, null, null, null], S: Object.assign({}, DEFAULT_SETTINGS, { turnTime: 30, claimTime: 12 }, store.get('roomS', {})), fill: 'medium' };
     Net.on('hi', hostOnHi);
     Net.on('act', msg => {
       const L = App.lobby; if (!L.started || !App.ctl || !msg.data || typeof msg.data.a !== 'string') return;
@@ -3083,18 +3112,20 @@ function onChat(msg) {
 }
 function joinPrompt() {
   const o = modal(`<h2>Join a Game</h2><p class="sub">Enter the 5-character room code your friend gave you.</p>
-    <form id="joinForm" style="display:flex;gap:10px;flex-wrap:wrap"><input type="text" id="joinCode" maxlength="5" placeholder="ABCDE" style="font:700 24px ui-monospace,monospace;letter-spacing:6px;text-transform:uppercase;width:190px" autocomplete="off"><button class="btn primary">Join</button></form><div class="err" id="joinErr"></div>`);
+    <form id="joinForm" style="display:flex;gap:10px;flex-wrap:wrap"><input type="text" id="joinCode" maxlength="5" placeholder="ABCDE" style="font:700 24px ui-monospace,monospace;letter-spacing:6px;text-transform:uppercase;width:190px" autocomplete="off"><button class="btn primary">Join</button><button class="btn" type="button" id="joinWatch">Watch</button></form><div class="err" id="joinErr"></div>`);
   const inp = o.querySelector('#joinCode'); inp.focus();
-  o.querySelector('#joinForm').onsubmit = e => { e.preventDefault(); const code = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 5) { o.querySelector('#joinErr').textContent = 'Codes are 5 characters.'; return; } joinRoom(code); };
+  const go = watch => { const code = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 5) { o.querySelector('#joinErr').textContent = 'Codes are 5 characters.'; return; } joinRoom(code, watch); };
+  o.querySelector('#joinForm').onsubmit = e => { e.preventDefault(); go(false); };
+  o.querySelector('#joinWatch').onclick = () => go(true);
 }
-async function joinRoom(code) {
-  busy('Joining room ' + code + '…');
+async function joinRoom(code, watch) {
+  busy((watch ? 'Watching room ' : 'Joining room ') + code + '…');
   const room = await Net.ready(); if (!room) { closeModal(); return onlineUnavailable(); }
   try {
     await Net.ensureKeys();
     Net.reset(); await Net.joinNamed(code);
-    await Net.named.presence({ n: App.name });
-    App.role = 'client'; App.seat = -1; App.lobby = null; resetGameUI();
+    await Net.named.presence(watch ? { n: App.name, w: 1 } : { n: App.name });
+    App.role = 'client'; App.seat = -1; App.lobby = null; App.watching = !!watch; resetGameUI();
     Net.on('lob', msg => {
       const d = msg.data; if (!d || d.code !== code || !Array.isArray(d.seats)) return;
       if (!Net.hostPeer) Net.hostPeer = msg.peer;
@@ -3132,14 +3163,14 @@ async function joinRoom(code) {
         $('#hlHome').onclick = () => { closeModal(); show('home'); };
       }
     }));
-    const hi = () => Net.emit('hi', { n: App.name, k: Net.pubB64, a: Net.presetAv() });
+    const hi = () => { if (!App.watching) Net.emit('hi', { n: App.name, k: Net.pubB64, a: Net.presetAv() }); };   // a watcher never asks for a seat
     Net.every(() => { if (App.lobby) Net.shareProfile(); }, 25000);
     hi();
     let tries = 0;
     Net.every(() => {
       tries++;
       if (App.seat >= 0 && Net.gotLobby) return;
-      if (Net.gotLobby && App.lobby && App.lobby.seats.every(x => x)) { if (App.screen === 'lobby') renderLobby(); return; }
+      if (Net.gotLobby && App.lobby && (App.watching || App.lobby.seats.every(x => x))) { if (App.screen === 'lobby') renderLobby(); return; }
       hi();
       if (tries === 5 && !Net.gotLobby) {
         Net.leave(); App.role = null; closeModal();
@@ -3169,7 +3200,8 @@ function renderLobby() {
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="code">${esc(L.code)}</span>${host ? '<button class="btn" id="copyCode">Copy code</button>' : ''}</div>
       ${host ? `<div class="note">Friends open this same page, choose <b>Join a room</b> and type the code.${Net.provider === 'claude' ? ' On claude.ai the page must be shared with them (Contributor access or higher).' : ''} Keep this page open: the game runs here.</div>` : ''}
       <h3>Players</h3>${L.seats.map(seatRow).join('')}
-      ${full ? '<div class="err">This room is full — you are watching as a spectator.</div>' : ''}
+      ${App.watching ? '<div class="note">You are watching. You will see the table when the game starts.</div>' : full ? '<div class="err">This room is full — you are watching as a spectator.</div>' : ''}
+      ${host ? `<label class="pubtog"><input type="checkbox" id="roomPub" ${L.pub ? 'checked' : ''}> Public: listed on the home page for anyone to join or watch</label>` : ''}
       ${host ? `<h3>Empty seats at start</h3><div class="lvls" id="fillLv">${LEVELS.map(l => `<button class="lvl ${L.fill === l ? 'on' : ''}" data-l="${l}">${cap(l)} bots</button>`).join('')}</div>` : ''}
     </div>
     <div class="panel"><h2>Table rules</h2><p class="sub">${host ? 'You choose the rules for this room.' : 'Set by the host.'}</p>${settingsHTML(L.S, host)}
@@ -3185,6 +3217,7 @@ function renderLobby() {
     el.querySelectorAll('[data-kick]').forEach(b => b.onclick = () => { const i = +b.dataset.kick; if (L.seats[i] && L.seats[i].p) Net.banned.add(L.seats[i].p); L.seats[i] = null; Net.sendLobby(); renderLobby(); });
     el.querySelectorAll('#fillLv .lvl').forEach(b => b.onclick = () => { L.fill = b.dataset.l; renderLobby(); });
     $('#startRoom').onclick = startRoomGame;
+    $('#roomPub').onchange = e => { L.pub = e.target.checked; store.set('roomPub', L.pub); Net.announce(); };
   }
   $('#leaveRoom').onclick = () => { Net.leave(); App.role = null; App.lobby = null; show('home'); };
 }

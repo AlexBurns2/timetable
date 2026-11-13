@@ -9,6 +9,8 @@
  *
  *   const r = await Rooms.host('tt', 'Alex', 4)   → { code, room }  (a fresh room)
  *   const r = await Rooms.join('tt', 'K7QX2', 'Sam') → { code, room }
+ *   const r = await Rooms.join('tt', 'K7QX2', 'Sam', true) → watch: presence { w: 1 }, never plays
+ *   const pub = await Rooms.lobby('tt') → the room public hosts announce themselves in
  *   room.emit(topic, data)  room.on(topic, fn)  room.presence(patch)
  *   room.peers()  room.onPeers(fn)  room.id  room.leave()  room.now()
  *
@@ -124,18 +126,21 @@
     }
     throw new Error('Couldn’t make a room. Try again.');
   }
-  /* someone else's room: there must be a host there, and space */
-  async function join(game, code, name){
+  /* someone else's room: there must be a host there, and space (a watcher needs neither space nor a round off) */
+  async function join(game, code, name, watch){
     code = cleanCode(code);
     if (code.length !== 5) throw new Error('Room codes are 5 letters and numbers.');
     const room = await open(game + '-' + code.toLowerCase());
     await wait(900);
     const others = room.peers().filter(p => !p.isMe), h = others.find(p => p.presence.h);
     if (!h){ await room.leave(); throw new Error('There’s no room with that code.'); }
-    if (others.length >= (h.presence.max || 4)){ await room.leave(); throw new Error('That room is full.'); }
-    if (h.presence.playing){ await room.leave(); throw new Error('That game has already started. Ask them to let you in next round.'); }
+    if (watch){ await room.presence({ n: cleanName(name), w: 1 }); return { code, room }; }
+    if (others.filter(p => !p.presence.w).length >= (h.presence.max || 4)){ await room.leave(); throw new Error('That room is full.'); }
+    if (h.presence.playing){ await room.leave(); throw new Error('That game has already started. Watch it, or ask them to let you in next round.'); }
     await room.presence({ n: cleanName(name) });
     return { code, room };
   }
-  window.Rooms = { host, join, cleanName, cleanCode };
+    /* the public list: a shared room per game where each public host's presence is { code, n, players, playing } */
+  const lobby = game => open(game + '-public');
+  window.Rooms = { host, join, lobby, cleanName, cleanCode };
 })();
