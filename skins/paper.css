@@ -1,0 +1,95 @@
+/* ══════════════════════════════════════════════════════════════════
+   NOTEBOOK — a scrapbook kept with some care. (Built from scratchpad
+   paper_tpl.css by paper.py; the few drawings are SVG.)
+   A cream ruled page, and on it a small number of things, each placed
+   once: the header is a strip of paper torn along its bottom edge and
+   held by one piece of washi tape; titles are swiped with highlighter;
+   Home's pages are sticky notes; the poll is held by a paperclip;
+   headings are handwritten and underlined by hand; buttons are
+   sketched. The timetable keeps its red margin, with the lessons set
+   on the page at a slight angle. Nothing is drawn in the margins.
+   Changing page, a fresh sheet is laid over.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="paper"]{
+  --hl:rgba(255,214,0,.42); --pen:#3d4f9f; --redpen:#c8443c; --pp-scrib:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='8' viewBox='0 0 120 8' preserveAspectRatio='none' fill='none'%3E%3Cpath stroke='%23c8443c' stroke-width='2' stroke-linecap='round' d='M2 5c12-4 20 3 32-1s22 3 34 0 24-2 34 1 12 0 16-1'/%3E%3C/svg%3E"); --pp-torn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='76' height='9' viewBox='0 0 76 9'%3E%3Cpath fill='%23f7f3e8' d='M0 9V5l3-2 4 3 3-4 5 3 3-2 4 4 4-5 5 3 4-2 5 3 3-3 4 4 5-5 4 3 3-1 4 3 4-4 4 2 0 5z'/%3E%3C/svg%3E");
+  --pp-rules:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(80,110,160,.14) 31px 32px);
+  --pp-paper:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E %3Cfilter id='a' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5' stitchTiles='stitch'/%3E %3CfeColorMatrix type='matrix' values='0 0 0 0 0.35 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.30000000000000004 -0.11000000000000001'/%3E%3C/filter%3E %3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
+  --bg:#f7f3e8; --bg-img:var(--pp-paper),var(--pp-rules);
+  --panel:#fffdf6; --panel-2:#f0ead8; --line:#ded4bd;
+  --text:#2c2519; --muted:#8a7f6a; --accent:#c2571f; --accent-ink:#fff;
+  --font-ui:"Patrick Hand",'Comic Sans MS',cursive;
+  --font-display:"Caveat",cursive;
+  --font-num:"Patrick Hand",cursive;
+  --card-radius:3px; --tint:44%; --card-accent:0px;
+  --card-border:1px solid rgba(0,0,0,.09);
+  --shadow:2px 3px 7px rgba(60,45,20,.16);
+  --shadow-hi:4px 7px 16px rgba(60,45,20,.22);
+  --display-w:700; --display-ls:0;
+}
+[data-skin="paper"][data-mode="dark"]{
+  --hl:rgba(255,196,0,.2); --pen:#9db0ff; --redpen:#ff8f85; --pp-scrib:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='8' viewBox='0 0 120 8' preserveAspectRatio='none' fill='none'%3E%3Cpath stroke='%23ff8f85' stroke-width='2' stroke-linecap='round' d='M2 5c12-4 20 3 32-1s22 3 34 0 24-2 34 1 12 0 16-1'/%3E%3C/svg%3E"); --pp-torn:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='76' height='9' viewBox='0 0 76 9'%3E%3Cpath fill='%23221f1a' d='M0 9V5l3-2 4 3 3-4 5 3 3-2 4 4 4-5 5 3 4-2 5 3 3-3 4 4 5-5 4 3 3-1 4 3 4-4 4 2 0 5z'/%3E%3C/svg%3E");
+  --pp-rules:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(150,170,210,.09) 31px 32px);
+  --pp-paper:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E %3Cfilter id='a' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5' stitchTiles='stitch'/%3E %3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.85 0 0 0 0.15000000000000002 -0.05500000000000001'/%3E%3C/filter%3E %3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
+  --bg:#221f1a;
+  --panel:#2e2a23; --panel-2:#282420; --line:#413a30;
+  --text:#f0e9db; --muted:#a2957f; --accent:#e8834a;
+  --tint:18%;      /* the pastel faculty colours are light, so a heavy tint would lift these cards until the text stopped reading */
+}
+/* ── the timetable page: the red margin, the lessons set down at a slight angle ── */
+[data-skin="paper"] .grid{position:relative}
+[data-skin="paper"] .grid::before{content:"";position:absolute;top:-14px;bottom:-30px;left:-14px;width:2px;background:rgba(200,70,70,.4);pointer-events:none;z-index:0}
+[data-skin="paper"][data-mode="dark"] .grid::before{background:rgba(235,120,120,.38)}
+@media (max-width:860px){ [data-skin="paper"] .grid::before{display:none} }
+[data-skin="paper"] .lesson{transform:rotate(var(--rot))}
+[data-skin="paper"] .lesson:hover{transform:rotate(0deg) translateY(-3px) scale(1.02)}
+[data-skin="paper"] .dayhead{position:relative}
+[data-skin="paper"] .lesson.current .s{background:linear-gradient(100deg,transparent 0 1%,var(--hl) 2.5% 96%,transparent 99%) 0 70%/100% 60% no-repeat}
+
+/* ── titles swiped with a highlighter; the header torn off along the bottom and taped on ── */
+[data-skin="paper"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1){width:fit-content;max-width:100%;padding:0 .14em;
+  background:linear-gradient(100deg,transparent 0 1%,var(--hl) 2.5% 96%,transparent 99%) 0 78%/100% 44% no-repeat}
+:root[data-skin="paper"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;box-shadow:none;border-bottom-color:transparent;padding-bottom:22px}
+:root[data-skin="paper"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;left:-1px;right:-1px;bottom:-1px;height:9px;pointer-events:none;background:var(--pp-torn) 0 100%/76px 9px repeat-x}
+:root[data-skin="paper"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;top:-9px;left:26px;width:88px;height:20px;
+  transform:rotate(-3.5deg);pointer-events:none;box-shadow:0 1px 2px rgba(0,0,0,.08);
+  background:repeating-linear-gradient(45deg,rgba(194,87,31,.34) 0 6px,rgba(194,87,31,.18) 6px 12px)}
+[data-skin="paper"] :is(.eyebrow,.sitename){font-family:"Caveat",cursive;font-size:1.0625rem;font-weight:700;letter-spacing:.02em;text-transform:none;color:var(--pen)}
+[data-skin="paper"] .sitename{padding-right:.35em}      /* the hand leans; without this its last letter is cut */
+/* ── Home's pages: sticky notes ── */
+[data-skin="paper"] .qtile{--note:#fff3a0;background:var(--note);border:0;border-radius:2px;box-shadow:2px 4px 9px rgba(60,45,20,.18);color:#2c2519;transform:rotate(-1.1deg)}
+[data-skin="paper"] .qtile:nth-child(4n+2){--note:#ffd6e2;transform:rotate(1.2deg)}
+[data-skin="paper"] .qtile:nth-child(4n+3){--note:#d3eaff;transform:rotate(-.7deg)}
+[data-skin="paper"] .qtile:nth-child(4n+4){--note:#d8f4cc;transform:rotate(.9deg)}
+[data-skin="paper"][data-mode="dark"] .qtile{--note:#4a4426;color:#f0e9db}
+[data-skin="paper"][data-mode="dark"] .qtile:nth-child(4n+2){--note:#4d3139}
+[data-skin="paper"][data-mode="dark"] .qtile:nth-child(4n+3){--note:#2f3f4d}
+[data-skin="paper"][data-mode="dark"] .qtile:nth-child(4n+4){--note:#33452c}
+:root[data-skin="paper"] .qtile:hover{background:var(--note);transform:rotate(0) translateY(-3px);box-shadow:4px 8px 16px rgba(60,45,20,.24)}
+/* ── cards: plain pieces of paper; a hand-drawn underline under what you point at ── */
+[data-skin="paper"] :is(.tdn,.gamecard h2){background:var(--pp-scrib) 0 100%/0% 7px no-repeat;padding-bottom:5px;transition:background-size .3s ease}
+[data-skin="paper"] :is(.tday:hover .tdn,.gamecard:hover h2){background-size:100% 7px}
+/* the poll, held by a paperclip */
+[data-skin="paper"] .pollwrap{position:relative}
+[data-skin="paper"] .pollwrap:not([hidden])::before{content:"";position:absolute;left:28px;top:-15px;width:26px;height:58px;z-index:3;pointer-events:none;transform:rotate(-7deg);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='58' viewBox='0 0 26 58' fill='none' stroke-linecap='round'%3E%3Cpath stroke='%235f646b' stroke-width='3.4' d='M7 14v30a6.5 6.5 0 0 0 13 0V9.5a4.5 4.5 0 0 0-9 0V42a2.2 2.2 0 0 0 4.4 0V15'/%3E%3Cpath stroke='%23dfe2e6' stroke-width='1.4' d='M7 14v30a6.5 6.5 0 0 0 13 0V9.5a4.5 4.5 0 0 0-9 0V42a2.2 2.2 0 0 0 4.4 0V15'/%3E%3C/svg%3E") center/contain no-repeat}
+[data-skin="paper"] .hubnow{height:auto;min-height:5rem}
+[data-skin="paper"] .hubnow .nowcard .subj{flex:none;line-height:1.35}      /* the hand has long tails; a fixed height cut them off */
+[data-skin="paper"] .pchip{margin-left:36px}             /* clear of the clip */
+/* ── sketched buttons, handwritten headings underlined by hand ── */
+:root[data-skin="paper"] :is(.btn,.modes button,.dayswitch button){border:1.5px solid color-mix(in srgb,var(--text) 55%,transparent);box-shadow:none;
+  border-radius:255px 14px 225px 14px / 14px 225px 14px 255px}
+:root[data-skin="paper"] .btn:hover{transform:rotate(-1deg);box-shadow:none}
+:root[data-skin="paper"] :is(.btn.primary,.modes button[aria-pressed="true"],.dayswitch button[aria-pressed="true"]){border-color:var(--accent)}
+[data-skin="paper"] :is(.sechd,.cathd,.forum h2){width:fit-content;font-family:"Caveat",cursive;font-size:1.6rem;font-weight:700;letter-spacing:0;text-transform:none;color:var(--text);
+  background:var(--pp-scrib) 0 100%/100% 7px no-repeat;padding-bottom:6px}
+[data-skin="paper"] .forum{border-top:0}
+[data-skin="paper"] .fpost{border-radius:3px 12px 4px 14px / 12px 4px 14px 3px}
+[data-skin="paper"] .dayhead .dow{font-size:1.3125rem}
+[data-skin="paper"] .lesson .s{font-size:1.0625rem;line-height:1.05}
+/* ── leaving and arriving: a fresh sheet is laid over the page; the next page is written on it ── */
+.pp-sheet i{position:absolute;inset:0 -20px 0 0;background-color:var(--bg);background-image:var(--pp-paper),var(--pp-rules);box-shadow:-18px 0 34px rgba(60,45,20,.3);
+  transform:translateX(104%) rotate(2.5deg);transform-origin:0 100%;transition:transform .34s cubic-bezier(.2,.8,.3,1)}
+.pp-sheet.in i{transform:none}
+.pp-sheet.now i{transition:none}
+.pp-sheet.go i{opacity:0;transition:opacity .22s ease}
+html.fx-enter[data-skin="paper"] .wrap{animation:ppink .38s ease both}
+@keyframes ppink{from{opacity:0;transform:translateY(5px)}}

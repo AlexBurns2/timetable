@@ -1,0 +1,150 @@
+/* ══════════════════════════════════════════════════════════════════
+   EDITORIAL — the site set as a magazine. Hierarchy and white space do
+   the work that boxes do elsewhere: one very large serif headline to a
+   page, a great drop in size to everything else, small spaced capitals
+   for labels, an oversized page number in the margin. Rules are
+   rationed: one heavy one at the head of the page, hairlines only
+   inside a list. Home's pages are a table of contents, the poll a pull
+   quote, the timetable a listing. Warm paper, off-black ink, one rust
+   accent used once or twice a page. Nothing moves; changing page is
+   the quietest fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="editorial"]{
+  --ed-no:"00";
+  --bg:#f4f0e8; --bg-img:none; --panel:#f4f0e8; --panel-2:#eae4d8; --line:#cfc6b6;
+  --text:#1a1814; --muted:#7a7166; --accent:#1a1814; --accent-ink:#f4f0e8; --ed:#b5432a;
+  --font-ui:"Jost",system-ui,sans-serif; --font-display:"Instrument Serif",Georgia,serif; --font-num:"Jost",system-ui,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
+  --card-border:1px solid var(--line); --shadow:none; --shadow-hi:none;
+  --display-tt:none; --display-ls:-.02em; --display-w:400;
+}
+[data-skin="editorial"][data-mode="dark"]{
+  --bg:#151412; --panel:#151412; --panel-2:#211f1b; --line:#3a362f;
+  --text:#ece6da; --muted:#9a9184; --accent:#ece6da; --accent-ink:#151412; --ed:#dd8d6a;
+}
+[data-skin="editorial"][data-pg="home"]{--ed-no:"01"}
+[data-skin="editorial"][data-pg="timetable"]{--ed-no:"02"}
+[data-skin="editorial"][data-pg="calendar"]{--ed-no:"03"}
+[data-skin="editorial"][data-pg="free"]{--ed-no:"04"}
+[data-skin="editorial"][data-pg="revision"]{--ed-no:"05"}
+[data-skin="editorial"][data-pg="resources"]{--ed-no:"06"}
+[data-skin="editorial"][data-pg="games"]{--ed-no:"07"}
+[data-skin="editorial"][data-pg="finder"]{--ed-no:"08"}
+[data-skin="editorial"][data-pg="mahjong"]{--ed-no:"09"}
+[data-skin="editorial"][data-pg="notes"]{--ed-no:"10"}
+[data-skin="editorial"] :is(.qtile,.tday,.gamecard,.btn,.lesson,.tile,.game,.popt,.arrowbtn){transition:none}
+
+/* ── the masthead: one rule, the name of the paper, the headline; the page number hangs in the margin ── */
+:root[data-skin="editorial"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:none;border:0;border-radius:0;box-shadow:none;
+  border-top:2px solid var(--text);padding:14px 0 4px;margin-bottom:46px}
+@media (min-width:1260px){
+  :root[data-skin="editorial"]:not([data-header="split"]) :is(.hubbar,.pagehead)::before{content:var(--ed-no);position:absolute;right:calc(100% + 30px);top:-12px;
+    font:400 8.5rem/.8 "Instrument Serif",Georgia,serif;letter-spacing:-.04em;color:var(--text)}
+}
+[data-skin="editorial"] :is(.eyebrow,.sitename){display:block;font:500 .625rem/1 var(--font-ui);letter-spacing:.26em;color:var(--text);margin-bottom:12px}
+[data-skin="editorial"] .hubid h1{font-size:clamp(2.7rem,11.5cqi,6.4rem);line-height:.9;letter-spacing:-.025em}
+[data-skin="editorial"] .brand h1{font-size:clamp(2.2rem,4.8vw,3.8rem);line-height:.94}
+[data-skin="editorial"] .pagehead h1{font-size:clamp(2.6rem,7vw,5rem);line-height:.9;letter-spacing:-.025em}
+[data-skin="editorial"] :is(.hubsub,.brand>span,.pagelede){font-family:var(--font-display);font-style:italic;font-size:1.25rem;line-height:1.25;color:var(--muted)}
+[data-skin="editorial"] .hubin{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id btn" "now now";gap:18px 16px}
+[data-skin="editorial"] .hubnow{height:auto;min-height:0;align-self:auto;gap:28px}
+[data-skin="editorial"] .hubin>.headbtns{flex-direction:row;align-self:start}
+/* Now and Next: a standfirst */
+[data-skin="editorial"] .nowcard{background:none;border:0;border-radius:0;padding:0}
+[data-skin="editorial"] :is(.nowcard .lbl,.ttday b,.field>label,.tbhead span){font:500 .625rem/1.2 var(--font-ui);letter-spacing:.24em;color:var(--ed)}
+[data-skin="editorial"] .nowcard .subj{font-family:var(--font-display);font-weight:400;font-size:1.625rem;line-height:1.05;letter-spacing:-.01em;margin-top:6px}
+[data-skin="editorial"] .nowcard .meta{font-size:.8125rem}
+[data-skin="editorial"] .prog{height:2px;border-radius:0}
+[data-skin="editorial"] .prog i{background:var(--ed);border-radius:0}
+@container hubbar (max-width:26em){ [data-skin="editorial"] .hubnow.pair{background:none;border:0;border-radius:0;padding:0} [data-skin="editorial"] .hubnow.pair .nowcard{border:0;padding:0} }
+
+/* ── Home's pages: a table of contents ── */
+[data-skin="editorial"] .qtiles{grid-template-columns:1fr 1fr;gap:0 44px;counter-reset:edtoc;margin:0 0 44px}
+[data-skin="editorial"] .qtile{height:auto;min-height:0;flex-direction:row;align-items:baseline;justify-content:flex-start;gap:14px;padding:14px 0 12px;text-align:left;
+  background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none}
+[data-skin="editorial"] .qtile::before{counter-increment:edtoc;content:counter(edtoc,decimal-leading-zero);flex:none;width:1.7em;font:500 .6875rem/1 var(--font-ui);letter-spacing:.14em;color:var(--muted)}
+[data-skin="editorial"] .qtile::after{content:"→";margin-left:auto;font:400 1.125rem/1 var(--font-ui);color:var(--ed);visibility:hidden}
+[data-skin="editorial"] .qtile .ico{display:none}
+[data-skin="editorial"] .qtile .tname{font-family:var(--font-display);font-weight:400;font-size:1.75rem;line-height:1;letter-spacing:-.015em;white-space:normal;overflow:visible}
+:root[data-skin="editorial"] .qtile:hover{background:none;transform:none;box-shadow:none;border-bottom-color:var(--text)}
+[data-skin="editorial"] .qtile:hover .tname{font-style:italic}
+[data-skin="editorial"] .qtile:hover::after{visibility:visible}
+[data-skin="editorial"] .tilepill{position:static;order:3;background:none;color:var(--ed);padding:0;font:500 .625rem/1 var(--font-ui);letter-spacing:.2em}
+@media (max-width:560px){ [data-skin="editorial"] .qtiles{gap:0 18px} [data-skin="editorial"] .qtile{gap:8px;padding:11px 0 10px} [data-skin="editorial"] .qtile .tname{font-size:1.25rem} [data-skin="editorial"] .qtile::after{display:none} }
+[data-skin="editorial"] .tday{background:none;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;padding:12px 0}
+:root[data-skin="editorial"] .tday:hover{background:none;transform:none}
+[data-skin="editorial"] .tdname{font-family:var(--font-display);font-weight:400;font-size:1.25rem}
+[data-skin="editorial"] .tdstat{color:var(--ed);font-weight:500;letter-spacing:.04em}
+[data-skin="editorial"] .newpill{background:none;color:var(--ed);padding:0;font:500 .625rem/1 var(--font-ui);letter-spacing:.2em}
+[data-skin="editorial"] .newsdot{background:var(--ed)}
+
+/* ── sections: a number and a small label, with room above ── */
+[data-skin="editorial"] body{counter-reset:edsec}
+[data-skin="editorial"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:baseline;gap:12px;margin-bottom:14px;font:500 .6875rem/1.2 var(--font-ui);letter-spacing:.22em;text-transform:uppercase;color:var(--text)}
+[data-skin="editorial"] :is(.sechd,.cathd,.forum h2)::before{counter-increment:edsec;content:counter(edsec,decimal-leading-zero);font:italic 400 1.375rem/1 "Instrument Serif",Georgia,serif;letter-spacing:0;color:var(--ed)}
+[data-skin="editorial"] :is(.sechd,.cathd){margin-top:30px}
+[data-skin="editorial"] .forum{border-top:0;padding-top:0;margin-top:30px}
+/* the poll: a pull quote, in white space */
+[data-skin="editorial"] .pollwrap{margin-bottom:50px}
+[data-skin="editorial"] .pcard{background:none;border:0;border-radius:0;box-shadow:none;padding:0}
+[data-skin="editorial"] .pchip{background:none;border:0;border-radius:0;padding:0;font:500 .625rem/1.2 var(--font-ui);letter-spacing:.24em;text-transform:uppercase;color:var(--ed)}
+[data-skin="editorial"] .pchip::before{display:none}
+[data-skin="editorial"] .pin{background:none;border:0;border-bottom:1px solid var(--text);border-radius:0;padding-left:0}
+[data-skin="editorial"] .pin:focus{border-bottom-width:2px;box-shadow:none}
+[data-skin="editorial"] .pminbtn{border-color:transparent;background:none}
+[data-skin="editorial"] .pfoot{border-top:0;padding-top:0}
+[data-skin="editorial"] .plink{font-weight:500;font-size:.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text)}
+[data-skin="editorial"] :is(.pbar,.plock span){border-radius:0}
+[data-skin="editorial"] .pq{font-weight:400;font-size:clamp(1.9rem,5vw,3rem);line-height:1.02;letter-spacing:-.02em}
+[data-skin="editorial"] .fpost{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0 10px}
+[data-skin="editorial"] .fpost.freply{background:none}
+[data-skin="editorial"] .fmeta b{font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:.6875rem}
+[data-skin="editorial"] .ftext{font-size:1rem;line-height:1.55}
+[data-skin="editorial"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.idrow){background:none;border:0;border-bottom:1px solid var(--text);border-radius:0;padding-left:0}
+[data-skin="editorial"] :is(.fnew textarea,.freplybox textarea,.gatepass):focus{outline:0;border-bottom-width:2px}
+[data-skin="editorial"] .hubfoot{border-top:1px solid var(--line);font-size:.75rem;letter-spacing:.06em}
+[data-skin="editorial"] .gamecard{background:none;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;padding:14px 0 16px}
+:root[data-skin="editorial"] .gamecard:hover{background:none;transform:none;box-shadow:none}
+[data-skin="editorial"] .gamecard:hover h2{font-style:italic}
+[data-skin="editorial"] :is(.gamecard h2,.game h2,.tile .tname){font-size:1.625rem;line-height:1;letter-spacing:-.015em}
+[data-skin="editorial"] .gamecard .ico .gi{width:1.5rem;height:1.5rem}
+[data-skin="editorial"] :is(.gamecard .tag,.gamecard .newbanner){background:none;border:0;color:var(--ed);padding:0;font:500 .625rem/1 var(--font-ui);letter-spacing:.2em}
+
+/* ── buttons: small capitals in a hairline box; the one that matters, solid ── */
+:root[data-skin="editorial"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;box-shadow:none;background:none;border:1px solid var(--text);color:var(--text);
+  font-family:var(--font-ui);font-size:.6875rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase}
+:root[data-skin="editorial"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover,
+:root[data-skin="editorial"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--text);color:var(--bg);border-color:var(--text)}
+:root[data-skin="editorial"] .btn.icon{border-color:transparent}
+:root[data-skin="editorial"] .btn:active{transform:none}
+[data-skin="editorial"] :is(dialog,.newsdlg,.sheet,.gatecard){border:1px solid var(--text);border-radius:0;box-shadow:none;background:var(--bg)}
+[data-skin="editorial"] :is(.dlg-h,.newshead){border-bottom:1px solid var(--text)}
+[data-skin="editorial"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font-family:var(--font-display);font-weight:400;font-size:1.75rem;letter-spacing:-.015em}
+[data-skin="editorial"] :is(.skinbtn,.rx,.rxpick,.arrowbtn,.dayswitch button){border-radius:0}
+
+/* ── the timetable: a listing. Each class is a rule in its subject's colour and what's under it ── */
+[data-skin="editorial"] .lesson{background:var(--bg);border:0;border-top:2px solid var(--c,var(--text));border-radius:0;box-shadow:none;padding:6px 8px 4px 0}
+[data-skin="editorial"] .lesson:hover{box-shadow:none}
+[data-skin="editorial"] .lesson .s{font-size:1.125rem;font-weight:400;line-height:1.02;letter-spacing:-.01em}
+[data-skin="editorial"] .lesson .r{font-weight:500;letter-spacing:.14em;font-size:.625rem;text-transform:uppercase;margin-top:4px}
+[data-skin="editorial"] .lesson.current{outline:0;border-top-width:5px}
+[data-skin="editorial"] .lesson.current .s{font-style:italic}
+[data-skin="editorial"] .lesson.current .r::after{content:"   ·   now";color:var(--ed)}
+[data-skin="editorial"] .dayhead{text-align:left;padding-bottom:10px}
+[data-skin="editorial"] .dayhead .dow{font-size:1.625rem;font-weight:400;letter-spacing:-.015em}
+[data-skin="editorial"] .dayhead .rule{height:1px;opacity:1;background:var(--text);border-radius:0}
+[data-skin="editorial"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--ed);font-style:italic}
+[data-skin="editorial"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--ed);height:3px}
+[data-skin="editorial"] .breakbar{background:none;border:0;border-radius:0;opacity:1;
+  font-family:var(--font-display);font-style:italic;font-size:.875rem;letter-spacing:0}
+[data-skin="editorial"] .breakbar span{font-weight:400;text-transform:none}
+[data-skin="editorial"] .weeklabel{font-size:1.5rem;font-weight:400;font-style:italic}
+[data-skin="editorial"] .tmark{font-size:.625rem;letter-spacing:.08em}
+/* the small controls at the head of a page carry no box; the standfirst sits flush with the headline */
+:root[data-skin="editorial"] .btn.icon:not(.gateskip){border-color:transparent}
+:root[data-skin="editorial"] .btn.icon:not(.gateskip):hover{background:none;color:var(--ed);border-color:transparent}
+[data-skin="editorial"] .hubnow{padding:0}
+[data-skin="editorial"] .hubnow .nowcard{padding:0;margin:0}
+[data-skin="editorial"] .gsec{margin-top:40px}
+[data-skin="editorial"] .gsec :is(.sechd,.cathd){margin-top:0}
+[data-skin="editorial"] .lbopen{border-radius:0;background:none;border:1px solid var(--text);font:500 .6875rem/1 var(--font-ui);letter-spacing:.16em;text-transform:uppercase;padding:8px 12px}

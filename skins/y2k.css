@@ -1,0 +1,121 @@
+/* ══════════════════════════════════════════════════════════════════
+   Y2K FUTURISM — the optimistic gadget look of about 2001: white,
+   silver and icy blue, with air in it. Chrome on the bars and buttons,
+   frosted translucent plastic for panels, rounded blobby corners, icons
+   in little blue glass bubbles, wide techno capitals for names, one
+   black glass display. Acid lime is kept for the one thing that matters
+   (and for what's selected); a touch of vermilion marks what's new.
+   Behind it (fx/y2k.js) a quiet room: light, a wire floor, a few thin
+   rings and a little liquid chrome in the corners. No rainbow sheen.
+   Changing page, a body of chrome slides across.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="y2k"]{
+  --y-lime:#c8ff2e; --y-verm:#ff4b1f; --y-ink:#0b0d10;
+  --bg:#eef3f8; --bg-img:linear-gradient(180deg,#ffffff,#dbe7f1);
+  --panel:rgba(255,255,255,.72); --panel-2:rgba(240,246,251,.78); --line:rgba(110,132,158,.34);
+  --text:#0d1117; --muted:#5a6676; --accent:#1c6fd6; --accent-ink:#fff;
+  --font-ui:"Sora",system-ui,sans-serif; --font-display:"Michroma","Sora",sans-serif; --font-num:"Sora",system-ui,sans-serif;
+  --card-radius:22px; --radius:14px; --tint:16%; --card-accent:0px;
+  --card-border:1px solid rgba(255,255,255,.95);
+  --shadow:0 0 0 1px rgba(110,132,158,.22),0 8px 22px rgba(60,90,130,.1),inset 0 1px 0 #fff;
+  --shadow-hi:0 0 0 1px rgba(110,132,158,.36),0 14px 30px rgba(60,90,130,.16),inset 0 1px 0 #fff;
+  --display-tt:uppercase; --display-ls:.04em; --display-w:400;
+  --y-chrome:linear-gradient(180deg,#ffffff 0%,#edf1f5 36%,#bcc7d2 50%,#e4eaf0 62%,#fbfcfd 100%);
+  --y-limegel:linear-gradient(180deg,#f4ffc8 0%,#d9ff66 45%,#b4ee00 55%,#dcff74 100%);
+  --y-text:linear-gradient(180deg,#5a6b80 0%,#0e141d 46%,#7c8da2 54%,#1f2835 100%);
+  --y-bubble:radial-gradient(circle at 32% 24%,rgba(255,255,255,.95) 0 9%,rgba(255,255,255,0) 36%),linear-gradient(180deg,#a9dcff,#3d98ee 62%,#2b7fd8);
+  --y-glass:linear-gradient(180deg,#171b21,#07090b);
+}
+[data-skin="y2k"][data-mode="dark"]{
+  --bg:#06080b; --bg-img:linear-gradient(180deg,#0b0f15,#040506);
+  --panel:rgba(17,21,27,.78); --panel-2:rgba(27,33,42,.74); --line:rgba(150,170,195,.22);
+  --text:#eef2f6; --muted:#8c98a8; --accent:#c8ff2e; --accent-ink:#0b0d10;
+  --card-border:1px solid rgba(190,215,240,.18);
+  --shadow:0 0 0 1px rgba(0,0,0,.45),0 10px 26px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.12);
+  --shadow-hi:0 0 0 1px rgba(200,255,46,.35),0 14px 32px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.16);
+  --y-chrome:linear-gradient(180deg,#4d5969 0%,#27303d 40%,#0f151e 50%,#242d3a 62%,#3d4858 100%);
+  --y-text:linear-gradient(180deg,#ffffff 0%,#c9d5e2 46%,#7a8ea6 54%,#eef3f8 100%);
+}
+html.fx-live[data-skin="y2k"]{--bg-img:none}
+
+/* ── the bar: chrome ── */
+:root[data-skin="y2k"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--y-chrome);border:1px solid rgba(255,255,255,.95);border-radius:30px;
+  box-shadow:0 0 0 1px rgba(110,132,158,.46),inset 0 1px 0 #fff,inset 0 -2px 7px rgba(110,132,158,.22),0 12px 30px rgba(60,90,130,.14);padding:18px 24px}
+:root[data-skin="y2k"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border-color:rgba(255,255,255,.22);
+  box-shadow:0 0 0 1px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.3),inset 0 -2px 8px rgba(0,0,0,.4),0 14px 36px rgba(0,0,0,.5)}
+[data-skin="y2k"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){background:var(--y-text);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.15}
+[data-skin="y2k"] :is(.brand h1,.pagehead h1){font-size:clamp(1.05rem,2.5vw,1.6rem)}
+[data-skin="y2k"] .hubid h1{font-size:clamp(1.05rem,4cqi,1.65rem)}
+[data-skin="y2k"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-family:"Michroma",sans-serif;font-weight:400;letter-spacing:.16em;text-transform:uppercase}
+[data-skin="y2k"] :is(.eyebrow,.sitename,.nowcard .lbl,.field>label,.tbhead span){font-size:.5625rem}
+[data-skin="y2k"] :is(.dayhead .dow,.weeklabel){font-size:.6875rem}
+/* section names: small capitals after a ring and a line, as on a diagram */
+[data-skin="y2k"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:.8em;font:400 .5625rem/1.2 "Michroma",sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+[data-skin="y2k"] :is(.sechd,.cathd,.forum h2)::before{content:"";flex:none;width:.8em;height:.8em;border-radius:50%;border:1px solid currentColor}
+[data-skin="y2k"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:1px;background:var(--line)}
+[data-skin="y2k"] .forum{border-top:0;padding-top:0}
+[data-skin="y2k"] .forum h2{margin-bottom:14px}
+/* ── Now and Next: the one black glass display ── */
+[data-skin="y2k"] .nowcard{background:var(--y-glass);color:#f1f5f8;border:1px solid #000;border-radius:18px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 rgba(255,255,255,.8)}
+[data-skin="y2k"][data-mode="dark"] .nowcard{box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.08)}
+[data-skin="y2k"] .nowcard::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(170deg,rgba(255,255,255,.15),rgba(255,255,255,0) 34%)}
+[data-skin="y2k"] .nowcard .lbl{color:var(--y-lime)}
+[data-skin="y2k"] .nowcard .meta{color:#93a0ae}
+[data-skin="y2k"] .nowcard .count,[data-skin="y2k"] .progrow .count{color:var(--y-lime)}
+[data-skin="y2k"] .prog{border-radius:999px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+[data-skin="y2k"] .prog i{background:var(--y-limegel)}
+@container hubbar (max-width:26em){
+  [data-skin="y2k"] .hubnow.pair{background:var(--y-glass);border:1px solid #000;border-radius:18px;color:#f1f5f8}
+  [data-skin="y2k"] .hubnow.pair .nowcard{box-shadow:none}
+}
+/* ── buttons: chrome pills; lime gel for the one that matters and for what's chosen ── */
+:root[data-skin="y2k"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:var(--y-chrome);border:1px solid rgba(110,132,158,.5);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 2px rgba(110,132,158,.28),0 3px 8px rgba(60,90,130,.12)}
+:root[data-skin="y2k"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-color:rgba(0,0,0,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 3px 9px rgba(0,0,0,.4)}
+:root[data-skin="y2k"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{filter:brightness(1.05)}
+:root[data-skin="y2k"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){
+  background:var(--y-limegel);border-color:#7ea400;color:#0b0d10;text-shadow:0 1px 0 rgba(255,255,255,.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 0 -3px 6px rgba(90,130,0,.22),0 4px 12px rgba(170,230,0,.3)}
+/* ── panels: frosted plastic; icons in blue glass bubbles ── */
+:root[data-skin="y2k"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{background-color:var(--panel);transform:translateY(-3px)}
+[data-skin="y2k"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.8rem;height:2.8rem;border-radius:50%;color:#fff!important;background:var(--y-bubble);
+  box-shadow:inset 0 -3px 6px rgba(20,70,140,.35),0 4px 10px rgba(40,100,180,.26),0 0 0 1px rgba(255,255,255,.7)}
+[data-skin="y2k"] .qtile .ico .ph{width:1.45rem;height:1.45rem;filter:drop-shadow(0 1px 0 rgba(20,70,140,.5))}
+[data-skin="y2k"] .qtile .tname{font-weight:600}
+@media (max-width:560px){ [data-skin="y2k"] .qtile .ico{width:2.4rem;height:2.4rem} }
+@container hubnav (max-width:19em){ [data-skin="y2k"] .qtile .ico{width:2.1rem;height:2.1rem} [data-skin="y2k"] .qtile .ico .ph{width:1.2rem;height:1.2rem} }
+[data-skin="y2k"] :is(.pcard,.forum){background:var(--panel);border:var(--card-border);border-radius:26px;box-shadow:var(--shadow)}
+[data-skin="y2k"] .forum{padding:18px 20px 20px;margin-top:24px}
+[data-skin="y2k"] :is(.newpill,.gamecard .newbanner){background:var(--y-verm);color:#fff}
+[data-skin="y2k"] .newsdot{background:var(--y-verm)}
+[data-skin="y2k"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(248,250,252,.97);border-radius:26px}
+[data-skin="y2k"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(13,17,23,.97)}
+[data-skin="y2k"] .sheet{border-radius:26px 26px 0 0}
+[data-skin="y2k"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:16px;background:rgba(255,255,255,.7);border:1px solid var(--line);box-shadow:inset 0 2px 4px rgba(60,90,130,.1)}
+[data-skin="y2k"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.4)}
+/* ── the timetable ── */
+[data-skin="y2k"] .lesson{border-radius:15px}
+[data-skin="y2k"] .lesson .s{font-family:var(--font-ui);font-weight:600;letter-spacing:-.01em}
+[data-skin="y2k"] .lesson.current{outline:0;box-shadow:0 0 0 3px var(--y-lime),0 0 0 4px #0b0d10}
+[data-skin="y2k"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--text)}
+[data-skin="y2k"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--y-lime);box-shadow:0 0 0 1px #0b0d10}
+[data-skin="y2k"] .breakbar{border-radius:999px}
+/* ── pages that are one piece: one frosted pane ── */
+:root[data-skin="y2k"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{
+  background:var(--panel);border:var(--card-border);border-radius:34px;box-shadow:var(--shadow);margin-top:26px;margin-bottom:60px;padding:18px 24px 34px}
+@media (max-width:640px){
+  :root[data-skin="y2k"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{margin:10px 8px 44px;padding:12px 12px 26px;border-radius:26px}
+}
+[data-skin="y2k"] .gamestage:not([hidden]){background:var(--panel);border:var(--card-border);border-radius:26px;padding:16px 18px 20px;box-shadow:var(--shadow)}
+/* ── leaving and arriving: a body of chrome slides across and on ── */
+html.fx-enter[data-skin="y2k"] .wrap{animation:none}
+.yk-wipe i{position:absolute;top:-15vh;height:130vh;left:-70vw;width:240vw;border-radius:min(65vh,60vw);transform:translateX(-178vw);transition:transform .5s cubic-bezier(.65,0,.2,1);
+  background:linear-gradient(100deg,#f7f9fb 0%,#c9d2dc 12%,#ffffff 24%,#aeb9c6 38%,#f2f5f8 50%,#b8c3cf 64%,#ffffff 78%,#c3cdd8 90%,#f7f9fb 100%);
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.95),inset 0 0 0 10px rgba(120,140,165,.45),inset 0 0 80px 30px rgba(255,255,255,.8),0 0 70px rgba(40,60,90,.4)}
+html[data-mode="dark"] .yk-wipe i{background:linear-gradient(100deg,#141a22 0%,#3d4857 12%,#0c1016 24%,#56657a 38%,#161c25 50%,#465466 64%,#0c1016 78%,#3a4654 90%,#141a22 100%);
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.5),inset 0 0 0 10px rgba(0,0,0,.5),inset 0 0 80px 30px rgba(160,190,220,.25),0 0 70px rgba(0,0,0,.6)}
+.yk-wipe.in i{transform:none}
+.yk-wipe.now i{transition:none}
+.yk-wipe.go i{transform:translateX(178vw);transition:transform .54s cubic-bezier(.7,0,.3,1)}
+@container hubbar (max-width:30em){ [data-skin="y2k"] .hubid h1{white-space:normal;overflow:visible} }

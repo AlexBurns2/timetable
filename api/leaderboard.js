@@ -219,7 +219,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Only moderators can see this." });
     let rows, error;
     ({ data: rows, error } = await db.from("prefs")
-      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen"')
+      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", iconstyle:data->>"tt.iconstyle", iconcolour:data->>"tt.iconcolour", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen"')
       .limit(5000));
     if (error) {                                      // the keys couldn't be picked out: read the settings whole instead
       console.warn("themes (picked):", error.message);
@@ -227,7 +227,7 @@ export default async function handler(req, res) {
       if (error) return res.status(502).json({ error: "Couldn't read the settings." });
       rows = rows.map(r => { const d = r.data || {}, s = v => v == null ? null : String(v);
         return { updated_at: r.updated_at, skin: s(d["tt.skin"]), mode: s(d["tt.mode"]), glassanim: s(d["tt.glassanim"]), gameicons: s(d["tt.gameicons"]),
-                 tileicons: s(d["tt.tileicons"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]) }; });
+                 tileicons: s(d["tt.tileicons"]), iconstyle: s(d["tt.iconstyle"]), iconcolour: s(d["tt.iconcolour"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]) }; });
     }
     const since = Date.now() - 30 * 864e5, skins = {}, tally = (o, k, act) => { const t = o[k] || (o[k] = { all: 0, active: 0 }); t.all++; if (act) t.active++; };
     const flags = { dark: {}, glassAnim: {}, emoji: {}, accentIcons: {}, clouds: {}, zen: {} };
@@ -237,8 +237,11 @@ export default async function handler(req, res) {
       tally(skins, r.skin || "plain", act);
       if (r.mode === "dark") tally(flags.dark, "n", act);
       if (r.skin === "glass" && r.glassanim === "on") tally(flags.glassAnim, "n", act);
-      if (r.gameicons === "emoji") tally(flags.emoji, "n", act);
-      if (r.tileicons === "accent") tally(flags.accentIcons, "n", act);
+      /* icons chosen in Display (over the theme's own); before that, the old two switches */
+      const style = r.iconstyle != null ? r.iconstyle : (r.gameicons === "emoji" ? "emoji" : null);
+      const colour = r.iconcolour != null ? r.iconcolour : (r.tileicons === "accent" ? "accent" : null);
+      if (style === "emoji") tally(flags.emoji, "n", act);
+      if (colour === "accent") tally(flags.accentIcons, "n", act);
       if (r.skin === "custom" && r.backdrop === "clouds") tally(flags.clouds, "n", act);
       if (r.zen === "true") tally(flags.zen, "n", act);
     }

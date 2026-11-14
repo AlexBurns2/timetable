@@ -26,37 +26,124 @@ const set = (k, v) => {
   if (!pulling && k.startsWith('tt.') && !SYNC_SKIP.has(k)) scheduleSync();
 };
 
-/* every skin in picker order; `custom` last so it lands bottom-right */
+/* the version on the shared files this script loads itself (each theme's
+   stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
+const ASSET_V = '20261114';
+
+/* Every theme, in the picker's order; `custom` last so it lands bottom-right.
+   css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
+   font: Google Fonts families it uses, fetched when it's chosen
+   ic / is: its own icons (Icon colour: tile = a colour each, accent = the
+         theme's colour; Icon style: icons or emoji), unless Display overrides them
+   both: has a light and a dark version (false: always dark)
+   legacy: an original, as the theme was before it was redrawn; not in the
+         picker, but under Settings → Custom → Originals */
 const SKINS = [
-  { id:'plain',     name:'Plain',     both:true, border:'#e5e5e8',
-    swatch:'linear-gradient(#fff,#fff)' },
-  { id:'classic',   name:'Classic',   both:true,
-    swatch:'linear-gradient(160deg,#dfe7f2,#f4f7fb 60%),radial-gradient(circle at 78% 22%,#0a84ff55,transparent 60%)' },
-  { id:'paper',     name:'Notebook',  both:true,
-    swatch:'linear-gradient(#f7f3e8,#f7f3e8) padding-box, repeating-linear-gradient(to bottom,#f7f3e8 0 7px,#c8d4e8 7px 8px)' },
-  { id:'glass',     name:'Glass',     both:true,
-    swatch:'radial-gradient(circle at 25% 20%,#7a5aff,transparent 60%),radial-gradient(circle at 80% 30%,#00becc,transparent 62%),radial-gradient(circle at 50% 90%,#ff50a0,transparent 60%),#0d1220' },
-  { id:'swiss',     name:'Swiss',     both:true, border:'#111',
-    swatch:'linear-gradient(#fff,#fff)' },
-  { id:'newsprint', name:'Newsprint', both:true, border:'#241f18',
-    swatch:'linear-gradient(#f4f1e8,#f4f1e8) padding-box, repeating-linear-gradient(45deg,rgba(0,0,0,.08) 0 3px,transparent 3px 6px)' },
-  { id:'retro',     name:'Retro',     both:true,
-    swatch:'linear-gradient(180deg,#3a6ea5 0 34%,#d4d0c8 34%),linear-gradient(#008080,#008080)' },
-  { id:'scifi',     name:'Sci-fi',    both:false,
-    swatch:'radial-gradient(circle at 50% 0%,rgba(0,229,255,.5),transparent 65%),repeating-linear-gradient(to bottom,rgba(0,229,255,.22) 0 1px,transparent 1px 8px),#04070d' },
-  { id:'terminal',  name:'Terminal',  both:false,
-    swatch:'repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)' },
-  { id:'blueprint', name:'Blueprint', both:false,
-    swatch:'repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#07223d' },
-  { id:'brutal',    name:'Brutal',    both:true,
-    swatch:'linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)' },
-  { id:'custom',    name:'Custom',    both:false, custom:true,
-    swatch:'conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)' }
+  { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
+  { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
+  { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
+  { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
+  { id:'skeuo',     name:'Skeuomorphism', both:true, ic:'tile', is:'icons', css:'skeuo' },
+  { id:'y2k',       name:'Y2K Futurism', both:true, ic:'accent', is:'icons', css:'y2k', font:'family=Michroma&family=Sora:wght@400;600;700' },
+  { id:'vapor',     name:'Vaporwave', both:true, ic:'tile', is:'emoji', css:'vapor', font:'family=VT323&family=DotGothic16' },
+  { id:'editorial', name:'Editorial', both:true, ic:'accent', is:'icons', css:'editorial', font:'family=Instrument+Serif:ital@0;1&family=Jost:wght@400;500;600' },
+  { id:'swiss',     name:'Swiss',     both:true, ic:'accent', is:'icons', css:'swiss', font:'family=Inter+Tight:wght@400;500;600;700;800' },
+  { id:'deco',      name:'Art Deco',  both:true, ic:'accent', is:'icons', css:'deco', font:'family=Big+Shoulders+Display:wght@500;700;900&family=Josefin+Sans:wght@400;600;700' },
+  { id:'brutal',    name:'Neo Brutalism', both:true, ic:'tile', is:'icons', css:'brutal', font:'family=Archivo+Black&family=Space+Grotesk:wght@400;500;700' },
+  { id:'maximal',   name:'Maximalism', both:true, ic:'tile', is:'icons', css:'maximal', font:'family=Archivo:wdth,wght@62..125,100..900&family=Instrument+Serif:ital@0;1' },
+  { id:'scifi',     name:'Cyberpunk', both:false, ic:'accent', is:'icons', css:'scifi', font:'family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Doto:wght@500;700;900&family=JetBrains+Mono:wght@400;700' },
+  { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
+  { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
+  { id:'custom',    name:'Custom',    both:false, custom:true },
+  /* the originals */
+  { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
+  { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
+  { id:'o-brutal',    name:'Brutal',    legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
+  { id:'o-scifi',     name:'Sci-fi',    legacy:true, both:false, ic:'tile', is:'icons', css:'legacy' },
+  { id:'o-terminal',  name:'Terminal',  legacy:true, both:false, ic:'tile', is:'icons', css:'legacy' },
+  { id:'o-blueprint', name:'Blueprint', legacy:true, both:false, ic:'tile', is:'icons', css:'legacy' },
+  { id:'newsprint',   name:'Newsprint', legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
+  { id:'retro',       name:'Retro',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' }
 ];
 const SKIN_IDS = SKINS.map(s => s.id);
 
-/* the four shown before the picker is expanded */
-const QUICK_SKINS = ['plain','classic','custom'];
+/* The picker's thumbnails: each theme as a miniature of itself, the same
+   little page every time (a bar across the top, three tiles under it) drawn
+   the way that theme draws it. SVG, 120 by 46, made here so they cost no
+   requests. (Type in them is the device's own; a data-URI can't use a web font.) */
+const THUMBS = (() => {
+  const bar = (a, extra) => '<rect x="8" y="6" width="104" height="12" ' + a + '/>' + (extra || '');
+  const tiles = (a, f) => [8, 44, 80].map((x, i) => '<rect x="' + x + '" y="23" width="32" height="17" ' + (f ? f(i) : a) + '/>').join('');
+  return {
+    plain: ['#ffffff', bar('rx="3" fill="#fff" stroke="#dcdce0"') + '<circle cx="15" cy="12" r="2.2" fill="#4f4fd0"/><rect x="21" y="10.5" width="30" height="3" rx="1.5" fill="#18181b"/>' + tiles('rx="3" fill="#fff" stroke="#dcdce0"')],
+    classic: ['#e3e9f1', bar('rx="5" fill="#fff" fill-opacity=".8"') + '<rect x="14" y="10.5" width="34" height="3" rx="1.5" fill="#1d1d1f"/>' +
+      tiles('', i => 'rx="5" fill="#fff" fill-opacity=".8" stroke="' + ['#ff9f0a', '#0a84ff', '#30d158'][i] + '" stroke-width="1.6"')],
+    glass: ['#0d1220', '<defs><filter id="b"><feGaussianBlur stdDeviation="9"/></filter></defs><g filter="url(#b)"><circle cx="22" cy="6" r="20" fill="#7a5aff"/><circle cx="96" cy="14" r="20" fill="#00becc"/><circle cx="60" cy="48" r="18" fill="#ff50a0"/></g>' +
+      bar('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"') + tiles('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"')],
+    paper: ['#f7f3e8', '<g stroke="#9fb4d8" stroke-opacity=".5">' + [9, 18, 27, 36, 45].map(y => '<path d="M0 ' + y + 'H120"/>').join('') + '</g><path d="M22 0V46" stroke="#d66" stroke-opacity=".6"/>' +
+      '<rect x="30" y="5" width="82" height="12" fill="#fffdf6" stroke="#ded4bd"/><rect x="36" y="2.5" width="16" height="5" fill="#c2571f" fill-opacity=".35" transform="rotate(-4 44 5)"/>' +
+      '<rect x="30" y="23" width="24" height="17" fill="#fff3a0" transform="rotate(-3 42 31)"/><rect x="59" y="23" width="24" height="17" fill="#ffd6e2" transform="rotate(2 71 31)"/><rect x="88" y="23" width="24" height="17" fill="#d3eaff" transform="rotate(-2 100 31)"/>'],
+    skeuo: ['#c69a63', '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c4c9cf"/><stop offset="1" stop-color="#dfe2e6"/></linearGradient>' +
+      '<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity=".15"/><stop offset=".51" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
+      '<g stroke="#a67843" stroke-opacity=".5"><path d="M0 9h120M0 20h70M40 31h80M0 41h120"/></g>' + bar('rx="3" fill="url(#a)" stroke="#6c7178"') + '<rect x="62" y="8.5" width="34" height="7" rx="1.5" fill="#b9c7a6" stroke="#4a5140"/>' +
+      [['#e5484d', 20], ['#f76b15', 52], ['#0090ff', 84]].map(c => '<rect x="' + c[1] + '" y="23" width="16" height="16" rx="4" fill="' + c[0] + '"/><rect x="' + c[1] + '" y="23" width="16" height="16" rx="4" fill="url(#g)"/>').join('')],
+    y2k: ['#e6ebf0', '<defs><linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#b3bfcc"/><stop offset=".62" stop-color="#e6ecf1"/><stop offset="1" stop-color="#fff"/></linearGradient>' +
+      '<radialGradient id="o" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#cdb6ff"/><stop offset="1" stop-color="#9ff0c6"/></radialGradient></defs>' +
+      '<circle cx="104" cy="40" r="17" fill="url(#c)" stroke="#8a98a8" stroke-width=".6"/>' + bar('rx="6" fill="url(#c)" stroke="#8a98a8" stroke-width=".7"') + '<rect x="58" y="8" width="40" height="8" rx="4" fill="#0b0d10"/><circle cx="64" cy="12" r="1.8" fill="#c8ff2e"/>' +
+      tiles('rx="6" fill="#fff" fill-opacity=".8" stroke="#aab6c4" stroke-width=".7"') + [16, 52, 88].map(x => '<circle cx="' + x + '" cy="31.5" r="4.5" fill="url(#o)"/>').join('')],
+    vapor: ['#2a0a52', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0638"/><stop offset=".62" stop-color="#7a1a7a"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient>' +
+      '<linearGradient id="t" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff71ce"/><stop offset=".5" stop-color="#b967ff"/><stop offset="1" stop-color="#01cdfe"/></linearGradient>' +
+      '<linearGradient id="u" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe66d"/><stop offset="1" stop-color="#ff2a8a"/></linearGradient></defs>' +
+      '<rect width="120" height="31" fill="url(#s)"/><circle cx="60" cy="29" r="13" fill="url(#u)"/><g fill="#7a1a7a"><rect x="40" y="24" width="40" height="1.4"/><rect x="40" y="27.3" width="40" height="2"/></g>' +
+      '<rect y="31" width="120" height="15" fill="#0d0420"/><g stroke="#ff71ce" stroke-width=".7"><path d="M0 34h120M0 39h120M60 31V46M40 31 22 46M80 31 98 46M20 31-14 46M100 31 134 46"/></g>' +
+      '<rect x="8" y="5" width="60" height="16" fill="#23103e" stroke="#a98be0"/><rect x="9" y="6" width="58" height="4.5" fill="url(#t)"/><rect x="13" y="14" width="26" height="2.6" fill="#ffe8fb"/>'],
+    editorial: ['#f4f0e8', '<rect x="8" y="6" width="104" height="2.4" fill="#1a1814"/><text x="8" y="31" font-family="Georgia,\'Times New Roman\',serif" font-size="24" letter-spacing="-1" fill="#1a1814">Aa</text>' +
+      '<rect x="46" y="14" width="66" height=".8" fill="#1a1814"/>' + [20, 27, 34].map((y, i) => '<rect x="46" y="' + y + '" width="' + [44, 52, 36][i] + '" height="2.6" fill="#1a1814"/><rect x="46" y="' + (y + 4.2) + '" width="66" height=".5" fill="#b9b0a2"/>').join('') +
+      '<rect x="8" y="38" width="12" height="1.6" fill="#b5432a"/>'],
+    swiss: ['#ffffff', [0, 1, 2, 3, 4, 5].map(i => '<rect x="' + (8 + i * 18) + '" y="0" width="14" height="46" fill="#e8112d" fill-opacity=".07"/>').join('') + '<rect x="8" y="5" width="104" height="4" fill="#000"/>' +
+      '<rect x="8" y="13" width="6" height="6" fill="#e8112d"/><rect x="44" y="13" width="56" height="6" fill="#000"/>' +
+      '<g fill="#fff" stroke="#000" stroke-width=".8"><rect x="44" y="24" width="22.6" height="16"/><rect x="66.6" y="24" width="22.6" height="16"/></g><rect x="89.2" y="24" width="22.8" height="16" fill="#e8112d"/>'],
+    deco: ['#0d0f12', '<g stroke="#d4af37" fill="none"><g stroke-width=".7">' + [-75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75].map(a => '<path d="M60 22V7" transform="rotate(' + a + ' 60 22)"/>').join('') + '</g>' +
+      '<path d="M45 22a15 15 0 0 1 30 0M52 22a8 8 0 0 1 16 0" stroke-width=".9"/><rect x="6" y="22" width="108" height="20" stroke-width=".9"/><rect x="8.5" y="24.5" width="103" height="15" stroke-width=".5"/>' +
+      [30, 60, 90].map(x => '<rect x="' + (x - 3.6) + '" y="28.4" width="7.2" height="7.2" transform="rotate(45 ' + x + ' 32)" stroke-width=".9"/>').join('') + '</g>'],
+    brutal: ['#ffe94a', '<defs><pattern id="d" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#000" fill-opacity=".3"/></pattern></defs><rect width="120" height="46" fill="url(#d)"/>' +
+      '<rect x="10.5" y="8.5" width="104" height="12" fill="#000"/>' + bar('fill="#fffdf5" stroke="#000" stroke-width="1.6"') + '<rect x="13" y="10" width="26" height="4" fill="#000"/>' +
+      [8, 44, 80].map((x, i) => '<rect x="' + (x + 2.5) + '" y="25.5" width="32" height="17" fill="#000"/><rect x="' + x + '" y="23" width="32" height="17" fill="' + ['#fffdf5', '#0047ff', '#fffdf5'][i] + '" stroke="#000" stroke-width="1.6"/>').join('')],
+    maximal: ['#fbf4e4', [['#14121a', 0], ['#fbf4e4', 11.5], ['#f5419e', 23], ['#2b6fd0', 34.5]].map(b => '<rect y="' + b[1] + '" width="120" height="11.5" fill="' + b[0] + '"/>').join('') +
+      '<g font-family="\'Arial Black\',Impact,sans-serif" font-size="11" font-weight="900" letter-spacing="-.4"><text x="-6" y="9.6" fill="#fbf4e4">MSCUNOFFICIAL +++ MSC</text><text x="-30" y="21.1" fill="#14121a">UNOFFICIAL +++ MSCUNOF</text>' +
+      '<text x="-14" y="32.6" fill="#14121a">OFFICIAL +++ MSCUNOFFI</text><text x="-40" y="44.1" fill="#fbf4e4">CUNOFFICIAL +++ MSCUNO</text></g>' +
+      '<rect x="33" y="13" width="62" height="24" fill="#f6bd1e"/><rect x="29" y="9" width="62" height="24" fill="#fbf4e4" stroke="#14121a" stroke-width="1.4"/><rect x="34" y="14" width="34" height="5" fill="#14121a"/><rect x="34" y="23" width="20" height="5" fill="#f5419e"/>'],
+    scifi: ['#08090b', '<rect width="9" height="46" fill="#d4ff00"/><g stroke="#e9ebe5" stroke-opacity=".3" fill="none" stroke-width=".6"><circle cx="100" cy="24" r="15"/><ellipse cx="100" cy="24" rx="21" ry="7" transform="rotate(-18 100 24)"/><path d="M88 15 100 9 112 15 112 33 100 39 88 33ZM88 15 112 33M112 15 88 33M100 9V39"/></g>' +
+      '<path d="M16 6H74L80 12V19H16Z" fill="#101216" stroke="#2a2e36"/><path d="M16 6h9l-2.4 4.4H16Z" fill="#d4ff00"/><rect x="29" y="12.6" width="30" height="3" fill="#e9ebe5"/>' +
+      [16, 40, 64].map(x => '<path d="M' + x + ' 24h14l5 5v11h-19Z" fill="#101216" stroke="#2a2e36"/><path d="M' + (x + 2.5) + ' 29.5v-3h3M' + (x + 16.5) + ' 34.5v3h-3" stroke="#d4ff00" fill="none" stroke-width=".8"/>').join('')],
+    terminal: ['#05080a', '<rect x="6.5" y="5.5" width="107" height="35" fill="none" stroke="#1f7a4b" stroke-width="1"/><rect x="9" y="8" width="102" height="30" fill="none" stroke="#1f7a4b" stroke-width="1"/>' +
+      '<text x="15" y="21" font-family="Consolas,Menlo,\'Courier New\',monospace" font-size="9.5" font-weight="700" fill="#39ff9e">&gt; msc --home</text><text x="15" y="32" font-family="Consolas,Menlo,\'Courier New\',monospace" font-size="9.5" fill="#5fae87">ready</text>' +
+      '<rect x="46" y="25" width="5.5" height="8.5" fill="#39ff9e"/><g fill="#000" fill-opacity=".28">' + [3, 9, 15, 21, 27, 33, 39, 45].map(y => '<rect y="' + y + '" width="120" height="1.4"/>').join('') + '</g>'],
+    blueprint: ['#0a2c52', '<g stroke="#fff" stroke-opacity=".12" stroke-width=".6">' + [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110].map(x => '<path d="M' + x + ' 0V46"/>').join('') + [6, 16, 26, 36].map(y => '<path d="M0 ' + y + 'H120"/>').join('') + '</g>' +
+      '<g fill="#0a2c52" stroke="#c4e4ff" stroke-opacity=".75" stroke-width=".8">' + bar('') + tiles('') + '</g><rect x="13" y="10.4" width="30" height="3" fill="#f2f9ff"/>' +
+      '<g stroke="#7ff0ff" stroke-width=".7"><path d="M4 21.5h4M116 21.5h-4M60 44v-3"/></g>'],
+    custom: ['#7ee8fa', '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f6d"/><stop offset=".35" stop-color="#ffc371"/><stop offset=".68" stop-color="#7ee8fa"/><stop offset="1" stop-color="#a06cd5"/></linearGradient></defs><rect width="120" height="46" fill="url(#r)"/>' +
+      '<g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M34 13h52M34 23h52M34 33h52"/></g><g fill="#fff" stroke="#14121a" stroke-opacity=".35"><circle cx="50" cy="13" r="4.2"/><circle cx="74" cy="23" r="4.2"/><circle cx="42" cy="33" r="4.2"/></g>']
+  };
+})();
+SKINS.forEach(s => {
+  const t = THUMBS[s.id];
+  /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
+  s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
+});
+SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf';
+
+/* kept for older callers; the picker shows every theme now */
+const QUICK_SKINS = SKINS.filter(s => !s.legacy).map(s => s.id);
+
+/* which page this is, for the themes that give each page its own look
+   (html[data-pg]): timetable, home, games, calendar, free, revision, … */
+const PG = (() => {
+  let f = location.pathname.split('/').pop().replace(/\.html$/, '');
+  if (!f || f === 'index' || f === 'index2') f = 'timetable';
+  if (f === 'poll') f = 'home';
+  return f;
+})();
 
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
@@ -67,7 +154,9 @@ const CUSTOM_DEFAULTS = { bg:'#f2f4f8', panel:'#ffffff', text:'#16181d',
                           border:1, accent2:'#00c2c7',
                           /* the Clouds backdrop: four colours, how strong, how big, moving or not */
                           cloud1:'#7a5cff', cloud2:'#00c2dc', cloud3:'#ff4fa3', cloud4:'#3a52f2',
-                          cloudStrength:55, cloudSize:100, cloudAnim:false };
+                          cloudStrength:55, cloudSize:100, cloudAnim:false,
+                          /* the theme's icons (Display can still override them) */
+                          iconColour:'tile', iconStyle:'icons' };
 
 const CUSTOM_VARS = ['--bg','--bg-img','--panel','--panel-2','--line','--text','--muted',
                      '--accent','--accent-ink','--card-radius','--radius','--tint',
@@ -119,6 +208,15 @@ const GLASS_CAP = { dark: .5, light: .62 };
    custom theme's colours recolours the same clouds rather than reshuffling. */
 const CLOUD_RND = Array.from({ length: 4 }, () => ({
   fx: 0.0013 + Math.random() * 0.0008, fy: 0.0013 + Math.random() * 0.0008, seed: 1 + Math.floor(Math.random() * 99998) }));
+/* ...and kept for the visit: the next page draws the very same clouds (no reshuffle, no fade-in), so going
+   from page to page the background doesn't change under the contents */
+let cloudsKept = false, cloudT0 = Date.now();
+try {
+  const k = JSON.parse(sessionStorage.getItem('tt.cloudrnd') || 'null');
+  if (k && k.r && k.r.length === 4 && k.r.every(r => r && r.fx > 0 && r.fy > 0 && r.seed > 0) && Date.now() - k.t0 < 6 * 3600e3 && Date.now() >= k.t0){
+    k.r.forEach((r, i) => Object.assign(CLOUD_RND[i], { fx:r.fx, fy:r.fy, seed:r.seed })); cloudT0 = k.t0; cloudsKept = true; }
+} catch {}
+const keepClouds = () => { try { sessionStorage.setItem('tt.cloudrnd', JSON.stringify({ r:CLOUD_RND, t0:cloudT0 })); } catch {} };
 const cloudMemo = {};
 /* fields: four [r, g, b (0–1), k (how sharply it shows)]; cap: the most colour
    ever; thr: where a field starts to show; size: 1 normal, 2 twice as big.
@@ -146,7 +244,7 @@ function cloudLayers(fields, cap, thr, size){
    The layers fade in once it's settled (theme.css, data-clouds-ready). Only
    once per page open; if the browser won't let the page read the drawing back
    (some Safari versions), the first draw is kept. */
-let cloudArgs = null, cloudVet = 'todo';
+let cloudArgs = null, cloudVet = cloudsKept ? 'done' : 'todo';
 function setCloudVars(root){
   const [a, b] = cloudLayers(cloudArgs.fields, cloudArgs.cap, cloudArgs.thr, cloudArgs.size);
   root.style.setProperty('--glass-a', a); root.style.setProperty('--glass-b', b);
@@ -187,6 +285,7 @@ function vetClouds(root){
       if (cloudArgs) setCloudVars(root);
     } catch { /* can't read the drawing back: keep the first */ }
     cloudVet = 'done';
+    keepClouds();
     root.setAttribute('data-clouds-ready', '1');
   })();
 }
@@ -204,11 +303,30 @@ const cloudGrain = dark => 'url("data:image/svg+xml,' + encodeURIComponent("<svg
    look changes. Browsers that don't take a favicon from a script (Safari)
    keep the fixed one. */
 let favImg = null, favTimer = 0, favLast = '';
-/* The letters get a little of each theme's character: rounded for Classic,
-   refracted for Glass, pixels for Terminal and Retro, an outline for
-   Blueprint, a hard shadow for Brutal, a glow for Sci-fi, a tilt for Notebook.
-   The rest keep the logo's letters as they are. */
-const FAV_STYLE = { classic:'round', glass:'glass', terminal:'pixel', retro:'pixel', blueprint:'outline', brutal:'shadow', scifi:'glow', paper:'tilt' };
+/* Each theme has its own icon: what's behind the letters (FAV: a shape, and a
+   painter for it; without one, a rounded square in the theme's accent), the
+   letters' colour, and how they're drawn (FAV_STYLE): rounded for Classic,
+   refracted for Glass, pixels for Terminal, an outline for Blueprint, a hard
+   shadow for Neo Brutalism, a colour split for Vaporwave, a gloss for
+   Skeuomorphism, a tilt for Notebook. */
+const FAV_STYLE = { classic:'round', glass:'glass', paper:'tilt', skeuo:'gloss', vapor:'glitch', brutal:'shadow', terminal:'pixel', blueprint:'outline',
+                    'o-paper':'tilt', 'o-brutal':'shadow', 'o-scifi':'glow', 'o-terminal':'pixel', 'o-blueprint':'outline', retro:'pixel' };
+const FAV = {
+  paper:     { shape:'square', ink:'#3a2f1c', bg(x, N){ x.fillStyle = '#fff3a0'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(80,110,160,.35)'; for (let y = 24; y < N; y += 13) x.fillRect(0, y, N, 1.5);
+               x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(N/2 - 13, 0, 26, 8); } },
+  y2k:       { shape:'circle', ink:'#0b0d10', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); [[0, '#fff'], [.36, '#e3e9ef'], [.5, '#9aa8b8'], [.62, '#dfe6ee'], [1, '#fff']].forEach(s => g.addColorStop(s[0], s[1]));
+               x.fillStyle = g; x.fillRect(0, 0, N, N); x.strokeStyle = '#c8ff2e'; x.lineWidth = 5; x.beginPath(); x.arc(N/2, N/2, N/2 - 2.5, 0, 7); x.stroke(); } },
+  vapor:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#7a4dff'); g.addColorStop(.55, '#ff5fbf'); g.addColorStop(1, '#ffb36b');
+               x.fillStyle = g; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(40,10,80,.55)'; [45, 52, 58].forEach((y, i) => x.fillRect(0, y, N, 2 + i)); } },
+  editorial: { shape:'square', ink:'#1a1814', bg(x, N){ x.fillStyle = '#f4f0e8'; x.fillRect(0, 0, N, N); x.fillStyle = '#1a1814'; x.fillRect(0, 0, N, 5); x.fillStyle = '#b5432a'; x.fillRect(0, N - 4, N, 4); } },
+  swiss:     { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#e8112d'; x.fillRect(0, 0, N, N); x.fillStyle = '#000'; x.fillRect(0, 0, N, 7); } },
+  deco:      { shape:'square', ink:'#d4af37', bg(x, N){ x.fillStyle = '#0d0f12'; x.fillRect(0, 0, N, N); x.strokeStyle = '#d4af37'; x.lineWidth = 2; x.strokeRect(3, 3, N - 6, N - 6); x.lineWidth = 1; x.strokeRect(7.5, 7.5, N - 15, N - 15); } },
+  brutal:    { shape:'square', ink:'#0047ff', bg(x, N){ x.fillStyle = '#ffe94a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#000'; x.lineWidth = 8; x.strokeRect(0, 0, N, N); } },
+  maximal:   { shape:'square', ink:'#14121a', bg(x, N){ [['#f5419e', 0, 0], ['#f6bd1e', N/2, 0], ['#2b6fd0', 0, N/2], ['#14a594', N/2, N/2]].forEach(q => { x.fillStyle = q[0]; x.fillRect(q[1], q[2], N/2, N/2); }); } },
+  scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
+  terminal:  { shape:'square', ink:'#39ff9e', bg(x, N){ x.fillStyle = '#05080a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#39ff9e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, N - 3, N - 3); } },
+  blueprint: { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#0b3a66'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 8; i < N; i += 12){ x.fillRect(i, 0, 1, N); x.fillRect(0, i, N, 1); } } }
+};
 function favThreshold(x, n, cut, soft){            // alpha: a soft step at `cut` (rounds or squares off the edges)
   const d = x.getImageData(0, 0, n, n), a = d.data, h = (soft || 1) / 2;
   for (let i = 3; i < a.length; i += 4) a[i] = Math.max(0, Math.min(255, (a[i] - (cut - h)) / (2 * h) * 255));
@@ -217,9 +335,10 @@ function favThreshold(x, n, cut, soft){            // alpha: a soft step at `cut
 function paintFavicon(){
   try {
     const root = document.documentElement, cs = getComputedStyle(root);
-    const bg = cs.getPropertyValue('--accent').trim(), ink = cs.getPropertyValue('--accent-ink').trim() || '#fff';
-    const style = FAV_STYLE[root.getAttribute('data-skin')] || 'plain';
-    if (!bg || bg + ink + style === favLast) return;
+    const sk = root.getAttribute('data-skin'), fv = FAV[sk] || {};
+    const bg = cs.getPropertyValue('--accent').trim(), ink = fv.ink || cs.getPropertyValue('--accent-ink').trim() || '#fff';
+    const style = FAV_STYLE[sk] || 'plain', key = sk + bg + ink + style;
+    if (!bg || key === favLast) return;
     const draw = () => {
       const N = 64, mk = n => { const c = document.createElement('canvas'); c.width = c.height = n || N; return c; };
       /* the letters, in a colour (or a gradient, made by fill(x)), in a shape */
@@ -236,9 +355,14 @@ function paintFavicon(){
         return c;
       };
       const c = mk(), x = c.getContext('2d'), r = N * 0.22;
-      x.beginPath(); x.moveTo(r, 0); x.arcTo(N, 0, N, N, r); x.arcTo(N, N, 0, N, r); x.arcTo(0, N, 0, 0, r); x.arcTo(0, 0, N, 0, r); x.closePath();
+      x.beginPath();
+      if (fv.shape === 'circle') x.arc(N / 2, N / 2, N / 2, 0, Math.PI * 2);
+      else if (fv.shape === 'square') x.rect(0, 0, N, N);
+      else if (fv.shape === 'cut'){ x.moveTo(0, 0); x.lineTo(N - 17, 0); x.lineTo(N, 17); x.lineTo(N, N); x.lineTo(0, N); x.closePath(); }
+      else { x.moveTo(r, 0); x.arcTo(N, 0, N, N, r); x.arcTo(N, N, 0, N, r); x.arcTo(0, N, 0, 0, r); x.arcTo(0, 0, N, 0, r); x.closePath(); }
       x.fillStyle = bg; x.fill();
       x.save(); x.clip();
+      if (fv.bg) fv.bg(x, N);
       if (style === 'glass'){
         /* a pane: a sheen across the top, the letters with light through them and a colour fringe */
         const g = x.createLinearGradient(0, 0, N * .7, N); g.addColorStop(0, 'rgba(255,255,255,.38)'); g.addColorStop(.45, 'rgba(255,255,255,.06)'); g.addColorStop(1, 'rgba(255,255,255,0)');
@@ -259,13 +383,25 @@ function paintFavicon(){
       } else if (style === 'glow'){
         /* neon: a white glow behind the letters */
         x.shadowColor = 'rgba(255,255,255,.95)'; x.shadowBlur = 6; const L = letters(ink); x.drawImage(L, 0, 0); x.drawImage(L, 0, 0); x.shadowBlur = 0;
+      } else if (style === 'glitch'){
+        /* the letters split into two colours, slightly apart */
+        x.globalAlpha = .9; x.drawImage(letters('#ff2e88'), -2, 0); x.drawImage(letters('#00e1ff'), 2, 0); x.globalAlpha = 1;
+        x.drawImage(letters(ink), 0, 0);
+      } else if (style === 'gloss'){
+        /* an app icon: light falling from the top, a gloss over the upper half, the letters pressed in */
+        const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, 'rgba(255,255,255,.28)'); g.addColorStop(.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.22)');
+        x.fillStyle = g; x.fillRect(0, 0, N, N);
+        x.drawImage(letters('rgba(0,0,0,.35)'), 0, 1.5); x.drawImage(letters(ink), 0, 0);
+        x.beginPath(); x.ellipse(N / 2, -N * .12, N * .78, N * .52, 0, 0, Math.PI * 2);
+        const s = x.createLinearGradient(0, 0, 0, N * .4); s.addColorStop(0, 'rgba(255,255,255,.55)'); s.addColorStop(1, 'rgba(255,255,255,.08)');
+        x.fillStyle = s; x.fill();
       } else if (style === 'tilt'){
         x.translate(N / 2, N / 2); x.rotate(-0.1); x.scale(.92, .92); x.translate(-N / 2, -N / 2); x.drawImage(letters(ink, 'round'), 0, 0);
       } else x.drawImage(letters(ink, style === 'round' || style === 'pixel' ? style : ''), 0, 0);
       x.restore();
       const url = c.toDataURL('image/png');
       document.querySelectorAll('link[rel~="icon"]').forEach(l => { l.type = 'image/png'; l.href = url; });
-      favLast = bg + ink + style;
+      favLast = key;
     };
     if (favImg && favImg.complete && favImg.naturalWidth) draw();
     else if (!favImg){ favImg = new Image(); favImg.onload = draw; favImg.src = '/images/msc-letters.png'; }
@@ -278,14 +414,108 @@ function queueFavicon(){
   else favTimer = setTimeout(paintFavicon, 0);
 }
 
+/* ── each theme's icons ─────────────────────────────────────────────
+   A theme picks its icons (SKINS ic / is; a custom theme its own). Display →
+   Icon colour / Icon style can override them for every theme: tt.iconcolour
+   (auto | tile | accent) and tt.iconstyle (auto | icons | emoji). Before
+   these existed the two switches were tt.tileicons and tt.gameicons, whose
+   defaults were tile and icons, so only someone who picked accent or emoji
+   had made a choice; that choice is kept as an override. */
+function iconsFor(st){
+  const sk = SKINS.find(s => s.id === st.skin) || SKINS[0];
+  let colour = sk.ic || 'tile', style = sk.is || 'icons';
+  if (st.skin === 'custom'){
+    colour = st.custom.iconColour === 'accent' ? 'accent' : 'tile';
+    style = st.custom.iconStyle === 'emoji' ? 'emoji' : 'icons';
+  }
+  const oc = get('tt.iconcolour', null), os = get('tt.iconstyle', null);
+  if (oc === 'tile' || oc === 'accent') colour = oc;
+  else if (oc == null && get('tt.tileicons', '') === 'accent') colour = 'accent';
+  if (os === 'icons' || os === 'emoji') style = os;
+  else if (os == null && get('tt.gameicons', '') === 'emoji') style = 'emoji';
+  return { colour, style };
+}
+/* what the Display switches show: auto, or the override (old switches included) */
+function iconChoice(){
+  const oc = get('tt.iconcolour', null), os = get('tt.iconstyle', null);
+  return {
+    colour: oc === 'tile' || oc === 'accent' ? oc : (oc == null && get('tt.tileicons', '') === 'accent' ? 'accent' : 'auto'),
+    style: os === 'icons' || os === 'emoji' ? os : (os == null && get('tt.gameicons', '') === 'emoji' ? 'emoji' : 'auto')
+  };
+}
+/* a theme's own typefaces, fetched only once someone picks it (the shared
+   ones are already linked by every page) */
+function skinFont(id){
+  try {
+    const sk = SKINS.find(s => s.id === id);
+    if (!sk || !sk.font) return;
+    const href = 'https://fonts.googleapis.com/css2?' + sk.font + '&display=swap';
+    if (document.querySelector('link[data-skinfont="' + id + '"]')) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href; l.setAttribute('data-skinfont', id);
+    (document.head || document.documentElement).appendChild(l);
+  } catch {}
+}
+
+/* Each theme's own stylesheet (/skins/<file>.css). While the page is still
+   loading it's written straight into the document, so it's there before the
+   first paint. Later (a theme picked in Settings) it's fetched, and the theme
+   goes on once it has arrived, so there's no moment of half a look.
+   true = ready to wear. */
+const skinCssState = {};
+let skinWaiting = null;                           // the look asked for while its stylesheet was on the way
+function skinCss(id){
+  const sk = SKINS.find(s => s.id === id), file = sk && sk.css;
+  if (!file || skinCssState[file] === 'ready') return true;
+  if (skinCssState[file] === 'loading') return false;
+  const href = '/skins/' + file + '.css?v=' + ASSET_V, cs = document.currentScript;
+  if (document.readyState === 'loading' && cs && !cs.async && !cs.defer){
+    document.write('<link rel="stylesheet" href="' + href + '" data-skincss="' + file + '">');
+    skinCssState[file] = 'ready';
+    return true;
+  }
+  skinCssState[file] = 'loading';
+  const l = document.createElement('link');
+  l.rel = 'stylesheet'; l.href = href; l.setAttribute('data-skincss', file);
+  l.onload = l.onerror = () => { skinCssState[file] = 'ready'; const st = skinWaiting; skinWaiting = null; apply(st || undefined); };
+  (document.head || document.documentElement).appendChild(l);
+  return false;
+}
+/* fetch every theme's stylesheet ahead (Settings does, as it opens), so picking one is instant */
+function warmSkins(){
+  try { [...new Set(SKINS.map(s => s.css).filter(Boolean))].forEach(f => { if (!skinCssState[f]) fetch('/skins/' + f + '.css?v=' + ASSET_V).catch(() => {}); }); } catch {}
+}
+
+/* ── Animation: the moving backgrounds and the page transitions ───────
+   One switch (Settings → Animation; tt.fx on | off). Off also with Reduce
+   motion, and by default for anyone whose device asks for less motion.
+   html[data-fx] carries it; fx.js and the themes' stylesheets read it. */
+function fxOn(){
+  if (get(LS.motion, 'normal') === 'reduced') return false;
+  const v = get('tt.fx', null);
+  if (v === 'off') return false;
+  if (v === 'on') return true;
+  try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
+}
+
 function apply(state){
+  const st = paint(state);
+  try { dispatchEvent(new CustomEvent('tt:look')); } catch {}
+  return st;
+}
+function paint(state){
   const st = state || readState();
   const root = document.documentElement;
+  if (!skinCss(st.skin)){ skinWaiting = state || null; return st; }   // its stylesheet is on the way: this runs again when it lands
   queueFavicon();
 
   root.setAttribute('data-skin', st.skin);
-  root.setAttribute('data-tileicons', get('tt.tileicons', 'tile') === 'accent' ? 'accent' : 'tile');   // Home's tile icons
-  root.setAttribute('data-gameicons', get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons');   // games: icons or emoji
+  root.setAttribute('data-pg', PG);
+  root.setAttribute('data-fx', fxOn() ? 'on' : 'off');
+  const ic = iconsFor(st);
+  root.setAttribute('data-tileicons', ic.colour);   // icons: a colour each (tile) or the theme's (accent)
+  root.setAttribute('data-gameicons', ic.style);    // icons or emoji
+  skinFont(st.skin);
   /* the colour clouds behind everything (theme.css): Glass always, a custom
      theme with the Clouds backdrop. data-clouds: off | still | move */
   let clouds = 'off';
@@ -302,7 +532,8 @@ function apply(state){
                   size: Math.max(.5, Math.min(2, (+c.cloudSize || 100) / 100)), dark: inkFor(c.bg) === '#fff' };
     clouds = c.cloudAnim ? 'move' : 'still';
   }
-  if (clouds !== 'off'){ setCloudVars(root); vetClouds(root); }
+  if (clouds !== 'off'){ setCloudVars(root); vetClouds(root);
+    root.style.setProperty('--cloud-d', '-' + ((Date.now() - cloudT0) / 1000).toFixed(2) + 's'); }     // where the drift has got to
   root.setAttribute('data-clouds', clouds);
   root.setAttribute('data-mode', st.mode);
   /* Keep native controls (the datalist autocomplete popup, text inputs,
@@ -313,7 +544,7 @@ function apply(state){
   root.style.colorScheme =
       st.skin === 'custom'
         ? (inkFor(st.custom.bg) === '#fff' ? 'dark' : 'light')
-    : (st.skin === 'scifi' || st.skin === 'terminal' || st.skin === 'blueprint')
+    : (SKINS.find(s => s.id === st.skin) || {}).both === false
         ? 'dark'
         : (st.mode === 'dark' ? 'dark' : 'light');
   root.classList.toggle('zen', !!st.zen);
@@ -379,8 +610,196 @@ function apply(state){
   return st;
 }
 
+/* ── theme codes: a custom theme as a short line of text to share ─────
+   MSC-<base64url>: a version byte, the six colours, the sizes, the font (by
+   its place in CUSTOM_FONTS, so that list only ever grows at the end), the
+   switches, the four cloud colours when the backdrop is Clouds, and a check
+   byte so a mistyped code is caught rather than half-applied. */
+const CODE_BACKDROPS = ['solid', 'gradient', 'mesh', 'clouds'], CODE_SHADOWS = ['none', 'soft', 'hard'];
+const CODE_COLOURS = ['bg', 'panel', 'text', 'accent', 'line', 'accent2'], CODE_CLOUDS = ['cloud1', 'cloud2', 'cloud3', 'cloud4'];
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+v || 0)));
+const hexOk = h => /^#[0-9a-f]{6}$/i.test(String(h || ''));
+function themeCode(c){
+  c = Object.assign({}, CUSTOM_DEFAULTS, c || {});
+  const b = [1];
+  const col = h => { const n = parseInt(hexOk(h) ? h.slice(1) : '000000', 16); b.push(n >> 16 & 255, n >> 8 & 255, n & 255); };
+  CODE_COLOURS.forEach(k => col(c[k]));
+  const bd = Math.max(0, CODE_BACKDROPS.indexOf(c.backdrop)), sh = Math.max(0, CODE_SHADOWS.indexOf(c.shadow));
+  b.push(clampN(c.radius, 0, 26), clampN(c.tint, 0, 70), Math.max(0, CUSTOM_FONTS.indexOf(c.font)), clampN(c.border, 0, 4),
+         bd | sh << 2 | (c.glass ? 16 : 0) | (c.iconColour === 'accent' ? 32 : 0) | (c.iconStyle === 'emoji' ? 64 : 0) | (c.cloudAnim ? 128 : 0));
+  if (CODE_BACKDROPS[bd] === 'clouds'){ CODE_CLOUDS.forEach(k => col(c[k])); b.push(clampN(c.cloudStrength, 15, 90), clampN(c.cloudSize / 10, 5, 20)); }
+  let sum = 7; b.forEach(x => { sum = (sum * 31 + x) & 255; }); b.push(sum);
+  return 'MSC-' + btoa(String.fromCharCode.apply(null, b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+/* the custom theme in a code, or null if it isn't one */
+function parseThemeCode(text){
+  try {
+    const raw = String(text || '').replace(/\s+/g, '').replace(/^msc-?/i, '').replace(/-/g, '+').replace(/_/g, '/');
+    if (!raw || !/^[A-Za-z0-9+/]+$/.test(raw)) return null;
+    const bin = atob(raw + '==='.slice((raw.length + 3) % 4)), b = Array.from(bin, ch => ch.charCodeAt(0));
+    if (b.length < 25 || b[0] !== 1) return null;
+    let sum = 7; b.slice(0, -1).forEach(x => { sum = (sum * 31 + x) & 255; });
+    if (sum !== b[b.length - 1]) return null;
+    let i = 1;
+    const col = () => '#' + [b[i++], b[i++], b[i++]].map(x => x.toString(16).padStart(2, '0')).join('');
+    const c = Object.assign({}, CUSTOM_DEFAULTS);
+    CODE_COLOURS.forEach(k => { c[k] = col(); });
+    c.radius = Math.min(26, b[i++]); c.tint = Math.min(70, b[i++]);
+    c.font = CUSTOM_FONTS[b[i++]] || CUSTOM_DEFAULTS.font; c.border = Math.min(4, b[i++]);
+    const f = b[i++];
+    c.backdrop = CODE_BACKDROPS[f & 3]; c.shadow = CODE_SHADOWS[(f >> 2) & 3] || 'soft';
+    c.glass = !!(f & 16); c.iconColour = f & 32 ? 'accent' : 'tile'; c.iconStyle = f & 64 ? 'emoji' : 'icons'; c.cloudAnim = !!(f & 128);
+    if (c.backdrop === 'clouds'){
+      if (b.length < i + 15) return null;
+      CODE_CLOUDS.forEach(k => { c[k] = col(); });
+      c.cloudStrength = clampN(b[i++], 15, 90); c.cloudSize = clampN(b[i++], 5, 20) * 10;
+    }
+    return c;
+  } catch { return null; }
+}
+/* switch to the custom theme from a code. The custom theme it replaces is kept
+   (tt.custom_prev) so it can be put back. Gives the theme, or null. */
+function useThemeCode(text){
+  const c = parseThemeCode(text);
+  if (!c) return null;
+  const cur = get(LS.custom, null);
+  if (cur && themeCode(cur) !== themeCode(c)) set('tt.custom_prev', cur);
+  set(LS.custom, c); set(LS.skin, 'custom');
+  apply();
+  return c;
+}
+
+/* The two Settings dialogs (settings.js, index.html) share these two pieces.
+   codeBox: the custom theme's "Copy code / Enter a code" row, in el; after()
+   runs once a code has changed the theme (to redraw the custom controls). */
+function codeBox(el, after){
+  if (!el) return;
+  const DEF = 'A custom theme as a short code. Copy yours to share it, or enter one you were given.';
+  el.innerHTML = '<div class="tcbtns"><button class="btn" type="button" data-a="copy">Copy my theme’s code</button>' +
+    '<button class="btn" type="button" data-a="enter">Enter a code</button></div>' +
+    '<div class="tcin" hidden><input type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste a theme code" aria-label="Theme code">' +
+    '<button class="btn primary" type="button" data-a="use">Use</button></div><div class="hint tcmsg" aria-live="polite"></div>';
+  const q = s => el.querySelector(s), box = q('.tcin'), inp = q('input'), msg = q('.tcmsg');
+  const say = (html) => { msg.innerHTML = html || DEF; const u = msg.querySelector('[data-a="undo"]'); if (u) u.onclick = undo; };
+  const undo = () => {
+    const prev = get('tt.custom_prev', null); if (!prev) return;
+    set(LS.custom, Object.assign({}, CUSTOM_DEFAULTS, prev)); set('tt.custom_prev', null);
+    apply(); say('Your previous custom theme is back.'); if (after) after();
+  };
+  /* a code used here or from What's new put a theme aside: offer it back */
+  const offerBack = () => get('tt.custom_prev', null) ? ' <button class="flinklike" type="button" data-a="undo">Put back your previous custom theme</button>' : '';
+  q('[data-a="copy"]').onclick = () => {
+    const code = themeCode(get(LS.custom, {}));
+    box.hidden = false; inp.value = code; inp.select();
+    const done = () => say('Copied. Anyone can paste it into Enter a code.');
+    try { navigator.clipboard.writeText(code).then(done, () => say('Select the code above and copy it.')); }
+    catch { say('Select the code above and copy it.'); }
+  };
+  q('[data-a="enter"]').onclick = () => { box.hidden = false; inp.value = ''; say(''); inp.focus(); };
+  const use = () => {
+    const c = useThemeCode(inp.value);
+    if (!c){ say('That code doesn’t look right. Check it was copied whole.'); return; }
+    box.hidden = true;
+    say('Theme applied.' + offerBack());
+    if (after) after();
+  };
+  /* run each time the custom controls are shown: the offer appears if a theme was put aside meanwhile */
+  el.tcRefresh = () => { if (!msg.innerHTML || msg.innerHTML === DEF) say(offerBack().trim()); };
+  el.tcRefresh();
+  q('[data-a="use"]').onclick = use;
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter'){ ev.preventDefault(); use(); } });
+}
+/* fxButtons: the Animation switch (a .modes holder with data-v on / off buttons, and a .hint after it) */
+function fxButtons(el, hint){
+  if (!el) return;
+  const paint = () => {
+    const on = fxOn(), reduced = get(LS.motion, 'normal') === 'reduced';
+    [...el.children].forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === 'on') === on)));
+    if (hint) hint.textContent = reduced ? 'Off while Reduce motion is on (Accessibility).' : 'Moving backgrounds and page transitions. Off uses less battery.';
+  };
+  [...el.children].forEach(b => b.onclick = () => { set('tt.fx', b.dataset.v); apply(); paint(); });
+  paint();
+}
+/* origBox: Settings → Custom → Originals. The themes as they were before they
+   were rebuilt, in a box of their own at the top of the Custom panel: a tile
+   each (its two main colours and its name). With one on, the custom controls
+   give way to a way back. after(): redraw the dialog. */
+const ORIG_SW = { 'o-paper':['#f7f3e8', '#c2571f'], 'o-swiss':['#ffffff', '#e8112d'], 'o-brutal':['#ffe94a', '#0047ff'], 'o-scifi':['#04070d', '#00e5ff'],
+                  'o-terminal':['#05080a', '#39ff9e'], 'o-blueprint':['#07223d', '#7ff0ff'], newsprint:['#f4f1e8', '#8c1c13'], retro:['#008080', '#d4d0c8'] };
+function origBox(el, after){
+  if (!el) return;
+  const cur = readState().skin, legacy = SKINS.filter(s => s.legacy), on = legacy.find(s => s.id === cur);
+  el.innerHTML = '<div class="orighd"><b>Originals</b><span>' + (on ? 'You’re using the original ' + on.name + ', exactly as it was.' : 'The themes as they were before the rebuild.') + '</span></div>' +
+    '<div class="origgrid">' + legacy.map(s => { const c = ORIG_SW[s.id] || ['#888', '#444'];
+      return '<button type="button" class="origtile" data-o="' + s.id + '" aria-pressed="' + (s.id === cur) + '"><i style="background:linear-gradient(135deg,' + c[0] + ' 0 58%,' + c[1] + ' 58%)"></i><span>' + s.name + '</span></button>'; }).join('') + '</div>' +
+    (on ? '<button type="button" class="btn origback" data-o="custom">Back to my custom theme</button>' : '');
+  el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { set(LS.skin, b.dataset.o); apply(); if (after) after(); });
+}
+/* iconButtons: Display's Icon colour and Icon style rows (.modes holders with
+   data-v buttons: auto, then the overrides) */
+function iconButtons(colEl, styEl){
+  const paint = () => {
+    const c = iconChoice();
+    if (colEl) [...colEl.children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === c.colour)));
+    if (styEl) [...styEl.children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === c.style)));
+  };
+  if (colEl) [...colEl.children].forEach(b => b.onclick = () => { set('tt.iconcolour', b.dataset.v); apply(); paint(); });
+  if (styEl) [...styEl.children].forEach(b => b.onclick = () => { set('tt.iconstyle', b.dataset.v); apply(); paint(); });
+  paint();
+}
+
+/* Arriving from another page of the site by a link: fx.js left a note as it
+   went (sessionStorage tt.nav), so this page can start under the theme's
+   cover and play the way in. */
+let nav = null;
+try {
+  const raw = sessionStorage.getItem('tt.nav');
+  if (raw){ sessionStorage.removeItem('tt.nav'); const n = JSON.parse(raw); if (n && Date.now() - n.t < 6000) nav = n; }
+} catch {}
+
+/* Once, for anyone who was here before the themes were rebuilt (November 2026):
+   a small note saying where the old ones are, and, if the theme they wear was
+   one of the rebuilt ones, a button to keep the original. Closing it is kept
+   with the account (tt.themes2_note). Someone new never sees it. */
+function themesNotice(){
+  try {
+    if (get('tt.themes2_note', 0)) return;
+    const had = ['tt.skin', 'tt.creds', 'tt.email', 'tt.cache', 'tt.mode'].some(k => localStorage.getItem(k) !== null);
+    if (!had || Date.now() > Date.parse('2027-03-01T00:00:00')){ set('tt.themes2_note', 1); return; }
+    if (!document.querySelector('.wrap') || document.querySelector('.ttnote')) return;
+    const orig = { paper:'o-paper', swiss:'o-swiss', brutal:'o-brutal', scifi:'o-scifi', terminal:'o-terminal', blueprint:'o-blueprint' }[readState().skin];
+    const name = orig ? (SKINS.find(k => k.id === orig) || {}).name : '';
+    const n = document.createElement('div'); n.className = 'ttnote'; n.setAttribute('role', 'status');
+    n.innerHTML = '<p><b>' + (orig ? name + ' has been rebuilt.' : 'The themes have been rebuilt.') + '</b> ' +
+      (orig ? 'The original is' : 'The originals are') + ' still here: Settings → Custom → Originals.</p>' +
+      '<div class="ttnotebtns">' + (orig ? '<button type="button" class="btn" data-a="old">Keep the original</button>' : '') + '<button type="button" class="btn primary" data-a="ok">Got it</button></div>';
+    const done = () => { set('tt.themes2_note', 1); n.classList.add('out'); setTimeout(() => n.remove(), 280); };
+    n.querySelector('[data-a="ok"]').onclick = done;
+    const o = n.querySelector('[data-a="old"]');
+    if (o) o.onclick = () => { set(LS.skin, orig); set('tt.themes2_note', 1); flushPush(true); setTimeout(() => location.reload(), 120); };
+    document.body.appendChild(n);
+  } catch {}
+}
+{ const later = () => setTimeout(themesNotice, 1500);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', later, { once:true }); else later(); }
+
 /* paint immediately so there is no flash of the wrong theme */
 apply();
+
+/* fx.js: the moving backgrounds and the page transitions. Arriving by a link
+   with Animation on, it's loaded at once (before the first paint) so the cover
+   is seamless; otherwise in its own time. */
+(function(){
+  const src = '/fx.js?v=' + ASSET_V, cs = document.currentScript, root = document.documentElement;
+  if (nav && fxOn() && document.readyState === 'loading' && cs && !cs.async && !cs.defer){
+    root.classList.add('fx-in');
+    setTimeout(() => root.classList.remove('fx-in'), 1600);      // should fx.js never arrive, the page still shows
+    document.write('<script src="' + src + '"><\/script>');
+  } else {
+    const sc = document.createElement('script'); sc.src = src; sc.async = true;
+    (document.head || root).appendChild(sc);
+  }
+})();
 
 /* a change made in another tab should follow here too */
 addEventListener('storage', ev => { if (ev.key && ev.key.startsWith('tt.')) apply(); });
@@ -546,7 +965,11 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
-  { id:'reactfix', date:'2026-11-12', title:'Dynamic favicons',
+  { id:'themes2', date:'2026-11-14', title:'Themes, rebuilt',
+    text:'Nine themes rebuilt from the ground up, each with its own layout, its own way between pages and, for some, a moving background ' +
+         '(Settings → Animation turns the motion off). New: Skeuomorphism, Y2K Futurism, Vaporwave, Editorial, Art Deco and Maximalism. ' +
+         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Prefer an old look? Settings → Custom → Originals. Custom themes can be shared as a code.' },
+  { id:'favicons', date:'2026-11-12', title:'Dynamic favicons',
     text:'Website favicons now dynamically update to match your selected theme.' },
   { id:'reactfix', date:'2026-11-12', title:'Reaction leaderboard fixed',
     text:'Reaction times under 80 ms were culled from the leaderboard to fix a bug.', href:'games.html?play=react' },
@@ -577,7 +1000,7 @@ function newsSeen(key){
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
-window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS,
+window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, origBox, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,

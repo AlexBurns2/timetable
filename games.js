@@ -3933,7 +3933,7 @@ BUILD.admin = host => {
   /* ── the weekly poll ── */
   function renderThemes(){
     const d = data || {}, act = d.active || 0, all = d.total || 0;
-    const nameOf = id => ((window.TT && TT.SKINS || []).find(s => s.id === id) || {}).name || id;
+    const nameOf = id => { const s = (window.TT && TT.SKINS || []).find(k => k.id === id); return s ? s.name + (s.legacy ? ' (original)' : '') : id; };
     const swatch = id => ((window.TT && TT.SKINS || []).find(s => s.id === id) || {}).swatch || 'var(--line)';
     const pct = (n, of) => of ? Math.round(n / of * 100) + '%' : '–';
     $('admnote').innerHTML = 'From everyone’s synced settings: <b>' + act + '</b> active in the last 30 days, <b>' + all + '</b> in all. ' +
@@ -3944,8 +3944,8 @@ BUILD.admin = host => {
       '<div class="thlist">' + d.skins.map(s => '<div class="threw"><span class="thsw" style="background:' + swatch(s.id) + '"></span>' +
         '<span class="thname">' + esc(nameOf(s.id)) + '</span><span class="thbar"><i style="width:' + (s.active / max * 100) + '%"></i></span>' +
         '<span class="thn">' + s.active + '<em> · ' + pct(s.active, act) + '</em></span><span class="thall">' + s.all + ' in all</span></div>').join('') + '</div>' +
-      '<div class="thflags">' + flag('Dark mode', d.dark || {}) + flag('Glass, animated', d.glassAnim || {}) + flag('Emoji icons', d.emoji || {}) +
-        flag('Icons in theme colour', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>';
+      '<div class="thflags">' + flag('Dark mode', d.dark || {}) + flag('Glass, animated', d.glassAnim || {}) + flag('Emoji icons, chosen', d.emoji || {}) +
+        flag('One-colour icons, chosen', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>';
   }
   function renderScans(){
     const codes = (data && data.codes) || [], days = (data && data.days) || [];

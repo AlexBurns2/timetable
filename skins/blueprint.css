@@ -1,0 +1,131 @@
+/* ══════════════════════════════════════════════════════════════════
+   BLUEPRINT — the site as a set of working drawings. A cyanotype
+   sheet: Prussian blue, white linework, a fine grid with a heavier line
+   every fifth. Everything is drawn and nothing is filled: outlines of
+   one weight, lettering in drafting capitals, registration marks in the
+   corners of whatever can be pressed, a dimension line after each
+   section's name, and at the head of every page a title block (the
+   drawing's name, and along its bottom edge the sheet number and the
+   scale). A dashed line means what it means on a drawing: not there at
+   the moment (a break, an empty cell). What's under the pointer, and
+   the class that's on now, are hatched the way a section is.
+   Changing page, the sheet is plotted again from left to right.
+   (Terminal is the machine room; this is the drawing office.)
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="blueprint"],[data-skin="blueprint"][data-mode="light"]{
+  --bp-sheet:"00";
+  --bg:#0a2c52;
+  --bg-img:
+    linear-gradient(rgba(200,230,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(200,230,255,.1) 1px,transparent 1px),
+    linear-gradient(rgba(200,230,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(200,230,255,.045) 1px,transparent 1px);
+  --panel:rgba(10,44,82,.88); --panel-2:rgba(17,60,106,.92);
+  --line:rgba(196,228,255,.52);
+  --text:#eef7ff; --muted:#9cc6ea; --accent:#8feaff; --accent-ink:#06223f;
+  --bp-hatch:repeating-linear-gradient(45deg,rgba(196,228,255,.17) 0 1px,transparent 1px 7px);
+  --font-ui:"Space Mono",monospace;
+  --font-display:"Space Mono",monospace;
+  --font-num:"Space Mono",monospace;
+  --card-radius:0px; --radius:0px; --tint:10%; --card-accent:0px;
+  --card-border:1px solid var(--line);
+  --shadow:none; --shadow-hi:none;
+  --display-tt:uppercase; --display-ls:.06em; --display-w:700;
+  --reg:linear-gradient(var(--line),var(--line));
+}
+[data-skin="blueprint"][data-pg="home"]{--bp-sheet:"01"}
+[data-skin="blueprint"][data-pg="timetable"]{--bp-sheet:"02"}
+[data-skin="blueprint"][data-pg="calendar"]{--bp-sheet:"03"}
+[data-skin="blueprint"][data-pg="free"]{--bp-sheet:"04"}
+[data-skin="blueprint"][data-pg="revision"]{--bp-sheet:"05"}
+[data-skin="blueprint"][data-pg="resources"]{--bp-sheet:"06"}
+[data-skin="blueprint"][data-pg="games"]{--bp-sheet:"07"}
+[data-skin="blueprint"][data-pg="finder"]{--bp-sheet:"08"}
+[data-skin="blueprint"][data-pg="mahjong"]{--bp-sheet:"09"}
+[data-skin="blueprint"][data-pg="notes"]{--bp-sheet:"10"}
+[data-skin="blueprint"] :is(body,.gate){background-size:80px 80px,80px 80px,16px 16px,16px 16px}      /* the grid: a heavier line every fifth */
+:root[data-skin="blueprint"] select option{background:#0a2c52;color:#eef7ff}
+[data-skin="blueprint"] ::selection{background:var(--accent);color:var(--accent-ink)}
+[data-skin="blueprint"] :is(.qtile,.tday,.gamecard,.btn,.lesson,.popt,.arrowbtn){transition:none}
+
+/* ── the head of a page: a title block, framed twice, with the sheet's particulars along the bottom ── */
+:root[data-skin="blueprint"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--panel);border:1px solid var(--line);border-radius:0;box-shadow:none;
+  outline:1px solid var(--line);outline-offset:3px;padding:14px 16px 32px;margin-top:4px}
+:root[data-skin="blueprint"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"SHEET " var(--bp-sheet) " OF 10 \00a0\00a0·\00a0\00a0 SCALE 1:1";position:absolute;left:0;right:0;bottom:0;height:19px;
+  box-sizing:border-box;border-top:1px solid var(--line);padding:0 12px;text-align:right;white-space:nowrap;overflow:hidden;
+  font:400 .5625rem/18px var(--font-num);letter-spacing:.2em;color:var(--muted);pointer-events:none}
+[data-skin="blueprint"] :is(.brand h1,.pagehead h1){font-size:clamp(1.5rem,3.4vw,2.25rem);line-height:1.05}
+[data-skin="blueprint"] .hubid h1{font-size:clamp(1.5rem,5.4cqi,2.25rem);line-height:1.05}
+[data-skin="blueprint"] :is(.eyebrow,.sitename){font-size:.625rem;letter-spacing:.2em;color:var(--accent)}
+[data-skin="blueprint"] :is(.nowcard .lbl,.ttday b,.field>label,.tbhead span){font-size:.625rem;letter-spacing:.2em;color:var(--accent)}
+/* Now is hatched; Next is only an outline */
+[data-skin="blueprint"] .nowcard{background:var(--bp-hatch);border:1px solid var(--line);border-radius:0}
+[data-skin="blueprint"] .nowcard + .nowcard{background:none}
+[data-skin="blueprint"] .nowcard .subj{text-transform:uppercase;letter-spacing:.04em;font-size:1rem}
+[data-skin="blueprint"] .prog{height:5px;border-radius:0;background:none;border:1px solid var(--line)}
+[data-skin="blueprint"] .prog i{border-radius:0}
+@container hubbar (max-width:26em){ [data-skin="blueprint"] .hubnow.pair{background:var(--bp-hatch);border:1px solid var(--line);border-radius:0} [data-skin="blueprint"] .hubnow.pair .nowcard{background:none;border:0} }
+
+/* ── what can be pressed: an outline with registration marks in its corners; hatched under the pointer ── */
+:root[data-skin="blueprint"] :is(.qtile,.gamecard,.tday,.tile,.game){border-radius:0;border:1px solid var(--line);box-shadow:none;background-color:var(--panel);
+  background-image:var(--reg),var(--reg),var(--reg),var(--reg),var(--reg),var(--reg),var(--reg),var(--reg);background-repeat:no-repeat;
+  background-size:9px 1px,1px 9px,9px 1px,1px 9px,9px 1px,1px 9px,9px 1px,1px 9px;
+  background-position:5px 5px,5px 5px,calc(100% - 5px) 5px,calc(100% - 5px) 5px,5px calc(100% - 5px),5px calc(100% - 5px),calc(100% - 5px) calc(100% - 5px),calc(100% - 5px) calc(100% - 5px)}
+:root[data-skin="blueprint"] :is(.qtile,.gamecard,.tday,.tile,.game):hover{transform:none;box-shadow:none;border-color:var(--accent);background-color:var(--panel);
+  background-image:var(--bp-hatch);background-size:auto;background-position:0 0;background-repeat:repeat}
+[data-skin="blueprint"] .qtile .tname,[data-skin="blueprint"] .tdname{text-transform:uppercase;letter-spacing:.06em;font-size:.8125rem}
+[data-skin="blueprint"] :is(.gamecard h2,.game h2,.tile .tname){font-size:.9375rem;letter-spacing:.05em}
+[data-skin="blueprint"] :is(.newpill,.gamecard .tag,.gamecard .newbanner){border-radius:0;background:none;border:1px solid var(--accent);color:var(--accent);font-weight:400;letter-spacing:.14em}
+[data-skin="blueprint"] .newsdot{border-radius:0}
+@media (max-width:560px){ [data-skin="blueprint"] .qtile .tname{font-size:.6875rem;letter-spacing:.02em} }
+
+/* ── sections: a name, then a dimension line ── */
+[data-skin="blueprint"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:10px;font-size:.75rem;letter-spacing:.18em;color:var(--text)}
+[data-skin="blueprint"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:9px;border-left:1px solid var(--line);border-right:1px solid var(--line);
+  background:linear-gradient(var(--line),var(--line)) center/100% 1px no-repeat}
+[data-skin="blueprint"] .gsec :is(.sechd,.cathd){flex:1}
+[data-skin="blueprint"] .forum{border-top:0;padding-top:0}
+
+/* ── the poll: another drawing on the sheet ── */
+[data-skin="blueprint"] .pcard{background:var(--panel);border:1px solid var(--line);border-radius:0;box-shadow:none}
+[data-skin="blueprint"] .pchip{background:none;border-radius:0;padding:0;font-weight:400;font-size:.625rem;letter-spacing:.2em;text-transform:uppercase}
+[data-skin="blueprint"] .pchip::before{border-radius:0;animation:none;box-shadow:none}
+[data-skin="blueprint"] .pq{font-size:clamp(1.125rem,3vw,1.75rem);line-height:1.2}
+[data-skin="blueprint"] .pin{border-radius:0;background:none;border:1px solid var(--line)}
+[data-skin="blueprint"] .pin:focus{box-shadow:none;border-color:var(--accent)}
+[data-skin="blueprint"] :is(.pbar,.plock span,.pminbtn){border-radius:0;box-shadow:none}
+[data-skin="blueprint"] .pbar{background:none}
+[data-skin="blueprint"] .pfill,[data-skin="blueprint"] .pbar:first-child .pfill{background:var(--bp-hatch)}
+[data-skin="blueprint"] .pbar:first-child .pfill{background-color:rgba(143,234,255,.16)}
+[data-skin="blueprint"] .pminbtn{background:none}
+
+/* ── keys: an outline in capitals; hatched under the pointer; the one that matters is inked in ── */
+:root[data-skin="blueprint"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;box-shadow:none;background:none;border:1px solid var(--line);color:var(--text);
+  text-transform:uppercase;letter-spacing:.1em;font-size:.75rem}
+:root[data-skin="blueprint"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{background:var(--bp-hatch);border-color:var(--accent);color:var(--text)}
+:root[data-skin="blueprint"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:root[data-skin="blueprint"] .btn:active{transform:none}
+:root[data-skin="blueprint"] :is(.fyears,.fweeks) button{border-radius:0;text-transform:uppercase;letter-spacing:.08em}
+[data-skin="blueprint"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.idrow,.pad){border-radius:0;border:1px solid var(--line);background:none}
+[data-skin="blueprint"] :is(.fnew textarea,.freplybox textarea,.gatepass,.pad):focus{outline:0;border-color:var(--accent)}
+[data-skin="blueprint"] :is(.fpost,.skinbtn,.rx,.rxpick,.lbopen){border-radius:0}
+[data-skin="blueprint"] :is(dialog,.newsdlg,.sheet,.gatecard){--panel:#0a2c52;--panel-2:#113c6a;border:1px solid var(--line);border-radius:0;box-shadow:none;outline:1px solid var(--line);outline-offset:3px;background:#0a2c52}
+[data-skin="blueprint"] .sheet{outline:0}
+
+/* ── the timetable: each class an outline with a leader in its subject's colour; the one that's on is hatched ── */
+[data-skin="blueprint"] .lesson{background:var(--panel);border:1px solid color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line));border-left:3px solid var(--c,var(--accent));border-radius:0;box-shadow:none}
+[data-skin="blueprint"] .lesson:hover{box-shadow:none;background:var(--bp-hatch),var(--panel)}
+[data-skin="blueprint"] .lesson .s{text-transform:uppercase;letter-spacing:.04em;font-size:.8125rem;line-height:1.2}
+[data-skin="blueprint"] .lesson.current{outline:1px solid var(--accent);outline-offset:2px;background:var(--bp-hatch),color-mix(in srgb,var(--c,var(--accent)) 22%,#0a2c52)}
+[data-skin="blueprint"] .dayhead .dow{font-size:.875rem;letter-spacing:.14em}
+[data-skin="blueprint"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--accent)}
+[data-skin="blueprint"] .dayhead .rule{background:var(--line);height:1px;opacity:1;border-radius:0}
+[data-skin="blueprint"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--accent);height:2px}
+[data-skin="blueprint"] .breakbar{background:none;border:1px dashed var(--line);border-radius:0;opacity:.85;letter-spacing:.1em}
+[data-skin="blueprint"] .weeklabel{font-size:.9375rem;letter-spacing:.16em}
+
+/* ── leaving: the sheet is lifted off. Arriving: it is plotted again, left to right, behind a moving head ── */
+html.fx-enter[data-skin="blueprint"] .wrap{animation:none}
+html[data-fx="on"].fx-enter[data-skin="blueprint"] body{animation:bpplot .42s linear both}
+html[data-fx="on"].fx-enter[data-skin="blueprint"]::after{content:"";position:fixed;z-index:95;top:0;bottom:0;left:0;width:2px;pointer-events:none;
+  background:var(--accent);box-shadow:0 0 14px 1px rgba(143,234,255,.7);animation:bphead .42s linear both}
+@keyframes bpplot{from{clip-path:inset(-200vh 100% -200vh 0)}to{clip-path:inset(-200vh 0% -200vh 0)}}
+@keyframes bphead{from{transform:translateX(0)}92%{opacity:1}to{transform:translateX(100vw);opacity:0}}

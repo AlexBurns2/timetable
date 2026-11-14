@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261112">
+<link rel="stylesheet" href="theme.css?v=20261114">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js"></script>
-<script src="icons.js?v=20261112"></script>
+<script src="theme.js?v=20261114"></script>
+<script src="icons.js?v=20261114"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -367,7 +367,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   display:flex;align-items:center;gap:7px;
 }
 .adv>summary::-webkit-details-marker{display:none}
-.adv>summary::before{content:"B8";transition:transform .18s;display:inline-block;font-size:0.6875rem}
+.adv>summary::before{content:"\25B8";transition:transform .18s;display:inline-block;font-size:0.6875rem}
 .adv[open]>summary::before{transform:rotate(90deg)}
 .adv>summary:hover{color:var(--text)}
 /* frosted mode for the custom skin */
@@ -507,6 +507,20 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="skins" id="skins"></div>
     </div>
 
+    <div class="field">
+      <label>Animation</label>
+      <div class="modes" id="fxmodes">
+        <button type="button" data-v="on">On</button>
+        <button type="button" data-v="off">Off</button>
+      </div>
+      <div class="hint" id="fxhint"></div>
+    </div>
+
+    <div class="field">
+      <label>Theme code</label>
+      <div id="c_code" class="tcode"></div>
+    </div>
+
     <div class="field" id="glasswrap" hidden>
       <label>Glass</label>
       <div class="custrow"><span>Animated background</span><input type="checkbox" id="glassanim" class="sw"></div>
@@ -514,6 +528,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field" id="customwrap" hidden>
+      <div class="origs" id="c_origs"></div>
       <label>Custom theme</label>
       <div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>
       <div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>
@@ -521,6 +536,9 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="custrow"><span>Accent</span><input type="color" id="c_accent"></div>
       <div class="custrow"><span>Corner radius</span><input type="range" id="c_radius" min="0" max="26" step="1"><b id="c_radius_v"></b></div>
       <div class="custrow"><span>Typeface</span><select id="c_font"></select></div>
+      <div class="custrow"><span>Icons</span>
+        <select id="c_iccol"><option value="tile">Colourful</option><option value="accent">One colour</option></select>
+        <select id="c_icsty"><option value="icons">Icons</option><option value="emoji">Emoji</option></select></div>
 
       <details class="adv" id="c_adv">
         <summary>Advanced</summary>
@@ -568,21 +586,6 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
 
-    <div class="field">
-      <label>Icon colour</label>
-      <div class="modes" id="tileicons">
-        <button type="button" data-ti="tile">Colourful</button>
-        <button type="button" data-ti="accent">Theme colour</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Icon style</label>
-      <div class="modes" id="gameicons">
-        <button type="button" data-gi="icons">Icons</button>
-        <button type="button" data-gi="emoji">Emoji</button>
-      </div>
-    </div>
 
     <div class="field">
       <label>Login</label>
@@ -650,6 +653,23 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <div class="hint">Panel keeps each page’s title and buttons in a card. Separated leaves them on the page.</div>
     </div>
     <div class="field">
+      <label>Icon colour</label>
+      <div class="modes" id="d_iccol">
+        <button type="button" data-v="auto">Match theme</button>
+        <button type="button" data-v="tile">Colourful</button>
+        <button type="button" data-v="accent">One colour</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Icon style</label>
+      <div class="modes" id="d_icsty">
+        <button type="button" data-v="auto">Match theme</button>
+        <button type="button" data-v="icons">Icons</button>
+        <button type="button" data-v="emoji">Emoji</button>
+      </div>
+      <div class="hint">Each theme picks its own icons. Choose here to use the same everywhere.</div>
+    </div>
+    <div class="field">
       <label>Layout</label>
       <div class="modes" id="views">
         <button type="button" data-view="compact" title="Positioned by clock time">Compact</button>
@@ -675,7 +695,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_progress" class="sw"></div>
       <div class="custrow"><span>Transparent background</span>
         <input type="checkbox" id="t_zen" class="sw"></div>
-      <div class="custrow"><span>Animations</span>
+      <div class="custrow"><span>Timetable animations</span>
         <input type="checkbox" id="t_anim" class="sw"></div>
       <div class="hint">Transparent is for browser wallpapers like Zen.</div>
     </div>
@@ -759,7 +779,7 @@ let zoom           = get(LS.zoom, 1);
 let contrast       = get(LS.contrast, 'normal');
 let motion         = get(LS.motion, 'normal');
 let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
-let skin     = get(LS.skin, 'plain');
+let skin     = TT.readState().skin;                 // (a retired theme reads as its successor)
 let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
 
@@ -1759,58 +1779,30 @@ $('whoami').addEventListener('blur', viewUser);
 
 /* ═══ settings ═══ */
 const dlg = $('dlg');
-let skinsExpanded = false;
+/* every theme, in the picker's order (the originals are under Custom) */
+const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
 function renderSkins(){
   const host = $('skins');
   host.innerHTML = '';
-
-  /* Collapsed shows just the two staples, the expander, and Custom —
-     twelve swatches at once made the panel a wall of colour. */
-  const quick = TT.QUICK_SKINS;
-  const showAll = skinsExpanded || quick.indexOf(skin) === -1;
-  const list = showAll ? SKINS : SKINS.filter(s => quick.indexOf(s.id) !== -1);
-
-  const tile = s => {
+  SKINS.filter(s => !s.legacy).forEach(s => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'skinbtn';
-    b.setAttribute('aria-pressed', String(s.id === skin));
+    b.setAttribute('aria-pressed', String(s.id === skin || (s.custom && isLegacy(skin))));
     b.innerHTML = '<span class="sw" style="background:' + s.swatch +
                   (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
     b.onclick = () => { skin = s.id; set(LS.skin, skin); applyLook();
                         renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); };
-    return b;
-  };
-
-  if (showAll){
-    list.forEach(s => host.appendChild(tile(s)));
-    if (skinsExpanded){
-      const less = document.createElement('button');
-      less.type = 'button';
-      less.className = 'skinbtn more';
-      less.innerHTML = '<span class="sw plus">&minus;</span><span class="nm">Fewer</span>';
-      less.onclick = () => { skinsExpanded = false; renderSkins(); };
-      host.appendChild(less);
-    }
-  } else {
-    /* order: Plain, Classic, +, Custom */
-    host.appendChild(tile(SKINS.find(s => s.id === 'plain')));
-    host.appendChild(tile(SKINS.find(s => s.id === 'classic')));
-    const more = document.createElement('button');
-    more.type = 'button';
-    more.className = 'skinbtn more';
-    more.title = 'Show every theme';
-    more.innerHTML = '<span class="sw plus">+</span><span class="nm">More</span>';
-    more.onclick = () => { skinsExpanded = true; renderSkins(); };
-    host.appendChild(more);
-    host.appendChild(tile(SKINS.find(s => s.id === 'custom')));
-  }
+    host.appendChild(b);
+  });
 }
 function renderCustom(){
-  const on = skin === 'custom';
+  const on = skin === 'custom' || isLegacy(skin);
   $('customwrap').hidden = !on;
+  $('customwrap').classList.toggle('islegacy', isLegacy(skin));
   if (!on) return;
+  TT.origBox($('c_origs'), () => { skin = TT.readState().skin; applyLook(); renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); });
   const sel = $('c_font');
   if (!sel.options.length) CUSTOM_FONTS.forEach(f => sel.add(new Option(f, f)));
   $('c_bg').value     = custom.bg;
@@ -1826,6 +1818,9 @@ function renderCustom(){
   $('c_tint').value   = custom.tint;   $('c_tint_v').textContent   = custom.tint + '%';
   $('c_border').value = custom.border; $('c_border_v').textContent = custom.border + 'px';
   sel.value = custom.font;
+  $('c_iccol').value = custom.iconColour === 'accent' ? 'accent' : 'tile';
+  $('c_icsty').value = custom.iconStyle === 'emoji' ? 'emoji' : 'icons';
+  if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   renderClouds();
 }
 /* the Clouds backdrop's own options, shown only with it chosen */
@@ -1850,7 +1845,13 @@ function bindCustom(){
   touch('c_accent','accent'); touch('c_accent2','accent2');
   touch('c_line','line'); touch('c_font','font');
   touch('c_backdrop','backdrop', renderClouds); touch('c_shadow','shadow');
+  touch('c_iccol','iconColour'); touch('c_icsty','iconStyle');
   ['cloud1', 'cloud2', 'cloud3', 'cloud4'].forEach((k, i) => touch('c_cl' + (i + 1), k));
+  /* share a custom theme as a code, or use someone's */
+  TT.codeBox($('c_code'), () => {
+    skin = TT.readState().skin; custom = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
+    applyLook(); renderSkins(); renderModes(); renderCustom(); renderGlass(); render();
+  });
   const num = (id, key, after) => $(id).addEventListener('input', ev => { custom[key] = +ev.target.value; set(LS.custom, custom); applyLook(); after(); });
   num('c_clstr', 'cloudStrength', () => { $('c_clstr_v').textContent = custom.cloudStrength + '%'; });
   num('c_clsize', 'cloudSize', () => { $('c_clsize_v').textContent = (custom.cloudSize / 100).toFixed(1) + '×'; });
@@ -1960,21 +1961,6 @@ function renderGlass(){
   $('glassanim').checked = !!(window.TT && TT.get('tt.glassanim', '') === 'on');
 }
 $('glassanim').addEventListener('change', ev => { set('tt.glassanim', ev.target.checked ? 'on' : ''); applyLook(); });
-function renderGameIcons(){
-  const cur = window.TT && TT.get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons';
-  [...$('gameicons').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.gi === cur));
-    b.onclick = () => { set('tt.gameicons', b.dataset.gi); document.documentElement.setAttribute('data-gameicons', b.dataset.gi); renderGameIcons(); };
-  });
-}
-/* the Home tile icons: a colour each, or the theme's accent (theme.js applies it) */
-function renderTileIcons(){
-  const cur = window.TT ? TT.get('tt.tileicons', 'tile') : 'tile';
-  [...$('tileicons').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.ti === cur));
-    b.onclick = () => { set('tt.tileicons', b.dataset.ti); document.documentElement.setAttribute('data-tileicons', b.dataset.ti); renderTileIcons(); };
-  });
-}
 function renderViews(){
   [...$('views').children].forEach(b =>
     b.setAttribute('aria-pressed', String(b.dataset.view === viewMode)));
@@ -2047,7 +2033,7 @@ $('modetoggle').onclick = () => {
 };
 $('settings').onclick = () => {
   paintCycleRow();
-  renderTileIcons(); renderGlass(); renderGameIcons();
+  renderGlass(); TT.fxButtons($('fxmodes'), $('fxhint')); TT.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();
@@ -2060,7 +2046,7 @@ $('settings').onclick = () => {
 
 /* sub-panels stack on top of the main dialog and pop back to it */
 $('openA11y').onclick    = () => { renderA11y(); $('dlgA11y').showModal(); };
-$('openDisplay').onclick = () => { renderViews(); renderRooms(); renderHeaders(); renderToggles(); $('dlgDisplay').showModal(); };
+$('openDisplay').onclick = () => { TT.iconButtons($('d_iccol'), $('d_icsty')); renderViews(); renderRooms(); renderHeaders(); renderToggles(); $('dlgDisplay').showModal(); };
 /* moderators: the moderator page, from here (the server checks again) */
 if (window.TT && TT.signedIn && TT.signedIn() && TT.api) TT.api('/api/leaderboard', { params:{ settings:1 } })
   .then(d => { if (d && d.isMod){ $('openMod').hidden = false; $('openMod').onclick = () => { location.href = 'games.html?play=admin'; }; } }, () => {});

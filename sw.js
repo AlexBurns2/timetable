@@ -19,10 +19,10 @@
      every cache, so a broken release can always be undone from the browser.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 /* the pages link the shared files they changed with ?v=ASSET_V, so a new deploy never pairs a
    fresh page with a stale stylesheet; the shell pre-caches those same URLs */
-const ASSET_V = '20261112';
+const ASSET_V = '20261114';
 const VA = f => f + '?v=' + ASSET_V;
 const CACHE = 'msc-' + CACHE_VERSION;
 
@@ -34,7 +34,7 @@ const SHELL = [
   '/', '/index.html', '/home.html', '/revision.html', '/games.html',
   '/calendar.html', '/notes.html', '/resources.html',
   VA('/site.css'), VA('/games.css'), VA('/theme.css'), VA('/settings.css'),
-  '/theme.js', '/tour.js', VA('/settings.js'), VA('/icons.js'), '/study.js', '/bento.js'
+  VA('/theme.js'), VA('/fx.js'), '/tour.js', VA('/settings.js'), VA('/icons.js'), '/study.js', '/bento.js'
 ];
 
 self.addEventListener('install', e => {

@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261112">
-<script src="theme.js"></script>
-<script src="icons.js?v=20261112"></script>
+<link rel="stylesheet" href="theme.css?v=20261114">
+<script src="theme.js?v=20261114"></script>
+<script src="icons.js?v=20261114"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261112">
-<link rel="stylesheet" href="settings.css?v=20261112">
-<link rel="stylesheet" href="poll.css?v=20261112">
+<link rel="stylesheet" href="site.css?v=20261114">
+<link rel="stylesheet" href="settings.css?v=20261114">
+<link rel="stylesheet" href="poll.css?v=20261114">
 </head>
 <body>
 <div class="wrap hub">
@@ -453,9 +453,9 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261112"></script>
-<script src="poll.js?v=20261112"></script>
-<script src="credits.js?v=20261112"></script>
+<script src="settings.js?v=20261114"></script>
+<script src="poll.js?v=20261114"></script>
+<script src="credits.js?v=20261114"></script>
 <script>
 /* ── Today: the two daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),
@@ -549,12 +549,24 @@ loadForum();
     document.getElementById('newslist').innerHTML = TT.NEWS.map(n =>
       '<li><div class="nwhead"><b>' + esc(n.title) + '</b>' + (unread.has(n.id) ? '<span class="newpill">New</span>' : '') +
         '<span class="nwdate">' + fmt(n.date) + '</span></div>' +
-      '<p>' + esc(n.text) + '</p>' + (n.href && n.href !== 'home.html' ? '<a href="' + esc(n.href) + '">Have a look →</a>' : '') + '</li>').join('');
+      '<p>' + esc(n.text) + '</p>' + (n.href && n.href !== 'home.html' ? '<a href="' + esc(n.href) + '">Have a look →</a>' : '') +
+      /* an entry can carry theme codes (custom themes to try): the code to copy, and Use */
+      (n.codes ? (n.codesNote ? '<p class="nwcnote">' + esc(n.codesNote) + '</p>' : '') + '<div class="nwcodes">' + n.codes.map(c =>
+        '<div class="nwcode"><b>' + esc(c.name) + '</b><code>' + esc(c.code) + '</code>' +
+        '<button class="btn" type="button" data-code="' + esc(c.code) + '" data-name="' + esc(c.name) + '">Use</button></div>').join('') +
+        '</div><p class="nwcmsg" aria-live="polite"></p>' : '') + '</li>').join('');
     if (window.Icon) Icon.fill(dlg);
     dlg.showModal();
     TT.newsRead(); dot.hidden = true;
   };
   document.getElementById('newsx').onclick = () => dlg.close();
+  /* Use: that code becomes your custom theme (the one it replaces can be put back from Settings) */
+  document.getElementById('newslist').addEventListener('click', e => {
+    const b = e.target.closest('[data-code]'); if (!b || !TT.useThemeCode) return;
+    const msg = b.closest('li').querySelector('.nwcmsg');
+    const ok = TT.useThemeCode(b.dataset.code);
+    if (msg) msg.textContent = ok ? 'Now using the old ' + b.dataset.name + ' look. Settings → Custom can change it, or bring back your last custom theme.' : 'That code didn’t work.';
+  });
   if (signedIn && document.getElementById('newsfoot')){
     document.getElementById('newsfoot').hidden = false;
     document.getElementById('newsidea').onclick = () => { dlg.close(); if (window.openIdea) window.openIdea(); };

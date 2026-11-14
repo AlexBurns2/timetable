@@ -1,0 +1,112 @@
+/* ══════════════════════════════════════════════════════════════════
+   VAPORWAVE — a 90s desktop left running in a dream. Behind each page
+   (fx/vapor.js) a different quiet scene in pink, violet and cyan: a
+   road to a banded sun, a chequered floor with columns, a sun in the
+   sea, a ringed planet, slow clouds. On top, windows: bevelled edges, a
+   pink-to-cyan title bar with the page's name in Japanese, the three
+   buttons; pixel type with its colours a little apart; grey bevelled
+   buttons that go in. Changing page, the picture loses tracking, drops
+   to static, and the next one tunes in.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="vapor"]{
+  --v-jp:"";
+  --bg:#c7b1ff; --bg-img:linear-gradient(180deg,#8f7bff 0%,#c3a2ff 28%,#ff9fd6 50%,#ffd9b8 60%,#e9d6ff 60.2%,#e9d6ff 100%);      /* until the tape starts */
+  --panel:rgba(248,243,255,.94); --panel-2:#ece2ff; --line:#7a5bbf;
+  --text:#2a1647; --muted:#6a5690; --accent:#d91f8f; --accent-ink:#fff;
+  --font-ui:Tahoma,Verdana,"Segoe UI",sans-serif; --font-display:"VT323",ui-monospace,monospace; --font-num:Tahoma,Verdana,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:24%; --card-accent:0px;
+  --card-border:2px solid #7a5bbf;
+  --shadow:4px 4px 0 rgba(60,30,120,.3); --shadow-hi:6px 6px 0 rgba(229,50,157,.4);
+  --display-tt:none; --display-ls:.03em; --display-w:400;
+  --v-hi:#ffffff; --v-lo:#6a4fb0; --v-bar:linear-gradient(90deg,#ff71ce,#b967ff 52%,#01cdfe); --vbar:24px; --v-key:#efe6ff; --v-glyph:#3a2370;
+}
+[data-skin="vapor"][data-mode="dark"]{
+  --bg:#14062b; --bg-img:linear-gradient(180deg,#090218 0%,#2a0a52 27%,#7a1a7a 49%,#ff4fa3 60%,#0d0420 60.2%,#0d0420 100%);
+  --panel:rgba(33,15,60,.93); --panel-2:#2e1651; --line:#a874ff;
+  --text:#ffe8fb; --muted:#c7a5ec; --accent:#ff71ce; --accent-ink:#1a0730;
+  --card-border:2px solid #a874ff;
+  --shadow:4px 4px 0 rgba(1,205,254,.34); --shadow-hi:6px 6px 0 rgba(255,113,206,.5);
+  --v-hi:#a98be0; --v-lo:#0d0420;
+}
+html.fx-live[data-skin="vapor"]{--bg-img:none}
+[data-skin="vapor"][data-pg="home"]{--v-jp:"　ホーム"}
+[data-skin="vapor"][data-pg="timetable"]{--v-jp:"　時間割"}
+[data-skin="vapor"][data-pg="calendar"]{--v-jp:"　カレンダー"}
+[data-skin="vapor"][data-pg="free"]{--v-jp:"　空き時間"}
+[data-skin="vapor"][data-pg="revision"]{--v-jp:"　復習"}
+[data-skin="vapor"][data-pg="resources"]{--v-jp:"　資料"}
+[data-skin="vapor"][data-pg="games"]{--v-jp:"　ゲーム"}
+[data-skin="vapor"][data-pg="finder"]{--v-jp:"　検索"}
+[data-skin="vapor"][data-pg="mahjong"]{--v-jp:"　麻雀"}
+[data-skin="vapor"][data-pg="notes"]{--v-jp:"　ノート"}
+[data-skin="vapor"] ::selection{background:#01cdfe;color:#1a0730}
+
+/* ── windows ── */
+[data-skin="vapor"] :is(.qtile,.tday,.gamecard,.tile,.game,.fpost,.nowcard,.lesson,dialog,.newsdlg,.sheet,.gatecard,.pcard,.hscstrip){border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi);border-radius:0}
+:root[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;padding-top:calc(var(--vbar) + 14px);border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi);border-radius:0}
+:root[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"ＭＳＣ　ＵＮＯＦＦＩＣＩＡＬ" var(--v-jp);
+  position:absolute;left:2px;right:2px;top:2px;height:var(--vbar);padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;
+  background:var(--v-bar);color:#fff;font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.06em;
+  text-shadow:1px 1px 0 rgba(80,30,120,.5);pointer-events:none}
+:root[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;right:6px;top:5px;width:62px;height:16px;pointer-events:none;
+  background:
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 4px 10px/7px 2px no-repeat,
+    linear-gradient(45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
+    linear-gradient(-45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 25px 3px/10px 2px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 0 0/16px 16px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 21px 0/16px 16px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 44px 0/16px 16px no-repeat}
+[data-skin="vapor"] :is(.dlg-h,.newshead,.sheethd){background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.5);border-bottom:0}
+[data-skin="vapor"] .newshead{padding-bottom:10px}
+/* ── buttons: grey, bevelled, and they go in ── */
+:root[data-skin="vapor"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;background:var(--panel-2);box-shadow:none;
+  border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi)}
+:root[data-skin="vapor"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):active{border-color:var(--v-lo) var(--v-hi) var(--v-hi) var(--v-lo);transform:translate(1px,1px)}
+:root[data-skin="vapor"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){
+  background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+[data-skin="vapor"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#fff;color:#2a1647;border:2px solid;border-color:var(--v-lo) var(--v-hi) var(--v-hi) var(--v-lo)}
+[data-skin="vapor"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:#12052a;color:#ffe8fb}
+/* ── pixel type, its colours a little apart ── */
+[data-skin="vapor"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){text-shadow:2px 0 rgba(1,205,254,.8),-2px 0 rgba(255,113,206,.8);line-height:1}
+[data-skin="vapor"] .brand h1{font-size:clamp(2rem,4.4vw,3rem)}
+[data-skin="vapor"] .pagehead h1{font-size:clamp(1.9rem,4.6vw,2.8rem)}
+[data-skin="vapor"] .hubid h1{font-size:clamp(1.9rem,7cqi,3rem)}
+[data-skin="vapor"] :is(.dayhead .dow,.weeklabel){font-size:1.3rem}
+[data-skin="vapor"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font-family:var(--font-display);font-size:1.6rem;font-weight:400}
+[data-skin="vapor"] :is(.gamecard h2,.game h2,.tile .tname){font-size:1.55rem;font-weight:400}
+[data-skin="vapor"] .pq{font-size:1.75rem;font-weight:400}
+[data-skin="vapor"] .lesson .s{font-family:var(--font-ui);font-weight:700;letter-spacing:0}
+[data-skin="vapor"] :is(.sechd,.cathd,.forum h2){display:inline-block;width:fit-content;padding:2px 12px;background:var(--panel);border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi);
+  font-family:var(--font-display);font-size:1.35rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--accent)}
+[data-skin="vapor"] .forum{border-top:0;padding-top:0}
+[data-skin="vapor"] .forum h2{margin-bottom:12px}
+[data-skin="vapor"] .hubfoot{padding:10px 14px;background:var(--panel);border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi)}
+[data-skin="vapor"] :is(.pagelede,.focusnote){width:fit-content;max-width:100%;padding:6px 12px;background:var(--panel);opacity:1}
+[data-skin="vapor"] .prog{border:2px solid;border-color:var(--v-lo) var(--v-hi) var(--v-hi) var(--v-lo);background:var(--panel);border-radius:0;height:11px}
+[data-skin="vapor"] .prog i{background:repeating-linear-gradient(90deg,#ff71ce 0 8px,transparent 8px 10px);border-radius:0}
+[data-skin="vapor"] :is(.arrowbtn,.dayswitch button,.newpill,.rx,.skinbtn){border-radius:0}
+[data-skin="vapor"] :is(.dayhead .dow,.weeklabel,.tmark){background:var(--panel);padding:0 8px;display:inline-block;opacity:1}
+[data-skin="vapor"] .dayhead .rule{display:none}
+[data-skin="vapor"] :is(.dayhead.today,.dayhead.focus) .dow{background:var(--v-bar);color:#fff}
+[data-skin="vapor"] .breakbar{background:var(--panel-2);opacity:1;border-radius:0}
+/* ── pages that are one piece: one window ── */
+:root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{
+  background:var(--panel);border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi);box-shadow:var(--shadow);margin-top:26px;margin-bottom:60px;padding:0 20px 30px}
+:root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead{
+  margin:0 -20px 18px;border:0;box-shadow:none;background:none;padding:calc(var(--vbar) + 12px) 20px 10px}
+:root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead::before{left:0;right:0;top:0}
+:root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead::after{top:3px}
+:root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) :is(.pagelede,.focusnote){padding:0;background:none}
+@media (max-width:640px){
+  :root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{margin:10px 8px 44px;padding:0 12px 24px}
+  :root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead{margin:0 -12px 14px;padding-left:12px;padding-right:12px}
+}
+[data-skin="vapor"] .gamestage:not([hidden]){background:var(--panel);border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi);padding:14px 16px 18px;box-shadow:var(--shadow)}
+/* ── leaving and arriving: tracking goes, static, the next picture tunes in ── */
+html.fx-enter[data-skin="vapor"] .wrap{animation:none}
+html.vp-track[data-skin="vapor"] .wrap{animation:vptrack .14s steps(1) both}
+@keyframes vptrack{0%{transform:translateX(-9px) skewX(-2.5deg);filter:saturate(1.7) hue-rotate(-14deg)}34%{transform:translateX(11px) skewX(1.5deg)}67%{transform:translateX(-5px) skewX(-1deg);filter:saturate(1.4) hue-rotate(12deg)}100%{transform:none;filter:none}}
+html.vp-settle[data-skin="vapor"] .wrap{transform:translateX(3px);filter:saturate(1.5)}
+[data-skin="vapor"] .hubnow{height:auto;min-height:5rem}
+[data-skin="vapor"] .hubnow .nowcard .subj{flex:none;line-height:1.3}

@@ -1,0 +1,139 @@
+/* ══════════════════════════════════════════════════════════════════
+   SWISS — the International Typographic Style: structure first. A
+   twelve-column grid you can see, and everything on it. Asymmetric:
+   a narrow column on the left for what a thing is (the section's name),
+   a wide one for the thing itself. One type family, one scale (12, 16,
+   24, 48, 96), lower case, flush left, ragged right. Black, white and
+   one red; shapes only where they mean something: a red block closes
+   the index, a red bar is today, a black block is now.
+   (Editorial is about atmosphere and the single headline; this is about
+   order.) Changing page, squares on the grid take the page's place,
+   rearrange, and leave.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="swiss"]{
+  --g:16px;
+  --bg:#fff; --bg-img:none; --panel:#fff; --panel-2:#f3f3f3;
+  --line:#111; --text:#000; --muted:#6b6b6b; --accent:#e8112d; --accent-ink:#fff;
+  --font-ui:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-display:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-num:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
+  --card-border:1px solid var(--line); --shadow:none; --shadow-hi:none;
+  --display-ls:-.045em; --display-w:700; --display-tt:lowercase;
+  --meta:calc(33.333% - var(--g)*.6667);                 /* three columns of nine, as seen from the wide column */
+}
+[data-skin="swiss"][data-mode="dark"]{
+  --bg:#000; --panel:#000; --panel-2:#141414; --line:#fff; --text:#fff; --muted:#8c8c8c;
+}
+[data-skin="swiss"] body{line-height:1.5}
+[data-skin="swiss"] :is(.qtile,.tday,.gamecard,.btn,.lesson,.popt,.arrowbtn){transition:none}
+/* the grid, showing */
+[data-skin="swiss"] .wrap::before{content:"";position:absolute;top:0;bottom:0;left:20px;right:20px;z-index:-1;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(232,17,45,.035) 0 calc((100% - 11*var(--g))/12),transparent 0 calc((100% - 11*var(--g))/12 + var(--g)))}
+@media (max-width:640px){ [data-skin="swiss"] .wrap::before{left:16px;right:16px;background:repeating-linear-gradient(90deg,rgba(232,17,45,.035) 0 calc((100% - 3*var(--g))/4),transparent 0 calc((100% - 3*var(--g))/4 + var(--g)))} }
+
+/* ── the head of a page: a heavy bar, the name of the site in the narrow column, the heading in the wide one ── */
+:root[data-skin="swiss"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:none;border:0;border-radius:0;box-shadow:none;border-top:8px solid var(--text);padding:12px 0 24px;margin-bottom:24px}
+[data-skin="swiss"] .pagehead h1{font-size:clamp(2.5rem,6vw,4.5rem);line-height:1;margin-top:-.06em}
+[data-skin="swiss"] .brand h1{font-size:clamp(1.75rem,3.2vw,3rem);line-height:1.05}
+[data-skin="swiss"] .hubid h1{font-size:clamp(2.5rem,10cqi,6rem);line-height:1.02;margin-top:-.08em}
+[data-skin="swiss"] :is(.eyebrow,.sitename){color:var(--text);letter-spacing:0;text-transform:none;font-size:.75rem;font-weight:700;margin-bottom:6px}
+[data-skin="swiss"] :is(.eyebrow,.sitename)::before{content:"";display:inline-block;width:.72em;height:.72em;margin-right:.5em;background:var(--accent)}
+[data-skin="swiss"] :is(.hubsub,.brand>span,.pagelede){color:var(--text);font-size:.75rem;font-weight:500;line-height:1.35}
+[data-skin="swiss"] .hubin{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id btn" "now now";gap:16px var(--g)}
+[data-skin="swiss"] .hubnow{height:auto;min-height:0;align-self:auto;gap:var(--g)}
+[data-skin="swiss"] .hubin>.headbtns{flex-direction:row;align-self:start}
+/* Now is a black block; Next, an outlined one */
+[data-skin="swiss"] .nowcard{background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:0;padding:12px 14px 14px}
+[data-skin="swiss"] .nowcard + .nowcard{background:none;color:var(--text)}
+[data-skin="swiss"] .nowcard .lbl{color:inherit;opacity:1;letter-spacing:0;text-transform:lowercase;font-size:.75rem}
+[data-skin="swiss"] .nowcard .subj{font-size:1.5rem;font-weight:700;letter-spacing:-.03em;line-height:1.05;text-transform:lowercase}
+[data-skin="swiss"] .nowcard .meta{color:inherit;opacity:.72;font-size:.75rem}
+[data-skin="swiss"] .nowcard .count,[data-skin="swiss"] .progrow .count{color:var(--accent)}
+[data-skin="swiss"] .prog{height:4px;border-radius:0;background:color-mix(in srgb,currentColor 25%,transparent)}
+[data-skin="swiss"] .prog i{border-radius:0}
+@container hubbar (max-width:26em){ [data-skin="swiss"] .hubnow.pair{background:var(--text);color:var(--bg);border:0;border-radius:0} [data-skin="swiss"] .hubnow.pair .nowcard{color:inherit;border:0} }
+
+/* ── Home on the grid: three columns for names, nine for things ── */
+@media (min-width:900px){
+  [data-skin="swiss"] .wrap.hub{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--g);align-items:start}
+  [data-skin="swiss"] .wrap.hub > *{grid-column:1 / -1}
+  [data-skin="swiss"] .wrap.hub > :is(.pollwrap,.pollskip,.hubrest,.hubfoot){grid-column:4 / -1;min-width:0}
+  [data-skin="swiss"] .hubbar .hubin{position:relative;padding-left:calc(25% + var(--g)*.25)}
+  [data-skin="swiss"] .hubid :is(.eyebrow,.hubsub){position:absolute;left:0;width:calc(25% - var(--g)*.75);margin:0;white-space:normal}
+  [data-skin="swiss"] .hubid .eyebrow{top:4px}
+  [data-skin="swiss"] .hubid .hubsub{top:28px;max-width:none}
+  [data-skin="swiss"] :is(.pollwrap,.hubnav,.forum){position:relative}
+  [data-skin="swiss"] .pollwrap:not([hidden])::before,[data-skin="swiss"] .hubnav::before,[data-skin="swiss"] .forum h2{position:absolute;right:calc(100% + var(--g));top:0;width:var(--meta);margin:0;
+    border-top:2px solid var(--text);padding-top:6px;font:700 .75rem/1.35 var(--font-ui);letter-spacing:0;text-transform:lowercase;color:var(--text)}
+  [data-skin="swiss"] .pollwrap:not([hidden])::before{content:"this week’s poll"}
+  [data-skin="swiss"] .hubnav::before{content:"index"}
+  [data-skin="swiss"] .forum{border-top:2px solid var(--text);padding-top:14px;margin-top:32px}
+}
+@media (max-width:899px){ [data-skin="swiss"] .forum h2{font-size:.75rem;text-transform:lowercase;border-top:2px solid var(--text);padding-top:6px} [data-skin="swiss"] .forum{border-top:0} }
+/* the index: squares sharing their rules, three to a row, and a red block where the ninth would be */
+[data-skin="swiss"] .qtiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--line);border-left:1px solid var(--line);counter-reset:swtile;margin-bottom:var(--g)}
+[data-skin="swiss"] .qtiles::after{content:"";background:var(--accent);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+[data-skin="swiss"] .qtile{height:auto;aspect-ratio:3 / 2;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:var(--bg);box-shadow:none;
+  padding:10px 12px 12px;align-items:flex-start;justify-content:space-between;text-align:left}
+[data-skin="swiss"] .qtile::before{counter-increment:swtile;content:counter(swtile,decimal-leading-zero);font-size:.75rem;font-weight:700}
+[data-skin="swiss"] .qtile .ico{display:none}
+[data-skin="swiss"] .qtile .tname{font-weight:700;font-size:1.5rem;letter-spacing:-.04em;line-height:1;text-transform:lowercase;white-space:normal;overflow:visible}
+:root[data-skin="swiss"] .qtile:hover{background:var(--accent);color:#fff;transform:none;box-shadow:none}
+[data-skin="swiss"] .tilepill{top:10px;right:10px;border-radius:0}
+@media (max-width:560px){ [data-skin="swiss"] .qtile{aspect-ratio:auto;min-height:4.5rem;padding:8px} [data-skin="swiss"] .qtile .tname{font-size:1rem;letter-spacing:-.03em} }
+@container hubnav (max-width:19em){ [data-skin="swiss"] .qtiles{grid-template-columns:repeat(2,minmax(0,1fr))} [data-skin="swiss"] .qtiles::after{display:none} [data-skin="swiss"] .qtile{flex-direction:column} }
+[data-skin="swiss"] .hubtoday{gap:var(--g)}
+[data-skin="swiss"] .tday{background:var(--bg);border:0;border-top:2px solid var(--text);border-radius:0;box-shadow:none;padding:8px 0}
+:root[data-skin="swiss"] .tday:hover{background:var(--bg);transform:none;color:var(--accent)}
+[data-skin="swiss"] .tdname{font-weight:700;letter-spacing:-.02em;text-transform:lowercase;font-size:1rem}
+[data-skin="swiss"] :is(.newpill,.gamecard .tag,.gamecard .newbanner){border-radius:0;border:0;background:var(--accent);color:#fff;text-transform:lowercase;letter-spacing:0}
+[data-skin="swiss"] .newsdot{border-radius:0}
+/* ── sections elsewhere: a rule, a number, a lower-case name ── */
+[data-skin="swiss"] body{counter-reset:swsec}
+[data-skin="swiss"] :is(.sechd,.cathd){border-top:2px solid var(--text);padding-top:6px;font-size:.75rem;font-weight:700;letter-spacing:0;text-transform:lowercase;color:var(--text)}
+[data-skin="swiss"] :is(.sechd,.cathd)::before{counter-increment:swsec;content:counter(swsec,decimal-leading-zero) "\2003";color:var(--accent)}
+[data-skin="swiss"] .gsec{display:block}
+[data-skin="swiss"] .pcard{background:var(--bg);border:0;border-top:2px solid var(--text);border-radius:0;box-shadow:none;padding:12px 0 16px}
+[data-skin="swiss"] .pq{font-size:clamp(1.5rem,4vw,3rem);font-weight:700;letter-spacing:-.045em;line-height:.98;text-transform:lowercase}
+[data-skin="swiss"] .fpost{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 0}
+[data-skin="swiss"] .fpost.freply{background:none;margin-left:calc(11.111% + var(--g)*.111)}
+[data-skin="swiss"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.idrow,.pad){border-radius:0;border:1px solid var(--line);background:var(--bg)}
+[data-skin="swiss"] :is(.fnew textarea,.freplybox textarea,.gatepass):focus{outline:2px solid var(--accent);outline-offset:0}
+[data-skin="swiss"] .hubfoot{border-top:2px solid var(--text);font-size:.75rem}
+[data-skin="swiss"] .gamecard{background:var(--bg);border:0;border-top:2px solid var(--text);border-radius:0;box-shadow:none;padding:10px 0 14px}
+:root[data-skin="swiss"] .gamecard:hover{background:var(--bg);transform:none;border-top-color:var(--accent);color:var(--accent)}
+[data-skin="swiss"] :is(.gamecard h2,.game h2,.tile .tname){font-size:1.5rem;letter-spacing:-.04em;line-height:1}
+/* ── buttons: lower case, a hairline; solid for the one that matters ── */
+:root[data-skin="swiss"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;box-shadow:none;background:var(--bg);border:1px solid var(--line);color:var(--text);
+  font-weight:700;text-transform:lowercase;letter-spacing:-.01em}
+:root[data-skin="swiss"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{background:var(--text);color:var(--bg);border-color:var(--text)}
+:root[data-skin="swiss"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent);color:#fff;border-color:var(--accent)}
+:root[data-skin="swiss"] .btn:active{transform:none}
+[data-skin="swiss"] :is(dialog,.newsdlg,.sheet,.gatecard){border:0;border-top:8px solid var(--text);border-radius:0;box-shadow:0 0 0 1px var(--line);background:var(--bg)}
+[data-skin="swiss"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font-size:1.5rem;letter-spacing:-.04em}
+[data-skin="swiss"] :is(.skinbtn,.rx,.rxpick,.arrowbtn,.dayswitch button,.prog,.prog i){border-radius:0}
+[data-skin="swiss"] :is(.field>label,.tbhead span,.ttday b){letter-spacing:0;text-transform:lowercase;color:var(--text);font-size:.75rem}
+/* ── the timetable: blocks on the grid; a black block is now, a red bar is today ── */
+[data-skin="swiss"] .lesson{background:var(--bg);border:1px solid var(--line);border-top:6px solid var(--c,var(--text));border-radius:0;box-shadow:none}
+[data-skin="swiss"] .lesson:hover{box-shadow:none;background:var(--panel-2)}
+[data-skin="swiss"] .lesson .s{font-weight:700;font-size:.9375rem;letter-spacing:-.025em;line-height:1.05;text-transform:lowercase}
+[data-skin="swiss"] .lesson.current{outline:0;background:var(--text);color:var(--bg);border-color:var(--text);border-top-color:var(--accent)}
+[data-skin="swiss"] .dayhead{text-align:left}
+[data-skin="swiss"] .dayhead .dow{font-weight:700;font-size:1.5rem;letter-spacing:-.04em}
+[data-skin="swiss"] .dayhead .rule{height:2px;border-radius:0;opacity:1;background:var(--text)}
+[data-skin="swiss"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--text)}
+[data-skin="swiss"] :is(.dayhead.today,.dayhead.focus) .rule{height:8px;background:var(--accent);margin-top:2px}
+[data-skin="swiss"] .breakbar{background:none;border:0;border-top:1px solid var(--line);border-radius:0;opacity:1;justify-content:flex-start;padding:0;text-transform:lowercase;letter-spacing:0;font-weight:700}
+[data-skin="swiss"] .breakbar span{text-transform:lowercase}
+[data-skin="swiss"] .weeklabel{font-size:1.5rem;letter-spacing:-.04em}
+/* ── leaving and arriving: squares on the grid ── */
+html.fx-enter[data-skin="swiss"] .wrap{animation:none}
+.sw-blocks i{position:absolute;background:#fff;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.14);opacity:0;transition:opacity 0s linear calc(var(--d)/var(--n)*.3s)}
+html[data-mode="dark"] .sw-blocks i{background:#000;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16)}
+.sw-blocks i.k{background:#000}
+html[data-mode="dark"] .sw-blocks i.k{background:#fff}
+.sw-blocks i.r{background:#e8112d}
+.sw-blocks.in i{opacity:1}
+.sw-blocks.now i{transition:none}
+.sw-blocks.go i{opacity:0;transition:opacity 0s linear calc(var(--e)/var(--n)*.14s)}

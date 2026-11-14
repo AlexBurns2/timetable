@@ -30,9 +30,6 @@
    readable (covers the notes subject picker and the custom-skin controls). */
 select option{ background:#ffffff; color:#16181d; }
 :root[data-mode="dark"] select option{ background:#23242b; color:#f2f2f5; }
-:root[data-skin="terminal"] select option{ background:#0b1410; color:#b6ffd6; }
-:root[data-skin="scifi"] select option{ background:#081119; color:#dff4ff; }
-:root[data-skin="blueprint"] select option{ background:#0a2137; color:#eaf4ff; }
 
 /* ── PLAIN ─ the quiet default: white on white, grey on grey ────── */
 [data-skin="plain"]{
@@ -51,50 +48,6 @@ select option{ background:#ffffff; color:#16181d; }
   --line:#303035; --text:#eaeaee; --muted:#87878f; --accent:#8f8ff2;
   --shadow-hi:0 1px 4px rgba(0,0,0,.55);
 }
-
-/* ── PAPER ─ ruled notebook, post-it lessons ───────────────────── */
-[data-skin="paper"]{
-  --bg:#f7f3e8;
-  --bg-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(80,110,160,.13) 31px 32px);
-  --panel:#fffdf6; --panel-2:#f0ead8; --line:#ded4bd;
-  --text:#2c2519; --muted:#8a7f6a; --accent:#c2571f; --accent-ink:#fff;
-  --font-ui:"Patrick Hand",'Comic Sans MS',cursive;
-  --font-display:"Caveat",cursive;
-  --font-num:"Patrick Hand",cursive;
-  --card-radius:3px; --tint:44%; --card-accent:0px;
-  --card-border:1px solid rgba(0,0,0,.09);
-  --shadow:2px 3px 7px rgba(60,45,20,.16);
-  --shadow-hi:4px 7px 16px rgba(60,45,20,.22);
-  --display-w:700; --display-ls:0;
-}
-[data-skin="paper"][data-mode="dark"]{
-  --bg:#221f1a;
-  --bg-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(150,170,210,.09) 31px 32px);
-  --panel:#2e2a23; --panel-2:#282420; --line:#413a30;
-  --text:#f0e9db; --muted:#a2957f; --accent:#e8834a;
-  /* the pastel faculty colours are light, so a heavy tint would lift these
-     cards until the text stopped reading */
-  --tint:18%;
-}
-/* The red margin rule belongs to the ruled page, so it starts below the
-   masthead instead of striking through the title. */
-[data-skin="paper"] .grid{position:relative}
-[data-skin="paper"] .grid::before{
-  content:"";position:absolute;top:-14px;bottom:-30px;left:-14px;
-  width:2px;background:rgba(200,70,70,.4);pointer-events:none;z-index:0;
-}
-[data-skin="paper"][data-mode="dark"] .grid::before{background:rgba(235,120,120,.38)}
-@media (max-width:860px){ [data-skin="paper"] .grid::before{display:none} }
-[data-skin="paper"] .lesson{transform:rotate(var(--rot))}
-[data-skin="paper"] .lesson:hover{transform:rotate(0deg) translateY(-3px) scale(1.02)}
-/* sticky-tape tab on each note */
-[data-skin="paper"] .lesson::before{
-  content:"";position:absolute;top:-7px;left:50%;translate:-50% 0;
-  width:46px;height:15px;background:rgba(255,255,255,.55);
-  border:1px solid rgba(0,0,0,.07);border-top:0;
-  box-shadow:0 1px 2px rgba(0,0,0,.08);
-}
-[data-skin="paper"][data-mode="dark"] .lesson::before{background:rgba(255,255,255,.14)}
 
 /* ── GLASS ─ frosted tiles over a colour mesh ──────────────────── */
 [data-skin="glass"]{
@@ -143,8 +96,8 @@ html.zen:is([data-clouds="still"],[data-clouds="move"]) body::before,html.zen:is
    drift and swell slowly against each other, so the colours move like weather.
    No turning (a few degrees shows a layer's edge on a wide screen), and the
    drift stays inside each layer's 14% margin. */
-html[data-clouds="move"] body::before{animation:glassdriftA 26s ease-in-out infinite alternate}
-html[data-clouds="move"] body::after{animation:glassdriftB 33s ease-in-out infinite alternate}
+html[data-clouds="move"] body::before{animation:glassdriftA 26s ease-in-out var(--cloud-d,0s) infinite alternate}
+html[data-clouds="move"] body::after{animation:glassdriftB 33s ease-in-out var(--cloud-d,0s) infinite alternate}
 @keyframes glassdriftA{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(8%,-6%,0) scale(1.2)}100%{transform:translate3d(-7%,6%,0) scale(1.06)}}
 @keyframes glassdriftB{0%{transform:translate3d(0,0,0) scale(1.1)}50%{transform:translate3d(-8%,5%,0) scale(1.02)}100%{transform:translate3d(6%,-8%,0) scale(1.22)}}
 html[data-motion="reduced"] body::before,html[data-motion="reduced"][data-clouds] body::after{animation:none}
@@ -195,84 +148,16 @@ html[data-motion="reduced"] body::before,html[data-motion="reduced"][data-clouds
 }
 [data-skin="glass"]:not([data-mode="light"]) .nowcard{ border-color:rgba(255,255,255,.2); }
 
-/* ── SWISS ─ stark white, hairlines, no shadow ─────────────────── */
-[data-skin="swiss"]{
-  --bg:#fff; --bg-img:none; --panel:#fff; --panel-2:#f6f6f6;
-  --line:#111; --text:#000; --muted:#767676; --accent:#e8112d; --accent-ink:#fff;
-  --font-ui:"Space Grotesk",Helvetica,Arial,sans-serif;
-  --font-display:"Space Grotesk",Helvetica,sans-serif;
-  --font-num:"Space Grotesk",Helvetica,sans-serif;
-  --card-radius:0px; --tint:0%; --card-accent:0px;
-  --card-border:1px solid #111;
-  --shadow:none; --shadow-hi:none;
-  --display-ls:-.045em; --display-w:700;
-}
-[data-skin="swiss"][data-mode="dark"]{
-  --bg:#000; --panel:#000; --panel-2:#111; --line:#fff; --text:#fff; --muted:#8c8c8c;
-  --card-border:1px solid #fff;
-}
-[data-skin="swiss"] .lesson{border-top:5px solid var(--c,var(--accent))}
-[data-skin="swiss"] .lesson:hover{background:var(--panel-2)}
-[data-skin="swiss"] .colhead .dow{text-transform:uppercase;letter-spacing:.06em;font-size:0.75rem}
+/* ═══ Settings → Custom → Theme code ═══ */
+.tcbtns{display:flex;gap:8px}
+.tcbtns .btn{flex:1;justify-content:center;padding:8px 10px;font-size:.8125rem}
+.tcin{display:flex;gap:8px;padding:8px 0 2px}
+.tcin[hidden]{display:none}
+.tcin input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.8125rem}
+.tcmsg:empty{display:none}
+.flinklike{background:none;border:0;padding:0;margin-left:4px;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline}
 
-/* ── TERMINAL ─ phosphor CRT ───────────────────────────────────── */
-[data-skin="terminal"],[data-skin="terminal"][data-mode="light"]{
-  --bg:#05080a; --bg-img:none; --panel:#0b1114; --panel-2:#0f171b;
-  --line:#265046; --text:#b6ffd6; --muted:#5fae87; --accent:#39ff9e; --accent-ink:#04120a;
-  --font-ui:"JetBrains Mono",ui-monospace,monospace;
-  --font-display:"JetBrains Mono",monospace;
-  --font-num:"JetBrains Mono",monospace;
-  --card-radius:0px; --tint:16%; --card-accent:3px;
-  --card-border:1px solid #1d3a33;
-  --shadow:none; --shadow-hi:0 0 0 1px var(--accent);
-  --display-ls:.04em; --display-tt:uppercase;
-}
-[data-skin="terminal"] body::after{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
-  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
-  mix-blend-mode:multiply;
-}
-[data-skin="terminal"] .lesson .s::before{content:"> ";color:var(--accent)}
-[data-skin="terminal"] .lesson:hover{box-shadow:0 0 14px rgba(57,255,158,.28)}
-
-/* ── BLUEPRINT ─ drafting paper ────────────────────────────────── */
-[data-skin="blueprint"],[data-skin="blueprint"][data-mode="light"]{
-  --bg:#07223d;
-  --bg-img:
-    repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),
-    repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 28px);
-  --panel:rgba(9,42,74,.82); --panel-2:rgba(12,52,90,.9);
-  --line:rgba(150,210,255,.55);
-  --text:#f2f9ff; --muted:#a9d2f2; --accent:#7ff0ff; --accent-ink:#052033;
-  --font-ui:"Space Mono",monospace;
-  --font-display:"Space Mono",monospace;
-  --font-num:"Space Mono",monospace;
-  --card-radius:0px; --tint:14%; --card-accent:0px;
-  --card-border:1px dashed rgba(150,210,255,.55);
-  --shadow:none; --shadow-hi:none;
-  --display-tt:uppercase; --display-ls:.08em;
-}
-[data-skin="blueprint"] .lesson{outline:1px solid rgba(150,210,255,.14);outline-offset:3px}
-[data-skin="blueprint"] .lesson:hover{border-style:solid}
-
-/* ── BRUTAL ─ thick borders, hard shadows ──────────────────────── */
-[data-skin="brutal"]{
-  --bg:#ffe94a; --bg-img:none; --panel:#fffdf5; --panel-2:#fff4c2;
-  --line:#000; --text:#000; --muted:#4a4a4a; --accent:#0047ff; --accent-ink:#fff;
-  --card-radius:0px; --tint:34%; --card-accent:0px;
-  --card-border:3px solid #000;
-  --shadow:5px 5px 0 #000; --shadow-hi:8px 8px 0 #000;
-  --font-ui:"Space Grotesk",system-ui,sans-serif;
-  --font-display:"Archivo Black",system-ui,sans-serif;
-  --font-num:"Space Grotesk",monospace;
-  --display-tt:uppercase; --display-ls:-.01em;
-}
-[data-skin="brutal"][data-mode="dark"]{
-  --bg:#12121a; --panel:#20202c; --panel-2:#2a2a38; --line:#fff;
-  --text:#fff; --muted:#b3b3c4; --accent:#ffe94a; --accent-ink:#000;
-  --card-border:3px solid #fff; --shadow:5px 5px 0 #fff; --shadow-hi:8px 8px 0 #fff;
-}
-[data-skin="brutal"] .lesson:hover{translate:-3px -3px}
 
 /* ═══════════════ shared structure ═══════════════ */
 
@@ -281,7 +166,7 @@ html[data-motion="reduced"] body::before,html[data-motion="reduced"][data-clouds
    to read on top of whatever the browser is showing behind. */
 html.zen{--page-bg:transparent;--page-img:none;background:transparent}
 html.zen body{background-color:transparent;background-image:none}
-html.zen body::after{display:none}          /* terminal scanlines would tint it */
+html.zen body::after{display:none}          /* terminal scanlines would tint it (and the vaporwave sun) */
 html.zen .dayhead,html.zen .corner,html.zen .tcol{background:transparent}
 /* break bars are nearly transparent by design; over an unknown wallpaper they
    need a backing or the label sits straight on the picture */
@@ -381,144 +266,6 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 [data-skin="classic"] .dayhead .rule{display:none}
 /* current day is shown by the blue text alone — no dot */
 
-/* ══════════════════════════════════════════════════════════════════
-   RETRO — early-2000s desktop web: teal ground, bevelled chrome,
-   glossy gradient buttons and Tahoma.
-   ══════════════════════════════════════════════════════════════════ */
-[data-skin="retro"]{
-  --bg:#008080;
-  --bg-img:none;
-  --panel:#d4d0c8; --panel-2:#c3c0b8;
-  --line:#7b7b70; --text:#000; --muted:#3b3b33; --accent:#000080; --accent-ink:#fff;
-  --font-ui:Tahoma,"MS Sans Serif",Verdana,Geneva,sans-serif;
-  --font-display:Tahoma,"MS Sans Serif",Verdana,sans-serif;
-  --font-num:Tahoma,"MS Sans Serif",Verdana,sans-serif;
-  --card-radius:0px; --radius:0px; --tint:22%; --card-accent:0px;
-  --card-border:2px solid #ffffff;
-  --shadow:2px 2px 0 rgba(0,0,0,.45);
-  --shadow-hi:3px 3px 0 rgba(0,0,0,.55);
-  --display-ls:0; --display-w:700; --display-tt:none;
-}
-[data-skin="retro"][data-mode="dark"]{
-  --bg:#003b3b; --panel:#333; --panel-2:#282828;
-  --line:#111; --text:#f2f2f2; --muted:#c9c9c9; --accent:#00c8ff; --accent-ink:#001018;
-  --card-border:2px solid #6e6e6e;
-  --tint:13%;
-}
-/* the bevel: light on top-left, shadow on bottom-right */
-[data-skin="retro"] .lesson,[data-skin="retro"] .nowcard,
-[data-skin="retro"] .btn,[data-skin="retro"] .weekbtn,
-[data-skin="retro"] dialog,[data-skin="retro"] .gatecard{
-  border-top-color:#fff;border-left-color:#fff;
-  border-right-color:#5a5a52;border-bottom-color:#5a5a52;
-  background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 55%);
-}
-[data-skin="retro"][data-mode="dark"] .lesson,[data-skin="retro"][data-mode="dark"] .nowcard,
-[data-skin="retro"][data-mode="dark"] .btn{
-  border-top-color:#7d7d7d;border-left-color:#7d7d7d;
-  border-right-color:#141414;border-bottom-color:#141414;
-}
-[data-skin="retro"] .btn:active,[data-skin="retro"] .weekbtn:active{
-  border-top-color:#5a5a52;border-left-color:#5a5a52;
-  border-right-color:#fff;border-bottom-color:#fff;
-}
-[data-skin="retro"] .weekbtn{
-  background-image:linear-gradient(180deg,#3a6ea5,#000080);color:#fff;
-}
-[data-skin="retro"] .lesson .s{text-shadow:1px 1px 0 rgba(255,255,255,.6)}
-[data-skin="retro"][data-mode="dark"] .lesson .s{text-shadow:none}
-[data-skin="retro"] .breakbar{
-  border:2px solid;border-top-color:#5a5a52;border-left-color:#5a5a52;
-  border-right-color:#fff;border-bottom-color:#fff;
-  background-color:var(--panel);
-  background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.07) 0 4px,transparent 4px 8px);
-  color:var(--text);opacity:1;
-}
-[data-skin="retro"] .dayhead .dow{
-  background:linear-gradient(180deg,#3a6ea5,#000080);color:#fff;
-  padding:4px 2px;display:block;
-}
-[data-skin="retro"][data-mode="dark"] .dayhead .dow{background:linear-gradient(180deg,#0a5a72,#012a38)}
-[data-skin="retro"] .dayhead.today .dow{background:linear-gradient(180deg,#c86a00,#7a3f00)}
-
-/* ══════════════════════════════════════════════════════════════════
-   SCIFI — ship's console: notched panels, cyan glow, wide caps.
-   ══════════════════════════════════════════════════════════════════ */
-[data-skin="scifi"],[data-skin="scifi"][data-mode="light"]{
-  --bg:#04070d;
-  --bg-img:
-    radial-gradient(80vw 60vh at 50% -10%,rgba(0,190,255,.16),transparent 70%),
-    repeating-linear-gradient(to bottom,rgba(0,229,255,.05) 0 1px,transparent 1px 42px),
-    repeating-linear-gradient(to right,rgba(0,229,255,.05) 0 1px,transparent 1px 42px);
-  --panel:rgba(9,26,44,.78); --panel-2:rgba(13,36,60,.86);
-  --line:rgba(0,214,255,.38);
-  --text:#dff4ff; --muted:#83bdd6; --accent:#00e5ff; --accent-ink:#02121a;
-  --font-ui:"Space Grotesk",system-ui,sans-serif;
-  --font-display:"Space Grotesk",system-ui,sans-serif;
-  --font-num:"Space Mono",monospace;
-  --card-radius:0px; --radius:0px; --tint:20%; --card-accent:3px;
-  --card-border:1px solid rgba(0,214,255,.38);
-  --shadow:0 0 0 1px rgba(0,229,255,.08);
-  --shadow-hi:0 0 18px rgba(0,229,255,.35);
-  --display-ls:.14em; --display-tt:uppercase; --display-w:700;
-}
-/* clipped corners read as machined panels */
-[data-skin="scifi"] .lesson,[data-skin="scifi"] .nowcard,[data-skin="scifi"] .breakbar{
-  clip-path:polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
-}
-[data-skin="scifi"] .lesson{
-  border-left:3px solid var(--c,var(--accent));
-  box-shadow:inset 0 0 22px rgba(0,229,255,.07);
-}
-[data-skin="scifi"] .lesson:hover{box-shadow:inset 0 0 22px rgba(0,229,255,.12),0 0 18px rgba(0,229,255,.3)}
-[data-skin="scifi"] .lesson.current{outline:1px solid var(--accent);box-shadow:0 0 22px rgba(0,229,255,.5)}
-[data-skin="scifi"] .lesson .s{letter-spacing:.06em}
-[data-skin="scifi"] .dayhead .dow{text-shadow:0 0 14px rgba(0,229,255,.5)}
-[data-skin="scifi"] .dayhead .rule{background:linear-gradient(90deg,transparent,var(--line),transparent);opacity:1}
-[data-skin="scifi"] .dayhead.today .rule{background:linear-gradient(90deg,transparent,var(--accent),transparent);
-  box-shadow:0 0 10px rgba(0,229,255,.6)}
-[data-skin="scifi"] .weekbtn{box-shadow:0 0 16px rgba(0,229,255,.4)}
-[data-skin="scifi"] .breakbar{border-style:solid;border-color:rgba(0,214,255,.22)}
-[data-skin="scifi"] .tmark{color:var(--accent);opacity:.65}
-
-/* ══════════════════════════════════════════════════════════════════
-   NEWSPRINT — broadsheet: cream stock, hairline rules, serif heads.
-   ══════════════════════════════════════════════════════════════════ */
-[data-skin="newsprint"]{
-  --bg:#f4f1e8;
-  --bg-img:none;
-  --panel:#fbf9f3; --panel-2:#efebdf;
-  --line:#241f18; --text:#171310; --muted:#5d564c; --accent:#8c1c13; --accent-ink:#fff;
-  --font-ui:"DM Sans",Georgia,serif;
-  --font-display:"Instrument Serif",Georgia,"Times New Roman",serif;
-  --font-num:"DM Sans",Georgia,serif;
-  --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
-  --card-border:1px solid var(--line);
-  --shadow:none; --shadow-hi:none;
-  --display-ls:-.01em; --display-w:400; --display-tt:none;
-}
-[data-skin="newsprint"][data-mode="dark"]{
-  --bg:#14120e; --panel:#1c1a15; --panel-2:#232019;
-  --line:#d9d2c4; --text:#f2ede1; --muted:#a79d8c; --accent:#e0655a;
-}
-[data-skin="newsprint"] .lesson{border-top:3px double var(--line)}
-[data-skin="newsprint"] .lesson .s{font-size:0.96875rem;line-height:1.1}
-[data-skin="newsprint"] .lesson .r{
-  font-variant:small-caps;letter-spacing:.06em;font-weight:400;
-}
-[data-skin="newsprint"] .lesson .t{font-style:italic}
-[data-skin="newsprint"] .dayhead .dow{
-  font-variant:small-caps;letter-spacing:.09em;font-size:1.0625rem;
-}
-[data-skin="newsprint"] .dayhead .rule{height:1px;background:var(--line);opacity:1}
-[data-skin="newsprint"] .dayhead.today .rule{height:3px}
-[data-skin="newsprint"] .breakbar{
-  border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  background:repeating-linear-gradient(45deg,rgba(0,0,0,.045) 0 3px,transparent 3px 6px);
-  border-radius:0;
-}
-[data-skin="newsprint"] .weekbtn{border:1px solid var(--line)}
-
 /* ── icons (icons.js: Phosphor, inlined); here because every page loads theme.css ── */
 .ph{display:inline-block;width:1em;height:1em;vertical-align:-.14em;flex:none}
 [data-icon]{display:inline-flex;align-items:center;justify-content:center;line-height:0}
@@ -556,3 +303,43 @@ html[data-motion="reduced"] .ldspin{animation-duration:2.4s}
 /* a heading or line that's loading: a small spinner in front of it */
 .ldinline::before{content:'';display:inline-block;vertical-align:-2px;width:12px;height:12px;margin-right:7px;border-radius:50%;
   border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
+
+/* ═══ Settings → Custom → Originals: the themes as they were, in a box of their own ═══ */
+.origs{margin:0 0 16px;padding:11px 12px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
+.orighd{display:flex;align-items:baseline;gap:4px 9px;flex-wrap:wrap;margin-bottom:9px}
+.orighd b{font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase}
+.orighd span{color:var(--muted);font-size:.75rem}
+.origgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:6px}
+.origtile{display:flex;align-items:center;gap:8px;min-width:0;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);
+  font:inherit;font-size:.78125rem;cursor:pointer;text-align:left}
+.origtile i{flex:none;width:22px;height:22px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.45)}
+.origtile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.origtile:hover{border-color:var(--accent)}
+.origtile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 32%,transparent)}
+.origback{margin-top:10px;width:100%;justify-content:center}
+.islegacy > :not(.origs){display:none!important}
+
+/* ═══ the note shown once after the themes were rebuilt (theme.js themesNotice) ═══ */
+.ttnote{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:70;box-sizing:border-box;width:min(580px,calc(100vw - 24px));
+  display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:12px 14px 12px 16px;background:var(--panel);color:var(--text);border:var(--card-border);border-radius:var(--radius);
+  box-shadow:0 12px 36px rgba(0,0,0,.3);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font:0.875rem/1.4 var(--font-ui);animation:ttnotein .35s cubic-bezier(.2,.8,.3,1) both}
+.ttnote p{flex:1 1 250px;margin:0}
+.ttnotebtns{display:flex;gap:8px;margin-left:auto}
+.ttnote .btn{padding:7px 12px;font-size:.8125rem}
+.ttnote.out{opacity:0;transition:opacity .25s}
+@keyframes ttnotein{from{opacity:0;transform:translate(-50%,10px)}}
+html[data-motion="reduced"] .ttnote{animation:none}
+
+/* ── effects (fx.js) ─────────────────────────────────────────────────
+   The canvas a theme's moving background is drawn on, and the layers a
+   page transition plays on (both are children of <html>). Arriving by a
+   link, the page waits out of sight until fx.js plays the way in. The
+   plain way out and in is a quick fade; a theme with its own is in its
+   stylesheet. */
+.fx-bg{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100lvh;z-index:-1;pointer-events:none;display:block}
+html.zen .fx-bg{display:none}
+.fx-layer{position:fixed;inset:0;z-index:2147483000;pointer-events:none;overflow:hidden}
+html.fx-in .wrap{opacity:0}
+html.fx-out .wrap{opacity:0;transition:opacity .12s ease}
+html.fx-enter .wrap{animation:fxfade .22s ease both}
+@keyframes fxfade{from{opacity:0}to{opacity:1}}

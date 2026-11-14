@@ -1,0 +1,184 @@
+/* ══════════════════════════════════════════════════════════════════
+   CYBERPUNK — the site as a piece of equipment, in a few bold flat
+   blocks: near-black, one acid lime, one light grey, and nothing else
+   until it's needed (a violet tab, a signal red for what's new).
+   The name of each page sits in a solid lime block; the next class in a
+   grey one; whatever the pointer is on turns lime. Condensed industrial
+   capitals, monospace for readouts.
+   The small technical marks are rationed, so they read as detail rather
+   than noise: one status strip at the top (the page, the time, the
+   connection), a number on each of Home's panels, an L-shaped
+   calibration mark in two corners of each panel, one cut corner.
+   Behind each page (fx/scifi.js) a different wireframe study.
+   Interference is rare and deliberate: a press, a page change, now and
+   then the title.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="scifi"],[data-skin="scifi"][data-mode="light"]{
+  --bg:#0a0a0c;
+  --bg-img:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px) 0 0/96px 96px,linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px) 0 0/96px 96px;
+  --panel:rgba(20,20,23,.96); --panel-2:rgba(29,29,33,.97); --line:#2c2c32;
+  --text:#ededea; --muted:#8a8a92; --accent:#d4ff00; --accent-ink:#0a0a0c;
+  --cy-grey:#c6c8cc; --cy-vio:#6b4dff; --cy-hot:#ff3b5c; --cy-cyan:#19e3ff; --cut:14px;
+  --font-ui:"Barlow",system-ui,sans-serif; --font-display:"Barlow Condensed","Barlow",sans-serif; --font-num:"JetBrains Mono",ui-monospace,monospace;
+  --card-radius:0px; --radius:0px; --tint:13%; --card-accent:3px;
+  --card-border:1px solid var(--line); --shadow:none; --shadow-hi:none;
+  --display-ls:.005em; --display-tt:uppercase; --display-w:800;
+  --notch:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,0 100%);
+  --notch-s:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);
+  --marks:linear-gradient(currentColor,currentColor) 0 0/9px 1px no-repeat,linear-gradient(currentColor,currentColor) 0 0/1px 9px no-repeat,
+          linear-gradient(currentColor,currentColor) 100% 100%/9px 1px no-repeat,linear-gradient(currentColor,currentColor) 100% 100%/1px 9px no-repeat;
+}
+html.fx-live[data-skin="scifi"]{--bg-img:none}
+:root[data-skin="scifi"] select option{background:#141417;color:#ededea}
+[data-skin="scifi"] ::selection{background:var(--accent);color:var(--accent-ink)}
+
+/* ── the frame: a lime rail down the left with the unit's name ── */
+@media (min-width:1100px){
+  [data-skin="scifi"] body{padding-left:46px}
+  [data-skin="scifi"] body::before{content:"MSC//UNOFFICIAL";position:fixed;left:0;top:0;bottom:0;width:46px;z-index:2;
+    writing-mode:vertical-rl;transform:rotate(180deg);text-align:right;padding-bottom:20px;box-sizing:border-box;white-space:nowrap;overflow:hidden;
+    color:#0a0a0c;font:800 2rem/46px "Barlow Condensed",sans-serif;letter-spacing:.015em;background:var(--accent)}
+  html.zen[data-skin="scifi"] body::before{display:none}
+}
+/* ── the one status strip (fx/scifi.js writes it: the page, the time, the connection) ── */
+.cy-hud{display:flex;align-items:center;gap:0 14px;overflow:hidden;white-space:nowrap;margin:0 0 10px;height:20px;
+  font:500 .625rem/20px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cy-hud b{flex:none;padding:0 12px 0 8px;background:var(--accent);color:#0a0a0c;font-weight:700;clip-path:polygon(0 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+.cy-hud span{flex:none}
+.cy-hud span + span::before{content:"/";margin-right:14px;color:var(--line)}
+.cy-hud em{font-style:normal;color:var(--text)}
+.cy-hud .ok{color:var(--accent)} .cy-hud .bad{color:var(--cy-hot)}
+
+/* ── the head of a page: its name in a solid lime block ── */
+:root[data-skin="scifi"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--panel);border:1px solid var(--line);border-radius:0;padding:12px}
+[data-skin="scifi"] :is(.hubid,.phtitle,.brand){background:var(--accent);color:#0a0a0c;padding:12px 18px 11px 14px;clip-path:var(--notch);align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+[data-skin="scifi"] .brand{max-width:min(46%,460px)}
+[data-skin="scifi"] :is(.brand h1,.pagehead h1){font-size:clamp(1.9rem,4.2vw,3rem);line-height:.92}
+[data-skin="scifi"] .hubid h1{font-size:clamp(1.9rem,7cqi,3.1rem);line-height:.92}
+[data-skin="scifi"] :is(.hubid,.phtitle,.brand) :is(.eyebrow,.sitename,.hubsub),[data-skin="scifi"] .brand>span{color:#0a0a0c;font-family:var(--font-num);font-weight:500;font-size:.625rem;letter-spacing:.14em;opacity:.78}
+[data-skin="scifi"] .hubsub{font-size:.6875rem;letter-spacing:.04em;text-transform:none}
+[data-skin="scifi"] .idrow{background:rgba(10,10,12,.12);border-color:rgba(10,10,12,.4);border-radius:0}
+[data-skin="scifi"] .idrow input,[data-skin="scifi"] .idrow .dom{color:#0a0a0c}
+[data-skin="scifi"] :is(.nowcard .lbl,.ttday b,.field>label,.tbhead span){font-family:var(--font-num);font-weight:500;font-size:.625rem;letter-spacing:.16em;color:var(--accent)}
+/* Now is a grey block; Next, a dark one */
+[data-skin="scifi"] .nowcard{clip-path:var(--notch);background:var(--cy-grey);color:#0a0a0c;border:0;border-radius:0}
+[data-skin="scifi"] .nowcard :is(.lbl,.meta){color:rgba(10,10,12,.68)}
+[data-skin="scifi"] .nowcard + .nowcard{background:var(--panel-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+[data-skin="scifi"] .nowcard + .nowcard .lbl{color:var(--accent)}
+[data-skin="scifi"] .nowcard + .nowcard .meta{color:var(--muted)}
+[data-skin="scifi"] .nowcard .subj{font-family:var(--font-display);font-weight:700;font-size:1.25rem;text-transform:uppercase;letter-spacing:.02em}
+[data-skin="scifi"] .hubnow .nowcard .subj{font-size:1.125rem}
+[data-skin="scifi"] .nowcard .meta{font-family:var(--font-num);font-size:.6875rem;letter-spacing:.04em}
+[data-skin="scifi"] .nowcard .count,[data-skin="scifi"] .progrow .count{font-family:var(--font-num);font-weight:700;color:inherit}
+[data-skin="scifi"] .prog{height:6px;border-radius:0;background:rgba(10,10,12,.2)}
+[data-skin="scifi"] .prog i{border-radius:0;background:#0a0a0c}
+[data-skin="scifi"] .nowcard + .nowcard .prog i{background:var(--accent)}
+@container hubbar (max-width:26em){ [data-skin="scifi"] .hubnow.pair{background:var(--cy-grey);color:#0a0a0c;border:0;border-radius:0} [data-skin="scifi"] .hubnow.pair .nowcard{background:none;box-shadow:none;clip-path:none;color:inherit}
+  [data-skin="scifi"] .hubnow.pair .nowcard :is(.lbl,.meta){color:rgba(10,10,12,.68)} }
+
+/* ── panels: one cut corner, a calibration mark in two others; the one under the pointer turns lime ── */
+[data-skin="scifi"] :is(.qtile,.gamecard,.lesson,.tile,.game){clip-path:var(--notch)}
+[data-skin="scifi"] :is(.qtile,.gamecard,.tday){position:relative;background:var(--panel);border:1px solid var(--line);border-radius:0;box-shadow:none;transition:none}
+[data-skin="scifi"] :is(.qtile,.gamecard,.tday)::before{content:"";position:absolute;inset:5px;pointer-events:none;color:var(--muted);opacity:.6;background:var(--marks)}
+:root[data-skin="scifi"] :is(.qtile,.gamecard,.tday,.tile,.game):hover{background:var(--accent);border-color:var(--accent);color:#0a0a0c;transform:none;box-shadow:none}
+[data-skin="scifi"] :is(.qtile,.gamecard,.tday):hover::before{color:#0a0a0c;opacity:1}
+:root[data-skin="scifi"] :is(.qtile,.gamecard,.tday):hover :is(.ico,.gi,p,.tdstat,.go,.sum,.w,.tname::before){color:#0a0a0c!important}
+[data-skin="scifi"] .tday .newpill{position:static}
+/* Home's pages: a number each */
+[data-skin="scifi"] .qtiles{counter-reset:cytile}
+[data-skin="scifi"] .qtile{padding:15px 15px 13px}
+[data-skin="scifi"] .qtile .tname{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:1.0625rem}
+[data-skin="scifi"] .qtile .tname::before{counter-increment:cytile;content:counter(cytile,decimal-leading-zero);position:absolute;right:12px;top:10px;
+  font:500 .625rem/1 var(--font-num);letter-spacing:.1em;color:var(--muted)}
+[data-skin="scifi"] .qtile:has(.tilepill) .tname::before{display:none}
+[data-skin="scifi"] .qtile .ico .ph{width:1.7rem;height:1.7rem}
+@media (max-width:560px){
+  [data-skin="scifi"] .qtile{padding:11px 4px 9px}
+  [data-skin="scifi"] .qtile .tname{font-size:.8125rem;letter-spacing:0;overflow-wrap:normal}
+  [data-skin="scifi"] .qtile .tname::before{display:none}
+}
+[data-skin="scifi"] .tdname{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;font-size:.9375rem}
+[data-skin="scifi"] .tdstat{font-family:var(--font-num);font-weight:500;font-size:.6875rem;letter-spacing:.06em}
+[data-skin="scifi"] :is(.gamecard h2,.game h2,.tile .tname){font-size:1.125rem;letter-spacing:.02em}
+[data-skin="scifi"] :is(.newpill,.gamecard .tag,.gamecard .newbanner){border-radius:0;border:0;background:var(--cy-hot);color:#fff;font-family:var(--font-num);font-weight:700;letter-spacing:.1em}
+[data-skin="scifi"] .gamecard .tag{background:var(--cy-vio)}
+[data-skin="scifi"] .gamecard .newbanner{background:none;box-shadow:inset 0 0 0 1px var(--cy-hot);color:var(--cy-hot)}
+[data-skin="scifi"] .gamecard:hover .newbanner{box-shadow:inset 0 0 0 1px #0a0a0c;color:#0a0a0c}
+[data-skin="scifi"] .newsdot{background:var(--cy-hot);border-radius:0}
+
+/* ── headings: a lime tab on a line ── */
+[data-skin="scifi"] :is(.sechd,.cathd,.forum h2){display:inline-block;width:fit-content;margin-bottom:0;padding:5px 22px 4px 10px;background:var(--accent);color:#0a0a0c;
+  font:700 .8125rem/1.1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;clip-path:polygon(0 0,100% 0,calc(100% - 11px) 100%,0 100%)}
+[data-skin="scifi"] .gsec{border-bottom:1px solid var(--line);margin-bottom:12px;align-items:flex-end}
+[data-skin="scifi"] .sechd{margin-bottom:10px}
+[data-skin="scifi"] .forum{border-top:0;padding-top:0}
+[data-skin="scifi"] .forum h2{margin-bottom:12px}
+
+/* ── keys ── */
+:root[data-skin="scifi"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;box-shadow:none;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+  font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.07em;clip-path:var(--notch-s)}
+:root[data-skin="scifi"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover,
+:root[data-skin="scifi"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:root[data-skin="scifi"] .btn:active{transform:none}
+/* a press: a moment of interference (nothing here may move or clip the element: a press that shifts it from under the pointer loses the click) */
+.cy-hit{animation:cyhit .18s steps(1) 1}
+@keyframes cyhit{0%{filter:invert(1)}34%{filter:brightness(1.7) saturate(1.4)}67%{filter:invert(1) hue-rotate(40deg)}100%{filter:none}}
+.cy-glitch{animation:cyglitch .28s steps(1) 1}
+@keyframes cyglitch{0%{text-shadow:3px 0 var(--cy-hot),-3px 0 var(--cy-cyan);opacity:.6}25%{text-shadow:-4px 0 var(--cy-hot),4px 0 var(--cy-cyan);opacity:1}50%{text-shadow:2px 0 var(--cy-hot),-2px 0 var(--cy-cyan);opacity:.75}75%{text-shadow:none;opacity:1}}
+[data-skin="scifi"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad){border-radius:0;border:1px solid var(--line);background:var(--panel-2);font-family:var(--font-num);font-size:.8125rem}
+[data-skin="scifi"] :is(.fnew textarea,.freplybox textarea,.gatepass,.pad):focus{outline:1px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+[data-skin="scifi"] :is(.fpost,.pcard,.hscstrip,.rx,.skinbtn,.rxpick){border-radius:0}
+[data-skin="scifi"] .fmeta{font-family:var(--font-num);font-size:.6875rem;letter-spacing:.04em}
+[data-skin="scifi"] .pcard{background:var(--panel);border:1px solid var(--line)}
+[data-skin="scifi"] :is(dialog,.newsdlg,.sheet,.gatecard){--panel:#141417;--panel-2:#1d1d21;border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:0;background:var(--panel)}
+[data-skin="scifi"] .sheet{border-radius:0}
+
+/* ── the timetable: flat blocks; the class that's on now is the lime one ── */
+[data-skin="scifi"] .lesson{--cut:9px;border-left:3px solid var(--c,var(--accent))}
+[data-skin="scifi"] .lesson .s{font-size:.9375rem;font-weight:700;letter-spacing:.015em;text-transform:uppercase;line-height:1.05}
+[data-skin="scifi"] .lesson :is(.r,.t,.tm){font-family:var(--font-num);font-size:.625rem;letter-spacing:.02em}
+[data-skin="scifi"] .lesson.current{outline:0;background:var(--accent);color:#0a0a0c;border-color:var(--accent)}
+[data-skin="scifi"] .dayhead .dow{font-size:1.0625rem}
+[data-skin="scifi"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--accent)}
+[data-skin="scifi"] .dayhead .rule{height:1px;border-radius:0;opacity:1;background:var(--line)}
+[data-skin="scifi"] :is(.dayhead.today,.dayhead.focus) .rule{height:3px;background:var(--accent)}
+[data-skin="scifi"] .breakbar{border:1px solid var(--line);border-radius:0;opacity:.9;font-family:var(--font-num);background:var(--panel)}
+[data-skin="scifi"] .tmark{font-family:var(--font-num);font-size:.625rem;letter-spacing:.04em}
+[data-skin="scifi"] .weeklabel{font-size:1.0625rem;letter-spacing:.06em}
+
+/* ── pages that are one piece: one panel ── */
+:root[data-skin="scifi"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{
+  background:var(--panel);border:1px solid var(--line);margin-top:22px;margin-bottom:60px;padding:12px 22px 30px}
+:root[data-skin="scifi"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead{background:none;border:0;border-bottom:1px solid var(--line);padding:0 0 12px}
+@media (max-width:640px){
+  :root[data-skin="scifi"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{margin:8px 6px 40px;padding:10px 12px 24px}
+}
+[data-skin="scifi"] .gamestage:not([hidden]){background:var(--panel);border:1px solid var(--line);padding:14px 16px 18px}
+
+/* ── arriving: the panels slide out from behind their angles; leaving: off the other way, and the signal breaks up ── */
+html.fx-enter[data-skin="scifi"] .wrap,html.fx-out[data-skin="scifi"] .wrap{animation:none;opacity:1;transition:none}
+html[data-fx="on"][data-skin="scifi"].fx-enter :is(.qtile,.gamecard,.nowcard,.lesson,.hubid,.phtitle,.brand){animation:cyin .32s cubic-bezier(.2,.7,.2,1) both}
+html[data-fx="on"][data-skin="scifi"].fx-enter :is(.tday,.pcard,.forum,.cy-hud,.gsec,.weekswitch){animation:cyslide .28s cubic-bezier(.2,.7,.2,1) both}
+html[data-skin="scifi"].fx-enter :is(.qtile,.gamecard):nth-child(4n+2){animation-delay:.04s}
+html[data-skin="scifi"].fx-enter :is(.qtile,.gamecard):nth-child(4n+3){animation-delay:.08s}
+html[data-skin="scifi"].fx-enter :is(.qtile,.gamecard):nth-child(4n+4){animation-delay:.12s}
+@keyframes cyin{from{clip-path:polygon(0 0,0 0,0 0,0 100%,0 100%);transform:translateX(-12px)}}
+@keyframes cyslide{from{opacity:0;transform:translateX(-16px)}}
+html.fx-out[data-skin="scifi"] :is(.qtile,.gamecard,.nowcard,.lesson,.hubid,.phtitle,.brand){animation:cyout .2s cubic-bezier(.6,0,.9,.4) both}
+html.fx-out[data-skin="scifi"] :is(.tday,.pcard,.forum,.cy-hud,.gsec,.weekswitch){animation:cyoff .2s cubic-bezier(.6,0,.9,.4) both}
+@keyframes cyout{to{clip-path:polygon(100% 0,100% 0,100% 0,100% 100%,100% 100%);transform:translateX(12px)}}
+@keyframes cyoff{to{opacity:0;transform:translateX(16px)}}
+.cy-link.in{background:#0a0a0c}
+.cy-link s{position:absolute;inset:0;display:block;text-decoration:none}
+.cy-link u{position:absolute;display:block}
+.cy-link em{position:absolute;left:0;right:0;top:50%;height:1px;background:#d4ff00;opacity:0}
+.cy-link b{position:absolute;left:50%;top:50%;transform:translate(-50%,-190%);white-space:nowrap;opacity:0;
+  font:700 .75rem/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.34em;color:#d4ff00}
+.cy-link.in em,.cy-link.in b{opacity:1}
+/* the small choices (a week, a year): square, like the keys */
+:root[data-skin="scifi"] :is(.fyears,.fweeks) button{border-radius:0;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+@media (max-width:640px){
+  .cy-hud .n{display:none}
+  [data-skin="scifi"] .brand{max-width:none;flex:1 1 0;min-width:0}
+  [data-skin="scifi"] :is(.brand h1,.pagehead h1){font-size:1.6rem}
+}
