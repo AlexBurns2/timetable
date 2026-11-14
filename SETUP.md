@@ -846,7 +846,7 @@ top-out/save (Zen). The two new modes use **separate tables** so existing weekly
 survival data is untouched.
 
 **Setup:** run these tables in the same Supabase project; no new env vars.
-`game_state` powers the Survival/Zen cross-device save; `sprint_best` and
+`game_state` powers the Survival/Zen cross-device save and online chess (one row per game, `email` = `chess:<CODE>`, `mode` = `chess`; no extra table); `sprint_best` and
 `zen_board` are the new all-time boards.
 ```sql
 create table tetris_score (
