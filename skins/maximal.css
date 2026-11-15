@@ -114,8 +114,9 @@ html.fx-live[data-skin="maximal"]{--bg-img:none}
 :root[data-skin="maximal"] .qtile .ico{color:inherit!important}
 [data-skin="maximal"] .qtile .ico .ph{width:1.7rem;height:1.7rem}
 [data-skin="maximal"] .qtile .tname{font-weight:900;font-stretch:118%;font-size:1.0625rem;text-transform:uppercase;letter-spacing:-.02em;line-height:.95;white-space:normal;overflow:visible}
-[data-skin="maximal"] .qtile::after{counter-increment:mx;content:counter(mx,decimal-leading-zero);position:absolute;right:10px;bottom:4px;
+[data-skin="maximal"] .qtile::after{counter-increment:mx;content:counter(mx,decimal-leading-zero);position:absolute;right:10px;top:6px;      /* top right, clear of the name and of the icon (top left) */
   font:900 2.9rem/1 "Archivo",sans-serif;font-stretch:62%;color:transparent;-webkit-text-stroke:1.5px var(--f);opacity:.85;pointer-events:none}
+[data-skin="maximal"] .qtile:has(.tilepill)::after{display:none}      /* the NEW pill has that corner */
 :root[data-skin="maximal"] .qtile:hover::after{color:var(--b);-webkit-text-stroke-color:var(--b)}
 @media (max-width:560px){
   [data-skin="maximal"] .qtile{height:5.6rem;padding:8px 4px}

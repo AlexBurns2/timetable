@@ -135,4 +135,11 @@ html[data-fx="on"].fx-enter[data-skin="y2k"] body{animation:ykreveal .52s cubic-
 .yk-wave.go{animation:ykgone .52s linear both}
 @keyframes ykwave{to{transform:translateX(calc(100vw + var(--yk-s) + 1vw - .74*var(--yk-w)))}}
 @keyframes ykgone{76%{opacity:1}to{opacity:0}}
+/* with a view transition (Chromium): the page being left stays as it was underneath, the new one is wiped on over it
+   on the same line, and the wave (named, so it is drawn above both) runs along the edge */
+[data-skin="y2k"]::view-transition-old(root){animation:none;mix-blend-mode:normal}
+[data-skin="y2k"]::view-transition-new(root){animation:ykreveal .52s cubic-bezier(.45,0,.2,1) both;mix-blend-mode:normal}
+[data-skin="y2k"]::view-transition-image-pair(root){isolation:auto}
+[data-skin="y2k"]::view-transition-group(yk-wave),[data-skin="y2k"]::view-transition-new(yk-wave),[data-skin="y2k"]::view-transition-old(yk-wave){animation:none}
+.yk-wave.vt{view-transition-name:yk-wave}
 @container hubbar (max-width:30em){ [data-skin="y2k"] .hubid h1{white-space:normal;overflow:visible} }

@@ -304,19 +304,41 @@ html[data-motion="reduced"] .ldspin{animation-duration:2.4s}
 .ldinline::before{content:'';display:inline-block;vertical-align:-2px;width:12px;height:12px;margin-right:7px;border-radius:50%;
   border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
 
-/* ═══ Settings → Originals: the themes as they were, in a box of their own (under Animation) ═══ */
-.origs{margin:0;padding:11px 12px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
-.orighd{display:flex;align-items:baseline;gap:4px 9px;flex-wrap:wrap;margin-bottom:9px}
-.orighd b{font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase}
-.orighd span{color:var(--muted);font-size:.75rem}
-.origgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:6px}
+/* ═══ Settings → Original themes: one row under Animation that opens to the themes as they were ═══ */
+.origs{margin:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
+.orighd{display:flex;align-items:center;gap:4px 10px;width:100%;margin:0;padding:10px 12px;border:0;background:none;font:inherit;color:var(--text);cursor:pointer;text-align:left}
+.orighd b{flex:none;font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase}
+.orighd span{flex:1;min-width:0;color:var(--muted);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orighd svg{flex:none;width:12px;height:12px;color:var(--muted);transition:transform .18s ease}
+.origs.open .orighd svg{transform:rotate(90deg)}
+.orighd:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:var(--radius)}
+.origgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px;padding:0 12px 12px}
 .origtile{display:flex;align-items:center;gap:8px;min-width:0;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);
-  font:inherit;font-size:.78125rem;cursor:pointer;text-align:left}
+  font:inherit;font-size:.75rem;line-height:1.15;cursor:pointer;text-align:left}
 .origtile i{flex:none;width:22px;height:22px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.45)}
-.origtile span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.origtile span{min-width:0;overflow-wrap:anywhere}
 .origtile:hover{border-color:var(--accent)}
 .origtile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 32%,transparent)}
-.origback{margin-top:10px;width:100%;justify-content:center}
+.origback{margin:0 12px 12px;width:calc(100% - 24px);justify-content:center}
+/* Dark mode and Animation: two switches side by side */
+.swrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tsw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:0;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;text-align:left}
+.tsw span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tsw i{position:relative;flex:none;width:34px;height:20px;border-radius:999px;background:color-mix(in srgb,var(--text) 22%,transparent);transition:background .15s}
+.tsw i::after{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.35);transition:transform .15s}
+.tsw[aria-checked="true"] i{background:var(--accent)}
+.tsw[aria-checked="true"] i::after{transform:translateX(14px)}
+.tsw[aria-disabled="true"]{cursor:default;opacity:.55}
+.tsw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.swhint{margin-top:6px}
+html[data-motion="reduced"] .tsw i,html[data-motion="reduced"] .tsw i::after{transition:none}
+/* Login: one line once signed in */
+.crline{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;font-size:.875rem}
+.crline b{font-weight:700}
+.crline .flinklike{margin-left:0}
+.crline .flinklike.danger{color:#e5484d}
+:is(.crline,#cr_form,#cr_cancel)[hidden]{display:none!important}
 /* the Appearance heading folds the grid of themes away; folded, it names the one that is on */
 .skhd{display:inline-flex;align-items:center;gap:6px;max-width:100%;margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;text-align:left}
 .skhd svg{flex:none;width:11px;height:11px;transition:transform .18s ease}

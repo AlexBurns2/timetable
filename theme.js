@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261115b';
+const ASSET_V = '20261115c';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -500,6 +500,17 @@ function fxOn(){
   try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
 }
 
+/* Y2K Futurism changes page with a view transition where the browser has them across pages (Chromium):
+   the page being left stays on screen and the new one is wiped on over it (fx.js, y2k.css). Both pages
+   have to ask for it, so the rule is kept in step with the look. */
+const VT_OK = typeof window !== 'undefined' && 'CSSViewTransitionRule' in window;
+function vtOptIn(want){
+  try {
+    let el = document.getElementById('tt-vt');
+    if (want && VT_OK && !el){ el = document.createElement('style'); el.id = 'tt-vt'; el.textContent = '@view-transition{navigation:auto}'; (document.head || document.documentElement).appendChild(el); }
+    else if ((!want || !VT_OK) && el) el.remove();
+  } catch {}
+}
 function apply(state){
   const st = paint(state);
   try { dispatchEvent(new CustomEvent('tt:look')); } catch {}
@@ -514,6 +525,7 @@ function paint(state){
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-pg', PG);
   root.setAttribute('data-fx', fxOn() ? 'on' : 'off');
+  vtOptIn(st.skin === 'y2k' && fxOn());
   const ic = iconsFor(st);
   root.setAttribute('data-tileicons', ic.colour);   // icons: a colour each (tile) or the theme's (accent)
   root.setAttribute('data-gameicons', ic.style);    // icons or emoji
@@ -677,7 +689,7 @@ function useThemeCode(text){
    runs once a code has changed the theme (to redraw the custom controls). */
 function codeBox(el, after){
   if (!el) return;
-  const DEF = 'A custom theme as a short code. Copy yours to share it, or enter one you were given.';
+  const DEF = 'Share your theme, or use someone else’s.';
   el.innerHTML = '<div class="tcbtns"><button class="btn" type="button" data-a="copy">Copy my theme’s code</button>' +
     '<button class="btn" type="button" data-a="enter">Enter a code</button></div>' +
     '<div class="tcin" hidden><input type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste a theme code" aria-label="Theme code">' +
@@ -712,31 +724,56 @@ function codeBox(el, after){
   q('[data-a="use"]').onclick = use;
   inp.addEventListener('keydown', ev => { if (ev.key === 'Enter'){ ev.preventDefault(); use(); } });
 }
-/* fxButtons: the Animation switch (a .modes holder with data-v on / off buttons, and a .hint after it) */
+/* lookRow: the first row of Settings, two switches side by side: Dark mode and Animation, with one
+   short hint under them. after(): the page redraws what it keeps of its own (index.html holds its own
+   copy of the mode). A theme with one palette shows Dark mode set and greyed. */
+function lookRow(el, after){
+  if (!el) return;
+  if (!el.querySelector('.swrow')){
+    el.innerHTML = '<div class="swrow"><button type="button" class="tsw" role="switch" data-k="dark"><span>Dark mode</span><i></i></button>' +
+      '<button type="button" class="tsw" role="switch" data-k="fx"><span>Animation</span><i></i></button></div><div class="hint swhint"></div>';
+    el.querySelector('[data-k="dark"]').onclick = () => {
+      const st = readState(), sk = SKINS.find(x => x.id === st.skin) || {};
+      if (sk.both === false) return;
+      set(LS.mode, st.mode === 'dark' ? 'light' : 'dark'); apply(); lookRow(el); if (after) after();
+    };
+    el.querySelector('[data-k="fx"]').onclick = () => {
+      if (get(LS.motion, 'normal') === 'reduced') return;
+      set('tt.fx', fxOn() ? 'off' : 'on'); apply(); lookRow(el); if (after) after();
+    };
+  }
+  const st = readState(), sk = SKINS.find(x => x.id === st.skin) || {}, fixed = sk.both === false, reduced = get(LS.motion, 'normal') === 'reduced';
+  const d = el.querySelector('[data-k="dark"]'), f = el.querySelector('[data-k="fx"]');
+  d.setAttribute('aria-checked', String(fixed ? document.documentElement.style.colorScheme === 'dark' : st.mode === 'dark'));
+  d.setAttribute('aria-disabled', String(fixed)); d.title = fixed ? 'This theme has one palette' : '';
+  f.setAttribute('aria-checked', String(fxOn())); f.setAttribute('aria-disabled', String(reduced));
+  el.querySelector('.swhint').textContent = reduced ? 'Animation is off while Reduce motion is on.' : fixed ? 'This theme has one palette. Animation off saves battery.' : 'Animation off saves battery.';
+}
+/* fxButtons: the old On / Off pair (a .modes holder with data-v buttons). Nothing calls it now; kept so an old page can't break. */
 function fxButtons(el, hint){
   if (!el) return;
-  const paint = () => {
-    const on = fxOn(), reduced = get(LS.motion, 'normal') === 'reduced';
-    [...el.children].forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === 'on') === on)));
-    if (hint) hint.textContent = reduced ? 'Off while Reduce motion is on (Accessibility).' : 'Moving backgrounds and page transitions. Off uses less battery.';
-  };
+  const paint = () => { [...el.children].forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === 'on') === fxOn()))); if (hint) hint.textContent = 'Animation off saves battery.'; };
   [...el.children].forEach(b => b.onclick = () => { set('tt.fx', b.dataset.v); apply(); paint(); });
   paint();
 }
-/* origBox: Settings → Originals. The themes as they were before they were
-   rebuilt, in a box of their own under Animation: a tile each (its two main
-   colours and its name). With one on, a button leads back to the theme that
-   was on before it. after(): redraw the dialog. */
+/* origBox: Settings → Original themes. The themes as they were before they were rebuilt, behind one
+   row under Animation that opens to a tile each (its two main colours and its name). Open while one of
+   them is on, with a button back to the theme that was on before it. after(): redraw the dialog. */
 const ORIG_SW = { 'o-paper':['#f7f3e8', '#c2571f'], 'o-swiss':['#ffffff', '#e8112d'], 'o-brutal':['#ffe94a', '#0047ff'], 'o-scifi':['#04070d', '#00e5ff'],
                   'o-terminal':['#05080a', '#39ff9e'], 'o-blueprint':['#07223d', '#7ff0ff'], newsprint:['#f4f1e8', '#8c1c13'], retro:['#008080', '#d4d0c8'] };
+let origOpen = null;                                 // null: open only while an original is on
 function origBox(el, after){
   if (!el) return;
   const cur = readState().skin, legacy = SKINS.filter(s => s.legacy), on = legacy.find(s => s.id === cur);
+  const open = origOpen === null ? !!on : origOpen;
   const prevId = get('tt.skin_prev', ''), prev = SKINS.find(s => s.id === prevId && !s.legacy) || SKINS.find(s => s.id === cur.replace(/^o-/, '') && !s.legacy) || SKINS[0];
-  el.innerHTML = '<div class="orighd"><b>Originals</b><span>' + (on ? 'You’re using the original ' + on.name + ', exactly as it was.' : 'The themes as they were before the rebuild.') + '</span></div>' +
-    '<div class="origgrid">' + legacy.map(s => { const c = ORIG_SW[s.id] || ['#888', '#444'];
+  el.classList.toggle('open', open);
+  el.innerHTML = '<button type="button" class="orighd" aria-expanded="' + open + '"><b>Original themes</b><span>' + (on ? on.name + ', as it was' : 'As they were before the rebuild') + '</span>' +
+      '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" d="M96 48l80 80-80 80"/></svg></button>' +
+    (open ? '<div class="origgrid">' + legacy.map(s => { const c = ORIG_SW[s.id] || ['#888', '#444'];
       return '<button type="button" class="origtile" data-o="' + s.id + '" aria-pressed="' + (s.id === cur) + '"><i style="background:linear-gradient(135deg,' + c[0] + ' 0 58%,' + c[1] + ' 58%)"></i><span>' + s.name + '</span></button>'; }).join('') + '</div>' +
-    (on ? '<button type="button" class="btn origback" data-o="' + prev.id + '">Back to ' + prev.name + '</button>' : '');
+      (on ? '<button type="button" class="btn origback" data-o="' + prev.id + '">Back to ' + prev.name + '</button>' : '') : '');
+  el.querySelector('.orighd').onclick = () => { origOpen = !open; origBox(el, after); };
   el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
     if (!on) set('tt.skin_prev', cur);                        // where "Back" leads
     set(LS.skin, b.dataset.o); apply(); if (after) after(); });
@@ -752,9 +789,9 @@ function skinFold(field){
     lab.innerHTML = '<button type="button" class="skhd"><span>Appearance</span>' +
       '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" d="M208 96l-80 80-80-80"/></svg><em class="sknow"></em></button>';
     hd = lab.querySelector('.skhd');
-    hd.onclick = ev => { ev.preventDefault(); set('tt.skinsfold', get('tt.skinsfold', 0) ? 0 : 1); skinFold(field); };
+    hd.onclick = ev => { ev.preventDefault(); set('tt.skinsfold', hd.getAttribute('aria-expanded') === 'true' ? 1 : 0); skinFold(field); };
   }
-  const folded = !!get('tt.skinsfold', 0), cur = SKINS.find(s => s.id === readState().skin);
+  const folded = !!get('tt.skinsfold', localStorage.getItem(LS.skin) !== null ? 1 : 0), cur = SKINS.find(s => s.id === readState().skin);      /* folded unless asked otherwise, once a theme has been picked */
   hd.setAttribute('aria-expanded', String(!folded)); hd.title = folded ? 'Show the themes' : 'Hide the themes';
   grid.hidden = folded;
   hd.querySelector('.sknow').textContent = cur ? cur.name + (cur.legacy ? ' (original)' : '') : '';
@@ -815,10 +852,15 @@ apply();
    is seamless; otherwise in its own time. */
 (function(){
   const src = '/fx.js?v=' + ASSET_V, cs = document.currentScript, root = document.documentElement;
-  if (nav && fxOn() && document.readyState === 'loading' && cs && !cs.async && !cs.defer){
+  const sync = document.readyState === 'loading' && cs && !cs.async && !cs.defer;
+  if (nav && nav.vt && document.getElementById('tt-vt') && sync){
+    document.write('<script src="' + src + '"><\/script>');      // a view transition shows the way in: nothing to hide
+  } else if (nav && fxOn() && sync){
     root.classList.add('fx-in');
     setTimeout(() => root.classList.remove('fx-in'), 1600);      // should fx.js never arrive, the page still shows
     document.write('<script src="' + src + '"><\/script>');
+  } else if (document.getElementById('tt-vt') && sync){
+    document.write('<script src="' + src + '"><\/script>');      // (back and forward get the view transition too, so fx.js must be here for it)
   } else {
     const sc = document.createElement('script'); sc.src = src; sc.async = true;
     (document.head || root).appendChild(sc);
@@ -1044,7 +1086,7 @@ function newsSeen(key){
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
-window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, origBox, skinFold, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
+window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,

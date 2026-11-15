@@ -156,20 +156,27 @@ const GAMES = [
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
   { id:'oddone', cat:'Timetable', ico:'🧠', name:'Odd One Out', blurb:'Three share a class of yours, one doesn’t' },
-  { id:'hkmj',   cat:'Arcade', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2, mp:true },
-  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen, Practice and Versus', w:2, mp:true },
-  { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat the dot, don’t bite yourself. Solo or online', mp:true },
+  /* Multiplayer: a lobby (mp.js) that stays together across games; each card opens it with that game picked */
+  { id:'mp',        cat:'Multiplayer', ico:'👥', name:'Lobby', blurb:'Make a lobby or join one. Switch games without starting over', w:2 },
+  { id:'mp-tetris', cat:'Multiplayer', ico:'🟦', name:'Tetris', blurb:'Send garbage, last one standing' },
+  { id:'mp-snake',  cat:'Multiplayer', ico:'🐍', name:'Snake', blurb:'Up to six snakes in one arena' },
+  { id:'mp-relay',  cat:'Multiplayer', ico:'✏️', name:'Sketch', blurb:'Write, draw, guess, and watch it drift' },
+  { id:'mp-chess',  cat:'Multiplayer', ico:'♟️', name:'Chess', blurb:'Two play, the lobby watches' },
+  { id:'hkmj',   cat:'Multiplayer', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2 },
+  { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
+  { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat, grow, don’t crash' },
   { id:'g2048',  cat:'Arcade', ico:'🧩', name:'2048', blurb:'Slide and merge to the big number' },
   { id:'memory', cat:'Arcade', ico:'🃏', name:'Memory', blurb:'Match every pair in the fewest moves' },
   { id:'mines',  cat:'Arcade', ico:'💣', name:'Minesweeper', blurb:'Clear the board, flag the mines' },
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' },
-  { id:'chess',  cat:'Arcade', ico:'♟️', name:'Chess', blurb:'Play the bot from Easy to Hard, or a friend online', mp:true }
+  { id:'chess',  cat:'Arcade', ico:'♟️', name:'Chess', blurb:'Play the bot from Easy to Hard, or a friend online' }
 ];
 /* The games page in two labelled sections, in order (both layouts use them:
    the gallery and the classic shelves). */
 const SECTIONS = [
   { cat:'Timetable', title:'Play with your year' },
+  { cat:'Multiplayer', title:'Multiplayer' },
   { cat:'Arcade', title:'Arcade' }
 ];
 const classicLayout = () => !!(window.TT && TT.layout && TT.layout() === 'classic');
@@ -1699,12 +1706,8 @@ BUILD.quartets = host => {
    Two modes — Sprint (clear 40 lines; deterministic weekly pieces; best
    time per week) and Zen (survive as long as you can; gravity ramps with
    time; all-time board). tetr.io-style layout, rebindable keys + handling. */
-/* ── online rooms (Tetris versus, Snake online): the lobby ────────────
-   rooms.js, loaded the first time someone opens one, talks to the same
-   online-room database Hong Kong Mahjong uses. The lobby: your name, make a
-   room or type a friend's code, and the host starts. The game is handed
-   { room, players, seed, at, isHost, me, hostId } and calls back() when the
-   round is over, which returns everyone to the lobby for another. */
+/* ── online rooms: rooms.js, loaded the first time the lobby (mp.js) needs it,
+   talks to the same online-room database Hong Kong Mahjong uses. ── */
 let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
@@ -1722,129 +1725,11 @@ function playName(){
   return e ? cap(e.split('@')[0].split('.')[0].replace(/\d+$/, '')) : '';
 }
 const typing = e => !!(e && e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
-function mpLobby(box, o){
-  let room = null, code = '', isHost = false, busy = false, inMatch = false, offs = [], closed = false;
-  let watching = false, isPub = false, pub = null, pubLoad = null, myName = '', roundMine = false;
-  const nameOf = p => (p && p.presence && p.presence.n) || 'Player';
-  const players = () => room.peers().filter(p => !p.presence.w).sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0));
-  const unwire = () => { offs.forEach(f => { try { f(); } catch {} }); offs = []; };
-  async function leave(){ unwire(); inMatch = false; watching = false; const r = room; room = null; announce(); if (r) await r.leave().catch(() => {}); }
-  /* the public list: everyone on the menu sees it; a public host keeps its row up to date */
-  function openPub(){
-    return pubLoad || (pubLoad = loadRooms().then(Rm => Rm.lobby(o.game)).then(p => {
-      if (closed){ p.leave(); return; }
-      pub = p; pub.onPeers(list); announce();
-    }).catch(() => { pubLoad = null; if ($('mppub')) $('mppub').innerHTML = '<p class="mpmsg">Couldn’t load the public rooms.</p>'; }));
-  }
-  function announce(){
-    if (!pub) return;
-    const on = room && isHost && isPub;
-    pub.presence(on ? { code, n: myName, players: players().length, max: o.max, playing: inMatch ? 1 : 0 } : { code: '' }).catch(() => {});
-  }
-  function list(){
-    const el = $('mppub'); if (!el || !pub) return;
-    const rows = pub.peers().filter(p => !p.isMe && p.presence.code);
-    el.innerHTML = rows.length ? '<ul class="mplist chgames">' + rows.map(p => { const x = p.presence, full = x.players >= (x.max || o.max);
-      return '<li><span>' + esc(Rooms.cleanName(x.n)) + '’s room<small>' + (x.players | 0) + '/' + (x.max || o.max) + ' players · ' + (x.playing ? 'playing' : full ? 'full' : 'waiting') + '</small></span>' +
-        '<span class="mpbtns">' + (x.playing || full ? '' : '<button class="btn primary" type="button" data-code="' + esc(x.code) + '">Join</button>') +
-        '<button class="btn" type="button" data-code="' + esc(x.code) + '" data-watch="1">Watch</button></span></li>'; }).join('') + '</ul>'
-      : '<p class="mpmsg">No public rooms right now.</p>';
-    el.querySelectorAll('[data-code]').forEach(b => b.onclick = () => joinCode(b.dataset.code, !!b.dataset.watch));
-  }
-  let joinCode = () => {};
-  function menu(msg){
-    if (closed) return;
-    inMatch = false;
-    box.innerHTML = '<div class="mpbox">' +
-      '<label class="mpname">Your name<input id="mpn" maxlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore value="' + esc(playName()) + '"></label>' +
-      '<div class="mprow"><button class="btn primary" type="button" id="mpmake">Make a room</button>' +
-        '<label class="chpub"><input type="checkbox" id="mppubin"' + (TT.get('tt.mpPub', true) ? ' checked' : '') + '> Public</label>' +
-        '<span class="mpor">or</span>' +
-        '<input id="mpcode" maxlength="5" placeholder="Code" autocomplete="off" data-lpignore="true" data-1p-ignore autocapitalize="characters" spellcheck="false" aria-label="Room code">' +
-        '<button class="btn" type="button" id="mpjoin">Join</button><button class="btn" type="button" id="mpwatch">Watch</button></div>' +
-      '<p class="mpmsg" id="mpmsg" role="status">' + esc(msg || 'Up to ' + o.max + ' players. Public rooms show up below for anyone to join or watch; private ones need the code.') + '</p>' +
-      '<div class="chlist" id="mppub">' + LD('Finding rooms…', '', { sm:true }) + '</div></div>';
-    const name = () => { const n = $('mpn').value.trim().slice(0, 16); if (n) TT.set('tt.mpname', n); return myName = n || 'Player'; };
-    const go = async fn => {
-      if (busy) return; busy = true; $('mpmsg').textContent = 'Connecting…';
-      try { const Rm = await loadRooms(); const r = await fn(Rm, name()); if (closed){ r.room.leave(); return; } room = r.room; code = r.code; wire(); lobby(); announce();
-        const h = room.peers().find(p => p.presence.h);
-        if (watching && h && h.presence.playing && Array.isArray(h.presence.pl)) enter({ players: h.presence.pl, at: h.presence.at }, h.id); }
-      catch (e){ if ($('mpmsg')) $('mpmsg').textContent = e.message || 'Couldn’t connect.'; }
-      finally { busy = false; }
-    };
-    joinCode = (c, w) => go((Rm, n) => { isHost = false; watching = w; return Rm.join(o.game, c, n, w); });
-    $('mppubin').onchange = () => TT.set('tt.mpPub', $('mppubin').checked);
-    $('mpmake').onclick = () => go((Rm, n) => { isHost = true; watching = false; isPub = $('mppubin').checked; return Rm.host(o.game, n, o.max); });
-    $('mpjoin').onclick = () => joinCode($('mpcode').value, false);
-    $('mpwatch').onclick = () => joinCode($('mpcode').value, true);
-    $('mpcode').onkeydown = e => { if (e.key === 'Enter') $('mpjoin').click(); };
-    openPub(); list();
-  }
-  function lobby(){
-    if (!room || closed) return menu();
-    const peers = room.peers().slice().sort((a, b) => (b.presence.h ? 1 : 0) - (a.presence.h ? 1 : 0) || (a.presence.w ? 1 : 0) - (b.presence.w ? 1 : 0));
-    const n = Math.min(players().length, o.max);
-    box.innerHTML = '<div class="mpbox"><div class="mphead"><div><span class="mplabel">' + (isHost ? (isPub ? 'Public' : 'Private') + ' room' : 'Room code') + '</span><b class="mpcode">' + esc(code) + '</b></div>' +
-        '<span class="mpbtns"><button class="btn" type="button" id="mpcopy">Copy code</button><button class="btn" type="button" id="mpleave">Leave</button></span></div>' +
-      '<ul class="mplist">' + peers.map(p => '<li' + (p.isMe ? ' class="me"' : '') + '>' + esc(nameOf(p)) +
-        (p.presence.h ? '<span>host</span>' : '') + (p.presence.w ? '<span>watching</span>' : '') + (p.isMe ? '<span>you</span>' : '') + '</li>').join('') + '</ul>' +
-      (isHost ? '<button class="btn primary" type="button" id="mpstart"' + (n < 2 ? ' disabled' : '') + '>' + (n < 2 ? 'Waiting for someone to join…' : 'Start with ' + n + ' players') + '</button>'
-              : '<p class="mpmsg">' + (watching ? 'Watching. The next round shows here when the host starts it.' : 'Waiting for the host to start…') + '</p>') + '</div>';
-    $('mpcopy').onclick = () => { try { navigator.clipboard.writeText(code); $('mpcopy').textContent = 'Copied'; } catch {} };
-    $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
-    if (isHost && $('mpstart')) $('mpstart').onclick = start;
-  }
-  async function start(){
-    const ps = players().slice(0, o.max);
-    if (ps.length < 2) return;
-    const pl = ps.map(p => ({ id: p.id, n: nameOf(p) })), at = room.now() + 3500;
-    await room.presence({ playing: 1, pl, at });      // pl: so someone who comes to watch mid-round knows who's playing
-    room.emit('start', { players: pl, seed: (Math.random() * 4294967296) >>> 0, at });
-  }
-  /* a round starts (or is already on, for a watcher who just came in) */
-  function enter(d, hostId){
-    const mine = roundMine = d.players.some(p => p.id === room.id);
-    inMatch = true;
-    if (isHost) announce();
-    if (!mine && !watching){ box.innerHTML = '<div class="mpbox"><p class="mpmsg">A round is on. You’ll be in the next one.</p></div>'; return; }
-    box.innerHTML = '<div class="mpbox mpon"><span>' + (watching ? 'Watching room' : 'Room') + ' <b>' + esc(code) + '</b> · ' + d.players.map(p => esc(p.n)).join(', ') + '</span>' +
-      '<button class="btn" type="button" id="mpleave">Leave</button></div>';
-    $('mpleave').onclick = () => { leave().then(() => menu()); if (o.onLeft) o.onLeft(); };
-    o.onStart({ room, players: d.players.map(p => ({ id: String(p.id), n: Rooms.cleanName(p.n) })), seed: d.seed >>> 0,
-                at: +d.at || room.now(), isHost, me: room.id, hostId, watch: !mine });
-  }
-  function wire(){
-    unwire();
-    offs.push(room.onPeers(peers => {
-      const h = peers.find(p => p.presence.h);
-      if (!h){                    // the host has gone: so has the room
-        leave().then(() => menu('The host left, so the room closed.')); if (o.onLeft) o.onLeft(); return;
-      }
-      if (inMatch){
-        if (o.onPeers) o.onPeers(peers);
-        // not playing this round: back to the room once the host is
-        if (!h.presence.playing && !roundMine) api.back();
-      } else lobby();
-      if (isHost) announce();
-    }));
-    offs.push(room.on('start', m => {
-      const d = m.data || {}, h = room.peers().find(p => p.presence.h);
-      if (!h || h.id !== m.peer || !Array.isArray(d.players)) return;    // only the host starts a round
-      enter(d, m.peer);
-    }));
-  }
-  menu();
-  const api = {
-    back(){ if (!room) return; inMatch = false; if (isHost){ room.presence({ playing: 0 }); announce(); } lobby(); },
-    close(){ closed = true; leave(); if (pub){ pub.leave(); pub = null; } },
-    live: () => !!room
-  };
-  return api;
-}
-
-BUILD.tetris = host => {
-  const COLS = 10, ROWS = 20, CELL = 24, TARGET = 40, LOCK_DELAY = 500, MAX_RESETS = 15, ROT_DAS = 250, ROT_ARR = 130;
+BUILD.tetris = (host, o) => {
+  /* a round of a lobby (mp.js): this build then plays Versus only, on the board and rules the host set */
+  const LB = o && o.lobby, VO = LB ? LB.opts || {} : {};
+  const COLS = LB ? Math.max(6, Math.min(16, +VO.w || 10)) : 10, ROWS = LB ? Math.max(12, Math.min(30, +VO.h || 20)) : 20;
+  const CELL = Math.min(24, Math.floor(480 / ROWS)), TARGET = 40, LOCK_DELAY = 500, MAX_RESETS = 15, ROT_DAS = 250, ROT_ARR = 130;
   const wk = tetrisWeek();
 
   /* ── config: keybinds + handling, persisted (syncs with other settings) ── */
@@ -1863,13 +1748,15 @@ BUILD.tetris = host => {
   }
   let cfg = loadCfg();
   const saveCfg = () => TT.set('tt.tetriscfg', cfg);
-  let mode = TT.get('tt.tetrismode', 'sprint');
+  let mode = LB ? 'versus' : TT.get('tt.tetrismode', 'sprint');
+  if (!LB && mode === 'versus') mode = 'sprint';           // Versus lives in the lobby now
 
-  head(host, 'Tetris', 'Clear lines. Keys are under Controls.', '<div id="twrap"></div>');
+  head(host, 'Tetris', LB ? 'Clear lines to send garbage. Click someone’s board to aim at them.' : 'Clear lines. Keys are under Controls.', '<div id="twrap"></div>');
   document.getElementById('twrap').innerHTML =
     '<div class="tmodes" id="tmodes"></div>' +
     '<div class="mppanel" id="tmp" hidden></div>' +
-    '<div class="tgame">' +
+    '<div class="tvsbar" id="tvsbar" hidden></div>' +
+    '<div class="tvsrow"><div class="tgame">' +
       '<div class="tside tleft">' +
         '<div class="tpanel"><div class="tlabel">Hold</div><canvas id="thold" width="80" height="60"></canvas></div>' +
         '<div class="tstats">' +
@@ -1879,7 +1766,7 @@ BUILD.tetris = host => {
         '</div>' +
       '</div>' +
       '<div class="tboardwrap">' +
-        '<canvas id="tcan" width="240" height="480"></canvas>' +
+        '<canvas id="tcan" width="' + COLS * CELL + '" height="' + ROWS * CELL + '"></canvas>' +
         '<div class="tflash" id="tflash"></div>' +
         '<div class="tover" id="tover"></div>' +
       '</div>' +
@@ -1887,7 +1774,8 @@ BUILD.tetris = host => {
         '<div class="tpanel"><div class="tlabel">Next</div><canvas id="tnext" width="80" height="224"></canvas></div>' +
       '</div>' +
     '</div>' +
-    '<div class="topps" id="topps" hidden></div>' +
+    '<div class="topps" id="topps" hidden></div></div>' +
+    '<div class="tvtgt" id="tvtgt" hidden></div>' +
     (TOUCH ? '<div class="tpad" id="tpad">' +
       '<button type="button" data-act="left" aria-label="Move left">◀</button>' +
       '<button type="button" data-act="right" aria-label="Move right">▶</button>' +
@@ -1978,7 +1866,7 @@ BUILD.tetris = host => {
   let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
   let grounded = false, lockStart = 0, lockResets = 0;
   let rebinding = null, savedState = null, saveFlashTimer = null;
-  let vs = null, lobbyUI = null;   // versus: the round, and the room's lobby
+  let vs = null, lastRot = false;  // versus: the round; whether the piece's last move was a rotation (T-spins)
 
   /* ── piece mechanics (SRS) ── */
   function collides(cells, px, py){
@@ -1998,7 +1886,7 @@ BUILD.tetris = host => {
   /* DAS cut delay: after a rotate/hold while a direction is held, cut the DAS
      charge down to at most cfg.dcd so the piece doesn't slam into the wall. */
   function applyDCD(now){ if (cfg.dcd>0 && moveDir!==0 && now-dasStart>cfg.dcd){ dasStart=now-cfg.dcd; dasCharged=false; } }
-  function tryMove(dx, now){ if (collides(piece.cells, piece.x+dx, piece.y)) return false; piece.x+=dx; updateGround(now,true); return true; }
+  function tryMove(dx, now){ if (collides(piece.cells, piece.x+dx, piece.y)) return false; piece.x+=dx; lastRot=false; updateGround(now,true); return true; }
   function tryRotate(dir, now){
     if (piece.type==='O') return false;                  // O is rotationally symmetric
     const from = piece.rot, to = (from + (dir===2?2:dir) + 4) % 4;
@@ -2007,14 +1895,14 @@ BUILD.tetris = host => {
       : (piece.type==='I' ? KICK_I : KICK_JLSTZ)[from+','+to].map(([kx,ky])=>[kx,-ky]);
     for (const [dx,dy] of kicks){
       if (!collides(m, piece.x+dx, piece.y+dy)){
-        piece.cells=m; piece.x+=dx; piece.y+=dy; piece.rot=to; updateGround(now,true); applyDCD(now); return true;
+        piece.cells=m; piece.x+=dx; piece.y+=dy; piece.rot=to; lastRot=true; updateGround(now,true); applyDCD(now); return true;
       }
     }
     return false;
   }
   function spawnFrom(type, now){
     const cells = SPAWN[type].map(r=>r.slice());
-    piece = { type, cells, rot:0, x:(COLS-cells[0].length)>>1, y:0 };
+    piece = { type, cells, rot:0, x:(COLS-cells[0].length)>>1, y:0 }; lastRot=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
     if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
   }
@@ -2028,13 +1916,14 @@ BUILD.tetris = host => {
   function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); commitLock(now, true); }
   function commitLock(now, hard){
     thud(hard ? 4 : 1.5);
+    const spin = mode==='versus' && piece.type==='T' && lastRot && tCorners() >= 3;
     piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c]=piece.type; }));
     let lines=0;
     for (let r=ROWS-1;r>=0;r--){ if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; } }
     if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800;
       if (lines>=4){ SFX.tetris(); flash('big'); } else { SFX.line(lines); flash('on'); } }
     else SFX.lock();
-    if (mode==='versus' && vs && !vsAfterLock(lines)) return;
+    if (mode==='versus' && vs && !vsAfterLock(lines, spin, lines > 0 && grid.every(r => r.every(c => !c)))) return;
     if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
     holdUsed=false; spawnNext(now); updateStats();
     if (mode==='practice') pushHistory();          // snapshot each placement so it can be undone
@@ -2045,7 +1934,7 @@ BUILD.tetris = host => {
      stay tense and don't drag; Sprint/Zen use the player's chosen gravity. */
   const gravityMs = () => mode==='survival'
     ? Math.max(17, 700 * Math.pow(0.55, (elapsedMs/1000)/12))
-    : mode==='versus' ? Math.max(60, 800 * Math.pow(0.8, elapsedMs/30000))   // everyone the same, a bit faster every 30s
+    : mode==='versus' ? vsGrav()                                             // everyone the same, as the host set it
     : cfg.grav;
   const saveable = () => mode==='zen' || mode==='survival';
   const scored = () => mode==='zen' || mode==='practice';    // score-based (not a clock)
@@ -2140,7 +2029,7 @@ BUILD.tetris = host => {
       piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if(v && piece.y+r>=0) cellPx((piece.x+c)*CELL,(piece.y+r)*CELL,piece.type,ctx); }));
     }
     /* versus: the garbage on its way, as a red bar up the left edge */
-    if (mode==='versus' && vs && vs.pending){ const h=Math.min(ROWS, vs.pending)*CELL; ctx.fillStyle='#e5484d'; ctx.fillRect(0, ROWS*CELL-h, 5, h); }
+    if (mode==='versus' && vs && vsPending()){ const h=Math.min(ROWS, vsPending())*CELL; ctx.fillStyle='#e5484d'; ctx.fillRect(0, ROWS*CELL-h, 5, h); }
     drawNext(); drawHold();
   }
 
@@ -2156,12 +2045,13 @@ BUILD.tetris = host => {
     $$('tgoallabel').textContent = mode==='sprint' ? 'Lines left' : 'Lines';
     $$('ttimelabel').textContent = scored() ? 'Score' : 'Time';
     const bestRow = $$('tbest').closest('.tstat');
-    if (bestRow) bestRow.style.display = mode==='practice' || mode==='versus' ? 'none' : 'flex';   // practice and versus aren't tracked
-    $$('tbestlabel').textContent = mode==='sprint' ? (weeklyOn() ? 'Best (wk)' : 'Best') : (mode==='survival' ? 'Best (all-time)' : 'Best score');
-    $$('tbest').textContent = fmtBest();
+    if (bestRow) bestRow.style.display = mode==='practice' ? 'none' : 'flex';   // practice isn't tracked
+    $$('tbestlabel').textContent = mode==='versus' ? 'Garbage sent' : mode==='sprint' ? (weeklyOn() ? 'Best (wk)' : 'Best') : (mode==='survival' ? 'Best (all-time)' : 'Best score');
+    $$('tbest').textContent = mode==='versus' ? String(vs ? vs.stats.sent : 0) : fmtBest();
     updatePracticeBtns();
   }
   function updateStats(){
+    if (mode==='versus') $$('tbest').textContent = String(vs ? vs.stats.sent : 0);
     $$('ttime').textContent = scored() ? String(score) : fmtHMS(elapsedMs);
     $$('tgoal').textContent = mode==='sprint' ? Math.max(0, TARGET-cleared) : cleared;
   }
@@ -2243,8 +2133,8 @@ BUILD.tetris = host => {
     if (won){ SFX.win(); flash('big'); } else { SFX.lose(); flash('redon'); thud(8, 360); }
     const restart = tap('Restart ('+keyLabel(cfg.keys.restart)+')', 'Tap to restart');
     if (mode==='versus'){                 // knocked out: tell the room (our own echo knocks us out here too)
-      if (vs){ const place = vs.alive.size; vs.room.emit('bd', { g: boardStr() }); vs.room.emit('out', {});
-        showOver('Knocked out', place > 1 ? ordinal(place) + ' place. Watch the others finish.' : ''); }
+      if (vs){ const place = vs.alive.size; vs.room.emit('bd', { g: boardStr(false), p: 0, k: vs.k }); vs.room.emit('out', { k: vs.k });
+        showOver('Knocked out', place > 1 ? ordinal(place) + ' place. The others are on the right.' : ''); }
       renderStatsLabels(); draw(); return;
     }
     if (mode==='sprint'){
@@ -2354,10 +2244,10 @@ BUILD.tetris = host => {
     ['sprint','Sprint','Clear 40 lines as fast as you can. Weekly board.'],
     ['survival','Survival','Endless, and it gets faster. All-time board.'],
     ['zen','Zen','Endless and relaxed. No clock, no leaderboard.'],
-    ['practice','Practice','Undo and redo as much as you like. Nothing is tracked.'],
-    ['versus','Versus','Play friends online. Clearing lines sends them garbage.']
+    ['practice','Practice','Undo and redo as much as you like. Nothing is tracked.']
   ];
   function renderModes(){
+    if (LB){ $$('tmodes').hidden = true; return; }       // a lobby round: Versus, nothing else
     $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+'</button>').join('');
     [...$$('tmodes').querySelectorAll('.tmode')].forEach(b=>b.onclick=()=>{ if (b.dataset.mode===mode) return; mode=b.dataset.mode; TT.set('tt.tetrismode',mode); toReady(); });
   }
@@ -2368,7 +2258,7 @@ BUILD.tetris = host => {
     $$('tstart').textContent='Start'; $$('tpause').textContent='Pause';
     $$('tstart').style.display = $$('tpause').style.display = mode==='versus' ? 'none' : '';
     const titles = { sprint:'Sprint: 40 lines', survival:'Survival: rising speed', zen:'Zen: endless and relaxed', practice:'Practice: undo and redo', versus:'Versus: play friends online' };
-    showOver(titles[mode], mode==='versus' ? 'Make a room above, or join a friend’s' : tap('Press Start or '+keyLabel(cfg.keys.hardDrop), 'Tap to start'));
+    if (mode!=='versus') showOver(titles[mode], tap('Press Start or '+keyLabel(cfg.keys.hardDrop), 'Tap to start'));
     loadLB();
     if (saveable() && TT.myEmail()){          // offer to resume a saved game
       const forMode = mode;
@@ -2383,95 +2273,253 @@ BUILD.tetris = host => {
     }
   }
 
-  /* ── versus: 2 to 4 players online, the same pieces in the same order.
-     Clearing 2/3/4 lines sends 1/2/4 rows of garbage (more for a combo or a
-     clear board) to someone still in; garbage on its way is cancelled by your
-     own clears first, and lands when you place a piece without clearing. The
-     last one standing wins. Each placement sends your board for the little
-     views of everyone else's. ── */
-  const oppCell = () => vs && vs.watch ? 12 : 6;   // a watcher's views are the whole show, so bigger
-  const ordinal = n => n + (n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
-  const boardStr = () => grid.map(r => r.map(c => c ? (c === 'G' ? 'g' : c) : '.').join('')).join('');
+  /* ── versus: a lobby round (mp.js). Everyone gets the same pieces in the same
+     order. Clears send garbage (tetr.io's table: 1/2/4 for a double/triple/
+     quad, 2/4/6 for a T-spin single/double/triple, +1 back-to-back, a combo
+     bonus, +10 for a clear board, times the host's multiplier); garbage on
+     its way is cancelled by your own clears first, and lands (up to the
+     host's limit a piece) when you place a piece without clearing. Who it
+     goes to: by hand (click a board), or Even, Random, Knockouts (the
+     highest stack) or Attackers (whoever has been sending you garbage).
+     Last one standing takes the round; the match is first to the host's
+     number. Knocked out, or watching, the other boards grow to fill the
+     space so you can follow the rest. ── */
+  const VG = { slow:1000, norm:800, fast:300, '20g':0 };
+  const TMODES = [['even', 'Even'], ['kos', 'Knockouts'], ['attackers', 'Attackers'], ['random', 'Random']];
+  const MESS = { clean:0, some:.3, messy:.7 };
+  const ordinal = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+  const pips = (n, ft) => ft > 1 ? '<span class="tpips" aria-label="' + n + ' of ' + ft + ' wins">' + Array.from({ length:ft }, (_, i) => '<i' + (i < n ? ' class="on"' : '') + '></i>').join('') + '</span>' : '';
+  const nameFor = id => { const p = vs && vs.players.find(x => x.id === id) || (LB && LB.players.find(x => x.id === id)); return p ? p.n : 'Player'; };
+  const vsPending = () => vs ? vs.queue.reduce((a, q) => a + q.n, 0) : 0;
+  function vsGrav(){
+    const base = VG[VO.grav] != null ? VG[VO.grav] : 800; if (!base) return 1;      // 20G: straight to the floor
+    const every = VO.ramp === 'off' ? 0 : VO.ramp === 'fast' ? 15000 : 30000;
+    return every ? Math.max(30, base * Math.pow(0.8, elapsedMs / every)) : base;
+  }
+  /* the board as a string (one character a cell), with the falling piece in it when someone is watching */
+  function boardStr(withPiece){
+    const rows = grid.map(r => r.map(c => c ? (c === 'G' ? 'g' : c) : '.'));
+    if (withPiece && piece && phase === 'playing') piece.cells.forEach((row, r) => row.forEach((v, c) => { const y = piece.y + r, x = piece.x + c;
+      if (v && y >= 0 && y < ROWS && x >= 0 && x < COLS) rows[y][x] = piece.type; }));
+    return rows.map(r => r.join('')).join('');
+  }
+  const stackOf = g => { const i = String(g || '').search(/[^.]/); return i < 0 ? 0 : ROWS - Math.floor(i / COLS); };
+  let match = null;
   function vsOpen(){
-    $$('tmp').hidden = false;
-    if (!lobbyUI) lobbyUI = mpLobby($$('tmp'), { game:'tt', max:4, onStart:vsStart, onLeft:vsLeft, onPeers:vsPeers });
+    if (!LB){ mode = 'sprint'; return; }
+    $$('tmp').hidden = true;
+    const R = LB.room, host = () => LB.hostId;
+    match = { ft:Math.max(1, +VO.ft || 1), wins:{}, k:0, over:false, offs:[] };
+    LB.players.forEach(p => match.wins[p.id] = 0);
+    LB.peersFn = vsPeers;
+    LB.leaveFn = () => { if (vs && !vs.watch && vs.alive.has(vs.me)) R.emit('out', { k:vs.k }); };
+    const cur = d => vs && (d || {}).k === vs.k;
+    match.offs.push(R.on('go', m => { const d = m.data || {}; if (m.peer !== host() || match.over || !(d.k > (vs ? vs.k : 0))) return; vsRound(d.k, d.seed >>> 0, +d.at); }));
+    match.offs.push(R.on('atk', m => { const d = m.data || {}, v = vs;
+      if (!cur(d) || m.isMe) return;
+      v.lastAtk.set(m.peer, d.to);                                         // who is aiming at whom, for the little marks
+      if (d.to === v.me){ v.attackers.set(m.peer, Date.now());
+        if (phase === 'playing') v.queue.push({ n:Math.max(0, Math.min(20, d.n | 0)) }); }
+      draw(); markOpps(); }));
+    match.offs.push(R.on('bd', m => { const d = m.data || {}; if (!cur(d) || m.isMe) return; vs.boards.set(m.peer, { g:String(d.g || ''), p:d.p | 0 }); drawOpps(); }));
+    match.offs.push(R.on('tg', m => { const d = m.data || {}; if (!cur(d) || m.isMe) return; vs.lastAtk.set(m.peer, d.t || null); markOpps(); }));
+    match.offs.push(R.on('out', m => { const d = m.data || {}; if (cur(d)) vsKnock(m.peer); }));
+    match.offs.push(R.on('rw', m => { const d = m.data || {}; if (m.peer !== host() || !cur(d) || vs.scored) return; vs.scored = true;
+      if (d.w && match.wins[d.w] != null) match.wins[d.w]++; vsBar(); }));
+    match.offs.push(R.on('mw', m => { const d = m.data || {}; if (m.peer !== host()) return; vsMatchOver(d.w); }));
+    vsRound(1, LB.seed, LB.at);
   }
   function vsClose(){
     const p = $$('tmp'); if (p){ p.hidden = true; p.innerHTML = ''; }
-    if (lobbyUI){ lobbyUI.close(); lobbyUI = null; }
-    vsStop(); renderOpps();
-  }
-  function vsStop(){ if (vs){ vs.offs.forEach(f => { try { f(); } catch {} }); clearTimeout(vs.cd); vs = null; } }
-  function vsLeft(){ vsStop(); renderOpps(); if (mode==='versus'){ phase='ready'; clearInterval(loopId); emptyBoard(); draw(); showOver('Versus: play friends online', 'Make a room above, or join a friend’s'); } }
-  function vsStart(m){
     vsStop();
-    const v = vs = Object.assign({}, m, { alive: new Set(m.players.map(p => p.id)), boards: new Map(), pending: 0, combo: 0, done: false, offs: [], cd: null });
-    v.offs.push(m.room.on('atk', msg => { const d = msg.data || {};
-      if (vs !== v || msg.isMe || d.to !== v.me || phase !== 'playing') return;
-      v.pending = Math.min(24, v.pending + Math.max(0, Math.min(10, d.n | 0))); draw(); }));
-    v.offs.push(m.room.on('bd', msg => { if (vs !== v || msg.isMe) return; v.boards.set(msg.peer, String((msg.data || {}).g || '')); drawOpps(); }));
-    v.offs.push(m.room.on('out', msg => { if (vs === v) vsKnock(msg.peer); }));
+    if (match){ match.offs.forEach(f => { try { f(); } catch {} }); match = null; }
     renderOpps();
-    phase='ready'; clearInterval(loopId); emptyBoard(); renderStatsLabels(); updateStats(); draw();
-    if (v.watch){ showOver('Watching', v.players.map(p => esc(p.n)).join(' · ')); return; }   // their boards are the views beside this one
+  }
+  function vsStop(){ if (vs){ clearTimeout(vs.cd); clearInterval(vs.live); vs = null; } }
+  function vsRound(k, seed, at){
+    vsStop();
+    const here = new Set(LB.room.peers().map(p => p.id));
+    const players = LB.players.filter(p => here.has(p.id) || p.id === LB.me);
+    const watch = LB.watch || !players.some(p => p.id === LB.me);
+    const v = vs = { k, seed, at, room:LB.room, players, me:LB.me, watch, alive:new Set(players.map(p => p.id)), boards:new Map(), queue:[], combo:0, b2b:0, carry:0,
+      done:false, scored:false, cd:null, live:null, target:null, tmode:VO.tgt === 'manual' ? 'even' : (VO.tgt || 'even'), sentTo:{}, attackers:new Map(), lastAtk:new Map(),
+      stats:{ sent:0, pieces:0 } };
+    match.k = k;
+    phase = 'ready'; clearInterval(loopId); emptyBoard(); newRng(); renderStatsLabels(); updateStats();
+    $$('twrap').classList.toggle('tspect', watch); renderOpps(); vsBar(); vsTargets(); draw();
+    /* while anyone is watching (out, or never in), the boards go out a few times a second with the falling piece in them */
+    v.live = setInterval(() => {
+      if (vs !== v || phase !== 'playing' || !v.alive.has(v.me)) return;
+      const watching = v.alive.size < v.players.length || v.room.peers().some(p => !p.presence.w && !v.players.some(x => x.id === p.id));
+      if (watching) v.room.emit('bd', { g:boardStr(true), p:vsPending(), k:v.k });
+    }, 220);
+    const names = () => players.map(p => esc(p.n)).join(' · ');
     const count = () => {
       if (vs !== v) return;
       const left = Math.ceil((v.at - v.room.now()) / 1000);
-      if (left > 0){ showOver(String(left), v.players.map(p => esc(p.n)).join(' · ')); v.cd = setTimeout(count, 150); }
-      else { begin(); toBoard(); }
+      if (left > 0){ if (watch) vsBar(left); else showOver(String(left), (match.ft > 1 ? 'Round ' + k + ' · ' : '') + names()); v.cd = setTimeout(count, 150); }
+      else if (!watch){ begin(); toBoard(); }
+      else vsBar();
     };
     count();
   }
-  function vsPeers(peers){ if (!vs) return; [...vs.alive].forEach(id => { if (!peers.some(p => p.id === id)) vsKnock(id); }); }
+  function vsPeers(peers){
+    if (!vs) return;
+    [...vs.alive].forEach(id => { if (id !== vs.me && !peers.some(p => p.id === id)) vsKnock(id); });
+  }
   function vsKnock(id){
     const v = vs; if (!v || !v.alive.has(id)) return;
-    v.alive.delete(id); drawOpps();
+    v.alive.delete(id); drawOpps(); vsSpect();
     if (v.alive.size > 1 || v.done) return;
     v.done = true;
-    const w = [...v.alive][0], who = w && (v.players.find(p => p.id === w) || {}).n;
-    if (w === v.me){ if (phase === 'playing'){ phase = 'over'; clearInterval(loopId); } SFX.win(); flash('big'); showOver('You win!', 'Last one standing'); }
-    else showOver(who ? esc(who) + ' wins' : 'Round over', 'Back to the room in a moment');
-    setTimeout(() => { if (vs === v && lobbyUI) lobbyUI.back(); }, 3000);
+    const w = [...v.alive][0] || null;
+    if (w === v.me){ if (phase === 'playing'){ phase = 'over'; clearInterval(loopId); } SFX.win(); flash('big'); }
+    const isHost = LB.hostNow();
+    const msg = (w === v.me ? 'You take the round' : w ? esc(nameFor(w)) + ' takes the round' : 'Nobody takes that one');
+    if (!v.watch && v.alive.has(v.me) || w === v.me) showOver(w === v.me ? (match.ft > 1 ? 'Round won!' : 'You win!') : msg, '');
+    vsBar(null, msg);
+    if (!isHost) return;
+    /* the host keeps the score and calls the next round */
+    v.room.emit('rw', { k:v.k, w });
+    setTimeout(() => {
+      if (vs !== v || !match || match.over) return;
+      const lead = Object.entries(match.wins).find(([, n]) => n >= match.ft);
+      if (lead){ v.room.emit('mw', { w:lead[0] }); return; }
+      v.room.emit('go', { k:v.k + 1, seed:(Math.random() * 4294967296) >>> 0, at:v.room.now() + 4200 });
+    }, 2600);
+  }
+  function vsMatchOver(w){
+    if (!match || match.over) return;
+    match.over = true;
+    if (phase === 'playing'){ phase = 'over'; clearInterval(loopId); }
+    const standings = Object.entries(match.wins).sort((a, b) => b[1] - a[1]).map(([id, n]) => esc(nameFor(id)) + ' ' + n).join(' · ');
+    if (w === LB.me){ SFX.win(); flash('big'); }
+    showOver(w === LB.me ? 'You win the match!' : esc(nameFor(w)) + ' wins the match', match.ft > 1 ? standings : '');
+    vsBar(null, (w === LB.me ? 'You win' : esc(nameFor(w)) + ' wins') + (match.ft > 1 ? ' · ' + standings : ''));
+    LB.quick('over');
+    LB.say((w === LB.me ? 'You won' : nameFor(w) + ' won') + ' the Tetris match' + (match.ft > 1 ? ' (' + Object.entries(match.wins).sort((a, b) => b[1] - a[1]).map(([id, n]) => nameFor(id) + ' ' + n).join(', ') + ').' : '.'));
+    if (LB.hostNow()) setTimeout(() => LB.back(), 6000);
+    else LB.back();
+  }
+  /* the line above the boards: the score, and what's happening */
+  function vsBar(count, note){
+    const el = $$('tvsbar'); if (!el || !vs || !match) return;
+    el.hidden = false;
+    el.innerHTML = '<span>' + (match.ft > 1 ? 'First to ' + match.ft + ' · Round ' + vs.k : 'One round') + '</span>' +
+      '<span class="tvsscore">' + vs.players.map(p => '<b class="' + (vs.alive.has(p.id) ? '' : 'out') + (p.id === vs.me ? ' me' : '') + '">' + esc(p.id === vs.me ? 'You' : p.n) + pips(match.wins[p.id] || 0, match.ft) + '</b>').join('') + '</span>' +
+      (count ? '<span class="tvsnote">Starting in ' + count + '…</span>' : note ? '<span class="tvsnote">' + note + '</span>' : vs.watch ? '<span class="tvsnote">Watching</span>' : '');
+  }
+  /* how garbage is aimed: the buttons under the boards (a board clicked overrides them until it's clicked again) */
+  function vsTargets(){
+    const el = $$('tvtgt'); if (!el) return;
+    if (!vs || vs.watch || vs.players.length < 3){ el.hidden = true; el.innerHTML = ''; return; }       // with one opponent there's nothing to choose
+    el.hidden = false;
+    el.innerHTML = '<span>Send garbage to</span>' + TMODES.map(([k, l]) => '<button type="button" class="diffpill" data-tm="' + k + '" aria-pressed="' + (!vs.target && vs.tmode === k) + '">' + l + '</button>').join('') +
+      (vs.target ? '<button type="button" class="diffpill" aria-pressed="true" data-tm="">' + esc(nameFor(vs.target)) + ' ×</button>' : '');
+    el.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { if (b.dataset.tm) vs.tmode = b.dataset.tm; aim(null); });
+  }
+  function aim(id){
+    if (!vs) return;
+    vs.target = id && vs.alive.has(id) && id !== vs.me ? id : null;
+    vs.room.emit('tg', { t:vs.target, k:vs.k });
+    vsTargets(); markOpps();
+  }
+  function pickTarget(){
+    const v = vs, opp = [...v.alive].filter(id => id !== v.me); if (!opp.length) return null;
+    if (v.target && opp.includes(v.target)) return v.target;
+    if (v.tmode === 'random') return opp[(Math.random() * opp.length) | 0];
+    if (v.tmode === 'kos') return opp.slice().sort((a, b) => stackOf((v.boards.get(b) || {}).g) - stackOf((v.boards.get(a) || {}).g))[0];
+    if (v.tmode === 'attackers'){ const now = Date.now(), at = opp.filter(id => now - (v.attackers.get(id) || 0) < 12000); if (at.length) return at[(Math.random() * at.length) | 0]; }
+    return opp.slice().sort((a, b) => (v.sentTo[a] || 0) - (v.sentTo[b] || 0) || Math.random() - .5)[0];        // even: whoever has had least
   }
   function addGarbage(n){
-    const hole = (Math.random() * COLS) | 0; let ok = true;
+    const mess = MESS[VO.mess] != null ? MESS[VO.mess] : .3;
+    let hole = (Math.random() * COLS) | 0, ok = true;
     for (let i = 0; i < n; i++){
+      if (i && Math.random() < mess) hole = (Math.random() * COLS) | 0;
       if (grid[0].some(Boolean)) ok = false;                  // pushed over the top
       grid.shift(); const row = new Array(COLS).fill('G'); row[hole] = null; grid.push(row);
     }
     thud(3);
     return ok;
   }
+  /* the T's three corners: a T locked by a rotation with three of the four corners round its middle filled is a T-spin */
+  function tCorners(){
+    const cx = piece.x + 1, cy = piece.y + 1; let n = 0;
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([dx, dy]) => { const x = cx + dx, y = cy + dy;
+      if (x < 0 || x >= COLS || y >= ROWS || (y >= 0 && grid[y][x])) n++; });
+    return n;
+  }
   /* after each placement: attack, cancel, take garbage, send the board. false: topped out */
-  function vsAfterLock(lines){
-    const v = vs;
+  function vsAfterLock(lines, spin, clearBoard){
+    const v = vs; v.stats.pieces++;
     v.combo = lines ? v.combo + 1 : 0;
-    let atk = lines ? [0, 0, 1, 2, 4][lines] + [0, 0, 1, 1, 2, 2, 3, 3, 4][Math.min(8, v.combo - 1)] : 0;
-    if (lines && grid.every(r => r.every(c => !c))) atk += 6;             // a clear board
-    const cancel = Math.min(atk, v.pending); atk -= cancel; v.pending -= cancel;
-    if (atk > 0){ const opp = [...v.alive].filter(id => id !== v.me);
-      if (opp.length) v.room.emit('atk', { to: opp[(Math.random() * opp.length) | 0], n: atk }); }
-    if (!lines && v.pending > 0){ const n = Math.min(8, v.pending); v.pending -= n; if (!addGarbage(n)){ end(false); return false; } }
-    v.room.emit('bd', { g: boardStr() });
+    let atk = 0;
+    if (lines){
+      const spins = +VO.spin !== 0, hard = lines === 4 || (spins && spin);
+      atk = spins && spin ? [0, 2, 4, 6][Math.min(3, lines)] : [0, 0, 1, 2, 4][lines];
+      if (spins){ if (hard){ if (v.b2b) atk += 1; v.b2b++; } else v.b2b = 0; }
+      atk += [0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5][Math.min(12, v.combo - 1)];
+      if (clearBoard) atk += 10;
+      if (spin && spins) flash('big');
+      atk = atk * (+VO.gmul || 1) + v.carry;
+      const whole = Math.floor(atk); v.carry = atk - whole; atk = whole;
+    }
+    let left = atk;
+    while (left > 0 && v.queue.length){ const q = v.queue[0], c = Math.min(left, q.n); q.n -= c; left -= c; if (!q.n) v.queue.shift(); }
+    if (left > 0){ const to = pickTarget();
+      if (to){ v.room.emit('atk', { to, n:left, k:v.k }); v.sentTo[to] = (v.sentTo[to] || 0) + left; v.stats.sent += left; v.lastAtk.set(v.me, to); markOpps(); } }
+    if (!lines && v.queue.length){
+      let room = +VO.gcap || 8;
+      while (room > 0 && v.queue.length){ const q = v.queue[0], n = Math.min(room, q.n); q.n -= n; room -= n; if (!q.n) v.queue.shift();
+        if (!addGarbage(n)){ end(false); return false; } }
+    }
+    v.room.emit('bd', { g:boardStr(false), p:vsPending(), k:v.k });
     return true;
+  }
+  /* knocked out or watching: the other boards take the space */
+  function vsSpect(){
+    const w = $$('twrap'); if (!w || !vs) return;
+    const on = !!(vs.watch || !vs.alive.has(vs.me));
+    if (w.classList.contains('tspect') !== on){ w.classList.toggle('tspect', on); renderOpps(); }
+  }
+  function oppCell(n, spect){
+    const fit = Math.floor(24 * 20 / ROWS);                 // the same height as yours at most
+    if (spect) return Math.min(fit, n <= 1 ? 24 : n <= 2 ? 22 : n <= 4 ? 16 : 12);
+    return Math.min(fit, n <= 1 ? 20 : n <= 2 ? 16 : n <= 3 ? 12 : 10);
   }
   function renderOpps(){
     const el = $$('topps'); if (!el) return;
     if (!vs){ el.hidden = true; el.innerHTML = ''; return; }
-    el.hidden = false; el.classList.toggle('watch', !!vs.watch);
-    el.innerHTML = vs.players.filter(p => p.id !== vs.me).map(p => '<div class="topp" data-id="' + esc(p.id) + '">' +
-      '<canvas width="' + COLS * oppCell() + '" height="' + ROWS * oppCell() + '"></canvas><span>' + esc(p.n) + '</span></div>').join('');
-    drawOpps();
+    const others = vs.players.filter(p => p.id !== vs.me), spect = $$('twrap').classList.contains('tspect'), cell = oppCell(others.length, spect);
+    el.hidden = false; el.className = 'topps v2' + (spect ? ' spect' : '');
+    el.innerHTML = others.map(p => '<button type="button" class="topp" data-id="' + esc(p.id) + '" aria-label="' + esc(p.n) + (vs.watch ? '' : ', send garbage here') + '">' +
+      '<span class="toppbar"><b>' + esc(p.n) + '</b>' + pips((match && match.wins[p.id]) || 0, match ? match.ft : 1) + '</span>' +
+      '<span class="toppb"><canvas width="' + COLS * cell + '" height="' + ROWS * cell + '"></canvas><i class="tin"></i><span class="tko">KO</span></span>' +
+      '<span class="toppf"><em class="taim">Your target</em><em class="tatk">Aiming at you</em></span></button>').join('');
+    el.querySelectorAll('.topp').forEach(b => b.onclick = () => { if (vs && !vs.watch && vs.alive.has(vs.me)) aim(vs.target === b.dataset.id ? null : b.dataset.id); });
+    drawOpps(); markOpps();
   }
   function drawOpps(){
     if (!vs) return;
+    const COLC = { g:COLORS.G };
     $$('topps').querySelectorAll('.topp').forEach(d => {
-      const id = d.dataset.id, g = vs.boards.get(id) || '', c = d.querySelector('canvas').getContext('2d'), OPP_CELL = oppCell();
-      c.clearRect(0, 0, COLS * OPP_CELL, ROWS * OPP_CELL);
-      for (let i = 0; i < g.length && i < COLS * ROWS; i++){ const ch = g[i]; if (ch === '.') continue;
-        c.fillStyle = ch === 'g' ? COLORS.G : (COLORS[ch] || '#888'); c.fillRect((i % COLS) * OPP_CELL, ((i / COLS) | 0) * OPP_CELL, OPP_CELL - 1, OPP_CELL - 1); }
+      const id = d.dataset.id, b = vs.boards.get(id) || { g:'', p:0 }, cv = d.querySelector('canvas'), c = cv.getContext('2d'), cell = cv.width / COLS;
+      c.clearRect(0, 0, cv.width, cv.height);
+      c.fillStyle = 'rgba(128,128,128,.12)'; c.fillRect(0, 0, cv.width, cv.height);
+      for (let i = 0; i < b.g.length && i < COLS * ROWS; i++){ const ch = b.g[i]; if (ch === '.') continue;
+        c.fillStyle = COLC[ch] || COLORS[ch] || '#888'; c.fillRect((i % COLS) * cell, ((i / COLS) | 0) * cell, cell - 1, cell - 1); }
+      const tin = d.querySelector('.tin'); if (tin) tin.style.height = Math.min(100, b.p / ROWS * 100) + '%';
       d.classList.toggle('out', !vs.alive.has(id));
     });
+  }
+  function markOpps(){
+    if (!vs) return;
+    const mine = vs.target || vs.lastAtk.get(vs.me);
+    $$('topps').querySelectorAll('.topp').forEach(d => { const id = d.dataset.id;
+      d.classList.toggle('aimed', !!vs.target && vs.target === id);
+      d.classList.toggle('sent', !vs.target && mine === id);
+      d.classList.toggle('atme', vs.lastAtk.get(id) === vs.me && vs.alive.has(id)); });
   }
 
   /* ── controls / config panel ── */
@@ -3027,194 +3075,420 @@ BUILD.memory = host => {
 };
 
 /* ── Snake ─────────────────────────────────────────────────────── */
-BUILD.snake = host => {
-  head(host, 'Snake', tap('Arrow keys or WASD. R to restart.', 'Swipe or use the arrows.'),
-       '<div class="diffbar snmodes" id="snmodes"><button type="button" class="diffpill" data-m="solo" aria-pressed="true">Solo</button>' +
-         '<button type="button" class="diffpill" data-m="online" aria-pressed="false">Online</button></div>' +
-       '<div class="mppanel" id="snmp" hidden></div>' +
-       '<canvas id="cv" width="320" height="320"></canvas>' +
-       (TOUCH ? '<div class="tpad dpad" id="snpad">' +
-         '<button type="button" data-act="u" aria-label="Up">▲</button>' +
-         '<button type="button" data-act="l" aria-label="Left">◀</button>' +
-         '<button type="button" data-act="d" aria-label="Down">▼</button>' +
-         '<button type="button" data-act="r" aria-label="Right">▶</button></div>' : ''));
-  const ctx = $('cv').getContext('2d'), N = 16, S = 20;
-  let snake = [{x:8,y:8}], dir = {x:1,y:0}, next = dir,
-      food = {x:4,y:4}, score = 0, dead = false, recorded = false;
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
-  const steer = m => {
-    if (online){ mtSteer(m); return; }
-    if (m[0] === -dir.x && m[1] === -dir.y) return;   /* no instant reverse */
-    next = {x:m[0], y:m[1]};
-  };
-  const key = e => {
+/* ── Snake ─────────────────────────────────────────────────────────
+   Solo here; the arena (several snakes, one board) is a lobby game
+   (mp.js), and this build plays it when it is handed a lobby round.
+
+   The rules move in steps; the drawing doesn't. Every frame the snake is
+   drawn part of the way from where it was to where it is going, so it
+   glides from cell to cell: a thick rounded line through the middle of
+   each cell, its head sliding forward and its tail drawing in behind,
+   eyes looking where it's headed. In the arena the host runs the rules
+   and sends the board out each step; everyone draws the last two steps
+   blended the same way, which costs one step of delay and looks smooth.
+
+   Solo settings: speed, board size, fruit, wrap-around or walls. Only the
+   Classic settings (normal speed that rises, medium board, one fruit,
+   wrap-around: the old game) count for the leaderboard.
+   Arena (host's settings, mp.js): board size, speed, fruit, walls, power-
+   ups (speed, ghost, shield, golden fruit), starting length, obstacles,
+   first to N rounds. ── */
+const SNK = (() => {
+  const DIRS = { u:[0, -1], d:[0, 1], l:[-1, 0], r:[1, 0] };
+  const keyDir = k => ({ arrowup:'u', w:'u', arrowdown:'d', s:'d', arrowleft:'l', a:'l', arrowright:'r', d:'r' })[k];
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const shade = (hex, k) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim()); if (!m) return hex;
+    const v = parseInt(m[1], 16), f = c => Math.max(0, Math.min(255, Math.round(c * k))); return 'rgb(' + f(v >> 16) + ',' + f((v >> 8) & 255) + ',' + f(v & 255) + ')'; };
+  /* the colours, read from the theme each time the board is drawn fresh */
+  function look(){
+    const dark = document.documentElement.style.colorScheme === 'dark';
+    return { a:css('--panel-2') || (dark ? '#1b1d22' : '#f2f2f2'), b:dark ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.04)', line:css('--line') || '#888',
+             accent:/^#[0-9a-f]{6}$/i.test(css('--accent')) ? css('--accent') : '#4e7cf6', rock:dark ? '#4a4f5a' : '#9aa0aa', dark };
+  }
+  /* one snake: a fat line through its cells, part of the way between the last step and this one */
+  function drawSnake(x, s, a, cell, W, H, wrap, lk){
+    const b = s.body; if (!b.length) return;
+    /* the path in unwrapped cells, from the head back (a step across an edge becomes a step off it): the head part of
+       the way from the cell behind it, the corners exact, and the tail part of the way from the cell it is leaving */
+    const pts = [];
+    if (b.length > 1){
+      pts.push({ x:b[1].x + wrapD(b[0].x - b[1].x, W) * a, y:b[1].y + wrapD(b[0].y - b[1].y, H) * a });
+      let px = b[1].x, py = b[1].y; pts.push({ x:px, y:py });
+      for (let i = 2; i < b.length; i++){ px += wrapD(b[i].x - b[i - 1].x, W); py += wrapD(b[i].y - b[i - 1].y, H); pts.push({ x:px, y:py }); }
+      if (s.tail){ const l = pts[pts.length - 1], dx = wrapD(s.tail.x - b[b.length - 1].x, W), dy = wrapD(s.tail.y - b[b.length - 1].y, H);
+        pts.push({ x:l.x + dx * (1 - a), y:l.y + dy * (1 - a) }); }
+    } else pts.push({ x:b[0].x, y:b[0].y });
+    const w = cell * .82, col = s.col, offs = wrap ? [-1, 0, 1] : [0];
+    x.save(); x.globalAlpha = s.alive ? (s.ghost ? .5 : 1) : Math.max(0, .55 - (s.deadFor || 0) * .5);
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    for (const ox of offs) for (const oy of offs){
+      const tx = ox * W * cell, ty = oy * H * cell;
+      const path = () => { x.beginPath(); pts.forEach((p, i) => { const X = (p.x + .5) * cell + tx, Y = (p.y + .5) * cell + ty; i ? x.lineTo(X, Y) : x.moveTo(X, Y); }); if (pts.length === 1) x.lineTo((pts[0].x + .5) * cell + tx + .01, (pts[0].y + .5) * cell + ty); };
+      path(); x.strokeStyle = shade(col, .72); x.lineWidth = w; x.stroke();
+      path(); x.strokeStyle = col; x.lineWidth = w * .8; x.stroke();
+      path(); x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = w * .28; x.translate(-w * .12, -w * .12); x.stroke(); x.translate(w * .12, w * .12);
+      if (s.shield){ x.beginPath(); x.arc((pts[0].x + .5) * cell + tx, (pts[0].y + .5) * cell + ty, w * .85, 0, 6.2832); x.strokeStyle = 'rgba(80,170,255,.8)'; x.lineWidth = 2; x.stroke(); }
+      /* eyes, looking where it's going */
+      const hx = (pts[0].x + .5) * cell + tx, hy = (pts[0].y + .5) * cell + ty, d = s.dir || { x:1, y:0 }, nx = -d.y, ny = d.x, e = w * .19;
+      [-1, 1].forEach(k => { const ex = hx + d.x * w * .12 + nx * k * w * .26, ey = hy + d.y * w * .12 + ny * k * w * .26;
+        x.beginPath(); x.arc(ex, ey, e, 0, 6.2832); x.fillStyle = '#fff'; x.fill();
+        x.beginPath(); x.arc(ex + d.x * e * .35, ey + d.y * e * .35, e * .55, 0, 6.2832); x.fillStyle = s.alive ? '#111' : '#777'; x.fill(); });
+    }
+    x.restore();
+  }
+  const wrapD = (d, n) => d > 1 ? d - n : d < -1 ? d + n : d;
+  function drawFruit(x, f, cell, t){
+    const cx = (f.x + .5) * cell, cy = (f.y + .5) * cell, r = cell * .34 * (1 + Math.sin(t / 260 + f.x + f.y) * .04);
+    if (f.k === 'gold'){ x.fillStyle = '#f5b301'; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill(); x.fillStyle = '#fff6c2'; x.beginPath(); x.arc(cx - r * .35, cy - r * .35, r * .3, 0, 6.2832); x.fill();
+      x.strokeStyle = '#b07c00'; x.lineWidth = 1.5; x.stroke(); return; }
+    x.fillStyle = '#e7442e'; x.beginPath(); x.arc(cx, cy + r * .05, r, 0, 6.2832); x.fill();
+    x.fillStyle = 'rgba(255,255,255,.45)'; x.beginPath(); x.arc(cx - r * .38, cy - r * .3, r * .26, 0, 6.2832); x.fill();
+    x.strokeStyle = '#6b3d1f'; x.lineWidth = Math.max(1.5, cell * .07); x.beginPath(); x.moveTo(cx, cy - r * .7); x.lineTo(cx + r * .15, cy - r * 1.15); x.stroke();
+    x.fillStyle = '#3fae49'; x.beginPath(); x.ellipse(cx + r * .45, cy - r * 1.02, r * .38, r * .18, -.5, 0, 6.2832); x.fill();
+  }
+  function drawItem(x, it, cell, t){
+    const cx = (it.x + .5) * cell, cy = (it.y + .5) * cell, r = cell * .36, bob = Math.sin(t / 300 + it.x) * cell * .05;
+    x.save(); x.translate(cx, cy + bob);
+    x.beginPath(); x.arc(0, 0, r, 0, 6.2832); x.fillStyle = it.k === 'speed' ? '#ffcc1a' : it.k === 'ghost' ? '#e9e3ff' : '#4aa8ff'; x.fill();
+    x.lineWidth = Math.max(1.5, cell * .06); x.strokeStyle = 'rgba(0,0,0,.35)'; x.stroke();
+    x.fillStyle = x.strokeStyle = '#222';
+    if (it.k === 'speed'){ x.beginPath(); x.moveTo(r * .15, -r * .7); x.lineTo(-r * .35, r * .1); x.lineTo(0, r * .1); x.lineTo(-r * .15, r * .7); x.lineTo(r * .35, -r * .1); x.lineTo(0, -r * .1); x.closePath(); x.fill(); }
+    else if (it.k === 'ghost'){ x.fillStyle = '#5a4b9a'; x.beginPath(); x.arc(-r * .25, -r * .1, r * .12, 0, 6.2832); x.arc(r * .25, -r * .1, r * .12, 0, 6.2832); x.fill(); }
+    else { x.lineWidth = Math.max(1.5, cell * .07); x.strokeStyle = '#fff'; x.beginPath(); x.moveTo(0, -r * .55); x.lineTo(r * .45, -r * .3); x.lineTo(r * .35, r * .25); x.lineTo(0, r * .6); x.lineTo(-r * .35, r * .25); x.lineTo(-r * .45, -r * .3); x.closePath(); x.stroke(); }
+    x.restore();
+  }
+  function drawBoard(x, st, a, t, lk){
+    const { W, H, cell } = st;
+    x.fillStyle = lk.a; x.fillRect(0, 0, W * cell, H * cell);
+    x.fillStyle = lk.b; for (let yy = 0; yy < H; yy++) for (let xx = (yy & 1); xx < W; xx += 2) x.fillRect(xx * cell, yy * cell, cell, cell);
+    if (st.walls){ x.strokeStyle = lk.line; x.lineWidth = 3; x.strokeRect(1.5, 1.5, W * cell - 3, H * cell - 3); }
+    (st.rocks || []).forEach(r => { x.fillStyle = lk.rock; const p = cell * .12; x.beginPath(); x.roundRect ? x.roundRect(r.x * cell + p, r.y * cell + p, cell - 2 * p, cell - 2 * p, cell * .22) : x.rect(r.x * cell + p, r.y * cell + p, cell - 2 * p, cell - 2 * p); x.fill(); });
+    (st.fruit || []).forEach(f => drawFruit(x, f, cell, t));
+    (st.items || []).forEach(it => drawItem(x, it, cell, t));
+    (st.pops || []).forEach(p => { const k = Math.min(1, (t - p.t) / 350); x.beginPath(); x.arc((p.x + .5) * cell, (p.y + .5) * cell, cell * (.3 + k * .6), 0, 6.2832);
+      x.strokeStyle = 'rgba(255,255,255,' + (1 - k) * .8 + ')'; x.lineWidth = 2; x.stroke(); });
+    st.pops = (st.pops || []).filter(p => t - p.t < 350);
+    st.snakes.filter(s => !s.alive).forEach(s => drawSnake(x, s, 1, cell, W, H, !st.walls, lk));
+    st.snakes.filter(s => s.alive).forEach(s => drawSnake(x, s, a, cell, W, H, !st.walls, lk));
+  }
+  /* sizes the canvas for a board W × H to the space it has; returns the cell size */
+  function fit(cv, W, H, maxW){
+    const room = Math.min(maxW || 560, (cv.parentElement && cv.parentElement.clientWidth) || 560);
+    const cell = Math.max(8, Math.min(30, Math.floor(room / W)));
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = W * cell * dpr; cv.height = H * cell * dpr; cv.style.width = W * cell + 'px'; cv.style.height = H * cell + 'px';
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return cell;
+  }
+  return { DIRS, keyDir, look, drawBoard, fit };
+})();
+
+BUILD.snake = (host, o) => o && o.lobby ? snakeArena(host, o.lobby) : snakeSolo(host);
+
+function snakeSolo(host){
+  const SPEEDS = { slow:['Slow', 150], norm:['Normal', 0], fast:['Fast', 70] };     // normal: the old game's, faster as you score
+  const SIZES = { s:['Small', 10], m:['Medium', 16], l:['Large', 22] };
+  const FRUITS = { 1:'1 fruit', 3:'3 fruit', 5:'5 fruit' };
+  const EDGES = { wrap:'Wrap around', walls:'Walls' };
+  const cfg = Object.assign({ sp:'norm', sz:'m', fr:1, ed:'wrap' }, TT.get('tt.snakecfg', {}) || {});
+  if (!SPEEDS[cfg.sp]) cfg.sp = 'norm'; if (!SIZES[cfg.sz]) cfg.sz = 'm'; if (!FRUITS[cfg.fr]) cfg.fr = 1; if (!EDGES[cfg.ed]) cfg.ed = 'wrap';
+  const classic = () => cfg.sp === 'norm' && cfg.sz === 'm' && +cfg.fr === 1 && cfg.ed === 'wrap';
+  head(host, 'Snake', tap('Arrow keys or WASD to start and steer. Space pauses, R restarts.', 'Swipe to start and steer. Tap to restart.'),
+    '<div class="snbar">' +
+      '<label>Speed<select id="snsp">' + Object.entries(SPEEDS).map(([k, v]) => '<option value="' + k + '">' + v[0] + '</option>').join('') + '</select></label>' +
+      '<label>Board<select id="snsz">' + Object.entries(SIZES).map(([k, v]) => '<option value="' + k + '">' + v[0] + '</option>').join('') + '</select></label>' +
+      '<label>Fruit<select id="snfr">' + Object.entries(FRUITS).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('') + '</select></label>' +
+      '<label>Edges<select id="sned">' + Object.entries(EDGES).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('') + '</select></label>' +
+      '<span class="snclassic" id="sncl"></span></div>' +
+    '<div class="snwrap"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div>' +
+    (TOUCH ? '<div class="tpad dpad" id="snpad"><button type="button" data-act="u" aria-label="Up">▲</button><button type="button" data-act="l" aria-label="Left">◀</button>' +
+      '<button type="button" data-act="d" aria-label="Down">▼</button><button type="button" data-act="r" aria-label="Right">▶</button></div>' : ''));
+  $('snsp').value = cfg.sp; $('snsz').value = cfg.sz; $('snfr').value = String(cfg.fr); $('sned').value = cfg.ed;
+  const cv = $('cv'), x = cv.getContext('2d');
+  let st, s, phase = 'ready', acc = 0, last = 0, raf = 0, q = [], recorded = false, lk = SNK.look(), alive = true;
+  const N = () => SIZES[cfg.sz][1];
+  const interval = () => cfg.sp === 'norm' ? Math.max(55, 112 - (s.body.length - 3) * 4) : SPEEDS[cfg.sp][1];
+  const best = () => classic() ? statVal('snake', 'high') : (TT.get('tt.snakebest', {}) || {})[key()];
+  const key = () => cfg.sp + cfg.sz + cfg.fr + cfg.ed;
+  function setup(){
+    const W = N(), cell = SNK.fit(cv, W, W, 520);
+    const mid = W >> 1;
+    s = { id:'me', col:lk.accent, body:[{ x:mid, y:mid }, { x:mid - 1, y:mid }, { x:mid - 2, y:mid }], tail:{ x:mid - 3, y:mid }, dir:{ x:1, y:0 }, alive:true };
+    st = { W, H:W, cell, walls:cfg.ed === 'walls', snakes:[s], fruit:[], items:[], rocks:[], pops:[] };
+    for (let i = 0; i < +cfg.fr; i++) st.fruit.push(free());
+    phase = 'ready'; q = []; recorded = false; acc = 0;
+    $('sncl').textContent = classic() ? 'Classic: counts for the leaderboard' : 'Not ranked (Classic is Normal, Medium, 1 fruit, wrap)';
+    over('Snake', tap('Press an arrow key to start', 'Swipe to start'));
+    status();
+  }
+  function free(){
+    const busy = new Set(s.body.map(c => c.x + ',' + c.y)); (st ? st.fruit : []).forEach(f => busy.add(f.x + ',' + f.y));
+    for (let i = 0; i < 400; i++){ const c = { x:(Math.random() * N()) | 0, y:(Math.random() * N()) | 0 }; if (!busy.has(c.x + ',' + c.y)) return c; }
+    return { x:0, y:0 };
+  }
+  const over = (t, sub) => { const o = $('snover'); o.innerHTML = t ? '<div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' : ''; o.hidden = !t; };
+  function status(){
+    const sc = s.body.length - 3, b = best();
+    $('sc').textContent = phase === 'dead' ? 'Out on ' + sc + (b ? ' · best ' + b : '') : 'Score ' + sc + (b ? ' · best ' + b : '');
+  }
+  function steer(d){
+    if (phase === 'dead') return;
+    const v = SNK.DIRS[d]; if (!v) return;
+    const lastD = q.length ? q[q.length - 1] : s.dir;
+    if ((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y)) return;
+    if (q.length < 2) q.push({ x:v[0], y:v[1] });
+    if (phase === 'ready' || phase === 'paused'){ phase = 'play'; over(); last = performance.now(); }
+  }
+  function step(){
+    if (q.length) s.dir = q.shift();
+    const W = st.W, h = { x:s.body[0].x + s.dir.x, y:s.body[0].y + s.dir.y };
+    if (st.walls){ if (h.x < 0 || h.y < 0 || h.x >= W || h.y >= W) return die(); }
+    else { h.x = (h.x + W) % W; h.y = (h.y + W) % W; }
+    const ate = st.fruit.findIndex(f => f.x === h.x && f.y === h.y);
+    const body = ate >= 0 ? s.body : s.body.slice(0, -1);
+    if (body.some(c => c.x === h.x && c.y === h.y)) return die();
+    s.tail = ate >= 0 ? null : s.body[s.body.length - 1];
+    s.body = [h].concat(body);
+    if (ate >= 0){ SFX.tick(); st.pops.push({ x:h.x, y:h.y, t:performance.now() }); st.fruit.splice(ate, 1); st.fruit.push(free()); status(); }
+  }
+  function die(){
+    phase = 'dead'; s.alive = false; s.deadFor = 0; SFX.lose();
+    const sc = s.body.length - 3;
+    if (!recorded){ recorded = true;
+      if (classic()) recordStat('snake', { key:'high', mode:'max', value:sc });
+      else { const b = TT.get('tt.snakebest', {}) || {}; if (!b[key()] || sc > b[key()]){ b[key()] = sc; TT.set('tt.snakebest', b); } } }
+    over('Out on ' + sc, tap('R to go again', 'Tap to go again')); status();
+  }
+  function frame(now){
+    raf = requestAnimationFrame(frame);
+    const dt = Math.min(100, now - (last || now)); last = now;
+    if (phase === 'play'){ acc += dt; const iv = interval(); let n = 0; while (acc >= iv && n < 4 && phase === 'play'){ acc -= iv; step(); n++; } if (phase !== 'play') acc = 0; }
+    if (phase === 'dead') s.deadFor = Math.min(1, (s.deadFor || 0) + dt / 600);
+    const a = phase === 'play' ? Math.min(1, acc / interval()) : 1;
+    SNK.drawBoard(x, st, phase === 'ready' ? 1 : a, now, lk);
+  }
+  const key_ = e => {
     if (typing(e)) return;
     const k = e.key.toLowerCase();
-    const m = {arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],
-               arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
-    if (!m) return;
-    e.preventDefault();
-    steer(m);
+    if (k === 'r' && phase === 'dead'){ setup(); e.preventDefault(); return; }
+    if (k === ' ' && (phase === 'play' || phase === 'paused')){ phase = phase === 'play' ? 'paused' : 'play'; over(phase === 'paused' ? 'Paused' : '', 'Space to carry on'); e.preventDefault(); return; }
+    const d = SNK.keyDir(k); if (!d) return;
+    e.preventDefault(); steer(d);
   };
-  const DIRS = { u:[0,-1], d:[0,1], l:[-1,0], r:[1,0] };
-  const again = () => { snake=[{x:8,y:8}]; dir={x:1,y:0}; next=dir; score=0; dead=false; recorded=false; };
-  if (TOUCH){
-    onSwipe($('cv'), d => steer(DIRS[d]), { step:22, repeat:true, tapFn:() => { if (dead && !online) again(); } });
-    wirePad($('snpad'), a => { if (dead && !online) again(); else steer(DIRS[a]); });
-  }
-  addEventListener('keydown', key);
-  const tick = () => {
-    if (dead || online) return;
-    dir = next;
-    const h = {x:(snake[0].x+dir.x+N)%N, y:(snake[0].y+dir.y+N)%N};
-    if (snake.some(p => p.x===h.x && p.y===h.y)){ dead = true; }
-    else {
-      snake.unshift(h);
-      if (h.x===food.x && h.y===food.y){
-        score++; SFX.tick();
-        do { food = {x:(Math.random()*N)|0, y:(Math.random()*N)|0}; }
-        while (snake.some(p => p.x===food.x && p.y===food.y));
-      } else snake.pop();
-    }
-    if (dead && !recorded){ recorded = true; SFX.lose(); recordStat('snake', {key:'high', mode:'max', value:score}); }
-    $('sc').textContent = dead ? 'Dead on ' + score + ' (best ' + (statVal('snake','high')||score) + ') · ' + tap('press R', 'tap to restart')
-                               : 'Score ' + score + (statVal('snake','high') ? ' · best ' + statVal('snake','high') : '');
-    ctx.clearRect(0,0,320,320);
-    ctx.fillStyle = css('--accent');
-    snake.forEach(p => ctx.fillRect(p.x*S+1, p.y*S+1, S-2, S-2));
-    ctx.fillStyle = '#e5484d';
-    ctx.fillRect(food.x*S+3, food.y*S+3, S-6, S-6);
-  };
-  const restart = e => {
-    if (typing(e) || online || e.key.toLowerCase() !== 'r' || !dead) return;
-    again();
-  };
-  addEventListener('keydown', restart);
-  let t = null;                                     /* self-scheduling so pace can ramp with score */
-  const loop = () => { tick(); t = setTimeout(loop, dead ? 130 : Math.max(55, 112 - score*4)); };
+  addEventListener('keydown', key_);
+  if (TOUCH){ onSwipe(cv, d => steer(d), { step:22, repeat:true, tapFn:() => { if (phase === 'dead') setup(); } });
+    wirePad($('snpad'), a => { if (phase === 'dead') setup(); else steer(a); }); }
+  $('snover').onclick = () => { if (phase === 'dead') setup(); };
+  [['snsp', 'sp'], ['snsz', 'sz'], ['snfr', 'fr'], ['sned', 'ed']].forEach(([id, k]) => $(id).onchange = () => { cfg[k] = k === 'fr' ? +$(id).value : $(id).value; TT.set('tt.snakecfg', cfg); setup(); $(id).blur(); });
+  const onLook = () => { lk = SNK.look(); if (s && st) s.col = lk.accent; };
+  addEventListener('tt:look', onLook);
+  const onResize = () => { if (st) st.cell = SNK.fit(cv, st.W, st.H, 520); };
+  addEventListener('resize', onResize);
+  setup(); raf = requestAnimationFrame(frame);
+  return () => { alive = false; cancelAnimationFrame(raf); removeEventListener('keydown', key_); removeEventListener('tt:look', onLook); removeEventListener('resize', onResize); };
+}
 
-  /* ── online: 2 to 4 snakes in one arena. The host runs it and sends the
-     arena out every step; everyone else only sends their turns. Running
-     into any snake (or a head-on) is out; an out snake leaves food behind.
-     The last one moving wins. ── */
-  const ON = { N:24, S:14, STEP:140 }, SNCOL = ['#22c55e', '#3b82f6', '#ec4899', '#f59e0b'];
-  const cv = $('cv');
-  let online = false, lobbyUI = null, mt = null;
-  const sizeCanvas = px => { if (cv.width !== px){ cv.width = cv.height = px; } };
-  const enc = cells => cells.map(c => (c.y * ON.N + c.x).toString(36).padStart(2, '0')).join('');
-  const dec = s => { const out = []; for (let i = 0; i + 1 < s.length; i += 2){ const v = parseInt(s.slice(i, i + 2), 36);
-    if (v >= 0 && v < ON.N * ON.N) out.push({ x: v % ON.N, y: (v / ON.N) | 0 }); } return out; };
-  function setMode(m){
-    online = m === 'online';
-    [...$('snmodes').children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
-    $('snmp').hidden = !online;
-    if (online){ if (!lobbyUI) lobbyUI = mpLobby($('snmp'), { game:'sn', max:4, onStart:mtStart, onLeft:mtLeft, onPeers:mtPeers }); mtIdle(); }
-    else { if (lobbyUI){ lobbyUI.close(); lobbyUI = null; } mtStop(); $('snmp').innerHTML = ''; sizeCanvas(320); again(); }
+/* ── the arena: a lobby round (mp.js). The host runs it. ── */
+function snakeArena(host, LB){
+  const O = LB.opts || {};
+  const W = Math.max(12, Math.min(48, +O.size || 24)), STEP = { slow:170, norm:130, fast:95, insane:68 }[O.speed] || 130;
+  const FRUIT = Math.max(1, Math.min(20, +O.fruit || 3)), WALLS = O.walls === 'walls', PW = O.pw || 'off', LEN = Math.max(3, Math.min(10, +O.len || 3));
+  const ROCKS = +O.rocks || 0, FT = Math.max(1, +O.ft || 1), COLS = window.MP_COLOURS || ['#3b82f6', '#22c55e', '#ec4899', '#f59e0b', '#8b5cf6', '#14b8a6'];
+  head(host, 'Snake', tap('Arrow keys or WASD. ', 'Swipe or use the arrows. ') + 'Run into anything and you’re out. Last snake moving takes the round.',
+    '<div class="tvsbar" id="snbar"></div><div class="snwrap arena"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div><div class="snlegend" id="snleg"></div>' +
+    (TOUCH ? '<div class="tpad dpad" id="snpad"><button type="button" data-act="u" aria-label="Up">▲</button><button type="button" data-act="l" aria-label="Left">◀</button>' +
+      '<button type="button" data-act="d" aria-label="Down">▼</button><button type="button" data-act="r" aria-label="Right">▶</button></div>' : ''));
+  const cv = $('cv'), x = cv.getContext('2d'), R = LB.room, isHost = LB.isHost, me = LB.me;
+  let lk = SNK.look(), raf = 0, timer = 0, cd = 0, alive = true, offs = [];
+  const wins = {}; LB.players.forEach(p => wins[p.id] = 0);
+  let k = 0, round = 0, st = null, recvAt = 0, over_ = false, matchOver = false;
+  const nameFor = id => (LB.players.find(p => p.id === id) || {}).n || 'Player';
+  const over = (t, sub) => { const o = $('snover'); o.innerHTML = t ? '<div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' : ''; o.hidden = !t; };
+  const pipsH = (n) => FT > 1 ? '<span class="tpips">' + Array.from({ length:FT }, (_, i) => '<i' + (i < n ? ' class="on"' : '') + '></i>').join('') + '</span>' : '';
+  function bar(note){
+    if (!st) return;
+    $('snbar').innerHTML = '<span>' + (FT > 1 ? 'First to ' + FT + ' · Round ' + round : 'One round') + '</span><span class="tvsscore">' +
+      st.snakes.map(s => '<b class="' + (s.alive ? '' : 'out') + (s.id === me ? ' me' : '') + '"><i class="lbdot" style="--c:' + s.col + '"></i>' + esc(s.id === me ? 'You' : s.n) + ' ' + s.body.length + pipsH(wins[s.id] || 0) + '</b>').join('') +
+      '</span>' + (note ? '<span class="tvsnote">' + note + '</span>' : LB.watch ? '<span class="tvsnote">Watching</span>' : '');
   }
-  [...$('snmodes').children].forEach(b => b.onclick = () => { if ((b.dataset.m === 'online') !== online) setMode(b.dataset.m); });
-  function mtIdle(){
-    sizeCanvas(ON.N * ON.S); ctx.clearRect(0, 0, cv.width, cv.height);
-    $('sc').textContent = 'Make a room above, or join a friend’s.';
+  function legend(){
+    $('snleg').innerHTML = PW === 'off' ? '' : '<span><i class="snpw speed"></i>Speed</span><span><i class="snpw ghost"></i>Ghost: through snakes</span><span><i class="snpw shield"></i>Shield: one free crash</span><span><i class="snpw gold"></i>Golden fruit: +3</span>';
   }
-  function mtStop(){ if (mt){ mt.offs.forEach(f => { try { f(); } catch {} }); clearInterval(mt.timer); clearTimeout(mt.cd); mt = null; } }
-  function mtLeft(){ mtStop(); if (online) mtIdle(); }
-  function freeCell(){
-    const busy = new Set(); mt.snakes.forEach(s => s.alive && s.body.forEach(c => busy.add(c.x + ',' + c.y))); mt.food.forEach(f => busy.add(f.x + ',' + f.y));
-    for (let i = 0; i < 200; i++){ const c = { x: (Math.random() * ON.N) | 0, y: (Math.random() * ON.N) | 0 }; if (!busy.has(c.x + ',' + c.y)) return c; }
-    return { x: 0, y: 0 };
+  /* a fresh arena for round r (host) */
+  function freshState(seed){
+    let a = seed >>> 0; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const here = new Set(R.peers().map(p => p.id));
+    const ps = LB.players.filter(p => here.has(p.id) || p.id === me);
+    const m = Math.max(2, Math.min((W >> 1) - 2, LEN + 1)), starts = [[m, m, 1, 0], [W - 1 - m, W - 1 - m, -1, 0], [W - 1 - m, m, 0, 1], [m, W - 1 - m, 0, -1], [W >> 1, m, 0, 1], [W >> 1, W - 1 - m, 0, -1]];
+    const snakes = ps.map((p, i) => { const [sx, sy, dx, dy] = starts[i % starts.length];
+      const body = []; for (let j = 0; j < LEN; j++) body.push({ x:(sx - dx * j + W) % W, y:(sy - dy * j + W) % W });
+      return { id:p.id, n:p.n, col:COLS[LB.players.findIndex(q => q.id === p.id) % COLS.length], dir:{ x:dx, y:dy }, q:[], alive:true, body, tail:null, grow:0, fx:{} }; });
+    const s = { W, H:W, cell:0, walls:WALLS, snakes, fruit:[], items:[], rocks:[], pops:[] };
+    const n = ROCKS === 2 ? Math.round(W * W * .025) : ROCKS === 1 ? Math.round(W * W * .01) : 0;
+    const clear = c => snakes.every(sn => Math.abs(sn.body[0].x - c.x) + Math.abs(sn.body[0].y - c.y) > 4 && !(sn.dir.x && c.y === sn.body[0].y) && !(sn.dir.y && c.x === sn.body[0].x));
+    for (let i = 0, tries = 0; i < n && tries < 2000; tries++){ const c = { x:(rnd() * W) | 0, y:(rnd() * W) | 0 }; if (clear(c) && !s.rocks.some(r => r.x === c.x && r.y === c.y)){ s.rocks.push(c); i++; } }
+    return s;
   }
-  function mtStart(m){
-    mtStop();
-    const N = ON.N, starts = [[4, 4, 1, 0], [N - 5, N - 5, -1, 0], [N - 5, 4, 0, 1], [4, N - 5, 0, -1]];
-    const g = mt = Object.assign({}, m, { food: [], k: 0, over: false, offs: [], timer: null, cd: null,
-      snakes: m.players.map((p, i) => { const [x, y, dx, dy] = starts[i];
-        return { id: p.id, n: p.n, col: SNCOL[i], dir: { x: dx, y: dy }, q: [], alive: true,
-                 body: [{ x, y }, { x: x - dx, y: y - dy }, { x: x - 2 * dx, y: y - 2 * dy }] }; }) });
-    sizeCanvas(N * ON.S);
-    if (g.isHost){
-      for (let i = 0; i < 3; i++) g.food.push(freeCell());
-      g.offs.push(m.room.on('dir', msg => { const s = mt === g && g.snakes.find(x => x.id === msg.peer); if (s && !msg.isMe) qTurn(s, (msg.data || {}).d); }));
-    } else g.offs.push(m.room.on('st', msg => { if (mt !== g || msg.peer !== g.hostId) return; unpack(msg.data || {}); drawOnline(); }));
-    g.offs.push(m.room.on('end', msg => { if (mt === g && msg.peer === g.hostId && !g.isHost) finish((msg.data || {}).w); }));
-    drawOnline();
+  function freeCell(s){
+    const busy = new Set(); s.snakes.forEach(sn => sn.alive && sn.body.forEach(c => busy.add(c.x + ',' + c.y)));
+    s.fruit.forEach(f => busy.add(f.x + ',' + f.y)); s.items.forEach(f => busy.add(f.x + ',' + f.y)); s.rocks.forEach(f => busy.add(f.x + ',' + f.y));
+    for (let i = 0; i < 400; i++){ const c = { x:(Math.random() * W) | 0, y:(Math.random() * W) | 0 }; if (!busy.has(c.x + ',' + c.y)) return c; }
+    return { x:0, y:0 };
+  }
+  /* ── the host's step ── */
+  function hostStep(){
+    const s = st; if (!s || over_) return;
+    const live = s.snakes.filter(sn => sn.alive), key = c => c.x + ',' + c.y;
+    /* power-ups wear off */
+    live.forEach(sn => { for (const f in sn.fx) if (f !== 'shield' && sn.fx[f] > 0) sn.fx[f]--; });
+    const moves = live.map(sn => 1 + (sn.fx.speed > 0 && k % 2 === 0 ? 1 : 0));      // speed: an extra cell every other step
+    const maxSub = Math.max(1, ...moves);
+    for (let sub = 0; sub < maxSub; sub++){
+      const movers = live.filter((sn, i) => sn.alive && moves[i] > sub);
+      movers.forEach(sn => { if (sub === 0 && sn.q.length) sn.dir = sn.q.shift();
+        let h = { x:sn.body[0].x + sn.dir.x, y:sn.body[0].y + sn.dir.y };
+        sn.wall = WALLS && (h.x < 0 || h.y < 0 || h.x >= W || h.y >= W);
+        if (!WALLS) h = { x:(h.x + W) % W, y:(h.y + W) % W };
+        sn.head = h; sn.eats = s.fruit.findIndex(f => f.x === h.x && f.y === h.y); sn.takes = s.items.findIndex(f => f.x === h.x && f.y === h.y); });
+      const occ = new Set(); s.rocks.forEach(r => occ.add(key(r)));
+      s.snakes.forEach(sn => { if (!sn.alive) return; const moving = movers.includes(sn), keep = moving && !(sn.eats >= 0 || sn.grow > 0) ? sn.body.length - 1 : sn.body.length;
+        for (let i = 0; i < keep; i++) occ.add(key(sn.body[i])); });
+      const heads = new Map(); movers.forEach(sn => { if (!sn.wall) heads.set(key(sn.head), (heads.get(key(sn.head)) || 0) + 1); });
+      const out = [];
+      movers.forEach(sn => {
+        const hit = sn.wall || (heads.get(key(sn.head)) > 1) || (occ.has(key(sn.head)) && !(sn.fx.ghost > 0 && !s.rocks.some(r => r.x === sn.head.x && r.y === sn.head.y)));
+        if (!hit) return;
+        if (sn.fx.shield && !sn.wall){ sn.fx.shield = 0; sn.saved = true; return; }       // the shield takes it: through this once
+        out.push(sn);
+      });
+      movers.forEach(sn => { if (out.includes(sn)) return;
+        sn.tail = (sn.eats >= 0 || sn.grow > 0) ? null : sn.body[sn.body.length - 1];
+        sn.body = [sn.head].concat(sn.tail ? sn.body.slice(0, -1) : sn.body);
+        if (sn.grow > 0 && sn.eats < 0) sn.grow--;
+        if (sn.eats >= 0){ const f = s.fruit[sn.eats]; if (f){ if (f.k === 'gold') sn.grow += 2; f.gone = 1; s.pops.push({ x:f.x, y:f.y, t:performance.now() }); } }
+        if (sn.takes >= 0){ const it = s.items[sn.takes]; if (it && !it.gone){ it.gone = 1; s.pops.push({ x:it.x, y:it.y, t:performance.now() });
+          if (it.k === 'speed') sn.fx.speed = 40; else if (it.k === 'ghost') sn.fx.ghost = 40; else if (it.k === 'shield') sn.fx.shield = 1; } } });
+      s.fruit = s.fruit.filter(f => !f.gone); s.items = s.items.filter(f => !f.gone);
+      out.forEach(sn => { sn.alive = false; sn.body.filter((c, i) => i % 2 === 0).slice(0, 8).forEach(c => s.fruit.push({ x:c.x, y:c.y })); });
+      if (out.some(sn => sn.id === me)) SFX.lose();
+    }
+    while (s.fruit.length < FRUIT) s.fruit.push(freeCell(s));
+    if (PW !== 'off' && s.items.length < (PW === 'lots' ? 4 : 2) && Math.random() < (PW === 'lots' ? .05 : .02)){
+      const kinds = ['speed', 'ghost', 'shield', 'gold'], kk = kinds[(Math.random() * kinds.length) | 0];
+      if (kk === 'gold') s.fruit.push(Object.assign(freeCell(s), { k:'gold' })); else s.items.push(Object.assign(freeCell(s), { k:kk }));
+    }
+    k++;
+    R.emit('st', pack(s));
+    recvAt = performance.now(); bar();
+    const still = s.snakes.filter(sn => sn.alive);
+    if (still.length <= (s.snakes.length > 1 ? 1 : 0)){
+      const w = still[0] || null;
+      R.emit('end', { k:round, w });
+    }
+  }
+  const enc = cells => cells.map(c => (c.y * W + c.x).toString(36).padStart(2, '0')).join('');
+  const dec = str => { const out = []; for (let i = 0; i + 1 < str.length; i += 2){ const v = parseInt(str.slice(i, i + 2), 36); if (v >= 0 && v < W * W) out.push({ x:v % W, y:(v / W) | 0 }); } return out; };
+  const DIRK = ['r', 'd', 'l', 'u'], DV = { r:{ x:1, y:0 }, d:{ x:0, y:1 }, l:{ x:-1, y:0 }, u:{ x:0, y:-1 } };
+  const dirK = d => d.x > 0 ? 0 : d.y > 0 ? 1 : d.x < 0 ? 2 : 3;
+  function pack(s){
+    return { k, r:round, s:s.snakes.map(sn => [sn.alive ? 1 : 0, enc(sn.body), dirK(sn.dir), sn.tail ? enc([sn.tail]) : '', (sn.fx.speed > 0 ? 1 : 0) | (sn.fx.ghost > 0 ? 2 : 0) | (sn.fx.shield ? 4 : 0)]),
+             f:s.fruit.map(f => enc([f]) + (f.k === 'gold' ? '*' : '')).join(''), i:s.items.map(it => enc([it]) + ({ speed:'s', ghost:'g', shield:'h' })[it.k]).join(''),
+             p:s.snakes.map(sn => sn.id), o:k <= 1 || k % 20 === 0 ? enc(s.rocks) : null };
+  }
+  function unpack(d){
+    if (!st || d.r !== round || !(d.k > k)) return;
+    k = d.k;
+    if (Array.isArray(d.p) && d.p.join() !== st.snakes.map(sn => sn.id).join())
+      st.snakes = d.p.map(id => st.snakes.find(sn => sn.id === id) || { id, n:nameFor(id), col:COLS[Math.max(0, LB.players.findIndex(q => q.id === id)) % COLS.length], dir:{ x:1, y:0 }, q:[], alive:true, body:[], tail:null, fx:{} });
+    (d.s || []).forEach((row, i) => { const sn = st.snakes[i]; if (!sn || !Array.isArray(row)) return;
+      if (sn.alive && !row[0] && sn.id === me) SFX.lose();
+      if (sn.alive && !row[0]) sn.deadFor = 0;
+      sn.alive = !!row[0]; const b = dec(String(row[1] || '')); if (b.length) sn.body = b;
+      sn.dir = DV[DIRK[row[2] | 0]] || sn.dir; const t = dec(String(row[3] || '')); sn.tail = t[0] || null;
+      sn.ghost = !!(row[4] & 2); sn.shield = !!(row[4] & 4); });
+    const fr = String(d.f || ''), fruit = [];
+    for (let i = 0; i + 1 < fr.length;){ const c = dec(fr.slice(i, i + 2))[0]; i += 2; const g = fr[i] === '*'; if (g) i++; if (c) fruit.push(g ? Object.assign(c, { k:'gold' }) : c); }
+    if (fruit.length < st.fruit.length) st.fruit.forEach(f => { if (!fruit.some(g => g.x === f.x && g.y === f.y)) st.pops.push({ x:f.x, y:f.y, t:performance.now() }); });
+    st.fruit = fruit;
+    const it = String(d.i || ''), items = [];
+    for (let i = 0; i + 2 < it.length; i += 3){ const c = dec(it.slice(i, i + 2))[0], kk = { s:'speed', g:'ghost', h:'shield' }[it[i + 2]]; if (c && kk) items.push(Object.assign(c, { k:kk })); }
+    st.items = items;
+    if (d.o != null) st.rocks = dec(String(d.o));
+    recvAt = performance.now(); bar();
+  }
+  /* ── rounds ── */
+  function startRound(r, seed, at){
+    clearInterval(timer); clearTimeout(cd); over_ = false; round = r; k = 0;
+    st = freshState(seed); st.cell = SNK.fit(cv, W, W, 640);
+    if (!isHost){ st.fruit = []; }
+    else { for (let i = 0; i < FRUIT; i++) st.fruit.push(freeCell(st)); }
+    bar(); legend(); recvAt = performance.now();
     const count = () => {
-      if (mt !== g) return;
-      const left = Math.ceil((g.at - g.room.now()) / 1000);
-      if (left > 0){ $('sc').textContent = 'Starting in ' + left + '…'; g.cd = setTimeout(count, 150); return; }
-      if (g.isHost) g.timer = setInterval(step, ON.STEP);
+      if (!alive || round !== r) return;
+      const left = Math.ceil((at - R.now()) / 1000);
+      if (left > 0){ over(String(left), (FT > 1 ? 'Round ' + r + ' · ' : '') + st.snakes.map(s => esc(s.id === me ? 'You' : s.n)).join(' · ')); cd = setTimeout(count, 150); return; }
+      over();
+      if (isHost){ R.emit('st', pack(st)); timer = setInterval(hostStep, STEP); }
     };
     count();
   }
-  function qTurn(s, d){
-    if (!Array.isArray(d) || Math.abs(d[0]) + Math.abs(d[1]) !== 1) return;
-    const last = s.q.length ? s.q[s.q.length - 1] : s.dir;
-    if ((d[0] === -last.x && d[1] === -last.y) || (d[0] === last.x && d[1] === last.y)) return;
-    if (s.q.length < 3) s.q.push({ x: d[0], y: d[1] });
+  function steer(d){
+    if (!st || over_ || LB.watch) return;
+    const sn = st.snakes.find(s => s.id === me); if (!sn || !sn.alive) return;
+    const v = SNK.DIRS[d]; if (!v) return;
+    if (isHost) qTurn(sn, v); else R.emit('dir', { d:v, r:round });
   }
-  function mtSteer(m){
-    if (!mt || mt.over || mt.watch) return;
-    if (mt.isHost){ const s = mt.snakes.find(x => x.id === mt.me); if (s) qTurn(s, m); }
-    else mt.room.emit('dir', { d: m });
+  function qTurn(sn, v){
+    if (!Array.isArray(v) || Math.abs(v[0]) + Math.abs(v[1]) !== 1) return;
+    const lastD = sn.q.length ? sn.q[sn.q.length - 1] : sn.dir;
+    if ((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y)) return;
+    if (sn.q.length < 3) sn.q.push({ x:v[0], y:v[1] });
   }
-  function mtPeers(peers){ if (!mt || !mt.isHost) return; mt.snakes.forEach(s => { if (s.alive && !peers.some(p => p.id === s.id)) s.alive = false; }); }
-  function step(){
-    const g = mt; if (!g || g.over) return;
-    const N = ON.N, live = g.snakes.filter(s => s.alive), key = c => c.x + ',' + c.y;
-    live.forEach(s => { if (s.q.length) s.dir = s.q.shift();
-      s.head = { x: (s.body[0].x + s.dir.x + N) % N, y: (s.body[0].y + s.dir.y + N) % N };
-      s.eats = g.food.findIndex(f => f.x === s.head.x && f.y === s.head.y); });
-    const occ = new Set();
-    live.forEach(s => { const keep = s.eats >= 0 ? s.body.length : s.body.length - 1; for (let i = 0; i < keep; i++) occ.add(key(s.body[i])); });
-    const heads = new Map(); live.forEach(s => heads.set(key(s.head), (heads.get(key(s.head)) || 0) + 1));
-    const out = live.filter(s => occ.has(key(s.head)) || heads.get(key(s.head)) > 1);
-    const eaten = new Set();
-    live.forEach(s => { if (out.includes(s)) return; s.body.unshift(s.head); if (s.eats >= 0) eaten.add(s.eats); else s.body.pop(); });
-    if (eaten.size){ SFX.tick(); g.food = g.food.filter((f, i) => !eaten.has(i)); }
-    out.forEach(s => { s.alive = false; s.body.filter((c, i) => i % 2 === 0).slice(0, 8).forEach(c => g.food.push({ x: c.x, y: c.y })); });
-    if (out.some(s => s.id === g.me)) SFX.lose();
-    while (g.food.length < 3) g.food.push(freeCell());
-    g.k++;
-    g.room.emit('st', { k: g.k, s: g.snakes.map(s => [s.alive ? 1 : 0, enc(s.body)]), f: enc(g.food) });
-    drawOnline();
-    const still = g.snakes.filter(s => s.alive);
-    if (still.length <= 1){
-      const w = still[0] || out.slice().sort((a, b) => b.body.length - a.body.length)[0];
-      const win = still[0] || (out.length > 1 && out[0].body.length === out[1].body.length ? null : w);
-      g.room.emit('end', { w: win ? win.id : null });
-      finish(win ? win.id : null);
-    }
+  function roundEnd(w){
+    if (over_) return; over_ = true; clearInterval(timer);
+    if (w && wins[w] != null) wins[w]++;
+    const msg = w === me ? 'You take the round' : w ? esc(nameFor(w)) + ' takes the round' : 'Nobody takes that one';
+    if (w === me) SFX.win();
+    bar(msg); over(w === me ? (FT > 1 ? 'Round won!' : 'You win!') : msg, '');
+    const lead = Object.entries(wins).find(([, n]) => n >= FT);
+    if (lead) return matchEnd(lead[0]);
+    if (FT <= 1) return matchEnd(w);
+    if (isHost) setTimeout(() => { if (alive && !matchOver) R.emit('go', { r:round + 1, seed:(Math.random() * 4294967296) >>> 0, at:R.now() + 3800 }); }, 2400);
   }
-  function unpack(d){
-    if (!mt || !Array.isArray(d.s)) return;
-    if (typeof d.k === 'number'){ if (d.k <= mt.k) return; mt.k = d.k; }
-    d.s.forEach((row, i) => { const s = mt.snakes[i]; if (!s || !Array.isArray(row)) return;
-      if (s.alive && !row[0] && s.id === mt.me) SFX.lose();
-      s.alive = !!row[0]; const b = dec(String(row[1] || '')); if (b.length) s.body = b; });
-    mt.food = dec(String(d.f || ''));
+  function matchEnd(w){
+    if (matchOver) return; matchOver = true;
+    const standings = Object.entries(wins).sort((a, b) => b[1] - a[1]).map(([id, n]) => nameFor(id) + ' ' + n).join(', ');
+    over(w === me ? 'You win the match!' : w ? esc(nameFor(w)) + ' wins the match' : 'Match over', FT > 1 ? esc(standings) : '');
+    LB.quick('over');
+    LB.say((w === me ? 'You won' : w ? nameFor(w) + ' won' : 'Nobody won') + ' the Snake match' + (FT > 1 ? ' (' + standings + ').' : '.'));
+    if (isHost) setTimeout(() => LB.back(), 5500); else LB.back();
   }
-  function drawOnline(){
-    if (!mt) return;
-    const S = ON.S;
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    ctx.fillStyle = '#e5484d'; mt.food.forEach(f => ctx.fillRect(f.x * S + 3, f.y * S + 3, S - 6, S - 6));
-    mt.snakes.forEach(s => { if (!s.alive) return; ctx.fillStyle = s.col;
-      s.body.forEach((p, i) => { ctx.globalAlpha = i === 0 ? 1 : .82; ctx.fillRect(p.x * S + 1, p.y * S + 1, S - 2, S - 2); }); });
-    ctx.globalAlpha = 1;
-    if (!mt.over) $('sc').innerHTML = mt.snakes.map(s => '<span class="snp' + (s.alive ? '' : ' out') + '"><i style="background:' + s.col + '"></i>' +
-      esc(s.id === mt.me ? 'You' : s.n) + ' ' + s.body.length + '</span>').join('');
+  offs.push(R.on('st', m => { if (!isHost && m.peer === LB.hostId) unpack(m.data || {}); }));
+  offs.push(R.on('dir', m => { if (!isHost || !st) return; const d = m.data || {}; if (d.r !== round) return; const sn = st.snakes.find(s => s.id === m.peer); if (sn && sn.alive) qTurn(sn, d.d); }));
+  offs.push(R.on('quit', m => { if (!isHost || !st) return; const sn = st.snakes.find(s => s.id === m.peer); if (sn) sn.alive = false; }));
+  offs.push(R.on('end', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.k === round) roundEnd(d.w || null); }));
+  offs.push(R.on('go', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.r > round && !matchOver) startRound(d.r, d.seed >>> 0, +d.at); }));
+  LB.peersFn = peers => { if (!isHost || !st) return; st.snakes.forEach(s => { if (s.alive && !peers.some(p => p.id === s.id)) s.alive = false; }); };
+  LB.leaveFn = () => R.emit('quit', {});
+  function frame(now){
+    raf = requestAnimationFrame(frame);
+    if (!st) return;
+    const a = over_ ? 1 : Math.min(1, (now - recvAt) / STEP);
+    st.snakes.forEach(s => { if (!s.alive) s.deadFor = Math.min(1, (s.deadFor || 0) + 1 / 40); });
+    SNK.drawBoard(x, st, a, now, lk);
   }
-  function finish(w){
-    const g = mt; if (!g || g.over) return;
-    g.over = true; clearInterval(g.timer);
-    const who = w && g.snakes.find(s => s.id === w);
-    if (w === g.me){ SFX.win(); $('sc').textContent = 'You win!'; }
-    else $('sc').textContent = who ? who.n + ' wins' : 'A draw';
-    setTimeout(() => { if (mt === g && lobbyUI) lobbyUI.back(); }, 3000);
-  }
-  loop();
-  return () => { clearTimeout(t); mtStop(); if (lobbyUI) lobbyUI.close();
-                 removeEventListener('keydown', key); removeEventListener('keydown', restart); };
-};
+  const key_ = e => { if (typing(e)) return; const d = SNK.keyDir(e.key.toLowerCase()); if (!d) return; e.preventDefault(); steer(d); };
+  addEventListener('keydown', key_);
+  if (TOUCH){ onSwipe(cv, d => steer(d), { step:22, repeat:true }); wirePad($('snpad'), a => steer(a)); }
+  const onLook = () => { lk = SNK.look(); };
+  addEventListener('tt:look', onLook);
+  const onResize = () => { if (st) st.cell = SNK.fit(cv, W, W, 640); };
+  addEventListener('resize', onResize);
+  startRound(1, LB.seed, LB.at);
+  raf = requestAnimationFrame(frame);
+  return () => { alive = false; cancelAnimationFrame(raf); clearInterval(timer); clearTimeout(cd); offs.forEach(f => { try { f(); } catch {} });
+    removeEventListener('keydown', key_); removeEventListener('tt:look', onLook); removeEventListener('resize', onResize); };
+}
 
 /* ── 2048 (animated) ───────────────────────────────────────────────
    Tiles are absolutely positioned and keep a stable id, so a move
@@ -8544,7 +8818,8 @@ const loadChess = () => window.Chess ? Promise.resolve(window.Chess) : chessLoad
   s.onload = () => res(window.Chess); s.onerror = () => { chessLoad = null; rej(new Error('Couldn’t load chess.')); };
   document.head.appendChild(s);
 }));
-BUILD.chess = host => {
+BUILD.chess = (host, o) => {
+  const LBC = o && o.lobby;          // a lobby round (mp.js): two of the lobby play, the rest watch
   head(host, 'Chess', tap('Click', 'Tap') + ' a piece, then where it goes.',
     '<div class="minesbar"><div class="diffbar" id="chmode"></div><div class="diffbar" id="chlvl"></div></div>' +
     '<div class="chsets"><label>Play as <select id="chcol"><option value="w">White</option><option value="b">Black</option><option value="r">Random</option></select></label>' +
@@ -8643,7 +8918,7 @@ BUILD.chess = host => {
         else b.push(['chdraw', g.offer === g.me ? 'Draw offered' : 'Offer draw']);
         b.push(['chres', 'Resign']);
       }
-      b.push(['chleave', g.me && !g.result ? 'Back to games' : 'Leave']);
+      if (!LBC) b.push(['chleave', g.me && !g.result ? 'Back to games' : 'Leave']);
     } else {
       b.push(['chnew', 'New game', 1], ['chundo', 'Undo']);
       if (!g.result && g.moves.length) b.push(['chres', 'Resign']);
@@ -8747,12 +9022,14 @@ BUILD.chess = host => {
     netBox(); draw();
   }
   async function send(action, extra){
+    if (LBC){ lobbyAct(LBC.me, action, Object.assign({}, extra || {}, { t:LBC.room.now() }), true); return; }
     if (busy) return; busy = true;
     try { const d = await TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'chess', action, code:g && g.code }, extra || {}) }); if (alive) take(d.game); }
     catch (e){ if (alive){ $('sc').textContent = e.message; if (g && g.code) refresh(); } }
     finally { busy = false; }
   }
   async function refresh(){
+    if (LBC){ if (lst && chFlagL(lst, LBC.room.now())){ LBC.room.emit('ca', { a:'flag', t:LBC.room.now() }); take(lview()); } return; }
     if (!g || !g.online || busy || document.hidden) return;
     try { const d = await TT.api('/api/gamestate', { params:{ mode:'chess', code:g.code } }); if (alive && g && g.code === d.game.code) take(d.game); } catch {}
   }
@@ -8768,7 +9045,7 @@ BUILD.chess = host => {
     } catch (e){ if (alive) lobby(e.message); }
   }
   function netBox(){
-    if (!g || !g.online){ $('chnet').innerHTML = ''; return; }
+    if (!g || !g.online || LBC){ $('chnet').innerHTML = ''; return; }
     const link = location.origin + location.pathname.replace(/[^/]*$/, '') + 'games.html?play=chess&code=' + g.code;
     $('chnet').innerHTML = '<div class="mpbox chnetbox"><div class="mphead"><div><span class="mplabel">' + (g.pub ? 'Public' : 'Private') + ' game' + (g.tc ? ' · ' + esc(g.tc.replace('+', ' + ')) : '') +
       (g.me ? '' : ' · watching') + '</span><b class="mpcode">' + esc(g.code) + '</b></div>' +
@@ -8815,6 +9092,72 @@ BUILD.chess = host => {
     $('chlist').querySelectorAll('[data-code]').forEach(b => b.onclick = () => open(b.dataset.code, !!b.dataset.join));
   }
 
+  /* ── a lobby round: the game is kept by both players' pages, the way the server keeps it for an
+     online game (the same rules: a move must be legal and at the right ply; clocks run from each
+     move's time on the lobby's shared clock). Every action goes to the room ('ca'); everyone,
+     watchers included, applies it. Someone who comes to watch late asks ('creq') and is sent the
+     whole game ('cst'). ── */
+  let lst = null, loffs = [], lended = false;
+  function chFlagL(st, now){
+    if (!st.clock || st.result || st.moves.length < 2) return false;
+    const side = st.moves.length % 2 ? 'b' : 'w';
+    if (st.clock[side] - (now - st.at) > 0) return false;
+    st.clock[side] = 0; st.result = side === 'w' ? '0-1' : '1-0'; st.reason = 'time'; st.offer = null;
+    return true;
+  }
+  function lview(){
+    const you = lst.w === LBC.me ? 'w' : lst.b === LBC.me ? 'b' : null;
+    return { code:'LOBBY', you, pub:false, tc:lst.tc, white:lst.wn, black:lst.bn, moves:lst.moves.slice(), result:lst.result, reason:lst.reason, offer:lst.offer,
+             clock:lst.clock ? Object.assign({}, lst.clock) : null, at:lst.at, now:LBC.room.now() };
+  }
+  function lobbyAct(by, a, d, mine){
+    if (!lst) return;
+    const seat = lst.w === by ? 'w' : lst.b === by ? 'b' : null; if (!seat) return;
+    const now = +d.t || LBC.room.now(), other = seat === 'w' ? 'b' : 'w';
+    if (chFlagL(lst, now)){ take(lview()); return; }
+    if (lst.result) return;
+    if (a === 'move'){
+      if (+d.ply !== lst.moves.length || (lst.moves.length % 2 ? 'b' : 'w') !== seat) { if (mine) take(lview()); return; }
+      const { states, ok } = C.replay(lst.moves); if (!ok) return;
+      const m = C.fromUci(states[states.length - 1], String(d.uci || '')); if (!m){ if (mine) take(lview()); return; }
+      states.push(C.make(states[states.length - 1], m)); lst.moves.push(C.uci(m));
+      if (lst.clock){ if (lst.moves.length > 2) lst.clock[seat] = Math.max(0, lst.clock[seat] - (now - lst.at)) + lst.clock.inc; lst.at = now; }
+      lst.offer = null;
+      const end = C.outcome(states); if (end){ lst.result = end.result; lst.reason = end.reason; }
+    } else if (a === 'resign'){ lst.result = seat === 'w' ? '0-1' : '1-0'; lst.reason = 'resignation'; lst.offer = null; }
+    else if (a === 'draw'){ if (lst.offer === other){ lst.result = '1/2-1/2'; lst.reason = 'agreement'; lst.offer = null; } else lst.offer = seat; }
+    else if (a === 'decline'){ if (lst.offer === other) lst.offer = null; }
+    else if (a !== 'flag') return;
+    if (mine) LBC.room.emit('ca', Object.assign({ a }, d));
+    take(lview()); lobbyDone();
+  }
+  function lobbyDone(){
+    if (!lst || !lst.result || lended) return; lended = true;
+    const win = lst.result === '1-0' ? lst.wn : lst.result === '0-1' ? lst.bn : null;
+    LBC.quick('over');
+    LBC.say((win ? win + ' won' : 'A draw') + ' at chess' + (lst.reason ? ' (' + (lst.reason === 'resignation' ? 'resigned' : lst.reason === 'time' ? 'on time' : lst.reason) + ').' : '.'));
+    if (LBC.hostNow()) setTimeout(() => LBC.back(), 9000); else LBC.back();
+  }
+  function lobbyStart(){
+    const P = LBC.players, a = P[0], b = P[1] || P[0];
+    let first = LBC.opts.col === 'w' ? 'w' : LBC.opts.col === 'b' ? 'b' : (LBC.seed & 1 ? 'w' : 'b');
+    const [mins, inc] = String(LBC.opts.tc || '0').split('+').map(Number);
+    lst = { w:first === 'w' ? a.id : b.id, b:first === 'w' ? b.id : a.id, wn:first === 'w' ? a.n : b.n, bn:first === 'w' ? b.n : a.n, moves:[], result:null, reason:null, offer:null,
+            clock:mins ? { w:mins * 60000, b:mins * 60000, inc:(inc || 0) * 1000 } : null, tc:mins ? mins + '+' + (inc || 0) : null, at:LBC.at };
+    const R = LBC.room;
+    loffs.push(R.on('ca', m => { if (m.isMe) return; const d = m.data || {}; lobbyAct(m.peer, String(d.a || ''), d, false); }));
+    loffs.push(R.on('creq', () => { if (lst && (lst.w === LBC.me || lst.b === LBC.me)) R.emit('cst', { st:lst }); }));
+    loffs.push(R.on('cst', m => { const d = (m.data || {}).st; if (!d || !Array.isArray(d.moves) || d.moves.length < lst.moves.length) return;
+      if (!(m.peer === lst.w || m.peer === lst.b)) return;
+      lst = Object.assign({}, d, { moves:d.moves.slice() }); take(lview()); lobbyDone(); }));
+    LBC.peersFn = peers => { if (!lst || lst.result) return;
+      const gone = [lst.w, lst.b].find(id => !peers.some(p => p.id === id));
+      if (gone){ lst.result = gone === lst.w ? '0-1' : '1-0'; lst.reason = 'the other player left'; lst.offer = null; take(lview()); lobbyDone(); } };
+    LBC.leaveFn = () => { if (lst && !lst.result && (lst.w === LBC.me || lst.b === LBC.me)) send('resign'); };
+    if (LBC.watch) R.emit('creq', {});
+    g = null; take(lview());
+  }
+
   /* ── mode and level pills ── */
   const pills = (bar, opts, cur, set) => {
     $(bar).innerHTML = '';
@@ -8842,13 +9185,15 @@ BUILD.chess = host => {
     } else strips((g.me || 'w') === 'w' ? !flip : flip);
   }, 200);
 
+  if (LBC){ document.querySelectorAll('#chmode, #chlvl, .chsets').forEach(el => el.style.display = 'none'); }
   loadChess().then(x => {
     if (!alive) return; C = x;
+    if (LBC){ lobbyStart(); return; }
     if (new URLSearchParams(location.search).get('code')){ mode = 'online'; pills('chmode', { bot:'vs Bot', online:'Online' }, mode, setMode); }
     setMode(mode);
   }).catch(e => { $('sc').textContent = e.message; });
 
-  return () => { alive = false; stopPoll(); clearInterval(tick); removeEventListener('keydown', esc_); if (worker) worker.terminate(); };
+  return () => { alive = false; stopPoll(); clearInterval(tick); removeEventListener('keydown', esc_); if (worker) worker.terminate(); loffs.forEach(f => { try { f(); } catch {} }); };
 };
 
 /* Hong Kong Mahjong is its own page in a frame: it's big, and its styles would clash

@@ -75,8 +75,8 @@ const BG = { id:'', canvas:null, scene:null, def:null, env:null, raf:0, last:0, 
 const loaded = {};
 let quiet = false, saving = false;
 const coarse = (() => { try { return matchMedia('(pointer:coarse)').matches; } catch { return false; } })();
-const envNow = () => ({ page:PG, dark:dark(), animate:on() && !quiet });
-const setFps = () => { BG.fps = (BG.def && BG.def.fps) || ((coarse || saving) ? 30 : 60); };
+const envNow = () => ({ page:PG, dark:dark(), animate:on() });
+const setFps = () => { BG.fps = (BG.def && BG.def.fps) || ((coarse || saving) ? 30 : 60); if (quiet) BG.fps = Math.min(BG.fps, 20); };
 function loadScript(src){
   return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.async = true; s.onload = ok; s.onerror = no; (document.head || root).appendChild(s); });
 }
@@ -139,6 +139,7 @@ function mountBg(early){
 const EARLY = { y2k:1, vapor:1 };
 function writeScene(){
   const want = (!root.classList.contains('zen') && SCENES[skin()]) ? skin() : '';
+  try { const nt = performance.getEntriesByType('navigation')[0]; if (nt && nt.type === 'reload' && !(nav && root.classList.contains('fx-in'))) return false; } catch {}
   if (!want || !EARLY[want] || document.readyState !== 'loading' || !cur || cur.async || cur.defer) return false;
   const file = SCENES[want];
   loaded[file] = new Promise((ok, no) => {
@@ -172,7 +173,8 @@ addEventListener('tt:look', () => mountBg());
 let rz = 0;
 addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (sizeBg()) kick(); else if (BG.scene && !BG.env.animate) kick(); }, 140); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
-/* a game or a subject open (games.js TTBackOn): the background holds still, so the game has the machine */
+/* a game or a subject open (games.js TTBackOn): the background keeps moving, but at twenty frames a second, so the game has most of the machine.
+   (It used to stop altogether, which looked like a fault.) */
 setInterval(() => {
   const q = typeof window.TTBackOn === 'function' && !!window.TTBackOn();
   if (q !== quiet){ quiet = q; root.classList.toggle('fx-quiet', q); mountBg(); }
@@ -262,9 +264,12 @@ function ykWave(dk){
   return h + '</g><path d="' + F(0) + '" fill="none" stroke="' + (dk ? 'rgba(200,220,245,.55)' : 'rgba(60,80,110,.5)') + '" stroke-width="1.4"/></g></svg>';
 }
 const ykLayer = () => root.querySelector('.yk-wave') || layer('yk-wave', '<i><b>' + ykWave(dark()) + '</b></i>');
+/* Where the browser can (Chromium): a view transition. Nothing happens on the page being left; the browser
+   keeps it on screen, and on the next page the wave and the wipe run over it (pagereveal, below; y2k.css). */
+const vtArmed = () => !!document.getElementById('tt-vt');
 TR.y2k = {
   outMs:130, inMs:540,
-  out(n, done){ root.classList.add('fx-out'); after(120, done); },
+  out(n, done){ if (vtArmed()){ n.vt = 1; done(); return; } root.classList.add('fx-out'); after(120, done); },
   cover(){ ykLayer(); },
   in(n, done){ const L = ykLayer(); void L.offsetWidth; L.classList.add('go'); after(540, done); }
 };
@@ -461,5 +466,14 @@ if (nav && root.classList.contains('fx-in')){
   setTimeout(enter, 1400);
 }
 
-if (nav && root.classList.contains('fx-in') && writeScene()) mountBg(true); else ready(() => mountBg());
+if (((nav && root.classList.contains('fx-in')) || vtArmed()) && writeScene()) mountBg(true); else ready(() => mountBg());
+/* the view transition's way in (Y2K Futurism): the wave goes up as the new page is first shown, starts with the
+   browser's wipe, and comes down when it is done */
+addEventListener('pagereveal', e => {
+  const vt = e.viewTransition; if (!vt) return;
+  if (skin() !== 'y2k' || !on()){ try { vt.skipTransition(); } catch {} return; }
+  const L = ykLayer(); L.classList.add('vt');
+  vt.ready.then(() => L.classList.add('go'), () => L.remove());
+  vt.finished.finally(() => L.remove());
+});
 })();

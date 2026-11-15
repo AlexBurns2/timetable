@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261115b">
+<link rel="stylesheet" href="theme.css?v=20261115c">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261115b"></script>
-<script src="icons.js?v=20261115b"></script>
+<script src="theme.js?v=20261115c"></script>
+<script src="icons.js?v=20261115c"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -508,12 +508,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
-      <label>Animation</label>
-      <div class="modes" id="fxmodes">
-        <button type="button" data-v="on">On</button>
-        <button type="button" data-v="off">Off</button>
-      </div>
-      <div class="hint" id="fxhint"></div>
+      <div id="looksw"></div>
     </div>
 
     <div class="field">
@@ -523,7 +518,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     <div class="field" id="glasswrap" hidden>
       <label>Glass</label>
       <div class="custrow"><span>Animated background</span><input type="checkbox" id="glassanim" class="sw"></div>
-      <div class="hint" style="margin-top:4px">The colours drift slowly. Uses a little more battery.</div>
+      <div class="hint" style="margin-top:4px">Uses a little more battery.</div>
     </div>
 
     <div class="field" id="customwrap" hidden>
@@ -588,18 +583,23 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
     <div class="field">
       <label>Login</label>
-      <div class="hint" style="margin-top:0;margin-bottom:9px">
-        Stored <b>only on this device</b>.
-      </div>
-      <div class="custrow"><span>School email</span>
-        <input type="text" id="cr_email" class="crin" spellcheck="false"
-               autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>
-      <div class="custrow"><span>Password</span>
-        <input type="password" id="cr_pass" class="crin" autocomplete="off"
-               placeholder="••••••••"></div>
-      <div class="custrow">
-        <button class="btn primary" type="button" id="cr_save">Sign in</button>
-        <button class="btn danger" type="button" id="cr_clear">Sign out</button>
+      <div class="crline" id="cr_line"><span>Signed in as <b id="cr_who"></b></span>
+        <button class="flinklike" type="button" id="cr_change">Change</button>
+        <button class="flinklike danger" type="button" id="cr_clear">Sign out</button></div>
+      <div id="cr_form">
+        <div class="hint" style="margin-top:0;margin-bottom:9px">
+          Stored <b>only on this device</b>.
+        </div>
+        <div class="custrow"><span>School email</span>
+          <input type="text" id="cr_email" class="crin" spellcheck="false"
+                 autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>
+        <div class="custrow"><span>Password</span>
+          <input type="password" id="cr_pass" class="crin" autocomplete="off"
+                 placeholder="••••••••"></div>
+        <div class="custrow">
+          <button class="btn primary" type="button" id="cr_save">Sign in</button>
+          <button class="btn" type="button" id="cr_cancel">Cancel</button>
+        </div>
       </div>
       <div class="hint" id="cr_state"></div>
     </div>
@@ -612,7 +612,6 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
       <button class="btn" type="button" id="openColours" title="Subject colours">Colours</button>
     </div>
     <div class="tabbtns">
-      <button class="btn" type="button" id="modetoggle" title="Light / dark"></button>
       <button class="btn" type="button" id="exportics" title="Download an .ics calendar">Export .ics</button>
     </div>
   </div>
@@ -1892,16 +1891,20 @@ function paintCycleRow(){
 }
 bindCustom();
 
+/* login: signed in, one line (who, Change, Sign out); the fields only when signing in or changing */
+let crEditing = false;
 function renderCreds(){
+  const form = !creds || crEditing;
+  $('cr_line').hidden = form; $('cr_form').hidden = !form;
+  $('cr_who').textContent = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_pass').value  = creds ? creds.password : '';
-  $('cr_state').textContent = creds
-    ? 'Signed in as ' + creds.email
-    : 'Not signed in.';
-  /* signed in, the button saves a changed password; signed out, it signs you in */
-  $('cr_save').textContent = creds ? 'Update login' : 'Sign in';
-  $('cr_save').classList.toggle('primary', !creds);
+  $('cr_state').textContent = '';
+  $('cr_save').textContent = creds ? 'Save' : 'Sign in';
+  $('cr_cancel').hidden = !creds;
 }
+$('cr_change').onclick = () => { crEditing = true; renderCreds(); $('cr_email').focus(); };
+$('cr_cancel').onclick = () => { crEditing = false; renderCreds(); };
 $('cr_save').onclick = async () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
   const pass = $('cr_pass').value;
@@ -1912,12 +1915,12 @@ $('cr_save').onclick = async () => {
   if (!email) { email = creds.email; set(LS.email, email); }
   $('cr_state').textContent = 'Checking…';
   await load(false);
-  renderCreds();
+  crEditing = !!loadError; renderCreds();
   if (loadError){ $('cr_state').textContent = loadError; }
   render();
 };
 $('cr_clear').onclick = () => {
-  creds = null; set(LS.creds, null); localStorage.removeItem(LS.cache);
+  creds = null; crEditing = false; set(LS.creds, null); localStorage.removeItem(LS.cache);
   entries = []; slots = []; displayName = '';
   dlg.close(); render(); showGate();
 };
@@ -2016,23 +2019,11 @@ function renderRooms(){
   b.onclick = () => { roomMode = b.dataset.room; set(LS.room, roomMode); renderRooms(); render(); };
 });
 
-function renderModes(){
-  const cur = SKINS.find(s => s.id === skin);
-  const btn = $('modetoggle');
-  btn.disabled = !cur.both;
-  btn.style.opacity = cur.both ? '' : '.45';
-  btn.textContent = !cur.both ? 'Fixed palette'
-                  : (mode === 'dark' ? 'Light mode' : 'Dark mode');
-}
-$('modetoggle').onclick = () => {
-  const cur = SKINS.find(s => s.id === skin);
-  if (!cur.both) return;
-  mode = mode === 'dark' ? 'light' : 'dark';
-  set(LS.mode, mode); applyLook(); renderModes(); render();
-};
+/* Dark mode and Animation: the first row (theme.js lookRow); this page keeps its own copy of the mode */
+function renderModes(){ TT.lookRow($('looksw'), () => { mode = TT.readState().mode; applyLook(); render(); }); }
 $('settings').onclick = () => {
   paintCycleRow();
-  renderGlass(); TT.fxButtons($('fxmodes'), $('fxhint')); TT.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
+  crEditing = false; renderCreds(); renderGlass(); renderModes(); TT.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');
   renderSkins(); renderModes(); renderCustom(); renderRooms(); renderViews();

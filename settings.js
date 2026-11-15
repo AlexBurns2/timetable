@@ -30,12 +30,11 @@ host.innerHTML =
     '<form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b">' +
       '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div></div>' +
-      '<div class="field"><label>Animation</label><div class="modes" id="s_fx"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>' +
-        '<div class="hint" id="s_fxhint"></div></div>' +
+      '<div class="field"><div id="s_look"></div></div>' +
       '<div class="field"><div class="origs" id="c_origs"></div></div>' +
       '<div class="field" id="s_glasswrap" hidden><label>Glass</label>' +
         '<div class="custrow"><span>Animated background</span><input type="checkbox" id="g_glassanim" class="sw"></div>' +
-        '<div class="hint" style="margin-top:4px">The colours drift slowly. Uses a little more battery.</div></div>' +
+        '<div class="hint" style="margin-top:4px">Uses a little more battery.</div></div>' +
       '<div class="field" id="s_customwrap" hidden>' +
         '<label>Custom theme</label>' +
         '<div id="c_code" class="tcode"></div>' +
@@ -68,10 +67,13 @@ host.innerHTML =
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
       '<div class="field"><label>Login</label>' +
-        '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
-        '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
-        '<div class="custrow"><span>Password</span><input type="password" id="cr_pass" class="crin" autocomplete="off" placeholder="••••••••"></div>' +
-        '<div class="custrow"><button class="btn primary" type="button" id="cr_save">Sign in</button><button class="btn danger" type="button" id="cr_clear">Sign out</button></div>' +
+        '<div class="crline" id="cr_line"><span>Signed in as <b id="cr_who"></b></span><button class="flinklike" type="button" id="cr_change">Change</button><button class="flinklike danger" type="button" id="cr_clear">Sign out</button></div>' +
+        '<div id="cr_form">' +
+          '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
+          '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
+          '<div class="custrow"><span>Password</span><input type="password" id="cr_pass" class="crin" autocomplete="off" placeholder="••••••••"></div>' +
+          '<div class="custrow"><button class="btn primary" type="button" id="cr_save">Sign in</button><button class="btn" type="button" id="cr_cancel">Cancel</button></div>' +
+        '</div>' +
         '<div class="hint" id="cr_state"></div>' +
       '</div>' +
     '</div>' +
@@ -81,7 +83,6 @@ host.innerHTML =
         '<button class="btn" type="button" id="openDisplay">Display</button>' +
         '<button class="btn" type="button" id="openMod" hidden>Moderator</button>' +
       '</div>' +
-      '<div class="tabbtns"><button class="btn" type="button" id="modetoggle"></button></div>' +
     '</div>' +
   '</dialog>' +
   '<dialog id="setA11y" class="setdlg">' +
@@ -193,16 +194,21 @@ function renderClouds(){
   $('c_reset').onclick = () => { custom = Object.assign({}, CUSTOM_DEFAULTS); set(LS.custom, custom); apply(); renderCustom(); };
 })();
 
-/* ── login ── */
+/* ── login: signed in, one line (who, Change, Sign out); the fields only when signing in or changing ── */
+let crEditing = false;
 function renderCreds(){
   creds = get(LS.creds, null);
+  const form = !creds || crEditing;
+  $('cr_line').hidden = form; $('cr_form').hidden = !form;
+  $('cr_who').textContent = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_pass').value  = creds ? creds.password : '';
-  $('cr_state').textContent = creds ? 'Signed in as ' + creds.email : 'Not signed in.';
-  /* signed in, the button saves a changed password; signed out, it signs you in */
-  $('cr_save').textContent = creds ? 'Update login' : 'Sign in';
-  $('cr_save').classList.toggle('primary', !creds);
+  $('cr_state').textContent = '';
+  $('cr_save').textContent = creds ? 'Save' : 'Sign in';
+  $('cr_cancel').hidden = !creds;
 }
+$('cr_change').onclick = () => { crEditing = true; renderCreds(); $('cr_email').focus(); };
+$('cr_cancel').onclick = () => { crEditing = false; renderCreds(); };
 $('cr_save').onclick = () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
   const pass = $('cr_pass').value;
@@ -210,10 +216,10 @@ $('cr_save').onclick = () => {
   creds = { email: user + '@' + EMAIL_DOMAIN, password: pass };
   set(LS.creds, creds); localStorage.removeItem(LS.cache);
   if (!get(LS.email, '')) set(LS.email, creds.email);
-  renderCreds();
+  crEditing = false; renderCreds();
   $('cr_state').textContent = 'Saved. Open the timetable to load it.';
 };
-$('cr_clear').onclick = () => { creds = null; set(LS.creds, null); localStorage.removeItem(LS.cache); renderCreds(); };
+$('cr_clear').onclick = () => { creds = null; crEditing = false; set(LS.creds, null); localStorage.removeItem(LS.cache); renderCreds(); };
 
 /* ── accessibility ── */
 function renderA11y(){
@@ -263,8 +269,8 @@ function renderGlass(){
 $('g_glassanim').addEventListener('change', ev => { set('tt.glassanim', ev.target.checked ? 'on' : ''); apply(); });
 
 /* ── mode toggle + open/close wiring ── */
-function renderModeBtn(){ $('modetoggle').textContent = get(LS.mode, 'light') === 'dark' ? 'Light mode' : 'Dark mode'; }
-$('modetoggle').onclick = () => { set(LS.mode, get(LS.mode,'light')==='dark'?'light':'dark'); apply(); renderModeBtn(); };
+/* Dark mode and Animation: the first row (theme.js lookRow) */
+function renderModeBtn(){ TTx.lookRow($('s_look')); }
 $('openA11y').onclick    = () => { renderA11y(); $('setDlg').close(); $('setA11y').showModal(); };
 $('openDisplay').onclick = () => { renderDisplay(); $('setDlg').close(); $('setDisplay').showModal(); };
 document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => {
@@ -272,7 +278,7 @@ document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => 
 
 function openSettings(){
   renderSkins(); renderCustom(); renderGlass(); renderCreds(); renderModeBtn();
-  TTx.fxButtons($('s_fx'), $('s_fxhint')); TTx.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
+  crEditing = false; TTx.lookRow($('s_look')); TTx.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
   /* finding Settings retires the bubble that points at it; no more bubbles inside */
