@@ -62,7 +62,7 @@ FX.scenes.vapor = {
     const sun = (cx, cy, R, top, mid, bot, t, skyFill) => {
       x.save(); x.beginPath(); x.arc(cx, cy, R, 0, TAU); x.clip();
       x.fillStyle = vgrad(cy - R, cy + R, [[0, top], [.5, mid], [1, bot]]); x.fillRect(cx - R, cy - R, R*2, R*2);
-      x.fillStyle = skyFill; const off = (t*.012) % 1, N = 7;
+      x.fillStyle = skyFill; const off = 1 - (t*.04) % 1, N = 7;          /* the gaps rise slowly, thinning as they go, and a new one opens at the foot */
       for (let i = 0; i < N; i++){ const u = (i + off)/N; x.fillRect(cx - R, cy + R*(-.1 + 1.12*Math.pow(u, 1.2)), R*2, R*(.01 + .085*u)); }
       x.restore(); };
     /* a floor of squares in perspective */
@@ -157,8 +157,9 @@ FX.scenes.vapor = {
           const l = Math.max(0, (-side*.3*nx + .5*ny + .82*nz)/(Math.hypot(nx, ny, nz) || 1));
           x.beginPath(); x.moveTo(px(a[0], a[2]), py(a[2], a[1])); x.lineTo(px(b[0], b[2]), py(b[2], b[1])); x.lineTo(px(c[0], c[2]), py(c[2], c[1])); x.closePath();
           x.fillStyle = mix(lo, hi, Math.pow(l, .8)); x.fill(); x.stroke(); };
-        for (let k = Math.ceil(FAR/ZS); k >= 0; k--){ const zn = (k - frac)*ZS + .7, zf = zn + ZS; if (zn < .55) continue;
-          x.globalAlpha = Math.min(1, (FAR - zn)/9);
+        /* rows come in faded at the far end and go out faded as they pass the camera (no popping at either end) */
+        for (let k = Math.ceil(FAR/ZS); k >= 0; k--){ const zn = (k - frac)*ZS + .7, zf = zn + ZS; if (zn < .2) continue;
+          x.globalAlpha = Math.max(0, Math.min(1, (FAR - zn)/9, (zn - .2)/.75));
           for (const side of [-1, 1]){
             x.strokeStyle = dk ? (side < 0 ? 'rgba(255,113,206,.7)' : 'rgba(1,205,254,.7)') : (side < 0 ? 'rgba(255,127,202,.75)' : 'rgba(88,200,240,.8)');
             for (let j = NJ - 1; j >= 0; j--){ const X0 = side*(1.5 + j*DX), X1 = side*(1.5 + (j + 1)*DX), rn = base + k, rf = rn + 1;
