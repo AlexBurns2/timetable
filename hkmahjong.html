@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261115d">
-<script src="theme.js?v=20261115d"></script>
+<link rel="stylesheet" href="theme.css?v=20261115e">
+<script src="theme.js?v=20261115e"></script>
 <script>
 /* In a Games module on the beta page (/beta/, in its frame #gmframe): that page's colours and type, on the module's own colour */
 const BETA = !!window.frameElement && (window.frameElement.id === 'gmframe' || new URLSearchParams(location.search).has('beta'));
@@ -3268,35 +3268,8 @@ function onKey(e) {
 
 // ===================== Fun stuff: filter, effects, sounds, stats, replay =====================
 
-// ---------- chat / name filter ----------
-const BAD_SUB = ['fuck', 'fuk', 'fck', 'phuck', 'shit', 'cunt', 'bitch', 'bastard', 'asshole', 'arsehole', 'dumbass', 'jackass', 'motherf', 'wank', 'twat', 'slut', 'whore',
-  'nigg', 'faggot', 'fagot', 'retard', 'pussy', 'douche', 'bollock', 'piss', 'porn', 'rapist', 'wetback', 'spastic', 'cocksuck', 'dickhead', 'bullshit', 'goddamn'];
-const BAD_EXACT = ['ass', 'arse', 'dick', 'cock', 'prick', 'damn', 'crap', 'tits', 'rape', 'kys', 'fag', 'fags', 'chink', 'spic', 'kike', 'tranny', 'dyke', 'coon', 'gook', 'paki',
-  'spaz', 'hoe', 'hoes', 'bugger', 'nazi', 'stfu', 'wtf', 'fu', 'mf', 'pos', 'dipshit', 'shite', 'feck', 'bloody'];
-const LEET = { '0': 'o', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '4': 'a', '@': 'a', '5': 's', '$': 's', '7': 't', '+': 't', '8': 'b', '9': 'g', '(': 'c' };
-function normWord(w) { return [...w.toLowerCase()].map(c => LEET[c] || c).join('').replace(/[^a-z]/g, '').replace(/(.)\1{2,}/g, '$1$1'); }
-const SAFE_WORDS = ['scunthorpe', 'shiitake', 'cocktail', 'cocktails', 'peacock', 'hancock', 'niggle', 'niggling', 'snigger', 'sniggering', 'swank', 'swanky', 'retardant', 'therapist', 'therapists', 'fukushima', 'assassin', 'classic', 'grape', 'drape', 'scrape', 'skyscraper', 'spicy', 'spice', 'hello', 'shell', 'hellish', 'pisces', 'dickens', 'cocky', 'cockpit', 'bassist', 'passion', 'mishit'];
-function isBad(n) {
-  if (!n || SAFE_WORDS.includes(n)) return false;
-  const squash = n.replace(/(.)\1+/g, '$1');
-  if (BAD_EXACT.includes(n) || BAD_EXACT.includes(squash)) return true;
-  return BAD_SUB.some(b => n.includes(b) || squash.includes(b.replace(/(.)\1+/g, '$1')));
-}
-function censor(text) {
-  let s = String(text || '');
-  // words, including ones written with symbols or numbers (sh1t, f*ck)
-  s = s.replace(/[A-Za-z0-9@$!|+(*#]+/g, w => {
-    const n = normWord(w.replace(/[*#]/g, ''));
-    if (isBad(n)) return '*'.repeat([...w].length);
-    if (/[*#]/.test(w) && /^[a-z]/i.test(w)) { // f*ck, sh#t: try filling the gap with likely letters
-      for (const fill of ['u', 'i', 'a', 'o', 'e']) if (isBad(normWord(w.replace(/[*#]/g, fill)))) return '*'.repeat([...w].length);
-    }
-    return w;
-  });
-  // spaced-out letters: "f u c k" or "s.h.i.t"
-  s = s.replace(/\b(?:[A-Za-z0-9@$][\s._\-]+){2,}[A-Za-z0-9@$]\b/g, run => isBad(normWord(run)) ? run.replace(/[A-Za-z0-9@$]/g, '*') : run);
-  return s;
-}
+// ---------- chat and names: passed through as typed (no word filter) ----------
+function censor(text) { return String(text || ''); }
 
 // ---------- extra appearance ----------
 const BACK_DESIGNS = { plain: 'Plain', lattice: 'Lattice', dragon: 'Dragon pearl', bamboo: 'Bamboo', coin: 'Gold coin', stars: 'Stars' };

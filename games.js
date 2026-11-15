@@ -159,8 +159,9 @@ const GAMES = [
   /* Multiplayer: a lobby (mp.js) that stays together across games; each card opens it with that game picked */
   { id:'mp',        cat:'Multiplayer', ico:'👥', name:'Lobby', blurb:'Make a lobby or join one. Switch games without starting over', w:2 },
   { id:'mp-tetris', cat:'Multiplayer', ico:'🟦', name:'Tetris', blurb:'Send garbage, last one standing' },
-  { id:'mp-snake',  cat:'Multiplayer', ico:'🐍', name:'Snake', blurb:'Up to six snakes in one arena' },
+  { id:'mp-snake',  cat:'Multiplayer', ico:'🐍', name:'Snake', blurb:'Classic, Trails or Territory, up to six' },
   { id:'mp-relay',  cat:'Multiplayer', ico:'✏️', name:'Sketch', blurb:'Write, draw, guess, and watch it drift' },
+  { id:'mp-impostor', cat:'Multiplayer', ico:'🕵️', name:'Impostor', blurb:'Everyone knows the word but one' },
   { id:'mp-chess',  cat:'Multiplayer', ico:'♟️', name:'Chess', blurb:'Two play, the lobby watches' },
   { id:'hkmj',   cat:'Multiplayer', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2 },
   { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
@@ -1728,8 +1729,8 @@ const typing = e => !!(e && e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.targe
 BUILD.tetris = (host, o) => {
   /* a round of a lobby (mp.js): this build then plays Versus only, on the board and rules the host set */
   const LB = o && o.lobby, VO = LB ? LB.opts || {} : {};
-  const COLS = LB ? Math.max(6, Math.min(16, +VO.w || 10)) : 10, ROWS = LB ? Math.max(12, Math.min(30, +VO.h || 20)) : 20;
-  const CELL = Math.min(24, Math.floor(480 / ROWS)), TARGET = 40, LOCK_DELAY = 500, MAX_RESETS = 15, ROT_DAS = 250, ROT_ARR = 130;
+  const COLS = LB ? Math.max(4, Math.min(40, Math.round(+VO.w) || 10)) : 10, ROWS = LB ? Math.max(8, Math.min(60, Math.round(+VO.h) || 20)) : 20;
+  const CELL = Math.max(6, Math.min(24, Math.floor(480 / ROWS), Math.floor(520 / COLS))), TARGET = 40, LOCK_DELAY = 500, MAX_RESETS = 15, ROT_DAS = 250, ROT_ARR = 130;
   const wk = tetrisWeek();
 
   /* ── config: keybinds + handling, persisted (syncs with other settings) ── */
@@ -1866,7 +1867,7 @@ BUILD.tetris = (host, o) => {
   let rotHeld = false, rotStart = 0, rotLast = 0, rotCharged = false;
   let grounded = false, lockStart = 0, lockResets = 0;
   let rebinding = null, savedState = null, saveFlashTimer = null;
-  let vs = null, lastRot = false;  // versus: the round; whether the piece's last move was a rotation (T-spins)
+  let vs = null, lastRot = false, spawnedAt = 0, pausePerf = 0;  // versus: the round; whether the piece's last move was a rotation (T-spins)
 
   /* ── piece mechanics (SRS) ── */
   function collides(cells, px, py){
@@ -1902,7 +1903,7 @@ BUILD.tetris = (host, o) => {
   }
   function spawnFrom(type, now){
     const cells = SPAWN[type].map(r=>r.slice());
-    piece = { type, cells, rot:0, x:(COLS-cells[0].length)>>1, y:0 }; lastRot=false;
+    piece = { type, cells, rot:0, x:(COLS-cells[0].length)>>1, y:0 }; lastRot=false; spawnedAt=performance.now();
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
     if (collides(piece.cells, piece.x, piece.y)) end(false);   // block out
   }
@@ -1913,7 +1914,11 @@ BUILD.tetris = (host, o) => {
     if (hold==null){ hold=cur; spawnNext(now); } else { const h=hold; hold=cur; spawnFrom(h, now); }
     SFX.hold(); applyDCD(now);
   }
-  function hardDrop(now){ while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); commitLock(now, true); }
+  /* a nerfed player (lobby vote) can't place pieces faster than one every NERF_GAP ms: hard drop waits, soft drop is plain gravity */
+  const NERF_GAP = [0, 500, 800, 1200];
+  const nerfGap = () => mode==='versus' && LB && LB.nerf ? NERF_GAP[LB.nerf(LB.me)] || 0 : 0;
+  const cooling = now => { const g = nerfGap(); return g > 0 && now - spawnedAt < g; };
+  function hardDrop(now){ if (cooling(now)) return; while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); commitLock(now, true); }
   function commitLock(now, hard){
     thud(hard ? 4 : 1.5);
     const spin = mode==='versus' && piece.type==='T' && lastRot && tCorners() >= 3;
@@ -1977,7 +1982,7 @@ BUILD.tetris = (host, o) => {
     }
     /* soft drop resets dropAcc on keypress (see onKey), so lowering sdf gives a
        genuinely faster drop — multiple cells/frame — without dumping banked gravity */
-    const interval = Math.max(1, softHeld ? cfg.sdf : gravityMs());
+    const interval = Math.max(1, softHeld && !cooling(now) ? cfg.sdf : gravityMs());
     dropAcc += dt;
     let steps = 0;
     while (dropAcc>=interval && steps<ROWS){ dropAcc-=interval; steps++;
@@ -2312,18 +2317,29 @@ BUILD.tetris = (host, o) => {
     match = { ft:Math.max(1, +VO.ft || 1), wins:{}, k:0, over:false, offs:[] };
     LB.players.forEach(p => match.wins[p.id] = 0);
     LB.peersFn = vsPeers;
-    LB.leaveFn = () => { if (vs && !vs.watch && vs.alive.has(vs.me)) R.emit('out', { k:vs.k }); };
+    /* leaving the round: your board carries on without you (the host's page drops pieces into it) */
+    LB.leaveFn = () => { if (vs && !vs.watch && vs.alive.has(vs.me)){ R.emit('bd', { g:boardStr(false), p:vsPending(), k:vs.k }); R.emit('lft', { k:vs.k }); } };
+    /* the lobby's pause: everything stops where it is, the lock delay and key repeat included */
+    LB.pauseFn = on => {
+      if (on){ if (phase === 'playing'){ phase = 'paused'; pauseAt = Date.now(); pausePerf = performance.now(); moveDir = 0; softHeld = false; rotHeld = false; } }
+      else if (phase === 'paused'){ const gap = performance.now() - pausePerf; phase = 'playing'; baseTime += Date.now() - pauseAt; lastTick = performance.now(); lockStart += gap; spawnedAt += gap; }
+      draw();
+    };
     const cur = d => vs && (d || {}).k === vs.k;
+    const as = (m, d) => d && d.as && m.peer === host() ? String(d.as) : m.peer;     // the host speaking for someone who left
     match.offs.push(R.on('go', m => { const d = m.data || {}; if (m.peer !== host() || match.over || !(d.k > (vs ? vs.k : 0))) return; vsRound(d.k, d.seed >>> 0, +d.at); }));
     match.offs.push(R.on('atk', m => { const d = m.data || {}, v = vs;
-      if (!cur(d) || m.isMe) return;
+      if (!cur(d)) return;
+      if (LB.hostNow() && v.ghosts[d.to]) v.ghosts[d.to].q += Math.max(0, Math.min(20, d.n | 0));
+      if (m.isMe) return;
       v.lastAtk.set(m.peer, d.to);                                         // who is aiming at whom, for the little marks
       if (d.to === v.me){ v.attackers.set(m.peer, Date.now());
         if (phase === 'playing') v.queue.push({ n:Math.max(0, Math.min(20, d.n | 0)) }); }
       draw(); markOpps(); }));
-    match.offs.push(R.on('bd', m => { const d = m.data || {}; if (!cur(d) || m.isMe) return; vs.boards.set(m.peer, { g:String(d.g || ''), p:d.p | 0 }); drawOpps(); }));
+    match.offs.push(R.on('bd', m => { const d = m.data || {}; if (!cur(d) || m.isMe) return; vs.boards.set(as(m, d), { g:String(d.g || ''), p:d.p | 0 }); drawOpps(); }));
+    match.offs.push(R.on('lft', m => { const d = m.data || {}; if (cur(d) && LB.hostNow() && m.peer !== LB.me) setTimeout(() => vsGhost(m.peer), 300); }));
     match.offs.push(R.on('tg', m => { const d = m.data || {}; if (!cur(d) || m.isMe) return; vs.lastAtk.set(m.peer, d.t || null); markOpps(); }));
-    match.offs.push(R.on('out', m => { const d = m.data || {}; if (cur(d)) vsKnock(m.peer); }));
+    match.offs.push(R.on('out', m => { const d = m.data || {}; if (cur(d)) vsKnock(as(m, d)); }));
     match.offs.push(R.on('rw', m => { const d = m.data || {}; if (m.peer !== host() || !cur(d) || vs.scored) return; vs.scored = true;
       if (d.w && match.wins[d.w] != null) match.wins[d.w]++; vsBar(); }));
     match.offs.push(R.on('mw', m => { const d = m.data || {}; if (m.peer !== host()) return; vsMatchOver(d.w); }));
@@ -2335,14 +2351,14 @@ BUILD.tetris = (host, o) => {
     if (match){ match.offs.forEach(f => { try { f(); } catch {} }); match = null; }
     renderOpps();
   }
-  function vsStop(){ if (vs){ clearTimeout(vs.cd); clearInterval(vs.live); vs = null; } }
+  function vsStop(){ if (vs){ clearTimeout(vs.cd); clearInterval(vs.live); Object.values(vs.ghosts).forEach(G => clearInterval(G.timer)); vs = null; } }
   function vsRound(k, seed, at){
     vsStop();
     const here = new Set(LB.room.peers().map(p => p.id));
     const players = LB.players.filter(p => here.has(p.id) || p.id === LB.me);
     const watch = LB.watch || !players.some(p => p.id === LB.me);
     const v = vs = { k, seed, at, room:LB.room, players, me:LB.me, watch, alive:new Set(players.map(p => p.id)), boards:new Map(), queue:[], combo:0, b2b:0, carry:0,
-      done:false, scored:false, cd:null, live:null, target:null, tmode:VO.tgt === 'manual' ? 'even' : (VO.tgt || 'even'), sentTo:{}, attackers:new Map(), lastAtk:new Map(),
+      done:false, scored:false, cd:null, live:null, target:null, ghosts:{}, tmode:VO.tgt === 'manual' ? 'even' : (VO.tgt || 'even'), sentTo:{}, attackers:new Map(), lastAtk:new Map(),
       stats:{ sent:0, pieces:0 } };
     match.k = k;
     phase = 'ready'; clearInterval(loopId); emptyBoard(); newRng(); renderStatsLabels(); updateStats();
@@ -2356,7 +2372,7 @@ BUILD.tetris = (host, o) => {
     const names = () => players.map(p => esc(p.n)).join(' · ');
     const count = () => {
       if (vs !== v) return;
-      const left = Math.ceil((v.at - v.room.now()) / 1000);
+      const left = Math.ceil((v.at - LB.clock()) / 1000);
       if (left > 0){ if (watch) vsBar(left); else showOver(String(left), (match.ft > 1 ? 'Round ' + k + ' · ' : '') + names()); v.cd = setTimeout(count, 150); }
       else if (!watch){ begin(); toBoard(); }
       else vsBar();
@@ -2364,8 +2380,40 @@ BUILD.tetris = (host, o) => {
     count();
   }
   function vsPeers(peers){
-    if (!vs) return;
-    [...vs.alive].forEach(id => { if (id !== vs.me && !peers.some(p => p.id === id)) vsKnock(id); });
+    if (!vs || !LB.hostNow()) return;
+    [...vs.alive].forEach(id => { if (id !== vs.me && !peers.some(p => p.id === id)) vsGhost(id); });
+  }
+  /* someone who left: their board carries on without them, on the host's page. Pieces come down at the
+     round's gravity and land where they fall; garbage aimed at them still arrives; when the stack reaches
+     the top they're out, the same as anyone. The host sends their board for them ('bd' and 'out' with as). */
+  function vsGhost(id){
+    const v = vs; if (!v || !LB.hostNow() || v.ghosts[id] || !v.alive.has(id) || id === v.me) return;
+    const src = String((v.boards.get(id) || {}).g || '');
+    const g = Array.from({ length:ROWS }, (_, r) => Array.from({ length:COLS }, (_, c) => { const ch = src[r * COLS + c]; return ch && ch !== '.' ? (ch === 'g' ? 'G' : ch) : null; }));
+    const G = v.ghosts[id] = { g, q:0, t:0, sent:0, rnd:mulberry32((Math.random() * 4294967296) >>> 0), bag:[], p:null, timer:0 };
+    const fits = (cells, x, y) => cells.every((row, r) => row.every((on, c) => !on || (x + c >= 0 && x + c < COLS && y + r < ROWS && (y + r < 0 || !g[y + r][x + c]))));
+    const next = () => { if (!G.bag.length){ G.bag = KEYS.slice(); for (let i = G.bag.length - 1; i > 0; i--){ const j = (G.rnd() * (i + 1)) | 0; [G.bag[i], G.bag[j]] = [G.bag[j], G.bag[i]]; } }
+      const type = G.bag.shift(), cells = SPAWN[type].map(r => r.slice()); return { type, cells, x:(COLS - cells[0].length) >> 1, y:0 }; };
+    const str = withPiece => g.map((row, r) => row.map((c, x) => { if (withPiece && G.p){ const pr = r - G.p.y, pc = x - G.p.x;
+      if (pr >= 0 && pc >= 0 && G.p.cells[pr] && G.p.cells[pr][pc]) return G.p.type; } return c ? (c === 'G' ? 'g' : c) : '.'; }).join('')).join('');
+    const send = withPiece => { const b = str(withPiece); v.boards.set(id, { g:b, p:G.q }); drawOpps(); v.room.emit('bd', { g:b, p:G.q, k:v.k, as:id }); };
+    G.p = next();
+    G.timer = setInterval(() => {
+      if (vs !== v || !v.alive.has(id) || v.done){ clearInterval(G.timer); return; }
+      if (LB.paused()) return;
+      G.t += 50; G.sent += 50;
+      if (G.t < Math.max(50, vsGrav())) return; G.t = 0;
+      if (fits(G.p.cells, G.p.x, G.p.y + 1)){ G.p.y++; if (G.sent >= 250){ G.sent = 0; send(true); } return; }
+      G.p.cells.forEach((row, r) => row.forEach((on, c) => { if (on && G.p.y + r >= 0) g[G.p.y + r][G.p.x + c] = G.p.type; }));
+      let lines = 0;
+      for (let r = ROWS - 1; r >= 0; r--) if (g[r].every(Boolean)){ g.splice(r, 1); g.unshift(new Array(COLS).fill(null)); r++; lines++; }
+      let top = false;
+      if (!lines && G.q > 0){ const n = Math.min(G.q, +VO.gcap || 8), hole = (Math.random() * COLS) | 0; G.q -= n;
+        for (let i = 0; i < n; i++){ if (g[0].some(Boolean)) top = true; g.shift(); const row = new Array(COLS).fill('G'); row[hole] = null; g.push(row); } }
+      G.p = next();
+      if (top || !fits(G.p.cells, G.p.x, G.p.y)){ G.p = null; send(false); clearInterval(G.timer); v.room.emit('out', { k:v.k, as:id }); return; }
+      send(true);
+    }, 50);
   }
   function vsKnock(id){
     const v = vs; if (!v || !v.alive.has(id)) return;
@@ -2385,7 +2433,7 @@ BUILD.tetris = (host, o) => {
       if (vs !== v || !match || match.over) return;
       const lead = Object.entries(match.wins).find(([, n]) => n >= match.ft);
       if (lead){ v.room.emit('mw', { w:lead[0] }); return; }
-      v.room.emit('go', { k:v.k + 1, seed:(Math.random() * 4294967296) >>> 0, at:v.room.now() + 4200 });
+      v.room.emit('go', { k:v.k + 1, seed:(Math.random() * 4294967296) >>> 0, at:LB.clock() + 4200 });
     }, 2600);
   }
   function vsMatchOver(w){
@@ -2406,7 +2454,8 @@ BUILD.tetris = (host, o) => {
     const el = $$('tvsbar'); if (!el || !vs || !match) return;
     el.hidden = false;
     el.innerHTML = '<span>' + (match.ft > 1 ? 'First to ' + match.ft + ' · Round ' + vs.k : 'One round') + '</span>' +
-      '<span class="tvsscore">' + vs.players.map(p => '<b class="' + (vs.alive.has(p.id) ? '' : 'out') + (p.id === vs.me ? ' me' : '') + '">' + esc(p.id === vs.me ? 'You' : p.n) + pips(match.wins[p.id] || 0, match.ft) + '</b>').join('') + '</span>' +
+      '<span class="tvsscore">' + vs.players.map(p => '<b class="' + (vs.alive.has(p.id) ? '' : 'out') + (p.id === vs.me ? ' me' : '') + '">' + esc(p.id === vs.me ? 'You' : p.n) +
+        (LB.nerf && LB.nerf(p.id) ? '<small class="tnerf">nerfed</small>' : '') + pips(match.wins[p.id] || 0, match.ft) + '</b>').join('') + '</span>' +
       (count ? '<span class="tvsnote">Starting in ' + count + '…</span>' : note ? '<span class="tvsnote">' + note + '</span>' : vs.watch ? '<span class="tvsnote">Watching</span>' : '');
   }
   /* how garbage is aimed: the buttons under the boards (a board clicked overrides them until it's clicked again) */
@@ -2461,7 +2510,7 @@ BUILD.tetris = (host, o) => {
       if (spins){ if (hard){ if (v.b2b) atk += 1; v.b2b++; } else v.b2b = 0; }
       atk += [0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5][Math.min(12, v.combo - 1)];
       if (clearBoard) atk += 10;
-      atk = atk * (+VO.gmul || 1) + v.carry;
+      atk = atk * (VO.gmul != null && VO.gmul !== '' && isFinite(+VO.gmul) ? +VO.gmul : 1) + v.carry;
       const whole = Math.floor(atk); v.carry = atk - whole; atk = whole;
     }
     let left = atk;
@@ -2614,7 +2663,7 @@ BUILD.tetris = (host, o) => {
   const toBoard = () => { if (!TOUCH) return; const g = document.querySelector('#twrap .tgame');
     if (g && g.scrollIntoView) g.scrollIntoView({ block:'start', behavior: reduced() ? 'auto' : 'smooth' }); };
   $$('tstart').onclick = () => { begin(); toBoard(); };
-  $$('tpause').onclick = () => { if (phase==='playing'||phase==='paused') togglePause(); };
+  $$('tpause').onclick = () => { if (mode!=='versus' && (phase==='playing'||phase==='paused')) togglePause(); };
   $$('tundo').onclick = undo;
   $$('tredo').onclick = redo;
   $$('tsave').onclick = saveGame;
@@ -3258,7 +3307,7 @@ const SNK = (() => {
       x.strokeStyle = 'rgba(255,255,255,' + (1 - k) * .8 + ')'; x.lineWidth = 2; x.stroke(); });
     st.pops = (st.pops || []).filter(p => t - p.t < 350);
     st.snakes.filter(s => !s.alive).forEach(s => drawSnake(x, s, 1, cell, W, H, !st.walls, t));
-    st.snakes.filter(s => s.alive).forEach(s => drawSnake(x, s, a, cell, W, H, !st.walls, t));
+    st.snakes.filter(s => s.alive).forEach(s => drawSnake(x, s, s.still ? 1 : a, cell, W, H, !st.walls, t));
   }
   /* sizes the canvas for a board W × H to the space it has; returns the cell size */
   function fit(cv, W, H, maxW){
@@ -3443,6 +3492,8 @@ function snakeSolo(host){
 const SNPAD = () => TOUCH ? '<div class="tpad dpad" id="snpad"><button type="button" data-act="u" aria-label="Up">▲</button><button type="button" data-act="l" aria-label="Left">◀</button>' +
   '<button type="button" data-act="d" aria-label="Down">▼</button><button type="button" data-act="r" aria-label="Right">▶</button></div>' : '';
 const SNSTEP = { slow:170, norm:130, fast:95, insane:68 };
+const SNNERF = [0, 4, 3, 2];                 // a nerfed snake (lobby vote) sits out one step in every 4, 3 or 2
+const snSkip = (LB, id, k) => { const n = LB.nerf ? LB.nerf(id) : 0; return n > 0 && k % SNNERF[n] === 0; };
 const snRand = seed => { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
 
 /* ── the arena: a lobby round (mp.js), Classic or Trails. The host runs it.
@@ -3452,8 +3503,9 @@ const snRand = seed => { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D
    (the rest can't change) and the whole of each body every ten steps. ── */
 function snakeArena(host, LB){
   const O = LB.opts || {}, TRAILS = O.mode === 'trails';
-  const W = Math.max(12, Math.min(64, +O.size || (TRAILS ? 40 : 24))), STEP = SNSTEP[O.speed] || 130;
-  const FRUIT = TRAILS ? 0 : Math.max(1, Math.min(20, +O.fruit || 3)), WALLS = O.walls === 'walls', PW = TRAILS ? 'off' : O.pw || 'off', LEN = Math.max(3, Math.min(10, +O.len || 3));
+  const W = Math.max(8, Math.min(200, Math.round(+O.size) || (TRAILS ? 40 : 24))), STEP = SNSTEP[O.speed] || 130;
+  const FRUIT = TRAILS ? 0 : Math.max(0, Math.min(500, O.fruit === '' || O.fruit == null ? 3 : Math.round(+O.fruit) || 0)), WALLS = O.walls === 'walls', PW = TRAILS ? 'off' : O.pw || 'off';
+  const LEN = Math.max(1, Math.min(100, W - 4, Math.round(+O.len) || 3)), clock = () => LB.clock ? LB.clock() : LB.room.now();
   const ROCKS = +O.rocks || 0, FT = Math.max(1, +O.ft || 1), COLS = window.MP_COLOURS || ['#3b82f6', '#22c55e', '#ec4899', '#f59e0b', '#8b5cf6', '#14b8a6'];
   const CW = W * W > 1296 ? 3 : 2;            // a cell is two base-36 characters, three on the big boards
   head(host, 'Snake', tap('Arrow keys or WASD. ', 'Swipe or use the arrows. ') + (TRAILS ? 'No fruit: every snake leaves a line that stays. Last one moving wins.' : 'Run into anything and you’re out. Last snake moving takes the round.'),
@@ -3497,12 +3549,13 @@ function snakeArena(host, LB){
   }
   /* ── the host's step ── */
   function hostStep(){
-    const s = st; if (!s || over_) return;
+    const s = st; if (!s || over_ || (LB.paused && LB.paused())) return;
     const live = s.snakes.filter(sn => sn.alive), key = c => c.x + ',' + c.y;
     const grows = sn => TRAILS || sn.eats >= 0 || sn.grow > 0;
     /* power-ups wear off */
     live.forEach(sn => { for (const f in sn.fx) if (f !== 'shield' && sn.fx[f] > 0) sn.fx[f]--; });
-    const moves = live.map(sn => 1 + (sn.fx.speed > 0 && k % 2 === 0 ? 1 : 0));      // speed: an extra cell every other step
+    const moves = live.map(sn => snSkip(LB, sn.id, k) ? 0 : 1 + (sn.fx.speed > 0 && k % 2 === 0 ? 1 : 0));      // speed: an extra cell every other step
+    live.forEach((sn, i) => { sn.still = !moves[i]; if (sn.still) sn.tail = null; });
     const maxSub = Math.max(1, ...moves);
     for (let sub = 0; sub < maxSub; sub++){
       const movers = live.filter((sn, i) => sn.alive && moves[i] > sub);
@@ -3556,7 +3609,7 @@ function snakeArena(host, LB){
   function pack(s, full){
     const all = !TRAILS || full;
     return { k, r:round, F:all ? 1 : 0, s:s.snakes.map(sn => [sn.alive ? 1 : 0, enc(all ? sn.body : sn.body.slice(0, 3)), dirK(sn.dir), sn.tail ? enc([sn.tail]) : '',
-               (sn.fx.speed > 0 ? 1 : 0) | (sn.fx.ghost > 0 ? 2 : 0) | (sn.fx.shield ? 4 : 0), sn.body.length]),
+               (sn.fx.speed > 0 ? 1 : 0) | (sn.fx.ghost > 0 ? 2 : 0) | (sn.fx.shield ? 4 : 0) | (sn.still ? 8 : 0), sn.body.length]),
              f:s.fruit.map(f => enc([f]) + (f.k === 'gold' ? '*' : '')).join(''), i:s.items.map(it => enc([it]) + ({ speed:'s', ghost:'g', shield:'h' })[it.k]).join(''),
              p:s.snakes.map(sn => sn.id), o:k <= 1 || k % 20 === 0 ? enc(s.rocks) : null };
   }
@@ -3578,7 +3631,7 @@ function snakeArena(host, LB){
         else if (n !== 0) need = true;
       }
       sn.dir = DV[DIRK[row[2] | 0]] || sn.dir; const t = dec(String(row[3] || '')); sn.tail = t[0] || null;
-      sn.ghost = !!(row[4] & 2); sn.shield = !!(row[4] & 4); });
+      sn.ghost = !!(row[4] & 2); sn.shield = !!(row[4] & 4); sn.still = !!(row[4] & 8); });
     if (need && performance.now() - asked > 1200){ asked = performance.now(); R.emit('sreq', { r:round }); }
     const fr = String(d.f || ''), fruit = [];
     for (let i = 0; i + CW <= fr.length;){ const c = dec(fr.slice(i, i + CW))[0]; i += CW; const g = fr[i] === '*'; if (g) i++; if (c) fruit.push(g ? Object.assign(c, { k:'gold' }) : c); }
@@ -3599,7 +3652,7 @@ function snakeArena(host, LB){
     bar(); legend(); recvAt = performance.now();
     const count = () => {
       if (!alive || round !== r) return;
-      const left = Math.ceil((at - R.now()) / 1000);
+      const left = Math.ceil((at - clock()) / 1000);
       if (left > 0){ over(String(left), (FT > 1 ? 'Round ' + r + ' · ' : '') + st.snakes.map(s => esc(s.id === me ? 'You' : s.n)).join(' · ')); cd = setTimeout(count, 150); return; }
       over();
       if (isHost){ R.emit('st', pack(st, true)); timer = setInterval(hostStep, STEP); }
@@ -3607,7 +3660,7 @@ function snakeArena(host, LB){
     count();
   }
   function steer(d){
-    if (!st || over_ || LB.watch) return;
+    if (!st || over_ || LB.watch || (LB.paused && LB.paused())) return;
     const sn = st.snakes.find(s => s.id === me); if (!sn || !sn.alive) return;
     const v = SNK.DIRS[d]; if (!v) return;
     if (isHost) qTurn(sn, v); else R.emit('dir', { d:v, r:round });
@@ -3627,7 +3680,7 @@ function snakeArena(host, LB){
     const lead = Object.entries(wins).find(([, n]) => n >= FT);
     if (lead) return matchEnd(lead[0]);
     if (FT <= 1) return matchEnd(w);
-    if (isHost) setTimeout(() => { if (alive && !matchOver) R.emit('go', { r:round + 1, seed:(Math.random() * 4294967296) >>> 0, at:R.now() + 3800 }); }, 2400);
+    if (isHost) setTimeout(() => { if (alive && !matchOver) R.emit('go', { r:round + 1, seed:(Math.random() * 4294967296) >>> 0, at:clock() + 3800 }); }, 2400);
   }
   function matchEnd(w){
     if (matchOver) return; matchOver = true;
@@ -3640,11 +3693,10 @@ function snakeArena(host, LB){
   offs.push(R.on('st', m => { if (!isHost && m.peer === LB.hostId) unpack(m.data || {}); }));
   offs.push(R.on('sreq', m => { if (isHost && (m.data || {}).r === round) wantFull = true; }));
   offs.push(R.on('dir', m => { if (!isHost || !st) return; const d = m.data || {}; if (d.r !== round) return; const sn = st.snakes.find(s => s.id === m.peer); if (sn && sn.alive) qTurn(sn, d.d); }));
-  offs.push(R.on('quit', m => { if (!isHost || !st) return; const sn = st.snakes.find(s => s.id === m.peer); if (sn) sn.alive = false; }));
   offs.push(R.on('end', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.k === round) roundEnd(d.w || null); }));
   offs.push(R.on('go', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.r > round && !matchOver) startRound(d.r, d.seed >>> 0, +d.at); }));
-  LB.peersFn = peers => { if (!isHost || !st) return; st.snakes.forEach(s => { if (s.alive && !peers.some(p => p.id === s.id)) s.alive = false; }); };
-  LB.leaveFn = () => R.emit('quit', {});
+  /* someone who leaves (or goes back to the lobby) keeps going: their snake runs on until it hits something */
+  LB.peersFn = null; LB.leaveFn = null;
   function frame(now){
     raf = requestAnimationFrame(frame);
     if (!st) return;
@@ -3677,8 +3729,8 @@ function snakeArena(host, LB){
    every thirty steps or when someone says they missed a step. ── */
 function snakeTerritory(host, LB){
   const O = LB.opts || {};
-  const W = Math.max(16, Math.min(64, +O.size || 40)), N = W * W, STEP = SNSTEP[O.speed] || 130;
-  const T = Math.max(30, +O.time || 120) * 1000, FT = Math.max(1, +O.ft || 1), COLS = window.MP_COLOURS || ['#3b82f6', '#22c55e', '#ec4899', '#f59e0b', '#8b5cf6', '#14b8a6'];
+  const W = Math.max(10, Math.min(200, Math.round(+O.size) || 40)), N = W * W, STEP = SNSTEP[O.speed] || 130;
+  const T = Math.max(10, +O.time || 120) * 1000, FT = Math.max(1, +O.ft || 1), COLS = window.MP_COLOURS || ['#3b82f6', '#22c55e', '#ec4899', '#f59e0b', '#8b5cf6', '#14b8a6'];
   const CW = N > 1296 ? 3 : 2;
   head(host, 'Snake', tap('Arrow keys or WASD. ', 'Swipe or use the arrows. ') + 'Leave your land to draw a line, and get back to it to take everything inside. Cross anyone’s line and they’re out.',
     '<div class="tvsbar" id="snbar"></div><div class="snwrap arena"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div>' + SNPAD());
@@ -3697,7 +3749,8 @@ function snakeTerritory(host, LB){
   const rle = a => { let s = '', i = 0; while (i < a.length){ let j = i + 1; while (j < a.length && a[j] === a[i]) j++; s += a[i] + (j - i).toString(36) + ','; i = j; } return s; };
   const unrle = (s, a) => { a.fill(0); let i = 0; String(s || '').split(',').forEach(t => { if (!t) return; const v = +t[0], n = parseInt(t.slice(1), 36); if (v >= 0 && v < 8 && n > 0) a.fill(v, i, Math.min(N, i + n)); i += n || 0; }); };
   const landOf = v => { let n = 0; for (let i = 0; i < N; i++) if (own[i] === v) n++; return n; };
-  const left = () => Math.max(0, (startAt || R.now()) + T - R.now());
+  const clock = () => LB.clock ? LB.clock() : R.now();                  // stands still while the lobby is paused
+  const left = () => Math.max(0, (startAt || clock()) + T - clock());
   const fmt = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   const DIRK = ['r', 'd', 'l', 'u'], DV = { r:{ x:1, y:0 }, d:{ x:0, y:1 }, l:{ x:-1, y:0 }, u:{ x:0, y:-1 } };
   const dirK = d => d.x > 0 ? 0 : d.y > 0 ? 1 : d.x < 0 ? 2 : 3;
@@ -3741,10 +3794,12 @@ function snakeTerritory(host, LB){
   }
   /* ── the host's step ── */
   function hostStep(){
-    if (over_ || ended) return;
-    const live = P.filter(p => p.alive), out = new Set(), at = new Map();
+    if (over_ || ended || (LB.paused && LB.paused())) return;
+    /* a nerfed player sits out some steps: they stay put (and can still be run into) */
+    const all = P.filter(p => p.alive), live = all.filter(p => !snSkip(LB, p.id, k)), out = new Set(), at = new Map();
+    all.forEach(p => { if (!live.includes(p)){ p.px = p.x; p.py = p.y; } });
     live.forEach(p => { if (p.q.length) p.dir = p.q.shift(); p.px = p.x; p.py = p.y; p.nx = p.x + p.dir.x; p.ny = p.y + p.dir.y;
-      p.off = p.nx < 0 || p.ny < 0 || p.nx >= W || p.ny >= W; if (p.off || p.quit) out.add(p); });
+      p.off = p.nx < 0 || p.ny < 0 || p.nx >= W || p.ny >= W; if (p.off) out.add(p); });
     /* a line crossed: its owner is out, whoever crossed it */
     live.forEach(p => { if (p.off) return; const t = trl[p.ny * W + p.nx]; if (t){ const o = P.find(q => q.v === t); if (o && o.alive) out.add(o); } });
     /* head to head (or swapping places): whoever is on their own land survives it */
@@ -3762,7 +3817,7 @@ function snakeTerritory(host, LB){
     recvAt = performance.now(); dirty = true; bar();
     const still = P.filter(p => p.alive);
     if (P.length > 1 ? still.length <= 1 : !still.length){ ended = true; R.emit('end', { k:round, w:still[0] ? still[0].id : null }); return; }
-    if (R.now() >= startAt + T){
+    if (clock() >= startAt + T){
       let best = null, bn = -1, tie = false;
       still.forEach(p => { const n = landOf(p.v); if (n > bn){ bn = n; best = p; tie = false; } else if (n === bn) tie = true; });
       ended = true; R.emit('end', { k:round, w:best && !tie ? best.id : null });
@@ -3839,7 +3894,7 @@ function snakeTerritory(host, LB){
     bar(); recvAt = performance.now();
     const count = () => {
       if (!alive || round !== r) return;
-      const s = Math.ceil((at - R.now()) / 1000);
+      const s = Math.ceil((at - clock()) / 1000);
       if (s > 0){ over(String(s), (FT > 1 ? 'Round ' + r + ' · ' : '') + fmt(T) + ' on the clock'); cd = setTimeout(count, 150); return; }
       over();
       if (isHost){ R.emit('st', pack(true)); timer = setInterval(hostStep, STEP); }
@@ -3847,7 +3902,7 @@ function snakeTerritory(host, LB){
     count();
   }
   function steer(d){
-    if (!P.length || over_ || LB.watch) return;
+    if (!P.length || over_ || LB.watch || (LB.paused && LB.paused())) return;
     const p = P.find(q => q.id === me); if (!p || !p.alive) return;
     const v = SNK.DIRS[d]; if (!v) return;
     if (isHost) qTurn(p, v); else R.emit('dir', { d:v, r:round });
@@ -3868,7 +3923,7 @@ function snakeTerritory(host, LB){
     const lead = Object.entries(wins).find(([, n]) => n >= FT);
     if (lead) return matchEnd(lead[0]);
     if (FT <= 1) return matchEnd(w);
-    if (isHost) setTimeout(() => { if (alive && !matchOver) R.emit('go', { r:round + 1, seed:(Math.random() * 4294967296) >>> 0, at:R.now() + 3800 }); }, 2400);
+    if (isHost) setTimeout(() => { if (alive && !matchOver) R.emit('go', { r:round + 1, seed:(Math.random() * 4294967296) >>> 0, at:clock() + 3800 }); }, 2400);
   }
   function matchEnd(w){
     if (matchOver) return; matchOver = true;
@@ -3881,11 +3936,10 @@ function snakeTerritory(host, LB){
   offs.push(R.on('st', m => { if (!isHost && m.peer === LB.hostId) unpack(m.data || {}); }));
   offs.push(R.on('treq', m => { if (isHost && (m.data || {}).r === round) wantFull = true; }));
   offs.push(R.on('dir', m => { if (!isHost) return; const d = m.data || {}; if (d.r !== round) return; const p = P.find(q => q.id === m.peer); if (p && p.alive) qTurn(p, d.d); }));
-  offs.push(R.on('quit', m => { if (!isHost) return; const p = P.find(q => q.id === m.peer); if (p) p.quit = true; }));
   offs.push(R.on('end', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.k === round) roundEnd(d.w || null); }));
   offs.push(R.on('go', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.r > round && !matchOver) startRound(d.r, d.seed >>> 0, +d.at); }));
-  LB.peersFn = peers => { if (!isHost) return; P.forEach(p => { if (p.alive && !peers.some(q => q.id === p.id)) p.quit = true; }); };
-  LB.leaveFn = () => R.emit('quit', {});
+  /* someone who leaves keeps going in a straight line, lines and all, until something stops them */
+  LB.peersFn = null; LB.leaveFn = null;
   function frame(now){
     raf = requestAnimationFrame(frame);
     if (!P.length) return;
@@ -9262,7 +9316,7 @@ BUILD.chess = (host, o) => {
   const pos = () => view.states[view.states.length - 1];
   const myTurn = () => g && !g.result && g.me === turn() && !thinking && (!g.online || (g.white && g.black));
   function load(moves){ view = C.replay(moves); }
-  const clockOn = () => g.clock && !g.result && g.moves.length >= 2;
+  const clockOn = () => g.clock && !g.result && g.moves.length >= 2 && !g.paused;
   const left = side => !g.clock ? null : g.clock[side] - (clockOn() && turn() === side ? Date.now() + (g.skew || 0) - g.at : 0);
 
   /* ── drawing ── */
@@ -9431,21 +9485,21 @@ BUILD.chess = (host, o) => {
     const keepFlip = g && g.code === d.code ? flip : false;
     const before = g && g.code === d.code ? g.moves.length : -1;
     g = { online:true, code:d.code, me:d.you, pub:d.pub, tc:d.tc, white:d.white, black:d.black, moves:d.moves.slice(), result:d.result, reason:d.reason,
-          offer:d.offer, clock:d.clock, at:d.at, skew:d.now - Date.now() };
+          offer:d.offer, clock:d.clock, at:d.at, skew:d.now - Date.now(), paused:!!d.paused };
     flip = keepFlip;
     if (before !== g.moves.length){ load(g.moves); if (before >= 0 && g.moves.length > before) SFX.flip(); }
     if (g.result && before >= 0) stopPoll();
     netBox(); draw();
   }
   async function send(action, extra){
-    if (LBC){ lobbyAct(LBC.me, action, Object.assign({}, extra || {}, { t:LBC.room.now() }), true); return; }
+    if (LBC){ lobbyAct(LBC.me, action, Object.assign({}, extra || {}, { t:LBC.clock() }), true); return; }
     if (busy) return; busy = true;
     try { const d = await TT.api('/api/gamestate', { method:'PUT', body:Object.assign({ mode:'chess', action, code:g && g.code }, extra || {}) }); if (alive) take(d.game); }
     catch (e){ if (alive){ $('sc').textContent = e.message; if (g && g.code) refresh(); } }
     finally { busy = false; }
   }
   async function refresh(){
-    if (LBC){ if (lst && chFlagL(lst, LBC.room.now())){ LBC.room.emit('ca', { a:'flag', t:LBC.room.now() }); take(lview()); } return; }
+    if (LBC){ if (lst && !LBC.paused() && chFlagL(lst, LBC.clock())){ LBC.room.emit('ca', { a:'flag', t:LBC.clock() }); take(lview()); } return; }
     if (!g || !g.online || busy || document.hidden) return;
     try { const d = await TT.api('/api/gamestate', { params:{ mode:'chess', code:g.code } }); if (alive && g && g.code === d.game.code) take(d.game); } catch {}
   }
@@ -9521,15 +9575,20 @@ BUILD.chess = (host, o) => {
     st.clock[side] = 0; st.result = side === 'w' ? '0-1' : '1-0'; st.reason = 'time'; st.offer = null;
     return true;
   }
+  /* the view the board draws from. Times are on the round's clock, which stands still while the lobby is
+     paused; paused, the side to move shows what it had left when the pause began, and nothing runs */
   function lview(){
-    const you = lst.w === LBC.me ? 'w' : lst.b === LBC.me ? 'b' : null;
+    const you = lst.w === LBC.me ? 'w' : lst.b === LBC.me ? 'b' : null, now = LBC.clock(), paused = LBC.paused();
+    const clock = lst.clock ? Object.assign({}, lst.clock) : null;
+    if (clock && paused && !lst.result && lst.moves.length >= 2){ const side = lst.moves.length % 2 ? 'b' : 'w'; clock[side] = Math.max(0, clock[side] - (now - lst.at)); }
     return { code:'LOBBY', you, pub:false, tc:lst.tc, white:lst.wn, black:lst.bn, moves:lst.moves.slice(), result:lst.result, reason:lst.reason, offer:lst.offer,
-             clock:lst.clock ? Object.assign({}, lst.clock) : null, at:lst.at, now:LBC.room.now() };
+             clock, at:paused ? now : lst.at, now, paused };
   }
   function lobbyAct(by, a, d, mine){
     if (!lst) return;
     const seat = lst.w === by ? 'w' : lst.b === by ? 'b' : null; if (!seat) return;
-    const now = +d.t || LBC.room.now(), other = seat === 'w' ? 'b' : 'w';
+    const now = +d.t || LBC.clock(), other = seat === 'w' ? 'b' : 'w';
+    if (LBC.paused()){ if (mine) take(lview()); return; }            // nothing moves while the lobby is paused
     if (chFlagL(lst, now)){ take(lview()); return; }
     if (lst.result) return;
     if (a === 'move'){
@@ -9566,10 +9625,9 @@ BUILD.chess = (host, o) => {
     loffs.push(R.on('cst', m => { const d = (m.data || {}).st; if (!d || !Array.isArray(d.moves) || d.moves.length < lst.moves.length) return;
       if (!(m.peer === lst.w || m.peer === lst.b)) return;
       lst = Object.assign({}, d, { moves:d.moves.slice() }); take(lview()); lobbyDone(); }));
-    LBC.peersFn = peers => { if (!lst || lst.result) return;
-      const gone = [lst.w, lst.b].find(id => !peers.some(p => p.id === id));
-      if (gone){ lst.result = gone === lst.w ? '0-1' : '1-0'; lst.reason = 'the other player left'; lst.offer = null; take(lview()); lobbyDone(); } };
-    LBC.leaveFn = () => { if (lst && !lst.result && (lst.w === LBC.me || lst.b === LBC.me)) send('resign'); };
+    /* someone who leaves isn't resigned for: their clock runs on (and the host can pause or end the round) */
+    LBC.peersFn = null; LBC.leaveFn = null;
+    LBC.pauseFn = () => { if (lst) take(lview()); };
     if (LBC.watch) R.emit('creq', {});
     g = null; take(lview());
   }
