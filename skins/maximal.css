@@ -42,6 +42,8 @@ html.fx-live[data-skin="maximal"]{--bg-img:none}
   [data-skin="maximal"] body::after{content:var(--mx-no);position:fixed;right:14px;bottom:-3.5vh;z-index:0;pointer-events:none;
     font:900 27vh/1 "Archivo",sans-serif;font-stretch:125%;letter-spacing:-.06em;color:var(--mx-yel);-webkit-text-stroke:3px #14121a;paint-order:stroke fill}
   html.zen[data-skin="maximal"] body::before,html.zen[data-skin="maximal"] body::after{display:none}
+  /* not inside the Hong Kong Mahjong frame: the games page around it already has them */
+  [data-skin="maximal"][data-pg="hkmahjong"] body::before,[data-skin="maximal"][data-pg="hkmahjong"] body::after{display:none}
 }
 
 /* ── type ── */

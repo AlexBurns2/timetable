@@ -47,6 +47,9 @@ html.fx-live[data-skin="scifi"]{--bg-img:none}
 @media (min-width:1100px){
   [data-skin="scifi"] body::after{content:"";position:fixed;left:9px;bottom:20px;width:28px;height:88px;z-index:3;pointer-events:none;background:var(--cy-code-v)}
   html.zen[data-skin="scifi"] body::after{display:none}
+  /* not inside the Hong Kong Mahjong frame: the games page around it already has the rail and the barcode */
+  [data-skin="scifi"][data-pg="hkmahjong"] body::before,[data-skin="scifi"][data-pg="hkmahjong"] body::after{display:none}
+  [data-skin="scifi"][data-pg="hkmahjong"] body{padding-left:0}
 }
 @media (max-width:1099.98px){
   [data-skin="scifi"] :is(.hubid,.phtitle){position:relative}
