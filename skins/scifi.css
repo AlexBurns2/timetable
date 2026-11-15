@@ -8,7 +8,9 @@
    The small technical marks are rationed, so they read as detail rather
    than noise: one status strip at the top (the page, the time, the
    connection), a number on each of Home's panels, an L-shaped
-   calibration mark in two corners of each panel, one cut corner.
+   calibration mark in two corners of each panel, one cut corner, and
+   one barcode a page (at the foot of the rail; on a narrow screen, in
+   the corner of the page's name).
    Behind each page (fx/scifi.js) a different wireframe study.
    Interference is rare and deliberate: a press, a page change, now and
    then the title.
@@ -39,6 +41,16 @@ html.fx-live[data-skin="scifi"]{--bg-img:none}
     writing-mode:vertical-rl;transform:rotate(180deg);text-align:right;padding-bottom:20px;box-sizing:border-box;white-space:nowrap;overflow:hidden;
     color:#0a0a0c;font:800 2rem/46px "Barlow Condensed",sans-serif;letter-spacing:.015em;background:var(--accent)}
   html.zen[data-skin="scifi"] body::before{display:none}
+}
+/* ── the barcode: once a page. On the rail where there is one; otherwise in the corner of the page's name ── */
+[data-skin="scifi"]{--cy-code:linear-gradient(90deg,#0a0a0c 0px 2px,transparent 2px 3px,#0a0a0c 3px 4px,transparent 4px 6px,#0a0a0c 6px 9px,transparent 9px 10px,#0a0a0c 10px 11px,transparent 11px 13px,#0a0a0c 13px 14px,transparent 14px 16px,#0a0a0c 16px 19px,transparent 19px 21px,#0a0a0c 21px 22px,transparent 22px 23px,#0a0a0c 23px 24px,transparent 24px 26px,#0a0a0c 26px 29px,transparent 29px 31px,#0a0a0c 31px 32px,transparent 32px 34px,#0a0a0c 34px 35px,transparent 35px 37px,#0a0a0c 37px 40px,transparent 40px 42px,#0a0a0c 42px 44px);--cy-code-v:linear-gradient(180deg,#0a0a0c 0px 4px,transparent 4px 6px,#0a0a0c 6px 8px,transparent 8px 12px,#0a0a0c 12px 18px,transparent 18px 20px,#0a0a0c 20px 22px,transparent 22px 26px,#0a0a0c 26px 28px,transparent 28px 32px,#0a0a0c 32px 38px,transparent 38px 42px,#0a0a0c 42px 44px,transparent 44px 46px,#0a0a0c 46px 48px,transparent 48px 52px,#0a0a0c 52px 58px,transparent 58px 62px,#0a0a0c 62px 64px,transparent 64px 68px,#0a0a0c 68px 70px,transparent 70px 74px,#0a0a0c 74px 80px,transparent 80px 84px,#0a0a0c 84px 88px)}
+@media (min-width:1100px){
+  [data-skin="scifi"] body::after{content:"";position:fixed;left:9px;bottom:20px;width:28px;height:88px;z-index:3;pointer-events:none;background:var(--cy-code-v)}
+  html.zen[data-skin="scifi"] body::after{display:none}
+}
+@media (max-width:1099.98px){
+  [data-skin="scifi"] :is(.hubid,.phtitle){position:relative}
+  [data-skin="scifi"] :is(.hubid,.phtitle)::after{content:"";position:absolute;right:22px;top:13px;width:44px;height:10px;pointer-events:none;background:var(--cy-code)}
 }
 /* ── the one status strip (fx/scifi.js writes it: the page, the time, the connection) ── */
 .cy-hud{display:flex;align-items:center;gap:0 14px;overflow:hidden;white-space:nowrap;margin:0 0 10px;height:20px;

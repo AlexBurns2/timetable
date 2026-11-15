@@ -14,7 +14,8 @@
    pressed (the main one breathes), switches that slide, grooved sliders,
    recessed fields, blue gel scrollbars, dialogs that drop like sheets
    with a red button to close them. Light always falls from the top.
-   Changing page, a metal shutter slides across and on.
+   Changing page, what is on the desk is picked up and the next page's
+   things are set down in turn; nothing covers the screen.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="skeuo"]{
   --tx-wood:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='420'%3E %3Cfilter id='a' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.11' numOctaves='3' seed='4' stitchTiles='stitch'/%3E %3CfeColorMatrix type='matrix' values='0 0 0 0 0.62 0 0 0 0 0.42 0 0 0 0 0.22 1.6 0 0 0 -0.55'/%3E%3C/filter%3E %3Cfilter id='b' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.9' numOctaves='2' seed='13' stitchTiles='stitch'/%3E %3CfeColorMatrix type='matrix' values='0 0 0 0 0.35 0 0 0 0 0.2 0 0 0 0 0.08 0 1.3 0 0 -0.52'/%3E%3C/filter%3E %3Crect width='100%25' height='100%25' fill='%23c69a63'/%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
@@ -284,21 +285,18 @@ html[data-fx="on"][data-skin="skeuo"] dialog[open]:not(.credits){animation:skshe
 [data-skin="skeuo"] .gatecard{background:var(--tx-paper),var(--panel)}
 [data-skin="skeuo"] .skinbtn{border-radius:6px}
 
-/* ── leaving and arriving: the page is pressed down and a metal shutter slides across; on the next page it slides on and away ── */
-html.fx-out[data-skin="skeuo"] .wrap{opacity:1;transform:scale(.985);transition:transform .3s cubic-bezier(.3,.8,.3,1)}
-html.fx-enter[data-skin="skeuo"] .wrap{animation:sklift .46s cubic-bezier(.2,.9,.3,1.1) both}
-@keyframes sklift{from{transform:scale(.985)}}
-.sk-shutter i{position:absolute;inset:0 -30px 0 0;transform:translateX(104%);transition:transform .36s cubic-bezier(.25,.9,.3,1);
-  background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0) 30%,rgba(0,0,0,.16)),var(--tx-alu),#cfd3d8;box-shadow:-22px 0 44px rgba(0,0,0,.55),inset 2px 0 0 rgba(255,255,255,.6)}
-.sk-shutter.in i{transform:none}
-.sk-shutter.now i{transition:none}
-.sk-shutter.go i{transform:translateX(-104%);transition:transform .42s cubic-bezier(.6,0,.3,1);box-shadow:22px 0 44px rgba(0,0,0,.55)}
-/* a door handle by the leading edge: a bar standing off the panel on two posts */
-.sk-shutter b{position:absolute;left:34px;top:50%;width:18px;height:min(46vh,340px);transform:translateY(-50%);border-radius:9px;
-  background:linear-gradient(90deg,#8d939a 0,#f4f5f6 28%,#c4c8cd 55%,#7b8188 100%);
-  box-shadow:0 0 0 1px rgba(0,0,0,.35),7px 4px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.9)}
-.sk-shutter b::before,.sk-shutter b::after{content:"";position:absolute;left:-4px;width:26px;height:22px;border-radius:5px;
-  background:linear-gradient(180deg,#eef0f2,#9aa0a7);box-shadow:0 0 0 1px rgba(0,0,0,.35),inset 0 1px 0 #fff}
-.sk-shutter b::before{top:22px}
-.sk-shutter b::after{bottom:22px}
-.sk-shutter.go b{left:auto;right:64px}
+/* ── leaving and arriving: what is on the desk is picked up (a small lift, and it is gone), and the next page's things
+      are set down one after another. Nothing covers the screen. On a page that is one thing (a sheet, a pad, a book), the whole of it. ── */
+html.fx-out[data-skin="skeuo"] .wrap,html.fx-enter[data-skin="skeuo"] .wrap{opacity:1;transition:none;animation:none}
+html.fx-out[data-skin="skeuo"]:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"]) .wrap{animation:skup .22s cubic-bezier(.5,0,.85,.45) both}
+html[data-fx="on"].fx-enter[data-skin="skeuo"]:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"]) .wrap{animation:skdown .4s cubic-bezier(.2,.8,.25,1) both}
+html.fx-out[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > *{animation:skup .2s cubic-bezier(.5,0,.85,.45) both}
+html.fx-out[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > :nth-child(2){animation-delay:.03s}
+html.fx-out[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > :nth-child(3){animation-delay:.06s}
+html.fx-out[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > :nth-child(n+4){animation-delay:.09s}
+html[data-fx="on"].fx-enter[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > *{animation:skdown .36s cubic-bezier(.2,.8,.25,1) both}
+html[data-fx="on"].fx-enter[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > :nth-child(2){animation-delay:.05s}
+html[data-fx="on"].fx-enter[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > :nth-child(3){animation-delay:.1s}
+html[data-fx="on"].fx-enter[data-skin="skeuo"]:not(:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="free"])) .wrap > :nth-child(n+4){animation-delay:.15s}
+@keyframes skup{to{opacity:0;transform:translateY(-12px) scale(1.012)}}
+@keyframes skdown{from{opacity:0;transform:translateY(-16px) scale(1.016)}55%{opacity:1}}

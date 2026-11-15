@@ -148,3 +148,35 @@
 [data-skin="editorial"] .gsec{margin-top:40px}
 [data-skin="editorial"] .gsec :is(.sechd,.cathd){margin-top:0}
 [data-skin="editorial"] .lbopen{border-radius:0;background:none;border:1px solid var(--text);font:500 .6875rem/1 var(--font-ui);letter-spacing:.16em;text-transform:uppercase;padding:8px 12px}
+
+/* ── Home, with room to breathe: no Next panel (the timetable has it), and the poll's results set as a listing ── */
+[data-skin="editorial"][data-pg="home"] .hubnow{display:none}
+:root[data-skin="editorial"][data-pg="home"]:not([data-header="split"]) .hubbar{margin-bottom:68px}
+[data-skin="editorial"] .pollwrap{margin-bottom:68px}
+[data-skin="editorial"] .phead{margin-bottom:18px}
+[data-skin="editorial"] .pq{margin-bottom:26px}
+[data-skin="editorial"] .pcount{background:none;border:0;border-radius:0;padding:0;font-size:.75rem;letter-spacing:.04em}
+[data-skin="editorial"] .pwin{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:20px;align-items:end;background:none;border:0;border-radius:0;padding:0 0 22px}
+[data-skin="editorial"] .pwinico{display:none}
+[data-skin="editorial"] .pwinl{grid-column:1;font:500 .625rem/1.2 var(--font-ui);letter-spacing:.24em;color:var(--ed)}
+[data-skin="editorial"] .pwinn{grid-column:1;font-style:italic;font-size:clamp(2rem,5.5vw,3.25rem);line-height:1.02;letter-spacing:-.02em;margin-top:6px}
+[data-skin="editorial"] .pwinp{grid-column:2;grid-row:1 / 3;align-self:end;max-width:none;font-size:.75rem;letter-spacing:.04em;padding-bottom:6px}
+[data-skin="editorial"] :is(.pbars,.ptease){gap:0}
+[data-skin="editorial"] .pbar{min-height:42px;padding:0;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;overflow:visible}
+[data-skin="editorial"] .pbar:first-child{border-top:1px solid var(--line)}
+[data-skin="editorial"] .pfill,[data-skin="editorial"] .pbar:first-child .pfill{top:auto;bottom:-1px;height:2px;border-radius:0;background:var(--text)}
+[data-skin="editorial"] .pbar:first-child .pfill{background:var(--ed)}
+[data-skin="editorial"] .pbar.mine{border-color:var(--line)}
+[data-skin="editorial"] .pbar.mine .pbl{font-style:italic}
+[data-skin="editorial"] .pbl{font-weight:500;font-size:1rem}
+[data-skin="editorial"] .prk{font-weight:500;letter-spacing:.1em;font-size:.6875rem}
+[data-skin="editorial"] .ppc{font-weight:500;font-size:.875rem;letter-spacing:.04em}
+[data-skin="editorial"] .ptease .pbar{filter:blur(4px)}
+[data-skin="editorial"] :is(.pdone,.pshare){background:none;border:0;border-radius:0;padding:14px 0 0}
+[data-skin="editorial"] .ptick{border-radius:0;box-shadow:none;background:none;color:var(--ed);width:auto;height:auto;font-family:var(--font-display);font-size:1.75rem}
+[data-skin="editorial"] .pfoot{margin-top:26px}
+@media (max-width:640px){
+  :root[data-skin="editorial"][data-pg="home"]:not([data-header="split"]) .hubbar{margin-bottom:44px}
+  [data-skin="editorial"] .pollwrap{margin-bottom:48px}
+  [data-skin="editorial"] .pwin{grid-template-columns:1fr} [data-skin="editorial"] .pwinp{grid-column:1;grid-row:auto;padding:6px 0 0}
+}

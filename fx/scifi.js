@@ -14,7 +14,7 @@
      finder             radar      rings, a sweep, and what it finds
      free, revision     ridges     ridgelines, one behind another
 
-   The first two lean a little toward the pointer; nothing else follows it.
+   Home's leans a little toward the pointer; nothing else follows it.
 
    Also here, because they are this theme's and nobody else's:
    · the status strip at the top of each page (.cy-hud): the page, the
@@ -169,7 +169,7 @@ FX.scenes.scifi = {
         x.strokeStyle = INK(.1); x.beginPath();
         for (let gx = 48; gx < W; gx += 96) for (let gy = 48; gy < H; gy += 96){ x.moveTo(gx - 4, gy + .5); x.lineTo(gx + 5, gy + .5); x.moveTo(gx + .5, gy - 4); x.lineTo(gx + .5, gy + 5); }
         x.stroke(); }
-      S3[scene](t, lx - .5, ly - .5);
+      if (scene === 'structure') S3[scene](t, lx - .5, ly - .5); else S3[scene](t, 0, 0);
     }
     return {
       frame: draw,

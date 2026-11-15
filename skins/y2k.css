@@ -3,11 +3,13 @@
    silver and icy blue, with air in it. Chrome on the bars and buttons,
    frosted translucent plastic for panels, rounded blobby corners, icons
    in little blue glass bubbles, wide techno capitals for names, one
-   black glass display. Acid lime is kept for the one thing that matters
+   glass display for Now and Next (ice-white by day, black in dark
+   mode). Acid lime is kept for the one thing that matters
    (and for what's selected); a touch of vermilion marks what's new.
    Behind it (fx/y2k.js) a quiet room: light, a wire floor, a few thin
    rings and a little liquid chrome in the corners. No rainbow sheen.
-   Changing page, a body of chrome slides across.
+   Changing page, a wave of liquid chrome crosses the screen once and
+   leaves the next page behind it.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="y2k"]{
   --y-lime:#c8ff2e; --y-verm:#ff4b1f; --y-ink:#0b0d10;
@@ -55,19 +57,27 @@ html.fx-live[data-skin="y2k"]{--bg-img:none}
 [data-skin="y2k"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:1px;background:var(--line)}
 [data-skin="y2k"] .forum{border-top:0;padding-top:0}
 [data-skin="y2k"] .forum h2{margin-bottom:14px}
-/* ── Now and Next: the one black glass display ── */
-[data-skin="y2k"] .nowcard{background:var(--y-glass);color:#f1f5f8;border:1px solid #000;border-radius:18px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 rgba(255,255,255,.8)}
-[data-skin="y2k"][data-mode="dark"] .nowcard{box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.08)}
-[data-skin="y2k"] .nowcard::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(170deg,rgba(255,255,255,.15),rgba(255,255,255,0) 34%)}
-[data-skin="y2k"] .nowcard .lbl{color:var(--y-lime)}
-[data-skin="y2k"] .nowcard .meta{color:#93a0ae}
-[data-skin="y2k"] .nowcard .count,[data-skin="y2k"] .progrow .count{color:var(--y-lime)}
-[data-skin="y2k"] .prog{border-radius:999px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
-[data-skin="y2k"] .prog i{background:var(--y-limegel)}
+/* ── Now and Next: the one glass display. By day it is ice-white (black stuck out too much on a light page); in dark mode, black ── */
+[data-skin="y2k"] .nowcard{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(222,234,246,.9));color:#0b0d10;border:1px solid rgba(255,255,255,.95);border-radius:18px;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -10px 16px -8px rgba(90,150,225,.28),0 0 0 1px rgba(110,132,158,.34),0 1px 3px rgba(40,70,110,.18)}
+[data-skin="y2k"] .nowcard::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(170deg,rgba(255,255,255,.7),rgba(255,255,255,0) 38%)}
+[data-skin="y2k"] .nowcard .lbl{color:#0a63d6}
+[data-skin="y2k"] .nowcard .meta{color:#5b6a7c}
+[data-skin="y2k"] .nowcard .count,[data-skin="y2k"] .progrow .count{color:#0a63d6}
+[data-skin="y2k"] .prog{border-radius:999px;background:rgba(30,60,100,.14);box-shadow:inset 0 1px 2px rgba(20,40,70,.3)}
+[data-skin="y2k"] .prog i{background:var(--y-limegel);box-shadow:inset 0 0 0 1px rgba(110,150,0,.55)}
+[data-skin="y2k"][data-mode="dark"] .nowcard{background:var(--y-glass);color:#f1f5f8;border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.08)}
+[data-skin="y2k"][data-mode="dark"] .nowcard::after{background:linear-gradient(170deg,rgba(255,255,255,.15),rgba(255,255,255,0) 34%)}
+[data-skin="y2k"][data-mode="dark"] .nowcard .lbl,[data-skin="y2k"][data-mode="dark"] .nowcard .count,[data-skin="y2k"][data-mode="dark"] .progrow .count{color:var(--y-lime)}
+[data-skin="y2k"][data-mode="dark"] .nowcard .meta{color:#93a0ae}
+[data-skin="y2k"][data-mode="dark"] .prog{background:rgba(255,255,255,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+[data-skin="y2k"][data-mode="dark"] .prog i{box-shadow:none}
 @container hubbar (max-width:26em){
-  [data-skin="y2k"] .hubnow.pair{background:var(--y-glass);border:1px solid #000;border-radius:18px;color:#f1f5f8}
-  [data-skin="y2k"] .hubnow.pair .nowcard{box-shadow:none}
+  [data-skin="y2k"] .hubnow.pair{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(222,234,246,.9));border:1px solid rgba(255,255,255,.95);border-radius:18px;color:#0b0d10;
+    box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(110,132,158,.34)}
+  [data-skin="y2k"][data-mode="dark"] .hubnow.pair{background:var(--y-glass);border-color:#000;color:#f1f5f8;box-shadow:none}
+  [data-skin="y2k"] .hubnow.pair .nowcard,[data-skin="y2k"][data-mode="dark"] .hubnow.pair .nowcard{box-shadow:none;background:none;border:0}
+  [data-skin="y2k"] .hubnow.pair .nowcard::after{display:none}
 }
 /* ── buttons: chrome pills; lime gel for the one that matters and for what's chosen ── */
 :root[data-skin="y2k"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:var(--y-chrome);border:1px solid rgba(110,132,158,.5);color:var(--text);
@@ -108,14 +118,16 @@ html.fx-live[data-skin="y2k"]{--bg-img:none}
   :root[data-skin="y2k"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{margin:10px 8px 44px;padding:12px 12px 26px;border-radius:26px}
 }
 [data-skin="y2k"] .gamestage:not([hidden]){background:var(--panel);border:var(--card-border);border-radius:26px;padding:16px 18px 20px;box-shadow:var(--shadow)}
-/* ── leaving and arriving: a body of chrome slides across and on ── */
+/* ── leaving: the page fades. Arriving: one wave of liquid chrome crosses the screen, and the page is left behind it ── */
 html.fx-enter[data-skin="y2k"] .wrap{animation:none}
-.yk-wipe i{position:absolute;top:-15vh;height:130vh;left:-70vw;width:240vw;border-radius:min(65vh,60vw);transform:translateX(-178vw);transition:transform .5s cubic-bezier(.65,0,.2,1);
-  background:linear-gradient(100deg,#f7f9fb 0%,#c9d2dc 12%,#ffffff 24%,#aeb9c6 38%,#f2f5f8 50%,#b8c3cf 64%,#ffffff 78%,#c3cdd8 90%,#f7f9fb 100%);
-  box-shadow:inset 0 0 0 3px rgba(255,255,255,.95),inset 0 0 0 10px rgba(120,140,165,.45),inset 0 0 80px 30px rgba(255,255,255,.8),0 0 70px rgba(40,60,90,.4)}
-html[data-mode="dark"] .yk-wipe i{background:linear-gradient(100deg,#141a22 0%,#3d4857 12%,#0c1016 24%,#56657a 38%,#161c25 50%,#465466 64%,#0c1016 78%,#3a4654 90%,#141a22 100%);
-  box-shadow:inset 0 0 0 3px rgba(255,255,255,.5),inset 0 0 0 10px rgba(0,0,0,.5),inset 0 0 80px 30px rgba(160,190,220,.25),0 0 70px rgba(0,0,0,.6)}
-.yk-wipe.in i{transform:none}
-.yk-wipe.now i{transition:none}
-.yk-wipe.go i{transform:translateX(178vw);transition:transform .54s cubic-bezier(.7,0,.3,1)}
+html[data-fx="on"].fx-enter[data-skin="y2k"] body{animation:ykreveal .46s cubic-bezier(.4,.1,.3,1) both}
+@keyframes ykreveal{from{clip-path:inset(-200vh calc(100% + 21vw) -200vh 0)}to{clip-path:inset(-200vh -21vw -200vh 0)}}
+.yk-wave i{position:absolute;top:0;bottom:0;left:0;width:42vw;transform:translateX(-42vw);filter:drop-shadow(0 0 22px rgba(255,255,255,.75)) drop-shadow(0 0 3px rgba(40,70,110,.5))}
+.yk-wave b{position:absolute;inset:0;display:block;
+  background:linear-gradient(90deg,#aebbc8 0%,#ffffff 16%,#8a99a9 31%,#f4f8fb 47%,#a3b1bf 60%,#ffffff 74%,#8f9eae 88%,#d5dde5 100%);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200' preserveAspectRatio='none'%3E%3Cpath d='M20 0C34 32 4 68 18 100S6 168 20 200H80C66 168 96 132 82 100S94 32 80 0Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200' preserveAspectRatio='none'%3E%3Cpath d='M20 0C34 32 4 68 18 100S6 168 20 200H80C66 168 96 132 82 100S94 32 80 0Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat}
+html[data-mode="dark"] .yk-wave i{filter:drop-shadow(0 0 22px rgba(150,190,235,.4)) drop-shadow(0 0 3px rgba(0,0,0,.7))}
+html[data-mode="dark"] .yk-wave b{background:linear-gradient(90deg,#1a212b 0%,#77879a 16%,#0d1117 31%,#93a4b8 47%,#1c232e 60%,#6b7c90 74%,#0d1117 88%,#3a4656 100%)}
+.yk-wave.go i{animation:ykwave .46s cubic-bezier(.4,.1,.3,1) both}
+@keyframes ykwave{from{transform:translateX(-42vw)}to{transform:translateX(100vw)}}
 @container hubbar (max-width:30em){ [data-skin="y2k"] .hubid h1{white-space:normal;overflow:visible} }

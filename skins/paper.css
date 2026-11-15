@@ -6,7 +6,7 @@
    held by one piece of washi tape; titles are swiped with highlighter;
    Home's pages are sticky notes; the poll is held by a paperclip;
    headings are handwritten and underlined by hand; buttons are
-   sketched. The timetable keeps its red margin, with the lessons set
+   sketched; the card under the pointer has its name highlighted. The timetable keeps its red margin, with the lessons set
    on the page at a slight angle. Nothing is drawn in the margins.
    Changing page, a fresh sheet is laid over.
    ══════════════════════════════════════════════════════════════════ */
@@ -65,9 +65,10 @@
 [data-skin="paper"][data-mode="dark"] .qtile:nth-child(4n+3){--note:#2f3f4d}
 [data-skin="paper"][data-mode="dark"] .qtile:nth-child(4n+4){--note:#33452c}
 :root[data-skin="paper"] .qtile:hover{background:var(--note);transform:rotate(0) translateY(-3px);box-shadow:4px 8px 16px rgba(60,45,20,.24)}
-/* ── cards: plain pieces of paper; a hand-drawn underline under what you point at ── */
-[data-skin="paper"] :is(.tdn,.gamecard h2){background:var(--pp-scrib) 0 100%/0% 7px no-repeat;padding-bottom:5px;transition:background-size .3s ease}
-[data-skin="paper"] :is(.tday:hover .tdn,.gamecard:hover h2){background-size:100% 7px}
+/* ── cards: plain pieces of paper; the name of the one you point at is swiped with highlighter ── */
+[data-skin="paper"] :is(.tdn,.gamecard h2){width:fit-content;max-width:100%;padding:0 .18em;margin-left:-.18em;
+  background:linear-gradient(100deg,transparent 0 1%,var(--hl) 2.5% 96%,transparent 99%) 0 72%/0% 62% no-repeat;transition:background-size .32s cubic-bezier(.3,.7,.2,1)}
+[data-skin="paper"] :is(.tday:hover .tdn,.gamecard:hover h2,.tday:focus-visible .tdn,.gamecard:focus-visible h2){background-size:100% 62%}
 /* the poll, held by a paperclip */
 [data-skin="paper"] .pollwrap{position:relative}
 [data-skin="paper"] .pollwrap:not([hidden])::before{content:"";position:absolute;left:28px;top:-15px;width:26px;height:58px;z-index:3;pointer-events:none;transform:rotate(-7deg);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='58' viewBox='0 0 26 58' fill='none' stroke-linecap='round'%3E%3Cpath stroke='%235f646b' stroke-width='3.4' d='M7 14v30a6.5 6.5 0 0 0 13 0V9.5a4.5 4.5 0 0 0-9 0V42a2.2 2.2 0 0 0 4.4 0V15'/%3E%3Cpath stroke='%23dfe2e6' stroke-width='1.4' d='M7 14v30a6.5 6.5 0 0 0 13 0V9.5a4.5 4.5 0 0 0-9 0V42a2.2 2.2 0 0 0 4.4 0V15'/%3E%3C/svg%3E") center/contain no-repeat}

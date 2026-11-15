@@ -28,7 +28,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261114';
+const ASSET_V = '20261115';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -37,7 +37,7 @@ const ASSET_V = '20261114';
          theme's colour; Icon style: icons or emoji), unless Display overrides them
    both: has a light and a dark version (false: always dark)
    legacy: an original, as the theme was before it was redrawn; not in the
-         picker, but under Settings → Custom → Originals */
+         picker, but under Settings → Originals */
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
@@ -669,8 +669,9 @@ function useThemeCode(text){
   return c;
 }
 
-/* The two Settings dialogs (settings.js, index.html) share these two pieces.
-   codeBox: the custom theme's "Copy code / Enter a code" row, in el; after()
+/* The two Settings dialogs (settings.js, index.html) share these pieces.
+   codeBox: the custom theme's "Copy code / Enter a code" row (inside the Custom
+   panel only), in el; after()
    runs once a code has changed the theme (to redraw the custom controls). */
 function codeBox(el, after){
   if (!el) return;
@@ -720,20 +721,41 @@ function fxButtons(el, hint){
   [...el.children].forEach(b => b.onclick = () => { set('tt.fx', b.dataset.v); apply(); paint(); });
   paint();
 }
-/* origBox: Settings → Custom → Originals. The themes as they were before they
-   were rebuilt, in a box of their own at the top of the Custom panel: a tile
-   each (its two main colours and its name). With one on, the custom controls
-   give way to a way back. after(): redraw the dialog. */
+/* origBox: Settings → Originals. The themes as they were before they were
+   rebuilt, in a box of their own under Animation: a tile each (its two main
+   colours and its name). With one on, a button leads back to the theme that
+   was on before it. after(): redraw the dialog. */
 const ORIG_SW = { 'o-paper':['#f7f3e8', '#c2571f'], 'o-swiss':['#ffffff', '#e8112d'], 'o-brutal':['#ffe94a', '#0047ff'], 'o-scifi':['#04070d', '#00e5ff'],
                   'o-terminal':['#05080a', '#39ff9e'], 'o-blueprint':['#07223d', '#7ff0ff'], newsprint:['#f4f1e8', '#8c1c13'], retro:['#008080', '#d4d0c8'] };
 function origBox(el, after){
   if (!el) return;
   const cur = readState().skin, legacy = SKINS.filter(s => s.legacy), on = legacy.find(s => s.id === cur);
+  const prevId = get('tt.skin_prev', ''), prev = SKINS.find(s => s.id === prevId && !s.legacy) || SKINS.find(s => s.id === cur.replace(/^o-/, '') && !s.legacy) || SKINS[0];
   el.innerHTML = '<div class="orighd"><b>Originals</b><span>' + (on ? 'You’re using the original ' + on.name + ', exactly as it was.' : 'The themes as they were before the rebuild.') + '</span></div>' +
     '<div class="origgrid">' + legacy.map(s => { const c = ORIG_SW[s.id] || ['#888', '#444'];
       return '<button type="button" class="origtile" data-o="' + s.id + '" aria-pressed="' + (s.id === cur) + '"><i style="background:linear-gradient(135deg,' + c[0] + ' 0 58%,' + c[1] + ' 58%)"></i><span>' + s.name + '</span></button>'; }).join('') + '</div>' +
-    (on ? '<button type="button" class="btn origback" data-o="custom">Back to my custom theme</button>' : '');
-  el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { set(LS.skin, b.dataset.o); apply(); if (after) after(); });
+    (on ? '<button type="button" class="btn origback" data-o="' + prev.id + '">Back to ' + prev.name + '</button>' : '');
+  el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+    if (!on) set('tt.skin_prev', cur);                        // where "Back" leads
+    set(LS.skin, b.dataset.o); apply(); if (after) after(); });
+}
+/* skinFold: the Appearance heading (the label of the field holding the .skins
+   grid) folds the grid away and back; folded, it names the theme that is on.
+   Kept with the other settings. Call it again whenever the theme changes. */
+function skinFold(field){
+  if (!field) return;
+  const grid = field.querySelector('.skins'), lab = field.querySelector('label'); if (!grid || !lab) return;
+  let hd = lab.querySelector('.skhd');
+  if (!hd){
+    lab.innerHTML = '<button type="button" class="skhd"><span>Appearance</span>' +
+      '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" d="M208 96l-80 80-80-80"/></svg><em class="sknow"></em></button>';
+    hd = lab.querySelector('.skhd');
+    hd.onclick = ev => { ev.preventDefault(); set('tt.skinsfold', get('tt.skinsfold', 0) ? 0 : 1); skinFold(field); };
+  }
+  const folded = !!get('tt.skinsfold', 0), cur = SKINS.find(s => s.id === readState().skin);
+  hd.setAttribute('aria-expanded', String(!folded)); hd.title = folded ? 'Show the themes' : 'Hide the themes';
+  grid.hidden = folded;
+  hd.querySelector('.sknow').textContent = cur ? cur.name + (cur.legacy ? ' (original)' : '') : '';
 }
 /* iconButtons: Display's Icon colour and Icon style rows (.modes holders with
    data-v buttons: auto, then the overrides) */
@@ -771,7 +793,7 @@ function themesNotice(){
     const name = orig ? (SKINS.find(k => k.id === orig) || {}).name : '';
     const n = document.createElement('div'); n.className = 'ttnote'; n.setAttribute('role', 'status');
     n.innerHTML = '<p><b>' + (orig ? name + ' has been rebuilt.' : 'The themes have been rebuilt.') + '</b> ' +
-      (orig ? 'The original is' : 'The originals are') + ' still here: Settings → Custom → Originals.</p>' +
+      (orig ? 'The original is' : 'The originals are') + ' still here: Settings → Originals.</p>' +
       '<div class="ttnotebtns">' + (orig ? '<button type="button" class="btn" data-a="old">Keep the original</button>' : '') + '<button type="button" class="btn primary" data-a="ok">Got it</button></div>';
     const done = () => { set('tt.themes2_note', 1); n.classList.add('out'); setTimeout(() => n.remove(), 280); };
     n.querySelector('[data-a="ok"]').onclick = done;
@@ -968,7 +990,7 @@ const NEWS = [
   { id:'themes2', date:'2026-11-14', title:'Themes, rebuilt',
     text:'Nine themes rebuilt from the ground up, each with its own layout, its own way between pages and, for some, a moving background ' +
          '(Settings → Animation turns the motion off). New: Skeuomorphism, Y2K Futurism, Vaporwave, Editorial, Art Deco and Maximalism. ' +
-         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Prefer an old look? Settings → Custom → Originals. Custom themes can be shared as a code.' },
+         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Prefer an old look? Settings → Originals. Custom themes can be shared as a code.' },
   { id:'favicons', date:'2026-11-12', title:'Dynamic favicons',
     text:'Website favicons now dynamically update to match your selected theme.' },
   { id:'reactfix', date:'2026-11-12', title:'Reaction leaderboard fixed',
@@ -1000,7 +1022,7 @@ function newsSeen(key){
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
-window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, origBox, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
+window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, origBox, skinFold, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,

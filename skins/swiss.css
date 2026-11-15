@@ -7,8 +7,11 @@
    one red; shapes only where they mean something: a red block closes
    the index, a red bar is today, a black block is now.
    (Editorial is about atmosphere and the single headline; this is about
-   order.) Changing page, squares on the grid take the page's place,
-   rearrange, and leave.
+   order.) The timetable has a grid of its own, because a day needs room
+   to be read: a narrow column for the times, then ten columns, two to a
+   day; the header, the week and every class sit on those. Changing
+   page, squares on the grid take the page's place, rearrange, and
+   leave.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="swiss"]{
   --g:16px;
@@ -127,6 +130,34 @@
 [data-skin="swiss"] .breakbar{background:none;border:0;border-top:1px solid var(--line);border-radius:0;opacity:1;justify-content:flex-start;padding:0;text-transform:lowercase;letter-spacing:0;font-weight:700}
 [data-skin="swiss"] .breakbar span{text-transform:lowercase}
 [data-skin="swiss"] .weeklabel{font-size:1.5rem;letter-spacing:-.04em}
+/* ── the timetable page's own grid: a column for the times (--tcol), then --sw-n columns; a day is two of them.
+      The stripes behind the page, the header, the week and the days are all cut to it. ── */
+[data-skin="swiss"][data-pg="timetable"]{--tcol:58px;--sw-n:10}
+[data-skin="swiss"][data-pg="timetable"][data-view="full"]{--tcol:86px}
+[data-skin="swiss"][data-pg="timetable"] .wrap::before{left:20px;right:20px;
+  background:linear-gradient(rgba(232,17,45,.035),rgba(232,17,45,.035)) 0 0/var(--tcol) 100% no-repeat,
+    repeating-linear-gradient(90deg,rgba(232,17,45,.035) 0 calc((100% - (var(--sw-n) - 1)*var(--g))/var(--sw-n)),transparent 0 calc((100% - (var(--sw-n) - 1)*var(--g))/var(--sw-n) + var(--g)))
+      calc(var(--tcol) + var(--g)) 0/calc(100% - var(--tcol) - var(--g)) 100% no-repeat}
+[data-skin="swiss"] .grid{column-gap:var(--g);grid-template-columns:var(--tcol) repeat(var(--days,5),minmax(0,1fr))}
+[data-skin="swiss"] .weekswitch{justify-content:flex-start;padding-left:calc(var(--tcol) + var(--g));margin-bottom:20px}
+[data-skin="swiss"] .tmark{right:auto;left:0;font-size:.75rem;opacity:1}
+/* room to read: the class's name may take two lines, the room and the teacher keep a line each */
+[data-skin="swiss"] .lesson{padding:7px 10px 8px}
+[data-skin="swiss"] .lesson .s{flex:none;line-height:1.12;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+[data-skin="swiss"] .lesson :is(.r,.t){font-size:.75rem;line-height:1.3;opacity:1}
+[data-skin="swiss"] .lesson .t{color:var(--muted)}
+[data-skin="swiss"] .lesson.current .t{color:inherit;opacity:.8}
+[data-skin="swiss"] .breakbar{font-size:.75rem;padding:3px 0 0}
+@media (min-width:861px){
+  :root[data-skin="swiss"][data-pg="timetable"]:not([data-header="split"]) .topbar{display:grid;grid-template-columns:var(--tcol) repeat(10,minmax(0,1fr));column-gap:var(--g);row-gap:12px;align-items:stretch}
+  :root[data-skin="swiss"][data-pg="timetable"]:not([data-header="split"]) .brand{grid-column:1 / span 3;max-width:none;min-width:0;align-self:start}
+  :root[data-skin="swiss"][data-pg="timetable"]:not([data-header="split"]) .brand h1{white-space:normal;overflow:visible;overflow-wrap:anywhere;text-wrap:balance;line-height:.98}
+  :root[data-skin="swiss"][data-pg="timetable"]:not([data-header="split"]) .now{grid-column:4 / span 6;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--g)}
+  :root[data-skin="swiss"][data-pg="timetable"]:not([data-header="split"]) .headbtns{grid-column:10 / span 2;flex-direction:row;justify-self:end;align-self:start}
+}
+@media (max-width:1100px) and (min-width:861px){ [data-skin="swiss"][data-pg="timetable"]{--g:10px} [data-skin="swiss"] .lesson .s{font-size:.875rem} [data-skin="swiss"] .dayhead .dow{font-size:1.25rem} }
+@media (max-width:860px){ [data-skin="swiss"][data-pg="timetable"]{--tcol:58px;--sw-n:4;--g:12px} }
+@media (max-width:600px){ [data-skin="swiss"][data-pg="timetable"] .wrap::before{left:14px;right:14px} }
 /* ── leaving and arriving: squares on the grid ── */
 html.fx-enter[data-skin="swiss"] .wrap{animation:none}
 .sw-blocks i{position:absolute;background:#fff;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.14);opacity:0;transition:opacity 0s linear calc(var(--d)/var(--n)*.3s)}

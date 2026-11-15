@@ -103,10 +103,23 @@ html.fx-live[data-skin="vapor"]{--bg-img:none}
   :root[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead{margin:0 -12px 14px;padding-left:12px;padding-right:12px}
 }
 [data-skin="vapor"] .gamestage:not([hidden]){background:var(--panel);border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi);padding:14px 16px 18px;box-shadow:var(--shadow)}
-/* ── leaving and arriving: tracking goes, static, the next picture tunes in ── */
-html.fx-enter[data-skin="vapor"] .wrap{animation:none}
-html.vp-track[data-skin="vapor"] .wrap{animation:vptrack .14s steps(1) both}
-@keyframes vptrack{0%{transform:translateX(-9px) skewX(-2.5deg);filter:saturate(1.7) hue-rotate(-14deg)}34%{transform:translateX(11px) skewX(1.5deg)}67%{transform:translateX(-5px) skewX(-1deg);filter:saturate(1.4) hue-rotate(12deg)}100%{transform:none;filter:none}}
-html.vp-settle[data-skin="vapor"] .wrap{transform:translateX(3px);filter:saturate(1.5)}
+/* ── leaving and arriving: the tape loses tracking (fx.js). The page itself tears sideways in bands and its colours part;
+      over it, scanlines, a tracking bar rolling up the screen, the deck's PLAY mark ── */
+html.fx-enter[data-skin="vapor"] .wrap,html.fx-out[data-skin="vapor"] .wrap{animation:none;transition:none}
+html.vp-tear[data-skin="vapor"] .wrap{opacity:var(--vp-o,1)}
+html.vp-jit[data-skin="vapor"] .wrap{animation:vpjit .32s steps(1) both;opacity:var(--vp-o,1)}
+@keyframes vpjit{0%{transform:translateX(-7px) skewX(-2deg);filter:saturate(1.7) hue-rotate(-14deg)}22%{transform:translateX(9px) skewX(1.4deg)}44%{transform:translateX(-12px) skewX(-3deg);filter:saturate(2) hue-rotate(16deg)}
+  66%{transform:translateX(14px) skewX(2.4deg)}88%{transform:translateX(-5px) skewX(-1deg);filter:saturate(1.4) hue-rotate(-8deg)}100%{transform:none;filter:none}}
+html.fx-in[data-skin="vapor"] .wrap{opacity:0}
+.vp-defs{width:0;height:0;overflow:hidden}
+.vp-vhs i{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(8,0,24,.26) 0 1px,transparent 1px 3px)}
+.vp-vhs b{position:absolute;left:0;right:0;top:0;height:13vh;transform:translateY(104vh);
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.34) 0 1px,transparent 1px 4px,rgba(255,255,255,.16) 4px 5px,transparent 5px 9px),
+    linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,113,206,.28) 30%,rgba(255,255,255,.4) 50%,rgba(1,205,254,.28) 70%,rgba(255,255,255,0));
+  box-shadow:0 -1px 0 rgba(255,255,255,.75),0 1px 0 rgba(255,255,255,.5)}
+.vp-vhs.roll b{transform:translateY(-16vh);transition:transform .33s linear}
+.vp-vhs.hold b{transform:translateY(40vh)}
+.vp-vhs em{position:absolute;left:26px;top:22px;font:400 1.5rem/1 "VT323",ui-monospace,monospace;font-style:normal;letter-spacing:.12em;color:#fff;text-shadow:2px 0 rgba(1,205,254,.85),-2px 0 rgba(255,113,206,.85)}
+.vp-vhs.off{opacity:0;transition:opacity .06s linear}
 [data-skin="vapor"] .hubnow{height:auto;min-height:5rem}
 [data-skin="vapor"] .hubnow .nowcard .subj{flex:none;line-height:1.3}

@@ -46,7 +46,8 @@ html.fx-live[data-skin="maximal"]{--bg-img:none}
 
 /* ── type ── */
 [data-skin="maximal"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-stretch:125%;line-height:.88}
-[data-skin="maximal"] .hubid h1{font-size:clamp(2.1rem,9cqi,5rem)}
+[data-skin="maximal"] .hubid h1{font-size:clamp(2.1rem,7.4cqi,4.4rem)}
+[data-skin="maximal"] .hubid h1{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}      /* a long greeting takes a second line (a third at most) rather than losing the name; sized so "Good morning," fits one */
 [data-skin="maximal"] .brand h1{font-size:clamp(1.5rem,2.7vw,2.3rem);font-stretch:108%}
 [data-skin="maximal"] .pagehead h1{font-size:clamp(2rem,6vw,3.6rem)}
 [data-skin="maximal"] .hubsub,[data-skin="maximal"] .brand>span,[data-skin="maximal"] .pagelede{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:1.1875rem;line-height:1.2}
@@ -183,4 +184,4 @@ html.fx-enter[data-skin="maximal"] .wrap{animation:none}
 .mx-bands i:nth-child(even) b{margin-left:-22vw}
 .mx-ink{background:#14121a;color:#fbf4e4}.mx-pink{background:#f5419e;color:#14121a}.mx-cream{background:#fbf4e4;color:#14121a}
 .mx-yellow{background:#f6bd1e;color:#14121a}.mx-blue{background:#2b6fd0;color:#fbf4e4}
-@container hubbar (max-width:30em){ [data-skin="maximal"] .hubid h1{font-size:1.6rem;line-height:.95;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical} }      /* on a phone the greeting takes two lines rather than being cut short */
+@container hubbar (max-width:30em){ [data-skin="maximal"] .hubid h1{font-size:1.4rem;line-height:.95;-webkit-line-clamp:3} }      /* on a phone the greeting takes two lines rather than being cut short */

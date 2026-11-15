@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261114">
+<link rel="stylesheet" href="theme.css?v=20261115">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261114"></script>
-<script src="icons.js?v=20261114"></script>
+<script src="theme.js?v=20261115"></script>
+<script src="icons.js?v=20261115"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -517,8 +517,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field">
-      <label>Theme code</label>
-      <div id="c_code" class="tcode"></div>
+      <div class="origs" id="c_origs"></div>
     </div>
 
     <div class="field" id="glasswrap" hidden>
@@ -528,8 +527,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
     </div>
 
     <div class="field" id="customwrap" hidden>
-      <div class="origs" id="c_origs"></div>
       <label>Custom theme</label>
+      <div id="c_code" class="tcode"></div>
       <div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>
       <div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>
       <div class="custrow"><span>Text</span><input type="color" id="c_text"></div>
@@ -1779,7 +1778,7 @@ $('whoami').addEventListener('blur', viewUser);
 
 /* ═══ settings ═══ */
 const dlg = $('dlg');
-/* every theme, in the picker's order (the originals are under Custom) */
+/* every theme, in the picker's order; the heading folds the grid away. The originals have their own box under Animation */
 const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
 function renderSkins(){
   const host = $('skins');
@@ -1788,7 +1787,7 @@ function renderSkins(){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'skinbtn';
-    b.setAttribute('aria-pressed', String(s.id === skin || (s.custom && isLegacy(skin))));
+    b.setAttribute('aria-pressed', String(s.id === skin));
     b.innerHTML = '<span class="sw" style="background:' + s.swatch +
                   (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
@@ -1796,13 +1795,13 @@ function renderSkins(){
                         renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); };
     host.appendChild(b);
   });
+  TT.skinFold(host.parentNode);
+  TT.origBox($('c_origs'), () => { skin = TT.readState().skin; applyLook(); renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); });
 }
 function renderCustom(){
-  const on = skin === 'custom' || isLegacy(skin);
+  const on = skin === 'custom';
   $('customwrap').hidden = !on;
-  $('customwrap').classList.toggle('islegacy', isLegacy(skin));
   if (!on) return;
-  TT.origBox($('c_origs'), () => { skin = TT.readState().skin; applyLook(); renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); });
   const sel = $('c_font');
   if (!sel.options.length) CUSTOM_FONTS.forEach(f => sel.add(new Option(f, f)));
   $('c_bg').value     = custom.bg;

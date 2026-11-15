@@ -20,6 +20,10 @@
 
    The type is drawn once on a 2D canvas (the theme's own face, once it
    has loaded) and used as a texture.
+
+   Everything moves slowly, the two pages people sit on longest (Home
+   and the timetable) slowest of all, and the pointer only dents the
+   cloth a little: faster or stronger than this made people queasy.
    ═══════════════════════════════════════════════════════════════════ */
 (() => {
 "use strict";
@@ -262,6 +266,7 @@ FX.scenes.maximal = {
     const gl = g.gl, tex = gl.createTexture();
     let asp = 8, e = env, mx = innerWidth/2, my = innerHeight/2, mz = 0, alive = true;
     const usesType = pick[0] === 'fabric' || pick[0] === 'radial';
+    const pace = env.page === 'home' ? .42 : pick[0] === 'grid' ? .38 : .78;      /* how fast this page's clock runs */
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 1, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array([0]));
     if (usesType){
@@ -271,13 +276,13 @@ FX.scenes.maximal = {
     }
     return {
       frame(t, dt, ptr){
-        const k = dt ? Math.min(1, dt*5) : 1;
+        const k = dt ? Math.min(1, dt*3) : 1;
         if (ptr.on){ mx += (ptr.px - mx)*k; my += (ptr.py - my)*k; }
         mz += ((ptr.on && e.animate ? 1 : 0) - mz)*(dt ? Math.min(1, dt*3) : 1);
         const H = canvas.clientHeight || innerHeight;
         gl.uniform2f(g.u('uRes'), canvas.width, canvas.height);
-        gl.uniform1f(g.u('uT'), t);
-        gl.uniform3f(g.u('uM'), mx/H, my/H, mz);
+        gl.uniform1f(g.u('uT'), t*pace);
+        gl.uniform3f(g.u('uM'), mx/H, my/H, mz*.38);
         gl.uniform1f(g.u('uDark'), e.dark ? 1 : 0);
         gl.uniform1f(g.u('uVar'), pick[1]);
         gl.uniform1f(g.u('uAsp'), asp);

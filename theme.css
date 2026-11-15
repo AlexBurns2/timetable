@@ -304,8 +304,8 @@ html[data-motion="reduced"] .ldspin{animation-duration:2.4s}
 .ldinline::before{content:'';display:inline-block;vertical-align:-2px;width:12px;height:12px;margin-right:7px;border-radius:50%;
   border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
 
-/* ═══ Settings → Custom → Originals: the themes as they were, in a box of their own ═══ */
-.origs{margin:0 0 16px;padding:11px 12px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
+/* ═══ Settings → Originals: the themes as they were, in a box of their own (under Animation) ═══ */
+.origs{margin:0;padding:11px 12px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
 .orighd{display:flex;align-items:baseline;gap:4px 9px;flex-wrap:wrap;margin-bottom:9px}
 .orighd b{font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase}
 .orighd span{color:var(--muted);font-size:.75rem}
@@ -317,7 +317,16 @@ html[data-motion="reduced"] .ldspin{animation-duration:2.4s}
 .origtile:hover{border-color:var(--accent)}
 .origtile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 32%,transparent)}
 .origback{margin-top:10px;width:100%;justify-content:center}
-.islegacy > :not(.origs){display:none!important}
+/* the Appearance heading folds the grid of themes away; folded, it names the one that is on */
+.skhd{display:inline-flex;align-items:center;gap:6px;max-width:100%;margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;text-align:left}
+.skhd svg{flex:none;width:11px;height:11px;transition:transform .18s ease}
+.skhd[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.skhd .sknow{display:none;font-style:normal;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skhd[aria-expanded="false"] .sknow{display:block}
+.skhd:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.skins[hidden]{display:none!important}
+.field:has(> .skins[hidden]) > label{margin-bottom:0}
+.field > .tcode{margin-bottom:10px}
 
 /* ═══ the note shown once after the themes were rebuilt (theme.js themesNotice) ═══ */
 .ttnote{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:70;box-sizing:border-box;width:min(580px,calc(100vw - 24px));

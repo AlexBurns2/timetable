@@ -203,13 +203,8 @@ TR.maximal = {
   in(n, done){ const L = root.querySelector('.mx-bands'); if (!L) return done(); L.classList.remove('now'); void L.offsetWidth; L.classList.add('go'); after(540, done); }
 };
 
-/* Skeuomorphism: a brushed-metal shutter slides across and on */
-TR.skeuo = {
-  outMs:400, inMs:460,
-  out(n, done){ root.classList.add('fx-out'); const L = layer('sk-shutter', '<i><b></b></i>'); void L.offsetWidth; L.classList.add('in'); after(380, done); },
-  cover(){ layer('sk-shutter in now', '<i><b></b></i>'); },
-  in(n, done){ const L = root.querySelector('.sk-shutter'); if (!L) return done(); L.classList.remove('now'); void L.offsetWidth; L.classList.add('go'); after(440, done); }
-};
+/* Skeuomorphism: what is on the desk is picked up; the next page's things are set down in turn (skeuo.css). Nothing covers the screen. */
+TR.skeuo = fade(300, 540);
 
 /* Notebook: a fresh sheet is laid over the page; the next page is written on it */
 TR.paper = {
@@ -219,12 +214,12 @@ TR.paper = {
   in(n, done){ const L = root.querySelector('.pp-sheet'); if (L) L.classList.add('go'); after(360, done); }
 };
 
-/* Y2K: a body of chrome slides across and on (a transform only, so it stays smooth while the next page loads) */
+/* Y2K Futurism: the page fades, and on the next one a wave of liquid chrome crosses the screen once, leaving the page behind it
+   (y2k.css: the page is clipped to the wave's middle as it goes) */
 TR.y2k = {
-  outMs:520, inMs:560,
-  out(n, done){ const L = layer('yk-wipe', '<i></i>'); void L.offsetWidth; L.classList.add('in'); after(500, done); },
-  cover(){ layer('yk-wipe in now', '<i></i>'); },
-  in(n, done){ const L = root.querySelector('.yk-wipe'); if (!L) return done(); L.classList.remove('now'); void L.offsetWidth; L.classList.add('go'); after(540, done); }
+  outMs:130, inMs:500,
+  out(n, done){ root.classList.add('fx-out'); after(120, done); },
+  in(n, done){ const L = layer('yk-wave', '<i><b></b></i>'); void L.offsetWidth; L.classList.add('go'); after(480, done); }
 };
 /* Art Deco: two halves of a fan rise to meet; on the next page they fold away from the middle */
 function fan(k, p){
@@ -281,42 +276,62 @@ TR.swiss = {
   }
 };
 
-/* Vaporwave: the picture loses tracking and drops to static; the next page tunes in line by line */
-function vhs(k, wipe, mode, label){
-  const { x, w, h } = k, dk = dark();
-  if (!k.noise){
-    const n = document.createElement('canvas'); n.width = 192; n.height = 108; const nx = n.getContext('2d'), d = nx.createImageData(192, 108);
-    for (let i = 0; i < d.data.length; i += 4){ const v = Math.random() * 255; d.data[i] = v * .9; d.data[i + 1] = v * .75; d.data[i + 2] = v; d.data[i + 3] = 255; }
-    nx.putImageData(d, 0, 0); k.noise = n;
+/* Vaporwave: the tape loses tracking. It is the page itself that distorts, not a cover laid over it: an SVG filter
+   shifts the page's own pixels sideways in bands (a small picture of grey bands is the displacement map; a new one each
+   step) and pulls its red apart from its green and blue. It worsens until the picture is gone; the next page arrives
+   torn the same way and settles. Over it: scanlines, a tracking bar rolling up the screen, and the deck's PLAY mark.
+   Where SVG filters on a page are unreliable (Safari), the page jitters and its colour runs instead (vapor.css). */
+const VP_SVG = !!window.chrome || /Firefox\//.test(navigator.userAgent);
+const vpMap = (bands, amp) => {                      /* grey = no shift; a band's red says how far it is pushed */
+  const c = document.createElement('canvas'); c.width = 4; c.height = 96;
+  const x = c.getContext('2d'), put = (y, h, v) => { x.fillStyle = 'rgb(' + Math.max(0, Math.min(255, Math.round(128 + v*127))) + ',128,128)'; x.fillRect(0, y, 4, h); };
+  put(0, 96, 0);
+  for (let y = 0; y < 96; y += 2) put(y, 2, (Math.random() - .5)*.06*amp);
+  for (let i = 0; i < bands; i++) put(Math.floor(Math.random()*92), 1 + Math.floor(Math.random()*Math.random()*12), (Math.random() < .5 ? -1 : 1)*(.25 + Math.random()*.75)*amp);
+  return c.toDataURL('image/png');
+};
+function vpStart(osd){
+  const L = layer('vp-vhs', '<i></i><b></b><em>&#9654; ' + osd + '</em>');
+  if (VP_SVG){
+    const d = layer('vp-defs', '<svg width="0" height="0" aria-hidden="true"><filter id="vp-tear" x="-10%" y="-2%" width="120%" height="104%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">' +
+      '<feImage x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="m"/>' +
+      '<feDisplacementMap in="SourceGraphic" in2="m" scale="0" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
+      '<feColorMatrix in="d" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/><feOffset in="r" dx="0" dy="0" result="r2"/>' +
+      '<feColorMatrix in="d" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="g"/><feOffset in="g" dx="0" dy="0" result="g2"/>' +
+      '<feBlend in="r2" in2="g2" mode="screen"/></filter></svg>');
+    L.img = d.querySelector('feImage'); L.dis = d.querySelector('feDisplacementMap'); L.off = d.querySelectorAll('feOffset');
   }
-  x.clearRect(0, 0, w, h);
-  const y0 = mode === 'cover' ? 0 : wipe * h, y1 = mode === 'cover' ? wipe * h : h;
-  if (y1 > y0){
-    x.save(); x.beginPath(); x.rect(0, y0, w, y1 - y0); x.clip();
-    x.fillStyle = dk ? '#12052a' : '#2b1a5a'; x.fillRect(0, y0, w, y1 - y0);
-    x.globalAlpha = .34; x.imageSmoothingEnabled = false;
-    x.drawImage(k.noise, Math.random() * 40, Math.random() * 30, 150, 78, 0, 0, w, h);
-    x.globalAlpha = 1;
-    for (let i = 0; i < 4; i++){ const by = Math.random() * h; x.fillStyle = i % 2 ? 'rgba(255,113,206,.22)' : 'rgba(1,205,254,.2)'; x.fillRect(0, by, w, 2 + Math.random() * 10); }
-    x.fillStyle = 'rgba(0,0,0,.28)'; for (let y = y0 - (y0 % 4); y < y1; y += 4) x.fillRect(0, y, w, 1.5);
-    if (label && wipe > .5){ x.font = '400 ' + Math.max(22, Math.min(44, w / 22)) + 'px VT323, ui-monospace, monospace'; x.textBaseline = 'top';
-      x.fillStyle = 'rgba(1,205,254,.9)'; x.fillText(label, 34, 26); x.fillStyle = '#fff'; x.fillText(label, 32, 24); }
-    x.restore();
-  }
-  const ly = mode === 'cover' ? y1 : y0;                      // the bright line where the picture ends
-  if (wipe > 0 && wipe < 1){ x.fillStyle = '#fff'; x.fillRect(0, ly - 2, w, 3); x.fillStyle = 'rgba(255,113,206,.7)'; x.fillRect(0, ly - 8, w, 4); x.fillStyle = 'rgba(1,205,254,.7)'; x.fillRect(0, ly + 3, w, 4); }
+  /* one step of the fault: k 0..1 how bad it is */
+  L.set = k => {
+    root.style.setProperty('--vp-o', String(Math.max(0, 1 - Math.max(0, k - .55)*2.1)));
+    if (!L.img) return;
+    L.img.setAttribute('href', vpMap(3 + Math.round(k*9), .35 + k*.65));
+    L.dis.setAttribute('scale', (.004 + k*k*.2).toFixed(4));
+    L.off[0].setAttribute('dx', (.0012 + k*.011).toFixed(4)); L.off[1].setAttribute('dx', (-.0012 - k*.011).toFixed(4));
+  };
+  root.classList.add(VP_SVG ? 'vp-tear' : 'vp-jit');
+  const w = document.querySelector('.wrap'); if (VP_SVG && w) w.style.filter = 'url(#vp-tear)';      /* set here, in the page, so the reference is to this document */
+  return L;
 }
+const vpEnd = () => { root.classList.remove('vp-tear', 'vp-jit'); root.style.removeProperty('--vp-o'); const w = document.querySelector('.wrap'); if (w) w.style.filter = ''; };
 TR.vapor = {
-  outMs:470, inMs:560,
+  outMs:340, inMs:400,
   out(n, done){
-    root.classList.add('vp-track');
-    const k = canvasLayer('vp-vhs', 1), label = '▶ PLAY  ' + (NAMES[n.to] || '').toUpperCase();
-    after(130, () => run(320, p => vhs(k, ease.in(p) * 1.001, 'cover', label), done));
+    const L = vpStart('PLAY'), K = [.08, .16, .28, .42, .6, .8, 1];
+    K.forEach((k, i) => after(i*45, () => L.set(k)));
+    void L.offsetWidth; L.classList.add('roll');
+    after(325, done);
   },
-  cover(n){ const k = canvasLayer('vp-vhs', 1); this.k = k; this.label = '▶ PLAY  ' + (NAMES[PG] || '').toUpperCase(); vhs(k, 1, 'cover', this.label);
-    this.tick = setInterval(() => vhs(k, 1, 'cover', this.label), 60); },
-  in(n, done){ clearInterval(this.tick); const k = this.k || canvasLayer('vp-vhs', 1);
-    run(460, p => vhs(k, ease.out(p), 'reveal', ''), () => { root.classList.add('vp-settle'); after(90, () => { root.classList.remove('vp-settle'); done(); }); }); }
+  cover(){ root.style.setProperty('--vp-o', '0'); const L = layer('vp-vhs hold', '<i></i><b></b><em>&#9654; PLAY</em>'); this.hold = L; },
+  in(n, done){
+    if (this.hold) this.hold.remove();
+    const L = vpStart('PLAY'), K = [1, .78, .58, .4, .26, .15, .07];
+    L.set(1);
+    K.forEach((k, i) => after(i*45, () => L.set(k)));
+    void L.offsetWidth; L.classList.add('roll');
+    after(330, () => { vpEnd(); L.classList.add('off'); });
+    after(390, done);
+  }
 };
 
 /* Cyberpunk: the panels shift off behind their angles, the signal breaks up for a moment, the next ones shift in */
@@ -362,7 +377,7 @@ function leave(url){
   const go = () => { if (gone) return; gone = true; try { sessionStorage.setItem('tt.nav', JSON.stringify(Object.assign(note, { t:Date.now() }))); } catch {} location.href = url; };
   try { tr.out(note, go); } catch { go(); }
   setTimeout(go, (tr.outMs || 400) + 300);
-  setTimeout(() => { leaving = false; clearLayers(); root.classList.remove('vp-track'); }, 5000);   // still here (a download, a blocked page): put the page back
+  setTimeout(() => { leaving = false; clearLayers(); vpEnd(); }, 5000);   // still here (a download, a blocked page): put the page back
 }
 FX.go = url => { if (on()) leave(url); else location.href = url; };
 document.addEventListener('click', e => {
@@ -378,7 +393,7 @@ document.addEventListener('click', e => {
   leave(u.href);
 });
 /* back from the page cache: the cover from leaving is still up; take it down */
-addEventListener('pageshow', e => { if (e.persisted){ leaving = false; clearLayers(); root.classList.remove('vp-track'); kick(); } });
+addEventListener('pageshow', e => { if (e.persisted){ leaving = false; clearLayers(); vpEnd(); kick(); } });
 
 /* arriving */
 const nav = TT.nav;
@@ -387,7 +402,7 @@ if (nav && root.classList.contains('fx-in')){
   const tr = trans();
   try { if (tr.cover) tr.cover(nav); } catch {}
   let entered = false;
-  const fin = () => { root.classList.remove('fx-enter', 'fx-in'); root.querySelectorAll('.fx-layer').forEach(n => n.remove()); };
+  const fin = () => { root.classList.remove('fx-enter', 'fx-in'); root.querySelectorAll('.fx-layer').forEach(n => n.remove()); vpEnd(); };      /* vpEnd: never leave the page under Vaporwave's filter, whatever went wrong */
   const enter = () => {
     if (entered) return; entered = true;
     root.classList.remove('fx-in'); root.classList.add('fx-enter');

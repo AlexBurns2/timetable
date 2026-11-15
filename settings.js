@@ -32,13 +32,13 @@ host.innerHTML =
       '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div></div>' +
       '<div class="field"><label>Animation</label><div class="modes" id="s_fx"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div>' +
         '<div class="hint" id="s_fxhint"></div></div>' +
-      '<div class="field"><label>Theme code</label><div id="c_code" class="tcode"></div></div>' +
+      '<div class="field"><div class="origs" id="c_origs"></div></div>' +
       '<div class="field" id="s_glasswrap" hidden><label>Glass</label>' +
         '<div class="custrow"><span>Animated background</span><input type="checkbox" id="g_glassanim" class="sw"></div>' +
         '<div class="hint" style="margin-top:4px">The colours drift slowly. Uses a little more battery.</div></div>' +
       '<div class="field" id="s_customwrap" hidden>' +
-        '<div class="origs" id="c_origs"></div>' +
         '<label>Custom theme</label>' +
+        '<div id="c_code" class="tcode"></div>' +
         '<div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>' +
         '<div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>' +
         '<div class="custrow"><span>Text</span><input type="color" id="c_text"></div>' +
@@ -126,29 +126,29 @@ host.innerHTML =
   '</dialog>';
 document.body.appendChild(host);
 
-/* ── appearance: every theme (the originals are under Custom) ── */
+/* ── appearance: every theme; the heading folds the grid away. The originals have their own box under Animation ── */
 const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
 function renderSkins(){
   skin = TTx.readState().skin;
   const box = $('s_skins'); box.innerHTML = '';
   const tile = s => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('aria-pressed', String(s.id === skin || (s.custom && isLegacy(skin))));
+    b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('aria-pressed', String(s.id === skin));
     b.innerHTML = '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
                   '<span class="nm">' + s.name + '</span>';
     b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); renderGlass(); };
     return b;
   };
   SKINS.filter(s => !s.legacy).forEach(s => box.appendChild(tile(s)));
+  TTx.skinFold(box.parentNode);
+  TTx.origBox($('c_origs'), () => { skin = TTx.readState().skin; renderSkins(); renderCustom(); renderGlass(); renderModeBtn(); });
 }
 
 /* ── custom theme ── */
 function renderCustom(){
-  const now = TTx.readState().skin, on = now === 'custom' || isLegacy(now);
+  const now = TTx.readState().skin, on = now === 'custom';
   $('s_customwrap').hidden = !on;
-  $('s_customwrap').classList.toggle('islegacy', isLegacy(now));
   if (!on) return;
-  TTx.origBox($('c_origs'), () => { skin = TTx.readState().skin; renderSkins(); renderCustom(); renderGlass(); renderModeBtn(); });
   custom = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
   const sel = $('c_font'); if (!sel.options.length) CUSTOM_FONTS.forEach(f => sel.add(new Option(f, f)));
   $('c_bg').value = custom.bg; $('c_panel').value = custom.panel; $('c_text').value = custom.text;
