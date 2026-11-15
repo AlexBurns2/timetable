@@ -3107,7 +3107,7 @@ data. No icon font or CDN script loads on the live site.
 - **Credits are an easter egg**: no footer link. Tap "MSC Unofficial" at the top of Home three times within ~1.3 s (`#sitemark`, styled not to look clickable, a faint tick on each tap) → `Credits.open()` (credits.js). The disclaimer is in the overlay, and still on the sign-in screen.
 - **The vault**: `/vault` → vault.html (rewrite), `noindex`, linked from nowhere. Signed in: POST `/api/forum?vault=1` records your first visit (table `vault_visit`, SQL in SETUP.md) and returns everyone in order by display name: "You're the 13th person to find this." typed out, then the list. Signed out: "This door needs a key." No table yet: "The vault is sealed for now."
 - **Clues, sparse on purpose**: (1) Home, about one load in eight (was thirty), 5–14 s in, "MSC Unofficial" scrambles into "/vault" and back; (2) in Credits, after 14 s, "/vault" fades in among the stars for ~3.5 s every ~28 s, away from the names; (3) the new 404.html ("Nothing here. Not everything is where you'd expect it.") has `title="/vault"` on its "· · ·"; (4) Home's console: "· · ·  not everything is on the map" (no path).
-- **Greetings** (home.html `greeting()`): usually "Good morning/afternoon/evening"; sometimes "Morning", "Afternoon", "Evening", "Good to see you"; "Still up"/"Late one" (before 5), "Early start"/"Up early" (5–7), "New week" (Monday morning), "Nearly the weekend" (Friday afternoon), "Happy Saturday/Sunday", "Welcome back" (7+ days since the last visit, `tt.hello_last`). Picked once per part of the day.
+- **Greetings** (home.html `greeting()`): just "Good morning/afternoon/evening", "Welcome" (before 5am) or "Welcome back" (7+ days since the last visit, `tt.hello_last`). The playful variants were removed at the user's request (8.111).
 - Cache stamps bumped to `?v=20261112`, sw.js `ASSET_V` 20261112 and `CACHE_VERSION` v7.
 
 ### 8.89 Suggest a feature
@@ -3279,3 +3279,17 @@ Feedback on 8.104 (deployed as `20261114`). Asset version is now `20261115`, `CA
 - **Numbers**: `LGAMES.*.num = {key: [min, max, step, unit]}` turns those settings into number boxes with the old values as suggestions (datalist); limits are only what the game can run (Tetris 4–40 × 8–60, Snake boards 8–200, fruit 0–500, length 1–100, times in seconds, etc.). The games' own clamps were widened to match.
 - **No word filter**: removed from the lobby chat, names, Sketch and Hong Kong Mahjong's chat (`censor()` there now passes text through). Control characters and lengths are still trimmed.
 - Tested with `mpt.mjs impostor`, `pause` (number entry, nerf vote, host pause, vote to resume, leaver note and board) plus the earlier scenarios, against the fake rooms.
+
+### 8.110 Quartets repeats less; Maximalism tiles; Tetris Save visible again (asset version `20261115i`, `CACHE_VERSION` v17)
+- **Quartets** (`QUARTETS_VERSION` unchanged at 8, so no stored puzzle is touched; only new days are picked differently):
+  - `_connroute.js` reads the last 60 days of `conn_puzzle` (read only) into `avoid` (category → days ago) and `usedBy` (category → email → days ago).
+  - `TIERS` now start: (0) nothing used in the last `AVOID_DAYS` = 10 days and no category with fewer than 4 people it hasn't used in `PEOPLE_DAYS` = 60 days; (1) the 10 days only; (2) 5 days; then the old tiers. Within a category, the people it used least lately are picked first; among candidate puzzles, each group that reuses 3+ recent people costs 2.5 points.
+  - A simulated year on the real Year 11 name list (made-up timetables; the list was only in the scratchpad and deleted afterwards): categories back within a week 338 → 1, median gap 11 → 15 days, the exact same four in a category within 60 days 148 → 86. On the synthetic year: 403 → 181, 10 → 13, 55 → 50. Every day still made a puzzle.
+- **Maximalism**: the games page's collage tiles turn about 2.5× less often (13–30 s each, from 5–13) and a little more gently.
+- **Tetris**: Save (Zen, Survival) and Undo/Redo (Practice) were invisible since site.css's `.btn[hidden]{display:none}`; they're now shown by clearing `hidden`. Saving and resuming had kept working.
+- **Mahjong frame**: Maximalism's spine and page number and Cyberpunk's rail and barcode no longer draw inside `hkmahjong.html` (`data-pg="hkmahjong"`). The 快/練 card tiles have their own ink colour. Home's `/vault` scramble: 1 load in 8.
+- **Vaporwave**: the road's near hill rows fade out instead of popping; the sun's gaps rise.
+
+## 8.111 Plainer greetings (asset version `20261116a`, `CACHE_VERSION` v18)
+
+The home greeting is now only "Good morning", "Good afternoon", "Good evening", "Welcome" (midnight to 5am, and when signed out) or "Welcome back" after a week away. "Still up", "Early start", "New week", "Nearly the weekend", "Happy Saturday", "Good to see you" and the short "Morning"/"Afternoon"/"Evening" are gone.

@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261115h">
-<script src="theme.js?v=20261115h"></script>
-<script src="icons.js?v=20261115h"></script>
+<link rel="stylesheet" href="theme.css?v=20261116a">
+<script src="theme.js?v=20261116a"></script>
+<script src="icons.js?v=20261116a"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261115h">
-<link rel="stylesheet" href="settings.css?v=20261115h">
-<link rel="stylesheet" href="poll.css?v=20261115h">
+<link rel="stylesheet" href="site.css?v=20261116a">
+<link rel="stylesheet" href="settings.css?v=20261116a">
+<link rel="stylesheet" href="poll.css?v=20261116a">
 </head>
 <body>
 <div class="wrap hub">
@@ -194,32 +194,19 @@ function setSub(full, short){ const h = $('hubsub'); h.dataset.full = full; h.da
 const DAY3 = d => DAYS[d.getDay()].slice(0, 3);
 const MON3 = d => MONTHS[d.getMonth()].slice(0, 3);
 /* ── the greeting ─────────────────────────────────────────────────────
-   Usually "Good morning". Now and then something else, short and plain:
-   "Morning", "Early start", "Still up", "New week" on a Monday morning,
-   "Nearly the weekend" on a Friday afternoon, "Welcome back" after a week
-   away. Picked once for each part of the day, so it doesn't change on every
-   reload. When you last came is kept with your account (tt.hello_last). */
-const hashStr = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h; };
+   Plain: "Good morning", "Good afternoon", "Good evening", or "Welcome back"
+   after a week away. When you last came is kept with your account
+   (tt.hello_last). */
 const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 function greeting(now){
-  const h = now.getHours(), dow = now.getDay(), today = ymd(now);
+  const h = now.getHours(), today = ymd(now);
   const last = TT.get('tt.hello_last', '') || '';
   const dayN = s => { const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? Date.UTC(+m[1], m[2] - 1, +m[3]) / 864e5 : null; };
   const away = dayN(last) == null ? null : dayN(today) - dayN(last);
   if (last !== today) TT.set('tt.hello_last', today);
-  const slot = h < 5 ? 'n' : h < 12 ? 'm' : h < 17 ? 'a' : 'e';
-  const pick = list => list[hashStr(today + slot) % list.length];
-  const good = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   if (away != null && away >= 7) return 'Welcome back';
-  if (h < 5) return pick(['Still up', 'Late one']);
-  if (h < 7) return pick(['Early start', 'Up early']);
-  if ((dow === 0 || dow === 6) && h < 18) return pick([good, good, 'Happy ' + DAYS[dow]]);
-  if (dow === 1 && h < 12) return pick([good, 'New week']);
-  if (dow === 5 && h >= 12 && h < 17) return pick([good, 'Nearly the weekend']);
-  if (h < 12) return pick([good, good, 'Morning', 'Good to see you']);
-  if (h < 17) return pick([good, good, 'Afternoon']);
-  if (h < 22) return pick([good, good, 'Evening']);
-  return pick([good, 'Late one']);
+  if (h < 5) return 'Welcome';
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
 function paintHub(){
   const now = new Date();
@@ -453,9 +440,9 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261115h"></script>
-<script src="poll.js?v=20261115h"></script>
-<script src="credits.js?v=20261115h"></script>
+<script src="settings.js?v=20261116a"></script>
+<script src="poll.js?v=20261116a"></script>
+<script src="credits.js?v=20261116a"></script>
 <script>
 /* ── Today: the two daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),

@@ -261,9 +261,16 @@ export function tidyTeacher(t){
   const m = s.match(/^([^,]+),\s*(.+)$/);
   return m ? m[2].trim() + ' ' + m[1].trim() : s;
 }
-export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Set(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000 }){
+/* avoid: the categories used lately, as a Map of id → days ago (a Set counts as yesterday).
+   usedBy: who each category has used lately, as a Map of id → Map of email → days ago. A
+   category used in the last AVOID_DAYS days is left out (in the first tier); within a
+   category, the people it has used least lately are picked first, so the same four
+   don't keep coming back together. */
+export const AVOID_DAYS = 10, PEOPLE_DAYS = 60;
+export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Map(), usedBy = new Map(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000 }){
   const senior = Number(year) >= 11;
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
+  if (avoid instanceof Set) avoid = new Map([...avoid].map(id => [id, 1]));
   const n = people.length;
   if (n < 24) return null;
   let fetches = 0;
@@ -335,6 +342,8 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
   const usable = [...cats.values()].filter(c => c.kind === 'profile' ? c.members.size >= 5 && c.share <= 0.45 && c.share > 0
     : c.members.size >= (c.kind === 'name' ? 5 : 6) && c.members.size <= n * 0.45);
   if (usable.length < 4) return null;
+  /* how many of each category's people it hasn't used in the last two months */
+  usable.forEach(c => { const m = usedBy.get(c.id); c.fresh = m ? [...c.members].filter(e => !(m.get(e) <= PEOPLE_DAYS)).length : c.members.size; });
 
   /* does this person fit this category? names exactly; timetables from their own timetable */
   const fits = (e, c) => {
@@ -389,9 +398,12 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
     for (const c of chosen){
       /* rule people out on what's free to check first (names), then read timetables */
       const clash = e => groups.some(g => g.m.some(x => first(x) === first(e) || last(x) === last(e)));
+      /* who this category has used lately, and how long ago (never: as long ago as can be) */
+      const ago = e => { const m = usedBy.get(c.id); const d = m && m.get(e); return d == null ? 999 : d; };
       const pool = shuffle([...c.members].filter(e => !taken.has(e) && !clash(e) &&
           chosen.every(o => o === c || o.kind !== 'name' || !o.members.has(e))), r)
-        .sort((a, b) => (tts.has(b) ? 1 : 0) - (tts.has(a) ? 1 : 0));        // already-read timetables first
+        .sort((a, b) => Math.min(ago(b), PEOPLE_DAYS) - Math.min(ago(a), PEOPLE_DAYS)        // the least used lately first
+          || (tts.has(b) ? 1 : 0) - (tts.has(a) ? 1 : 0));                                   // then already-read timetables
       if (pool.length < 4){ ok = false; break; }
       const picked = [];
       for (let i = 0; i < pool.length && picked.length < 4; i += 8){
@@ -408,7 +420,8 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
         if (fetches >= budget && !trust) break;
       }
       if (picked.length < 4){ ok = false; break; }
-      picked.forEach(e => taken.add(e)); groups.push({ c, m: picked });
+      /* stale: three or four of the same people this category had in the last two months */
+      picked.forEach(e => taken.add(e)); groups.push({ c, m: picked, stale: picked.filter(e => ago(e) <= PEOPLE_DAYS).length >= 3 });
     }
     if (!ok) continue;
     const all = groups.flatMap(g => g.m);
@@ -418,9 +431,10 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
     if (rival || [...initials.values()].some(k => k >= 4)) continue;
     /* red herrings: other categories three of them share, across groups */
     const herrings = usable.filter(c => !chosen.includes(c) && all.filter(e => fits(e, c) === true).length === 3).length;
-    const score = Math.min(herrings, 3);
-    if (!best || score > best.score) best = { groups, score };
-    if (best.score >= 2) break;
+    /* the best: red herrings, less a lot for each group that's a rerun of a recent one */
+    const stale = groups.filter(g => g.stale).length, score = Math.min(herrings, 3) - 2.5 * stale;
+    if (!best || score > best.rank) best = { groups, score:Math.min(herrings, 3), rank:score };
+    if (best.score >= 2 && !stale) break;
   }
   return best;
   }
@@ -451,7 +465,9 @@ export const BAND = [8.5, 11];                        // the four together (e.g.
    each person fits only their own group, no two groups about the same thing,
    no fifth theme hiding in the sixteen. */
 export const TIERS = [
-  { band: BAND, easiest: 1.75, hardest: 3, avoid: true },               // the proper one
+  { band: BAND, easiest: 1.75, hardest: 3, avoid: AVOID_DAYS, fresh: true },   // the proper one: nothing from the last ten days, nor the same people
+  { band: BAND, easiest: 1.75, hardest: 3, avoid: AVOID_DAYS },         // the same, even if a category has few new people left
+  { band: BAND, easiest: 1.75, hardest: 3, avoid: 5 },                  // the same, allowing anything not seen for five days
   { band: BAND, easiest: 1.75, hardest: 3, avoid: false },              // the same, even if a category was used lately
   { band: [8, 11.5], easiest: 2, hardest: 2.75, avoid: false },
   { band: [7.5, 12], easiest: 2.25, hardest: 2.5, avoid: false },
@@ -464,7 +480,8 @@ function pickFour(usable, r, avoid, tier = TIERS[0]){
   const tt = x => x.kind !== 'name', specific = x => x.kind === 'class' || x.kind === 'teacher';
   for (const c of shuffle(usable, r)){
     if (tier.names && c.kind !== 'name') continue;
-    if (tier.avoid && avoid && avoid.has(c.id) && r() < 0.85) continue;     // used in the last few days: mostly skipped
+    if (tier.avoid && avoid && avoid.has(c.id) && avoid.get(c.id) <= tier.avoid) continue;     // used lately: left out
+    if (tier.fresh && c.fresh != null && c.fresh < 4) continue;                                 // or it would be the same people again
     const f = family(c);
     if ((fam[f] || 0) >= (tier.any ? 3 : 2)) continue;                      // no more than two of a kind
     if (c.kind === 'teacher' && chosen.some(o => o.kind === 'teacher')) continue;

@@ -192,8 +192,8 @@ void main(){
   vec2 id = floor(q), f = fract(q);
   vec2 big = floor(q/2.);
   if (hash(big + 3.) < .2){ id = big + 100.; f = fract(q/2.); }   /* some tiles are four times the size */
-  float h = hash(id), per = mix(5., 13., hash(id + 7.))*mix(1., 3., uVar);
-  float tt = uT/per + h*9., e = floor(tt), pr = fract(tt), w = .35/per;   /* each tile turns over to a new pattern, in its own time */
+  float h = hash(id), per = mix(13., 30., hash(id + 7.))*mix(1., 1.6, uVar);      /* about two and a half times as long between turns as before */
+  float tt = uT/per + h*9., e = floor(tt), pr = fract(tt), w = .45/per;   /* each tile turns over to a new pattern, in its own time, a little more gently */
   vec2 m = (id + .5) - uM.xy*6.5 - vec2(.3, .2);
   if (id.x < 99. && uM.z > .5 && dot(m, m) < 1.2) e += 1.;      /* and the ones under the pointer turn at once */
   float sq = 1.;
