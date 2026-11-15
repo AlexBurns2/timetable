@@ -1921,7 +1921,7 @@ BUILD.tetris = (host, o) => {
     let lines=0;
     for (let r=ROWS-1;r>=0;r--){ if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(new Array(COLS).fill(null)); lines++; r++; } }
     if (lines){ cleared+=lines; score += [0,100,300,500,800][lines] || 800;
-      if (lines>=4){ SFX.tetris(); flash('big'); } else { SFX.line(lines); flash('on'); } }
+      if (lines>=4) SFX.tetris(); else SFX.line(lines); }      // no flash on a clear: just the sound and the thud
     else SFX.lock();
     if (mode==='versus' && vs && !vsAfterLock(lines, spin, lines > 0 && grid.every(r => r.every(c => !c)))) return;
     if (mode==='sprint' && cleared>=TARGET){ end(true); return; }
@@ -2461,7 +2461,6 @@ BUILD.tetris = (host, o) => {
       if (spins){ if (hard){ if (v.b2b) atk += 1; v.b2b++; } else v.b2b = 0; }
       atk += [0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5][Math.min(12, v.combo - 1)];
       if (clearBoard) atk += 10;
-      if (spin && spins) flash('big');
       atk = atk * (+VO.gmul || 1) + v.carry;
       const whole = Math.floor(atk); v.carry = atk - whole; atk = whole;
     }
@@ -3074,39 +3073,95 @@ BUILD.memory = host => {
   return () => stopTimer();
 };
 
-/* ── Snake ─────────────────────────────────────────────────────── */
 /* ── Snake ─────────────────────────────────────────────────────────
-   Solo here; the arena (several snakes, one board) is a lobby game
-   (mp.js), and this build plays it when it is handed a lobby round.
+   Solo here; the lobby's Snake (mp.js) is played by this build when it is
+   handed a lobby round, in one of three modes: Classic (several snakes,
+   fruit, power-ups), Trails (no fruit; every snake leaves a line that
+   never goes, and the last one moving wins) and Territory (leave your land
+   to draw a line, get back to it to take everything inside; most land at
+   the end, or the last one left, wins).
 
-   The rules move in steps; the drawing doesn't. Every frame the snake is
+   The rules move in steps; the drawing doesn't. Every frame each snake is
    drawn part of the way from where it was to where it is going, so it
-   glides from cell to cell: a thick rounded line through the middle of
-   each cell, its head sliding forward and its tail drawing in behind,
-   eyes looking where it's headed. In the arena the host runs the rules
-   and sends the board out each step; everyone draws the last two steps
-   blended the same way, which costs one step of delay and looks smooth.
+   glides: a thick line through the middle of each cell, its head sliding
+   forward and its tail drawing in behind. In the lobby the host runs the
+   rules and sends each step out; everyone draws the last two blended.
 
-   Solo settings: speed, board size, fruit, wrap-around or walls. Only the
-   Classic settings (normal speed that rises, medium board, one fruit,
-   wrap-around: the old game) count for the leaderboard.
-   Arena (host's settings, mp.js): board size, speed, fruit, walls, power-
-   ups (speed, ghost, shield, golden fruit), starting length, obstacles,
-   first to N rounds. ── */
+   Solo has two tabs. Leaderboard: the default rules, fixed, and the only
+   games that count. Custom: a mode and the rules to go with it, for fun.
+     Classic   as it always was
+     Bun       a bun down each side: after a turn you must go two cells
+               before the next, so there's no turning on the spot
+     Statues   every fruit leaves a stone copy of your tail behind, which
+               crumbles away a piece at a time; don't hit it
+     Holey     every third piece of you is a hole you can pass through
+     Rubble    every fruit drops a rock somewhere on the board, for good
+     Runaway   the fruit hops away when you get close
+   The look (both tabs): the fruit, and the snake's colour, pattern, shape
+   and eyes. None of it changes the rules. ── */
 const SNK = (() => {
   const DIRS = { u:[0, -1], d:[0, 1], l:[-1, 0], r:[1, 0] };
   const keyDir = k => ({ arrowup:'u', w:'u', arrowdown:'d', s:'d', arrowleft:'l', a:'l', arrowright:'r', d:'r' })[k];
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const shade = (hex, k) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim()); if (!m) return hex;
-    const v = parseInt(m[1], 16), f = c => Math.max(0, Math.min(255, Math.round(c * k))); return 'rgb(' + f(v >> 16) + ',' + f((v >> 8) & 255) + ',' + f(v & 255) + ')'; };
-  /* the colours, read from the theme each time the board is drawn fresh */
+  const rgb = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim()); if (!m) return null; const v = parseInt(m[1], 16); return [v >> 16, (v >> 8) & 255, v & 255]; };
+  const shade = (hex, k) => { const c = rgb(hex); if (!c) return hex; const f = x => Math.max(0, Math.min(255, Math.round(x * k))); return 'rgb(' + f(c[0]) + ',' + f(c[1]) + ',' + f(c[2]) + ')'; };
+  const tint = (hex, k) => { const c = rgb(hex); if (!c) return hex; const f = x => Math.round(x + (255 - x) * k); return 'rgb(' + f(c[0]) + ',' + f(c[1]) + ',' + f(c[2]) + ')'; };
+  const rgba = (hex, a) => { const c = rgb(hex); return c ? 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')' : hex; };
+  const COLOURS = { theme:['Theme', null], blue:['Blue', '#4e7cf6'], green:['Green', '#3fae49'], red:['Red', '#e5484d'], orange:['Orange', '#f76b15'], yellow:['Yellow', '#e2b100'],
+    purple:['Purple', '#8e4ec6'], pink:['Pink', '#e93d82'], teal:['Teal', '#12a594'], black:['Black', '#2b2d31'], rainbow:['Rainbow', null] };
+  const FRUITS = { apple:'Apples', grape:'Grapes', orange:'Oranges', cherry:'Cherries', banana:'Bananas', berry:'Strawberries', melon:'Watermelon', lemon:'Lemons', mixed:'A mix' };
+  const FKINDS = ['apple', 'grape', 'orange', 'cherry', 'banana', 'berry', 'melon', 'lemon'];
+  const PATTERNS = { plain:'Plain', stripes:'Stripes', spots:'Spots', fade:'Fade' };
+  const SHAPES = { round:'Round', blocky:'Blocky', slim:'Slim' };
+  const EYES = { round:'Wide awake', sleepy:'Sleepy', cool:'Sunglasses' };
+  /* the board's colours, read from the theme each time it changes */
   function look(){
     const dark = document.documentElement.style.colorScheme === 'dark';
     return { a:css('--panel-2') || (dark ? '#1b1d22' : '#f2f2f2'), b:dark ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.04)', line:css('--line') || '#888',
              accent:/^#[0-9a-f]{6}$/i.test(css('--accent')) ? css('--accent') : '#4e7cf6', rock:dark ? '#4a4f5a' : '#9aa0aa', dark };
   }
-  /* one snake: a fat line through its cells, part of the way between the last step and this one */
-  function drawSnake(x, s, a, cell, W, H, wrap, lk){
+  const wrapD = (d, n) => d > 1 ? d - n : d < -1 ? d + n : d;
+  /* ── fruit ── */
+  function drawFruit(x, f, cell, t){
+    const cx = (f.x + .5) * cell, cy = (f.y + .5) * cell, r = cell * .34 * (1 + Math.sin(t / 260 + f.x + f.y) * .04), k = f.k === 'gold' ? 'gold' : f.t || 'apple';
+    const circ = (X, Y, R, col) => { x.beginPath(); x.arc(X, Y, R, 0, 6.2832); x.fillStyle = col; x.fill(); };
+    const shine = (X, Y, R) => circ(X - R * .38, Y - R * .32, R * .26, 'rgba(255,255,255,.5)');
+    const leaf = (X, Y, R, ang) => { x.fillStyle = '#3fae49'; x.beginPath(); x.ellipse(X, Y, R * .38, R * .17, ang, 0, 6.2832); x.fill(); };
+    const stem = (X1, Y1, X2, Y2) => { x.strokeStyle = '#6b3d1f'; x.lineWidth = Math.max(1.5, cell * .07); x.lineCap = 'round'; x.beginPath(); x.moveTo(X1, Y1); x.quadraticCurveTo((X1 + X2) / 2 + r * .2, Math.min(Y1, Y2) - r * .1, X2, Y2); x.stroke(); };
+    switch (k){
+      case 'gold': circ(cx, cy, r, '#f5b301'); circ(cx - r * .35, cy - r * .35, r * .3, '#fff6c2'); x.strokeStyle = '#b07c00'; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.stroke(); break;
+      case 'grape': [[-.42, -.3], [.42, -.3], [0, -.3], [-.22, .12], [.22, .12], [0, .52]].forEach(([dx, dy]) => { circ(cx + dx * r, cy + dy * r, r * .33, '#7b3fb8'); circ(cx + dx * r - r * .1, cy + dy * r - r * .1, r * .09, 'rgba(255,255,255,.45)'); });
+        stem(cx, cy - r * .55, cx + r * .1, cy - r * 1.05); leaf(cx + r * .45, cy - r * .95, r, -.4); break;
+      case 'orange': circ(cx, cy, r, '#f7901e'); x.fillStyle = 'rgba(160,80,0,.25)'; for (let i = 0; i < 6; i++){ x.fillRect(cx + Math.cos(i) * r * .5, cy + Math.sin(i * 1.7) * r * .5, 1.2, 1.2); }
+        shine(cx, cy, r); leaf(cx + r * .3, cy - r * .95, r, -.3); break;
+      case 'cherry': stem(cx - r * .45, cy + r * .1, cx + r * .1, cy - r * 1.05); stem(cx + r * .45, cy + r * .2, cx + r * .1, cy - r * 1.05);
+        circ(cx - r * .45, cy + r * .3, r * .5, '#c8102e'); circ(cx + r * .45, cy + r * .4, r * .5, '#d7263d'); shine(cx - r * .45, cy + r * .3, r * .5); shine(cx + r * .45, cy + r * .4, r * .5); leaf(cx + r * .45, cy - r * .95, r, .3); break;
+      case 'banana': x.strokeStyle = '#f2c200'; x.lineWidth = r * .75; x.lineCap = 'round'; x.beginPath(); x.arc(cx + r * .2, cy - r * .55, r * 1.05, Math.PI * .62, Math.PI * 1.12); x.stroke();
+        x.strokeStyle = 'rgba(160,110,0,.5)'; x.lineWidth = r * .18; x.beginPath(); x.arc(cx + r * .2, cy - r * .55, r * 1.25, Math.PI * .66, Math.PI * 1.08); x.stroke();
+        circ(cx - r * .8, cy - r * .1, r * .12, '#5a3a12'); break;
+      case 'berry': x.fillStyle = '#e5484d'; x.beginPath(); x.moveTo(cx, cy + r * 1.05); x.bezierCurveTo(cx - r * 1.25, cy + r * .1, cx - r * .9, cy - r * .85, cx, cy - r * .55);
+        x.bezierCurveTo(cx + r * .9, cy - r * .85, cx + r * 1.25, cy + r * .1, cx, cy + r * 1.05); x.fill();
+        x.fillStyle = '#ffe9a8'; [[-.35, -.15], [.35, -.15], [0, .1], [-.2, .45], [.2, .45], [0, -.3]].forEach(([dx, dy]) => x.fillRect(cx + dx * r, cy + dy * r, 1.6, 1.6));
+        x.fillStyle = '#3fae49'; x.beginPath(); for (let i = 0; i < 5; i++){ const a0 = Math.PI * (1.15 + i * .175); x.moveTo(cx, cy - r * .55); x.lineTo(cx + Math.cos(a0) * r * .55, cy - r * .55 + Math.sin(a0) * r * .35); } x.lineWidth = r * .22; x.strokeStyle = '#3fae49'; x.stroke(); break;
+      case 'melon': x.fillStyle = '#2f8f3a'; x.beginPath(); x.arc(cx, cy - r * .35, r * 1.1, 0, Math.PI); x.fill(); x.fillStyle = '#f2f5d0'; x.beginPath(); x.arc(cx, cy - r * .35, r * .95, 0, Math.PI); x.fill();
+        x.fillStyle = '#ef4b5c'; x.beginPath(); x.arc(cx, cy - r * .35, r * .82, 0, Math.PI); x.fill(); x.fillStyle = '#222'; [[-.4, .05], [0, .25], [.4, .05]].forEach(([dx, dy]) => { x.beginPath(); x.ellipse(cx + dx * r, cy + dy * r, r * .07, r * .12, 0, 0, 6.2832); x.fill(); }); break;
+      case 'lemon': x.fillStyle = '#f5d90a'; x.beginPath(); x.ellipse(cx, cy, r * 1.05, r * .78, -.35, 0, 6.2832); x.fill(); circ(cx + r * .95, cy - r * .35, r * .16, '#f5d90a'); circ(cx - r * .95, cy + r * .35, r * .16, '#f5d90a'); shine(cx, cy, r * .8); break;
+      default: circ(cx, cy + r * .05, r, '#e7442e'); shine(cx, cy, r); stem(cx, cy - r * .7, cx + r * .15, cy - r * 1.15); leaf(cx + r * .45, cy - r * 1.02, r, -.5);
+    }
+  }
+  function drawItem(x, it, cell, t){
+    const cx = (it.x + .5) * cell, cy = (it.y + .5) * cell, r = cell * .36, bob = Math.sin(t / 300 + it.x) * cell * .05;
+    x.save(); x.translate(cx, cy + bob);
+    x.beginPath(); x.arc(0, 0, r, 0, 6.2832); x.fillStyle = it.k === 'speed' ? '#ffcc1a' : it.k === 'ghost' ? '#e9e3ff' : '#4aa8ff'; x.fill();
+    x.lineWidth = Math.max(1.5, cell * .06); x.strokeStyle = 'rgba(0,0,0,.35)'; x.stroke();
+    x.fillStyle = '#222';
+    if (it.k === 'speed'){ x.beginPath(); x.moveTo(r * .15, -r * .7); x.lineTo(-r * .35, r * .1); x.lineTo(0, r * .1); x.lineTo(-r * .15, r * .7); x.lineTo(r * .35, -r * .1); x.lineTo(0, -r * .1); x.closePath(); x.fill(); }
+    else if (it.k === 'ghost'){ x.fillStyle = '#5a4b9a'; x.beginPath(); x.arc(-r * .25, -r * .1, r * .12, 0, 6.2832); x.arc(r * .25, -r * .1, r * .12, 0, 6.2832); x.fill(); }
+    else { x.lineWidth = Math.max(1.5, cell * .07); x.strokeStyle = '#fff'; x.beginPath(); x.moveTo(0, -r * .55); x.lineTo(r * .45, -r * .3); x.lineTo(r * .35, r * .25); x.lineTo(0, r * .6); x.lineTo(-r * .35, r * .25); x.lineTo(-r * .45, -r * .3); x.closePath(); x.stroke(); }
+    x.restore();
+  }
+  /* ── a snake ── */
+  function drawSnake(x, s, a, cell, W, H, wrap, t){
     const b = s.body; if (!b.length) return;
     /* the path in unwrapped cells, from the head back (a step across an edge becomes a step off it): the head part of
        the way from the cell behind it, the corners exact, and the tail part of the way from the cell it is leaving */
@@ -3118,44 +3173,76 @@ const SNK = (() => {
       if (s.tail){ const l = pts[pts.length - 1], dx = wrapD(s.tail.x - b[b.length - 1].x, W), dy = wrapD(s.tail.y - b[b.length - 1].y, H);
         pts.push({ x:l.x + dx * (1 - a), y:l.y + dy * (1 - a) }); }
     } else pts.push({ x:b[0].x, y:b[0].y });
-    const w = cell * .82, col = s.col, offs = wrap ? [-1, 0, 1] : [0];
-    x.save(); x.globalAlpha = s.alive ? (s.ghost ? .5 : 1) : Math.max(0, .55 - (s.deadFor || 0) * .5);
-    x.lineCap = 'round'; x.lineJoin = 'round';
-    for (const ox of offs) for (const oy of offs){
-      const tx = ox * W * cell, ty = oy * H * cell;
-      const path = () => { x.beginPath(); pts.forEach((p, i) => { const X = (p.x + .5) * cell + tx, Y = (p.y + .5) * cell + ty; i ? x.lineTo(X, Y) : x.moveTo(X, Y); }); if (pts.length === 1) x.lineTo((pts[0].x + .5) * cell + tx + .01, (pts[0].y + .5) * cell + ty); };
-      path(); x.strokeStyle = shade(col, .72); x.lineWidth = w; x.stroke();
-      path(); x.strokeStyle = col; x.lineWidth = w * .8; x.stroke();
-      path(); x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = w * .28; x.translate(-w * .12, -w * .12); x.stroke(); x.translate(w * .12, w * .12);
-      if (s.shield){ x.beginPath(); x.arc((pts[0].x + .5) * cell + tx, (pts[0].y + .5) * cell + ty, w * .85, 0, 6.2832); x.strokeStyle = 'rgba(80,170,255,.8)'; x.lineWidth = 2; x.stroke(); }
-      /* eyes, looking where it's going */
-      const hx = (pts[0].x + .5) * cell + tx, hy = (pts[0].y + .5) * cell + ty, d = s.dir || { x:1, y:0 }, nx = -d.y, ny = d.x, e = w * .19;
-      [-1, 1].forEach(k => { const ex = hx + d.x * w * .12 + nx * k * w * .26, ey = hy + d.y * w * .12 + ny * k * w * .26;
+    const sk = s.skin || {}, shape = sk.shape || 'round', pat = sk.pat || 'plain', rainbow = s.col === 'rainbow';
+    const base = rainbow ? '#e5484d' : s.col, w = cell * (shape === 'slim' ? .56 : shape === 'blocky' ? .86 : .82);
+    const hue = i => (i * 22 + t / 25) % 360;
+    const outCol = i => rainbow ? 'hsl(' + hue(i) + ',70%,40%)' : shade(base, .72);
+    const inCol = i => rainbow ? 'hsl(' + hue(i) + ',78%,56%)' : pat === 'fade' ? tint(base, Math.min(.6, i / Math.max(8, pts.length) * .75)) : base;
+    /* Holey: a gap at every third piece, counted from when each piece was laid down (s.n is the steps taken),
+       so the holes stay put on the board. The dash pattern repeats every three cells; the caps reach into
+       the gaps, so the gaps are drawn wider by a snake's width to look the size they are. */
+    const per = 3 * cell, gap = .62 * cell + w, on = per - gap, ph = ((s.n || 0) % 3 + 3) % 3, i0 = ph === 0 ? 3 : ph;
+    const holeOffset = (((on + gap / 2 - (a + i0 - 1) * cell) % per) + per) % per;
+    /* the ones that are out fade, except in Trails, where they stay where they stopped */
+    x.save(); x.globalAlpha = s.alive ? (s.ghost ? .5 : 1) : s.keep ? .45 : Math.max(0, .55 - (s.deadFor || 0) * .5);
+    x.lineCap = shape === 'blocky' ? 'square' : 'round'; x.lineJoin = shape === 'blocky' ? 'miter' : 'round';
+    /* across a wrapping edge the snake is drawn again from the other side, but only where it reaches over */
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+    const ox_ = wrap ? [-1, 0, 1].filter(o => x0 + o * W < W && x1 + o * W > -1) : [0], oy_ = wrap ? [-1, 0, 1].filter(o => y0 + o * H < H && y1 + o * H > -1) : [0];
+    for (const ox of ox_) for (const oy of oy_){
+      const tx = ox * W * cell, ty = oy * H * cell, P = p => [(p.x + .5) * cell + tx, (p.y + .5) * cell + ty];
+      const path = () => { x.beginPath(); pts.forEach((p, i) => { const [X, Y] = P(p); i ? x.lineTo(X, Y) : x.moveTo(X, Y); }); if (pts.length === 1){ const [X, Y] = P(pts[0]); x.lineTo(X + .01, Y); } };
+      /* the bun, a little wider than the snake each side */
+      if (s.bun){ x.setLineDash([]); path(); x.strokeStyle = '#a86a32'; x.lineWidth = cell * 1.62; x.stroke(); path(); x.strokeStyle = '#e8b277'; x.lineWidth = cell * 1.44; x.stroke(); }
+      const dash = off => { if (s.holes){ x.setLineDash([on, gap]); x.lineDashOffset = holeOffset + (off || 0); } else x.setLineDash([]); };
+      if (rainbow || pat === 'fade'){
+        /* a colour per piece: each piece its own stroke, the holes kept in step with the distance along */
+        for (const pass of [0, 1]){ let dist = 0;
+          for (let i = 0; i < pts.length - 1; i++){
+            const [X1, Y1] = P(pts[i]), [X2, Y2] = P(pts[i + 1]);
+            dash(dist); x.beginPath(); x.moveTo(X1, Y1); x.lineTo(X2, Y2);
+            x.strokeStyle = pass ? inCol(i) : outCol(i); x.lineWidth = pass ? w * .8 : w; x.stroke();
+            dist += Math.hypot(X2 - X1, Y2 - Y1);
+          }
+        }
+      } else {
+        dash(); path(); x.strokeStyle = outCol(0); x.lineWidth = w; x.stroke();
+        path(); x.strokeStyle = base; x.lineWidth = w * .8; x.stroke();
+      }
+      /* the head, whole even when a hole is just behind it */
+      { const [X, Y] = P(pts[0]); x.setLineDash([]); x.beginPath(); x.moveTo(X, Y); x.lineTo(X + .01, Y); x.strokeStyle = outCol(0); x.lineWidth = w; x.stroke(); x.strokeStyle = inCol(0); x.lineWidth = w * .8; x.stroke(); }
+      /* the pattern */
+      if (pat === 'stripes'){ x.setLineDash([cell * .3, cell * .7]); x.lineDashOffset = (.15 - a) * cell; const cap = x.lineCap; x.lineCap = 'butt';
+        path(); x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = w * .8; x.stroke(); x.lineCap = cap; }
+      x.setLineDash([]);
+      if (pat === 'spots') for (let i = 2; i < pts.length - 1; i += 2){ if (s.holes && i % 3 === ph) continue; const [X, Y] = P(pts[i]); x.beginPath(); x.arc(X + w * .1, Y - w * .08, w * .17, 0, 6.2832); x.fillStyle = 'rgba(255,255,255,.4)'; x.fill(); }
+      if (pat !== 'stripes'){ dash(); path(); x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = w * .26; x.translate(-w * .12, -w * .12); x.stroke(); x.translate(w * .12, w * .12); x.setLineDash([]); }
+      if (s.shield){ const [X, Y] = P(pts[0]); x.beginPath(); x.arc(X, Y, w * .85, 0, 6.2832); x.strokeStyle = 'rgba(80,170,255,.8)'; x.lineWidth = 2; x.stroke(); }
+      /* the eyes, looking where it's going */
+      const [hx, hy] = P(pts[0]), d = s.dir || { x:1, y:0 }, nx = -d.y, ny = d.x, e = w * .2;
+      const eyes = [-1, 1].map(k => [hx + d.x * w * .12 + nx * k * w * .26, hy + d.y * w * .12 + ny * k * w * .26]);
+      if (sk.eyes === 'cool'){
+        x.strokeStyle = '#111'; x.lineWidth = e * .6; x.beginPath(); x.moveTo(eyes[0][0], eyes[0][1]); x.lineTo(eyes[1][0], eyes[1][1]); x.stroke();
+        eyes.forEach(([ex, ey]) => { x.beginPath(); x.arc(ex, ey, e * 1.05, 0, 6.2832); x.fillStyle = '#111'; x.fill(); x.beginPath(); x.arc(ex - e * .3, ey - e * .3, e * .25, 0, 6.2832); x.fillStyle = 'rgba(255,255,255,.6)'; x.fill(); });
+      } else eyes.forEach(([ex, ey]) => {
         x.beginPath(); x.arc(ex, ey, e, 0, 6.2832); x.fillStyle = '#fff'; x.fill();
-        x.beginPath(); x.arc(ex + d.x * e * .35, ey + d.y * e * .35, e * .55, 0, 6.2832); x.fillStyle = s.alive ? '#111' : '#777'; x.fill(); });
+        x.beginPath(); x.arc(ex + d.x * e * .35, ey + d.y * e * .35, e * .55, 0, 6.2832); x.fillStyle = s.alive ? '#111' : '#777'; x.fill();
+        if (sk.eyes === 'sleepy'){ x.save(); x.beginPath(); x.arc(ex, ey, e * 1.05, 0, 6.2832); x.clip(); x.fillStyle = inCol(0);
+          x.translate(ex, ey); x.rotate(Math.atan2(d.y, d.x)); x.fillRect(e * .05, -e * 1.2, e * 1.3, e * 2.4);
+          x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(e * .05, -e * 1.2, Math.max(1, e * .18), e * 2.4); x.restore(); }
+      });
     }
     x.restore();
   }
-  const wrapD = (d, n) => d > 1 ? d - n : d < -1 ? d + n : d;
-  function drawFruit(x, f, cell, t){
-    const cx = (f.x + .5) * cell, cy = (f.y + .5) * cell, r = cell * .34 * (1 + Math.sin(t / 260 + f.x + f.y) * .04);
-    if (f.k === 'gold'){ x.fillStyle = '#f5b301'; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill(); x.fillStyle = '#fff6c2'; x.beginPath(); x.arc(cx - r * .35, cy - r * .35, r * .3, 0, 6.2832); x.fill();
-      x.strokeStyle = '#b07c00'; x.lineWidth = 1.5; x.stroke(); return; }
-    x.fillStyle = '#e7442e'; x.beginPath(); x.arc(cx, cy + r * .05, r, 0, 6.2832); x.fill();
-    x.fillStyle = 'rgba(255,255,255,.45)'; x.beginPath(); x.arc(cx - r * .38, cy - r * .3, r * .26, 0, 6.2832); x.fill();
-    x.strokeStyle = '#6b3d1f'; x.lineWidth = Math.max(1.5, cell * .07); x.beginPath(); x.moveTo(cx, cy - r * .7); x.lineTo(cx + r * .15, cy - r * 1.15); x.stroke();
-    x.fillStyle = '#3fae49'; x.beginPath(); x.ellipse(cx + r * .45, cy - r * 1.02, r * .38, r * .18, -.5, 0, 6.2832); x.fill();
-  }
-  function drawItem(x, it, cell, t){
-    const cx = (it.x + .5) * cell, cy = (it.y + .5) * cell, r = cell * .36, bob = Math.sin(t / 300 + it.x) * cell * .05;
-    x.save(); x.translate(cx, cy + bob);
-    x.beginPath(); x.arc(0, 0, r, 0, 6.2832); x.fillStyle = it.k === 'speed' ? '#ffcc1a' : it.k === 'ghost' ? '#e9e3ff' : '#4aa8ff'; x.fill();
-    x.lineWidth = Math.max(1.5, cell * .06); x.strokeStyle = 'rgba(0,0,0,.35)'; x.stroke();
-    x.fillStyle = x.strokeStyle = '#222';
-    if (it.k === 'speed'){ x.beginPath(); x.moveTo(r * .15, -r * .7); x.lineTo(-r * .35, r * .1); x.lineTo(0, r * .1); x.lineTo(-r * .15, r * .7); x.lineTo(r * .35, -r * .1); x.lineTo(0, -r * .1); x.closePath(); x.fill(); }
-    else if (it.k === 'ghost'){ x.fillStyle = '#5a4b9a'; x.beginPath(); x.arc(-r * .25, -r * .1, r * .12, 0, 6.2832); x.arc(r * .25, -r * .1, r * .12, 0, 6.2832); x.fill(); }
-    else { x.lineWidth = Math.max(1.5, cell * .07); x.strokeStyle = '#fff'; x.beginPath(); x.moveTo(0, -r * .55); x.lineTo(r * .45, -r * .3); x.lineTo(r * .35, r * .25); x.lineTo(0, r * .6); x.lineTo(-r * .35, r * .25); x.lineTo(-r * .45, -r * .3); x.closePath(); x.stroke(); }
-    x.restore();
+  function drawStatues(x, st, cell){
+    (st.statues || []).forEach(sv => {
+      const n = Math.ceil(sv.c.length * sv.life / sv.max);
+      x.globalAlpha = Math.min(1, .35 + sv.life / sv.max);
+      sv.c.slice(0, n).forEach((c, i) => { const p = cell * .1;
+        x.fillStyle = i % 2 ? '#a7a29a' : '#b9b4ab'; x.beginPath(); x.roundRect ? x.roundRect(c.x * cell + p, c.y * cell + p, cell - 2 * p, cell - 2 * p, cell * .3) : x.rect(c.x * cell + p, c.y * cell + p, cell - 2 * p, cell - 2 * p); x.fill();
+        x.strokeStyle = 'rgba(0,0,0,.18)'; x.lineWidth = 1; x.beginPath(); x.moveTo(c.x * cell + cell * .3, c.y * cell + cell * .35); x.lineTo(c.x * cell + cell * .55, c.y * cell + cell * .6); x.stroke(); });
+      x.globalAlpha = 1;
+    });
   }
   function drawBoard(x, st, a, t, lk){
     const { W, H, cell } = st;
@@ -3163,100 +3250,158 @@ const SNK = (() => {
     x.fillStyle = lk.b; for (let yy = 0; yy < H; yy++) for (let xx = (yy & 1); xx < W; xx += 2) x.fillRect(xx * cell, yy * cell, cell, cell);
     if (st.walls){ x.strokeStyle = lk.line; x.lineWidth = 3; x.strokeRect(1.5, 1.5, W * cell - 3, H * cell - 3); }
     (st.rocks || []).forEach(r => { x.fillStyle = lk.rock; const p = cell * .12; x.beginPath(); x.roundRect ? x.roundRect(r.x * cell + p, r.y * cell + p, cell - 2 * p, cell - 2 * p, cell * .22) : x.rect(r.x * cell + p, r.y * cell + p, cell - 2 * p, cell - 2 * p); x.fill(); });
-    (st.fruit || []).forEach(f => drawFruit(x, f, cell, t));
+    drawStatues(x, st, cell);
+    /* fruit with no kind of its own (the lobby's) is drawn as the viewer's choice of fruit */
+    (st.fruit || []).forEach(f => drawFruit(x, f.t || f.k || !st.fk ? f : { x:f.x, y:f.y, t:st.fk === 'mixed' ? FKINDS[(f.x * 7 + f.y * 13) % FKINDS.length] : st.fk }, cell, t));
     (st.items || []).forEach(it => drawItem(x, it, cell, t));
     (st.pops || []).forEach(p => { const k = Math.min(1, (t - p.t) / 350); x.beginPath(); x.arc((p.x + .5) * cell, (p.y + .5) * cell, cell * (.3 + k * .6), 0, 6.2832);
       x.strokeStyle = 'rgba(255,255,255,' + (1 - k) * .8 + ')'; x.lineWidth = 2; x.stroke(); });
     st.pops = (st.pops || []).filter(p => t - p.t < 350);
-    st.snakes.filter(s => !s.alive).forEach(s => drawSnake(x, s, 1, cell, W, H, !st.walls, lk));
-    st.snakes.filter(s => s.alive).forEach(s => drawSnake(x, s, a, cell, W, H, !st.walls, lk));
+    st.snakes.filter(s => !s.alive).forEach(s => drawSnake(x, s, 1, cell, W, H, !st.walls, t));
+    st.snakes.filter(s => s.alive).forEach(s => drawSnake(x, s, a, cell, W, H, !st.walls, t));
   }
   /* sizes the canvas for a board W × H to the space it has; returns the cell size */
   function fit(cv, W, H, maxW){
-    const room = Math.min(maxW || 560, (cv.parentElement && cv.parentElement.clientWidth) || 560);
-    const cell = Math.max(8, Math.min(30, Math.floor(room / W)));
+    const room = Math.min(maxW || 560, (cv.parentElement && cv.parentElement.clientWidth) || 560), roomH = Math.max(280, innerHeight - 240);
+    const cell = Math.max(8, Math.min(30, Math.floor(room / W), Math.floor(roomH / H)));
     const dpr = Math.min(2, devicePixelRatio || 1);
     cv.width = W * cell * dpr; cv.height = H * cell * dpr; cv.style.width = W * cell + 'px'; cv.style.height = H * cell + 'px';
     cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
     return cell;
   }
-  return { DIRS, keyDir, look, drawBoard, fit };
+  return { DIRS, keyDir, look, drawBoard, drawSnake, drawFruit, fit, wrapD, rgba, shade, tint, COLOURS, FRUITS, FKINDS, PATTERNS, SHAPES, EYES };
 })();
 
-BUILD.snake = (host, o) => o && o.lobby ? snakeArena(host, o.lobby) : snakeSolo(host);
+BUILD.snake = (host, o) => !o || !o.lobby ? snakeSolo(host)
+  : (o.lobby.opts || {}).mode === 'territory' ? snakeTerritory(host, o.lobby) : snakeArena(host, o.lobby);
 
 function snakeSolo(host){
+  const MODES = { classic:['Classic', 'The game as it always was.'], bun:['Bun', 'A bun down each side: after a turn you go two cells before the next. No turning on the spot.'],
+    statue:['Statues', 'Every fruit leaves a stone copy of your tail behind. It crumbles away a piece at a time. Don’t hit it.'],
+    holey:['Holey', 'Every third piece of you is a hole. You can pass straight through your own holes.'],
+    rubble:['Rubble', 'Every fruit drops a rock somewhere on the board, and it stays.'], runaway:['Runaway', 'The fruit hops away when you get close.'] };
   const SPEEDS = { slow:['Slow', 150], norm:['Normal', 0], fast:['Fast', 70] };     // normal: the old game's, faster as you score
   const SIZES = { s:['Small', 10], m:['Medium', 16], l:['Large', 22] };
-  const FRUITS = { 1:'1 fruit', 3:'3 fruit', 5:'5 fruit' };
+  const FRUITS = { 1:'1', 3:'3', 5:'5' };
   const EDGES = { wrap:'Wrap around', walls:'Walls' };
-  const cfg = Object.assign({ sp:'norm', sz:'m', fr:1, ed:'wrap' }, TT.get('tt.snakecfg', {}) || {});
-  if (!SPEEDS[cfg.sp]) cfg.sp = 'norm'; if (!SIZES[cfg.sz]) cfg.sz = 'm'; if (!FRUITS[cfg.fr]) cfg.fr = 1; if (!EDGES[cfg.ed]) cfg.ed = 'wrap';
-  const classic = () => cfg.sp === 'norm' && cfg.sz === 'm' && +cfg.fr === 1 && cfg.ed === 'wrap';
+  const DEF = { mode:'classic', sp:'norm', sz:'m', fr:1, ed:'wrap' };
+  const cfg = Object.assign({ tab:'lb' }, DEF, TT.get('tt.snakecfg', {}) || {});
+  if (!MODES[cfg.mode]) cfg.mode = 'classic'; if (!SPEEDS[cfg.sp]) cfg.sp = 'norm'; if (!SIZES[cfg.sz]) cfg.sz = 'm'; if (!FRUITS[cfg.fr]) cfg.fr = 1; if (!EDGES[cfg.ed]) cfg.ed = 'wrap';
+  if (cfg.tab !== 'custom') cfg.tab = 'lb';
+  const lookCfg = Object.assign({ fruit:'apple', col:'theme', pat:'plain', shape:'round', eyes:'round' }, TT.get('tt.snakelook', {}) || {});
+  /* the rules in play: the Leaderboard tab always plays the defaults */
+  const R = () => cfg.tab === 'lb' ? DEF : cfg;
+  const ranked = () => cfg.tab === 'lb';
+  const sel = (id, opts, cur) => '<select id="' + id + '">' + Object.entries(opts).map(([k, v]) => '<option value="' + k + '"' + (String(k) === String(cur) ? ' selected' : '') + '>' + (Array.isArray(v) ? v[0] : v) + '</option>').join('') + '</select>';
   head(host, 'Snake', tap('Arrow keys or WASD to start and steer. Space pauses, R restarts.', 'Swipe to start and steer. Tap to restart.'),
-    '<div class="snbar">' +
-      '<label>Speed<select id="snsp">' + Object.entries(SPEEDS).map(([k, v]) => '<option value="' + k + '">' + v[0] + '</option>').join('') + '</select></label>' +
-      '<label>Board<select id="snsz">' + Object.entries(SIZES).map(([k, v]) => '<option value="' + k + '">' + v[0] + '</option>').join('') + '</select></label>' +
-      '<label>Fruit<select id="snfr">' + Object.entries(FRUITS).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('') + '</select></label>' +
-      '<label>Edges<select id="sned">' + Object.entries(EDGES).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join('') + '</select></label>' +
-      '<span class="snclassic" id="sncl"></span></div>' +
+    '<div class="sntabs"><span class="diffbar" id="sntab"><button type="button" class="diffpill" data-tab="lb">Leaderboard</button><button type="button" class="diffpill" data-tab="custom">Custom</button></span>' +
+      '<button type="button" class="btn sntoggle" id="snlookbtn" aria-expanded="false">Look</button></div>' +
+    '<div class="snbar" id="snrules">' +
+      '<label>Mode' + sel('snmode', MODES, cfg.mode) + '</label><label>Speed' + sel('snsp', SPEEDS, cfg.sp) + '</label><label>Board' + sel('snsz', SIZES, cfg.sz) + '</label>' +
+      '<label>Fruit' + sel('snfr', FRUITS, cfg.fr) + '</label><label>Edges' + sel('sned', EDGES, cfg.ed) + '</label></div>' +
+    '<div class="snbar snlook" id="snlook" hidden>' +
+      '<label>Fruit' + sel('lkfruit', SNK.FRUITS, lookCfg.fruit) + '</label>' +
+      '<span class="sncols" id="lkcol" role="radiogroup" aria-label="Colour">' + Object.entries(SNK.COLOURS).map(([k, v]) =>
+        '<button type="button" role="radio" data-col="' + k + '" aria-label="' + v[0] + '" title="' + v[0] + '" style="--c:' + (v[1] || (k === 'rainbow' ? 'conic-gradient(#e5484d,#f2c200,#3fae49,#0090ff,#8e4ec6,#e5484d)' : 'var(--accent)')) + '"></button>').join('') + '</span>' +
+      '<label>Pattern' + sel('lkpat', SNK.PATTERNS, lookCfg.pat) + '</label><label>Shape' + sel('lkshape', SNK.SHAPES, lookCfg.shape) + '</label><label>Eyes' + sel('lkeyes', SNK.EYES, lookCfg.eyes) + '</label></div>' +
+    '<p class="snhint" id="snhint"></p>' +
     '<div class="snwrap"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div>' +
     (TOUCH ? '<div class="tpad dpad" id="snpad"><button type="button" data-act="u" aria-label="Up">▲</button><button type="button" data-act="l" aria-label="Left">◀</button>' +
       '<button type="button" data-act="d" aria-label="Down">▼</button><button type="button" data-act="r" aria-label="Right">▶</button></div>' : ''));
-  $('snsp').value = cfg.sp; $('snsz').value = cfg.sz; $('snfr').value = String(cfg.fr); $('sned').value = cfg.ed;
   const cv = $('cv'), x = cv.getContext('2d');
-  let st, s, phase = 'ready', acc = 0, last = 0, raf = 0, q = [], recorded = false, lk = SNK.look(), alive = true;
-  const N = () => SIZES[cfg.sz][1];
-  const interval = () => cfg.sp === 'norm' ? Math.max(55, 112 - (s.body.length - 3) * 4) : SPEEDS[cfg.sp][1];
-  const best = () => classic() ? statVal('snake', 'high') : (TT.get('tt.snakebest', {}) || {})[key()];
-  const key = () => cfg.sp + cfg.sz + cfg.fr + cfg.ed;
-  function setup(){
-    const W = N(), cell = SNK.fit(cv, W, W, 520);
-    const mid = W >> 1;
-    s = { id:'me', col:lk.accent, body:[{ x:mid, y:mid }, { x:mid - 1, y:mid }, { x:mid - 2, y:mid }], tail:{ x:mid - 3, y:mid }, dir:{ x:1, y:0 }, alive:true };
-    st = { W, H:W, cell, walls:cfg.ed === 'walls', snakes:[s], fruit:[], items:[], rocks:[], pops:[] };
-    for (let i = 0; i < +cfg.fr; i++) st.fruit.push(free());
-    phase = 'ready'; q = []; recorded = false; acc = 0;
-    $('sncl').textContent = classic() ? 'Classic: counts for the leaderboard' : 'Not ranked (Classic is Normal, Medium, 1 fruit, wrap)';
-    over('Snake', tap('Press an arrow key to start', 'Swipe to start'));
-    status();
+  let st, s, phase = 'ready', acc = 0, last = 0, raf = 0, q = [], recorded = false, lk = SNK.look();
+  const N = () => SIZES[R().sz][1];
+  const mode = () => R().mode;
+  const interval = () => R().sp === 'norm' ? Math.max(55, 112 - (s.body.length - 3) * 4) : SPEEDS[R().sp][1];
+  const bestKey = () => [cfg.mode, cfg.sp, cfg.sz, cfg.fr, cfg.ed].join('.');
+  const best = () => ranked() ? statVal('snake', 'high') : (TT.get('tt.snakebest', {}) || {})[bestKey()];
+  const snakeCol = () => lookCfg.col === 'rainbow' ? 'rainbow' : lookCfg.col === 'theme' ? lk.accent : (SNK.COLOURS[lookCfg.col] || [0, lk.accent])[1];
+  const fruitKind = () => lookCfg.fruit === 'mixed' ? SNK.FKINDS[(Math.random() * SNK.FKINDS.length) | 0] : lookCfg.fruit;
+  function paintTabs(){
+    [...$('sntab').children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === cfg.tab)));
+    $('snrules').hidden = cfg.tab !== 'custom';
+    const m = MODES[mode()];
+    $('snhint').textContent = ranked() ? 'The standard rules: Classic, normal speed that rises as you score, medium board, one fruit, wrap around. Counts for the leaderboard.'
+      : m[1] + ' Not ranked; your best for these settings is kept.';
+    [...$('lkcol').children].forEach(b => b.setAttribute('aria-checked', String(b.dataset.col === lookCfg.col)));
   }
-  function free(){
-    const busy = new Set(s.body.map(c => c.x + ',' + c.y)); (st ? st.fruit : []).forEach(f => busy.add(f.x + ',' + f.y));
-    for (let i = 0; i < 400; i++){ const c = { x:(Math.random() * N()) | 0, y:(Math.random() * N()) | 0 }; if (!busy.has(c.x + ',' + c.y)) return c; }
+  function setup(){
+    const W = N(), cell = SNK.fit(cv, W, W, 520), mid = W >> 1, md = mode();
+    s = { id:'me', col:snakeCol(), skin:lookCfg, body:[{ x:mid, y:mid }, { x:mid - 1, y:mid }, { x:mid - 2, y:mid }], tail:{ x:mid - 3, y:mid }, dir:{ x:1, y:0 }, alive:true,
+          since:9, n:0, bun:md === 'bun', holes:md === 'holey' };
+    st = { W, H:W, cell, walls:R().ed === 'walls', snakes:[s], fruit:[], items:[], rocks:[], statues:[], pops:[] };
+    for (let i = 0; i < +R().fr; i++) st.fruit.push(Object.assign(free(), { t:fruitKind() }));
+    phase = 'ready'; q = []; recorded = false; acc = 0;
+    over('Snake' + (md !== 'classic' ? ': ' + MODES[md][0] : ''), tap('Press an arrow key to start', 'Swipe to start'));
+    paintTabs(); status();
+  }
+  function busySet(){
+    const b = new Set(s.body.map(c => c.x + ',' + c.y));
+    st.fruit.forEach(f => b.add(f.x + ',' + f.y)); st.rocks.forEach(f => b.add(f.x + ',' + f.y)); st.statues.forEach(sv => sv.c.forEach(c => b.add(c.x + ',' + c.y)));
+    return b;
+  }
+  function free(far){
+    const busy = st ? busySet() : new Set(s.body.map(c => c.x + ',' + c.y)), h = s.body[0];
+    for (let i = 0; i < 600; i++){ const c = { x:(Math.random() * N()) | 0, y:(Math.random() * N()) | 0 };
+      if (!busy.has(c.x + ',' + c.y) && (!far || Math.abs(c.x - h.x) + Math.abs(c.y - h.y) > 3)) return c; }
     return { x:0, y:0 };
   }
   const over = (t, sub) => { const o = $('snover'); o.innerHTML = t ? '<div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' : ''; o.hidden = !t; };
   function status(){
     const sc = s.body.length - 3, b = best();
-    $('sc').textContent = phase === 'dead' ? 'Out on ' + sc + (b ? ' · best ' + b : '') : 'Score ' + sc + (b ? ' · best ' + b : '');
+    $('sc').textContent = (phase === 'dead' ? 'Out on ' + sc : 'Score ' + sc) + (b ? ' · best ' + b : '') + (ranked() ? '' : ' · not ranked');
   }
   function steer(d){
     if (phase === 'dead') return;
     const v = SNK.DIRS[d]; if (!v) return;
     const lastD = q.length ? q[q.length - 1] : s.dir;
-    if ((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y)) return;
-    if (q.length < 2) q.push({ x:v[0], y:v[1] });
-    if (phase === 'ready' || phase === 'paused'){ phase = 'play'; over(); last = performance.now(); }
+    const turn = !((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y));
+    if (turn && q.length < 2) q.push({ x:v[0], y:v[1] });
+    if (phase === 'ready' || phase === 'paused'){ phase = 'play'; over(); last = performance.now(); }      // any arrow starts it, even straight ahead
   }
   function step(){
-    if (q.length) s.dir = q.shift();
+    const md = mode();
+    /* Bun: a turn waits until you've gone two cells since the last one (it's kept, not lost) */
+    if (q.length && !(md === 'bun' && s.since < 2)){ const nd = q.shift(); if (nd.x !== s.dir.x || nd.y !== s.dir.y){ s.dir = nd; s.since = 0; } }
+    s.since++;
     const W = st.W, h = { x:s.body[0].x + s.dir.x, y:s.body[0].y + s.dir.y };
     if (st.walls){ if (h.x < 0 || h.y < 0 || h.x >= W || h.y >= W) return die(); }
     else { h.x = (h.x + W) % W; h.y = (h.y + W) % W; }
     const ate = st.fruit.findIndex(f => f.x === h.x && f.y === h.y);
     const body = ate >= 0 ? s.body : s.body.slice(0, -1);
-    if (body.some(c => c.x === h.x && c.y === h.y)) return die();
+    const at = c => c.x === h.x && c.y === h.y;
+    /* Holey: a piece laid down on a step that's a multiple of three is a hole. After this move the piece at
+       index i was laid i steps ago, so it's a hole when i and the step count agree, mod 3 */
+    const n1 = s.n + 1;
+    if (body.some((c, j) => at(c) && !(md === 'holey' && (j + 1) % 3 === n1 % 3))) return die();
+    if (st.rocks.some(at) || st.statues.some(sv => sv.c.slice(0, Math.ceil(sv.c.length * sv.life / sv.max)).some(at))) return die();
     s.tail = ate >= 0 ? null : s.body[s.body.length - 1];
-    s.body = [h].concat(body);
-    if (ate >= 0){ SFX.tick(); st.pops.push({ x:h.x, y:h.y, t:performance.now() }); st.fruit.splice(ate, 1); st.fruit.push(free()); status(); }
+    s.body = [h].concat(body); s.n = n1;
+    st.statues.forEach(sv => sv.life--); st.statues = st.statues.filter(sv => sv.life > 0);
+    if (ate >= 0){
+      SFX.tick(); st.pops.push({ x:h.x, y:h.y, t:performance.now() });
+      if (md === 'statue') st.statues.push({ c:s.body.slice(-Math.min(6, s.body.length - 2)).reverse().map(c => ({ x:c.x, y:c.y })), life:70, max:70 });
+      st.fruit.splice(ate, 1);
+      if (md === 'rubble') st.rocks.push(free(true));
+      st.fruit.push(Object.assign(free(), { t:fruitKind() }));
+      status();
+    }
+    /* Runaway: fruit near the head may hop one cell further off */
+    if (md === 'runaway') st.fruit.forEach(f => {
+      const d0 = Math.abs(f.x - h.x) + Math.abs(f.y - h.y); if (d0 > 2 || Math.random() > .45) return;
+      const busy = busySet(); let bestC = null, bestD = d0;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { let c = { x:f.x + dx, y:f.y + dy };
+        if (st.walls && (c.x < 0 || c.y < 0 || c.x >= W || c.y >= W)) return; c = { x:(c.x + W) % W, y:(c.y + W) % W };
+        if (busy.has(c.x + ',' + c.y)) return; const dd = Math.abs(c.x - h.x) + Math.abs(c.y - h.y); if (dd > bestD){ bestD = dd; bestC = c; } });
+      if (bestC){ f.x = bestC.x; f.y = bestC.y; }
+    });
   }
   function die(){
     phase = 'dead'; s.alive = false; s.deadFor = 0; SFX.lose();
     const sc = s.body.length - 3;
     if (!recorded){ recorded = true;
-      if (classic()) recordStat('snake', { key:'high', mode:'max', value:sc });
-      else { const b = TT.get('tt.snakebest', {}) || {}; if (!b[key()] || sc > b[key()]){ b[key()] = sc; TT.set('tt.snakebest', b); } } }
+      if (ranked()) recordStat('snake', { key:'high', mode:'max', value:sc });
+      else { const b = TT.get('tt.snakebest', {}) || {}; if (!b[bestKey()] || sc > b[bestKey()]){ b[bestKey()] = sc; TT.set('tt.snakebest', b); } } }
     over('Out on ' + sc, tap('R to go again', 'Tap to go again')); status();
   }
   function frame(now){
@@ -3268,7 +3413,7 @@ function snakeSolo(host){
     SNK.drawBoard(x, st, phase === 'ready' ? 1 : a, now, lk);
   }
   const key_ = e => {
-    if (typing(e)) return;
+    if (typing(e) || /^(SELECT|BUTTON)$/.test((e.target || {}).tagName) && e.key === ' ') return;
     const k = e.key.toLowerCase();
     if (k === 'r' && phase === 'dead'){ setup(); e.preventDefault(); return; }
     if (k === ' ' && (phase === 'play' || phase === 'paused')){ phase = phase === 'play' ? 'paused' : 'play'; over(phase === 'paused' ? 'Paused' : '', 'Space to carry on'); e.preventDefault(); return; }
@@ -3279,36 +3424,51 @@ function snakeSolo(host){
   if (TOUCH){ onSwipe(cv, d => steer(d), { step:22, repeat:true, tapFn:() => { if (phase === 'dead') setup(); } });
     wirePad($('snpad'), a => { if (phase === 'dead') setup(); else steer(a); }); }
   $('snover').onclick = () => { if (phase === 'dead') setup(); };
-  [['snsp', 'sp'], ['snsz', 'sz'], ['snfr', 'fr'], ['sned', 'ed']].forEach(([id, k]) => $(id).onchange = () => { cfg[k] = k === 'fr' ? +$(id).value : $(id).value; TT.set('tt.snakecfg', cfg); setup(); $(id).blur(); });
-  const onLook = () => { lk = SNK.look(); if (s && st) s.col = lk.accent; };
+  [...$('sntab').children].forEach(b => b.onclick = () => { if (cfg.tab === b.dataset.tab) return; cfg.tab = b.dataset.tab; TT.set('tt.snakecfg', cfg); setup(); });
+  [['snmode', 'mode'], ['snsp', 'sp'], ['snsz', 'sz'], ['snfr', 'fr'], ['sned', 'ed']].forEach(([id, k]) => $(id).onchange = () => { cfg[k] = k === 'fr' ? +$(id).value : $(id).value; TT.set('tt.snakecfg', cfg); setup(); $(id).blur(); });
+  /* the look changes nothing but the look: it applies straight away, mid-game too */
+  const saveLook = () => { TT.set('tt.snakelook', lookCfg); s.col = snakeCol(); s.skin = lookCfg; if (lookCfg.fruit !== 'mixed') st.fruit.forEach(f => f.t = lookCfg.fruit); paintTabs(); };
+  [['lkfruit', 'fruit'], ['lkpat', 'pat'], ['lkshape', 'shape'], ['lkeyes', 'eyes']].forEach(([id, k]) => $(id).onchange = () => { lookCfg[k] = $(id).value; saveLook(); $(id).blur();
+    if (k === 'fruit' && lookCfg.fruit === 'mixed') st.fruit.forEach(f => f.t = fruitKind()); });
+  [...$('lkcol').children].forEach(b => b.onclick = () => { lookCfg.col = b.dataset.col; saveLook(); });
+  $('snlookbtn').onclick = () => { const l = $('snlook'); l.hidden = !l.hidden; $('snlookbtn').setAttribute('aria-expanded', String(!l.hidden)); };
+  const onLook = () => { lk = SNK.look(); if (s) s.col = snakeCol(); };
   addEventListener('tt:look', onLook);
   const onResize = () => { if (st) st.cell = SNK.fit(cv, st.W, st.H, 520); };
   addEventListener('resize', onResize);
   setup(); raf = requestAnimationFrame(frame);
-  return () => { alive = false; cancelAnimationFrame(raf); removeEventListener('keydown', key_); removeEventListener('tt:look', onLook); removeEventListener('resize', onResize); };
+  return () => { cancelAnimationFrame(raf); removeEventListener('keydown', key_); removeEventListener('tt:look', onLook); removeEventListener('resize', onResize); };
 }
 
-/* ── the arena: a lobby round (mp.js). The host runs it. ── */
+const SNPAD = () => TOUCH ? '<div class="tpad dpad" id="snpad"><button type="button" data-act="u" aria-label="Up">▲</button><button type="button" data-act="l" aria-label="Left">◀</button>' +
+  '<button type="button" data-act="d" aria-label="Down">▼</button><button type="button" data-act="r" aria-label="Right">▶</button></div>' : '';
+const SNSTEP = { slow:170, norm:130, fast:95, insane:68 };
+const snRand = seed => { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+
+/* ── the arena: a lobby round (mp.js), Classic or Trails. The host runs it.
+   Trails: no fruit and no power-ups; every snake grows a cell each step and never shrinks, and a
+   snake that's out stays where it stopped, so the board fills up with lines. Last one moving wins.
+   The bodies get long, so in Trails the host sends just the first few cells of each and the length
+   (the rest can't change) and the whole of each body every ten steps. ── */
 function snakeArena(host, LB){
-  const O = LB.opts || {};
-  const W = Math.max(12, Math.min(48, +O.size || 24)), STEP = { slow:170, norm:130, fast:95, insane:68 }[O.speed] || 130;
-  const FRUIT = Math.max(1, Math.min(20, +O.fruit || 3)), WALLS = O.walls === 'walls', PW = O.pw || 'off', LEN = Math.max(3, Math.min(10, +O.len || 3));
+  const O = LB.opts || {}, TRAILS = O.mode === 'trails';
+  const W = Math.max(12, Math.min(64, +O.size || (TRAILS ? 40 : 24))), STEP = SNSTEP[O.speed] || 130;
+  const FRUIT = TRAILS ? 0 : Math.max(1, Math.min(20, +O.fruit || 3)), WALLS = O.walls === 'walls', PW = TRAILS ? 'off' : O.pw || 'off', LEN = Math.max(3, Math.min(10, +O.len || 3));
   const ROCKS = +O.rocks || 0, FT = Math.max(1, +O.ft || 1), COLS = window.MP_COLOURS || ['#3b82f6', '#22c55e', '#ec4899', '#f59e0b', '#8b5cf6', '#14b8a6'];
-  head(host, 'Snake', tap('Arrow keys or WASD. ', 'Swipe or use the arrows. ') + 'Run into anything and you’re out. Last snake moving takes the round.',
-    '<div class="tvsbar" id="snbar"></div><div class="snwrap arena"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div><div class="snlegend" id="snleg"></div>' +
-    (TOUCH ? '<div class="tpad dpad" id="snpad"><button type="button" data-act="u" aria-label="Up">▲</button><button type="button" data-act="l" aria-label="Left">◀</button>' +
-      '<button type="button" data-act="d" aria-label="Down">▼</button><button type="button" data-act="r" aria-label="Right">▶</button></div>' : ''));
-  const cv = $('cv'), x = cv.getContext('2d'), R = LB.room, isHost = LB.isHost, me = LB.me;
+  const CW = W * W > 1296 ? 3 : 2;            // a cell is two base-36 characters, three on the big boards
+  head(host, 'Snake', tap('Arrow keys or WASD. ', 'Swipe or use the arrows. ') + (TRAILS ? 'No fruit: every snake leaves a line that stays. Last one moving wins.' : 'Run into anything and you’re out. Last snake moving takes the round.'),
+    '<div class="tvsbar" id="snbar"></div><div class="snwrap arena"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div><div class="snlegend" id="snleg"></div>' + SNPAD());
+  const cv = $('cv'), x = cv.getContext('2d'), R = LB.room, isHost = LB.isHost, me = LB.me, MYLOOK = TT.get('tt.snakelook', {}) || {};
   let lk = SNK.look(), raf = 0, timer = 0, cd = 0, alive = true, offs = [];
   const wins = {}; LB.players.forEach(p => wins[p.id] = 0);
-  let k = 0, round = 0, st = null, recvAt = 0, over_ = false, matchOver = false;
+  let k = 0, round = 0, st = null, recvAt = 0, over_ = false, matchOver = false, wantFull = false, asked = 0;
   const nameFor = id => (LB.players.find(p => p.id === id) || {}).n || 'Player';
   const over = (t, sub) => { const o = $('snover'); o.innerHTML = t ? '<div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' : ''; o.hidden = !t; };
   const pipsH = (n) => FT > 1 ? '<span class="tpips">' + Array.from({ length:FT }, (_, i) => '<i' + (i < n ? ' class="on"' : '') + '></i>').join('') + '</span>' : '';
   function bar(note){
     if (!st) return;
     $('snbar').innerHTML = '<span>' + (FT > 1 ? 'First to ' + FT + ' · Round ' + round : 'One round') + '</span><span class="tvsscore">' +
-      st.snakes.map(s => '<b class="' + (s.alive ? '' : 'out') + (s.id === me ? ' me' : '') + '"><i class="lbdot" style="--c:' + s.col + '"></i>' + esc(s.id === me ? 'You' : s.n) + ' ' + s.body.length + pipsH(wins[s.id] || 0) + '</b>').join('') +
+      st.snakes.map(s => '<b class="' + (s.alive ? '' : 'out') + (s.id === me ? ' me' : '') + '"><i class="lbdot" style="--c:' + s.col + '"></i>' + esc(s.id === me ? 'You' : s.n) + (TRAILS ? '' : ' ' + s.body.length) + pipsH(wins[s.id] || 0) + '</b>').join('') +
       '</span>' + (note ? '<span class="tvsnote">' + note + '</span>' : LB.watch ? '<span class="tvsnote">Watching</span>' : '');
   }
   function legend(){
@@ -3316,13 +3476,13 @@ function snakeArena(host, LB){
   }
   /* a fresh arena for round r (host) */
   function freshState(seed){
-    let a = seed >>> 0; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const rnd = snRand(seed);
     const here = new Set(R.peers().map(p => p.id));
     const ps = LB.players.filter(p => here.has(p.id) || p.id === me);
     const m = Math.max(2, Math.min((W >> 1) - 2, LEN + 1)), starts = [[m, m, 1, 0], [W - 1 - m, W - 1 - m, -1, 0], [W - 1 - m, m, 0, 1], [m, W - 1 - m, 0, -1], [W >> 1, m, 0, 1], [W >> 1, W - 1 - m, 0, -1]];
     const snakes = ps.map((p, i) => { const [sx, sy, dx, dy] = starts[i % starts.length];
       const body = []; for (let j = 0; j < LEN; j++) body.push({ x:(sx - dx * j + W) % W, y:(sy - dy * j + W) % W });
-      return { id:p.id, n:p.n, col:COLS[LB.players.findIndex(q => q.id === p.id) % COLS.length], dir:{ x:dx, y:dy }, q:[], alive:true, body, tail:null, grow:0, fx:{} }; });
+      return { id:p.id, n:p.n, col:COLS[LB.players.findIndex(q => q.id === p.id) % COLS.length], dir:{ x:dx, y:dy }, q:[], alive:true, body, tail:null, grow:0, fx:{}, keep:TRAILS }; });
     const s = { W, H:W, cell:0, walls:WALLS, snakes, fruit:[], items:[], rocks:[], pops:[] };
     const n = ROCKS === 2 ? Math.round(W * W * .025) : ROCKS === 1 ? Math.round(W * W * .01) : 0;
     const clear = c => snakes.every(sn => Math.abs(sn.body[0].x - c.x) + Math.abs(sn.body[0].y - c.y) > 4 && !(sn.dir.x && c.y === sn.body[0].y) && !(sn.dir.y && c.x === sn.body[0].x));
@@ -3339,6 +3499,7 @@ function snakeArena(host, LB){
   function hostStep(){
     const s = st; if (!s || over_) return;
     const live = s.snakes.filter(sn => sn.alive), key = c => c.x + ',' + c.y;
+    const grows = sn => TRAILS || sn.eats >= 0 || sn.grow > 0;
     /* power-ups wear off */
     live.forEach(sn => { for (const f in sn.fx) if (f !== 'shield' && sn.fx[f] > 0) sn.fx[f]--; });
     const moves = live.map(sn => 1 + (sn.fx.speed > 0 && k % 2 === 0 ? 1 : 0));      // speed: an extra cell every other step
@@ -3351,7 +3512,8 @@ function snakeArena(host, LB){
         if (!WALLS) h = { x:(h.x + W) % W, y:(h.y + W) % W };
         sn.head = h; sn.eats = s.fruit.findIndex(f => f.x === h.x && f.y === h.y); sn.takes = s.items.findIndex(f => f.x === h.x && f.y === h.y); });
       const occ = new Set(); s.rocks.forEach(r => occ.add(key(r)));
-      s.snakes.forEach(sn => { if (!sn.alive) return; const moving = movers.includes(sn), keep = moving && !(sn.eats >= 0 || sn.grow > 0) ? sn.body.length - 1 : sn.body.length;
+      /* in Trails the ones that are out still block */
+      s.snakes.forEach(sn => { if (!sn.alive && !TRAILS) return; const moving = movers.includes(sn), keep = moving && !grows(sn) ? sn.body.length - 1 : sn.body.length;
         for (let i = 0; i < keep; i++) occ.add(key(sn.body[i])); });
       const heads = new Map(); movers.forEach(sn => { if (!sn.wall) heads.set(key(sn.head), (heads.get(key(sn.head)) || 0) + 1); });
       const out = [];
@@ -3362,14 +3524,15 @@ function snakeArena(host, LB){
         out.push(sn);
       });
       movers.forEach(sn => { if (out.includes(sn)) return;
-        sn.tail = (sn.eats >= 0 || sn.grow > 0) ? null : sn.body[sn.body.length - 1];
-        sn.body = [sn.head].concat(sn.tail ? sn.body.slice(0, -1) : sn.body);
-        if (sn.grow > 0 && sn.eats < 0) sn.grow--;
+        const g = grows(sn);
+        sn.tail = g ? null : sn.body[sn.body.length - 1];
+        sn.body = [sn.head].concat(g ? sn.body : sn.body.slice(0, -1));
+        if (!TRAILS && sn.grow > 0 && sn.eats < 0) sn.grow--;
         if (sn.eats >= 0){ const f = s.fruit[sn.eats]; if (f){ if (f.k === 'gold') sn.grow += 2; f.gone = 1; s.pops.push({ x:f.x, y:f.y, t:performance.now() }); } }
         if (sn.takes >= 0){ const it = s.items[sn.takes]; if (it && !it.gone){ it.gone = 1; s.pops.push({ x:it.x, y:it.y, t:performance.now() });
           if (it.k === 'speed') sn.fx.speed = 40; else if (it.k === 'ghost') sn.fx.ghost = 40; else if (it.k === 'shield') sn.fx.shield = 1; } } });
       s.fruit = s.fruit.filter(f => !f.gone); s.items = s.items.filter(f => !f.gone);
-      out.forEach(sn => { sn.alive = false; sn.body.filter((c, i) => i % 2 === 0).slice(0, 8).forEach(c => s.fruit.push({ x:c.x, y:c.y })); });
+      out.forEach(sn => { sn.alive = false; sn.deadFor = 0; if (!TRAILS) sn.body.filter((c, i) => i % 2 === 0).slice(0, 8).forEach(c => s.fruit.push({ x:c.x, y:c.y })); });
       if (out.some(sn => sn.id === me)) SFX.lose();
     }
     while (s.fruit.length < FRUIT) s.fruit.push(freeCell(s));
@@ -3378,20 +3541,22 @@ function snakeArena(host, LB){
       if (kk === 'gold') s.fruit.push(Object.assign(freeCell(s), { k:'gold' })); else s.items.push(Object.assign(freeCell(s), { k:kk }));
     }
     k++;
-    R.emit('st', pack(s));
+    R.emit('st', pack(s, k <= 1 || k % 10 === 0 || wantFull)); wantFull = false;
     recvAt = performance.now(); bar();
     const still = s.snakes.filter(sn => sn.alive);
     if (still.length <= (s.snakes.length > 1 ? 1 : 0)){
       const w = still[0] || null;
-      R.emit('end', { k:round, w });
+      R.emit('end', { k:round, w:w && w.id });
     }
   }
-  const enc = cells => cells.map(c => (c.y * W + c.x).toString(36).padStart(2, '0')).join('');
-  const dec = str => { const out = []; for (let i = 0; i + 1 < str.length; i += 2){ const v = parseInt(str.slice(i, i + 2), 36); if (v >= 0 && v < W * W) out.push({ x:v % W, y:(v / W) | 0 }); } return out; };
+  const enc = cells => cells.map(c => (c.y * W + c.x).toString(36).padStart(CW, '0')).join('');
+  const dec = str => { const out = []; for (let i = 0; i + CW <= str.length; i += CW){ const v = parseInt(str.slice(i, i + CW), 36); if (v >= 0 && v < W * W) out.push({ x:v % W, y:(v / W) | 0 }); } return out; };
   const DIRK = ['r', 'd', 'l', 'u'], DV = { r:{ x:1, y:0 }, d:{ x:0, y:1 }, l:{ x:-1, y:0 }, u:{ x:0, y:-1 } };
   const dirK = d => d.x > 0 ? 0 : d.y > 0 ? 1 : d.x < 0 ? 2 : 3;
-  function pack(s){
-    return { k, r:round, s:s.snakes.map(sn => [sn.alive ? 1 : 0, enc(sn.body), dirK(sn.dir), sn.tail ? enc([sn.tail]) : '', (sn.fx.speed > 0 ? 1 : 0) | (sn.fx.ghost > 0 ? 2 : 0) | (sn.fx.shield ? 4 : 0)]),
+  function pack(s, full){
+    const all = !TRAILS || full;
+    return { k, r:round, F:all ? 1 : 0, s:s.snakes.map(sn => [sn.alive ? 1 : 0, enc(all ? sn.body : sn.body.slice(0, 3)), dirK(sn.dir), sn.tail ? enc([sn.tail]) : '',
+               (sn.fx.speed > 0 ? 1 : 0) | (sn.fx.ghost > 0 ? 2 : 0) | (sn.fx.shield ? 4 : 0), sn.body.length]),
              f:s.fruit.map(f => enc([f]) + (f.k === 'gold' ? '*' : '')).join(''), i:s.items.map(it => enc([it]) + ({ speed:'s', ghost:'g', shield:'h' })[it.k]).join(''),
              p:s.snakes.map(sn => sn.id), o:k <= 1 || k % 20 === 0 ? enc(s.rocks) : null };
   }
@@ -3399,19 +3564,28 @@ function snakeArena(host, LB){
     if (!st || d.r !== round || !(d.k > k)) return;
     k = d.k;
     if (Array.isArray(d.p) && d.p.join() !== st.snakes.map(sn => sn.id).join())
-      st.snakes = d.p.map(id => st.snakes.find(sn => sn.id === id) || { id, n:nameFor(id), col:COLS[Math.max(0, LB.players.findIndex(q => q.id === id)) % COLS.length], dir:{ x:1, y:0 }, q:[], alive:true, body:[], tail:null, fx:{} });
+      st.snakes = d.p.map(id => st.snakes.find(sn => sn.id === id) || { id, n:nameFor(id), col:COLS[Math.max(0, LB.players.findIndex(q => q.id === id)) % COLS.length], dir:{ x:1, y:0 }, q:[], alive:true, body:[], tail:null, fx:{}, keep:TRAILS });
+    let need = false;
     (d.s || []).forEach((row, i) => { const sn = st.snakes[i]; if (!sn || !Array.isArray(row)) return;
       if (sn.alive && !row[0] && sn.id === me) SFX.lose();
       if (sn.alive && !row[0]) sn.deadFor = 0;
-      sn.alive = !!row[0]; const b = dec(String(row[1] || '')); if (b.length) sn.body = b;
+      sn.alive = !!row[0]; const b = dec(String(row[1] || ''));
+      if (d.F){ if (b.length) sn.body = b; }
+      else {
+        /* Trails: the new cells go on the front; anything that doesn't line up waits for the next whole body */
+        const n = (row[5] | 0) - sn.body.length, same = (p, q) => p && q && p.x === q.x && p.y === q.y;
+        if (n > 0 && sn.body.length && n <= b.length && (n === b.length || same(b[n], sn.body[0]))) sn.body = b.slice(0, n).concat(sn.body);
+        else if (n !== 0) need = true;
+      }
       sn.dir = DV[DIRK[row[2] | 0]] || sn.dir; const t = dec(String(row[3] || '')); sn.tail = t[0] || null;
       sn.ghost = !!(row[4] & 2); sn.shield = !!(row[4] & 4); });
+    if (need && performance.now() - asked > 1200){ asked = performance.now(); R.emit('sreq', { r:round }); }
     const fr = String(d.f || ''), fruit = [];
-    for (let i = 0; i + 1 < fr.length;){ const c = dec(fr.slice(i, i + 2))[0]; i += 2; const g = fr[i] === '*'; if (g) i++; if (c) fruit.push(g ? Object.assign(c, { k:'gold' }) : c); }
+    for (let i = 0; i + CW <= fr.length;){ const c = dec(fr.slice(i, i + CW))[0]; i += CW; const g = fr[i] === '*'; if (g) i++; if (c) fruit.push(g ? Object.assign(c, { k:'gold' }) : c); }
     if (fruit.length < st.fruit.length) st.fruit.forEach(f => { if (!fruit.some(g => g.x === f.x && g.y === f.y)) st.pops.push({ x:f.x, y:f.y, t:performance.now() }); });
     st.fruit = fruit;
     const it = String(d.i || ''), items = [];
-    for (let i = 0; i + 2 < it.length; i += 3){ const c = dec(it.slice(i, i + 2))[0], kk = { s:'speed', g:'ghost', h:'shield' }[it[i + 2]]; if (c && kk) items.push(Object.assign(c, { k:kk })); }
+    for (let i = 0; i + CW < it.length; i += CW + 1){ const c = dec(it.slice(i, i + CW))[0], kk = { s:'speed', g:'ghost', h:'shield' }[it[i + CW]]; if (c && kk) items.push(Object.assign(c, { k:kk })); }
     st.items = items;
     if (d.o != null) st.rocks = dec(String(d.o));
     recvAt = performance.now(); bar();
@@ -3428,7 +3602,7 @@ function snakeArena(host, LB){
       const left = Math.ceil((at - R.now()) / 1000);
       if (left > 0){ over(String(left), (FT > 1 ? 'Round ' + r + ' · ' : '') + st.snakes.map(s => esc(s.id === me ? 'You' : s.n)).join(' · ')); cd = setTimeout(count, 150); return; }
       over();
-      if (isHost){ R.emit('st', pack(st)); timer = setInterval(hostStep, STEP); }
+      if (isHost){ R.emit('st', pack(st, true)); timer = setInterval(hostStep, STEP); }
     };
     count();
   }
@@ -3464,6 +3638,7 @@ function snakeArena(host, LB){
     if (isHost) setTimeout(() => LB.back(), 5500); else LB.back();
   }
   offs.push(R.on('st', m => { if (!isHost && m.peer === LB.hostId) unpack(m.data || {}); }));
+  offs.push(R.on('sreq', m => { if (isHost && (m.data || {}).r === round) wantFull = true; }));
   offs.push(R.on('dir', m => { if (!isHost || !st) return; const d = m.data || {}; if (d.r !== round) return; const sn = st.snakes.find(s => s.id === m.peer); if (sn && sn.alive) qTurn(sn, d.d); }));
   offs.push(R.on('quit', m => { if (!isHost || !st) return; const sn = st.snakes.find(s => s.id === m.peer); if (sn) sn.alive = false; }));
   offs.push(R.on('end', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.k === round) roundEnd(d.w || null); }));
@@ -3475,6 +3650,8 @@ function snakeArena(host, LB){
     if (!st) return;
     const a = over_ ? 1 : Math.min(1, (now - recvAt) / STEP);
     st.snakes.forEach(s => { if (!s.alive) s.deadFor = Math.min(1, (s.deadFor || 0) + 1 / 40); });
+    /* on your own screen, your snake wears your look (the colour stays the lobby's) and the fruit is yours */
+    st.fk = MYLOOK.fruit; const mine = st.snakes.find(s => s.id === me); if (mine) mine.skin = MYLOOK;
     SNK.drawBoard(x, st, a, now, lk);
   }
   const key_ = e => { if (typing(e)) return; const d = SNK.keyDir(e.key.toLowerCase()); if (!d) return; e.preventDefault(); steer(d); };
@@ -3483,6 +3660,245 @@ function snakeArena(host, LB){
   const onLook = () => { lk = SNK.look(); };
   addEventListener('tt:look', onLook);
   const onResize = () => { if (st) st.cell = SNK.fit(cv, W, W, 640); };
+  addEventListener('resize', onResize);
+  startRound(1, LB.seed, LB.at);
+  raf = requestAnimationFrame(frame);
+  return () => { alive = false; cancelAnimationFrame(raf); clearInterval(timer); clearTimeout(cd); offs.forEach(f => { try { f(); } catch {} });
+    removeEventListener('keydown', key_); removeEventListener('tt:look', onLook); removeEventListener('resize', onResize); };
+}
+
+/* ── Territory: a lobby round (mp.js). The host runs it.
+   Everyone starts on a small patch of land. Off your land you leave a line; get back onto it and
+   the line, and everything it closes off, becomes yours (anyone else's land in there too). Run
+   into any line and its owner is out, so crossing your own is the end of you; meet someone head on
+   and whoever is standing on their own land survives it. Run out of land, or into the edge, and
+   you're out. Most land when the time is up, or the last one left, takes the round.
+   Each step the host sends where everyone is and the cells that changed, and the whole board
+   every thirty steps or when someone says they missed a step. ── */
+function snakeTerritory(host, LB){
+  const O = LB.opts || {};
+  const W = Math.max(16, Math.min(64, +O.size || 40)), N = W * W, STEP = SNSTEP[O.speed] || 130;
+  const T = Math.max(30, +O.time || 120) * 1000, FT = Math.max(1, +O.ft || 1), COLS = window.MP_COLOURS || ['#3b82f6', '#22c55e', '#ec4899', '#f59e0b', '#8b5cf6', '#14b8a6'];
+  const CW = N > 1296 ? 3 : 2;
+  head(host, 'Snake', tap('Arrow keys or WASD. ', 'Swipe or use the arrows. ') + 'Leave your land to draw a line, and get back to it to take everything inside. Cross anyone’s line and they’re out.',
+    '<div class="tvsbar" id="snbar"></div><div class="snwrap arena"><canvas id="cv"></canvas><div class="snover" id="snover"></div></div>' + SNPAD());
+  const cv = $('cv'), x = cv.getContext('2d'), R = LB.room, isHost = LB.isHost, me = LB.me, MYLOOK = TT.get('tt.snakelook', {}) || {};
+  const own = new Int8Array(N), trl = new Int8Array(N), lc = document.createElement('canvas'), lx = lc.getContext('2d');
+  const tO = new Set(), tT = new Set();
+  let lk = SNK.look(), raf = 0, timer = 0, cd = 0, alive = true, offs = [], cell = 16, P = [], pops = [];
+  const wins = {}; LB.players.forEach(p => wins[p.id] = 0);
+  let k = 0, round = 0, recvAt = 0, over_ = false, ended = false, matchOver = false, startAt = 0, dirty = true, stale = false, asked = 0, wantFull = false, shownSec = -1;
+  const nameFor = id => (LB.players.find(p => p.id === id) || {}).n || 'Player';
+  const colFor = id => COLS[Math.max(0, LB.players.findIndex(q => q.id === id)) % COLS.length];
+  const over = (t, sub) => { const o = $('snover'); o.innerHTML = t ? '<div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' : ''; o.hidden = !t; };
+  const pipsH = n => FT > 1 ? '<span class="tpips">' + Array.from({ length:FT }, (_, i) => '<i' + (i < n ? ' class="on"' : '') + '></i>').join('') + '</span>' : '';
+  const encL = list => list.map(i => i.toString(36).padStart(CW, '0')).join('');
+  const decL = str => { const out = []; for (let i = 0; i + CW <= str.length; i += CW){ const v = parseInt(str.slice(i, i + CW), 36); if (v >= 0 && v < N) out.push(v); } return out; };
+  const rle = a => { let s = '', i = 0; while (i < a.length){ let j = i + 1; while (j < a.length && a[j] === a[i]) j++; s += a[i] + (j - i).toString(36) + ','; i = j; } return s; };
+  const unrle = (s, a) => { a.fill(0); let i = 0; String(s || '').split(',').forEach(t => { if (!t) return; const v = +t[0], n = parseInt(t.slice(1), 36); if (v >= 0 && v < 8 && n > 0) a.fill(v, i, Math.min(N, i + n)); i += n || 0; }); };
+  const landOf = v => { let n = 0; for (let i = 0; i < N; i++) if (own[i] === v) n++; return n; };
+  const left = () => Math.max(0, (startAt || R.now()) + T - R.now());
+  const fmt = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const DIRK = ['r', 'd', 'l', 'u'], DV = { r:{ x:1, y:0 }, d:{ x:0, y:1 }, l:{ x:-1, y:0 }, u:{ x:0, y:-1 } };
+  const dirK = d => d.x > 0 ? 0 : d.y > 0 ? 1 : d.x < 0 ? 2 : 3;
+  function bar(note){
+    if (window.__SNDBG) window.__SNDBG.terr = { P, own, trl, W, me };     // only for the test scripts, which set __SNDBG
+    const n = new Int32Array(8); for (let i = 0; i < N; i++) n[own[i]]++;
+    const mine = P.find(p => p.id === me);
+    $('snbar').innerHTML = '<span>' + (FT > 1 ? 'First to ' + FT + ' · Round ' + round : 'One round') + ' · <span class="sntime">' + fmt(left()) + '</span></span><span class="tvsscore">' +
+      P.map(p => '<b class="' + (p.alive ? '' : 'out') + (p.id === me ? ' me' : '') + '"><i class="lbdot" style="--c:' + p.col + '"></i>' + esc(p.id === me ? 'You' : p.n) + ' ' + (n[p.v] * 100 / N).toFixed(1) + '%' + pipsH(wins[p.id] || 0) + '</b>').join('') + '</span>' +
+      (note ? '<span class="tvsnote">' + note + '</span>' : LB.watch ? '<span class="tvsnote">Watching</span>' : mine && !mine.alive && !over_ ? '<span class="tvsnote">You’re out. Watching the rest</span>' : '');
+  }
+  /* everyone's patch, spaced round a circle, all setting off the same way round it (so nobody meets head on at the start) */
+  function fresh(seed){
+    const rnd = snRand(seed), here = new Set(R.peers().map(p => p.id));
+    const ps = LB.players.filter(p => here.has(p.id) || p.id === me);
+    own.fill(0); trl.fill(0);
+    const c = (W - 1) / 2, rad = W * .3, a0 = rnd() * 6.2832, r0 = W >= 24 ? 2 : 1;
+    P = ps.map((p, i) => {
+      const a = a0 + i * 6.2832 / Math.max(1, ps.length), cl = v => Math.max(r0 + 1, Math.min(W - 2 - r0, v));
+      const sx = cl(Math.round(c + Math.cos(a) * rad)), sy = cl(Math.round(c + Math.sin(a) * rad)), tx = -Math.sin(a), ty = Math.cos(a);
+      const dir = Math.abs(tx) >= Math.abs(ty) ? { x:Math.sign(tx) || 1, y:0 } : { x:0, y:Math.sign(ty) || 1 }, v = i + 1;
+      for (let yy = sy - r0; yy <= sy + r0; yy++) for (let xx = sx - r0; xx <= sx + r0; xx++) own[yy * W + xx] = v;
+      return { id:p.id, n:p.n, col:colFor(p.id), v, x:sx, y:sy, px:sx, py:sy, dir, q:[], alive:true, trail:[] };
+    });
+    dirty = true;
+  }
+  const setO = (i, v) => { own[i] = v; tO.add(i); }, setT = (i, v) => { trl[i] = v; tT.add(i); };
+  /* home with a line: the line becomes land, and so does whatever can't reach the edge without crossing it */
+  function capture(p){
+    p.trail.forEach(i => { setT(i, 0); setO(i, p.v); }); p.trail = [];
+    const seen = new Uint8Array(N), stack = [];
+    const push = c => { if (!seen[c] && own[c] !== p.v){ seen[c] = 1; stack.push(c); } };
+    for (let i = 0; i < W; i++){ push(i); push(N - W + i); push(i * W); push(i * W + W - 1); }
+    while (stack.length){ const c = stack.pop(), cx = c % W; if (cx > 0) push(c - 1); if (cx < W - 1) push(c + 1); if (c >= W) push(c - W); if (c < N - W) push(c + W); }
+    for (let i = 0; i < N; i++) if (!seen[i] && own[i] !== p.v) setO(i, p.v);
+  }
+  function kill(p){
+    p.alive = false; p.trail = [];
+    for (let i = 0; i < N; i++){ if (own[i] === p.v) setO(i, 0); if (trl[i] === p.v) setT(i, 0); }
+    pops.push({ x:p.x, y:p.y, t:performance.now() }); if (p.id === me) SFX.lose();
+  }
+  /* ── the host's step ── */
+  function hostStep(){
+    if (over_ || ended) return;
+    const live = P.filter(p => p.alive), out = new Set(), at = new Map();
+    live.forEach(p => { if (p.q.length) p.dir = p.q.shift(); p.px = p.x; p.py = p.y; p.nx = p.x + p.dir.x; p.ny = p.y + p.dir.y;
+      p.off = p.nx < 0 || p.ny < 0 || p.nx >= W || p.ny >= W; if (p.off || p.quit) out.add(p); });
+    /* a line crossed: its owner is out, whoever crossed it */
+    live.forEach(p => { if (p.off) return; const t = trl[p.ny * W + p.nx]; if (t){ const o = P.find(q => q.v === t); if (o && o.alive) out.add(o); } });
+    /* head to head (or swapping places): whoever is on their own land survives it */
+    live.forEach(p => { if (!p.off){ const i = p.ny * W + p.nx; at.set(i, (at.get(i) || []).concat([p])); } });
+    at.forEach((ps, i) => { if (ps.length > 1) ps.forEach(p => { if (own[i] !== p.v) out.add(p); }); });
+    live.forEach(a => live.forEach(b => { if (a !== b && !a.off && !b.off && a.nx === b.x && a.ny === b.y && b.nx === a.x && b.ny === a.y && own[a.ny * W + a.nx] !== a.v) out.add(a); }));
+    live.forEach(p => { if (out.has(p)) return;
+      p.x = p.nx; p.y = p.ny; const i = p.y * W + p.x;
+      if (own[i] === p.v){ if (p.trail.length) capture(p); }
+      else { setT(i, p.v); p.trail.push(i); } });
+    out.forEach(kill);
+    P.forEach(p => { if (p.alive && !landOf(p.v)) kill(p); });          // no land left, no game
+    k++;
+    R.emit('st', pack(k <= 1 || k % 30 === 0 || wantFull)); wantFull = false;
+    recvAt = performance.now(); dirty = true; bar();
+    const still = P.filter(p => p.alive);
+    if (P.length > 1 ? still.length <= 1 : !still.length){ ended = true; R.emit('end', { k:round, w:still[0] ? still[0].id : null }); return; }
+    if (R.now() >= startAt + T){
+      let best = null, bn = -1, tie = false;
+      still.forEach(p => { const n = landOf(p.v); if (n > bn){ bn = n; best = p; tie = false; } else if (n === bn) tie = true; });
+      ended = true; R.emit('end', { k:round, w:best && !tie ? best.id : null });
+    }
+  }
+  function pack(full){
+    const o = {}, t = {};
+    if (!full){ tO.forEach(i => (o[own[i]] = o[own[i]] || []).push(i)); tT.forEach(i => (t[trl[i]] = t[trl[i]] || []).push(i));
+      for (const v in o) o[v] = encL(o[v]); for (const v in t) t[v] = encL(t[v]); }
+    tO.clear(); tT.clear();
+    return { k, r:round, p:P.map(p => p.id), h:P.map(p => [p.alive ? 1 : 0, encL([p.y * W + p.x]), dirK(p.dir)]), o, t, F:full ? { o:rle(own), t:rle(trl) } : null };
+  }
+  function unpack(d){
+    if (d.r !== round || !(d.k > k)) return;
+    const gap = d.k !== k + 1; k = d.k;
+    if (Array.isArray(d.p) && d.p.join() !== P.map(p => p.id).join())
+      P = d.p.map((id, i) => Object.assign(P.find(p => p.id === id) || { id, n:nameFor(id), col:colFor(id), x:0, y:0, px:0, py:0, dir:{ x:1, y:0 }, q:[], alive:true, trail:[] }, { v:i + 1 }));
+    (d.h || []).forEach((row, i) => { const p = P[i]; if (!p || !Array.isArray(row)) return;
+      const c = decL(String(row[1] || ''))[0];
+      if (p.alive && !row[0]){ pops.push({ x:p.x, y:p.y, t:performance.now() }); if (p.id === me) SFX.lose(); }
+      p.alive = !!row[0];
+      if (c != null){ p.px = p.x; p.py = p.y; p.x = c % W; p.y = (c / W) | 0; if (Math.abs(p.x - p.px) + Math.abs(p.y - p.py) > 1){ p.px = p.x; p.py = p.y; } }
+      p.dir = DV[DIRK[row[2] | 0]] || p.dir; });
+    if (d.F){ unrle(d.F.o, own); unrle(d.F.t, trl); stale = false; }
+    else if (gap || stale){ stale = true; if (performance.now() - asked > 1200){ asked = performance.now(); R.emit('treq', { r:round }); } }
+    else { for (const v in d.o || {}) decL(String(d.o[v])).forEach(i => own[i] = +v); for (const v in d.t || {}) decL(String(d.t[v])).forEach(i => trl[i] = +v); }
+    recvAt = performance.now(); dirty = true; bar();
+  }
+  /* ── drawing: the board and the land are kept on a canvas of their own and redrawn when the land changes ── */
+  function paintLand(){
+    if (lc.width !== cv.width || lc.height !== cv.height){ lc.width = cv.width; lc.height = cv.height; }
+    const dpr = cv.width / (W * cell), S = W * cell;
+    lx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    lx.fillStyle = lk.a; lx.fillRect(0, 0, S, S);
+    lx.fillStyle = lk.b; for (let yy = 0; yy < W; yy++) for (let xx = (yy & 1); xx < W; xx += 2) lx.fillRect(xx * cell, yy * cell, cell, cell);
+    P.forEach(p => { const v = p.v;
+      lx.beginPath(); for (let i = 0; i < N; i++) if (own[i] === v) lx.rect((i % W) * cell, ((i / W) | 0) * cell, cell, cell);
+      lx.fillStyle = SNK.rgba(p.col, lk.dark ? .42 : .32); lx.fill();
+      lx.beginPath();
+      for (let i = 0; i < N; i++){ if (own[i] !== v) continue; const cx = i % W, cy = (i / W) | 0, X = cx * cell, Y = cy * cell;
+        if (cy === 0 || own[i - W] !== v){ lx.moveTo(X, Y + 1); lx.lineTo(X + cell, Y + 1); }
+        if (cy === W - 1 || own[i + W] !== v){ lx.moveTo(X, Y + cell - 1); lx.lineTo(X + cell, Y + cell - 1); }
+        if (cx === 0 || own[i - 1] !== v){ lx.moveTo(X + 1, Y); lx.lineTo(X + 1, Y + cell); }
+        if (cx === W - 1 || own[i + 1] !== v){ lx.moveTo(X + cell - 1, Y); lx.lineTo(X + cell - 1, Y + cell); } }
+      lx.strokeStyle = SNK.rgba(p.col, .9); lx.lineWidth = 2; lx.lineCap = 'square'; lx.stroke(); });
+    lx.strokeStyle = lk.line; lx.lineWidth = 3; lx.strokeRect(1.5, 1.5, S - 3, S - 3);
+    dirty = false;
+  }
+  function draw(a, t){
+    if (dirty) paintLand();
+    const S = W * cell;
+    x.drawImage(lc, 0, 0, S, S);
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    P.forEach(p => {
+      const v = p.v, hi = p.alive ? p.y * W + p.x : -1;
+      x.beginPath();
+      for (let i = 0; i < N; i++){ if (trl[i] !== v || i === hi) continue;
+        const X = (i % W + .5) * cell, Y = (((i / W) | 0) + .5) * cell; x.moveTo(X, Y); x.lineTo(X + .01, Y);
+        if (i % W < W - 1 && trl[i + 1] === v && i + 1 !== hi){ x.moveTo(X, Y); x.lineTo(X + cell, Y); }
+        if (i < N - W && trl[i + W] === v && i + W !== hi){ x.moveTo(X, Y); x.lineTo(X, Y + cell); } }
+      if (p.alive && (trl[hi] === v || trl[p.py * W + p.px] === v)){
+        x.moveTo((p.px + .5) * cell, (p.py + .5) * cell); x.lineTo((p.px + (p.x - p.px) * a + .5) * cell, (p.py + (p.y - p.py) * a + .5) * cell); }
+      x.strokeStyle = SNK.rgba(p.col, .85); x.lineWidth = cell * .4; x.stroke();
+    });
+    P.forEach(p => { if (p.alive) SNK.drawSnake(x, { col:p.col, dir:p.dir, alive:true, skin:p.id === me ? MYLOOK : null, body:[{ x:p.x, y:p.y }, { x:p.px, y:p.py }] }, a, cell, W, W, false, t); });
+    pops.forEach(q => { const kk = Math.min(1, (t - q.t) / 500); x.beginPath(); x.arc((q.x + .5) * cell, (q.y + .5) * cell, cell * (.4 + kk * 1.4), 0, 6.2832);
+      x.strokeStyle = 'rgba(255,255,255,' + (1 - kk) * .8 + ')'; x.lineWidth = 2; x.stroke(); });
+    pops = pops.filter(q => t - q.t < 500);
+  }
+  /* ── rounds ── */
+  function startRound(r, seed, at){
+    clearInterval(timer); clearTimeout(cd); over_ = false; ended = false; round = r; k = 0; stale = false; pops = []; startAt = at;
+    fresh(seed); cell = SNK.fit(cv, W, W, 640); dirty = true;
+    bar(); recvAt = performance.now();
+    const count = () => {
+      if (!alive || round !== r) return;
+      const s = Math.ceil((at - R.now()) / 1000);
+      if (s > 0){ over(String(s), (FT > 1 ? 'Round ' + r + ' · ' : '') + fmt(T) + ' on the clock'); cd = setTimeout(count, 150); return; }
+      over();
+      if (isHost){ R.emit('st', pack(true)); timer = setInterval(hostStep, STEP); }
+    };
+    count();
+  }
+  function steer(d){
+    if (!P.length || over_ || LB.watch) return;
+    const p = P.find(q => q.id === me); if (!p || !p.alive) return;
+    const v = SNK.DIRS[d]; if (!v) return;
+    if (isHost) qTurn(p, v); else R.emit('dir', { d:v, r:round });
+  }
+  function qTurn(p, v){
+    if (!Array.isArray(v) || Math.abs(v[0]) + Math.abs(v[1]) !== 1) return;
+    const lastD = p.q.length ? p.q[p.q.length - 1] : p.dir;
+    if ((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y)) return;
+    if (p.q.length < 3) p.q.push({ x:v[0], y:v[1] });
+  }
+  function roundEnd(w){
+    if (over_) return; over_ = true; clearInterval(timer);
+    if (w && wins[w] != null) wins[w]++;
+    const pw = P.find(p => p.id === w), share = pw ? ' with ' + (landOf(pw.v) * 100 / N).toFixed(1) + '%' : '';
+    const msg = w === me ? 'You take the round' + share : w ? esc(nameFor(w)) + ' takes the round' + share : 'Nobody takes that one';
+    if (w === me) SFX.win();
+    bar(msg); over(w === me ? (FT > 1 ? 'Round won!' : 'You win!') : msg, '');
+    const lead = Object.entries(wins).find(([, n]) => n >= FT);
+    if (lead) return matchEnd(lead[0]);
+    if (FT <= 1) return matchEnd(w);
+    if (isHost) setTimeout(() => { if (alive && !matchOver) R.emit('go', { r:round + 1, seed:(Math.random() * 4294967296) >>> 0, at:R.now() + 3800 }); }, 2400);
+  }
+  function matchEnd(w){
+    if (matchOver) return; matchOver = true;
+    const standings = Object.entries(wins).sort((a, b) => b[1] - a[1]).map(([id, n]) => nameFor(id) + ' ' + n).join(', ');
+    over(w === me ? 'You win the match!' : w ? esc(nameFor(w)) + ' wins the match' : 'Match over', FT > 1 ? esc(standings) : '');
+    LB.quick('over');
+    LB.say((w === me ? 'You won' : w ? nameFor(w) + ' won' : 'Nobody won') + ' the Snake match' + (FT > 1 ? ' (' + standings + ').' : '.'));
+    if (isHost) setTimeout(() => LB.back(), 5500); else LB.back();
+  }
+  offs.push(R.on('st', m => { if (!isHost && m.peer === LB.hostId) unpack(m.data || {}); }));
+  offs.push(R.on('treq', m => { if (isHost && (m.data || {}).r === round) wantFull = true; }));
+  offs.push(R.on('dir', m => { if (!isHost) return; const d = m.data || {}; if (d.r !== round) return; const p = P.find(q => q.id === m.peer); if (p && p.alive) qTurn(p, d.d); }));
+  offs.push(R.on('quit', m => { if (!isHost) return; const p = P.find(q => q.id === m.peer); if (p) p.quit = true; }));
+  offs.push(R.on('end', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.k === round) roundEnd(d.w || null); }));
+  offs.push(R.on('go', m => { if (m.peer !== LB.hostId) return; const d = m.data || {}; if (d.r > round && !matchOver) startRound(d.r, d.seed >>> 0, +d.at); }));
+  LB.peersFn = peers => { if (!isHost) return; P.forEach(p => { if (p.alive && !peers.some(q => q.id === p.id)) p.quit = true; }); };
+  LB.leaveFn = () => R.emit('quit', {});
+  function frame(now){
+    raf = requestAnimationFrame(frame);
+    if (!P.length) return;
+    const sec = Math.ceil(left() / 1000);
+    if (sec !== shownSec && !over_){ shownSec = sec; const el = document.querySelector('#snbar .sntime'); if (el) el.textContent = fmt(left()); }
+    draw(over_ ? 1 : Math.min(1, (now - recvAt) / STEP), now);
+  }
+  const key_ = e => { if (typing(e)) return; const d = SNK.keyDir(e.key.toLowerCase()); if (!d) return; e.preventDefault(); steer(d); };
+  addEventListener('keydown', key_);
+  if (TOUCH){ onSwipe(cv, d => steer(d), { step:22, repeat:true }); wirePad($('snpad'), a => steer(a)); }
+  const onLook = () => { lk = SNK.look(); dirty = true; };
+  addEventListener('tt:look', onLook);
+  const onResize = () => { cell = SNK.fit(cv, W, W, 640); dirty = true; };
   addEventListener('resize', onResize);
   startRound(1, LB.seed, LB.at);
   raf = requestAnimationFrame(frame);

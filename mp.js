@@ -72,17 +72,24 @@ const LGAMES = {
       ['tgt', 'Targeting', [['even', 'Even'], ['random', 'Random'], ['kos', 'Knockouts'], ['attackers', 'Attackers'], ['manual', 'Pick your own']], 'even'],
       ['spin', 'T-spins and back-to-back', [[1, 'On'], [0, 'Off']], 1]
     ] },
+  /* an option with a fifth entry only shows in those modes; picking a mode resets what modeSets says */
   snake: { name:'Snake', ico:'snake', min:1, max:6, watch:true,
-    blurb:'Eat, grow, and make everyone else crash. Last snake moving wins.',
+    blurb:'Classic, Trails or Territory. Make everyone else crash.',
+    blurbs:{ classic:'Eat, grow, and make everyone else crash. Last snake moving wins.',
+             trails:'No fruit. Every snake leaves a line that never goes away. Last one moving wins.',
+             territory:'Leave your land to draw a line, and get back to it to take everything inside. Cross anyone’s line and they’re out. Most land when time’s up wins.' },
+    modeSets:{ classic:{ size:24, walls:'wrap' }, trails:{ size:40, walls:'walls' }, territory:{ size:40 } },
     opts:[
+      ['mode', 'Mode', [['classic', 'Classic'], ['trails', 'Trails'], ['territory', 'Territory']], 'classic'],
       ['ft', 'Match', [[1, 'One round'], [2, 'First to 2'], [3, 'First to 3'], [5, 'First to 5']], 3],
-      ['size', 'Arena', [[16, 'Small'], [24, 'Medium'], [32, 'Large'], [40, 'Huge']], 24],
+      ['size', 'Arena', [[16, 'Small'], [24, 'Medium'], [32, 'Large'], [40, 'Huge'], [56, 'Giant']], 24],
+      ['time', 'Time limit', [[60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min']], 120, ['territory']],
       ['speed', 'Speed', [['slow', 'Slow'], ['norm', 'Normal'], ['fast', 'Fast'], ['insane', 'Insane']], 'norm'],
-      ['fruit', 'Fruit', [[1, '1'], [3, '3'], [5, '5'], [8, '8'], [15, 'A feast']], 3],
-      ['walls', 'Edges', [['wrap', 'Wrap around'], ['walls', 'Walls']], 'wrap'],
-      ['pw', 'Power-ups', [['off', 'Off'], ['some', 'Some'], ['lots', 'Lots']], 'some'],
-      ['len', 'Starting length', [[3, '3'], [5, '5'], [8, '8']], 3],
-      ['rocks', 'Obstacles', [[0, 'None'], [1, 'A few'], [2, 'Plenty']], 0]
+      ['fruit', 'Fruit', [[1, '1'], [3, '3'], [5, '5'], [8, '8'], [15, 'A feast']], 3, ['classic']],
+      ['walls', 'Edges', [['wrap', 'Wrap around'], ['walls', 'Walls']], 'wrap', ['classic', 'trails']],
+      ['pw', 'Power-ups', [['off', 'Off'], ['some', 'Some'], ['lots', 'Lots']], 'some', ['classic']],
+      ['len', 'Starting length', [[3, '3'], [5, '5'], [8, '8']], 3, ['classic', 'trails']],
+      ['rocks', 'Obstacles', [[0, 'None'], [1, 'A few'], [2, 'Plenty']], 0, ['classic', 'trails']]
     ] },
   relay: { name:'Sketch', ico:'relay', min:3, max:10, watch:false,
     blurb:'Write a prompt, draw someone else’s, guess what the next drawing is. See how far it drifts.',
@@ -389,8 +396,8 @@ function hub(host, opts){
         '<label class="lbso"><input type="checkbox" id="lbso"' + (sitting ? ' checked' : '') + '> Sit out the next game</label></section>' +
       '<section class="lbsec"><h3>Game</h3><div class="lbgames">' + GORDER.map(id => '<button type="button" class="lbg' + (id === gid ? ' cur' : '') + '" data-g="' + id + '"' + (L.isHost ? '' : ' disabled') + ' aria-pressed="' + (id === gid) + '">' +
           '<span class="ico">' + gameIco(id, GICO[id]) + '</span><b>' + esc(LGAMES[id].name) + '</b><small>' + (LGAMES[id].min === LGAMES[id].max ? LGAMES[id].min : LGAMES[id].min + '–' + LGAMES[id].max) + ' players</small></button>').join('') + '</div>' +
-        '<p class="lbblurb">' + esc(g.blurb) + '</p></section>' +
-      '<section class="lbsec"><h3>Settings' + (L.isHost ? '' : ' <small>the host sets these</small>') + '</h3><div class="lbopts">' + g.opts.map(([k, label, vals]) =>
+        '<p class="lbblurb">' + esc((g.blurbs && g.blurbs[o.mode]) || g.blurb) + '</p></section>' +
+      '<section class="lbsec"><h3>Settings' + (L.isHost ? '' : ' <small>the host sets these</small>') + '</h3><div class="lbopts">' + g.opts.filter(d => !d[4] || d[4].includes(o.mode)).map(([k, label, vals]) =>
         '<label class="lbopt"><span>' + esc(label) + '</span>' + (L.isHost
           ? '<select data-o="' + k + '">' + vals.map(([v, l]) => '<option value="' + esc(String(v)) + '"' + (String(v) === String(o[k]) ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select>'
           : '<b>' + esc(optLabel(gid, k, o[k])) + '</b>') + '</label>').join('') + '</div></section>' +
@@ -409,7 +416,8 @@ function hub(host, opts){
       main.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { if (b.dataset.g !== gid) writeLs({ g:b.dataset.g }); });
       main.querySelectorAll('[data-o]').forEach(sel => sel.onchange = () => {
         const def = g.opts.find(x => x[0] === sel.dataset.o), raw = sel.value, val = typeof def[3] === 'number' ? +raw : raw;
-        const all = Object.assign({}, L.ls.o); all[gid] = Object.assign({}, o, { [sel.dataset.o]:val }); writeLs({ o:all }); });
+        const all = Object.assign({}, L.ls.o); all[gid] = Object.assign({}, o, { [sel.dataset.o]:val },
+          sel.dataset.o === 'mode' && g.modeSets ? g.modeSets[val] || {} : {}); writeLs({ o:all }); });
       if ($('lbstart')) $('lbstart').onclick = hostStart;
       if ($('lbend')) $('lbend').onclick = () => writeLs({ ph:'lobby', r:null });
     }
