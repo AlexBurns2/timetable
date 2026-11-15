@@ -99,7 +99,7 @@ function unmountBg(){
   BG.id = ''; BG.canvas = BG.scene = BG.def = null; BG.raf = 0; BG.last = 0;
   root.classList.remove('fx-live');
 }
-function mountBg(){
+function mountBg(early){
   const want = (!root.classList.contains('zen') && SCENES[skin()]) ? skin() : '';
   if (want === BG.id){
     if (BG.scene){ BG.env = envNow(); if (BG.scene.env) BG.scene.env(BG.env); setFps(); kick(); }
@@ -108,7 +108,7 @@ function mountBg(){
   unmountBg(); BG.id = want;
   if (!want) return;
   const file = SCENES[want];
-  (loaded[file] || (loaded[file] = loadScript('/fx/' + file + '.js?v=' + V))).then(() => ready(() => {
+  const make = () => {
     if (BG.id !== want || BG.scene) return;
     const def = FX.scenes[want]; if (!def) return;
     const c = document.createElement('canvas'); c.className = 'fx-bg'; c.setAttribute('aria-hidden', 'true');
@@ -120,9 +120,35 @@ function mountBg(){
     if (!scene){ c.remove(); BG.canvas = BG.def = null; return; }     // no WebGL, say: the stylesheet's still background stays
     BG.scene = scene;
     if (scene.resize) scene.resize(c.width, c.height, c.width / (c.clientWidth || innerWidth));
-    root.classList.add('fx-live');
+    if (early){
+      try { scene.frame(FX.now(), 0, ptr); } catch {}           // drawn now, so the first paint already has it
+      root.classList.add('fx-live');
+    } else {
+      /* arriving any other way, the page has already been painted with the stylesheet's still picture: the scene fades in over it */
+      c.classList.add('fx-late'); setTimeout(() => { if (BG.canvas === c) root.classList.add('fx-live'); }, 460);
+    }
     kick();
-  }), () => {});
+  };
+  (loaded[file] || (loaded[file] = loadScript('/fx/' + file + '.js?v=' + V))).then(() => early ? make() : ready(make), () => {});
+}
+/* Arriving by a link, this script was written into the page as it loaded, so the scene's script can be
+   too: it runs before the page is first painted, and the background carries straight on from the last
+   page instead of dropping to the stylesheet's still picture for a moment (that drop was a flicker).
+   Only for the themes whose way in shows the background while the page loads: the others put up an
+   opaque cover, and their bigger shaders would only hold the cover up longer. */
+const EARLY = { y2k:1, vapor:1 };
+function writeScene(){
+  const want = (!root.classList.contains('zen') && SCENES[skin()]) ? skin() : '';
+  if (!want || !EARLY[want] || document.readyState !== 'loading' || !cur || cur.async || cur.defer) return false;
+  const file = SCENES[want];
+  loaded[file] = new Promise((ok, no) => {
+    const hit = e => { const el = e.target; if (!el || el.tagName !== 'SCRIPT' || (el.src || '').indexOf('/fx/' + file + '.js') < 0) return false;
+      document.removeEventListener('load', onLoad, true); document.removeEventListener('error', onErr, true); return true; };
+    const onLoad = e => { if (hit(e)) ok(); }, onErr = e => { if (hit(e)) no(); };
+    document.addEventListener('load', onLoad, true); document.addEventListener('error', onErr, true);
+  });
+  try { document.write('<script src="/fx/' + file + '.js?v=' + V + '"><\/script>'); } catch { delete loaded[file]; return false; }
+  return true;
 }
 function frame(ts){
   BG.raf = 0;
@@ -140,9 +166,9 @@ function frame(ts){
   if (animate) BG.raf = requestAnimationFrame(frame); else BG.last = 0;
 }
 function kick(){ if (!BG.raf && BG.scene) BG.raf = requestAnimationFrame(frame); }
-FX.refresh = mountBg;
+FX.refresh = () => mountBg();
 
-addEventListener('tt:look', mountBg);
+addEventListener('tt:look', () => mountBg());
 let rz = 0;
 addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (sizeBg()) kick(); else if (BG.scene && !BG.env.animate) kick(); }, 140); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
@@ -214,12 +240,33 @@ TR.paper = {
   in(n, done){ const L = root.querySelector('.pp-sheet'); if (L) L.classList.add('go'); after(360, done); }
 };
 
-/* Y2K Futurism: the page fades, and on the next one a wave of liquid chrome crosses the screen once, leaving the page behind it
-   (y2k.css: the page is clipped to the wave's middle as it goes) */
+/* Y2K Futurism: the page fades; on the next one a wave of liquid chrome crosses the screen once, on a
+   slant, and the page is left behind it (y2k.css clips the page to a line inside the wave's solid part,
+   so the edge never shows). The wave is drawn once, as an SVG whose bands follow its curved front the way
+   reflections run along a rounded surface, and its back fades out, so it reads as a body of metal rather
+   than a column. It goes up under the cover, before the page is first shown, so it is ready to move; after
+   that only its position and, at the end, its opacity change, and the browser does both off the main
+   thread, so a page busy loading can't make it stutter. */
+function ykWave(dk){
+  const F = d => 'M' + (392 - d) + ' 0C' + (452 - d) + ' 260 ' + (418 - d) + ' 520 ' + (446 - d) + ' 760S' + (404 - d) + ' 1180 ' + (420 - d) + ' 1400';
+  const bands = dk ? [[0, '#e3ecf7', 6], [10, '#06080c', 12], [28, '#8597ac', 22], [56, '#0f141b', 26], [92, '#a9bacd', 34], [140, '#19202a', 44], [200, '#55647a', 64], [270, '#0e1319', 80]]
+                   : [[0, '#ffffff', 6], [10, '#6f7d8d', 12], [28, '#f7fafd', 22], [56, '#a3afbd', 26], [92, '#ffffff', 34], [140, '#b9c4d0', 44], [200, '#f1f5f9', 64], [270, '#c9d3de', 80]];
+  let h = '<svg viewBox="0 0 480 1400" preserveAspectRatio="none" aria-hidden="true"><defs>' +
+    '<linearGradient id="yk-m" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="480" y2="0"><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".64" stop-color="#fff"/></linearGradient>' +
+    '<mask id="yk-k" maskUnits="userSpaceOnUse" x="-40" y="0" width="560" height="1400"><rect x="-40" y="0" width="560" height="1400" fill="url(#yk-m)"/></mask>' +
+    '<clipPath id="yk-c"><path d="' + F(0) + 'L0 1400L0 0Z"/></clipPath></defs><g mask="url(#yk-k)">' +
+    '<path d="' + F(-6) + '" fill="none" stroke="' + (dk ? '#9fc0e6' : '#ffffff') + '" stroke-width="18" stroke-opacity=".32"/>' +
+    '<g clip-path="url(#yk-c)"><rect width="480" height="1400" fill="' + (dk ? '#232b36' : '#dde4ec') + '"/>';
+  bands.slice().reverse().forEach(b => [[1.7, .2], [1, .5], [.5, 1]].forEach(k => {
+    h += '<path d="' + F(b[0]) + '" fill="none" stroke="' + b[1] + '" stroke-width="' + (b[2] * k[0]).toFixed(1) + '" stroke-opacity="' + k[1] + '"/>'; }));
+  return h + '</g><path d="' + F(0) + '" fill="none" stroke="' + (dk ? 'rgba(200,220,245,.55)' : 'rgba(60,80,110,.5)') + '" stroke-width="1.4"/></g></svg>';
+}
+const ykLayer = () => root.querySelector('.yk-wave') || layer('yk-wave', '<i><b>' + ykWave(dark()) + '</b></i>');
 TR.y2k = {
-  outMs:130, inMs:500,
+  outMs:130, inMs:540,
   out(n, done){ root.classList.add('fx-out'); after(120, done); },
-  in(n, done){ const L = layer('yk-wave', '<i><b></b></i>'); void L.offsetWidth; L.classList.add('go'); after(480, done); }
+  cover(){ ykLayer(); },
+  in(n, done){ const L = ykLayer(); void L.offsetWidth; L.classList.add('go'); after(540, done); }
 };
 /* Art Deco: two halves of a fan rise to meet; on the next page they fold away from the middle */
 function fan(k, p){
@@ -414,5 +461,5 @@ if (nav && root.classList.contains('fx-in')){
   setTimeout(enter, 1400);
 }
 
-ready(mountBg);
+if (nav && root.classList.contains('fx-in') && writeScene()) mountBg(true); else ready(() => mountBg());
 })();

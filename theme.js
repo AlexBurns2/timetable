@@ -21,14 +21,16 @@ const get = (k, d) => {
 /* true only while syncPull writes server values in, so those writes don't
    bounce straight back out as a push. */
 let pulling = false;
+/* keys this page has written itself: newer than anything the server had when the page opened */
+const touched = new Set();
 const set = (k, v) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
-  if (!pulling && k.startsWith('tt.') && !SYNC_SKIP.has(k)) scheduleSync();
+  if (!pulling && k.startsWith('tt.') && !SYNC_SKIP.has(k)){ touched.add(k); scheduleSync(); }
 };
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261115';
+const ASSET_V = '20261115b';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -952,25 +954,45 @@ async function syncPull(){
   const data = payload && payload.data;
   if (!data || typeof data !== 'object') return;
 
-  /* Gate on the server's version stamp, not on comparing values: jsonb does
-     not preserve object key order, so a value-diff would loop forever. */
   const stamp = payload.updated_at || null;
   if (stamp === get('tt.syncedat', null)) return;   // already in sync
 
+  /* A new stamp doesn't mean anything changed. Most often it is this device's
+     own last push: a change made just before leaving a page is sent as the page
+     goes (pagehide), and that page never reads the answer, so the stamp it
+     would have kept is lost. So compare the values themselves (in a form that
+     ignores key order: jsonb doesn't keep it), and skip any key this page has
+     already written (ours is newer). This used to reload regardless, and a
+     reloading page writes keys of its own, so quick clicking between pages
+     could reload one several times over. */
+  const changed = [];
+  for (const k in data){
+    if (!k.startsWith('tt.') || SYNC_SKIP.has(k) || touched.has(k)) continue;
+    if (canon(get(k, null)) !== canon(data[k])) changed.push(k);
+  }
+  if (!changed.length){ set('tt.syncedat', stamp); return; }
+
   pulling = true;
-  try {
-    for (const k in data){
-      if (!k.startsWith('tt.') || SYNC_SKIP.has(k)) continue;
-      try { localStorage.setItem(k, JSON.stringify(data[k])); } catch {}
-    }
-  } finally { pulling = false; }
+  try { changed.forEach(k => { try { localStorage.setItem(k, JSON.stringify(data[k])); } catch {} }); }
+  finally { pulling = false; }
   set('tt.syncedat', stamp);
   apply();
 
-  /* The page captured its state from localStorage before this async pull
-     resolved (grid DOM, view mode, colours). A one-time reload rebinds it to
-     the synced values. Gated by the stamp above, so it never loops. */
+  /* Something really did change on another device. The page captured its
+     state from localStorage before this pull resolved (grid DOM, view mode,
+     colours), so it reloads once to pick the new values up: never twice for
+     the same stamp in a tab. */
+  try {
+    if (sessionStorage.getItem('tt.pullreload') === String(stamp)) return;
+    sessionStorage.setItem('tt.pullreload', String(stamp));
+  } catch {}
   try { location.reload(); } catch {}
+}
+/* a value in one fixed form: object keys sorted, so two copies compare equal whatever order their keys came in */
+function canon(v){
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
 }
 
 /* flush a pending change when leaving the page */
