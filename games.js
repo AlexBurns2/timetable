@@ -1959,7 +1959,7 @@ BUILD.tetris = (host, o) => {
     const on = mode==='practice';
     /* .btn sets display:inline-flex, which beats the [hidden] attribute — so toggle
        display directly, else undo/redo would show in every mode. */
-    u.style.display = on ? '' : 'none'; r.style.display = on ? '' : 'none';
+    u.hidden = r.hidden = !on; u.style.display = r.style.display = '';
     if (on){ u.disabled = undoStack.length<=1; r.disabled = redoStack.length===0; }
   }
   function loop(){
@@ -2110,7 +2110,7 @@ BUILD.tetris = (host, o) => {
     clearInterval(loopId); loopId=setInterval(loop,16);
     renderStatsLabels(); updateSaveBtn(); updateStats(); draw();
   }
-  function updateSaveBtn(){ const b=$$('tsave'); if (b){ b.style.display = saveable() ? '' : 'none'; b.textContent='Save'; } }
+  function updateSaveBtn(){ const b=$$('tsave'); if (b){ b.hidden = !saveable(); b.style.display = ''; b.textContent='Save'; } }   /* site.css's .btn[hidden] wins over a style, so the attribute is what counts */
   function flashSave(msg){ const b=$$('tsave'); if (!b) return; b.textContent=msg;
     clearTimeout(saveFlashTimer); saveFlashTimer=setTimeout(()=>{ const x=$$('tsave'); if (x) x.textContent='Save'; }, 1600); }
   async function saveGame(){
