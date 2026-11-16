@@ -1722,6 +1722,21 @@ function playName(){
   return e ? cap(e.split('@')[0].split('.')[0].replace(/\d+$/, '')) : '';
 }
 const typing = e => !!(e && e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
+/* the button into a lobby (Tetris Versus, Snake Online) names one public room
+   you could join right now, or nothing. paint(text) gets '' when there's none.
+   Returns a stop function. */
+function pubPeek(game, max, paint){
+  let pub = null, off = false;
+  loadRooms().then(Rm => Rm.lobby(game)).then(p => {
+    if (off){ p.leave(); return; }
+    pub = p;
+    p.onPeers(peers => {
+      const r = peers.find(x => !x.isMe && x.presence.code && !x.presence.playing && (x.presence.players | 0) < (x.presence.max || max));
+      paint(r ? Rooms.cleanName(r.presence.n) + ' · ' + (r.presence.players | 0) + '/' + (r.presence.max || max) : '');
+    });
+  }).catch(() => {});
+  return () => { off = true; if (pub) pub.leave(); };
+}
 function mpLobby(box, o){
   let room = null, code = '', isHost = false, busy = false, inMatch = false, offs = [], closed = false;
   let watching = false, isPub = false, pub = null, pubLoad = null, myName = '', roundMine = false;
@@ -2357,8 +2372,11 @@ BUILD.tetris = host => {
     ['practice','Practice','Undo and redo as much as you like. Nothing is tracked.'],
     ['versus','Versus','Play friends online. Clearing lines sends them garbage.']
   ];
+  let vsPeek = '';
+  const peekStop = pubPeek('tt', 4, t => { if (t !== vsPeek && alive){ vsPeek = t; renderModes(); } });
   function renderModes(){
-    $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+'</button>').join('');
+    $$('tmodes').innerHTML = MODES.map(([id,name,desc])=>'<button class="tmode'+(id===mode?' cur':'')+'" data-mode="'+id+'" title="'+desc+'">'+name+
+      (id==='versus'&&vsPeek ? '<small class="mppeek">'+esc(vsPeek)+'</small>' : '')+'</button>').join('');
     [...$$('tmodes').querySelectorAll('.tmode')].forEach(b=>b.onclick=()=>{ if (b.dataset.mode===mode) return; mode=b.dataset.mode; TT.set('tt.tetrismode',mode); toReady(); });
   }
   async function toReady(){
@@ -2578,7 +2596,7 @@ BUILD.tetris = host => {
 
   renderModes(); renderKeyHint(); toReady();   // ready, NOT auto-started
 
-  return () => { alive=false; clearInterval(loopId); vsClose();
+  return () => { alive=false; clearInterval(loopId); vsClose(); peekStop();
                  document.removeEventListener('keydown', onKey); document.removeEventListener('keyup', onKeyUp); };
 };
 
@@ -3030,7 +3048,7 @@ BUILD.memory = host => {
 BUILD.snake = host => {
   head(host, 'Snake', tap('Arrow keys or WASD. R to restart.', 'Swipe or use the arrows.'),
        '<div class="diffbar snmodes" id="snmodes"><button type="button" class="diffpill" data-m="solo" aria-pressed="true">Solo</button>' +
-         '<button type="button" class="diffpill" data-m="online" aria-pressed="false">Online</button></div>' +
+         '<button type="button" class="diffpill" data-m="online" aria-pressed="false">Online<small class="mppeek" id="snpeek"></small></button></div>' +
        '<div class="mppanel" id="snmp" hidden></div>' +
        '<canvas id="cv" width="320" height="320"></canvas>' +
        (TOUCH ? '<div class="tpad dpad" id="snpad">' +
@@ -3212,7 +3230,8 @@ BUILD.snake = host => {
     setTimeout(() => { if (mt === g && lobbyUI) lobbyUI.back(); }, 3000);
   }
   loop();
-  return () => { clearTimeout(t); mtStop(); if (lobbyUI) lobbyUI.close();
+  const peekStop = pubPeek('sn', 4, txt => { const el = $('snpeek'); if (el) el.textContent = txt; });
+  return () => { clearTimeout(t); mtStop(); if (lobbyUI) lobbyUI.close(); peekStop();
                  removeEventListener('keydown', key); removeEventListener('keydown', restart); };
 };
 

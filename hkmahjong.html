@@ -2178,8 +2178,8 @@ const SETTING_DEFS = [
   ['spicy', 'Points table', [['half', 'Half spicy'], ['full', 'Full spicy']]],
   ['payment', 'Paying for a discard win', [['all', 'Discarder pays all'], ['half', 'Discarder pays half']]],
   ['sevenPairs', 'Seven Pairs (4 faan)', [[true, 'Allowed'], [false, 'Not allowed']]],
-  ['turnTime', 'Turn timer', [[0, 'Off'], [15, '15 s'], [30, '30 s'], [60, '60 s']]],
-  ['claimTime', 'Claim timer', [[0, 'Off'], [8, '8 s'], [12, '12 s'], [20, '20 s']]]
+  ['turnTime', 'Turn timer', [0, 5, 10, 15, 20, 30, 45, 60, 90, 120].map(n => [n, n ? n + ' s' : 'Off'])],
+  ['claimTime', 'Claim timer', [0, 3, 5, 8, 10, 12, 15, 20, 30].map(n => [n, n ? n + ' s' : 'Off'])]
 ];
 function settingsHTML(S, editable) {
   return `<div class="settings">${SETTING_DEFS.map(([k, label, opts]) => `<label>${label}<select data-k="${k}" ${editable ? '' : 'disabled'}>${opts.map(([v, l]) => `<option value="${String(v)}" ${String(S[k]) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`).join('')}</div>`;
@@ -2630,7 +2630,7 @@ function renderChat() {
   const names = App.view ? App.view.P.filter(p => p.ty !== 'b').map(p => p.n) : [];
   w.querySelector('.cw-sub').textContent = online ? names.join(', ') : 'Bots can\'t read chat';
   const log = w.querySelector('.cw-log');
-  log.innerHTML = App.chat.map(c => `<div class="cw-msg ${c.me ? 'me' : ''}"><b>${esc(c.n)}</b><span>${esc(c.m)}</span></div>`).join('') || '<div class="cw-empty">No messages yet. Swear words are hidden automatically.</div>';
+  log.innerHTML = App.chat.map(c => `<div class="cw-msg ${c.me ? 'me' : ''}"><b>${esc(c.n)}</b><span>${esc(c.m)}</span></div>`).join('') || '<div class="cw-empty">No messages yet.</div>';
   log.scrollTop = log.scrollHeight;
 }
 
@@ -3014,7 +3014,7 @@ const Net = {
   },
   sendChat(m) {
     if (Date.now() - (this.lastChat || 0) < 700) return; this.lastChat = Date.now();
-    const data = { n: App.name, m: censor(m.slice(0, 200)) };
+    const data = { n: App.name, m: m.slice(0, 200) };
     if (App.role === 'local') onChat({ data, peer: 'local', sameTab: true }); else this.emit('chat', data);
   },
 };
@@ -3103,7 +3103,7 @@ async function hostOnHi(msg) {
 }
 function onChat(msg) {
   const d = msg.data; if (!d || typeof d.m !== 'string') return;
-  const m = censor(d.m.replace(/[\u0000-\u001f]/g, ' ').slice(0, 200));
+  const m = d.m.replace(/[\u0000-\u001f]/g, ' ').slice(0, 200);
   const me = !!msg.sameTab || msg.peer === 'local';
   App.chat.push({ n: cleanName(d.n) || 'Someone', m, me }); if (App.chat.length > 200) App.chat.shift();
   chatBubble(msg.peer === 'local' ? App.seat : seatOfPeer(msg.peer), m);
