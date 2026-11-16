@@ -3293,3 +3293,16 @@ Feedback on 8.104 (deployed as `20261114`). Asset version is now `20261115`, `CA
 ## 8.111 Plainer greetings (asset version `20261116a`, `CACHE_VERSION` v18)
 
 The home greeting is now only "Good morning", "Good afternoon", "Good evening", "Welcome" (midnight to 5am, and when signed out) or "Welcome back" after a week away. "Still up", "Early start", "New week", "Nearly the weekend", "Happy Saturday", "Good to see you" and the short "Morning"/"Afternoon"/"Evening" are gone.
+
+## 8.112 Mahjong club: score calculator; the graph zooms (asset version `20261116b`, `CACHE_VERSION` v19)
+
+**Score calculator** (mahjong.js `calcHTML`/`calcPay`/`wireCalc`, a collapsible box under "Record a game"):
+- Winner, "Won by" (self-drawn or someone's discard), faan, then Half spicy / Full spicy, "Discarder pays all" / "Everyone pays a share", and a Unit multiplier (free number, suggestions 1–16). The last three are kept on the device (`localStorage` `mj.calc`).
+- The tables and payments are the HK game's (`HALF_SPICY`, `FULL_SPICY`, `win()` in hkmahjong.html): self-drawn, everyone else at the table pays half; discard, either the discarder pays all, or half from the discarder and a quarter from the others. Over 13 faan counts as 13. Losers are rounded; the winner gets exactly what they pay, so a game always adds to 0.
+- "At the table" chips pick who pays for a self-draw or a shared payment (all players by default when there are 4 or fewer; the winner and the discarder are always in).
+- "Count the faan" is an optional checklist using the HK game's own faan values (dragon pungs counted separately from Small/Great Dragons, as in the game; a limit hand counts alone; 1 is added for self-drawn).
+- "Fill in the game below" only fills the Record a game boxes; nothing is saved until Save game. After a save the winner and checklist reset.
+
+**Graph** (`graph`/`drawGraph`/`wireGraph`): scroll wheel or pinch zooms around the pointer, dragging moves along, double-click / Show all / Esc / 0 shows everything, + and − buttons and keys, arrow keys move. The points scale fits the games in view. Hover (or tap on touch) shows that game's points and change for everyone. Dots appear once 24 or fewer games are in view. The wheel only zooms out until everything is shown, then the page scrolls as normal. The SVG is drawn at the page's own width now (it was a 640-wide picture scaled up or down, which made the text tiny on phones).
+
+Preview: `/mock/mj?n=60` adds 60 made-up games to the mock Mahjong sheet (`n=0` to go back).
