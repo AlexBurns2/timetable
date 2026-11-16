@@ -1,0 +1,278 @@
+/* ═══════════════════════════════════════════════════════════════
+   The originals: each theme exactly as it was before the themes were
+   redrawn (November 2026), kept under its own id so anyone who liked the
+   old look still has it: Settings → Custom → Originals.
+   o-paper (Notebook), o-swiss, o-terminal, o-blueprint, o-brutal,
+   o-scifi (Sci-fi), retro, newsprint. Not to be restyled.
+   ═══════════════════════════════════════════════════════════════ */
+/* ── PAPER ─ ruled notebook, post-it lessons ───────────────────── */
+[data-skin="o-paper"]{
+  --bg:#f7f3e8;
+  --bg-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(80,110,160,.13) 31px 32px);
+  --panel:#fffdf6; --panel-2:#f0ead8; --line:#ded4bd;
+  --text:#2c2519; --muted:#8a7f6a; --accent:#c2571f; --accent-ink:#fff;
+  --font-ui:"Patrick Hand",'Comic Sans MS',cursive;
+  --font-display:"Caveat",cursive;
+  --font-num:"Patrick Hand",cursive;
+  --card-radius:3px; --tint:44%; --card-accent:0px;
+  --card-border:1px solid rgba(0,0,0,.09);
+  --shadow:2px 3px 7px rgba(60,45,20,.16);
+  --shadow-hi:4px 7px 16px rgba(60,45,20,.22);
+  --display-w:700; --display-ls:0;
+}
+[data-skin="o-paper"][data-mode="dark"]{
+  --bg:#221f1a;
+  --bg-img:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(150,170,210,.09) 31px 32px);
+  --panel:#2e2a23; --panel-2:#282420; --line:#413a30;
+  --text:#f0e9db; --muted:#a2957f; --accent:#e8834a;
+  /* the pastel faculty colours are light, so a heavy tint would lift these
+     cards until the text stopped reading */
+  --tint:18%;
+}
+/* The red margin rule belongs to the ruled page, so it starts below the
+   masthead instead of striking through the title. */
+[data-skin="o-paper"] .grid{position:relative}
+[data-skin="o-paper"] .grid::before{
+  content:"";position:absolute;top:-14px;bottom:-30px;left:-14px;
+  width:2px;background:rgba(200,70,70,.4);pointer-events:none;z-index:0;
+}
+[data-skin="o-paper"][data-mode="dark"] .grid::before{background:rgba(235,120,120,.38)}
+@media (max-width:860px){ [data-skin="o-paper"] .grid::before{display:none} }
+[data-skin="o-paper"] .lesson{transform:rotate(var(--rot))}
+[data-skin="o-paper"] .lesson:hover{transform:rotate(0deg) translateY(-3px) scale(1.02)}
+/* sticky-tape tab on each note */
+[data-skin="o-paper"] .lesson::before{
+  content:"";position:absolute;top:-7px;left:50%;translate:-50% 0;
+  width:46px;height:15px;background:rgba(255,255,255,.55);
+  border:1px solid rgba(0,0,0,.07);border-top:0;
+  box-shadow:0 1px 2px rgba(0,0,0,.08);
+}
+[data-skin="o-paper"][data-mode="dark"] .lesson::before{background:rgba(255,255,255,.14)}
+
+/* ── SWISS ─ stark white, hairlines, no shadow ─────────────────── */
+[data-skin="o-swiss"]{
+  --bg:#fff; --bg-img:none; --panel:#fff; --panel-2:#f6f6f6;
+  --line:#111; --text:#000; --muted:#767676; --accent:#e8112d; --accent-ink:#fff;
+  --font-ui:"Space Grotesk",Helvetica,Arial,sans-serif;
+  --font-display:"Space Grotesk",Helvetica,sans-serif;
+  --font-num:"Space Grotesk",Helvetica,sans-serif;
+  --card-radius:0px; --tint:0%; --card-accent:0px;
+  --card-border:1px solid #111;
+  --shadow:none; --shadow-hi:none;
+  --display-ls:-.045em; --display-w:700;
+}
+[data-skin="o-swiss"][data-mode="dark"]{
+  --bg:#000; --panel:#000; --panel-2:#111; --line:#fff; --text:#fff; --muted:#8c8c8c;
+  --card-border:1px solid #fff;
+}
+[data-skin="o-swiss"] .lesson{border-top:5px solid var(--c,var(--accent))}
+[data-skin="o-swiss"] .lesson:hover{background:var(--panel-2)}
+[data-skin="o-swiss"] .colhead .dow{text-transform:uppercase;letter-spacing:.06em;font-size:0.75rem}
+
+/* ── TERMINAL ─ phosphor CRT ───────────────────────────────────── */
+[data-skin="o-terminal"],[data-skin="o-terminal"][data-mode="light"]{
+  --bg:#05080a; --bg-img:none; --panel:#0b1114; --panel-2:#0f171b;
+  --line:#265046; --text:#b6ffd6; --muted:#5fae87; --accent:#39ff9e; --accent-ink:#04120a;
+  --font-ui:"JetBrains Mono",ui-monospace,monospace;
+  --font-display:"JetBrains Mono",monospace;
+  --font-num:"JetBrains Mono",monospace;
+  --card-radius:0px; --tint:16%; --card-accent:3px;
+  --card-border:1px solid #1d3a33;
+  --shadow:none; --shadow-hi:0 0 0 1px var(--accent);
+  --display-ls:.04em; --display-tt:uppercase;
+}
+[data-skin="o-terminal"] body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply;
+}
+[data-skin="o-terminal"] .lesson .s::before{content:"> ";color:var(--accent)}
+[data-skin="o-terminal"] .lesson:hover{box-shadow:0 0 14px rgba(57,255,158,.28)}
+
+/* ── BLUEPRINT ─ drafting paper ────────────────────────────────── */
+[data-skin="o-blueprint"],[data-skin="o-blueprint"][data-mode="light"]{
+  --bg:#07223d;
+  --bg-img:
+    repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),
+    repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 28px);
+  --panel:rgba(9,42,74,.82); --panel-2:rgba(12,52,90,.9);
+  --line:rgba(150,210,255,.55);
+  --text:#f2f9ff; --muted:#a9d2f2; --accent:#7ff0ff; --accent-ink:#052033;
+  --font-ui:"Space Mono",monospace;
+  --font-display:"Space Mono",monospace;
+  --font-num:"Space Mono",monospace;
+  --card-radius:0px; --tint:14%; --card-accent:0px;
+  --card-border:1px dashed rgba(150,210,255,.55);
+  --shadow:none; --shadow-hi:none;
+  --display-tt:uppercase; --display-ls:.08em;
+}
+[data-skin="o-blueprint"] .lesson{outline:1px solid rgba(150,210,255,.14);outline-offset:3px}
+[data-skin="o-blueprint"] .lesson:hover{border-style:solid}
+
+/* ── BRUTAL ─ thick borders, hard shadows ──────────────────────── */
+[data-skin="o-brutal"]{
+  --bg:#ffe94a; --bg-img:none; --panel:#fffdf5; --panel-2:#fff4c2;
+  --line:#000; --text:#000; --muted:#4a4a4a; --accent:#0047ff; --accent-ink:#fff;
+  --card-radius:0px; --tint:34%; --card-accent:0px;
+  --card-border:3px solid #000;
+  --shadow:5px 5px 0 #000; --shadow-hi:8px 8px 0 #000;
+  --font-ui:"Space Grotesk",system-ui,sans-serif;
+  --font-display:"Archivo Black",system-ui,sans-serif;
+  --font-num:"Space Grotesk",monospace;
+  --display-tt:uppercase; --display-ls:-.01em;
+}
+[data-skin="o-brutal"][data-mode="dark"]{
+  --bg:#12121a; --panel:#20202c; --panel-2:#2a2a38; --line:#fff;
+  --text:#fff; --muted:#b3b3c4; --accent:#ffe94a; --accent-ink:#000;
+  --card-border:3px solid #fff; --shadow:5px 5px 0 #fff; --shadow-hi:8px 8px 0 #fff;
+}
+[data-skin="o-brutal"] .lesson:hover{translate:-3px -3px}
+
+/* ══════════════════════════════════════════════════════════════════
+   RETRO — early-2000s desktop web: teal ground, bevelled chrome,
+   glossy gradient buttons and Tahoma.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="retro"]{
+  --bg:#008080;
+  --bg-img:none;
+  --panel:#d4d0c8; --panel-2:#c3c0b8;
+  --line:#7b7b70; --text:#000; --muted:#3b3b33; --accent:#000080; --accent-ink:#fff;
+  --font-ui:Tahoma,"MS Sans Serif",Verdana,Geneva,sans-serif;
+  --font-display:Tahoma,"MS Sans Serif",Verdana,sans-serif;
+  --font-num:Tahoma,"MS Sans Serif",Verdana,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:22%; --card-accent:0px;
+  --card-border:2px solid #ffffff;
+  --shadow:2px 2px 0 rgba(0,0,0,.45);
+  --shadow-hi:3px 3px 0 rgba(0,0,0,.55);
+  --display-ls:0; --display-w:700; --display-tt:none;
+}
+[data-skin="retro"][data-mode="dark"]{
+  --bg:#003b3b; --panel:#333; --panel-2:#282828;
+  --line:#111; --text:#f2f2f2; --muted:#c9c9c9; --accent:#00c8ff; --accent-ink:#001018;
+  --card-border:2px solid #6e6e6e;
+  --tint:13%;
+}
+/* the bevel: light on top-left, shadow on bottom-right */
+[data-skin="retro"] .lesson,[data-skin="retro"] .nowcard,
+[data-skin="retro"] .btn,[data-skin="retro"] .weekbtn,
+[data-skin="retro"] dialog,[data-skin="retro"] .gatecard{
+  border-top-color:#fff;border-left-color:#fff;
+  border-right-color:#5a5a52;border-bottom-color:#5a5a52;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 55%);
+}
+[data-skin="retro"][data-mode="dark"] .lesson,[data-skin="retro"][data-mode="dark"] .nowcard,
+[data-skin="retro"][data-mode="dark"] .btn{
+  border-top-color:#7d7d7d;border-left-color:#7d7d7d;
+  border-right-color:#141414;border-bottom-color:#141414;
+}
+[data-skin="retro"] .btn:active,[data-skin="retro"] .weekbtn:active{
+  border-top-color:#5a5a52;border-left-color:#5a5a52;
+  border-right-color:#fff;border-bottom-color:#fff;
+}
+[data-skin="retro"] .weekbtn{
+  background-image:linear-gradient(180deg,#3a6ea5,#000080);color:#fff;
+}
+[data-skin="retro"] .lesson .s{text-shadow:1px 1px 0 rgba(255,255,255,.6)}
+[data-skin="retro"][data-mode="dark"] .lesson .s{text-shadow:none}
+[data-skin="retro"] .breakbar{
+  border:2px solid;border-top-color:#5a5a52;border-left-color:#5a5a52;
+  border-right-color:#fff;border-bottom-color:#fff;
+  background-color:var(--panel);
+  background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.07) 0 4px,transparent 4px 8px);
+  color:var(--text);opacity:1;
+}
+[data-skin="retro"] .dayhead .dow{
+  background:linear-gradient(180deg,#3a6ea5,#000080);color:#fff;
+  padding:4px 2px;display:block;
+}
+[data-skin="retro"][data-mode="dark"] .dayhead .dow{background:linear-gradient(180deg,#0a5a72,#012a38)}
+[data-skin="retro"] .dayhead.today .dow{background:linear-gradient(180deg,#c86a00,#7a3f00)}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCIFI — ship's console: notched panels, cyan glow, wide caps.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="o-scifi"],[data-skin="o-scifi"][data-mode="light"]{
+  --bg:#04070d;
+  --bg-img:
+    radial-gradient(80vw 60vh at 50% -10%,rgba(0,190,255,.16),transparent 70%),
+    repeating-linear-gradient(to bottom,rgba(0,229,255,.05) 0 1px,transparent 1px 42px),
+    repeating-linear-gradient(to right,rgba(0,229,255,.05) 0 1px,transparent 1px 42px);
+  --panel:rgba(9,26,44,.78); --panel-2:rgba(13,36,60,.86);
+  --line:rgba(0,214,255,.38);
+  --text:#dff4ff; --muted:#83bdd6; --accent:#00e5ff; --accent-ink:#02121a;
+  --font-ui:"Space Grotesk",system-ui,sans-serif;
+  --font-display:"Space Grotesk",system-ui,sans-serif;
+  --font-num:"Space Mono",monospace;
+  --card-radius:0px; --radius:0px; --tint:20%; --card-accent:3px;
+  --card-border:1px solid rgba(0,214,255,.38);
+  --shadow:0 0 0 1px rgba(0,229,255,.08);
+  --shadow-hi:0 0 18px rgba(0,229,255,.35);
+  --display-ls:.14em; --display-tt:uppercase; --display-w:700;
+}
+/* clipped corners read as machined panels */
+[data-skin="o-scifi"] .lesson,[data-skin="o-scifi"] .nowcard,[data-skin="o-scifi"] .breakbar{
+  clip-path:polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
+}
+[data-skin="o-scifi"] .lesson{
+  border-left:3px solid var(--c,var(--accent));
+  box-shadow:inset 0 0 22px rgba(0,229,255,.07);
+}
+[data-skin="o-scifi"] .lesson:hover{box-shadow:inset 0 0 22px rgba(0,229,255,.12),0 0 18px rgba(0,229,255,.3)}
+[data-skin="o-scifi"] .lesson.current{outline:1px solid var(--accent);box-shadow:0 0 22px rgba(0,229,255,.5)}
+[data-skin="o-scifi"] .lesson .s{letter-spacing:.06em}
+[data-skin="o-scifi"] .dayhead .dow{text-shadow:0 0 14px rgba(0,229,255,.5)}
+[data-skin="o-scifi"] .dayhead .rule{background:linear-gradient(90deg,transparent,var(--line),transparent);opacity:1}
+[data-skin="o-scifi"] .dayhead.today .rule{background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  box-shadow:0 0 10px rgba(0,229,255,.6)}
+[data-skin="o-scifi"] .weekbtn{box-shadow:0 0 16px rgba(0,229,255,.4)}
+[data-skin="o-scifi"] .breakbar{border-style:solid;border-color:rgba(0,214,255,.22)}
+[data-skin="o-scifi"] .tmark{color:var(--accent);opacity:.65}
+
+/* ══════════════════════════════════════════════════════════════════
+   NEWSPRINT — broadsheet: cream stock, hairline rules, serif heads.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="newsprint"]{
+  --bg:#f4f1e8;
+  --bg-img:none;
+  --panel:#fbf9f3; --panel-2:#efebdf;
+  --line:#241f18; --text:#171310; --muted:#5d564c; --accent:#8c1c13; --accent-ink:#fff;
+  --font-ui:"DM Sans",Georgia,serif;
+  --font-display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --font-num:"DM Sans",Georgia,serif;
+  --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
+  --card-border:1px solid var(--line);
+  --shadow:none; --shadow-hi:none;
+  --display-ls:-.01em; --display-w:400; --display-tt:none;
+}
+[data-skin="newsprint"][data-mode="dark"]{
+  --bg:#14120e; --panel:#1c1a15; --panel-2:#232019;
+  --line:#d9d2c4; --text:#f2ede1; --muted:#a79d8c; --accent:#e0655a;
+}
+[data-skin="newsprint"] .lesson{border-top:3px double var(--line)}
+[data-skin="newsprint"] .lesson .s{font-size:0.96875rem;line-height:1.1}
+[data-skin="newsprint"] .lesson .r{
+  font-variant:small-caps;letter-spacing:.06em;font-weight:400;
+}
+[data-skin="newsprint"] .lesson .t{font-style:italic}
+[data-skin="newsprint"] .dayhead .dow{
+  font-variant:small-caps;letter-spacing:.09em;font-size:1.0625rem;
+}
+[data-skin="newsprint"] .dayhead .rule{height:1px;background:var(--line);opacity:1}
+[data-skin="newsprint"] .dayhead.today .rule{height:3px}
+[data-skin="newsprint"] .breakbar{
+  border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:repeating-linear-gradient(45deg,rgba(0,0,0,.045) 0 3px,transparent 3px 6px);
+  border-radius:0;
+}
+[data-skin="newsprint"] .weekbtn{border:1px solid var(--line)}
+
+/* the timetable page's own rules for these looks */
+:is([data-skin="o-swiss"],[data-skin="o-brutal"],[data-skin="o-blueprint"],[data-skin="o-terminal"]) :is(.arrowbtn,.prog,.prog i,.dayswitch button){border-radius:0}
+:is([data-skin="o-brutal"],[data-skin="o-swiss"]) .btn.primary{border-color:var(--line)}
+[data-skin="o-paper"] .dayhead .dow{font-size:1.3125rem}
+[data-skin="o-paper"] .lesson .s{font-size:1.0625rem;line-height:1.05}
+[data-skin="o-terminal"] .lesson .s{font-family:var(--font-ui)}
+:is([data-skin="o-terminal"],[data-skin="o-blueprint"]) .gateerr{color:#ff8a8a}
+:root[data-skin="o-terminal"] select option{ background:#0b1410; color:#b6ffd6; }
+:root[data-skin="o-scifi"] select option{ background:#081119; color:#dff4ff; }
+:root[data-skin="o-blueprint"] select option{ background:#0a2137; color:#eaf4ff; }

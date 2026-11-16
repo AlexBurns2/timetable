@@ -555,3 +555,12 @@ html[data-mode="dark"]:not([data-tileicons="accent"]) .qtile .ico,
 html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .qtile .ico .ie{font-size:1.75rem;line-height:1;display:block}
 @media (max-width:560px){ .qtile .ico .ie{font-size:1.5rem} }
+
+/* What's new: theme codes (an old look, as a custom theme) */
+.newslist .nwcnote{margin:8px 0 6px;color:var(--text)}
+.nwcodes{display:flex;flex-direction:column;gap:6px}
+.nwcode{display:grid;grid-template-columns:5.5rem minmax(0,1fr) auto;align-items:center;gap:10px;font-size:.8125rem}
+.nwcode code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.6875rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:all;-webkit-user-select:all}
+.nwcode .btn{padding:4px 11px;font-size:.75rem}
+.newslist .nwcmsg{margin:6px 0 0;font-size:.78125rem;color:var(--accent)}
+.newslist .nwcmsg:empty{display:none}

@@ -1,0 +1,162 @@
+/* ══════════════════════════════════════════════════════════════════
+   TERMINAL — the site as a text-mode program on a phosphor screen.
+   One typeface at very nearly one size, so hierarchy comes from what a
+   terminal has: inverse video, a prompt, a frame with its name set into
+   the top edge, lower case for names and capitals for what matters.
+   Home's pages are a directory listing; games are programs (./tetris);
+   a section is a ruled line with its name in it; buttons are [bracketed]
+   and go inverse under the cursor; progress is counted out in blocks;
+   forum posts read like a chat log. Along the bottom of the screen, a
+   status line: the mode, where you are, whether animation is on.
+   A block cursor waits after each page's title. Scanlines and a faint
+   glow, kept low. Changing page, the screen clears and the next page
+   is printed from the top.
+   (Blueprint is the drawing office; this is the machine room.)
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="terminal"],[data-skin="terminal"][data-mode="light"]{
+  --tm-path:"~/msc";
+  --bg:#030604; --bg-img:radial-gradient(ellipse 120% 90% at 50% 40%,rgba(57,255,158,.055),transparent 65%);
+  --panel:#040a07; --panel-2:#08160e; --line:#1c6b43;
+  --text:#b6ffd6; --muted:#5fae87; --accent:#39ff9e; --accent-ink:#021008;
+  --font-ui:"JetBrains Mono",ui-monospace,monospace;
+  --font-display:"JetBrains Mono",monospace;
+  --font-num:"JetBrains Mono",monospace;
+  --card-radius:0px; --radius:0px; --tint:10%; --card-accent:0px;
+  --card-border:1px solid var(--line);
+  --shadow:none; --shadow-hi:none;
+  --display-ls:.02em; --display-tt:uppercase; --display-w:700;
+}
+[data-skin="terminal"][data-pg="timetable"]{--tm-path:"~/msc/timetable"}
+[data-skin="terminal"][data-pg="calendar"]{--tm-path:"~/msc/calendar"}
+[data-skin="terminal"][data-pg="free"]{--tm-path:"~/msc/free-periods"}
+[data-skin="terminal"][data-pg="revision"]{--tm-path:"~/msc/revision"}
+[data-skin="terminal"][data-pg="resources"]{--tm-path:"~/msc/resources"}
+[data-skin="terminal"][data-pg="games"]{--tm-path:"~/msc/games"}
+[data-skin="terminal"][data-pg="finder"]{--tm-path:"~/msc/finder"}
+[data-skin="terminal"][data-pg="mahjong"]{--tm-path:"~/msc/mahjong"}
+[data-skin="terminal"][data-pg="notes"]{--tm-path:"~/msc/notes"}
+:root[data-skin="terminal"] select option{background:#040a07;color:#b6ffd6}
+[data-skin="terminal"] ::selection{background:var(--accent);color:var(--accent-ink)}
+[data-skin="terminal"] :is(input,textarea){caret-color:var(--accent)}
+[data-skin="terminal"] :is(.qtile,.tday,.gamecard,.btn,.lesson,.popt,.arrowbtn){transition:none}
+
+/* ── the screen: a glow on the type, scanlines over everything, a status line along the bottom ── */
+[data-skin="terminal"] body{text-shadow:0 0 5px rgba(57,255,158,.3)}
+[data-skin="terminal"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.2) 0 1px,transparent 1px 3px)}
+@media (min-width:761px){
+  [data-skin="terminal"] body{padding-bottom:30px}
+  html[data-skin="terminal"]::before{content:"NORMAL";position:fixed;left:0;bottom:0;z-index:41;height:22px;padding:0 1ch;pointer-events:none;
+    font:700 .75rem/22px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em;background:#39ff9e;color:#021008}
+  html[data-skin="terminal"]::after{content:var(--tm-path) "     fx:" attr(data-fx);position:fixed;left:0;right:0;bottom:0;z-index:40;height:22px;box-sizing:border-box;padding:0 1ch 0 10ch;
+    white-space:pre;overflow:hidden;pointer-events:none;font:400 .75rem/21px "JetBrains Mono",ui-monospace,monospace;background:#08160e;border-top:1px solid #1c6b43;color:#5fae87}
+  html:is(.zen,.fx-quiet,[data-pg="hkmahjong"])[data-skin="terminal"]::before,html:is(.zen,.fx-quiet,[data-pg="hkmahjong"])[data-skin="terminal"]::after{display:none}      /* not over a game */
+}
+
+/* ── the head of a page: a frame with where you are set into its top edge; a prompt, then the title and a cursor ── */
+:root[data-skin="terminal"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--panel);border:1px solid var(--line);border-radius:0;box-shadow:none;margin-top:10px}
+:root[data-skin="terminal"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"┤ " var(--tm-path) " ├";position:absolute;left:14px;top:-.56em;padding:0 2px;background:var(--bg);
+  white-space:pre;pointer-events:none;font:400 .6875rem/1 var(--font-num);color:var(--muted)}
+[data-skin="terminal"] :is(.eyebrow,.sitename){text-transform:lowercase;letter-spacing:0;font-weight:400;color:var(--muted)}
+[data-skin="terminal"] :is(.eyebrow,.sitename)::before{content:"$ ";color:var(--accent)}
+[data-skin="terminal"] :is(.brand h1,.pagehead h1){font-size:clamp(1.375rem,3.2vw,2rem);line-height:1.1}
+[data-skin="terminal"] .hubid h1{font-size:clamp(1.375rem,5cqi,2rem);line-height:1.1}
+[data-skin="terminal"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1)::after{content:"█";margin-left:.14em;color:var(--accent)}
+html[data-fx="on"][data-skin="terminal"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1)::after{animation:tblink 1.1s steps(1) infinite}
+@keyframes tblink{50%{opacity:0}}
+/* Now, in inverse video; Next, outlined */
+[data-skin="terminal"] .nowcard{background:var(--panel-2);border:1px solid var(--line);border-radius:0}
+[data-skin="terminal"] .nowcard .lbl{display:inline-block;width:fit-content;background:var(--accent);color:var(--accent-ink);padding:0 .7ch;opacity:1;text-shadow:none;letter-spacing:.08em;font-size:.6875rem}
+[data-skin="terminal"] .nowcard + .nowcard .lbl{background:none;color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
+[data-skin="terminal"] :is(.ttday b,.field>label,.tbhead span){letter-spacing:.08em;color:var(--accent)}
+[data-skin="terminal"] .prog{height:8px;border-radius:0;background:repeating-linear-gradient(90deg,rgba(57,255,158,.16) 0 7px,transparent 7px 9px)}
+[data-skin="terminal"] .prog i{border-radius:0;background:repeating-linear-gradient(90deg,var(--accent) 0 7px,transparent 7px 9px)}
+@container hubbar (max-width:26em){ [data-skin="terminal"] .hubnow.pair{background:var(--panel-2);border:1px solid var(--line);border-radius:0} [data-skin="terminal"] .hubnow.pair .nowcard{background:none;border:0} }
+
+/* ── Home's pages: a directory listing; the line under the cursor goes inverse ── */
+[data-skin="terminal"] .qtiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;margin-bottom:14px}
+[data-skin="terminal"] .qtile{height:auto;min-height:0;flex-direction:row;align-items:center;justify-content:flex-start;gap:1ch;padding:8px 1ch;
+  background:none;border:0;border-bottom:1px dashed var(--line);border-radius:0;box-shadow:none}
+[data-skin="terminal"] .qtile::before{content:">";flex:none;color:var(--accent);visibility:hidden}
+[data-skin="terminal"] .qtile:hover::before{visibility:visible;color:var(--accent-ink)}
+[data-skin="terminal"] .qtile .ico .ph{width:1.15rem;height:1.15rem}
+[data-skin="terminal"] .qtile .ico .ie{font-size:1rem}
+[data-skin="terminal"] .qtile .tname{font-weight:400;text-transform:lowercase;font-size:.9375rem}
+[data-skin="terminal"] .qtile .tname::after{content:"/";color:var(--muted)}
+[data-skin="terminal"] .qtile:hover .tname::after{color:var(--accent-ink)}
+[data-skin="terminal"] .tilepill{position:static;margin-left:auto}
+:root[data-skin="terminal"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{background:var(--accent);color:var(--accent-ink);text-shadow:none;transform:none;box-shadow:none}
+:root[data-skin="terminal"] :is(.qtile,.tday,.gamecard,.tile,.game):hover :is(.ico,.gi,p,.tdstat,.go,.sum,.w,.newpill,.tag,.newbanner){color:var(--accent-ink)!important}
+[data-skin="terminal"] :is(.tday,.gamecard){background:var(--panel);border:1px solid var(--line);border-radius:0;box-shadow:none}
+/* games are programs */
+[data-skin="terminal"] :is(.gamecard h2,.game h2,.tile .tname){font-size:1rem;font-weight:400;text-transform:lowercase;letter-spacing:0}
+[data-skin="terminal"] .gamecard h2::before{content:"./";color:var(--muted)}
+[data-skin="terminal"] .gamecard:hover h2::before{color:var(--accent-ink)}
+[data-skin="terminal"] :is(.newpill,.gamecard .tag,.gamecard .newbanner){border-radius:0;background:none;border:0;padding:0;color:var(--accent);font-weight:400;text-transform:lowercase;letter-spacing:0}
+[data-skin="terminal"] :is(.newpill,.gamecard .tag,.gamecard .newbanner)::before{content:"["}
+[data-skin="terminal"] :is(.newpill,.gamecard .tag,.gamecard .newbanner)::after{content:"]"}
+[data-skin="terminal"] .newsdot{border-radius:0}
+
+/* ── a section: a ruled line with its name in it ── */
+[data-skin="terminal"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:1ch;color:var(--accent);font-size:.8125rem;letter-spacing:.06em}
+[data-skin="terminal"] :is(.sechd,.cathd,.forum h2)::before{content:"──"}
+[data-skin="terminal"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;border-top:1px solid var(--line)}
+[data-skin="terminal"] .gsec :is(.sechd,.cathd){flex:1}
+[data-skin="terminal"] .forum{border-top:0;padding-top:0}
+/* the forum reads like a chat log */
+[data-skin="terminal"] .fpost{background:none;border:0;border-left:1px solid var(--line);border-radius:0;padding:4px 0 4px 1.5ch}
+[data-skin="terminal"] .fmeta b::before{content:"<";color:var(--muted);font-weight:400}
+[data-skin="terminal"] .fmeta b::after{content:">";color:var(--muted);font-weight:400}
+
+/* ── the poll: a question at the prompt ── */
+[data-skin="terminal"] .pcard{background:var(--panel);border:1px solid var(--line);border-radius:0;box-shadow:none}
+[data-skin="terminal"] .pchip{background:none;border-radius:0;padding:0;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:lowercase}
+[data-skin="terminal"] .pchip::before{content:"#";width:auto;height:auto;background:none;border-radius:0;animation:none;box-shadow:none}
+[data-skin="terminal"] .pq{font-size:clamp(1.0625rem,3vw,1.5rem);line-height:1.25}
+[data-skin="terminal"] .pq::before{content:"? ";color:var(--accent)}
+[data-skin="terminal"] .pin{border-radius:0;border:1px solid var(--line);background:var(--panel-2)}
+[data-skin="terminal"] .pin:focus{box-shadow:none;border-color:var(--accent)}
+[data-skin="terminal"] :is(.pbar,.plock span,.pminbtn){border-radius:0;box-shadow:none}
+[data-skin="terminal"] .pbar{background:none}
+[data-skin="terminal"] .pfill{border-radius:0;background:repeating-linear-gradient(90deg,rgba(57,255,158,.26) 0 7px,transparent 7px 9px)}
+[data-skin="terminal"] .pbar:first-child .pfill{background:repeating-linear-gradient(90deg,rgba(57,255,158,.5) 0 7px,transparent 7px 9px)}
+[data-skin="terminal"] .plock span{background:var(--panel)}
+[data-skin="terminal"] .pminbtn{background:none}
+[data-skin="terminal"] .pfoot{border-top:1px dashed var(--line)}
+
+/* ── commands: [bracketed], inverse under the cursor ── */
+:root[data-skin="terminal"] :is(.btn,.modes button,.dayswitch button,.popt,.arrowbtn):not(.gateskip){border-radius:0;box-shadow:none;background:transparent;border:1px solid transparent}
+:root[data-skin="terminal"] .btn:not(.icon):not(.gateskip)::before{content:"[";color:var(--muted)}
+:root[data-skin="terminal"] .btn:not(.icon):not(.gateskip)::after{content:"]";color:var(--muted)}
+:root[data-skin="terminal"] :is(.btn.icon,.arrowbtn,.modes button,.dayswitch button,.popt):not(.gateskip){border:1px solid var(--line)}
+:root[data-skin="terminal"] .btn.primary{background:transparent;color:var(--accent);border-color:transparent}
+:root[data-skin="terminal"] :is(.btn,.modes button,.dayswitch button,.popt,.arrowbtn):not(.gateskip):hover,
+:root[data-skin="terminal"] :is(.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){
+  background:var(--accent);color:var(--accent-ink);text-shadow:none;border-color:var(--accent)}
+:root[data-skin="terminal"] .btn:not(.icon):hover::before,:root[data-skin="terminal"] .btn:not(.icon):hover::after{color:var(--accent-ink)}
+:root[data-skin="terminal"] .btn:active{transform:none}
+:root[data-skin="terminal"] :is(.fyears,.fweeks) button{border-radius:0}
+[data-skin="terminal"] .lbopen{border-radius:0;background:none;border:1px solid var(--line)}
+[data-skin="terminal"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.idrow,.pad){border-radius:0;border:1px solid var(--line);background:var(--panel-2)}
+[data-skin="terminal"] :is(.fnew textarea,.freplybox textarea,.gatepass,.pad):focus{outline:0;border-color:var(--accent)}
+[data-skin="terminal"] :is(dialog,.newsdlg,.sheet,.gatecard){border:1px solid var(--accent);border-radius:0;box-shadow:none;background:#040a07}
+[data-skin="terminal"] :is(.skinbtn,.rx,.rxpick){border-radius:0}
+
+/* ── the timetable: each class a line at the prompt; the one that's on is in inverse video ── */
+[data-skin="terminal"] .lesson{border:1px solid color-mix(in srgb,var(--c,var(--accent)) 55%,#1c6b43);border-radius:0;box-shadow:none}
+[data-skin="terminal"] .lesson .s::before{content:"> ";color:var(--accent)}
+[data-skin="terminal"] .lesson:hover{box-shadow:0 0 14px rgba(57,255,158,.28)}
+[data-skin="terminal"] .lesson.current{outline:0;background:var(--c,var(--accent));border-color:var(--c,var(--accent));color:#021008;text-shadow:none}
+[data-skin="terminal"] .lesson.current :is(.s,.r,.t,.tm),[data-skin="terminal"] .lesson.current .s::before{color:#021008}
+[data-skin="terminal"] .dayhead .dow{font-size:.875rem;letter-spacing:.08em}
+[data-skin="terminal"] :is(.dayhead.today,.dayhead.focus) .dow{display:inline-block;background:var(--accent);color:var(--accent-ink);padding:0 1ch;text-shadow:none}
+[data-skin="terminal"] .dayhead .rule{height:1px;border-radius:0;opacity:1;background:var(--line)}
+[data-skin="terminal"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--accent)}
+[data-skin="terminal"] .breakbar{background:none;border:0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);border-radius:0;opacity:.85}
+[data-skin="terminal"] .breakbar span{text-transform:lowercase;font-weight:400}
+[data-skin="terminal"] .weeklabel{font-size:.9375rem;letter-spacing:.08em}
+
+/* ── leaving: the screen clears. Arriving: the page is printed from the top, a few lines at a time ── */
+html.fx-out[data-skin="terminal"] .wrap{opacity:0;transition:none}
+html[data-fx="on"].fx-enter[data-skin="terminal"] .wrap{animation:tmprint .34s steps(14,end) both}
+@keyframes tmprint{from{clip-path:inset(0 -100vw 100% -100vw)}to{clip-path:inset(0 -100vw -200px -100vw)}}

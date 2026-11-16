@@ -24,7 +24,7 @@ import { db } from "./_supabase.js";
 import { withName, stripEmails, rosterList, markClasses, hasClassesIn } from "./_names.js";
 import { fetchAsOwner } from "./timetable.js";
 import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
-import { makeQuartets, hashStr, howFor, tidyTeacher, hardness, QUARTETS_VERSION } from "./_conn.js";
+import { makeQuartets, hashStr, howFor, tidyTeacher, hardness, QUARTETS_VERSION, PEOPLE_DAYS } from "./_conn.js";
 
 export const CONN_EPOCH = "2026-11-10";        // the first day of Quartets
 const MAX_MISTAKES = 7;
@@ -112,14 +112,19 @@ async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
   const teacherName = raw => { const e = String(raw || "").toLowerCase();
     return e.includes("@") ? withName(NAMES, e, staff.get(e) || tidyTeacher(raw)) : tidyTeacher(raw); };
   const seed = hashStr("conn:" + date + ":" + year);
-  /* the last few days' categories, so the same ones don't keep turning up */
-  const avoid = new Set();
-  const { data: recent } = await db.from("conn_puzzle").select("groups").in("year", allKeys(year)).lt("date", date)
-    .order("date", { ascending: false }).limit(3);
-  (recent || []).forEach(r => (Array.isArray(r.groups) ? r.groups : []).forEach(g => g && g.id && avoid.add(g.id)));
+  /* the last two months' puzzles: which categories came up when (so the same ones don't keep turning up),
+     and who each category used (so it picks other people next time). Read only; nothing is changed. */
+  const avoid = new Map(), usedBy = new Map(), dayMs = 864e5, today = Date.parse(date + "T00:00:00Z");
+  const { data: recent } = await db.from("conn_puzzle").select("date, groups").in("year", allKeys(year)).lt("date", date)
+    .gte("date", new Date(today - PEOPLE_DAYS * dayMs).toISOString().slice(0, 10)).order("date", { ascending: false }).limit(PEOPLE_DAYS + 5);
+  (recent || []).forEach(r => { const ago = Math.round((today - Date.parse(String(r.date).slice(0, 10) + "T00:00:00Z")) / dayMs);
+    (Array.isArray(r.groups) ? r.groups : []).forEach(g => { if (!g || !g.id) return;
+      if (!avoid.has(g.id) || ago < avoid.get(g.id)) avoid.set(g.id, ago);
+      const m = usedBy.get(g.id) || usedBy.set(g.id, new Map()).get(g.id);
+      (Array.isArray(g.emails) ? g.emails : []).forEach(e => { const k = String(e).toLowerCase(); if (!m.has(k) || ago < m.get(k)) m.set(k, ago); }); }); });
   const checked = new Map(), onTimetable = (e, raw) => checked.set(e, hasClassesIn(raw));   // everyone whose timetable was read
-  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, teacherName, onTimetable, deadline });
-  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, teacherName, onTimetable,
+  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, usedBy, teacherName, onTimetable, deadline });
+  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, usedBy, teacherName, onTimetable,
                                          deadline: Math.max(deadline, Date.now() + 3000) });
   markClasses(checked).catch(() => {});
   if (!made) { console.error("quartets: couldn't make", year, date, "from", people.length, "people"); return null; }   // not kept: tried again next visit

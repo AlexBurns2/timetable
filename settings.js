@@ -30,17 +30,22 @@ host.innerHTML =
     '<form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b">' +
       '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div></div>' +
+      '<div class="field"><div id="s_look"></div></div>' +
+      '<div class="field"><div class="origs" id="c_origs"></div></div>' +
       '<div class="field" id="s_glasswrap" hidden><label>Glass</label>' +
         '<div class="custrow"><span>Animated background</span><input type="checkbox" id="g_glassanim" class="sw"></div>' +
-        '<div class="hint" style="margin-top:4px">The colours drift slowly. Uses a little more battery.</div></div>' +
+        '<div class="hint" style="margin-top:4px">Uses a little more battery.</div></div>' +
       '<div class="field" id="s_customwrap" hidden>' +
         '<label>Custom theme</label>' +
+        '<div id="c_code" class="tcode"></div>' +
         '<div class="custrow"><span>Background</span><input type="color" id="c_bg"></div>' +
         '<div class="custrow"><span>Card</span><input type="color" id="c_panel"></div>' +
         '<div class="custrow"><span>Text</span><input type="color" id="c_text"></div>' +
         '<div class="custrow"><span>Accent</span><input type="color" id="c_accent"></div>' +
         '<div class="custrow"><span>Corner radius</span><input type="range" id="c_radius" min="0" max="26" step="1"><b id="c_radius_v"></b></div>' +
         '<div class="custrow"><span>Typeface</span><select id="c_font"></select></div>' +
+        '<div class="custrow"><span>Icons</span><select id="c_iccol"><option value="tile">Colourful</option><option value="accent">One colour</option></select>' +
+          '<select id="c_icsty"><option value="icons">Icons</option><option value="emoji">Emoji</option></select></div>' +
         '<details class="adv"><summary>Advanced</summary>' +
           '<div class="custrow"><span>Border colour</span><input type="color" id="c_line"></div>' +
           '<div class="custrow"><span>Second colour</span><input type="color" id="c_accent2"></div>' +
@@ -61,15 +66,14 @@ host.innerHTML =
         '</details>' +
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
-      '<div class="field"><label>Icon colour</label><div class="modes" id="s_tileic">' +
-        '<button type="button" data-ti="tile">Colourful</button><button type="button" data-ti="accent">Theme colour</button></div></div>' +
-      '<div class="field"><label>Icon style</label><div class="modes" id="s_gameic">' +
-        '<button type="button" data-gi="icons">Icons</button><button type="button" data-gi="emoji">Emoji</button></div></div>' +
       '<div class="field"><label>Login</label>' +
-        '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
-        '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
-        '<div class="custrow"><span>Password</span><input type="password" id="cr_pass" class="crin" autocomplete="off" placeholder="••••••••"></div>' +
-        '<div class="custrow"><button class="btn primary" type="button" id="cr_save">Sign in</button><button class="btn danger" type="button" id="cr_clear">Sign out</button></div>' +
+        '<div class="crline" id="cr_line"><span>Signed in as <b id="cr_who"></b></span><button class="flinklike" type="button" id="cr_change">Change</button><button class="flinklike danger" type="button" id="cr_clear">Sign out</button></div>' +
+        '<div id="cr_form">' +
+          '<div class="hint" style="margin-top:0;margin-bottom:9px">Stored <b>only on this device</b>.</div>' +
+          '<div class="custrow"><span>School email</span><input type="text" id="cr_email" class="crin" spellcheck="false" autocapitalize="none" autocomplete="off" placeholder="first.last1"></div>' +
+          '<div class="custrow"><span>Password</span><input type="password" id="cr_pass" class="crin" autocomplete="off" placeholder="••••••••"></div>' +
+          '<div class="custrow"><button class="btn primary" type="button" id="cr_save">Sign in</button><button class="btn" type="button" id="cr_cancel">Cancel</button></div>' +
+        '</div>' +
         '<div class="hint" id="cr_state"></div>' +
       '</div>' +
     '</div>' +
@@ -79,7 +83,6 @@ host.innerHTML =
         '<button class="btn" type="button" id="openDisplay">Display</button>' +
         '<button class="btn" type="button" id="openMod" hidden>Moderator</button>' +
       '</div>' +
-      '<div class="tabbtns"><button class="btn" type="button" id="modetoggle"></button></div>' +
     '</div>' +
   '</dialog>' +
   '<dialog id="setA11y" class="setdlg">' +
@@ -101,6 +104,11 @@ host.innerHTML =
       '<div class="field"><label>Header</label><div class="modes" id="headers">' +
         '<button type="button" data-header="unified">Panel</button><button type="button" data-header="split">Separated</button></div>' +
         '<div class="hint">Panel keeps each page’s title and buttons in a card. Separated leaves them on the page.</div></div>' +
+'<div class="field"><label>Icon colour</label><div class="modes" id="d_iccol">' +
+        '<button type="button" data-v="auto">Match theme</button><button type="button" data-v="tile">Colourful</button><button type="button" data-v="accent">One colour</button></div></div>' +
+      '<div class="field"><label>Icon style</label><div class="modes" id="d_icsty">' +
+        '<button type="button" data-v="auto">Match theme</button><button type="button" data-v="icons">Icons</button><button type="button" data-v="emoji">Emoji</button></div>' +
+        '<div class="hint">Each theme picks its own icons. Choose here to use the same everywhere.</div></div>' +
       '<div class="field"><label>Layout</label><div class="modes" id="views">' +
         '<button type="button" data-view="compact">Compact</button><button type="button" data-view="full">Full</button></div></div>' +
       '<div class="field"><label>Room numbers</label><div class="modes" id="rooms">' +
@@ -111,7 +119,7 @@ host.innerHTML =
         '<div class="custrow"><span>Coloured subject outlines</span><input type="checkbox" id="t_outline" class="sw"></div>' +
         '<div class="custrow"><span>Progress bar on Now</span><input type="checkbox" id="t_progress" class="sw"></div>' +
         '<div class="custrow"><span>Transparent background</span><input type="checkbox" id="t_zen" class="sw"></div>' +
-        '<div class="custrow"><span>Animations</span><input type="checkbox" id="t_anim" class="sw"></div>' +
+        '<div class="custrow"><span>Timetable animations</span><input type="checkbox" id="t_anim" class="sw"></div>' +
         '<div class="hint">These apply to your timetable. Subject colours and .ics export live on the timetable page.</div>' +
       '</div>' +
     '</div>' +
@@ -119,12 +127,10 @@ host.innerHTML =
   '</dialog>';
 document.body.appendChild(host);
 
-/* ── appearance ── */
-/* Collapsed, like the timetable's Settings: Plain, Classic, "More" and Custom.
-   Twelve swatches at once was the first thing a new visitor met. */
-let skinsExpanded = false;
+/* ── appearance: every theme; the heading folds the grid away. The originals have their own box under Animation ── */
+const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
 function renderSkins(){
-  skin = get(LS.skin, 'plain');
+  skin = TTx.readState().skin;
   const box = $('s_skins'); box.innerHTML = '';
   const tile = s => {
     const b = document.createElement('button');
@@ -134,27 +140,14 @@ function renderSkins(){
     b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); renderGlass(); };
     return b;
   };
-  const extra = (sign, label, title, open) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'skinbtn more'; if (title) b.title = title;
-    b.innerHTML = '<span class="sw plus">' + sign + '</span><span class="nm">' + label + '</span>';
-    b.onclick = () => { skinsExpanded = open; renderSkins(); };
-    return b;
-  };
-  const quick = TTx.QUICK_SKINS || ['plain', 'classic', 'custom'];
-  if (skinsExpanded || quick.indexOf(skin) === -1){
-    SKINS.forEach(s => box.appendChild(tile(s)));
-    if (skinsExpanded) box.appendChild(extra('&minus;', 'Fewer', '', false));
-  } else {
-    ['plain', 'classic'].forEach(id => { const s = SKINS.find(x => x.id === id); if (s) box.appendChild(tile(s)); });
-    box.appendChild(extra('+', 'More', 'Show every theme', true));
-    const c = SKINS.find(x => x.id === 'custom'); if (c) box.appendChild(tile(c));
-  }
+  SKINS.filter(s => !s.legacy).forEach(s => box.appendChild(tile(s)));
+  TTx.skinFold(box.parentNode);
+  TTx.origBox($('c_origs'), () => { skin = TTx.readState().skin; renderSkins(); renderCustom(); renderGlass(); renderModeBtn(); });
 }
 
 /* ── custom theme ── */
 function renderCustom(){
-  const on = get(LS.skin, 'plain') === 'custom';
+  const now = TTx.readState().skin, on = now === 'custom';
   $('s_customwrap').hidden = !on;
   if (!on) return;
   custom = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
@@ -166,6 +159,9 @@ function renderCustom(){
   $('c_tint').value = custom.tint; $('c_tint_v').textContent = custom.tint + '%';
   $('c_border').value = custom.border; $('c_border_v').textContent = custom.border + 'px';
   sel.value = custom.font;
+  $('c_iccol').value = custom.iconColour === 'accent' ? 'accent' : 'tile';
+  $('c_icsty').value = custom.iconStyle === 'emoji' ? 'emoji' : 'icons';
+  if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   renderClouds();
 }
 /* the Clouds backdrop's own options, shown only with it chosen */
@@ -184,6 +180,8 @@ function renderClouds(){
   touch('c_bg','bg'); touch('c_panel','panel'); touch('c_text','text');
   touch('c_accent','accent'); touch('c_accent2','accent2'); touch('c_line','line'); touch('c_font','font');
   touch('c_backdrop','backdrop', renderClouds); touch('c_shadow','shadow');
+  touch('c_iccol','iconColour'); touch('c_icsty','iconStyle');
+  TTx.codeBox($('c_code'), () => { skin = TTx.readState().skin; renderSkins(); renderCustom(); renderGlass(); });
   ['cloud1', 'cloud2', 'cloud3', 'cloud4'].forEach((k, i) => touch('c_cl' + (i + 1), k));
   const num = (id, key, after) => $(id).addEventListener('input', ev => { custom[key] = +ev.target.value; set(LS.custom, custom); apply(); after(); });
   num('c_clstr', 'cloudStrength', () => { $('c_clstr_v').textContent = custom.cloudStrength + '%'; });
@@ -196,16 +194,21 @@ function renderClouds(){
   $('c_reset').onclick = () => { custom = Object.assign({}, CUSTOM_DEFAULTS); set(LS.custom, custom); apply(); renderCustom(); };
 })();
 
-/* ── login ── */
+/* ── login: signed in, one line (who, Change, Sign out); the fields only when signing in or changing ── */
+let crEditing = false;
 function renderCreds(){
   creds = get(LS.creds, null);
+  const form = !creds || crEditing;
+  $('cr_line').hidden = form; $('cr_form').hidden = !form;
+  $('cr_who').textContent = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_email').value = creds ? String(creds.email || '').split('@')[0] : '';
   $('cr_pass').value  = creds ? creds.password : '';
-  $('cr_state').textContent = creds ? 'Signed in as ' + creds.email : 'Not signed in.';
-  /* signed in, the button saves a changed password; signed out, it signs you in */
-  $('cr_save').textContent = creds ? 'Update login' : 'Sign in';
-  $('cr_save').classList.toggle('primary', !creds);
+  $('cr_state').textContent = '';
+  $('cr_save').textContent = creds ? 'Save' : 'Sign in';
+  $('cr_cancel').hidden = !creds;
 }
+$('cr_change').onclick = () => { crEditing = true; renderCreds(); $('cr_email').focus(); };
+$('cr_cancel').onclick = () => { crEditing = false; renderCreds(); };
 $('cr_save').onclick = () => {
   const user = $('cr_email').value.trim().toLowerCase().split('@')[0];
   const pass = $('cr_pass').value;
@@ -213,10 +216,10 @@ $('cr_save').onclick = () => {
   creds = { email: user + '@' + EMAIL_DOMAIN, password: pass };
   set(LS.creds, creds); localStorage.removeItem(LS.cache);
   if (!get(LS.email, '')) set(LS.email, creds.email);
-  renderCreds();
+  crEditing = false; renderCreds();
   $('cr_state').textContent = 'Saved. Open the timetable to load it.';
 };
-$('cr_clear').onclick = () => { creds = null; set(LS.creds, null); localStorage.removeItem(LS.cache); renderCreds(); };
+$('cr_clear').onclick = () => { creds = null; crEditing = false; set(LS.creds, null); localStorage.removeItem(LS.cache); renderCreds(); };
 
 /* ── accessibility ── */
 function renderA11y(){
@@ -250,46 +253,32 @@ function toggle(id, key, def){
   box.onchange = () => { set(LS[key], box.checked); apply(); };
 }
 function renderDisplay(){
+  TTx.iconButtons($('d_iccol'), $('d_icsty'));
   group('headers','header','unified'); group('views','view','compact'); group('rooms','room','full');
   toggle('t_weekletter','weekletter', false); toggle('t_outline','outline', true);
   toggle('t_progress','progress', true); toggle('t_zen','zen', false); toggle('t_anim','anim', false);
 }
 
 
-/* ── the Home tile icons: a colour each (default), or the theme's accent ── */
-function renderTileIcons(){
-  const cur = get('tt.tileicons', 'tile');
-  [...$('s_tileic').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.ti === cur));
-    b.onclick = () => { set('tt.tileicons', b.dataset.ti); document.documentElement.setAttribute('data-tileicons', b.dataset.ti); renderTileIcons(); };
-  });
-}
 
 /* ── glass: the moving background (only shown with Glass on) ── */
 function renderGlass(){
-  $('s_glasswrap').hidden = get(LS.skin, 'plain') !== 'glass';
+  $('s_glasswrap').hidden = TTx.readState().skin !== 'glass';
   $('g_glassanim').checked = get('tt.glassanim', '') === 'on';
 }
 $('g_glassanim').addEventListener('change', ev => { set('tt.glassanim', ev.target.checked ? 'on' : ''); apply(); });
-/* ── game icons: the duotone set (default) or emoji ── */
-function renderGameIcons(){
-  const cur = get('tt.gameicons', 'icons') === 'emoji' ? 'emoji' : 'icons';
-  [...$('s_gameic').children].forEach(b => {
-    b.setAttribute('aria-pressed', String(b.dataset.gi === cur));
-    b.onclick = () => { set('tt.gameicons', b.dataset.gi); document.documentElement.setAttribute('data-gameicons', b.dataset.gi); renderGameIcons(); };
-  });
-}
 
 /* ── mode toggle + open/close wiring ── */
-function renderModeBtn(){ $('modetoggle').textContent = get(LS.mode, 'light') === 'dark' ? 'Light mode' : 'Dark mode'; }
-$('modetoggle').onclick = () => { set(LS.mode, get(LS.mode,'light')==='dark'?'light':'dark'); apply(); renderModeBtn(); };
+/* Dark mode and Animation: the first row (theme.js lookRow) */
+function renderModeBtn(){ TTx.lookRow($('s_look')); }
 $('openA11y').onclick    = () => { renderA11y(); $('setDlg').close(); $('setA11y').showModal(); };
 $('openDisplay').onclick = () => { renderDisplay(); $('setDlg').close(); $('setDisplay').showModal(); };
 document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => {
   b.closest('dialog').close(); openSettings(); });
 
 function openSettings(){
-  renderSkins(); renderCustom(); renderGlass(); renderTileIcons(); renderGameIcons(); renderCreds(); renderModeBtn();
+  renderSkins(); renderCustom(); renderGlass(); renderCreds(); renderModeBtn();
+  crEditing = false; TTx.lookRow($('s_look')); TTx.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
   /* finding Settings retires the bubble that points at it; no more bubbles inside */
