@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261117a';
+const ASSET_V = '20261117b';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -42,7 +42,7 @@ const ASSET_V = '20261117a';
          picker, but under Settings → Originals */
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
-  { id:'studio',    name:'Studio',    both:true, ic:'accent', is:'icons', css:'studio' },
+  { id:'studio',    name:'Studio - Beta',    both:true, ic:'accent', is:'icons', css:'studio' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
