@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261117h">
+<link rel="stylesheet" href="theme.css?v=20261117i">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261117h"></script>
-<script src="icons.js?v=20261117h"></script>
-<script src="suggest.js?v=20261117h"></script>
+<script src="theme.js?v=20261117i"></script>
+<script src="icons.js?v=20261117i"></script>
+<script src="suggest.js?v=20261117i"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -1601,6 +1601,13 @@ function fitHeight(){
 }
 addEventListener('resize', () => { if (studioOn()) fitHeight(); });
 addEventListener('tt:look', () => fitHeight());   /* theme, mode or zoom changed */
+/* Studio has no Home page: "Look around first" on the sign-in card opens the pages under the timetable instead */
+document.querySelector('.gatecard .gateskip').addEventListener('click', e => {
+  if (!studioOn()) return;
+  e.preventDefault();
+  gate.hidden = true;
+  document.getElementById('sthome').scrollIntoView({ behavior:'auto' });
+});
 /* Home, on the timetable in Studio: the pages are just below, so it scrolls to them */
 document.getElementById('homebtn').addEventListener('click', e => {
   if (!studioOn()) return;

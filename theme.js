@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261117h';
+const ASSET_V = '20261117i';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1130,8 +1130,16 @@ function homeLinks(){
     });
   } catch {}
 }
+/* …and Home itself isn't a page in Studio: home.html goes to the timetable,
+   on load or the moment Studio is picked there (a moderator's poll preview,
+   ?pollpreview=, still opens) */
+function studioAway(){
+  if (studioHome() && document.documentElement.getAttribute('data-pg') === 'home' && !/[?&]pollpreview=/.test(location.search))
+    location.replace('./' + location.hash);
+}
+studioAway();
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeLinks); else homeLinks();
-addEventListener('tt:look', homeLinks);
+addEventListener('tt:look', () => { studioAway(); homeLinks(); });
 (function(){
   function addBack(){
     const crumbs = document.querySelector('.pagehead .crumbs');
