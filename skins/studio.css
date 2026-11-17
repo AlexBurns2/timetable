@@ -392,11 +392,15 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 @media (max-width:420px){ [data-skin="studio"] .topbar .idrow .dom{display:none} }
 
 /* the grid: an arrow, the days, an arrow */
-:root[data-skin="studio"] #grid.stg{--colmax:320px;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;align-items:start;padding:4px 0 0}
+:root[data-skin="studio"] #grid.stg{--colmax:320px;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;grid-template-rows:auto minmax(0,1fr);align-items:stretch;padding:4px 0 0}
 /* the day is sized to the window: the page itself never scrolls */
 html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="timetable"] body{height:100%;overflow:hidden;overscroll-behavior:none}
-/* the day is sized to the window (no scrolling): nothing under it */
-:root[data-skin="studio"][data-pg="timetable"] .wrap{padding-bottom:0}
+/* the page is one window-high column: header, then the timetable takes all
+   the height that is left; the margin under it matches the one above */
+:root[data-skin="studio"][data-pg="timetable"] .wrap{box-sizing:border-box;height:100%;display:flex;flex-direction:column;padding-bottom:20px}
+:root[data-skin="studio"][data-pg="timetable"] .wrap>*{flex:none}
+:root[data-skin="studio"][data-pg="timetable"] .wrap>#grid{flex:1 1 0;min-height:0}
+@media (max-width:860px){ :root[data-skin="studio"][data-pg="timetable"] .wrap{padding-bottom:14px} }
 [data-skin="studio"] #grid.stg .starrow{width:32px;height:32px;border:0;border-radius:50%;background:none;display:grid;place-items:center;color:var(--muted);align-self:center;cursor:pointer;padding:0}
 [data-skin="studio"] #grid.stg .starrow:hover{background:var(--st-fill);color:var(--text)}
 [data-skin="studio"] #grid.stg .starrow svg{width:16px;height:16px}
@@ -405,7 +409,8 @@ html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="
 [data-skin="studio"] #grid.stg .dh .n{font-size:1.0625rem;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
 [data-skin="studio"] #grid.stg .dh .wl{font-size:.75rem;font-weight:600;color:var(--st-violet-ink)}
 [data-skin="studio"] #grid.stg .dh.today :is(.d,.n){color:var(--text);font-weight:700}
-[data-skin="studio"] #grid.stg .stcol{position:relative}
+[data-skin="studio"] #grid.stg .stcol{position:relative;min-height:0}
+[data-skin="studio"] #grid.stg .dh{align-self:end}
 /* a lesson */
 [data-skin="studio"] #grid.stg .blk{position:absolute;left:0;right:0;cursor:pointer;container-type:inline-size;--tint:34%}
 [data-skin="studio"][data-mode="dark"] #grid.stg .blk{--tint:24%}
@@ -420,7 +425,7 @@ html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="
 [data-skin="studio"] #grid.stg .blk:not(.open):not(.closing) .blk-card{height:100%}
 [data-skin="studio"] #grid.stg .blk .s{display:block;font-weight:600;font-size:.9375rem;color:color-mix(in srgb,var(--c) 40%,var(--text));line-height:1.25;padding-right:calc(var(--rw,3ch) + 8px)}
 [data-skin="studio"] #grid.stg .blk .m{display:block;font-size:.8125rem;margin-top:2px;color:color-mix(in srgb,var(--text) 72%,var(--c));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-[data-skin="studio"] #grid.stg .blk .r{position:absolute;top:10px;left:calc(100cqw - 12px);translate:-100% 0;font-size:.8125rem;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--text));font-variant-numeric:tabular-nums}
+[data-skin="studio"] #grid.stg .blk .r{position:absolute;top:10px;left:calc(var(--bw,100cqw) - 12px);translate:-100% 0;font-size:.8125rem;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--text));font-variant-numeric:tabular-nums}
 [data-skin="studio"] #grid.stg .blk .t{display:block;margin-top:auto;padding-top:4px;font-size:.75rem;white-space:nowrap;color:color-mix(in srgb,var(--text) 64%,var(--c));font-variant-numeric:tabular-nums}
 [data-skin="studio"] #grid.stg .blk.tight:not(.open) .m{display:none}
 [data-skin="studio"] #grid.stg .blk.tight:not(.open) .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -440,9 +445,9 @@ html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="
 [data-skin="studio"] #grid.stg .blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 25%,transparent);
   border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 /* opened: it grows by half a day (never less than room for Room and Class code), laid out at its final size from the first frame */
-[data-skin="studio"] #grid.stg .blk-card{--xw:max(50cqw,112px)}
-[data-skin="studio"] #grid.stg .blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:0 12px 40px rgba(40,20,40,.18),0 3px 10px rgba(40,20,40,.1)}
-[data-skin="studio"] #grid.stg :is(.blk.open,.blk.closing) .blk-card{display:grid;grid-template-columns:calc(100cqw - 24px) calc(var(--xw) - 16px);
+[data-skin="studio"] #grid.stg .blk-card{--xw:max(calc(var(--bw,100cqw) * .5),112px)}
+[data-skin="studio"] #grid.stg .blk.open .blk-card{width:calc(var(--bw,100cqw) + var(--xw));box-shadow:0 12px 40px rgba(40,20,40,.18),0 3px 10px rgba(40,20,40,.1)}
+[data-skin="studio"] #grid.stg :is(.blk.open,.blk.closing) .blk-card{display:grid;grid-template-columns:calc(var(--bw,100cqw) - 24px) calc(var(--xw) - 16px);
   grid-template-rows:auto auto auto 1fr auto;gap:0 16px;align-items:start;justify-content:start}
 [data-skin="studio"] #grid.stg :is(.blk.open,.blk.closing) .s{grid-area:1/1}
 [data-skin="studio"] #grid.stg :is(.blk.open,.blk.closing) .m{grid-area:2/1;display:block}
@@ -512,7 +517,7 @@ html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="
   :root[data-skin="studio"] #grid.stg{grid-template-columns:0 minmax(0,1fr) 0;column-gap:0}
   [data-skin="studio"] #grid.stg .starrow{visibility:hidden}
   [data-skin="studio"] #grid.stg .dh{padding:10px 2px 8px;margin-bottom:8px}
-  [data-skin="studio"] #grid.stg .blk.open .blk-card{width:100cqw}
+  [data-skin="studio"] #grid.stg .blk.open .blk-card{width:var(--bw,100cqw)}
   [data-skin="studio"] #grid.stg :is(.blk.open,.blk.closing) .blk-card{grid-template-columns:minmax(0,1fr) minmax(0,auto)}
 }
 html[data-skin="studio"][data-motion="reduced"] #grid.stg *{animation:none!important}

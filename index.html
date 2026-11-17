@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261117d">
+<link rel="stylesheet" href="theme.css?v=20261117e">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261117d"></script>
-<script src="icons.js?v=20261117d"></script>
+<script src="theme.js?v=20261117e"></script>
+<script src="icons.js?v=20261117e"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -1297,7 +1297,6 @@ const entryAt = (cycleDay, slotKey) =>
 "use strict";
 
 const studioOn = () => document.documentElement.getAttribute('data-skin') === 'studio';
-const reRender = () => render();          /* the page's render(), declared after this block */
 window.studioOn = studioOn;
 
 /* NSW public school terms (Eastern division), the beta's table: first and last
@@ -1521,8 +1520,12 @@ document.addEventListener('click', e => { if (openKey && !e.target.closest('#gri
 addEventListener('keydown', e => { if (e.key === 'Escape' && openKey && !document.querySelector('dialog[open]')) closeAll(); });
 
 /* ═══ the grid ═══ */
-function html(ctx, cols, dates, y, H){
-  const now = ctx.now, nowMin = ctx.nowMin;
+function html(ctx, cols, dates, T0, T1){
+  const nowMin = ctx.nowMin;
+  /* where a time sits down the day, as a share of the column: the column is
+     sized by CSS to the space left in the window, so the day always fits */
+  const pc = t => ((t - T0) / (T1 - T0) * 100).toFixed(3) + '%';
+  const pos = (s, e) => 'top:calc(' + pc(s) + ' + 4px);height:calc(' + pc(e) + ' - ' + pc(s) + ' - 8px)';
   let h = arrow(-1) + cols.map((c, k) => {
     const d = dates[k], today = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
     return '<div class="dh' + (today ? ' today' : '') + '"><span class="d">' + DN[d.getDay()] + '</span><span class="n">' + d.getDate() + ' ' + MON[d.getMonth()] + '</span>' +
@@ -1530,25 +1533,24 @@ function html(ctx, cols, dates, y, H){
   }).join('') + arrow(1) + '<div></div>';
   cols.forEach((c, k) => {
     const today = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
-    h += '<div class="stcol' + (k === cols.length - 1 && cols.length > 1 ? ' end' : '') + '" style="height:' + H + 'px">';
+    h += '<div class="stcol' + (k === cols.length - 1 && cols.length > 1 ? ' end' : '') + '">';
     for (const x of c.items){
-      const top = y(x.s) + 4, ht = y(x.drawEnd || x.e) - y(x.s) - 8;
+      const at = pos(x.s, x.drawEnd || x.e);
       const past = today ? x.e <= nowMin : !ctx.showingCurrentWeek ? false : DAY_KEYS.indexOf(ctx.todayKey) > c.i;
       const cur = today && x.s <= nowMin && nowMin < x.e;
       const tm = '<span class="t">' + f(x.s) + ' – ' + f(x.e) + '</span>';
       if (!x.lesson && !x.asm){
-        h += '<div class="gap' + (past ? ' past' : '') + (ht < 44 ? ' sm' : '') + '" style="top:' + top + 'px;height:' + ht + 'px">' +
-             x.ls.map(esc).join('<i></i>') + tm + '</div>';
+        h += '<div class="gap' + (past ? ' past' : '') + '" style="' + at + '">' + x.ls.map(esc).join('<i></i>') + tm + '</div>';
         continue;
       }
       if (x.asm){
-        h += '<div class="gap asm' + (past ? ' past' : '') + (ht < 44 ? ' sm' : '') + '" style="top:' + top + 'px;height:' + ht + 'px"><b>' + esc(x.asm) + '</b>' + tm + '</div>';
+        h += '<div class="gap asm' + (past ? ' past' : '') + '" style="' + at + '"><b>' + esc(x.asm) + '</b>' + tm + '</div>';
         continue;
       }
       const e = x.lesson, room = roomLabel(e), id = d2k(dates[k]) + '|' + x.s;
       const p = cur ? Math.round((nowMin - x.s) / (x.e - x.s) * 100) : 0;
-      h += '<div class="blk' + (past ? ' past' : '') + (cur ? ' now' : '') + (ht < 50 ? ' sm' : '') + (openKey === id ? ' open settled landed' : '') + '"' +
-           ' data-k="' + id + '" data-code="' + esc(e.code) + '" style="--c:' + esc(colourFor(e.subject)) + ';top:' + top + 'px;height:' + ht + 'px;--rw:' + room.length + 'ch;--p:' + p + '%">' +
+      h += '<div class="blk' + (past ? ' past' : '') + (cur ? ' now' : '') + (openKey === id ? ' open settled landed' : '') + '"' +
+           ' data-k="' + id + '" data-code="' + esc(e.code) + '" style="--c:' + esc(colourFor(e.subject)) + ';' + at + ';--rw:' + room.length + 'ch;--p:' + p + '%">' +
            '<div class="blk-card"><span class="r">' + esc(room) + '</span><span class="s">' + esc(e.subject) + '</span><span class="m">' + esc(e.teacher) + '</span>' + tm +
            detailHtml(e, id, cur ? x.e - nowMin : null) + '</div></div>';
     }
@@ -1568,55 +1570,38 @@ function drawStudio(ctx){
   const all = cols.flatMap(c => c.items);
   if (!all.length){ grid.innerHTML = ''; return; }
   const T0 = Math.min(...all.map(x => x.s)), T1 = Math.max(...all.map(x => x.e));
-  /* The whole day always fits the window, whatever its height: no scrolling.
-     Draw once, measure where the columns start, then draw again at the
-     height that leaves exactly the bottom margin. Short windows make short
-     blocks; they switch to their one-line form (.sm) instead of overflowing. */
-  const draw = PX => { const y = t => (t - T0) * PX; grid.innerHTML = html(ctx, cols, dates, y, y(T1)); };
-  draw(1);
-  if (scrollX || scrollY) scrollTo(0, 0);       /* the page is pinned: a restored or nudged scroll would hide the last lesson */
-  const col = grid.querySelector('.stcol');
-  const colTop = (col || grid).getBoundingClientRect().top;
-  /* the same margin under the day as the page has above its header */
-  const wrap = grid.closest('.wrap'), margin = wrap ? parseFloat(getComputedStyle(wrap).paddingTop) || 16 : 16;
-  const room = document.documentElement.clientHeight - colTop - margin;
-  draw(Math.max(.35, room / (T1 - T0)));
-  /* lessons in the lower half of the day open upwards, so an opened card
-     never runs past the bottom of the window (the page can't scroll) */
+  grid.innerHTML = html(ctx, cols, dates, T0, T1);
+  if (scrollX || scrollY) scrollTo(0, 0);
+  fit();
+}
+/* What depends on real sizes, redone whenever the grid changes size (window,
+   zoom, header): short bars put their time beside the name; a lesson too
+   short for its lines drops the teacher, then goes to one line; lessons in
+   the lower half of a day open upwards so they stay inside the window. */
+function fit(){
+  const grid = document.getElementById('grid');
+  if (!grid.classList.contains('stg')) return;
+  /* each lesson's width in px: the open card and the room badge are placed from it (container units misplace them in some browsers) */
+  grid.querySelectorAll('.blk').forEach(b => b.style.setProperty('--bw', b.offsetWidth + 'px'));
+  grid.querySelectorAll('.gap').forEach(g => g.classList.toggle('sm', g.offsetHeight < 44));
+  grid.querySelectorAll('.blk:not(.open):not(.closing)').forEach(b => {
+    b.classList.remove('tight', 'sm');
+    const c = b.querySelector('.blk-card'), over = () => c.scrollHeight > c.clientHeight + 1;
+    if (b.offsetHeight < 50) b.classList.add('sm');
+    else if (over()){ b.classList.add('tight'); if (over()){ b.classList.remove('tight'); b.classList.add('sm'); } }
+  });
   grid.querySelectorAll('.stcol').forEach(c => {
     const half = c.offsetHeight / 2;
     c.querySelectorAll('.blk').forEach(b => b.classList.toggle('up', b.offsetTop + b.offsetHeight / 2 > half));
   });
-  /* a block too short for its lines drops the teacher, then goes to one line */
-  grid.querySelectorAll('.blk:not(.sm)').forEach(b => {
-    const c = b.querySelector('.blk-card');
-    if (c.scrollHeight > c.clientHeight + 1) b.classList.add('tight');
-    if (c.scrollHeight > c.clientHeight + 1){ b.classList.remove('tight'); b.classList.add('sm'); }
-  });
 }
-/* keep the page at the top while it can't scroll (focus, find-in-page and
-   scroll restoration can still move it) */
+/* keep the page at the top: it never scrolls, but focus, find-in-page and
+   scroll restoration could still move it */
 addEventListener('scroll', () => { if (studioOn() && (scrollX || scrollY)) scrollTo(0, 0); }, { passive:true });
 try { if (studioOn()) history.scrollRestoration = 'manual'; } catch {}
-/* refit when anything above the grid changes height (a status line, Now and
-   Next wrapping, the poll note) and once the fonts have arrived, so the day
-   always ends inside the window */
-let fitRO = 0, lastTop = -1;
-if (window.ResizeObserver) new ResizeObserver(() => {
-  if (!studioOn()) return;
-  const g = document.getElementById('grid'), t = Math.round(g.getBoundingClientRect().top);
-  if (t === lastTop) return;
-  lastTop = t;
-  clearTimeout(fitRO); fitRO = setTimeout(reRender, 60);
-}).observe(document.querySelector('.topbar'));
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (studioOn()) reRender(); });
-/* refit when the window changes height (or width: the header can wrap) */
-let fitTimer = 0, fitW = innerWidth, fitH = innerHeight;
-addEventListener('resize', () => {
-  if (!studioOn() || (innerWidth === fitW && innerHeight === fitH)) return;
-  fitW = innerWidth; fitH = innerHeight;
-  clearTimeout(fitTimer); fitTimer = setTimeout(() => { closeAll(); reRender(); }, 80);
-});
+let fitT = 0;
+if (window.ResizeObserver) new ResizeObserver(() => { if (studioOn()){ clearTimeout(fitT); fitT = setTimeout(fit, 40); } }).observe(document.getElementById('grid'));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (studioOn()) fit(); });
 /* the page's render() asks first: true = drawn here */
 window.studioRender = ctx => {
   if (!studioOn()){ ctx.grid.classList.remove('stg'); paintTerm(ctx.days, ctx.week); return false; }
