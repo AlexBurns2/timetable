@@ -280,7 +280,7 @@ html[data-skin="skeuo"][data-tileicons="accent"] :is(.tdico,.gamecard .ico) .gi{
   background:radial-gradient(120% 90% at 50% -10%,rgba(255,255,255,.75) 0 48%,rgba(255,255,255,0) 50%),radial-gradient(circle at 50% 60%,#ff6a5c,#d92b1e 70%,#a81f15)}
 :root[data-skin="skeuo"] :is(.dlg-h,.newshead) .btn.icon .ph{width:11px;height:11px;opacity:0;transition:opacity .12s}
 :root[data-skin="skeuo"] :is(.dlg-h,.newshead) .btn.icon:hover .ph{opacity:1}
-html[data-fx="on"][data-skin="skeuo"] dialog[open]:not(.credits){animation:sksheet .34s cubic-bezier(.2,.9,.3,1.12)}
+html[data-fx="on"][data-skin="skeuo"] dialog[open]{animation:sksheet .34s cubic-bezier(.2,.9,.3,1.12)}
 @keyframes sksheet{from{opacity:0;transform:translateY(-28px) scale(.97)}}
 [data-skin="skeuo"] .gatecard{background:var(--tx-paper),var(--panel)}
 [data-skin="skeuo"] .skinbtn{border-radius:6px}

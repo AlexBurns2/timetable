@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261116b">
-<script src="theme.js?v=20261116b"></script>
-<script src="icons.js?v=20261116b"></script>
+<link rel="stylesheet" href="theme.css?v=20261117a">
+<script src="theme.js?v=20261117a"></script>
+<script src="icons.js?v=20261117a"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261116b">
-<link rel="stylesheet" href="settings.css?v=20261116b">
-<link rel="stylesheet" href="poll.css?v=20261116b">
+<link rel="stylesheet" href="site.css?v=20261117a">
+<link rel="stylesheet" href="settings.css?v=20261117a">
+<link rel="stylesheet" href="poll.css?v=20261117a">
 </head>
 <body>
 <div class="wrap hub">
@@ -75,6 +75,7 @@
   <footer class="hubfoot">
     <span class="footlinks">
       <button type="button" class="footbtn" id="newsbtn">What’s new<span class="newsdot" id="newsdot" hidden></span></button>
+      <button type="button" class="footbtn" id="aboutbtn">About</button>
       <button type="button" class="footbtn" id="ideabtn" aria-expanded="false" aria-controls="ideaform" hidden>Suggest a feature</button>
     </span>
     <!-- the redesign beta lives on its own at /beta/: an add-on, not part of this site -->
@@ -93,13 +94,19 @@
     <ul class="newslist" id="newslist"></ul>
     <p class="newsfoot" id="newsfoot" hidden>Something missing? <button type="button" class="footbtn" id="newsidea">Suggest a feature</button></p>
   </dialog>
-  <dialog class="credits" id="credits" aria-label="Credits">
-    <canvas class="crsky" id="crsky" aria-hidden="true"></canvas>
-    <div class="crstage" id="crstage">
-      <div class="crmid"><span class="crby" id="crby">Made by</span><span class="crwait" id="crwait"></span></div>
+  <dialog class="newsdlg aboutdlg" id="aboutdlg" aria-labelledby="abouthd">
+    <div class="newshead"><h2 id="abouthd">About</h2>
+      <button type="button" class="btn icon" id="aboutx" aria-label="Close"><span data-icon="x"></span></button></div>
+    <div class="aboutbody">
+      <h3>What this is</h3>
+      <p>MSC Unofficial is a free upgrade to the school timetable, inspired by the work of OggyP. The website is strictly for utility and entertainment: there will never be any ads, payments or data collection.</p>
+      <h3>How it was made</h3>
+      <p>Put bluntly, the website was almost entirely coded by large language models with minimal human supervision. We guided the general functionality, look and details of the website; Claude Opus 5.5 wrote and implemented our ideas. Of course, we would much rather be able to proclaim the website as the hard work of humans alone, but with other commitments and the purpose of the website in mind, we felt that the extensive use of AI was justified. We've also not included our names anywhere on the website or credits, since it is really the work of AI.</p>
+      <h3>What this means for you</h3>
+      <p>AI generated code is quite prone to mistakes and overlooks. If you catch any such issues, please report them through the "Suggest a feature" button on the homepage. Privacy and data management was supervised by us. All important data is encrypted and stored with row level security on a remote server. We can't access this private information either, only you can access it with your specific credentials.</p>
+      <h3>AI and your data</h3>
+      <p>No AIs are involved in the actual function and access of the site, AI was ONLY used to code it. Your data is never sent to any kind of AI when you access the site. AI was strictly used for development alone.</p>
     </div>
-    <p class="crfoot">Not run by the school or the Department.</p>
-    <button type="button" class="btn icon crx" id="crx" aria-label="Close"><span data-icon="x"></span></button>
   </dialog>
 
 </div>
@@ -440,9 +447,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261116b"></script>
-<script src="poll.js?v=20261116b"></script>
-<script src="credits.js?v=20261116b"></script>
+<script src="settings.js?v=20261117a"></script>
+<script src="poll.js?v=20261117a"></script>
 <script>
 /* ── Today: the two daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),
@@ -469,19 +475,12 @@ loadForum();
 })();
 
 /* ── for those who look ───────────────────────────────────────────────
-   "MSC Unofficial" at the top, tapped three times quickly: the credits (it
-   doesn't look like a button, and isn't one). Once in a while, a few seconds
-   in, the same words flicker into something else and back. */
+   Once in a while, a few seconds in, "MSC Unofficial" at the top flickers
+   into something else and back. */
 (function(){
   const mark = document.getElementById('sitemark'); if (!mark) return;
   const calm = () => document.documentElement.getAttribute('data-motion') === 'reduced' ||
     (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  let taps = [];
-  mark.addEventListener('click', () => {
-    const t = Date.now(); taps = taps.filter(x => t - x < 1300); taps.push(t);
-    mark.classList.remove('tick'); void mark.offsetWidth; mark.classList.add('tick');
-    if (taps.length >= 3){ taps = []; if (window.Credits) Credits.open(); }
-  });
   const word = mark.textContent, CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/#·';
   const noise = n => Array.from({ length:n }, () => CH[Math.floor(Math.random() * CH.length)]).join('');
   function flicker(){
@@ -523,6 +522,14 @@ loadForum();
     } catch (err){ msg.textContent = err.message; }
     send.disabled = false;
   };
+})();
+
+/* ── About: what the site is and how it was made (no names, on purpose) ── */
+(function(){
+  const dlg = document.getElementById('aboutdlg'), btn = document.getElementById('aboutbtn'); if (!dlg || !btn) return;
+  btn.onclick = () => { if (window.Icon) Icon.fill(dlg); dlg.showModal(); };
+  document.getElementById('aboutx').onclick = () => dlg.close();
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });      // a click outside the box
 })();
 
 /* ── What's new (the list is in theme.js) ─────────────────────────────── */

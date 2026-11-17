@@ -102,11 +102,6 @@ export default async function handler(req, res) {
   }
   const t0 = Date.now();
   const me = await whoami(req);
-  /* the credits on Home: only for someone signed in (not in any page's source) */
-  if (req.method === "GET" && req.query.credits) {
-    if (!me) return res.status(401).json({ error: "Sign in to see the credits." });
-    return res.status(200).json({ by: ["Alex Burns", "Andre Kwok"] });
-  }
   /* signed out (someone opening a friend's link): the question only, to sign in for */
   if (!me && req.method === "GET" && req.query.poll === "1") {
     try {
