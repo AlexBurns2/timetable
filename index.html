@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261117e">
+<link rel="stylesheet" href="theme.css?v=20261117f">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261117e"></script>
-<script src="icons.js?v=20261117e"></script>
+<script src="theme.js?v=20261117f"></script>
+<script src="icons.js?v=20261117f"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -1572,8 +1572,23 @@ function drawStudio(ctx){
   const T0 = Math.min(...all.map(x => x.s)), T1 = Math.max(...all.map(x => x.e));
   grid.innerHTML = html(ctx, cols, dates, T0, T1);
   if (scrollX || scrollY) scrollTo(0, 0);
+  fitHeight();
   fit();
 }
+/* The page is exactly one window high. Accessibility → Zoom scales <body>
+   (theme.css body{zoom}) and browsers disagree on whether a percentage
+   height gets zoomed too (Firefox/Zen does, Chromium doesn't), so: set the
+   body to the window's height, see how tall the page really draws, and
+   correct once. */
+function fitHeight(){
+  const b = document.body, w = b.querySelector('.wrap');
+  if (!studioOn() || !w){ b.style.height = ''; return; }
+  b.style.height = innerHeight + 'px';
+  const h = w.getBoundingClientRect().height;
+  if (h && Math.abs(h - innerHeight) > .5) b.style.height = (innerHeight * innerHeight / h) + 'px';
+}
+addEventListener('resize', () => { if (studioOn()) fitHeight(); });
+addEventListener('tt:look', () => fitHeight());   /* theme, mode or zoom changed */
 /* What depends on real sizes, redone whenever the grid changes size (window,
    zoom, header): short bars put their time beside the name; a lesson too
    short for its lines drops the teacher, then goes to one line; lessons in
@@ -1604,7 +1619,7 @@ if (window.ResizeObserver) new ResizeObserver(() => { if (studioOn()){ clearTime
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (studioOn()) fit(); });
 /* the page's render() asks first: true = drawn here */
 window.studioRender = ctx => {
-  if (!studioOn()){ ctx.grid.classList.remove('stg'); paintTerm(ctx.days, ctx.week); return false; }
+  if (!studioOn()){ ctx.grid.classList.remove('stg'); paintTerm(ctx.days, ctx.week); fitHeight(); return false; }
   drawStudio(ctx);
   return true;
 };
