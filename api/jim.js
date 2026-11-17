@@ -17,6 +17,7 @@
  */
 
 import { db } from "./_supabase.js";
+import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
 
 const MAX_ADD = 500;          // presses per request; turbo mode at full tilt stays well under
 const MAX_ROWS = 1000;
@@ -46,6 +47,9 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    /* no sign-in here by design, so: only from this site's own page, and not faster than a keen presser */
+    if (crossSite(req)) return res.status(403).json({ error: "Open this from the site itself." });
+    if (limited("jim:" + ipOf(req), 600, 60e3)) return slowDown(res);
     let body = req.body;
     if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
     const name = cleanName(body && body.name);

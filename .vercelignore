@@ -5,3 +5,13 @@ index2.html
 backup
 graphify-out
 .preview
+
+# Tooling folders and files that the site never loads.
+.agents
+.claude
+skills-lock.json
+
+# Design source files: they carry the name of the computer account that made
+# them in their metadata, and no page uses them (the PNG and SVG exports are
+# what the site shows).
+images/*.ai

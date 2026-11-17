@@ -396,8 +396,10 @@ current.
 ### Start here: the diagnostic probe
 
 ```bash
-curl "https://YOUR-PROJECT.vercel.app/api/timetable?diag=1"
+curl -H "X-School-Email: you.name1" -H "X-School-Password: your-password" "https://YOUR-PROJECT.vercel.app/api/timetable?diag=1"
 ```
+
+It answers moderators only (the addresses in `api/_supabase.js`, or `OWNER_EMAIL`), so it needs your own school login in the two headers.
 
 This POSTs **dummy** credentials to several candidate token paths and reports what
 each one returns. It never sends or echoes your real email, password or token.
@@ -525,7 +527,7 @@ copy too).
 | `SCHOOL_PASSWORD` | yes | That account's password |
 | `SCHOOL_API_BASE` | yes | School intranet base URL, no trailing slash |
 | `ALLOWED_ORIGIN` | no | Comma-separated origins allowed to call the API. Defaults to `https://alexburns2.github.io` |
-| `ALLOWED_EMAILS` | no | Comma-separated usernames allowed to be looked up. **Unset means anyone can look up anyone.** |
+| `ALLOWED_EMAILS` | no | Comma-separated usernames whose timetable may be read **without signing in**, through the server's own login. **Unset means nobody**: everything then needs the visitor's own school login. Class lists, directories, the finder and free periods always do. |
 | `SCHOOL_TOKEN_PATH` | no | Auth path on the school API. Defaults to `/api/token` |
 | `EMAIL_DOMAIN` | no | Defaults to the domain of `SCHOOL_EMAIL` |
 
@@ -584,7 +586,7 @@ Day 0 of the cycle is treated as a **Monday**: the start date is snapped back to
 
 **Errors are deliberately vague to the client.** Real causes go to the Vercel logs.
 
-**Still worth knowing:** anyone who finds the endpoint can pull timetables through your account at whatever rate they like. `ALLOWED_EMAILS` is the fix if that matters to you.
+**Nothing is served without a sign-in** unless you list addresses in `ALLOWED_EMAILS` (then only those timetables are). See "Security checklist" at the end of this file.
 
 ---
 
@@ -2843,3 +2845,49 @@ alter table qr_scan enable row level security;   -- no policies: only the server
 ```
 
 Until it exists scans still go straight to the timetable; they just aren't counted.
+
+---
+
+## Security checklist
+
+What the code does is in HANDOFF.md ("Security and privacy pass"). These are the things only the owner can do.
+
+**1. Turn on row-level security for every table (Supabase → SQL editor).** The site only ever uses the service-role key, which is not affected, so nothing changes for it and no data is touched. It means the project's public (anon) key can read and write nothing.
+
+```sql
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'prefs','revision_progress','forum_post','forum_reaction','shared_deck','calendar_event','subject_event','birthday',
+    'game_state','game_score','tetris_score','zen_score','sprint_best','zen_board','daily_puzzle','daily_result',
+    'conn_puzzle','conn_result','onboarding','name_override','site_setting','jim_score','poll','poll_voter','poll_tally',
+    'poll_suggestion','student_cache','vault_visit','qr_scan']
+  loop
+    if to_regclass('public.' || t) is not null then
+      execute format('alter table public.%I enable row level security', t);
+    end if;
+  end loop;
+end $$;
+```
+
+To check afterwards (every row should say `true`):
+
+```sql
+select relname, relrowsecurity from pg_class
+where relnamespace = 'public'::regnamespace and relkind = 'r' order by relname;
+```
+
+**2. Vercel environment variables.** `ALLOWED_EMAILS` unset (or only addresses that are meant to be public). `CRON_SECRET` set (the nightly job refuses to run without it). `OWNER_EMAIL` only if you want another moderator.
+
+**3. The repository.** If it is public, so is everything in it, including these notes and the moderators' addresses. Making it private doesn't affect Vercel.
+
+**4. After deploying, check the headers** at securityheaders.com or with:
+
+```bash
+curl -sI https://www.mscunofficial.com/home.html
+```
+
+There should be a `content-security-policy` line. If a page stops loading something from another site, the browser's console says which rule blocked it; add that host to the matching part of the policy in `vercel.json`.
+
+**5. Firebase.** In the console, Realtime Database → Rules: reading the root and `rooms` as a whole should be refused (it is, as of this pass), and only `rooms/<name>` should be readable and writable.

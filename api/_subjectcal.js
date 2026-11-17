@@ -14,8 +14,8 @@
  *
  * A course is named the way the school timetable names it (its CourseName,
  * e.g. "Physics Yr11"), lowercased, so Year 11 and Year 12 Physics are kept
- * apart. Reading needs no login (the events are about subjects, not people);
- * writing needs the same verified school login as everything else.
+ * apart. Reading and writing both need the same verified school login as
+ * everything else: an event carries what a student wrote and who last changed it.
  *
  * Table (Supabase → SQL editor):
  *   create table subject_event (
@@ -35,6 +35,7 @@
  */
 
 import { db, whoami } from "./_supabase.js";
+import { limited, slowDown } from "./_limit.js";
 import { displayNames, withName } from "./_names.js";
 
 let NAMES = new Map();
@@ -65,6 +66,10 @@ export async function subjectHandler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!db) return res.status(503).json({ error: "Subject events aren't set up on the server yet." });
+  if (req.method !== "GET" && req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const me = await whoami(req);
+  if (!me) return res.status(401).json({ error: req.method === "GET" ? "Sign in on the main timetable to see subject events."
+                                                                    : "Sign in on the main timetable to add or change subject events." });
   NAMES = await displayNames();
 
   if (req.method === "GET") {
@@ -77,10 +82,8 @@ export async function subjectHandler(req, res) {
     return res.status(200).json({ events: (data || []).map(shape) });
   }
 
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  const me = await whoami(req);
-  if (!me) return res.status(401).json({ error: "Sign in on the main timetable to add or change subject events." });
   const email = String(me.email).toLowerCase();
+  if (limited("subjectcal:" + email, 40, 10 * 60e3)) return slowDown(res);
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }

@@ -437,6 +437,10 @@ html[data-tileicons="accent"] .qtile .ico{color:var(--accent)}
 .aboutbody h3{margin:14px 0 4px;font-size:0.9375rem}
 .aboutbody h3:first-child{margin-top:6px}
 .aboutbody p{margin:0;font-size:0.875rem;color:var(--muted);line-height:1.5}
+.aboutcred{margin-top:8px;font-size:0.75rem;color:var(--muted)}
+.aboutcred summary{cursor:pointer;font-weight:700;font-size:0.8125rem}
+.aboutcred ul{margin:6px 0 0;padding-left:16px;line-height:1.45}
+.aboutcred a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 
 /* ── Home's header: one shape, whatever's in it ────────────────────
    The greeting, one box for your classes (always the same size: Now and

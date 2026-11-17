@@ -367,11 +367,13 @@ html[data-motion="reduced"] .ttnote{animation:none}
    link, the page waits out of sight until fx.js plays the way in. The
    plain way out and in is a quick fade; a theme with its own is in its
    stylesheet. */
-.fx-bg{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100lvh;z-index:-1;pointer-events:none;display:block}
+.fx-bg{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100lvh;z-index:-1;pointer-events:none;display:block;
+  max-width:none;background:none;border:0;border-radius:0;image-rendering:auto}      /* games.css styles every canvas as a game board: not this one (a see-through scene showed it) */
 html.zen .fx-bg{display:none}
 .fx-bg.fx-late{animation:fxbgin .45s ease both}
 @keyframes fxbgin{from{opacity:0}}
 .fx-layer{position:fixed;inset:0;z-index:2147483000;pointer-events:none;overflow:hidden}
+.fx-layer canvas{background:none;border:0;border-radius:0;max-width:none;image-rendering:auto}      /* not a game board either (games.css) */
 html.fx-in .wrap{opacity:0}
 html.fx-out .wrap{opacity:0;transition:opacity .12s ease}
 html.fx-enter .wrap{animation:fxfade .22s ease both}

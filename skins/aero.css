@@ -1,0 +1,153 @@
+/* ══════════════════════════════════════════════════════════════════
+   FRUTIGER AERO — the clean, hopeful look of about 2006–2012: real
+   stock photographs of sky, grass, water and fish behind glossy glass.
+   One idea: glass with a shine on it, over nature. Panels are frosted
+   white with the bright upper half every Aero surface has; buttons are
+   gel (aqua, and green for the one that matters); icons are glossy
+   app tiles. Behind it, one composed world (images/th/aero-world.webp,
+   built from real photographs: sky, the hill, a glossy water line with
+   tropical fish, the earth in a bubble, a monitor on the grass showing
+   the sky, a bubble of fish); the timetable gets only the sky and hill.
+   fx/aero.js lets bubbles drift up over it, slowly: the only motion.
+
+   Dark mode is FRUTIGER EVIL, the joke version: the same world gone
+   wrong. Red water, black skies, a blood moon, fish skeletons and bats
+   (images/th/evil-*.webp), cut out a bit badly on purpose, behind black
+   glass with a red shine. Same layout, so it reads as the same theme
+   having a very bad day. Not serious.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="aero"]{
+  --ae-sky:#0b84d6; --ae-green:#4fb81f; --ae-ink:#06253d;
+  --bg:#9fd6ff; --bg-img:linear-gradient(180deg,#2f8fe6 0%,#9fd6ff 55%,#6cc04a 56%,#2e8c1c 100%);
+  --panel:rgba(255,255,255,.62); --panel-2:rgba(236,248,255,.72); --line:rgba(20,95,150,.18);
+  --text:#06253d; --muted:#3f627b; --accent:#0b84d6; --accent-ink:#fff;
+  --font-ui:"Segoe UI","Hind","Frutiger","Myriad Pro",system-ui,sans-serif; --font-display:var(--font-ui); --font-num:var(--font-ui);
+  --card-radius:12px; --radius:10px; --tint:22%; --card-accent:0px;
+  --card-border:1px solid rgba(255,255,255,.88);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.95),0 0 0 1px rgba(10,80,140,.14),0 8px 22px rgba(10,60,110,.16);
+  --shadow-hi:inset 0 1px 0 #fff,0 0 0 1px rgba(10,110,190,.32),0 10px 28px rgba(10,90,160,.24),0 0 18px rgba(120,210,255,.45);
+  --display-tt:none; --display-ls:-.01em; --display-w:300;
+  /* the shine: bright on top, a clean break at the middle, a little light coming back at the bottom */
+  --ae-gloss:linear-gradient(180deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.38) 48%,rgba(255,255,255,.1) 50.5%,rgba(255,255,255,.22) 100%);
+  --ae-gel:linear-gradient(180deg,#f2fbff 0%,#bfe6ff 48%,#78c8f5 50.5%,#a8e0ff 100%);
+  --ae-gel-hi:linear-gradient(180deg,#f8fdff 0%,#d3efff 48%,#8fd4fb 50.5%,#bfe9ff 100%);
+  --ae-gogel:linear-gradient(180deg,#f0ffe4 0%,#a7e77a 48%,#5cc22c 50.5%,#94e064 100%);
+  --ae-ph:url(../images/th/aero-world.webp); --ae-phs:url(../images/th/aero-world-s.webp); --ae-pos:center 50%;
+  --ae-veil:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0));
+}
+[data-skin="aero"][data-mode="dark"]{
+  --bg:#140203; --bg-img:linear-gradient(180deg,#14040a 0%,#3a0610 55%,#7a0a0a 56%,#1a0202 100%);
+  --panel:rgba(22,3,5,.66); --panel-2:rgba(48,6,10,.66); --line:rgba(255,90,80,.2);
+  --text:#ffece8; --muted:#d9a19a; --accent:#ff3324; --accent-ink:#fff;
+  --card-border:1px solid rgba(255,120,100,.3);
+  --shadow:inset 0 1px 0 rgba(255,150,130,.28),0 0 0 1px rgba(0,0,0,.6),0 10px 26px rgba(0,0,0,.55);
+  --shadow-hi:inset 0 1px 0 rgba(255,170,150,.4),0 0 0 1px rgba(255,50,30,.5),0 12px 30px rgba(0,0,0,.6),0 0 22px rgba(255,30,0,.4);
+  --ae-gloss:linear-gradient(180deg,rgba(255,110,90,.26) 0%,rgba(255,70,50,.08) 48%,rgba(0,0,0,0) 50.5%,rgba(150,0,0,.16) 100%);
+  --ae-gel:linear-gradient(180deg,#5a1a1c 0%,#2e0709 48%,#140102 50.5%,#3a0507 100%);
+  --ae-gel-hi:linear-gradient(180deg,#7a2426 0%,#420a0c 48%,#200204 50.5%,#540709 100%);
+  --ae-gogel:linear-gradient(180deg,#ffb0a0 0%,#ef2a1d 48%,#ac0d08 50.5%,#e3261f 100%);
+  --ae-ph:url(../images/th/evil-hill.webp); --ae-phs:url(../images/th/evil-hill-s.webp); --ae-pos:center 60%;
+}
+/* two scenes, not one per page: the whole world (sky, hills, water and fish, the earth in a bubble, a monitor on the grass)
+   everywhere, and just the sky and the hill behind the timetable, which is busy enough. Evil: its Home scene everywhere, its sky behind the timetable. */
+[data-skin="aero"][data-pg="timetable"]{--ae-ph:url(../images/th/aero-calm.webp);--ae-phs:url(../images/th/aero-calm-s.webp);--ae-pos:center 40%;
+  --ae-veil:linear-gradient(180deg,rgba(255,255,255,.05),rgba(235,247,255,.45) 70%,rgba(235,247,255,.6))}
+[data-skin="aero"][data-mode="dark"][data-pg="timetable"]{--ae-ph:url(../images/th/evil-sky.webp);--ae-phs:url(../images/th/evil-sky-s.webp);--ae-pos:center 70%;--ae-veil:linear-gradient(180deg,rgba(0,0,0,0),rgba(20,0,0,.35))}
+[data-skin="aero"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:var(--ae-veil),var(--ae-ph) var(--ae-pos)/cover no-repeat,var(--bg-img)}
+@media (max-width:700px){ [data-skin="aero"] body::before{background:var(--ae-veil),var(--ae-phs) var(--ae-pos)/cover no-repeat,var(--bg-img)} }
+html.zen[data-skin="aero"] body::before,[data-skin="aero"][data-pg="hkmahjong"] body::before{display:none}
+
+/* ── glass: frosted, with the shine ── */
+:root[data-skin="aero"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),
+[data-skin="aero"] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.gamestage:not([hidden])){
+  background-image:var(--ae-gloss);background-color:var(--panel);-webkit-backdrop-filter:blur(14px) saturate(1.35);backdrop-filter:blur(14px) saturate(1.35)}
+:root[data-skin="aero"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border:1px solid rgba(255,255,255,.9);border-radius:16px;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(255,255,255,.5),0 0 0 1px rgba(10,80,140,.2),0 12px 30px rgba(10,60,110,.2)}
+:root[data-skin="aero"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border-color:rgba(255,120,100,.35);
+  box-shadow:inset 0 1px 0 rgba(255,160,140,.35),0 0 0 1px #000,0 14px 36px rgba(0,0,0,.6),0 0 30px rgba(255,20,0,.18)}
+[data-skin="aero"] :is(.pcard,.forum){border:var(--card-border);border-radius:14px;box-shadow:var(--shadow)}
+[data-skin="aero"] .forum{padding:16px 18px 18px}
+/* the greeting and page names: light, airy, with a white halo (Evil: hot lettering) */
+[data-skin="aero"] :is(.hubid h1,.pagehead h1,.brand h1){font-weight:300;letter-spacing:-.015em;color:#05395e;text-shadow:0 1px 0 rgba(255,255,255,.9),0 0 16px rgba(255,255,255,.75)}
+[data-skin="aero"][data-mode="dark"] :is(.hubid h1,.pagehead h1,.brand h1){font-weight:700;letter-spacing:-.01em;text-shadow:none;color:#ffb347;
+  background:linear-gradient(180deg,#fff6c8 0%,#ffb12b 40%,#ff3c00 62%,#8a0000 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 7px rgba(255,40,0,.7)) drop-shadow(0 2px 0 #000)}
+[data-skin="aero"] :is(.hubid h1,.pagehead h1,.brand h1){line-height:1.22}
+[data-skin="aero"] .nowcard .subj{line-height:1.3}
+[data-skin="aero"] :is(.eyebrow,.sitename){color:#0a6fb3;font-weight:600;letter-spacing:.02em}
+[data-skin="aero"][data-mode="dark"] :is(.eyebrow,.sitename){color:#ff6a55}
+[data-skin="aero"] :is(.sechd,.cathd,.forum h2){font-weight:400;font-size:1.0625rem;letter-spacing:0;text-transform:none;color:#075a95}
+[data-skin="aero"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){color:#ff7a66}
+[data-skin="aero"] :is(.sechd,.cathd){text-shadow:0 0 8px #fff,0 0 3px #fff,0 0 1px #fff}
+[data-skin="aero"][data-mode="dark"] :is(.sechd,.cathd){text-shadow:0 0 8px #000,0 0 3px #000,0 1px 0 #000}
+[data-skin="aero"] .forum{border-top:var(--card-border)}
+
+/* ── buttons: gel ── */
+:root[data-skin="aero"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){background:var(--ae-gel);border:1px solid rgba(20,110,175,.55);border-radius:8px;color:#04304f;
+  text-shadow:0 1px 0 rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(255,255,255,.35),0 1px 2px rgba(10,60,110,.2)}
+:root[data-skin="aero"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{background:var(--ae-gel-hi);box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(80,190,255,.5),0 0 12px rgba(80,190,255,.55)}
+:root[data-skin="aero"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){
+  background:var(--ae-gogel);border-color:#3c8c16;color:#0b2e00;text-shadow:0 1px 0 rgba(255,255,255,.55);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(40,90,0,.3),0 0 10px rgba(120,220,60,.35)}
+:root[data-skin="aero"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-color:rgba(255,80,60,.45);color:#ffe2dc;text-shadow:0 1px 0 #000;
+  box-shadow:inset 0 1px 0 rgba(255,150,130,.35),0 1px 3px rgba(0,0,0,.6)}
+:root[data-skin="aero"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{box-shadow:inset 0 1px 0 rgba(255,170,150,.45),0 0 0 1px rgba(255,60,30,.6),0 0 14px rgba(255,40,0,.5)}
+:root[data-skin="aero"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){
+  border-color:#5a0000;color:#fff;text-shadow:0 1px 1px rgba(80,0,0,.8);box-shadow:inset 0 1px 0 rgba(255,220,210,.7),0 0 14px rgba(255,30,0,.5)}
+
+/* ── Home's tiles: glossy app icons, a colour each ── */
+:root[data-skin="aero"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background-color:var(--panel-2)}
+[data-skin="aero"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;border-radius:11px;color:#fff!important;
+  background:radial-gradient(120% 70% at 50% 0%,rgba(255,255,255,.75) 0 38%,rgba(255,255,255,.12) 39%,rgba(255,255,255,0) 60%),
+             radial-gradient(90% 60% at 50% 110%,rgba(255,255,255,.45),rgba(255,255,255,0) 70%),var(--tc,var(--accent));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),0 0 0 1px rgba(0,40,80,.25),0 3px 8px rgba(0,40,80,.28)}
+html[data-tileicons="accent"][data-skin="aero"] .qtile .ico{--tc:var(--accent)}
+[data-skin="aero"] .qtile .ico .ph{width:1.5rem;height:1.5rem;filter:drop-shadow(0 1px 1px rgba(0,30,60,.45))}
+[data-skin="aero"] .qtile .tname{font-weight:600}
+@media (max-width:560px){ [data-skin="aero"] .qtile .ico{width:2.3rem;height:2.3rem;border-radius:9px} [data-skin="aero"] .qtile .ico .ph{width:1.25rem;height:1.25rem} }
+@container hubnav (max-width:19em){ [data-skin="aero"] .qtile .ico{width:2.05rem;height:2.05rem} [data-skin="aero"] .qtile .ico .ph{width:1.15rem;height:1.15rem} }
+[data-skin="aero"][data-mode="dark"] .qtile .ico{filter:saturate(.5) brightness(.75) sepia(.6) hue-rotate(-30deg) saturate(3.2);box-shadow:inset 0 0 0 1px rgba(255,180,160,.3),0 0 0 1px #000,0 0 10px rgba(255,30,0,.35)}
+
+/* ── Now and Next: a pane of aqua glass (Evil: black glass, red light) ── */
+[data-skin="aero"] .nowcard{background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(220,242,255,.55) 49%,rgba(190,230,255,.4) 51%,rgba(215,240,255,.6));border:1px solid rgba(255,255,255,.95);border-radius:10px;
+  box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(10,100,170,.22)}
+[data-skin="aero"] .nowcard .lbl{color:#2f8a12;letter-spacing:.06em}
+[data-skin="aero"][data-mode="dark"] .nowcard{background:linear-gradient(180deg,rgba(90,10,14,.75),rgba(30,2,4,.8) 49%,rgba(8,0,0,.86) 51%,rgba(40,3,6,.82));border-color:rgba(255,110,90,.35);
+  box-shadow:inset 0 1px 0 rgba(255,150,130,.3),0 0 0 1px #000}
+[data-skin="aero"][data-mode="dark"] .nowcard .lbl{color:#ff5a45}
+[data-skin="aero"] .prog{border-radius:999px;background:rgba(10,60,110,.14);box-shadow:inset 0 1px 2px rgba(10,40,70,.3)}
+[data-skin="aero"] .prog i{border-radius:999px;background:var(--ae-gogel)}
+@container hubbar (max-width:26em){
+  [data-skin="aero"] .hubnow.pair{background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.9);border-radius:10px}
+  [data-skin="aero"][data-mode="dark"] .hubnow.pair{background:rgba(20,0,0,.6);border-color:rgba(255,110,90,.3)}
+  [data-skin="aero"] .hubnow.pair .nowcard{background:none;border:0;box-shadow:none}
+}
+[data-skin="aero"] :is(.newpill,.gamecard .newbanner){background:var(--ae-gogel);color:#0b2e00;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+[data-skin="aero"][data-mode="dark"] :is(.newpill,.gamecard .newbanner){color:#fff}
+[data-skin="aero"] .newsdot{background:#3fbf12}
+[data-skin="aero"] :is(dialog,.newsdlg,.sheet,.gatecard){background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(235,247,255,.96));border-radius:14px}
+[data-skin="aero"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:linear-gradient(180deg,rgba(40,4,6,.97),rgba(12,0,1,.97))}
+[data-skin="aero"] .sheet{border-radius:14px 14px 0 0}
+[data-skin="aero"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:9px;background:rgba(255,255,255,.78);border:1px solid rgba(20,95,150,.3);box-shadow:inset 0 1px 3px rgba(10,60,110,.18)}
+[data-skin="aero"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.5);border-color:rgba(255,90,70,.3)}
+
+/* ── the timetable: glossy blocks of colour ── */
+[data-skin="aero"] .lesson{border-radius:10px;background-color:color-mix(in srgb,var(--c) var(--tint),rgba(244,251,255,.9));
+  background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.18) 48%,rgba(255,255,255,0) 50%,rgba(255,255,255,.12))}
+[data-skin="aero"][data-mode="dark"] .lesson{background-color:color-mix(in srgb,var(--c) 18%,rgba(24,3,5,.9))}
+[data-skin="aero"][data-mode="dark"] .lesson{background-image:linear-gradient(180deg,rgba(255,120,100,.16),rgba(255,80,60,.04) 48%,rgba(0,0,0,0) 50%,rgba(0,0,0,.12))}
+[data-skin="aero"] .lesson.current{outline:0;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ae-green),0 0 16px rgba(110,230,60,.6)}
+[data-skin="aero"][data-mode="dark"] .lesson.current{box-shadow:0 0 0 2px #000,0 0 0 4px var(--accent),0 0 18px rgba(255,30,0,.7)}
+[data-skin="aero"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--ae-gogel);height:4px;border-radius:2px}
+[data-skin="aero"] .breakbar{border-radius:8px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+[data-skin="aero"] :is(.dayhead,.corner,.tcol){background:transparent}
+/* pages that are one piece: one sheet of glass */
+:root[data-skin="aero"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+  background-color:var(--panel);background-image:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0) 160px);-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);
+  border:var(--card-border);border-radius:18px;box-shadow:var(--shadow);margin-top:24px;margin-bottom:60px;padding:18px 24px 34px}
+:root[data-skin="aero"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+  background-image:linear-gradient(180deg,rgba(255,80,60,.1),rgba(0,0,0,0) 160px)}
+@media (max-width:640px){
+  :root[data-skin="aero"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:10px 8px 44px;padding:12px 12px 26px;border-radius:14px}
+}
+/* no backdrop blur where the browser would have to blur a lot of it at once (a phone, on a long list) */

@@ -1054,17 +1054,17 @@ BUILD.guesswho = host => {
 
     /* what they do — the freshest hints, so use them whenever we know them */
     if (target.year && diff !== 'grade')                    // pointless in My-grade — all one year
-      T[0].push(() => 'They are in year <b>' + target.year + '</b>.');
+      T[0].push(() => 'They are in year <b>' + esc(target.year) + '</b>.');
     if (hasClasses){
-      T[0].push(() => 'They take <b>' + firstClass + '</b>.');
+      T[0].push(() => 'They take <b>' + esc(firstClass) + '</b>.');
       if (diff === 'myclasses' || target.subjects.length > 1)
         T[0].push(() => 'They are in <b>' + target.subjects.length + '</b> of your classes.');
-      if (subs[1]) T[1].push(() => 'They also take <b>' + subs[1] + '</b>.');
-      if (subs[2]) T[1].push(() => 'They take <b>' + subs[2] + '</b> too.');
+      if (subs[1]) T[1].push(() => 'They also take <b>' + esc(subs[1]) + '</b>.');
+      if (subs[2]) T[1].push(() => 'They take <b>' + esc(subs[2]) + '</b> too.');
     }
-    if (teach[0]) T[1].push(() => 'They have a class with <b>' + teach[0] + '</b>.');
-    if (teach[1]) T[2].push(() => 'They also have a class with <b>' + teach[1] + '</b>.');
-    if (peer) T[2].push(() => 'They share a class with <b>' + peer.name + '</b>.');
+    if (teach[0]) T[1].push(() => 'They have a class with <b>' + esc(teach[0]) + '</b>.');
+    if (teach[1]) T[2].push(() => 'They also have a class with <b>' + esc(teach[1]) + '</b>.');
+    if (peer) T[2].push(() => 'They share a class with <b>' + esc(peer.name) + '</b>.');
 
     /* vague name shape */
     T[0].push(() => 'Their first name has <b>' + first.length + '</b> letters.');
@@ -1205,8 +1205,10 @@ BUILD.dailyguess = host => {
 
     const hintsEl = document.getElementById('dghints');
     const allHints = s.hints || [];
+    /* a hint arrives as text with <b> for emphasis (the server makes it); no other tag is let through */
+    const hintHtml = h => String(h == null ? '' : h).replace(/<(?!\/?b>)/g, '&lt;');
     const paint = fresh => hintsEl.innerHTML = allHints.slice(0, shown).map((h,i) =>
-      '<div class="gwhint' + (i===fresh?' fresh':'') + '"><span class="dghn">' + (i + 1) + '</span>' + h + '</div>').join('');
+      '<div class="gwhint' + (i===fresh?' fresh':'') + '"><span class="dghn">' + (i + 1) + '</span>' + hintHtml(h) + '</div>').join('');
     paint(-1);
 
     const sc = document.getElementById('sc');
@@ -1719,7 +1721,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261113';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261117s';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

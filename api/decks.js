@@ -16,6 +16,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
+import { limited, slowDown } from "./_limit.js";
 import { displayNames, withName } from "./_names.js";
 
 /* display-name overrides, loaded per request (see _names.js) */
@@ -97,6 +98,7 @@ export default async function handler(req, res) {
     const cards = cleanCards(body.cards);
     if (!name) return res.status(400).json({ error: "Give the deck a name." });
     if (!cards) return res.status(400).json({ error: "The deck needs at least one card." });
+    if (limited("deck:" + me.email, 20, 3600e3)) return slowDown(res);
     const id = newId();
     const { error } = await db.from("shared_deck").insert({ id, email: me.email, name, category, cards });
     if (error) { console.error("deck publish:", error.message); return res.status(502).json({ error: "Couldn't publish." }); }

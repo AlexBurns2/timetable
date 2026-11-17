@@ -1,0 +1,102 @@
+/* ══════════════════════════════════════════════════════════════════
+   COQUETTE — soft, romantic, a little old-fashioned: ribbon, lace,
+   pearls, blush and cream, a letter written on good paper.
+   One idea: a love letter tied with a ribbon. The header is a sheet of
+   cream paper with a lace edge, tied with a real satin bow (a cut-out
+   photograph, images/th/cq-bow.webp, not a drawing); section names sit
+   over a short string of pearls. Behind everything,
+   plain cream paper (the photographs were tried and taken out: too much).
+   Headings in Playfair Display italic, the site's name in a script,
+   everything else in DM Sans so it stays easy to read. Raspberry for
+   what matters. No motion beyond a soft fade. Dark mode is the darker
+   side of the same look: wine and black, lace in blush.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="coquette"]{
+  --cq-lace:#fffaf8; --cq-rose:#c2375f;
+  --bg:#fbf1ee; --bg-img:linear-gradient(180deg,#fdf6f3,#f6e2e2);
+  --panel:rgba(255,251,249,.9); --panel-2:#fdf1ef; --line:rgba(176,96,116,.2);
+  --text:#3b2228; --muted:#8b636b; --accent:#c2375f; --accent-ink:#fff;
+  --font-ui:"DM Sans",system-ui,sans-serif; --font-display:"Playfair Display",Georgia,serif; --font-num:"DM Sans",system-ui,sans-serif;
+  --card-radius:14px; --radius:12px; --tint:20%; --card-accent:0px;
+  --card-border:1px solid rgba(226,176,188,.7);
+  --shadow:0 1px 2px rgba(150,70,90,.08),0 8px 22px rgba(170,90,110,.1);
+  --shadow-hi:0 0 0 1px rgba(194,55,95,.35),0 10px 26px rgba(170,70,100,.18);
+  --display-tt:none; --display-ls:0; --display-w:500;
+  --cq-lacemask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath fill-rule='evenodd' d='M0 0H24V3A6 6 0 0 1 12 3A6 6 0 0 1 0 3ZM7.3 4.4a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0ZM19.3 4.4a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0ZM12.7 1.3a.7.7 0 1 0-1.4 0a.7.7 0 1 0 1.4 0ZM.7 1.3a.7.7 0 1 0-1.4 0a.7.7 0 1 0 1.4 0Z'/%3E%3C/svg%3E");
+  --cq-pearl:radial-gradient(circle at 38% 34%,#fff 0 1px,#f7ece9 1.6px,#e3cfcb 3px,#c9aea9 3.5px,transparent 3.9px);
+}
+[data-skin="coquette"][data-mode="dark"]{
+  --cq-lace:#3a1822; --cq-rose:#f28aa7;
+  --bg:#170a0e; --bg-img:linear-gradient(180deg,#1e0d13,#10060a);
+  --panel:rgba(36,14,21,.9); --panel-2:rgba(52,20,30,.92); --line:rgba(255,170,195,.16);
+  --text:#fbe9ee; --muted:#c99ba8; --accent:#f28aa7; --accent-ink:#2a0b14;
+  --card-border:1px solid rgba(242,138,167,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 26px rgba(0,0,0,.4);
+  --shadow-hi:0 0 0 1px rgba(242,138,167,.45),0 12px 30px rgba(0,0,0,.5);
+  --cq-pearl:radial-gradient(circle at 38% 34%,#fff 0 1px,#f2dfe3 1.6px,#b99aa2 3px,#7d5d66 3.5px,transparent 3.9px);
+}
+/* no photographs: plain cream paper, the faintest blush in one corner (wine in dark mode) */
+[data-skin="coquette"] body{font-feature-settings:"lnum" 1}      /* Playfair's figures are old-style by default (a 1 looked like an i) */
+[data-skin="coquette"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(120% 80% at 100% 0%,rgba(246,205,214,.55),rgba(246,205,214,0) 60%),radial-gradient(90% 70% at 0% 100%,rgba(250,224,214,.5),rgba(250,224,214,0) 60%),var(--bg-img)}
+[data-skin="coquette"][data-mode="dark"] body::before{background:radial-gradient(120% 80% at 100% 0%,rgba(120,30,58,.45),rgba(120,30,58,0) 60%),radial-gradient(90% 70% at 0% 100%,rgba(90,24,40,.4),rgba(90,24,40,0) 60%),var(--bg-img)}
+html.zen[data-skin="coquette"] body::before,[data-skin="coquette"][data-pg="hkmahjong"] body::before{display:none}
+
+/* ── the letter: cream paper with a lace edge, tied with a bow ── */
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--cq-lace);border:0;border-radius:6px 6px 0 0;box-shadow:0 10px 24px rgba(150,70,90,.12);margin-bottom:34px}
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;pointer-events:none;
+  background:var(--cq-lace);-webkit-mask:var(--cq-lacemask) 0 0/24px 10px repeat-x;mask:var(--cq-lacemask) 0 0/24px 10px repeat-x;filter:drop-shadow(0 3px 2px rgba(150,70,90,.12))}
+/* the bow is tied at the hem, on the left, where the lace starts */
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.hubbar,.pagehead)::before{content:"";position:absolute;bottom:-38px;left:-40px;width:66px;height:52px;z-index:2;pointer-events:none;
+  background:url(../images/th/cq-bow.webp) center/contain no-repeat;transform:rotate(-8deg);filter:drop-shadow(0 4px 4px rgba(120,40,60,.25))}
+:root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){box-shadow:0 12px 30px rgba(0,0,0,.45)}
+@media (max-width:560px){ :root[data-skin="coquette"]:not([data-header="split"]) :is(.hubbar,.pagehead)::before{width:50px;height:39px;bottom:-24px;left:-10px} }
+[data-skin="coquette"] :is(.hubid h1,.pagehead h1,.brand h1){font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0;color:#5a1f30}
+[data-skin="coquette"][data-mode="dark"] :is(.hubid h1,.pagehead h1,.brand h1){color:#fbe1e8}
+[data-skin="coquette"] .sitename{font-family:"Pinyon Script",cursive;font-size:1.05rem;letter-spacing:0;text-transform:none;color:var(--cq-rose)}
+[data-skin="coquette"] :is(.eyebrow,.nowcard .lbl,.ttday b,.weeklabel,.field>label,.tbhead span){letter-spacing:.14em}
+/* section names in italic, over a short string of pearls */
+[data-skin="coquette"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:12px;font:italic 500 1.0625rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--text);white-space:nowrap}
+[data-skin="coquette"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:0 1 120px;height:8px;background:var(--cq-pearl) 0 50%/9px 8px repeat-x;opacity:.95}
+[data-skin="coquette"] .forum{border-top:0}
+[data-skin="coquette"] :is(.pcard,.forum){background:var(--panel);border:var(--card-border);border-radius:16px;box-shadow:var(--shadow)}
+[data-skin="coquette"] .forum{padding:16px 18px 18px}
+
+/* ── buttons: ribbon pills ── */
+:root[data-skin="coquette"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:var(--panel);border:1px solid rgba(194,55,95,.35);color:var(--text);box-shadow:none}
+:root[data-skin="coquette"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{border-color:var(--accent);background:var(--panel-2);box-shadow:0 4px 12px rgba(194,55,95,.15)}
+:root[data-skin="coquette"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* ── Home's tiles: cream cards ── */
+[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:14px}
+:root[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
+[data-skin="coquette"] .qtile .tname{font-weight:500}
+/* ── Now and Next: blush, labelled in italic ── */
+[data-skin="coquette"] .nowcard{background:#fbe3e8;border:1px solid rgba(226,150,170,.55);border-radius:12px}
+[data-skin="coquette"] .nowcard .lbl{font:italic 500 .9375rem/1 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--cq-rose)}
+[data-skin="coquette"][data-mode="dark"] .nowcard{background:rgba(120,36,62,.4);border-color:rgba(242,138,167,.3)}
+[data-skin="coquette"] .prog{border-radius:999px;background:rgba(194,55,95,.14)}
+[data-skin="coquette"] .prog i{border-radius:999px;background:var(--accent)}
+@container hubbar (max-width:26em){
+  [data-skin="coquette"] .hubnow.pair{background:#fbe3e8;border-radius:12px}
+  [data-skin="coquette"][data-mode="dark"] .hubnow.pair{background:rgba(120,36,62,.4)}
+  [data-skin="coquette"] .hubnow.pair .nowcard{background:none;border:0}
+}
+[data-skin="coquette"] :is(.newpill,.gamecard .newbanner){background:var(--accent);color:var(--accent-ink)}
+[data-skin="coquette"] .newsdot{background:var(--accent)}
+[data-skin="coquette"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#fffaf8;border-radius:16px}
+[data-skin="coquette"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#22101a}
+[data-skin="coquette"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:12px;background:#fffaf8;border:1px solid var(--line)}
+[data-skin="coquette"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.25)}
+/* ── the timetable: soft rounded cards ── */
+[data-skin="coquette"] .lesson{border-radius:12px}
+[data-skin="coquette"] .lesson .s{font-family:"DM Sans",sans-serif;font-weight:700;letter-spacing:0}
+[data-skin="coquette"] .lesson.current{outline:2px solid var(--accent);outline-offset:2px}
+[data-skin="coquette"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--cq-pearl) 0 50%/9px 8px repeat-x;height:8px}
+[data-skin="coquette"] .breakbar{border-radius:999px}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+  background:var(--panel);border:var(--card-border);border-radius:18px;box-shadow:var(--shadow);margin-top:24px;margin-bottom:60px;padding:18px 24px 34px}
+@media (max-width:640px){
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:10px 8px 44px;padding:12px 12px 26px}
+}
+html.fx-enter[data-skin="coquette"] .wrap{animation:cqin .34s ease both}
+@keyframes cqin{from{opacity:0;transform:translateY(6px)}}

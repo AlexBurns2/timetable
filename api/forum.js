@@ -44,6 +44,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
+import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
 import { displayNames, withName, rosterList } from "./_names.js";
 import { pollGet, pollPost, pollPreview, pollClock } from "./_poll.js";
 import { resolveYear } from "./_daily.js";
@@ -96,6 +97,8 @@ export default async function handler(req, res) {
     const code = String(req.query.scan).toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 32) || "none";
     const device = ["phone", "tablet", "computer"].includes(req.query.device) ? req.query.device : null;
     if (/bot|crawl|spider|preview|facebookexternalhit|slurp/i.test(String(req.headers["user-agent"] || ""))) return res.status(204).end();
+    /* it needs no sign-in, so: only from this site's own page, and only so many from one network */
+    if (crossSite(req) || limited("qr:" + ipOf(req), 30, 10 * 60e3)) return res.status(204).end();
     const { error } = await db.from("qr_scan").insert({ code, device, first: req.query.first === "1", signed_in: req.query.signedin === "1" });
     if (error) console.error("qr scan:", error.message);
     return res.status(204).end();
@@ -250,6 +253,7 @@ export default async function handler(req, res) {
     }
 
     if (body.action === "react") {
+      if (limited("react:" + me.email, 90, 60e3)) return slowDown(res);
       const id = String(body.id || ""), emoji = String(body.emoji || "");
       if (!isEmoji(emoji)) return res.status(400).json({ error: "That isn't an emoji." });
       const { data: post } = await db.from("forum_post").select("id").eq("id", id).maybeSingle();
@@ -284,6 +288,8 @@ export default async function handler(req, res) {
 
     const text = String(body.body || "").trim().slice(0, MAX_BODY);
     if (!text) return res.status(400).json({ error: "Write something first." });
+    /* a person, not a script: a handful a minute, a few dozen an hour */
+    if (limited("post:" + me.email, 8, 60e3) || limited("posth:" + me.email, 60, 3600e3)) return slowDown(res);
 
     let parent = null;
     if (body.parent) {

@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261117j';
+const ASSET_V = '20261118a';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -40,14 +40,20 @@ const ASSET_V = '20261117j';
    both: has a light and a dark version (false: always dark)
    legacy: an original, as the theme was before it was redrawn; not in the
          picker, but under Settings → Originals */
+/* held back for now (not finished): their files stay, but they're out of the picker and a saved choice reads as Plain.
+   Take an id out of this list to bring that theme back. */
+const HIDDEN_SKINS = ['coquette', 'aero'];
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
   { id:'studio',    name:'Studio - Beta',    both:true, ic:'accent', is:'icons', css:'studio' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
+  { id:'coquette',  name:'Coquette',  both:true, ic:'accent', is:'icons', css:'coquette', font:'family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Pinyon+Script' },
   { id:'skeuo',     name:'Skeuomorphism', both:true, ic:'tile', is:'icons', css:'skeuo' },
+  { id:'aero',      name:'Frutiger Aero', darkName:'Frutiger Evil', both:true, ic:'tile', is:'icons', css:'aero', font:'family=Hind:wght@300;400;500;600' },
   { id:'y2k',       name:'Y2K Futurism', both:true, ic:'accent', is:'icons', css:'y2k', font:'family=Michroma&family=Sora:wght@400;600;700' },
+  { id:'softclub',  name:'Gen X Soft Club', both:true, ic:'accent', is:'icons', css:'softclub', font:'family=Lexend+Giga:wght@300;400&family=Arimo:ital,wght@0,400;0,700;1,400' },
   { id:'vapor',     name:'Vaporwave', both:true, ic:'tile', is:'emoji', css:'vapor', font:'family=VT323&family=DotGothic16' },
   { id:'editorial', name:'Editorial', both:true, ic:'accent', is:'icons', css:'editorial', font:'family=Instrument+Serif:ital@0;1&family=Jost:wght@400;500;600' },
   { id:'swiss',     name:'Swiss',     both:true, ic:'accent', is:'icons', css:'swiss', font:'family=Inter+Tight:wght@400;500;600;700;800' },
@@ -67,7 +73,7 @@ const SKINS = [
   { id:'o-blueprint', name:'Blueprint', legacy:true, both:false, ic:'tile', is:'icons', css:'legacy' },
   { id:'newsprint',   name:'Newsprint', legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
   { id:'retro',       name:'Retro',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' }
-];
+].filter(s => !HIDDEN_SKINS.includes(s.id));
 const SKIN_IDS = SKINS.map(s => s.id);
 
 /* The picker's thumbnails: each theme as a miniature of itself, the same
@@ -127,6 +133,23 @@ const THUMBS = (() => {
     blueprint: ['#0a2c52', '<g stroke="#fff" stroke-opacity=".12" stroke-width=".6">' + [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110].map(x => '<path d="M' + x + ' 0V46"/>').join('') + [6, 16, 26, 36].map(y => '<path d="M0 ' + y + 'H120"/>').join('') + '</g>' +
       '<g fill="#0a2c52" stroke="#c4e4ff" stroke-opacity=".75" stroke-width=".8">' + bar('') + tiles('') + '</g><rect x="13" y="10.4" width="30" height="3" fill="#f2f9ff"/>' +
       '<g stroke="#7ff0ff" stroke-width=".7"><path d="M4 21.5h4M116 21.5h-4M60 44v-3"/></g>'],
+    aero: ['#3b9cf0', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f86e6"/><stop offset="1" stop-color="#bfe6ff"/></linearGradient>' +
+      '<linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd34a"/><stop offset="1" stop-color="#2c8a18"/></linearGradient>' +
+      '<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset=".48" stop-color="#fff" stop-opacity=".45"/><stop offset=".5" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient></defs>' +
+      '<rect width="120" height="46" fill="url(#k)"/><path d="M0 34Q40 24 80 30T120 28V46H0Z" fill="url(#h)"/><ellipse cx="86" cy="11" rx="11" ry="4.5" fill="#fff" fill-opacity=".9"/>' +
+      bar('rx="5" fill="url(#g)" stroke="#fff" stroke-opacity=".9" stroke-width=".7"') + [['#22a7f0', 12], ['#5cc22c', 48], ['#ff9f1a', 84]].map(c => '<rect x="' + c[1] + '" y="24" width="15" height="15" rx="4" fill="' + c[0] + '"/><rect x="' + c[1] + '" y="24" width="15" height="7.5" rx="4" fill="#fff" fill-opacity=".5"/>').join('') +
+      '<circle cx="108" cy="36" r="6" fill="#fff" fill-opacity=".12" stroke="#fff" stroke-opacity=".8" stroke-width=".6"/><circle cx="105.8" cy="33.8" r="1.4" fill="#fff" fill-opacity=".9"/>'],
+    softclub: ['#d8e9ea', '<defs><linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef7f7"/><stop offset=".6" stop-color="#bcd8da"/><stop offset="1" stop-color="#9fc4c6"/></linearGradient></defs>' +
+      '<rect width="120" height="46" fill="url(#w)"/><g fill="#5f8d92" fill-opacity=".35"><rect x="60" y="0" width="1" height="46"/><rect x="0" y="30" width="120" height="6" fill-opacity=".25"/></g>' +
+      '<g fill="#fff" fill-opacity=".75">' + [4, 8, 12, 16, 20, 24, 28, 32, 36, 40].map(y => '<rect x="3" y="' + y + '" width="' + (5 + (y * 7) % 6) + '" height="1.2"/>').join('') + '</g>' +
+      '<text x="16" y="17" font-family="Arial,Helvetica,sans-serif" font-size="9" letter-spacing="3.2" fill="#fff">gen x</text><rect x="16" y="21" width="44" height="1.6" fill="#fff" fill-opacity=".8"/>' +
+      '<rect x="72" y="8" width="34" height="22" fill="none" stroke="#fff" stroke-width=".8"/><rect x="82" y="15" width="18" height="12" fill="#1d48c8"/>'],
+    coquette: ['#fbf1ee', '<defs><pattern id="l" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 0H8V1.4A2 2 0 0 1 4 1.4A2 2 0 0 1 0 1.4Z" fill="#fff"/></pattern></defs>' +
+      '<rect x="8" y="5" width="104" height="13" rx="3" fill="#fff"/><rect x="10" y="18" width="100" height="3" fill="url(#l)"/>' +
+      '<text x="30" y="14.6" font-family="Georgia,serif" font-style="italic" font-size="8.5" fill="#7a2c3e">Good morning</text>' +
+      '<g transform="translate(15 7)" fill="#e58aa2" stroke="#b8325a" stroke-width=".5"><path d="M0 4C-6 -1 -7 7 0 5Z"/><path d="M0 4C6 -1 7 7 0 5Z"/><path d="M-.5 5L-3 11L-1 10L0 5ZM.5 5L3 11L1 10L0 5Z"/><circle cx="0" cy="4.6" r="1.1"/></g>' +
+      [14, 48, 82].map(x => '<rect x="' + x + '" y="25" width="26" height="15" rx="4" fill="#fffaf8" stroke="#e7b9c4" stroke-width=".7"/>').join('') +
+      '<g fill="#f3e6e2" stroke="#d6bdb8" stroke-width=".4">' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(i => '<circle cx="' + (14 + i * 7.1) + '" cy="43.4" r="1.6"/>').join('') + '</g>'],
     custom: ['#7ee8fa', '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f6d"/><stop offset=".35" stop-color="#ffc371"/><stop offset=".68" stop-color="#7ee8fa"/><stop offset="1" stop-color="#a06cd5"/></linearGradient></defs><rect width="120" height="46" fill="url(#r)"/>' +
       '<g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M34 13h52M34 23h52M34 33h52"/></g><g fill="#fff" stroke="#14121a" stroke-opacity=".35"><circle cx="50" cy="13" r="4.2"/><circle cx="74" cy="23" r="4.2"/><circle cx="42" cy="33" r="4.2"/></g>']
   };
@@ -136,7 +159,7 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
-SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6';
+SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6';
 
 /* kept for older callers; the picker shows every theme now */
 const QUICK_SKINS = SKINS.filter(s => !s.legacy).map(s => s.id);
@@ -314,7 +337,7 @@ let favImg = null, favTimer = 0, favLast = '';
    refracted for Glass, pixels for Terminal, an outline for Blueprint, a hard
    shadow for Neo Brutalism, a colour split for Vaporwave, a gloss for
    Skeuomorphism, a tilt for Notebook. */
-const FAV_STYLE = { classic:'round', glass:'glass', paper:'tilt', skeuo:'gloss', vapor:'glitch', brutal:'shadow', terminal:'pixel', blueprint:'outline',
+const FAV_STYLE = { classic:'round', glass:'glass', paper:'tilt', skeuo:'gloss', aero:'gloss', vapor:'glitch', brutal:'shadow', terminal:'pixel', blueprint:'outline',
                     'o-paper':'tilt', 'o-brutal':'shadow', 'o-scifi':'glow', 'o-terminal':'pixel', 'o-blueprint':'outline', retro:'pixel' };
 const FAV = {
   paper:     { shape:'square', ink:'#3a2f1c', bg(x, N){ x.fillStyle = '#fff3a0'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(80,110,160,.35)'; for (let y = 24; y < N; y += 13) x.fillRect(0, y, N, 1.5);
@@ -324,6 +347,11 @@ const FAV = {
   vapor:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#7a4dff'); g.addColorStop(.55, '#ff5fbf'); g.addColorStop(1, '#ffb36b');
                x.fillStyle = g; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(40,10,80,.55)'; [45, 52, 58].forEach((y, i) => x.fillRect(0, y, N, 2 + i)); } },
   studio:    { ink:'#fff', bg(x, N){ x.fillStyle = '#6b4fd0'; x.fillRect(0, 0, N, N); } },
+  aero:      { ink:'#fff', bg(x, N){ const ev = document.documentElement.getAttribute('data-mode') === 'dark', g = x.createLinearGradient(0, 0, 0, N);
+               (ev ? [[0, '#ff8a70'], [.49, '#d4140c'], [.5, '#8e0603'], [1, '#e0261c']] : [[0, '#9fe3ff'], [.49, '#2aa4ef'], [.5, '#0b7fd0'], [1, '#4fc0ff']]).forEach(s => g.addColorStop(s[0], s[1]));
+               x.fillStyle = g; x.fillRect(0, 0, N, N); } },
+  softclub:  { shape:'square', ink:'#1d48c8', bg(x, N){ x.fillStyle = '#e4f0f1'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.9)'; x.fillRect(0, N - 9, N, 2); } },
+  coquette:  { shape:'circle', ink:'#b8325a', bg(x, N){ x.fillStyle = '#f9d7df'; x.fillRect(0, 0, N, N); x.strokeStyle = '#fff'; x.lineWidth = 4; x.beginPath(); x.arc(N/2, N/2, N/2 - 4, 0, 7); x.stroke(); } },
   editorial: { shape:'square', ink:'#1a1814', bg(x, N){ x.fillStyle = '#f4f0e8'; x.fillRect(0, 0, N, N); x.fillStyle = '#1a1814'; x.fillRect(0, 0, N, 5); x.fillStyle = '#b5432a'; x.fillRect(0, N - 4, N, 4); } },
   swiss:     { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#e8112d'; x.fillRect(0, 0, N, N); x.fillStyle = '#000'; x.fillRect(0, 0, N, 7); } },
   deco:      { shape:'square', ink:'#d4af37', bg(x, N){ x.fillStyle = '#0d0f12'; x.fillRect(0, 0, N, N); x.strokeStyle = '#d4af37'; x.lineWidth = 2; x.strokeRect(3, 3, N - 6, N - 6); x.lineWidth = 1; x.strokeRect(7.5, 7.5, N - 15, N - 15); } },
@@ -786,6 +814,8 @@ function origBox(el, after){
 /* skinFold: the Appearance heading (the label of the field holding the .skins
    grid) folds the grid away and back; folded, it names the theme that is on.
    Kept with the other settings. Call it again whenever the theme changes. */
+/* a theme's name as Settings shows it: one theme has another name in dark mode */
+const skinName = s => (s.darkName && document.documentElement.getAttribute('data-mode') === 'dark') ? s.darkName : s.name;
 function skinFold(field){
   if (!field) return;
   const grid = field.querySelector('.skins'), lab = field.querySelector('label'); if (!grid || !lab) return;
@@ -799,7 +829,7 @@ function skinFold(field){
   const folded = !!get('tt.skinsfold', localStorage.getItem(LS.skin) !== null ? 1 : 0), cur = SKINS.find(s => s.id === readState().skin);      /* folded unless asked otherwise, once a theme has been picked */
   hd.setAttribute('aria-expanded', String(!folded)); hd.title = folded ? 'Show the themes' : 'Hide the themes';
   grid.hidden = folded;
-  hd.querySelector('.sknow').textContent = cur ? cur.name + (cur.legacy ? ' (original)' : '') : '';
+  hd.querySelector('.sknow').textContent = cur ? skinName(cur) + (cur.legacy ? ' (original)' : '') : '';
 }
 /* iconButtons: Display's Icon colour and Icon style rows (.modes holders with
    data-v buttons: auto, then the overrides) */
@@ -1056,6 +1086,8 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'themes3', date:'2026-11-17', title:'A new theme',
+    text:'Gen X Soft Club. In Settings. Try it in dark mode too.' },
   { id:'themes2', date:'2026-11-14', title:'Themes, rebuilt',
     text:'Nine themes rebuilt from the ground up, each with its own layout, its own way between pages and, for some, a moving background ' +
          '(Settings → Animation turns the motion off). New: Skeuomorphism, Y2K Futurism, Vaporwave, Editorial, Art Deco and Maximalism. ' +
@@ -1091,7 +1123,7 @@ function newsSeen(key){
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
-window.TT = { LS, get, set, SKINS, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
+window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,

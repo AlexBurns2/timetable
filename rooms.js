@@ -72,7 +72,10 @@
     const peerFns = [], topicFns = {};
     const onPeers = snap => {
       const v = snap.val() || {}, list = [];
-      for (const id in v){ let p = {}; try { p = JSON.parse(v[id].p || '{}'); } catch (e) {} list.push({ id, isMe: id === me, presence: p }); }
+      /* what someone else's computer wrote: always a plain object, whatever they sent */
+      for (const id in v){ let p = {}; try { p = JSON.parse((v[id] && v[id].p) || '{}'); } catch (e) {}
+        if (!p || typeof p !== 'object' || Array.isArray(p)) p = {};
+        list.push({ id, isMe: id === me, presence: p }); }
       peers = list;
       peerFns.slice().forEach(f => { try { f(peers); } catch (e) { console.error(e); } });
     };
