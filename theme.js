@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261117i';
+const ASSET_V = '20261117k';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1131,11 +1131,16 @@ function homeLinks(){
   } catch {}
 }
 /* …and Home itself isn't a page in Studio: home.html goes to the timetable,
-   on load or the moment Studio is picked there (a moderator's poll preview,
-   ?pollpreview=, still opens) */
+   on load or the moment Studio is picked there, except home.html?show=forum
+   or ?show=poll (the timetable's Forum and Poll tiles) and a moderator's poll
+   preview (?pollpreview=) */
 function studioAway(){
-  if (studioHome() && document.documentElement.getAttribute('data-pg') === 'home' && !/[?&]pollpreview=/.test(location.search))
-    location.replace('./' + location.hash);
+  const root = document.documentElement, show = new URLSearchParams(location.search).get('show');
+  /* the Forum and Poll tiles open Home showing only that (studio.css hides the rest) */
+  root.toggleAttribute('data-show', false);
+  if (!studioHome() || root.getAttribute('data-pg') !== 'home') return;
+  if (show === 'forum' || show === 'poll'){ root.setAttribute('data-show', show); return; }
+  if (!/[?&]pollpreview=/.test(location.search)) location.replace('./' + location.hash);
 }
 studioAway();
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeLinks); else homeLinks();

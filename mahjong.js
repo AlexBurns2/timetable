@@ -42,6 +42,15 @@ function mount(host){
   const color = id => MJ_COLORS[(id - 1) % MJ_COLORS.length];
   const fmt = v => v.toLocaleString();
   const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
+  /* Studio draws the sheet as the beta (/beta/) does: standings as bars on the left, the
+     awards and graph on the right; the graph's hover replaces the History list */
+  const studio = () => document.documentElement.getAttribute('data-skin') === 'studio';
+  /* the beta's scale: spread out around the middle, so a pack of close scores doesn't merge into one line */
+  function spread(now){
+    const v = [...now].sort((a, b) => a - b), gaps = v.slice(1).map((x, i) => x - v[i]).sort((a, b) => a - b);
+    const mid = v[v.length >> 1], size = Math.max(8, gaps[gaps.length >> 1] || 0);
+    return x => Math.asinh((x - mid) / size);
+  }
 
   /* every player's points after each game, for the graph: [game][player] */
   function series(){
@@ -69,21 +78,26 @@ function mount(host){
     return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; };
   function drawGraph(){
     const svg = $('mjg'); if (!svg) return;
-    const cw = Math.round(svg.clientWidth || 640); GW = Math.max(280, cw); GH = cw < 560 ? 230 : 260;
+    const cw = Math.round(svg.clientWidth || 640); GW = Math.max(280, cw); GH = studio() ? Math.max(300, Math.round(svg.clientHeight || 420)) : cw < 560 ? 230 : 260;
     svg.setAttribute('viewBox', '0 0 ' + GW + ' ' + GH);
     const pts = series(), n = pts.length - 1;
     const a = view ? view.a : 0, b = view ? view.b : n;
     const i0 = Math.max(0, Math.floor(a)), i1 = Math.min(n, Math.ceil(b));
     const vis = []; for (let i = i0; i <= i1; i++) state.players.forEach(p => vis.push(pts[i][p.id]));
-    let lo = Math.min(...vis), hi = Math.max(...vis); if (lo === hi){ lo -= 100; hi += 100; }
+    const at = studio() ? spread(state.players.map(p => pts[n][p.id])) : v => v;
+    let lo = Math.min(...vis.map(at)), hi = Math.max(...vis.map(at)); if (lo === hi){ lo -= studio() ? 1 : 100; hi += studio() ? 1 : 100; }
     const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
-    const x = i => GL + (GW - GL - GR) * (i - a) / (b - a), y = v => GT + (GH - GT - GB) * (hi - v) / (hi - lo);
-    const ys = niceStep((hi - lo) / 5), yt = []; for (let v = Math.ceil(lo / ys) * ys; v <= hi; v += ys) yt.push(v);
+    const x = i => GL + (GW - GL - GR) * (i - a) / (b - a), y = v => GT + (GH - GT - GB) * (hi - at(v)) / (hi - lo);
+    let yt = [];
+    if (studio()){      /* labels at the start ± powers of 2, nearest first, wherever there's room */
+      for (const v of [MJ_START, ...[...Array(14).keys()].slice(1).flatMap(k => [MJ_START + 2 ** k, MJ_START - 2 ** k])])
+        if (at(v) >= lo && at(v) <= hi && yt.every(u => Math.abs(y(u) - y(v)) >= 22)) yt.push(v);
+    } else { const ys = niceStep((hi - lo) / 5); for (let v = Math.ceil(lo / ys) * ys; v <= hi; v += ys) yt.push(v); }
     const xs = Math.max(1, niceStep((b - a) / 6)), xt = []; for (let i = Math.ceil(a / xs) * xs; i <= b + 1e-9; i += xs) xt.push(Math.round(i));
     const from = Math.max(0, i0 - 1), to = Math.min(n, i1 + 1), dots = b - a <= 24;
     let s = '<defs><clipPath id="mjgclip"><rect x="'+GL+'" y="0" width="'+(GW - GL - GR)+'" height="'+(GH - GB + 4)+'"/></clipPath></defs>' +
       yt.map(v => '<line x1="'+GL+'" x2="'+(GW-GR)+'" y1="'+y(v).toFixed(1)+'" y2="'+y(v).toFixed(1)+'" class="mjgrid"/><text x="'+(GL-6)+'" y="'+(y(v)+4).toFixed(1)+'" text-anchor="end">'+fmt(v)+'</text>').join('') +
-      (lo < MJ_START && hi > MJ_START ? '<line x1="'+GL+'" x2="'+(GW-GR)+'" y1="'+y(MJ_START).toFixed(1)+'" y2="'+y(MJ_START).toFixed(1)+'" class="mjstart"/>' : '') +
+      (at(MJ_START) > lo && at(MJ_START) < hi ? '<line x1="'+GL+'" x2="'+(GW-GR)+'" y1="'+y(MJ_START).toFixed(1)+'" y2="'+y(MJ_START).toFixed(1)+'" class="mjstart"/>' : '') +
       xt.map((i, k) => '<text x="'+x(i).toFixed(1)+'" y="'+(GH-6)+'" text-anchor="'+(x(i) < GL + 20 ? 'start' : x(i) > GW - GR - 20 ? 'end' : 'middle')+'">'+
         (i === 0 ? 'Start' : (k === 0 || xt[0] === 0 && k === 1 ? 'Game ' : '') + i)+'</text>').join('') +
       '<g clip-path="url(#mjgclip)">' +
@@ -97,12 +111,29 @@ function mount(host){
     const all = $('mjgall'); if (all) all.hidden = !view;
     const tip = $('mjgtip');
     if (tip){ if (tipAt == null || tipAt < a || tipAt > b) tip.hidden = true;
+      else if (studio()) { tip.innerHTML = gameTip(tipAt, pts); tip.hidden = false;
+        const fx = x(tipAt) / GW; tip.style.left = (fx * 100) + '%'; tip.classList.toggle('mjgtipl', fx > 0.55); }
       else { const prev = pts[Math.max(0, tipAt - 1)];
         tip.innerHTML = '<b>'+(tipAt ? 'After game ' + tipAt : 'Start')+'</b>' + state.players.slice().sort((p, q) => pts[tipAt][q.id] - pts[tipAt][p.id]).map(p => {
           const v = pts[tipAt][p.id], d = tipAt ? v - prev[p.id] : 0;
           return '<span><i class="mjdot" style="background:'+color(p.id)+'"></i>'+esc(p.name)+' <em>'+fmt(v)+'</em>'+(d ? ' <small class="'+(d > 0 ? 'mjup' : 'mjdown')+'">'+signed(d)+'</small>' : '')+'</span>'; }).join('');
         tip.hidden = false;
         const fx = x(tipAt) / GW; tip.style.left = (fx * 100) + '%'; tip.classList.toggle('mjgtipl', fx > 0.55); } }
+  }
+  /* Studio's hover: everything the History list said about a game, and what it did to the table */
+  function gameTip(g, pts){
+    if (!g) return '<b>Start</b><span class="mjtn">Everyone on ' + fmt(MJ_START) + '</span>';
+    const r = state.rounds[g - 1], prev = pts[g - 1], now = pts[g];
+    const place = (o, id) => 1 + state.players.filter(q => o[q.id] > o[id]).length;
+    const when = r.t ? new Date(r.t).toLocaleDateString([], { weekday:'short', day:'numeric', month:'short' }) : '';
+    const rows = Object.keys(r.d).filter(id => state.players.some(q => q.id === +id)).sort((p, q) => r.d[q] - r.d[p]).map(id => {
+      const p = state.players.find(q => q.id === +id), v = r.d[id], a = place(prev, +id), b = place(now, +id);
+      return '<span class="mjtr"><i class="mjdot" style="background:'+color(+id)+'"></i><span class="mjtnm">'+esc(p.name)+'</span>' +
+        '<em class="'+(v > 0 ? 'mjup' : 'mjdown')+'">'+signed(v)+'</em><span class="mjttot">'+fmt(now[id])+'</span>' +
+        '<small>'+(a === b ? '#' + b : '#' + a + ' → #' + b)+'</small></span>'; }).join('');
+    const top = state.players.slice().sort((p, q) => now[q.id] - now[p.id])[0];
+    return '<b>Game ' + g + (when ? ' <small>' + esc(when) + '</small>' : '') + '</b>' + rows +
+      (top ? '<span class="mjtn">Leading: ' + esc(top.name) + ', ' + fmt(now[top.id]) + '</span>' : '');
   }
   function wireGraph(){
     const svg = $('mjg'); if (!svg) return;
@@ -284,10 +315,39 @@ function mount(host){
         esc(mjNames(players.filter((p, i) => v[i] === best)))+'</b><small>'+say(best)+'</small></div>'; }).filter(Boolean);
     return '<div class="mjawards" style="--n:'+cards.length+';--r:'+Math.ceil(cards.length / 2)+'">' + cards.join('') + '</div>';
   }
+  /* Studio's sheet: the beta's two columns */
+  function studioHTML(err){
+    const st = mjStandings(state), n = st.length;
+    const at = spread(st.map(p => p.pts)), hi = n ? at(st[0].pts) : 0, lo = n ? at(st[n - 1].pts) : 0;
+    const fill = v => hi === lo ? 100 : 12 + 88 * (at(v) - lo) / (hi - lo);       /* the lowest still shows some colour */
+    const rows = st.map(p => { const rank = 1 + st.filter(q => q.pts > p.pts).length;
+      return '<div class="mjsrow" data-id="'+p.id+'" style="--c:'+color(p.id)+'"><i class="mjfill" style="width:'+fill(p.pts).toFixed(1)+'%"></i>' +
+        '<span class="mjrk">'+rank+'</span><span class="mjnm">'+esc(p.name)+'</span><b class="mjpts">'+fmt(p.pts)+'</b>' +
+        '<span class="mjbox"><input type="number" step="1" data-id="'+p.id+'" placeholder="+ / −" aria-label="'+esc(p.name)+'’s points this game"></span></div>'; }).join('');
+    return (err ? '<p class="how mjerr">' + esc(err) + '</p>' : '') + '<div class="mjs">' +
+      '<section class="mjscol"><h3 class="mjsh">Standings</h3>' +
+        (n ? '<div class="mjround mjslist">' + rows + '</div>' : '<p class="how">No players yet. Add everyone at the table.</p>') +
+        (n > 1 ? '<div class="mjsblk mjssave"><span class="mjsum how" id="mjsum">+ for winners, − for whoever paid</span><div class="mjsbtns">' +
+          (state.rounds.length ? '<button class="btn" id="mjundo" type="button">Undo</button>' : '') + '<button class="btn primary" id="mjsave" type="button">Save</button></div></div>' : '') +
+        '<div class="mjsblk mjsadd"><input id="mjname" placeholder="'+(n ? 'Add a player' : 'Add everyone at the table')+'" maxlength="30" autocomplete="off"><button class="btn" id="mjaddp" type="button">Add</button></div>' +
+        (n > 1 ? calcHTML() : '') +
+      '</section>' +
+      '<section class="mjscol"><h3 class="mjsh">Over time</h3>' + awards() +
+        '<div class="mjsblk mjschart">' + (state.rounds.length ? graph() : '<p class="how mjnone">Nothing here until the first game.</p>') + '</div>' +
+      '</section></div>';
+  }
+  /* Studio: when the rankings change, each player's bar slides from its old place to its new one */
+  function reorder(was){
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.getAttribute('data-motion') === 'reduced') return;
+    box.querySelectorAll('.mjsrow').forEach(r => { const t = was[r.dataset.id]; if (t == null) return;
+      const dy = t - r.getBoundingClientRect().top; if (Math.abs(dy) < 1) return;
+      r.animate([{ transform:'translateY(' + dy + 'px)' }, { transform:'none' }], { duration:520, easing:'cubic-bezier(.25,.8,.3,1)' }); });
+  }
   function paint(err){
     const st = mjStandings(state), last = state.rounds[state.rounds.length - 1];
     $('sc').textContent = state.rounds.length + ' game' + (state.rounds.length === 1 ? '' : 's');
-    box.innerHTML =
+    const was = {}; box.querySelectorAll('.mjsrow').forEach(r => was[r.dataset.id] = r.getBoundingClientRect().top);
+    if (studio()){ box.innerHTML = studioHTML(err); reorder(was); } else box.innerHTML =
       (err ? '<p class="how mjerr">' + esc(err) + '</p>' : '') +
       '<h3 class="mjh">Standings</h3>' +
       (st.length ? '<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Last game</span><span class="tm">Points</span></div>' +
@@ -319,8 +379,10 @@ function mount(host){
     $('mjname').onkeydown = e => { if (e.key === 'Enter') addP(); };
     const inputs = [...box.querySelectorAll('.mjround input')];
     const sum = () => { const t = inputs.reduce((a, i) => a + (Math.round(+i.value) || 0), 0);
-      $('mjsum').textContent = t ? 'Adds up to ' + signed(t) + ' (usually 0)' : ''; };
+      $('mjsum').textContent = t ? 'Adds up to ' + signed(t) + ' (usually 0)' : studio() ? '+ for winners, − for whoever paid' : ''; };
     inputs.forEach(i => i.oninput = sum);
+    /* Studio: Enter in a box saves the game */
+    box.querySelectorAll('.mjsrow input').forEach(i => i.onkeydown = e => { if (e.key === 'Enter' && $('mjsave')) $('mjsave').click(); });
     if ($('mjsave')) $('mjsave').onclick = () => { const d = {}; inputs.forEach(i => { const v = Math.round(+i.value); if (v) d[i.dataset.id] = v; });
       if (Object.keys(d).length) act({ action:'round', d }); };
     if ($('mjundo')) $('mjundo').onclick = () => { if (confirm('Undo the last game?')) act({ action:'undo' }); };
@@ -334,6 +396,7 @@ function mount(host){
     catch (e){ paint(e.message); }
     busy = false;
   }
+  addEventListener('tt:look', () => { if (state && !busy) paint(); });
   mjFetch().then(d => { state = d.state; paint(); }, e => { box.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; });
 }
 

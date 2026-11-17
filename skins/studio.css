@@ -567,3 +567,85 @@ html[data-skin="studio"][data-motion="reduced"] #grid.stg *{animation:none!impor
 
 /* the poll lives on Home, which Studio doesn't have: no note pointing there */
 [data-skin="studio"] .pollnote{display:none!important}
+
+/* ── Home as just the Forum or just the Poll (the timetable's tiles: home.html?show=forum|poll) ── */
+html[data-skin="studio"][data-show] :is(.hubnow,.hubsub,.hubtoday,.hubnav,.hubfoot,.pollskip,.sitemark){display:none!important}
+html[data-skin="studio"][data-show="forum"] #poll{display:none!important}
+html[data-skin="studio"][data-show="poll"] #hubrest{display:none!important}
+html[data-skin="studio"][data-show] #hello{font-size:0;line-height:0}
+html[data-skin="studio"][data-show] #hello::after{font-size:clamp(1.625rem,3vw,2rem);line-height:1.1}
+html[data-skin="studio"][data-show="forum"] #hello::after{content:"Forum"}
+html[data-skin="studio"][data-show="poll"] #hello::after{content:"Poll"}
+html[data-skin="studio"][data-show] .hubin{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id btn"}
+html[data-skin="studio"][data-show="forum"] .forum h2{display:none}
+html[data-skin="studio"][data-show="poll"] .wrap.hub:has(#poll[hidden])::after{content:"No poll is open right now.";display:block;margin-top:8px;color:var(--muted);font-size:.9375rem}
+
+/* ══ Mahjong club, as the beta draws it (mahjong.js studioHTML): standings as bars on the left,
+   the awards and the graph on the right; hovering the graph tells each game's story ══ */
+[data-skin="studio"][data-pg="mahjong"] .wrap{max-width:1400px}
+[data-skin="studio"][data-pg="mahjong"] .stage>.row{display:none}
+[data-skin="studio"] .mjs{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:0 12px;align-items:start}
+[data-skin="studio"] .mjsh{margin:4px 0 12px;text-align:center;font-family:var(--font-display);font-size:1.0625rem;font-weight:500;color:var(--text)}
+[data-skin="studio"] .mjslist{display:flex;flex-direction:column;gap:8px;margin:0}
+[data-skin="studio"] .mjsrow{--t:34%;position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px;
+  height:60px;padding:0 10px 0 14px;border-radius:10px;background:color-mix(in srgb,var(--c) calc(var(--t) * .35),var(--st-paper))}
+[data-skin="studio"][data-mode="dark"] .mjsrow{--t:24%}
+[data-skin="studio"] .mjsrow .mjfill{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--c) var(--t),var(--st-paper))}
+[data-skin="studio"] .mjsrow>:not(.mjfill){position:relative}
+[data-skin="studio"] .mjsrow :is(.mjrk,.mjnm){color:color-mix(in srgb,var(--c) 40%,var(--text));font-weight:600}
+[data-skin="studio"] .mjsrow .mjrk{font-size:1.0625rem;font-variant-numeric:tabular-nums;min-width:1.2em}
+[data-skin="studio"] .mjsrow .mjnm{font-size:.9375rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-skin="studio"] .mjsrow .mjpts{font-size:.9375rem;font-weight:700;font-variant-numeric:tabular-nums}
+[data-skin="studio"] .mjbox{display:flex;align-items:center;gap:4px}
+:root[data-skin="studio"] .mjbox input{width:84px;padding:7px 8px;border:0;border-radius:8px;text-align:right;font:inherit;font-size:.875rem;font-variant-numeric:tabular-nums;
+  background:color-mix(in srgb,var(--st-paper) 72%,transparent);color:var(--text);appearance:textfield;-moz-appearance:textfield}
+[data-skin="studio"] .mjbox input::-webkit-inner-spin-button,[data-skin="studio"] .mjbox input::-webkit-outer-spin-button{appearance:none;margin:0}
+:root[data-skin="studio"] .mjbox input:focus{outline:none;background:var(--st-paper);box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 60%,transparent)}
+[data-skin="studio"] .mjsblk{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--st-fill)}
+[data-skin="studio"] .mjssave{display:flex;flex-direction:column;gap:8px}
+[data-skin="studio"] .mjssave .mjsum{margin:0;font-size:.8125rem}
+[data-skin="studio"] .mjsbtns{display:flex;gap:6px}
+[data-skin="studio"] .mjsbtns .btn{flex:1;justify-content:center}
+[data-skin="studio"] .mjsadd{display:flex;align-items:center;gap:8px}
+:root[data-skin="studio"] .mjsadd input{flex:1;min-width:0;padding:8px 10px;border:0;border-radius:8px;background:color-mix(in srgb,var(--st-paper) 72%,transparent);font:inherit;font-size:.875rem;color:var(--text)}
+:root[data-skin="studio"] .mjsadd input:focus{outline:none;background:var(--st-paper);box-shadow:0 0 0 3px color-mix(in srgb,var(--st-violet) 22%,transparent)}
+[data-skin="studio"] .mjs .mjcalc{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--st-fill)}
+[data-skin="studio"] .mjs .mjcalc>summary{cursor:pointer;font-size:.875rem;font-weight:600}
+/* the awards: a row of tinted cards, as the beta */
+[data-skin="studio"] .mjs .mjawards{margin:0 0 8px;gap:8px}
+[data-skin="studio"] .mjs .mjaward{border-radius:10px;padding:10px 12px;background:color-mix(in srgb,var(--c) 34%,var(--st-paper))}
+[data-skin="studio"][data-mode="dark"] .mjs .mjaward{background:color-mix(in srgb,var(--c) 24%,var(--st-paper))}
+[data-skin="studio"] .mjs .mjaward small{color:color-mix(in srgb,var(--c) 30%,var(--text))}
+[data-skin="studio"] .mjs .mjaward b{font-weight:700;color:var(--text)}
+/* the graph: tall, no key (hover names everyone), zoom buttons tucked top-right */
+[data-skin="studio"] .mjschart{padding:10px 12px 8px}
+[data-skin="studio"] .mjschart :is(.mjh,.mjkey){display:none}
+[data-skin="studio"] .mjschart .mjghead{justify-content:flex-end;margin-bottom:-34px;position:relative;z-index:2}
+[data-skin="studio"] .mjschart .mjgtools .btn{min-width:26px;height:26px;padding:0 8px;background:color-mix(in srgb,var(--st-paper) 80%,transparent)}
+[data-skin="studio"] .mjschart .mjgraph{height:clamp(320px,calc(100vh - 340px),640px)}
+[data-skin="studio"] .mjschart .mjgraph text{font-size:11px;fill:var(--muted)}
+[data-skin="studio"] .mjschart .mjgrid{stroke:var(--st-sep)}
+[data-skin="studio"] .mjschart .mjstart{stroke:color-mix(in srgb,var(--text) 22%,transparent);stroke-dasharray:4 4}
+[data-skin="studio"] .mjschart .mjghov{stroke:color-mix(in srgb,var(--text) 30%,transparent)}
+[data-skin="studio"] .mjnone{margin:60px 0;text-align:center}
+/* the hover card: a game's date, who won or paid what, their new totals and places */
+[data-skin="studio"] .mjschart .mjgtip{min-width:230px;gap:3px;padding:9px 12px;border:0;border-radius:10px;background:var(--st-paper);box-shadow:var(--st-pop);color:var(--text);font-size:.8125rem}
+[data-skin="studio"] .mjschart .mjgtip>b{font-size:.875rem;font-weight:600;margin-bottom:3px}
+[data-skin="studio"] .mjschart .mjgtip>b small{font-weight:400;color:var(--muted);margin-left:4px}
+[data-skin="studio"] .mjtr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:8px}
+[data-skin="studio"] .mjtr .mjdot{margin:0}
+[data-skin="studio"] .mjtr .mjtnm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-skin="studio"] .mjtr em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+[data-skin="studio"] .mjtr .mjttot{font-variant-numeric:tabular-nums;color:var(--muted)}
+[data-skin="studio"] .mjtr small{font-size:.6875rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
+[data-skin="studio"] .mjtn{margin-top:4px;padding-top:5px;border-top:1px solid var(--st-sep);color:var(--muted);font-size:.75rem}
+[data-skin="studio"] .mjs .mjup{color:var(--st-green)}
+[data-skin="studio"] .mjs .mjdown{color:var(--st-red)}
+@media (max-width:860px){ [data-skin="studio"] .mjs{grid-template-columns:minmax(0,1fr)} [data-skin="studio"] .mjs .mjscol+.mjscol{margin-top:20px} }
+[data-skin="studio"] .mjschart .mjgtip[hidden]{display:none}
+/* the sheet sits on the page, not in a card; the awards stay one row, as the beta */
+[data-skin="studio"][data-pg="mahjong"] .stage{background:none;border:0;box-shadow:none;padding:0}
+[data-skin="studio"] .mjs .mjawards{flex-wrap:nowrap}
+[data-skin="studio"] .mjs .mjaward{flex:1 1 0}
+@media (max-width:1100px){ [data-skin="studio"] .mjs .mjawards{flex-wrap:wrap} [data-skin="studio"] .mjs .mjaward{flex:1 1 180px} }
+[data-skin="studio"] .mjs .mjaward{text-align:left;justify-items:start}
