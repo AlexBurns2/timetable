@@ -15,7 +15,7 @@ const get = TTx.get, set = TTx.set;
 const LS = { skin:'tt.skin', mode:'tt.mode', custom:'tt.custom', creds:'tt.creds', email:'tt.email', cache:'tt.cache',
   textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
   view:'tt.view', outline:'tt.outline', header:'tt.header', zen:'tt.zen',
-  room:'tt.room', weekletter:'tt.weekletter', progress:'tt.progress', layout:'tt.layout', anim:'tt.anim' };
+  room:'tt.room', weekletter:'tt.weekletter', progress:'tt.progress', nownext:'tt.nownext', layout:'tt.layout', anim:'tt.anim' };
 const apply = () => TTx.apply(TTx.readState());
 const $ = id => document.getElementById(id);
 
@@ -117,6 +117,7 @@ host.innerHTML =
       '<div class="field"><label>Options</label>' +
         '<div class="custrow"><span>Week letter on day names</span><input type="checkbox" id="t_weekletter" class="sw"></div>' +
         '<div class="custrow"><span>Coloured subject outlines</span><input type="checkbox" id="t_outline" class="sw"></div>' +
+        '<div class="custrow"><span>Now and Next</span><input type="checkbox" id="t_nownext" class="sw"></div>' +
         '<div class="custrow"><span>Progress bar on Now</span><input type="checkbox" id="t_progress" class="sw"></div>' +
         '<div class="custrow"><span>Transparent background</span><input type="checkbox" id="t_zen" class="sw"></div>' +
         '<div class="custrow"><span>Timetable animations</span><input type="checkbox" id="t_anim" class="sw"></div>' +
@@ -256,7 +257,7 @@ function renderDisplay(){
   TTx.iconButtons($('d_iccol'), $('d_icsty'));
   group('headers','header','unified'); group('views','view','compact'); group('rooms','room','full');
   toggle('t_weekletter','weekletter', false); toggle('t_outline','outline', true);
-  toggle('t_progress','progress', true); toggle('t_zen','zen', false); toggle('t_anim','anim', false);
+  toggle('t_progress','progress', true); toggle('t_nownext','nownext', true); toggle('t_zen','zen', false); toggle('t_anim','anim', false);
 }
 
 

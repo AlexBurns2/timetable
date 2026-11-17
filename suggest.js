@@ -11,6 +11,8 @@
      min: 1         letters before anything is suggested
      max: 8         rows shown
      delay: 0       ms to wait after typing (for network sources)
+     waiting        text (or q => text) shown while the source works; none by default
+   A source may return [{ hint:'text' }]: shown as a line of text, not a choice.
    }) → { close(), refresh() }
    Up/Down move, Enter picks the highlighted row, Escape closes.
    ═══════════════════════════════════════════════════════════════════ */
@@ -81,8 +83,14 @@ function attach(input, opts){
 
   let items = [], active = -1, seq = 0, timer = null;
   const close = () => { list.hidden = true; active = -1; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); };
+  const hintOnly = () => items.length === 1 && items[0].hint;
   const paint = q => {
     if (!items.length){ close(); return; }
+    if (hintOnly()){        /* a line of text, not a choice: "Searching…", "No one matches" */
+      list.innerHTML = '<li class="sgempty" role="status">' + esc(items[0].hint) + '</li>';
+      list.hidden = false; input.setAttribute('aria-expanded', 'true'); input.removeAttribute('aria-activedescendant');
+      return;
+    }
     list.innerHTML = items.map((it, i) =>
       '<li class="sgitem" role="option" id="' + id + '-' + i + '" data-i="' + i + '" aria-selected="' + (i === active) + '">' +
       '<span class="sgl">' + mark(it.label, q) + '</span>' + (it.sub ? '<span class="sgs">' + esc(it.sub) + '</span>' : '') + '</li>').join('');
@@ -96,6 +104,8 @@ function attach(input, opts){
     clearTimeout(timer);
     if (q.length < opts.min){ items = []; close(); return; }
     const mine = ++seq;
+    const wait = typeof opts.waiting === 'function' ? opts.waiting(q) : opts.waiting;
+    if (wait && document.activeElement === input){ items = [{ hint:wait }]; active = -1; paint(q); }
     const run = async () => {
       let got = [];
       try { got = await opts.source(q); } catch { got = []; }
@@ -105,7 +115,7 @@ function attach(input, opts){
     if (opts.delay) timer = setTimeout(run, opts.delay); else run();
   };
   const choose = i => {
-    const it = items[i]; if (!it) return;
+    const it = items[i]; if (!it || it.hint) return;
     input.value = it.value; close();
     if (opts.onPick) opts.onPick(it);
   };
@@ -113,6 +123,7 @@ function attach(input, opts){
   input.addEventListener('focus', () => { if (input.value.trim().length >= opts.min) refresh(); });
   input.addEventListener('keydown', e => {
     if (list.hidden) return;
+    if (hintOnly()){ if (e.key === 'Escape'){ e.preventDefault(); close(); } return; }
     if (e.key === 'ArrowDown'){ e.preventDefault(); active = (active + 1) % items.length; paint(input.value.trim()); }
     else if (e.key === 'ArrowUp'){ e.preventDefault(); active = (active - 1 + items.length) % items.length; paint(input.value.trim()); }
     else if (e.key === 'Enter' && active >= 0){ e.preventDefault(); e.stopImmediatePropagation(); choose(active); }

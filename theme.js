@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261117a';
+const ASSET_V = '20261117j';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -42,6 +42,7 @@ const ASSET_V = '20261117a';
          picker, but under Settings → Originals */
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
+  { id:'studio',    name:'Studio - Beta',    both:true, ic:'accent', is:'icons', css:'studio' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
@@ -82,6 +83,8 @@ const THUMBS = (() => {
       tiles('', i => 'rx="5" fill="#fff" fill-opacity=".8" stroke="' + ['#ff9f0a', '#0a84ff', '#30d158'][i] + '" stroke-width="1.6"')],
     glass: ['#0d1220', '<defs><filter id="b"><feGaussianBlur stdDeviation="9"/></filter></defs><g filter="url(#b)"><circle cx="22" cy="6" r="20" fill="#7a5aff"/><circle cx="96" cy="14" r="20" fill="#00becc"/><circle cx="60" cy="48" r="18" fill="#ff50a0"/></g>' +
       bar('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"') + tiles('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"')],
+    studio: ['#f7f2ec', bar('rx="2.5" fill="none"') + '<rect x="8" y="7" width="40" height="5" rx="1.5" fill="#1d1d1f"/><rect x="8" y="14" width="22" height="2.4" rx="1.2" fill="#a29d97"/>' +
+      tiles('rx="2.5" fill="#fffefc" stroke="#e2ddd6" stroke-width=".7"') + [14, 50, 86].map(x => '<rect x="' + x + '" y="28" width="6" height="6" rx="1.5" fill="#6b4fd0"/>').join('')],
     paper: ['#f7f3e8', '<g stroke="#9fb4d8" stroke-opacity=".5">' + [9, 18, 27, 36, 45].map(y => '<path d="M0 ' + y + 'H120"/>').join('') + '</g><path d="M22 0V46" stroke="#d66" stroke-opacity=".6"/>' +
       '<rect x="30" y="5" width="82" height="12" fill="#fffdf6" stroke="#ded4bd"/><rect x="36" y="2.5" width="16" height="5" fill="#c2571f" fill-opacity=".35" transform="rotate(-4 44 5)"/>' +
       '<rect x="30" y="23" width="24" height="17" fill="#fff3a0" transform="rotate(-3 42 31)"/><rect x="59" y="23" width="24" height="17" fill="#ffd6e2" transform="rotate(2 71 31)"/><rect x="88" y="23" width="24" height="17" fill="#d3eaff" transform="rotate(-2 100 31)"/>'],
@@ -133,7 +136,7 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
-SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf';
+SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6';
 
 /* kept for older callers; the picker shows every theme now */
 const QUICK_SKINS = SKINS.filter(s => !s.legacy).map(s => s.id);
@@ -320,6 +323,7 @@ const FAV = {
                x.fillStyle = g; x.fillRect(0, 0, N, N); x.strokeStyle = '#c8ff2e'; x.lineWidth = 5; x.beginPath(); x.arc(N/2, N/2, N/2 - 2.5, 0, 7); x.stroke(); } },
   vapor:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#7a4dff'); g.addColorStop(.55, '#ff5fbf'); g.addColorStop(1, '#ffb36b');
                x.fillStyle = g; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(40,10,80,.55)'; [45, 52, 58].forEach((y, i) => x.fillRect(0, y, N, 2 + i)); } },
+  studio:    { ink:'#fff', bg(x, N){ x.fillStyle = '#6b4fd0'; x.fillRect(0, 0, N, N); } },
   editorial: { shape:'square', ink:'#1a1814', bg(x, N){ x.fillStyle = '#f4f0e8'; x.fillRect(0, 0, N, N); x.fillStyle = '#1a1814'; x.fillRect(0, 0, N, 5); x.fillStyle = '#b5432a'; x.fillRect(0, N - 4, N, 4); } },
   swiss:     { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#e8112d'; x.fillRect(0, 0, N, N); x.fillStyle = '#000'; x.fillRect(0, 0, N, 7); } },
   deco:      { shape:'square', ink:'#d4af37', bg(x, N){ x.fillStyle = '#0d0f12'; x.fillRect(0, 0, N, N); x.strokeStyle = '#d4af37'; x.lineWidth = 2; x.strokeRect(3, 3, N - 6, N - 6); x.lineWidth = 1; x.strokeRect(7.5, 7.5, N - 15, N - 15); } },
@@ -550,6 +554,7 @@ function paint(state){
     root.style.setProperty('--cloud-d', '-' + ((Date.now() - cloudT0) / 1000).toFixed(2) + 's'); }     // where the drift has got to
   root.setAttribute('data-clouds', clouds);
   root.setAttribute('data-mode', st.mode);
+  root.setAttribute('data-nownext', get('tt.nownext', true) === false ? 'off' : 'on');   // Display → Now and Next
   /* Keep native controls (the datalist autocomplete popup, text inputs,
      scrollbars) in step with the effective palette. Without this a dark page
      keeps a light native popup, and its option text — which inherits the
@@ -1114,6 +1119,27 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
    the games and revision pages, while a game or subject is open (games.js shows
    and hides it). It goes back if you came from another page of this site,
    otherwise to Home; a page can handle it first (window.TTBack returning true). */
+/* Studio: Home is the timetable with the site's pages under it, so the Home
+   buttons and the "MSC Unofficial" links go there instead of home.html */
+const studioHome = () => document.documentElement.getAttribute('data-skin') === 'studio';
+function homeLinks(){
+  try {
+    document.querySelectorAll('a.btn.icon[href="home.html"], a.sitename[href="home.html"], a[data-home]').forEach(a => {
+      if (!a.dataset.home) a.dataset.home = a.getAttribute('href');
+      a.setAttribute('href', studioHome() && document.documentElement.getAttribute('data-pg') !== 'timetable' ? './' : a.dataset.home);
+    });
+  } catch {}
+}
+/* …and Home itself isn't a page in Studio: home.html goes to the timetable,
+   on load or the moment Studio is picked there (a moderator's poll preview,
+   ?pollpreview=, still opens) */
+function studioAway(){
+  if (studioHome() && document.documentElement.getAttribute('data-pg') === 'home' && !/[?&]pollpreview=/.test(location.search))
+    location.replace('./' + location.hash);
+}
+studioAway();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeLinks); else homeLinks();
+addEventListener('tt:look', () => { studioAway(); homeLinks(); });
 (function(){
   function addBack(){
     const crumbs = document.querySelector('.pagehead .crumbs');
@@ -1126,7 +1152,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
       if (typeof window.TTBack === 'function' && window.TTBack()) return;
       let fromHere = false;
       try { fromHere = !!document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1; } catch {}
-      if (fromHere) history.back(); else location.href = 'home.html';
+      if (fromHere) history.back(); else location.href = studioHome() ? './' : 'home.html';
     };
     b.hidden = !(window.TTBackOn && window.TTBackOn());
     crumbs.insertBefore(b, crumbs.firstChild);
