@@ -453,6 +453,7 @@ html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="
 [data-skin="studio"] #grid.stg :is(.blk.open,.blk.closing) .blk-meta .det-row:first-child{padding-top:0}
 [data-skin="studio"] #grid.stg .stcol.end .blk .r{left:auto;right:12px;translate:none}
 [data-skin="studio"] #grid.stg .stcol.end .blk-card{left:auto;right:0}
+[data-skin="studio"] #grid.stg .blk.up .blk-card{top:auto;bottom:0}
 [data-skin="studio"] #grid.stg .open.landed .blk-card>.r{visibility:hidden}
 [data-skin="studio"] #grid.stg .blk:not(.landed) .det-row.room .rk{opacity:0}
 [data-skin="studio"] #grid.stg .det-row.room .rk{font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--text))}
