@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261116b">
+<link rel="stylesheet" href="theme.css?v=20261117a">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261116b"></script>
-<script src="icons.js?v=20261116b"></script>
+<script src="theme.js?v=20261117a"></script>
+<script src="icons.js?v=20261117a"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -454,9 +454,11 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 <div class="wrap">
   <header class="topbar">
+    <div class="stterm" id="stterm" hidden></div>
     <div class="brand">
       <h1 id="title">Timetable</h1>
       <div class="idrow" title="Type a username to see anyone's timetable">
+        <svg class="idglass" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="m10.4 10.4 3.4 3.4"/></svg>
         <button type="button" class="whoback" id="whoback" title="Back to your timetable"
                 aria-label="Back to your timetable" hidden><span data-icon="arrow-left"></span></button>
         <input type="text" id="whoami" spellcheck="false" autocapitalize="none"
@@ -689,6 +691,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
         <input type="checkbox" id="t_weekletter" class="sw"></div>
       <div class="custrow"><span>Coloured subject outlines</span>
         <input type="checkbox" id="t_outline" class="sw"></div>
+      <div class="custrow"><span>Now and Next</span>
+        <input type="checkbox" id="t_nownext" class="sw"></div>
       <div class="custrow"><span>Progress bar on Now</span>
         <input type="checkbox" id="t_progress" class="sw"></div>
       <div class="custrow"><span>Transparent background</span>
@@ -739,7 +743,7 @@ const inkFor = TT.inkFor;
 const LS = { email:'tt.email', custom:'tt.custom', room:'tt.room', view:'tt.view', zen:'tt.zen',
              creds:'tt.creds',
              textScale:'tt.textscale', zoom:'tt.zoom', contrast:'tt.contrast', motion:'tt.motion',
-             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', anim:'tt.anim', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
+             cycleshift:'tt.cycleshift', weekletter:'tt.weekletter', outline:'tt.outline', progress:'tt.progress', nownext:'tt.nownext', anim:'tt.anim', header:'tt.header', skin:'tt.skin', mode:'tt.mode', colours:'tt.colours', cache:'tt.cache' };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
   /* mirror settings to the signed-in user (theme.js debounces + skips creds/cache) */
@@ -765,6 +769,7 @@ let roomMode   = get(LS.room, 'full');
 let showWeekLetter = get(LS.weekletter, false);
 let showOutline    = get(LS.outline, true);
 let showProgress   = get(LS.progress, true);
+let showNowNext   = get(LS.nownext, true);
 let animMode       = get(LS.anim, false);      /* animated mode: off unless switched on */
 let viewMode       = get(LS.view, 'compact');
 let headerMode     = get(LS.header, 'unified');
@@ -953,7 +958,7 @@ function setCycleWeek(letter){
   const base = cycleDayFor(cycleRefDay(), cycleStart);
   cycleShift = base ? (base.slice(-1) === letter ? 0 : 5) : keep;
   set(LS.cycleshift, cycleShift);
-  viewWeek = null;
+  viewWeek = null; weekOff = 0;
   render();
 }
 /* Only a bare number ("4", "P4", "Period 4") is a period number. Labels like
@@ -989,6 +994,7 @@ const slotLabel = slot => {
 
 /* ═══ state ═══ */
 let viewWeek = null;           /* 'a' | 'b' -- which cycle week is on screen */
+let weekOff = 0;               /* weeks from this one, for the dates Studio shows (the arrows step it with the letter) */
 let entries = [], slots = [];
 let cycleStart = null, displayName = '';
 let mobileDay = Math.min(4, (new Date().getDay()+6)%7);
@@ -1271,6 +1277,317 @@ const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"]/
 const entryAt = (cycleDay, slotKey) =>
   entries.find(e => e.dayKey === cycleDay && mergeKey(e.pnum || e.period) === mergeKey(slotKey));
 
+/* ═══ Studio's timetable: the beta's layout (/beta/, andre/index.html) on
+   the main page's data ═══════════════════════════════════════════════════
+   Its own block inside this script, reading the same data (entries, slots,
+   entryAt, bellFor, colourFor, roomLabel, loadClass, rosterPeople,
+   viewUser…). Only runs while the Studio theme is on (studioOn); render()
+   asks studioRender() first, and every other theme draws as before.
+
+   What it draws, as the beta does:
+   - a header line "Term 4 · Week 6B · 16 – 20 Nov" (#stterm)
+   - day headings "Mon 16 Nov" between two round arrows (no week animation)
+   - no time column: each lesson carries its own time; breaks and free
+     periods next to each other merge into one grey bar ("Recess · Free")
+   - a lesson opens in place: it springs half a day wider and shows Room,
+     Class code, time left, the teacher's email and the class list (names
+     tinted in the lesson's colour); the room number flies into the full
+     room code. Same timings and curves as the beta. */
+(() => {
+"use strict";
+
+const studioOn = () => document.documentElement.getAttribute('data-skin') === 'studio';
+window.studioOn = studioOn;
+
+/* NSW public school terms (Eastern division), the beta's table: first and last
+   day for students, and the Monday the school calls Week 1 when it differs. */
+const TERMS = [
+  ['2026-02-02','2026-04-02'], ['2026-04-22','2026-07-03'], ['2026-07-21','2026-09-25'], ['2026-10-13','2026-12-17'],
+  ['2027-02-03','2027-04-09','2027-01-25'], ['2027-04-29','2027-07-02'], ['2027-07-20','2027-09-24'], ['2027-10-11','2027-12-17']
+];
+const termDays = TERMS.map(([a, b, w1]) => [toDate(a), toDate(b), w1 ? toDate(w1) : null]);
+const yearListed = d => TERMS.some(r => +r[0].slice(0, 4) === d.getFullYear());
+function termWeek(monday){
+  for (let i = 0; i < termDays.length; i++){
+    const s = startOfWeek(termDays[i][2] || termDays[i][0]);
+    if (monday >= s && monday <= termDays[i][1]) return { term: i % 4 + 1, week: Math.round((monday - s) / (7 * 864e5)) + 1 };
+  }
+  return yearListed(monday) ? false : null;
+}
+const DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const f = m => { const h = Math.floor(m / 60); return (((h + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0'); };
+const noMotion = () => document.documentElement.getAttribute('data-motion') === 'reduced' ||
+                       matchMedia('(prefers-reduced-motion: reduce)').matches;
+const arrow = d => '<button class="starrow" type="button" data-d="' + d + '" aria-label="' + (d < 0 ? 'Previous' : 'Next') + ' week">' +
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' +
+  (d < 0 ? 'M10 3 5 8l5 5' : 'M6 3l5 5-5 5') + '"/></svg></button>';
+
+/* the header line */
+function paintTerm(dates, week){
+  const el = document.getElementById('stterm');
+  if (!el) return;
+  el.hidden = !studioOn();
+  if (el.hidden) return;
+  const d0 = dates[0], d4 = dates[dates.length - 1], tw = termWeek(startOfWeek(d0)), L = String(week || '').toUpperCase();
+  const range = '<span class="strange"> · ' + d0.getDate() + (d0.getMonth() !== d4.getMonth() ? ' ' + MON[d0.getMonth()] : '') +
+                ' – ' + d4.getDate() + ' ' + MON[d4.getMonth()] + '</span>';
+  el.innerHTML = tw ? '<span class="sttl">Term ' + tw.term + ' · </span><b>Week ' + tw.week + L + '</b>' + range
+               : tw === false ? '<b>Holidays</b>' + range
+               : '<b>Week ' + L + '</b>' + range;
+}
+
+/* every block a day will draw, in time order: breaks and free periods that
+   touch merge into one bar, a double lesson into one block */
+function items(cyc){
+  if (!cyc) return [];
+  let L = [];
+  for (const slot of slots){
+    const e = entryAt(cyc, slot.key), b = bellFor(cyc, slot.key);
+    const s = (e && e.start != null) ? e.start : (b ? b.start : null);
+    const en = (e && e.end != null) ? e.end : (b ? b.end : null);
+    if (s == null || en == null || en <= s) continue;
+    const kind = e ? e.kind : slot.kind;
+    if (kind === 'class' && e) L.push({ s, e:en, lesson:e });
+    else if (kind === 'assembly') L.push({ s, e:en, asm:(e && e.subject) || 'Assembly' });
+    else L.push({ s, e:en, ls:[kind === 'class' ? 'Free' : slotLabel(slot)] });
+  }
+  L.sort((x, y) => x.s - y.s);
+  const first = L.findIndex(x => x.lesson), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson);
+  if (first === -1) return [];
+  L = L.slice(first, last + 1);
+  const out = [];
+  for (const x of L){
+    const p = out[out.length - 1];
+    if (p && x.ls && p.ls){ p.e = x.e; if (p.ls[p.ls.length - 1] !== x.ls[0]) p.ls.push(x.ls[0]); }
+    else if (p && x.lesson && p.lesson && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5) p.e = x.e;
+    else out.push(x);
+  }
+  for (let i = 0; i < out.length - 1; i++){
+    const gap = out[i + 1].s - out[i].e;
+    if (gap > 0 && gap <= 10) out[i].drawEnd = out[i + 1].s;
+  }
+  return out;
+}
+
+/* ═══ an opened lesson ═══ */
+let openKey = null, rosterKey = null;
+const rosters = {};
+const leftText = m => m < 1 ? 'Under a minute' : m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + m % 60 + ' min' : '');
+function roomParts(e){
+  const full = String(e.rawRoom || e.room || ''), key = roomLabel(e);
+  const at = roomMode === 'number' ? full.lastIndexOf(key) : full.indexOf(key);
+  if (!key || at < 0) return esc(full);
+  return '<span class="rp">' + esc(full.slice(0, at)) + '</span><span class="rk">' + esc(key) + '</span><span class="rp">' + esc(full.slice(at + key.length)) + '</span>';
+}
+const measure = document.createElement('canvas').getContext('2d');
+function emWidth(text){
+  measure.font = '13px ' + getComputedStyle(document.body).fontFamily;
+  return (measure.measureText(text).width / 13 * 1.02).toFixed(3);
+}
+function detailHtml(e, id, left){
+  const rows = list => list.filter(r => r[1]).map(([lbl, val, cls, style]) =>
+    '<div class="det-row ' + (cls || '') + '"' + (style ? ' style="' + style + '"' : '') + '><div class="lbl">' + lbl + '</div><div class="val">' + val + '</div></div>').join('');
+  const mail = /@/.test(e.rawTeacher || '') ? e.rawTeacher.trim() : '';
+  const meta = rows([['Time left', left != null && leftText(left), 'left'], ['Room', (e.rawRoom || e.room) && roomParts(e), 'room'], ['Class code', esc(e.code)]]);
+  const more = rows([
+    ['Teacher email', mail && '<a href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>', 'wide mail', mail && '--ew:' + emWidth(mail)],
+    ['Full name', e.rawSubject && e.rawSubject !== e.subject ? esc(e.rawSubject) : '', 'wide']
+  ]);
+  return (meta ? '<div class="blk-detail blk-meta"><div class="det">' + meta + '</div></div>' : '') +
+    '<div class="blk-detail blk-more">' + (more ? '<div class="det">' + more + '</div>' : '') +
+    (e.code ? '<div class="roster">' + rosterHtml(e.code, id, rosterKey === id) + '</div>' : '') + '</div>';
+}
+function rosterHtml(code, id, open){
+  const r = rosters[code] || {};
+  const label = r.loading ? 'Loading class list…'
+              : r.people ? 'View class list · ' + r.people.length + ' student' + (r.people.length === 1 ? '' : 's') : 'View class list';
+  const inner = r.error ? '<div class="cls-note err">' + esc(r.error) + '</div>'
+              : !r.people ? ''
+              : !r.people.length ? '<div class="cls-note">No students are listed for this class.</div>'
+              : r.people.map(p => p.user
+                  ? '<button type="button" data-user="' + esc(p.user) + '" title="' + esc(p.name) + '">' + esc(p.name) + '</button>'
+                  : '<button type="button" disabled title="' + esc(p.name) + '">' + esc(p.name) + '</button>').join('');
+  const show = open && (r.people || r.error);
+  return '<button type="button" class="cls-btn ' + (show ? 'open' : '') + '"><span>' + label + '</span><svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4.5 4.5L11 4"/></svg></button>' +
+         '<div class="cls-list ' + (show ? 'open' : '') + '"><div class="cls-list-inner">' + inner + '</div></div>';
+}
+const itemEl = id => document.querySelector('#grid [data-k="' + CSS.escape(id) + '"]');
+function paintRoster(id, code){
+  const host = itemEl(id) && itemEl(id).querySelector('.roster');
+  if (host) host.innerHTML = rosterHtml(code, id, false);
+}
+function openList(item){
+  const btn = item.querySelector('.cls-btn'), list = item.querySelector('.cls-list');
+  if (!list || list.classList.contains('open')) return;
+  btn.classList.add('open'); list.classList.add('open');
+  if (noMotion()) return;
+  list.getAnimations().forEach(x => x.cancel());
+  list.animate([{ height:'0px' }, { height:list.scrollHeight + 'px' }], { duration:420, easing:'cubic-bezier(.25,.8,.3,1)' });
+  list.firstElementChild.animate([{ opacity:0, transform:'translateY(-6px)' }, { opacity:1, transform:'none' }],
+                                 { duration:340, delay:90, easing:'ease-out', fill:'backwards' });
+}
+function closeList(item){
+  const btn = item.querySelector('.cls-btn'), list = item.querySelector('.cls-list');
+  if (!list || !list.classList.contains('open')) return;
+  const h = list.getBoundingClientRect().height;
+  btn.classList.remove('open'); list.classList.remove('open');
+  if (noMotion()) return;
+  list.getAnimations().forEach(x => x.cancel());
+  list.animate([{ height:h + 'px', maxHeight:'none' }, { height:'0px', maxHeight:'none' }], { duration:300, easing:'cubic-bezier(.4,0,.2,1)' });
+}
+async function toggleRoster(item){
+  const id = item.dataset.k, code = item.dataset.code;
+  if (rosterKey === id){ rosterKey = null; closeList(item); return; }
+  rosterKey = id;
+  if (!rosters[code] || rosters[code].error){
+    rosters[code] = { loading:true };
+    paintRoster(id, code);
+    try {
+      const dom = '@' + CONFIG.EMAIL_DOMAIN;
+      const people = rosterPeople(await loadClass(code)).sort((a, b) => a.name.localeCompare(b.name));
+      rosters[code] = { people: people.map(p => ({ name:p.name, user: p.mail && p.mail.toLowerCase().endsWith(dom) ? p.mail.split('@')[0] : '' })) };
+    } catch (err) { rosters[code] = { error: err.message || 'The class list couldn’t be loaded.' }; }
+    paintRoster(id, code);
+  }
+  const el = itemEl(id);
+  if (el && rosterKey === id) openList(el);
+}
+/* opening, the room number flies from its corner into its place in the full
+   room code; closing, it flies back */
+function flyRoom(item, opening){
+  const badge = item.querySelector(':scope .blk-card > .r'), rk = item.querySelector('.det-row.room .rk');
+  const a = badge && badge.getBoundingClientRect(), b = rk && rk.getBoundingClientRect();
+  item.classList.remove('landed');
+  if (!a || !b || !a.width || noMotion()){ if (opening) item.classList.add('landed'); return; }
+  badge.getAnimations().forEach(x => x.cancel());
+  const shift = opening && item.matches('.stcol.end .blk') ? Math.max(item.offsetWidth / 2, 112) : 0;
+  const there = { transform:'translate(' + (b.left - a.left - shift) + 'px,' + (b.top - a.top) + 'px)' }, home = { transform:'none' };
+  const flight = badge.animate(opening ? [home, there] : [there, home], { duration:opening ? 520 : 440, easing:'cubic-bezier(.25,.8,.3,1)' });
+  if (opening) flight.onfinish = () => { if (item.classList.contains('open')) item.classList.add('landed'); };
+}
+/* run a layout change, then slide each line of text from where it was (FLIP) */
+function glide(item, change){
+  if (noMotion()){ change(); return; }
+  const els = [...item.querySelectorAll(':scope .blk-card > .s, :scope .blk-card > .m, :scope .blk-card > .t')];
+  const before = els.map(el => el.getBoundingClientRect());
+  change();
+  els.forEach((el, i) => {
+    const a = before[i], b = el.getBoundingClientRect();
+    const dx = a.left - b.left, dy = a.top - b.top;
+    if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
+    el.animate([{ transform:'translate(' + dx + 'px,' + dy + 'px)' }, { transform:'none' }], { duration:480, easing:'cubic-bezier(.3,1.25,.55,1)' });
+  });
+}
+function closeAll(){
+  document.querySelectorAll('#grid .blk.open').forEach(b => {
+    const ds = [...b.querySelectorAll('.blk-detail')];
+    ds.forEach(d => d.style.maxHeight = d.scrollHeight + 'px');
+    b.offsetHeight;
+    b.classList.remove('open', 'settled');
+    b.classList.add('closing');
+    flyRoom(b, false);
+    requestAnimationFrame(() => ds.forEach(d => d.style.maxHeight = ''));
+    clearTimeout(b.closingTimer);
+    b.closingTimer = setTimeout(() => glide(b, () => b.classList.remove('closing')), 600);
+    b.querySelectorAll('.cls-btn.open,.cls-list.open').forEach(x => x.classList.remove('open'));
+  });
+  openKey = null; rosterKey = null;
+}
+function onClick(ev){
+  if (!studioOn()) return;
+  const arr = ev.target.closest('.starrow');
+  if (arr){ closeAll(); toggleWeek(+arr.dataset.d); return; }
+  const who = ev.target.closest('[data-user]');
+  if (who){
+    ev.stopPropagation(); closeAll();
+    $('whoami').value = who.dataset.user; sizeWhoami(); viewUser(); scrollTo({ top:0, behavior:'smooth' });
+    return;
+  }
+  const item = ev.target.closest('.blk[data-k]');
+  if (!item) return;
+  ev.stopPropagation();
+  if (ev.target.closest('.cls-btn')){ toggleRoster(item); return; }
+  if (ev.target.closest('a')) return;
+  if (item.classList.contains('open')){ if (!ev.target.closest('.blk-detail')) closeAll(); return; }
+  closeAll();
+  item.classList.remove('closing');
+  glide(item, () => item.classList.add('open'));
+  flyRoom(item, true);
+  openKey = item.dataset.k;
+}
+document.getElementById('grid').addEventListener('click', onClick);
+document.addEventListener('click', e => { if (openKey && !e.target.closest('#grid .blk.open')) closeAll(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && openKey && !document.querySelector('dialog[open]')) closeAll(); });
+
+/* ═══ the grid ═══ */
+function html(ctx, cols, dates, y, H){
+  const now = ctx.now, nowMin = ctx.nowMin;
+  let h = arrow(-1) + cols.map((c, k) => {
+    const d = dates[k], today = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
+    return '<div class="dh' + (today ? ' today' : '') + '"><span class="d">' + DN[d.getDay()] + '</span><span class="n">' + d.getDate() + ' ' + MON[d.getMonth()] + '</span>' +
+      (showWeekLetter ? '<span class="wl">' + ctx.week.toUpperCase() + '</span>' : '') + '</div>';
+  }).join('') + arrow(1) + '<div></div>';
+  cols.forEach((c, k) => {
+    const today = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
+    h += '<div class="stcol' + (k === cols.length - 1 && cols.length > 1 ? ' end' : '') + '" style="height:' + H + 'px">';
+    for (const x of c.items){
+      const top = y(x.s) + 4, ht = y(x.drawEnd || x.e) - y(x.s) - 8;
+      const past = today ? x.e <= nowMin : !ctx.showingCurrentWeek ? false : DAY_KEYS.indexOf(ctx.todayKey) > c.i;
+      const cur = today && x.s <= nowMin && nowMin < x.e;
+      const tm = '<span class="t">' + f(x.s) + ' – ' + f(x.e) + '</span>';
+      if (!x.lesson && !x.asm){
+        h += '<div class="gap' + (past ? ' past' : '') + (ht < 44 ? ' sm' : '') + '" style="top:' + top + 'px;height:' + ht + 'px">' +
+             x.ls.map(esc).join('<i></i>') + tm + '</div>';
+        continue;
+      }
+      if (x.asm){
+        h += '<div class="gap asm' + (past ? ' past' : '') + (ht < 44 ? ' sm' : '') + '" style="top:' + top + 'px;height:' + ht + 'px"><b>' + esc(x.asm) + '</b>' + tm + '</div>';
+        continue;
+      }
+      const e = x.lesson, room = roomLabel(e), id = d2k(dates[k]) + '|' + x.s;
+      const p = cur ? Math.round((nowMin - x.s) / (x.e - x.s) * 100) : 0;
+      h += '<div class="blk' + (past ? ' past' : '') + (cur ? ' now' : '') + (ht < 50 ? ' sm' : '') + (openKey === id ? ' open settled landed' : '') + '"' +
+           ' data-k="' + id + '" data-code="' + esc(e.code) + '" style="--c:' + esc(colourFor(e.subject)) + ';top:' + top + 'px;height:' + ht + 'px;--rw:' + room.length + 'ch;--p:' + p + '%">' +
+           '<div class="blk-card"><span class="r">' + esc(room) + '</span><span class="s">' + esc(e.subject) + '</span><span class="m">' + esc(e.teacher) + '</span>' + tm +
+           detailHtml(e, id, cur ? x.e - nowMin : null) + '</div></div>';
+    }
+    h += '</div>';
+  });
+  return h + '<div></div>';
+}
+const d2k = d => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+
+function render(ctx){
+  const grid = ctx.grid;
+  grid.classList.add('stg');
+  const dates = ctx.idx.map(i => ctx.days[i]);
+  paintTerm(ctx.days, ctx.week);
+  const cols = ctx.idx.map(i => ({ i, items: items(ctx.cycles[i]) }));
+  grid.style.setProperty('--nd', cols.length);
+  const all = cols.flatMap(c => c.items);
+  if (!all.length){ grid.innerHTML = ''; return; }
+  const T0 = Math.min(...all.map(x => x.s)), T1 = Math.max(...all.map(x => x.e));
+  const top = grid.getBoundingClientRect().top + scrollY;
+  let PX = Math.max(560, innerHeight - Math.min(top, 220) - 70) / (T1 - T0);
+  for (let pass = 0; pass < 4; pass++){
+    const y = t => (t - T0) * PX;
+    grid.innerHTML = html(ctx, cols, dates, y, y(T1));
+    let worst = 1;
+    grid.querySelectorAll('.blk:not(.open):not(.closing) .blk-card').forEach(c => {
+      if (c.scrollHeight > c.clientHeight + 1) worst = Math.max(worst, (c.scrollHeight + 8) / (c.clientHeight + 8));
+    });
+    if (worst <= 1) return;
+    PX *= worst;
+  }
+}
+/* the page's render() asks first: true = drawn here */
+window.studioRender = ctx => {
+  if (!studioOn()){ ctx.grid.classList.remove('stg'); paintTerm(ctx.days, ctx.week); return false; }
+  render(ctx);
+  return true;
+};
+})();
+
 function render(){
   const now = new Date();
   const nowMin = now.getHours()*60 + now.getMinutes();
@@ -1283,10 +1600,10 @@ function render(){
      the first render runs before the fetch resolves. */
   if (viewWeek === null && realWeek) viewWeek = realWeek;
   const week = viewWeek || realWeek || 'a';
-  const showingCurrentWeek = !!realWeek && week === realWeek;
+  const showingCurrentWeek = !!realWeek && week === realWeek && weekOff % 2 === 0 && (weekOff === 0 || !window.studioOn || !studioOn());
   const todayKey = realCycle ? realCycle.slice(0, 3) : null;
 
-  const days = [0,1,2,3,4].map(i => addDays(startOfWeek(now), i));
+  const days = [0,1,2,3,4].map(i => addDays(startOfWeek(now), i + weekOff * 7));
   const cycles = DAY_KEYS.map(k => k + week);
 
   $('title').textContent = displayName || 'Timetable';
@@ -1341,6 +1658,7 @@ function render(){
   /* Friday, classes done: the useful message is that the week is over. */
   const doneForWeek = todayKey === 'fri' && !current && !todays.some(e => e.start > nowMin);
   const nowEl = $('now');
+  nowEl.hidden = !showNowNext;
   nowEl.innerHTML = '';
   nowEl.appendChild(nowCard('Now',  current,  nowMin, ''));
   nowEl.appendChild(doneForWeek
@@ -1357,6 +1675,7 @@ function render(){
 
   grid.style.setProperty('--cell-gap', CELL_GAP + 'px');
   const ctx = { idx, grid, days, cycles, week, showingCurrentWeek, todayKey, now, nowMin };
+  if (window.studioRender && studioRender(ctx)) return;
   if (viewMode === 'full') renderFull(ctx); else renderCompact(ctx);
 }
 
@@ -1988,6 +2307,7 @@ function renderToggles(){
   $('t_weekletter').checked = showWeekLetter;
   $('t_outline').checked    = showOutline;
   $('t_progress').checked   = showProgress;
+  $('t_nownext').checked    = showNowNext;
   $('t_zen').checked        = zenMode;
   $('t_anim').checked       = animMode;
 }
@@ -1998,13 +2318,14 @@ $('t_zen').addEventListener('change', ev => {
   document.documentElement.classList.toggle('zen', zenMode);
   render();
 });
-[['t_weekletter','weekletter'],['t_outline','outline'],['t_progress','progress']]
+[['t_weekletter','weekletter'],['t_outline','outline'],['t_progress','progress'],['t_nownext','nownext']]
   .forEach(([id, key]) => {
     $(id).addEventListener('change', ev => {
       const v = ev.target.checked;
       if (key === 'weekletter') showWeekLetter = v;
       if (key === 'outline')    showOutline    = v;
       if (key === 'progress')   showProgress   = v;
+      if (key === 'nownext'){ showNowNext = v; document.documentElement.setAttribute('data-nownext', v ? 'on' : 'off'); }
       set(LS[key], v);
       document.documentElement.classList.toggle('nooutline', !showOutline);
       render();
@@ -2136,7 +2457,9 @@ $('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colo
 /* ═══ controls ═══ */
 function toggleWeek(dir){
   const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
-  turnWeek(() => { viewWeek = shown === 'a' ? 'b' : 'a'; render(); }, dir === -1 ? -1 : 1);
+  const go = () => { viewWeek = shown === 'a' ? 'b' : 'a'; weekOff += dir === -1 ? -1 : 1; render(); };
+  if (window.studioOn && studioOn()){ go(); return; }      /* Studio changes week without animation, as asked */
+  turnWeek(go, dir === -1 ? -1 : 1);
 }
 $('weekprev').onclick = () => toggleWeek(-1);
 $('weeknext').onclick = () => toggleWeek(1);

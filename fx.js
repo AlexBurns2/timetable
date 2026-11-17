@@ -214,7 +214,8 @@ const rnd = seed => { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s 
 const TR = {};
 const fade = (o, i) => ({ outMs:o, inMs:i, out(n, done){ root.classList.add('fx-out'); after(o, done); }, in(n, done){ after(i, done); } });
 TR.glass = fade(120, 260);                       // the page's contents fade; the clouds behind stay exactly where they were (theme.js keeps them)
-TR.editorial = fade(90, 180);                    // quiet: no movement, barely there
+TR.editorial = fade(90, 180);
+TR.studio = fade(80, 160);                       // a short cross-fade, nothing else                    // quiet: no movement, barely there
 TR.terminal = fade(60, 360);                     // the screen clears, then the page is printed from the top (terminal.css)
 TR.brutal = fade(120, 470);                      // the blocks are pressed flat; the next page's are stamped down in turn (brutal.css)
 TR.blueprint = fade(120, 440);                   // the sheet is plotted again, left to right (blueprint.css)
