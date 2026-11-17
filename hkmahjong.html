@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261117k">
-<script src="theme.js?v=20261117k"></script>
+<link rel="stylesheet" href="theme.css?v=20261118b">
+<script src="theme.js?v=20261118b"></script>
 <script>
 /* In a Games module on the beta page (/beta/, in its frame #gmframe): that page's colours and type, on the module's own colour */
 const BETA = !!window.frameElement && (window.frameElement.id === 'gmframe' || new URLSearchParams(location.search).has('beta'));
@@ -1948,6 +1948,28 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fmt = x => (Math.round(x * 100) / 100).toString();
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
 const LEVELS = ['easy', 'medium', 'hard', 'pro', 'master'];
+/* What another computer sends is never trusted. A room's host (or someone posing as one)
+   could put markup in any field of the game it sends out, and the table is drawn from
+   those fields. So everything a client receives goes through here first: in every piece
+   of text, the characters that could start a tag or end an attribute are swapped for
+   look-alikes, and anything too deep or too long is cut. Text made only of the tile
+   alphabet (see enc: the characters 0 to Y) is left exactly as it is, because hands are
+   sent that way; with no space, quote or slash in it, such text can't carry anything
+   that runs. Numbers, true/false and the shape of the data are untouched. */
+const TAME = { '<': '‹', '>': '›', '"': '”', "'": '’', '`': '’' };
+function tame(x, depth = 0) {
+  if (typeof x === 'string') return /^[0-Y]*$/.test(x) ? x.slice(0, 4000) : x.slice(0, 4000).replace(/[<>"'`]/g, c => TAME[c]);
+  if (x === null || typeof x === 'number' || typeof x === 'boolean') return x;
+  if (typeof x !== 'object' || depth > 12) return null;
+  if (Array.isArray(x)) return x.slice(0, 4000).map(v => tame(v, depth + 1));
+  const o = {};
+  for (const k of Object.keys(x).slice(0, 4000)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+    /* hx is the hand's move list for the replay: letters mixed with tile characters, only ever read one character at a time (showReplay) */
+    o[tame(String(k))] = k === 'hx' && typeof x[k] === 'string' ? x[k].slice(0, 6000) : tame(x[k], depth + 1);
+  }
+  return o;
+}
 const BOT_NAMES = ['Andy Lau', 'Stephen Chow', 'Donnie Yen', 'Bot Delta', 'Bot Echo', 'Bot Foxtrot', 'Bot Hotel'];
 const SPEED = { instant: 0, fast: 320, normal: 750, slow: 1300 };
 const SPEED_NAMES = { instant: 'Instant', fast: 'Fast', normal: 'Normal', slow: 'Slow' };
@@ -3135,7 +3157,7 @@ async function joinRoom(code, watch) {
       if (!Net.gotLobby) { Net.gotLobby = true; closeModal(); }
       if (d.hk && !Net.hostKeyP) Net.hostKeyP = Net.derive(d.hk);
       const firstLob = !App.lobby;
-      App.lobby = { code, started: !!d.st, seats: d.seats.map(x => x && { n: cleanName(x.n), ty: x.ty === 'b' ? 'b' : 'h', lv: LEVELS.includes(x.lv) ? x.lv : '', p: x.p, on: x.on, a: cleanAvatar(x.a) }), S: Object.assign({}, DEFAULT_SETTINGS, d.S || {}) };
+      App.lobby = { code, started: !!d.st, seats: d.seats.map(x => x && { n: cleanName(x.n), ty: x.ty === 'b' ? 'b' : 'h', lv: LEVELS.includes(x.lv) ? x.lv : '', p: x.p, on: x.on, a: cleanAvatar(x.a) }), S: Object.assign({}, DEFAULT_SETTINGS, tame(d.S) || {}) };
       if (firstLob) setTimeout(() => Net.shareProfile(), 300);
       App.seat = App.lobby.seats.findIndex(x => x && x.p && x.p === Net.myPeer);
       if (!App.lobby.started) { if (App.screen !== 'lobby') { closeModal(); resetGameUI(); show('lobby'); } else renderLobby(); }
@@ -3150,7 +3172,7 @@ async function joinRoom(code, watch) {
       if (d.seq < Net.lastSeq) return;
       if (App.seat >= 0 && !priv && App.priv && App.view && App.view.hn === d.pub.hn) priv = App.priv; // keep last known hand if a packet couldn't be read
       if (App.screen !== 'game') { closeModal(); show('game'); }
-      setView(d.pub, priv);
+      setView(tame(d.pub), tame(priv));        // from another computer: made safe to draw first
     });
     Net.on('chat', onChat);
     Net.on('rx', m => { const i = m.data && m.data.e; if (Number.isInteger(i)) showReaction(seatOfPeer(m.peer), i); });

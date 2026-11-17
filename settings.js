@@ -20,6 +20,7 @@ const apply = () => TTx.apply(TTx.readState());
 const $ = id => document.getElementById(id);
 
 let skin   = get(LS.skin, 'plain');
+if (TTx.SKIN_IDS.indexOf(skin) === -1) skin = 'plain';   // (a held-back theme reads as Plain)
 let custom = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
 let creds  = get(LS.creds, null);
 
@@ -130,6 +131,8 @@ document.body.appendChild(host);
 
 /* ── appearance: every theme; the heading folds the grid away. The originals have their own box under Animation ── */
 const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
+/* a theme can have another name in dark mode (Frutiger Aero), so the grid is named again when the mode changes */
+addEventListener('tt:look', () => { const d = $('setDlg'); if (d && d.open && $('s_skins')) renderSkins(); });
 function renderSkins(){
   skin = TTx.readState().skin;
   const box = $('s_skins'); box.innerHTML = '';
@@ -137,7 +140,7 @@ function renderSkins(){
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('aria-pressed', String(s.id === skin));
     b.innerHTML = '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
-                  '<span class="nm">' + s.name + '</span>';
+                  '<span class="nm">' + (TTx.skinName ? TTx.skinName(s) : s.name) + '</span>';
     b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); renderGlass(); };
     return b;
   };

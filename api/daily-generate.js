@@ -10,6 +10,7 @@
  */
 
 import { db } from "./_supabase.js";
+import { safeEqual } from "./_limit.js";
 import { ensurePuzzle, sydneyDate } from "./_daily.js";
 import { prebuildQuartets } from "./_connroute.js";
 import { displayNames, refreshRosterCache, checkSomeClasses } from "./_names.js";
@@ -19,7 +20,7 @@ export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || (req.headers.authorization || "") !== `Bearer ${secret}`) {
+  if (!secret || !safeEqual(req.headers.authorization || "", `Bearer ${secret}`)) {
     return res.status(401).json({ error: "unauthorized" });
   }
   if (!db) return res.status(503).json({ error: "not configured" });

@@ -19,7 +19,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { getToken, decodeJwtPayload, normaliseEmail } from "./timetable.js";
+import { getToken, decodeJwtPayload, normaliseEmail, clientIp } from "./timetable.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -62,7 +62,8 @@ export async function whoami(req) {
   if (!emailAddress) return null;
 
   try {
-    const auth = await getToken(apiBase, emailAddress, String(password));
+    /* the token is only reused for the same password, and wrong ones are counted (timetable.js) */
+    const auth = await getToken(apiBase, emailAddress, String(password), clientIp(req));
     const claims = decodeJwtPayload(auth.token) || {};
     const verified = String(claims.emailAddress || emailAddress).toLowerCase();
     const groups = Array.isArray(claims.groups) ? claims.groups : [];
@@ -73,6 +74,6 @@ export async function whoami(req) {
     }
     return { email: verified, year, groups };
   } catch {
-    return null;   // bad credentials / unreachable → not authenticated
+    return null;   // bad credentials / too many tries / unreachable → not authenticated
   }
 }

@@ -1,9 +1,10 @@
 /*
  * GET /api/timetable?email=<username or full address>
  *
- * Authenticates against the school API with server-side credentials, then
- * fetches the timetable, bell times, cycle start date and profile and returns
- * them as one JSON payload.
+ * Authenticates against the school API (with the caller's own school login,
+ * sent as headers; the server's own login is only used for addresses listed in
+ * ALLOWED_EMAILS), then fetches the timetable, bell times, cycle start date and
+ * profile and returns them as one JSON payload.
  *
  * The JWT is cached in module scope (survives warm invocations) and refreshed
  * from its own `exp` claim. It is never included in the response — the browser
@@ -16,16 +17,46 @@
  *   SCHOOL_TOKEN_PATH optional  default: /api/token
  *   ALLOWED_ORIGIN    optional  comma-separated origins allowed to call this
  *                               (default: the GitHub Pages origin below)
- *   ALLOWED_EMAILS    optional  comma-separated usernames/addresses that may be
- *                               looked up. Unset = anyone may look up anyone.
+ *   ALLOWED_EMAILS    optional  comma-separated usernames/addresses whose timetable
+ *                               may be read WITHOUT signing in (through the server's
+ *                               own login). Unset = nobody: every request then needs
+ *                               the caller's own school login. Class lists, the
+ *                               directories, the finder and free periods always do.
  *   EMAIL_DOMAIN      optional  default: the domain of SCHOOL_EMAIL
+ *
+ * Security notes (see HANDOFF "Security"):
+ *   - A cached token is only handed back to a request that sent the same password
+ *     it was issued for (compared by keyed digest; the password itself is never kept).
+ *   - Wrong passwords are remembered for a minute and counted, per address and per
+ *     network, so the site can't be used to guess school passwords at speed and a
+ *     stale saved password doesn't hammer the school's sign-in.
  */
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { nameOverrides, renamePerson, renameList, noClassesSet } from "./_names.js";
 /* a class list or directory, wrapped or bare, with overrides written over the names */
 const renameRoster = (map, x) => Array.isArray(x) ? renameList(map, x)
   : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, Array.isArray(v) ? renameList(map, v) : v])) : x;
 
+/* Fields no page here uses and nobody else should be handed, dropped from anything
+   passed on from the school's system in case it ever sends them (a class list or a
+   profile is passed on as it comes). Names are compared without case or punctuation. */
+const PRIVATE_KEYS = new Set(["password", "passwordhash", "pwd", "token", "secret", "salt", "hash",
+  "dob", "dateofbirth", "birthdate", "birthday", "address", "homeaddress", "streetaddress", "suburb", "postcode",
+  "phone", "phonenumber", "mobile", "mobilenumber", "homephone", "medical", "medicalnotes",
+  "guardian", "guardians", "parent", "parents", "emergencycontact", "emergencycontacts", "srn", "usi"]);
+export function scrub(x, depth = 0) {
+  if (depth > 6 || x == null || typeof x !== "object") return x;
+  if (Array.isArray(x)) return x.map(v => scrub(v, depth + 1));
+  const out = {};
+  for (const k of Object.keys(x)) if (!PRIVATE_KEYS.has(k.toLowerCase().replace(/[^a-z]/g, ""))) out[k] = scrub(x[k], depth + 1);
+  return out;
+}
+
 const DEFAULT_ORIGIN = "https://alexburns2.github.io";
+/* A page on a developer's own computer may call the live API (the beta is
+   worked on this way). Safe to allow: every request is authorised by the school
+   login sent in its headers, never by a cookie, so letting another origin read
+   a response gives it nothing it couldn't already ask for with that login. */
 const LOCAL_PREVIEW_ORIGINS = [
   "http://127.0.0.1:3000",
   "http://localhost:3000"
@@ -35,7 +66,57 @@ const TOKEN_SKEW_MS = 60 * 60 * 1000;   // refresh an hour before expiry
 /* One cached token per account. Visitors may supply their own credentials,
    in which case their timetable is fetched under their own login rather than
    the site owner's. Keyed by email so the two never mix. */
-const tokenCache = new Map();            // email -> { token, type, exp }
+const tokenCache = new Map();            // email -> { token, type, exp, tag }
+const TOKEN_CACHE_MAX = 3000;
+
+/* ── who may reuse a cached token ─────────────────────────────────────────
+   The cache is keyed by address, so a hit must ALSO prove the password: the
+   entry keeps a digest of the password it was issued for (HMAC with a key made
+   fresh for each server instance, so the digest is useless anywhere else and
+   the password is never held), and only a request carrying the same password
+   gets the token. Without this, any password "worked" for an address whose
+   token was still cached. */
+const TAG_KEY = randomBytes(32);
+const pwTag = pw => createHmac("sha256", TAG_KEY).update(String(pw)).digest();
+const sameTag = (a, b) => !!a && !!b && a.length === b.length && timingSafeEqual(a, b);
+
+/* ── wrong passwords ──────────────────────────────────────────────────────
+   Kept in memory per server instance (so it slows guessing rather than making
+   it impossible; the school's own sign-in has the final say):
+     - the same wrong password for an address is refused for a minute without
+       asking the school again (a stale saved password is sent by every request
+       a page makes; each one would otherwise be a failed sign-in at the school);
+     - failures are counted per address+network, per address and per network,
+       and past the limit sign-ins are refused until the window has passed.
+   A school shares one address on the internet, so the per-network limit is
+   loose and the per-person ones do the work. */
+const FAIL_WINDOW_MS = 10 * 60 * 1000, BAD_TTL_MS = 60 * 1000;
+const FAIL_LIMITS = { pair: 8, email: 20, ip: 60 };
+const badPassword = new Map();           // email -> { tag, until }
+const failures = new Map();              // "pair|email|ip:…" -> [times]
+const failCount = (key, now) => {
+  const list = (failures.get(key) || []).filter(t => now - t < FAIL_WINDOW_MS);
+  if (list.length) failures.set(key, list); else failures.delete(key);
+  return list.length;
+};
+const failNote = (key, now) => { const list = failures.get(key) || []; list.push(now); failures.set(key, list); };
+function tooMany() {
+  const err = new Error("Too many sign-in attempts. Wait a few minutes and try again.");
+  err.status = 429;
+  err.hint = "too-many-attempts";
+  return err;
+}
+function rejected() {
+  const err = new Error("The school rejected those sign-in details.");
+  err.status = 502;
+  err.hint = "check-credentials";
+  return err;
+}
+/* the caller's network address, as Vercel reports it (the first hop is the client) */
+export function clientIp(req) {
+  const h = (req && req.headers) || {};
+  return String(h["x-real-ip"] || String(h["x-forwarded-for"] || "").split(",")[0] || "").trim().slice(0, 64);
+}
 
 /* ------------------------------------------------------------------ utils */
 
@@ -83,6 +164,7 @@ export function isOutage(res, body) {
    accepted"; the school being down or unreachable is reported as that, so
    nobody is told their password is wrong during an outage. */
 function signInFailed(res, e) {
+  if (e && e.hint === "too-many-attempts") return res.status(429).json({ error: e.message, hint: e.hint });
   const down = e && (e.hint === "school-outage" || e.hint === "check-api-base" || e.hint === "bad-json");
   if (!down) return res.status(401).json({ error: "Those school sign-in details were not accepted." });
   return res.status(e.status === 503 ? 503 : 502).json({ error: e.message, hint: e.hint });
@@ -125,11 +207,23 @@ async function readJson(res, url) {
   }
 }
 
-export async function getToken(apiBase, emailAddress, password) {
+/* ip: the caller's network address when these are a visitor's own details (so
+   failures are counted); left out for the server's own login. */
+export async function getToken(apiBase, emailAddress, password, ip) {
   const now = Date.now();
   const key = String(emailAddress).toLowerCase();
+  const tag = pwTag(password);
   const hit = tokenCache.get(key);
-  if (hit && hit.exp * 1000 - TOKEN_SKEW_MS > now) return hit;
+  if (hit && hit.exp * 1000 - TOKEN_SKEW_MS > now && sameTag(hit.tag, tag)) return hit;
+
+  const counted = ip !== undefined;
+  const kPair = "pair:" + key + "|" + ip, kEmail = "email:" + key, kIp = "ip:" + ip;
+  if (counted) {
+    const bad = badPassword.get(key);
+    if (bad && bad.until > now && sameTag(bad.tag, tag)) throw rejected();      // the same wrong password again: no need to ask the school
+    if (failCount(kPair, now) >= FAIL_LIMITS.pair || failCount(kEmail, now) >= FAIL_LIMITS.email ||
+        (ip && failCount(kIp, now) >= FAIL_LIMITS.ip)) throw tooMany();
+  }
 
   /* The intranet serves its SPA shell (200 + HTML) for unknown paths, so a wrong
      path looks like success. Auth lives at /api/token; /token is the SPA. */
@@ -152,6 +246,13 @@ export async function getToken(apiBase, emailAddress, password) {
   if (!res.ok) {
     if (isOutage(res, await res.text().catch(() => ""))) throw outageError();
     console.error(`POST ${url} returned ${res.status}.`);
+    /* the school said no to these details (not: the school is having trouble) */
+    if (counted && (res.status === 400 || res.status === 401 || res.status === 403)) {
+      if (badPassword.size >= 5000) badPassword.clear();
+      if (failures.size >= 20000) failures.clear();
+      badPassword.set(key, { tag, until: now + BAD_TTL_MS });
+      failNote(kPair, now); failNote(kEmail, now); if (ip) failNote(kIp, now);
+    }
     const err = new Error(
       res.status === 401
         ? "The school rejected those sign-in details."
@@ -175,9 +276,12 @@ export async function getToken(apiBase, emailAddress, password) {
     email: key,
     token,
     type: data.type || "Bearer",
-    exp: (payload && payload.exp) || Math.floor(Date.now() / 1000) + 3600
+    exp: (payload && payload.exp) || Math.floor(Date.now() / 1000) + 3600,
+    tag
   };
+  if (tokenCache.size >= TOKEN_CACHE_MAX) tokenCache.delete(tokenCache.keys().next().value);   // the oldest goes
   tokenCache.set(key, entry);
+  badPassword.delete(key);
   return entry;
 }
 
@@ -343,14 +447,14 @@ export function busyKeys(timetable) {
   }
   return [...out].sort();
 }
-async function busyFor(apiBase, authEmail, pw, who) {
+async function busyFor(apiBase, authEmail, pw, who, ip) {
   const hit = busyCache.get(who);
   if (hit && Date.now() - hit.at < BUSY_TTL_MS) return hit.busy;
   const path = `/api/timetable/${encodeURIComponent(who)}`;
-  let auth = await getToken(apiBase, authEmail, pw);
+  let auth = await getToken(apiBase, authEmail, pw, ip);
   let tt = await apiGet(apiBase, path, auth);
   if (tt === null) {                       // token expired → refresh and retry
-    auth = await getToken(apiBase, authEmail, pw);
+    auth = await getToken(apiBase, authEmail, pw, ip);
     tt = await apiGet(apiBase, path, auth);
   }
   if (!tt) throw new Error("No timetable for " + who);
@@ -396,8 +500,13 @@ export default async function handler(req, res) {
    * Probes the school API with DUMMY credentials and reports what comes back,
    * so a misconfigured base URL or a moved token path is visible in one call.
    * Never echoes SCHOOL_EMAIL / SCHOOL_PASSWORD or any real token.
+   * Moderators only: it names the school's server and makes the site call it.
    */
   if (req.query.diag) {
+    res.setHeader("Cache-Control", "private, no-store");
+    const { whoami, isAdmin } = await import("./_supabase.js");
+    const who = await whoami(req);
+    if (!who || !isAdmin(who.email)) return res.status(who ? 403 : 401).json({ error: "Moderators only." });
     const paths = [process.env.SCHOOL_TOKEN_PATH, "/api/token", "/token",
                    "/api/auth/token", "/auth/token", "/api/login"].filter(Boolean);
     const seen = new Set();
@@ -441,6 +550,7 @@ export default async function handler(req, res) {
   const ownEmail = String(req.headers["x-school-email"] || "").trim();
   const ownPassword = String(req.headers["x-school-password"] || "");
   const usingOwn = !!(ownEmail && ownPassword);
+  const ip = usingOwn ? clientIp(req) : undefined;      // a visitor's own details: wrong passwords are counted
 
   const domain = (process.env.EMAIL_DOMAIN || schoolEmail.split("@")[1] || "").toLowerCase();
   const authEmail = usingOwn ? normaliseEmail(ownEmail, domain) : schoolEmail;
@@ -451,13 +561,13 @@ export default async function handler(req, res) {
   const email = normaliseEmail(req.query.email || authEmail, domain);
   if (!email) return res.status(400).json({ error: "A valid email address is required." });
 
-  /* The allowlist protects the owner's account; it does not apply to someone
-     signing in with their own credentials. */
+  /* Without your own login, the server's is used for one thing only: the
+     timetable of an address the owner has listed in ALLOWED_EMAILS. Nothing
+     listed means nobody: these are students' timetables, names and class lists,
+     so everything else needs a working school login of your own (checked below,
+     after the finder and free periods, which say so in their own words). */
   const allowlist = listEnv("ALLOWED_EMAILS");
-  if (!usingOwn && allowlist.length) {
-    const ok = allowlist.some(e => normaliseEmail(e, domain) === email);
-    if (!ok) return res.status(403).json({ error: "That address is not permitted on this site." });
-  }
+  const listed = allowlist.some(e => normaliseEmail(e, domain) === email);
 
   /* ---- ?find=<name> ------------------------------------------------------
    * Student finder. Unlike the class and group lists below, this one needs the
@@ -472,7 +582,7 @@ export default async function handler(req, res) {
     if (!usingOwn) {
       return res.status(401).json({ error: "Sign in with your school account to use the student finder." });
     }
-    try { await getToken(apiBase, authEmail, ownPassword); }
+    try { await getToken(apiBase, authEmail, ownPassword, ip); }
     catch (e) { return signInFailed(res, e); }
     const q = String(req.query.find || "").trim().toLowerCase().replace(/\s+/g, " ");
     if (q.length < 2) return res.status(400).json({ error: "Type at least two letters." });
@@ -508,7 +618,7 @@ export default async function handler(req, res) {
     if (!usingOwn) {
       return res.status(401).json({ error: "Sign in with your school account to compare free periods." });
     }
-    try { await getToken(apiBase, authEmail, ownPassword); }
+    try { await getToken(apiBase, authEmail, ownPassword, ip); }
     catch (e) { return signInFailed(res, e); }
     const wanted = [...new Set(String(req.query.free || "").split(",")
       .map(s => normaliseEmail(s, domain)).filter(Boolean))];
@@ -517,7 +627,7 @@ export default async function handler(req, res) {
     const people = {};
     let outage = false;
     await eachLimited(wanted, 5, async who => {
-      try { people[who] = await busyFor(apiBase, authEmail, ownPassword, who); }
+      try { people[who] = await busyFor(apiBase, authEmail, ownPassword, who, ip); }
       catch (error) {
         if (error.hint === "school-outage") outage = true;
         else if (error.hint) console.error("Free periods failed:", error.message);
@@ -529,24 +639,30 @@ export default async function handler(req, res) {
     return res.status(200).json({ people });
   }
 
+  /* not signed in: only a listed address's timetable, never a list of people */
+  if (!usingOwn && (!listed || req.query.class || req.query.group)) {
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.status(401).json({ error: "Sign in with your school account.", hint: "sign-in" });
+  }
+
   /* ---- ?class=<code> -----------------------------------------------------
    * Class roster. The school API exposes the students in a class at
-   * /api/timetable/class/{ClassCode}. Returned as-is (minus caching), so the
-   * page can list who is in a period.
+   * /api/timetable/class/{ClassCode}. Returned as it comes (minus anything
+   * private, and never cached), so the page can list who is in a period.
+   * Needs your own school login.
    */
   if (req.query.class) {
     const code = String(req.query.class).trim();
     if (!code) return res.status(400).json({ error: "A class code is required." });
     try {
-      let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+      let auth = await getToken(apiBase, authEmail, ownPassword, ip);
       let roster = await apiGet(apiBase, `/api/timetable/class/${encodeURIComponent(code)}`, auth);
       if (roster === null) {                              // token expired → retry once
-        auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+        auth = await getToken(apiBase, authEmail, ownPassword, ip);
         roster = await apiGet(apiBase, `/api/timetable/class/${encodeURIComponent(code)}`, auth);
       }
-      res.setHeader("Cache-Control", usingOwn ? "private, no-store"
-                                              : "public, s-maxage=900, stale-while-revalidate=3600");
-      return res.status(200).json({ class: code, roster: renameRoster(await nameOverrides(), roster) });
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.status(200).json({ class: code, roster: renameRoster(await nameOverrides(), scrub(roster)) });
     } catch (error) {
       const status = error.status || 502;
       console.error("Class roster failed:", error.message);
@@ -566,20 +682,19 @@ export default async function handler(req, res) {
     const g = String(req.query.group).toLowerCase();
     if (g !== "student" && g !== "teacher") return res.status(400).json({ error: "Unknown group." });
     try {
-      let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+      let auth = await getToken(apiBase, authEmail, ownPassword, ip);
       let list = await apiGet(apiBase, `/api/group/${g}`, auth);
       if (list === null) {
-        auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+        auth = await getToken(apiBase, authEmail, ownPassword, ip);
         list = await apiGet(apiBase, `/api/group/${g}`, auth);
       }
-      res.setHeader("Cache-Control", usingOwn ? "private, no-store"
-                                              : "public, s-maxage=3600, stale-while-revalidate=86400");
+      res.setHeader("Cache-Control", "private, no-store");
       /* students with no classes here (left, or an old account) aren't in the games */
       const none = g === "student" ? await noClassesSet() : new Set();
       const keep = arr => arr.filter(p => !none.has(String(p.emailAddress || p.Email || p.email || "").toLowerCase()));
       const shown = Array.isArray(list) ? keep(list) : list && typeof list === "object"
         ? Object.fromEntries(Object.entries(list).map(([k, v]) => [k, Array.isArray(v) ? keep(v) : v])) : list;
-      return res.status(200).json({ group: g, people: renameRoster(await nameOverrides(), shown) });
+      return res.status(200).json({ group: g, people: renameRoster(await nameOverrides(), scrub(shown)) });
     } catch (error) {
       const status = error.status || 502;
       console.error("Group directory failed:", error.message);
@@ -592,7 +707,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+    let auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password, ip);
 
     const fetchAll = async a => Promise.all([
       apiGet(apiBase, `/api/timetable/${encodeURIComponent(email)}`, a),
@@ -604,7 +719,7 @@ export default async function handler(req, res) {
     let [timetable, bellTimes, startDate, profile] = await fetchAll(auth);
 
     if (timetable === null) {                             // 401 → token refreshed
-      auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password);
+      auth = await getToken(apiBase, authEmail, usingOwn ? ownPassword : password, ip);
       [timetable, bellTimes, startDate, profile] = await fetchAll(auth);
     }
 
@@ -617,7 +732,7 @@ export default async function handler(req, res) {
       ? "private, no-store"                       // never cache a personal login
       : "public, s-maxage=900, stale-while-revalidate=3600");
 
-    return res.status(200).json({ email, timetable, bellTimes, startDate, profile: renamePerson(await nameOverrides(), profile),
+    return res.status(200).json({ email, timetable, bellTimes, startDate, profile: renamePerson(await nameOverrides(), scrub(profile)),
                                   ownLogin: usingOwn });
   } catch (error) {
     const status = error.status || 502;

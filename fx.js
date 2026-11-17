@@ -70,7 +70,7 @@ FX.gl = function(canvas, frag, pre){
 };
 
 /* ═══════════════ backgrounds ═══════════════ */
-const SCENES = { maximal:'maximal', y2k:'y2k', vapor:'vapor', scifi:'scifi' };       // theme → /fx/<file>.js
+const SCENES = { maximal:'maximal', y2k:'y2k', vapor:'vapor', scifi:'scifi', aero:'aero' };       // theme → /fx/<file>.js
 const BG = { id:'', canvas:null, scene:null, def:null, env:null, raf:0, last:0, q:1, slow:0, fps:60 };
 const loaded = {};
 let quiet = false, saving = false;
@@ -136,7 +136,7 @@ function mountBg(early){
    page instead of dropping to the stylesheet's still picture for a moment (that drop was a flicker).
    Only for the themes whose way in shows the background while the page loads: the others put up an
    opaque cover, and their bigger shaders would only hold the cover up longer. */
-const EARLY = { y2k:1, vapor:1 };
+const EARLY = { y2k:1, vapor:1, aero:1 };
 function writeScene(){
   const want = (!root.classList.contains('zen') && SCENES[skin()]) ? skin() : '';
   try { const nt = performance.getEntriesByType('navigation')[0]; if (nt && nt.type === 'reload' && !(nav && root.classList.contains('fx-in'))) return false; } catch {}
@@ -215,6 +215,7 @@ const TR = {};
 const fade = (o, i) => ({ outMs:o, inMs:i, out(n, done){ root.classList.add('fx-out'); after(o, done); }, in(n, done){ after(i, done); } });
 TR.glass = fade(120, 260);                       // the page's contents fade; the clouds behind stay exactly where they were (theme.js keeps them)
 TR.editorial = fade(90, 180);
+TR.coquette = fade(120, 300);
 TR.studio = fade(80, 160);                       // a short cross-fade, nothing else                    // quiet: no movement, barely there
 TR.terminal = fade(60, 360);                     // the screen clears, then the page is printed from the top (terminal.css)
 TR.brutal = fade(120, 470);                      // the blocks are pressed flat; the next page's are stamped down in turn (brutal.css)
@@ -387,6 +388,57 @@ TR.vapor = {
   }
 };
 
+/* Frutiger Aero: a rush of bubbles rises up the screen and the page changes behind it (Frutiger Evil's are red).
+   The bubbles are the background's own (fx/aero.js, FX.aeBubble); placed from the note's seed, so the page left and the
+   page reached draw the same ones, and the rise carries straight on across the change. Nothing covers the screen. */
+function aeRise(k, seed, p){
+  const { x, w, h } = k, r = rnd(seed), evil = dark(), spr = FX.aeBubble ? FX.aeBubble(evil) : null, N = Math.round(16 + w / 70);
+  x.clearRect(0, 0, w, h);
+  for (let i = 0; i < N; i++){
+    const rad = 9 + 58 * Math.pow(r(), 1.9), off = r() * h * .7, bx = r() * w, sway = (r() - .5) * 34, ph = r() * 6.3;
+    const y = (h + rad + off) * (1 - p) - rad * p, xx = bx + Math.sin(p * 5 + ph) * sway;
+    if (y < -rad || y > h + rad) continue;
+    if (spr){ x.globalAlpha = .92; x.drawImage(spr, xx - rad, y - rad, rad * 2, rad * 2); }
+    else { x.globalAlpha = .7; x.strokeStyle = evil ? '#ff9a8a' : '#fff'; x.lineWidth = 1.5; x.beginPath(); x.arc(xx, y, rad, 0, 7); x.stroke(); }
+  }
+  x.globalAlpha = 1;
+}
+TR.aero = {
+  outMs:340, inMs:560,
+  out(n, done){ root.classList.add('fx-out'); const k = canvasLayer('ae-rise'); run(330, p => aeRise(k, n.seed, p * .42), done); },
+  cover(n){ this.k = canvasLayer('ae-rise'); aeRise(this.k, n.seed, .42); },
+  in(n, done){ const k = this.k || canvasLayer('ae-rise'); run(540, p => aeRise(k, n.seed, .42 + p * .58), done); }
+};
+
+/* Gen X Soft Club: the page smears sideways and breaks into a digital glitch (a horizontal blur, bands of it pushed
+   along, the red pulled from the blue), and the next one comes in the same way and settles. Same SVG-filter-on-the-page
+   approach as Vaporwave, with the same fallback (a plain slide, softclub.css) where filters on a page are unreliable. */
+if (VP_SVG) root.classList.add('sc-svg');
+function scStart(dir){
+  const d = layer('sc-defs', '<svg width="0" height="0" aria-hidden="true"><filter id="sc-smear" x="-25%" y="-2%" width="150%" height="104%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">' +
+    '<feGaussianBlur in="SourceGraphic" stdDeviation="0 0" result="b"/>' +
+    '<feImage x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="m"/>' +
+    '<feDisplacementMap in="b" in2="m" scale="0" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
+    '<feColorMatrix in="d" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/><feOffset in="r" dx="0" dy="0" result="r2"/>' +
+    '<feColorMatrix in="d" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="g"/><feOffset in="g" dx="0" dy="0" result="g2"/>' +
+    '<feBlend in="r2" in2="g2" mode="screen"/></filter></svg>');
+  const blur = d.querySelector('feGaussianBlur'), img = d.querySelector('feImage'), dis = d.querySelector('feDisplacementMap'), off = d.querySelectorAll('feOffset');
+  const wr = document.querySelector('.wrap'); if (wr) wr.style.filter = 'url(#sc-smear)';
+  return k => {                                       /* k 0..1: how far gone */
+    blur.setAttribute('stdDeviation', (k * k * .07).toFixed(4) + ' 0');
+    img.setAttribute('href', vpMap(2 + Math.round(k * 7), .3 + k * .7));
+    dis.setAttribute('scale', (k * k * .14).toFixed(4));
+    off[0].setAttribute('dx', (k * .014).toFixed(4)); off[1].setAttribute('dx', (-k * .014).toFixed(4));
+    if (wr){ wr.style.transform = 'translateX(' + (dir * k * k * 7).toFixed(2) + 'vw)'; wr.style.opacity = String(Math.max(0, 1 - Math.max(0, k - .55) * 2.3)); }
+  };
+}
+const scEnd = () => { const wr = document.querySelector('.wrap'); if (wr){ wr.style.filter = wr.style.transform = wr.style.opacity = ''; } };
+TR.softclub = VP_SVG ? {
+  outMs:300, inMs:400,
+  out(n, done){ const set = scStart(-1), K = [.12, .26, .42, .6, .8, 1]; set(.04); K.forEach((k, i) => after(40 + i * 45, () => set(k))); after(300, done); },
+  in(n, done){ const set = scStart(1), K = [1, .8, .6, .42, .27, .15, .06, 0]; set(1); K.forEach((k, i) => after(i * 45, () => set(k))); after(380, () => { scEnd(); done(); }); }
+} : fade(200, 420);
+
 /* Cyberpunk: the panels shift off behind their angles, the signal breaks up for a moment, the next ones shift in */
 function bars(L, n){
   let html = '';
@@ -455,7 +507,7 @@ if (nav && root.classList.contains('fx-in')){
   const tr = trans();
   try { if (tr.cover) tr.cover(nav); } catch {}
   let entered = false;
-  const fin = () => { root.classList.remove('fx-enter', 'fx-in'); root.querySelectorAll('.fx-layer').forEach(n => n.remove()); vpEnd(); };      /* vpEnd: never leave the page under Vaporwave's filter, whatever went wrong */
+  const fin = () => { root.classList.remove('fx-enter', 'fx-in'); root.querySelectorAll('.fx-layer').forEach(n => n.remove()); vpEnd(); scEnd(); };      /* vpEnd: never leave the page under Vaporwave's filter, whatever went wrong */
   const enter = () => {
     if (entered) return; entered = true;
     root.classList.remove('fx-in'); root.classList.add('fx-enter');

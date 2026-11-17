@@ -288,7 +288,13 @@ function afterDraw(first, startAt){
   if (opts.onDraw) try { opts.onDraw(p); } catch {}
   if (!first) return;
   const q = new URLSearchParams(location.search), pv = q.get('pollpreview');
-  if (pv){ if (isMin()) setMin(false); preview(pv, q); return; }
+  if (pv){
+    /* a preview link is for moderators choosing a show. For anyone else it does nothing (the
+       server says who is a moderator), so a link can't dress the real results up under a
+       made-up question and line. */
+    TT.api('/api/leaderboard', { params:{ settings:1 } }).then(s => { if (s && s.isMod){ if (isMin()) setMin(false); preview(pv, q); } }, () => {});
+    return;
+  }
   if (!p) return;
   const state = stateOf(p), seenBefore = TT.get(SEEN, '');
   /* Friday: you voted, and the winner is out */

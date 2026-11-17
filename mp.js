@@ -560,8 +560,9 @@ function hub(host, opts){
     function list(peers){
       const el = $('lbpubs'); if (!el) return;
       const rows = peers.filter(p => !p.isMe && p.presence.code);
-      el.innerHTML = rows.length ? '<ul class="mplist chgames">' + rows.map(p => { const x = p.presence, full = (x.players | 0) >= (x.max || MAXLOBBY);
-        return '<li><span>' + esc(MPF.name(x.n)) + '’s lobby<small>' + (x.players | 0) + '/' + (x.max || MAXLOBBY) + ' · ' + esc((LGAMES[x.g] || {}).name || 'Lobby') + ' · ' + (x.playing ? 'playing' : 'waiting') + '</small></span>' +
+      /* a public lobby's details come from another computer: numbers are made numbers, text is escaped */
+      el.innerHTML = rows.length ? '<ul class="mplist chgames">' + rows.map(p => { const x = p.presence, max = Math.max(0, Math.min(99, x.max | 0)) || MAXLOBBY, full = (x.players | 0) >= max;
+        return '<li><span>' + esc(MPF.name(x.n)) + '’s lobby<small>' + (x.players | 0) + '/' + max + ' · ' + esc((LGAMES[x.g] || {}).name || 'Lobby') + ' · ' + (x.playing ? 'playing' : 'waiting') + '</small></span>' +
           (full ? '<span class="mpbtns"><small>Full</small></span>' : '<span class="mpbtns"><button class="btn primary" type="button" data-code="' + esc(x.code) + '">Join</button></span>') + '</li>'; }).join('') + '</ul>'
         : '<p class="mpmsg">No public lobbies right now. Make one.</p>';
       el.querySelectorAll('[data-code]').forEach(b => b.onclick = () => go(() => connect('join', b.dataset.code, name())));
