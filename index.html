@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261117f">
+<link rel="stylesheet" href="theme.css?v=20261117g">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261117f"></script>
-<script src="icons.js?v=20261117f"></script>
-<script src="suggest.js"></script>
+<script src="theme.js?v=20261117g"></script>
+<script src="icons.js?v=20261117g"></script>
+<script src="suggest.js?v=20261117g"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -1598,7 +1598,7 @@ function fit(){
   if (!grid.classList.contains('stg')) return;
   /* each lesson's width in px: the open card and the room badge are placed from it (container units misplace them in some browsers) */
   grid.querySelectorAll('.blk').forEach(b => b.style.setProperty('--bw', b.offsetWidth + 'px'));
-  grid.querySelectorAll('.gap').forEach(g => g.classList.toggle('sm', g.offsetHeight < 44));
+  grid.querySelectorAll('.gap').forEach(g => g.classList.toggle('sm', g.offsetHeight < 72));   /* two lines only with a comfortable margin round them */
   grid.querySelectorAll('.blk:not(.open):not(.closing)').forEach(b => {
     b.classList.remove('tight', 'sm');
     const c = b.querySelector('.blk-card'), over = () => c.scrollHeight > c.clientHeight + 1;
@@ -2080,11 +2080,22 @@ $('gateform').onsubmit = async ev => {
    The school API lets a signed-in user fetch any timetable, so this just
    changes which email is requested — it never re-authenticates. */
 $('whoamidom').textContent = '@' + CONFIG.EMAIL_DOMAIN;
+const whoMeasure = document.createElement('canvas').getContext('2d');
 function sizeWhoami(){
   const i = $('whoami');
+  /* Studio: the box is exactly as wide as its text, so the domain sits right after the name, as in the beta */
+  if (window.studioOn && studioOn()){
+    const cs = getComputedStyle(i); whoMeasure.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    i.style.width = Math.ceil(whoMeasure.measureText(i.value || i.placeholder).width + 3) + 'px';
+    return;
+  }
   i.style.width = Math.min(17, Math.max(3, (i.value.length || i.placeholder.length))) + 'ch';
 }
 async function viewUser(){
+  /* Studio: a name half-typed (it has a space) is a search, not a username: leaving it puts the current person back */
+  if (window.studioOn && studioOn() && /\s/.test($('whoami').value.trim())){
+    $('whoami').value = String(email || '').split('@')[0]; sizeWhoami(); $('whoami').closest('.idrow').classList.remove('naming'); return;
+  }
   const v = $('whoami').value.trim().toLowerCase();
   const user = v.includes('@') ? v.split('@')[0] : v;
   if (!user || !/^[a-z0-9][a-z0-9._-]*$/.test(user)){
@@ -2098,7 +2109,7 @@ async function viewUser(){
   await load(false);
   render();
 }
-$('whoami').addEventListener('input', sizeWhoami);
+$('whoami').addEventListener('input', () => { sizeWhoami(); $('whoami').closest('.idrow').classList.toggle('naming', /\s/.test($('whoami').value)); });
 $('whoback').onclick = () => {
   if (!creds || !creds.email) return;
   $('whoami').value = String(creds.email).split('@')[0];
@@ -2111,17 +2122,22 @@ $('whoback').onclick = () => {
    box never offers saved sign-in details. */
 if (window.Suggest) Suggest.attach($('whoami'), {
   min: 2, max: 8, delay: 200,
+  /* Studio speaks while it searches, as the beta does */
+  waiting: q => window.studioOn && studioOn() && creds && creds.password ? 'Searching…' : '',
   async source(q){
-    if (!creds || !creds.email || !creds.password) return [];
+    const studio = window.studioOn && studioOn();
+    if (!creds || !creds.email || !creds.password)
+      return studio && /\s/.test(q) ? [{ hint:'Searching by name needs your school login. Sign in under Settings first.' }] : [];
     const u = new URL(endpoint, location.href);
     u.searchParams.set('find', q.toLowerCase());
     const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
     const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
       'X-School-Email':creds.email, 'X-School-Password':creds.password } });
     const d = await res.json().catch(() => null);
-    if (!res.ok || !d) return [];
-    return (d.results || []).map(p => { const user = String(p.email || '').split('@')[0];
-      return { value:user, label:p.name || user, sub:user }; });
+    if (!res.ok || !d) return studio ? [{ hint:(d && d.error) || 'The search failed.' }] : [];
+    const found = (d.results || []).map(p => { const user = String(p.email || '').split('@')[0];
+      return { value:user, label:p.name || user, sub: studio && p.year ? user + ' · Year ' + p.year : user }; });
+    return studio && !found.length ? [{ hint:'No students match “' + q + '”.' }] : found;
   },
   onPick(){ sizeWhoami(); $('whoami').blur(); }      // blur runs viewUser
 });
