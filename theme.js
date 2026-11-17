@@ -42,9 +42,9 @@ const ASSET_V = '20261117a';
          picker, but under Settings → Originals */
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
+  { id:'studio',    name:'Studio',    both:true, ic:'accent', is:'icons', css:'studio' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
-  { id:'studio',    name:'Studio',    both:true, ic:'accent', is:'icons', css:'studio' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'skeuo',     name:'Skeuomorphism', both:true, ic:'tile', is:'icons', css:'skeuo' },
   { id:'y2k',       name:'Y2K Futurism', both:true, ic:'accent', is:'icons', css:'y2k', font:'family=Michroma&family=Sora:wght@400;600;700' },

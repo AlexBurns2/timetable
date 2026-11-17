@@ -1297,6 +1297,7 @@ const entryAt = (cycleDay, slotKey) =>
 "use strict";
 
 const studioOn = () => document.documentElement.getAttribute('data-skin') === 'studio';
+const reRender = () => render();          /* the page's render(), declared after this block */
 window.studioOn = studioOn;
 
 /* NSW public school terms (Eastern division), the beta's table: first and last
@@ -1557,7 +1558,7 @@ function html(ctx, cols, dates, y, H){
 }
 const d2k = d => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
 
-function render(ctx){
+function drawStudio(ctx){
   const grid = ctx.grid;
   grid.classList.add('stg');
   const dates = ctx.idx.map(i => ctx.days[i]);
@@ -1567,23 +1568,34 @@ function render(ctx){
   const all = cols.flatMap(c => c.items);
   if (!all.length){ grid.innerHTML = ''; return; }
   const T0 = Math.min(...all.map(x => x.s)), T1 = Math.max(...all.map(x => x.e));
-  const top = grid.getBoundingClientRect().top + scrollY;
-  let PX = Math.max(560, innerHeight - Math.min(top, 220) - 70) / (T1 - T0);
-  for (let pass = 0; pass < 4; pass++){
-    const y = t => (t - T0) * PX;
-    grid.innerHTML = html(ctx, cols, dates, y, y(T1));
-    let worst = 1;
-    grid.querySelectorAll('.blk:not(.open):not(.closing) .blk-card').forEach(c => {
-      if (c.scrollHeight > c.clientHeight + 1) worst = Math.max(worst, (c.scrollHeight + 8) / (c.clientHeight + 8));
-    });
-    if (worst <= 1) return;
-    PX *= worst;
-  }
+  /* The whole day always fits the window, whatever its height: no scrolling.
+     Draw once, measure where the columns start, then draw again at the
+     height that leaves exactly the bottom margin. Short windows make short
+     blocks; they switch to their one-line form (.sm) instead of overflowing. */
+  const draw = PX => { const y = t => (t - T0) * PX; grid.innerHTML = html(ctx, cols, dates, y, y(T1)); };
+  draw(1);
+  const col = grid.querySelector('.stcol');
+  const colTop = col ? col.getBoundingClientRect().top + scrollY : grid.getBoundingClientRect().top + scrollY;
+  const room = document.documentElement.clientHeight - colTop - 14;
+  draw(Math.max(.35, room / (T1 - T0)));
+  /* a block too short for its lines drops the teacher, then goes to one line */
+  grid.querySelectorAll('.blk:not(.sm)').forEach(b => {
+    const c = b.querySelector('.blk-card');
+    if (c.scrollHeight > c.clientHeight + 1) b.classList.add('tight');
+    if (c.scrollHeight > c.clientHeight + 1){ b.classList.remove('tight'); b.classList.add('sm'); }
+  });
 }
+/* refit when the window changes height (or width: the header can wrap) */
+let fitTimer = 0, fitW = innerWidth, fitH = innerHeight;
+addEventListener('resize', () => {
+  if (!studioOn() || (innerWidth === fitW && innerHeight === fitH)) return;
+  fitW = innerWidth; fitH = innerHeight;
+  clearTimeout(fitTimer); fitTimer = setTimeout(() => { closeAll(); reRender(); }, 80);
+});
 /* the page's render() asks first: true = drawn here */
 window.studioRender = ctx => {
   if (!studioOn()){ ctx.grid.classList.remove('stg'); paintTerm(ctx.days, ctx.week); return false; }
-  render(ctx);
+  drawStudio(ctx);
   return true;
 };
 })();

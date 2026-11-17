@@ -389,7 +389,9 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 @media (max-width:420px){ [data-skin="studio"] .topbar .idrow .dom{display:none} }
 
 /* the grid: an arrow, the days, an arrow */
-:root[data-skin="studio"] #grid.stg{--colmax:320px;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;align-items:start;padding:4px 0 24px}
+:root[data-skin="studio"] #grid.stg{--colmax:320px;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;align-items:start;padding:4px 0 0}
+/* the day is sized to the window (no scrolling): nothing under it */
+:root[data-skin="studio"][data-pg="timetable"] .wrap{padding-bottom:0}
 [data-skin="studio"] #grid.stg .starrow{width:32px;height:32px;border:0;border-radius:50%;background:none;display:grid;place-items:center;color:var(--muted);align-self:center;cursor:pointer;padding:0}
 [data-skin="studio"] #grid.stg .starrow:hover{background:var(--st-fill);color:var(--text)}
 [data-skin="studio"] #grid.stg .starrow svg{width:16px;height:16px}
@@ -415,6 +417,12 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 [data-skin="studio"] #grid.stg .blk .m{display:block;font-size:.8125rem;margin-top:2px;color:color-mix(in srgb,var(--text) 72%,var(--c));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-skin="studio"] #grid.stg .blk .r{position:absolute;top:10px;left:calc(100cqw - 12px);translate:-100% 0;font-size:.8125rem;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--text));font-variant-numeric:tabular-nums}
 [data-skin="studio"] #grid.stg .blk .t{display:block;margin-top:auto;padding-top:4px;font-size:.75rem;white-space:nowrap;color:color-mix(in srgb,var(--text) 64%,var(--c));font-variant-numeric:tabular-nums}
+[data-skin="studio"] #grid.stg .blk.tight:not(.open) .m{display:none}
+[data-skin="studio"] #grid.stg .blk.tight:not(.open) .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-skin="studio"] #grid.stg .blk.tight:not(.open) .blk-card{padding-top:8px;padding-bottom:7px}
+[data-skin="studio"] #grid.stg .blk.tight:not(.open) .r{top:8px}
+/* one-line blocks: the time gone is a tint along the bottom, not a line through the words */
+[data-skin="studio"] #grid.stg .blk.sm.now:not(.open) .blk-card::before{inset:auto auto 0 0;height:2px;width:var(--p);border:0;background:color-mix(in srgb,var(--c) 70%,#000)}
 [data-skin="studio"] #grid.stg .blk.sm .blk-card{flex-direction:row;align-items:center;gap:8px;padding:0 12px}
 [data-skin="studio"] #grid.stg .blk.sm .s{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:0}
 [data-skin="studio"] #grid.stg .blk.sm .t{margin:0;padding:0}
