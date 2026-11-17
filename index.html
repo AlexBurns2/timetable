@@ -7,12 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261117c">
+<link rel="stylesheet" href="theme.css?v=20261117d">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261117c"></script>
-<script src="icons.js?v=20261117c"></script>
+<script src="theme.js?v=20261117d"></script>
+<script src="icons.js?v=20261117d"></script>
 <script src="suggest.js"></script>
 <script src="tour.js"></script>
 <style>
@@ -1574,9 +1574,12 @@ function drawStudio(ctx){
      blocks; they switch to their one-line form (.sm) instead of overflowing. */
   const draw = PX => { const y = t => (t - T0) * PX; grid.innerHTML = html(ctx, cols, dates, y, y(T1)); };
   draw(1);
+  if (scrollX || scrollY) scrollTo(0, 0);       /* the page is pinned: a restored or nudged scroll would hide the last lesson */
   const col = grid.querySelector('.stcol');
-  const colTop = col ? col.getBoundingClientRect().top + scrollY : grid.getBoundingClientRect().top + scrollY;
-  const room = document.documentElement.clientHeight - colTop - 14;
+  const colTop = (col || grid).getBoundingClientRect().top;
+  /* the same margin under the day as the page has above its header */
+  const wrap = grid.closest('.wrap'), margin = wrap ? parseFloat(getComputedStyle(wrap).paddingTop) || 16 : 16;
+  const room = document.documentElement.clientHeight - colTop - margin;
   draw(Math.max(.35, room / (T1 - T0)));
   /* lessons in the lower half of the day open upwards, so an opened card
      never runs past the bottom of the window (the page can't scroll) */
@@ -1591,6 +1594,10 @@ function drawStudio(ctx){
     if (c.scrollHeight > c.clientHeight + 1){ b.classList.remove('tight'); b.classList.add('sm'); }
   });
 }
+/* keep the page at the top while it can't scroll (focus, find-in-page and
+   scroll restoration can still move it) */
+addEventListener('scroll', () => { if (studioOn() && (scrollX || scrollY)) scrollTo(0, 0); }, { passive:true });
+try { if (studioOn()) history.scrollRestoration = 'manual'; } catch {}
 /* refit when anything above the grid changes height (a status line, Now and
    Next wrapping, the poll note) and once the fonts have arrived, so the day
    always ends inside the window */
