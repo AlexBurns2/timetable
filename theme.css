@@ -381,4 +381,4 @@ html.fx-enter .wrap{animation:fxfade .22s ease both}
 html[data-nownext="off"] .now,
 html[data-nownext="off"] .hubnow:not(:has(.hubsign)){display:none!important}
 /* parts only the Studio theme shows (skins/studio.css) */
-.idglass,.stterm{display:none}
+.idglass,.stterm,.sthome{display:none}

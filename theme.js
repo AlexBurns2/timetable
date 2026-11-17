@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261117g';
+const ASSET_V = '20261117h';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1119,6 +1119,19 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
    the games and revision pages, while a game or subject is open (games.js shows
    and hides it). It goes back if you came from another page of this site,
    otherwise to Home; a page can handle it first (window.TTBack returning true). */
+/* Studio: Home is the timetable with the site's pages under it, so the Home
+   buttons and the "MSC Unofficial" links go there instead of home.html */
+const studioHome = () => document.documentElement.getAttribute('data-skin') === 'studio';
+function homeLinks(){
+  try {
+    document.querySelectorAll('a.btn.icon[href="home.html"], a.sitename[href="home.html"], a[data-home]').forEach(a => {
+      if (!a.dataset.home) a.dataset.home = a.getAttribute('href');
+      a.setAttribute('href', studioHome() && document.documentElement.getAttribute('data-pg') !== 'timetable' ? './' : a.dataset.home);
+    });
+  } catch {}
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeLinks); else homeLinks();
+addEventListener('tt:look', homeLinks);
 (function(){
   function addBack(){
     const crumbs = document.querySelector('.pagehead .crumbs');
@@ -1131,7 +1144,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
       if (typeof window.TTBack === 'function' && window.TTBack()) return;
       let fromHere = false;
       try { fromHere = !!document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1; } catch {}
-      if (fromHere) history.back(); else location.href = 'home.html';
+      if (fromHere) history.back(); else location.href = studioHome() ? './' : 'home.html';
     };
     b.hidden = !(window.TTBackOn && window.TTBackOn());
     crumbs.insertBefore(b, crumbs.firstChild);

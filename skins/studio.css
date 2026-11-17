@@ -391,12 +391,10 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 
 /* the grid: an arrow, the days, an arrow */
 :root[data-skin="studio"] #grid.stg{--colmax:320px;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;grid-template-rows:auto minmax(0,1fr);align-items:stretch;padding:4px 0 0}
-/* the day is sized to the window: the page itself never scrolls */
-html[data-skin="studio"][data-pg="timetable"],html[data-skin="studio"][data-pg="timetable"] body{height:100%;overflow:hidden;overscroll-behavior:none}
-html[data-skin="studio"][data-pg="timetable"] body{min-height:0}   /* its height is set by fitHeight() in index.html */
+/* the timetable fills the first screen exactly (fitHeight() sets .wrap's height); the pages' tiles follow below */
 /* the page is one window-high column: header, then the timetable takes all
    the height that is left; the margin under it matches the one above */
-:root[data-skin="studio"][data-pg="timetable"] .wrap{box-sizing:border-box;height:100%;display:flex;flex-direction:column;padding-bottom:20px}
+:root[data-skin="studio"][data-pg="timetable"] .wrap{box-sizing:border-box;height:100vh;display:flex;flex-direction:column;padding-bottom:20px}
 :root[data-skin="studio"][data-pg="timetable"] .wrap>*{flex:none}
 :root[data-skin="studio"][data-pg="timetable"] .wrap>#grid{flex:1 1 0;min-height:0}
 @media (max-width:860px){ :root[data-skin="studio"][data-pg="timetable"] .wrap{padding-bottom:14px} }
@@ -551,3 +549,18 @@ html[data-skin="studio"][data-motion="reduced"] #grid.stg *{animation:none!impor
 [data-skin="studio"] .topbar .idrow input::placeholder{font-weight:400}
 [data-skin="studio"] .topbar .idrow .dom{font-size:.875rem;color:var(--muted)}
 [data-skin="studio"] .topbar .idrow .whoback{padding:0;color:var(--muted)}
+
+/* ── under the timetable: the site's pages, as the beta's tiles (same columns as the days) ── */
+[data-skin="studio"][data-pg="timetable"] .sthome{display:block;max-width:1400px;margin:0 auto;padding:44px 20px 72px}
+[data-skin="studio"] .sthome .mg{display:grid;grid-template-columns:repeat(5,minmax(0,320px));justify-content:center;grid-auto-rows:150px;gap:8px;margin-inline:44px}
+[data-skin="studio"] .sthome .mod{--tint:34%;--ink:color-mix(in srgb,var(--c) 40%,var(--text));display:flex;flex-direction:column;justify-content:space-between;
+  padding:14px 16px;border-radius:10px;text-decoration:none;color:var(--ink);background:color-mix(in srgb,var(--c) var(--tint),var(--st-paper));
+  transition:filter var(--st-fast) var(--st-ease),transform var(--st-fast) var(--st-ease)}
+[data-skin="studio"][data-mode="dark"] .sthome .mod{--tint:24%;--ink:color-mix(in srgb,var(--c) 35%,var(--text))}
+[data-skin="studio"] .sthome .mod:hover{filter:brightness(.97)}
+[data-skin="studio"][data-mode="dark"] .sthome .mod:hover{filter:brightness(1.1)}
+[data-skin="studio"] .sthome .mod:active{transform:scale(.985)}
+[data-skin="studio"] .sthome .mod .ic svg{display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+[data-skin="studio"] .sthome .mod h3{margin:0;font-family:var(--font-ui);font-size:.9375rem;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+@media (max-width:1100px){ [data-skin="studio"] .sthome .mg{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:860px){ [data-skin="studio"][data-pg="timetable"] .sthome{padding:28px 14px 48px} [data-skin="studio"] .sthome .mg{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:110px;margin-inline:0} }
