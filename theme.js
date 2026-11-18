@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261118h';
+const ASSET_V = '20261118i';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -46,6 +46,7 @@ const HIDDEN_SKINS = ['coquette', 'aero'];
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
   { id:'studio',    name:'Studio - Beta',    both:true, ic:'accent', is:'icons', css:'studio' },
+  { id:'canvas',    name:'Canvas - Beta',    both:true, ic:'accent', is:'icons', css:'canvas' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
@@ -89,6 +90,9 @@ const THUMBS = (() => {
       tiles('', i => 'rx="5" fill="#fff" fill-opacity=".8" stroke="' + ['#ff9f0a', '#0a84ff', '#30d158'][i] + '" stroke-width="1.6"')],
     glass: ['#0d1220', '<defs><filter id="b"><feGaussianBlur stdDeviation="9"/></filter></defs><g filter="url(#b)"><circle cx="22" cy="6" r="20" fill="#7a5aff"/><circle cx="96" cy="14" r="20" fill="#00becc"/><circle cx="60" cy="48" r="18" fill="#ff50a0"/></g>' +
       bar('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"') + tiles('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"')],
+    canvas: ['#f6f5f4', '<rect x="8" y="5" width="48" height="8" rx="4" fill="#000" fill-opacity=".05"/><rect x="9" y="6" width="15" height="6" rx="3" fill="#fff"/>' +
+      [8, 44, 80].map((x, i) => '<rect x="' + x + '" y="20" width="32" height="22" rx="4" fill="#fff" stroke="#000" stroke-opacity=".06" stroke-width=".6"/><rect x="' + (x + 4) + '" y="24" width="8" height="8" rx="2.2" fill="' + ['#3b82f6', '#22c55e', '#f59e0b'][i] + '"/>').join('') +
+      '<rect x="88" y="5" width="24" height="8" rx="4" fill="#3b82f6"/>'],
     studio: ['#f7f2ec', bar('rx="2.5" fill="none"') + '<rect x="8" y="7" width="40" height="5" rx="1.5" fill="#1d1d1f"/><rect x="8" y="14" width="22" height="2.4" rx="1.2" fill="#a29d97"/>' +
       tiles('rx="2.5" fill="#fffefc" stroke="#e2ddd6" stroke-width=".7"') + [14, 50, 86].map(x => '<rect x="' + x + '" y="28" width="6" height="6" rx="1.5" fill="#6b4fd0"/>').join('')],
     paper: ['#f7f3e8', '<g stroke="#9fb4d8" stroke-opacity=".5">' + [9, 18, 27, 36, 45].map(y => '<path d="M0 ' + y + 'H120"/>').join('') + '</g><path d="M22 0V46" stroke="#d66" stroke-opacity=".6"/>' +
@@ -159,7 +163,7 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
-SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6';
+SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; SKINS.find(s => s.id === 'canvas').border = '#e7e6e4';
 
 /* kept for older callers; the picker shows every theme now */
 const QUICK_SKINS = SKINS.filter(s => !s.legacy).map(s => s.id);
@@ -347,6 +351,7 @@ const FAV = {
   vapor:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#7a4dff'); g.addColorStop(.55, '#ff5fbf'); g.addColorStop(1, '#ffb36b');
                x.fillStyle = g; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(40,10,80,.55)'; [45, 52, 58].forEach((y, i) => x.fillRect(0, y, N, 2 + i)); } },
   studio:    { ink:'#fff', bg(x, N){ x.fillStyle = '#6b4fd0'; x.fillRect(0, 0, N, N); } },
+  canvas:    { ink:'#fff', bg(x, N){ x.fillStyle = '#3b82f6'; x.fillRect(0, 0, N, N); } },
   aero:      { ink:'#fff', bg(x, N){ const ev = document.documentElement.getAttribute('data-mode') === 'dark', g = x.createLinearGradient(0, 0, 0, N);
                (ev ? [[0, '#ff8a70'], [.49, '#d4140c'], [.5, '#8e0603'], [1, '#e0261c']] : [[0, '#9fe3ff'], [.49, '#2aa4ef'], [.5, '#0b7fd0'], [1, '#4fc0ff']]).forEach(s => g.addColorStop(s[0], s[1]));
                x.fillStyle = g; x.fillRect(0, 0, N, N); } },
@@ -1155,7 +1160,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
    otherwise to Home; a page can handle it first (window.TTBack returning true). */
 /* Studio: Home is the timetable with the site's pages under it, so the Home
    buttons and the "MSC Unofficial" links go there instead of home.html */
-const studioHome = () => document.documentElement.getAttribute('data-skin') === 'studio';
+const studioHome = () => ['studio','canvas'].includes(document.documentElement.getAttribute('data-skin'));
 function homeLinks(){
   try {
     document.querySelectorAll('a.btn.icon[href="home.html"], a.sitename[href="home.html"], a[data-home]').forEach(a => {
