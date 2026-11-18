@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261118g';
+const ASSET_V = '20261118h';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1086,6 +1086,8 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'ghostlobbies', date:'2026-11-18', title:'No more ghost lobbies',
+    text:'A public lobby now closes once everyone has left it, even if someone’s phone went to sleep or lost its connection. Empty lobbies drop off the list within a couple of minutes.' },
   { id:'themes3', date:'2026-11-17', title:'A new theme',
     text:'Gen X Soft Club. In Settings. Try it in dark mode too.' },
   { id:'themes2', date:'2026-11-14', title:'Themes, rebuilt',

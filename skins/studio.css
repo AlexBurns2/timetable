@@ -844,3 +844,25 @@ html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] 
   border-left:1px solid color-mix(in srgb,var(--c,var(--st-violet)) 30%,transparent)}
 html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:has(.stlb) .stlb .lbbr{line-height:1.35}
 html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard{align-content:center}
+
+/* Games, third pass: Plain's proportions. A 32px icon and a 1.125rem name; a tile without a
+   board is icon top-left, name at the foot (as Plain); a tile with a board puts icon and name
+   on top and lets the board fill the rest in larger type */
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard{padding:14px 16px;row-gap:6px;column-gap:12px}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard .ico .gi{width:32px;height:32px}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard h2{font-size:1.125rem;font-weight:600;letter-spacing:-.012em}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard:not(:has(.stlb)){display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard:not(:has(.stlb)) h2{margin-top:auto;white-space:normal}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard:not(:has(.stlb)) .mppeek{font-size:.8125rem}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard:has(.stlb){grid-template-rows:auto minmax(0,1fr)}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb{align-self:stretch;justify-content:space-evenly;margin-top:4px;padding-top:8px}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb .lbbr{font-size:.875rem;line-height:1.5}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb .lbbr i{font-size:.8125rem}
+/* "Play with your year" (wide and short): icon and name on the left, the board beside them */
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:not(:has(.stlb)){flex-direction:row;align-items:center;justify-content:flex-start;gap:12px}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:not(:has(.stlb)) h2{margin:0}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:has(.stlb){grid-template-rows:minmax(0,1fr)}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:has(.stlb) .stlb{justify-content:center;padding-top:0}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .stlb .lbbr{font-size:.8125rem;line-height:1.4}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard:not(:has(.stlb)) :is(.ico,h2,.mppeek){align-self:flex-start}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:not(:has(.stlb)) :is(.ico,h2){align-self:center}

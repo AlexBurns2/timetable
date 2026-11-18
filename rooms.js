@@ -68,17 +68,27 @@
     const TS = fb.database.ServerValue.TIMESTAMP;
     const base = db.ref('rooms/' + name), peersRef = base.child('peers'), evRef = base.child('events'), myRef = peersRef.child(me);
     const mine = {};
-    let peers = [], gone = false;
+    let peers = [], gone = false, raw = {}, lastKey = '';
     const peerFns = [], topicFns = {};
-    const onPeers = snap => {
-      const v = snap.val() || {}, list = [];
+    /* Ghosts: a peer is removed when its browser disconnects, but a phone that sleeps or a
+       connection that drops can leave it behind for good (a public lobby nobody is in, still
+       listed). So every open room says it's still here every BEAT, and anyone not heard from
+       for STALE is treated as gone. */
+    const BEAT = 30000, STALE = 150000;
+    const build = () => {
+      const list = [], now = Date.now() + offset;
       /* what someone else's computer wrote: always a plain object, whatever they sent */
-      for (const id in v){ let p = {}; try { p = JSON.parse((v[id] && v[id].p) || '{}'); } catch (e) {}
+      for (const id in raw){ const r = raw[id] || {};
+        if (id !== me && typeof r.t === 'number' && now - r.t > STALE) continue;
+        let p = {}; try { p = JSON.parse(r.p || '{}'); } catch (e) {}
         if (!p || typeof p !== 'object' || Array.isArray(p)) p = {};
         list.push({ id, isMe: id === me, presence: p }); }
+      const key = JSON.stringify(list.map(q => [q.id, q.presence]));
+      if (key === lastKey) return; lastKey = key;
       peers = list;
       peerFns.slice().forEach(f => { try { f(peers); } catch (e) { console.error(e); } });
     };
+    const onPeers = snap => { raw = snap.val() || {}; lastKey = ''; build(); };
     const evQuery = evRef.orderByChild('t').startAt(Date.now() + offset - 3000);
     const onEv = snap => {
       const v = snap.val(); if (!v || typeof v.topic !== 'string' || typeof v.d !== 'string') return;
@@ -90,6 +100,7 @@
     await myRef.set({ p: '{}', t: TS });
     peersRef.on('value', onPeers);
     evQuery.on('child_added', onEv);
+    const beat = setInterval(() => { if (gone) return; myRef.set({ p: JSON.stringify(mine), t: TS }).catch(() => {}); build(); }, BEAT);
     return {
       id: me, name,
       now: () => Date.now() + offset,
@@ -104,7 +115,7 @@
       peers: () => peers,
       onPeers: fn => { peerFns.push(fn); if (peers.length) setTimeout(() => fn(peers), 0); return () => { const i = peerFns.indexOf(fn); if (i >= 0) peerFns.splice(i, 1); }; },
       leave: async () => {
-        if (gone) return; gone = true;
+        if (gone) return; gone = true; clearInterval(beat);
         peersRef.off('value', onPeers); evQuery.off('child_added', onEv);
         await myRef.remove().catch(() => {});
         try { await myRef.onDisconnect().cancel(); } catch (e) {}
