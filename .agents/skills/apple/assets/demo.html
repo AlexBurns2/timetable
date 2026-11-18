@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Lumen — Apple design system demo</title>
+  <meta name="description" content="Reference implementation of the /apple skill tokens and components.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./apple-tokens.css">
+  <link rel="stylesheet" href="./apple-components.css">
+  <style>
+    /* Demo-only composition. Everything visual comes from the tokens. */
+    .demo-nav-links { display: flex; gap: var(--space-8); list-style: none; margin: 0; padding: 0; }
+    @media (max-width: 734px) { .demo-nav-links { display: none; } }
+    .demo-brand { font-weight: 600; font-size: var(--type-body-size); letter-spacing: var(--type-body-tracking); color: var(--label); opacity: 1 !important; }
+
+    .demo-hero { padding-block: var(--space-20) 0; text-align: center; overflow: hidden; }
+    .demo-hero .ap-type-eyebrow { color: var(--label); }
+    .demo-hero .ap-type-hero { margin-top: var(--space-2); }
+    .demo-hero .ap-type-intro { margin-top: var(--space-4); color: var(--label-secondary); }
+    .demo-ctas { display: flex; gap: var(--space-6); justify-content: center; align-items: center; margin-top: var(--space-8); flex-wrap: wrap; }
+
+    /* Product visual: a window with a floating glass sidebar over a colorful content layer */
+    .demo-window {
+      --_r: var(--radius-2xl); --_inset: 12px;
+      position: relative; margin: var(--space-16) auto 0; width: min(1080px, 100% - 2 * var(--gutter)); aspect-ratio: 16 / 9.5;
+      border-radius: var(--_r); overflow: hidden; background: var(--surface); box-shadow: var(--shadow-lg); text-align: start;
+    }
+    .demo-canvas { position: absolute; inset: 0; background:
+      radial-gradient(40% 55% at 78% 30%, light-dark(#ffd9a8, #8a4b12) 0%, transparent 70%),
+      radial-gradient(45% 60% at 55% 85%, light-dark(#b8d8ff, #12407a) 0%, transparent 70%),
+      radial-gradient(35% 45% at 95% 90%, light-dark(#ffc2d6, #7a1238) 0%, transparent 70%),
+      var(--bg-alt); }
+    .demo-sidebar {
+      position: absolute; inset: var(--_inset) auto var(--_inset) var(--_inset); width: min(240px, 34%);
+      border-radius: calc(var(--_r) - var(--_inset)); padding: var(--space-5) var(--space-3); display: flex; flex-direction: column; gap: 2px;
+    }
+    .demo-sidebar h4 { font: var(--text-footnote); font-weight: 600; color: var(--label-secondary); padding: var(--space-3) var(--space-3) var(--space-1); }
+    .demo-sidebar a { display: flex; align-items: center; gap: var(--space-3); padding: 8px 12px; border-radius: var(--radius-sm); color: var(--label); font-size: 0.9375rem; letter-spacing: -0.016em; }
+    .demo-sidebar a:hover { text-decoration: none; background: var(--fill-quaternary); }
+    .demo-sidebar a[aria-current] { background: var(--fill-tertiary); font-weight: 600; }
+    .demo-sidebar svg { width: 18px; height: 18px; color: var(--accent-text); }
+    .demo-notes { position: absolute; inset: calc(var(--space-16) + var(--space-3)) var(--space-8) var(--space-8) calc(min(240px, 34%) + var(--space-10)); display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); align-content: start; }
+    .demo-note { background: var(--surface); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--shadow-sm); }
+    .demo-note h5 { font: var(--text-headline); letter-spacing: var(--text-headline-tracking); margin: 0 0 var(--space-1); }
+    .demo-note p { font: var(--text-subheadline); color: var(--label-secondary); }
+    .demo-floating-tools { position: absolute; top: var(--space-4); right: var(--space-4); display: flex; gap: var(--space-2); }
+    .demo-floating-tools .ap-toolbar-group { padding: 2px; }
+    @media (max-width: 734px) {
+      .demo-window { aspect-ratio: 3 / 4; }
+      .demo-notes { inset: calc(var(--space-16) + 8px) var(--space-4) var(--space-4) var(--space-4); grid-template-columns: 1fr; }
+      .demo-sidebar { display: none; }
+    }
+
+    .demo-section-head { text-align: center; margin-bottom: var(--space-12); }
+    .demo-section-head .ap-type-intro { color: var(--label-secondary); margin-top: var(--space-4); }
+    .demo-tile { padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-12); }
+    .demo-tile p { color: var(--label-secondary); }
+    .demo-tile p strong { color: var(--label); font-weight: 600; }
+    .demo-tile-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; }
+    .demo-tile-icon svg { width: 24px; height: 24px; }
+
+    .demo-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-10); text-align: center; }
+    .demo-stat-value { font-size: var(--type-headline-size); line-height: var(--type-headline-leading); letter-spacing: var(--type-headline-tracking); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .demo-stat-label { color: var(--label-secondary); margin-top: var(--space-2); }
+
+    /* App demo: a phone-sized scroll container */
+    .demo-app-wrap { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: var(--space-16); align-items: center; max-width: 1080px; margin-inline: auto; }
+    .demo-copy { max-width: 34em; }
+    @media (max-width: 1068px) { .demo-app-wrap { grid-template-columns: 1fr; justify-items: center; } }
+    .demo-phone { position: relative; width: min(390px, 100%); height: 780px; border-radius: 54px; overflow: hidden; background: var(--bg-grouped);
+      box-shadow: 0 0 0 10px light-dark(#1d1d1f, #3a3a3c), var(--shadow-lg); }
+    .demo-phone-scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 110px; scrollbar-width: none; }
+    .demo-phone-scroll::-webkit-scrollbar { display: none; }
+    .demo-phone .ap-toolbar { --toolbar-edge-color: var(--bg-grouped); padding-top: 54px; }
+    .demo-phone .ap-tabbar { position: absolute; inset-inline: 16px; bottom: 22px; }
+    .demo-phone .ap-list-section { margin-inline: var(--space-4); }
+    .demo-controls { padding: var(--space-2) var(--space-4) 0; display: grid; gap: var(--space-4); }
+    .demo-copy .ap-type-intro { color: var(--label-secondary); margin-top: var(--space-4); }
+    .demo-copy ul { margin: var(--space-6) 0 0; padding-inline-start: 1.1em; color: var(--label-secondary); display: grid; gap: var(--space-2); }
+    .demo-copy li strong { color: var(--label); font-weight: 600; }
+
+    .demo-gallery { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .demo-row-label { font: var(--text-footnote); color: var(--label-secondary); margin: var(--space-8) 0 var(--space-3); }
+    .demo-field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-6); }
+
+    .demo-footer { padding-block: var(--space-10) var(--space-16); background: var(--bg-alt); }
+    .demo-footer p { font-size: var(--type-caption-size); line-height: var(--type-caption-leading); letter-spacing: var(--type-caption-tracking); color: var(--label-secondary); }
+    .demo-footer hr { margin: var(--space-4) 0; }
+
+    /* Anchor the menu to its button where CSS anchor positioning is supported */
+    @supports (anchor-name: --a) {
+      #more-button { anchor-name: --more; }
+      #more-menu { position-anchor: --more; inset: auto; top: anchor(bottom); right: anchor(right); margin: 8px 0 0; --menu-origin: top right; position-try-fallbacks: flip-block; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SVG symbol sprite (simple 24px stroke icons, weight-matched to regular text) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7.5 7.5 4.5-4.5 4.5 4.5"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1.5 1.5 5 5.5-5 5.5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19a5 5 0 1 1 .9-9.9A6 6 0 0 1 19.5 11 4 4 0 0 1 18 19Z"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5 13.9 9l5.6 2-5.6 2L12 18.5 10.1 13 4.5 11l5.6-2Z"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1Z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h17"/><path d="M8.5 6V4.5a1.5 1.5 0 0 1 1.5-1.5h4a1.5 1.5 0 0 1 1.5 1.5V6"/><path d="m18.5 6-.8 13.1a2 2 0 0 1-2 1.9H8.3a2 2 0 0 1-2-1.9L5.5 6"/></symbol>
+  </defs>
+</svg>
+
+<header class="ap-globalnav">
+  <nav class="ap-globalnav-inner ap-container" aria-label="Global">
+    <a href="#" class="demo-brand">Lumen</a>
+    <ul class="demo-nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#app">App</a></li>
+      <li><a href="#components">Components</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+    </ul>
+    <div class="ap-segmented" style="--n: 3; width: 210px" role="radiogroup" aria-label="Appearance">
+      <label><input type="radio" name="theme" value="system" checked><span>Auto</span></label>
+      <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+      <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <!-- Hero: eyebrow (product) + giant headline + intro + two CTAs + product visual -->
+  <section class="demo-hero">
+    <div class="ap-container">
+      <h1 class="ap-type-eyebrow">Lumen Notes</h1>
+      <p class="ap-type-hero">Think it. Keep it.</p>
+      <p class="ap-type-intro ap-measure ap-center">Capture a thought in a second and find it again in less. Notes that stay out of your way until you need them.</p>
+      <div class="demo-ctas">
+        <a class="ap-button" href="#pricing">Download Free</a>
+        <a class="ap-link-chevron" href="#features">Learn more</a>
+      </div>
+    </div>
+    <div class="demo-window ap-reveal" role="img" aria-label="Lumen on Mac: a floating glass sidebar beside a grid of notes">
+      <div class="demo-canvas"></div>
+      <nav class="demo-sidebar ap-glass" aria-hidden="true">
+        <h4>Library</h4>
+        <a aria-current="true"><svg><use href="#i-note"/></svg>All Notes</a>
+        <a><svg><use href="#i-sparkle"/></svg>Highlights</a>
+        <a><svg><use href="#i-cloud"/></svg>Shared</a>
+        <h4>Folders</h4>
+        <a><svg><use href="#i-house"/></svg>Home</a>
+        <a><svg><use href="#i-person"/></svg>Personal</a>
+      </nav>
+      <div class="demo-floating-tools" aria-hidden="true">
+        <div class="ap-toolbar-group ap-glass"><button tabindex="-1"><svg><use href="#i-search"/></svg></button></div>
+        <div class="ap-toolbar-group ap-glass"><button tabindex="-1"><svg><use href="#i-share"/></svg></button><button tabindex="-1"><svg><use href="#i-more"/></svg></button></div>
+        <div class="ap-toolbar-group ap-glass-prominent"><button tabindex="-1" style="color:#fff"><svg><use href="#i-plus"/></svg></button></div>
+      </div>
+      <div class="demo-notes" aria-hidden="true">
+        <article class="demo-note"><h5>Trip to Kyoto</h5><p>Book the ryokan by Friday. Train passes, temple hours, the tofu place near Nanzen-ji.</p></article>
+        <article class="demo-note"><h5>Design review</h5><p>Tighten the onboarding to two screens. Move color into the content layer.</p></article>
+        <article class="demo-note"><h5>Groceries</h5><p>Lemons, basil, sourdough, oat milk, the good olive oil.</p></article>
+        <article class="demo-note"><h5>Book notes</h5><p>“Simplicity isn’t minimalism.” Having exactly enough.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features: alternate background, centered header, tile grid -->
+  <section class="ap-section ap-section--alt" id="features">
+    <div class="ap-container">
+      <div class="demo-section-head">
+        <h2 class="ap-type-section">Get the essentials.</h2>
+        <p class="ap-type-intro ap-measure ap-center">Everything you need to capture, organize, and find your ideas — and nothing you don’t.</p>
+      </div>
+      <div class="ap-grid" style="--grid-min: 280px">
+        <article class="ap-tile demo-tile ap-reveal">
+          <div class="demo-tile-icon" style="background: var(--orange)"><svg><use href="#i-sparkle"/></svg></div>
+          <div><h3 class="ap-type-tile">Instant capture.</h3><p style="margin-top: var(--space-2)"><strong>One shortcut, anywhere.</strong> A new note opens before you finish the thought.</p></div>
+        </article>
+        <article class="ap-tile demo-tile ap-reveal">
+          <div class="demo-tile-icon" style="background: var(--blue)"><svg><use href="#i-search"/></svg></div>
+          <div><h3 class="ap-type-tile">Search that reads.</h3><p style="margin-top: var(--space-2)"><strong>Typed, written, or scanned.</strong> Find words inside handwriting and photos.</p></div>
+        </article>
+        <article class="ap-tile demo-tile ap-reveal">
+          <div class="demo-tile-icon" style="background: var(--green)"><svg><use href="#i-lock"/></svg></div>
+          <div><h3 class="ap-type-tile">Private by design.</h3><p style="margin-top: var(--space-2)"><strong>Encrypted end to end.</strong> Your notes are readable only on your devices.</p></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dark chapter with stats -->
+  <section class="ap-section ap-section--dark">
+    <div class="ap-container">
+      <div class="demo-section-head">
+        <p class="ap-type-eyebrow" style="color: var(--orange-text)">Performance</p>
+        <h2 class="ap-type-headline" style="margin-top: var(--space-2)">Fast that feels instant.</h2>
+      </div>
+      <div class="demo-stats">
+        <div class="ap-reveal"><div class="demo-stat-value">0.2 s</div><p class="demo-stat-label">to a blank note<sup>1</sup></p></div>
+        <div class="ap-reveal"><div class="demo-stat-value">10×</div><p class="demo-stat-label">faster search than v1<sup>2</sup></p></div>
+        <div class="ap-reveal"><div class="demo-stat-value">Up to 1M</div><p class="demo-stat-label">notes, fully searchable</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- App UI: iPhone-style screen + explanation -->
+  <section class="ap-section" id="app">
+    <div class="ap-container-wide">
+      <div class="demo-app-wrap">
+        <div class="demo-phone" aria-label="Example settings screen">
+          <div class="demo-phone-scroll" id="phone-scroll">
+            <div class="ap-toolbar" id="phone-toolbar">
+              <div class="ap-toolbar-leading">
+                <div class="ap-toolbar-group ap-glass ap-glass-press"><button aria-label="Back"><svg style="width:10px;height:18px;transform:scaleX(-1)"><use href="#i-chevron"/></svg></button></div>
+              </div>
+              <div class="ap-toolbar-title">Settings</div>
+              <div class="ap-toolbar-trailing">
+                <div class="ap-toolbar-group ap-glass-prominent ap-glass-press"><button aria-label="Done" style="color:#fff;font-weight:600">Done</button></div>
+              </div>
+            </div>
+            <h2 class="ap-large-title">Settings</h2>
+            <div class="demo-controls">
+              <label class="ap-search"><svg><use href="#i-search"/></svg><span class="ap-sr-only">Search settings</span><input type="search" placeholder="Search"></label>
+            </div>
+            <div class="ap-list-section">
+              <ul class="ap-list">
+                <li><a class="ap-row" href="#"><span class="ap-row-icon" style="--icon-bg: var(--gray)"><svg><use href="#i-person"/></svg></span><span class="ap-row-title">Account<span class="ap-row-subtitle">Appleseed Studio</span></span><svg class="ap-row-chevron"><use href="#i-chevron"/></svg></a></li>
+                <li><a class="ap-row" href="#"><span class="ap-row-icon" style="--icon-bg: var(--blue)"><svg><use href="#i-cloud"/></svg></span><span class="ap-row-title">Sync</span><span class="ap-row-detail">On</span><svg class="ap-row-chevron"><use href="#i-chevron"/></svg></a></li>
+              </ul>
+            </div>
+            <div class="ap-list-section">
+              <h3 class="ap-list-header">Notifications</h3>
+              <ul class="ap-list">
+                <li><label class="ap-row"><span class="ap-row-icon" style="--icon-bg: var(--red)"><svg><use href="#i-bell"/></svg></span><span class="ap-row-title">Reminders</span><input type="checkbox" role="switch" class="ap-switch" checked></label></li>
+                <li><label class="ap-row"><span class="ap-row-icon" style="--icon-bg: var(--indigo)"><svg><use href="#i-moon"/></svg></span><span class="ap-row-title">Quiet Hours</span><input type="checkbox" role="switch" class="ap-switch"></label></li>
+              </ul>
+              <p class="ap-list-footer">Quiet Hours silences reminders from 10 PM to 7 AM.</p>
+            </div>
+            <div class="ap-list-section">
+              <h3 class="ap-list-header">Note Layout</h3>
+              <div class="ap-segmented" style="--n: 3" role="radiogroup" aria-label="Note layout">
+                <label><input type="radio" name="layout" checked><span>List</span></label>
+                <label><input type="radio" name="layout"><span>Grid</span></label>
+                <label><input type="radio" name="layout"><span>Board</span></label>
+              </div>
+            </div>
+            <div class="ap-list-section">
+              <ul class="ap-list">
+                <li><button class="ap-row" style="color: var(--accent-text)" data-open="sheet-new">New Folder…</button></li>
+                <li><button class="ap-row" style="color: var(--red-text)" data-open="alert-delete">Delete All Notes</button></li>
+              </ul>
+            </div>
+            <div style="height: 240px"></div>
+          </div>
+          <nav class="ap-tabbar ap-glass" aria-label="Primary">
+            <a href="#" ><svg><use href="#i-note"/></svg>Notes</a>
+            <a href="#"><svg><use href="#i-sparkle"/></svg>Highlights</a>
+            <a href="#" aria-current="page"><svg><use href="#i-gear"/></svg>Settings</a>
+          </nav>
+        </div>
+
+        <div class="demo-copy">
+          <p class="ap-type-eyebrow" style="color: var(--accent-text)">Product UI</p>
+          <h2 class="ap-type-headline" style="margin-top: var(--space-2)">Familiar where it matters.</h2>
+          <p class="ap-type-intro">Two layers. Content scrolls; controls float on glass and stay quiet. Scroll the screen to see the edge effect appear under the toolbar.</p>
+          <ul>
+            <li><strong>Glass only on controls</strong> — toolbar groups and the tab bar, never on list rows.</li>
+            <li><strong>One tinted action.</strong> Done is the only colored control.</li>
+            <li><strong>Concentric corners</strong> everywhere, capsules for touch.</li>
+            <li><strong>Inset grouped lists</strong> with separators aligned to the text.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Component gallery -->
+  <section class="ap-section ap-section--alt" id="components">
+    <div class="ap-container">
+      <div class="demo-section-head">
+        <h2 class="ap-type-section">Components.</h2>
+        <p class="ap-type-intro ap-measure ap-center">Every state built in: hover, press, focus, disabled.</p>
+      </div>
+      <div class="ap-card ap-card--lg">
+        <p class="demo-row-label" style="margin-top:0">Buttons — one prominent action per view</p>
+        <div class="demo-gallery">
+          <button class="ap-button">Save Changes</button>
+          <button class="ap-button ap-button--tinted">Add to List</button>
+          <button class="ap-button ap-button--gray">Cancel</button>
+          <button class="ap-button ap-button--plain">Learn More</button>
+          <button class="ap-button ap-button--outline">Compare</button>
+          <button class="ap-button ap-button--destructive-plain">Delete</button>
+          <button class="ap-button" disabled>Disabled</button>
+          <button class="ap-button ap-button--sm">Buy</button>
+          <button class="ap-button ap-button--icon ap-button--gray" aria-label="Share"><svg><use href="#i-share"/></svg></button>
+          <span style="position: relative">
+            <button class="ap-button ap-button--icon ap-button--gray" id="more-button" aria-label="More" popovertarget="more-menu" aria-haspopup="menu"><svg><use href="#i-more"/></svg></button>
+          </span>
+        </div>
+
+        <p class="demo-row-label">Status</p>
+        <div class="demo-gallery">
+          <span class="ap-pill ap-pill--green">Synced</span>
+          <span class="ap-pill ap-pill--orange">Pending</span>
+          <span class="ap-pill ap-pill--red">Failed</span>
+          <span class="ap-pill">Beta</span>
+          <span class="ap-badge">3</span>
+          <span class="ap-spinner" role="progressbar" aria-label="Syncing"></span>
+          <progress class="ap-progress" value="62" max="100" style="width: 160px" aria-label="Upload progress"></progress>
+        </div>
+
+        <p class="demo-row-label">Fields</p>
+        <div class="demo-field-grid">
+          <div>
+            <label class="ap-label" for="f-email">Email</label>
+            <input class="ap-field" id="f-email" type="email" autocomplete="email" placeholder="name@example.com" aria-describedby="f-email-hint">
+            <p class="ap-field-hint" id="f-email-hint">We’ll send your receipt here.</p>
+          </div>
+          <div>
+            <label class="ap-label" for="f-pass">Password</label>
+            <input class="ap-field" id="f-pass" type="password" autocomplete="new-password" value="abc" aria-invalid="true" aria-describedby="f-pass-err">
+            <p class="ap-field-error" id="f-pass-err">Choose a password with at least 8 characters.</p>
+          </div>
+        </div>
+
+        <p class="demo-row-label">Loading placeholders</p>
+        <div style="display:grid; gap: 10px; max-width: 420px">
+          <div class="ap-skeleton" style="height: 18px; width: 60%"></div>
+          <div class="ap-skeleton" style="height: 14px"></div>
+          <div class="ap-skeleton" style="height: 14px; width: 85%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing / CTA -->
+  <section class="ap-section" id="pricing">
+    <div class="ap-container ap-center">
+      <h2 class="ap-type-headline">Start writing today.</h2>
+      <p class="ap-type-intro ap-measure ap-center ap-secondary" style="margin-top: var(--space-4)">Free on every device. Lumen Pro adds shared folders and unlimited history for $2.99/mo.</p>
+      <div class="demo-ctas">
+        <a class="ap-button ap-button--lg" href="#">Download Free</a>
+        <a class="ap-link-chevron" href="#">Compare plans</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="demo-footer">
+  <div class="ap-container">
+    <p>1. Measured on a mid-range laptop with 10,000 notes. Results vary.</p>
+    <p>2. Compared with Lumen 1.0 on the same device and library.</p>
+    <hr class="ap-separator">
+    <p>Lumen is a fictional product used to demonstrate the /apple skill. Copyright © 2026.</p>
+  </div>
+</footer>
+
+<!-- Menu (Popover API) -->
+<div id="more-menu" class="ap-menu" popover role="menu" aria-label="More actions">
+  <button class="ap-menu-item" role="menuitem">Duplicate<svg><use href="#i-copy"/></svg></button>
+  <button class="ap-menu-item" role="menuitem">Rename…<svg><use href="#i-pencil"/></svg></button>
+  <button class="ap-menu-item" role="menuitem">Share…<svg><use href="#i-share"/></svg></button>
+  <hr class="ap-menu-separator">
+  <button class="ap-menu-item ap-menu-item--destructive" role="menuitem">Delete<svg><use href="#i-trash"/></svg></button>
+</div>
+
+<!-- Sheet: Cancel leading, title, Done trailing -->
+<dialog class="ap-sheet ap-sheet--grouped" id="sheet-new" aria-labelledby="sheet-new-title">
+  <div class="ap-sheet-grabber" aria-hidden="true"></div>
+  <div class="ap-sheet-header">
+    <button class="ap-button ap-button--gray ap-button--sm" data-close>Cancel</button>
+    <h2 class="ap-sheet-title" id="sheet-new-title">New Folder</h2>
+    <button class="ap-button ap-button--sm" data-close>Done</button>
+  </div>
+  <div class="ap-sheet-body">
+    <ul class="ap-list">
+      <li><label class="ap-row"><span class="ap-sr-only">Folder name</span><input class="ap-row-title" style="border:0;background:none;outline:none;padding:0" placeholder="Name" autofocus></label></li>
+    </ul>
+    <p class="ap-list-footer">Folders sync to all your devices.</p>
+  </div>
+</dialog>
+
+<!-- Alert: specific title, verb buttons, destructive not default -->
+<dialog class="ap-alert" id="alert-delete" role="alertdialog" aria-labelledby="alert-title" aria-describedby="alert-msg">
+  <h2 class="ap-alert-title" id="alert-title">Delete all 214 notes?</h2>
+  <p class="ap-alert-message" id="alert-msg">This removes them from all your devices. You can’t undo this.</p>
+  <div class="ap-alert-actions">
+    <button class="ap-button ap-button--gray" data-close autofocus>Cancel</button>
+    <button class="ap-button ap-button--destructive" data-close>Delete</button>
+  </div>
+</dialog>
+
+<script>
+  // Theme: Auto follows the OS; Light/Dark set data-theme on <html>. Also accepts ?theme=light|dark
+  const setTheme = v => {
+    if (v === 'light' || v === 'dark') document.documentElement.dataset.theme = v;
+    else document.documentElement.removeAttribute('data-theme');
+  };
+  document.querySelectorAll('input[name="theme"]').forEach(r => r.addEventListener('change', e => setTheme(e.target.value)));
+  const initial = new URLSearchParams(location.search).get('theme');
+  if (initial) {
+    setTheme(initial);
+    const radio = document.querySelector(`input[name="theme"][value="${initial}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  // Reveal once on scroll
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (en.isIntersecting) { en.target.classList.add('is-visible'); io.unobserve(en.target); }
+  }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.ap-reveal').forEach(el => io.observe(el));
+
+  // Scroll edge effect + inline title once content scrolls under the toolbar
+  const scroller = document.getElementById('phone-scroll');
+  const toolbar = document.getElementById('phone-toolbar');
+  scroller.addEventListener('scroll', () => toolbar.toggleAttribute('data-scrolled', scroller.scrollTop > 40), { passive: true });
+
+  // Glass press glow originates under the finger/pointer
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.ap-glass-press'); if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--px', `${e.clientX - r.left}px`);
+    el.style.setProperty('--py', `${e.clientY - r.top}px`);
+  });
+
+  // Dialogs: open, close, light-dismiss by tapping the backdrop
+  document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.open).showModal()));
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+  document.querySelectorAll('dialog.ap-sheet').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+
+  // ?open=<id> opens a dialog or popover on load (handy for screenshots and reviews)
+  const openId = new URLSearchParams(location.search).get('open');
+  const target = openId && document.getElementById(openId);
+  if (target?.showModal) target.showModal();
+  else if (target?.showPopover) target.showPopover();
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+/* ══════════════════════════════════════════════════════════════════
+   APPLE — the site as a Mac app, designed the way Apple's team designs
+   (Human Interface Guidelines; skills: .agents/skills/apple, apple-design).
+   Written from scratch; nothing here comes from Studio.
+
+   Structure
+   - A window: a translucent sidebar on the left (theme.js appleShell:
+     the pages, Settings at the foot, Now and Next on the timetable) and
+     the content on the right. Phones keep each page's own header.
+   - Timetable (index.html Apple block, #grid.apg): a toolbar ("Week 6A",
+     ‹ Today ›, search), then the week the way Calendar draws it — an hour
+     ruler, hairlines on the hour, lessons at their real times, a red line
+     at the time now. A lesson opens a popover beside it. Under the week,
+     the pages as app icons (the only part of any page that scrolls).
+   - Every other page fills the window and never scrolls; a long list
+     scrolls inside its own panel. Nothing is wider than 16:9 of the
+     window's height.
+
+   Rules this file keeps
+   - Content layer white, sidebar a material; colour lives in content
+     (subjects, page symbols), the one accent is for what you act on.
+   - Group with space and soft fills, not borders; shadows only on things
+     that float (popovers, sheets, menus).
+   - Capsules for buttons; concentric radii (inner = outer − padding).
+   - Springs, critically damped, interruptible; reduced motion = none.
+   - No coloured stripes down the side of anything.
+   ══════════════════════════════════════════════════════════════════ */
+
+[data-skin="apple"]{
+  color-scheme:light;
+  --ap-win:#ffffff;            /* the content */
+  --ap-side:rgba(242,242,247,.82);
+  --ap-side-solid:#f2f2f7;
+  --ap-well:#f5f5f7;           /* grouped surfaces on the content */
+  --ap-well-2:#ebebf0;
+  --ap-label:#1d1d1f; --ap-label-2:#6e6e73; --ap-label-3:#86868b;
+  --ap-sep:rgba(60,60,67,.14); --ap-sep-strong:rgba(60,60,67,.29);
+  --ap-fill:rgba(118,118,128,.12); --ap-fill-2:rgba(118,118,128,.2); --ap-fill-3:rgba(116,116,128,.08);
+  --ap-blue:#0071e3; --ap-blue-text:#0066cc; --ap-blue-tint:rgba(0,113,227,.12);
+  --ap-red:#ff3b30; --ap-red-text:#e9152d; --ap-green:#34c759; --ap-green-text:#008932;
+  --ap-pop:0 0 0 .5px rgba(0,0,0,.12),0 10px 30px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06);
+  --ap-sheet:0 4px 16px rgba(0,0,0,.08),0 24px 64px rgba(0,0,0,.18);
+  --ap-spring:linear(0,.0345,.1146,.2153,.3212,.4233,.517,.5999,.6716,.7326,.7836,.8258,.8605,.8887,.9116,.93,.9447,.9564,.9658,.9732,.979,.9836,.9872,.99,.9923,.994,.9953,.9964,.9972,.9978,.9983,.9987,1);
+  --ap-snappy:linear(0,.0321,.1099,.2117,.3226,.4326,.5354,.6277,.7078,.7754,.8313,.8764,.9121,.9398,.9607,.9762,.9874,.9951,1.0003,1.0035,1.0053,1.0061,1.0063,1.006,1.0055,1.0048,1.0041,1.0034,1.0028,1.0022,1.0017,1.0013,1);
+  --ap-ease:cubic-bezier(.25,.1,.25,1);
+  --ap-sidew:240px;
+  --ap-max:calc(100dvh * 16 / 9);      /* the whole window, sidebar included */
+  --ap-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI Variable Text","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --ap-font-d:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI Variable Display","Segoe UI","Helvetica Neue",Arial,sans-serif;
+
+  /* the tokens every page reads */
+  --bg:var(--ap-win); --bg-img:none; --panel:var(--ap-well); --panel-2:var(--ap-well-2);
+  --line:var(--ap-sep); --text:var(--ap-label); --muted:var(--ap-label-2);
+  --accent:var(--ap-blue); --accent-ink:#fff;
+  --font-ui:var(--ap-font); --font-display:var(--ap-font-d); --font-num:var(--ap-font);
+  --display-tt:normal; --display-ls:-.015em; --display-w:600;
+  --radius:10px; --card-radius:14px; --tint:22%; --card-accent:0px; --card-border:0;
+  --shadow:none; --shadow-hi:var(--ap-sheet);
+}
+[data-skin="apple"][data-mode="dark"]{
+  color-scheme:dark;
+  --ap-win:#1e1e20;
+  --ap-side:rgba(44,44,46,.78);
+  --ap-side-solid:#2c2c2e;
+  --ap-well:#2a2a2d; --ap-well-2:#353538;
+  --ap-label:#f5f5f7; --ap-label-2:#a1a1a6; --ap-label-3:#8d8d93;
+  --ap-sep:rgba(255,255,255,.1); --ap-sep-strong:rgba(255,255,255,.2);
+  --ap-fill:rgba(118,118,128,.24); --ap-fill-2:rgba(118,118,128,.34); --ap-fill-3:rgba(118,118,128,.16);
+  --ap-blue:#0a84ff; --ap-blue-text:#409cff; --ap-blue-tint:rgba(10,132,255,.22);
+  --ap-red:#ff453a; --ap-red-text:#ff6961; --ap-green:#30d158; --ap-green-text:#30d158;
+  --ap-pop:0 0 0 .5px rgba(255,255,255,.12),0 12px 34px rgba(0,0,0,.55);
+  --ap-sheet:0 0 0 .5px rgba(255,255,255,.1),0 24px 64px rgba(0,0,0,.6);
+  --tint:30%;
+}
+
+/* ══ base ══ */
+[data-skin="apple"] body{font-family:var(--ap-font);font-size:.875rem;line-height:1.36;letter-spacing:-.01em;color:var(--ap-label);background:var(--ap-win);-webkit-font-smoothing:antialiased}
+html.zen[data-skin="apple"] body{background:transparent}
+[data-skin="apple"] :is(h1,h2,h3){font-family:var(--ap-font-d);letter-spacing:-.015em}
+[data-skin="apple"] a{color:var(--ap-blue-text)}
+[data-skin="apple"] ::selection{background:color-mix(in srgb,var(--ap-blue) 24%,transparent)}
+[data-skin="apple"] :focus-visible{outline:3px solid color-mix(in srgb,var(--ap-blue) 50%,transparent);outline-offset:1px;border-radius:6px}
+[data-skin="apple"] ::placeholder{color:var(--ap-label-3)}
+html[data-skin="apple"]{scrollbar-width:thin;scrollbar-color:var(--ap-fill-2) transparent}
+
+/* ══ controls ══ */
+/* buttons: gray capsules; the one that matters is filled blue */
+:root[data-skin="apple"] :is(.btn,.lbopen){display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:28px;padding:5px 13px;border:0;border-radius:999px;
+  background:var(--ap-fill);color:var(--ap-label);box-shadow:none;font:500 .8125rem/1.2 var(--ap-font);letter-spacing:-.006em;
+  transition:background-color .12s linear,transform .3s var(--ap-snappy)}
+:root[data-skin="apple"] :is(.btn,.lbopen):hover{background:var(--ap-fill-2);box-shadow:none;transform:none}
+:root[data-skin="apple"] :is(.btn,.lbopen):active{transform:scale(.96);transition-duration:.12s,.08s}
+:root[data-skin="apple"] .btn.primary{background:var(--ap-blue);color:#fff}
+:root[data-skin="apple"] .btn.primary:hover{background:color-mix(in srgb,var(--ap-blue),#fff 8%)}
+:root[data-skin="apple"] .btn.danger{color:var(--ap-red-text)}
+:root[data-skin="apple"] .btn.icon{width:30px;height:30px;min-height:0;padding:0;border-radius:8px;background:transparent;color:var(--ap-label-2)}
+:root[data-skin="apple"] .btn.icon:hover{background:var(--ap-fill-3);color:var(--ap-label)}
+:root[data-skin="apple"] :is(.arrowbtn,.arrowbtn2){width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--ap-label-2);box-shadow:none}
+:root[data-skin="apple"] :is(.arrowbtn,.arrowbtn2):hover{background:var(--ap-fill-3);color:var(--ap-label)}
+
+/* segmented controls: a recessed track, the choice a raised white segment */
+:root[data-skin="apple"] :is(.modes,.dayswitch,.yeartabs,.fweeks,.fyears){display:inline-flex;gap:0;padding:2px;border:0;border-radius:9px;background:var(--ap-fill);box-shadow:none}
+:root[data-skin="apple"] :is(.modes,.dayswitch,.yeartabs,.fweeks,.fyears)>button{min-height:24px;padding:3px 12px;border:0;border-radius:7px;background:transparent;box-shadow:none;
+  font:500 .8125rem/1.2 var(--ap-font);color:var(--ap-label);transition:background-color .2s var(--ap-ease),box-shadow .2s var(--ap-ease)}
+:root[data-skin="apple"] :is(.modes,.dayswitch,.yeartabs,.fweeks,.fyears)>button:hover{background:transparent}
+:root[data-skin="apple"] :is(.modes,.dayswitch,.yeartabs,.fweeks,.fyears)>button:is([aria-pressed="true"],[aria-selected="true"],.on,.active){background:#fff;color:var(--ap-label);
+  box-shadow:0 0 0 .5px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.14)}
+:root[data-skin="apple"][data-mode="dark"] :is(.modes,.dayswitch,.yeartabs,.fweeks,.fyears)>button:is([aria-pressed="true"],[aria-selected="true"],.on,.active){background:#636366;box-shadow:none}
+
+/* switches */
+[data-skin="apple"] .tsw{border:0;border-radius:10px;background:var(--ap-well);font-weight:400}
+[data-skin="apple"] .tsw i{width:38px;height:22px;border-radius:11px;background:var(--ap-fill-2);transition:background-color .25s var(--ap-ease)}
+[data-skin="apple"] .tsw i::after{width:18px;height:18px;left:2px;top:2px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.04);transition:transform .45s var(--ap-spring)}
+[data-skin="apple"] .tsw[aria-checked="true"] i{background:var(--ap-green)}
+[data-skin="apple"] .tsw[aria-checked="true"] i::after{transform:translateX(16px)}
+
+/* fields: a soft fill; focus brings up the blue ring */
+:root[data-skin="apple"] :is(.field input[type=text],.emailrow,.gatepass,.idrow,.fnew textarea,.freplybox textarea,.pin,.custrow select,.custrow input.crin,.fsearch,.mjsadd input,input.crin){
+  border:0;border-radius:8px;background:var(--ap-fill-3);box-shadow:inset 0 0 0 .5px var(--ap-sep);color:var(--ap-label)}
+:root[data-skin="apple"] :is(.field input[type=text],.gatepass,.fnew textarea,.freplybox textarea,.pin,.custrow input.crin,.fsearch,.mjsadd input):focus,
+:root[data-skin="apple"] :is(.emailrow,.idrow):focus-within{outline:0;background:var(--ap-win);box-shadow:0 0 0 3px color-mix(in srgb,var(--ap-blue) 45%,transparent)}
+:root[data-skin="apple"] :is(.field>label,.tbhead span,.adv>summary){font-size:.8125rem;font-weight:600;letter-spacing:-.006em;text-transform:none;color:var(--ap-label)}
+[data-skin="apple"] .hint{font-size:.75rem;color:var(--ap-label-2)}
+
+/* sheets and dialogs: an opaque sheet, the window dims */
+:root[data-skin="apple"] :is(dialog,dialog.setdlg,.newsdlg){border:0;border-radius:18px;background:var(--ap-win);color:var(--ap-label);box-shadow:var(--ap-sheet)}
+:root[data-skin="apple"] :is(dialog,dialog.setdlg,.newsdlg)::backdrop{background:rgba(0,0,0,.22);backdrop-filter:none}
+:root[data-skin="apple"] :is(.dlg-h,.newshead){border:0;padding:14px 14px 6px 20px}
+:root[data-skin="apple"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font:600 1.0625rem/1.3 var(--ap-font-d);letter-spacing:-.02em}
+:root[data-skin="apple"] .dlg-b{padding:6px 20px 16px}
+:root[data-skin="apple"] .dlg-f{border:0;background:transparent;padding:10px 20px 16px}
+@media (prefers-reduced-motion:no-preference){
+  html[data-skin="apple"]:not([data-motion="reduced"]) dialog[open]:not(.credits){animation:ap-sheet .4s var(--ap-spring) both}
+  html[data-skin="apple"]:not([data-motion="reduced"]) dialog[open]:not(.credits)::backdrop{animation:ap-fade .25s var(--ap-ease)}
+}
+@keyframes ap-sheet{from{opacity:0;transform:translateY(-6px) scale(.97)}}
+@keyframes ap-fade{from{opacity:0}}
+[data-skin="apple"] .sheet{border-radius:18px 18px 0 0;background:var(--ap-win);box-shadow:var(--ap-sheet)}
+[data-skin="apple"] .skinbtn{border:0;border-radius:10px;box-shadow:0 0 0 1px var(--ap-sep);overflow:hidden}
+:root[data-skin="apple"] .skinbtn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ap-blue)}
+:root[data-skin="apple"] .skinbtn .nm{font-weight:400;background:var(--ap-win)}
+
+/* the sign-in sheet */
+[data-skin="apple"] .gate{background:var(--ap-side-solid)}
+[data-skin="apple"] .gatecard{border:0;border-radius:18px;background:var(--ap-win);box-shadow:var(--ap-sheet);padding:28px 26px 20px}
+[data-skin="apple"] .gatecard h2{font:600 1.5rem/1.2 var(--ap-font-d);letter-spacing:-.02em}
+[data-skin="apple"] .gatecard .btn.primary{min-height:36px;font-size:.9375rem}
+:root[data-skin="apple"] .gatecard .gateskip{background:none;color:var(--ap-blue-text)}
+
+/* small things */
+[data-skin="apple"] :is(.newpill,.tilepill,.gamecard .newbanner,.gamecard .tag){border:0;border-radius:999px;padding:1px 7px;background:var(--ap-blue);color:#fff;font:600 .6875rem/1.4 var(--ap-font);letter-spacing:0;text-transform:none;box-shadow:none}
+[data-skin="apple"] .newsdot{background:var(--ap-red)}
+[data-skin="apple"] .ldspin{border-color:var(--ap-fill);border-top-color:var(--ap-label-2)}
+[data-skin="apple"] :is(.ttnote,.pollnote){border:0;border-radius:12px;box-shadow:var(--ap-pop);background:var(--ap-win)}
+:root[data-skin="apple"] :is(.tile.primary,.subjcard.lib,.lesson,.actions,.mkq,.rvquote,.note){border-left-width:0;border-right-width:0}
+
+/* ══ the window: sidebar + content (computers) ══ */
+#apside{display:none}
+@media (min-width:861px){
+  html.apshell body{padding-left:var(--ap-sidew)}
+  html.apshell #apside{position:fixed;z-index:50;left:0;top:0;bottom:0;width:var(--ap-sidew);box-sizing:border-box;display:flex;flex-direction:column;gap:2px;
+    padding:18px 10px 12px;overflow-y:auto;scrollbar-width:none;
+    background:var(--ap-side);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);
+    box-shadow:inset -.5px 0 0 var(--ap-sep-strong)}
+  html.zen.apshell #apside{background:color-mix(in srgb,var(--ap-side-solid) 55%,transparent)}
+  #apside .apbrand{padding:0 10px 12px;font:600 .8125rem/1.2 var(--ap-font);color:var(--ap-label-2);letter-spacing:-.006em}
+  #apside .aplist{display:flex;flex-direction:column;gap:1px;margin-top:6px}
+  #apside .aplist::before{content:"Pages";padding:0 10px 4px;font:600 .6875rem/1.3 var(--ap-font);color:var(--ap-label-3)}
+  #apside :is(.aplist a,.apset){display:flex;align-items:center;gap:9px;min-height:30px;padding:0 10px;border:0;border-radius:8px;background:none;
+    font:400 .875rem/1 var(--ap-font);letter-spacing:-.012em;color:var(--ap-label);text-decoration:none;cursor:pointer;
+    transition:background-color .12s linear}
+  #apside :is(.aplist a,.apset):hover{background:var(--ap-fill-3)}
+  #apside .aplist a.on{background:var(--ap-fill-2);font-weight:500}
+  #apside .apic{display:grid;place-items:center;width:20px;height:20px;color:var(--c)}
+  #apside svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #apside .apset{margin-top:auto;color:var(--ap-label-2);width:100%;text-align:left}
+  #apside .apset svg{width:18px;height:18px;margin:0 1px}
+  /* Now and Next, on the timetable: two small cards above the list */
+  #apnow{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
+  #apnow[hidden]{display:none}
+  #apnow .apcard{display:grid;gap:1px;padding:10px 12px 11px;border-radius:12px;background:color-mix(in srgb,var(--c,var(--ap-label-3)) 16%,var(--ap-win))}
+  #apnow .apcard.quiet{background:var(--ap-win)}
+  #apnow .aplbl{font:600 .6875rem/1.3 var(--ap-font);color:var(--ap-label-2)}
+  #apnow .apcard.isnow .aplbl{color:var(--ap-red-text)}
+  #apnow b{font:600 .9375rem/1.25 var(--ap-font);letter-spacing:-.02em;color:color-mix(in srgb,var(--c,var(--ap-label)) 35%,var(--ap-label))}
+  #apnow .apcard.quiet b{color:var(--ap-label)}
+  #apnow span{font-size:.75rem;color:var(--ap-label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #apnow .apbar{height:4px;margin:7px 0 3px;border-radius:2px;background:color-mix(in srgb,var(--c) 22%,transparent);overflow:hidden}
+  #apnow .apbar i{display:block;height:100%;border-radius:2px;background:var(--c)}
+  #apnow small{font-size:.6875rem;color:var(--ap-label-2);font-variant-numeric:tabular-nums}
+
+  /* the content: never wider than 16:9 of the window (sidebar included) */
+  html.apshell .wrap{box-sizing:border-box;max-width:max(640px,calc(var(--ap-max) - var(--ap-sidew)));margin:0 auto;padding:16px 24px 20px}
+  /* every page's own header: just its large title; the sidebar does the rest */
+  html.apshell .pagehead{display:flex;align-items:center;min-height:0;margin:2px 0 14px;padding:0;background:none;border:0;box-shadow:none}
+  html.apshell .pagehead .sitename,html.apshell .pagehead .crumbs>a.btn.icon,html.apshell .pagehead .crumbs>#themebtn{display:none}
+  html.apshell .pagehead h1{margin:0;font:700 1.625rem/1.15 var(--ap-font-d);letter-spacing:-.022em;color:var(--ap-label)}
+  html.apshell .pagehead .crumbs{margin-left:auto}
+  html.apshell :is(.pagelede,.flede,.reslede,.gameslede){margin:-8px 0 12px;font-size:.8125rem;color:var(--ap-label-2)}
+}
+
+/* ══ the timetable page ══ */
+[data-skin="apple"][data-pg="timetable"] :is(#now,.weekswitch,.dayswitch,#title,#sub){display:none!important}
+[data-skin="apple"] .idglass{display:block}
+[data-skin="apple"] .stterm[hidden]{display:none}
+@media (min-width:861px){
+  html.apshell[data-pg="timetable"] .wrap{display:flex;flex-direction:column;padding:12px 20px 16px}
+  html.apshell[data-pg="timetable"] .topbar{flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"title search btns";align-items:center;gap:14px;margin:0 0 10px;padding:0;background:none;border:0;box-shadow:none}
+  html.apshell[data-pg="timetable"] .headbtns{grid-area:btns;display:none}
+}
+[data-skin="apple"] .topbar .stterm{grid-area:title;display:flex;align-items:center;gap:16px;min-width:0}
+[data-skin="apple"] .aptitle{display:grid;min-width:0}
+[data-skin="apple"] .aptitle h2{margin:0;font:700 1.625rem/1.15 var(--ap-font-d);letter-spacing:-.022em;color:var(--ap-label);white-space:nowrap}
+[data-skin="apple"] .aptitle span{font-size:.8125rem;color:var(--ap-label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ‹ Today ›: one control, three parts */
+[data-skin="apple"] .apweek{display:inline-flex;align-items:center;margin-left:auto;padding:2px;border-radius:9px;background:var(--ap-fill)}
+[data-skin="apple"] .apweek button{display:grid;place-items:center;min-width:28px;height:24px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:var(--ap-label);
+  font:500 .8125rem/1 var(--ap-font);cursor:pointer;transition:background-color .12s linear}
+[data-skin="apple"] .apweek button:hover:not(:disabled){background:var(--ap-fill-3)}
+[data-skin="apple"] .apweek button:active:not(:disabled){background:var(--ap-fill-2)}
+[data-skin="apple"] .apweek button:disabled{color:var(--ap-label-3);cursor:default}
+[data-skin="apple"] .apweek svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* the search: the system search field */
+[data-skin="apple"] .topbar .brand{grid-area:search;display:block;margin:0}
+:root[data-skin="apple"] .topbar .idrow{position:relative;display:flex;align-items:center;gap:6px;width:min(360px,30vw);height:30px;margin:0;padding:0 10px;border-radius:8px;opacity:1;overflow:hidden}
+[data-skin="apple"] .topbar .idrow .idglass{width:14px;height:14px;flex:none;color:var(--ap-label-2)}
+[data-skin="apple"] .topbar .idrow input{flex:1;min-width:0;max-width:none;padding:0;border:0;background:none;font:400 .875rem/1 var(--ap-font);letter-spacing:-.01em;color:var(--ap-label)}
+[data-skin="apple"] .topbar .idrow .dom{font-size:.875rem;color:var(--ap-label-3);white-space:nowrap}
+[data-skin="apple"] .topbar .idrow .whoback{padding:0;border:0;background:none;color:var(--ap-blue-text)}
+[data-skin="apple"] .topbar .idrow .sgwrap{position:static}
+[data-skin="apple"] .topbar .idrow .sglist{top:calc(100% + 6px);left:0;right:0;min-width:260px;padding:5px;border:0;border-radius:12px;background:var(--ap-win);box-shadow:var(--ap-pop)}
+[data-skin="apple"] .topbar .idrow .sgitem{display:grid;padding:6px 9px;border-radius:7px;gap:1px}
+[data-skin="apple"] .topbar .idrow .sgitem .sgl{font-weight:500;font-size:.875rem;color:var(--ap-label)}
+[data-skin="apple"] .topbar .idrow .sgitem .sgs{font-size:.75rem;color:var(--ap-label-2)}
+[data-skin="apple"] .topbar .idrow .sgitem:is([aria-selected="true"],:hover){background:var(--ap-blue)}
+[data-skin="apple"] .topbar .idrow .sgitem:is([aria-selected="true"],:hover) :is(.sgl,.sgl b,.sgs){color:#fff}
+[data-skin="apple"] .topbar .idrow .sgempty{padding:7px 9px;font-size:.8125rem;color:var(--ap-label-2)}
+
+/* the week */
+[data-skin="apple"] #grid.apg{position:relative;flex:1 1 0;min-height:420px;display:flex;flex-direction:column;align-items:stretch;width:100%;margin:0;padding:0;background:none;border:0;
+  --rul:52px}
+@media (min-width:861px){ html.apshell[data-pg="timetable"] #grid.apg{min-height:0} }
+[data-skin="apple"] .aphead{flex:none;width:100%;display:grid;grid-template-columns:var(--rul) repeat(5,minmax(0,1fr));box-shadow:inset 0 -.5px 0 var(--ap-sep-strong)}
+[data-skin="apple"] .apday{display:flex;align-items:baseline;justify-content:flex-end;gap:5px;padding:4px 10px 8px;font-family:var(--ap-font-d)}
+[data-skin="apple"] .apday span{font-size:.875rem;color:var(--ap-label-2)}
+[data-skin="apple"] .apday b{font-size:1.125rem;font-weight:500;letter-spacing:-.02em;color:var(--ap-label);font-variant-numeric:tabular-nums}
+[data-skin="apple"] .apday.today span{color:var(--ap-red-text);font-weight:600}
+[data-skin="apple"] .apday.today b{display:inline-grid;place-items:center;min-width:1.65em;height:1.65em;padding:0 .2em;border-radius:999px;background:var(--ap-red);color:#fff;font-weight:600}
+[data-skin="apple"] .apbody{position:relative;width:100%;flex:1 1 0;min-height:0;display:grid;grid-template-columns:var(--rul) repeat(5,minmax(0,1fr));padding:10px 0 12px}
+[data-skin="apple"] .apruler{position:relative}
+[data-skin="apple"] .apruler span{position:absolute;right:8px;translate:0 -50%;font-size:.6875rem;color:var(--ap-label-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+[data-skin="apple"] .apcol{position:relative;box-shadow:inset .5px 0 0 var(--ap-sep)}
+[data-skin="apple"] .aphr{position:absolute;left:0;right:0;height:0;border-top:.5px solid var(--ap-sep)}
+/* a lesson: a soft tint of its subject, the name in a deeper shade of it */
+[data-skin="apple"] .apev{position:absolute;left:3px;right:4px;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;gap:1px;overflow:hidden;
+  padding:5px 8px;border:0;border-radius:7px;text-align:left;cursor:pointer;font:inherit;
+  background:color-mix(in srgb,var(--c) var(--tint),var(--ap-win));color:color-mix(in srgb,var(--c) 45%,#1d1d1f);
+  transition:background-color .15s linear,box-shadow .2s var(--ap-ease),opacity .2s linear}
+[data-skin="apple"][data-mode="dark"] .apev{background:color-mix(in srgb,var(--c) var(--tint),var(--ap-win));color:color-mix(in srgb,var(--c) 40%,#fff)}
+[data-skin="apple"] .apev:hover{background:color-mix(in srgb,var(--c) calc(var(--tint) + 8%),var(--ap-win))}
+[data-skin="apple"] .apev .tm{font-size:.6875rem;font-variant-numeric:tabular-nums;opacity:.85}
+[data-skin="apple"] .apev b{font-size:.8125rem;font-weight:600;letter-spacing:-.012em;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-skin="apple"] .apev .mt{font-size:.75rem;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-skin="apple"] .apev.two .mt{display:none}
+[data-skin="apple"] .apev.one{flex-direction:row;align-items:center;gap:6px;padding-block:0}
+[data-skin="apple"] .apev.one .mt{display:none}
+[data-skin="apple"] .apev.one .tm{order:2;margin-left:auto}
+[data-skin="apple"] .apev.past{opacity:.5}
+[data-skin="apple"] .apev.cur{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent)}
+[data-skin="apple"] .apev.sel{background:color-mix(in srgb,var(--c) 62%,#1d1d1f);color:#fff;opacity:1}
+[data-skin="apple"] .apev.sel .tm,[data-skin="apple"] .apev.sel .mt{opacity:.9}
+[data-skin="apple"] .apev.asm{cursor:default;background:var(--ap-fill-3);color:var(--ap-label-2)}
+/* the time now: a red line across today with the time on it */
+[data-skin="apple"] .apnowline{position:absolute;left:-4px;right:0;z-index:3;height:0;border-top:1.5px solid var(--ap-red);pointer-events:none}
+[data-skin="apple"] .apnowline::before{content:"";position:absolute;left:0;top:-4.5px;width:7px;height:7px;border-radius:50%;background:var(--ap-red)}
+[data-skin="apple"] .apnowline em{display:none}
+
+/* the popover: grows out of the lesson's edge, an arrow pointing back at it */
+[data-skin="apple"] .appop{position:absolute;z-index:30;box-sizing:border-box;padding:12px;border-radius:14px;background:var(--ap-win);color:var(--ap-label);box-shadow:var(--ap-pop);
+  opacity:0;transform:scale(.94);transform-origin:0 var(--ay,40px);pointer-events:none;
+  transition:opacity .16s linear,transform .42s var(--ap-spring)}
+[data-skin="apple"] .appop.flip{transform-origin:100% var(--ay,40px)}
+[data-skin="apple"] .appop.on{opacity:1;transform:none;pointer-events:auto}
+[data-skin="apple"] .appop::before{content:"";position:absolute;top:calc(var(--ay,40px) - 7px);left:-6px;width:14px;height:14px;background:inherit;transform:rotate(45deg);
+  box-shadow:-.5px .5px 0 rgba(0,0,0,.08);border-radius:2px}
+[data-skin="apple"] .appop.flip::before{left:auto;right:-6px;box-shadow:.5px -.5px 0 rgba(0,0,0,.08)}
+[data-skin="apple"] .aphd{display:grid;gap:2px;padding:2px 4px 10px}
+[data-skin="apple"] .aphd b{font:600 1.0625rem/1.25 var(--ap-font-d);letter-spacing:-.022em;color:color-mix(in srgb,var(--c) 45%,var(--ap-label))}
+[data-skin="apple"] .aphd span{font-size:.8125rem;color:var(--ap-label-2)}
+[data-skin="apple"] .apgroup{display:grid;border-radius:10px;background:var(--ap-well);overflow:hidden}
+[data-skin="apple"] .aprow{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:8px;align-items:baseline;padding:7px 10px;font-size:.8125rem}
+[data-skin="apple"] .aprow+.aprow{box-shadow:inset 0 .5px 0 var(--ap-sep)}
+[data-skin="apple"] .aprow span{color:var(--ap-label-2)}
+[data-skin="apple"] .aprow b{font-weight:500;overflow-wrap:anywhere}
+[data-skin="apple"] .appop .roster{margin-top:8px}
+[data-skin="apple"] .appop .cls-btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:32px;padding:0 10px;border:0;border-radius:10px;background:var(--ap-well);
+  font:500 .8125rem/1 var(--ap-font);color:var(--ap-blue-text);cursor:pointer}
+[data-skin="apple"] .appop .cls-btn svg{width:12px;height:12px;transition:transform .35s var(--ap-spring)}
+[data-skin="apple"] .appop .cls-btn.open svg{transform:rotate(180deg)}
+[data-skin="apple"] .appop .cls-list{max-height:0;overflow:hidden}
+[data-skin="apple"] .appop .cls-list.open{max-height:220px;overflow-y:auto}
+[data-skin="apple"] .appop .cls-list-inner{display:flex;flex-wrap:wrap;gap:4px;padding:8px 0 2px}
+[data-skin="apple"] .appop .cls-list-inner button{padding:3px 9px;border:0;border-radius:999px;background:color-mix(in srgb,var(--c) 16%,var(--ap-win));color:color-mix(in srgb,var(--c) 45%,var(--ap-label));font:500 .75rem/1.3 var(--ap-font);cursor:pointer}
+[data-skin="apple"] .appop .cls-list-inner button:hover{background:color-mix(in srgb,var(--c) 26%,var(--ap-win))}
+[data-skin="apple"] .appop .cls-list-inner button:disabled{cursor:default;opacity:.6}
+[data-skin="apple"] .appop .cls-note{font-size:.75rem;color:var(--ap-label-2);padding:6px 2px}
+[data-skin="apple"] .appop .cls-note.err{color:var(--ap-red-text)}
+
+/* under the week: the pages as app icons */
+[data-skin="apple"][data-pg="timetable"] .sthome{display:block;box-sizing:border-box;max-width:max(640px,calc(var(--ap-max) - var(--ap-sidew)));margin:0 auto;padding:40px 24px 72px;box-shadow:inset 0 .5px 0 var(--ap-sep)}
+[data-skin="apple"] .sthome .mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:22px 12px;margin:0}
+[data-skin="apple"] .sthome .mod{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0;border-radius:14px;background:none;text-decoration:none;color:var(--ap-label);
+  transition:transform .3s var(--ap-snappy)}
+[data-skin="apple"] .sthome .mod .ic{display:grid;place-items:center;width:60px;height:60px;border-radius:15px;color:#fff;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c),#fff 14%),var(--c));box-shadow:0 1px 2px rgba(0,0,0,.12),inset 0 .5px 0 rgba(255,255,255,.3)}
+[data-skin="apple"] .sthome .mod .ic svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+[data-skin="apple"] .sthome .mod h3{margin:0;font:400 .8125rem/1.2 var(--ap-font);letter-spacing:-.006em;text-align:center;color:var(--ap-label)}
+[data-skin="apple"] .sthome .mod:hover .ic{filter:brightness(1.05)}
+[data-skin="apple"] .sthome .mod:active{transform:scale(.94);transition-duration:.08s}
+[data-skin="apple"] .pollnote{display:none!important}
+
+/* ══ every other page: one window, nothing scrolls (theme.js studioFit,
+   games.js and mahjong.js set .wrap to the window's height) ══ */
+@media (min-width:861px){
+  html.apshell:not([data-pg="timetable"]),html.apshell:not([data-pg="timetable"]) body{overflow:hidden}
+  html.apshell:not([data-pg="timetable"]) .wrap{display:flex;flex-direction:column;height:100dvh}
+  html.apshell:not([data-pg="timetable"]) .wrap>*{flex:none}
+}
+
+/* Calendar: the month as a white sheet ruled by hairlines; events and the
+   import beside it in a quiet column */
+[data-skin="apple"] .calbar{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+[data-skin="apple"] #mlabel{font:600 1.0625rem/1.2 var(--ap-font-d);letter-spacing:-.02em}
+[data-skin="apple"] .grid:has(>.day){gap:0;border-radius:12px;overflow:hidden;background:var(--ap-win);box-shadow:inset 0 0 0 .5px var(--ap-sep-strong)}
+[data-skin="apple"] .day{border:0;border-radius:0;background:transparent;box-shadow:inset .5px .5px 0 var(--ap-sep)}
+[data-skin="apple"] .day:hover{background:var(--ap-fill-3)}
+[data-skin="apple"] .day.out .dnum{color:var(--ap-label-3);opacity:1}
+[data-skin="apple"] .day.today{box-shadow:inset .5px .5px 0 var(--ap-sep)}
+[data-skin="apple"] .dnum{font-weight:500;font-variant-numeric:tabular-nums;color:var(--ap-label)}
+[data-skin="apple"] .day.today .dnum{display:inline-grid;place-items:center;min-width:1.7em;height:1.7em;border-radius:999px;background:var(--ap-red);color:#fff;font-weight:600}
+[data-skin="apple"] .dow{font-size:.75rem;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ap-label-2)}
+[data-skin="apple"] .chip{border-radius:5px;font-weight:500}
+[data-skin="apple"][data-pg="calendar"] .side .card{border:0;border-radius:12px;background:var(--ap-well);box-shadow:none;padding:12px 14px}
+[data-skin="apple"][data-pg="calendar"] .side .card h2{font:600 .9375rem/1.3 var(--ap-font-d);letter-spacing:-.016em}
+@media (min-width:861px){
+  html.apshell[data-pg="calendar"] .wrap>:is(.calwrap,.callay,main,.lay){flex:1 1 0;min-height:0}
+  html.apshell[data-pg="calendar"] :is(#viewhost){min-height:0}
+}
+
+/* Free periods: the week's grid on the left, your group and people on the right */
+[data-skin="apple"][data-pg="free"] .fpanel{border:0;border-radius:12px;background:var(--ap-well);box-shadow:none}
+[data-skin="apple"][data-pg="free"] .fc{border:0;border-radius:8px;box-shadow:none}
+[data-skin="apple"][data-pg="free"] .fc.busy{background:var(--ap-well);color:var(--ap-label-2)}
+[data-skin="apple"][data-pg="free"] .fc.free{background:color-mix(in srgb,var(--ap-green) 18%,var(--ap-win));color:var(--ap-green-text)}
+[data-skin="apple"][data-pg="free"] .fc.all{background:var(--ap-green);color:#fff}
+[data-skin="apple"][data-pg="free"] .fc.none{background:transparent;box-shadow:inset 0 0 0 .5px var(--ap-sep)}
+[data-skin="apple"][data-pg="free"] .fbar{border-radius:3px;background:var(--ap-fill)}
+@media (min-width:861px){
+  html.apshell[data-pg="free"] .flay{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"main group" "main people";gap:10px 18px;align-items:stretch}
+  html.apshell[data-pg="free"] :is(.fmain,#group,#people){min-height:0;overflow:auto}
+}
+
+/* Resources: the subjects as tiles, a symbol and a name */
+[data-skin="apple"][data-pg="resources"] .subjcard{border:0;border-radius:12px;background:var(--ap-well);box-shadow:none;color:var(--ap-label);transition:background-color .12s linear,transform .3s var(--ap-snappy)}
+:root[data-skin="apple"][data-pg="resources"] .subjcard:hover{background:var(--ap-well-2);transform:none;box-shadow:none}
+:root[data-skin="apple"][data-pg="resources"] .subjcard:active{transform:scale(.97)}
+[data-skin="apple"][data-pg="resources"] .subjcard .nm{font-weight:600;letter-spacing:-.012em}
+[data-skin="apple"][data-pg="resources"] .subjcard .go{color:var(--ap-label-3)}
+@media (min-width:861px){
+  html.apshell[data-pg="resources"] .subjgrid{flex:1 1 0;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));grid-auto-rows:minmax(72px,1fr);gap:10px;margin-top:12px}
+  html.apshell[data-pg="resources"] .subjcard{display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px}
+}
+
+/* Student finder: the search on top, people below */
+[data-skin="apple"][data-pg="finder"] .fsearch{height:34px;padding:0 12px;font-size:.9375rem}
+[data-skin="apple"][data-pg="finder"] .flist>*{border:0;border-radius:12px;background:var(--ap-well);box-shadow:none}
+@media (min-width:861px){
+  html.apshell[data-pg="finder"] .flist{flex:1 1 0;min-height:0;overflow:auto;align-content:start;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-top:10px}
+  html.apshell[data-pg="finder"] .fyears{margin-top:10px}
+}
+
+/* Games and Revision: each section a shelf, its games side by side;
+   a game is a quiet tile with its symbol in colour, leaderboards inside */
+[data-skin="apple"] :is(.gamecard,.game){border:0;border-radius:12px;background:var(--ap-well);box-shadow:none;color:var(--ap-label);transition:background-color .12s linear,transform .3s var(--ap-snappy)}
+:root[data-skin="apple"] .gamecard:hover{background:var(--ap-well-2);transform:none;box-shadow:none;filter:none}
+:root[data-skin="apple"] .gamecard:active{transform:scale(.97)}
+[data-skin="apple"]:not([data-gameicons="emoji"]) .gamecard .ico{display:grid;place-items:center;width:34px;height:34px;margin:0;border-radius:9px;background:var(--c,var(--ap-blue));color:#fff}
+[data-skin="apple"] .gamecard .ico .gi{width:20px;height:20px;color:#fff!important}
+[data-skin="apple"] .gamecard h2{margin:0;font:600 .9375rem/1.25 var(--ap-font);letter-spacing:-.016em;color:var(--ap-label)}
+[data-skin="apple"] .gamecard :is(p,.sum,.mppeek){font-size:.75rem;color:var(--ap-label-2)}
+[data-skin="apple"] .gamecard .go{display:none}
+[data-skin="apple"] :is(.sechd,.cathd){font:600 .9375rem/1.3 var(--ap-font-d);letter-spacing:-.016em;text-transform:none;color:var(--ap-label);margin:0 0 6px}
+@media (min-width:861px){
+  html.apshell.stfit[data-pg="games"] #gamegrid{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:6px}
+  html.apshell.stfit[data-pg="games"] #gamegrid>:not(.gsec):not(.gamegrid){display:none}
+  html.apshell.stfit[data-pg="games"] #gamegrid>.gsec{flex:none;margin:6px 0 0}
+  html.apshell.stfit[data-pg="games"] #gamegrid>.gsec:first-child{margin-top:0}
+  html.apshell.stfit[data-pg="games"] #gamegrid>.gamegrid{flex:1 1 0;min-height:0;display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-auto-rows:minmax(0,1fr);align-items:stretch;align-content:stretch;gap:8px;margin:0}
+  html.apshell.stfit[data-pg="games"] #gamegrid>.gamegrid[data-cat="Arcade"]{flex-grow:1.7}
+  html.apshell.stfit[data-pg="games"] .gamecard{display:flex;flex-direction:column;align-items:flex-start;gap:8px;height:auto;min-height:0;align-self:stretch;padding:12px;overflow:hidden;text-align:left}
+  html.apshell.stfit[data-pg="games"] .gamecard h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  html.apshell.stfit[data-pg="games"] .gamecard :is(.go,.sum:empty){display:none}
+  html.apshell.stfit .gameslede{display:none}
+  /* a leaderboard inside a tile: top three and you */
+  html.apshell.stfit .stlb{flex:1 1 0;min-height:0;width:100%;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;gap:1px;padding-top:6px;box-shadow:inset 0 .5px 0 var(--ap-sep)}
+  html.apshell.stfit .stlb .lbbr{display:grid;grid-template-columns:minmax(1.3em,auto) minmax(0,1fr) auto;gap:6px;align-items:baseline;font-size:.75rem;line-height:1.5;color:var(--ap-label-2)}
+  html.apshell.stfit .stlb .lbbr i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--ap-label-3)}
+  html.apshell.stfit .stlb .lbbr .w{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ap-label)}
+  html.apshell.stfit .stlb .lbbr .v{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ap-label)}
+  html.apshell.stfit .stlb .lbbr.me :is(.w,.v,i){color:var(--ap-blue-text)}
+  html.apshell.stfit .stlb .stlbh{margin-top:4px;font:600 .6875rem/1.3 var(--ap-font);color:var(--ap-label-3)}
+  html.apshell.stfit .stlb .stlbh:first-child{margin-top:0}
+  html.apshell.stfit .stlb :is(.lbbempty,.ld){font-size:.75rem;color:var(--ap-label-3)}
+  /* Revision: the subjects as a grid, the study tools in a column beside them */
+  html.apshell.stfit[data-pg="revision"] #gamegrid{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) min(360px,30vw);grid-template-rows:auto minmax(0,1fr);gap:10px 18px}
+  html.apshell.stfit[data-pg="revision"] #gamegrid>.rvyear{grid-column:1;grid-row:1;margin:0}
+  html.apshell.stfit[data-pg="revision"] #gamegrid>.gamegrid{grid-column:1;grid-row:2;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));grid-auto-rows:minmax(80px,1fr);gap:8px;align-content:stretch}
+  html.apshell.stfit[data-pg="revision"] #gamegrid>.rvstudy{grid-column:2;grid-row:1 / 3;min-height:0;overflow:auto;margin:0;padding:12px;border-radius:12px;background:var(--ap-well)}
+  html.apshell.stfit[data-pg="revision"] #gamegrid>:not(.rvyear):not(.gamegrid):not(.rvstudy){display:none}
+  html.apshell.stfit[data-pg="revision"] .gamecard{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:8px;padding:12px}
+}
+
+/* Mahjong club: the graph is the hero, top right; standings down the left
+   like a list; the awards a row of cards under the graph */
+[data-skin="apple"][data-pg="mahjong"] .stage{background:none;border:0;box-shadow:none;padding:0}
+[data-skin="apple"][data-pg="mahjong"] .stage>.row{display:none}
+[data-skin="apple"] .mjs{display:grid;grid-template-columns:minmax(260px,24%) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"list graph" "list awards";gap:12px 16px}
+[data-skin="apple"] .mjs>.mjscol:first-child{grid-area:list;display:flex;flex-direction:column;min-height:0}
+[data-skin="apple"] .mjs>.mjsgcol{grid-area:graph;display:flex;flex-direction:column;min-height:0}
+[data-skin="apple"] .mjs>.mjsacol{grid-area:awards;min-width:0}
+[data-skin="apple"] .mjsh{margin:0 0 8px;font:600 .9375rem/1.3 var(--ap-font-d);letter-spacing:-.016em;color:var(--ap-label);text-align:left}
+[data-skin="apple"] .mjsacol .mjsh{display:none}
+[data-skin="apple"] .mjslist{display:flex;flex-direction:column;margin:0;border-radius:12px;background:var(--ap-well);overflow:hidden}
+[data-skin="apple"] .mjsrow{position:relative;display:grid;grid-template-columns:1.4em minmax(0,1fr) auto auto;align-items:center;gap:10px;min-height:44px;padding:0 10px 0 12px;background:none;border-radius:0}
+[data-skin="apple"] .mjsrow+.mjsrow{box-shadow:inset 0 .5px 0 var(--ap-sep)}
+[data-skin="apple"] .mjsrow .mjfill{display:none}
+[data-skin="apple"] .mjsrow .mjrk{font-size:.8125rem;font-weight:600;color:var(--ap-label-3);font-variant-numeric:tabular-nums}
+[data-skin="apple"] .mjsrow .mjnm{display:flex;align-items:center;gap:8px;font-size:.875rem;font-weight:500;color:var(--ap-label);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-skin="apple"] .mjsrow .mjnm::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:var(--c)}
+[data-skin="apple"] .mjsrow .mjpts{font-size:.875rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ap-label)}
+[data-skin="apple"] .mjbox{display:flex;align-items:center;gap:4px}
+:root[data-skin="apple"] .mjbox input{width:70px;padding:4px 8px;border:0;border-radius:7px;background:var(--ap-win);box-shadow:inset 0 0 0 .5px var(--ap-sep);text-align:right;font:inherit;font-size:.8125rem;
+  font-variant-numeric:tabular-nums;color:var(--ap-label);appearance:textfield;-moz-appearance:textfield}
+[data-skin="apple"] .mjbox input::-webkit-inner-spin-button,[data-skin="apple"] .mjbox input::-webkit-outer-spin-button{appearance:none;margin:0}
+:root[data-skin="apple"] .mjbox input:focus{outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--ap-blue) 45%,transparent)}
+[data-skin="apple"] .mjsblk{margin-top:10px;padding:0;background:none}
+[data-skin="apple"] .mjssave{display:flex;flex-direction:column;gap:8px}
+[data-skin="apple"] .mjssave .mjsum{margin:0;font-size:.75rem;color:var(--ap-label-2)}
+[data-skin="apple"] .mjsbtns{display:flex;gap:8px}
+[data-skin="apple"] .mjsbtns .btn{flex:1}
+[data-skin="apple"] .mjsadd{display:flex;gap:8px}
+:root[data-skin="apple"] .mjsadd input{flex:1;min-width:0;height:28px;padding:0 10px;font:inherit;font-size:.8125rem}
+[data-skin="apple"] .mjs .mjcalc{display:none}
+[data-skin="apple"] .mjschart{flex:1 1 0;min-height:0;display:flex;flex-direction:column;margin:0;padding:10px 12px 6px;border-radius:12px;background:var(--ap-well)}
+[data-skin="apple"] .mjschart :is(.mjh,.mjkey){display:none}
+[data-skin="apple"] .mjschart .mjghead{justify-content:flex-end;margin-bottom:-30px;position:relative;z-index:2}
+[data-skin="apple"] .mjschart .mjgtools .btn{min-width:24px;height:24px;min-height:0;padding:0 8px;background:var(--ap-win)}
+[data-skin="apple"] .mjschart .mjgwrap{flex:1 1 0;min-height:0}
+[data-skin="apple"] .mjschart .mjgraph{height:100%;min-height:240px}
+[data-skin="apple"] .mjschart .mjgraph text{font-size:10.5px;fill:var(--ap-label-3)}
+[data-skin="apple"] .mjschart .mjgrid{stroke:var(--ap-sep)}
+[data-skin="apple"] .mjschart .mjstart{stroke:var(--ap-sep-strong);stroke-dasharray:3 4}
+[data-skin="apple"] .mjschart .mjghov{stroke:var(--ap-sep-strong)}
+[data-skin="apple"] .mjschart .mjgtip{min-width:220px;gap:3px;padding:10px 12px;border:0;border-radius:12px;background:var(--ap-win);box-shadow:var(--ap-pop);color:var(--ap-label);font-size:.8125rem}
+[data-skin="apple"] .mjschart .mjgtip[hidden]{display:none}
+[data-skin="apple"] .mjschart .mjgtip>b{font-weight:600}
+[data-skin="apple"] .mjschart .mjgtip>b small{font-weight:400;color:var(--ap-label-2);margin-left:4px}
+[data-skin="apple"] .mjtr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:8px}
+[data-skin="apple"] .mjtr em{font-style:normal;font-weight:600;font-variant-numeric:tabular-nums}
+[data-skin="apple"] .mjtr :is(.mjttot,small){font-variant-numeric:tabular-nums;color:var(--ap-label-2)}
+[data-skin="apple"] .mjtn{margin-top:4px;padding-top:5px;box-shadow:inset 0 .5px 0 var(--ap-sep);color:var(--ap-label-2);font-size:.75rem}
+[data-skin="apple"] .mjs .mjup{color:var(--ap-green-text)}
+[data-skin="apple"] .mjs .mjdown{color:var(--ap-red-text)}
+[data-skin="apple"] .mjs .mjawards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0}
+[data-skin="apple"] .mjs .mjaward{display:grid;gap:1px;align-content:start;justify-items:start;text-align:left;padding:10px 12px;border-radius:12px;background:var(--ap-well)}
+[data-skin="apple"] .mjs .mjaward small{font-size:.6875rem;color:var(--ap-label-2)}
+[data-skin="apple"] .mjs .mjaward b{font-size:.875rem;font-weight:600;color:color-mix(in srgb,var(--c) 45%,var(--ap-label))}
+[data-skin="apple"] .mjnone{margin:60px 0;text-align:center;color:var(--ap-label-2)}
+@media (min-width:861px){
+  html.apshell[data-pg="mahjong"] .wrap{overflow:hidden}
+  html.apshell[data-pg="mahjong"] :is(.stage,#mj){flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  html.apshell[data-pg="mahjong"] .mjs{flex:1 1 0;min-height:0}
+  html.apshell[data-pg="mahjong"] .mjslist{flex:1 1 0;min-height:0;overflow-y:auto}
+}
+@media (max-width:860px){
+  [data-skin="apple"] .mjs{grid-template-columns:minmax(0,1fr);grid-template-areas:"list" "graph" "awards"}
+  [data-skin="apple"] .mjschart .mjgraph{height:260px}
+}
+
+/* Forum and Poll (Home showing only that) */
+[data-skin="apple"][data-show] :is(.hubnow,.hubsub,.hubtoday,.hubnav,.hubfoot,.pollskip,.sitemark,.hubid,.hubbar){display:none!important}
+[data-skin="apple"][data-show="forum"] #poll{display:none!important}
+[data-skin="apple"][data-show="poll"] #hubrest{display:none!important}
+@media (min-width:861px){
+  html.apshell[data-show] .wrap{max-width:860px}
+  html.apshell[data-show] .wrap::before{display:block;margin:2px 0 14px;font:700 1.625rem/1.15 var(--ap-font-d);letter-spacing:-.022em;color:var(--ap-label)}
+  html.apshell[data-show="forum"] .wrap::before{content:"Forum"}
+  html.apshell[data-show="poll"] .wrap::before{content:"Poll"}
+  html.apshell[data-show="forum"] :is(.forum,#hubrest){flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  html.apshell[data-show="forum"] .fposts{flex:1 1 0;min-height:0;overflow-y:auto}
+}
+[data-skin="apple"] .forum{border:0;padding:0}
+[data-skin="apple"] .forum h2{display:none}
+[data-skin="apple"] .fposts{display:flex;flex-direction:column;gap:0;border-radius:12px;background:var(--ap-well);overflow:hidden}
+[data-skin="apple"] .fposts:empty{display:none}
+[data-skin="apple"] .fpost{padding:11px 14px;border:0;border-radius:0;background:none;box-shadow:none}
+[data-skin="apple"] .fpost+.fpost{box-shadow:inset 0 .5px 0 var(--ap-sep)}
+[data-skin="apple"] .fpost.freply{padding-left:30px}
+[data-skin="apple"] .fmeta{font-size:.75rem;color:var(--ap-label-2)}
+[data-skin="apple"] .fmeta b{color:var(--ap-label);font-weight:600}
+[data-skin="apple"] :is(.rx,.rxadd){border:0;border-radius:999px;background:var(--ap-fill-3)}
+[data-skin="apple"] .rx.mine{background:var(--ap-blue-tint);color:var(--ap-blue-text)}
+[data-skin="apple"] .rxpick{border:0;border-radius:12px;background:var(--ap-win);box-shadow:var(--ap-pop)}
+[data-skin="apple"] .pcard{border:0;border-radius:14px;background:var(--ap-well);box-shadow:none;padding:18px 20px}
+[data-skin="apple"] .pq{font:600 1.375rem/1.25 var(--ap-font-d);letter-spacing:-.02em}
+[data-skin="apple"] .pchip{border-radius:999px;background:var(--ap-blue-tint);color:var(--ap-blue-text);font-weight:600}
+[data-skin="apple"] .popt{border:0;border-radius:999px;background:var(--ap-win);box-shadow:inset 0 0 0 .5px var(--ap-sep);font-weight:500}
+[data-skin="apple"] .popt:hover{transform:none;background:var(--ap-fill-3)}
+[data-skin="apple"] .popt[aria-checked="true"]{background:var(--ap-blue);color:#fff;box-shadow:none}
+[data-skin="apple"] .pbar{border-radius:4px}
+
+/* ══ accessibility ══ */
+@media (prefers-reduced-transparency:reduce){ html.apshell #apside{background:var(--ap-side-solid);-webkit-backdrop-filter:none;backdrop-filter:none} }
+@media (prefers-contrast:more){
+  [data-skin="apple"] :is(.apev,.gamecard,.subjcard,.apcard,.mjslist,.mjschart,.fpanel){box-shadow:inset 0 0 0 1px var(--ap-label)!important}
+}
+html[data-skin="apple"][data-motion="reduced"] *{transition-duration:0s!important;animation-duration:0s!important}
+@media (prefers-reduced-motion:reduce){ [data-skin="apple"] :is(.appop,.sthome .mod,.gamecard,.subjcard,.btn){transition:none!important;transform:none!important} }
+/* Mahjong: no emoji as icons; the standings list is as long as its people */
+[data-skin="apple"] .mjs .mjaward>i{display:none}
+@media (min-width:861px){ html.apshell[data-pg="mahjong"] .mjslist{flex:0 1 auto} }
+/* Calendar on a computer: the month fills the left, the side column on the right */
+@media (min-width:861px){
+  html.apshell[data-pg="calendar"] .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);grid-template-rows:auto auto minmax(0,1fr);column-gap:18px}
+  html.apshell[data-pg="calendar"] .wrap>.pagehead{grid-column:1 / -1}
+  html.apshell[data-pg="calendar"] .wrap>.calbar{grid-column:1;grid-row:2}
+  html.apshell[data-pg="calendar"] .wrap>#viewhost{grid-column:1;grid-row:3;min-height:0;display:flex;flex-direction:column}
+  html.apshell[data-pg="calendar"] .wrap>.side{grid-column:2;grid-row:2 / 4;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin:0}
+  html.apshell[data-pg="calendar"] #viewhost .grid:has(>.day){flex:1 1 0;min-height:0;grid-auto-rows:minmax(0,1fr)}
+}
+[data-skin="apple"] .day.today .dnum{width:fit-content;justify-self:start;align-self:flex-start}
+/* Revision: the study tools stack in their column */
+@media (min-width:861px){
+  html.apshell.stfit[data-pg="revision"] .rvstudy{display:flex;flex-direction:column;gap:12px}
+  html.apshell.stfit[data-pg="revision"] .rvstudy>*{width:auto;min-width:0}
+  html.apshell.stfit[data-pg="revision"] #gamegrid>.gamegrid{grid-auto-rows:minmax(80px,140px);align-content:start}
+}
+/* Resources: words and a chevron, not emoji */
+[data-skin="apple"][data-pg="resources"] .subjcard .ico{display:none}
+@media (min-width:861px){ html.apshell[data-pg="resources"] .subjgrid{grid-auto-rows:minmax(64px,110px);align-content:start} }

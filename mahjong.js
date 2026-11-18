@@ -44,7 +44,7 @@ function mount(host){
   const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
   /* Studio draws the sheet as the beta (/beta/) does: standings as bars on the left, the
      awards and graph on the right; the graph's hover replaces the History list */
-  const studio = () => ['studio','canvas'].includes(document.documentElement.getAttribute('data-skin'));
+  const studio = () => ['studio','apple'].includes(document.documentElement.getAttribute('data-skin'));
   /* the beta's scale: spread out around the middle, so a pack of close scores doesn't merge into one line */
   function spread(now){
     const v = [...now].sort((a, b) => a - b), gaps = v.slice(1).map((x, i) => x - v[i]).sort((a, b) => a - b);

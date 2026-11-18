@@ -1,0 +1,376 @@
+/* ==========================================================================
+   Apple design tokens
+   Sources: Apple Human Interface Guidelines (current through Sept 2026: Color,
+   Typography, Layout, Materials, Motion, Accessibility) and apple.com's
+   production CSS (Oct 2026). Contrast ratios verified with scripts/contrast.py.
+
+   Usage: link this file first, then style everything with these variables.
+   Theme: follows the OS by default. Force with <html data-theme="light|dark">.
+   Requires light-dark() (Safari 17.5+, Chrome 123+, Firefox 120+).
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* ------------------------------------------------------------------------
+     1. Typography — families
+     ------------------------------------------------------------------------ */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-rounded: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Nunito", "Inter", sans-serif;
+  --font-serif: ui-serif, "New York", "Iowan Old Style", Charter, Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ------------------------------------------------------------------------
+     2. Typography — marketing scale (apple.com). Large viewports; steps down
+        at ≤1068px and ≤734px below. size / leading / tracking.
+     ------------------------------------------------------------------------ */
+  --type-hero-size: 5rem;            --type-hero-leading: 1.05;       --type-hero-tracking: -0.015em;      /* 80 */
+  --type-display-size: 4rem;         --type-display-leading: 1.0625;  --type-display-tracking: -0.009em;   /* 64 */
+  --type-section-size: 3.5rem;       --type-section-leading: 1.0714;  --type-section-tracking: -0.005em;   /* 56 */
+  --type-headline-size: 3rem;        --type-headline-leading: 1.0834; --type-headline-tracking: -0.003em;  /* 48 */
+  --type-headline-sm-size: 2.5rem;   --type-headline-sm-leading: 1.1; --type-headline-sm-tracking: 0em;    /* 40 */
+  --type-tagline-size: 2rem;         --type-tagline-leading: 1.125;   --type-tagline-tracking: 0.004em;    /* 32 */
+  --type-tile-size: 1.75rem;         --type-tile-leading: 1.1428;     --type-tile-tracking: 0.007em;       /* 28 */
+  --type-eyebrow-size: 1.5rem;       --type-eyebrow-leading: 1.1666;  --type-eyebrow-tracking: 0.009em;    /* 24 */
+  --type-intro-size: 1.3125rem;      --type-intro-leading: 1.381;     --type-intro-tracking: 0.011em;      /* 21 */
+  --type-body-size: 1.0625rem;       --type-body-leading: 1.4706;     --type-body-tracking: -0.022em;      /* 17 */
+  --type-body-tight-leading: 1.2353;
+  --type-small-size: 0.875rem;       --type-small-leading: 1.4286;    --type-small-tracking: -0.016em;     /* 14 */
+  --type-caption-size: 0.75rem;      --type-caption-leading: 1.3334;  --type-caption-tracking: -0.01em;    /* 12 */
+
+  /* ------------------------------------------------------------------------
+     3. Typography — app text styles (HIG iOS "Large" default, SF tracking).
+        1pt = 1px. Use for product UI / app-like web.
+     ------------------------------------------------------------------------ */
+  --text-large-title: 700 2.125rem/1.2059 var(--font-sans);  --text-large-title-tracking: 0.012em;   /* 34/41 bold (emphasized) */
+  --text-title1: 400 1.75rem/1.2143 var(--font-sans);        --text-title1-tracking: 0.014em;        /* 28/34 */
+  --text-title2: 400 1.375rem/1.2727 var(--font-sans);       --text-title2-tracking: -0.012em;       /* 22/28 */
+  --text-title3: 400 1.25rem/1.25 var(--font-sans);          --text-title3-tracking: -0.023em;       /* 20/25 */
+  --text-headline: 600 1.0625rem/1.2941 var(--font-sans);    --text-headline-tracking: -0.026em;     /* 17/22 semibold */
+  --text-body: 400 1.0625rem/1.2941 var(--font-sans);        --text-body-tracking: -0.026em;         /* 17/22 (rows, UI) */
+  --text-body-loose-leading: 1.4118;                                                                  /* 17/24 paragraphs */
+  --text-callout: 400 1rem/1.3125 var(--font-sans);          --text-callout-tracking: -0.02em;       /* 16/21 */
+  --text-subheadline: 400 0.9375rem/1.3333 var(--font-sans); --text-subheadline-tracking: -0.016em;  /* 15/20 */
+  --text-footnote: 400 0.8125rem/1.3846 var(--font-sans);    --text-footnote-tracking: -0.006em;     /* 13/18 */
+  --text-caption1: 400 0.75rem/1.3333 var(--font-sans);      --text-caption1-tracking: 0em;          /* 12/16 */
+  --text-caption2: 400 0.6875rem/1.1818 var(--font-sans);    --text-caption2-tracking: 0.006em;      /* 11/13 */
+
+  /* ------------------------------------------------------------------------
+     4. Color — surfaces (light | dark). Dark uses base vs elevated levels.
+     ------------------------------------------------------------------------ */
+  --bg:                light-dark(#ffffff, #000000);   /* page / systemBackground */
+  --bg-alt:            light-dark(#f5f5f7, #161617);   /* alternating marketing section */
+  --bg-grouped:        light-dark(#f2f2f7, #000000);   /* systemGroupedBackground (settings-style screens) */
+  --surface:           light-dark(#ffffff, #1c1c1e);   /* card, tile, grouped cell */
+  --surface-2:         light-dark(#f2f2f7, #2c2c2e);   /* nested surface, inset well */
+  --bg-elevated:       light-dark(#ffffff, #1c1c1e);   /* sheets, popovers, menus (opaque) */
+  --surface-elevated:  light-dark(#f2f2f7, #2c2c2e);   /* cells inside an elevated sheet */
+  --tile-dark:         #1d1d1f;                        /* apple.com dark tile on black */
+
+  /* Labels (web-safe values that pass WCAG on their backgrounds) */
+  --label:             light-dark(#1d1d1f, #f5f5f7);   /* 16.8:1 on #fff | 19.3:1 on #000 */
+  --label-secondary:   light-dark(#6e6e73, #a1a1a6);   /*  5.1:1          |  8.2:1 */
+  --label-tertiary:    light-dark(#86868b, #86868b);   /*  3.6:1 (large/non-essential only) | 5.8:1 */
+  --label-quaternary:  light-dark(rgb(60 60 67 / 0.18), rgb(235 235 245 / 0.16)); /* watermarks only */
+  --placeholder:       var(--label-tertiary);
+  /* Exact iOS label colors, for pixel-faithful iOS mockups (secondary fails AA as small text on white) */
+  --ios-label-secondary:  light-dark(rgb(60 60 67 / 0.6), rgb(235 235 245 / 0.6));
+  --ios-label-tertiary:   light-dark(rgb(60 60 67 / 0.3), rgb(235 235 245 / 0.3));
+
+  /* Fills — control backgrounds (segmented tracks, search fields, gray buttons) */
+  --fill:              light-dark(rgb(120 120 128 / 0.20), rgb(120 120 128 / 0.36));
+  --fill-secondary:    light-dark(rgb(120 120 128 / 0.16), rgb(120 120 128 / 0.32));
+  --fill-tertiary:     light-dark(rgb(118 118 128 / 0.12), rgb(118 118 128 / 0.24));
+  --fill-quaternary:   light-dark(rgb(116 116 128 / 0.08), rgb(118 118 128 / 0.18));
+
+  /* Separators */
+  --separator:         light-dark(rgb(60 60 67 / 0.29), rgb(84 84 88 / 0.65)); /* 0.5px hairlines */
+  --separator-opaque:  light-dark(#d2d2d7, #424245);                           /* 1px lines (apple.com) */
+
+  /* ------------------------------------------------------------------------
+     5. Color — accent (one per product). Defaults to Apple's web blue.
+     ------------------------------------------------------------------------ */
+  --accent:            #0071e3;                         /* filled buttons: white text 4.7:1 */
+  --accent-hover:      #0076df;
+  --accent-active:     #006edb;
+  --accent-text:       light-dark(#0066cc, #2997ff);    /* links & blue text: 5.6:1 | 7.0:1 */
+  --accent-tint:       color-mix(in srgb, var(--accent) 14%, transparent); /* tinted buttons, selection */
+  --on-accent:         #ffffff;
+  --focus-ring:        var(--accent);
+
+  /* ------------------------------------------------------------------------
+     6. Color — system colors (HIG 2025+ values). Use the plain token for fills,
+        icons and large shapes; the -text token for colored text and small icons
+        (Increased-Contrast light values pass 4.5:1 on white; dark defaults pass on black).
+     ------------------------------------------------------------------------ */
+  --red:    light-dark(#ff383c, #ff4245);  --red-text:    light-dark(#e9152d, #ff4245);
+  --orange: light-dark(#ff8d28, #ff9230);  --orange-text: light-dark(#c55300, #ff9230);
+  --yellow: light-dark(#ffcc00, #ffd600);  --yellow-text: light-dark(#a16a00, #ffd600);
+  --green:  light-dark(#34c759, #30d158);  --green-text:  light-dark(#008932, #30d158);
+  --mint:   light-dark(#00c8b3, #00dac3);  --mint-text:   light-dark(#008575, #00dac3);
+  --teal:   light-dark(#00c3d0, #00d2e0);  --teal-text:   light-dark(#008198, #00d2e0);
+  --cyan:   light-dark(#00c0e8, #3cd3fe);  --cyan-text:   light-dark(#007eae, #3cd3fe);
+  --blue:   light-dark(#0088ff, #0091ff);  --blue-text:   light-dark(#1e6ef4, #0091ff);
+  --indigo: light-dark(#6155f5, #6d7cff);  --indigo-text: light-dark(#564ade, #6d7cff);
+  --purple: light-dark(#cb30e0, #db34f2);  --purple-text: light-dark(#b02fc2, #db34f2);
+  --pink:   light-dark(#ff2d55, #ff375f);  --pink-text:   light-dark(#e7124d, #ff375f);
+  --brown:  light-dark(#ac7f5e, #b78a66);  --brown-text:  light-dark(#956d51, #b78a66);
+  --gray:   #8e8e93;
+  --gray-2: light-dark(#aeaeb2, #636366);  --gray-3: light-dark(#c7c7cc, #48484a);
+  --gray-4: light-dark(#d1d1d6, #3a3a3c);  --gray-5: light-dark(#e5e5ea, #2c2c2e);
+  --gray-6: light-dark(#f2f2f7, #1c1c1e);
+  --destructive:       light-dark(#e9152d, #ff4245);    /* white text on it: 4.56:1 */
+  --success:           var(--green-text);
+  --warning:           var(--orange-text);
+  --switch-on:         light-dark(#34c759, #30d158);
+
+  /* ------------------------------------------------------------------------
+     7. Materials & Liquid Glass (web approximations; see references/materials.md)
+     ------------------------------------------------------------------------ */
+  --glass-fill:         light-dark(rgb(255 255 255 / 0.55), rgb(44 44 48 / 0.5));
+  --glass-fill-clear:   rgb(255 255 255 / 0.1);
+  --glass-blur:         16px;
+  --glass-saturate:     180%;
+  --glass-highlight:    light-dark(rgb(255 255 255 / 0.75), rgb(255 255 255 / 0.22));
+  --glass-lowlight:     light-dark(rgb(0 0 0 / 0.05), rgb(0 0 0 / 0.3));
+  --glass-outline:      light-dark(rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.5));
+  --glass-shadow:       light-dark(rgb(0 0 0 / 0.12), rgb(0 0 0 / 0.45));
+  --glass-shadow-tight: light-dark(rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.3));
+  --glass-rim-strong:   light-dark(rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.32));
+  --glass-rim-soft:     light-dark(rgb(255 255 255 / 0.45), rgb(255 255 255 / 0.1));
+
+  --material-ultrathin: light-dark(rgb(255 255 255 / 0.35), rgb(28 28 30 / 0.35));
+  --material-thin:      light-dark(rgb(255 255 255 / 0.55), rgb(28 28 30 / 0.55));
+  --material-regular:   light-dark(rgb(250 250 252 / 0.72), rgb(28 28 30 / 0.72));
+  --material-thick:     light-dark(rgb(250 250 252 / 0.85), rgb(28 28 30 / 0.85));
+  --material-blur:      saturate(180%) blur(20px);
+  --nav-material:       light-dark(rgb(250 250 252 / 0.8), rgb(22 22 23 / 0.8)); /* apple.com global nav */
+  --scrim:              rgb(0 0 0 / 0.25);   /* modal backdrop */
+  --media-dim:          rgb(0 0 0 / 0.35);   /* dimming under clear glass over bright media */
+
+  /* ------------------------------------------------------------------------
+     8. Elevation — soft and sparse. Dark mode relies on lighter surfaces instead.
+     ------------------------------------------------------------------------ */
+  --shadow-xs: 0 1px 2px light-dark(rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.4));
+  --shadow-sm: 0 1px 3px light-dark(rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.4)), 0 4px 12px light-dark(rgb(0 0 0 / 0.05), rgb(0 0 0 / 0.3));
+  --shadow-md: 0 2px 8px light-dark(rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.4)), 0 12px 32px light-dark(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.5));
+  --shadow-lg: 0 4px 16px light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.45)), 0 24px 64px light-dark(rgb(0 0 0 / 0.16), rgb(0 0 0 / 0.6));
+
+  /* ------------------------------------------------------------------------
+     9. Shape — fixed radii, capsule; nest concentrically (inner = outer − padding)
+     ------------------------------------------------------------------------ */
+  --radius-xs: 6px;      /* badges, small thumbnails, checkboxes */
+  --radius-sm: 10px;     /* dense desktop controls, menu item highlights */
+  --radius-md: 14px;     /* inputs, small cards */
+  --radius-lg: 18px;     /* cards & tiles (apple.com default) */
+  --radius-xl: 28px;     /* large tiles, sheets, popovers, menus */
+  --radius-2xl: 36px;    /* big floating panels */
+  --radius-capsule: 999px;
+
+  /* ------------------------------------------------------------------------
+     10. Spacing — 4px base, 8px rhythm
+     ------------------------------------------------------------------------ */
+  --space-0-5: 2px;  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;   --space-6: 24px;  --space-8: 32px;  --space-10: 40px; --space-12: 48px;
+  --space-16: 64px;  --space-20: 80px; --space-30: 120px; --space-40: 160px;
+  --section-padding: var(--space-40);          /* marketing sections (steps down below) */
+  --gutter: var(--space-5);                    /* app side margin */
+
+  /* ------------------------------------------------------------------------
+     11. Layout
+     ------------------------------------------------------------------------ */
+  --content-width: 980px;                      /* apple.com reading/content container */
+  --content-wide: 1440px;                      /* galleries, app shells */
+  --measure: 38em;                             /* comfortable paragraph width (~65ch) */
+  --bar-height: 52px;                          /* app top bar */
+  --nav-height: 44px;                          /* marketing global nav */
+  --tabbar-height: 62px;
+  --sidebar-width: 280px;
+  --target-min: 44px;                          /* touch hit target */
+  --target-min-dense: 28px;                    /* pointer-only dense UI */
+  /* Breakpoints (for reference; media queries can't read variables):
+     small ≤734px · medium 735–1068px · large 1069–1440px · xlarge ≥1441px */
+
+  /* ------------------------------------------------------------------------
+     12. Motion — springs (damping / response → CSS linear()); see scripts/spring.py
+     ------------------------------------------------------------------------ */
+  --spring-smooth: linear(0, 0.0345, 0.1146, 0.2153, 0.3212, 0.4233, 0.517, 0.5999, 0.6716, 0.7326, 0.7836, 0.8258, 0.8605, 0.8887, 0.9116, 0.93, 0.9447, 0.9564, 0.9658, 0.9732, 0.979, 0.9836, 0.9872, 0.99, 0.9923, 0.994, 0.9953, 0.9964, 0.9972, 0.9978, 0.9983, 0.9987, 1);
+  --spring-smooth-duration: 662ms;      /* damping 1.0, response 0.45s — the default */
+  --spring-snappy: linear(0, 0.0321, 0.1099, 0.2117, 0.3226, 0.4326, 0.5354, 0.6277, 0.7078, 0.7754, 0.8313, 0.8764, 0.9121, 0.9398, 0.9607, 0.9762, 0.9874, 0.9951, 1.0003, 1.0035, 1.0053, 1.0061, 1.0063, 1.006, 1.0055, 1.0048, 1.0041, 1.0034, 1.0028, 1.0022, 1.0017, 1.0013, 1);
+  --spring-snappy-duration: 488ms;      /* damping 0.85, response 0.35s */
+  --spring-bouncy: linear(0, 0.0444, 0.1516, 0.29, 0.4368, 0.5769, 0.7012, 0.8051, 0.8874, 0.9492, 0.9927, 1.0211, 1.0375, 1.0448, 1.0458, 1.0426, 1.0371, 1.0305, 1.0238, 1.0175, 1.0121, 1.0076, 1.0042, 1.0016, 0.9998, 0.9987, 0.9981, 0.9979, 0.9979, 0.9981, 0.9984, 0.9987, 1);
+  --spring-bouncy-duration: 819ms;      /* damping 0.7, response 0.5s — momentum only */
+  --spring-gentle: linear(0, 0.0344, 0.1145, 0.2151, 0.3209, 0.423, 0.5166, 0.5995, 0.6712, 0.7322, 0.7832, 0.8255, 0.8602, 0.8885, 0.9114, 0.9298, 0.9445, 0.9563, 0.9657, 0.9731, 0.9789, 0.9835, 0.9872, 0.99, 0.9922, 0.994, 0.9953, 0.9964, 0.9972, 0.9978, 0.9983, 0.9987, 1);
+  --spring-gentle-duration: 1029ms;     /* damping 1.0, response 0.7s — large travel */
+  --spring-interactive: linear(0, 0.0323, 0.1103, 0.2122, 0.3228, 0.4322, 0.5344, 0.626, 0.7054, 0.7726, 0.828, 0.8729, 0.9084, 0.9361, 0.9571, 0.9728, 0.9842, 0.9923, 0.9977, 1.0013, 1.0034, 1.0046, 1.005, 1.005, 1.0046, 1.0042, 1.0036, 1.0031, 1.0025, 1.0021, 1.0016, 1.0013, 1);
+  --spring-interactive-duration: 210ms; /* damping 0.86, response 0.15s */
+
+  --ease-standard:   cubic-bezier(0.4, 0, 0.6, 1);     /* apple.com UI chrome: nav, menus, color */
+  --ease-out-soft:   cubic-bezier(0.25, 0.1, 0.3, 1);  /* content reveals */
+  --ease-emphasized: cubic-bezier(0.28, 0.11, 0.32, 1);
+  --dur-instant: 100ms;
+  --dur-fast: 200ms;
+  --dur-base: 320ms;
+  --dur-slow: 500ms;
+
+  /* ------------------------------------------------------------------------
+     13. Layers
+     ------------------------------------------------------------------------ */
+  --z-content: 0;
+  --z-sticky: 10;
+  --z-bar: 100;
+  --z-popover: 1000;
+  --z-sheet: 2000;
+  --z-alert: 3000;
+}
+
+/* ---------- Manual theme override ---------- */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
+/* ---------- Responsive marketing type & spacing (apple.com breakpoints) ---------- */
+@media (max-width: 1068px) {
+  :root {
+    --type-hero-size: 4rem;        --type-hero-leading: 1.0625;      --type-hero-tracking: -0.009em;
+    --type-display-size: 3rem;     --type-display-leading: 1.0834;   --type-display-tracking: -0.003em;
+    --type-section-size: 3rem;     --type-section-leading: 1.0834;   --type-section-tracking: -0.003em;
+    --type-headline-size: 2.5rem;  --type-headline-leading: 1.1;     --type-headline-tracking: 0em;
+    --type-headline-sm-size: 2rem; --type-headline-sm-leading: 1.125; --type-headline-sm-tracking: 0.004em;
+    --type-tagline-size: 1.75rem;  --type-tagline-leading: 1.1428;   --type-tagline-tracking: 0.007em;
+    --type-tile-size: 1.5rem;      --type-tile-leading: 1.1666;      --type-tile-tracking: 0.009em;
+    --type-eyebrow-size: 1.3125rem; --type-eyebrow-leading: 1.1904; --type-eyebrow-tracking: 0.011em;
+    --section-padding: var(--space-30);
+  }
+}
+@media (max-width: 734px) {
+  :root {
+    --type-hero-size: 3rem;        --type-hero-leading: 1.0834;      --type-hero-tracking: -0.003em;
+    --type-display-size: 2.5rem;   --type-display-leading: 1.1;      --type-display-tracking: 0em;
+    --type-section-size: 2rem;     --type-section-leading: 1.125;    --type-section-tracking: 0.004em;
+    --type-headline-size: 2rem;    --type-headline-leading: 1.125;   --type-headline-tracking: 0.004em;
+    --type-headline-sm-size: 1.75rem; --type-headline-sm-leading: 1.1428; --type-headline-sm-tracking: 0.007em;
+    --type-tagline-size: 1.5rem;   --type-tagline-leading: 1.1666;   --type-tagline-tracking: 0.009em;
+    --type-tile-size: 1.3125rem;   --type-tile-leading: 1.1904;      --type-tile-tracking: 0.011em;
+    --type-intro-size: 1.1875rem;  --type-intro-leading: 1.4211;     --type-intro-tracking: 0.012em;
+    --section-padding: var(--space-20);
+    --gutter: var(--space-4);
+    --content-width: 87.5%;
+  }
+}
+@media (min-width: 735px) and (max-width: 1068px) {
+  :root { --content-width: 692px; }
+}
+
+/* ---------- Increased contrast (prefers-contrast: more) ---------- */
+@media (prefers-contrast: more) {
+  :root {
+    --label:            light-dark(#000000, #ffffff);
+    --label-secondary:  light-dark(#48484a, #d1d1d6);
+    --label-tertiary:   light-dark(#6c6c70, #aeaeb2);
+    --separator:        light-dark(#8e8e93, #8e8e93);
+    --separator-opaque: light-dark(#8e8e93, #8e8e93);
+    --accent:           #0058b9;
+    --accent-hover:     #0062c9;
+    --accent-active:    #004f9e;
+    --accent-text:      light-dark(#1e6ef4, #5cb8ff);
+    --red:    light-dark(#e9152d, #ff6165);  --red-text:    light-dark(#e9152d, #ff6165);
+    --orange: light-dark(#c55300, #ffa056);  --orange-text: light-dark(#c55300, #ffa056);
+    --yellow: light-dark(#a16a00, #fedf43);  --yellow-text: light-dark(#a16a00, #fedf43);
+    --green:  light-dark(#008932, #4ad968);  --green-text:  light-dark(#008932, #4ad968);
+    --mint:   light-dark(#008575, #54dfcb);  --mint-text:   light-dark(#008575, #54dfcb);
+    --teal:   light-dark(#008198, #3bddec);  --teal-text:   light-dark(#008198, #3bddec);
+    --cyan:   light-dark(#007eae, #6dd9ff);  --cyan-text:   light-dark(#007eae, #6dd9ff);
+    --blue:   light-dark(#1e6ef4, #5cb8ff);  --blue-text:   light-dark(#1e6ef4, #5cb8ff);
+    --indigo: light-dark(#564ade, #a7aaff);  --indigo-text: light-dark(#564ade, #a7aaff);
+    --purple: light-dark(#b02fc2, #ea8dff);  --purple-text: light-dark(#b02fc2, #ea8dff);
+    --pink:   light-dark(#e7124d, #ff8ac4);  --pink-text:   light-dark(#e7124d, #ff8ac4);
+    --brown:  light-dark(#956d51, #dba679);  --brown-text:  light-dark(#956d51, #dba679);
+    --switch-on: light-dark(#008932, #4ad968);
+    --glass-fill: var(--bg-elevated);
+    --glass-blur: 0px;
+    --glass-saturate: 100%;
+    --glass-outline: var(--label);
+    --nav-material: var(--bg-elevated);
+  }
+}
+
+/* ---------- Reduced transparency ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-fill: light-dark(rgb(250 250 252 / 0.97), rgb(36 36 38 / 0.97));
+    --glass-fill-clear: rgb(30 30 32 / 0.9);
+    --glass-blur: 0px;
+    --material-ultrathin: var(--bg-elevated);
+    --material-thin: var(--bg-elevated);
+    --material-regular: var(--bg-elevated);
+    --material-thick: var(--bg-elevated);
+    --nav-material: light-dark(rgb(250 250 252 / 0.98), rgb(22 22 23 / 0.98));
+  }
+}
+
+/* ---------- Reduced motion: no travel, no bounce, quick fades ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --spring-smooth: ease;  --spring-snappy: ease;  --spring-bouncy: ease;  --spring-gentle: ease;  --spring-interactive: ease;
+    --spring-smooth-duration: 200ms; --spring-snappy-duration: 150ms; --spring-bouncy-duration: 200ms;
+    --spring-gentle-duration: 250ms; --spring-interactive-duration: 100ms;
+    --dur-base: 200ms; --dur-slow: 250ms;
+  }
+  html { scroll-behavior: auto !important; }
+}
+
+/* ==========================================================================
+   Base — opinionated defaults that make everything start out "Apple"
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--label);
+}
+/* Root stays at the browser default (16px), so 1rem = 16px everywhere and browser text-size
+   settings and zoom scale the whole UI. For iOS Dynamic Type in app-like PWAs, see
+   references/typography.md §7 (opt-in; it changes what 1rem means). */
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-leading);
+  letter-spacing: var(--type-body-tracking);
+  font-weight: var(--weight-regular);
+  color: var(--label);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis-weight: none;
+}
+
+h1, h2, h3, h4, h5, h6 { margin: 0; font-weight: var(--weight-semibold); text-wrap: balance; }
+p { margin: 0; text-wrap: pretty; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button, input, select, textarea { font: inherit; letter-spacing: inherit; color: inherit; }
+
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
+
+::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (forced-colors: active) {
+  :focus-visible { outline-color: Highlight; }
+}

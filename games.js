@@ -213,11 +213,11 @@ function gameCard(g, i){
   c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
   /* Studio: each tile in its game's colour, with the game's leaderboard (every place) inside it */
   const gc = window.Icon && Icon.GAMES && Icon.GAMES[g.id];
-  if (['studio','canvas'].includes(document.documentElement.getAttribute('data-skin'))){ c.dataset.g = g.id; if (gc) c.style.setProperty('--c', gc[1]); }
+  if (['studio','apple'].includes(document.documentElement.getAttribute('data-skin'))){ c.dataset.g = g.id; if (gc) c.style.setProperty('--c', gc[1]); }
   if (studioGames() && TILE_BOARDS[g.id]) c.insertAdjacentHTML('beforeend', '<span class="stlb" data-lb="' + TILE_BOARDS[g.id].join(' ') + '">' + LD('Loading…', '', { sm:true }) + '</span>');
   return c;
 }
-const studioGames = () => !REVISION_PAGE && ['studio','canvas'].includes(document.documentElement.getAttribute('data-skin'));
+const studioGames = () => !REVISION_PAGE && ['studio','apple'].includes(document.documentElement.getAttribute('data-skin'));
 /* which leaderboards (LB_CAT ids) each game's tile shows in Studio */
 const TILE_BOARDS = { chain:['chain'], oddone:['oddone'], classroom:['classroom'], snake:['snake'], g2048:['g2048'],
                       typing:['typing'], react:['react'], tetris:['tsprint', 'tsurv', 'tzen'] };
@@ -256,7 +256,7 @@ function fillTileBoards(grid){
    zoomed too, so set it, measure, and correct once. */
 function fitGames(){
   const w = document.querySelector('.wrap'); if (!w) return;
-  const on = ['studio','canvas'].includes(document.documentElement.getAttribute('data-skin')) && innerWidth > 860 && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
+  const on = ['studio','apple'].includes(document.documentElement.getAttribute('data-skin')) && innerWidth > 860 && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
   document.documentElement.classList.toggle('stfit', on);
   if (!on){ w.style.height = ''; return; }
   w.style.height = innerHeight + 'px';
@@ -1781,7 +1781,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261118j';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261118m';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

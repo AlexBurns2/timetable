@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261118j">
+<link rel="stylesheet" href="theme.css?v=20261118m">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261118j"></script>
-<script src="icons.js?v=20261118j"></script>
-<script src="suggest.js?v=20261118j"></script>
+<script src="theme.js?v=20261118m"></script>
+<script src="icons.js?v=20261118m"></script>
+<script src="suggest.js?v=20261118m"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -1309,7 +1309,10 @@ const entryAt = (cycleDay, slotKey) =>
 (() => {
 "use strict";
 
-const studioOn = () => ['studio','canvas'].includes(document.documentElement.getAttribute('data-skin'));
+const studioOn = () => document.documentElement.getAttribute('data-skin') === 'studio';
+/* Studio and Apple share the timetable page's behaviour (fit to the window, the tiles below, no week animation, the search); each draws its own grid */
+const studioLike = () => ['studio','apple'].includes(document.documentElement.getAttribute('data-skin'));
+window.studioLike = studioLike;
 window.studioOn = studioOn;
 
 /* NSW public school terms (Eastern division), the beta's table: first and last
@@ -1469,20 +1472,25 @@ async function toggleRoster(item){
    room code; closing, it flies back */
 function flyRoom(item, opening){
   const badge = item.querySelector(':scope .blk-card > .r'), rk = item.querySelector('.det-row.room .rk');
-  const a = badge && badge.getBoundingClientRect(), b = rk && rk.getBoundingClientRect();
   item.classList.remove('landed');
-  if (!a || !b || !a.width || noMotion()){ if (opening) item.classList.add('landed'); return; }
+  if (!badge || !rk){ if (opening) item.classList.add('landed'); return; }
+  /* a flight already under way (clicking fast) carries on from where the badge is now, never from its corner */
+  const was = getComputedStyle(badge).transform;
   badge.getAnimations().forEach(x => x.cancel());
+  const a = badge.getBoundingClientRect(), b = rk.getBoundingClientRect();
+  if (!a.width || noMotion()){ if (opening) item.classList.add('landed'); return; }
   const shift = opening && item.matches('.stcol.end .blk') ? Math.max(item.offsetWidth / 2, 112) : 0;
   const there = { transform:'translate(' + (b.left - a.left - shift) + 'px,' + (b.top - a.top) + 'px)' }, home = { transform:'none' };
-  const flight = badge.animate(opening ? [home, there] : [there, home], { duration:opening ? 520 : 440, easing:'cubic-bezier(.25,.8,.3,1)' });
+  const from = was && was !== 'none' ? { transform:was } : opening ? home : there;
+  const flight = badge.animate(opening ? [from, there] : [from, home], { duration:opening ? 520 : 440, easing:'cubic-bezier(.25,.8,.3,1)' });
   if (opening) flight.onfinish = () => { if (item.classList.contains('open')) item.classList.add('landed'); };
 }
 /* run a layout change, then slide each line of text from where it was (FLIP) */
 function glide(item, change){
   if (noMotion()){ change(); return; }
   const els = [...item.querySelectorAll(':scope .blk-card > .s, :scope .blk-card > .m, :scope .blk-card > .t')];
-  const before = els.map(el => el.getBoundingClientRect());
+  const before = els.map(el => el.getBoundingClientRect());     /* where each line is on screen now, mid-glide or not */
+  els.forEach(el => el.getAnimations().forEach(x => x.cancel()));
   change();
   els.forEach((el, i) => {
     const a = before[i], b = el.getBoundingClientRect();
@@ -1523,6 +1531,7 @@ function onClick(ev){
   if (ev.target.closest('a')) return;
   if (item.classList.contains('open')){ if (!ev.target.closest('.blk-detail')) closeAll(); return; }
   closeAll();
+  clearTimeout(item.closingTimer);     /* reopened before its close finished: that close mustn't land later */
   item.classList.remove('closing');
   glide(item, () => item.classList.add('open'));
   flyRoom(item, true);
@@ -1596,23 +1605,23 @@ function fitHeight(){
   const w = document.querySelector('.wrap');
   document.body.style.height = '';
   if (!w) return;
-  if (!studioOn()){ w.style.height = ''; return; }
+  if (!studioLike()){ w.style.height = ''; return; }
   w.style.height = innerHeight + 'px';
   const h = w.getBoundingClientRect().height;
   if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
 }
-addEventListener('resize', () => { if (studioOn()) fitHeight(); });
+addEventListener('resize', () => { if (studioLike()) fitHeight(); });
 addEventListener('tt:look', () => fitHeight());   /* theme, mode or zoom changed */
 /* Studio has no Home page: "Look around first" on the sign-in card opens the pages under the timetable instead */
 document.querySelector('.gatecard .gateskip').addEventListener('click', e => {
-  if (!studioOn()) return;
+  if (!studioLike()) return;
   e.preventDefault();
   gate.hidden = true;
   document.getElementById('sthome').scrollIntoView({ behavior:'auto' });
 });
 /* Home, on the timetable in Studio: the pages are just below, so it scrolls to them */
 document.getElementById('homebtn').addEventListener('click', e => {
-  if (!studioOn()) return;
+  if (!studioLike()) return;
   e.preventDefault();
   document.getElementById('sthome').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 });
@@ -1640,10 +1649,228 @@ function fit(){
 let fitT = 0;
 if (window.ResizeObserver) new ResizeObserver(() => { if (studioOn()){ clearTimeout(fitT); fitT = setTimeout(fit, 40); } }).observe(document.getElementById('grid'));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (studioOn()) fit(); });
+/* shared with the Apple theme's block below: the term table, the class list and the window fit */
+window.ttTermWeek = d => termWeek(startOfWeek(d));
+window.ttRosterHtml = (code, id) => rosterHtml(code, id, rosterKey === id);
+window.ttToggleRoster = item => toggleRoster(item);
+window.ttFitHeight = fitHeight;
 /* the page's render() asks first: true = drawn here */
 window.studioRender = ctx => {
   if (!studioOn()){ ctx.grid.classList.remove('stg'); paintTerm(ctx.days, ctx.week); fitHeight(); return false; }
   drawStudio(ctx);
+  return true;
+};
+})();
+
+/* ═══ Apple theme: the timetable as a Mac calendar ═══
+   Its own drawing (skins/apple.css), sharing only the data helpers above
+   it reads through the page (items come from the same entries/slots).
+   - toolbar: "Week 6A" with the term and dates under it, ‹ Today › and the search
+   - the week: an hour ruler down the left, hairlines on the hour, lessons
+     placed by their real times, a red line at the time now on today
+   - a lesson opens a popover beside it (room, class code, time left, the
+     teacher's email, the class list); it grows from the lesson's edge and
+     follows to whichever lesson is clicked next, from where it is
+   - Now and Next live in the sidebar (theme.js draws the sidebar) */
+(() => {
+"use strict";
+const appleOn = () => document.documentElement.getAttribute('data-skin') === 'apple';
+window.appleOn = appleOn;
+const DNs = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const fm = m => { const h = Math.floor(m / 60); return (((h + 11) % 12) + 1) + ':' + String(m % 60).padStart(2, '0'); };
+const hourLabel = h => (((h + 11) % 12) + 1) + (h < 12 ? ' am' : ' pm');
+const still = () => document.documentElement.getAttribute('data-motion') === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const leftTxt = m => m < 1 ? 'Under a minute' : m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + m % 60 + ' min' : '');
+let openK = null, lastCtx = null;
+
+function lessonsOf(cyc){                         /* the day's lessons (doubles joined) and assemblies */
+  const out = [];
+  for (const slot of slots){
+    const e = entryAt(cyc, slot.key), b = bellFor(cyc, slot.key);
+    const s = (e && e.start != null) ? e.start : (b ? b.start : null), en = (e && e.end != null) ? e.end : (b ? b.end : null);
+    if (s == null || en == null || en <= s || !e) continue;
+    if (e.kind === 'class') out.push({ s, e:en, lesson:e });
+    else if (e.kind === 'assembly') out.push({ s, e:en, asm:e.subject || 'Assembly' });
+  }
+  out.sort((x, y) => x.s - y.s);
+  const j = [];
+  for (const x of out){ const p = j[j.length - 1];
+    if (p && p.lesson && x.lesson && p.lesson.code === x.lesson.code && p.lesson.room === x.lesson.room && x.s - p.e <= 5) p.e = x.e; else j.push(x); }
+  return j;
+}
+
+function toolbar(ctx){
+  const el = document.getElementById('stterm'); if (!el) return;
+  const d0 = ctx.days[0], d4 = ctx.days[4], tw = termWeekOf(d0), L = String(ctx.week || '').toUpperCase();
+  const range = d0.getDate() + (d0.getMonth() !== d4.getMonth() ? ' ' + MON[d0.getMonth()] : '') + ' – ' + d4.getDate() + ' ' + MON[d4.getMonth()];
+  const title = tw ? 'Week ' + tw.week + L : tw === false ? 'Holidays' : 'Week ' + L;
+  const sub = (tw ? 'Term ' + tw.term + ' · ' : '') + range + (ctx.showingCurrentWeek ? '' : ' · ' + (weekOff < 0 ? 'Past week' : 'Coming week'));
+  el.hidden = false;
+  el.innerHTML = '<div class="aptitle"><h2>' + esc(title) + '</h2><span>' + esc(sub) + '</span></div>' +
+    '<div class="apweek" role="group" aria-label="Week"><button type="button" data-d="-1" aria-label="Previous week"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>' +
+    '<button type="button" data-today' + (weekOff === 0 && ctx.showingCurrentWeek ? ' disabled' : '') + '>Today</button>' +
+    '<button type="button" data-d="1" aria-label="Next week"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button></div>';
+}
+function termWeekOf(d){ try { return window.ttTermWeek ? ttTermWeek(d) : null; } catch { return null; } }
+
+function nowNext(ctx){
+  const box = document.getElementById('apnow'); if (!box) return;
+  if (!showNowNext){ box.hidden = true; return; }
+  box.hidden = false;
+  const c = ctx.current, u = ctx.upcoming, nm = ctx.nowMin;
+  let h = '';
+  if (c){
+    const end = c.end == null ? c.start + 60 : c.end, p = Math.max(0, Math.min(1, (nm - c.start) / (end - c.start)));
+    h += '<div class="apcard isnow" style="--c:' + esc(colourFor(c.subject)) + '"><div class="aplbl">Now</div><b>' + esc(c.subject) + '</b>' +
+      '<span>' + esc([roomLabel(c), c.teacher].filter(Boolean).join(' · ')) + '</span>' +
+      '<div class="apbar"><i style="width:' + (p * 100).toFixed(1) + '%"></i></div><small>' + esc(leftTxt(end - nm)) + ' left</small></div>';
+  } else h += '<div class="apcard isnow quiet"><div class="aplbl">Now</div><b>' + (ctx.doneForWeek ? 'Done for the week' : 'No class') + '</b></div>';
+  if (u) h += '<div class="apcard" style="--c:' + esc(colourFor(u.subject)) + '"><div class="aplbl">' + esc(ctx.upcomingWhen || 'Next') + '</div><b>' + esc(u.subject) + '</b>' +
+    '<span>' + esc([fm(u.start), roomLabel(u), u.teacher].filter(Boolean).join(' · ')) + '</span></div>';
+  box.innerHTML = h;
+}
+
+function draw(ctx){
+  const grid = ctx.grid;
+  grid.classList.remove('stg'); grid.classList.add('apg');
+  const cols = ctx.idx.map(i => ({ i, items: lessonsOf(ctx.cycles[i]) }));
+  let T0 = Infinity, T1 = -Infinity;
+  cols.forEach(c => c.items.forEach(x => { T0 = Math.min(T0, x.s); T1 = Math.max(T1, x.e); }));
+  if (!isFinite(T0)){ T0 = 8 * 60 + 30; T1 = 15 * 60; }
+  T0 = Math.floor(T0 / 60) * 60; T1 = Math.ceil(T1 / 60) * 60;
+  const pc = t => ((t - T0) / (T1 - T0) * 100).toFixed(3) + '%';
+  let h = '<div class="aphead"><span></span>' + cols.map(c => {
+    const d = ctx.days[c.i], today = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey;
+    return '<div class="apday' + (today ? ' today' : '') + '"><span>' + DNs[d.getDay()] + '</span><b>' + d.getDate() + '</b></div>';
+  }).join('') + '</div><div class="apbody"><div class="apruler">';
+  for (let t = T0; t <= T1; t += 60) h += '<span style="top:' + pc(t) + '">' + hourLabel(t / 60) + '</span>';
+  h += '</div>';
+  cols.forEach(c => {
+    const today = ctx.showingCurrentWeek && DAY_KEYS[c.i] === ctx.todayKey, d = ctx.days[c.i];
+    h += '<div class="apcol' + (today ? ' today' : '') + '">';
+    for (let t = T0 + 60; t < T1; t += 60) h += '<i class="aphr" style="top:' + pc(t) + '"></i>';
+    for (const x of c.items){
+      const past = today ? x.e <= ctx.nowMin : ctx.showingCurrentWeek && DAY_KEYS.indexOf(ctx.todayKey) > c.i;
+      const at = 'top:calc(' + pc(x.s) + ' + 1px);height:calc(' + pc(x.e) + ' - ' + pc(x.s) + ' - 2px)';
+      if (x.asm){ h += '<div class="apev asm' + (past ? ' past' : '') + '" style="' + at + '"><b>' + esc(x.asm) + '</b><span class="tm">' + fm(x.s) + '</span></div>'; continue; }
+      const e = x.lesson, k = d2key(d) + '|' + x.s, cur = today && x.s <= ctx.nowMin && ctx.nowMin < x.e;
+      h += '<button type="button" class="apev' + (past ? ' past' : '') + (cur ? ' cur' : '') + (openK === k ? ' sel' : '') + '" data-ek="' + k + '" style="--c:' + esc(colourFor(e.subject)) + ';' + at + '">' +
+        '<span class="tm">' + fm(x.s) + ' – ' + fm(x.e) + '</span><b>' + esc(e.subject) + '</b><span class="mt">' + esc([roomLabel(e), e.teacher].filter(Boolean).join(' · ')) + '</span></button>';
+    }
+    if (today && ctx.nowMin >= T0 && ctx.nowMin <= T1) h += '<div class="apnowline" style="top:' + pc(ctx.nowMin) + '"><em>' + fm(ctx.nowMin) + '</em></div>';
+    h += '</div>';
+  });
+  grid.innerHTML = h + '</div>';
+  grid._ap = { cols, ctx };
+  sizeEvents();
+  if (openK){ const ev = grid.querySelector('[data-ek="' + CSS.escape(openK) + '"]'); if (ev) show(ev, true); else openK = null; }
+}
+const d2key = d => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+
+/* short lessons lose lines, from the bottom, rather than overflow */
+function sizeEvents(){
+  document.querySelectorAll('#grid.apg .apev').forEach(ev => {
+    ev.classList.remove('two', 'one');
+    const hgt = ev.offsetHeight;
+    if (hgt < 40) ev.classList.add('one'); else if (hgt < 62) ev.classList.add('two');
+  });
+}
+
+/* ── the popover ── */
+function find(k){
+  const g = document.getElementById('grid');
+  for (const c of (g._ap ? g._ap.cols : [])) for (const x of c.items){
+    if (!x.lesson) continue;
+    const d = g._ap.ctx.days[c.i];
+    if (d2key(d) + '|' + x.s === k) return { x, c, d, ctx:g._ap.ctx };
+  }
+  return null;
+}
+function show(ev, instant){
+  const g = document.getElementById('grid'), k = ev.dataset.ek, f = find(k); if (!f) return;
+  const e = f.x.lesson, ctx = f.ctx, today = ctx.showingCurrentWeek && DAY_KEYS[f.c.i] === ctx.todayKey;
+  const cur = today && f.x.s <= ctx.nowMin && ctx.nowMin < f.x.e;
+  let pop = g.querySelector('.appop');
+  const fresh = !pop;
+  if (fresh){ pop = document.createElement('div'); pop.className = 'appop'; pop.setAttribute('role', 'dialog'); g.appendChild(pop); }
+  const was = !fresh && pop.classList.contains('on') ? pop.getBoundingClientRect() : null;
+  g.querySelectorAll('.apev.sel').forEach(x => x.classList.remove('sel')); ev.classList.add('sel');
+  openK = k;
+  pop.dataset.k = k; pop.dataset.code = e.code || '';
+  pop.setAttribute('aria-label', e.subject);
+  const mail = /@/.test(e.rawTeacher || '') ? e.rawTeacher.trim() : '';
+  const row = (l, v) => v ? '<div class="aprow"><span>' + l + '</span><b>' + v + '</b></div>' : '';
+  pop.style.setProperty('--c', colourFor(e.subject));
+  pop.innerHTML = '<div class="aphd"><b>' + esc(e.subject) + '</b><span>' + DAY[f.d.getDay()] + ' ' + f.d.getDate() + ' ' + MON[f.d.getMonth()] + ' · ' + fm(f.x.s) + ' – ' + fm(f.x.e) + '</span></div>' +
+    '<div class="apgroup">' + row('Time left', cur && leftTxt(f.x.e - ctx.nowMin)) + row('Room', esc(e.rawRoom || e.room || '')) + row('Class', esc(e.code || '')) +
+    row('Teacher', esc(e.teacher || '')) + row('Email', mail && '<a href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>') +
+    row('Course', e.rawSubject && e.rawSubject !== e.subject ? esc(e.rawSubject) : '') + '</div>' +
+    (e.code ? '<div class="roster">' + window.ttRosterHtml(e.code, k) + '</div>' : '');
+  place(pop, ev);
+  if (instant || still()){ pop.classList.add('on'); return; }
+  if (was){                                                   /* moving to another lesson: glide from where it is */
+    const now = pop.getBoundingClientRect();
+    pop.getAnimations().forEach(a => a.cancel());
+    pop.animate([{ transform:'translate(' + (was.left - now.left) + 'px,' + (was.top - now.top) + 'px)' }, { transform:'none' }],
+                { duration:420, easing:'cubic-bezier(.25,.1,.25,1)' });
+    pop.classList.add('on');
+  } else { pop.classList.remove('on'); pop.offsetWidth; pop.classList.add('on'); }
+}
+function place(pop, ev){
+  const g = document.getElementById('grid'), gr = g.getBoundingClientRect(), r = ev.getBoundingClientRect();
+  const W = Math.min(320, gr.width - 24);
+  pop.style.width = W + 'px';
+  const right = r.right + 12 + W <= gr.right - 4;
+  const left = right ? r.right - gr.left + 12 : r.left - gr.left - 12 - W;
+  pop.classList.toggle('flip', !right);
+  pop.style.left = Math.max(4, left) + 'px';
+  pop.style.top = '0px';
+  const H = pop.offsetHeight, mid = r.top - gr.top + r.height / 2;
+  const top = Math.max(4, Math.min(gr.height - H - 4, mid - 36));
+  pop.style.top = top + 'px';
+  pop.style.setProperty('--ay', (mid - top) + 'px');
+}
+function hide(){
+  const g = document.getElementById('grid'), pop = g && g.querySelector('.appop');
+  openK = null;
+  if (g) g.querySelectorAll('.apev.sel').forEach(x => x.classList.remove('sel'));
+  if (!pop) return;
+  pop.classList.remove('on');
+  const gone = () => { if (!pop.classList.contains('on')) pop.remove(); };
+  if (still()) gone(); else setTimeout(gone, 260);
+}
+
+document.getElementById('grid').addEventListener('click', e => {
+  if (!appleOn()) return;
+  const who = e.target.closest('.appop [data-user]');
+  if (who){ hide(); $('whoami').value = who.dataset.user; sizeWhoami(); viewUser(); return; }
+  if (e.target.closest('.appop .cls-btn')){ window.ttToggleRoster(e.target.closest('.appop')); return; }
+  if (e.target.closest('.appop')) return;
+  const ev = e.target.closest('.apev[data-ek]');
+  if (!ev){ hide(); return; }
+  e.stopPropagation();
+  if (ev.dataset.ek === openK){ hide(); return; }
+  show(ev);
+});
+document.getElementById('stterm').addEventListener('click', e => {
+  if (!appleOn()) return;
+  const b = e.target.closest('.apweek button'); if (!b || b.disabled) return;
+  hide();
+  if (b.hasAttribute('data-today')){ viewWeek = null; weekOff = 0; render(); return; }
+  toggleWeek(+b.dataset.d);
+});
+document.addEventListener('click', e => { if (appleOn() && openK && !e.target.closest('#grid')) hide(); });
+addEventListener('keydown', e => { if (appleOn() && e.key === 'Escape' && openK && !document.querySelector('dialog[open]')) hide(); });
+let rT = 0;
+if (window.ResizeObserver) new ResizeObserver(() => { if (!appleOn()) return; clearTimeout(rT); rT = setTimeout(() => {
+  sizeEvents(); const g = document.getElementById('grid'), pop = g.querySelector('.appop'), ev = openK && g.querySelector('[data-ek="' + CSS.escape(openK) + '"]');
+  if (pop && ev) place(pop, ev); }, 40); }).observe(document.getElementById('grid'));
+
+window.appleRender = ctx => {
+  if (!appleOn()){ ctx.grid.classList.remove('apg'); const b = document.getElementById('apnow'); if (b) b.innerHTML = ''; return false; }
+  lastCtx = ctx;
+  toolbar(ctx); nowNext(ctx); draw(ctx);
+  window.ttFitHeight && ttFitHeight();
   return true;
 };
 })();
@@ -1660,7 +1887,7 @@ function render(){
      the first render runs before the fetch resolves. */
   if (viewWeek === null && realWeek) viewWeek = realWeek;
   const week = viewWeek || realWeek || 'a';
-  const showingCurrentWeek = !!realWeek && week === realWeek && weekOff % 2 === 0 && (weekOff === 0 || !window.studioOn || !studioOn());
+  const showingCurrentWeek = !!realWeek && week === realWeek && weekOff % 2 === 0 && (weekOff === 0 || !window.studioLike || !studioLike());
   const todayKey = realCycle ? realCycle.slice(0, 3) : null;
 
   const days = [0,1,2,3,4].map(i => addDays(startOfWeek(now), i + weekOff * 7));
@@ -1734,7 +1961,8 @@ function render(){
   grid.innerHTML = '';
 
   grid.style.setProperty('--cell-gap', CELL_GAP + 'px');
-  const ctx = { idx, grid, days, cycles, week, showingCurrentWeek, todayKey, now, nowMin };
+  const ctx = { idx, grid, days, cycles, week, showingCurrentWeek, todayKey, now, nowMin, current, upcoming, upcomingWhen, doneForWeek };
+  if (window.appleRender && appleRender(ctx)) return;
   if (window.studioRender && studioRender(ctx)) return;
   if (viewMode === 'full') renderFull(ctx); else renderCompact(ctx);
 }
@@ -2107,7 +2335,7 @@ const whoMeasure = document.createElement('canvas').getContext('2d');
 function sizeWhoami(){
   const i = $('whoami');
   /* Studio: the box is exactly as wide as its text, so the domain sits right after the name, as in the beta */
-  if (window.studioOn && studioOn()){
+  if (window.studioLike && studioLike()){
     const cs = getComputedStyle(i); whoMeasure.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
     i.style.width = Math.ceil(whoMeasure.measureText(i.value || i.placeholder).width + 3) + 'px';
     return;
@@ -2116,7 +2344,7 @@ function sizeWhoami(){
 }
 async function viewUser(){
   /* Studio: a name half-typed (it has a space) is a search, not a username: leaving it puts the current person back */
-  if (window.studioOn && studioOn() && /\s/.test($('whoami').value.trim())){
+  if (window.studioLike && studioLike() && /\s/.test($('whoami').value.trim())){
     $('whoami').value = String(email || '').split('@')[0]; sizeWhoami(); $('whoami').closest('.idrow').classList.remove('naming'); return;
   }
   const v = $('whoami').value.trim().toLowerCase();
@@ -2146,9 +2374,9 @@ $('whoback').onclick = () => {
 if (window.Suggest) Suggest.attach($('whoami'), {
   min: 2, max: 8, delay: 200,
   /* Studio speaks while it searches, as the beta does */
-  waiting: q => window.studioOn && studioOn() && creds && creds.password ? 'Searching…' : '',
+  waiting: q => window.studioLike && studioLike() && creds && creds.password ? 'Searching…' : '',
   async source(q){
-    const studio = window.studioOn && studioOn();
+    const studio = window.studioLike && studioLike();
     if (!creds || !creds.email || !creds.password)
       return studio && /\s/.test(q) ? [{ hint:'Searching by name needs your school login. Sign in under Settings first.' }] : [];
     const u = new URL(endpoint, location.href);
@@ -2534,7 +2762,7 @@ $('resetcolours').onclick = e => { e.preventDefault(); colours = {}; set(LS.colo
 function toggleWeek(dir){
   const shown = viewWeek || (cycleDayFor(new Date(), cycleStart) || 'a').slice(-1);
   const go = () => { viewWeek = shown === 'a' ? 'b' : 'a'; weekOff += dir === -1 ? -1 : 1; render(); };
-  if (window.studioOn && studioOn()){ go(); return; }      /* Studio changes week without animation, as asked */
+  if (window.studioLike && studioLike()){ go(); return; }      /* Studio changes week without animation, as asked */
   turnWeek(go, dir === -1 ? -1 : 1);
 }
 $('weekprev').onclick = () => toggleWeek(-1);

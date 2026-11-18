@@ -1,0 +1,420 @@
+/* ==========================================================================
+   Apple components — reference implementations built only from apple-tokens.css.
+   Load after apple-tokens.css. Every class is prefixed "ap-" so it can drop into
+   an existing project without collisions. See assets/demo.html for usage.
+   Behavior notes live in references/components.md.
+   ========================================================================== */
+
+/* ---------- Layout ---------- */
+.ap-container { width: var(--content-width); max-width: 100%; margin-inline: auto; }
+.ap-container-wide { width: min(var(--content-wide), 100% - 2 * var(--gutter)); margin-inline: auto; }
+.ap-section { padding-block: var(--section-padding); background: var(--bg); color: var(--label); }
+.ap-section--alt { background: var(--bg-alt); }
+/* A dark chapter on a light page: tokens resolve to their dark values inside */
+.ap-section--dark { color-scheme: dark; background: var(--bg); color: var(--label); }
+.ap-stack { display: flex; flex-direction: column; gap: var(--stack-gap, var(--space-4)); }
+.ap-center { text-align: center; }
+.ap-measure { max-width: var(--measure); }
+.ap-center .ap-measure, .ap-measure.ap-center { margin-inline: auto; }
+
+/* ---------- Marketing type (apple.com scale; responsive via tokens) ---------- */
+.ap-type-hero        { font-size: var(--type-hero-size);        line-height: var(--type-hero-leading);        letter-spacing: var(--type-hero-tracking);        font-weight: 600; }
+.ap-type-display     { font-size: var(--type-display-size);     line-height: var(--type-display-leading);     letter-spacing: var(--type-display-tracking);     font-weight: 600; }
+.ap-type-section     { font-size: var(--type-section-size);     line-height: var(--type-section-leading);     letter-spacing: var(--type-section-tracking);     font-weight: 600; }
+.ap-type-headline    { font-size: var(--type-headline-size);    line-height: var(--type-headline-leading);    letter-spacing: var(--type-headline-tracking);    font-weight: 600; }
+.ap-type-headline-sm { font-size: var(--type-headline-sm-size); line-height: var(--type-headline-sm-leading); letter-spacing: var(--type-headline-sm-tracking); font-weight: 600; }
+.ap-type-tagline     { font-size: var(--type-tagline-size);     line-height: var(--type-tagline-leading);     letter-spacing: var(--type-tagline-tracking);     font-weight: 600; }
+.ap-type-tile        { font-size: var(--type-tile-size);        line-height: var(--type-tile-leading);        letter-spacing: var(--type-tile-tracking);        font-weight: 600; }
+.ap-type-eyebrow     { font-size: var(--type-eyebrow-size);     line-height: var(--type-eyebrow-leading);     letter-spacing: var(--type-eyebrow-tracking);     font-weight: 600; }
+.ap-type-intro       { font-size: var(--type-intro-size);       line-height: var(--type-intro-leading);       letter-spacing: var(--type-intro-tracking);       font-weight: 400; }
+.ap-type-body        { font-size: var(--type-body-size);        line-height: var(--type-body-leading);        letter-spacing: var(--type-body-tracking); }
+.ap-type-small       { font-size: var(--type-small-size);       line-height: var(--type-small-leading);       letter-spacing: var(--type-small-tracking); }
+.ap-type-caption     { font-size: var(--type-caption-size);     line-height: var(--type-caption-leading);     letter-spacing: var(--type-caption-tracking); }
+
+/* ---------- App text styles (HIG) ---------- */
+.ap-text-large-title { font: var(--text-large-title); letter-spacing: var(--text-large-title-tracking); }
+.ap-text-title1      { font: var(--text-title1);      letter-spacing: var(--text-title1-tracking); }
+.ap-text-title2      { font: var(--text-title2);      letter-spacing: var(--text-title2-tracking); }
+.ap-text-title3      { font: var(--text-title3);      letter-spacing: var(--text-title3-tracking); }
+.ap-text-headline    { font: var(--text-headline);    letter-spacing: var(--text-headline-tracking); }
+.ap-text-body        { font: var(--text-body);        letter-spacing: var(--text-body-tracking); }
+.ap-text-callout     { font: var(--text-callout);     letter-spacing: var(--text-callout-tracking); }
+.ap-text-subheadline { font: var(--text-subheadline); letter-spacing: var(--text-subheadline-tracking); }
+.ap-text-footnote    { font: var(--text-footnote);    letter-spacing: var(--text-footnote-tracking); }
+.ap-text-caption1    { font: var(--text-caption1);    letter-spacing: var(--text-caption1-tracking); }
+.ap-text-caption2    { font: var(--text-caption2);    letter-spacing: var(--text-caption2-tracking); }
+.ap-text-title1.ap-bold, .ap-text-title2.ap-bold, .ap-text-title3.ap-bold { font-weight: 700; }
+
+.ap-secondary { color: var(--label-secondary); }
+.ap-tertiary  { color: var(--label-tertiary); }
+.ap-accent    { color: var(--accent-text); }
+.ap-tabular   { font-variant-numeric: tabular-nums; }
+.ap-sr-only   { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- Buttons ---------- */
+.ap-button {
+  --_bg: var(--accent); --_bg-hover: var(--accent-hover); --_bg-active: var(--accent-active); --_fg: var(--on-accent);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4em;
+  min-height: 44px; padding: 10px 22px;
+  border: 0; border-radius: var(--radius-capsule);
+  background: var(--_bg); color: var(--_fg);
+  font-size: var(--type-body-size); line-height: var(--type-body-tight-leading); letter-spacing: var(--type-body-tracking); font-weight: 400;
+  text-decoration: none; white-space: nowrap; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-instant) linear, color var(--dur-instant) linear,
+              transform var(--spring-snappy-duration) var(--spring-snappy), opacity var(--dur-fast) var(--ease-standard);
+}
+.ap-button:hover { background: var(--_bg-hover); text-decoration: none; }
+.ap-button:active { background: var(--_bg-active); transform: scale(0.97); transition-duration: var(--dur-instant), var(--dur-instant), 80ms, var(--dur-fast); }
+.ap-button:disabled, .ap-button[aria-disabled="true"] { opacity: 0.42; pointer-events: none; }
+.ap-button svg { width: 1.1em; height: 1.1em; flex: none; }
+
+.ap-button--sm { min-height: 36px; padding: 8px 16px; font-size: var(--type-small-size); letter-spacing: var(--type-small-tracking); }
+.ap-button--lg { min-height: 50px; padding: 14px 28px; font-weight: 600; }
+.ap-button--block { display: flex; width: 100%; }
+.ap-button--icon { padding: 0; width: 44px; aspect-ratio: 1; }
+.ap-button--icon.ap-button--sm { width: 36px; }
+
+.ap-button--tinted { --_bg: var(--accent-tint); --_bg-hover: color-mix(in srgb, var(--accent) 20%, transparent); --_bg-active: color-mix(in srgb, var(--accent) 26%, transparent); --_fg: var(--accent-text); }
+.ap-button--gray   { --_bg: var(--fill-tertiary); --_bg-hover: var(--fill-secondary); --_bg-active: var(--fill); --_fg: var(--label); }
+.ap-button--plain  { --_bg: transparent; --_bg-hover: var(--fill-quaternary); --_bg-active: var(--fill-tertiary); --_fg: var(--accent-text); padding-inline: 12px; }
+.ap-button--outline { --_bg: transparent; --_bg-hover: var(--accent-hover); --_bg-active: var(--accent-active); --_fg: var(--accent-text); box-shadow: inset 0 0 0 1px currentColor; }
+.ap-button--outline:hover { color: var(--on-accent); }
+.ap-button--destructive { --_bg: var(--destructive); --_bg-hover: color-mix(in oklab, var(--destructive), white 6%); --_bg-active: color-mix(in oklab, var(--destructive), black 8%); --_fg: #fff; }
+.ap-button--destructive-plain { --_bg: transparent; --_bg-hover: var(--fill-quaternary); --_bg-active: var(--fill-tertiary); --_fg: var(--red-text); }
+
+@media (hover: hover) and (pointer: fine) {
+  .ap-button--dense { min-height: 28px; padding: 4px 12px; font-size: 0.8125rem; letter-spacing: -0.006em; border-radius: var(--radius-sm); }
+}
+
+/* Text link with chevron ("Learn more ›") */
+.ap-link-chevron { color: var(--accent-text); display: inline-flex; align-items: baseline; gap: 0.2em; }
+.ap-link-chevron::after {
+  content: ""; width: 0.42em; height: 0.72em; align-self: center; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 14'%3E%3Cpath d='M1.2 1.2 6.8 7l-5.6 5.8' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 14'%3E%3Cpath d='M1.2 1.2 6.8 7l-5.6 5.8' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.ap-link-chevron:dir(rtl)::after { transform: scaleX(-1); }
+
+/* ---------- Liquid Glass (functional layer only) ---------- */
+:where(.ap-glass, .ap-glass-clear, .ap-glass-prominent) { position: relative; }
+.ap-glass, .ap-glass-clear, .ap-glass-prominent { isolation: isolate; }
+.ap-glass {
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+          backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-highlight),
+    inset 0 -0.5px 0.5px var(--glass-lowlight),
+    0 0 0 0.5px var(--glass-outline),
+    0 8px 28px var(--glass-shadow),
+    0 1px 3px var(--glass-shadow-tight);
+}
+.ap-glass::after, .ap-glass-clear::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 1;
+  background: linear-gradient(135deg, var(--glass-rim-strong), transparent 38%, transparent 62%, var(--glass-rim-soft));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.ap-glass-clear {
+  background: var(--glass-fill-clear); color: #fff;
+  -webkit-backdrop-filter: blur(6px) saturate(160%) brightness(1.05);
+          backdrop-filter: blur(6px) saturate(160%) brightness(1.05);
+  box-shadow: inset 0 1px 0.5px rgb(255 255 255 / 0.45), 0 0 0 0.5px rgb(255 255 255 / 0.18), 0 8px 24px rgb(0 0 0 / 0.25);
+}
+.ap-glass-prominent {
+  background: color-mix(in oklab, var(--accent) 90%, transparent); color: var(--on-accent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+          backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: inset 0 1px 0.5px rgb(255 255 255 / 0.35), 0 6px 20px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+/* Press: flex and glow from the touch point (set --px/--py from JS; see demo) */
+.ap-glass-press { transition: transform var(--spring-snappy-duration) var(--spring-snappy); }
+.ap-glass-press::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; z-index: 1;
+  background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), rgb(255 255 255 / 0.45), transparent 65%);
+  transition: opacity 240ms var(--ease-standard);
+}
+.ap-glass-press:active { transform: scale(1.04); }
+.ap-glass-press:active::before { opacity: 1; }
+
+/* Standard materials (content layer overlays) */
+.ap-material-thin, .ap-material, .ap-material-thick { -webkit-backdrop-filter: var(--material-blur); backdrop-filter: var(--material-blur); }
+.ap-material-thin  { background: var(--material-thin); }
+.ap-material       { background: var(--material-regular); }
+.ap-material-thick { background: var(--material-thick); }
+
+@media (prefers-contrast: more) {
+  .ap-glass::after, .ap-glass-clear::after { display: none; }
+  .ap-glass, .ap-glass-clear { box-shadow: 0 0 0 1px var(--label); }
+}
+@media (prefers-reduced-motion: reduce) { .ap-glass-press:active { transform: none; } }
+
+/* ---------- Global nav (marketing, apple.com style) ---------- */
+.ap-globalnav {
+  position: sticky; top: 0; z-index: var(--z-bar);
+  height: calc(var(--nav-height) + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top);
+  background: var(--nav-material);
+  -webkit-backdrop-filter: var(--material-blur); backdrop-filter: var(--material-blur);
+}
+.ap-globalnav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); }
+.ap-globalnav a { color: var(--label); opacity: 0.8; font-size: var(--type-caption-size); letter-spacing: var(--type-caption-tracking); transition: opacity var(--dur-fast) var(--ease-standard); }
+.ap-globalnav a:hover { opacity: 1; text-decoration: none; }
+
+/* ---------- App toolbar (iOS 26-style: floating glass groups, scroll edge behind) ---------- */
+.ap-toolbar {
+  position: sticky; top: 0; z-index: var(--z-bar);
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--space-2);
+  min-height: var(--bar-height); padding: calc(env(safe-area-inset-top) + 6px) var(--gutter) 6px;
+}
+.ap-toolbar-leading { display: flex; gap: var(--space-2); justify-self: start; }
+.ap-toolbar-trailing { display: flex; gap: var(--space-2); justify-self: end; }
+.ap-toolbar-title { font: var(--text-headline); letter-spacing: var(--text-headline-tracking); opacity: 0; transition: opacity var(--dur-fast) var(--ease-standard); }
+.ap-toolbar[data-scrolled] .ap-toolbar-title { opacity: 1; }
+.ap-toolbar-group { display: flex; align-items: center; border-radius: var(--radius-capsule); padding: 2px; }
+.ap-toolbar-group > button, .ap-toolbar-group > a {
+  min-width: 40px; height: 40px; padding: 0 10px; display: grid; place-items: center; border: 0; background: none; border-radius: var(--radius-capsule);
+  color: var(--label); cursor: pointer; font-size: var(--type-body-size); letter-spacing: var(--type-body-tracking);
+}
+.ap-toolbar-group > :is(button, a):hover { background: var(--fill-quaternary); text-decoration: none; }
+.ap-toolbar-group svg { width: 21px; height: 21px; }
+/* Scroll edge effect: appears only once content scrolls beneath the bar */
+.ap-toolbar::before {
+  content: ""; position: absolute; inset: 0 0 -28px 0; z-index: -1; pointer-events: none; opacity: 0;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--toolbar-edge-color, var(--bg)) 80%, transparent), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent); mask-image: linear-gradient(to bottom, #000 50%, transparent);
+  transition: opacity var(--dur-base) var(--ease-standard);
+}
+.ap-toolbar[data-scrolled]::before { opacity: 1; }
+
+.ap-large-title { font: var(--text-large-title); letter-spacing: var(--text-large-title-tracking); padding: var(--space-1) var(--gutter) var(--space-2); text-wrap: balance; }
+
+/* ---------- Tab bar (floating capsule, phone) ---------- */
+.ap-tabbar {
+  position: fixed; z-index: var(--z-bar); inset-inline: max(16px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom));
+  max-width: 480px; margin-inline: auto; height: var(--tabbar-height); padding: 4px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-radius: var(--radius-capsule);
+}
+.ap-tabbar a {
+  display: grid; place-items: center; align-content: center; gap: 1px; border-radius: var(--radius-capsule);
+  color: var(--label); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.01em; text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+}
+.ap-tabbar a svg { width: 24px; height: 24px; }
+.ap-tabbar a[aria-current="page"] { color: var(--accent-text); background: var(--fill-tertiary); }
+
+/* ---------- Cards & tiles ---------- */
+.ap-card { background: var(--surface); border-radius: var(--radius-xl); padding: var(--space-6); color: var(--label); }
+.ap-card--lg { border-radius: var(--radius-xl); padding: var(--space-10); }
+.ap-tile {
+  --_r: var(--radius-xl); --_pad: 0px;
+  display: block; background: var(--surface); border-radius: var(--_r); overflow: hidden; color: var(--label); text-decoration: none;
+  transition: transform var(--spring-smooth-duration) var(--spring-smooth), box-shadow var(--dur-base) var(--ease-standard);
+}
+.ap-tile img { border-radius: max(var(--_r) - var(--_pad), 0px); }
+@media (hover: hover) and (pointer: fine) {
+  a.ap-tile:hover { transform: scale(1.015); box-shadow: var(--shadow-md); text-decoration: none; }
+}
+.ap-grid { display: grid; gap: var(--grid-gap, var(--space-3)); grid-template-columns: repeat(auto-fill, minmax(min(var(--grid-min, 300px), 100%), 1fr)); }
+
+/* ---------- Inset grouped list (Settings style) ---------- */
+.ap-list-section { margin-block: var(--space-6); }
+.ap-list-header { font: var(--text-footnote); letter-spacing: var(--text-footnote-tracking); color: var(--label-secondary); padding: 0 var(--space-4) var(--space-2); }
+.ap-list-footer { font: var(--text-footnote); letter-spacing: var(--text-footnote-tracking); color: var(--label-secondary); padding: var(--space-2) var(--space-4) 0; }
+.ap-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; }
+.ap-row {
+  --row-inset: var(--space-4);
+  position: relative; display: flex; align-items: center; gap: var(--space-3);
+  min-height: 44px; padding: 10px var(--space-4); color: var(--label); text-decoration: none; width: 100%;
+  font: var(--text-body); letter-spacing: var(--text-body-tracking); background: none; border: 0; text-align: start;
+}
+.ap-row:has(.ap-row-icon) { --row-inset: calc(var(--space-4) + 30px + var(--space-3)); }
+.ap-list > li + li > .ap-row::before, .ap-list > .ap-row + .ap-row::before {
+  content: ""; position: absolute; top: 0; inset-inline-start: var(--row-inset); inset-inline-end: 0; border-top: 0.5px solid var(--separator);
+}
+:is(a, button, label).ap-row { cursor: pointer; transition: background-color var(--dur-instant) linear; }
+:is(a, button, label).ap-row:hover { background: var(--fill-quaternary); text-decoration: none; }
+:is(a, button, label).ap-row:active { background: var(--fill-tertiary); }
+.ap-row-icon { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: var(--icon-bg, var(--blue)); }
+.ap-row-icon svg { width: 18px; height: 18px; }
+.ap-row-title { flex: 1; min-width: 0; }
+.ap-row-subtitle { display: block; font: var(--text-subheadline); letter-spacing: var(--text-subheadline-tracking); color: var(--label-secondary); }
+.ap-row-detail { color: var(--label-secondary); white-space: nowrap; }
+.ap-row-chevron { flex: none; width: 8px; height: 14px; color: var(--label-tertiary); }
+.ap-row-chevron:dir(rtl) { transform: scaleX(-1); }
+
+/* ---------- Switch (iOS) — native checkbox, role="switch" ---------- */
+.ap-switch {
+  --_travel: 20px;
+  appearance: none; -webkit-appearance: none; flex: none; margin: 0; cursor: pointer;
+  position: relative; width: 51px; height: 31px; border-radius: var(--radius-capsule);
+  background: var(--fill); transition: background-color var(--dur-fast) var(--ease-standard);
+}
+.ap-switch::before {
+  content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 27px; height: 27px; border-radius: var(--radius-capsule);
+  background: #fff; box-shadow: 0 3px 8px rgb(0 0 0 / 0.15), 0 3px 1px rgb(0 0 0 / 0.06);
+  transition: transform var(--spring-snappy-duration) var(--spring-snappy), width var(--spring-snappy-duration) var(--spring-snappy);
+}
+.ap-switch:checked { background: var(--switch-on); }
+.ap-switch:checked::before { transform: translateX(var(--_travel)); }
+.ap-switch:dir(rtl) { --_travel: -20px; }
+.ap-switch:active::before { width: 33px; }
+.ap-switch:checked:active::before { transform: translateX(calc(var(--_travel) - 6px)); }
+.ap-switch:dir(rtl):checked:active::before { transform: translateX(calc(var(--_travel) + 6px)); }
+.ap-switch:disabled { opacity: 0.42; cursor: default; }
+@media (prefers-contrast: more) { .ap-switch { box-shadow: inset 0 0 0 1px var(--label); } }
+
+/* ---------- Segmented control (radio group). Set style="--n: <segments>" ---------- */
+.ap-segmented {
+  --n: 2; position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr);
+  padding: 2px; border-radius: var(--radius-capsule); background: var(--fill-tertiary); isolation: isolate;
+}
+.ap-segmented::before { /* the sliding thumb */
+  content: ""; position: absolute; z-index: -1; top: 2px; bottom: 2px; inset-inline-start: 2px;
+  width: calc((100% - 4px) / var(--n)); border-radius: var(--radius-capsule);
+  background: light-dark(#ffffff, #636366); box-shadow: 0 3px 8px rgb(0 0 0 / 0.12), 0 1px 1px rgb(0 0 0 / 0.04);
+  transition: transform var(--spring-snappy-duration) var(--spring-snappy);
+}
+.ap-segmented label { position: relative; display: grid; place-items: center; min-height: 32px; padding: 0 12px; cursor: pointer;
+  font: var(--text-subheadline); font-weight: 500; letter-spacing: var(--text-subheadline-tracking); color: var(--label); border-radius: var(--radius-capsule); }
+.ap-segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.ap-segmented label:has(input:checked) { font-weight: 600; }
+.ap-segmented label:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+.ap-segmented:has(label:nth-child(2) input:checked)::before { transform: translateX(100%); }
+.ap-segmented:has(label:nth-child(3) input:checked)::before { transform: translateX(200%); }
+.ap-segmented:has(label:nth-child(4) input:checked)::before { transform: translateX(300%); }
+.ap-segmented:has(label:nth-child(5) input:checked)::before { transform: translateX(400%); }
+.ap-segmented:dir(rtl):has(label:nth-child(2) input:checked)::before { transform: translateX(-100%); }
+.ap-segmented:dir(rtl):has(label:nth-child(3) input:checked)::before { transform: translateX(-200%); }
+.ap-segmented:dir(rtl):has(label:nth-child(4) input:checked)::before { transform: translateX(-300%); }
+.ap-segmented:dir(rtl):has(label:nth-child(5) input:checked)::before { transform: translateX(-400%); }
+
+/* ---------- Text fields & search ---------- */
+.ap-label { display: block; font: var(--text-subheadline); font-weight: 500; letter-spacing: var(--text-subheadline-tracking); color: var(--label); margin-bottom: var(--space-2); }
+.ap-field {
+  display: block; width: 100%; min-height: 48px; padding: 12px 16px; margin: 0;
+  border-radius: var(--radius-md); border: 1px solid var(--label-tertiary); background: var(--surface); color: var(--label);
+  font-size: var(--type-body-size); letter-spacing: var(--type-body-tracking); line-height: 1.25;
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ap-field::placeholder { color: var(--placeholder); opacity: 1; }
+.ap-field:focus { outline: none; border-color: var(--focus-ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 30%, transparent); }
+.ap-field[aria-invalid="true"] { border-color: var(--red-text); }
+.ap-field-hint  { font: var(--text-footnote); letter-spacing: var(--text-footnote-tracking); color: var(--label-secondary); margin-top: 6px; }
+.ap-field-error { font: var(--text-footnote); letter-spacing: var(--text-footnote-tracking); color: var(--red-text); margin-top: 6px; }
+
+.ap-search { position: relative; display: block; }
+.ap-search input {
+  width: 100%; min-height: 44px; padding: 10px 16px 10px 42px; border: 0; border-radius: var(--radius-capsule);
+  background: var(--fill-tertiary); color: var(--label); font-size: var(--type-body-size); letter-spacing: var(--type-body-tracking);
+}
+.ap-search input::placeholder { color: var(--label-secondary); opacity: 1; }
+.ap-search input:focus { outline: 3px solid color-mix(in srgb, var(--focus-ring) 45%, transparent); outline-offset: 0; }
+.ap-search svg { position: absolute; inset-inline-start: 14px; top: 50%; translate: 0 -50%; width: 18px; height: 18px; color: var(--label-secondary); pointer-events: none; }
+.ap-search:dir(rtl) input { padding: 10px 42px 10px 16px; }
+
+/* ---------- Sheets & alerts (<dialog>) ---------- */
+.ap-sheet, .ap-alert {
+  border: 0; padding: 0; color: var(--label); background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg); overflow: hidden;
+  transition: transform var(--spring-smooth-duration) var(--spring-smooth), opacity var(--dur-base) var(--ease-standard),
+              overlay var(--spring-smooth-duration) allow-discrete, display var(--spring-smooth-duration) allow-discrete;
+}
+.ap-sheet { width: min(560px, 100% - 32px); max-height: min(720px, 100dvh - 64px); border-radius: var(--radius-xl); opacity: 0; transform: translateY(24px) scale(0.98); }
+.ap-sheet[open] { opacity: 1; transform: none; }
+@starting-style { .ap-sheet[open] { opacity: 0; transform: translateY(24px) scale(0.98); } }
+.ap-sheet--grouped { background: light-dark(#f2f2f7, #1c1c1e); }               /* grouped bg, elevated in dark */
+.ap-sheet--grouped .ap-list { background: light-dark(#ffffff, #2c2c2e); }        /* cells one level brighter */
+@media (max-width: 734px) {
+  .ap-sheet { width: 100%; max-width: none; margin: auto 0 0; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: calc(100dvh - 48px); transform: translateY(100%); opacity: 1; padding-bottom: env(safe-area-inset-bottom); }
+  .ap-sheet[open] { transform: none; }
+  @starting-style { .ap-sheet[open] { transform: translateY(100%); } }
+}
+.ap-sheet-grabber { width: 36px; height: 5px; border-radius: var(--radius-capsule); background: var(--fill); margin: 6px auto 0; }
+.ap-sheet-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-2); }
+.ap-sheet-header > :first-child { justify-self: start; }
+.ap-sheet-header > :last-child { justify-self: end; }
+.ap-sheet-title { font: var(--text-headline); letter-spacing: var(--text-headline-tracking); text-align: center; }
+.ap-sheet-body { padding: var(--space-2) var(--space-4) var(--space-6); overflow: auto; }
+
+.ap-alert { width: min(320px, 100% - 48px); border-radius: 34px; padding: var(--space-6) var(--space-5) var(--space-5); opacity: 0; transform: scale(1.06); }
+.ap-alert[open] { opacity: 1; transform: none; }
+@starting-style { .ap-alert[open] { opacity: 0; transform: scale(1.06); } }
+.ap-alert-title { font: var(--text-headline); letter-spacing: var(--text-headline-tracking); margin-bottom: var(--space-1); }
+.ap-alert-message { font: var(--text-subheadline); letter-spacing: var(--text-subheadline-tracking); color: var(--label-secondary); }
+.ap-alert-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--space-2); margin-top: var(--space-5); }
+
+.ap-sheet::backdrop, .ap-alert::backdrop { background: var(--scrim); transition: background-color var(--dur-base) var(--ease-standard), overlay var(--dur-base) allow-discrete, display var(--dur-base) allow-discrete; }
+@starting-style { .ap-sheet[open]::backdrop, .ap-alert[open]::backdrop { background: transparent; } }
+
+/* ---------- Menus (Popover API) ---------- */
+.ap-menu {
+  --_r: var(--radius-xl); --_pad: 6px;
+  margin: 0; border: 0; padding: var(--_pad); min-width: 232px; border-radius: var(--_r); color: var(--label);
+  background: var(--glass-fill); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 1px 0.5px var(--glass-highlight), 0 0 0 0.5px var(--glass-outline), var(--shadow-lg);
+  transform-origin: var(--menu-origin, top left);
+  opacity: 0; transform: scale(0.94); filter: blur(4px);
+  transition: opacity var(--dur-fast) var(--ease-standard), transform var(--spring-smooth-duration) var(--spring-smooth), filter var(--dur-fast) var(--ease-standard),
+              overlay var(--dur-base) allow-discrete, display var(--dur-base) allow-discrete;
+}
+.ap-menu:popover-open { opacity: 1; transform: none; filter: none; }
+@starting-style { .ap-menu:popover-open { opacity: 0; transform: scale(0.94); filter: blur(4px); } }
+@media (prefers-reduced-transparency: reduce) { .ap-menu { background: var(--bg-elevated); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+.ap-menu-item {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: 40px; padding: 8px 12px; border: 0; background: none;
+  border-radius: max(var(--_r) - var(--_pad), 8px); color: inherit; text-align: start; cursor: pointer; text-decoration: none;
+  font: var(--text-body); letter-spacing: var(--text-body-tracking);
+}
+.ap-menu-item:hover, .ap-menu-item:focus-visible { background: var(--fill-tertiary); outline: none; text-decoration: none; }
+.ap-menu-item svg { width: 18px; height: 18px; flex: none; margin-inline-start: auto; color: var(--label-secondary); }
+.ap-menu-item--destructive, .ap-menu-item--destructive svg { color: var(--red-text); }
+.ap-menu-separator { height: 0; border: 0; border-top: 0.5px solid var(--separator); margin: 6px 12px; }
+
+/* ---------- Badges, pills ---------- */
+.ap-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-capsule);
+  background: var(--destructive); color: #fff; font-size: 0.75rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.ap-pill { --c: var(--accent); --c-text: var(--accent-text);
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-capsule);
+  background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c-text);
+  font-size: var(--type-caption-size); font-weight: 600; letter-spacing: 0; }
+.ap-pill--green  { --c: var(--green);  --c-text: var(--green-text); }
+.ap-pill--orange { --c: var(--orange); --c-text: var(--orange-text); }
+.ap-pill--red    { --c: var(--red);    --c-text: var(--red-text); }
+
+/* ---------- Progress ---------- */
+.ap-spinner {
+  --s: 20px; display: inline-block; width: var(--s); height: var(--s); color: var(--label-secondary);
+  background: conic-gradient(from 0deg, transparent, currentColor);
+  -webkit-mask: radial-gradient(farthest-side, transparent 46%, #000 47%), repeating-conic-gradient(from -9deg, #000 0deg 18deg, transparent 18deg 45deg);
+  -webkit-mask-composite: source-in;
+          mask: radial-gradient(farthest-side, transparent 46%, #000 47%) intersect, repeating-conic-gradient(from -9deg, #000 0deg 18deg, transparent 18deg 45deg);
+  animation: ap-spin 0.8s steps(8) infinite;
+}
+@keyframes ap-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ap-spinner { animation-duration: 1.6s; } }
+
+.ap-progress { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 4px; border: 0; border-radius: var(--radius-capsule); background: var(--fill-secondary); overflow: hidden; }
+.ap-progress::-webkit-progress-bar { background: var(--fill-secondary); border-radius: var(--radius-capsule); }
+.ap-progress::-webkit-progress-value { background: var(--accent); border-radius: var(--radius-capsule); transition: inline-size var(--dur-base) var(--ease-standard); }
+.ap-progress::-moz-progress-bar { background: var(--accent); border-radius: var(--radius-capsule); }
+
+.ap-skeleton { background: var(--fill-quaternary); border-radius: var(--radius-xs); position: relative; overflow: hidden; }
+.ap-skeleton::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, light-dark(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.06)), transparent);
+  animation: ap-shimmer 1.6s var(--ease-standard) infinite;
+}
+@keyframes ap-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .ap-skeleton::after { display: none; } }
+
+/* ---------- Hairline separator ---------- */
+.ap-separator { border: 0; border-top: 0.5px solid var(--separator); margin: 0; }
+
+/* ---------- Reveal on scroll (marketing). Add .is-visible via IntersectionObserver ----------
+   Hidden only when scripting is on, so content is never lost if JS fails to load. */
+@media (scripting: enabled) {
+  .ap-reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.8s var(--ease-out-soft), transform 0.8s var(--ease-out-soft); }
+  .ap-reveal.is-visible { opacity: 1; transform: none; }
+}
+@media (scripting: enabled) and (prefers-reduced-motion: reduce) { .ap-reveal { transform: none; transition: opacity var(--dur-slow) linear; } }

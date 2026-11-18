@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261118j';
+const ASSET_V = '20261118m';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -46,7 +46,7 @@ const HIDDEN_SKINS = ['coquette', 'aero'];
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
   { id:'studio',    name:'Studio - Beta',    both:true, ic:'accent', is:'icons', css:'studio' },
-  { id:'canvas',    name:'Canvas - Beta',    both:true, ic:'accent', is:'icons', css:'canvas' },
+  { id:'apple',     name:'Apple - Beta',     both:true, ic:'accent', is:'icons', css:'apple' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
@@ -90,9 +90,8 @@ const THUMBS = (() => {
       tiles('', i => 'rx="5" fill="#fff" fill-opacity=".8" stroke="' + ['#ff9f0a', '#0a84ff', '#30d158'][i] + '" stroke-width="1.6"')],
     glass: ['#0d1220', '<defs><filter id="b"><feGaussianBlur stdDeviation="9"/></filter></defs><g filter="url(#b)"><circle cx="22" cy="6" r="20" fill="#7a5aff"/><circle cx="96" cy="14" r="20" fill="#00becc"/><circle cx="60" cy="48" r="18" fill="#ff50a0"/></g>' +
       bar('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"') + tiles('rx="6" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".4"')],
-    canvas: ['#f6f5f4', '<rect x="8" y="5" width="48" height="8" rx="4" fill="#000" fill-opacity=".05"/><rect x="9" y="6" width="15" height="6" rx="3" fill="#fff"/>' +
-      [8, 44, 80].map((x, i) => '<rect x="' + x + '" y="20" width="32" height="22" rx="4" fill="#fff" stroke="#000" stroke-opacity=".06" stroke-width=".6"/><rect x="' + (x + 4) + '" y="24" width="8" height="8" rx="2.2" fill="' + ['#3b82f6', '#22c55e', '#f59e0b'][i] + '"/>').join('') +
-      '<rect x="88" y="5" width="24" height="8" rx="4" fill="#3b82f6"/>'],
+    apple: ['#f5f5f7', '<rect x="34" y="5" width="52" height="8" rx="4" fill="#787880" fill-opacity=".14"/><circle cx="40" cy="9" r="1.8" fill="none" stroke="#86868b" stroke-width=".8"/>' +
+      [8, 44, 80].map((x, i) => '<rect x="' + x + '" y="19" width="32" height="23" rx="5" fill="#fff"/><path d="M' + (x + 5) + ' 25h6" stroke="' + ['#0071e3', '#34c759', '#ff8d28'][i] + '" stroke-width="2.4" stroke-linecap="round"/><rect x="' + (x + 5) + '" y="34" width="14" height="2.4" rx="1.2" fill="#1d1d1f"/>').join('')],
     studio: ['#f7f2ec', bar('rx="2.5" fill="none"') + '<rect x="8" y="7" width="40" height="5" rx="1.5" fill="#1d1d1f"/><rect x="8" y="14" width="22" height="2.4" rx="1.2" fill="#a29d97"/>' +
       tiles('rx="2.5" fill="#fffefc" stroke="#e2ddd6" stroke-width=".7"') + [14, 50, 86].map(x => '<rect x="' + x + '" y="28" width="6" height="6" rx="1.5" fill="#6b4fd0"/>').join('')],
     paper: ['#f7f3e8', '<g stroke="#9fb4d8" stroke-opacity=".5">' + [9, 18, 27, 36, 45].map(y => '<path d="M0 ' + y + 'H120"/>').join('') + '</g><path d="M22 0V46" stroke="#d66" stroke-opacity=".6"/>' +
@@ -163,7 +162,7 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
-SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; SKINS.find(s => s.id === 'canvas').border = '#e7e6e4';
+SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; SKINS.find(s => s.id === 'apple').border = '#d2d2d7';
 
 /* kept for older callers; the picker shows every theme now */
 const QUICK_SKINS = SKINS.filter(s => !s.legacy).map(s => s.id);
@@ -351,7 +350,7 @@ const FAV = {
   vapor:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#7a4dff'); g.addColorStop(.55, '#ff5fbf'); g.addColorStop(1, '#ffb36b');
                x.fillStyle = g; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(40,10,80,.55)'; [45, 52, 58].forEach((y, i) => x.fillRect(0, y, N, 2 + i)); } },
   studio:    { ink:'#fff', bg(x, N){ x.fillStyle = '#6b4fd0'; x.fillRect(0, 0, N, N); } },
-  canvas:    { ink:'#fff', bg(x, N){ x.fillStyle = '#3b82f6'; x.fillRect(0, 0, N, N); } },
+  apple:     { ink:'#fff', bg(x, N){ x.fillStyle = '#0071e3'; x.fillRect(0, 0, N, N); } },
   aero:      { ink:'#fff', bg(x, N){ const ev = document.documentElement.getAttribute('data-mode') === 'dark', g = x.createLinearGradient(0, 0, 0, N);
                (ev ? [[0, '#ff8a70'], [.49, '#d4140c'], [.5, '#8e0603'], [1, '#e0261c']] : [[0, '#9fe3ff'], [.49, '#2aa4ef'], [.5, '#0b7fd0'], [1, '#4fc0ff']]).forEach(s => g.addColorStop(s[0], s[1]));
                x.fillStyle = g; x.fillRect(0, 0, N, N); } },
@@ -1160,7 +1159,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localh
    otherwise to Home; a page can handle it first (window.TTBack returning true). */
 /* Studio: Home is the timetable with the site's pages under it, so the Home
    buttons and the "MSC Unofficial" links go there instead of home.html */
-const studioHome = () => ['studio','canvas'].includes(document.documentElement.getAttribute('data-skin'));
+const studioHome = () => ['studio','apple'].includes(document.documentElement.getAttribute('data-skin'));
 function homeLinks(){
   try {
     document.querySelectorAll('a.btn.icon[href="home.html"], a.sitename[href="home.html"], a[data-home]').forEach(a => {
@@ -1206,6 +1205,48 @@ function studioFit(){
     if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
   } catch {}
 }
+/* Apple theme: every page sits in a Mac window with a sidebar (skins/apple.css).
+   The sidebar lists the site's pages (the current one selected), Settings at
+   the foot, and on the timetable Now and Next above the list (index.html fills
+   #apnow). Phones don't get it: they keep each page's own header. */
+const APNAV = [
+  ['timetable', './', 'Timetable', '#ff3b30', '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>'],
+  ['calendar', 'calendar.html', 'Calendar', '#af52de', '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 14h2M12 14h2M16 14h0M8 17h2"/>'],
+  ['free', 'free.html', 'Free periods', '#30c05a', '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/>'],
+  ['revision', 'revision.html', 'Revision', '#ff9f0a', '<path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/>'],
+  ['resources', 'resources.html', 'Resources', '#0a84ff', '<path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/>'],
+  ['games', 'games.html', 'Games', '#ff375f', '<rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/>'],
+  ['finder', 'finder.html', 'Student finder', '#5e5ce6', '<circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>'],
+  ['forum', 'home.html?show=forum', 'Forum', '#30b0c7', '<path d="M4 5h16v11H9l-5 4z"/>'],
+  ['poll', 'home.html?show=poll', 'Poll', '#ffcc00', '<path d="M5 20V10M12 20V4M19 20v-7"/>'],
+  ['mahjong', 'mahjong.html', 'Mahjong club', '#e0303a', '<rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/>']
+];
+function appleShell(){
+  try {
+    const root = document.documentElement, on = root.getAttribute('data-skin') === 'apple';
+    let side = document.getElementById('apside');
+    root.classList.toggle('apshell', on);
+    if (!on){ if (side) side.remove(); return; }
+    if (!document.body) return;
+    const pg = root.getAttribute('data-pg'), here = pg === 'home' ? (root.getAttribute('data-show') || '') : pg;
+    if (!side){
+      side = document.createElement('aside');
+      side.id = 'apside'; side.setAttribute('aria-label', 'Pages');
+      side.innerHTML = '<div class="apbrand">MSC Unofficial</div>' + (pg === 'timetable' ? '<section id="apnow" aria-label="Now and next"></section>' : '') +
+        '<nav class="aplist">' + APNAV.map(([id, href, name, c, ic]) =>
+          '<a href="' + href + '" data-p="' + id + '" style="--c:' + c + '"><span class="apic"><svg viewBox="0 0 24 24" aria-hidden="true">' + ic + '</svg></span>' + name + '</a>').join('') + '</nav>' +
+        '<button type="button" class="apset"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Settings</button>';
+      side.querySelector('.apset').onclick = () => {
+        const b = document.getElementById('settings') || document.querySelector('[aria-label="Settings"]:not(.apset)');
+        if (b) b.click();
+      };
+      document.body.prepend(side);
+    }
+    side.querySelectorAll('.aplist a').forEach(a => { const cur = a.dataset.p === here; a.classList.toggle('on', cur); if (cur) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  } catch {}
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', appleShell); else appleShell();
+addEventListener('tt:look', appleShell);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', studioFit); else studioFit();
 addEventListener('resize', studioFit);
 addEventListener('load', studioFit);
