@@ -649,3 +649,30 @@ html[data-skin="studio"][data-show="poll"] .wrap.hub:has(#poll[hidden])::after{c
 [data-skin="studio"] .mjs .mjaward{flex:1 1 0}
 @media (max-width:1100px){ [data-skin="studio"] .mjs .mjawards{flex-wrap:wrap} [data-skin="studio"] .mjs .mjaward{flex:1 1 180px} }
 [data-skin="studio"] .mjs .mjaward{text-align:left;justify-items:start}
+
+/* ══ Mahjong club, one window high (mahjong.js fitPage sets .wrap's height): standings,
+   then the graph taking all the room that's left, then the awards in a column of their own ══ */
+@media (min-width:861px){
+  :root[data-skin="studio"][data-pg="mahjong"] .wrap{max-width:none;box-sizing:border-box;display:flex;flex-direction:column;padding:16px 24px 18px;overflow:hidden}
+  [data-skin="studio"][data-pg="mahjong"] .wrap>.pagehead{flex:none;margin-bottom:6px}
+  [data-skin="studio"][data-pg="mahjong"] .stage{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  [data-skin="studio"][data-pg="mahjong"] #mj{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  [data-skin="studio"] .mjs{flex:1 1 0;min-height:0;grid-template-columns:minmax(300px,26%) minmax(0,1fr) minmax(190px,15%);grid-template-rows:minmax(0,1fr);gap:0 14px;align-items:stretch}
+  [data-skin="studio"] .mjscol{display:flex;flex-direction:column;min-height:0}
+  [data-skin="studio"] .mjsh{flex:none;margin:0 0 8px}
+  /* the bars share whatever height the column has (never taller than the beta's 60px) */
+  [data-skin="studio"] .mjslist{flex:1 1 0;min-height:0;gap:6px}
+  [data-skin="studio"] .mjsrow{flex:1 1 0;min-height:0;height:auto;max-height:60px}
+  [data-skin="studio"] .mjsrow .mjbox input{padding:4px 8px}
+  [data-skin="studio"] .mjscol>:is(.mjsblk,.mjcalc){flex:none;margin-top:6px}
+  [data-skin="studio"] .mjs .mjcalc[open]{max-height:45vh;overflow:auto}
+  /* the graph fills its column */
+  [data-skin="studio"] .mjscol>.mjschart{flex:1 1 0;min-height:0;margin:0;display:flex;flex-direction:column}
+  [data-skin="studio"] .mjschart .mjgwrap{flex:1 1 0;min-height:0}
+  [data-skin="studio"] .mjschart .mjgraph{height:100%}
+  /* the awards: a column of cards, each with room for its words */
+  [data-skin="studio"] .mjsacol .mjawards{flex:1 1 0;min-height:0;flex-direction:column;flex-wrap:nowrap;gap:8px;margin:0}
+  [data-skin="studio"] .mjsacol .mjaward{flex:1 1 0;min-height:0;max-height:120px;align-content:center}
+  [data-skin="studio"] .mjsacol .mjaward b{white-space:normal;overflow-wrap:anywhere}
+}
+@media (max-width:860px){ [data-skin="studio"] .mjsacol{margin-top:20px} [data-skin="studio"] .mjsacol .mjawards{flex-wrap:wrap} }

@@ -182,7 +182,7 @@ function mount(host){
     $('mjgout').onclick = () => zoomAt(mid(), 1.5);
     $('mjgall').onclick = () => { view = null; redraw(); };
     if (view && view.b > n()) setView(view.a, span());
-    if (window.ResizeObserver){ let lw = 0; new ResizeObserver(() => { const w = svg.clientWidth; if (w && w !== lw){ lw = w; redraw(); } }).observe(svg); }
+    if (window.ResizeObserver){ let lw = 0, lh = 0; new ResizeObserver(() => { const w = svg.clientWidth, h = svg.clientHeight; if (w && (w !== lw || h !== lh)){ lw = w; lh = h; redraw(); } }).observe(svg); }
     drawGraph();
   }
 
@@ -330,11 +330,11 @@ function mount(host){
         (n > 1 ? '<div class="mjsblk mjssave"><span class="mjsum how" id="mjsum">+ for winners, − for whoever paid</span><div class="mjsbtns">' +
           (state.rounds.length ? '<button class="btn" id="mjundo" type="button">Undo</button>' : '') + '<button class="btn primary" id="mjsave" type="button">Save</button></div></div>' : '') +
         '<div class="mjsblk mjsadd"><input id="mjname" placeholder="'+(n ? 'Add a player' : 'Add everyone at the table')+'" maxlength="30" autocomplete="off"><button class="btn" id="mjaddp" type="button">Add</button></div>' +
-        (n > 1 ? calcHTML() : '') +
-      '</section>' +
-      '<section class="mjscol"><h3 class="mjsh">Over time</h3>' + awards() +
+      '</section>' +          /* (no score calculator in Studio, at the user's request) */
+      '<section class="mjscol mjsgcol"><h3 class="mjsh">Over time</h3>' +
         '<div class="mjsblk mjschart">' + (state.rounds.length ? graph() : '<p class="how mjnone">Nothing here until the first game.</p>') + '</div>' +
-      '</section></div>';
+      '</section>' +
+      (state.rounds.length ? '<section class="mjscol mjsacol"><h3 class="mjsh">Awards</h3>' + awards() + '</section>' : '') + '</div>';
   }
   /* Studio: when the rankings change, each player's bar slides from its old place to its new one */
   function reorder(was){
@@ -396,7 +396,19 @@ function mount(host){
     catch (e){ paint(e.message); }
     busy = false;
   }
-  addEventListener('tt:look', () => { if (state && !busy) paint(); });
+  addEventListener('tt:look', () => { fitPage(); if (state && !busy) paint(); });
+  /* Studio on a computer: the sheet is exactly one window high, like the timetable, so
+     nothing needs scrolling. Accessibility → Zoom scales <body>, and browsers disagree on
+     whether a set height is zoomed too, so set it, measure, and correct once. */
+  function fitPage(){
+    const w = host.closest('.wrap'); if (!w) return;
+    if (!studio() || innerWidth <= 860){ w.style.height = ''; return; }
+    w.style.height = innerHeight + 'px';
+    const h = w.getBoundingClientRect().height;
+    if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
+  }
+  addEventListener('resize', fitPage);
+  fitPage();
   mjFetch().then(d => { state = d.state; paint(); }, e => { box.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; });
 }
 
