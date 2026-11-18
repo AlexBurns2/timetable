@@ -704,7 +704,6 @@ html.stfit[data-skin="studio"] #gamegrid>.gsec .cathd{text-align:center;font-fam
 html.stfit[data-skin="studio"][data-pg="games"] #gamegrid>.gamegrid{grid-row:2;min-height:0}
 html.stfit[data-skin="studio"][data-pg="games"] #gamegrid>:not(.gsec):not(.gamegrid){display:none}
 html.stfit[data-skin="studio"] .gameslede{display:none}
-[data-skin="studio"] #stlbbtn[hidden]{display:none}
 /* the tiles */
 html.stfit[data-skin="studio"] .gamegrid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:8px;background:none;box-shadow:none;border-radius:0;overflow:visible}
 html.stfit[data-skin="studio"] .gamegrid[data-cat="Arcade"]{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -817,3 +816,31 @@ html[data-skin="studio"][data-show="forum"] #hello::after{content:"Forum"}
 html[data-skin="studio"][data-show="poll"] #hello::after{content:"Poll"}
 :root[data-skin="studio"][data-show] .hubbar{margin-bottom:12px;padding:2px 0}
 html[data-skin="studio"][data-show] .hubin>.headbtns{flex-direction:row;gap:4px}
+
+/* Games, take two: wide tiles. "Play with your year" a single column of short tiles; Multiplayer
+   and Arcade two across. Icon beside the name, the board under it (top three, and you) */
+html.stfit[data-skin="studio"][data-pg="games"] #gamegrid{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1.5fr)}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"]{grid-template-columns:minmax(0,1fr)}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid:is([data-cat="Multiplayer"],[data-cat="Arcade"]){grid-template-columns:repeat(2,minmax(0,1fr))}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);
+  align-content:start;column-gap:10px;row-gap:2px;padding:12px 14px}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard .ico{grid-column:1;grid-row:1;align-self:center}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard h2{grid-column:2;grid-row:1;align-self:center;margin:0}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard>:not(.ico):not(h2):not(.newbanner):not(.tag){grid-column:1 / -1}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb{flex:none;overflow:hidden;margin-top:6px;align-self:start}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb .lbbr{font-size:.78125rem}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb .lbbr i{min-width:1.6em}
+html.stfit[data-skin="studio"][data-pg="games"] .stlb .lbbr:nth-child(4){margin-top:2px;padding-top:2px;border-top:1px dashed color-mix(in srgb,var(--c,var(--st-violet)) 30%,transparent)}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard[data-g="tetris"] .stlb .lbbr{grid-template-columns:4.6em minmax(0,1fr) auto}
+html.stfit[data-skin="studio"][data-pg="games"] .gamecard[data-g="tetris"] .stlb .lbbr i{font-weight:500}
+
+/* Settings' theme picker: each thumbnail a full-width strip above the name, whatever the browser */
+[data-skin="studio"] .skinbtn{display:flex;flex-direction:column;align-items:stretch;padding:0;overflow:hidden}
+[data-skin="studio"] .skinbtn .sw{display:block;flex:none;width:100%;height:46px;border-radius:0}
+[data-skin="studio"] .skinbtn .nm{flex:1 1 auto}
+/* "Play with your year": short wide tiles, so the board sits beside the name */
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:has(.stlb){grid-template-columns:auto minmax(0,.9fr) minmax(0,1.4fr);grid-template-rows:minmax(0,1fr);align-content:stretch}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:has(.stlb) .stlb{grid-column:3;grid-row:1;align-self:center;margin:0;padding:0 0 0 12px;border-top:0;
+  border-left:1px solid color-mix(in srgb,var(--c,var(--st-violet)) 30%,transparent)}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:has(.stlb) .stlb .lbbr{line-height:1.35}
+html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard{align-content:center}

@@ -212,8 +212,8 @@ function gameCard(g, i){
     '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
   c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
   /* Studio: each tile in its game's colour, with the game's leaderboard (every place) inside it */
-  c.dataset.g = g.id;
-  const gc = window.Icon && Icon.GAMES && Icon.GAMES[g.id]; if (gc) c.style.setProperty('--c', gc[1]);
+  const gc = window.Icon && Icon.GAMES && Icon.GAMES[g.id];
+  if (document.documentElement.getAttribute('data-skin') === 'studio'){ c.dataset.g = g.id; if (gc) c.style.setProperty('--c', gc[1]); }
   if (studioGames() && TILE_BOARDS[g.id]) c.insertAdjacentHTML('beforeend', '<span class="stlb" data-lb="' + TILE_BOARDS[g.id].join(' ') + '">' + LD('Loading…', '', { sm:true }) + '</span>');
   return c;
 }
@@ -240,11 +240,16 @@ function fetchBoardsFull(){
 function fillTileBoards(grid){
   const boxes = [...grid.querySelectorAll('.stlb')]; if (!boxes.length) return;
   if (!TT.myEmail || !TT.myEmail()){ boxes.forEach(b => b.innerHTML = '<span class="lbbempty">Sign in to see the leaderboard</span>'); return; }
-  const list = L => !L ? '<span class="lbbempty">Couldn’t load</span>' : !L.rows.length ? '<span class="lbbempty">No scores yet</span>'
-    : L.rows.map((r, i) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (i + 1) + '</i><span class="w">' + esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('');
+  const row = (r, i, label) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (label || i + 1) + '</i><span class="w">' + esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>';
+  /* the top three, and your own place under them when you're further down */
+  const list = L => { if (!L) return '<span class="lbbempty">Couldn’t load</span>'; if (!L.rows.length) return '<span class="lbbempty">No scores yet</span>';
+    const me = L.rows.findIndex(r => r.you);
+    return L.rows.slice(0, 3).map((r, i) => row(r, i)).join('') + (me > 2 ? row(L.rows[me], me) : ''); };
+  const name = id => ((LB_CAT.find(c => c.id === id) || {}).name || id).replace(/^Tetris /, '');
   fetchBoardsFull().then(B => boxes.forEach(b => { const ids = b.dataset.lb.split(' ');
+    /* one board: its top three; several (Tetris): each board's leader, named */
     b.innerHTML = ids.length === 1 ? list(B[ids[0]])
-      : ids.map(id => '<span class="stlbh">' + esc((LB_CAT.find(c => c.id === id) || {}).name || id).replace(/^Tetris /, '') + '</span>' + list(B[id])).join(''); }));
+      : ids.map(id => { const L = B[id]; return L && L.rows.length ? row(L.rows[0], 0, esc(name(id))) : '<span class="lbbr"><i>' + esc(name(id)) + '</i><span class="w lbbempty">No scores yet</span><span class="v"></span></span>'; }).join(''); }));
 }
 /* Studio: the games fill exactly one window (the page doesn't scroll while they're showing).
    Accessibility → Zoom scales <body>, and browsers disagree on whether a set height is
@@ -259,6 +264,11 @@ function fitGames(){
   if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
 }
 addEventListener('resize', () => fitGames());
+/* a theme change redraws the cards, so Studio's colours and boards come and go with Studio */
+let lookSkin = document.documentElement.getAttribute('data-skin');
+addEventListener('tt:look', () => { const sk = document.documentElement.getAttribute('data-skin');
+  if (lookSkin !== null && sk !== lookSkin && $('gamegrid') && !$('gamegrid').hidden) showGrid();
+  lookSkin = sk; fitGames(); });
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
@@ -308,12 +318,6 @@ function showGrid(){
   boardsSection(grid);
   fillSums();
   if (studioGames()) fillTileBoards(grid);
-  /* Studio: the boards are in the tiles; every board (weekly ones too) is one button in the header */
-  let lbb = $('stlbbtn');
-  if (studioGames() && !lbb){ const crumbs = document.querySelector('.pagehead .crumbs');
-    if (crumbs){ lbb = document.createElement('button'); lbb.type = 'button'; lbb.className = 'btn'; lbb.id = 'stlbbtn'; lbb.textContent = 'Leaderboards';
-      lbb.onclick = () => openLBSheet(); crumbs.insertBefore(lbb, crumbs.firstChild); } }
-  if (lbb) lbb.hidden = !studioGames();
   fitGames();
   /* the Lobby card names one public lobby (mp.js, which loads after this file: on first load, wait for it) */
   const peek = () => { const pk = $('mppeek'); if (pk && window.MPPeek && !peekOff) peekOff = MPPeek(pk).catch(() => null); };
