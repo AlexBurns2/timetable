@@ -874,7 +874,7 @@ html.stfit[data-skin="canvas"][data-pg="games"] .gamegrid[data-cat="Timetable"] 
    Everything above is Studio's, re-pointed at Canvas; these rules win
    by coming last (same specificity).
    ══════════════════════════════════════════════════════════════════ */
-html[data-skin="canvas"],html[data-skin="canvas"] body{background:var(--bg)}
+html[data-skin="canvas"]:not(.zen),html[data-skin="canvas"]:not(.zen) body{background:var(--bg)}
 [data-skin="canvas"] body{-webkit-font-smoothing:antialiased}
 [data-skin="canvas"] :is(.stterm b,.dh .n,.lbbr .v,.mjs .v){font-variant-numeric:tabular-nums}
 
