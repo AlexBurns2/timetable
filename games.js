@@ -211,8 +211,54 @@ function gameCard(g, i){
     (g.id === 'mp' && !REVISION_PAGE ? '<span class="mppeek" id="mppeek"></span>' : '') +
     '<span class="go">' + (REVISION_PAGE ? 'Start' : g.href ? 'Open' : 'Play') + ' &#8594;</span>';
   c.onclick = () => { if (g.href) location.href = g.href; else openGame(g.id); };
+  /* Studio: each tile in its game's colour, with the game's leaderboard (every place) inside it */
+  c.dataset.g = g.id;
+  const gc = window.Icon && Icon.GAMES && Icon.GAMES[g.id]; if (gc) c.style.setProperty('--c', gc[1]);
+  if (studioGames() && TILE_BOARDS[g.id]) c.insertAdjacentHTML('beforeend', '<span class="stlb" data-lb="' + TILE_BOARDS[g.id].join(' ') + '">' + LD('Loading…', '', { sm:true }) + '</span>');
   return c;
 }
+const studioGames = () => !REVISION_PAGE && document.documentElement.getAttribute('data-skin') === 'studio';
+/* which leaderboards (LB_CAT ids) each game's tile shows in Studio */
+const TILE_BOARDS = { chain:['chain'], oddone:['oddone'], classroom:['classroom'], snake:['snake'], g2048:['g2048'],
+                      typing:['typing'], react:['react'], tetris:['tsprint', 'tsurv', 'tzen'] };
+let lbFullCache = null;      // every board, every place, once per page
+function fetchBoardsFull(){
+  if (lbFullCache) return lbFullCache;
+  const wk = tetrisWeek();
+  const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
+  lbFullCache = Promise.all(LB_CAT.map(async cat => {
+    try {
+      if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } }); return [cat.id, all(d.all && d.all.top, 'score', cat.fmt)]; }
+      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:{ mode:'zen' } }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:{ mode:'zenscore' } }); return [cat.id, all(d.top, 'best', cat.fmt)]; }
+    } catch (e){}
+    return [cat.id, null];
+  })).then(Object.fromEntries);
+  return lbFullCache;
+}
+function fillTileBoards(grid){
+  const boxes = [...grid.querySelectorAll('.stlb')]; if (!boxes.length) return;
+  if (!TT.myEmail || !TT.myEmail()){ boxes.forEach(b => b.innerHTML = '<span class="lbbempty">Sign in to see the leaderboard</span>'); return; }
+  const list = L => !L ? '<span class="lbbempty">Couldn’t load</span>' : !L.rows.length ? '<span class="lbbempty">No scores yet</span>'
+    : L.rows.map((r, i) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (i + 1) + '</i><span class="w">' + esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('');
+  fetchBoardsFull().then(B => boxes.forEach(b => { const ids = b.dataset.lb.split(' ');
+    b.innerHTML = ids.length === 1 ? list(B[ids[0]])
+      : ids.map(id => '<span class="stlbh">' + esc((LB_CAT.find(c => c.id === id) || {}).name || id).replace(/^Tetris /, '') + '</span>' + list(B[id])).join(''); }));
+}
+/* Studio: the games fill exactly one window (the page doesn't scroll while they're showing).
+   Accessibility → Zoom scales <body>, and browsers disagree on whether a set height is
+   zoomed too, so set it, measure, and correct once. */
+function fitGames(){
+  const w = document.querySelector('.wrap'); if (!w) return;
+  const on = document.documentElement.getAttribute('data-skin') === 'studio' && innerWidth > 860 && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
+  document.documentElement.classList.toggle('stfit', on);
+  if (!on){ w.style.height = ''; return; }
+  w.style.height = innerHeight + 'px';
+  const h = w.getBoundingClientRect().height;
+  if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
+}
+addEventListener('resize', () => fitGames());
 
 function showGrid(){
   if (stop){ stop(); stop = null; }
@@ -245,6 +291,7 @@ function showGrid(){
     GAMES.filter(g => g.cat === 'Revision' && (g.year || 11) === year).forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
     if (year === 12 && window.Study){ try { const st = Study.render(); st.classList.add('rvstudy'); grid.appendChild(st); } catch (e) { console.error(e); } }
+    fitGames();
     return;
   }
 
@@ -254,12 +301,20 @@ function showGrid(){
     const inCat = GAMES.filter(g => g.cat === sec.cat && !gameHidden(g));
     if (!inCat.length) return;
     grid.appendChild(sectionHead(sec));
-    const box = document.createElement('div'); box.className = 'gamegrid gcompact';
+    const box = document.createElement('div'); box.className = 'gamegrid gcompact'; box.dataset.cat = sec.cat;
     inCat.forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
   });
   boardsSection(grid);
   fillSums();
+  if (studioGames()) fillTileBoards(grid);
+  /* Studio: the boards are in the tiles; every board (weekly ones too) is one button in the header */
+  let lbb = $('stlbbtn');
+  if (studioGames() && !lbb){ const crumbs = document.querySelector('.pagehead .crumbs');
+    if (crumbs){ lbb = document.createElement('button'); lbb.type = 'button'; lbb.className = 'btn'; lbb.id = 'stlbbtn'; lbb.textContent = 'Leaderboards';
+      lbb.onclick = () => openLBSheet(); crumbs.insertBefore(lbb, crumbs.firstChild); } }
+  if (lbb) lbb.hidden = !studioGames();
+  fitGames();
   /* the Lobby card names one public lobby (mp.js, which loads after this file: on first load, wait for it) */
   const peek = () => { const pk = $('mppeek'); if (pk && window.MPPeek && !peekOff) peekOff = MPPeek(pk).catch(() => null); };
   if (window.MPPeek) peek(); else addEventListener('load', peek, { once:true });
@@ -484,6 +539,7 @@ function openGame(id){
   const grid = $('gamegrid'), st = $('gamestage');
   const go = () => {
     grid.hidden = true; grid.classList.remove('leaving');
+    fitGames();                     /* a game open: the page scrolls again */
     setTimeout(syncBack, 0);
     if ($('gameslede')) $('gameslede').hidden = true;
     if (bentoStop){ bentoStop(); bentoStop = null; }

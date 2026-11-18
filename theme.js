@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261118c';
+const ASSET_V = '20261118f';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1171,10 +1171,38 @@ function studioAway(){
   /* the Forum and Poll tiles open Home showing only that (studio.css hides the rest) */
   root.toggleAttribute('data-show', false);
   if (!studioHome() || root.getAttribute('data-pg') !== 'home') return;
-  if (show === 'forum' || show === 'poll'){ root.setAttribute('data-show', show); return; }
+  if (show === 'forum' || show === 'poll'){ root.setAttribute('data-show', show);
+    /* its Timetable button is the way home here: say so, with the house */
+    const homeBtn = () => { const b = document.getElementById('ttbtn'); if (!b) return;
+      b.title = 'Home'; b.setAttribute('aria-label', 'Home'); if (window.Icon && Icon.svg) b.innerHTML = Icon.svg('house'); };
+    if (document.readyState === 'complete') homeBtn(); else addEventListener('load', homeBtn, { once:true });
+    return; }
   if (!/[?&]pollpreview=/.test(location.search)) location.replace('./' + location.hash);
 }
 studioAway();
+/* Studio on a computer: the pages under the timetable's menu fill exactly one window and
+   don't scroll (long lists scroll inside their own panel). html.stfit turns the layouts on
+   (skins/studio.css). Accessibility → Zoom scales <body> and browsers disagree on whether
+   a set height is zoomed too, so set it, measure, and correct once. Games and Mahjong fit
+   themselves (games.js, mahjong.js). */
+const FIT_PAGES = ['calendar', 'free', 'resources', 'finder'];      /* revision fits itself in games.js, like games */
+function studioFit(){
+  try {
+    const root = document.documentElement, w = document.querySelector('.wrap'); if (!w) return;
+    const pg = root.getAttribute('data-pg');
+    if (pg === 'games' || pg === 'revision' || pg === 'mahjong' || pg === 'timetable') return;
+    const on = studioHome() && innerWidth > 860 && (FIT_PAGES.includes(pg) || (pg === 'home' && root.hasAttribute('data-show')));
+    root.classList.toggle('stfit', on);
+    if (!on){ w.style.height = ''; return; }
+    w.style.height = innerHeight + 'px';
+    const h = w.getBoundingClientRect().height;
+    if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
+  } catch {}
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', studioFit); else studioFit();
+addEventListener('resize', studioFit);
+addEventListener('load', studioFit);
+addEventListener('tt:look', studioFit);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeLinks); else homeLinks();
 addEventListener('tt:look', () => { studioAway(); homeLinks(); });
 (function(){

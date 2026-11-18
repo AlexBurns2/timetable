@@ -676,3 +676,144 @@ html[data-skin="studio"][data-show="poll"] .wrap.hub:has(#poll[hidden])::after{c
   [data-skin="studio"] .mjsacol .mjaward b{white-space:normal;overflow-wrap:anywhere}
 }
 @media (max-width:860px){ [data-skin="studio"] .mjsacol{margin-top:20px} [data-skin="studio"] .mjsacol .mjawards{flex-wrap:wrap} }
+
+/* ══ every page but the timetable: the header is one small line ("MSC Unofficial · Games"),
+   like the timetable's term line, and only Home and Settings (Home and Timetable go to
+   the same place in Studio) ══ */
+:root[data-skin="studio"] .pagehead{min-height:0;margin-bottom:12px;padding:2px 0}
+[data-skin="studio"] .pagehead .phtitle{display:flex;align-items:baseline;flex-wrap:nowrap;min-width:0;font-size:.8125rem;white-space:nowrap}
+[data-skin="studio"] .pagehead .sitename{display:inline;margin:0;font-size:.8125rem;font-weight:500;color:var(--muted)}
+[data-skin="studio"] .pagehead .sitename::after{content:"\00a0\00b7\00a0";color:var(--muted)}
+:root[data-skin="studio"] .pagehead h1{display:inline;margin:0;font-family:var(--font-ui);font-size:.8125rem;font-weight:600;letter-spacing:0;line-height:1.4;color:var(--text);overflow:hidden;text-overflow:ellipsis}
+[data-skin="studio"] .pagehead .crumbs a.btn.icon[href="./"]:not([data-home]){display:none}
+[data-skin="studio"] .pagelede{margin:-4px 0 12px}
+
+/* Mahjong (computer): nothing to scroll to */
+@media (min-width:861px){ html[data-skin="studio"][data-pg="mahjong"],html[data-skin="studio"][data-pg="mahjong"] body{overflow:hidden} }
+
+/* ══ Games: three columns, one per section, filling one window (games.js fitGames adds
+   html.stfit while the games are showing); tiles in their game's colour, each game's
+   leaderboard (every place) inside its tile ══ */
+html.stfit[data-skin="studio"],html.stfit[data-skin="studio"] body{overflow:hidden}
+html.stfit[data-skin="studio"] .wrap{max-width:none;box-sizing:border-box;display:flex;flex-direction:column;padding:16px 24px 18px}
+html.stfit[data-skin="studio"] .wrap>.pagehead{flex:none}
+html.stfit[data-skin="studio"][data-pg="games"] #gamegrid{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) minmax(0,3fr);
+  grid-template-rows:auto minmax(0,1fr);gap:0 14px}
+html.stfit[data-skin="studio"][data-pg="games"] #gamegrid>.gsec{grid-row:1;margin:0 0 8px;justify-content:center}
+html.stfit[data-skin="studio"] #gamegrid>.gsec .cathd{text-align:center;font-family:var(--font-display);font-size:1.0625rem;font-weight:500;margin:0}
+html.stfit[data-skin="studio"][data-pg="games"] #gamegrid>.gamegrid{grid-row:2;min-height:0}
+html.stfit[data-skin="studio"][data-pg="games"] #gamegrid>:not(.gsec):not(.gamegrid){display:none}
+html.stfit[data-skin="studio"] .gameslede{display:none}
+[data-skin="studio"] #stlbbtn[hidden]{display:none}
+/* the tiles */
+html.stfit[data-skin="studio"] .gamegrid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:8px;background:none;box-shadow:none;border-radius:0;overflow:visible}
+html.stfit[data-skin="studio"] .gamegrid[data-cat="Arcade"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+html.stfit[data-skin="studio"] .gamegrid[data-cat="Multiplayer"] .gamecard[data-g="mp"]{grid-column:span 2}
+html.stfit[data-skin="studio"] .gamecard{--t:34%;--ink:color-mix(in srgb,var(--c,var(--st-violet)) 40%,var(--text));display:flex;flex-direction:column;align-items:stretch;gap:4px;
+  min-height:0;padding:12px 14px;border-radius:10px;overflow:hidden;text-align:left;color:var(--ink);
+  background:color-mix(in srgb,var(--c,var(--st-violet)) var(--t),var(--st-paper));box-shadow:none}
+html.stfit[data-skin="studio"][data-mode="dark"] .gamecard{--t:24%;--ink:color-mix(in srgb,var(--c,var(--st-violet)) 35%,var(--text))}
+:root.stfit[data-skin="studio"] .gamecard:hover{background:color-mix(in srgb,var(--c,var(--st-violet)) var(--t),var(--st-paper));box-shadow:none;filter:brightness(.97)}
+:root.stfit[data-skin="studio"][data-mode="dark"] .gamecard:hover{filter:brightness(1.1)}
+:root.stfit[data-skin="studio"] .gamecard:active{background:color-mix(in srgb,var(--c,var(--st-violet)) var(--t),var(--st-paper));transform:scale(.99)}
+html.stfit[data-skin="studio"] .gamecard>*{grid-column:auto}
+html.stfit[data-skin="studio"]:not([data-gameicons="emoji"]) .gamecard .ico{width:auto;height:auto;background:none;place-items:start;color:var(--ink);flex:none}
+html.stfit[data-skin="studio"] .gamecard .ico .gi{color:var(--ink)!important;width:22px;height:22px}
+html.stfit[data-skin="studio"] .gamecard h2{flex:none;margin:2px 0 0;font-size:.9375rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.stfit[data-skin="studio"] .gamecard :is(.go,.sum:empty){display:none}
+html.stfit[data-skin="studio"] .gamecard .sum{font-size:.75rem;color:color-mix(in srgb,var(--text) 70%,var(--c,var(--st-violet)))}
+html.stfit[data-skin="studio"] .gamecard :is(.newbanner,.tag){top:10px;right:10px;background:color-mix(in srgb,var(--st-paper) 75%,transparent);color:var(--ink)}
+html.stfit[data-skin="studio"] .gamecard .mppeek{font-size:.75rem;color:color-mix(in srgb,var(--text) 70%,var(--c,var(--st-violet)))}
+/* the leaderboard inside a tile: every place, scrolling inside the tile if it's long */
+html.stfit[data-skin="studio"] .stlb{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:1px;margin-top:4px;
+  padding-top:6px;border-top:1px solid color-mix(in srgb,var(--c,var(--st-violet)) 30%,transparent);scrollbar-width:thin}
+html.stfit[data-skin="studio"] .stlb .lbbr{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:6px;align-items:baseline;font-size:.75rem;line-height:1.45;color:color-mix(in srgb,var(--text) 82%,var(--c,var(--st-violet)))}
+html.stfit[data-skin="studio"] .stlb .lbbr i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+html.stfit[data-skin="studio"] .stlb .lbbr .w{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.stfit[data-skin="studio"] .stlb .lbbr .v{font-variant-numeric:tabular-nums;font-weight:600}
+html.stfit[data-skin="studio"] .stlb .lbbr.me{color:var(--text);font-weight:700}
+html.stfit[data-skin="studio"] .stlb .stlbh{margin-top:4px;font-size:.6875rem;font-weight:600;color:var(--ink)}
+html.stfit[data-skin="studio"] .stlb .stlbh:first-child{margin-top:0}
+html.stfit[data-skin="studio"] .stlb :is(.lbbempty,.ld){font-size:.75rem;color:color-mix(in srgb,var(--text) 60%,var(--c,var(--st-violet)))}
+html.stfit[data-skin="studio"] .gamegrid{align-items:stretch;align-content:stretch;height:100%}
+html.stfit[data-skin="studio"] .gamegrid>.gamecard{height:auto;min-height:0;align-self:stretch}
+
+/* ══ the other menu pages, one window each (theme.js studioFit / games.js fitGames add
+   html.stfit and size .wrap): the page never scrolls; a long list scrolls in its own panel ══ */
+html.stfit[data-skin="studio"]:not([data-pg="games"]),html.stfit[data-skin="studio"]:not([data-pg="games"]) body{overflow:hidden}
+html.stfit[data-skin="studio"]:not([data-pg="games"]) .wrap{max-width:none;box-sizing:border-box;padding:16px 24px 18px}
+html.stfit[data-skin="studio"] :is(.fpanel,.side .card,.flist li){scrollbar-width:thin}
+
+/* Calendar: the month on the left filling the height, Coming up / HSC exams / Import on the right */
+html.stfit[data-skin="studio"][data-pg="calendar"] .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);grid-template-rows:auto auto minmax(0,1fr);gap:0 16px}
+html.stfit[data-skin="studio"][data-pg="calendar"] .pagehead{grid-column:1 / -1}
+html.stfit[data-skin="studio"][data-pg="calendar"] .calbar{grid-column:1;margin-bottom:10px}
+html.stfit[data-skin="studio"][data-pg="calendar"] #viewhost{grid-column:1;grid-row:3;min-height:0;overflow:auto;display:flex;flex-direction:column}
+html.stfit[data-skin="studio"][data-pg="calendar"] #viewhost>.grid:has(>.day){flex:1 1 0;min-height:0;grid-auto-rows:minmax(0,1fr)}
+html.stfit[data-skin="studio"][data-pg="calendar"] #viewhost .day{height:auto;min-height:0}
+html.stfit[data-skin="studio"][data-pg="calendar"] .side{grid-column:2;grid-row:2 / 4;margin:0;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
+html.stfit[data-skin="studio"][data-pg="calendar"] .side .card{flex:none;border:0;border-radius:10px;background:var(--st-fill);padding:12px 14px}
+html.stfit[data-skin="studio"][data-pg="calendar"] .side .card h3{margin:0 0 8px;font-size:.9375rem;font-weight:600}
+
+/* Free periods: the week on the left, the group and people panels on the right, each scrolling inside */
+html.stfit[data-skin="studio"][data-pg="free"] .wrap{display:flex;flex-direction:column}
+html.stfit[data-skin="studio"][data-pg="free"] .wrap>*{flex:none}
+html.stfit[data-skin="studio"][data-pg="free"] .flay{flex:1 1 0;min-height:0;grid-template-columns:minmax(0,1fr) minmax(280px,340px);grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"main group" "main people";align-items:stretch;gap:8px 16px}
+html.stfit[data-skin="studio"][data-pg="free"] :is(.fmain,#group,#people){min-height:0;overflow:auto}
+html.stfit[data-skin="studio"][data-pg="free"] .fpanel{border:0;border-radius:10px;background:var(--st-fill);box-shadow:none}
+
+/* Student finder: the search on top, results in columns filling the rest */
+html.stfit[data-skin="studio"][data-pg="finder"] .wrap{display:flex;flex-direction:column}
+html.stfit[data-skin="studio"][data-pg="finder"] .wrap>*{flex:none}
+html.stfit[data-skin="studio"][data-pg="finder"] .flist{flex:1 1 0;min-height:0;overflow:auto;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));align-content:start}
+html.stfit[data-skin="studio"][data-pg="finder"] .fnote{margin:8px 0 0}
+
+/* Resources: the subjects as coloured tiles filling the window */
+html.stfit[data-skin="studio"][data-pg="resources"] .wrap{display:flex;flex-direction:column}
+html.stfit[data-skin="studio"][data-pg="resources"] .wrap>*{flex:none}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjgrid{flex:1 1 0;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  grid-auto-rows:minmax(86px,1fr);gap:8px}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard{--t:34%;border:0;border-radius:10px;box-shadow:none;padding:12px 14px;
+  background:color-mix(in srgb,var(--c) var(--t),var(--st-paper));color:color-mix(in srgb,var(--c) 40%,var(--text))}
+html.stfit[data-skin="studio"][data-mode="dark"][data-pg="resources"] .subjcard{--t:24%;color:color-mix(in srgb,var(--c) 35%,var(--text))}
+:root.stfit[data-skin="studio"][data-pg="resources"] .subjcard:hover{transform:none;box-shadow:none;background:color-mix(in srgb,var(--c) var(--t),var(--st-paper));filter:brightness(.97)}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard .nm{font-weight:600}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard .go{color:inherit}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+1){--c:#0A84FF}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+2){--c:#FF9F0A}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+3){--c:#30C05A}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+4){--c:#AF52DE}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+5){--c:#FF375F}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+6){--c:#30B0C7}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+7){--c:#5E5CE6}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjcard:nth-child(8n+8){--c:#FFCC00}
+
+/* Revision: the subjects as coloured tiles filling the window, Year 12's study tools in a column beside them */
+html.stfit[data-skin="studio"][data-pg="revision"] .wrap{display:flex;flex-direction:column}
+html.stfit[data-skin="studio"][data-pg="revision"] .wrap>*{flex:none}
+html.stfit[data-skin="studio"][data-pg="revision"] #gamegrid{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);gap:8px 16px}
+html.stfit[data-skin="studio"][data-pg="revision"] #gamegrid>.rvyear{grid-column:1;grid-row:1;margin:0}
+html.stfit[data-skin="studio"][data-pg="revision"] #gamegrid>.gamegrid{grid-column:1;grid-row:2;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+html.stfit[data-skin="studio"][data-pg="revision"] #gamegrid>.rvstudy{grid-column:2;grid-row:1 / 3;width:min(380px,32vw);min-height:0;overflow:auto;margin:0}
+html.stfit[data-skin="studio"][data-pg="revision"] .gameslede{display:none}
+
+/* Forum and Poll (home.html?show=…): the posts scroll inside the window under the box you write in */
+html.stfit[data-skin="studio"][data-show] .wrap{display:flex;flex-direction:column;max-width:1100px}
+html.stfit[data-skin="studio"][data-show] .wrap>*{flex:none}
+html.stfit[data-skin="studio"][data-show="forum"] #hubrest{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+html.stfit[data-skin="studio"][data-show="forum"] .forum{flex:1 1 0;min-height:0;display:flex;flex-direction:column;margin:0}
+html.stfit[data-skin="studio"][data-show="forum"] .forum>*{flex:none}
+html.stfit[data-skin="studio"][data-show="forum"] .fposts{flex:1 1 0;min-height:0;overflow:auto}
+html.stfit[data-skin="studio"][data-show="poll"] #poll{flex:1 1 0;min-height:0;overflow:auto}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjgrid{align-items:stretch;align-content:stretch}
+html.stfit[data-skin="studio"][data-pg="resources"] .subjgrid>*{height:auto;min-height:0;align-self:stretch}
+/* Revision's study tools (countdown, today's plan, focus) stacked in their column */
+html.stfit[data-skin="studio"][data-pg="revision"] #gamegrid>.rvstudy{width:min(400px,30vw);display:flex;flex-direction:column;gap:16px;padding:14px 16px;border:0;border-radius:10px;background:var(--st-fill);box-shadow:none}
+/* Forum / Poll: the same one-line header as the other pages */
+html[data-skin="studio"][data-show] #hello::after{font-family:var(--font-ui);font-size:.8125rem;font-weight:600;letter-spacing:0;line-height:1.4}
+html[data-skin="studio"][data-show] #hello::before{content:"MSC Unofficial \00b7  ";white-space:pre;font-family:var(--font-ui);font-size:.8125rem;font-weight:500;line-height:1.4;color:var(--muted)}
+html[data-skin="studio"][data-show="forum"] #hello::after{content:"Forum"}
+html[data-skin="studio"][data-show="poll"] #hello::after{content:"Poll"}
+:root[data-skin="studio"][data-show] .hubbar{margin-bottom:12px;padding:2px 0}
+html[data-skin="studio"][data-show] .hubin>.headbtns{flex-direction:row;gap:4px}
