@@ -49,6 +49,8 @@
   --st-pop:0 0 0 .5px rgba(70,40,60,.16),0 12px 36px rgba(70,40,60,.16);
   --st-ring:3px solid color-mix(in srgb,var(--st-violet) 42%,transparent);
   --st-ease:cubic-bezier(.25,.1,.25,1); --st-fast:.14s; --st-med:.22s;
+  /* how wide the timetable, its tiles and Mahjong may get: 16:9 of the window, never under 1400px */
+  --st-wide:max(1400px,calc(100dvh * 16 / 9));
 }
 [data-skin="studio"][data-mode="dark"]{
   --st-cream:#1c1820;  --st-cream-2:#2a2530;  --st-paper:#24202a;
@@ -390,7 +392,7 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 @media (max-width:420px){ [data-skin="studio"] .topbar .idrow .dom{display:none} }
 
 /* the grid: an arrow, the days, an arrow */
-:root[data-skin="studio"] #grid.stg{--colmax:320px;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;grid-template-rows:auto minmax(0,1fr);align-items:stretch;padding:4px 0 0}
+:root[data-skin="studio"] #grid.stg{--colmax:1fr;display:grid;grid-template-columns:36px repeat(var(--nd,5),minmax(0,var(--colmax))) 36px;justify-content:center;column-gap:8px;row-gap:0;grid-template-rows:auto minmax(0,1fr);align-items:stretch;padding:4px 0 0}
 /* the timetable fills the first screen exactly (fitHeight() sets .wrap's height); the pages' tiles follow below */
 /* the page is one window-high column: header, then the timetable takes all
    the height that is left; the margin under it matches the one above */
@@ -473,7 +475,7 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 @keyframes stDetSide{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
 /* the details */
 [data-skin="studio"] #grid.stg .blk-detail{max-height:0;overflow:hidden;opacity:0;pointer-events:none;transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .25s ease}
-[data-skin="studio"] #grid.stg .open .blk-detail{max-height:900px;opacity:1;pointer-events:auto;transition:max-height .5s cubic-bezier(.34,1.2,.64,1),opacity .3s ease .08s}
+[data-skin="studio"] #grid.stg .open .blk-detail{max-height:none;opacity:1;pointer-events:auto;transition:opacity .3s ease .08s}   /* the card's own height animation (index.html onClick) does the growing */
 [data-skin="studio"] #grid.stg .det{padding:8px 0 2px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0 18px}
 [data-skin="studio"] #grid.stg .det-row{padding:4px 0;min-width:0}
 [data-skin="studio"] #grid.stg :is(.det-row.wide,.det .roster){grid-column:1/-1}
@@ -550,9 +552,10 @@ html[data-skin="studio"][data-motion="reduced"] #grid.stg *{animation:none!impor
 [data-skin="studio"] .topbar .idrow .dom{font-size:.875rem;color:var(--muted)}
 [data-skin="studio"] .topbar .idrow .whoback{padding:0;color:var(--muted)}
 
+[data-skin="studio"][data-pg="timetable"] .wrap{max-width:var(--st-wide)}
 /* ── under the timetable: the site's pages, as the beta's tiles (same columns as the days) ── */
-[data-skin="studio"][data-pg="timetable"] .sthome{display:block;max-width:1400px;margin:0 auto;padding:44px 20px 72px}
-[data-skin="studio"] .sthome .mg{display:grid;grid-template-columns:repeat(5,minmax(0,320px));justify-content:center;grid-auto-rows:150px;gap:8px;margin-inline:44px}
+[data-skin="studio"][data-pg="timetable"] .sthome{display:block;max-width:var(--st-wide);margin:0 auto;padding:44px 20px 72px}
+[data-skin="studio"] .sthome .mg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));justify-content:center;grid-auto-rows:150px;gap:8px;margin-inline:44px}
 [data-skin="studio"] .sthome .mod{--tint:34%;--ink:color-mix(in srgb,var(--c) 40%,var(--text));display:flex;flex-direction:column;justify-content:space-between;
   padding:14px 16px;border-radius:10px;text-decoration:none;color:var(--ink);background:color-mix(in srgb,var(--c) var(--tint),var(--st-paper));
   transition:filter var(--st-fast) var(--st-ease),transform var(--st-fast) var(--st-ease)}
@@ -582,7 +585,7 @@ html[data-skin="studio"][data-show="poll"] .wrap.hub:has(#poll[hidden])::after{c
 
 /* ══ Mahjong club, as the beta draws it (mahjong.js studioHTML): standings as bars on the left,
    the awards and the graph on the right; hovering the graph tells each game's story ══ */
-[data-skin="studio"][data-pg="mahjong"] .wrap{max-width:1400px}
+[data-skin="studio"][data-pg="mahjong"] .wrap{max-width:var(--st-wide)}
 [data-skin="studio"][data-pg="mahjong"] .stage>.row{display:none}
 [data-skin="studio"] .mjs{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:0 12px;align-items:start}
 [data-skin="studio"] .mjsh{margin:4px 0 12px;text-align:center;font-family:var(--font-display);font-size:1.0625rem;font-weight:500;color:var(--text)}

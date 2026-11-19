@@ -1488,12 +1488,16 @@ function flyRoom(item, opening){
 /* run a layout change, then slide each line of text from where it was (FLIP) */
 function glide(item, change){
   if (noMotion()){ change(); return; }
+  const card = item.querySelector('.blk-card');
   const els = [...item.querySelectorAll(':scope .blk-card > .s, :scope .blk-card > .m, :scope .blk-card > .t')];
-  const before = els.map(el => el.getBoundingClientRect());     /* where each line is on screen now, mid-glide or not */
+  /* measured from the card's corner, not the page: the card itself moves and grows
+     (a lesson low in the day grows upwards), and the lines ride on it */
+  const at = el => { const r = el.getBoundingClientRect(), c = card.getBoundingClientRect(); return { left:r.left - c.left, top:r.top - c.top }; };
+  const before = els.map(at);                                   /* where each line is now, mid-glide or not */
   els.forEach(el => el.getAnimations().forEach(x => x.cancel()));
   change();
   els.forEach((el, i) => {
-    const a = before[i], b = el.getBoundingClientRect();
+    const a = before[i], b = at(el);
     const dx = a.left - b.left, dy = a.top - b.top;
     if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
     el.animate([{ transform:'translate(' + dx + 'px,' + dy + 'px)' }, { transform:'none' }], { duration:480, easing:'cubic-bezier(.3,1.25,.55,1)' });
@@ -1532,8 +1536,15 @@ function onClick(ev){
   if (item.classList.contains('open')){ if (!ev.target.closest('.blk-detail')) closeAll(); return; }
   closeAll();
   clearTimeout(item.closingTimer);     /* reopened before its close finished: that close mustn't land later */
+  const card = item.querySelector('.blk-card'), h0 = card.getBoundingClientRect().height;
+  card.getAnimations().forEach(x => { if (x.effect && x.effect.getKeyframes().some(k => 'height' in k)) x.cancel(); });
   item.classList.remove('closing');
+  item.querySelectorAll('.blk-detail').forEach(d => d.style.maxHeight = '');
   glide(item, () => item.classList.add('open'));
+  /* the card grows to its full height on the same spring as its width, instead of
+     the details snapping it open (it was a max-height transition that ended almost at once) */
+  const h1 = card.getBoundingClientRect().height;
+  if (!noMotion() && Math.abs(h1 - h0) > 1) card.animate([{ height:h0 + 'px' }, { height:h1 + 'px' }], { duration:550, easing:'cubic-bezier(.34,1.4,.64,1)' });
   flyRoom(item, true);
   openKey = item.dataset.k;
 }
