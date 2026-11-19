@@ -1,20 +1,23 @@
 /* ══════════════════════════════════════════════════════════════════
-   FRUTIGER AERO — the clean, hopeful look of about 2006–2012: real
-   stock photographs of sky, grass, water and fish behind glossy glass.
-   One idea: glass with a shine on it, over nature. Panels are frosted
-   white with the bright upper half every Aero surface has; buttons are
-   gel (aqua, and green for the one that matters); icons are glossy
-   app tiles. Behind it, one composed world (images/th/aero-world.webp,
-   built from real photographs: sky, the hill, a glossy water line with
-   tropical fish, the earth in a bubble, a monitor on the grass showing
-   the sky, a bubble of fish); the timetable gets only the sky and hill.
-   fx/aero.js lets bubbles drift up over it, slowly: the only motion.
+   FRUTIGER AERO — the clean, hopeful look of about 2006–2012: glossy
+   glass over a stock-photo world where technology meets nature.
+   One idea: glass with a shine on it, over the archetypal Aero picture.
+   Panels are frosted white with the bright upper half every Aero surface
+   has; buttons are gel (aqua, and green for the one that matters); icons
+   are glossy app tiles. Behind it, fx/aero.js puts the picture together
+   from cut-out photographs (images/th/ar-*.webp): a deep blue sky with
+   gulls, a glass globe with the world map turning slowly in it, a clear
+   splash along the waterline, a monitor in the sea with a butterflyfish
+   bursting out of its screen, sand, a starfish, bubbles. The still here
+   (ar-still*.webp, a frame of that scene; a tall one for phones) is what
+   shows before the scene is drawn, or without it. A page change is a wall
+   of bubbles rushing up the screen.
 
-   Dark mode is FRUTIGER EVIL, the joke version: the same world gone
-   wrong. Red water, black skies, a blood moon, fish skeletons and bats
-   (images/th/evil-*.webp), cut out a bit badly on purpose, behind black
-   glass with a red shine. Same layout, so it reads as the same theme
-   having a very bad day. Not serious.
+   Dark mode is FRUTIGER EVIL, the joke version: the same picture gone
+   wrong. A murky brown sky with bats, a pink globe, red water, the
+   monitor's black screen on fire with a fish skeleton bursting out, a
+   skull on the bottom, cut out a bit badly on purpose, behind black glass
+   with a red shine. Its page change is a wall of fire. Not serious.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="aero"]{
   --ae-sky:#0b84d6; --ae-green:#4fb81f; --ae-ink:#06253d;
@@ -32,7 +35,7 @@
   --ae-gel:linear-gradient(180deg,#f2fbff 0%,#bfe6ff 48%,#78c8f5 50.5%,#a8e0ff 100%);
   --ae-gel-hi:linear-gradient(180deg,#f8fdff 0%,#d3efff 48%,#8fd4fb 50.5%,#bfe9ff 100%);
   --ae-gogel:linear-gradient(180deg,#f0ffe4 0%,#a7e77a 48%,#5cc22c 50.5%,#94e064 100%);
-  --ae-ph:url(../images/th/aero-world.webp); --ae-phs:url(../images/th/aero-world-s.webp); --ae-pos:center 50%;
+  --ae-ph:url(../images/th/ar-still.webp); --ae-phs:url(../images/th/ar-still-p.webp); --ae-pos:center 50%;
   --ae-veil:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0));
 }
 [data-skin="aero"][data-mode="dark"]{
@@ -46,15 +49,10 @@
   --ae-gel:linear-gradient(180deg,#5a1a1c 0%,#2e0709 48%,#140102 50.5%,#3a0507 100%);
   --ae-gel-hi:linear-gradient(180deg,#7a2426 0%,#420a0c 48%,#200204 50.5%,#540709 100%);
   --ae-gogel:linear-gradient(180deg,#ffb0a0 0%,#ef2a1d 48%,#ac0d08 50.5%,#e3261f 100%);
-  --ae-ph:url(../images/th/evil-hill.webp); --ae-phs:url(../images/th/evil-hill-s.webp); --ae-pos:center 60%;
+  --ae-ph:url(../images/th/ar-still-e.webp); --ae-phs:url(../images/th/ar-still-ep.webp); --ae-pos:center 50%;
 }
-/* two scenes, not one per page: the whole world (sky, hills, water and fish, the earth in a bubble, a monitor on the grass)
-   everywhere, and just the sky and the hill behind the timetable, which is busy enough. Evil: its Home scene everywhere, its sky behind the timetable. */
-[data-skin="aero"][data-pg="timetable"]{--ae-ph:url(../images/th/aero-calm.webp);--ae-phs:url(../images/th/aero-calm-s.webp);--ae-pos:center 40%;
-  --ae-veil:linear-gradient(180deg,rgba(255,255,255,.05),rgba(235,247,255,.45) 70%,rgba(235,247,255,.6))}
-[data-skin="aero"][data-mode="dark"][data-pg="timetable"]{--ae-ph:url(../images/th/evil-sky.webp);--ae-phs:url(../images/th/evil-sky-s.webp);--ae-pos:center 70%;--ae-veil:linear-gradient(180deg,rgba(0,0,0,0),rgba(20,0,0,.35))}
 [data-skin="aero"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:var(--ae-veil),var(--ae-ph) var(--ae-pos)/cover no-repeat,var(--bg-img)}
-@media (max-width:700px){ [data-skin="aero"] body::before{background:var(--ae-veil),var(--ae-phs) var(--ae-pos)/cover no-repeat,var(--bg-img)} }
+@media (max-aspect-ratio:4/5){ [data-skin="aero"] body::before{background:var(--ae-veil),var(--ae-phs) var(--ae-pos)/cover no-repeat,var(--bg-img)} }
 html.zen[data-skin="aero"] body::before,[data-skin="aero"][data-pg="hkmahjong"] body::before{display:none}
 
 /* ── glass: frosted, with the shine ── */
@@ -73,6 +71,9 @@ html.zen[data-skin="aero"] body::before,[data-skin="aero"][data-pg="hkmahjong"] 
   background:linear-gradient(180deg,#fff6c8 0%,#ffb12b 40%,#ff3c00 62%,#8a0000 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 0 7px rgba(255,40,0,.7)) drop-shadow(0 2px 0 #000)}
 [data-skin="aero"] :is(.hubid h1,.pagehead h1,.brand h1){line-height:1.22}
+/* the timetable's times and day names sit straight on the picture: a white halo (Evil: a dark one) */
+[data-skin="aero"] :is(.tmark,.dayhead .dow,.weeklabel){color:#05395e;font-weight:600;text-shadow:0 0 7px #fff,0 0 2px #fff,0 0 1px #fff}
+[data-skin="aero"][data-mode="dark"] :is(.tmark,.dayhead .dow,.weeklabel){color:#ffe2da;text-shadow:0 0 7px #000,0 0 2px #000,0 0 1px #000}
 [data-skin="aero"] .nowcard .subj{line-height:1.3}
 [data-skin="aero"] :is(.eyebrow,.sitename){color:#0a6fb3;font-weight:600;letter-spacing:.02em}
 [data-skin="aero"][data-mode="dark"] :is(.eyebrow,.sitename){color:#ff6a55}

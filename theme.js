@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261118m';
+const ASSET_V = '20261119c';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -42,11 +42,11 @@ const ASSET_V = '20261118m';
          picker, but under Settings → Originals */
 /* held back for now (not finished): their files stay, but they're out of the picker and a saved choice reads as Plain.
    Take an id out of this list to bring that theme back. */
-const HIDDEN_SKINS = ['coquette', 'aero'];
+const HIDDEN_SKINS = ['coquette'];
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
-  { id:'studio',    name:'Studio - Beta',    both:true, ic:'accent', is:'icons', css:'studio' },
-  { id:'apple',     name:'Apple - Beta',     both:true, ic:'accent', is:'icons', css:'apple' },
+  { id:'studio',    name:'Studio',    both:true, ic:'accent', is:'icons', css:'studio' },
+  { id:'apple',     name:'Apple',     both:true, ic:'accent', is:'icons', css:'apple' },
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
@@ -54,7 +54,7 @@ const SKINS = [
   { id:'skeuo',     name:'Skeuomorphism', both:true, ic:'tile', is:'icons', css:'skeuo' },
   { id:'aero',      name:'Frutiger Aero', darkName:'Frutiger Evil', both:true, ic:'tile', is:'icons', css:'aero', font:'family=Hind:wght@300;400;500;600' },
   { id:'y2k',       name:'Y2K Futurism', both:true, ic:'accent', is:'icons', css:'y2k', font:'family=Michroma&family=Sora:wght@400;600;700' },
-  { id:'softclub',  name:'Gen X Soft Club', both:true, ic:'accent', is:'icons', css:'softclub', font:'family=Lexend+Giga:wght@300;400&family=Arimo:ital,wght@0,400;0,700;1,400' },
+  { id:'softclub',  name:'Gen X Soft Club', both:true, ic:'accent', is:'icons', css:'softclub', font:'family=Lexend+Giga:wght@300;400&family=Arimo:ital,wght@0,400;0,700;1,400&family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900' },
   { id:'vapor',     name:'Vaporwave', both:true, ic:'tile', is:'emoji', css:'vapor', font:'family=VT323&family=DotGothic16' },
   { id:'editorial', name:'Editorial', both:true, ic:'accent', is:'icons', css:'editorial', font:'family=Instrument+Serif:ital@0;1&family=Jost:wght@400;500;600' },
   { id:'swiss',     name:'Swiss',     both:true, ic:'accent', is:'icons', css:'swiss', font:'family=Inter+Tight:wght@400;500;600;700;800' },
@@ -147,12 +147,13 @@ const THUMBS = (() => {
       '<g fill="#fff" fill-opacity=".75">' + [4, 8, 12, 16, 20, 24, 28, 32, 36, 40].map(y => '<rect x="3" y="' + y + '" width="' + (5 + (y * 7) % 6) + '" height="1.2"/>').join('') + '</g>' +
       '<text x="16" y="17" font-family="Arial,Helvetica,sans-serif" font-size="9" letter-spacing="3.2" fill="#fff">gen x</text><rect x="16" y="21" width="44" height="1.6" fill="#fff" fill-opacity=".8"/>' +
       '<rect x="72" y="8" width="34" height="22" fill="none" stroke="#fff" stroke-width=".8"/><rect x="82" y="15" width="18" height="12" fill="#1d48c8"/>'],
-    coquette: ['#fbf1ee', '<defs><pattern id="l" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 0H8V1.4A2 2 0 0 1 4 1.4A2 2 0 0 1 0 1.4Z" fill="#fff"/></pattern></defs>' +
-      '<rect x="8" y="5" width="104" height="13" rx="3" fill="#fff"/><rect x="10" y="18" width="100" height="3" fill="url(#l)"/>' +
-      '<text x="30" y="14.6" font-family="Georgia,serif" font-style="italic" font-size="8.5" fill="#7a2c3e">Good morning</text>' +
-      '<g transform="translate(15 7)" fill="#e58aa2" stroke="#b8325a" stroke-width=".5"><path d="M0 4C-6 -1 -7 7 0 5Z"/><path d="M0 4C6 -1 7 7 0 5Z"/><path d="M-.5 5L-3 11L-1 10L0 5ZM.5 5L3 11L1 10L0 5Z"/><circle cx="0" cy="4.6" r="1.1"/></g>' +
-      [14, 48, 82].map(x => '<rect x="' + x + '" y="25" width="26" height="15" rx="4" fill="#fffaf8" stroke="#e7b9c4" stroke-width=".7"/>').join('') +
-      '<g fill="#f3e6e2" stroke="#d6bdb8" stroke-width=".4">' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(i => '<circle cx="' + (14 + i * 7.1) + '" cy="43.4" r="1.6"/>').join('') + '</g>'],
+    coquette: ['#fdf7f4', '<defs><pattern id="l" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 0H8V1.4A2 2 0 0 1 4 1.4A2 2 0 0 1 0 1.4Z" fill="#fffaf6"/></pattern></defs>' +
+      [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<rect x="' + (i * 16 + 8) + '" width="8" height="46" fill="#f8e0e5"/>').join('') +
+      '<rect x="8" y="4" width="104" height="14" fill="#fffaf6"/><rect x="10" y="6" width="100" height="10" fill="none" stroke="#e7b3c0" stroke-width=".5"/><rect x="8" y="18" width="104" height="3" fill="url(#l)"/>' +
+      '<text x="15" y="14.6" font-family="\'Snell Roundhand\',\'Segoe Script\',Georgia,serif" font-style="italic" font-size="8.5" fill="#6b1f38">Welcome</text>' +
+      '<path d="M84 8.4h22l-2.2 2.6 2.2 2.6H84l2.2-2.6Z" fill="#b8325a"/>' +
+      [8, 44, 80].map(x => '<rect x="' + x + '" y="24" width="32" height="18" fill="#fffaf6" stroke="#ecc9d1" stroke-width=".5"/><ellipse cx="' + (x + 16) + '" cy="31.5" rx="3.6" ry="4.4" fill="#f9dce3" stroke="#d9bcb8" stroke-width="1.5" stroke-dasharray="0 2" stroke-linecap="round"/>' +
+        '<rect x="' + (x + 10) + '" y="38" width="12" height="1.4" fill="#6b1f38" fill-opacity=".55"/>').join('')],
     custom: ['#7ee8fa', '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f6d"/><stop offset=".35" stop-color="#ffc371"/><stop offset=".68" stop-color="#7ee8fa"/><stop offset="1" stop-color="#a06cd5"/></linearGradient></defs><rect width="120" height="46" fill="url(#r)"/>' +
       '<g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M34 13h52M34 23h52M34 33h52"/></g><g fill="#fff" stroke="#14121a" stroke-opacity=".35"><circle cx="50" cy="13" r="4.2"/><circle cx="74" cy="23" r="4.2"/><circle cx="42" cy="33" r="4.2"/></g>']
   };
@@ -355,7 +356,9 @@ const FAV = {
                (ev ? [[0, '#ff8a70'], [.49, '#d4140c'], [.5, '#8e0603'], [1, '#e0261c']] : [[0, '#9fe3ff'], [.49, '#2aa4ef'], [.5, '#0b7fd0'], [1, '#4fc0ff']]).forEach(s => g.addColorStop(s[0], s[1]));
                x.fillStyle = g; x.fillRect(0, 0, N, N); } },
   softclub:  { shape:'square', ink:'#1d48c8', bg(x, N){ x.fillStyle = '#e4f0f1'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.9)'; x.fillRect(0, N - 9, N, 2); } },
-  coquette:  { shape:'circle', ink:'#b8325a', bg(x, N){ x.fillStyle = '#f9d7df'; x.fillRect(0, 0, N, N); x.strokeStyle = '#fff'; x.lineWidth = 4; x.beginPath(); x.arc(N/2, N/2, N/2 - 4, 0, 7); x.stroke(); } },
+  coquette:  { shape:'circle', ink:'#b8325a', bg(x, N){ x.fillStyle = '#f9dce3'; x.fillRect(0, 0, N, N);          // a ring of pearls round the edge
+               for (let i = 0; i < 18; i++){ const a = i / 18 * Math.PI * 2, px = N/2 + Math.cos(a) * (N/2 - 4.5), py = N/2 + Math.sin(a) * (N/2 - 4.5), g = x.createRadialGradient(px - 1, py - 1.2, .3, px, py, 3.4);
+                 g.addColorStop(0, '#fff'); g.addColorStop(.6, '#f1e3df'); g.addColorStop(1, '#c9a9a6'); x.fillStyle = g; x.beginPath(); x.arc(px, py, 3.2, 0, 7); x.fill(); } } },
   editorial: { shape:'square', ink:'#1a1814', bg(x, N){ x.fillStyle = '#f4f0e8'; x.fillRect(0, 0, N, N); x.fillStyle = '#1a1814'; x.fillRect(0, 0, N, 5); x.fillStyle = '#b5432a'; x.fillRect(0, N - 4, N, 4); } },
   swiss:     { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#e8112d'; x.fillRect(0, 0, N, N); x.fillStyle = '#000'; x.fillRect(0, 0, N, 7); } },
   deco:      { shape:'square', ink:'#d4af37', bg(x, N){ x.fillStyle = '#0d0f12'; x.fillRect(0, 0, N, N); x.strokeStyle = '#d4af37'; x.lineWidth = 2; x.strokeRect(3, 3, N - 6, N - 6); x.lineWidth = 1; x.strokeRect(7.5, 7.5, N - 15, N - 15); } },
@@ -1090,6 +1093,10 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'study', date:'2026-11-19', title:'Study tracker',
+    text:'On the Revision page: add tasks for each subject and time them. Set a target if you like, and it tells you when the time is up.' },
+  { id:'themes4', date:'2026-11-19', title:'A new theme',
+    text:'Frutiger Aero is in Settings. Try it in dark mode too.' },
   { id:'ghostlobbies', date:'2026-11-18', title:'No more ghost lobbies',
     text:'A public lobby now closes once everyone has left it, even if someone’s phone went to sleep or lost its connection. Empty lobbies drop off the list within a couple of minutes.' },
   { id:'themes3', date:'2026-11-17', title:'A new theme',

@@ -1,102 +1,281 @@
 /* ══════════════════════════════════════════════════════════════════
-   COQUETTE — soft, romantic, a little old-fashioned: ribbon, lace,
-   pearls, blush and cream, a letter written on good paper.
-   One idea: a love letter tied with a ribbon. The header is a sheet of
-   cream paper with a lace edge, tied with a real satin bow (a cut-out
-   photograph, images/th/cq-bow.webp, not a drawing); section names sit
-   over a short string of pearls. Behind everything,
-   plain cream paper (the photographs were tried and taken out: too much).
-   Headings in Playfair Display italic, the site's name in a script,
-   everything else in DM Sans so it stays easy to read. Raspberry for
-   what matters. No motion beyond a soft fade. Dark mode is the darker
-   side of the same look: wine and black, lace in blush.
+   COQUETTE — a love letter, on good stationery, kept in a ribbon box.
+   (Built from the scratchpad's cq/gen/tpl.css; the pearl and trellis
+   drawings are made by gen.py.)
+   One idea: every page is a piece of writing paper laid on striped
+   boudoir wallpaper, and what matters is tied with satin ribbon.
+   - The wall: Marie Antoinette wallpaper in blush and cream, a different
+     paper per page within one style (stripes on Home, Swiss dots behind
+     the timetable, a trellis with a pearl at each crossing behind the
+     inner pages, pink gingham on the games). Dark mode is a claret velvet
+     boudoir: the same papers flocked tone on tone, antique-gold hairlines.
+   - The paper: cream cards with a second rule drawn inside the edge.
+     Home, the timetable and Games open on a letter with a lace hem;
+     the other pages are one sheet with a letterhead, a satin ribbon
+     wrapped across it and the bow (a photograph, images/th/cq-bow.webp,
+     never a drawing) tied at its middle.
+   - Ribbon: the button that matters, and whichever tab is chosen, is cut
+     from satin with notched ends; each class on the timetable carries a
+     bookmark ribbon in its subject's colour, and the class on now wears
+     the bow. Pearls: strung after section names, as dividers, as the
+     progress bar, round Home's icons (a cameo) and as the round buttons.
+   - Type: the page's name in a flowing script (Pinyon Script), section
+     names in Playfair Display italic, labels in small spaced capitals,
+     everything you read in DM Sans.
+   Nothing moves but a soft fade with a slight lift between pages.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="coquette"]{
-  --cq-lace:#fffaf8; --cq-rose:#c2375f;
-  --bg:#fbf1ee; --bg-img:linear-gradient(180deg,#fdf6f3,#f6e2e2);
-  --panel:rgba(255,251,249,.9); --panel-2:#fdf1ef; --line:rgba(176,96,116,.2);
-  --text:#3b2228; --muted:#8b636b; --accent:#c2375f; --accent-ink:#fff;
+  --cq-paper:#fffaf6; --cq-lace:#fffaf6; --cq-rose:#c2375f; --cq-wine:#6b1f38; --cq-rule:rgba(194,55,95,.26); --cq-edge:rgba(196,120,138,.34);
+  --bg:#fbeeee; --bg-img:none;
+  --panel:#fffaf6; --panel-2:#fcefee; --line:rgba(176,96,116,.22);
+  --text:#3d1f27; --muted:#85606a; --accent:#b8325a; --accent-ink:#fff;
   --font-ui:"DM Sans",system-ui,sans-serif; --font-display:"Playfair Display",Georgia,serif; --font-num:"DM Sans",system-ui,sans-serif;
-  --card-radius:14px; --radius:12px; --tint:20%; --card-accent:0px;
-  --card-border:1px solid rgba(226,176,188,.7);
-  --shadow:0 1px 2px rgba(150,70,90,.08),0 8px 22px rgba(170,90,110,.1);
-  --shadow-hi:0 0 0 1px rgba(194,55,95,.35),0 10px 26px rgba(170,70,100,.18);
+  --card-radius:6px; --radius:8px; --tint:15%; --card-accent:0px;
+  --card-border:1px solid var(--cq-edge);
+  --shadow:0 1px 2px rgba(150,70,90,.07),0 6px 18px rgba(170,90,110,.09);
+  --shadow-hi:0 0 0 1px rgba(184,50,90,.32),0 10px 24px rgba(170,70,100,.16);
   --display-tt:none; --display-ls:0; --display-w:500;
+  /* the paper's inner rule: a second line drawn 6px inside the edge */
+  --cq-frame:inset 0 0 0 6px var(--cq-paper),inset 0 0 0 7px var(--cq-rule);
+  /* satin: a deep raspberry with a sheen across its upper third (the bow's colour, deep enough for white type) */
+  --cq-satin:linear-gradient(180deg,rgba(255,255,255,0) 3%,rgba(255,255,255,.22) 14%,rgba(255,255,255,0) 27%),linear-gradient(180deg,#c64169,#b8325a 40%,#a0284e 62%,#b8355d);
+  --cq-satin-ink:#fff;
+  --cq-band:linear-gradient(180deg,#f2a4b6,#e27d94 40%,#c95c76 62%,#e891a6);       /* the ribbon across a sheet: the bow's own pink */
+  --cq-notch:polygon(0 0,100% 0,calc(100% - 8px) 50%,100% 100%,0 100%,8px 50%);
+  --cq-pearl:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='16' viewBox='0 0 18 16'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.38' cy='.32' r='.72'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.42' stop-color='%23f7eeeb'/%3E%3Cstop offset='.78' stop-color='%23e2cdc9'/%3E%3Cstop offset='1' stop-color='%23b99a9c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='9' cy='8' r='7.3' fill='url(%23g)'/%3E%3C/svg%3E");
+  --cq-pearlbtn:radial-gradient(circle at 34% 26%,#fff 0 7%,#fcf6f3 24%,#f1e4df 56%,#dcc6c0 88%,#cdb3ad);
   --cq-lacemask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath fill-rule='evenodd' d='M0 0H24V3A6 6 0 0 1 12 3A6 6 0 0 1 0 3ZM7.3 4.4a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0ZM19.3 4.4a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0ZM12.7 1.3a.7.7 0 1 0-1.4 0a.7.7 0 1 0 1.4 0ZM.7 1.3a.7.7 0 1 0-1.4 0a.7.7 0 1 0 1.4 0Z'/%3E%3C/svg%3E");
-  --cq-pearl:radial-gradient(circle at 38% 34%,#fff 0 1px,#f7ece9 1.6px,#e3cfcb 3px,#c9aea9 3.5px,transparent 3.9px);
+  --cq-cameo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='72' viewBox='0 0 60 72'%3E%3Cdefs%3E%3CradialGradient id='p' cx='.38' cy='.32' r='.75'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.5' stop-color='%23f5ebe7'/%3E%3Cstop offset='1' stop-color='%23c9aea8'/%3E%3C/radialGradient%3E%3CradialGradient id='f' cx='.4' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23fff6f6'/%3E%3Cstop offset='1' stop-color='%23f7d9e0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='30' cy='36' rx='22.6' ry='28.6' fill='url(%23f)' stroke='%23e3a7b6' stroke-width='.8'/%3E%3Ccircle cx='30.00' cy='3.60' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='36.97' cy='4.75' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.30' cy='8.01' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.46' cy='12.84' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.38' cy='18.81' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.95' cy='25.41' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='32.39' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='39.56' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.96' cy='46.54' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.40' cy='53.15' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.49' cy='59.13' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.33' cy='63.97' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='37.01' cy='67.24' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='30.04' cy='68.40' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='23.03' cy='67.25' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.70' cy='63.99' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.54' cy='59.16' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.62' cy='53.19' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.05' cy='46.59' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='39.61' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='32.44' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.04' cy='25.46' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.60' cy='18.85' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.51' cy='12.87' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.67' cy='8.03' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='22.99' cy='4.76' r='2.55' fill='url(%23p)'/%3E%3C/svg%3E");
+  --cq-trellis:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.8' fill='none'%3E%3Cpath d='M0 0L44 44M44 0L0 44'/%3E%3C/g%3E%3Ccircle cx='0' cy='0' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='44' cy='0' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='0' cy='44' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='44' cy='44' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='22' cy='22' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3C/svg%3E");
+  /* the wallpapers (one per kind of page; the trellis is the default) */
+  --cq-wall:var(--cq-trellis) 0 0/44px 44px,linear-gradient(180deg,#fdf5f2,#f9e8e8);
 }
 [data-skin="coquette"][data-mode="dark"]{
-  --cq-lace:#3a1822; --cq-rose:#f28aa7;
-  --bg:#170a0e; --bg-img:linear-gradient(180deg,#1e0d13,#10060a);
-  --panel:rgba(36,14,21,.9); --panel-2:rgba(52,20,30,.92); --line:rgba(255,170,195,.16);
-  --text:#fbe9ee; --muted:#c99ba8; --accent:#f28aa7; --accent-ink:#2a0b14;
-  --card-border:1px solid rgba(242,138,167,.22);
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 26px rgba(0,0,0,.4);
-  --shadow-hi:0 0 0 1px rgba(242,138,167,.45),0 12px 30px rgba(0,0,0,.5);
-  --cq-pearl:radial-gradient(circle at 38% 34%,#fff 0 1px,#f2dfe3 1.6px,#b99aa2 3px,#7d5d66 3.5px,transparent 3.9px);
+  --cq-paper:#2b0c17; --cq-lace:#2b0c17; --cq-rose:#f2a5b8; --cq-wine:#f7d3dc; --cq-rule:rgba(201,164,92,.42); --cq-edge:rgba(201,164,92,.34);
+  --bg:#1c0610;
+  --panel:#2b0c17; --panel-2:#3a1221; --line:rgba(236,170,190,.16);
+  --text:#f8e7eb; --muted:#d0a5b0; --accent:#f2a5b8; --accent-ink:#36091a;
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 26px rgba(0,0,0,.4);
+  --shadow-hi:0 0 0 1px rgba(201,164,92,.6),0 12px 30px rgba(0,0,0,.5);
+  --cq-satin:linear-gradient(180deg,rgba(255,255,255,0) 3%,rgba(255,255,255,.34) 14%,rgba(255,255,255,0) 27%),linear-gradient(180deg,#f6c4d0,#eea2b5 42%,#e18aa1 62%,#f0afc0);
+  --cq-satin-ink:#36091a;
+  --cq-band:linear-gradient(180deg,#e88aa1,#c95a76 40%,#9e3a55 62%,#cf6b85);
+  --cq-pearl:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='16' viewBox='0 0 18 16'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.38' cy='.32' r='.72'%3E%3Cstop offset='0' stop-color='%23fffaf2'/%3E%3Cstop offset='.42' stop-color='%23efe2d8'/%3E%3Cstop offset='.78' stop-color='%23c4ad9d'/%3E%3Cstop offset='1' stop-color='%238d7266'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='9' cy='8' r='7.3' fill='url(%23g)'/%3E%3C/svg%3E");
+  --cq-pearlbtn:radial-gradient(circle at 34% 26%,#fffaf2 0 6%,#f3e7dd 24%,#dcc8b9 56%,#b59c8b 88%,#9c8273);
+  --cq-cameo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='72' viewBox='0 0 60 72'%3E%3Cdefs%3E%3CradialGradient id='p' cx='.38' cy='.32' r='.75'%3E%3Cstop offset='0' stop-color='%23fffaf2'/%3E%3Cstop offset='.45' stop-color='%23ead9cc'/%3E%3Cstop offset='1' stop-color='%239c8072'/%3E%3C/radialGradient%3E%3CradialGradient id='f' cx='.4' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%234a1628'/%3E%3Cstop offset='1' stop-color='%232a0a15'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='30' cy='36' rx='22.6' ry='28.6' fill='url(%23f)' stroke='%23c9a45c' stroke-width='.8'/%3E%3Ccircle cx='30.00' cy='3.60' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='36.97' cy='4.75' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.30' cy='8.01' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.46' cy='12.84' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.38' cy='18.81' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.95' cy='25.41' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='32.39' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='39.56' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.96' cy='46.54' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.40' cy='53.15' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.49' cy='59.13' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.33' cy='63.97' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='37.01' cy='67.24' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='30.04' cy='68.40' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='23.03' cy='67.25' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.70' cy='63.99' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.54' cy='59.16' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.62' cy='53.19' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.05' cy='46.59' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='39.61' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='32.44' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.04' cy='25.46' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.60' cy='18.85' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.51' cy='12.87' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.67' cy='8.03' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='22.99' cy='4.76' r='2.55' fill='url(%23p)'/%3E%3C/svg%3E");
+  --cq-trellis:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.8' fill='none'%3E%3Cpath d='M0 0L44 44M44 0L0 44'/%3E%3C/g%3E%3Ccircle cx='0' cy='0' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='44' cy='0' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='0' cy='44' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='44' cy='44' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='22' cy='22' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3C/svg%3E");
+  --cq-wall:var(--cq-trellis) 0 0/44px 44px,radial-gradient(120% 90% at 50% 0%,#3a0d1d,#1c0610 70%);
 }
-/* no photographs: plain cream paper, the faintest blush in one corner (wine in dark mode) */
+/* ── the wall: one paper per kind of page ── */
+/* Home: Marie Antoinette stripes, a wide blush band and a cream one edged in two fine rose lines */
+[data-skin="coquette"][data-pg="home"]{--cq-wall:
+  repeating-linear-gradient(90deg,transparent 0 44px,rgba(206,120,142,.13) 44px 45px,transparent 45px 48px,rgba(206,120,142,.13) 48px 49px,transparent 49px 88px),
+  repeating-linear-gradient(90deg,#fdf7f4 0 46.5px,#faeaec 46.5px 88px)}
+[data-skin="coquette"][data-mode="dark"][data-pg="home"]{--cq-wall:
+  repeating-linear-gradient(90deg,transparent 0 44px,rgba(201,164,92,.13) 44px 45px,transparent 45px 48px,rgba(201,164,92,.13) 48px 49px,transparent 49px 88px),
+  repeating-linear-gradient(90deg,#230812 0,#2d0b18 22px,#230812 46.5px,#1b050d 46.5px,#220711 66px,#1b050d 88px)}
+/* the timetable: Swiss dots, the quietest of them, behind a busy page */
+[data-skin="coquette"][data-pg="timetable"]{--cq-wall:
+  radial-gradient(circle,rgba(206,110,135,.2) 0 1.2px,transparent 1.7px) 0 0/30px 30px,
+  radial-gradient(circle,rgba(206,110,135,.2) 0 1.2px,transparent 1.7px) 15px 15px/30px 30px,
+  linear-gradient(180deg,#fdf6f3,#f9eaea)}
+[data-skin="coquette"][data-mode="dark"][data-pg="timetable"]{--cq-wall:
+  radial-gradient(circle,rgba(201,164,92,.15) 0 1.2px,transparent 1.7px) 0 0/30px 30px,
+  radial-gradient(circle,rgba(201,164,92,.15) 0 1.2px,transparent 1.7px) 15px 15px/30px 30px,
+  radial-gradient(120% 90% at 50% 0%,#330b1a,#1c0610 70%)}
+/* the games: pink gingham, a picnic cloth */
+[data-skin="coquette"]:is([data-pg="games"],[data-pg="mahjong"]){--cq-wall:
+  repeating-linear-gradient(0deg,rgba(236,150,172,.12) 0 16px,transparent 16px 32px),
+  repeating-linear-gradient(90deg,rgba(236,150,172,.12) 0 16px,transparent 16px 32px),#fdf7f4}
+[data-skin="coquette"][data-mode="dark"]:is([data-pg="games"],[data-pg="mahjong"]){--cq-wall:
+  repeating-linear-gradient(0deg,rgba(120,26,58,.12) 0 16px,transparent 16px 32px),
+  repeating-linear-gradient(90deg,rgba(120,26,58,.12) 0 16px,transparent 16px 32px),#1e0711}
 [data-skin="coquette"] body{font-feature-settings:"lnum" 1}      /* Playfair's figures are old-style by default (a 1 looked like an i) */
-[data-skin="coquette"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
-  background:radial-gradient(120% 80% at 100% 0%,rgba(246,205,214,.55),rgba(246,205,214,0) 60%),radial-gradient(90% 70% at 0% 100%,rgba(250,224,214,.5),rgba(250,224,214,0) 60%),var(--bg-img)}
-[data-skin="coquette"][data-mode="dark"] body::before{background:radial-gradient(120% 80% at 100% 0%,rgba(120,30,58,.45),rgba(120,30,58,0) 60%),radial-gradient(90% 70% at 0% 100%,rgba(90,24,40,.4),rgba(90,24,40,0) 60%),var(--bg-img)}
-html.zen[data-skin="coquette"] body::before,[data-skin="coquette"][data-pg="hkmahjong"] body::before{display:none}
+[data-skin="coquette"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:var(--cq-wall)}
+/* a soft shade at the edges of the room, so the wall sits behind the paper */
+[data-skin="coquette"] body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(130% 100% at 50% 40%,transparent 55%,rgba(196,110,132,.14))}
+[data-skin="coquette"][data-mode="dark"] body::after{background:radial-gradient(130% 100% at 50% 40%,transparent 50%,rgba(0,0,0,.45))}
+html.zen[data-skin="coquette"] body::before,html.zen[data-skin="coquette"] body::after,
+[data-skin="coquette"][data-pg="hkmahjong"] body::before,[data-skin="coquette"][data-pg="hkmahjong"] body::after{display:none}
 
-/* ── the letter: cream paper with a lace edge, tied with a bow ── */
-:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--cq-lace);border:0;border-radius:6px 6px 0 0;box-shadow:0 10px 24px rgba(150,70,90,.12);margin-bottom:34px}
-:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;pointer-events:none;
-  background:var(--cq-lace);-webkit-mask:var(--cq-lacemask) 0 0/24px 10px repeat-x;mask:var(--cq-lacemask) 0 0/24px 10px repeat-x;filter:drop-shadow(0 3px 2px rgba(150,70,90,.12))}
-/* the bow is tied at the hem, on the left, where the lace starts */
-:root[data-skin="coquette"]:not([data-header="split"]) :is(.hubbar,.pagehead)::before{content:"";position:absolute;bottom:-38px;left:-40px;width:66px;height:52px;z-index:2;pointer-events:none;
-  background:url(../images/th/cq-bow.webp) center/contain no-repeat;transform:rotate(-8deg);filter:drop-shadow(0 4px 4px rgba(120,40,60,.25))}
-:root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){box-shadow:0 12px 30px rgba(0,0,0,.45)}
-@media (max-width:560px){ :root[data-skin="coquette"]:not([data-header="split"]) :is(.hubbar,.pagehead)::before{width:50px;height:39px;bottom:-24px;left:-10px} }
-[data-skin="coquette"] :is(.hubid h1,.pagehead h1,.brand h1){font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:500;letter-spacing:0;color:#5a1f30}
-[data-skin="coquette"][data-mode="dark"] :is(.hubid h1,.pagehead h1,.brand h1){color:#fbe1e8}
-[data-skin="coquette"] .sitename{font-family:"Pinyon Script",cursive;font-size:1.05rem;letter-spacing:0;text-transform:none;color:var(--cq-rose)}
-[data-skin="coquette"] :is(.eyebrow,.nowcard .lbl,.ttday b,.weeklabel,.field>label,.tbhead span){letter-spacing:.14em}
-/* section names in italic, over a short string of pearls */
-[data-skin="coquette"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:12px;font:italic 500 1.0625rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--text);white-space:nowrap}
-[data-skin="coquette"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:0 1 120px;height:8px;background:var(--cq-pearl) 0 50%/9px 8px repeat-x;opacity:.95}
+/* ── the letter (Home, the timetable, Games): cream paper with a lace hem and a bow pinned at the corner ── */
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--cq-paper);border:1px solid var(--cq-edge);border-bottom:0;border-radius:4px 4px 0 0;
+  box-shadow:var(--cq-frame),0 12px 26px rgba(150,70,90,.12);margin-top:12px;margin-bottom:36px;padding-left:44px}
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;left:-1px;right:-1px;bottom:-10px;height:10px;pointer-events:none;
+  background:var(--cq-lace);-webkit-mask:var(--cq-lacemask) 0 0/24px 10px repeat-x;mask:var(--cq-lacemask) 0 0/24px 10px repeat-x}
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;top:-24px;left:-34px;width:72px;height:56px;z-index:3;pointer-events:none;
+  background:url(../images/th/cq-bow.webp) center/contain no-repeat;transform:rotate(-14deg);filter:drop-shadow(0 5px 5px rgba(120,40,60,.25))}
+:root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){box-shadow:var(--cq-frame),0 14px 34px rgba(0,0,0,.5)}
+:root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{filter:drop-shadow(0 5px 6px rgba(0,0,0,.5)) brightness(.92)}
+:root[data-skin="coquette"]:not([data-header="split"]) .topbar{padding-left:56px}
+:root[data-skin="coquette"]:not([data-header="split"]) .topbar::before{left:-16px;top:-20px}
+@media (max-width:600px){
+  :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){padding-left:30px}
+  :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{width:52px;height:40px;top:-17px;left:-16px}
+}
+
+/* ── the other pages: one sheet of writing paper with a letterhead, a ribbon wrapped across it and the bow tied in the middle ── */
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+  background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:4px;box-shadow:inset 0 0 0 8px var(--cq-paper),inset 0 0 0 9px var(--cq-rule),0 2px 4px rgba(150,70,90,.06),0 18px 40px rgba(150,70,90,.14);
+  margin-top:28px;margin-bottom:60px;padding:22px 30px 40px}
+:root[data-skin="coquette"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+  box-shadow:inset 0 0 0 8px var(--cq-paper),inset 0 0 0 9px var(--cq-rule),0 20px 46px rgba(0,0,0,.55)}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{
+  background:none;border:0;border-radius:0;box-shadow:none;margin:0 0 44px;padding:8px 0 36px}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::after{
+  left:-31px;right:-31px;bottom:0;height:7px;background:var(--cq-band);-webkit-mask:none;mask:none;box-shadow:0 1px 2px rgba(120,40,60,.18)}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::before{
+  top:auto;bottom:-30px;left:50%;width:84px;height:64px;transform:translateX(-50%) rotate(-3deg)}
+@media (min-width:601px){
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{justify-content:center;text-align:center}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead .phtitle{flex:0 1 auto}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead .crumbs{position:absolute;right:0;top:4px}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .pagelede{margin:-18px auto 26px;text-align:center}
+}
+@media (max-width:640px){
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:14px 8px 44px;padding:14px 14px 28px}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::after{left:-15px;right:-15px}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::before{width:64px;height:49px;bottom:-22px}
+}
+
+/* ── type: the page's name in script; small spaced capitals over it ── */
+[data-skin="coquette"] :is(.hubid h1,.pagehead h1,.brand h1){font-family:"Pinyon Script",cursive;font-style:normal;font-weight:400;letter-spacing:0;color:var(--cq-wine);line-height:1.22;padding:0 .2em 0 .04em}
+[data-skin="coquette"] .hubid h1{font-size:clamp(2.1rem,7.2cqi,3.25rem)}
+[data-skin="coquette"] .pagehead h1{font-size:clamp(2.2rem,5vw,3.4rem);overflow:visible}
+[data-skin="coquette"] .brand h1{font-size:clamp(1.9rem,3.6vw,2.7rem)}
+[data-skin="coquette"] :is(.eyebrow,.sitename){font:600 .6875rem/1.4 "Playfair Display",Georgia,serif;letter-spacing:.32em;text-transform:uppercase;color:var(--cq-rose);margin-bottom:0}
+[data-skin="coquette"] .sitename:hover{color:var(--text)}
+@media (max-width:600px){ [data-skin="coquette"] :is(.eyebrow,.sitename){font-size:.625rem;letter-spacing:.2em} }
+[data-skin="coquette"] :is(.hubsub,.pagelede){font-family:"Playfair Display",Georgia,serif;font-style:italic;color:var(--muted)}
+[data-skin="coquette"] :is(.ttday b,.field>label,.tbhead span){letter-spacing:.14em}
+[data-skin="coquette"] .weeklabel{font:italic 500 1.375rem/1 "Playfair Display",Georgia,serif;letter-spacing:0}
+/* section names in italic, then a string of pearls that fades out */
+[data-skin="coquette"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:14px;font:italic 500 1.25rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--text);white-space:nowrap}
+[data-skin="coquette"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:0 1 240px;height:8px;background:var(--cq-pearl) 0 50%/9px 8px round no-repeat;
+  -webkit-mask:linear-gradient(90deg,#000 55%,transparent);mask:linear-gradient(90deg,#000 55%,transparent)}
 [data-skin="coquette"] .forum{border-top:0}
-[data-skin="coquette"] :is(.pcard,.forum){background:var(--panel);border:var(--card-border);border-radius:16px;box-shadow:var(--shadow)}
-[data-skin="coquette"] .forum{padding:16px 18px 18px}
+[data-skin="coquette"] .gsec .cathd{flex:1}
+[data-skin="coquette"] :is(.pcard,.forum){background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:6px;box-shadow:var(--cq-frame),var(--shadow)}
+[data-skin="coquette"] .forum{padding:20px 22px 22px}
 
-/* ── buttons: ribbon pills ── */
-:root[data-skin="coquette"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:var(--panel);border:1px solid rgba(194,55,95,.35);color:var(--text);box-shadow:none}
-:root[data-skin="coquette"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{border-color:var(--accent);background:var(--panel-2);box-shadow:0 4px 12px rgba(194,55,95,.15)}
-:root[data-skin="coquette"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-/* ── Home's tiles: cream cards ── */
-[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:14px}
-:root[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--panel-2)}
-[data-skin="coquette"] .qtile .tname{font-weight:500}
-/* ── Now and Next: blush, labelled in italic ── */
-[data-skin="coquette"] .nowcard{background:#fbe3e8;border:1px solid rgba(226,150,170,.55);border-radius:12px}
-[data-skin="coquette"] .nowcard .lbl{font:italic 500 .9375rem/1 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--cq-rose)}
-[data-skin="coquette"][data-mode="dark"] .nowcard{background:rgba(120,36,62,.4);border-color:rgba(242,138,167,.3)}
-[data-skin="coquette"] .prog{border-radius:999px;background:rgba(194,55,95,.14)}
-[data-skin="coquette"] .prog i{border-radius:999px;background:var(--accent)}
+/* ── buttons: cream with a rose hairline; the one that matters (and the chosen tab) is satin ribbon with notched ends;
+      the round ones are pearls ── */
+:root[data-skin="coquette"] :is(.btn,.dayswitch button,.modes button,.popt,.diffpill,.fweeks button,.fyears button,.yeartab,.daypick button):not(.gateskip,.icon,.primary,[aria-pressed="true"],[aria-checked="true"]){border-radius:999px;background:var(--cq-paper);border:1px solid rgba(184,50,90,.38);color:var(--text);box-shadow:none}
+:root[data-skin="coquette"][data-mode="dark"] :is(.btn,.dayswitch button,.modes button,.popt,.diffpill,.fweeks button,.fyears button,.yeartab,.daypick button):not(.gateskip,.icon,.primary,[aria-pressed="true"],[aria-checked="true"]){background:var(--panel-2);border-color:rgba(201,164,92,.45)}
+:root[data-skin="coquette"] :is(.btn,.dayswitch button,.modes button,.popt,.diffpill,.fweeks button,.fyears button,.yeartab,.daypick button):not(.gateskip,.icon,.primary,[aria-pressed="true"],[aria-checked="true"]):hover{border-color:var(--accent);background:var(--panel-2);box-shadow:0 3px 10px rgba(184,50,90,.14)}
+:root[data-skin="coquette"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.diffpill[aria-pressed="true"],.fweeks button[aria-pressed="true"],.fyears button[aria-pressed="true"],.yeartab[aria-pressed="true"],.daypick button[aria-pressed="true"]):not(.icon),
+:root[data-skin="coquette"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.diffpill[aria-pressed="true"],.fweeks button[aria-pressed="true"],.fyears button[aria-pressed="true"],.yeartab[aria-pressed="true"],.daypick button[aria-pressed="true"]):not(.icon):hover{
+  background:var(--cq-satin);color:var(--cq-satin-ink);border:0;border-radius:0;clip-path:var(--cq-notch);justify-content:center;padding-left:calc(1em + 8px);padding-right:calc(1em + 8px);
+  text-shadow:0 1px 0 rgba(90,10,35,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(80,10,30,.25);transform:none}
+:root[data-skin="coquette"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.diffpill[aria-pressed="true"],.fweeks button[aria-pressed="true"],.fyears button[aria-pressed="true"],.yeartab[aria-pressed="true"],.daypick button[aria-pressed="true"]):not(.icon){text-shadow:0 1px 0 rgba(255,255,255,.35)}
+/* the notches would cut a focus ring off: show it inside the ribbon instead */
+:root[data-skin="coquette"] :is(.btn.primary,.dayswitch button,.modes button,.popt,.diffpill,.fweeks button,.fyears button,.yeartab,.daypick button):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:root[data-skin="coquette"] :is(.btn.primary,[aria-pressed="true"],[aria-checked="true"]):not(.icon):is(.btn,.dayswitch button,.modes button,.popt,.diffpill,.fweeks button,.fyears button,.yeartab,.daypick button):focus-visible{outline:0;box-shadow:inset 0 0 0 2px var(--cq-satin-ink),inset 0 0 0 4px var(--accent)}
+:root[data-skin="coquette"] .btn.primary:disabled{opacity:.6}
+:root[data-skin="coquette"][data-mode="dark"] .btn.primary:disabled{opacity:.72}
+/* pearls */
+:root[data-skin="coquette"] :is(.btn.icon,.arrowbtn):not(.gateskip){border-radius:50%;border:0;background:var(--cq-pearlbtn);color:#5a1a2e;
+  box-shadow:0 2px 4px rgba(120,60,72,.2),0 0 0 1px rgba(170,120,120,.18),inset 0 -2px 3px rgba(140,90,90,.12)}
+:root[data-skin="coquette"] :is(.btn.icon,.arrowbtn):not(.gateskip):hover{background:var(--cq-pearlbtn);color:var(--cq-rose);box-shadow:0 3px 8px rgba(184,50,90,.22),0 0 0 1px rgba(184,50,90,.35)}
+:root[data-skin="coquette"][data-mode="dark"] :is(.btn.icon,.arrowbtn):not(.gateskip){color:#3a0d1c;box-shadow:0 2px 6px rgba(0,0,0,.5),0 0 0 1px rgba(201,164,92,.3)}
+:root[data-skin="coquette"][data-mode="dark"] :is(.btn.icon,.arrowbtn):not(.gateskip):hover{color:#8a1c3f;box-shadow:0 0 0 1px rgba(201,164,92,.8),0 4px 12px rgba(0,0,0,.5)}
+
+/* ── Home's tiles: note cards, each icon in a cameo with a ring of pearls ── */
+[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game){background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:6px;box-shadow:var(--shadow)}
+:root[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--cq-paper)}
+[data-skin="coquette"] .qtile{align-items:center;justify-content:center;gap:10px;text-align:center;height:auto;min-height:calc(var(--tile-h) + 1.75rem);padding:14px 8px 12px}
+[data-skin="coquette"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:3.25rem;height:3.9rem;background:var(--cq-cameo) center/contain no-repeat}
+[data-skin="coquette"] .qtile .ico .ph{width:1.5rem;height:1.5rem}
+[data-skin="coquette"] .qtile .ico .ie{font-size:1.375rem}
+[data-skin="coquette"] .qtile .tname{font:500 1rem/1.2 "Playfair Display",Georgia,serif;white-space:normal}
+:root[data-skin="coquette"] .qtile:hover .tname{font-style:italic}
+@media (max-width:560px){
+  [data-skin="coquette"] .qtile{min-height:0;padding:9px 2px 8px;gap:5px}
+  [data-skin="coquette"] .qtile .ico{width:2.5rem;height:3rem}
+  [data-skin="coquette"] .qtile .ico .ph{width:1.2rem;height:1.2rem}
+  [data-skin="coquette"] .qtile .tname{font-size:.75rem;line-height:1.15}
+}
+@container hubnav (max-width:19em){
+  [data-skin="coquette"] .qtile{flex-direction:row;justify-content:flex-start;text-align:left;min-height:3.5rem;padding:8px 10px}
+  [data-skin="coquette"] .qtile .ico{width:2.2rem;height:2.6rem}
+}
+[data-skin="coquette"] :is(.tdname,.gamecard h2,.game h2,.tile .tname,.subjcard .nm){font-family:"Playfair Display",Georgia,serif;font-weight:500}
+[data-skin="coquette"] .gamecard h2{font-size:1.1875rem}
+:root[data-skin="coquette"] .gamecard:hover h2{font-style:italic}
+
+/* ── Now and Next: a blush card, labelled in italic; the progress bar is a string of pearls ── */
+[data-skin="coquette"] .nowcard{background:#fbe6ea;border:1px solid rgba(214,140,160,.5);border-radius:6px}
+[data-skin="coquette"] .nowcard .lbl{font:italic 500 1rem/1 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--cq-rose)}
+[data-skin="coquette"][data-mode="dark"] .nowcard{background:#3d1323;border-color:rgba(201,164,92,.35)}
+[data-skin="coquette"] .hubnow .nowcard{padding-top:.45rem;padding-bottom:.45rem}
+[data-skin="coquette"] .hubnow .nowcard .lbl{line-height:.9}
+[data-skin="coquette"] .hubnow .nowcard .subj{margin-top:2px}
+[data-skin="coquette"] .prog{height:8px;border-radius:0;overflow:hidden;background:var(--cq-pearl) 0 50%/9px 8px repeat-x;opacity:1}
+[data-skin="coquette"] .prog i{border-radius:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='16' viewBox='0 0 18 16'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.38' cy='.32' r='.72'%3E%3Cstop offset='0' stop-color='%23ffe9ef'/%3E%3Cstop offset='.42' stop-color='%23ee93ab'/%3E%3Cstop offset='.8' stop-color='%23c2375f'/%3E%3Cstop offset='1' stop-color='%238a2244'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='9' cy='8' r='7.3' fill='url(%23g)'/%3E%3C/svg%3E") 0 50%/9px 8px repeat-x}
 @container hubbar (max-width:26em){
-  [data-skin="coquette"] .hubnow.pair{background:#fbe3e8;border-radius:12px}
-  [data-skin="coquette"][data-mode="dark"] .hubnow.pair{background:rgba(120,36,62,.4)}
+  [data-skin="coquette"] .hubnow.pair{background:#fbe6ea;border:1px solid rgba(214,140,160,.5);border-radius:6px}
+  [data-skin="coquette"][data-mode="dark"] .hubnow.pair{background:#3d1323;border-color:rgba(201,164,92,.35)}
   [data-skin="coquette"] .hubnow.pair .nowcard{background:none;border:0}
 }
-[data-skin="coquette"] :is(.newpill,.gamecard .newbanner){background:var(--accent);color:var(--accent-ink)}
+[data-skin="coquette"] :is(.newpill,.gamecard .newbanner){background:var(--cq-satin);color:var(--cq-satin-ink);border-radius:0;clip-path:polygon(0 0,100% 0,calc(100% - 5px) 50%,100% 100%,0 100%,5px 50%);padding-left:10px;padding-right:10px}
 [data-skin="coquette"] .newsdot{background:var(--accent)}
-[data-skin="coquette"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#fffaf8;border-radius:16px}
-[data-skin="coquette"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#22101a}
-[data-skin="coquette"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:12px;background:#fffaf8;border:1px solid var(--line)}
-[data-skin="coquette"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.25)}
-/* ── the timetable: soft rounded cards ── */
-[data-skin="coquette"] .lesson{border-radius:12px}
-[data-skin="coquette"] .lesson .s{font-family:"DM Sans",sans-serif;font-weight:700;letter-spacing:0}
+[data-skin="coquette"] .hscstrip{background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:6px}
+
+/* ── the poll: a card of writing paper; results drawn as lengths of ribbon ── */
+[data-skin="coquette"] .pchip{background:none;padding:0;font:600 .625rem/1.4 "Playfair Display",Georgia,serif;letter-spacing:.28em;text-transform:uppercase;color:var(--cq-rose)}
+[data-skin="coquette"] .pchip::before{width:6px;height:6px}
+[data-skin="coquette"] .pq{font-weight:500}
+[data-skin="coquette"] :is(.pin,.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:6px;background:#fffdfb;border:1px solid var(--cq-edge)}
+[data-skin="coquette"][data-mode="dark"] :is(.pin,.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.22);border-color:rgba(201,164,92,.3)}
+[data-skin="coquette"] .pbar{border-radius:4px;background:var(--panel-2);border-color:var(--line)}
+[data-skin="coquette"] .pfill,[data-skin="coquette"] .pbar:first-child .pfill{border-radius:0;clip-path:polygon(0 0,100% 0,calc(100% - 9px) 50%,100% 100%,0 100%);
+  background:linear-gradient(180deg,rgba(255,255,255,0) 12%,rgba(255,255,255,.3) 26%,rgba(255,255,255,0) 40%),linear-gradient(180deg,#f6c6d1,#eba5b6 50%,#f3bccb)}
+[data-skin="coquette"] .pbar:first-child .pfill{background:linear-gradient(180deg,rgba(255,255,255,0) 12%,rgba(255,255,255,.3) 26%,rgba(255,255,255,0) 40%),linear-gradient(180deg,#f2a8ba,#e3859c 50%,#efa2b4)}
+[data-skin="coquette"][data-mode="dark"] .pfill{background:linear-gradient(180deg,rgba(255,255,255,0) 12%,rgba(255,255,255,.12) 26%,rgba(255,255,255,0) 40%),linear-gradient(180deg,#6a1c36,#561429 50%,#64193a)}
+[data-skin="coquette"][data-mode="dark"] .pbar:first-child .pfill{background:linear-gradient(180deg,rgba(255,255,255,0) 12%,rgba(255,255,255,.14) 26%,rgba(255,255,255,0) 40%),linear-gradient(180deg,#8e2a4c,#76203f 50%,#8a2849)}
+
+/* ── dialogs: a card of the same paper ── */
+[data-skin="coquette"] :is(dialog,.newsdlg,.sheet,.gatecard){background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:6px}
+[data-skin="coquette"] :is(dialog,.newsdlg,.gatecard){box-shadow:0 20px 50px rgba(120,40,60,.25)}
+[data-skin="coquette"][data-mode="dark"] :is(dialog,.newsdlg,.gatecard){box-shadow:0 20px 50px rgba(0,0,0,.6)}
+[data-skin="coquette"] :is(.dlg-h,.newshead){border-bottom-color:var(--line)}
+[data-skin="coquette"] :is(.dlg-h h2,.newshead h2,.sheethd h2,.gatecard h2){font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:500;font-size:1.375rem}
+[data-skin="coquette"] .newshead{background:var(--cq-paper)}
+[data-skin="coquette"] :is(.skinbtn,.origtile){border-radius:6px}
+[data-skin="coquette"] :is(.tsw,.origs){border-radius:6px}
+[data-skin="coquette"] .tsw[aria-checked="true"] i{background:var(--cq-satin)}
+[data-skin="coquette"] input[type=checkbox]{accent-color:var(--accent)}
+
+/* ── the timetable: note cards, each with a bookmark ribbon in its subject's colour; the class on now wears the bow ── */
+[data-skin="coquette"] .lesson{border-radius:5px;background:color-mix(in srgb,var(--c) 13%,var(--cq-paper));border:1px solid color-mix(in srgb,var(--c) 34%,transparent)}
+[data-skin="coquette"] .lesson .s{font-family:"DM Sans",sans-serif;font-weight:700;letter-spacing:0;padding-right:16px}
+[data-skin="coquette"] .lesson{--rb:color-mix(in srgb,var(--c,var(--accent)) 74%,#5a1028)}
+[data-skin="coquette"][data-mode="dark"] .lesson{--rb:var(--c,var(--accent))}
+[data-skin="coquette"] .lesson::after{content:"";position:absolute;top:0;right:9px;width:9px;height:21px;pointer-events:none;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--rb) 72%,#000),var(--rb) 30%,color-mix(in srgb,var(--rb) 62%,#fff) 55%,var(--rb) 80%,color-mix(in srgb,var(--rb) 82%,#000));
+  clip-path:polygon(0 0,100% 0,100% 100%,50% 74%,0 100%)}
 [data-skin="coquette"] .lesson.current{outline:2px solid var(--accent);outline-offset:2px}
-[data-skin="coquette"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--cq-pearl) 0 50%/9px 8px repeat-x;height:8px}
-[data-skin="coquette"] .breakbar{border-radius:999px}
-:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
-  background:var(--panel);border:var(--card-border);border-radius:18px;box-shadow:var(--shadow);margin-top:24px;margin-bottom:60px;padding:18px 24px 34px}
-@media (max-width:640px){
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:10px 8px 44px;padding:12px 12px 26px}
-}
-html.fx-enter[data-skin="coquette"] .wrap{animation:cqin .34s ease both}
-@keyframes cqin{from{opacity:0;transform:translateY(6px)}}
+[data-skin="coquette"] .lesson.current .s{padding-right:34px}
+[data-skin="coquette"] .lesson.current::after{top:3px;right:3px;width:38px;height:29px;clip-path:none;background:url(../images/th/cq-bow.webp) center/contain no-repeat;transform:rotate(10deg);filter:drop-shadow(0 2px 2px rgba(120,40,60,.25))}
+[data-skin="coquette"] .dayhead .dow{font:italic 500 1.0625rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0}
+[data-skin="coquette"] .dayhead .rule{height:1px;opacity:1;background:var(--cq-edge);border-radius:0}
+[data-skin="coquette"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--cq-rose)}
+[data-skin="coquette"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--cq-pearl) 0 50%/9px 8px round no-repeat;height:8px;margin-top:4px}
+/* breaks: a string of pearls with the name in italic in the middle */
+[data-skin="coquette"] .breakbar{background:none;border:0;border-radius:0;opacity:1;gap:10px;color:var(--muted);font:italic 500 .875rem/1 "Playfair Display",Georgia,serif;letter-spacing:0}
+[data-skin="coquette"] .breakbar span{font-weight:500;text-transform:none;color:var(--text)}
+[data-skin="coquette"] .breakbar em{font-style:italic;opacity:1;font-size:.8125rem}
+[data-skin="coquette"] .breakbar::before,[data-skin="coquette"] .breakbar::after{content:"";flex:1 1 0;min-width:8px;height:8px;background:var(--cq-pearl) 0 50%/9px 8px round no-repeat;opacity:.9}
+html.zen[data-skin="coquette"] .breakbar{background:color-mix(in srgb,var(--panel) 88%,transparent)}
+[data-skin="coquette"] .tmark{letter-spacing:.02em}
+[data-skin="coquette"] .fpost{border-radius:6px;background:var(--cq-paper);border-color:var(--cq-edge)}
+[data-skin="coquette"] .fpost.freply{background:var(--panel-2)}
+[data-skin="coquette"] .hubfoot{position:relative;border-top:0;padding-top:30px}
+[data-skin="coquette"] .hubfoot::before{content:"";position:absolute;top:0;left:50%;width:171px;height:8px;transform:translateX(-50%);background:var(--cq-pearl) 0 0/9px 8px repeat-x;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);mask:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent)}
+
+/* ── changing page: a soft fade with a slight lift ── */
+html.fx-enter[data-skin="coquette"] .wrap{animation:fxfade .2s ease both}
+html.fx-enter[data-fx="on"][data-skin="coquette"] .wrap{animation:cqin .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes cqin{from{opacity:0;transform:translateY(8px)}}
+@media (prefers-reduced-motion:reduce){ html.fx-enter[data-skin="coquette"] .wrap{animation:fxfade .2s ease both} }

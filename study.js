@@ -174,10 +174,15 @@ function practise(it){
 
 const WHY = { weak:'got it wrong last time', due:'due for review', new:'not started yet' };
 
-/* the panel at the top of the Year 12 revision page */
-function render(){
+/* The study area at the top of the revision page: the study tracker
+   (tracker.js) and, beside it (under it on a phone), the countdown, focus mode
+   and today's plan. The countdown and the plan are Year 12's, so they come with
+   { hsc:true } (games.js: while Year 12 is picked); the tracker and focus mode
+   are for everyone. Without tracker.js it is just the side column. */
+function area(opts){
+  const hsc = !opts || opts.hsc !== false;
   const wrap = document.createElement('section');
-  wrap.className = 'studypanel';
+  wrap.className = 'studypanel studyarea';
   const cd = countdown();
   const cdHtml = cd.kind === 'exam'
     ? '<div class="cdbig">' + cd.days + '</div><div class="cdlbl">day' + (cd.days === 1 ? '' : 's') + ' ' + esc(cd.label) + '</div>' +
@@ -188,7 +193,7 @@ function render(){
       '<div class="cdsub">Exam timetable out around May. The countdown starts then.</div>' +
       (cd.next ? '<div class="cdnext"><b>' + daysUntil(cd.next.d) + ' day' + (daysUntil(cd.next.d) === 1 ? '' : 's') + '</b> until ' +
                  esc(cd.next.what.charAt(0).toLowerCase() + cd.next.what.slice(1)) + ' (' + esc(longDate(cd.next.d)) + ')</div>' : '');
-  const p = plan(4);
+  const p = hsc ? plan(4) : { items:[], done:[] };
   const list = p.items.length
     ? '<ol class="planlist">' + p.items.map((it, i) =>
         '<li><button type="button" class="planitem" data-i="' + i + '">' +
@@ -207,10 +212,19 @@ function render(){
       '<button type="button" class="btn" data-focus="60">1 hour</button>' +
       '<button type="button" class="btn" data-focus="120">2 hours</button></div>';
 
-  wrap.innerHTML =
-    '<div class="sp-cd">' + cdHtml + '</div>' +
-    '<div class="sp-plan"><h3>Today’s revision</h3>' + list + doneTxt + '</div>' +
-    '<div class="sp-focus">' + focusHtml + '<p class="sp-hint">Locks the games and forum until the time’s up.</p></div>';
+  if (window.Tracker){
+    const main = document.createElement('div');
+    main.className = 'sp-main';
+    try { main.appendChild(Tracker.render()); } catch (e) { console.error(e); }
+    wrap.appendChild(main);
+  } else wrap.classList.add('notrk');
+  const side = document.createElement('div');
+  side.className = 'sp-side';
+  side.innerHTML =
+    (hsc ? '<div class="sp-cd">' + cdHtml + '</div>' : '') +
+    '<div class="sp-focus">' + focusHtml + '<p class="sp-hint">Locks the games and forum until the time’s up.</p></div>' +
+    (hsc ? '<div class="sp-plan"><h3>Today’s revision</h3>' + list + doneTxt + '</div>' : '');
+  wrap.appendChild(side);
 
   wrap.querySelectorAll('.planitem').forEach(b => { b.onclick = () => practise(p.items[+b.dataset.i]); });
   wrap.querySelectorAll('[data-focus]').forEach(b => { b.onclick = () => {
@@ -223,8 +237,10 @@ function render(){
   }
   return wrap;
 }
+/* what an older games.js asks for (Year 12 only) */
+const render = () => area({ hsc:true });
 
 window.HSC_DATES = HSC_DATES;
-window.Study = { countdown, plan, practise, render, daysUntil, longDate, topicState };
+window.Study = { countdown, plan, practise, render, area, daysUntil, longDate, topicState };
 window.Focus = Focus;
 })();

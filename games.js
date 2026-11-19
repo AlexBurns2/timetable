@@ -189,7 +189,15 @@ const HSC_YEAR = 2027;
 const YEAR12_FROM = new Date(HSC_YEAR - 1, 9, 13);        // Term 4 the year before
 const defaultYear = () => (new Date() >= YEAR12_FROM ? 12 : 11);
 const yearShown = () => { const v = +TT.get('tt.rev_year', 0); return v === 11 || v === 12 ? v : defaultYear(); };
-const setYearShown = y => { TT.set('tt.rev_year', y); showGrid(); };
+/* The year pills sit under the study area, whose Year 12 parts come and go with
+   the year: keep the pills where they were on screen so the page doesn't jump */
+const setYearShown = y => {
+  const bar = () => document.querySelector('#gamegrid > .rvyear');
+  const b = bar(), top = b ? b.getBoundingClientRect().top : null;
+  TT.set('tt.rev_year', y); showGrid();
+  const b2 = bar();
+  if (top != null && b2 && !document.documentElement.classList.contains('stfit')) scrollBy(0, b2.getBoundingClientRect().top - top);
+};
 
 /* This file runs both pages. games.html gets the side-scrolling shelves;
    revision.html gets every subject on screen at once, because when you sit
@@ -284,23 +292,45 @@ function showGrid(){
 
   if (REVISION_PAGE){
     const year = yearShown();
+    /* Two sections. Study first: the study tracker (tracker.js), and beside it
+       the HSC countdown, focus mode and today's plan (study.js), as one panel;
+       the countdown and the plan only while Year 12 is picked. Then Practice:
+       the year pills and every subject's quiz. In Studio and Apple the panel is
+       the column beside the subjects (their CSS places .rvyear, .gamegrid and
+       .rvstudy by name), and the section headings are hidden there. */
+    if (window.Study){
+      try {
+        const st = Study.area ? Study.area({ hsc:year === 12 }) : year === 12 ? Study.render() : null;
+        if (st){
+          const hd = sectionHead({ title:'Study' }); hd.classList.add('rvhead');
+          /* the subjects are a long way down on a phone: one tap to them */
+          const jump = document.createElement('button');
+          jump.type = 'button'; jump.className = 'trk-link rvjump';
+          jump.innerHTML = 'Go to practice' + (window.Icon ? Icon.svg('caret-right') : '');
+          jump.onclick = () => { const b = document.querySelector('#gamegrid > .rvyear'); if (b) b.scrollIntoView({ behavior:reduced() ? 'auto' : 'smooth', block:'start' }); };
+          hd.appendChild(jump);
+          grid.appendChild(hd);
+          st.classList.add('rvstudy'); grid.appendChild(st);
+        }
+      } catch (e) { console.error(e); }
+    }
     const has = y => GAMES.some(g => g.cat === 'Revision' && (g.year || 11) === y);
+    const bar = document.createElement('div');
+    bar.className = 'gsec diffbar rvyear';
+    bar.innerHTML = '<h2 class="cathd">Practice</h2>';
     if (has(11) && has(12)){
-      const bar = document.createElement('div');
-      bar.className = 'diffbar rvyear';
+      const pills = document.createElement('div'); pills.className = 'rvpills';
       [11, 12].forEach(y => { const b = document.createElement('button');
         b.type = 'button'; b.className = 'diffpill'; b.textContent = 'Year ' + y;
         b.setAttribute('aria-pressed', String(y === year));
         b.onclick = () => setYearShown(y);
-        bar.appendChild(b); });
-      grid.appendChild(bar);
+        pills.appendChild(b); });
+      bar.appendChild(pills);
     }
-    /* the subjects first, so picking one never needs a scroll; then the HSC
-       countdown, today's plan and focus mode (study.js) */
+    grid.appendChild(bar);
     const box = document.createElement('div'); box.className = 'gamegrid gcompact';
     GAMES.filter(g => g.cat === 'Revision' && (g.year || 11) === year).forEach((g, i) => box.appendChild(gameCard(g, i)));
     grid.appendChild(box);
-    if (year === 12 && window.Study){ try { const st = Study.render(); st.classList.add('rvstudy'); grid.appendChild(st); } catch (e) { console.error(e); } }
     fitGames();
     return;
   }
@@ -1781,7 +1811,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261118m';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261119c';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

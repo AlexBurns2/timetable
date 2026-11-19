@@ -6,115 +6,168 @@
    walkways, escalators, glass lobbies, an empty pavilion), people blurred
    by long exposure, alone in a crowd. Sterile and organic at once.
 
-   One idea: a hazy, softly saturated photograph of one of those places
-   (images/th/sc-*.webp, five of them: a blue/cyan/green gradient map,
-   haze, bloom on the lights, motion blur, the fine screen of an LCD),
-   with a second view set into a hairline frame, the way the sleeves
-   layered their pictures (baked into Home's; a drifting pane elsewhere).
-   Panels are translucent plastic and brushed metal. Type: wide, light, lower case (Lexend Giga)
-   over a plain grotesque (Arimo, Helvetica's measure). Panels are
-   frosted acrylic with hairline edges and square corners; one deep
-   signal blue for what matters. A column of faint data runs down the
-   left edge. Dark mode is the same place after dark: the photograph
-   dimmed to a deep cold teal. The frame drifts very slowly; a page
-   change slides past like a train leaving.
+   One idea: the page is a sleeve. A hazy photograph of one of those
+   places (images/th/sc-*.webp: a blue/cyan/green gradient map, haze,
+   bloom, motion blur, the fine screen of an LCD; a tall crop of each
+   for phones held upright) with the sleeve's type set into it, not on
+   top: the page's name huge, heavy and expanded, half sunk into the
+   picture (html::after, overlay-blended, with a ghost of itself above;
+   standing on its side on a phone); a column of data down the left edge;
+   a block of dots and squares (html::before); a second view in a
+   hairline frame (body::after). They are laid out by the stylesheet,
+   not baked into the photograph, so they sit right on any screen.
+   The UI is part of the same sleeve: frosted acrylic and brushed metal
+   with square corners, hairline frames set a little off their panels,
+   the site's name on a bar of signal blue in italic expanded capitals,
+   heavy expanded headings (Archivo at its widest) against light wide
+   lower case (Lexend Giga) and a plain grotesque for reading (Arimo).
+   Rooms on the timetable are numbered like platforms. Dark mode is the
+   same place after dark, a deep cold teal. The frame drifts very slowly;
+   a page change smears sideways like a train leaving.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="softclub"]{
-  --sc-blue:#1d48c8;
+  --sc-blue:#1d48c8; --sc-ink:#0f2147; --sc-halo:rgba(238,248,250,.92);
   --bg:#dfecee; --bg-img:linear-gradient(180deg,#eef6f7,#c9dfe1);
-  --panel:rgba(246,251,252,.66); --panel-2:rgba(233,244,246,.72); --line:rgba(52,96,104,.2);
-  --text:#16262c; --muted:#557077; --accent:#1d48c8; --accent-ink:#fff;
-  --font-ui:"Arimo","Helvetica Neue",Helvetica,Arial,sans-serif; --font-display:"Lexend Giga","Arimo",sans-serif; --font-num:"Arimo","Helvetica Neue",Arial,sans-serif;
+  --panel:rgba(246,251,252,.7); --panel-2:rgba(233,244,246,.76); --line:rgba(52,96,104,.22);
+  --text:#12222a; --muted:#4b666d; --accent:#1d48c8; --accent-ink:#fff;
+  --font-ui:"Arimo","Helvetica Neue",Helvetica,Arial,sans-serif; --font-display:"Archivo","Arimo",sans-serif; --font-num:"Arimo","Helvetica Neue",Arial,sans-serif;
   --card-radius:2px; --radius:2px; --tint:14%; --card-accent:0px;
-  --card-border:1px solid rgba(255,255,255,.8);
-  --shadow:0 0 0 1px rgba(52,96,104,.1);
-  --shadow-hi:0 0 0 1px rgba(29,72,200,.45);
-  --display-tt:lowercase; --display-ls:.01em; --display-w:300;
-  --sc-ph:url(../images/th/sc-home.webp); --sc-phs:url(../images/th/sc-home-s.webp); --sc-pos:center 50%;
+  --card-border:1px solid rgba(255,255,255,.82);
+  --shadow:0 0 0 1px rgba(52,96,104,.12);
+  --shadow-hi:0 0 0 1px rgba(29,72,200,.5);
+  --display-tt:uppercase; --display-ls:0; --display-w:800;
+  --sc-ph:url(../images/th/sc-home.webp); --sc-pos:center 50%;
   --sc-dim:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,0));
+  --sc-word:rgba(255,255,255,.62); --sc-ghost:rgba(255,255,255,.2); --sc-blend:overlay;
+  --sc-frame:rgba(255,255,255,.8);
   --sc-data:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='78'%20height='576'%3E%3Cg%20font-family='Consolas,Menlo,monospace'%20font-size='7.4'%20letter-spacing='.6'%20fill='%23fff'%20fill-opacity='.62'%3E%3Ctext%20x='0'%20y='8'%3Ec3j27xdcg2lMLz%3C/text%3E%3Ctext%20x='0'%20y='17'%3EgeonyLGcTJFiz4%3C/text%3E%3Ctext%20x='0'%20y='26'%3EsoCmZ9cpvnpKnA%3C/text%3E%3Ctext%20x='0'%20y='35'%3E1hEDCM4PmBxdUc%3C/text%3E%3Ctext%20x='0'%20y='44'%3El1MhOoSfAqFdpR%3C/text%3E%3Ctext%20x='0'%20y='53'%3Eaj71FtQUwOgSBE%3C/text%3E%3Ctext%20x='0'%20y='62'%3EkxGZG2SYE9B2rA%3C/text%3E%3Ctext%20x='0'%20y='71'%3ENN76DeYtZaEkoM%3C/text%3E%3Ctext%20x='0'%20y='80'%3ExrRVFTVA9aw7HI%3C/text%3E%3Ctext%20x='0'%20y='89'%3EPtGADdzfLrjMcg%3C/text%3E%3Ctext%20x='0'%20y='98'%3EMuxIapYHZaNAR3%3C/text%3E%3Ctext%20x='0'%20y='107'%3EzlT4BNLZ2mpkGC%3C/text%3E%3Ctext%20x='0'%20y='116'%3EJNcQAxnV1SYEEF%3C/text%3E%3Ctext%20x='0'%20y='125'%3ENloPAmXXndI9le%3C/text%3E%3Ctext%20x='0'%20y='134'%3E1kI3YLoJT6O0nP%3C/text%3E%3Ctext%20x='0'%20y='143'%3EuMKvo8jMr8Y4em%3C/text%3E%3Ctext%20x='0'%20y='152'%3EFaDGGCg9QPvtZQ%3C/text%3E%3Ctext%20x='0'%20y='161'%3Ea05mfShL7uEIOe%3C/text%3E%3Ctext%20x='0'%20y='170'%3Ejp2nnERN66NvBE%3C/text%3E%3Ctext%20x='0'%20y='179'%3ERacPDCLSXhkIFX%3C/text%3E%3Ctext%20x='0'%20y='188'%3EI5cVqushl8IlC7%3C/text%3E%3Ctext%20x='0'%20y='197'%3EBe6WsT9CBmoEeE%3C/text%3E%3Ctext%20x='0'%20y='206'%3EuTUIEEciXvC57v%3C/text%3E%3Ctext%20x='0'%20y='215'%3EvtIy96VWFre5E3%3C/text%3E%3Ctext%20x='0'%20y='224'%3E2a8yB3fkAnqYYl%3C/text%3E%3Ctext%20x='0'%20y='233'%3EAmEFFoHQ4auVY7%3C/text%3E%3Ctext%20x='0'%20y='242'%3Evsldcd1iFhwgBT%3C/text%3E%3Ctext%20x='0'%20y='251'%3EmFeBO9sHfxnq6f%3C/text%3E%3Ctext%20x='0'%20y='260'%3EQ5AXTJrnMhKw5V%3C/text%3E%3Ctext%20x='0'%20y='269'%3Eq7cf5PUZqQMobz%3C/text%3E%3Ctext%20x='0'%20y='278'%3Ezw6M4NYOl6UNII%3C/text%3E%3Ctext%20x='0'%20y='287'%3EfW152CtE8R0KHc%3C/text%3E%3Ctext%20x='0'%20y='296'%3EeR7N1aYohfrUt1%3C/text%3E%3Ctext%20x='0'%20y='305'%3E1ncUE1CR3mCrtR%3C/text%3E%3Ctext%20x='0'%20y='314'%3EkWTpykBpIZdMBx%3C/text%3E%3Ctext%20x='0'%20y='323'%3E1RPxJyDoHcGoip%3C/text%3E%3Ctext%20x='0'%20y='332'%3EozX9ErMM0eQLtA%3C/text%3E%3Ctext%20x='0'%20y='341'%3EweitCLORxWis8h%3C/text%3E%3Ctext%20x='0'%20y='350'%3EgnwKZ2ys5OFa75%3C/text%3E%3Ctext%20x='0'%20y='359'%3EuYIcdMo46AYjkp%3C/text%3E%3Ctext%20x='0'%20y='368'%3E4gy08VdUpNGu30%3C/text%3E%3Ctext%20x='0'%20y='377'%3Ezp7tHNP5YFTiy7%3C/text%3E%3Ctext%20x='0'%20y='386'%3EUQ6t2BWgFCcVja%3C/text%3E%3Ctext%20x='0'%20y='395'%3ExRf6BNz3EbzCLi%3C/text%3E%3Ctext%20x='0'%20y='404'%3EVry6IeJh5uh1rs%3C/text%3E%3Ctext%20x='0'%20y='413'%3Ec84fl8sFwOchjS%3C/text%3E%3Ctext%20x='0'%20y='422'%3E1ujoKhg16jQTqY%3C/text%3E%3Ctext%20x='0'%20y='431'%3E9235nNT2J9ihRk%3C/text%3E%3Ctext%20x='0'%20y='440'%3EfMaiHgAmYBiCh6%3C/text%3E%3Ctext%20x='0'%20y='449'%3EZizkHfFsKE7ida%3C/text%3E%3Ctext%20x='0'%20y='458'%3E69z7ZRPefIVb50%3C/text%3E%3Ctext%20x='0'%20y='467'%3E756ehUGManB7QI%3C/text%3E%3Ctext%20x='0'%20y='476'%3EsxBCMJOArSUuWP%3C/text%3E%3Ctext%20x='0'%20y='485'%3EnfGfulH2gnQtMs%3C/text%3E%3Ctext%20x='0'%20y='494'%3Eh4bBYoa0hnKiN3%3C/text%3E%3Ctext%20x='0'%20y='503'%3EoioNhN2inl2IO6%3C/text%3E%3Ctext%20x='0'%20y='512'%3EvozW5LUmU57MNx%3C/text%3E%3Ctext%20x='0'%20y='521'%3EM4GI4PIuFQYGb1%3C/text%3E%3Ctext%20x='0'%20y='530'%3E8aiytIMZorzBGM%3C/text%3E%3Ctext%20x='0'%20y='539'%3EkrW609XHtgowVg%3C/text%3E%3Ctext%20x='0'%20y='548'%3Er1MzEeGBCwjng5%3C/text%3E%3Ctext%20x='0'%20y='557'%3EkeJMLHNL1KS7rG%3C/text%3E%3Ctext%20x='0'%20y='566'%3ElDI8rdEwGUZdbg%3C/text%3E%3Ctext%20x='0'%20y='575'%3EWbNmXAosC2MLad%3C/text%3E%3C/g%3E%3C/svg%3E");
+  --sc-dots:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27220%27%20height%3D%27104%27%3E%3Cg%20fill%3D%27%23fff%27%3E%3Ccircle%20cx%3D%276%27%20cy%3D%278%27%20r%3D%271.5%27%20fill-opacity%3D%270.81%27%2F%3E%3Ccircle%20cx%3D%276%27%20cy%3D%2736%27%20r%3D%271.7%27%20fill-opacity%3D%270.57%27%2F%3E%3Ccircle%20cx%3D%276%27%20cy%3D%2750%27%20r%3D%271.3%27%20fill-opacity%3D%270.72%27%2F%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2722%27%20r%3D%272.2%27%20fill-opacity%3D%270.60%27%2F%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2750%27%20r%3D%272.3%27%20fill-opacity%3D%270.78%27%2F%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2764%27%20r%3D%272.4%27%20fill-opacity%3D%270.57%27%2F%3E%3Ccircle%20cx%3D%2734%27%20cy%3D%278%27%20r%3D%271.6%27%20fill-opacity%3D%270.61%27%2F%3E%3Ccircle%20cx%3D%2734%27%20cy%3D%2736%27%20r%3D%272.2%27%20fill-opacity%3D%270.62%27%2F%3E%3Ccircle%20cx%3D%2734%27%20cy%3D%2750%27%20r%3D%272.0%27%20fill-opacity%3D%270.70%27%2F%3E%3Ccircle%20cx%3D%2734%27%20cy%3D%2764%27%20r%3D%271.4%27%20fill-opacity%3D%270.57%27%2F%3E%3Ccircle%20cx%3D%2748%27%20cy%3D%2722%27%20r%3D%271.8%27%20fill-opacity%3D%270.68%27%2F%3E%3Ccircle%20cx%3D%2748%27%20cy%3D%2736%27%20r%3D%271.8%27%20fill-opacity%3D%270.67%27%2F%3E%3Ccircle%20cx%3D%2748%27%20cy%3D%2750%27%20r%3D%272.1%27%20fill-opacity%3D%270.65%27%2F%3E%3Ccircle%20cx%3D%2748%27%20cy%3D%2764%27%20r%3D%271.9%27%20fill-opacity%3D%270.90%27%2F%3E%3Ccircle%20cx%3D%2762%27%20cy%3D%278%27%20r%3D%271.6%27%20fill-opacity%3D%270.94%27%2F%3E%3Ccircle%20cx%3D%2762%27%20cy%3D%2736%27%20r%3D%272.1%27%20fill-opacity%3D%270.61%27%2F%3E%3Ccircle%20cx%3D%2762%27%20cy%3D%2750%27%20r%3D%271.3%27%20fill-opacity%3D%270.82%27%2F%3E%3Ccircle%20cx%3D%2762%27%20cy%3D%2764%27%20r%3D%271.9%27%20fill-opacity%3D%270.90%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%278%27%20r%3D%272.1%27%20fill-opacity%3D%270.79%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2722%27%20r%3D%271.8%27%20fill-opacity%3D%270.89%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2736%27%20r%3D%271.8%27%20fill-opacity%3D%270.82%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2764%27%20r%3D%272.0%27%20fill-opacity%3D%270.95%27%2F%3E%3Ccircle%20cx%3D%2790%27%20cy%3D%278%27%20r%3D%271.6%27%20fill-opacity%3D%270.70%27%2F%3E%3Ccircle%20cx%3D%2790%27%20cy%3D%2722%27%20r%3D%271.3%27%20fill-opacity%3D%270.73%27%2F%3E%3Ccircle%20cx%3D%27104%27%20cy%3D%278%27%20r%3D%271.4%27%20fill-opacity%3D%270.65%27%2F%3E%3Ccircle%20cx%3D%27104%27%20cy%3D%2722%27%20r%3D%272.3%27%20fill-opacity%3D%270.58%27%2F%3E%3Ccircle%20cx%3D%27104%27%20cy%3D%2736%27%20r%3D%271.9%27%20fill-opacity%3D%270.90%27%2F%3E%3Ccircle%20cx%3D%27104%27%20cy%3D%2750%27%20r%3D%272.3%27%20fill-opacity%3D%270.66%27%2F%3E%3Ccircle%20cx%3D%27104%27%20cy%3D%2764%27%20r%3D%271.7%27%20fill-opacity%3D%270.90%27%2F%3E%3Ccircle%20cx%3D%27118%27%20cy%3D%278%27%20r%3D%271.5%27%20fill-opacity%3D%270.62%27%2F%3E%3Ccircle%20cx%3D%27118%27%20cy%3D%2750%27%20r%3D%271.9%27%20fill-opacity%3D%270.66%27%2F%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%278%27%20r%3D%271.7%27%20fill-opacity%3D%270.78%27%2F%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%2722%27%20r%3D%272.1%27%20fill-opacity%3D%270.76%27%2F%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%2736%27%20r%3D%272.0%27%20fill-opacity%3D%270.57%27%2F%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%2750%27%20r%3D%272.2%27%20fill-opacity%3D%270.90%27%2F%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%2764%27%20r%3D%271.7%27%20fill-opacity%3D%270.71%27%2F%3E%3Ccircle%20cx%3D%27146%27%20cy%3D%2722%27%20r%3D%271.4%27%20fill-opacity%3D%270.58%27%2F%3E%3Ccircle%20cx%3D%27146%27%20cy%3D%2764%27%20r%3D%271.4%27%20fill-opacity%3D%270.55%27%2F%3E%3Ccircle%20cx%3D%27160%27%20cy%3D%2736%27%20r%3D%271.3%27%20fill-opacity%3D%270.90%27%2F%3E%3Ccircle%20cx%3D%27160%27%20cy%3D%2750%27%20r%3D%271.5%27%20fill-opacity%3D%270.65%27%2F%3E%3Ccircle%20cx%3D%27160%27%20cy%3D%2764%27%20r%3D%271.7%27%20fill-opacity%3D%270.60%27%2F%3E%3Ccircle%20cx%3D%27174%27%20cy%3D%278%27%20r%3D%272.4%27%20fill-opacity%3D%270.74%27%2F%3E%3Ccircle%20cx%3D%27174%27%20cy%3D%2722%27%20r%3D%271.4%27%20fill-opacity%3D%270.59%27%2F%3E%3Ccircle%20cx%3D%27174%27%20cy%3D%2736%27%20r%3D%271.6%27%20fill-opacity%3D%270.88%27%2F%3E%3Crect%20x%3D%27190%27%20y%3D%274%27%20width%3D%279%27%20height%3D%279%27%2F%3E%3Crect%20x%3D%27204%27%20y%3D%274%27%20width%3D%279%27%20height%3D%279%27%20fill%3D%27none%27%20stroke%3D%27%23fff%27%2F%3E%3Crect%20x%3D%27190%27%20y%3D%2718%27%20width%3D%2723%27%20height%3D%274%27%20fill-opacity%3D%27.6%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2784%27%20width%3D%27214%27%20height%3D%271%27%20fill-opacity%3D%27.7%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2792%27%20width%3D%2740%27%20height%3D%276%27%20fill-opacity%3D%27.9%27%2F%3E%3Crect%20x%3D%2746%27%20y%3D%2792%27%20width%3D%276%27%20height%3D%276%27%20fill-opacity%3D%27.5%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 [data-skin="softclub"][data-mode="dark"]{
-  --sc-blue:#7fe0cf;
+  --sc-blue:#7fe0cf; --sc-ink:#e3f4f5; --sc-halo:rgba(4,16,18,.92);
   --bg:#0a1517; --bg-img:linear-gradient(180deg,#0e1d20,#071012);
-  --panel:rgba(10,24,27,.66); --panel-2:rgba(18,38,42,.72); --line:rgba(150,205,210,.16);
-  --text:#d7e9ea; --muted:#83a2a6; --accent:#7fe0cf; --accent-ink:#06201d;
-  --card-border:1px solid rgba(170,225,230,.18);
+  --panel:rgba(10,24,27,.7); --panel-2:rgba(18,38,42,.76); --line:rgba(150,205,210,.18);
+  --text:#dcedee; --muted:#93b2b6; --accent:#7fe0cf; --accent-ink:#06201d;
+  --card-border:1px solid rgba(170,225,230,.2);
   --shadow:0 0 0 1px rgba(0,0,0,.3);
-  --shadow-hi:0 0 0 1px rgba(127,224,207,.5);
+  --shadow-hi:0 0 0 1px rgba(127,224,207,.55);
   --sc-dim:linear-gradient(180deg,#3a6c76,#24505a);
+  --sc-word:rgba(170,235,240,.34); --sc-ghost:rgba(170,235,240,.12); --sc-blend:screen;
+  --sc-frame:rgba(170,225,230,.42);
 }
-/* five places, not one per page: the platform (Home), the moving walkway (timetable), the escalators (games, Mahjong club),
+/* five places: the platform (Home), the moving walkway (timetable), the escalators (games, Mahjong club),
    the pavilion's lounge (free periods, revision, notes) and the concourse (calendar, finder, resources) */
-[data-skin="softclub"][data-pg="timetable"]{--sc-ph:url(../images/th/sc-calm.webp);--sc-phs:url(../images/th/sc-calm-s.webp);--sc-pos:center 50%}
-[data-skin="softclub"]:is([data-pg="games"],[data-pg="mahjong"]){--sc-ph:url(../images/th/sc-green.webp);--sc-phs:url(../images/th/sc-green-s.webp);--sc-pos:center 55%}
-[data-skin="softclub"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--sc-ph:url(../images/th/sc-lounge.webp);--sc-phs:url(../images/th/sc-lounge-s.webp);--sc-pos:center 70%}
-[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"]){--sc-ph:url(../images/th/sc-crowd.webp);--sc-phs:url(../images/th/sc-crowd-s.webp);--sc-pos:center 60%}
+[data-skin="softclub"][data-pg="timetable"]{--sc-ph:url(../images/th/sc-calm.webp)}
+[data-skin="softclub"]:is([data-pg="games"],[data-pg="mahjong"]){--sc-ph:url(../images/th/sc-green.webp);--sc-pos:center 55%}
+[data-skin="softclub"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--sc-ph:url(../images/th/sc-lounge.webp);--sc-pos:center 70%}
+[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"]){--sc-ph:url(../images/th/sc-crowd.webp);--sc-pos:center 60%}
+@media (max-width:700px){
+  [data-skin="softclub"]{--sc-ph:url(../images/th/sc-home-s.webp)}
+  [data-skin="softclub"][data-pg="timetable"]{--sc-ph:url(../images/th/sc-calm-s.webp)}
+  [data-skin="softclub"]:is([data-pg="games"],[data-pg="mahjong"]){--sc-ph:url(../images/th/sc-green-s.webp)}
+  [data-skin="softclub"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--sc-ph:url(../images/th/sc-lounge-s.webp)}
+  [data-skin="softclub"]:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"]){--sc-ph:url(../images/th/sc-crowd-s.webp)}
+}
+/* a phone held upright: the tall crops, so the place isn't cut down to a sliver of its middle */
+@media (max-aspect-ratio:4/5){
+  [data-skin="softclub"]{--sc-ph:url(../images/th/sc-home-p.webp);--sc-pos:center 50%}
+  [data-skin="softclub"][data-pg="timetable"]{--sc-ph:url(../images/th/sc-calm-p.webp)}
+  [data-skin="softclub"]:is([data-pg="games"],[data-pg="mahjong"]){--sc-ph:url(../images/th/sc-green-p.webp)}
+  [data-skin="softclub"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--sc-ph:url(../images/th/sc-lounge-p.webp)}
+  [data-skin="softclub"]:is([data-pg="calendar"],[data-pg="finder"],[data-pg="resources"]){--sc-ph:url(../images/th/sc-crowd-p.webp)}
+}
 /* the photograph (dark mode multiplies it down to a cold night), and the data column down the left edge */
 [data-skin="softclub"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
   background:var(--sc-data) 14px 0/78px 576px repeat-y,var(--sc-dim),var(--sc-ph) var(--sc-pos)/cover no-repeat,var(--bg-img);
   background-blend-mode:normal,multiply,normal,normal}
-/* the second view: the same place, nearer, bluer, in a hairline frame, drifting very slowly */
-[data-skin="softclub"] body::after{content:"";position:fixed;z-index:-2;pointer-events:none;right:4vw;top:16vh;width:min(30vw,440px);aspect-ratio:4/3;
-  background:linear-gradient(rgba(29,72,200,.34),rgba(29,72,200,.34)),var(--sc-ph) 62% 40%/260% auto no-repeat;background-blend-mode:multiply,normal;
-  outline:1px solid rgba(255,255,255,.85);outline-offset:6px;opacity:.9}
 [data-skin="softclub"][data-mode="dark"] body::before{background-blend-mode:soft-light,multiply,normal,normal}
-[data-skin="softclub"][data-mode="dark"] body::after{background:linear-gradient(rgba(10,60,70,.6),rgba(10,60,70,.6)),var(--sc-ph) 62% 40%/260% auto no-repeat;outline-color:rgba(170,225,230,.4);opacity:.75}
+/* the second view: the same place, nearer, bluer, in a hairline frame set off it, drifting very slowly */
+[data-skin="softclub"] body::after{content:"";position:fixed;z-index:-2;pointer-events:none;right:4vw;top:15vh;width:min(28vw,420px);aspect-ratio:4/3;
+  background:linear-gradient(rgba(29,72,200,.34),rgba(29,72,200,.34)),var(--sc-ph) 62% 40%/260% auto no-repeat;background-blend-mode:multiply,normal;
+  outline:1px solid var(--sc-frame);outline-offset:7px;opacity:.9}
+[data-skin="softclub"][data-mode="dark"] body::after{background:linear-gradient(rgba(10,60,70,.6),rgba(10,60,70,.6)),var(--sc-ph) 62% 40%/260% auto no-repeat;opacity:.75}
 html[data-fx="on"][data-skin="softclub"] body::after{animation:scdrift 90s ease-in-out infinite alternate}
 @keyframes scdrift{to{background-position:0 0,40% 52%}}
+[data-skin="softclub"][data-pg="home"] body::after{top:auto;bottom:12vh;width:min(22vw,320px)}
+[data-skin="softclub"][data-pg="timetable"] body::after{display:none}
+@media (max-width:1100px){ [data-skin="softclub"] body::after{top:auto;bottom:8vh;width:28vw} }
+@media (max-width:700px){ [data-skin="softclub"] body::after{display:none} }
+/* the block of dots and squares, as on the sleeves' type-setting */
+html[data-skin="softclub"]::before{content:"";position:fixed;z-index:-1;pointer-events:none;right:4.5vw;top:9vh;width:220px;height:104px;background:var(--sc-dots) 0 0/220px 104px no-repeat;opacity:.85}
+html[data-skin="softclub"][data-mode="dark"]::before{opacity:.45}
+html[data-skin="softclub"]:is([data-pg="home"],[data-pg="timetable"])::before{top:auto;bottom:5vh;right:3vw}
+@media (max-width:700px){ html[data-skin="softclub"]::before{top:auto;bottom:3vh;right:4vw;width:150px;height:71px;background-size:150px 71px} }
+/* the page's name, huge, heavy and expanded, sunk into the photograph, with a ghost of itself above */
+html[data-skin="softclub"]::after{content:"msc";position:fixed;z-index:-1;pointer-events:none;left:-.05em;bottom:-.14em;white-space:nowrap;
+  font:800 clamp(5rem,17vw,17rem)/.86 "Archivo","Arimo",sans-serif;font-stretch:125%;letter-spacing:-.05em;text-transform:uppercase;
+  color:var(--sc-word);mix-blend-mode:var(--sc-blend);text-shadow:0 -.86em 0 var(--sc-ghost)}
+html[data-skin="softclub"][data-pg="timetable"]::after{content:"timetable";font-size:clamp(4rem,13vw,14rem)}
+html[data-skin="softclub"][data-pg="calendar"]::after{content:"calendar"}
+html[data-skin="softclub"][data-pg="free"]::after{content:"free"}
+html[data-skin="softclub"][data-pg="revision"]::after{content:"revision"}
+html[data-skin="softclub"][data-pg="games"]::after{content:"games"}
+html[data-skin="softclub"][data-pg="resources"]::after{content:"resources"}
+html[data-skin="softclub"][data-pg="finder"]::after{content:"finder"}
+html[data-skin="softclub"][data-pg="notes"]::after{content:"notes"}
+html[data-skin="softclub"][data-pg="mahjong"]::after{content:"mahjong"}
+/* a phone: the word stands on its side down the right edge, the way the sleeves ran a title up the spine */
 @media (max-width:700px){
-  [data-skin="softclub"] body::before{background:var(--sc-dim),var(--sc-phs) var(--sc-pos)/cover no-repeat,var(--bg-img);background-blend-mode:multiply,normal,normal}
-  [data-skin="softclub"] body::after{display:none}
+  html[data-skin="softclub"]::after{left:auto;right:-.12em;bottom:auto;top:6vh;writing-mode:vertical-rl;font-size:clamp(4.5rem,27vw,9rem);text-shadow:.86em 0 0 var(--sc-ghost)}
+  html[data-skin="softclub"][data-pg="timetable"]::after{font-size:clamp(4rem,22vw,8rem)}
 }
-@media (max-width:1100px){ [data-skin="softclub"] body::after{top:auto;bottom:8vh;width:30vw} }
-[data-skin="softclub"]:is([data-pg="home"],[data-pg="timetable"]) body::after{display:none}
-html.zen[data-skin="softclub"] body::before,html.zen[data-skin="softclub"] body::after,
-[data-skin="softclub"][data-pg="hkmahjong"] body::before,[data-skin="softclub"][data-pg="hkmahjong"] body::after{display:none}
+html.zen[data-skin="softclub"] body::before,html.zen[data-skin="softclub"] body::after,html.zen[data-skin="softclub"]::before,html.zen[data-skin="softclub"]::after,
+[data-skin="softclub"][data-pg="hkmahjong"] body::before,[data-skin="softclub"][data-pg="hkmahjong"] body::after,
+html[data-skin="softclub"][data-pg="hkmahjong"]::before,html[data-skin="softclub"][data-pg="hkmahjong"]::after{display:none}
 
 /* ── frosted acrylic, hairline edges, square corners ── */
 :root[data-skin="softclub"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),
 [data-skin="softclub"] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.gamestage:not([hidden])){
   background-color:var(--panel);-webkit-backdrop-filter:blur(18px) saturate(.8);backdrop-filter:blur(18px) saturate(.8);border:var(--card-border);border-radius:2px;box-shadow:var(--shadow)}
-:root[data-skin="softclub"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border-radius:4px;
-  background:linear-gradient(180deg,rgba(248,253,254,.78),rgba(214,234,240,.55) 55%,rgba(196,224,232,.6));border-color:rgba(255,255,255,.9);
-  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(120,170,185,.35),0 0 0 1px rgba(100,150,165,.25),0 18px 40px rgba(20,60,80,.18)}
+/* the header: brushed metal, with the sleeve's hairline frame set a little off it */
+:root[data-skin="softclub"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border-radius:3px;
+  background:linear-gradient(180deg,rgba(248,253,254,.82),rgba(214,234,240,.6) 55%,rgba(196,224,232,.66));border-color:rgba(255,255,255,.9);
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(120,170,185,.35),0 0 0 1px rgba(100,150,165,.25),0 18px 40px rgba(20,60,80,.18);
+  outline:1px solid var(--sc-frame);outline-offset:6px}
 :root[data-skin="softclub"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){
-  background:linear-gradient(180deg,rgba(40,70,78,.6),rgba(10,26,30,.62) 55%,rgba(14,34,40,.66));border-color:rgba(170,225,230,.25);
+  background:linear-gradient(180deg,rgba(40,70,78,.66),rgba(10,26,30,.7) 55%,rgba(14,34,40,.72));border-color:rgba(170,225,230,.25);
   box-shadow:inset 0 1px 0 rgba(200,240,245,.25),0 0 0 1px rgba(0,0,0,.4),0 18px 40px rgba(0,0,0,.4)}
-[data-skin="softclub"] .forum{padding:16px 18px 18px}
-/* the greeting and page names: wide, light, lower case */
-[data-skin="softclub"] :is(.hubid h1,.pagehead h1,.brand h1){font-family:"Lexend Giga",sans-serif;font-weight:300;text-transform:lowercase;letter-spacing:-.02em;line-height:1.1}
-[data-skin="softclub"] .hubid h1{font-size:clamp(.95rem,3.4cqi,1.85rem)}
-[data-skin="softclub"] :is(.pagehead h1,.brand h1){font-size:clamp(1.05rem,2.4vw,1.5rem)}
-/* small labels: a grotesque in capitals, spaced, sometimes leaning (the oblique of the sleeves) */
-[data-skin="softclub"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font-family:"Arimo",sans-serif;font-weight:400;letter-spacing:.24em;text-transform:uppercase;font-size:.625rem}
-[data-skin="softclub"] :is(.eyebrow,.sitename){font-style:italic;letter-spacing:.3em}
-[data-skin="softclub"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:12px;font:300 .875rem/1.2 "Lexend Giga",sans-serif;text-transform:lowercase;letter-spacing:0;color:var(--text)}
-[data-skin="softclub"] :is(.sechd,.cathd){text-shadow:0 0 10px rgba(236,248,250,.95),0 0 2px rgba(236,248,250,.9)}
-[data-skin="softclub"][data-mode="dark"] :is(.sechd,.cathd){text-shadow:0 0 10px rgba(4,16,18,.95),0 0 2px rgba(4,16,18,.9)}
-[data-skin="softclub"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
-[data-skin="softclub"] .forum{border-top:var(--card-border)}
+[data-skin="softclub"] .forum{padding:16px 18px 18px;border-top:var(--card-border)}
+/* the site's name on a bar of signal blue, italic expanded capitals, like the strip across a sleeve */
+[data-skin="softclub"] :is(.sitename,.eyebrow){display:inline-block;width:max-content;max-width:100%;padding:3px 30px 3px 8px;
+  background:linear-gradient(90deg,var(--accent) 0,var(--accent) 62%,transparent);color:var(--accent-ink);
+  font:italic 600 .625rem/1.3 "Archivo","Arimo",sans-serif;font-stretch:125%;letter-spacing:.16em;text-transform:uppercase;text-decoration:none}
+[data-skin="softclub"] .nowcard :is(.sitename,.eyebrow){background:rgba(255,255,255,.22);color:#fff}
+/* page names and the greeting: heavy, expanded capitals */
+[data-skin="softclub"] :is(.hubid h1,.pagehead h1,.brand h1){font-family:"Archivo","Arimo",sans-serif;font-stretch:125%;font-weight:800;text-transform:uppercase;letter-spacing:-.025em;line-height:.98;color:var(--sc-ink)}
+[data-skin="softclub"] .hubid h1{font-size:clamp(1rem,3.3cqi,2rem)}
+[data-skin="softclub"] :is(.pagehead h1,.brand h1){font-size:clamp(1.15rem,2.6vw,1.75rem)}
+/* small labels: a grotesque in capitals, spaced */
+[data-skin="softclub"] :is(.nowcard .lbl,.weeklabel,.field>label,.tbhead span){font-family:"Arimo",sans-serif;font-weight:700;letter-spacing:.22em;text-transform:uppercase;font-size:.625rem}
+/* section names: expanded capitals with a hairline running out, set into the picture with a soft halo */
+[data-skin="softclub"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:12px;font:700 .8125rem/1.2 "Archivo","Arimo",sans-serif;font-stretch:125%;text-transform:uppercase;letter-spacing:.04em;color:var(--sc-ink)}
+[data-skin="softclub"] :is(.sechd,.cathd){text-shadow:0 0 12px var(--sc-halo),0 0 3px var(--sc-halo)}
+[data-skin="softclub"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--sc-ink),transparent);opacity:.35}
 
-/* ── buttons: plain, hairline; the one that matters in signal blue ── */
-:root[data-skin="softclub"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:3px;background:linear-gradient(180deg,rgba(250,254,255,.85),rgba(210,230,236,.75));
-  border:1px solid rgba(110,160,175,.45);box-shadow:inset 0 1px 0 #fff;color:var(--text);
-  font-family:"Arimo",sans-serif;letter-spacing:.02em}
-:root[data-skin="softclub"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){background:linear-gradient(180deg,rgba(90,130,140,.3),rgba(20,40,46,.4));border-color:rgba(170,225,230,.22);box-shadow:inset 0 1px 0 rgba(200,240,245,.18)}
-:root[data-skin="softclub"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{border-color:var(--accent);box-shadow:none;transform:none}
-:root[data-skin="softclub"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* ── buttons: brushed metal, hairline; the one that matters in signal blue ── */
+:root[data-skin="softclub"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:2px;background:linear-gradient(180deg,rgba(252,255,255,.92),rgba(206,226,232,.85));
+  border:1px solid rgba(90,140,155,.5);box-shadow:inset 0 1px 0 #fff;color:var(--text);font-family:"Arimo",sans-serif;letter-spacing:.02em}
+:root[data-skin="softclub"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){background:linear-gradient(180deg,rgba(90,130,140,.34),rgba(20,40,46,.5));border-color:rgba(170,225,230,.26);box-shadow:inset 0 1px 0 rgba(200,240,245,.2)}
+:root[data-skin="softclub"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{border-color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.6);transform:none}
+:root[data-skin="softclub"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:linear-gradient(180deg,#3563e6,var(--accent));border-color:var(--accent);color:var(--accent-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+:root[data-skin="softclub"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"]){background:var(--accent)}
 
 /* ── Home's tiles: numbered, like tracks on a sleeve ── */
 [data-skin="softclub"] .qtiles{counter-reset:sct}
 [data-skin="softclub"] .qtile{counter-increment:sct}
-[data-skin="softclub"] .qtile::after{content:counter(sct,decimal-leading-zero);position:absolute;top:10px;right:12px;font:400 .625rem/1 "Arimo",sans-serif;letter-spacing:.2em;color:var(--muted)}
-[data-skin="softclub"] .qtile .tname{font-weight:400;text-transform:lowercase;letter-spacing:.01em}
+[data-skin="softclub"] .qtile::after{content:counter(sct,decimal-leading-zero);position:absolute;top:10px;right:12px;font:700 .625rem/1 "Arimo",sans-serif;letter-spacing:.2em;color:var(--muted)}
+[data-skin="softclub"] .qtile .tname{font-family:"Lexend Giga","Arimo",sans-serif;font-weight:400;text-transform:lowercase;letter-spacing:-.02em;color:var(--text)}
 :root[data-skin="softclub"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{transform:none;box-shadow:var(--shadow-hi);background-color:var(--panel-2)}
 @media (max-width:560px){ [data-skin="softclub"] .qtile::after{display:none} }
 /* ── Now and Next: the one block of colour on the page ── */
-[data-skin="softclub"] .nowcard{background:linear-gradient(180deg,#2a5ce0,#1a40b8);color:#fff;border:0;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 26px rgba(40,110,230,.35)}
-[data-skin="softclub"] .nowcard .lbl{color:rgba(255,255,255,.7)}
-[data-skin="softclub"] .nowcard .meta{color:rgba(255,255,255,.78)}
-[data-skin="softclub"][data-mode="dark"] .nowcard{background:rgba(127,224,207,.12);color:var(--text);box-shadow:inset 0 0 0 1px rgba(127,224,207,.45),0 0 26px rgba(127,224,207,.18)}
+[data-skin="softclub"] .nowcard{background:linear-gradient(180deg,#2a5ce0,#1a40b8);color:#fff;border:0;border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 26px rgba(40,110,230,.35)}
+[data-skin="softclub"] .nowcard .lbl{color:rgba(255,255,255,.78)}
+[data-skin="softclub"] .nowcard .meta{color:rgba(255,255,255,.85)}
+[data-skin="softclub"][data-mode="dark"] .nowcard{background:rgba(127,224,207,.13);color:var(--text);box-shadow:inset 0 0 0 1px rgba(127,224,207,.5),0 0 26px rgba(127,224,207,.18)}
 [data-skin="softclub"][data-mode="dark"] .nowcard .lbl{color:var(--accent)}
 [data-skin="softclub"][data-mode="dark"] .nowcard .meta{color:var(--muted)}
 [data-skin="softclub"] :is(.nowcard .count,.progrow .count){color:inherit}
@@ -123,31 +176,46 @@ html.zen[data-skin="softclub"] body::before,html.zen[data-skin="softclub"] body:
 [data-skin="softclub"][data-mode="dark"] .prog i{background:var(--accent)}
 @container hubbar (max-width:26em){
   [data-skin="softclub"] .hubnow.pair{background:var(--sc-blue);color:#fff}
-  [data-skin="softclub"][data-mode="dark"] .hubnow.pair{background:rgba(127,224,207,.12);color:var(--text)}
+  [data-skin="softclub"][data-mode="dark"] .hubnow.pair{background:rgba(127,224,207,.13);color:var(--text)}
   [data-skin="softclub"] .hubnow.pair .nowcard{background:none;box-shadow:none}
 }
 [data-skin="softclub"] :is(.newpill,.gamecard .newbanner){background:var(--accent);color:var(--accent-ink);border-radius:0;letter-spacing:.14em}
 [data-skin="softclub"] .newsdot{background:var(--accent)}
 [data-skin="softclub"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(244,250,251,.97);border-radius:2px}
 [data-skin="softclub"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(9,22,25,.97)}
-[data-skin="softclub"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:2px;background:rgba(255,255,255,.6);border:1px solid var(--line);box-shadow:none}
-[data-skin="softclub"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.25)}
+[data-skin="softclub"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:2px;background:rgba(255,255,255,.66);border:1px solid var(--line);box-shadow:none}
+[data-skin="softclub"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.28)}
 
-/* ── the timetable: frosted panes, a thin line of the subject's colour ── */
-[data-skin="softclub"] .lesson{border-radius:0;background-color:color-mix(in srgb,var(--c) 10%,rgba(246,251,252,.88));box-shadow:inset 0 2px 0 var(--c,var(--accent)),var(--shadow)}
-[data-skin="softclub"][data-mode="dark"] .lesson{background-color:color-mix(in srgb,var(--c) 12%,rgba(10,24,27,.88))}
+/* ── the timetable: frosted panes, a line of the subject's colour, rooms numbered like platforms ── */
+[data-skin="softclub"] .lesson{border-radius:0;background-color:color-mix(in srgb,var(--c) 10%,rgba(246,251,252,.9));box-shadow:inset 0 2px 0 var(--c,var(--accent)),var(--shadow)}
+[data-skin="softclub"][data-mode="dark"] .lesson{background-color:color-mix(in srgb,var(--c) 12%,rgba(10,24,27,.9))}
 [data-skin="softclub"] .lesson .s{font-family:"Arimo",sans-serif;font-weight:700;letter-spacing:0}
+[data-skin="softclub"] .lesson .r{display:inline-block;width:max-content;margin-top:4px;padding:1px 6px;background:color-mix(in srgb,var(--c,var(--accent)) 38%,#0d1f36);color:#fff;opacity:1;font:700 .6875rem/1.35 "Arimo",sans-serif;letter-spacing:.08em}
 [data-skin="softclub"] .lesson.current{outline:1px solid var(--accent);outline-offset:3px}
+/* what sits straight on the photograph is set dark with a soft halo, so it reads on any part of it */
+[data-skin="softclub"] .tmark{color:var(--sc-ink);font-weight:700;letter-spacing:.04em;text-shadow:0 0 8px var(--sc-halo),0 0 2px var(--sc-halo),0 0 1px var(--sc-halo)}
+[data-skin="softclub"] .dayhead .dow{font:700 .6875rem/1.2 "Archivo","Arimo",sans-serif;font-stretch:125%;letter-spacing:.14em;text-transform:uppercase;color:var(--sc-ink);text-shadow:0 0 10px var(--sc-halo),0 0 2px var(--sc-halo)}
+[data-skin="softclub"] :is(.dayhead.today,.dayhead.focus) .dow{display:inline-block;padding:3px 8px 2px;background:var(--accent);color:var(--accent-ink);text-shadow:none}
 [data-skin="softclub"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--accent);height:2px}
-[data-skin="softclub"] .breakbar{border-radius:0}
+[data-skin="softclub"] .dayhead small{color:var(--sc-ink);text-shadow:0 0 8px var(--sc-halo)}
+[data-skin="softclub"] .breakbar{border-radius:0;background:var(--panel);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--line);color:var(--text)}
+[data-skin="softclub"] .breakbar span{letter-spacing:.2em;font-size:.625rem}
+[data-skin="softclub"] .breakbar em{opacity:.8}
 [data-skin="softclub"] :is(.dayhead,.corner,.tcol){background:transparent}
+[data-skin="softclub"] .weeklabel{color:var(--sc-ink);text-shadow:0 0 10px var(--sc-halo),0 0 2px var(--sc-halo)}
+
+/* ── the other pages: one frosted sheet, a bar of signal blue along its top edge, a hairline frame set off it ── */
 :root[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
-  background-color:var(--panel);-webkit-backdrop-filter:blur(20px) saturate(.8);backdrop-filter:blur(20px) saturate(.8);border:var(--card-border);border-radius:2px;margin-top:24px;margin-bottom:60px;padding:18px 24px 34px}
+  background:linear-gradient(var(--accent),var(--accent)) 24px 0/min(160px,30%) 3px no-repeat,var(--panel);
+  -webkit-backdrop-filter:blur(20px) saturate(.8);backdrop-filter:blur(20px) saturate(.8);border:var(--card-border);border-radius:2px;
+  outline:1px solid var(--sc-frame);outline-offset:8px;margin-top:28px;margin-bottom:60px;padding:18px 24px 34px}
+:root[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .pagehead{outline:0}
 @media (max-width:640px){
-  :root[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:10px 8px 44px;padding:12px 12px 26px}
+  :root[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:14px 10px 44px;padding:12px 12px 26px;outline-offset:5px}
 }
 /* ── changing page: fx.js smears the page sideways into a digital glitch (an SVG filter on .wrap, html.sc-svg).
       Where that isn't used, it slides away a little blurred and the next one pulls in. ── */
+html.sc-svg.fx-out[data-skin="softclub"] .wrap,html.sc-svg.fx-enter[data-skin="softclub"] .wrap{will-change:transform,opacity,filter}
 html:not(.sc-svg).fx-out[data-skin="softclub"] .wrap{opacity:0;transform:translateX(-5vw);filter:blur(5px);transition:opacity .2s ease-in,transform .2s ease-in,filter .2s ease-in}
 html.sc-svg.fx-enter[data-skin="softclub"] .wrap{animation:none}
 html:not(.sc-svg).fx-enter[data-skin="softclub"] .wrap{animation:scin .42s cubic-bezier(.15,.7,.2,1) both}

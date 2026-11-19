@@ -389,33 +389,114 @@ TR.vapor = {
   }
 };
 
-/* Frutiger Aero: a rush of bubbles rises up the screen and the page changes behind it (Frutiger Evil's are red).
-   The bubbles are the background's own (fx/aero.js, FX.aeBubble); placed from the note's seed, so the page left and the
-   page reached draw the same ones, and the rise carries straight on across the change. Nothing covers the screen. */
-function aeRise(k, seed, p){
-  const { x, w, h } = k, r = rnd(seed), evil = dark(), spr = FX.aeBubble ? FX.aeBubble(evil) : null, N = Math.round(16 + w / 70);
+/* Frutiger Aero: a thick wall of bubbles rushes up the screen, the way the old cartoons changed scene, and the
+   page changes behind its thickest part. Frutiger Evil: a wall of fire instead. Both are drawn from the note's seed,
+   so the page left and the page reached draw the same wall and the rush carries straight on across the change.
+   (Asked for by name: the one place a page change covers the whole screen, and only for a moment.) */
+function aeBubble(evil){
+  const R = 128, c = document.createElement('canvas'); c.width = c.height = R * 2 + 4;
+  const x = c.getContext('2d'), m = R + 2, body = x.createRadialGradient(m, m, R * .2, m, m, R);
+  if (evil){ body.addColorStop(0, 'rgba(255,220,210,.03)'); body.addColorStop(.75, 'rgba(255,200,190,.12)'); body.addColorStop(1, 'rgba(255,215,200,.45)'); }
+  else { body.addColorStop(0, 'rgba(255,255,255,.02)'); body.addColorStop(.72, 'rgba(255,255,255,.1)'); body.addColorStop(1, 'rgba(255,255,255,.45)'); }
+  x.fillStyle = body; x.beginPath(); x.arc(m, m, R, 0, 7); x.fill();
+  const f = x.createLinearGradient(m - R, m - R, m + R, m + R);           // the film: colour round the rim, lower right
+  if (evil){ f.addColorStop(0, 'rgba(120,255,200,0)'); f.addColorStop(.45, 'rgba(120,255,200,.4)'); f.addColorStop(.7, 'rgba(255,120,220,.45)'); f.addColorStop(1, 'rgba(255,230,120,.4)'); }
+  else { f.addColorStop(0, 'rgba(120,220,255,0)'); f.addColorStop(.55, 'rgba(120,220,255,.35)'); f.addColorStop(.8, 'rgba(255,150,220,.3)'); f.addColorStop(1, 'rgba(255,230,140,.25)'); }
+  x.strokeStyle = f; x.lineWidth = R * .08; x.beginPath(); x.arc(m, m, R * .95, 0, 7); x.stroke();
+  x.strokeStyle = evil ? 'rgba(255,225,215,.6)' : 'rgba(255,255,255,.75)'; x.lineWidth = R * .025; x.beginPath(); x.arc(m, m, R * .985, 0, 7); x.stroke();
+  x.save(); x.translate(m - R * .4, m - R * .44); x.rotate(-.7);                // the window of light, up on the left
+  const h = x.createRadialGradient(0, 0, 0, 0, 0, R * .3); h.addColorStop(0, 'rgba(255,255,255,.95)'); h.addColorStop(1, 'rgba(255,255,255,0)');
+  x.scale(1, .55); x.fillStyle = h; x.beginPath(); x.arc(0, 0, R * .3, 0, 7); x.fill(); x.restore();
+  x.fillStyle = 'rgba(255,255,255,.55)'; x.beginPath(); x.arc(m + R * .46, m + R * .5, R * .06, 0, 7); x.fill();
+  return c;
+}
+const AEB = {}; FX.aeBubble = evil => AEB[evil ? 1 : 0] || (AEB[evil ? 1 : 0] = aeBubble(!!evil));     // the background's bubbles too (fx/aero.js)
+const AEP = {};
+const aePic = n => AEP[n] || (AEP[n] = (() => { const i = new Image(); i.decoding = 'async'; i.src = '/images/th/' + n + '.webp' + (V ? '?v=' + V : ''); return i; })());
+const aeOk = i => !!(i && i.complete && i.naturalWidth > 0);
+let aeList = null;
+function aeWall(k, seed, p){
+  const { x, w, h } = k, evil = dark();
   x.clearRect(0, 0, w, h);
-  for (let i = 0; i < N; i++){
-    const rad = 9 + 58 * Math.pow(r(), 1.9), off = r() * h * .7, bx = r() * w, sway = (r() - .5) * 34, ph = r() * 6.3;
-    const y = (h + rad + off) * (1 - p) - rad * p, xx = bx + Math.sin(p * 5 + ph) * sway;
-    if (y < -rad || y > h + rad) continue;
-    if (spr){ x.globalAlpha = .92; x.drawImage(spr, xx - rad, y - rad, rad * 2, rad * 2); }
-    else { x.globalAlpha = .7; x.strokeStyle = evil ? '#ff9a8a' : '#fff'; x.lineWidth = 1.5; x.beginPath(); x.arc(xx, y, rad, 0, 7); x.stroke(); }
+  const yc = h * (2 - 3 * p), top = yc - h, bot = yc + h;        // the wall is twice the screen tall; its solid middle more than the screen
+  if (bot < 0 || top > h) return;
+  const g = x.createLinearGradient(0, top, 0, bot);
+  if (!evil){ g.addColorStop(0, 'rgba(200,240,255,0)'); g.addColorStop(.12, 'rgba(170,228,252,.85)'); g.addColorStop(.18, 'rgba(120,205,248,1)'); g.addColorStop(.5, 'rgba(40,150,228,1)');
+              g.addColorStop(.82, 'rgba(20,110,205,1)'); g.addColorStop(.9, 'rgba(20,110,205,.7)'); g.addColorStop(1, 'rgba(20,110,205,0)'); }
+  else { g.addColorStop(0, 'rgba(255,120,0,0)'); g.addColorStop(.1, 'rgba(255,110,0,.85)'); g.addColorStop(.18, 'rgba(255,150,10,1)'); g.addColorStop(.42, 'rgba(255,70,0,1)');
+         g.addColorStop(.7, 'rgba(170,10,0,1)'); g.addColorStop(.84, 'rgba(70,0,0,1)'); g.addColorStop(.92, 'rgba(30,0,0,.7)'); g.addColorStop(1, 'rgba(20,0,0,0)'); }
+  x.fillStyle = g; const y0 = Math.max(0, top), y1 = Math.min(h, bot); x.fillRect(0, y0, w, y1 - y0);
+  if (!evil){
+    /* the bubbles: a couple of hundred, a few big ones in front, each rising a little faster or slower than the wall */
+    const key = seed + ':' + w + ':' + h;
+    if (!aeList || aeList.key !== key){
+      const r = rnd(seed), N = Math.min(260, Math.round(90 + w * h / 9000)), L = [];
+      for (let i = 0; i < N; i++){ const rad = 5 + 105 * Math.pow(r(), 2.8); L.push({ bx:r() * w, dy:(r() * 2.5 - 1.25) * h, rad, sp:.88 + .26 * r(), sw:(r() - .5) * 40, ph:r() * 6.3 }); }
+      L.sort((a, b) => a.rad - b.rad); aeList = { key, L };
+    }
+    const spr = FX.aeBubble(false);
+    x.globalAlpha = .95;
+    for (const b of aeList.L){
+      const y = h * (2 - 3 * p * b.sp) + b.dy; if (y < -b.rad || y > h + b.rad) continue;
+      x.drawImage(spr, b.bx + Math.sin(p * 9 + b.ph) * b.sw - b.rad, y - b.rad, b.rad * 2, b.rad * 2);
+    }
+    x.globalAlpha = 1;
+    return;
   }
-  x.globalAlpha = 1;
+  /* fire: the photograph's flames rising through the middle, tongues of flame along the top edge, sparks above */
+  const fire = aePic('ar-fire'), tongues = aePic('ar-flames'), r = rnd(seed);
+  if (aeOk(fire)){                                    // one photograph of fire across the wall's middle, stretched a little as it goes
+    const c0 = top + 2 * h * .03, ch = 2 * h * .9, cw = Math.max(w * 1.1, ch * fire.naturalWidth / fire.naturalHeight * .9);
+    x.save(); x.globalAlpha = .92; x.translate(w / 2, c0); x.scale(1, 1 + .04 * Math.sin(p * 23)); x.drawImage(fire, -cw / 2, 0, cw, ch); x.restore();
+  }
+  if (aeOk(tongues)){
+    const tw = Math.max(w / 2.2, 380), th = tw * tongues.naturalHeight / tongues.naturalWidth;
+    x.save();
+    for (let xx = -tw * r(), c = 0; xx < w; xx += tw * .8, c++){
+      const k2 = 1 + .12 * Math.sin(p * 37 + c * 1.7) + .06 * Math.sin(p * 61 + c);
+      x.save(); x.translate(xx + tw / 2, top + 2 * h * .16); x.scale(c % 2 ? -1 : 1, k2 * 1.25); x.drawImage(tongues, -tw / 2, -th, tw, th); x.restore();
+    }
+    x.restore();
+  }
+  x.save(); x.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 70; i++){
+    const ex = r() * w, ey = top + 2 * h * .12 - r() * h * .55 - p * h * .4 * r(), er = 1 + 2.5 * r(), gch = 140 + 100 * r() | 0, ea = .5 + .5 * r();
+    if (ey < -10 || ey > h + 10) continue;
+    x.fillStyle = 'rgba(255,' + gch + ',40,' + ea + ')'; x.beginPath(); x.arc(ex + Math.sin(p * 20 + i) * 8, ey, er, 0, 7); x.fill();
+  }
+  x.restore();
 }
 TR.aero = {
-  outMs:340, inMs:560,
-  out(n, done){ root.classList.add('fx-out'); const k = canvasLayer('ae-rise'); run(330, p => aeRise(k, n.seed, p * .42), done); },
-  cover(n){ this.k = canvasLayer('ae-rise'); aeRise(this.k, n.seed, .42); },
-  in(n, done){ const k = this.k || canvasLayer('ae-rise'); run(540, p => aeRise(k, n.seed, .42 + p * .58), done); }
+  outMs:430, inMs:620,
+  pics(){ if (dark()){ aePic('ar-fire'); aePic('ar-flames'); } },
+  layer(){ return canvasLayer('ae-wall', dark() ? .6 : undefined); },
+  out(n, done){ this.pics(); const k = this.layer(); run(420, p => aeWall(k, n.seed, p * .5), done); },
+  cover(n){ this.pics(); this.k = this.layer(); aeWall(this.k, n.seed, .5); },
+  in(n, done){ const k = this.k || this.layer(); run(600, p => aeWall(k, n.seed, .5 + ease.out(p) * .5), done); }
 };
+if (skin() === 'aero') TR.aero.pics();
 
 /* Gen X Soft Club: the page smears sideways and breaks into a digital glitch (a horizontal blur, bands of it pushed
    along, the red pulled from the blue), and the next one comes in the same way and settles. Same SVG-filter-on-the-page
    approach as Vaporwave, with the same fallback (a plain slide, softclub.css) where filters on a page are unreliable. */
 if (VP_SVG) root.classList.add('sc-svg');
+/* Soft Club's photographs, one per kind of page (skins/softclub.css), so the next one can be fetched while this page
+   leaves and decoded before the next one smears in (a photograph still arriving was the stutter). The others are
+   fetched quietly once the page has settled, so every page after the first finds its photograph waiting. */
+const SC_PH = { home:'sc-home', timetable:'sc-calm', games:'sc-green', mahjong:'sc-green', free:'sc-lounge', revision:'sc-lounge', notes:'sc-lounge',
+                calendar:'sc-crowd', finder:'sc-crowd', resources:'sc-crowd' };
+const scUrl = pg => { const n = SC_PH[pg] || 'sc-home', mm = q => { try { return matchMedia(q).matches; } catch { return false; } };
+  return '/images/th/' + n + (mm('(max-aspect-ratio:4/5)') ? '-p' : mm('(max-width:700px)') ? '-s' : '') + '.webp'; };
+const SCI = {};
+const scPic = pg => { const u = scUrl(pg); if (!SCI[u]){ const i = new Image(); i.decoding = 'async'; i.src = u; SCI[u] = i; } return SCI[u]; };
+if (skin() === 'softclub') ready(() => setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(() => {
+  if (skin() === 'softclub') [...new Set(Object.values(SC_PH))].forEach((n, k) => setTimeout(() => scPic(Object.keys(SC_PH).find(pg => SC_PH[pg] === n)), k * 300));
+}), 1500));
+/* the smear: a horizontal blur, bands pushed sideways (a few displacement maps made once, not every step), red split
+   from green and blue. Kept light: the filter covers the whole page, however long it is. */
+let SC_MAPS = null;
 function scStart(dir){
+  if (!SC_MAPS) SC_MAPS = [vpMap(2, .3), vpMap(4, .55), vpMap(6, .8), vpMap(8, 1)];
   const d = layer('sc-defs', '<svg width="0" height="0" aria-hidden="true"><filter id="sc-smear" x="-25%" y="-2%" width="150%" height="104%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">' +
     '<feGaussianBlur in="SourceGraphic" stdDeviation="0 0" result="b"/>' +
     '<feImage x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="m"/>' +
@@ -425,20 +506,28 @@ function scStart(dir){
     '<feBlend in="r2" in2="g2" mode="screen"/></filter></svg>');
   const blur = d.querySelector('feGaussianBlur'), img = d.querySelector('feImage'), dis = d.querySelector('feDisplacementMap'), off = d.querySelectorAll('feOffset');
   const wr = document.querySelector('.wrap'); if (wr) wr.style.filter = 'url(#sc-smear)';
+  let lastMap = -1;
   return k => {                                       /* k 0..1: how far gone */
-    blur.setAttribute('stdDeviation', (k * k * .07).toFixed(4) + ' 0');
-    img.setAttribute('href', vpMap(2 + Math.round(k * 7), .3 + k * .7));
-    dis.setAttribute('scale', (k * k * .14).toFixed(4));
-    off[0].setAttribute('dx', (k * .014).toFixed(4)); off[1].setAttribute('dx', (-k * .014).toFixed(4));
+    blur.setAttribute('stdDeviation', (k * k * .03).toFixed(4) + ' 0');
+    const m = Math.min(3, Math.floor(k * 4)); if (m !== lastMap){ img.setAttribute('href', SC_MAPS[m]); lastMap = m; }
+    dis.setAttribute('scale', (k * k * .12).toFixed(4));
+    off[0].setAttribute('dx', (k * .012).toFixed(4)); off[1].setAttribute('dx', (-k * .012).toFixed(4));
     if (wr){ wr.style.transform = 'translateX(' + (dir * k * k * 7).toFixed(2) + 'vw)'; wr.style.opacity = String(Math.max(0, 1 - Math.max(0, k - .55) * 2.3)); }
   };
 }
 const scEnd = () => { const wr = document.querySelector('.wrap'); if (wr){ wr.style.filter = wr.style.transform = wr.style.opacity = ''; } };
+/* the way in waits (a fifth of a second at most) for this page's photograph to be decoded, so the smear runs on a finished picture */
+const scReady = go => { let gone = false; const once = () => { if (!gone){ gone = true; go(); } }; const i = scPic(PG);
+  if (i.decode) i.decode().then(once, once); else if (i.complete) once(); else i.onload = once; after(200, once); };
 TR.softclub = VP_SVG ? {
-  outMs:300, inMs:400,
-  out(n, done){ const set = scStart(-1), K = [.12, .26, .42, .6, .8, 1]; set(.04); K.forEach((k, i) => after(40 + i * 45, () => set(k))); after(300, done); },
-  in(n, done){ const set = scStart(1), K = [1, .8, .6, .42, .27, .15, .06, 0]; set(1); K.forEach((k, i) => after(i * 45, () => set(k))); after(380, () => { scEnd(); done(); }); }
-} : fade(200, 420);
+  outMs:300, inMs:420,
+  out(n, done){ scPic(n.to); const set = scStart(-1), K = [.15, .35, .6, .85, 1]; set(.05); K.forEach((k, i) => after(45 + i * 50, () => set(k))); after(300, done); },
+  in(n, done){ const set = scStart(1); set(1); scReady(() => { const K = [.8, .58, .38, .2, .07, 0]; K.forEach((k, i) => after(i * 50, () => set(k))); after(320, () => { scEnd(); done(); }); }); }
+} : {
+  outMs:200, inMs:420,
+  out(n, done){ scPic(n.to); root.classList.add('fx-out'); after(200, done); },
+  in(n, done){ after(420, done); }
+};
 
 /* Cyberpunk: the panels shift off behind their angles, the signal breaks up for a moment, the next ones shift in */
 function bars(L, n){
