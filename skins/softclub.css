@@ -23,7 +23,8 @@
    lower case (Lexend Giga) and a plain grotesque for reading (Arimo).
    Rooms on the timetable are numbered like platforms. Dark mode is the
    same place after dark, a deep cold teal. The frame drifts very slowly;
-   a page change smears sideways like a train leaving.
+   a page change washes the frame out while light streaks past, like a
+   train leaving.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="softclub"]{
   --sc-blue:#1d48c8; --sc-ink:#0f2147; --sc-halo:rgba(238,248,250,.92);
@@ -213,15 +214,18 @@ html[data-skin="softclub"][data-pg="hkmahjong"]::before,html[data-skin="softclub
 @media (max-width:640px){
   :root[data-skin="softclub"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:14px 10px 44px;padding:12px 12px 26px;outline-offset:5px}
 }
-/* ── changing page: the whole frame, photograph and all, smears sideways into a washed-out blur and the next page comes
-      out of it. With a view transition fx.js (scSmear) does it to the browser's pictures of the two pages, so the
-      browser's own cross-fade is turned off here. Without one, the page and its photograph wash out and slide as it is
-      left (fx-out), and the next ones come back out of the same wash (fx-in, then fx-enter). ── */
-html.sc-vt::view-transition-group(root),html.sc-vt::view-transition-image-pair(root),html.sc-vt::view-transition-old(root),html.sc-vt::view-transition-new(root){animation:none}
-html.fx-out[data-skin="softclub"] .wrap{opacity:0;transform:translateX(-6vw) scaleX(1.05);filter:blur(7px) brightness(1.3) saturate(.6);transition:opacity .22s ease-in,transform .22s ease-in,filter .22s ease-in}
-html.fx-out[data-skin="softclub"] body::before{filter:blur(12px) brightness(1.45) saturate(.5) contrast(.85);transform:translateX(-2.5vw) scale(1.1);transition:filter .22s ease-in,transform .22s ease-in}
-html.fx-in[data-skin="softclub"] body::before{filter:blur(12px) brightness(1.45) saturate(.5) contrast(.85);transform:translateX(2.5vw) scale(1.1)}
-html.fx-enter[data-skin="softclub"] .wrap{animation:scin .48s cubic-bezier(.15,.7,.2,1) both}
-html.fx-enter[data-skin="softclub"] body::before{animation:scbg .52s cubic-bezier(.2,.7,.25,1) both}
-@keyframes scin{from{opacity:0;transform:translateX(6vw) scaleX(1.05);filter:blur(7px) brightness(1.3) saturate(.6)}}
-@keyframes scbg{from{filter:blur(12px) brightness(1.45) saturate(.5) contrast(.85);transform:translateX(2.5vw) scale(1.1)}}
+/* ── changing page: the whole frame, photograph and all, washes out into a bright blur while streaks of light run past
+      (fx.js, .sc-light), and the next page comes up out of the same haze. Nothing moves or changes size but the light.
+      With a view transition fx.js (scSmear) does it to the browser's pictures of the two pages, so the browser's own
+      cross-fade is turned off here. Without one, the page and its photograph wash out as it is left (fx-out), and the
+      next ones come back out of the same wash (fx-in, then fx-enter). ── */
+html.sc-vt::view-transition-group(root),html.sc-vt::view-transition-image-pair(root),html.sc-vt::view-transition-old(root),html.sc-vt::view-transition-new(root),
+html.sc-vt::view-transition-group(sc-light),html.sc-vt::view-transition-new(sc-light),html.sc-vt::view-transition-old(sc-light){animation:none}
+.sc-light canvas{position:absolute;left:0;top:0;width:200%;height:100%;display:block}
+html.fx-out[data-skin="softclub"] .wrap{opacity:0;filter:blur(9px) brightness(1.45) saturate(.5);transition:opacity .22s ease-in,filter .22s ease-in}
+html.fx-out[data-skin="softclub"] body::before{filter:blur(13px) brightness(1.55) saturate(.45) contrast(.72);transition:filter .22s ease-in}
+html.fx-in[data-skin="softclub"] body::before{filter:blur(13px) brightness(1.55) saturate(.45) contrast(.72)}
+html.fx-enter[data-skin="softclub"] .wrap{animation:scin .46s cubic-bezier(.2,.55,.3,1) both}
+html.fx-enter[data-skin="softclub"] body::before{animation:scbg .5s cubic-bezier(.2,.55,.3,1) both}
+@keyframes scin{from{opacity:0;filter:blur(9px) brightness(1.45) saturate(.5)}}
+@keyframes scbg{from{filter:blur(13px) brightness(1.55) saturate(.45) contrast(.72)}}

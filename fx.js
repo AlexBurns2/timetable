@@ -687,38 +687,78 @@ const scPic = pg => { const u = scUrl(pg); if (!SCI[u]){ const i = new Image(); 
 if (skin() === 'softclub') ready(() => setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(() => {
   if (skin() === 'softclub') [...new Set(Object.values(SC_PH))].forEach((n, k) => setTimeout(() => scPic(Object.keys(SC_PH).find(pg => SC_PH[pg] === n)), k * 300));
 }), 1500));
-/* The page change: the whole frame, photograph and all, smears sideways into a washed-out blur, the way a long exposure
-   smears a train leaving, and the next page comes out of the same smear. (It was an SVG filter over the page, changed
-   step by step on timers: the browser had to redraw the whole page through it each step, which stuttered, and it
-   pulled the red apart from the blue.)
-   With a view transition (Chromium, Safari 18.2+; theme.js opts in) the browser holds pictures of the page being left
-   and of the next one, and scSmear works on those: the pair is squeezed sideways, blurred, and stretched back out, so
-   the blur runs sideways only; it is washed out (brighter, paler, flatter); the old picture slides off to the left as
-   the next one slides in from the right and settles. Only transforms, opacity and filters, which the browser animates
-   by itself, so a page busy loading can't make it stutter. Without one, softclub.css washes the page and its
-   photograph out as it is left and brings them back as the next one arrives. */
-function scSmear(){
-  const w = innerWidth, N = 24, P = [], O = [], NW = [];
-  const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+/* The page change: the whole frame, photograph and all, washes out into a bright blur, the way an overexposed long
+   exposure looks, while soft streaks of light run past like a platform's lights from a train pulling out; the next page
+   comes up out of the same haze. The page itself never moves or changes size: only the light moves. (An SVG filter
+   stepped on timers stuttered and split the red from the blue; then the page slid and stretched sideways, which looked
+   stiff.) The streaks are drawn once, in two layers twice the screen's width (the far ones fainter and slower), and
+   then only moved and faded.
+   With a view transition (Chromium, Safari 18.2+; theme.js opts in) scSmear washes the browser's pictures of the two
+   pages out and back, and the streaks are named so they are drawn over both. Only opacity, filters and the streaks'
+   positions change, which the browser animates by itself, so a page busy loading can't make it stutter. Without one,
+   softclub.css washes the page and its photograph out as it is left and brings the next ones back, and the streaks
+   run across the change. */
+const SC_MS = 660;
+const scSm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function scStreaks(seed, named){
+  const w = innerWidth, h = innerHeight, k = .5, r = rnd((seed || 7) * 7 + 3), dk = dark(), L = layer('sc-light');
+  L.style.opacity = '0'; if (named) L.style.viewTransitionName = 'sc-light';
+  const cols = dk ? ['150,225,232', '120,200,215', '205,242,246'] : ['255,255,255', '214,240,246', '196,228,255'], am = dk ? .7 : 1;
+  [0, 1].forEach(near => {
+    const c = document.createElement('canvas'); c.width = Math.round(w * 2 * k); c.height = Math.max(2, Math.round(h * k));
+    const x = c.getContext('2d'); x.scale(k, k);
+    if (!near){                                        // the haze the light is in, brightest through the middle
+      const g = x.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, 'rgba(' + cols[0] + ',' + (.06 * am) + ')'); g.addColorStop(.5, 'rgba(' + cols[0] + ',' + (.2 * am) + ')'); g.addColorStop(1, 'rgba(' + cols[0] + ',' + (.06 * am) + ')');
+      x.fillStyle = g; x.fillRect(0, 0, w * 2, h);
+    }
+    const streak = (len, th, a, blur, core) => {      // a streak: fading in and out along its length, soft (only its blurred shadow is drawn) or with a bright core
+      const col = cols[(r() * 3) | 0], X = r() * w * 2 - len * .3, Y = near ? h * (.06 + .88 * r()) : h * (.12 + .76 * (r() + r()) / 2);
+      const g = x.createLinearGradient(X, 0, X + len, 0);
+      g.addColorStop(0, 'rgba(' + col + ',0)'); g.addColorStop(.2 + .3 * r(), 'rgba(' + col + ',' + (a * am).toFixed(3) + ')'); g.addColorStop(.88, 'rgba(' + col + ',' + (a * am * .5).toFixed(3) + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
+      x.fillStyle = g; x.shadowColor = 'rgba(' + col + ',1)'; x.shadowBlur = blur * k;
+      if (core){ x.fillRect(X, Y - th / 2, len, th); return; }
+      x.shadowOffsetX = w * 4 * k; x.fillRect(X - w * 4, Y - th / 2, len, th); x.shadowOffsetX = 0;
+    };
+    if (!near) for (let i = 0; i < 46; i++) streak(w * (.2 + .7 * r()), 2 + 10 * r(), .08 + .16 * r(), 6 + 8 * r());
+    else {
+      for (let i = 0; i < 22; i++) streak(w * (.35 + .9 * r()), 4 + 26 * r() * r(), .1 + .22 * r(), 10 + 10 * r());
+      for (let i = 0; i < 7; i++) streak(w * (.4 + .8 * r()), 1.2 + 1.4 * r(), .45 + .3 * r(), 8, true);
+    }
+    L.appendChild(c);
+  });
+  return L;
+}
+/* the streaks at a point p (0..1) of the change: they fade in, run past, fade out; the near ones three times as fast */
+const scLightAt = (p, w) => ({ op:scSm(0, .32, p) * (1 - scSm(.6, 1, p)), far:-.32 * w * Math.pow(p, 1.25), near:-.95 * w * Math.pow(p, 1.25) });
+function scStreakRun(L, p0, p1, ms){
+  const w = innerWidth, N = 16, O = [], F = [], NR = [], cs = L.children;
   for (let i = 0; i <= N; i++){
-    const t = i / N, s = Math.pow(Math.sin(Math.PI * t), 1.25), k = 1 + 5 * s, u = sm(.3, .7, t);
-    P.push({ offset:t, transform:'scaleX(' + k.toFixed(4) + ')',
-             filter:'blur(' + (4 * s).toFixed(2) + 'px) brightness(' + (1 + .42 * s).toFixed(3) + ') saturate(' + (1 - .5 * s).toFixed(3) + ') contrast(' + (1 - .2 * s).toFixed(3) + ')' });
-    O.push({ offset:t, transform:'scaleX(' + (1 / k).toFixed(5) + ') translateX(' + (-w * .12 * Math.pow(sm(0, .7, t), 1.5)).toFixed(1) + 'px)', opacity:(1 - u).toFixed(3) });
-    NW.push({ offset:t, transform:'scaleX(' + (1 / k).toFixed(5) + ') translateX(' + (w * .12 * Math.pow(1 - sm(.3, 1, t), 1.5)).toFixed(1) + 'px)', opacity:u.toFixed(3) });
+    const s = scLightAt(p0 + (p1 - p0) * i / N, w);
+    O.push({ offset:i / N, opacity:s.op.toFixed(3) }); F.push({ offset:i / N, transform:'translateX(' + s.far.toFixed(1) + 'px)' }); NR.push({ offset:i / N, transform:'translateX(' + s.near.toFixed(1) + 'px)' });
   }
-  const o = { duration:560, easing:'linear', fill:'both' }, el = document.documentElement;
+  const t = { duration:ms, easing:'linear', fill:'both' };
+  try { L.animate(O, t); cs[0].animate(F, t); cs[1].animate(NR, t); } catch {}
+}
+function scStreakSet(L, p){ const s = scLightAt(p, innerWidth); L.style.opacity = s.op.toFixed(3); L.children[0].style.transform = 'translateX(' + s.far + 'px)'; L.children[1].style.transform = 'translateX(' + s.near + 'px)'; }
+/* the browser's pictures of the two pages: the old one washes out (blurred, brighter, paler, flatter), they cross in the
+   haze, and the new one comes clear. Their opacities always add up to one, so the crossing never dips. */
+function scSmear(){
+  const el = document.documentElement, W = 'blur(13px) brightness(1.55) saturate(.45) contrast(.72)', C = 'blur(0px) brightness(1) saturate(1) contrast(1)';
+  const o = { duration:SC_MS, fill:'both' };
   try {
-    el.animate(P, Object.assign({ pseudoElement:'::view-transition-image-pair(root)' }, o));
-    el.animate(O, Object.assign({ pseudoElement:'::view-transition-old(root)' }, o));
-    el.animate(NW, Object.assign({ pseudoElement:'::view-transition-new(root)' }, o));
+    el.animate([{ offset:0, filter:C, opacity:1, easing:'cubic-bezier(.4,0,.75,.6)' }, { offset:.42, filter:W, opacity:1, easing:'ease-in-out' }, { offset:.6, filter:W, opacity:0 }, { offset:1, filter:W, opacity:0 }],
+               Object.assign({ pseudoElement:'::view-transition-old(root)' }, o));
+    el.animate([{ offset:0, filter:W, opacity:0 }, { offset:.42, filter:W, opacity:0, easing:'ease-in-out' }, { offset:.6, filter:W, opacity:1, easing:'cubic-bezier(.2,.55,.3,1)' }, { offset:1, filter:C, opacity:1 }],
+               Object.assign({ pseudoElement:'::view-transition-new(root)' }, o));
     return true;
   } catch { return false; }
 }
 TR.softclub = {
-  outMs:240, inMs:520,
-  out(n, done){ scPic(n.to); if (vtArmed()){ n.vt = 1; done(); return; } root.classList.add('fx-out'); after(230, done); },
-  in(n, done){ after(520, done); }
+  outMs:240, inMs:460,
+  out(n, done){ scPic(n.to); if (vtArmed()){ n.vt = 1; done(); return; } root.classList.add('fx-out'); scStreakRun(scStreaks(n.seed, false), 0, .4, 230); after(230, done); },
+  cover(n){ this.L = scStreaks(n.seed, false); scStreakSet(this.L, .4); },
+  in(n, done){ const L = this.L || scStreaks(n.seed, false); scStreakRun(L, .4, 1, 440); after(460, done); }
 };
 
 /* Cyberpunk: the panels shift off behind their angles, the signal breaks up for a moment, the next ones shift in */
@@ -807,10 +847,11 @@ if (((nav && root.classList.contains('fx-in')) || vtArmed()) && writeScene()) mo
 addEventListener('pagereveal', e => {
   const vt = e.viewTransition; if (!vt) return;
   if ((skin() !== 'y2k' && skin() !== 'aero' && skin() !== 'softclub') || !on()){ try { vt.skipTransition(); } catch {} return; }
-  if (skin() === 'softclub'){                        /* Gen X Soft Club: both pages smear together */
+  if (skin() === 'softclub'){                        /* Gen X Soft Club: both pages wash out and back, the light running past over them */
     root.classList.add('sc-vt');
-    vt.ready.then(() => { if (!scSmear()) try { vt.skipTransition(); } catch {} }, () => {});
-    vt.finished.finally(() => root.classList.remove('sc-vt'));
+    const L = scStreaks((nav && nav.seed) || (Date.now() % 100000) + 1, true);
+    vt.ready.then(() => { if (scSmear()) scStreakRun(L, 0, 1, SC_MS); else try { vt.skipTransition(); } catch {} }, () => {});
+    vt.finished.finally(() => { L.remove(); root.classList.remove('sc-vt'); });
     return;
   }
   if (skin() === 'aero'){                            /* Frutiger Aero: the wall rises over both pages; the next one is uncovered behind it */
