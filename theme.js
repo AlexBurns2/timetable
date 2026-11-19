@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261119c';
+const ASSET_V = '20261119e';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -539,9 +539,10 @@ function fxOn(){
   try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
 }
 
-/* Y2K Futurism changes page with a view transition where the browser has them across pages (Chromium):
-   the page being left stays on screen and the new one is wiped on over it (fx.js, y2k.css). Both pages
-   have to ask for it, so the rule is kept in step with the look. */
+/* Y2K Futurism, Frutiger Aero and Gen X Soft Club change page with a view transition where the browser
+   has them across pages (Chromium, Safari 18.2+): the page being left stays on screen while the new one
+   comes on over it (fx.js, y2k.css, theme.css, softclub.css). Both pages have to ask for it, so the rule
+   is kept in step with the look. */
 const VT_OK = typeof window !== 'undefined' && 'CSSViewTransitionRule' in window;
 function vtOptIn(want){
   try {
@@ -564,7 +565,7 @@ function paint(state){
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-pg', PG);
   root.setAttribute('data-fx', fxOn() ? 'on' : 'off');
-  vtOptIn(st.skin === 'y2k' && fxOn());
+  vtOptIn((st.skin === 'y2k' || st.skin === 'aero' || st.skin === 'softclub') && fxOn());
   const ic = iconsFor(st);
   root.setAttribute('data-tileicons', ic.colour);   // icons: a colour each (tile) or the theme's (accent)
   root.setAttribute('data-gameicons', ic.style);    // icons or emoji

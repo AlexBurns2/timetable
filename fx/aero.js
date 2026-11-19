@@ -9,18 +9,23 @@
    its screen, another under the water, a starfish on the sand, and
    bubbles. Built here rather than baked into one picture so it can be
    laid out for any screen (a phone gets its own arrangement) and so a
-   few things can move, slowly: the globe turns, the bubbles rise, the
-   gulls and the lower fish drift a little. Nothing follows the pointer.
+   few things can move, slowly: the globe turns with a light circling it
+   on its ring, the bubbles rise, the clouds drift, the light under the
+   water sways, the surface glints now and then, and the gulls and the
+   fish drift a little. Nothing follows the pointer. On a wide screen the
+   globe and the monitor stand at the edges, where the page's own column
+   leaves the picture showing, not in the middle behind it.
 
    Dark mode is FRUTIGER EVIL, the meme: the same picture gone wrong.
    A murky brown sky with bats, a pink globe, red water, the monitor's
-   black screen on fire with a fish skeleton bursting out of it,
+   screen on fire (flames licking up over its top, embers drifting off
+   it) with a fish skeleton bursting out of it,
    another skeleton and dead fish in the water, a skull on the bottom.
    Cut out a bit roughly, which is the joke.
 
    The still layers (sky, sea, splash, monitor) are drawn once into two
-   canvases and copied each frame; only the globe, the bubbles and a
-   handful of cut-outs are drawn every frame.
+   canvases and copied each frame; only the globe, the clouds, the
+   bubbles and a handful of cut-outs are drawn every frame.
    ═══════════════════════════════════════════════════════════════════ */
 (() => {
 "use strict";
@@ -35,8 +40,8 @@ const pic = n => IM[n] || (IM[n] = (() => {
 })());
 const ok = i => !!(i && i.complete && i.naturalWidth > 0);
 const LIGHT = ['ar-clouds', 'ar-splash', 'ar-mon', 'ar-fish1', 'ar-fish2', 'ar-gull1', 'ar-gull2', 'ar-gull3', 'ar-star', 'ar-sand', 'ar-map'];
-const EVIL = ['ar-sky-e', 'ar-water-e', 'ar-splash-e', 'ar-mon-e', 'ar-flame', 'evil-bone', 'ar-fish-e', 'ar-skull', 'evil-bat1', 'evil-bat2', 'evil-bat3', 'ar-map', 'ar-fire', 'ar-flames'];
-FX.aePics = evil => (evil ? EVIL : LIGHT).map(pic);   // also used by the page change (fx.js TR.aero), which wants the fire ready
+const EVIL = ['ar-sky-e', 'ar-water-e', 'ar-splash-e', 'ar-mon-e', 'evil-bone', 'ar-fish-e', 'ar-skull', 'evil-bat1', 'evil-bat2', 'evil-bat3', 'ar-map', 'ar-flames'];
+FX.aePics = evil => (evil ? EVIL : LIGHT).map(pic);
 
 /* the bubbles are fx.js's (FX.aeBubble), shared with the page change */
 
@@ -107,22 +112,24 @@ function Globe(D){
 function layout(w, h){
   const port = w / h < .9;
   if (!port){
-    const s = Math.min(w / 1600, h / 1000), Y0 = h * .6;
+    /* the page's column sits in the middle, so the things to look at are measured in from the edges: the globe on the
+       left, the monitor on the right with the fish bursting out of it towards the middle */
+    const s = Math.min(w / 1600, h / 1000), Y0 = h * .6, mh = 540 * s, mw = mh * 680 / 748, mx = w - 235 * s, my = Y0 - mh * .44;
     return { port, s, Y0,
-      globe:{ x:w * .8, y:h * .45, r:235 * s },
-      mon:{ x:w * .585, y:h * .345, h:580 * s },
-      fish1:{ x:w * .468, y:h * .545, w:310 * s, rot:-.06 },
-      fish2:{ x:w * .3, y:h * .86, w:280 * s, rot:.05 },
-      fish3:{ x:w * .9, y:h * .745, w:110 * s, rot:.08 },
-      star:{ x:w * .15, y:h * .935, w:210 * s, rot:-.3 },
-      skull:{ x:w * .87, y:h * .87, w:230 * s },
-      bone2:{ x:w * .27, y:h * .86, w:300 * s },
-      dead:[{ x:w * .37, y:h * .74, w:80 * s }, { x:w * .73, y:h * .81, w:70 * s, flip:1 }],
+      globe:{ x:150 * s, y:h * .3, r:225 * s },
+      mon:{ x:mx, y:my, h:mh },
+      fish1:{ x:mx - mw * .355, y:my + mh * .345, w:mh * .534, rot:-.06 },
+      fish2:{ x:310 * s, y:h * .81, w:280 * s, rot:.05 },
+      fish3:{ x:w - 470 * s, y:h * .9, w:110 * s, rot:.08 },
+      star:{ x:105 * s, y:h * .935, w:210 * s, rot:-.3 },
+      skull:{ x:125 * s, y:h * .88, w:230 * s },
+      bone2:{ x:330 * s, y:h * .8, w:300 * s },
+      dead:[{ x:470 * s, y:h * .69, w:80 * s }, { x:w - 430 * s, y:h * .9, w:70 * s, flip:1 }],
       splash:{ x:-w * .04, w:w * 1.08, minH:h * .2 },
       clouds:{ x:-w * .07, w:Math.max(w * .6, 760 * s) },
-      flyers:[{ i:0, x:w * .545, y:h * .175, w:200 * s, flip:1 }, { i:2, x:w * .345, y:h * .37, w:270 * s }, { i:1, x:w * .455, y:h * .14, w:95 * s }, { i:1, x:w * .27, y:h * .045, w:62 * s }],
-      bubbles:[[w * .415, h * .27, 98 * s], [w * .865, h * .155, 52 * s], [w * .755, h * .235, 30 * s], [w * .718, h * .272, 11 * s], [w * .62, h * .06, 17 * s],
-               [w * .335, h * .4, 34 * s], [w * .27, h * .935, 62 * s], [w * .41, h * .79, 30 * s], [w * .035, h * .83, 36 * s], [w * .965, h * .62, 22 * s]]
+      flyers:[{ i:0, x:w - 400 * s, y:h * .13, w:200 * s, flip:1 }, { i:2, x:340 * s, y:h * .52, w:250 * s }, { i:1, x:w - 120 * s, y:h * .06, w:95 * s }, { i:1, x:430 * s, y:h * .085, w:62 * s }],
+      bubbles:[[355 * s, h * .24, 90 * s], [w - 70 * s, h * .15, 52 * s], [w - 450 * s, h * .3, 30 * s], [w - 490 * s, h * .345, 11 * s], [480 * s, h * .15, 17 * s],
+               [45 * s, h * .55, 30 * s], [215 * s, h * .935, 60 * s], [470 * s, h * .83, 28 * s], [w - 35 * s, h * .66, 22 * s], [w - 300 * s, h * .94, 34 * s]]
     };
   }
   const s = Math.min(w / 900, h / 1500), Y0 = h * .54;
@@ -149,6 +156,21 @@ const sprite = (x, im, cx, cy, w, rot, flip, alpha) => {
   x.save(); x.translate(cx, cy); if (rot) x.rotate(rot); if (flip) x.scale(-1, 1); if (alpha != null) x.globalAlpha = alpha;
   x.drawImage(im, -w / 2, -h / 2, w, h); x.restore();
 };
+/* Evil: a row of flames (the cut-out photograph ar-flames, every other one mirrored) standing on the line from (x0, y0) to
+   (x1, y1). Each is drawn in slices that sway, the tips most and the roots not at all, and it stretches a little as it
+   flickers: the way real fire moves, where squashing a whole picture up and down only looked like a picture squashing. */
+function flames(x, fl, x0, x1, y0, y1, tw, t){
+  const iw = fl.naturalWidth, ih = fl.naturalHeight, th = tw * ih / iw, S = 12, n = Math.max(2, Math.ceil((x1 - x0) / (tw * .55)));
+  for (let c = 0; c < n; c++){
+    const u = c / (n - 1), cx = x0 + (x1 - x0) * u, by = y0 + (y1 - y0) * u + th * .07;
+    const hh = th * (.8 + .25 * hash(c, 41)) * (1 + .07 * Math.sin(t * 5.3 + c * 1.7) + .04 * Math.sin(t * 8.9 + c * 2.9)), f = c % 2 ? -1 : 1;
+    for (let j = 0; j < S; j++){
+      const sway = Math.sin(t * 6.1 + j * .75 + c * 2.1) * tw * .016 * Math.pow(1 - j / S, 1.4);
+      x.save(); x.translate(cx + sway, 0); x.scale(f, 1);
+      x.drawImage(fl, 0, j * ih / S, iw, ih / S, -tw / 2, by - hh + j * hh / S, tw, hh / S + .7); x.restore();
+    }
+  }
+}
 const coverImg = (x, im, X, Y, W, H, fx, fy) => {
   if (!ok(im)) return;
   const sc = Math.max(W / im.naturalWidth, H / im.naturalHeight), w = im.naturalWidth * sc, h = im.naturalHeight * sc;
@@ -164,12 +186,7 @@ function drawBack(x, w, h, L, evil){
     x.fillStyle = g; x.fillRect(0, 0, w, Y0 + 2);
     const sun = x.createRadialGradient(w * .32, Y0, 0, w * .32, Y0, Math.max(w, h) * .45);
     sun.addColorStop(0, 'rgba(235,252,255,.55)'); sun.addColorStop(1, 'rgba(235,252,255,0)'); x.fillStyle = sun; x.fillRect(0, 0, w, Y0 + 2);
-    const cl = IM['ar-clouds'];
-    if (ok(cl)){
-      const cw = L.clouds.w, ch = cw * cl.naturalHeight / cl.naturalWidth;
-      x.globalAlpha = .55; x.save(); x.translate(w * .62 + cw * .5, 0); x.scale(-1, 1); x.drawImage(cl, -cw * .4, Y0 - ch * .78, cw * .8, ch * .8); x.restore();
-      x.globalAlpha = .96; x.drawImage(cl, L.clouds.x, Y0 - ch * .9, cw, ch); x.globalAlpha = 1;
-    }
+    /* (the clouds drift, so they are drawn every frame: CLOUDS, below) */
     /* under the water: bright at the top, sand at the bottom, a few rays of light */
     const u = x.createLinearGradient(0, Y0, 0, h);
     u.addColorStop(0, '#86e0f4'); u.addColorStop(.3, '#3db4de'); u.addColorStop(.62, '#4cbfdc'); u.addColorStop(1, '#8ccfd2');
@@ -181,13 +198,7 @@ function drawBack(x, w, h, L, evil){
       const f = x.createLinearGradient(0, ys, 0, ys + (h - ys) * .55);
       f.addColorStop(0, 'rgba(76,191,220,1)'); f.addColorStop(1, 'rgba(76,191,220,0)'); x.fillStyle = f; x.fillRect(0, ys, w, (h - ys) * .55);
     }
-    x.save(); x.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 5; i++){
-      const bx = w * (.1 + .2 * i + .05 * hash(i, 3)), bw = w * (.03 + .04 * hash(i, 4));
-      const rg = x.createLinearGradient(0, Y0, 0, h); rg.addColorStop(0, 'rgba(255,255,255,.12)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
-      x.fillStyle = rg; x.beginPath(); x.moveTo(bx, Y0); x.lineTo(bx + bw, Y0); x.lineTo(bx + bw * 3 + w * .08, h); x.lineTo(bx + w * .08, h); x.fill();
-    }
-    x.restore();
+    /* (the rays of light under the water sway, so they are drawn every frame too: rays(), below) */
     const lip = x.createLinearGradient(0, Y0 - 5, 0, Y0 + 8);
     lip.addColorStop(0, 'rgba(255,255,255,0)'); lip.addColorStop(.4, 'rgba(255,255,255,.9)'); lip.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = lip; x.fillRect(0, Y0 - 5, w, 13);
   } else {
@@ -234,16 +245,15 @@ function drawFront(x, w, h, L, evil, page){
     }
   }
   if (!evil){
-    sprite(x, IM['ar-fish1'], L.fish1.x, L.fish1.y, L.fish1.w, L.fish1.rot);
     sprite(x, IM['ar-star'], L.star.x, L.star.y, L.star.w, L.star.rot);
   } else {
     L.dead.forEach(d => sprite(x, IM['ar-fish-e'], d.x, d.y, d.w, .05, d.flip, .9));
     sprite(x, IM['ar-skull'], L.skull.x, L.skull.y, L.skull.w, .08);
     sprite(x, IM['evil-bone'], L.bone2.x, L.bone2.y, L.bone2.w, -.04, 0, .95);
-    sprite(x, IM['evil-bone'], L.fish1.x - L.fish1.w * .05, L.fish1.y - L.fish1.w * .08, L.fish1.w * 1.4, .1, 1);      // bursting out of the screen, facing out
-    const v = x.createRadialGradient(w / 2, h * .45, Math.min(w, h) * .35, w / 2, h * .5, Math.max(w, h) * .78);
-    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,0,0,.6)'); x.fillStyle = v; x.fillRect(0, 0, w, h);
+    const v = x.createRadialGradient(w / 2, h * .45, Math.min(w, h) * .42, w / 2, h * .5, Math.max(w, h) * .85);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,0,0,.45)'); x.fillStyle = v; x.fillRect(0, 0, w, h);
   }
+  /* (the fish bursting out of the screen, and Evil's skeleton, bob a little: drawn every frame) */
   if (page === 'timetable'){ x.fillStyle = evil ? 'rgba(12,0,0,.3)' : 'rgba(238,249,255,.3)'; x.fillRect(0, 0, w, h); }     // the timetable is busy enough: the picture steps back a little
 }
 
@@ -253,24 +263,86 @@ FX.scenes.aero = {
     const x = canvas.getContext('2d'); if (!x) return null;
     let e = env, W = canvas.width, H = canvas.height, U = 1, built = '', L = null;
     const back = document.createElement('canvas'), front = document.createElement('canvas');
-    let globe = null;
+    let globe = null, CL = null, RG = null;
     FX.aePics(!!e.dark);
+    let shown = null, born = performance.now();
+    setTimeout(() => { if (FX.refresh) FX.refresh(); }, 1600);      // with Animation off nothing else would draw it after the wait
+    /* the clouds are drawn at their size once, each into its own canvas cut off at the horizon, and then only moved */
+    const cloudsAt = (w, evil) => {
+      const cl = IM['ar-clouds']; CL = null; if (evil || !ok(cl)) return;
+      const Y0 = L.Y0, cw = L.clouds.w, ch = cw * cl.naturalHeight / cl.naturalWidth;
+      const mk = (x0, top, cw2, ch2, flip, a) => {
+        const c = document.createElement('canvas'), hh = Math.max(1, Y0 - top); c.width = Math.ceil(cw2 * U); c.height = Math.ceil(hh * U);
+        const q = c.getContext('2d'); q.scale(U, U); q.globalAlpha = a; if (flip){ q.translate(cw2, 0); q.scale(-1, 1); } q.drawImage(cl, 0, 0, cw2, ch2);
+        return { c, x:x0, top, w:cw2, h:hh };
+      };
+      CL = [mk(w * .62 + cw * .1, Y0 - ch * .78, cw * .8, ch * .8, 1, .55), mk(L.clouds.x, Y0 - ch * .9, cw, ch, 0, .96)];     // the faint far copy first
+    };
     const build = () => {
       const w = W / U, h = H / U, evil = !!e.dark;
       L = layout(w, h);
       for (const c of [back, front]){ c.width = W; c.height = H; const cx = c.getContext('2d'); cx.setTransform(U, 0, 0, U, 0, 0); cx.clearRect(0, 0, w, h); }
       drawBack(back.getContext('2d'), w, h, L, evil);
       drawFront(front.getContext('2d'), w, h, L, evil, e.page);
+      cloudsAt(w, evil);
+      RG = x.createLinearGradient(0, L.Y0, 0, h); RG.addColorStop(0, 'rgba(255,255,255,.12)'); RG.addColorStop(1, 'rgba(255,255,255,0)');
       const D = Math.max(96, Math.min(360, Math.round(L.globe.r * 2 * U * .8)));
       if (!globe || globe.canvas.width !== D) globe = Globe(D);
     };
+    /* the light under the water: five rays from the surface, their feet swaying slowly and their strength coming and going */
+    const rays = (w, h, t) => {
+      x.save(); x.globalCompositeOperation = 'lighter'; x.fillStyle = RG;
+      for (let i = 0; i < 5; i++){
+        const bx = w * (.1 + .2 * i + .05 * hash(i, 3)), bw = w * (.03 + .04 * hash(i, 4)), sw = Math.sin(t * .09 + i * 1.7) * w * .05;
+        x.globalAlpha = .7 + .3 * Math.sin(t * .21 + i * 2.3);
+        x.beginPath(); x.moveTo(bx, L.Y0); x.lineTo(bx + bw, L.Y0); x.lineTo(bx + bw * 3 + w * .08 + sw, h); x.lineTo(bx + w * .08 + sw, h); x.fill();
+      }
+      x.restore();
+    };
+    /* now and then a glint of sun on the surface: a soft point of light with a short cross, there for a second or two, somewhere else next time */
+    const glints = (w, t) => {
+      const n = L.port ? 5 : 9, k = Math.max(.7, L.s);
+      x.save(); x.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < n; i++){
+        const ph = t * .35 + hash(i, 21) * 6.283, cy = Math.floor(ph / 6.283), a = Math.pow(Math.max(0, Math.sin(ph)), 8);
+        if (a < .02) continue;
+        const gx = w * hash(i * 7 + cy, 22), gy = L.Y0 - 4 + 14 * hash(i * 7 + cy, 23), r = (5 + 7 * hash(i, 24)) * k;
+        const g = x.createRadialGradient(gx, gy, 0, gx, gy, r); g.addColorStop(0, 'rgba(255,255,255,' + (.9 * a).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = g; x.fillRect(gx - r, gy - r, r * 2, r * 2);
+        x.globalAlpha = a * .7; x.fillStyle = '#fff'; x.fillRect(gx - r * 2.4, gy - .6, r * 4.8, 1.2); x.fillRect(gx - .6, gy - r * 1.3, 1.2, r * 2.6); x.globalAlpha = 1;
+      }
+      x.restore();
+    };
+    /* Evil: embers drifting up off the burning monitor, each glowing for a few seconds and gone */
+    const embers = t => {
+      const M = L.mon, mw = M.h * 680 / 748, n = L.port ? 10 : 16, k = Math.max(.8, L.s);
+      x.save(); x.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < n; i++){
+        const life = 6 + 6 * hash(i, 31), q = t / life + hash(i, 32), cy = Math.floor(q), u = q - cy;
+        const ex = M.x - mw * .45 + mw * .9 * hash(i * 5 + cy, 33) + Math.sin(t * (.6 + .5 * hash(i, 34)) + i) * 12 * k + (hash(i, 35) - .5) * 70 * k * u;
+        const ey = M.y + M.h * .04 - u * (150 + 150 * hash(i, 36)) * k;
+        const a = Math.sin(Math.PI * u) * (.75 + .25 * Math.sin(t * 6 + i * 3));
+        x.fillStyle = 'rgba(255,' + (120 + 100 * hash(i, 38) | 0) + ',40,' + a.toFixed(3) + ')';
+        x.beginPath(); x.arc(ex, ey, (1.1 + 1.5 * hash(i, 37)) * k, 0, 7); x.fill();
+      }
+      x.restore();
+    };
     const draw = t => {
       const evil = !!e.dark, key = W + 'x' + H + ':' + U + ':' + (evil ? 1 : 0) + ':' + gen;
+      /* until its photographs are in (or a second and a half has gone), the canvas stays clear and the stylesheet's still
+         frame of this same picture (ar-still*, under it) is what shows: no half-drawn sky with things popping into it */
+      if (shown !== evil){
+        if (!(evil ? EVIL : LIGHT).every(n => IM[n] && IM[n].complete) && performance.now() - born < 1500){ x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H); return; }
+        shown = evil; document.documentElement.classList.add('ae-drawn');
+      }
       if (key !== built){ build(); built = key; }
       const w = W / U, h = H / U;
       x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H);
       x.drawImage(back, 0, 0);
       x.setTransform(U, 0, 0, U, 0, 0);
+      /* the clouds, drifting a little way and back over a few minutes (the far copy the other way); the light under the water */
+      if (CL){ const dx = Math.sin(t * .045) * 36 * L.s; CL.forEach((c, i) => x.drawImage(c.c, c.x + (i ? dx : -dx * .6), c.top, c.w, c.h)); }
+      if (!evil) rays(w, h, t);
       /* the globe, its halo, its glass */
       const G = L.globe, gl = globe.draw((t / 160) % 1, evil, IM['ar-map']);
       const halo = x.createRadialGradient(G.x, G.y, G.r * .85, G.x, G.y, G.r * 1.35);
@@ -278,23 +350,40 @@ FX.scenes.aero = {
       x.fillStyle = halo; x.fillRect(G.x - G.r * 1.4, G.y - G.r * 1.4, G.r * 2.8, G.r * 2.8);
       x.drawImage(gl, G.x - G.r, G.y - G.r, G.r * 2, G.r * 2);
       if (!evil){
+        /* its rings sway very slowly, and a light goes round the middle one, dimmer as it passes behind */
+        const tilt = i => -.35 + i * .5 + Math.sin(t * .05 + i * 2) * .06;
         x.save(); x.strokeStyle = 'rgba(230,250,255,.55)'; x.lineWidth = 1.2; x.shadowColor = 'rgba(160,230,255,.9)'; x.shadowBlur = 6;
-        for (let i = 0; i < 3; i++){ x.beginPath(); x.ellipse(G.x, G.y, G.r * (.98 - i * .02), G.r * (.25 + i * .28), -.35 + i * .5, 0, Math.PI * 2); x.stroke(); }
+        for (let i = 0; i < 3; i++){ x.beginPath(); x.ellipse(G.x, G.y, G.r * (.98 - i * .02), G.r * (.25 + i * .28), tilt(i), 0, Math.PI * 2); x.stroke(); }
+        x.restore();
+        const rx = G.r * .96, ry = G.r * .53, ro = tilt(1), cr = Math.cos(ro), sr = Math.sin(ro), th = t * .42;
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (let k = 6; k >= 0; k--){
+          const a = th - k * .06, ex = Math.cos(a) * rx, ey = Math.sin(a) * ry, px = G.x + ex * cr - ey * sr, py = G.y + ex * sr + ey * cr;
+          const near = Math.min(1, Math.max(0, (Math.sin(a) + .25) / .5)), al = (.25 + .75 * near) * (1 - k / 7), rr = G.r * (k ? .025 : .06);
+          const g = x.createRadialGradient(px, py, 0, px, py, rr); g.addColorStop(0, 'rgba(235,252,255,' + al.toFixed(3) + ')'); g.addColorStop(1, 'rgba(160,230,255,0)');
+          x.fillStyle = g; x.fillRect(px - rr, py - rr, rr * 2, rr * 2);
+        }
         x.restore();
       }
       x.save(); x.translate(G.x - G.r * .38, G.y - G.r * .55); x.rotate(-.5);
       const hl = x.createRadialGradient(0, 0, 0, 0, 0, G.r * .5); hl.addColorStop(0, 'rgba(255,255,255,.75)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
       x.scale(1, .45); x.fillStyle = hl; x.beginPath(); x.arc(0, 0, G.r * .5, 0, 7); x.fill(); x.restore();
       x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(front, 0, 0); x.setTransform(U, 0, 0, U, 0, 0);
-      /* Evil: the fire out of the screen, flickering */
-      if (evil && ok(IM['ar-flame'])){
-        const M = L.mon, fw = M.h * .82, fl = IM['ar-flame'], fh = fw * fl.naturalHeight / fl.naturalWidth;
-        const k1 = 1 + .05 * Math.sin(t * 7.3) + .03 * Math.sin(t * 12.1), k2 = 1 + .05 * Math.sin(t * 5.9 + 1) + .03 * Math.sin(t * 13.7);
-        x.save(); x.globalCompositeOperation = 'screen';
-        const bx = M.x - M.h * .32, by = M.y + M.h * .26;
-        x.save(); x.translate(bx, by); x.scale(1, k1); x.globalAlpha = .95; x.drawImage(fl, -fw * .2, -fh * .95, fw, fh); x.restore();
-        x.save(); x.translate(bx + fw * .12, by); x.scale(-.8, k2 * .9); x.globalAlpha = .6; x.drawImage(fl, -fw * .35, -fh * .95, fw, fh); x.restore();
-        x.restore();
+      const F = L.fish1, bob = [Math.sin(t * .31) * 3 * L.s, Math.sin(t * .43) * 4 * L.s, Math.sin(t * .37) * .015];
+      if (!evil){
+        glints(w, t);
+        sprite(x, IM['ar-fish1'], F.x + bob[0], F.y + bob[1], F.w, F.rot + bob[2]);         // bursting out of the screen
+      } else {
+        /* the screen is on fire (the picture's in ar-mon-e): its light flickers on the air round it, flames lick up over
+           the monitor's top, and embers drift off. The skeleton bursts out in front of it all. */
+        const M = L.mon, mw = M.h * 680 / 748, mx = M.x - mw / 2, fk = .75 + .12 * Math.sin(t * 7.1) + .08 * Math.sin(t * 11.3 + 1) + .05 * Math.sin(t * 17.9 + 2);
+        const gx = M.x, gy = M.y + M.h * .35, gr = M.h * .8;
+        x.save(); x.globalCompositeOperation = 'lighter';
+        const g = x.createRadialGradient(gx, gy, gr * .15, gx, gy, gr); g.addColorStop(0, 'rgba(255,90,10,' + (.17 * fk).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,60,0,0)');
+        x.fillStyle = g; x.fillRect(gx - gr, gy - gr, gr * 2, gr * 2); x.restore();
+        if (ok(IM['ar-flames'])) flames(x, IM['ar-flames'], mx + mw * .2, mx + mw * .8, M.y + M.h * .03, M.y + M.h * .045, mw * .46, t);
+        sprite(x, IM['evil-bone'], F.x - F.w * .05 + bob[0], F.y - F.w * .08 + bob[1], F.w * 1.4, .1 + bob[2], 1);      // facing out
+        embers(t);
       }
       /* gulls (Aero) or bats (Evil), drifting a very little */
       L.flyers.forEach((f, i) => {
@@ -323,8 +412,8 @@ FX.scenes.aero = {
     return {
       frame(t){ draw(t); },
       resize(w, h, sc){ W = w; H = h; U = sc || 1; },
-      env(n){ e = n; FX.aePics(!!e.dark); },
-      dispose(){}
+      env(n){ if (!!n.dark !== !!e.dark) born = performance.now(); e = n; FX.aePics(!!e.dark); },
+      dispose(){ document.documentElement.classList.remove('ae-drawn'); }
     };
   }
 };

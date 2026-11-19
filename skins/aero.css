@@ -54,6 +54,9 @@
 [data-skin="aero"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:var(--ae-veil),var(--ae-ph) var(--ae-pos)/cover no-repeat,var(--bg-img)}
 @media (max-aspect-ratio:4/5){ [data-skin="aero"] body::before{background:var(--ae-veil),var(--ae-phs) var(--ae-pos)/cover no-repeat,var(--bg-img)} }
 html.zen[data-skin="aero"] body::before,[data-skin="aero"][data-pg="hkmahjong"] body::before{display:none}
+/* the page change without a view transition masks the body (fx.js), which lifts this still frame over the moving
+   picture for the moment it runs; once the moving one is drawn, the still is not needed then */
+html.fx-enter.ae-drawn[data-skin="aero"] body::before{visibility:hidden}
 
 /* ── glass: frosted, with the shine ── */
 :root[data-skin="aero"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),

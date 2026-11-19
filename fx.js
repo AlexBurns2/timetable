@@ -389,10 +389,18 @@ TR.vapor = {
   }
 };
 
-/* Frutiger Aero: a thick wall of bubbles rushes up the screen, the way the old cartoons changed scene, and the
-   page changes behind its thickest part. Frutiger Evil: a wall of fire instead. Both are drawn from the note's seed,
-   so the page left and the page reached draw the same wall and the rush carries straight on across the change.
-   (Asked for by name: the one place a page change covers the whole screen, and only for a moment.) */
+/* Frutiger Aero: a thick wall of bubbles rushes up the screen, the way the old cartoons changed scene: a few strays
+   first, then a mass of them packed so close the page behind is lost in them, then the last ones trailing off. Every
+   bubble rises at its own speed (the big ones fastest), weaves from side to side, wobbles out of round, swells a little
+   as it rises, and here and there one pops. The page changes behind the wall's thickest part: above it the page being
+   left is still there, below it the next one. Frutiger Evil: a wall of fire instead, flames flickering all through it
+   and licking up from its leading edge, loose flames and sparks flying on ahead, smoke left behind.
+   The wall is drawn frame by frame (aeWallEngine), in a worker where the browser can hand it the canvas, so a page busy
+   loading can't make it stutter; elsewhere on the page. The next page shows through a soft-edged mask that rises on the
+   same curve and clock (the browser runs that part itself), its edge in the wall's thickest part.
+   Where the browser has view transitions across pages (Chromium, Safari 18.2+) the page being left really is still
+   there above the wall (theme.js opts in, as for Y2K; pagereveal below starts it); elsewhere it fades as it is left and
+   the wall uncovers the next one over the background. */
 function aeBubble(evil){
   const R = 128, c = document.createElement('canvas'); c.width = c.height = R * 2 + 4;
   const x = c.getContext('2d'), m = R + 2, body = x.createRadialGradient(m, m, R * .2, m, m, R);
@@ -414,72 +422,259 @@ const AEB = {}; FX.aeBubble = evil => AEB[evil ? 1 : 0] || (AEB[evil ? 1 : 0] = 
 const AEP = {};
 const aePic = n => AEP[n] || (AEP[n] = (() => { const i = new Image(); i.decoding = 'async'; i.src = '/images/th/' + n + '.webp' + (V ? '?v=' + V : ''); return i; })());
 const aeOk = i => !!(i && i.complete && i.naturalWidth > 0);
-let aeList = null;
-function aeWall(k, seed, p){
-  const { x, w, h } = k, evil = dark();
-  x.clearRect(0, 0, w, h);
-  const yc = h * (2 - 3 * p), top = yc - h, bot = yc + h;        // the wall is twice the screen tall; its solid middle more than the screen
-  if (bot < 0 || top > h) return;
-  const g = x.createLinearGradient(0, top, 0, bot);
-  if (!evil){ g.addColorStop(0, 'rgba(200,240,255,0)'); g.addColorStop(.12, 'rgba(170,228,252,.85)'); g.addColorStop(.18, 'rgba(120,205,248,1)'); g.addColorStop(.5, 'rgba(40,150,228,1)');
-              g.addColorStop(.82, 'rgba(20,110,205,1)'); g.addColorStop(.9, 'rgba(20,110,205,.7)'); g.addColorStop(1, 'rgba(20,110,205,0)'); }
-  else { g.addColorStop(0, 'rgba(255,120,0,0)'); g.addColorStop(.1, 'rgba(255,110,0,.85)'); g.addColorStop(.18, 'rgba(255,150,10,1)'); g.addColorStop(.42, 'rgba(255,70,0,1)');
-         g.addColorStop(.7, 'rgba(170,10,0,1)'); g.addColorStop(.84, 'rgba(70,0,0,1)'); g.addColorStop(.92, 'rgba(30,0,0,.7)'); g.addColorStop(1, 'rgba(20,0,0,0)'); }
-  x.fillStyle = g; const y0 = Math.max(0, top), y1 = Math.min(h, bot); x.fillRect(0, y0, w, y1 - y0);
-  if (!evil){
-    /* the bubbles: a couple of hundred, a few big ones in front, each rising a little faster or slower than the wall */
-    const key = seed + ':' + w + ':' + h;
-    if (!aeList || aeList.key !== key){
-      const r = rnd(seed), N = Math.min(260, Math.round(90 + w * h / 9000)), L = [];
-      for (let i = 0; i < N; i++){ const rad = 5 + 105 * Math.pow(r(), 2.8); L.push({ bx:r() * w, dy:(r() * 2.5 - 1.25) * h, rad, sp:.88 + .26 * r(), sw:(r() - .5) * 40, ph:r() * 6.3 }); }
-      L.sort((a, b) => a.rad - b.rad); aeList = { key, L };
+
+/* ── the wall, frame by frame. Self-contained: everything it needs is passed in (cfg, and the two photographs of fire
+   as they arrive), so the same code runs in a worker or on the page. G: the global scope (self, or window). ── */
+function aeWallEngine(G){
+  const mk = (w, h) => { w = Math.max(1, Math.ceil(w)); h = Math.max(1, Math.ceil(h));
+    if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
+    const c = G.document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const rnd = seed => { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const bez = (a, b, c, d) => {                       // CSS cubic-bezier(a, b, c, d), so the wall keeps to the mask's curve
+    const X = t => ((1 - 3 * c + 3 * a) * t + (3 * c - 6 * a)) * t * t + 3 * a * t, Y = t => ((1 - 3 * d + 3 * b) * t + (3 * d - 6 * b)) * t * t + 3 * b * t;
+    return p => { if (p <= 0) return 0; if (p >= 1) return 1; let lo = 0, hi = 1; for (let i = 0; i < 24; i++){ const m = (lo + hi) / 2; if (X(m) < p) lo = m; else hi = m; } return Y((lo + hi) / 2); };
+  };
+  const now = () => (G.performance.timeOrigin || 0) + G.performance.now();
+  const next = G.requestAnimationFrame ? f => G.requestAnimationFrame(f) : f => G.setTimeout(() => f(), 16);
+  let cv = null, X = null, C = null, ease = null, start = 0, going = false, stopped = false;
+  let B = null, nBack = 0, SPR = null, HZ = null;                                  // Aero
+  let FL = null, WSP = null, BODY = null, GL = null, SPK = null, SMK = null, SP = null, WS = null, SM = null;      // Evil
+  const lin = (y0, y1, stops) => { const g = X.createLinearGradient(0, y0, 0, y1); stops.forEach(s => g.addColorStop(s[0], s[1])); return g; };
+  function toon(v){                                   // a cartoon bubble: clear, a crisp white outline with a little blue round it, a crescent of light; four ways
+    const R = 96, c = mk(R * 2 + 10, R * 2 + 10), x = c.getContext('2d'), m = R + 5, b = x.createRadialGradient(m - R * .2, m - R * .25, R * .1, m, m, R);
+    b.addColorStop(0, 'rgba(235,250,255,.08)'); b.addColorStop(.78, 'rgba(195,236,255,.2)'); b.addColorStop(1, 'rgba(175,228,255,.42)');
+    x.fillStyle = b; x.beginPath(); x.arc(m, m, R, 0, 7); x.fill();
+    x.strokeStyle = 'rgba(30,130,210,.7)'; x.lineWidth = R * .035; x.beginPath(); x.arc(m, m, R * 1.01, 0, 7); x.stroke();
+    x.strokeStyle = 'rgba(140,220,255,.8)'; x.lineWidth = R * .1; x.beginPath(); x.arc(m, m, R * .935, 0, 7); x.stroke();
+    x.strokeStyle = '#fff'; x.lineWidth = R * (.05 + .012 * v); x.beginPath(); x.arc(m, m, R * .97, 0, 7); x.stroke();
+    const a0 = [1.08, 1, 1.15, 1.04][v], a1 = [1.42, 1.3, 1.46, 1.52][v];
+    x.lineCap = 'round'; x.lineWidth = R * [.11, .09, .13, .1][v]; x.beginPath(); x.arc(m, m, R * .7, Math.PI * a0, Math.PI * a1); x.stroke();
+    const ad = Math.PI * (a1 + .1); x.fillStyle = 'rgba(255,255,255,.95)'; x.beginPath(); x.arc(m + Math.cos(ad) * R * .7, m + Math.sin(ad) * R * .7, R * .065, 0, 7); x.fill();
+    if (v !== 2){ x.strokeStyle = 'rgba(255,255,255,.5)'; x.lineWidth = R * .05; x.beginPath(); x.arc(m, m, R * .72, Math.PI * .15, Math.PI * .35); x.stroke(); }
+    return c;
+  }
+  /* the flames' cut-out with its faint haze taken out and its edges feathered, so where pieces of it meet or overlap no
+     straight edge or pale rectangle shows; and five loose flames cut from it, each feathered into a soft oval */
+  function soften(im){
+    const iw = im.width, ih = im.height, c = mk(iw, ih), x = c.getContext('2d'); x.drawImage(im, 0, 0);
+    try { const d = x.getImageData(0, 0, iw, ih), p = d.data; for (let i = 3; i < p.length; i += 4){ const a = p[i]; p[i] = a < 30 ? 0 : Math.min(255, (a - 30) * 1.14); } x.putImageData(d, 0, 0); } catch {}
+    x.globalCompositeOperation = 'destination-in';
+    const g = x.createLinearGradient(0, 0, iw, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.13, '#000'); g.addColorStop(.87, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, iw, ih);
+    const v = x.createLinearGradient(0, 0, 0, ih); v.addColorStop(0, '#000'); v.addColorStop(.88, '#000'); v.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = v; x.fillRect(0, 0, iw, ih);
+    return c;
+  }
+  function wisps(src){
+    const iw = src.width, ih = src.height, sw = iw * .26, out = [];
+    for (let i = 0; i < 5; i++){
+      const c = mk(sw, ih), x = c.getContext('2d'); x.drawImage(src, Math.min(iw - sw, i * iw * .185), 0, sw, ih, 0, 0, sw, ih);
+      x.globalCompositeOperation = 'destination-in'; x.translate(sw / 2, ih * .56); x.scale(sw / 2, ih * .5);
+      const g = x.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, '#000'); g.addColorStop(.55, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(-1, -1.2, 2, 2.4); out.push(c);
     }
-    const spr = FX.aeBubble(false);
-    x.globalAlpha = .95;
-    for (const b of aeList.L){
-      const y = h * (2 - 3 * p * b.sp) + b.dy; if (y < -b.rad || y > h + b.rad) continue;
-      x.drawImage(spr, b.bx + Math.sin(p * 9 + b.ph) * b.sw - b.rad, y - b.rad, b.rad * 2, b.rad * 2);
+    return out;
+  }
+  function glow(R, inner, outer){ const c = mk(R * 2, R * 2), x = c.getContext('2d'), g = x.createRadialGradient(R, R, 0, R, R, R); g.addColorStop(0, inner); g.addColorStop(1, outer); x.fillStyle = g; x.fillRect(0, 0, R * 2, R * 2); return c; }
+  function initAero(){
+    const { w, h, T, s } = C, r = rnd(C.seed * 13 + 7), D = h + T;
+    SPR = [0, 1, 2, 3].map(toon);
+    HZ = lin(0, T, [[.1, 'rgba(225,246,255,0)'], [.3, 'rgba(225,246,255,.26)'], [.65, 'rgba(225,246,255,.26)'], [.92, 'rgba(225,246,255,0)']]);
+    const dens = v => v < .05 ? 0 : v < .2 ? (v - .05) / .15 : v < .72 ? 1 : Math.max(.08, 1 - (v - .72) / .3);
+    const N = [Math.round(w * T / 2700), Math.round(w * T / 1750 / (s * s)), Math.round(10 + w / 70)];
+    B = [];
+    for (let kind = 0; kind < 3; kind++) for (let tries = 0, n = 0; n < N[kind] && tries < N[kind] * 8; tries++){
+      const v = r(); if (kind < 2 && r() > dens(v)) continue;
+      const u = r(), rad = (kind === 0 ? 3 + 13 * u * u : kind === 1 ? 8 + 72 * Math.pow(u, 2.1) : 40 + 95 * u) * s;
+      const y0 = h + rad * 1.2 + (kind === 2 ? T * .1 : 0) + v * (kind === 0 ? T * .95 : T);
+      let sp = kind === 0 ? .86 + .1 * r() : kind === 1 ? .88 + .24 * Math.pow(rad / (80 * s), .8) + .06 * (r() - .5) : 1.12 + .18 * r();
+      sp = Math.max(sp, (y0 + rad * 1.3 + 12) / D);                                  // whatever its speed, it is off the top by the end
+      B.push({ kind, x0:r() * w, y0, rad, sp, n:n++,
+        wa:(2 + 10 * r()) * Math.sqrt(rad / 20), wf:2 * Math.PI * (1.4 + 1.2 * r()) / (1 + rad / 50), wp:r() * 6.3, dx:(r() - .5) * 50 * s,
+        qa:.025 + .05 * r(), qf:2 * Math.PI * (2.4 + 2 * r()), qp:r() * 6.3, rot:(r() - .5) * .9, v:(r() * 4) | 0,
+        pop:kind && r() < .2 ? h * (.06 + .5 * r()) : -1e9, pt:-1 });
     }
-    x.globalAlpha = 1;
-    return;
+    B.sort((a, b) => a.kind - b.kind || a.rad - b.rad);
+    nBack = B.findIndex(b => b.kind > 0); if (nBack < 0) nBack = B.length;
   }
-  /* fire: the photograph's flames rising through the middle, tongues of flame along the top edge, sparks above */
-  const fire = aePic('ar-fire'), tongues = aePic('ar-flames'), r = rnd(seed);
-  if (aeOk(fire)){                                    // one photograph of fire across the wall's middle, stretched a little as it goes
-    const c0 = top + 2 * h * .03, ch = 2 * h * .9, cw = Math.max(w * 1.1, ch * fire.naturalWidth / fire.naturalHeight * .9);
-    x.save(); x.globalAlpha = .92; x.translate(w / 2, c0); x.scale(1, 1 + .04 * Math.sin(p * 23)); x.drawImage(fire, -cw / 2, 0, cw, ch); x.restore();
-  }
-  if (aeOk(tongues)){
-    const tw = Math.max(w / 2.2, 380), th = tw * tongues.naturalHeight / tongues.naturalWidth;
-    x.save();
-    for (let xx = -tw * r(), c = 0; xx < w; xx += tw * .8, c++){
-      const k2 = 1 + .12 * Math.sin(p * 37 + c * 1.7) + .06 * Math.sin(p * 61 + c);
-      x.save(); x.translate(xx + tw / 2, top + 2 * h * .16); x.scale(c % 2 ? -1 : 1, k2 * 1.25); x.drawImage(tongues, -tw / 2, -th, tw, th); x.restore();
+  function drawAero(e, tau){
+    const { w, h, T, k } = C, D = h + T;
+    for (let i = 0; i < B.length; i++){
+      if (i === nBack){ X.globalAlpha = 1; X.setTransform(k, 0, 0, k, 0, k * (h - D * e)); X.fillStyle = HZ; X.fillRect(0, 0, w, T); }    // a little light in the thick of it
+      const b = B[i], rr = b.rad * (1 + .1 * e), y = b.y0 - b.sp * D * e;
+      if (y < -rr * 1.6 || y > h + rr * 1.6) continue;
+      const x = b.x0 + b.wa * Math.sin(b.wf * tau + b.wp) + b.dx * e;
+      if (!b.kind){ X.globalAlpha = .55; X.setTransform(k, 0, 0, k, k * x, k * y); X.drawImage(SPR[b.v], -rr, -rr, rr * 2, rr * 2); continue; }
+      let al = b.kind === 1 ? .95 : .9, sc = 1, q = 0;
+      if (b.pop > -1e8 && y < b.pop && e > .12){                                    // pop: it swells, thins and is gone, a few drops flying off
+        if (b.pt < 0) b.pt = tau;
+        q = (tau - b.pt) / .16; if (q >= 1) continue;
+        sc = 1 + .45 * q; al *= 1 - q;
+      }
+      const sq = b.qa * Math.sin(b.qf * tau + b.qp), sx = (1 + sq) * sc, sy = (1 - sq * .8) * sc, ro = b.rot + .12 * Math.sin(.8 * tau + b.wp), co = Math.cos(ro), si = Math.sin(ro);
+      X.globalAlpha = al;
+      X.setTransform(k * sx * co, k * sy * si, -k * sx * si, k * sy * co, k * x, k * y);
+      X.drawImage(SPR[b.v], -rr, -rr, rr * 2, rr * 2);
+      if (q > 0){
+        X.setTransform(k, 0, 0, k, 0, 0); X.fillStyle = '#fff'; X.globalAlpha = 1 - q;
+        for (let j = 0; j < 6; j++){ const a = j * 1.047 + b.wp, d = rr * (1.05 + 1.1 * q); X.beginPath(); X.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, (1.2 + rr * .04) * (1 - q * .6), 0, 7); X.fill(); }
+      }
     }
-    x.restore();
   }
-  x.save(); x.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 70; i++){
-    const ex = r() * w, ey = top + 2 * h * .12 - r() * h * .55 - p * h * .4 * r(), er = 1 + 2.5 * r(), gch = 140 + 100 * r() | 0, ea = .5 + .5 * r();
-    if (ey < -10 || ey > h + 10) continue;
-    x.fillStyle = 'rgba(255,' + gch + ',40,' + ea + ')'; x.beginPath(); x.arc(ex + Math.sin(p * 20 + i) * 8, ey, er, 0, 7); x.fill();
+  function initFire(){
+    const { w, h, T, s } = C, r = rnd(C.seed * 17 + 3), D = h + T;
+    GL = lin(0, T, [[0, 'rgba(255,150,30,0)'], [.14, 'rgba(255,150,30,0)'], [.22, 'rgba(255,130,20,.85)'], [.3, 'rgba(255,100,0,1)'], [.5, 'rgba(220,50,0,1)'],
+                    [.66, 'rgba(140,15,0,1)'], [.76, 'rgba(50,4,0,.92)'], [.9, 'rgba(25,0,0,.5)'], [1, 'rgba(20,0,0,0)']]);
+    SPK = glow(16, 'rgba(255,230,150,1)', 'rgba(255,90,0,0)');
+    SMK = glow(64, 'rgba(22,6,2,.55)', 'rgba(22,6,2,0)');
+    SP = []; for (let i = 0; i < 150; i++){ const y0 = h + T * (.04 + .4 * Math.pow(r(), 1.3)); SP.push({ x0:r() * w, y0, sp:1.15 + .45 * r(), wa:(6 + 26 * r()) * s, wf:2 * Math.PI * (.5 + 1.4 * r()), wp:r() * 6.3, rad:(1 + 2.6 * r() * r()) * s * 3, fl:6 + 10 * r(), g:130 + 110 * r() }); }
+    WS = []; for (let i = 0; i < 34; i++) WS.push({ x0:r() * w, y0:h + T * (.18 + .5 * r()), sp:1.05 + .28 * r(), wd:(80 + 140 * r()) * s, c:(r() * 5) | 0, fp:r() < .5 ? -1 : 1, wf:2 * Math.PI * (.6 + .8 * r()), wp:r() * 6.3, a:.4 + .4 * r() });
+    SM = []; for (let i = 0; i < 26; i++) SM.push({ x0:r() * w, y0:h + T * (.7 + .3 * r()), sp:.86 + .1 * r(), rad:(90 + 120 * r()) * s, dx:(r() - .5) * 120 * s });
   }
-  x.restore();
+  function makeBody(){                                // the photograph of fire across the width: cross-faded copies from different parts of it, faded top and bottom
+    const fire = C._fire; if (!fire || BODY) return;
+    const { w, T, k } = C, ph = T * .52, iw = fire.width, ih = fire.height, n = Math.max(1, Math.ceil(w / (ph * iw / ih * .65))), cw = w / n, tw = cw * 1.35;
+    const t = mk(w * k, ph * k), q = t.getContext('2d'); q.scale(k, k);
+    for (let i = 0; i < n; i++){
+      const c = mk(tw * k, ph * k), cx = c.getContext('2d'), sx = (i % 3) * iw * .12, kk = (tw - cw) / tw; cx.scale(k, k);
+      cx.drawImage(fire, sx, 0, iw * .76, ih, 0, 0, tw, ph);
+      const e = cx.createLinearGradient(0, 0, tw, 0);
+      e.addColorStop(0, i ? 'rgba(0,0,0,0)' : '#000'); e.addColorStop(kk, '#000'); e.addColorStop(1 - kk, '#000'); e.addColorStop(1, i < n - 1 ? 'rgba(0,0,0,0)' : '#000');
+      cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = e; cx.fillRect(0, 0, tw, ph);
+      q.drawImage(c, i * cw - (tw - cw) / 2, 0, tw, ph);
+    }
+    const fd = q.createLinearGradient(0, 0, 0, ph); fd.addColorStop(0, 'rgba(0,0,0,0)'); fd.addColorStop(.2, '#000'); fd.addColorStop(.8, '#000'); fd.addColorStop(1, 'rgba(0,0,0,0)');
+    q.globalCompositeOperation = 'destination-in'; q.fillStyle = fd; q.fillRect(0, 0, w, ph);
+    BODY = t;
+  }
+  function tongues(by, tw, al, hk, tau, seed, S){     // a row of flames standing on y = by, each swaying in slices, the tips most
+    const iw = FL.width, ih = FL.height, th = tw * ih / iw, r = rnd(seed), k = C.k, off = r() * tw * .5;
+    X.globalAlpha = al;
+    for (let c = 0, cx = -off; cx < C.w + tw * .5; c++, cx += tw * .45){
+      const f1 = 7 + 4 * r(), ph = r() * 6.3, hh = th * hk * (.72 + .32 * r()) * (1 + .1 * Math.sin(tau * f1 + ph) + .05 * Math.sin(tau * 15.3 + c)), fp = c % 2 ? -1 : 1;
+      for (let j = 0; j < S; j++){
+        const sw = Math.sin(tau * 8.5 + j * .8 + ph) * tw * .024 * Math.pow(1 - j / S, 1.4);
+        X.setTransform(k * fp, 0, 0, k, k * (cx + sw), 0);
+        X.drawImage(FL, 0, j * ih / S, iw, ih / S, -tw / 2, by - hh + j * hh / S, tw, hh / S + .8);
+      }
+    }
+  }
+  function drawFire(e, tau){
+    const { w, h, T, k, s } = C, D = h + T, top = h - D * e;
+    X.globalCompositeOperation = 'source-over';
+    const fade = 1 - ss(.72, 1, e);
+    X.setTransform(k, 0, 0, k, 0, 0);
+    for (const p of SM){                                 // smoke left behind, spreading and thinning
+      const y = p.y0 - p.sp * D * e, rr = p.rad * (1 + .6 * e); if (y < -rr || y > h + rr) continue;
+      X.globalAlpha = .9 * fade; X.drawImage(SMK, p.x0 + p.dx * e - rr, y - rr, rr * 2, rr * 2);
+    }
+    X.globalAlpha = 1; X.setTransform(k, 0, 0, k, 0, k * top); X.fillStyle = GL; X.fillRect(0, 0, w, T);        // the glow
+    if (!BODY) makeBody();
+    if (BODY){                                           // the body of the fire: its rows sway, the sway running upward, and it breathes
+      const ph = T * .52, n = 32, by = top + T * .2, st = 1 + .035 * Math.sin(tau * 3.1) + .02 * Math.sin(tau * 7.7);
+      X.globalAlpha = .92;
+      for (let j = 0; j < n; j++){
+        const yy = j * ph / n, dx = (Math.sin(yy * .012 - tau * 5.2) + .5 * Math.sin(yy * .027 - tau * 8.3 + 1)) * 5 * s;
+        X.setTransform(k, 0, 0, k, k * dx, k * (by + yy * st + ph * (1 - st)));
+        X.drawImage(BODY, 0, j * BODY.height / n, BODY.width, BODY.height / n, 0, 0, w, ph / n * st + .8);
+      }
+    }
+    if (FL){
+      const iw = FL.width, ih = FL.height, tw = Math.min(w * .55, T * .27 * iw / ih);
+      tongues(top + T * .47, tw * .8, .42, .8, tau, C.seed * 3 + 5, 8);              // flames flickering inside it
+      tongues(top + T * .64, tw * .7, .34, .7, tau * 1.13, C.seed * 3 + 9, 8);
+      /* and the tall ones on its leading edge */
+      tongues(top + T * .27 + tw * ih / iw * .06, tw, 1, 1, tau, C.seed * 3 + 1, 10);
+      X.globalCompositeOperation = 'lighter';           // loose flames flying up ahead of it, growing and fading
+      for (const f of WS){
+        const y = f.y0 - f.sp * D * e, d = y - top, a = f.a * ss(-h * .22, 0, d) * (.75 + .25 * Math.sin(tau * 9 + f.wp)); if (a < .02) continue;
+        const sp = WSP[f.c], wd = f.wd * (1 + .5 * ss(0, -h * .2, d)), hh = wd * sp.height / sp.width * (.85 + .15 * Math.sin(tau * 7 + f.wp)), x = f.x0 + Math.sin(f.wf * tau + f.wp) * 14 * s;
+        X.globalAlpha = a; X.setTransform(k * f.fp, 0, 0, k, k * x, 0);
+        X.drawImage(sp, -wd / 2, y - hh, wd, hh);
+      }
+    }
+    X.globalCompositeOperation = 'lighter'; X.setTransform(k, 0, 0, k, 0, 0);
+    for (const p of SP){                                // sparks, weaving, flickering, flying on ahead
+      const y = p.y0 - p.sp * D * e; if (y < -10 || y > h + 10) continue;
+      const a = (.55 + .45 * Math.sin(tau * p.fl + p.wp)) * (1 - ss(.85, 1, e)), rr = p.rad * (1 - .4 * e);
+      X.globalAlpha = Math.max(0, a); X.drawImage(SPK, p.x0 + p.wa * Math.sin(p.wf * tau + p.wp) - rr, y - rr, rr * 2, rr * 2);
+    }
+    X.globalCompositeOperation = 'source-over';
+  }
+  function frame(){
+    if (stopped) return;
+    const t = now() - start, p = Math.min(1, Math.max(0, t / C.ms)), e = ease(p);
+    X.setTransform(1, 0, 0, 1, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'; X.clearRect(0, 0, cv.width, cv.height);
+    if (p < 1){ if (C.evil) drawFire(e, t / 1000); else drawAero(e, t / 1000); next(frame); }
+  }
+  return {
+    init(canvas, cfg){ cv = canvas; C = cfg; X = cv.getContext('2d'); ease = bez.apply(null, cfg.ease); if (cfg.evil) initFire(); else initAero(); },
+    image(n, im){ if (!C) return; if (n === 'ar-flames'){ FL = soften(im); WSP = wisps(FL); } if (n === 'ar-fire'){ C._fire = im; } },
+    go(epoch){ if (going || !C) return; going = true; start = epoch; frame(); },
+    stop(){ stopped = true; }
+  };
+}
+/* the worker that runs it: made from that same function's source, so there is no second copy to keep in step */
+let AE_URL = null;
+const AE_OFF = (() => { try { return typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && !!HTMLCanvasElement.prototype.transferControlToOffscreen; } catch { return false; } })();
+const aeWorkerUrl = () => AE_URL || (AE_URL = URL.createObjectURL(new Blob(['"use strict";const E=(' + aeWallEngine.toString() + ')(self);' +
+  'self.onmessage=e=>{const d=e.data;if(d.init)E.init(d.canvas,d.cfg);' +
+  'if(d.pics)Object.keys(d.pics).forEach(n=>fetch(d.pics[n]).then(r=>r.blob()).then(b=>createImageBitmap(b)).then(b=>E.image(n,b)).catch(()=>{}));' +
+  'if(d.go)E.go(d.go);if(d.stop){E.stop();close();}};'], { type:'text/javascript' })));
+/* the wall's measurements: T its thickness (more than the screen is tall), the mask's edge (a fraction of the way down
+   the wall) and how soft it is, s a size for bubbles and sparks */
+const aeGeo = evil => { const w = innerWidth, h = innerHeight;
+  return { w, h, T:Math.round(h * (evil ? 1.25 : 1.4)), s:Math.max(.6, Math.min(1.4, Math.min(w, h) / 800)),
+           edge:evil ? .5 : .47, soft:Math.round(h * (evil ? .2 : .32)), ms:evil ? 1000 : 950 }; };
+const AE_EASE = [.45, .05, .35, 1];
+/* put the wall up (still empty: it is drawn once it is told when it started); vt: it is named, so a view transition draws it over both pages */
+function aeSweepLayer(seed, vt){
+  const evil = dark(), g = aeGeo(evil), k = Math.min(devicePixelRatio || 1, evil ? .75 : 1.25);
+  const L = layer('ae-sweep'); if (vt) L.style.viewTransitionName = 'ae-sweep';
+  const c = document.createElement('canvas'); c.width = Math.max(2, Math.round(g.w * k)); c.height = Math.max(2, Math.round(g.h * k)); L.appendChild(c);
+  const cfg = { w:g.w, h:g.h, T:g.T, s:g.s, k, evil, seed, ms:g.ms, ease:AE_EASE }, pics = evil ? ['ar-fire', 'ar-flames'] : [];
+  let eng = null, wk = null;
+  if (AE_OFF) try {
+    wk = new Worker(aeWorkerUrl()); const off = c.transferControlToOffscreen();
+    wk.postMessage({ init:1, canvas:off, cfg }, [off]);
+    if (pics.length){ const P = {}; pics.forEach(n => { P[n] = new URL('/images/th/' + n + '.webp' + (V ? '?v=' + V : ''), location.href).href; }); wk.postMessage({ pics:P }); }
+    eng = { go:ep => wk.postMessage({ go:ep }), stop:() => { try { wk.postMessage({ stop:1 }); } catch {} setTimeout(() => { try { wk.terminate(); } catch {} }, 100); } };
+  } catch { eng = null; if (wk) try { wk.terminate(); } catch {} }
+  if (!eng){                                          // no worker to hand it to: the page draws it
+    const E = aeWallEngine(window); E.init(c, cfg);
+    pics.forEach(n => { const i = aePic(n); if (aeOk(i)) E.image(n, i); else i.addEventListener('load', () => E.image(n, i), { once:true }); });
+    eng = { go:E.go, stop:E.stop };
+  }
+  Object.assign(L, { g, eng });
+  return L;
+}
+/* run it: the next page (target: the body, or the view transition's new page) shows through a soft-edged mask that rises
+   on the wall's curve; the wall is told the moment it started, and keeps to the same clock */
+const AE_MASK = (() => { try { return CSS.supports('mask-image', 'linear-gradient(#000,#000)') ? 'mask' : 'webkitMask'; } catch { return 'mask'; } })();
+function aeSweepRun(L, target, pseudo, done){
+  const { g } = L, o = { duration:g.ms, easing:'cubic-bezier(' + AE_EASE.join(',') + ')', fill:'both' };
+  let z = 1; if (!pseudo) try { z = parseFloat(getComputedStyle(target).zoom) || 1; } catch {}
+  const q = v => (v / z).toFixed(1) + 'px';
+  const img = 'linear-gradient(to bottom,transparent 0,transparent ' + q(2 * g.h - g.soft / 2) + ',#000 ' + q(2 * g.h + g.soft / 2) + ',#000 100%)';
+  const mk = y => ({ [AE_MASK + 'Image']:img, [AE_MASK + 'Size']:'100% ' + q(4 * g.h), [AE_MASK + 'Repeat']:'no-repeat', [AE_MASK + 'Position']:'0 ' + q(y - 2 * g.h) });
+  let A;
+  try { A = target.animate([mk(g.h + g.edge * g.T), mk(-g.T + g.edge * g.T)], pseudo ? Object.assign({ pseudoElement:pseudo }, o) : o); }
+  catch { L.eng.stop(); if (done) done(); return null; }
+  const st = document.timeline && document.timeline.currentTime;
+  if (st != null) try { A.startTime = st; } catch {}
+  L.eng.go((performance.timeOrigin || (Date.now() - performance.now())) + (st != null ? +st : performance.now()));
+  A.finished.then(() => { if (!pseudo) A.cancel(); L.eng.stop(); if (done) done(); }, () => { L.eng.stop(); if (done) done(); });
+  return A;
 }
 TR.aero = {
-  outMs:430, inMs:620,
+  outMs:140, inMs:1000,
   pics(){ if (dark()){ aePic('ar-fire'); aePic('ar-flames'); } },
-  layer(){ return canvasLayer('ae-wall', dark() ? .6 : undefined); },
-  out(n, done){ this.pics(); const k = this.layer(); run(420, p => aeWall(k, n.seed, p * .5), done); },
-  cover(n){ this.pics(); this.k = this.layer(); aeWall(this.k, n.seed, .5); },
-  in(n, done){ const k = this.k || this.layer(); run(600, p => aeWall(k, n.seed, .5 + ease.out(p) * .5), done); }
+  out(n, done){ if (vtArmed()){ n.vt = 1; done(); return; } this.pics(); root.classList.add('fx-out'); after(130, done); },
+  cover(n){ this.pics(); this.L = aeSweepLayer(n.seed || 7, false); },
+  in(n, done){ const L = this.L || aeSweepLayer(n.seed || 7, false); if (!aeSweepRun(L, document.body, null, done)) done(); }
 };
 if (skin() === 'aero') TR.aero.pics();
 
-/* Gen X Soft Club: the page smears sideways and breaks into a digital glitch (a horizontal blur, bands of it pushed
-   along, the red pulled from the blue), and the next one comes in the same way and settles. Same SVG-filter-on-the-page
-   approach as Vaporwave, with the same fallback (a plain slide, softclub.css) where filters on a page are unreliable. */
-if (VP_SVG) root.classList.add('sc-svg');
+/* Gen X Soft Club */
 /* Soft Club's photographs, one per kind of page (skins/softclub.css), so the next one can be fetched while this page
    leaves and decoded before the next one smears in (a photograph still arriving was the stutter). The others are
    fetched quietly once the page has settled, so every page after the first finds its photograph waiting. */
@@ -492,41 +687,38 @@ const scPic = pg => { const u = scUrl(pg); if (!SCI[u]){ const i = new Image(); 
 if (skin() === 'softclub') ready(() => setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(() => {
   if (skin() === 'softclub') [...new Set(Object.values(SC_PH))].forEach((n, k) => setTimeout(() => scPic(Object.keys(SC_PH).find(pg => SC_PH[pg] === n)), k * 300));
 }), 1500));
-/* the smear: a horizontal blur, bands pushed sideways (a few displacement maps made once, not every step), red split
-   from green and blue. Kept light: the filter covers the whole page, however long it is. */
-let SC_MAPS = null;
-function scStart(dir){
-  if (!SC_MAPS) SC_MAPS = [vpMap(2, .3), vpMap(4, .55), vpMap(6, .8), vpMap(8, 1)];
-  const d = layer('sc-defs', '<svg width="0" height="0" aria-hidden="true"><filter id="sc-smear" x="-25%" y="-2%" width="150%" height="104%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">' +
-    '<feGaussianBlur in="SourceGraphic" stdDeviation="0 0" result="b"/>' +
-    '<feImage x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="m"/>' +
-    '<feDisplacementMap in="b" in2="m" scale="0" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
-    '<feColorMatrix in="d" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/><feOffset in="r" dx="0" dy="0" result="r2"/>' +
-    '<feColorMatrix in="d" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="g"/><feOffset in="g" dx="0" dy="0" result="g2"/>' +
-    '<feBlend in="r2" in2="g2" mode="screen"/></filter></svg>');
-  const blur = d.querySelector('feGaussianBlur'), img = d.querySelector('feImage'), dis = d.querySelector('feDisplacementMap'), off = d.querySelectorAll('feOffset');
-  const wr = document.querySelector('.wrap'); if (wr) wr.style.filter = 'url(#sc-smear)';
-  let lastMap = -1;
-  return k => {                                       /* k 0..1: how far gone */
-    blur.setAttribute('stdDeviation', (k * k * .03).toFixed(4) + ' 0');
-    const m = Math.min(3, Math.floor(k * 4)); if (m !== lastMap){ img.setAttribute('href', SC_MAPS[m]); lastMap = m; }
-    dis.setAttribute('scale', (k * k * .12).toFixed(4));
-    off[0].setAttribute('dx', (k * .012).toFixed(4)); off[1].setAttribute('dx', (-k * .012).toFixed(4));
-    if (wr){ wr.style.transform = 'translateX(' + (dir * k * k * 7).toFixed(2) + 'vw)'; wr.style.opacity = String(Math.max(0, 1 - Math.max(0, k - .55) * 2.3)); }
-  };
+/* The page change: the whole frame, photograph and all, smears sideways into a washed-out blur, the way a long exposure
+   smears a train leaving, and the next page comes out of the same smear. (It was an SVG filter over the page, changed
+   step by step on timers: the browser had to redraw the whole page through it each step, which stuttered, and it
+   pulled the red apart from the blue.)
+   With a view transition (Chromium, Safari 18.2+; theme.js opts in) the browser holds pictures of the page being left
+   and of the next one, and scSmear works on those: the pair is squeezed sideways, blurred, and stretched back out, so
+   the blur runs sideways only; it is washed out (brighter, paler, flatter); the old picture slides off to the left as
+   the next one slides in from the right and settles. Only transforms, opacity and filters, which the browser animates
+   by itself, so a page busy loading can't make it stutter. Without one, softclub.css washes the page and its
+   photograph out as it is left and brings them back as the next one arrives. */
+function scSmear(){
+  const w = innerWidth, N = 24, P = [], O = [], NW = [];
+  const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (let i = 0; i <= N; i++){
+    const t = i / N, s = Math.pow(Math.sin(Math.PI * t), 1.25), k = 1 + 5 * s, u = sm(.3, .7, t);
+    P.push({ offset:t, transform:'scaleX(' + k.toFixed(4) + ')',
+             filter:'blur(' + (4 * s).toFixed(2) + 'px) brightness(' + (1 + .42 * s).toFixed(3) + ') saturate(' + (1 - .5 * s).toFixed(3) + ') contrast(' + (1 - .2 * s).toFixed(3) + ')' });
+    O.push({ offset:t, transform:'scaleX(' + (1 / k).toFixed(5) + ') translateX(' + (-w * .12 * Math.pow(sm(0, .7, t), 1.5)).toFixed(1) + 'px)', opacity:(1 - u).toFixed(3) });
+    NW.push({ offset:t, transform:'scaleX(' + (1 / k).toFixed(5) + ') translateX(' + (w * .12 * Math.pow(1 - sm(.3, 1, t), 1.5)).toFixed(1) + 'px)', opacity:u.toFixed(3) });
+  }
+  const o = { duration:560, easing:'linear', fill:'both' }, el = document.documentElement;
+  try {
+    el.animate(P, Object.assign({ pseudoElement:'::view-transition-image-pair(root)' }, o));
+    el.animate(O, Object.assign({ pseudoElement:'::view-transition-old(root)' }, o));
+    el.animate(NW, Object.assign({ pseudoElement:'::view-transition-new(root)' }, o));
+    return true;
+  } catch { return false; }
 }
-const scEnd = () => { const wr = document.querySelector('.wrap'); if (wr){ wr.style.filter = wr.style.transform = wr.style.opacity = ''; } };
-/* the way in waits (a fifth of a second at most) for this page's photograph to be decoded, so the smear runs on a finished picture */
-const scReady = go => { let gone = false; const once = () => { if (!gone){ gone = true; go(); } }; const i = scPic(PG);
-  if (i.decode) i.decode().then(once, once); else if (i.complete) once(); else i.onload = once; after(200, once); };
-TR.softclub = VP_SVG ? {
-  outMs:300, inMs:420,
-  out(n, done){ scPic(n.to); const set = scStart(-1), K = [.15, .35, .6, .85, 1]; set(.05); K.forEach((k, i) => after(45 + i * 50, () => set(k))); after(300, done); },
-  in(n, done){ const set = scStart(1); set(1); scReady(() => { const K = [.8, .58, .38, .2, .07, 0]; K.forEach((k, i) => after(i * 50, () => set(k))); after(320, () => { scEnd(); done(); }); }); }
-} : {
-  outMs:200, inMs:420,
-  out(n, done){ scPic(n.to); root.classList.add('fx-out'); after(200, done); },
-  in(n, done){ after(420, done); }
+TR.softclub = {
+  outMs:240, inMs:520,
+  out(n, done){ scPic(n.to); if (vtArmed()){ n.vt = 1; done(); return; } root.classList.add('fx-out'); after(230, done); },
+  in(n, done){ after(520, done); }
 };
 
 /* Cyberpunk: the panels shift off behind their angles, the signal breaks up for a moment, the next ones shift in */
@@ -597,7 +789,7 @@ if (nav && root.classList.contains('fx-in')){
   const tr = trans();
   try { if (tr.cover) tr.cover(nav); } catch {}
   let entered = false;
-  const fin = () => { root.classList.remove('fx-enter', 'fx-in'); root.querySelectorAll('.fx-layer').forEach(n => n.remove()); vpEnd(); scEnd(); };      /* vpEnd: never leave the page under Vaporwave's filter, whatever went wrong */
+  const fin = () => { root.classList.remove('fx-enter', 'fx-in'); root.querySelectorAll('.fx-layer').forEach(n => n.remove()); vpEnd(); };      /* vpEnd: never leave the page under Vaporwave's filter, whatever went wrong */
   const enter = () => {
     if (entered) return; entered = true;
     root.classList.remove('fx-in'); root.classList.add('fx-enter');
@@ -610,11 +802,24 @@ if (nav && root.classList.contains('fx-in')){
 }
 
 if (((nav && root.classList.contains('fx-in')) || vtArmed()) && writeScene()) mountBg(true); else ready(() => mountBg());
-/* the view transition's way in (Y2K Futurism): the wave goes up as the new page is first shown, starts with the
-   browser's wipe, and comes down when it is done */
+/* the view transition's way in (Y2K Futurism, Frutiger Aero, Gen X Soft Club): the wave goes up as the new page is first
+   shown, starts with the browser's wipe, and comes down when it is done */
 addEventListener('pagereveal', e => {
   const vt = e.viewTransition; if (!vt) return;
-  if (skin() !== 'y2k' || !on()){ try { vt.skipTransition(); } catch {} return; }
+  if ((skin() !== 'y2k' && skin() !== 'aero' && skin() !== 'softclub') || !on()){ try { vt.skipTransition(); } catch {} return; }
+  if (skin() === 'softclub'){                        /* Gen X Soft Club: both pages smear together */
+    root.classList.add('sc-vt');
+    vt.ready.then(() => { if (!scSmear()) try { vt.skipTransition(); } catch {} }, () => {});
+    vt.finished.finally(() => root.classList.remove('sc-vt'));
+    return;
+  }
+  if (skin() === 'aero'){                            /* Frutiger Aero: the wall rises over both pages; the next one is uncovered behind it */
+    root.classList.add('ae-vt');
+    const L = aeSweepLayer((nav && nav.seed) || (Date.now() % 100000) + 1, true);
+    vt.ready.then(() => { if (!aeSweepRun(L, root, '::view-transition-new(root)')) try { vt.skipTransition(); } catch {} }, () => {});
+    vt.finished.finally(() => { L.remove(); root.classList.remove('ae-vt'); });
+    return;
+  }
   const L = ykLayer(); L.classList.add('vt');
   vt.ready.then(() => L.classList.add('go'), () => L.remove());
   vt.finished.finally(() => L.remove());

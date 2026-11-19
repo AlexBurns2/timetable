@@ -377,6 +377,15 @@ html.zen .fx-bg{display:none}
 html.fx-in .wrap{opacity:0}
 html.fx-out .wrap{opacity:0;transition:opacity .12s ease}
 html.fx-enter .wrap{animation:fxfade .22s ease both}
+/* Frutiger Aero's page change (fx.js): a thick wall of bubbles (Evil: fire) rising up the screen, drawn frame by frame on
+   one canvas, the next page uncovered behind it. With a view transition the wall is named (so it is drawn over both pages) and the next page is
+   masked by fx.js, so the browser's own cross-fade is turned off; without one, the body is masked instead and the
+   usual fade is not wanted. */
+.ae-sweep canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+html.fx-enter[data-skin="aero"] .wrap{animation:none}
+html.ae-vt::view-transition-old(root),html.ae-vt::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.ae-vt::view-transition-image-pair(root){isolation:auto}
+html.ae-vt::view-transition-group(ae-sweep),html.ae-vt::view-transition-new(ae-sweep),html.ae-vt::view-transition-old(ae-sweep){animation:none}
 @keyframes fxfade{from{opacity:0}to{opacity:1}}
 
 /* Display → Now and Next off: the timetable's pair and Home's Next card go (Home's sign-in prompt stays) */
