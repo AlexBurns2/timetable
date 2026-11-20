@@ -61,7 +61,7 @@
   </div>
 
   <section class="forum" id="forum">
-    <h2>Forum</h2>
+    <div class="fhead"><h2>Forum</h2><button type="button" class="fyear" id="fyear" aria-pressed="false" hidden></button></div>
     <div class="fnew" id="fnew">
       <textarea id="fbody" rows="1" maxlength="1000" placeholder="Say something…" aria-label="Write a post"></textarea>
       <select id="fscope" aria-label="Who it’s for" hidden></select>
@@ -107,9 +107,9 @@
       <h3>What this is</h3>
       <p>MSC Unofficial is a free upgrade to the school timetable, inspired by the work of OggyP. The website is strictly for utility and entertainment: there will never be any ads, payments or data collection.</p>
       <h3>How it was made</h3>
-      <p>Put bluntly, the website was almost entirely coded by large language models with minimal human supervision. We guided the general functionality, look and details of the website; Claude Opus 5.5 wrote and implemented our ideas. Of course, we would much rather be able to proclaim the website as the hard work of humans alone, but with other commitments and the purpose of the website in mind, we felt that the extensive use of AI was justified. We've also not included our names anywhere on the website or credits, since it is really the work of AI.</p>
+      <p>Put bluntly, the website was almost entirely coded by large language models with minimal human supervision. We guided the general functionality, look and details of the website; Claude Opus 5.5 wrote and implemented our ideas. Of course, we would much rather be able to proclaim the website as the hard work of humans alone, but with other commitments and the purpose of the website in mind, we felt that the extensive use of AI was justified. For this reason, we haven't included our names anywhere on the website or credits.</p>
       <h3>What this means for you</h3>
-      <p>AI generated code is quite prone to mistakes and overlooks. If you catch any such issues, please report them through the "Suggest a feature" button on the homepage. Privacy and data management was supervised by us. All important data is encrypted and stored with row level security on a remote server. We can't access this private information either, only you can access it with your specific credentials.</p>
+      <p>AI generated code is prone to mistakes and blindspots. If you catch any such issues, please report them through the "Suggest a feature" button on the homepage. Privacy and data management was supervised by us. All important data is encrypted and stored with row level security on a remote server. We can't access this private information either, only you can access it with your specific credentials.</p>
       <h3>AI and your data</h3>
       <p>No AIs are involved in the actual function and access of the site, AI was ONLY used to code it. Your data is never sent to any kind of AI when you access the site. AI was strictly used for development alone.</p>
       <h3>Photographs</h3>
@@ -163,7 +163,10 @@ const CYCLE = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','f
 const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
 /* the forum and this week's poll in one trip, started straight away; the forum
    and the poll card each take their half the first time they load */
-const firstLoad = signedIn ? { at: Date.now(), p: TT.api('/api/forum', { params:{ withpoll:1 } }) } : null;
+/* "Only Year N" on the forum: yours to set (synced with your settings), asked of the server so the
+   threads you get are your year's, not a few of everyone's */
+const forumOnlyYear = () => !!TT.get('tt.forumyear', false);
+const firstLoad = signedIn ? { at: Date.now(), p: TT.api('/api/forum', { params: forumOnlyYear() ? { withpoll:1, only:'year' } : { withpoll:1 } }) } : null;
 if (firstLoad) firstLoad.p.catch(() => {});
 const userOf = e => String(e || '').toLowerCase().split('@')[0];
 function ownPayload(){
@@ -435,7 +438,7 @@ function wireRx(bar){
 /* only the newest thread until you ask for the rest */
 let forumOpen = false;
 /* showing more or fewer redraws the posts already loaded: instant, no fetch */
-let lastPosts = null;
+let lastPosts = null, forumYear = null, forumFiltered = false;
 $('fmore').onclick = () => {
   forumOpen = !forumOpen;
   if (lastPosts) renderForum(lastPosts);
@@ -444,8 +447,11 @@ $('fmore').onclick = () => {
 };
 async function loadForum(){
   try {
-    const d = firstLoad && !firstLoad.forumUsed ? (firstLoad.forumUsed = true, await firstLoad.p) : await TT.api('/api/forum');
+    const d = firstLoad && !firstLoad.forumUsed ? (firstLoad.forumUsed = true, await firstLoad.p)
+      : await TT.api('/api/forum', { params: forumOnlyYear() ? { only:'year' } : {} });
     lastPosts = d.posts || [];
+    forumYear = d.year || null; forumFiltered = d.only === 'year';
+    yearToggle();
     scopeChoices(d);
     renderForum(lastPosts);
   } catch (e){
@@ -460,6 +466,7 @@ function renderForum(posts){
   $('fposts').innerHTML = posts.length
     ? shown.map(p => postCard(p, false) +
         (p.replies || []).map(r => postCard(r, true)).join('')).join('')
+    : forumFiltered ? '<p class="how">Nothing from Year ' + esc(forumYear) + ' yet. Say the first thing, or turn off “Only Year ' + esc(forumYear) + '” to see everyone’s.</p>'
     : '<p class="how">Nothing here yet. Say the first thing.</p>';
   const more = posts.length - shown.length;
   $('fmore').hidden = !more && !forumOpen || posts.length < 2;
@@ -490,6 +497,22 @@ function wireForum(){
   });
 }
 
+/* the "Only Year N" toggle: shown once we know your year; turning it on or off reloads the threads */
+function yearToggle(){
+  const b = $('fyear'); if (!b) return;
+  if (!forumYear){ b.hidden = true; return; }
+  b.textContent = 'Only Year ' + forumYear;
+  b.setAttribute('aria-pressed', forumOnlyYear() ? 'true' : 'false');
+  b.title = forumOnlyYear() ? 'Showing threads from your year. Press to see everyone’s.' : 'Hide threads started by people in other years';
+  b.hidden = false; b.disabled = false;
+}
+$('fyear').onclick = async () => {
+  const b = $('fyear');
+  TT.set('tt.forumyear', !forumOnlyYear());
+  b.setAttribute('aria-pressed', forumOnlyYear() ? 'true' : 'false'); b.disabled = true;
+  await loadForum();
+  b.disabled = false;
+};
 /* who a new thread is for: everyone, your year, or one of your classes (from your own timetable;
    the server checks you're in it). Only once the forum's scope columns exist (d.scopes). */
 function scopeChoices(d){

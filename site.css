@@ -538,3 +538,11 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .ffor{padding:0 7px;border:1px solid var(--line);border-radius:999px;font-size:.6875rem;font-weight:700;color:var(--text);line-height:1.6}
 /* Send a suggestion: what it is, then the line */
 .ideaform select{flex:none;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
+
+/* the forum's heading, with "Only Year N" beside it (home.html yearToggle) */
+.fhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.fhead h2{margin:0}
+.fyear{flex:none;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-size:.8125rem;font-weight:600;cursor:pointer}
+.fyear:hover{color:var(--text);border-color:color-mix(in srgb,var(--text) 30%,var(--line))}
+.fyear[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fyear:disabled{opacity:.6;cursor:progress}

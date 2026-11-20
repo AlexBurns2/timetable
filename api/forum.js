@@ -59,7 +59,7 @@ import { displayNames, withName, rosterList } from "./_names.js";
 import { pollGet, pollPost, pollPreview, pollClock, pickFor, hasAudience } from "./_poll.js";
 import { resolveYear } from "./_daily.js";
 import { fetchAsOwner } from "./timetable.js";
-import { noticeGet, noticePost } from "./_notice.js";
+import { noticeGet, noticePost, noticeSent } from "./_notice.js";
 
 /* ── who a thread is for ─────────────────────────────────────────────── */
 let scopeCol = { at: 0, ok: null };
@@ -97,6 +97,12 @@ async function yearOf(me) {
     if (p.year) return String(p.year);
   } catch {}
   return resolveYear(me).catch(() => null);
+}
+
+/* everyone's year, email → "12", from the (cached) directory: for "only my year" and the moderators' view */
+async function yearsByEmail() {
+  try { return new Map((await rosterList()).filter(p => p.year).map(p => [String(p.email).toLowerCase(), String(p.year)])); }
+  catch { return new Map(); }
 }
 
 /* display-name overrides, loaded per request (see _names.js) */
@@ -221,7 +227,11 @@ export default async function handler(req, res) {
     if (!me.year) me.year = await yearOf(me);
     return pollGet(req, res, me, NAMES);
   }
-  if (req.method === "GET" && req.query.notices) return noticeGet(req, res, me);
+  if (req.method === "GET" && req.query.notices) {
+    if (req.query.notices !== "sent") return noticeGet(req, res, me);
+    if (!isOwner) return res.status(403).json({ error: "Moderators only." });
+    return noticeSent(res, e => withName(NAMES, e, nameFromEmail(e)));
+  }
   /* Home asks for the forum and this week's poll together (?withpoll=1): one trip
      instead of two. The poll is worked out alongside the posts; if it fails, the
      posts still come back and the poll is null (Home then shows no poll card). */
@@ -247,6 +257,16 @@ export default async function handler(req, res) {
       if (!me.year) me.year = await yearOf(me);
       const mine = data.some(r => String(r.scope).startsWith("class:")) ? await classesOf(me.email).catch(() => new Map()) : new Map();
       data = data.filter(r => !r.scope || r.scope === "all" || r.scope === "year:" + me.year || (String(r.scope).startsWith("class:") && mine.has(String(r.scope).slice(6))));
+    }
+    /* "Only my year" (Home's toggle, ?only=year): threads started by someone in another year are left
+       out. Threads from people with no year here (staff) stay, as do threads aimed at a year or a class,
+       and a thread kept keeps all its replies, so no conversation is cut in half. */
+    const onlyYear = req.query.only === "year";
+    if (!me.year) me.year = await yearOf(me);
+    const years = onlyYear && me.year || isOwner ? await yearsByEmail() : null;
+    if (onlyYear && me.year) {
+      const mineYr = String(me.year);
+      data = data.filter(r => r.parent || (r.scope && r.scope !== "all") || !years.has(String(r.email).toLowerCase()) || years.get(String(r.email).toLowerCase()) === mineYr);
     }
 
     /* everyone's reactions, as counts per emoji plus whether one is yours.
@@ -277,7 +297,9 @@ export default async function handler(req, res) {
          shows a moderator's delete on other people's posts only on hover) */
       mine: r.email === me.email, canDelete: r.email === me.email || isOwner, reactions: reactionsOf(r.id),
       /* who it's for, when it isn't everyone */
-      for: r.scope && r.scope !== "all" ? (String(r.scope).startsWith("year:") ? (r.scope_name || "Year " + String(r.scope).slice(5)) : (r.scope_name ? r.scope_name + " class" : "One class")) : undefined
+      for: r.scope && r.scope !== "all" ? (String(r.scope).startsWith("year:") ? (r.scope_name || "Year " + String(r.scope).slice(5)) : (r.scope_name ? r.scope_name + " class" : "One class")) : undefined,
+      /* moderators only: who it's for exactly, and the poster's year (the moderator page can change it) */
+      ...(isOwner && !r.parent ? { scope: r.scope || "all", pyear: years.get(String(r.email).toLowerCase()) || null } : {})
     });
     const rows = data || [];
     const threads = rows.filter(r => !r.parent).slice(0, MAX_THREADS).map(shape);
@@ -295,9 +317,9 @@ export default async function handler(req, res) {
     if (pollAlong) {
       const poll = await pollAlong, ms = Date.now() - t0;
       if (ms > 2500) console.warn("home load slow: " + ms + "ms");          // to see in the logs if it's still slow
-      return res.status(200).json({ posts: threads, poll, scopes: scoped, year: scoped ? me.year || await yearOf(me) : undefined });
+      return res.status(200).json({ posts: threads, poll, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined });
     }
-    return res.status(200).json({ posts: threads, scopes: scoped, year: scoped ? me.year || await yearOf(me) : undefined });
+    return res.status(200).json({ posts: threads, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined });
   }
 
   if (req.method === "POST") {
@@ -305,7 +327,7 @@ export default async function handler(req, res) {
     if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
     body = body || {};
 
-    if (/^(noticeread|noticesend|requestname|nameapply)$/.test(String(body.action || ""))) {
+    if (/^(noticeread|noticesend|noticeto|requestname|nameapply)$/.test(String(body.action || ""))) {
       if (body.action === "requestname" && limited("ask:" + me.email, 6, 3600e3)) return slowDown(res);
       return noticePost(body, res, me);
     }
@@ -331,6 +353,26 @@ export default async function handler(req, res) {
         : await db.from("forum_reaction").insert({ post_id: id, email: me.email, emoji });
       if (error) { console.error("reaction:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
       return res.status(200).json({ ok: true, on: !already });
+    }
+
+    /* moderators: who a thread is for, everyone or a year (its replies follow it). Only who can see it
+       changes: the words, the poster, the time and the reactions stay as they are. */
+    if (body.action === "scopeset") {
+      if (!isOwner) return res.status(403).json({ error: "Moderators only." });
+      if (!(await hasScope())) return res.status(409).json({ error: "The forum's new columns aren't there yet (SETUP.md, “Forum: posts for a year or a class”)." });
+      const id = String(body.id || ""), want = String(body.scope || "");
+      if (!/^[a-z0-9]{1,40}$/i.test(id)) return res.status(400).json({ error: "That isn't a post." });
+      let scope, scope_name;
+      if (want === "all") { scope = "all"; scope_name = null; }
+      else if (/^year:(7|8|9|10|11|12)$/.test(want)) { scope = want; scope_name = "Year " + want.slice(5); }
+      else return res.status(400).json({ error: "Pick everyone or a year." });
+      const { data: row } = await db.from("forum_post").select("id, parent").eq("id", id).maybeSingle();
+      if (!row) return res.status(404).json({ error: "That post is gone." });
+      const top = row.parent || row.id;
+      const { error: e1 } = await db.from("forum_post").update({ scope, scope_name }).eq("id", top);
+      const { error: e2 } = e1 ? { error: null } : await db.from("forum_post").update({ scope, scope_name }).eq("parent", top);
+      if (e1 || e2) { console.error("forum scope:", (e1 || e2).message); return res.status(502).json({ error: "Couldn't change that." }); }
+      return res.status(200).json({ ok: true, scope });
     }
 
     if (body.action === "delete") {

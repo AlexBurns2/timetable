@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120l';
+const ASSET_V = '20261120m';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1257,7 +1257,7 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
-  { id:'reactfast', date:'2026-11-20', key:'game:react', title:'Reaction time patch', href:'games.html?play=react',
+  { id:'reactfast', date:'2026-11-20', title:'Reaction time patch', href:'games.html?play=react',
     text:'The 60ms reaction time lower limit has been removed.' },
   { id:'yearboards', date:'2026-11-20', title:'Cohort leaderboards',
     text:'Leaderboards are separated into cohorts, and can be accessed with the drop down.' },

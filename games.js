@@ -2116,7 +2116,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120l';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120m';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4767,6 +4767,17 @@ BUILD.admin = host => {
   const POLLS = { id:'polls', name:'Polls', kind:'p' };
   /* ideas for the site, sent from Home's footer */
   const IDEAS = { id:'ideas', name:'Requests', kind:'i' };
+  /* Requests' "Message someone": everyone who has used the site (fetched once), what was sent lately,
+     and a half-written message (kept while the tab redraws) */
+  let admPeople = null, admSent = null;
+  const msgDraft = { to:'', pick:null, body:'' };
+  async function loadMsgExtras(){
+    const [pp, sent] = await Promise.all([
+      admPeople || TT.api('/api/leaderboard', { params:{ users:1 } }).then(d => (d.users || []).map(u => ({ name:String(u.name || ''), email:String(u.email || '') }))).catch(() => null),
+      TT.api('/api/forum', { params:{ notices:'sent' } }).catch(() => null)]);
+    if (pp) admPeople = pp;
+    admSent = sent;
+  }
   /* scans of the printed QR codes (q.html), one row per code */
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
   /* which themes people use (from their synced settings) */
@@ -4824,7 +4835,10 @@ BUILD.admin = host => {
       if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
-      if (cur.kind === 'p' || cur.kind === 'i'){ data = await TT.api('/api/forum', { params:{ poll:'admin' } }); render(); return; }
+      if (cur.kind === 'p' || cur.kind === 'i'){
+        const [d] = await Promise.all([TT.api('/api/forum', { params:{ poll:'admin' } }), cur.kind === 'i' ? loadMsgExtras() : null]);
+        data = d; render(); return;
+      }
       if (cur.kind === 'q'){ data = await TT.api('/api/forum', { params:{ scans:1 } }); render(); return; }
       if (cur.kind === 'x'){ data = await TT.api('/api/leaderboard', { params:{ themes:1 } }); render(); return; }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
@@ -5034,10 +5048,23 @@ BUILD.admin = host => {
     const posts = (data && data.posts) || [];
     const all = [];
     posts.forEach(p => { all.push({ ...p, reply:false }); (p.replies || []).forEach(r => all.push({ ...r, reply:true })); });
-    $('admnote').textContent = posts.length + ' thread' + (posts.length === 1 ? '' : 's') + '. Deleting a thread removes its replies too.';
+    $('admnote').textContent = posts.length + ' thread' + (posts.length === 1 ? '' : 's') + '. Deleting a thread removes its replies too.' +
+      (data && data.scopes ? ' The menu beside a thread changes who sees it, the whole school or the poster’s year; its replies follow.'
+                           : ' (Choosing who a thread is for needs the forum’s new columns: SETUP.md, “Forum: posts for a year or a class”.)');
+    /* who a thread is for: everyone, or a year (the poster's, or the one it's already for); a class it's for stays listed until changed */
+    const scopeSel = p => {
+      if (p.reply || !data || !data.scopes || p.scope == null) return '';
+      const opts = [['all', 'Whole school']];
+      if (p.pyear) opts.push(['year:' + p.pyear, 'Year ' + p.pyear + ' only']);
+      if (p.scope.startsWith('year:') && p.scope !== 'year:' + p.pyear) opts.push([p.scope, 'Year ' + p.scope.slice(5) + ' only']);
+      if (p.scope.startsWith('class:')) opts.push([p.scope, p.for || 'One class']);
+      if (opts.length < 2) return '';
+      return '<select class="modscope" data-sid="' + esc(p.id) + '" aria-label="Who this thread is for">' +
+        opts.map(([v, l]) => '<option value="' + esc(v) + '"' + (v === p.scope ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select>';
+    };
     $('admbody').innerHTML = all.length ? all.map(p => '<div class="adminrow modpost' + (p.reply ? ' reply' : '') + '">' +
         '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' }) + (p.for ? ' · for ' + p.for : '')) +
-        '</em><span class="pb">' + esc(p.body) + '</span></span>' +
+        '</em><span class="pb">' + esc(p.body) + '</span></span>' + scopeSel(p) +
         '<button class="del" type="button" data-id="' + esc(p.id) + '">Delete</button></div>').join('')
       : '<p class="how">No posts.</p>';
     $('admbody').querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
@@ -5045,6 +5072,14 @@ BUILD.admin = host => {
       b.disabled = true;
       try { await TT.api('/api/forum', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); load(); }
       catch (e){ alert('Could not delete: ' + e.message); b.disabled = false; }
+    });
+    $('admbody').querySelectorAll('.modscope').forEach(sel => {
+      const was = sel.value;
+      sel.onchange = async () => {
+        sel.disabled = true;
+        try { await TT.api('/api/forum', { method:'POST', body:{ action:'scopeset', id:sel.dataset.sid, scope:sel.value } }); load(); }
+        catch (e){ alert('Could not change that: ' + e.message); sel.value = was; sel.disabled = false; }
+      };
     });
   }
   /* ── Mahjong club: rename or remove players, delete any game ── */
@@ -5084,9 +5119,9 @@ BUILD.admin = host => {
      never from you (wireReplies, api/_notice.js). Poll ideas are under Polls. ── */
   function renderIdeas(){
     const names = (data && data.names) || [], list = (data && data.features) || [];
-    $('admnote').textContent = 'What students sent from “Send a suggestion” on Home. Reply to answer one person: it shows on their screen from MSC Unofficial, not from you. Dismiss one once it’s done or decided against.';
+    $('admnote').textContent = 'Message anyone, or answer what students sent from “Send a suggestion” on Home. Either way it shows on their screen from MSC Unofficial, not from you. Dismiss a request once it’s done or decided against.';
     const row = (main, sub, btns) => '<div class="adminrow pollrow"><span class="nm"><b>' + main + '</b><em>' + sub + '</em></span><span class="pact">' + btns + '</span></div>';
-    $('admbody').innerHTML =
+    $('admbody').innerHTML = msgHtml() +
       '<h4 class="admsub">Name changes</h4>' + (names.length ? names.map(n => row('“' + esc(n.want) + '”', 'now ' + esc(n.by) + ' · ' + esc(seenAgo(n.at)),
           '<button class="btn primary" type="button" data-apply="' + esc(n.id) + '">Apply</button>' +
           '<button class="btn" type="button" data-reply="' + esc(n.id) + '">Reply</button>' +
@@ -5107,6 +5142,69 @@ BUILD.admin = host => {
       catch (e){ b.disabled = false; alert(e.message); }
     });
     wireReplies($('admbody'));
+    wireMsg();
+  }
+  /* ── Message someone: to anyone, by name (everyone who has used the site) or a school email. It pops up
+     on their screen from "MSC Unofficial" (api/_notice.js noticeto), and the list under it says whether
+     each message has been seen. ── */
+  function msgHtml(){
+    return '<h4 class="admsub">Message someone</h4>' +
+      '<div class="admreply admmsg">' +
+        '<div class="msgto"><input id="msgto" type="search" autocomplete="off" maxlength="80" placeholder="Their name or school email" aria-label="Who to message" aria-describedby="msgpicked">' +
+          '<span class="msgpicked" id="msgpicked"></span><div class="msgsug" id="msgsug"></div></div>' +
+        '<textarea id="msgbody" maxlength="600" rows="3" placeholder="Your message. They’ll see it from MSC Unofficial, not from you."></textarea>' +
+        '<div class="pfrow"><button class="btn primary" type="button" id="msgsend">Send</button><span class="pfmsg" id="msgmsg" aria-live="polite"></span></div>' +
+      '</div>' + sentHtml();
+  }
+  function sentHtml(){
+    const list = (admSent && admSent.sent) || [];
+    if (admSent && admSent.missing) return '<p class="how">The notice table isn’t there yet (SETUP.md, “Replies from the moderators”), so nothing can be sent.</p>';
+    if (!list.length) return '';
+    return '<details class="msgsent"' + (list.length <= 4 ? ' open' : '') + '><summary>Sent recently (' + list.length + ')</summary>' +
+      list.map(n => '<div class="adminrow pollrow"><span class="nm"><b>' + esc(n.to) + '</b><em>' + esc(n.body) +
+        (n.about ? ' · re ' + esc(n.about) : '') + '</em></span><span class="pact"><span class="ptag' + (n.seen ? ' seen' : '') + '">' +
+        esc(n.seen ? 'Seen ' + seenAgo(n.seen) : 'Not seen yet') + '</span><span class="msgat">sent ' + esc(seenAgo(n.at)) + '</span></span></div>').join('') +
+      '</details>';
+  }
+  function wireMsg(){
+    const to = $('msgto'), sug = $('msgsug'), body = $('msgbody'), send = $('msgsend'), msg = $('msgmsg'), picked = $('msgpicked');
+    if (!to) return;
+    const isEmail = v => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+    const showPick = () => { picked.textContent = msgDraft.pick ? 'To ' + msgDraft.pick.name + ' (' + msgDraft.pick.email + ')' : ''; };
+    to.value = msgDraft.to; body.value = msgDraft.body; showPick();
+    const suggest = () => {
+      const q = to.value.trim().toLowerCase();
+      if (q.length < 2 || !admPeople){ sug.innerHTML = ''; return; }
+      const words = q.split(/\s+/);
+      const hits = admPeople.filter(p => { const hay = (p.name + ' ' + p.email).toLowerCase(); return words.every(w => hay.includes(w)); }).slice(0, 8);
+      sug.innerHTML = hits.map((p, i) => '<button type="button" class="msgpick" data-i="' + i + '">' + esc(p.name) + ' <em>' + esc(p.email) + '</em></button>').join('') ||
+        (isEmail(q) ? '' : '<span class="how">Nobody by that name has used the site. A school email works too.</span>');
+      sug.querySelectorAll('.msgpick').forEach(b => b.onclick = () => {
+        const p = hits[+b.dataset.i]; msgDraft.pick = p; msgDraft.to = to.value = p.name; sug.innerHTML = ''; showPick(); body.focus();
+      });
+    };
+    to.oninput = () => { msgDraft.to = to.value; msgDraft.pick = null; showPick(); msg.textContent = ''; suggest(); };
+    body.oninput = () => { msgDraft.body = body.value; msg.textContent = ''; };
+    send.onclick = async () => {
+      const typed = to.value.trim().toLowerCase();
+      const email = msgDraft.pick ? msgDraft.pick.email : isEmail(typed) ? typed : '';
+      if (!email){ msg.textContent = 'Pick someone from the list, or type their school email.'; to.focus(); return; }
+      const text = body.value.trim();
+      if (text.length < 2){ msg.textContent = 'Write a message first.'; body.focus(); return; }
+      const who = msgDraft.pick ? msgDraft.pick.name : email;
+      if (!confirm('Send this to ' + who + '? It shows on their screen from MSC Unofficial.')) return;
+      send.disabled = true; msg.textContent = 'Sending…';
+      try {
+        await TT.api('/api/forum', { method:'POST', body:{ action:'noticeto', to:email, body:text } });
+        msgDraft.to = ''; msgDraft.pick = null; msgDraft.body = '';
+        to.value = ''; body.value = ''; showPick();
+        msg.textContent = 'Sent to ' + who + '. It shows on their screen next time they open the site.';
+        try { admSent = await TT.api('/api/forum', { params:{ notices:'sent' } }); } catch {}
+        const old = $('admbody').querySelector('.msgsent'), html = sentHtml();
+        if (old) old.outerHTML = html; else if (html) $('admbody').querySelector('.admmsg').insertAdjacentHTML('afterend', html);
+      } catch (e){ msg.textContent = e.message; }
+      send.disabled = false;
+    };
   }
   /* a reply to one person's request, under its row: it pops up on their screen next time they open the
      site, from "MSC Unofficial" (api/_notice.js finds who sent it; their address never comes here) */
