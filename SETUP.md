@@ -2848,7 +2848,7 @@ Until it exists scans still go straight to the timetable; they just aren't count
 
 ---
 
-## Whose Week (`api/_whose.js`, served by `/api/daily?whose=1`; first called "Whose timetable?")
+## Whose timetable? (`api/_whose.js`, served by `/api/daily?whose=1`)
 
 A daily game: one day of a student's timetable, guessed by their year. Run this once in the
 Supabase SQL editor. It only creates the two tables if they aren't there; nothing else is touched.

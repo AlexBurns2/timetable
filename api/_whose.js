@@ -1,7 +1,7 @@
 /*
- * "Whose Week" — a daily game on the games page, served by /api/daily?whose=1 (whoseRoute below),
- * so it needs no Vercel function of its own. Private helper (underscore = not a route). (It was
- * "Whose timetable?" for its first day; the tables and the id keep "whose".)
+ * "Whose timetable?" — a daily game on the games page, served by /api/daily?whose=1 (whoseRoute below),
+ * so it needs no Vercel function of its own. Private helper (underscore = not a route). (Briefly
+ * called "Whose Week"; the owner went back to this name, easier to say.)
  *
  * Someone's whole fortnight from your year, the same for everyone in it that day. It starts as the
  * school's grid: a blank rectangle for every period at its bell time, gaps for recess, lunch and
@@ -28,7 +28,7 @@
  * in the background. Names only ever go to the browser, never email addresses. The last 30 days can
  * be played again from the archive (?whose=1&archive=1 lists them).
  *
- * Tables (SETUP.md, "Whose Week"). RLS on with no policies: only the server reads or writes them.
+ * Tables (SETUP.md, "Whose timetable?"). RLS on with no policies: only the server reads or writes them.
  *   whose_puzzle(date, year, puzzle jsonb, created_at, pk(date, year))
  *   whose_result(email, date, year, guesses, won, done, updated_at, pk(email, date))
  * A day made by an earlier version of the game is made again if it's today (the owner chose not to
@@ -336,7 +336,7 @@ export async function ensureWhose(year, date, deadline = Date.now() + 45000) {
   year = String(year);
   const sel = () => db.from("whose_puzzle").select("puzzle, created_at").eq("date", date).eq("year", year).maybeSingle();
   const { data: row, error } = await sel();
-  if (error) throw new Error(/does not exist|relation|schema cache/i.test(error.message) ? "Whose Week isn't set up yet." : "puzzle read: " + error.message);
+  if (error) throw new Error(/does not exist|relation|schema cache/i.test(error.message) ? "Whose timetable? isn't set up yet." : "puzzle read: " + error.message);
   const today = date === sydneyDate();
   if (row && (row.puzzle && row.puzzle.v === VERSION || !today)) return row;
   if (!today) return null;                           // a past day that was never made stays unmade

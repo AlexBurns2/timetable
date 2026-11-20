@@ -151,7 +151,7 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose Week', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
+  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
   { id:'quartets', cat:'Timetable', ico:'☘️', name:'Triplets', blurb:'Find the three groups of three from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -1453,7 +1453,7 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
-/* ── Whose Week ─────────────────────────────────────────────────────────
+/* ── Whose timetable? ──────────────────────────────────────────────────
    Someone's whole fortnight from your year. It starts as the school's grid, every period a blank
    rectangle at its bell time (free periods too, so the first guess is blind). Each wrong guess, or a
    skip, gives the next hint: most fill in tiles (a subject in its colour, or Free), one is a teacher
@@ -1463,7 +1463,7 @@ BUILD.dailyguess = host => {
    /api/daily?whose=1 (api/_whose.js); guesses are marked here, instantly, and saved in the background. */
 const WT_COLS = ['#e5484d', '#f76b15', '#d6a20a', '#30a46c', '#12a594', '#0090ff', '#3e63dd', '#8e4ec6', '#d6409f', '#e93d82', '#29a383', '#00a2c7'];
 BUILD.whose = host => {
-  head(host, 'Whose Week', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
+  head(host, 'Whose timetable?', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
   const box = document.getElementById('wt');
   let alive = true, arch = null, calMonth = null, cur = null;
   const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
@@ -2089,7 +2089,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120h';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120i';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

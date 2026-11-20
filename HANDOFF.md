@@ -3571,3 +3571,6 @@ The user found 8.131 much too hard and agreed a new design (through the side ses
   - A past day loads with `?date=` and Results follow it. Guesses on a past day are saved for that date, and count in the streak as in Guess Who.
 - **Triplets' icons**: the Phosphor duotone `circles-three` (three rings, added to icons.js) instead of `users-four`, and the emoji ☘️ (three leaves) instead of 🍀, in the games list and Home's strip. (`dots-nine` was tried first: its faded layer is the whole square, so it read as a grey box among outline icons; removed. Asset version `20261120h`, v60.) The share text's coloured squares are untouched.
 - Tested offline (made-up years): senior on lines 12 of 12 days (one person first fits at hint 2 or 3), junior with electives 12 of 12 (hint 3), identical classes none. The page, the archive, all-names suggestions, the games list and Home were shot in headless Chrome with a stand-in API.
+
+## 8.134 Back to "Whose timetable?" (asset version `20261120i`, `CACHE_VERSION` v61)
+The owner preferred the first name after all (easier to say), so everything people see says "Whose timetable?" again: the game card and page, Home's Today strip, What's new, the server's messages and SETUP.md. Nothing else from 8.133 changes (the hints, the archive, suggestions for the whole year, Triplets' icons).
