@@ -3809,3 +3809,39 @@ Checked with the fake database slowed to 300 ms a trip (`e2eslow.mjs`): the next
 - **The pictures** (Theme finder cards, Settings → Appearance and its minis; theme.js `CITY_DUO`): each city's thumbnail is now printed the way its page is.
   - The layers are a fine halftone, then the photo in greys (`saturation`), multiplied by the scale colour and screened with the dark ink (day pair).
   - The `background-blend-mode` rides in the swatch string after a `;`, because every place that draws a swatch writes `style="background:…"`.
+
+## 8.153 Round 2 on the moderator-only themes (asset version `20261121b`, `CACHE_VERSION` v80)
+The owner reviewed the seven new themes and the Cities Collection and gave feedback with reference images (scratchpad `images/49–62`, briefs `theme-brief.md` and `theme-brief-r2.md`). Five agents each revised their own files; shared changes were done centrally.
+- **Shared**:
+  - theme.js `skinJs`: a SKINS entry can name a script (`js:'xp'`, `js:'cities'`), loaded from `/skins/<js>.js` the first time that theme is on. The script watches `html[data-skin]`/`tt:look` itself and undoes everything when another theme is picked.
+  - api/leaderboard.js `?weather=<city>`: Open-Meteo for the city's coordinates only (no key, nothing about the user), cached 15 min, codes put into words (`CITY_AT`, `WX_TEXT`).
+  - The cities' clock element is `data-clock` now (it was `data-city`, which matched the page's own `[data-city]` rules).
+  - Thumbnails updated for Bauhaus, De Stijl, Deconstructivism, Windows XP and Eco.
+  - Seven photo credits added to About.
+- **Downloads**: the owner allowed downloads without asking while away, on condition of a log. Every file is in `PHOTO-LOG.md` (repo root, not deployed):
+  - XP's hill (Collina verde del Valdarno superiore);
+  - Eco's leaf, sunflower, turbine, tree and solar panel;
+  - DORFic's orange slice.
+
+  Two agents rightly wouldn't take the go-ahead second-hand. Eco's and DORFic's photos were fetched by the coordinator with the agent's own script (scratchpad `agent-a/fetch-photos.py`, which cuts them out and logs each).
+- **Bauhaus** (bauhaus.css): one designed column of square tiles (quarter and half circles, triangles, squares, stripes, a few spanning four) on a strict grid down the left. It's arranged differently per page from a list in scratchpad `agent-c/bh-gen.mjs`. The page stands to its right; it's one tile wide under 1100px and a band along the top on phones.
+- **De Stijl** (destijl.css): the page is one grid of thick black lines; every panel, tile and button is a cell packed edge to edge, with some rows' lines running out to the window edges where colour planes sit. Home is a start screen of mixed-size cells (Timetable a big red 2×2); the full-view timetable reads as a Mondrian table.
+- **Deconstructivism** (decon.css):
+  - The greeting wraps on purpose (the hello small on a steel beam, the name large and light) and never triggers Home's shortening.
+  - Every button, tile and card is a shard with its own cut, tilt and displaced second edge.
+  - Type is mixed: torn page titles, a heavy-then-light poll question, alternating heading weights, a vertical "Forum" at 1100px and up.
+  - Body text and the timetable are unchanged.
+- **DORFic** (dorfic.css): Home's speed lines are lower. The timetable has a quiet honeycomb. One idea per page: the orange-slice sun with orbs and bubbles (games), a wireframe globe with line meshes (calendar/free), rings of light (revision/resources/notes), retro circles (Theme finder).
+- **Frutiger Eco** (eco.css): a clip-art landscape built like Aero's: sky, cloud bank, a glossy green globe (from the existing map), glossy grass hills and path, cut-out turbines, tree, solar panel, sunflower and a leaf with dew. Arranged per page; at night with moon and fireflies. Nothing moves now.
+- **Windows XP** (xp.css + xp.js): a real Luna desktop:
+  - The taskbar is at the bottom; "start" is the Settings button and opens a Start menu. The page's buttons sit in the tray by a clock.
+  - Home's page tiles are desktop icons. Its widgets are windows you can drag by the title bar on a computer with a mouse. Positions are kept in `msc.xpwin` (not synced); "Reset windows" is in the Start menu.
+  - The timetable is one maximised window with an Address bar. The wallpaper is the hill photo.
+- **Cities Collection** (cities.css + cities.js): the transit-line timetable was asked for and then withdrawn ("too tryhard"); none was built. Instead:
+  - a weather postage stamp in Home's header, in the city's own weather words;
+  - one print mark per city: Sydney's series line, Tokyo's crop marks, Hong Kong's postmark, Chongqing's barcode label;
+  - small local details: a date stamp in the local style, the page's name in the local language, Tokyo's station-number box;
+  - the CJK names raised onto the bottom edge;
+  - paper labels under every line of text that sat on the photo.
+
+  The coordinator also made the greeting fit again once the city's face and the stamp arrive (cities.js calls `fitHello`; it had been cut to "Welcome back, …").

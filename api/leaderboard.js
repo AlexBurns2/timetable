@@ -70,7 +70,14 @@ const DIRS = {
   "oddone:high": "max"         // Odd One Out — best score in a run
 };
 const MAX_SCORE = 100000000;
-let themePop = { at: 0, order: [] };      // the Theme finder's "Popular" order (?themepop=1), kept an hour
+let themePop = { at: 0, order: [] };
+/* the Cities Collection's weather: each city's coordinates, and WMO weather codes in words */
+const CITY_AT = { sydney: [-33.8688, 151.2093], tokyo: [35.6762, 139.6503], hongkong: [22.3193, 114.1694], chongqing: [29.5630, 106.5516],
+  la: [34.0522, -118.2437], singapore: [1.3521, 103.8198], taipei: [25.0330, 121.5654], london: [51.5072, -0.1276] };
+const cityWx = new Map();
+const WX_TEXT = c => c === 0 ? "Clear" : c === 1 ? "Mostly clear" : c === 2 ? "Partly cloudy" : c === 3 ? "Overcast" : c === 45 || c === 48 ? "Fog" :
+  c >= 51 && c <= 57 ? "Drizzle" : c >= 61 && c <= 67 ? "Rain" : c >= 71 && c <= 77 ? "Snow" : c >= 80 && c <= 82 ? "Showers" :
+  c === 85 || c === 86 ? "Snow showers" : c >= 95 ? "Thunderstorms" : "—";      // the Theme finder's "Popular" order (?themepop=1), kept an hour
 
 /* Owner-only engagement view: everyone who has actually used the site.
  * `prefs` gets a row the first time someone's settings sync after they log in,
@@ -290,6 +297,32 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Couldn't save that. Has the site_setting table been created?" });
     }
     return res.status(200).json({ ...(await siteSettings()), isMod: true });
+  }
+
+  /* Cities Collection: the city's weather now, for its Home card (skins/cities.js). Only the city's own
+     coordinates go to Open-Meteo (free, no key, no account); nothing about who asked. Kept 15 minutes per city. */
+  if (req.method === "GET" && src.weather) {
+    const C = CITY_AT[String(src.weather)];
+    if (!C) return res.status(400).json({ error: "Unknown city." });
+    const hit = cityWx.get(src.weather);
+    if (hit && Date.now() - hit.at < 15 * 60e3) return res.status(200).json(hit.d);
+    try {
+      const u = "https://api.open-meteo.com/v1/forecast?latitude=" + C[0] + "&longitude=" + C[1] +
+        "&current=temperature_2m,weather_code,is_day,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=1";
+      const r = await fetch(u, { headers: { "User-Agent": "school-site-weather/1.0" }, signal: AbortSignal.timeout(6000) });
+      if (!r.ok) throw new Error("status " + r.status);
+      const j = await r.json(), c = j.current || {}, d = j.daily || {};
+      const out = { city: String(src.weather), temp: Math.round(c.temperature_2m), code: c.weather_code, text: WX_TEXT(c.weather_code), day: c.is_day === 1,
+        wind: Math.round(c.wind_speed_10m), hi: Math.round((d.temperature_2m_max || [])[0]), lo: Math.round((d.temperature_2m_min || [])[0]),
+        sunrise: (d.sunrise || [])[0] || null, sunset: (d.sunset || [])[0] || null, at: c.time || null };
+      cityWx.set(src.weather, { at: Date.now(), d: out });
+      res.setHeader("Cache-Control", "private, max-age=600");
+      return res.status(200).json(out);
+    } catch (e) {
+      console.warn("weather:", e.message);
+      if (hit) return res.status(200).json(hit.d);
+      return res.status(502).json({ error: "No weather just now." });
+    }
   }
 
   /* the Theme finder's "Popular" strip: theme ids in order of how many people have them on (active in the

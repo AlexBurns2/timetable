@@ -1,17 +1,22 @@
 /* ══════════════════════════════════════════════════════════════════
    BAUHAUS — the page built from the three elementary forms, as the
-   school's posters and books were. Kandinsky's pairing holds
-   everywhere: the triangle is yellow, the square red, the circle blue;
-   heavy black bars hold them together. Lower case throughout the
-   headings (Bayer's "universal" type), set in a geometric sans (Jost).
-   Planes of printed paper on a warmer ground, no outlines, no
-   shadows, no rounding (only circles are round). The forms mark
-   things: the site's mark is the three of them, each Home tile keeps
-   its icon in one, a section opens with one, today is a red square.
-   Each page's ground is a poster of its own: a few large forms at the
-   edges of the window, never behind the reading. (Swiss is the grid
-   and the single red; Neo Brutalism is outlines and hard shadows;
-   this is the forms.) On black paper in dark mode.
+   school's posters and books were. Kandinsky's pairing holds in the
+   UI: the triangle is yellow, the square red, the circle blue; heavy
+   black bars hold them together. Lower case throughout the headings
+   (Bayer's "universal" type), set in a geometric sans (Jost). Planes
+   of printed paper on a warmer ground, no outlines, no shadows, no
+   rounding (only circles are round). The forms mark things: the
+   site's mark is the three of them, each Home tile keeps its icon in
+   one, a section opens with one, today is a red square.
+   The ground is one designed thing: a column of square tiles down the
+   left of the window, each holding one form (a quarter or half circle,
+   a circle, a square cut on the diagonal, stripes) in the three
+   colours and ink, on a strict grid, a few forms spanning four tiles.
+   Every page lays the same tiles out its own way; the page stands to
+   the right of the column. On a phone it lies down as a band across
+   the top. (Swiss is the grid and the single red; Neo Brutalism is
+   outlines and hard shadows; this is the forms.) On black paper in
+   dark mode.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="bauhaus"]{
   --bh-red:#d63a2a; --bh-yel:#f2b619; --bh-blu:#1f4e9e; --bh-ink:#171614; --bh-on-red:#fff; --bh-on-blu:#fff;
@@ -38,65 +43,291 @@
 [data-skin="bauhaus"] body{line-height:1.5}
 [data-skin="bauhaus"] ::selection{background:var(--bh-yel);color:#171614}
 
-/* ── the ground: a poster per page. Large flat forms at the edges of the window, anchored to the
-      column's edges (50vw ± 500px) so they sit in the margins and not under the reading. Drawn with
-      gradients, so dark mode only changes the colours. A triangle is two halves side by side. ── */
-[data-skin="bauhaus"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--bh-poster,none)}
+/* ── the ground: a column of tiles down the left of the window. Each square holds one of the school's forms
+      (a quarter or half circle, a circle, half a square cut on the diagonal, a square, stripes), in the three
+      colours and ink, on one grid: a few forms take four squares. Every page lays the same tiles out its own
+      way; the page itself stands to the right of the column. The cells are an eighth of the window's height,
+      so the column always ends on a whole row. Drawn with gradients, so dark mode only changes the colours. ── */
+[data-skin="bauhaus"]{--bh-pap:var(--panel);--bh-u:min(calc(100vh / 8),9vw);--bh-cols:2;--bh-colw:calc(var(--bu) * var(--bh-cols));--bu:var(--bh-u)}
+/* whole pixels, so neighbouring cells meet without a seam */
+@supports (width:round(down,10.5px,1px)){ [data-skin="bauhaus"]{--bu:round(down,var(--bh-u),1px)} }
+[data-skin="bauhaus"][data-pg="timetable"]{--bh-cols:1}
+[data-skin="bauhaus"] body::before{content:"";position:fixed;left:0;top:0;bottom:0;width:var(--bh-colw);z-index:-1;pointer-events:none;background:var(--bh-tiles,none)}
+[data-skin="bauhaus"] body{padding-left:var(--bh-colw)}
+/* a narrower window keeps the left file of the column; a phone lays it down as a band along the top
+   (the timetable keeps its whole width there) */
+@media (max-width:1099px){ [data-skin="bauhaus"]{--bh-cols:1;--bh-u:min(calc(100vh / 8),10vw)} }
+@media (max-width:600px){
+  [data-skin="bauhaus"]{--bh-u:10vw}
+  [data-skin="bauhaus"] body{padding-left:0;padding-top:var(--bh-u)}
+  [data-skin="bauhaus"] body::before{position:absolute;right:0;bottom:auto;width:auto;height:var(--bh-u);background:var(--bh-band,none)}
+  [data-skin="bauhaus"][data-pg="timetable"] body{padding-top:0}
+  [data-skin="bauhaus"][data-pg="timetable"] body::before{display:none}
+}
 html.zen[data-skin="bauhaus"] body::before,[data-skin="bauhaus"][data-pg="hkmahjong"] body::before{display:none}
-[data-skin="bauhaus"]{
-  --bh-L:calc(50vw - 500px); --bh-R:calc(50vw + 500px);
-  --bh-c:radial-gradient(circle closest-side,var(--bh-blu) calc(100% - 1px),transparent 100%);
-  --bh-s:linear-gradient(var(--bh-red),var(--bh-red));
-  --bh-k:linear-gradient(var(--bh-ink),var(--bh-ink));
-  --bh-tl:linear-gradient(to top left,var(--bh-yel) calc(50% - .5px),transparent calc(50% + .5px));
-  --bh-tr:linear-gradient(to top right,var(--bh-yel) calc(50% - .5px),transparent calc(50% + .5px));
-}
-/* Home: a bar falls from the top edge across a large blue circle and stands on a red square; a yellow triangle stands on the foot of the window at the left */
-[data-skin="bauhaus"][data-pg="home"]{--bh-poster:
-  var(--bh-k) calc(var(--bh-R) + 92px) 0/16px 68vh no-repeat,
-  var(--bh-s) calc(var(--bh-R) + 68px) 68vh/64px 64px no-repeat,
-  var(--bh-c) calc(var(--bh-R) + 36px) 92px/340px 340px no-repeat,
-  var(--bh-tl) calc(var(--bh-L) - 226px) calc(100vh - 182px)/105px 182px no-repeat,
-  var(--bh-tr) calc(var(--bh-L) - 121px) calc(100vh - 182px)/105px 182px no-repeat}
-/* the timetable: almost nothing; a quarter of a circle in the far corner */
-[data-skin="bauhaus"][data-pg="timetable"]{--bh-poster:
-  var(--bh-c) calc(100vw - 150px) calc(100vh - 150px)/300px 300px no-repeat}
-/* games: the three forms stacked like the school's building blocks, standing on a bar; a bar from top to bottom at the right */
-[data-skin="bauhaus"]:is([data-pg="games"],[data-pg="mahjong"]){--bh-poster:
-  var(--bh-k) 0 calc(100vh - 56px)/calc(var(--bh-L) - 24px) 16px no-repeat,
-  var(--bh-tl) calc(var(--bh-L) - 190px) calc(100vh - 384px)/62px 108px no-repeat,
-  var(--bh-tr) calc(var(--bh-L) - 128px) calc(100vh - 384px)/62px 108px no-repeat,
-  var(--bh-s) calc(var(--bh-L) - 190px) calc(100vh - 276px)/124px 124px no-repeat,
-  var(--bh-c) calc(var(--bh-L) - 190px) calc(100vh - 180px)/124px 124px no-repeat,
-  var(--bh-k) calc(var(--bh-R) + 70px) 0/16px 100vh no-repeat}
-/* calendar: a large blue disc rising at the right behind a bar along its horizon; at the left a red square sits on a bar from the edge */
-[data-skin="bauhaus"][data-pg="calendar"]{--bh-poster:
-  var(--bh-k) calc(var(--bh-R) + 20px) calc(100vh - 160px)/100vw 16px no-repeat,
-  var(--bh-c) calc(var(--bh-R) + 40px) calc(100vh - 360px)/400px 400px no-repeat,
-  var(--bh-k) 0 26vh/calc(var(--bh-L) - 50px) 16px no-repeat,
-  var(--bh-s) calc(var(--bh-L) - 134px) calc(26vh - 64px)/64px 64px no-repeat}
-/* free periods and revision: two bars crossing at the left, a red square where they meet */
-[data-skin="bauhaus"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--bh-poster:
-  var(--bh-k) calc(var(--bh-L) - 90px) 0/16px 100vh no-repeat,
-  var(--bh-k) 0 34vh/calc(var(--bh-L) - 40px) 16px no-repeat,
-  var(--bh-s) calc(var(--bh-L) - 150px) calc(34vh - 44px)/76px 76px no-repeat,
-  var(--bh-c) calc(var(--bh-R) + 40px) calc(100vh - 230px)/180px 180px no-repeat}
-/* resources: a red square cut by the right edge, resting on a bar; a blue circle at the foot of the left margin */
-[data-skin="bauhaus"][data-pg="resources"]{--bh-poster:
-  var(--bh-k) calc(var(--bh-R) + 34px) calc(14vh + 170px)/100vw 16px no-repeat,
-  var(--bh-s) calc(var(--bh-R) + 70px) 14vh/170px 170px no-repeat,
-  var(--bh-c) calc(var(--bh-L) - 230px) calc(100vh - 300px)/240px 240px no-repeat}
-/* the Theme finder: squares inside squares, as in the colour classes; half a blue circle at the left edge */
-[data-skin="bauhaus"]:is([data-pg="themes"],[data-pg="finder"]){--bh-poster:
-  var(--bh-c) calc(var(--bh-L) - 330px) 16vh/240px 240px no-repeat,
-  linear-gradient(var(--bh-blu),var(--bh-blu)) calc(var(--bh-R) + 82px) calc(100vh - 186px)/76px 76px no-repeat,
-  var(--bh-s) calc(var(--bh-R) + 56px) calc(100vh - 240px)/128px 128px no-repeat,
-  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bh-R) + 30px) calc(100vh - 294px)/180px 180px no-repeat}
-/* a phone has no margins: one form looks in at the corner */
-@media (max-width:1060px){
-  [data-skin="bauhaus"]:not([data-pg="timetable"]){--bh-poster:var(--bh-c) calc(100vw - 80px) calc(100vh - 80px)/160px 160px no-repeat}
-  [data-skin="bauhaus"][data-pg="timetable"]{--bh-poster:none}
-}
+html.zen[data-skin="bauhaus"] body,[data-skin="bauhaus"][data-pg="hkmahjong"] body{padding:0}
+/* ⟪bh-tiles⟫ */
+[data-skin="bauhaus"][data-pg="home"]{--bh-tiles:
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top left,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-red) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-ink) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-pap) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-pap) calc(var(--bu) - 1px),#0000 var(--bu)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 6)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-blu) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) 0 calc(var(--bu) * 2)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) var(--bu) calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  linear-gradient(to top left,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 4) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-pap) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 6) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-blu) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) calc(var(--bu) * 2) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="timetable"]{--bh-tiles:
+  linear-gradient(to bottom right,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-pap) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  linear-gradient(to bottom right,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-pap) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 4) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 2) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="games"],[data-skin="bauhaus"][data-pg="mahjong"]{--bh-tiles:
+  repeating-linear-gradient(180deg,var(--bh-blu) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-red) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top left,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-yel) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) 0 calc(var(--bu) * 4)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) 0 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  radial-gradient(circle at 100% 100%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-red) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top left,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 2) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-yel) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) calc(var(--bu) * 4) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) 0 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="calendar"]{--bh-tiles:
+  linear-gradient(to top right,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-blu) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-ink) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 8)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(to top right,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 4)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 var(--bu)/calc(var(--bu) * 2) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) var(--bu)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  radial-gradient(circle at 50% 100%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 2) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-ink) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 8) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(to bottom left,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 4) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) 0/var(--bu) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="free"]{--bh-tiles:
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-pap) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-blu) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-ink) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-ink) calc(var(--bu) - 1px),#0000 var(--bu)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-red) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) 0 calc(var(--bu) * 4)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) var(--bu) calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  linear-gradient(to bottom right,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-blu) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 2) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-ink) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-red) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) calc(var(--bu) * 4) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="revision"],[data-skin="bauhaus"][data-pg="notes"]{--bh-tiles:
+  radial-gradient(circle at 50% 50%,var(--bh-pap) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-blu) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top left,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 2)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-ink) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) 0 calc(var(--bu) * 4)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(to bottom left,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) 0 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) 0 calc(var(--bu) * 6)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  radial-gradient(circle at 100% 100%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-blu) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 2) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-ink) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) calc(var(--bu) * 4) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(to top right,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) 0 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) calc(var(--bu) * 6) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="resources"]{--bh-tiles:
+  linear-gradient(to bottom left,var(--bh-pap) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 0,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-red) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-yel) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 0,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top left,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 6)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 3)/calc(var(--bu) * 2) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 100%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 2)/calc(var(--bu) * 2) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) 0 calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  radial-gradient(circle at 100% 50%,var(--bh-ink) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-red) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 4) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 100%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-red) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top left,var(--bh-yel) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 6) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-blu) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 3) 0/var(--bu) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 2) 0/var(--bu) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) calc(var(--bu) * 7) 0/var(--bu) var(--bu) no-repeat}
+[data-skin="bauhaus"][data-pg="themes"],[data-skin="bauhaus"][data-pg="finder"]{--bh-tiles:
+  radial-gradient(circle at 0 0,var(--bh-pap) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-ink) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 calc(var(--bu) * 8)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(180deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) 0 calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-red) calc(var(--bu) - 1px),#0000 var(--bu)) var(--bu) calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to top right,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) 0 calc(var(--bu) * 4)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom right,var(--bh-red) calc(50% - .5px),#0000 calc(50% + .5px)) var(--bu) var(--bu)/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) 0 var(--bu)/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-red) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) 0 calc(var(--bu) * 6)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 calc(var(--bu) * 2)/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) 0 calc(var(--bu) * 3)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) var(--bu) calc(var(--bu) * 5)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) var(--bu) calc(var(--bu) * 7)/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) var(--bu) calc(var(--bu) * 9)/var(--bu) var(--bu) no-repeat;
+--bh-band:
+  radial-gradient(circle at 50% 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 9) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 50% 0,var(--bh-yel) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) calc(var(--bu) * 8) 0/var(--bu) var(--bu) no-repeat,
+  repeating-linear-gradient(90deg,var(--bh-ink) 0 calc(var(--bu) / 14),#0000 0 calc(var(--bu) / 7)) calc(var(--bu) * 5) 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(to bottom left,var(--bh-blu) calc(50% - .5px),#0000 calc(50% + .5px)) calc(var(--bu) * 4) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 0 50%,var(--bh-blu) calc(calc(var(--bu) / 2) - 1px),#0000 calc(var(--bu) / 2)) var(--bu) 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) 0 0/var(--bu) var(--bu) no-repeat,
+  radial-gradient(circle at 100% 100%,var(--bh-red) calc(calc(var(--bu) * 2) - 1px),#0000 calc(var(--bu) * 2)) calc(var(--bu) * 6) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  radial-gradient(circle at 50% 50%,var(--bh-yel) calc(var(--bu) - 1px),#0000 var(--bu)) calc(var(--bu) * 2) 0/calc(var(--bu) * 2) calc(var(--bu) * 2) no-repeat,
+  linear-gradient(var(--bh-red),var(--bh-red)) 0 0/var(--bu) var(--bu) no-repeat,
+  linear-gradient(var(--bh-ink),var(--bh-ink)) calc(var(--bu) * 3) 0/var(--bu) var(--bu) no-repeat}
+/* ⟪/bh-tiles⟫ */
 
 /* ── the head of a page: a paper plane standing on a heavy bar at its left; the site's mark before its name ── */
 :root[data-skin="bauhaus"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--panel);border:0;border-radius:0;box-shadow:none;
@@ -281,8 +512,8 @@ html[data-contrast="high"][data-skin="bauhaus"] .lesson{box-shadow:inset 0 0 0 2
 :root[data-skin="bauhaus"] .arrowbtn2:hover{background:var(--bh-yel);color:#171614}
 [data-skin="bauhaus"] .calbar h2{text-transform:lowercase;font-weight:700;letter-spacing:-.015em}
 
-/* ── arriving (with Animation on, once fx.js has a TR.bauhaus entry): the page fades in as usual, and the
-      poster's forms are printed a moment after it. Nothing moves. ── */
+/* ── arriving (with Animation on, fx.js TR.bauhaus): the page fades in as usual, and the column of tiles is
+      printed a moment after it. Nothing moves. ── */
 html.fx-enter[data-skin="bauhaus"] body::before{animation:bhprint .32s .14s ease-out both}
 @keyframes bhprint{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){ html.fx-enter[data-skin="bauhaus"] body::before{animation:none} }

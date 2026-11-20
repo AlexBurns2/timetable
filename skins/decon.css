@@ -1,23 +1,24 @@
 /* ══════════════════════════════════════════════════════════════════
    DECONSTRUCTIVISM — the architecture of Gehry, Hadid, Libeskind and
    Coop Himmelb(l)au, and Tschumi's red follies at the Parc de la
-   Villette; the broken grids of Carson's Ray Gun. The frame is taken
-   apart, never the content: every reading surface stays square on to
-   the page and nothing is turned or overlaps the text. What breaks is
-   around it. Panels are flat planes of pale plaster on raw concrete,
-   cut off at a corner (clip-path), with a hairline steel edge; the
-   head of a page is a plane that starts below the top of what's on it,
-   the page's name a block of steel laid across that edge and hanging
-   off its side, and behind it a second edge in red knocked out of line. One sharp colour, the follies' red: the
-   second edge, what's on now, today, the button that matters, the
-   icons standing about like follies. Syne for the type, extra bold for
-   names. Behind every page, concrete, and on it Tschumi's three
-   systems, one to a page: surfaces on Home (tilted planes, a glass
-   sheet, a red beam), lines on the timetable (long cables, nearly
-   level, at the edges only), points on Games (a turned grid of marks
-   with a few red follies), and on the rest two grids laid one over the
-   other, out of true. No moving background. Dark mode is the same
-   building at night: dark concrete, the planes in shadow, the red lit.
+   Villette; the broken grids of Carson's Ray Gun and the torn, disjoined
+   type of the posters that followed. The frame is taken apart, never
+   what you read: body text, the timetable and every detail stay square,
+   horizontal and whole. What breaks is around it.
+   Everything you press is a shard: a plane of pale plaster cut to an
+   irregular outline with a hairline steel edge, turned a fraction out
+   of true, and behind it a second edge drawn on its own, out of
+   register, so the two never quite meet. No two neighbours are cut the
+   same. One sharp colour, the follies' red.
+   The type is broken up the same way: the page's name half on a block
+   of steel and half off it; Home's greeting broken across a line, the
+   hello small and heavy on a strip of steel, your name under it, large
+   and light; headings in mixed weights; the forum's name stood on end.
+   Syne, whose width grows with its weight, so heavy and light set side
+   by side really differ. Behind every page, concrete, and on it one of
+   Tschumi's three systems: surfaces on Home, lines on the timetable,
+   points on Games, two grids out of true on the rest. Nothing moves.
+   Dark mode is the same building at night.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="decon"]{
   --bg:#c8c5bf; --bg-img:none;
@@ -35,6 +36,19 @@
   /* a cut edge drawn back in: a 3px band on the diagonal of a corner box (half of it is clipped away) */
   --dc-diag:linear-gradient(to top right,transparent calc(50% - 1.5px),var(--dc-steel) calc(50% - 1.5px) calc(50% + 1.5px),transparent calc(50% + 1.5px));
   --dc-diag2:linear-gradient(to top left,transparent calc(50% - 1.5px),var(--dc-steel) calc(50% - 1.5px) calc(50% + 1.5px),transparent calc(50% + 1.5px));
+  /* the second edges: four-sided wires, each out of true in its own way, stretched to the shard (the line keeps its weight) */
+  --dc-w1:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M1 8L99.3 1.2L97.6 99.2L.7 95Z' fill='none' stroke='%231a1a1a' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>");
+  --dc-w2:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M.7 1.4L96.5 7L99.3 99L4.5 97.4Z' fill='none' stroke='%231a1a1a' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>");
+  --dc-w3:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M3.5 .8L99.3 4.5L95.5 99.2L.7 93Z' fill='none' stroke='%231a1a1a' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>");
+  --dc-wr:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M.8 5L98.6 .9L99.2 96L2.5 99.2Z' fill='none' stroke='%23d3261a' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>");
+  /* the cuts: every coordinate is measured from an edge in px, so the steel rim (the same cut, 1.5px further in) keeps its weight */
+  --dc-cut-a:polygon(0 0,calc(100% - 18px) 0,100% 11px,100% 100%,0 100%);
+  --dc-cut-b:polygon(0 0,100% 0,100% calc(100% - 15px),calc(100% - 30px) 100%,0 100%);
+  --dc-cut-c:polygon(8px 0,100% 0,100% 100%,0 100%);
+  --dc-cut-d:polygon(0 0,100% 0,100% 100%,58px 100%,58px calc(100% - 7px),0 calc(100% - 7px));
+  --dc-cut-e:polygon(0 12px,16px 0,100% 0,100% calc(100% - 12px),calc(100% - 9px) 100%,0 100%);
+  --dc-cut-f:polygon(0 0,calc(100% - 52px) 0,calc(100% - 46px) 6px,100% 6px,100% 100%,0 100%);
+  --dc-cut-g:polygon(0 0,100% 0,calc(100% - 7px) 100%,0 100%);
   --dc-concrete:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><filter id='m' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .22  0 0 0 0 .21  0 0 0 0 .2  0 0 0 .5 -.12'/></filter><filter id='n' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .1  0 0 0 0 .1  0 0 0 0 .1  0 0 0 .5 -.16'/></filter><filter id='w' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .45 -.15'/></filter><rect width='280' height='280' filter='url(%23m)'/><rect width='280' height='280' filter='url(%23n)'/><rect width='280' height='280' filter='url(%23w)'/></svg>");
   --dc-sys:none;
 }
@@ -42,7 +56,11 @@
   --bg:#1b1b1c;
   --panel:#2a2a2b; --panel-2:#333335; --line:#d9d7d1;
   --text:#ecebe7; --muted:#a4a29c; --accent:#ff4a36; --accent-ink:#ffffff;
-  --dc-steel:#d9d7d1; --dc-plane:#2a2a2b; --dc-plane-2:#323234; --dc-red:#ff4a36;
+  --dc-steel:#d9d7d1; --dc-plane:#2c2c2e; --dc-plane-2:#363638; --dc-red:#ff4a36;
+  --dc-w1:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M1 8L99.3 1.2L97.6 99.2L.7 95Z' fill='none' stroke='%23d9d7d1' stroke-opacity='.75' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>");
+  --dc-w2:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M.7 1.4L96.5 7L99.3 99L4.5 97.4Z' fill='none' stroke='%23d9d7d1' stroke-opacity='.75' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>");
+  --dc-w3:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M3.5 .8L99.3 4.5L95.5 99.2L.7 93Z' fill='none' stroke='%23d9d7d1' stroke-opacity='.75' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>");
+  --dc-wr:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M.8 5L98.6 .9L99.2 96L2.5 99.2Z' fill='none' stroke='%23ff4a36' stroke-width='2' vector-effect='non-scaling-stroke'/></svg>");
   --dc-concrete:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><filter id='m' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .55  0 0 0 0 .56  0 0 0 .35 -.1'/></filter><filter id='n' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .6 -.18'/></filter><filter id='w' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .22 -.08'/></filter><rect width='280' height='280' filter='url(%23m)'/><rect width='280' height='280' filter='url(%23n)'/><rect width='280' height='280' filter='url(%23w)'/></svg>");
 }
 [data-skin="decon"] ::selection{background:var(--dc-red);color:#fff}
@@ -67,8 +85,8 @@ html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"
 [data-skin="decon"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><defs><pattern id='a' width='120' height='120' patternUnits='userSpaceOnUse'><path d='M0 .5H120M.5 0V120' stroke='%23d9d7d1' stroke-opacity='.1' fill='none'/></pattern><pattern id='b' width='88' height='88' patternUnits='userSpaceOnUse' patternTransform='rotate(-14)'><path d='M0 .5H88M.5 0V88' stroke='%23d9d7d1' stroke-opacity='.13' fill='none'/></pattern></defs><rect width='1600' height='1000' fill='url(%23a)'/><path d='M560 0H1600V1000H300Z' fill='url(%23b)'/><path d='M560 0L300 1000' stroke='%23ff4a36' stroke-width='3' fill='none'/></svg>")}
 
 /* ══ the head of a page: a plane, cut at two corners, that starts below the top of what's on it; the page's name is
-      a block of steel laid across its edge and hanging off its left side; behind it all, a second edge in red,
-      knocked out of line ══ */
+      laid across its edge, half on a block of steel and half off it; behind it all, a second edge in red, knocked
+      out of line ══ */
 :root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;isolation:isolate;background:none;border:0;border-radius:0;box-shadow:none;
   padding-top:20px;padding-left:var(--dc-hd-pad,22px)}
 :root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;inset:var(--dc-hd-top,52px) 0 0 0;z-index:-1;pointer-events:none;
@@ -82,13 +100,44 @@ html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"
 :root[data-skin="decon"]:not([data-header="split"]) .brand{align-self:flex-start}
 @media (max-width:600px){ :root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){--dc-hd-pad:16px} }
 [data-skin="decon"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-family:var(--font-display);font-weight:800;letter-spacing:-.035em;line-height:1}
-:root[data-skin="decon"]:not([data-header="split"]) :is(.brand h1,.hubid h1,.pagehead h1){width:fit-content;max-width:calc(100% + var(--dc-hd-pad,22px) + 8px);margin-left:calc(-8px - var(--dc-hd-pad,22px));
-  padding:.1em .3em .16em calc(8px + var(--dc-hd-pad,22px));background:var(--text);color:var(--dc-plane)}
-[data-skin="decon"] .pagehead h1{font-size:clamp(1.6rem,4.6vw,2.9rem);overflow-wrap:break-word}
-[data-skin="decon"] .brand h1{font-size:clamp(1.35rem,2.4vw,1.9rem)}
-[data-skin="decon"] .hubid h1{font-size:clamp(1.5rem,5.6cqi,2.6rem)}
+
+/* the page's name (and the timetable's: whose it is): the steel runs only part of the way along it, so the word is
+   torn in two, light on the steel and dark off it, like a word printed across the edge of a photograph */
+:root[data-skin="decon"]:not([data-header="split"]) :is(.brand h1,.pagehead h1){position:relative;width:fit-content;max-width:calc(100% + var(--dc-hd-pad,22px) + 8px);
+  margin-left:calc(-8px - var(--dc-hd-pad,22px));padding:.1em .3em .16em calc(8px + var(--dc-hd-pad,22px));
+  --dc-tear:62%;
+  background:linear-gradient(90deg,var(--dc-plane) 0 var(--dc-tear),var(--text) var(--dc-tear)) 0 0/100% 100% no-repeat;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+:root[data-skin="decon"]:not([data-header="split"]) :is(.brand h1,.pagehead h1)::before{content:"";position:absolute;z-index:-1;left:0;top:0;bottom:0;width:var(--dc-tear);
+  background:var(--text);pointer-events:none}
+/* a red cut where the steel stops */
+:root[data-skin="decon"]:not([data-header="split"]) :is(.brand h1,.pagehead h1)::after{content:"";position:absolute;z-index:-1;left:calc(var(--dc-tear) - 2px);top:-.14em;height:calc(100% + .3em);width:4px;
+  background:var(--dc-red);transform:rotate(9deg);pointer-events:none}
+[data-skin="decon"] .pagehead h1{font-size:clamp(1.7rem,5vw,3.3rem);overflow-wrap:break-word}
+[data-skin="decon"] .pagehead h1::selection,[data-skin="decon"] .brand h1::selection{-webkit-text-fill-color:#fff}
+/* the timetable's name wraps rather than being cut off (a long name breaks onto a second line) */
+[data-skin="decon"] .brand h1{font-size:clamp(1.35rem,2.4vw,1.9rem);white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
 [data-skin="decon"] .hubid .eyebrow{margin-bottom:6px}
 [data-skin="decon"] .brand .idrow{margin-top:10px}
+
+/* Home's greeting, broken across a line: the hello small and heavy on a beam of steel laid across the head (hung off
+   the plane's edge, its end cut), your name under it, large and light, the two lines touching. It wraps instead of
+   being cut: the page shortens a greeting only when one line can't hold a word, and the sizes below are set from the
+   space (container units) so that doesn't happen. A short greeting stays on the beam by itself. (The beam is the h1's
+   own background, not the first line's: Chrome doesn't always repaint a ::first-line background when the text
+   changes.) */
+:root[data-skin="decon"] .hubid h1{
+  --dc-g1:min(1.75rem,calc((40cqi - 42.8px) / 14.2));
+  white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word;
+  font-size:min(3.5rem,calc(var(--dc-g1) * 2.35))!important;font-weight:500;letter-spacing:-.05em;line-height:.98;color:var(--text);
+  margin:0 0 2px;padding-right:14px;
+  background:linear-gradient(to top right,var(--text) 50%,transparent 50%) right 0 top 0/14px calc(var(--dc-g1) * 1.3) no-repeat,
+    linear-gradient(var(--text),var(--text)) 0 0/calc(100% - 14px) calc(var(--dc-g1) * 1.3) no-repeat}
+:root[data-skin="decon"] .hubid h1::first-line{font-size:var(--dc-g1);font-weight:800;letter-spacing:0;line-height:1.3;color:var(--dc-plane)}
+:root[data-skin="decon"]:not([data-header="split"]) .hubid h1{margin-left:calc(-8px - var(--dc-hd-pad,22px));padding-left:calc(8px + var(--dc-hd-pad,22px))}
+@container hubbar (max-width:44em){
+  :root[data-skin="decon"] .hubid h1{--dc-g1:min(2.1rem,calc((100cqi - 118px) / 14.2))}
+}
 @media (max-width:860px) and (min-width:601px){ [data-skin="decon"] .topbar .now{flex-basis:250px}
   [data-skin="decon"] .topbar .nowcard .subj{font-weight:700;font-size:.9375rem;letter-spacing:-.02em;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical} }
 @media (max-width:600px){
@@ -103,47 +152,101 @@ html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"
 [data-skin="decon"] .sitename:hover{color:var(--dc-red)}
 [data-skin="decon"] :is(.hubsub,.brand>span,.pagelede){color:var(--muted)}
 [data-skin="decon"] .idrow{background:var(--panel);border:1.5px solid var(--dc-steel);border-radius:0;opacity:1}
-/* Now and Next: plaster with a steel edge, cut at a corner; what is on now is framed in red */
-[data-skin="decon"] .nowcard{background:var(--dc-plane);color:var(--text);border:1.5px solid var(--dc-steel);border-radius:0;
-  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%);background-image:var(--dc-diag) right top/16px 16px no-repeat}
-[data-skin="decon"] .nowcard:first-child:not(:only-child){box-shadow:inset 0 0 0 2px var(--dc-red);border-color:var(--dc-red)}
-[data-skin="decon"] .nowcard:first-child:not(:only-child) .lbl{color:var(--dc-red)}
-[data-skin="decon"] .nowcard .lbl{color:var(--muted);letter-spacing:.2em;font-weight:700}
-[data-skin="decon"] .nowcard .subj{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em}
-[data-skin="decon"] :is(.nowcard .count,.progrow .count){color:var(--dc-red)}
-[data-skin="decon"] .prog{height:4px;border-radius:0;background:color-mix(in srgb,currentColor 22%,transparent)}
-[data-skin="decon"] .prog i{border-radius:0;background:var(--dc-red)}
-@container hubbar (max-width:26em){
-  [data-skin="decon"] .hubnow.pair{background:var(--dc-plane);border:1.5px solid var(--dc-steel);border-radius:0}
-  [data-skin="decon"] .hubnow.pair .nowcard{clip-path:none;background:none;border:0;color:var(--text)}
-}
 
-/* ══ planes: flat plaster, one corner cut off, a hairline of steel; the content keeps clear of the cut ══ */
-[data-skin="decon"] :is(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.fpost,.hscstrip){border:0;border-radius:0;box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);
-  background:var(--dc-diag) right bottom/14px 14px no-repeat,var(--dc-plane);clip-path:polygon(-24px -24px,calc(100% + 24px) -24px,calc(100% + 24px) calc(100% - 38px),calc(100% - 14px) 100%,-24px 100%);transition:none}
-[data-skin="decon"] .fpost{background:var(--dc-diag) right top/12px 12px no-repeat,var(--dc-plane);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%)}
-[data-skin="decon"] .fpost.freply{background:var(--dc-diag) right top/12px 12px no-repeat,var(--dc-plane-2)}
-/* under the pointer: the plane takes the red, in the corner that's cut */
-:root[data-skin="decon"] :is(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard):hover{transform:none;
-  background:linear-gradient(to top left,var(--dc-red) 50%,transparent 50%) right bottom/26px 26px no-repeat,var(--dc-plane);box-shadow:inset 0 0 0 2.5px var(--dc-steel)}
-[data-skin="decon"] .qtile{justify-content:space-between;padding:14px 16px 14px}
-[data-skin="decon"] .qtile .tname{font-family:var(--font-display);font-weight:800;font-size:1rem;letter-spacing:-.02em}
+/* ══ shards: everything you press. The element itself carries only its second edge (a wire, behind); ::before is a
+      plane of steel cut to the shard's outline and ::after the plaster, the same cut 1.5px further in, so the rim
+      follows every cut; both turned a fraction out of true. Neighbours take different cuts, insets and tilts. ══ */
+:root[data-skin="decon"] :where(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.subjcard,.fpost,.pcard,.forum,.nowcard,.fpanel,.studypanel,
+  .btn,.arrowbtn,.popt,.lbopen,.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn,.tsw,.skinbtn):not(.gateskip){
+  --dc-t:0px;--dc-r:5px;--dc-b:5px;--dc-l:0px;--dc-cut:var(--dc-cut-a);--dc-tilt:0deg;--dc-e:var(--dc-edge);
+  --dc-ec:var(--dc-steel);--dc-fc:var(--dc-plane);--dc-wire:var(--dc-w1);
+  position:relative;isolation:isolate;border:0;border-radius:0;box-shadow:none;transition:none;
+  background:var(--dc-wire) 0 0/100% 100% no-repeat}
+:root[data-skin="decon"] :where(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.subjcard,.fpost,.pcard,.forum,.nowcard,.fpanel,.studypanel,
+  .btn,.arrowbtn,.popt,.lbopen,.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn,.tsw,.skinbtn):not(.gateskip)::before{
+  content:"";position:absolute;z-index:-2;pointer-events:none;inset:var(--dc-t) var(--dc-r) var(--dc-b) var(--dc-l);
+  background:var(--dc-ec);clip-path:var(--dc-cut);transform:rotate(var(--dc-tilt))}
+:root[data-skin="decon"] :where(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.subjcard,.fpost,.pcard,.forum,.nowcard,.fpanel,.studypanel,
+  .btn,.arrowbtn,.popt,.lbopen,.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn,.tsw,.skinbtn):not(.gateskip)::after{
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  inset:calc(var(--dc-t) + var(--dc-e)) calc(var(--dc-r) + var(--dc-e)) calc(var(--dc-b) + var(--dc-e)) calc(var(--dc-l) + var(--dc-e));
+  background:var(--dc-fc);clip-path:var(--dc-cut);transform:rotate(var(--dc-tilt))}
+:root[data-skin="decon"] :is(.gamecard,.tfcard,.subjcard,.pcard,.nowcard){overflow:visible}
+
+/* the cuts, dealt out so no two neighbours match */
+:root[data-skin="decon"] :is(.qtile,.gamecard,.tile,.subjcard,.tfcard,.lbbcard,.tday,.btn,.fpost):nth-child(5n+2){--dc-cut:var(--dc-cut-b);--dc-t:4px;--dc-r:0px;--dc-b:0px;--dc-l:5px;--dc-tilt:.45deg;--dc-wire:var(--dc-w2)}
+:root[data-skin="decon"] :is(.qtile,.gamecard,.tile,.subjcard,.tfcard,.lbbcard,.tday,.btn,.fpost):nth-child(5n+3){--dc-cut:var(--dc-cut-c);--dc-t:3px;--dc-r:3px;--dc-b:3px;--dc-l:2px;--dc-tilt:-.7deg;--dc-wire:var(--dc-w3)}
+:root[data-skin="decon"] :is(.qtile,.gamecard,.tile,.subjcard,.tfcard,.lbbcard,.tday,.btn,.fpost):nth-child(5n+4){--dc-cut:var(--dc-cut-d);--dc-t:0px;--dc-r:0px;--dc-b:6px;--dc-l:4px;--dc-tilt:.25deg;--dc-wire:var(--dc-w2)}
+:root[data-skin="decon"] :is(.qtile,.gamecard,.tile,.subjcard,.tfcard,.lbbcard,.tday,.btn,.fpost):nth-child(5n){--dc-cut:var(--dc-cut-e);--dc-t:2px;--dc-r:4px;--dc-b:3px;--dc-l:0px;--dc-tilt:-.35deg;--dc-wire:var(--dc-w3)}
+:root[data-skin="decon"] :is(.qtile,.gamecard,.tile,.subjcard,.tfcard,.lbbcard):nth-child(7n+6){--dc-cut:var(--dc-cut-f);--dc-wire:var(--dc-wr)}
+/* small things can't take the big cuts: buttons and toggles get small ones */
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen,.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn):not(.gateskip){
+  --dc-cut:polygon(0 0,calc(100% - 9px) 0,100% 8px,100% 100%,0 100%);--dc-t:0px;--dc-r:3px;--dc-b:3px;--dc-l:0px;--dc-tilt:0deg}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen,.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn):not(.gateskip):nth-child(3n+2){
+  --dc-cut:polygon(4px 0,100% 0,100% 100%,0 100%);--dc-t:3px;--dc-r:0px;--dc-b:0px;--dc-l:2px;--dc-wire:var(--dc-w2)}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen,.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn):not(.gateskip):nth-child(3n){
+  --dc-cut:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 12px) 100%,0 100%);--dc-t:1px;--dc-r:2px;--dc-b:3px;--dc-l:1px;--dc-tilt:-1deg;--dc-wire:var(--dc-w3)}
+
+/* under the pointer: the rim goes red and the plaster a shade darker; held down, the shard sits in */
+:root[data-skin="decon"] :is(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.subjcard):hover{transform:none;--dc-ec:var(--dc-red);--dc-e:2.5px;--dc-fc:var(--dc-plane-2)}
+:root[data-skin="decon"] :is(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.subjcard):active{transform:translate(1px,1px)}
+
+/* ══ Home's tiles: the names set in different weights, and the first one on a strip of steel like the page's name ══ */
+[data-skin="decon"] .qtile{justify-content:space-between;padding:14px 18px 14px 16px}
+[data-skin="decon"] .qtile .tname{font-family:var(--font-display);font-weight:800;font-size:1.0625rem;letter-spacing:-.025em;line-height:1.25}
+[data-skin="decon"] .qtile:nth-child(3n+2) .tname{font-weight:500;font-size:1.3rem;letter-spacing:-.045em}
+[data-skin="decon"] .qtile:nth-child(3n) .tname{font-weight:700;font-size:.75rem;letter-spacing:.18em;text-transform:uppercase}
+:root[data-skin="decon"]:not([data-header="split"]) .qtile:first-child .tname{background:var(--text);color:var(--dc-plane);margin-left:-26px;padding:.12em .35em .14em 26px}
 [data-skin="decon"] .qtile .ico .ph{width:1.85rem;height:1.85rem}
-[data-skin="decon"] :is(.gamecard h2,.game h2,.tile .tname){font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;line-height:1.1}
-[data-skin="decon"] .gamecard h2{font-size:1.0625rem}
+@media (max-width:560px){
+  [data-skin="decon"] .qtile{padding:10px 4px}
+  [data-skin="decon"] .qtile .tname,[data-skin="decon"] .qtile:is(:nth-child(3n+2),:nth-child(3n)) .tname{font-size:.6875rem;letter-spacing:-.03em;text-transform:none;overflow-wrap:normal;word-break:normal;hyphens:none}
+  [data-skin="decon"] .qtile .tname{font-weight:700}
+  [data-skin="decon"] .qtile:nth-child(3n+2) .tname{font-weight:500;font-size:.75rem}
+  :root[data-skin="decon"]:not([data-header="split"]) .qtile:first-child .tname{margin-left:0;padding:.1em .3em}
+}
+@container hubnav (max-width:19em){
+  :root[data-skin="decon"]:not([data-header="split"]) .qtile:first-child .tname{margin-left:0;padding:.1em .3em}
+  [data-skin="decon"] .qtile .tname{font-size:.8125rem;letter-spacing:-.02em;text-transform:none}
+}
+[data-skin="decon"] :is(.gamecard h2,.game h2,.tile .tname){font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;line-height:1.2}
+/* the games' names in three weights; the page's own sizes (which keep a long name on two lines, never cut) still apply,
+   the heavy one a step smaller because it's so much wider */
+[data-skin="decon"] .gamecard:nth-child(4n+2) h2{font-weight:800;letter-spacing:-.035em}
+[data-skin="decon"] .gamecard:nth-child(4n+2):not(.wide) h2{font-size:.9375rem}
+[data-skin="decon"] .gamecard:nth-child(4n+3) h2{font-weight:500;letter-spacing:-.045em}
+[data-skin="decon"] .gamecard:nth-child(4n+3):not(.wide) h2{font-size:1.125rem}
+@media (max-width:560px){
+  [data-skin="decon"] .gamecard:nth-child(4n+2):not(.wide) h2{font-size:min(.8125rem,10cqi)}
+  [data-skin="decon"] .gamecard:nth-child(4n+3):not(.wide) h2{font-size:min(1rem,13cqi)}
+  :root[data-skin="decon"] .tfcard{padding:2px 4px 2px 2px}
+  [data-skin="decon"] .tfnm{font-weight:500}
+}
+/* a narrow phone: the lighter (narrower) weight where a long name would otherwise be cut short */
+@media (max-width:420px){
+  [data-skin="decon"] .topbar .nowcard .subj,[data-skin="decon"] .subjcard .nm{font-weight:500;letter-spacing:-.03em}
+  :root[data-skin="decon"] .tfcard{padding:0}
+  [data-skin="decon"] .tfnm{font-size:.8125rem;gap:5px;padding-left:8px;padding-right:7px;letter-spacing:-.035em}
+  [data-skin="decon"] .tftag{padding:0 5px;font-size:.625rem}
+}
+@media (max-width:370px){ [data-skin="decon"] .tfnm{font-size:.75rem} }
 [data-skin="decon"] .tdname{font-family:var(--font-display);font-weight:700;letter-spacing:-.02em}
+[data-skin="decon"] .tday:nth-child(2) .tdname{font-weight:500;font-size:1rem;letter-spacing:-.04em}
+/* the little red tags break out over the top edge of their card, knocked askew */
 [data-skin="decon"] :is(.newpill,.gamecard .newbanner){border-radius:0;background:var(--dc-red);color:#fff;letter-spacing:.14em;clip-path:polygon(0 0,100% 0,calc(100% - 5px) 100%,0 100%);padding-right:10px}
+[data-skin="decon"] :is(.tilepill,.gamecard .newbanner){top:-7px;right:12px;transform:rotate(-3deg)}
+[data-skin="decon"] .tday .newpill{transform:rotate(-2deg)}
 [data-skin="decon"] .newsdot{border-radius:0;background:var(--dc-red)}
 [data-skin="decon"] .tdstat{color:var(--dc-red)}
-@media (max-width:560px){ [data-skin="decon"] .qtile{padding:10px 3px} [data-skin="decon"] .qtile .tname{font-size:.6875rem;font-weight:700;letter-spacing:-.03em;overflow-wrap:normal;word-break:normal;hyphens:none} }
 
-/* ══ the poll and the forum: big planes, cut at two corners ══ */
-[data-skin="decon"] .pcard{border:0;border-radius:0;padding:22px 24px 18px;
-  background:var(--dc-diag) left top/34px 16px no-repeat,var(--dc-diag) right bottom/22px 22px no-repeat,var(--dc-plane);
-  box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);clip-path:polygon(0 16px,34px 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%)}
+/* ══ the poll and the forum: big shards. The question's first line heavy, the rest light ══ */
+:root[data-skin="decon"] .pcard{padding:22px 28px 20px 24px;--dc-r:6px;--dc-b:6px;--dc-tilt:-.15deg;--dc-wire:var(--dc-w2);
+  --dc-cut:polygon(0 16px,34px 0,100% 0,100% calc(100% - 24px),calc(100% - 24px) 100%,150px 100%,142px calc(100% - 8px),0 calc(100% - 8px))}
 [data-skin="decon"] .pchip{border-radius:0;background:none;padding:0;color:var(--text);letter-spacing:.2em;text-transform:uppercase;font-size:.6875rem}
 [data-skin="decon"] .pchip::before{border-radius:0;background:var(--dc-red);animation:none;box-shadow:none}
-[data-skin="decon"] .pq{font-family:var(--font-display);font-weight:800;letter-spacing:-.035em;line-height:1.02;font-size:clamp(1.7rem,4.4vw,2.75rem)}
+[data-skin="decon"] .pq{font-family:var(--font-display);font-weight:500;letter-spacing:-.045em;line-height:1.02;font-size:clamp(1.8rem,4.8vw,3rem)}
+[data-skin="decon"] .pq::first-line{font-weight:800;letter-spacing:-.035em}
+[data-skin="decon"] .pcard.pmin .pq{font-weight:800;font-size:1.0625rem}
 [data-skin="decon"] .pin{border-radius:0;background:var(--panel);border:1.5px solid var(--dc-steel)}
 [data-skin="decon"] .pin:focus{border-color:var(--dc-steel);box-shadow:4px 4px 0 -1px var(--dc-red)}
 [data-skin="decon"] .pbar{border-radius:0;background:transparent;border:1.5px solid var(--dc-steel)}
@@ -151,16 +254,24 @@ html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"
 [data-skin="decon"] .pbar:first-child .pfill{background:var(--dc-red)}
 [data-skin="decon"] .pbar:first-child .pbl{color:#fff}
 [data-skin="decon"] .plock span{border-radius:0;background:var(--dc-plane);border:1.5px solid var(--dc-steel);box-shadow:none}
-[data-skin="decon"] .pminbtn{border-radius:0;border:1.5px solid var(--dc-steel);background:var(--dc-plane)}
 [data-skin="decon"] .pfoot{border-top:1.5px solid var(--dc-steel)}
 [data-skin="decon"] .plink{color:var(--text);text-decoration:underline;text-decoration-color:var(--dc-red);text-decoration-thickness:2px;text-underline-offset:3px}
-[data-skin="decon"] .forum{border:0;padding:20px 22px 22px;
-  background:var(--dc-diag2) right top/40px 14px no-repeat,var(--dc-diag) left bottom/18px 18px no-repeat,var(--dc-plane);
-  box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);clip-path:polygon(0 0,calc(100% - 40px) 0,100% 14px,100% 100%,18px 100%,0 calc(100% - 18px))}
+:root[data-skin="decon"] .forum{padding:20px 26px 24px 22px;--dc-t:6px;--dc-r:0px;--dc-b:0px;--dc-l:6px;--dc-tilt:.12deg;--dc-wire:var(--dc-w3);
+  --dc-cut:polygon(0 0,calc(100% - 40px) 0,100% 14px,100% 100%,18px 100%,0 calc(100% - 18px))}
 [data-skin="decon"] .fhead h2,[data-skin="decon"] .forum h2{font-family:var(--font-display);font-weight:800;font-size:1.75rem;letter-spacing:-.035em}
+/* the forum's name stood on end, up the left edge, half on the plane and half off it (where there's room for it) */
+@media (min-width:1100px){
+  :root[data-skin="decon"] .fhead{min-height:0;justify-content:flex-end;margin-bottom:14px}
+  :root[data-skin="decon"] .fhead h2{position:absolute;left:-.62em;top:16px;margin:0;font-size:3.25rem;line-height:1;
+    writing-mode:vertical-rl;transform:rotate(180deg);color:var(--text)}
+}
+:root[data-skin="decon"] :is(.studypanel,.fpanel){--dc-r:6px;--dc-b:5px;--dc-tilt:-.12deg;--dc-wire:var(--dc-w3);
+  --dc-cut:polygon(0 0,calc(100% - 34px) 0,100% 14px,100% 100%,96px 100%,90px calc(100% - 6px),0 calc(100% - 6px))}
+:root[data-skin="decon"] .fpanel:nth-child(even){--dc-t:5px;--dc-r:0px;--dc-b:0px;--dc-l:5px;--dc-tilt:.2deg;--dc-wire:var(--dc-w2);--dc-cut:var(--dc-cut-e)}
+:root[data-skin="decon"] .fpost{--dc-cut:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);--dc-r:3px;--dc-b:3px}
+:root[data-skin="decon"] .fpost.freply{--dc-fc:var(--dc-plane-2)}
 [data-skin="decon"] :is(.fnew textarea,.freplybox textarea,.ideaform input,.psug input){border-radius:0;border:1.5px solid var(--dc-steel);background:var(--panel)}
-[data-skin="decon"] .fyear{border-radius:0;border:1.5px solid var(--dc-steel)}
-[data-skin="decon"] .fyear[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+[data-skin="decon"] .fyear[aria-pressed="true"]{color:var(--dc-plane);--dc-fc:var(--text);--dc-ec:var(--text)}
 [data-skin="decon"] .rx{border-radius:0;border:1.5px solid var(--dc-steel);background:transparent}
 [data-skin="decon"] .rx.mine{background:var(--dc-red);border-color:var(--dc-red);color:#fff}
 [data-skin="decon"] .rx.mine b{color:#fff}
@@ -169,31 +280,49 @@ html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"
 [data-skin="decon"] .flink{color:var(--text);text-decoration:underline;text-decoration-color:var(--dc-red);text-underline-offset:3px}
 [data-skin="decon"] .hubfoot{border-top:1.5px solid var(--dc-steel)}
 
-/* ══ section names: extra bold, run out past the left edge, a red bar laid across ══ */
+/* Now and Next: shards too; what is on now has a red rim */
+:root[data-skin="decon"] .nowcard{color:var(--text);--dc-cut:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%);--dc-r:4px;--dc-b:4px}
+:root[data-skin="decon"] .nowcard:first-child:not(:only-child){--dc-ec:var(--dc-red);--dc-e:2.5px;--dc-wire:var(--dc-w3);--dc-cut:polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 22px) 100%,0 100%)}
+[data-skin="decon"] .nowcard:first-child:not(:only-child) .lbl{color:var(--dc-red)}
+[data-skin="decon"] .nowcard .lbl{color:var(--muted);letter-spacing:.2em;font-weight:700}
+[data-skin="decon"] .nowcard .subj{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em}
+[data-skin="decon"] :is(.nowcard .count,.progrow .count){color:var(--dc-red)}
+[data-skin="decon"] .prog{height:4px;border-radius:0;background:color-mix(in srgb,currentColor 22%,transparent)}
+[data-skin="decon"] .prog i{border-radius:0;background:var(--dc-red)}
+@container hubbar (max-width:26em){
+  [data-skin="decon"] .hubnow.pair{background:var(--dc-plane);border:1.5px solid var(--dc-steel);border-radius:0}
+  :root[data-skin="decon"] .hubnow.pair .nowcard{background:none}
+  :root[data-skin="decon"] .hubnow.pair .nowcard::before,:root[data-skin="decon"] .hubnow.pair .nowcard::after{display:none}
+}
+
+/* ══ section names: extra bold or light by turns, run out past the left edge, a red bar laid across ══ */
 [data-skin="decon"] :is(.sechd,.cathd){position:relative;font:800 1.125rem/1.1 var(--font-display);letter-spacing:-.025em;text-transform:none;color:var(--text);padding-left:30px}
 [data-skin="decon"] :is(.sechd,.cathd)::before{content:"";position:absolute;left:-8px;top:.48em;width:30px;height:4px;background:var(--dc-red);transform:skewY(-12deg)}
+[data-skin="decon"] :is(.gamesections>.gsec:nth-child(4n+3),.gsec.diffbar,.lbboards>.gsec) .cathd{font-weight:500;font-size:1.5rem;letter-spacing:-.05em}
 @media (min-width:1100px){ [data-skin="decon"] :is(.sechd,.cathd){margin-left:-30px} }
 [data-skin="decon"] .gsec .cathd{flex:1}
 
-/* ══ buttons: steel-edged, one corner cut; the one that matters is red ══ */
-:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip){border:0;border-radius:0;color:var(--text);box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);
-  background:var(--dc-diag) right top/9px 9px no-repeat,var(--dc-plane);clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%);font-family:var(--font-ui);font-weight:700;transition:none}
-:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):hover{background:var(--text);color:var(--bg);box-shadow:none}
+/* ══ buttons: small shards; the one that matters is red ══ */
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip){color:var(--text);font-family:var(--font-ui);font-weight:700}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):hover{color:var(--dc-plane);--dc-fc:var(--text);--dc-ec:var(--text)}
 :root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):active{transform:translate(1px,1px)}
-:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):focus-visible{outline:2px solid var(--dc-red);outline-offset:-5px}
-:root[data-skin="decon"] .btn.primary{background:var(--dc-red);color:#fff;box-shadow:none}
-:root[data-skin="decon"] .btn.primary:hover{background:var(--text);color:var(--bg)}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen,.tsw,.skinbtn,.modes button):not(.gateskip):focus-visible{outline:2px solid var(--dc-red);outline-offset:2px}
+:root[data-skin="decon"] .btn.primary{color:#fff;--dc-fc:var(--dc-red);--dc-ec:var(--dc-red);--dc-wire:var(--dc-w2)}
+:root[data-skin="decon"] .btn.primary:hover{color:var(--dc-plane);--dc-fc:var(--text);--dc-ec:var(--text)}
 :root[data-skin="decon"] .btn.danger{color:#c11a10}
 :root[data-skin="decon"][data-mode="dark"] .btn.danger{color:#ff8073}
-:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab){border-radius:0;border:1.5px solid var(--dc-steel);background:var(--dc-plane);color:var(--text);box-shadow:none}
-:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab):hover{border-color:var(--dc-red)}
-:root[data-skin="decon"] .glbtab.cur,:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.popt)[aria-pressed="true"],:root[data-skin="decon"] .popt[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text);transform:none}
+:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn){color:var(--text)}
+:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab,.yeartab,.fyear,.pminbtn):hover{--dc-ec:var(--dc-red)}
+:root[data-skin="decon"] .glbtab.cur,:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.popt,.yeartab)[aria-pressed="true"],:root[data-skin="decon"] .popt[aria-checked="true"]{
+  color:var(--dc-plane);--dc-fc:var(--text);--dc-ec:var(--text);transform:none;background:var(--dc-wire) 0 0/100% 100% no-repeat}
 [data-skin="decon"] :is(.emailrow,.gatepass,.pad,.field input[type=text],.custrow input.crin,.custrow select){border-radius:0;border:1.5px solid var(--dc-steel);background:var(--panel)}
-[data-skin="decon"] .tsw{border-radius:0;border:1.5px solid var(--dc-steel);background:var(--dc-plane);font-weight:500;letter-spacing:-.01em}
-[data-skin="decon"] .tsw i{border-radius:0;background:color-mix(in srgb,var(--text) 22%,transparent);width:36px;height:16px}
-[data-skin="decon"] .tsw i::after{border-radius:0;top:2px;left:2px;width:12px;height:12px;box-shadow:none;background:var(--bg)}
+/* switches: a shard each, the track a parallelogram */
+:root[data-skin="decon"] .tsw{font-weight:500;letter-spacing:-.01em;--dc-r:4px;--dc-b:3px}
+:root[data-skin="decon"] .tsw:nth-child(even){--dc-cut:var(--dc-cut-g);--dc-t:3px;--dc-r:0px;--dc-b:0px;--dc-l:3px;--dc-wire:var(--dc-w2)}
+[data-skin="decon"] .tsw i{border-radius:0;background:color-mix(in srgb,var(--text) 22%,transparent);width:38px;height:16px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
+[data-skin="decon"] .tsw i::after{border-radius:0;top:2px;left:5px;width:12px;height:12px;box-shadow:none;background:var(--bg)}
 [data-skin="decon"] .tsw[aria-checked="true"] i{background:var(--dc-red)}
-[data-skin="decon"] .tsw[aria-checked="true"] i::after{transform:translateX(20px);background:#fff}
+[data-skin="decon"] .tsw[aria-checked="true"] i::after{transform:translateX(16px);background:#fff}
 [data-skin="decon"] input[type=range]{accent-color:var(--dc-red)}
 [data-skin="decon"] select{border-radius:0;border:1.5px solid var(--dc-steel);background-color:var(--panel);color:var(--text)}
 [data-skin="decon"] input[type=checkbox]{accent-color:var(--dc-red)}
@@ -208,13 +337,20 @@ html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"
 :root[data-skin="decon"] .dlg-f{border-top:1.5px solid var(--dc-steel)}
 :root[data-skin="decon"] :is(.field>label,.tbhead span){font-weight:700;letter-spacing:.2em;color:var(--text)}
 [data-skin="decon"] .custrow{border-bottom-color:color-mix(in srgb,var(--dc-steel) 30%,transparent)}
-[data-skin="decon"] :is(.skinbtn,.rx,.rxpick,.tfcard){border-radius:0}
-[data-skin="decon"] .skinbtn{border:1.5px solid var(--dc-steel)}
-[data-skin="decon"] .skinbtn[aria-pressed="true"]{border-color:var(--dc-red);box-shadow:4px 4px 0 -1px var(--dc-red)}
-[data-skin="decon"] .tfcard[aria-current="true"]{box-shadow:inset 0 0 0 3px var(--dc-red)}
+[data-skin="decon"] :is(.rx,.rxpick){border-radius:0}
+/* the theme pictures in Settings: shards; the one in use has a red rim */
+:root[data-skin="decon"] .skinbtn{padding:4px 7px 0 3px;--dc-t:0px;--dc-r:0px;--dc-b:0px;--dc-l:0px;--dc-cut:polygon(0 0,calc(100% - 14px) 0,100% 10px,100% 100%,0 100%)}
+:root[data-skin="decon"] .skinbtn:nth-child(even){--dc-cut:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 18px) 100%,0 100%);--dc-wire:var(--dc-w3)}
+:root[data-skin="decon"] .skinbtn .nm{background:none}
+:root[data-skin="decon"] .skinbtn[aria-pressed="true"]{--dc-ec:var(--dc-red);--dc-e:3px;--dc-wire:var(--dc-wr);box-shadow:none}
+:root[data-skin="decon"] .skinbtn:hover{--dc-ec:var(--dc-red)}
+:root[data-skin="decon"] .tfcard[aria-current="true"]{--dc-ec:var(--dc-red);--dc-e:3px;--dc-wire:var(--dc-wr)}
+:root[data-skin="decon"] .tfsw{clip-path:polygon(0 0,100% 0,100% 100%,0 calc(100% - 5px))}
+:root[data-skin="decon"] .tfcard{padding:3px 6px 4px 3px}
 [data-skin="decon"] .tftag{border-radius:0}
 [data-skin="decon"] .tftag.on{background:var(--dc-red);border-color:var(--dc-red)}
 [data-skin="decon"] .tfh{font-family:var(--font-display);font-weight:800;letter-spacing:-.025em;font-size:1.25rem}
+[data-skin="decon"] .tfsec:nth-of-type(even) .tfh{font-weight:500;font-size:1.6rem;letter-spacing:-.05em}
 
 /* ══ the timetable: straight blocks on the concrete, each cut at one corner; the red frames what's on, and today ══ */
 [data-skin="decon"] .lesson{border:0;border-radius:0;color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc-steel) 55%,transparent),inset 4px 0 0 var(--c,var(--accent));

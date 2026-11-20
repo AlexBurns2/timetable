@@ -16,11 +16,18 @@
    The header carries the city's own time (theme.js cityClock). The site
    itself is clear frosted glass on the photo, the same in every city,
    with only the accent and the name's face changing. Nothing moves.
-   Each page is the same photo seen differently (a nearer crop, or quieter).
+
+   What makes each one that city (round 2), kept small, to be found rather
+   than shown: the date stamped the way the city writes it, each page's
+   name again in its language, Home's weather as a postage stamp in the
+   city's own weather words, and one printed mark on the card (Sydney's
+   series line, Tokyo's crop marks, Hong Kong's postmark, Chongqing's
+   barcode label). skins/cities.js draws the stamp, the mark and the date.
+   Every line of type that sits on the photo has a paper label under it.
    ══════════════════════════════════════════════════════════════════ */
 
 /* ── each city ── */
-[data-city="sydney"]{
+:root[data-city="sydney"]{
   --ct-day:url(../images/city/sydney-day.webp); --ct-night:url(../images/city/sydney-night.webp);
   --ct-day-p:url(../images/city/sydney-day-p.webp); --ct-night-p:url(../images/city/sydney-night-p.webp);
   --ct-tint:linear-gradient(180deg,#8fc6dd 0%,#d9ecf0 55%,#e9d8b5 100%); --ct-tint-n:linear-gradient(180deg,#0b1830,#13284a 60%,#3a2a3a);
@@ -28,7 +35,7 @@
   --accent:#1f6f9a; --ct-accent-n:#c7b2ff; --ct-pos:38% 48%; --ct-pos-n:32% 55%;   /* harbour blue; the dusk's lilac */
   --ct-lo:#0b5560; --ct-hi:#f5f2ea; --ct-lo-n:#041a20; --ct-hi-n:#7fd8d2; --ct-m:#f5ecdd; --ct-m-n:#7dd4cc; --ct-size:20vw; --ct-em:5.2;   /* teal and white; deep teal and aqua */
 }
-[data-city="tokyo"]{
+:root[data-city="tokyo"]{
   --ct-day:url(../images/city/tokyo-day.webp); --ct-night:url(../images/city/tokyo-night.webp);
   --ct-day-p:url(../images/city/tokyo-day-p.webp); --ct-night-p:url(../images/city/tokyo-night-p.webp);
   --ct-tint:linear-gradient(180deg,#c9c3dc 0%,#ece6ee 55%,#f0d2c4 100%); --ct-tint-n:linear-gradient(180deg,#0d0f24,#1d1838 60%,#43213a);
@@ -36,7 +43,7 @@
   --accent:#d0472b; --ct-accent-n:#ffad4a; --ct-pos:center 42%; --ct-pos-n:center 50%;   /* the tower's red; its lit amber */
   --ct-lo:#28262c; --ct-hi:#ef5340; --ct-lo-n:#0d0c11; --ct-hi-n:#ff8c3c; --ct-m:#ec3518; --ct-m-n:#ff862e; --ct-size:30vw; --ct-em:2.1;   /* charcoal and red; black and the tower's orange */
 }
-[data-city="hongkong"]{
+:root[data-city="hongkong"]{
   --ct-day:url(../images/city/hongkong-day.webp); --ct-night:url(../images/city/hongkong-night.webp);
   --ct-day-p:url(../images/city/hongkong-day-p.webp); --ct-night-p:url(../images/city/hongkong-night-p.webp);
   --ct-tint:linear-gradient(180deg,#9fb6cc 0%,#dfe7ec 55%,#efcfd6 100%); --ct-tint-n:linear-gradient(180deg,#070d1c,#121a36 60%,#3a1030);
@@ -44,7 +51,7 @@
   --accent:#c8102e; --ct-accent-n:#ff5fa8; --ct-pos:center 40%; --ct-pos-n:40% 50%;   /* the city's red; the harbour's neon pink */
   --ct-lo:#1c2654; --ct-hi:#f7b4b6; --ct-lo-n:#080c24; --ct-hi-n:#ff58a8; --ct-m:#f6a792; --ct-m-n:#ff509a; --ct-size:30vw; --ct-em:2.1;   /* navy and coral pink; navy and neon pink */
 }
-[data-city="chongqing"]{
+:root[data-city="chongqing"]{
   --ct-day:url(../images/city/chongqing-day.webp); --ct-night:url(../images/city/chongqing-night.webp);
   --ct-day-p:url(../images/city/chongqing-day-p.webp); --ct-night-p:url(../images/city/chongqing-night-p.webp);
   --ct-tint:linear-gradient(180deg,#c7c1b6 0%,#e6e1d6 55%,#e8cfae 100%); --ct-tint-n:linear-gradient(180deg,#120c10,#2a1616 60%,#5a2a14);
@@ -54,7 +61,7 @@
 }
 
 /* ── the shared look: light (day) ── */
-[data-city]{
+:root[data-city]{
   --ct-photo:var(--ct-day); --ct-fallback:var(--ct-tint);
   --ct-paper:#f7f3ea; --ct-wash:rgba(255,250,240,.16); --ct-filter:saturate(.78) contrast(.9) brightness(1.04);
   --ct-word:rgba(255,255,255,.86); --ct-word-shadow:0 2px 30px rgba(0,0,0,.18);
@@ -68,7 +75,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(20,20,40,.08); --shadow-hi:0 2px 4px rgba(0,0,0,.08),0 14px 34px rgba(20,20,40,.14);
 }
 /* dark: the same place at night */
-[data-city][data-mode="dark"]{
+:root[data-city][data-mode="dark"]{
   --ct-photo:var(--ct-night); --ct-fallback:var(--ct-tint-n); --ct-pos:var(--ct-pos-n);
   --ct-paper:#14141a; --ct-wash:rgba(8,10,24,.22); --ct-filter:saturate(.86) contrast(.94) brightness(.96);
   --ct-word:rgba(255,255,255,.8); --ct-word-shadow:0 2px 40px rgba(0,0,0,.5);
@@ -80,15 +87,15 @@
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.3); --shadow-hi:0 2px 4px rgba(0,0,0,.35),0 16px 38px rgba(0,0,0,.4);
 }
 @media (max-aspect-ratio:4/5){
-  [data-city]{--ct-photo:var(--ct-day-p)}
-  [data-city][data-mode="dark"]{--ct-photo:var(--ct-night-p)}
+  :root[data-city]{--ct-photo:var(--ct-day-p)}
+  :root[data-city][data-mode="dark"]{--ct-photo:var(--ct-night-p)}
 }
 
 /* ── the postcard: the photograph inside a narrow paper border, washed a little, grain over it ── */
 /* --ct-edge: the paper border. --ct-zoom: how much nearer a page sees the photo. The picture's box is made that much
    bigger than the window and clipped back to the frame, so a nearer view still fills it whatever the photo's shape
    (a background-size like 125% left bands above and below a wide panorama on a tall window). */
-[data-city]{--ct-edge:10px;--ct-zoom:0px}
+:root[data-city]{--ct-edge:10px;--ct-zoom:0px}
 [data-city] body{background:var(--ct-paper)}
 [data-city] body::before{content:"";position:fixed;inset:calc(var(--ct-edge) - var(--ct-zoom));z-index:-2;pointer-events:none;border-radius:6px;
   clip-path:inset(var(--ct-zoom) round 6px);
@@ -106,12 +113,17 @@ html[data-city]::before{content:"";position:fixed;inset:var(--ct-edge);z-index:-
 /* the city's name, very large, low in the picture like a postcard's title */
 /* The name: big and bold, run off the bottom-left corner like a poster's (the owner tried it kept whole inside the
    frame and preferred it cropped). --ct-em, its width in ems, is kept for a later fit if one is wanted. */
-html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:calc(var(--ct-edge) - .04em);bottom:calc(var(--ct-edge) - .2em);white-space:nowrap;
+/* --ct-drop: how far below the frame's edge the line runs. SYDNEY's capitals take .2em; the two-character names
+   fill their line, so at .2em their lower quarter was lost: they sit on the edge instead, legible, the bottom
+   strokes still cut by it */
+:root[data-city]{--ct-drop:.2em}
+:root[data-city]:is([data-city="tokyo"],[data-city="hongkong"],[data-city="chongqing"]){--ct-drop:0em}
+html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:calc(var(--ct-edge) - .04em);bottom:calc(var(--ct-edge) - var(--ct-drop));white-space:nowrap;
   font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:var(--ct-ls);text-transform:var(--ct-tt);line-height:.9;
   font-size:clamp(6rem,var(--ct-size),30rem);color:var(--ct-ink);mix-blend-mode:var(--ct-ink-blend);opacity:var(--ct-ink-alpha)}
 /* a phone held upright: the name stands up the right edge */
 @media (max-width:700px){
-  [data-city]{--ct-edge:6px}
+  :root[data-city]{--ct-edge:6px}
   html[data-city]::after{left:auto;right:calc(var(--ct-edge) - .14em);bottom:auto;top:8vh;writing-mode:vertical-rl;font-size:clamp(5rem,34vw,11rem)}
   html[data-city="sydney"]::after{writing-mode:vertical-rl;transform:rotate(180deg);top:auto;bottom:6vh;font-size:clamp(4rem,22vw,8rem)}
 }
@@ -137,13 +149,187 @@ html.zen[data-city] body{background:transparent}
 /* page names and the greeting in the city's own face; section names quiet */
 [data-city] :is(.hubid h1,.pagehead h1,.brand h1){font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:0}
 [data-city="sydney"] :is(.hubid h1,.pagehead h1,.brand h1){letter-spacing:-.02em}
-[data-city] :is(.sechd,.cathd){text-shadow:0 0 14px var(--ct-paper),0 0 4px var(--ct-paper)}
 /* the clock: the caption under the site's name (theme.js cityClock) */
 .cityclock{display:none}
-[data-city] .cityclock{display:flex;align-items:baseline;gap:8px;margin:2px 0 4px;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+[data-city] .cityclock{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;margin:2px 0 4px;font-size:.75rem;color:color-mix(in srgb,var(--text) 78%,transparent);font-variant-numeric:tabular-nums}
 [data-city] .cityclock b{font-family:var(--ct-face);font-weight:var(--ct-w);font-size:.875rem;color:var(--accent)}
 [data-city="sydney"] .cityclock b{font-size:.6875rem;text-transform:uppercase;letter-spacing:.04em}
 [data-city] .cityclock span::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--accent);vertical-align:.08em}
 [data-city] .topbar .cityclock{margin:0 0 2px}
 /* the main button and chosen things in the city's colour */
 :root[data-city] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"]){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* ── words that sit straight on the photograph get a printed label under them ──
+   A page's loose lines (headings between groups, a page's one-line intro, the timetable's days and times, the
+   calendar's weekdays) were dark or grey type on a busy two-ink print, and some couldn't be read at all. Each
+   now sits on a small paper label (dark glass at night), like a caption stuck on a postcard. */
+:root[data-city]{--ct-chip:rgba(251,248,241,.86);--ct-chip-b:rgba(255,255,255,.7)}
+:root[data-city][data-mode="dark"]{--ct-chip:rgba(16,16,23,.76);--ct-chip-b:rgba(255,255,255,.1)}
+[data-city] :is(.weeklabel,.dayhead .dow,.tmark,.cathd,.tfh,.tflede,.reslede,.flede,.fstat:not(:empty),.fnow,.fyl,.fnote,.notesel,.padbar,.calbar h2,
+  .tforig summary,.pagelede,.sechd,.tflook .swhint,.rvjump),[data-city][data-pg="calendar"] .grid>.dow,[data-city][data-pg="finder"] .wrap>.fmsg:not(:empty){
+  width:fit-content;max-width:100%;box-sizing:border-box;background:var(--ct-chip);box-shadow:0 0 0 1px var(--ct-chip-b);border-radius:6px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--text)}
+[data-city] :is(.tflede,.reslede,.flede,.fstat,.fnote,.pagelede,.tflook .swhint),[data-city][data-pg="finder"] .wrap>.fmsg{padding:.35em .7em;border-radius:8px}
+[data-city] :is(.cathd,.tfh,.sechd,.calbar h2,.tforig summary,.fnow,.fyl,.rvjump){padding:.2em .6em}
+[data-city] :is(.tflede,.reslede,.flede,.fstat,.fnote,.pagelede,.fnow,.fyl,.notesel,.padbar,.tforig summary,.sechd,.cathd){color:color-mix(in srgb,var(--text) 82%,transparent)}
+[data-city] .notesel{padding:.25em .3em .25em .7em;border-radius:8px}
+[data-city] .padbar{padding:.25em .7em;border-radius:8px}
+[data-city] .tforig{border-top:0;padding-top:4px}
+[data-city] .tforig summary em{opacity:.8}
+[data-city] .calbar h2{min-width:0}
+[data-city][data-pg="calendar"] .grid>.dow{margin:0 auto;padding:.15em .6em}
+/* the timetable: the days, the week, the gutter's times, the breaks */
+[data-city] .weeklabel{padding:.3em .9em;min-width:0;border-radius:999px}
+[data-city] .dayhead .dow{margin:0 auto;padding:.2em .7em;border-radius:999px}
+[data-city] .dayhead .rule{display:none}
+[data-city] .dayhead.today .dow{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+[data-city] .tmark{padding:1px 5px;border-radius:4px;opacity:1;color:color-mix(in srgb,var(--text) 80%,transparent)}
+:root[data-city] .breakbar{background:var(--ct-chip);border:1px solid var(--ct-chip-b);opacity:1;color:var(--text);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+[data-city] .breakbar em{opacity:.75}
+[data-city][data-view="full"] .periodcell{background:var(--ct-chip);box-shadow:0 0 0 1px var(--ct-chip-b);border-radius:8px;margin-right:6px;padding-left:6px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+/* small cards that let too much of the print through: the calendar's days, the free-period grid */
+[data-city] :is(.day,.fc){-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+/* the days of the months either side: the card stays whole (a faded card was just more photo), its contents fade */
+[data-city] .day.out{opacity:1}
+[data-city] .day.out>*{opacity:.5}
+/* the notes page's writing pad: frosted like the panels, so what's typed isn't written over the city */
+[data-city] textarea.pad{background-color:var(--panel);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+[data-city] .fc.busy{color:color-mix(in srgb,var(--text) 72%,transparent)}
+[data-city] .fgrid{background:var(--ct-chip);box-shadow:0 0 0 1px var(--ct-chip-b);border-radius:12px;padding:8px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+[data-city] .fgrid :is(.fh,.fp){color:color-mix(in srgb,var(--text) 78%,transparent)}
+/* Home's footer: one label for the row */
+[data-city] .hubfoot{border-top:0;padding:10px 16px;border-radius:10px;background:var(--ct-chip);box-shadow:0 0 0 1px var(--ct-chip-b);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:color-mix(in srgb,var(--text) 80%,transparent)}
+[data-city] .hubfoot :is(a,.footbtn){color:color-mix(in srgb,var(--text) 80%,transparent)}
+/* the "Separated" header (no panel): the name, the caption and the greeting get a label of their own */
+:root[data-city][data-header="split"] :is(.hubid,.phtitle,.topbar .brand){width:fit-content;max-width:100%;box-sizing:border-box;padding:8px 14px 10px;border-radius:10px;
+  background:var(--ct-chip);box-shadow:0 0 0 1px var(--ct-chip-b);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+:root[data-city][data-header="split"] .phtitle{flex:0 1 auto;margin-right:auto}
+:root[data-city][data-header="split"] .hubid{justify-self:start}
+
+/* ── small local things, for whoever looks closely ──
+   - the date the way the city writes it, stamped beside the time in the header's caption (令和8年11月21日 in
+     Tokyo, the Reiwa year; 2026年11月21日 in Hong Kong and Chongqing, with Chongqing's one-character name 渝 as a
+     red seal; 21 NOV 2026 in Sydney). cities.js keeps --ct-date right.
+   - after a page's name, the same name in the city's language (時間割, 上課時間表, 课程表 …) in small print; Tokyo
+     also numbers its pages like its stations (a JR-style box: MS 02), Sydney gives each a small line roundel.
+     The timetable has no page name, so its word sits in the week's label. */
+:root[data-city="tokyo"]{--ct-small:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif}
+:root[data-city="hongkong"]{--ct-small:"Noto Serif TC","PMingLiU","MingLiU",serif}
+:root[data-city="chongqing"]{--ct-small:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif}
+:root[data-city="sydney"]{--ct-small:var(--font-ui)}
+:root[data-city][data-pg="timetable"]{--ct-no:"01"} :root[data-city][data-pg="calendar"]{--ct-no:"02"} :root[data-city][data-pg="free"]{--ct-no:"03"}
+:root[data-city][data-pg="revision"]{--ct-no:"04"} :root[data-city][data-pg="resources"]{--ct-no:"05"} :root[data-city][data-pg="games"]{--ct-no:"06"}
+:root[data-city][data-pg="themes"]{--ct-no:"07"} :root[data-city][data-pg="notes"]{--ct-no:"08"} :root[data-city][data-pg="mahjong"]{--ct-no:"09"} :root[data-city][data-pg="finder"]{--ct-no:"10"}
+:root[data-city="tokyo"][data-pg="timetable"]{--ct-word:"時間割"} :root[data-city="tokyo"][data-pg="calendar"]{--ct-word:"カレンダー"} :root[data-city="tokyo"][data-pg="free"]{--ct-word:"空きコマ"}
+:root[data-city="tokyo"][data-pg="revision"]{--ct-word:"復習"} :root[data-city="tokyo"][data-pg="resources"]{--ct-word:"教科書"} :root[data-city="tokyo"][data-pg="games"]{--ct-word:"遊び"}
+:root[data-city="tokyo"][data-pg="themes"]{--ct-word:"着せ替え"} :root[data-city="tokyo"][data-pg="notes"]{--ct-word:"ノート"} :root[data-city="tokyo"][data-pg="mahjong"]{--ct-word:"麻雀"} :root[data-city="tokyo"][data-pg="finder"]{--ct-word:"名簿"}
+:root[data-city="hongkong"][data-pg="timetable"]{--ct-word:"上課時間表"} :root[data-city="hongkong"][data-pg="calendar"]{--ct-word:"月曆"} :root[data-city="hongkong"][data-pg="free"]{--ct-word:"空堂"}
+:root[data-city="hongkong"][data-pg="revision"]{--ct-word:"溫書"} :root[data-city="hongkong"][data-pg="resources"]{--ct-word:"課本"} :root[data-city="hongkong"][data-pg="games"]{--ct-word:"遊戲"}
+:root[data-city="hongkong"][data-pg="themes"]{--ct-word:"主題"} :root[data-city="hongkong"][data-pg="notes"]{--ct-word:"筆記"} :root[data-city="hongkong"][data-pg="mahjong"]{--ct-word:"麻雀"} :root[data-city="hongkong"][data-pg="finder"]{--ct-word:"同學"}
+:root[data-city="chongqing"][data-pg="timetable"]{--ct-word:"课程表"} :root[data-city="chongqing"][data-pg="calendar"]{--ct-word:"日历"} :root[data-city="chongqing"][data-pg="free"]{--ct-word:"自习"}
+:root[data-city="chongqing"][data-pg="revision"]{--ct-word:"复习"} :root[data-city="chongqing"][data-pg="resources"]{--ct-word:"课本"} :root[data-city="chongqing"][data-pg="games"]{--ct-word:"游戏"}
+:root[data-city="chongqing"][data-pg="themes"]{--ct-word:"主题"} :root[data-city="chongqing"][data-pg="notes"]{--ct-word:"笔记"} :root[data-city="chongqing"][data-pg="mahjong"]{--ct-word:"麻将"} :root[data-city="chongqing"][data-pg="finder"]{--ct-word:"同学"}
+[data-city]:not([data-city="sydney"]) :is(.pagehead h1,.weeklabel)::after{content:var(--ct-word,none);display:inline-block;margin-left:.6em;font-family:var(--ct-small);
+  font-size:.75rem;font-weight:600;letter-spacing:.08em;line-height:1;color:color-mix(in srgb,var(--text) 55%,transparent);vertical-align:.4em;white-space:nowrap;text-transform:none}
+[data-city]:not([data-city="sydney"]) .weeklabel::after{font-size:.6875rem;vertical-align:.1em;margin-left:.5em}
+/* Tokyo's station numbering: the line's letters over the stop's number, in a box ringed in the line's colour */
+[data-city="tokyo"] .pagehead h1::before{content:"MS\A" var(--ct-no,none);white-space:pre;display:inline-block;box-sizing:border-box;width:1.5rem;padding:2px 0 1px;margin-right:.45em;
+  border:2px solid var(--accent);border-radius:4px;background:#fff;color:#1b1b1f;font:700 .5rem/1.05 var(--font-ui);letter-spacing:.02em;text-align:center;vertical-align:.32em}
+/* Sydney: a line roundel */
+[data-city="sydney"] :is(.pagehead h1,.weeklabel)::after{content:"S" var(--ct-no,none);display:inline-grid;place-items:center;width:1.55rem;height:1.55rem;margin-left:.55em;border-radius:50%;
+  background:var(--accent);color:var(--accent-ink);font:700 .5625rem/1 var(--font-ui);letter-spacing:.02em;vertical-align:.35em;text-transform:none}
+[data-city="sydney"] .weeklabel::after{width:1.25rem;height:1.25rem;font-size:.5rem;vertical-align:.08em}
+/* the date stamp in the caption */
+[data-city] .cityclock::after{content:var(--ct-date,none);align-self:center;padding:1px .5em 0;border:1px solid currentColor;border-radius:3px;font-size:.625rem;line-height:1.4;letter-spacing:.05em;
+  color:color-mix(in srgb,var(--accent) 82%,var(--text));opacity:.85;transform:rotate(-1.5deg);white-space:nowrap}
+[data-city="tokyo"] .cityclock::after{border-radius:999px;font-family:var(--ct-small);font-weight:600}
+[data-city="hongkong"] .cityclock::after{font-family:var(--ct-small);font-weight:700;border-radius:1px}
+[data-city="chongqing"] .cityclock::after{border:0;padding:0;transform:none;font-family:var(--ct-small)}
+[data-city="sydney"] .cityclock::after{font-family:"Space Mono",ui-monospace,monospace;font-weight:700;letter-spacing:.08em;border-width:1.5px;border-radius:2px}
+/* Chongqing's seal: 渝, the city's one-character name (the one on its number plates) */
+[data-city="chongqing"] .cityclock span::after{content:"渝";display:inline-grid;place-items:center;width:1.15rem;height:1.15rem;margin-left:8px;border-radius:2px;
+  background:#c8322a;color:#fbefe6;font:700 .6875rem/1 var(--ct-small);vertical-align:.05em;transform:rotate(-3deg)}
+[data-city="chongqing"][data-mode="dark"] .cityclock span::after{background:#e2483c;color:#1a0d0b}
+
+/* ── Home: the city's weather as a postage stamp in the header (cities.js; no stamp if the weather can't be had) ──
+   Perforated paper, printed in the city's dark ink: its time big, the temperature as the stamp's value, the sky
+   now in the city's own words (and in English, small), today's range and the sun's times the way that city's
+   weather service writes them, and the city's name and date along the foot. */
+.ctwx{display:none}
+[data-city] .hubin.hasctwx{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto auto;grid-template-areas:"id now wx btn"}
+[data-city] .hubin.hasctwx .cityclock{display:none}
+:root[data-city]{--ct-stamp:#fbf8f2;--ct-stamp-ink:color-mix(in srgb,var(--ct-lo) 88%,#000);--ct-stamp-mute:color-mix(in srgb,var(--ct-lo) 62%,#fbf8f2)}
+:root[data-city][data-mode="dark"]{--ct-stamp:#1d1c24;--ct-stamp-ink:#f3f1f6;--ct-stamp-mute:#aeabba}
+[data-city] .ctwx{display:block;grid-area:wx;align-self:center;min-width:12.5rem;max-width:15rem;transform:rotate(1.2deg);
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.16)) drop-shadow(0 5px 10px rgba(20,20,40,.1))}
+[data-city][data-mode="dark"] .ctwx{filter:drop-shadow(0 1px 1px rgba(0,0,0,.5)) drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+[data-city] .ctwx-in{position:relative;padding:11px 13px 9px;background:var(--ct-stamp);color:var(--ct-stamp-ink);outline:1px solid color-mix(in srgb,currentColor 30%,transparent);outline-offset:-6px;
+  -webkit-mask:radial-gradient(circle,#0000 2.6px,#000 3.1px) -4.5px -4.5px/9px 9px round,linear-gradient(#000 0 0) 4.5px 4.5px/calc(100% - 9px) calc(100% - 9px) no-repeat;
+          mask:radial-gradient(circle,#0000 2.6px,#000 3.1px) -4.5px -4.5px/9px 9px round,linear-gradient(#000 0 0) 4.5px 4.5px/calc(100% - 9px) calc(100% - 9px) no-repeat}
+.ctwx-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;line-height:1}
+.ctwx-time{font-family:var(--ct-face);font-weight:var(--ct-w);font-size:1.5rem;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctwx-time small{font-size:.5em;margin-right:.15em;letter-spacing:0}
+[data-city="sydney"] .ctwx-time{font-size:1.125rem;letter-spacing:-.03em}
+[data-city="sydney"] .ctwx-time small{margin:0 0 0 .2em;text-transform:uppercase}
+.ctwx-temp{font:700 1.5rem/1 var(--font-ui);color:var(--accent);letter-spacing:-.02em}
+.ctwx-temp small{font-size:.55em;font-weight:700;vertical-align:.55em;margin-left:1px}
+.ctwx-now{display:flex;align-items:center;gap:6px;margin-top:7px;min-width:0}
+.ctwx-now svg{width:17px;height:17px;flex:none;color:var(--accent)}
+.ctwx-now svg .c{fill:var(--ct-stamp)}
+.ctwx-now b{font-family:var(--ct-small);font-size:.8125rem;font-weight:700;white-space:nowrap}
+.ctwx-now span{font-size:.6875rem;color:var(--ct-stamp-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ctwx-row{display:flex;flex-wrap:wrap;gap:1px 9px;margin-top:4px;font-size:.6875rem;color:var(--ct-stamp-mute);font-variant-numeric:tabular-nums}
+.ctwx-row span{white-space:nowrap}
+.ctwx-row i{font-style:normal;font-family:var(--ct-small);font-size:.92em;opacity:.8;margin-right:1px}
+.ctwx-foot{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:6px;padding-top:4px;border-top:1px dashed color-mix(in srgb,currentColor 28%,transparent);
+  font-size:.5625rem;letter-spacing:.06em;color:var(--ct-stamp-mute)}
+.ctwx-foot b{font-family:var(--ct-face);font-weight:var(--ct-w);font-size:.75rem;letter-spacing:.04em;color:var(--ct-stamp-ink)}
+[data-city="sydney"] .ctwx-foot b{font-size:.5625rem;text-transform:uppercase;letter-spacing:.1em}
+.ctwx-foot span{font-family:var(--ct-small);white-space:nowrap}
+[data-city="sydney"] .ctwx-foot span{font-family:"Space Mono",ui-monospace,monospace}
+@container hubbar (max-width:50em){
+  [data-city] .hubin.hasctwx{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id btn" "now now" "wx wx"}
+  [data-city] .ctwx{justify-self:start;max-width:none;width:min(100%,19rem);transform:none}
+}
+
+/* ── one printed mark on the postcard, different in each city (cities.js .ctprint, under the page like the name) ──
+   Sydney: the series line up the right edge, as on a poster's margin, with its place and price.
+   Tokyo: crop marks (トンボ) at the corners, the double ones Japanese printers use, and a centre mark.
+   Hong Kong: a postmark in the top corner, the city's name in both its languages round the date.
+   Chongqing: a barcode label, the kind on a postcard sold in a shop there (69 is China's prefix; 定价, its price). */
+.ctprint{display:none}
+html[data-city] .ctprint{display:block;position:fixed;inset:var(--ct-edge);z-index:-1;pointer-events:none;color:var(--ct-mark)}
+:root[data-city]{--ct-mark:color-mix(in srgb,var(--ct-lo-u) 80%,#000)}
+:root[data-city][data-mode="dark"]{--ct-mark:color-mix(in srgb,var(--ct-hi-u) 55%,#fff)}
+html.zen[data-city] .ctprint,html[data-city][data-pg="hkmahjong"] .ctprint{display:none}
+/* the timetable fills the card edge to edge, and a phone has no margin: only Tokyo's marks (in the corners) stay */
+html[data-city][data-pg="timetable"] :is(.ctp-series,.ctp-post,.ctp-label){display:none}
+.ctp-series{position:absolute;right:13px;bottom:16px;display:flex;gap:12px;writing-mode:vertical-rl;transform:rotate(180deg);
+  font:700 .5625rem/1 var(--font-ui);letter-spacing:.24em;text-transform:uppercase;color:#f5f2ea;opacity:.9;text-shadow:0 0 6px rgba(4,30,36,.5)}
+.ctp-series b{font-weight:800}
+.ctp-series span{font-weight:500;opacity:.8}
+.ctp-tombo{position:absolute;width:30px;height:30px;opacity:.75}
+.ctp-tombo svg{display:block;width:100%;height:100%}
+.ctp-tombo.tl{left:6px;top:6px}
+.ctp-tombo.tr{right:6px;top:6px;transform:scaleX(-1)}
+.ctp-tombo.br{right:6px;bottom:6px;transform:scale(-1)}
+.ctp-tombo.bl{left:6px;bottom:6px;transform:scaleY(-1)}
+.ctp-tombo.mid.l{left:0;top:50%;margin-top:-15px}
+.ctp-post{position:absolute;right:16px;top:14px;width:230px;height:auto;opacity:.5;overflow:visible}
+[data-mode="dark"] .ctp-post{opacity:.4}
+.ctp-post .en{font:700 8.5px var(--font-ui);letter-spacing:2.4px}
+.ctp-post .zh{font:900 10px "Noto Serif TC","PMingLiU",serif;letter-spacing:8px}
+.ctp-post .dt{font:700 9.5px "Space Mono",ui-monospace,monospace;letter-spacing:.5px}
+.ctp-label{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px 5px;
+  background:#fbf8f2;color:#1b1714;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.3);font:500 .5rem/1.2 var(--ct-small)}
+[data-mode="dark"] .ctp-label{background:#cfcac0;opacity:.82}
+.ctp-label svg{display:block;width:100px;height:auto}
+.ctp-label svg text{font:500 7px var(--font-ui)}
+.ctp-label .t{letter-spacing:.12em}
+.ctp-label .p{letter-spacing:.06em;font-weight:700}
+@media (max-width:700px){
+  :is(.ctp-series,.ctp-post,.ctp-label),.ctp-tombo.mid{display:none}
+}
