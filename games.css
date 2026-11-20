@@ -1758,7 +1758,7 @@ html.stfit[data-pg="revision"] #gamegrid>.rvyear>.cathd{display:none}
 body[data-page="revision"] .gamestage>.stage{clear:both}
 html[data-motion="reduced"] :is(.trk-bar i,.trk-car,.trk-ib){transition:none}
 
-/* ═══ Whose timetable? (games.js BUILD.whose): the fortnight on the left, hints and guessing on the right ═══ */
+/* ═══ Whose Week (games.js BUILD.whose): the fortnight on the left, hints and guessing on the right ═══ */
 .wtboard{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);gap:18px;align-items:start;margin-top:12px}
 @media (max-width:820px){ .wtboard{grid-template-columns:minmax(0,1fr)} }
 .wtcount{margin:0 0 10px;font-size:0.9375rem;color:var(--muted)}

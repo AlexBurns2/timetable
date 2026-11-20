@@ -3553,3 +3553,21 @@ The user found 8.131 much too hard and agreed a new design (through the side ses
   - A first-version day for today is rebuilt and overwritten (`ensureWhose`, with `created_at` reset); a result saved before that counts as not started, and the day's results ignore it. Nothing is deleted.
 - **Tested offline** (made-up years, scratchpad `whose_test.mjs`, `whose_fake2.mjs`): senior on lines (150 and 220 students) 12 of 12, one person first fitting at hint 4 mostly, otherwise 5; junior with electives 12 of 12 at hint 5; junior with identical class timetables: none. About 15 ms per day.
 - The page was shot in headless Chrome with a stand-in API: wide, phone and dark. Never run on real timetables or bell times.
+
+## 8.133 Whose Week: renamed, fairer hints, an archive; Triplets' icons (asset version `20261120g`, `CACHE_VERSION` v59)
+- **Renamed** "Whose timetable?" → **Whose Week** everywhere people see it: the game card and page, Home's Today strip, What's new, and the server's messages. The id `whose`, the routes and the tables `whose_puzzle`/`whose_result` are unchanged.
+- **No subject count and no shared-classes hint**: the owner found them unfair. Six hints, same fixed order:
+  1. a common subject (a pair in junior years)
+  2. a period on every day
+  3. a whole day
+  4. a rarer subject
+  5. a teacher or a double
+  6. the frees
+
+  Certainty is required by hint 4, the third from last, with more than one person fitting after hint 1 (`planFor`). Puzzle `VERSION` 3, so today's earlier-version day is rebuilt. Everyone's class codes (`codes`/`pc`) are no longer stored; they were only for the shared-classes hint. `whoseView(p, nameOf)` now takes no player.
+- **The guess box suggests anyone in the year again**, not just those who still fit. A name from outside the year still doesn't cost a guess. The "N students still fit" count stays.
+- **Archive** (as in Daily Guess Who): `?whose=1&archive=1` (`archiveFor`) lists the year's days of this version with a puzzle in the last 30 (from `WHOSE_EPOCH`), with played and solved counts and your own result. Results saved before a day was remade don't count.
+  - The page's Archive button opens a month calendar. Days without a puzzle are greyed; today can always be opened.
+  - A past day loads with `?date=` and Results follow it. Guesses on a past day are saved for that date, and count in the streak as in Guess Who.
+- **Triplets' icons**: the Phosphor duotone `dots-nine` (a 3 by 3 grid, added to icons.js) instead of `users-four`, and the emoji ☘️ (three leaves) instead of 🍀, in the games list and Home's strip. The share text's coloured squares are untouched.
+- Tested offline (made-up years): senior on lines 12 of 12 days (one person first fits at hint 2 or 3), junior with electives 12 of 12 (hint 3), identical classes none. The page, the archive, all-names suggestions, the games list and Home were shot in headless Chrome with a stand-in API.

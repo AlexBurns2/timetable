@@ -1,36 +1,39 @@
 /*
- * "Whose timetable?" — a daily game on the games page, served by /api/daily?whose=1 (whoseRoute below),
- * so it needs no Vercel function of its own. Private helper (underscore = not a route).
+ * "Whose Week" — a daily game on the games page, served by /api/daily?whose=1 (whoseRoute below),
+ * so it needs no Vercel function of its own. Private helper (underscore = not a route). (It was
+ * "Whose timetable?" for its first day; the tables and the id keep "whose".)
  *
  * Someone's whole fortnight from your year, the same for everyone in it that day. It starts as the
  * school's grid: a blank rectangle for every period at its bell time, gaps for recess, lunch and
  * assembly, and nothing else (free periods look like the rest, so the first guess is blind). Each
  * wrong guess, or a skip, gives one more hint, in the same order of kinds every day:
- *   1 how many subjects they take          5 a whole day (frees and all)
- *   2 which classes you share with them    6 every lesson of a rarer subject
- *     (each player's own)                  7 a teacher ("teaches two of their classes") or a double
- *   3 every lesson of a common subject       on a day
- *     (two of them in the junior years)    8 all their free periods
- *   4 one period on every day
- * The board ones fill in tiles (subjects in their colours); a hint never fills a tile already shown.
- * Under the board, a plain count of the students who still fit, and the guess box only suggests them.
+ *   1 every lesson of a common subject (two of them in the junior years)
+ *   2 one period on every day
+ *   3 a whole day (frees and all)
+ *   4 every lesson of a rarer subject
+ *   5 a teacher ("teaches two of their classes"), or a double on a day
+ *   6 all their free periods
+ * Each fills in tiles (subjects in their colours) except the teacher or double; a hint never fills a
+ * tile already shown. Nothing personal or abstract (how many subjects, which classes you share): the
+ * owner found those unfair. Under the board, a plain count of the students who still fit.
  *
  * The answer is certain. Building a day reads every timetable in the year; the details of each hint
  * are chosen so that, checked against everyone's whole fortnight (a single week can be shared, so both
- * are always checked), exactly one person fits by the sixth hint (the third from last), and more than
- * one still fits after the first. Hint 2 differs from player to player, so it is never counted on.
- * If no one in the year can be made certain (whole classes sharing a timetable), the year has no
- * puzzle that day.
+ * are always checked), exactly one person fits by the fourth hint (the third from last), and more than
+ * one still fits after the first. If no one in the year can be made certain (whole classes sharing a
+ * timetable), the year has no puzzle that day.
  *
  * Like Daily Guess Who, the browser gets everything up front (the board, the hints, who still fits
  * after each one, and the answer) and marks guesses itself, so it's instant; each guess is saved here
- * in the background. Names only ever go to the browser, never email addresses.
+ * in the background. Names only ever go to the browser, never email addresses. The last 30 days can
+ * be played again from the archive (?whose=1&archive=1 lists them).
  *
- * Tables (SETUP.md, "Whose timetable?"). RLS on with no policies: only the server reads or writes them.
+ * Tables (SETUP.md, "Whose Week"). RLS on with no policies: only the server reads or writes them.
  *   whose_puzzle(date, year, puzzle jsonb, created_at, pk(date, year))
  *   whose_result(email, date, year, guesses, won, done, updated_at, pk(email, date))
- * A day made by the first version of the game is made again (the owner chose not to keep it), and a
- * result saved before its day was remade counts as not started.
+ * A day made by an earlier version of the game is made again if it's today (the owner chose not to
+ * keep those), and a result saved before its day was remade counts as not started. An earlier
+ * version's past day can't be played.
  */
 
 import { db } from "./_supabase.js";
@@ -39,7 +42,7 @@ import { rosterList, withName } from "./_names.js";
 import { resolveYear, sydneyDate, computeStreak } from "./_daily.js";
 
 export const WHOSE_EPOCH = "2026-11-20";            // the first day of the game
-const VERSION = 2;
+const VERSION = 3;
 const CYCLE = ["mona", "tuea", "weda", "thua", "fria", "monb", "tueb", "wedb", "thub", "frib"];
 const WEEKDAY = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday" };
 const dayName = d => WEEKDAY[d.slice(0, 3)] + ", Week " + d.slice(3).toUpperCase();
@@ -55,6 +58,8 @@ const shuffle = (a, r) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--
 async function eachLimited(list, n, fn) { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) await fn(list[i++]); })); }
 const toMin = v => { const m = String(v == null ? "" : v).match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 const lc = s => String(s || "").trim().toLowerCase();
+const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+const shift = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 
 /* subjects and teachers as the timetable shows them (the same tidying as _daily.js and index.html) */
 const cleanSubject = name => String(name || "")
@@ -153,12 +158,11 @@ function profileOf(person, slots) {
   const doubles = new Set();
   for (const d of CYCLE) { const day = person.days[d]; if (day) for (const [per, c] of day) { const n = day.get(per + 1); if (n && n.code === c.code) doubles.add(d); } }
   return { email: person.email, cells, subj: new Map([...subjSlots].map(([s, l]) => [s, l.join(",")])), frees: frees.join(","),
-           subjects, nSubj: subjects.length, teach, teachers: [...classes.values()], doubles, codes: [...classes.keys()],
+           subjects, nSubj: subjects.length, teach, teachers: [...classes.values()], doubles,
            sig: slots.map(k => lc(cells[k])).join("|") };
 }
-/* does someone fit a hint about the answer? (hint 2, each player's own, is never counted on) */
+/* does someone fit a hint about the answer? */
 function fits(c, h, a, slots) {
-  if (h.k === "count") return c.nSubj === a.nSubj;
   if (h.k === "subj") return h.subjects.every(s => (c.subj.get(lc(s)) || "") === (a.subj.get(lc(s)) || ""));
   if (h.k === "slot") return slots.every(k => !k.endsWith("|" + h.p) || lc(c.cells[k]) === lc(a.cells[k]));
   if (h.k === "day") return slots.every(k => !k.startsWith(h.d + "|") || lc(c.cells[k]) === lc(a.cells[k]));
@@ -177,13 +181,11 @@ function tilesFor(h, a, slots) {
 }
 
 /* The details of the day's hints for one answer, or null. The kinds come in a fixed order; the details
-   (which subjects, period, day, teacher) are tried and scored: exactly one person must fit after hint 6
-   (the third from last); more than one after hint 1; best if one person first fits at hint 5 or 6 (4 is
-   fine, 3 at a push); each hint should cut the field down; each board hint must show new tiles. */
+   (which subjects, period, day, teacher) are tried and scored: exactly one person must fit after hint 4
+   (the third from last); more than one after hint 1; best if one person first fits at hint 3 or 4 (2 at
+   a push); each hint should cut the field down; each board hint must show new tiles. */
 function planFor(a, people, slots, freq, junior, r) {
   const n = list => list.length;
-  const S1 = people.filter(c => fits(c, { k: "count" }, a, slots));
-  if (n(S1) < 2) return null;
   const onBoard = a.subjects.filter(s => a.subj.has(lc(s)));
   if (onBoard.length < 3) return null;
   const common = onBoard.slice().sort((x, y) => (freq.get(lc(y)) || 0) - (freq.get(lc(x)) || 0) || x.localeCompare(y));
@@ -194,29 +196,29 @@ function planFor(a, people, slots, freq, junior, r) {
   let best = null;
   for (const sa of firstOpts) {
     const hA = { k: "subj", subjects: sa }, shownA = new Set(tilesFor(hA, a, slots));
-    const S3 = S1.filter(c => fits(c, hA, a, slots));
+    const S1 = people.filter(c => fits(c, hA, a, slots));
+    if (n(S1) < 2) continue;
     for (const p of shuffle(periods, r)) {
       const hS = { k: "slot", p }, tS = tilesFor(hS, a, slots);
       if (tS.filter(k => !shownA.has(k)).length < 3) continue;
-      const S4 = S3.filter(c => fits(c, hS, a, slots)), shown4 = new Set([...shownA, ...tS]);
+      const S2 = S1.filter(c => fits(c, hS, a, slots)), shown2 = new Set([...shownA, ...tS]);
       for (const d of shuffle(CYCLE, r)) {
         const hD = { k: "day", d }, tD = tilesFor(hD, a, slots);
-        if (tD.filter(k => !shown4.has(k)).length < 3) continue;
-        const S5 = S4.filter(c => fits(c, hD, a, slots)), shown5 = new Set([...shown4, ...tD]);
+        if (tD.filter(k => !shown2.has(k)).length < 3) continue;
+        const S3 = S2.filter(c => fits(c, hD, a, slots)), shown3 = new Set([...shown2, ...tD]);
         /* the payoff: a rarer subject, rarest first, with tiles still to show */
         const rare = common.filter(s => !sa.includes(s)).reverse();
         for (const sb of rare.slice(0, 3)) {
           const hB = { k: "subj", subjects: [sb] };
-          if (!tilesFor(hB, a, slots).some(k => !shown5.has(k))) continue;
-          const S6 = S5.filter(c => fits(c, hB, a, slots));
-          if (n(S6) !== 1) continue;
-          const counts = [n(people), n(S1), n(S1), n(S3), n(S4), n(S5), n(S6)];
+          if (!tilesFor(hB, a, slots).some(k => !shown3.has(k))) continue;
+          const S4 = S3.filter(c => fits(c, hB, a, slots));
+          if (n(S4) !== 1) continue;
+          const counts = [n(people), n(S1), n(S2), n(S3), n(S4)];
           const first = counts.indexOf(1);
-          if (first < 3) continue;
-          let score = { 6: 3, 5: 3, 4: 1.5, 3: 0 }[first];
-          for (const i of [3, 4, 5]) if (i <= first && counts[i] === counts[i - 1]) score -= 0.8;     // a hint that ruled nobody out
-          const span = Math.log(counts[1]);
-          for (const i of [3, 4, 5, 6]) if (i <= first) score -= Math.pow((Math.log(counts[i - 1]) - Math.log(Math.max(1, counts[i]))) / span - 1 / 4, 2) * 2;
+          let score = { 4: 3, 3: 3, 2: 1 }[first] || 0;
+          for (const i of [2, 3]) if (i <= first && counts[i] === counts[i - 1]) score -= 0.8;     // a hint that ruled nobody out
+          const span = Math.log(counts[0]);
+          for (const i of [1, 2, 3, 4]) if (i <= first) score -= Math.pow((Math.log(counts[i - 1]) - Math.log(Math.max(1, counts[i]))) / span - 1 / first, 2) * 2;
           score += r() * 0.3;
           if (!best || score > best.score) best = { score, sa, p, d, sb, counts };
         }
@@ -224,15 +226,15 @@ function planFor(a, people, slots, freq, junior, r) {
     }
   }
   if (!best) return null;
-  /* the seventh: a teacher who has them more than once, else a double, else any teacher */
+  /* the fifth: a teacher who has them more than once, else a double, else any teacher */
   const many = [...new Map(a.teachers.filter(c => c.teacher && !NOT_A_SUBJECT.test(c.subject)).map(c => [lc(c.teacher), c.teacher])).values()]
     .map(t => ({ t, n: a.teach.get(lc(t)) || 0 }));
   const twice = many.filter(x => x.n >= 2);
-  const seventh = twice.length ? Object.assign({ k: "teacher" }, twice[Math.floor(r() * twice.length)])
+  const fifth = twice.length ? Object.assign({ k: "teacher" }, twice[Math.floor(r() * twice.length)])
     : a.doubles.size ? { k: "double", d: shuffle([...a.doubles], r)[0] }
     : many.length ? Object.assign({ k: "teacher" }, many[Math.floor(r() * many.length)]) : null;
-  const hints = [{ k: "count", n: a.nSubj }, { k: "share" }, { k: "subj", subjects: best.sa }, { k: "slot", p: best.p },
-                 { k: "day", d: best.d }, { k: "subj", subjects: [best.sb] }].concat(seventh ? [seventh] : [], [{ k: "frees" }]);
+  const hints = [{ k: "subj", subjects: best.sa }, { k: "slot", p: best.p }, { k: "day", d: best.d }, { k: "subj", subjects: [best.sb] }]
+    .concat(fifth ? [fifth] : [], [{ k: "frees" }]);
   return { hints, counts: best.counts };
 }
 
@@ -253,25 +255,19 @@ export function makeWhose({ people: raw, bells, seed, avoid = new Set(), maxTrie
     if (tries++ >= maxTries) break;
     const plan = planFor(a, people, slots, freq, junior, r);
     if (!plan) continue;
-    /* who still fits after each hint (hint 2 left out: it's each player's own) */
+    /* who still fits after each hint */
     const fit = [people.map((_, i) => i)];
     let alive = fit[0];
     for (const h of plan.hints) { alive = alive.filter(i => fits(people[i], h, a, slots)); fit.push(alive); }
-    const codes = [...new Set(people.flatMap(p => p.codes))], ci = new Map(codes.map((c, i) => [c, i]));
     return { v: VERSION, email: a.email, template, cells: a.cells, hints: plan.hints, counts: plan.counts, fit,
-             people: people.map(p => p.email), codes, pc: people.map(p => p.codes.map(c => ci.get(c))),
-             classes: Object.fromEntries(a.teachers.map(c => [c.code, c.subject])) };
+             people: people.map(p => p.email), classes: Object.fromEntries(a.teachers.map(c => [c.code, c.subject])) };
   }
   return null;
 }
 
-/* the hints as the browser shows them; hint 2 is worked out for the player reading it */
-function hintText(h, p, share) {
+/* the hints as the browser shows them */
+function hintText(h, p) {
   const list = xs => xs.length === 1 ? "<b>" + xs[0] + "</b>" : xs.slice(0, -1).map(x => "<b>" + x + "</b>").join(", ") + " and <b>" + xs[xs.length - 1] + "</b>";
-  if (h.k === "count") return "They take <b>" + word(h.n) + "</b> subjects.";
-  if (h.k === "share") return share == null ? "You’re not in this year, so you share no classes with them."
-    : share.all ? "You share every class with them." : !share.subjects.length ? "You don’t share any classes with them."
-    : share.subjects.length === 1 ? "You share a class with them: <b>" + share.subjects[0] + "</b>." : "You share " + list(share.subjects) + " with them.";
   if (h.k === "subj") return "Here’s every " + list(h.subjects) + " lesson.";
   if (h.k === "slot") return "Here’s <b>Period " + h.p + "</b> on every day.";
   if (h.k === "day") return "Here’s their whole <b>" + dayName(h.d) + "</b>.";
@@ -280,21 +276,10 @@ function hintText(h, p, share) {
   return Object.values(p.cells).some(v => !v) ? "Here are all their free periods." : "They have <b>no free periods</b>.";
 }
 
-/* what the browser gets for one player: names (never emails), the board, who fits after each hint,
-   and hint 2 worked out for them (the answer's classes they're in too, and everyone who shares exactly
-   those with them) */
-export function whoseView(p, email, nameOf) {
-  const mi = p.people.indexOf(email), ai = p.people.indexOf(p.email);
-  let share = null, shareFit = null;
-  if (mi >= 0) {
-    const mine = new Set(p.pc[mi]), key = list => list.filter(c => mine.has(c)).sort((x, y) => x - y).join(",");
-    const ak = key(p.pc[ai]);
-    share = { all: mi === ai, subjects: [...new Set(p.pc[ai].filter(c => mine.has(c)).map(c => p.classes[p.codes[c]]).filter(s => s && !NOT_A_SUBJECT.test(s)))] };
-    shareFit = p.pc.map((l, i) => key(l) === ak ? i : -1).filter(i => i >= 0);
-  }
-  return { names: p.people.map(nameOf), answerIndex: ai, template: p.template, cells: p.cells, fit: p.fit,
-           shareAt: p.hints.findIndex(h => h.k === "share"), shareFit,
-           hints: p.hints.map(h => Object.assign({}, h, { text: hintText(h, p, share) })) };
+/* what the browser gets: names (never emails), the board, who fits after each hint, and the hints */
+export function whoseView(p, nameOf) {
+  return { names: p.people.map(nameOf), answerIndex: p.people.indexOf(p.email), template: p.template, cells: p.cells, fit: p.fit,
+           hints: p.hints.map(h => Object.assign({}, h, { text: hintText(h, p) })) };
 }
 
 /* ── building a year's day (the school API, as the server account) ─────── */
@@ -351,7 +336,7 @@ export async function ensureWhose(year, date, deadline = Date.now() + 45000) {
   year = String(year);
   const sel = () => db.from("whose_puzzle").select("puzzle, created_at").eq("date", date).eq("year", year).maybeSingle();
   const { data: row, error } = await sel();
-  if (error) throw new Error(/does not exist|relation|schema cache/i.test(error.message) ? "Whose timetable? isn't set up yet." : "puzzle read: " + error.message);
+  if (error) throw new Error(/does not exist|relation|schema cache/i.test(error.message) ? "Whose Week isn't set up yet." : "puzzle read: " + error.message);
   const today = date === sydneyDate();
   if (row && (row.puzzle && row.puzzle.v === VERSION || !today)) return row;
   if (!today) return null;                           // a past day that was never made stays unmade
@@ -384,9 +369,26 @@ export async function prebuildWhose(deadline) {
   return out;
 }
 
+/* the archive: the year's days in the last 30 (this version's, with a puzzle), how many played and
+   solved each, and how you went (results saved before a day was remade don't count) */
+async function archiveFor(year, today, email) {
+  const from = WHOSE_EPOCH > shift(today, -30) ? WHOSE_EPOCH : shift(today, -30);
+  const [{ data: days }, { data: all }, { data: mine }] = await Promise.all([
+    db.from("whose_puzzle").select("date, created_at, v:puzzle->v, none:puzzle->none").eq("year", String(year)).gte("date", from).lte("date", today),
+    db.from("whose_result").select("date, won, done, updated_at").eq("year", String(year)).gte("date", from).lte("date", today).limit(20000),
+    db.from("whose_result").select("date, won, done, guesses, updated_at").eq("email", email).gte("date", from).lte("date", today)
+  ]);
+  const made = new Map((days || []).filter(d => Number(d.v) === VERSION && !d.none).map(d => [d.date, d.created_at]));
+  const counts = r => made.has(r.date) && Date.parse(r.updated_at) >= Date.parse(made.get(r.date));
+  const by = {};
+  for (const d of made.keys()) by[d] = { date: d, played: 0, wins: 0 };
+  for (const r of all || []) if (counts(r)) { if (r.done) by[r.date].played++; if (r.won) by[r.date].wins++; }
+  const you = {};
+  for (const r of mine || []) if (counts(r)) you[r.date] = { won: !!r.won, done: !!r.done, guesses: r.guesses || 0 };
+  return { epoch: from, today, days: Object.values(by).sort((x, y) => y.date.localeCompare(x.date)), mine: you };
+}
+
 /* ── the route: /api/daily?whose=1 (GET: the day; summary=1: how the year went) and {whose:1, guess | skip} ── */
-const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
-const shift = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 export async function whoseRoute(req, res, me, body, NAMES) {
   const today = sydneyDate();
   const raw = req.method === "POST" ? body.date : req.query.date;
@@ -396,6 +398,7 @@ export async function whoseRoute(req, res, me, body, NAMES) {
   try {
     year = await resolveYear(me);
     if (!year) return res.status(400).json({ error: "Couldn't work out which year you're in." });
+    if (req.method === "GET" && req.query.archive) return res.status(200).json(await archiveFor(year, today, me.email));
     row = await ensureWhose(year, date);
   } catch (e) { console.error("whose setup:", e.message); return res.status(502).json({ error: e.message || "Couldn't load the puzzle." }); }
   const p = row && row.puzzle;
@@ -431,7 +434,7 @@ export async function whoseRoute(req, res, me, body, NAMES) {
   }
   if (req.method === "GET")
     return res.status(200).json(Object.assign({ date, today, year, answer, total, guesses, done, won, streak: await streak() },
-      whoseView(p, me.email, nameOf)));
+      whoseView(p, nameOf)));
   if (req.method === "POST") {
     if (done) return res.status(200).json({ done, won, guesses, total, streak: await streak(), answer });
     const guess = String(body.guess || "");

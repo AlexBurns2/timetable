@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120f';
+const ASSET_V = '20261120g';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1175,7 +1175,7 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
-  { id:'whose', date:'2026-11-20', key:'game:whose', title:'Whose timetable?', href:'games.html?play=whose',
+  { id:'whose', date:'2026-11-20', key:'game:whose', title:'Whose Week', href:'games.html?play=whose',
     text:'A new daily game: someone’s fortnight from your year, starting as a blank grid. Each wrong guess fills in a little more. Whose is it?' },
   { id:'study', date:'2026-11-19', title:'Study tracker',
     text:'On the Revision page: add tasks for each subject and time them. Set a target if you like, and it tells you when the time is up.' },

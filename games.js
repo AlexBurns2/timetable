@@ -151,8 +151,8 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
-  { id:'quartets', cat:'Timetable', ico:'🍀', name:'Triplets', blurb:'Find the three groups of three from your year.' },
+  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose Week', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
+  { id:'quartets', cat:'Timetable', ico:'☘️', name:'Triplets', blurb:'Find the three groups of three from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -1453,40 +1453,49 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
-/* ── Whose timetable? ──────────────────────────────────────────────────
+/* ── Whose Week ─────────────────────────────────────────────────────────
    Someone's whole fortnight from your year. It starts as the school's grid, every period a blank
    rectangle at its bell time (free periods too, so the first guess is blind). Each wrong guess, or a
-   skip, gives the next hint: some fill in tiles (a subject in its colour, or Free), some are facts.
-   Under the board, how many students still fit; the guess box only suggests them. Week A and B sit
-   one above the other on a wide screen, and behind two tabs on a phone. Everything comes from
-   /api/daily?whose=1 (api/_whose.js); guesses are marked here, instantly, and saved in the background,
-   as in Daily Guess Who. */
+   skip, gives the next hint: most fill in tiles (a subject in its colour, or Free), one is a teacher
+   or a double. Under the board, how many students still fit; the guess box suggests anyone in your
+   year. Week A and B sit one above the other on a wide screen, and behind two tabs on a phone. The
+   Archive replays any of the last 30 days, as in Daily Guess Who. Everything comes from
+   /api/daily?whose=1 (api/_whose.js); guesses are marked here, instantly, and saved in the background. */
 const WT_COLS = ['#e5484d', '#f76b15', '#d6a20a', '#30a46c', '#12a594', '#0090ff', '#3e63dd', '#8e4ec6', '#d6409f', '#e93d82', '#29a383', '#00a2c7'];
 BUILD.whose = host => {
-  head(host, 'Whose timetable?', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
+  head(host, 'Whose Week', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
   const box = document.getElementById('wt');
-  let alive = true;
+  let alive = true, arch = null, calMonth = null, cur = null;
+  const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const norm = x => String(x == null ? '' : x).trim().toLowerCase().replace(/\s+/g, ' ');
   /* a hint arrives as text with <b> for emphasis (the server makes it); no other tag is let through */
   const hintHtml = h => String(h == null ? '' : h).replace(/<(?!\/?b>)/g, '&lt;');
   const colOf = s => { let h = 0; for (const ch of norm(s)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return WT_COLS[h % WT_COLS.length]; };
-  (async () => {
+  /* date: a past day from the Archive; null for today */
+  async function loadDay(date){
     box.innerHTML = LD('Reading your year’s timetables…');
     let s;
-    try { s = await TT.api('/api/daily', { params:{ whose:1 } }); }
+    try { s = await TT.api('/api/daily', { params: date ? { whose:1, date } : { whose:1 } }); }
     catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message) + '</p>'; return; }
     if (alive) render(s);
-  })();
+  }
+  loadDay(null);
 
   function render(s){
-    if (s.none){ box.innerHTML = '<p class="how">No puzzle for Year ' + esc(s.year) + ' today. ' + esc(s.none) + '</p>'; return; }
+    cur = s;
+    if (s.none){
+      box.innerHTML = '<p class="how">No puzzle for Year ' + esc(s.year) + (s.date === s.today ? ' today' : ' on ' + esc(shortDate(s.date))) + '. ' + esc(s.none) + '</p>' +
+        (s.date !== s.today ? '<button class="btn" type="button" id="wtback">Back to today</button>' : '');
+      const b = document.getElementById('wtback'); if (b) b.onclick = () => loadDay(null);
+      return;
+    }
     const hints = s.hints || [], total = s.total || hints.length + 1, answer = s.answer, cells = s.cells || {}, tmpl = s.template || {};
     let guesses = s.guesses || 0, done = !!s.done, won = !!s.won, streak = s.streak || 0;
     const guessed = new Set();
     const seen = () => done ? hints.length : Math.min(guesses, hints.length);
-    const shareFit = s.shareFit ? new Set(s.shareFit) : null;
-    /* who still fits after k hints: the day's list, and from hint 2 on, your own shared classes too */
-    const fitAt = k => (s.fit[Math.min(k, s.fit.length - 1)] || []).filter(i => !(shareFit && s.shareAt >= 0 && k > s.shareAt) || shareFit.has(i));
+    /* who still fits after k hints */
+    const fitAt = k => s.fit[Math.min(k, s.fit.length - 1)] || [];
     /* the tiles shown after k hints */
     const DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
     const slots = DAYS.flatMap(d => (tmpl[d] || []).map(x => d + '|' + x.p));
@@ -1497,13 +1506,16 @@ BUILD.whose = host => {
     markDay('whose', s, { done, won, streak });
     recordStat('whose', { key:'streak', mode:'set', value:streak });
 
+    const calOpen = !!(document.getElementById('wtcalbox') && !document.getElementById('wtcalbox').hidden);
     box.innerHTML =
       '<div class="dgbar">' +
-        '<span class="dgwhen">Year ' + esc(s.year) + ' · <b>Today</b></span>' +
+        '<span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : shortDate(s.date)) + '</b></span>' +
         '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="wtstreak">' + streak + '</b></span>' +
         '<span class="dgsp"></span>' +
+        '<button class="dgchip" id="wtcal" type="button" aria-expanded="' + calOpen + '" aria-controls="wtcalbox">Archive</button>' +
         '<button class="dgchip" id="wtsumbtn" type="button" aria-expanded="false" aria-controls="wtsummary">Results</button>' +
       '</div>' +
+      '<div class="dgcal" id="wtcalbox"' + (calOpen ? '' : ' hidden') + '></div>' +
       '<div class="wtboard">' +
         '<div class="wtleft">' +
           '<p class="wtcount" id="wtcount" aria-live="polite"></p>' +
@@ -1561,10 +1573,13 @@ BUILD.whose = host => {
       b.innerHTML = won ? 'You got it in <b>' + guesses + '</b>. It was <b>' + esc(answer) + '</b>.' : 'Out of guesses. It was <b>' + esc(answer) + '</b>.';
       document.getElementById('wthints').appendChild(b);
       markDay('whose', s, { done:true, won, streak });
+      if (arch){ arch.mine[s.date] = { won, done:true, guesses }; if (!document.getElementById('wtcalbox').hidden) paintCal(); }
       openSummary();
     }
 
     paint(null); setScore();
+    document.getElementById('wtcal').onclick = toggleCal;
+    if (calOpen) paintCal();
     document.getElementById('wtsumbtn').onclick = () => {
       const el = document.getElementById('wtsummary');
       if (!el.hidden){ el.hidden = true; document.getElementById('wtsumbtn').setAttribute('aria-expanded', 'false'); return; }
@@ -1574,9 +1589,8 @@ BUILD.whose = host => {
 
     const input = document.getElementById('wtin'), msg = document.getElementById('wtmsg');
     const names = s.names || [], known = new Set(names.map(norm));
-    /* only the students who still fit everything shown so far (and not those already guessed) */
-    const fitNames = () => fitAt(seen()).map(i => names[i]).filter(nm => nm && !guessed.has(norm(nm)));
-    if (window.Suggest) Suggest.attach(input, { source: q => Suggest.names(fitNames(), 8)(q) });
+    /* anyone in the year, whether they still fit or not */
+    if (window.Suggest) Suggest.attach(input, { source: Suggest.names(names.slice().sort((x, y) => x.localeCompare(y)), 8) });
     function step(v, skip){
       if (done) return;
       /* a name that isn't in your year doesn't cost a guess (a typo, say) */
@@ -1617,7 +1631,63 @@ BUILD.whose = host => {
     input.focus();
   }
 
-  /* how the year went today */
+  /* ── past days: a small month calendar of the last 30 days. Each shows how you went (✓ or ✗)
+     and how many in your year played it; pick one to play it. ── */
+  async function toggleCal(){
+    const el = document.getElementById('wtcalbox'), btn = document.getElementById('wtcal');
+    const open = el.hidden;
+    el.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    if (!arch){
+      el.innerHTML = LD();
+      try {
+        const d = await TT.api('/api/daily', { params:{ whose:1, archive:1 } });
+        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch };
+        (d.days || []).forEach(a => arch.days[a.date] = a);
+      } catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load past days.</p>'; return; }
+    }
+    if (!alive) return;
+    calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    paintCal();
+  }
+  function paintCal(){
+    const el = document.getElementById('wtcalbox'); if (!el || !arch) return;
+    if (!calMonth) calMonth = (cur && cur.date || arch.today).slice(0, 7);
+    const [y, m] = calMonth.split('-').map(Number);
+    const iso = d => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const firstDow = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;      // Monday first
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const minMonth = arch.epoch.slice(0, 7), maxMonth = arch.today.slice(0, 7);
+    let cells = '';
+    for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
+    for (let d = 1; d <= dim; d++){
+      const date = iso(d), mine = arch.mine[date], day = arch.days[date];
+      /* today can always be opened; a past day only if it had a puzzle */
+      const off = date > arch.today || (date !== arch.today && !day);
+      const state = mine && mine.won ? 'won' : mine && mine.done ? 'lost' : 'open';
+      const tip = off ? '' : shortDate(date) + (mine && mine.won ? ': you got it in ' + mine.guesses : mine && mine.done ? ': you missed it' : ': not played') +
+        (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
+      cells += off ? '<span class="dgc off"><span class="dgcn">' + d + '</span></span>'
+        : '<button type="button" class="dgc ' + state + (cur && date === cur.date ? ' cur' : '') + (date === arch.today ? ' today' : '') +
+          '" data-date="' + date + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+          '<span class="dgcn">' + d + '</span><span class="dgcm">' + (state === 'won' ? '✓' : state === 'lost' ? '✗' : '') + '</span>' +
+          '<span class="dgcp">' + (day && day.played ? day.played : '') + '</span></button>';
+    }
+    el.innerHTML =
+      '<div class="dgcalhd"><button type="button" class="dgcnav" data-step="-1" aria-label="Previous month"' + (calMonth <= minMonth ? ' disabled' : '') + '>‹</button>' +
+        '<b>' + MONTHS[m - 1] + ' ' + y + '</b>' +
+        '<button type="button" class="dgcnav" data-step="1" aria-label="Next month"' + (calMonth >= maxMonth ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="dgcgrid"><span class="dgcw">M</span><span class="dgcw">T</span><span class="dgcw">W</span><span class="dgcw">T</span>' +
+        '<span class="dgcw">F</span><span class="dgcw">S</span><span class="dgcw">S</span>' + cells + '</div>' +
+      '<div class="dgclegend"><span class="won">✓</span> solved <span class="lost">✗</span> missed <span class="dgcp">12</span> played in your year</div>';
+    el.querySelectorAll('.dgcnav').forEach(b => b.onclick = () => {
+      const dt = new Date(Date.UTC(y, m - 1 + (+b.dataset.step), 1));
+      calMonth = dt.toISOString().slice(0, 7); paintCal();
+    });
+    el.querySelectorAll('button.dgc').forEach(b => b.onclick = () => loadDay(b.dataset.date === arch.today ? null : b.dataset.date));
+  }
+
+  /* how the year went that day */
   function openSummary(){
     const el = document.getElementById('wtsummary'), b = document.getElementById('wtsumbtn');
     if (!el) return;
@@ -1627,7 +1697,7 @@ BUILD.whose = host => {
   async function loadSummary(){
     const el = document.getElementById('wtsummary'); if (!el) return;
     if (!el.innerHTML) el.innerHTML = LD();
-    try { const d = await TT.api('/api/daily', { params:{ whose:1, summary:1 } }); if (alive) paintSummary(el, d.summary); }
+    try { const d = await TT.api('/api/daily', { params: Object.assign({ whose:1, summary:1 }, cur && cur.date !== cur.today ? { date:cur.date } : {}) }); if (alive) paintSummary(el, d.summary); }
     catch { el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
   function paintSummary(el, sum){
@@ -2019,7 +2089,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120f';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120g';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
