@@ -3529,3 +3529,4 @@ Asked for (passed on from a side session): one day of a student's timetable as b
   - Junior where classes share identical timetables: none, as it should be.
   - The page was tested in headless Chrome with a stand-in API. Never run on real timetables.
 - Not done: an archive of past days (the route accepts `date` for the last 30 days, the page only plays today), a spotlight in Results, a share line.
+- Results' bars show who's in each on hover, as Daily Guess Who's do: the summary returns `names` per guess count and `lost` (display names, 40 per bar). Asset version `20261120e`, v57.

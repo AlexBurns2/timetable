@@ -1600,11 +1600,13 @@ BUILD.whose = host => {
   function paintSummary(el, sum){
     if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
     const max = Math.max(1, sum.losses, ...Object.keys(sum.dist).map(k => sum.dist[k]));
-    const bar = (label, n, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"><span class="dgbl">' + label + '</span>' +
+    /* hover a bar to see who's in it, as in Daily Guess Who */
+    const tip = key => { const list = (sum.names || {})[key]; return list && list.length ? ' title="' + esc(list.join(', ')) + '"' : ''; };
+    const bar = (label, n, key, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"' + tip(key) + '><span class="dgbl">' + label + '</span>' +
       '<span class="dgbt"><i style="width:' + (n / max * 100) + '%"></i></span><span class="dgbn">' + n + '</span></div>';
     let rows = '';
-    for (let i = 1; i <= sum.total; i++) rows += bar(i, sum.dist[i] || 0, false);
-    rows += bar('✗', sum.losses, true);
+    for (let i = 1; i <= sum.total; i++) rows += bar(i, sum.dist[i] || 0, String(i), false);
+    rows += bar('✗', sum.losses, 'lost', true);
     el.innerHTML = '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + Math.round(sum.wins / sum.played * 100) + '%</b> solved</div>' +
       '<div class="dgbars">' + rows + '</div>';
   }
@@ -1984,7 +1986,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120d';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120e';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

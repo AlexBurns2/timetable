@@ -319,11 +319,19 @@ export async function whoseRoute(req, res, me, body, NAMES) {
     .order("date", { ascending: false }).limit(120)).data || []).map(r => r.date), today);
 
   if (req.method === "GET" && req.query.summary) {
-    const { data } = await db.from("whose_result").select("guesses, won, done").eq("year", String(year)).eq("date", date).limit(5000);
-    const dist = {}; for (let i = 1; i <= total; i++) dist[i] = 0;
+    const { data } = await db.from("whose_result").select("email, guesses, won, done").eq("year", String(year)).eq("date", date).limit(5000);
+    /* who is in each bar, for hovering over it (by the names people go by, as in Daily Guess Who; capped so it stays small) */
+    const roster = new Map((await rosterList().catch(() => [])).map(x => [x.email, x.first + " " + x.last]));
+    const nameOf = e => withName(NAMES, e, roster.get(e) || titleCase(String(e).split("@")[0].replace(/[._]+/g, " ").replace(/\d+$/, "")));
+    const dist = {}, names = { lost: [] }; for (let i = 1; i <= total; i++) { dist[i] = 0; names[i] = []; }
+    const add = (k, e) => { if (names[k].length < 40) names[k].push(nameOf(e)); };
     let played = 0, wins = 0;
-    for (const r of data || []) { if (r.done) played++; if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= total) dist[r.guesses]++; } }
-    return res.status(200).json({ date, summary: { played, wins, losses: played - wins, total, dist } });
+    for (const r of data || []) {
+      if (r.done) played++;
+      if (r.won) { wins++; if (r.guesses >= 1 && r.guesses <= total) { dist[r.guesses]++; add(r.guesses, r.email); } }
+      else if (r.done) add("lost", r.email);
+    }
+    return res.status(200).json({ date, summary: { played, wins, losses: played - wins, total, dist, names } });
   }
   if (req.method === "GET") {
     const candidates = (await rosterList()).filter(x => String(x.year) === String(year) && x.first && x.last && x.hasClasses !== false)
