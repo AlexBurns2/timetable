@@ -1366,31 +1366,41 @@ BUILD.dailyguess = host => {
 
     const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
     if (window.Suggest) Suggest.attach(input, { source: Suggest.names(s.candidates || [], 8) });
-    let sending = false;
-    async function doGuess(){
-      const v = input.value.trim(); if (!v || done || sending) return;
-      /* marked by the server, which keeps the answer until you're done */
-      sending = true; btn.disabled = true;
+    /* Marked by the server, which keeps the answer until you're done. So there's no wait, the guess
+       shows straight away and so does the next hint (the server sends it ahead, as peek); if the
+       guess turns out right, that hint is taken back and the win shows instead. */
+    let sending = false, peek = s.peek || null, queue = Promise.resolve();
+    /* a guess typed while the last one is still being marked waits its turn (it isn't dropped) */
+    function doGuess(){ const v = input.value.trim(); if (!v || done) return; input.value = ''; queue = queue.then(() => guessNow(v)); }
+    async function guessNow(v){
+      if (done || !alive) return;
+      sending = true;
+      const row = document.createElement('div');
+      row.className = 'gwguessrow pend'; row.textContent = '… ' + v;
+      document.getElementById('dglog').prepend(row);
+      input.value = ''; input.focus();
+      const before = { guesses, shown };
+      if (peek && guesses + 1 < total){ allHints[guesses + 1] = peek; shown = Math.min(guesses + 2, total); paint(shown - 1); }
+      sc.textContent = 'Guess ' + (guesses + 2) + ' of ' + total;
       let r;
       try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } }); }
-      catch (e){ sending = false; btn.disabled = false; sc.textContent = e.message; return; }
-      sending = false; btn.disabled = false;
+      catch (e){ sending = false; row.remove(); guesses = before.guesses; shown = before.shown; paint(-1); setScore(); sc.textContent = e.message; input.value = v; return; }
+      sending = false;
       if (!alive || !r) return;
       const correct = !!r.correct;
       guesses = r.guesses != null ? r.guesses : guesses + 1;
-      const row = document.createElement('div');
+      peek = r.peek || null;
       row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
       row.textContent = (correct ? '✓ ' : '✗ ') + v;
-      document.getElementById('dglog').prepend(row);
-      input.value = '';
+      if (correct){ shown = before.shown; paint(-1); }           // the hint shown ahead goes back
       done = !!r.done; won = !!r.won;
       if (r.answer) answer = r.answer;
       streak = r.streak != null ? r.streak : streak;
       const a = document.getElementById('dgstreak'); if (a) a.textContent = streak;
       recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
       markDay('dailyguess', s, { done, won, streak });
-      if (!done && r.nextHint){ allHints[guesses] = r.nextHint; shown = Math.min(guesses + 1, total); paint(shown - 1); }
-      if (done){ finish(); loadSummary(s.date); } else { setScore(); input.focus(); }
+      if (!done && r.nextHint && allHints[guesses] !== r.nextHint){ allHints[guesses] = r.nextHint; shown = Math.min(guesses + 1, total); paint(shown - 1); }
+      if (done){ finish(); loadSummary(s.date); } else setScore();
     }
     btn.onclick = doGuess;
     input.addEventListener('keydown', e => { if (e.key==='Enter') doGuess(); });
@@ -1537,12 +1547,16 @@ BUILD.whose = host => {
     /* The server sends only what's been shown so far (the hints unlocked, the tiles they filled in,
        how many still fit after each), marks every guess, and sends the answer and the rest of the
        board once you're done; take() keeps the newest of those. */
-    let hints = s.hints || [], tiles = s.tiles || [], counts = s.counts || [], cells = s.cells || {}, answer = s.answer;
+    let hints = s.hints || [], tiles = s.tiles || [], counts = s.counts || [], cells = s.cells || {}, answer = s.answer, peek = s.peek || null;
     const total = s.total || hints.length + 1, tmpl = s.template || {};
     let guesses = s.guesses || 0, done = !!s.done, won = !!s.won, streak = s.streak || 0;
     const take = r => { hints = r.hints || hints; tiles = r.tiles || tiles; counts = r.counts || counts; cells = r.cells || cells;
       if (r.answer) answer = r.answer; if (r.guesses != null) guesses = r.guesses; done = !!r.done; won = !!r.won;
-      if (r.streak != null) streak = r.streak; };
+      if (r.streak != null) streak = r.streak; peek = r.peek || null; };
+    /* the next hint, sent ahead by the server: shown at once on a wrong guess or a skip */
+    const showPeek = () => { if (!peek) return false;
+      hints = hints.concat([peek.hint]); tiles = tiles.concat([peek.tiles]); counts = counts.concat([peek.count]);
+      cells = Object.assign({}, cells, peek.cells); guesses++; return true; };
     const guessed = new Set();
     const seen = () => done ? hints.length : Math.min(guesses, hints.length);
     /* how many still fit after k hints */
@@ -1639,39 +1653,56 @@ BUILD.whose = host => {
     const names = s.names || [], known = new Set(names.map(norm));
     /* anyone in the year, whether they still fit or not */
     if (window.Suggest) Suggest.attach(input, { source: Suggest.names(names.slice().sort((x, y) => x.localeCompare(y)), 8) });
-    let sending = false;
-    async function step(v, skip){
-      if (done || sending) return;
+    let sending = false, queue = Promise.resolve();
+    /* a guess typed while the last one is still being marked waits its turn (it isn't dropped) */
+    function step(v, skip){
+      if (done) return;
+      if (!skip && known.size && !known.has(norm(v))){ msg.textContent = 'Pick a name from your year.'; input.focus(); return; }
+      input.value = '';
+      queue = queue.then(() => stepNow(v, skip));
+    }
+    async function stepNow(v, skip){
+      if (done || !alive) return;
       /* a name that isn't in your year doesn't cost a guess (a typo, say) */
       if (!skip && known.size && !known.has(norm(v))){ msg.textContent = 'Pick a name from your year.'; input.focus(); return; }
       msg.textContent = '';
       const before = shownAt(seen());
-      /* marked by the server, which keeps the answer (and the rest of the board) until you're done */
+      /* Marked by the server, which keeps the answer (and the rest of the board) until you're done.
+         So there's no wait, the guess shows straight away, and so does the next hint (peek) when it
+         isn't the last guess; if the guess turns out right, the win and the whole board replace it. */
       sending = true;
+      const row = document.createElement('div');
+      row.className = 'gwguessrow ' + (skip ? 'miss' : 'pend');
+      row.textContent = skip ? '→ Skipped' : '… ' + v;
+      document.getElementById('wtlog').prepend(row);
+      input.value = ''; input.focus();
+      const snap = { hints, tiles, counts, cells, guesses };
+      const ahead = guesses + 1 < total && showPeek();
+      if (ahead) paintFresh(before);
       let r;
       try { r = await TT.api('/api/daily', { method:'POST', body: skip ? { whose:1, skip:true, date:s.date } : { whose:1, guess:v, date:s.date } }); }
-      catch (e){ sending = false; msg.textContent = e.message; return; }
+      catch (e){ sending = false; ({ hints, tiles, counts, cells, guesses } = snap); row.remove(); paint(null); setScore(); msg.textContent = e.message; if (!skip) input.value = v; return; }
       sending = false;
       if (!alive || !r) return;
       take(r);
       const correct = !!r.correct;
       if (!skip) guessed.add(norm(v));
-      const row = document.createElement('div');
       row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
       row.textContent = skip ? '→ Skipped' : (correct ? '✓ ' : '✗ ') + v;
-      document.getElementById('wtlog').prepend(row);
-      input.value = '';
       const a = document.getElementById('wtstreak'); if (a) a.textContent = streak;
       recordStat('whose', { key:'streak', mode:'set', value:streak });
       markDay('whose', s, { done, won, streak });
       if (done){ finish(true); loadSummary(); return; }
-      /* the new hint's tiles light up (on whichever week they're in; the tab moves to them on a phone) */
+      if (ahead) setScore(); else paintFresh(before);   // already on screen when the hint was shown ahead
+    }
+    /* the new hint's tiles light up (on whichever week they're in; the tab moves to them on a phone) */
+    function paintFresh(before){
       const now = shownAt(seen()), fresh = new Set([...now].filter(k => !before.has(k)));
       if (fresh.size && ![...fresh].some(k => k.split('|')[0].endsWith(tab))){
         tab = [...fresh][0].split('|')[0].slice(-1);
         host.querySelectorAll('.wttabs button').forEach(x => x.setAttribute('aria-selected', String(x.dataset.w === tab)));
       }
-      paint(fresh); setScore(); input.focus();
+      paint(fresh); setScore();
     }
     document.getElementById('wtguess').onclick = () => { const v = input.value.trim(); if (v) step(v, false); };
     document.getElementById('wtskip').onclick = () => step('', true);
@@ -2120,7 +2151,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120u';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120y';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

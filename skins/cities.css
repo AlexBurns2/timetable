@@ -26,6 +26,7 @@
   --ct-tint:linear-gradient(180deg,#8fc6dd 0%,#d9ecf0 55%,#e9d8b5 100%); --ct-tint-n:linear-gradient(180deg,#0b1830,#13284a 60%,#3a2a3a);
   --ct-name:"Sydney"; --ct-face:"Unbounded",system-ui,sans-serif; --ct-w:800; --ct-ls:-.04em; --ct-tt:uppercase;
   --accent:#1f6f9a; --ct-accent-n:#c7b2ff; --ct-pos:38% 48%; --ct-pos-n:32% 55%;   /* harbour blue; the dusk's lilac */
+  --ct-lo:#0b5560; --ct-hi:#f5f2ea; --ct-lo-n:#041a20; --ct-hi-n:#7fd8d2; --ct-m:#f5ecdd; --ct-m-n:#7dd4cc; --ct-size:20vw;   /* teal and white; deep teal and aqua */
 }
 [data-city="tokyo"]{
   --ct-day:url(../images/city/tokyo-day.webp); --ct-night:url(../images/city/tokyo-night.webp);
@@ -33,6 +34,7 @@
   --ct-tint:linear-gradient(180deg,#c9c3dc 0%,#ece6ee 55%,#f0d2c4 100%); --ct-tint-n:linear-gradient(180deg,#0d0f24,#1d1838 60%,#43213a);
   --ct-name:"東京"; --ct-face:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif; --ct-w:800; --ct-ls:.02em; --ct-tt:none;
   --accent:#d0472b; --ct-accent-n:#ffad4a; --ct-pos:center 42%; --ct-pos-n:center 50%;   /* the tower's red; its lit amber */
+  --ct-lo:#28262c; --ct-hi:#ef5340; --ct-lo-n:#0d0c11; --ct-hi-n:#ff8c3c; --ct-m:#ec3518; --ct-m-n:#ff862e; --ct-size:30vw;   /* charcoal and red; black and the tower's orange */
 }
 [data-city="hongkong"]{
   --ct-day:url(../images/city/hongkong-day.webp); --ct-night:url(../images/city/hongkong-night.webp);
@@ -40,6 +42,7 @@
   --ct-tint:linear-gradient(180deg,#9fb6cc 0%,#dfe7ec 55%,#efcfd6 100%); --ct-tint-n:linear-gradient(180deg,#070d1c,#121a36 60%,#3a1030);
   --ct-name:"香港"; --ct-face:"Noto Serif TC","PMingLiU","MingLiU",serif; --ct-w:900; --ct-ls:.02em; --ct-tt:none;
   --accent:#c8102e; --ct-accent-n:#ff5fa8; --ct-pos:center 40%; --ct-pos-n:40% 50%;   /* the city's red; the harbour's neon pink */
+  --ct-lo:#1c2654; --ct-hi:#f7b4b6; --ct-lo-n:#080c24; --ct-hi-n:#ff58a8; --ct-m:#f6a792; --ct-m-n:#ff509a; --ct-size:30vw;   /* navy and coral pink; navy and neon pink */
 }
 [data-city="chongqing"]{
   --ct-day:url(../images/city/chongqing-day.webp); --ct-night:url(../images/city/chongqing-night.webp);
@@ -47,6 +50,7 @@
   --ct-tint:linear-gradient(180deg,#c7c1b6 0%,#e6e1d6 55%,#e8cfae 100%); --ct-tint-n:linear-gradient(180deg,#120c10,#2a1616 60%,#5a2a14);
   --ct-name:"重庆"; --ct-face:"Ma Shan Zheng","STKaiti","KaiTi",serif; --ct-w:400; --ct-ls:0; --ct-tt:none;
   --accent:#b8502a; --ct-accent-n:#ff5a4f; --ct-pos:30% 70%; --ct-pos-n:40% 60%;   /* the river's clay; the bridge's red */
+  --ct-lo:#351a18; --ct-hi:#f3a866; --ct-lo-n:#0f0808; --ct-hi-n:#ff5b3a; --ct-m:#f09e56; --ct-m-n:#ff5634; --ct-size:30vw;   /* chili brown and hotpot amber; black and the bridge's red */
 }
 
 /* ── the shared look: light (day) ── */
@@ -54,6 +58,8 @@
   --ct-photo:var(--ct-day); --ct-fallback:var(--ct-tint);
   --ct-paper:#f7f3ea; --ct-wash:rgba(255,250,240,.16); --ct-filter:saturate(.78) contrast(.9) brightness(1.04);
   --ct-word:rgba(255,255,255,.86); --ct-word-shadow:0 2px 30px rgba(0,0,0,.18);
+  --ct-lo-u:var(--ct-lo); --ct-hi-u:var(--ct-hi); --ct-m-u:var(--ct-m);
+  --ct-ink:color-mix(in srgb,var(--ct-lo-u) 32%,#fff); --ct-ink-blend:color-burn; --ct-ink-alpha:.85;
   --bg:var(--ct-paper); --bg-img:none;
   --panel:rgba(255,255,255,.68); --panel-2:rgba(255,255,255,.58); --line:rgba(40,40,50,.14);
   --text:#16161c; --muted:#55555f; --accent-ink:#fff;
@@ -66,6 +72,8 @@
   --ct-photo:var(--ct-night); --ct-fallback:var(--ct-tint-n); --ct-pos:var(--ct-pos-n);
   --ct-paper:#14141a; --ct-wash:rgba(8,10,24,.22); --ct-filter:saturate(.86) contrast(.94) brightness(.96);
   --ct-word:rgba(255,255,255,.8); --ct-word-shadow:0 2px 40px rgba(0,0,0,.5);
+  --ct-lo-u:var(--ct-lo-n); --ct-hi-u:var(--ct-hi-n); --ct-m-u:var(--ct-m-n);
+  --ct-ink:color-mix(in srgb,var(--ct-hi-u) 60%,#fff); --ct-ink-blend:screen; --ct-ink-alpha:.32;
   --panel:rgba(18,18,26,.6); --panel-2:rgba(30,30,42,.55); --line:rgba(255,255,255,.12);
   --text:#f1f0f5; --muted:#b4b2c0; --accent:var(--ct-accent-n); --accent-ink:#111;
   --card-border:1px solid rgba(255,255,255,.14);
@@ -77,39 +85,52 @@
 }
 
 /* ── the postcard: the photograph inside a narrow paper border, washed a little, grain over it ── */
+/* --ct-edge: the paper border. --ct-zoom: how much nearer a page sees the photo. The picture's box is made that much
+   bigger than the window and clipped back to the frame, so a nearer view still fills it whatever the photo's shape
+   (a background-size like 125% left bands above and below a wide panorama on a tall window). */
+[data-city]{--ct-edge:10px;--ct-zoom:0px}
 [data-city] body{background:var(--ct-paper)}
-[data-city] body::before{content:"";position:fixed;inset:10px;z-index:-2;pointer-events:none;border-radius:6px;
-  background:linear-gradient(var(--ct-wash),var(--ct-wash)),var(--ct-photo) var(--ct-pos)/cover no-repeat,var(--ct-fallback);
-  filter:var(--ct-filter);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+[data-city] body::before{content:"";position:fixed;inset:calc(var(--ct-edge) - var(--ct-zoom));z-index:-2;pointer-events:none;border-radius:6px;
+  clip-path:inset(var(--ct-zoom) round 6px);
+  /* a duotone print, in one element: the photo in greys (a black layer, saturation), scaled by --ct-m (multiply),
+     then screened with the dark ink, which gives dark ink + grey × (light ink − dark ink): black prints in the
+     dark ink, white in the light one, and every grey evenly between (--ct-m = (light − dark) / (1 − dark), worked
+     out per city) */
+  background:linear-gradient(var(--ct-lo-u),var(--ct-lo-u)),linear-gradient(var(--ct-m-u),var(--ct-m-u)),linear-gradient(#000,#000),
+    var(--ct-photo) var(--ct-pos)/cover no-repeat,var(--ct-fallback);
+  background-blend-mode:screen,multiply,saturation,normal,normal;
+  filter:contrast(1.12);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
 /* film grain: fine, still, over the photo only (under the page) */
-html[data-city]::before{content:"";position:fixed;inset:10px;z-index:-1;pointer-events:none;border-radius:6px;opacity:.5;mix-blend-mode:overlay;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E") 0 0/180px 180px}
+html[data-city]::before{content:"";position:fixed;inset:var(--ct-edge);z-index:-1;pointer-events:none;border-radius:6px;opacity:.55;mix-blend-mode:overlay;
+  background:radial-gradient(circle,rgba(0,0,0,.55) 0 .8px,transparent 1.3px) 0 0/4px 4px,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E") 0 0/180px 180px}
 /* the city's name, very large, low in the picture like a postcard's title */
-html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:clamp(18px,3vw,48px);bottom:clamp(14px,3vh,40px);white-space:nowrap;
+html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:calc(var(--ct-edge) - .04em);bottom:calc(var(--ct-edge) - .2em);white-space:nowrap;
   font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:var(--ct-ls);text-transform:var(--ct-tt);line-height:.9;
-  font-size:clamp(4rem,15vw,15rem);color:var(--ct-word);text-shadow:var(--ct-word-shadow)}
+  font-size:clamp(6rem,var(--ct-size),30rem);color:var(--ct-ink);mix-blend-mode:var(--ct-ink-blend);opacity:var(--ct-ink-alpha)}
 /* a phone held upright: the name stands up the right edge */
 @media (max-width:700px){
-  [data-city] body::before,html[data-city]::before{inset:6px;border-radius:4px}
-  html[data-city]::after{left:auto;right:12px;bottom:auto;top:12vh;writing-mode:vertical-rl;font-size:clamp(4rem,24vw,8rem)}
-  html[data-city="sydney"]::after{writing-mode:vertical-rl;transform:rotate(180deg);top:auto;bottom:10vh;font-size:clamp(3.4rem,17vw,6rem)}
+  [data-city]{--ct-edge:6px}
+  html[data-city]::after{left:auto;right:calc(var(--ct-edge) - .14em);bottom:auto;top:8vh;writing-mode:vertical-rl;font-size:clamp(5rem,34vw,11rem)}
+  html[data-city="sydney"]::after{writing-mode:vertical-rl;transform:rotate(180deg);top:auto;bottom:6vh;font-size:clamp(4rem,22vw,8rem)}
 }
-/* each page, the same photograph seen differently: Home the whole view; the timetable quieter; games nearer */
-[data-city][data-pg="timetable"]{--ct-wash:rgba(255,250,240,.46)}
-[data-city][data-mode="dark"][data-pg="timetable"]{--ct-wash:rgba(8,10,24,.5)}
-[data-city][data-pg="timetable"]::after{opacity:.55}
-[data-city]:is([data-pg="games"],[data-pg="mahjong"]) body::before{background-size:auto,140% auto,auto;background-position:0 0,72% 40%,0 0}
-[data-city]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="notes"],[data-pg="resources"],[data-pg="themes"],[data-pg="finder"]) body::before{
-  background-size:auto,125% auto,auto;background-position:0 0,22% 55%,0 0}
+/* The postcard is the same on every page and doesn't move: changing page, only the page itself blurs out and
+   back in over it (fx.js TR.city). The filter is only on while that runs (fill-mode backwards), because a filter
+   left on .wrap would stop the panels' frosted glass seeing the photo. (Each page used to see the photo a little
+   nearer, which looked like the background jumping in size on every page change; --ct-zoom stays at 0.) */
+html[data-city].fx-out .wrap{opacity:0;filter:blur(10px);transition:opacity .16s ease,filter .16s ease}
+html[data-city].fx-enter .wrap{animation:ctblurin .34s ease-out backwards}
+@keyframes ctblurin{from{opacity:0;filter:blur(10px)}}
 html.zen[data-city] body::before,html.zen[data-city]::before,html.zen[data-city]::after,
 [data-city][data-pg="hkmahjong"] body::before,html[data-city][data-pg="hkmahjong"]::before,html[data-city][data-pg="hkmahjong"]::after{display:none}
 html.zen[data-city] body{background:transparent}
 
 /* ── the site: clear frosted glass on the photograph, the same in every city ── */
 :root[data-city]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),
-[data-city] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.gamestage:not([hidden]),.tfcard,.lbbcard,.fpost){
+[data-city] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.stage,.tfcard,.lbbcard,.fpost){
   background-color:var(--panel);-webkit-backdrop-filter:blur(12px) saturate(1.1);backdrop-filter:blur(12px) saturate(1.1);border:var(--card-border);box-shadow:var(--shadow)}
 [data-city] .forum{padding:16px 18px 18px}
+/* an open game: the game's own card is the glass; the holder round it and its "All games" button stays clear */
+[data-city] .gamestage{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 [data-city] :is(.lesson,.nowcard,.breakbar){-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 /* page names and the greeting in the city's own face; section names quiet */
 [data-city] :is(.hubid h1,.pagehead h1,.brand h1){font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:0}

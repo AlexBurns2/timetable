@@ -280,15 +280,22 @@ function hintText(h, p) {
 /* What the browser gets, after n hints: names (never emails), the empty board, the n hints with the
    tiles each filled in (and only those tiles' subjects), and how many still fit after 0…n hints.
    With done, everything: the whole board and every hint. */
-export function whoseView(p, nameOf, n, done) {
+export function whoseView(p, nameOf, n, done, light) {
   const slots = CYCLE.flatMap(d => (p.template[d] || []).map(x => d + "|" + x.p));
   const k = done ? p.hints.length : Math.max(0, Math.min(n, p.hints.length));
   const hints = p.hints.slice(0, k), tiles = hints.map(h => tilesFor(h, p, slots));
   const cells = {};
   (done ? slots : tiles.flat()).forEach(key => { cells[key] = p.cells[key] || ""; });
-  return { names: p.people.map(nameOf), template: p.template, cells, tiles,
-           counts: p.fit.slice(0, k + 1).map(l => l.length),
-           hints: hints.map(h => ({ k: h.k, text: hintText(h, p) })) };
+  /* peek: the next hint (its words, tiles and how many still fit after it), sent ahead so a
+     wrong guess or a skip shows it straight away instead of waiting for the server */
+  let peek;
+  if (!done && k < p.hints.length) {
+    const h = p.hints[k], t = tilesFor(h, p, slots), c = {};
+    t.forEach(key => { c[key] = p.cells[key] || ""; });
+    peek = { hint: { k: h.k, text: hintText(h, p) }, tiles: t, cells: c, count: (p.fit[k + 1] || []).length };
+  }
+  const out = { cells, tiles, counts: p.fit.slice(0, k + 1).map(l => l.length), hints: hints.map(h => ({ k: h.k, text: hintText(h, p) })), peek };
+  return light ? out : Object.assign({ names: p.people.map(nameOf), template: p.template }, out);
 }
 
 /* ── building a year's day (the school API, as the server account) ─────── */
@@ -403,12 +410,13 @@ export async function whoseRoute(req, res, me, body, NAMES) {
   const raw = req.method === "POST" ? body.date : req.query.date;
   const date = !raw ? today : /^\d{4}-\d{2}-\d{2}$/.test(raw) && raw <= today && raw >= WHOSE_EPOCH && raw >= shift(today, -30) ? raw : null;
   if (!date) return res.status(400).json({ error: "That day isn't available to play." });
-  let year, row;
+  let year, row, hadRead;
   try {
     year = await resolveYear(me);
     if (!year) return res.status(400).json({ error: "Couldn't work out which year you're in." });
     if (req.method === "GET" && req.query.archive) return res.status(200).json(await archiveFor(year, today, me.email));
-    row = await ensureWhose(year, date);
+    [row, hadRead] = await Promise.all([ensureWhose(year, date),
+      db.from("whose_result").select("guesses, won, done, updated_at").eq("email", me.email).eq("date", date).maybeSingle()]);
   } catch (e) { console.error("whose setup:", e.message); return res.status(502).json({ error: e.message || "Couldn't load the puzzle." }); }
   const p = row && row.puzzle;
   if (!p || p.retry) return res.status(503).json({ error: "Still reading everyone’s timetables. Try again in a minute." });
@@ -420,12 +428,13 @@ export async function whoseRoute(req, res, me, body, NAMES) {
   const total = p.hints.length + 1;
   const made = row.created_at || "";
   /* a result saved before the day was made again doesn't count */
-  const { data: had } = await db.from("whose_result").select("guesses, won, done, updated_at").eq("email", me.email).eq("date", date).maybeSingle();
+  const had = hadRead && hadRead.data;
   const after = t => !made || Date.parse(t) >= Date.parse(made);
   const cur = had && after(had.updated_at) ? had : null;
   let guesses = (cur && cur.guesses) || 0, done = !!(cur && cur.done), won = !!(cur && cur.won);
-  const streak = async () => computeStreak(((await db.from("whose_result").select("date").eq("email", me.email).eq("won", true)
-    .order("date", { ascending: false }).limit(120)).data || []).map(r => r.date), today);
+  const wonDates = async () => ((await db.from("whose_result").select("date").eq("email", me.email).eq("won", true)
+    .order("date", { ascending: false }).limit(120)).data || []).map(r => r.date);
+  const streak = async () => computeStreak(await wonDates(), today);
 
   if (req.method === "GET" && req.query.summary) {
     const { data } = await db.from("whose_result").select("email, guesses, won, done, updated_at").eq("year", String(year)).eq("date", date).limit(5000);
@@ -442,8 +451,8 @@ export async function whoseRoute(req, res, me, body, NAMES) {
     return res.status(200).json({ date, summary: { played, wins, losses: played - wins, total, dist, names } });
   }
   /* the day as you have it: the hints so far, and the answer only once you're done */
-  const view = async () => Object.assign({ date, today, year, total, guesses, done, won, streak: await streak(), answer: done ? answer : undefined },
-    whoseView(p, nameOf, guesses, done));
+  const view = async (light, streakNow) => Object.assign({ date, today, year, total, guesses, done, won,
+    streak: streakNow != null ? streakNow : await streak(), answer: done ? answer : undefined }, whoseView(p, nameOf, guesses, done, light));
   if (req.method === "GET") return res.status(200).json(await view());
   if (req.method === "POST") {
     if (done) return res.status(200).json(Object.assign(await view(), { correct: won }));
@@ -455,13 +464,17 @@ export async function whoseRoute(req, res, me, body, NAMES) {
     done = won || guesses >= total;
     /* saved only on top of the result just read, so guesses sent all at once can't each count as the same one */
     const row = { email: me.email, date, year: String(year), guesses, won, done, updated_at: new Date().toISOString() };
-    const { data: saved, error } = cur ? await db.from("whose_result").update(row).eq("email", me.email).eq("date", date).eq("guesses", before).select("guesses")
-      : had ? await db.from("whose_result").update(row).eq("email", me.email).eq("date", date).eq("updated_at", had.updated_at).select("guesses")
-      : await db.from("whose_result").insert(row).select("guesses");
+    /* the streak is read at the same time (today counted in if this guess won it) */
+    const [{ data: saved, error }, dates] = await Promise.all([
+      cur ? db.from("whose_result").update(row).eq("email", me.email).eq("date", date).eq("guesses", before).select("guesses")
+      : had ? db.from("whose_result").update(row).eq("email", me.email).eq("date", date).eq("updated_at", had.updated_at).select("guesses")
+      : db.from("whose_result").insert(row).select("guesses"),
+      wonDates()]);
     if (error && /duplicate|unique|23505/i.test(error.message + " " + error.code)) return res.status(409).json({ error: "Too quick: try that again." });
     if (error) { console.error("whose result:", error.message); return res.status(502).json({ error: "Couldn't save your guess." }); }
     if (!saved || !saved.length) return res.status(409).json({ error: "Too quick: try that again." });
-    return res.status(200).json(Object.assign(await view(), { correct: won }));
+    const st = computeStreak(won && !dates.includes(date) ? [date].concat(dates) : dates, today);
+    return res.status(200).json(Object.assign(await view(true, st), { correct: won }));
   }
   return res.status(405).json({ error: "Method not allowed" });
 }

@@ -370,6 +370,7 @@ html[data-motion="reduced"] .memcard,html[data-motion="reduced"] .memcard .face{
   animation:hintIn .25s ease}
 .gwguessrow.miss{background:color-mix(in srgb,#e5484d 12%,var(--panel));color:var(--text)}
 .gwguessrow.win{background:color-mix(in srgb,#2f9e44 16%,var(--panel));color:var(--text)}
+.gwguessrow.pend{background:var(--panel-2);color:var(--muted)}            /* sent, waiting to be marked */
 html[data-motion="reduced"] .gwhint.fresh,html[data-motion="reduced"] .gwguessrow{animation:none}
 /* classroom */
 #crin{flex:1;min-width:160px;padding:11px 13px;border:var(--card-border);border-radius:var(--radius);

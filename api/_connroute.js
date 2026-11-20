@@ -275,7 +275,11 @@ export async function connRoute(req, res, me, body, NAMES) {
     }
     const date = cleanDate(req.method === "POST" ? body && body.date : req.query.date, today);
     if (!date) return res.status(400).json({ error: "That day isn't available." });
-    const day = await ensureConn(year, date, NAMES);
+    /* the day, your result for it (under each version's key, as the day decides which counts) and your
+       streak, read side by side: each read is a trip to the database */
+    const [day, mine, streakDates] = await Promise.all([ensureConn(year, date, NAMES),
+      db.from("conn_result").select("year, found, log, mistakes, solved, done, updated_at").eq("email", me.email).eq("date", date).in("year", keys),
+      db.from("conn_result").select("date").eq("email", me.email).eq("solved", true).order("date", { ascending: false }).limit(120)]);
     if (!day || !isPuzzle(day.groups)) return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, none: true, retry: true });
     const stored = day.groups, pk = day.key;     // results go with the version that made the day
     /* by the names people go by today; emails stay on the server */
@@ -284,7 +288,8 @@ export async function connRoute(req, res, me, body, NAMES) {
       return { lv: g.lv, label: stripEmails(g.label), kind: g.kind, names, how: names.map(n => g.kind === "name" ? howFor(g.id, n) : "") };
     });
 
-    const { data: had } = await db.from("conn_result").select("found, log, mistakes, solved, done, updated_at").eq("email", me.email).eq("date", date).eq("year", pk).maybeSingle();
+    const had = ((mine && mine.data) || []).find(r => r.year === pk) || null;
+    const dates = [...new Set(((streakDates && streakDates.data) || []).map(r => r.date))];
     const result = had ? { found: had.found || [], log: had.log || [], mistakes: had.mistakes || 0, solved: !!had.solved, done: !!had.done }
                        : { found: [], log: [], mistakes: 0, solved: false, done: false };
     result.hinted = result.log.some(g => Array.isArray(g) && g.length && g.every(l => l === HINT_MARK));
@@ -294,7 +299,7 @@ export async function connRoute(req, res, me, body, NAMES) {
       return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored, result.done), mine: result });
     }
     const board = async extra => res.status(200).json(Object.assign({ date, today, epoch: CONN_EPOCH, year }, boardView(groups, result, date, CH),
-      { streak: await streakFor(me.email, today) }, extra || {}));
+      { streak: computeStreak(result.solved && !dates.includes(date) ? [date].concat(dates) : dates, today) }, extra || {}));
     if (req.method === "GET") return board();
     if (req.method === "POST") {
       if (result.done) return board();

@@ -170,14 +170,16 @@ export default async function handler(req, res) {
   if (req.query.whose || (body && body.whose)) return whoseRoute(req, res, me, body || {}, NAMES);
   const rawDate = req.method === "POST" ? (body && body.date) : req.query.date;
 
-  let year, today, date, puzzle;
+  let year, today, date, puzzle, resultRead;
   try {
     year = await resolveYear(me);
     if (!year) return res.status(400).json({ error: "Couldn't work out which year you're in." });
     today = sydneyDate();
     date = cleanDate(rawDate, today);
     if (!date) return res.status(400).json({ error: "That day isn't available to play." });
-    puzzle = await ensurePuzzle(db, year, date);
+    /* the puzzle and your result for the day, read side by side (each read is a trip to the database) */
+    [puzzle, resultRead] = await Promise.all([ensurePuzzle(db, year, date),
+      db.from("daily_result").select("guesses, won, done").eq("email", me.email).eq("date", date).maybeSingle()]);
   } catch (e) {
     console.error("daily setup:", e.message);
     return res.status(502).json({ error: e.message || "Couldn't load the puzzle." });
@@ -206,8 +208,7 @@ export default async function handler(req, res) {
   const totalHints = hints.length;
   const answerName = shownName;
 
-  const { data: result } = await db.from("daily_result")
-    .select("guesses, won, done").eq("email", me.email).eq("date", date).maybeSingle();
+  const result = resultRead && resultRead.data;
   let guesses = (result && result.guesses) || 0;
   let done = !!(result && result.done);
   let won = !!(result && result.won);
@@ -220,13 +221,14 @@ export default async function handler(req, res) {
       mine: { done, won, guesses } });
     // how many hints the player has already seen (one per wrong guess).
     const shown = done ? Math.min(guesses, totalHints) : Math.min(guesses + 1, totalHints);
-    const streak = computeStreak(await wonDatesFor(me.email), today);
-    /* only the hints already unlocked, and the answer only once the day is over for you:
-       guesses are marked here (POST), so nothing in the page gives the person away */
+    /* only the hints already unlocked, the next one (peek: shown the moment you guess, so a wrong
+       guess needs no wait), and the answer only once the day is over for you: guesses are marked here */
+    const [streakDates, history, candidates] = await Promise.all([wonDatesFor(me.email), historyFor(me.email, today),
+      candidatesFor(year, puzzle.candidates, answerName)]);
     return res.status(200).json({
-      date, today, epoch: EPOCH, year, candidates: await candidatesFor(year, puzzle.candidates, answerName),
-      hints: hints.slice(0, shown), shown, totalHints, guesses, done, won, streak,
-      history: await historyFor(me.email, today),
+      date, today, epoch: EPOCH, year, candidates,
+      hints: hints.slice(0, shown), peek: !done && shown < totalHints ? hints[shown] : undefined,
+      shown, totalHints, guesses, done, won, streak: computeStreak(streakDates, today), history,
       answer: done ? answerName : undefined
     });
   }
@@ -247,19 +249,22 @@ export default async function handler(req, res) {
     done = correct || guesses >= totalHints;
 
     /* saved only on top of the result just read, so guesses sent all at once can't each
-       count as the same guess (a first guess makes the row; a later one needs the count unchanged) */
+       count as the same guess (a first guess makes the row; a later one needs the count unchanged).
+       The streak is read at the same time (today counted in if this guess won it). */
     const row = { email: me.email, date, year, guesses, won, done, updated_at: new Date().toISOString() };
-    const { data: saved, error } = result
-      ? await db.from("daily_result").update(row).eq("email", me.email).eq("date", date).eq("guesses", before).select("guesses")
-      : await db.from("daily_result").insert(row).select("guesses");
+    const [{ data: saved, error }, dates] = await Promise.all([
+      result ? db.from("daily_result").update(row).eq("email", me.email).eq("date", date).eq("guesses", before).select("guesses")
+             : db.from("daily_result").insert(row).select("guesses"),
+      wonDatesFor(me.email)]);
     if (error && /duplicate|unique|23505/i.test(error.message + " " + error.code)) return res.status(409).json({ error: "Too quick: try that again." });
     if (error) { console.error("daily result:", error.message); return res.status(502).json({ error: "Couldn't save your guess." }); }
     if (!saved || !saved.length) return res.status(409).json({ error: "Too quick: try that again." });
 
-    const streak = computeStreak(await wonDatesFor(me.email), today);
+    const streak = computeStreak(won && !dates.includes(date) ? [date].concat(dates) : dates, today);
     const nextHint = (!done && guesses < totalHints) ? hints[guesses] : undefined;
+    const peek = (!done && guesses + 1 < totalHints) ? hints[guesses + 1] : undefined;
     return res.status(200).json({
-      correct, done, won, guesses, totalHints, streak, nextHint,
+      correct, done, won, guesses, totalHints, streak, nextHint, peek,
       answer: done ? answerName : undefined
     });
   }

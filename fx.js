@@ -797,7 +797,9 @@ TR.scifi = {
   }
 };
 
-const trans = () => TR[skin()] || null;
+/* the Cities Collection shares one: the page blurs out and back in over a postcard that stays put (cities.css) */
+TR.city = fade(160, 340);
+const trans = () => TR[skin()] || (root.hasAttribute('data-city') ? TR.city : null);
 FX.TR = TR;
 let leaving = false;
 function leave(url){

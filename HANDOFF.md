@@ -3755,3 +3755,40 @@ People had been cheating high scores. What was open, and what changed:
     - Chongqing: river clay / the bridge's red.
   - The wash is lighter and the panels a little clearer, so more of the city shows.
 - Still moderators only, in the Theme finder's "Cities Collection" group.
+
+## 8.147 Cities: the photo always fills the frame and stays put; pages blur in and out (asset version `20261120v`, `CACHE_VERSION` v74)
+- **Clipping fixed**: inner pages and Games used to see the photo nearer with `background-size:125%/140% auto`. On a tall or large window a wide panorama (Sydney at night) then left dark bands above and below. The photo's box can now be grown past the window and clipped back to the frame (`--ct-zoom`, `clip-path:inset(... round 6px)`), so a nearer view still fills it.
+- **No zoom at all now**: at the owner's request, the postcard is the same on every page and never changes (no nearer crops, no quieter timetable). The different zoom per page looked like the background scaling on every page change. `--ct-zoom` stays 0.
+- **Page change** (fx.js `TR.city`, used for any `html[data-city]`): only the page (`.wrap`) blurs out (0.16 s) and back in (0.34 s); the postcard behind doesn't move. The blur runs with `animation-fill-mode: backwards`, so no filter is left on `.wrap` afterwards, where it would stop the panels' frosted glass seeing the photo. It is off with Animation off.
+- Tested at 1964 × 1216, at a tall 1100 × 1300 and at 390, plus leaving (blur on, background still `cover`) and arriving (no filter left).
+
+## 8.148 Cities: no box round an open game (asset version `20261120w`, `CACHE_VERSION` v75)
+- With a game open, the holder round it (`.gamestage`, holding the "All games" button and `.stage`) used to get the frosted glass too, so a pale box rose behind the back button. It's clear now; the game's own card (`.stage`) is the glass.
+
+## 8.149 The lag in Daily Guess Who, Whose timetable? and Triplets (asset version `20261120x`, `CACHE_VERSION` v76)
+
+Since 8.136 these mark every guess on the server, and every guess felt slow. The cause was mostly distance: the functions ran in Washington (`iad1`, Vercel's default; see the `X-Vercel-Id` header, `syd1::iad1::…`), while the players, the database and the school's system are all in Australia, and each guess made 4 database trips one after another. A request that touched the database took 1.3–1.6 s.
+- **`vercel.json` `"regions": ["syd1"]`**: every function now runs in Sydney. This speeds up every API call on the site, not just these games.
+- **Two trips per guess instead of four, done side by side**: the day's puzzle and your result are read together, and your streak is read while the guess is saved (today is counted in if the guess won it). Daily (`api/daily.js`), Whose (`api/_whose.js`) and Triplets (`api/_connroute.js`). After a guess, Whose sends only what changed, not the year's names and the empty board again.
+- **No wait for a wrong guess**: the server sends the next hint ahead (`peek`, one hint early; for Whose its tiles, cells and count), and the page shows it the moment you press Guess or Skip. The guess shows as "… name" until it's marked (`.gwguessrow.pend`). If it was right, the early hint is taken back and the win shows. A guess typed while the last is still being marked waits its turn instead of being dropped. The trade (owner's choice: smoothness over security): a script can read one hint ahead of where you are. The answer itself still only comes once you're done.
+- Triplets has no hint to send ahead (its answer is the groups), so it just waits for the quicker server.
+- `home.html` had been left on `?v=20261120l` by an earlier bump; it's on `20261120x` with the rest now.
+
+Checked with the fake database slowed to 300 ms a trip (`e2eslow.mjs`): the next hint shows about 0.1 s after pressing Guess, and the marking arrives about 0.6 s after. In Sydney, a trip to the database should take a few milliseconds.
+
+## 8.150 Cities: a duotone print, and the name burned in (asset version `20261120y`, `CACHE_VERSION` v77)
+- **Duotone** (cities.css, one element, no SVG filter): the photo in greys (a black layer, `saturation`), multiplied by `--ct-m`, then screened with the dark ink. That gives dark ink + grey × (light ink − dark ink): black prints in the dark ink, white in the light one, every grey evenly between. `--ct-m = (light − dark) / (1 − dark)` per channel, worked out for each city and written next to its inks. An earlier try (lighten + multiply) left Sydney's mid-tones grey.
+  - Inks, day / night:
+
+    | City | Day | Night |
+    |---|---|---|
+    | Sydney | teal `#0b5560` and white `#f5f2ea` | deep teal and aqua |
+    | Tokyo | charcoal `#28262c` and red `#ef5340` | black and the tower's orange |
+    | Hong Kong | navy `#1c2654` and coral pink `#f7b4b6` | navy and neon pink |
+    | Chongqing | chili brown `#351a18` and hotpot amber `#f3a866` | black and the bridge's red |
+
+  - `contrast(1.12)` over it. The old wash and desaturating filter are gone.
+- **Printed**: a fine halftone screen (4px dots) with the film grain, overlay-blended over the photo, under the page.
+- **The name**: much bigger (`--ct-size`: 30vw for the two-character names, 20vw for SYDNEY, up to 30rem) and cropped off the bottom-left corner like a poster; on a phone it stands up the right edge, bigger too.
+  - By day it's burned into the print (`color-burn`, a light tint of the dark ink, .85). At night it's a soft light screen (a light tint of the light ink, `screen`, .32). A first try with `color-dodge` and a dark ink left three of the four night names invisible.
+- The owner asked to "try it and see": this is a trial, open to change.
