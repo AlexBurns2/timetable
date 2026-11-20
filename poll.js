@@ -171,7 +171,7 @@ function stateOf(p){
 function frame(body, p, extra){
   extra = extra || {};
   return '<div class="pcard' + (extra.cls ? ' ' + extra.cls : '') + '">' +
-    '<div class="phead"><span class="pchip">' + esc(extra.chip || 'This week’s poll · anonymous') + '</span>' +
+    '<div class="phead"><span class="pchip">' + esc(extra.chip || (({ junior:'Juniors’ poll', senior:'Seniors’ poll', y12:'Year 12’s poll' })[p && p.audience] || 'This week’s poll') + ' · anonymous') + '</span>' +
       '<span class="pright"><span class="pcount" id="pcount" hidden></span><span class="pwhen" id="pwhen"></span>' +
       (extra.foot === false ? '' : '<button type="button" class="pminbtn" data-act="min" aria-expanded="true" aria-label="Minimise the poll" title="Minimise">' +
         (window.Icon ? Icon.svg('caret-up') : '^') + '</button>') +

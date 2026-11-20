@@ -2754,6 +2754,25 @@ in `vercel.json` (already there), which deploys with the site.
 
 ---
 
+
+### Separate questions for juniors, seniors and Year 12
+
+Lets a week have a question for everyone, or separate ones: juniors (Years 7 to 10), seniors (11 and 12)
+and Year 12 alone. Each student gets the most particular one for them. **Deploy the code first, then run
+this once** (the older code saves one question a week and would stop saving after it). It adds a column
+(every existing question becomes "for everyone") and makes a question's key its week and who it's for.
+Nothing is deleted.
+
+```sql
+alter table poll add column if not exists audience text not null default 'all';
+alter table poll drop constraint if exists poll_audience_check;
+alter table poll add constraint poll_audience_check check (audience in ('all','junior','senior','y12'));
+alter table poll drop constraint if exists poll_pkey;
+alter table poll add primary key (week, audience);
+```
+
+Until it's run, the moderator page's "Who it's for" stays hidden and every question is for everyone.
+
 ## Quartets (`api/_conn.js`, `api/_connroute.js`, served by `/api/daily?conn=1`)
 
 A daily puzzle for each year: sixteen people, and four groups of four to find.
@@ -2848,7 +2867,7 @@ Until it exists scans still go straight to the timetable; they just aren't count
 
 ---
 
-## Whose timetable? (`api/_whose.js`, served by `/api/daily?whose=1`)
+## Whose Timetable? (`api/_whose.js`, served by `/api/daily?whose=1`)
 
 A daily game: one day of a student's timetable, guessed by their year. Run this once in the
 Supabase SQL editor. It only creates the two tables if they aren't there; nothing else is touched.
@@ -2877,6 +2896,35 @@ alter table whose_result enable row level security;
 
 The nightly job builds each year's day at 00:20 (vercel.json's second cron, `/api/daily-generate?whose=1`);
 a year it didn't reach is built by its first player (reading every timetable in the year takes a few seconds).
+
+## Replies from the moderators (`api/_notice.js`, served by `/api/forum`)
+
+A moderator's answer to one person's request (a feature idea, a poll idea, a name change) shows on that
+person's screen the next time they open a page, signed "MSC Unofficial". Run once; it only creates the table.
+
+```sql
+create table if not exists notice (
+  id         text primary key,
+  email      text not null,          -- who it's for
+  body       text not null,
+  about      text,                   -- what it answers, shown under it
+  created_at timestamptz not null default now(),
+  read_at    timestamptz             -- closed by them
+);
+create index if not exists notice_email_idx on notice (email, read_at);
+alter table notice enable row level security;   -- no policies: only the server (service role)
+```
+
+## Forum: posts for a year or a class (`api/forum.js`)
+
+A thread can be for everyone, the poster's year, or one of their classes; replies go where their thread
+is, and people only see the ones for them. Run once; every existing post stays "for everyone", nothing is
+deleted. Until it's run, the forum works as before.
+
+```sql
+alter table forum_post add column if not exists scope      text not null default 'all';   -- 'all', 'year:12', 'class:<code>'
+alter table forum_post add column if not exists scope_name text;                          -- "Year 12" or the class's subject
+```
 
 ## Security checklist
 

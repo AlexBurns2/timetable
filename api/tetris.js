@@ -22,6 +22,33 @@
 
 import { db, whoami, isAdmin } from "./_supabase.js";
 import { displayNames, withName } from "./_names.js";
+import { yearMap, boardScope } from "./leaderboard.js";
+import { ticketAge, scoreFits } from "./_runs.js";
+
+/* Year groups (as leaderboard.js): each board is your own year's unless you ask
+   for another (?year=7…12) or everyone's (?year=all). Scores sent need a ticket
+   from when the game started (POST /api/leaderboard {action:"ticket", game:"tetris"}),
+   and have to fit the time since. */
+/* one board: the top (20, or 200 for a moderator), and your best and place on it */
+async function boardOf({ table, col, asc, narrow, extra }, me, adm) {
+  const SCOPE = me.scope, YEARS = me.years || new Map();
+  const cols = "name, email, " + col + (extra ? ", " + extra : "");
+  let q = db.from(table).select(cols); if (narrow) q = narrow(q);
+  const { data } = await q.order(col, { ascending: asc }).limit(SCOPE ? 5000 : (adm ? 200 : 20));
+  let rows = data || [];
+  if (SCOPE) rows = rows.filter(r => YEARS.get(r.email) === SCOPE);
+  let mine = rows.find(r => r.email === me.email);
+  if (!mine && !SCOPE) { let m = db.from(table).select(col + (extra ? ", " + extra : "")).eq("email", me.email); if (narrow) m = narrow(m);
+    ({ data: mine } = await m.maybeSingle()); }
+  const meBest = mine ? mine[col] : null;
+  let meRank = null;
+  if (meBest != null) {
+    if (SCOPE) meRank = 1 + rows.filter(r => asc ? r[col] < meBest : r[col] > meBest).length;
+    else { let c = db.from(table).select("*", { count: "exact", head: true }); if (narrow) c = narrow(c);
+      const { count } = await (asc ? c.lt(col, meBest) : c.gt(col, meBest)); meRank = (count || 0) + 1; }
+  }
+  return { rows: rows.slice(0, adm ? 200 : 20), mine, meBest, meRank };
+}
 
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
@@ -37,65 +64,28 @@ function nameFromEmail(email) {
 const SPRINT_MIN = 3000, SPRINT_MAX = 3600000;   // 3s … 1h
 const ZEN_MIN = 2000, ZEN_MAX = 7200000;         // 2s … 2h
 
+const yr = me => ({ year: me.scope || "all" });
 async function sprintBoard(me, week, adm) {
-  const { data: top } = await db.from("tetris_score")
-    .select("name, time_ms, email").eq("week", week)
-    .order("time_ms", { ascending: true }).limit(adm ? 200 : 20);
-  const { data: mine } = await db.from("tetris_score")
-    .select("time_ms").eq("email", me.email).eq("week", week).maybeSingle();
-  const meBest = mine ? mine.time_ms : null;
-  let meRank = null;
-  if (meBest != null) {
-    const { count } = await db.from("tetris_score")
-      .select("*", { count: "exact", head: true }).eq("week", week).lt("time_ms", meBest);
-    meRank = (count || 0) + 1;
-  }
-  return { mode: "sprint", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
+  const b = await boardOf({ table: "tetris_score", col: "time_ms", asc: true, narrow: q => q.eq("week", week) }, me, adm);
+  return { mode: "sprint", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 async function zenBoard(me, adm) {
-  const { data: top } = await db.from("zen_score")
-    .select("name, ms, email").order("ms", { ascending: false }).limit(adm ? 200 : 20);
-  const { data: mine } = await db.from("zen_score")
-    .select("ms").eq("email", me.email).maybeSingle();
-  const meBest = mine ? mine.ms : null;
-  let meRank = null;
-  if (meBest != null) {
-    const { count } = await db.from("zen_score")
-      .select("*", { count: "exact", head: true }).gt("ms", meBest);   // longer is better
-    meRank = (count || 0) + 1;
-  }
-  return { mode: "zen", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
+  const b = await boardOf({ table: "zen_score", col: "ms", asc: false }, me, adm);   // longer is better
+  return { mode: "zen", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 /* all-time fastest Sprint clears (separate table from the weekly tetris_score) */
 async function sprintAllBoard(me, adm) {
-  const { data: top } = await db.from("sprint_best")
-    .select("name, time_ms, email").order("time_ms", { ascending: true }).limit(adm ? 200 : 20);
-  const { data: mine } = await db.from("sprint_best")
-    .select("time_ms").eq("email", me.email).maybeSingle();
-  const meBest = mine ? mine.time_ms : null;
-  let meRank = null;
-  if (meBest != null) {
-    const { count } = await db.from("sprint_best").select("*", { count: "exact", head: true }).lt("time_ms", meBest);
-    meRank = (count || 0) + 1;
-  }
-  return { mode: "sprintall", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meRank, canWipe: adm };
+  const b = await boardOf({ table: "sprint_best", col: "time_ms", asc: true }, me, adm);
+  return { mode: "sprintall", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 /* Zen scoreboard: each player's most recent score alongside their all-time best */
 async function zenScoreBoard(me, adm) {
-  const { data: top } = await db.from("zen_board")
-    .select("name, current, best, email").order("best", { ascending: false }).limit(adm ? 200 : 20);
-  const { data: mine } = await db.from("zen_board")
-    .select("current, best").eq("email", me.email).maybeSingle();
-  const meBest = mine ? mine.best : null, meCurrent = mine ? mine.current : null;
-  let meRank = null;
-  if (meBest != null) {
-    const { count } = await db.from("zen_board").select("*", { count: "exact", head: true }).gt("best", meBest);
-    meRank = (count || 0) + 1;
-  }
-  return { mode: "zenscore", top: (top || []).map(r => ({ name: withName(NAMES, r.email, r.name), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })), meBest, meCurrent, meRank, canWipe: adm };
+  const b = await boardOf({ table: "zen_board", col: "best", asc: false, extra: "current" }, me, adm);
+  return { mode: "zenscore", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })),
+    meBest: b.meBest, meCurrent: b.mine ? b.mine.current : null, meRank: b.meRank, canWipe: adm };
 }
 
 /* pick the right board for a mode (used by admin actions to return fresh data) */
@@ -117,6 +107,10 @@ export default async function handler(req, res) {
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the leaderboard." });
   NAMES = await displayNames();
+  /* which year's boards (kept on this request's own "me", so two requests at once never mix) */
+  me.years = await yearMap();
+  me.scope = boardScope((req.method === "GET" ? req.query : (typeof req.body === "object" && req.body) || {}).year, me, me.years);
+  if (isAdmin(me.email) && ((req.query && req.query.admin) || (req.body && typeof req.body === "object" && req.body.action))) me.scope = null;   // the moderator page: everyone
 
   const weekOf = v => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n < 100000 ? n : null; };
 
@@ -193,6 +187,12 @@ export default async function handler(req, res) {
       } else return res.status(400).json({ error: "Unknown action." });
       return res.status(200).json(await boardFor(mode, me, wk, true));
     }
+
+    /* a ticket from when the game started, and a score that fits the time since */
+    const age = await ticketAge(me, "tetris", body && body.ticket);
+    if (age == null) return res.status(400).json({ error: "Start a new game to post a score." });
+    const claim = mode === "zenscore" ? Math.round(Number(body && body.score)) : mode === "zen" ? Math.round(Number(body && body.ms)) : Math.round(Number(body && body.timeMs));
+    if (!scoreFits("tetris:" + mode, null, claim, age)) return res.status(400).json({ error: "That doesn't fit the game." });
 
     if (mode === "sprintall") {
       const timeMs = Math.round(Number(body && body.timeMs));

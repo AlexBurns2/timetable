@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261120i">
+<link rel="stylesheet" href="theme.css?v=20261120l">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261120i"></script>
-<script src="icons.js?v=20261120i"></script>
-<script src="suggest.js?v=20261120i"></script>
+<script src="theme.js?v=20261120l"></script>
+<script src="icons.js?v=20261120l"></script>
+<script src="suggest.js?v=20261120l"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -2378,28 +2378,74 @@ $('whoback').onclick = () => {
 /* Suggestions as you type (suggest.js): students whose name or username
    matches, from the student finder's search (it needs your own school login),
    each with their name and username. Picking one opens their timetable. The
-   box never offers saved sign-in details. */
+   box never offers saved sign-in details.
+   Quick: every answer is remembered, and one that came back under the search's
+   cap (20) holds everyone who could match, so more letters narrow it here, with
+   no request. The box also starts the search up as it's focused, so the first
+   letters don't wait for a cold start. */
+const FIND_CAP = 20, findCache = new Map();          // query → { results, user }
+const foldQ = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const findWords = q => { let s = foldQ(q); if (s.includes('@')) s = s.split('@')[0]; return s.replace(/[,;]+/g, ' ').split(/\s+/).filter(Boolean); };
+const userish = words => words.some(w => /[.\d]/.test(w));          // as the server: a username only counts when it looks like one
+const sq = s => s.replace(/[^a-z0-9]/g, '');
+/* narrow an earlier, complete answer: the longest earlier query this one goes on from */
+function findLocal(q){
+  const words = findWords(q), byUser = userish(words);
+  if (!words.length) return null;
+  for (let i = q.length - 1; i >= 2; i--){
+    const hit = findCache.get(q.slice(0, i));
+    if (!hit || hit.results.length >= FIND_CAP || hit.user !== byUser) continue;
+    const out = hit.results.filter(p => {
+      const name = foldQ(p.name), user = String(p.email || '').split('@')[0].toLowerCase();
+      const parts = name.split(/[\s'’.-]+/).filter(Boolean).concat(name.split(/\s+/).map(sq), byUser ? [user].concat(user.split(/[._-]+/)) : []);
+      return words.every(w => parts.some(x => x.startsWith(w)) || (sq(w) && parts.some(x => x.startsWith(sq(w)))));
+    });
+    /* nothing left: for one word that's the answer; with more, the server may still find a near miss */
+    return out.length || words.length < 2 ? out : null;
+  }
+  return null;
+}
+async function findFetch(q){
+  const u = new URL(endpoint, location.href);
+  u.searchParams.set('find', q);
+  const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
+  const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
+    'X-School-Email':creds.email, 'X-School-Password':creds.password } });
+  const d = await res.json().catch(() => null);
+  if (res.ok && d && !d.close) findCache.set(q, { results:d.results || [], user:userish(findWords(q)) });
+  return { res, d };
+}
 if (window.Suggest) Suggest.attach($('whoami'), {
-  min: 2, max: 8, delay: 200,
+  min: 2, max: 8, delay: 70,
   /* Studio speaks while it searches, as the beta does */
   waiting: q => window.studioLike && studioLike() && creds && creds.password ? 'Searching…' : '',
   async source(q){
     const studio = window.studioLike && studioLike();
     if (!creds || !creds.email || !creds.password)
       return studio && /\s/.test(q) ? [{ hint:'Searching by name needs your school login. Sign in under Settings first.' }] : [];
-    const u = new URL(endpoint, location.href);
-    u.searchParams.set('find', q.toLowerCase());
-    const url = u.origin === location.origin ? u.pathname + u.search : u.toString();
-    const res = await fetch(url, { cache:'no-store', headers:{ Accept:'application/json',
-      'X-School-Email':creds.email, 'X-School-Password':creds.password } });
-    const d = await res.json().catch(() => null);
-    if (!res.ok || !d) return studio ? [{ hint:(d && d.error) || 'The search failed.' }] : [];
-    const found = (d.results || []).map(p => { const user = String(p.email || '').split('@')[0];
+    q = q.toLowerCase();
+    const shape = list => list.map(p => { const user = String(p.email || '').split('@')[0];
       return { value:user, label:p.name || user, sub: studio && p.year ? user + ' · Year ' + p.year : user }; });
+    const known = findCache.get(q) || null, local = known ? null : findLocal(q);
+    if (known) return shape(known.results);
+    if (local) return shape(local);
+    const { res, d } = await findFetch(q);
+    if (!res.ok || !d) return studio ? [{ hint:(d && d.error) || 'The search failed.' }] : [];
+    const found = shape(d.results || []);
     return studio && !found.length ? [{ hint:'No students match “' + q + '”.' }] : found;
   },
   onPick(){ sizeWhoami(); $('whoami').blur(); }      // blur runs viewUser
 });
+/* start the search up (the school login check and the directory) before the first letters arrive */
+let findWarm = false;
+function warmFind(){
+  if (findWarm || !creds || !creds.email || !creds.password) return;
+  findWarm = true;
+  const v = $('whoami').value.trim().toLowerCase();
+  findFetch(v.length >= 2 ? v : String(creds.email).split('@')[0]).catch(() => {});
+}
+['focus', 'pointerdown'].forEach(ev => $('whoami').addEventListener(ev, warmFind));
+if (document.activeElement === $('whoami')) warmFind();
 $('whoami').addEventListener('keydown', ev => {
   if (ev.key === 'Enter'){ ev.preventDefault(); $('whoami').blur(); }
 });
@@ -2411,6 +2457,8 @@ const dlg = $('dlg');
 /* Appearance: theme.js skinPicker draws it, as in every other page's Settings (a row of themes that opens to
    them all, the originals' row under them); a picked theme is saved and on by the time it calls back */
 const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
+/* the "saul" secret (theme.js) changes the theme from any box: keep this page's copy in step */
+addEventListener('tt:skin', () => { skin = TT.readState().skin; applyLook(); render(); });
 function renderSkins(){
   TT.skinPicker($('skins').parentNode, () => { skin = TT.readState().skin; applyLook(); renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); });
 }

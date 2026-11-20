@@ -1,16 +1,17 @@
 /*
  * Quartets, the route (served by api/daily.js for ?conn=1 / {conn:1}).
  *
- * GET  /api/daily?conn=1[&date=YYYY-MM-DD]  → that day's puzzle for your year:
- *      { date, today, epoch, year, groups:[{lv, label, kind, names, how}], result:{ found, log, mistakes, solved, done }, streak }
- *      (the answers come with the puzzle so the page can mark a guess instantly,
- *       as Daily Guess Who does; nothing in them is private. `how` is worked out
- *       now, from the names people go by today.)
+ * GET  /api/daily?conn=1[&date=YYYY-MM-DD]  → that day's puzzle for your year, as you have it (boardView):
+ *      { date, today, epoch, year, size, chances, tiles:[names not yet placed], groups:[{lv, label, names, how}],
+ *        result:{ found, log, mistakes, solved, done, hinted }, hint:{ gold, blue }, streak }
+ *      groups are only the ones you've found (all of them once you're done), so the page never holds
+ *      the answers; guesses are marked here. `how` is worked out now, from the names people go by today.
  *      { none:true, retry:true } if it couldn't be made just now (nothing is kept;
  *      the page quietly asks again until it's there)
  * GET  /api/daily?conn=1&archive=1          → every day with a puzzle: how many in the year played and solved it, and how you went
- * GET  /api/daily?conn=1&summary=1&date=…   → how the year went that day (see summaryFor)
- * POST /api/daily {conn:1, date, found:[levels], log:[[lv,lv,lv,lv]…], mistakes}  → { ok, streak }
+ * GET  /api/daily?conn=1&summary=1&date=…   → how the year went that day (see summaryFor; group names only once you're done)
+ * POST /api/daily {conn:1, date, pick:[names]}  → marked: the board as above, plus { right, oneAway }
+ * POST /api/daily {conn:1, date, hint:true}     → Triplets' one hint, used: the board as above
  *
  * Each day's puzzle is made by _conn.js the first time anyone in the year opens
  * it (or by the nightly job), then kept, so past days can be played from the
@@ -171,7 +172,7 @@ function designOf(stored) {
   const total = [...hs.values()].reduce((a, b) => a + b, 0);
   return { rated: lv => hs.has(lv) ? rateGroup(hs.get(lv)) : null, day: hs.size === 4 ? (total < 9 ? -1 : total > 10.5 ? 1 : 0) : hs.size === 3 ? (total < 6 ? -1 : total > 7.2 ? 1 : 0) : null };
 }
-async function summaryFor(pk, date, groups, NAMES, stored) {
+async function summaryFor(pk, date, groups, NAMES, stored, told) {
   const MAX_MISTAKES = chancesFor(stored);
   const { data } = await db.from("conn_result").select("email, found, mistakes, solved, done, updated_at")
     .eq("year", pk).eq("date", date).eq("done", true).limit(2000);
@@ -184,7 +185,7 @@ async function summaryFor(pk, date, groups, NAMES, stored) {
     dist[k]++; if (names[k].length < 40) names[k].push(nm(r.email));
   }
   const design = designOf(stored);
-  const found = (groups || []).map(g => ({ lv: g.lv, label: g.label, rated: design.rated(g.lv),
+  const found = (groups || []).map(g => ({ lv: g.lv, label: told ? g.label : undefined, rated: design.rated(g.lv),
     found: rows.filter(r => Array.isArray(r.found) && r.found.includes(g.lv)).length }));
   /* one person for the day: the first to solve it without a mistake, or else the first to solve it */
   const solvedRows = rows.filter(r => r.solved).sort((a, b) => String(a.updated_at).localeCompare(String(b.updated_at)));
@@ -206,6 +207,41 @@ export async function prebuildQuartets(year, date, NAMES, deadline = Date.now() 
     try { await ensureConn(String(year), d, NAMES, Math.min(deadline, Date.now() + 15000)); } catch (e) { console.error("quartets repair:", e.message); }
   }
   return day ? "ok" : "none";
+}
+
+/* the same shuffle the page used to do, from a seed (so a reload keeps the order) */
+const seeded = (list, seed) => { let h = 2166136261; for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const HINT_MARK = 0;                    // a log entry of all zeros: Triplets' hint was asked for (kept with the result)
+/* The hints, from the guesses so far. Triplets: the one asked for, two people from the easiest
+   group still unsolved. Quartets (earlier days): two in a row wrong lights up two from the easiest
+   unsolved group, a third wrong in a row a third; with one mistake left, two from another group. */
+function hintsFor(groups, result, date, CH) {
+  const K = groups.length, found = result.found || [], log = (result.log || []).filter(g => !g.every(l => l === HINT_MARK));
+  if (K === 3) { const hg = groups.find(x => !found.includes(x.lv));
+    return { gold: result.hinted && hg && !result.done ? seeded(hg.names, date + ":hint").slice(0, 2) : [], blue: [] }; }
+  let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];
+  for (const g of log) {
+    if (g.every(l => l === g[0])) { got.push(g[0]); run = 0; continue; }
+    run++; wrong++;
+    if (run === 2 && step === 0) { hg = groups.find(x => !got.includes(x.lv)); step = 1; }
+    else if (run === 3 && step === 1) { step = hg && !got.includes(hg.lv) ? 2 : 3; }
+    if (wrong === CH - 1 && !lg) lg = groups.find(x => !got.includes(x.lv) && x !== hg) || null;
+  }
+  if (result.done) return { gold: [], blue: [] };
+  const gold = !hg || found.includes(hg.lv) || step === 3 ? [] : seeded(hg.names, date + ":hint").slice(0, step === 2 ? 3 : 2);
+  const blue = !lg || found.includes(lg.lv) ? [] : seeded(lg.names, date + ":last").slice(0, 2);
+  return { gold, blue };
+}
+/* the board as this person has it: the people not yet placed, the groups found (all once done) */
+function boardView(groups, result, date, CH) {
+  const sorted = groups.slice().sort((a, b) => a.lv - b.lv), found = result.found || [];
+  const shown = result.done ? sorted : found.map(lv => sorted.find(g => g.lv === lv)).filter(Boolean);
+  return { size: sorted.length, chances: CH,
+    tiles: seeded(sorted.flatMap(g => g.names), date).filter(n => !shown.some(g => g.names.includes(n))),
+    groups: shown.map(g => ({ lv: g.lv, label: g.label, names: g.names, how: g.how, found: found.includes(g.lv) })),
+    result: { found, log: result.log || [], mistakes: result.mistakes || 0, solved: !!result.solved, done: !!result.done, hinted: !!result.hinted },
+    hint: hintsFor(sorted, result, date, CH) };
 }
 
 async function streakFor(email, today) {
@@ -248,29 +284,50 @@ export async function connRoute(req, res, me, body, NAMES) {
       return { lv: g.lv, label: stripEmails(g.label), kind: g.kind, names, how: names.map(n => g.kind === "name" ? howFor(g.id, n) : "") };
     });
 
-    const { data: had } = await db.from("conn_result").select("found, log, mistakes, solved, done").eq("email", me.email).eq("date", date).eq("year", pk).maybeSingle();
+    const { data: had } = await db.from("conn_result").select("found, log, mistakes, solved, done, updated_at").eq("email", me.email).eq("date", date).eq("year", pk).maybeSingle();
     const result = had ? { found: had.found || [], log: had.log || [], mistakes: had.mistakes || 0, solved: !!had.solved, done: !!had.done }
                        : { found: [], log: [], mistakes: 0, solved: false, done: false };
+    result.hinted = result.log.some(g => Array.isArray(g) && g.length && g.every(l => l === HINT_MARK));
+    const CH = chancesFor(stored);
 
     if (req.method === "GET" && req.query.summary) {
-      return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored), mine: result });
+      return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored, result.done), mine: result });
     }
-    if (req.method === "GET") {
-      return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, chances: chancesFor(stored), groups, result, streak: await streakFor(me.email, today) });
-    }
+    const board = async extra => res.status(200).json(Object.assign({ date, today, epoch: CONN_EPOCH, year }, boardView(groups, result, date, CH),
+      { streak: await streakFor(me.email, today) }, extra || {}));
+    if (req.method === "GET") return board();
     if (req.method === "POST") {
-      if (result.done) return res.status(200).json({ ok: true, streak: await streakFor(me.email, today) });
-      const G = stored.length, CH = chancesFor(stored);           // groups, and people in each (the same)
-      const lv = x => Number.isInteger(x) && x >= 1 && x <= G;
-      const found = [...new Set([...(result.found || []), ...((Array.isArray(body.found) ? body.found : []).filter(lv))])].slice(0, G);
-      const log = (Array.isArray(body.log) ? body.log : []).filter(g => Array.isArray(g) && g.length === G && g.every(lv)).slice(0, G + CH);
-      const mistakes = Math.max(result.mistakes, Math.min(CH, Math.max(0, parseInt(body.mistakes, 10) || 0)));
-      const solved = found.length === G && mistakes < CH;
-      const done = solved || mistakes >= CH;
-      const { error } = await db.from("conn_result").upsert({ email: me.email, date, year: pk, found, log: log.length >= (result.log || []).length ? log : result.log,
-        mistakes, solved, done, updated_at: new Date().toISOString() });
+      if (result.done) return board();
+      const G = stored.length;                                    // groups, and people in each (the same)
+      let extra = {};
+      if (body.hint) {
+        if (G !== 3 || result.hinted) return board();
+        result.log = result.log.concat([Array(G).fill(HINT_MARK)]); result.hinted = true;
+      } else {
+        /* a guess: K names, all still on the board */
+        const pick = Array.isArray(body.pick) ? [...new Set(body.pick.map(String))] : [];
+        const lvOf = new Map(); groups.forEach(g => g.names.forEach(n => lvOf.set(n, g.lv)));
+        if (pick.length !== G || pick.some(n => !lvOf.has(n) || result.found.includes(lvOf.get(n))))
+          return res.status(400).json({ error: "Reload the page to carry on." });
+        const lvs = pick.map(n => lvOf.get(n)), right = lvs.every(l => l === lvs[0]);
+        result.log = result.log.concat([lvs]).slice(0, G + CH + 1);
+        if (right) result.found = [...new Set(result.found.concat(lvs[0]))];
+        else result.mistakes = Math.min(CH, result.mistakes + 1);
+        const most = Math.max(...groups.map(g => lvs.filter(x => x === g.lv).length));
+        extra = { right, oneAway: !right && most === G - 1 };
+      }
+      result.solved = result.found.length === G && result.mistakes < CH;
+      result.done = result.solved || result.mistakes >= CH;
+      /* saved only on top of the result just read, so guesses sent at once can't both count */
+      const row = { email: me.email, date, year: pk, found: result.found, log: result.log, mistakes: result.mistakes,
+        solved: result.solved, done: result.done, updated_at: new Date().toISOString() };
+      const { data: saved, error } = had
+        ? await db.from("conn_result").update(row).eq("email", me.email).eq("date", date).eq("year", pk).eq("updated_at", had.updated_at).select("done")
+        : await db.from("conn_result").insert(row).select("done");
+      if (error && /duplicate|unique|23505/i.test(error.message + " " + error.code)) return res.status(409).json({ error: "Too quick: try that again." });
       if (error) { console.error("quartets result:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
-      return res.status(200).json({ ok: true, streak: await streakFor(me.email, today) });
+      if (!saved || !saved.length) return res.status(409).json({ error: "Too quick: try that again." });
+      return board(extra);
     }
     return res.status(405).json({ error: "Method not allowed" });
   } catch (e) {

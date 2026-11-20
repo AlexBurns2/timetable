@@ -10,6 +10,7 @@ graphify-out
 .agents
 .claude
 skills-lock.json
+tools
 
 # Design source files: they carry the name of the computer account that made
 # them in their metadata, and no page uses them (the PNG and SVG exports are

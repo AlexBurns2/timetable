@@ -531,3 +531,10 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .nwcode .btn{padding:4px 11px;font-size:.75rem}
 .newslist .nwcmsg{margin:6px 0 0;font-size:.78125rem;color:var(--accent)}
 .newslist .nwcmsg:empty{display:none}
+
+/* the forum: who a thread is for (Home's composer), and its tag when it isn't everyone */
+.fnew #fscope{display:none;flex:none;max-width:12rem;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
+.fnew.open #fscope:not([hidden]){display:block}
+.ffor{padding:0 7px;border:1px solid var(--line);border-radius:999px;font-size:.6875rem;font-weight:700;color:var(--text);line-height:1.6}
+/* Send a suggestion: what it is, then the line */
+.ideaform select{flex:none;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}

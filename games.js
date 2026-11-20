@@ -151,7 +151,7 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
+  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose Timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
   { id:'quartets', cat:'Timetable', ico:'☘️', name:'Triplets', blurb:'Find the three groups of three from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -237,10 +237,10 @@ function fetchBoardsFull(){
   const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
   lbFullCache = Promise.all(LB_CAT.map(async cat => {
     try {
-      if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } }); return [cat.id, all(d.all && d.all.top, 'score', cat.fmt)]; }
-      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
-      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:{ mode:'zen' } }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
-      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:{ mode:'zenscore' } }); return [cat.id, all(d.top, 'best', cat.fmt)]; }
+      if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) }); return [cat.id, all(d.all && d.all.top, 'score', cat.fmt)]; }
+      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zen' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zenscore' }, lbYearParam()) }); return [cat.id, all(d.top, 'best', cat.fmt)]; }
     } catch (e){}
     return [cat.id, null];
   })).then(Object.fromEntries);
@@ -458,11 +458,11 @@ function fetchLeaders(){
   const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
   lbSumCache = Promise.all(LB_CAT.map(async cat => {
     try {
-      if (cat.g){ const d = await TT.api('/api/leaderboard', { params:{ game:cat.id, metric:cat.g.metric, week:wk } });
+      if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) });
         return [cat.id, top3(d.all && d.all.top, 'score', cat.fmt)]; }
-      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:{ mode:'sprintall' } }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
-      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:{ mode:'zen' } }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
-      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:{ mode:'zenscore' } }); return [cat.id, top3(d.top, 'best', cat.fmt)]; }
+      if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zen' }, lbYearParam()) }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
+      if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zenscore' }, lbYearParam()) }); return [cat.id, top3(d.top, 'best', cat.fmt)]; }
     } catch (e){}
     return [cat.id, null];
   })).then(Object.fromEntries);
@@ -658,7 +658,7 @@ function recordStat(game, { key, mode, value }){
   else s[game][key] = value;
   TT.set('tt.stats', s);
   const lb = LB_GAMES[game];      // a score good enough for the shared board goes to it
-  if (lb && key === lb.metric && (mode === 'max' || mode === 'min')) lbConsider(game, value, s[game][key] === value);
+  if (lb && !lb.server && key === lb.metric && (mode === 'max' || mode === 'min')) lbConsider(game, value, s[game][key] === value);
   return s[game][key];
 }
 const statVal = (game, key) => { const s = allStats()[game]; return s ? s[key] : undefined; };
@@ -695,10 +695,43 @@ const LB_GAMES = {
   g2048:     { metric:'high',    dir:'max', label:'Score',           fmt:v=>String(v) },
   typing:    { metric:'wpm',     dir:'max', label:'Words / min',     fmt:v=>v+' wpm' },
   react:     { metric:'fastest', dir:'min', label:'Reaction',        fmt:v=>v+' ms' },
-  classroom: { metric:'high',    dir:'max', label:'Correct',         fmt:v=>String(v) },
-  chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v) },
-  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v) }
+  /* server: the server runs these (api/_runs.js) and records their scores itself */
+  classroom: { metric:'high',    dir:'max', label:'Correct',         fmt:v=>String(v), server:true },
+  chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v), server:true },
+  oddone:    { metric:'high',    dir:'max', label:'Best score',      fmt:v=>String(v), server:true }
 };
+/* Tickets: the games played in the page ask the server for one when a game starts, and a
+   score is sent with it (the server holds a score to what fits the time since). */
+const lbTickets = {};
+function lbTicket(game){
+  if (!TT.myEmail || !TT.myEmail()) return;
+  TT.api('/api/leaderboard', { method:'POST', body:{ action:'ticket', game } })
+    .then(d => { if (d && d.ticket) lbTickets[game] = d.ticket; }).catch(() => {});
+}
+/* a run the server plays (Six Degrees, Odd One Out, Classroom): one step of it */
+const runCall = (game, op, extra) => TT.api('/api/leaderboard', { method:'POST', body:Object.assign({ action:'run', game, op, week:tetrisWeek() }, extra || {}), timeout:90000 });
+/* which year's boards are shown: your own (the server's default), another year, or everyone's */
+let lbYear = TT.get('tt.lbyear', '') || '';
+const lbYearParam = () => lbYear ? { year:lbYear } : {};
+/* the year picker beside a board (Year 7 to 12, or Everyone); until you pick, your own year,
+   as the server last said (lbScopeSeen) */
+let lbScopeSeen = '';
+function yearPickHTML(){
+  const cur = lbYear || lbScopeSeen || 'all';
+  return '<select class="lbyear" aria-label="Whose scores">' + ['7','8','9','10','11','12'].map(y => '<option value="' + y + '"' + (cur === y ? ' selected' : '') + '>Year ' + y + '</option>').join('') +
+    '<option value="all"' + (cur === 'all' ? ' selected' : '') + '>Everyone</option></select>';
+}
+function wireYearPick(root, reload){
+  root.querySelectorAll('.lbyear').forEach(sel => sel.onchange = () => {
+    lbYear = sel.value; TT.set('tt.lbyear', lbYear); lbSumCache = null; lbFullCache = null;
+    document.querySelectorAll('.lbyear').forEach(x => { x.value = lbYear; });
+    reload(); });
+}
+function noteScope(d){
+  if (!d || !d.year) return;
+  lbScopeSeen = String(d.year);
+  if (!lbYear) document.querySelectorAll('.lbyear').forEach(x => { x.value = lbScopeSeen; });
+}
 /* == revision progress ====================================================
    One entry per question. Chemistry alone is ~1,350 of them (~56 KB), and the
    Year 11 subjects together ~86 KB, so this cannot ride the tt.* settings blob:
@@ -831,7 +864,7 @@ function lbRemember(game, d){ if (d && d.week && d.all) lbBest[game] = { wk:tetr
 /* the server's copy, fetched once per page if the game's panel hasn't loaded it yet */
 function lbKnow(game){
   if (lbBest[game] && lbBest[game].wk === tetrisWeek()) return Promise.resolve(lbBest[game]);   // a new week means a new weekly board
-  if (!lbKnowing[game]) lbKnowing[game] = TT.api('/api/leaderboard', { params:{ game, metric:LB_GAMES[game].metric, week:tetrisWeek() } })
+  if (!lbKnowing[game]) lbKnowing[game] = TT.api('/api/leaderboard', { params:Object.assign({ game, metric:LB_GAMES[game].metric, week:tetrisWeek() }, lbYearParam()) })
     .then(d => { lbRemember(game, d); return lbBest[game] || null; })
     .catch(() => null)
     .finally(() => { lbKnowing[game] = null; });
@@ -852,7 +885,7 @@ async function lbSubmit(game, score){
   if (f.busy){ if (f.next == null || lbBetter(game, score, f.next)) f.next = score; return; }
   f.busy = true;
   try {
-    const d = await TT.api('/api/leaderboard', { method:'POST', body:{ game, metric:lb.metric, score, week:tetrisWeek() } });
+    const d = await TT.api('/api/leaderboard', { method:'POST', body:Object.assign({ game, metric:lb.metric, score, week:tetrisWeek(), ticket:lbTickets[game] }, lbYearParam()) });
     lbSumCache = null;   // summary strip is now stale
     lbRemember(game, d);
     if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
@@ -871,12 +904,13 @@ async function mountLB(game){
   const panel = document.createElement('div');
   panel.className = 'glb'; panel.id = 'glb';
   panel.innerHTML =
-    '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' +
+    '<div class="glbhd"><h3>Leaderboard · '+esc(lb.label)+'</h3>' + yearPickHTML() +
     (weekly ? '<div class="glbtabs"><button type="button" class="glbtab cur" data-p="week">This week</button>' +
     '<button type="button" class="glbtab" data-p="all">All time</button></div>' : '') + '</div>' +
     '<div id="glbbody">' + LD() + '</div>';
   $('stage').appendChild(panel);
   lbState = { game, period: weekly ? 'week' : 'all', week:null, all:null };
+  wireYearPick(panel, () => { lbState.week = lbState.all = null; paintLB(); loadLBoard(game); });
   [...panel.querySelectorAll('.glbtab')].forEach(b => b.onclick = () => {
     lbState.period = b.dataset.p;
     [...panel.querySelectorAll('.glbtab')].forEach(t => t.classList.toggle('cur', t===b));
@@ -888,8 +922,9 @@ async function loadLBoard(game){
   const lb = LB_GAMES[game], body = $('glbbody');
   if (!TT.myEmail()){ if (body) body.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboard.</p>'; return; }
   try {
-    const d = await TT.api('/api/leaderboard', { params:{ game, metric:lb.metric, week:tetrisWeek() } });
+    const d = await TT.api('/api/leaderboard', { params:Object.assign({ game, metric:lb.metric, week:tetrisWeek() }, lbYearParam()) });
     lbRemember(game, d);                            // fresh each time the game opens, so a deletion is noticed
+    noteScope(d);
     if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){ if (body) body.innerHTML = ''; }
 }
@@ -1266,7 +1301,8 @@ BUILD.dailyguess = host => {
     cur = s;
     clearInterval(spotTimer);
     const isToday = s.date === s.today;
-    const answer = s.answer, total = s.totalHints;
+    let answer = s.answer;                  // only once the day is over for you: guesses are marked by the server
+    const total = s.totalHints;
     let guesses = s.guesses||0, done = !!s.done, won = !!s.won, streak = s.streak||0;
     let shown = s.shown != null ? s.shown : Math.min(guesses+1, total);
     markDay('dailyguess', s, { done, won, streak });
@@ -1295,7 +1331,7 @@ BUILD.dailyguess = host => {
     if (calOpen) paintCal();
 
     const hintsEl = document.getElementById('dghints');
-    const allHints = s.hints || [];
+    const allHints = (s.hints || []).slice();      // the hints unlocked so far; each wrong guess brings the next
     /* a hint arrives as text with <b> for emphasis (the server makes it); no other tag is let through */
     const hintHtml = h => String(h == null ? '' : h).replace(/<(?!\/?b>)/g, '&lt;');
     const paint = fresh => hintsEl.innerHTML = allHints.slice(0, shown).map((h,i) =>
@@ -1326,27 +1362,31 @@ BUILD.dailyguess = host => {
 
     const input = document.getElementById('dgin'), btn = document.getElementById('dgguess');
     if (window.Suggest) Suggest.attach(input, { source: Suggest.names(s.candidates || [], 8) });
-    function doGuess(){
-      const v = input.value.trim(); if (!v || done) return;
-      guesses++;
-      const correct = norm(v) === norm(answer);          // graded locally — instant, no round-trip
+    let sending = false;
+    async function doGuess(){
+      const v = input.value.trim(); if (!v || done || sending) return;
+      /* marked by the server, which keeps the answer until you're done */
+      sending = true; btn.disabled = true;
+      let r;
+      try { r = await TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } }); }
+      catch (e){ sending = false; btn.disabled = false; sc.textContent = e.message; return; }
+      sending = false; btn.disabled = false;
+      if (!alive || !r) return;
+      const correct = !!r.correct;
+      guesses = r.guesses != null ? r.guesses : guesses + 1;
       const row = document.createElement('div');
       row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
       row.textContent = (correct ? '✓ ' : '✗ ') + v;
       document.getElementById('dglog').prepend(row);
       input.value = '';
-      if (correct){ won = true; done = true; }
-      else if (guesses >= total){ done = true; }
-      else { shown = Math.min(guesses+1, total); paint(shown-1); }
-      /* record in the background so streak, the summary and cross-device stay right */
-      TT.api('/api/daily', { method:'POST', body:{ guess:v, date:s.date } })
-        .then(r => { if (!alive || !r) return; streak = r.streak != null ? r.streak : streak;
-          const a=document.getElementById('dgstreak'); if(a) a.textContent = streak;
-          recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
-          markDay('dailyguess', s, { done, won, streak });
-          if (done) loadSummary(s.date); })
-        .catch(()=>{});
-      if (done) finish(); else { setScore(); input.focus(); }
+      done = !!r.done; won = !!r.won;
+      if (r.answer) answer = r.answer;
+      streak = r.streak != null ? r.streak : streak;
+      const a = document.getElementById('dgstreak'); if (a) a.textContent = streak;
+      recordStat('dailyguess', { key:'streak', mode:'set', value:streak });
+      markDay('dailyguess', s, { done, won, streak });
+      if (!done && r.nextHint){ allHints[guesses] = r.nextHint; shown = Math.min(guesses + 1, total); paint(shown - 1); }
+      if (done){ finish(); loadSummary(s.date); } else { setScore(); input.focus(); }
     }
     btn.onclick = doGuess;
     input.addEventListener('keydown', e => { if (e.key==='Enter') doGuess(); });
@@ -1453,7 +1493,7 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
-/* ── Whose timetable? ──────────────────────────────────────────────────
+/* ── Whose Timetable? ──────────────────────────────────────────────────
    Someone's whole fortnight from your year. It starts as the school's grid, every period a blank
    rectangle at its bell time (free periods too, so the first guess is blind). Each wrong guess, or a
    skip, gives the next hint: most fill in tiles (a subject in its colour, or Free), one is a teacher
@@ -1463,7 +1503,7 @@ BUILD.dailyguess = host => {
    /api/daily?whose=1 (api/_whose.js); guesses are marked here, instantly, and saved in the background. */
 const WT_COLS = ['#e5484d', '#f76b15', '#d6a20a', '#30a46c', '#12a594', '#0090ff', '#3e63dd', '#8e4ec6', '#d6409f', '#e93d82', '#29a383', '#00a2c7'];
 BUILD.whose = host => {
-  head(host, 'Whose timetable?', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
+  head(host, 'Whose Timetable?', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
   const box = document.getElementById('wt');
   let alive = true, arch = null, calMonth = null, cur = null;
   const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
@@ -1490,19 +1530,23 @@ BUILD.whose = host => {
       const b = document.getElementById('wtback'); if (b) b.onclick = () => loadDay(null);
       return;
     }
-    const hints = s.hints || [], total = s.total || hints.length + 1, answer = s.answer, cells = s.cells || {}, tmpl = s.template || {};
+    /* The server sends only what's been shown so far (the hints unlocked, the tiles they filled in,
+       how many still fit after each), marks every guess, and sends the answer and the rest of the
+       board once you're done; take() keeps the newest of those. */
+    let hints = s.hints || [], tiles = s.tiles || [], counts = s.counts || [], cells = s.cells || {}, answer = s.answer;
+    const total = s.total || hints.length + 1, tmpl = s.template || {};
     let guesses = s.guesses || 0, done = !!s.done, won = !!s.won, streak = s.streak || 0;
+    const take = r => { hints = r.hints || hints; tiles = r.tiles || tiles; counts = r.counts || counts; cells = r.cells || cells;
+      if (r.answer) answer = r.answer; if (r.guesses != null) guesses = r.guesses; done = !!r.done; won = !!r.won;
+      if (r.streak != null) streak = r.streak; };
     const guessed = new Set();
     const seen = () => done ? hints.length : Math.min(guesses, hints.length);
-    /* who still fits after k hints */
-    const fitAt = k => s.fit[Math.min(k, s.fit.length - 1)] || [];
-    /* the tiles shown after k hints */
+    /* how many still fit after k hints */
+    const fitAt = k => counts[Math.min(k, counts.length - 1)] || 0;
     const DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
     const slots = DAYS.flatMap(d => (tmpl[d] || []).map(x => d + '|' + x.p));
-    const tilesOf = h => h.k === 'subj' ? slots.filter(k => h.subjects.some(x => norm(cells[k]) === norm(x)))
-      : h.k === 'slot' ? slots.filter(k => k.endsWith('|' + h.p)) : h.k === 'day' ? slots.filter(k => k.startsWith(h.d + '|'))
-      : h.k === 'frees' ? slots.filter(k => !cells[k]) : [];
-    const shownAt = k => { const set = new Set(); hints.slice(0, k).forEach(h => tilesOf(h).forEach(x => set.add(x))); return set; };
+    /* the tiles shown after k hints */
+    const shownAt = k => { const set = new Set(); tiles.slice(0, k).forEach(l => (l || []).forEach(x => set.add(x))); return set; };
     markDay('whose', s, { done, won, streak });
     recordStat('whose', { key:'streak', mode:'set', value:streak });
 
@@ -1550,7 +1594,7 @@ BUILD.whose = host => {
                 (on ? '<span>' + esc(v || 'Free') + '</span>' : '') + '</div>'; }).join('') +
             '</div></div>'; }).join('') + '</div></div>';
       weeksEl.innerHTML = week('a') + week('b');
-      const k = done ? hints.length : n, c = fitAt(k).length;
+      const k = done ? hints.length : n, c = fitAt(k);
       document.getElementById('wtcount').innerHTML = '<b>' + c + '</b> ' + (c === 1 ? 'student still fits' : 'students still fit');
       document.getElementById('wthints').innerHTML = hints.slice(0, n).map((h, i) => '<div class="gwhint' + (fresh && i === n - 1 ? ' fresh' : '') + '"><span class="dghn">' + (i + 1) + '</span>' + hintHtml(h.text) + '</div>').join('') ||
         '<p class="wtstart">Every grid in your year starts like this. Guess whose fortnight it is, or skip for a hint.</p>';
@@ -1591,32 +1635,32 @@ BUILD.whose = host => {
     const names = s.names || [], known = new Set(names.map(norm));
     /* anyone in the year, whether they still fit or not */
     if (window.Suggest) Suggest.attach(input, { source: Suggest.names(names.slice().sort((x, y) => x.localeCompare(y)), 8) });
-    function step(v, skip){
-      if (done) return;
+    let sending = false;
+    async function step(v, skip){
+      if (done || sending) return;
       /* a name that isn't in your year doesn't cost a guess (a typo, say) */
       if (!skip && known.size && !known.has(norm(v))){ msg.textContent = 'Pick a name from your year.'; input.focus(); return; }
       msg.textContent = '';
       const before = shownAt(seen());
-      guesses++;
-      const correct = !skip && norm(v) === norm(answer);
+      /* marked by the server, which keeps the answer (and the rest of the board) until you're done */
+      sending = true;
+      let r;
+      try { r = await TT.api('/api/daily', { method:'POST', body: skip ? { whose:1, skip:true, date:s.date } : { whose:1, guess:v, date:s.date } }); }
+      catch (e){ sending = false; msg.textContent = e.message; return; }
+      sending = false;
+      if (!alive || !r) return;
+      take(r);
+      const correct = !!r.correct;
       if (!skip) guessed.add(norm(v));
       const row = document.createElement('div');
       row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
       row.textContent = skip ? '→ Skipped' : (correct ? '✓ ' : '✗ ') + v;
       document.getElementById('wtlog').prepend(row);
       input.value = '';
-      if (correct){ won = true; done = true; }
-      else if (guesses >= total) done = true;
-      /* saved in the background, so the streak and the year's results stay right */
-      TT.api('/api/daily', { method:'POST', body: skip ? { whose:1, skip:true, date:s.date } : { whose:1, guess:v, date:s.date } })
-        .then(r => { if (!alive || !r) return;
-          streak = r.streak != null ? r.streak : streak;
-          const a = document.getElementById('wtstreak'); if (a) a.textContent = streak;
-          recordStat('whose', { key:'streak', mode:'set', value:streak });
-          markDay('whose', s, { done, won, streak });
-          if (done) loadSummary(); })
-        .catch(() => {});
-      if (done){ finish(true); return; }
+      const a = document.getElementById('wtstreak'); if (a) a.textContent = streak;
+      recordStat('whose', { key:'streak', mode:'set', value:streak });
+      markDay('whose', s, { done, won, streak });
+      if (done){ finish(true); loadSummary(); return; }
       /* the new hint's tiles light up (on whichever week they're in; the tab moves to them on a phone) */
       const now = shownAt(seen()), fresh = new Set([...now].filter(k => !before.has(k)));
       if (fresh.size && ![...fresh].some(k => k.split('|')[0].endsWith(tab))){
@@ -1730,9 +1774,9 @@ function LD(text, late, opts){ return window.TT && TT.loader ? TT.loader(text, l
    Sixteen people from your year and four hidden groups of four, levels 1
    (easiest) to 4. Pick four and check them; four mistakes and it's over.
    Laid out like Daily Guess Who: your streak, the Archive calendar of past
-   days, and how your year went, shown under your board once you finish. The puzzle and its answers
-   come from /api/daily?conn=1 (api/_connroute.js); guesses are marked here,
-   instantly, and saved in the background. */
+   days, and how your year went, shown under your board once you finish. The puzzle comes from
+   /api/daily?conn=1 (api/_connroute.js), which keeps the groups to itself until you find them
+   and marks each guess. */
 const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
 const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
 /* Triplets (from 21 November 2026): nine people, three groups of three, four mistakes and one hint you
@@ -1782,44 +1826,24 @@ BUILD.quartets = host => {
     if (!$('qtcal').hidden) paintCal();
   }
 
+  /* The page only has the people still to place and the groups found so far (all of them once
+     you're done); the server marks each guess and works out the hints (api/_connroute.js). */
   function play(s){
     cur = s;
-    const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
-    const K = groups.length, LVS = groups.map(g => g.lv), trip = K === 3;      // K groups of K; Triplets when three
+    const K = s.size || 3, trip = K === 3;            // K groups of K; Triplets when three
     const GAME = trip ? 'Triplets' : 'Quartets';
-    const HKEY = 'qt.hint.' + s.date;                // Triplets' one hint, asked for (kept on this device)
-    let hinted = trip && !!TT.get(HKEY, false);
-    const lvOf = new Map(), howOf = new Map();
-    groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
-    const r0 = s.result || {};
-    let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
-    markDay('quartets', s, { done, won: found.length === K && mistakes < (s.chances || 7), streak });
     const CH = s.chances || 7;                       // mistakes allowed
+    let order = (s.tiles || []).slice(), groups = (s.groups || []).slice();
+    let R = s.result || {}, hint = s.hint || { gold:[], blue:[] }, streak = s.streak || 0;
+    let found = (R.found || []).slice(), log = (R.log || []).filter(g => !g.every(l => l === 0)), mistakes = R.mistakes || 0, done = !!R.done, hinted = !!R.hinted;
+    const take = r => { R = r.result || R; found = (R.found || []).slice(); log = (R.log || []).filter(g => !g.every(l => l === 0));
+      mistakes = R.mistakes || 0; done = !!R.done; hinted = !!R.hinted; groups = (r.groups || groups).slice(); hint = r.hint || hint;
+      if (r.streak != null) streak = r.streak;
+      const left = new Set(r.tiles || []); order = order.filter(n => left.has(n)).concat((r.tiles || []).filter(n => !order.includes(n))); };
+    const won = () => found.length === K && mistakes < CH;
+    markDay('quartets', s, { done, won: won(), streak });
     const sel = new Set(), tried = new Set();
-    /* Hints, worked out from the guesses so far (so a reload keeps them):
-       2 wrong in a row lights up two people from the easiest group still
-       unsolved; a 3rd wrong in a row lights up a third from that group. That's
-       all: two hints a day at most, and if the group is solved before the
-       second, the second is used up. */
-    /* and with one mistake left, a last one: two people from another group still
-       unsolved, outlined in blue so it's clear they're a different pair */
-    const hints = () => {
-      /* Triplets: the one hint, when asked for: two people from the easiest group still unsolved */
-      if (trip){ const hg = groups.find(x => !found.includes(x.lv));
-        return { gold: hinted && hg ? seeded(hg.names, s.date + ':hint').slice(0, 2) : [], blue: [], n: hinted ? 2 : 0 }; }
-      let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];
-      for (const g of log){
-        if (g.every(l => l === g[0])){ got.push(g[0]); run = 0; continue; }
-        run++; wrong++;
-        if (run === 2 && step === 0){ hg = groups.find(x => !got.includes(x.lv)); step = 1; }
-        else if (run === 3 && step === 1){ step = hg && !got.includes(hg.lv) ? 2 : 3; }
-        if (wrong === CH - 1 && !lg) lg = groups.find(x => !got.includes(x.lv) && x !== hg) || null;
-      }
-      const gold = !hg || found.includes(hg.lv) || step === 3 ? [] : seeded(hg.names, s.date + ':hint').slice(0, step === 2 ? 3 : 2);
-      const blue = !lg || found.includes(lg.lv) ? [] : seeded(lg.names, s.date + ':last').slice(0, 2);
-      return { gold, blue, n: gold.length + blue.length };
-    };
-    let order = seeded(groups.flatMap(g => g.names), s.date).filter(n => !found.includes(lvOf.get(n)));
+    let busy = false;
 
     box.innerHTML = topBar(s, streak) +
       '<div class="qtsolved" id="qtsolved"></div>' +
@@ -1834,17 +1858,19 @@ BUILD.quartets = host => {
       '<div class="dgresults" id="qtsummary" hidden></div>';
     wireBar(s);
 
+    const howOf = (g, i) => (g.how || [])[i] || '';
     const row = (g, missed) => '<div class="qtrow lv' + g.lv + (missed ? ' missed' : '') + '"><span class="qtlv">Level ' + g.lv + (missed ? ' · missed' : '') + '</span><b>' + esc(g.label) + '</b>' +
       /* each person as a chip, with why they fit beside the name (not small grey text) */
-      '<span class="qtnames">' + g.names.map(n => '<span class="qtp">' + esc(n) + (howOf.get(n) ? '<em>' + esc(howOf.get(n)) + '</em>' : '') + '</span>').join('') + '</span></div>';
+      '<span class="qtnames">' + g.names.map((n, i) => '<span class="qtp">' + esc(n) + (howOf(g, i) ? '<em>' + esc(howOf(g, i)) + '</em>' : '') + '</span>').join('') + '</span></div>';
     const paintSolved = () => {
-      const missed = done && found.length < K ? groups.filter(g => !found.includes(g.lv)) : [];
-      $('qtsolved').innerHTML = found.map(lv => row(groups.find(g => g.lv === lv), false)).join('') + missed.map(g => row(g, true)).join('');
+      const byLv = lv => groups.find(g => g.lv === lv);
+      const missed = done ? groups.filter(g => !found.includes(g.lv)).sort((a, b) => a.lv - b.lv) : [];
+      $('qtsolved').innerHTML = found.map(byLv).filter(Boolean).map(g => row(g, false)).join('') + missed.map(g => row(g, true)).join('');
     };
     const paintGrid = () => {
       const grid = $('qtgrid');
       grid.hidden = done;
-      const h = hints(), gold = new Set(h.gold), blue = new Set(h.blue);
+      const gold = new Set(hint.gold || []), blue = new Set(hint.blue || []);
       grid.innerHTML = order.map(n => '<button type="button" class="qttile' + (sel.has(n) ? ' on' : '') + (gold.has(n) ? ' hint' : blue.has(n) ? ' hint hint2' : '') + '" aria-pressed="' + sel.has(n) + '" data-n="' + esc(n) + '"' +
         (gold.has(n) || blue.has(n) ? ' title="A hint: the people outlined in the same colour are in the same group"' : '') + '>' + esc(n) + '</button>').join('');
       grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
@@ -1852,24 +1878,20 @@ BUILD.quartets = host => {
         const n = b.dataset.n;
         if (sel.has(n)) sel.delete(n); else if (sel.size < K) sel.add(n); else return;
         SFX.tick(); b.classList.toggle('on', sel.has(n)); b.setAttribute('aria-pressed', String(sel.has(n)));
-        $('qtgo').disabled = sel.size !== K;
+        $('qtgo').disabled = sel.size !== K || busy;
       });
-      $('qtgo').disabled = sel.size !== K;
-      const hb = $('qthint'); if (hb){ hb.disabled = hinted || done; hb.textContent = hinted ? 'Hint used' : 'Hint'; }
+      $('qtgo').disabled = sel.size !== K || busy;
+      const hb = $('qthint'); if (hb){ hb.disabled = hinted || done || busy; hb.textContent = hinted ? 'Hint used' : 'Hint'; }
     };
     const paintLives = () => {
       $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:CH }, (_, i) => '<i class="' + (i < CH - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
       $('qtbtns').hidden = done;
     };
     const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
-    const save = () => { markDay('quartets', s, { done, won: won(), streak });
-      return TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, found, log, mistakes } })
-      .then(r => { if (!alive || !r) return;
-        if (r.streak != null){ streak = r.streak; const el = $('qtstreak'); if (el) el.textContent = streak; markDay('quartets', s, { done, won: won(), streak }); }
-        if (done) loadSummary(s.date); }).catch(() => {}); };
+    const afterSave = () => { markDay('quartets', s, { done, won: won(), streak }); const el = $('qtstreak'); if (el) el.textContent = streak;
+      if (arch && done){ arch.mine[s.date] = { solved:won(), done:true, mistakes }; if (!$('qtcal').hidden) paintCal(); } };
 
     /* the share card: an image of how you went (no names, no answers), and the same as text */
-    const won = () => found.length === K && mistakes < CH;
     const verdict = () => (won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it') + (hinted ? ', one hint' : '');
     const shareText = () => GAME + ' · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
       log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=quartets';
@@ -1915,36 +1937,41 @@ BUILD.quartets = host => {
 
     $('qtshuf').onclick = () => { order = seeded(order, Math.random().toString(36)); paintGrid(); };
     $('qtclear').onclick = () => { sel.clear(); paintGrid(); };
-    if ($('qthint')) $('qthint').onclick = () => { if (hinted || done) return; hinted = true; TT.set(HKEY, true); paintGrid();
-      say('Hint: the two highlighted people are in the same group.'); };
-    $('qtgo').onclick = () => {
-      if (done || sel.size !== K) return;
+    if ($('qthint')) $('qthint').onclick = async () => {
+      if (hinted || done || busy) return;
+      busy = true; paintGrid();
+      try { take(await TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, hint:true } })); say('Hint: the two highlighted people are in the same group.'); }
+      catch (e){ say(e.message, true); }
+      busy = false; paintGrid();
+    };
+    $('qtgo').onclick = async () => {
+      if (done || busy || sel.size !== K) return;
       const pick = [...sel], key = pick.slice().sort().join('|');
       if (tried.has(key)){ say('You’ve tried those ' + (trip ? 'three' : 'four') + ' already.'); return; }
+      busy = true; $('qtgo').disabled = true;
+      const before = (hint.gold || []).length + (hint.blue || []).length, blueBefore = (hint.blue || []).length;
+      let r;
+      try { r = await TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, pick } }); }
+      catch (e){ busy = false; say(e.message, true); paintGrid(); return; }
+      busy = false;
+      if (!alive) return;
       tried.add(key);
-      const lvs = pick.map(n => lvOf.get(n));
-      const right = lvs.every(l => l === lvs[0]);
-      const before = hints();                         // to tell if this guess unlocks a hint
-      log.push(lvs);
-      if (right){
-        found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
+      take(r); afterSave();
+      if (r.right){
+        sel.clear();
         SFX.line(found.length);
-        if (found.length === K){ done = true; SFX.win(); }
+        if (done) SFX.win();
       } else {
-        mistakes++;
-        const most = Math.max(...LVS.map(l => lvs.filter(x => x === l).length));
-        say(most === K - 1 ? 'One away…' : 'Not a group.', true);
+        say(r.oneAway ? 'One away…' : 'Not a group.', true);
         /* a hint just unlocked: say so (after the shake) */
-        setTimeout(() => { const now = hints(); if (done || now.n <= before.n) return;
-          if (now.blue.length > before.blue.length) say('Last chance: the two people outlined in blue are in the same group.');
-          else say(now.gold.length === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
+        setTimeout(() => { const now = (hint.gold || []).length + (hint.blue || []).length; if (done || now <= before) return;
+          if ((hint.blue || []).length > blueBefore) say('Last chance: the two people outlined in blue are in the same group.');
+          else say((hint.gold || []).length === 2 ? 'Hint: the two highlighted people are in the same group.' : 'Hint: here’s a third person in that group.'); }, 900);
         $('qtgrid').querySelectorAll('.qttile.on').forEach(b => b.animate && b.animate([{ transform:'translateX(0)' }, { transform:'translateX(-5px)' },
           { transform:'translateX(5px)' }, { transform:'translateX(0)' }], { duration:260 }));
-        if (mistakes >= CH){ done = true; SFX.lose(); }
+        if (done) SFX.lose();
       }
-      if (arch && done){ arch.mine[s.date] = { solved:won(), done:true, mistakes }; if (!$('qtcal').hidden) paintCal(); }
-      save();
-      setTimeout(() => { paint(); if (done) openSummary(s.date); }, right || done ? 0 : 280);
+      setTimeout(() => { paint(); if (done) openSummary(s.date); }, r.right || done ? 0 : 280);
     };
   }
 
@@ -2089,7 +2116,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120i';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120l';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -2449,6 +2476,7 @@ BUILD.tetris = (host, o) => {
   /* ── game flow ── */
   function emptyBoard(){ grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null)); piece=null; hold=null; queue=[]; cleared=0; score=0; elapsedMs=0; }
   function begin(){
+    if (mode !== 'practice' && mode !== 'versus') lbTicket('tetris');   // a score is sent with this (the server checks it)
     if (saveable()) clearState();              // starting fresh discards any saved game
     emptyBoard(); newRng();
     holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
@@ -2480,6 +2508,7 @@ BUILD.tetris = (host, o) => {
     if (!piece) spawnNext(performance.now());
   }
   function resumeGame(s){
+    lbTicket('tetris');
     applyState(s);
     phase='playing'; baseTime=Date.now()-elapsedMs; lastTick=performance.now(); hideOver();
     $$('tstart').textContent='Restart'; $$('tpause').textContent='Pause';
@@ -2552,13 +2581,13 @@ BUILD.tetris = (host, o) => {
   async function submitScore(ms){        // sprint (40-clear) or survival (top-out)
     if (!TT.myEmail()) return;
     try {
-      if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{method:'POST',body:{mode:'zen',ms}}), 'Longest survivals (all-time)'); }
+      if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'zen',ms,ticket:lbTickets.tetris}, lbYearParam())}), 'Longest survivals (all-time)'); }
       else {
         /* the weekly board is still written to even while it is hidden, so turning
            weekly boards back on brings every score back with it */
         const [w,a] = await Promise.all([
-          TT.api('/api/tetris',{method:'POST',body:{mode:'sprint',week:wk,timeMs:ms}}),
-          TT.api('/api/tetris',{method:'POST',body:{mode:'sprintall',timeMs:ms}})
+          TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'sprint',week:wk,timeMs:ms,ticket:lbTickets.tetris}, lbYearParam())}),
+          TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'sprintall',timeMs:ms,ticket:lbTickets.tetris}, lbYearParam())})
         ]);
         sprintBoards={week:w,all:a}; renderSprintLB();
       }
@@ -2566,7 +2595,7 @@ BUILD.tetris = (host, o) => {
   }
   async function submitZen(sc){
     if (!TT.myEmail()) return;
-    try { renderZenLB(await TT.api('/api/tetris',{method:'POST',body:{mode:'zenscore',score:sc}})); } catch(e){}
+    try { renderZenLB(await TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'zenscore',score:sc,ticket:lbTickets.tetris}, lbYearParam())})); } catch(e){}
   }
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
@@ -2576,11 +2605,11 @@ BUILD.tetris = (host, o) => {
       if (mode==='sprint'){
         await siteSettings();
         if (!weeklyOn()){ sprintTab='all';
-          sprintBoards={week:null,all:await TT.api('/api/tetris',{params:{mode:'sprintall'}})}; renderSprintLB(); return; }
-        const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}), TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
+          sprintBoards={week:null,all:await TT.api('/api/tetris',{params:Object.assign({mode:'sprintall'}, lbYearParam())})}; renderSprintLB(); return; }
+        const [w,a] = await Promise.all([ TT.api('/api/tetris',{params:Object.assign({mode:'sprint',week:wk}, lbYearParam())}), TT.api('/api/tetris',{params:Object.assign({mode:'sprintall'}, lbYearParam())}) ]);
         sprintBoards={week:w,all:a}; renderSprintLB();
-      } else if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{params:{mode:'zen'}}), 'Longest survivals (all-time)'); }
-      else { renderZenLB(await TT.api('/api/tetris',{params:{mode:'zenscore'}})); }
+      } else if (mode==='survival'){ renderTimeLB(await TT.api('/api/tetris',{params:Object.assign({mode:'zen'}, lbYearParam())}), 'Longest survivals (all-time)'); }
+      else { renderZenLB(await TT.api('/api/tetris',{params:Object.assign({mode:'zenscore'}, lbYearParam())})); }
     } catch(e){ if($$('tlb')) $$('tlb').innerHTML=''; }
   }
   function rowsHTML(d, fmt){
@@ -3055,380 +3084,264 @@ BUILD.tetris = (host, o) => {
 };
 
 /* ── Classroom ─────────────────────────────────────────────────────
-   Uses the rooms from your own timetable: each round names a class and
-   you type which room it runs in. Self-contained — no directory calls. */
+   Questions from your own timetable: the room, the teacher or the class.
+   The server asks them (api/_runs.js): it reads your timetable, keeps each
+   answer to itself, marks your pick, runs the clock and records the score,
+   so nothing in the page gives an answer away. */
 BUILD.classroom = host => {
   head(host, 'Classroom',
     'Questions from your own timetable. Three slips ends the run.',
     '<div id="cr"></div>');
   const box = $('cr');
-  let alive = true, timer = null;
-  (async () => {
-    box.innerHTML = LD();
-    try {
-      if (!gwData) gwData = await loadGuessData();
-      if (!alive) return;
-      ready();
-    } catch (err){
-      if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
-    }
-  })();
+  let alive = true, timer = null, run = null, busy = false;
+  const stop = () => { if (timer){ clearInterval(timer); timer = null; } };
+  ready();
 
   function ready(){
-    if (timer){ clearInterval(timer); timer = null; }
-    const rooms = (gwData.rooms || []).filter(r => r.room && r.subject);
-    if (rooms.length < 3){
-      box.innerHTML = '<p class="how">Your timetable doesn’t list enough rooms to play. Open your timetable first.</p>';
-      return;
-    }
+    stop();
     box.innerHTML =
       '<div class="crq"><div class="crsub">Ready?</div>' +
         '<div class="crclue">Name the room, teacher or class. You get 3 lives and the clock speeds up.</div></div>' +
       '<div class="gwrow"><button class="btn primary" id="crstart" type="button">Start</button></div>';
     $('sc').textContent = 'Best ' + (statVal('classroom','high') != null ? statVal('classroom','high') : '—');
-    $('crstart').onclick = run;
+    $('crstart').onclick = go;
   }
-
-  function run(){
-    if (timer){ clearInterval(timer); timer = null; }
-    const rooms = (gwData.rooms || []).filter(r => r.room && r.subject);
-    if (rooms.length < 3){
-      box.innerHTML = '<p class="how">Your timetable doesn’t list enough rooms to play. Open your timetable first.</p>';
-      return;
-    }
-    const uniq = a => [...new Set(a)];
-    const norm = s => String(s).toLowerCase().replace(/\s+/g,'');
-    const allRooms    = uniq(rooms.map(r => r.room));
-    const allSubjects = uniq(rooms.map(r => r.subject));
-    const withTeacher = rooms.filter(r => r.teacher);
-    const allTeachers = uniq(withTeacher.map(r => r.teacher));
-    const roomTxt   = r => r ? 'Room ' + r : '';
-    const periodTxt = p => p ? (/^\d+$/.test(p) ? 'Period ' + p : p) : '';
-
-    const types = ['room'];                                    /* only offer types with 4+ answers */
-    if (allTeachers.length >= 3 && withTeacher.length >= 2) types.push('teacher');
-    if (allSubjects.length >= 3) types.push('subject');
-
-    let correct = 0, streak = 0, lives = 3, lastKey = '', qStart = 0;
-    const timeFor = () => Math.max(4000, 12000 - correct*450 - streak*150);   // starts slow, speeds up
-
-    /* a plausible wrong room code: one digit nudged by ±1 (ER0018.169 → ER0019.168) */
-    function nearMiss(code){
-      const pos = []; for (let i=0;i<code.length;i++) if (/\d/.test(code[i])) pos.push(i);
-      if (!pos.length) return code + '2';
-      const i = pos[(Math.random()*pos.length)|0];
-      let d = +code[i], nd = Math.random()<0.5 ? d+1 : d-1;
-      if (nd < 0) nd = 1; if (nd > 9) nd = 8; if (nd === d) nd = (d+1)%10;
-      return code.slice(0,i) + nd + code.slice(i+1);
-    }
-    /* 4 options: the answer plus distinct distractors from the same field */
-    function opts4(pool, answer){
-      const out = [answer];
-      for (const v of shuffle(pool.slice())){
-        if (out.length >= 4) break;
-        if (!out.some(o => norm(o) === norm(v))) out.push(v);
-      }
-      return shuffle(out);
-    }
-    /* rooms get one-digit-off red herrings mixed with real other rooms, so the
-       options look confusingly alike rather than obviously different buildings */
-    function roomOpts(answer){
-      const out = [answer];
-      const pool = shuffle([ nearMiss(answer), nearMiss(answer), nearMiss(answer),
-                             ...shuffle(allRooms.filter(r => norm(r) !== norm(answer))).slice(0,2) ]);
-      for (const v of pool){ if (out.length >= 4) break;
-        if (v && !out.some(o => norm(o) === norm(v))) out.push(v); }
-      let guard = 0;
-      while (out.length < 4 && guard++ < 30){ const v = nearMiss(answer);
-        if (v && !out.some(o => norm(o) === norm(v))) out.push(v); }
-      return shuffle(out);
-    }
-    function nextQ(){
-      let type, cls, tries = 0;
-      do {
-        type = types[(Math.random()*types.length)|0];
-        cls = (type === 'teacher' ? withTeacher : rooms)[(Math.random() * (type === 'teacher' ? withTeacher.length : rooms.length))|0];
-      } while (type + ':' + cls.subject === lastKey && tries++ < 10);
-      lastKey = type + ':' + cls.subject;
-
-      let prompt, clue, answer, options;
-      if (type === 'room'){
-        prompt = 'Where is your ' + esc(cls.subject) + '?';
-        clue = [cls.teacher ? 'with ' + cls.teacher : '', periodTxt(cls.period)].filter(Boolean).join(' · ');
-        answer = cls.room; options = roomOpts(cls.room);
-      } else if (type === 'teacher'){
-        prompt = 'Who takes your ' + esc(cls.subject) + '?';
-        clue = [roomTxt(cls.room), periodTxt(cls.period)].filter(Boolean).join(' · ');
-        answer = cls.teacher; options = opts4(allTeachers, cls.teacher);
-      } else {
-        prompt = 'Which class runs in ' + esc(cls.room) + '?';
-        clue = [cls.teacher ? 'with ' + cls.teacher : '', periodTxt(cls.period)].filter(Boolean).join(' · ');
-        answer = cls.subject; options = opts4(allSubjects, cls.subject);
-      }
-      renderQ(prompt, clue, answer, options);
-    }
-    function renderQ(prompt, clue, answer, options){
-      box.innerHTML =
-        '<div class="crtimer"><i id="crbar" style="width:100%"></i></div>' +
-        '<div class="crq"><div class="crprog">Correct ' + correct + ' · streak ' + streak + '</div>' +
-          '<div class="crsub">' + prompt + '</div>' +
-          (clue ? '<div class="crclue">' + esc(clue) + '</div>' : '') +
-        '</div>' +
-        '<div class="mcq" id="cropts"></div>' +
-        '<div class="crlives" id="crlives"></div>';
-      $('crlives').textContent = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
-      $('sc').textContent = correct + ' correct';
-      const wrap = $('cropts');
-      options.forEach(o => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'mcopt'; b.textContent = o;
-        b.onclick = () => resolve(b, o === answer, answer, wrap);
-        wrap.appendChild(b);
-      });
-      qStart = Date.now();
-      const TIME = timeFor();
-      const bar = $('crbar');
-      timer = setInterval(() => {
-        const left = Math.max(0, TIME - (Date.now() - qStart));
-        bar.style.width = (left / TIME * 100) + '%';
-        if (left <= 0){ clearInterval(timer); timer = null; resolve(null, false, answer, wrap); }
-      }, 80);
-    }
-    function resolve(btn, right, answer, wrap){
-      if (timer){ clearInterval(timer); timer = null; }
-      [...wrap.children].forEach(b => { b.disabled = true; if (b.textContent === answer) b.classList.add('right'); });
-      if (right){ correct++; streak++; SFX.good(); setTimeout(() => { if (alive) nextQ(); }, 520); }
-      else { if (btn) btn.classList.add('wrong'); SFX.bad(); streak = 0; lives--;
-        setTimeout(() => { if (!alive) return; lives ? nextQ() : finish(); }, 950); }
-    }
-    function finish(){
-      SFX.lose();
-      const best = recordStat('classroom', { key:'high', mode:'max', value:correct });
-      box.innerHTML =
-        '<div class="crq"><div class="crsub">' + correct + ' correct</div>' +
-          '<div class="crmeta">best ' + best + '</div></div>' +
-        '<div class="gwrow"><button class="btn primary" id="cragain" type="button">Play again</button></div>';
-      $('sc').textContent = correct + ' correct';
-      $('cragain').onclick = run;
-    }
-    nextQ();
+  async function go(){
+    stop();
+    if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to play.</p>'; return; }
+    box.innerHTML = LD('Reading your timetable…');
+    try { run = await runCall('classroom', 'go'); }
+    catch (err){ if (alive) box.innerHTML = '<p class="how">' + esc(err.message) + '</p><div class="gwrow"><button class="btn" id="crback" type="button">Back</button></div>';
+      const b = $('crback'); if (b) b.onclick = ready; return; }
+    if (alive) question();
   }
-  return () => { alive = false; if (timer) clearInterval(timer); };
+  function question(){
+    const q = run.q;
+    box.innerHTML =
+      '<div class="crtimer"><i id="crbar" style="width:100%"></i></div>' +
+      '<div class="crq"><div class="crprog">Correct ' + run.score + ' · streak ' + run.streak + '</div>' +
+        '<div class="crsub">' + esc(q.prompt) + '</div>' +
+        (q.clue ? '<div class="crclue">' + esc(q.clue) + '</div>' : '') +
+      '</div>' +
+      '<div class="mcq" id="cropts"></div>' +
+      '<div class="crlives" id="crlives"></div>';
+    $('crlives').textContent = '❤️'.repeat(run.lives) + '🖤'.repeat(Math.max(0, 3 - run.lives));
+    $('sc').textContent = run.score + ' correct';
+    const wrap = $('cropts');
+    q.options.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'mcopt'; b.textContent = o;
+      b.onclick = () => pick(i, b, wrap);
+      wrap.appendChild(b);
+    });
+    const t0 = Date.now(), TIME = q.time, bar = $('crbar');
+    busy = false;
+    timer = setInterval(() => {
+      const left = Math.max(0, TIME - (Date.now() - t0));
+      bar.style.width = (left / TIME * 100) + '%';
+      if (left <= 0){ stop(); pick(-1, null, wrap); }
+    }, 80);
+  }
+  async function pick(i, btn, wrap){
+    if (busy) return; busy = true; stop();
+    [...wrap.children].forEach(b => b.disabled = true);
+    let r;
+    try { r = await runCall('classroom', 'pick', { rid:run.rid, pick:i }); }
+    catch (err){ if (alive){ box.innerHTML = '<p class="how">' + esc(err.message) + '</p>'; setTimeout(() => { if (alive) ready(); }, 1500); } return; }
+    if (!alive) return;
+    const right = wrap.children[r.ans];
+    if (right) right.classList.add('right');
+    if (r.right) SFX.good(); else { if (btn) btn.classList.add('wrong'); SFX.bad(); }
+    run = r;
+    setTimeout(() => { if (!alive) return; r.over ? finish() : question(); }, r.right ? 520 : 950);
+  }
+  function finish(){
+    SFX.lose();
+    const best = recordStat('classroom', { key:'high', mode:'max', value:run.score });
+    lbSumCache = null; if (lbState && lbState.game === 'classroom') loadLBoard('classroom');
+    box.innerHTML =
+      '<div class="crq"><div class="crsub">' + run.score + ' correct</div>' +
+        '<div class="crmeta">best ' + best + '</div></div>' +
+      '<div class="gwrow"><button class="btn primary" id="cragain" type="button">Play again</button></div>';
+    $('sc').textContent = run.score + ' correct';
+    $('cragain').onclick = go;
+  }
+  return () => { alive = false; stop(); };
 };
 
 /* ── Six Degrees (timed gauntlet) ───────────────────────────────────
-   Graph of your classmates linked by shared classes. You're dropped on a
-   node and given a target; reach it and a NEW target appears instantly.
+   Your classmates, linked by every class they share. You're dropped on
+   someone and given a target; reach it and a NEW target appears at once.
    Chain as many as you can before the clock runs out. Targets sit further
-   away as your score climbs, so a lucky short hop can't carry the board.  */
+   away as your score climbs. The server holds the map and runs the game
+   (api/_runs.js): the page only ever sees who you're on, the target and
+   the people you can go to next, and the target is never on the tile you
+   just pressed. */
 BUILD.chain = host => {
   head(host, 'Six Degrees',
     'Chain classmate to classmate through shared classes.',
     '<div id="ch"></div>');
   const box = document.getElementById('ch');
-  let alive = true, timer = null;
+  let alive = true, timer = null, run = null, endAt = 0, ended = false, busy = false;
   const RUN_TIME = 90000;
   const clearTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
   (async () => {
-    box.innerHTML = LD();
-    try {
-      if (!gwData) gwData = await loadGuessData();
-      if (!alive) return;
-      startScreen();
-    } catch (err){
-      if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>';
-    }
+    if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to play.</p>'; return; }
+    box.innerHTML = LD('Mapping your classes…', 'The first time takes a little while: it reads who is in every class.');
+    try { const r = await runCall('chain', 'ready'); if (!alive) return;
+      if (r.people < 6){ box.innerHTML = '<p class="how">Not enough classmates with shared classes to play. Open your timetable first.</p>'; return; }
+      startScreen(); }
+    catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; }
   })();
 
-  function build(){
-    const nodes = (gwData.classPool || []).filter(p => p.subjects && p.subjects.length);
-    if (nodes.length < 6) return null;
-    const bySubj = new Map();
-    nodes.forEach((p,i) => p.subjects.forEach(s => { if (!bySubj.has(s)) bySubj.set(s, []); bySubj.get(s).push(i); }));
-    const adj = nodes.map(() => new Set());
-    for (const arr of bySubj.values())
-      for (let a=0; a<arr.length; a++) for (let b=a+1; b<arr.length; b++){ adj[arr[a]].add(arr[b]); adj[arr[b]].add(arr[a]); }
-    const bfs = src => {
-      const dist = nodes.map(() => Infinity); dist[src] = 0; const q = [src];
-      for (let h=0; h<q.length; h++){ const c = q[h]; for (const n of adj[c]) if (dist[n] === Infinity){ dist[n] = dist[c]+1; q.push(n); } }
-      return dist;
-    };
-    const sharedClass = (a,b) => nodes[a].subjects.find(s => nodes[b].subjects.includes(s));
-    return { nodes, adj, bfs, sharedClass };
-  }
-  const rand = n => (Math.random()*n)|0;
-
+  const yr = p => p && p.y ? ' <span class="chyr">Yr ' + esc(p.y) + '</span>' : '';
   function startScreen(){
-    const g = build();
-    if (!g){ box.innerHTML = '<p class="how">Not enough classmates with shared classes to play. Open your timetable first.</p>'; return; }
-    run(g);
+    clearTimer(); run = null; ended = false;
+    box.innerHTML =
+      '<div class="crtimer"><i id="chbar" style="width:100%"></i></div>' +
+      '<div id="chboard" class="chdim"><div class="chhead">' +
+        '<div class="chtarget">Reach <b class="chblank">______</b></div>' +
+        '<div class="chmeta">On <b class="chblank">______</b> · ' + (RUN_TIME / 1000) + 's</div></div>' +
+        '<div class="chopts">' + Array.from({ length:8 }, () => '<button type="button" class="chopt chface" tabindex="-1"><span class="cnm">·</span><em>·</em></button>').join('') + '</div></div>' +
+      '<div class="chstartwrap"><button class="btn primary" id="chstart" type="button">Start run</button></div>';
+    document.getElementById('chstart').onclick = startRun;
+    document.getElementById('sc').textContent = 'Best ' + (statVal('chain','targets') != null ? statVal('chain','targets') : '—');
   }
-
-  function run(g){
-    const { nodes, adj, bfs, sharedClass } = g;
-    let cur = rand(nodes.length), tries = 0;
-    while (adj[cur].size === 0 && tries++ < 50) cur = rand(nodes.length);   // start with edges
-    let score = 0, target = null, dist = null, ended = false, started = false, t0 = 0;
-
-    function pickTarget(){
-      dist = bfs(cur);
-      const minD = 2 + Math.min(4, Math.floor(score / 4));                  // further as you climb
-      let cands = [];
-      for (let d = minD; d >= 1 && !cands.length; d--)
-        for (let i=0; i<nodes.length; i++) if (i !== cur && dist[i] !== Infinity && dist[i] >= d) cands.push(i);
-      target = cands.length ? cands[rand(cands.length)] : null;
-    }
-    const tgtLine  = () => 'Reach <b>' + esc(nodes[target].name) + '</b>' + (nodes[target].year ? ' <span class="chyr">Yr ' + esc(nodes[target].year) + '</span>' : '');
-    const metaLine = () => 'On <b>' + esc(nodes[cur].name) + '</b> · reached <b>' + score + '</b> · <b id="chclock">' + Math.ceil(RUN_TIME/1000) + 's</b> left';
-    pickTarget();
+  async function startRun(){
+    const b = document.getElementById('chstart'); if (b) b.disabled = true;
+    try { run = await runCall('chain', 'go'); }
+    catch (err){ if (alive) box.innerHTML = '<p class="how">' + esc(err.message) + '</p>'; return; }
+    if (!alive) return;
+    endAt = Date.now() + run.left;
     render();
-
-    function render(){
-      if (started && target == null){ finish(); return; }
-      const nbrs = [...adj[cur]];
-      let show = shuffle(nbrs.slice()).slice(0, 14);
-      if (target != null && nbrs.includes(target) && !show.includes(target)) show[show.length-1] = target;
-      show = shuffle(show);
-      box.innerHTML =
-        '<div class="crtimer"><i id="chbar" style="width:100%"></i></div>' +
-        '<div id="chboard"' + (started ? '' : ' class="chdim"') + '>' +
-          '<div class="chhead">' +
-            '<div class="chtarget" id="chtgt">' + (started ? tgtLine() : 'Reach <b class="chblank">______</b>') + '</div>' +
-            '<div class="chmeta" id="chmeta">' + (started ? metaLine() : 'On <b class="chblank">______</b> · ' + (RUN_TIME/1000) + 's') + '</div>' +
-          '</div>' +
-          '<div class="chopts" id="chopts"></div>' +
-        '</div>' +
-        (started ? '' : '<div class="chstartwrap"><button class="btn primary" id="chstart" type="button">Start run</button></div>');
-      const opts = document.getElementById('chopts');
-      show.forEach((n, idx) => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'chopt' + (started ? ' chflip' : ' chface');
-        if (started) b.style.animationDelay = (idx*25) + 'ms';
-        b.innerHTML = '<span class="cnm">' + esc(nodes[n].name) + '</span><em>via ' + esc(sharedClass(cur,n) || 'shared class') + '</em>';
-        b.onclick = () => move(n);
-        opts.appendChild(b);
-      });
-      if (!started){
-        document.getElementById('chstart').onclick = startRun;
-        document.getElementById('sc').textContent = 'Best ' + (statVal('chain','targets') != null ? statVal('chain','targets') : '—');
-      } else document.getElementById('sc').textContent = 'Reached ' + score;
-    }
-    function startRun(){
-      started = true; t0 = Date.now();
-      render();                                   // reveal names (flip) + fill the target/on lines
-      timer = setInterval(() => {
-        if (ended) return;
-        const left = Math.max(0, RUN_TIME - (Date.now() - t0));
-        const bar = document.getElementById('chbar'); if (bar) bar.style.width = (left / RUN_TIME * 100) + '%';
-        const clock = document.getElementById('chclock'); if (clock) clock.textContent = Math.ceil(left/1000) + 's';
-        if (left <= 0) finish();
-      }, 100);
-    }
-    function move(n){
-      if (!started || ended) return;
-      const hit = n === target;
-      cur = n;
-      if (hit){ score++; SFX.good(); pickTarget(); } else SFX.move();
-      render();
-    }
-    function finish(){
+    timer = setInterval(() => {
       if (ended) return;
-      ended = true; clearTimer();
-      const best = recordStat('chain', { key:'targets', mode:'max', value:score });  // metric matches LB → auto-submits
-      recordStat('chain', { key:'runs', mode:'count', value:1 });
-      SFX.win();
-      box.innerHTML =
-        '<div class="chhead"><div class="chtarget">Time! You reached <b>' + score + '</b> ' + (score===1?'target':'targets') + '.</div>' +
-          '<div class="chmeta">Best run <b>' + best + '</b></div></div>' +
-        '<div class="gwrow"><button class="btn primary" id="chagain" type="button">Play again</button></div>';
-      document.getElementById('sc').textContent = 'Reached ' + score;
-      document.getElementById('chagain').onclick = () => startScreen();
-    }
+      const left = Math.max(0, endAt - Date.now());
+      const bar = document.getElementById('chbar'); if (bar) bar.style.width = (left / RUN_TIME * 100) + '%';
+      const clock = document.getElementById('chclock'); if (clock) clock.textContent = Math.ceil(left / 1000) + 's';
+      if (left <= 0) end();
+    }, 100);
+  }
+  function render(){
+    if (run.over || !run.target){ end(); return; }
+    box.innerHTML =
+      '<div class="crtimer"><i id="chbar" style="width:' + (Math.max(0, endAt - Date.now()) / RUN_TIME * 100) + '%"></i></div>' +
+      '<div id="chboard"><div class="chhead">' +
+        '<div class="chtarget" id="chtgt">Reach <b>' + esc(run.target.n) + '</b>' + yr(run.target) + '</div>' +
+        '<div class="chmeta" id="chmeta">On <b>' + esc(run.cur.n) + '</b> · reached <b>' + run.score + '</b> · <b id="chclock">' + Math.ceil(Math.max(0, endAt - Date.now()) / 1000) + 's</b> left</div>' +
+      '</div><div class="chopts" id="chopts"></div></div>';
+    const opts = document.getElementById('chopts');
+    run.opts.forEach((o, idx) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chopt chflip';
+      b.style.animationDelay = (idx * 25) + 'ms';
+      b.innerHTML = '<span class="cnm">' + esc(o.n) + '</span><em>via ' + esc(o.via || 'shared class') + '</em>';
+      b.onclick = () => move(idx);
+      opts.appendChild(b);
+    });
+    document.getElementById('sc').textContent = 'Reached ' + run.score;
+  }
+  async function move(idx){
+    if (!run || ended || busy) return;
+    busy = true;
+    try {
+      const r = await runCall('chain', 'pick', { rid:run.rid, pick:idx });
+      if (!alive || ended) return;
+      run = r; endAt = Date.now() + r.left;
+      if (r.hit) SFX.good(); else SFX.move();
+      busy = false;
+      if (r.over) end(); else render();
+    } catch (err){ busy = false; }
+  }
+  async function end(){
+    if (ended) return;
+    ended = true; clearTimer();
+    let r = run;
+    try { r = await runCall('chain', 'end', { rid:run.rid }); } catch (e){}
+    if (!alive) return;
+    const score = r ? r.score : 0;
+    const best = recordStat('chain', { key:'targets', mode:'max', value:score });
+    recordStat('chain', { key:'runs', mode:'count', value:1 });
+    lbSumCache = null; if (lbState && lbState.game === 'chain') loadLBoard('chain');
+    SFX.win();
+    box.innerHTML =
+      '<div class="chhead"><div class="chtarget">Time! You reached <b>' + score + '</b> ' + (score === 1 ? 'target' : 'targets') + '.</div>' +
+        '<div class="chmeta">Best run <b>' + best + '</b></div></div>' +
+      '<div class="gwrow"><button class="btn primary" id="chagain" type="button">Play again</button></div>';
+    document.getElementById('sc').textContent = 'Reached ' + score;
+    document.getElementById('chagain').onclick = () => startScreen();
   }
   return () => { alive = false; clearTimer(); };
 };
 
 /* ── Odd One Out ───────────────────────────────────────────────────
    Fast recall on your own classes: three of four people are in a class
-   of yours, one isn't — spot the outsider before the bar empties.     */
+   of yours, one isn't. Spot the outsider before the bar empties. The
+   server picks each round and keeps who the outsider is (api/_runs.js). */
 BUILD.oddone = host => {
   head(host, 'Odd One Out',
     'Three share a class of yours. Pick the one who doesn’t.',
     '<div id="oo"></div>');
   const box = $('oo');
-  let alive = true, timer = null;
-  (async () => {
-    box.innerHTML = LD();
-    try { if (!gwData) gwData = await loadGuessData(); if (!alive) return; start(); }
-    catch (err){ if (alive) box.innerHTML = '<p class="how">Could not load: ' + esc(err.message) + '</p>'; }
-  })();
-  function start(){
-    if (timer){ clearInterval(timer); timer = null; }
-    const pool = (gwData.classPool || []).filter(p => p.subjects && p.subjects.length);
-    const bySubj = new Map();
-    pool.forEach(p => p.subjects.forEach(s => { if (!bySubj.has(s)) bySubj.set(s, []); bySubj.get(s).push(p); }));
-    const subjects = [...bySubj.keys()].filter(s => bySubj.get(s).length >= 3 && bySubj.get(s).length < pool.length);
-    if (!subjects.length){
-      box.innerHTML = '<p class="how">Not enough classmates across your classes to play yet. Open your timetable first.</p>';
-      return;
-    }
-    let score = 0, streak = 0, lives = 3, lastSubj = '';
-    const TIME0 = 8000, TMIN = 3000, runStart = Date.now();
-    function round(){
-      let subj, tries = 0;
-      do { subj = subjects[(Math.random()*subjects.length)|0]; } while (subj === lastSubj && subjects.length > 1 && tries++ < 6);
-      lastSubj = subj;
-      const three = shuffle(bySubj.get(subj).slice()).slice(0, 3);
-      const odd = shuffle(pool.filter(p => !p.subjects.includes(subj)))[0];
-      if (!odd){ start(); return; }
-      render(subj, shuffle([...three, odd]), odd);
-    }
-    function render(subj, cards, odd){
-      /* speeds up with your streak AND with time survived in the run */
-      const elapsed = Date.now() - runStart;
-      const time = Math.max(TMIN, TIME0 - streak*300 - Math.floor(elapsed/8000)*300);
-      box.innerHTML =
-        '<div class="crtimer"><i id="oobar" style="width:100%"></i></div>' +
-        '<div class="crq"><div class="crprog">Score ' + score + ' · streak ' + streak + '</div>' +
-          '<div class="crsub">Who is <u>not</u> in your ' + esc(subj) + '?</div></div>' +
-        '<div class="mcq" id="ooopts"></div>' +
-        '<div class="crlives">' + '❤️'.repeat(lives) + '🖤'.repeat(3 - lives) + '</div>';
-      $('sc').textContent = 'Score ' + score;
-      const wrap = $('ooopts');
-      cards.forEach(p => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'mcopt';
-        if (p === odd) b.dataset.odd = '1';
-        b.innerHTML = '<span>' + esc(p.name) + '</span>' + (p.year ? '<em>Yr ' + esc(p.year) + '</em>' : '');
-        b.onclick = () => resolve(b, p === odd, wrap);
-        wrap.appendChild(b);
-      });
-      const t0 = Date.now(), bar = $('oobar');
-      timer = setInterval(() => {
-        const left = Math.max(0, time - (Date.now() - t0));
-        bar.style.width = (left / time * 100) + '%';
-        if (left <= 0){ clearInterval(timer); timer = null; resolve(null, false, wrap); }
-      }, 80);
-    }
-    function resolve(btn, right, wrap){
-      if (timer){ clearInterval(timer); timer = null; }
-      [...wrap.children].forEach(b => { b.disabled = true; if (b.dataset.odd) b.classList.add('right'); });
-      if (right){ score++; streak++; SFX.good(); recordStat('oddone', { key:'high', mode:'max', value:score });
-        setTimeout(() => { if (alive) round(); }, 520); }
-      else { if (btn) btn.classList.add('wrong'); SFX.bad(); streak = 0; lives--;
-        setTimeout(() => { if (!alive) return; lives ? round() : finish(); }, 1000); }
-    }
-    function finish(){
-      SFX.lose();
-      const best = statVal('oddone', 'high') || score;
-      box.innerHTML =
-        '<div class="crq"><div class="crsub">Score ' + score + '</div><div class="crmeta">best ' + best + '</div></div>' +
-        '<div class="gwrow"><button class="btn primary" id="ooagain" type="button">Play again</button></div>';
-      $('sc').textContent = 'Score ' + score;
-      $('ooagain').onclick = start;
-    }
-    round();
+  let alive = true, timer = null, run = null, busy = false;
+  const stop = () => { if (timer){ clearInterval(timer); timer = null; } };
+  start();
+  async function start(){
+    stop();
+    if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to play.</p>'; return; }
+    box.innerHTML = LD('Reading your classes…');
+    try { run = await runCall('oddone', 'go'); }
+    catch (err){ if (alive) box.innerHTML = '<p class="how">' + esc(err.message) + '</p>'; return; }
+    if (alive) render();
   }
-  return () => { alive = false; if (timer) clearInterval(timer); };
+  function render(){
+    const q = run.q;
+    box.innerHTML =
+      '<div class="crtimer"><i id="oobar" style="width:100%"></i></div>' +
+      '<div class="crq"><div class="crprog">Score ' + run.score + ' · streak ' + run.streak + '</div>' +
+        '<div class="crsub">Who is <u>not</u> in your ' + esc(q.subj) + '?</div></div>' +
+      '<div class="mcq" id="ooopts"></div>' +
+      '<div class="crlives">' + '❤️'.repeat(run.lives) + '🖤'.repeat(Math.max(0, 3 - run.lives)) + '</div>';
+    $('sc').textContent = 'Score ' + run.score;
+    const wrap = $('ooopts');
+    q.cards.forEach((p, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mcopt';
+      b.innerHTML = '<span>' + esc(p.n) + '</span>' + (p.y ? '<em>Yr ' + esc(p.y) + '</em>' : '');
+      b.onclick = () => pick(i, b, wrap);
+      wrap.appendChild(b);
+    });
+    const t0 = Date.now(), time = q.time, bar = $('oobar');
+    busy = false;
+    timer = setInterval(() => {
+      const left = Math.max(0, time - (Date.now() - t0));
+      bar.style.width = (left / time * 100) + '%';
+      if (left <= 0){ stop(); pick(-1, null, wrap); }
+    }, 80);
+  }
+  async function pick(i, btn, wrap){
+    if (busy) return; busy = true; stop();
+    [...wrap.children].forEach(b => b.disabled = true);
+    let r;
+    try { r = await runCall('oddone', 'pick', { rid:run.rid, pick:i }); }
+    catch (err){ if (alive){ box.innerHTML = '<p class="how">' + esc(err.message) + '</p>'; setTimeout(() => { if (alive) start(); }, 1500); } return; }
+    if (!alive) return;
+    const odd = wrap.children[r.ans]; if (odd) odd.classList.add('right');
+    if (r.right){ SFX.good(); recordStat('oddone', { key:'high', mode:'max', value:r.score }); }
+    else { if (btn) btn.classList.add('wrong'); SFX.bad(); }
+    run = r;
+    setTimeout(() => { if (!alive) return; r.over ? finish() : render(); }, r.right ? 520 : 1000);
+  }
+  function finish(){
+    SFX.lose();
+    lbSumCache = null; if (lbState && lbState.game === 'oddone') loadLBoard('oddone');
+    const best = statVal('oddone', 'high') || run.score;
+    box.innerHTML =
+      '<div class="crq"><div class="crsub">Score ' + run.score + '</div><div class="crmeta">best ' + best + '</div></div>' +
+      '<div class="gwrow"><button class="btn primary" id="ooagain" type="button">Play again</button></div>';
+    $('sc').textContent = 'Score ' + run.score;
+    $('ooagain').onclick = start;
+  }
+  return () => { alive = false; stop(); };
 };
 
 /* ── Memory (match pairs) ─────────────────────────────────────────── */
@@ -3782,6 +3695,7 @@ function snakeSolo(host){
     const lastD = q.length ? q[q.length - 1] : s.dir;
     const turn = !((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y));
     if (turn && q.length < 2) q.push({ x:v[0], y:v[1] });
+    if (phase === 'ready' && ranked()) lbTicket('snake');                // a leaderboard score is sent with this
     if (phase === 'ready' || phase === 'paused'){ phase = 'play'; over(); last = performance.now(); }      // any arrow starts it, even straight ahead
   }
   function step(){
@@ -4469,6 +4383,7 @@ BUILD.g2048 = host => {
   const refit = () => { if (fit()) paint(); };
   addEventListener('resize', refit);
   if (TOUCH) onSwipe(wrap, move, { step:30 });
+  lbTicket('g2048');                                   // a leaderboard score is sent with this
   spawn(); spawn(); paint();
   return () => { removeEventListener('keydown', key); removeEventListener('resize', refit); };
 };
@@ -4641,7 +4556,7 @@ BUILD.typing = host => {
       cheated = true; v = v.slice(0, prevLen + 1); inp.value = v;
     }
     prevLen = v.length;
-    if (!started && v.length) started = Date.now();
+    if (!started && v.length){ started = Date.now(); lbTicket('typing'); }
     paint(v);
     if (!done && v === target){
       done = true;
@@ -4684,12 +4599,11 @@ BUILD.react = host => {
   const el = $('react');
   let state = 'idle', t = null, at = 0, times = [], lockUntil = 0;
   /* Autoclickers can't win:
-     - under 60 ms isn't a human reaction (it's anticipation, or a bot
-       watching the screen), so it doesn't count; the server refuses it too
      - a burst of presses (4 inside 400 ms) or a run of presses at a machine-
        steady rhythm stops the round, wipes the run and locks the box briefly
      - clicks a script fakes (not from a real mouse or finger) are ignored */
-  const MIN_MS = 60, presses = [];
+  const presses = [];
+  lbTicket('react');                                   // a leaderboard time is sent with this
   const show = (cls, text) => { el.className = cls; el.textContent = text; };
   const arm = () => {
     show('wait', 'Wait for green…');
@@ -4729,7 +4643,6 @@ BUILD.react = host => {
     if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon. ' + tap('Click', 'Tap') + ' to retry.'); return; }
     if (state === 'go'){
       const ms = Math.max(0, Math.round(now - at));
-      if (ms < MIN_MS){ state = 'idle'; SFX.bad(); show('', ms + ' ms is faster than anyone can react, so it doesn’t count. ' + tap('Click', 'Tap') + ' to retry.'); return; }
       times.push(ms); SFX.good();
       const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
       recordStat('react', {key:'fastest', mode:'min', value:ms});
@@ -4752,7 +4665,7 @@ function lbBoard(box, focusId){
   let cur = LB_CAT.find(c => c.id === focusId) || LB_CAT[0], period = 'all', data = null, seq = 0;
   box.innerHTML =
     '<div class="diffbar lbpick"></div>' +
-    '<div class="glbhd"><h3 class="lbtitle"></h3>' +
+    '<div class="glbhd"><h3 class="lbtitle"></h3>' + yearPickHTML() +
       '<div class="glbtabs"><button type="button" class="glbtab" data-p="week">This week</button>' +
       '<button type="button" class="glbtab cur" data-p="all">All time</button></div></div>' +
     '<div class="lbbody">' + LD() + '</div>';
@@ -4764,6 +4677,7 @@ function lbBoard(box, focusId){
     pick.appendChild(b); });
   [...box.querySelectorAll('.glbtab[data-p]')].forEach(b => b.onclick = () => {
     period = b.dataset.p; [...box.querySelectorAll('.glbtab[data-p]')].forEach(t=>t.classList.toggle('cur', t===b)); paint(); });
+  wireYearPick(box, () => load());
   load();
 
   const remap = (arr, key) => (arr||[]).map(r => ({ name:r.name, score:r[key], you:r.you }));
@@ -4775,20 +4689,21 @@ function lbBoard(box, focusId){
       await siteSettings();
       let d;
       if (cur.g){
-        d = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.g.metric, week:wk } });
+        d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cur.id, metric:cur.g.metric, week:wk }, lbYearParam()) });
       } else if (cur.t === 'sprint'){
-        const [w,a] = await Promise.all([ weeklyOn() ? TT.api('/api/tetris',{params:{mode:'sprint',week:wk}}) : null,
-                                          TT.api('/api/tetris',{params:{mode:'sprintall'}}) ]);
+        const [w,a] = await Promise.all([ weeklyOn() ? TT.api('/api/tetris',{params:Object.assign({mode:'sprint',week:wk}, lbYearParam())}) : null,
+                                          TT.api('/api/tetris',{params:Object.assign({mode:'sprintall'}, lbYearParam())}) ]);
         d = { week:w ? { top:remap(w.top,'time_ms'), meBest:w.meBest, meRank:w.meRank } : null,
-              all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank } };
+              all: { top:remap(a.top,'time_ms'), meBest:a.meBest, meRank:a.meRank }, scope:a };
       } else if (cur.t === 'zen'){
-        const r = await TT.api('/api/tetris',{params:{mode:'zen'}});
-        const b = { top:remap(r.top,'time_ms'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b };
+        const r = await TT.api('/api/tetris',{params:Object.assign({mode:'zen'}, lbYearParam())});
+        const b = { top:remap(r.top,'time_ms'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b, scope:r };
       } else if (cur.t === 'zenscore'){
-        const r = await TT.api('/api/tetris',{params:{mode:'zenscore'}});
-        const b = { top:remap(r.top,'best'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b };
+        const r = await TT.api('/api/tetris',{params:Object.assign({mode:'zenscore'}, lbYearParam())});
+        const b = { top:remap(r.top,'best'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b, scope:r };
       }
       if (my !== seq) return;
+      noteScope(d.scope || d);
       data = d; syncTabs(); paint();
     } catch(e){ if (my === seq) body.innerHTML = '<p class="how">Could not load: ' + esc(e.message) + '</p>'; }
   }
@@ -4821,7 +4736,7 @@ BUILD.leaderboards = host => {
 
 /* ── Moderator page (moderators only, checked on the server): how the site is
    used, the people, the forum and shared decks, site settings, and every board ── */
-/* the moderator's poll planner: changes waiting to be saved, by week ({...the question} or {remove:true}),
+/* the moderator's poll planner: changes waiting to be saved, by week and who it's for ("2026-11-23|senior": {...the question} or {remove:true}),
    and where it was. Kept while the games page is open, so switching tabs doesn't lose them. */
 const pollDrafts = new Map(), pollErr = new Map();
 let pollAt = null, pollNote = '', pollBusy = '';
@@ -4851,7 +4766,7 @@ BUILD.admin = host => {
   /* the weekly poll on Home: questions, the show each week, suggestions */
   const POLLS = { id:'polls', name:'Polls', kind:'p' };
   /* ideas for the site, sent from Home's footer */
-  const IDEAS = { id:'ideas', name:'Feature ideas', kind:'i' };
+  const IDEAS = { id:'ideas', name:'Requests', kind:'i' };
   /* scans of the printed QR codes (q.html), one row per code */
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
   /* which themes people use (from their synced settings) */
@@ -4901,7 +4816,11 @@ BUILD.admin = host => {
         forgetSiteSettings(); await siteSettings();
         render(); return;
       }
-      if (cur.kind === 'o'){ data = await TT.api('/api/leaderboard', { params:{ stats:1 } }); render(); return; }
+      if (cur.kind === 'o'){
+        /* the counts, and how far the site has spread in each year (that one's allowed to fail on its own) */
+        const [st, reach] = await Promise.all([TT.api('/api/leaderboard', { params:{ stats:1 } }), TT.api('/api/leaderboard', { params:{ reach:1 } }).catch(() => null)]);
+        data = st; data.reach = reach; render(); return;
+      }
       if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
@@ -4916,7 +4835,7 @@ BUILD.admin = host => {
         catch { onboard = null; }
         render(); return;
       }
-      if (cur.kind === 'g') data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.metric, week:wk } });
+      if (cur.kind === 'g') data = await TT.api('/api/leaderboard', { params:{ game:cur.id, metric:cur.metric, week:wk, year:'all' } });
       else data = await TT.api('/api/tetris', { params:{ mode:cur.mode, week:wk, admin:1 } });
       if (!data.canWipe){ body.innerHTML = '<p class="how">You are not the owner. Set OWNER_EMAIL on the server to your school login.</p>'; return; }
       render();
@@ -5084,7 +5003,31 @@ BUILD.admin = host => {
       (d.jim ? card('🟡', 'The Jim Button', n(d.jim.presses) + ' presses', [n(d.jim.names) + ' names', (siteCfg.hiddenGames || []).includes('jim') ? 'Hidden from the games page' : '']) : '') +
       '</div>' +
       (games.length ? '<h4 class="admsub">Players per leaderboard (all-time)</h4><div class="admstats small">' +
-        games.map(([g, k]) => card('', gameName(g), n(k), [])).join('') + '</div>' : '');
+        games.map(([g, k]) => card('', gameName(g), n(k), [])).join('') + '</div>' : '') +
+      reachHtml(d.reach);
+  }
+  /* How far the site has spread: for each thing (signed in, played a game, voted, posted), a pie per year
+     showing the share of that year's students (those with classes here) who have done it. One series, so
+     one colour (the theme's accent) on a neutral track, the share printed in the middle, the year under
+     it; hover a pie for the counts; the same numbers as a table below. */
+  function reachHtml(r){
+    if (!r || !Array.isArray(r.years) || !r.years.some(y => y.total)) return '';
+    const ROWS = [['signedIn', 'Signed in'], ['played', 'Played a game'], ['voted', 'Voted in a poll'], ['posted', 'Posted on the forum']];
+    const pie = (y, k, label) => {
+      const pct = y.total ? y[k] / y.total : 0, R = 26, C = 2 * Math.PI * R, len = Math.max(0, Math.min(1, pct)) * C;
+      const tip = 'Year ' + y.year + ': ' + y[k] + ' of ' + y.total + ' ' + label.toLowerCase() + ' (' + Math.round(pct * 100) + '%)';
+      return '<figure class="reachpie" title="' + esc(tip) + '"><svg viewBox="0 0 64 64" role="img" aria-label="' + esc(tip) + '">' +
+        '<circle cx="32" cy="32" r="' + R + '" class="rtrack"/>' +
+        (len > 0 ? '<circle cx="32" cy="32" r="' + R + '" class="rfill" stroke-dasharray="' + len.toFixed(2) + ' ' + C.toFixed(2) + '" transform="rotate(-90 32 32)"/>' : '') +
+        '<text x="32" y="36.5" text-anchor="middle">' + Math.round(pct * 100) + '%</text></svg><figcaption>Year ' + y.year + '</figcaption></figure>';
+    };
+    const years = r.years.filter(y => y.total);
+    return '<h4 class="admsub">How far it has spread, year by year</h4>' +
+      '<p class="how" style="margin:0 0 10px">The share of each year’s students (those with classes here) who have done each thing. Hover a pie for the numbers.</p>' +
+      ROWS.map(([k, label]) => '<div class="reachrow"><div class="reachh">' + label + '</div><div class="reachpies">' + years.map(y => pie(y, k, label)).join('') + '</div></div>').join('') +
+      '<details class="reachtbl"><summary>As a table</summary><table><thead><tr><th>Year</th><th>Students</th>' + ROWS.map(([, l]) => '<th>' + l + '</th>').join('') + '</tr></thead><tbody>' +
+        years.map(y => '<tr><td>' + y.year + '</td><td>' + y.total + '</td>' + ROWS.map(([k]) => '<td>' + y[k] + ' (' + Math.round(y[k] / y.total * 100) + '%)</td>').join('') + '</tr>').join('') +
+      '</tbody></table></details>';
   }
   /* ── Forum: every thread and reply, newest first, each removable ── */
   function renderForum(){
@@ -5093,7 +5036,7 @@ BUILD.admin = host => {
     posts.forEach(p => { all.push({ ...p, reply:false }); (p.replies || []).forEach(r => all.push({ ...r, reply:true })); });
     $('admnote').textContent = posts.length + ' thread' + (posts.length === 1 ? '' : 's') + '. Deleting a thread removes its replies too.';
     $('admbody').innerHTML = all.length ? all.map(p => '<div class="adminrow modpost' + (p.reply ? ' reply' : '') + '">' +
-        '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' })) +
+        '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' }) + (p.for ? ' · for ' + p.for : '')) +
         '</em><span class="pb">' + esc(p.body) + '</span></span>' +
         '<button class="del" type="button" data-id="' + esc(p.id) + '">Delete</button></div>').join('')
       : '<p class="how">No posts.</p>';
@@ -5136,30 +5079,78 @@ BUILD.admin = host => {
         '<span class="qrbars" title="' + esc(days[0] + ' to ' + days[days.length - 1]) + '">' + c.days.map((n, i) =>
           '<i style="height:' + Math.max(2, Math.round(n / max * 100)) + '%" title="' + esc(days[i]) + ': ' + n + '"></i>').join('') + '</span></div>').join('');
   }
+  /* ── Requests, from Home's "Send a suggestion": name changes (Apply sets the name and tells them) and
+     feature ideas. Each can be answered: the reply pops up on their screen from "MSC Unofficial",
+     never from you (wireReplies, api/_notice.js). Poll ideas are under Polls. ── */
   function renderIdeas(){
-    const list = (data && data.features) || [];
-    $('admnote').textContent = 'Ideas students sent from the "Suggest a feature" link on Home. Dismiss one once it’s done or decided against.';
-    $('admbody').innerHTML = list.length ? list.map(f => '<div class="adminrow pollrow">' +
-        '<span class="nm"><b>' + esc(f.idea) + '</b><em>' + esc(f.by) + ' · ' + esc(seenAgo(f.at)) + '</em></span>' +
-        '<button class="del" type="button" data-idel="' + esc(f.id) + '">Dismiss</button></div>').join('')
-      : '<p class="how">No ideas yet.</p>';
+    const names = (data && data.names) || [], list = (data && data.features) || [];
+    $('admnote').textContent = 'What students sent from “Send a suggestion” on Home. Reply to answer one person: it shows on their screen from MSC Unofficial, not from you. Dismiss one once it’s done or decided against.';
+    const row = (main, sub, btns) => '<div class="adminrow pollrow"><span class="nm"><b>' + main + '</b><em>' + sub + '</em></span><span class="pact">' + btns + '</span></div>';
+    $('admbody').innerHTML =
+      '<h4 class="admsub">Name changes</h4>' + (names.length ? names.map(n => row('“' + esc(n.want) + '”', 'now ' + esc(n.by) + ' · ' + esc(seenAgo(n.at)),
+          '<button class="btn primary" type="button" data-apply="' + esc(n.id) + '">Apply</button>' +
+          '<button class="btn" type="button" data-reply="' + esc(n.id) + '">Reply</button>' +
+          '<button class="del" type="button" data-idel="' + esc(n.id) + '">Dismiss</button>')).join('') : '<p class="how">None waiting.</p>') +
+      '<h4 class="admsub">Feature ideas</h4>' + (list.length ? list.map(f => row(esc(f.idea), esc(f.by) + ' · ' + esc(seenAgo(f.at)),
+          '<button class="btn" type="button" data-reply="' + esc(f.id) + '">Reply</button>' +
+          '<button class="del" type="button" data-idel="' + esc(f.id) + '">Dismiss</button>')).join('') : '<p class="how">No ideas yet.</p>');
     $('admbody').querySelectorAll('[data-idel]').forEach(b => b.onclick = async () => {
       b.disabled = true;
       try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.idel } }); await load(); }
       catch (e){ b.disabled = false; alert(e.message); }
     });
+    $('admbody').querySelectorAll('[data-apply]').forEach(b => b.onclick = async () => {
+      if (!confirm('Show them by this name everywhere on the site? They’ll get a note saying it’s done.')) return;
+      b.disabled = true;
+      try { const r = await TT.api('/api/forum', { method:'POST', body:{ action:'nameapply', request:b.dataset.apply } });
+            if (!r.told) alert('Done. (They weren’t told: the notice table isn’t there yet, SETUP.md.)'); await load(); }
+      catch (e){ b.disabled = false; alert(e.message); }
+    });
+    wireReplies($('admbody'));
+  }
+  /* a reply to one person's request, under its row: it pops up on their screen next time they open the
+     site, from "MSC Unofficial" (api/_notice.js finds who sent it; their address never comes here) */
+  function wireReplies(box){
+    box.querySelectorAll('[data-reply]').forEach(b => b.onclick = () => {
+      const row = b.closest('.adminrow');
+      let f = row.nextElementSibling;
+      if (f && f.classList.contains('admreply')){ f.remove(); return; }
+      f = document.createElement('div'); f.className = 'admreply';
+      f.innerHTML = '<textarea maxlength="600" rows="3" placeholder="Your reply. They’ll see it from MSC Unofficial, not from you."></textarea>' +
+        '<div class="pfrow"><button class="btn primary" type="button">Send</button><span class="pfmsg" aria-live="polite"></span></div>';
+      row.after(f);
+      const ta = f.querySelector('textarea'), send = f.querySelector('.btn'), msg = f.querySelector('.pfmsg');
+      ta.focus();
+      send.onclick = async () => {
+        const t = ta.value.trim(); if (t.length < 2){ msg.textContent = 'Write a reply first.'; return; }
+        send.disabled = true; msg.textContent = 'Sending…';
+        try { await TT.api('/api/forum', { method:'POST', body:{ action:'noticesend', request:b.dataset.reply, body:t } });
+              msg.textContent = 'Sent. It shows on their screen next time they open the site.'; ta.disabled = true; }
+        catch (e){ msg.textContent = e.message; send.disabled = false; }
+      };
+    });
   }
   /* The weekly poll's planner: every school week from now to Year 12's last term before the HSC (the
-     server's list, api/_poll.js schoolWeeks), one form for the week picked, and the list under it.
-     Edits wait as unsaved changes (pollDrafts, kept while the games page is open) until the Save bar
-     sends them all at once (pollbatch), so many weeks can be set up without a reload after each. A
-     question that has opened (this week's, live, and every past one) is locked: no Edit, Remove or
-     Collect, and the server refuses any change to it too, so its votes can't be touched. */
+     server's list, api/_poll.js schoolWeeks), one form for the question picked, and the list under it.
+     A week can have one question for everyone, or separate ones for juniors (7 to 10), seniors (11 and
+     12) and Year 12 alone (each student gets the most particular one for them; api/_poll.js pickFor),
+     so a question is a week and who it's for ("2026-11-23|senior"). Edits wait as unsaved changes
+     (pollDrafts, kept while the games page is open) until the Save bar sends them all at once
+     (pollbatch), so many weeks can be set up without a reload after each. A question that has opened
+     (this week's, live, and every past one) is locked: no Edit, Remove or Collect, and the server
+     refuses any change to it too, so its votes can't be touched. */
   function renderPolls(){
     const KINDS = { period:'A period (0 to 7)', student:'A student in their year', teacher:'A teacher', class:'A subject in their year', custom:'Your own answers' };
     /* Monday: how the new question takes over the card. Friday: the winner's celebration. */
     const SHOWS = { surprise:'Surprise me', drop:'The Drop', wreck:'Wrecking ball', topple:'Topple', explode:'Explode', flip:'Flip', slot:'Slot reel' };
     const CELEBS = { surprise:'Surprise me', spotlight:'Spotlight', countdown:'Countdown', curtain:'Curtain', envelope:'Envelope', slot:'Slot machine' };
+    /* who a question is for (needs the database's audience column: data.audiences) */
+    const AUDS = { all:'Everyone', junior:'Juniors (Years 7 to 10)', senior:'Seniors (Years 11 and 12)', y12:'Year 12 only' };
+    const AUD_TAG = { junior:'Juniors', senior:'Seniors', y12:'Year 12' };
+    const AUD_ORDER = ['all', 'junior', 'senior', 'y12'];
+    const keyOf = (w, a) => w + '|' + (AUDS[a] ? a : 'all'), wOf = k => String(k).split('|')[0], aOf = k => String(k).split('|')[1] || 'all';
+    /* changes kept from before groups existed were keyed by week alone */
+    for (const m of [pollDrafts, pollErr]) for (const [k, v] of [...m]) if (!String(k).includes('|')){ m.delete(k); m.set(keyOf(k, 'all'), v && typeof v === 'object' ? Object.assign({ audience:'all' }, v) : v); }
     /* the same default line Home uses when none is written (poll.js revealLine) */
     const autoLine = (q, kind) => {
       q = String(q || '').trim().replace(/[?!.\s]+$/, '');
@@ -5170,39 +5161,43 @@ BUILD.admin = host => {
         return 'The ' + m[1].toLowerCase() + ' ' + m[2] + ' is…';
       return 'And the winner is…';
     };
-    const polls = data.polls || [], saved = new Map(polls.map(p => [p.week, p]));
+    const polls = data.polls || [], saved = new Map(polls.map(p => [keyOf(p.week, p.audience), p]));
     const thisWeek = (data.clock && data.clock.week) || (data.weeks || [''])[0];
     const info = new Map((data.schoolWeeks || []).map(s => [s.week, s]));
+    const draftWeeks = [...pollDrafts.keys()].map(wOf);
     /* the planner's weeks: each school week from now on, any later question set outside them (in the holidays, say), and any week with a change waiting */
-    const plan = [...new Set((data.schoolWeeks || []).map(s => s.week).concat(polls.map(p => p.week), [...pollDrafts.keys()]))]
-      .filter(w => w >= thisWeek || pollDrafts.has(w)).sort();
-    const past = polls.filter(p => p.week < thisWeek && !pollDrafts.has(p.week)).slice(0, 30);
+    const plan = [...new Set((data.schoolWeeks || []).map(s => s.week).concat(polls.map(p => p.week), draftWeeks))]
+      .filter(w => w >= thisWeek || draftWeeks.includes(w)).sort();
+    /* a week's questions (saved or waiting), everyone's first; a week with none has one empty row, for everyone */
+    const keysFor = w => { const ks = AUD_ORDER.map(a => keyOf(w, a)).filter(k => saved.has(k) || pollDrafts.has(k)); return ks.length ? ks : [keyOf(w, 'all')]; };
+    const past = polls.filter(p => p.week < thisWeek && !pollDrafts.has(keyOf(p.week, p.audience))).slice(0, 40);
     const lastSchool = (data.schoolWeeks || []).slice(-1)[0];
     /* opened (live or past) or voted on: nothing about it can change. This week can still get a question if it has none. */
-    const locked = w => { const p = saved.get(w); return !!p && (w <= thisWeek || (p.voters || 0) > 0); };
-    const lockWhy = w => { const n = (saved.get(w) || {}).voters || 0;
+    const locked = k => { const p = saved.get(k); return !!p && (wOf(k) <= thisWeek || (p.voters || 0) > 0); };
+    const lockWhy = k => { const n = (saved.get(k) || {}).voters || 0;
       return n ? n + (n === 1 ? ' person has' : ' people have') + ' voted on this one, so it can’t be changed.' : 'This week’s question is live, so it can’t be changed.'; };
     const clean = s => String(s || '').replace(/\s+/g, ' ').trim();
     const BLANK = { question:'', kind:'student', pick:1, exact:false, anim:'surprise', celebrate:'surprise', reveal:'', choices:[] };
-    const asVals = p => ({ week:p.week, question:clean(p.question), kind:p.kind, pick:p.pick || 1, exact:!!(p.exact && p.pick > 1),
+    const asVals = p => ({ week:p.week, audience:AUDS[p.audience] ? p.audience : 'all', question:clean(p.question), kind:p.kind, pick:p.pick || 1, exact:!!(p.exact && p.pick > 1),
       anim:SHOWS[p.anim] ? p.anim : 'surprise', celebrate:CELEBS[p.celebrate] ? p.celebrate : 'surprise', reveal:clean(p.reveal),
       choices:p.kind === 'custom' ? (p.choices || []).map(clean).filter(Boolean) : [] });
     const formVals = () => {
       const pv = $('pfpick').value, kind = $('pfkind').value;
-      return { week:pollAt, question:clean($('pfq').value), kind, pick:parseInt(pv, 10) || 1, exact:/x$/.test(pv),
+      return { week:wOf(pollAt), audience:aOf(pollAt), question:clean($('pfq').value), kind, pick:parseInt(pv, 10) || 1, exact:/x$/.test(pv),
         anim:$('pfanim').value, celebrate:$('pfcel').value, reveal:clean($('pfline').value),
         choices:kind === 'custom' ? $('pfchoices').value.split('\n').map(clean).filter(Boolean) : [] };
     };
     const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);       // (both built in the same key order)
-    /* what a week holds now: its change waiting to be saved, or else what's saved */
-    const current = w => { const d = pollDrafts.get(w); if (d && !d.remove) return d; const p = saved.get(w); return p ? asVals(p) : null; };
+    /* what a question holds now: its change waiting to be saved, or else what's saved */
+    const current = k => { const d = pollDrafts.get(k); if (d && !d.remove) return d; const p = saved.get(k); return p ? asVals(p) : null; };
     const day = w => new Date(w + 'T00:00:00').toLocaleDateString(undefined, { day:'numeric', month:'short' });
     const termOf = w => { const s = info.get(w); return s ? 'Term ' + s.term + ', ' + s.year : 'Outside term'; };
     const wkOf = w => { const s = info.get(w); return s ? 'Week ' + s.n : 'Holidays'; };
     const detail = v => (KINDS[v.kind] || v.kind) + (v.pick > 1 ? (v.exact ? ' · exactly ' : ' · up to ') + v.pick : '') +
       (v.kind === 'custom' ? ': ' + v.choices.join(', ') : '') + ' · ' + (SHOWS[v.anim] || v.anim) + ' / ' + (CELEBS[v.celebrate] || v.celebrate);
-    const firstFree = () => plan.find(w => !locked(w) && !current(w)) || plan.find(w => !locked(w)) || plan[0];
-    if (!plan.includes(pollAt)) pollAt = firstFree();
+    const firstFree = () => { const w = plan.find(w => keysFor(w).every(k => !locked(k) && !current(k))) || plan.find(w => !locked(keyOf(w, 'all'))) || plan[0]; return keyOf(w, 'all'); };
+    if (!pollAt || !plan.includes(wOf(pollAt)) || !String(pollAt).includes('|')) pollAt = firstFree();
+    if (!data.audiences && aOf(pollAt) !== 'all') pollAt = keyOf(wOf(pollAt), 'all');
     const opts = (o, sel) => Object.entries(o).map(([k, v]) => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(v) + '</option>').join('');
     $('admnote').textContent = 'A new question opens every Monday at 9:30. Voters see the live results; the winner is announced Friday at noon, when voting closes. ' +
       'Votes are anonymous: nobody, moderators included, can see who picked what. Once a question has opened it can’t be changed or removed, so its votes are safe.';
@@ -5210,7 +5205,10 @@ BUILD.admin = host => {
       '<div class="pollform" id="pollform">' +
         '<h4>Set a question</h4>' +
         '<label>Week<select id="pfweek"></select></label>' +
-        '<p class="pfhint pfstate" id="pfstate" aria-live="polite"></p>' +
+        '<label' + (data.audiences ? '' : ' hidden') + '>Who it’s for<select id="pfaud">' + opts(AUDS, aOf(pollAt)) + '</select></label>' +
+        '<p class="pfhint pfstate wide" id="pfstate" aria-live="polite"></p>' +
+        (data.audiences ? '<p class="pfhint wide">Each student gets the most particular question for them: Year 12 their own, else the seniors’, else everyone’s; Year 11 the seniors’, else everyone’s; Years 7 to 10 the juniors’, else everyone’s.</p>'
+          : '<p class="pfhint wide">Separate questions for juniors, seniors and Year 12 need one change to the database first (SETUP.md, the weekly poll).</p>') +
         '<label class="wide">Question<input id="pfq" maxlength="120" placeholder="Most likely to become state rank?" autocomplete="off"></label>' +
         '<label>People answer with<select id="pfkind">' + opts(KINDS, 'student') + '</select></label>' +
         '<label>How many they pick<select id="pfpick"><option value="1">One</option><option value="2">Up to two</option><option value="2x">Exactly two</option>' +
@@ -5243,7 +5241,10 @@ BUILD.admin = host => {
     };
     /* the line's placeholder is what Home would say if it's left empty */
     const lineHint = () => { $('pfline').placeholder = autoLine($('pfq').value, $('pfkind').value) + '  (left empty, it says this)'; };
-    const mark = w => locked(w) ? ((saved.get(w) || {}).voters ? ' · voted, locked' : ' · live, locked') : pollDrafts.has(w) ? (pollDrafts.get(w).remove ? ' · to remove' : ' · not saved') : saved.has(w) ? ' · set' : '';
+    /* a week in the picker: the state of its questions, all groups together */
+    const mark = w => { const ks = keysFor(w).filter(k => saved.has(k) || pollDrafts.has(k)), n = ks.length;
+      return ks.some(locked) ? (ks.some(k => (saved.get(k) || {}).voters) ? ' · voted, locked' : ' · live, locked')
+        : ks.some(k => pollDrafts.has(k)) ? ' · not saved' : n ? ' · set' + (n > 1 ? ' (' + n + ' groups)' : '') : ''; };
     const paintWeeks = () => {
       let html = '', grp = null;
       for (const w of plan){
@@ -5252,54 +5253,57 @@ BUILD.admin = host => {
         html += '<option value="' + w + '">' + esc(wkOf(w) + ' · ' + day(w) + (w === thisWeek ? ' (this week)' : '') + mark(w)) + '</option>';
       }
       $('pfweek').innerHTML = html + (grp !== null ? '</optgroup>' : '');
-      $('pfweek').value = pollAt;
+      $('pfweek').value = wOf(pollAt);
+      $('pfaud').value = aOf(pollAt);
     };
     const paintState = () => {
-      const w = pollAt, p = saved.get(w), d = pollDrafts.get(w), err = pollErr.get(w), el = $('pfstate');
-      el.textContent = locked(w) ? lockWhy(w)
+      const k = pollAt, p = saved.get(k), d = pollDrafts.get(k), err = pollErr.get(k), el = $('pfstate');
+      const whose = data.audiences && aOf(k) !== 'all' ? ' for ' + AUD_TAG[aOf(k)] : '';
+      el.textContent = locked(k) ? lockWhy(k)
         : err ? err
         : d && d.remove ? 'Removed when you save. Change anything to keep it.'
         : d ? (p ? 'Changed, not saved yet.' : 'New, not saved yet.')
-        : p ? 'Saved.' : 'Nothing set for this week yet.';
-      el.classList.toggle('err', !!err && !locked(w));
+        : p ? 'Saved.' : 'Nothing set' + whose + ' for this week yet.';
+      el.classList.toggle('err', !!err && !locked(k));
     };
     const fill = () => {
-      const w = pollAt, v = current(w) || BLANK, lock = locked(w);
+      const k = pollAt, v = current(k) || BLANK, lock = locked(k);
       $('pfq').value = v.question; $('pfkind').value = KINDS[v.kind] ? v.kind : 'student';
       $('pfpick').value = String(v.pick || 1) + (v.exact && v.pick > 1 ? 'x' : '');
       $('pfanim').value = v.anim; $('pfcel').value = v.celebrate; $('pfline').value = v.reveal || ''; $('pfchoices').value = (v.choices || []).join('\n');
       FIELDS.forEach(id => { $(id).disabled = lock; });
       kindHint(); lineHint(); paintState();
     };
-    /* keep what the form says as this week's change (or drop the change, if it's back to what's saved) */
+    /* keep what the form says as this question's change (or drop the change, if it's back to what's saved) */
     const stage = () => {
-      const w = pollAt; if (!w || locked(w)) return;
-      const v = formVals(), p = saved.get(w);
-      if (same(v, p ? asVals(p) : Object.assign({ week:w }, BLANK))) pollDrafts.delete(w); else pollDrafts.set(w, v);
-      pollErr.delete(w); pollNote = '';
+      const k = pollAt; if (!k || locked(k)) return;
+      const v = formVals(), p = saved.get(k);
+      if (same(v, p ? asVals(p) : Object.assign({ week:wOf(k), audience:aOf(k) }, BLANK))) pollDrafts.delete(k); else pollDrafts.set(k, v);
+      pollErr.delete(k); pollNote = '';
       paintState(); paintWeeks(); paintPlan(); paintBar();
     };
-    const go = w => { pollAt = w; paintWeeks(); fill(); paintPlan(); };
+    const go = k => { pollAt = k; paintWeeks(); fill(); paintPlan(); };
     const thisYear = String(new Date().getFullYear());
-    const rowHtml = w => {
-      const p = saved.get(w), d = pollDrafts.get(w), lock = locked(w), v = current(w), err = pollErr.get(w);
+    const rowHtml = (k, first) => {
+      const w = wOf(k), a = aOf(k), p = saved.get(k), d = pollDrafts.get(k), lock = locked(k), v = current(k), err = pollErr.get(k);
       const tags = [];
-      if (w === thisWeek) tags.push('<span class="ptag">This week</span>');
+      if (data.audiences && a !== 'all') tags.push('<span class="ptag aud">' + AUD_TAG[a] + '</span>');
+      if (w === thisWeek && first) tags.push('<span class="ptag">This week</span>');
       if (lock) tags.push('<span class="ptag">' + (p.voters ? 'Voted on' : 'Live') + ', locked</span>');
       if (d) tags.push(d.remove ? '<span class="ptag rm">Removed when you save</span>' : '<span class="ptag new">' + (p ? 'Changed' : 'New') + ', not saved</span>');
       const sub = !v || v.kind !== 'class' ? ''
         : d && !d.remove ? ' · subjects collected when you save'
         : ' · subjects: ' + ((p.subjectsDone || []).length ? 'Years ' + p.subjectsDone.slice().sort((a, b) => a - b).join(', ') : 'not collected yet');
       const collect = p && p.kind === 'class' && !lock && !d && w > thisWeek && (p.subjectsDone || []).length < 6 && w.slice(0, 4) <= thisYear;
-      return '<div class="adminrow pollrow' + (w === pollAt ? ' on' : '') + '">' +
-        '<span class="wk">' + esc(wkOf(w)) + '<br>' + esc(day(w)) + '</span>' +
+      return '<div class="adminrow pollrow' + (k === pollAt ? ' on' : '') + (first ? '' : ' more') + '">' +
+        '<span class="wk">' + (first ? esc(wkOf(w)) + '<br>' + esc(day(w)) : '') + '</span>' +
         '<span class="nm">' + (v ? '<b>' + esc(v.question || 'No question yet') + '</b><em>' + esc(detail(v) + sub) + '</em>' : '<em>Nothing set</em>') +
           (tags.length ? '<span class="ptags">' + tags.join('') + '</span>' : '') + (err ? '<em class="perr">' + esc(err) + '</em>' : '') + '</span>' +
         '<span class="pact">' + (p ? '<span class="vt">' + p.voters + ' voted</span>' : '') +
-        (collect ? '<button class="btn" type="button" data-collect="' + w + '">Collect subjects</button>' : '') +
-        (lock ? '' : '<button class="btn" type="button" data-edit="' + w + '">' + (v ? 'Edit' : 'Set') + '</button>') +
-        (d ? '<button class="btn" type="button" data-undo="' + w + '">Undo</button>'
-           : p && !lock ? '<button class="del" type="button" data-pdel="' + w + '">Remove</button>' : '') +
+        (collect ? '<button class="btn" type="button" data-collect="' + k + '">Collect subjects</button>' : '') +
+        (lock ? '' : '<button class="btn" type="button" data-edit="' + k + '">' + (v ? 'Edit' : 'Set') + '</button>') +
+        (d ? '<button class="btn" type="button" data-undo="' + k + '">Undo</button>'
+           : p && !lock ? '<button class="del" type="button" data-pdel="' + k + '">Remove</button>' : '') +
       '</span></div>';
     };
     const paintPlan = () => {
@@ -5307,7 +5311,7 @@ BUILD.admin = host => {
       for (const w of plan){
         const g = termOf(w);
         if (g !== grp){ html += (grp !== null ? '</div>' : '') + '<h5 class="pollterm">' + esc(g) + '</h5><div>'; grp = g; }
-        html += rowHtml(w);
+        html += keysFor(w).map((k, i) => rowHtml(k, i === 0)).join('');
       }
       const box = $('pollplan');
       box.innerHTML = html + (grp !== null ? '</div>' : '');
@@ -5320,8 +5324,9 @@ BUILD.admin = host => {
         paintWeeks(); paintPlan(); paintBar();
       });
       box.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => {
-        pollDrafts.set(b.dataset.pdel, { week:b.dataset.pdel, remove:true }); pollErr.delete(b.dataset.pdel);
-        if (b.dataset.pdel === pollAt) fill();
+        const k = b.dataset.pdel;
+        pollDrafts.set(k, { week:wOf(k), audience:aOf(k), remove:true }); pollErr.delete(k);
+        if (k === pollAt) fill();
         paintWeeks(); paintPlan(); paintBar();
       });
       box.querySelectorAll('[data-collect]').forEach(b => b.onclick = async () => {
@@ -5331,9 +5336,10 @@ BUILD.admin = host => {
     };
     const paintPast = () => {
       const box = $('pollpast'); if (!box) return;
-      box.innerHTML = past.map(p => { const v = asVals(p);
+      box.innerHTML = past.map(p => { const v = asVals(p), a = v.audience;
         return '<div class="adminrow pollrow"><span class="wk">' + esc(day(p.week)) + '</span>' +
-          '<span class="nm"><b>' + esc(v.question) + '</b><em>' + esc(detail(v)) + '</em></span>' +
+          '<span class="nm"><b>' + esc(v.question) + '</b><em>' + esc(detail(v)) + '</em>' +
+            (data.audiences && a !== 'all' ? '<span class="ptags"><span class="ptag aud">' + AUD_TAG[a] + '</span></span>' : '') + '</span>' +
           '<span class="vt">' + p.voters + ' voted</span></div>'; }).join('');
     };
     const paintSugg = () => {
@@ -5341,6 +5347,7 @@ BUILD.admin = host => {
       box.innerHTML = list.length ? list.map(sg => '<div class="adminrow pollrow">' +
           '<span class="nm"><b>' + esc(sg.question) + '</b><em>' + esc(KINDS[sg.kind] || 'No answer type given') + ' · ' + esc(sg.by) + ' · ' + esc(seenAgo(sg.at)) + '</em></span>' +
           '<button class="btn" type="button" data-use="' + esc(sg.id) + '">Use</button>' +
+          '<button class="btn" type="button" data-reply="' + esc(sg.id) + '">Reply</button>' +
           '<button class="del" type="button" data-sdel="' + esc(sg.id) + '">Dismiss</button></div>').join('')
         : '<p class="how">None yet.</p>';
       box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
@@ -5350,6 +5357,7 @@ BUILD.admin = host => {
         kindHint(); lineHint(); stage();
         $('pollform').scrollIntoView({ block:'start' }); try { $('pfq').focus({ preventScroll:true }); } catch {}
       });
+      wireReplies(box);
       box.querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => {
         b.disabled = true;
         try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.sdel } });
@@ -5372,24 +5380,24 @@ BUILD.admin = host => {
       catch (e){ pollNote = 'Saved, but the list didn’t refresh (' + e.message + ').'; paintBar(); }
     };
     /* a class question: every subject each year takes, a slice of the year at a time (years already done are skipped) */
-    const collect = async w => {
-      const missed = [];
+    const collect = async k => {
+      const w = wOf(k), missed = [];
       for (let y = 7; y <= 12; y++){
         let from = 0;
         try {
           while (from !== null){
             pollBusy = 'Collecting Year ' + y + ' subjects for ' + day(w) + '…'; paintBar();
-            const r = await TT.api('/api/forum', { method:'POST', body:{ action:'pollsubjects', week:w, year:y, from } });
+            const r = await TT.api('/api/forum', { method:'POST', body:{ action:'pollsubjects', week:w, audience:aOf(k), year:y, from } });
             from = r.next;
           }
         } catch (e){ missed.push(y); }
       }
-      if (missed.length) pollErr.set(w, 'Year ' + missed.join(', ') + ' subjects didn’t collect (they pick from their own until you collect again).');
+      if (missed.length) pollErr.set(k, 'Year ' + missed.join(', ') + ' subjects didn’t collect (they pick from their own until you collect again).');
     };
     const save = async () => {
       if (!pollDrafts.size || pollBusy) return;
       const sent = new Map(pollDrafts), set = [], remove = [];
-      for (const [w, d] of sent) if (d.remove) remove.push(w); else set.push(d);
+      for (const [k, d] of sent) if (d.remove) remove.push({ week:wOf(k), audience:aOf(k) }); else set.push(d);
       pollBusy = 'Saving ' + (sent.size === 1 ? '1 change' : sent.size + ' changes') + '…'; pollNote = ''; paintBar();
       let res;
       try { res = await TT.api('/api/forum', { method:'POST', body:{ action:'pollbatch', set, remove } }); }
@@ -5397,15 +5405,16 @@ BUILD.admin = host => {
       let ok = 0, bad = 0;
       const classes = [];
       for (const r of res.results || []){
+        const k = keyOf(r.week, r.audience);
         if (r.ok){
-          ok++; const d = sent.get(r.week);
-          if (d && !d.remove && d.kind === 'class') classes.push(r.week);
-          if (pollDrafts.get(r.week) === d) pollDrafts.delete(r.week);          // (unless it was changed again while saving)
-          pollErr.delete(r.week);
-        } else { bad++; pollErr.set(r.week, r.error || 'Couldn’t save that.'); }
+          ok++; const d = sent.get(k);
+          if (d && !d.remove && d.kind === 'class') classes.push(k);
+          if (pollDrafts.get(k) === d) pollDrafts.delete(k);          // (unless it was changed again while saving)
+          pollErr.delete(k);
+        } else { bad++; pollErr.set(k, r.error || 'Couldn’t save that.'); }
       }
       /* not for a question that's already live (it can't change), nor next year's (its classes aren't set yet; collect them once it starts) */
-      for (const w of classes) if (w > thisWeek && w.slice(0, 4) <= thisYear) await collect(w);
+      for (const k of classes) if (wOf(k) > thisWeek && wOf(k).slice(0, 4) <= thisYear) await collect(k);
       pollBusy = '';
       pollNote = bad ? ok + ' saved, ' + bad + ' not (marked in the list).' : 'Saved ' + (ok === 1 ? '1 change.' : ok + ' changes.');
       await refresh();
@@ -5417,7 +5426,9 @@ BUILD.admin = host => {
       pollDrafts.clear(); pollErr.clear(); pollNote = '';
       fill(); paintWeeks(); paintPlan(); paintBar();
     };
-    $('pfweek').onchange = () => go($('pfweek').value);
+    /* a new week opens on its first question (everyone's if it has none); a new group keeps the week */
+    $('pfweek').onchange = () => go(keysFor($('pfweek').value)[0]);
+    $('pfaud').onchange = () => go(keyOf(wOf(pollAt), $('pfaud').value));
     $('pfq').addEventListener('input', () => { lineHint(); stage(); });
     $('pfkind').addEventListener('change', () => { kindHint(); lineHint(); stage(); });
     ['pfpick', 'pfanim', 'pfcel'].forEach(id => $(id).addEventListener('change', stage));

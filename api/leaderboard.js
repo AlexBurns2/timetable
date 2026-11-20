@@ -13,10 +13,42 @@
  *   game_score(game, metric, period, email, name, score, updated_at,
  *              primary key (game, metric, period, email))
  *   period is 'all' or 'w<week>'.
+ *
+ * Year groups: every board is your own year's unless you ask for another
+ * (?year=7…12) or everyone's (?year=all). Scores are kept as before (one row
+ * per person); the year comes from the school directory when a board is read,
+ * so someone moving up a year moves boards with them.
+ *
+ * Six Degrees, Odd One Out and Classroom are run by the server (_runs.js:
+ * POST {action:"run", …}) and record their own scores; a score posted for them
+ * is refused. Snake, 2048, Typing, Reaction and Tetris need a ticket from when
+ * the game started (POST {action:"ticket", game}), and the score has to fit the
+ * time since.
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, displayNames, withName, forgetNameOverrides } from "./_names.js";
+import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList } from "./_names.js";
+import { runHandler, RUN_GAMES, issueTicket, ticketAge, scoreFits, TICKET_GAMES } from "./_runs.js";
+
+/* the server runs Six Degrees' map-making and the runs: give it time */
+export const config = { maxDuration: 60 };
+
+/* ── year groups ─────────────────────────────────────────────────────────
+   Who is in which year, from the copy of the school directory (rosterList,
+   refreshed nightly). A board for one year is the full board filtered to them. */
+export async function yearMap() {
+  try { return new Map((await rosterList()).filter(p => p.email && p.year).map(p => [p.email, String(p.year)])); }
+  catch { return new Map(); }
+}
+/* which board was asked for: "all", a year 7–12, or (nothing asked) your own year, else everyone's */
+export function boardScope(raw, me, years) {
+  const v = String(raw == null ? "" : raw).toLowerCase();
+  if (v === "all") return null;
+  const n = parseInt(v, 10);
+  if (n >= 7 && n <= 12) return String(n);
+  const mine = me.year || years.get(me.email);
+  return mine ? String(mine) : null;
+}
 import { siteSettings, setSiteSetting } from "./_settings.js";
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
@@ -42,6 +74,41 @@ const MAX_SCORE = 100000000;
  * so it is the closest thing to a sign-in log; game scores and daily results
  * fill in anyone who played before settings synced, and give an activity count.
  * Read-only — it never writes, and it is gated to admins by the caller. */
+/* every email in a table (a page of 1000 at a time, the database's limit, up to 60 pages); a missing
+   table is simply empty */
+async function emailsIn(table) {
+  const out = new Set();
+  for (let from = 0; from < 60000; from += 1000) {
+    const { data, error } = await db.from(table).select("email").range(from, from + 999);
+    if (error || !data) break;
+    data.forEach(r => r.email && out.add(String(r.email).toLowerCase()));
+    if (data.length < 1000) break;
+  }
+  return out;
+}
+/* each year's students (with classes here), and how many of them have done each thing */
+async function siteReach() {
+  const roster = (await rosterList()).filter(p => p.year && p.hasClasses !== false);
+  const groups = { signedIn: ["prefs", "onboarding"], played: ["game_score", "daily_result", "conn_result", "whose_result", "sprint_best", "tetris_score", "zen_board"],
+                   voted: ["poll_voter"], posted: ["forum_post"] };
+  const sets = {};
+  for (const [k, tables] of Object.entries(groups)) {
+    const s = new Set();
+    for (const t of tables) (await emailsIn(t)).forEach(e => s.add(e));
+    sets[k] = s;
+  }
+  /* anyone who played, voted or posted has signed in, whether or not their settings were saved */
+  ["played", "voted", "posted"].forEach(k => sets[k].forEach(e => sets.signedIn.add(e)));
+  const years = [];
+  for (const y of [7, 8, 9, 10, 11, 12]) {
+    const people = roster.filter(p => Number(p.year) === y).map(p => String(p.email).toLowerCase());
+    const row = { year: y, total: people.length };
+    for (const k of Object.keys(groups)) row[k] = people.filter(e => sets[k].has(e)).length;
+    years.push(row);
+  }
+  return { years, at: new Date().toISOString() };
+}
+
 async function siteUsers() {
   const out = new Map(), names = await displayNames();
   const touch = (email, when, key) => {
@@ -72,8 +139,20 @@ async function siteUsers() {
   return [...out.values()].sort((a, b) => String(b.last || "").localeCompare(String(a.last || "")));
 }
 
-async function board(game, metric, period, dir, meEmail, withEmail) {
+async function board(game, metric, period, dir, meEmail, withEmail, year, years) {
   const asc = dir === "min", names = await displayNames();
+  /* one year's board: everyone's scores, filtered to that year, ranked here */
+  if (year) {
+    const { data } = await db.from("game_score")
+      .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
+      .order("score", { ascending: asc }).limit(5000);
+    const rows = (data || []).filter(r => years.get(r.email) === year);
+    const mine = rows.find(r => r.email === meEmail);
+    const meBest = mine ? mine.score : null;
+    const meRank = meBest == null ? null : 1 + rows.filter(r => asc ? r.score < meBest : r.score > meBest).length;
+    return { year, top: rows.slice(0, withEmail ? 200 : 20).map(r => { const o = { name: withName(names, r.email, r.name), score: r.score, you: r.email === meEmail };
+      if (withEmail) o.email = r.email; return o; }), meBest, meRank };
+  }
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
     .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit
@@ -146,7 +225,7 @@ async function siteStats() {
   const perGame = {};
   for (const r of scores || []) (perGame[r.game] = perGame[r.game] || new Set()).add(r.email);
   const perMode = {};
-  for (const r of states || []) if (r.email !== "mahjong") perMode[r.mode] = (perMode[r.mode] || 0) + 1;
+  for (const r of states || []) if (r.email !== "mahjong" && !/^run:/.test(r.mode)) perMode[r.mode] = (perMode[r.mode] || 0) + 1;
   const mjState = (mj && mj[0] && mj[0].state) || {};
   return {
     users: { total: users.filter(u => !u.pending).length, day: seen(864e5), week: seen(7 * 864e5),
@@ -166,7 +245,6 @@ async function siteStats() {
   };
 }
 
-const MIN_REACTION_MS = 60;              // under this isn't a human reaction (the page refuses it too)
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -251,6 +329,15 @@ export default async function handler(req, res) {
       dark: f("dark"), glassAnim: f("glassAnim"), emoji: f("emoji"), accentIcons: f("accentIcons"), clouds: f("clouds"), zen: f("zen") });
   }
 
+  /* moderator-only: how far the site has spread, year by year: of the students in each year (with
+     classes here), how many have signed in, played a game, voted in a poll, posted on the forum.
+     Counts only; read-only. */
+  if (req.method === "GET" && src.reach) {
+    if (!isAdmin(me.email))
+      return res.status(403).json({ error: "Only moderators can see this." });
+    return res.status(200).json(await siteReach());
+  }
+
   /* moderator-only: how much each part of the site is used. Read-only counts. */
   if (req.method === "GET" && src.stats) {
     if (!isAdmin(me.email))
@@ -286,6 +373,22 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, name: name || nameFromEmail(email) });
   }
 
+  /* the games the server runs (Six Degrees, Odd One Out, Classroom) */
+  if (req.method === "POST" && src.action === "run") {
+    const record = async (g, m, score, week) => {
+      const name = nameFromEmail(me.email), d = DIRS[g + ":" + m];
+      await writeBest(g, m, "all", me.email, name, score, d);
+      await writeBest(g, m, "w" + week, me.email, name, score, d);
+    };
+    return runHandler(req, res, me, src, record);
+  }
+  /* a ticket for a game played in the page (Snake, 2048, Typing, Reaction, Tetris) */
+  if (req.method === "POST" && src.action === "ticket") {
+    try { const ticket = await issueTicket(me, String(src.game || ""));
+      return ticket ? res.status(200).json({ ticket }) : res.status(400).json({ error: "Unknown game." }); }
+    catch (e) { console.error("ticket:", e.message); return res.status(502).json({ error: "Couldn't start that." }); }
+  }
+
   const game = String(src.game || "");
   const metric = String(src.metric || "");
   const dir = DIRS[game + ":" + metric];
@@ -319,8 +422,14 @@ export default async function handler(req, res) {
   } else if (req.method === "POST") {
     const score = Math.round(Number(src.score));
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
-    /* faster than a person can react: an autoclicker or a script, not a score */
-    if (game === "react" && metric === "fastest" && score < MIN_REACTION_MS) return res.status(400).json({ error: "That's faster than anyone can react." });
+    /* the games the server runs keep their own scores */
+    if (RUN_GAMES.has(game)) return res.status(400).json({ error: "This game records its own scores." });
+    /* the rest: a ticket from when the game started, and a score that fits the time since */
+    if (TICKET_GAMES.has(game)) {
+      const age = await ticketAge(me, game, src.ticket);
+      if (age == null) return res.status(400).json({ error: "Start a new game to post a score." });
+      if (!scoreFits(game, metric, score, age)) return res.status(400).json({ error: "That score doesn't fit the game." });
+    }
     const name = nameFromEmail(me.email);
     try {
       await writeBest(game, metric, "all", me.email, name, score, dir);
@@ -330,9 +439,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const years = await yearMap();
+  /* a moderator's edit answers with everyone's board (the moderator page shows them all) */
+  const scope = isOwner && ["wipe", "set", "delete"].includes(src.action) ? null : boardScope(src.year, me, years);
   return res.status(200).json({
-    week: await board(game, metric, wperiod, dir, me.email, isOwner),
-    all:  await board(game, metric, "all", dir, me.email, isOwner),
+    week: await board(game, metric, wperiod, dir, me.email, isOwner, scope, years),
+    all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years),
+    year: scope || "all", myYear: me.year || years.get(me.email) || null,
     canWipe: isOwner
   });
 }

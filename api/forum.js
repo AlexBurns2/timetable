@@ -7,6 +7,12 @@
  * POST /api/forum {action:'delete', id}  → author (or an admin) removes a post
  * POST /api/forum {action:'react', id, emoji} → add that reaction, or take it
  *                                         back if you'd already added it
+ * A thread can be for everyone, your year, or one of your classes: {body, scope:'all' | 'year' |
+ * 'class:<code>'} (you have to be in the class); replies go where their thread is. You only see the
+ * ones for you (moderators see all). Needs the scope columns below; until then everything is for
+ * everyone, as before.
+ * Replies from the moderators to one person, and name-change requests, ride here too (_notice.js):
+ *   GET ?notices=1; POST {action:'noticeread' | 'noticesend' | 'requestname' | 'nameapply', …}
  *
  * The weekly anonymous poll on Home rides on this route too (see _poll.js):
  *   GET  /api/forum?poll=1 | history | admin
@@ -41,13 +47,47 @@
  *     primary key (post_id, email, emoji)
  *   );
  *   create index forum_reaction_post_idx on forum_reaction (post_id);
+ *
+ * Who a thread is for (run once; every existing post stays "for everyone"; nothing is deleted):
+ *   alter table forum_post add column if not exists scope      text not null default 'all';
+ *   alter table forum_post add column if not exists scope_name text;
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
 import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
 import { displayNames, withName, rosterList } from "./_names.js";
-import { pollGet, pollPost, pollPreview, pollClock } from "./_poll.js";
+import { pollGet, pollPost, pollPreview, pollClock, pickFor, hasAudience } from "./_poll.js";
 import { resolveYear } from "./_daily.js";
+import { fetchAsOwner } from "./timetable.js";
+import { noticeGet, noticePost } from "./_notice.js";
+
+/* ── who a thread is for ─────────────────────────────────────────────── */
+let scopeCol = { at: 0, ok: null };
+async function hasScope() {
+  if (scopeCol.ok !== null && Date.now() - scopeCol.at < 10 * 60e3) return scopeCol.ok;
+  const { error } = await db.from("forum_post").select("scope").limit(1);
+  scopeCol = { at: Date.now(), ok: !error };
+  return scopeCol.ok;
+}
+/* someone's classes, code → subject, from their timetable (read as the server account), kept 6 hours */
+const NOT_A_CLASS = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch|break)\b/i;
+const tidySubject = name => String(name || "").replace(/\s*\b(yr|year)\s*\.?\s*\d{1,2}\b\s*$/i, "")
+  .replace(/^\d{1,2}\s*[A-Za-z]{2,}[A-Za-z0-9]*(?:\s+[A-Za-z]?\d{1,2})?\s+(?=\S)/, "").replace(/^[\s:\-–—]+/, "").trim();
+const classCache = new Map();
+async function classesOf(email) {
+  const hit = classCache.get(email);
+  if (hit && Date.now() - hit.at < 6 * 3600e3) return hit.map;
+  const raw = await fetchAsOwner("/api/timetable/" + encodeURIComponent(email));
+  const rows = Array.isArray(raw) ? raw : (raw && (raw.timetable || raw.Timetable)) || [];
+  const map = new Map();
+  for (const r of rows) {
+    const code = String(r.ClassCode || r.classCode || "").trim(), subject = tidySubject(r.CourseName || r.courseName || "");
+    if (code && subject && !NOT_A_CLASS.test(subject) && !map.has(code)) map.set(code, subject);
+  }
+  if (classCache.size > 2000) classCache.clear();
+  classCache.set(email, { at: Date.now(), map });
+  return map;
+}
 /* a student's year when the login didn't carry it: the (cached) directory first,
    so staff, who aren't in it, cost nothing; the slower lookup only if needed */
 async function yearOf(me) {
@@ -109,7 +149,10 @@ export default async function handler(req, res) {
   if (!me && req.method === "GET" && req.query.poll === "1") {
     try {
       const clock = pollClock();
-      const { data } = await db.from("poll").select("week, question, kind, anim, celebrate, reveal").eq("week", clock.week).maybeSingle();
+      /* everyone's question (a group's own needs to know whose year you're in, so it waits for you to sign in) */
+      const A = await hasAudience();
+      const { data: rows } = await db.from("poll").select("week, question, kind, anim, celebrate, reveal" + (A ? ", audience" : "")).eq("week", clock.week);
+      const data = (rows || []).find(r => !r.audience || r.audience === "all") || null;
       /* how many people have voted, all years together: a count, nothing more */
       let total = 0;
       if (data) {
@@ -126,7 +169,11 @@ export default async function handler(req, res) {
   if (req.method === "GET" && req.query.pollpeek) {
     try {
       const clock = pollClock();
-      const { data: p } = await db.from("poll").select("week").eq("week", clock.week).maybeSingle();
+      /* your group's question, or everyone's */
+      if (!me.year) me.year = await yearOf(me).catch(() => null);
+      const A = await hasAudience();
+      const { data: rows } = await db.from("poll").select("week" + (A ? ", audience" : "")).eq("week", clock.week);
+      const p = pickFor(rows, me);
       if (!p) return res.status(200).json({ week: clock.week, has: false });
       const { data: v } = await db.from("poll_voter").select("email").eq("week", p.week).eq("email", me.email).maybeSingle();
       return res.status(200).json({ week: p.week, has: true, open: clock.phase === "open", voted: !!v });
@@ -174,6 +221,7 @@ export default async function handler(req, res) {
     if (!me.year) me.year = await yearOf(me);
     return pollGet(req, res, me, NAMES);
   }
+  if (req.method === "GET" && req.query.notices) return noticeGet(req, res, me);
   /* Home asks for the forum and this week's poll together (?withpoll=1): one trip
      instead of two. The poll is worked out alongside the posts; if it fails, the
      posts still come back and the poll is null (Home then shows no poll card). */
@@ -188,10 +236,18 @@ export default async function handler(req, res) {
   })();
 
   if (req.method === "GET") {
-    const { data, error } = await db.from("forum_post")
-      .select("id, email, body, parent, created_at")
+    const scoped = await hasScope();
+    const { data: all, error } = await db.from("forum_post")
+      .select("id, email, body, parent, created_at" + (scoped ? ", scope, scope_name" : ""))
       .order("created_at", { ascending: false }).limit(600);
     if (error) { console.error("forum read:", error.message); return res.status(502).json({ error: "Couldn't load the forum." }); }
+    /* only the threads for you: everyone's, your year's, your classes' (a moderator sees them all) */
+    let data = all || [];
+    if (scoped && !isOwner && data.some(r => r.scope && r.scope !== "all")) {
+      if (!me.year) me.year = await yearOf(me);
+      const mine = data.some(r => String(r.scope).startsWith("class:")) ? await classesOf(me.email).catch(() => new Map()) : new Map();
+      data = data.filter(r => !r.scope || r.scope === "all" || r.scope === "year:" + me.year || (String(r.scope).startsWith("class:") && mine.has(String(r.scope).slice(6))));
+    }
 
     /* everyone's reactions, as counts per emoji plus whether one is yours.
        If the table isn't there yet, posts simply have none. */
@@ -219,7 +275,9 @@ export default async function handler(req, res) {
       id: r.id, name: withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
       /* mine: yours. canDelete: yours, or anyone's for a moderator (the page
          shows a moderator's delete on other people's posts only on hover) */
-      mine: r.email === me.email, canDelete: r.email === me.email || isOwner, reactions: reactionsOf(r.id)
+      mine: r.email === me.email, canDelete: r.email === me.email || isOwner, reactions: reactionsOf(r.id),
+      /* who it's for, when it isn't everyone */
+      for: r.scope && r.scope !== "all" ? (String(r.scope).startsWith("year:") ? (r.scope_name || "Year " + String(r.scope).slice(5)) : (r.scope_name ? r.scope_name + " class" : "One class")) : undefined
     });
     const rows = data || [];
     const threads = rows.filter(r => !r.parent).slice(0, MAX_THREADS).map(shape);
@@ -237,9 +295,9 @@ export default async function handler(req, res) {
     if (pollAlong) {
       const poll = await pollAlong, ms = Date.now() - t0;
       if (ms > 2500) console.warn("home load slow: " + ms + "ms");          // to see in the logs if it's still slow
-      return res.status(200).json({ posts: threads, poll });
+      return res.status(200).json({ posts: threads, poll, scopes: scoped, year: scoped ? me.year || await yearOf(me) : undefined });
     }
-    return res.status(200).json({ posts: threads });
+    return res.status(200).json({ posts: threads, scopes: scoped, year: scoped ? me.year || await yearOf(me) : undefined });
   }
 
   if (req.method === "POST") {
@@ -247,6 +305,10 @@ export default async function handler(req, res) {
     if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
     body = body || {};
 
+    if (/^(noticeread|noticesend|requestname|nameapply)$/.test(String(body.action || ""))) {
+      if (body.action === "requestname" && limited("ask:" + me.email, 6, 3600e3)) return slowDown(res);
+      return noticePost(body, res, me);
+    }
     if (/^(poll|suggestdel$|featuresuggest$)/.test(String(body.action || ""))) {
       if (!me.year) me.year = await yearOf(me);
       return pollPost(body, res, me, NAMES);
@@ -291,16 +353,39 @@ export default async function handler(req, res) {
     /* a person, not a script: a handful a minute, a few dozen an hour */
     if (limited("post:" + me.email, 8, 60e3) || limited("posth:" + me.email, 60, 3600e3)) return slowDown(res);
 
-    let parent = null;
+    const scoped = await hasScope();
+    let parent = null, scope = "all", scope_name = null;
     if (body.parent) {
       parent = String(body.parent);
-      const { data: p } = await db.from("forum_post").select("id, parent").eq("id", parent).maybeSingle();
+      const { data: p } = await db.from("forum_post").select("id, parent" + (scoped ? ", scope, scope_name" : "")).eq("id", parent).maybeSingle();
       if (!p) return res.status(404).json({ error: "That thread no longer exists." });
       if (p.parent) parent = p.parent;          // replying to a reply lands on the thread
+      /* a reply goes where its thread is, and only someone who can see the thread can reply */
+      if (scoped && p.scope && p.scope !== "all") {
+        scope = p.scope; scope_name = p.scope_name || null;
+        if (!isOwner) {
+          if (!me.year) me.year = await yearOf(me);
+          const ok = scope === "year:" + me.year || (scope.startsWith("class:") && (await classesOf(me.email).catch(() => new Map())).has(scope.slice(6)));
+          if (!ok) return res.status(403).json({ error: "That thread isn't for you." });
+        }
+      }
+    } else if (scoped) {
+      const want = String(body.scope || "all");
+      if (want === "year") {
+        if (!me.year) me.year = await yearOf(me);
+        if (!me.year) return res.status(400).json({ error: "Couldn't work out which year you're in." });
+        scope = "year:" + me.year; scope_name = "Year " + me.year;
+      } else if (want.startsWith("class:")) {
+        const code = want.slice(6), mine = await classesOf(me.email).catch(() => new Map());
+        if (!mine.has(code)) return res.status(403).json({ error: "You can only post to your own classes." });
+        scope = "class:" + code; scope_name = mine.get(code);
+      }
     }
 
     const id = newId();
-    const { error } = await db.from("forum_post").insert({ id, email: me.email, body: text, parent });
+    const row = { id, email: me.email, body: text, parent };
+    if (scoped) Object.assign(row, { scope, scope_name });
+    const { error } = await db.from("forum_post").insert(row);
     if (error) { console.error("forum post:", error.message); return res.status(502).json({ error: "Couldn't post that." }); }
     return res.status(200).json({ id });
   }

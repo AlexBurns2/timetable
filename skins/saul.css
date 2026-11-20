@@ -1,0 +1,46 @@
+/* ══════════════════════════════════════════════════════════════════
+   BETTER CALL SAUL — a secret, asked for more than once: type "saul" in any
+   box (theme.js) and the site turns into a Saul Goodman late-night ad. Typing
+   it again puts back the theme you had. It isn't in the picker.
+   Behind everything, the spinning Saul: Tenor's "3D Saul" (adamghik), as a
+   short looping video (images/th/saul.webm, .mp4 if WebM can't play) that
+   theme.js puts behind the page while Animation is on; under it, and instead
+   of it with Animation off or Reduce motion, a still of the first frame
+   (images/th/saul-still.webp). One idea, the billboard: a red, white and blue
+   band across each page's top panel, headings in a tall condensed face in gold
+   with a red drop, and "S'all good, man." in the corner.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="saul"],[data-skin="saul"][data-mode="light"]{
+  --sg-navy:#0b1638; --sg-red:#d7263d; --sg-gold:#ffcc33; --sg-blue:#2a4fb8;
+  --bg:#0b1638; --bg-img:none;
+  --panel:rgba(14,27,66,.88); --panel-2:rgba(27,45,99,.9); --line:rgba(255,204,51,.3);
+  --text:#f7f3e8; --muted:#b9c3e3; --accent:#e8364c; --accent-ink:#fff;
+  --font-display:"Anton","Impact","Arial Narrow Bold",sans-serif;
+  --display-tt:uppercase; --display-ls:.03em; --display-w:400;
+  --card-radius:8px; --radius:8px; --tint:18%; --card-accent:0px;
+  --card-border:1px solid var(--line);
+  --shadow:0 6px 18px rgba(0,0,0,.35); --shadow-hi:0 14px 40px rgba(0,0,0,.5);
+}
+:root[data-skin="saul"] select option{background:#0e1b42;color:#f7f3e8}
+[data-skin="saul"] ::selection{background:var(--sg-gold);color:#0b1638}
+
+/* ── the backdrop: Saul, the still underneath, the video over it (theme.js .saulbg) ── */
+[data-skin="saul"] body{background:#0b1638}
+[data-skin="saul"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:linear-gradient(rgba(11,22,56,.35),rgba(11,22,56,.55)),url(/images/th/saul-still.webp) center / cover no-repeat,#0b1638}
+.saulbg{position:fixed;inset:0;z-index:-1;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.75}
+html:not([data-skin="saul"]) .saulbg,html.zen .saulbg{display:none}
+html.zen[data-skin="saul"] body::before,html.zen[data-skin="saul"] body::after{display:none}
+
+/* ── the billboard: a red, white and blue band on each page's top panel ── */
+[data-skin="saul"] :is(.hubbar,.pagehead,.topbar){
+  background-image:linear-gradient(90deg,var(--sg-red) 0 33.4%,#fff 33.4% 66.6%,var(--sg-blue) 66.6%);
+  background-size:100% 5px;background-repeat:no-repeat;background-position:top}
+[data-skin="saul"] :is(h1,.pagehead h1,.pq,.gamecard .tname,.qtile .tname){color:var(--sg-gold);text-shadow:2px 2px 0 var(--sg-red)}
+[data-skin="saul"] :is(.btn.primary,.btn.primary:hover){background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ── and his line, in the corner ── */
+[data-skin="saul"] body::after{content:"S\2019 all good, man.";position:fixed;right:14px;bottom:10px;z-index:5;pointer-events:none;
+  font:400 1.05rem/1 "Anton","Impact",sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--sg-gold);
+  text-shadow:2px 2px 0 var(--sg-red);opacity:.9}
+@media (max-width:560px){ [data-skin="saul"] body::after{font-size:.85rem;right:10px;bottom:8px} }

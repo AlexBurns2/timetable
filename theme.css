@@ -411,3 +411,22 @@ html[data-nownext="off"] .now,
 html[data-nownext="off"] .hubnow:not(:has(.hubsign)){display:none!important}
 /* parts only the Studio theme shows (skins/studio.css) */
 .idglass,.stterm,.sthome{display:none}
+
+/* the "saul" secret's note (theme.js): a moment at the bottom of the screen */
+.saulnote{position:fixed;left:50%;bottom:22px;z-index:2000;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:999px;
+  background:#0b1638;color:#ffcc33;font-weight:700;font-size:.875rem;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:saulnote 3.6s ease forwards;pointer-events:none}
+@keyframes saulnote{0%{opacity:0;transform:translate(-50%,8px)}8%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+html[data-motion="reduced"] .saulnote{animation:none}
+.secretnote{margin:8px 0 0}
+
+/* a reply from the moderators (theme.js, api/_notice.js): a card in the corner until it's closed */
+.mscnote{position:fixed;right:16px;bottom:16px;z-index:1500;width:min(380px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;padding:14px 16px;
+  background:var(--panel);color:var(--text);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow-hi);animation:mscnote .3s ease-out}
+.mscnote p{margin:0}
+.mscnoteh{font-weight:800;font-size:.9375rem;margin-bottom:8px!important}
+.mscnoteb{padding:8px 0;border-top:1px solid var(--line)}
+.mscnoteb p{font-size:.875rem;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.mscnote .mscnotea{color:var(--muted);font-size:.78125rem;margin-bottom:4px}
+.mscnote .btn{margin-top:10px}
+@keyframes mscnote{from{opacity:0;transform:translateY(10px)}}
+html[data-motion="reduced"] .mscnote{animation:none}

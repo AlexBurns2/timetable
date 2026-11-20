@@ -321,6 +321,26 @@ async function apiGet(apiBase, path, auth, retry = true) {
  * identity-independent jobs like the daily-puzzle generator, which need the
  * directory but aren't tied to any one caller. Returns parsed JSON.
  */
+/*
+ * The same, authenticated as the CALLER, from the school login in their request
+ * headers (wrong passwords counted, as everywhere). For the games the server runs
+ * itself (api/_runs.js), which need the player's own timetable and class lists.
+ * Throws when the request carries no login.
+ */
+export async function fetchAsCaller(req, path) {
+  const apiBase = (process.env.SCHOOL_API_BASE || "").replace(/\/+$/, "");
+  const domain = (process.env.EMAIL_DOMAIN || (process.env.SCHOOL_EMAIL || "").split("@")[1] || "").toLowerCase();
+  const email = normaliseEmail(req.headers["x-school-email"], domain), pw = String(req.headers["x-school-password"] || "");
+  if (!apiBase || !email || !pw) throw Object.assign(new Error("Sign in with your school account."), { status: 401 });
+  let auth = await getToken(apiBase, email, pw, clientIp(req));
+  let out = await apiGet(apiBase, path, auth);
+  if (out === null) {                       // token expired → refresh and retry
+    auth = await getToken(apiBase, email, pw, clientIp(req));
+    out = await apiGet(apiBase, path, auth);
+  }
+  return out;
+}
+
 export async function fetchAsOwner(path) {
   const apiBase = (process.env.SCHOOL_API_BASE || "").replace(/\/+$/, "");
   const email = process.env.SCHOOL_EMAIL, password = process.env.SCHOOL_PASSWORD;

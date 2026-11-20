@@ -88,6 +88,15 @@
  *   revoke execute on function poll_bump(date, text, text[]) from public, anon, authenticated;
  *   grant execute on function poll_bump(date, text, text[]) to service_role;
  *
+ *   -- Separate questions for juniors, seniors and Year 12 (run once, after the code that knows about
+ *   -- them is live: the old code saves one question a week). Adds a column (every existing question
+ *   -- becomes "for everyone") and makes a week's key the week and who it's for. Nothing is deleted.
+ *   alter table poll add column if not exists audience text not null default 'all';
+ *   alter table poll drop constraint if exists poll_audience_check;
+ *   alter table poll add constraint poll_audience_check check (audience in ('all','junior','senior','y12'));
+ *   alter table poll drop constraint if exists poll_pkey;
+ *   alter table poll add primary key (week, audience);
+ *
  *   -- Optional: a second lock in the database itself (the server already refuses all of
  *   -- this). A question anyone has voted on can't be changed or deleted, and a count can
  *   -- only go up. Adds rules only; no data is changed. Safe to run more than once.
@@ -307,8 +316,39 @@ async function optionsFor(poll, me, NAMES) {
   }
   return [];
 }
-/* student and class questions are per year: your year's people, your year's subjects */
-const scopeOf = (kind, me) => kind === "student" || kind === "class" ? String(me.year || "") : "all";
+/* ── who a question is for ─────────────────────────────────────────────
+   A week can have one question for everyone, or separate ones: juniors (Years 7 to 10), seniors (11
+   and 12) and Year 12 alone (the sentimental ones, the more grown-up ones kept from juniors). Each
+   student gets the most particular one there is for them: Year 12 their own, else the seniors', else
+   everyone's; Year 11 the seniors', else everyone's; 7 to 10 the juniors', else everyone's. Anyone
+   without a year gets everyone's. It needs the audience column (SQL above); until it's there every
+   question is for everyone, as before. A vote still counts once a week (poll_voter), whichever one. */
+export const AUDIENCES = ["all", "junior", "senior", "y12"];
+const prefsFor = me => { const y = Number(me && me.year);
+  return y === 12 ? ["y12", "senior", "all"] : y === 11 ? ["senior", "all"] : y >= 7 && y <= 10 ? ["junior", "all"] : ["all"]; };
+const audOf = p => (p && p.audience) || "all";
+/* this person's question out of a week's */
+export function pickFor(rows, me) {
+  for (const a of prefsFor(me)) { const r = (rows || []).find(x => audOf(x) === a); if (r) return r; }
+  return null;
+}
+let audCol = { at: 0, ok: null };
+export async function hasAudience() {
+  if (audCol.ok !== null && Date.now() - audCol.at < 10 * 60e3) return audCol.ok;
+  const { error } = await db.from("poll").select("audience").limit(1);
+  audCol = { at: Date.now(), ok: !error };
+  return audCol.ok;
+}
+const cols = async list => (await hasAudience()) ? list + ", audience" : list;
+/* the newest week's question for this person, out of rows newest first (several to a week) */
+const byWeek = rows => { const m = new Map(); for (const r of rows || []) (m.get(r.week) || m.set(r.week, []).get(r.week)).push(r); return m; };
+
+/* student and class questions are per year: your year's people, your year's subjects. A group's own
+   question counts on its own ("senior:12"); everyone's keeps the old scopes ("12", "all"). */
+const scopeOf = (kind, me, aud) => {
+  const base = kind === "student" || kind === "class" ? String(me.year || "") : "all";
+  return base && aud && aud !== "all" ? aud + ":" + base : base;
+};
 
 /* an answer's name for the results, whoever is reading them */
 async function labeller(poll, scope, NAMES) {
@@ -317,7 +357,7 @@ async function labeller(poll, scope, NAMES) {
   if (kind === "period") { const m = new Map(PERIODS.map(p => [p.id, p.label])); return id => m.get(id) || id; }
   if (kind === "teacher") { const m = new Map((await teachers().catch(() => [])).map(t => [t.id, t.label])); return id => m.get(id) || titleCase(id.replace(/[._]+/g, " ").replace(/\d+$/, "")); }
   if (kind === "student") {
-    const m = new Map((await yearMates(scope, NAMES).catch(() => [])).map(p => [p.id, p.label]));
+    const m = new Map((await yearMates(String(scope).split(":").pop(), NAMES).catch(() => [])).map(p => [p.id, p.label]));
     return id => m.get(id) || titleCase(id.replace(/[._]+/g, " ").replace(/\d+$/, ""));
   }
   return id => id;
@@ -356,12 +396,13 @@ export async function pollGet(req, res, me, NAMES) {
   const clock = pollClock();
   try {
     if (what === "history") {
-      const { data, error } = await db.from("poll").select("week, question, kind, choices, pick, pickexact")
-        .lt("week", clock.week).order("week", { ascending: false }).limit(30);
+      const { data, error } = await db.from("poll").select(await cols("week, question, kind, choices, pick, pickexact"))
+        .lt("week", clock.week).order("week", { ascending: false }).limit(120);
       if (error) throw new Error(error.message);
       const polls = [];
-      for (const p of data || []) {
-        const scope = scopeOf(p.kind, me);
+      for (const rows of [...byWeek(data).values()].slice(0, 30)) {
+        const p = pickFor(rows, me); if (!p) continue;
+        const scope = scopeOf(p.kind, me, audOf(p));
         const r = scope ? await resultsOf(p, scope, NAMES, 8) : { total: 0, results: null };
         polls.push({ week: p.week, question: p.question, kind: p.kind, pick: p.pick || 1, total: r.total, results: r.results, others: r.others || 0 });
       }
@@ -369,33 +410,40 @@ export async function pollGet(req, res, me, NAMES) {
     }
     if (what === "admin") {
       if (!isAdmin(me.email)) return res.status(403).json({ error: "Moderators only." });
+      const audiences = await hasAudience();
       const [{ data: polls }, { data: sugg }, { data: voters }] = await Promise.all([
-        db.from("poll").select("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by").order("week", { ascending: false }).limit(120),
+        db.from("poll").select(await cols("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by")).order("week", { ascending: false }).limit(200),
         db.from("poll_suggestion").select("id, email, question, kind, created_at").order("created_at", { ascending: false }).limit(300),
-        db.from("poll_tally").select("week, votes").eq("choice", VOTERS).gte("week", addDays(clock.week, -7 * 60)).limit(1000)
+        db.from("poll_tally").select("week, scope, votes").eq("choice", VOTERS).gte("week", addDays(clock.week, -7 * 60)).limit(3000)
       ]);
+      /* voters per week and group: a group's scopes start "junior:", "senior:" or "y12:" */
       const count = new Map();
-      for (const v of voters || []) count.set(v.week, (count.get(v.week) || 0) + (v.votes || 0));
+      for (const v of voters || []) { const k = v.week + "|" + (String(v.scope).includes(":") ? String(v.scope).split(":")[0] : "all");
+        count.set(k, (count.get(k) || 0) + (v.votes || 0)); }
       /* every school week from this one to Year 12's last term (the planner's list) */
       const plan = schoolWeeks(clock.week), weeks = plan.map(w => w.week);
       return res.status(200).json({
-        clock, weeks, schoolWeeks: plan, planEnd: PLAN_END,
-        polls: (polls || []).map(p => ({ week: p.week, question: p.question, kind: p.kind, anim: p.anim || "surprise",
+        clock, weeks, schoolWeeks: plan, planEnd: PLAN_END, audiences,
+        polls: (polls || []).map(p => ({ week: p.week, audience: audOf(p), question: p.question, kind: p.kind, anim: p.anim || "surprise",
           celebrate: p.celebrate || "surprise", reveal: p.reveal || "",
-          choices: Array.isArray(p.choices) ? p.choices : [], pick: p.pick || 1, exact: !!p.pickexact, voters: count.get(p.week) || 0,
+          choices: Array.isArray(p.choices) ? p.choices : [], pick: p.pick || 1, exact: !!p.pickexact, voters: count.get(p.week + "|" + audOf(p)) || 0,
           subjectsDone: p.kind === "class" && p.choices && Array.isArray(p.choices.done) ? p.choices.done : undefined,
           by: withName(NAMES, p.created_by, userOf(p.created_by)) })),
-        suggestions: (sugg || []).filter(s => s.kind !== "feature").map(s => ({ id: s.id, question: s.question, kind: s.kind || "", at: s.created_at,
+        suggestions: (sugg || []).filter(s => s.kind !== "feature" && s.kind !== "name").map(s => ({ id: s.id, question: s.question, kind: s.kind || "", at: s.created_at,
           by: withName(NAMES, s.email, titleCase(userOf(s.email).replace(/[._]+/g, " ").replace(/\d+$/, ""))) })),
         /* ideas for the site, from Home's footer */
         features: (sugg || []).filter(s => s.kind === "feature").map(s => ({ id: s.id, idea: s.question, at: s.created_at,
+          by: withName(NAMES, s.email, titleCase(userOf(s.email).replace(/[._]+/g, " ").replace(/\d+$/, ""))) })),
+        /* name changes asked for (also from Home's footer): the name now, and the one wanted */
+        names: (sugg || []).filter(s => s.kind === "name").map(s => ({ id: s.id, want: s.question, at: s.created_at,
           by: withName(NAMES, s.email, titleCase(userOf(s.email).replace(/[._]+/g, " ").replace(/\d+$/, ""))) }))
       });
     }
 
     /* this week's poll, as this person sees it */
-    const { data: poll, error } = await db.from("poll").select("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal").eq("week", clock.week).maybeSingle();
+    const { data: rowsNow, error } = await db.from("poll").select(await cols("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal")).eq("week", clock.week);
     if (error) throw new Error(error.message);
+    const poll = pickFor(rowsNow, me);
     if (!poll) {
       /* the holidays (and no question set for them): a look back at the term, or at the year over summer */
       const brk = breakOf(clock.week);
@@ -403,17 +451,18 @@ export async function pollGet(req, res, me, NAMES) {
       if (brk) try { lookback = await lookbackFor(brk, clock, me, NAMES); } catch (e) { console.error("poll look back:", e.message); }
       if (lookback) return res.status(200).json({ clock, poll: null, last: null, lookback });
       /* nothing this week: the most recent finished one instead, if any */
-      const { data: last } = await db.from("poll").select("week, question, kind, choices, pick")
-        .lt("week", clock.week).order("week", { ascending: false }).limit(1).maybeSingle();
+      const { data: before } = await db.from("poll").select(await cols("week, question, kind, choices, pick"))
+        .lt("week", clock.week).order("week", { ascending: false }).limit(16);
+      const last = [...byWeek(before).values()].map(rows => pickFor(rows, me)).find(Boolean);
       let lastOut = null;
       if (last) {
-        const scope = scopeOf(last.kind, me);
+        const scope = scopeOf(last.kind, me, audOf(last));
         const r = scope ? await resultsOf(last, scope, NAMES, 8) : { total: 0, results: null };
         lastOut = { week: last.week, question: last.question, kind: last.kind, pick: last.pick || 1, total: r.total, results: r.results, others: r.others || 0 };
       }
       return res.status(200).json({ clock, poll: null, last: lastOut });
     }
-    const scope = scopeOf(poll.kind, me), open = clock.phase === "open";
+    const scope = scopeOf(poll.kind, me, audOf(poll)), open = clock.phase === "open";
     /* everything the card might need, asked for at once rather than one after
        another (the answers or the results are dropped if it turns out they
        aren't needed) */
@@ -427,7 +476,7 @@ export async function pollGet(req, res, me, NAMES) {
     ]);
     if (votedR.e) throw votedR.e;
     const voted = votedR.v;
-    const out = { week: poll.week, question: poll.question, kind: poll.kind, anim: poll.anim || "surprise",
+    const out = { week: poll.week, audience: audOf(poll), question: poll.question, kind: poll.kind, anim: poll.anim || "surprise",
                   celebrate: poll.celebrate || "surprise", reveal: poll.reveal || "", pick: poll.pick || 1, exact: !!poll.pickexact, voted, phase: clock.phase,
                   canVote: !!scope, total: scope ? totalR.v || 0 : 0, minShow: MIN_SHOW };
     if (!voted && scope && open) {
@@ -466,11 +515,12 @@ export async function pollPost(body, res, me, NAMES) {
   const action = body.action;
 
   if (action === "pollvote") {
-    const { data: poll, error: pErr } = await db.from("poll").select("week, question, kind, choices, pick, pickexact").eq("week", clock.week).maybeSingle();
+    const { data: rowsNow, error: pErr } = await db.from("poll").select(await cols("week, question, kind, choices, pick, pickexact")).eq("week", clock.week);
     if (pErr) { console.error("poll vote read:", pErr.message); return res.status(502).json({ error: "Couldn't save your vote. Try again." }); }
+    const poll = pickFor(rowsNow, me);
     if (!poll || String(body.week) !== poll.week) return res.status(409).json({ error: "That poll has closed. Reload for this week's." });
     if (clock.phase !== "open") return res.status(409).json({ error: "Voting has closed. The results are out." });
-    const scope = scopeOf(poll.kind, me);
+    const scope = scopeOf(poll.kind, me, audOf(poll));
     if (!scope) return res.status(403).json({ error: "This one is for students." });
     let options;
     try { options = await optionsFor(poll, me, NAMES); }
@@ -536,19 +586,22 @@ export async function pollPost(body, res, me, NAMES) {
   /* many weeks at once (the planner's Save): { set: [questions as pollset takes them], remove: [weeks] }.
      Each is checked and saved on its own, and the answer says how each went. */
   if (action === "pollbatch") {
-    /* one change a week (a later one wins), and a week that's being set isn't also removed */
-    const byWeek = new Map((Array.isArray(body.set) ? body.set : []).filter(x => x && typeof x === "object").map(x => [String(x.week || ""), x]));
-    const set = [...byWeek.values()].slice(0, 80);
-    const remove = [...new Set((Array.isArray(body.remove) ? body.remove : []).map(String))].filter(w => !byWeek.has(w)).slice(0, 80);
+    /* one change a week and group (a later one wins), and one that's being set isn't also removed.
+       A removal is { week, audience }, or just a week (everyone's) from an older page. */
+    const keyOf = x => String(x.week || "") + "|" + (AUDIENCES.includes(x.audience) ? x.audience : "all");
+    const sets = new Map((Array.isArray(body.set) ? body.set : []).filter(x => x && typeof x === "object").map(x => [keyOf(x), x]));
+    const set = [...sets.values()].slice(0, 80);
+    const remove = [...new Map((Array.isArray(body.remove) ? body.remove : []).map(x => typeof x === "object" && x ? x : { week: String(x) })
+      .map(x => [keyOf(x), x])).entries()].filter(([k]) => !sets.has(k)).map(([, x]) => x).slice(0, 80);
     if (!set.length && !remove.length) return res.status(400).json({ error: "Nothing to save." });
-    const jobs = set.map(x => ({ week: String(x.week || ""), run: () => pollSetOne(x, me, clock) }))
-      .concat(remove.map(week => ({ week, removed: true, run: () => pollDelOne(week, clock) })));
+    const jobs = set.map(x => ({ week: String(x.week || ""), audience: keyOf(x).split("|")[1], run: () => pollSetOne(x, me, clock) }))
+      .concat(remove.map(x => ({ week: String(x.week || ""), audience: keyOf(x).split("|")[1], removed: true, run: () => pollDelOne(String(x.week || ""), clock, x.audience) })));
     const results = new Array(jobs.length);
     await eachLimited(jobs.map((_, k) => k), 4, async k => {
       const j = jobs[k];
       let r;
       try { r = await j.run(); } catch (e) { console.error("poll batch:", e.message); r = { error: "Couldn't save that." }; }
-      results[k] = { week: j.week, removed: !!j.removed, ok: !!r.ok, error: r.ok ? undefined : r.error };
+      results[k] = { week: j.week, audience: j.audience, removed: !!j.removed, ok: !!r.ok, error: r.ok ? undefined : r.error };
     });
     return res.status(200).json({ results });
   }
@@ -556,7 +609,9 @@ export async function pollPost(body, res, me, NAMES) {
   if (action === "pollsubjects") {
     const week = String(body.week || ""), year = String(parseInt(body.year, 10) || "");
     const from = Math.max(0, parseInt(body.from, 10) || 0);
-    const { data: poll, error: pErr } = await db.from("poll").select("kind, choices").eq("week", week).maybeSingle();
+    const aud = AUDIENCES.includes(body.audience) ? body.audience : "all", A = await hasAudience();
+    const one = q => A ? q.eq("audience", aud) : q;
+    const { data: poll, error: pErr } = await one(db.from("poll").select("kind, choices").eq("week", week)).maybeSingle();
     if (pErr || !poll) return res.status(404).json({ error: "Save the question first." });
     if (poll.kind !== "class") return res.status(400).json({ error: "That isn't a class question." });
     const why = lockedWeek(week, clock);
@@ -575,12 +630,12 @@ export async function pollPost(body, res, me, NAMES) {
     const next = from + SUBJECT_SLICE < mates.length ? from + SUBJECT_SLICE : null;
     years[year] = [...set].sort((a, b) => a.localeCompare(b));
     if (next === null && mates.length) done.push(year);
-    const { error } = await db.from("poll").update({ choices: { years, done } }).eq("week", week).eq("kind", "class");
+    const { error } = await one(db.from("poll").update({ choices: { years, done } }).eq("week", week).eq("kind", "class"));
     if (error) { console.error("poll subjects save:", error.message); return res.status(502).json({ error: "Couldn't save the subjects." }); }
     return res.status(200).json({ next, total: mates.length, count: years[year].length });
   }
   if (action === "polldel") {
-    const r = await pollDelOne(String(body.week || ""), clock);
+    const r = await pollDelOne(String(body.week || ""), clock, body.audience);
     return r.ok ? res.status(200).json({ ok: true }) : res.status(r.status).json({ error: r.error });
   }
   if (action === "suggestdel") {
@@ -607,12 +662,12 @@ async function closedResults(p, scope, NAMES) {
 }
 async function lookbackFor(brk, clock, me, NAMES) {
   const from = brk.summer ? brk.after.first.slice(0, 4) + "-01-01" : mondayOf(brk.after.week1 || brk.after.first);
-  const { data, error } = await db.from("poll").select("week, question, kind, choices, pick")
-    .gte("week", from).lt("week", clock.week).order("week", { ascending: false }).limit(45);
+  const { data, error } = await db.from("poll").select(await cols("week, question, kind, choices, pick"))
+    .gte("week", from).lt("week", clock.week).order("week", { ascending: false }).limit(180);
   if (error) throw new Error(error.message);
-  const list = data || [], polls = new Array(list.length);
+  const list = [...byWeek(data).values()].map(rows => pickFor(rows, me)).filter(Boolean).slice(0, 45), polls = new Array(list.length);
   await eachLimited(list.map((_, i) => i), 6, async i => {
-    const p = list[i], scope = scopeOf(p.kind, me);
+    const p = list[i], scope = scopeOf(p.kind, me, audOf(p));
     const r = scope ? await closedResults(p, scope, NAMES).catch(() => ({ total: 0, results: null })) : { total: 0, results: null };
     polls[i] = { week: p.week, question: p.question, kind: p.kind, total: r.total || 0,
                  top: (r.results || []).slice(0, 2).map(x => ({ label: x.label, votes: x.votes, pct: x.pct })) };
@@ -663,7 +718,10 @@ async function pollSetOne(body, me, clock) {
   if (!isMonday(week) || week < clock.week) return { status: 400, error: "Pick this week or a later Monday." };
   if (!KINDS.includes(kind)) return { status: 400, error: "Pick a kind of answer." };
   if (question.length < 5) return { status: 400, error: "Write the question." };
+  const aud = AUDIENCES.includes(body.audience) ? body.audience : "all", A = await hasAudience();
+  if (!A && aud !== "all") return { status: 409, error: "Separate questions need the database's new column first (SETUP.md)." };
   const row = { week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by: me.email };
+  if (A) row.audience = aud;
   /* this week, only if it has no question yet: added as a new row, which fails if one exists */
   if (week === clock.week) {
     if (await votedOn(week)) return { status: 409, error: "This week's question is live, so it can't be changed." };
@@ -675,20 +733,22 @@ async function pollSetOne(body, me, clock) {
   const why = lockedWeek(week, clock);
   if (why) return { status: 409, error: why };
   if (await votedOn(week)) return { status: 409, error: "People have voted on this one, so it can't be changed." };
-  const { data: had } = await db.from("poll").select("kind, choices").eq("week", week).maybeSingle();
+  const sel = db.from("poll").select("kind, choices").eq("week", week);
+  const { data: had } = await (A ? sel.eq("audience", aud) : sel).maybeSingle();
   /* a class question keeps the subjects already collected for it */
   if (kind === "class") row.choices = had && had.kind === "class" && had.choices && !Array.isArray(had.choices) ? had.choices : null;
-  const { error } = await db.from("poll").upsert(row, { onConflict: "week" });
+  const { error } = await db.from("poll").upsert(row, { onConflict: A ? "week,audience" : "week" });
   if (error) { console.error("poll set:", error.message); return { status: 502, error: "Couldn't save that." }; }
   return { ok: true };
 }
-/* take a week's question down, if nobody has voted on it */
-async function pollDelOne(week, clock) {
+/* take a week's question down (one group's, or everyone's), if nobody has voted on it */
+async function pollDelOne(week, clock, audience) {
   if (!isMonday(week)) return { status: 400, error: "That isn't a week." };
   const why = lockedWeek(week, clock);
   if (why) return { status: 409, error: why };
   if (await votedOn(week)) return { status: 409, error: "People have voted on this one, so it stays." };
-  const { error } = await db.from("poll").delete().eq("week", week);
+  const aud = AUDIENCES.includes(audience) ? audience : "all", del = db.from("poll").delete().eq("week", week);
+  const { error } = await ((await hasAudience()) ? del.eq("audience", aud) : del);
   if (error) return { status: 502, error: "Couldn't remove that." };
   return { ok: true };
 }
@@ -699,8 +759,9 @@ export async function pollPreview(req, res) {
   let q = "";
   try {
     if (db) {
-      const { data } = await db.from("poll").select("question").eq("week", pollClock().week).maybeSingle();
-      q = data ? data.question : "";
+      const { data } = await db.from("poll").select(await cols("question")).eq("week", pollClock().week);
+      const p = (data || []).find(x => audOf(x) === "all") || (data || [])[0];
+      q = p ? p.question : "";
     }
   } catch {}
   const title = q ? q : "This week's poll";

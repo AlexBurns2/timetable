@@ -1,5 +1,5 @@
 /*
- * "Whose timetable?" — a daily game on the games page, served by /api/daily?whose=1 (whoseRoute below),
+ * "Whose Timetable?" — a daily game on the games page, served by /api/daily?whose=1 (whoseRoute below),
  * so it needs no Vercel function of its own. Private helper (underscore = not a route). (Briefly
  * called "Whose Week"; the owner went back to this name, easier to say.)
  *
@@ -23,12 +23,13 @@
  * one still fits after the first. If no one in the year can be made certain (whole classes sharing a
  * timetable), the year has no puzzle that day.
  *
- * Like Daily Guess Who, the browser gets everything up front (the board, the hints, who still fits
- * after each one, and the answer) and marks guesses itself, so it's instant; each guess is saved here
- * in the background. Names only ever go to the browser, never email addresses. The last 30 days can
+ * The browser only gets what has been shown so far: the hints unlocked, the tiles they filled in,
+ * and how many still fit after each. Guesses are marked here, and the answer (and the rest of the
+ * board) only goes out once the day is over for you, so nothing in the page gives the person away.
+ * Names only ever go to the browser, never email addresses. The last 30 days can
  * be played again from the archive (?whose=1&archive=1 lists them).
  *
- * Tables (SETUP.md, "Whose timetable?"). RLS on with no policies: only the server reads or writes them.
+ * Tables (SETUP.md, "Whose Timetable?"). RLS on with no policies: only the server reads or writes them.
  *   whose_puzzle(date, year, puzzle jsonb, created_at, pk(date, year))
  *   whose_result(email, date, year, guesses, won, done, updated_at, pk(email, date))
  * A day made by an earlier version of the game is made again if it's today (the owner chose not to
@@ -276,10 +277,18 @@ function hintText(h, p) {
   return Object.values(p.cells).some(v => !v) ? "Here are all their free periods." : "They have <b>no free periods</b>.";
 }
 
-/* what the browser gets: names (never emails), the board, who fits after each hint, and the hints */
-export function whoseView(p, nameOf) {
-  return { names: p.people.map(nameOf), answerIndex: p.people.indexOf(p.email), template: p.template, cells: p.cells, fit: p.fit,
-           hints: p.hints.map(h => Object.assign({}, h, { text: hintText(h, p) })) };
+/* What the browser gets, after n hints: names (never emails), the empty board, the n hints with the
+   tiles each filled in (and only those tiles' subjects), and how many still fit after 0…n hints.
+   With done, everything: the whole board and every hint. */
+export function whoseView(p, nameOf, n, done) {
+  const slots = CYCLE.flatMap(d => (p.template[d] || []).map(x => d + "|" + x.p));
+  const k = done ? p.hints.length : Math.max(0, Math.min(n, p.hints.length));
+  const hints = p.hints.slice(0, k), tiles = hints.map(h => tilesFor(h, p, slots));
+  const cells = {};
+  (done ? slots : tiles.flat()).forEach(key => { cells[key] = p.cells[key] || ""; });
+  return { names: p.people.map(nameOf), template: p.template, cells, tiles,
+           counts: p.fit.slice(0, k + 1).map(l => l.length),
+           hints: hints.map(h => ({ k: h.k, text: hintText(h, p) })) };
 }
 
 /* ── building a year's day (the school API, as the server account) ─────── */
@@ -336,7 +345,7 @@ export async function ensureWhose(year, date, deadline = Date.now() + 45000) {
   year = String(year);
   const sel = () => db.from("whose_puzzle").select("puzzle, created_at").eq("date", date).eq("year", year).maybeSingle();
   const { data: row, error } = await sel();
-  if (error) throw new Error(/does not exist|relation|schema cache/i.test(error.message) ? "Whose timetable? isn't set up yet." : "puzzle read: " + error.message);
+  if (error) throw new Error(/does not exist|relation|schema cache/i.test(error.message) ? "Whose Timetable? isn't set up yet." : "puzzle read: " + error.message);
   const today = date === sydneyDate();
   if (row && (row.puzzle && row.puzzle.v === VERSION || !today)) return row;
   if (!today) return null;                           // a past day that was never made stays unmade
@@ -432,19 +441,27 @@ export async function whoseRoute(req, res, me, body, NAMES) {
     }
     return res.status(200).json({ date, summary: { played, wins, losses: played - wins, total, dist, names } });
   }
-  if (req.method === "GET")
-    return res.status(200).json(Object.assign({ date, today, year, answer, total, guesses, done, won, streak: await streak() },
-      whoseView(p, nameOf)));
+  /* the day as you have it: the hints so far, and the answer only once you're done */
+  const view = async () => Object.assign({ date, today, year, total, guesses, done, won, streak: await streak(), answer: done ? answer : undefined },
+    whoseView(p, nameOf, guesses, done));
+  if (req.method === "GET") return res.status(200).json(await view());
   if (req.method === "POST") {
-    if (done) return res.status(200).json({ done, won, guesses, total, streak: await streak(), answer });
+    if (done) return res.status(200).json(Object.assign(await view(), { correct: won }));
     const guess = String(body.guess || "");
     if (!guess && !body.skip) return res.status(400).json({ error: "A guess is required." });
+    const before = guesses;
     guesses += 1;
     won = !body.skip && norm(guess) === norm(answer);
     done = won || guesses >= total;
-    const { error } = await db.from("whose_result").upsert({ email: me.email, date, year: String(year), guesses, won, done, updated_at: new Date().toISOString() });
+    /* saved only on top of the result just read, so guesses sent all at once can't each count as the same one */
+    const row = { email: me.email, date, year: String(year), guesses, won, done, updated_at: new Date().toISOString() };
+    const { data: saved, error } = cur ? await db.from("whose_result").update(row).eq("email", me.email).eq("date", date).eq("guesses", before).select("guesses")
+      : had ? await db.from("whose_result").update(row).eq("email", me.email).eq("date", date).eq("updated_at", had.updated_at).select("guesses")
+      : await db.from("whose_result").insert(row).select("guesses");
+    if (error && /duplicate|unique|23505/i.test(error.message + " " + error.code)) return res.status(409).json({ error: "Too quick: try that again." });
     if (error) { console.error("whose result:", error.message); return res.status(502).json({ error: "Couldn't save your guess." }); }
-    return res.status(200).json({ correct: won, done, won, guesses, total, streak: await streak(), answer: done ? answer : undefined });
+    if (!saved || !saved.length) return res.status(409).json({ error: "Too quick: try that again." });
+    return res.status(200).json(Object.assign(await view(), { correct: won }));
   }
   return res.status(405).json({ error: "Method not allowed" });
 }

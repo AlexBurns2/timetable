@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120i';
+const ASSET_V = '20261120l';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -65,6 +65,8 @@ const SKINS = [
   { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
   { id:'custom',    name:'Custom',    both:false, custom:true },
+  /* a secret: type "saul" in any box (below). Not in the picker. */
+  { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
   /* the originals */
   { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
@@ -166,7 +168,7 @@ SKINS.forEach(s => {
 SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
 
 /* kept for older callers; the picker shows every theme now */
-const QUICK_SKINS = SKINS.filter(s => !s.legacy).map(s => s.id);
+const QUICK_SKINS = SKINS.filter(s => !s.legacy && !s.secret).map(s => s.id);
 
 /* which page this is, for the themes that give each page its own look
    (html[data-pg]): timetable, home, games, calendar, free, revision, … */
@@ -386,6 +388,7 @@ const FAV = {
   maximal:   { shape:'square', ink:'#14121a', bg(x, N){ [['#f5419e', 0, 0], ['#f6bd1e', N/2, 0], ['#2b6fd0', 0, N/2], ['#14a594', N/2, N/2]].forEach(q => { x.fillStyle = q[0]; x.fillRect(q[1], q[2], N/2, N/2); }); } },
   scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
   terminal:  { shape:'square', ink:'#39ff9e', bg(x, N){ x.fillStyle = '#05080a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#39ff9e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, N - 3, N - 3); } },
+  saul:      { shape:'square', ink:'#ffcc33', bg(x, N){ x.fillStyle = '#0b1638'; x.fillRect(0, 0, N, N); [['#d7263d', 0], ['#fff', N/3], ['#2a4fb8', 2*N/3]].forEach(c => { x.fillStyle = c[0]; x.fillRect(c[1], N - 7, N/3, 7); }); } },
   blueprint: { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#0b3a66'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 8; i < N; i += 12){ x.fillRect(i, 0, 1, N); x.fillRect(0, i, N, 1); } } }
 };
 function favThreshold(x, n, cut, soft){            // alpha: a soft step at `cut` (rounds or squares off the edges)
@@ -864,7 +867,7 @@ function skinPicker(field, after){
   if (!hd){ lab.innerHTML = '<button type="button" class="skhd"><span>Appearance</span>' + caret('M208 96l-80 80-80-80') + '</button>'; hd = lab.querySelector('.skhd'); }
   hd.onclick = ev => { ev.preventDefault(); fold(!folded); };
   hd.setAttribute('aria-expanded', String(!folded)); hd.title = folded ? 'Show every theme' : 'Show fewer';
-  const cur = readState().skin, all = SKINS.filter(s => !s.legacy), on = all.find(s => s.id === cur);
+  const cur = readState().skin, all = SKINS.filter(s => !s.legacy && !s.secret), on = all.find(s => s.id === cur);
   const back = grid.contains(document.activeElement) ? document.activeElement.getAttribute('data-sk') : null;
   const tile = s => {
     const b = document.createElement('button');
@@ -897,6 +900,12 @@ function skinPicker(field, after){
     const t = (want && grid.querySelector('[data-sk="' + want + '"]')) || grid.querySelector('[data-sk]');
     if (t) try { t.focus({ preventScroll:true }); } catch {}
   }
+  /* the secret one (Better Call Saul) isn't a tile: a line says it's on, and how to go back */
+  let sn = field.querySelector('.secretnote');
+  const secret = SKINS.find(s => s.secret && s.id === cur);
+  if (secret){ if (!sn){ sn = document.createElement('p'); sn.className = 'hint secretnote'; grid.after(sn); }
+    sn.textContent = secret.name + ' is on. Type “saul” in any box to go back, or pick a theme.'; }
+  else if (sn) sn.remove();
   if (orow){
     orow.hidden = folded && !SKINS.some(s => s.legacy && s.id === cur);
     if (orow.hidden) orow.innerHTML = ''; else origBox(orow, after);
@@ -967,6 +976,79 @@ function themesNotice(){
 }
 { const later = () => setTimeout(themesNotice, 1500);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', later, { once:true }); else later(); }
+
+/* ── a secret, asked for by students: type "saul" in any box and the site turns into
+   Better Call Saul (skins/saul.css); type it again and the theme you had comes back.
+   Only a box holding just "saul" counts (so a name that starts with it doesn't), once
+   you stop typing for a moment or press Enter, and never a password box. The page is
+   told (tt:skin) so one that keeps its own copy of the look (the timetable) follows. */
+(function(){
+  let timer = 0, last = 0;
+  const flip = el => {
+    if (!el || !/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.type === 'password') return;
+    if (String(el.value || '').trim().toLowerCase() !== 'saul' || Date.now() - last < 1500) return;
+    last = Date.now();
+    const st = readState(), on = st.skin === 'saul';
+    if (on) set(LS.skin, SKIN_IDS.includes(get('tt.skin_presaul', '')) && get('tt.skin_presaul', '') !== 'saul' ? get('tt.skin_presaul', '') : 'plain');
+    else { set('tt.skin_presaul', st.skin); set(LS.skin, 'saul'); }
+    apply();
+    try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
+    const n = document.createElement('div');
+    n.className = 'saulnote'; n.setAttribute('role', 'status');
+    n.textContent = on ? 'Back to your theme.' : 'S’all good, man. Type “saul” again to go back.';
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3600);
+  };
+  document.addEventListener('input', e => { clearTimeout(timer); const el = e.target; timer = setTimeout(() => flip(el), 700); }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(timer); flip(e.target); } }, true);
+})();
+
+/* Better Call Saul's backdrop: the spinning Saul as a muted looping video behind the page, only while the
+   theme is on and Animation is too (skins/saul.css shows a still frame under it, and instead of it) */
+function saulBg(){
+  if (!document.body) return;
+  const want = document.documentElement.getAttribute('data-skin') === 'saul' && fxOn();
+  let v = document.querySelector('video.saulbg');
+  if (!want){ if (v) v.remove(); return; }
+  if (v) return;
+  v = document.createElement('video');
+  v.className = 'saulbg'; v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.setAttribute('aria-hidden', 'true'); v.setAttribute('tabindex', '-1');
+  v.innerHTML = '<source src="/images/th/saul.webm" type="video/webm"><source src="/images/th/saul.mp4" type="video/mp4">';
+  document.body.prepend(v);
+  v.play().catch(() => {});
+}
+addEventListener('tt:look', saulBg);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulBg, { once:true }); else saulBg();
+
+/* ── replies from the moderators (api/_notice.js): an answer to something you sent (an idea, a poll
+   idea, a name change) shows on the next page you open, signed "MSC Unofficial" (never a moderator's
+   name), with what it answers under it, until you close it. Asked for at most every three minutes. */
+(function(){
+  const show = list => {
+    const n = document.createElement('div');
+    n.className = 'mscnote'; n.setAttribute('role', 'alertdialog'); n.setAttribute('aria-labelledby', 'mscnoteh');
+    const e = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+    n.innerHTML = '<p class="mscnoteh" id="mscnoteh">A message from MSC Unofficial</p>' +
+      list.map(x => '<div class="mscnoteb">' + (x.about ? '<p class="mscnotea">' + e(x.about) + '</p>' : '') + '<p>' + e(x.body) + '</p></div>').join('') +
+      '<button type="button" class="btn primary">Got it</button>';
+    document.body.appendChild(n);
+    const b = n.querySelector('button');
+    b.onclick = () => { n.remove(); api('/api/forum', { method:'POST', body:{ action:'noticeread', ids:list.map(x => x.id) } }).catch(() => {}); };
+    try { b.focus({ preventScroll:true }); } catch {}
+  };
+  const run = async () => {
+    try {
+      if (!hasCreds() || /[?&]pollpreview=/.test(location.search)) return;
+      const k = 'tt.noticeat', last = +(sessionStorage.getItem(k) || 0);
+      if (Date.now() - last < 180000) return;
+      sessionStorage.setItem(k, String(Date.now()));
+      const d = await api('/api/forum', { params:{ notices:1 } });
+      if (d && d.notices && d.notices.length) show(d.notices);
+    } catch {}
+  };
+  const later = () => setTimeout(run, 2500);           // after the page has settled (and Home's own shows)
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', later, { once:true }); else later();
+})();
 
 /* paint immediately so there is no flash of the wrong theme */
 apply();
@@ -1175,7 +1257,11 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
-  { id:'whose', date:'2026-11-20', key:'game:whose', title:'Whose timetable?', href:'games.html?play=whose',
+  { id:'reactfast', date:'2026-11-20', key:'game:react', title:'Reaction: no lower limit', href:'games.html?play=react',
+    text:'Reaction no longer throws out times under 60 ms. Every time you set now counts.' },
+  { id:'yearboards', date:'2026-11-20', title:'A leaderboard for each year',
+    text:'Every leaderboard now shows your own year first. Pick another year, or everyone, from the menu beside it. Six Degrees, Odd One Out and Classroom are also marked on the server now, so their scores are fair.' },
+  { id:'whose', date:'2026-11-20', key:'game:whose', title:'Whose Timetable?', href:'games.html?play=whose',
     text:'A new daily game: reveal a random classmate’s timetable period by period to guess who it is. Quartets has also become triplets with a palettable 3x3 grid.' },
   { id:'study', date:'2026-11-19', title:'Study tracker',
     text:'On the revision page, you can now add timed tasks for each subject. Set a goal, and you will be reminded when the time is up.' },
