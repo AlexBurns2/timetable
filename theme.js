@@ -1176,21 +1176,21 @@ addEventListener('pagehide', () => {
    To announce something: add a line at the top. */
 const NEWS = [
   { id:'whose', date:'2026-11-20', key:'game:whose', title:'Whose timetable?', href:'games.html?play=whose',
-    text:'A new daily game: someone’s fortnight from your year, starting as a blank grid. Each wrong guess fills in a little more. Whose is it?' },
+    text:'A new daily game: reveal a random classmate’s timetable period by period to guess who it is. Quartets has also become triplets with a palettable 3x3 grid.' },
   { id:'study', date:'2026-11-19', title:'Study tracker',
-    text:'On the Revision page: add tasks for each subject and time them. Set a target if you like, and it tells you when the time is up.' },
-  { id:'themes4', date:'2026-11-19', title:'A new theme',
-    text:'Frutiger Aero is in Settings. Try it in dark mode too.' },
+    text:'On the revision page, you can now add timed tasks for each subject. Set a goal, and you will be reminded when the time is up.' },
+  { id:'themes4', date:'2026-11-19', title:'Frutiger Aero',
+    text:'Frutiger Aero yams 12 o’clock... now available through the settings page. Dark mode hides another new theme.' },
   { id:'ghostlobbies', date:'2026-11-18', title:'No more ghost lobbies',
-    text:'A public lobby now closes once everyone has left it, even if someone’s phone went to sleep or lost its connection. Empty lobbies drop off the list within a couple of minutes.' },
-  { id:'themes3', date:'2026-11-17', title:'A new theme',
-    text:'Gen X Soft Club. In Settings. Try it in dark mode too.' },
-  { id:'themes2', date:'2026-11-14', title:'Themes, rebuilt',
-    text:'Nine themes rebuilt from the ground up, each with its own layout, its own way between pages and, for some, a moving background ' +
-         '(Settings → Animation turns the motion off). New: Skeuomorphism, Y2K Futurism, Vaporwave, Editorial, Art Deco and Maximalism. ' +
-         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Prefer an old look? Settings → All themes → Original themes. Custom themes can be shared as a code.' },
+    text:'Public lobbies now close once everyone has left, even if someone’s device went to sleep or lost its connection. Empty lobbies drop off the list within a couple of minutes.' },
+  { id:'themes3', date:'2026-11-17', title:'Gen X Soft Club',
+    text:'Gen X Soft Club theme now available on the settings page for a moody 2000s aesthetic.' },
+  { id:'themes2', date:'2026-11-14', title:'Themes overhaul',
+    text:'Nine themes have been rebuilt from the ground up, each with its own layout, transitions and backgrounds.' +
+         'Disable animations through the settings menu. New themes include: Skeuomorphism, Y2K Futurism, Vaporwave, Editorial, Art Deco and Maximalism.' +
+         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Old themes are available in the settings page. Custom themes can now be shared as a code.' },
   { id:'favicons', date:'2026-11-12', title:'Dynamic favicons',
-    text:'Website favicons now dynamically update to match your selected theme.' },
+    text:'Website favicon now dynamically update to match your selected theme.' },
   { id:'reactfix', date:'2026-11-12', title:'Reaction leaderboard fixed',
     text:'Reaction times under 80 ms were culled from the leaderboard to fix a bug.', href:'games.html?play=react' },
   { id:'qtdiff', date:'2026-11-12', key:'game:quartets', title:'How hard was today?',
