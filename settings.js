@@ -30,9 +30,8 @@ host.innerHTML =
   '<dialog id="setDlg" class="setdlg">' +
     '<form method="dialog" class="dlg-h"><h2>Settings</h2><button class="btn icon" value="close" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></form>' +
     '<div class="dlg-b">' +
-      '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div></div>' +
+      '<div class="field"><label>Appearance</label><div class="skins" id="s_skins"></div><div class="origrow" id="c_origs" hidden></div></div>' +
       '<div class="field"><div id="s_look"></div></div>' +
-      '<div class="field"><div class="origs" id="c_origs"></div></div>' +
       '<div class="field" id="s_glasswrap" hidden><label>Glass</label>' +
         '<div class="custrow"><span>Animated background</span><input type="checkbox" id="g_glassanim" class="sw"></div>' +
         '<div class="hint" style="margin-top:4px">Uses a little more battery.</div></div>' +
@@ -129,24 +128,14 @@ host.innerHTML =
   '</dialog>';
 document.body.appendChild(host);
 
-/* ── appearance: every theme; the heading folds the grid away. The originals have their own box under Animation ── */
+/* ── appearance: theme.js skinPicker draws it (a row of themes that opens to them all, the originals' row under
+   them); a picked theme is saved and on by the time it calls back ── */
 const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
 /* a theme can have another name in dark mode (Frutiger Aero), so the grid is named again when the mode changes */
 addEventListener('tt:look', () => { const d = $('setDlg'); if (d && d.open && $('s_skins')) renderSkins(); });
 function renderSkins(){
   skin = TTx.readState().skin;
-  const box = $('s_skins'); box.innerHTML = '';
-  const tile = s => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('aria-pressed', String(s.id === skin));
-    b.innerHTML = '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
-                  '<span class="nm">' + (TTx.skinName ? TTx.skinName(s) : s.name) + '</span>';
-    b.onclick = () => { skin = s.id; set(LS.skin, skin); apply(); renderSkins(); renderCustom(); renderGlass(); };
-    return b;
-  };
-  SKINS.filter(s => !s.legacy).forEach(s => box.appendChild(tile(s)));
-  TTx.skinFold(box.parentNode);
-  TTx.origBox($('c_origs'), () => { skin = TTx.readState().skin; renderSkins(); renderCustom(); renderGlass(); renderModeBtn(); });
+  TTx.skinPicker($('s_skins').parentNode, () => { skin = TTx.readState().skin; renderSkins(); renderCustom(); renderGlass(); renderModeBtn(); });
 }
 
 /* ── custom theme ── */

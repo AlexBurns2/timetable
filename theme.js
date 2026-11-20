@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261119f';
+const ASSET_V = '20261120';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -39,7 +39,7 @@ const ASSET_V = '20261119f';
          theme's colour; Icon style: icons or emoji), unless Display overrides them
    both: has a light and a dark version (false: always dark)
    legacy: an original, as the theme was before it was redrawn; not in the
-         picker, but under Settings → Originals */
+         picker's grid, but in the Original themes row under it (origBox) */
 /* held back for now (not finished): their files stay, but they're out of the picker and a saved choice reads as Plain.
    Take an id out of this list to bring that theme back. */
 const HIDDEN_SKINS = ['coquette', 'apple'];
@@ -798,9 +798,10 @@ function fxButtons(el, hint){
   paint();
 }
 /* origBox: Settings → Original themes. The themes as they were before they were rebuilt, behind one
-   row under Animation that opens to a tile each (its two main colours and its name). Open while one of
-   them is on, with a button back to the theme that was on before it. after(): redraw the dialog. */
-const ORIG_SW = { 'o-paper':['#f7f3e8', '#c2571f'], 'o-swiss':['#ffffff', '#e8112d'], 'o-brutal':['#ffe94a', '#0047ff'], 'o-scifi':['#04070d', '#00e5ff'],
+   quiet row under every theme (skinPicker shows it while every theme is shown, or while an original is
+   on) that opens to a tile each (its two main colours and its name). Open while one of them is on, with
+   a button back to the theme that was on before it. after(): redraw the dialog. */
+const ORIG_SW ={ 'o-paper':['#f7f3e8', '#c2571f'], 'o-swiss':['#ffffff', '#e8112d'], 'o-brutal':['#ffe94a', '#0047ff'], 'o-scifi':['#04070d', '#00e5ff'],
                   'o-terminal':['#05080a', '#39ff9e'], 'o-blueprint':['#07223d', '#7ff0ff'], newsprint:['#f4f1e8', '#8c1c13'], retro:['#008080', '#d4d0c8'] };
 let origOpen = null;                                 // null: open only while an original is on
 function origBox(el, after){
@@ -809,7 +810,7 @@ function origBox(el, after){
   const open = origOpen === null ? !!on : origOpen;
   const prevId = get('tt.skin_prev', ''), prev = SKINS.find(s => s.id === prevId && !s.legacy) || SKINS.find(s => s.id === cur.replace(/^o-/, '') && !s.legacy) || SKINS[0];
   el.classList.toggle('open', open);
-  el.innerHTML = '<button type="button" class="orighd" aria-expanded="' + open + '"><b>Original themes</b><span>' + (on ? on.name + ', as it was' : 'As they were before the rebuild') + '</span>' +
+  el.innerHTML = '<button type="button" class="orighd" aria-expanded="' + open + '"><b>Original themes</b><span>' + (on ? on.name + ', as it was' : 'as they were before the rebuild') + '</span>' +
       '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" d="M96 48l80 80-80 80"/></svg></button>' +
     (open ? '<div class="origgrid">' + legacy.map(s => { const c = ORIG_SW[s.id] || ['#888', '#444'];
       return '<button type="button" class="origtile" data-o="' + s.id + '" aria-pressed="' + (s.id === cur) + '"><i style="background:linear-gradient(135deg,' + c[0] + ' 0 58%,' + c[1] + ' 58%)"></i><span>' + s.name + '</span></button>'; }).join('') + '</div>' +
@@ -819,11 +820,71 @@ function origBox(el, after){
     if (!on) set('tt.skin_prev', cur);                        // where "Back" leads
     set(LS.skin, b.dataset.o); apply(); if (after) after(); });
 }
-/* skinFold: the Appearance heading (the label of the field holding the .skins
-   grid) folds the grid away and back; folded, it names the theme that is on.
-   Kept with the other settings. Call it again whenever the theme changes. */
 /* a theme's name as Settings shows it: one theme has another name in dark mode */
 const skinName = s => (s.darkName && document.documentElement.getAttribute('data-mode') === 'dark') ? s.darkName : s.name;
+/* skinPicker: Settings → Appearance, in both dialogs (settings.js, index.html). field: the .field holding the
+   <label>, the .skins grid and the .origrow box. Folded (the default once a theme has been picked) the grid is
+   one row of pictures: the theme that's on, two of the newer ones, and a tile that opens every theme, with four
+   more in miniature on it. (Folded to the heading alone, people missed the new themes and opened the originals'
+   row under it instead.) Open, it's every theme and a Fewer tile, then the originals' quiet row, which also
+   shows while an original is on. The heading folds it too. after(): a theme was picked (saved and on by then);
+   the page redraws what it keeps of its own. */
+const SHOWCASE = ['aero', 'y2k', 'vapor', 'scifi', 'softclub', 'deco', 'maximal', 'skeuo', 'paper', 'brutal', 'editorial', 'swiss', 'studio', 'blueprint', 'terminal', 'glass', 'classic', 'plain', 'custom'];
+const caret = d => '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="' + d + '"/></svg>';
+let pickerAt = null;                                 // the picker last drawn, drawn again when the look changes (names differ in dark mode)
+function skinPicker(field, after){
+  if (!field) return;
+  const grid = field.querySelector('.skins'), lab = field.querySelector('label'), orow = field.querySelector('.origrow');
+  if (!grid || !lab) return;
+  pickerAt = { field, after };
+  const again = () => skinPicker(field, after);
+  const folded = !!get('tt.skinsfold', localStorage.getItem(LS.skin) !== null ? 1 : 0);      /* folded unless asked otherwise, once a theme has been picked */
+  const fold = v => { set('tt.skinsfold', v ? 1 : 0); again(); };
+  let hd = lab.querySelector('.skhd');
+  if (!hd){ lab.innerHTML = '<button type="button" class="skhd"><span>Appearance</span>' + caret('M208 96l-80 80-80-80') + '</button>'; hd = lab.querySelector('.skhd'); }
+  hd.onclick = ev => { ev.preventDefault(); fold(!folded); };
+  hd.setAttribute('aria-expanded', String(!folded)); hd.title = folded ? 'Show every theme' : 'Show fewer';
+  const cur = readState().skin, all = SKINS.filter(s => !s.legacy), on = all.find(s => s.id === cur);
+  const back = grid.contains(document.activeElement) ? document.activeElement.getAttribute('data-sk') : null;
+  const tile = s => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'skinbtn'; b.setAttribute('data-sk', s.id); b.setAttribute('aria-pressed', String(s.id === cur));
+    b.innerHTML = '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
+                  '<span class="nm">' + skinName(s) + '</span>';
+    b.onclick = () => { set(LS.skin, s.id); apply(); if (after) after(); };
+    return b;
+  };
+  const more = (key, cls, sw, name, title, go) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'skinbtn more'; b.setAttribute('data-sk', key); b.title = title;
+    b.innerHTML = '<span class="sw ' + cls + '">' + sw + '</span><span class="nm">' + name + '</span>';
+    b.onclick = go;
+    return b;
+  };
+  grid.hidden = false; grid.innerHTML = ''; grid.classList.toggle('peek', folded);
+  if (folded){
+    const rest = SHOWCASE.map(id => all.find(s => s.id === id)).filter(s => s && s !== on);
+    const shown = (on ? [on] : []).concat(rest).slice(0, 3);      // (a phone has room for two of them: theme.css hides the third)
+    shown.forEach(s => grid.appendChild(tile(s)));
+    const mini = rest.filter(s => shown.indexOf(s) < 0).slice(0, 4);
+    grid.appendChild(more('more', 'mos', mini.map(s => '<i style="background:' + s.swatch + '"></i>').join(''), 'All ' + all.length + ' themes', 'Show every theme', () => fold(false)));
+  } else {
+    all.forEach(s => grid.appendChild(tile(s)));
+    grid.appendChild(more('fewer', 'plus', caret('M48 160l80-80 80 80'), 'Fewer', 'Show fewer', () => fold(true)));
+  }
+  if (back){                                         // keep the keyboard's place across the redraw
+    const want = back === 'fewer' ? 'more' : back === 'more' ? '' : back;
+    const t = (want && grid.querySelector('[data-sk="' + want + '"]')) || grid.querySelector('[data-sk]');
+    if (t) try { t.focus({ preventScroll:true }); } catch {}
+  }
+  if (orow){
+    orow.hidden = folded && !SKINS.some(s => s.legacy && s.id === cur);
+    if (orow.hidden) orow.innerHTML = ''; else origBox(orow, after);
+  }
+}
+addEventListener('tt:look', () => { const p = pickerAt; if (p && p.field.isConnected && p.field.closest('dialog[open]')) skinPicker(p.field, p.after); });
+/* skinFold: the old Appearance heading (the grid folded away to the heading alone, which named the
+   theme). The dialogs use skinPicker now; kept so an old page can't break. */
 function skinFold(field){
   if (!field) return;
   const grid = field.querySelector('.skins'), lab = field.querySelector('label'); if (!grid || !lab) return;
@@ -875,7 +936,7 @@ function themesNotice(){
     const name = orig ? (SKINS.find(k => k.id === orig) || {}).name : '';
     const n = document.createElement('div'); n.className = 'ttnote'; n.setAttribute('role', 'status');
     n.innerHTML = '<p><b>' + (orig ? name + ' has been rebuilt.' : 'The themes have been rebuilt.') + '</b> ' +
-      (orig ? 'The original is' : 'The originals are') + ' still here: Settings → Originals.</p>' +
+      (orig ? 'The original is' : 'The originals are') + ' still here: Settings → All themes → Original themes.</p>' +
       '<div class="ttnotebtns">' + (orig ? '<button type="button" class="btn" data-a="old">Keep the original</button>' : '') + '<button type="button" class="btn primary" data-a="ok">Got it</button></div>';
     const done = () => { set('tt.themes2_note', 1); n.classList.add('out'); setTimeout(() => n.remove(), 280); };
     n.querySelector('[data-a="ok"]').onclick = done;
@@ -1105,7 +1166,7 @@ const NEWS = [
   { id:'themes2', date:'2026-11-14', title:'Themes, rebuilt',
     text:'Nine themes rebuilt from the ground up, each with its own layout, its own way between pages and, for some, a moving background ' +
          '(Settings → Animation turns the motion off). New: Skeuomorphism, Y2K Futurism, Vaporwave, Editorial, Art Deco and Maximalism. ' +
-         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Prefer an old look? Settings → Originals. Custom themes can be shared as a code.' },
+         'Sci-fi is now Cyberpunk and Brutal is Neo Brutalism. Prefer an old look? Settings → All themes → Original themes. Custom themes can be shared as a code.' },
   { id:'favicons', date:'2026-11-12', title:'Dynamic favicons',
     text:'Website favicons now dynamically update to match your selected theme.' },
   { id:'reactfix', date:'2026-11-12', title:'Reaction leaderboard fixed',
@@ -1137,7 +1198,7 @@ function newsSeen(key){
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
-window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
+window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,

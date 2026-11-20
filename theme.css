@@ -304,22 +304,26 @@ html[data-motion="reduced"] .ldspin{animation-duration:2.4s}
 .ldinline::before{content:'';display:inline-block;vertical-align:-2px;width:12px;height:12px;margin-right:7px;border-radius:50%;
   border:2px solid color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--accent);animation:ldspin .75s linear infinite}
 
-/* ═══ Settings → Original themes: one row under Animation that opens to the themes as they were ═══ */
-.origs{margin:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
-.orighd{display:flex;align-items:center;gap:4px 10px;width:100%;margin:0;padding:10px 12px;border:0;background:none;font:inherit;color:var(--text);cursor:pointer;text-align:left}
-.orighd b{flex:none;font-size:.6875rem;letter-spacing:.1em;text-transform:uppercase}
-.orighd span{flex:1;min-width:0;color:var(--muted);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.orighd svg{flex:none;width:12px;height:12px;color:var(--muted);transition:transform .18s ease}
-.origs.open .orighd svg{transform:rotate(90deg)}
-.orighd:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:var(--radius)}
-.origgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px;padding:0 12px 12px}
+/* ═══ Settings → Original themes: a quiet line under every theme (theme.js skinPicker shows it while
+   every theme is shown, or while an original is on) that opens to the themes as they were. It was a
+   box of its own under Animation, and stood out more than the themes themselves. ═══ */
+.origrow{margin-top:12px}
+.origrow[hidden]{display:none!important}
+.orighd{display:inline-flex;align-items:center;gap:7px;max-width:100%;margin:0;padding:2px 0;border:0;background:none;font:inherit;font-size:.8125rem;color:var(--muted);cursor:pointer;text-align:left}
+.orighd b{flex:none;font-weight:600}
+.orighd span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orighd svg{flex:none;width:10px;height:10px;transition:transform .18s ease}
+.orighd:hover{color:var(--text)}
+.origrow.open .orighd svg{transform:rotate(90deg)}
+.orighd:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.origgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px;padding:8px 0 0}
 .origtile{display:flex;align-items:center;gap:8px;min-width:0;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);
   font:inherit;font-size:.75rem;line-height:1.15;cursor:pointer;text-align:left}
 .origtile i{flex:none;width:22px;height:22px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.45)}
 .origtile span{min-width:0;overflow-wrap:anywhere}
 .origtile:hover{border-color:var(--accent)}
 .origtile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 32%,transparent)}
-.origback{margin:0 12px 12px;width:calc(100% - 24px);justify-content:center}
+.origback{margin:8px 0 0;width:100%;justify-content:center}
 /* Dark mode and Animation: two switches side by side */
 .swrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tsw{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:0;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius);
@@ -348,6 +352,20 @@ html[data-motion="reduced"] .tsw i,html[data-motion="reduced"] .tsw i::after{tra
 .skhd:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
 .skins[hidden]{display:none!important}
 .field:has(> .skins[hidden]) > label{margin-bottom:0}
+/* folded, Appearance is one row of pictures (theme.js skinPicker): the theme that's on, two newer ones, and a
+   tile with four more on it in miniature that opens them all; open, a Fewer tile ends the grid. A phone shows
+   two themes before that tile. */
+.field > .skins.peek{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:479px){
+  .field > .skins.peek{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .field > .skins.peek > .skinbtn:nth-child(3):not(.more){display:none}
+}
+.skins .skinbtn.more .sw.mos{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--line)}
+.skins .skinbtn.more .sw.mos i{display:block;min-width:0;min-height:0}
+.skins .skinbtn.more .sw.plus{display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--panel-2)}
+.skins .skinbtn.more .sw.plus svg{width:20px;height:20px}
+.skins .skinbtn.more:hover{border-color:var(--accent)}
+.skins .skinbtn.more:hover .sw.plus{color:var(--accent)}
 .field > .tcode{margin-bottom:10px}
 
 /* ═══ the note shown once after the themes were rebuilt (theme.js themesNotice) ═══ */
