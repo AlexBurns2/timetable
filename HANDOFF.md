@@ -3530,3 +3530,26 @@ Asked for (passed on from a side session): one day of a student's timetable as b
   - The page was tested in headless Chrome with a stand-in API. Never run on real timetables.
 - Not done: an archive of past days (the route accepts `date` for the last 30 days, the page only plays today), a spotlight in Results, a share line.
 - Results' bars show who's in each on hover, as Daily Guess Who's do: the summary returns `names` per guess count and `lost` (display names, 40 per bar). Asset version `20261120e`, v57.
+
+## 8.132 Whose timetable?, redesigned: the whole fortnight, a plain count, easier (asset version `20261120f`, `CACHE_VERSION` v58)
+The user found 8.131 much too hard and agreed a new design (through the side session). The first version's days needn't be kept. 8.131's server notes are replaced by these; the tables, routes, cron and Home strip are unchanged.
+- **Board**: the answer's whole fortnight. Week A over Week B on wide screens, two tabs under 640px. A new hint's tiles light up, and on a phone the tab moves to them.
+  - It starts as the school's grid: every period a grey rectangle at its bell time (`/api/timetable/bell-times`, `readBells`; Type O or R is not a teaching period). Breaks are gaps, and free periods look the same as the rest, so the first guess is blind.
+  - The template (`templateOf`) is the same for everyone: a bell-time teaching period, or a period a sixth of the year has a class in (sport); times fall back to the commonest row times.
+  - Shown tiles carry the subject in its colour (hashed into 12 colours) or an outlined "Free".
+- **Count**: "N students still fit", plain. The guess box only suggests those who still fit and haven't been guessed (`Suggest` with a function source).
+- **Hints** (`planFor`), in a fixed order of kinds, details picked per day. There are no room hints, and a board hint never re-shows a tile (the slot and day hints must show 3 or more new tiles).
+  1. how many subjects they take
+  2. the classes you share with them (each player's own, `whoseView`; never counted on for certainty)
+  3. every lesson of their most common subject (juniors, median 9+ subjects: a pair of common ones)
+  4. one period on every day
+  5. a whole day
+  6. every lesson of a rarer subject (rarest first)
+  7. a teacher who has them more than once ("teaches two of their classes"), else a double on a day, else any teacher
+  8. all their free periods
+- **Certainty**: everyone is checked over the whole fortnight (`fits`, `profileOf`). Exactly one person must fit after hint 6 (the third from last), more than one after hint 1, and best is first fitting at hint 5 or 6 (4 fine, 3 at a push). Only people whose whole grid is unique are tried.
+- **Stored puzzle (v2)**: `template`, the answer's `cells`, `hints`, `counts`, `fit` (who fits after each hint, as indices), `people` (emails, server-only), `codes`/`pc` (each person's class codes, for hint 2) and `classes` (the answer's code → subject).
+  - The browser gets `whoseView`: names (never emails), the board, `fit`, `shareAt`/`shareFit` for the player, and the hint texts.
+  - A first-version day for today is rebuilt and overwritten (`ensureWhose`, with `created_at` reset); a result saved before that counts as not started, and the day's results ignore it. Nothing is deleted.
+- **Tested offline** (made-up years, scratchpad `whose_test.mjs`, `whose_fake2.mjs`): senior on lines (150 and 220 students) 12 of 12, one person first fitting at hint 4 mostly, otherwise 5; junior with electives 12 of 12 at hint 5; junior with identical class timetables: none. About 15 ms per day.
+- The page was shot in headless Chrome with a stand-in API: wide, phone and dark. Never run on real timetables or bell times.

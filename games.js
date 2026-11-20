@@ -151,7 +151,7 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose timetable?', blurb:'One day of someone’s timetable from your year. Whose is it?' },
+  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
   { id:'quartets', cat:'Timetable', ico:'🍀', name:'Triplets', blurb:'Find the three groups of three from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
@@ -1454,18 +1454,22 @@ BUILD.dailyguess = host => {
 };
 
 /* ── Whose timetable? ──────────────────────────────────────────────────
-   One day of someone's timetable from your year, as blank tiles: which periods are free and which are
-   doubles. Each wrong guess (or a skip) fills one more thing in: a period's subject, teacher or room,
-   the weekday or the week. Nine guesses; the server made sure exactly one person fits once the last
-   hint is out. The day, its hints and the answer come from /api/daily?whose=1 (api/_whose.js); guesses
-   are marked here, instantly, and saved in the background, as in Daily Guess Who. */
+   Someone's whole fortnight from your year. It starts as the school's grid, every period a blank
+   rectangle at its bell time (free periods too, so the first guess is blind). Each wrong guess, or a
+   skip, gives the next hint: some fill in tiles (a subject in its colour, or Free), some are facts.
+   Under the board, how many students still fit; the guess box only suggests them. Week A and B sit
+   one above the other on a wide screen, and behind two tabs on a phone. Everything comes from
+   /api/daily?whose=1 (api/_whose.js); guesses are marked here, instantly, and saved in the background,
+   as in Daily Guess Who. */
+const WT_COLS = ['#e5484d', '#f76b15', '#d6a20a', '#30a46c', '#12a594', '#0090ff', '#3e63dd', '#8e4ec6', '#d6409f', '#e93d82', '#29a383', '#00a2c7'];
 BUILD.whose = host => {
-  head(host, 'Whose timetable?', 'One day of someone’s timetable from your year. Whose is it?', '<div id="wt"></div>');
+  head(host, 'Whose timetable?', 'Someone’s fortnight from your year. Whose is it?', '<div id="wt"></div>');
   const box = document.getElementById('wt');
   let alive = true;
   const norm = x => String(x == null ? '' : x).trim().toLowerCase().replace(/\s+/g, ' ');
   /* a hint arrives as text with <b> for emphasis (the server makes it); no other tag is let through */
   const hintHtml = h => String(h == null ? '' : h).replace(/<(?!\/?b>)/g, '&lt;');
+  const colOf = s => { let h = 0; for (const ch of norm(s)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return WT_COLS[h % WT_COLS.length]; };
   (async () => {
     box.innerHTML = LD('Reading your year’s timetables…');
     let s;
@@ -1476,12 +1480,23 @@ BUILD.whose = host => {
 
   function render(s){
     if (s.none){ box.innerHTML = '<p class="how">No puzzle for Year ' + esc(s.year) + ' today. ' + esc(s.none) + '</p>'; return; }
-    const hints = s.hints || [], total = s.total || hints.length + 1, answer = s.answer;
-    const names = new Set((s.candidates || []).map(norm));
+    const hints = s.hints || [], total = s.total || hints.length + 1, answer = s.answer, cells = s.cells || {}, tmpl = s.template || {};
     let guesses = s.guesses || 0, done = !!s.done, won = !!s.won, streak = s.streak || 0;
+    const guessed = new Set();
     const seen = () => done ? hints.length : Math.min(guesses, hints.length);
+    const shareFit = s.shareFit ? new Set(s.shareFit) : null;
+    /* who still fits after k hints: the day's list, and from hint 2 on, your own shared classes too */
+    const fitAt = k => (s.fit[Math.min(k, s.fit.length - 1)] || []).filter(i => !(shareFit && s.shareAt >= 0 && k > s.shareAt) || shareFit.has(i));
+    /* the tiles shown after k hints */
+    const DAYS = ['mona','tuea','weda','thua','fria','monb','tueb','wedb','thub','frib'];
+    const slots = DAYS.flatMap(d => (tmpl[d] || []).map(x => d + '|' + x.p));
+    const tilesOf = h => h.k === 'subj' ? slots.filter(k => h.subjects.some(x => norm(cells[k]) === norm(x)))
+      : h.k === 'slot' ? slots.filter(k => k.endsWith('|' + h.p)) : h.k === 'day' ? slots.filter(k => k.startsWith(h.d + '|'))
+      : h.k === 'frees' ? slots.filter(k => !cells[k]) : [];
+    const shownAt = k => { const set = new Set(); hints.slice(0, k).forEach(h => tilesOf(h).forEach(x => set.add(x))); return set; };
     markDay('whose', s, { done, won, streak });
     recordStat('whose', { key:'streak', mode:'set', value:streak });
+
     box.innerHTML =
       '<div class="dgbar">' +
         '<span class="dgwhen">Year ' + esc(s.year) + ' · <b>Today</b></span>' +
@@ -1490,7 +1505,11 @@ BUILD.whose = host => {
         '<button class="dgchip" id="wtsumbtn" type="button" aria-expanded="false" aria-controls="wtsummary">Results</button>' +
       '</div>' +
       '<div class="wtboard">' +
-        '<div class="wtday" id="wtday"></div>' +
+        '<div class="wtleft">' +
+          '<p class="wtcount" id="wtcount" aria-live="polite"></p>' +
+          '<div class="wttabs" role="tablist"><button type="button" role="tab" data-w="a" aria-selected="true">Week A</button><button type="button" role="tab" data-w="b" aria-selected="false">Week B</button></div>' +
+          '<div class="wtweeks" id="wtweeks"></div>' +
+        '</div>' +
         '<div class="wtside">' +
           '<div class="gwhints" id="wthints"></div>' +
           '<div class="gwrow" id="wtrow"><input id="wtin" placeholder="Type a name from your year…" aria-label="Your guess" autocomplete="off">' +
@@ -1502,29 +1521,33 @@ BUILD.whose = host => {
       '</div>' +
       '<div class="dgresults" id="wtsummary" hidden></div>';
 
-    const dayEl = document.getElementById('wtday'), hintsEl = document.getElementById('wthints');
-    const full = new Map((s.full || []).map(t => [t.from, t]));
-    const lbl = t => t.from === t.to ? 'P' + t.from : 'P' + t.from + '–' + t.to;
-    /* the board: what's known so far (everything, once it's over), the newest thing lit up */
+    /* the grid: each day's periods placed by their bell times, so recess, lunch and assembly are gaps */
+    const all = DAYS.flatMap(d => tmpl[d] || []);
+    const t0 = Math.min(...all.map(x => x.s)), t1 = Math.max(...all.map(x => x.e)), PX = 0.82;
+    const dayH = Math.max(120, Math.round((t1 - t0) * PX));
+    const weeksEl = document.getElementById('wtweeks');
+    let tab = 'a';
     function paint(fresh){
-      const n = seen(), know = hints.slice(0, n);
-      const got = (k, from) => done || know.some(h => h.k === k && (from == null || h.from === from));
-      const lit = (k, from) => fresh && fresh.k === k && (from == null || fresh.from === from) ? ' fresh' : '';
-      const valOf = (k, from) => { const t = full.get(from) || {}; return k === 'S' ? t.subject : k === 'T' ? t.teacher : t.room; };
-      dayEl.innerHTML =
-        '<div class="wthd"><span class="' + (got('D') ? '' : 'unk') + lit('D') + '">' + (got('D') ? esc(s.day.weekday) : 'Which day?') + '</span>' +
-          '<span class="' + (got('W') ? '' : 'unk') + lit('W') + '">Week ' + (got('W') ? esc(s.day.week) : '?') + '</span></div>' +
-        (s.tiles || []).map(t => {
-          const span = t.to - t.from + 1;
-          if (t.free) return '<div class="wttile free" style="--n:' + span + '"><span class="wtp">' + lbl(t) + '</span><span class="wtfree">Free</span></div>';
-          const line = (k, cls) => { const on = got(k, t.from), v = on ? valOf(k, t.from) : '';
-            return '<span class="' + cls + (on ? '' : ' unk') + lit(k, t.from) + '">' + (on && v ? esc(v) : '') + '</span>'; };
-          return '<div class="wttile" style="--n:' + span + '"><span class="wtp">' + lbl(t) + '</span>' +
-            '<span class="wtbody">' + line('S', 'wts') + line('T', 'wtt') + line('R', 'wtr') + '</span></div>';
-        }).join('');
-      hintsEl.innerHTML = know.map((h, i) => '<div class="gwhint' + (fresh && i === n - 1 ? ' fresh' : '') + '"><span class="dghn">' + (i + 1) + '</span>' + hintHtml(h.text) + '</div>').join('') ||
-        '<p class="wtstart">Here’s the shape of someone’s day. Guess whose it is, or skip for a hint.</p>';
+      const n = seen(), shown = done ? new Set(slots) : shownAt(n), lit = fresh || new Set();
+      const week = w => '<div class="wtweek' + (w === tab ? ' on' : '') + '" data-w="' + w + '"><div class="wtwk">Week ' + w.toUpperCase() + '</div><div class="wtgrid">' +
+        ['mon','tue','wed','thu','fri'].map(dd => { const d = dd + w;
+          return '<div class="wtcol"><div class="wtdh">' + dd.charAt(0).toUpperCase() + dd.slice(1) + '</div><div class="wtdb" style="height:' + dayH + 'px">' +
+            (tmpl[d] || []).map(x => { const k = d + '|' + x.p, on = shown.has(k), v = cells[k];
+              const style = 'top:' + Math.round((x.s - t0) * PX) + 'px;height:' + Math.max(16, Math.round((x.e - x.s) * PX) - 3) + 'px' + (on && v ? ';--c:' + colOf(v) : '');
+              return '<div class="wtc' + (on ? (v ? ' sub' : ' free') : '') + (lit.has(k) ? ' fresh' : '') + '" style="' + style + '" title="' + esc('Period ' + x.p + (on ? ': ' + (v || 'Free') : '')) + '">' +
+                (on ? '<span>' + esc(v || 'Free') + '</span>' : '') + '</div>'; }).join('') +
+            '</div></div>'; }).join('') + '</div></div>';
+      weeksEl.innerHTML = week('a') + week('b');
+      const k = done ? hints.length : n, c = fitAt(k).length;
+      document.getElementById('wtcount').innerHTML = '<b>' + c + '</b> ' + (c === 1 ? 'student still fits' : 'students still fit');
+      document.getElementById('wthints').innerHTML = hints.slice(0, n).map((h, i) => '<div class="gwhint' + (fresh && i === n - 1 ? ' fresh' : '') + '"><span class="dghn">' + (i + 1) + '</span>' + hintHtml(h.text) + '</div>').join('') ||
+        '<p class="wtstart">Every grid in your year starts like this. Guess whose fortnight it is, or skip for a hint.</p>';
     }
+    host.querySelectorAll('.wttabs button').forEach(b => b.onclick = () => {
+      tab = b.dataset.w;
+      host.querySelectorAll('.wttabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+      weeksEl.querySelectorAll('.wtweek').forEach(x => x.classList.toggle('on', x.dataset.w === tab));
+    });
     const sc = document.getElementById('sc');
     const setScore = () => { if (sc) sc.textContent = done ? '' : 'Guess ' + (guesses + 1) + ' of ' + total; };
 
@@ -1535,9 +1558,8 @@ BUILD.whose = host => {
       paint(null);
       const b = document.createElement('div');
       b.className = 'gwhint ' + (won ? 'win' : 'lose');
-      b.innerHTML = (won ? 'You got it in <b>' + guesses + '</b>. It was <b>' + esc(answer) + '</b>.' : 'Out of guesses. It was <b>' + esc(answer) + '</b>.') +
-        ' Their ' + esc(s.day.weekday) + ', Week ' + esc(s.day.week) + '.';
-      hintsEl.appendChild(b);
+      b.innerHTML = won ? 'You got it in <b>' + guesses + '</b>. It was <b>' + esc(answer) + '</b>.' : 'Out of guesses. It was <b>' + esc(answer) + '</b>.';
+      document.getElementById('wthints').appendChild(b);
       markDay('whose', s, { done:true, won, streak });
       openSummary();
     }
@@ -1551,14 +1573,19 @@ BUILD.whose = host => {
     if (done){ finish(false); return; }
 
     const input = document.getElementById('wtin'), msg = document.getElementById('wtmsg');
-    if (window.Suggest) Suggest.attach(input, { source: Suggest.names(s.candidates || [], 8) });
+    const names = s.names || [], known = new Set(names.map(norm));
+    /* only the students who still fit everything shown so far (and not those already guessed) */
+    const fitNames = () => fitAt(seen()).map(i => names[i]).filter(nm => nm && !guessed.has(norm(nm)));
+    if (window.Suggest) Suggest.attach(input, { source: q => Suggest.names(fitNames(), 8)(q) });
     function step(v, skip){
       if (done) return;
       /* a name that isn't in your year doesn't cost a guess (a typo, say) */
-      if (!skip && names.size && !names.has(norm(v))){ msg.textContent = 'Pick a name from your year.'; input.focus(); return; }
+      if (!skip && known.size && !known.has(norm(v))){ msg.textContent = 'Pick a name from your year.'; input.focus(); return; }
       msg.textContent = '';
+      const before = shownAt(seen());
       guesses++;
       const correct = !skip && norm(v) === norm(answer);
+      if (!skip) guessed.add(norm(v));
       const row = document.createElement('div');
       row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
       row.textContent = skip ? '→ Skipped' : (correct ? '✓ ' : '✗ ') + v;
@@ -1575,8 +1602,14 @@ BUILD.whose = host => {
           markDay('whose', s, { done, won, streak });
           if (done) loadSummary(); })
         .catch(() => {});
-      if (done) finish(true);
-      else { paint(hints[guesses - 1]); setScore(); input.focus(); }
+      if (done){ finish(true); return; }
+      /* the new hint's tiles light up (on whichever week they're in; the tab moves to them on a phone) */
+      const now = shownAt(seen()), fresh = new Set([...now].filter(k => !before.has(k)));
+      if (fresh.size && ![...fresh].some(k => k.split('|')[0].endsWith(tab))){
+        tab = [...fresh][0].split('|')[0].slice(-1);
+        host.querySelectorAll('.wttabs button').forEach(x => x.setAttribute('aria-selected', String(x.dataset.w === tab)));
+      }
+      paint(fresh); setScore(); input.focus();
     }
     document.getElementById('wtguess').onclick = () => { const v = input.value.trim(); if (v) step(v, false); };
     document.getElementById('wtskip').onclick = () => step('', true);
@@ -1986,7 +2019,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120e';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120f';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
