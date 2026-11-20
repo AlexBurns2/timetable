@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120z';
+const ASSET_V = '20261121a';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -219,9 +219,15 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
-const CITY_TINT = { sydney:'#5aa7c8,#f3d7a6', tokyo:'#c9b8d8,#f2c4b3', hongkong:'#6c8fb3,#f0b8c8', chongqing:'#b8a48e,#e9c79a' };
+/* the Cities Collection's pictures are their photos printed the way the theme prints them (skins/cities.css): a fine
+   halftone over the photo in the city's two inks (the photo in greys, multiplied by the scale colour, screened with
+   the dark ink). [dark ink, scale colour] for each, the day pair from cities.css. The blend rides along in the same
+   style attribute as the background (every place that draws a swatch writes style="background:…"). */
+const CITY_DUO = { sydney:['#0b5560', '#f5ecdd'], tokyo:['#28262c', '#ec3518'], hongkong:['#1c2654', '#f6a792'], chongqing:['#351a18', '#f09e56'] };
 SKINS.filter(s => s.city).forEach(s => {
-  s.swatch = "url('/images/city/" + s.id + "-t.webp') center/cover no-repeat,linear-gradient(135deg," + (CITY_TINT[s.id] || '#999,#ccc') + ")";
+  const d = CITY_DUO[s.id] || ['#222222', '#dddddd'];
+  s.swatch = 'radial-gradient(circle,rgba(0,0,0,.3) 0 .55px,transparent 1px) 0 0/3px 3px,linear-gradient(' + d[0] + ',' + d[0] + '),linear-gradient(' + d[1] + ',' + d[1] + '),' +
+    "linear-gradient(#000,#000),url('/images/city/" + s.id + "-t.webp') center/cover no-repeat " + d[0] + ';background-blend-mode:normal,screen,multiply,saturation,normal';
 });
 SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'destijl') || {}).border = '#111'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
 

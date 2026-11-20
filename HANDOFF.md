@@ -3803,3 +3803,9 @@ Checked with the fake database slowed to 300 ms a trip (`e2eslow.mjs`): the next
   `--ct-em` is the name's width in ems, measured in its own face: SYDNEY 5.12 (set to 5.2), 東京/香港 2.04, 重庆 2.0 (2.1). On a phone, standing up the right edge, its length is held to the frame's height the same way.
 - The two-character names are now about the height of SYDNEY's capitals (`--ct-size` 15vw against 20vw; 22vw on a phone). Sized only by the width they could take, they were twice as tall and looked like a bug.
 - Checked by measurement for each city at nine window sizes (1964 × 1216 down to 320 × 568, wide and tall): the name ends inside the frame in all 36.
+
+## 8.152 Cities: the big cropped name back; the pictures printed like the theme (asset version `20261121a`, `CACHE_VERSION` v79)
+- **The name** is big and run off the bottom-left corner again (as in 8.150: 30vw for the two-character names, 20vw for SYDNEY, `bottom: border − .2em`; on a phone, standing up the right edge, slightly off it). The owner tried the whole-inside-the-frame version (8.151) and preferred the cropped poster. `--ct-em` is kept in case a fit is wanted later.
+- **The pictures** (Theme finder cards, Settings → Appearance and its minis; theme.js `CITY_DUO`): each city's thumbnail is now printed the way its page is.
+  - The layers are a fine halftone, then the photo in greys (`saturation`), multiplied by the scale colour and screened with the dark ink (day pair).
+  - The `background-blend-mode` rides in the swatch string after a `;`, because every place that draws a swatch writes `style="background:…"`.
