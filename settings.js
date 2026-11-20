@@ -213,7 +213,7 @@ $('cr_save').onclick = () => {
   crEditing = false; renderCreds();
   $('cr_state').textContent = 'Saved. Open the timetable to load it.';
 };
-$('cr_clear').onclick = () => { creds = null; crEditing = false; set(LS.creds, null); localStorage.removeItem(LS.cache); renderCreds(); };
+$('cr_clear').onclick = () => { creds = null; crEditing = false; set(LS.creds, null); localStorage.removeItem(LS.cache); if (TTx.setMod) TTx.setMod(false); renderCreds(); };
 
 /* ── accessibility ── */
 function renderA11y(){
@@ -289,6 +289,7 @@ window.openSettings = openSettings;            // the Theme finder opens it for 
    isMod and checks every moderator action again. */
 if (TTx.signedIn && TTx.signedIn() && TTx.api){
   TTx.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
+    if (d && TTx.setMod) TTx.setMod(!!d.isMod);                 // (moderators' themes: theme.js)
     if (!d || !d.isMod) return;
     const b = $('openMod'); if (!b) return;
     b.hidden = false;

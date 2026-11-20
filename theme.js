@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120q';
+const ASSET_V = '20261120u';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -72,6 +72,16 @@ const SKINS = [
   { id:'bauhaus',   name:'Bauhaus',   mod:true, both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
   { id:'destijl',   name:'De Stijl',  mod:true, both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
   { id:'decon',     name:'Deconstructivism', mod:true, both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
+  /* Cities Collection: a digital postcard of one city each, all drawn by skins/cities.css (html[data-city]).
+     city: its time zone, the locale its clock speaks, and its name as the city writes it. */
+  { id:'sydney',    name:'Sydney',    mod:true, both:true, ic:'accent', is:'icons', css:'cities', font:'family=Unbounded:wght@600;800',
+    city:{ tz:'Australia/Sydney', locale:'en-AU', local:'Sydney' } },
+  { id:'tokyo',     name:'Tokyo',     mod:true, both:true, ic:'accent', is:'icons', css:'cities', font:'family=Shippori+Mincho+B1:wght@600;800',
+    city:{ tz:'Asia/Tokyo', locale:'ja-JP', local:'東京' } },
+  { id:'hongkong',  name:'Hong Kong', mod:true, both:true, ic:'accent', is:'icons', css:'cities', font:'family=Noto+Serif+TC:wght@700;900',
+    city:{ tz:'Asia/Hong_Kong', locale:'zh-HK', local:'香港' } },
+  { id:'chongqing', name:'Chongqing', mod:true, both:true, ic:'accent', is:'icons', css:'cities', font:'family=Ma+Shan+Zheng',
+    city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
   /* a secret: type "saul" in any box (below). Not in the picker. */
   { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
@@ -209,6 +219,10 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
+const CITY_TINT = { sydney:'#5aa7c8,#f3d7a6', tokyo:'#c9b8d8,#f2c4b3', hongkong:'#6c8fb3,#f0b8c8', chongqing:'#b8a48e,#e9c79a' };
+SKINS.filter(s => s.city).forEach(s => {
+  s.swatch = "url('/images/city/" + s.id + "-t.webp') center/cover no-repeat,linear-gradient(135deg," + (CITY_TINT[s.id] || '#999,#ccc') + ")";
+});
 SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'destijl') || {}).border = '#111'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
 
 /* kept for older callers; the picker shows every theme now */
@@ -270,9 +284,24 @@ function inkFor(hex){
   return (0.2126*v[0] + 0.7152*v[1] + 0.0722*v[2]) > 0.42 ? '#000' : '#fff';
 }
 
+/* Themes still being made (mod: true) are for moderators only: for anyone else a saved one reads as
+   Plain (the choice itself is left as it is). Whether you're a moderator is the server's answer (isMod),
+   remembered on this device by whichever page asked last (msc.ismod: not a tt. key, so it doesn't sync);
+   setMod() is how a page passes the answer in, and it repaints if that changes what you'd see. */
+const MOD_SKINS = new Set(SKINS.filter(s => s.mod).map(s => s.id));
+const isModHere = () => { try { return localStorage.getItem('msc.ismod') === '1'; } catch { return false; } };
+function setMod(on){
+  const was = isModHere();
+  try { if (on) localStorage.setItem('msc.ismod', '1'); else localStorage.removeItem('msc.ismod'); } catch {}
+  if (was !== !!on && MOD_SKINS.has(get(LS.skin, 'plain'))){
+    apply();
+    try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}       // a page that keeps its own copy of the look follows
+  }
+}
 function readState(){
   let skin = PREVIEW ? PREVIEW.skin : get(LS.skin, 'plain');
   if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
+  else if (!PREVIEW && MOD_SKINS.has(skin) && !isModHere()) skin = 'plain';
   return {
     skin,
     mode: PREVIEW && PREVIEW.mode ? PREVIEW.mode : get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
@@ -631,6 +660,7 @@ function paint(state){
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-pg', PG);
+  { const sk = SKINS.find(s => s.id === st.skin); if (sk && sk.city) root.setAttribute('data-city', sk.id); else root.removeAttribute('data-city'); }
   root.setAttribute('data-fx', fxOn() ? 'on' : 'off');
   vtOptIn((st.skin === 'y2k' || st.skin === 'aero' || st.skin === 'softclub') && fxOn());
   const ic = iconsFor(st);
@@ -1111,6 +1141,34 @@ if (PREVIEW){
   });
 }
 
+/* Cities Collection: the city's own time in the header, under the site's name, like the caption on a
+   postcard: its name as it writes it and the time there, the way it's written there (21:43 in Tokyo,
+   下午9:43 in Hong Kong, 9:43 pm in Sydney). Ticks every 20 seconds; gone with any other theme. */
+let cityTimer = 0;
+function cityClock(){
+  try {
+    const sk = SKINS.find(s => s.id === document.documentElement.getAttribute('data-city')), c = sk && sk.city;
+    document.querySelectorAll('.cityclock').forEach(e => { if (!c || e.dataset.city !== sk.id) e.remove(); });
+    clearInterval(cityTimer); cityTimer = 0;
+    if (!c || !document.body) return;
+    const host = document.querySelector('.hubbar .hubid, .pagehead .phtitle, .topbar .brand');
+    if (!host) return;
+    let el = host.querySelector('.cityclock');
+    if (!el){
+      el = document.createElement('div'); el.className = 'cityclock'; el.dataset.city = sk.id;
+      const at = host.querySelector('.eyebrow, .sitename');
+      if (at) at.after(el); else host.prepend(el);
+    }
+    const fmt = new Intl.DateTimeFormat(c.locale, { timeZone:c.tz, hour:'numeric', minute:'2-digit' });
+    const tick = () => { const t = fmt.format(new Date());
+      el.innerHTML = '<b lang="' + c.locale + '">' + c.local + '</b><span>' + t + '</span>';
+      el.setAttribute('aria-label', 'In ' + sk.name + ' it is ' + t); };
+    tick(); cityTimer = setInterval(tick, 20000);
+  } catch {}
+}
+addEventListener('tt:look', cityClock);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cityClock, { once:true }); else cityClock();
+
 /* Better Call Saul used to put a smooth video of Saul behind the page; it's the small, crunchy GIF
    everywhere now, all in skins/saul.css. This only tidies away a video an older copy of the page left. */
 function saulBg(){
@@ -1420,7 +1478,7 @@ const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
-              NEWS, newsActive, newsTag, newsSeen, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE,
+              NEWS, newsActive, newsTag, newsSeen, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the

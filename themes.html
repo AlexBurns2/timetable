@@ -10,11 +10,11 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=20261120q">
-<script src="theme.js?v=20261120q"></script>
-<script src="icons.js?v=20261120q"></script>
-<link rel="stylesheet" href="site.css?v=20261120q">
-<link rel="stylesheet" href="settings.css?v=20261120q">
+<link rel="stylesheet" href="theme.css?v=20261120u">
+<script src="theme.js?v=20261120u"></script>
+<script src="icons.js?v=20261120u"></script>
+<link rel="stylesheet" href="site.css?v=20261120u">
+<link rel="stylesheet" href="settings.css?v=20261120u">
 <style>
 /* ── the Theme finder: every theme, grouped, with a preview before you pick ── */
 .tflede{color:var(--muted);font-size:0.875rem;margin:0 0 14px;max-width:62ch}
@@ -28,27 +28,28 @@
 .tfcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi)}
 .tfcard:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .tfcard[aria-current="true"]{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
-.tfsw{display:block;height:96px;background-size:cover;background-position:center}
+/* the picture keeps the thumbnails' own shape (120 × 46), so none of it is cut off */
+.tfsw{display:block;width:100%;aspect-ratio:120/46;background-size:cover;background-position:center}
 .tfnm{display:flex;align-items:center;gap:8px;padding:9px 12px 10px;font-weight:700;font-size:0.875rem;min-width:0}
 .tfnm span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tftag{flex:none;margin-left:auto;padding:0 7px;border-radius:999px;font-size:0.6875rem;font-weight:700;line-height:1.6;border:1px solid var(--line);color:var(--muted)}
 .tftag.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 /* Popular: one strip that scrolls sideways */
-.tfstrip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(200px,1fr);gap:12px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x proximity}
-.tfstrip .tfcard{scroll-snap-align:start}
-.tfstrip .tfsw{height:118px}
+/* Popular: the four most used, a little bigger, wrapping onto rows like the groups (never sideways) */
+.tfstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 /* a group: a grid */
-.tfgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+/* every row four across at most, Popular the same as the rest */
+.tfgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 /* the originals: quiet, folded */
 .tforig{margin:4px 0 30px;border-top:1px solid var(--line);padding-top:12px}
 .tforig summary{cursor:pointer;color:var(--muted);font-size:0.875rem;font-weight:700;list-style:none}
 .tforig summary::-webkit-details-marker{display:none}
 .tforig summary em{font-style:normal;font-weight:400;margin-left:6px}
 .tforig[open] summary{margin-bottom:12px}
-.tforig .tfsw{height:64px}
+
+@media (max-width:820px) and (min-width:561px){ :is(.tfgrid,.tfstrip){grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media (max-width:560px){
-  .tfgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-  .tfsw{height:78px} .tfstrip{grid-auto-columns:72%} .tfstrip .tfsw{height:104px}
+  :is(.tfgrid,.tfstrip){grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 }
 html[data-motion="reduced"] .tfcard{transition:none}
 
@@ -125,7 +126,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&am
 const ALL = TT.SKINS.filter(s => !s.secret);
 /* themes still being made (mod: true): only in their own group, and only for moderators */
 const WIP = ALL.filter(s => s.mod).map(s => s.id);
-let isMod = false;
+let isMod = !!(TT.isMod && TT.isMod());          // as this device last heard; the server's answer below settles it
 const byId = id => ALL.find(s => s.id === id);
 const nameOf = s => (s.darkName && document.documentElement.getAttribute('data-mode') === 'dark') ? s.darkName : s.name;
 
@@ -137,17 +138,19 @@ const GROUPS = [
   ['Analogue', ['vapor', 'terminal', 'blueprint', 'scifi']],
   ['Post-modernism', ['maximal', 'brutal', 'decon']],
   ['Cozy', ['coquette', 'paper', 'deco']],
-  ['Modernism', ['editorial', 'studio', 'swiss', 'bauhaus', 'destijl']]
+  ['Modernism', ['editorial', 'studio', 'swiss', 'bauhaus', 'destijl']],
+  ['Cities Collection', ['sydney', 'tokyo', 'hongkong', 'chongqing']]
 ];
 const themes = ALL.filter(s => !s.legacy && !s.mod), listed = new Set(GROUPS.flatMap(g => g[1]));
 const more = themes.filter(s => !listed.has(s.id)).map(s => s.id);
 if (more.length) GROUPS.push(['More', more]);
 const ORIGINALS = ALL.filter(s => s.legacy).map(s => s.id);
-GROUPS.forEach(g => g[1] = g[1].filter(id => !WIP.includes(id)));
+/* the themes being made are already in their groups; only moderators see them there (see shown()) */
+const shown = id => isMod || !WIP.includes(id);
 /* Popular: the newer themes (not the basics), the most used first; until that's known, the picker's showcase order */
 let popular = (TT.SHOWCASE || []).filter(id => byId(id) && !BASICS.includes(id));
-themes.forEach(s => { if (!BASICS.includes(s.id) && !popular.includes(s.id)) popular.push(s.id); });
-const POP_SHOWN = 8;
+ALL.forEach(s => { if (!s.legacy && !BASICS.includes(s.id) && !popular.includes(s.id)) popular.push(s.id); });
+const POP_SHOWN = 4;                              // the four most used
 
 const current = () => TT.readState().skin;
 const card = (id, list) => {
@@ -159,11 +162,10 @@ const card = (id, list) => {
 };
 const LISTS = {};
 function render(){
-  LISTS.pop = popular.slice(0, POP_SHOWN);
+  LISTS.pop = popular.filter(shown).slice(0, POP_SHOWN);
   $('tfpop').innerHTML = LISTS.pop.map(id => card(id, 'pop')).join('');
-  const groups = isMod && WIP.length ? GROUPS.concat([['In progress · moderators only', WIP]]) : GROUPS;
-  $('tfgroups').innerHTML = groups.map(([name, ids], i) => {
-    const have = ids.filter(byId); LISTS['g' + i] = have;
+  $('tfgroups').innerHTML = GROUPS.map(([name, ids], i) => {
+    const have = ids.filter(id => byId(id) && shown(id)); LISTS['g' + i] = have;
     return have.length ? '<section class="tfsec" aria-labelledby="tfg' + i + '"><h2 class="tfh" id="tfg' + i + '">' + esc(name) + '</h2>' +
       '<div class="tfgrid">' + have.map(id => card(id, 'g' + i)).join('') + '</div></section>' : '';
   }).join('');
@@ -177,13 +179,17 @@ TT.lookRow($('tflook'), () => render());
 addEventListener('tt:look', () => { if (!$('tfprev').open) render(); });
 if (TT.signedIn && TT.signedIn()){
   TT.api('/api/leaderboard', { params:{ themepop:1 } }).then(d => {
-    const order = (d && d.order || []).filter(id => byId(id) && !byId(id).legacy && !byId(id).mod && !BASICS.includes(id));
+    const order = (d && d.order || []).filter(id => byId(id) && !byId(id).legacy && !BASICS.includes(id));
     if (!order.length) return;
     popular = order.concat(popular.filter(id => !order.includes(id)));
     render();
   }, () => {});
   /* moderators see the themes still being made (the server says who's one) */
-  if (WIP.length) TT.api('/api/leaderboard', { params:{ settings:1 } }).then(d => { if (d && d.isMod){ isMod = true; render(); } }, () => {});
+  if (WIP.length) TT.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
+    if (!d) return;
+    if (TT.setMod) TT.setMod(!!d.isMod);
+    if (isMod !== !!d.isMod){ isMod = !!d.isMod; render(); }
+  }, () => {});
 }
 
 /* ── the preview ── */
@@ -253,6 +259,6 @@ $('tfpvuse').onclick = () => {
 };
 })();
 </script>
-<script src="settings.js?v=20261120q"></script>
+<script src="settings.js?v=20261120u"></script>
 </body>
 </html>

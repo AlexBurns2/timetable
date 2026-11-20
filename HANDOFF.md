@@ -3709,3 +3709,49 @@ People had been cheating high scores. What was open, and what changed:
   - XP: green hill under blue sky (CC BY / CC0).
   - Decon: La Villette follies.
 - **Also fixed:** at phone width, Quick settings' two switches cut their labels off, in every theme; they now stack.
+
+## 8.143 Moderators' themes read as Plain for everyone else; Popular shows four (asset version `20261120r`, `CACHE_VERSION` v70)
+- **A saved `mod:true` theme reads as Plain unless you're a moderator** (theme.js `MOD_SKINS`, `isModHere`, `setMod`, in `readState`). The saved choice (`tt.skin`) is left as it is.
+  - Whether you're a moderator is the server's `isMod` (`/api/leaderboard?settings=1`), remembered on the device as `msc.ismod`. It isn't a `tt.` key, so it doesn't sync.
+  - Every page that already asks passes the answer in with `TT.setMod`: settings.js, the timetable's Settings, games.js `siteSettings`, the Theme finder. `setMod` repaints (and fires `tt:skin`) when the answer changes what you'd see. Signing out clears it.
+  - On a new device a moderator sees Plain for the moment until the first answer comes back. It's a convenience on the device, not security: moderator powers are still checked on the server.
+  - Preview frames aren't affected.
+- **Popular** in the Theme finder shows the four most used (`POP_SHOWN = 4`).
+- Tested: a non-moderator with DORFic saved sees Plain and keeps the choice; a moderator sees DORFic and gets `msc.ismod`; Popular shows four.
+
+## 8.144 Moderators see the Theme finder as it will be; Popular wraps (asset version `20261120s`, `CACHE_VERSION` v71)
+- **Moderators** see the themes being made (`mod:true`) in the groups they'll be in, with no "In progress" group and no tag, so the page looks as it will once they're released. They can also reach Popular if they're among the most used. Everyone else never sees them (themes.html `shown()`).
+- **Popular** wraps onto rows like the groups do (grid auto-fill; two columns on a phone) instead of scrolling sideways. Checked: no sideways scroll at 1280 or 390.
+- The Cities collection (see the owner's concept) hasn't been started; it waits for the owner's go.
+
+## 8.145 Theme finder grid; the Cities Collection's engine (asset version `20261120t`, `CACHE_VERSION` v72)
+- **Theme finder**: Popular is the same size as every other group. Every row is four across at most (three from 561 to 820px, two on a phone). The pictures keep the thumbnails' own shape (`aspect-ratio:120/46`), so none is cropped any more; Settings' Appearance tiles too (theme.css `.skins.skinnow .skinbtn .sw`).
+- **Cities Collection** (in progress, moderators only, its own group "Cities Collection" in the Theme finder):
+  - **Registered**: Sydney, Tokyo, Hong Kong and Chongqing (theme.js SKINS, `css:'cities'`, `city:{ tz, locale, local }`, `mod:true`). Their thumbnails are their own photos (`images/city/<id>-t.webp`) over a tint until those exist.
+  - **One engine for all** (skins/cities.css): theme.js marks the page `html[data-city="<id>"]`, and each city sets only its photos (`--ct-day`, `--ct-night`, `-p` for phones held upright), its name (`--ct-name`: Sydney, 東京, 香港, 重庆 — Chongqing in the simplified characters it uses itself), the face for it (Unbounded, Shippori Mincho B1, Noto Serif TC, Ma Shan Zheng) and its accent.
+  - **The postcard**: the photo fills the window inside a narrow paper border, washed and with still film grain. The city's name is huge, low on the left, standing up the right edge on a phone. Panels are frosted glass. The timetable is quieter; games and the inner pages use nearer crops of the same photo. Nothing moves.
+  - **Clock** (theme.js `cityClock`): the city's own time under the site's name in the header, written its own way (Intl with the city's locale and time zone), every 20 s.
+  - **Photos**: not downloaded yet. Candidates are being found on Commons and wait for the owner's OK. Until then, a tint shows instead.
+
+## 8.146 Cities Collection: the photographs (asset version `20261120u`, `CACHE_VERSION` v73)
+- **Eight Commons photos**, a day and a night for each city. The owner approved the list. The 1920px Commons thumbnails were downloaded; Commons only serves standard widths, so 2560 was refused.
+  - Each was made into three webp files in `images/city/` (camera data stripped):
+    - `<id>-<day|night>.webp`: 1920 wide;
+    - `-p.webp`: an upright crop for phones, centred on the landmark;
+    - `<id>-t.webp`: the Theme finder thumbnail, 480 × 184, from the day photo.
+  - About 2.9 MB for all 20; a page loads one photo.
+  - Credited in Home → About → Photo credits.
+- **The photos**:
+  - Sydney: north view of the Opera House, the Rocks and the CBD (DXR); the Opera House and Bridge at dusk (Benh LIEU SONG).
+  - Tokyo: Shibuya and Mount Fuji from Roppongi Hills (Syced, CC0); Tokyo Tower at blue hour (David Kernan).
+  - Hong Kong: Victoria Harbour from Kowloon (Diego Delso); the harbour at night from the Peak (Benh LIEU SONG).
+  - Chongqing: Raffles City from the Yangtze (Junyi Lou); the skyline at night (Maple Doctor).
+  - The research agent's ranked list of 73 candidates for all eight cities, including Los Angeles, Singapore, Taipei and London, is in scratchpad `cities/candidates.json`. That folder is temporary.
+- **cities.css**:
+  - Each city now has its focus points (`--ct-pos`, `--ct-pos-n` for night) and an accent taken from its photos:
+    - Sydney: harbour blue / dusk lilac;
+    - Tokyo: the tower's red / its lit amber;
+    - Hong Kong: the city's red / the harbour's neon pink;
+    - Chongqing: river clay / the bridge's red.
+  - The wash is lighter and the panels a little clearer, so more of the city shows.
+- Still moderators only, in the Theme finder's "Cities Collection" group.

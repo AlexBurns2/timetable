@@ -434,6 +434,7 @@ html[data-motion="reduced"] .mscnote{animation:none}
 /* Settings → Appearance: your theme and the way to the Theme finder (theme.js skinPicker, FINDER) */
 .field > .skins.skinnow{grid-template-columns:repeat(2,minmax(0,1fr))}
 .skins.skinnow a.skinbtn{display:block;text-decoration:none;color:var(--text)}
+.skins.skinnow .skinbtn .sw{height:auto;aspect-ratio:120/46}          /* the thumbnail's own shape: nothing cut off */
 .skins.skinnow a.skinbtn.more .nm{color:var(--accent)}
 .skins.skinnow a.skinbtn.more:hover{border-color:var(--accent)}
 /* Settings → Quick settings (theme.js quickRow) */

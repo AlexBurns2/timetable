@@ -840,7 +840,8 @@ const RV = (() => {
 let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false };
 function siteSettings(){
   if (!sitePromise) sitePromise = TT.api('/api/leaderboard', { params:{ settings:1 } })
-    .then(d => { siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
+    .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
+                 siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
                              isMod: !!(d && d.isMod) }; return siteCfg; })
     .catch(() => siteCfg);
@@ -2119,7 +2120,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120q';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120u';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
