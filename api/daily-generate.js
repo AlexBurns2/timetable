@@ -13,6 +13,7 @@ import { db } from "./_supabase.js";
 import { safeEqual } from "./_limit.js";
 import { ensurePuzzle, sydneyDate } from "./_daily.js";
 import { prebuildQuartets } from "./_connroute.js";
+import { prebuildWhose } from "./_whose.js";
 import { displayNames, refreshRosterCache, checkSomeClasses } from "./_names.js";
 
 /* making six years of Quartets reads a lot of timetables */
@@ -26,6 +27,9 @@ export default async function handler(req, res) {
   if (!db) return res.status(503).json({ error: "not configured" });
 
   const date = sydneyDate(), started = Date.now();
+  /* the second nightly run (vercel.json, 20 minutes later): Whose timetable? for every year. Each year
+     reads all its timetables, so it gets a run of its own; any year not reached is made by its first player. */
+  if (req.query.whose) return res.status(200).json({ date, whose: await prebuildWhose(started + 55000) });
   const out = {}, quartets = {};
   /* first, the copy of the student directory every route reads its names and years from */
   let roster;

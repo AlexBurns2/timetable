@@ -398,7 +398,9 @@ html[data-tileicons="accent"] .qtile .ico{color:var(--accent)}
 @media (max-width:560px){ .qtile .ico .ph{width:1.6rem;height:1.6rem} }
 
 /* ── Home: today's daily games, a slim row under the tiles ──────────── */
-.hubtoday{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 4px}
+.hubtoday{display:grid;grid-template-columns:repeat(var(--td,2),minmax(0,1fr));gap:10px;margin:10px 0 4px}
+/* three daily games on a phone: two side by side, the third across both */
+@media (max-width:560px){ .hubtoday{grid-template-columns:repeat(2,minmax(0,1fr))} .hubtoday .tday:last-child:nth-child(odd){grid-column:1 / -1} }
 .hubtoday[hidden]{display:none}
 .tday{display:flex;align-items:center;gap:12px;min-width:0;padding:11px 16px;border-radius:var(--radius);text-decoration:none;
   color:var(--text);background:var(--panel);border:var(--card-border);box-shadow:var(--shadow);

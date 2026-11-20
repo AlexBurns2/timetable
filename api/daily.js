@@ -7,6 +7,7 @@
  * GET  /api/daily?archive=1           → every day since the epoch that has results,
  *      with how many played and solved it, plus your own result per day
  * GET/POST …?conn=1 / {conn:1}         → Quartets (see _connroute.js)
+ * GET/POST …?whose=1 / {whose:1}       → Whose timetable? (see _whose.js)
  * GET  /api/daily?date=…&summary=1     → how the year went that day, and a
  *      "spotlight": best guesser, first to solve, stumped, longest streak, most improved
  *
@@ -24,6 +25,7 @@ import { displayNames, withName, stripEmails, rosterList } from "./_names.js";
 let NAMES = new Map();
 import { ensurePuzzle, resolveYear, computeStreak, sydneyDate, buildHints } from "./_daily.js";
 import { connRoute } from "./_connroute.js";
+import { whoseRoute } from "./_whose.js";
 
 /* making a day's Quartets reads a sample of the year's timetables, which can take a while */
 export const config = { maxDuration: 60 };
@@ -164,6 +166,8 @@ export default async function handler(req, res) {
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
   /* Quartets (?conn=1, or {conn:1}) lives here too, so it needs no function of its own */
   if (req.query.conn || (body && body.conn)) return connRoute(req, res, me, body || {}, NAMES);
+  /* Whose timetable? (?whose=1, or {whose:1}): see _whose.js */
+  if (req.query.whose || (body && body.whose)) return whoseRoute(req, res, me, body || {}, NAMES);
   const rawDate = req.method === "POST" ? (body && body.date) : req.query.date;
 
   let year, today, date, puzzle;

@@ -25,7 +25,10 @@
 
 /* The generator's version. Puzzles made by an older one are deleted and made
    again (see _connroute.js); bump this whenever the categories or rules change. */
-export const QUARTETS_VERSION = 8;
+export const QUARTETS_VERSION = 9;
+/* From TRIPLETS_FROM the daily puzzle is Triplets: nine people, three groups of three, made by
+   version 9. Days before keep the four-by-four puzzles they were made with (version 8 and older). */
+export const TRIPLETS_FROM = "2026-11-21";
 
 /* ── small word lists (lower case) ─────────────────────────────────── */
 const L = s => s.split(' ');
@@ -267,8 +270,8 @@ export function tidyTeacher(t){
    category, the people it has used least lately are picked first, so the same four
    don't keep coming back together. */
 export const AVOID_DAYS = 10, PEOPLE_DAYS = 60;
-export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid = new Map(), usedBy = new Map(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000 }){
-  const senior = Number(year) >= 11;
+export async function makeQuartets({ size = 4, people, getTT, getRoster, seed, year, avoid = new Map(), usedBy = new Map(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000 }){
+  const senior = Number(year) >= 11, K = size;          // K groups of K people (4 for Quartets, 3 for Triplets)
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   if (avoid instanceof Set) avoid = new Map([...avoid].map(id => [id, 1]));
   const n = people.length;
@@ -389,7 +392,7 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
   const maxTries = trust ? 4000 : tier.any ? 400 : 160;                // the last resort reads nothing, so it can try far more
   for (let draw = 0, tries = 0; draw < maxTries * 40 && tries < maxTries && !late(); draw++){
     if (fetches >= budget && !trust) break;
-    const chosen = pickFour(usable, r, avoid, tier);
+    const chosen = pickFour(usable, r, avoid, tier, K);
     if (!chosen) continue;
     tries++;
     /* four people each, who fit their own group and none of the other three */
@@ -404,13 +407,13 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
           chosen.every(o => o === c || o.kind !== 'name' || !o.members.has(e))), r)
         .sort((a, b) => Math.min(ago(b), PEOPLE_DAYS) - Math.min(ago(a), PEOPLE_DAYS)        // the least used lately first
           || (tts.has(b) ? 1 : 0) - (tts.has(a) ? 1 : 0));                                   // then already-read timetables
-      if (pool.length < 4){ ok = false; break; }
+      if (pool.length < K){ ok = false; break; }
       const picked = [];
-      for (let i = 0; i < pool.length && picked.length < 4; i += 8){
+      for (let i = 0; i < pool.length && picked.length < K; i += 8){
         const batch = pool.slice(i, i + 8);
         if (ttOK && fetches < budget && Date.now() < deadline) await loadTT(batch.slice(0, Math.max(0, budget - fetches)));
         for (const e of batch){
-          if (picked.length >= 4) break;
+          if (picked.length >= K) break;
           const t = tts.get(e);
           if (t ? !t.subjects.size : !trust) continue;                       // need their timetable, and real classes in it
           if (chosen.some(o => o !== c && fits(e, o) !== false)) continue;
@@ -419,13 +422,14 @@ export async function makeQuartets({ people, getTT, getRoster, seed, year, avoid
         }
         if (fetches >= budget && !trust) break;
       }
-      if (picked.length < 4){ ok = false; break; }
+      if (picked.length < K){ ok = false; break; }
       /* stale: three or four of the same people this category had in the last two months */
       picked.forEach(e => taken.add(e)); groups.push({ c, m: picked, stale: picked.filter(e => ago(e) <= PEOPLE_DAYS).length >= 3 });
     }
     if (!ok) continue;
     const all = groups.flatMap(g => g.m);
     /* no rival: no other name theme takes in four of the sixteen, and no first initial four times over */
+    /* (Triplets: three of the nine sharing another theme is a red herring; four would be a rival) */
     const rival = usable.some(c => c.kind === 'name' && !chosen.includes(c) && all.filter(e => c.members.has(e)).length >= 4);
     const initials = new Map(); all.forEach(e => initials.set(first(e)[0], (initials.get(first(e)[0]) || 0) + 1));
     if (rival || [...initials.values()].some(k => k >= 4)) continue;
@@ -450,15 +454,18 @@ const HARD = {
   'n:wordsur': 1.5, 'n:wordfirst': 1.5, 'n:job': 1.75, 'n:animal': 1.75, 'n:bird': 1.75, 'n:pop': 1.75,
   'n:long': 1.25, 'n:ie': 1.5, 'n:yend': 1.5, 'n:son': 1.5,
   /* medium: a bit of knowledge, or a second look */
-  'n:place': 2.25, 'n:fplace': 1.75, 'n:monarch': 2.25, 'n:pm': 2.5, 'n:f1': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3,
+  'n:place': 2.25, 'n:fplace': 1.75, 'n:monarch': 2.25, 'n:pm': 2.5, 'n:f1': 2.5, 'n:bookend': 2.5, 'n:palindrome': 2.5, 'n:initword': 3.75,
   /* hard: wordplay */
-  'n:abc': 3, 'n:country': 3, 'n:element': 3.25, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:food': 3.5, 'n:monthhid': 3.5, 'n:schoolhid': 3.5,
+  'n:abc': 3.75, 'n:country': 3, 'n:element': 3.75, 'n:hiddenname': 3.25, 'n:chain': 3.5, 'n:food': 3.5, 'n:monthhid': 3.5, 'n:schoolhid': 3.5,
   'n:hiddenanimal': 3.75, 'n:hiddenbody': 3.75, 'n:trig': 3.75, 'n:backwards': 3.75, 'n:anagram': 4 };
 /* a broad kind of subject is easy; one subject is middling; one class or one teacher is the hardest */
 const PROFILE_HARD = { 'p:tech': 1.25, 'p:arts': 1.25, 'p:lang': 1.25, 'p:nomaths': 1.5, 'p:nosci': 1.5, 'p:sci3': 2, 'p:ext2': 2 };
 export const hardness = c => c.kind === 'subject' ? 2.25 : c.kind === 'teacher' ? 3.5 : c.kind === 'class' ? 3.75
   : c.kind === 'profile' ? PROFILE_HARD[c.id] || 2 : HARD[c.id] || 3;
-const family = c => c.kind === 'profile' ? 'profile' : c.kind !== 'name' ? 'timetable' : hardness(c) <= 2 ? 'theme' : 'wordplay';
+/* letter puzzles on the initials (next in the alphabet, spell a word, a chemical symbol) count as
+   very hard, and a day has one of them at most: two on one day was too much */
+const INITIALS = new Set(['n:abc', 'n:initword', 'n:element']);
+const family = c => c.kind === 'profile' ? 'profile' : c.kind !== 'name' ? 'timetable' : INITIALS.has(c.id) ? 'initials' : hardness(c) <= 2 ? 'theme' : 'wordplay';
 export const BAND = [8.5, 11];                        // the four together (e.g. 1.25 + 2.25 + 3.25 + 3.75 is 10.5)
 /* how picky to be, in order; a day uses the first that finds a puzzle (almost
    always the first). Even the loosest keeps the rules that make a puzzle fair:
@@ -475,7 +482,10 @@ export const TIERS = [
   { any: true, avoid: false, names: true },                             // name themes only
   { any: true, avoid: false, names: true, trust: true }                 // …trusting the roster if timetables can't be read
 ];
-function pickFour(usable, r, avoid, tier = TIERS[0]){
+/* Triplets: three groups, and an easier day (the band and the hardest group scaled down) */
+const scaleTier = (t, K) => K >= 4 || t.any ? t : Object.assign({}, t, { band: t.band.map(b => b * 0.68), hardest: Math.min(t.hardest, 2.5) });
+function pickFour(usable, r, avoid, tier = TIERS[0], K = 4){
+  tier = scaleTier(tier, K);
   const chosen = [], fam = {}, maxTT = tier.names ? 0 : r() < .15 ? 3 : 2;   // timetable groups: usually two, now and then three
   const tt = x => x.kind !== 'name', specific = x => x.kind === 'class' || x.kind === 'teacher';
   for (const c of shuffle(usable, r)){
@@ -483,7 +493,7 @@ function pickFour(usable, r, avoid, tier = TIERS[0]){
     if (tier.avoid && avoid && avoid.has(c.id) && avoid.get(c.id) <= tier.avoid) continue;     // used lately: left out
     if (tier.fresh && c.fresh != null && c.fresh < 4) continue;                                 // or it would be the same people again
     const f = family(c);
-    if ((fam[f] || 0) >= (tier.any ? 3 : 2)) continue;                      // no more than two of a kind
+    if ((fam[f] || 0) >= (f === 'initials' ? 1 : tier.any ? 3 : 2)) continue;   // no more than two of a kind (one initials puzzle)
     if (c.kind === 'teacher' && chosen.some(o => o.kind === 'teacher')) continue;
     /* two timetable groups mustn't overlap: "Physics" and "a Physics class", or a Physics teacher */
     const subj = x => x.kind === 'teacher' ? [...x.subjects] : x.subject ? [x.subject] : [];
@@ -494,9 +504,9 @@ function pickFour(usable, r, avoid, tier = TIERS[0]){
     if (tt(c) && chosen.filter(tt).length >= maxTT) continue;
     if (specific(c) && chosen.some(specific)) continue;                    // one "same class" or "same teacher" at most
     chosen.push(c); fam[f] = (fam[f] || 0) + 1;
-    if (chosen.length === 4) break;
+    if (chosen.length === K) break;
   }
-  if (chosen.length < 4) return null;
+  if (chosen.length < K) return null;
   if (tier.any) return chosen;
   const total = chosen.reduce((a, c) => a + hardness(c), 0), easiest = Math.min(...chosen.map(hardness));
   const hardest = Math.max(...chosen.map(hardness));

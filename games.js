@@ -151,7 +151,8 @@ const GAMES = [
      for good. */
   { id:'jim',    cat:'Arcade', ico:'🟡', name:'The Jim Button', blurb:'A big yellow button that says your name' },
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
-  { id:'quartets', cat:'Timetable', ico:'🍀', name:'Quartets', blurb:'Find the four similar groups of four from your year.' },
+  { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose timetable?', blurb:'One day of someone’s timetable from your year. Whose is it?' },
+  { id:'quartets', cat:'Timetable', ico:'🍀', name:'Triplets', blurb:'Find the three groups of three from your year.' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -475,7 +476,7 @@ const sumNote = html => '<span class="sl note">' + html + '</span>';
 /* straight away, from this device: your own record */
 function localSum(id){
   const s = allStats()[id] || {};
-  if (id === 'dailyguess') return s.streak ? sumNote('🔥 <b>' + s.streak + '</b> day streak') : '';
+  if (id === 'dailyguess' || id === 'whose') return s.streak ? sumNote('🔥 <b>' + s.streak + '</b> day streak') : '';
   const lb = LB_GAMES[id];
   if (lb) return s[lb.metric] != null ? sumLine('Your best', lb.fmt(s[lb.metric])) : '';
   if (id === 'tetris'){ const b = s.allBest != null ? s.allBest : s.best; return b != null ? sumLine('Sprint best', shortHMS(b * 1000)) : ''; }
@@ -1452,6 +1453,164 @@ BUILD.dailyguess = host => {
   return () => { alive = false; clearInterval(spotTimer); };
 };
 
+/* ── Whose timetable? ──────────────────────────────────────────────────
+   One day of someone's timetable from your year, as blank tiles: which periods are free and which are
+   doubles. Each wrong guess (or a skip) fills one more thing in: a period's subject, teacher or room,
+   the weekday or the week. Nine guesses; the server made sure exactly one person fits once the last
+   hint is out. The day, its hints and the answer come from /api/daily?whose=1 (api/_whose.js); guesses
+   are marked here, instantly, and saved in the background, as in Daily Guess Who. */
+BUILD.whose = host => {
+  head(host, 'Whose timetable?', 'One day of someone’s timetable from your year. Whose is it?', '<div id="wt"></div>');
+  const box = document.getElementById('wt');
+  let alive = true;
+  const norm = x => String(x == null ? '' : x).trim().toLowerCase().replace(/\s+/g, ' ');
+  /* a hint arrives as text with <b> for emphasis (the server makes it); no other tag is let through */
+  const hintHtml = h => String(h == null ? '' : h).replace(/<(?!\/?b>)/g, '&lt;');
+  (async () => {
+    box.innerHTML = LD('Reading your year’s timetables…');
+    let s;
+    try { s = await TT.api('/api/daily', { params:{ whose:1 } }); }
+    catch (e){ if (alive) box.innerHTML = '<p class="how">' + esc(e.message) + '</p>'; return; }
+    if (alive) render(s);
+  })();
+
+  function render(s){
+    if (s.none){ box.innerHTML = '<p class="how">No puzzle for Year ' + esc(s.year) + ' today. ' + esc(s.none) + '</p>'; return; }
+    const hints = s.hints || [], total = s.total || hints.length + 1, answer = s.answer;
+    const names = new Set((s.candidates || []).map(norm));
+    let guesses = s.guesses || 0, done = !!s.done, won = !!s.won, streak = s.streak || 0;
+    const seen = () => done ? hints.length : Math.min(guesses, hints.length);
+    markDay('whose', s, { done, won, streak });
+    recordStat('whose', { key:'streak', mode:'set', value:streak });
+    box.innerHTML =
+      '<div class="dgbar">' +
+        '<span class="dgwhen">Year ' + esc(s.year) + ' · <b>Today</b></span>' +
+        '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="wtstreak">' + streak + '</b></span>' +
+        '<span class="dgsp"></span>' +
+        '<button class="dgchip" id="wtsumbtn" type="button" aria-expanded="false" aria-controls="wtsummary">Results</button>' +
+      '</div>' +
+      '<div class="wtboard">' +
+        '<div class="wtday" id="wtday"></div>' +
+        '<div class="wtside">' +
+          '<div class="gwhints" id="wthints"></div>' +
+          '<div class="gwrow" id="wtrow"><input id="wtin" placeholder="Type a name from your year…" aria-label="Your guess" autocomplete="off">' +
+            '<button class="btn primary" id="wtguess" type="button">Guess</button>' +
+            '<button class="btn" id="wtskip" type="button" title="Show the next hint (uses a guess)">Skip</button></div>' +
+          '<p class="wtmsg" id="wtmsg" aria-live="polite"></p>' +
+          '<div class="gwlog" id="wtlog"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="dgresults" id="wtsummary" hidden></div>';
+
+    const dayEl = document.getElementById('wtday'), hintsEl = document.getElementById('wthints');
+    const full = new Map((s.full || []).map(t => [t.from, t]));
+    const lbl = t => t.from === t.to ? 'P' + t.from : 'P' + t.from + '–' + t.to;
+    /* the board: what's known so far (everything, once it's over), the newest thing lit up */
+    function paint(fresh){
+      const n = seen(), know = hints.slice(0, n);
+      const got = (k, from) => done || know.some(h => h.k === k && (from == null || h.from === from));
+      const lit = (k, from) => fresh && fresh.k === k && (from == null || fresh.from === from) ? ' fresh' : '';
+      const valOf = (k, from) => { const t = full.get(from) || {}; return k === 'S' ? t.subject : k === 'T' ? t.teacher : t.room; };
+      dayEl.innerHTML =
+        '<div class="wthd"><span class="' + (got('D') ? '' : 'unk') + lit('D') + '">' + (got('D') ? esc(s.day.weekday) : 'Which day?') + '</span>' +
+          '<span class="' + (got('W') ? '' : 'unk') + lit('W') + '">Week ' + (got('W') ? esc(s.day.week) : '?') + '</span></div>' +
+        (s.tiles || []).map(t => {
+          const span = t.to - t.from + 1;
+          if (t.free) return '<div class="wttile free" style="--n:' + span + '"><span class="wtp">' + lbl(t) + '</span><span class="wtfree">Free</span></div>';
+          const line = (k, cls) => { const on = got(k, t.from), v = on ? valOf(k, t.from) : '';
+            return '<span class="' + cls + (on ? '' : ' unk') + lit(k, t.from) + '">' + (on && v ? esc(v) : '') + '</span>'; };
+          return '<div class="wttile" style="--n:' + span + '"><span class="wtp">' + lbl(t) + '</span>' +
+            '<span class="wtbody">' + line('S', 'wts') + line('T', 'wtt') + line('R', 'wtr') + '</span></div>';
+        }).join('');
+      hintsEl.innerHTML = know.map((h, i) => '<div class="gwhint' + (fresh && i === n - 1 ? ' fresh' : '') + '"><span class="dghn">' + (i + 1) + '</span>' + hintHtml(h.text) + '</div>').join('') ||
+        '<p class="wtstart">Here’s the shape of someone’s day. Guess whose it is, or skip for a hint.</p>';
+    }
+    const sc = document.getElementById('sc');
+    const setScore = () => { if (sc) sc.textContent = done ? '' : 'Guess ' + (guesses + 1) + ' of ' + total; };
+
+    function finish(now){
+      if (now) SFX[won ? 'win' : 'lose']();
+      const row = document.getElementById('wtrow'); if (row) row.style.display = 'none';
+      if (sc) sc.textContent = '';
+      paint(null);
+      const b = document.createElement('div');
+      b.className = 'gwhint ' + (won ? 'win' : 'lose');
+      b.innerHTML = (won ? 'You got it in <b>' + guesses + '</b>. It was <b>' + esc(answer) + '</b>.' : 'Out of guesses. It was <b>' + esc(answer) + '</b>.') +
+        ' Their ' + esc(s.day.weekday) + ', Week ' + esc(s.day.week) + '.';
+      hintsEl.appendChild(b);
+      markDay('whose', s, { done:true, won, streak });
+      openSummary();
+    }
+
+    paint(null); setScore();
+    document.getElementById('wtsumbtn').onclick = () => {
+      const el = document.getElementById('wtsummary');
+      if (!el.hidden){ el.hidden = true; document.getElementById('wtsumbtn').setAttribute('aria-expanded', 'false'); return; }
+      openSummary();
+    };
+    if (done){ finish(false); return; }
+
+    const input = document.getElementById('wtin'), msg = document.getElementById('wtmsg');
+    if (window.Suggest) Suggest.attach(input, { source: Suggest.names(s.candidates || [], 8) });
+    function step(v, skip){
+      if (done) return;
+      /* a name that isn't in your year doesn't cost a guess (a typo, say) */
+      if (!skip && names.size && !names.has(norm(v))){ msg.textContent = 'Pick a name from your year.'; input.focus(); return; }
+      msg.textContent = '';
+      guesses++;
+      const correct = !skip && norm(v) === norm(answer);
+      const row = document.createElement('div');
+      row.className = 'gwguessrow ' + (correct ? 'win' : 'miss');
+      row.textContent = skip ? '→ Skipped' : (correct ? '✓ ' : '✗ ') + v;
+      document.getElementById('wtlog').prepend(row);
+      input.value = '';
+      if (correct){ won = true; done = true; }
+      else if (guesses >= total) done = true;
+      /* saved in the background, so the streak and the year's results stay right */
+      TT.api('/api/daily', { method:'POST', body: skip ? { whose:1, skip:true, date:s.date } : { whose:1, guess:v, date:s.date } })
+        .then(r => { if (!alive || !r) return;
+          streak = r.streak != null ? r.streak : streak;
+          const a = document.getElementById('wtstreak'); if (a) a.textContent = streak;
+          recordStat('whose', { key:'streak', mode:'set', value:streak });
+          markDay('whose', s, { done, won, streak });
+          if (done) loadSummary(); })
+        .catch(() => {});
+      if (done) finish(true);
+      else { paint(hints[guesses - 1]); setScore(); input.focus(); }
+    }
+    document.getElementById('wtguess').onclick = () => { const v = input.value.trim(); if (v) step(v, false); };
+    document.getElementById('wtskip').onclick = () => step('', true);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter'){ const v = input.value.trim(); if (v) step(v, false); } });
+    input.focus();
+  }
+
+  /* how the year went today */
+  function openSummary(){
+    const el = document.getElementById('wtsummary'), b = document.getElementById('wtsumbtn');
+    if (!el) return;
+    el.hidden = false; if (b) b.setAttribute('aria-expanded', 'true');
+    loadSummary();
+  }
+  async function loadSummary(){
+    const el = document.getElementById('wtsummary'); if (!el) return;
+    if (!el.innerHTML) el.innerHTML = LD();
+    try { const d = await TT.api('/api/daily', { params:{ whose:1, summary:1 } }); if (alive) paintSummary(el, d.summary); }
+    catch { el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
+  }
+  function paintSummary(el, sum){
+    if (!sum || !sum.played){ el.innerHTML = '<p class="how" style="margin:0">No one in your year has finished this one yet.</p>'; return; }
+    const max = Math.max(1, sum.losses, ...Object.keys(sum.dist).map(k => sum.dist[k]));
+    const bar = (label, n, miss) => '<div class="dgbar' + (miss ? ' miss' : '') + '"><span class="dgbl">' + label + '</span>' +
+      '<span class="dgbt"><i style="width:' + (n / max * 100) + '%"></i></span><span class="dgbn">' + n + '</span></div>';
+    let rows = '';
+    for (let i = 1; i <= sum.total; i++) rows += bar(i, sum.dist[i] || 0, false);
+    rows += bar('✗', sum.losses, true);
+    el.innerHTML = '<div class="dgsumhd"><b>' + sum.played + '</b> played · <b>' + Math.round(sum.wins / sum.played * 100) + '%</b> solved</div>' +
+      '<div class="dgbars">' + rows + '</div>';
+  }
+  return () => { alive = false; };
+};
+
 /* Home's "Today" strip shows where you are with today's daily games from these
    (tt. keys, so they follow your account to other devices). Today's only. */
 function markDay(game, s, st){
@@ -1471,8 +1630,11 @@ function LD(text, late, opts){ return window.TT && TT.loader ? TT.loader(text, l
    instantly, and saved in the background. */
 const QT_COL = ['', '#5cc08b', '#6aa1f0', '#f2a65a', '#e5718b'];
 const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
+/* Triplets (from 21 November 2026): nine people, three groups of three, four mistakes and one hint you
+   ask for. Earlier days are still the four-by-four Quartets they were made as, with their old hints; the
+   board takes its size from the day's puzzle (K groups of K). */
 BUILD.quartets = host => {
-  head(host, 'Quartets', 'Find the four similar groups of four from your year.', '<div id="qt"></div>');
+  head(host, 'Triplets', 'Find the three groups of three from your year.', '<div id="qt"></div>');
   const box = $('qt');
   let alive = true, arch = null, calMonth = null, cur = null;
   const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
@@ -1518,11 +1680,15 @@ BUILD.quartets = host => {
   function play(s){
     cur = s;
     const groups = s.groups.slice().sort((a, b) => a.lv - b.lv);
+    const K = groups.length, LVS = groups.map(g => g.lv), trip = K === 3;      // K groups of K; Triplets when three
+    const GAME = trip ? 'Triplets' : 'Quartets';
+    const HKEY = 'qt.hint.' + s.date;                // Triplets' one hint, asked for (kept on this device)
+    let hinted = trip && !!TT.get(HKEY, false);
     const lvOf = new Map(), howOf = new Map();
     groups.forEach(g => g.names.forEach((n, i) => { lvOf.set(n, g.lv); howOf.set(n, (g.how || [])[i] || ''); }));
     const r0 = s.result || {};
     let found = (r0.found || []).slice(), log = (r0.log || []).slice(), mistakes = r0.mistakes || 0, done = !!r0.done, streak = s.streak || 0;
-    markDay('quartets', s, { done, won: found.length === 4 && mistakes < (s.chances || 7), streak });
+    markDay('quartets', s, { done, won: found.length === K && mistakes < (s.chances || 7), streak });
     const CH = s.chances || 7;                       // mistakes allowed
     const sel = new Set(), tried = new Set();
     /* Hints, worked out from the guesses so far (so a reload keeps them):
@@ -1533,6 +1699,9 @@ BUILD.quartets = host => {
     /* and with one mistake left, a last one: two people from another group still
        unsolved, outlined in blue so it's clear they're a different pair */
     const hints = () => {
+      /* Triplets: the one hint, when asked for: two people from the easiest group still unsolved */
+      if (trip){ const hg = groups.find(x => !found.includes(x.lv));
+        return { gold: hinted && hg ? seeded(hg.names, s.date + ':hint').slice(0, 2) : [], blue: [], n: hinted ? 2 : 0 }; }
       let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];
       for (const g of log){
         if (g.every(l => l === g[0])){ got.push(g[0]); run = 0; continue; }
@@ -1549,10 +1718,11 @@ BUILD.quartets = host => {
 
     box.innerHTML = topBar(s, streak) +
       '<div class="qtsolved" id="qtsolved"></div>' +
-      '<div class="qtgrid" id="qtgrid" role="group" aria-label="The sixteen people"></div>' +
+      '<div class="qtgrid' + (trip ? ' qt3' : '') + '" id="qtgrid" role="group" aria-label="The ' + (trip ? 'nine' : 'sixteen') + ' people"></div>' +
       '<div class="qtlives" id="qtlives"></div>' +
       '<div class="qtbtns" id="qtbtns"><button class="btn" type="button" id="qtshuf">Shuffle</button>' +
         '<button class="btn" type="button" id="qtclear">Deselect all</button>' +
+        (trip ? '<button class="btn" type="button" id="qthint">Hint</button>' : '') +
         '<button class="btn primary" type="button" id="qtgo" disabled>Submit</button></div>' +
       '<div class="qtmsg" id="qtmsg" role="status" aria-live="polite"></div>' +
       '<div class="qtdone" id="qtdone"></div>' +
@@ -1563,7 +1733,7 @@ BUILD.quartets = host => {
       /* each person as a chip, with why they fit beside the name (not small grey text) */
       '<span class="qtnames">' + g.names.map(n => '<span class="qtp">' + esc(n) + (howOf.get(n) ? '<em>' + esc(howOf.get(n)) + '</em>' : '') + '</span>').join('') + '</span></div>';
     const paintSolved = () => {
-      const missed = done && found.length < 4 ? groups.filter(g => !found.includes(g.lv)) : [];
+      const missed = done && found.length < K ? groups.filter(g => !found.includes(g.lv)) : [];
       $('qtsolved').innerHTML = found.map(lv => row(groups.find(g => g.lv === lv), false)).join('') + missed.map(g => row(g, true)).join('');
     };
     const paintGrid = () => {
@@ -1575,11 +1745,12 @@ BUILD.quartets = host => {
       grid.querySelectorAll('.qttile').forEach(b => b.onclick = () => {
         if (done) return;
         const n = b.dataset.n;
-        if (sel.has(n)) sel.delete(n); else if (sel.size < 4) sel.add(n); else return;
+        if (sel.has(n)) sel.delete(n); else if (sel.size < K) sel.add(n); else return;
         SFX.tick(); b.classList.toggle('on', sel.has(n)); b.setAttribute('aria-pressed', String(sel.has(n)));
-        $('qtgo').disabled = sel.size !== 4;
+        $('qtgo').disabled = sel.size !== K;
       });
-      $('qtgo').disabled = sel.size !== 4;
+      $('qtgo').disabled = sel.size !== K;
+      const hb = $('qthint'); if (hb){ hb.disabled = hinted || done; hb.textContent = hinted ? 'Hint used' : 'Hint'; }
     };
     const paintLives = () => {
       $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:CH }, (_, i) => '<i class="' + (i < CH - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
@@ -1593,9 +1764,9 @@ BUILD.quartets = host => {
         if (done) loadSummary(s.date); }).catch(() => {}); };
 
     /* the share card: an image of how you went (no names, no answers), and the same as text */
-    const won = () => found.length === 4 && mistakes < CH;
-    const verdict = () => won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it';
-    const shareText = () => 'Quartets · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
+    const won = () => found.length === K && mistakes < CH;
+    const verdict = () => (won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it') + (hinted ? ', one hint' : '');
+    const shareText = () => GAME + ' · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
       log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=quartets';
     const drawCard = () => {
       const S = 2, W = 360, sq = 34, gap = 7, rows = Math.max(1, log.length);
@@ -1607,10 +1778,10 @@ BUILD.quartets = host => {
       const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#1b1930'); bg.addColorStop(1, '#2b2350');
       rr(0, 0, W, H, 22); g.fillStyle = bg; g.fill();
       g.textAlign = 'center'; g.fillStyle = '#fff';
-      g.font = '800 26px ' + font; g.fillText('Quartets', W / 2, 46);
+      g.font = '800 26px ' + font; g.fillText(GAME, W / 2, 46);
       g.fillStyle = 'rgba(255,255,255,.65)'; g.font = '600 13px ' + font; g.fillText('Year ' + s.year + ' · ' + longDate(s.date), W / 2, 68);
       g.fillStyle = won() ? '#ffe08a' : '#ffb3c0'; g.font = '700 16px ' + font; g.fillText(verdict(), W / 2, 98);
-      const gx = (W - (4 * sq + 3 * gap)) / 2;
+      const gx = (W - (K * sq + (K - 1) * gap)) / 2;
       log.forEach((r, i) => r.forEach((l, j) => { rr(gx + j * (sq + gap), 116 + i * (sq + gap), sq, sq, 8); g.fillStyle = QT_COL[l]; g.fill(); }));
       g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '600 12px ' + font; g.fillText('mscunofficial.com', W / 2, H - 18);
       return c;
@@ -1624,7 +1795,7 @@ BUILD.quartets = host => {
       el.querySelector('.qtcard').appendChild(card);
       $('qtcopy').onclick = async () => { try { await navigator.clipboard.writeText(shareText()); $('qtcopy').textContent = 'Copied'; } catch {} };
       $('qtshare').onclick = () => card.toBlob(async blob => {
-        const file = blob && new File([blob], 'quartets-' + s.date + '.png', { type:'image/png' });
+        const file = blob && new File([blob], GAME.toLowerCase() + '-' + s.date + '.png', { type:'image/png' });
         try {
           if (file && navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], text:shareText() });
           else if (navigator.share && TOUCH) await navigator.share({ text:shareText() });
@@ -1639,10 +1810,12 @@ BUILD.quartets = host => {
 
     $('qtshuf').onclick = () => { order = seeded(order, Math.random().toString(36)); paintGrid(); };
     $('qtclear').onclick = () => { sel.clear(); paintGrid(); };
+    if ($('qthint')) $('qthint').onclick = () => { if (hinted || done) return; hinted = true; TT.set(HKEY, true); paintGrid();
+      say('Hint: the two highlighted people are in the same group.'); };
     $('qtgo').onclick = () => {
-      if (done || sel.size !== 4) return;
+      if (done || sel.size !== K) return;
       const pick = [...sel], key = pick.slice().sort().join('|');
-      if (tried.has(key)){ say('You’ve tried those four already.'); return; }
+      if (tried.has(key)){ say('You’ve tried those ' + (trip ? 'three' : 'four') + ' already.'); return; }
       tried.add(key);
       const lvs = pick.map(n => lvOf.get(n));
       const right = lvs.every(l => l === lvs[0]);
@@ -1651,11 +1824,11 @@ BUILD.quartets = host => {
       if (right){
         found.push(lvs[0]); sel.clear(); order = order.filter(n => !pick.includes(n));
         SFX.line(found.length);
-        if (found.length === 4){ done = true; SFX.win(); }
+        if (found.length === K){ done = true; SFX.win(); }
       } else {
         mistakes++;
-        const most = Math.max(...[1, 2, 3, 4].map(l => lvs.filter(x => x === l).length));
-        say(most === 3 ? 'One away…' : 'Not a group.', true);
+        const most = Math.max(...LVS.map(l => lvs.filter(x => x === l).length));
+        say(most === K - 1 ? 'One away…' : 'Not a group.', true);
         /* a hint just unlocked: say so (after the shake) */
         setTimeout(() => { const now = hints(); if (done || now.n <= before.n) return;
           if (now.blue.length > before.blue.length) say('Last chance: the two people outlined in blue are in the same group.');
@@ -1811,7 +1984,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120c';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120d';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

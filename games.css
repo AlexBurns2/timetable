@@ -1245,6 +1245,7 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .qtrow.lv3,.qtgridshare .lv3{background:#f2a65a}
 .qtrow.lv4,.qtgridshare .lv4{background:#e5718b}
 .qtgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.qtgrid.qt3{grid-template-columns:repeat(3,minmax(0,1fr));max-width:540px;margin-left:auto;margin-right:auto}
 .qtgrid[hidden]{display:none}
 .qttile{font:inherit;font-weight:700;font-size:0.875rem;line-height:1.2;min-height:68px;padding:8px 6px;border-radius:var(--radius);
   background:var(--panel-2);color:var(--text);border:1px solid var(--line);cursor:pointer;overflow-wrap:anywhere;
@@ -1756,3 +1757,32 @@ html.stfit[data-pg="revision"] #gamegrid>.rvyear>.cathd{display:none}
 .trkmini .trk-ib{width:30px;height:30px}
 body[data-page="revision"] .gamestage>.stage{clear:both}
 html[data-motion="reduced"] :is(.trk-bar i,.trk-car,.trk-ib){transition:none}
+
+/* ═══ Whose timetable? (games.js BUILD.whose): the day on the left, hints and guessing on the right ═══ */
+.wtboard{display:grid;grid-template-columns:minmax(200px,270px) minmax(0,1fr);gap:16px;align-items:start;margin-top:12px}
+@media (max-width:640px){ .wtboard{grid-template-columns:minmax(0,1fr)} }
+.wtday{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2)}
+.wthd{display:flex;justify-content:space-between;gap:8px;margin-bottom:2px;font-weight:800;font-size:0.9375rem}
+.wthd .unk{color:var(--muted);font-weight:600}
+.wttile{display:flex;gap:10px;align-items:stretch;min-height:calc(var(--n,1) * 54px + (var(--n,1) - 1) * 6px);padding:8px 10px;
+  border-radius:10px;background:var(--panel);border:1.5px solid var(--line)}
+.wttile.free{background:transparent;border-style:dashed;color:var(--muted)}
+.wtp{flex:none;width:3.4em;padding-top:2px;font-size:0.75rem;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.wtbody{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.wtbody span{display:block;min-height:1.15em;line-height:1.25;border-radius:5px;overflow-wrap:anywhere}
+.wts{font-weight:700;font-size:0.9375rem}
+.wtt,.wtr{font-size:0.8125rem;color:var(--muted)}
+.wtbody .unk{width:72%;background:color-mix(in srgb,var(--text) 9%,transparent)}
+.wtbody .wtt.unk{width:54%}
+.wtbody .wtr.unk{width:30%}
+.wtfree{align-self:center;font-size:0.8125rem;font-weight:600}
+.wtday .fresh{animation:wtlit .7s ease-out}
+@keyframes wtlit{from{background:color-mix(in srgb,var(--accent) 38%,transparent)}}
+html[data-motion="reduced"] .wtday .fresh{animation:none}
+/* the name box, as Daily Guess Who's */
+#wtin{flex:1;min-width:160px;width:100%;box-sizing:border-box;padding:11px 13px;border:var(--card-border);
+  border-radius:var(--radius);background:var(--panel-2);color:var(--text);outline:none;font:inherit}
+#wtin:focus{border-color:var(--accent)}
+.wtstart{margin:0 0 8px;color:var(--muted);font-size:0.875rem}
+.wtmsg{margin:6px 0 0;min-height:1.2em;font-size:0.8125rem;color:#e5484d}
+.wtmsg:empty{min-height:0;margin:0}

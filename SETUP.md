@@ -2848,6 +2848,36 @@ Until it exists scans still go straight to the timetable; they just aren't count
 
 ---
 
+## Whose timetable? (`api/_whose.js`, served by `/api/daily?whose=1`)
+
+A daily game: one day of a student's timetable, guessed by their year. Run this once in the
+Supabase SQL editor. It only creates the two tables if they aren't there; nothing else is touched.
+
+```sql
+create table if not exists whose_puzzle (
+  date       date not null,
+  year       text not null,
+  puzzle     jsonb not null,          -- the day and its hints, or {none: why} when no day could be made certain
+  created_at timestamptz not null default now(),
+  primary key (date, year)
+);
+create table if not exists whose_result (
+  email      text not null,
+  date       date not null,
+  year       text not null,
+  guesses    int  not null default 0,
+  won        boolean not null default false,
+  done       boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (email, date)
+);
+alter table whose_puzzle enable row level security;   -- no policies: only the server (service role) reads or writes
+alter table whose_result enable row level security;
+```
+
+The nightly job builds each year's day at 00:20 (vercel.json's second cron, `/api/daily-generate?whose=1`);
+a year it didn't reach is built by its first player (reading every timetable in the year takes a few seconds).
+
 ## Security checklist
 
 What the code does is in HANDOFF.md ("Security and privacy pass"). These are the things only the owner can do.

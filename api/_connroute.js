@@ -24,17 +24,19 @@ import { db } from "./_supabase.js";
 import { withName, stripEmails, rosterList, markClasses, hasClassesIn } from "./_names.js";
 import { fetchAsOwner } from "./timetable.js";
 import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
-import { makeQuartets, hashStr, howFor, tidyTeacher, hardness, QUARTETS_VERSION, PEOPLE_DAYS } from "./_conn.js";
+import { makeQuartets, hashStr, howFor, tidyTeacher, hardness, QUARTETS_VERSION, TRIPLETS_FROM, PEOPLE_DAYS } from "./_conn.js";
 
 export const CONN_EPOCH = "2026-11-10";        // the first day of Quartets
 const MAX_MISTAKES = 7;
+/* Triplets (from TRIPLETS_FROM): three groups of three, four mistakes. Quartets days: four of four, seven. */
+const chancesFor = groups => Array.isArray(groups) && groups.length === 3 ? 4 : MAX_MISTAKES;
 /* Puzzles and results are kept under "<year>#v<version>" (the version of the
    generator that made the day). New days are made by the current version; a day
    made by an older one keeps its puzzle and its results under its own key. */
-const keyFor = year => String(year) + "#v" + QUARTETS_VERSION;
+const keyFor = (year, date) => String(year) + "#v" + (date && date >= TRIPLETS_FROM ? QUARTETS_VERSION : 8);
 const allKeys = year => [String(year), ...Array.from({ length: QUARTETS_VERSION }, (_, i) => String(year) + "#v" + (i + 1))];
 const verOf = k => { const m = /#v(\d+)$/.exec(String(k)); return m ? +m[1] : 0; };
-const isPuzzle = g => Array.isArray(g) && g.length === 4;
+const isPuzzle = g => Array.isArray(g) && (g.length === 4 || g.length === 3);
 /* of a day's rows (one per version), the one that's played: a real puzzle, the
    newest version first */
 const pickDay = rows => (rows || []).filter(r => isPuzzle(r.groups)).sort((a, b) => verOf(b.year) - verOf(a.year))[0] || null;
@@ -70,7 +72,7 @@ function cleanDate(d, today) {
 /* the day's puzzle as { groups, key }, made now if it hasn't been; null if it
    couldn't be made just now */
 async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
-  const key = keyFor(year);
+  const key = keyFor(year, date);
   const selAll = () => db.from("conn_puzzle").select("year, groups").eq("date", date).in("year", allKeys(year));
   let { data: rows, error } = await selAll();
   if (error) throw new Error("quartets read: " + error.message);
@@ -123,8 +125,9 @@ async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
       const m = usedBy.get(g.id) || usedBy.set(g.id, new Map()).get(g.id);
       (Array.isArray(g.emails) ? g.emails : []).forEach(e => { const k = String(e).toLowerCase(); if (!m.has(k) || ago < m.get(k)) m.set(k, ago); }); }); });
   const checked = new Map(), onTimetable = (e, raw) => checked.set(e, hasClassesIn(raw));   // everyone whose timetable was read
-  let made = await makeQuartets({ people, getTT, getRoster, seed, year, avoid, usedBy, teacherName, onTimetable, deadline });
-  if (!made) made = await makeQuartets({ people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, usedBy, teacherName, onTimetable,
+  const size = date >= TRIPLETS_FROM ? 3 : 4;
+  let made = await makeQuartets({ size, people, getTT, getRoster, seed, year, avoid, usedBy, teacherName, onTimetable, deadline });
+  if (!made) made = await makeQuartets({ size, people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, usedBy, teacherName, onTimetable,
                                          deadline: Math.max(deadline, Date.now() + 3000) });
   markClasses(checked).catch(() => {});
   if (!made) { console.error("quartets: couldn't make", year, date, "from", people.length, "people"); return null; }   // not kept: tried again next visit
@@ -166,9 +169,10 @@ const rateGroup = h => h <= 1.5 ? 1 : h <= 2.25 ? 2 : h <= 3.25 ? 3 : 4;
 function designOf(stored) {
   const hs = new Map((stored || []).map(g => [g.lv, hardness({ kind: g.kind, id: g.id })]));
   const total = [...hs.values()].reduce((a, b) => a + b, 0);
-  return { rated: lv => hs.has(lv) ? rateGroup(hs.get(lv)) : null, day: hs.size === 4 ? (total < 9 ? -1 : total > 10.5 ? 1 : 0) : null };
+  return { rated: lv => hs.has(lv) ? rateGroup(hs.get(lv)) : null, day: hs.size === 4 ? (total < 9 ? -1 : total > 10.5 ? 1 : 0) : hs.size === 3 ? (total < 6 ? -1 : total > 7.2 ? 1 : 0) : null };
 }
 async function summaryFor(pk, date, groups, NAMES, stored) {
+  const MAX_MISTAKES = chancesFor(stored);
   const { data } = await db.from("conn_result").select("email, found, mistakes, solved, done, updated_at")
     .eq("year", pk).eq("date", date).eq("done", true).limit(2000);
   const rows = data || [];
@@ -226,7 +230,7 @@ export async function connRoute(req, res, me, body, NAMES) {
       ]);
       /* each day's played puzzle (its version); a day kept empty is listed too, and made when it's opened */
       const rowsOf = new Map(); (days || []).forEach(d => (rowsOf.get(d.date) || rowsOf.set(d.date, []).get(d.date)).push(d));
-      const keyOf = {}; rowsOf.forEach((rs, date) => { const p = pickDay(rs); keyOf[date] = p ? p.year : keyFor(year); });
+      const keyOf = {}; rowsOf.forEach((rs, date) => { const p = pickDay(rs); keyOf[date] = p ? p.year : keyFor(year, date); });
       const by = {};
       Object.keys(keyOf).forEach(date => by[date] = { date, played: 0, wins: 0 });
       (plays || []).forEach(r => { const d = by[r.date]; if (d && r.year === keyOf[r.date]) { d.played++; if (r.solved) d.wins++; } });
@@ -252,16 +256,17 @@ export async function connRoute(req, res, me, body, NAMES) {
       return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored), mine: result });
     }
     if (req.method === "GET") {
-      return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, chances: MAX_MISTAKES, groups, result, streak: await streakFor(me.email, today) });
+      return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, chances: chancesFor(stored), groups, result, streak: await streakFor(me.email, today) });
     }
     if (req.method === "POST") {
       if (result.done) return res.status(200).json({ ok: true, streak: await streakFor(me.email, today) });
-      const lv = x => Number.isInteger(x) && x >= 1 && x <= 4;
-      const found = [...new Set([...(result.found || []), ...((Array.isArray(body.found) ? body.found : []).filter(lv))])].slice(0, 4);
-      const log = (Array.isArray(body.log) ? body.log : []).filter(g => Array.isArray(g) && g.length === 4 && g.every(lv)).slice(0, 4 + MAX_MISTAKES);
-      const mistakes = Math.max(result.mistakes, Math.min(MAX_MISTAKES, Math.max(0, parseInt(body.mistakes, 10) || 0)));
-      const solved = found.length === 4 && mistakes < MAX_MISTAKES;
-      const done = solved || mistakes >= MAX_MISTAKES;
+      const G = stored.length, CH = chancesFor(stored);           // groups, and people in each (the same)
+      const lv = x => Number.isInteger(x) && x >= 1 && x <= G;
+      const found = [...new Set([...(result.found || []), ...((Array.isArray(body.found) ? body.found : []).filter(lv))])].slice(0, G);
+      const log = (Array.isArray(body.log) ? body.log : []).filter(g => Array.isArray(g) && g.length === G && g.every(lv)).slice(0, G + CH);
+      const mistakes = Math.max(result.mistakes, Math.min(CH, Math.max(0, parseInt(body.mistakes, 10) || 0)));
+      const solved = found.length === G && mistakes < CH;
+      const done = solved || mistakes >= CH;
       const { error } = await db.from("conn_result").upsert({ email: me.email, date, year: pk, found, log: log.length >= (result.log || []).length ? log : result.log,
         mistakes, solved, done, updated_at: new Date().toISOString() });
       if (error) { console.error("quartets result:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }

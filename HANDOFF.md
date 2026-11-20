@@ -3506,3 +3506,26 @@ Asked for: no editing polls that have votes, and the owner stressed that live, v
   - A question set for a holiday week still shows as normal. Signed-out visitors get no card in the holidays, as before when no question is set.
 - api/_poll.js `TERMS` now includes Term 4 2027, for the spring holidays; the planner still stops at `PLAN_END`.
 - Tested with the page's clock moved (scratchpad `holgen.mjs`). Not yet handled: the timetable page itself (and Studio, which opens it as Home) still shows classes and a Now card in the holidays.
+
+## 8.131 Whose timetable? (a new daily game; asset version `20261120d`, `CACHE_VERSION` v56)
+Asked for (passed on from a side session): one day of a student's timetable as blank tiles, guess a student from your year, one more thing revealed per wrong guess (about 8 hints, fast like Guess Who). The day must belong to exactly one person, and exactly one person must fit by about the 6th to 8th hint.
+- **Server** (`api/_whose.js`, routed by `/api/daily?whose=1`, so no new function):
+  - `buildYear` reads every timetable in the year (the roster from `rosterList`, `hasClasses !== false`; 12 at a time, cached per instance for 6 h so a retry carries on). Fewer than ~85% read means it tries again later, with nothing stored. One timetable shared by over a quarter of the year (the API handing back one for everyone) means no puzzle.
+  - `makeWhose` is pure and testable offline. Each student's 10 days become a shape (`shapeOf`: periods 0–9, free, class, or the same class as before = a double) and tiles (`tilesOf`: doubles merged; a room or teacher that differs inside a double is dropped).
+  - Only days whose full signature (day, shape, every tile's subject, teacher and room) nobody else has are tried, in seeded order, skipping anyone used in the last 40 days.
+  - Facts are the weekday, the week, and each tile's subject, teacher and room. `planHints` tries 500 seeded orders of 8 and checks each against every same-shaped day in the year: someone fits if any one of their days fits everything shown so far.
+  - It requires exactly one person after hint 8 and nobody uniquely fitting before hint 5, prefers hint 6 or 7, scores a steady narrowing, and prefers a subject or the weekday as the opener. It never ends on the day or week, nor opens with both.
+  - The answer is proven theirs by finding them on the roster of one of that day's classes.
+  - A year where no day can be made certain (whole roll classes sharing identical timetables) stores `{ none }` for the day, and the page says so.
+- **Tables** `whose_puzzle` and `whose_result` (SQL in SETUP.md; **not created yet**: the user runs it). Until then the game says it isn't set up yet.
+- **Nightly**: a second cron in vercel.json, `/api/daily-generate?whose=1` at 14:20 UTC, builds every year (`prebuildWhose`); a year it doesn't reach is built by its first player, which takes a few seconds.
+- **Page** (games.js `BUILD.whose`, games.css "Whose timetable?"):
+  - The day on the left, with "Which day? · Week ?" and blank tiles that fill in; hints, guess and Skip on the right. The newest fill is lit briefly (none with Reduce motion).
+  - A name not in your year doesn't cost a guess. Guesses are marked locally and saved in the background, as in Daily Guess Who; also streak, Results (played, solved, guess histogram) and `markDay('whose')`.
+  - Added to `GAMES` (Timetable, after Daily Guess Who), icons.js (`table`, teal), Home's Today strip (three games: three across, or two and one on a phone, via `--td` in site.css), and What's new.
+- **Tested offline** (scratchpad `whose_test.mjs`, made-up years only):
+  - Senior years on lines (150 and 220 students): 12 of 12 days made, unique first at hint 6 (mostly), 5 or 7; about 30–40 ms.
+  - Junior with electives: 12 of 12.
+  - Junior where classes share identical timetables: none, as it should be.
+  - The page was tested in headless Chrome with a stand-in API. Never run on real timetables.
+- Not done: an archive of past days (the route accepts `date` for the last 30 days, the page only plays today), a spotlight in Results, a share line.
