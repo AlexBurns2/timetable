@@ -66,6 +66,7 @@ host.innerHTML =
         '</details>' +
         '<div class="custrow"><button class="btn" type="button" id="c_reset">Reset custom theme</button></div>' +
       '</div>' +
+      '<div class="field"><label>Quick settings</label><div id="s_quick"></div></div>' +
       '<div class="field"><label>Login</label>' +
         '<div class="crline" id="cr_line"><span>Signed in as <b id="cr_who"></b></span><button class="flinklike" type="button" id="cr_change">Change</button><button class="flinklike danger" type="button" id="cr_clear">Sign out</button></div>' +
         '<div id="cr_form">' +
@@ -270,7 +271,7 @@ document.querySelectorAll('.setdlg [data-back]').forEach(b => b.onclick = () => 
   b.closest('dialog').close(); openSettings(); });
 
 function openSettings(){
-  renderSkins(); renderCustom(); renderGlass(); renderCreds(); renderModeBtn();
+  renderSkins(); renderCustom(); renderGlass(); renderCreds(); renderModeBtn(); TTx.quickRow($('s_quick'));
   crEditing = false; TTx.lookRow($('s_look')); TTx.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   $('setDlg').showModal();
   /* finding Settings on your own retires the step that points at it */
@@ -281,6 +282,7 @@ function openSettings(){
 /* the home page's gear opens Settings now */
 const gear = $('themebtn');
 if (gear){ gear.onclick = openSettings; gear.title = 'Settings'; }
+window.openSettings = openSettings;            // the Theme finder opens it for the custom theme's colours
 
 /* Moderators find the moderator page in Settings (it used to be a header
    button, which changed how the page looked for them). The server answers

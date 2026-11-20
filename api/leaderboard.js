@@ -70,6 +70,7 @@ const DIRS = {
   "oddone:high": "max"         // Odd One Out — best score in a run
 };
 const MAX_SCORE = 100000000;
+let themePop = { at: 0, order: [] };      // the Theme finder's "Popular" order (?themepop=1), kept an hour
 
 /* Owner-only engagement view: everyone who has actually used the site.
  * `prefs` gets a row the first time someone's settings sync after they log in,
@@ -289,6 +290,22 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Couldn't save that. Has the site_setting table been created?" });
     }
     return res.status(200).json({ ...(await siteSettings()), isMod: true });
+  }
+
+  /* the Theme finder's "Popular" strip: theme ids in order of how many people have them on (active in the
+     last 30 days first, then everyone), from synced settings. The order only: no counts, nobody's choice.
+     Read-only, worked out at most once an hour per warm instance. */
+  if (req.method === "GET" && src.themepop) {
+    if (!themePop.at || Date.now() - themePop.at > 3600e3) {
+      const { data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin"').limit(5000);
+      if (!error) {
+        const since = Date.now() - 30 * 864e5, n = {};
+        for (const r of rows || []) { const k = String(r.skin || "plain"); const t = n[k] || (n[k] = { a: 0, all: 0 }); t.all++; if (Date.parse(r.updated_at) > since) t.a++; }
+        themePop = { at: Date.now(), order: Object.entries(n).sort((x, y) => y[1].a - x[1].a || y[1].all - x[1].all).map(([k]) => k).filter(k => /^[a-z0-9-]{1,24}$/.test(k)) };
+      } else console.warn("theme order:", error.message);
+    }
+    res.setHeader("Cache-Control", "private, max-age=600");
+    return res.status(200).json({ order: themePop.order || [] });
   }
 
   /* moderator-only: which themes people use, from their synced settings (prefs).

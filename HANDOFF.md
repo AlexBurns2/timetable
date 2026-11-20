@@ -3634,3 +3634,78 @@ People had been cheating high scores. What was open, and what changed:
 - **A new board**: `LB_GAMES.react` and `LB_CAT` use the metric `avg3` (lower is better; `DIRS["react:avg3"]` in api/leaderboard.js). The old single-click board (`react:fastest`) is untouched in the database and still allowed by `DIRS`, just no longer shown or sent, because mixing single clicks with averages wouldn't be fair. A note in the game says the board started again (closable, `tt.react_avgnote`, until 19 Dec 2026). It replaces the old "times under 80 ms were cleared" note.
 - **The ticket check** (api/_runs.js `scoreFits`): an `avg3` score needs at least 4 s since the ticket (three waits of at least 0.9 s, 0.7 s apart). `fastest` keeps its 1 s.
 - Tested with real (trusted) mouse presses through Chrome's DevTools protocol (scratchpad `reacttest.mjs`): three tries send one `avg3` score, the right average; an early press restarts the three and sends nothing; `scoreFits` refuses an average after 3 s and takes it after 5.
+
+## 8.140 An "Updated" tag (asset version `20261120o`, `CACHE_VERSION` v67)
+- **What's new entries can say what their tag says** (theme.js NEWS `tag`, `TT.newsTag(key)`): 'New' unless given. Reaction has one: `reactavg`, `key:'game:react'`, `tag:'Updated'`, about the average of three (the owner may reword it). The games page card, Home's daily strip and Home's Games tile all use it. The tile says New if any game behind it is new, Updated if they're all changes.
+- `reactavg` is dated 2026-11-21 so it shows for people who opened Reaction on the 20th (the old `reactfast` key had marked it seen that day). **`newsSeen` now records the newest entry's date when that's later than today**, so opening a game clears its tag even when its entry is dated ahead (before, it would have stayed until the next day).
+
+## 8.141 Theme finder, Settings shortcuts, no more week toggle, Saul everywhere, moderators see the forum as it is (asset version `20261120p`, `CACHE_VERSION` v68)
+- **Theme finder** (new page, `themes.html`; Home's Student finder tile is now "Theme finder" with Phosphor's palette, `d:palette` in icons.js). `finder.html` still exists, and Studio's page menu and Apple's sidebar (Pugmeowla's themes) still link to it.
+  - **Popular**: a sideways strip of the newer themes (never the basics), most used first. The order comes from `/api/leaderboard?themepop=1`, which returns the order only, no counts, worked out once an hour from synced settings; signed out, it's theme.js `SHOWCASE` order.
+  - **Groups** (the current themes only; new ones go in `GROUPS` in the page; anything unlisted lands in "More"):
+    - Basics: Plain, Classic, Glass, Custom
+    - 2000s tech: Aero, Skeuomorphism, Y2K, Soft Club
+    - Analogue: Vaporwave, Terminal, Blueprint, Cyberpunk
+    - Post-modernism: Maximalism, Neo Brutalism
+    - Cozy: Notebook, Art Deco
+    - Modernism: Editorial, Studio, Swiss
+    - Then the originals, folded and quiet.
+  - **Preview**: pressing a theme opens a dialog with the real Home, Timetable or Games in a frame (`?ttpreview=<id>&ttpmode=`), drawn at 1280 × 800 (390 wide on a phone) and scaled.
+    - theme.js `PREVIEW`, only inside a frame: readState answers with that theme and nothing is saved. Sync, notes, the Saul trigger and the tour are off, and clicks, submits and right-clicks are stopped, but it scrolls. `html[data-preview]` is set.
+    - Changing the theme, the mode or the previous/next arrows posts a message, so the frame switches without reloading. Only the page buttons reload it. The frame is blanked on close.
+    - "Use this theme" saves `tt.skin`, plus `tt.mode` as previewed for a theme with both palettes. For Custom, it then opens Settings (`window.openSettings`, exported by settings.js).
+- **Settings → Appearance** (theme.js `skinPicker`, `FINDER = true`; both dialogs): the theme that's on and a "Theme finder" tile, both links to the page. The old grid code is still there behind `FINDER`. The Saul note stays.
+- **Quick settings** (theme.js `quickRow`; index.html `#quickset`, settings.js `#s_quick`): Layout, Text size, Now and Next, Game sounds. They read and write the same keys as Display and Accessibility, so both places agree. On the timetable it takes the place of the old Cycle week field.
+- **The week is the school's**: the Cycle week correction is gone. index.html `cycleShift` is a constant 0 (`setCycleWeek`, `cycleRefDay` and `paintCycleRow` are removed), and home.html and free.html no longer read `tt.cycleshift`. A saved value is left alone, just unread. Checked with the timetable's own `cycleDayFor`: start 2025-02-03 gives `frib` on Fri 20 Nov 2026 (the owner confirmed it's Week B Friday) and `mona` on Mon 23 Nov.
+- **Better Call Saul, cheaper** (skins/saul.css): the original 220 × 168 GIF (`images/th/saul.gif`; still: `saul-small.png`, its first frame) squashed to fill every panel and tiled behind the page, pixelated, under a light wash. Meme text: Impact, white, black outline. Square, black-bordered panels. The video is no longer used: `saulBg` only removes an old one. `saul.webm`/`.mp4`/`saul-still.webp` are still in the repo, unused now; they can be deleted.
+- **Moderators see the forum as everyone does** (api/forum.js `seeAll`): only with `?all=1` do they get every thread. Home has an "All posts" button for moderators (this visit only, sessionStorage `tt.forumall`; "Only Year N" is off while it's on). The moderator page's Forum tab always asks with `all=1`. The response says `mod` and `all`.
+- Tested in headless Chrome:
+  - the finder's groups and Popular order;
+  - the preview: the frame's skin and mode, next/previous, the page switch, a click in the frame not navigating, nothing saved until Use;
+  - both Settings dialogs; the timetable's quick Layout;
+  - Saul on Home and the timetable;
+  - the moderators' All posts asking `all=1`;
+  - phone width.
+
+## 8.142 Seven themes in the making, for moderators only; every Student finder link is the Theme finder (asset version `20261120q`, `CACHE_VERSION` v69)
+- **Links**: Studio's page menu (index.html `#sthome`) and Apple's sidebar (theme.js `APNAV`, id `themes`) now go to the Theme finder, as Home's tile does. `finder.html` still exists, linked from nowhere.
+- **Moderators only** (theme.js `mod:true` on a SKINS entry):
+  - They are left out of `QUICK_SKINS`, Settings' picker and Popular.
+  - The Theme finder shows them in their own group, "In progress · moderators only", once `/api/leaderboard?settings=1` says `isMod`.
+  - A saved choice of one still works for anyone. To release a theme, take `mod` off: it then appears in its group, where it's already listed in `GROUPS`:
+    - 2000s tech: `xp`, `dorfic`, `eco`
+    - Post-modernism: `decon`
+    - Cozy: `coquette`
+    - Modernism: `bauhaus`, `destijl`
+  - Coquette is no longer in `HIDDEN_SKINS`; it's `mod:true`.
+- **The themes** (each designed by a separate agent on its own stylesheet from one brief, scratchpad `theme-brief.md`; thumbnails in `THUMBS`; page changes are short fades in fx.js `TR`). All are CSS/SVG only (no photos), with nothing moving except Eco's turbines on Home.
+  - **DORFic** (`dorfic.css`, Nunito): see-through tangerine plastic in sunshine.
+    - Panels are clamshells: a white glossy middle in an orange translucent rim.
+    - Candy-ball icons; timetable classes come in "flavours"; aqua only for liquid things.
+    - Background: a sunburst with speed lines and one vector swirl. Dark is dusk.
+    - Its sheet is generated: scratchpad `agent-a/build-dorfic.mjs` with `dorfic.tpl.css` and `swirl.mjs`.
+  - **Frutiger Eco** (`eco.css`, Cabin): dew on clean glass in green light.
+    - Leaf-cut glass panels (two round corners, two square), water drops, drop icons, a leaf-green main button.
+    - Home: sky and swoosh hill with two slow turbines (`html::before/after`). Dark: moon and fireflies.
+    - Generated too: `agent-a/build-eco.mjs`, `ecoart.mjs`.
+  - **Windows XP** (`xp.css`, Tahoma/Trebuchet):
+    - The header is a taskbar with a green start-style pill (no logos); panels are blue-titled windows with beige bodies.
+    - Home's tiles are desktop shortcuts; the daily games are balloon tips.
+    - XP controls; a CSS hill and sky (not Bliss); Royale-Noir-style dark.
+  - **Coquette** (`coquette.css`, reworked): a love letter on good stationery with satin ribbon markers.
+    - Lace hems, pearls only on round things, still wallpapers per page, no photos and no drawn bow.
+    - `images/th/cq-bow.webp` and its About credit are now unused; removing them waits for the owner.
+  - **Bauhaus** (`bauhaus.css`, Jost):
+    - Kandinsky's yellow triangle / red square / blue circle with heavy black bars; lowercase headings.
+    - Icons in coloured forms; poster compositions in the margins; Now is a yellow plane.
+  - **De Stijl** (`destijl.css`, Work Sans):
+    - A Mondrian composition: white, thick black lines, a few red/yellow/blue planes, no curves.
+    - The head's lines run to both window edges (border-image outset, no sideways scroll); things that belong together share one grid.
+  - **Deconstructivism** (`decon.css`, Syne with lining figures): the frame taken apart, the content never.
+    - Plaster planes with a cut corner on concrete; the page name a steel block across the header edge; an offset red outline.
+    - Tschumi's surfaces, lines and points as per-page backgrounds.
+- **Photo candidates** listed by the agents (none downloaded; the owner decides):
+  - Eco: dew on a leaf; Rabich's wind turbines.
+  - XP: green hill under blue sky (CC BY / CC0).
+  - Decon: La Villette follies.
+- **Also fixed:** at phone width, Quick settings' two switches cut their labels off, in every theme; they now stack.

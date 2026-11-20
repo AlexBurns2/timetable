@@ -251,9 +251,11 @@ export default async function handler(req, res) {
       .select("id, email, body, parent, created_at" + (scoped ? ", scope, scope_name" : ""))
       .order("created_at", { ascending: false }).limit(600);
     if (error) { console.error("forum read:", error.message); return res.status(502).json({ error: "Couldn't load the forum." }); }
-    /* only the threads for you: everyone's, your year's, your classes' (a moderator sees them all) */
+    /* only the threads for you: everyone's, your year's, your classes'. A moderator sees the forum the
+       same way, and every thread with ?all=1 (Home's "All posts", and the moderator page), to check them. */
+    const seeAll = isOwner && req.query.all === "1";
     let data = all || [];
-    if (scoped && !isOwner && data.some(r => r.scope && r.scope !== "all")) {
+    if (scoped && !seeAll && data.some(r => r.scope && r.scope !== "all")) {
       if (!me.year) me.year = await yearOf(me);
       const mine = data.some(r => String(r.scope).startsWith("class:")) ? await classesOf(me.email).catch(() => new Map()) : new Map();
       data = data.filter(r => !r.scope || r.scope === "all" || r.scope === "year:" + me.year || (String(r.scope).startsWith("class:") && mine.has(String(r.scope).slice(6))));
@@ -261,7 +263,7 @@ export default async function handler(req, res) {
     /* "Only my year" (Home's toggle, ?only=year): threads started by someone in another year are left
        out. Threads from people with no year here (staff) stay, as do threads aimed at a year or a class,
        and a thread kept keeps all its replies, so no conversation is cut in half. */
-    const onlyYear = req.query.only === "year";
+    const onlyYear = req.query.only === "year" && !seeAll;
     if (!me.year) me.year = await yearOf(me);
     const years = onlyYear && me.year || isOwner ? await yearsByEmail() : null;
     if (onlyYear && me.year) {
@@ -317,9 +319,11 @@ export default async function handler(req, res) {
     if (pollAlong) {
       const poll = await pollAlong, ms = Date.now() - t0;
       if (ms > 2500) console.warn("home load slow: " + ms + "ms");          // to see in the logs if it's still slow
-      return res.status(200).json({ posts: threads, poll, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined });
+      return res.status(200).json({ posts: threads, poll, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined,
+        mod: isOwner || undefined, all: seeAll || undefined });
     }
-    return res.status(200).json({ posts: threads, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined });
+    return res.status(200).json({ posts: threads, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined,
+      mod: isOwner || undefined, all: seeAll || undefined });
   }
 
   if (req.method === "POST") {

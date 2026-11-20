@@ -1,24 +1,27 @@
 /* ══════════════════════════════════════════════════════════════════
-   COQUETTE — a love letter, on good stationery, kept in a ribbon box.
-   (Built from the scratchpad's cq/gen/tpl.css; the pearl and trellis
-   drawings are made by gen.py.)
-   One idea: every page is a piece of writing paper laid on striped
-   boudoir wallpaper, and what matters is tied with satin ribbon.
-   - The wall: Marie Antoinette wallpaper in blush and cream, a different
-     paper per page within one style (stripes on Home, Swiss dots behind
-     the timetable, a trellis with a pearl at each crossing behind the
-     inner pages, pink gingham on the games). Dark mode is a claret velvet
-     boudoir: the same papers flocked tone on tone, antique-gold hairlines.
+   COQUETTE — a love letter on good stationery, marked with satin ribbon.
+   One idea: every page is writing paper laid on boudoir wallpaper, and a
+   length of satin ribbon is what marks the page and whatever matters on it.
+   No photographs and no drawn objects (no bows): only paper, lace, satin
+   and pearls, which code draws well.
+   - The ribbon (the signature): a pair of satin ribbons, raspberry and
+     blush, laid over the top edge of each page's letter and hanging past
+     its hem with notched ends, like the ribbon markers of a good diary.
+     The same satin, with the same notched ends, is the button that
+     matters, the chosen tab, the NEW pills and the poll's results; each
+     class on the timetable carries a small marker in its subject's
+     colour, and the class on now a long raspberry one.
    - The paper: cream cards with a second rule drawn inside the edge.
-     Home, the timetable and Games open on a letter with a lace hem;
-     the other pages are one sheet with a letterhead, a satin ribbon
-     wrapped across it and the bow (a photograph, images/th/cq-bow.webp,
-     never a drawing) tied at its middle.
-   - Ribbon: the button that matters, and whichever tab is chosen, is cut
-     from satin with notched ends; each class on the timetable carries a
-     bookmark ribbon in its subject's colour, and the class on now wears
-     the bow. Pearls: strung after section names, as dividers, as the
-     progress bar, round Home's icons (a cameo) and as the round buttons.
+     Home, the timetable and Games open on a letter with a lace hem; the
+     other pages are one whole sheet with a centred letterhead.
+   - Pearls, kept to round things: the round buttons, the progress bar and
+     the string under today. Home's icons sit in oval frames, like the
+     vignette on old stationery.
+   - The wall: Marie Antoinette wallpaper in blush and cream, a different
+     paper per kind of page within one style (stripes on Home, Swiss dots
+     behind the timetable, a trellis behind the inner pages, pink gingham
+     on the games). Dark mode is a claret velvet boudoir: the same papers
+     flocked tone on tone, antique-gold hairlines, blush satin.
    - Type: the page's name in a flowing script (Pinyon Script), section
      names in Playfair Display italic, labels in small spaced capitals,
      everything you read in DM Sans.
@@ -37,21 +40,26 @@
   --display-tt:none; --display-ls:0; --display-w:500;
   /* the paper's inner rule: a second line drawn 6px inside the edge */
   --cq-frame:inset 0 0 0 6px var(--cq-paper),inset 0 0 0 7px var(--cq-rule);
-  /* satin: a deep raspberry with a sheen across its upper third (the bow's colour, deep enough for white type) */
+  /* satin for buttons and tabs: a deep raspberry with a sheen across its upper third (deep enough for white type) */
   --cq-satin:linear-gradient(180deg,rgba(255,255,255,0) 3%,rgba(255,255,255,.22) 14%,rgba(255,255,255,0) 27%),linear-gradient(180deg,#c64169,#b8325a 40%,#a0284e 62%,#b8355d);
   --cq-satin-ink:#fff;
-  --cq-band:linear-gradient(180deg,#f2a4b6,#e27d94 40%,#c95c76 62%,#e891a6);       /* the ribbon across a sheet: the bow's own pink */
   --cq-notch:polygon(0 0,100% 0,calc(100% - 8px) 50%,100% 100%,0 100%,8px 50%);
   --cq-pearl:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='16' viewBox='0 0 18 16'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.38' cy='.32' r='.72'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.42' stop-color='%23f7eeeb'/%3E%3Cstop offset='.78' stop-color='%23e2cdc9'/%3E%3Cstop offset='1' stop-color='%23b99a9c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='9' cy='8' r='7.3' fill='url(%23g)'/%3E%3C/svg%3E");
   --cq-pearlbtn:radial-gradient(circle at 34% 26%,#fff 0 7%,#fcf6f3 24%,#f1e4df 56%,#dcc6c0 88%,#cdb3ad);
   --cq-lacemask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath fill-rule='evenodd' d='M0 0H24V3A6 6 0 0 1 12 3A6 6 0 0 1 0 3ZM7.3 4.4a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0ZM19.3 4.4a1.3 1.3 0 1 0-2.6 0a1.3 1.3 0 1 0 2.6 0ZM12.7 1.3a.7.7 0 1 0-1.4 0a.7.7 0 1 0 1.4 0ZM.7 1.3a.7.7 0 1 0-1.4 0a.7.7 0 1 0 1.4 0Z'/%3E%3C/svg%3E");
-  --cq-cameo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='72' viewBox='0 0 60 72'%3E%3Cdefs%3E%3CradialGradient id='p' cx='.38' cy='.32' r='.75'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.5' stop-color='%23f5ebe7'/%3E%3Cstop offset='1' stop-color='%23c9aea8'/%3E%3C/radialGradient%3E%3CradialGradient id='f' cx='.4' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23fff6f6'/%3E%3Cstop offset='1' stop-color='%23f7d9e0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='30' cy='36' rx='22.6' ry='28.6' fill='url(%23f)' stroke='%23e3a7b6' stroke-width='.8'/%3E%3Ccircle cx='30.00' cy='3.60' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='36.97' cy='4.75' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.30' cy='8.01' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.46' cy='12.84' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.38' cy='18.81' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.95' cy='25.41' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='32.39' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='39.56' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.96' cy='46.54' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.40' cy='53.15' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.49' cy='59.13' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.33' cy='63.97' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='37.01' cy='67.24' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='30.04' cy='68.40' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='23.03' cy='67.25' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.70' cy='63.99' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.54' cy='59.16' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.62' cy='53.19' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.05' cy='46.59' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='39.61' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='32.44' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.04' cy='25.46' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.60' cy='18.85' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.51' cy='12.87' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.67' cy='8.03' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='22.99' cy='4.76' r='2.55' fill='url(%23p)'/%3E%3C/svg%3E");
+  /* Home's icons sit in an oval frame (a double rule), like the vignette on old stationery */
+  --cq-oval:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='72' viewBox='0 0 60 72'%3E%3Cdefs%3E%3CradialGradient id='f' cx='.42' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23fff8f8'/%3E%3Cstop offset='1' stop-color='%23f8dee4'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='30' cy='36' rx='27' ry='33' fill='url(%23f)' stroke='%23d68ea1' stroke-width='1.1'/%3E%3Cellipse cx='30' cy='36' rx='23.4' ry='29.4' fill='none' stroke='%23e2a9b8' stroke-opacity='.9' stroke-width='.7'/%3E%3C/svg%3E");
+  /* the ribbon: satin runs along its length, so the sheen is a stripe down the middle */
+  --cq-rib-a:linear-gradient(90deg,#861b40 0%,#ad2d56 18%,#cf5279 42%,#e27f9b 52%,#c43d66 63%,#9e264c 86%,#781839 100%);
+  --cq-rib-b:linear-gradient(90deg,#d37a91 0%,#e999ad 18%,#f6bfcd 42%,#fcd8e0 52%,#f0a9bb 63%,#e290a5 86%,#ca728a 100%);
+  --cq-tail-a:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10' preserveAspectRatio='none'%3E%3ClinearGradient id='s'%3E%3Cstop offset='0' stop-color='%23861b40'/%3E%3Cstop offset='0.18' stop-color='%23ad2d56'/%3E%3Cstop offset='0.42' stop-color='%23cf5279'/%3E%3Cstop offset='0.52' stop-color='%23e27f9b'/%3E%3Cstop offset='0.63' stop-color='%23c43d66'/%3E%3Cstop offset='0.86' stop-color='%239e264c'/%3E%3Cstop offset='1' stop-color='%23781839'/%3E%3C/linearGradient%3E%3Cpath d='M0 0H14V10L7 4.2L0 10Z' fill='url(%23s)'/%3E%3C/svg%3E");
+  --cq-tail-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='10' viewBox='0 0 9 10' preserveAspectRatio='none'%3E%3ClinearGradient id='s'%3E%3Cstop offset='0' stop-color='%23d37a91'/%3E%3Cstop offset='0.18' stop-color='%23e999ad'/%3E%3Cstop offset='0.42' stop-color='%23f6bfcd'/%3E%3Cstop offset='0.52' stop-color='%23fcd8e0'/%3E%3Cstop offset='0.63' stop-color='%23f0a9bb'/%3E%3Cstop offset='0.86' stop-color='%23e290a5'/%3E%3Cstop offset='1' stop-color='%23ca728a'/%3E%3C/linearGradient%3E%3Cpath d='M0 0H9V10L4.5 4.2L0 10Z' fill='url(%23s)'/%3E%3C/svg%3E");
   --cq-trellis:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.8' fill='none'%3E%3Cpath d='M0 0L44 44M44 0L0 44'/%3E%3C/g%3E%3Ccircle cx='0' cy='0' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='44' cy='0' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='0' cy='44' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='44' cy='44' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3Ccircle cx='22' cy='22' r='1.9' fill='%23fff' fill-opacity='.95' stroke='%23d48a9c' stroke-opacity='.32' stroke-width='.6'/%3E%3C/svg%3E");
   /* the wallpapers (one per kind of page; the trellis is the default) */
   --cq-wall:var(--cq-trellis) 0 0/44px 44px,linear-gradient(180deg,#fdf5f2,#f9e8e8);
 }
 [data-skin="coquette"][data-mode="dark"]{
-  --cq-paper:#2b0c17; --cq-lace:#2b0c17; --cq-rose:#f2a5b8; --cq-wine:#f7d3dc; --cq-rule:rgba(201,164,92,.42); --cq-edge:rgba(201,164,92,.34);
+  --cq-paper:#2b0c17; --cq-lace:#48192c; --cq-rose:#f2a5b8; --cq-wine:#f7d3dc; --cq-rule:rgba(201,164,92,.42); --cq-edge:rgba(201,164,92,.34);
   --bg:#1c0610;
   --panel:#2b0c17; --panel-2:#3a1221; --line:rgba(236,170,190,.16);
   --text:#f8e7eb; --muted:#d0a5b0; --accent:#f2a5b8; --accent-ink:#36091a;
@@ -59,10 +67,13 @@
   --shadow-hi:0 0 0 1px rgba(201,164,92,.6),0 12px 30px rgba(0,0,0,.5);
   --cq-satin:linear-gradient(180deg,rgba(255,255,255,0) 3%,rgba(255,255,255,.34) 14%,rgba(255,255,255,0) 27%),linear-gradient(180deg,#f6c4d0,#eea2b5 42%,#e18aa1 62%,#f0afc0);
   --cq-satin-ink:#36091a;
-  --cq-band:linear-gradient(180deg,#e88aa1,#c95a76 40%,#9e3a55 62%,#cf6b85);
   --cq-pearl:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='16' viewBox='0 0 18 16'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.38' cy='.32' r='.72'%3E%3Cstop offset='0' stop-color='%23fffaf2'/%3E%3Cstop offset='.42' stop-color='%23efe2d8'/%3E%3Cstop offset='.78' stop-color='%23c4ad9d'/%3E%3Cstop offset='1' stop-color='%238d7266'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='9' cy='8' r='7.3' fill='url(%23g)'/%3E%3C/svg%3E");
   --cq-pearlbtn:radial-gradient(circle at 34% 26%,#fffaf2 0 6%,#f3e7dd 24%,#dcc8b9 56%,#b59c8b 88%,#9c8273);
-  --cq-cameo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='72' viewBox='0 0 60 72'%3E%3Cdefs%3E%3CradialGradient id='p' cx='.38' cy='.32' r='.75'%3E%3Cstop offset='0' stop-color='%23fffaf2'/%3E%3Cstop offset='.45' stop-color='%23ead9cc'/%3E%3Cstop offset='1' stop-color='%239c8072'/%3E%3C/radialGradient%3E%3CradialGradient id='f' cx='.4' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%234a1628'/%3E%3Cstop offset='1' stop-color='%232a0a15'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='30' cy='36' rx='22.6' ry='28.6' fill='url(%23f)' stroke='%23c9a45c' stroke-width='.8'/%3E%3Ccircle cx='30.00' cy='3.60' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='36.97' cy='4.75' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.30' cy='8.01' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.46' cy='12.84' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.38' cy='18.81' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.95' cy='25.41' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='32.39' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='56.24' cy='39.56' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='54.96' cy='46.54' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='52.40' cy='53.15' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='48.49' cy='59.13' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='43.33' cy='63.97' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='37.01' cy='67.24' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='30.04' cy='68.40' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='23.03' cy='67.25' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.70' cy='63.99' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.54' cy='59.16' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.62' cy='53.19' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.05' cy='46.59' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='39.61' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='3.76' cy='32.44' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='5.04' cy='25.46' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='7.60' cy='18.85' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='11.51' cy='12.87' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='16.67' cy='8.03' r='2.55' fill='url(%23p)'/%3E%3Ccircle cx='22.99' cy='4.76' r='2.55' fill='url(%23p)'/%3E%3C/svg%3E");
+  --cq-oval:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='72' viewBox='0 0 60 72'%3E%3Cdefs%3E%3CradialGradient id='f' cx='.42' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%234d1a2c'/%3E%3Cstop offset='1' stop-color='%232c0b17'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cellipse cx='30' cy='36' rx='27' ry='33' fill='url(%23f)' stroke='%23c9a45c' stroke-width='1.1'/%3E%3Cellipse cx='30' cy='36' rx='23.4' ry='29.4' fill='none' stroke='%23c9a45c' stroke-opacity='.45' stroke-width='.7'/%3E%3C/svg%3E");
+  --cq-rib-a:linear-gradient(90deg,#c97088 0%,#e595aa 18%,#f6bccb 42%,#fdd6df 52%,#efa6b9 63%,#dc8aa0 86%,#bf667f 100%);
+  --cq-rib-b:linear-gradient(90deg,#8f7238 0%,#b5954f 18%,#d6bb78 42%,#ecd9a4 52%,#cdb06b 63%,#a8894a 86%,#83672f 100%);
+  --cq-tail-a:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10' preserveAspectRatio='none'%3E%3ClinearGradient id='s'%3E%3Cstop offset='0' stop-color='%23c97088'/%3E%3Cstop offset='0.18' stop-color='%23e595aa'/%3E%3Cstop offset='0.42' stop-color='%23f6bccb'/%3E%3Cstop offset='0.52' stop-color='%23fdd6df'/%3E%3Cstop offset='0.63' stop-color='%23efa6b9'/%3E%3Cstop offset='0.86' stop-color='%23dc8aa0'/%3E%3Cstop offset='1' stop-color='%23bf667f'/%3E%3C/linearGradient%3E%3Cpath d='M0 0H14V10L7 4.2L0 10Z' fill='url(%23s)'/%3E%3C/svg%3E");
+  --cq-tail-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='10' viewBox='0 0 9 10' preserveAspectRatio='none'%3E%3ClinearGradient id='s'%3E%3Cstop offset='0' stop-color='%238f7238'/%3E%3Cstop offset='0.18' stop-color='%23b5954f'/%3E%3Cstop offset='0.42' stop-color='%23d6bb78'/%3E%3Cstop offset='0.52' stop-color='%23ecd9a4'/%3E%3Cstop offset='0.63' stop-color='%23cdb06b'/%3E%3Cstop offset='0.86' stop-color='%23a8894a'/%3E%3Cstop offset='1' stop-color='%2383672f'/%3E%3C/linearGradient%3E%3Cpath d='M0 0H9V10L4.5 4.2L0 10Z' fill='url(%23s)'/%3E%3C/svg%3E");
   --cq-trellis:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.8' fill='none'%3E%3Cpath d='M0 0L44 44M44 0L0 44'/%3E%3C/g%3E%3Ccircle cx='0' cy='0' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='44' cy='0' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='0' cy='44' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='44' cy='44' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3Ccircle cx='22' cy='22' r='1.9' fill='%23e8d6c4' fill-opacity='.18' stroke='%23c9a45c' stroke-opacity='.11' stroke-width='.6'/%3E%3C/svg%3E");
   --cq-wall:var(--cq-trellis) 0 0/44px 44px,radial-gradient(120% 90% at 50% 0%,#3a0d1d,#1c0610 70%);
 }
@@ -98,44 +109,64 @@
 html.zen[data-skin="coquette"] body::before,html.zen[data-skin="coquette"] body::after,
 [data-skin="coquette"][data-pg="hkmahjong"] body::before,[data-skin="coquette"][data-pg="hkmahjong"] body::after{display:none}
 
-/* ── the letter (Home, the timetable, Games): cream paper with a lace hem and a bow pinned at the corner ── */
+/* ── the letter (Home, the timetable, Games): cream paper with an inner rule and a lace hem ── */
 :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--cq-paper);border:1px solid var(--cq-edge);border-bottom:0;border-radius:4px 4px 0 0;
-  box-shadow:var(--cq-frame),0 12px 26px rgba(150,70,90,.12);margin-top:12px;margin-bottom:36px;padding-left:44px}
+  box-shadow:var(--cq-frame),0 12px 26px rgba(150,70,90,.12);margin-top:12px;margin-bottom:44px;padding-left:64px}
 :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;left:-1px;right:-1px;bottom:-10px;height:10px;pointer-events:none;
   background:var(--cq-lace);-webkit-mask:var(--cq-lacemask) 0 0/24px 10px repeat-x;mask:var(--cq-lacemask) 0 0/24px 10px repeat-x}
-:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;top:-24px;left:-34px;width:72px;height:56px;z-index:3;pointer-events:none;
-  background:url(../images/th/cq-bow.webp) center/contain no-repeat;transform:rotate(-14deg);filter:drop-shadow(0 5px 5px rgba(120,40,60,.25))}
 :root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){box-shadow:var(--cq-frame),0 14px 34px rgba(0,0,0,.5)}
-:root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{filter:drop-shadow(0 5px 6px rgba(0,0,0,.5)) brightness(.92)}
-:root[data-skin="coquette"]:not([data-header="split"]) .topbar{padding-left:56px}
-:root[data-skin="coquette"]:not([data-header="split"]) .topbar::before{left:-16px;top:-20px}
+/* the ribbon: a pair of satin markers, raspberry and blush (blush and old gold in the dark), laid over the
+   letter's top edge and hanging past its hem with notched ends. Drawn as backgrounds (the notch is a small
+   SVG at the foot of each), so the drop shadow follows the ribbons' outline. */
+:root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;z-index:3;pointer-events:none;top:-1px;left:22px;bottom:-34px;width:26px;
+  background:
+    linear-gradient(180deg,rgba(60,0,22,.34),rgba(60,0,22,0) 4px) 0 0/14px 5px no-repeat,
+    linear-gradient(180deg,rgba(60,0,22,.26),rgba(60,0,22,0) 4px) 17px 0/9px 5px no-repeat,
+    var(--cq-tail-a) 0 100%/14px 10px no-repeat,
+    var(--cq-rib-a) 0 0/14px calc(100% - 9.5px) no-repeat,
+    var(--cq-tail-b) 17px calc(100% - 11px)/9px 10px no-repeat,
+    var(--cq-rib-b) 17px 0/9px calc(100% - 20.5px) no-repeat;
+  filter:drop-shadow(0 1px 1.2px rgba(110,30,55,.32))}
+:root[data-skin="coquette"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.6))}
 @media (max-width:600px){
-  :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){padding-left:30px}
-  :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{width:52px;height:40px;top:-17px;left:-16px}
+  :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){padding-left:42px;margin-bottom:40px}
+  :root[data-skin="coquette"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{left:12px;width:19px;bottom:-30px;
+    background:
+      linear-gradient(180deg,rgba(60,0,22,.34),rgba(60,0,22,0) 4px) 0 0/11px 5px no-repeat,
+      linear-gradient(180deg,rgba(60,0,22,.26),rgba(60,0,22,0) 4px) 13px 0/6px 5px no-repeat,
+      var(--cq-tail-a) 0 100%/11px 8px no-repeat,
+      var(--cq-rib-a) 0 0/11px calc(100% - 7.5px) no-repeat,
+      var(--cq-tail-b) 13px calc(100% - 9px)/6px 8px no-repeat,
+      var(--cq-rib-b) 13px 0/6px calc(100% - 16.5px) no-repeat}
 }
 
-/* ── the other pages: one sheet of writing paper with a letterhead, a ribbon wrapped across it and the bow tied in the middle ── */
-:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+/* ── the other pages: one whole sheet of writing paper, a centred letterhead with a hairline under it,
+      and the ribbons laid over the sheet's top edge ── */
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
   background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:4px;box-shadow:inset 0 0 0 8px var(--cq-paper),inset 0 0 0 9px var(--cq-rule),0 2px 4px rgba(150,70,90,.06),0 18px 40px rgba(150,70,90,.14);
   margin-top:28px;margin-bottom:60px;padding:22px 30px 40px}
-:root[data-skin="coquette"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
+:root[data-skin="coquette"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{
   box-shadow:inset 0 0 0 8px var(--cq-paper),inset 0 0 0 9px var(--cq-rule),0 20px 46px rgba(0,0,0,.55)}
-:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{
-  background:none;border:0;border-radius:0;box-shadow:none;margin:0 0 44px;padding:8px 0 36px}
-:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::after{
-  left:-31px;right:-31px;bottom:0;height:7px;background:var(--cq-band);-webkit-mask:none;mask:none;box-shadow:0 1px 2px rgba(120,40,60,.18)}
-:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::before{
-  top:auto;bottom:-30px;left:50%;width:84px;height:64px;transform:translateX(-50%) rotate(-3deg)}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{
+  background:none;border:0;border-radius:0;box-shadow:none;margin:0 0 30px;padding:10px 0 26px 0}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::after{
+  left:50%;right:auto;bottom:0;width:min(360px,64%);height:1px;transform:translateX(-50%);-webkit-mask:none;mask:none;
+  background:linear-gradient(90deg,transparent,var(--cq-rule) 22%,var(--cq-rule) 78%,transparent)}
+:root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::before{top:-23px;left:2px;bottom:-16px}
 @media (min-width:601px){
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{justify-content:center;text-align:center}
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead .phtitle{flex:0 1 auto}
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead .crumbs{position:absolute;right:0;top:4px}
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .pagelede{margin:-18px auto 26px;text-align:center}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{justify-content:center;text-align:center}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead .phtitle{flex:0 1 auto}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead .crumbs{position:absolute;right:0;top:6px}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .pagelede{margin:-12px auto 26px;text-align:center}
 }
 @media (max-width:640px){
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:14px 8px 44px;padding:14px 14px 28px}
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::after{left:-15px;right:-15px}
-  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::before{width:64px;height:49px;bottom:-22px}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]) .wrap{margin:14px 8px 44px;padding:14px 14px 28px}
+}
+@media (max-width:600px){
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead{padding:6px 0 18px 32px;margin-bottom:24px}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::after{left:0;right:0;width:auto;transform:none;
+    background:linear-gradient(90deg,var(--cq-rule),var(--cq-rule) 70%,transparent)}
+  :root[data-skin="coquette"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="themes"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="revision"]):not([data-header="split"]) .pagehead::before{top:-15px;left:0;bottom:-12px}
 }
 
 /* ── type: the page's name in script; small spaced capitals over it ── */
@@ -147,12 +178,11 @@ html.zen[data-skin="coquette"] body::before,html.zen[data-skin="coquette"] body:
 [data-skin="coquette"] .sitename:hover{color:var(--text)}
 @media (max-width:600px){ [data-skin="coquette"] :is(.eyebrow,.sitename){font-size:.625rem;letter-spacing:.2em} }
 [data-skin="coquette"] :is(.hubsub,.pagelede){font-family:"Playfair Display",Georgia,serif;font-style:italic;color:var(--muted)}
-[data-skin="coquette"] :is(.ttday b,.field>label,.tbhead span){letter-spacing:.14em}
+[data-skin="coquette"] :is(.ttday b,.tbhead span){letter-spacing:.14em}
+[data-skin="coquette"] dialog .field>label{font:600 .6875rem/1.4 "Playfair Display",Georgia,serif;letter-spacing:.26em;color:var(--cq-rose)}
 [data-skin="coquette"] .weeklabel{font:italic 500 1.375rem/1 "Playfair Display",Georgia,serif;letter-spacing:0}
-/* section names in italic, then a string of pearls that fades out */
-[data-skin="coquette"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:14px;font:italic 500 1.25rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--text);white-space:nowrap}
-[data-skin="coquette"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:0 1 240px;height:8px;background:var(--cq-pearl) 0 50%/9px 8px round no-repeat;
-  -webkit-mask:linear-gradient(90deg,#000 55%,transparent);mask:linear-gradient(90deg,#000 55%,transparent)}
+/* section names in Playfair italic, nothing after them */
+[data-skin="coquette"] :is(.sechd,.cathd,.forum h2,.tfh){font:italic 500 1.25rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0;text-transform:none;color:var(--text)}
 [data-skin="coquette"] .forum{border-top:0}
 [data-skin="coquette"] .gsec .cathd{flex:1}
 [data-skin="coquette"] :is(.pcard,.forum){background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:6px;box-shadow:var(--cq-frame),var(--shadow)}
@@ -180,11 +210,11 @@ html.zen[data-skin="coquette"] body::before,html.zen[data-skin="coquette"] body:
 :root[data-skin="coquette"][data-mode="dark"] :is(.btn.icon,.arrowbtn):not(.gateskip){color:#3a0d1c;box-shadow:0 2px 6px rgba(0,0,0,.5),0 0 0 1px rgba(201,164,92,.3)}
 :root[data-skin="coquette"][data-mode="dark"] :is(.btn.icon,.arrowbtn):not(.gateskip):hover{color:#8a1c3f;box-shadow:0 0 0 1px rgba(201,164,92,.8),0 4px 12px rgba(0,0,0,.5)}
 
-/* ── Home's tiles: note cards, each icon in a cameo with a ring of pearls ── */
+/* ── Home's tiles: note cards, each icon in an oval frame ── */
 [data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game){background:var(--cq-paper);border:1px solid var(--cq-edge);border-radius:6px;box-shadow:var(--shadow)}
 :root[data-skin="coquette"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);background:var(--cq-paper)}
 [data-skin="coquette"] .qtile{align-items:center;justify-content:center;gap:10px;text-align:center;height:auto;min-height:calc(var(--tile-h) + 1.75rem);padding:14px 8px 12px}
-[data-skin="coquette"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:3.25rem;height:3.9rem;background:var(--cq-cameo) center/contain no-repeat}
+[data-skin="coquette"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:3.25rem;height:3.9rem;background:var(--cq-oval) center/contain no-repeat}
 [data-skin="coquette"] .qtile .ico .ph{width:1.5rem;height:1.5rem}
 [data-skin="coquette"] .qtile .ico .ie{font-size:1.375rem}
 [data-skin="coquette"] .qtile .tname{font:500 1rem/1.2 "Playfair Display",Georgia,serif;white-space:normal}
@@ -246,7 +276,7 @@ html.zen[data-skin="coquette"] body::before,html.zen[data-skin="coquette"] body:
 [data-skin="coquette"] .tsw[aria-checked="true"] i{background:var(--cq-satin)}
 [data-skin="coquette"] input[type=checkbox]{accent-color:var(--accent)}
 
-/* ── the timetable: note cards, each with a bookmark ribbon in its subject's colour; the class on now wears the bow ── */
+/* ── the timetable: note cards, each with a ribbon marker in its subject's colour; the class on now has a long raspberry one ── */
 [data-skin="coquette"] .lesson{border-radius:5px;background:color-mix(in srgb,var(--c) 13%,var(--cq-paper));border:1px solid color-mix(in srgb,var(--c) 34%,transparent)}
 [data-skin="coquette"] .lesson .s{font-family:"DM Sans",sans-serif;font-weight:700;letter-spacing:0;padding-right:16px}
 [data-skin="coquette"] .lesson{--rb:color-mix(in srgb,var(--c,var(--accent)) 74%,#5a1028)}
@@ -255,27 +285,26 @@ html.zen[data-skin="coquette"] body::before,html.zen[data-skin="coquette"] body:
   background:linear-gradient(90deg,color-mix(in srgb,var(--rb) 72%,#000),var(--rb) 30%,color-mix(in srgb,var(--rb) 62%,#fff) 55%,var(--rb) 80%,color-mix(in srgb,var(--rb) 82%,#000));
   clip-path:polygon(0 0,100% 0,100% 100%,50% 74%,0 100%)}
 [data-skin="coquette"] .lesson.current{outline:2px solid var(--accent);outline-offset:2px}
-[data-skin="coquette"] .lesson.current .s{padding-right:34px}
-[data-skin="coquette"] .lesson.current::after{top:3px;right:3px;width:38px;height:29px;clip-path:none;background:url(../images/th/cq-bow.webp) center/contain no-repeat;transform:rotate(10deg);filter:drop-shadow(0 2px 2px rgba(120,40,60,.25))}
+[data-skin="coquette"] .lesson.current::after{width:11px;height:34px;right:8px;background:var(--cq-rib-a);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%)}
+[data-skin="coquette"] .lesson.current :is(.s,.r){padding-right:20px}
 [data-skin="coquette"] .dayhead .dow{font:italic 500 1.0625rem/1.2 "Playfair Display",Georgia,serif;letter-spacing:0}
 [data-skin="coquette"] .dayhead .rule{height:1px;opacity:1;background:var(--cq-edge);border-radius:0}
 [data-skin="coquette"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--cq-rose)}
 [data-skin="coquette"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--cq-pearl) 0 50%/9px 8px round no-repeat;height:8px;margin-top:4px}
-/* breaks: a string of pearls with the name in italic in the middle */
+/* breaks: the name in italic between two hairlines */
 [data-skin="coquette"] .breakbar{background:none;border:0;border-radius:0;opacity:1;gap:10px;color:var(--muted);font:italic 500 .875rem/1 "Playfair Display",Georgia,serif;letter-spacing:0}
 [data-skin="coquette"] .breakbar span{font-weight:500;text-transform:none;color:var(--text)}
 [data-skin="coquette"] .breakbar em{font-style:italic;opacity:1;font-size:.8125rem}
-[data-skin="coquette"] .breakbar::before,[data-skin="coquette"] .breakbar::after{content:"";flex:1 1 0;min-width:8px;height:8px;background:var(--cq-pearl) 0 50%/9px 8px round no-repeat;opacity:.9}
+[data-skin="coquette"] .breakbar::before,[data-skin="coquette"] .breakbar::after{content:"";flex:1 1 0;min-width:8px;height:1px;background:var(--cq-edge)}
 html.zen[data-skin="coquette"] .breakbar{background:color-mix(in srgb,var(--panel) 88%,transparent)}
 [data-skin="coquette"] .tmark{letter-spacing:.02em}
 [data-skin="coquette"] .fpost{border-radius:6px;background:var(--cq-paper);border-color:var(--cq-edge)}
 [data-skin="coquette"] .fpost.freply{background:var(--panel-2)}
-[data-skin="coquette"] .hubfoot{position:relative;border-top:0;padding-top:30px}
-[data-skin="coquette"] .hubfoot::before{content:"";position:absolute;top:0;left:50%;width:171px;height:8px;transform:translateX(-50%);background:var(--cq-pearl) 0 0/9px 8px repeat-x;
-  -webkit-mask:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);mask:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent)}
+[data-skin="coquette"] .hubfoot{border-top-color:var(--line)}
 
 /* ── changing page: a soft fade with a slight lift ── */
 html.fx-enter[data-skin="coquette"] .wrap{animation:fxfade .2s ease both}
 html.fx-enter[data-fx="on"][data-skin="coquette"] .wrap{animation:cqin .3s cubic-bezier(.2,.7,.3,1) both}
+html.fx-enter[data-motion="reduced"][data-skin="coquette"] .wrap{animation:fxfade .2s ease both}
 @keyframes cqin{from{opacity:0;transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){ html.fx-enter[data-skin="coquette"] .wrap{animation:fxfade .2s ease both} }

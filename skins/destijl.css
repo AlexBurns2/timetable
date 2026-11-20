@@ -1,0 +1,304 @@
+/* ══════════════════════════════════════════════════════════════════
+   DE STIJL — the page as a Neoplastic composition (Mondrian, van
+   Doesburg, Rietveld). Only horizontals and verticals: thick black
+   lines divide white planes, and a few planes are pure red, yellow or
+   blue (or grey). Things that belong together share their lines, as
+   rectangles in a painting do: Home's tiles, the games, the forum,
+   the calendar's days are one grid each, black between the cells. The
+   head of every page is a band whose two lines run out to the edges
+   of the window; in the margin they enclose the page's colour (Home
+   red, Games blue, Calendar yellow…), cut off by a vertical line that
+   runs the height of the window. Asymmetric, balanced, and mostly
+   white. No curves (icons apart), no diagonals, no shadows: the
+   switches and the spinner are square too. Headings in heavy capitals
+   (Work Sans), as on the movement's own journal. In dark mode the
+   ground is near-black, the planes are greys, the colours stay pure.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="destijl"]{
+  --ds-red:#df2a1d; --ds-yel:#f7cf0f; --ds-blu:#1748a3; --ds-k:#111111; --ds-grey:#dcdcd7; --ds-white:#ffffff;
+  --ds-w:6px; --ds-t:3px;                      /* the composition's lines; the thinner ones inside small things */
+  --bg:#ffffff; --bg-img:none;
+  --panel:#ffffff; --panel-2:#f2f2ef; --line:#d4d4cf;
+  --text:#111111; --muted:#5a5a55; --accent:#1748a3; --accent-ink:#fff;
+  --font-ui:"Work Sans",system-ui,sans-serif;
+  --font-display:"Work Sans",system-ui,sans-serif;
+  --font-num:"Work Sans",system-ui,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
+  --card-border:var(--ds-t) solid var(--ds-k); --shadow:none; --shadow-hi:none;
+  --display-tt:uppercase; --display-ls:.01em; --display-w:800;
+  --ds-plane:var(--ds-red); --ds-corner:var(--ds-yel);
+}
+[data-skin="destijl"][data-mode="dark"]{
+  --ds-red:#d23a2c; --ds-yel:#f0c419; --ds-blu:#2f5fc0; --ds-k:#050505; --ds-grey:#3a3a38; --ds-white:#e8e6e0;
+  --bg:#1d1d1c; --panel:#2a2a28; --panel-2:#333331; --line:#45453f;
+  --text:#efeeea; --muted:#a8a7a0; --accent:#6f95e6; --accent-ink:#0d0d0d;
+}
+@media (max-width:600px){ [data-skin="destijl"]{--ds-w:4px;--ds-t:2px} }
+[data-skin="destijl"] body{line-height:1.5}
+[data-skin="destijl"] ::selection{background:var(--ds-yel);color:#111}
+
+/* ── the composition behind the page: a vertical line in each margin, the full height of the window,
+      and a plane in the corner they make with a short horizontal one. The margins are measured from
+      the column (50vw ± --ds-half), so on a narrow window they are simply gone. ── */
+[data-skin="destijl"]{--ds-half:500px;--ds-L:calc(50vw - var(--ds-half));--ds-R:calc(50vw + var(--ds-half));--ds-vl:calc(var(--ds-L) - 100px);--ds-vr:calc(var(--ds-R) + 70px)}
+[data-skin="destijl"][data-pg="timetable"]{--ds-half:700px}
+[data-skin="destijl"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  linear-gradient(var(--ds-k),var(--ds-k)) var(--ds-vl) 0/var(--ds-w) 100% no-repeat,
+  linear-gradient(var(--ds-k),var(--ds-k)) var(--ds-vr) 0/var(--ds-w) 100% no-repeat,
+  linear-gradient(var(--ds-k),var(--ds-k)) var(--ds-vr) var(--ds-cy,calc(100vh - 150px))/100vw var(--ds-w) no-repeat,
+  linear-gradient(var(--ds-corner),var(--ds-corner)) calc(var(--ds-vr) + var(--ds-w)) calc(var(--ds-cy,calc(100vh - 150px)) + var(--ds-w))/100vw 100vh no-repeat}
+html.zen[data-skin="destijl"] body::before,[data-skin="destijl"][data-pg="hkmahjong"] body::before{display:none}
+html.zen[data-skin="destijl"] :is(.topbar,.hubbar,.pagehead)::before,html.zen[data-skin="destijl"] :is(.topbar,.hubbar,.pagehead)::after{display:none}
+/* each page its own colours: the plane by the head, and the plane in the corner */
+[data-skin="destijl"][data-pg="home"]{--ds-plane:var(--ds-red);--ds-corner:var(--ds-blu);--ds-cy:calc(100vh - 120px)}
+[data-skin="destijl"][data-pg="timetable"]{--ds-plane:var(--ds-blu);--ds-corner:var(--ds-yel);--ds-cy:calc(100vh - 90px)}
+[data-skin="destijl"]:is([data-pg="games"],[data-pg="mahjong"]){--ds-plane:var(--ds-blu);--ds-corner:var(--ds-red);--ds-cy:calc(100vh - 210px)}
+[data-skin="destijl"][data-pg="calendar"]{--ds-plane:var(--ds-yel);--ds-corner:var(--ds-red);--ds-cy:calc(100vh - 160px)}
+[data-skin="destijl"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--ds-plane:var(--ds-yel);--ds-corner:var(--ds-blu);--ds-cy:calc(100vh - 240px)}
+[data-skin="destijl"][data-pg="resources"]{--ds-plane:var(--ds-red);--ds-corner:var(--ds-yel);--ds-cy:calc(100vh - 130px)}
+[data-skin="destijl"]:is([data-pg="themes"],[data-pg="finder"]){--ds-plane:var(--ds-blu);--ds-corner:var(--ds-yel);--ds-cy:calc(100vh - 190px)}
+
+/* ── the head of a page: a white band between two lines that run out to the window's edges;
+      in the left margin they hold the page's colour ── */
+:root[data-skin="destijl"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--panel);border:var(--ds-w) solid var(--ds-k);border-radius:0;box-shadow:none}
+:root[data-skin="destijl"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;z-index:-1;pointer-events:none;
+  inset:calc(-1 * var(--ds-w));
+  /* the two lines, carried out to both edges by the border image's outset: that is only paint, so the page never scrolls sideways */
+  border-image:linear-gradient(var(--ds-k) 0 var(--ds-w),transparent 0 calc(100% - var(--ds-w)),var(--ds-k) 0) fill 0/0/0 100vw}
+:root[data-skin="destijl"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;z-index:-1;pointer-events:none;
+  top:0;bottom:0;width:100vw;right:calc(100% + 120px);background:var(--ds-plane)}
+@media (max-width:1100px){ :root[data-skin="destijl"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{right:100%} }
+:root[data-skin="destijl"][data-pg="timetable"]:not([data-header="split"]) .topbar::before{right:100%}
+@media (min-width:1540px){ :root[data-skin="destijl"][data-pg="timetable"]:not([data-header="split"]) .topbar::before{right:calc(100% + 120px)} }
+[data-skin="destijl"] :is(.eyebrow,.sitename){color:var(--text);letter-spacing:.14em;text-transform:uppercase;font-size:.6875rem;font-weight:700}
+[data-skin="destijl"] .sitename:hover{color:var(--accent)}
+[data-skin="destijl"] :is(.brand h1,.hubid h1,.pagehead h1){font-weight:800;letter-spacing:.01em;line-height:1.08}
+[data-skin="destijl"] .pagehead h1{font-size:clamp(1.5rem,3.6vw,2.25rem)}
+[data-skin="destijl"] .hubid h1{font-size:clamp(1.5rem,5.4cqi,2.375rem)}
+[data-skin="destijl"] :is(.hubsub,.brand>span){color:var(--muted)}
+
+/* Home's head is three cells: who, now, the buttons */
+:root[data-skin="destijl"]:not([data-header="split"]) .hubbar{padding:0}
+:root[data-skin="destijl"]:not([data-header="split"]) .hubin{gap:var(--ds-w);background:var(--ds-k);align-items:stretch}
+:root[data-skin="destijl"]:not([data-header="split"]) .hubin > *{background:var(--panel);margin:0}
+:root[data-skin="destijl"]:not([data-header="split"]) .hubid{padding:16px 18px;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+:root[data-skin="destijl"]:not([data-header="split"]) .hubin > .headbtns{padding:12px;align-self:stretch;justify-content:center;align-items:center}
+:root[data-skin="destijl"]:not([data-header="split"]) .hubnow{height:auto;min-height:5.5rem;align-self:stretch;gap:var(--ds-w);background:var(--ds-k)}
+[data-skin="destijl"] .hubnow .nowcard .subj{font-size:1rem;line-height:1.2;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+/* the timetable's head: the same, the name, Now, Next and the buttons */
+:root[data-skin="destijl"]:not([data-header="split"]) .topbar{padding:0;gap:var(--ds-w);background:var(--ds-k)}
+:root[data-skin="destijl"]:not([data-header="split"]) .topbar > :is(.brand,.headbtns){background:var(--panel);align-self:stretch;margin:0}
+:root[data-skin="destijl"]:not([data-header="split"]) .topbar > .brand{padding:14px 18px;max-width:none}
+:root[data-skin="destijl"]:not([data-header="split"]) .topbar > .headbtns{padding:12px;justify-content:center;align-items:center}
+:root[data-skin="destijl"]:not([data-header="split"]) .topbar > .now{gap:var(--ds-w)}
+/* inner pages: the title, then the buttons in a cell of their own */
+:root[data-skin="destijl"]:not([data-header="split"]) .pagehead{padding:0;gap:var(--ds-w);background:var(--ds-k);align-items:stretch}
+:root[data-skin="destijl"]:not([data-header="split"]) .pagehead > *{background:var(--panel)}
+:root[data-skin="destijl"]:not([data-header="split"]) .phtitle{padding:14px 18px}
+:root[data-skin="destijl"]:not([data-header="split"]) .crumbs{padding:12px 14px}
+@media (max-width:600px){ :root[data-skin="destijl"]:not([data-header="split"]) .phtitle{padding:12px} :root[data-skin="destijl"]:not([data-header="split"]) .crumbs{padding:10px} }
+
+/* Now is a yellow plane; Next a white one */
+[data-skin="destijl"] .nowcard{background:var(--ds-yel);color:#111;border:0;border-radius:0}
+[data-skin="destijl"] .nowcard :is(.lbl,.meta,.count){color:#111}
+[data-skin="destijl"] .nowcard .meta{opacity:.8}
+[data-skin="destijl"] .nowcard + .nowcard{background:var(--panel);color:var(--text)}
+[data-skin="destijl"] .nowcard + .nowcard :is(.lbl,.meta,.count){color:var(--text)}
+[data-skin="destijl"] .nowcard + .nowcard .meta{color:var(--muted);opacity:1}
+[data-skin="destijl"] .nowcard .lbl{letter-spacing:.14em;font-size:.6875rem}
+[data-skin="destijl"] .nowcard .subj{font-weight:800;font-size:1.125rem;text-transform:uppercase;letter-spacing:.01em}
+[data-skin="destijl"] .prog{height:6px;border-radius:0;background:rgba(0,0,0,.14)}
+[data-skin="destijl"] .prog i{border-radius:0;background:#111}
+[data-skin="destijl"] .nowcard + .nowcard .prog{background:color-mix(in srgb,var(--text) 14%,transparent)}
+[data-skin="destijl"] .nowcard + .nowcard .prog i{background:var(--ds-red)}
+[data-skin="destijl"] .progrow .count{color:inherit}
+@container hubbar (max-width:26em){ [data-skin="destijl"] .hubnow.pair{background:var(--ds-yel);border:0;border-radius:0;color:#111}
+  [data-skin="destijl"] .hubnow.pair .nowcard{background:none;color:#111} [data-skin="destijl"] .hubnow.pair .nowcard :is(.lbl,.meta){color:#111} }
+
+/* ── Home's tiles: one grid, cells of different sizes sharing their lines; two of them are colour ── */
+[data-skin="destijl"] .qtiles{gap:var(--ds-w);background:var(--ds-k);border:var(--ds-w) solid var(--ds-k);grid-template-columns:1.32fr 1fr 1.14fr .84fr;margin-bottom:0}
+:root[data-skin="destijl"] .qtile{background:var(--panel);border:0;border-radius:0;box-shadow:none;transition:background .12s}
+[data-skin="destijl"] .qtile:nth-child(-n+4){height:calc(var(--tile-h) * 1.18)}
+[data-skin="destijl"] .qtile:nth-child(n+5){height:calc(var(--tile-h) * .86)}
+:root[data-skin="destijl"] .qtile:hover{transform:none;box-shadow:none;background:var(--panel-2)}
+[data-skin="destijl"] .qtile .tname{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.8125rem}
+html:root[data-skin="destijl"]:not([data-tileicons="accent"]) .qtile .ico{color:var(--text)}
+html:root[data-skin="destijl"][data-tileicons="accent"] .qtile .ico{color:var(--accent)}
+/* the colour planes */
+:root[data-skin="destijl"] .qtile:nth-child(1){background:var(--ds-red);color:#fff}
+:root[data-skin="destijl"] .qtile:nth-child(4){background:var(--ds-blu);color:#fff}
+html:root[data-skin="destijl"] .qtiles .qtile:is(:nth-child(1),:nth-child(4)) .ico{color:#fff}
+:root[data-skin="destijl"] .qtile:is(:nth-child(1),:nth-child(4)):hover{background:var(--ds-k);color:#fff}
+html:root[data-skin="destijl"] .qtiles .qtile:is(:nth-child(1),:nth-child(4)):hover .ico{color:#fff}
+[data-skin="destijl"] .tilepill{border-radius:0;background:var(--ds-k);color:#fff}
+@media (max-width:560px){ [data-skin="destijl"] .qtiles{grid-template-columns:1.2fr 1fr 1.1fr .9fr} [data-skin="destijl"] .qtile .tname{font-size:.625rem;letter-spacing:.03em} }
+@container hubnav (max-width:19em){ [data-skin="destijl"] .qtiles{grid-template-columns:1.2fr 1fr} [data-skin="destijl"] .qtile:nth-child(n){height:auto} }
+/* today's daily games: one strip of cells under the grid, sharing its bottom line */
+[data-skin="destijl"] .hubtoday{gap:var(--ds-w);background:var(--ds-k);border:var(--ds-w) solid var(--ds-k);border-top:0;margin-top:0}
+:root[data-skin="destijl"] .tday{background:var(--panel);border:0;border-radius:0;box-shadow:none}
+:root[data-skin="destijl"] .tday:hover{transform:none;background:var(--panel-2)}
+[data-skin="destijl"] .tdname{font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.75rem}
+[data-skin="destijl"] .tdstat{color:var(--accent)}
+html:root[data-skin="destijl"]:not([data-tileicons="accent"]) .gi{color:var(--text)}
+[data-skin="destijl"] :is(.newpill,.gamecard .tag,.gamecard .newbanner){border-radius:0;border:0;background:var(--ds-red);color:#fff;letter-spacing:.1em}
+[data-skin="destijl"] .newsdot{border-radius:0;background:var(--ds-red)}
+
+/* ── sections: heavy capitals over a line ── */
+[data-skin="destijl"] :is(.sechd,.cathd,.forum h2,.tfh){font-family:var(--font-display);font-size:.8125rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--text);
+  padding-bottom:6px;border-bottom:var(--ds-w) solid var(--ds-k)}
+[data-skin="destijl"] .forum{border-top:0;padding-top:0}
+[data-skin="destijl"] .gsec{display:block}
+[data-skin="destijl"] .hubfoot{border-top:var(--ds-w) solid var(--ds-k)}
+
+/* ── the poll: a white plane in its frame; the results are planes too ── */
+[data-skin="destijl"] .pcard{background:var(--panel);border:var(--ds-w) solid var(--ds-k);border-radius:0;box-shadow:none}
+[data-skin="destijl"] .pchip{border-radius:0;background:var(--ds-k);color:#fff;text-transform:uppercase;letter-spacing:.12em;font-size:.6875rem}
+[data-skin="destijl"] .pchip::before{border-radius:0;background:var(--ds-red);box-shadow:none;animation:none}
+[data-skin="destijl"] .pq{text-transform:uppercase;letter-spacing:.01em;font-weight:800}
+[data-skin="destijl"] .pin{border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel)}
+[data-skin="destijl"] .pin:focus{border-color:var(--ds-k);box-shadow:inset 0 0 0 2px var(--ds-yel)}
+[data-skin="destijl"] .pbars{gap:var(--ds-t)}
+[data-skin="destijl"] .pbar{border-radius:0;border:0;background:var(--panel-2)}
+[data-skin="destijl"] .pfill{border-radius:0;background:var(--ds-grey)}
+[data-skin="destijl"] .pbar:first-child .pfill{background:var(--ds-yel)}
+[data-skin="destijl"] .plock span{border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel);box-shadow:none}
+[data-skin="destijl"] .pminbtn{border-radius:0}
+[data-skin="destijl"] .pfoot{border-top:var(--ds-t) solid var(--ds-k)}
+[data-skin="destijl"] .pwin{border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--ds-yel);color:#111}
+
+/* ── buttons: white rectangles with a firm line; yellow under the pointer; blue for the one that matters ── */
+:root[data-skin="destijl"] :is(.btn,.arrowbtn,.shelfbtn,.popt,.lbopen):not(.gateskip){border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel);color:var(--text);box-shadow:none;
+  font-weight:600;transition:background .1s,color .1s}
+:root[data-skin="destijl"] :is(.btn,.arrowbtn,.shelfbtn,.popt,.lbopen):not(.gateskip):hover{background:var(--ds-yel);color:#111;border-color:var(--ds-k)}
+:root[data-skin="destijl"] :is(.btn.primary,.popt[aria-checked="true"]){background:var(--ds-blu);color:#fff;border-color:var(--ds-k)}
+:root[data-skin="destijl"] :is(.btn.primary,.popt[aria-checked="true"]):hover{background:var(--ds-k);color:#fff}
+:root[data-skin="destijl"] .btn:active{transform:none}
+:root[data-skin="destijl"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.fyear){border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel);color:var(--text);box-shadow:none;font-weight:600}
+:root[data-skin="destijl"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.fyear)[aria-pressed="true"]{background:var(--ds-k);color:#fff;border-color:var(--ds-k)}
+[data-mode="dark"][data-skin="destijl"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.fyear)[aria-pressed="true"]{background:var(--ds-white);color:#111}
+[data-skin="destijl"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.idrow,.pad){border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel)}
+[data-skin="destijl"] :is(.fnew textarea,.freplybox textarea,.gatepass,.pad):focus{outline:0;box-shadow:inset 0 0 0 2px var(--ds-yel)}
+[data-skin="destijl"] .idrow{opacity:1}
+/* the forum: a column of cells */
+[data-skin="destijl"] .fposts{gap:var(--ds-w);background:var(--ds-k);border:var(--ds-w) solid var(--ds-k)}
+[data-skin="destijl"] .fposts:has(> .ld){background:none;border:0}
+[data-skin="destijl"] .fpost{background:var(--panel);border:0;border-radius:0}
+[data-skin="destijl"] .fpost.freply{margin-left:0;background:var(--panel);border-left:56px solid var(--ds-grey)}
+[data-skin="destijl"] :is(.rx,.rxadd,.ffor,.fyear){border-radius:0}
+[data-skin="destijl"] .rx.mine{border-color:var(--ds-k);background:var(--ds-yel);color:#111}
+[data-skin="destijl"] .rx.mine b{color:#111}
+[data-skin="destijl"] .tsw{border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel)}
+[data-skin="destijl"] .tsw i{border-radius:0}
+[data-skin="destijl"] .tsw i::after{border-radius:0;box-shadow:none}
+[data-skin="destijl"] .tsw[aria-checked="true"] i{background:var(--ds-blu)}
+[data-skin="destijl"] .ldspin,[data-skin="destijl"] .ldinline::before{border-radius:0;border-color:color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--ds-red)}
+
+/* ── dialogs: a framed plane, its title in a band ── */
+[data-skin="destijl"] :is(dialog,.newsdlg,.gatecard){border:var(--ds-w) solid var(--ds-k);border-radius:0;box-shadow:none;background:var(--panel)}
+[data-skin="destijl"] .sheet{border:var(--ds-w) solid var(--ds-k);border-bottom:0;border-radius:0;background:var(--panel)}
+:root[data-skin="destijl"] :is(.dlg-h,.newshead){border-bottom:var(--ds-w) solid var(--ds-k)}
+:root[data-skin="destijl"] .dlg-f{border-top:var(--ds-w) solid var(--ds-k)}
+:root[data-skin="destijl"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font-size:1.125rem;letter-spacing:.04em;text-transform:uppercase}
+:root[data-skin="destijl"] :is(.field>label,.tbhead span,.ttday b,.adv>summary){letter-spacing:.14em;color:var(--text);font-weight:700}
+:root[data-skin="destijl"] :is(.skinbtn,.rxpick,.origtile,.origtile i,.tfcard){border-radius:0}
+:root[data-skin="destijl"] .skinbtn{border:var(--ds-t) solid var(--ds-k)}
+:root[data-skin="destijl"] .skinbtn[aria-pressed="true"]{border-color:var(--ds-k);box-shadow:0 0 0 3px var(--ds-yel)}
+[data-skin="destijl"] .tfgrid,[data-skin="destijl"] .tfstrip{gap:var(--ds-w)}
+[data-skin="destijl"] .tfcard{border:var(--ds-t) solid var(--ds-k);box-shadow:none}
+:root[data-skin="destijl"] .tfcard:hover{transform:none;box-shadow:none;border-color:var(--ds-k)}
+:root[data-skin="destijl"] .tfcard:hover .tfnm{background:var(--ds-yel);color:#111}
+[data-skin="destijl"] .tfsw{border-bottom:var(--ds-t) solid var(--ds-k)}
+[data-skin="destijl"] .tfcard[aria-current="true"]{box-shadow:0 0 0 3px var(--ds-red)}
+[data-skin="destijl"] .tftag{border-radius:0}
+[data-skin="destijl"] .tftag.on{background:var(--ds-red);border-color:var(--ds-red);color:#fff}
+
+/* ── games: each section one grid of cells ── */
+:root[data-skin="destijl"] .gamegrid{gap:var(--ds-w);padding:var(--ds-w)}
+:root[data-skin="destijl"] .gamecard{background:var(--panel);border:0;border-radius:0;box-shadow:none;animation:none;outline:var(--ds-w) solid var(--ds-k);outline-offset:0}
+:root[data-skin="destijl"] .gamecard:hover{transform:none;box-shadow:none;background:var(--panel-2)}
+:root[data-skin="destijl"] .gamecard:hover .ico{transform:none}
+:root[data-skin="destijl"] :is(.gamecard h2,.game h2,.tile .tname){font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.875rem}
+:root[data-skin="destijl"] .stage{border:var(--ds-w) solid var(--ds-k);border-radius:0;box-shadow:none}
+
+/* ── the timetable: a day is a column of framed cells, the subject's colour a plane at their left;
+      today's name is a red plane; the class that's on is yellow ── */
+[data-skin="destijl"] .dayhead{padding:0 0 10px}
+[data-skin="destijl"] .dayhead .dow{font-weight:800;font-size:.8125rem;letter-spacing:.14em;text-transform:uppercase;padding:6px 0}
+[data-skin="destijl"] .dayhead .rule{height:var(--ds-w);border-radius:0;opacity:1;background:var(--ds-k);margin-top:0}
+[data-skin="destijl"] :is(.dayhead.today,.dayhead.focus) .dow{background:var(--ds-red);color:#fff}
+[data-skin="destijl"] :is(.dayhead.today,.dayhead.focus) .rule{height:var(--ds-w);background:var(--ds-k);margin-top:0}
+[data-skin="destijl"] .dayhead:hover .dow{color:var(--accent)}
+[data-skin="destijl"] :is(.dayhead.today,.dayhead.focus):hover .dow{color:#fff}
+:root[data-skin="destijl"] .lesson{padding-left:calc(10px + var(--ds-t) + 9px)}
+[data-skin="destijl"] .lesson{--ds-bk:var(--panel);border:var(--ds-t) solid var(--ds-k);border-radius:0;box-shadow:none;
+  background:linear-gradient(var(--c,var(--ds-grey)),var(--c,var(--ds-grey))) 0 0/10px 100% no-repeat,linear-gradient(var(--ds-k),var(--ds-k)) 10px 0/var(--ds-t) 100% no-repeat,var(--ds-bk)}
+[data-skin="destijl"] .lesson:hover{--ds-bk:var(--panel-2);box-shadow:none}
+[data-skin="destijl"] .lesson .s{font-weight:700;letter-spacing:.01em}
+[data-skin="destijl"] .lesson .r{font-weight:600}
+[data-skin="destijl"] .lesson.current{outline:0;--ds-bk:var(--ds-yel);color:#111}
+[data-skin="destijl"] .breakbar{background:var(--ds-grey);border:0;border-radius:0;opacity:1;color:var(--text);letter-spacing:.12em}
+[data-skin="destijl"] .breakbar em{opacity:.75}
+[data-skin="destijl"] .breakbar.assembly{background:var(--panel);border:var(--ds-t) solid var(--ds-k)}
+[data-skin="destijl"] .weeklabel{font-weight:800;letter-spacing:.08em}
+[data-skin="destijl"] .tmark{opacity:1}
+html.nooutline[data-skin="destijl"] .lesson{border-color:var(--ds-k)!important;border-left-color:var(--ds-k)!important;background:var(--ds-bk)!important}
+html.nooutline:root[data-skin="destijl"] .lesson{padding-left:9px}
+html.nooutline[data-skin="destijl"] .lesson .s::before{border-radius:0}
+
+/* ── the other pages' own parts ── */
+[data-skin="destijl"] :is(.day,.card,.fpanel,.fc,.chip){border-radius:0}
+/* the calendar's month: one grid of framed days; the days of other months grey, today yellow */
+[data-skin="destijl"][data-pg="calendar"] .grid{gap:var(--ds-t);padding:0 var(--ds-t) var(--ds-t)}
+[data-skin="destijl"][data-pg="calendar"] .day{border:0;outline:var(--ds-t) solid var(--ds-k);background:var(--panel)}
+[data-skin="destijl"][data-pg="calendar"] .day:hover{background:var(--panel-2)}
+[data-skin="destijl"][data-pg="calendar"] .day.out{opacity:1;background:var(--panel-2)}
+[data-skin="destijl"][data-pg="calendar"] .day.out .dnum{opacity:.55}
+[data-skin="destijl"][data-pg="calendar"] .day.today{background:var(--ds-yel);box-shadow:none}
+[data-skin="destijl"][data-pg="calendar"] .day.today .dnum{color:#111}
+[data-skin="destijl"][data-pg="calendar"] .dow{color:var(--text);letter-spacing:.14em}
+[data-skin="destijl"][data-pg="calendar"] .chip{border-radius:0}
+[data-skin="destijl"][data-pg="calendar"] .tgwrap{border:var(--ds-w) solid var(--ds-k);border-radius:0}
+[data-skin="destijl"][data-pg="calendar"] .card{border:var(--ds-w) solid var(--ds-k)}
+/* free periods: a free period is a yellow plane in its frame; one the whole group shares is blue */
+[data-skin="destijl"] .fpanel{border:var(--ds-w) solid var(--ds-k)}
+[data-skin="destijl"] .fc{border-radius:0}
+[data-skin="destijl"] .fc.busy{background:var(--panel-2)}
+[data-skin="destijl"] .fc.free{border:var(--ds-t) solid var(--ds-k);background:var(--ds-yel);color:#111}
+[data-skin="destijl"] .fc.some{border:var(--ds-t) solid var(--ds-k);background:var(--panel)}
+[data-skin="destijl"] .fc.all{border:var(--ds-t) solid var(--ds-k);background:var(--ds-blu);color:#fff}
+[data-skin="destijl"] .fc.now{box-shadow:inset 0 0 0 3px var(--ds-red)}
+[data-skin="destijl"] .fh.today{color:var(--ds-red)}
+[data-skin="destijl"] .fpp{border-radius:0}
+[data-skin="destijl"] .fpp[aria-pressed="true"]{border:var(--ds-t) solid var(--ds-k);background:var(--ds-yel);color:#111}
+[data-skin="destijl"] .fpp[aria-pressed="true"] .t{color:#111}
+[data-skin="destijl"] .fchip{border-radius:0}
+:root[data-skin="destijl"] .arrowbtn2{border-radius:0;border:var(--ds-t) solid var(--ds-k);background:var(--panel);color:var(--text)}
+:root[data-skin="destijl"] .arrowbtn2:hover{background:var(--ds-yel);color:#111}
+[data-skin="destijl"] .calbar h2{text-transform:uppercase;font-weight:800;letter-spacing:.04em}
+[data-skin="destijl"][data-mode="dark"][data-pg="calendar"] .day.out{background:#222221}
+
+/* ── arriving (with Animation on, once fx.js has a TR.destijl entry): the page fades in as usual, then the
+      head's colour plane is laid in, then the margins' lines and corner plane. Nothing moves. ── */
+html.fx-enter[data-skin="destijl"] :is(.topbar,.hubbar,.pagehead)::before{animation:dsplane .26s .12s ease-out both}
+html.fx-enter[data-skin="destijl"] body::before{animation:dsplane .26s .22s ease-out both}
+@keyframes dsplane{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){ html.fx-enter[data-skin="destijl"] :is(.topbar,.hubbar,.pagehead)::before,html.fx-enter[data-skin="destijl"] body::before{animation:none} }
+
+/* ── no curves anywhere: every corner is square (a game in play keeps its own drawing) ── */
+[data-skin="destijl"] :not(.stage *,.jimmini *),
+[data-skin="destijl"] :not(.stage *,.jimmini *)::before,
+[data-skin="destijl"] :not(.stage *,.jimmini *)::after{border-radius:0!important}
+/* toggles elsewhere (Resources' years, Revision's practice/test) as the theme's buttons */
+:root[data-skin="destijl"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp){border:var(--ds-t) solid var(--ds-k);background:var(--panel);color:var(--text)}
+:root[data-skin="destijl"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp):hover{background:var(--ds-yel);color:#111}
+:root[data-skin="destijl"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp)[aria-pressed="true"]{background:var(--ds-k);color:#fff;border-color:var(--ds-k)}
+[data-mode="dark"]:root[data-skin="destijl"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp)[aria-pressed="true"]{background:var(--ds-white);color:#111}
+[data-skin="destijl"] .rvmode{border:var(--ds-t) solid var(--ds-k);background:var(--panel);padding:0;gap:0}
+[data-skin="destijl"] .rvmode button[aria-pressed="true"]{background:var(--ds-k);color:#fff;box-shadow:none}
+[data-mode="dark"][data-skin="destijl"] .rvmode button[aria-pressed="true"]{background:var(--ds-white);color:#111}
+/* Resources: one grid of framed cells, like the games */
+[data-skin="destijl"] .subjgrid{gap:var(--ds-w);padding:var(--ds-w)}
+:root[data-skin="destijl"] .subjcard{border:0;box-shadow:none;outline:var(--ds-w) solid var(--ds-k);background:var(--panel)}
+:root[data-skin="destijl"] .subjcard:hover{transform:none;box-shadow:none;background:var(--panel-2)}
+:root[data-skin="destijl"] :is(.wrap select,#viewsel){border:var(--ds-t) solid var(--ds-k);background-color:var(--panel);color:var(--text)}
+[data-skin="destijl"] .notesel{color:var(--text)}

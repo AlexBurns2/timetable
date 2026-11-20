@@ -19,6 +19,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 (() => {
 "use strict";
+if (window.TT && TT.preview) return;   // not inside the Theme finder's preview frame
 
 const LSK = 'onboard.seen';        /* deliberately not a tt.* key: this syncs
                                       through its own table, not through prefs */

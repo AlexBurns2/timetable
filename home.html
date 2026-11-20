@@ -53,7 +53,7 @@
     <a class="qtile" href="revision.html" id="tileRevision" style="--tc:#30a46c"><span class="ico" data-icon="d:pencil-simple-line" data-emoji="📝"></span><span class="tname">Revision</span></a>
     <a class="qtile" href="resources.html" style="--tc:#12a594"><span class="ico" data-icon="d:books" data-emoji="📚"></span><span class="tname">Resources</span></a>
     <a class="qtile" href="games.html" id="tileGames" style="--tc:#8e4ec6"><span class="ico" data-icon="d:game-controller" data-emoji="🎮"></span><span class="tname">Games</span></a>
-    <a class="qtile" href="finder.html" style="--tc:#0090ff"><span class="ico" data-icon="d:magnifying-glass" data-emoji="🔎"></span><span class="tname">Student finder</span></a>
+    <a class="qtile" href="themes.html" style="--tc:#af52de"><span class="ico" data-icon="d:palette" data-emoji="🎨"></span><span class="tname">Theme finder</span></a>
     <a class="qtile" href="mahjong.html" id="tileMahjong" style="--tc:#d6409f"><span class="ico" data-icon="d:cards-three" data-emoji="🀄"></span><span class="tname">Mahjong club</span></a>
   </nav>
   <!-- today's daily games, and whether you've played them (filled below) -->
@@ -61,7 +61,7 @@
   </div>
 
   <section class="forum" id="forum">
-    <div class="fhead"><h2>Forum</h2><button type="button" class="fyear" id="fyear" aria-pressed="false" hidden></button></div>
+    <div class="fhead"><h2>Forum</h2><span class="fheadbtns"><button type="button" class="fyear" id="fall" aria-pressed="false" hidden>All posts</button><button type="button" class="fyear" id="fyear" aria-pressed="false" hidden></button></span></div>
     <div class="fnew" id="fnew">
       <textarea id="fbody" rows="1" maxlength="1000" placeholder="Say something…" aria-label="Write a post"></textarea>
       <select id="fscope" aria-label="Who it’s for" hidden></select>
@@ -166,7 +166,10 @@ const signedIn = !!(window.TT && TT.signedIn && TT.signedIn());
 /* "Only Year N" on the forum: yours to set (synced with your settings), asked of the server so the
    threads you get are your year's, not a few of everyone's */
 const forumOnlyYear = () => !!TT.get('tt.forumyear', false);
-const firstLoad = signedIn ? { at: Date.now(), p: TT.api('/api/forum', { params: forumOnlyYear() ? { withpoll:1, only:'year' } : { withpoll:1 } }) } : null;
+/* moderators: "All posts" shows every thread, to check them (this visit only) */
+const forumAll = () => { try { return sessionStorage.getItem('tt.forumall') === '1'; } catch { return false; } };
+const forumParams = extra => Object.assign({}, extra, forumOnlyYear() ? { only:'year' } : {}, forumAll() ? { all:1 } : {});
+const firstLoad = signedIn ? { at: Date.now(), p: TT.api('/api/forum', { params: forumParams({ withpoll:1 }) }) } : null;
 if (firstLoad) firstLoad.p.catch(() => {});
 const userOf = e => String(e || '').toLowerCase().split('@')[0];
 function ownPayload(){
@@ -208,7 +211,7 @@ function lessonsOn(payload, key){
     .filter(l => l.start != null && l.end != null).sort((a, b) => a.start - b.start);
 }
 function nowNext(payload){
-  const start = parseStart(payload.startDate), shift = +TT.get('tt.cycleshift', 0) === 5 ? 5 : 0;
+  const start = parseStart(payload.startDate), shift = 0;      // the school's week (the old correction, tt.cycleshift, is no longer read)
   const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
   const today = cycleDay(now, start, shift);
   const todays = today ? lessonsOn(payload, today) : [];
@@ -448,10 +451,10 @@ $('fmore').onclick = () => {
 async function loadForum(){
   try {
     const d = firstLoad && !firstLoad.forumUsed ? (firstLoad.forumUsed = true, await firstLoad.p)
-      : await TT.api('/api/forum', { params: forumOnlyYear() ? { only:'year' } : {} });
+      : await TT.api('/api/forum', { params: forumParams({}) });
     lastPosts = d.posts || [];
     forumYear = d.year || null; forumFiltered = d.only === 'year';
-    yearToggle();
+    yearToggle(); allToggle(d);
     scopeChoices(d);
     renderForum(lastPosts);
   } catch (e){
@@ -506,6 +509,20 @@ function yearToggle(){
   b.title = forumOnlyYear() ? 'Showing threads from your year. Press to see everyone’s.' : 'Hide threads started by people in other years';
   b.hidden = false; b.disabled = false;
 }
+/* moderators: "All posts", every thread whoever it's for (each shows who it's for) */
+function allToggle(d){
+  const b = $('fall'); if (!b) return;
+  b.hidden = !d.mod;
+  if (!d.mod) return;
+  b.setAttribute('aria-pressed', d.all ? 'true' : 'false');
+  b.title = d.all ? 'Showing every thread, for checking. Press to see the forum as you normally would.' : 'Moderators: show every thread, whoever it’s for';
+  $('fyear').disabled = !!d.all;
+}
+$('fall').onclick = async () => {
+  const b = $('fall');
+  try { sessionStorage.setItem('tt.forumall', forumAll() ? '0' : '1'); } catch {}
+  b.disabled = true; await loadForum(); b.disabled = false;
+};
 $('fyear').onclick = async () => {
   const b = $('fyear');
   TT.set('tt.forumyear', !forumOnlyYear());
@@ -572,15 +589,17 @@ loadForum();
     const fresh = TT.newsActive && TT.newsActive('game:' + g.id);
     return '<a class="tday' + (t && t.done ? ' done' : '') + '" href="games.html?play=' + g.id + '">' +
       '<span class="tdico" aria-hidden="true">' + (window.Icon && Icon.game ? Icon.game(g.id, g.ico) : g.ico) + '</span>' +
-      '<span class="tdtext"><span class="tdname"><span class="tdn">' + g.name + '</span>' + (fresh ? '<span class="newpill">New</span>' : '') + '</span>' +
+      '<span class="tdtext"><span class="tdname"><span class="tdn">' + g.name + '</span>' + (fresh ? '<span class="newpill">' + (TT.newsTag ? TT.newsTag('game:' + g.id) : 'New') + '</span>' : '') + '</span>' +
       '<span class="tdstat">' + stat + '</span></span></a>';
   }).join('');
   box.style.setProperty('--td', DAILY.length);
   box.hidden = false;
-  /* a NEW tag on the Games tile, for a new game that isn't already in the strip */
+  /* a tag on the Games tile, for a new or changed game that isn't already in the strip: New if any is
+     new, Updated if they're all changes to games people know */
   const tile = document.getElementById('tileGames');
-  const other = (TT.NEWS || []).some(n => n.key && /^game:/.test(n.key) && !DAILY.some(g => 'game:' + g.id === n.key) && TT.newsActive(n.key));
-  if (tile && other && !tile.classList.contains('locked')) tile.insertAdjacentHTML('beforeend', '<span class="newpill tilepill">New</span>');
+  const other = [...new Set((TT.NEWS || []).filter(n => n.key && /^game:/.test(n.key) && !DAILY.some(g => 'game:' + g.id === n.key) && TT.newsActive(n.key)).map(n => n.key))];
+  const word = other.some(k => !TT.newsTag || TT.newsTag(k) === 'New') ? 'New' : 'Updated';
+  if (tile && other.length && !tile.classList.contains('locked')) tile.insertAdjacentHTML('beforeend', '<span class="newpill tilepill">' + word + '</span>');
 })();
 
 /* ── for those who look ───────────────────────────────────────────────

@@ -1,46 +1,61 @@
 /* ══════════════════════════════════════════════════════════════════
    BETTER CALL SAUL — a secret, asked for more than once: type "saul" in any
-   box (theme.js) and the site turns into a Saul Goodman late-night ad. Typing
-   it again puts back the theme you had. It isn't in the picker.
-   Behind everything, the spinning Saul: Tenor's "3D Saul" (adamghik), as a
-   short looping video (images/th/saul.webm, .mp4 if WebM can't play) that
-   theme.js puts behind the page while Animation is on; under it, and instead
-   of it with Animation off or Reduce motion, a still of the first frame
-   (images/th/saul-still.webp). One idea, the billboard: a red, white and blue
-   band across each page's top panel, headings in a tall condensed face in gold
-   with a red drop, and "S'all good, man." in the corner.
+   box (theme.js) and the site turns into a cheap Saul Goodman late-night ad.
+   Typing it again puts back the theme you had. It isn't in the picker.
+   One idea, done badly on purpose: the spinning Saul (Tenor's "3D Saul" by
+   adamghik, the original 220 × 168 GIF, images/th/saul.gif) is every panel,
+   stretched and pixelated, and the page behind them too, tiled. Text goes meme:
+   Impact in white with a black outline, so it reads over him. With Animation
+   off or Reduce motion it's his first frame (images/th/saul-small.png) instead.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="saul"],[data-skin="saul"][data-mode="light"]{
   --sg-navy:#0b1638; --sg-red:#d7263d; --sg-gold:#ffcc33; --sg-blue:#2a4fb8;
+  --sg-pic:url(/images/th/saul-small.png);
+  --sg-wash:linear-gradient(rgba(5,10,30,.36),rgba(5,10,30,.36));
   --bg:#0b1638; --bg-img:none;
-  --panel:rgba(14,27,66,.88); --panel-2:rgba(27,45,99,.9); --line:rgba(255,204,51,.3);
-  --text:#f7f3e8; --muted:#b9c3e3; --accent:#e8364c; --accent-ink:#fff;
-  --font-display:"Anton","Impact","Arial Narrow Bold",sans-serif;
-  --display-tt:uppercase; --display-ls:.03em; --display-w:400;
-  --card-radius:8px; --radius:8px; --tint:18%; --card-accent:0px;
-  --card-border:1px solid var(--line);
-  --shadow:0 6px 18px rgba(0,0,0,.35); --shadow-hi:0 14px 40px rgba(0,0,0,.5);
+  --panel:rgba(14,27,66,.88); --panel-2:rgba(27,45,99,.9); --line:#000;
+  --text:#fff; --muted:#e8ecff; --accent:#e8364c; --accent-ink:#fff;
+  --font-display:Impact,"Anton","Haettenschweiler","Arial Narrow Bold",sans-serif;
+  --display-tt:uppercase; --display-ls:.02em; --display-w:400;
+  --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
+  --card-border:2px solid #000;
+  --shadow:4px 4px 0 #000; --shadow-hi:6px 6px 0 #000;
 }
-:root[data-skin="saul"] select option{background:#0e1b42;color:#f7f3e8}
+/* the GIF only while Animation is on (and motion isn't reduced) */
+:root[data-skin="saul"][data-fx="on"]:not([data-motion="reduced"]){ --sg-pic:url(/images/th/saul.gif) }
+@media (prefers-reduced-motion:reduce){ :root[data-skin="saul"]{ --sg-pic:url(/images/th/saul-small.png) } }
+:root[data-skin="saul"] select option{background:#0e1b42;color:#fff}
 [data-skin="saul"] ::selection{background:var(--sg-gold);color:#0b1638}
 
-/* ── the backdrop: Saul, the still underneath, the video over it (theme.js .saulbg) ── */
-[data-skin="saul"] body{background:#0b1638}
-[data-skin="saul"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
-  background:linear-gradient(rgba(11,22,56,.35),rgba(11,22,56,.55)),url(/images/th/saul-still.webp) center / cover no-repeat,#0b1638}
-.saulbg{position:fixed;inset:0;z-index:-1;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.75}
-html:not([data-skin="saul"]) .saulbg,html.zen .saulbg{display:none}
-html.zen[data-skin="saul"] body::before,html.zen[data-skin="saul"] body::after{display:none}
+/* ── behind everything: Saul, tiled at his own size ── */
+[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 220px 168px repeat,#0b1638;image-rendering:pixelated}
+html.zen[data-skin="saul"] body{background:transparent}
+.saulbg{display:none}
 
-/* ── the billboard: a red, white and blue band on each page's top panel ── */
-[data-skin="saul"] :is(.hubbar,.pagehead,.topbar){
-  background-image:linear-gradient(90deg,var(--sg-red) 0 33.4%,#fff 33.4% 66.6%,var(--sg-blue) 66.6%);
-  background-size:100% 5px;background-repeat:no-repeat;background-position:top}
-[data-skin="saul"] :is(h1,.pagehead h1,.pq,.gamecard .tname,.qtile .tname){color:var(--sg-gold);text-shadow:2px 2px 0 var(--sg-red)}
-[data-skin="saul"] :is(.btn.primary,.btn.primary:hover){background:var(--accent);border-color:var(--accent);color:#fff}
+/* ── every panel is Saul: the whole of him squashed to fit, crunchy, a wash so the words read ── */
+[data-skin="saul"] :is(.hubbar,.pagehead,.topbar,.themebar,.tile,.qtile,.tday,.fpost,.pcard,.pad,.game,.stage,.sheet,.newsdlg,
+  .gamecard,.lbbcard,.lbgcard,.lbsec,.dgc,.studypanel,.mkcard,.rvcard,.mscnote,.ttnote,.focuslock,.jimcount,
+  .lesson,.nowcard,.breakbar,.gatecard,.idrow,.tfcard,.tfpop,.tfgroup .tfsw,dialog,.setdlg){
+  background:var(--sg-wash),var(--sg-pic) center / 100% 100% no-repeat,#0b1638 !important;
+  image-rendering:pixelated;border:2px solid #000 !important;border-radius:0 !important;box-shadow:4px 4px 0 #000 !important;
+  -webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+/* the bits inside a panel let him show through */
+[data-skin="saul"] :is(.lesson,.nowcard,.qtile,.tday,.gamecard,.fpost) :is(.ico,.tdico){background:transparent}
 
-/* ── and his line, in the corner ── */
+/* ── the words: meme text ── */
+[data-skin="saul"] body{color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+[data-skin="saul"] :is(h1,h2,h3,.pagehead h1,.pq,.gamecard h2,.qtile h2,.tname,.tdname,.lbbt){
+  font-family:Impact,"Anton",sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;color:#fff;
+  -webkit-text-stroke:1px #000;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+[data-skin="saul"] :is(input,textarea,select){text-shadow:none;color:#111;background:#fff;border:2px solid #000;border-radius:0}
+[data-skin="saul"] :is(input,textarea)::placeholder{color:#555}
+[data-skin="saul"] .btn{background:#fff;color:#000;text-shadow:none;border:2px solid #000;border-radius:0;box-shadow:3px 3px 0 #000}
+[data-skin="saul"] :is(.btn.primary,.btn.primary:hover){background:var(--accent);border-color:#000;color:#fff;
+  text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+
+/* ── and his line, in the corner, in yellow like a cheap ad ── */
 [data-skin="saul"] body::after{content:"S\2019 all good, man.";position:fixed;right:14px;bottom:10px;z-index:5;pointer-events:none;
-  font:400 1.05rem/1 "Anton","Impact",sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--sg-gold);
-  text-shadow:2px 2px 0 var(--sg-red);opacity:.9}
-@media (max-width:560px){ [data-skin="saul"] body::after{font-size:.85rem;right:10px;bottom:8px} }
+  font:400 1.25rem/1 Impact,"Anton",sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#ffe600;
+  -webkit-text-stroke:1px #000;text-shadow:3px 3px 0 #000;transform:rotate(-4deg)}
+html.zen[data-skin="saul"] body::after{display:none}
+@media (max-width:560px){ [data-skin="saul"] body::after{font-size:1rem;right:10px;bottom:8px} }

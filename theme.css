@@ -430,3 +430,15 @@ html[data-motion="reduced"] .saulnote{animation:none}
 .mscnote .btn{margin-top:10px}
 @keyframes mscnote{from{opacity:0;transform:translateY(10px)}}
 html[data-motion="reduced"] .mscnote{animation:none}
+
+/* Settings → Appearance: your theme and the way to the Theme finder (theme.js skinPicker, FINDER) */
+.field > .skins.skinnow{grid-template-columns:repeat(2,minmax(0,1fr))}
+.skins.skinnow a.skinbtn{display:block;text-decoration:none;color:var(--text)}
+.skins.skinnow a.skinbtn.more .nm{color:var(--accent)}
+.skins.skinnow a.skinbtn.more:hover{border-color:var(--accent)}
+/* Settings → Quick settings (theme.js quickRow) */
+:is(#quickset,#s_quick) .custrow .modes{margin-left:auto;display:flex;gap:4px}
+:is(#quickset,#s_quick) .custrow input[type="range"]{flex:1;min-width:0}
+:is(#quickset,#s_quick) .swrow{margin-top:10px}
+:is(#quickset,#s_quick) .hint{margin-top:8px}
+@media (max-width:440px){ :is(#quickset,#s_quick) .swrow{grid-template-columns:1fr} }

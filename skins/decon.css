@@ -1,0 +1,254 @@
+/* ══════════════════════════════════════════════════════════════════
+   DECONSTRUCTIVISM — the architecture of Gehry, Hadid, Libeskind and
+   Coop Himmelb(l)au, and Tschumi's red follies at the Parc de la
+   Villette; the broken grids of Carson's Ray Gun. The frame is taken
+   apart, never the content: every reading surface stays square on to
+   the page and nothing is turned or overlaps the text. What breaks is
+   around it. Panels are flat planes of pale plaster on raw concrete,
+   cut off at a corner (clip-path), with a hairline steel edge; the
+   head of a page is a plane that starts below the top of what's on it,
+   the page's name a block of steel laid across that edge and hanging
+   off its side, and behind it a second edge in red knocked out of line. One sharp colour, the follies' red: the
+   second edge, what's on now, today, the button that matters, the
+   icons standing about like follies. Syne for the type, extra bold for
+   names. Behind every page, concrete, and on it Tschumi's three
+   systems, one to a page: surfaces on Home (tilted planes, a glass
+   sheet, a red beam), lines on the timetable (long cables, nearly
+   level, at the edges only), points on Games (a turned grid of marks
+   with a few red follies), and on the rest two grids laid one over the
+   other, out of true. No moving background. Dark mode is the same
+   building at night: dark concrete, the planes in shadow, the red lit.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="decon"]{
+  --bg:#c8c5bf; --bg-img:none;
+  --panel:#f1f0ec; --panel-2:#e3e1dc; --line:#1a1a1a;
+  --text:#111111; --muted:#57554f; --accent:#d3261a; --accent-ink:#ffffff;
+  --font-ui:"Syne","Helvetica Neue",Arial,system-ui,sans-serif;
+  --font-display:"Syne","Helvetica Neue",Arial,system-ui,sans-serif;
+  --font-num:"Helvetica Neue",Arial,"Liberation Sans",system-ui,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:14%; --card-accent:0px;
+  --card-border:1.5px solid var(--line);
+  --shadow:none; --shadow-hi:none;
+  --display-tt:none; --display-ls:-.035em; --display-w:800;
+  --dc-steel:#1a1a1a; --dc-plane:#f1f0ec; --dc-plane-2:#e6e4df; --dc-edge:1.5px;
+  --dc-red:#d3261a;
+  /* a cut edge drawn back in: a 3px band on the diagonal of a corner box (half of it is clipped away) */
+  --dc-diag:linear-gradient(to top right,transparent calc(50% - 1.5px),var(--dc-steel) calc(50% - 1.5px) calc(50% + 1.5px),transparent calc(50% + 1.5px));
+  --dc-diag2:linear-gradient(to top left,transparent calc(50% - 1.5px),var(--dc-steel) calc(50% - 1.5px) calc(50% + 1.5px),transparent calc(50% + 1.5px));
+  --dc-concrete:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><filter id='m' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .22  0 0 0 0 .21  0 0 0 0 .2  0 0 0 .5 -.12'/></filter><filter id='n' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .1  0 0 0 0 .1  0 0 0 0 .1  0 0 0 .5 -.16'/></filter><filter id='w' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .45 -.15'/></filter><rect width='280' height='280' filter='url(%23m)'/><rect width='280' height='280' filter='url(%23n)'/><rect width='280' height='280' filter='url(%23w)'/></svg>");
+  --dc-sys:none;
+}
+[data-skin="decon"][data-mode="dark"]{
+  --bg:#1b1b1c;
+  --panel:#2a2a2b; --panel-2:#333335; --line:#d9d7d1;
+  --text:#ecebe7; --muted:#a4a29c; --accent:#ff4a36; --accent-ink:#ffffff;
+  --dc-steel:#d9d7d1; --dc-plane:#2a2a2b; --dc-plane-2:#323234; --dc-red:#ff4a36;
+  --dc-concrete:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><filter id='m' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.011' numOctaves='3' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .55  0 0 0 0 .56  0 0 0 .35 -.1'/></filter><filter id='n' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .6 -.18'/></filter><filter id='w' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .22 -.08'/></filter><rect width='280' height='280' filter='url(%23m)'/><rect width='280' height='280' filter='url(%23n)'/><rect width='280' height='280' filter='url(%23w)'/></svg>");
+}
+[data-skin="decon"] ::selection{background:var(--dc-red);color:#fff}
+/* Syne's figures are old style unless asked: lining, so a room like S03 reads as one */
+[data-skin="decon"] :is(body,button,input,select,textarea){font-feature-settings:"lnum" 1}
+
+/* ── the ground: concrete, and one of Tschumi's systems drawn on it ── */
+[data-skin="decon"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:var(--dc-sys) center/cover no-repeat,var(--dc-concrete) 0 0/280px 280px,var(--bg)}
+html.zen[data-skin="decon"] body::before,[data-skin="decon"][data-pg="hkmahjong"] body::before{display:none}
+/* surfaces (Home): a sheet of glass and a plane tipped in from the top right, a dark plane low on the left, a red beam, two cables */
+[data-skin="decon"][data-pg="home"]{--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><path d='M1010 0H1600V470L1190 640Z' fill='%2396b2c4' fill-opacity='.34'/><path d='M1240 0H1600V250L1330 330Z' fill='%23fff' fill-opacity='.28'/><path d='M0 700L560 560L610 640L0 830Z' fill='%23262626' fill-opacity='.82'/><path d='M0 760L250 700L262 730L0 800Z' fill='%23fff' fill-opacity='.12'/><path d='M1080 1000L1600 600V628L1118 1000Z' fill='%23d3261a'/><g stroke='%231a1a1a' fill='none'><path d='M0 236L1600 108' stroke-width='1.2'/><path d='M180 1000L780 0' stroke-width='1'/><path d='M1600 820L700 1000' stroke-width='1'/></g></svg>")}
+[data-skin="decon"][data-mode="dark"][data-pg="home"]{--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><path d='M1010 0H1600V470L1190 640Z' fill='%2389a6bb' fill-opacity='.12'/><path d='M1240 0H1600V250L1330 330Z' fill='%23fff' fill-opacity='.05'/><path d='M0 700L560 560L610 640L0 830Z' fill='%23000' fill-opacity='.55'/><path d='M1080 1000L1600 600V628L1118 1000Z' fill='%23ff4a36'/><g stroke='%23d9d7d1' stroke-opacity='.55' fill='none'><path d='M0 236L1600 108' stroke-width='1.2'/><path d='M180 1000L780 0' stroke-width='1'/><path d='M1600 820L700 1000' stroke-width='1'/></g></svg>")}
+/* lines (the timetable): long cables, nearly level, out at the edges */
+[data-skin="decon"][data-pg="timetable"]{--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><g fill='none' stroke='%231a1a1a' stroke-opacity='.5'><path d='M0 64L1600 30'/><path d='M0 980L1600 930'/><path d='M0 120L1600 160' stroke-opacity='.3'/><path d='M40 0L0 1000' stroke-opacity='.35'/><path d='M1560 0L1600 1000' stroke-opacity='.35'/></g><path d='M0 952L1600 888' stroke='%23d3261a' stroke-width='3' fill='none'/></svg>")}
+[data-skin="decon"][data-mode="dark"][data-pg="timetable"]{--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><g fill='none' stroke='%23d9d7d1' stroke-opacity='.35'><path d='M0 64L1600 30'/><path d='M0 980L1600 930'/><path d='M0 120L1600 160' stroke-opacity='.2'/><path d='M40 0L0 1000' stroke-opacity='.25'/><path d='M1560 0L1600 1000' stroke-opacity='.25'/></g><path d='M0 952L1600 888' stroke='%23ff4a36' stroke-width='3' fill='none'/></svg>")}
+/* points (Games, Mahjong): a grid of marks turned out of true, and a few red follies on it */
+[data-skin="decon"]:is([data-pg="games"],[data-pg="mahjong"]){--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><defs><pattern id='p' width='96' height='96' patternUnits='userSpaceOnUse' patternTransform='rotate(9)'><path d='M42 48h12M48 42v12' stroke='%231a1a1a' stroke-opacity='.45' stroke-width='1.4'/></pattern></defs><rect width='1600' height='1000' fill='url(%23p)'/><g fill='%23d3261a' transform='rotate(9 800 500)'><rect x='130' y='186' width='26' height='26'/><rect x='1474' y='378' width='26' height='26'/><rect x='322' y='858' width='26' height='26'/><rect x='1186' y='-6' width='26' height='26'/></g><path d='M0 900L1600 640' stroke='%231a1a1a' stroke-opacity='.4' fill='none'/></svg>")}
+[data-skin="decon"][data-mode="dark"]:is([data-pg="games"],[data-pg="mahjong"]){--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><defs><pattern id='p' width='96' height='96' patternUnits='userSpaceOnUse' patternTransform='rotate(9)'><path d='M42 48h12M48 42v12' stroke='%23d9d7d1' stroke-opacity='.3' stroke-width='1.4'/></pattern></defs><rect width='1600' height='1000' fill='url(%23p)'/><g fill='%23ff4a36' transform='rotate(9 800 500)'><rect x='130' y='186' width='26' height='26'/><rect x='1474' y='378' width='26' height='26'/><rect x='322' y='858' width='26' height='26'/><rect x='1186' y='-6' width='26' height='26'/></g><path d='M0 900L1600 640' stroke='%23d9d7d1' stroke-opacity='.3' fill='none'/></svg>")}
+/* superimposition (the rest): a square grid, and a second one laid over it out of true */
+[data-skin="decon"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><defs><pattern id='a' width='120' height='120' patternUnits='userSpaceOnUse'><path d='M0 .5H120M.5 0V120' stroke='%231a1a1a' stroke-opacity='.16' fill='none'/></pattern><pattern id='b' width='88' height='88' patternUnits='userSpaceOnUse' patternTransform='rotate(-14)'><path d='M0 .5H88M.5 0V88' stroke='%231a1a1a' stroke-opacity='.2' fill='none'/></pattern></defs><rect width='1600' height='1000' fill='url(%23a)'/><path d='M560 0H1600V1000H300Z' fill='url(%23b)'/><path d='M560 0L300 1000' stroke='%23d3261a' stroke-width='3' fill='none'/></svg>")}
+[data-skin="decon"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--dc-sys:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000' preserveAspectRatio='xMidYMid slice'><defs><pattern id='a' width='120' height='120' patternUnits='userSpaceOnUse'><path d='M0 .5H120M.5 0V120' stroke='%23d9d7d1' stroke-opacity='.1' fill='none'/></pattern><pattern id='b' width='88' height='88' patternUnits='userSpaceOnUse' patternTransform='rotate(-14)'><path d='M0 .5H88M.5 0V88' stroke='%23d9d7d1' stroke-opacity='.13' fill='none'/></pattern></defs><rect width='1600' height='1000' fill='url(%23a)'/><path d='M560 0H1600V1000H300Z' fill='url(%23b)'/><path d='M560 0L300 1000' stroke='%23ff4a36' stroke-width='3' fill='none'/></svg>")}
+
+/* ══ the head of a page: a plane, cut at two corners, that starts below the top of what's on it; the page's name is
+      a block of steel laid across its edge and hanging off its left side; behind it all, a second edge in red,
+      knocked out of line ══ */
+:root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;isolation:isolate;background:none;border:0;border-radius:0;box-shadow:none;
+  padding-top:20px;padding-left:var(--dc-hd-pad,22px)}
+:root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"";position:absolute;inset:var(--dc-hd-top,52px) 0 0 0;z-index:-1;pointer-events:none;
+  clip-path:polygon(0 0,calc(100% - 44px) 0,100% 18px,100% 100%,26px 100%,0 calc(100% - 26px));
+  background:var(--dc-diag) right top/44px 18px no-repeat,var(--dc-diag) left bottom/26px 26px no-repeat,var(--dc-plane);box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel)}
+:root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;inset:8px -10px -9px 18px;z-index:-2;pointer-events:none;
+  border:2px solid var(--dc-red);transform:rotate(-1.1deg)}
+:root[data-skin="decon"]:not([data-header="split"]) .hubbar{--dc-hd-top:56px}
+:root[data-skin="decon"]:not([data-header="split"]) .topbar{--dc-hd-top:34px}
+:root[data-skin="decon"]:not([data-header="split"]) .hubid{align-self:start}
+:root[data-skin="decon"]:not([data-header="split"]) .brand{align-self:flex-start}
+@media (max-width:600px){ :root[data-skin="decon"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){--dc-hd-pad:16px} }
+[data-skin="decon"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-family:var(--font-display);font-weight:800;letter-spacing:-.035em;line-height:1}
+:root[data-skin="decon"]:not([data-header="split"]) :is(.brand h1,.hubid h1,.pagehead h1){width:fit-content;max-width:calc(100% + var(--dc-hd-pad,22px) + 8px);margin-left:calc(-8px - var(--dc-hd-pad,22px));
+  padding:.1em .3em .16em calc(8px + var(--dc-hd-pad,22px));background:var(--text);color:var(--dc-plane)}
+[data-skin="decon"] .pagehead h1{font-size:clamp(1.6rem,4.6vw,2.9rem);overflow-wrap:break-word}
+[data-skin="decon"] .brand h1{font-size:clamp(1.35rem,2.4vw,1.9rem)}
+[data-skin="decon"] .hubid h1{font-size:clamp(1.5rem,5.6cqi,2.6rem)}
+[data-skin="decon"] .hubid .eyebrow{margin-bottom:6px}
+[data-skin="decon"] .brand .idrow{margin-top:10px}
+@media (max-width:860px) and (min-width:601px){ [data-skin="decon"] .topbar .now{flex-basis:250px}
+  [data-skin="decon"] .topbar .nowcard .subj{font-weight:700;font-size:.9375rem;letter-spacing:-.02em;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical} }
+@media (max-width:600px){
+  [data-skin="decon"] .nowcard .subj{font-weight:700;font-size:.9375rem;letter-spacing:-.02em}
+  [data-skin="decon"] .brand h1{font-size:1.25rem;letter-spacing:-.04em}
+  /* a phone: the page's name has the first line to itself, the buttons go under it on the plane */
+  :root[data-skin="decon"]:not([data-header="split"]) .pagehead .phtitle{flex:1 1 100%}
+  :root[data-skin="decon"]:not([data-header="split"]) .pagehead .crumbs{margin-left:auto}
+}
+[data-skin="decon"] :is(.eyebrow,.sitename){font-family:var(--font-ui);font-weight:700;font-size:.6875rem;letter-spacing:.24em;text-transform:uppercase;color:var(--text)}
+[data-skin="decon"] :is(.eyebrow,.sitename)::before{content:"";display:inline-block;width:.62em;height:.62em;margin-right:.6em;background:var(--dc-red);vertical-align:.04em}
+[data-skin="decon"] .sitename:hover{color:var(--dc-red)}
+[data-skin="decon"] :is(.hubsub,.brand>span,.pagelede){color:var(--muted)}
+[data-skin="decon"] .idrow{background:var(--panel);border:1.5px solid var(--dc-steel);border-radius:0;opacity:1}
+/* Now and Next: plaster with a steel edge, cut at a corner; what is on now is framed in red */
+[data-skin="decon"] .nowcard{background:var(--dc-plane);color:var(--text);border:1.5px solid var(--dc-steel);border-radius:0;
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%);background-image:var(--dc-diag) right top/16px 16px no-repeat}
+[data-skin="decon"] .nowcard:first-child:not(:only-child){box-shadow:inset 0 0 0 2px var(--dc-red);border-color:var(--dc-red)}
+[data-skin="decon"] .nowcard:first-child:not(:only-child) .lbl{color:var(--dc-red)}
+[data-skin="decon"] .nowcard .lbl{color:var(--muted);letter-spacing:.2em;font-weight:700}
+[data-skin="decon"] .nowcard .subj{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em}
+[data-skin="decon"] :is(.nowcard .count,.progrow .count){color:var(--dc-red)}
+[data-skin="decon"] .prog{height:4px;border-radius:0;background:color-mix(in srgb,currentColor 22%,transparent)}
+[data-skin="decon"] .prog i{border-radius:0;background:var(--dc-red)}
+@container hubbar (max-width:26em){
+  [data-skin="decon"] .hubnow.pair{background:var(--dc-plane);border:1.5px solid var(--dc-steel);border-radius:0}
+  [data-skin="decon"] .hubnow.pair .nowcard{clip-path:none;background:none;border:0;color:var(--text)}
+}
+
+/* ══ planes: flat plaster, one corner cut off, a hairline of steel; the content keeps clear of the cut ══ */
+[data-skin="decon"] :is(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard,.fpost,.hscstrip){border:0;border-radius:0;box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);
+  background:var(--dc-diag) right bottom/14px 14px no-repeat,var(--dc-plane);clip-path:polygon(-24px -24px,calc(100% + 24px) -24px,calc(100% + 24px) calc(100% - 38px),calc(100% - 14px) 100%,-24px 100%);transition:none}
+[data-skin="decon"] .fpost{background:var(--dc-diag) right top/12px 12px no-repeat,var(--dc-plane);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%)}
+[data-skin="decon"] .fpost.freply{background:var(--dc-diag) right top/12px 12px no-repeat,var(--dc-plane-2)}
+/* under the pointer: the plane takes the red, in the corner that's cut */
+:root[data-skin="decon"] :is(.qtile,.tday,.gamecard,.tile,.game,.lbbcard,.tfcard):hover{transform:none;
+  background:linear-gradient(to top left,var(--dc-red) 50%,transparent 50%) right bottom/26px 26px no-repeat,var(--dc-plane);box-shadow:inset 0 0 0 2.5px var(--dc-steel)}
+[data-skin="decon"] .qtile{justify-content:space-between;padding:14px 16px 14px}
+[data-skin="decon"] .qtile .tname{font-family:var(--font-display);font-weight:800;font-size:1rem;letter-spacing:-.02em}
+[data-skin="decon"] .qtile .ico .ph{width:1.85rem;height:1.85rem}
+[data-skin="decon"] :is(.gamecard h2,.game h2,.tile .tname){font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;line-height:1.1}
+[data-skin="decon"] .gamecard h2{font-size:1.0625rem}
+[data-skin="decon"] .tdname{font-family:var(--font-display);font-weight:700;letter-spacing:-.02em}
+[data-skin="decon"] :is(.newpill,.gamecard .newbanner){border-radius:0;background:var(--dc-red);color:#fff;letter-spacing:.14em;clip-path:polygon(0 0,100% 0,calc(100% - 5px) 100%,0 100%);padding-right:10px}
+[data-skin="decon"] .newsdot{border-radius:0;background:var(--dc-red)}
+[data-skin="decon"] .tdstat{color:var(--dc-red)}
+@media (max-width:560px){ [data-skin="decon"] .qtile{padding:10px 3px} [data-skin="decon"] .qtile .tname{font-size:.6875rem;font-weight:700;letter-spacing:-.03em;overflow-wrap:normal;word-break:normal;hyphens:none} }
+
+/* ══ the poll and the forum: big planes, cut at two corners ══ */
+[data-skin="decon"] .pcard{border:0;border-radius:0;padding:22px 24px 18px;
+  background:var(--dc-diag) left top/34px 16px no-repeat,var(--dc-diag) right bottom/22px 22px no-repeat,var(--dc-plane);
+  box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);clip-path:polygon(0 16px,34px 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%)}
+[data-skin="decon"] .pchip{border-radius:0;background:none;padding:0;color:var(--text);letter-spacing:.2em;text-transform:uppercase;font-size:.6875rem}
+[data-skin="decon"] .pchip::before{border-radius:0;background:var(--dc-red);animation:none;box-shadow:none}
+[data-skin="decon"] .pq{font-family:var(--font-display);font-weight:800;letter-spacing:-.035em;line-height:1.02;font-size:clamp(1.7rem,4.4vw,2.75rem)}
+[data-skin="decon"] .pin{border-radius:0;background:var(--panel);border:1.5px solid var(--dc-steel)}
+[data-skin="decon"] .pin:focus{border-color:var(--dc-steel);box-shadow:4px 4px 0 -1px var(--dc-red)}
+[data-skin="decon"] .pbar{border-radius:0;background:transparent;border:1.5px solid var(--dc-steel)}
+[data-skin="decon"] .pfill{border-radius:0;background:color-mix(in srgb,var(--text) 14%,transparent)}
+[data-skin="decon"] .pbar:first-child .pfill{background:var(--dc-red)}
+[data-skin="decon"] .pbar:first-child .pbl{color:#fff}
+[data-skin="decon"] .plock span{border-radius:0;background:var(--dc-plane);border:1.5px solid var(--dc-steel);box-shadow:none}
+[data-skin="decon"] .pminbtn{border-radius:0;border:1.5px solid var(--dc-steel);background:var(--dc-plane)}
+[data-skin="decon"] .pfoot{border-top:1.5px solid var(--dc-steel)}
+[data-skin="decon"] .plink{color:var(--text);text-decoration:underline;text-decoration-color:var(--dc-red);text-decoration-thickness:2px;text-underline-offset:3px}
+[data-skin="decon"] .forum{border:0;padding:20px 22px 22px;
+  background:var(--dc-diag2) right top/40px 14px no-repeat,var(--dc-diag) left bottom/18px 18px no-repeat,var(--dc-plane);
+  box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);clip-path:polygon(0 0,calc(100% - 40px) 0,100% 14px,100% 100%,18px 100%,0 calc(100% - 18px))}
+[data-skin="decon"] .fhead h2,[data-skin="decon"] .forum h2{font-family:var(--font-display);font-weight:800;font-size:1.75rem;letter-spacing:-.035em}
+[data-skin="decon"] :is(.fnew textarea,.freplybox textarea,.ideaform input,.psug input){border-radius:0;border:1.5px solid var(--dc-steel);background:var(--panel)}
+[data-skin="decon"] .fyear{border-radius:0;border:1.5px solid var(--dc-steel)}
+[data-skin="decon"] .fyear[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+[data-skin="decon"] .rx{border-radius:0;border:1.5px solid var(--dc-steel);background:transparent}
+[data-skin="decon"] .rx.mine{background:var(--dc-red);border-color:var(--dc-red);color:#fff}
+[data-skin="decon"] .rx.mine b{color:#fff}
+[data-skin="decon"] .rxadd{border-radius:0}
+[data-skin="decon"] .rxpick{border-radius:0;border:1.5px solid var(--dc-steel);box-shadow:6px 6px 0 -2px var(--dc-red)}
+[data-skin="decon"] .flink{color:var(--text);text-decoration:underline;text-decoration-color:var(--dc-red);text-underline-offset:3px}
+[data-skin="decon"] .hubfoot{border-top:1.5px solid var(--dc-steel)}
+
+/* ══ section names: extra bold, run out past the left edge, a red bar laid across ══ */
+[data-skin="decon"] :is(.sechd,.cathd){position:relative;font:800 1.125rem/1.1 var(--font-display);letter-spacing:-.025em;text-transform:none;color:var(--text);padding-left:30px}
+[data-skin="decon"] :is(.sechd,.cathd)::before{content:"";position:absolute;left:-8px;top:.48em;width:30px;height:4px;background:var(--dc-red);transform:skewY(-12deg)}
+@media (min-width:1100px){ [data-skin="decon"] :is(.sechd,.cathd){margin-left:-30px} }
+[data-skin="decon"] .gsec .cathd{flex:1}
+
+/* ══ buttons: steel-edged, one corner cut; the one that matters is red ══ */
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip){border:0;border-radius:0;color:var(--text);box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);
+  background:var(--dc-diag) right top/9px 9px no-repeat,var(--dc-plane);clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%);font-family:var(--font-ui);font-weight:700;transition:none}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):hover{background:var(--text);color:var(--bg);box-shadow:none}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):active{transform:translate(1px,1px)}
+:root[data-skin="decon"] :is(.btn,.arrowbtn,.popt,.lbopen):not(.gateskip):focus-visible{outline:2px solid var(--dc-red);outline-offset:-5px}
+:root[data-skin="decon"] .btn.primary{background:var(--dc-red);color:#fff;box-shadow:none}
+:root[data-skin="decon"] .btn.primary:hover{background:var(--text);color:var(--bg)}
+:root[data-skin="decon"] .btn.danger{color:#c11a10}
+:root[data-skin="decon"][data-mode="dark"] .btn.danger{color:#ff8073}
+:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab){border-radius:0;border:1.5px solid var(--dc-steel);background:var(--dc-plane);color:var(--text);box-shadow:none}
+:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab):hover{border-color:var(--dc-red)}
+:root[data-skin="decon"] .glbtab.cur,:root[data-skin="decon"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.popt)[aria-pressed="true"],:root[data-skin="decon"] .popt[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text);transform:none}
+[data-skin="decon"] :is(.emailrow,.gatepass,.pad,.field input[type=text],.custrow input.crin,.custrow select){border-radius:0;border:1.5px solid var(--dc-steel);background:var(--panel)}
+[data-skin="decon"] .tsw{border-radius:0;border:1.5px solid var(--dc-steel);background:var(--dc-plane);font-weight:500;letter-spacing:-.01em}
+[data-skin="decon"] .tsw i{border-radius:0;background:color-mix(in srgb,var(--text) 22%,transparent);width:36px;height:16px}
+[data-skin="decon"] .tsw i::after{border-radius:0;top:2px;left:2px;width:12px;height:12px;box-shadow:none;background:var(--bg)}
+[data-skin="decon"] .tsw[aria-checked="true"] i{background:var(--dc-red)}
+[data-skin="decon"] .tsw[aria-checked="true"] i::after{transform:translateX(20px);background:#fff}
+[data-skin="decon"] input[type=range]{accent-color:var(--dc-red)}
+[data-skin="decon"] select{border-radius:0;border:1.5px solid var(--dc-steel);background-color:var(--panel);color:var(--text)}
+[data-skin="decon"] input[type=checkbox]{accent-color:var(--dc-red)}
+
+/* ══ dialogs: a plane cut at two corners ══ */
+[data-skin="decon"] :is(dialog,.newsdlg,.sheet,.gatecard){border:0;border-radius:0;background:var(--dc-diag) left top/30px 14px no-repeat,var(--dc-diag) right bottom/20px 20px no-repeat,var(--dc-plane);
+  box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);clip-path:polygon(0 14px,30px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%)}
+[data-skin="decon"] .sheet{clip-path:polygon(0 14px,30px 0,100% 0,100% 100%,0 100%);background:var(--dc-diag) left top/30px 14px no-repeat,var(--dc-plane)}
+[data-skin="decon"] dialog::backdrop{background:rgba(20,20,20,.5);backdrop-filter:none}
+:root[data-skin="decon"] :is(.dlg-h,.newshead,.sheethd){border-bottom:1.5px solid var(--dc-steel);background:transparent}
+:root[data-skin="decon"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font-family:var(--font-display);font-weight:800;font-size:1.5rem;letter-spacing:-.035em}
+:root[data-skin="decon"] .dlg-f{border-top:1.5px solid var(--dc-steel)}
+:root[data-skin="decon"] :is(.field>label,.tbhead span){font-weight:700;letter-spacing:.2em;color:var(--text)}
+[data-skin="decon"] .custrow{border-bottom-color:color-mix(in srgb,var(--dc-steel) 30%,transparent)}
+[data-skin="decon"] :is(.skinbtn,.rx,.rxpick,.tfcard){border-radius:0}
+[data-skin="decon"] .skinbtn{border:1.5px solid var(--dc-steel)}
+[data-skin="decon"] .skinbtn[aria-pressed="true"]{border-color:var(--dc-red);box-shadow:4px 4px 0 -1px var(--dc-red)}
+[data-skin="decon"] .tfcard[aria-current="true"]{box-shadow:inset 0 0 0 3px var(--dc-red)}
+[data-skin="decon"] .tftag{border-radius:0}
+[data-skin="decon"] .tftag.on{background:var(--dc-red);border-color:var(--dc-red)}
+[data-skin="decon"] .tfh{font-family:var(--font-display);font-weight:800;letter-spacing:-.025em;font-size:1.25rem}
+
+/* ══ the timetable: straight blocks on the concrete, each cut at one corner; the red frames what's on, and today ══ */
+[data-skin="decon"] .lesson{border:0;border-radius:0;color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc-steel) 55%,transparent),inset 4px 0 0 var(--c,var(--accent));
+  background:linear-gradient(to top right,transparent calc(50% - 1px),color-mix(in srgb,var(--dc-steel) 55%,transparent) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)) right top/12px 12px no-repeat,
+    color-mix(in srgb,var(--c,var(--accent)) var(--tint),var(--dc-plane));clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);padding-left:12px}
+[data-skin="decon"] .lesson:hover{box-shadow:inset 0 0 0 1.5px var(--dc-steel),inset 4px 0 0 var(--c,var(--accent))}
+[data-skin="decon"] .lesson .s{font-family:var(--font-display);font-weight:700;letter-spacing:-.025em}
+[data-skin="decon"] .lesson.current{outline:0;box-shadow:inset 0 0 0 3px var(--dc-red);
+  background:linear-gradient(to top left,var(--dc-red) 50%,transparent 50%) right top/22px 22px no-repeat,color-mix(in srgb,var(--c,var(--accent)) var(--tint),var(--dc-plane))}
+[data-skin="decon"] .tmark{color:var(--text);opacity:.75;font-weight:600}
+[data-skin="decon"] .dayhead{text-align:left}
+[data-skin="decon"] .dayhead .dow{font-family:var(--font-display);font-weight:800;font-size:1.0625rem;letter-spacing:-.025em}
+[data-skin="decon"] .dayhead .rule{height:1.5px;border-radius:0;opacity:1;background:var(--dc-steel)}
+[data-skin="decon"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--dc-red)}
+[data-skin="decon"] :is(.dayhead.today,.dayhead.focus) .rule{height:6px;background:var(--dc-red);clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)}
+[data-skin="decon"] .breakbar{border:0;border-top:1.5px solid var(--dc-steel);border-radius:0;background:color-mix(in srgb,var(--dc-plane) 45%,transparent);opacity:1;justify-content:flex-start;padding:0 8px;letter-spacing:.18em}
+html.zen[data-skin="decon"] .breakbar{background:color-mix(in srgb,var(--dc-plane) 88%,transparent)}
+[data-skin="decon"] .weeklabel{font-family:var(--font-display);font-weight:800;letter-spacing:-.025em;font-size:1.25rem}
+[data-skin="decon"] .dhead{border-bottom:1.5px solid var(--dc-steel)}
+
+/* ══ pages that are one piece: one big plane, its steel edge doubled and knocked out of line ══ */
+:root[data-skin="decon"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::before{
+  content:"";position:absolute;left:4px;right:4px;top:96px;bottom:34px;z-index:-1;pointer-events:none;
+  background:var(--dc-diag) left bottom/40px 40px no-repeat,var(--dc-diag2) right top/60px 24px no-repeat,color-mix(in srgb,var(--dc-plane) 82%,transparent);
+  box-shadow:inset 0 0 0 var(--dc-edge) var(--dc-steel);clip-path:polygon(0 0,calc(100% - 60px) 0,100% 24px,100% 100%,40px 100%,0 calc(100% - 40px))}
+:root[data-skin="decon"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::after{
+  content:"";position:absolute;left:18px;right:8px;top:118px;bottom:16px;z-index:-2;pointer-events:none;border:1.5px solid var(--dc-steel);transform:skewY(.7deg)}
+:root[data-skin="decon"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{padding-left:36px;padding-right:36px}
+@media (max-width:640px){
+  :root[data-skin="decon"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
+  :root[data-skin="decon"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::before{left:6px;right:6px;top:84px}
+  :root[data-skin="decon"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::after{left:12px;right:2px;top:100px}
+}
+[data-skin="decon"] .gamestage:not([hidden]){background:none}
+
+/* ══ Separated header: no plane; the name keeps its weight ══ */
+:root[data-skin="decon"][data-header="split"] .pagehead{border-bottom:1.5px solid var(--dc-steel)}

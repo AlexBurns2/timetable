@@ -1,0 +1,308 @@
+/* ══════════════════════════════════════════════════════════════════
+   BAUHAUS — the page built from the three elementary forms, as the
+   school's posters and books were. Kandinsky's pairing holds
+   everywhere: the triangle is yellow, the square red, the circle blue;
+   heavy black bars hold them together. Lower case throughout the
+   headings (Bayer's "universal" type), set in a geometric sans (Jost).
+   Planes of printed paper on a warmer ground, no outlines, no
+   shadows, no rounding (only circles are round). The forms mark
+   things: the site's mark is the three of them, each Home tile keeps
+   its icon in one, a section opens with one, today is a red square.
+   Each page's ground is a poster of its own: a few large forms at the
+   edges of the window, never behind the reading. (Swiss is the grid
+   and the single red; Neo Brutalism is outlines and hard shadows;
+   this is the forms.) On black paper in dark mode.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="bauhaus"]{
+  --bh-red:#d63a2a; --bh-yel:#f2b619; --bh-blu:#1f4e9e; --bh-ink:#171614; --bh-on-red:#fff; --bh-on-blu:#fff;
+  --bg:#ece6d8; --bg-img:none;
+  --panel:#faf7f0; --panel-2:#f1ece1; --line:#cbc2b0;
+  --text:#171614; --muted:#655e52; --accent:#c4321f; --accent-ink:#fff;
+  --font-ui:"Jost",system-ui,sans-serif;
+  --font-display:"Jost",system-ui,sans-serif;
+  --font-num:"Jost",system-ui,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:30%; --card-accent:0px;
+  --card-border:0 solid transparent; --shadow:none; --shadow-hi:none;
+  --display-tt:lowercase; --display-ls:-.012em; --display-w:700;
+  --bh-bar:12px;
+  /* the three forms, small, for the site's mark: triangle, square, circle */
+  --bh-mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12' viewBox='0 0 40 12'%3E%3Cpath d='M0 12 6.93 0 13.86 12Z' fill='%23f2b619'/%3E%3Crect x='16' y='1' width='10' height='10' fill='%23d63a2a'/%3E%3Ccircle cx='34' cy='6' r='5.5' fill='%231f4e9e'/%3E%3C/svg%3E");
+}
+[data-skin="bauhaus"][data-mode="dark"]{
+  --tint:34%;
+  --bh-red:#e5483a; --bh-yel:#f4c02c; --bh-blu:#3f6fca; --bh-ink:#e9e2d2; --bh-on-red:#fff; --bh-on-blu:#fff;
+  --bg:#121110; --panel:#1d1c19; --panel-2:#262420; --line:#3b3832;
+  --text:#ece5d5; --muted:#a29a8a; --accent:#ef5e48; --accent-ink:#121110;
+  --bh-mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12' viewBox='0 0 40 12'%3E%3Cpath d='M0 12 6.93 0 13.86 12Z' fill='%23f4c02c'/%3E%3Crect x='16' y='1' width='10' height='10' fill='%23e5483a'/%3E%3Ccircle cx='34' cy='6' r='5.5' fill='%233f6fca'/%3E%3C/svg%3E");
+}
+[data-skin="bauhaus"] body{line-height:1.5}
+[data-skin="bauhaus"] ::selection{background:var(--bh-yel);color:#171614}
+
+/* ── the ground: a poster per page. Large flat forms at the edges of the window, anchored to the
+      column's edges (50vw ± 500px) so they sit in the margins and not under the reading. Drawn with
+      gradients, so dark mode only changes the colours. A triangle is two halves side by side. ── */
+[data-skin="bauhaus"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--bh-poster,none)}
+html.zen[data-skin="bauhaus"] body::before,[data-skin="bauhaus"][data-pg="hkmahjong"] body::before{display:none}
+[data-skin="bauhaus"]{
+  --bh-L:calc(50vw - 500px); --bh-R:calc(50vw + 500px);
+  --bh-c:radial-gradient(circle closest-side,var(--bh-blu) calc(100% - 1px),transparent 100%);
+  --bh-s:linear-gradient(var(--bh-red),var(--bh-red));
+  --bh-k:linear-gradient(var(--bh-ink),var(--bh-ink));
+  --bh-tl:linear-gradient(to top left,var(--bh-yel) calc(50% - .5px),transparent calc(50% + .5px));
+  --bh-tr:linear-gradient(to top right,var(--bh-yel) calc(50% - .5px),transparent calc(50% + .5px));
+}
+/* Home: a bar falls from the top edge across a large blue circle and stands on a red square; a yellow triangle stands on the foot of the window at the left */
+[data-skin="bauhaus"][data-pg="home"]{--bh-poster:
+  var(--bh-k) calc(var(--bh-R) + 92px) 0/16px 68vh no-repeat,
+  var(--bh-s) calc(var(--bh-R) + 68px) 68vh/64px 64px no-repeat,
+  var(--bh-c) calc(var(--bh-R) + 36px) 92px/340px 340px no-repeat,
+  var(--bh-tl) calc(var(--bh-L) - 226px) calc(100vh - 182px)/105px 182px no-repeat,
+  var(--bh-tr) calc(var(--bh-L) - 121px) calc(100vh - 182px)/105px 182px no-repeat}
+/* the timetable: almost nothing; a quarter of a circle in the far corner */
+[data-skin="bauhaus"][data-pg="timetable"]{--bh-poster:
+  var(--bh-c) calc(100vw - 150px) calc(100vh - 150px)/300px 300px no-repeat}
+/* games: the three forms stacked like the school's building blocks, standing on a bar; a bar from top to bottom at the right */
+[data-skin="bauhaus"]:is([data-pg="games"],[data-pg="mahjong"]){--bh-poster:
+  var(--bh-k) 0 calc(100vh - 56px)/calc(var(--bh-L) - 24px) 16px no-repeat,
+  var(--bh-tl) calc(var(--bh-L) - 190px) calc(100vh - 384px)/62px 108px no-repeat,
+  var(--bh-tr) calc(var(--bh-L) - 128px) calc(100vh - 384px)/62px 108px no-repeat,
+  var(--bh-s) calc(var(--bh-L) - 190px) calc(100vh - 276px)/124px 124px no-repeat,
+  var(--bh-c) calc(var(--bh-L) - 190px) calc(100vh - 180px)/124px 124px no-repeat,
+  var(--bh-k) calc(var(--bh-R) + 70px) 0/16px 100vh no-repeat}
+/* calendar: a large blue disc rising at the right behind a bar along its horizon; at the left a red square sits on a bar from the edge */
+[data-skin="bauhaus"][data-pg="calendar"]{--bh-poster:
+  var(--bh-k) calc(var(--bh-R) + 20px) calc(100vh - 160px)/100vw 16px no-repeat,
+  var(--bh-c) calc(var(--bh-R) + 40px) calc(100vh - 360px)/400px 400px no-repeat,
+  var(--bh-k) 0 26vh/calc(var(--bh-L) - 50px) 16px no-repeat,
+  var(--bh-s) calc(var(--bh-L) - 134px) calc(26vh - 64px)/64px 64px no-repeat}
+/* free periods and revision: two bars crossing at the left, a red square where they meet */
+[data-skin="bauhaus"]:is([data-pg="free"],[data-pg="revision"],[data-pg="notes"]){--bh-poster:
+  var(--bh-k) calc(var(--bh-L) - 90px) 0/16px 100vh no-repeat,
+  var(--bh-k) 0 34vh/calc(var(--bh-L) - 40px) 16px no-repeat,
+  var(--bh-s) calc(var(--bh-L) - 150px) calc(34vh - 44px)/76px 76px no-repeat,
+  var(--bh-c) calc(var(--bh-R) + 40px) calc(100vh - 230px)/180px 180px no-repeat}
+/* resources: a red square cut by the right edge, resting on a bar; a blue circle at the foot of the left margin */
+[data-skin="bauhaus"][data-pg="resources"]{--bh-poster:
+  var(--bh-k) calc(var(--bh-R) + 34px) calc(14vh + 170px)/100vw 16px no-repeat,
+  var(--bh-s) calc(var(--bh-R) + 70px) 14vh/170px 170px no-repeat,
+  var(--bh-c) calc(var(--bh-L) - 230px) calc(100vh - 300px)/240px 240px no-repeat}
+/* the Theme finder: squares inside squares, as in the colour classes; half a blue circle at the left edge */
+[data-skin="bauhaus"]:is([data-pg="themes"],[data-pg="finder"]){--bh-poster:
+  var(--bh-c) calc(var(--bh-L) - 330px) 16vh/240px 240px no-repeat,
+  linear-gradient(var(--bh-blu),var(--bh-blu)) calc(var(--bh-R) + 82px) calc(100vh - 186px)/76px 76px no-repeat,
+  var(--bh-s) calc(var(--bh-R) + 56px) calc(100vh - 240px)/128px 128px no-repeat,
+  linear-gradient(var(--bh-yel),var(--bh-yel)) calc(var(--bh-R) + 30px) calc(100vh - 294px)/180px 180px no-repeat}
+/* a phone has no margins: one form looks in at the corner */
+@media (max-width:1060px){
+  [data-skin="bauhaus"]:not([data-pg="timetable"]){--bh-poster:var(--bh-c) calc(100vw - 80px) calc(100vh - 80px)/160px 160px no-repeat}
+  [data-skin="bauhaus"][data-pg="timetable"]{--bh-poster:none}
+}
+
+/* ── the head of a page: a paper plane standing on a heavy bar at its left; the site's mark before its name ── */
+:root[data-skin="bauhaus"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--panel);border:0;border-radius:0;box-shadow:none;
+  border-left:var(--bh-bar) solid var(--bh-ink)}
+[data-skin="bauhaus"] :is(.eyebrow,.sitename){display:inline-flex;align-items:center;gap:8px;color:var(--text);letter-spacing:.02em;text-transform:lowercase;font-size:.8125rem;font-weight:600}
+[data-skin="bauhaus"] :is(.eyebrow,.sitename)::before{content:"";flex:none;width:34px;height:10px;background:var(--bh-mark) 0 50%/34px 10px no-repeat}
+[data-skin="bauhaus"] .sitename:hover{color:var(--accent)}
+[data-skin="bauhaus"] :is(.brand h1,.hubid h1,.pagehead h1){font-weight:700;letter-spacing:-.02em;line-height:1.12}
+[data-skin="bauhaus"] .pagehead h1{font-size:clamp(1.75rem,4vw,2.5rem)}
+[data-skin="bauhaus"] .hubid h1{font-size:clamp(1.75rem,6cqi,2.75rem)}
+[data-skin="bauhaus"] :is(.hubsub,.brand>span){color:var(--muted)}
+
+/* Now: a yellow plane; Next: a paper plane under a bar */
+[data-skin="bauhaus"] .nowcard{background:var(--bh-yel);color:#171614;border:0;border-radius:0}
+[data-skin="bauhaus"] .nowcard :is(.lbl,.meta,.count){color:#171614}
+[data-skin="bauhaus"] .nowcard .meta{opacity:.78}
+[data-skin="bauhaus"] .nowcard .lbl{letter-spacing:.04em;text-transform:lowercase;font-size:.75rem;font-weight:600}
+[data-skin="bauhaus"] .nowcard .subj{font-weight:700;font-size:1.25rem;letter-spacing:-.015em;line-height:1.2}
+[data-skin="bauhaus"] .hubnow{height:auto;min-height:5rem}
+[data-skin="bauhaus"] .nowcard + .nowcard{background:var(--panel-2);color:var(--text);box-shadow:inset 0 5px 0 var(--bh-ink)}
+[data-skin="bauhaus"] .nowcard + .nowcard :is(.lbl,.meta,.count){color:var(--text)}
+[data-skin="bauhaus"] .nowcard + .nowcard .meta{color:var(--muted);opacity:1}
+[data-skin="bauhaus"] .prog{height:6px;border-radius:0;background:rgba(23,22,20,.16)}
+[data-skin="bauhaus"] .prog i{border-radius:0;background:#171614}
+[data-skin="bauhaus"] .nowcard + .nowcard .prog{background:color-mix(in srgb,var(--text) 14%,transparent)}
+[data-skin="bauhaus"] .nowcard + .nowcard .prog i{background:var(--accent)}
+[data-skin="bauhaus"] .progrow .count{color:inherit}
+@container hubbar (max-width:26em){ [data-skin="bauhaus"] .hubnow.pair{background:var(--bh-yel);color:#171614;border:0;border-radius:0}
+  [data-skin="bauhaus"] .hubnow.pair .nowcard{background:none;box-shadow:none;color:#171614} [data-skin="bauhaus"] .hubnow.pair .nowcard :is(.lbl,.meta){color:#171614} }
+
+/* ── Home: the tiles keep their icon in a form, cycling triangle, square, circle ── */
+[data-skin="bauhaus"] .qtiles{gap:10px}
+:root[data-skin="bauhaus"] .qtile{background:var(--panel);border:0;border-radius:0;box-shadow:none;padding:14px 16px 13px;transition:background .15s,box-shadow .15s}
+:root[data-skin="bauhaus"] .qtile:hover{transform:none;background:var(--panel);box-shadow:inset 0 -6px 0 var(--bh-ink)}
+[data-skin="bauhaus"] .qtile .ico{position:relative;display:flex;align-items:center;justify-content:center;width:46px;height:46px;flex:none}
+[data-skin="bauhaus"] .qtile .ico::before{content:"";position:absolute;inset:0;z-index:0}
+[data-skin="bauhaus"] .qtile .ico > *{position:relative;z-index:1}
+[data-skin="bauhaus"] .qtile .ico .ph{width:1.375rem;height:1.375rem}
+[data-skin="bauhaus"] .qtile .ico .ie{font-size:1.25rem}
+/* triangle (yellow, ink icon low in it), square (red), circle (blue) */
+:root:is(html)[data-skin="bauhaus"] .qtiles .qtile:nth-child(3n+1) .ico{color:#171614}
+[data-skin="bauhaus"] .qtile:nth-child(3n+1) .ico::before{background:var(--bh-yel);clip-path:polygon(50% 0,100% 100%,0 100%);inset:-2px -3px 0}
+[data-skin="bauhaus"] .qtile:nth-child(3n+1) .ico > *{top:7px}
+:root:is(html)[data-skin="bauhaus"] .qtiles .qtile:nth-child(3n+2) .ico{color:var(--bh-on-red)}
+[data-skin="bauhaus"] .qtile:nth-child(3n+2) .ico::before{background:var(--bh-red);inset:3px}
+:root:is(html)[data-skin="bauhaus"] .qtiles .qtile:nth-child(3n) .ico{color:var(--bh-on-blu)}
+[data-skin="bauhaus"] .qtile:nth-child(3n) .ico::before{background:var(--bh-blu);border-radius:50%;inset:1px}
+[data-skin="bauhaus"] .qtile .tname{font-weight:600;font-size:1rem;letter-spacing:-.005em;text-transform:lowercase}
+@media (max-width:560px){
+  :root[data-skin="bauhaus"] .qtile{height:auto;min-height:var(--tile-h);padding:10px 3px 9px;gap:7px}
+  [data-skin="bauhaus"] .qtile .ico{width:34px;height:34px}
+  [data-skin="bauhaus"] .qtile .ico .ph{width:1.0625rem;height:1.0625rem}
+  [data-skin="bauhaus"] .qtile:nth-child(3n+1) .ico > *{top:5px}
+  [data-skin="bauhaus"] .qtile .tname{font-size:.75rem;line-height:1.1;overflow-wrap:normal;word-break:normal;hyphens:manual}
+}
+@container hubnav (max-width:19em){ [data-skin="bauhaus"] .qtile .ico{width:32px;height:32px} [data-skin="bauhaus"] .qtile .ico .ph{width:1rem;height:1rem} }
+[data-skin="bauhaus"] .tilepill{border-radius:0}
+:root[data-skin="bauhaus"] .tday{background:var(--panel);border:0;border-radius:0;box-shadow:none;transition:box-shadow .15s}
+:root[data-skin="bauhaus"] .tday:hover{transform:none;background:var(--panel);box-shadow:inset 0 -6px 0 var(--bh-ink)}
+[data-skin="bauhaus"] .tdname{font-weight:600;text-transform:lowercase}
+[data-skin="bauhaus"] .tdstat{color:var(--accent);font-weight:600}
+[data-skin="bauhaus"] :is(.newpill,.gamecard .tag,.gamecard .newbanner){border-radius:0;border:0;background:var(--bh-yel);color:#171614;text-transform:lowercase;letter-spacing:.02em;font-weight:600}
+[data-skin="bauhaus"] .newsdot{border-radius:0;width:8px;height:8px;background:var(--bh-red)}
+
+/* ── sections open with a form, and a heading in lower case ── */
+[data-skin="bauhaus"] :is(.sechd,.cathd,.forum h2,.tfh){display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.125rem;font-weight:700;
+  letter-spacing:-.01em;text-transform:lowercase;color:var(--text)}
+[data-skin="bauhaus"] :is(.sechd,.cathd,.forum h2,.tfh)::before{content:"";flex:none;width:.8em;height:.8em;background:var(--bh-red)}
+[data-skin="bauhaus"] :is(.gsec:nth-child(6n+1) .cathd,.wrap > .tfsec .tfh,#tfgroups > .tfsec:nth-child(3n) .tfh)::before{background:var(--bh-yel);clip-path:polygon(50% 0,100% 100%,0 100%);width:.92em}
+[data-skin="bauhaus"] :is(.gsec:nth-child(6n+5) .cathd,#tfgroups > .tfsec:nth-child(3n+2) .tfh)::before{background:var(--bh-blu);border-radius:50%}
+[data-skin="bauhaus"] .forum{border-top:0;padding-top:0}
+[data-skin="bauhaus"] .hubfoot{border-top:4px solid var(--bh-ink)}
+
+/* ── the poll: a paper plane; the results a bar chart, a heavy bar under each name ── */
+[data-skin="bauhaus"] .pcard{background:var(--panel);border:0;border-radius:0;box-shadow:none}
+[data-skin="bauhaus"] .pchip{border-radius:0;background:none;color:var(--text);padding:0;text-transform:lowercase;letter-spacing:.02em;font-weight:600}
+[data-skin="bauhaus"] .pchip::before{width:12px;height:10px;border-radius:0;background:var(--bh-yel);clip-path:polygon(50% 0,100% 100%,0 100%);box-shadow:none;animation:none}
+[data-skin="bauhaus"] .pq{text-transform:lowercase;letter-spacing:-.02em;font-size:clamp(1.625rem,3.8vw,2.5rem);line-height:1.05}
+[data-skin="bauhaus"] .pin{border-radius:0;border:2px solid var(--bh-ink);background:var(--panel)}
+[data-skin="bauhaus"] .pin:focus{border-color:var(--bh-ink);box-shadow:inset 0 -4px 0 var(--bh-yel)}
+[data-skin="bauhaus"] .pbar{border-radius:0;border:0;background:var(--panel-2)}
+[data-skin="bauhaus"] .pfill{border-radius:0;top:auto;height:6px;background:color-mix(in srgb,var(--bh-ink) 70%,transparent)}
+[data-skin="bauhaus"] .pbar:nth-child(1) .pfill{background:var(--bh-red)}
+[data-skin="bauhaus"] .pbar:nth-child(2) .pfill{background:var(--bh-blu)}
+[data-skin="bauhaus"] .pbar:nth-child(3) .pfill{background:var(--bh-yel)}
+[data-skin="bauhaus"] .plock span{border-radius:0;border:2px solid var(--bh-ink);background:var(--panel);box-shadow:none}
+[data-skin="bauhaus"] .pminbtn{border-radius:50%}
+[data-skin="bauhaus"] .pfoot{border-top:2px solid var(--bh-ink)}
+[data-skin="bauhaus"] .pwin{border-radius:0;border:0;background:var(--panel-2);box-shadow:inset var(--bh-bar) 0 0 var(--bh-red)}
+
+/* ── buttons: rectangles with a firm edge; icon buttons are circles; yellow under the pointer, red for the one that matters ── */
+:root[data-skin="bauhaus"] :is(.btn,.popt,.lbopen):not(.gateskip){border-radius:0;border:2px solid var(--bh-ink);background:var(--panel);color:var(--text);box-shadow:none;
+  font-weight:600;text-transform:lowercase;letter-spacing:.01em;transition:background .12s,color .12s}
+:root[data-skin="bauhaus"] :is(.btn.icon,.arrowbtn,.shelfbtn){border-radius:50%;border:2px solid var(--bh-ink);background:var(--panel);color:var(--text);box-shadow:none}
+:root[data-skin="bauhaus"] :is(.btn,.popt,.lbopen,.arrowbtn,.shelfbtn):not(.gateskip):hover{background:var(--bh-yel);color:#171614;border-color:var(--bh-ink)}
+:root[data-skin="bauhaus"] :is(.btn.primary,.popt[aria-checked="true"]){background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:root[data-skin="bauhaus"] :is(.btn.primary,.popt[aria-checked="true"]):hover{background:var(--bh-ink);color:var(--panel);border-color:var(--bh-ink)}
+:root[data-skin="bauhaus"] .btn:active{transform:translateY(1px)}
+:root[data-skin="bauhaus"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.fyear){border-radius:0;border:2px solid var(--bh-ink);background:var(--panel);color:var(--text);box-shadow:none;font-weight:600;text-transform:lowercase}
+:root[data-skin="bauhaus"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.fyear)[aria-pressed="true"]{background:var(--bh-ink);color:var(--panel);border-color:var(--bh-ink)}
+:root[data-skin="bauhaus"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.idrow,.pad){border-radius:0;border:2px solid var(--bh-ink);background:var(--panel)}
+:root[data-skin="bauhaus"] :is(.fnew textarea,.freplybox textarea,.gatepass,.pad):focus{outline:0;box-shadow:inset 0 -4px 0 var(--bh-yel)}
+:root[data-skin="bauhaus"] .idrow{border-width:2px;opacity:1}
+:root[data-skin="bauhaus"] .fpost{background:var(--panel);border:0;border-radius:0}
+:root[data-skin="bauhaus"] .fpost.freply{background:var(--panel-2);box-shadow:inset 4px 0 0 var(--bh-ink)}
+:root[data-skin="bauhaus"] :is(.rx,.rxadd){border-radius:0}
+[data-skin="bauhaus"] .rx.mine{border-color:var(--bh-ink);background:color-mix(in srgb,var(--bh-yel) 40%,var(--panel))}
+[data-skin="bauhaus"] .rx.mine b{color:var(--text)}
+[data-skin="bauhaus"] .tsw{border-radius:0;border:0;background:var(--panel-2)}
+[data-skin="bauhaus"] .tsw[aria-checked="true"] i{background:var(--bh-blu)}
+
+/* ── dialogs: a paper sheet on a heavy bar, like the head of a page ── */
+[data-skin="bauhaus"] :is(dialog,.newsdlg,.gatecard){border:0;border-left:var(--bh-bar) solid var(--bh-ink);border-radius:0;box-shadow:0 18px 50px rgba(0,0,0,.28);background:var(--panel)}
+[data-skin="bauhaus"] .sheet{border:0;border-top:var(--bh-bar) solid var(--bh-ink);border-radius:0;background:var(--panel)}
+:root[data-skin="bauhaus"] :is(.dlg-h,.newshead){border-bottom:2px solid var(--bh-ink)}
+:root[data-skin="bauhaus"] :is(.dlg-h h2,.newshead h2,.sheethd h2){font-size:1.375rem;letter-spacing:-.02em;text-transform:lowercase}
+:root[data-skin="bauhaus"] :is(.dlg-f){border-top:2px solid var(--bh-ink)}
+:root[data-skin="bauhaus"] :is(.field>label,.tbhead span,.ttday b,.adv>summary){letter-spacing:.02em;text-transform:lowercase;color:var(--text);font-size:.8125rem;font-weight:600}
+:root[data-skin="bauhaus"] :is(.skinbtn,.rxpick,.origtile,.origtile i,.tfcard){border-radius:0}
+:root[data-skin="bauhaus"] .skinbtn{border-color:var(--line)}
+:root[data-skin="bauhaus"] .skinbtn[aria-pressed="true"]{border-color:var(--bh-ink);box-shadow:0 0 0 2px var(--bh-ink)}
+[data-skin="bauhaus"] .tfcard{border:0;box-shadow:none}
+:root[data-skin="bauhaus"] .tfcard:hover{transform:none;box-shadow:inset 0 -6px 0 var(--bh-ink)}
+[data-skin="bauhaus"] .tfcard[aria-current="true"]{box-shadow:0 0 0 3px var(--bh-ink)}
+[data-skin="bauhaus"] .tftag{border-radius:0}
+[data-skin="bauhaus"] .tftag.on{background:var(--bh-yel);border-color:var(--bh-yel);color:#171614}
+
+/* ── games ── */
+:root[data-skin="bauhaus"] .gamecard{background:var(--panel);border:0;border-radius:0;box-shadow:none}
+:root[data-skin="bauhaus"] .gamecard:hover{transform:none;background:var(--panel);box-shadow:inset 0 -6px 0 var(--bh-ink)}
+[data-skin="bauhaus"] .gamecard:hover .ico{transform:none}
+/* the game's icons in ink (or the red, with Icon colour set to the theme's) */
+html:root[data-skin="bauhaus"]:not([data-tileicons="accent"]) .gi{color:var(--bh-ink)}
+[data-skin="bauhaus"] :is(.gamecard h2,.game h2,.tile .tname){font-weight:600;text-transform:lowercase;letter-spacing:-.01em}
+[data-skin="bauhaus"] .stage{border:0;border-radius:0;box-shadow:none;background:var(--panel)}
+
+/* ── the timetable: planes of the subject's colour; a heavy bar under each day; today a red square and a red bar;
+      the class that's on is framed in ink with a yellow corner ── */
+[data-skin="bauhaus"] .dayhead{text-align:left;padding:4px 0 8px}
+[data-skin="bauhaus"] .dayhead .dow{font-size:1.125rem;font-weight:700;letter-spacing:-.015em;text-transform:lowercase}
+[data-skin="bauhaus"] .dayhead .rule{height:6px;border-radius:0;opacity:1;background:var(--bh-ink);margin-top:6px}
+[data-skin="bauhaus"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--text)}
+[data-skin="bauhaus"] :is(.dayhead.today,.dayhead.focus) .dow::before{content:"";display:inline-block;width:.62em;height:.62em;margin-right:.4em;background:var(--bh-red);vertical-align:.02em}
+[data-skin="bauhaus"] :is(.dayhead.today,.dayhead.focus) .rule{height:6px;background:var(--bh-red);margin-top:6px}
+[data-skin="bauhaus"] .dayhead:hover .dow{color:var(--accent)}
+[data-skin="bauhaus"] .lesson{border:0;border-radius:0;box-shadow:none;background:color-mix(in srgb,var(--c) var(--tint),var(--panel))}
+[data-skin="bauhaus"] .lesson:hover{box-shadow:inset 0 -4px 0 var(--bh-ink)}
+[data-skin="bauhaus"] .lesson .s{font-family:var(--font-display);font-weight:600;letter-spacing:-.005em;text-transform:lowercase;font-size:.875rem}
+[data-skin="bauhaus"] .lesson .r{font-weight:600}
+[data-skin="bauhaus"] .lesson.current{outline:0;box-shadow:inset 0 0 0 3px var(--bh-ink)}
+[data-skin="bauhaus"] .lesson.current::after{content:"";position:absolute;right:0;top:0;width:24px;height:24px;background:var(--bh-yel);clip-path:polygon(0 0,100% 0,100% 100%)}
+[data-skin="bauhaus"] .breakbar{background:var(--panel-2);border:0;border-radius:0;opacity:1;color:var(--muted);text-transform:lowercase;letter-spacing:.02em}
+[data-skin="bauhaus"] .breakbar span{text-transform:lowercase;font-weight:600;color:var(--text)}
+[data-skin="bauhaus"] .breakbar.assembly{box-shadow:inset 3px 0 0 var(--bh-ink)}
+[data-skin="bauhaus"] .weeklabel{font-weight:700;font-size:1.25rem;letter-spacing:-.02em}
+[data-skin="bauhaus"] .tmark{opacity:1}
+html.nooutline[data-skin="bauhaus"] .lesson{background:var(--panel)!important}
+html.nooutline[data-skin="bauhaus"] .lesson .s::before{border-radius:0}
+html[data-contrast="high"][data-skin="bauhaus"] .lesson{box-shadow:inset 0 0 0 2px var(--bh-ink)}
+
+/* ── the other pages' own parts ── */
+[data-skin="bauhaus"] :is(.day,.card,.fpanel,.fc,.chip){border-radius:0}
+[data-skin="bauhaus"] .ldspin,[data-skin="bauhaus"] .ldinline::before{border-color:color-mix(in srgb,var(--text) 14%,transparent);border-top-color:var(--bh-red)}
+[data-skin="bauhaus"] .fc.free{border:2px solid var(--bh-ink);background:var(--panel)}
+[data-skin="bauhaus"] .fc.all{border:2px solid var(--bh-ink);background:var(--bh-yel);color:#171614}
+[data-skin="bauhaus"] .fc.now{box-shadow:inset 0 -5px 0 var(--bh-red)}
+[data-skin="bauhaus"] .fh.today{color:var(--bh-red)}
+[data-skin="bauhaus"] .fpanel{border:0;border-radius:0;box-shadow:none}
+[data-skin="bauhaus"] :is(.fpp,.fchip){border-radius:0}
+[data-skin="bauhaus"] .fpp[aria-pressed="true"]{border-color:var(--bh-ink);background:color-mix(in srgb,var(--bh-yel) 30%,var(--panel))}
+[data-skin="bauhaus"] .fpp[aria-pressed="true"] .t{color:var(--text)}
+[data-skin="bauhaus"][data-pg="calendar"] .day{border:0;background:var(--panel)}
+[data-skin="bauhaus"][data-pg="calendar"] .day:hover{background:var(--panel);box-shadow:inset 0 -5px 0 var(--bh-ink)}
+[data-skin="bauhaus"][data-pg="calendar"] .day.out{opacity:.5}
+[data-skin="bauhaus"][data-pg="calendar"] .day.today{box-shadow:inset 0 0 0 3px var(--bh-ink)}
+[data-skin="bauhaus"][data-pg="calendar"] .day.today .dnum{display:inline-flex;align-items:center;gap:6px;color:var(--text)}
+[data-skin="bauhaus"][data-pg="calendar"] .day.today .dnum::before{content:"";width:.7em;height:.7em;background:var(--bh-red)}
+[data-skin="bauhaus"][data-pg="calendar"] .dow{color:var(--text);text-transform:lowercase;letter-spacing:.02em;font-size:.8125rem}
+[data-skin="bauhaus"][data-pg="calendar"] .tgwrap{border:0;border-radius:0}
+[data-skin="bauhaus"][data-pg="calendar"] .card{border:0}
+:root[data-skin="bauhaus"] .arrowbtn2{border-radius:50%;border:2px solid var(--bh-ink);background:var(--panel);color:var(--text)}
+:root[data-skin="bauhaus"] .arrowbtn2:hover{background:var(--bh-yel);color:#171614}
+[data-skin="bauhaus"] .calbar h2{text-transform:lowercase;font-weight:700;letter-spacing:-.015em}
+
+/* ── arriving (with Animation on, once fx.js has a TR.bauhaus entry): the page fades in as usual, and the
+      poster's forms are printed a moment after it. Nothing moves. ── */
+html.fx-enter[data-skin="bauhaus"] body::before{animation:bhprint .32s .14s ease-out both}
+@keyframes bhprint{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){ html.fx-enter[data-skin="bauhaus"] body::before{animation:none} }
+
+/* ── no rounding: a pill is neither a circle nor a square. Everything is square-cornered (a game in play keeps
+      its own drawing), and only what is meant to be a circle is one ── */
+[data-skin="bauhaus"] :not(.stage *,.jimmini *),
+[data-skin="bauhaus"] :not(.stage *,.jimmini *)::before,
+[data-skin="bauhaus"] :not(.stage *,.jimmini *)::after{border-radius:0!important}
+[data-skin="bauhaus"] :is(.btn.icon,.arrowbtn,.arrowbtn2,.shelfbtn,.pminbtn,.ldspin,.rvring,.rvring b,.rvdot,.mjdot,.dgcnav,.qtlives i,.rvlegend i){border-radius:50%!important}
+[data-skin="bauhaus"] :is(.tsw i,.ldinline,.qttile.hint)::after,[data-skin="bauhaus"] .ldinline::before,
+[data-skin="bauhaus"] :is(.qtile:nth-child(3n) .ico,.gsec:nth-child(6n+5) .cathd,#tfgroups > .tfsec:nth-child(3n+2) .tfh)::before{border-radius:50%!important}
+/* toggles elsewhere (Resources' years, Revision's practice/test) as the theme's buttons */
+:root[data-skin="bauhaus"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp){border:2px solid var(--bh-ink);background:var(--panel);color:var(--text);text-transform:lowercase;font-weight:600}
+:root[data-skin="bauhaus"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp):hover{background:var(--bh-yel);color:#171614}
+:root[data-skin="bauhaus"] :is(.yeartab,.diffpill,.gwdiff,.glbtab,.tmode,.mjcp)[aria-pressed="true"]{background:var(--bh-ink);color:var(--panel);border-color:var(--bh-ink)}
+[data-skin="bauhaus"] .rvmode{border:2px solid var(--bh-ink);background:var(--panel);padding:0;gap:0}
+[data-skin="bauhaus"] .rvmode button[aria-pressed="true"]{background:var(--bh-ink);color:var(--panel);box-shadow:none}
+:root[data-skin="bauhaus"] .subjcard{border:0;box-shadow:none;background:var(--panel)}
+:root[data-skin="bauhaus"] .subjcard:hover{transform:none;background:var(--panel);box-shadow:inset 0 -6px 0 var(--bh-ink)}
+/* the pages' own pickers (Notes' subject, the calendar's view) */
+:root[data-skin="bauhaus"] :is(.wrap select,#viewsel){border:2px solid var(--bh-ink);background-color:var(--panel);color:var(--text)}
+[data-skin="bauhaus"] .notesel{text-transform:lowercase;letter-spacing:.02em;color:var(--text);font-size:.8125rem}

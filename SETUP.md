@@ -2930,30 +2930,49 @@ alter table forum_post add column if not exists scope_name text;                
 
 What the code does is in HANDOFF.md ("Security and privacy pass"). These are the things only the owner can do.
 
-**1. Turn on row-level security for every table (Supabase → SQL editor).** The site only ever uses the service-role key, which is not affected, so nothing changes for it and no data is touched. It means the project's public (anon) key can read and write nothing.
+**1. Lock every table (Supabase → SQL editor → Run).** Without row-level security Supabase marks a table "Unrestricted": anyone holding the project's public (anon) key could read and change it through Supabase's own API, whatever the site does. The site never uses that key (only the server's service-role key, which these rules don't apply to), so nothing on the site changes and no data is touched. This turns RLS on for every table in `public` (new ones included), takes all access away from the public keys, and makes tables created later start locked. Safe to run again; run it after adding any table.
 
 ```sql
+-- MSC Unofficial: lock every table so only the site's server can read or write it.
+-- Paste into Supabase → SQL editor → Run. Safe to run more than once.
+-- Changes no data. The site keeps working: its server uses the service-role key,
+-- which these rules don't apply to. What stops working is the public (anon) key
+-- and signed-in Supabase users, which the site never uses.
+
+-- 1. Row-level security on every table, now and any made since the list was written.
+--    No policies are added, so the public keys can see and change nothing.
 do $$
-declare t text;
+declare t record;
 begin
-  foreach t in array array[
-    'prefs','revision_progress','forum_post','forum_reaction','shared_deck','calendar_event','subject_event','birthday',
-    'game_state','game_score','tetris_score','zen_score','sprint_best','zen_board','daily_puzzle','daily_result',
-    'conn_puzzle','conn_result','onboarding','name_override','site_setting','jim_score','poll','poll_voter','poll_tally',
-    'poll_suggestion','student_cache','vault_visit','qr_scan']
-  loop
-    if to_regclass('public.' || t) is not null then
-      execute format('alter table public.%I enable row level security', t);
-    end if;
+  for t in select tablename from pg_tables where schemaname = 'public' loop
+    execute format('alter table public.%I enable row level security', t.tablename);
   end loop;
 end $$;
-```
 
-To check afterwards (every row should say `true`):
+-- 2. And take away the public keys' access outright (belt and braces), including
+--    the two database functions (jim_press, poll_bump), which they could otherwise call.
+revoke all on all tables in schema public from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;
+revoke execute on all functions in schema public from anon, authenticated, public;
 
-```sql
-select relname, relrowsecurity from pg_class
-where relnamespace = 'public'::regnamespace and relkind = 'r' order by relname;
+-- 3. The site's server keeps everything.
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
+
+-- 4. Tables and functions made later start out locked too.
+alter default privileges in schema public revoke all on tables from anon, authenticated;
+alter default privileges in schema public revoke all on sequences from anon, authenticated;
+alter default privileges in schema public revoke execute on functions from anon, authenticated, public;
+
+-- 5. Check: every table should say rls = true and public_access = false.
+select c.relname as "table",
+       c.relrowsecurity as rls,
+       (has_table_privilege('anon', c.oid, 'select') or has_table_privilege('anon', c.oid, 'insert')
+        or has_table_privilege('anon', c.oid, 'update') or has_table_privilege('anon', c.oid, 'delete')) as public_access
+from pg_class c
+where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
+order by c.relname;
 ```
 
 **2. Vercel environment variables.** `ALLOWED_EMAILS` unset (or only addresses that are meant to be public). `CRON_SECRET` set (the nightly job refuses to run without it). `OWNER_EMAIL` only if you want another moderator.

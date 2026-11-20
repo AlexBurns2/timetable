@@ -214,7 +214,8 @@ function gameCard(g, i){
   c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
   /* just the icon and the name, the same height everywhere (your records are
      inside each game, and the leaderboards at the bottom of the games page) */
-  c.innerHTML = (g.mp ? '<span class="newbanner">Multiplayer</span>' : g.isNew || fresh ? '<span class="newbanner">New</span>' : '') +
+  const tag = fresh && TT.newsTag ? TT.newsTag('game:' + g.id) : 'New';     // 'Updated' for a change to a game you know
+  c.innerHTML = (g.mp ? '<span class="newbanner">Multiplayer</span>' : g.isNew || fresh ? '<span class="newbanner">' + tag + '</span>' : '') +
     '<span class="ico">' + (window.Icon && Icon.game ? Icon.game(g.id, g.ico) : g.ico) + '</span>' +
     '<h2>' + g.name + '</h2>' +
     (g.id === 'mp' && !REVISION_PAGE ? '<span class="mppeek" id="mppeek"></span>' : '') +
@@ -2118,7 +2119,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120n';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120q';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4847,7 +4848,7 @@ BUILD.admin = host => {
         const [st, reach] = await Promise.all([TT.api('/api/leaderboard', { params:{ stats:1 } }), TT.api('/api/leaderboard', { params:{ reach:1 } }).catch(() => null)]);
         data = st; data.reach = reach; render(); return;
       }
-      if (cur.kind === 'f'){ data = await TT.api('/api/forum'); render(); return; }
+      if (cur.kind === 'f'){ data = await TT.api('/api/forum', { params:{ all:1 } }); render(); return; }
       if (cur.kind === 'd'){ data = await TT.api('/api/decks'); render(); return; }
       if (cur.kind === 'm'){ data = await TT.api('/api/gamestate', { params:{ mode:'mahjong' } }); render(); return; }
       if (cur.kind === 'p' || cur.kind === 'i'){

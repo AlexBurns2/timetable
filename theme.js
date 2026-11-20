@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120n';
+const ASSET_V = '20261120q';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -42,7 +42,9 @@ const ASSET_V = '20261120n';
          picker's grid, but in the Original themes row under it (origBox) */
 /* held back for now (not finished): their files stay, but they're out of the picker and a saved choice reads as Plain.
    Take an id out of this list to bring that theme back. */
-const HIDDEN_SKINS = ['coquette', 'apple'];
+const HIDDEN_SKINS = ['apple'];
+/* mod: true: still being made. Only moderators see it (in the Theme finder's own group); for anyone else
+   it's in no list, though a saved choice of one still works. Take mod off to release it. */
 const SKINS = [
   { id:'plain',     name:'Plain',     both:true, ic:'tile', is:'icons' },
   { id:'studio',    name:'Studio',    both:true, ic:'accent', is:'icons', css:'studio' },
@@ -50,7 +52,7 @@ const SKINS = [
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
-  { id:'coquette',  name:'Coquette',  both:true, ic:'accent', is:'icons', css:'coquette', font:'family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Pinyon+Script' },
+  { id:'coquette',  name:'Coquette',  mod:true, both:true, ic:'accent', is:'icons', css:'coquette', font:'family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Pinyon+Script' },
   { id:'skeuo',     name:'Skeuomorphism', both:true, ic:'tile', is:'icons', css:'skeuo' },
   { id:'aero',      name:'Frutiger Aero', darkName:'Frutiger Evil', both:true, ic:'tile', is:'icons', css:'aero', font:'family=Hind:wght@300;400;500;600' },
   { id:'y2k',       name:'Y2K Futurism', both:true, ic:'accent', is:'icons', css:'y2k', font:'family=Michroma&family=Sora:wght@400;600;700' },
@@ -64,6 +66,12 @@ const SKINS = [
   { id:'scifi',     name:'Cyberpunk', both:false, ic:'accent', is:'icons', css:'scifi', font:'family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Doto:wght@500;700;900&family=JetBrains+Mono:wght@400;700' },
   { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
+  { id:'dorfic',    name:'DORFic',    mod:true, both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
+  { id:'eco',       name:'Frutiger Eco', mod:true, both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
+  { id:'xp',        name:'Windows XP', mod:true, both:true, ic:'tile', is:'icons', css:'xp' },
+  { id:'bauhaus',   name:'Bauhaus',   mod:true, both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
+  { id:'destijl',   name:'De Stijl',  mod:true, both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
+  { id:'decon',     name:'Deconstructivism', mod:true, both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
   { id:'custom',    name:'Custom',    both:false, custom:true },
   /* a secret: type "saul" in any box (below). Not in the picker. */
   { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
@@ -78,6 +86,17 @@ const SKINS = [
   { id:'retro',       name:'Retro',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' }
 ].filter(s => !HIDDEN_SKINS.includes(s.id));
 const SKIN_IDS = SKINS.map(s => s.id);
+
+/* Preview (the Theme finder, themes.html): a page opened in the finder's frame with ?ttpreview=<id>
+   (and &ttpmode=light|dark) shows that theme and saves nothing: readState() answers with it, settings
+   don't sync from or to the account, and no notes pop up. The finder can switch it without reloading
+   (a message: { ttpreview, mode }). Only inside a frame, so a link with it does nothing on its own. */
+const PREVIEW = (() => { try {
+  if (window.top === window) return null;
+  const q = new URLSearchParams(location.search), id = q.get('ttpreview'), m = q.get('ttpmode');
+  if (!id || SKIN_IDS.indexOf(id) === -1) return null;
+  return { skin:id, mode: m === 'dark' || m === 'light' ? m : null };
+} catch { return null; } })();
 
 /* The picker's thumbnails: each theme as a miniature of itself, the same
    little page every time (a bar across the top, three tiles under it) drawn
@@ -152,10 +171,35 @@ const THUMBS = (() => {
     coquette: ['#fdf7f4', '<defs><pattern id="l" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 0H8V1.4A2 2 0 0 1 4 1.4A2 2 0 0 1 0 1.4Z" fill="#fffaf6"/></pattern></defs>' +
       [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<rect x="' + (i * 16 + 8) + '" width="8" height="46" fill="#f8e0e5"/>').join('') +
       '<rect x="8" y="4" width="104" height="14" fill="#fffaf6"/><rect x="10" y="6" width="100" height="10" fill="none" stroke="#e7b3c0" stroke-width=".5"/><rect x="8" y="18" width="104" height="3" fill="url(#l)"/>' +
-      '<text x="15" y="14.6" font-family="\'Snell Roundhand\',\'Segoe Script\',Georgia,serif" font-style="italic" font-size="8.5" fill="#6b1f38">Welcome</text>' +
+      '<path d="M13 4h3.4v19.5l-1.7-1.5-1.7 1.5Z" fill="#b8325a"/><path d="M17.1 4h2.2v17.5l-1.1-1-1.1 1Z" fill="#eda3b6"/>' +
+      '<text x="23" y="14.6" font-family="\'Snell Roundhand\',\'Segoe Script\',Georgia,serif" font-style="italic" font-size="8.5" fill="#6b1f38">Welcome</text>' +
       '<path d="M84 8.4h22l-2.2 2.6 2.2 2.6H84l2.2-2.6Z" fill="#b8325a"/>' +
-      [8, 44, 80].map(x => '<rect x="' + x + '" y="24" width="32" height="18" fill="#fffaf6" stroke="#ecc9d1" stroke-width=".5"/><ellipse cx="' + (x + 16) + '" cy="31.5" rx="3.6" ry="4.4" fill="#f9dce3" stroke="#d9bcb8" stroke-width="1.5" stroke-dasharray="0 2" stroke-linecap="round"/>' +
-        '<rect x="' + (x + 10) + '" y="38" width="12" height="1.4" fill="#6b1f38" fill-opacity=".55"/>').join('')],
+      [8, 44, 80].map(x => '<rect x="' + x + '" y="25" width="32" height="17" fill="#fffaf6" stroke="#ecc9d1" stroke-width=".5"/><ellipse cx="' + (x + 16) + '" cy="31.8" rx="3.4" ry="4.2" fill="#f9dce3" stroke="#d68ea1" stroke-width=".6"/>' +
+        '<rect x="' + (x + 10) + '" y="38.2" width="12" height="1.3" fill="#6b1f38" fill-opacity=".55"/>').join('')],
+    /* the themes still being made (mod: true) */
+    dorfic: ['#ffb052', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2d8"/><stop offset=".55" stop-color="#ffc072"/><stop offset="1" stop-color="#ff8a1f"/></linearGradient><linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc884"/><stop offset="1" stop-color="#ec5600"/></linearGradient></defs><rect width="120" height="46" fill="url(#k)"/><g fill="#fff" fill-opacity=".42"><path d="M106 2L96.6 91.5L84.2 89.3Z"/><path d="M106 2L63.7 81.5L53.1 74.8Z"/><path d="M106 2L37.1 59.9L29.7 49.7Z"/><path d="M106 2L20.4 29.8L17.4 17.6Z"/><path d="M106 2L16.2 -4.3L18.0 -16.7Z"/></g><circle cx="106" cy="2" r="16" fill="#fff" fill-opacity=".45"/><circle cx="106" cy="2" r="8" fill="#fff"/><rect x="8" y="6" width="104" height="12" rx="6" fill="#fff" stroke="url(#r)" stroke-width="2.4"/><rect x="15" y="10.5" width="30" height="3" rx="1.5" fill="#f26a00"/><rect x="62" y="8.6" width="38" height="6.8" rx="3.4" fill="#ffcf9a"/><rect x="8" y="23" width="32" height="17" rx="6" fill="#fff" stroke="url(#r)" stroke-width="2.4"/><rect x="44" y="23" width="32" height="17" rx="6" fill="#fff" stroke="url(#r)" stroke-width="2.4"/><rect x="80" y="23" width="32" height="17" rx="6" fill="#fff" stroke="url(#r)" stroke-width="2.4"/><circle cx="17" cy="31.5" r="4.6" fill="#e8414e"/><ellipse cx="17" cy="29.7" rx="2.8" ry="1.6" fill="#fff" fill-opacity=".8"/><circle cx="53" cy="31.5" r="4.6" fill="#ff8a1a"/><ellipse cx="53" cy="29.7" rx="2.8" ry="1.6" fill="#fff" fill-opacity=".8"/><circle cx="89" cy="31.5" r="4.6" fill="#14b4cf"/><ellipse cx="89" cy="29.7" rx="2.8" ry="1.6" fill="#fff" fill-opacity=".8"/>'],
+    eco: ['#a6dcff', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#82cbfb"/><stop offset=".7" stop-color="#e6f5ff"/></linearGradient><linearGradient id="h" x1="0" x2="1"><stop offset="0" stop-color="#b8e886"/><stop offset="1" stop-color="#5cbd3c"/></linearGradient><linearGradient id="d" x1="0" x2="1"><stop offset="0" stop-color="#6cc644"/><stop offset="1" stop-color="#2a9637"/></linearGradient></defs><rect width="120" height="46" fill="url(#k)"/><circle cx="4" cy="0" r="16" fill="#fffbe0" fill-opacity=".55"/><circle cx="4" cy="0" r="7" fill="#fffdf0"/><path d="M0 33C30 26 60 25 85 29S112 31 120 25V46H0Z" fill="url(#h)"/><path d="M0 39C35 33 70 33 95 36S115 37 120 34V46H0Z" fill="url(#d)"/><path d="M0 33C30 26 60 25 85 29S112 31 120 25" fill="none" stroke="#fff" stroke-width=".7" stroke-opacity=".9"/><path d="M15 6H110.6Q112 6 112 7.4V12A6 6 0 0 1 106 18H9.4Q8 18 8 16.6V12A6 6 0 0 1 15 6Z" fill="#fff" fill-opacity=".88" stroke="#fff"/><rect x="14" y="10.5" width="30" height="3" rx="1.5" fill="#1f7d33"/><circle cx="100" cy="11" r="2.4" fill="#fff" stroke="#9cc4a8" stroke-width=".5"/><circle cx="99.3" cy="10.2" r=".8" fill="#fff"/><path d="M13 23H39Q40 23 40 24V35A5 5 0 0 1 35 40H9Q8 40 8 39V28A5 5 0 0 1 13 23Z" fill="#fff" fill-opacity=".86" stroke="#fff"/><circle cx="17" cy="31.5" r="4.6" fill="#f4fbf6" stroke="#b9d6c2" stroke-width=".6"/><circle cx="17" cy="32" r="2.2" fill="#e8414e"/><ellipse cx="15.6" cy="29.6" rx="1.5" ry=".9" fill="#fff"/><path d="M49 23H75Q76 23 76 24V35A5 5 0 0 1 71 40H45Q44 40 44 39V28A5 5 0 0 1 49 23Z" fill="#fff" fill-opacity=".86" stroke="#fff"/><circle cx="53" cy="31.5" r="4.6" fill="#f4fbf6" stroke="#b9d6c2" stroke-width=".6"/><circle cx="53" cy="32" r="2.2" fill="#ff8a1a"/><ellipse cx="51.6" cy="29.6" rx="1.5" ry=".9" fill="#fff"/><path d="M85 23H111Q112 23 112 24V35A5 5 0 0 1 107 40H81Q80 40 80 39V28A5 5 0 0 1 85 23Z" fill="#fff" fill-opacity=".86" stroke="#fff"/><circle cx="89" cy="31.5" r="4.6" fill="#f4fbf6" stroke="#b9d6c2" stroke-width=".6"/><circle cx="89" cy="32" r="2.2" fill="#7c5cd6"/><ellipse cx="87.6" cy="29.6" rx="1.5" ry=".9" fill="#fff"/>'],
+    xp: ['#5a8fd8', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2559c4"/><stop offset=".75" stop-color="#9bc4f2"/></linearGradient><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5aa0ff"/><stop offset=".3" stop-color="#2462d8"/><stop offset="1" stop-color="#1f52c4"/></linearGradient><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f97ff"/><stop offset="1" stop-color="#0055e3"/></linearGradient></defs>' +
+      '<rect width="120" height="46" fill="url(#s)"/><path d="M0 37Q46 27 120 35V46H0Z" fill="#5aa531"/><path d="M40 46Q80 33 120 38V46Z" fill="#3f8f25"/>' +
+      '<rect width="120" height="11" fill="url(#t)"/><rect x="98" width="22" height="11" fill="#1aa3ee"/><path d="M0 0H24Q29 0 29 5.5T24 11H0Z" fill="#3a9431"/><rect x="5" y="4.4" width="16" height="2.2" rx="1" fill="#fff" fill-opacity=".9"/>' +
+      '<rect x="32" y="2" width="24" height="7" rx="1.2" fill="#1a48a8"/>' +
+      [10, 45, 80].map(x => '<rect x="' + x + '" y="16" width="30" height="24" rx="2.5" fill="url(#w)"/><rect x="' + (x + 1.5) + '" y="21" width="27" height="17.5" fill="#ece9d8"/><rect x="' + (x + 24) + '" y="17.3" width="4.6" height="2.8" rx=".7" fill="#e0582a" stroke="#fff" stroke-width=".4"/>').join('')],
+    bauhaus: ['#ece6d8', '<circle cx="121" cy="7" r="15" fill="#1f4e9e"/><rect x="113" y="0" width="2.4" height="30" fill="#171614"/>' +
+      bar('fill="#faf7f0"') + '<rect x="8" y="6" width="2.6" height="12" fill="#171614"/><path d="M14.4 14.4 16.6 10.6 18.8 14.4Z" fill="#f2b619"/><rect x="20" y="10.6" width="3.8" height="3.8" fill="#d63a2a"/><circle cx="27.3" cy="12.5" r="1.9" fill="#1f4e9e"/>' +
+      '<rect x="31" y="11" width="24" height="3" fill="#171614"/><rect x="70" y="8" width="38" height="8" fill="#f2b619"/>' +
+      tiles('fill="#faf7f0"') + '<path d="M11.5 35.4 16 27.4 20.5 35.4Z" fill="#f2b619"/><rect x="48" y="27.4" width="8" height="8" fill="#d63a2a"/><circle cx="88" cy="31.4" r="4.2" fill="#1f4e9e"/>' +
+      [12, 48, 84].map(x => '<rect x="' + x + '" y="37.3" width="13" height="1.3" fill="#171614"/>').join('')],
+    destijl: ['#ffffff', '<rect y="5.6" width="5" height="12.8" fill="#df2a1d"/><rect x="47.6" y="5.6" width="46.4" height="12.8" fill="#f7cf0f"/>' +
+      '<rect x="11.6" y="24.6" width="32.4" height="15.8" fill="#df2a1d"/><rect x="75.6" y="24.6" width="32.8" height="15.8" fill="#1748a3"/><rect x="114" y="34" width="6" height="12" fill="#1748a3"/>' +
+      '<g fill="#111"><rect y="4" width="120" height="1.6"/><rect y="18.4" width="120" height="1.6"/><rect x="5" width="1.6" height="46"/><rect x="112.4" width="1.6" height="46"/><rect x="114" y="32.4" width="6" height="1.6"/>' +
+      '<rect x="10" y="4" width="1.6" height="16"/><rect x="108.4" y="4" width="1.6" height="16"/><rect x="46" y="4" width="1.6" height="16"/><rect x="94" y="4" width="1.6" height="16"/>' +
+      '<rect x="14.5" y="10.6" width="22" height="2.8"/><rect x="98.6" y="9" width="6" height="6" fill="none" stroke="#111" stroke-width="1"/>' +
+      '<rect x="10" y="23" width="100" height="1.6"/><rect x="10" y="40.4" width="100" height="1.6"/><rect x="10" y="23" width="1.6" height="19"/><rect x="108.4" y="23" width="1.6" height="19"/><rect x="44" y="23" width="1.6" height="19"/><rect x="74" y="23" width="1.6" height="19"/></g>'],
+    decon: ['#c8c5bf', '<path d="M64 46L120 14V18L70 46Z" fill="#d3261a"/><path d="M0 30L120 22M30 46L58 0" stroke="#1a1a1a" stroke-width=".4"/>' +
+      '<path d="M11 3.4L114 1.8L115 19.4L12 21Z" fill="none" stroke="#d3261a" stroke-width=".9"/>' +
+      '<path d="M8 8H106L112 11V20H12L8 16.5Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/>' +
+      '<rect x="5" y="5" width="33" height="8" fill="#111"/><rect x="9" y="7.9" width="25" height="2.4" fill="#f1f0ec"/>' +
+      [8, 44, 80].map(x => '<path d="M' + x + ' 25H' + (x + 32) + 'V37L' + (x + 29) + ' 40H' + x + 'Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/><rect x="' + (x + 4) + '" y="28" width="5" height="5" fill="none" stroke="#d3261a" stroke-width="1"/><rect x="' + (x + 4) + '" y="35" width="14" height="1.6" fill="#111"/>').join('')],
     custom: ['#7ee8fa', '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f6d"/><stop offset=".35" stop-color="#ffc371"/><stop offset=".68" stop-color="#7ee8fa"/><stop offset="1" stop-color="#a06cd5"/></linearGradient></defs><rect width="120" height="46" fill="url(#r)"/>' +
       '<g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M34 13h52M34 23h52M34 33h52"/></g><g fill="#fff" stroke="#14121a" stroke-opacity=".35"><circle cx="50" cy="13" r="4.2"/><circle cx="74" cy="23" r="4.2"/><circle cx="42" cy="33" r="4.2"/></g>']
   };
@@ -165,10 +209,10 @@ SKINS.forEach(s => {
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
-SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
+SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'destijl') || {}).border = '#111'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
 
 /* kept for older callers; the picker shows every theme now */
-const QUICK_SKINS = SKINS.filter(s => !s.legacy && !s.secret).map(s => s.id);
+const QUICK_SKINS = SKINS.filter(s => !s.legacy && !s.secret && !s.mod).map(s => s.id);
 
 /* which page this is, for the themes that give each page its own look
    (html[data-pg]): timetable, home, games, calendar, free, revision, … */
@@ -227,11 +271,11 @@ function inkFor(hex){
 }
 
 function readState(){
-  let skin = get(LS.skin, 'plain');
+  let skin = PREVIEW ? PREVIEW.skin : get(LS.skin, 'plain');
   if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
   return {
     skin,
-    mode: get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+    mode: PREVIEW && PREVIEW.mode ? PREVIEW.mode : get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
     zen: get(LS.zen, false),
     custom: Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {})),
     textScale: get(LS.textScale, 1),
@@ -813,6 +857,33 @@ function lookRow(el, after){
   f.setAttribute('aria-checked', String(fxOn())); f.setAttribute('aria-disabled', String(reduced));
   el.querySelector('.swhint').textContent = reduced ? 'Animation is off while Reduce motion is on.' : fixed ? 'This theme has one palette. Animation off saves battery.' : 'Animation off saves battery.';
 }
+/* quickRow: Settings → Quick settings, in both dialogs: the ones people change most, here as well as
+   in Accessibility and Display (they read the same keys, so either place shows the same). Layout,
+   text size, Now and Next, game sounds. after(): the page redraws what it keeps of its own (the
+   timetable holds its own copies). */
+function quickRow(el, after){
+  if (!el) return;
+  const view = get(LS.view, 'compact'), ts = Math.round((+get(LS.textScale, 1) || 1) * 100);
+  const sw = (k, label, on) => '<button type="button" class="tsw" role="switch" data-q="' + k + '" aria-checked="' + on + '"><span>' + label + '</span><i></i></button>';
+  el.innerHTML =
+    '<div class="custrow"><span>Layout</span><div class="modes qmodes">' +
+      [['compact', 'Compact'], ['full', 'Full']].map(([v, l]) => '<button type="button" data-qv="' + v + '" aria-pressed="' + (view === v) + '">' + l + '</button>').join('') + '</div></div>' +
+    '<div class="custrow"><span>Text size</span><input type="range" min="80" max="150" step="5" value="' + ts + '" aria-label="Text size"><b>' + ts + '%</b></div>' +
+    '<div class="swrow">' + sw('nownext', 'Now and Next', get('tt.nownext', true) !== false) + sw('sfx', 'Game sounds', !!get('tt.gamesfx', false)) + '</div>' +
+    '<div class="hint">Also in Display and Accessibility.</div>';
+  el.querySelectorAll('[data-qv]').forEach(b => b.onclick = () => {
+    set(LS.view, b.dataset.qv); apply(); if (after) after('view');
+    el.querySelectorAll('[data-qv]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  const r = el.querySelector('input[type="range"]'), rv = r.nextElementSibling;
+  r.addEventListener('input', () => { set(LS.textScale, +r.value / 100); rv.textContent = r.value + '%'; apply(); if (after) after('text'); });
+  el.querySelector('[data-q="nownext"]').onclick = ev => {
+    const on = get('tt.nownext', true) === false; set('tt.nownext', on); ev.currentTarget.setAttribute('aria-checked', String(on)); apply(); if (after) after('nownext');
+  };
+  el.querySelector('[data-q="sfx"]').onclick = ev => {
+    const on = !get('tt.gamesfx', false); set('tt.gamesfx', on); ev.currentTarget.setAttribute('aria-checked', String(on)); if (after) after('sfx');
+  };
+}
 /* fxButtons: the old On / Off pair (a .modes holder with data-v buttons). Nothing calls it now; kept so an old page can't break. */
 function fxButtons(el, hint){
   if (!el) return;
@@ -855,6 +926,7 @@ const skinName = s => (s.darkName && document.documentElement.getAttribute('data
 const SHOWCASE = ['aero', 'y2k', 'vapor', 'scifi', 'softclub', 'deco', 'maximal', 'skeuo', 'paper', 'brutal', 'editorial', 'swiss', 'studio', 'blueprint', 'terminal', 'glass', 'classic', 'plain', 'custom'];
 const caret = d => '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="' + d + '"/></svg>';
 let pickerAt = null;                                 // the picker last drawn, drawn again when the look changes (names differ in dark mode)
+const FINDER = true;                                 // Settings points to the Theme finder instead of holding every theme
 function skinPicker(field, after){
   if (!field) return;
   const grid = field.querySelector('.skins'), lab = field.querySelector('label'), orow = field.querySelector('.origrow');
@@ -867,7 +939,7 @@ function skinPicker(field, after){
   if (!hd){ lab.innerHTML = '<button type="button" class="skhd"><span>Appearance</span>' + caret('M208 96l-80 80-80-80') + '</button>'; hd = lab.querySelector('.skhd'); }
   hd.onclick = ev => { ev.preventDefault(); fold(!folded); };
   hd.setAttribute('aria-expanded', String(!folded)); hd.title = folded ? 'Show every theme' : 'Show fewer';
-  const cur = readState().skin, all = SKINS.filter(s => !s.legacy && !s.secret), on = all.find(s => s.id === cur);
+  const cur = readState().skin, all = SKINS.filter(s => !s.legacy && !s.secret && !s.mod), on = SKINS.find(s => s.id === cur && !s.legacy && !s.secret);
   const back = grid.contains(document.activeElement) ? document.activeElement.getAttribute('data-sk') : null;
   const tile = s => {
     const b = document.createElement('button');
@@ -884,6 +956,25 @@ function skinPicker(field, after){
     b.onclick = go;
     return b;
   };
+  /* Every theme lives in the Theme finder (themes.html) now: Settings shows the one that's on and a way
+     there. (The grid below is kept, unused, in case it's wanted back: set FINDER to false.) */
+  if (FINDER){
+    lab.textContent = 'Appearance';
+    const s = SKINS.find(x => x.id === cur) || SKINS[0], mini = SHOWCASE.map(id => all.find(x => x.id === id)).filter(x => x && x !== s).slice(0, 4);
+    grid.hidden = false; grid.classList.remove('peek'); grid.classList.add('skinnow');
+    grid.innerHTML = '<a class="skinbtn" href="themes.html" aria-pressed="true" title="Your theme. Open the Theme finder to change it">' +
+        '<span class="sw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
+        '<span class="nm">' + skinName(s) + (s.legacy ? ' (original)' : '') + '</span></a>' +
+      '<a class="skinbtn more" href="themes.html" title="Every theme, with a preview before you pick">' +
+        '<span class="sw mos">' + mini.map(x => '<i style="background:' + x.swatch + '"></i>').join('') + '</span><span class="nm">Theme finder</span></a>';
+    let sn = field.querySelector('.secretnote');
+    const secret = SKINS.find(x => x.secret && x.id === cur);
+    if (secret){ if (!sn){ sn = document.createElement('p'); sn.className = 'hint secretnote'; grid.after(sn); }
+      sn.textContent = secret.name + ' is on. Type “saul” in any box to go back, or pick a theme in the Theme finder.'; }
+    else if (sn) sn.remove();
+    if (orow){ orow.hidden = true; orow.innerHTML = ''; }
+    return;
+  }
   grid.hidden = false; grid.innerHTML = ''; grid.classList.toggle('peek', folded);
   if (folded){
     const rest = SHOWCASE.map(id => all.find(s => s.id === id)).filter(s => s && s !== on);
@@ -983,6 +1074,7 @@ function themesNotice(){
    you stop typing for a moment or press Enter, and never a password box. The page is
    told (tt:skin) so one that keeps its own copy of the look (the timetable) follows. */
 (function(){
+  if (PREVIEW) return;
   let timer = 0, last = 0;
   const flip = el => {
     if (!el || !/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.type === 'password') return;
@@ -1003,19 +1095,27 @@ function themesNotice(){
   document.addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(timer); flip(e.target); } }, true);
 })();
 
-/* Better Call Saul's backdrop: the spinning Saul as a muted looping video behind the page, only while the
-   theme is on and Animation is too (skins/saul.css shows a still frame under it, and instead of it) */
+/* the Theme finder switching what its frame shows (see PREVIEW) */
+if (PREVIEW){
+  document.documentElement.setAttribute('data-preview', '');
+  /* a look, not a visit: it scrolls, but nothing in it can be pressed or sent */
+  const stop = e => { e.preventDefault(); e.stopPropagation(); };
+  ['click', 'submit', 'auxclick', 'contextmenu'].forEach(t => document.addEventListener(t, stop, true));
+  addEventListener('message', e => {
+    if (e.origin !== location.origin || e.source !== window.parent) return;
+    const d = e.data || {};
+    if (!d.ttpreview || SKIN_IDS.indexOf(d.ttpreview) === -1) return;
+    PREVIEW.skin = d.ttpreview; PREVIEW.mode = d.mode === 'dark' || d.mode === 'light' ? d.mode : null;
+    apply();
+    try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}       // a page that keeps its own copy of the look follows
+  });
+}
+
+/* Better Call Saul used to put a smooth video of Saul behind the page; it's the small, crunchy GIF
+   everywhere now, all in skins/saul.css. This only tidies away a video an older copy of the page left. */
 function saulBg(){
-  if (!document.body) return;
-  const want = document.documentElement.getAttribute('data-skin') === 'saul' && fxOn();
-  let v = document.querySelector('video.saulbg');
-  if (!want){ if (v) v.remove(); return; }
-  if (v) return;
-  v = document.createElement('video');
-  v.className = 'saulbg'; v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.setAttribute('aria-hidden', 'true'); v.setAttribute('tabindex', '-1');
-  v.innerHTML = '<source src="/images/th/saul.webm" type="video/webm"><source src="/images/th/saul.mp4" type="video/mp4">';
-  document.body.prepend(v);
-  v.play().catch(() => {});
+  const v = document.querySelector('video.saulbg');
+  if (v) v.remove();
 }
 addEventListener('tt:look', saulBg);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulBg, { once:true }); else saulBg();
@@ -1024,6 +1124,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
    idea, a name change) shows on the next page you open, signed "MSC Unofficial" (never a moderator's
    name), with what it answers under it, until you close it. Asked for at most every three minutes. */
 (function(){
+  if (PREVIEW) return;
   const show = list => {
     const n = document.createElement('div');
     n.className = 'mscnote'; n.setAttribute('role', 'alertdialog'); n.setAttribute('aria-labelledby', 'mscnoteh');
@@ -1168,7 +1269,7 @@ function collectPrefs(){
 
 let pushTimer = null;
 function scheduleSync(){
-  if (!hasCreds()) return;
+  if (!hasCreds() || PREVIEW) return;
   clearTimeout(pushTimer);
   pushTimer = setTimeout(() => { pushTimer = null; flushPush(); }, 900);
 }
@@ -1191,7 +1292,7 @@ async function flushPush(keepalive){
 const syncPush = scheduleSync;
 
 async function syncPull(){
-  if (!hasCreds()) return;
+  if (!hasCreds() || PREVIEW) return;
   let payload = null;
   try {
     const res = await fetch(apiUrl('/api/prefs'), { headers: apiHeaders(), cache: 'no-store' });
@@ -1255,8 +1356,12 @@ addEventListener('pagehide', () => {
    Newest first. key: the thing a NEW tag sits on ('game:<id>'), cleared when
    you open it; no key, no tag (just the list). A tag also stops after
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
+   tag: what the tag says, 'New' unless given (e.g. 'Updated' for a change to
+   something people already know).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'reactavg', date:'2026-11-21', key:'game:react', tag:'Updated', title:'Reaction: the average of three', href:'games.html?play=react',
+    text:'Your time is now the average of three tries in a row, so one lucky click can’t top the board. The leaderboard has started again.' },
   { id:'reactfast', date:'2026-11-20', title:'Reaction time patch', href:'games.html?play=react',
     text:'The 60ms reaction time lower limit has been removed.' },
   { id:'yearboards', date:'2026-11-20', title:'Cohort leaderboards',
@@ -1298,16 +1403,24 @@ function newsActive(key){
   const seen = (get('tt.news_seen', {}) || {})[key] || '';
   return NEWS.some(n => n.key === key && recent(n) && n.date > seen);
 }
+/* what that tag says: the newest unseen entry's tag, or 'New' */
+function newsTag(key){
+  const seen = (get('tt.news_seen', {}) || {})[key] || '';
+  const n = NEWS.find(n => n.key === key && recent(n) && n.date > seen);
+  return (n && n.tag) || 'New';
+}
 function newsSeen(key){
   if (!newsActive(key)) return;
-  const m = Object.assign({}, get('tt.news_seen', {}) || {}); m[key] = ymd(); set('tt.news_seen', m);
+  /* today, or the date of its newest entry if that's later (one dated a day ahead still clears) */
+  const upto = NEWS.filter(n => n.key === key).reduce((d, n) => n.date > d ? n.date : d, ymd());
+  const m = Object.assign({}, get('tt.news_seen', {}) || {}); m[key] = upto; set('tt.news_seen', m);
 }
 /* the sheet: anything recent you haven't seen there yet */
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
-              NEWS, newsActive, newsSeen, newsUnread, newsRead,
+              NEWS, newsActive, newsTag, newsSeen, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
@@ -1393,7 +1506,7 @@ const APNAV = [
   ['revision', 'revision.html', 'Revision', '#ff9f0a', '<path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/>'],
   ['resources', 'resources.html', 'Resources', '#0a84ff', '<path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/>'],
   ['games', 'games.html', 'Games', '#ff375f', '<rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/>'],
-  ['finder', 'finder.html', 'Student finder', '#5e5ce6', '<circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>'],
+  ['themes', 'themes.html', 'Theme finder', '#af52de', '<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.7 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.4-.5-.8-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'],
   ['forum', 'home.html?show=forum', 'Forum', '#30b0c7', '<path d="M4 5h16v11H9l-5 4z"/>'],
   ['poll', 'home.html?show=poll', 'Poll', '#ffcc00', '<path d="M5 20V10M12 20V4M19 20v-7"/>'],
   ['mahjong', 'mahjong.html', 'Mahjong club', '#e0303a', '<rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/>']

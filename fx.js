@@ -216,6 +216,12 @@ const fade = (o, i) => ({ outMs:o, inMs:i, out(n, done){ root.classList.add('fx-
 TR.glass = fade(120, 260);                       // the page's contents fade; the clouds behind stay exactly where they were (theme.js keeps them)
 TR.editorial = fade(90, 180);
 TR.coquette = fade(120, 300);
+TR.bauhaus = fade(100, 420);                     // the page fades in, then its colour planes settle a moment later (bauhaus.css)
+TR.destijl = fade(100, 420);                     // the same: nothing moves (destijl.css)
+TR.dorfic = fade(110, 420);                      // the page lands with a small bounce (dorfic.css)
+TR.eco = fade(120, 460);                         // the page clears like a misted window (eco.css)
+TR.xp = fade(80, 160);                           // a short cross-fade (xp.css)
+TR.decon = fade(80, 160);                        // a short cross-fade (decon.css)
 TR.apple = fade(80, 160);
 TR.studio = fade(80, 160);                       // a short cross-fade, nothing else                    // quiet: no movement, barely there
 TR.terminal = fade(60, 360);                     // the screen clears, then the page is printed from the top (terminal.css)

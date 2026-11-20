@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Theme finder · MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=20261120q">
+<script src="theme.js?v=20261120q"></script>
+<script src="icons.js?v=20261120q"></script>
+<link rel="stylesheet" href="site.css?v=20261120q">
+<link rel="stylesheet" href="settings.css?v=20261120q">
+<style>
+/* ── the Theme finder: every theme, grouped, with a preview before you pick ── */
+.tflede{color:var(--muted);font-size:0.875rem;margin:0 0 14px;max-width:62ch}
+.tflook{max-width:420px;margin:0 0 22px}
+.tfh{margin:0 0 10px;font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt);font-size:1.0625rem}
+.tfsec{margin:0 0 26px}
+/* a theme: its picture, its name, and whether it's the one on */
+.tfcard{position:relative;display:flex;flex-direction:column;min-width:0;padding:0;text-align:left;cursor:pointer;overflow:hidden;
+  background:var(--panel);color:var(--text);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);
+  font:inherit;transition:transform .14s,box-shadow .14s}
+.tfcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi)}
+.tfcard:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tfcard[aria-current="true"]{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
+.tfsw{display:block;height:96px;background-size:cover;background-position:center}
+.tfnm{display:flex;align-items:center;gap:8px;padding:9px 12px 10px;font-weight:700;font-size:0.875rem;min-width:0}
+.tfnm span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tftag{flex:none;margin-left:auto;padding:0 7px;border-radius:999px;font-size:0.6875rem;font-weight:700;line-height:1.6;border:1px solid var(--line);color:var(--muted)}
+.tftag.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* Popular: one strip that scrolls sideways */
+.tfstrip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(200px,1fr);gap:12px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x proximity}
+.tfstrip .tfcard{scroll-snap-align:start}
+.tfstrip .tfsw{height:118px}
+/* a group: a grid */
+.tfgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+/* the originals: quiet, folded */
+.tforig{margin:4px 0 30px;border-top:1px solid var(--line);padding-top:12px}
+.tforig summary{cursor:pointer;color:var(--muted);font-size:0.875rem;font-weight:700;list-style:none}
+.tforig summary::-webkit-details-marker{display:none}
+.tforig summary em{font-style:normal;font-weight:400;margin-left:6px}
+.tforig[open] summary{margin-bottom:12px}
+.tforig .tfsw{height:64px}
+@media (max-width:560px){
+  .tfgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .tfsw{height:78px} .tfstrip{grid-auto-columns:72%} .tfstrip .tfsw{height:104px}
+}
+html[data-motion="reduced"] .tfcard{transition:none}
+
+/* ── the preview: the real pages in the theme, in a frame, nothing saved until "Use this theme" ── */
+.tfprev{width:min(1120px,96vw);max-width:none;max-height:96vh;padding:0;border:var(--card-border);border-radius:var(--card-radius);
+  background:var(--panel);color:var(--text);box-shadow:var(--shadow-hi);overflow:auto}
+.tfprev::backdrop{background:rgba(0,0,0,.55)}
+.tfpvhead{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.tfpvhead h2{margin:0;flex:1;min-width:0;font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);
+  text-transform:var(--display-tt);font-size:1.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tfpvhead .tfpvcount{color:var(--muted);font-size:0.8125rem;flex:none}
+.tfpvbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px}
+.tfpvbar .modes{display:flex;gap:4px}
+.tfpvbar [hidden]{display:none}
+.tfpvbar .modes button{padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel-2);color:var(--text);font:inherit;font-size:0.8125rem;font-weight:600;cursor:pointer}
+.tfpvbar .modes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tfpvbar .hint{margin:0;color:var(--muted);font-size:0.8125rem}
+.tfpvframe{position:relative;margin:0 14px;overflow:hidden;border:1px solid var(--line);border-radius:calc(var(--radius) * .6);background:var(--bg)}
+.tfpvframe iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;background:transparent}
+.tfpvframe .tfpvwait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.875rem;pointer-events:none}
+.tfpvfoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px}
+.tfpvfoot .hint{flex:1;min-width:12rem;margin:0;color:var(--muted);font-size:0.8125rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>Theme finder</h1></div>
+    <div class="crumbs">
+      <a class="btn icon" href="home.html" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <a class="btn icon" href="./" title="Timetable" aria-label="Timetable"><span data-icon="table"></span></a>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
+    </div>
+  </div>
+
+  <p class="tflede">Press a theme to see the site in it first. Nothing changes until you choose “Use this theme”.</p>
+  <div class="tflook" id="tflook"></div>
+
+  <section class="tfsec" aria-labelledby="tfpoph"><h2 class="tfh" id="tfpoph">Popular</h2><div class="tfstrip" id="tfpop"></div></section>
+  <div id="tfgroups"></div>
+  <details class="tforig" id="tforig"><summary>Original themes<em>as they were before the rebuild</em></summary><div class="tfgrid" id="tforiggrid"></div></details>
+</div>
+
+<dialog id="tfprev" class="tfprev" aria-labelledby="tfpvname">
+  <div class="tfpvhead">
+    <button class="btn icon" type="button" id="tfpvprev" title="Previous theme" aria-label="Previous theme"><span data-icon="caret-left"></span></button>
+    <h2 id="tfpvname"></h2>
+    <span class="tfpvcount" id="tfpvcount"></span>
+    <button class="btn icon" type="button" id="tfpvnext" title="Next theme" aria-label="Next theme"><span data-icon="caret-right"></span></button>
+    <button class="btn icon" type="button" id="tfpvx" title="Close" aria-label="Close preview"><span data-icon="x"></span></button>
+  </div>
+  <div class="tfpvbar">
+    <div class="modes" id="tfpvpages" role="group" aria-label="Page to preview">
+      <button type="button" data-p="home.html">Home</button><button type="button" data-p="./">Timetable</button><button type="button" data-p="games.html">Games</button>
+    </div>
+    <div class="modes" id="tfpvmode" role="group" aria-label="Light or dark">
+      <button type="button" data-m="light">Light</button><button type="button" data-m="dark">Dark</button>
+    </div>
+    <p class="hint" id="tfpvone" hidden>This theme has one palette.</p>
+  </div>
+  <div class="tfpvframe" id="tfpvframe"><span class="tfpvwait" id="tfpvwait">Loading the preview…</span>
+    <iframe id="tfpvif" title="Preview of the theme" tabindex="-1"></iframe></div>
+  <div class="tfpvfoot">
+    <p class="hint" id="tfpvnote">A preview of the real page. You can scroll it; nothing in it can be pressed.</p>
+    <button class="btn" type="button" id="tfpvback">Back</button>
+    <button class="btn primary" type="button" id="tfpvuse">Use this theme</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const ALL = TT.SKINS.filter(s => !s.secret);
+/* themes still being made (mod: true): only in their own group, and only for moderators */
+const WIP = ALL.filter(s => s.mod).map(s => s.id);
+let isMod = false;
+const byId = id => ALL.find(s => s.id === id);
+const nameOf = s => (s.darkName && document.documentElement.getAttribute('data-mode') === 'dark') ? s.darkName : s.name;
+
+/* the groups (the current themes only; a new one goes in its group here). Anything not listed ends up in More. */
+const BASICS = ['plain', 'classic', 'glass', 'custom'];
+const GROUPS = [
+  ['Basics', BASICS],
+  ['2000s tech', ['aero', 'skeuo', 'y2k', 'softclub', 'xp', 'dorfic', 'eco']],
+  ['Analogue', ['vapor', 'terminal', 'blueprint', 'scifi']],
+  ['Post-modernism', ['maximal', 'brutal', 'decon']],
+  ['Cozy', ['coquette', 'paper', 'deco']],
+  ['Modernism', ['editorial', 'studio', 'swiss', 'bauhaus', 'destijl']]
+];
+const themes = ALL.filter(s => !s.legacy && !s.mod), listed = new Set(GROUPS.flatMap(g => g[1]));
+const more = themes.filter(s => !listed.has(s.id)).map(s => s.id);
+if (more.length) GROUPS.push(['More', more]);
+const ORIGINALS = ALL.filter(s => s.legacy).map(s => s.id);
+GROUPS.forEach(g => g[1] = g[1].filter(id => !WIP.includes(id)));
+/* Popular: the newer themes (not the basics), the most used first; until that's known, the picker's showcase order */
+let popular = (TT.SHOWCASE || []).filter(id => byId(id) && !BASICS.includes(id));
+themes.forEach(s => { if (!BASICS.includes(s.id) && !popular.includes(s.id)) popular.push(s.id); });
+const POP_SHOWN = 8;
+
+const current = () => TT.readState().skin;
+const card = (id, list) => {
+  const s = byId(id); if (!s) return '';
+  const on = id === current();
+  return '<button type="button" class="tfcard" data-id="' + id + '" data-list="' + list + '"' + (on ? ' aria-current="true"' : '') + '>' +
+    '<span class="tfsw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
+    '<span class="tfnm"><span>' + esc(nameOf(s)) + '</span>' + (on ? '<b class="tftag on">On</b>' : s.both === false && !s.custom ? '<b class="tftag">Dark only</b>' : '') + '</span></button>';
+};
+const LISTS = {};
+function render(){
+  LISTS.pop = popular.slice(0, POP_SHOWN);
+  $('tfpop').innerHTML = LISTS.pop.map(id => card(id, 'pop')).join('');
+  const groups = isMod && WIP.length ? GROUPS.concat([['In progress · moderators only', WIP]]) : GROUPS;
+  $('tfgroups').innerHTML = groups.map(([name, ids], i) => {
+    const have = ids.filter(byId); LISTS['g' + i] = have;
+    return have.length ? '<section class="tfsec" aria-labelledby="tfg' + i + '"><h2 class="tfh" id="tfg' + i + '">' + esc(name) + '</h2>' +
+      '<div class="tfgrid">' + have.map(id => card(id, 'g' + i)).join('') + '</div></section>' : '';
+  }).join('');
+  LISTS.orig = ORIGINALS;
+  $('tforiggrid').innerHTML = ORIGINALS.map(id => card(id, 'orig')).join('');
+  if (ORIGINALS.includes(current())) $('tforig').open = true;
+  document.querySelectorAll('.tfcard').forEach(b => b.onclick = () => openPreview(b.dataset.id, b.dataset.list));
+}
+render();
+TT.lookRow($('tflook'), () => render());
+addEventListener('tt:look', () => { if (!$('tfprev').open) render(); });
+if (TT.signedIn && TT.signedIn()){
+  TT.api('/api/leaderboard', { params:{ themepop:1 } }).then(d => {
+    const order = (d && d.order || []).filter(id => byId(id) && !byId(id).legacy && !byId(id).mod && !BASICS.includes(id));
+    if (!order.length) return;
+    popular = order.concat(popular.filter(id => !order.includes(id)));
+    render();
+  }, () => {});
+  /* moderators see the themes still being made (the server says who's one) */
+  if (WIP.length) TT.api('/api/leaderboard', { params:{ settings:1 } }).then(d => { if (d && d.isMod){ isMod = true; render(); } }, () => {});
+}
+
+/* ── the preview ── */
+const dlg = $('tfprev'), frame = $('tfpvframe'), ifr = $('tfpvif');
+const pv = { id:null, list:null, page:'home.html', mode:'light', loaded:false };
+const fixedDark = id => (byId(id) || {}).both === false;             // (Custom too: its own colours decide)
+const pvMode = () => fixedDark(pv.id) ? 'dark' : pv.mode;
+/* the frame draws the page at a computer's size (a phone's on a phone) and scales it to fit */
+function fit(){
+  const cw = frame.clientWidth || 600, vw = cw >= 640 ? 1280 : 390, vh = cw >= 640 ? 800 : 760, k = cw / vw;
+  ifr.style.width = vw + 'px'; ifr.style.height = vh + 'px'; ifr.style.transform = 'scale(' + k + ')';
+  frame.style.height = Math.round(vh * k) + 'px';
+}
+addEventListener('resize', () => { if (dlg.open) fit(); });
+function load(){
+  pv.loaded = false; $('tfpvwait').hidden = false;
+  ifr.src = pv.page + '?ttpreview=' + encodeURIComponent(pv.id) + '&ttpmode=' + pvMode();
+}
+ifr.addEventListener('load', () => { if (ifr.src && ifr.src !== 'about:blank'){ pv.loaded = true; $('tfpvwait').hidden = true; } });
+function paint(){
+  const s = byId(pv.id), list = LISTS[pv.list] || [pv.id], i = list.indexOf(pv.id);
+  $('tfpvname').textContent = nameOf(s);
+  $('tfpvcount').textContent = list.length > 1 ? (i + 1) + ' of ' + list.length : '';
+  $('tfpvprev').disabled = $('tfpvnext').disabled = list.length < 2;
+  $('tfpvpages').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === pv.page)));
+  const one = fixedDark(pv.id);
+  $('tfpvmode').hidden = one; $('tfpvone').hidden = !one;
+  $('tfpvone').textContent = pv.id === 'custom' ? 'Your own colours decide light or dark.' : 'This theme has one palette.';
+  $('tfpvmode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === pv.mode)));
+  const on = pv.id === current() && (one || pv.mode === TT.readState().mode);
+  $('tfpvuse').textContent = on ? 'This is your theme' : 'Use ' + nameOf(s);
+  $('tfpvuse').disabled = on;
+  $('tfpvnote').textContent = pv.id === 'custom'
+    ? 'Your own colours. Change them in Settings once it’s on.'
+    : 'A preview of the real page. You can scroll it; nothing in it can be pressed.';
+}
+/* another theme or mode: told to the page already in the frame, so it switches at once */
+function show(){
+  paint();
+  if (pv.loaded && ifr.contentWindow) ifr.contentWindow.postMessage({ ttpreview:pv.id, mode:pvMode() }, location.origin);
+  else load();
+}
+function openPreview(id, list){
+  pv.id = id; pv.list = list; pv.mode = TT.readState().mode;
+  paint();
+  if (!dlg.open) dlg.showModal();
+  fit(); load();
+}
+const step = d => { const list = LISTS[pv.list] || []; if (list.length < 2) return; const i = list.indexOf(pv.id); pv.id = list[(i + d + list.length) % list.length]; show(); };
+$('tfpvprev').onclick = () => step(-1);
+$('tfpvnext').onclick = () => step(1);
+dlg.addEventListener('keydown', e => { if (e.key === 'ArrowLeft'){ e.preventDefault(); step(-1); } else if (e.key === 'ArrowRight'){ e.preventDefault(); step(1); } });
+$('tfpvpages').querySelectorAll('button').forEach(b => b.onclick = () => { if (pv.page === b.dataset.p) return; pv.page = b.dataset.p; paint(); load(); });
+$('tfpvmode').querySelectorAll('button').forEach(b => b.onclick = () => { pv.mode = b.dataset.m; show(); });
+const close = () => { if (dlg.open) dlg.close(); };
+$('tfpvx').onclick = close; $('tfpvback').onclick = close;
+dlg.addEventListener('close', () => { ifr.src = 'about:blank'; pv.loaded = false; render(); });
+/* choosing it: saved like a pick in Settings (and the mode it was previewed in, for a theme with both) */
+$('tfpvuse').onclick = () => {
+  TT.set('tt.skin', pv.id);
+  if (!fixedDark(pv.id)) TT.set('tt.mode', pv.mode);
+  TT.apply(TT.readState());
+  try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
+  const custom = pv.id === 'custom';
+  close();
+  if (custom && typeof window.openSettings === 'function') window.openSettings();
+};
+})();
+</script>
+<script src="settings.js?v=20261120q"></script>
+</body>
+</html>

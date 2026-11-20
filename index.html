@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261120n">
+<link rel="stylesheet" href="theme.css?v=20261120q">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261120n"></script>
-<script src="icons.js?v=20261120n"></script>
-<script src="suggest.js?v=20261120n"></script>
+<script src="theme.js?v=20261120q"></script>
+<script src="icons.js?v=20261120q"></script>
+<script src="suggest.js?v=20261120q"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -494,7 +494,7 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   <a class="mod" href="revision.html" style="--c:#FF9F0A"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/></svg></span><h3>Revision</h3></a>
   <a class="mod" href="resources.html" style="--c:#0A84FF"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 2-2h11v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h11v-3"/></svg></span><h3>Resources</h3></a>
   <a class="mod" href="games.html" style="--c:#FF375F"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></svg></span><h3>Games</h3></a>
-  <a class="mod" href="finder.html" style="--c:#5E5CE6"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg></span><h3>Student finder</h3></a>
+  <a class="mod" href="themes.html" style="--c:#AF52DE"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.7 1.6-1.6 0-.5-.2-.9-.5-1.2-.3-.4-.5-.8-.5-1.2 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span><h3>Theme finder</h3></a>
   <a class="mod" href="home.html?show=forum" style="--c:#30B0C7"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><h3>Forum</h3></a>
   <a class="mod" href="home.html?show=poll" style="--c:#FFCC00"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span><h3>Poll</h3></a>
   <a class="mod" href="mahjong.html" style="--c:#E0303A"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="9" r="2"/><path d="M9 15h6"/></svg></span><h3>Mahjong club</h3></a>
@@ -580,15 +580,8 @@ dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
 
 
     <div class="field">
-      <label>Cycle week</label>
-      <div class="hint" style="margin-top:0;margin-bottom:9px">
-        Cycle starts <b id="cyc_start">—</b>. Wrong A/B week? Set it here.
-      </div>
-      <div class="custrow"><span id="cyc_label">Today is</span>
-        <span style="display:flex;gap:6px">
-          <button class="btn" type="button" id="cyc_a">Week A</button>
-          <button class="btn" type="button" id="cyc_b">Week B</button>
-        </span></div>
+      <label>Quick settings</label>
+      <div id="quickset"></div>
     </div>
 
 
@@ -793,7 +786,7 @@ let contrast       = get(LS.contrast, 'normal');
 let motion         = get(LS.motion, 'normal');
 let custom   = Object.assign({}, CUSTOM_DEFAULTS, get(LS.custom, {}));
 let skin     = TT.readState().skin;                 // (a retired theme reads as its successor)
-let mode     = get(LS.mode, matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+let mode     = TT.readState().mode;                  // (in the Theme finder's preview frame, the mode it's showing)
 if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
 
 function applyLook(){
@@ -933,11 +926,11 @@ const titleCase = s => String(s).split(/[-\s]+/).filter(Boolean)
   .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
 
 /* ═══ cycle mapping ═══ */
-/* The school API's cycle start date can be a year or more old, and counting
-   weekdays through it also counts the holidays, so the A/B week can end up a
-   week out. `cycleShift` (0 or 5, half a cycle) is the user's correction, kept
-   in tt.* so it syncs. */
-let cycleShift = (+get(LS.cycleshift, 0) === 5) ? 5 : 0;
+/* The A/B week comes from the school API's cycle start date alone, counting weekdays through the
+   holidays too (3 Feb 2025 gives Week B for Friday 20 Nov 2026, which is right). There used to be a
+   Week A / Week B correction in Settings (tt.cycleshift, 0 or 5); it's gone and a saved one is no
+   longer read, so everyone's week is the school's. */
+const cycleShift = 0;
 function cycleDayFor(date, cycleStart){
   if (!cycleStart) return null;
   /* Day 0 of the cycle is a Monday. If the API's start date lands mid-week,
@@ -951,25 +944,6 @@ function cycleDayFor(date, cycleStart){
   const cur = new Date(start);
   while (cur < d){ cur.setDate(cur.getDate()+1); const w = cur.getDay(); if (w !== 0 && w !== 6) elapsed++; }
   return CYCLE_DAYS[(elapsed + cycleShift) % 10];
-}
-/* The weekday the correction is calibrated against: today, or Monday if it is
-   the weekend (the cycle has no Saturday). */
-function cycleRefDay(){
-  const d = midnight(new Date()), dow = d.getDay();
-  if (dow === 6) d.setDate(d.getDate() + 2);
-  else if (dow === 0) d.setDate(d.getDate() + 1);
-  return d;
-}
-/* Set the correction so the reference weekday lands on the chosen week. */
-function setCycleWeek(letter){
-  if (!cycleStart) return;
-  const keep = cycleShift;
-  cycleShift = 0;
-  const base = cycleDayFor(cycleRefDay(), cycleStart);
-  cycleShift = base ? (base.slice(-1) === letter ? 0 : 5) : keep;
-  set(LS.cycleshift, cycleShift);
-  viewWeek = null; weekOff = 0;
-  render();
 }
 /* Only a bare number ("4", "P4", "Period 4") is a period number. Labels like
    "L1"/"L2" (lunch halves) and "R" (recess) must keep their own identity --
@@ -2458,7 +2432,7 @@ const dlg = $('dlg');
    them all, the originals' row under them); a picked theme is saved and on by the time it calls back */
 const isLegacy = id => !!(SKINS.find(s => s.id === id) || {}).legacy;
 /* the "saul" secret (theme.js) changes the theme from any box: keep this page's copy in step */
-addEventListener('tt:skin', () => { skin = TT.readState().skin; applyLook(); render(); });
+addEventListener('tt:skin', () => { const st = TT.readState(); skin = st.skin; mode = st.mode; applyLook(); render(); });
 function renderSkins(){
   TT.skinPicker($('skins').parentNode, () => { skin = TT.readState().skin; applyLook(); renderSkins(); renderModes(); renderCustom(); renderGlass(); render(); });
 }
@@ -2529,30 +2503,14 @@ function bindCustom(){
     custom = Object.assign({}, CUSTOM_DEFAULTS);
     set(LS.custom, custom); applyLook(); renderCustom(); render();
   };
-  $('cyc_a').onclick = () => { setCycleWeek('a'); paintCycleRow(); };
-  $('cyc_b').onclick = () => { setCycleWeek('b'); paintCycleRow(); };
 }
-/* Show the cycle start the school API gave us, which week today is, and which
-   of the two buttons is the one currently in force. */
-function paintCycleRow(){
-  if (!$('cyc_start')) return;
-  const ref = cycleRefDay(), isToday = midnight(ref).getTime() === midnight(new Date()).getTime();
-  $('cyc_label').textContent = isToday ? 'Today is' : 'Monday is';
-  $('cyc_start').textContent = cycleStart
-    ? cycleStart.toLocaleDateString(undefined, { day:'numeric', month:'long', year:'numeric' })
-    : 'an unknown date';
-  const now = cycleDayFor(ref, cycleStart);
-  const letter = now ? now.slice(-1) : null;
-  ['a','b'].forEach(x => {
-    const b = $('cyc_' + x);
-    /* With no start date from the school there is no cycle to correct, so say
-       that rather than leaving two buttons that quietly do nothing. */
-    b.disabled = !cycleStart;
-    b.setAttribute('aria-pressed', String(letter === x));
-    b.style.fontWeight = letter === x ? '700' : '';
-    b.style.opacity = !cycleStart ? '.45' : (letter && letter !== x ? '.6' : '');
+/* Quick settings (theme.js quickRow): layout, text size, Now and Next, game sounds, here as well as in
+   Display and Accessibility; this page keeps its own copies, so they're read again after a change */
+function renderQuick(){
+  TT.quickRow($('quickset'), () => {
+    viewMode = get(LS.view, 'compact'); textScale = +get(LS.textScale, 1) || 1; showNowNext = get(LS.nownext, true);
+    applyLook(); render();
   });
-  if (!cycleStart) $('cyc_start').textContent = 'no date — the school API did not send one';
 }
 bindCustom();
 
@@ -2689,7 +2647,7 @@ function renderRooms(){
 /* Dark mode and Animation: the first row (theme.js lookRow); this page keeps its own copy of the mode */
 function renderModes(){ TT.lookRow($('looksw'), () => { mode = TT.readState().mode; applyLook(); render(); }); }
 $('settings').onclick = () => {
-  paintCycleRow();
+  renderQuick();
   crEditing = false; renderCreds(); renderGlass(); renderModes(); TT.warmSkins(); if ($('c_code').tcRefresh) $('c_code').tcRefresh();
   $('status').textContent = loadError || staleNote || '';
   $('status').className = 'status' + (loadError ? ' err' : '');

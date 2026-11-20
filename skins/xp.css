@@ -1,0 +1,520 @@
+/* ══════════════════════════════════════════════════════════════════
+   WINDOWS XP — the 2001 "Luna" desktop, with the website as the
+   computer. One idea: the header of every page is the taskbar (a
+   glossy blue bar across the whole screen, the site's name in the
+   green start-style pill, the page's buttons in the lighter tray at
+   the right, Now and Next as taskbar buttons), and what's under it
+   are windows: the blue rounded title bar with its gloss, a blue
+   frame, the beige (#ECE9D8) body. A title bar is made of something
+   the page already has wherever it can be (the poll's own header and
+   its minimise button, the forum's heading, a dialog's heading and
+   close button, the timetable's week switch with its arrows); pages
+   that are one piece are one window, titled with the page's name.
+   Home's eight pages are desktop shortcuts on the wallpaper. Controls
+   are XP's: rounded push buttons with an orange glow under the
+   pointer, checkboxes with a green tick, the blue combo-box button,
+   the green block progress bar, Luna scrollbars. Type is the
+   system's own: Tahoma, with Trebuchet MS for titles.
+   The wallpaper (body::before) changes with the page, always the XP
+   world: a green hill under a blue sky on Home, a clear sky on the
+   timetable, the hill at sunset on Games and Mahjong, a blue abstract
+   (the welcome screen's light) on the rest. Code gradients for now; a
+   real photograph of a green hill could replace Home's (see the
+   report). No moving background. No Microsoft artwork, logo or flag.
+   Dark mode is the glossy graphite of that era's black theme ("Royale
+   Noir"): the same taskbar and windows in black glass, the same
+   wallpapers at night.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="xp"]{
+  --bg:#3c74d4; --bg-img:none;
+  --panel:#ffffff; --panel-2:#f4f3ee; --line:#b9b5a5;
+  --text:#101010; --muted:#5d5a52; --accent:#1c55c6; --accent-ink:#fff;
+  --font-ui:Tahoma,"Segoe UI",Verdana,"DejaVu Sans",system-ui,sans-serif;
+  --font-display:"Trebuchet MS","Segoe UI",Tahoma,"DejaVu Sans",system-ui,sans-serif;
+  --font-num:Tahoma,"Segoe UI",Verdana,system-ui,sans-serif;
+  --card-radius:3px; --radius:3px; --tint:16%; --card-accent:0px;
+  --card-border:1px solid #9d9a8c;
+  --shadow:0 1px 2px rgba(0,0,0,.12); --shadow-hi:0 2px 6px rgba(0,0,0,.2);
+  --display-tt:none; --display-ls:0; --display-w:700;
+  /* XP's own colours */
+  --xp-face:#ece9d8; --xp-face-hi:#f7f6ef; --xp-field:#7f9db9; --xp-edge:#aca899; --xp-sel:#316ac5; --xp-link:#0b48c9;
+  --xp-hot:inset 0 0 0 1px #fff0cf,inset 0 0 0 2px #f8b330;      /* the orange glow of a button under the pointer */
+  --xp-ink:#fff; --xp-ink-shadow:1px 1px 0 #0b2a8a;
+  --xp-sub:#d9e6ff;
+  /* the title bar's gloss (in px from the top, so any height keeps it) */
+  --xp-title:linear-gradient(180deg,#0a5de6 0,#3f97ff 2px,#2a87ff 4px,#1172fa 7px,#0461ee 11px,#0057e5 16px,#0055e3 52%,#005bec 70%,#0566f8 86%,#0059e8 94%,#0044b8 100%);
+  /* the frame round a window's sides and bottom */
+  --xp-frame:inset 1px 0 0 #0831d9,inset -1px 0 0 #001ea0,inset 0 -1px 0 #001ea0,inset 4px 0 0 #166aee,inset -4px 0 0 #0b58dd,inset 0 -4px 0 #0b58dd;
+  --xp-drop:0 6px 18px rgba(0,22,80,.32),0 1px 3px rgba(0,22,80,.25);
+  /* the taskbar, its tray and the start pill */
+  --xp-tb:linear-gradient(180deg,#1c3f98 0,#3c7fe6 1px,#4a92f0 3px,#3a82ea 5px,#2c6fdf 8px,#2462d8 13px,#2159d4 40%,#225cd7 75%,#2562de 92%,#1f52c4 98%,#163f9e 100%);
+  --xp-tray:linear-gradient(180deg,#0c59b9 0,#16a4ef 2px,#1aa9f0 4px,#119ae9 7px,#0f8fe5 13px,#0d8be6 55%,#0e98ee 85%,#108fe2 95%,#0b67c8 100%);
+  --xp-tray-edge:inset 1px 0 0 #0a3a8f,inset 2px 0 0 rgba(140,210,255,.45);
+  --xp-start:linear-gradient(180deg,#5aac4c 0,#3f9a35 2px,#3a9431 5px,#338a2b 45%,#2f8128 52%,#378f2f 80%,#4aa23f 95%,#2b7524 100%);
+  --xp-tbbtn:linear-gradient(180deg,#5c9cff 0,#3a80f0 2px,#3171e2 50%,#2c69d8 100%);
+  --xp-tbbtn-on:linear-gradient(180deg,#1a48a8 0,#1e53bc 5px,#2058c2 100%);
+  /* push buttons */
+  --xp-btn:linear-gradient(180deg,#ffffff 0,#f6f5f0 45%,#ecebe5 80%,#d8d3c7 100%);
+  --xp-btn-down:linear-gradient(180deg,#d1cec4 0,#e3e2da 15%,#e8e7e0 85%,#f2f1ec 100%);
+  --xp-btn-edge:#003c74; --xp-btn-ink:#101010;
+  --xp-go:linear-gradient(180deg,#8fd47a 0,#4caf3c 3px,#3c9b30 50%,#348c29 100%);
+  --xp-go-edge:#1d6418;
+  /* the three buttons on a title bar (drawn, not working: a real one is styled where there is one) */
+  --xp-tbtns:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='67' height='21'><defs><radialGradient id='b' cx='.9' cy='.9' r='1.27'><stop offset='0' stop-color='%230054e9'/><stop offset='.55' stop-color='%232263d5'/><stop offset='.7' stop-color='%234479e4'/><stop offset='.9' stop-color='%23a3bbec'/><stop offset='1' stop-color='%23fff'/></radialGradient><radialGradient id='r' cx='.9' cy='.9' r='1.27'><stop offset='0' stop-color='%23cc4600'/><stop offset='.55' stop-color='%23dc6527'/><stop offset='.7' stop-color='%23cd7546'/><stop offset='.9' stop-color='%23ffccb2'/><stop offset='1' stop-color='%23fff'/></radialGradient></defs><g stroke='%23fff'><rect x='.5' y='.5' width='20' height='20' rx='3' fill='url(%23b)'/><rect x='23.5' y='.5' width='20' height='20' rx='3' fill='url(%23b)'/><rect x='46.5' y='.5' width='20' height='20' rx='3' fill='url(%23r)'/></g><g fill='none' stroke='%23fff'><path d='M5 14.5h7' stroke-width='3'/><path d='M28.5 6.5h10v9h-10z'/><path d='M28.5 7.5h10' stroke-width='2'/><path d='M52 6l9 9M61 6l-9 9' stroke-width='2.2'/></g></svg>");
+  --xp-glyph-min:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21'><path d='M5 14.5h7' stroke='%23fff' stroke-width='3'/></svg>");
+  --xp-glyph-restore:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21'><g fill='none' stroke='%23fff'><path d='M7.5 5.5h8v7M7.5 6.5h8' /><path d='M4.5 8.5h8v7h-8z'/><path d='M4.5 9.5h8' stroke-width='2'/></g></svg>");
+  --xp-winicon:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><rect x='.5' y='.5' width='13' height='13' rx='1.5' fill='%23fff' stroke='%23163c8c'/><rect x='1' y='1' width='12' height='3.5' fill='%233a7ae8'/><path d='M3 7.5h8M3 10h5' stroke='%23a9b8d6'/></svg>");
+  --xp-close:radial-gradient(circle at 90% 90%,#cc4600 0,#dc6527 55%,#cd7546 70%,#ffccb2 90%,#fff 100%);
+  --xp-tbutton:radial-gradient(circle at 90% 90%,#0054e9 0,#2263d5 55%,#4479e4 70%,#a3bbec 90%,#fff 100%);
+  --xp-check:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13'><path d='M3 6.3l2.3 2.4L10.2 3.8' fill='none' stroke='%2321a121' stroke-width='2.1'/></svg>");
+  --xp-combo:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='17' height='19'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23e8effd'/><stop offset='1' stop-color='%23b3c9f5'/></linearGradient></defs><rect x='.5' y='.5' width='16' height='18' rx='2' fill='url(%23g)' stroke='%23b6cbf7'/><path d='M5 8l3.5 3.4L12 8' fill='none' stroke='%234d6185' stroke-width='2'/></svg>");
+  --xp-wall:linear-gradient(180deg,#2d63cc,#7fb1ee);
+}
+[data-skin="xp"][data-mode="dark"]{
+  --bg:#08090c;
+  --panel:#1d1e22; --panel-2:#26282d; --line:#4a4c53;
+  --text:#ececee; --muted:#a6a8b0; --accent:#78a6ff; --accent-ink:#06122e;
+  --card-border:1px solid #4a4c53;
+  --shadow:0 1px 2px rgba(0,0,0,.5); --shadow-hi:0 3px 8px rgba(0,0,0,.6);
+  --xp-face:#2a2c31; --xp-face-hi:#33363c; --xp-field:#5c6170; --xp-edge:#4a4c53; --xp-sel:#2e64c4; --xp-link:#7eaaff;
+  --xp-ink:#f4f4f6; --xp-ink-shadow:1px 1px 0 #000;
+  --xp-sub:#b9bcc6;
+  --xp-title:linear-gradient(180deg,#6c7079 0,#4b4e56 1px,#3a3d44 3px,#2c2e34 8px,#1f2025 14px,#141518 50%,#0a0a0c 52%,#121315 80%,#1b1c20 94%,#000 100%);
+  --xp-frame:inset 1px 0 0 #000,inset -1px 0 0 #000,inset 0 -1px 0 #000,inset 4px 0 0 #2c2e33,inset -4px 0 0 #232428,inset 0 -4px 0 #232428;
+  --xp-drop:0 8px 22px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.6);
+  --xp-tb:linear-gradient(180deg,#000 0,#5d6068 1px,#3e4047 3px,#2a2c31 7px,#1d1e22 13px,#141518 48%,#060607 50%,#0e0f11 80%,#17181b 95%,#000 100%);
+  --xp-tray:linear-gradient(180deg,#000 0,#4a4d55 1px,#34363c 4px,#26282d 12px,#1d1e22 48%,#121315 50%,#1a1b1f 90%,#000 100%);
+  --xp-tray-edge:inset 1px 0 0 #000,inset 2px 0 0 rgba(255,255,255,.12);
+  --xp-start:linear-gradient(180deg,#6fbf5e 0,#3b8f31 2px,#2f7e28 6px,#276f21 48%,#1d5e18 52%,#24691e 85%,#2f7c28 96%,#123e0f 100%);
+  --xp-tbbtn:linear-gradient(180deg,#585b63 0,#3a3c42 2px,#2b2d32 50%,#25272b 100%);
+  --xp-tbbtn-on:linear-gradient(180deg,#0b0b0d 0,#141518 5px,#1a1b1f 100%);
+  --xp-btn:linear-gradient(180deg,#5a5d65 0,#44464d 45%,#393b41 80%,#2d2f34 100%);
+  --xp-btn-down:linear-gradient(180deg,#1f2024 0,#2a2c31 15%,#303237 85%,#3a3c42 100%);
+  --xp-btn-edge:#000; --xp-btn-ink:#f2f2f4;
+  --xp-tbutton:radial-gradient(circle at 90% 90%,#141518 0,#2a2c31 55%,#43464d 70%,#8b8f99 90%,#d9dbe0 100%);
+}
+
+/* ── the wallpaper, a different one per page (all of it under Transparent background goes) ── */
+[data-skin="xp"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--xp-wall)}
+html.zen[data-skin="xp"] body::before,[data-skin="xp"][data-pg="hkmahjong"] body::before{display:none}
+/* Hong Kong Mahjong is drawn on its own: there the page is a window's face, not the desktop */
+[data-skin="xp"][data-pg="hkmahjong"]{--bg:var(--xp-face)}
+/* Home: a green hill under a blue sky, a little haze of cloud */
+[data-skin="xp"][data-pg="home"]{--xp-wall:
+  radial-gradient(ellipse 26% 7% at 24% 21%,rgba(255,255,255,.7),rgba(255,255,255,0) 72%),
+  radial-gradient(ellipse 17% 5% at 33% 18%,rgba(255,255,255,.55),rgba(255,255,255,0) 72%),
+  radial-gradient(ellipse 24% 6% at 79% 30%,rgba(255,255,255,.5),rgba(255,255,255,0) 72%),
+  radial-gradient(ellipse 14% 4% at 70% 27%,rgba(255,255,255,.45),rgba(255,255,255,0) 72%),
+  radial-gradient(ellipse 150% 50% at 66% 114%,#2a7419 0,#3f8f25 46%,#62b034 72%,#8ccb4a 78.6%,rgba(140,203,74,0) 79%),
+  radial-gradient(ellipse 105% 46% at 4% 106%,#367f20 0,#4f9b2b 58%,#74bb3e 76.6%,rgba(116,187,62,0) 77%),
+  linear-gradient(180deg,#2559c4 0,#3a76da 20%,#5c97e8 42%,#85b5ef 62%,#a3c9f3 72%,#bcd8f6 80%)}
+/* the timetable: a clear sky, the hills far off and low */
+[data-skin="xp"][data-pg="timetable"]{--xp-wall:
+  radial-gradient(ellipse 160% 14% at 30% 104%,#3f8d25 0,#5aa431 70%,rgba(90,164,49,0) 72%),
+  radial-gradient(ellipse 120% 12% at 90% 104%,#36801f 0,#4f9a2b 70%,rgba(79,154,43,0) 72%),
+  linear-gradient(180deg,#2a5fc8 0,#4180de 30%,#78acec 62%,#b5d4f6 86%,#d8e9fb 100%)}
+/* Games and Mahjong: the hill at sunset */
+[data-skin="xp"]:is([data-pg="games"],[data-pg="mahjong"]){--xp-wall:
+  radial-gradient(ellipse 40% 22% at 72% 70%,rgba(255,226,140,.8),rgba(255,190,90,0) 70%),
+  radial-gradient(ellipse 140% 46% at 30% 112%,#16300f 0,#1f4614 55%,#2c5c1a 76.6%,rgba(44,92,26,0) 77%),
+  radial-gradient(ellipse 110% 40% at 96% 108%,#1c3a12 0,#27511a 70%,rgba(39,81,26,0) 72%),
+  linear-gradient(180deg,#2b3f9c 0,#5a5cb0 26%,#b0679c 48%,#f0896a 62%,#ffbe6a 72%,#ffe0a0 80%)}
+/* the rest: blue light, as on the welcome screen */
+[data-skin="xp"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--xp-wall:
+  radial-gradient(ellipse 60% 55% at 14% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 70%),
+  linear-gradient(172deg,rgba(255,255,255,0) 58%,rgba(255,255,255,.22) 63%,rgba(255,255,255,0) 68%),
+  linear-gradient(166deg,rgba(255,255,255,0) 70%,rgba(160,200,255,.25) 76%,rgba(255,255,255,0) 82%),
+  linear-gradient(180deg,#3d63c9 0,#5a7edc 40%,#4a6bd3 75%,#2c4fb7 100%)}
+/* at night */
+[data-skin="xp"][data-mode="dark"]{--xp-stars:
+  radial-gradient(1.2px 1.2px at 12% 14%,#fff 50%,transparent 100%),radial-gradient(1px 1px at 27% 31%,#cfd8ff 50%,transparent 100%),
+  radial-gradient(1.3px 1.3px at 41% 9%,#fff 50%,transparent 100%),radial-gradient(1px 1px at 56% 24%,#fff 50%,transparent 100%),
+  radial-gradient(1.2px 1.2px at 68% 12%,#dfe6ff 50%,transparent 100%),radial-gradient(1px 1px at 83% 27%,#fff 50%,transparent 100%),
+  radial-gradient(1.4px 1.4px at 92% 8%,#fff 50%,transparent 100%),radial-gradient(1px 1px at 6% 38%,#fff 50%,transparent 100%),
+  radial-gradient(1px 1px at 34% 46%,#cfd8ff 50%,transparent 100%),radial-gradient(1px 1px at 76% 44%,#fff 50%,transparent 100%)}
+[data-skin="xp"][data-mode="dark"][data-pg="home"]{--xp-wall:var(--xp-stars),
+  radial-gradient(ellipse 18% 18% at 80% 18%,rgba(220,230,255,.16),rgba(220,230,255,0) 70%),
+  radial-gradient(ellipse 150% 50% at 66% 114%,#050b05 0,#0b170a 60%,#1a3318 77.4%,#2c4a2a 78.6%,rgba(44,74,42,0) 79%),
+  radial-gradient(ellipse 105% 46% at 4% 106%,#070f07 0,#0e1d0d 62%,#203a1e 76.6%,rgba(32,58,30,0) 77%),
+  linear-gradient(180deg,#020309 0,#060b1d 38%,#0f1d3d 66%,#1a2c50 78%)}
+[data-skin="xp"][data-mode="dark"][data-pg="timetable"]{--xp-wall:var(--xp-stars),
+  radial-gradient(ellipse 160% 14% at 30% 104%,#0a140a 0,#14240f 70%,rgba(20,36,15,0) 72%),
+  linear-gradient(180deg,#020309 0,#070d22 45%,#122348 85%,#1a2d55 100%)}
+[data-skin="xp"][data-mode="dark"]:is([data-pg="games"],[data-pg="mahjong"]){--xp-wall:var(--xp-stars),
+  radial-gradient(ellipse 40% 18% at 72% 76%,rgba(255,120,60,.35),rgba(255,120,60,0) 70%),
+  radial-gradient(ellipse 140% 46% at 30% 112%,#030503 0,#070c06 70%,#0d160b 76.6%,rgba(13,22,11,0) 77%),
+  linear-gradient(180deg,#05050f 0,#14123a 40%,#3a1c48 64%,#7a3438 76%,#a2502e 84%)}
+[data-skin="xp"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--xp-wall:
+  radial-gradient(ellipse 60% 55% at 14% 12%,rgba(255,255,255,.12),rgba(255,255,255,0) 70%),
+  linear-gradient(172deg,rgba(255,255,255,0) 58%,rgba(255,255,255,.06) 63%,rgba(255,255,255,0) 68%),
+  linear-gradient(180deg,#16181d 0,#0d0e11 60%,#050506 100%)}
+
+/* ══ the taskbar: the head of every page, docked at the top and across the whole screen ══ */
+:root[data-skin="xp"]:not([data-header="split"]) .wrap{padding-top:0}
+:root[data-skin="xp"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;margin-top:0;padding:10px 0 10px 0;border:0;border-radius:0;box-shadow:none;background:none;
+  border-image:var(--xp-tb) fill 0 / / 0 100vw;color:var(--xp-ink)}
+:root[data-skin="xp"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead) :is(h1,.hubsub,.brand>span){color:var(--xp-ink)}
+[data-skin="xp"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-family:var(--font-display);font-weight:700;letter-spacing:0}
+:root[data-skin="xp"]:not([data-header="split"]) :is(.brand h1,.hubid h1,.pagehead h1){text-shadow:1px 1px 0 rgba(0,20,90,.55),0 0 8px rgba(0,30,120,.35)}
+:root[data-skin="xp"][data-mode="dark"]:not([data-header="split"]) :is(.brand h1,.hubid h1,.pagehead h1){text-shadow:1px 1px 0 #000}
+:root[data-skin="xp"]:not([data-header="split"]) .hubsub{color:var(--xp-sub)}
+:root[data-skin="xp"]:not([data-header="split"]) .brand>span{color:var(--xp-sub);opacity:1}
+[data-skin="xp"] .pagehead h1{font-size:clamp(1.25rem,3vw,1.75rem)}
+[data-skin="xp"] .brand h1{font-size:clamp(1.25rem,2.6vw,1.75rem)}
+[data-skin="xp"] .hubid h1{font-size:clamp(1.3rem,4.6cqi,2rem)}
+/* the site's name: a green start-style pill (on the inner pages it is the way home, as the button was the way in) */
+[data-skin="xp"] :is(.eyebrow,.sitename){display:inline-block;width:fit-content;max-width:100%;margin:0 0 6px;padding:2px 15px 3px 11px;border-radius:3px 13px 13px 3px;background:var(--xp-start);
+  color:#fff;font:italic 700 .8125rem/1.35 var(--font-display);letter-spacing:.01em;text-transform:none;text-decoration:none;text-shadow:1px 1px 1px rgba(0,0,0,.45);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),1px 1px 2px rgba(0,0,0,.3)}
+[data-skin="xp"] .sitename:hover{color:#fff;filter:brightness(1.08)}
+[data-skin="xp"] .sitename:active{filter:brightness(.92)}
+/* the tray: the lighter blue at the right, out to the edge of the screen; its buttons are icons */
+:root[data-skin="xp"]:not([data-header="split"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs){align-self:stretch;justify-content:center;align-items:center;gap:2px;margin:-10px 0 -10px auto;padding:6px 0 6px 12px;
+  border-image:var(--xp-tray) fill 0 / / 0 100vw 0 0;box-shadow:var(--xp-tray-edge)}
+:root[data-skin="xp"]:not([data-header="split"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs) :is(.btn,.btn:hover){background:transparent;border:1px solid transparent;border-radius:3px;box-shadow:none;color:#fff;
+  filter:drop-shadow(1px 1px 0 rgba(0,20,80,.45))}
+:root[data-skin="xp"]:not([data-header="split"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs) .btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35)}
+:root[data-skin="xp"]:not([data-header="split"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs) .btn:active{background:rgba(0,30,90,.25);border-color:rgba(0,0,0,.25)}
+:root[data-skin="xp"]:not([data-header="split"]) .hubin>.headbtns{align-self:stretch}
+@container hubbar (max-width:44em){ :root[data-skin="xp"]:not([data-header="split"]) .hubin>.headbtns{margin-top:-10px;margin-bottom:0;padding-bottom:6px;align-self:start} }
+/* the inner pages: a taskbar of the real height: the start pill, the page as the pressed taskbar button of its window, the tray */
+:root[data-skin="xp"]:not([data-header="split"]) .pagehead{padding:0;min-height:42px;gap:8px;align-items:stretch}
+:root[data-skin="xp"]:not([data-header="split"]) .pagehead .phtitle{display:flex;align-items:center;gap:10px;min-width:0;padding:4px 0}
+:root[data-skin="xp"]:not([data-header="split"]) .pagehead .sitename{align-self:stretch;display:flex;align-items:center;margin:-4px 0;padding:0 20px 1px 13px;border-radius:0 14px 14px 0;font-size:.9375rem;flex:none}
+:root[data-skin="xp"]:not([data-header="split"]) .pagehead h1{flex:0 1 auto;min-width:0;max-width:240px;padding:5px 14px 5px 32px;border-radius:3px;border:1px solid rgba(0,20,80,.55);
+  background:var(--xp-winicon) 10px 50%/14px 14px no-repeat,var(--xp-tbbtn-on);box-shadow:inset 1px 1px 2px rgba(0,0,0,.45);
+  font-size:.9375rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;text-shadow:1px 1px 0 rgba(0,10,50,.6)}
+:root[data-skin="xp"][data-mode="dark"]:not([data-header="split"]) .pagehead h1{border-color:#000}
+:root[data-skin="xp"]:not([data-header="split"]) .pagehead .crumbs{margin:0 0 0 auto;padding:0 2px 0 12px}
+@container pagehead (max-width:19em){ :root[data-skin="xp"]:not([data-header="split"]) .pagehead .crumbs{margin-left:0;flex:1 1 100%;justify-content:flex-end} }
+/* a phone: the tray's buttons a little narrower; the page's name stays on its window, so the taskbar keeps the pill and the tray */
+@media (max-width:600px){
+  :root[data-skin="xp"]:not([data-header="split"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs) .btn{width:36px}
+  :root[data-skin="xp"]:not([data-header="split"]) .pagehead .sitename{font-size:.875rem;padding:0 16px 1px 10px}
+  :root[data-skin="xp"]:not([data-header="split"]) .pagehead .crumbs{padding-left:8px}
+}
+@media (max-width:520px){
+  :root[data-skin="xp"]:not([data-header="split"]) .pagehead h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);border:0;white-space:nowrap}
+}
+/* Now and Next: taskbar buttons (the one on now is pressed in) */
+[data-skin="xp"] .nowcard{background:var(--xp-winicon) 11px 13px/14px 14px no-repeat,var(--xp-tbbtn);color:#fff;border:1px solid rgba(0,30,110,.6);border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 1px 0 0 rgba(255,255,255,.15)}
+[data-skin="xp"] .nowcard:first-child:not(:only-child){background:var(--xp-winicon) 11px 13px/14px 14px no-repeat,var(--xp-tbbtn-on);box-shadow:inset 1px 1px 2px rgba(0,0,0,.5)}
+/* (the window's icon at the left, as on a taskbar button; :root to win over site.css's padding on Home) */
+:root[data-skin="xp"] :is(.nowcard,.hubnow .nowcard){padding-left:34px}
+[data-skin="xp"] .hubnow .nowcard{background-position:11px 50%,0 0}
+[data-skin="xp"] a.nowcard:hover{border-color:rgba(255,255,255,.6);filter:brightness(1.06)}
+[data-skin="xp"] .nowcard .lbl{color:#e2ecff;letter-spacing:.06em}
+[data-skin="xp"] .nowcard .subj{font-family:var(--font-display);color:#fff;text-shadow:1px 1px 0 rgba(0,20,80,.5)}
+[data-skin="xp"] .nowcard .meta{color:#e8efff}
+[data-skin="xp"] :is(.nowcard .count,.progrow .count){color:#fff}
+[data-skin="xp"][data-mode="dark"] .nowcard{border-color:#000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+[data-skin="xp"][data-mode="dark"] .nowcard .lbl{color:#a9adb8}
+/* the green block progress bar */
+[data-skin="xp"] .prog{height:13px;border-radius:3px;padding:2px;background:#fff;border:1px solid #686868;box-shadow:inset 1px 1px 1px rgba(0,0,0,.18)}
+[data-skin="xp"] .prog i{border-radius:0;background:repeating-linear-gradient(90deg,transparent 0 6px,#fff 6px 8px),linear-gradient(180deg,#a8eea0 0,#3bd23b 30%,#28b828 60%,#3fd63f 100%)}
+[data-skin="xp"][data-mode="dark"] .prog{background:#0d0e10;border-color:#000}
+[data-skin="xp"][data-mode="dark"] .prog i{background-image:repeating-linear-gradient(90deg,transparent 0 6px,#0d0e10 6px 8px),linear-gradient(180deg,#a8eea0 0,#3bd23b 30%,#28b828 60%,#3fd63f 100%)}
+@container hubbar (max-width:26em){
+  :root[data-skin="xp"] .hubnow.pair{padding-left:34px;background:var(--xp-winicon) 11px 50%/14px 14px no-repeat,var(--xp-tbbtn);border:1px solid rgba(0,30,110,.6);border-radius:3px;color:#fff}
+  :root[data-skin="xp"] .hubnow.pair .nowcard{padding-left:0;background:none;border:0;box-shadow:none}
+}
+/* the timetable's name box: the taskbar's Address bar */
+[data-skin="xp"] .idrow{background:#fff;border:1px solid var(--xp-field);border-radius:0;opacity:1;padding:2px 7px}
+[data-skin="xp"] .idrow input{color:#101010}
+[data-skin="xp"] .idrow .dom{color:#6d6a60;opacity:1}
+[data-skin="xp"][data-mode="dark"] .idrow{background:#0f1012;border-color:#5c6170}
+[data-skin="xp"][data-mode="dark"] .idrow input{color:#eee}
+[data-skin="xp"] .whoback{color:#1c55c6}
+
+/* ══ windows ══ */
+/* a title bar: the blue gloss, white bold Trebuchet */
+[data-skin="xp"] :is(.phead,.fhead,.dlg-h,.newshead,.sheethd){background:var(--xp-title);color:var(--xp-ink);border:0;border-radius:7px 7px 0 0;min-height:30px;
+  font-family:var(--font-display);text-shadow:var(--xp-ink-shadow)}
+:root[data-skin="xp"] :is(.dlg-h h2,.newshead h2,.sheethd h2,.fhead h2){margin:0 auto 0 0;font:700 .9375rem/1.2 var(--font-display);letter-spacing:0;text-transform:none;color:var(--xp-ink)}
+/* the poll */
+[data-skin="xp"] .pcard{padding:0 18px 16px;border:0;border-radius:8px 8px 0 0;background:var(--xp-face);box-shadow:var(--xp-frame),var(--xp-drop)}
+[data-skin="xp"] .phead{margin:0 -18px 14px;padding:4px 5px 4px 10px;flex-wrap:nowrap}
+[data-skin="xp"] .pchip{padding:0;background:none;color:var(--xp-ink);font:700 .875rem/1.2 var(--font-display);letter-spacing:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-skin="xp"] .pchip::before{width:14px;height:14px;border-radius:0;animation:none;box-shadow:none;flex:none;background:var(--xp-winicon)}
+[data-skin="xp"] .pright{flex-wrap:nowrap;gap:10px;flex:none}
+[data-skin="xp"] .pwhen{color:var(--xp-sub);font-family:var(--font-ui);text-shadow:none;font-size:.75rem}
+[data-skin="xp"] .pwhen b{color:var(--xp-ink)}
+/* its minimise button is a real one: XP's, with the restore glyph once it's down */
+[data-skin="xp"] .pminbtn{width:21px;height:21px;border-radius:3px;border:1px solid #fff;color:transparent;background:var(--xp-glyph-min) center/21px 21px no-repeat,var(--xp-tbutton)}
+[data-skin="xp"] .pminbtn svg{display:none}
+[data-skin="xp"] .pcard.pmin .pminbtn{background:var(--xp-glyph-restore) center/21px 21px no-repeat,var(--xp-tbutton)}
+[data-skin="xp"] .pminbtn:hover{filter:brightness(1.15);border-color:#fff}
+[data-skin="xp"] .pminbtn:active{filter:brightness(.85)}
+[data-skin="xp"] .pcard.pmin{padding-top:0;padding-bottom:10px}
+[data-skin="xp"] .pcard.pmin .phead{margin-bottom:10px}
+[data-skin="xp"] .pcard.pmin:hover{border:0}
+[data-skin="xp"] .pq{font-family:var(--font-display);font-weight:700;letter-spacing:0;color:var(--text)}
+[data-skin="xp"] .pin{background:#fff;color:#101010;border:1px solid var(--xp-field);border-radius:0}
+[data-skin="xp"] .pin:focus{border-color:var(--xp-sel);box-shadow:0 0 0 1px var(--xp-sel)}
+[data-skin="xp"][data-mode="dark"] .pin{background:#111214;color:#eee}
+[data-skin="xp"] .pbar{border-radius:3px;background:#fff;border:1px solid #8b8b83}
+[data-skin="xp"] .pfill{border-radius:0;background:linear-gradient(180deg,#e0ebff,#b7cdf5)}
+[data-skin="xp"] .pbar:first-child .pfill{background:repeating-linear-gradient(90deg,transparent 0 9px,rgba(255,255,255,.85) 9px 11px),linear-gradient(180deg,#bdf2b4 0,#5fd55a 35%,#3cc23c 65%,#62d85e 100%)}
+[data-skin="xp"][data-mode="dark"] .pbar{background:#141518;border-color:#000}
+[data-skin="xp"][data-mode="dark"] .pfill{background:linear-gradient(180deg,#2f4a7c,#22385f)}
+[data-skin="xp"][data-mode="dark"] .pbar:first-child .pfill{background:repeating-linear-gradient(90deg,transparent 0 9px,rgba(20,21,24,.9) 9px 11px),linear-gradient(180deg,#5ab85a 0,#2f8f2f 50%,#257a25 100%)}
+[data-skin="xp"] .plock span{border-radius:3px;background:#ffffe1;color:#101010;border:1px solid #000;box-shadow:2px 2px 3px rgba(0,0,0,.3)}
+[data-skin="xp"] .pfoot{border-top:1px solid var(--xp-edge);box-shadow:0 1px 0 rgba(255,255,255,.7) inset}
+[data-skin="xp"][data-mode="dark"] .pfoot{box-shadow:0 1px 0 rgba(255,255,255,.06) inset}
+[data-skin="xp"] .plink{color:var(--xp-link)}
+/* the forum */
+[data-skin="xp"] .forum{margin-top:26px;padding:0 16px 16px;border:0;border-radius:8px 8px 0 0;background:var(--xp-face);box-shadow:var(--xp-frame),var(--xp-drop)}
+[data-skin="xp"] .fhead{margin:0 -16px 14px;padding:4px 80px 4px 10px;position:relative;min-height:30px}
+[data-skin="xp"] .fhead::after{content:"";position:absolute;right:6px;top:4px;width:67px;height:21px;background:var(--xp-tbtns);pointer-events:none}
+[data-skin="xp"] .fhead:has(.fyear:not([hidden])){padding-right:6px}
+[data-skin="xp"] .fhead:has(.fyear:not([hidden]))::after{display:none}
+[data-skin="xp"] .fyear{padding:2px 10px;border-radius:3px;border:1px solid #fff;background:rgba(255,255,255,.14);color:#fff;font-family:var(--font-ui);text-shadow:none}
+[data-skin="xp"] .fyear[aria-pressed="true"]{background:var(--xp-tbbtn-on);border-color:#fff;color:#fff}
+[data-skin="xp"] .fpost{background:var(--panel);border:1px solid var(--xp-field);border-radius:0}
+[data-skin="xp"] .fpost.freply{background:var(--xp-face-hi);border-color:var(--xp-edge)}
+[data-skin="xp"] :is(.fnew textarea,.freplybox textarea,.ideaform input,.psug input){background:#fff;color:#101010;border:1px solid var(--xp-field);border-radius:0}
+[data-skin="xp"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.ideaform input,.psug input){background:#111214;color:#eee}
+[data-skin="xp"] :is(.fnew textarea,.freplybox textarea):focus{outline:1px solid var(--xp-sel);outline-offset:-1px}
+[data-skin="xp"] .rx{border-radius:3px;background:var(--xp-btn);border:1px solid #8f8c80;color:var(--xp-btn-ink)}
+[data-skin="xp"] .rx.mine{background:#dce7fb;border-color:var(--xp-sel)}
+[data-skin="xp"][data-mode="dark"] .rx.mine{background:#20345c}
+[data-skin="xp"] .rxadd{border-radius:3px}
+[data-skin="xp"] .rxpick{border-radius:0;background:#fff;border:1px solid #808080;box-shadow:2px 2px 4px rgba(0,0,0,.35)}
+[data-skin="xp"][data-mode="dark"] .rxpick{background:#1d1e22;border-color:#000}
+[data-skin="xp"] .rxpick button{border-radius:0}
+[data-skin="xp"] .rxpick button:hover{background:var(--xp-sel);color:#fff}
+[data-skin="xp"] .flink{color:var(--xp-link)}
+
+/* ══ Home's pages: shortcuts on the desktop ══ */
+[data-skin="xp"] .qtiles{gap:6px}
+[data-skin="xp"] .qtile{height:auto;min-height:calc(var(--tile-h) - .5rem);padding:8px 4px 6px;align-items:center;justify-content:flex-start;gap:6px;text-align:center;
+  background:none;border:0;border-radius:3px;box-shadow:none;color:#fff;transition:none}
+:root[data-skin="xp"] .qtile:hover{background:rgba(255,255,255,.08);transform:none;box-shadow:none}
+[data-skin="xp"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:3.25rem;height:3.25rem;border-radius:5px;
+  background:linear-gradient(180deg,#ffffff 0,#f3f6fb 50%,#dfe7f3 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 0 0 1px rgba(0,30,80,.32),2px 3px 4px rgba(0,20,50,.35)}
+[data-skin="xp"] .qtile .ico .ph{width:2.05rem;height:2.05rem}
+[data-skin="xp"] .qtile .tname{padding:1px 5px 2px;border-radius:1px;color:#fff;font-weight:400;font-size:.875rem;white-space:normal;line-height:1.25;text-shadow:1px 1px 1px #000,1px 1px 3px rgba(0,0,0,.6)}
+/* chosen, the name goes XP blue and the picture takes a blue tint */
+:root[data-skin="xp"] .qtile:is(:hover,:focus-visible) .tname{background:var(--xp-sel);text-shadow:none}
+[data-skin="xp"] .qtile:is(:hover,:focus-visible) .ico{background:linear-gradient(180deg,#c9d9f6,#9fbcef);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),0 0 0 1px #0b3c9e,2px 3px 4px rgba(0,20,50,.35)}
+[data-skin="xp"] .qtile:focus-visible{outline:0}
+[data-skin="xp"] .qtile:focus-visible .tname{outline:1px dotted #fff;outline-offset:1px}
+[data-skin="xp"][data-mode="dark"] .qtile .ico{background:linear-gradient(180deg,#4a4d55 0,#33353b 55%,#26282d 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 0 0 1px #000,2px 3px 5px rgba(0,0,0,.6)}
+[data-skin="xp"][data-mode="dark"] .qtile:is(:hover,:focus-visible) .ico{background:linear-gradient(180deg,#365caa,#22427f)}
+[data-skin="xp"] .tilepill{top:2px;right:calc(50% - 2.6rem)}
+@media (max-width:560px){ [data-skin="xp"] .qtile{padding:6px 2px 4px;gap:4px} [data-skin="xp"] .qtile .ico{width:2.6rem;height:2.6rem} [data-skin="xp"] .qtile .ico .ph{width:1.6rem;height:1.6rem}
+  [data-skin="xp"] .qtile .tname{font-size:.71875rem;padding:1px 3px} [data-skin="xp"] .tilepill{top:0;right:calc(50% - 2.1rem)} }
+@container hubnav (max-width:19em){ [data-skin="xp"] .qtile{flex-direction:row;justify-content:flex-start;text-align:left;min-height:3.25rem} [data-skin="xp"] .qtile .ico{width:2.3rem;height:2.3rem} [data-skin="xp"] .qtile .ico .ph{width:1.45rem;height:1.45rem} }
+/* today's daily games: XP's yellow balloon tips */
+[data-skin="xp"] .hubtoday{margin-top:12px}
+[data-skin="xp"] .tday{background:#ffffe1;color:#101010;border:1px solid #000;border-radius:7px;box-shadow:2px 3px 4px rgba(0,0,0,.3);transition:none}
+:root[data-skin="xp"] .tday:hover{background:#ffffe1;transform:none;box-shadow:2px 3px 4px rgba(0,0,0,.3),inset 0 0 0 1px #000}
+[data-skin="xp"] .tday .tdname{font-weight:700}
+[data-skin="xp"] .tday .tdstat{color:var(--xp-link);text-decoration:underline;font-weight:400}
+[data-skin="xp"] .tday.done .tdstat{color:#5d5a52;text-decoration:none}
+[data-skin="xp"][data-mode="dark"] .tday{background:#2a2b22;color:#f1f0dc;border-color:#000}
+[data-skin="xp"][data-mode="dark"] .tday .tdstat{color:#9cc0ff}
+[data-skin="xp"][data-mode="dark"] .tday.done .tdstat{color:#b4b3a0}
+[data-skin="xp"] :is(.newpill,.gamecard .newbanner){border-radius:2px;background:#f6a623;color:#101010;letter-spacing:.04em;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+[data-skin="xp"] .newsdot{background:#f6a623;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+/* the foot of Home sits on the wallpaper */
+[data-skin="xp"] .hubfoot{border-top:0;color:#fff;text-shadow:1px 1px 1px #000}
+[data-skin="xp"] :is(.hubfoot a,.hubfoot .footbtn){color:#fff}
+[data-skin="xp"] :is(.hubfoot a,.hubfoot .footbtn):hover{color:#fff;text-decoration:underline}
+[data-skin="xp"] .pollskip{color:#fff;text-shadow:1px 1px 1px #000}
+[data-skin="xp"] .hubfoot .ideaform{text-shadow:none}
+[data-skin="xp"] .hub .focusnote{color:#fff;opacity:1;text-shadow:1px 1px 1px #000}
+/* the HSC countdown: Internet Explorer's yellow information bar */
+[data-skin="xp"] .hscstrip{background:#ffffe1;color:#101010;border:1px solid #8d8d80;border-radius:0;box-shadow:1px 2px 3px rgba(0,0,0,.25)}
+[data-skin="xp"] .hscstrip a{color:var(--xp-link)}
+[data-skin="xp"][data-mode="dark"] .hscstrip{background:#2a2b22;color:#f1f0dc;border-color:#000}
+[data-skin="xp"][data-mode="dark"] .hscstrip a{color:#9cc0ff}
+
+/* ══ section names: bold, over XP's fading blue line ══ */
+[data-skin="xp"] :is(.sechd,.cathd){display:block;padding-bottom:4px;background:linear-gradient(90deg,#7ba2e7,rgba(123,162,231,0) 70%) 0 100%/100% 1px no-repeat;
+  font:700 .875rem/1.3 var(--font-display);letter-spacing:0;text-transform:none;color:#0b3a9e}
+[data-skin="xp"][data-mode="dark"] :is(.sechd,.cathd){color:#9fc0ff;background-image:linear-gradient(90deg,#5d7fc0,rgba(93,127,192,0) 70%)}
+[data-skin="xp"] .gsec{align-items:flex-end}
+[data-skin="xp"] .gsec .cathd{flex:1}
+
+/* ══ buttons: XP push buttons, an orange glow under the pointer; the one that matters is green ══ */
+:root[data-skin="xp"] :is(.btn,.popt,.lbopen):not(.gateskip){background:var(--xp-btn);border:1px solid var(--xp-btn-edge);border-radius:3px;color:var(--xp-btn-ink);box-shadow:none;font-family:var(--font-ui);
+  transition:none}
+:root[data-skin="xp"] :is(.btn,.popt,.lbopen):not(.gateskip):hover{background:var(--xp-btn);box-shadow:var(--xp-hot)}
+:root[data-skin="xp"] :is(.btn,.popt,.lbopen):not(.gateskip):active{background:var(--xp-btn-down);box-shadow:none;transform:none}
+:root[data-skin="xp"] :is(.btn,.popt,.lbopen):not(.gateskip):focus-visible{outline:1px dotted currentColor;outline-offset:-4px}
+:root[data-skin="xp"] .btn.primary{background:var(--xp-go);border-color:var(--xp-go-edge);color:#fff;font-weight:700;text-shadow:1px 1px 0 rgba(0,40,0,.45)}
+:root[data-skin="xp"] .btn.primary:hover{background:var(--xp-go);filter:brightness(1.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+:root[data-skin="xp"] .btn.primary:active{filter:brightness(.92)}
+:root[data-skin="xp"] .btn.primary:disabled{filter:grayscale(.6);opacity:.6}
+:root[data-skin="xp"] .btn.danger{color:#b8261b}
+:root[data-skin="xp"][data-mode="dark"] .btn.danger{color:#ff8b80}
+/* chosen among several: XP's selection blue */
+:root[data-skin="xp"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab){background:var(--xp-btn);border:1px solid var(--xp-btn-edge);border-radius:3px;color:var(--xp-btn-ink);box-shadow:none}
+:root[data-skin="xp"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.glbtab):hover{box-shadow:var(--xp-hot)}
+:root[data-skin="xp"] .glbtab.cur,:root[data-skin="xp"] :is(.modes button,.dayswitch button,.fyears button,.fweeks button,.diffpill,.popt)[aria-pressed="true"],:root[data-skin="xp"] .popt[aria-checked="true"]{background:var(--xp-sel);border-color:#0b2f80;color:#fff;box-shadow:inset 1px 1px 2px rgba(0,0,0,.35);transform:none}
+/* fields */
+[data-skin="xp"] :is(.emailrow,.gatepass,.pad,.field input[type=text],.custrow input.crin){background:#fff;color:#101010;border:1px solid var(--xp-field);border-radius:0;box-shadow:none}
+[data-skin="xp"][data-mode="dark"] :is(.emailrow,.gatepass,.pad,.field input[type=text],.custrow input.crin){background:#111214;color:#eee}
+[data-skin="xp"] .emailrow input{color:inherit}
+/* a combo box: XP's blue drop-down button */
+[data-skin="xp"] select:not([multiple]){-webkit-appearance:none;appearance:none;padding:4px 24px 4px 6px;border:1px solid var(--xp-field);border-radius:0;
+  background:#fff var(--xp-combo) right 1px center/17px calc(100% - 2px) no-repeat;color:#101010;font-family:var(--font-ui)}
+[data-skin="xp"][data-mode="dark"] select:not([multiple]){background-color:#111214;color:#eee}
+/* a checkbox, and the switches as XP checkboxes */
+[data-skin="xp"] input[type=checkbox]{-webkit-appearance:none;appearance:none;width:13px;height:13px;margin:0 2px;border:1px solid #1c5180;border-radius:0;flex:none;
+  background:linear-gradient(135deg,#dcdcd7,#fff);vertical-align:-2px;cursor:pointer}
+[data-skin="xp"] input[type=checkbox]:checked{background:var(--xp-check) center/13px 13px no-repeat,linear-gradient(135deg,#dcdcd7,#fff)}
+[data-skin="xp"] input[type=checkbox]:hover{box-shadow:inset 0 0 0 1px #fdd889,inset 0 0 0 2px #f8b330}
+[data-skin="xp"][data-mode="dark"] input[type=checkbox]{border-color:#7c8394;background-color:#111;background-image:linear-gradient(135deg,#1a1b1e,#3a3c42)}
+[data-skin="xp"][data-mode="dark"] input[type=checkbox]:checked{background-image:var(--xp-check),linear-gradient(135deg,#1a1b1e,#3a3c42);background-size:13px 13px,auto;background-position:center;background-repeat:no-repeat}
+[data-skin="xp"] .tsw{background:none;border:1px solid transparent;border-radius:0;padding:6px 6px;justify-content:flex-start;gap:8px;font-weight:400}
+[data-skin="xp"] .tsw:hover{border-color:transparent}
+[data-skin="xp"] .tsw i{order:-1;width:13px;height:13px;border-radius:0;border:1px solid #1c5180;background:linear-gradient(135deg,#dcdcd7,#fff);transition:none}
+[data-skin="xp"] .tsw i::after{display:none}
+[data-skin="xp"] .tsw[aria-checked="true"] i{background:var(--xp-check) center/13px 13px no-repeat,linear-gradient(135deg,#dcdcd7,#fff)}
+[data-skin="xp"] .tsw:hover i{box-shadow:inset 0 0 0 1px #fdd889,inset 0 0 0 2px #f8b330}
+[data-skin="xp"] .tsw:focus-visible{outline:1px dotted currentColor;outline-offset:-2px}
+[data-skin="xp"][data-mode="dark"] .tsw i{border-color:#7c8394;background:linear-gradient(135deg,#1a1b1e,#3a3c42)}
+[data-skin="xp"][data-mode="dark"] .tsw[aria-checked="true"] i{background:var(--xp-check) center/13px 13px no-repeat,linear-gradient(135deg,#1a1b1e,#3a3c42)}
+/* the slider */
+:root[data-skin="xp"] input[type=range]{accent-color:var(--xp-sel)}
+
+/* ══ dialogs: windows; the close button is XP's red one ══ */
+[data-skin="xp"] :is(dialog,.newsdlg,.sheet,.gatecard){background:var(--xp-face);border:0;border-radius:8px 8px 0 0;box-shadow:var(--xp-frame),var(--xp-drop);color:var(--text)}
+[data-skin="xp"] :is(dialog,.newsdlg){padding-bottom:4px}
+:root[data-skin="xp"] .dlg-h{padding:4px 5px 4px 10px;border-bottom:0}
+[data-skin="xp"] .newshead{padding:4px 5px 4px 10px;margin-bottom:8px}
+[data-skin="xp"] :is(.dlg-h,.newshead,.sheethd) .btn.icon{width:22px;height:22px;padding:0;border:1px solid #fff;border-radius:3px;background:var(--xp-close);color:#fff;box-shadow:none;filter:none}
+:root[data-skin="xp"] :is(.dlg-h,.newshead,.sheethd) .btn.icon:hover{background:var(--xp-close);box-shadow:none;filter:brightness(1.12)}
+:root[data-skin="xp"] :is(.dlg-h,.newshead,.sheethd) .btn.icon:active{background:var(--xp-close);filter:brightness(.85)}
+[data-skin="xp"] :is(.dlg-h,.newshead,.sheethd) .btn.icon .ph{width:15px;height:15px;stroke-width:2.5}
+[data-skin="xp"] :is(.dlg-h,.newshead,.sheethd) .btn.icon svg{width:14px;height:14px}
+:root[data-skin="xp"] .dlg-b{padding:16px 16px 12px}
+:root[data-skin="xp"] .dlg-f{border-top:0;padding:8px 14px 12px}
+:root[data-skin="xp"] :is(.field>label,.tbhead span){font-weight:700;letter-spacing:0;text-transform:none;font-size:.8125rem;color:var(--text)}
+[data-skin="xp"] .custrow{border-bottom-color:var(--xp-edge)}
+[data-skin="xp"] .hint{color:var(--muted)}
+[data-skin="xp"] :is(.skinbtn,.tfcard){border-radius:0}
+[data-skin="xp"] .skinbtn{border:1px solid var(--xp-edge)}
+[data-skin="xp"] .skinbtn[aria-pressed="true"]{border-color:var(--xp-sel);box-shadow:0 0 0 2px var(--xp-sel)}
+[data-skin="xp"] .skinbtn .nm{background:#fff}
+[data-skin="xp"][data-mode="dark"] .skinbtn .nm{background:var(--panel)}
+[data-skin="xp"] .sheet{border-radius:8px 8px 0 0}
+[data-skin="xp"] .sheetgrab{background:linear-gradient(180deg,#0a5de6 0,#3f97ff 2px,#2a87ff 4px,#1172fa 7px,#0461ee 11px,#0057e5 100%);border-radius:7px 7px 0 0;padding:6px 0 2px}
+[data-skin="xp"][data-mode="dark"] .sheetgrab{background:linear-gradient(180deg,#6c7079 0,#4b4e56 1px,#3a3d44 3px,#2c2e34 8px,#1f2025 100%)}
+[data-skin="xp"] .sheetgrab i{background:rgba(255,255,255,.55)}
+[data-skin="xp"] .sheethd{border-radius:0;padding:2px 6px 6px 12px;margin-bottom:10px}
+[data-skin="xp"] .gatecard{padding:0 24px 22px}
+[data-skin="xp"] .gatecard h2{margin:0 -24px 16px;padding:6px 12px;min-height:30px;background:var(--xp-title);border-radius:7px 7px 0 0;color:var(--xp-ink);font-size:1rem;text-shadow:var(--xp-ink-shadow)}
+[data-skin="xp"] dialog::backdrop{background:rgba(0,10,40,.35);backdrop-filter:none}
+
+/* ══ the timetable: one window, its title bar the week switch (the arrows are its buttons) ══ */
+[data-skin="xp"][data-pg="timetable"] .weekswitch{justify-content:flex-start;gap:3px;margin:0;padding:4px 5px 4px 10px;min-height:31px;background:var(--xp-title);border-radius:8px 8px 0 0;box-shadow:0 0 0 1px rgba(0,20,100,.4)}
+[data-skin="xp"][data-pg="timetable"] .weeklabel{order:-1;margin-right:auto;min-width:0;text-align:left;color:var(--xp-ink);font:700 .9375rem/1.2 var(--font-display);text-shadow:var(--xp-ink-shadow)}
+[data-skin="xp"][data-pg="timetable"] .weeklabel::before{content:"";display:inline-block;width:14px;height:14px;margin-right:8px;vertical-align:-2px;background:var(--xp-winicon)}
+:root[data-skin="xp"] .arrowbtn{width:21px;height:21px;border-radius:3px;border:1px solid #fff;background:var(--xp-tbutton);color:#fff;box-shadow:none;transition:none}
+:root[data-skin="xp"] .arrowbtn:hover{background:var(--xp-tbutton);color:#fff;border-color:#fff;filter:brightness(1.15)}
+:root[data-skin="xp"] .arrowbtn:active{transform:none;filter:brightness(.85)}
+[data-skin="xp"] .arrowbtn .ph{width:13px;height:13px}
+[data-skin="xp"][data-pg="timetable"] .dayswitch{margin:0;padding:8px 10px 6px;background:var(--xp-face);box-shadow:inset 1px 0 0 #0831d9,inset -1px 0 0 #001ea0,inset 4px 0 0 #166aee,inset -4px 0 0 #0b58dd}
+[data-skin="xp"][data-mode="dark"][data-pg="timetable"] .dayswitch{box-shadow:inset 1px 0 0 #000,inset -1px 0 0 #000,inset 4px 0 0 #2c2e33,inset -4px 0 0 #232428}
+[data-skin="xp"][data-pg="timetable"] .grid{padding:10px 12px 14px 6px;background:var(--xp-face);box-shadow:var(--xp-frame),var(--xp-drop)}
+[data-skin="xp"] .tmark{color:var(--muted);opacity:1}
+[data-skin="xp"] :is(.dayhead,.corner,.tcol){background:transparent}
+[data-skin="xp"] .dayhead .dow{font-family:var(--font-display);font-weight:700;letter-spacing:0}
+[data-skin="xp"] .dayhead .rule{height:2px;border-radius:0;opacity:1;background:none;border-top:1px solid var(--xp-edge);border-bottom:1px solid #fff}
+[data-skin="xp"][data-mode="dark"] .dayhead .rule{border-bottom-color:rgba(255,255,255,.06)}
+[data-skin="xp"] :is(.dayhead.today,.dayhead.focus) .dow{display:inline-block;padding:0 6px;background:var(--xp-sel);color:#fff}
+[data-skin="xp"] :is(.dayhead.today,.dayhead.focus) .rule{height:2px;border:0;background:var(--xp-sel);margin-top:8px}
+[data-skin="xp"] .dayhead small{color:inherit}
+[data-skin="xp"] .lesson{border:1px solid color-mix(in srgb,var(--c,var(--accent)) 45%,#77756c);border-radius:3px;color:#101010;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c,var(--accent)) 7%,#fff),color-mix(in srgb,var(--c,var(--accent)) 19%,#fff));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 1px 1px rgba(0,0,0,.08)}
+[data-skin="xp"] .lesson:hover{box-shadow:var(--xp-hot),0 1px 2px rgba(0,0,0,.15)}
+[data-skin="xp"] .lesson .s{font-family:var(--font-ui);font-weight:700;letter-spacing:0}
+[data-skin="xp"] .lesson.current{outline:0;box-shadow:inset 0 0 0 1px #fff0cf,inset 0 0 0 3px #f8b330,0 0 0 1px #c98a10}
+[data-skin="xp"][data-mode="dark"] .lesson{color:#eee;border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,#000);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c,var(--accent)) 22%,#2e3036),color-mix(in srgb,var(--c,var(--accent)) 12%,#1f2024));box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+[data-skin="xp"][data-mode="dark"] .lesson.current{box-shadow:inset 0 0 0 2px #f8b330,0 0 0 1px #000}
+[data-skin="xp"] .breakbar{background:rgba(255,255,255,.4);border:1px solid #d3cfbd;border-radius:3px;color:#5d5a52;opacity:1}
+[data-skin="xp"][data-mode="dark"] .breakbar{background:rgba(255,255,255,.03);border-color:#3c3e44;color:#a6a8b0}
+html.zen[data-skin="xp"] .breakbar{background:color-mix(in srgb,var(--xp-face) 92%,transparent)}
+[data-skin="xp"] .periodcell{color:var(--muted)}
+/* the lesson's own window */
+[data-skin="xp"] .dhead{border-bottom:1px solid var(--xp-edge)}
+
+/* ══ pages that are one piece: one window under the taskbar, titled with the page's name ══ */
+[data-skin="xp"][data-pg="games"]{--xp-name:"Games"}
+[data-skin="xp"][data-pg="calendar"]{--xp-name:"Calendar"}
+[data-skin="xp"][data-pg="free"]{--xp-name:"Free periods"}
+[data-skin="xp"][data-pg="revision"]{--xp-name:"Revision"}
+[data-skin="xp"][data-pg="resources"]{--xp-name:"Resources"}
+[data-skin="xp"][data-pg="notes"]{--xp-name:"Notes"}
+[data-skin="xp"][data-pg="mahjong"]{--xp-name:"Mahjong club"}
+[data-skin="xp"]:is([data-pg="finder"],[data-pg="themes"]){--xp-name:"Theme finder"}
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{overflow-y:clip;padding-bottom:40px;margin-bottom:30px}
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead{position:relative;margin-bottom:62px}
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead::after{
+  content:var(--xp-name) / "";position:absolute;left:0;right:0;top:calc(100% + 18px);height:60000px;z-index:-1;pointer-events:none;box-sizing:border-box;
+  padding:6px 84px 0 34px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--xp-ink);font:700 .9375rem/19px var(--font-display);text-shadow:var(--xp-ink-shadow);
+  border-radius:8px 8px 0 0;
+  background:var(--xp-tbtns) right 6px top 5px/67px 21px no-repeat,
+    var(--xp-winicon) 10px 8px/14px 14px no-repeat,
+    var(--xp-title) 0 0/100% 31px no-repeat,var(--xp-face);
+  box-shadow:var(--xp-frame),var(--xp-drop)}
+:root[data-skin="xp"][data-mode="dark"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead::after{
+  background:var(--xp-tbtns) right 6px top 5px/67px 21px no-repeat,var(--xp-winicon) 10px 8px/14px 14px no-repeat,var(--xp-title) 0 0/100% 31px no-repeat,var(--xp-face)}
+/* the window's foot: its frame closes along the bottom of the page */
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::after{
+  content:"";position:absolute;left:20px;right:20px;bottom:0;height:4px;z-index:-1;pointer-events:none;background:#0b58dd;box-shadow:inset 0 -1px 0 #001ea0,inset 1px 0 0 #0831d9,inset -1px 0 0 #001ea0}
+:root[data-skin="xp"][data-mode="dark"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::after{background:#232428;box-shadow:inset 0 -1px 0 #000,inset 1px 0 0 #000,inset -1px 0 0 #000}
+@media (max-width:640px){ :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap::after{left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right))} }
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{padding-left:34px;padding-right:34px}
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead{margin-left:-14px;margin-right:-14px}
+@media (max-width:640px){
+  :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{padding-left:max(24px,calc(env(safe-area-inset-left) + 10px));padding-right:max(24px,calc(env(safe-area-inset-right) + 10px))}
+  :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead{margin-left:-10px;margin-right:-10px}
+}
+:root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagelede{color:var(--muted);margin-top:0}
+[data-skin="xp"] .gamestage:not([hidden]){background:none}
+/* the game cards: items in the window, XP's tiles view */
+[data-skin="xp"] :is(.gamecard,.tile,.game,.lbbcard,.tfcard){background:var(--panel);border:1px solid var(--xp-field);border-radius:0;box-shadow:none;transition:none}
+:root[data-skin="xp"] :is(.gamecard,.tile,.game,.lbbcard,.tfcard):hover{transform:none;background:var(--panel);box-shadow:var(--xp-hot)}
+[data-skin="xp"] :is(.gamecard h2,.game h2,.tile .tname){font-family:var(--font-display);font-weight:700;letter-spacing:0}
+[data-skin="xp"] .gamecard:hover .ico{transform:none}
+[data-skin="xp"] .tfcard[aria-current="true"]{box-shadow:0 0 0 2px var(--xp-sel)}
+[data-skin="xp"] .tfnm{background:transparent}
+[data-skin="xp"] .tftag{border-radius:2px}
+[data-skin="xp"] .tftag.on{background:var(--xp-sel);border-color:var(--xp-sel);color:#fff}
+[data-skin="xp"] .tfh{font-family:var(--font-display);color:#0b3a9e;padding-bottom:4px;background:linear-gradient(90deg,#7ba2e7,rgba(123,162,231,0) 70%) 0 100%/100% 1px no-repeat}
+[data-skin="xp"][data-mode="dark"] .tfh{color:#9fc0ff}
+[data-skin="xp"] .tforig{border-top-color:var(--xp-edge)}
+[data-skin="xp"] .tfprev{background:var(--xp-face);border:0;border-radius:8px 8px 0 0;box-shadow:var(--xp-frame),var(--xp-drop)}
+[data-skin="xp"] .tfpvhead{background:var(--xp-title);border:0;border-radius:7px 7px 0 0;padding:4px 5px 4px 10px;min-height:30px}
+[data-skin="xp"] .tfpvhead h2{color:var(--xp-ink);font-size:.9375rem;text-shadow:var(--xp-ink-shadow)}
+[data-skin="xp"] .tfpvhead .tfpvcount{color:var(--xp-sub)}
+[data-skin="xp"] .tfpvhead .btn.icon{width:22px;height:22px;padding:0;border:1px solid #fff;background:var(--xp-tbutton);color:#fff}
+[data-skin="xp"] .tfpvhead .btn.icon:last-child{background:var(--xp-close)}
+[data-skin="xp"] .tfpvframe{border-radius:0;border-color:var(--xp-field)}
+[data-skin="xp"] .tfpvbar .modes button{border-radius:3px}
+
+/* ══ scrollbars: Luna's ══ */
+html[data-skin="xp"]::-webkit-scrollbar,[data-skin="xp"] ::-webkit-scrollbar{width:17px;height:17px}
+html[data-skin="xp"]::-webkit-scrollbar-track,[data-skin="xp"] ::-webkit-scrollbar-track{background:linear-gradient(90deg,#eeede5,#fdfdfa 30%,#f3f1ea)}
+html[data-skin="xp"]::-webkit-scrollbar-track:horizontal,[data-skin="xp"] ::-webkit-scrollbar-track:horizontal{background:linear-gradient(180deg,#eeede5,#fdfdfa 30%,#f3f1ea)}
+html[data-skin="xp"]::-webkit-scrollbar-thumb,[data-skin="xp"] ::-webkit-scrollbar-thumb{border:1px solid #fff;border-radius:3px;box-shadow:inset 0 0 0 1px #a4bdf5;
+  background:linear-gradient(#eef4fe,#eef4fe) center calc(50% - 4px)/7px 1px no-repeat,linear-gradient(#8cabe8,#8cabe8) center calc(50% - 3px)/7px 1px no-repeat,
+    linear-gradient(#eef4fe,#eef4fe) center calc(50% - 1px)/7px 1px no-repeat,linear-gradient(#8cabe8,#8cabe8) center 50%/7px 1px no-repeat,
+    linear-gradient(#eef4fe,#eef4fe) center calc(50% + 2px)/7px 1px no-repeat,linear-gradient(#8cabe8,#8cabe8) center calc(50% + 3px)/7px 1px no-repeat,
+    linear-gradient(90deg,#cbdafc,#bdd0fa 50%,#aec4f6)}
+html[data-skin="xp"]::-webkit-scrollbar-thumb:horizontal,[data-skin="xp"] ::-webkit-scrollbar-thumb:horizontal{background:linear-gradient(180deg,#cbdafc,#bdd0fa 50%,#aec4f6)}
+html[data-skin="xp"]::-webkit-scrollbar-thumb:hover,[data-skin="xp"] ::-webkit-scrollbar-thumb:hover{box-shadow:inset 0 0 0 1px #b4ccff;filter:brightness(1.05)}
+html[data-skin="xp"]::-webkit-scrollbar-corner,[data-skin="xp"] ::-webkit-scrollbar-corner{background:#f3f1ea}
+html[data-skin="xp"][data-mode="dark"]::-webkit-scrollbar-track,[data-skin="xp"][data-mode="dark"] ::-webkit-scrollbar-track{background:linear-gradient(90deg,#141518,#1d1e22 40%,#141518)}
+html[data-skin="xp"][data-mode="dark"]::-webkit-scrollbar-thumb,[data-skin="xp"][data-mode="dark"] ::-webkit-scrollbar-thumb{border-color:#000;box-shadow:inset 0 0 0 1px #5d6068;background:linear-gradient(90deg,#4a4d55,#3a3c42 50%,#2e3035)}
+html[data-skin="xp"][data-mode="dark"]::-webkit-scrollbar-corner,[data-skin="xp"][data-mode="dark"] ::-webkit-scrollbar-corner{background:#141518}
+
+/* ══ Separated header: no taskbar; what was on it sits on the wallpaper, so it is lettered to stay readable ══ */
+:root[data-skin="xp"][data-header="split"] :is(.brand h1,.hubid h1,.pagehead h1,.hubsub,.brand>span){color:#fff;text-shadow:1px 1px 1px #000,0 0 6px rgba(0,0,0,.45)}
+:root[data-skin="xp"][data-header="split"] .pagehead{border-bottom:0}

@@ -546,3 +546,4 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .fyear:hover{color:var(--text);border-color:color-mix(in srgb,var(--text) 30%,var(--line))}
 .fyear[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .fyear:disabled{opacity:.6;cursor:progress}
+.fheadbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
