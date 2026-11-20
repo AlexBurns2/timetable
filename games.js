@@ -1811,7 +1811,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120c';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4543,6 +4543,10 @@ BUILD.leaderboards = host => {
 
 /* ── Moderator page (moderators only, checked on the server): how the site is
    used, the people, the forum and shared decks, site settings, and every board ── */
+/* the moderator's poll planner: changes waiting to be saved, by week ({...the question} or {remove:true}),
+   and where it was. Kept while the games page is open, so switching tabs doesn't lose them. */
+const pollDrafts = new Map(), pollErr = new Map();
+let pollAt = null, pollNote = '', pollBusy = '';
 BUILD.admin = host => {
   head(host, 'Moderator', 'Changes happen straight away and everyone sees them.', '<div id="adm"></div>');
   const box = $('adm');
@@ -4596,6 +4600,9 @@ BUILD.admin = host => {
   $('admwipe').onclick = wipeBoard;
   $('admsync').onclick = syncSprint;
   load();
+  /* unsaved poll changes: ask before the page is left */
+  const warnUnsaved = e => { if (pollDrafts.size){ e.preventDefault(); e.returnValue = ''; } };
+  addEventListener('beforeunload', warnUnsaved);
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
@@ -4864,6 +4871,12 @@ BUILD.admin = host => {
       catch (e){ b.disabled = false; alert(e.message); }
     });
   }
+  /* The weekly poll's planner: every school week from now to Year 12's last term before the HSC (the
+     server's list, api/_poll.js schoolWeeks), one form for the week picked, and the list under it.
+     Edits wait as unsaved changes (pollDrafts, kept while the games page is open) until the Save bar
+     sends them all at once (pollbatch), so many weeks can be set up without a reload after each. A
+     question that has opened (this week's, live, and every past one) is locked: no Edit, Remove or
+     Collect, and the server refuses any change to it too, so its votes can't be touched. */
   function renderPolls(){
     const KINDS = { period:'A period (0 to 7)', student:'A student in their year', teacher:'A teacher', class:'A subject in their year', custom:'Your own answers' };
     /* Monday: how the new question takes over the card. Friday: the winner's celebration. */
@@ -4879,16 +4892,47 @@ BUILD.admin = host => {
         return 'The ' + m[1].toLowerCase() + ' ' + m[2] + ' is…';
       return 'And the winner is…';
     };
-    const polls = data.polls || [], byWeek = new Map(polls.map(p => [p.week, p]));
+    const polls = data.polls || [], saved = new Map(polls.map(p => [p.week, p]));
+    const thisWeek = (data.clock && data.clock.week) || (data.weeks || [''])[0];
+    const info = new Map((data.schoolWeeks || []).map(s => [s.week, s]));
+    /* the planner's weeks: each school week from now on, any later question set outside them (in the holidays, say), and any week with a change waiting */
+    const plan = [...new Set((data.schoolWeeks || []).map(s => s.week).concat(polls.map(p => p.week), [...pollDrafts.keys()]))]
+      .filter(w => w >= thisWeek || pollDrafts.has(w)).sort();
+    const past = polls.filter(p => p.week < thisWeek && !pollDrafts.has(p.week)).slice(0, 30);
+    const lastSchool = (data.schoolWeeks || []).slice(-1)[0];
+    /* opened (live or past) or voted on: nothing about it can change. This week can still get a question if it has none. */
+    const locked = w => { const p = saved.get(w); return !!p && (w <= thisWeek || (p.voters || 0) > 0); };
+    const lockWhy = w => { const n = (saved.get(w) || {}).voters || 0;
+      return n ? n + (n === 1 ? ' person has' : ' people have') + ' voted on this one, so it can’t be changed.' : 'This week’s question is live, so it can’t be changed.'; };
+    const clean = s => String(s || '').replace(/\s+/g, ' ').trim();
+    const BLANK = { question:'', kind:'student', pick:1, exact:false, anim:'surprise', celebrate:'surprise', reveal:'', choices:[] };
+    const asVals = p => ({ week:p.week, question:clean(p.question), kind:p.kind, pick:p.pick || 1, exact:!!(p.exact && p.pick > 1),
+      anim:SHOWS[p.anim] ? p.anim : 'surprise', celebrate:CELEBS[p.celebrate] ? p.celebrate : 'surprise', reveal:clean(p.reveal),
+      choices:p.kind === 'custom' ? (p.choices || []).map(clean).filter(Boolean) : [] });
+    const formVals = () => {
+      const pv = $('pfpick').value, kind = $('pfkind').value;
+      return { week:pollAt, question:clean($('pfq').value), kind, pick:parseInt(pv, 10) || 1, exact:/x$/.test(pv),
+        anim:$('pfanim').value, celebrate:$('pfcel').value, reveal:clean($('pfline').value),
+        choices:kind === 'custom' ? $('pfchoices').value.split('\n').map(clean).filter(Boolean) : [] };
+    };
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);       // (both built in the same key order)
+    /* what a week holds now: its change waiting to be saved, or else what's saved */
+    const current = w => { const d = pollDrafts.get(w); if (d && !d.remove) return d; const p = saved.get(w); return p ? asVals(p) : null; };
     const day = w => new Date(w + 'T00:00:00').toLocaleDateString(undefined, { day:'numeric', month:'short' });
-    const weeks = (data.weeks || []).map((w, i) => '<option value="' + w + '">' + (i === 0 ? 'This week (' + day(w) + ')' : 'Week of ' + day(w)) +
-      (byWeek.has(w) ? ' · set' : '') + '</option>').join('');
+    const termOf = w => { const s = info.get(w); return s ? 'Term ' + s.term + ', ' + s.year : 'Outside term'; };
+    const wkOf = w => { const s = info.get(w); return s ? 'Week ' + s.n : 'Holidays'; };
+    const detail = v => (KINDS[v.kind] || v.kind) + (v.pick > 1 ? (v.exact ? ' · exactly ' : ' · up to ') + v.pick : '') +
+      (v.kind === 'custom' ? ': ' + v.choices.join(', ') : '') + ' · ' + (SHOWS[v.anim] || v.anim) + ' / ' + (CELEBS[v.celebrate] || v.celebrate);
+    const firstFree = () => plan.find(w => !locked(w) && !current(w)) || plan.find(w => !locked(w)) || plan[0];
+    if (!plan.includes(pollAt)) pollAt = firstFree();
     const opts = (o, sel) => Object.entries(o).map(([k, v]) => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(v) + '</option>').join('');
-    $('admnote').textContent = 'A new question opens every Monday at 9:30. Voters see the live results; the winner is announced Friday at noon, when voting closes. Votes are anonymous: nobody, moderators included, can see who picked what.';
+    $('admnote').textContent = 'A new question opens every Monday at 9:30. Voters see the live results; the winner is announced Friday at noon, when voting closes. ' +
+      'Votes are anonymous: nobody, moderators included, can see who picked what. Once a question has opened it can’t be changed or removed, so its votes are safe.';
     $('admbody').innerHTML =
-      '<div class="pollform">' +
+      '<div class="pollform" id="pollform">' +
         '<h4>Set a question</h4>' +
-        '<label>Week<select id="pfweek">' + weeks + '</select></label>' +
+        '<label>Week<select id="pfweek"></select></label>' +
+        '<p class="pfhint pfstate" id="pfstate" aria-live="polite"></p>' +
         '<label class="wide">Question<input id="pfq" maxlength="120" placeholder="Most likely to become state rank?" autocomplete="off"></label>' +
         '<label>People answer with<select id="pfkind">' + opts(KINDS, 'student') + '</select></label>' +
         '<label>How many they pick<select id="pfpick"><option value="1">One</option><option value="2">Up to two</option><option value="2x">Exactly two</option>' +
@@ -4901,86 +4945,211 @@ BUILD.admin = host => {
           '<button class="btn" type="button" id="pfprevr">Preview Friday</button>' +
           '<span class="pfhint">Opens Home in a new tab and plays it. A preview doesn’t count as seeing it.</span></div>' +
         '<p class="pfhint wide" id="pfkindhint"></p>' +
-        '<div class="pfrow wide"><button class="btn primary" type="button" id="pfsave">Save</button><span class="pfmsg" id="pfmsg"></span></div>' +
+        '<p class="pfhint wide">Changes wait here until you save, so you can set up as many weeks as you like and save them together.</p>' +
       '</div>' +
-      '<h4 class="pollh">Scheduled and past</h4>' +
-      (polls.length ? polls.map(p => '<div class="adminrow pollrow">' +
-          '<span class="wk">' + esc(day(p.week)) + '</span>' +
-          '<span class="nm"><b>' + esc(p.question) + '</b><em>' + esc(KINDS[p.kind] || p.kind) + (p.pick > 1 ? (p.exact ? ' · exactly ' : ' · up to ') + p.pick : '') +
-            (p.kind === 'custom' ? ': ' + esc((p.choices || []).join(', ')) : '') +
-            (p.kind === 'class' ? ' · subjects: ' + ((p.subjectsDone || []).length ? 'Years ' + esc(p.subjectsDone.slice().sort((a, b) => a - b).join(', ')) : 'not collected yet (Save again)') : '') + ' · ' + esc(SHOWS[p.anim] || p.anim) + ' / ' + esc(CELEBS[p.celebrate] || p.celebrate || '') + '</em></span>' +
-          '<span class="vt">' + p.voters + ' voted</span>' +
-          (p.week >= (data.weeks || [''])[0] ? '<button class="btn" type="button" data-edit="' + p.week + '">Edit</button>' : '') +
-          (!p.voters && p.week >= (data.weeks || [''])[0] ? '<button class="del" type="button" data-pdel="' + p.week + '">Remove</button>' : '') +
-        '</div>').join('') : '<p class="how">Nothing scheduled yet.</p>') +
-      '<h4 class="pollh">Suggestions from students</h4>' +
-      ((data.suggestions || []).length ? data.suggestions.map(sg => '<div class="adminrow pollrow">' +
-          '<span class="nm"><b>' + esc(sg.question) + '</b><em>' + esc(KINDS[sg.kind] || 'No answer type given') + ' · ' + esc(sg.by) + ' · ' + esc(seenAgo(sg.at)) + '</em></span>' +
-          '<button class="btn" type="button" data-use="' + esc(sg.id) + '">Use</button>' +
-          '<button class="del" type="button" data-sdel="' + esc(sg.id) + '">Dismiss</button></div>').join('')
-        : '<p class="how">None yet.</p>');
+      '<h4 class="pollh">Every school week' + (lastSchool ? ' to the end of Term ' + lastSchool.term + ', ' + lastSchool.year : '') + '</h4>' +
+      '<p class="pfhint">Year 12’s last term before the HSC. Holidays are left out.</p>' +
+      '<div id="pollplan"></div>' +
+      (past.length ? '<h4 class="pollh">Past</h4><div id="pollpast"></div>' : '') +
+      '<h4 class="pollh">Suggestions from students</h4><div id="pollsugg"></div>' +
+      '<div class="pollbar" id="pollbar" hidden><span id="pbmsg" aria-live="polite"></span>' +
+        '<button class="btn" type="button" id="pbdiscard">Discard</button><button class="btn primary" type="button" id="pbsave">Save</button></div>';
 
+    const FIELDS = ['pfq', 'pfkind', 'pfpick', 'pfchoices', 'pfanim', 'pfcel', 'pfline'];
     const kindHint = () => {
       const k = $('pfkind').value;
       $('pfcwrap').hidden = k !== 'custom';
       $('pfkindhint').textContent = k === 'student' ? 'Results name real people to their whole year. Keep it kind: nothing anyone would be upset to win.'
-        : k === 'class' ? 'Each year picks from every subject in that year, with results by year. Saving collects the subjects from the year’s timetables (a minute or two).'
+        : k === 'class' ? 'Each year picks from every subject in that year, with results by year. Saving collects the subjects from the year’s timetables (a minute or two a week; weeks next year are collected once that year has started, and never once a question is live).'
         : k === 'teacher' ? 'Any teacher in the school directory.' : '';
-    };
-    const fill = p => {
-      $('pfweek').value = p.week; $('pfq').value = p.question; $('pfkind').value = p.kind;
-      $('pfpick').value = String(p.pick || 1) + (p.exact && p.pick > 1 ? 'x' : ''); $('pfanim').value = SHOWS[p.anim] ? p.anim : 'surprise';
-      $('pfcel').value = CELEBS[p.celebrate] ? p.celebrate : 'surprise'; $('pfline').value = p.reveal || '';
-      $('pfchoices').value = (p.choices || []).join('\n'); kindHint(); lineHint();
     };
     /* the line's placeholder is what Home would say if it's left empty */
     const lineHint = () => { $('pfline').placeholder = autoLine($('pfq').value, $('pfkind').value) + '  (left empty, it says this)'; };
-    $('pfq').addEventListener('input', lineHint); $('pfkind').addEventListener('change', lineHint); lineHint();
-    $('pfkind').onchange = kindHint; kindHint();
-    $('pfweek').onchange = () => { const p = byWeek.get($('pfweek').value); if (p) fill(p); };
-    { const p = byWeek.get($('pfweek').value); if (p) fill(p); }
+    const mark = w => locked(w) ? ((saved.get(w) || {}).voters ? ' · voted, locked' : ' · live, locked') : pollDrafts.has(w) ? (pollDrafts.get(w).remove ? ' · to remove' : ' · not saved') : saved.has(w) ? ' · set' : '';
+    const paintWeeks = () => {
+      let html = '', grp = null;
+      for (const w of plan){
+        const g = termOf(w);
+        if (g !== grp){ html += (grp !== null ? '</optgroup>' : '') + '<optgroup label="' + esc(g) + '">'; grp = g; }
+        html += '<option value="' + w + '">' + esc(wkOf(w) + ' · ' + day(w) + (w === thisWeek ? ' (this week)' : '') + mark(w)) + '</option>';
+      }
+      $('pfweek').innerHTML = html + (grp !== null ? '</optgroup>' : '');
+      $('pfweek').value = pollAt;
+    };
+    const paintState = () => {
+      const w = pollAt, p = saved.get(w), d = pollDrafts.get(w), err = pollErr.get(w), el = $('pfstate');
+      el.textContent = locked(w) ? lockWhy(w)
+        : err ? err
+        : d && d.remove ? 'Removed when you save. Change anything to keep it.'
+        : d ? (p ? 'Changed, not saved yet.' : 'New, not saved yet.')
+        : p ? 'Saved.' : 'Nothing set for this week yet.';
+      el.classList.toggle('err', !!err && !locked(w));
+    };
+    const fill = () => {
+      const w = pollAt, v = current(w) || BLANK, lock = locked(w);
+      $('pfq').value = v.question; $('pfkind').value = KINDS[v.kind] ? v.kind : 'student';
+      $('pfpick').value = String(v.pick || 1) + (v.exact && v.pick > 1 ? 'x' : '');
+      $('pfanim').value = v.anim; $('pfcel').value = v.celebrate; $('pfline').value = v.reveal || ''; $('pfchoices').value = (v.choices || []).join('\n');
+      FIELDS.forEach(id => { $(id).disabled = lock; });
+      kindHint(); lineHint(); paintState();
+    };
+    /* keep what the form says as this week's change (or drop the change, if it's back to what's saved) */
+    const stage = () => {
+      const w = pollAt; if (!w || locked(w)) return;
+      const v = formVals(), p = saved.get(w);
+      if (same(v, p ? asVals(p) : Object.assign({ week:w }, BLANK))) pollDrafts.delete(w); else pollDrafts.set(w, v);
+      pollErr.delete(w); pollNote = '';
+      paintState(); paintWeeks(); paintPlan(); paintBar();
+    };
+    const go = w => { pollAt = w; paintWeeks(); fill(); paintPlan(); };
+    const thisYear = String(new Date().getFullYear());
+    const rowHtml = w => {
+      const p = saved.get(w), d = pollDrafts.get(w), lock = locked(w), v = current(w), err = pollErr.get(w);
+      const tags = [];
+      if (w === thisWeek) tags.push('<span class="ptag">This week</span>');
+      if (lock) tags.push('<span class="ptag">' + (p.voters ? 'Voted on' : 'Live') + ', locked</span>');
+      if (d) tags.push(d.remove ? '<span class="ptag rm">Removed when you save</span>' : '<span class="ptag new">' + (p ? 'Changed' : 'New') + ', not saved</span>');
+      const sub = !v || v.kind !== 'class' ? ''
+        : d && !d.remove ? ' · subjects collected when you save'
+        : ' · subjects: ' + ((p.subjectsDone || []).length ? 'Years ' + p.subjectsDone.slice().sort((a, b) => a - b).join(', ') : 'not collected yet');
+      const collect = p && p.kind === 'class' && !lock && !d && w > thisWeek && (p.subjectsDone || []).length < 6 && w.slice(0, 4) <= thisYear;
+      return '<div class="adminrow pollrow' + (w === pollAt ? ' on' : '') + '">' +
+        '<span class="wk">' + esc(wkOf(w)) + '<br>' + esc(day(w)) + '</span>' +
+        '<span class="nm">' + (v ? '<b>' + esc(v.question || 'No question yet') + '</b><em>' + esc(detail(v) + sub) + '</em>' : '<em>Nothing set</em>') +
+          (tags.length ? '<span class="ptags">' + tags.join('') + '</span>' : '') + (err ? '<em class="perr">' + esc(err) + '</em>' : '') + '</span>' +
+        '<span class="pact">' + (p ? '<span class="vt">' + p.voters + ' voted</span>' : '') +
+        (collect ? '<button class="btn" type="button" data-collect="' + w + '">Collect subjects</button>' : '') +
+        (lock ? '' : '<button class="btn" type="button" data-edit="' + w + '">' + (v ? 'Edit' : 'Set') + '</button>') +
+        (d ? '<button class="btn" type="button" data-undo="' + w + '">Undo</button>'
+           : p && !lock ? '<button class="del" type="button" data-pdel="' + w + '">Remove</button>' : '') +
+      '</span></div>';
+    };
+    const paintPlan = () => {
+      let html = '', grp = null;
+      for (const w of plan){
+        const g = termOf(w);
+        if (g !== grp){ html += (grp !== null ? '</div>' : '') + '<h5 class="pollterm">' + esc(g) + '</h5><div>'; grp = g; }
+        html += rowHtml(w);
+      }
+      const box = $('pollplan');
+      box.innerHTML = html + (grp !== null ? '</div>' : '');
+      box.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
+        go(b.dataset.edit); $('pollform').scrollIntoView({ block:'start' }); try { $('pfq').focus({ preventScroll:true }); } catch {}
+      });
+      box.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => {
+        pollDrafts.delete(b.dataset.undo); pollErr.delete(b.dataset.undo);
+        if (b.dataset.undo === pollAt) fill();
+        paintWeeks(); paintPlan(); paintBar();
+      });
+      box.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => {
+        pollDrafts.set(b.dataset.pdel, { week:b.dataset.pdel, remove:true }); pollErr.delete(b.dataset.pdel);
+        if (b.dataset.pdel === pollAt) fill();
+        paintWeeks(); paintPlan(); paintBar();
+      });
+      box.querySelectorAll('[data-collect]').forEach(b => b.onclick = async () => {
+        if (pollBusy) return;
+        await collect(b.dataset.collect); pollBusy = ''; paintBar(); await refresh();
+      });
+    };
+    const paintPast = () => {
+      const box = $('pollpast'); if (!box) return;
+      box.innerHTML = past.map(p => { const v = asVals(p);
+        return '<div class="adminrow pollrow"><span class="wk">' + esc(day(p.week)) + '</span>' +
+          '<span class="nm"><b>' + esc(v.question) + '</b><em>' + esc(detail(v)) + '</em></span>' +
+          '<span class="vt">' + p.voters + ' voted</span></div>'; }).join('');
+    };
+    const paintSugg = () => {
+      const list = data.suggestions || [], box = $('pollsugg');
+      box.innerHTML = list.length ? list.map(sg => '<div class="adminrow pollrow">' +
+          '<span class="nm"><b>' + esc(sg.question) + '</b><em>' + esc(KINDS[sg.kind] || 'No answer type given') + ' · ' + esc(sg.by) + ' · ' + esc(seenAgo(sg.at)) + '</em></span>' +
+          '<button class="btn" type="button" data-use="' + esc(sg.id) + '">Use</button>' +
+          '<button class="del" type="button" data-sdel="' + esc(sg.id) + '">Dismiss</button></div>').join('')
+        : '<p class="how">None yet.</p>';
+      box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
+        const sg = list.find(x => x.id === b.dataset.use); if (!sg) return;
+        if (locked(pollAt)) go(firstFree());
+        $('pfq').value = sg.question; if (KINDS[sg.kind]) $('pfkind').value = sg.kind;
+        kindHint(); lineHint(); stage();
+        $('pollform').scrollIntoView({ block:'start' }); try { $('pfq').focus({ preventScroll:true }); } catch {}
+      });
+      box.querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => {
+        b.disabled = true;
+        try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.sdel } });
+              data.suggestions = (data.suggestions || []).filter(x => x.id !== b.dataset.sdel); paintSugg(); }
+        catch (e){ b.disabled = false; alert(e.message); }
+      });
+    };
+    const paintBar = () => {
+      const bar = $('pollbar'); if (!bar) return;
+      const n = pollDrafts.size;
+      bar.hidden = !n && !pollNote && !pollBusy;
+      $('pbmsg').textContent = pollBusy || ((n ? n + (n === 1 ? ' change' : ' changes') + ' not saved yet.' : '') + (pollNote ? (n ? ' ' : '') + pollNote : ''));
+      $('pbsave').hidden = $('pbdiscard').hidden = !n;
+      $('pbsave').disabled = $('pbdiscard').disabled = !!pollBusy;
+      $('pbsave').textContent = n === 1 ? 'Save 1 change' : 'Save ' + n + ' changes';
+    };
+    /* the list again, quietly (no spinner), once everything has gone */
+    const refresh = async () => {
+      try { const d = await TT.api('/api/forum', { params:{ poll:'admin' } }); if (cur.kind === 'p' || cur.kind === 'i'){ data = d; render(); } }
+      catch (e){ pollNote = 'Saved, but the list didn’t refresh (' + e.message + ').'; paintBar(); }
+    };
+    /* a class question: every subject each year takes, a slice of the year at a time (years already done are skipped) */
+    const collect = async w => {
+      const missed = [];
+      for (let y = 7; y <= 12; y++){
+        let from = 0;
+        try {
+          while (from !== null){
+            pollBusy = 'Collecting Year ' + y + ' subjects for ' + day(w) + '…'; paintBar();
+            const r = await TT.api('/api/forum', { method:'POST', body:{ action:'pollsubjects', week:w, year:y, from } });
+            from = r.next;
+          }
+        } catch (e){ missed.push(y); }
+      }
+      if (missed.length) pollErr.set(w, 'Year ' + missed.join(', ') + ' subjects didn’t collect (they pick from their own until you collect again).');
+    };
+    const save = async () => {
+      if (!pollDrafts.size || pollBusy) return;
+      const sent = new Map(pollDrafts), set = [], remove = [];
+      for (const [w, d] of sent) if (d.remove) remove.push(w); else set.push(d);
+      pollBusy = 'Saving ' + (sent.size === 1 ? '1 change' : sent.size + ' changes') + '…'; pollNote = ''; paintBar();
+      let res;
+      try { res = await TT.api('/api/forum', { method:'POST', body:{ action:'pollbatch', set, remove } }); }
+      catch (e){ pollBusy = ''; pollNote = 'Nothing was saved: ' + e.message; paintBar(); return; }
+      let ok = 0, bad = 0;
+      const classes = [];
+      for (const r of res.results || []){
+        if (r.ok){
+          ok++; const d = sent.get(r.week);
+          if (d && !d.remove && d.kind === 'class') classes.push(r.week);
+          if (pollDrafts.get(r.week) === d) pollDrafts.delete(r.week);          // (unless it was changed again while saving)
+          pollErr.delete(r.week);
+        } else { bad++; pollErr.set(r.week, r.error || 'Couldn’t save that.'); }
+      }
+      /* not for a question that's already live (it can't change), nor next year's (its classes aren't set yet; collect them once it starts) */
+      for (const w of classes) if (w > thisWeek && w.slice(0, 4) <= thisYear) await collect(w);
+      pollBusy = '';
+      pollNote = bad ? ok + ' saved, ' + bad + ' not (marked in the list).' : 'Saved ' + (ok === 1 ? '1 change.' : ok + ' changes.');
+      await refresh();
+    };
+    $('pbsave').onclick = save;
+    $('pbdiscard').onclick = () => {
+      const n = pollDrafts.size;
+      if (!n || !confirm('Discard ' + (n === 1 ? 'this unsaved change?' : 'these ' + n + ' unsaved changes?'))) return;
+      pollDrafts.clear(); pollErr.clear(); pollNote = '';
+      fill(); paintWeeks(); paintPlan(); paintBar();
+    };
+    $('pfweek').onchange = () => go($('pfweek').value);
+    $('pfq').addEventListener('input', () => { lineHint(); stage(); });
+    $('pfkind').addEventListener('change', () => { kindHint(); lineHint(); stage(); });
+    ['pfpick', 'pfanim', 'pfcel'].forEach(id => $(id).addEventListener('change', stage));
+    ['pfchoices', 'pfline'].forEach(id => $(id).addEventListener('input', stage));
     const pick = (sel, all) => sel.value === 'surprise' ? Object.keys(all)[1 + Math.floor(Math.random() * (Object.keys(all).length - 1))] : sel.value;
     $('pfprev').onclick = () => window.open('home.html?pollpreview=intro&from=final&anim=' + encodeURIComponent(pick($('pfanim'), SHOWS)), '_blank');
     $('pfprevr').onclick = () => window.open('home.html?pollpreview=reveal&anim=' + encodeURIComponent(pick($('pfcel'), CELEBS)) +
       '&kind=' + encodeURIComponent($('pfkind').value) + '&q=' + encodeURIComponent($('pfq').value) + '&line=' + encodeURIComponent($('pfline').value), '_blank');
-    $('pfsave').onclick = async () => {
-      const b = $('pfsave'); b.disabled = true; $('pfmsg').textContent = '';
-      try {
-        await TT.api('/api/forum', { method:'POST', body:{ action:'pollset', week:$('pfweek').value, question:$('pfq').value,
-          kind:$('pfkind').value, pick:parseInt($('pfpick').value, 10), exact:/x$/.test($('pfpick').value), anim:$('pfanim').value, celebrate:$('pfcel').value, reveal:$('pfline').value,
-          choices:$('pfchoices').value.split('\n').map(x => x.trim()).filter(Boolean) } });
-        /* a class question: gather every subject each year takes (a slice at a time; years already done are skipped) */
-        if ($('pfkind').value === 'class'){
-          const week = $('pfweek').value, missed = [];
-          for (let y = 7; y <= 12; y++){
-            let from = 0;
-            try {
-              while (from !== null){
-                $('pfmsg').textContent = 'Saved. Collecting Year ' + y + ' subjects…';
-                const r = await TT.api('/api/forum', { method:'POST', body:{ action:'pollsubjects', week, year:y, from } });
-                from = r.next;
-              }
-            } catch (e){ missed.push(y); }
-          }
-          $('pfmsg').textContent = missed.length ? 'Saved, but Year ' + missed.join(', ') + ' subjects didn’t collect (they’ll pick from their own until you Save again).' : 'Saved, with every year’s subjects.';
-        } else $('pfmsg').textContent = 'Saved.';
-        await load();
-      } catch (e){ $('pfmsg').textContent = e.message; b.disabled = false; }
-    };
-    $('admbody').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { fill(byWeek.get(b.dataset.edit)); $('pfq').focus(); });
-    $('admbody').querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
-      if (!confirm('Remove this question? Nobody has voted on it yet.')) return;
-      try { await TT.api('/api/forum', { method:'POST', body:{ action:'polldel', week:b.dataset.pdel } }); await load(); }
-      catch (e){ alert(e.message); }
-    });
-    $('admbody').querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
-      const sg = (data.suggestions || []).find(x => x.id === b.dataset.use); if (!sg) return;
-      $('pfq').value = sg.question; if (sg.kind) $('pfkind').value = sg.kind; kindHint(); $('pfq').focus();
-    });
-    $('admbody').querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => {
-      try { await TT.api('/api/forum', { method:'POST', body:{ action:'suggestdel', id:b.dataset.sdel } }); await load(); }
-      catch (e){ alert(e.message); }
-    });
+    paintWeeks(); fill(); paintPlan(); paintPast(); paintSugg(); paintBar();
+    if (pollNote && !pollDrafts.size){ const note = pollNote; setTimeout(() => { if (pollNote === note){ pollNote = ''; paintBar(); } }, 6000); }
   }
 
   function renderMahjong(){
@@ -5054,7 +5223,7 @@ BUILD.admin = host => {
       render();
     } catch(e){ alert('Could not sync: ' + e.message); }
   }
-  return () => {};
+  return () => removeEventListener('beforeunload', warnUnsaved);
 };
 
 /* ── Flashcards (revision): make decks and study them; saved to your account ── */

@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261120';
+const ASSET_V = '20261120c';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -176,6 +176,26 @@ const PG = (() => {
   if (f === 'poll') f = 'home';
   return f;
 })();
+
+/* NSW public school terms (Eastern division): the students' first and last days, the same dates as the
+   timetable's table (index.html TERMS) and the poll's (api/_poll.js TERMS). Add the next year's once the
+   Department publishes them. schoolBreak(date): the holidays that day falls in, named after the term just
+   ended ({ name, back: the first day back, summer }), or null in term (weekends too) or past the table. */
+const TERM_DAYS = [
+  ['2026-02-02','2026-04-02'], ['2026-04-22','2026-07-03'], ['2026-07-21','2026-09-25'], ['2026-10-13','2026-12-17'],
+  ['2027-02-03','2027-04-09'], ['2027-04-29','2027-07-02'], ['2027-07-20','2027-09-24'], ['2027-10-11','2027-12-17']
+];
+const BREAK_NAMES = ['Autumn holidays', 'Winter holidays', 'Spring holidays', 'Summer holidays'];
+function schoolBreak(d){
+  d = d || new Date();
+  const day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  for (let i = 0; i < TERM_DAYS.length - 1; i++){
+    const [a, b] = TERM_DAYS[i], n = TERM_DAYS[i + 1][0];
+    if (day >= a && day <= b) return null;
+    if (day > b && day < n){ const [y, m, dd] = n.split('-').map(Number); return { name:BREAK_NAMES[i % 4], back:new Date(y, m - 1, dd), summer:i % 4 === 3 }; }
+  }
+  return null;
+}
 
 const CUSTOM_FONTS = ['DM Sans','Space Grotesk','JetBrains Mono','Space Mono',
                       'Instrument Serif','Caveat','Patrick Hand','Archivo Black'];
@@ -1198,7 +1218,7 @@ function newsSeen(key){
 const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.filter(n => recent(n) && n.date > r); };
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
-window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
+window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsSeen, newsUnread, newsRead,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,

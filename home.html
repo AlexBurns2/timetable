@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261120">
-<script src="theme.js?v=20261120"></script>
-<script src="icons.js?v=20261120"></script>
+<link rel="stylesheet" href="theme.css?v=20261120c">
+<script src="theme.js?v=20261120c"></script>
+<script src="icons.js?v=20261120c"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261120">
-<link rel="stylesheet" href="settings.css?v=20261120">
-<link rel="stylesheet" href="poll.css?v=20261120">
+<link rel="stylesheet" href="site.css?v=20261120c">
+<link rel="stylesheet" href="settings.css?v=20261120c">
+<link rel="stylesheet" href="poll.css?v=20261120c">
 </head>
 <body>
 <div class="wrap hub">
@@ -248,14 +248,36 @@ function greeting(now){
   if (h < 5) return 'Welcome';
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
+/* ── the school holidays (theme.js schoolBreak, from the term dates) ────────────
+   The greeting wishes you happy holidays (Christmas Day and New Year's Day their own),
+   the date names the break, and the class card says when school's back, instead of
+   classes the timetable can't know are off. */
+function holidayHello(now){
+  if (now.getMonth() === 11 && now.getDate() === 25) return 'Merry Christmas';
+  if (now.getMonth() === 0 && now.getDate() === 1) return 'Happy New Year';
+  return 'Happy holidays';
+}
+function backIn(back, now){
+  const days = Math.round((new Date(back.getFullYear(), back.getMonth(), back.getDate()) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5);
+  return days <= 1 ? 'Tomorrow' : days < 14 ? 'In ' + days + ' days' : 'In ' + Math.floor(days / 7) + ' weeks';
+}
+function breakCard(brk, now){
+  const b = brk.back;
+  return '<div class="nowcard hubbreak"><div class="lbl">' + esc(brk.name) + '</div>' +
+    '<div class="subj">Back ' + esc(DAYS[b.getDay()] + ' ' + b.getDate() + ' ' + MON3(b)) + '</div>' +
+    '<div class="meta"><span class="mwhen">' + esc(backIn(b, now)) + '</span></div></div>';
+}
 function paintHub(){
   const now = new Date();
-  const part = signedIn ? greeting(now) : 'Welcome';
+  const brk = window.TT && TT.schoolBreak ? TT.schoolBreak(now) : null;
+  let part = signedIn ? greeting(now) : 'Welcome';
+  if (signedIn && brk) part = holidayHello(now);
   const payload = signedIn ? ownPayload() : null;
   const first = String(profileOf(payload).firstname || '').trim();
   const date = DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
   if (!signedIn){
     setHello('Welcome');
+    if (brk){ const b = brk.back; setSub(brk.name + '. Back ' + DAYS[b.getDay()] + ' ' + b.getDate() + ' ' + MONTHS[b.getMonth()] + '.', brk.name + '. Back ' + DAY3(b) + ' ' + b.getDate() + ' ' + MON3(b) + '.'); }
     $('hubnow').className = 'hubnow';
     $('hubnow').innerHTML =
       '<div class="nowcard hubsign"><div class="hstext"><div class="lbl">Get started</div>' +
@@ -267,6 +289,12 @@ function paintHub(){
   setHello(part + (first ? ', ' + first : ''),
            /^Good /.test(part) ? part.replace(/^Good (\w)/, (m, c) => c.toUpperCase()) + (first ? ', ' + first : '') : part);
   const shortDate = DAY3(now) + ' ' + now.getDate() + ' ' + MON3(now);
+  if (brk){
+    setSub(date + ' · ' + brk.name, shortDate + ' · Holidays');
+    $('hubnow').className = 'hubnow';
+    $('hubnow').innerHTML = breakCard(brk, now);
+    return;
+  }
   if (!payload){
     setSub(date, shortDate);
     $('hubnow').className = 'hubnow';
@@ -480,8 +508,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261120"></script>
-<script src="poll.js?v=20261120"></script>
+<script src="settings.js?v=20261120c"></script>
+<script src="poll.js?v=20261120c"></script>
 <script>
 /* ── Today: the two daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),

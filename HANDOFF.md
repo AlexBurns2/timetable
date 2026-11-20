@@ -3472,3 +3472,37 @@ Feedback: the original themes stood out more than the new ones, and many people 
 - **Original themes** (`origBox`) is now a quiet line under the full grid (`.origrow`, muted text and no box), shown only while every theme is shown or an original is on. Its tiles and "Back to …" are unchanged. It used to be `.origs`, so studio.css's and coquette.css's `.origs` rules no longer match anything (left alone).
 - The picker redraws itself on `tt:look` while its dialog is open, so the timetable now also says "Frutiger Evil" in dark mode. Keyboard focus stays on the same tile across a redraw (More → first tile, Fewer → the All tile).
 - `skinFold` is kept, unused, for old pages. Wording: the returning-visitor notice and the "Themes, rebuilt" news entry now say Settings → All themes → Original themes. The tour's `#skins, #s_skins` step can point at the row now, since the grid is never hidden.
+
+## 8.129 Polls: locked once open, a planner to the HSC, one Save (asset version `20261120b`, `CACHE_VERSION` v54)
+Asked for: no editing polls that have votes, and the owner stressed that live, voted polls and their votes must not be touchable at all; every Year 12 school week from now to the HSC; and a Save button so many changes go at once.
+- **The lock (api/_poll.js `lockedWeek`)**: a question can't be changed, removed or have class subjects collected once it has opened, so this week's (live) and every past one, whether or not anyone has voted yet. That way no edit can land while votes are coming in.
+  - Next week's locks 2 minutes before it opens (`LOCK_AHEAD`; no request runs that long), so a save can't land as the first votes do.
+  - This week can still get a question if it has none: it's an insert, which fails if a row appeared meanwhile.
+  - `votedOn` is checked as well, as a second guard.
+  - The only other writes to the poll tables are voting itself and the existing undo of a voter's own record when their vote failed to count.
+- **Optional database lock**: SQL in the header of api/_poll.js adds two triggers. `poll_locked` stops update or delete of a poll row that has voters; `poll_tally_up` stops tally rows being deleted or lowered. It adds rules only and changes no data. **Not run**; it's the owner's call. Drop the triggers if data ever has to be fixed by hand.
+- **School weeks**: `TERMS` and `PLAN_END` (2027-09-24, the end of Term 3, Year 12's last term before the HSC; they sit the exams in Term 4) in api/_poll.js. `schoolWeeks(from)` gives every week with a student day in it: 35 weeks from Term 4 Week 6 2026. 2027 Term 1 Week 1 is staff days only, so the list starts at Week 2. The admin GET returns `schoolWeeks` and `planEnd`. To plan further, add terms and move `PLAN_END`.
+- **Batch save**: the `pollbatch` action takes `{ set:[…pollset bodies], remove:[weeks] }` and checks each with `pollSetOne`/`pollDelOne`, up to 4 at a time. It returns `{ results:[{ week, ok, error, removed }] }`. `pollset`/`polldel` still work.
+- **Moderator page** (games.js `renderPolls`, games.css "the planner"):
+  - Week picker grouped by term.
+  - The form saves into `pollDrafts` as you type; this module-level state survives switching tabs, and leaving the page warns.
+  - The list shows every school week with tags (New/Changed, not saved; Removed when you save; Live/Voted on, locked). It has Set/Edit/Undo/Remove, and a sticky bar "N changes not saved yet · Discard · Save N changes".
+  - One request saves everything, then the list refreshes once. A week that fails keeps its change and shows why.
+  - Live and past weeks have no buttons and a disabled form.
+- **Class questions**: subjects are collected after saving, but only for weeks that haven't opened and are in the current year. The next year's cohorts and classes aren't set yet, so the row gets a "Collect subjects" button to use once that year starts.
+- The `.preview` mock (local only) now returns `schoolWeeks` and answers `pollbatch`; it needs a restart to pick that up. Tested in headless Chrome with a stand-in API in the page (scratchpad `pollfake.js`/`pollgen.mjs`).
+
+## 8.130 The school holidays on Home: a greeting, when school's back, and the poll looking back (asset version `20261120c`, `CACHE_VERSION` v55)
+- **theme.js `TT.schoolBreak(date)`**: the NSW Eastern-division terms (`TERM_DAYS`, the same dates as index.html's and api/_poll.js's tables). It returns `{ name, back, summer }` in the holidays; it returns null in term (weekends included) and past the table. The breaks are named after the term just ended: Autumn, Winter, Spring, Summer holidays. The days before students return, such as staff development days, count as holidays.
+- **Home** (home.html `paintHub`):
+  - Signed in: the greeting becomes "Happy holidays, …". Christmas Day says "Merry Christmas" and New Year's Day "Happy New Year".
+  - The date line says "· Summer holidays" instead of the week letter.
+  - The class card becomes "Summer holidays · Back Wednesday 3 Feb · In 5 weeks" (`breakCard`). The timetable's A/B count doesn't know about holidays and would otherwise name a class.
+  - Signed out: the line under "Welcome" names the break and the day back.
+- **The poll card** (api/_poll.js `breakOf`, `lookbackFor`; poll.js `lookbackHtml`): when there's no question this week and the week is in the holidays, the answer carries `lookback`.
+  - It covers every question from the term just ended, or from the whole year over summer, newest first. Each comes with its top two answers for the reader's scope, plus how many of them the reader voted in (their own `poll_voter` rows only).
+  - Closed weeks' results are cached for 6 hours per instance.
+  - The card: chip "Summer holidays · looking back", title "2026 in polls" or "Term 2 in polls", a facts line, two moments (the closest call and the one with the most votes), and the list with "You picked …" where this device remembers it (`poll.mine.*`, never sent anywhere). It also has "Show all", when the polls are back, "Suggest a question for next term", and "Back in 5 weeks" in the header.
+  - A question set for a holiday week still shows as normal. Signed-out visitors get no card in the holidays, as before when no question is set.
+- api/_poll.js `TERMS` now includes Term 4 2027, for the spring holidays; the planner still stops at `PLAN_END`.
+- Tested with the page's clock moved (scratchpad `holgen.mjs`). Not yet handled: the timetable page itself (and Studio, which opens it as Home) still shows classes and a Now card in the holidays.

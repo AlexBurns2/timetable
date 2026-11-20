@@ -26,6 +26,10 @@
    a click on it, or Escape ends it.
    home.html?pollpreview=intro&anim=wreck&from=final (or =reveal&anim=curtain)
    replays one without marking anything as seen.
+
+   The school holidays, with no question set: the card looks back instead (the server sends
+   `lookback`: the term's questions, or the year's over summer, each with its winner), with
+   your own pick beside each where this device remembers it, and when the polls are back.
    ═══════════════════════════════════════════════════════════════════ */
 (function(){
 "use strict";
@@ -157,7 +161,7 @@ const left = k => Math.max(0, ((data.clock && data.clock[k]) || 0) - (Date.now()
 
 /* where this person is with this week's poll */
 function stateOf(p){
-  if (!p) return data && data.last ? 'last' : 'none';
+  if (!p) return data && data.lookback ? 'break' : data && data.last ? 'last' : 'none';
   if (p.signedOut) return 'signin';
   if (p.phase === 'results') return p.voted ? 'final' : 'closed';
   return p.voted ? 'voted' : 'vote';
@@ -177,7 +181,7 @@ function frame(body, p, extra){
     (extra.foot === false ? '' :
       '<div class="pfoot">' +
         '<button type="button" class="plink" data-act="history">Past polls</button>' +
-        (opts.signedIn ? '<button type="button" class="plink" data-act="suggest">Suggest next week’s question</button>' : '') +
+        (opts.signedIn ? '<button type="button" class="plink" data-act="suggest">' + esc(extra.suggest || 'Suggest next week’s question') + '</button>' : '') +
       '</div>' +
       '<form class="psug" id="psug" hidden>' +
         '<input id="psugq" maxlength="120" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore ' +
@@ -209,8 +213,15 @@ function draw(first, startAt){
   clearInterval(tick);
   const p = data.poll;
   el.hidden = false;
-  curKey = p ? p.week : data.last ? 'last:' + data.last.week : 'none';
+  curKey = p ? p.week : data.lookback ? 'break:' + data.lookback.back : data.last ? 'last:' + data.last.week : 'none';
   if (!p){
+    /* the holidays: the look back (its own key, so minimising it lasts the break) */
+    if (data.lookback){
+      const lb = data.lookback;
+      el.innerHTML = frame(lookbackHtml(lb), { question:lb.title }, { cls:'plook', chip:lb.name + ' · looking back', suggest:'Suggest a question for next term' });
+      wire(); whenText(); clearInterval(tick); tick = setInterval(whenText, 30 * 60000);
+      afterDraw(first, startAt); return;
+    }
     /* no question has ever been set: no card at all, so the site can go live before the first one */
     if (!data.last){
       if (first && previewing()){ el.innerHTML = ''; afterDraw(first, startAt); return; }   // the preview draws its own card
@@ -314,6 +325,7 @@ function afterDraw(first, startAt){
 function whenText(){
   const w = document.getElementById('pwhen'); if (!w || !data) return;
   const p = data.poll;
+  if (!p && data.lookback){ w.innerHTML = 'Back <b>' + esc(backIn(data.lookback.back).toLowerCase()) + '</b>'; return; }
   if (!p || !data.clock){ w.textContent = ''; return; }
   w.innerHTML = data.clock.phase === 'open' ? 'Closes in <b>' + dur(left('resultsIn')) + '</b>' : 'Opens in <b>' + dur(left('nextIn')) + '</b>';
 }
@@ -454,6 +466,45 @@ function resultsHtml(results, total, others, mine, pick, live){
     '<p class="pmeta">' + plural(total, 'voter') + (pick > 1 ? ' · up to ' + pick + ' picks each' : '') + (others ? ' · ' + others + ' more got a vote or two' : '') + '</p>';
 }
 
+/* ── the holidays: looking back ──────────────────────────────────────── */
+const LB_SHOW = 4;
+const dayOf = s => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); };
+function backIn(back){
+  const b = dayOf(back), n = new Date(), days = Math.round((b - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5);
+  return days <= 1 ? 'Tomorrow' : days < 14 ? 'In ' + days + ' days' : 'In ' + Math.floor(days / 7) + ' weeks';
+}
+function lookbackHtml(lb){
+  const polls = lb.polls || [];
+  const backTxt = dayOf(lb.back).toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long' });
+  const closing = '<p class="pmeta lbback">The polls are back with school, on ' + esc(backTxt) + '.</p>';
+  if (!polls.length) return '<p class="pnote">No poll over the holidays.</p>' + closing;
+  const quote = q => '“' + esc(String(q).replace(/\s+$/, '')) + '”';
+  const res = polls.filter(p => p.top && p.top.length);
+  const votes = polls.reduce((a, p) => a + (p.total || 0), 0);
+  /* two moments: the closest call, and the one most people voted in */
+  const close = res.filter(p => p.top.length > 1).sort((a, b) => (a.top[0].votes - a.top[1].votes) - (b.top[0].votes - b.top[1].votes))[0];
+  const most = res.slice().sort((a, b) => b.total - a.total)[0];
+  const moments = [];
+  if (close){ const gap = close.top[0].votes - close.top[1].votes;
+    moments.push('<li><b>Closest call</b><span>' + quote(close.question) + ', ' + (gap ? esc(close.top[0].label) + ' by ' + plural(gap, 'vote')
+      : 'a tie between ' + esc(close.top[0].label) + ' and ' + esc(close.top[1].label)) + '</span></li>'); }
+  if (most && most !== close) moments.push('<li><b>Most votes</b><span>' + quote(most.question) + ', ' + plural(most.total, 'voter') + '</span></li>');
+  const row = (p, i) => {
+    const w = p.top && p.top[0], mine = mineList(lsGet(mineKey(p.week)));
+    return '<li class="lbrow' + (i >= LB_SHOW ? ' extra' : '') + '"><span class="lbwk">' + esc(weekLabel(p.week).replace(/^Week of /, '')) + '</span>' +
+      '<span class="lbq">' + esc(p.question) + '</span>' +
+      '<span class="lbwin">' + (w ? esc(w.label) + ' <b>' + w.pct + '%</b>' : 'No votes') + '</span>' +
+      (mine.length ? '<span class="lbme">You picked ' + esc(mine.join(', ')) + '</span>' : '') + '</li>';
+  };
+  return '<p class="lbintro">No question this week. Here’s how ' + (lb.summer ? 'the year' : 'the term') + ' went, one poll at a time.</p>' +
+    '<p class="pmeta lbfacts">' + plural(polls.length, 'question') + ' · ' + votes.toLocaleString() + ' votes' +
+      (lb.voted != null ? ' · ' + (lb.voted ? 'you voted in ' + lb.voted : 'you didn’t vote in any of them') : '') + '</p>' +
+    (moments.length ? '<ul class="lbmoments">' + moments.join('') + '</ul>' : '') +
+    '<ol class="lblist">' + polls.map(row).join('') + '</ol>' +
+    (polls.length > LB_SHOW ? '<button type="button" class="plink pmore" data-act="lball">Show all ' + polls.length + '</button>' : '') +
+    closing;
+}
+
 /* ── sharing ─────────────────────────────────────────────────────────── */
 const shareUrl = () => location.origin + '/poll';
 const ic = n => window.Icon ? Icon.svg(n) : '';
@@ -542,6 +593,7 @@ function wire(){
     else if (a === 'suggest'){ const f = document.getElementById('psug'); f.hidden = !f.hidden; if (!f.hidden) document.getElementById('psugq').focus(); }
     else if (a === 'share' || a === 'copy') share(a);
     else if (a === 'more'){ el.querySelectorAll('.pbar.extra').forEach(x => x.classList.remove('extra')); b.remove(); }
+    else if (a === 'lball'){ el.querySelectorAll('.lbrow.extra').forEach(x => x.classList.remove('extra')); b.remove(); }
   });
   const f = document.getElementById('psug');
   if (f) f.onsubmit = async e => {

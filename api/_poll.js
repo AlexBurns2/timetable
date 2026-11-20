@@ -87,6 +87,28 @@
  *   $$;
  *   revoke execute on function poll_bump(date, text, text[]) from public, anon, authenticated;
  *   grant execute on function poll_bump(date, text, text[]) to service_role;
+ *
+ *   -- Optional: a second lock in the database itself (the server already refuses all of
+ *   -- this). A question anyone has voted on can't be changed or deleted, and a count can
+ *   -- only go up. Adds rules only; no data is changed. Safe to run more than once.
+ *   create or replace function poll_locked() returns trigger language plpgsql as $$
+ *   begin
+ *     if exists (select 1 from poll_voter where week = old.week) then
+ *       raise exception 'poll % has votes, so it is locked', old.week;
+ *     end if;
+ *     return case when tg_op = 'DELETE' then old else new end;
+ *   end $$;
+ *   drop trigger if exists poll_locked on poll;
+ *   create trigger poll_locked before update or delete on poll for each row execute function poll_locked();
+ *   create or replace function poll_tally_up() returns trigger language plpgsql as $$
+ *   begin
+ *     if tg_op = 'DELETE' or new.votes < old.votes or new.week <> old.week or new.scope <> old.scope or new.choice <> old.choice then
+ *       raise exception 'poll counts only go up';
+ *     end if;
+ *     return new;
+ *   end $$;
+ *   drop trigger if exists poll_tally_up on poll_tally;
+ *   create trigger poll_tally_up before update or delete on poll_tally for each row execute function poll_tally_up();
  */
 
 import { db, isAdmin } from "./_supabase.js";
@@ -118,6 +140,43 @@ function sydney(d = new Date()) {
 const iso = (y, m, d) => new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10);
 const addDays = (s, n) => { const t = new Date(s + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
 const isMonday = s => /^\d{4}-\d{2}-\d{2}$/.test(s) && new Date(s + "T00:00:00Z").getUTCDay() === 1;
+
+/* NSW public school terms (Eastern division) from now: the students' first and last days, and the Monday the
+   school calls Week 1 where that comes first (the same dates as the timetable's TERMS in index.html, from the
+   Department's published calendar). The moderator's planner offers every school week from this week to the end
+   of PLAN_END's term: Year 12's last term before the HSC, since they sit the exams in Term 4 and aren't at
+   school. To plan further, add the next terms here and move PLAN_END. */
+const TERMS = [
+  { term: 4, first: "2026-10-13", last: "2026-12-17" },
+  { term: 1, first: "2027-02-03", last: "2027-04-09", week1: "2027-01-25" },
+  { term: 2, first: "2027-04-29", last: "2027-07-02" },
+  { term: 3, first: "2027-07-20", last: "2027-09-24" },
+  { term: 4, first: "2027-10-11", last: "2027-12-17" }
+];
+export const PLAN_END = "2027-09-24";
+const mondayOf = s => addDays(s, -((new Date(s + "T00:00:00Z").getUTCDay() + 6) % 7));
+/* every week with a school day in it, from `from` (a Monday) to PLAN_END: [{ week, term, n, year }] */
+export function schoolWeeks(from) {
+  const out = [];
+  for (const t of TERMS) {
+    const w1 = mondayOf(t.week1 || t.first), end = t.last < PLAN_END ? t.last : PLAN_END;
+    for (let m = mondayOf(t.first); m <= end; m = addDays(m, 7))
+      if (m >= from) out.push({ week: m, term: t.term, n: Math.round((Date.parse(m) - Date.parse(w1)) / (7 * 864e5)) + 1, year: +t.first.slice(0, 4) });
+  }
+  return out;
+}
+/* the school holidays a week (its Monday) falls in, named after the term just ended, with the day
+   school is back; null for a week with a school day in it, or one past the table */
+const BREAK_NAMES = { 1: "Autumn holidays", 2: "Winter holidays", 3: "Spring holidays", 4: "Summer holidays" };
+export function breakOf(week) {
+  const fri = addDays(week, 4);
+  for (let i = 0; i < TERMS.length; i++) {
+    const t = TERMS[i], n = TERMS[i + 1];
+    if (t.first <= fri && week <= t.last) return null;
+    if (n && week > t.last && fri < n.first) return { name: BREAK_NAMES[t.term], after: t, back: n.first, summer: t.term === 4 };
+  }
+  return null;
+}
 
 /* this week's Monday, where we are in the week, and when each change happens.
    resultsAt / nextAt are exact instants (epoch ms) and `now` is the server's
@@ -311,15 +370,16 @@ export async function pollGet(req, res, me, NAMES) {
     if (what === "admin") {
       if (!isAdmin(me.email)) return res.status(403).json({ error: "Moderators only." });
       const [{ data: polls }, { data: sugg }, { data: voters }] = await Promise.all([
-        db.from("poll").select("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by").order("week", { ascending: false }).limit(60),
+        db.from("poll").select("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by").order("week", { ascending: false }).limit(120),
         db.from("poll_suggestion").select("id, email, question, kind, created_at").order("created_at", { ascending: false }).limit(300),
         db.from("poll_tally").select("week, votes").eq("choice", VOTERS).gte("week", addDays(clock.week, -7 * 60)).limit(1000)
       ]);
       const count = new Map();
       for (const v of voters || []) count.set(v.week, (count.get(v.week) || 0) + (v.votes || 0));
-      const weeks = Array.from({ length: 9 }, (_, i) => addDays(clock.week, 7 * i));
+      /* every school week from this one to Year 12's last term (the planner's list) */
+      const plan = schoolWeeks(clock.week), weeks = plan.map(w => w.week);
       return res.status(200).json({
-        clock, weeks,
+        clock, weeks, schoolWeeks: plan, planEnd: PLAN_END,
         polls: (polls || []).map(p => ({ week: p.week, question: p.question, kind: p.kind, anim: p.anim || "surprise",
           celebrate: p.celebrate || "surprise", reveal: p.reveal || "",
           choices: Array.isArray(p.choices) ? p.choices : [], pick: p.pick || 1, exact: !!p.pickexact, voters: count.get(p.week) || 0,
@@ -337,6 +397,11 @@ export async function pollGet(req, res, me, NAMES) {
     const { data: poll, error } = await db.from("poll").select("week, question, kind, choices, pick, pickexact, anim, celebrate, reveal").eq("week", clock.week).maybeSingle();
     if (error) throw new Error(error.message);
     if (!poll) {
+      /* the holidays (and no question set for them): a look back at the term, or at the year over summer */
+      const brk = breakOf(clock.week);
+      let lookback = null;
+      if (brk) try { lookback = await lookbackFor(brk, clock, me, NAMES); } catch (e) { console.error("poll look back:", e.message); }
+      if (lookback) return res.status(200).json({ clock, poll: null, last: null, lookback });
       /* nothing this week: the most recent finished one instead, if any */
       const { data: last } = await db.from("poll").select("week, question, kind, choices, pick")
         .lt("week", clock.week).order("week", { ascending: false }).limit(1).maybeSingle();
@@ -461,35 +526,31 @@ export async function pollPost(body, res, me, NAMES) {
     return res.status(200).json({ ok: true });
   }
 
-  /* moderators: set, change or take down a week's question, clear a suggestion */
+  /* moderators: set, change or take down a week's question, clear a suggestion. Only questions
+     that haven't opened yet can change (lockedWeek); a live or past one, and its votes, can't. */
   if (!isAdmin(me.email)) return res.status(403).json({ error: "Moderators only." });
   if (action === "pollset") {
-    const week = String(body.week || ""), kind = String(body.kind || "");
-    const anim = ANIMS.includes(body.anim) ? body.anim : "surprise";
-    const celebrate = CELEBS.includes(body.celebrate) ? body.celebrate : "surprise";
-    const reveal = String(body.reveal || "").replace(/\s+/g, " ").trim().slice(0, 140) || null;
-    const pick = Math.min(3, Math.max(1, parseInt(body.pick, 10) || 1));
-    const pickexact = pick > 1 && body.exact === true;
-    let choices = null;
-    if (kind === "custom") {
-      choices = [...new Set((Array.isArray(body.choices) ? body.choices : [])
-        .map(c => String(c).replace(/\s+/g, " ").trim().slice(0, 60)).filter(Boolean))];
-      if (choices.length < 2 || choices.length > 8) return res.status(400).json({ error: "A custom question needs 2 to 8 answers." });
-      if (pick >= choices.length) return res.status(400).json({ error: "Let people pick fewer than all the answers." });
-    }
-    const question = String(body.question || "").replace(/\s+/g, " ").trim().slice(0, MAX_Q);
-    if (!isMonday(week) || week < clock.week) return res.status(400).json({ error: "Pick this week or a later Monday." });
-    if (!KINDS.includes(kind)) return res.status(400).json({ error: "Pick a kind of answer." });
-    if (question.length < 5) return res.status(400).json({ error: "Write the question." });
-    const { data: had } = await db.from("poll").select("kind, choices, pick, pickexact").eq("week", week).maybeSingle();
-    if (kind === "class") choices = had && had.kind === "class" && had.choices && !Array.isArray(had.choices) ? had.choices : null;
-    if (had && (had.kind !== kind || (had.pick || 1) !== pick || !!had.pickexact !== pickexact || JSON.stringify(had.choices || null) !== JSON.stringify(choices))) {
-      const { data: v } = await db.from("poll_voter").select("email").eq("week", week).limit(1);
-      if ((v || []).length) return res.status(409).json({ error: "People have already voted, so only the wording and the show can change." });
-    }
-    const { error } = await db.from("poll").upsert({ week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by: me.email }, { onConflict: "week" });
-    if (error) { console.error("poll set:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
-    return res.status(200).json({ ok: true });
+    const r = await pollSetOne(body, me, clock);
+    return r.ok ? res.status(200).json({ ok: true }) : res.status(r.status).json({ error: r.error });
+  }
+  /* many weeks at once (the planner's Save): { set: [questions as pollset takes them], remove: [weeks] }.
+     Each is checked and saved on its own, and the answer says how each went. */
+  if (action === "pollbatch") {
+    /* one change a week (a later one wins), and a week that's being set isn't also removed */
+    const byWeek = new Map((Array.isArray(body.set) ? body.set : []).filter(x => x && typeof x === "object").map(x => [String(x.week || ""), x]));
+    const set = [...byWeek.values()].slice(0, 80);
+    const remove = [...new Set((Array.isArray(body.remove) ? body.remove : []).map(String))].filter(w => !byWeek.has(w)).slice(0, 80);
+    if (!set.length && !remove.length) return res.status(400).json({ error: "Nothing to save." });
+    const jobs = set.map(x => ({ week: String(x.week || ""), run: () => pollSetOne(x, me, clock) }))
+      .concat(remove.map(week => ({ week, removed: true, run: () => pollDelOne(week, clock) })));
+    const results = new Array(jobs.length);
+    await eachLimited(jobs.map((_, k) => k), 4, async k => {
+      const j = jobs[k];
+      let r;
+      try { r = await j.run(); } catch (e) { console.error("poll batch:", e.message); r = { error: "Couldn't save that." }; }
+      results[k] = { week: j.week, removed: !!j.removed, ok: !!r.ok, error: r.ok ? undefined : r.error };
+    });
+    return res.status(200).json({ results });
   }
   /* one slice of a year's timetables, for a class question's subject list */
   if (action === "pollsubjects") {
@@ -498,6 +559,9 @@ export async function pollPost(body, res, me, NAMES) {
     const { data: poll, error: pErr } = await db.from("poll").select("kind, choices").eq("week", week).maybeSingle();
     if (pErr || !poll) return res.status(404).json({ error: "Save the question first." });
     if (poll.kind !== "class") return res.status(400).json({ error: "That isn't a class question." });
+    const why = lockedWeek(week, clock);
+    if (why) return res.status(409).json({ error: why });
+    if (await votedOn(week)) return res.status(409).json({ error: "People have voted on this one, so it can't be changed." });
     const c = poll.choices && !Array.isArray(poll.choices) ? poll.choices : {};
     const years = { ...(c.years || {}) }, done = Array.isArray(c.done) ? c.done.slice() : [];
     if (done.includes(year)) return res.status(200).json({ next: null, total: 0, count: (years[year] || []).length });
@@ -516,12 +580,8 @@ export async function pollPost(body, res, me, NAMES) {
     return res.status(200).json({ next, total: mates.length, count: years[year].length });
   }
   if (action === "polldel") {
-    const week = String(body.week || "");
-    const { data: v } = await db.from("poll_voter").select("email").eq("week", week).limit(1);
-    if ((v || []).length) return res.status(409).json({ error: "People have voted on this one, so it stays." });
-    const { error } = await db.from("poll").delete().eq("week", week);
-    if (error) return res.status(502).json({ error: "Couldn't remove that." });
-    return res.status(200).json({ ok: true });
+    const r = await pollDelOne(String(body.week || ""), clock);
+    return r.ok ? res.status(200).json({ ok: true }) : res.status(r.status).json({ error: r.error });
   }
   if (action === "suggestdel") {
     const { error } = await db.from("poll_suggestion").delete().eq("id", String(body.id || ""));
@@ -529,6 +589,108 @@ export async function pollPost(body, res, me, NAMES) {
     return res.status(200).json({ ok: true });
   }
   return res.status(400).json({ error: "Unknown poll action." });
+}
+
+/* ── the holidays: looking back ──────────────────────────────────────
+   Every question from the term just ended (over summer, the whole year), newest first, each with its
+   top two answers for this person's scope, plus how many of them this person voted in (their own
+   poll_voter rows: never anyone else's, and never what they picked). A closed week's results can't
+   change, so they're kept for six hours per warm instance. */
+const pastResults = new Map();
+async function closedResults(p, scope, NAMES) {
+  const k = p.week + "|" + scope, hit = pastResults.get(k);
+  if (hit && Date.now() - hit.at < 6 * 3600e3) return hit.r;
+  const r = await resultsOf(p, scope, NAMES, 2);
+  if (pastResults.size > 500) pastResults.clear();
+  pastResults.set(k, { at: Date.now(), r });
+  return r;
+}
+async function lookbackFor(brk, clock, me, NAMES) {
+  const from = brk.summer ? brk.after.first.slice(0, 4) + "-01-01" : mondayOf(brk.after.week1 || brk.after.first);
+  const { data, error } = await db.from("poll").select("week, question, kind, choices, pick")
+    .gte("week", from).lt("week", clock.week).order("week", { ascending: false }).limit(45);
+  if (error) throw new Error(error.message);
+  const list = data || [], polls = new Array(list.length);
+  await eachLimited(list.map((_, i) => i), 6, async i => {
+    const p = list[i], scope = scopeOf(p.kind, me);
+    const r = scope ? await closedResults(p, scope, NAMES).catch(() => ({ total: 0, results: null })) : { total: 0, results: null };
+    polls[i] = { week: p.week, question: p.question, kind: p.kind, total: r.total || 0,
+                 top: (r.results || []).slice(0, 2).map(x => ({ label: x.label, votes: x.votes, pct: x.pct })) };
+  });
+  let voted = null;
+  if (me.email) {
+    const { count, error: cErr } = await db.from("poll_voter").select("week", { count: "exact", head: true })
+      .eq("email", me.email).gte("week", from).lt("week", clock.week);
+    if (!cErr && typeof count === "number") voted = count;
+  }
+  return { name: brk.name, back: brk.back, summer: brk.summer,
+           title: brk.summer ? from.slice(0, 4) + " in polls" : "Term " + brk.after.term + " in polls", polls, voted };
+}
+
+/* A question is fixed once it has opened: this week's (live) and every past one can't be changed,
+   removed or have its subjects collected, whether or not anyone has voted yet, so nothing can ever
+   touch a question while votes are coming in. Next week's locks two minutes before it opens (no
+   request runs that long), so a save can't land as the first votes do. A question can still be
+   set for this week if it has none (a new row; nothing to change). Returns why, or "". */
+const LOCK_AHEAD = 2 * 60e3;
+function lockedWeek(week, clock) {
+  if (week <= clock.week) return week === clock.week ? "This week's question is live, so it can't be changed." : "That week has been and gone.";
+  if (week === addDays(clock.week, 7) && clock.nextAt - Date.now() < LOCK_AHEAD) return "That question opens in a moment, so it's locked now.";
+  return "";
+}
+/* has anyone voted on that week's question? */
+async function votedOn(week) {
+  const { data, error } = await db.from("poll_voter").select("email").eq("week", week).limit(1);
+  if (error) throw new Error("poll voters: " + error.message);
+  return (data || []).length > 0;
+}
+/* one week's question, checked and saved: { ok } or { status, error } */
+async function pollSetOne(body, me, clock) {
+  const week = String(body.week || ""), kind = String(body.kind || "");
+  const anim = ANIMS.includes(body.anim) ? body.anim : "surprise";
+  const celebrate = CELEBS.includes(body.celebrate) ? body.celebrate : "surprise";
+  const reveal = String(body.reveal || "").replace(/\s+/g, " ").trim().slice(0, 140) || null;
+  const pick = Math.min(3, Math.max(1, parseInt(body.pick, 10) || 1));
+  const pickexact = pick > 1 && body.exact === true;
+  let choices = null;
+  if (kind === "custom") {
+    choices = [...new Set((Array.isArray(body.choices) ? body.choices : [])
+      .map(c => String(c).replace(/\s+/g, " ").trim().slice(0, 60)).filter(Boolean))];
+    if (choices.length < 2 || choices.length > 8) return { status: 400, error: "A custom question needs 2 to 8 answers." };
+    if (pick >= choices.length) return { status: 400, error: "Let people pick fewer than all the answers." };
+  }
+  const question = String(body.question || "").replace(/\s+/g, " ").trim().slice(0, MAX_Q);
+  if (!isMonday(week) || week < clock.week) return { status: 400, error: "Pick this week or a later Monday." };
+  if (!KINDS.includes(kind)) return { status: 400, error: "Pick a kind of answer." };
+  if (question.length < 5) return { status: 400, error: "Write the question." };
+  const row = { week, question, kind, choices, pick, pickexact, anim, celebrate, reveal, created_by: me.email };
+  /* this week, only if it has no question yet: added as a new row, which fails if one exists */
+  if (week === clock.week) {
+    if (await votedOn(week)) return { status: 409, error: "This week's question is live, so it can't be changed." };
+    const { error } = await db.from("poll").insert(row);
+    if (error) return /duplicate|unique/i.test(error.message) ? { status: 409, error: "This week's question is live, so it can't be changed." }
+      : (console.error("poll set:", error.message), { status: 502, error: "Couldn't save that." });
+    return { ok: true };
+  }
+  const why = lockedWeek(week, clock);
+  if (why) return { status: 409, error: why };
+  if (await votedOn(week)) return { status: 409, error: "People have voted on this one, so it can't be changed." };
+  const { data: had } = await db.from("poll").select("kind, choices").eq("week", week).maybeSingle();
+  /* a class question keeps the subjects already collected for it */
+  if (kind === "class") row.choices = had && had.kind === "class" && had.choices && !Array.isArray(had.choices) ? had.choices : null;
+  const { error } = await db.from("poll").upsert(row, { onConflict: "week" });
+  if (error) { console.error("poll set:", error.message); return { status: 502, error: "Couldn't save that." }; }
+  return { ok: true };
+}
+/* take a week's question down, if nobody has voted on it */
+async function pollDelOne(week, clock) {
+  if (!isMonday(week)) return { status: 400, error: "That isn't a week." };
+  const why = lockedWeek(week, clock);
+  if (why) return { status: 409, error: why };
+  if (await votedOn(week)) return { status: 409, error: "People have voted on this one, so it stays." };
+  const { error } = await db.from("poll").delete().eq("week", week);
+  if (error) return { status: 502, error: "Couldn't remove that." };
+  return { ok: true };
 }
 
 /* ── the share link's preview (/poll): the question, never the results ── */
