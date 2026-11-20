@@ -397,7 +397,8 @@ export function scoreFits(game, metric, score, ms) {
   if (game === "snake") return score <= 253 && score <= 4 * s + 5;              // the 16 × 16 board, a fruit at a time
   if (game === "g2048") return score <= 300 * s + 500;
   if (game === "typing") return score <= 250 && s >= 1.5;
-  if (game === "react") return s >= 1;
+  /* three tries, each after a wait of at least 0.9 s, 0.7 s apart: at least about 4 s */
+  if (game === "react") return metric === "avg3" ? s >= 4 : s >= 1;
   if (game === "tetris:sprint" || game === "tetris:sprintall") return score <= ms + 3000;   // a clear can't take less time than has passed
   /* Survival and Zen can be saved and carried on another day, so only the ticket is checked */
   return true;

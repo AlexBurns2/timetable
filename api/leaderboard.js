@@ -62,7 +62,9 @@ function nameFromEmail(email) {
 /* which (game:metric) pairs are allowed, and whether higher or lower wins */
 const DIRS = {
   "snake:high": "max", "g2048:high": "max", "typing:wpm": "max",
-  "react:fastest": "min", "classroom:high": "max",
+  "react:fastest": "min",      // legacy single-click Reaction (kept readable; no longer sent)
+  "react:avg3": "min",         // Reaction: the average of three tries in a row
+  "classroom:high": "max",
   "chain:best": "min",         // legacy single-puzzle Six Degrees (kept readable)
   "chain:targets": "max",      // new Six Degrees gauntlet — most targets in a run
   "oddone:high": "max"         // Odd One Out — best score in a run

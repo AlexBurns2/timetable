@@ -444,7 +444,7 @@ const LB_CAT = [
   { id:'snake',     name:'Snake',          g:{metric:'high'},    fmt:v=>String(v) },
   { id:'g2048',     name:'2048',           g:{metric:'high'},    fmt:v=>String(v) },
   { id:'typing',    name:'Typing race',    g:{metric:'wpm'},     fmt:v=>v+' wpm' },
-  { id:'react',     name:'Reaction',       g:{metric:'fastest'}, fmt:v=>v+' ms' },
+  { id:'react',     name:'Reaction',       g:{metric:'avg3'},    fmt:v=>v+' ms' },
   { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
@@ -670,7 +670,7 @@ const statLine = game => {
   }
   return Object.entries(s).map(([k,v]) => STAT_LABEL[k] ? STAT_LABEL[k]+' '+v : '').filter(Boolean).join(' · ');
 };
-const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak', targets:'Best run' };
+const STAT_LABEL = { best:'Best', high:'High', fastest:'Fastest', avg3:'Best average', plays:'Played', wpm:'Top WPM', cleared:'Cleared', streak:'Streak', targets:'Best run' };
 
 /* Monday-anchored week index (local time); drives Tetris's weekly reset */
 function tetrisWeek(){
@@ -694,7 +694,9 @@ const LB_GAMES = {
   snake:     { metric:'high',    dir:'max', label:'High score',      fmt:v=>String(v) },
   g2048:     { metric:'high',    dir:'max', label:'Score',           fmt:v=>String(v) },
   typing:    { metric:'wpm',     dir:'max', label:'Words / min',     fmt:v=>v+' wpm' },
-  react:     { metric:'fastest', dir:'min', label:'Reaction',        fmt:v=>v+' ms' },
+  /* Reaction ranks the average of three tries (avg3), so one lucky click can't top it. The old
+     single-click board (fastest) is still in the database, just no longer shown. */
+  react:     { metric:'avg3',    dir:'min', label:'Average of 3',    fmt:v=>v+' ms' },
   /* server: the server runs these (api/_runs.js) and records their scores itself */
   classroom: { metric:'high',    dir:'max', label:'Correct',         fmt:v=>String(v), server:true },
   chain:     { metric:'targets', dir:'max', label:'Targets reached', fmt:v=>String(v), server:true },
@@ -2116,7 +2118,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120m';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261120n';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4587,15 +4589,17 @@ BUILD.typing = host => {
 
 /* ── Reaction test ─────────────────────────────────────────────── */
 BUILD.react = host => {
-  /* a note about the times cleared in the bug fix (8.100): until it's closed
-     (tt.react_cullnote, so it stays closed on other devices) or the end of term */
-  const cullNote = !(window.TT && TT.get('tt.react_cullnote', '')) && Date.now() < Date.parse('2026-12-19')
-    ? '<div class="gnote" id="cullnote"><span>Missing a time? While fixing a bug we cleared every reaction time under 80 ms, so yours may have gone with them.</span>' +
-      '<button type="button" id="cullx" aria-label="Dismiss">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' : '';
-  head(host, 'Reaction', 'Best of five.',
-       cullNote + '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
-  const cx = $('cullx');
-  if (cx) cx.onclick = () => { TT.set('tt.react_cullnote', '1'); const n = $('cullnote'); if (n) n.remove(); };
+  /* Your score is the average of three tries in a row (a start too soon starts the three again), so
+     one lucky click can't top the board. A note says the board started again for it, until it's
+     closed (tt.react_avgnote, so it stays closed on other devices) or the end of term. */
+  const ROUND = 3;
+  const avgNote = !(window.TT && TT.get('tt.react_avgnote', '')) && Date.now() < Date.parse('2026-12-19')
+    ? '<div class="gnote" id="avgnote"><span>Your time is now the average of three tries, so the leaderboard has started again.</span>' +
+      '<button type="button" id="avgx" aria-label="Dismiss">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' : '';
+  head(host, 'Reaction', 'The average of three tries.',
+       avgNote + '<div id="react">' + tap('Click', 'Tap') + ' to start</div>');
+  const ax = $('avgx');
+  if (ax) ax.onclick = () => { TT.set('tt.react_avgnote', '1'); const n = $('avgnote'); if (n) n.remove(); };
   const el = $('react');
   let state = 'idle', t = null, at = 0, times = [], lockUntil = 0;
   /* Autoclickers can't win:
@@ -4640,17 +4644,28 @@ BUILD.react = host => {
     if (now < lockUntil) return;
     if (autoclicking(now)){ lockOut('That’s a lot of clicking.'); return; }
     if (state === 'idle'){ arm(); return; }
-    if (state === 'wait'){ clearTimeout(t); state = 'idle'; SFX.bad(); show('', 'Too soon. ' + tap('Click', 'Tap') + ' to retry.'); return; }
+    /* too soon: the three start again, so guessing when it'll turn green doesn't pay */
+    if (state === 'wait'){
+      clearTimeout(t); state = 'idle'; SFX.bad();
+      const had = times.length; times = [];
+      show('', 'Too soon. ' + (had ? 'The three start again. ' : '') + tap('Click', 'Tap') + ' to retry.');
+      $('sc').textContent = statVal('react', 'avg3') != null ? 'Best average ' + statVal('react', 'avg3') + ' ms' : '';
+      return;
+    }
     if (state === 'go'){
       const ms = Math.max(0, Math.round(now - at));
       times.push(ms); SFX.good();
-      const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
-      recordStat('react', {key:'fastest', mode:'min', value:ms});
-      $('sc').textContent = ms + ' ms · avg ' + avg + ' · fastest ' + statVal('react','fastest');
-      if (times.length >= 5){
+      recordStat('react', {key:'fastest', mode:'min', value:ms});        // your own record only; the board takes the average
+      if (times.length >= ROUND){
+        const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length), each = times.join(', ');
         state = 'idle'; times = [];
-        show('', ms + ' ms. ' + tap('Click', 'Tap') + ' to go again.');
-      } else { state = 'idle'; setTimeout(arm, 700); show('', ms + ' ms'); }
+        recordStat('react', {key:'avg3', mode:'min', value:avg});         // the leaderboard's score
+        $('sc').textContent = 'Average ' + avg + ' ms (' + each + ') · best average ' + statVal('react', 'avg3') + ' ms';
+        show('', 'Average ' + avg + ' ms. ' + tap('Click', 'Tap') + ' to go again.');
+      } else {
+        state = 'idle'; setTimeout(arm, 700); show('', ms + ' ms');
+        $('sc').textContent = ms + ' ms · ' + times.length + ' of ' + ROUND;
+      }
     }
   });
   return () => clearTimeout(t);
