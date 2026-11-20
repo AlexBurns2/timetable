@@ -26,7 +26,7 @@
   --ct-tint:linear-gradient(180deg,#8fc6dd 0%,#d9ecf0 55%,#e9d8b5 100%); --ct-tint-n:linear-gradient(180deg,#0b1830,#13284a 60%,#3a2a3a);
   --ct-name:"Sydney"; --ct-face:"Unbounded",system-ui,sans-serif; --ct-w:800; --ct-ls:-.04em; --ct-tt:uppercase;
   --accent:#1f6f9a; --ct-accent-n:#c7b2ff; --ct-pos:38% 48%; --ct-pos-n:32% 55%;   /* harbour blue; the dusk's lilac */
-  --ct-lo:#0b5560; --ct-hi:#f5f2ea; --ct-lo-n:#041a20; --ct-hi-n:#7fd8d2; --ct-m:#f5ecdd; --ct-m-n:#7dd4cc; --ct-size:20vw;   /* teal and white; deep teal and aqua */
+  --ct-lo:#0b5560; --ct-hi:#f5f2ea; --ct-lo-n:#041a20; --ct-hi-n:#7fd8d2; --ct-m:#f5ecdd; --ct-m-n:#7dd4cc; --ct-size:20vw; --ct-em:5.2;   /* teal and white; deep teal and aqua */
 }
 [data-city="tokyo"]{
   --ct-day:url(../images/city/tokyo-day.webp); --ct-night:url(../images/city/tokyo-night.webp);
@@ -34,7 +34,7 @@
   --ct-tint:linear-gradient(180deg,#c9c3dc 0%,#ece6ee 55%,#f0d2c4 100%); --ct-tint-n:linear-gradient(180deg,#0d0f24,#1d1838 60%,#43213a);
   --ct-name:"東京"; --ct-face:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif; --ct-w:800; --ct-ls:.02em; --ct-tt:none;
   --accent:#d0472b; --ct-accent-n:#ffad4a; --ct-pos:center 42%; --ct-pos-n:center 50%;   /* the tower's red; its lit amber */
-  --ct-lo:#28262c; --ct-hi:#ef5340; --ct-lo-n:#0d0c11; --ct-hi-n:#ff8c3c; --ct-m:#ec3518; --ct-m-n:#ff862e; --ct-size:30vw;   /* charcoal and red; black and the tower's orange */
+  --ct-lo:#28262c; --ct-hi:#ef5340; --ct-lo-n:#0d0c11; --ct-hi-n:#ff8c3c; --ct-m:#ec3518; --ct-m-n:#ff862e; --ct-size:15vw; --ct-em:2.1;   /* charcoal and red; black and the tower's orange */
 }
 [data-city="hongkong"]{
   --ct-day:url(../images/city/hongkong-day.webp); --ct-night:url(../images/city/hongkong-night.webp);
@@ -42,7 +42,7 @@
   --ct-tint:linear-gradient(180deg,#9fb6cc 0%,#dfe7ec 55%,#efcfd6 100%); --ct-tint-n:linear-gradient(180deg,#070d1c,#121a36 60%,#3a1030);
   --ct-name:"香港"; --ct-face:"Noto Serif TC","PMingLiU","MingLiU",serif; --ct-w:900; --ct-ls:.02em; --ct-tt:none;
   --accent:#c8102e; --ct-accent-n:#ff5fa8; --ct-pos:center 40%; --ct-pos-n:40% 50%;   /* the city's red; the harbour's neon pink */
-  --ct-lo:#1c2654; --ct-hi:#f7b4b6; --ct-lo-n:#080c24; --ct-hi-n:#ff58a8; --ct-m:#f6a792; --ct-m-n:#ff509a; --ct-size:30vw;   /* navy and coral pink; navy and neon pink */
+  --ct-lo:#1c2654; --ct-hi:#f7b4b6; --ct-lo-n:#080c24; --ct-hi-n:#ff58a8; --ct-m:#f6a792; --ct-m-n:#ff509a; --ct-size:15vw; --ct-em:2.1;   /* navy and coral pink; navy and neon pink */
 }
 [data-city="chongqing"]{
   --ct-day:url(../images/city/chongqing-day.webp); --ct-night:url(../images/city/chongqing-night.webp);
@@ -50,7 +50,7 @@
   --ct-tint:linear-gradient(180deg,#c7c1b6 0%,#e6e1d6 55%,#e8cfae 100%); --ct-tint-n:linear-gradient(180deg,#120c10,#2a1616 60%,#5a2a14);
   --ct-name:"重庆"; --ct-face:"Ma Shan Zheng","STKaiti","KaiTi",serif; --ct-w:400; --ct-ls:0; --ct-tt:none;
   --accent:#b8502a; --ct-accent-n:#ff5a4f; --ct-pos:30% 70%; --ct-pos-n:40% 60%;   /* the river's clay; the bridge's red */
-  --ct-lo:#351a18; --ct-hi:#f3a866; --ct-lo-n:#0f0808; --ct-hi-n:#ff5b3a; --ct-m:#f09e56; --ct-m-n:#ff5634; --ct-size:30vw;   /* chili brown and hotpot amber; black and the bridge's red */
+  --ct-lo:#351a18; --ct-hi:#f3a866; --ct-lo-n:#0f0808; --ct-hi-n:#ff5b3a; --ct-m:#f09e56; --ct-m-n:#ff5634; --ct-size:15vw; --ct-em:2.1;   /* chili brown and hotpot amber; black and the bridge's red */
 }
 
 /* ── the shared look: light (day) ── */
@@ -104,14 +104,20 @@
 html[data-city]::before{content:"";position:fixed;inset:var(--ct-edge);z-index:-1;pointer-events:none;border-radius:6px;opacity:.55;mix-blend-mode:overlay;
   background:radial-gradient(circle,rgba(0,0,0,.55) 0 .8px,transparent 1.3px) 0 0/4px 4px,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E") 0 0/180px 180px}
 /* the city's name, very large, low in the picture like a postcard's title */
-html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:calc(var(--ct-edge) - .04em);bottom:calc(var(--ct-edge) - .2em);white-space:nowrap;
-  font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:var(--ct-ls);text-transform:var(--ct-tt);line-height:.9;
-  font-size:clamp(6rem,var(--ct-size),30rem);color:var(--ct-ink);mix-blend-mode:var(--ct-ink-blend);opacity:var(--ct-ink-alpha)}
+/* The name always whole inside the frame: as big as --ct-size allows, but never wider than the frame (its width in
+   ems, --ct-em, measured in its own face: SYDNEY 5.12, the two-character names 2.04) nor taller than most of it.
+   The two-character names are set to about the same height as SYDNEY's capitals (15vw against 20vw): sized only by
+   the width they could have, they came out twice as tall and looked like a mistake. */
+html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:calc(var(--ct-edge) + 2vw);bottom:calc(var(--ct-edge) + 2vh);white-space:nowrap;
+  font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:var(--ct-ls);text-transform:var(--ct-tt);line-height:1;
+  font-size:min(var(--ct-size),30rem,calc((100vw - 2 * var(--ct-edge) - 4vw) / var(--ct-em)),60vh);
+  color:var(--ct-ink);mix-blend-mode:var(--ct-ink-blend);opacity:var(--ct-ink-alpha)}
 /* a phone held upright: the name stands up the right edge */
 @media (max-width:700px){
   [data-city]{--ct-edge:6px}
-  html[data-city]::after{left:auto;right:calc(var(--ct-edge) - .14em);bottom:auto;top:8vh;writing-mode:vertical-rl;font-size:clamp(5rem,34vw,11rem)}
-  html[data-city="sydney"]::after{writing-mode:vertical-rl;transform:rotate(180deg);top:auto;bottom:6vh;font-size:clamp(4rem,22vw,8rem)}
+  html[data-city]::after{left:auto;right:calc(var(--ct-edge) + 2vw);bottom:auto;top:8vh;writing-mode:vertical-rl;
+    font-size:min(22vw,8rem,calc((88vh - 2 * var(--ct-edge)) / var(--ct-em)))}
+  html[data-city="sydney"]::after{transform:rotate(180deg);top:auto;bottom:calc(var(--ct-edge) + 3vh);font-size:min(22vw,8rem,calc((88vh - 2 * var(--ct-edge)) / var(--ct-em)))}
 }
 /* The postcard is the same on every page and doesn't move: changing page, only the page itself blurs out and
    back in over it (fx.js TR.city). The filter is only on while that runs (fill-mode backwards), because a filter

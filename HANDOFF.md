@@ -3792,3 +3792,14 @@ Checked with the fake database slowed to 300 ms a trip (`e2eslow.mjs`): the next
 - **The name**: much bigger (`--ct-size`: 30vw for the two-character names, 20vw for SYDNEY, up to 30rem) and cropped off the bottom-left corner like a poster; on a phone it stands up the right edge, bigger too.
   - By day it's burned into the print (`color-burn`, a light tint of the dark ink, .85). At night it's a soft light screen (a light tint of the light ink, `screen`, .32). A first try with `color-dodge` and a dark ink left three of the four night names invisible.
 - The owner asked to "try it and see": this is a trial, open to change.
+
+## 8.151 Cities: the name is always whole (asset version `20261120z`, `CACHE_VERSION` v78)
+- The city's name is never cut off now. It sits inside the frame (`left`/`bottom` = the paper border + 2vw/2vh, `line-height:1`). Its size is the smallest of:
+  - `--ct-size`;
+  - 30rem;
+  - the frame's width ÷ `--ct-em`;
+  - 60vh.
+
+  `--ct-em` is the name's width in ems, measured in its own face: SYDNEY 5.12 (set to 5.2), 東京/香港 2.04, 重庆 2.0 (2.1). On a phone, standing up the right edge, its length is held to the frame's height the same way.
+- The two-character names are now about the height of SYDNEY's capitals (`--ct-size` 15vw against 20vw; 22vw on a phone). Sized only by the width they could take, they were twice as tall and looked like a bug.
+- Checked by measurement for each city at nine window sizes (1964 × 1216 down to 320 × 568, wide and tall): the name ends inside the frame in all 36.
