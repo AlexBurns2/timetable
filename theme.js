@@ -1257,10 +1257,10 @@ addEventListener('pagehide', () => {
    NEWS_DAYS. What you've seen is kept with your account (tt. keys sync).
    To announce something: add a line at the top. */
 const NEWS = [
-  { id:'reactfast', date:'2026-11-20', key:'game:react', title:'Reaction: no lower limit', href:'games.html?play=react',
-    text:'Reaction no longer throws out times under 60 ms. Every time you set now counts.' },
-  { id:'yearboards', date:'2026-11-20', title:'A leaderboard for each year',
-    text:'Every leaderboard now shows your own year first. Pick another year, or everyone, from the menu beside it. Six Degrees, Odd One Out and Classroom are also marked on the server now, so their scores are fair.' },
+  { id:'reactfast', date:'2026-11-20', key:'game:react', title:'Reaction time patch', href:'games.html?play=react',
+    text:'The 60ms reaction time lower limit has been removed.' },
+  { id:'yearboards', date:'2026-11-20', title:'Cohort leaderboards',
+    text:'Leaderboards are separated into cohorts, and can be accessed with the drop down.' },
   { id:'whose', date:'2026-11-20', key:'game:whose', title:'Whose Timetable?', href:'games.html?play=whose',
     text:'A new daily game: reveal a random classmate’s timetable period by period to guess who it is. Quartets has also become triplets with a palettable 3x3 grid.' },
   { id:'study', date:'2026-11-19', title:'Study tracker',
