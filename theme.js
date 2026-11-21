@@ -52,7 +52,7 @@ const SKINS = [
   { id:'classic',   name:'Classic',   both:true, ic:'tile', is:'emoji' },
   { id:'glass',     name:'Glass',     both:true, ic:'accent', is:'icons' },
   { id:'paper',     name:'Notebook',  both:true, ic:'tile', is:'emoji', css:'paper', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
-  { id:'coquette',  name:'Coquette',  mod:true, both:true, ic:'accent', is:'icons', css:'coquette', font:'family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Pinyon+Script' },
+  { id:'coquette',  name:'Coquette',  both:true, ic:'accent', is:'icons', css:'coquette', font:'family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&family=Pinyon+Script' },
   { id:'skeuo',     name:'Skeuomorphism', both:true, ic:'tile', is:'icons', css:'skeuo' },
   { id:'aero',      name:'Frutiger Aero', darkName:'Frutiger Evil', both:true, ic:'tile', is:'icons', css:'aero', font:'family=Hind:wght@300;400;500;600' },
   { id:'y2k',       name:'Y2K Futurism', both:true, ic:'accent', is:'icons', css:'y2k', font:'family=Michroma&family=Sora:wght@400;600;700' },
@@ -66,11 +66,11 @@ const SKINS = [
   { id:'scifi',     name:'Cyberpunk', both:false, ic:'accent', is:'icons', css:'scifi', font:'family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Doto:wght@500;700;900&family=JetBrains+Mono:wght@400;700' },
   { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
-  { id:'dorfic',    name:'DORFic',    mod:true, both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
+  { id:'dorfic',    name:'DORFic',    both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
   { id:'eco',       name:'Frutiger Eco', mod:true, both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
   { id:'xp',        name:'Windows XP', mod:true, both:true, ic:'tile', is:'icons', css:'xp', js:'xp' },
   { id:'bauhaus',   name:'Bauhaus',   both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
-  { id:'destijl',   name:'De Stijl',  mod:true, both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
+  { id:'destijl',   name:'De Stijl',  both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
   { id:'decon',     name:'Deconstructivism', both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
   /* Cities Collection: a digital postcard of one city each, all drawn by skins/cities.css (html[data-city]).
      city: its time zone, the locale its clock speaks, and its name as the city writes it. */
@@ -1447,6 +1447,8 @@ addEventListener('pagehide', () => {
    something people already know).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'themes5', date:'2026-11-21', title:'Theme finder and more new themes',
+    text:'Themes have been moved to a new theme finder page. 10 unqiue new themes have been added including DORFic, Frutiger Eco, Deconstructivism, Coquette, Bauhaus and De Stijl. The Cities Collection includes Sydney, Tokyo, Hong Kong and Chongqing, with more coming soon.' },
   { id:'reactavg', date:'2026-11-21', key:'game:react', tag:'Updated', title:'Reaction: the average of three', href:'games.html?play=react',
     text:'Your time is now the average of three tries in a row, so one lucky click can’t top the board. The leaderboard has started again.' },
   { id:'reactfast', date:'2026-11-20', title:'Reaction time patch', href:'games.html?play=react',

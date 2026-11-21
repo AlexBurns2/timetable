@@ -64,10 +64,11 @@
   /* the photos (cut-outs; see PHOTO-LOG.md) */
   --eco-p-leaf:url(../images/th/eco-leaf.webp); --eco-p-leaf-b:url(../images/th/eco-leaf-b.webp);
   --eco-p-turbine:url(../images/th/eco-turbine.webp); --eco-p-tree:url(../images/th/eco-tree.webp);
-  --eco-p-panel:url(../images/th/eco-panel.webp); --eco-p-sunflower:url(../images/th/eco-sunflower.webp);
-  --eco-p-clouds:url(../images/th/ar-clouds.webp);
+  --eco-p-tracker:url(../images/th/eco-tracker.webp); --eco-p-sunflower:url(../images/th/eco-sunflower.webp);
+  --eco-p-clouds:url(../images/th/eco-clouds-a.webp); --eco-p-clouds-b:url(../images/th/eco-clouds-b.webp);   /* Aero's cloud bank, softened and feathered (agent-a/clouds.py) */
   /* the hills' height; things are stood on their crests by fractions of it (ecoart2.mjs crestAt) */
   --hh:clamp(230px,44vh,500px); --hy:calc(100vh - var(--hh));
+  --m:calc((100vw - 1000px) / 2);   /* the margin beside the page's column */
   /* sizes: the globe's box (the globe is 600/760 of it), the leaf, the big turbine */
   --gb:clamp(340px,42vw,760px); --lf:clamp(230px,26vw,470px); --lfb:clamp(190px,20vw,360px); --tb:clamp(230px,50vh,560px);
   --eco-sky:linear-gradient(180deg,#1f7fe0 0%,#3d9cf0 26%,#7cc4fa 52%,#c4e8ff 74%,#eaf8ff 100%);
@@ -77,8 +78,8 @@
   --bg-img:var(--eco-sky);
   /* back to front; each page sets its own */
   --eco-far:var(--eco-globe) left calc(6vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .36 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
-            var(--eco-p-clouds) left -8vw top calc(var(--hy) + var(--hh) * .3 - min(64vw,1000px) * .31)/min(64vw,1000px) auto no-repeat,
-            var(--eco-p-clouds) right -14vw top calc(var(--hy) + var(--hh) * .33 - min(56vw,880px) * .3)/min(56vw,880px) auto no-repeat;
+            var(--eco-p-clouds) left -16vw top calc(var(--hy) + var(--hh) * .32 - min(82vw,1420px) * .34)/min(82vw,1420px) auto no-repeat,
+            var(--eco-p-clouds-b) right -18vw top calc(var(--hy) + var(--hh) * .35 - min(74vw,1280px) * .34)/min(74vw,1280px) auto no-repeat;
   --eco-mid:var(--eco-hfrontr) 0 100%/100% var(--hh) no-repeat,
             var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
             var(--eco-p-turbine) left calc(90vw - var(--tb) * .388) bottom calc(var(--hh) * .65 - var(--tb) * .03)/auto var(--tb) no-repeat,
@@ -116,8 +117,8 @@
 [data-skin="eco"][data-pg="timetable"]{--hh:clamp(120px,20vh,220px); --lf:clamp(190px,17vw,300px); --tb:clamp(170px,34vh,320px);
   --eco-sky:linear-gradient(180deg,#8ccaf6 0%,#b4ddfb 35%,#dcf0fd 70%,#eef9f4 100%);
   --eco-air:radial-gradient(circle at 93% 3%,#fffef4 0 2.6vmin,rgba(255,252,226,.75) 6vmin,rgba(255,250,214,.25) 16vmin,rgba(255,250,214,0) 36vmin);
-  --eco-far:var(--eco-p-clouds) left -9vw top calc(var(--hy) + var(--hh) * .32 - min(44vw,660px) * .31)/min(44vw,660px) auto no-repeat,
-            var(--eco-p-clouds) right -12vw top calc(var(--hy) + var(--hh) * .34 - min(40vw,600px) * .3)/min(40vw,600px) auto no-repeat;
+  --eco-far:var(--eco-p-clouds) left -14vw top calc(var(--hy) + var(--hh) * .34 - min(58vw,940px) * .34)/min(58vw,940px) auto no-repeat,
+            var(--eco-p-clouds-b) right -16vw top calc(var(--hy) + var(--hh) * .36 - min(54vw,880px) * .34)/min(54vw,880px) auto no-repeat;
   --eco-mid:var(--eco-hfront) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
             var(--eco-p-turbine) left calc(97vw - var(--tb) * .388) bottom calc(var(--hh) * .7 - var(--tb) * .03)/auto var(--tb) no-repeat,
             var(--eco-p-turbine) left calc(2.5vw - var(--tb) * .24) bottom calc(var(--hh) * .62 - var(--tb) * .02)/auto calc(var(--tb) * .62) no-repeat;
@@ -128,17 +129,17 @@
   --eco-far:none}
 /* Games: the sun and two turbines on the left, a solar array in the grass in front; the globe rising on the right behind a
    big sunflower; clouds on both sides; the leaf at the top */
-[data-skin="eco"]:is([data-pg="games"],[data-pg="mahjong"]){--hh:clamp(220px,40vh,460px); --gb:clamp(300px,34vw,620px); --sf:clamp(250px,54vh,620px); --pw:clamp(260px,27vw,480px);
+[data-skin="eco"]:is([data-pg="games"],[data-pg="mahjong"]){--hh:clamp(220px,40vh,460px); --gb:clamp(300px,34vw,620px); --sf:clamp(250px,54vh,620px); --tk:clamp(230px,24vw,420px);
   --eco-air:var(--eco-sun) left calc(10vw - 300px) top calc(8vh - 300px)/600px 600px no-repeat,
            var(--eco-flarer) left calc(10vw - 30px) top calc(8vh + 26px)/480px 460px no-repeat;
   --eco-far:var(--eco-globe) left calc(91vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .35 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
-            var(--eco-p-clouds) left -10vw top calc(var(--hy) + var(--hh) * .32 - min(60vw,900px) * .31)/min(60vw,900px) auto no-repeat,
-            var(--eco-p-clouds) right -16vw top calc(var(--hy) + var(--hh) * .33 - min(52vw,800px) * .3)/min(52vw,800px) auto no-repeat;
+            var(--eco-p-clouds) left -18vw top calc(var(--hy) + var(--hh) * .34 - min(78vw,1340px) * .34)/min(78vw,1340px) auto no-repeat,
+            var(--eco-p-clouds-b) right -20vw top calc(var(--hy) + var(--hh) * .35 - min(70vw,1200px) * .34)/min(70vw,1200px) auto no-repeat;
   --eco-mid:var(--eco-hfrontr) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
             var(--eco-p-turbine) left calc(6vw - var(--tb) * .24) bottom calc(var(--hh) * .64 - var(--tb) * .02)/auto calc(var(--tb) * .62) no-repeat,
             var(--eco-p-turbine) left calc(15vw - var(--tb) * .19) bottom calc(var(--hh) * .7 - var(--tb) * .02)/auto calc(var(--tb) * .48) no-repeat;
   --eco-near:var(--eco-p-sunflower) right -1vw bottom calc(var(--sf) * -.2)/auto var(--sf) no-repeat,
-             var(--eco-p-panel) left -3vw bottom calc(var(--pw) * -.08)/var(--pw) auto no-repeat;
+             var(--eco-p-tracker) left max(-2vw,calc(var(--m) - var(--tk) * .62)) bottom calc(var(--hh) * .07)/var(--tk) auto no-repeat;
   --eco-top:var(--eco-p-leaf) right -1.5vw top -2vh/var(--lf) auto no-repeat}
 [data-skin="eco"][data-mode="dark"]:is([data-pg="games"],[data-pg="mahjong"]){
   --eco-air:var(--eco-moon) left calc(10vw - 150px) top calc(9vh - 150px)/300px 300px no-repeat,var(--eco-flies) left 0 bottom calc(var(--hh) * .5)/100% calc(var(--hh) * .7) no-repeat,var(--eco-night) 0 0/100% 100% no-repeat;
@@ -146,18 +147,18 @@
 /* the inner pages (one big sheet of glass in the middle): the sun and two turbines on the left with the solar array in the
    grass in front; on the right the globe rising behind a lone tree on the hill; clouds on both sides; the leaf */
 [data-skin="eco"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){
-  --hh:clamp(200px,38vh,440px); --tr:clamp(200px,40vh,440px); --pw:clamp(240px,25vw,440px); --gb:clamp(300px,34vw,620px);
+  --hh:clamp(200px,38vh,440px); --tr:clamp(200px,40vh,440px); --tk:clamp(220px,23vw,400px); --gb:clamp(300px,34vw,620px);
   --eco-air:var(--eco-sun) left calc(12vw - 300px) top calc(8vh - 300px)/600px 600px no-repeat,
            var(--eco-flarer) left calc(12vw - 30px) top calc(8vh + 26px)/480px 460px no-repeat;
   --eco-far:var(--eco-globe) left calc(97vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .3 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
-            var(--eco-p-clouds) left -12vw top calc(var(--hy) + var(--hh) * .3 - min(54vw,820px) * .31)/min(54vw,820px) auto no-repeat,
-            var(--eco-p-clouds) right -14vw top calc(var(--hy) + var(--hh) * .33 - min(60vw,900px) * .31)/min(60vw,900px) auto no-repeat;
+            var(--eco-p-clouds) left -18vw top calc(var(--hy) + var(--hh) * .33 - min(74vw,1280px) * .34)/min(74vw,1280px) auto no-repeat,
+            var(--eco-p-clouds-b) right -18vw top calc(var(--hy) + var(--hh) * .35 - min(80vw,1380px) * .34)/min(80vw,1380px) auto no-repeat;
   --eco-mid:var(--eco-hfrontr) 0 100%/100% var(--hh) no-repeat,
             var(--eco-p-tree) left calc(87vw - var(--tr) * .35) bottom calc(var(--hh) * .41 - var(--tr) * .03)/auto var(--tr) no-repeat,
             var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
             var(--eco-p-turbine) left calc(6vw - var(--tb) * .24) bottom calc(var(--hh) * .64 - var(--tb) * .02)/auto calc(var(--tb) * .6) no-repeat,
             var(--eco-p-turbine) left calc(14.5vw - var(--tb) * .17) bottom calc(var(--hh) * .7 - var(--tb) * .02)/auto calc(var(--tb) * .44) no-repeat;
-  --eco-near:var(--eco-p-panel) left -3vw bottom calc(var(--pw) * -.08)/var(--pw) auto no-repeat;
+  --eco-near:var(--eco-p-tracker) left max(-2vw,calc(var(--m) - var(--tk) * .62)) bottom calc(var(--hh) * .07)/var(--tk) auto no-repeat;
   --eco-top:var(--eco-p-leaf) right -1.5vw top -2vh/var(--lf) auto no-repeat}
 [data-skin="eco"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){
   --eco-air:var(--eco-moon) left calc(12vw - 150px) top calc(10vh - 150px)/300px 300px no-repeat,var(--eco-flies) left 0 bottom calc(var(--hh) * .5)/100% calc(var(--hh) * .7) no-repeat,var(--eco-night) 0 0/100% 100% no-repeat;
@@ -168,7 +169,7 @@
   [data-skin="eco"]{--hh:clamp(150px,24vh,230px) !important; --gb:min(92vw,420px) !important; --tb:clamp(170px,30vh,260px) !important; --lf:min(46vw,210px) !important}
   [data-skin="eco"]:not([data-pg="timetable"]){
     --eco-far:var(--eco-globe) left calc(-1 * var(--gb) * .38) top calc(var(--hy) + var(--hh) * .38 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
-              var(--eco-p-clouds) right -30vw top calc(var(--hy) + var(--hh) * .34 - 90vw * .3)/90vw auto no-repeat;
+              var(--eco-p-clouds-b) right -40vw top calc(var(--hy) + var(--hh) * .36 - 130vw * .34)/130vw auto no-repeat;
     --eco-mid:var(--eco-hfront) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
               var(--eco-p-turbine) left calc(84vw - var(--tb) * .388) bottom calc(var(--hh) * .65 - var(--tb) * .03)/auto var(--tb) no-repeat}
   [data-skin="eco"][data-mode="dark"]:not([data-pg="timetable"]){--eco-far:var(--eco-globed) left calc(-1 * var(--gb) * .38) top calc(var(--hy) + var(--hh) * .38 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat}

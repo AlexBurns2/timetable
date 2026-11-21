@@ -9,7 +9,8 @@
    pixels), draws the same picture onto its canvas, and brings a few things
    to life, slowly and only a little:
      · the clouds drift a short way and back over a couple of minutes;
-     · the turbines' rotors turn, slowly, each in its own tilted plane;
+     · the turbines' blades turn, slowly, each in its own tilted plane (the
+       hub's nose, drawn over them, stays still);
      · the leaf sways on its stem, a degree or so;
      · now and then the light catches a drop of dew on the leaf.
    Everything that doesn't move is drawn once into two still layers. At the
@@ -97,11 +98,11 @@ FX.scenes.eco = {
       for (const l of layers()){
         const im = pic(l.u); if (!ok(im)){ if (!im.complete) waiting = true; continue; }
         const b = box(l, im), f = l.g === 'far' ? '' : dim;
-        if (/ar-clouds/.test(l.u)){ flush(); items.push({ k:'cloud', b, c:sprite(im, b, f), i:nC++ }); continue; }
+        if (/eco-clouds|ar-clouds/.test(l.u)){ flush(); items.push({ k:'cloud', b, c:sprite(im, b, f), i:nC++ }); continue; }
         if (/eco-turbine\.webp/.test(l.u)){
-          const tw = pic(l.u.replace('eco-turbine.webp', 'eco-turbine-tower.webp')), rt = pic(l.u.replace('eco-turbine.webp', 'eco-turbine-rotor.webp'));
-          if (ok(tw) && ok(rt)){ flush(); items.push({ k:'turbine', b, tower:sprite(tw, b, f), rotor:sprite(rt, b, f), i:nT++ }); continue; }
-          if (!tw.complete || !rt.complete) waiting = true;
+          const part = n => pic(l.u.replace('eco-turbine.webp', 'eco-turbine-' + n + '.webp')), tw = part('tower'), rt = part('rotor'), ns = part('nose');
+          if (ok(tw) && ok(rt) && ok(ns)){ flush(); items.push({ k:'turbine', b, tower:sprite(tw, b, f), rotor:sprite(rt, b, f), nose:sprite(ns, b, f), i:nT++ }); continue; }
+          if (!tw.complete || !rt.complete || !ns.complete) waiting = true;
         }
         const lm = l.u.match(/eco-leaf(-b)?\.webp/);
         if (lm){ flush(); items.push({ k:'leaf', b, c:sprite(im, b, f), flip:!!lm[1], i:nL++, dark:!!dim }); continue; }
@@ -140,6 +141,7 @@ FX.scenes.eco = {
           const M = [R[0] * AI[0] + R[1] * AI[2], R[0] * AI[1] + R[1] * AI[3], R[2] * AI[0] + R[3] * AI[2], R[2] * AI[1] + R[3] * AI[3]];
           x.save(); x.translate(b.x + HUB[0] * k, b.y + HUB[1] * k); x.transform(M[0], M[2], M[1], M[3], 0, 0);
           x.drawImage(it.rotor, -HUB[0] * k, -HUB[1] * k, b.w, b.h); x.restore();
+          x.drawImage(it.nose, b.x, b.y, b.w, b.h);                   // the hub's nose doesn't turn: it stays facing the way it faces
         } else if (it.k === 'leaf'){
           /* swaying on its stem: a degree and a half either way, about where the stem leaves the picture */
           const a = Math.sin(tau * 2 * Math.PI / (it.flip ? 10.5 : 8.5)) * .026 * (it.flip ? -1 : 1);
