@@ -1,29 +1,36 @@
 /* Windows XP: its own script (theme.js skinJs), for what the stylesheet can't do. Loaded once, the first
    time the theme is on; it watches html[data-skin] (tt:look) and takes everything of its own away again
    when another theme is picked.
-   - Every page: the taskbar's clock, a taskbar button for each window, the Start menu's name banner
-     (Settings), and a click outside the Start menu closes it.
-   - The timetable and the other pages: the window's caption buttons (minimise to the taskbar, maximise /
-     restore, close = Home).
+   - Every page: the taskbar's clock, Quick Launch's Desktop button (Home; on Home itself it shows the
+     desktop, minimising every window, and brings them back), a taskbar button for each window, the Start
+     menu's name banner (Settings), and a click outside the Start menu closes it.
+   - The timetable and the other pages: the page is one window on the same desktop, with the desktop's
+     icons down the left on a computer-sized screen (one click opens a page; this page's is picked), its
+     caption buttons (minimise to the taskbar, maximise / restore, remembered in msc.xpmax; close = Home)
+     and, arriving from another page with Animation on, XP's opening: a title bar flies out from what was
+     clicked (or from the taskbar) to the window, and the window is there.
    - Home, on a computer with a mouse (1000px wide or more, hover, a fine pointer): the windows (MSC
      Unofficial, the poll, today's games, the forum) can be dragged by their title bars, come to the front
      when clicked, minimise to the taskbar, and stay inside the screen; where they are is remembered on
      this device (msc.xpwin, not a tt. key, so it doesn't sync). The Start menu gets "Reset windows". The
      page tiles are desktop icons: a click selects, a double-click (or Enter) opens.
    Nothing here is needed to use the page: without it the windows simply stay where the stylesheet puts
-   them, and keyboard and screen reader use is the page's own. The page's order is kept; the one thing
-   moved is Home's Settings / Timetable pair, into the taskbar while windows can be moved, and it stays
-   first on the page. */
+   them, and keyboard and screen reader use is the page's own. The page's order is kept; the taskbar's
+   own buttons come first, the desktop's icons after the page, and the one thing moved is Home's Settings /
+   Timetable pair, into the taskbar while windows can be moved, which stays first on the page. */
 (() => {
 'use strict';
 const D = document, R = D.documentElement;
-const WINKEY = 'msc.xpwin', MAXKEY = 'msc.xpmax';
+const WINKEY = 'msc.xpwin', MAXKEY = 'msc.xpmax', FROMKEY = 'msc.xpfrom';
 const WM_Q = '(min-width:1000px) and (hover:hover) and (pointer:fine)';
-const TBH = 30;
 const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
 const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const pg = () => R.dataset.pg || '';
 const want = () => R.dataset.skin === 'xp' && pg() !== 'hkmahjong' && !!D.body;
+/* the taskbar's height, from the stylesheet (--xp-tbh) */
+const tbh = () => parseFloat(getComputedStyle(R).getPropertyValue('--xp-tbh')) || 38;
+/* moving things only with Animation on, and never with Reduce motion or the device asking for less */
+const moving = () => R.dataset.fx === 'on' && R.dataset.motion !== 'reduced' && !(matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 let live = null;
 
 function look(){
@@ -31,8 +38,6 @@ function look(){
   if (want()){ if (!live) start(); else live.refresh(); }
   else if (live) stop();
 }
-addEventListener('tt:look', look);
-if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', look, { once:true }); else look();
 
 function stop(){ const l = live; live = null; if (l) for (let i = l.off.length - 1; i >= 0; i--) try { l.off[i](); } catch {} }
 
@@ -62,29 +67,78 @@ function who(){
   } catch { return 'Guest'; }
 }
 
+/* ── XP's window animation: a title bar flying from one place to another (opening, minimising, restoring).
+      Small (a title bar's height) and quick; never with motion off. ── */
+const box = el => { if (!el) return null; const r = el.getBoundingClientRect(); return r.width ? { x:r.left, y:r.top, w:r.width, h:r.height } : null; };
+function zoom(from, to, ms, done){
+  let fin = false;
+  const end = () => { if (fin) return; fin = true; z.remove(); if (done) done(); };
+  const z = D.createElement('div'); z.className = 'xpzoom'; z.setAttribute('aria-hidden', 'true');
+  if (!from || !to || !moving() || !z.animate){ fin = true; if (done) done(); return; }
+  const H = 30, top = r => Math.max(0, Math.min(r.y, innerHeight - H));
+  const k = (r, h) => ({ left:r.x + 'px', top:top(r) + 'px', width:Math.max(24, r.w) + 'px', height:h + 'px' });
+  D.body.appendChild(z);
+  const a = z.animate([k(from, Math.min(H, from.h)), k(to, H)], { duration:ms, easing:'cubic-bezier(.25,.6,.35,1)', fill:'forwards' });
+  a.onfinish = end; a.oncancel = end;
+  setTimeout(end, ms + 250);
+}
+/* what was clicked to open the next page, for its opening */
+function remember(el){ const r = box(el); if (r) try { sessionStorage.setItem(FROMKEY, JSON.stringify(Object.assign(r, { t:Date.now() }))); } catch {} }
+function recalled(){
+  try { const s = JSON.parse(sessionStorage.getItem(FROMKEY) || 'null'); sessionStorage.removeItem(FROMKEY); return s && Date.now() - s.t < 6000 ? s : null; } catch { return null; }
+}
+
+/* the desktop's icons, as Home has them (its own tiles there) */
+const HOUSE = '<svg class="ph" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M216,120v96H152V152H104v64H40V120l88-88Z" opacity="0.2"/>' +
+  '<path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span class="ie">🏠</span>';
+const ICONS = [
+  ['home.html', 'Home', '#1c55c6', '', '🏠', ['home']],
+  ['./', 'Timetable', '#e5484d', 'd:table', '📋', ['timetable']],
+  ['calendar.html', 'Calendar', '#f76b15', 'd:calendar-dots', '📅', ['calendar']],
+  ['free.html', 'Free periods', '#ffb224', 'd:users-three', '☕', ['free']],
+  ['revision.html', 'Revision', '#30a46c', 'd:pencil-simple-line', '📝', ['revision']],
+  ['resources.html', 'Resources', '#12a594', 'd:books', '📚', ['resources']],
+  ['games.html', 'Games', '#8e4ec6', 'd:game-controller', '🎮', ['games']],
+  ['themes.html', 'Theme finder', '#af52de', 'd:palette', '🎨', ['themes', 'finder']],
+  ['mahjong.html', 'Mahjong club', '#d6409f', 'd:cards-three', '🀄', ['mahjong']]
+];
+
 function start(){
   const off = [];
   live = { off, refresh(){ fit(); } };
   const on = (t, ev, fn, opt) => { t.addEventListener(ev, fn, opt); off.push(() => t.removeEventListener(ev, fn, opt)); };
-  R.classList.add('xpjs'); off.push(() => R.classList.remove('xpjs'));
+  R.classList.add('xpjs'); off.push(() => R.classList.remove('xpjs', 'xpopening'));
+  const isHome = pg() === 'home';
 
-  /* the taskbar's own layer: the window buttons and the clock (the bar, start and tray are the page's, drawn by xp.css) */
+  /* arriving from another page: keep the window out of sight (xp.css hides it under fx.js's cover) until it opens */
+  const opening = !isHome && R.classList.contains('fx-in') && moving();
+  if (opening){ R.classList.add('xpopening'); setTimeout(() => R.classList.remove('xpopening'), 900); }
+
+  /* the taskbar's own layer, first on the page: Quick Launch's Desktop, the window buttons, the clock
+     (the bar, the start button and the tray are the page's own, drawn by xp.css) */
   const tb = D.createElement('div'); tb.id = 'xptb';
-  tb.innerHTML = '<div class="xptasks" role="group" aria-label="Windows"></div><span class="xpclock"></span>';
-  D.body.appendChild(tb); off.push(() => tb.remove());
-  const tasks = tb.querySelector('.xptasks'), clock = tb.querySelector('.xpclock');
+  tb.innerHTML = '<div class="xpql"></div><div class="xptasks" role="group" aria-label="Windows"></div><span class="xpclock"></span>';
+  D.body.insertBefore(tb, D.body.firstChild); off.push(() => tb.remove());
+  const ql = tb.querySelector('.xpql'), tasks = tb.querySelector('.xptasks'), clock = tb.querySelector('.xpclock');
+  const desk = D.createElement(isHome ? 'button' : 'a');
+  desk.className = 'xpdesk'; desk.innerHTML = '<span>Desktop</span>';
+  if (isHome){ desk.type = 'button'; desk.title = 'Show the desktop'; desk.setAttribute('aria-label', 'Show the desktop'); desk.setAttribute('aria-pressed', 'false'); }
+  else { desk.href = 'home.html'; desk.title = 'Desktop (Home)'; desk.setAttribute('aria-label', 'Desktop (Home)'); }
+  ql.appendChild(desk);
   const tick = () => {
     const d = new Date();
     clock.textContent = d.toLocaleTimeString('en-AU', { hour:'numeric', minute:'2-digit' }).toUpperCase();
     clock.title = d.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
   };
   tick(); const clk = setInterval(tick, 15000); off.push(() => clearInterval(clk));
-  /* the window buttons fill the bar between the start button and the tray */
+  /* Quick Launch after the start button, the window buttons between it and the tray */
   function fit(){
     const s = D.querySelector('#themebtn,#settings'), tray = D.querySelector('#xptray .headbtns,.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs');
-    const l = s ? Math.round(s.getBoundingClientRect().right) + 6 : 110;
+    const l = s ? Math.round(s.getBoundingClientRect().right) + 4 : 110;
+    tb.style.setProperty('--xp-ql', l + 'px');
+    const q = ql.hidden ? l : Math.round(ql.getBoundingClientRect().right) + 4;
     const r = tray ? Math.round(innerWidth - tray.getBoundingClientRect().left) + 6 : 190;
-    tb.style.setProperty('--xp-tl', l + 'px'); tb.style.setProperty('--xp-tr', r + 'px');
+    tb.style.setProperty('--xp-tl', q + 'px'); tb.style.setProperty('--xp-tr', r + 'px');
   }
   fit(); on(window, 'resize', fit);
   const task = (id, label) => {
@@ -92,6 +146,8 @@ function start(){
     b.innerHTML = '<span></span>'; b.firstChild.textContent = label; b.title = label;
     tasks.appendChild(b); return b;
   };
+  /* what's clicked to go to another page: where its window will open from */
+  on(D, 'click', e => { const a = e.target.closest && e.target.closest('a.qtile,.xpicons a,a.xpdesk'); if (a && !e.defaultPrevented) remember(a.querySelector('.ico') || a); }, true);
 
   /* ── the Start menu (Settings): the name on the banner; a click outside closes it ── */
   [D.getElementById('setDlg'), D.getElementById('dlg')].filter(Boolean).forEach(dlg => {
@@ -112,55 +168,83 @@ function start(){
   const sb = D.querySelector('#themebtn,#settings');
   if (sb){ const was = sb.getAttribute('aria-label'); sb.setAttribute('aria-label', 'Start: Settings'); off.push(() => { if (was == null) sb.removeAttribute('aria-label'); else sb.setAttribute('aria-label', was); }); }
 
-  if (pg() === 'home') home(off, on, task, fit);
-  else pageWindow(off, on, task, fit);
+  if (isHome) home(off, on, task, fit, desk, ql);
+  else pageWindow(off, on, task, fit, opening);
 }
 
-/* ── the timetable and the other pages: one window, its caption buttons, its taskbar button ── */
-function pageWindow(off, on, task, fit){
+/* ── the timetable and the other pages: one window on the desktop, the desktop's icons beside it ── */
+function pageWindow(off, on, task, fit, opening){
   const tt = pg() === 'timetable';
-  const head = D.querySelector(tt ? '.topbar' : '.pagehead'); if (!head) return;
+  const wrap = D.querySelector('.wrap'), head = D.querySelector(tt ? '.topbar' : '.pagehead');
+  if (!wrap || !head){ R.classList.remove('xpopening'); return; }
+  const titleOf = () => box(tt ? head.querySelector('h1') || head : head);
+
+  /* the desktop's icons, after the page (shown by xp.css on a computer-sized screen) */
+  const nav = D.createElement('nav'); nav.className = 'xpicons'; nav.setAttribute('aria-label', 'Desktop');
+  nav.innerHTML = ICONS.map(i => '<a class="qtile" href="' + i[0] + '" style="--tc:' + i[2] + '"' + (i[5].includes(pg()) ? ' aria-current="page"' : '') + '>' +
+    (i[3] ? '<span class="ico" data-icon="' + i[3] + '" data-emoji="' + i[4] + '"></span>' : '<span class="ico">' + HOUSE + '</span>') +
+    '<span class="tname">' + i[1] + '</span></a>').join('');
+  wrap.after(nav); off.push(() => nav.remove());
+  if (window.Icon && Icon.fill) Icon.fill(nav);
+  const cur = nav.querySelector('[aria-current="page"]'); if (cur) cur.classList.add('xpsel');
+
   const cap = caption(['min', 'max', 'close']);
   head.appendChild(cap); off.push(() => cap.remove());
   const h1 = head.querySelector('h1');
   const tb = task('page', tt ? 'Timetable' : (h1 && h1.textContent.trim()) || D.title);
   tb.setAttribute('aria-pressed', 'true');
-  /* maximised: the timetable is unless restored; the other pages aren't unless maximised */
+  /* maximised or not (msc.xpmax: the timetable on its own, the other pages together); not, to begin with */
   const key = tt ? 'timetable' : 'page';
-  const isMax = () => { const m = lsGet(MAXKEY, {}) || {}; return key in m ? !!m[key] : tt; };
-  const paintMax = () => { const m = isMax(); R.classList.toggle('xpmaxed', m && !tt); R.classList.toggle('xpwinned', !m && tt); setMaxBtn(cap.querySelector('[data-cap="max"]'), m); fit(); };
-  paintMax(); off.push(() => R.classList.remove('xpmaxed', 'xpwinned', 'xppagemin'));
+  const isMax = () => { const m = lsGet(MAXKEY, {}) || {}; return !!m[key]; };
+  const paintMax = () => { const m = isMax(); R.classList.toggle('xpmaxed', m); setMaxBtn(cap.querySelector('[data-cap="max"]'), m); fit(); };
+  const flipMax = () => { const m = lsGet(MAXKEY, {}) || {}; m[key] = !isMax(); lsSet(MAXKEY, m); paintMax(); };
+  paintMax(); off.push(() => R.classList.remove('xpmaxed', 'xppagemin'));
   const minimise = v => {
-    R.classList.toggle('xppagemin', v); tb.setAttribute('aria-pressed', String(!v));
-    if (v && head.contains(D.activeElement)) tb.focus();
+    if (v){
+      const from = titleOf();
+      R.classList.add('xppagemin'); tb.setAttribute('aria-pressed', 'false');
+      if (wrap.contains(D.activeElement)) tb.focus();
+      zoom(from, box(tb), 170);
+    } else {
+      tb.setAttribute('aria-pressed', 'true');
+      zoom(box(tb), titleOf(), 170, () => R.classList.remove('xppagemin'));
+    }
   };
   on(cap, 'click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const k = b.dataset.cap;
     if (k === 'min') minimise(true);
-    else if (k === 'max'){ const m = lsGet(MAXKEY, {}) || {}; m[key] = !isMax(); lsSet(MAXKEY, m); paintMax(); }
+    else if (k === 'max') flipMax();
     else if (k === 'close') location.href = 'home.html';
   });
   on(tb, 'click', () => minimise(!R.classList.contains('xppagemin')));
   /* a double-click on the title bar maximises, as in XP */
   on(head, 'dblclick', e => {
     if (e.target.closest('button,a,input,select,textarea,.crumbs,.headbtns,.idrow,.now')) return;
-    const r = head.getBoundingClientRect(); if (e.clientY - r.top > TBH) return;
-    const m = lsGet(MAXKEY, {}) || {}; m[key] = !isMax(); lsSet(MAXKEY, m); paintMax();
+    const r = head.getBoundingClientRect(); if (e.clientY - r.top > 30) return;
+    flipMax();
   });
+
+  /* opening: from what was clicked on the last page, else from this window's taskbar button */
+  if (opening){
+    const from = recalled() || box(tb);
+    requestAnimationFrame(() => zoom(from, titleOf(), 210, () => R.classList.remove('xpopening')));
+  } else try { sessionStorage.removeItem(FROMKEY); } catch {}
 }
 
 /* ── Home: the desktop ── */
-function home(off, on, task, fit){
+function home(off, on, task, fit, desk, ql){
   const mq = matchMedia(WM_Q);
   let wm = null;
   const body = D.body;
   const can = () => mq.matches && !body.classList.contains('pollfocus');
-  const sync = () => { if (can() && !wm) wm = wmOn(); else if (!can() && wm){ wm(); wm = null; } fit(); };
+  /* Quick Launch's Desktop is for when there are windows to put away */
+  const sync = () => { if (can() && !wm) wm = wmOn(); else if (!can() && wm){ wm.off(); wm = null; } ql.hidden = !wm; fit(); };
   sync();
   on(mq, 'change', sync);
+  on(desk, 'click', () => { if (wm) wm.desk(); });
   const bo = new MutationObserver(sync); bo.observe(body, { attributes:true, attributeFilter:['class'] }); off.push(() => bo.disconnect());
-  off.push(() => { if (wm){ wm(); wm = null; } });
+  off.push(() => { if (wm){ wm.off(); wm = null; } });
 
   function wmOn(){
     const offw = [];
@@ -171,11 +255,11 @@ function home(off, on, task, fit){
       { id:'today', el:D.getElementById('hubtoday'), label:'Today’s games', cap:['min'] },
       { id:'forum', el:D.getElementById('forum'), label:'Forum', cap:['min', 'max'] }
     ].filter(w => w.el);
-    const byEl = el => WINS.find(w => w.el === el);
     const shown = w => !w.el.hidden && w.el.getClientRects().length > 0 || w.el.classList.contains('xpmin');
     const saved = () => { const s = lsGet(WINKEY, null); return s && s.v === 1 && s.w ? s.w : {}; };
     const save = () => { const s = {}; WINS.forEach(w => { if (w.placed) s[w.id] = { x:Math.round(w.x), y:Math.round(w.y) }; }); lsSet(WINKEY, { v:1, w:s }); };
-    let ztop = 10;
+    const titleOf = w => { const r = box(w.el); return r && { x:r.x, y:r.y, w:r.w, h:30 }; };
+    let ztop = 10, hidden = null;
     scrollTo(0, 0);
 
     /* Settings and Timetable sit in the taskbar, out of the window that holds them (so a window in front can't
@@ -200,7 +284,7 @@ function home(off, on, task, fit){
       WINS.forEach((w, i) => { if (keep[i] == null) w.el.removeAttribute('style'); else w.el.setAttribute('style', keep[i]); });
       return out;
     }
-    const avail = () => innerHeight - TBH;
+    const avail = () => innerHeight - tbh();
     function clamp(w){
       if (!w.placed || w.el.classList.contains('xpmaxw')) return;
       const el = w.el, ww = el.offsetWidth, hh = el.offsetHeight;
@@ -234,15 +318,20 @@ function home(off, on, task, fit){
       WINS.forEach(w => { if (w.placed && !w.el.classList.contains('xpmin') && !w.el.hidden && (!best || +w.el.style.zIndex > +best.el.style.zIndex)) best = w; });
       return best;
     }
-    function minimise(w){
-      const had = w.el.contains(D.activeElement);
+    function minimise(w, quiet){
+      const had = w.el.contains(D.activeElement), from = titleOf(w);
       w.el.classList.add('xpmin'); w.el.classList.remove('xpon');
-      front(topmost());
+      if (!quiet){ front(topmost()); zoom(from, box(w.task), 170); }
       if (w.task){ w.task.setAttribute('aria-pressed', 'false'); if (had) w.task.focus(); }
     }
+    function restore(w){
+      const to = (() => { w.el.classList.remove('xpmin'); clamp(w); const r = titleOf(w); w.el.classList.add('xpmin'); return r; })();
+      zoom(box(w.task), to, 170, () => { w.el.classList.remove('xpmin'); front(w); clamp(w); });
+    }
     function taskClick(w){
+      hidden = null; desk.setAttribute('aria-pressed', 'false');
       const el = w.el;
-      if (el.classList.contains('xpmin')){ el.classList.remove('xpmin'); front(w); clamp(w); }
+      if (el.classList.contains('xpmin')) restore(w);
       else if (el.classList.contains('xpon')) minimise(w);
       else front(w);
     }
@@ -251,6 +340,14 @@ function home(off, on, task, fit){
       w.el.classList.toggle('xpmaxw', m);
       setMaxBtn(w.capEl && w.capEl.querySelector('[data-cap="max"]'), m);
       front(w); if (!m) clamp(w);
+    }
+    /* Quick Launch's Desktop: every window away to the taskbar; again, and they come back */
+    function deskToggle(){
+      if (hidden){ const back = hidden; hidden = null; back.forEach(w => w.el.classList.remove('xpmin')); back.forEach(clamp); front(back[back.length - 1] || topmost()); desk.setAttribute('aria-pressed', 'false'); return; }
+      const open = WINS.filter(w => w.placed && !w.el.hidden && !w.el.classList.contains('xpmin')).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
+      if (!open.length) return;
+      open.forEach(w => minimise(w, true)); front(null); WINS.forEach(w => { if (w.task) w.task.setAttribute('aria-pressed', 'false'); });
+      hidden = open; desk.setAttribute('aria-pressed', 'true');
     }
 
     /* first placing: every window showing now */
@@ -281,7 +378,7 @@ function home(off, on, task, fit){
         front(w);
         if (e.button !== 0 || e.pointerType === 'touch' || w.el.classList.contains('xpmaxw')) return;
         const r = w.el.getBoundingClientRect();
-        if (e.clientY - r.top > TBH) return;
+        if (e.clientY - r.top > 30) return;
         if (e.target.closest('button,a,input,select,textarea,label,[contenteditable="true"],.xpcap')) return;
         e.preventDefault();
         drag = { w, dx:e.clientX - r.left, dy:e.clientY - r.top, id:e.pointerId, x0:e.clientX, y0:e.clientY, moved:false };
@@ -291,7 +388,7 @@ function home(off, on, task, fit){
       onw(w.el, 'focusin', () => { if (w.placed) front(w); });
       onw(w.el, 'dblclick', e => {
         if (!w.cap.includes('max') || e.target.closest('button,a,input,select,textarea')) return;
-        const r = w.el.getBoundingClientRect(); if (e.clientY - r.top <= TBH) maxToggle(w);
+        const r = w.el.getBoundingClientRect(); if (e.clientY - r.top <= 30) maxToggle(w);
       });
       if (w.cap.length) onw(w.el, 'click', e => {
         const b = e.target.closest('.xpcap button'); if (!b || !w.el.contains(b)) return;
@@ -339,7 +436,7 @@ function home(off, on, task, fit){
       b.title = 'Put the windows back where they started';
       b.onclick = () => {
         if (dlg.open) dlg.close();
-        lsSet(WINKEY, null);
+        lsSet(WINKEY, null); hidden = null; desk.setAttribute('aria-pressed', 'false');
         const d = defaults();
         WINS.forEach(w => { if (!w.placed) return; w.el.classList.remove('xpmin', 'xpmaxw'); setMaxBtn(w.capEl && w.capEl.querySelector('[data-cap="max"]'), false); w.placed = false; place(w, d[w.id]); });
         front(WINS.find(w => w.id === 'poll' && w.placed) || topmost());
@@ -350,6 +447,7 @@ function home(off, on, task, fit){
     /* and all of it away again */
     offw.push(() => {
       R.classList.remove('xpwm');
+      desk.setAttribute('aria-pressed', 'false');
       WINS.forEach(w => {
         const el = w.el;
         el.classList.remove('xpwin', 'xpon', 'xpmin', 'xpmaxw', 'xpdrag');
@@ -360,7 +458,11 @@ function home(off, on, task, fit){
         w.placed = false; w.capEl = w.task = null;
       });
     });
-    return () => { for (let i = offw.length - 1; i >= 0; i--) try { offw[i](); } catch {} };
+    return { off(){ for (let i = offw.length - 1; i >= 0; i--) try { offw[i](); } catch {} }, desk:deskToggle };
   }
 }
+
+/* (last, once everything above is defined: the page may already be loaded) */
+addEventListener('tt:look', look);
+if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', look, { once:true }); else look();
 })();

@@ -64,7 +64,7 @@
   /* the photos (cut-outs; see PHOTO-LOG.md) */
   --eco-p-leaf:url(../images/th/eco-leaf.webp); --eco-p-leaf-b:url(../images/th/eco-leaf-b.webp);
   --eco-p-turbine:url(../images/th/eco-turbine.webp); --eco-p-tree:url(../images/th/eco-tree.webp);
-  --eco-p-solar:url(../images/th/eco-solar.webp); --eco-p-sunflower:url(../images/th/eco-sunflower.webp);
+  --eco-p-panel:url(../images/th/eco-panel.webp); --eco-p-sunflower:url(../images/th/eco-sunflower.webp);
   --eco-p-clouds:url(../images/th/ar-clouds.webp);
   /* the hills' height; things are stood on their crests by fractions of it (ecoart2.mjs crestAt) */
   --hh:clamp(230px,44vh,500px); --hy:calc(100vh - var(--hh));
@@ -110,55 +110,65 @@
   --eco-dim:brightness(.4) saturate(.8) contrast(1.06);
 }
 
-/* ── the landscape, page by page ── */
-/* the timetable: the quietest; a paler sky, the sun's glow in the corner, a low hill, the leaf peeking in at the top */
-[data-skin="eco"][data-pg="timetable"]{--hh:clamp(110px,18vh,200px); --lf:clamp(190px,17vw,300px);
+/* ── the landscape, page by page: every page as full as Home, the things kept to the edges ── */
+/* the timetable: the quietest; a paler sky, the sun's glow in the corner, clouds low on the horizon, a low hill with a
+   turbine at each edge, the leaf peeking in at the top */
+[data-skin="eco"][data-pg="timetable"]{--hh:clamp(120px,20vh,220px); --lf:clamp(190px,17vw,300px); --tb:clamp(170px,34vh,320px);
   --eco-sky:linear-gradient(180deg,#8ccaf6 0%,#b4ddfb 35%,#dcf0fd 70%,#eef9f4 100%);
   --eco-air:radial-gradient(circle at 93% 3%,#fffef4 0 2.6vmin,rgba(255,252,226,.75) 6vmin,rgba(255,250,214,.25) 16vmin,rgba(255,250,214,0) 36vmin);
-  --eco-far:none;
-  --eco-mid:var(--eco-hfront) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat;
+  --eco-far:var(--eco-p-clouds) left -9vw top calc(var(--hy) + var(--hh) * .32 - min(44vw,660px) * .31)/min(44vw,660px) auto no-repeat,
+            var(--eco-p-clouds) right -12vw top calc(var(--hy) + var(--hh) * .34 - min(40vw,600px) * .3)/min(40vw,600px) auto no-repeat;
+  --eco-mid:var(--eco-hfront) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
+            var(--eco-p-turbine) left calc(97vw - var(--tb) * .388) bottom calc(var(--hh) * .7 - var(--tb) * .03)/auto var(--tb) no-repeat,
+            var(--eco-p-turbine) left calc(2.5vw - var(--tb) * .24) bottom calc(var(--hh) * .62 - var(--tb) * .02)/auto calc(var(--tb) * .62) no-repeat;
   --eco-top:var(--eco-p-leaf) right -2.5vw top -3vh/var(--lf) auto no-repeat}
 [data-skin="eco"][data-mode="dark"][data-pg="timetable"]{
   --eco-sky:linear-gradient(180deg,#040e22 0%,#081d3a 45%,#0d3046 80%,#134a4c 100%);
   --eco-air:var(--eco-moon) left calc(90vw - 150px) top calc(8vh - 150px)/300px 300px no-repeat,var(--eco-night) 0 0/100% 100% no-repeat;
   --eco-far:none}
-/* Games: a sunflower in the grass and a solar panel, the globe rising on the right, turbines far off on the left */
-[data-skin="eco"]:is([data-pg="games"],[data-pg="mahjong"]){--hh:clamp(220px,40vh,460px); --gb:clamp(300px,34vw,620px); --sf:clamp(250px,54vh,620px); --sp:clamp(180px,20vw,380px);
+/* Games: the sun and two turbines on the left, a solar array in the grass in front; the globe rising on the right behind a
+   big sunflower; clouds on both sides; the leaf at the top */
+[data-skin="eco"]:is([data-pg="games"],[data-pg="mahjong"]){--hh:clamp(220px,40vh,460px); --gb:clamp(300px,34vw,620px); --sf:clamp(250px,54vh,620px); --pw:clamp(260px,27vw,480px);
   --eco-air:var(--eco-sun) left calc(10vw - 300px) top calc(8vh - 300px)/600px 600px no-repeat,
-           var(--eco-flarer) left calc(10vw - 30px) top calc(8vh + 26px)/480px 460px no-repeat; 
+           var(--eco-flarer) left calc(10vw - 30px) top calc(8vh + 26px)/480px 460px no-repeat;
   --eco-far:var(--eco-globe) left calc(91vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .35 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
-            var(--eco-p-clouds) left -10vw top calc(var(--hy) + var(--hh) * .32 - min(60vw,900px) * .31)/min(60vw,900px) auto no-repeat;
-  --eco-mid:var(--eco-hfront) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
+            var(--eco-p-clouds) left -10vw top calc(var(--hy) + var(--hh) * .32 - min(60vw,900px) * .31)/min(60vw,900px) auto no-repeat,
+            var(--eco-p-clouds) right -16vw top calc(var(--hy) + var(--hh) * .33 - min(52vw,800px) * .3)/min(52vw,800px) auto no-repeat;
+  --eco-mid:var(--eco-hfrontr) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
             var(--eco-p-turbine) left calc(6vw - var(--tb) * .24) bottom calc(var(--hh) * .64 - var(--tb) * .02)/auto calc(var(--tb) * .62) no-repeat,
-            var(--eco-p-turbine) left calc(14vw - var(--tb) * .2) bottom calc(var(--hh) * .69 - var(--tb) * .02)/auto calc(var(--tb) * .48) no-repeat;
+            var(--eco-p-turbine) left calc(15vw - var(--tb) * .19) bottom calc(var(--hh) * .7 - var(--tb) * .02)/auto calc(var(--tb) * .48) no-repeat;
   --eco-near:var(--eco-p-sunflower) right -1vw bottom calc(var(--sf) * -.2)/auto var(--sf) no-repeat,
-             var(--eco-p-solar) left 2vw bottom calc(var(--hh) * .14)/var(--sp) auto no-repeat;
+             var(--eco-p-panel) left -3vw bottom calc(var(--pw) * -.08)/var(--pw) auto no-repeat;
   --eco-top:var(--eco-p-leaf) right -1.5vw top -2vh/var(--lf) auto no-repeat}
 [data-skin="eco"][data-mode="dark"]:is([data-pg="games"],[data-pg="mahjong"]){
   --eco-air:var(--eco-moon) left calc(10vw - 150px) top calc(9vh - 150px)/300px 300px no-repeat,var(--eco-flies) left 0 bottom calc(var(--hh) * .5)/100% calc(var(--hh) * .7) no-repeat,var(--eco-night) 0 0/100% 100% no-repeat;
   --eco-far:var(--eco-globed) left calc(91vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .35 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat}
-/* the inner pages (one big sheet of glass in the middle): a lone tree on the hill at the right, a solar panel in the grass at
-   the left, a turbine far off, the leaf; no globe, the sheet would hide it */
+/* the inner pages (one big sheet of glass in the middle): the sun and two turbines on the left with the solar array in the
+   grass in front; on the right the globe rising behind a lone tree on the hill; clouds on both sides; the leaf */
 [data-skin="eco"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){
-  --hh:clamp(200px,36vh,420px); --tr:clamp(200px,40vh,440px); --sp:clamp(170px,17vw,320px);
+  --hh:clamp(200px,38vh,440px); --tr:clamp(200px,40vh,440px); --pw:clamp(240px,25vw,440px); --gb:clamp(300px,34vw,620px);
   --eco-air:var(--eco-sun) left calc(12vw - 300px) top calc(8vh - 300px)/600px 600px no-repeat,
-           var(--eco-flarer) left calc(12vw - 30px) top calc(8vh + 26px)/480px 460px no-repeat; 
-  --eco-far:var(--eco-p-clouds) right -12vw top calc(var(--hy) + var(--hh) * .33 - min(60vw,900px) * .31)/min(60vw,900px) auto no-repeat;
+           var(--eco-flarer) left calc(12vw - 30px) top calc(8vh + 26px)/480px 460px no-repeat;
+  --eco-far:var(--eco-globe) left calc(97vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .3 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
+            var(--eco-p-clouds) left -12vw top calc(var(--hy) + var(--hh) * .3 - min(54vw,820px) * .31)/min(54vw,820px) auto no-repeat,
+            var(--eco-p-clouds) right -14vw top calc(var(--hy) + var(--hh) * .33 - min(60vw,900px) * .31)/min(60vw,900px) auto no-repeat;
   --eco-mid:var(--eco-hfrontr) 0 100%/100% var(--hh) no-repeat,
-            var(--eco-p-tree) left calc(90vw - var(--tr) * .35) bottom calc(var(--hh) * .41 - var(--tr) * .03)/auto var(--tr) no-repeat,
+            var(--eco-p-tree) left calc(87vw - var(--tr) * .35) bottom calc(var(--hh) * .41 - var(--tr) * .03)/auto var(--tr) no-repeat,
             var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
-            var(--eco-p-turbine) left calc(8vw - var(--tb) * .24) bottom calc(var(--hh) * .64 - var(--tb) * .02)/auto calc(var(--tb) * .56) no-repeat;
-  --eco-near:var(--eco-p-solar) left 1.5vw bottom calc(var(--hh) * .1)/var(--sp) auto no-repeat;
+            var(--eco-p-turbine) left calc(6vw - var(--tb) * .24) bottom calc(var(--hh) * .64 - var(--tb) * .02)/auto calc(var(--tb) * .6) no-repeat,
+            var(--eco-p-turbine) left calc(14.5vw - var(--tb) * .17) bottom calc(var(--hh) * .7 - var(--tb) * .02)/auto calc(var(--tb) * .44) no-repeat;
+  --eco-near:var(--eco-p-panel) left -3vw bottom calc(var(--pw) * -.08)/var(--pw) auto no-repeat;
   --eco-top:var(--eco-p-leaf) right -1.5vw top -2vh/var(--lf) auto no-repeat}
 [data-skin="eco"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){
   --eco-air:var(--eco-moon) left calc(12vw - 150px) top calc(10vh - 150px)/300px 300px no-repeat,var(--eco-flies) left 0 bottom calc(var(--hh) * .5)/100% calc(var(--hh) * .7) no-repeat,var(--eco-night) 0 0/100% 100% no-repeat;
-  --eco-far:none}
+  --eco-far:var(--eco-globed) left calc(97vw - var(--gb) / 2) top calc(var(--hy) + var(--hh) * .3 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat}
 
-/* a phone held upright: the hills lower, the globe peeking in at the left, one turbine, one small leaf; nothing standing in front */
+/* a phone held upright: the hills lower, the globe peeking in at the left, clouds, one turbine, one small leaf; nothing standing in front */
 @media (max-width:640px){
   [data-skin="eco"]{--hh:clamp(150px,24vh,230px) !important; --gb:min(92vw,420px) !important; --tb:clamp(170px,30vh,260px) !important; --lf:min(46vw,210px) !important}
   [data-skin="eco"]:not([data-pg="timetable"]){
-    --eco-far:var(--eco-globe) left calc(-1 * var(--gb) * .38) top calc(var(--hy) + var(--hh) * .38 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat;
+    --eco-far:var(--eco-globe) left calc(-1 * var(--gb) * .38) top calc(var(--hy) + var(--hh) * .38 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat,
+              var(--eco-p-clouds) right -30vw top calc(var(--hy) + var(--hh) * .34 - 90vw * .3)/90vw auto no-repeat;
     --eco-mid:var(--eco-hfront) 0 100%/100% var(--hh) no-repeat,var(--eco-hback) 0 100%/100% var(--hh) no-repeat,
               var(--eco-p-turbine) left calc(84vw - var(--tb) * .388) bottom calc(var(--hh) * .65 - var(--tb) * .03)/auto var(--tb) no-repeat}
   [data-skin="eco"][data-mode="dark"]:not([data-pg="timetable"]){--eco-far:var(--eco-globed) left calc(-1 * var(--gb) * .38) top calc(var(--hy) + var(--hh) * .38 - var(--gb) / 2)/var(--gb) var(--gb) no-repeat}
@@ -166,11 +176,16 @@
     --eco-top:var(--eco-p-leaf) right -3vw top -1vh/var(--lf) auto no-repeat}
 }
 
+/* the layers, back to front: the sky (body::before, under the far things), the hills and what stands on them, the things
+   in front, the leaves. With the moving scene on (fx/eco.js; html.fx-live, and .eco-drawn once it has every picture) its canvas draws everything from the far layer
+   up, the same picture, and these step aside: body::before keeps only the sky. */
 [data-skin="eco"] body::before,[data-skin="eco"] body::after,html[data-skin="eco"]::before,html[data-skin="eco"]::after{content:"";position:fixed;inset:0;pointer-events:none}
 [data-skin="eco"] body::before{z-index:-4;background:var(--eco-far),var(--eco-air),var(--eco-sky)}
 [data-skin="eco"] body::after{z-index:-3;background:var(--eco-mid);filter:var(--eco-dim)}
 html[data-skin="eco"]::before{z-index:-2;background:var(--eco-near);filter:var(--eco-dim)}
 html[data-skin="eco"]::after{z-index:-1;background:var(--eco-top);filter:var(--eco-dim)}
+html.fx-live.eco-drawn[data-skin="eco"] body::before{background:var(--eco-air),var(--eco-sky)}
+html.fx-live.eco-drawn[data-skin="eco"] body::after,html.fx-live.eco-drawn[data-skin="eco"]::before,html.fx-live.eco-drawn[data-skin="eco"]::after{visibility:hidden}
 html.zen[data-skin="eco"] body::before,html.zen[data-skin="eco"] body::after,html.zen[data-skin="eco"]::before,html.zen[data-skin="eco"]::after,
 [data-skin="eco"][data-pg="hkmahjong"] body::before,[data-skin="eco"][data-pg="hkmahjong"] body::after,html[data-skin="eco"][data-pg="hkmahjong"]::before,html[data-skin="eco"][data-pg="hkmahjong"]::after{display:none}
 

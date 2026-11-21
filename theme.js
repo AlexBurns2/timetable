@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121b';
+const ASSET_V = '20261121c';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -69,18 +69,18 @@ const SKINS = [
   { id:'dorfic',    name:'DORFic',    mod:true, both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
   { id:'eco',       name:'Frutiger Eco', mod:true, both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
   { id:'xp',        name:'Windows XP', mod:true, both:true, ic:'tile', is:'icons', css:'xp', js:'xp' },
-  { id:'bauhaus',   name:'Bauhaus',   mod:true, both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
+  { id:'bauhaus',   name:'Bauhaus',   both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
   { id:'destijl',   name:'De Stijl',  mod:true, both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
-  { id:'decon',     name:'Deconstructivism', mod:true, both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
+  { id:'decon',     name:'Deconstructivism', both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
   /* Cities Collection: a digital postcard of one city each, all drawn by skins/cities.css (html[data-city]).
      city: its time zone, the locale its clock speaks, and its name as the city writes it. */
-  { id:'sydney',    name:'Sydney',    mod:true, both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Unbounded:wght@600;800',
+  { id:'sydney',    name:'Sydney',    both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Unbounded:wght@600;800',
     city:{ tz:'Australia/Sydney', locale:'en-AU', local:'Sydney' } },
-  { id:'tokyo',     name:'Tokyo',     mod:true, both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Shippori+Mincho+B1:wght@600;800',
+  { id:'tokyo',     name:'Tokyo',     both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Shippori+Mincho+B1:wght@600;800',
     city:{ tz:'Asia/Tokyo', locale:'ja-JP', local:'東京' } },
-  { id:'hongkong',  name:'Hong Kong', mod:true, both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Noto+Serif+TC:wght@700;900',
+  { id:'hongkong',  name:'Hong Kong', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Noto+Serif+TC:wght@700;900',
     city:{ tz:'Asia/Hong_Kong', locale:'zh-HK', local:'香港' } },
-  { id:'chongqing', name:'Chongqing', mod:true, both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Ma+Shan+Zheng',
+  { id:'chongqing', name:'Chongqing', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Ma+Shan+Zheng',
     city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
   /* a secret: type "saul" in any box (below). Not in the picker. */
@@ -193,13 +193,14 @@ const THUMBS = (() => {
       '<rect width="120" height="46" fill="url(#s)"/><ellipse cx="62" cy="9" rx="9" ry="2.4" fill="#fff" fill-opacity=".85"/><ellipse cx="108" cy="20" rx="7" ry="2" fill="#fff" fill-opacity=".75"/>' +
       '<path d="M0 36Q56 16 120 30V46H0Z" fill="#62b034"/><path d="M48 46Q92 24 120 31V46Z" fill="#4b9b2a"/>' +
       [[4, 5], [4, 15], [4, 25]].map(p => '<rect x="' + p[0] + '" y="' + p[1] + '" width="7" height="6" rx="1" fill="#fff" stroke="#1d4fc0" stroke-width=".6"/>').join('') +
-      [[16, 5, 46, 30], [66, 5, 42, 13], [66, 20, 42, 15]].map(r => '<rect x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '" rx="2.2" fill="url(#w)"/>' +
+      [[16, 5, 46, 29], [66, 5, 42, 13], [66, 20, 42, 14]].map(r =>'<rect x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '" rx="2.2" fill="url(#w)"/>' +
         '<rect x="' + (r[0] + 1) + '" y="' + (r[1] + 4.2) + '" width="' + (r[2] - 2) + '" height="' + (r[3] - 5.2) + '" fill="#ece9d8"/>' +
         '<rect x="' + (r[0] + r[2] - 4.6) + '" y="' + (r[1] + .9) + '" width="3.2" height="2.6" rx=".6" fill="#e0582a" stroke="#fff" stroke-width=".35"/>').join('') +
       '<rect x="19" y="13" width="26" height="2.4" rx=".6" fill="#0b3a9e" fill-opacity=".75"/><rect x="19" y="18" width="40" height="11" fill="#fff" stroke="#7f9db9" stroke-width=".5"/>' +
-      '<rect y="39.5" width="120" height="6.5" fill="url(#t)"/><path d="M0 39.5H17Q21 39.5 21 42.75T17 46H0Z" fill="#3d9a35"/><rect x="3.5" y="42" width="11" height="1.5" rx=".75" fill="#fff"/>' +
-      '<rect x="24" y="40.6" width="17" height="4.3" rx=".8" fill="#1a47a8"/><rect x="43" y="40.6" width="17" height="4.3" rx=".8" fill="#3b84f1"/><rect x="62" y="40.6" width="17" height="4.3" rx=".8" fill="#3b84f1"/>' +
-      '<rect x="101" y="39.5" width="19" height="6.5" fill="#13a0ea"/><rect x="108" y="42" width="9" height="1.5" rx=".75" fill="#fff" fill-opacity=".9"/>'],
+      '<rect y="38" width="120" height="8" fill="url(#t)"/><path d="M0 38H18Q22.5 38 22.5 42T18 46H0Z" fill="#3d9a35"/><rect x="3.5" y="41.2" width="12" height="1.7" rx=".85" fill="#fff"/>' +
+      '<rect x="25.5" y="39.6" width="5" height="4" rx=".5" fill="#e9e7de"/><rect x="26.2" y="40.2" width="3.6" height="2.8" fill="#3e86ee"/>' +
+      '<rect x="34" y="39.3" width="18" height="5.4" rx=".9" fill="#1a47a8"/><rect x="54" y="39.3" width="18" height="5.4" rx=".9" fill="#3b84f1"/><rect x="74" y="39.3" width="18" height="5.4" rx=".9" fill="#3b84f1"/>' +
+      '<rect x="100" y="38" width="20" height="8" fill="#13a0ea"/><rect x="107.5" y="41.2" width="9.5" height="1.7" rx=".85" fill="#fff" fill-opacity=".9"/>'],
     bauhaus: ['#ece6d8', '<path d="M0 0V11.5H11.5Z" fill="#f2b619"/><path d="M11.5 0A5.75 5.75 0 0 0 23 0ZM11.5 11.5A5.75 5.75 0 0 1 23 11.5Z" fill="#1f4e9e"/><rect y="11.5" width="11.5" height="11.5" fill="#171614"/><path d="M0 11.5H11.5A11.5 11.5 0 0 1 0 23Z" fill="#faf7f0"/><path d="M11.5 11.5H23V23Z" fill="#d63a2a"/><path d="M23 23A23 23 0 0 0 0 46H23Z" fill="#1f4e9e"/><path d="M11.5 34.5A5.75 5.75 0 0 1 11.5 46Z" fill="#f2b619"/><rect x="30" y="6" width="84" height="12" fill="#faf7f0"/><rect x="30" y="6" width="2.4" height="12" fill="#171614"/><path d="M35.4 14 37.2 10.8 39 14Z" fill="#f2b619"/><rect x="39.8" y="10.8" width="3.2" height="3.2" fill="#d63a2a"/><circle cx="45.4" cy="12.4" r="1.6" fill="#1f4e9e"/><rect x="48.6" y="11" width="16" height="2.8" fill="#171614"/><rect x="80" y="8" width="31" height="8" fill="#f2b619"/><rect x="30" y="23" width="25.2" height="17" fill="#faf7f0"/><rect x="33" y="36.2" width="11" height="1.3" fill="#171614"/><rect x="59.4" y="23" width="25.2" height="17" fill="#faf7f0"/><rect x="62.4" y="36.2" width="11" height="1.3" fill="#171614"/><rect x="88.8" y="23" width="25.2" height="17" fill="#faf7f0"/><rect x="91.8" y="36.2" width="11" height="1.3" fill="#171614"/><path d="M33 33.4 36.8 26.6 40.6 33.4Z" fill="#f2b619"/><rect x="62.4" y="26.6" width="6.8" height="6.8" fill="#d63a2a"/><circle cx="95.2" cy="30" r="3.5" fill="#1f4e9e"/>'],
     destijl: ['#ffffff', '<rect y="4.6" width="4.4" height="12.4" fill="#df2a1d"/><rect x="47.6" y="4.6" width="44.4" height="12.4" fill="#f7cf0f"/><rect x="11.6" y="18.6" width="31.2" height="25.2" fill="#df2a1d"/><rect x="77.2" y="18.6" width="31.2" height="11.8" fill="#1748a3"/><rect x="60.8" y="32" width="14.8" height="11.8" fill="#f7cf0f"/><rect x="115.6" y="18.6" width="4.4" height="25.2" fill="#1748a3"/><g fill="#111"><rect y="3" width="120" height="1.6"/><rect y="17" width="120" height="1.6"/><rect x="10" y="43.8" width="110" height="1.6"/><rect x="4.4" width="1.6" height="46"/><rect x="10" width="1.6" height="46"/><rect x="108.4" width="1.6" height="46"/><rect x="114" width="1.6" height="46"/><rect x="46" y="3" width="1.6" height="15.6"/><rect x="92" y="3" width="1.6" height="15.6"/><rect x="93.6" y="10" width="14.8" height="1.6"/><rect x="42.8" y="17" width="1.6" height="28"/><rect x="59.2" y="17" width="1.6" height="28"/><rect x="75.6" y="17" width="1.6" height="28"/><rect x="92" y="30.4" width="1.6" height="15"/><rect x="44.4" y="30.4" width="64" height="1.6"/><rect x="14.4" y="8.4" width="5" height=".9"/><rect x="14.4" y="10.6" width="22" height="2.6"/><rect x="50.4" y="8.4" width="7" height=".9"/><rect x="50.4" y="10.6" width="22" height="2"/><rect x="47.2" y="26.4" width="8" height="1.1"/><rect x="63.6" y="26.4" width="8" height="1.1"/><rect x="63.6" y="39.6" width="7" height="1.1"/><rect x="80" y="39.6" width="8" height="1.1"/><rect x="96.4" y="39.6" width="8" height="1.1"/><rect x="47.2" y="39.6" width="8" height="1.1"/></g><g fill="none" stroke="#111" stroke-width=".7"><rect x="98.6" y="5.6" width="4.6" height="3.2"/><rect x="98.6" y="13" width="4.6" height="3.2"/></g><g fill="#fff"><rect x="14.4" y="38.4" width="13" height="1.6"/><rect x="80" y="26.4" width="10" height="1.1"/></g><rect x="14.6" y="21.6" width="6.4" height="4.8" fill="none" stroke="#fff" stroke-width="1"/>'],
     decon: ['#c8c5bf', '<path d="M64 46L120 14V18L70 46Z" fill="#d3261a"/><path d="M0 30L120 22M30 46L58 0" stroke="#1a1a1a" stroke-width=".4"/>' +
@@ -686,6 +687,9 @@ function paint(state){
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-pg', PG);
   { const sk = SKINS.find(s => s.id === st.skin); if (sk && sk.city) root.setAttribute('data-city', sk.id); else root.removeAttribute('data-city'); }
+  /* Windows XP: a page kept maximised (skins/xp.js, msc.xpmax) is maximised from the first paint, not after its script */
+  if (st.skin === 'xp' && PG !== 'home'){ let m = null; try { m = JSON.parse(localStorage.getItem('msc.xpmax')); } catch {} root.classList.toggle('xpmaxed', !!(m && m[PG === 'timetable' ? 'timetable' : 'page'])); }
+  else root.classList.remove('xpmaxed');
   root.setAttribute('data-fx', fxOn() ? 'on' : 'off');
   vtOptIn((st.skin === 'y2k' || st.skin === 'aero' || st.skin === 'softclub') && fxOn());
   const ic = iconsFor(st);

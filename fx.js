@@ -70,7 +70,7 @@ FX.gl = function(canvas, frag, pre){
 };
 
 /* ═══════════════ backgrounds ═══════════════ */
-const SCENES = { maximal:'maximal', y2k:'y2k', vapor:'vapor', scifi:'scifi', aero:'aero' };       // theme → /fx/<file>.js
+const SCENES = { maximal:'maximal', y2k:'y2k', vapor:'vapor', scifi:'scifi', aero:'aero', eco:'eco' };       // theme → /fx/<file>.js
 const BG = { id:'', canvas:null, scene:null, def:null, env:null, raf:0, last:0, q:1, slow:0, fps:60 };
 const loaded = {};
 let quiet = false, saving = false;
@@ -216,11 +216,11 @@ const fade = (o, i) => ({ outMs:o, inMs:i, out(n, done){ root.classList.add('fx-
 TR.glass = fade(120, 260);                       // the page's contents fade; the clouds behind stay exactly where they were (theme.js keeps them)
 TR.editorial = fade(90, 180);
 TR.coquette = fade(120, 300);
-TR.bauhaus = fade(100, 420);                     // the page fades in, then its colour planes settle a moment later (bauhaus.css)
+TR.bauhaus = fade(100, 420);                     // only the contents fade; the tile column stays put (bauhaus.css)
 TR.destijl = fade(100, 420);                     // the same: nothing moves (destijl.css)
 TR.dorfic = fade(110, 420);                      // the page lands with a small bounce (dorfic.css)
 TR.eco = fade(120, 460);                         // the page clears like a misted window (eco.css)
-TR.xp = fade(80, 160);                           // a short cross-fade (xp.css)
+TR.xp = fade(80, 160);                           // nothing fades (xp.css): the new page's window opens from what was clicked (xp.js)
 TR.decon = fade(80, 160);                        // a short cross-fade (decon.css)
 TR.apple = fade(80, 160);
 TR.studio = fade(80, 160);                       // a short cross-fade, nothing else                    // quiet: no movement, barely there

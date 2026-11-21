@@ -363,7 +363,23 @@ html:root[data-skin="destijl"] body .gamesections > *,html:root[data-skin="desti
 html.nooutline[data-skin="destijl"] .lesson{border-color:var(--ds-k)!important;border-left-color:var(--ds-k)!important;background:var(--ds-bk)!important}
 html.nooutline:root[data-skin="destijl"] .lesson{padding-left:9px}
 html.nooutline[data-skin="destijl"] .lesson .s::before{border-radius:0}
-.ttghost .lesson{transition:none}
+/* the foot: the timetable ends as a finished composition. A closing rule lies under the last period, carried out to
+   both window edges as the head's lines are, so the table is a closed band between the two; the times' line and
+   every day's lines stand on it. Below it the page is one empty cell, like the last row of every other page, and
+   beyond the right margin's line it holds the timetable's second plane, yellow, cut by the window's foot (on a wide
+   enough window). The day's last time sits just above the rule, inside the picture. */
+[data-skin="destijl"] #grid.grid{position:relative;border-bottom:var(--ds-w) solid var(--ds-k)}
+[data-skin="destijl"] #grid.grid::after{content:"";position:absolute;left:0;right:0;bottom:calc(-1 * var(--ds-w));height:var(--ds-w);z-index:-1;pointer-events:none;
+  border-image:linear-gradient(var(--ds-k),var(--ds-k)) fill 0/0/0 100vw}
+[data-skin="destijl"] #grid.grid::before{content:"";position:absolute;left:0;right:0;top:calc(100% + var(--ds-w));height:1px;z-index:-1;pointer-events:none;
+  border-image:linear-gradient(90deg,#0000 calc(100% - 100vw + var(--ds-m) + var(--ds-w)),var(--ds-side) 0) fill 0/0/0 100vw 100vh 0}
+html.zen[data-skin="destijl"] #grid.grid::before,html.zen[data-skin="destijl"] #grid.grid::after{display:none}
+/* the last classes end on the rule itself (no sliver of white between their foot and it) */
+[data-skin="destijl"][data-view="compact"] #grid > :is(.tcol,.dbody){margin-bottom:calc(-1 * var(--ds-t))}
+[data-skin="destijl"][data-view="full"] #grid > :nth-last-child(-n+6 of .cell,.periodcell){margin-bottom:calc(-1 * var(--ds-t))}
+@media (max-width:860px){ [data-skin="destijl"][data-view="full"] #grid > :nth-last-child(-n+6 of .cell,.periodcell){margin-bottom:0}
+  [data-skin="destijl"][data-view="full"] #grid > :nth-last-child(-n+2 of .cell,.periodcell){margin-bottom:calc(-1 * var(--ds-t))} }
+[data-skin="destijl"] #grid .tcol .tmark:last-child{translate:0 calc(-100% - var(--ds-t) - 2px)}
 
 /* ── the calendar: the bar is a row; the month one grid of days, the days' names on the same lines; the days
       of other months grey, today yellow ── */

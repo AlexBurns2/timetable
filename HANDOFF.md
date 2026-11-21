@@ -3845,3 +3845,29 @@ The owner reviewed the seven new themes and the Cities Collection and gave feedb
   - paper labels under every line of text that sat on the photo.
 
   The coordinator also made the greeting fit again once the city's face and the stamp arrive (cities.js calls `fitHello`; it had been cut to "Welcome back, …").
+
+## 8.154 Launched: the Cities Collection, Bauhaus, Deconstructivism; round 3 on the rest (asset version `20261121c`, `CACHE_VERSION` v81)
+- **Released to everyone** (their `mod:true` removed): Sydney, Tokyo, Hong Kong, Chongqing, Bauhaus, Deconstructivism. Still moderators only: Coquette, DORFic, Frutiger Eco, Windows XP, De Stijl.
+- **Theme finder**: the group "Analogue" is now "Retro-digital".
+- **Cities**: the white haze over neighbouring tiles on hover. It couldn't be reproduced here, but its likely cause is gone:
+  - the name and the grain were `mix-blend-mode` layers under the page, which Chrome's `backdrop-filter` doesn't always see blended, so a hover could show the name's pale tint through cards;
+  - all blending is now inside the photo's own background: grain as its top layers, the day name as a darkened copy of the photo shown through the letters, the night name as a plain light wash.
+
+  Checked pixel for pixel on hover on a GPU and in software: nothing changes outside the hovered tile. Ask the owner to confirm on their machine.
+- **Bauhaus**: no flash between pages. The tile column was hidden and faded back in on arrival; now it's there from the first paint (in that page's arrangement) and only the contents fade (`TR.bauhaus` unchanged).
+- **De Stijl**: the timetable is closed by a thick rule under the last period, which the time column and day lines end on (out to the window edges). The day's end time sits inside above it, and the space below is one empty cell (on wide windows the right margin cell holds the yellow plane).
+- **Frutiger Eco**:
+  - Every page composed like Home.
+  - The flat solar clip-art replaced by a real photo (`eco-panel.webp`); `eco-solar.webp` deleted and its credit removed.
+  - Gentle motion in a new canvas scene (`fx/eco.js`, `SCENES.eco`): clouds drift over two minutes, the turbine blades turn (the turbine photo split into `eco-turbine-tower`/`-rotor`), the leaf sways ~1.5° and dew glints. All off with Animation off or reduced motion. The scene reads its layout from eco.css.
+- **DORFic**:
+  - Patterns no longer clipped (the Theme finder circles, bubbles and globe sit whole in the margins and drop out where there's no room).
+  - Page change: a 0.11 s fade out, then the next page fades in with an 8px rise.
+  - Slow motion: the sunburst turns once in 12 minutes, the bubbles rise over 96 s, the rings breathe, the meshes drift.
+  - The agent also offered a full-window view-transition version (fx.js and theme.js changes); not applied.
+- **Windows XP (option B, chosen by the owner)**: every page is a window on the same desktop.
+  - The wallpaper and the desktop icons (Home first, the current page selected) stay down the left from 1000px. One click opens a page; on Home a single click still selects and a double-click opens, as in XP.
+  - Windows aren't maximised to begin with. Maximise is remembered in `msc.xpmax`, and theme.js now sets `xpmaxed` at first paint so a maximised page doesn't jump.
+  - A Quick Launch "Desktop" button sits next to start (labelled on phones). The taskbar is 38px.
+  - A small title bar flies from the clicked icon to the window as the page opens (off with Animation off).
+- **Photos**: `eco-panel.webp` downloaded (logged in PHOTO-LOG.md, credited in About).

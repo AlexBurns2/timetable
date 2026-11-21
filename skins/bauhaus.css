@@ -512,11 +512,11 @@ html[data-contrast="high"][data-skin="bauhaus"] .lesson{box-shadow:inset 0 0 0 2
 :root[data-skin="bauhaus"] .arrowbtn2:hover{background:var(--bh-yel);color:#171614}
 [data-skin="bauhaus"] .calbar h2{text-transform:lowercase;font-weight:700;letter-spacing:-.015em}
 
-/* ── arriving (with Animation on, fx.js TR.bauhaus): the page fades in as usual, and the column of tiles is
-      printed a moment after it. Nothing moves. ── */
-html.fx-enter[data-skin="bauhaus"] body::before{animation:bhprint .32s .14s ease-out both}
-@keyframes bhprint{from{opacity:0}}
-@media (prefers-reduced-motion:reduce){ html.fx-enter[data-skin="bauhaus"] body::before{animation:none} }
+/* ── changing page (with Animation on, fx.js TR.bauhaus): only the page's contents fade out and in. The column
+      of tiles is never hidden or redrawn: it is there from the new page's first paint, already in that page's
+      arrangement, so there is no moment of bare paper between pages (it used to be printed a moment late, which
+      showed as a flash). ── */
+html:is(.fx-in,.fx-out,.fx-enter)[data-skin="bauhaus"] body::before{animation:none;opacity:1}
 
 /* ── no rounding: a pill is neither a circle nor a square. Everything is square-cornered (a game in play keeps
       its own drawing), and only what is meant to be a circle is one ── */

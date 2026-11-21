@@ -66,7 +66,7 @@
   --ct-paper:#f7f3ea; --ct-wash:rgba(255,250,240,.16); --ct-filter:saturate(.78) contrast(.9) brightness(1.04);
   --ct-word:rgba(255,255,255,.86); --ct-word-shadow:0 2px 30px rgba(0,0,0,.18);
   --ct-lo-u:var(--ct-lo); --ct-hi-u:var(--ct-hi); --ct-m-u:var(--ct-m);
-  --ct-ink:color-mix(in srgb,var(--ct-lo-u) 32%,#fff); --ct-ink-blend:color-burn; --ct-ink-alpha:.85;
+  --ct-ink:color-mix(in srgb,var(--ct-lo-u) 32%,#fff); --ct-ink-alpha:.85;
   --bg:var(--ct-paper); --bg-img:none;
   --panel:rgba(255,255,255,.68); --panel-2:rgba(255,255,255,.58); --line:rgba(40,40,50,.14);
   --text:#16161c; --muted:#55555f; --accent-ink:#fff;
@@ -80,7 +80,7 @@
   --ct-paper:#14141a; --ct-wash:rgba(8,10,24,.22); --ct-filter:saturate(.86) contrast(.94) brightness(.96);
   --ct-word:rgba(255,255,255,.8); --ct-word-shadow:0 2px 40px rgba(0,0,0,.5);
   --ct-lo-u:var(--ct-lo-n); --ct-hi-u:var(--ct-hi-n); --ct-m-u:var(--ct-m-n);
-  --ct-ink:color-mix(in srgb,var(--ct-hi-u) 60%,#fff); --ct-ink-blend:screen; --ct-ink-alpha:.32;
+  --ct-ink:color-mix(in srgb,var(--ct-hi-u) 60%,#fff); --ct-ink-alpha:.32;
   --panel:rgba(18,18,26,.6); --panel-2:rgba(30,30,42,.55); --line:rgba(255,255,255,.12);
   --text:#f1f0f5; --muted:#b4b2c0; --accent:var(--ct-accent-n); --accent-ink:#111;
   --card-border:1px solid rgba(255,255,255,.14);
@@ -95,21 +95,27 @@
 /* --ct-edge: the paper border. --ct-zoom: how much nearer a page sees the photo. The picture's box is made that much
    bigger than the window and clipped back to the frame, so a nearer view still fills it whatever the photo's shape
    (a background-size like 125% left bands above and below a wide panorama on a tall window). */
-:root[data-city]{--ct-edge:10px;--ct-zoom:0px}
+/* No layer under the page uses mix-blend-mode (round 3). The name used to be burned in with color-burn and the
+   grain laid on with overlay, each a separate layer blended at composite time. Chrome's frosted glass
+   (backdrop-filter) doesn't always see such a layer blended: when a hover changed the layers, the cards sampled
+   the name unblended, as the pale tint it is drawn in, and pale letter-shaped haze showed over neighbouring cards.
+   Now every blend happens inside one element's own background (background-blend-mode, painted, never composited):
+   the grain is the top two layers of the print itself, and the name is a second copy of the print, burned darker
+   with filters and seen only through its letters (background-clip:text). The look is the same. */
+:root[data-city]{--ct-edge:10px;--ct-zoom:0px;
+  /* the print: film grain (a fine halftone and noise, overlaid), then the duotone: the photo in greys (a black
+     layer, saturation), scaled by --ct-m (multiply), then screened with the dark ink, which gives dark ink + grey ×
+     (light ink − dark ink): black prints in the dark ink, white in the light one, and every grey evenly between
+     (--ct-m = (light − dark) / (1 − dark), worked out per city) */
+  --ct-print:radial-gradient(circle,rgba(0,0,0,.3) 0 .8px,transparent 1.3px) 0 0/4px 4px,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .38 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E") 0 0/180px 180px,
+    linear-gradient(var(--ct-lo-u),var(--ct-lo-u)),linear-gradient(var(--ct-m-u),var(--ct-m-u)),linear-gradient(#000,#000),
+    var(--ct-photo) var(--ct-pos)/cover no-repeat,var(--ct-fallback);
+  --ct-print-blend:overlay,overlay,screen,multiply,saturation,normal,normal}
 [data-city] body{background:var(--ct-paper)}
 [data-city] body::before{content:"";position:fixed;inset:calc(var(--ct-edge) - var(--ct-zoom));z-index:-2;pointer-events:none;border-radius:6px;
-  clip-path:inset(var(--ct-zoom) round 6px);
-  /* a duotone print, in one element: the photo in greys (a black layer, saturation), scaled by --ct-m (multiply),
-     then screened with the dark ink, which gives dark ink + grey × (light ink − dark ink): black prints in the
-     dark ink, white in the light one, and every grey evenly between (--ct-m = (light − dark) / (1 − dark), worked
-     out per city) */
-  background:linear-gradient(var(--ct-lo-u),var(--ct-lo-u)),linear-gradient(var(--ct-m-u),var(--ct-m-u)),linear-gradient(#000,#000),
-    var(--ct-photo) var(--ct-pos)/cover no-repeat,var(--ct-fallback);
-  background-blend-mode:screen,multiply,saturation,normal,normal;
+  clip-path:inset(var(--ct-zoom) round 6px);background:var(--ct-print);background-blend-mode:var(--ct-print-blend);
   filter:contrast(1.12);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
-/* film grain: fine, still, over the photo only (under the page) */
-html[data-city]::before{content:"";position:fixed;inset:var(--ct-edge);z-index:-1;pointer-events:none;border-radius:6px;opacity:.55;mix-blend-mode:overlay;
-  background:radial-gradient(circle,rgba(0,0,0,.55) 0 .8px,transparent 1.3px) 0 0/4px 4px,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E") 0 0/180px 180px}
 /* the city's name, very large, low in the picture like a postcard's title */
 /* The name: big and bold, run off the bottom-left corner like a poster's (the owner tried it kept whole inside the
    frame and preferred it cropped). --ct-em, its width in ems, is kept for a later fit if one is wanted. */
@@ -118,14 +124,25 @@ html[data-city]::before{content:"";position:fixed;inset:var(--ct-edge);z-index:-
    strokes still cut by it */
 :root[data-city]{--ct-drop:.2em}
 :root[data-city]:is([data-city="tokyo"],[data-city="hongkong"],[data-city="chongqing"]){--ct-drop:0em}
-html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-events:none;left:calc(var(--ct-edge) - .04em);bottom:calc(var(--ct-edge) - var(--ct-drop));white-space:nowrap;
-  font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:var(--ct-ls);text-transform:var(--ct-tt);line-height:.9;
-  font-size:clamp(6rem,var(--ct-size),30rem);color:var(--ct-ink);mix-blend-mode:var(--ct-ink-blend);opacity:var(--ct-ink-alpha)}
-/* a phone held upright: the name stands up the right edge */
+/* The name's box is the photo's own frame, so its copy of the print lines up exactly; the letters sit in its
+   bottom-left corner (a line-height shortened by twice the drop lets them run that far below the edge) and the
+   frame crops them. By day the copy is burned darker (what color-burn with a pale tint of the dark ink did) and
+   laid on at .85; by night the letters are a soft wash of the light ink, as the screen blend was. */
+html[data-city]::after{content:var(--ct-name);position:fixed;inset:var(--ct-edge);z-index:-1;pointer-events:none;border-radius:6px;overflow:hidden;
+  display:flex;align-items:flex-end;white-space:nowrap;text-indent:-.04em;
+  font-family:var(--ct-face);font-weight:var(--ct-w);letter-spacing:var(--ct-ls);text-transform:var(--ct-tt);line-height:calc(.9em - 2 * var(--ct-drop));
+  font-size:clamp(6rem,var(--ct-size),30rem);
+  color:transparent;-webkit-text-fill-color:transparent;background:var(--ct-print);background-blend-mode:var(--ct-print-blend);
+  -webkit-background-clip:text;background-clip:text;filter:contrast(1.12) contrast(1.7) brightness(.69);opacity:.85}
+html[data-city][data-mode="dark"]::after{background:none;color:var(--ct-ink);-webkit-text-fill-color:currentColor;filter:none;opacity:var(--ct-ink-alpha)}
+/* a phone held upright: the name stands up the right edge (Sydney's reads upwards, from near the foot) */
 @media (max-width:700px){
   :root[data-city]{--ct-edge:6px}
-  html[data-city]::after{left:auto;right:calc(var(--ct-edge) - .14em);bottom:auto;top:8vh;writing-mode:vertical-rl;font-size:clamp(5rem,34vw,11rem)}
-  html[data-city="sydney"]::after{writing-mode:vertical-rl;transform:rotate(180deg);top:auto;bottom:6vh;font-size:clamp(4rem,22vw,8rem)}
+  html[data-city]::after{display:block;writing-mode:vertical-rl;text-indent:0;line-height:.62em;padding-top:calc(8vh - var(--ct-edge));font-size:clamp(5rem,34vw,11rem)}
+  html[data-city="sydney"]::after{font-size:clamp(4rem,22vw,8rem)}
+  @supports (writing-mode:sideways-lr){
+    html[data-city="sydney"]::after{writing-mode:sideways-lr;padding:0 0 calc(6vh - var(--ct-edge)) calc(100vw - 2 * var(--ct-edge) - .62em)}
+  }
 }
 /* The postcard is the same on every page and doesn't move: changing page, only the page itself blurs out and
    back in over it (fx.js TR.city). The filter is only on while that runs (fill-mode backwards), because a filter
@@ -134,8 +151,8 @@ html[data-city]::after{content:var(--ct-name);position:fixed;z-index:-1;pointer-
 html[data-city].fx-out .wrap{opacity:0;filter:blur(10px);transition:opacity .16s ease,filter .16s ease}
 html[data-city].fx-enter .wrap{animation:ctblurin .34s ease-out backwards}
 @keyframes ctblurin{from{opacity:0;filter:blur(10px)}}
-html.zen[data-city] body::before,html.zen[data-city]::before,html.zen[data-city]::after,
-[data-city][data-pg="hkmahjong"] body::before,html[data-city][data-pg="hkmahjong"]::before,html[data-city][data-pg="hkmahjong"]::after{display:none}
+html.zen[data-city] body::before,html.zen[data-city]::after,
+[data-city][data-pg="hkmahjong"] body::before,html[data-city][data-pg="hkmahjong"]::after{display:none}
 html.zen[data-city] body{background:transparent}
 
 /* ── the site: clear frosted glass on the photograph, the same in every city ── */

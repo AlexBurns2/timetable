@@ -46,7 +46,7 @@
   --xp-hot:inset 0 0 0 1px #fff0cf,inset 0 0 0 2px #f8b330;      /* the orange glow of a button under the pointer */
   --xp-ink:#fff; --xp-ink-shadow:1px 1px 0 #0a1f73;
   --xp-sb:env(safe-area-inset-bottom,0px);                          /* the taskbar stands on the phone's home bar */
-  --xp-tbh:30px;
+  --xp-tbh:38px;
   /* a window's title bar (stops in px from the top, so it is the same at any height) */
   --xp-title:linear-gradient(180deg,#0058ee 0,#3a93ff 2px,#2c8bff 3px,#127dff 6px,#0369fc 9px,#0262ee 13px,#0057e5 17px,#0054e3 20px,#0055eb 23px,#005bf5 26px,#0262ee 28px,#0047c6 30px,#003fae 100%);
   --xp-title-off:linear-gradient(180deg,#6f8bd6 0,#a2b9f0 2px,#95aeec 3px,#86a1e6 6px,#7c98e2 9px,#7591dd 13px,#708cda 17px,#6f8bd8 23px,#7591dd 26px,#6a85d0 30px,#6a85d0 100%);
@@ -56,11 +56,11 @@
   --xp-frame-off:inset 1px 0 0 #6582d0,inset -1px 0 0 #5a76c4,inset 0 -1px 0 #5a76c4,inset 3px 0 0 #8ca7e6,inset -3px 0 0 #7d99e0,inset 0 -3px 0 #7d99e0;
   --xp-drop:0 8px 22px rgba(0,22,80,.34),0 1px 3px rgba(0,22,80,.28);
   /* the taskbar, the tray, the start button, a taskbar button */
-  --xp-tb:linear-gradient(180deg,#1b3d9a 0,#4a92ef 1px,#3b80e8 2px,#2c6ae0 4px,#2560db 7px,#245ddb 14px,#2459d6 22px,#2157d0 27px,#1a47b3 30px,#1a47b3 100%);
-  --xp-tray:linear-gradient(180deg,#0b4fae 0,#22b7f6 1px,#1aa9f1 3px,#129ce9 7px,#0f95e5 14px,#0f8fe1 22px,#0d86d9 27px,#0a63bd 30px,#0a63bd 100%);
+  --xp-tb:linear-gradient(180deg,#1b3d9a 0,#4a92ef 1px,#3b80e8 3px,#2c6ae0 5px,#2560db 9px,#245ddb 18px,#2459d6 28px,#2157d0 34px,#1a47b3 38px,#1a47b3 100%);
+  --xp-tray:linear-gradient(180deg,#0b4fae 0,#22b7f6 1px,#1aa9f1 4px,#129ce9 9px,#0f95e5 18px,#0f8fe1 28px,#0d86d9 34px,#0a63bd 38px,#0a63bd 100%);
   --xp-tray-edge:inset 1px 0 0 #0a3a8f,inset 2px 0 0 rgba(150,215,255,.55);
-  --xp-start:linear-gradient(180deg,#2f7d2a 0,#64c35a 1px,#4fb146 3px,#43a33b 7px,#3d9a35 14px,#378f30 22px,#3a9533 27px,#2d7a27 30px,#2d7a27 100%);
-  --xp-start-down:linear-gradient(180deg,#123d10 0,#1d5a19 3px,#226820 14px,#1f611c 27px,#174a15 30px,#174a15 100%);
+  --xp-start:linear-gradient(180deg,#2f7d2a 0,#64c35a 1px,#4fb146 4px,#43a33b 9px,#3d9a35 18px,#378f30 28px,#3a9533 34px,#2d7a27 38px,#2d7a27 100%);
+  --xp-start-down:linear-gradient(180deg,#123d10 0,#1d5a19 4px,#226820 18px,#1f611c 34px,#174a15 38px,#174a15 100%);
   --xp-tbbtn:linear-gradient(180deg,#4c8ff5 0,#5aa0ff 1px,#3b84f1 3px,#3379eb 10px,#2f72e6 20px,#2c6ce1 100%);
   --xp-tbbtn-on:linear-gradient(180deg,#183f97 0,#1e4fb3 3px,#2058c0 100%);
   /* push buttons */
@@ -112,11 +112,11 @@
   --xp-frame:inset 1px 0 0 #000,inset -1px 0 0 #000,inset 0 -1px 0 #000,inset 3px 0 0 #34363c,inset -3px 0 0 #26282c,inset 0 -3px 0 #26282c;
   --xp-frame-off:inset 1px 0 0 #000,inset -1px 0 0 #000,inset 0 -1px 0 #000,inset 3px 0 0 #3a3c42,inset -3px 0 0 #303237,inset 0 -3px 0 #303237;
   --xp-drop:0 10px 26px rgba(0,0,0,.65),0 1px 3px rgba(0,0,0,.6);
-  --xp-tb:linear-gradient(180deg,#000 0,#62656d 1px,#45474e 3px,#303237 7px,#25272b 12px,#1b1c20 15px,#070708 16px,#0e0f11 22px,#16171a 27px,#000 30px,#000 100%);
-  --xp-tray:linear-gradient(180deg,#000 0,#4f525a 1px,#393b42 4px,#2b2d32 12px,#222428 15px,#121315 16px,#191a1d 27px,#000 30px,#000 100%);
+  --xp-tb:linear-gradient(180deg,#000 0,#62656d 1px,#45474e 4px,#303237 9px,#25272b 15px,#1b1c20 19px,#070708 20px,#0e0f11 28px,#16171a 34px,#000 38px,#000 100%);
+  --xp-tray:linear-gradient(180deg,#000 0,#4f525a 1px,#393b42 5px,#2b2d32 15px,#222428 19px,#121315 20px,#191a1d 34px,#000 38px,#000 100%);
   --xp-tray-edge:inset 1px 0 0 #000,inset 2px 0 0 rgba(255,255,255,.12);
-  --xp-start:linear-gradient(180deg,#0d2a0b 0,#6fbf5e 1px,#3e9434 3px,#2f7f28 8px,#286f22 15px,#1c5a18 16px,#22661d 27px,#123e0f 30px,#123e0f 100%);
-  --xp-start-down:linear-gradient(180deg,#0a2208 0,#174d14 4px,#1c5a18 16px,#123e0f 30px);
+  --xp-start:linear-gradient(180deg,#0d2a0b 0,#6fbf5e 1px,#3e9434 4px,#2f7f28 10px,#286f22 19px,#1c5a18 20px,#22661d 34px,#123e0f 38px,#123e0f 100%);
+  --xp-start-down:linear-gradient(180deg,#0a2208 0,#174d14 5px,#1c5a18 20px,#123e0f 38px);
   --xp-tbbtn:linear-gradient(180deg,#000 0,#5d6068 1px,#3f4148 3px,#2e3035 14px,#26282c 100%);
   --xp-tbbtn-on:linear-gradient(180deg,#000 0,#0d0e10 3px,#17181b 100%);
   --xp-btn:linear-gradient(180deg,#5a5d65 0,#44464d 45%,#393b41 80%,#2d2f34 100%);
@@ -156,45 +156,55 @@ html.zen[data-skin="xp"] body::before,[data-skin="xp"][data-pg="hkmahjong"] body
   background:var(--xp-tb) 0 0/100% var(--xp-tbh) no-repeat,#1a47b3}
 :root[data-skin="xp"][data-mode="dark"]:not([data-pg="hkmahjong"]) .wrap::after{background-color:#000}
 /* the start button: the page's Settings button */
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings){position:fixed;left:0;bottom:var(--xp-sb);top:auto;z-index:9001;width:auto;height:var(--xp-tbh);margin:0;padding:0 26px 2px 12px;
-  display:flex;align-items:center;justify-content:center;border:0;border-radius:0 13px 13px 0;background:var(--xp-start);color:#fff;filter:none;
-  box-shadow:inset -3px 0 4px rgba(0,0,0,.2),inset 0 -1px 0 rgba(0,0,0,.2),inset 1px 0 0 rgba(255,255,255,.18),2px 0 3px rgba(0,0,0,.25);transition:none;transform:none}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings){position:fixed;left:0;bottom:var(--xp-sb);top:auto;z-index:9001;width:auto;height:var(--xp-tbh);margin:0;padding:0 32px 2px 15px;
+  display:flex;align-items:center;justify-content:center;border:0;border-radius:0 17px 17px 0;background:var(--xp-start);color:#fff;filter:none;
+  box-shadow:inset -3px 0 5px rgba(0,0,0,.2),inset 0 -1px 0 rgba(0,0,0,.2),inset 1px 0 0 rgba(255,255,255,.18),2px 0 3px rgba(0,0,0,.25);transition:none;transform:none}
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings) > *{display:none}
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings)::after{content:"start";content:"start" / "";font:italic 700 1.1875rem/1 var(--font-display);letter-spacing:.01em;text-shadow:1px 1px 2px rgba(0,0,0,.6)}
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings):hover{background:var(--xp-start);filter:brightness(1.1);box-shadow:inset -3px 0 4px rgba(0,0,0,.2),inset 1px 0 0 rgba(255,255,255,.18),2px 0 3px rgba(0,0,0,.25)}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings)::after{content:"start";content:"start" / "";font:italic 700 1.4375rem/1 var(--font-display);letter-spacing:.01em;text-shadow:1px 1px 2px rgba(0,0,0,.6)}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings):hover{background:var(--xp-start);filter:brightness(1.1);box-shadow:inset -3px 0 5px rgba(0,0,0,.2),inset 1px 0 0 rgba(255,255,255,.18),2px 0 3px rgba(0,0,0,.25)}
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings):active,
 :root[data-skin="xp"]:has(#setDlg[open]) #themebtn,:root[data-skin="xp"]:has(#dlg[open]) #settings{background:var(--xp-start-down);filter:none;box-shadow:inset 2px 2px 4px rgba(0,0,0,.45)}
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings):focus-visible{outline:1px dotted #fff;outline-offset:-5px}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings):focus-visible{outline:1px dotted #fff;outline-offset:-6px}
 /* the tray: the page's other buttons, small and white, and (xp.js) the clock at the end */
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns){position:fixed;right:0;bottom:var(--xp-sb);top:auto;left:auto;z-index:9001;
-  display:flex;flex-direction:row;align-items:center;gap:1px;height:var(--xp-tbh);margin:0;padding:0 8px 0 10px;align-self:auto;
+  display:flex;flex-direction:row;align-items:center;gap:2px;height:var(--xp-tbh);margin:0;padding:0 10px 0 12px;align-self:auto;
   background:var(--xp-tray);box-shadow:var(--xp-tray-edge);border:0;border-radius:0;flex:none}
-:root.xpjs[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns){padding-right:74px}
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn:not(#themebtn):not(#settings){width:26px;height:24px;padding:0;margin:0;border:1px solid transparent;border-radius:3px;
+:root.xpjs[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns){padding-right:86px}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn:not(#themebtn):not(#settings){width:32px;height:30px;padding:0;margin:0;border:1px solid transparent;border-radius:3px;
   background:transparent;color:#fff;box-shadow:none;transition:none;transform:none;filter:drop-shadow(1px 1px 0 rgba(0,20,80,.5))}
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn:not(#themebtn):not(#settings):hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);box-shadow:none}
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn:not(#themebtn):not(#settings):active{background:rgba(0,20,80,.3);border-color:rgba(0,0,0,.3)}
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn:not(#themebtn):not(#settings):focus-visible{outline:1px dotted #fff;outline-offset:-3px}
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn .ph{width:17px;height:17px}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn .ph{width:20px;height:20px}
 :root[data-skin="xp"][data-mode="dark"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn{filter:none}
 /* a little volume slider over its button, and the timetable's "New poll this week" as a balloon over the tray */
-[data-skin="xp"] .volpop{top:auto;bottom:calc(100% + 9px);right:-6px;padding:8px 10px;background:var(--xp-face);border:1px solid #8a8678;border-radius:0;box-shadow:2px 2px 4px rgba(0,0,0,.35)}
-:root[data-skin="xp"] .pollnote{top:auto;bottom:calc(100% + 13px);right:-60px;padding:8px 6px 8px 12px;border-radius:7px;background:#ffffe1;color:#101010;border:1px solid #000;box-shadow:2px 3px 5px rgba(0,0,0,.3)}
-:root[data-skin="xp"] .pollnote::before{top:auto;bottom:-7px;right:84px;width:12px;height:12px;background:#ffffe1;border:0;border-right:1px solid #000;border-bottom:1px solid #000;transform:rotate(45deg) skew(8deg,8deg)}
+[data-skin="xp"] .volpop{top:auto;bottom:calc(100% + 12px);right:-6px;padding:8px 10px;background:var(--xp-face);border:1px solid #8a8678;border-radius:0;box-shadow:2px 2px 4px rgba(0,0,0,.35)}
+:root[data-skin="xp"] .pollnote{top:auto;bottom:calc(100% + 16px);right:-70px;padding:8px 6px 8px 12px;border-radius:7px;background:#ffffe1;color:#101010;border:1px solid #000;box-shadow:2px 3px 5px rgba(0,0,0,.3)}
+:root[data-skin="xp"] .pollnote::before{top:auto;bottom:-7px;right:94px;width:12px;height:12px;background:#ffffe1;border:0;border-right:1px solid #000;border-bottom:1px solid #000;transform:rotate(45deg) skew(8deg,8deg)}
 :root[data-skin="xp"] .pollnote a{color:#101010}
 :root[data-skin="xp"] .pollnote a::before{background:#f6a623}
 :root[data-skin="xp"] .pollnote button{color:#444}
 :root[data-skin="xp"][data-mode="dark"] .pollnote{background:#2a2b22;color:#f1f0dc}
 :root[data-skin="xp"][data-mode="dark"] .pollnote::before{background:#2a2b22}
 :root[data-skin="xp"][data-mode="dark"] .pollnote a{color:#f1f0dc}
-/* (xp.js) the clock, and a button for each window */
+/* (xp.js) Quick Launch's Desktop button, a button for each window, the clock */
 #xptb{position:fixed;left:0;right:0;bottom:0;height:0;z-index:9002}
 #xptray{position:fixed;left:0;right:0;bottom:0;height:0;z-index:9001}
-#xptb .xpclock{position:fixed;z-index:9003;right:0;bottom:var(--xp-sb);width:72px;height:var(--xp-tbh);display:flex;align-items:center;justify-content:center;padding:0 6px 1px 0;
-  color:#fff;font:400 .75rem/1 var(--font-ui);white-space:nowrap;text-shadow:0 0 1px rgba(0,30,90,.35);cursor:default;user-select:none}
-#xptb .xptasks{position:fixed;left:var(--xp-tl,118px);right:var(--xp-tr,190px);bottom:var(--xp-sb);height:var(--xp-tbh);display:flex;align-items:center;gap:3px;padding:0 4px;overflow:hidden}
-#xptb .xptask{flex:0 1 162px;min-width:42px;height:24px;display:flex;align-items:center;gap:6px;padding:0 9px 1px 8px;border:1px solid rgba(0,25,100,.7);border-radius:3px;
-  background:var(--xp-tbbtn);color:#fff;font:400 .75rem/1 var(--font-ui);text-align:left;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 1px 0 0 rgba(255,255,255,.15)}
+#xptb .xpclock{position:fixed;z-index:9003;right:0;bottom:var(--xp-sb);width:84px;height:var(--xp-tbh);display:flex;align-items:center;justify-content:center;padding:0 8px 1px 0;
+  color:#fff;font:400 .8125rem/1 var(--font-ui);white-space:nowrap;text-shadow:0 0 1px rgba(0,30,90,.35);cursor:default;user-select:none}
+#xptb .xpql{position:fixed;left:var(--xp-ql,128px);bottom:var(--xp-sb);height:var(--xp-tbh);display:flex;align-items:center;padding:0 7px 0 6px;
+  box-shadow:inset 2px 0 0 -1px rgba(0,20,80,.45),inset 3px 0 0 -1px rgba(150,200,255,.35),inset -2px 0 0 -1px rgba(0,20,80,.45),inset -3px 0 0 -1px rgba(150,200,255,.35)}
+#xptb .xpdesk{display:flex;align-items:center;gap:7px;height:30px;min-width:32px;padding:0 6px;border:1px solid transparent;border-radius:3px;background:none;color:#fff;
+  font:400 .8125rem/1 var(--font-ui);text-decoration:none;cursor:pointer;text-shadow:1px 1px 0 rgba(0,20,80,.45)}
+#xptb .xpdesk::before{content:"";flex:none;width:22px;height:22px;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><rect x='1.5' y='2.5' width='19' height='14' rx='1.5' fill='%23e9e7de' stroke='%23243c6e'/><rect x='3' y='4' width='16' height='11' fill='%233e86ee'/><path d='M3 12.2c4.2-3.4 9-4 16-1.6V15H3z' fill='%2353ad35'/><path d='M6 4.6h5' stroke='%23fff' stroke-opacity='.7'/><path d='M8 19.5h6M11 16.5v3' stroke='%23e9e7de' stroke-width='1.8'/></svg>") center/22px 22px no-repeat;
+  filter:drop-shadow(1px 1px 0 rgba(0,20,80,.4))}
+#xptb .xpdesk span{display:none}
+#xptb .xpdesk:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4)}
+#xptb .xpdesk:active,#xptb .xpdesk[aria-pressed="true"]{background:rgba(0,20,80,.3);border-color:rgba(0,0,0,.3)}
+#xptb .xpdesk:focus-visible{outline:1px dotted #fff;outline-offset:-3px}
+#xptb .xptasks{position:fixed;left:var(--xp-tl,178px);right:var(--xp-tr,200px);bottom:var(--xp-sb);height:var(--xp-tbh);display:flex;align-items:center;gap:3px;padding:0 4px;overflow:hidden}
+#xptb .xptask{flex:0 1 180px;min-width:46px;height:30px;display:flex;align-items:center;gap:7px;padding:0 10px 1px 9px;border:1px solid rgba(0,25,100,.7);border-radius:3px;
+  background:var(--xp-tbbtn);color:#fff;font:400 .8125rem/1 var(--font-ui);text-align:left;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 1px 0 0 rgba(255,255,255,.15)}
 #xptb .xptask::before{content:"";flex:none;width:16px;height:16px;background:var(--xp-ti,var(--xp-winicon)) center/16px 16px no-repeat}
 #xptb .xptask span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #xptb .xptask[hidden]{display:none}
@@ -202,16 +212,20 @@ html.zen[data-skin="xp"] body::before,[data-skin="xp"][data-pg="hkmahjong"] body
 #xptb .xptask[aria-pressed="true"]{background:var(--xp-tbbtn-on);box-shadow:inset 1px 1px 2px rgba(0,0,0,.55);border-color:rgba(0,15,70,.8)}
 #xptb .xptask:focus-visible{outline:1px dotted #fff;outline-offset:-4px}
 [data-mode="dark"] #xptb .xptask{border-color:#000}
+[data-mode="dark"] #xptb .xpql{box-shadow:inset 2px 0 0 -1px #000,inset 3px 0 0 -1px rgba(255,255,255,.12),inset -2px 0 0 -1px #000,inset -3px 0 0 -1px rgba(255,255,255,.12)}
 #xptb .xptask[data-w="poll"]{--xp-ti:var(--xp-ico-poll)}
 #xptb .xptask[data-w="forum"]{--xp-ti:var(--xp-ico-forum)}
 #xptb .xptask[data-w="today"]{--xp-ti:var(--xp-ico-games)}
 #xptb .xptask[data-w="page"]{--xp-ti:var(--xp-pageico,var(--xp-winicon))}
-@media (max-width:700px){ #xptb .xptasks{display:none} }
+/* a phone: no room for the windows' buttons, so Quick Launch's Desktop says what it is */
+@media (max-width:700px){ #xptb .xptasks{display:none} #xptb .xpdesk span{display:inline} #xptb .xpdesk{padding:0 8px 0 5px} }
 @media (max-width:420px){
-  :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings){padding:0 20px 2px 10px}
-  :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings)::after{font-size:1.0625rem}
-  :root.xpjs[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns){padding-right:66px}
-  #xptb .xpclock{width:64px}
+  :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings){padding:0 24px 2px 11px}
+  :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings)::after{font-size:1.25rem}
+  :root.xpjs[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns){padding:0 72px 0 8px}
+  :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(.hubbar .headbtns,.topbar .headbtns,.pagehead .crumbs,#xptray .headbtns) .btn:not(#themebtn):not(#settings){width:30px}
+  #xptb .xpclock{width:70px;padding-right:6px}
+  #xptb .xpql{padding:0 4px}
 }
 /* the page keeps clear of the taskbar */
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) body{padding-bottom:calc(var(--xp-tbh) + var(--xp-sb))}
@@ -344,9 +358,12 @@ html[data-skin="xp"][data-tileicons="accent"] .qtile .ico{color:#1c55c6}
 [data-skin="xp"] .qtile .ico .ph [opacity]{opacity:1;fill:#fff}
 [data-skin="xp"] .qtile .tname{max-width:100%;padding:1px 3px 2px;color:#fff;font:400 .78125rem/1.25 var(--font-ui);white-space:normal;overflow-wrap:normal;
   text-shadow:1px 1px 1px #000,1px 1px 2px rgba(0,0,0,.7)}
-:root[data-skin="xp"] .qtile:is(.xpsel,:focus-visible) .tname{background:var(--xp-sel);text-shadow:none}
+:root[data-skin="xp"] .qtile:is(.xpsel,:focus-visible) .tname{background:#1d4fb0;text-shadow:none;box-shadow:0 0 0 1px rgba(0,10,60,.35)}
+:root[data-skin="xp"] .qtile.xpsel .tname{outline:1px dotted rgba(255,255,255,.9);outline-offset:-1px}
 :root[data-skin="xp"] .qtile.xpsel .ico{color:#163c8c}
 :root[data-skin="xp"] .qtile.xpsel .ico .ph [opacity]{fill:#8fb0ee}
+:root[data-skin="xp"][data-mode="dark"] .qtile.xpsel .ico{color:#8fb0ee}
+:root[data-skin="xp"][data-mode="dark"] .qtile.xpsel .ico .ph [opacity]{fill:#1d4fb0}
 [data-skin="xp"] .qtile:focus-visible{outline:0}
 [data-skin="xp"] .qtile:focus-visible .tname{outline:1px dotted #fff;outline-offset:0}
 :root:not(.xpwm)[data-skin="xp"] .qtile:hover .tname{text-decoration:underline}
@@ -388,8 +405,7 @@ html.zen[data-skin="xp"] .qtile:is(.xpsel,:focus-visible) .tname{color:#fff;text
   :root[data-skin="xp"][data-pg="home"] .qtile{min-height:74px}
 }
 /* while the windows can be moved (xp.js): each is placed on the screen, the page itself stays still */
-:root.xpwm[data-skin="xp"],:root.xpwm[data-skin="xp"] body{overflow:hidden}
-:root.xpwm[data-skin="xp"] .xpwin{position:fixed;margin:0;z-index:10}
+:root.xpwm[data-skin="xp"],:root.xpwm[data-skin="xp"] body{overflow:hidden}:root.xpwm[data-skin="xp"] .xpwin{position:fixed;margin:0;z-index:10}
 :root.xpwm[data-skin="xp"] .xpwin.xpmin{display:none!important}
 :root.xpwm[data-skin="xp"] .xpwin.xpmaxw{left:0!important;top:0!important;width:100vw!important;height:calc(100vh - var(--xp-tbh))!important;max-height:none!important;border-radius:0}
 :root.xpwm[data-skin="xp"] .xpwin.xpmaxw :is(.fhead,.phead,.eyebrow){border-radius:0}
@@ -586,8 +602,8 @@ html.zen[data-skin="xp"] .qtile:is(.xpsel,:focus-visible) .tname{color:#fff;text
   [data-skin="xp"] .xpuser i{width:38px;height:38px}
 }
 
-/* ══ the timetable: one maximised window ══ */
-:root[data-skin="xp"][data-pg="timetable"] .wrap{max-width:none;margin:0;padding:0 0 18px;min-height:calc(100vh - var(--xp-tbh) - var(--xp-sb));background:var(--xp-face)}
+/* ══ the timetable: one big window (its place on the desktop is with the other pages', below) ══ */
+:root[data-skin="xp"][data-pg="timetable"] .wrap{padding:0 3px 14px;background:var(--xp-face);border-radius:8px 8px 0 0;box-shadow:var(--xp-frame),var(--xp-drop)}
 html.zen[data-skin="xp"][data-pg="timetable"] .wrap{background:transparent}
 :root[data-skin="xp"][data-pg="timetable"] .topbar{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:0;margin:0;padding:0 0 6px;border:0;border-radius:0;background:none;box-shadow:none;color:var(--text)}
 :root[data-skin="xp"][data-pg="timetable"] .brand{display:contents}
@@ -598,10 +614,12 @@ html.zen[data-skin="xp"][data-pg="timetable"] .wrap{background:transparent}
 :root[data-skin="xp"][data-pg="timetable"] .brand h1::after{content:" - Timetable";content:" - Timetable" / "";font-weight:700}
 :root:not(.xpjs)[data-skin="xp"][data-pg="timetable"] .topbar::after{content:"";position:absolute;right:6px;top:5px;width:67px;height:21px;background:var(--xp-tbtns);pointer-events:none}
 :root[data-skin="xp"][data-pg="timetable"] .topbar>.xpcap{position:absolute;right:6px;top:5px}
-/* restored (its caption button, xp.js): a window on the desktop like the other pages */
-:root.xpwinned[data-skin="xp"][data-pg="timetable"] .wrap{width:min(1400px,calc(100% - 40px));max-width:none;margin:16px auto 20px;padding:0 3px 14px;min-height:0;border-radius:8px 8px 0 0;box-shadow:var(--xp-frame),var(--xp-drop)}
-:root.xpwinned[data-skin="xp"][data-pg="timetable"] .topbar{margin:0 -3px}
-:root.xpwinned[data-skin="xp"][data-pg="timetable"] .brand h1{border-radius:8px 8px 0 0}
+:root[data-skin="xp"][data-pg="timetable"] .topbar{margin:0 -3px}
+:root[data-skin="xp"][data-pg="timetable"] .brand h1{border-radius:8px 8px 0 0}
+/* maximised (its caption button, xp.js): the whole screen, square */
+:root.xpmaxed[data-skin="xp"][data-pg="timetable"] .wrap{padding:0 0 18px;box-shadow:none}
+:root.xpmaxed[data-skin="xp"][data-pg="timetable"] .topbar{margin:0}
+:root.xpmaxed[data-skin="xp"][data-pg="timetable"] .brand h1{border-radius:0}
 /* the Address bar: whose timetable */
 :root[data-skin="xp"][data-pg="timetable"] .idrow{order:2;flex:1 1 300px;position:relative;margin:6px 10px 2px 66px;padding:2px 6px;min-height:24px;max-width:none;background:var(--xp-white);border:1px solid var(--xp-field);border-radius:0;opacity:1}
 :root[data-skin="xp"][data-pg="timetable"] .idrow::before{content:"Address";content:"Address" / "";position:absolute;left:-58px;top:50%;transform:translateY(-50%);color:#7a7768;font:400 .78125rem/1 var(--font-ui)}
@@ -646,7 +664,7 @@ html.zen[data-skin="xp"][data-pg="timetable"] .grid{background:color-mix(in srgb
   background:linear-gradient(180deg,color-mix(in srgb,var(--c,var(--accent)) 6%,#fff),color-mix(in srgb,var(--c,var(--accent)) 17%,#fff));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 1px 1px rgba(0,0,0,.08)}
 [data-skin="xp"] .lesson:hover{box-shadow:var(--xp-hot),0 1px 2px rgba(0,0,0,.15)}
-[data-skin="xp"] .lesson .s{font-family:var(--font-ui);font-weight:700;letter-spacing:0}
+[data-skin="xp"] .lesson .s{font-family:var(--font-display);font-weight:700;letter-spacing:0}
 [data-skin="xp"] .lesson.current{outline:0;box-shadow:inset 0 0 0 1px #fff0cf,inset 0 0 0 3px #f8b330,0 0 0 1px #c98a10}
 [data-skin="xp"][data-mode="dark"] .lesson{color:#eee;border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,#000);
   background:linear-gradient(180deg,color-mix(in srgb,var(--c,var(--accent)) 22%,#2e3036),color-mix(in srgb,var(--c,var(--accent)) 12%,#1f2024));box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
@@ -672,7 +690,51 @@ html.zen[data-skin="xp"] .breakbar{background:color-mix(in srgb,var(--xp-face) 9
 [data-skin="xp"][data-pg="timetable"]{--xp-pageico:var(--xp-ico-table)}
 [data-skin="xp"][data-pg="calendar"]{--xp-pageico:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect x='.5' y='1.5' width='15' height='14' rx='1' fill='%23fff' stroke='%23163c8c'/><rect x='1' y='2' width='14' height='3.5' fill='%23f76b15'/><path d='M3.5 8h2M7 8h2M10.5 8h2M3.5 11h2M7 11h2' stroke='%237d95c8' stroke-width='1.6'/></svg>")}
 :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{
-  margin:20px auto 24px;padding:0 18px 22px;background:var(--xp-face);border-radius:8px 8px 0 0;box-shadow:var(--xp-frame),var(--xp-drop)}
+  padding:0 18px 22px;background:var(--xp-face);border-radius:8px 8px 0 0;box-shadow:var(--xp-frame),var(--xp-drop)}
+/* where a page's window sits: on the desktop, to the right of its icons (from 1000px across), at the page's own width
+   (--xp-ww), centred in the room there is; the wallpaper shows round it */
+:root[data-skin="xp"]{--xp-ww:1000px;--xp-dl:0px}
+:root[data-skin="xp"][data-pg="timetable"]{--xp-ww:1400px}
+@media (min-width:1000px){ :root[data-skin="xp"]{--xp-dl:112px} }
+:root[data-skin="xp"]:is([data-pg="timetable"],[data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{
+  width:min(var(--xp-ww),calc(100% - var(--xp-dl) - 40px));max-width:none;min-height:0;
+  margin:18px auto 24px max(calc(var(--xp-dl) + 14px),calc((100% - min(var(--xp-ww),calc(100% - var(--xp-dl) - 40px))) / 2))}
+/* a smaller screen: the timetable takes all the room beside the icons, so five days still fit */
+@media (min-width:1000px) and (max-width:1279px){
+  :root[data-skin="xp"][data-pg="timetable"] .wrap{width:calc(100% - var(--xp-dl) - 10px);margin-left:calc(var(--xp-dl) + 2px);margin-right:8px}
+  :root[data-skin="xp"][data-pg="timetable"] .grid{margin:8px 6px 0;padding-right:4px}
+  :root[data-skin="xp"][data-pg="timetable"] .lesson .s{font-size:.8125rem}
+  :root[data-skin="xp"][data-pg="timetable"] .lesson{padding-left:6px;padding-right:5px}
+}
+/* the desktop's icons on every other page (xp.js; Home's are its own tiles), down the left as on Home */
+.xpicons{display:none}
+@media (min-width:1000px){
+  :root[data-skin="xp"] .xpicons{position:fixed;left:10px;top:12px;z-index:0;display:grid;grid-template-columns:88px;grid-auto-rows:minmax(72px,auto);gap:2px;width:92px;margin:0;padding:0;
+    max-height:calc(100vh - var(--xp-tbh) - var(--xp-sb) - 16px);overflow-y:auto;scrollbar-width:none}
+  :root[data-skin="xp"] .xpicons::-webkit-scrollbar{display:none}
+  :root[data-skin="xp"] .xpicons .qtile{min-height:72px;height:auto}
+  :root.xpmaxed[data-skin="xp"]:not(.xppagemin) .xpicons{visibility:hidden}
+}
+/* (the timetable has no site.css: what Home's tiles get from it) */
+:root[data-skin="xp"] .xpicons .qtile{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-width:0;text-decoration:none;color:#fff;transform:none}
+:root[data-skin="xp"]:not([data-gameicons="emoji"]) .xpicons .ie{display:none}
+:root[data-skin="xp"][data-gameicons="emoji"] .xpicons .ph{display:none}
+:root[data-skin="xp"] .xpicons .ie{font-size:2rem;line-height:1;display:block}
+:root[data-skin="xp"] .xpicons .qtile .tname{display:block;overflow:visible;text-overflow:clip;text-align:center}
+:root[data-skin="xp"] .xpicons .qtile:hover .tname{text-decoration:underline}
+:root[data-skin="xp"] .xpicons .qtile[aria-current="page"]:hover .tname{text-decoration:none}
+/* opening (xp.js, Animation on): the window waits, out of sight, while a title bar flies out to where it will be */
+html.fx-in[data-skin="xp"] .wrap,html.fx-out[data-skin="xp"] .wrap{opacity:1;transition:none}
+html.fx-enter[data-skin="xp"] .wrap{animation:none}
+@media (prefers-reduced-motion:no-preference){
+  html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) .wrap{visibility:hidden}
+  html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) .wrap::after,
+  html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
+}
+:root.xpopening[data-skin="xp"] .wrap{visibility:hidden}
+:root.xpopening[data-skin="xp"] .wrap::after,:root.xpopening[data-skin="xp"] :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
+.xpzoom{position:fixed;z-index:9500;pointer-events:none;border-radius:7px 7px 0 0;background:var(--xp-title);box-shadow:0 0 0 1px rgba(255,255,255,.35),0 2px 6px rgba(0,20,80,.3);opacity:.92}
+#xptb .xpql[hidden]{display:none}
 :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead{
   position:relative;display:flex;align-items:center;flex-wrap:nowrap;min-height:30px;margin:0 -18px 18px;padding:0 84px 0 32px;gap:0;border:0;border-radius:8px 8px 0 0;
   background:var(--xp-pageico,var(--xp-winicon)) 9px 7px/16px 16px no-repeat,var(--xp-title);box-shadow:none;color:var(--xp-ink)}
@@ -687,14 +749,19 @@ html.zen[data-skin="xp"] .breakbar{background:color-mix(in srgb,var(--xp-face) 9
 :root[data-skin="xp"] .pagehead>.xpcap{position:absolute;right:6px;top:5px}
 :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagelede{color:var(--muted);margin-top:0}
 @media (max-width:700px){
+  :root[data-skin="xp"]:is([data-pg="timetable"],[data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{
+    width:auto;margin:0;border-radius:0;min-height:calc(100vh - var(--xp-tbh) - var(--xp-sb))}
   :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .wrap{
-    margin:0;padding:0 max(12px,env(safe-area-inset-right)) 20px max(12px,env(safe-area-inset-left));border-radius:0;min-height:calc(100vh - var(--xp-tbh) - var(--xp-sb))}
+    padding:0 max(12px,env(safe-area-inset-right)) 20px max(12px,env(safe-area-inset-left))}
+  :root[data-skin="xp"][data-pg="timetable"] .wrap{padding:0 0 18px;box-shadow:none}
+  :root[data-skin="xp"][data-pg="timetable"] .topbar{margin:0}
+  :root[data-skin="xp"][data-pg="timetable"] .brand h1{border-radius:0}
   :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead{
     margin:0 calc(-1 * max(12px,env(safe-area-inset-right))) 14px calc(-1 * max(12px,env(safe-area-inset-left)));border-radius:0;padding-right:58px}
   [data-skin="xp"] .xpcap .xpmax{display:none}
 }
 /* maximised (its caption button, xp.js): the whole screen; minimised: only the desktop and the taskbar */
-:root.xpmaxed[data-skin="xp"] .wrap{max-width:none!important;margin:0!important;border-radius:0!important;min-height:calc(100vh - var(--xp-tbh) - var(--xp-sb))}
+:root.xpmaxed[data-skin="xp"] .wrap{width:auto!important;max-width:none!important;margin:0!important;border-radius:0!important;min-height:calc(100vh - var(--xp-tbh) - var(--xp-sb))}
 :root.xpmaxed[data-skin="xp"] .pagehead{border-radius:0!important}
 :root.xppagemin[data-skin="xp"] .wrap{visibility:hidden}
 :root.xppagemin[data-skin="xp"] .wrap::after,:root.xppagemin[data-skin="xp"] :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
