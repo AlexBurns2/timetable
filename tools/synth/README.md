@@ -48,6 +48,6 @@ Re-make them after changing anything in `fx/synth.js` that changes the picture.
      `--only drive --quality 58` (about 125 KB on a computer, 41 KB on a phone).
 
 The page opens with `sessionStorage synth.still = 1`, which is `fx/synth.js`'s still mode: the
-page itself is hidden, time is fixed and the grain is steady. localStorage gets only the theme,
+page itself is hidden and time is fixed (there is no film grain any more, only a still dither). localStorage gets only the theme,
 light or dark, and the moderator flag a mod-only theme needs, so no account or real data is used.
 A still only matches its scene if the cameras in `fx/synth.js` are unchanged.

@@ -507,6 +507,13 @@ function makeNext(canvas, env){
         g.save(); g.shadowColor = dk ? 'rgba(12,14,40,.45)' : 'rgba(70,44,130,.26)'; g.shadowBlur = U*.03; g.shadowOffsetX = U*.012; g.shadowOffsetY = U*.02;
         g.drawImage(im, x0, y0, w, h); g.restore(); keep.push([x0, y0, w, h]); } }
   };
+  /* a faint still grain over the picture: specks of black and of white, most of them barely there. Only the picture: the page's windows
+     and their text stay clean (over them it was hard on the eyes) */
+  const grainCv = (() => { const c = canvas2(128, 128), g = c.getContext('2d'), d = g.createImageData(128, 128), r = rnd(4242);
+    for (let i = 0; i < d.data.length; i += 4){ const v = r() < .5 ? 0 : 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = Math.round(r()*r()*46); }
+    g.putImageData(d, 0, 0); return c; })();
+  let grainPat = null;
+  const grain = dk => { grainPat = grainPat || x.createPattern(grainCv, 'repeat'); if (!grainPat) return; x.globalAlpha = dk ? .7 : .55; x.fillStyle = grainPat; x.fillRect(0, 0, W, H); x.globalAlpha = 1; };
   /* the page's word (tools/vapor/word.py): big vertical type in the margin beside the window; now and then a pale glint passes slowly down it */
   let wordCv = null, wordKey = '', wordBox = null;
   const word = (t, dk) => { wordBox = null; const sd = PL.word; if (!sd || lay.tall) return;
@@ -554,6 +561,7 @@ function makeNext(canvas, env){
       haze(hy, dk);
       build(dk); x.drawImage(front, 0, 0);
       floats(t, dk);
+      grain(dk);
       word(t, dk);
       stage();
     },
@@ -971,8 +979,8 @@ function visitors(){
        each page with this page's pressed in, a clock. Real links and
        buttons; nothing in it moves. Not on a narrow screen, and not
        while a game is open. (Only pages the site already links to.)
-     · A faint still grain over everything, so the page and the picture
-       behind it read as one image.
+     (The faint grain is in the picture now, not over the page: over the
+     windows and their text it was hard on the eyes. See makeNext.)
    ═══════════════════════════════════════════════════════════════════ */
 const TASKS = [['home', 'Home', 'home.html', 'home'], ['timetable', 'Timetable', './', 'tt'], ['calendar', 'Calendar', 'calendar.html', 'cal'], ['free', 'Free periods', 'free.html', 'clock'],
   ['revision', 'Revision', 'revision.html', 'book'], ['resources', 'Resources', 'resources.html', 'folder'], ['games', 'Games', 'games.html', 'joy'], ['mahjong', 'Mahjong club', 'mahjong.html', 'tile']];
@@ -981,12 +989,6 @@ function desk(){
   const PG = root.getAttribute('data-pg') || FX.page || '';
   const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
   const pix = n => { const i = el('img'); i.alt = ''; i.width = i.height = 16; i.src = icon(n); return i; };
-  /* the grain: specks of black and of white, most of them barely there */
-  const gr = el('div', 'vw-grain'); gr.setAttribute('aria-hidden', 'true');
-  { const c = canvas2(128, 128), g = c.getContext('2d'), d = g.createImageData(128, 128), r = rnd(4242);
-    for (let i = 0; i < d.data.length; i += 4){ const v = r() < .5 ? 0 : 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = Math.round(r()*r()*46); }
-    g.putImageData(d, 0, 0); gr.style.backgroundImage = 'url(' + c.toDataURL() + ')'; }
-  document.body.appendChild(gr);
   /* the taskbar */
   const bar = el('nav', 'vw-task'); bar.setAttribute('aria-label', 'Pages');
   const start = el('button', 'vw-start'); start.type = 'button'; start.setAttribute('aria-haspopup', 'menu'); start.setAttribute('aria-expanded', 'false'); start.append(pix('opaline'), el('span', null, 'Start'));
@@ -1022,7 +1024,7 @@ function desk(){
   document.addEventListener('pointerdown', e => { if (!menu.hidden && !menu.contains(e.target) && !start.contains(e.target)) close(false); }, true);
   bar.append(start, el('span', 'vw-tsep'), list, tray, menu);
   document.body.appendChild(bar);
-  const sync = () => { const on = root.getAttribute('data-skin') === 'vapor'; bar.hidden = gr.hidden = !on; root.classList.toggle('vw-desk', on); };
+  const sync = () => { const on = root.getAttribute('data-skin') === 'vapor'; bar.hidden = !on; root.classList.toggle('vw-desk', on); };
   sync(); addEventListener('tt:look', sync);
 }
 /* not inside a frame (the Mahjong board inside Games, a page previewed in the Theme finder): the page round it has its own */

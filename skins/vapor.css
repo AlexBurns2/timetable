@@ -322,7 +322,7 @@ html.vw-next[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-p
    fx/vapor.js builds it).
      · On a wide screen each page's window stands off centre (html[data-vw-shift]), so the scene's main thing has the bigger margin.
      · A taskbar along the foot of the screen (html.vw-desk while it's there): Start, a button a page, a clock.
-     · A faint still grain over everything; now and then a heading's colours part for a moment.
+     · Now and then a heading's colours part for a moment. (The faint grain is in the scene's picture only, not over the page.)
    Nothing here moves with Animation off or Reduce motion.
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width:1500px){
@@ -372,11 +372,7 @@ html.vw-next .vw-task .vw-smi[role="menuitemcheckbox"]{position:relative}
 html.vw-next .vw-task .vw-smi[aria-checked="true"]::after{content:"";position:absolute;right:10px;top:50%;width:9px;height:9px;margin-top:-5px;background:var(--v-tick) center/9px 9px no-repeat}
 html.vw-next .vw-task .vw-smi[aria-checked="true"]:is(:hover,:focus-visible)::after{filter:brightness(0) invert(1)}
 html.vw-next .vw-smsep{height:2px;margin:3px 2px;box-shadow:inset 0 1px var(--w-sh),inset 0 -1px var(--w-hl)}
-/* the grain: still, over the page and the picture alike */
-html.vw-next .vw-grain{position:fixed;inset:0;z-index:1400;pointer-events:none;background-repeat:repeat;background-size:128px 128px;opacity:.55}
-html.vw-next .vw-grain[hidden]{display:none}
-html.vw-next[data-mode="dark"] .vw-grain{opacity:.7}
-@media print{html.vw-next :is(.vw-grain,.vw-task,.vw-ent){display:none!important}}
+@media print{html.vw-next :is(.vw-task,.vw-ent){display:none!important}}
 /* a heading's colours part a little further, for a moment, every so often */
 @keyframes vwca{0%,96.4%,100%{text-shadow:2px 0 rgba(1,205,254,.8),-2px 0 rgba(255,113,206,.8);transform:none}
   96.8%{text-shadow:6px 0 rgba(1,205,254,.85),-5px 0 rgba(255,113,206,.85);transform:translateX(1px)}

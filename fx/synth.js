@@ -6,13 +6,14 @@
    with no textures); everything else is made here: the car (a generic
    wedge, from its sections), the palms (seeded: trunk, fronds, leaflets),
    the grid, the crags, the sea, a pyramid, a planet, the sun. One light:
-   a low sun, which also fills the sky the models reflect. Then fog, a
-   soft bloom on what is brighter than white, and a little film grain.
+   a low sun, which also fills the sky the models reflect. Then fog and a
+   soft bloom on what is brighter than white. No film grain.
    One idea a page, kept out at the sides:
 
-     timetable                       drive    the car, from behind, on a lit grid that
-                                              runs between faceted crags, their edges
-                                              lit, to the banded sun; going by, slowly
+     timetable                       drive    the car (a coupé of the nineties), from
+                                              behind, on a lit grid that runs between
+                                              faceted crags, their edges lit, to the
+                                              banded sun; going by fast
      home                            bay      towers across the water, their windows
                                               lit in strips, the sun going down behind
                                               them; palms on a spit to the right
@@ -22,9 +23,9 @@
      notes, resources, mahjong       shoreB   palm (the sun to one side, then the other)
 
    Dusk in light mode, night (deep violet, stars) in dark. The camera never
-   follows the pointer and nothing shakes: the road comes toward us and the
-   water moves, slowly, and the car eases across its road after the pointer,
-   a little behind it. That's all. Thirty frames a second at most, drawn at no more than
+   follows the pointer and nothing shakes: the road comes toward us (fast,
+   on the timetable) and the water moves, slowly, and the car eases across
+   its road after the pointer, a little behind it. That's all. Thirty frames a second at most, drawn at no more than
    the screen's own pixels (fewer on a phone); fx.js stops it while the
    tab is hidden.
 
@@ -134,51 +135,95 @@ function palmArrays(seed){
 }
 const PALM_SEEDS = [11, 23, 37];
 
-/* ── the car: a generic wedge of the early eighties, made here from its sections, tail (-z) to nose (+z). Each section is
-   half the body's outline, from the middle of the floor round to the middle of the roof: floor, sill, the belt crease,
-   the shoulder, the foot of the glass, the edge of the roof, the roof's middle. Low and wide (1.9 m by 1.13 m), flat
-   panels meeting at crisp creases, a cabin set well forward under a fast screen, a long rear deck. No real car's lines. ── */
-const CAR = [
-  [-2.15, [[0, .28], [.8, .28], [.87, .48], [.85, .76], [.6, .78], [.34, .785], [0, .79]]],
-  [-2.04, [[0, .22], [.87, .22], [.95, .47], [.9, .83], [.64, .86], [.36, .865], [0, .87]]],
-  [-1.30, [[0, .17], [.9, .17], [.96, .46], [.9, .88], [.66, .93], [.42, .935], [0, .94]]],
-  [-0.38, [[0, .16], [.9, .16], [.965, .45], [.9, .88], [.7, .92], [.56, 1.12], [0, 1.13]]],
-  [ 0.32, [[0, .16], [.9, .16], [.96, .44], [.89, .84], [.69, .88], [.56, 1.12], [0, 1.13]]],
-  [ 1.12, [[0, .17], [.89, .17], [.94, .42], [.87, .74], [.64, .77], [.42, .78], [0, .785]]],
-  [ 1.98, [[0, .2], [.84, .2], [.88, .36], [.82, .54], [.6, .56], [.36, .565], [0, .57]]],
-  [ 2.16, [[0, .25], [.78, .25], [.81, .34], [.75, .45], [.56, .46], [.34, .465], [0, .47]]]
+/* ── the car: a coupé of the nineteen-nineties, made here from its sections, tail (-z) to nose (+z). Rounded where the old wedge
+   was creased: a high soft tail, a short boot with a small wing on it, a fastback rear window, a low rounded nose, the wheels
+   set into arches. 4.4 m long, 1.79 m wide, 1.27 m high. Each station below gives: z, the floor's height, the sill's half-width,
+   the widest half-width, the belt line's height and half-width, and the height and half-width of the roof (or, where there is no
+   cabin, the deck). Stations in between are eased from these, and each cross-section is rounded off, so nothing is flat-faced.
+   No real car's lines. ── */
+const CAR_ST = [
+  [-2.20, .36, .66, .76,  .74,  .73,  .775, .66],
+  [-2.13, .28, .76, .835, .80,  .80,  .83,  .72],
+  [-1.90, .22, .83, .885, .845, .85,  .87,  .76],
+  [-1.50, .19, .85, .895, .86,  .86,  .89,  .76],
+  [-1.12, .18, .85, .89,  .87,  .855, .915, .72],      // the foot of the rear window
+  [-0.55, .18, .85, .885, .88,  .85, 1.245, .57],      // its head: the roof
+  [-0.10, .18, .85, .885, .88,  .85, 1.27,  .575],
+  [ 0.35, .18, .85, .88,  .875, .845, 1.25, .57],      // the head of the windscreen
+  [ 1.02, .18, .85, .88,  .86,  .845, .885, .70],      // its foot
+  [ 1.45, .19, .84, .875, .80,  .84,  .835, .70],
+  [ 1.90, .22, .80, .85,  .70,  .80,  .74,  .66],
+  [ 2.12, .27, .72, .78,  .60,  .72,  .63,  .58],
+  [ 2.20, .32, .58, .66,  .54,  .60,  .56,  .48]
 ];
-const CAR_GLASS = { '2,5':1, '3,4':1, '4,5':1 };          // [gap between sections, segment of the outline]: the rear window, the side glass, the screen
+const CAR_WHEELS = [[.775, 1.36], [-.775, 1.36], [.775, -1.32], [-.775, -1.32]], CAR_ARCH = .385;
 function carArrays(){
-  const o = { body:[], glass:[], trim:[], line:[], tail:[] };        // line: trim whose edges are drawn lit (the louvres, the bumper)
-  const P = (st, j, sx) => [st[1][j][0] * sx, st[1][j][1], st[0]];
+  /* the stations eased (a cubic that never overshoots: the slope at each is the harmonic mean of the slopes either side) */
+  const NK = CAR_ST.length, slope = (i, k) => { if (i <= 0 || i >= NK - 1) return 0;
+    const a = (CAR_ST[i][k] - CAR_ST[i - 1][k]) / (CAR_ST[i][0] - CAR_ST[i - 1][0]), b = (CAR_ST[i + 1][k] - CAR_ST[i][k]) / (CAR_ST[i + 1][0] - CAR_ST[i][0]); return a * b <= 0 ? 0 : 2 * a * b / (a + b); };
+  const at = z => { let i = 0; while (i < NK - 2 && z > CAR_ST[i + 1][0]) i++;
+    const z0 = CAR_ST[i][0], h = CAR_ST[i + 1][0] - z0, t = clamp((z - z0) / h, 0, 1), t2 = t * t, t3 = t2 * t, out = [z];
+    for (let k = 1; k < 8; k++) out.push((2 * t3 - 3 * t2 + 1) * CAR_ST[i][k] + (t3 - 2 * t2 + t) * h * slope(i, k) + (-2 * t3 + 3 * t2) * CAR_ST[i + 1][k] + (t3 - t2) * h * slope(i + 1, k));
+    return out; };
+  /* a cross-section, half of it, from the middle of the floor round to the middle of the roof: the body, the glass, the top, each rounded off (corners cut, twice) */
+  const cut = (p, n) => { for (let it = 0; it < n; it++){ const q = [p[0]]; for (let i = 0; i < p.length - 1; i++){ const a = p[i], b = p[i + 1]; q.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); } q.push(p[p.length - 1]); p = q; } return p; };
+  const half = st => { const [, yb, ws, wm, hb, wb, hr, wr] = st, he = hr - .022;
+    const body = cut([[0, yb], [ws * .8, yb], [ws, yb + .05], [wm, yb + (hb - yb) * .42], [wb, hb]], 2);
+    const glass = cut([[wb, hb], [(wb + wr) / 2 + .012, (hb + he) / 2], [wr, he]], 1), top = cut([[wr, he], [wr * .62, hr - .005], [0, hr]], 2);
+    return body.concat(glass.slice(1), top.slice(1)); };
+  const NB = 20, NG = 6, NP = NB + NG - 1 + 12 - 1, NR = 2 * NP - 2, ZS = [];           // points in the body, in the glass; in half a section; in the whole ring
+  for (let z = -2.2; z < 2.2001; z += .05) ZS.push(Math.round(z * 100) / 100);
+  const NS = ZS.length, V = [], IN = [];
+  for (let s = 0; s < NS; s++){ const h = half(at(ZS[s])), ring = [], ins = [];
+    for (let r = 0; r < NR; r++){ const j = r < NP ? r : NR - r, sx = r < NP ? 1 : -1; let x = h[j][0] * sx; const y = h[j][1]; let inn = false;
+      if (j < NB && Math.abs(x) > .5) for (const w of CAR_WHEELS) if (Math.sign(w[0]) === sx && Math.hypot(ZS[s] - w[1], y - .33) < CAR_ARCH){ x -= sx * .22; inn = true; }     /* the arches: the side pushed in round each wheel */
+      ring.push([x, y, ZS[s]]); ins.push(inn); }
+    V.push(ring); IN.push(ins); }
+  /* a normal at each point, from its neighbours along and round the body, so the paint shades as one curved surface */
+  const N = V.map((ring, s) => ring.map((p, r) => { const a = V[Math.min(NS - 1, s + 1)][r], b = V[Math.max(0, s - 1)][r], c = ring[(r + 1) % NR], d = ring[(r + NR - 1) % NR];
+    let n = norm(cross(sub(a, b), sub(c, d))); if (n[0] * p[0] + n[1] * (p[1] - .7) < 0) n = mul(n, -1); return n; }));
+  const o = { body:[[], []], glass:[[], []], well:[[], []], flat:[], trim:[], tail:[], amber:[], lamp:[], plate:[] };
+  const quad = (t, s, r) => { const r1 = (r + 1) % NR, id = [[s, r], [s, r1], [s + 1, r1], [s, r], [s + 1, r1], [s + 1, r]];
+    for (const [a, b] of id){ t[0].push(V[a][b][0], V[a][b][1], V[a][b][2]); t[1].push(N[a][b][0], N[a][b][1], N[a][b][2]); } };
+  for (let s = 0; s < NS - 1; s++) for (let r = 0; r < NR; r++){
+    const seg = r < NP - 1 ? r : NR - 1 - r, z = (ZS[s] + ZS[s + 1]) / 2, r1 = (r + 1) % NR;
+    const inn = IN[s][r] + IN[s][r1] + IN[s + 1][r] + IN[s + 1][r1];
+    let t = o.body;
+    if (inn >= 3) t = o.well;
+    else if (seg >= NB - 1 && seg < NB + NG - 3){ if (z > -.9 && z < .82) t = o.glass; }                      /* the side glass (its top edge left as the roof rail) */
+    else if (seg >= NB + NG - 1 && ((z > -1.06 && z < -.6) || (z > .4 && z < .97))) t = o.glass;         /* the rear window; the windscreen (their edges left as pillars) */
+    quad(t, s, r);
+  }
   const tri = (a, p, q, s) => a.push(p[0], p[1], p[2], q[0], q[1], q[2], s[0], s[1], s[2]);
+  for (const s of [0, NS - 1]){                            /* the tail and the nose, closed */
+    const ring = V[s], c = [0, ring.reduce((t, p) => t + p[1], 0) / NR, ZS[s]], nz = s ? 1 : -1;
+    for (let r = 0; r < NR; r++){ for (const p of [c, ring[r], ring[(r + 1) % NR]]){ o.body[0].push(p[0], p[1], p[2]); o.body[1].push(0, 0, nz); } }
+  }
   const box = (a, c, ax, ay, az) => {                    // a box from its centre and three half-axes
     const v = [];
     for (const i of [-1, 1]) for (const j of [-1, 1]) for (const k of [-1, 1]) v.push(add(c, add(mul(ax, i), add(mul(ay, j), mul(az, k)))));
     [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]].forEach(f => { tri(a, v[f[0]], v[f[1]], v[f[2]]); tri(a, v[f[0]], v[f[2]], v[f[3]]); });
   };
-  for (let s = 0; s < CAR.length - 1; s++) for (let j = 0; j < 6; j++) for (const sx of [1, -1]){
-    const a = CAR_GLASS[s + ',' + j] ? o.glass : o.body, p = P(CAR[s], j, sx), q = P(CAR[s], j + 1, sx), u = P(CAR[s + 1], j + 1, sx), w = P(CAR[s + 1], j, sx);
-    tri(a, p, q, u); tri(a, p, u, w);
+  const X = [1, 0, 0], Yv = [0, 1, 0], Zv = [0, 0, 1], T = -2.203;
+  /* the tail: a lamp each side (red, with an amber and a white part inboard), a dark strip between them, the plate in its recess,
+     a black skirt and two pipes under the bumper */
+  for (const sx of [-1, 1]){
+    box(o.tail, [sx * .53, .628, T], mul(X, .165), mul(Yv, .052), mul(Zv, .006));
+    box(o.amber, [sx * .315, .628, T], mul(X, .042), mul(Yv, .052), mul(Zv, .006));
+    box(o.lamp, [sx * .242, .628, T], mul(X, .026), mul(Yv, .052), mul(Zv, .006));
   }
-  for (const st of [CAR[0], CAR[CAR.length - 1]]){        // the tail and the nose, closed
-    const ring = []; for (let j = 0; j <= 6; j++) ring.push(P(st, j, 1)); for (let j = 5; j >= 1; j--) ring.push(P(st, j, -1));
-    const c = [0, ring.reduce((t, p) => t + p[1], 0) / ring.length, st[0]];
-    for (let i = 0; i < ring.length; i++) tri(o.body, c, ring[i], ring[(i + 1) % ring.length]);
-  }
-  /* louvres over the rear window: six slats following its slope */
-  const A0 = P(CAR[2], 6, 1), A1 = P(CAR[3], 6, 1), sl = norm(sub(A1, A0)), nn = norm(cross(sl, [1, 0, 0]));
-  for (let k = 0; k < 6; k++){
-    const v = (k + .75) / 6.5, hw = lerp(CAR[2][1][5][0], CAR[3][1][5][0], v) * .97;
-    box(o.line, add(mix3(A0, A1, v), mul(nn, .04)), [hw, 0, 0], mul(sl, .045), mul(nn, .012));
-  }
-  /* the tail: one light right across it, in three; a dark panel under it; a slim bumper; mirrors */
-  box(o.tail, [0, .645, -2.162], [.76, 0, 0], [0, .028, 0], [0, 0, .01]);
-  for (const x of [-.26, .26]) box(o.trim, [x, .645, -2.174], [.01, 0, 0], [0, .03, 0], [0, 0, .004]);
-  box(o.trim, [0, .46, -2.154], [.68, 0, 0], [0, .09, 0], [0, 0, .005]);
-  box(o.line, [0, .32, -2.175], [.84, 0, 0], [0, .03, 0], [0, 0, .035]);
-  for (const sx of [-1, 1]) box(o.body, [sx * .97, .85, .3], [.05, 0, 0], [0, .03, 0], [0, 0, .08]);
+  box(o.trim, [0, .628, T + .002], mul(X, .21), mul(Yv, .046), mul(Zv, .004));
+  box(o.trim, [0, .475, T + .002], mul(X, .275), mul(Yv, .064), mul(Zv, .004));
+  box(o.plate, [0, .475, T - .003], mul(X, .2), mul(Yv, .044), mul(Zv, .003));
+  box(o.trim, [0, .375, -2.17], mul(X, .6), mul(Yv, .028), mul(Zv, .04));
+  for (const x of [-.47, -.38]) box(o.trim, [x, .345, -2.2], mul(X, .034), mul(Yv, .03), mul(Zv, .05));
+  /* the wing on the boot: a blade on two posts, a thin brake light in its trailing edge */
+  const wz = [0, -.105, .995], wy = [0, .995, .105];
+  box(o.flat, [0, 1.005, -1.93], mul(X, .74), mul(wy, .013), mul(wz, .085));
+  for (const sx of [-1, 1]) box(o.flat, [sx * .6, .935, -1.915], mul(X, .022), mul(Yv, .07), mul(Zv, .055));
+  box(o.tail, [0, .999, -2.017], mul(X, .15), mul(Yv, .007), mul(Zv, .004));
+  /* the door mirrors */
+  for (const sx of [-1, 1]) box(o.flat, [sx * .93, .93, .74], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
   return o;
 }
 
@@ -276,8 +321,13 @@ const SEA = {
 };
 /* the bloom and the last pass */
 const QUAD_V = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }';
-const PRE_F = 'uniform sampler2D tSrc; uniform vec2 uTx; uniform float uThr, uKnee; varying vec2 vUv;\n' +
-  'void main(){ vec3 c = (texture2D(tSrc, vUv + uTx * vec2(-1., -1.)).rgb + texture2D(tSrc, vUv + uTx * vec2(1., -1.)).rgb + texture2D(tSrc, vUv + uTx * vec2(-1., 1.)).rgb + texture2D(tSrc, vUv + uTx).rgb) * .25;\n' +
+/* A pixel of a tower's glass can come out as not a number, or as an absurd highlight, for one frame; blurred into the bloom that
+   was a white flash over the city. So: a sample that isn't a sane number counts as black (SANE), and the four samples are
+   averaged by how dim they are, so one wild one can't carry the average. */
+const SANE = 'float sane1(float v){ return (v > -1e4 && v < 48.) ? max(v, 0.) : 0.; }\nvec3 sane(vec3 c){ return vec3(sane1(c.r), sane1(c.g), sane1(c.b)); }\n';
+const PRE_F = 'uniform sampler2D tSrc; uniform vec2 uTx; uniform float uThr, uKnee; varying vec2 vUv;\n' + SANE +
+  'vec4 tap(vec2 o){ vec3 c = sane(texture2D(tSrc, vUv + uTx * o).rgb); float w = 1. / (1. + max(c.r, max(c.g, c.b))); return vec4(c * w, w); }\n' +
+  'void main(){ vec4 a = tap(vec2(-1., -1.)) + tap(vec2(1., -1.)) + tap(vec2(-1., 1.)) + tap(vec2(1., 1.)); vec3 c = a.rgb / max(a.a, 1e-4);\n' +
   '  float br = max(c.r, max(c.g, c.b)), so = clamp(br - uThr + uKnee, 0., 2. * uKnee); so = so * so / (4. * uKnee + 1e-4);\n' +
   '  gl_FragColor = vec4(min(c * max(so, br - uThr) / max(br, 1e-4), vec3(16.)), 1.); }';
 const DOWN_F = 'uniform sampler2D tSrc; uniform vec2 uTx; varying vec2 vUv;\n' +
@@ -287,15 +337,14 @@ const UP_F = 'uniform sampler2D tSrc; uniform vec2 uTx; uniform float uW; varyin
   'void main(){ vec3 c = texture2D(tSrc, vUv + vec2(-2. * uTx.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(2. * uTx.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(0., -2. * uTx.y)).rgb + texture2D(tSrc, vUv + vec2(0., 2. * uTx.y)).rgb;\n' +
   '  c += (texture2D(tSrc, vUv + uTx * vec2(-1., 1.)).rgb + texture2D(tSrc, vUv + uTx).rgb + texture2D(tSrc, vUv - uTx).rgb + texture2D(tSrc, vUv + uTx * vec2(1., -1.)).rgb) * 2.;\n' +
   '  gl_FragColor = vec4(c * uW / 12., 1.); }';
-const COMP_F = 'uniform sampler2D tScene, tBloom; uniform float uBloom, uExp, uGrain, uSeed, uVig; varying vec2 vUv;\n' +
+const COMP_F = 'uniform sampler2D tScene, tBloom; uniform float uBloom, uExp, uGrain, uSeed, uVig; varying vec2 vUv;\n' + SANE +
   'vec3 aces(vec3 x){ return clamp((x * (2.51 * x + .03)) / (x * (2.43 * x + .59) + .14), 0., 1.); }\n' +
   'void main(){\n' +
-  '  vec3 c = texture2D(tScene, vUv).rgb + texture2D(tBloom, vUv).rgb * uBloom;\n' +
+  '  vec3 c = sane(texture2D(tScene, vUv).rgb) + sane(texture2D(tBloom, vUv).rgb) * uBloom;\n' +
   '  c = aces(c * uExp);\n' +
   '  vec2 q = vUv - .5; c *= 1. - uVig * dot(q, q);\n' +
   '  c = mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - .055, step(.0031308, c));\n' +
-  '  vec3 h3 = fract(vec3(gl_FragCoord.xy, uSeed) * .1031); h3 += dot(h3, h3.zyx + 31.32); float g = fract((h3.x + h3.y) * h3.z) - .5;\n' +
-  '  c += g * uGrain * (1. - c * .6);\n' +
+  '  vec3 h3 = fract(vec3(gl_FragCoord.xy, uSeed) * .1031); h3 += dot(h3, h3.zyx + 31.32); c += (fract((h3.x + h3.y) * h3.z) - .5) * uGrain;\n' +
   '  gl_FragColor = vec4(c, 1.);\n}';
 
 /* ═══════════════ building a scene ═══════════════ */
@@ -420,7 +469,7 @@ async function build(canvas, kind, dark){
   if (kind === 'drive'){
     /* the road runs into the screen (-z), straight at the sun, through a canyon of crags; the car in its right-hand lane */
     sunDir = DIR(0, .095); sunR = 128; look.fogNear = 40; look.fogFar = 950;
-    const SPEED = 1.4;                                     /* m/s: about one grid row (4/3 m) a second past the foot of the screen, as calm as the old 4 m rows at 3.2 m/s */
+    const SPEED = 9;                                       /* m/s: nearly seven grid rows (4/3 m) a second. The owner asked for the road to go by fast (it was 1.4). Under 13, so a row never moves half a cell in a frame even at twenty frames a second (past that the lines seem to run backwards) */
     /* the road: two lanes, each two of the floor's 4/3 m cells wide (2.67 m: the car, 1.93 m, with a little room either side),
        so its edges (at ROAD, either side of the middle) fall on grid lines */
     const ROAD = 8 / 3, LANE = ROAD / 2;
@@ -510,25 +559,26 @@ async function build(canvas, kind, dark){
         const m = new T.Mesh(g, terM); m.frustumCulled = false; scene.add(m); chunks.push({ m, k });
       }
     }
-    /* the car (carArrays): dark gloss, its creases drawn in thin lit lines; wheels mostly in the arches */
+    /* the car (carArrays): pearl white, so it takes the dusk's colours; dark glass; red lamps that glow; wheels in their arches */
     const car = new T.Group(); car.position.set(LANE, 0, 0); car.rotation.y = Math.PI; scene.add(car);          // in the middle of the right-hand lane
     const ca = carArrays(), geo = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a, 3)); g.computeVertexNormals(); return g; };
-    const paint = std({ color:'#140920', roughness:.38, metalness:.35, envMapIntensity:.55, flatShading:true, side:T.DoubleSide });
-    const gB = geo(ca.body), gT = geo(ca.trim), gL = geo(ca.line);
-    car.add(new T.Mesh(gB, paint));
-    car.add(new T.Mesh(geo(ca.glass), std({ color:'#040208', roughness:.05, metalness:.95, envMapIntensity:1.4, flatShading:true, side:T.DoubleSide })));
-    const trimM = std({ color:'#08060b', roughness:.6, metalness:.3, envMapIntensity:.5, flatShading:true });
-    car.add(new T.Mesh(gT, trimM), new T.Mesh(gL, trimM));
-    car.add(new T.Mesh(geo(ca.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(2.6, .2, .75) }))));
-    const lineM = neonLine(.5);
-    car.add(new T.LineSegments(keep(new T.EdgesGeometry(gB, 14)), lineM), new T.LineSegments(keep(new T.EdgesGeometry(gL, 30)), lineM));
-    const tyre = keep(new T.CylinderGeometry(.33, .33, .26, 22)); tyre.rotateZ(Math.PI / 2);
-    const hub = keep(new T.CylinderGeometry(.21, .21, .02, 22)); hub.rotateZ(Math.PI / 2);
-    const tyreM = std({ color:'#060508', roughness:.9 }), hubM = std({ color:'#2a2234', roughness:.35, metalness:.9, envMapIntensity:.9 });
+    const geoN = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a[0], 3)); g.setAttribute('normal', new T.Float32BufferAttribute(a[1], 3)); return g; };
+    const paint = std({ color:'#e6e0f0', roughness:.46, metalness:.08, envMapIntensity:.8, side:T.DoubleSide });      // not glossier: the low sun's glint on the roof bloomed into a white blob
+    const trimM = std({ color:'#08060b', roughness:.6, metalness:.3, envMapIntensity:.5, side:T.DoubleSide });
+    car.add(new T.Mesh(geoN(ca.body), paint), new T.Mesh(geo(ca.flat), paint));
+    car.add(new T.Mesh(geoN(ca.glass), std({ color:'#06040a', roughness:.16, metalness:.9, envMapIntensity:1.3, side:T.DoubleSide })));
+    car.add(new T.Mesh(geoN(ca.well), trimM), new T.Mesh(geo(ca.trim), trimM));
+    car.add(new T.Mesh(geo(ca.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.55, .05, .1) }))));
+    car.add(new T.Mesh(geo(ca.amber), std({ color:'#c46a1c', roughness:.3 })), new T.Mesh(geo(ca.lamp), std({ color:'#dcdce6', roughness:.25 })), new T.Mesh(geo(ca.plate), std({ color:'#ece6cf', roughness:.6 })));
+    const tyre = keep(new T.CylinderGeometry(.325, .325, .25, 28)); tyre.rotateZ(Math.PI / 2);
+    const hub = keep(new T.CylinderGeometry(.215, .215, .02, 28)); hub.rotateZ(Math.PI / 2);
+    const lip = keep(new T.RingGeometry(.345, .43, 44)); lip.rotateY(Math.PI / 2);                             // a black lip round each arch
+    const tyreM = std({ color:'#060508', roughness:.9 }), hubM = std({ color:'#c8c4d2', roughness:.32, metalness:.9, envMapIntensity:1 });
     const wheels = [];
-    for (const [x, z] of [[.8, 1.36], [-.8, 1.36], [.8, -1.32], [-.8, -1.32]]){
-      const w = new T.Group(); w.position.set(x, .33, z);
-      const hb = new T.Mesh(hub, hubM); hb.position.x = Math.sign(x) * .125; w.add(new T.Mesh(tyre, tyreM), hb); car.add(w); wheels.push(w);
+    for (const [x, z] of CAR_WHEELS){
+      const sx = Math.sign(x), w = new T.Group(); w.position.set(x, .325, z);
+      const hb = new T.Mesh(hub, hubM); hb.position.x = sx * .12; w.add(new T.Mesh(tyre, tyreM), hb); car.add(w); wheels.push(w);
+      const lp = new T.Mesh(lip, trimM); lp.position.set(sx * (z < 0 ? .899 : .881), .33, z); car.add(lp);
     }
     /* its shadow, long, towards us (the sun is ahead) */
     const sc = document.createElement('canvas'); sc.width = 64; sc.height = 128;
@@ -546,7 +596,7 @@ async function build(canvas, kind, dark){
       const dist = t * SPEED;
       gridU.uOff.value = dist % (4 / 3);                      // the floor comes toward us, as the hills do (it ran the other way, into the picture)
       for (const c of chunks){ const zz = (((c.k * CH - dist) % LOOP) + LOOP) % LOOP; c.m.position.z = 14 + CH - zz; }
-      const a = dist / .33; wheels.forEach(w => { w.rotation.x = a; });
+      const a = (dist / .325) % (2 * Math.PI); wheels.forEach(w => { w.rotation.x = a; });
       const dt = lastT == null ? 0 : clamp(t - lastT, 0, .1); lastT = t;
       const p = FX.ptr, want = FOLLOW && p && p.on ? clamp((p.x - .5) * 2.4, -1, 1) * REACH : LANE;
       const nx = carX + (want - carX) * (1 - Math.exp(-dt / .55));
@@ -580,7 +630,7 @@ async function build(canvas, kind, dark){
     };
     wallMat.customProgramCacheKey = () => 'sy-windows';
     const towerMat = { wall:wallMat, frame:std({ color:'#120e1a', roughness:.5, metalness:.4, envMapIntensity:.8 }), dark:std({ color:'#07050b', roughness:.7 }),
-                       glass:std({ color:'#0a0812', roughness:.1, metalness:.9, envMapIntensity:1.2 }) };
+                       glass:std({ color:'#0a0812', roughness:.3, metalness:.75, envMapIntensity:1.1 }) };       // not a mirror: a mirror that small catches the sun for one frame at a time
     const r = rnd(5), list = [];
     const names = ['tower-a', 'tower-c', 'tower-e'];
     for (let x = -310; x < 50; x += 13 + r() * 15){
@@ -679,7 +729,7 @@ async function build(canvas, kind, dark){
   const preM = pass(PRE_F, { tSrc:{ value:null }, uTx:{ value:new T.Vector2() }, uThr:{ value:hdr ? 1 : .8 }, uKnee:{ value:.5 } });
   const downM = pass(DOWN_F, { tSrc:{ value:null }, uTx:{ value:new T.Vector2() } });
   const upM = pass(UP_F, { tSrc:{ value:null }, uTx:{ value:new T.Vector2() }, uW:{ value:.75 } }, { blending:T.AdditiveBlending, transparent:true });       // uW < 1: the widest halo is the faintest
-  const compU = { tScene:{ value:mainRT.texture }, tBloom:{ value:LV[0].texture }, uBloom:{ value:.6 }, uExp:{ value:1 }, uGrain:{ value:.035 }, uSeed:{ value:0 }, uVig:{ value:.55 } };
+  const compU = { tScene:{ value:mainRT.texture }, tBloom:{ value:LV[0].texture }, uBloom:{ value:.6 }, uExp:{ value:1 }, uGrain:{ value:1.5 / 255 }, uSeed:{ value:0 }, uVig:{ value:.55 } };
   const compM = pass(COMP_F, compU);
   const blit = (m, target) => { quad.material = m; renderer.setRenderTarget(target); renderer.render(pscene, pcam); };
   const bloom = () => {
@@ -728,14 +778,13 @@ async function build(canvas, kind, dark){
     if (sea && sea.getRenderTarget) sea.getRenderTarget().setSize(Math.max(64, Math.round(w * .5)), Math.max(64, Math.round(h * .5)));
     frame(); placeSun();
   };
-  let seed = 0;
   const render = t => {
     renderer.info.reset();
     frame(); update(t); camera.updateMatrixWorld(); placeSun();
     if (sea && sea.material.uniforms && sea.material.uniforms.uTime) sea.material.uniforms.uTime.value = t % 1000;
     renderer.setRenderTarget(mainRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
     bloom();
-    compU.uSeed.value = STILL ? 0 : (seed = (seed + 1) % 256);      // a new grain each frame (small numbers: the old sine hash, fed big ones, could draw streaks that drifted)
+    compU.uSeed.value = 0;                                      // no film grain (the owner found it noise, worst in the dark): only a still dither, a level and a half deep, so the night sky doesn't band
     blit(compM, null);
   };
   setMode(dark);

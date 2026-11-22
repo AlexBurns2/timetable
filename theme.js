@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121i';
+const ASSET_V = '20261121j';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -139,6 +139,22 @@ const THUMBS = (() => {
       '<radialGradient id="o" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#cdb6ff"/><stop offset="1" stop-color="#9ff0c6"/></radialGradient></defs>' +
       '<circle cx="104" cy="40" r="17" fill="url(#c)" stroke="#8a98a8" stroke-width=".6"/>' + bar('rx="6" fill="url(#c)" stroke="#8a98a8" stroke-width=".7"') + '<rect x="58" y="8" width="40" height="8" rx="4" fill="#0b0d10"/><circle cx="64" cy="12" r="1.8" fill="#c8ff2e"/>' +
       tiles('rx="6" fill="#fff" fill-opacity=".8" stroke="#aab6c4" stroke-width=".7"') + [16, 52, 88].map(x => '<circle cx="' + x + '" cy="31.5" r="4.5" fill="url(#o)"/>').join('')],
+    /* the reworked Vaporwave (moderators, until it's released): a pastel sky, the sun, a chequered floor running to the horizon, one
+       Windows 95 window (the pink-to-cyan title bar, a heading with its colours apart, a button, a sunk field) and the taskbar */
+    vapornext: ['#cdbdf3', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86e0f6"/><stop offset=".58" stop-color="#cdbdf3"/><stop offset="1" stop-color="#ffbedc"/></linearGradient>' +
+      '<linearGradient id="t" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff71ce"/><stop offset=".52" stop-color="#b967ff"/><stop offset="1" stop-color="#01cdfe"/></linearGradient>' +
+      '<linearGradient id="u" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffa6cb"/><stop offset="1" stop-color="#ff5c9c"/></linearGradient></defs>' +
+      '<rect width="120" height="27" fill="url(#s)"/><circle cx="22" cy="19" r="11.5" fill="url(#u)"/><rect y="27" width="120" height="19" fill="#f4f0fa"/><path fill="#2a2540" d="' +
+      (() => { const Y = [27, 28.3, 30.2, 33, 37.2, 43.6, 53], X = (k, y) => (60 + k * 17 * (y - 27) / 19).toFixed(1); let d = '';
+        for (let r = 0; r < Y.length - 1; r++) for (let k = -8; k < 8; k++) if ((r + k) & 1) d += 'M' + X(k, Y[r]) + ' ' + Y[r] + 'L' + X(k + 1, Y[r]) + ' ' + Y[r] + 'L' + X(k + 1, Y[r + 1]) + ' ' + Y[r + 1] + 'L' + X(k, Y[r + 1]) + ' ' + Y[r + 1] + 'Z';
+        return d; })() + '"/><rect y="26.4" width="120" height="2.2" fill="#ffbedc" fill-opacity=".8"/>' +
+      '<rect x="44" y="5" width="66" height="29" fill="#e9e4f6"/><path d="M44.4 34V5.4H110" fill="none" stroke="#fff" stroke-width=".8"/><path d="M109.6 5V33.6H44" fill="none" stroke="#372d5e" stroke-width=".8"/>' +
+      '<rect x="45.6" y="6.6" width="62.8" height="5" fill="url(#t)"/><g fill="#efe6ff">' + [96, 100, 104].map(x => '<rect x="' + x + '" y="7.4" width="3.2" height="3.4"/>').join('') + '</g>' +
+      '<rect x="49.2" y="15.6" width="26" height="3.2" fill="#01cdfe" fill-opacity=".8"/><rect x="47.6" y="15.6" width="26" height="3.2" fill="#ff71ce" fill-opacity=".8"/><rect x="48.4" y="15.6" width="26" height="3.2" fill="#1f163d"/>' +
+      '<rect x="48.4" y="23" width="17" height="7.4" fill="#dcd6ec"/><path d="M48.7 30.4V23.3H65.4" fill="none" stroke="#fff" stroke-width=".6"/><path d="M65.1 23V30.1H48.4" fill="none" stroke="#372d5e" stroke-width=".6"/>' +
+      '<rect x="68.4" y="23" width="37" height="7.4" fill="#fff"/><path d="M68.7 30.4V23.3H105.4" fill="none" stroke="#372d5e" stroke-width=".6"/>' +
+      '<rect y="40" width="120" height="6" fill="#dcd6ec"/><rect y="40" width="120" height=".6" fill="#fff"/><rect x="1.6" y="41.4" width="11" height="3.6" fill="#dcd6ec" stroke="#372d5e" stroke-width=".4"/><rect x="3.2" y="42.4" width="2" height="1.6" fill="#b967ff"/>' +
+      '<rect x="15" y="41.4" width="15" height="3.6" fill="#f4f0fa" stroke="#372d5e" stroke-width=".4"/><rect x="32" y="41.4" width="15" height="3.6" fill="#dcd6ec" stroke="#9f96c4" stroke-width=".4"/><rect x="106" y="41.4" width="12.4" height="3.6" fill="#dcd6ec" stroke="#9f96c4" stroke-width=".4"/>'],
     vapor: ['#2a0a52', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0638"/><stop offset=".62" stop-color="#7a1a7a"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient>' +
       '<linearGradient id="t" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff71ce"/><stop offset=".5" stop-color="#b967ff"/><stop offset="1" stop-color="#01cdfe"/></linearGradient>' +
       '<linearGradient id="u" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe66d"/><stop offset="1" stop-color="#ff2a8a"/></linearGradient></defs>' +
@@ -236,20 +252,10 @@ const THUMBS = (() => {
   };
 })();
 SKINS.forEach(s => {
-  const t = THUMBS[s.id];
+  let next = false; try { next = s.id === 'vapor' && localStorage.getItem('msc.ismod') === '1'; } catch {}      /* at release: make vapornext the drawing for 'vapor' and drop this */
+  const t = THUMBS[next ? 'vapornext' : s.id];
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
-});
-/* Where there is one, a tile shows a real corner of the theme's Home page instead of the drawing above (images/tf, made by
-   tools/thumbs.py from screenshots), so the pictures can't drift away from the themes. The drawing's ground colour shows until
-   the picture arrives. Vaporwave has two: the reworked one for moderators until it's released, the one everybody has for
-   everybody else. The cities keep their photographs (below) and Custom its drawing. */
-const SHOTS = 'plain studio apple classic glass paper coquette skeuo aero y2k softclub vapor editorial swiss deco brutal maximal scifi synth terminal blueprint dorfic eco xp bauhaus destijl decon saul newsprint retro'.split(' ');
-SKINS.forEach(s => {
-  if (SHOTS.indexOf(s.id) < 0) return;
-  let mod = false; try { mod = localStorage.getItem('msc.ismod') === '1'; } catch {}
-  const t = THUMBS[s.id];
-  s.swatch = "url('/images/tf/" + (s.id === 'vapor' && !mod ? 'vapor-old' : s.id) + ".webp?v=" + ASSET_V + "') center/cover no-repeat " + (t ? t[0] : 'var(--panel-2)');
 });
 /* the Cities Collection's pictures are their photos printed the way the theme prints them (skins/cities.css): a fine
    halftone over the photo in the city's two inks (the photo in greys, multiplied by the scale colour, screened with

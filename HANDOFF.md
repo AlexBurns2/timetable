@@ -4062,3 +4062,25 @@ All of the Vaporwave and Synthwave work is still **moderators only**. The Theme 
 **Checked:** every page at 1920 × 1080 light and dark; 3440 × 1235; 5120 × 1235; 1366 × 768; phone; the Settings sheet; a game open; a non-moderator (old Vaporwave, no taskbar); visitors called up on eight pages; frames of the other pointer, the cascade and the dissolve. No page errors.
 
 **Open for the owner:** whether the visitors are now too many (every number is in `pace`); the grain's strength (`.vw-grain` opacity); whether the windows should move off centre at all; the floor scroll, if they want to try it despite the above; whether Notes and Student finder should be linked (then add them to `TASKS`); Synthwave's drawing size on a big window (still capped at 1.35 MP, so it is stretched 1.8× at 3440 wide: raising it costs frame rate).
+
+## 8.163 Theme finder icons drawn again; Synthwave: no grain, no flashes, a fast road, a 90s car; Vaporwave's grain off the page (asset version `20261121j`, `CACHE_VERSION` v88)
+The owner's notes on 8.162, which went out in their push at `20261121i`. Nothing in this section is committed.
+
+**Theme finder icons (for everyone)**
+- The real captures of 8.162 were "a bit too cluttered"; the owner "quite liked how the old ones kind of summarised the general look of the theme". The `SHOTS` override is out of `theme.js`, and `images/tf` and `tools/thumbs.py` are deleted (they were in the last push, so they show as deletions). The drawn `THUMBS` are back.
+- One new drawing, `vapornext`: the reworked Vaporwave (pastel sky, the sun, a chequered floor to the horizon, one Windows 95 window, the taskbar). Moderators see it for Vaporwave; everyone else keeps `vapor`. **At release, make `vapornext` the drawing for `vapor`.**
+- Which other drawings the owner finds ugly or stale is not known yet; ask before redrawing more.
+
+**Synthwave (`fx/synth.js`), moderators only**
+- **No film grain.** The owner still saw noise, "especially noticeable in dark spots": that was the grain itself, added after the tone curve, so on black only its bright half showed and it flickered every frame. `uGrain` is now a still dither a level and a half deep (the seed never changes), only to keep the night sky from banding. Measured: a dark patch of sky changed 0.80 levels a frame before, 0.00 now.
+- **White flashes in the city scene.** Reproduced: for one frame a pixel of a tower's glass came out as not a number (a black dot) and the bloom spread it into a white burst. `SANE` (in `PRE_F` and `COMP_F`) counts anything that isn't a sane number as black; the bloom's first pass averages its four samples by how dim they are, so one wild one can't carry it; the towers' glass is rougher (0.1 → 0.3). 3 flashes in 40 frames before, none in 70 after.
+- **The road goes by fast:** `SPEED` 1.4 → 9 m/s. Keep it under 13 (past half a cell a frame at twenty frames a second the rows seem to run backwards).
+- **A 90s car** in place of the wedge ("a bit too scifi"): `CAR_ST` (thirteen stations) eased into 89, each cross-section rounded, with a normal at every point so the paint shades as one curved surface; arches pushed in round the wheels; a flat tail with a lamp each side (red, amber, white), a plate, a skirt, two pipes; a small wing with a brake light; door mirrors. Pearl white, dark glass, no lit outline. Paint roughness 0.46: glossier, the sun's glint on the roof bloomed white.
+- All twenty stills in `images/synth` regenerated (`tools/synth/stills.mjs`; the drive ones at `--quality 58`).
+
+**Vaporwave (`fx/vapor.js`, `skins/vapor.css`), moderators only**
+- The grain over everything was "a bit hard on the eyes" on the windows. `.vw-grain` is gone; the same grain is drawn into the scene's canvas only (`grain()` in `makeNext`, under the page's word), so the windows, their text, the taskbar and the visitors are clean.
+
+**Checked:** the city scene frame by frame; the drive scene at 1600 × 900, 3440 × 1235 and on a phone; the stills; the Theme finder; a Vaporwave page at full size.
+
+**Open for the owner:** which other Theme finder drawings to redo; whether the car's shape and colour are right; whether 9 m/s is the right speed.
