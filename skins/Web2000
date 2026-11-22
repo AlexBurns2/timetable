@@ -1,0 +1,75 @@
+/* ══════════════════════════════════════════════════════════════════
+   WEB 2000 — a site as built in the year of the millennium bug. Two moods
+   from the Web Design Museum's galleries. By day, the Apple Store of 2001
+   and Macromedia's pages: white with a fine pinstripe, 11px Verdana,
+   platinum bevelled panels with a one-pixel dark line, and Aqua gel
+   buttons (a stripe of blue with a highlight across the top half). Tabs
+   and rules do the layout; links are underlined. By night, a Flash site of the
+   PlayStation and 2Advanced kind: black, hairline grey boxes, tiny type in
+   capitals, orange for the live item, and square buttons that invert.
+   No rounded corners beyond the gel pills; nothing blurs; no shadows
+   beyond one pixel. Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="web2000"]{
+  --w-aqua:linear-gradient(180deg,#e6f3ff 0%,#8fc6f6 45%,#3d8fe0 50%,#7cc0fa 100%);
+  --w-plat:linear-gradient(180deg,#fdfdfd,#e8e8e8 50%,#d9d9d9 51%,#ececec);
+  --w-stripe:repeating-linear-gradient(0deg,#fff 0 2px,#f1f1f1 2px 4px);
+  --w-link:#0033cc; --w-new:#e8240c;
+  --bg:#f4f4f4; --bg-img:var(--w-stripe);
+  --panel:#fff; --panel-2:#ececec; --line:#999;
+  --text:#000; --muted:#555; --accent:#336699; --accent-ink:#fff;
+  --font-ui:Verdana,Geneva,Tahoma,sans-serif; --font-display:Verdana,Geneva,Tahoma,sans-serif; --font-num:Verdana,Geneva,Tahoma,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:10%; --card-accent:0px;
+  --card-border:1px solid #999; --shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #ccc; --shadow-hi:inset 1px 1px 0 #fff,inset -1px -1px 0 #ccc,0 0 0 1px #336699;
+  --display-tt:none; --display-ls:0; --display-w:700;
+}
+[data-skin="web2000"][data-mode="dark"]{
+  --w-or:#ff6a00; --bg:#000; --bg-img:none; --panel:#050505; --panel-2:#111; --line:#4a4a4a;
+  --text:#d8d8d8; --muted:#808080; --accent:#ff6a00; --accent-ink:#000;
+  --card-border:1px solid #4a4a4a; --shadow:none; --shadow-hi:0 0 0 1px #ff6a00;
+}
+[data-skin="web2000"] body,[data-skin="web2000"]{font-size:11px}
+:root[data-skin="web2000"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--w-plat);border:1px solid #777;border-bottom-color:#555;border-radius:0;padding:10px 16px;box-shadow:inset 0 1px 0 #fff}
+:root[data-skin="web2000"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:#000;border:0;border-bottom:1px solid var(--w-or);box-shadow:none}
+[data-skin="web2000"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 1.5rem/1.2 Verdana,Geneva,sans-serif;letter-spacing:-.02em;color:#003366}
+[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-size:1rem;letter-spacing:.3em;text-transform:uppercase;color:var(--w-or)}
+[data-skin="web2000"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-weight:700;font-size:.6875rem;letter-spacing:0;text-transform:none;color:#003366}
+[data-skin="web2000"][data-mode="dark"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-size:.5625rem;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+/* section heads: a navy bar, as on a 2001 product page; at night a hairline with a tick */
+[data-skin="web2000"] :is(.sechd,.cathd,.forum h2){display:block;padding:3px 8px;background:linear-gradient(180deg,#5b86b4,#336699);color:#fff!important;border:1px solid #234a73}
+[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){background:none;border:0;border-bottom:1px solid #4a4a4a;color:var(--w-or)!important;padding:0 0 4px}
+:root[data-skin="web2000"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:0;box-shadow:var(--shadow)}
+[data-skin="web2000"] .forum{padding:12px 14px 14px;margin-top:20px}
+:root[data-skin="web2000"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{box-shadow:var(--shadow-hi)}
+:root[data-skin="web2000"] :is(.qtile,.tday,.gamecard,.tile,.game) .tname{color:var(--w-link);text-decoration:underline}
+[data-skin="web2000"][data-mode="dark"] :is(.qtile,.tday,.gamecard,.tile,.game) .tname{color:var(--text);text-decoration:none;text-transform:uppercase;letter-spacing:.14em}
+[data-skin="web2000"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.2rem;height:2.2rem;color:#336699!important;background:var(--w-plat);border:1px solid #888}
+[data-skin="web2000"][data-mode="dark"] .qtile .ico{background:none;border:1px solid #4a4a4a;color:var(--w-or)!important}
+/* Now and Next: a beveled data box with a progress bar like a download dialog */
+[data-skin="web2000"] .nowcard{background:#fff;border:1px solid #666;border-radius:0;box-shadow:inset 1px 1px 0 #999,inset -1px -1px 0 #fff;color:#000}
+[data-skin="web2000"] .nowcard .lbl,[data-skin="web2000"] .nowcard .count,[data-skin="web2000"] .progrow .count{color:#003366}
+[data-skin="web2000"][data-mode="dark"] .nowcard{background:#000;border:1px solid var(--w-or);box-shadow:none;color:var(--text)}
+[data-skin="web2000"][data-mode="dark"] .nowcard .lbl,[data-skin="web2000"][data-mode="dark"] .nowcard .count,[data-skin="web2000"][data-mode="dark"] .progrow .count{color:var(--w-or)}
+[data-skin="web2000"] .prog{border-radius:0;height:12px;background:#fff;border:1px solid #666;box-shadow:inset 1px 1px 0 #999}
+[data-skin="web2000"] .prog i{border-radius:0;background:repeating-linear-gradient(90deg,#3d8fe0 0 8px,#fff 8px 10px)}
+[data-skin="web2000"][data-mode="dark"] .prog{background:#000;border-color:#4a4a4a;box-shadow:none}
+[data-skin="web2000"][data-mode="dark"] .prog i{background:var(--w-or)}
+/* Aqua gel pills by day; square, inverting buttons by night */
+:root[data-skin="web2000"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:var(--w-plat);border:1px solid #6d6d6d;color:#000;font:700 .6875rem Verdana,sans-serif;box-shadow:inset 0 1px 0 #fff,0 1px 1px rgba(0,0,0,.25)}
+:root[data-skin="web2000"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--w-aqua);border-color:#1f5f9f;color:#fff;text-shadow:0 -1px 0 rgba(0,40,90,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 1px 2px rgba(0,40,90,.4)}
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;background:#000;border:1px solid #6a6a6a;color:var(--text);box-shadow:none;font-size:.5625rem;letter-spacing:.24em;text-transform:uppercase;font-weight:400}
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--w-or);border-color:var(--w-or);color:#000;text-shadow:none}
+[data-skin="web2000"] :is(.newpill,.gamecard .newbanner){background:var(--w-new);color:#fff;border-radius:0;font-weight:700}
+[data-skin="web2000"] .newpill::before{content:"NEW! "}
+[data-skin="web2000"] .newsdot{background:var(--w-new);border-radius:0}
+[data-skin="web2000"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#ececec;border:2px outset #fff;border-radius:0}
+[data-skin="web2000"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#000;border:1px solid var(--w-or)}
+[data-skin="web2000"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#fff;border:2px inset #ccc;font-family:Verdana,sans-serif}
+[data-skin="web2000"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:#000;border:1px solid #4a4a4a}
+[data-skin="web2000"] .lesson{border-radius:0;box-shadow:inset 1px 1px 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(0,0,0,.2)}
+[data-skin="web2000"] .lesson.current{outline:2px dotted #000;outline-offset:1px}
+[data-skin="web2000"][data-mode="dark"] .lesson.current{outline:1px solid var(--w-or);box-shadow:0 0 0 3px #000,0 0 0 4px var(--w-or)}
+[data-skin="web2000"] :is(.dayhead.today,.dayhead.focus) .rule{background:#336699;height:3px;border-radius:0}
+[data-skin="web2000"][data-mode="dark"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--w-or)}
+[data-skin="web2000"] .breakbar{border-radius:0}
+html.fx-enter[data-skin="web2000"] .wrap{animation:none}
