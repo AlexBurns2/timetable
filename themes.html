@@ -71,6 +71,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
 .tfpvframe iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;background:transparent}
 .tfpvframe .tfpvwait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.875rem;pointer-events:none}
 .tfpvfoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px}
+.tfpvabout{flex:1 1 100%;margin:0;font-size:.875rem;line-height:1.5}
 .tfpvfoot .hint{flex:1;min-width:12rem;margin:0;color:var(--muted);font-size:0.8125rem}
 </style>
 </head>
@@ -113,6 +114,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
   <div class="tfpvframe" id="tfpvframe"><span class="tfpvwait" id="tfpvwait">Loading the preview…</span>
     <iframe id="tfpvif" title="Preview of the theme" tabindex="-1"></iframe></div>
   <div class="tfpvfoot">
+    <p class="tfpvabout" id="tfpvabout" hidden></p>
     <p class="hint" id="tfpvnote">A preview of the real page. You can scroll it; nothing in it can be pressed.</p>
     <button class="btn" type="button" id="tfpvback">Back</button>
     <button class="btn primary" type="button" id="tfpvuse">Use this theme</button>
@@ -134,10 +136,10 @@ const nameOf = s => (s.darkName && document.documentElement.getAttribute('data-m
 const BASICS = ['plain', 'classic', 'glass', 'custom'];
 const GROUPS = [
   ['Basics', BASICS],
-  ['2000s tech', ['aero', 'skeuo', 'y2k', 'softclub', 'xp', 'dorfic', 'eco']],
+  ['2000s tech', ['aero', 'skeuo', 'y2k', 'softclub', 'xp', 'dorfic', 'eco', 'clearplastic', 'web2000', 'sonyad']],
   ['Retro-digital', ['vapor', 'terminal', 'blueprint', 'scifi']],
   ['Post-modernism', ['maximal', 'brutal', 'decon']],
-  ['Cozy', ['coquette', 'paper', 'deco']],
+  ['Cozy', ['coquette', 'paper', 'deco', 'darkdeco', 'spectrum']],
   ['Modernism', ['editorial', 'studio', 'swiss', 'bauhaus', 'destijl']],
   ['Cities Collection', ['sydney', 'tokyo', 'hongkong', 'chongqing']]
 ];
@@ -222,6 +224,7 @@ function paint(){
   const on = pv.id === current() && (one || pv.mode === TT.readState().mode);
   $('tfpvuse').textContent = on ? 'This is your theme' : 'Use ' + nameOf(s);
   $('tfpvuse').disabled = on;
+  $('tfpvabout').hidden = !s.about; $('tfpvabout').textContent = s.about ? 'About this theme: ' + s.about : '';
   $('tfpvnote').textContent = pv.id === 'custom'
     ? 'Your own colours. Change them in Settings once it’s on.'
     : 'A preview of the real page. You can scroll it; nothing in it can be pressed.';

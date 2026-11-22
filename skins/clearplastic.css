@@ -1,0 +1,75 @@
+/* ══════════════════════════════════════════════════════════════════
+   CLEAR PLASTIC — the see-through gadgets of 1998–2001 (iMac and Game Boy
+   Color in translucent shells, clear telephones, Walkmans with the guts
+   showing). By day the shell is "ice" (blue-tinted clear acrylic), by
+   night "smoke" (grey-black). Every panel is a moulded slab: a tinted
+   translucent body, a bright rim, a soft highlight down the top, and the
+   board inside faintly visible, drawn as a dot grid and one trace. Buttons are
+   candy: a fat translucent pill with an inner glow in the colour it's
+   made of (tangerine for the one that matters, lime for what's chosen).
+   Icons sit in clear domes. Now and Next is the little green LCD set in
+   the shell. Rounded, chunky, friendly; type is a rounded sans. A hot
+   red dot marks what's new. Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="clearplastic"]{
+  --c-orange:#ff8a1f; --c-lime:#b6f23a; --c-red:#ff3b2f; --c-lcd:#c6dfa6; --c-lcd-ink:#27381a;
+  --c-guts:radial-gradient(circle,rgba(40,90,140,.22) 1.2px,transparent 1.6px) 0 0/14px 14px;
+  --c-gloss:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.08) 46%,rgba(255,255,255,0) 52%);
+  --bg:#cfe3f1;
+  --bg-img:radial-gradient(60% 40% at 20% 0%,rgba(255,255,255,.9),transparent 70%),linear-gradient(180deg,#d9ebf7,#aecbe0);
+  --panel:rgba(190,222,245,.55); --panel-2:rgba(214,235,250,.6); --line:rgba(40,90,140,.3);
+  --text:#0f2236; --muted:#4b6580; --accent:#1a74d8; --accent-ink:#fff;
+  --font-ui:"Nunito",system-ui,sans-serif; --font-display:"Nunito",system-ui,sans-serif; --font-num:"Nunito",system-ui,sans-serif;
+  --card-radius:26px; --radius:16px; --tint:20%; --card-accent:0px;
+  --card-border:1.5px solid rgba(255,255,255,.85);
+  --shadow:0 0 0 1px rgba(40,90,140,.28),0 10px 24px rgba(30,70,120,.22),inset 0 2px 0 rgba(255,255,255,.9),inset 0 -8px 16px rgba(40,110,180,.16);
+  --shadow-hi:0 0 0 1px rgba(40,90,140,.4),0 16px 32px rgba(30,70,120,.28),inset 0 2px 0 #fff,inset 0 -8px 16px rgba(40,110,180,.22);
+  --display-tt:none; --display-ls:0; --display-w:900;
+}
+[data-skin="clearplastic"][data-mode="dark"]{
+  --bg:#15181c; --bg-img:radial-gradient(60% 40% at 20% 0%,rgba(255,255,255,.08),transparent 70%),linear-gradient(180deg,#1c2025,#0d0f12);
+  --panel:rgba(70,78,88,.42); --panel-2:rgba(90,98,110,.4); --line:rgba(255,255,255,.2);
+  --text:#eef2f6; --muted:#98a3b0; --accent:#b6f23a; --accent-ink:#10150a;
+  --c-guts:radial-gradient(circle,rgba(180,220,255,.16) 1.2px,transparent 1.6px) 0 0/14px 14px;
+  --c-gloss:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,.04) 46%,rgba(255,255,255,0) 52%);
+  --card-border:1.5px solid rgba(255,255,255,.22);
+  --shadow:0 0 0 1px rgba(0,0,0,.6),0 10px 26px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.25),inset 0 -8px 16px rgba(0,0,0,.35);
+  --shadow-hi:0 0 0 1px rgba(182,242,58,.5),0 16px 34px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.3);
+}
+/* the slab: tinted body, rim, gloss, and the board showing through */
+:root[data-skin="clearplastic"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game),
+:root[data-skin="clearplastic"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){position:relative;background:var(--c-gloss),var(--c-guts),var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);backdrop-filter:blur(10px) saturate(1.3)}
+:root[data-skin="clearplastic"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border-radius:34px;padding:18px 26px}
+[data-skin="clearplastic"] .forum{padding:18px 22px 22px;margin-top:24px}
+:root[data-skin="clearplastic"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{box-shadow:var(--shadow-hi);transform:translateY(-3px)}
+[data-skin="clearplastic"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-weight:900;letter-spacing:-.01em;font-size:clamp(1.2rem,3vw,1.8rem)}
+[data-skin="clearplastic"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.6875rem}
+[data-skin="clearplastic"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:.7em;color:var(--muted)}
+[data-skin="clearplastic"] :is(.sechd,.cathd,.forum h2)::before{content:"";width:.9em;height:.9em;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0 12%,transparent 40%),var(--c-orange);box-shadow:inset 0 -2px 3px rgba(150,60,0,.4)}
+/* icons in clear domes */
+[data-skin="clearplastic"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.9rem;height:2.9rem;border-radius:50%;color:var(--text)!important;
+  background:radial-gradient(circle at 32% 24%,rgba(255,255,255,.95) 0 9%,rgba(255,255,255,0) 40%),radial-gradient(circle at 50% 120%,var(--accent),transparent 70%),rgba(255,255,255,.28);
+  box-shadow:inset 0 -3px 7px rgba(30,80,150,.3),0 4px 10px rgba(30,70,120,.25),0 0 0 1px rgba(255,255,255,.7)}
+/* Now and Next: the LCD set in the shell */
+[data-skin="clearplastic"] .nowcard{background:var(--c-lcd);color:var(--c-lcd-ink);border-radius:18px;border:0;box-shadow:inset 0 3px 8px rgba(40,60,20,.45),0 0 0 4px rgba(255,255,255,.55),0 0 0 5px rgba(40,90,140,.3);font-variant-numeric:tabular-nums}
+[data-skin="clearplastic"] .nowcard .lbl,[data-skin="clearplastic"] .nowcard .count,[data-skin="clearplastic"] .progrow .count,[data-skin="clearplastic"] .nowcard .meta{color:var(--c-lcd-ink)}
+[data-skin="clearplastic"] .prog{border-radius:999px;background:rgba(39,56,26,.2);box-shadow:inset 0 1px 3px rgba(39,56,26,.4)}
+[data-skin="clearplastic"] .prog i{background:var(--c-lcd-ink)}
+/* candy buttons */
+:root[data-skin="clearplastic"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;font-weight:800;color:var(--text);border:1.5px solid rgba(255,255,255,.8);
+  background:var(--c-gloss),rgba(255,255,255,.4);box-shadow:0 0 0 1px rgba(40,90,140,.3),0 4px 9px rgba(30,70,120,.2),inset 0 -5px 9px rgba(40,110,180,.18)}
+:root[data-skin="clearplastic"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){background:var(--c-gloss),rgba(120,130,145,.35);border-color:rgba(255,255,255,.3);box-shadow:0 0 0 1px #000,0 4px 10px rgba(0,0,0,.45)}
+:root[data-skin="clearplastic"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):active{transform:translateY(1px) scale(.98)}
+:root[data-skin="clearplastic"] :is(.btn.primary){background:var(--c-gloss),var(--c-orange);color:#2a1100;border-color:rgba(255,230,200,.9);box-shadow:0 0 0 1px rgba(150,60,0,.5),0 5px 12px rgba(255,138,31,.45),inset 0 -6px 10px rgba(150,60,0,.3)}
+:root[data-skin="clearplastic"] :is(.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--c-gloss),var(--c-lime);color:#17240a;border-color:rgba(240,255,200,.9);box-shadow:0 0 0 1px rgba(80,120,0,.5),0 5px 12px rgba(182,242,58,.45),inset 0 -6px 10px rgba(80,120,0,.25)}
+[data-skin="clearplastic"] :is(.newpill,.gamecard .newbanner){background:var(--c-red);color:#fff;border-radius:999px}
+[data-skin="clearplastic"] .newsdot{background:var(--c-red)}
+[data-skin="clearplastic"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(226,240,250,.96);border-radius:28px;box-shadow:var(--shadow)}
+[data-skin="clearplastic"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(28,32,38,.96)}
+[data-skin="clearplastic"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:16px;background:rgba(255,255,255,.55);border:1.5px solid rgba(255,255,255,.8);box-shadow:inset 0 3px 6px rgba(30,80,140,.18)}
+[data-skin="clearplastic"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:rgba(0,0,0,.35);border-color:rgba(255,255,255,.2)}
+[data-skin="clearplastic"] .lesson{border-radius:16px;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),inset 0 -6px 10px rgba(0,0,0,.12)}
+[data-skin="clearplastic"] .lesson.current{outline:0;box-shadow:0 0 0 3px var(--c-lime),0 0 0 4px rgba(0,0,0,.55),0 0 18px rgba(182,242,58,.5)}
+[data-skin="clearplastic"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--c-orange);height:4px;border-radius:4px}
+[data-skin="clearplastic"] .breakbar{border-radius:999px}
+html.fx-enter[data-skin="clearplastic"] .wrap{animation:none}

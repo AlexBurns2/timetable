@@ -1,0 +1,60 @@
+/* ══════════════════════════════════════════════════════════════════
+   DARK DECO — Art Deco after the lights go down: black lacquer, deep
+   bottle-green panels and brass, as in a 1930s cinema foyer. Always dark
+   (Art Deco, the other skin, is the gilded daylight one). Panels have a
+   double brass frame and chamfered corners; the bar has a brass rule
+   under it and a diamond in the middle of the rule; buttons are
+   six-sided brass lozenges; names are in the Poiret-like capitals deco
+   used for marquees. Now and Next is a lit green-glass sign. A vermilion
+   lamp marks what's new. Behind it (CSS only): a sunburst rising from the
+   foot of the page and a few nested arcs. Changing page is the site's
+   own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="darkdeco"],[data-skin="darkdeco"][data-mode="light"]{
+  --d-brass:#c9a24a; --d-hi:#f0d98c; --d-lo:#6f5319; --d-green:#0b1f1c; --d-verm:#d1331f;
+  --d-grad:linear-gradient(135deg,#6f5319,#f0d98c 42%,#c9a24a 58%,#6f5319);
+  --bg:#08090a;
+  --bg-img:repeating-conic-gradient(from 180deg at 50% 112%,rgba(201,162,74,.085) 0 2deg,transparent 2deg 7deg),radial-gradient(80% 60% at 50% 112%,rgba(201,162,74,.2),transparent 70%),repeating-radial-gradient(circle at 50% 112%,transparent 0 58px,rgba(201,162,74,.12) 58px 59px),#08090a;
+  --panel:rgba(14,22,21,.95); --panel-2:rgba(20,31,29,.95); --line:#6f5319;
+  --text:#efe6d2; --muted:#9a8c6e; --accent:#c9a24a; --accent-ink:#12100a;
+  --font-ui:"Josefin Sans",system-ui,sans-serif; --font-display:"Big Shoulders Display","Josefin Sans",sans-serif; --font-num:"Josefin Sans",system-ui,sans-serif;
+  --card-radius:0px; --radius:0px; --tint:12%; --card-accent:0px;
+  --card-border:1px solid var(--d-lo); --shadow:inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--d-brass); --shadow-hi:inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--d-hi),0 0 24px rgba(201,162,74,.25);
+  --display-tt:uppercase; --display-ls:.14em; --display-w:700;
+  --chamfer:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px);
+  --lozenge:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%);
+}
+:root[data-skin="darkdeco"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:linear-gradient(180deg,#101a18,#0a100f);border:0;border-bottom:1px solid var(--d-brass);border-radius:0;padding:18px 24px;
+  box-shadow:0 5px 0 -4px #08090a,0 6px 0 -4px var(--d-lo)}
+[data-skin="darkdeco"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){background:var(--d-grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:clamp(1.2rem,3vw,1.9rem);letter-spacing:.2em}
+[data-skin="darkdeco"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-family:var(--font-ui);font-weight:600;letter-spacing:.26em;text-transform:uppercase;font-size:.6875rem;color:var(--d-brass)}
+/* section names sit between two ruled lines with a diamond */
+[data-skin="darkdeco"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:.9em}
+[data-skin="darkdeco"] :is(.sechd,.cathd,.forum h2)::before,[data-skin="darkdeco"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:5px;border-top:1px solid var(--d-lo);border-bottom:1px solid var(--d-lo)}
+[data-skin="darkdeco"] :is(.sechd,.cathd,.forum h2)>*:first-child{order:0}
+:root[data-skin="darkdeco"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game){background:var(--panel);clip-path:var(--chamfer);border:0;box-shadow:inset 0 0 0 1px var(--d-lo),var(--shadow)}
+[data-skin="darkdeco"] .forum{padding:18px 22px 22px;margin-top:24px}
+:root[data-skin="darkdeco"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{box-shadow:inset 0 0 0 1px var(--d-brass),var(--shadow-hi)}
+/* icons stand in brass diamonds */
+[data-skin="darkdeco"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.4rem;height:2.4rem;color:var(--d-hi)!important;border:1px solid var(--d-brass);transform:rotate(45deg);background:var(--d-green)}
+[data-skin="darkdeco"] .qtile .ico .ph{transform:rotate(-45deg);width:1.2rem;height:1.2rem}
+/* Now and Next: a lit green-glass marquee */
+[data-skin="darkdeco"] .nowcard{background:linear-gradient(180deg,#0f3a33,#06201c);color:#c7efe5;clip-path:var(--chamfer);border:0;border-radius:0;box-shadow:inset 0 0 0 1px var(--d-brass),inset 0 0 0 4px #06201c,inset 0 0 0 5px var(--d-lo)}
+[data-skin="darkdeco"] .nowcard .lbl,[data-skin="darkdeco"] .nowcard .count,[data-skin="darkdeco"] .progrow .count{color:var(--d-hi)}
+[data-skin="darkdeco"] .nowcard .meta{color:#7fb3a6}
+[data-skin="darkdeco"] .prog{border-radius:0;background:#06201c;box-shadow:inset 0 0 0 1px var(--d-lo)}
+[data-skin="darkdeco"] .prog i{background:var(--d-grad)}
+:root[data-skin="darkdeco"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){clip-path:var(--lozenge);border:0;border-radius:0;background:var(--d-grad);color:#17110a;font-family:var(--font-ui);font-weight:700;letter-spacing:.2em;text-transform:uppercase;font-size:.6875rem;padding-inline:1.5em}
+:root[data-skin="darkdeco"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{filter:brightness(1.15)}
+:root[data-skin="darkdeco"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:linear-gradient(135deg,#fff4c9,#f0d98c)}
+[data-skin="darkdeco"] :is(.newpill,.gamecard .newbanner){background:var(--d-verm);color:#fff;border-radius:0;letter-spacing:.2em}
+[data-skin="darkdeco"] .newsdot{background:var(--d-verm);box-shadow:0 0 8px var(--d-verm)}
+[data-skin="darkdeco"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#0b1311;border:1px solid var(--d-brass);border-radius:0;box-shadow:inset 0 0 0 4px #0b1311,inset 0 0 0 5px var(--d-lo)}
+[data-skin="darkdeco"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#060b0a;border:1px solid var(--d-lo)}
+[data-skin="darkdeco"] .lesson{border-radius:0;clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% 100%,0 100%,0 7px);box-shadow:inset 0 3px 0 var(--c,var(--d-brass))}
+[data-skin="darkdeco"] .lesson.current{outline:0;box-shadow:inset 0 0 0 2px var(--d-hi),inset 0 3px 0 var(--d-hi)}
+[data-skin="darkdeco"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--d-hi)}
+[data-skin="darkdeco"] .dayhead .rule{height:5px;border-top:1px solid var(--d-lo);border-bottom:1px solid var(--d-lo);background:none;border-radius:0}
+[data-skin="darkdeco"] :is(.dayhead.today,.dayhead.focus) .rule{border-color:var(--d-brass);background:var(--d-brass)}
+[data-skin="darkdeco"] .breakbar{border-radius:0;border:0;border-block:1px solid var(--d-lo);background:none;letter-spacing:.2em}
+html.fx-enter[data-skin="darkdeco"] .wrap{animation:none}
