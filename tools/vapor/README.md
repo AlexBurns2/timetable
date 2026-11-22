@@ -127,6 +127,9 @@ Each scene renders these parts:
 `n` is the number of frames averaged. Each frame jitters the camera, the sun and a sky light,
 which gives anti-aliasing, soft shadows and ambient occlusion; 96 is plenty. The scenes, their
 camera and their light are in `scenes.js`; the columns, materials and the CRT are in `props.js`.
+A column can be broken off on a slant (`column({ broken:true })`, or `broken:{ sl, phi, rag }` for
+the slope, the way it faces and how ragged the break is: 0 is a saw cut, 1.3 is what Home has).
+The break always has a face: never an open, jagged rim.
 
 ## 4. Into the site
 

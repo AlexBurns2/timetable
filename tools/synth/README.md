@@ -7,6 +7,12 @@ Tools for the Synthwave theme (`fx/synth.js`, `skins/synth.css`). `tools/` is no
 Only Home's towers are models. The car and the palms are built in code in `fx/synth.js`
 (`carArrays` and `palmArrays`, seeded), so they have nothing to regenerate.
 
+One thing to know before tuning a material there: this Three.js (r170) ignores a material's
+`envMapIntensity` when the sky light comes from `scene.environment`, so those numbers (and
+`DAY.*.env`) do nothing. A material that should take less of the sky sets
+`userData.envK = [dusk, night]`; it is then given the map itself and that strength. Only the
+car's paint and its small pale parts do.
+
 The towers are a lean copy of three of Kenney's CC0 skyscrapers. The triangles are split by what
 they are (glass, frame, wall, dark). There are no textures, UVs, normals or vertex colours, and
 positions are stored as int16 (`KHR_mesh_quantization`).

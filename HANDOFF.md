@@ -4084,3 +4084,66 @@ The owner's notes on 8.162, which went out in their push at `20261121i`. Nothing
 **Checked:** the city scene frame by frame; the drive scene at 1600 × 900, 3440 × 1235 and on a phone; the stills; the Theme finder; a Vaporwave page at full size.
 
 **Open for the owner:** which other Theme finder drawings to redo; whether the car's shape and colour are right; whether 9 m/s is the right speed.
+
+## 8.164 Synthwave: the car lit, the hills stood back, a slow turn; Home's columns; the labels' glitch moves (asset version `20261121k`, `CACHE_VERSION` v89)
+The owner's notes on 8.163, which went out in their push `e2b98a7` at `20261121j`. Nothing in this section is committed.
+
+**Synthwave's road scene (`fx/synth.js`), moderators only**
+- **Why the car looked unlit: two faults.**
+  1. The tail's end cap was wound facing into the car. The paint is two-sided, so the shader turned its normal round and lit it as if it faced the sun: a flat white panel. `carArrays` now winds each end to face out.
+  2. Three.js r170 ignores a material's `envMapIntensity` when the sky light comes from `scene.environment` (it uses `scene.environmentIntensity`, which is 1). So **every `envMapIntensity` in the file, and `DAY.*.env`, does nothing**: everything takes the sky's light at full strength, and the dusk's sky is many times the night's. The scenes were tuned by eye with that, so they are left alone. A material that sets `userData.envK = [dusk, night]` now carries the map itself (`makeEnv`) and gets that strength (`setMode`): the paint (`[.6, 1]`) and the small pale parts (the amber and white lamp parts, the plate, the hubs: `[.3, 1]`, the `pale()` helper).
+- **The paint's shader** (`paint.onBeforeCompile`, uniforms in `rimU`, also `pal.paint`):
+  - Shade on what it gives back of the sky: `uShade` (dusk 1.15, night 1.5) times three terms: darker towards the road, darker on what doesn't face up, darker on what faces us (the sun is ahead). At dusk what doesn't face up leans cool (`uTint`), or the shade on a white car is brown.
+  - Its sheen is turned down where it mirrors the road (the sky's picture carries its orange rim on under the horizon).
+  - The rim light: on what faces up above 0.9 m and turns away from us (the roof), magenta on the left to cyan on the right (`uRimA`, `uRimB`, `uRimK`). The wing's blade is edge-on to the camera, so its rim is a hair of light along the top of its trailing edge: twelve unlit boxes with vertex colours (`o.rim` in `carArrays`).
+  - Real lights for the rim were tried first: they lit the hills too.
+- **The lamps:** a halo sprite over each, and a round pink pool on the road behind the car (5 × 4.4 m, centred a metre behind the tail).
+- **On the road, in this order** (`renderOrder`): the sun's long shadow 1, the lamps' pool 1.3, the dark right under the car 1.6, the reflection 2, the car 3, the halos 5. The shadows are multiplied onto the floor (`dark()`). The pool is not flagged transparent, or it would be drawn after everything else; it adds all the same. So the pool is cut off at the tail and the car is seen to stand in it.
+- **The reflection:** the body again, upside down, additive, no depth test, fading out within 0.92 m of the road; only what faces back (the floor pan, mirrored, was a pale slab under the car, and the flank a smear under the near wheel). The lamps' is drawn five times, longer each time, so it runs down the road.
+- **Depth:** the floor's grid fades with distance to a quarter (its edges to a half); the hills' lines are a third of what they were (`pal.crag` × 0.7 at night, 0.58 at dusk; were 1.85 and 1.5) and fade to a tenth between 16 and 260 m.
+- **The turn:** where the pointer wants the car is smoothed first (half a second), then a critically damped spring (ω 1) carries it. A full crossing (2.9 m) is half done at 2.2 s and nine tenths at 4.5 s (was 1.3 s); the car turns 2.9° into it at most (was 5°, reached in a tenth of a second).
+- The four `images/synth/drive-*.webp` stills are regenerated. The other scenes' stills are unchanged (checked by checksum), and the city, sea and pyramid scenes look as they did.
+
+**Vaporwave's Home (`tools/vapor/props.js`), moderators only**
+- "The column normals seem to be flipped": `shaftGeo` wound the shafts facing in, so the near side was culled and the far side's inside showed, lit the wrong way. Fixed.
+- (The cut was made a little ragged again in 8.165; what follows is the clean one.) "I don't like how messy the cut is": `breakTop` (a jagged, open rim) is gone. `shaftGeo(…, cut)` slices the shaft on a slant, cleanly (`sl` 0.8 m a metre, towards `phi` -1.1, so the face is turned a little to the camera and the middle), each point above the slice brought down onto it at the shaft's width there, and returns the slice's face (`userData.cap`; its edge follows the flutes). `column({ broken:true })`, or `broken:{ sl, phi }`.
+- `home` left, right and phone re-rendered in both modes: those six `images/th/vw-home-*.webp` changed and nothing else (checksums before and after); `META` rewritten by `ship.py`.
+
+**Vaporwave's labels (`fx/vapor.js`, `word()`), moderators only**
+- "The glitch effect on the katakana should be animated a little bit" (the review's "make it shimmer slightly" meant this; the pale glint of 8.162 is out). Time runs in spells of 3.7 s; four in five have one slip: a row of the type (3.5 to 10.5% of a character high) moves sideways by 5 to 13% of a character, overshoots for 60 ms, holds 0.3 to 1.4 s, sometimes jumps across once, and snaps back. The same sizes as the slips baked into the pictures (`tools/vapor/word.py`). A step, never a slide. None with Animation off.
+- The word is drawn on a canvas of its own, padded either side, so a slipped row is never cut off.
+
+**Asked for as suggestions only, nothing built: the car hidden by the timetable.** At 1920 × 1080 the car's roof is behind the last rows of Thursday and Friday; at 1366 × 768 all of it is behind the grid; on an ultrawide it is clear. What I put to the owner:
+1. On wide windows, turn the camera so the road's end sits about three quarters across, and keep the car between the grid's edge and the road's end (the sun comes out from behind the grid too). Narrow windows stay as they are. My recommendation.
+2. Bring the car nearer and lower, so its tail sits under the grid's last row. Only helps when the page is shorter than the window.
+3. Let the car answer the page: hold the lane whose side has more open margin, or drop back when the pointer is over the grid.
+4. Thin the glass of the cells over the car. Costs legibility; not recommended.
+
+**Checked:** the car close up and at 1600 × 900 in both modes, after every change; the timetable page at 1920 × 1080, 1366 × 768, 3440 × 1235 and on a phone; the other three Synthwave scenes; the stills; Home in Vaporwave in both modes; fourteen seconds of frames for the label's slips (two seen, each about a second).
+
+**Open for the owner:** which way to free the car from the timetable; whether the rim should be one colour, not two; whether the label's slips come too often or too seldom.
+
+## 8.165 The column's break a little ragged; the sun's gaps rise; the car stands out more (same version `20261121k`, `CACHE_VERSION` v89)
+The owner's notes on 8.164, which had not been committed (HEAD was still `e2b98a7` at `20261121j`), so this goes out with it under the same version. Nothing in this section is committed.
+
+**Vaporwave's Home: the broken column (`tools/vapor/props.js`), moderators only**
+- "Make the cut on the column a little bit more ragged": the dead flat slice of 8.164 was too clean; the jagged open rim before it was "messy". This sits between. `shaftGeo`'s `cut` takes `rag` (0 is the saw cut; `column({ broken:true })` now gives 1.3) and `seed`:
+  - the face is a little uneven (a slow unevenness of 1.6 cm × rag and a finer one of 0.6 cm × rag);
+  - one shallow step runs across it (2.6 cm × rag), its line wandering;
+  - five flakes are off its edge, each a flat facet: a somewhat steeper plane that takes a wide, shallow sliver off the rim, three of them on the low edge where they show.
+- Two things tried and dropped, so nobody tries them again: round scoops out of the edge looked melted, not broken; steep flakes, falling fast across the flutes, left a row of teeth down their ridges, like icing.
+- The break's face (`userData.cap`) is now rings of facets (flat shaded) and not one fan, so the step and the flakes are crisp.
+- `home` right and phone re-rendered in both modes: those four `images/th/vw-home-*.webp` changed since 8.164 and nothing else (checksums); `META` rewritten.
+
+**Synthwave (`fx/synth.js`), moderators only**
+- "Animate the gaps in the sun rising upward": the sun's shader takes `uT`; the gaps climb one spacing (a thirteenth of the sun's height) in about six seconds (`SUN_RISE` 0.16), thinning as they go and closing at 0.62 of its height, new ones opening at its foot. Measured on screen at 1600 × 900: 4.9 px a second, upward. Every scene with the sun has it (the road, the city, the sea and its reflection). Not in the stills (`uT` is 0 there, so the stills of the other scenes are unchanged, by checksum), and so not with Animation off or Reduce motion.
+- "Make the car a little bit more salient, maybe by making the tail lights brighter": left to me. What I did:
+  - each lamp has a far brighter middle (`o.hot`, colour 3.6, 0.7, 1.25: white-hot through the tone curve, pink in the bloom) inside the red bar (now 1.75, 0.06, 0.14);
+  - more of the lamps' glow: the halo sprites (opacity 0.32 → 0.44, a little bigger), the pool on the road (0.45 → 0.62, 5.6 × 5 m), the lamps' reflection down the road (× 1.4);
+  - a little more light on the body (`uShade` dusk 1.15 → 1.4, night 1.5 → 1.9) and a stronger rim (`uRimK` 1.3 → 1.75).
+  The car is the same size and in the same place.
+- The four `images/synth/drive-*.webp` stills are regenerated again.
+
+**Checked:** the break close up and on the Home page at 1920 × 1080 in both modes, and on a phone; twelve frames of the sun over eight seconds (the gaps' edges tracked: upward, steady); the car close up, at 1600 × 900, and behind the timetable at 1920 × 1080 in both modes; the city, sea and pyramid scenes; the stills.
+
+**Open for the owner:** whether the break is ragged enough (`rag`, one number); whether the sun's gaps should go faster or slower (`SUN_RISE`); the car and the timetable (8.164's four options, still unanswered).

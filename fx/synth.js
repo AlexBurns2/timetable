@@ -182,7 +182,7 @@ function carArrays(){
   /* a normal at each point, from its neighbours along and round the body, so the paint shades as one curved surface */
   const N = V.map((ring, s) => ring.map((p, r) => { const a = V[Math.min(NS - 1, s + 1)][r], b = V[Math.max(0, s - 1)][r], c = ring[(r + 1) % NR], d = ring[(r + NR - 1) % NR];
     let n = norm(cross(sub(a, b), sub(c, d))); if (n[0] * p[0] + n[1] * (p[1] - .7) < 0) n = mul(n, -1); return n; }));
-  const o = { body:[[], []], glass:[[], []], well:[[], []], flat:[], trim:[], tail:[], amber:[], lamp:[], plate:[] };
+  const o = { body:[[], []], glass:[[], []], well:[[], []], flat:[], trim:[], tail:[], hot:[], amber:[], lamp:[], plate:[], rim:[[], []] };
   const quad = (t, s, r) => { const r1 = (r + 1) % NR, id = [[s, r], [s, r1], [s + 1, r1], [s, r], [s + 1, r1], [s + 1, r]];
     for (const [a, b] of id){ t[0].push(V[a][b][0], V[a][b][1], V[a][b][2]); t[1].push(N[a][b][0], N[a][b][1], N[a][b][2]); } };
   for (let s = 0; s < NS - 1; s++) for (let r = 0; r < NR; r++){
@@ -197,7 +197,7 @@ function carArrays(){
   const tri = (a, p, q, s) => a.push(p[0], p[1], p[2], q[0], q[1], q[2], s[0], s[1], s[2]);
   for (const s of [0, NS - 1]){                            /* the tail and the nose, closed */
     const ring = V[s], c = [0, ring.reduce((t, p) => t + p[1], 0) / NR, ZS[s]], nz = s ? 1 : -1;
-    for (let r = 0; r < NR; r++){ for (const p of [c, ring[r], ring[(r + 1) % NR]]){ o.body[0].push(p[0], p[1], p[2]); o.body[1].push(0, 0, nz); } }
+    for (let r = 0; r < NR; r++){ for (const p of s ? [c, ring[r], ring[(r + 1) % NR]] : [c, ring[(r + 1) % NR], ring[r]]){ o.body[0].push(p[0], p[1], p[2]); o.body[1].push(0, 0, nz); } }      // each wound to face out (the tail's faced in, and the paint, two-sided, lit it as if it faced the sun: a flat white panel)
   }
   const box = (a, c, ax, ay, az) => {                    // a box from its centre and three half-axes
     const v = [];
@@ -209,6 +209,7 @@ function carArrays(){
      a black skirt and two pipes under the bumper */
   for (const sx of [-1, 1]){
     box(o.tail, [sx * .53, .628, T], mul(X, .165), mul(Yv, .052), mul(Zv, .006));
+    box(o.hot, [sx * .53, .628, T - .004], mul(X, .14), mul(Yv, .027), mul(Zv, .004));      // the lamp's middle, far brighter: it reads as lit, and the bloom takes it
     box(o.amber, [sx * .315, .628, T], mul(X, .042), mul(Yv, .052), mul(Zv, .006));
     box(o.lamp, [sx * .242, .628, T], mul(X, .026), mul(Yv, .052), mul(Zv, .006));
   }
@@ -221,6 +222,11 @@ function carArrays(){
   const wz = [0, -.105, .995], wy = [0, .995, .105];
   box(o.flat, [0, 1.005, -1.93], mul(X, .74), mul(wy, .013), mul(wz, .085));
   for (const sx of [-1, 1]) box(o.flat, [sx * .6, .935, -1.915], mul(X, .022), mul(Yv, .07), mul(Zv, .055));
+  /* the rim light on the wing: a hair of light along the top of its trailing edge, magenta at the left end (+x here: the car is
+     turned round in the scene) to cyan at the right, in twelve lengths. The blade's top is edge-on to the camera, so the paint's
+     own rim light can't show there. */
+  for (let k = 0; k < 12; k++){ const x = -.74 + (k + .5) * 1.48 / 12, u = ss(-.42, .42, x), c = [lerp(.1, 1.25, u), lerp(.92, .1, u), lerp(1.25, .92, u)];
+    box(o.rim[0], [x, 1.0225, -2.0172], mul(X, .74 / 12), mul(wy, .0042), mul(wz, .003)); for (let q = 0; q < 36; q++) o.rim[1].push(c[0] * .8, c[1] * .8, c[2] * .8); }
   box(o.tail, [0, .999, -2.017], mul(X, .15), mul(Yv, .007), mul(Zv, .004));
   /* the door mirrors */
   for (const sx of [-1, 1]) box(o.flat, [sx * .93, .93, .74], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
@@ -288,11 +294,13 @@ const SKY_F = 'uniform vec3 uTop, uMid, uHor, uGlow, uSun; uniform float uStars;
   '  gl_FragColor = vec4(c, 1.);\n}';
 /* the sun: a disc, warm at the top and hot pink below, cut by bands that thicken towards the horizon */
 const SUN_V = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }';
-const SUN_F = 'uniform vec3 uTop, uBot; uniform float uI;\nvarying vec2 vUv;\n' +
+/* the sun: its lower part cut by gaps that rise: each opens wide at its foot, thins as it climbs, and closes at .62 of its height
+   (uT: how far the gaps have risen, in gap spacings; it only matters by its fraction) */
+const SUN_F = 'uniform vec3 uTop, uBot; uniform float uI, uT;\nvarying vec2 vUv;\n' +
   'void main(){\n' +
   '  vec2 p = vUv * 2. - 1.; float r = length(p), w = fwidth(r);\n' +
   '  float a = 1. - smoothstep(1. - w * 1.5, 1., r);\n' +
-  '  float y = vUv.y, g = fract(y * 13. + .35), th = clamp((.62 - y) * 1.15, 0., .9), gw = fwidth(y * 13.);\n' +
+  '  float y = vUv.y, g = fract(y * 13. + .35 - uT), th = clamp((.62 - y) * 1.15, 0., .9), gw = fwidth(y * 13.);\n' +
   '  a *= y < .62 ? smoothstep(th - gw, th + gw, g) : 1.;\n' +
   '  vec3 c = mix(uBot, uTop, smoothstep(.02, .98, y)) * uI;\n' +
   '  gl_FragColor = vec4(c * a, a);\n}';
@@ -372,12 +380,12 @@ async function build(canvas, kind, dark){
   const skyGeo = keep(new T.SphereGeometry(1000, 40, 20));
   const sky = new T.Mesh(skyGeo, skyMat); sky.renderOrder = -2; sky.frustumCulled = false; scene.add(sky);
   /* the sun */
-  const sunU = { uTop:{ value:new T.Color() }, uBot:{ value:new T.Color() }, uI:{ value:2 } };
+  const sunU = { uTop:{ value:new T.Color() }, uBot:{ value:new T.Color() }, uI:{ value:2 }, uT:{ value:0 } };
   const sunMat = keep(new T.ShaderMaterial({ uniforms:sunU, vertexShader:SUN_V, fragmentShader:SUN_F, transparent:true, depthWrite:false, fog:false,
     blending:T.CustomBlending, blendSrc:T.OneFactor, blendDst:T.OneMinusSrcAlphaFactor }));
   const sunGeo = keep(new T.PlaneGeometry(2, 2));
   const sun = new T.Mesh(sunGeo, sunMat); sun.renderOrder = -1; sun.frustumCulled = false; scene.add(sun);
-  const SUN_D = 900;
+  const SUN_D = 900, SUN_RISE = .16;                          /* the gaps in the sun climb one spacing (a thirteenth of its height) in about six seconds: a few pixels a second */
   let sunDir = new T.Vector3(0, .07, -1).normalize(), sunR = 120;
   const placeSun = () => { sun.position.copy(camera.position).addScaledVector(sunDir, SUN_D); sun.scale.setScalar(sunR); sun.lookAt(camera.position); sky.position.copy(camera.position); };
 
@@ -395,6 +403,10 @@ async function build(canvas, kind, dark){
     const rt = pmrem.fromScene(envScene, 0, .1, 100);
     skyU.uStars.value = u;
     if (envRT) envRT.dispose(); envRT = rt; scene.environment = rt.texture;
+    /* Three.js (r163 on) gives every material the scene's sky light at full strength, whatever its envMapIntensity says: that only
+       counts for a material carrying the map itself. The scenes were tuned by eye with that, so they are left as they are; a
+       material that sets userData.envK ([dusk, night]) carries the map, and gets that strength (see setMode). */
+    scene.traverse(o => { const m = o.material; if (m && m.userData && m.userData.envK) m.envMap = rt.texture; });
   };
 
   /* materials */
@@ -484,7 +496,8 @@ async function build(canvas, kind, dark){
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
           '{ float road = 1. - step(' + (ROAD + .01).toFixed(3) + ', abs(vSyW.x)), fx = max(fwidth(vSyW.x), 1e-4);\n' +
           '  float de = abs(abs(vSyW.x) - ' + ROAD.toFixed(4) + ') / fx, edge = max(1. - smoothstep(1.1, 2.3, de), exp(-de * .4) * .4);\n' +
-          '  totalEmissiveRadiance += uGrid * syGrid(vec2(vSyW.x, vSyW.z - uOff) * .75, 1.05, .36, .32) * mix(1., .62, road) + uRoad * edge; }');
+          '  float fd = length(cameraPosition - vSyW);\n' +                              /* brightest at our feet, fading with distance: the foreground leads */
+          '  totalEmissiveRadiance += uGrid * syGrid(vec2(vSyW.x, vSyW.z - uOff) * .75, 1.05, .36, .32) * mix(1., .62, road) * mix(1., .24, smoothstep(12., 230., fd)) + uRoad * edge * mix(1., .5, smoothstep(40., 420., fd)); }');
     };
     floorM.customProgramCacheKey = () => 'sy-floor';
     const fg = keep(new T.PlaneGeometry(2400, 2400, 1, 1)); fg.rotateX(-Math.PI / 2); fg.translate(0, 0, -900);
@@ -503,7 +516,7 @@ async function build(canvas, kind, dark){
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 gq; attribute vec3 bary; varying vec2 vGq; varying vec3 vBary;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvGq = gq; vBary = bary;');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vGq; varying vec3 vBary; uniform vec3 uTer;\n' + GLSL_GRID)
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec3 bd = vBary / max(fwidth(vBary), vec3(1e-4)); float e = 1. - smoothstep(.7, 1.9, min(min(bd.x, bd.y), bd.z));\n' +
-          '  totalEmissiveRadiance += uTer * max(syGrid(vGq, .8, .2, .12), e * 1.15); }');
+          '  totalEmissiveRadiance += uTer * max(syGrid(vGq, .8, .2, .12), e * 1.15) * mix(1., .1, smoothstep(16., 260., length(vViewPosition))); }');      /* and the hills recede */
     };
     terM.customProgramCacheKey = () => 'sy-terrain';
     const CH = 120, NC = 9, LOOP = CH * NC, NX = 14, NZ = 10, R = LOOP / (2 * Math.PI), CELL_H = 4 / 3;      // a coarse mesh (facets 7 to 25 m), the floor's cell size
@@ -563,35 +576,86 @@ async function build(canvas, kind, dark){
     const car = new T.Group(); car.position.set(LANE, 0, 0); car.rotation.y = Math.PI; scene.add(car);          // in the middle of the right-hand lane
     const ca = carArrays(), geo = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a, 3)); g.computeVertexNormals(); return g; };
     const geoN = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a[0], 3)); g.setAttribute('normal', new T.Float32BufferAttribute(a[1], 3)); return g; };
-    const paint = std({ color:'#e6e0f0', roughness:.46, metalness:.08, envMapIntensity:.8, side:T.DoubleSide });      // not glossier: the low sun's glint on the roof bloomed into a white blob
+    const paint = std({ color:'#e6e0f0', roughness:.46, metalness:.08, side:T.DoubleSide });      // not glossier: the low sun's glint on the roof bloomed into a white blob
+    paint.userData.envK = [.6, 1];                            // the sky's light on it, [dusk, night]: the dusk's sky is many times the night's
+    /* two things only the paint knows about (real lights lit the hills too).
+       Shade: the sky lights the whole car evenly, from every side and from below, and at dusk that much light is past the top of
+       the tone curve: the body was one flat pale tone. So what the paint gives back of it is turned down (uShade, by the time of
+       day), and more so towards the road and on what doesn't face up (nothing comes back off a black road), and on what faces us
+       (the sun is ahead: this side is the shaded one); and at dusk what doesn't face up leans cool (uTint: overhead the sky is
+       violet, only its rim is orange, and an orange shade on a white car is brown). Its sheen is turned down where it mirrors
+       the road: the sky's picture carries its orange rim on under the horizon, and the road is black.
+       A rim light, as from lamps ahead of it and above: on the roof and the wing's blade (above 0.9 m, facing up, turning away
+       from us), magenta on the left, cyan on the right. */
+    const rimU = { uRimA:{ value:new T.Color(1.25, .1, .92) }, uRimB:{ value:new T.Color(.1, .92, 1.25) }, uRimK:{ value:1.75 }, uShade:{ value:1 }, uTint:{ value:new T.Color(1, 1, 1) } }; pal.paint = rimU;
+    paint.onBeforeCompile = sh => { Object.assign(sh.uniforms, rimU);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vRim;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvRim = position.xy;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uRimA, uRimB, uTint; uniform float uRimK, uShade; varying vec2 vRim;')
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
+          '{ vec3 wn = inverseTransformDirection(normal, viewMatrix), wv = inverseTransformDirection(normalize(vViewPosition), viewMatrix);\n' +
+          '  float up = smoothstep(-.2, .9, wn.y);\n' +
+          '  diffuseColor.rgb *= uShade * mix(.4, 1., smoothstep(.14, .86, vRim.y)) * mix(.3, 1., up) * mix(1., .4, smoothstep(-.1, .85, wn.z)) * mix(uTint, vec3(1.), up);\n' +
+          '  float fr = pow(1. - clamp(dot(wn, wv), 0., 1.), 4.) * smoothstep(.1, .62, wn.y) * smoothstep(.9, 1., vRim.y);\n' +
+          '  totalEmissiveRadiance += mix(uRimB, uRimA, smoothstep(-.42, .42, vRim.x)) * fr * uRimK; }')
+        .replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\n' +
+          '{ vec3 wn = inverseTransformDirection(normal, viewMatrix), wv = inverseTransformDirection(normalize(vViewPosition), viewMatrix);\n' +
+          '  reflectedLight.indirectSpecular *= mix(.12, 1., smoothstep(-.45, .2, reflect(-wv, wn).y)); }'); };
+    paint.customProgramCacheKey = () => 'sy-paint';
     const trimM = std({ color:'#08060b', roughness:.6, metalness:.3, envMapIntensity:.5, side:T.DoubleSide });
     car.add(new T.Mesh(geoN(ca.body), paint), new T.Mesh(geo(ca.flat), paint));
     car.add(new T.Mesh(geoN(ca.glass), std({ color:'#06040a', roughness:.16, metalness:.9, envMapIntensity:1.3, side:T.DoubleSide })));
     car.add(new T.Mesh(geoN(ca.well), trimM), new T.Mesh(geo(ca.trim), trimM));
-    car.add(new T.Mesh(geo(ca.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.55, .05, .1) }))));
-    car.add(new T.Mesh(geo(ca.amber), std({ color:'#c46a1c', roughness:.3 })), new T.Mesh(geo(ca.lamp), std({ color:'#dcdce6', roughness:.25 })), new T.Mesh(geo(ca.plate), std({ color:'#ece6cf', roughness:.6 })));
+    car.add(new T.Mesh(geo(ca.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.75, .06, .14) }))));
+    car.add(new T.Mesh(geo(ca.hot), keep(new T.MeshBasicMaterial({ color:new T.Color(3.6, .7, 1.25) }))));      // white-hot through the tone curve, pink in the bloom
+    const pale = o => { const m = std(o); m.userData.envK = [.3, 1]; return m; };      // the small pale parts: at dusk they outshone the lamps
+    car.add(new T.Mesh(geo(ca.amber), pale({ color:'#c46a1c', roughness:.3 })), new T.Mesh(geo(ca.lamp), pale({ color:'#dcdce6', roughness:.25 })), new T.Mesh(geo(ca.plate), pale({ color:'#ece6cf', roughness:.6 })));
+    { const g = geo(ca.rim[0]); g.setAttribute('color', new T.Float32BufferAttribute(ca.rim[1], 3)); car.add(new T.Mesh(g, keep(new T.MeshBasicMaterial({ vertexColors:true })))); }      // the wing's rim light
     const tyre = keep(new T.CylinderGeometry(.325, .325, .25, 28)); tyre.rotateZ(Math.PI / 2);
     const hub = keep(new T.CylinderGeometry(.215, .215, .02, 28)); hub.rotateZ(Math.PI / 2);
     const lip = keep(new T.RingGeometry(.345, .43, 44)); lip.rotateY(Math.PI / 2);                             // a black lip round each arch
-    const tyreM = std({ color:'#060508', roughness:.9 }), hubM = std({ color:'#c8c4d2', roughness:.32, metalness:.9, envMapIntensity:1 });
+    const tyreM = std({ color:'#060508', roughness:.9 }), hubM = pale({ color:'#c8c4d2', roughness:.36, metalness:.9 });
     const wheels = [];
     for (const [x, z] of CAR_WHEELS){
       const sx = Math.sign(x), w = new T.Group(); w.position.set(x, .325, z);
       const hb = new T.Mesh(hub, hubM); hb.position.x = sx * .12; w.add(new T.Mesh(tyre, tyreM), hb); car.add(w); wheels.push(w);
       const lp = new T.Mesh(lip, trimM); lp.position.set(sx * (z < 0 ? .899 : .881), .33, z); car.add(lp);
     }
-    /* its shadow, long, towards us (the sun is ahead) */
-    const sc = document.createElement('canvas'); sc.width = 64; sc.height = 128;
-    { const x = sc.getContext('2d'), gr = x.createRadialGradient(32, 40, 4, 32, 54, 60); gr.addColorStop(0, 'rgba(0,0,0,.9)'); gr.addColorStop(.45, 'rgba(0,0,0,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-      x.fillStyle = gr; x.fillRect(0, 0, 64, 128); }
-    const st = keep(new T.CanvasTexture(sc));
-    const shg = keep(new T.PlaneGeometry(2.7, 7.4)); shg.rotateX(-Math.PI / 2);
-    const sh = new T.Mesh(shg, keep(new T.MeshBasicMaterial({ map:st, transparent:true, depthWrite:false, color:0x000000, opacity:.85 })));
-    sh.position.set(LANE, .03, 2.6); scene.add(sh);
-    /* the car follows the pointer across its road, a little behind it: it eases over, turning slightly into the move, and settles;
-       with no pointer about it keeps its lane. Only the car: the camera stays where it is, so the picture never swings. */
+    car.traverse(o => { if (o.isMesh) o.renderOrder = 3; });      // the order on the floor: its shadows and its lamps' light (1 to 2), its reflection over them (2, drawn without a depth test), then the car itself (3)
+    /* soft round glows, made once: for the lamps, and for their light on the road */
+    const glowTex = (w, h, stops) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.translate(w / 2, h / 2); x.scale(w / 2, h / 2);
+      const gr = x.createRadialGradient(0, 0, 0, 0, 0, 1); stops.forEach(q => gr.addColorStop(q[0], 'rgba(255,255,255,' + q[1] + ')')); x.fillStyle = gr; x.fillRect(-1, -1, 2, 2); return keep(new T.CanvasTexture(c)); };
+    const soft = glowTex(128, 128, [[0, 1], [.25, .55], [.55, .16], [1, 0]]);
+    /* the lamps bloom: a halo over each, pink */
+    for (const sx of [-1, 1]){ const h = new T.Sprite(keep(new T.SpriteMaterial({ map:soft, color:new T.Color(1., .1, .42), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:.44 })));
+      h.scale.set(1.55, .95, 1); h.position.set(sx * .5, .63, -2.3); h.renderOrder = 5; car.add(h); }
+    /* its reflection in the floor: the tail and its lamps again, upside down under it, faint, gone within a metre of the road. Only
+       what faces back: the floor pan, mirrored, was a pale slab under the car, and the flank a smear under the near wheel. The
+       lamps' is drawn out down the road (a gloss smears a light). */
+    const reflM = (c, k, far) => keep(new T.ShaderMaterial({ uniforms:{ uC:{ value:new T.Color(c[0], c[1], c[2]) }, uK:{ value:k }, uF:{ value:far } }, blending:T.AdditiveBlending, depthTest:false, depthWrite:false,
+      vertexShader:'varying float vY, vN; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vY = w.y; vN = -normal.z; gl_Position = projectionMatrix * viewMatrix * w; }',
+      fragmentShader:'uniform vec3 uC; uniform float uK, uF; varying float vY, vN; void main(){ gl_FragColor = vec4(uC * uK * (1. - smoothstep(uF * .15, uF, -vY)) * step(vY, 0.) * smoothstep(.25, .8, vN), 1.); }' }));
+    const gBody = geoN(ca.body), gTail = geo(ca.tail);
+    const mirror = (g, m, sy) => { const r = new T.Group(); r.scale.y = sy; const o = new T.Mesh(g, m); o.renderOrder = 2; o.frustumCulled = false; r.add(o); car.add(r); };
+    mirror(gBody, reflM([.5, .36, .62], .12, .92), -1);
+    [[-1, .7], [-1.13, .45], [-1.27, .28], [-1.42, .17], [-1.58, .1]].forEach(q => mirror(gTail, reflM([1.6, .16, .34], q[1], 1.5), q[0]));
+    /* its shadows, multiplied onto the floor: a long soft one towards us (the sun is ahead), and a close dark one right under it, so it sits on the road */
+    const shade = (w, h, cy, r, stops) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h);
+      x.translate(w / 2, cy); x.scale(w / 2, r); const gr = x.createRadialGradient(0, 0, 0, 0, 0, 1); stops.forEach(q => gr.addColorStop(q[0], 'rgba(0,0,0,' + q[1] + ')')); x.fillStyle = gr; x.fillRect(-1, -cy / r, 2, h / r); return keep(new T.CanvasTexture(c)); };
+    const dark = (map, w, d, ro) => { const g = keep(new T.PlaneGeometry(w, d)); g.rotateX(-Math.PI / 2); const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ map, blending:T.MultiplyBlending, depthWrite:false }))); m.renderOrder = ro; scene.add(m); return m; };
+    const sh = dark(shade(64, 128, 46, 62, [[0, .8], [.5, .45], [1, 0]]), 2.7, 7.4, 1); sh.position.set(LANE, .03, 2.6);
+    /* the lamps' light on the road behind it: a soft round pink pool. Over the sun's shadow (light lands on a shadow too), under the
+       dark beneath the car (it doesn't get in there): so the pool is cut off at the tail, and the car is seen to stand in it.
+       (Not flagged transparent, or it would be drawn after everything else whatever its order; it adds all the same.) */
+    const plg = keep(new T.PlaneGeometry(5.6, 5)); plg.rotateX(-Math.PI / 2);
+    const pool = new T.Mesh(plg, keep(new T.MeshBasicMaterial({ map:soft, depthWrite:false, blending:T.AdditiveBlending, color:new T.Color(1., .1, .4), opacity:.62 })));
+    pool.position.set(LANE, .032, 3.35); pool.renderOrder = 1.3; scene.add(pool);
+    const cs = dark(shade(96, 192, 96, 96, [[0, 1], [.7, 1], [.88, .55], [1, 0]]), 2.25, 4.9, 1.6); cs.position.set(LANE, .034, 0);
+    /* the car follows the pointer across its road, a long way behind it. Where the pointer wants it is smoothed first, then a soft
+       spring carries the car there: so it gathers way from nothing, takes about five seconds to cross, and settles as slowly; it
+       turns only a little into the move (three degrees at most), and that comes on and goes as gradually. With no pointer about
+       it keeps its lane. Only the car: the camera stays where it is, so the picture never swings. */
     const FOLLOW = !STILL && mm('(hover:hover) and (pointer:fine)'), REACH = ROAD - 1.12;
-    let carX = LANE, carV = 0, lastT = null;
+    let carX = LANE, carV = 0, carT = LANE, lastT = null;
     update = t => {
       const dist = t * SPEED;
       gridU.uOff.value = dist % (4 / 3);                      // the floor comes toward us, as the hills do (it ran the other way, into the picture)
@@ -599,9 +663,9 @@ async function build(canvas, kind, dark){
       const a = (dist / .325) % (2 * Math.PI); wheels.forEach(w => { w.rotation.x = a; });
       const dt = lastT == null ? 0 : clamp(t - lastT, 0, .1); lastT = t;
       const p = FX.ptr, want = FOLLOW && p && p.on ? clamp((p.x - .5) * 2.4, -1, 1) * REACH : LANE;
-      const nx = carX + (want - carX) * (1 - Math.exp(-dt / .55));
-      carV += ((dt ? (nx - carX) / dt : 0) - carV) * Math.min(1, dt * 6); carX = nx;
-      car.position.x = sh.position.x = carX; car.rotation.y = Math.PI - clamp(carV * .1, -.09, .09);
+      carT += (want - carT) * (1 - Math.exp(-dt / .5));
+      const om = 1; carV += (om * om * (carT - carX) - 2 * om * carV) * dt; carX += carV * dt;       // critically damped: no overshoot, no snap
+      car.position.x = sh.position.x = cs.position.x = pool.position.x = carX; car.rotation.y = Math.PI - carV * .055;
     };
     const cx = LANE - 2.05;                                   // the camera keeps its place behind the car (the road's end and the sun, at infinity, stay put)
     cams = { L:{ pos:[.3 + cx, 1.9, 10.4], at:[-3.6 + cx, 1.7, -60], fov:34 }, P:{ pos:[1.3 + cx, 2.7, 12.5], at:[1.1 + cx, 1.2, -40], fov:56 } };
@@ -763,11 +827,12 @@ async function build(canvas, kind, dark){
     if (pal.edge) pal.edge.value.set(d.neon).multiplyScalar(dk ? 2.4 : 1.8);
     if (pal.grid) pal.grid.value.set(dk ? '#9a3cff' : '#ff5fae').multiplyScalar(dk ? .9 : .6);
     if (pal.floor){ pal.floor.uGrid.value.set('#ff2a9c').multiplyScalar(dk ? 2.4 : 2.0); pal.floor.uRoad.value.set('#ff5fb8').multiplyScalar(dk ? 3.2 : 2.7); }
-    if (pal.crag) pal.crag.value.set(dk ? '#4d6dff' : '#6a78ff').multiplyScalar(dk ? 1.85 : 1.5);
+    if (pal.paint){ pal.paint.uShade.value = dk ? 1.9 : 1.4; pal.paint.uTint.value.setRGB(dk ? 1 : .72, dk ? 1 : .64, dk ? 1 : 1.3); }
+    if (pal.crag) pal.crag.value.set(dk ? '#4d6dff' : '#6a78ff').multiplyScalar(dk ? .7 : .58);      // a third of what it was: the hills were as bright as the road
     if (sea && sea.material.uniforms && sea.material.uniforms.uDeep){
       const u = sea.material.uniforms; u.uDeep.value.set(dk ? '#07030e' : '#1a0a22'); u.uFog.value.set(d.fog); u.uFogR.value.set(look.fogNear, look.fogFar); u.uRip.value = look.seaRip;
     }
-    scene.traverse(o => { const m = o.material; if (m && m.isMeshStandardMaterial && m.userData.env == null) m.userData.env = m.envMapIntensity; if (m && m.isMeshStandardMaterial) m.envMapIntensity = m.userData.env * d.env; });
+    scene.traverse(o => { const m = o.material; if (m && m.isMeshStandardMaterial && m.userData.env == null) m.userData.env = m.envMapIntensity; if (m && m.isMeshStandardMaterial) m.envMapIntensity = m.userData.envK ? m.userData.envK[dk ? 1 : 0] : m.userData.env * d.env; });
     compU.uBloom.value = d.bloom * look.bloom; compU.uExp.value = d.exposure * look.exp;
     placeSun(); makeEnv();
   };
@@ -781,6 +846,7 @@ async function build(canvas, kind, dark){
   const render = t => {
     renderer.info.reset();
     frame(); update(t); camera.updateMatrixWorld(); placeSun();
+    sunU.uT.value = STILL ? 0 : (t * SUN_RISE) % 1;             // the gaps in the sun rise (the owner asked): slowly, and not in the still pictures
     if (sea && sea.material.uniforms && sea.material.uniforms.uTime) sea.material.uniforms.uTime.value = t % 1000;
     renderer.setRenderTarget(mainRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
     bloom();
