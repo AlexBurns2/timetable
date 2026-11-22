@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261122b';
+const ASSET_V = '20261122c';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -68,7 +68,7 @@ const SKINS = [
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
   { id:'dorfic',    name:'DORFic',    both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
   { id:'eco',       name:'Frutiger Eco', mod:true, both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
-  { id:'sonyad', name:'Sony Ad', both:true, ic:'accent', is:'icons', css:'sonyad', font:'family=Michroma&family=Sora:wght@400;600;700', about:"Japanese electronics ads and shop sites of 1999 to 2003. Night: a black box with blue towers of light rising from a wire floor. Day: the same machine on white, brushed aluminium with blue only where it is switched on. Wide light type, a blinking record light, spec-sheet numbering, and a black display for Now and Next." },
+  { id:'sonyad', name:'Sony Ad', both:true, ic:'accent', is:'icons', css:'sonyad', font:'family=Michroma&family=Sora:wght@400;600;700', about:"A big electronics maker\'s front page from 2000–02. Light is 2002: white, a hairline round the header corner, small navy caps with orange boxes, an orange hero of halftone dots, pale-blue tabs. Dark is 2000: scanlined red-orange, grey dot panels, blue chrome title." },
   { id:'darkdeco', name:'Dark Deco', both:false, ic:'accent', is:'icons', css:'darkdeco', font:'family=Big+Shoulders+Display:wght@500;700;900&family=Josefin+Sans:wght@400;600;700', about:"Art Deco after the lights go down: black lacquer, bottle-green panels, brass double frames and a sunburst rising from the foot of the page. Dark only; Art Deco is the daylight one." },
   { id:'spectrum', name:'Spectrum', both:true, ic:'accent', is:'icons', css:'spectrum', font:'family=Sora:wght@300;400;600', about:"Airbrushed gradients on white, after late-90s Japanese graphic design: hairlines, tiny tracked-out type, and the full spectrum kept for the bar's underline, section marks and what you pick. Light and dark." },
   { id:'clearplastic', name:'Clear Plastic', both:true, ic:'accent', is:'icons', css:'clearplastic', font:'family=Nunito:wght@400;700;800;900', about:"A see-through game controller: grey-blue clear shell, black rubber, red, blue, green and pink buttons, and a green circuit board under the glass with light running along its traces. Ice by day, smoke by night." },
@@ -224,10 +224,11 @@ const THUMBS = (() => {
       '<path d="M80.4 27L112.6 25L111.4 42.2L79.6 41Z" fill="none" stroke="#d3261a" stroke-width=".7"/>' +
       '<path d="M82.6 24.4L111.4 25.4L111 39.6L80.2 39.2Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/>' +
       '<rect x="85" y="27.8" width="4.6" height="4.6" fill="none" stroke="#d3261a" stroke-width="1"/><rect x="85" y="35" width="2" height="1.8" fill="#111"/><rect x="88.4" y="35" width="2" height="1.8" fill="#111"/><rect x="91.8" y="35" width="2" height="1.8" fill="#111"/><rect x="95.2" y="35" width="2" height="1.8" fill="#111"/>'],
-    sonyad: ['#050608', '<defs><linearGradient id="m" x1="0" x2="1"><stop offset="0" stop-color="#868b92"/><stop offset=".25" stop-color="#e0e3e7"/><stop offset=".55" stop-color="#9aa0a7"/><stop offset="1" stop-color="#7f848b"/></linearGradient><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd0ff"/><stop offset="1" stop-color="#2a8cff" stop-opacity="0"/></linearGradient><clipPath id="d"><path d="M70 0H120V46H50Z"/></clipPath></defs>' +
-      '<rect width="120" height="46" fill="#e6e9ed"/><g clip-path="url(#d)"><rect width="120" height="46" fill="#050608"/>' + [78, 86, 94, 102, 110].map((x, i) => '<rect x="' + x + '" y="' + (26 - 4 * ((i * 7) % 4 + 1)) + '" width="3" height="' + (4 * ((i * 7) % 4 + 1) + 14) + '" fill="url(#t)"/>').join('') + '</g>' +
-      bar('rx="1" fill="#f6f8fa" stroke="#b4bac2" stroke-width=".7"') + '<rect x="14" y="10.5" width="30" height="3" fill="#2a313b"/><rect x="74" y="9" width="30" height="6" fill="#000" stroke="#34bbff" stroke-width=".6"/><circle cx="78" cy="12" r="1.2" fill="#34bbff"/>' +
-      tiles('rx="1" fill="#f6f8fa" stroke="#b4bac2" stroke-width=".7"') + [14, 50, 86].map(x => '<circle cx="' + x + '" cy="31.5" r="4" fill="#fff" stroke="#0a6fe0" stroke-width=".8"/>').join('')],
+    sonyad: ['#fff', '<rect x="0" y="0" width="60" height="46" fill="#fff"/><g><rect x="60" y="0" width="60" height="46" fill="#ff9a00"/>' + [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45].map(y => '<rect x="60" y="' + y + '" width="60" height="1" fill="#e8431a"/>').join('') + '</g>' +
+      '<path d="M2 17H48Q58 17 60 7" fill="none" stroke="#000" stroke-width="1"/><path d="M3 10h22" stroke="#000" stroke-width="2.4"/><rect x="62" y="6" width="54" height="10" fill="#3a3a3a"/><path d="M64 11h24" stroke="#4aa3ff" stroke-width="2.4"/>' +
+      '<rect x="6" y="20" width="46" height="14" fill="#ff8a00"/><path d="M6 20h40l6 6" fill="none"/><circle cx="14" cy="27" r="2" fill="#ffd678" opacity=".7"/><circle cx="22" cy="27" r="2" fill="#ffd678" opacity=".7"/><circle cx="30" cy="27" r="2" fill="#ffd678" opacity=".7"/>' +
+      [4, 20, 36].map(x => '<rect x="' + x + '" y="36" width="14" height="10" rx="4" ry="4" fill="#d8e9f7"/>').join('') +
+      [64, 80, 96].map(x => '<rect x="' + x + '" y="36" width="14" height="10" fill="#ff9a00" stroke="#000" stroke-width=".6"/>').join('') + '<rect x="64" y="20" width="52" height="12" fill="#333" stroke="#ffb54a" stroke-width=".6"/>'],
     darkdeco: ['#08090a', '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f5319"/><stop offset=".45" stop-color="#f0d98c"/><stop offset="1" stop-color="#8a6a22"/></linearGradient></defs>' +
       [-50, -38, -26, -14, -2, 10, 22, 34, 46].map(a => '<path d="M60 52L' + (60 + 90 * Math.sin(a * Math.PI / 90)).toFixed(1) + ' ' + (52 - 90 * Math.cos(a * Math.PI / 90)).toFixed(1) + '" stroke="#c9a24a" stroke-opacity=".18" stroke-width="3"/>').join('') +
       '<path d="M16 6H104L112 12V14L104 18H16L8 14V12Z" fill="#0d1a18" stroke="#c9a24a" stroke-width=".8"/><rect x="14" y="10.5" width="30" height="3" fill="url(#g)"/><path d="M52 18l4 3 4-3" stroke="#c9a24a" fill="none" stroke-width=".7"/>' +
