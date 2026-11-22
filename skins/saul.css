@@ -12,7 +12,7 @@
    first frame (images/th/saul-small.png) instead.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="saul"],[data-skin="saul"][data-mode="light"]{
-  --sg-yellow:#ffe600; --sg-red:#e3171e; --sg-ink:#000;
+  --sg-yellow:#ffe600; --sg-red:#ff2b2b; --sg-ink:#000;
   --sg-pic:url(/images/th/saul-small.png);
   --sg-wash:linear-gradient(rgba(0,0,0,.34),rgba(0,0,0,.34));
   --sg-line:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,2px 2px 0 #000;
@@ -74,7 +74,7 @@ html.zen[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 22
 [data-skin="saul"] :is(h1,h2,h3,.pagehead h1,.pq,.gamecard h2,.qtile h2,.tname,.tdname,.lbbt,.aptitle h2){
   font-family:"Yellowtail","Brush Script MT",cursive !important;font-style:normal;font-weight:400;text-transform:none;letter-spacing:0;
   color:var(--sg-red) !important;-webkit-text-stroke:0;
-  text-shadow:-1px -1px 0 var(--sg-yellow),1px -1px 0 var(--sg-yellow),-1px 1px 0 var(--sg-yellow),1px 1px 0 var(--sg-yellow),3px 3px 0 #000 !important}
+  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,3px 3px 0 #000 !important}
 [data-skin="saul"] h1{font-size:max(2.2em,1.6rem)}
 [data-skin="saul"] :is(h2,h3,.tname,.tdname,.lbbt){font-size:max(1.4em,1.3rem) !important;line-height:1.15}
 /* the main button of a form: red, like the script */
@@ -84,6 +84,6 @@ html.zen[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 22
 /* ── and his line, in the corner, in the logo's colours ── */
 [data-skin="saul"] body::after{content:"S\2019 all good, man.";position:fixed;right:14px;bottom:10px;z-index:5;pointer-events:none;
   font:400 1.75rem/1 "Yellowtail","Brush Script MT",cursive;color:var(--sg-red);
-  text-shadow:-1px -1px 0 var(--sg-yellow),1px -1px 0 var(--sg-yellow),-1px 1px 0 var(--sg-yellow),1px 1px 0 var(--sg-yellow),3px 3px 0 #000;transform:rotate(-4deg)}
+  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,3px 3px 0 #000;transform:rotate(-4deg)}
 html.zen[data-skin="saul"] body::after{display:none}
 @media (max-width:560px){ [data-skin="saul"] body::after{font-size:1.25rem;right:10px;bottom:8px} }
