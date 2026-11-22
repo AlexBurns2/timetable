@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121m';
+const ASSET_V = '20261121q';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -65,7 +65,7 @@ const SKINS = [
   { id:'maximal',   name:'Maximalism', both:true, ic:'tile', is:'icons', css:'maximal', font:'family=Archivo:wdth,wght@62..125,100..900&family=Instrument+Serif:ital@0;1' },
   { id:'scifi',     name:'Cyberpunk', both:false, ic:'accent', is:'icons', css:'scifi', font:'family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Doto:wght@500;700;900&family=JetBrains+Mono:wght@400;700' },
   /* Synthwave: real-time 3D behind each page (fx/synth.js, Three.js), so a note says what it costs (lookRow) */
-  { id:'synth',     name:'Synthwave', both:true, mod:true, ic:'accent', is:'icons', css:'synth', font:'family=Syncopate:wght@700&family=Saira:wght@400;500;600;700',
+  { id:'synth',     name:'Synthwave', both:false, mod:true, ic:'accent', is:'icons', css:'synth', font:'family=Syncopate:wght@700&family=Saira:wght@400;500;600;700',
     note:'Its 3D backgrounds use more battery than other themes. Animation off shows a still picture instead.' },
   { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
@@ -236,9 +236,9 @@ const THUMBS = (() => {
       '<path d="M80.4 27L112.6 25L111.4 42.2L79.6 41Z" fill="none" stroke="#d3261a" stroke-width=".7"/>' +
       '<path d="M82.6 24.4L111.4 25.4L111 39.6L80.2 39.2Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/>' +
       '<rect x="85" y="27.8" width="4.6" height="4.6" fill="none" stroke="#d3261a" stroke-width="1"/><rect x="85" y="35" width="2" height="1.8" fill="#111"/><rect x="88.4" y="35" width="2" height="1.8" fill="#111"/><rect x="91.8" y="35" width="2" height="1.8" fill="#111"/><rect x="95.2" y="35" width="2" height="1.8" fill="#111"/>'],
-    /* Synthwave: the banded sun on the sea at dusk, out to the right; dark glass panels, the heading in chrome */
-    synth: ['#1c0b30', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c0b30"/><stop offset=".45" stop-color="#5a1c5e"/><stop offset=".68" stop-color="#e0527a"/></linearGradient>' +
-      '<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe39a"/><stop offset="1" stop-color="#ff3f86"/></linearGradient>' +
+    /* Synthwave: the banded sun (yellow, orange, pink) on the sea under a purple and pink sky, out to the right; dark glass panels, the heading in chrome */
+    synth: ['#160a48', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#160a48"/><stop offset=".45" stop-color="#5e1a8c"/><stop offset=".72" stop-color="#ff3d88"/></linearGradient>' +
+      '<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff8a2e"/><stop offset="1" stop-color="#ff2a78"/></linearGradient>' +
       '<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".48" stop-color="#f2c8ff"/><stop offset=".5" stop-color="#6b2a7e"/><stop offset="1" stop-color="#ffb08a"/></linearGradient></defs>' +
       '<rect width="120" height="31.5" fill="url(#k)"/><circle cx="96" cy="31.5" r="13" fill="url(#s)"/><g fill="#d24a77">' +
       [[22.6, .8], [25.6, 1.1], [28.4, 1.5]].map(b => '<rect x="80" y="' + b[0] + '" width="32" height="' + b[1] + '"/>').join('') + '</g>' +

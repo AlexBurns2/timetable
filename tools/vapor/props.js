@@ -2,11 +2,12 @@
 import { THREE, tex, loadGLTF, TAU, rnd } from './core.js';
 
 const PH = '/ph-dl/';
-/* polished marble (Poly Haven marble_01) */
+/* polished marble (Poly Haven marble_01, made into one unbroken stone by marble.py: the photograph is of a wall of blocks, and
+   its joints drew a grid up the columns and across the steps, each block a slightly different tone) */
 export function marble(rep = 1, tint = 0xffffff, opts = {}){
   const m = new THREE.MeshPhysicalMaterial(Object.assign({
-    color:tint, map:tex(PH + 'marble_01/marble_01_diff_2k.jpg', true, rep), roughnessMap:tex(PH + 'marble_01/marble_01_rough_2k.jpg', false, rep),
-    normalMap:tex(PH + 'marble_01/marble_01_nor_gl_2k.jpg', false, rep), normalScale:new THREE.Vector2(.6, .6), roughness:.9, clearcoat:.55, clearcoatRoughness:.18 }, opts));
+    color:tint, map:tex(PH + 'marble_01/marble_01_solid_diff.jpg', true, rep), roughnessMap:tex(PH + 'marble_01/marble_01_solid_rough.jpg', false, rep),
+    normalMap:tex(PH + 'marble_01/marble_01_solid_nor.jpg', false, rep), normalScale:new THREE.Vector2(.6, .6), roughness:.9, clearcoat:.55, clearcoatRoughness:.18 }, opts));
   /* the photo's marble is warm and grey: keep its veins, lift it to white */
   const vein = opts.vein == null ? .4 : opts.vein; delete m.vein;
   m.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>

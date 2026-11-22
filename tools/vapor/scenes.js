@@ -131,7 +131,15 @@ const DEF = {
       const lm = new THREE.Mesh(lgeo, new THREE.MeshBasicMaterial({ map:lt, color:new THREE.Color(dk ? 2.4 : 1.9, dk ? 2.4 : 1.9, dk ? 2.4 : 1.9) })); lm.position.z = .15; door.add(lm);
       const pad = block(dw + 1.1, .16, 1.2, m, .03); pad.position.set(0, -.08, .15); door.add(pad);
       door.position.set(p.x + .4, 2.1, p.z - 2.6); door.rotation.y = -.35; g.add(door);
-      for (let i = 0; i < 10; i++){ const st = block(1.25, .18, .66, m, .025); st.position.set(p.x + .3 - i * .44, 1.86 - i * .3, p.z - 1.95 + i * .3); st.rotation.y = -.35; g.add(st); }
+      /* the flight, set out from the landing in the doorway's own frame, so the landing is its first step: every step (the top one
+         too) is one rise below the one before, one run further out and the same way along. (They were placed in the world's frame,
+         from a point that was not the landing's: the top step sat half a rise under the landing and off to one side of the line the
+         rest came down, which the owner saw at once.) */
+      /* ALONG is how far each step stands to one side of the one above. It was -.31: the flight ran off diagonally, under the
+         page's window, which hid most of it (the owner: "the staircase could be moved slightly to be less obstructed"). Now 0: a
+         straight flight, square to the doorway, coming down towards us inside the margin. */
+      const RISE = .3, RUN = .433, ALONG = 0, FRONT = .15 + .6, TH = .18, DEEP = .66;
+      for (let i = 1; i <= 10; i++){ const st = block(1.25, TH, DEEP, m, .025); st.position.set(ALONG * i, -RISE * i - TH / 2, FRONT + RUN * i - DEEP / 2); door.add(st); }
       const kl = new THREE.PointLight(dk ? 0xffd9c8 : 0xfff2e8, dk ? 6 : 3, 6, 1.6); kl.position.set(p.x + .3, 2.9, p.z - 2.2); g.add(kl);
       return { g, p }; },
   },

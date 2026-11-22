@@ -1,12 +1,15 @@
 /* ══════════════════════════════════════════════════════════════════
    SYNTHWAVE: the 1980s idea of the future, at the end of the day.
    Behind each page (fx/synth.js) a real 3D scene lit by one low sun:
-   the car on a lit grid between crags (Home), the towers across the bay
-   (timetable), a pyramid and a planet over still water (Games, Finder), and
-   on every other page only the sun on the sea and one palm. Dusk in
-   light mode, night in dark. Until the scene is ready, and whenever it
-   won't run (Animation off, Reduce motion, a weak device, no WebGL 2),
-   a still picture of the same scene: images/synth/<scene>-<dusk|night>
+   a wet street with a cinema and a parked car (Home, and any page not
+   named here), the towers across the bay (timetable), the car on a lit
+   grid between crags (Games), a pyramid and a planet over still water
+   (Calendar, Free periods, Revision, Finder), and the sun on the sea and one palm (Notes,
+   Resources, Mahjong). Dark only: the dark styles below are written
+   :is([data-mode]), so they hold whichever mode is saved. Until the scene
+   is ready, and whenever it won't run (Animation off, Reduce motion, a
+   weak device, no WebGL 2), a still picture of the same scene:
+   images/synth/<scene>-night
    (-p: the tall crop for a phone), rendered from fx/synth.js.
    On top, one palette (magenta, orange, deep violet) and restraint:
      · panels of dark smoked glass, a hairline round them; the only
@@ -21,7 +24,7 @@
    scene behind is never covered.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="synth"]{
-  --bg:#3a1446; --bg-img:url(../images/synth/shore-a-dusk.webp);
+  --bg:#3a1446;
   --panel:rgba(48,17,52,.82); --panel-2:rgba(64,25,70,.85); --line:rgba(255,206,232,.18);
   --text:#fff3fb; --muted:rgba(250,222,240,.72); --accent:#ff5fae; --accent-ink:#22071a;
   --font-ui:"Saira",system-ui,sans-serif; --font-display:"Saira",system-ui,sans-serif; --font-num:"Saira",system-ui,sans-serif;
@@ -34,35 +37,26 @@
   --sy-chrome:linear-gradient(180deg,#ffffff 0%,#fff0fb 24%,#f4c2ff 46%,#3b1252 48.5%,#6a2470 52%,#ff6f8f 72%,#ffc78a 100%);
   --sy-sun:linear-gradient(90deg,#ff7a59,#ff4f9a);
 }
-[data-skin="synth"][data-mode="dark"]{
-  --bg:#0d0518; --bg-img:url(../images/synth/shore-a-night.webp);
+[data-skin="synth"]:is([data-mode]){
+  --bg:#0d0518;
   --panel:rgba(14,7,28,.84); --panel-2:rgba(28,13,46,.87); --line:rgba(214,176,255,.16);
   --text:#f7efff; --muted:rgba(226,208,248,.68); --accent:#ff58ae; --accent-ink:#1a0616;
   --sy-glass:rgba(14,6,26,.62); --sy-btn:rgba(26,12,44,.82); --sy-btn-hi:rgba(44,20,68,.88);
   --sy-chrome:linear-gradient(180deg,#ffffff 0%,#f3eaff 24%,#d6b4ff 46%,#2a0d46 48.5%,#5a1d6e 52%,#ff4f9a 74%,#ffa0c8 100%);
 }
-/* ── the still picture of each page's scene (and the colour under it while it loads) ── */
-[data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-dusk.webp)}
-[data-skin="synth"][data-mode="dark"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night.webp)}
-[data-skin="synth"][data-pg="home"]{--bg-img:url(../images/synth/drive-dusk.webp)}
-[data-skin="synth"][data-mode="dark"][data-pg="home"]{--bg-img:url(../images/synth/drive-night.webp)}
-[data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-dusk.webp)}
-[data-skin="synth"][data-mode="dark"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night.webp)}
-[data-skin="synth"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-dusk.webp)}
-[data-skin="synth"][data-mode="dark"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-night.webp)}
+/* ── the still picture of each page's scene (and the colour under it while it loads). Dark only, so one picture a scene ── */
+[data-skin="synth"]{--bg-img:url(../images/synth/street-night.webp)}
+[data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night.webp)}
+[data-skin="synth"][data-pg="games"]{--bg-img:url(../images/synth/drive-night.webp)}
+[data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night.webp)}
+[data-skin="synth"]:is([data-pg="finder"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"]){--bg-img:url(../images/synth/pyramid-night.webp)}
 @media (max-aspect-ratio:4/5){
-  [data-skin="synth"]{--bg-img:url(../images/synth/shore-a-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"]{--bg-img:url(../images/synth/shore-a-night-p.webp)}
-  [data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night-p.webp)}
-  [data-skin="synth"][data-pg="home"]{--bg-img:url(../images/synth/drive-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"][data-pg="home"]{--bg-img:url(../images/synth/drive-night-p.webp)}
-  [data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night-p.webp)}
-  [data-skin="synth"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-night-p.webp)}
+  [data-skin="synth"]{--bg-img:url(../images/synth/street-night-p.webp)}
+  [data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night-p.webp)}
+  [data-skin="synth"][data-pg="games"]{--bg-img:url(../images/synth/drive-night-p.webp)}
+  [data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night-p.webp)}
+  [data-skin="synth"]:is([data-pg="finder"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"]){--bg-img:url(../images/synth/pyramid-night-p.webp)}
 }
-/* the Mahjong board inside Games: no picture of its own (the games page around it has the scene) */
 html[data-skin="synth"][data-pg="hkmahjong"]{--bg-img:none}
 [data-skin="synth"] body{background-size:cover;background-position:center;background-repeat:no-repeat;color-scheme:dark}
 :root[data-skin="synth"] select option{background:#1c0b2a;color:#f7efff}
@@ -92,7 +86,7 @@ html[data-contrast="high"][data-skin="synth"] :is(.brand h1,.hubid h1,.pagehead 
 [data-skin="synth"] :is(.eyebrow,.sitename){font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 [data-skin="synth"] .sitename:hover{color:var(--accent)}
 [data-skin="synth"] :is(.sechd,.cathd,.forum h2){font-family:var(--font-ui);font-weight:600;font-size:.8125rem;letter-spacing:.18em;text-transform:uppercase;color:#ffc2e0}
-[data-skin="synth"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){color:#f0c8ff}
+[data-skin="synth"]:is([data-mode]) :is(.sechd,.cathd,.forum h2){color:#f0c8ff}
 [data-skin="synth"] :is(.pagelede,.focusnote,.hubsub){color:var(--muted)}
 /* where a line of text sits straight on the scene, it gets a little shade under it */
 [data-skin="synth"] :is(.pagelede,.focusnote,.tflede,.tflook .hint,.sechd,.cathd,.tfh,.weeklabel,.dayhead .dow,.tmark){text-shadow:0 1px 3px rgba(10,0,24,.75),0 0 12px rgba(10,0,24,.45)}
@@ -101,7 +95,7 @@ html[data-contrast="high"][data-skin="synth"] :is(.brand h1,.hubid h1,.pagehead 
 [data-skin="synth"] :is(.qtile,.tday,.gamecard,.tile,.game,.tfcard,.lbbcard,.pcard,.forum,.fpost,.hscstrip,.sheet){transition:border-color .2s,background-color .2s,box-shadow .2s}
 [data-skin="synth"] :is(.qtile,.tday,.gamecard,.tile,.game,.tfcard,.lbbcard):hover{border-color:rgba(255,150,200,.5);background-color:var(--panel-2);transform:none}
 [data-skin="synth"] :is(dialog,.newsdlg,.gatecard){background:rgba(26,10,36,.94);border:1px solid var(--line);box-shadow:0 24px 70px -20px rgba(0,0,0,.8)}
-[data-skin="synth"][data-mode="dark"] :is(dialog,.newsdlg,.gatecard){background:rgba(13,6,24,.95)}
+[data-skin="synth"]:is([data-mode]) :is(dialog,.newsdlg,.gatecard){background:rgba(13,6,24,.95)}
 [data-skin="synth"] dialog::backdrop{background:rgba(10,2,20,.55)}
 [data-skin="synth"] :is(.newshead,.sheethd,.dlg-h){border-bottom:1px solid var(--line)}
 [data-skin="synth"] .qtile .tname,[data-skin="synth"] :is(.tdname,.gamecard h2,.game h2,.tile .tname){font-weight:600;letter-spacing:.01em}
@@ -132,7 +126,7 @@ html[data-contrast="high"][data-skin="synth"] :is(.brand h1,.hubid h1,.pagehead 
 [data-skin="synth"] .breakbar{background:rgba(20,6,30,.45);border-color:rgba(255,206,232,.22);opacity:1}
 [data-skin="synth"] .nowcard{background:rgba(255,255,255,.05);border:1px solid var(--line)}
 [data-skin="synth"] .nowcard .lbl{color:#ffc2e0;letter-spacing:.16em;font-weight:600}
-[data-skin="synth"][data-mode="dark"] .nowcard .lbl{color:#f0c8ff}
+[data-skin="synth"]:is([data-mode]) .nowcard .lbl{color:#f0c8ff}
 [data-skin="synth"] :is(.weeklabel,.tmark){color:var(--text)}
 [data-skin="synth"] .lesson.current{outline-color:#ffab6b}
 
@@ -147,3 +141,5 @@ html[data-motion="reduced"].fx-out[data-skin="synth"] .wrap{transform:none}
   html.fx-out[data-skin="synth"] .wrap{transform:none}
   html[data-skin="synth"] .fx-bg{transition:none}
 }
+/* (Home's page used to move a little to the left, to clear the road behind it. The road is behind Games now (2026-11-23), whose
+   page is wider and stays centred; Home has the cinema's street, which is laid out for a centred page.) */

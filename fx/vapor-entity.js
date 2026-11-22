@@ -1,203 +1,222 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Vaporwave's visitors: what they say, and when.
+   Vaporwave's messages: what they say, and when.
 
-   Windows 95 windows turn up in the margins beside the page, as if
-   something in the machine were keeping itself busy and, now and then,
-   trying to say something. This file is only the words and the timing;
-   fx/vapor.js draws the windows. It is written to be edited: change a
-   line, add one, change a number.
+   Now and then a Windows 95 message box turns up in the margin beside
+   the page. Rarely: three or four in a day for somebody who uses the
+   site a lot; one, perhaps, for somebody who looks in once or twice.
+   Most are found waiting when you come back after a while away, as if
+   they had come while you were gone; a few arrive in front of you.
+   This file is only the words and the timing; fx/vapor.js draws the
+   windows. It is written to be edited: change a line, add one, change
+   a number.
 
-   There are two sorts. The passing windows (ambient: true) come and go all
-   the time on a screen with room beside the page, and come round again: a
-   note typing itself, something playing, a job that takes its time, a line
-   or two. The conversations (the rest) each come once, and some have a
-   follow-up hours later that depends on what you answered.
+   To write one, copy a line from the list and change it:
+     { id: 'a-name', title: 'the title bar', text: 'what it says',
+       buttons: [{ label: 'one' }, { label: 'two' }] },
 
-   Write in the same voice: quiet, a little uncanny, wistful, deadpan.
-   No exclamation marks. Never hopeless or threatening: if a line sounds
-   bleak, give it a gentle follow-up later (see "It's over" below).
+   The voice: short, lower case, deadpan. A notification that says a
+   little too much. No exclamation marks, and nobody speaking as "I".
+   A follow-up that explains or softens the first message spoils it.
    ═══════════════════════════════════════════════════════════════════ */
 window.VW_ENTITY = {
 
   /* ── how often ─────────────────────────────────────────────────── */
   pace: {
-    /* on a screen with room beside the page: somebody is usually about */
-    firstAfterSeconds: [2, 5],    // after a page opens, the first window turns up within this long...
-    idleSeconds: 2,               // ...once the pointer and the keys have been still this long
-    staySeconds: [24, 44],        // how long a passing window stays before the other pointer comes and closes it
-    gapSeconds: [5, 12],          // the pause between the last one leaving and the next arriving
-    secondChance: 0.5,            // the chance that a second window joins the first...
-    secondAfterSeconds: [12, 28], // ...this long after it
-    maxOpen: 2,                   // never more than this many at once
-    storyChance: 0.3,             // the chance that the next one is a conversation rather than a passing window
-    typeCps: 30,                  // how fast their words type themselves, in letters a second
+    maxPerDay: 4,              // never more than this many in a day
+    minGapMinutes: 120,        // at least this long between one and the next
 
-    /* on a narrow screen (a phone): none of the above. One small window, rarely: */
-    quietSessions: 2,        // no visitors at all in the first 2 sessions after choosing the theme
-    sessionGapMinutes: 30,   // away this long, and coming back counts as a new session
-    minGapMinutes: 100,      // at least this long between one visitor and the next (about two periods)
-    chancePerPage: 0.2,      // once that gap has passed, the chance that opening a page brings one
-    maxPerDay: 4,            // never more than this many in a day
-    callbackChance: 0.6,     // when a follow-up is due, the chance that the next page brings it
-    rareAfter: 5,            // the rare ones (those with your name) only after this many others
-    rareGapHours: 72,        // and at most one of them every this many hours
-    rareChance: 0.3,         // and even then, only now and then
-    narrowChance: 0.35,      // on a phone-sized screen they come this much less often (and never on the timetable)
-    appearAfterSeconds: [3, 9],  // how long after a page opens a visitor turns up (a random time in this range)
-    fadeAfterSeconds: 75     // how long a window that fades stays, if nobody touches it
+    /* most are found waiting when you come back */
+    awayMinutes: 20,           // "away": the site not looked at (its tab hidden, or closed) for this long
+    awayChance: 0.5,           // coming back after that, the chance that one is waiting
+
+    /* a few arrive in front of you */
+    liveChance: 0.04,          // on any other page you open, the chance that one arrives while you're there...
+    liveAfterSeconds: [20, 90],// ...this long after the page opens (a random time in this range)...
+    idleSeconds: 2,            // ...once the pointer and the keys have been still this long
+
+    stayMinutes: [3, 7],       // one that isn't answered stays this long (and follows you from page to page), then another pointer closes it
+    repeatAfterDays: 14,       // one that has been seen can come again after this many days
+    followUpChance: 0.7,       // when a follow-up is due, the chance that it is the one that comes
+
+    rareAfter: 5,              // the rare ones (those with your name) only after this many others
+    rareGapHours: 72,          // and at most one of them every this many hours
+    rareChance: 0.3,           // and even then, only now and then
+
+    phoneChance: 0.5,          // on a phone-sized screen they come this much less often (and never on the timetable)
+    phoneStaySeconds: 75,      // and stay only this long: there, a window covers part of the page
+    typeCps: 30                // how fast the words of one that arrives in front of you type themselves, in letters a second
   },
 
-  /* ── who comes ─────────────────────────────────────────────────────
-     id        a name for it, used by follow-ups
+  /* ── the messages ──────────────────────────────────────────────────
+     id        a name for it (any, but each its own): what follow-ups point at, and how it is remembered
      title     the window's title bar
      text      what it says. {NAME} is the student's first name, DOS style (DEMO, ALEXAN~1)
-     icon      door, folder, bin, sun, monitor, opaline (the company's logo) or none
      buttons   each: { label, do, say, open }
                  do: 'vanish' (the default) closes it
                      'reply'  it answers with `say`, then goes
                      'flee'   it jumps to another corner (twice at most), then goes
-                     'open'   it goes, and the visitor named in `open` comes at once
+                     'open'   it goes, and the one named in `open` comes at once
                  disabled: true  a button that can't be pressed
-     stay      'fade'    leaves by itself after a while, or when the page changes (the default)
-               'persist' stays, page after page, until it's closed
-               'evade'   its X makes it reappear somewhere else, twice, then it goes
-                         (with `lastWord`, if it has one). Its buttons work as usual.
-               'shy'     goes the moment your pointer comes near it
-     ambient   true: a passing window (see the top of this file). It can come again.
-     smear     true: a hung program. Dragged, it leaves copies of itself behind; when its
-               time is up the other pointer drags it off the same way.
+     icon      door, folder, bin, sun, monitor, hour, opaline or none
+     stay      (nothing)  it stays a few minutes, or until it is answered or closed
+               'persist'  stays until it's closed
+               'evade'    its X makes it reappear somewhere else, twice, then it goes
+                          (with `lastWord`, if it has one). Its buttons work as usual.
+               'shy'      goes the moment your pointer comes near it
+     hours     [from, to]: only between these hours of the day (24-hour; [5, 12] is the morning)
      after     a follow-up: { id, button, minHours, maxHours }. It comes only after that
-               visitor (and, with `button`, only if that was the answer), between minHours
+               one (and, with `button`, only if that was the answer), between minHours
                and maxHours later. maxHours around 20 lets it wait for the next morning.
      weight    how likely, against the others (1 if not given)
+     again     days before it can come again (repeatAfterDays, above, if not given)
      rare      true: one of the rare ones (see pace)
+     hidden    true: never comes by itself, only when another's button opens it
+     smear     true: a hung program. Dragged, it leaves copies of itself behind; when its
+               time is up the other pointer drags it off the same way.
      pages     only on these pages; notOn: never on these. Page names: timetable, home,
                calendar, notes, games, finder, free, revision, resources, mahjong
-     kind      'dialog' (the default), 'explorer', 'list', 'web' or 'sunrise' (the windows with more in them);
+     kind      'dialog' (the default: a message with buttons); the windows with more in them:
+               'explorer' (path, folders), 'list' (columns, rows, foot), 'sunrise',
+               'player'   track, jp, en, length (seconds), from (where it has got to): something
+                          playing, with no sound. The titles are made up; no real songs.
                'notepad'  lines: [...]  a note that types itself, line by line
-               'player'   track, jp, en, length (seconds), from (where it has got to): something playing.
-                          The titles are made up; no real songs.
                'progress' text, from, stopAt, done: a bar that fills to stopAt per cent, then says `done`
-
-     Opaline Systems is a company we made up: a 90s software house whose programs
-     are still running, cheerfully, for nobody. Its windows are signed with its logo.
+               (also there to use: 'web', heading, counter, updated: a page from the old web)
   */
   events: [
 
-    /* the owner's */
+    /* ── the owner's ── */
+    { id: 'checking', title: 'just checking', text: 'you still think about it?',
+      buttons: [{ label: 'no' }, { label: 'sometimes' }, { label: 'everyday' }] },
+    { id: 'goback', title: 'reminder', text: 'you cannot go back there',
+      buttons: [{ label: 'ok' }, { label: 'dismiss' }] },
+    { id: 'happy', title: 'hello?', text: 'are you happy with how things turned out?',
+      buttons: [{ label: 'next question' }, { label: 'not really' }] },
+    { id: 'advice', title: 'advice', text: 'if he wanted to, he would',
+      buttons: [{ label: 'unfortunately' }, { label: 'block' }] },
+    { id: 'update', title: 'a little update', text: 'nothing has changed',
+      buttons: [{ label: 'good' }, { label: 'oh' }] },
+    { id: 'morning', title: 'good morning', text: 'you are not behind', hours: [5, 12],
+      buttons: [{ label: 'thanks' }, { label: 'dismiss' }] },
+    { id: 'lastseen', title: 'last seen', text: 'online 8 years ago',
+      buttons: [{ label: 'delete' }, { label: 'message' }] },
+
+    /* existential system messages */
+    { id: 'tomorrows', title: 'system notice', text: 'you are running out of tomorrows',
+      buttons: [{ label: 'continue' }] },
+    { id: 'unsaved', title: 'You have unsaved changes.', text: 'Would you like to save the person you used to be?',
+      buttons: [{ label: 'Save' }, { label: 'Discard' }] },
+    { id: 'youngest', title: 'reminder', text: 'this is the youngest you will ever be again',
+      buttons: [{ label: 'ok' }] },
+    { id: 'restore', title: 'restore point', text: 'backup found 06-11-2019',
+      buttons: [{ label: 'restore' }, { label: 'delete' }] },
+
+    /* satire */
+    { id: 'story', title: 'new notification', text: "someone you don't know liked your story",
+      buttons: [{ label: 'view' }, { label: 'ignore' }] },
+    { id: 'advert', title: 'advertisement', text: "buy something. you'll feel better",
+      buttons: [{ label: 'shop now' }, { label: 'shop later' }] },
+    { id: 'privacy', title: 'privacy settings', text: 'your data has been shared with 157 licensed partners',
+      buttons: [{ label: 'okay' }] },
+    { id: 'terms', title: 'terms of service', text: 'you have agreed to everything',
+      buttons: [{ label: 'continue' }] },
+    { id: 'follower', title: 'new follower', text: 'another person is watching you',
+      buttons: [{ label: 'follow back' }, { label: 'ignore' }] },
+
+    /* absurd */
+    { id: 'moon', title: 'important', text: 'the moon is not real. my bad',
+      buttons: [{ label: 'ok' }] },
+    { id: 'optimised', title: 'system update', text: 'you have been optimised',
+      buttons: [{ label: 'undo' }] },
+    { id: 'blank', title: 'new document', text: 'a blank page. how exciting.',
+      buttons: [{ label: 'start' }, { label: 'panic' }] },
+
+    /* ── kept from the first set ── */
     { id: 'readonly', title: 'Memory', text: 'This memory is read-only.',
-      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Fine.', weight: 2 },
+      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Fine.' },
 
     { id: 'over', title: 'Notice', text: "It's over",
-      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Okay.', weight: 2 },
-    { id: 'over-2', after: { id: 'over', minHours: 1, maxHours: 20 },
-      title: 'Notice', text: "It wasn't, actually.", buttons: [{ label: 'OK' }] },
+      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Okay.' },
 
     { id: 'altenv', title: 'Display', text: 'An alternative environment has been detected.',
-      buttons: [{ label: 'View', do: 'open', open: 'sunrise' }, { label: 'Dismiss' }], weight: 2 },
+      buttons: [{ label: 'View', do: 'open', open: 'sunrise' }, { label: 'Dismiss' }] },
+    { id: 'sunrise', kind: 'sunrise', title: 'Sunrise', icon: 'sun', stay: 'persist', hidden: true },
 
     { id: 'leave', title: 'Exit', icon: 'door', text: 'Would you like to leave this place?',
-      buttons: [{ label: 'Stay' }, { label: 'Escape', do: 'flee' }], weight: 2 },
-    { id: 'leave-stay', after: { id: 'leave', button: 'Stay', minHours: 1, maxHours: 20 },
-      title: 'Exit', icon: 'door', text: 'You stayed. Thank you.', buttons: [{ label: 'OK' }] },
+      buttons: [{ label: 'Stay' }, { label: 'Escape', do: 'flee' }] },
     { id: 'leave-back', after: { id: 'leave', button: 'Escape', minHours: 1, maxHours: 20 },
       title: 'Exit', icon: 'door', text: 'You came back.', buttons: [{ label: 'OK' }] },
+
+    { id: 'wonder', title: 'Question', text: "Do you wonder what's beyond this screen?",
+      buttons: [{ label: 'Yes' }, { label: 'No' }] },
+    { id: 'wonder-no', after: { id: 'wonder', button: 'No', minHours: 1, maxHours: 20 },
+      title: 'Question', text: 'Probably wise.', buttons: [{ label: 'OK' }] },
+
+    { id: 'saved', title: 'Save', text: 'Your progress has been saved somewhere.', buttons: [{ label: 'OK' }] },
+
+    { id: 'renew', title: 'Subscription', text: 'Your subscription to MSC Unofficial has expired.',
+      buttons: [{ label: 'Renew', do: 'reply', say: 'Renewal is no longer available.' }, { label: 'OK' }] },
+
+    { id: 'opaline', title: 'Opaline System', icon: 'opaline', text: 'Opaline OS is still running. No users have been detected since 1999.',
+      buttons: [{ label: 'OK' }] },
+
+    /* a hung program: drag it, or wait for the other pointer to */
+    { id: 'frozen', title: 'thoughts.exe', icon: 'hour', smear: true, weight: 0.7,
+      text: 'This program is not responding.', buttons: [{ label: 'Wait' }] },
+
+    /* the rare ones, with your name */
+    { id: 'delete', title: 'Memory', text: '{NAME} is attempting to delete memories. Allow?', rare: true,
+      buttons: [{ label: 'Allow' }, { label: 'Deny' }] },
 
     { id: 'drive', kind: 'explorer', title: 'CONSCIOUSNESS', path: 'C:\\{NAME}\\CONSCIOUSNESS\\', rare: true,
       folders: [
         { label: 'DREAMS', say: '3 items. Still loading.' },
         { label: 'MEMORY', say: 'This folder is read-only.' },
         { label: 'DO_NOT_OPEN', say: 'Access is denied.' },
-        { label: 'SUMMER_1998', say: 'This folder is empty. It was not always.' }
+        { label: 'SUMMER_1998', say: 'This folder is empty.' }
       ] },
 
-    { id: 'delete', title: 'Memory', text: '{NAME} is attempting to delete memories. Allow?', rare: true,
-      buttons: [{ label: 'Allow' }, { label: 'Deny' }] },
-    { id: 'delete-allow', after: { id: 'delete', button: 'Allow', minHours: 1, maxHours: 20 },
-      title: 'Memory', text: 'Some of them came back anyway.', buttons: [{ label: 'OK' }] },
-    { id: 'delete-deny', after: { id: 'delete', button: 'Deny', minHours: 1, maxHours: 20 },
-      title: 'Memory', text: 'Kept. They are somewhere safe.', buttons: [{ label: 'OK' }] },
-
-    { id: 'taskmgr', kind: 'list', title: 'Task Manager', icon: 'monitor',
+    /* windows with more in them */
+    { id: 'taskmgr', kind: 'list', title: 'Task Manager', icon: 'monitor', weight: 0.7,
       columns: ['Image Name', 'CPU'],
-      rows: [['thoughts.exe', '99'], ['daydream.exe', '01'], ['opaline_update.exe', '00'], ['System Idle Process', '00']],
-      foot: 'CPU Usage: 100%', ambient: true,
+      rows: [['thoughts.exe', '99'], ['explorer.exe', '01'], ['System Idle Process', '00']],
+      foot: 'CPU Usage: 100%',
       buttons: [{ label: 'End Task', disabled: true }, { label: 'Close' }] },
 
-    { id: 'bin', kind: 'list', title: 'Recycle Bin', icon: 'bin',
-      columns: ['Name', 'Size'], rows: [['summer.zip', '0 bytes']], foot: '1 object(s)', ambient: true,
-      buttons: [{ label: 'Restore', do: 'reply', say: 'There was nothing in it to restore.' }, { label: 'Close' }] },
+    { id: 'bin', kind: 'list', title: 'Recycle Bin', icon: 'bin', weight: 0.7,
+      columns: ['Name', 'Size'], rows: [['New Folder', '0 bytes']], foot: '1 object(s)',
+      buttons: [{ label: 'Restore', do: 'reply', say: 'The original location no longer exists.' }, { label: 'Close' }] },
 
-    { id: 'sunrise', kind: 'sunrise', title: 'Sunrise', icon: 'sun', stay: 'persist' },
+    /* ── notes, typing themselves, and left unfinished ── */
+    { id: 'pad-remember', kind: 'notepad', title: 'Untitled - Notepad', weight: 0.8,
+      lines: ['remember to'] },
+    { id: 'pad-list', kind: 'notepad', title: 'list.txt - Notepad', weight: 0.8,
+      lines: ['things to remember:', '1.', '2.', '3. where i put the'] },
+    { id: 'pad-todo', kind: 'notepad', title: 'to do.txt - Notepad', weight: 0.8,
+      lines: ['to do:', '1. reply', '2.'] },
+    { id: 'pad-draft', kind: 'notepad', title: 'draft.txt - Notepad', weight: 0.8,
+      lines: ['hey', 'hey, sorry', 'never mind'] },
 
-    /* Opaline Systems, still running */
-    { id: 'opaline', title: 'Opaline System', icon: 'opaline', text: 'Opaline OS is still running. No users have been detected since 1999.',
-      buttons: [{ label: 'OK' }] },
-    { id: 'opaline-2', after: { id: 'opaline', minHours: 1, maxHours: 20 },
-      title: 'Opaline System', icon: 'opaline', text: 'One user detected. Welcome back.', buttons: [{ label: 'OK' }] },
-    { id: 'renew', title: 'Opaline System', icon: 'opaline', text: 'Your subscription to Summer 1998 has expired.',
-      buttons: [{ label: 'Renew', do: 'reply', say: 'Renewal is no longer available.' }, { label: 'OK' }] },
-    { id: 'thanks', title: 'Opaline System', icon: 'opaline', text: 'Thank you for choosing tomorrow.', buttons: [{ label: 'OK' }], ambient: true },
-
-    /* a page from the old web, still up */
-    { id: 'homepage', kind: 'web', title: 'welcome.htm', heading: 'Welcome to my page',
-      counter: '000001', updated: 'Last updated 14 August 1998', ambient: true },
-
-    /* a thread of our own */
-    { id: 'wonder', title: 'Question', text: "Do you wonder what's beyond this screen?",
-      buttons: [{ label: 'Yes' }, { label: 'No' }], weight: 2 },
-    { id: 'wonder-yes', after: { id: 'wonder', button: 'Yes', minHours: 1, maxHours: 20 },
-      title: 'Question', text: 'I looked. It goes on for a while.', buttons: [{ label: 'OK' }] },
-    { id: 'wonder-no', after: { id: 'wonder', button: 'No', minHours: 1, maxHours: 20 },
-      title: 'Question', text: 'Probably wise.', buttons: [{ label: 'OK' }] },
-
-    /* and a few on their own */
-    { id: 'anyone', title: 'Network', text: 'Is anyone there?',
-      buttons: [{ label: 'Yes', do: 'reply', say: 'Oh. Hello.' }, { label: 'No', do: 'reply', say: 'Understood.' }] },
-    { id: 'saved', title: 'Save', text: 'Your progress has been saved somewhere.', buttons: [{ label: 'OK' }], ambient: true },
-    { id: 'mild', title: 'Weather', text: 'It is a mild day in here.', buttons: [{ label: 'OK' }], ambient: true },
-    { id: 'forgot', title: 'Reminder', text: 'You came here for something. It will come back to you.', buttons: [{ label: 'OK' }], ambient: true },
-    { id: 'nothing', title: 'System', text: 'This window has nothing to report.',
-      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Noted.', ambient: true },
-
-    /* ── the passing windows ── */
-
-    /* notes, typing themselves */
-    { id: 'pad-list', kind: 'notepad', title: 'list.txt - Notepad', ambient: true,
-      lines: ['things to remember:', '- the light in the hall', '- a song, mostly the middle', '- where I put the'] },
-    { id: 'pad-letter', kind: 'notepad', title: 'Untitled - Notepad', ambient: true,
-      lines: ['Dear whoever finds this,', 'the machine is fine.', 'It only wanted the company.'] },
-    { id: 'pad-log', kind: 'notepad', title: 'log.txt - Notepad', ambient: true,
-      lines: ['08:55  nobody', '10:05  nobody', '11:45  somebody (you)', '11:46  hello'] },
-    { id: 'pad-forecast', kind: 'notepad', title: 'forecast.txt - Notepad', ambient: true,
-      lines: ['Forecast for inside:', 'mild, with a chance', 'of afternoon.'] },
-    { id: 'pad-readme', kind: 'notepad', title: 'README.TXT - Notepad', ambient: true,
-      lines: ['Thank you for installing', 'Opaline Sunrise 2.0.', '', 'There is no step two.'] },
-
-    /* something playing, with no sound */
-    { id: 'play-mall', kind: 'player', title: 'Media Player', ambient: true,
-      track: '03', jp: '夕暮れのモール', en: 'mall at dusk (slowed)', length: 227, from: 74 },
-    { id: 'play-pool', kind: 'player', title: 'Media Player', ambient: true,
-      track: '07', jp: 'プールサイド 1998', en: 'poolside 1998', length: 198, from: 12 },
-    { id: 'play-hold', kind: 'player', title: 'Media Player', ambient: true,
-      track: '01', jp: '保留音', en: 'hold music, extended', length: 599, from: 341 },
-    { id: 'play-rain', kind: 'player', title: 'Media Player', ambient: true,
-      track: '11', jp: '雨の日のテレビ', en: 'television on a rainy day', length: 242, from: 130 },
-
-    /* jobs that take their time */
-    { id: 'defrag', kind: 'progress', title: 'Disk Defragmenter', icon: 'hour', ambient: true,
+    /* ── jobs that take their time ── */
+    { id: 'defrag', kind: 'progress', title: 'Disk Defragmenter', icon: 'hour', weight: 0.7,
       text: 'Putting the afternoon back in order.', from: 12, stopAt: 99, done: '99%. The last piece is being shy.' },
-    { id: 'copying', kind: 'progress', title: 'Copying', icon: 'folder', ambient: true,
+    { id: 'copying', kind: 'progress', title: 'Copying', icon: 'folder', weight: 0.7,
       text: 'Copying summer.zip to Somewhere Safe.', from: 3, stopAt: 100, done: 'Copied. Nothing was lost.' },
-    { id: 'dialup', kind: 'progress', title: 'Connecting', icon: 'monitor', ambient: true,
+    { id: 'dialup', kind: 'progress', title: 'Connecting', icon: 'monitor', weight: 0.7,
       text: 'Dialling the outside.', from: 0, stopAt: 64, done: 'No answer. It rang for a while, though.' },
 
-    /* a hung program: drag it, or wait for the other pointer to */
-    { id: 'frozen', title: 'daydream.exe', icon: 'hour', ambient: true, smear: true, weight: 0.7,
-      text: 'This program is not responding. It is thinking about something else.', buttons: [{ label: 'Wait' }] },
-
-    /* a shy one */
-    { id: 'peek', title: 'Window', ambient: true, stay: 'shy', weight: 0.7,
-      text: 'Oh. I did not think anyone was looking.' }
+    /* ── something playing, with no sound. The titles are made up; no real songs. ── */
+    { id: 'play-lawn', kind: 'player', title: 'Media Player', weight: 0.8,
+      track: '03', jp: 'ローンチェア', en: 'lawnchairs', length: 227, from: 74 },
+    { id: 'play-indigo', kind: 'player', title: 'Media Player', weight: 0.8,
+      track: '07', jp: 'インディゴの女', en: 'indigo woman', length: 198, from: 12 },
+    { id: 'play-fruit', kind: 'player', title: 'Media Player', weight: 0.8,
+      track: '01', jp: 'ガラスの果物', en: 'glass fruit', length: 599, from: 341 },
+    { id: 'play-soft', kind: 'player', title: 'Media Player', weight: 0.8,
+      track: '11', jp: 'やわらかい家電', en: 'soft appliances', length: 242, from: 130 },
+    { id: 'play-pale', kind: 'player', title: 'Media Player', weight: 0.8,
+      track: '05', jp: '青白いエスカレーター', en: 'pale escalator', length: 264, from: 201 },
+    { id: 'play-ocean', kind: 'player', title: 'Media Player', weight: 0.8,
+      track: '09', jp: '二番目の海', en: 'second ocean', length: 312, from: 47 }
   ]
 };

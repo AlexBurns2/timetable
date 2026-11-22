@@ -4168,3 +4168,186 @@ The owner, after the swap of 8.166 put the bay behind the timetable: "is there a
 - **Where:** every Synthwave scene but the road (Home's, which moves too fast to fold frames together), and never in a still (`STILL`), so the stills in `images/synth` are unchanged and need no re-render.
 - **Measured** at 1920 × 1080 on the bay, 24 frames 120 ms apart: pixels in the palms' crowns that jump more than 24 levels from one frame to the next, 1.73% → 0.10%; the sky unchanged; the towers' window edges 0.77% → 0.25%; the reflection under the palms 3.0% → 0.8%. The sea's ripples are a little smoother; its reflections still break up as before. A looser hold on the history (`uCl` 3) gained almost nothing (0.07%), so it stays at 1.
 - **Checked:** the bay (timetable) at 1920 × 1080 and on a phone; the sea scenes, light and dark; the pyramid scene over three seconds; the road (unchanged).
+
+## 8.168 Synthwave: dark only, a pink and purple sky, Home's road to the right, a new street scene, the fronds sway, calmer reflections (asset version `20261121n`, `CACHE_VERSION` v92)
+The owner on 8.167 ("I'm loving synthwave, looks incredible"), with five reference pictures. Nothing in this section is committed.
+
+**Dark only, one look** (`theme.js` synth `both:false`)
+- "I think this might work better if its locked to dark mode with the orange sun and purple sky like all the references", then "the sky should be more pink and purple and the sun kind of pinkish to orange to yellow so it stands out better".
+- `DAY.night` is now a purple and pink sky (violet top, magenta-purple middle, hot pink at the horizon, a few stars) with the sun's glow held close (`wide` 0.6: wider, the orange mixed with the purple into brown).
+- The sun has three colours foot to top (`uBot` pink, `uMid` orange, `uTop` yellow) and a pink rim (`uRim`): `SUN_F`, `DAY.*.sunMid` and `sunRim`. `DAY.dusk` is kept for the record but is never used.
+- `skins/synth.css`: every `[data-mode="dark"]` rule is now `:is([data-mode])`, so the dark styles hold even when the saved mode is light (a `both:false` skin still gets `data-mode` from the saved setting; only `color-scheme` is forced). The base (light) values are dead but harmless.
+- Stills: one a scene (`<scene>-night`, `-night-p`). The twelve `-dusk` stills and the two `shore-a` ones are deleted.
+
+**Home (the road)**
+- The road's end, the sun and the car sit to the right on a wide screen: `look.shift` (a lens shift by `camera.setViewOffset`, 9% of the width from 1.2:1 up to 1.6:1; nothing turns), and Home's `.wrap` moves left by up to 8vw (never more than its margin) in `skins/synth.css`.
+- The hills start nearer the road (16 m at most from its edge, was 16 m more), so less empty grid shows; the right side keeps room for the street lights.
+- Street lights now and then (45 to 120 m apart), on the right only: `lamp()` (a pole, an arm, a hood, a warm lens), a halo and a pool of light on the road each, coming by with the road, fading into the haze.
+- The sun is bigger (`sunR` 128 → 170).
+- At 1920 × 1080 the car is clear of the page; at 1366 × 768 the poll still covers part of it.
+
+**The new street scene** (`kind === 'street'`: calendar, free periods, revision, and any page not listed; `shoreA` is unused now)
+- "a hotel/shop front out on a wet street with a car parked out front and a city in the distance ... a very cozy, almost nostalgic feel. Keep it fairly simple". The owner thinks the palms and water are overused, so this scene has neither.
+- On the right a hotel with a video shop on its ground floor, then blocks down the street: brick fronts drawn on canvases (`facade()`: colours, and what glows, so the lit windows light up and the brick doesn't), warm windows with blinds or a curtain drawn, cyan neon along the floors, a canopy with a pink edge and lights under it, `HOTEL` down a blade (cyan, framed pink), `VIDEO` over the shop, `OPEN` in its window (`sign()`: words stroked in light on a plane, in Saira).
+- A second car, `CAR2`: an eighties wedge (no real car's lines), silver, one tail lamp across its back with brighter parts, slats over the rear window, crisper creases. `carArrays` now takes a definition (`CAR1`, `CAR2`: stations, wheels, glass zones, how many times the sections are rounded, and the car's own parts); the point counts follow the rounding.
+- The street is wet: `STREET`, a Reflector shader like the sea's but still, the reflections drawn out down the street on damp asphalt and clear in the puddles. Street lights on the right. On the left a low wall with a pink tube, low buildings beyond, and the city (the same towers as the bay, `towers()` now shared) far off in the haze under the sun.
+- The camera is still; only the sun's bands and the steadying move.
+
+**The palms and the reflections** (mid-round notes)
+- "give the palm leaves some subtle animation": the fronds sway (about six seconds a swing, a tip moving some 15 cm, in a breeze that comes and goes), the trunk still. A weight a vertex (`sway`, how far out from the crown) in `palmArrays`, the motion in `palmMat`'s vertex shader.
+- "now the reflections shimmer": the sea's ripples finer than a pixel are left out (`a2`, `a3` by `fwidth`), each reflection is four samples drawn out down the water, and the Reflector has 4× MSAA off phones. Measured on the bay: the sea's pixels jumping more than 24 levels a frame 8.6% → 1.4%; under the palms 0.8% → 0%.
+
+**Checked:** every scene at 1600 × 900; Home at 1920, 1366 and 3440 wide; the street at 1920 bare and under the Calendar, and on a phone; all ten stills.
+
+**Open for the owner:** whether the street's car and hotel are close to what they pictured; whether Home's road should go further right at 1366 wide. (The Theme finder's Synthwave drawing has the new sky and sun colours; its shapes are unchanged.)
+
+## 8.169 Synthwave: the sun crisp with its glow outside it, a haze from the horizon; the hotel scene rebuilt after the owner's picture (same version `20261121n`, `CACHE_VERSION` v92)
+The owner on 8.168, which had not been committed (HEAD was still `bb04193` at `20261121m`), so this goes out with it under the same version. Nothing in this section is committed.
+
+**The sun and the sky (every scene)**
+- "The sun should be crispier with the fade radiating outward rather than inward": `SUN_F` no longer tints the disc towards its rim (that read as a soft edge). The disc is clean to a crisp edge; its glow is outside it, brightest at the edge and fading outward (`uHalo`, `DAY.*.sunHalo`). The sun's quad is `SUN_GS` (1.4) times the disc, to hold the glow. More of the disc's foot is pink.
+- "The haze should fade up from the horizon and low around the sun, currently there's this big ball of glow around the sun": `SKY_F`'s two round glows (`pow(s, 6.)`, `pow(s, 60.)`) are gone. In their place a haze that rises from the horizon all round and lies deeper under and beside the sun (`uHz`, `DAY.*.haze`: fall-off and strength all round, fall-off and strength towards the sun). `uWide` and `DAY.*.wide` are gone.
+
+**The hotel scene (`kind === 'street'`), rebuilt twice in this round**
+- The owner was "really not keen on" the first street (8.168) and asked to "recreate this shot basically one for one, car and hotel on the right side, city and sun in the left". Their picture: a brick building with pink neon and a blue script shop sign, a lettered marquee beside it, a silver wedge parked in front, palms, a street light, the water and a skyline on the left.
+- First rebuild: the entrance was a box of its own, with the brick building bent away from it at 42 degrees. The owner: "in the reference, the hotel sign is attached to an overhanging roof that protrudes from the actual store front, and the building is parallel to the one beside it. Yours looks weird because it awkwardly curves and doesn't architecturally make sense."
+- **(Superseded by 8.170: the whole layout was redone round a street that runs to the sun.) Then: one straight frontage.** Two buildings side by side, their fronts in one plane (`O`, `BU`, `BN`, `onB(a, y, n)`: metres along the frontage, up, and out towards the street; `turned()` sets a thing on it), seen at 40 degrees:
+  - the brick hotel (to +a): a painted front (`sheet()`: two canvases, the colours and what glows) with bricks, three floors of tall windows with curtains and balconies, pink neon tubes along its floors with their light painted on the brick, a ground floor of shop fronts; the shop's lit window with shelves, its name in blue script (`Video rental`), `OPEN late` in red;
+  - the wing beside it (to -a), darker brick lined in blue, with the hotel's entrance on its ground floor (doors, `LOBBY`);
+  - the canopy: a roof standing 4.6 m out from the entrance's wall over the pavement, on two white columns at its outer corners; `HOTEL` in outlined pink neon letters on its front and on its near end, its edges lined in blue and pink; a lit box on top of it against the wall;
+  - the pavement a straight strip, its kerb parallel to the fronts; a tall street light with a curved arm; the wedge (`CAR2`) parked at an angle before the shop, seen from behind and to one side.
+  - On the left: the quay's low wall, water beyond it (`STREET`'s `uQuay`: past it the ground is a clear mirror, not asphalt), palms (one at the picture's edge with its fronds hanging in from above, two against the sun), the city low and far off, the sun over it.
+- Five real point lights (the doors, under the canopy, the shop's sign, the street light), so the car and the columns take the neon's colours; pools of light on the pavement and the road are added planes.
+- The camera is three metres up and looks a little upward. `cams.W` is new: a third framing for a very wide window (`frame()` goes from L to W between 16:9 and 2.8:1).
+- **Kept ours, on purpose:** the signs' words (the picture's are not copied: see the memory rule on reference text), the car (our wedge, not the picture's), and no person in the street.
+- The script sign uses whatever script face the device has (`Segoe Script`, `Brush Script MT`, `Snell Roundhand`, `cursive`), so it differs a little between devices; the stills show this machine's.
+
+**Stills:** all ten regenerated (the sun changed in every scene).
+
+**Checked:** the hotel scene bare at 1920 x 1080 and 3440 x 1235, on a phone, behind the Calendar and Revision; the other four scenes for the sun and the haze.
+
+**Open for the owner:** whether the canopy and its letters should be bigger; whether to keep the two palms (they called palms overused, but the picture has them); the sign wording.
+
+## 8.170 Synthwave's hotel scene laid out again: the street runs to the sun (same version `20261121n`, `CACHE_VERSION` v92)
+The owner on 8.169, still uncommitted (HEAD `bb04193` at `20261121m`): "The hotel scene still looks very sloppy." Their list, and what answers each. Nothing in this section is committed.
+
+- "The original also has the vanishing point of the street scene at the sun, so the leading lines guide your eyes to the focal point": the street now runs straight away from the camera (-z) and the sun stands dead ahead down it (`sunDir = DIR(0, .06)`). The fronts are parallel to the street (one plane, `x = FX`), so the kerbs, the neon along the floors and the balconies all converge on the sun. The camera stands in the roadway near its left kerb, three metres up, turned 25 degrees right of the street's line, so the sun and the city are on the left and the hotel on the right (`yaw()` in `cams`).
+- "Make the distant city much denser, and more of a cluster rather than a spread": 96 towers within about 150 m either side of the sun's line (a triangular spread, tallest in the middle), 480 to 520 m off. It was 25 strung along 470 m.
+- "the buildings are on a landmass, maybe the other side of the bay": three low `islet()`s make a far shore under the city.
+- "the road ends at a T intersection with a road running along the waterfront": the street ends at `ZT`; a cross road nine metres wide, its far kerb, a promenade with a row of lamps and palms, a low wall at `ZQ`, then the bay (`STREET`'s `uQuay`).
+- "the streetlamp faces over the street": the lamps stand at the right-hand kerb with their arms out over the roadway; the tall one is beside the car's tail.
+- "the car is parked parallel": at the right-hand kerb before the shop, its nose towards the sun; darker paint (it was a pale pink shape under the neon).
+- The canopy is unchanged in idea (8.169): a roof standing out from the entrance's wall, now right across the pavement to two white columns at the kerb, `HOTEL` on its end (facing us down the street) and on its street side; its fascia is lit magenta and the tier on top blue, as the picture's are.
+- **The ground is one wet surface now** (the reflecting plane), pavement and roadway alike, with low stone kerbs on it. Raised slabs of pavement, seen nearly edge-on against the low sun, took its sheen and came out as flat pale shapes; and the wet pavement mirrors the shop and the canopy, which is most of the picture's charm.
+- The balconies are real (instanced slabs and iron bars standing 0.75 m out); painted on, they were flat at this angle.
+- The palms: a short row down the left-hand pavement set well left, so the sun and the city stand clear; one near us whose fronds hang into the top of the picture; two beyond the entrance; a few along the waterfront.
+- `cams.P` (phones) stands further back and turns only six degrees, so a tall screen has the sun, the canopy and the car.
+
+**The owner's offer:** "If its easier, I could model the hotel myself." Told them it would help (my fronts are boxes with painted faces; a model would give real depth) and what the loader needs: one `.glb`, no Draco or meshopt, materials named by what they are (textures are dropped; the look is given per material name), metres, the front towards one axis, origin on the ground at a front corner, under about 30,000 triangles. `parseGlb` in `fx/synth.js` expects every node to carry a mesh, so a model from Blender needs a pass like `tools/synth/conv.py` first. Not started; waiting on them.
+
+**Stills:** `street-night` and `street-night-p` regenerated. **Checked:** bare at 1920 x 1080 and 3440 x 1235, on a phone, behind the Calendar and Revision.
+
+## 8.171 Vaporwave (moderators only): messages rare and rewritten, the word clean, the seams out of the renders, content in windows (same version `20261121n`, `CACHE_VERSION` v92)
+The owner on the reworked Vaporwave, 2026-11-22. HEAD is still `bb04193` at `20261121m`; 8.168 to 8.170 are uncommitted under `n`, and this goes out with them. Nothing in this section is committed. Everything here is behind `html.vw-next` (moderators): the Vaporwave everybody else has was checked and is as it was.
+
+**The messages (`fx/vapor-entity.js`, and `visitors()` in `fx/vapor.js`)**
+- "Dramatically lower the chance of popups in vaporwave, right now there are WAYYY too many." 8.162 had made them the company on a wide screen (one or two about most of the time). That is gone. The passing windows (`ambient`), the second window, the short gaps: all removed.
+- Their numbers: "A user should max see maybe 3 or 4 messages a day if they use the website a lot, logging in once or twice they might only see one. Most should appear when the user comes back to the website after a while and the message appears when they were away, but sometimes a message can appear right in front of them."
+- How it works now (every number is in `pace`, at the top of `fx/vapor-entity.js`):
+  - never more than `maxPerDay` (4) in a day, nor two within `minGapMinutes` (120);
+  - **found waiting:** coming back after `awayMinutes` (20) or more with the site not looked at (its tab hidden, or closed), there is an `awayChance` (0.5) that one is there: no arrival, its words already written (`how: 'away'`, the class `vw-there`). Both a page opened after a while and a tab come back to count (`visibilitychange`, and `msc.vwent.active`, touched each minute and on `pagehide`);
+  - **in front of you:** on any other page opened, a `liveChance` (0.04) that one arrives 20 to 90 s in, once the pointer and keys have been still 2 s: the glitch, the words typing;
+  - one that isn't answered stays `stayMinutes` (3 to 7), then the other pointer closes it; meanwhile it is remembered (`msc.vwent.wins`: id, until, x, y) and is there again on the next page, in the same place if that is clear there;
+  - one that has been seen can come again after `repeatAfterDays` (14); follow-ups as before; the rare ones (with the name) as before; a phone: half as often, 75 s, never on the timetable.
+  - A simulation of these numbers: opening the site once in a day, one message a little over half the time; twice, 1.1 on average; five visits, 2.7; a school day and an evening of coming and going, 3.5; open all day, 4.
+- **The words.** "Use only these text message popups" (their nineteen, in four groups: theirs, existential system messages, satire, absurd), "keep some of the original messages, and remove the corny ones", and "I like the playlist thing too, but the names are a bit corny. Make the names a bit more abstract and surreal, like indigo woman or lawnchairs."
+  - Their nineteen are in as written (lower case, their buttons). `good morning` only between 5 and 12 (`hours`, new).
+  - Kept from the first set: `readonly`, `over` (and `over-2`), `altenv` (and the Sunrise, now `hidden`: only its button opens it), `leave` (and `leave-back`), `wonder` (and `wonder-no`), `saved`, `renew`, `frozen` (now `thoughts.exe`, "This program is not responding."), `delete` (and `delete-allow`), `drive`, `taskmgr`, `bin`.
+  - Removed as corny: the five notes that typed themselves, the three jobs (defragmenter, copying, dialling), the old web page, the shy window, `opaline`, `opaline-2`, `thanks`, `anyone`, `mild`, `forgot`, `nothing`, and the follow-ups `leave-stay`, `wonder-yes`, `delete-deny`. Trimmed: the task manager's `daydream.exe` and `opaline_update.exe` rows, the bin's `summer.zip` (now `New Folder`; Restore says "The original location no longer exists."), the explorer's "It was not always."
+  - What they have in common, and the rule now at the top of the file: short, lower case, deadpan, a notification that says a little too much; nobody speaking as "I".
+  - The player's six tracks: lawnchairs, indigo woman, glass fruit, soft appliances, pale escalator, second ocean (each with its Japanese). Made up; no real songs.
+  - The drawer still knows `notepad`, `progress`, `web` and `stay: 'shy'`; nothing uses them.
+- For moderators: `?vwent=<id>`, `?vwent=next` (arriving), `?vwent=away` (found waiting, new), `?vwent=reset`, `?vwent=on`, `&vwlife=`. Start's switch is now called Messages.
+- **For the owner to decide:** `privacy` ("your data has been shared with 157 licensed partners") is satire, but on a site that holds real sign-ins somebody could take it as a notice about this site. It is in, as asked; flagged to them.
+- Tested in headless Chrome with a made-up history: found waiting on a page after 30 minutes away; arriving after 23 s; nothing inside the gap; nothing past the day's four; carried to the next page (in its place, or moved if that is under the page there) and its answer kept; a tab come back to after 26 minutes; a failed roll; a phone; a phone's timetable (none).
+
+**The word (the katakana)**
+- "The katakana should also be unglitched by default, and occasionally glitch out. Currently the two glitch effects stack and it just looks weird. I love the iridescent look of the characters." The pictures had slipped rows baked in, and a row slipped over them every 3.7 s besides.
+- The eleven `images/th/vw-word-*.webp` are made again clean (`tools/vapor/word.py`: no slips unless a seventh argument asks; an output ending `.webp` is saved at half size). The fill, bevel and outline are untouched.
+- `word()` in `fx/vapor.js`: clean; time in spells of 34 s, seven in ten with one glitch of 0.5 to 1.2 s, in steps of an eighth of a second, each with one to three rows slipped (one doubled, pink and cyan), one step in five clean. None in a visit's first 12 s; none with Animation off. Seeded from when the visit began. (This file's `rnd()` gives small first numbers from small seeds: seed it through `hash()`, as here, or the first draws all come out low.)
+
+**The seams ("fix the weird seams around the pillars and some other rendered items")**. Three causes, all found by raising the contrast on the owner's two screenshots:
+- **The marble.** Poly Haven's `marble_01` is a photograph of a wall of marble blocks: its joints drew a grid up the columns and across the steps, each block a different tone. `tools/vapor/marble.py` (new) makes one unbroken, repeating marble from the insides of the blocks; `props.js` `marble()` reads it. Home's columns and the staircase are rendered again.
+- **The moon on the water** was a plain rectangle of light drawn in code: its sides stood on the water as upright lines beside the column. Now a soft path (`glint()` in `fx/vapor.js`).
+- **Shadows cut off at the picture's edge.** A group is cut from the 2880-wide picture it was rendered in; where its shadow ran out of that picture it stopped dead, and on a wide screen the page stands the group away from the edge, so the cut showed (the broken column's shadow in light and dark, the pyramid's at dusk, a faint shade at the left of four more). `tools/vapor/pack.py` now feathers a group towards such a side. Every group's left and right edges now end at an alpha of 4 or less.
+- **Files:** 18 of `images/th/vw-*.webp` changed (home left, right, phone; stairs right, phone; and, feathered only, cal right, solids left and right, tt left; each in l and d); the plates and the rest are byte-identical (md5 checked before and after). `META` in `fx/vapor.js` rewritten by `ship.py`.
+
+**The staircase.** Mid-turn: "also the staircase top stair seems to be misaligned." The steps were placed in the world's frame from a point that was not the landing's, so the top one sat half a rise under the landing and off to one side of the line the others came down. `tools/vapor/scenes.js`: the flight is now set out from the landing in the doorway's own frame, the landing being its first step: every step one rise down, one run out and the same way along.
+
+**Windows ("try putting the timetable and some other things inside their own windows 95 style window, instead of leaving them floating")**. CSS only, at the end of `skins/vapor.css`; no page's markup changed. Where a heading is followed by what it heads, the heading is drawn as the title bar and the next box as the body, each with its own part of the frame (`--win-top`, `--win-mid`, `--win-foot`).
+- The timetable: a window of its own under the header's, titled Timetable; the week's switch is its toolbar; the grid stands on a sunk white ground (`.grid::before`); on a phone the day buttons are part of it.
+- Games and Revision: a window a section, the section's name in the title bar (Play with your year, Multiplayer, Arcade, Study, Practice, Leaderboards); the year's buttons and the "Go to practice" link become a toolbar row.
+- Home: the page tiles and today's games in a window (Programs), the forum in another. The poll is left as it is: it is a panel already, and it has too many states (minimised, staged, the reel of past polls) to restyle safely.
+- The Theme finder: one window, as the Calendar and the rest already were.
+- Checked at 1920 x 1080 in light and dark, 3440 x 1235, and a 390-wide phone.
+
+**Their hotel.** "ok ill model the hotel myself in blender." `models/synth/cinema.blend` is in the working tree, untracked: theirs, in progress, not touched. What the loader needs is in 8.170.
+
+**Seen, not fixed:** on a phone, a game tile whose name runs to two lines (Daily Guess Who, Whose Timetable?, Hong Kong Mahjong) has its second line cut off in Vaporwave. It was so before the windows (measured both ways) and is so in the released theme too. Flagged to the owner as a separate job.
+
+## 8.172 Vaporwave's windows centred again, messages edited, the Theme finder in windows; Synthwave's street rebuilt round the owner's own model (version `20261121o`, `CACHE_VERSION` v93)
+The owner on 8.171: "Much better, I'm very happy with vaporwave now. Only a few things, then a decent chunk of work for synthwave." Nothing here is committed. HEAD is still `bb04193` at `20261121m`; 8.168 to 8.172 all go out together.
+
+**The version is bumped (`20261121o`, v93) although `n` was never committed.** The service worker serves scripts and styles from its cache and refreshes them in the background, so whoever reviews a local build sees each change one visit late. The owner had asked for a Theme finder window that 8.171 had already built: most likely they were shown the stylesheet from before it. A new version empties that cache. Both peer sessions were told; the next free version is `20261121p` / v94.
+
+**Vaporwave (moderators only)**
+- "It might be better to recentre the windows in vaporwave, its a bit jarring when you change pages and the window suddenly moves, and its generally uncomfortable to look at." 8.162's off-centre windows are gone: `PAGE_LAY` has no `shift`, and the `html[data-vw-shift]` rules are out of `skins/vapor.css`. Every page's window is in the middle.
+  - Home has a column in each margin and its word beside the window. The right-hand column now stands out past the word (`ARR.home.clear`, and `wordPlan()` in `fx/vapor.js`, which works out where the word goes before anything is drawn). On a screen whose margin can't hold both (a 1536-wide laptop) the word gives way.
+- The messages (`fx/vapor-entity.js`):
+  - "Remove the 'your subscription to summer 1998 has expired' and replace it with your subscription to MSC Unofficial": `renew` now says "Your subscription to MSC Unofficial has expired." (title Subscription).
+  - "Remove the 'it wasn't actually' and 'some of them came back anyway' follow ups": `over-2` and `delete-allow` are out. Two follow-ups are left (`leave-back`, `wonder-no`). The file's note on voice now says a follow-up that explains or softens the first message spoils it.
+  - "Readd the notes that type themselves but make them less corny. I like the one where it says something along the lines of 'remember to' and then blank": four notes, each left unfinished: `remember to`; `things to remember: 1. 2. 3. where i put the`; `to do: 1. reply 2.`; `hey / hey, sorry / never mind`.
+  - "The defragmenter, copying and dial up also works": back as they were. "'Opaline OS is still running' works ok": back, without its follow-up.
+  - A job found waiting shows where it ended (its bar full, its last line), not its start.
+  - 48 messages now.
+- "The theme finder could maybe do with a window to match the other pages": it was one window for the whole page (8.171). Now as Games is: its heading, note and two switches are one window; each group of themes is a window with the group's name in the title bar; the original themes, folded, are a window that is only its title bar until opened.
+- "The staircase could be moved slightly to be less obstructed": it ran off diagonally under the page's window. `tools/vapor/scenes.js` `ALONG` is 0: a straight flight, square to the doorway, coming down towards us inside the margin. `vw-stairs-right-{l,d}` and `vw-stairs-phone-{l,d}` rendered again (the only four images that changed; md5 checked).
+
+**Synthwave's street (`kind === 'street'`: Calendar, Free periods, Revision), moderators only**
+The owner modelled the scene themselves: `models/synth/cinema.blend` (theirs; untracked; not touched), open in Blender with the MCP add-on listening on localhost:9876. Their words: "its pretty bare bones": the cinema (a round stepped canopy with neon rings, a tower and fin, CINEMA in letters round the canopy), a block for the video store, a box where the car goes, raised blocks for pavements, a rough camera. "Use the second reference image strongly, that is the visual direction I'm going for" (the wet street with the cinema, the record shop and the parked car). "I'm changing the cinema and some other things later to keep it different."
+- **How the model gets to the site.** `tools/synth/cinema.py` (new) reads a glTF export of it and writes `models/synth/cinema.glb` (175 KB): the parts by what they are (`building`, `structure`, `glass`, `letters`, `neon <colour>`, `sidewalk`), and a layout in the file's extras (`parseGlb` hands it over as `M.$`): the car's box, the shop's box, the ground's extent, each pane of glass, the building's front wall, where the neon is, the sign's lines, the model's camera. `tools/synth/README.md` has the table of names that matter and the three steps to update. I read and exported through the add-on only; their file was not saved or changed.
+- **Nothing in the page knows the model's shapes**, so they can change it: `fx/synth.js` dresses the parts by name and places everything else from the layout.
+- **The sign.** "I wanted the CINEMA sign to actually look like neon tubes wrapped in the shape of the letters ... with the current letters I have becoming a black holder." The letters are an Art Deco face: heavy blocks and hairlines. `cinema.py` unrolls them (they follow the canopy's curve), draws their faces, and traces two kinds of line: round each heavy stroke, set in 4.5 cm from its edge; down the middle of each hairline (thinned, then walked end to end). Corners become short bends. The page makes the tubes (`tubeAlong`). The letters are black.
+- **The neon lights what is near it** in the shader (`glowLit`): rings of light and points, from the layout, so the canopy's steps each take their ring's colour. Real lights for a dozen tubes would cost too much; there are five real ones (lobby, under the canopy, forecourt, shop, the tall street light).
+- **What the page adds:** the wet ground (one mirror: road, forecourt and paving alike; the model's raised strip of road is drawn flat); a lit lobby behind the glass, with frames on the panes; the video shop built on its box (brick, pink neon, tall windows, a lit shop with shelves of tapes, two stands and a counter seen through its window and door, "Video rental" in blue script, "OPEN late": our wording, as before); our wedge in the car's place; a tall street light by the car's tail and plain ones up the street and along the water; a rail at the water's edge; palms; the city and the sun as in 8.170. The sun stands at the street's vanishing point.
+- **The park** ("some kind of park like/grassy area off to the left ... really just be there to fill the space on widescreen monitors"): it starts at the model's left-hand end, so an ordinary screen doesn't see it; between it and the street is the same wet paving.
+- **The camera** ("definitely not final ... It needs to be below the roof of the cinema so the neon is visible"): where theirs is, but 2.5 m up (theirs is 3.7), turned 14.5 degrees right of the street (17 on a very wide screen; theirs is 26), a 25.5 degree lens. That puts the sun in the left margin and the cinema in the right, with the page's window between. A phone stands nearer and looks at the cinema.
+- **Things the owner should know about their model:** several meshes are inside out (the building, the pavements, the glass); the converter doesn't mind. From the street only "EMA" of CINEMA faces us: the word runs round the far side of the canopy. `Cube.012` is a pavement but isn't named one (it is found by its shape).
+- `.vercelignore` now keeps `models/**/*.blend` off the site: a `.blend` carries the folder paths of the computer it was made on.
+- Stills: `street-night` and `street-night-p` made again.
+- Checked: bare at 1920 x 1080, 3440 x 1235, 1536 x 864 and a phone; behind the Calendar and Revision; the other four Synthwave scenes still load (no errors).
+- The 8.170 street (the brick hotel) is replaced. Its code is in the scratch folder only (`vw/street4-full.js.txt`); it was never committed.
+
+## 8.173 Synthwave's street: a plaza inside the left-hand pavement's L (version `20261121p`, `CACHE_VERSION` v94)
+
+The owner (2026-11-23), after 8.172: "Looks really good. Only one change: I think the left side looks a bit unfinished, could you make it look more like a wet, reflective concrete plaza? Add some subtle tiling and bollards to fill it out a bit more. A simple bench or something might also help. It would go inside that L shaped strip of pavement under the city in the composition". Not committed by Claude.
+
+- **Where:** the left-hand pavement in the model is one L (a strip along the street, an arm along the waterfront road). The plaza is the ground inside it: from the strip's inner edge (`plX`) left to the model's end (`parkX`), and from the arm's near edge (`parkZ`) back past where we stand. All three come from `layout.walks`, so they follow the model if it changes.
+- **The paving is in the ground's own shader** (`STREET` in `fx/synth.js`: uniforms `uPlaza` x0, z0, x1, z1; `uPave` the concrete's colour; `uTile` the slab, 1.2 m). The ground stays the one wet mirror. Inside `uPlaza` it is paler, wet all over, each slab slightly different (how wet, and how level: the reflection steps a little from slab to slab), with thin dark joints. The joints are averaged over the pixel (a box filter), so distant rows fade out instead of crawling. A scene that sets no `uPlaza` has no plaza.
+- **Bollards:** dark posts with a band of warm light under the cap, half a slab in from each kerb, every second slab: four along the far kerb, a row along the street-side kerb. Two instanced meshes and one mesh of light patches (`pools`).
+- **The bench:** slats on two iron ends, facing the bay with its back to us, placed where the sun lies on the slabs (in the left margin on both an ordinary and a very wide screen).
+- **The park's edge:** a low wall of the plaza's concrete with the hedge behind it (it was a bare black hedge), and the path's small lights moved nearer so the first shows on a very wide screen.
+- Tuned down after the first render: slab-to-slab variation, joint darkness and the bollards' brightness (the owner asked for subtle).
+- Stills: `street-night` made again; `street-night-p` came out identical (a phone doesn't see the plaza).
+- Checked: bare at 3440 x 1235, 2560 x 1305, 1920 x 1080, 1536 x 864, 1366 x 768, 1024 x 768, 820 x 1180 and a phone; behind the Calendar at 1920 and 3440; five live frames compared (the joints and bollards hold still; only the sun's bands and the fronds move, as before); the other Synthwave scenes, a Vaporwave page, Plain, and a non-moderator page load with no errors.
+- **Seen, not changed:** on a tall tablet (820 x 1180) the far street lamp's lens mirrors in the road as six short dashes (the road's six-sample smear, there since 8.172; small bright things show the samples).
+
+## 8.174 Synthwave: the scenes change pages (version `20261121q`, `CACHE_VERSION` v95)
+
+The owner (2026-11-23): "make the new cinema scene the homepage and the road seen the games page. The current games page is really good so it can be moved somewhere else." Not committed by Claude.
+
+- Home: the cinema's street (it is also what any unlisted page gets). Games: the road and the car. Calendar, Free periods, Revision and the Student finder: the pyramid. Timetable (bay) and Notes, Resources, Mahjong (shore) are as they were.
+- Changed in the three places the pairing lives: `PAGE` in `fx/synth.js`, the stills' rules in `skins/synth.css`, `SCENES` in `tools/synth/stills.mjs`. The still pictures are named by scene, so none were remade.
+- Home's page no longer moves left on a wide screen (that was to clear the road). Games is not moved: its page is wider than Home's and the old rule assumed Home's width. The road scene still sets its own picture to the right (`look.shift`).
+- Checked: Home, Games and Calendar load their new scenes with no errors at 1920 x 1080.
+

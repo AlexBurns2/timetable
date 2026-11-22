@@ -16,3 +16,8 @@ tools
 # them in their metadata, and no page uses them (the PNG and SVG exports are
 # what the site shows).
 images/*.ai
+
+# 3D source files: a .blend carries the folder paths of the computer it was
+# made on, and the site loads only the .glb made from it (tools/synth/cinema.py).
+models/**/*.blend
+models/**/*.blend1

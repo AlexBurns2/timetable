@@ -39,12 +39,12 @@ const PAGE = { timetable:'drive', home:'ruins', calendar:'pyramids', notes:'pyra
 const root = document.documentElement;
 const NEXT = (() => { try { return localStorage.getItem('msc.ismod') === '1'; } catch { return false; } })();
 if (NEXT) root.classList.add('vw-next');
-/* Each page's own arrangement in the reworked theme. On a wide screen its window stands off centre (shift: skins/vapor.css moves it, by
-   html[data-vw-shift]; the timetable is too wide to) and the scene's main thing takes the bigger margin. Its word (the page's name, in
-   Japanese, in big vertical type) stands in the margin named: 'l', 'r', or 'in', just right of the window, where that margin is the big one. */
-const PAGE_LAY = { timetable:{ word:'r' }, home:{ shift:'l', word:'in' }, calendar:{ shift:'l', word:'l' }, notes:{ shift:'l', word:'l' }, games:{ shift:'l', word:'l' },
-                   finder:{ shift:'l', word:'l' }, free:{ shift:'l', word:'l' }, revision:{ shift:'l', word:'l' }, resources:{ shift:'l', word:'l' }, mahjong:{ shift:'l', word:'l' }, themes:{ shift:'l', word:'l' } };
-if (NEXT){ const pl = PAGE_LAY[root.getAttribute('data-pg') || FX.page || '']; if (pl && pl.shift) root.setAttribute('data-vw-shift', pl.shift); }
+/* Each page's own arrangement in the reworked theme. Every page's window stands in the middle of the screen. (For a while each stood
+   off centre on a wide screen, with the scene's main thing in the bigger margin: the owner found it jarring that the window moved from
+   page to page, and uncomfortable to look at.) Its word (the page's name, in Japanese, in big vertical type) stands in the margin
+   named: 'l', 'r', or 'in', just right of the window (Home's: both its margins have a column, and the right-hand one moves over for it). */
+const PAGE_LAY = { timetable:{ word:'r' }, home:{ word:'in' }, calendar:{ word:'l' }, notes:{ word:'l' }, games:{ word:'l' },
+                   finder:{ word:'l' }, free:{ word:'l' }, revision:{ word:'l' }, resources:{ word:'l' }, mahjong:{ word:'l' }, themes:{ word:'l' } };
 
 FX.scenes.vapor = {
   dpr:NEXT ? 1.5 : 1, maxPx:NEXT ? 6.2e6 : 2.1e6, fps:30,      /* the reworked scenes are still pictures, cheap to draw: at a big window's own pixels, not stretched up to it */
@@ -331,7 +331,7 @@ FX.scenes.vapor = {
    stands out at the sides of the page's column (measured, not guessed);
    a phone gets the whole picture framed for a tall screen. Drawn here in
    code: only the soft sun and the haze at the horizon. (The Windows 95
-   windows are the visitors, further down: real windows, not pictures.)
+   windows are the messages, further down: real windows, not pictures.)
 
      page               scene    rendered
      timetable          tt       a great marble head (a photograph) on the floor, looking into the page, against the sun;
@@ -349,17 +349,17 @@ FX.scenes.vapor = {
 const PAGE_N = { timetable:'tt', home:'home', calendar:'cal', notes:'notes', games:'planets', finder:'planets',
                  free:'stairs', revision:'stairs', resources:'solids', mahjong:'solids' };
 /* each scene's pictures: the plate's size and horizon; each piece's crop (x, y, w, h) and its foot or centre (ax, ay), in plate pixels, light and dark */
-const META = /*META*/{"cal":{"d":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1056,"y":704,"w":1824,"h":496,"ax":2448,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1454,"y":704,"w":1426,"h":496,"ax":2448,"ay":1080}}},"home":{"d":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2852,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1350,"y":464,"w":1530,"h":736,"ax":2534,"ay":1116}},"l":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2169,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1352,"y":464,"w":1528,"h":736,"ax":2534,"ay":1116}}},"notes":{"d":{"phone":{"W":900,"H":1600,"hy":0.62}},"l":{"phone":{"W":900,"H":1600,"hy":0.62}}},"planets":{"d":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}},"l":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}}},"solids":{"d":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1887,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1731,"y":732,"w":1149,"h":468,"ax":2534,"ay":1080}},"l":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1570,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1780,"y":732,"w":1100,"h":468,"ax":2534,"ay":1080}}},"stairs":{"d":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":1788,"y":321,"w":772,"h":879,"ax":2477,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":1788,"y":321,"w":772,"h":879,"ax":2477,"ay":1080}}},"tt":{"d":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1641,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}},"l":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1336,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}}}};
-/* the scenes' own arrangements: where the sun is; the side the scene fills (busy: the visitors keep to the other); a floor or a picture borrowed
+const META = /*META*/{"cal":{"d":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1056,"y":704,"w":1824,"h":496,"ax":2448,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1454,"y":704,"w":1426,"h":496,"ax":2448,"ay":1080}}},"home":{"d":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2811,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1339,"y":464,"w":1541,"h":736,"ax":2534,"ay":1116}},"l":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":1992,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1401,"y":464,"w":1479,"h":736,"ax":2534,"ay":1116}}},"notes":{"d":{"phone":{"W":900,"H":1600,"hy":0.62}},"l":{"phone":{"W":900,"H":1600,"hy":0.62}}},"planets":{"d":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}},"l":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}}},"solids":{"d":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1887,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1731,"y":732,"w":1149,"h":468,"ax":2534,"ay":1080}},"l":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1570,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1780,"y":732,"w":1100,"h":468,"ax":2534,"ay":1080}}},"stairs":{"d":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":2176,"y":321,"w":384,"h":879,"ax":2477,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":2176,"y":321,"w":384,"h":879,"ax":2477,"ay":1080}}},"tt":{"d":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1641,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}},"l":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1336,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}}}};
+/* the scenes' own arrangements: where the sun is; the side the scene fills (busy: the messages keep to the other); a floor or a picture borrowed
    (base: another scene's plate; panel: a picture laid in the left margin); floating things (each bobs), by the group they belong to or a fraction of the width */
-/* kw: about how wide each group's own thing is (not its shadow), as a fraction of the screen's height, so the visitors can keep off it.
+/* kw: about how wide each group's own thing is (not its shadow), as a fraction of the screen's height, so the messages can keep off it.
    A floating thing's place: a fraction of the width, a group's name, or { s, dx, dy }: the margin (0 left, 1 right) and a nudge from its middle. */
 const ARR = {
   tt:     { sun:'l', busy:'l', floats:[], kw:{ left:.2 } },     /* palms were here, out for now (the owner found them too much): palms:[{ n:'venice', s:'l', dx:-.1, h:.95 }, { n:'canary', s:'r', dx:.06, h:.6, flip:true }] */
   cal:    { sun:'r', busy:'r', floats:[], kw:{ right:.3 } },
   notes:  { sun:'r', busy:'r', base:'cal', panel:'paint', panelSide:'r', floats:[] },
-  home:   { moon:true, floats:[], kw:{ left:.16, right:.14 }, nudge:{ right:.09 } },      /* nudge: a group moved over a little (of the screen's height) where its margin is the big one, to leave the word room */
-  stairs: { busy:'r', cloudFloor:true, floats:[], kw:{ right:.42 } },
+  home:   { moon:true, floats:[], kw:{ left:.16, right:.14 }, clear:'right' },      /* clear: the group that shares its margin with the page's word, and stands out past it (see build) */
+  stairs: { busy:'r', cloudFloor:true, floats:[], kw:{ right:.34 } },
   planets:{ busy:'r', floats:[['moon', { s:1, dx:.2, dy:-.13 }, 12], ['planet', { s:1, dx:0 }, 0]] },
   solids: { busy:'r', floats:[], kw:{ left:.17, right:.24 } }
 };
@@ -465,6 +465,13 @@ function makeNext(canvas, env){
     const g = x.createRadialGradient(cx, cy, R*.6, cx, cy, R*2.1); g.addColorStop(0, rgba(rgb, a)); g.addColorStop(.4, rgba(rgb, a*.4)); g.addColorStop(1, rgba(rgb, 0));
     x.fillStyle = g; x.fillRect(cx - R*2.1, cy - R*2.1, R*4.2, R*4.2);
     const cv = disc(R, top, bot); x.drawImage(cv, cx - cv.width/2, cy - cv.height/2); };
+  /* the moon on the water: a path of light under it, brightest at the horizon and down its middle, fading out to either side and
+     towards us. (It was a plain rectangle of light: its two straight sides stood on the water as upright lines, beside the column.) */
+  const glints = {};
+  const glint = dk => glints[dk] || (glints[dk] = (() => { const c = canvas2(64, 128), g = c.getContext('2d');
+    let gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, dk ? 'rgba(255,240,246,.46)' : 'rgba(255,255,255,.62)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
+    g.globalCompositeOperation = 'destination-in'; gr = g.createLinearGradient(0, 0, 64, 0);
+    [[0, 0], [.14, .06], [.3, .42], [.42, .86], [.5, 1], [.58, .86], [.7, .42], [.86, .06], [1, 0]].forEach(q => gr.addColorStop(q[0], 'rgba(0,0,0,' + q[1] + ')')); g.fillStyle = gr; g.fillRect(0, 0, 64, 128); return c; })());
   const breathe = () => .94;                        /* the haze used to swell and fade; on a smooth sky its bands of colour crept as it did, so it holds still */
   /* palms: photographs of real palms against the sky, cut to their silhouettes (tools/vapor/palms.py), standing far off at the horizon
      and washed out pale by the haze; tinted here, once a size, from the top of the tree to its foot */
@@ -500,8 +507,10 @@ function makeNext(canvas, env){
     if (ok(pl)){ const w = pmm.W*L.s, k = Math.max(1, W/w); g.drawImage(pl, W/2 - w*k/2, L.hy - pmm.hy*pmm.H*L.s*k, w*k, pmm.H*L.s*k); }
     keep = [];
     for (const p of ['left', 'right']){ const m = meta(p, dk), im = m && piece(p, dk); if (!m || !ok(im)) continue;
-      const big = (p === 'left' ? col.l : W - col.r) > U*.5, ax = side(m.ax/m.W, U) + (big ? ((A.nudge || {})[p] || 0)*U : 0); g.drawImage(im, ax - (m.ax - m.x)*L.s, m.y*L.s, m.w*L.s, m.h*L.s);
-      const kw = ((A.kw || {})[p] || .2)*U; keep.push([ax - kw/2, m.y*L.s, kw, (m.ay - m.y)*L.s + U*.03]); }
+      const kw = ((A.kw || {})[p] || .2)*U, wp = A.clear === p ? wordPlan() : null; let ax = side(m.ax/m.W, U);
+      if (wp) ax = Math.min(W - kw*.75, Math.max(ax, wp.x0 + wp.w + kw*.5 + U*.02));        /* past the word, which is beside the window (never off the screen: the word gives way instead, see wordPlan) */
+      g.drawImage(im, ax - (m.ax - m.x)*L.s, m.y*L.s, m.w*L.s, m.h*L.s);
+      keep.push([ax - kw/2, m.y*L.s, kw, (m.ay - m.y)*L.s + U*.03]); }
     if (A.panel){ const im = pic('vw-' + scene + '-' + A.panel + '-' + (dk ? 'd' : 'l')), right = A.panelSide === 'r', room = (right ? W - col.r : col.l) - U*.05;
       if (ok(im) && room >= 220*px()){ const w = Math.min(room, U*.5), h = w*im.naturalHeight/im.naturalWidth, x0 = right ? col.r + (W - col.r - w)/2 : (col.l - w)/2, y0 = Math.max(H*.08, L.hy*.5 - h*.55);
         g.save(); g.shadowColor = dk ? 'rgba(12,14,40,.45)' : 'rgba(70,44,130,.26)'; g.shadowBlur = U*.03; g.shadowOffsetX = U*.012; g.shadowOffsetY = U*.02;
@@ -514,32 +523,51 @@ function makeNext(canvas, env){
     g.putImageData(d, 0, 0); return c; })();
   let grainPat = null;
   const grain = dk => { grainPat = grainPat || x.createPattern(grainCv, 'repeat'); if (!grainPat) return; x.globalAlpha = dk ? .7 : .55; x.fillStyle = grainPat; x.fillRect(0, 0, W, H); x.globalAlpha = 1; };
-  /* the page's word (tools/vapor/word.py): big vertical type in the margin beside the window. Its glitch is alive, a little: every few
-     seconds a row of the type somewhere slips sideways (as the rows slipped in the picture itself have), holds a moment, sometimes
-     jumps across once, and snaps back. One row at a time, small and brief, a step and never a slide; none with Animation off. (A pale
-     glint passing down the word stood here before: the owner had asked for the glitch itself to move.) The word is drawn on a canvas
-     of its own, wider than the picture, so a slipped row is never cut off at its edge. */
-  let wordCv = null, wordKey = '', wordBox = null;
-  const word = (t, dk) => { wordBox = null; const sd = PL.word; if (!sd || lay.tall) return;
-    const im = pic('vw-word-' + page); if (!ok(im)) return;
-    const room = sd === 'l' ? col.l : W - col.r; if (room < 170*px()) return;
+  /* the page's word (tools/vapor/word.py): big vertical type in the margin beside the window. It stands clean. Now and then it
+     glitches for a moment: for about a second a few rows of the type slip sideways, a different few every eighth of a second
+     (one of them doubled, its colours parted into a pink and a cyan ghost; here and there a step where it comes right), and then it
+     is clean again. Steps, never slides; small; and none at all with Animation off. (The pictures used to have slipped rows of
+     their own, still ones, and a row slipped over them every few seconds besides: the owner found the two together looked wrong,
+     and asked for it "unglitched by default", glitching only occasionally.) The word is drawn on a canvas of its own, wider than
+     the picture, so a slipped row is never cut off at its edge; it is drawn again only when what it shows changes. */
+  let wordCv = null, wordKey = '', wordBox = null, wordGl = '', tintCv = null;
+  const VISIT = Math.floor((Date.now() - (FX.now ? FX.now() : 0)*1000)/1000 + .25) % 9973;      // a number for this visit (when its clock started)
+  const ghost = (g, im, yb, hb, sc, w, gx, tint) => { tintCv = tintCv || canvas2(2, 2); tintCv.width = w; tintCv.height = hb; const q = tintCv.getContext('2d');
+    q.drawImage(im, 0, yb*sc, im.naturalWidth, hb*sc, 0, 0, w, hb); q.globalCompositeOperation = 'source-in'; q.fillStyle = tint; q.fillRect(0, 0, w, hb);
+    g.globalAlpha = .45; g.drawImage(tintCv, gx, yb); g.globalAlpha = 1; };
+  /* where the word goes, and how big: worked out apart from drawing it, because a group that shares its margin stands clear of it (build) */
+  const wordPlan = () => { const sd = PL.word; if (!sd || !lay || lay.tall || !col) return null;
+    const im = pic('vw-word-' + page); if (!ok(im)) return null;
+    const room = sd === 'l' ? col.l : W - col.r; if (room < 170*px()) return null;
     /* Every page's word is set in the same size of type: the pictures are all made at 220 px a character, and all shown at one scale, which
        the screen sets (about an eighth of its height a character, less if the longest word, five characters, would not fit). So a short
        word is shorter, not bigger. Only a margin too narrow for it makes one smaller. */
     const top = H*.09; let k = Math.min(U*.135, H*.72/5.27)/220; if (im.naturalWidth*k > room*.94) k = room*.94/im.naturalWidth;
     const w = Math.round(im.naturalWidth*k), h = Math.round(im.naturalHeight*k);
+    if (A.clear && room < w + ((A.kw || {})[A.clear] || .2)*U*1.25 + U*.07) return null;      /* a margin too narrow for the word and the thing in it: the thing stays, the word goes */
     const x0 = Math.round(sd === 'l' ? Math.max(side(0, U), col.l - U*.24) - w/2 : sd === 'r' ? Math.min(side(1, U), col.r + U*.24) - w/2 : col.r + U*.03), y0 = Math.round(top);
+    return { im, k, w, h, x0, y0 }; };
+  const word = (t, dk) => { wordBox = null; const wp = wordPlan(); if (!wp) return;
+    const im = wp.im, k = wp.k, w = wp.w, h = wp.h, x0 = wp.x0, y0 = wp.y0;
     const G = 220*k, pad = Math.ceil(G*.2);                                   // a character's size on the screen; room either side for a slipped row
-    const wk = [w, h, gen].join(); if (wk !== wordKey || !wordCv){ wordKey = wk; wordCv = wordCv || canvas2(2, 2); wordCv.width = w + 2*pad; wordCv.height = h; }
-    const g = wordCv.getContext('2d'); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, w + 2*pad, h); g.imageSmoothingQuality = 'high'; g.drawImage(im, pad, 0, w, h);
-    if (e.animate){                                                           /* the slip: time in spells of 3.7 s, each with (four times in five) one slip, made from the spell's number so it is the same on every frame of it */
-      const P = 3.7, n = Math.floor(t/P), u = t - n*P, r = rnd(n*7919 + 101);
-      const t0 = .2 + r()*1.4, hold = .3 + r()*1.1, yb = Math.round((.04 + r()*.9)*h), hb = Math.max(3, Math.round((.035 + r()*.07)*G)), dir = r() < .5 ? -1 : 1, amp = (.05 + r()*.08)*G,
-            turn = r() < .45 ? .45 + r()*.3 : 2, back = .35 + r()*.4, none = r() < .2;       // (the same sizes as the slips in the picture: tools/vapor/word.py)
-      if (!none && u >= t0 && u < t0 + hold){ const q = (u - t0)/hold, dx = Math.round(dir*amp*(u - t0 < .06 ? 1.45 : q > turn ? -back : 1)), sc = im.naturalHeight/h;      // it overshoots for an instant as it tears
-        g.clearRect(0, yb, w + 2*pad, hb); g.drawImage(im, 0, yb*sc, im.naturalWidth, hb*sc, pad + dx, yb, w, hb); } }
+    /* when: time runs in spells of 34 s; seven in ten have one glitch, somewhere in the spell, half a second to a little over one
+       long (and none in a visit's first twelve seconds). Everything about it is made from the spell's number and the step's, so
+       every frame of a step shows the same thing; and from when the visit began, so no two visits glitch at the same moments. */
+    let gl = '';
+    if (e.animate && t > 12){ const SP = 34, n = Math.floor(t/SP), u = t - n*SP, r = rnd(1 + hash(n, VISIT)*4294967294), t0 = 3 + r()*(SP - 6), len = .5 + r()*.7;
+      if (r() < .7 && u >= t0 && u < t0 + len) gl = n + '.' + Math.floor((u - t0)/.125); }
+    const wk = [w, h, gen].join();
+    if (wk !== wordKey || gl !== wordGl || !wordCv){ wordKey = wk; wordGl = gl; wordCv = wordCv || canvas2(2, 2);
+      if (wordCv.width !== w + 2*pad || wordCv.height !== h){ wordCv.width = w + 2*pad; wordCv.height = h; }
+      const g = wordCv.getContext('2d'); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, w + 2*pad, h); g.imageSmoothingQuality = 'high'; g.drawImage(im, pad, 0, w, h);
+      if (gl){ const q = gl.split('.'), r = rnd(1 + hash(q[0]*31 + VISIT, +q[1])*4294967294), sc = im.naturalHeight/h;       // (seeded through hash: this generator's first numbers from small seeds are all small)
+        if (r() > .2){ const rows = 1 + (r()*3 | 0);                           // (one step in five, it comes right)
+          for (let i = 0; i < rows; i++){ const yb = Math.round((.04 + r()*.9)*h), hb = Math.max(3, Math.round((.035 + r()*.07)*G)), dx = Math.round((r() < .5 ? -1 : 1)*(.05 + r()*.08)*G), two = !i && r() < .6;
+            g.clearRect(0, yb, w + 2*pad, hb);
+            if (two){ const o = Math.round(G*.035); ghost(g, im, yb, hb, sc, w, pad + dx - o, '#ff73cc'); ghost(g, im, yb, hb, sc, w, pad + dx + o, '#66f2ff'); }
+            g.drawImage(im, 0, yb*sc, im.naturalWidth, hb*sc, pad + dx, yb, w, hb); } } } }
     x.drawImage(wordCv, x0 - pad, y0); wordBox = [x0, y0, w, h]; };
-  /* what stands where, in the page's own pixels, for the visitors (they keep off the scene's things and the word) */
+  /* what stands where, in the page's own pixels, for the messages (they keep off the scene's things and the word) */
   let keep = [], fkeep = [];
   const stage = () => { const k = px(), all = keep.concat(fkeep, wordBox ? [wordBox] : []);
     FX.vwStage = { keep:all.map(r => [r[0]/k, r[1]/k, r[2]/k, r[3]/k]), hy:lay.hy/k, tall:!!lay.tall }; };
@@ -561,8 +589,7 @@ function makeNext(canvas, env){
       else if (A.sun === 'l') sun(side(0, Q) + Q*.05, hy - Q*.15, Q*.24, dk ? '#f6b3c4' : '#ffa6cb', dk ? '#d97c9f' : '#ff5c9c', dk ? '236,170,196' : '255,170,210', (dk ? .3 : .34)*breathe(t));
       else if (A.sun === 'r') sun(side(1, Q) + Q*.03, hy - Q*.09, Q*.22, dk ? '#f6b3c4' : '#ffa6cb', dk ? '#d97c9f' : '#ff5c9c', dk ? '236,170,196' : '255,170,210', (dk ? .3 : .34)*breathe(t));
       if (A.moon){ skyBand(hy, dk, t, true);                  /* still water: the sky again, upside down, and the moon on it */
-        const g = x.createLinearGradient(0, hy, 0, H); g.addColorStop(0, dk ? 'rgba(255,240,246,.4)' : 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-        x.fillStyle = g; x.fillRect(side(0, Q) + Q*.08 - U*.08, hy, U*.16, H - hy); }
+        x.drawImage(glint(dk), side(0, Q) + Q*.08 - U*.15, hy, U*.3, H - hy); }
       if (A.cloudFloor){ skyBand(hy, dk, t*.6, true);                /* a floor of cloud: the sky's photograph again, upside down, under a veil */
         const g = x.createLinearGradient(0, hy, 0, H); g.addColorStop(0, rgba(HAZE(dk), .55)); g.addColorStop(1, rgba(HAZE(dk), .18)); x.fillStyle = g; x.fillRect(0, hy, W, H - hy); }
       palms(hy, dk);
@@ -579,40 +606,43 @@ function makeNext(canvas, env){
   };
 }
 /* ═══════════════════════════════════════════════════════════════════
-   The visitors (moderators only, with the rest of NEXT).
+   The messages (moderators only, with the rest of NEXT).
 
-   Windows 95 windows that turn up in the margins beside the page, as if
-   something in the machine were keeping itself busy, and now and then
-   trying to say something. Who comes, what they say and how often is
-   fx/vapor-entity.js, a list written to be edited; this is how they
-   behave.
+   Now and then a Windows 95 message box turns up in the margin beside
+   the page. What they say and how often is fx/vapor-entity.js, a list
+   written to be edited; this is how they behave.
+     · Rarely. Three or four in a day for somebody who uses the site a
+       lot; one, perhaps, for somebody who looks in once or twice. Most
+       are found waiting when you come back after a while away (the tab
+       hidden, or the site closed, for twenty minutes or more), as if
+       they had come while you were gone: simply there, their words
+       written. A few arrive in front of you, in a glitch (bands
+       slipping, the colours parting), their words typing themselves.
+       (They used to be about most of the time, one or two at once: the
+       owner found that far too many.)
      · Real windows, above the scene and below the site's own sheets and
        notes, dragged by the title bar. They stand in the page's places:
        the corners and middles of the margins, clear of the page's
-       column, the scene's things, the page's word and the taskbar.
-     · On a screen with margins somebody is usually about: one window,
-       sometimes two, never more; a short pause between one going and
-       the next coming. Most are passing windows (a note typing itself,
-       something playing, a job that takes its time); some are the
-       conversations, with their follow-ups hours later. On a narrow
-       screen none of that: one small window in a bottom corner, rarely,
-       and never on the timetable.
-     · They arrive and leave in a glitch (bands slipping, the colours
-       parting, a last bright line). Their words type themselves. When a
-       window's time is up another pointer, not yours, comes and presses
-       its X; a hung program is dragged off by it, leaving copies of
-       itself behind. A shy one goes when your pointer comes near.
+       column, the scene's things, the page's word and the taskbar. On a
+       narrow screen: one small window in a bottom corner, and never on
+       the timetable.
+     · One that isn't answered stays a few minutes, and is there again
+       on the next page you open, where it was. When its time is up
+       another pointer, not yours, comes and presses its X; a hung
+       program is dragged off by it, leaving copies of itself behind.
      · Not modal: they never take the focus or hold the keyboard. Their
        buttons are buttons; Escape closes the one you're in.
      · Remembered on this device only (msc.vwent: who came, what you
-       answered, when). Off for good from any window's menu (the icon at
-       the left of its title bar) or from Start (msc.vwent.off).
+       answered, when, and what is open). Off for good from any window's
+       menu (the icon at the left of its title bar) or from Start
+       (msc.vwent.off).
      · Animation off, or Reduce motion: no glitch, no typing, no other
        pointer, nothing moving in them; they come and go at once.
      · Moderators can call one up: ?vwent=<id> (or two: <id>,<id>),
        with &vwlife=<seconds> to see it taken away again; ?vwent=next
-       (whoever would come next), ?vwent=reset (forget everything),
-       ?vwent=on (after "Don't show these").
+       (whoever might come next, arriving); ?vwent=away (the same, found
+       waiting); ?vwent=reset (forget everything); ?vwent=on (after
+       "Don't show these").
    ═══════════════════════════════════════════════════════════════════ */
 const VKEY = 'msc.vwent', VOFF = 'msc.vwent.off';
 const vget = () => { try { const s = JSON.parse(localStorage.getItem(VKEY) || 'null'); return s && typeof s === 'object' ? s : {}; } catch { return {}; } };
@@ -699,19 +729,18 @@ function startVisitors(){
 }
 function visitors(){
   const C = window.VW_ENTITY; if (!C || !Array.isArray(C.events) || !document.body || document.querySelector('.vw-ent')) return;
-  const P = Object.assign({ quietSessions:2, sessionGapMinutes:30, minGapMinutes:100, chancePerPage:.2, maxPerDay:4, callbackChance:.6, rareAfter:5, rareGapHours:72,
-    rareChance:.3, narrowChance:.35, appearAfterSeconds:[3, 9], fadeAfterSeconds:75,
-    firstAfterSeconds:[2, 5], idleSeconds:2, staySeconds:[24, 44], gapSeconds:[5, 12], secondChance:.5, secondAfterSeconds:[12, 28], maxOpen:2, storyChance:.3, typeCps:30 }, C.pace || {});
+  const P = Object.assign({ maxPerDay:4, minGapMinutes:120, awayMinutes:20, awayChance:.5, liveChance:.04, liveAfterSeconds:[20, 90], idleSeconds:2, stayMinutes:[3, 7], repeatAfterDays:14,
+    followUpChance:.7, rareAfter:5, rareGapHours:72, rareChance:.3, phoneChance:.5, phoneStaySeconds:75, typeCps:30, maxOpen:2 }, C.pace || {});
   const EV = {}; C.events.forEach(e => { if (e && e.id) EV[e.id] = e; });
   const PG = root.getAttribute('data-pg') || FX.page || '';
   const q = (() => { try { return new URLSearchParams(location.search).get('vwent'); } catch { return null; } })();
-  if (q === 'reset'){ vput({}); setVoff(false); try { sessionStorage.removeItem('msc.vwamb'); } catch {} } else if (q === 'on') setVoff(false);
+  if (q === 'reset'){ vput({}); setVoff(false); } else if (q === 'on') setVoff(false);
   const preview = q && q !== 'reset' && q !== 'on' ? q : null;
   const lifeQ = (() => { try { return Math.max(0, +new URLSearchParams(location.search).get('vwlife') || 0); } catch { return 0; } })();      /* with ?vwent=<id>: &vwlife=<seconds> before the other pointer comes for it (else it stays) */
-  /* a session: coming back after a while away */
-  const t0 = Date.now();
-  vupd(s => { if (!s.first) s.first = t0; if (!s.active || t0 - s.active > P.sessionGapMinutes*6e4) s.sessions = (s.sessions || 0) + 1; s.active = t0; });
-  setInterval(() => { if (!document.hidden) vupd(s => { s.active = Date.now(); }); }, 3e5);
+  /* when the site was last looked at, on any of its pages: what tells coming back after a while from clicking through to another page */
+  const t0 = Date.now(), lastSeen = vget().active || 0;
+  const touch = () => vupd(s => { if (!s.first) s.first = t0; s.active = Date.now(); });
+  touch(); setInterval(() => { if (!document.hidden) touch(); }, 6e4); addEventListener('pagehide', touch);
 
   const layer = document.createElement('div'); layer.className = 'vw-ent'; document.body.appendChild(layer);
   const sync = () => { layer.hidden = root.getAttribute('data-skin') !== 'vapor'; }; sync(); addEventListener('tt:look', sync);
@@ -724,7 +753,7 @@ function visitors(){
 
   /* ── the stage: where a window may stand. In the margins beside the page's column, never over the column, the scene's things, the
         page's word, the taskbar or another window. Each margin offers its corners and its middle; the best three that are free are
-        the page's places. (On a narrow screen there are no margins: one small window, in a bottom corner, as before.) ── */
+        the page's places. (On a narrow screen there are no margins: one small window, in a bottom corner.) ── */
   const M = 10, SIZE = { dialog:[196, 300], explorer:[250, 320], list:[240, 310], web:[230, 300], sunrise:[180, 220], notepad:[216, 300], player:[212, 250], progress:[216, 300] };
   const colNow = () => { const w = document.querySelector('.wrap'); if (w && w.offsetWidth){ const b = w.getBoundingClientRect(); return { l:b.left, r:b.right }; }
     const mw = Math.min(innerWidth, 1040); return { l:(innerWidth - mw)/2, r:(innerWidth + mw)/2 }; };
@@ -748,36 +777,26 @@ function visitors(){
   const narrowSpot = c => { const w = Math.round(Math.min(250, innerWidth - 2*M)); c.win.style.width = w + 'px'; const h = c.win.offsetHeight; return [M, innerWidth - w - M].map(x => ({ x, y:Math.max(M, innerHeight - h - M), w })); };
   const inView = (p, w, h) => p[0] >= 0 && p[1] >= 0 && p[0] + w <= innerWidth && p[1] + h <= innerHeight;
 
-  /* ── who comes next ── */
+  /* ── who comes next: a follow-up that is due; or else one that hasn't been seen (or not for a good while), by its weight ── */
   const named = ev => /\{NAME\}/.test(JSON.stringify(ev));
+  const fits = ev => { const k = ev.kind || 'dialog'; return wide() ? canFit(k) : k === 'dialog' && !ev.smear && PG !== 'timetable'; };
   const onPage = ev => !(ev.pages && ev.pages.indexOf(PG) < 0) && !(ev.notOn && ev.notOn.indexOf(PG) >= 0) && !(named(ev) && dosName() === 'USER');
-  const eligible = (ev, s, t, ign, narrow) => {
+  const inHours = ev => { if (!ev.hours) return true; const h = new Date().getHours(), a = ev.hours[0], b = ev.hours[1]; return a <= b ? h >= a && h < b : h >= a || h < b; };
+  const eligible = (ev, s, t, ign) => {
+    if (ev.hidden || !onPage(ev) || !fits(ev)) return false;
     const seen = s.seen[ev.id];
-    if (seen && !(ev.again && t - seen.at > ev.again*864e5)) return false;
-    if (!onPage(ev)) return false;
-    if (narrow ? (ev.kind || 'dialog') !== 'dialog' || PG === 'timetable' : !canFit(ev.kind || 'dialog')) return false;
-    if (ev.after){ const p = s.seen[ev.after.id]; if (!p) return false; if (ev.after.button && p.b !== ev.after.button) return false;
-      if (!ign){ const h = (t - p.at)/36e5; if (h < (ev.after.minHours == null ? 1 : ev.after.minHours) || h > (ev.after.maxHours || 20)) return false; } }
-    if (ev.rare && !ign && ((s.count || 0) < P.rareAfter || (s.rareLast && t - s.rareLast < P.rareGapHours*36e5) || Math.random() >= P.rareChance)) return false;
+    if (ev.after){ const p = s.seen[ev.after.id]; if (!p || (seen && seen.at >= p.at)) return false; if (ev.after.button && p.b !== ev.after.button) return false;
+      if (!ign){ const h = (t - p.at)/36e5; if (h < (ev.after.minHours == null ? 1 : ev.after.minHours) || h > (ev.after.maxHours || 20)) return false; }
+      return true; }
+    if (ign) return true;
+    if (seen && t - seen.at < (ev.again == null ? P.repeatAfterDays : ev.again)*864e5) return false;
+    if (!inHours(ev)) return false;
+    if (ev.rare && ((s.count || 0) < P.rareAfter || (s.rareLast && t - s.rareLast < P.rareGapHours*36e5) || Math.random() >= P.rareChance)) return false;
     return true; };
   const weighted = pool => { let r = Math.random()*pool.reduce((a, e) => a + (e.weight || 1), 0); for (const e of pool){ r -= e.weight || 1; if (r < 0) return e; } return pool[0]; };
-  /* a narrow screen: now and then, as it always was */
-  const pickRare = ign => {
-    const s = vget(), t = Date.now(); s.seen = s.seen || {};
-    if (!ign){ if ((s.sessions || 0) <= P.quietSessions) return null;
-      if (s.last && t - s.last < P.minGapMinutes*6e4) return null;
-      if (s.day === dayOf(t) && (s.dayN || 0) >= P.maxPerDay) return null; }
-    const due = C.events.filter(e => e.after && eligible(e, s, t, ign, true));
-    if (due.length && (ign || Math.random() < P.callbackChance)) return due[0];
-    if (!ign && Math.random() >= P.chancePerPage*P.narrowChance) return null;
-    const pool = C.events.filter(e => !e.after && !e.smear && eligible(e, s, t, ign, true)); return pool.length ? weighted(pool) : null; };
-  /* a screen with margins: a follow-up that's due; or one of the conversations; or one of the passing windows (not one that's just been) */
-  const recent = (() => { try { const a = JSON.parse(sessionStorage.getItem('msc.vwamb') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } })();
-  const remember = id => { recent.push(id); while (recent.length > 7) recent.shift(); try { sessionStorage.setItem('msc.vwamb', JSON.stringify(recent)); } catch {} };
-  const pickNext = () => { const s = vget(), t = Date.now(); s.seen = s.seen || {}; const isOpen = e => openNow().some(o => o.ev.id === e.id);
-    const due = C.events.filter(e => e.after && !isOpen(e) && eligible(e, s, t, false)); if (due.length && Math.random() < P.callbackChance) return due[0];
-    if (Math.random() < P.storyChance){ const pool = C.events.filter(e => !e.after && !e.ambient && !isOpen(e) && eligible(e, s, t, false)); if (pool.length) return weighted(pool); }
-    const amb = C.events.filter(e => e.ambient && !isOpen(e) && recent.indexOf(e.id) < 0 && onPage(e) && canFit(e.kind || 'dialog')); return amb.length ? weighted(amb) : null; };
+  const pick = ign => { const s = vget(), t = Date.now(); s.seen = s.seen || {}; const isOpen = e => openNow().some(o => o.ev.id === e.id);
+    const due = C.events.filter(e => e.after && !isOpen(e) && eligible(e, s, t, ign)); if (due.length && (ign ? Math.random() < .3 : Math.random() < P.followUpChance)) return due[0];
+    const pool = C.events.filter(e => !e.after && !isOpen(e) && eligible(e, s, t, ign)); return pool.length ? weighted(pool) : null; };
 
   /* ── the other pointer: an arrow that isn't yours. When a window's time is up it comes over and presses the X itself; one window
         it takes by the title bar and drags, and the window leaves copies of itself behind, as a hung program's used to. With
@@ -790,7 +809,7 @@ function visitors(){
   const approach = async (tx, ty) => {
     if (!cur || !cur.classList.contains('on') || !curAt){ curSet(tx + (tx > innerWidth/2 ? 1 : -1)*(70 + Math.random()*90), Math.min(innerHeight - 30, ty + 140 + Math.random()*120), 0); void curEl().offsetWidth; cur.classList.add('on'); await wait(160); }
     const d = Math.hypot(tx - curAt[0], ty - curAt[1]); await curGo(tx, ty, Math.round(Math.max(520, Math.min(1300, d*2.6)))); };
-  const ghost = async job => { if (curBusy || instant() || layer.hidden) return false; curBusy = true; try { await job(); } catch {} curBusy = false; return true; };
+  const ghost = async job => { if (curBusy || instant() || layer.hidden || document.hidden) return false; curBusy = true; try { await job(); } catch {} curBusy = false; return true; };
   const ghostClose = c => ghost(async () => { const r = c.bX.getBoundingClientRect(); await approach(r.left + r.width/2 - 3, r.top + r.height/2 - 2); if (c.gone){ curOut(); return; }
     c.bX.classList.add('vw-press'); await wait(150); c.bX.classList.remove('vw-press'); c.leave(null); await wait(650); await curGo(curAt[0] + 22, curAt[1] + 30, 900); curOut(); });
   const stamp = c => { if (c.stamps.length >= 14) return; const k = c.win.cloneNode(true); k.className = k.className.replace(/\b(on|off|vw-drag)\b/g, '') + ' vw-stamp'; k.removeAttribute('role'); k.removeAttribute('aria-label'); k.removeAttribute('aria-describedby'); k.setAttribute('aria-hidden', 'true');
@@ -801,12 +820,16 @@ function visitors(){
     for (let i = 1; i <= 9 && !c.gone; i++){ stamp(c); c.place([Math.max(0, Math.min(innerWidth - r.width, p0[0] + dx*i)), Math.max(0, Math.min(floorY() - 30, p0[1] + dy*i))]); curSet(curAt[0] + dx, curAt[1] + dy, 70); await wait(100); }
     await wait(1300); if (!c.gone) c.leave(null); await wait(500); curOut(); });
 
-  /* ── a window ── */
-  const show = (ev, how) => {
+  /* ── a window. how: 'new' (it arrives in front of you: the glitch, its words typing themselves); 'away' (it is found waiting,
+        as if it had come while you were gone: simply there, its words written); 'again' (it was open on the page you came from:
+        there again, where it was); 'open' (another's button opened it); 'preview' (a moderator called it up). was: where it stood
+        and how long it has left, for 'again' ── */
+  const keepRec = fn => vupd(s => { s.wins = fn(Array.isArray(s.wins) ? s.wins : []); });
+  const show = (ev, how, was) => {
     if (layer.hidden || openNow().length >= P.maxOpen) return null;
-    const kind = ev.kind || 'dialog', roomy = wide();
+    const kind = ev.kind || 'dialog', roomy = wide(), still = how === 'away' || how === 'again' || !!(was && was.still);
     if (roomy ? !canFit(kind) : kind !== 'dialog' || PG === 'timetable') return null;
-    const win = el('div', 'vw-win vw-' + kind + (roomy ? '' : ' vw-small')), uid = 'vw' + Math.random().toString(36).slice(2, 8);
+    const win = el('div', 'vw-win vw-' + kind + (roomy ? '' : ' vw-small') + (still ? ' vw-there' : '')), uid = 'vw' + Math.random().toString(36).slice(2, 8);
     const c = { ev, win, gone:false, stamps:[], pos:null };
     win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', fill(ev.title || 'Message'));
     /* the title bar: the window menu, the name, the caption buttons */
@@ -821,7 +844,7 @@ function visitors(){
     /* words that type themselves: the whole text is there for a screen reader from the start; what's seen arrives a letter at a time */
     const typed = (holder, text, done) => { const sr = el('span', 'vw-sr', text), out = el('span', 'vw-typed'); out.setAttribute('aria-hidden', 'true'); holder.append(sr, out);
       const finish = () => { clearTimeout(typing); typeJob = null; out.textContent = text; if (done) done(); };
-      if (instant() || how === 'again'){ finish(); return out; }
+      if (instant() || still){ finish(); return out; }
       let i = 0; const step = () => { if (c.gone) return; i++; out.textContent = text.slice(0, i); if (i >= text.length){ typeJob = null; if (done) done(); return; }
         const ch = text[i - 1]; typing = setTimeout(step, (ch === '\n' ? 520 : /[.,?:]/.test(ch) ? 240 : 1000/P.typeCps)*(.7 + Math.random()*.6)); };
       typeJob = finish; typing = setTimeout(step, 380); return out; };
@@ -853,7 +876,7 @@ function visitors(){
       const ctl = el('div', 'vw-ctl'); ['Play', 'Pause', 'Stop'].forEach(k => { const b = el('button', 'vw-pb vw-' + k.toLowerCase()); b.type = 'button'; b.setAttribute('aria-label', k); ctl.appendChild(b); }); body.appendChild(ctl);
       const len = ev.length || 213; let sec = Math.min(len - 1, ev.from || 0), playing = true;
       const two = n => (n < 10 ? '0' : '') + n, draw = () => { tm.textContent = two(Math.floor(sec/60)) + ':' + two(sec % 60); knob.style.left = (sec/len*92).toFixed(1) + '%'; };
-      const beat = still => [...bars.children].forEach((b, i) => { b.style.height = (still ? 4 + (i*7) % 13 : 3 + Math.round((.5 + .5*Math.sin(sec*1.7 + i*1.3))*(7 + 12*Math.random()))) + 'px'; });
+      const beat = flat => [...bars.children].forEach((b, i) => { b.style.height = (flat ? 4 + (i*7) % 13 : 3 + Math.round((.5 + .5*Math.sin(sec*1.7 + i*1.3))*(7 + 12*Math.random()))) + 'px'; });
       draw(); beat(true); tick = setInterval(() => { if (!playing) return; sec = (sec + 1) % len; draw(); if (!instant()) beat(false); }, 1000);
       ctl.children[0].addEventListener('click', () => { playing = true; }); ctl.children[1].addEventListener('click', () => { playing = false; }); ctl.children[2].addEventListener('click', () => { playing = false; sec = 0; draw(); beat(true); });
     } else {
@@ -861,11 +884,13 @@ function visitors(){
       msg = el('p'); msg.id = uid + 't'; typed(msg, fill(ev.text)); row.appendChild(msg); body.appendChild(row); win.setAttribute('aria-describedby', msg.id);
       if (kind === 'progress'){                     /* a job that takes its time */
         const well = el('div', 'vw-prog'), bar = el('i'); well.setAttribute('aria-hidden', 'true'); well.appendChild(bar); body.appendChild(well); status = el('div', 'vw-status', ''); body.appendChild(status);
-        const end = ev.stopAt || 100; let pc = Math.min(end, ev.from || 0); const put = () => { bar.style.width = pc + '%'; status.textContent = pc + '%'; };
-        put(); tick = setInterval(() => { pc = Math.min(end, pc + 1 + Math.floor(Math.random()*4)); put(); if (pc >= end){ clearInterval(tick); if (ev.done){ if (typeJob) typeJob(); msg.textContent = fill(ev.done); } } }, 850);
+        const end = ev.stopAt || 100; let pc = still ? end : Math.min(end, ev.from || 0); const put = () => { bar.style.width = pc + '%'; status.textContent = pc + '%'; };
+        const over = () => { if (ev.done){ if (typeJob) typeJob(); msg.textContent = fill(ev.done); } };
+        put(); if (still) over();                 /* one found waiting has got as far as it is going to */
+        else tick = setInterval(() => { pc = Math.min(end, pc + 1 + Math.floor(Math.random()*4)); put(); if (pc >= end){ clearInterval(tick); over(); } }, 850);
       }
     }
-    const btns = el('div', 'vw-btns');
+    const btns = el('div', 'vw-btns' + ((ev.buttons || []).length > 2 ? ' vw-b3' : ''));
     (ev.buttons || []).forEach((bd, i) => { const b = el('button', 'vw-btn' + (i ? '' : ' vw-def'), fill(bd.label)); b.type = 'button'; if (bd.disabled) b.disabled = true; b.addEventListener('click', () => act(bd)); btns.appendChild(b); });
     if ((ev.buttons || []).length) body.appendChild(btns);
     /* the window menu */
@@ -878,28 +903,34 @@ function visitors(){
     /* where */
     let jumps = 0, timer = 0, held = false, lastStamp = null;
     const place = p => { c.pos = p; win.style.left = Math.round(p[0]) + 'px'; win.style.top = Math.round(p[1]) + 'px'; }; c.place = place;
-    const was = how === 'again' && vget().open, sp = roomy ? places(c, kind) : narrowSpot(c);
+    const sp = roomy ? places(c, kind) : narrowSpot(c);
     if (!sp.length){ clearInterval(tick); clearTimeout(typing); win.remove(); return null; }
     const pk = sp[Math.random()*sp.length | 0]; win.style.width = pk.w + 'px';
-    place(was && was.x != null && inView([was.x, was.y], win.offsetWidth, win.offsetHeight) ? [was.x, was.y] : [pk.x, pk.y]);
-    if (instant()) win.classList.add('on'); else requestAnimationFrame(() => requestAnimationFrame(() => win.classList.add('on')));
+    const back = was && was.x != null && inView([was.x, was.y], win.offsetWidth, win.offsetHeight) && (!roomy || free([was.x, was.y, win.offsetWidth, win.offsetHeight], c));
+    place(back ? [was.x, was.y] : [pk.x, pk.y]);                      // (there again where it was, if that place is clear on this page too)
+    if (instant() || still) win.classList.add('on'); else requestAnimationFrame(() => requestAnimationFrame(() => win.classList.add('on')));
     live.push(c);
-    if (ev.ambient) remember(ev.id);
-    else if (how !== 'again') vupd(s => { const t = Date.now(); s.seen[ev.id] = { at:t }; s.last = t; s.count = (s.count || 0) + 1;
-      if (s.day !== dayOf(t)){ s.day = dayOf(t); s.dayN = 0; } s.dayN = (s.dayN || 0) + 1; if (ev.rare) s.rareLast = t; if (ev.stay === 'persist') s.open = { id:ev.id }; });
+    /* how long it stays if nobody answers it: then the other pointer comes and closes it. Meanwhile it is remembered (msc.vwent,
+       wins), so it is there again on the next page you open. One that stays (the Sunrise) stays until it is closed. */
+    const t1 = Date.now();
+    const life = how === 'preview' ? lifeQ*1000 : ev.stay === 'persist' ? 0 : how === 'again' && was && was.until ? Math.max(4000, was.until - t1) : roomy ? rand(P.stayMinutes)*6e4 : P.phoneStaySeconds*1000;
+    if (how === 'new' || how === 'away') vupd(s => { s.seen[ev.id] = { at:t1 }; s.last = t1; s.count = (s.count || 0) + 1;
+      if (s.day !== dayOf(t1)){ s.day = dayOf(t1); s.dayN = 0; } s.dayN = (s.dayN || 0) + 1; if (ev.rare) s.rareLast = t1; });
+    else if (how === 'open') vupd(s => { s.seen[ev.id] = { at:t1 }; });
+    if (how !== 'preview' && how !== 'again') keepRec(w => w.filter(o => o.id !== ev.id).concat([{ id:ev.id, until:life ? t1 + life : 0, x:c.pos[0], y:c.pos[1] }]));
 
     /* going: it breaks up and is gone (the copies it left, if any, go after it, one at a time) */
-    const answer = a => { if (!ev.ambient) vupd(s => { if (s.seen[ev.id]) s.seen[ev.id].b = a; }); };
+    const answer = a => vupd(s => { if (s.seen[ev.id]) s.seen[ev.id].b = a; });
     const leave = a => { if (c.gone) return; c.gone = true; clearTimeout(timer); clearInterval(tick); clearTimeout(typing); if (a != null) answer(a);
-      if (ev.stay === 'persist') vupd(s => { s.open = null; });
-      win.classList.remove('on'); win.classList.add('off');
+      if (how !== 'preview') keepRec(w => w.filter(o => o.id !== ev.id));
+      win.classList.remove('on', 'vw-there'); win.classList.add('off');
       c.stamps.forEach((k, i) => setTimeout(() => k.remove(), instant() ? 0 : 60 + 45*i));
-      const rm = () => { win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); went(); }; if (instant()) rm(); else setTimeout(rm, 520); };
+      const rm = () => { win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); }; if (instant()) rm(); else setTimeout(rm, 520); };
     c.leave = leave;
     const jump = () => { const sp2 = (roomy ? places(c, kind) : narrowSpot(c)).filter(p => Math.hypot(p.x - c.pos[0], p.y - c.pos[1]) > 120); if (!sp2.length) return false;
       const p = sp2[Math.random()*sp2.length | 0];
       if (instant()){ win.style.width = p.w + 'px'; place([p.x, p.y]); return true; }
-      win.classList.remove('on'); win.classList.add('off'); setTimeout(() => { if (c.gone) return; win.style.width = p.w + 'px'; place([p.x, p.y]); win.classList.remove('off'); void win.offsetWidth; win.classList.add('on'); }, 500); return true; };
+      win.classList.remove('on', 'vw-there'); win.classList.add('off'); setTimeout(() => { if (c.gone) return; win.style.width = p.w + 'px'; place([p.x, p.y]); win.classList.remove('off'); void win.offsetWidth; win.classList.add('on'); }, 500); return true; };
     const say = (text, ms) => { if (typeJob) typeJob(); if (msg) msg.textContent = text; else if (status) status.textContent = text; btns.remove(); clearTimeout(timer); timer = setTimeout(() => leave(null), ms); };
     const act = bd => { answer(bd.label);
       if (bd.do === 'reply') say(fill(bd.say || ''), 2600);
@@ -910,8 +941,7 @@ function visitors(){
       if (ev.stay === 'evade'){ if (jumps < 2 && jump()){ jumps++; return; } if (ev.lastWord){ answer('close'); say(fill(ev.lastWord), 1800); return; } }
       leave('close'); });
     if (bMin) bMin.addEventListener('click', () => leave(null));
-    /* it leaves by itself after a while (not while you're in it), unless it stays: the other pointer comes and closes it */
-    const life = how === 'preview' ? lifeQ*1000 : ev.stay === 'persist' ? 0 : !roomy ? P.fadeAfterSeconds*1000 : ev.ambient ? rand(P.staySeconds)*1000 : P.fadeAfterSeconds*1000;
+    /* its time is up (not while you're in it): the other pointer comes and closes it */
     const arm = ms => { if (!ms) return; clearTimeout(timer); timer = setTimeout(() => { if (c.gone) return; if (held || curBusy){ arm(4000); return; }
       (ev.smear ? ghostSmear(c) : ghostClose(c)).then(done => { if (!done && !c.gone) leave(null); }); }, ms); };
     arm(life);
@@ -933,14 +963,14 @@ function visitors(){
     document.addEventListener('pointerdown', offMenu, true);
     /* Escape: the menu first, then the window */
     win.addEventListener('keydown', e => { if (e.key !== 'Escape') return; e.stopPropagation(); if (!menu.hidden) closeMenu(true); else leave('close'); });
-    /* dragged by its title bar (a hung one leaves copies of itself along the way) */
+    /* dragged by its title bar (a hung one leaves copies of itself along the way); where it is left is where it is on the next page */
     tb.addEventListener('pointerdown', e => {
       if (e.button || e.target.closest('button')) return; e.preventDefault();
       const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; try { tb.setPointerCapture(e.pointerId); } catch {} held = true; win.classList.add('vw-drag'); lastStamp = c.pos.slice();
       const mv = m => { const p = [Math.max(0, Math.min(innerWidth - r.width, m.clientX - dx)), Math.max(0, Math.min(innerHeight - 24, m.clientY - dy))];
         if (ev.smear && Math.hypot(p[0] - lastStamp[0], p[1] - lastStamp[1]) > 16){ stamp(c); lastStamp = p.slice(); } place(p); };
       const up = () => { tb.removeEventListener('pointermove', mv); tb.removeEventListener('pointerup', up); tb.removeEventListener('pointercancel', up); held = false; win.classList.remove('vw-drag');
-        if (ev.stay === 'persist') vupd(s => { if (s.open){ s.open.x = c.pos[0]; s.open.y = c.pos[1]; } }); };
+        if (how !== 'preview' && !c.gone) keepRec(w => w.map(o => o.id === ev.id ? Object.assign({}, o, { x:c.pos[0], y:c.pos[1] }) : o)); };
       tb.addEventListener('pointermove', mv); tb.addEventListener('pointerup', up); tb.addEventListener('pointercancel', up); });
     /* the screen changes size: it moves somewhere that still fits, or goes quietly */
     let rz = 0;
@@ -951,39 +981,46 @@ function visitors(){
     return c;
   };
 
-  /* ── the company: on a screen with margins somebody is usually about. The first turns up a few seconds after the page opens, once
-        you've been still a moment; sometimes a second joins it; when the last one goes there's a short pause, then the next. Never
-        more than two, and none while one of the site's own dialogs is open. ── */
-  let nextAt = Date.now() + rand(P.firstAfterSeconds)*1000, secondAt = Infinity, waited = 0, lastAct = Date.now(), running = false;
-  const went = () => { const n = openNow().length, t = Date.now(); if (!n){ nextAt = t + rand(P.gapSeconds)*1000; secondAt = Infinity; } else if (Math.random() < P.secondChance) secondAt = t + rand(P.secondAfterSeconds)*1000; };
-  const stir = () => { lastAct = Date.now(); };
-  const company = () => {
-    if (!running || voff() || layer.hidden || document.hidden || !wide() || document.querySelector('dialog[open]')) return;
-    const n = openNow().length, t = Date.now(); if (n >= P.maxOpen || t < (n ? secondAt : nextAt)) return;
-    if (t - lastAct < P.idleSeconds*1000 && ++waited < 16) return;
-    waited = 0;
-    const ev = pickNext(), c = ev && show(ev, 'new'); if (!c){ if (n) secondAt = t + 6000; else nextAt = t + 3500; return; }
-    secondAt = !n && Math.random() < P.secondChance ? t + rand(P.secondAfterSeconds)*1000 : Infinity; };
+  /* ── when: rarely. Never more than maxPerDay in a day, nor two within minGapMinutes. Coming back after a while away (the tab
+        hidden, or the site closed, for awayMinutes or more) one may be found waiting; on any other page there is a small chance
+        that one arrives in front of you, once you've been still a moment. Never while one is open already, nor while one of the
+        site's own dialogs is. ── */
+  const budget = () => { const s = vget(), t = Date.now(); return !(s.last && t - s.last < P.minGapMinutes*6e4) && !(s.day === dayOf(t) && (s.dayN || 0) >= P.maxPerDay); };
+  const phoneK = () => wide() ? 1 : P.phoneChance;
+  const quiet = () => voff() || layer.hidden || !!document.querySelector('dialog[open]');
+  const bring = how => { if (quiet() || openNow().some(o => o.ev.stay !== 'persist') || !budget()) return null; const ev = pick(false); return ev ? show(ev, how) : null; };
+  /* the scene says where its things stand once its pictures have arrived, a moment after the page opens: a window waits for that
+     (three seconds at most), so as not to stand on them */
+  const whenStage = fn => { let n = 0; const go = () => { const st = FX.vwStage; if ((st && (st.tall || (st.keep || []).length)) || ++n > 24) fn(); else setTimeout(go, 120); }; go(); };
+  let lastAct = Date.now(); const stir = () => { lastAct = Date.now(); };
   ['pointermove', 'pointerdown', 'keydown', 'wheel'].forEach(n => addEventListener(n, stir, { passive:true, capture:true }));
-  setInterval(company, 700);
-  /* turned off (a window's menu, or Start): they all go at once; turned on again: they come back in their own time */
-  addEventListener('vw:visitors', () => { if (voff()) openNow().forEach(o => o.leave(null)); else if (wide()){ running = true; nextAt = Date.now() + 1500; } });
+  const arrive = ms => setTimeout(() => { let tries = 0; const iv = setInterval(() => { if (++tries > 260){ clearInterval(iv); return; }
+    if (document.hidden || quiet() || Date.now() - lastAct < P.idleSeconds*1000) return; clearInterval(iv); bring('new'); }, 700); }, ms);
+  let hidAt = document.hidden ? Date.now() : 0;
+  /* turned off (a window's menu, or Start): they all go at once. Turned on again: they come in their own time */
+  addEventListener('vw:visitors', () => { if (voff()) openNow().forEach(o => o.leave(null)); });
 
-  /* ── this page: one called up to look at (?vwent=id, or a,b for two); a window that stays, back again; then the company, or on a narrow screen perhaps one visitor ── */
-  if (preview){ const ids = preview === 'next' ? [null] : preview.split(',');
-    ids.forEach((id, i) => setTimeout(() => { const ev = id ? EV[id] : (wide() ? pickNext() : pickRare(true)); if (ev) show(ev, 'preview'); }, 700 + i*900)); return; }
+  /* ── this page ── */
+  /* a moderator calling one up: ?vwent=<id> (or a,b for two), ?vwent=next (whoever might come next, arriving), ?vwent=away (the same, found waiting) */
+  if (preview){ const ids = preview === 'next' || preview === 'away' ? [null] : preview.split(',');
+    whenStage(() => ids.forEach((id, i) => setTimeout(() => { const ev = id ? EV[id] : pick(true); if (ev) show(ev, 'preview', { still:preview === 'away' }); }, 500 + i*900))); return; }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden){ hidAt = Date.now(); touch(); return; }
+    const gone = hidAt ? Date.now() - hidAt : 0; hidAt = 0; touch();
+    if (gone >= P.awayMinutes*6e4 && !voff() && Math.random() < P.awayChance*phoneK()) bring('away'); });
   if (voff()) return;
-  const s0 = vget();
-  if (s0.open && EV[s0.open.id]) setTimeout(() => show(EV[s0.open.id], 'again'), 700);
-  if (wide()){ running = true; return; }
-  if (s0.open && EV[s0.open.id]) return;
-  const ev = pickRare(false); if (!ev) return;
-  const a = P.appearAfterSeconds || [3, 9]; setTimeout(() => show(ev, 'new'), rand(a)*1000);
+  /* what was open on the page you came from, if its time isn't up */
+  const kept = (Array.isArray(vget().wins) ? vget().wins : []).filter(w => w && EV[w.id] && (!w.until || w.until > t0 + 3000));
+  keepRec(() => kept);
+  if (kept.length) whenStage(() => kept.forEach(w => show(EV[w.id], 'again', w)));
+  if (kept.some(w => EV[w.id].stay !== 'persist')) return;
+  if (lastSeen && t0 - lastSeen >= P.awayMinutes*6e4 && Math.random() < P.awayChance*phoneK()) whenStage(() => bring('away'));
+  else if (Math.random() < P.liveChance*phoneK()) arrive(rand(P.liveAfterSeconds)*1000);
 }
 /* ═══════════════════════════════════════════════════════════════════
    The desktop's furniture (moderators only, with the rest of NEXT).
      · A taskbar along the foot of the screen: Start (the pages again,
-       the Theme finder, Settings, the visitors on or off), a button for
+       the Theme finder, Settings, the messages on or off), a button for
        each page with this page's pressed in, a clock. Real links and
        buttons; nothing in it moves. Not on a narrow screen, and not
        while a game is open. (Only pages the site already links to.)
@@ -1022,7 +1059,7 @@ function desk(){
   const gear = document.getElementById('themebtn');
   if (gear){ const b = el('button'); b.type = 'button'; mi(b, 'monitor', 'Settings…'); b.addEventListener('click', () => { close(false); gear.click(); }); }
   sep();
-  const vis = el('button'); vis.type = 'button'; mi(vis, 'win', 'Visitors'); vis.setAttribute('role', 'menuitemcheckbox');
+  const vis = el('button'); vis.type = 'button'; mi(vis, 'win', 'Messages'); vis.setAttribute('role', 'menuitemcheckbox');
   const visSync = () => { vis.setAttribute('aria-checked', voff() ? 'false' : 'true'); };
   vis.addEventListener('click', () => { setVoff(!voff()); visSync(); dispatchEvent(new Event('vw:visitors')); });
   start.addEventListener('click', () => menu.hidden ? open() : close(true));

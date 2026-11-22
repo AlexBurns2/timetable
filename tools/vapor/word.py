@@ -1,14 +1,18 @@
 # The page's word, set vertically in big iridescent type, for the margin opposite the scene (the timetable's is 時間割).
 # The fill is a photograph of a real soap film (thin-film interference), its colours moved onto the theme's pastels (cyan, periwinkle,
-# lilac, pink, white) so the swirls stay the photograph's own. Then a soft bevel, a pale inner line, a deep violet outline, and two
-# or three rows of the type slipped sideways, as a bad copy would. Still, never animated.
-# usage: python -P tools/vapor/word.py <film.jpg> <out.png> <text> [glyph px] [seed] [font file]
+# lilac, pink, white) so the swirls stay the photograph's own. Then a soft bevel, a pale inner line and a deep violet outline.
+# The picture is clean. Now and then the page slips a few rows of it sideways for a moment (fx/vapor.js); the pictures used to
+# have slipped rows of their own as well, and the two glitches, one still and one moving, looked wrong together. (A seventh
+# argument brings them back: how many rows to slip.)
+# usage: python -P tools/vapor/word.py <film.jpg> <out.png or out.webp> <text> [glyph px] [seed] [font file] [slips]
+#        (an out.webp is saved at half the size, which is what the site ships: images/th/vw-word-<page>.webp)
 import sys, numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 a = sys.argv[1:]
 film, dst, text = a[0], a[1], a[2]
 G = int(a[3]) if len(a) > 3 else 480; rng = np.random.default_rng(int(a[4]) if len(a) > 4 else 5)
-FONT = a[5] if len(a) > 5 else 'C:/Windows/Fonts/YuGothB.ttc'
+FONT = a[5] if len(a) > 5 and a[5] not in ('', '-') else 'C:/Windows/Fonts/YuGothB.ttc'
+SLIPS = int(a[6]) if len(a) > 6 else 0
 font = ImageFont.truetype(FONT, G)
 O, IN, PAD, BOLD = int(G * .07), int(G * .02), int(G * .22), int(G * .01)   # outline, inner line, room for the glow and the slips, weight added
 
@@ -66,8 +70,8 @@ def slide(arr, dx):
     if dx >= 0: o[:, dx:] = arr[:, :Wd - dx]
     else: o[:, :Wd + dx] = arr[:, -dx:]
     return o
-nsl = 2 if len(text) < 3 else 3                             # one slip to a glyph, three at most, each somewhere in its own glyph
-rows = sorted(PAD + int(gi) * cell + int(rng.integers(G // 6, G - G // 4)) for gi in rng.choice(len(text), nsl, replace=False))
+nsl = min(SLIPS, len(text))                                 # (none, unless asked for) one slip to a glyph, each somewhere in its own glyph
+rows = sorted(PAD + int(gi) * cell + int(rng.integers(G // 6, G - G // 4)) for gi in rng.choice(len(text), nsl, replace=False)) if nsl else []
 for j, y in enumerate(rows):
     h = int(rng.integers(G * .03, G * .1)); dx = int(rng.choice([-1, 1]) * rng.integers(G * .05, G * .13)); band = img[y:y + h].copy()
     img[y:y + h] = slide(band, dx)
@@ -78,4 +82,8 @@ for j, y in enumerate(rows):
             seg[..., :3] = (c * al[..., None] + seg[..., :3] * a0 * (1 - al[..., None])) / np.maximum(na, 1e-4); seg[..., 3:4] = na
 
 ys, xs = np.where(img[..., 3] > .01); img = img[max(0, ys.min() - 2):ys.max() + 3, max(0, xs.min() - 2):xs.max() + 3]
-Image.fromarray((np.clip(img, 0, 1) * 255 + .5).astype(np.uint8)).save(dst); print(dst, img.shape[1], 'x', img.shape[0])
+out = Image.fromarray((np.clip(img, 0, 1) * 255 + .5).astype(np.uint8))
+if dst.lower().endswith('.webp'):
+    out = out.resize((round(out.width / 2), round(out.height / 2)), Image.LANCZOS); out.save(dst, quality=90, alpha_quality=92, method=6)
+else: out.save(dst)
+print(dst, out.width, 'x', out.height)

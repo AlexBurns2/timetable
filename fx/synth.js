@@ -3,29 +3,52 @@
 
    Real 3D, drawn with Three.js (lib/three, MIT). The towers are CC0
    models by Kenney (models/synth/towers.glb, a lean vertex-coloured copy
-   with no textures); everything else is made here: the car (a generic
-   wedge, from its sections), the palms (seeded: trunk, fronds, leaflets),
-   the grid, the crags, the sea, a pyramid, a planet, the sun. One light:
+   with no textures). The street's cinema is the owner's own model
+   (models/synth/cinema.glb, made from their Blender file by
+   tools/synth/cinema.py). Everything else is made here: the two cars (from
+   their sections), the palms (seeded: trunk, fronds, leaflets), the street's
+   shop, lobby, neon and signs, the grid, the crags, the sea, a pyramid, a
+   planet, the sun. One light:
    a low sun, which also fills the sky the models reflect. Then fog and a
    soft bloom on what is brighter than white. No film grain.
    One idea a page, kept out at the sides:
 
-     home                            drive    the car (a coupé of the nineties), from
+     games                           drive    the car (a coupé of the nineties), from
                                               behind, on a lit grid that runs between
                                               faceted crags, their edges lit, to the
-                                              banded sun; going by fast
+                                              banded sun; going by fast. The road, the
+                                              sun and the car sit to the right on a
+                                              wide screen, the page a little left;
+                                              street lights now and then on the right
      timetable                       bay      towers across the water, their windows
                                               lit in strips, the sun going down behind
                                               them; palms on a spit to the right. The
                                               calm one, for the page with most to read
-     games, finder                   pyramid  a pyramid of glass and lit edges in still
-                                              water, turning very slowly, a planet over it
-     calendar, free, revision        shoreA   the quiet ones: the sun on the sea and one
-     notes, resources, mahjong       shoreB   palm (the sun to one side, then the other)
+     calendar, free, revision,       pyramid  a pyramid of glass and lit edges in still
+     finder                                   water, turning very slowly, a planet over it
+     home                            street   a wet street corner at the end of the day,
+     (and any page not listed)                built round the owner's model of a cinema:
+                                              a round stepped canopy ringed in neon, its
+                                              sign's letters outlined in neon tubes, a lit
+                                              lobby; beside it a brick video shop (pink
+                                              neon, shelves seen through its window, its
+                                              name in blue script); a wedge parked at the
+                                              kerb, a lamp over it. The street runs to a
+                                              waterfront road and the sun; over the bay
+                                              the city, one cluster under the sun. On the
+                                              left a plaza of wet concrete slabs (low
+                                              lights along its kerbs, a bench facing the
+                                              bay); past it a park, for a wide screen
+     notes, resources, mahjong       shoreB   the quiet one: the sun on the sea and one
+                                              palm (shoreA, its mirror, is unused now)
 
-   Dusk in light mode, night (deep violet, stars) in dark. The camera never
+   Dark only (theme.js both:false): a purple and pink sky, a haze rising from
+   the horizon, a few stars; the sun a crisp disc, pink at its foot through
+   orange to yellow, its glow outside it and fading outward. Dusk is kept in
+   DAY for the record. The camera never
    follows the pointer and nothing shakes: the road comes toward us (fast,
-   on Home) and the water moves, slowly, and the car eases across
+   on Home) and the water moves, slowly, the palms' fronds sway a little, the
+   sun's bands rise, and the car eases across
    its road after the pointer, a little behind it. That's all. Thirty frames a second at most, drawn at no more than
    the screen's own pixels (fewer on a phone); fx.js stops it while the
    tab is hidden.
@@ -47,9 +70,9 @@ const SMALL = mm('(pointer:coarse)') || mm('(max-width:700px)');
    synth.t = the moment). Nothing else uses it. */
 let STILL = false, STILL_T = 0;
 try { STILL = sessionStorage.getItem('synth.still') === '1'; STILL_T = +sessionStorage.getItem('synth.t') || 0; } catch {}
-const PAGE = { timetable:'bay', home:'drive', games:'pyramid', finder:'pyramid',
-               calendar:'shoreA', free:'shoreA', revision:'shoreA', notes:'shoreB', resources:'shoreB', mahjong:'shoreB', hkmahjong:'shoreB' };
-const MODELS = { bay:['towers'] };                // the only models fetched; the car and the palms are built here
+const PAGE = { timetable:'bay', home:'street', games:'drive', finder:'pyramid',
+               calendar:'pyramid', free:'pyramid', revision:'pyramid', notes:'shoreB', resources:'shoreB', mahjong:'shoreB', hkmahjong:'shoreB' };      // (2026-11-23, the owner: the cinema on Home, the road on Games, the pyramid moved on)
+const MODELS = { bay:['towers'], street:['towers', 'cinema'] };      // the only models fetched; the car and the palms are built here
 const LIB = '/lib/three/three.module.min.js', REFL = '/lib/three/addons/Reflector.js';
 
 function weak(){
@@ -89,9 +112,14 @@ const GLSL_GRID = 'float syGrid(vec2 q, float w, float f, float h){ vec2 fw = ma
    ones raised, the old ones hanging, each a curved stalk carrying 40 to 70 narrow leaflets a side that fall away from it in
    a shallow V, longest mid-frond, a few missing. Flat triangles (about 5,500), coloured per vertex: trunk or leaf. ── */
 function palmArrays(seed){
-  const r = rnd(seed), P = [], C = [];
+  const r = rnd(seed), P = [], C = [], SW = [];
   const TRUNK = [.03, .012, .018], LEAF = [.009, .02, .016];
-  const tri = (a, b, c, k) => { P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); C.push(k[0], k[1], k[2], k[0], k[1], k[2], k[0], k[1], k[2]); };
+  /* the sway (SW, two numbers a vertex): how far it moves, by how far out from the crown it is (the trunk keeps still, a frond's
+     tip moves most), and its frond's phase, so the fronds don't move as one */
+  let crown = null, ph = 0;
+  const sw = v => { const w = crown ? Math.min(1, Math.hypot(v[0] - crown[0], v[1] - crown[1], v[2] - crown[2]) / 4.5) : 0; SW.push(w * w, ph); };
+  const tri = (a, b, c, k) => { P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); C.push(k[0], k[1], k[2], k[0], k[1], k[2], k[0], k[1], k[2]);
+    if (k === TRUNK){ SW.push(0, 0, 0, 0, 0, 0); } else { sw(a); sw(b); sw(c); } };
   const quad = (a, b, c, d, k) => { tri(a, b, c, k); tri(a, c, d, k); };
   /* the trunk: leaning out along +x, more towards the top */
   const Ht = 9.6 + r() * 2.4, lean = .5 + r() * 1.9, bend = 1.4 + r() * .9, N = 48, S = 7;
@@ -104,9 +132,9 @@ function palmArrays(seed){
     prev = ring;
   }
   /* the crown */
-  const top = at(1), nF = 9 + Math.floor(r() * 6), rank = Array.from({ length:nF }, (_, i) => i / (nF - 1)).sort(() => r() - .5);
+  const top = at(1); crown = top; const nF = 9 + Math.floor(r() * 6), rank = Array.from({ length:nF }, (_, i) => i / (nF - 1)).sort(() => r() - .5);
   for (let f = 0; f < nF; f++){
-    const phi = f / nF * 6.2832 + (r() - .5) * .5, age = rank[f];
+    const phi = f / nF * 6.2832 + (r() - .5) * .5, age = rank[f]; ph = r() * 6.2832;
     const el = lerp(.95, -.55, age) + (r() - .5) * .25, L = 3.3 + r() * 1.5 + age * .7, g = .32 + age * .55 + r() * .15;
     const h = [Math.cos(phi), 0, Math.sin(phi)], ce = Math.cos(el), se = Math.sin(el);
     const pt = u => [top[0] + h[0] * L * u * ce, top[1] + L * u * se - g * L * u * u, top[2] + h[2] * L * u * ce];
@@ -132,7 +160,7 @@ function palmArrays(seed){
       tri(sub(m, mul(w, .8)), add(m, mul(w, .8)), e, tint);
     }
   }
-  return { pos:new Float32Array(P), col:new Float32Array(C), h:Ht };
+  return { pos:new Float32Array(P), col:new Float32Array(C), sw:new Float32Array(SW), h:Ht };
 }
 const PALM_SEEDS = [11, 23, 37];
 
@@ -158,26 +186,27 @@ const CAR_ST = [
   [ 2.20, .32, .58, .66,  .54,  .60,  .56,  .48]
 ];
 const CAR_WHEELS = [[.775, 1.36], [-.775, 1.36], [.775, -1.32], [-.775, -1.32]], CAR_ARCH = .385;
-function carArrays(){
+function carArrays(D){
+  const ST = D.st, WH = D.wheels, ARCH = D.arch, CU = D.cuts, GZ = D.glass;
   /* the stations eased (a cubic that never overshoots: the slope at each is the harmonic mean of the slopes either side) */
-  const NK = CAR_ST.length, slope = (i, k) => { if (i <= 0 || i >= NK - 1) return 0;
-    const a = (CAR_ST[i][k] - CAR_ST[i - 1][k]) / (CAR_ST[i][0] - CAR_ST[i - 1][0]), b = (CAR_ST[i + 1][k] - CAR_ST[i][k]) / (CAR_ST[i + 1][0] - CAR_ST[i][0]); return a * b <= 0 ? 0 : 2 * a * b / (a + b); };
-  const at = z => { let i = 0; while (i < NK - 2 && z > CAR_ST[i + 1][0]) i++;
-    const z0 = CAR_ST[i][0], h = CAR_ST[i + 1][0] - z0, t = clamp((z - z0) / h, 0, 1), t2 = t * t, t3 = t2 * t, out = [z];
-    for (let k = 1; k < 8; k++) out.push((2 * t3 - 3 * t2 + 1) * CAR_ST[i][k] + (t3 - 2 * t2 + t) * h * slope(i, k) + (-2 * t3 + 3 * t2) * CAR_ST[i + 1][k] + (t3 - t2) * h * slope(i + 1, k));
+  const NK = ST.length, slope = (i, k) => { if (i <= 0 || i >= NK - 1) return 0;
+    const a = (ST[i][k] - ST[i - 1][k]) / (ST[i][0] - ST[i - 1][0]), b = (ST[i + 1][k] - ST[i][k]) / (ST[i + 1][0] - ST[i][0]); return a * b <= 0 ? 0 : 2 * a * b / (a + b); };
+  const at = z => { let i = 0; while (i < NK - 2 && z > ST[i + 1][0]) i++;
+    const z0 = ST[i][0], h = ST[i + 1][0] - z0, t = clamp((z - z0) / h, 0, 1), t2 = t * t, t3 = t2 * t, out = [z];
+    for (let k = 1; k < 8; k++) out.push((2 * t3 - 3 * t2 + 1) * ST[i][k] + (t3 - 2 * t2 + t) * h * slope(i, k) + (-2 * t3 + 3 * t2) * ST[i + 1][k] + (t3 - t2) * h * slope(i + 1, k));
     return out; };
   /* a cross-section, half of it, from the middle of the floor round to the middle of the roof: the body, the glass, the top, each rounded off (corners cut, twice) */
   const cut = (p, n) => { for (let it = 0; it < n; it++){ const q = [p[0]]; for (let i = 0; i < p.length - 1; i++){ const a = p[i], b = p[i + 1]; q.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); } q.push(p[p.length - 1]); p = q; } return p; };
   const half = st => { const [, yb, ws, wm, hb, wb, hr, wr] = st, he = hr - .022;
-    const body = cut([[0, yb], [ws * .8, yb], [ws, yb + .05], [wm, yb + (hb - yb) * .42], [wb, hb]], 2);
-    const glass = cut([[wb, hb], [(wb + wr) / 2 + .012, (hb + he) / 2], [wr, he]], 1), top = cut([[wr, he], [wr * .62, hr - .005], [0, hr]], 2);
+    const body = cut([[0, yb], [ws * .8, yb], [ws, yb + .05], [wm, yb + (hb - yb) * .42], [wb, hb]], CU[0]);
+    const glass = cut([[wb, hb], [(wb + wr) / 2 + .012, (hb + he) / 2], [wr, he]], CU[1]), top = cut([[wr, he], [wr * .62, hr - .005], [0, hr]], CU[2]);
     return body.concat(glass.slice(1), top.slice(1)); };
-  const NB = 20, NG = 6, NP = NB + NG - 1 + 12 - 1, NR = 2 * NP - 2, ZS = [];           // points in the body, in the glass; in half a section; in the whole ring
-  for (let z = -2.2; z < 2.2001; z += .05) ZS.push(Math.round(z * 100) / 100);
+  const NB = 5 << CU[0], NG = 3 << CU[1], NP = NB + NG - 1 + (3 << CU[2]) - 1, NR = 2 * NP - 2, ZS = [];      // (each cut doubles a run's points)           // points in the body, in the glass; in half a section; in the whole ring
+  for (let z = ST[0][0]; z < ST[ST.length - 1][0] + .0001; z += .05) ZS.push(Math.round(z * 100) / 100);
   const NS = ZS.length, V = [], IN = [];
   for (let s = 0; s < NS; s++){ const h = half(at(ZS[s])), ring = [], ins = [];
     for (let r = 0; r < NR; r++){ const j = r < NP ? r : NR - r, sx = r < NP ? 1 : -1; let x = h[j][0] * sx; const y = h[j][1]; let inn = false;
-      if (j < NB && Math.abs(x) > .5) for (const w of CAR_WHEELS) if (Math.sign(w[0]) === sx && Math.hypot(ZS[s] - w[1], y - .33) < CAR_ARCH){ x -= sx * .22; inn = true; }     /* the arches: the side pushed in round each wheel */
+      if (j < NB && Math.abs(x) > .5) for (const w of WH) if (Math.sign(w[0]) === sx && Math.hypot(ZS[s] - w[1], y - .33) < ARCH){ x -= sx * .22; inn = true; }     /* the arches: the side pushed in round each wheel */
       ring.push([x, y, ZS[s]]); ins.push(inn); }
     V.push(ring); IN.push(ins); }
   /* a normal at each point, from its neighbours along and round the body, so the paint shades as one curved surface */
@@ -191,8 +220,8 @@ function carArrays(){
     const inn = IN[s][r] + IN[s][r1] + IN[s + 1][r] + IN[s + 1][r1];
     let t = o.body;
     if (inn >= 3) t = o.well;
-    else if (seg >= NB - 1 && seg < NB + NG - 3){ if (z > -.9 && z < .82) t = o.glass; }                      /* the side glass (its top edge left as the roof rail) */
-    else if (seg >= NB + NG - 1 && ((z > -1.06 && z < -.6) || (z > .4 && z < .97))) t = o.glass;         /* the rear window; the windscreen (their edges left as pillars) */
+    else if (seg >= NB - 1 && seg < NB + NG - 3){ if (z > GZ.side[0] && z < GZ.side[1]) t = o.glass; }                      /* the side glass (its top edge left as the roof rail) */
+    else if (seg >= NB + NG - 1 && ((z > GZ.rear[0] && z < GZ.rear[1]) || (z > GZ.front[0] && z < GZ.front[1]))) t = o.glass;         /* the rear window; the windscreen (their edges left as pillars) */
     quad(t, s, r);
   }
   const tri = (a, p, q, s) => a.push(p[0], p[1], p[2], q[0], q[1], q[2], s[0], s[1], s[2]);
@@ -205,41 +234,80 @@ function carArrays(){
     for (const i of [-1, 1]) for (const j of [-1, 1]) for (const k of [-1, 1]) v.push(add(c, add(mul(ax, i), add(mul(ay, j), mul(az, k)))));
     [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]].forEach(f => { tri(a, v[f[0]], v[f[1]], v[f[2]]); tri(a, v[f[0]], v[f[2]], v[f[3]]); });
   };
-  const X = [1, 0, 0], Yv = [0, 1, 0], Zv = [0, 0, 1], T = -2.203;
-  /* the tail: a lamp each side (red, with an amber and a white part inboard), a dark strip between them, the plate in its recess,
-     a black skirt and two pipes under the bumper */
-  for (const sx of [-1, 1]){
-    box(o.tail, [sx * .53, .628, T], mul(X, .165), mul(Yv, .052), mul(Zv, .006));
-    box(o.hot, [sx * .53, .628, T - .004], mul(X, .14), mul(Yv, .027), mul(Zv, .004));      // the lamp's middle, far brighter: it reads as lit, and the bloom takes it
-    box(o.amber, [sx * .315, .628, T], mul(X, .042), mul(Yv, .052), mul(Zv, .006));
-    box(o.lamp, [sx * .242, .628, T], mul(X, .026), mul(Yv, .052), mul(Zv, .006));
-  }
-  box(o.trim, [0, .628, T + .002], mul(X, .21), mul(Yv, .046), mul(Zv, .004));
-  box(o.trim, [0, .475, T + .002], mul(X, .275), mul(Yv, .064), mul(Zv, .004));
-  box(o.plate, [0, .475, T - .003], mul(X, .2), mul(Yv, .044), mul(Zv, .003));
-  box(o.trim, [0, .375, -2.17], mul(X, .6), mul(Yv, .028), mul(Zv, .04));
-  for (const x of [-.47, -.38]) box(o.trim, [x, .345, -2.2], mul(X, .034), mul(Yv, .03), mul(Zv, .05));
-  /* the wing on the boot: a blade on two posts, a thin brake light in its trailing edge */
-  const wz = [0, -.105, .995], wy = [0, .995, .105];
-  box(o.flat, [0, 1.005, -1.93], mul(X, .74), mul(wy, .013), mul(wz, .085));
-  for (const sx of [-1, 1]) box(o.flat, [sx * .6, .935, -1.915], mul(X, .022), mul(Yv, .07), mul(Zv, .055));
-  /* the rim light on the wing: a hair of light along the top of its trailing edge, magenta at the left end (+x here: the car is
-     turned round in the scene) to cyan at the right, in twelve lengths. The blade's top is edge-on to the camera, so the paint's
-     own rim light can't show there. */
-  for (let k = 0; k < 12; k++){ const x = -.74 + (k + .5) * 1.48 / 12, u = ss(-.42, .42, x), c = [lerp(.1, 1.25, u), lerp(.92, .1, u), lerp(1.25, .92, u)];
-    box(o.rim[0], [x, 1.0225, -2.0172], mul(X, .74 / 12), mul(wy, .0042), mul(wz, .003)); for (let q = 0; q < 36; q++) o.rim[1].push(c[0] * .8, c[1] * .8, c[2] * .8); }
-  box(o.tail, [0, .999, -2.017], mul(X, .15), mul(Yv, .007), mul(Zv, .004));
-  /* the door mirrors */
-  for (const sx of [-1, 1]) box(o.flat, [sx * .93, .93, .74], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
+  const X = [1, 0, 0], Yv = [0, 1, 0], Zv = [0, 0, 1], T = ST[0][0] - .003;
+  D.details(o, { box, X, Yv, Zv, T });
   return o;
 }
+/* the coupé's own parts: its lamps, plate, skirt and pipes; its wing; its mirrors */
+const CAR1 = { st:CAR_ST, wheels:CAR_WHEELS, arch:CAR_ARCH, cuts:[2, 1, 2], glass:{ side:[-.9, .82], rear:[-1.06, -.6], front:[.4, .97] },
+  details(o, { box, X, Yv, Zv, T }){
+    /* the tail: a lamp each side (red, with an amber and a white part inboard), a dark strip between them, the plate in its recess,
+       a black skirt and two pipes under the bumper */
+    for (const sx of [-1, 1]){
+      box(o.tail, [sx * .53, .628, T], mul(X, .165), mul(Yv, .052), mul(Zv, .006));
+      box(o.hot, [sx * .53, .628, T - .004], mul(X, .14), mul(Yv, .027), mul(Zv, .004));      // the lamp's middle, far brighter: it reads as lit, and the bloom takes it
+      box(o.amber, [sx * .315, .628, T], mul(X, .042), mul(Yv, .052), mul(Zv, .006));
+      box(o.lamp, [sx * .242, .628, T], mul(X, .026), mul(Yv, .052), mul(Zv, .006));
+    }
+    box(o.trim, [0, .628, T + .002], mul(X, .21), mul(Yv, .046), mul(Zv, .004));
+    box(o.trim, [0, .475, T + .002], mul(X, .275), mul(Yv, .064), mul(Zv, .004));
+    box(o.plate, [0, .475, T - .003], mul(X, .2), mul(Yv, .044), mul(Zv, .003));
+    box(o.trim, [0, .375, -2.17], mul(X, .6), mul(Yv, .028), mul(Zv, .04));
+    for (const x of [-.47, -.38]) box(o.trim, [x, .345, -2.2], mul(X, .034), mul(Yv, .03), mul(Zv, .05));
+    /* the wing on the boot: a blade on two posts, a thin brake light in its trailing edge */
+    const wz = [0, -.105, .995], wy = [0, .995, .105];
+    box(o.flat, [0, 1.005, -1.93], mul(X, .74), mul(wy, .013), mul(wz, .085));
+    for (const sx of [-1, 1]) box(o.flat, [sx * .6, .935, -1.915], mul(X, .022), mul(Yv, .07), mul(Zv, .055));
+    /* the rim light on the wing: a hair of light along the top of its trailing edge, magenta at the left end (+x here: the car is
+       turned round in the scene) to cyan at the right, in twelve lengths. The blade's top is edge-on to the camera, so the paint's
+       own rim light can't show there. */
+    for (let k = 0; k < 12; k++){ const x = -.74 + (k + .5) * 1.48 / 12, u = ss(-.42, .42, x), c = [lerp(.1, 1.25, u), lerp(.92, .1, u), lerp(1.25, .92, u)];
+      box(o.rim[0], [x, 1.0225, -2.0172], mul(X, .74 / 12), mul(wy, .0042), mul(wz, .003)); for (let q = 0; q < 36; q++) o.rim[1].push(c[0] * .8, c[1] * .8, c[2] * .8); }
+    box(o.tail, [0, .999, -2.017], mul(X, .15), mul(Yv, .007), mul(Zv, .004));
+    /* the door mirrors */
+    for (const sx of [-1, 1]) box(o.flat, [sx * .93, .93, .74], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
+  } };
+/* ── a second car, for the street: a wedge of the eighties, parked. No real car's lines: a long low nose, a high flat tail with one
+   lamp across it, the roof set well back, slats over the rear window, crisp creases (the sections cut once, not twice), silver.
+   4.35 m long, 1.81 m wide, 1.15 m high. ── */
+const CAR2_ST = [
+  [-2.15, .30, .78, .84,  .88, .82,  .94, .76],
+  [-2.08, .24, .84, .89,  .91, .86,  .97, .80],
+  [-1.80, .21, .87, .905, .92, .875, .99, .80],
+  [-1.25, .20, .87, .905, .92, .875, 1.00, .78],      // the foot of the rear window
+  [-0.62, .20, .87, .905, .91, .87, 1.14, .66],       // the roof
+  [ 0.10, .20, .87, .905, .90, .87, 1.15, .66],
+  [ 1.00, .20, .87, .90,  .84, .865, .86, .76],       // the foot of the windscreen
+  [ 1.55, .20, .86, .895, .76, .855, .77, .78],
+  [ 2.02, .21, .84, .875, .66, .835, .665, .78],
+  [ 2.20, .26, .80, .84,  .58, .80,  .58, .74]
+];
+const CAR2 = { st:CAR2_ST, wheels:[[.8, 1.36], [-.8, 1.36], [.8, -1.3], [-.8, -1.3]], arch:.375, cuts:[1, 1, 1], glass:{ side:[-.6, .92], rear:[-1.22, -.66], front:[.16, .96] },
+  details(o, { box, X, Yv, Zv, T }){
+    /* the tail: one lamp across it (brighter each side of the middle), cut into five by dark ribs; the plate in a black band; a black bumper; two pipes */
+    box(o.tail, [0, .8, T], mul(X, .74), mul(Yv, .055), mul(Zv, .006));
+    for (const sx of [-1, 1]) box(o.hot, [sx * .46, .8, T - .004], mul(X, .2), mul(Yv, .026), mul(Zv, .004));
+    for (const x of [-.44, -.15, .15, .44]) box(o.trim, [x, .8, T - .007], mul(X, .012), mul(Yv, .058), mul(Zv, .003));
+    box(o.trim, [0, .6, T + .002], mul(X, .8), mul(Yv, .1), mul(Zv, .004));
+    box(o.plate, [0, .6, T - .003], mul(X, .2), mul(Yv, .046), mul(Zv, .003));
+    box(o.trim, [0, .42, T + .02], mul(X, .84), mul(Yv, .07), mul(Zv, .05));
+    for (const x of [-.5, -.4]) box(o.trim, [x, .33, T + .01], mul(X, .035), mul(Yv, .028), mul(Zv, .05));
+    /* the slats over the rear window: eight across it, following its slope */
+    const a = [0, 1.01, -1.2], b = [0, 1.14, -.7], d = sub(b, a), al = norm(d), up = norm(cross(al, X));
+    for (let k = 0; k < 8; k++) box(o.trim, add(add(a, mul(d, (k + .5) / 8)), mul(up, .03)), mul(X, .6), mul(al, .014), mul(up, .02));
+    /* a black rubbing strip down each side; the door mirrors */
+    for (const sx of [-1, 1]) box(o.trim, [sx * .9, .52, 0], mul(X, .012), mul(Yv, .028), mul(Zv, 1.7));
+    for (const sx of [-1, 1]) box(o.flat, [sx * .95, .92, .78], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
+  } };
 
-/* ── the two times of day. Colours are sRGB; light in arbitrary units (the picture is tone-mapped at the end). ── */
+/* ── the two times of day. Colours are sRGB; light in arbitrary units (the picture is tone-mapped at the end).
+   Synthwave is dark only now (theme.js: both:false), so only night is seen: a purple sky, orange at the horizon, and the orange
+   sun of dusk, as in the owner's references. Dusk is kept for the record. ── */
 const DAY = {
   dusk:  { top:'#23104a', mid:'#a8386f', hor:'#ff9a5a', fog:'#7a2a58', glow:'#ff9a6a', sunTop:'#ffc56a', sunBot:'#ff3a78', sunI:1.0,
            light:'#ffa27a', lightI:2.2, hemiTop:'#8a4a9a', hemiBot:'#14081a', hemiI:.4, stars:0, neon:'#ff3d9a', neonI:2.2, env:.55, exposure:1.0, bloom:.5 },
-  night: { top:'#04020a', mid:'#170a32', hor:'#5c1d5e', fog:'#240c34', glow:'#c23a8a', sunTop:'#ff9fd0', sunBot:'#a8145e', sunI:1.15,
-           light:'#ff6fb0', lightI:1.1, hemiTop:'#3a1d70', hemiBot:'#06030c', hemiI:.4, stars:1, neon:'#ff3d9a', neonI:2.6, env:.5, exposure:1.05, bloom:.65 }
+  night: { top:'#160a48', mid:'#5e1a8c', hor:'#ff3d88', fog:'#3a1252', glow:'#ff4f96', sunTop:'#ffe066', sunMid:'#ff8a2e', sunBot:'#ff2a78', sunRim:'#ff2a86', sunI:.95,
+           light:'#ff8a9a', lightI:1.5, hemiTop:'#5a2aa0', hemiBot:'#08040e', hemiI:.4, stars:.55, haze:[12, .22, 6.5, .5], sunHalo:.55, neon:'#ff3d9a', neonI:2.6, env:.5, exposure:1.0, bloom:.62 }
 };
 
 /* ── a .glb from models/synth (the lean copies: positions as int16, KHR_mesh_quantization; no textures): meshes, each
@@ -274,6 +342,7 @@ function parseGlb(T, buf){
     }
     out[nd.name] = { parts, at:pv };
   }
+  if (j.extras) out.$ = j.extras;                              // a model's own notes for the page (the street's: where things go; tools/synth/cinema.py)
   return out;
 }
 
@@ -282,29 +351,70 @@ const GLSL_HASH = 'float h21(vec2 p){ p = fract(p * vec2(233.34, 851.73)); p += 
   'float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h21(i), h21(i + vec2(1., 0.)), f.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), f.x), f.y); }\n';
 /* the sky: three colours top to horizon, a haze on the horizon, the sun's glow, stars at night */
 const SKY_V = 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); gl_Position.z = gl_Position.w; }';
-const SKY_F = 'uniform vec3 uTop, uMid, uHor, uGlow, uSun; uniform float uStars;\nvarying vec3 vDir;\n' +
+const SKY_F = 'uniform vec3 uTop, uMid, uHor, uGlow, uSun; uniform vec4 uHz; uniform float uStars;\nvarying vec3 vDir;\n' +
   'float h31(vec3 p){ p = fract(p * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }\n' +
   'void main(){\n' +
   '  vec3 d = normalize(vDir); float y = d.y;\n' +
   '  vec3 c = mix(uHor, uMid, smoothstep(-.01, .12, y)); c = mix(c, uTop, smoothstep(.07, .34, y));\n' +
   '  c += uHor * .3 * exp(-abs(y) * 30.);\n' +
-  '  float s = max(dot(d, uSun), 0.); c += uGlow * (pow(s, 6.) * .22 + pow(s, 60.) * .45);\n' +
+  '  float up = max(y, 0.), az = max(dot(normalize(d.xz + 1e-5), normalize(uSun.xz + 1e-5)), 0.);\n' +          /* the haze (uHz: fall-off and strength all round; fall-off and strength towards the sun). */
+  '  c += uGlow * (exp(-up * uHz.x) * uHz.y + exp(-up * uHz.z) * pow(az, 5.) * uHz.w);\n' +                    /* It rises from the horizon and lies low under and beside the sun: there was a ball of glow round the sun, which the owner disliked */
   '  if (uStars > 0.){ vec3 q = d * 300.; vec3 id = floor(q); float h = h31(id);\n' +
   '    vec3 f = fract(q) - .5 - (vec3(h31(id + 1.7), h31(id + 3.1), h31(id + 5.3)) - .5) * .6;\n' +
   '    c += vec3(1., .86, 1.) * smoothstep(.24, .0, length(f)) * step(.986, h) * smoothstep(.03, .3, y) * uStars * (.35 + 1.6 * fract(h * 37.)); }\n' +
   '  gl_FragColor = vec4(c, 1.);\n}';
 /* the sun: a disc, warm at the top and hot pink below, cut by bands that thicken towards the horizon */
 const SUN_V = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }';
-/* the sun: its lower part cut by gaps that rise: each opens wide at its foot, thins as it climbs, and closes at .62 of its height
+/* the sun: a crisp disc, yellow at its top through orange to pink at its foot, and a glow outside it that fades outward from its
+   edge; its lower part cut by gaps that rise: each opens wide at its foot, thins as it climbs, and closes at .62 of its height
    (uT: how far the gaps have risen, in gap spacings; it only matters by its fraction) */
-const SUN_F = 'uniform vec3 uTop, uBot; uniform float uI, uT;\nvarying vec2 vUv;\n' +
+const SUN_GS = 1.4;                                        // the sun's quad reaches this far past its disc, for the glow
+const SUN_F = 'uniform vec3 uTop, uMid, uBot, uRim; uniform float uI, uT, uHalo;\nvarying vec2 vUv;\n' +
   'void main(){\n' +
-  '  vec2 p = vUv * 2. - 1.; float r = length(p), w = fwidth(r);\n' +
-  '  float a = 1. - smoothstep(1. - w * 1.5, 1., r);\n' +
-  '  float y = vUv.y, g = fract(y * 13. + .35 - uT), th = clamp((.62 - y) * 1.15, 0., .9), gw = fwidth(y * 13.);\n' +
+  '  vec2 p = (vUv * 2. - 1.) * ' + SUN_GS.toFixed(2) + '; float r = length(p), w = fwidth(r);\n' +           /* the disc is r < 1 */
+  '  float disc = 1. - smoothstep(1. - w, 1., r), a = disc;\n' +                                              /* a crisp edge */
+  '  float y = p.y * .5 + .5, g = fract(y * 13. + .35 - uT), th = clamp((.62 - y) * 1.15, 0., .9), gw = fwidth(y * 13.);\n' +
   '  a *= y < .62 ? smoothstep(th - gw, th + gw, g) : 1.;\n' +
-  '  vec3 c = mix(uBot, uTop, smoothstep(.02, .98, y)) * uI;\n' +
-  '  gl_FragColor = vec4(c * a, a);\n}';
+  '  vec3 c = mix(mix(uBot, uMid, smoothstep(.16, .55, y)), uTop, smoothstep(.5, .96, y)) * uI;\n' +           /* three colours foot to top, clean to the edge */
+  '  float o = clamp((r - 1.) / ' + (SUN_GS - 1).toFixed(2) + ', 0., 1.), halo = (1. - disc) * pow(1. - o, 2.6) * uHalo;\n' +   /* the glow: brightest at the edge, fading outward */
+  '  gl_FragColor = vec4(c * a + uRim * halo, a);\n}';
+/* the wet street: what the mirror saw, still (no swell: it rained, it stopped), drawn out down the street on damp asphalt and clear
+   in the puddles; the asphalt's grain between.
+   Inside uPlaza (x0, z0, x1, z1; a scene that sets none has none) the ground is a plaza of concrete slabs instead: paler, wet all
+   over (so more of a mirror than the road is), each slab a little different from the next (how wet it is, and how level it lies:
+   the reflection steps a touch from slab to slab, which is what says "paving" in a mirror), dark joints between. The joints are
+   averaged over the pixel (a box filter, after Quilez), so a row too far off to draw fades out instead of crawling. */
+const STREET = {
+  name:'SynthStreet',
+  uniforms:{ color:{ value:null }, tDiffuse:{ value:null }, textureMatrix:{ value:null }, uDeep:{ value:null }, uFog:{ value:null }, uFogR:{ value:null }, uRip:{ value:1 }, uQuay:{ value:-1e6 },
+             uPlaza:{ value:null }, uPave:{ value:null }, uTile:{ value:1.2 } },
+  vertexShader:'uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW;\n' +
+    'void main(){ vUv = textureMatrix * vec4(position, 1.); vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+  fragmentShader:'uniform vec3 color, uDeep, uFog, uPave; uniform sampler2D tDiffuse; uniform vec2 uFogR; uniform float uQuay, uTile; uniform vec4 uPlaza;\nvarying vec4 vUv; varying vec3 vW;\n' + GLSL_HASH +
+    'const float JN = 46.;\n' +                                                                   /* a slab is this many joints wide */
+    'void main(){\n' +
+    '  vec3 V = cameraPosition - vW; float d = length(V); V /= d; vec2 p = vW.xz;\n' +
+    '  float water = 1. - step(uQuay, vW.z);\n' +                                                 /* beyond the quay (z < uQuay): water */
+    '  vec2 pin = step(uPlaza.xy, p) * step(p, uPlaza.zw); float plaza = pin.x * pin.y;\n' +      /* the plaza: its slabs counted from the corner by the street */
+    '  vec2 q = (p - uPlaza.zy) / uTile + .5 / JN, qw = max(fwidth(q), vec2(1e-5)), qa = q + .5 * qw, qb = q - .5 * qw;\n' +
+    '  vec2 jc = clamp((floor(qa) + min(fract(qa) * JN, 1.) - floor(qb) - min(fract(qb) * JN, 1.)) / (JN * qw), 0., 1.);\n' +
+    '  float joint = plaza * (1. - (1. - jc.x) * (1. - jc.y));\n' +
+    '  vec2 id = floor(q); float fine = plaza * (1. - smoothstep(.2, .7, max(qw.x, qw.y))), slab = (h21(id) - .5) * fine;\n' +      /* (slabs too small to tell apart are all alike) */
+    '  float pud = max(water, smoothstep(.5 - .12 * plaza, .64 - .08 * plaza, vnoise(p * .16 + 3.) * .65 + vnoise(p * .55) * .35 + slab * .1));\n' +
+    '  float grit = mix(vnoise(p * 2.7) * .5 + vnoise(p * 9.) * .5, .35, water);\n' +
+    '  vec4 uv = vUv; uv.x += (vnoise(vec2(p.x * 1.7, p.y * .4)) - .5) * .006 * (1. - pud) * (1. - .7 * plaza) * uv.w;\n' +
+    '  uv.y += (vnoise(vec2(p.x * .05, p.y * .7)) - .5) * .02 * water * uv.w;\n' +
+    '  uv.xy += (vec2(h21(id + 3.7), h21(id + 9.2)) - .5) * vec2(.0015, .0035) * fine * uv.w;\n' +   /* each slab lies a little out of level */
+    '  float sp = mix(mix(.014, .003, pud), mix(.008, .0025, pud), plaza) * uv.w; vec3 refl = vec3(0.);\n' +
+    '  for (int i = 0; i < 6; i++) refl += texture2DProj(tDiffuse, uv + vec4(0., (float(i) - 2.5) * sp, 0., 0.)).rgb / 6.;\n' +
+    '  float fr = .05 + .95 * pow(1. - max(V.y, 0.), 5.);\n' +
+    '  float wet = mix(mix(.2, .9, pud), mix(.5, .93, pud) * (1. + .2 * slab) * (1. - .5 * joint), plaza);\n' +
+    '  float k = clamp(wet * (fr * 1.1 + .25), 0., 1.);\n' +
+    '  vec3 base = mix(uDeep * (.55 + .9 * grit), uPave * (.8 + .4 * grit + .3 * slab) * (1. - .45 * joint), plaza);\n' +
+    '  vec3 c = mix(base, refl * color, k);\n' +
+    '  c = mix(c, uFog, smoothstep(uFogR.x, uFogR.y, d) * .85);\n' +
+    '  gl_FragColor = vec4(c, 1.);\n}'
+};
 /* the sea: what the mirror saw, broken up by long slow swells; deeper colour looking down into it; fog to the horizon */
 const SEA = {
   name:'SynthSea',
@@ -317,12 +427,14 @@ const SEA = {
     '  vec3 V = cameraPosition - vW; float d = length(V); V /= d;\n' +
     '  vec2 p = vW.xz;\n' +
     '  float n1 = vnoise(vec2(p.x * .035, p.y * .9 + uTime * .2));\n' +
-    '  float n2 = vnoise(vec2(p.x * .09 - uTime * .02, p.y * 2.3 + uTime * .33));\n' +
-    '  float n3 = vnoise(vec2(p.x * .3, p.y * 5.7 - uTime * .5));\n' +
+    '  float a2 = 1. - smoothstep(.15, .5, fwidth(p.y * 2.3)), a3 = 1. - smoothstep(.15, .5, fwidth(p.y * 5.7));\n' +      /* ripples finer than a pixel, left out: they only sparkled */
+    '  float n2 = mix(.5, vnoise(vec2(p.x * .09 - uTime * .02, p.y * 2.3 + uTime * .33)), a2);\n' +
+    '  float n3 = mix(.5, vnoise(vec2(p.x * .3, p.y * 5.7 - uTime * .5)), a3);\n' +
     '  float k = uRip / (1. + d * .004);\n' +
     '  vec2 dis = vec2((n1 - .5) * .008, (n1 * .5 + n2 * .8 + n3 * .6 - .95) * .07) * k;\n' +
     '  vec4 uv = vUv; uv.xy += dis * uv.w;\n' +
-    '  vec3 refl = texture2DProj(tDiffuse, uv).rgb;\n' +
+    '  float sp = .0045 * k * uv.w; vec3 refl = vec3(0.);\n' +                                   /* four samples down the reflection, averaged: drawn out a little, as on water, and steadier */
+    '  for (int i = 0; i < 4; i++) refl += texture2DProj(tDiffuse, uv + vec4(0., (float(i) - 1.5) * sp, 0., 0.)).rgb * .25;\n' +
     '  float fr = .02 + .98 * pow(1. - max(V.y, 0.), 5.);\n' +
     '  vec3 c = mix(uDeep, refl * color, clamp(fr * 1.15 + .08, 0., 1.));\n' +
     '  c = mix(c, uFog, smoothstep(uFogR.x, uFogR.y, d) * .85);\n' +
@@ -386,19 +498,19 @@ async function build(canvas, kind, dark){
   const fog = new T.Fog(0x000000, 60, 900); scene.fog = fog;
 
   /* the sky: a sphere that goes where the camera goes */
-  const skyU = { uTop:{ value:new T.Color() }, uMid:{ value:new T.Color() }, uHor:{ value:new T.Color() }, uGlow:{ value:new T.Color() }, uSun:{ value:new T.Vector3(0, .07, -1) }, uStars:{ value:0 } };
+  const skyU = { uTop:{ value:new T.Color() }, uMid:{ value:new T.Color() }, uHor:{ value:new T.Color() }, uGlow:{ value:new T.Color() }, uSun:{ value:new T.Vector3(0, .07, -1) }, uStars:{ value:0 }, uHz:{ value:new T.Vector4(14, .2, 7, .45) } };
   const skyMat = keep(new T.ShaderMaterial({ uniforms:skyU, vertexShader:SKY_V, fragmentShader:SKY_F, side:T.BackSide, depthWrite:false, fog:false }));
   const skyGeo = keep(new T.SphereGeometry(1000, 40, 20));
   const sky = new T.Mesh(skyGeo, skyMat); sky.renderOrder = -2; sky.frustumCulled = false; scene.add(sky);
   /* the sun */
-  const sunU = { uTop:{ value:new T.Color() }, uBot:{ value:new T.Color() }, uI:{ value:2 }, uT:{ value:0 } };
+  const sunU = { uTop:{ value:new T.Color() }, uMid:{ value:new T.Color() }, uBot:{ value:new T.Color() }, uRim:{ value:new T.Color() }, uI:{ value:2 }, uT:{ value:0 }, uHalo:{ value:.5 } };
   const sunMat = keep(new T.ShaderMaterial({ uniforms:sunU, vertexShader:SUN_V, fragmentShader:SUN_F, transparent:true, depthWrite:false, fog:false,
     blending:T.CustomBlending, blendSrc:T.OneFactor, blendDst:T.OneMinusSrcAlphaFactor }));
   const sunGeo = keep(new T.PlaneGeometry(2, 2));
   const sun = new T.Mesh(sunGeo, sunMat); sun.renderOrder = -1; sun.frustumCulled = false; scene.add(sun);
   const SUN_D = 900, SUN_RISE = .16;                          /* the gaps in the sun climb one spacing (a thirteenth of its height) in about six seconds: a few pixels a second */
   let sunDir = new T.Vector3(0, .07, -1).normalize(), sunR = 120;
-  const placeSun = () => { sun.position.copy(camera.position).addScaledVector(sunDir, SUN_D); sun.scale.setScalar(sunR); sun.lookAt(camera.position); sky.position.copy(camera.position); };
+  const placeSun = () => { sun.position.copy(camera.position).addScaledVector(sunDir, SUN_D); sun.scale.setScalar(sunR * SUN_GS); sun.lookAt(camera.position); sky.position.copy(camera.position); };
 
   /* the one light, and what the sky gives back */
   const light = new T.DirectionalLight(0xffffff, 2); scene.add(light); scene.add(light.target);
@@ -409,7 +521,7 @@ async function build(canvas, kind, dark){
   const envSky = new T.Mesh(skyGeo, skyMat); envSky.scale.setScalar(.04); envScene.add(envSky);
   const envSun = new T.Mesh(sunGeo, sunMat); envScene.add(envSun);
   const makeEnv = () => {
-    envSun.position.copy(sunDir).multiplyScalar(30); envSun.scale.setScalar(sunR * 30 / SUN_D); envSun.lookAt(0, 0, 0);
+    envSun.position.copy(sunDir).multiplyScalar(30); envSun.scale.setScalar(sunR * 30 / SUN_D * SUN_GS); envSun.lookAt(0, 0, 0);
     const u = skyU.uStars.value; skyU.uStars.value = 0;
     const rt = pmrem.fromScene(envScene, 0, .1, 100);
     skyU.uStars.value = u;
@@ -428,11 +540,19 @@ async function build(canvas, kind, dark){
 
   /* palms (palmArrays): a geometry per variant, made once and shared; dark against the sky, lit round the edges by the low sun */
   const palmMat = std({ color:'#ffffff', roughness:.8, vertexColors:true, side:T.DoubleSide, envMapIntensity:.35 });
+  /* the fronds sway, a little and slowly (the owner asked): about six seconds a swing, a frond's tip moving some fifteen
+     centimetres either way, in a breeze that comes and goes; the trunk keeps still */
+  const palmU = { value:0 };
+  palmMat.onBeforeCompile = sh => { sh.uniforms.uSway = palmU;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 sway; uniform float uSway;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n{ float g = .65 + .35 * sin(uSway * .43 + sway.y * .2);\n' +
+        '  transformed += vec3(sin(uSway * 1.05 + sway.y), .4 * sin(uSway * 1.7 + sway.y * 1.9), .8 * cos(uSway * .83 + sway.y * 1.3)) * sway.x * .16 * g; }'); };
+  palmMat.customProgramCacheKey = () => 'sy-palm';
   const palmGeo = [];
   const palm = (v, x, z, s, ry) => {
     if (!palmGeo[v]){
       const a = palmArrays(PALM_SEEDS[v]), g = keep(new T.BufferGeometry());
-      g.setAttribute('position', new T.BufferAttribute(a.pos, 3)); g.setAttribute('color', new T.BufferAttribute(a.col, 3));
+      g.setAttribute('position', new T.BufferAttribute(a.pos, 3)); g.setAttribute('color', new T.BufferAttribute(a.col, 3)); g.setAttribute('sway', new T.BufferAttribute(a.sw, 2));
       g.computeVertexNormals(); g.computeBoundingSphere(); palmGeo[v] = g;
     }
     const m = new T.Mesh(palmGeo[v], palmMat); m.position.set(x, -.1, z); m.scale.setScalar(s); m.rotation.y = ry; scene.add(m); return m;
@@ -440,18 +560,73 @@ async function build(canvas, kind, dark){
   const _m = new T.Matrix4(), _q = new T.Quaternion(), _e = new T.Euler(), _s = new T.Vector3(), _p = new T.Vector3();
   /* the sea */
   let sea = null;
-  const makeSea = (size, rip) => {
+  const makeSea = (size, rip, shader) => {
     const g = keep(new T.PlaneGeometry(size, size));
     if (RF && hdr){
-      sea = new RF.Reflector(g, { textureWidth:256, textureHeight:256, multisample:0, clipBias:.002, shader:SEA });
+      sea = new RF.Reflector(g, { textureWidth:256, textureHeight:256, multisample:SMALL ? 0 : 4, clipBias:.002, shader:shader || SEA });      // smoothed edges in the reflection too (they were jagged, and sparkled as the water moved)
       const u = sea.material.uniforms; u.uDeep.value = new T.Color(); u.uFog.value = new T.Color(); u.uFogR.value = new T.Vector2(80, 900); u.uRip.value = rip || 1;
       u.color.value = new T.Color(.92, .9, .95);
+      if (u.uPlaza){ u.uPlaza.value = new T.Vector4(1, 1, 0, 0); u.uPave.value = new T.Color(0, 0, 0); }      // (no plaza, until a scene lays one)
       dispose.push({ dispose:() => sea.dispose() });
     } else sea = new T.Mesh(g, std({ color:'#0c0716', roughness:.12, metalness:.9 }));
     sea.rotation.x = -Math.PI / 2; scene.add(sea);
     return sea;
   };
 
+  /* geometry from plain arrays (geo: its normals worked out; geoN: [positions, normals]) */
+  const geo = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a, 3)); g.computeVertexNormals(); return g; };
+  const geoN = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a[0], 3)); g.setAttribute('normal', new T.Float32BufferAttribute(a[1], 3)); return g; };
+  /* a soft round glow (white, its alpha falling off through stops), for halos and pools of light */
+  const glowTex = (w, h, stops) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.translate(w / 2, h / 2); x.scale(w / 2, h / 2);
+    const gr = x.createRadialGradient(0, 0, 0, 0, 0, 1); stops.forEach(q => gr.addColorStop(q[0], 'rgba(255,255,255,' + q[1] + ')')); x.fillStyle = gr; x.fillRect(-1, -1, 2, 2); return keep(new T.CanvasTexture(c)); };
+  /* the towers (models/synth/towers.glb), placed from a list [{ n, x, z, s, ry }]: their windows lit in strips by the shader, a
+     fixed pattern (made from where each window is), the colour one uniform for all (pal.win) */
+  let towerMat = null;
+  const towers = list => {
+    if (!towerMat){
+      const win = { uWin:{ value:new T.Color() } };
+      const wallMat = std({ color:'#0c0a12', roughness:.42, metalness:.35, envMapIntensity:.9, vertexColors:true });
+      wallMat.onBeforeCompile = sh => {
+        sh.uniforms.uWin = win.uWin;
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vSyW; varying vec3 vSyN;')
+          .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n#ifdef USE_INSTANCING\n vSyW = (modelMatrix * instanceMatrix * vec4(transformed, 1.)).xyz; vSyN = mat3(modelMatrix) * mat3(instanceMatrix) * objectNormal;\n#else\n vSyW = (modelMatrix * vec4(transformed, 1.)).xyz; vSyN = mat3(modelMatrix) * objectNormal;\n#endif');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vSyW; varying vec3 vSyN; uniform vec3 uWin;\n' + GLSL_HASH)
+          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
+            '{ vec3 n = normalize(vSyN); float side = step(.7, 1. - abs(n.y));\n' +
+            '  vec2 td = normalize(vec2(-n.z, n.x) + 1e-5); float u = dot(vSyW.xz, td) / 3.2, fy = vSyW.y / 3.6;\n' +
+            '  float row = floor(fy), cl = floor(u), h = h21(vec2(row, cl + floor(dot(vSyW.xz, vec2(n.x, n.z)) * .05) * 17.));\n' +
+            '  float run = h21(vec2(row * 1.3, floor(u / 5.) + 3.)), on = step(.42, run) * step(.18, h);\n' +
+            '  float inRow = smoothstep(.3, .36, fract(fy)) * (1. - smoothstep(.64, .7, fract(fy)));\n' +
+            '  totalEmissiveRadiance += uWin * on * inRow * side * step(6., vSyW.y) * (.55 + .9 * fract(h * 7.)); }');
+      };
+      wallMat.customProgramCacheKey = () => 'sy-windows';
+      towerMat = { wall:wallMat, frame:std({ color:'#120e1a', roughness:.5, metalness:.4, envMapIntensity:.8 }), dark:std({ color:'#07050b', roughness:.7 }),
+                   glass:std({ color:'#0a0812', roughness:.3, metalness:.75, envMapIntensity:1.1 }) };       // not a mirror: a mirror that small catches the sun for one frame at a time
+      pal.win = win.uWin;
+    }
+    for (const n of ['tower-a', 'tower-c', 'tower-e']){
+      const items = list.filter(t => t.n === n); if (!items.length || !M[n]) continue;
+      for (const part in M[n].parts){
+        const im = new T.InstancedMesh(M[n].parts[part], towerMat[part] || towerMat.dark, items.length);
+        items.forEach((t, i) => { _e.set(0, t.ry, 0); _q.setFromEuler(_e); _s.set(t.s, t.s * 1.15, t.s); _p.set(t.x, t.y == null ? 2.5 : t.y, t.z); im.setMatrixAt(i, _m.compose(_p, _q, _s)); });
+        im.computeBoundingSphere(); scene.add(im);
+      }
+    }
+  };
+  /* a street light: a slim dark pole, an arm out to -x, a hood and a warm glowing lens under it (its halo and pool are the scene's) */
+  let lampParts = null;
+  const lamp = () => {
+    if (!lampParts){
+      const pole = keep(new T.CylinderGeometry(.06, .09, 6.3, 10)); pole.translate(0, 3.15, 0);
+      const arm = keep(new T.BoxGeometry(1.75, .07, .07)); arm.translate(-.82, 6.25, 0);
+      const hood = keep(new T.BoxGeometry(.62, .12, .3)); hood.translate(-1.62, 6.24, 0);
+      const lens = keep(new T.BoxGeometry(.52, .04, .22)); lens.translate(-1.62, 6.16, 0);
+      lampParts = { pole, arm, hood, lens, metal:std({ color:'#140c1c', roughness:.45, metalness:.6 }), glow:keep(new T.MeshBasicMaterial({ color:new T.Color(4, 1.9, .9) })) };
+    }
+    const L = lampParts, g = new T.Group();
+    g.add(new T.Mesh(L.pole, L.metal), new T.Mesh(L.arm, L.metal), new T.Mesh(L.hood, L.metal), new T.Mesh(L.lens, L.glow));
+    return g;
+  };
   /* a low island of sand: a flattened dome, its edge ragged and its top uneven, so it isn't a disc */
   const islet = (x, z, rx, rz, h, seed) => {
     const r = rnd(seed), ph = [r() * 6.3, r() * 6.3, r() * 6.3];
@@ -491,7 +666,10 @@ async function build(canvas, kind, dark){
 
   if (kind === 'drive'){
     /* the road runs into the screen (-z), straight at the sun, through a canyon of crags; the car in its right-hand lane */
-    sunDir = DIR(0, .095); sunR = 128; look.fogNear = 40; look.fogFar = 950;
+    sunDir = DIR(0, .095); sunR = 170; look.fogNear = 40; look.fogFar = 950;      // the sun bigger (the owner asked; it was 128)
+    /* the road's end, the sun and the car to the right of the picture on a wide screen (a shift of the lens: nothing turns), where
+       Home's page, moved a little the other way (skins/synth.css), leaves them clear */
+    look.shift = a => .09 * clamp((a - 1.2) / .4, 0, 1);
     const SPEED = 9;                                       /* m/s: nearly seven grid rows (4/3 m) a second. The owner asked for the road to go by fast (it was 1.4). Under 13, so a row never moves half a cell in a frame even at twenty frames a second (past that the lines seem to run backwards) */
     /* the road: two lanes, each two of the floor's 4/3 m cells wide (2.67 m: the car, 1.93 m, with a little room either side),
        so its edges (at ROAD, either side of the middle) fall on grid lines */
@@ -535,7 +713,7 @@ async function build(canvas, kind, dark){
     for (const sd of [-1, 1]){
       const S = sd > 0 ? 400 : 700;
       const ring = w => { const a = w / R; return [R * Math.cos(a), R * Math.sin(a)]; };       // round the loop, so the noise repeats with it
-      const foot = w => { const [c, s] = ring(w); return ROAD + 1 + 15 * clamp((fbm3(0, c / 75, s / 75, S + 1, 3) - .3) / .42, 0, 1); };   // where the hills start: never nearer the road's edge than 0.4 m
+      const foot = w => { const [c, s] = ring(w); return ROAD + (sd > 0 ? 2.3 + 5 * clamp((fbm3(0, c / 75, s / 75, S + 1, 3) - .3) / .42, 0, 1) : .7 + 6 * clamp((fbm3(0, c / 75, s / 75, S + 1, 3) - .3) / .42, 0, 1)); };   /* nearer the road than they were (16 m at most), so less of the empty grid shows; the right keeps room for the street lights */ // where the hills start: never nearer the road's edge than 0.4 m
       const height = (x, w, d, dn) => {
         const [c, s] = ring(w);
         const big = (4 + 30 * dn) * (.3 + 1.05 * fbm3(x / 48, c / 48, s / 48, S + 2, 4));
@@ -585,8 +763,7 @@ async function build(canvas, kind, dark){
     }
     /* the car (carArrays): pearl white, so it takes the dusk's colours; dark glass; red lamps that glow; wheels in their arches */
     const car = new T.Group(); car.position.set(LANE, 0, 0); car.rotation.y = Math.PI; scene.add(car);          // in the middle of the right-hand lane
-    const ca = carArrays(), geo = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a, 3)); g.computeVertexNormals(); return g; };
-    const geoN = a => { const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(a[0], 3)); g.setAttribute('normal', new T.Float32BufferAttribute(a[1], 3)); return g; };
+    const ca = carArrays(CAR1);
     const paint = std({ color:'#e6e0f0', roughness:.46, metalness:.08, side:T.DoubleSide });      // not glossier: the low sun's glint on the roof bloomed into a white blob
     paint.userData.envK = [.6, 1];                            // the sky's light on it, [dusk, night]: the dusk's sky is many times the night's
     /* two things only the paint knows about (real lights lit the hills too).
@@ -633,8 +810,6 @@ async function build(canvas, kind, dark){
     }
     car.traverse(o => { if (o.isMesh) o.renderOrder = 3; });      // the order on the floor: its shadows and its lamps' light (1 to 2), its reflection over them (2, drawn without a depth test), then the car itself (3)
     /* soft round glows, made once: for the lamps, and for their light on the road */
-    const glowTex = (w, h, stops) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.translate(w / 2, h / 2); x.scale(w / 2, h / 2);
-      const gr = x.createRadialGradient(0, 0, 0, 0, 0, 1); stops.forEach(q => gr.addColorStop(q[0], 'rgba(255,255,255,' + q[1] + ')')); x.fillStyle = gr; x.fillRect(-1, -1, 2, 2); return keep(new T.CanvasTexture(c)); };
     const soft = glowTex(128, 128, [[0, 1], [.25, .55], [.55, .16], [1, 0]]);
     /* the lamps bloom: a halo over each, pink */
     for (const sx of [-1, 1]){ const h = new T.Sprite(keep(new T.SpriteMaterial({ map:soft, color:new T.Color(1., .1, .42), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:.44 })));
@@ -661,6 +836,17 @@ async function build(canvas, kind, dark){
     const pool = new T.Mesh(plg, keep(new T.MeshBasicMaterial({ map:soft, depthWrite:false, blending:T.AdditiveBlending, color:new T.Color(1., .1, .4), opacity:.62 })));
     pool.position.set(LANE, .032, 3.35); pool.renderOrder = 1.3; scene.add(pool);
     const cs = dark(shade(96, 192, 96, 96, [[0, 1], [.7, 1], [.88, .55], [1, 0]]), 2.25, 4.9, 1.6); cs.position.set(LANE, .034, 0);
+    /* street lights, now and then (45 to 120 m apart), on the right of the road only: a dark pole, an arm over the road's edge, a
+       warm lamp with a halo and its pool of light on the road. They come by with the road; far off they fade into the haze. */
+    const lamps = [], lr = rnd(91), LX = ROAD + 1.35;
+    for (let w = 30; w < LOOP - 40; w += 45 + lr() * 75){
+      const g = new T.Group(); g.add(lamp());
+      const halo = new T.Sprite(keep(new T.SpriteMaterial({ map:soft, color:new T.Color(1.4, .62, .3), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:.5, fog:false })));
+      halo.scale.set(2.6, 2.6, 1); halo.position.set(-1.62, 6.12, 0); g.add(halo);
+      const pm = keep(new T.MeshBasicMaterial({ map:soft, depthWrite:false, blending:T.AdditiveBlending, color:new T.Color(1., .46, .24), opacity:.5, fog:false }));
+      const pg = keep(new T.PlaneGeometry(7, 7)); pg.rotateX(-Math.PI / 2); const pl = new T.Mesh(pg, pm); pl.position.set(-1.62, .03 - 0, 0); pl.renderOrder = 1.2; g.add(pl);
+      g.position.x = LX; scene.add(g); lamps.push({ g, w, halo, pm });
+    }
     /* the car follows the pointer across its road, a long way behind it. Where the pointer wants it is smoothed first, then a soft
        spring carries the car there: so it gathers way from nothing, takes about five seconds to cross, and settles as slowly; it
        turns only a little into the move (three degrees at most), and that comes on and goes as gradually. With no pointer about
@@ -671,6 +857,7 @@ async function build(canvas, kind, dark){
       const dist = t * SPEED;
       gridU.uOff.value = dist % (4 / 3);                      // the floor comes toward us, as the hills do (it ran the other way, into the picture)
       for (const c of chunks){ const zz = (((c.k * CH - dist) % LOOP) + LOOP) % LOOP; c.m.position.z = 14 + CH - zz; }
+      for (const l of lamps){ const z = 24 - ((((l.w - dist) % LOOP) + LOOP) % LOOP), f = 1 - ss(70, 520, -z); l.g.position.z = z; l.halo.material.opacity = .5 * f; l.pm.opacity = .5 * f; }
       const a = (dist / .325) % (2 * Math.PI); wheels.forEach(w => { w.rotation.x = a; });
       const dt = lastT == null ? 0 : clamp(t - lastT, 0, .1); lastT = t;
       const p = FX.ptr, want = FOLLOW && p && p.on ? clamp((p.x - .5) * 2.4, -1, 1) * REACH : LANE;
@@ -688,39 +875,13 @@ async function build(canvas, kind, dark){
     makeSea(3000, 1);
     const shore = std({ color:'#0b0712', roughness:.9 });
     const sg = keep(new T.BoxGeometry(1600, 4, 90)); sg.translate(-100, 1, -360); scene.add(new T.Mesh(sg, shore));
-    const win = { uWin:{ value:new T.Color() }, uSeed:{ value:3 } };
-    const wallMat = std({ color:'#0c0a12', roughness:.42, metalness:.35, envMapIntensity:.9, vertexColors:true });
-    wallMat.onBeforeCompile = sh => {
-      sh.uniforms.uWin = win.uWin;
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vSyW; varying vec3 vSyN;')
-        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n#ifdef USE_INSTANCING\n vSyW = (modelMatrix * instanceMatrix * vec4(transformed, 1.)).xyz; vSyN = mat3(modelMatrix) * mat3(instanceMatrix) * objectNormal;\n#else\n vSyW = (modelMatrix * vec4(transformed, 1.)).xyz; vSyN = mat3(modelMatrix) * objectNormal;\n#endif');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vSyW; varying vec3 vSyN; uniform vec3 uWin;\n' + GLSL_HASH)
-        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
-          '{ vec3 n = normalize(vSyN); float side = step(.7, 1. - abs(n.y));\n' +
-          '  vec2 td = normalize(vec2(-n.z, n.x) + 1e-5); float u = dot(vSyW.xz, td) / 3.2, fy = vSyW.y / 3.6;\n' +
-          '  float row = floor(fy), cl = floor(u), h = h21(vec2(row, cl + floor(dot(vSyW.xz, vec2(n.x, n.z)) * .05) * 17.));\n' +
-          '  float run = h21(vec2(row * 1.3, floor(u / 5.) + 3.)), on = step(.42, run) * step(.18, h);\n' +
-          '  float inRow = smoothstep(.3, .36, fract(fy)) * (1. - smoothstep(.64, .7, fract(fy)));\n' +
-          '  totalEmissiveRadiance += uWin * on * inRow * side * step(6., vSyW.y) * (.55 + .9 * fract(h * 7.)); }');
-    };
-    wallMat.customProgramCacheKey = () => 'sy-windows';
-    const towerMat = { wall:wallMat, frame:std({ color:'#120e1a', roughness:.5, metalness:.4, envMapIntensity:.8 }), dark:std({ color:'#07050b', roughness:.7 }),
-                       glass:std({ color:'#0a0812', roughness:.3, metalness:.75, envMapIntensity:1.1 }) };       // not a mirror: a mirror that small catches the sun for one frame at a time
     const r = rnd(5), list = [];
     const names = ['tower-a', 'tower-c', 'tower-e'];
     for (let x = -310; x < 50; x += 13 + r() * 15){
       const near = Math.exp(-Math.pow((x + 120) / 110, 2));     // the tallest round the middle of the cluster
       list.push({ n:names[(r() * names.length) | 0], x, z:-338 - r() * 40, s:7 + near * 16 + r() * 5, ry:((r() * 4) | 0) * Math.PI / 2 + (r() - .5) * .3 });
     }
-    for (const n of names){
-      const items = list.filter(t => t.n === n); if (!items.length || !M[n]) continue;
-      for (const part in M[n].parts){
-        const im = new T.InstancedMesh(M[n].parts[part], towerMat[part] || towerMat.dark, items.length);
-        items.forEach((t, i) => { _e.set(0, t.ry, 0); _q.setFromEuler(_e); _s.set(t.s, t.s * 1.15, t.s); _p.set(t.x, 2.5, t.z); im.setMatrixAt(i, _m.compose(_p, _q, _s)); });
-        im.computeBoundingSphere(); scene.add(im);
-      }
-    }
-    pal.win = win.uWin;                                         // one uniform, shared by every tower
+    towers(list);
     /* the palms, and the low bank of sand they grow from */
     /* the palms: on a spit of sand on our side of the bay, off to the right */
     islet(44, -36, 34, 13, 2.4, 53);
@@ -783,6 +944,316 @@ async function build(canvas, kind, dark){
     cams = { L:{ pos:[0, 7, 40], at:[10, 28, -200], fov:38 }, P:{ pos:[40, 7, 60], at:[66, 34, -200], fov:60 } };
   }
 
+  if (kind === 'street'){
+    /* A street corner at the end of the day, wet after rain, built round a model the owner made in Blender (models/synth/cinema.glb,
+       from tools/synth/cinema.py: their cinema, and boxes for the car and the video shop). The model is theirs and will change, so
+       nothing here knows its shapes: its parts are dressed by what they are (parts: building, structure, glass, letters, neon by
+       colour, sidewalk), and everything else is placed from its layout (M.$: the car's box, the shop's box, the glass, the sign's
+       lines, where the neon is, the ground's extent).
+       What we add, after the picture they are working from (its look, not its words): the wet ground, one mirror for road and
+       forecourt alike; the cinema's look, its neon lighting the canopy round it, a lit lobby behind its glass, the sign's letters
+       as black holders with tubes of neon bent round them; the video shop built on its box (brick, pink neon along it, a lit shop
+       with shelves inside, its name in blue script: our wording); our wedge parked in the car's place; street lights; palms; inside
+       the left-hand pavement's L a plaza of wet concrete slabs (low lights along its kerbs, a bench), and past it a park for a wide
+       screen; the waterfront road across the street's end, the bay, and the city on its far shore under the sun, which stands at
+       the street's vanishing point. Still: only the sun's bands, the palms' fronds, the steadying move. */
+    const L = M.$ || {}, CP = (M.cinema || {}).parts || {}, GR = L.ground || { x0:-13, x1:29, z0:-14, z1:20 };
+    sunDir = DIR(0, .06); sunR = 104; look.fogNear = 60; look.fogFar = 1100; look.deep = '#150a26';      // the sun dead ahead down the street
+    makeSea(2400, 1, STREET);
+    if (sea.material.uniforms && sea.material.uniforms.uQuay) sea.material.uniforms.uQuay.value = GR.z0 - .15;      // past the model's far edge the ground is water
+    await Promise.race([document.fonts ? document.fonts.load('700 64px Saira') : null, new Promise(r => setTimeout(r, 1500))]).catch(() => {});
+    const UI = '"Saira", "Arial Narrow", sans-serif', SCRIPT = '"Segoe Script", "Brush Script MT", "Snell Roundhand", "Apple Chancery", cursive';
+    const PINK = '#ff3fa8', BLUE = '#3f8cff', V = (x, y, z) => new T.Vector3(x, y, z);
+    const soft2 = glowTex(128, 128, [[0, 1], [.3, .5], [.62, .14], [1, 0]]);
+    const tex = c => { const t = keep(new T.CanvasTexture(c)); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t; };
+    const canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+    /* a painted front: two canvases the same size (the colours, and what glows), drawn in metres with y up from the foot.
+       R: a rectangle (its fill; and its glow, a colour, or '' for none there). W: a gradient down a rectangle (add: as light).
+       spot: a round patch of light. hole: an opening (the material is then made with alphaTest) */
+    const sheet = (w, h, K) => { const cw = Math.round(w * K), ch = Math.round(h * K), c = canvas(cw, ch), e = canvas(cw, ch), g = c.getContext('2d'), ge = e.getContext('2d');
+      ge.fillStyle = '#000'; ge.fillRect(0, 0, cw, ch);
+      const R = (x0, y0, ww, hh, fill, glow) => { const X = x0 * K, Y = ch - (y0 + hh) * K; if (fill){ g.fillStyle = fill; g.fillRect(X, Y, ww * K, hh * K); } if (glow != null){ ge.fillStyle = glow || '#000'; ge.fillRect(X, Y, ww * K, hh * K); } };
+      const W = (ctx, x0, y0, ww, hh, top, bot, add) => { const Y = ch - (y0 + hh) * K, gr = ctx.createLinearGradient(0, Y, 0, Y + hh * K); gr.addColorStop(0, top); gr.addColorStop(1, bot);
+        ctx.globalCompositeOperation = add ? 'lighter' : 'source-over'; ctx.fillStyle = gr; ctx.fillRect(x0 * K, Y, ww * K, hh * K); ctx.globalCompositeOperation = 'source-over'; };
+      const spot = (ctx, cx, cy, r, col) => { const X = cx * K, Y = ch - cy * K, gr = ctx.createRadialGradient(X, Y, 0, X, Y, r * K); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(X - r * K, Y - r * K, 2 * r * K, 2 * r * K); ctx.globalCompositeOperation = 'source-over'; };
+      const hole = (x0, y0, ww, hh) => { g.clearRect(x0 * K, ch - (y0 + hh) * K, ww * K, hh * K); R(x0, y0, ww, hh, null, ''); };
+      return { c, g, ge, K, ch, R, W, spot, hole, mat:o => std(Object.assign({ map:tex(c), emissiveMap:tex(e), emissive:'#ffffff', emissiveIntensity:1.5, roughness:.86 }, o || {})),
+               lit:k => keep(new T.MeshBasicMaterial({ map:tex(c), color:new T.Color(k || 1, k || 1, k || 1), fog:false })) };      // lit: a surface that is its own light (a room seen through a window)
+    };
+    const bricks = (S, w, h, seed, light, dark) => { const r = rnd(seed), K = S.K; for (let y = 0, row = 0; y < h; y += .085, row++) for (let x0 = -(row % 2) * .115; x0 < w; x0 += .23){ const t = r();
+      S.g.fillStyle = t < .5 ? 'rgba(' + light + ',' + (t * .2).toFixed(3) + ')' : 'rgba(' + dark + ',' + ((t - .5) * .4).toFixed(3) + ')'; S.g.fillRect(x0 * K, S.ch - (y + .075) * K, .22 * K - 1, .075 * K - 1); } };
+    /* neon: a lit tube (a thin box from a to b), and a sign: words in light on a plane. A sign's rows: { t, size (m), y and x (m, from
+       the plane's middle), font, style, color, spread (set the letters evenly across this much of the width), fill (script: filled, not outlined) } */
+    const tube = (a, b, col, k, r) => { const Ln = a.distanceTo(b), g = keep(new T.BoxGeometry(r || .06, r || .06, Ln));
+      const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ color:new T.Color(col).multiplyScalar(k || 2.6), fog:false }))); m.position.addVectors(a, b).multiplyScalar(.5); m.lookAt(b); scene.add(m); return m; };
+    const sign = (w, h, rows, o) => {
+      const PX = o.px || 96, c = canvas(Math.round(w * PX), Math.round(h * PX)), x = c.getContext('2d');
+      x.lineJoin = x.lineCap = 'round'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      for (const r of rows){
+        const fs = r.size * PX, col = r.color || o.color, cy = c.height / 2 - (r.y || 0) * PX, cx = c.width / 2 + (r.x || 0) * PX; x.font = (r.style || '700') + ' ' + fs + 'px ' + (r.font || UI);
+        const put = () => { const one = (ch, px) => r.fill ? x.fillText(ch, px, cy) : x.strokeText(ch, px, cy);
+          if (r.spread){ const Lt = r.t.split(''), step = c.width * r.spread / Lt.length, x0 = cx - step * (Lt.length - 1) / 2; Lt.forEach((ch, i) => one(ch, x0 + i * step)); } else one(r.t, cx); };
+        const lw = fs * (r.lw || .07);
+        x.shadowColor = col; x.strokeStyle = x.fillStyle = col; x.lineWidth = lw; x.shadowBlur = fs * .3; put(); x.shadowBlur = fs * .1; put();
+        if (r.fill){ x.lineWidth = fs * .035; x.shadowBlur = fs * .12; const f = r.fill; r.fill = false; put(); r.fill = f; }      // script: its strokes thickened
+        x.shadowBlur = 0; x.strokeStyle = '#fff6fb'; x.fillStyle = 'rgba(255,255,255,.55)'; x.lineWidth = lw * .3; put();
+      }
+      const k = o.k || 2, m = new T.Mesh(keep(new T.PlaneGeometry(w, h)), keep(new T.MeshBasicMaterial({ map:tex(c), transparent:true, blending:T.AdditiveBlending, depthWrite:false, color:new T.Color(k, k, k), fog:false })));
+      m.renderOrder = 2; scene.add(m); return m;
+    };
+    /* light lying on the ground (a soft round patch, added), a real point of light, and a halo */
+    const pool = (x, y, z, w, d, col, op) => { const g = keep(new T.PlaneGeometry(w, d)); g.rotateX(-Math.PI / 2);
+      const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ map:soft2, depthWrite:false, blending:T.AdditiveBlending, color:new T.Color(col[0], col[1], col[2]), opacity:op, fog:false }))); m.position.set(x, y, z); m.renderOrder = 1.2; scene.add(m); return m; };
+    /* many small patches of light on the ground at once (one mesh): pts [[x, z], ...], each s metres across */
+    const pools = (pts, y, s, col, op) => { const pos = [], uv = [], idx = [], h = s / 2;
+      pts.forEach(([x, z], i) => { pos.push(x - h, y, z - h, x + h, y, z - h, x + h, y, z + h, x - h, y, z + h); uv.push(0, 0, 1, 0, 1, 1, 0, 1); idx.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4, i * 4 + 3, i * 4 + 2); });
+      const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+      const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ map:soft2, depthWrite:false, blending:T.AdditiveBlending, color:new T.Color(col[0], col[1], col[2]), opacity:op, fog:false }))); m.renderOrder = 1.2; scene.add(m); return m; };
+    const lightAt = (col, I, p, dist) => { const l = new T.PointLight(col, I, dist, 2); l.position.copy(p); scene.add(l); return l; };
+    const halo = (p, col, s, op) => { const h = new T.Sprite(keep(new T.SpriteMaterial({ map:soft2, color:new T.Color(col[0], col[1], col[2]), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:op, fog:false }))); h.scale.set(s, s, 1); h.position.copy(p); scene.add(h); return h; };
+    const plain = std({ color:'#170d1e', roughness:.9 }), roofM = std({ color:'#0d0812', roughness:.9 });
+    const boxAt = (w, h, d, x, y, z, m) => { const o = new T.Mesh(keep(new T.BoxGeometry(w, h, d)), m); o.position.set(x, y, z); scene.add(o); return o; };      // (m: one material, or six: +x, -x, +y, -y, +z, -z)
+    const faceSt = m => { m.rotation.y = -Math.PI / 2; return m; };      // a plane turned to face the street (-x); its picture then runs from the far end (-z) to the near
+    const wallAt = (w, h, x, y, z, m, ry) => { const o = new T.Mesh(keep(new T.PlaneGeometry(w, h)), m); o.position.set(x, y, z); o.rotation.y = ry; scene.add(o); return o; };
+    /* a tube bent along a line of points (the sign's neon): a ring of six at each point, turned as little as may be from the last */
+    const tubeAlong = (P, r, closed) => { const n = P.length, pos = [], idx = [], SD = 6, t = V(0, 0, 0), a = V(0, 1, 0), b = V(0, 0, 0);
+      for (let i = 0; i < n; i++){ t.subVectors(P[closed ? (i + 1) % n : Math.min(n - 1, i + 1)], P[closed ? (i - 1 + n) % n : Math.max(0, i - 1)]).normalize();
+        a.addScaledVector(t, -a.dot(t)); if (a.lengthSq() < 1e-6) a.set(1, 0, 0).addScaledVector(t, -t.x); a.normalize(); b.crossVectors(t, a);
+        for (let k = 0; k < SD; k++){ const q = k / SD * Math.PI * 2, c = Math.cos(q) * r, s = Math.sin(q) * r; pos.push(P[i].x + a.x * c + b.x * s, P[i].y + a.y * c + b.y * s, P[i].z + a.z * c + b.z * s); } }
+      for (let i = 0; i < (closed ? n : n - 1); i++){ const i1 = (i + 1) % n; for (let k = 0; k < SD; k++){ const k1 = (k + 1) % SD; idx.push(i * SD + k, i1 * SD + k, i1 * SD + k1, i * SD + k, i1 * SD + k1, i * SD + k1); } }
+      const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx); return g; };
+
+    /* ── the model's neon: each colour its own light. And that light on what is near it: the canopy's rings, the fin and the wall are
+       lit in the shader from where the neon is (rings of it, and points along the rest), since real lights for a dozen tubes
+       would cost far too much ── */
+    const NEON = { blue:[.05, .2, 1], cyan:[0, .72, 1], green:[.05, 1, .35], yellow:[1, .66, .04], red:[1, .03, .12], pink:[1, .06, .55], white:[1, .9, .95], orange:[1, .34, .03], purple:[.5, .1, 1] };
+    const hue = n => NEON[n] || NEON.pink, hot = (n, k) => { const c = hue(n); return new T.Color((c[0] * .93 + .07) * k, (c[1] * .93 + .07) * k, (c[2] * .93 + .07) * k); };      // a tube: its colour, a little paler, and brighter than white (so it blooms)
+    const GL = L.glow || {}, rings = (GL.rings || []).slice(0, 8), gpts = (GL.pts || []).slice(0, 16);
+    if (L.sign) for (const lp of (L.sign.loops || []).slice(0, 8)) if (gpts.length < 24) gpts.push({ p:[lp[0], lp[1], lp[2]], col:'pink', k:.6 });      // the sign's own tubes: a point a letter
+    const NR = Math.max(1, rings.length), NP = Math.max(1, gpts.length);
+    const glowU = { uRing:{ value:Array.from({ length:NR }, (_, i) => rings[i] ? new T.Vector4(rings[i].c[0], rings[i].c[1], rings[i].c[2], rings[i].r) : new T.Vector4(0, -99, 0, 1)) },
+      uRingC:{ value:Array.from({ length:NR }, (_, i) => rings[i] ? new T.Color(...hue(rings[i].col)) : new T.Color(0, 0, 0)) },
+      uPt:{ value:Array.from({ length:NP }, (_, i) => gpts[i] ? V(...gpts[i].p) : V(0, -99, 0)) },
+      uPtC:{ value:Array.from({ length:NP }, (_, i) => gpts[i] ? new T.Color(...hue(gpts[i].col)).multiplyScalar(gpts[i].k || 1) : new T.Color(0, 0, 0)) }, uGlowK:{ value:1 } };
+    const glowLit = (m, k) => { m.onBeforeCompile = sh => { Object.assign(sh.uniforms, glowU);
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vGW; varying vec3 vGN;')
+          .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n vGW = (modelMatrix * vec4(transformed, 1.)).xyz; vGN = mat3(modelMatrix) * objectNormal;');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vGW; varying vec3 vGN; uniform vec4 uRing[' + NR + ']; uniform vec3 uRingC[' + NR + ']; uniform vec3 uPt[' + NP + ']; uniform vec3 uPtC[' + NP + ']; uniform float uGlowK;')
+          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
+            '{ vec3 n = normalize(vGN) * (gl_FrontFacing ? 1. : -1.), gsum = vec3(0.);\n' +
+            '  for (int i = 0; i < ' + NR + '; i++){ vec2 d2 = vGW.xz - uRing[i].xz; float rr = max(length(d2), 1e-4); vec3 q = vec3(uRing[i].x + d2.x / rr * uRing[i].w, uRing[i].y, uRing[i].z + d2.y / rr * uRing[i].w) - vGW;\n' +       /* towards the nearest point of the ring */
+            '    float d = length(q); gsum += uRingC[i] * (.25 + .75 * max(dot(n, q / max(d, 1e-4)), 0.)) * (1. - smoothstep(1., 3.2, d)) / (.1 + d * 1.6); }\n' +
+            '  for (int i = 0; i < ' + NP + '; i++){ vec3 q = uPt[i] - vGW; float d2 = dot(q, q); gsum += uPtC[i] * (.25 + .75 * max(dot(n, q * inversesqrt(d2 + 1e-5)), 0.)) * (1. - smoothstep(4., 16., d2)) / (.5 + d2 * 1.5); }\n' +
+            '  totalEmissiveRadiance += gsum * (diffuseColor.rgb * .5 + .05) * uGlowK * ' + (k || 1).toFixed(2) + '; }'); };
+      m.customProgramCacheKey = () => 'sy-glow' + NR + '.' + NP + '.' + (k || 1); return m; };
+    const structM = glowLit(std({ color:'#221a33', roughness:.46, metalness:.3, side:T.DoubleSide }), 2.6), wallM = glowLit(std({ color:'#191536', roughness:.9, side:T.DoubleSide }), 2.2);
+    structM.userData.envK = [.3, .3]; wallM.userData.envK = [.25, .25];              // the sky's light on them, held down: they are lit by their neon
+    const look1 = { building:wallM, structure:structM, letters:std({ color:'#07050b', roughness:.55, side:T.DoubleSide }),
+      sidewalk:std({ color:'#2b2236', roughness:.92, side:T.DoubleSide, envMapIntensity:.25 }),
+      glass:std({ color:'#0c0a18', roughness:.06, metalness:.3, transparent:true, opacity:.3, side:T.DoubleSide, depthWrite:false }) };
+    for (const n in CP){ const neonN = /^neon /.test(n) ? n.slice(5) : null, mat = neonN ? keep(new T.MeshBasicMaterial({ color:hot(neonN, 2.2), fog:false })) : look1[n] || structM;
+      const m = new T.Mesh(CP[n], mat); if (n === 'glass') m.renderOrder = 1.4; scene.add(m); }
+    /* the sign: tubes of neon bent round the letters (which are their black holders): round each heavy stroke, down each hairline */
+    if (L.sign){ const sm = keep(new T.MeshBasicMaterial({ color:new T.Color(2.6, .5, 1.5), fog:false })), r = L.sign.r || .022;
+      const line = (a, closed) => { const P = []; for (let i = 0; i < a.length; i += 3) P.push(V(a[i], a[i + 1], a[i + 2])); if (P.length > 1) scene.add(new T.Mesh(tubeAlong(P, r, closed), sm)); };
+      (L.sign.loops || []).forEach(a => line(a, true)); (L.sign.lines || []).forEach(a => line(a, false)); }
+
+    /* ── the cinema's lobby, behind its glass: a lit room (its own light, no lamps), set back inside the building; frames on the glass ── */
+    const bb = n => { const g = CP[n]; if (!g) return null; g.computeBoundingBox(); return g.boundingBox; };
+    const BB = bb('building'), GB = bb('glass'), FR = L.front && L.front.axis === 'x' ? L.front : null;      // FR: the building's front wall (it faces the street)
+    if (BB && GB){
+      const z0 = Math.max(BB.min.z + .25, GB.min.z - 1.3), z1 = Math.min(BB.max.z - .25, GB.max.z + 1.3), x0 = (FR ? FR.at : GB.max.x) + .03, x1 = Math.min(BB.max.x - .3, x0 + 4.4), hh = Math.min(3.1, GB.max.y + .35), w = z1 - z0, d = x1 - x0;
+      const bk = sheet(w, hh, 56);                                      // the back wall: a counter with its lit case, menu boards over it, posters, the way through to the screens
+      bk.W(bk.g, 0, 0, w, hh, '#5a1838', '#2a0c24'); bk.W(bk.g, 0, hh - .5, w, .5, 'rgba(255,190,120,.5)', 'rgba(255,190,120,0)', true);
+      const cw = Math.min(3.4, w * .5), cx0 = w * .5 - cw / 2; bk.R(cx0, 0, cw, 1.05, '#1a0a18'); bk.W(bk.g, cx0 + .1, .5, cw - .2, .46, '#fff2c8', '#ffb45a'); bk.R(cx0, 1.05, cw, .06, '#e7c9a0');
+      for (let i = 0; i < 3; i++){ const mx = cx0 + .08 + i * (cw - .16) / 3; bk.W(bk.g, mx, 1.75, (cw - .16) / 3 - .08, .62, '#fff6da', '#ffd9a0'); for (let k = 0; k < 4; k++) bk.R(mx + .08, 1.85 + k * .12, (cw - .16) / 3 - .3, .035, 'rgba(90,30,40,.55)'); }
+      for (const [px, c1, c2] of [[.35, '#ff5fb0', '#5a2a9a'], [w - 1.25, '#3fd0ff', '#2a2a9a']]){ bk.R(px - .05, .75, 1.0, 1.5, '#f3d9a8'); bk.W(bk.g, px, .8, .9, 1.4, c1, c2); bk.spot(bk.g, px + .45, 1.7, .5, 'rgba(255,255,255,.35)'); }
+      const fl = sheet(d, w, 24); fl.W(fl.g, 0, 0, d, w, '#4a1230', '#3a0e2a'); for (let i = 0; i < 40; i++){ const r2 = rnd(i + 3); fl.spot(fl.g, r2() * d, r2() * w, .5 + r2() * .6, 'rgba(255,150,90,.1)'); }
+      const cl = sheet(d, w, 24); cl.R(0, 0, d, w, '#1a0a16'); for (let ix = .6; ix < d; ix += 1.1) for (let iz = .6; iz < w; iz += 1.1) cl.spot(cl.g, ix, iz, .22, 'rgba(255,230,180,1)');
+      const sd = sheet(d, hh, 32); sd.W(sd.g, 0, 0, d, hh, '#521636', '#240a20'); sd.R(d * .3, .7, 1.1, 1.5, '#f0d4a0'); sd.W(sd.g, d * .3 + .06, .76, .98, 1.38, '#ffcf5a', '#c0306a');
+      faceSt(wallAt(w, hh, x1, hh / 2, (z0 + z1) / 2, bk.lit(1.25), 0));
+      wallAt(d, hh, (x0 + x1) / 2, hh / 2, z0, sd.lit(1.05), 0); wallAt(d, hh, (x0 + x1) / 2, hh / 2, z1, sd.lit(1.05), Math.PI);
+      const fg = keep(new T.PlaneGeometry(d, w)); fg.rotateX(-Math.PI / 2); const fm = new T.Mesh(fg, fl.lit(1)); fm.position.set((x0 + x1) / 2, .03, (z0 + z1) / 2); scene.add(fm);
+      const cg = keep(new T.PlaneGeometry(d, w)); cg.rotateX(Math.PI / 2); const cm = new T.Mesh(cg, cl.lit(1.6)); cm.position.set((x0 + x1) / 2, hh, (z0 + z1) / 2); scene.add(cm);
+      /* the glass's frames: an upright at each end of a pane and every metre or so along it, a rail across at door height */
+      const fr = std({ color:'#0b0810', roughness:.4, metalness:.6 }), bar = keep(new T.BoxGeometry(1, 1, 1));
+      for (const g of L.glass || []){ const nx = g.n[0], nz = g.n[2], tx = -nz, tz = nx, cx = (g.min[0] + g.max[0]) / 2, cz = (g.min[2] + g.max[2]) / 2, half = Math.hypot(g.max[0] - g.min[0], g.max[2] - g.min[2]) / 2, y0 = Math.max(0, g.min[1]), y1 = g.max[1];
+        const nV = Math.max(1, Math.round(half * 2 / 1.0));
+        for (let i = 0; i <= nV; i++){ const s = -half + 2 * half * i / nV, m = new T.Mesh(bar, fr); m.scale.set(.07, y1 - y0, .07); m.position.set(cx + tx * s, (y0 + y1) / 2, cz + tz * s); scene.add(m); }
+        for (const yy of [y1 - .03, Math.min(y1 - .45, 2.12)]){ const m = new T.Mesh(bar, fr); m.scale.set(.06, .06, half * 2); m.position.set(cx, yy, cz); m.rotation.y = Math.atan2(tx, tz); scene.add(m); } }
+      const gc = V((GB.min.x + GB.max.x) / 2, 0, (GB.min.z + GB.max.z) / 2);
+      pool(GB.min.x - 2.4, .012, gc.z, 7.5, 8.5, [1, .6, .34], .5); lightAt('#ffb070', 22, V(GB.min.x - 1.2, 1.9, gc.z), 12);
+      /* two lines of blue along the building's front, as the picture's cinema has */
+      if (FR) for (const y of [FR.max[1] - .2, FR.max[1] - 2.2]) tube(V(FR.at - .07, y, FR.min[2] + .1), V(FR.at - .07, y, FR.max[2] - .1), '#2a5cff', 2.3, .06);
+    }
+    /* the neon's light on the wet ground under the canopy, and one real light among the rings (for the car, the kerbs and the palms) */
+    if (rings.length){ const c = rings[0].c, lowY = Math.min(...rings.map(q => q.c[1])), rad = Math.max(...rings.map(q => q.r));
+      pool(c[0] - rad * .55, .012, c[2], rad * 2.6, rad * 2.9, [1, .2, .62], .42); pool(c[0] - rad * 1.2, .012, c[2] + rad * .5, rad * 2.2, rad * 2.2, [.25, .4, 1], .3);
+      lightAt('#ff5fb8', 34, V(c[0] - rad * .9, lowY - .5, c[2]), 17); lightAt('#5f8cff', 16, V(c[0] - rad * 1.5, 1.5, c[2] + rad * 1.1), 15);      // (out over the forecourt, low: up among the rings it put a white glint on them)
+      /* small warm lamps set in the canopy's underside, round the entrance */
+      const SB = bb('structure'), low = rings.reduce((a, q) => q.c[1] < a.c[1] ? q : a);
+      if (SB){ const rr = low.r * .68, dot = keep(new T.CircleGeometry(.075, 12)), dm = keep(new T.MeshBasicMaterial({ color:new T.Color(3.4, 2.2, 1.2), fog:false }));
+        for (let i = 0; i < 18; i++){ const a = i / 18 * Math.PI * 2, x = low.c[0] + Math.cos(a) * rr, z = low.c[2] + Math.sin(a) * rr; if (FR && x > FR.at - .3) continue;
+          const d = new T.Mesh(dot, dm); d.rotation.x = Math.PI / 2; d.position.set(x, SB.min.y - .012, z); scene.add(d); } } }
+
+    /* ── the video shop, built on the model's box for it: brick, pink neon along it, tall windows upstairs; downstairs a lit shop seen
+       through its window (shelves of tapes along the back, two stands, a counter), its name in blue script over it ── */
+    const ST = L.store;
+    if (ST){
+      const x0 = ST.x0, zA = ST.z0, BW = ST.z1 - ST.z0, BH = ST.y1, SD = ST.x1 - ST.x0, GF = Math.min(4.4, BH * .46), rb = rnd(7);
+      const fb = sheet(BW, BH, 40), NY = [GF + .34, BH - 1.2];
+      fb.R(0, 0, BW, BH, '#3d1528'); bricks(fb, BW, BH, 5, '255,150,190', '0,0,0');
+      for (const yn of NY){                                 /* each neon line's light on the brick: strong under it, a little over it */
+        fb.W(fb.g, 0, yn - 2.7, BW, 2.7, 'rgba(255,50,160,.55)', 'rgba(255,50,160,0)', true); fb.W(fb.g, 0, yn, BW, 1.1, 'rgba(255,50,160,0)', 'rgba(255,50,160,.3)', true);
+        fb.W(fb.ge, 0, yn - 2.7, BW, 2.7, 'rgba(255,40,150,.5)', 'rgba(255,40,150,0)', true); fb.W(fb.ge, 0, yn, BW, 1.1, 'rgba(255,40,150,0)', 'rgba(255,40,150,.28)', true);
+        fb.R(0, yn - .24, BW, .36, '#8f6889'); fb.W(fb.ge, 0, yn - .24, BW, .36, 'rgba(255,90,180,.5)', 'rgba(255,60,160,.3)', true); }
+      const win = (S, cx, y0, ww, wh, lit) => { const xx = cx - ww / 2;
+        S.R(xx - .2, y0 - .14, ww + .4, wh + .34, '#86627f'); S.R(xx, y0, ww, wh, '#0a0612', '');
+        if (lit){ S.W(S.g, xx + .06, y0 + .06, ww - .12, wh - .12, '#d3f0e8', '#7fb6b2'); S.W(S.ge, xx + .06, y0 + .06, ww - .12, wh - .12, 'rgba(180,230,220,.6)', 'rgba(100,160,165,.42)');
+          for (let k = 0; k < 9; k++){ const cxx = (xx + .1 + k * (ww - .2) / 9) * S.K, al = (.08 + rb() * .18).toFixed(2); for (const ctx of [S.g, S.ge]){ ctx.fillStyle = 'rgba(20,40,50,' + al + ')'; ctx.fillRect(cxx, S.ch - (y0 + wh - .06) * S.K, .05 * S.K, (wh - .12) * S.K); } } }
+        else S.W(S.g, xx + .06, y0 + .06, ww - .12, wh - .12, 'rgba(130,60,160,.55)', 'rgba(20,10,30,.2)');
+        S.R(cx - .035, y0, .07, wh, '#150c1c', ''); S.R(xx, y0 + wh * .62, ww, .06, '#150c1c', ''); };
+      const WY = GF + 1.15, WH = Math.max(1.6, Math.min(2.6, BH - GF - 2.9)), nW = Math.max(1, Math.round(BW / 3.1));
+      for (let i = 0; i < nW; i++) win(fb, (i + .5) * BW / nW, WY, 1.5, WH, [1, 0, 1, 1, 0][i % 5] === 1);
+      /* its ground floor: a dark painted front, pale piers, the shop's window and its door (openings: the shop is behind them) */
+      const DOOR = [.7, 1.95], SHOP = [2.55, BW - .75];
+      fb.R(0, 0, BW, GF, '#1b0c1d', ''); fb.W(fb.g, 0, GF - 1.2, BW, 1.2, 'rgba(255,50,160,.34)', 'rgba(255,50,160,0)', true); fb.W(fb.ge, 0, GF - 1.2, BW, 1.2, 'rgba(255,40,150,.3)', 'rgba(255,40,150,0)', true);
+      for (const px of [.06, DOOR[1] + .14, BW - .66]){ fb.W(fb.g, px, 0, .46, GF, '#c9b9d6', '#8a7a9c'); fb.R(px, 0, .07, GF, 'rgba(255,255,255,.18)'); fb.R(px + .38, 0, .08, GF, 'rgba(0,0,0,.3)'); }
+      fb.R(SHOP[0] - .12, .43, SHOP[1] - SHOP[0] + .24, 2.66, '#0d0712', ''); fb.R(DOOR[0] - .1, 0, DOOR[1] - DOOR[0] + .2, 2.72, '#0d0712', '');
+      fb.spot(fb.g, (SHOP[0] + SHOP[1]) / 2, GF - .55, 3.4, 'rgba(50,120,255,.5)'); fb.spot(fb.ge, (SHOP[0] + SHOP[1]) / 2, GF - .55, 3.2, 'rgba(40,110,255,.42)');      // the blue of its sign on the wall
+      fb.hole(SHOP[0], .55, SHOP[1] - SHOP[0], 2.42); fb.hole(DOOR[0], .04, DOOR[1] - DOOR[0], 2.58);
+      /* its end wall (towards us): brick, the neon carried round, two windows a floor */
+      const fe = sheet(SD, BH, 40); fe.R(0, 0, SD, BH, '#34122a'); bricks(fe, SD, BH, 9, '255,150,190', '0,0,0');
+      for (const yn of NY){ fe.W(fe.g, 0, yn - 2.4, SD, 2.4, 'rgba(255,50,160,.45)', 'rgba(255,50,160,0)', true); fe.W(fe.ge, 0, yn - 2.4, SD, 2.4, 'rgba(255,40,150,.4)', 'rgba(255,40,150,0)', true); fe.R(0, yn - .24, SD, .36, '#8f6889'); fe.W(fe.ge, 0, yn - .24, SD, .36, 'rgba(255,90,180,.5)', 'rgba(255,60,160,.3)', true); }
+      win(fe, SD * .3, WY, 1.3, WH, false); win(fe, SD * .72, WY, 1.3, WH, true); fe.R(0, 0, SD, GF, '#1b0c1d', ''); fe.W(fe.g, 0, GF - 1.2, SD, 1.2, 'rgba(255,50,160,.3)', 'rgba(255,50,160,0)', true);
+      boxAt(SD, BH, BW, x0 + SD / 2, BH / 2, zA + BW / 2, [plain, fb.mat({ alphaTest:.5 }), roofM, roofM, fe.mat(), plain]);
+      for (const yn of NY){ tube(V(x0 - .14, yn, zA + .1), V(x0 - .14, yn, zA + BW + .14), PINK, 2.7, .07); tube(V(x0 - .14, yn, zA + BW + .14), V(x0 + SD - .1, yn, zA + BW + .14), PINK, 2.7, .07); }
+      /* the shop inside: its own light (a bright, cool room), five metres deep. Shelves of tapes: rows of spines */
+      const spines = (S, x00, y00, ww, hh2, rows) => { const cols = ['#ff4f9a', '#35d6e8', '#ffd84a', '#7a5cff', '#f4f0ff', '#ff7a3a', '#2a2a40', '#3aa0ff'];
+        S.R(x00, y00, ww, hh2, '#191326'); const rh = hh2 / rows;
+        for (let r2 = 0; r2 < rows; r2++){ S.R(x00, y00 + r2 * rh, ww, .04, '#0c0914'); for (let sx = x00 + .03; sx < x00 + ww - .06;){ const sw = .028 + rb() * .03, sh2 = rh * (.7 + rb() * .18); if (rb() < .9){ S.R(sx, y00 + r2 * rh + .05, sw, sh2, cols[(rb() * cols.length) | 0]); if (rb() < .5) S.R(sx, y00 + r2 * rh + .05 + sh2 * .62, sw, sh2 * .12, 'rgba(255,255,255,.75)'); } sx += sw + .006; } } };
+      const RD = Math.min(5, SD - .5), RH = Math.min(3.25, GF - .6), rx0 = x0 + .03, rx1 = x0 + RD, rw = BW - .24, rz = zA + .12;
+      const sb = sheet(rw, RH, 64); sb.W(sb.g, 0, 0, rw, RH, '#d9f1f2', '#a9d6dc'); spines(sb, .25, .15, rw - .5, 1.95, 5); sb.R(.25, 2.25, rw - .5, .42, '#1d1740'); for (let i = 0; i < 5; i++) sb.W(sb.g, .45 + i * (rw - .9) / 5, 2.3, (rw - .9) / 5 - .2, .32, ['#ff5fb0', '#39d0e6', '#ffd24a', '#8a6cff', '#ff8a4a'][i], '#ffffff');
+      const ss = sheet(RD, RH, 64); ss.W(ss.g, 0, 0, RD, RH, '#cdeaec', '#9fcfd6'); spines(ss, .2, .15, RD - .4, 1.95, 5);
+      const sf = sheet(RD, rw, 32); for (let ix = 0; ix * .5 < RD; ix++) for (let iz = 0; iz * .5 < rw; iz++) sf.R(ix * .5, iz * .5, .5, .5, (ix + iz) % 2 ? '#e9f6f6' : '#7fb9c2');
+      const sc2 = sheet(RD, rw, 32); sc2.R(0, 0, RD, rw, '#c5dfe2'); for (let iz = .9; iz < rw; iz += 1.7) sc2.R(.5, iz, RD - 1, .22, '#ffffff');
+      faceSt(wallAt(rw, RH, rx1, RH / 2, rz + rw / 2, sb.lit(1.15), 0));
+      wallAt(RD, RH, (rx0 + rx1) / 2, RH / 2, rz, ss.lit(1.05), 0); wallAt(RD, RH, (rx0 + rx1) / 2, RH / 2, rz + rw, ss.lit(1.05), Math.PI);
+      { const g = keep(new T.PlaneGeometry(RD, rw)); g.rotateX(-Math.PI / 2); const m = new T.Mesh(g, sf.lit(.95)); m.position.set((rx0 + rx1) / 2, .03, rz + rw / 2); scene.add(m);
+        const g2 = keep(new T.PlaneGeometry(RD, rw)); g2.rotateX(Math.PI / 2); const m2 = new T.Mesh(g2, sc2.lit(1.5)); m2.position.set((rx0 + rx1) / 2, RH, rz + rw / 2); scene.add(m2); }
+      { const gs = sheet(2.4, 1.5, 64); spines(gs, 0, 0, 2.4, 1.5, 4); const gm = gs.lit(1.1), top = keep(new T.MeshBasicMaterial({ color:'#2a2440', fog:false }));      /* two stands of tapes, and the counter */
+        for (const [gx, ga] of [[1.55, SHOP[0] + 1.5], [3.0, SHOP[0] + 3.3]]) if (ga + 1.2 < BW) boxAt(.5, 1.5, 2.4, x0 + gx, .78, zA + ga + 1.2, [gm, gm, top, top, top, top]);
+        boxAt(.7, 1.05, 1.7, x0 + 2.1, .55, zA + (DOOR[0] + DOOR[1]) / 2 + .1, keep(new T.MeshBasicMaterial({ color:'#3b2f66', fog:false }))); boxAt(.34, .3, .4, x0 + 2.1, 1.22, zA + DOOR[1] - .1, keep(new T.MeshBasicMaterial({ color:'#e8fbff', fog:false }))); }
+      /* the window's glass and its frames; the door's */
+      const gm2 = std({ color:'#0c0a18', roughness:.06, metalness:.3, transparent:true, opacity:.2, depthWrite:false }), fr2 = std({ color:'#0b0810', roughness:.4, metalness:.6 });
+      const pane = (a0, a1, y0, y1, ups) => { const m = wallAt(a1 - a0, y1 - y0, x0 - .01, (y0 + y1) / 2, zA + (a0 + a1) / 2, gm2, -Math.PI / 2); m.renderOrder = 1.4;
+        for (let i = 0; i <= ups; i++) boxAt(.07, y1 - y0, .07, x0 - .03, (y0 + y1) / 2, zA + a0 + (a1 - a0) * i / ups, fr2); boxAt(.07, .07, a1 - a0, x0 - .03, y1, zA + (a0 + a1) / 2, fr2); boxAt(.07, .07, a1 - a0, x0 - .03, y0, zA + (a0 + a1) / 2, fr2); };
+      pane(SHOP[0], SHOP[1], .55, 2.97, Math.max(2, Math.round((SHOP[1] - SHOP[0]) / 1.9))); pane(DOOR[0], DOOR[1], .04, 2.62, 1);
+      /* its name in blue script over the window (our wording); OPEN in red inside the glass */
+      const sw2 = Math.min(5.2, SHOP[1] - SHOP[0] + .6);
+      faceSt(sign(sw2, 1.9, [{ t:'Video', size:1.12, y:.18, x:-.3, font:SCRIPT, style:'italic 700', fill:true }, { t:'rental', size:.5, y:-.58, x:1.25, font:SCRIPT, style:'italic 700', fill:true }], { color:'#2f9bff', k:2.3 })).position.set(x0 - .2, GF - .5, zA + (SHOP[0] + SHOP[1]) / 2);
+      faceSt(sign(1.1, .95, [{ t:'OPEN', size:.36, y:.17, lw:.09 }, { t:'late', size:.3, y:-.22, lw:.09 }], { color:'#ff4058', k:2.3 })).position.set(x0 + .12, 2.2, zA + SHOP[0] + .75);
+      pool(x0 - 2.6, .012, zA + (SHOP[0] + SHOP[1]) / 2, 6.5, BW * .95, [.62, .92, 1], .42); lightAt('#bfeaff', 26, V(x0 - 1.4, 1.9, zA + (SHOP[0] + SHOP[1]) / 2), 13);
+      /* a plain dark block beyond it, towards us: only there to close the right-hand edge of a wide screen */
+      { const nb = sheet(16, 7.5, 24); nb.R(0, 0, 16, 7.5, '#1b1230'); for (let i = 0; i < 5; i++) for (const y of [1.2, 4.3]) nb.R(1 + i * 3.1, y, 1.5, 2, rb() < .3 ? '#6a5a3a' : '#0c0916', rb() < .3 ? '#3a2a14' : '');
+        boxAt(SD, 7.5, 16, x0 + SD / 2 + .6, 3.75, zA + BW + 8.4, [plain, nb.mat(), roofM, roofM, plain, plain]); tube(V(x0 + .46, 7.2, zA + BW + .5), V(x0 + .46, 7.2, zA + BW + 16.3), BLUE, 2.2, .06); }
+    }
+
+    /* ── the pavements are the model's (run on past its edges). The left-hand one is an L: a strip along the street, an arm along
+       the waterfront road. Inside the L, where we stand, a plaza (the owner: "a wet, reflective concrete plaza ... some subtle
+       tiling and bollards ... a simple bench"): the mirror's own shader paves it in slabs (STREET's uPlaza), so it stays the wet
+       mirror the road is; low lights stand along its two kerbs; one bench faces the bay, where the sun lies on the slabs.
+       Past the model's left-hand end, behind a low wall of the same concrete: a park, for a wide screen (the owner: "really just
+       there to fill the space on widescreen monitors"). ── */
+    const leftW = (L.walks || []).filter(w => w.loop.every(p => p[0] < 0)), mcam = (L.cam && L.cam.pos) || [-8.6, 3.7, 28];
+    const walkX = Math.min(...leftW.map(w => Math.max(...w.loop.map(p => p[0]))), -3.4);      // the left-hand pavement's kerb
+    const parkX = Math.min(...leftW.flatMap(w => w.loop.map(p => p[0])), GR.x0, mcam[0] - 4.5);      // the park's edge: the model's left-hand end (and never under where we stand)
+    const zTop = w => Math.max(...w.loop.map(p => p[1])), xLow = w => Math.min(...w.loop.map(p => p[0]));
+    const stripW = leftW.length ? leftW.reduce((a, w) => zTop(w) > zTop(a) ? w : a) : null, armW = leftW.length ? leftW.reduce((a, w) => xLow(w) < xLow(a) ? w : a) : null;
+    const plX = stripW ? Math.min(...stripW.loop.filter(p => p[1] > zTop(stripW) - .05).map(p => p[0])) : walkX - 1.5;      // the plaza's two kerbs: the strip's inner edge,
+    const parkZ = armW && (armW !== stripW || armW.loop.length > 4) ? Math.max(...armW.loop.filter(p => p[0] < xLow(armW) + .05).map(p => p[1])) : GR.z0 + 6;      // and the arm's near edge
+    const TILE = 1.2;                                                                        // a slab, in metres
+    if (sea.material.uniforms && sea.material.uniforms.uPlaza){ const u = sea.material.uniforms; u.uPlaza.value.set(parkX, parkZ, plX, 400); u.uPave.value.set('#3a2a48'); u.uTile.value = TILE; }
+    { /* low lights along the plaza's two kerbs, half a slab in, every second slab: a dark post, a band of warm light under its cap */
+      const post = keep(new T.LatheGeometry([[0, 0], [.085, 0], [.085, .76], [.066, .76], [.066, .83], [.095, .83], [.095, .9], [0, .9]].map(q => new T.Vector2(q[0], q[1])), 16));
+      const band = keep(new T.CylinderGeometry(.07, .07, .062, 16, 1, true)); band.translate(0, .795, 0);
+      const at = [], bx = plX - TILE / 2, bz = parkZ + TILE / 2;
+      for (let x = bx; x > parkX + .4; x -= TILE * 2) at.push([x, bz]);
+      for (let z = bz + TILE * 2; z < mcam[2] - 1; z += TILE * 2) at.push([bx, z]);
+      const a = new T.InstancedMesh(post, std({ color:'#1b1424', roughness:.4, metalness:.7 }), at.length), b = new T.InstancedMesh(band, keep(new T.MeshBasicMaterial({ color:new T.Color(2.0, 1.0, .45), fog:false })), at.length);
+      at.forEach((q, i) => { _m.makeTranslation(q[0], 0, q[1]); a.setMatrixAt(i, _m); b.setMatrixAt(i, _m); }); a.computeBoundingSphere(); b.computeBoundingSphere(); scene.add(a, b);
+      pools(at, .012, 2.6, [1, .5, .26], .38); }
+    { /* the bench: slats on two iron ends, facing the bay, its back to us (x along it; its back at +z) */
+      const boxes = list => { const pos = []; for (const q of list){ const g = new T.BoxGeometry(q[0], q[1], q[2]); if (q[6]) g.rotateX(q[6]); g.translate(q[3], q[4], q[5]); const n = g.toNonIndexed(); for (const v of n.attributes.position.array) pos.push(v); g.dispose(); n.dispose(); } return geo(pos); };
+      const LB = 1.9, lean = .16, wood = [], iron = [];
+      for (const z of [-.16, -.02, .12]) wood.push([LB, .04, .12, 0, .45, z]);                                   // the seat
+      for (const y of [.62, .77]) wood.push([LB, .11, .03, 0, y, .2 + (y - .45) * lean, -lean]);                   // the back
+      for (const x of [-.74, .74]){ iron.push([.05, .43, .05, x, .215, -.19], [.05, .43, .05, x, .215, .17], [.05, .05, .46, x, .405, -.01], [.05, .4, .05, x, .625, .2 + .175 * lean, -lean]); }
+      const g = new T.Group(); g.add(new T.Mesh(boxes(wood), std({ color:'#2c1b26', roughness:.7 })), new T.Mesh(boxes(iron), std({ color:'#120b18', roughness:.45, metalness:.6 })));
+      g.position.set(plX - Math.round(4.8 / TILE) * TILE, 0, parkZ + (Math.round(12 / TILE) + .5) * TILE); scene.add(g); }
+    { const g = keep(new T.PlaneGeometry(240, 130)); g.rotateX(-Math.PI / 2); const m = new T.Mesh(g, keep(new T.MeshLambertMaterial({ color:'#12262a', emissive:'#0a1418' }))); m.position.set(parkX - 120, .09, parkZ + 65); scene.add(m);
+      /* a low wall round it, a clipped hedge behind the wall, and small lights along a path through the grass: something to see in it, not a blank */
+      const hedge = keep(new T.MeshLambertMaterial({ color:'#143229', emissive:'#0a1a16' })), wall = std({ color:'#3a2f49', roughness:.85 });
+      boxAt(.5, .46, 76, parkX - .25, .23, parkZ + 38, wall); boxAt(110, .46, .5, parkX - 55, .23, parkZ + .25, wall);
+      boxAt(.8, .8, 75, parkX - .95, .4, parkZ + 38.6, hedge); boxAt(109, .8, .8, parkX - 55.6, .4, parkZ + .95, hedge);
+      for (let i = 0; i < 12; i++){ const x = parkX - 2.4 - i * 3.9, z = parkZ + 3.2 + Math.sin(i * .9) * 2.4 + i * 1.5; boxAt(.09, .55, .09, x, .3, z, hedge); halo(V(x, .68, z), [1.3, .7, .4], .8, .7); pool(x, .1, z, 2.4, 2.4, [1, .5, .26], .45); } }
+
+    /* ── street lights: one behind the car, its arm out over the roadway (as the picture's is), one further up the street, one across
+       it by the park; a row along the waterfront ── */
+    const kerbR = Math.min(...(L.walks || []).filter(w => w.loop.every(p => p[0] > 0)).flatMap(w => w.loop.map(p => p[0])), 3.25) + .45, CAR = L.car || { x:kerbR - 1.5, z:8, len:4.3, wid:1.9 };
+    { const metal = std({ color:'#120b18', roughness:.45, metalness:.6 }), pole = keep(new T.CylinderGeometry(.075, .11, 5.7, 12)); pole.translate(0, 2.85, 0);
+      const arm = keep(new T.TubeGeometry(new T.QuadraticBezierCurve3(V(0, 5.7, 0), V(0, 7.3, 0), V(-2.3, 7.3, 0)), 18, .065, 8));
+      const head = keep(new T.BoxGeometry(.8, .16, .34)); head.translate(-2.6, 7.28, 0); const lens = keep(new T.BoxGeometry(.6, .05, .24)); lens.translate(-2.6, 7.18, 0);
+      const g = new T.Group(); g.add(new T.Mesh(pole, metal), new T.Mesh(arm, metal), new T.Mesh(head, metal), new T.Mesh(lens, keep(new T.MeshBasicMaterial({ color:new T.Color(4.2, 2.3, 1.1), fog:false }))));
+      const lz = CAR.z + CAR.len / 2 + .4;                        // by the car's tail, its arm over the car (as the picture's is): from where we stand it is then between the cinema and the shop's sign, not across either
+      g.position.set(kerbR, 0, lz); scene.add(g);
+      g.add(halo(V(-2.6, 7.3, 0), [1.4, .72, .36], 2.1, .5), lightAt('#ffb070', 55, V(-2.6, 6.8, 0), 26)); pool(kerbR - 2.6, .012, lz, 8, 8, [1, .5, .26], .34); }
+    { const g = lamp(); g.position.set(kerbR, 0, GR.z0 + 8.2); scene.add(g); halo(V(kerbR - 1.62, 6.12, GR.z0 + 8.2), [1.4, .72, .36], 2.4, .5); pool(kerbR - 1.62, .012, GR.z0 + 8.2, 7, 7, [1, .46, .24], .36); }
+    { const z = GR.z0 + 11; const g = lamp(); g.position.set(walkX - .5, 0, z); g.rotation.y = Math.PI; scene.add(g); halo(V(walkX - .5 + 1.62, 6.12, z), [1.4, .72, .36], 2.4, .5); pool(walkX + 1.1, .012, z, 7, 7, [1, .46, .24], .36); }      // (well up the street: near us it stood in the middle of the picture)
+    for (const x of [-74, -50, -26, -3, 20, 44, 68]){ const g = lamp(); g.position.set(x, 0, GR.z0 + .5); g.rotation.y = Math.PI / 2; scene.add(g); halo(V(x, 6.12, GR.z0 + .5 + 1.62), [1.4, .72, .36], 2.2, .5); }
+    /* a rail along the water's edge */
+    { const iron = std({ color:'#0d0812', roughness:.5, metalness:.5 }), unit = keep(new T.BoxGeometry(1, 1, 1)), list = [[0, 1.05, GR.z0 + .12, 480, .06, .06], [0, .55, GR.z0 + .12, 480, .04, .04]];
+      for (let x = -120; x <= 120; x += 2) list.push([x, .6, GR.z0 + .12, .06, 1.0, .06]);
+      const im = new T.InstancedMesh(unit, iron, list.length); list.forEach((q, i) => { _p.set(q[0], q[1], q[2]); _q.identity(); _s.set(q[3], q[4], q[5]); im.setMatrixAt(i, _m.compose(_p, _q, _s)); }); im.computeBoundingSphere(); scene.add(im); }
+
+    /* ── the car: our wedge, in the model's place for it, along the kerb, its nose towards the sun ── */
+    { const cb = carArrays(CAR2), car = new T.Group(); car.position.set(CAR.x, 0, CAR.z); car.rotation.y = CAR.along === 'x' ? Math.PI / 2 : Math.PI; car.scale.setScalar(clamp((CAR.len || 4.4) / 4.45, .9, 1.12)); scene.add(car);
+      const paint = std({ color:'#4e4a62', roughness:.26, metalness:.88, side:T.DoubleSide }), trim = std({ color:'#08060b', roughness:.55, metalness:.3, side:T.DoubleSide });
+      paint.userData.envK = [.7, .7];                             // the sky's light on it, held down (at full strength it was a pale blank)
+      car.add(new T.Mesh(geoN(cb.body), paint), new T.Mesh(geo(cb.flat), paint), new T.Mesh(geoN(cb.glass), std({ color:'#05030a', roughness:.12, metalness:.9, side:T.DoubleSide })));
+      car.add(new T.Mesh(geoN(cb.well), trim), new T.Mesh(geo(cb.trim), trim), new T.Mesh(geo(cb.plate), std({ color:'#d8d0c2', roughness:.6 })));
+      car.add(new T.Mesh(geo(cb.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.75, .06, .14) }))), new T.Mesh(geo(cb.hot), keep(new T.MeshBasicMaterial({ color:new T.Color(3.6, .7, 1.25) }))));
+      const tyre = keep(new T.CylinderGeometry(.32, .32, .24, 28)); tyre.rotateZ(Math.PI / 2); const disc = keep(new T.CylinderGeometry(.22, .22, .02, 28)); disc.rotateZ(Math.PI / 2);
+      const tyreM = std({ color:'#060508', roughness:.9 }), discM = std({ color:'#8e8a9c', roughness:.4, metalness:.85 });
+      for (const [x, z] of CAR2.wheels){ const sx = Math.sign(x), w = new T.Group(); w.position.set(x, .32, z); const d = new T.Mesh(disc, discM); d.position.x = sx * .12; w.add(new T.Mesh(tyre, tyreM), d); car.add(w); }
+      for (const sx of [-1, 1]){ const h = new T.Sprite(keep(new T.SpriteMaterial({ map:soft2, color:new T.Color(1, .1, .3), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:.5, fog:false }))); h.scale.set(1.2, .7, 1); h.position.set(sx * .45, .8, -2.25); car.add(h); }
+      const shT = glowTex(128, 128, [[0, 1], [.55, .85], [.8, .35], [1, 0]]), sh = new T.Mesh(keep(new T.PlaneGeometry(2.3, 4.9)), keep(new T.MeshBasicMaterial({ map:shT, color:0x000000, transparent:true, opacity:.88, depthWrite:false })));
+      sh.rotation.x = -Math.PI / 2; sh.position.set(0, .011, 0); sh.renderOrder = 1.1; car.add(sh);
+      car.add(pool(0, .012, -3.3, 3.6, 3.4, [1, .1, .35], .55)); }
+
+    /* ── palms: in the park (one near us, its fronds hanging into the picture; a few further in, for a wide screen), by the corner where
+       the street meets the waterfront, and along the water ── */
+    palm(0, mcam[0] - 1.9, mcam[2] - 10, .95, .3);                            // the near one: its trunk just out of an ordinary screen's left, its fronds in the picture's top corner
+    palm(2, parkX - 9, 9, 1.08, 2.4); palm(1, parkX - 17, 22, 1, 1.1); palm(0, parkX - 24, 3, 1.1, .4); palm(2, parkX - 35, 15, .95, 2.9); palm(1, parkX - 48, 7, 1.05, 4);      // in the park: a wide screen's
+    for (const [x, v] of [[-61, 0], [-37, 1], [-15, 2], [8.5, 0], [32, 1], [56, 0]]) palm(v, x, GR.z0 + 1, .82, x);
+    /* ── across the bay: a low shore, and on it the city, close-packed in one cluster round the foot of the sun (tallest in its middle) ── */
+    islet(0, -500, 300, 46, 3.2, 83); islet(-360, -540, 190, 40, 2.4, 85); islet(330, -545, 170, 38, 2.2, 87);
+    { const tr = rnd(19), names = ['tower-a', 'tower-c', 'tower-e'], tl = [];
+      for (let k = 0; k < 96; k++){ const u = (tr() + tr() + tr()) / 3 * 2 - 1, x = u * 150, near = Math.exp(-Math.pow(x / 62, 2));
+        tl.push({ n:names[(tr() * 3) | 0], x, z:-478 - tr() * 44, s:(2.4 + near * 5.2 + tr() * 2.2) * (.7 + .6 * tr()), ry:((tr() * 4) | 0) * Math.PI / 2 + (tr() - .5) * .3, y:1.5 }); }
+      towers(tl); }
+    /* ── where we stand: about where the model's own camera is (across the street from the buildings, well back), but lower than the
+       canopy, so its neon is seen from beneath, and turned less to the right: the sun, at the street's end, is then in the picture's
+       left, the cinema in its right, with the page's window between them. We stand in the plaza: its slabs are the picture's
+       bottom left, the bench in the sun's light on them. A wide screen sees the park's wall beyond the sun and the shop beyond the
+       cinema. A phone stands nearer and looks at the cinema. ── */
+    const yaw = (px, pz, deg, y) => { const a = deg * Math.PI / 180; return [px + Math.sin(a) * 30, y, pz - Math.cos(a) * 30]; };      // a point 30 m off, that many degrees right of the street's line
+    const mc = (L.cam && L.cam.pos) || [-8.6, 3.7, 28], cx = mc[0], cz = mc[2] + .5, target = rings.length ? rings[0].c : [10.5, 4, -2.2];
+    cams = { L:{ pos:[cx, 2.5, cz], at:yaw(cx, cz, 14.5, 3.55), fov:25.5 }, W:{ pos:[cx, 2.5, cz], at:yaw(cx, cz, 17, 3.55), fov:25.5 },
+             P:{ pos:[cx + 5.5, 2.3, cz - 6], at:[target[0] - 2.2, 4.3, target[2] + .5], fov:54 } };
+  }
+
   if (kind === 'shoreA' || kind === 'shoreB'){
     /* the quiet one: the sun on the sea to one side, one palm leaning in from the other */
     const sgn = kind === 'shoreA' ? -1 : 1;
@@ -822,20 +1293,23 @@ async function build(canvas, kind, dark){
   };
 
   /* ═══ the camera: one framing for a wide screen, one for a tall one, and in between ═══ */
-  let W = 2, H = 2;
+  let W = 2, H = 2, viewX = 0;
   const frame = () => {
-    const a = W / H, k = clamp((a - .56) / (1.6 - .56), 0, 1), L = cams.L, P = cams.P;
-    camera.position.set(lerp(P.pos[0], L.pos[0], k), lerp(P.pos[1], L.pos[1], k), lerp(P.pos[2], L.pos[2], k));
-    camera.fov = lerp(P.fov, L.fov, k); camera.aspect = a; camera.updateProjectionMatrix();
-    camera.lookAt(lerp(P.at[0], L.at[0], k), lerp(P.at[1], L.at[1], k), lerp(P.at[2], L.at[2], k));
+    const a = W / H, k = clamp((a - .56) / (1.6 - .56), 0, 1), L = cams.L, P = cams.P, Wc = cams.W || L, kw = cams.W ? clamp((a - 1.78) / (2.8 - 1.78), 0, 1) : 0;      // W: a framing for a very wide window, if the scene has one
+    const pos = i => lerp(lerp(P.pos[i], L.pos[i], k), Wc.pos[i], kw), at = i => lerp(lerp(P.at[i], L.at[i], k), Wc.at[i], kw);
+    camera.position.set(pos(0), pos(1), pos(2));
+    camera.fov = lerp(lerp(P.fov, L.fov, k), Wc.fov, kw); camera.aspect = a;
+    viewX = look.shift ? -Math.round(look.shift(a) * W) : 0;    // a scene can move its picture sideways (look.shift: a fraction of the width, to the right)
+    if (viewX) camera.setViewOffset(W, H, viewX, 0, W, H); else { camera.clearViewOffset(); camera.updateProjectionMatrix(); }
+    camera.lookAt(at(0), at(1), at(2));
   };
 
   /* ═══ dusk or night ═══ */
   const setMode = dk => {
     const d = dk ? DAY.night : DAY.dusk;
-    skyU.uTop.value.set(d.top); skyU.uMid.value.set(d.mid); skyU.uHor.value.set(d.hor); skyU.uGlow.value.set(d.glow); skyU.uStars.value = d.stars;
+    skyU.uTop.value.set(d.top); skyU.uMid.value.set(d.mid); skyU.uHor.value.set(d.hor); skyU.uGlow.value.set(d.glow); skyU.uStars.value = d.stars; skyU.uHz.value.fromArray(d.haze || [14, .2, 7, .45]);
     skyU.uSun.value.copy(sunDir);
-    sunU.uTop.value.set(d.sunTop); sunU.uBot.value.set(d.sunBot); sunU.uI.value = d.sunI; sun.visible = sunR > 0;
+    sunU.uTop.value.set(d.sunTop); sunU.uBot.value.set(d.sunBot); sunU.uMid.value.set(d.sunMid || d.sunTop).lerp(d.sunMid ? sunU.uMid.value : sunU.uBot.value, d.sunMid ? 0 : .5); sunU.uRim.value.set(d.sunRim || d.sunBot); sunU.uI.value = d.sunI; sunU.uHalo.value = d.sunHalo == null ? .5 : d.sunHalo; sun.visible = sunR > 0;
     fog.color.set(d.fog); fog.near = look.fogNear; fog.far = look.fogFar;
     light.color.set(d.light); light.intensity = d.lightI; light.position.copy(sunDir).multiplyScalar(200);
     hemi.color.set(d.hemiTop); hemi.groundColor.set(d.hemiBot); hemi.intensity = d.hemiI;
@@ -848,7 +1322,7 @@ async function build(canvas, kind, dark){
     if (pal.paint){ pal.paint.uShade.value = dk ? 1.9 : 1.4; pal.paint.uTint.value.setRGB(dk ? 1 : .72, dk ? 1 : .64, dk ? 1 : 1.3); }
     if (pal.crag) pal.crag.value.set(dk ? '#4d6dff' : '#6a78ff').multiplyScalar(dk ? .7 : .58);      // a third of what it was: the hills were as bright as the road
     if (sea && sea.material.uniforms && sea.material.uniforms.uDeep){
-      const u = sea.material.uniforms; u.uDeep.value.set(dk ? '#07030e' : '#1a0a22'); u.uFog.value.set(d.fog); u.uFogR.value.set(look.fogNear, look.fogFar); u.uRip.value = look.seaRip;
+      const u = sea.material.uniforms; u.uDeep.value.set(look.deep || (dk ? '#07030e' : '#1a0a22')); u.uFog.value.set(d.fog); u.uFogR.value.set(look.fogNear, look.fogFar); u.uRip.value = look.seaRip;
     }
     scene.traverse(o => { const m = o.material; if (m && m.isMeshStandardMaterial && m.userData.env == null) m.userData.env = m.envMapIntensity; if (m && m.isMeshStandardMaterial) m.envMapIntensity = m.userData.envK ? m.userData.envK[dk ? 1 : 0] : m.userData.env * d.env; });
     compU.uBloom.value = d.bloom * look.bloom; compU.uExp.value = d.exposure * look.exp;
@@ -864,9 +1338,9 @@ async function build(canvas, kind, dark){
   const render = t => {
     renderer.info.reset();
     frame(); update(t); camera.updateMatrixWorld();
-    if (TAA){ const j = JIT[taaN % 16]; camera.setViewOffset(W, H, j[0], j[1], W, H); }      // a fraction of a pixel off from the last frame
+    if (TAA){ const j = JIT[taaN % 16]; camera.setViewOffset(W, H, viewX + j[0], j[1], W, H); }      // a fraction of a pixel off from the last frame
     placeSun();
-    sunU.uT.value = STILL ? 0 : (t * SUN_RISE) % 1;             // the gaps in the sun rise (the owner asked): slowly, and not in the still pictures
+    sunU.uT.value = STILL ? 0 : (t * SUN_RISE) % 1; palmU.value = t % 3600;             // the gaps in the sun rise (the owner asked): slowly, and not in the still pictures
     if (sea && sea.material.uniforms && sea.material.uniforms.uTime) sea.material.uniforms.uTime.value = t % 1000;
     renderer.setRenderTarget(mainRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
     let src = mainRT;
@@ -899,7 +1373,7 @@ FX.scenes.synth = {
     /* in a frame (the Mahjong board inside Games, a page previewed in the Theme finder) the page around it has its own
        scene, or should: a second one would only double the cost. The frame keeps the still (or, Mahjong, plain colour). */
     try { if (!STILL && (window.top !== window || env.page === 'hkmahjong')) return null; } catch { return null; }
-    const kind = PAGE[env.page] || 'shoreA';
+    const kind = PAGE[env.page] || 'street';
     let e = env, st = 'idle', R = null, W = canvas.width, H = canvas.height;
     canvas.classList.add('sy-wait');
     if (STILL){ root.classList.add('sy-still'); const s = document.createElement('style'); s.textContent = 'html.sy-still body{visibility:hidden}html.sy-still .fx-bg{transition:none!important;opacity:1!important}'; document.head.appendChild(s); }

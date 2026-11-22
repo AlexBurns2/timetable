@@ -8,7 +8,7 @@
    usage (Node 22 or later; the site served locally, e.g. python -m http.server 3000 from the repo root):
      node tools/synth/stills.mjs [--base http://localhost:3000] [--out images/synth] [--only drive,bay]
                                  [--t 40] [--quality 70] [--chrome <path to chrome>] [--port 9333]
-   Each scene gives four files: <scene>-dusk, <scene>-night (1600 x 900) and the same with -p (a phone, 430 x 932 at 1.5x). */
+   Each scene gives two files: <scene>-night (1600 x 900) and <scene>-night-p (a phone, 430 x 932 at 1.5x). Synthwave is dark only. */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path';
 
@@ -21,7 +21,7 @@ const T = arg('t', '40'), Q = +arg('quality', '70'), PORT = +arg('port', '9333')
 const CHROME = arg('chrome', process.env.CHROME || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe'
   : process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome'));
 /* the scenes, and a page that shows each (fx/synth.js PAGE) */
-const SCENES = [['drive', '/home.html'], ['bay', '/'], ['pyramid', '/games.html'], ['shore-a', '/calendar.html'], ['shore-b', '/notes.html']];
+const SCENES = [['drive', '/games.html'], ['bay', '/'], ['pyramid', '/calendar.html'], ['street', '/home.html'], ['shore-b', '/notes.html']];
 const SIZES = [{ w:1600, h:900, dpr:1, suf:'' }, { w:430, h:932, dpr:1.5, suf:'-p' }];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -45,7 +45,7 @@ const READY = 'new Promise(r => { const t0 = Date.now(); (function w(){ if (wind
 let failed = 0;
 for (const [name, url] of SCENES){
   if (ONLY && !ONLY.includes(name)) continue;
-  for (const [mode, label] of [['light', 'dusk'], ['dark', 'night']]) for (const s of SIZES){
+  for (const [mode, label] of [['dark', 'night']]) for (const s of SIZES){
     const c = await tab();
     await c.send('Emulation.setDeviceMetricsOverride', { width:s.w, height:s.h, deviceScaleFactor:s.dpr, mobile:s.w < 700 });
     if (s.w < 700) await c.send('Emulation.setTouchEmulationEnabled', { enabled:true });

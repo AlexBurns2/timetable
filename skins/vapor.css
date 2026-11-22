@@ -140,7 +140,7 @@ html.fx-in[data-skin="vapor"] .wrap{opacity:0}
 .vp-vhs.off{opacity:0;transition:opacity .06s linear}
 [data-skin="vapor"] .hubnow{height:auto;min-height:5rem}
 [data-skin="vapor"] .hubnow .nowcard .subj{flex:none;line-height:1.3}
-/* ── the visitors (moderators only, with vw-next): Windows 95 windows that turn up in the margins (fx/vapor.js; their words, fx/vapor-entity.js).
+/* ── the messages (moderators only, with vw-next): Windows 95 windows that turn up in the margins, now and then (fx/vapor.js; their words, fx/vapor-entity.js).
       Above the scene and the page, below the site's own notes and sheets; never modal ── */
 html.vw-next .vw-ent{position:fixed;inset:0;z-index:40;pointer-events:none}
 html.vw-next .vw-ent[hidden]{display:none}
@@ -320,15 +320,12 @@ html.vw-next[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-p
 /* ══════════════════════════════════════════════════════════════════
    The reworked Vaporwave's desktop (moderators only, with vw-next;
    fx/vapor.js builds it).
-     · On a wide screen each page's window stands off centre (html[data-vw-shift]), so the scene's main thing has the bigger margin.
+     · Every page's window stands in the middle of the screen. (For a while each stood off centre on a wide screen: the owner found
+       the window moving from page to page jarring.)
      · A taskbar along the foot of the screen (html.vw-desk while it's there): Start, a button a page, a clock.
      · Now and then a heading's colours part for a moment. (The faint grain is in the scene's picture only, not over the page.)
    Nothing here moves with Animation off or Reduce motion.
    ══════════════════════════════════════════════════════════════════ */
-@media (min-width:1500px){
-  html.vw-next[data-skin="vapor"][data-vw-shift="l"] body{padding-right:clamp(0px,(100vw - 1380px)*.66,640px)}
-  html.vw-next[data-skin="vapor"][data-vw-shift="r"] body{padding-left:clamp(0px,(100vw - 1380px)*.66,640px)}
-}
 html.vw-next[data-skin="vapor"]{--vw-task:0px}
 @media (min-width:761px){
   html.vw-next.vw-desk[data-skin="vapor"]:not(.zen,.fx-quiet){--vw-task:38px}
@@ -383,12 +380,13 @@ html.vw-next[data-skin="vapor"][data-fx="on"] :is(.brand h1,.hubid h1,.pagehead 
 html[data-motion="reduced"].vw-next[data-skin="vapor"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1){animation:none}
 
 /* ══════════════════════════════════════════════════════════════════
-   The visitors, reworked (moderators only, with vw-next).
+   The messages, reworked (moderators only, with vw-next).
      · In the page's own greys (the --w- colours above), so they belong
        to the scene in light and in dark alike.
-     · They arrive and leave in a glitch: bands of the window slip
-       sideways, its colours part, and it goes out in one bright line.
-     · New kinds: a note that types itself, something playing, a job
+     · One that arrives in front of you comes in a glitch (bands of the
+       window slip sideways, its colours part); they all go out in one
+       bright line. One found waiting is simply there (vw-there).
+     · Other kinds: something playing, a note that types itself, a job
        that takes its time. And the other pointer, and the copies a hung
        window leaves behind it.
    With Animation off, or Reduce motion, none of it moves.
@@ -416,6 +414,8 @@ html.vw-next .vw-win.off::after{opacity:1}
   68%{opacity:1;clip-path:inset(46% 0 48% 0);transform:scaleX(1.05);filter:brightness(2.2)}
   82%{opacity:1;clip-path:inset(48.5% 14% 49.5% 14%);filter:brightness(3)}
   100%{opacity:0;clip-path:inset(50% 50% 50% 50%)}}
+/* one found waiting (it came while you were away), or there again from the page before: no arrival, it is simply there */
+html.vw-next .vw-win.vw-there.on,html.vw-next .vw-win.vw-there.on::after{animation:none}
 html.vw-next[data-fx="off"] .vw-win,html.vw-next[data-fx="off"] .vw-win::after{animation:none!important}
 html[data-motion="reduced"].vw-next .vw-win,html[data-motion="reduced"].vw-next .vw-win::after{animation:none!important}
 @media (prefers-reduced-motion:reduce){html.vw-next .vw-win,html.vw-next .vw-win::after{animation:none!important}}
@@ -432,6 +432,8 @@ html.vw-next .vw-ent .vw-btn.vw-def{box-shadow:0 0 0 1px var(--w-dk),var(--bev-o
 html.vw-next .vw-ent .vw-btn:active:not(:disabled){box-shadow:0 0 0 1px var(--w-dk),var(--bev-down)}
 html.vw-next .vw-ent .vw-btn:focus-visible{outline:1px dotted var(--w-ink)}
 html.vw-next .vw-ent .vw-btn:disabled{color:var(--w-sh);text-shadow:1px 1px var(--w-hl)}
+html.vw-next .vw-ent .vw-b3{gap:6px}
+html.vw-next .vw-ent .vw-b3 .vw-btn{min-width:54px;padding:0 8px}
 html.vw-next :is(.vw-field,.vw-pane,.vw-listbox){background:var(--w-field);color:var(--w-ink);box-shadow:var(--bev-in)}
 html.vw-next .vw-ent .vw-fold:focus-visible span,html.vw-next .vw-ent .vw-fold:active span{outline:1px dotted var(--w-ink)}
 html.vw-next .vw-status{box-shadow:var(--bev-thin)}
@@ -482,3 +484,103 @@ html.vw-next .vw-stamp{opacity:1;animation:none!important;pointer-events:none}
 html.vw-next .vw-stamp *{pointer-events:none}
 html.vw-next .vw-stamp::after{display:none}
 html.vw-next .vw-stamp .vw-caret{animation:none}
+
+/* ══════════════════════════════════════════════════════════════════
+   Windows of their own (moderators only, with vw-next). The timetable,
+   Home's page tiles and forum, the Games and Revision sections and the
+   Theme finder's groups each sit in a Windows 95 window. (They stood
+   straight on the scene,
+   "floating": the owner asked for them to be put in windows.)
+   Nothing in the pages' markup changes: a window is drawn by the boxes
+   that are already there. Where a heading is followed by what it heads
+   (two boxes, one after the other), the heading is the window's title
+   bar and the next box its body: each draws its own part of the frame
+   (--win-top, --win-mid, --win-foot) and they meet without a gap.
+   ══════════════════════════════════════════════════════════════════ */
+html.vw-next[data-skin="vapor"]{
+  --win-top:inset -1px 0 var(--w-dk),inset 1px 1px var(--w-hl),inset -2px 0 var(--w-sh),inset 2px 2px var(--w-lt);        /* a window's head: the bevel along its top and down its sides */
+  --win-mid:inset -1px 0 var(--w-dk),inset 1px 0 var(--w-hl),inset -2px 0 var(--w-sh),inset 2px 0 var(--w-lt);            /* its sides only */
+  --win-foot:inset -1px -1px var(--w-dk),inset 1px 0 var(--w-hl),inset -2px -2px var(--w-sh),inset 2px 0 var(--w-lt);     /* its sides and its foot */
+  --v-caps:linear-gradient(var(--v-glyph),var(--v-glyph)) 4px 10px/7px 2px no-repeat,
+    linear-gradient(45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
+    linear-gradient(-45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 25px 3px/10px 2px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 0 0/16px 16px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 21px 0/16px 16px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 44px 0/16px 16px no-repeat;                                                  /* the three caption buttons, drawn (as on the pages' own title bars) */
+}
+/* a title bar: the theme's pink-to-cyan strip, the name in white pixel type, the three buttons at its right */
+html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) .cathd,
+html.vw-next[data-skin="vapor"] .forum .fhead h2,
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .weekswitch::before,
+html.vw-next[data-skin="vapor"] .hubnav::before{
+  display:block;box-sizing:border-box;width:auto;height:var(--vbar);margin:0;padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  background:var(--v-bar);color:#fff;border:0;box-shadow:none;opacity:1;
+  font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.16em;text-transform:uppercase;text-align:left;
+  text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) .cathd,
+html.vw-next[data-skin="vapor"] .forum .fhead h2{position:relative;flex:0 0 100%}
+html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) .cathd::after,
+html.vw-next[data-skin="vapor"] .forum .fhead h2::after,
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .weekswitch::after,
+html.vw-next[data-skin="vapor"] .hubnav::after{content:"";position:absolute;right:4px;top:4px;width:62px;height:16px;background:var(--v-caps);pointer-events:none}
+
+/* ── the timetable: the week's switch is its title bar and toolbar, the grid its body, on a sunk white ground ── */
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .weekswitch{position:relative;margin:14px 0 0;padding:calc(var(--vbar) + 11px) 12px 9px;background:var(--panel);box-shadow:var(--win-top)}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .weekswitch::before{content:"Timetable";position:absolute;left:3px;right:3px;top:3px}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .weekswitch::after{right:7px;top:7px}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .weeklabel{min-width:7.5em;padding:3px 14px;text-align:center;background:var(--w-field);box-shadow:var(--bev-in)}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .dayswitch{margin:0;padding:0 12px 9px;background:var(--panel);box-shadow:var(--win-mid)}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid{position:relative;isolation:isolate;padding:10px 14px 16px 8px;background:var(--panel);box-shadow:var(--win-foot)}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid::before{content:"";position:absolute;z-index:-1;left:5px;right:5px;top:0;bottom:5px;background:var(--w-field);box-shadow:var(--bev-in)}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid :is(.dayhead .dow,.tmark){background:none}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid .tmark{padding:0;right:6px}
+html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid :is(.dayhead.today,.dayhead.focus) .dow{background:var(--dither)}
+
+/* ── Games and Revision: a window a section. Its heading is the title bar (anything else in the heading's row, the year's
+      buttons or a link, goes under it as a toolbar); the tiles are its body ── */
+html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec){display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:0 8px;margin:18px 0 0;padding:3px 3px 0;min-height:0;
+  background:var(--panel);box-shadow:var(--win-top)}
+html.vw-next[data-skin="vapor"] #gamegrid > .gsec:first-child{margin-top:0}
+html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) > :not(.cathd){margin:9px 9px 0 0}
+html.vw-next[data-skin="vapor"] #gamegrid > .gsec + :is(.gamegrid,.studypanel),
+html.vw-next[data-skin="vapor"] .lbboards > .gsec + .lbbgrid{margin:0;padding:12px 12px 14px;background:var(--panel);border:0;box-shadow:var(--win-foot)}
+html.vw-next[data-skin="vapor"] #gamegrid > .lbboards{margin-top:18px}
+html.vw-next[data-skin="vapor"] .lbboards > .gsec{margin-top:0}
+html.vw-next[data-skin="vapor"][data-pg="revision"] #gamegrid > .rvyear.gsec{margin:18px 0 0}
+
+/* ── Home: the pages' tiles (and today's games under them) in a window; the forum in another ── */
+html.vw-next[data-skin="vapor"] .hubnav{position:relative;padding:calc(var(--vbar) + 14px) 12px 10px;background:var(--panel);box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"] .hubnav::before{content:"Programs";position:absolute;left:3px;right:3px;top:3px}
+html.vw-next[data-skin="vapor"] .hubnav::after{right:7px;top:7px}
+html.vw-next[data-skin="vapor"] .forum{margin-top:18px;padding:3px 12px 14px;background:var(--panel);box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"] .forum .fhead{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:0 8px;margin:0 -9px 12px}
+html.vw-next[data-skin="vapor"] .forum .fhead > :not(h2){margin:9px 9px 0 0}
+/* ── the Theme finder: windows, as on Games. Its heading, the note under it and the two switches are one window (three boxes, drawn
+      as one); then a window a group, the group's name in its title bar; the original themes, folded, are a window that is only its
+      title bar until it is opened ── */
+html.vw-next[data-skin="vapor"][data-pg="themes"] .pagehead{margin-bottom:0;box-shadow:var(--win-top)}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tflede{margin:0;max-width:none;padding:0 16px 12px;background:var(--panel);box-shadow:var(--win-mid)}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tflook{max-width:none;margin:0 0 18px;padding:0 16px 14px;background:var(--panel);box-shadow:var(--win-foot)}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tflook > *{max-width:420px}
+html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfsec,.tforig){margin:0 0 18px;padding:3px 12px 14px;border:0;background:var(--panel);box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig:not([open]){padding-bottom:3px}
+html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfh,.tforig summary){position:relative;display:block;box-sizing:border-box;height:var(--vbar);margin:0 -9px 12px;padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  background:var(--v-bar);color:#fff;font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.16em;text-transform:uppercase;
+  text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig:not([open]) summary{margin-bottom:0}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig summary em{letter-spacing:.06em;text-transform:none;opacity:.9}
+html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfh,.tforig summary)::after{content:"";position:absolute;right:4px;top:4px;width:62px;height:16px;background:var(--v-caps);pointer-events:none}
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig summary:focus-visible{outline:1px dotted #fff;outline-offset:-3px}
+@media (max-width:640px){
+  html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tflede,.tflook){padding-left:12px;padding-right:12px}
+  html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfsec,.tforig){padding:3px 8px 10px}
+  html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfh,.tforig summary){margin:0 -5px 10px}
+  html.vw-next[data-skin="vapor"][data-pg="timetable"] .weekswitch{margin-top:10px;padding-left:8px;padding-right:8px}
+  html.vw-next[data-skin="vapor"][data-pg="timetable"] .dayswitch{padding:0 8px 8px}
+  html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid{padding:8px 10px 12px 6px}
+  html.vw-next[data-skin="vapor"] #gamegrid > .gsec + :is(.gamegrid,.studypanel),html.vw-next[data-skin="vapor"] .lbboards > .gsec + .lbbgrid{padding:9px 8px 10px}
+  html.vw-next[data-skin="vapor"] .hubnav{padding:calc(var(--vbar) + 11px) 8px 8px}
+  html.vw-next[data-skin="vapor"] .forum{padding:3px 8px 10px}
+  html.vw-next[data-skin="vapor"] .forum .fhead{margin:0 -5px 10px}
+}

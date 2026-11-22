@@ -17,7 +17,8 @@ Make a folder outside the repo, for example `C:\vapor-work`, and put these in it
   `package/` folder as `three/`, so that `three/build/three.module.js` and `three/examples/jsm/`
   exist.
 - `ph-dl/`: from Poly Haven (CC0). `PHOTO-LOG.md` lists them:
-  - `marble_01/`: the 2k textures `marble_01_diff_2k.jpg`, `_rough_2k.jpg`, `_nor_gl_2k.jpg`.
+  - `marble_01/`: the 2k textures `marble_01_diff_2k.jpg`, `_rough_2k.jpg`, `_nor_gl_2k.jpg`. Then run `marble.py` on the
+    folder (section 2): the scenes use the three `marble_01_solid_*.jpg` it writes, not the 2k files.
   - `television_02/`: the 2k glTF (`television_02_2k.gltf`, its `.bin` and `textures/`).
   - `kloofendal_48d_partly_cloudy_puresky/`: `kloofendal_48d_partly_cloudy_puresky_2k.hdr`.
   - `sky/`: the same sky's 8k tonemapped JPG, `kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg`.
@@ -62,7 +63,8 @@ python -P tools/vapor/eyes.py   <work>/photo/youth4-l.png <work>/photo/youth4-g-
 python -P tools/vapor/eyes.py   <work>/photo/youth4-d.png <work>/photo/youth4-g-d.png plane 300 850 541 548 -.028 125 .07 80 7
 python -P tools/vapor/palms.py  <work>/palms-dl/p5.jpg <work>/palms/venice.png dark .62 .04 1 1 1300 45
 python -P tools/vapor/palms.py  <work>/palms-dl/p2.jpg <work>/palms/canary.png dark .12 0 .92 .69 1100 40
-python -P tools/vapor/word.py   <work>/film-dl/soapfilm1.jpg <work>/word/timetable.png 時間割 440 5
+python -P tools/vapor/word.py   <work>/film-dl/soapfilm1.jpg images/th/vw-word-timetable.webp 時間割 440 5
+python -P tools/vapor/marble.py <work>/ph-dl/marble_01
 python -P tools/vapor/sky.py    <work>/ph-dl/sky/kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg <work>/final 4400 540
 python -P tools/vapor/paint.py  <work>/photo/apollo.png <work>/ph-dl/sky/kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg <work>/final/vw-notes-paint-l.webp l
 python -P tools/vapor/paint.py  <work>/photo/apollo.png <work>/ph-dl/sky/kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg <work>/final/vw-notes-paint-d.webp d
@@ -83,11 +85,17 @@ python -P tools/vapor/paint.py  <work>/photo/apollo.png <work>/ph-dl/sky/kloofen
 - `palms.py` (palms are out of the scene for now) reduces a photograph of palms against the sky to their silhouette (white, the shape in the alpha); the page tints it
   pale. The numbers are the part of the photograph kept (fractions), the height, and the darkness threshold.
 - `word.py` sets a page's word vertically in Yu Gothic Bold, filled with the soap film recoloured to the theme's pastels, with a
-  bevel, a pale line, a violet outline and a slipped row to a glyph (three at most); the long-vowel bar is turned to stand
-  upright. Every page has one, all made at 440 px a glyph and saved at half that as `images/th/vw-word-<page>.webp`
-  (`pack.py` doesn't handle them), so the page can show them all at one scale. The words and their seeds: timetable 時間割 5,
+  bevel, a pale line and a violet outline; the long-vowel bar is turned to stand upright. The picture is clean: the page
+  glitches it now and then itself (`word()` in `fx/vapor.js`). The pictures used to carry slipped rows of their own; a seventh
+  argument (how many) brings them back. Every page has one, all made at 440 px a glyph; give it an output ending `.webp` and it
+  saves at half that, which is what ships as `images/th/vw-word-<page>.webp` (`pack.py` doesn't handle them), so the page can
+  show them all at one scale. The words and their seeds: timetable 時間割 5,
   home ホーム 12, calendar カレンダー 21, notes ノート 8, games ゲーム 14, finder 検索 3, free 空き時間 17, revision 復習 9,
   resources 資料 6, mahjong 麻雀 11, themes テーマ 4.
+- `marble.py` makes one unbroken marble from Poly Haven's `marble_01`, which is a photograph of a wall of marble blocks. Laid
+  on a column, its joints drew a grid up the shaft and each block's tone made a patchwork. The script finds the joints, takes
+  patches from inside the blocks only, brings them to one tone, and lays them over one another with soft edges into a square
+  that repeats without a seam (colour, roughness and normals alike). `props.js` `marble()` reads its output.
 - `eyes.py` glitches a band across the head's eyes (smeared and slipped rows, parted colour channels, a missing line) so it
   doesn't stare out of the screen. The numbers are the band's rows and span in the cut-out, then the seed.
 - `sky.py` makes `vw-sky-l.webp` and `vw-sky-d.webp`, a seamless band of the photographed sky
@@ -141,3 +149,14 @@ python -P tools/vapor/ship.py --work <work>
 `pack.py` turns `<work>/out/*.png` into WebP in `<work>/final`, along with the placement table.
 `ship.py` copies `vw-*.webp` into `images/th` and writes the table into `fx/vapor.js`. Bump the
 asset version as usual afterwards.
+
+`pack.py` also feathers a group (`left`, `right`) towards a side of the picture that its shadow ran
+out of. The group is cut from the 2880-wide picture it was rendered in, and the page stands it
+wherever its margin is, so on a wide screen a shadow that stopped at the picture's edge showed as an
+upright line across the floor. After packing, every group's alpha should be 4 or less (of 255) along
+its left and right edges. Its bottom edge is the bottom of the screen and is left alone.
+
+Three kinds of seam have turned up in these pictures; look for them at high contrast before
+shipping a render: a texture's own joints (the marble, above); a shadow or reflection cut off at
+the edge of the picture it was rendered in (the feather, above); and anything the page draws in code
+over the picture with straight sides (the moon's light on the water was a plain rectangle).
