@@ -468,6 +468,52 @@ button.row:hover{background:var(--fill2)}
 :root[data-skin="terminal"]{--s-bg:#05080a;--s-panel:#0b1114;--s-panel2:#0f171b;--s-line:#265046;--s-text:#b6ffd6;--s-muted:#5fae87;--s-accent:#39ff9e;--s-font:"JetBrains Mono",ui-monospace,monospace;--s-tint:16%}
 :root[data-skin="blueprint"]{--s-bg:#07223d;--s-img:repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 28px),repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 28px);
   --s-panel:rgba(9,42,74,.82);--s-panel2:rgba(12,52,90,.9);--s-line:rgba(150,210,255,.55);--s-text:#f2f9ff;--s-muted:#a9d2f2;--s-accent:#7ff0ff;--s-font:"Space Mono",monospace;--s-tint:14%;--s-base:var(--s-panel)}
+/* ═══ Mahjong: the hidden theme (type its name in the search bar) ═══
+   The table is felt green with the weave showing; every card is an ivory tile
+   with a bevelled face and a suit mark in the corner; breaks are tiles laid
+   face down; the two dragons dance in the top corners. Dark is a night table:
+   deep green felt and bone tiles. The dragons are drawn here, not photographed. */
+:root[data-skin="mahjong"]{
+  --s-bg:#0d6b47;
+  --s-img:repeating-linear-gradient(45deg,rgba(0,0,0,.06) 0 2px,transparent 2px 4px),repeating-linear-gradient(-45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 4px),radial-gradient(70vw 50vh at 50% -10%,rgba(255,255,255,.1),transparent 70%);
+  --s-panel:#f8f3e6; --s-panel2:#ece3cd; --s-line:#c6b48f; --s-sep:rgba(60,45,20,.22);
+  --s-text:#1b1a16; --s-muted:#6e6554; --s-accent:#c8102e; --s-base:var(--s-panel); --s-tint:26%;
+  --mj-jade:#0f7a4a; --mj-red:#c8102e; --mj-ivory:#f8f3e6; --mj-edge:rgba(120,96,48,.45); --mj-back:#0a5a3c;
+}
+:root[data-skin="mahjong"][data-mode="dark"]{
+  --s-bg:#052b1e; --s-panel:#232923; --s-panel2:#1a201b; --s-line:#3d4a3f; --s-sep:rgba(255,255,255,.14);
+  --s-text:#f1ead9; --s-muted:#9aa89a; --s-accent:#ff5566;
+  --mj-jade:#3ad68c; --mj-red:#ff5566; --mj-ivory:#e8e0cc; --mj-edge:rgba(0,0,0,.6); --mj-back:#06301f;
+}
+/* every card is a tile: a bevelled ivory face that lifts when you point at it */
+[data-skin="mahjong"] :is(.blk-card,.card,.mod,.row-group,.daypill,.chip,.email){
+  border-radius:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -3px 0 var(--mj-edge),0 2px 4px rgba(0,0,0,.3)}
+[data-skin="mahjong"][data-mode="dark"] :is(.blk-card,.card,.mod,.row-group,.daypill,.chip,.email){box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 0 var(--mj-edge),0 2px 5px rgba(0,0,0,.6)}
+[data-skin="mahjong"] .blk:not(.open):hover .blk-card{transform:translateY(-3px);filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -3px 0 var(--mj-edge),0 8px 14px rgba(0,0,0,.35)}
+/* the suit mark in the corner of each lesson, as on a tile */
+[data-skin="mahjong"] .blk-card::after{position:absolute;right:7px;bottom:5px;font:600 .75rem/1 "Noto Serif TC","Songti SC",serif;color:var(--mj-jade);opacity:.5;pointer-events:none}
+[data-skin="mahjong"] .blk:nth-of-type(3n+1) .blk-card::after{content:"萬";color:var(--mj-red)}
+[data-skin="mahjong"] .blk:nth-of-type(3n+2) .blk-card::after{content:"筒"}
+[data-skin="mahjong"] .blk:nth-of-type(3n+3) .blk-card::after{content:"索"}
+/* the lesson running now is stamped with the red dragon */
+[data-skin="mahjong"] .blk.now .blk-card::after{content:"中";color:var(--mj-red);opacity:.85}
+/* breaks are tiles laid face down on the table */
+[data-skin="mahjong"] .brk{background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 6px,transparent 6px 12px),var(--mj-back);color:#e8f6ee;border-radius:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.45)}
+[data-skin="mahjong"] .bar{border-bottom:2px solid var(--mj-jade)}
+/* the two dragons, dancing in opposite corners */
+.mjd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 54px);width:74px;z-index:12;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4));animation:mjdance 1.9s ease-in-out infinite}
+.mjd.l{left:8px}
+.mjd.r{right:8px;animation-delay:-.95s}
+.mjd .arm{transform-box:fill-box;transform-origin:top center;animation:mjarm 1.9s ease-in-out infinite}
+.mjd .arm.b{animation-delay:-.95s}
+@keyframes mjdance{0%,100%{transform:translateY(0) rotate(-7deg)}25%{transform:translateY(-7px) rotate(0)}50%{transform:translateY(0) rotate(7deg)}75%{transform:translateY(-7px) rotate(0)}}
+@keyframes mjarm{0%,100%{transform:rotate(18deg)}50%{transform:rotate(-30deg)}}
+@media (max-width:900px){.mjd{display:none}}
+[data-still] .mjd,[data-still] .mjd .arm{animation:none}
+@media (prefers-reduced-motion:reduce){.mjd,.mjd .arm,.mjsay{animation:none}}
+/* the word, when the theme turns on or off */
+.mjsay{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99;padding:10px 18px;border-radius:9px;background:var(--mj-ivory,#f8f3e6);color:#1b1a16;font:600 .8125rem/1.3 var(--font,system-ui);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -3px 0 rgba(120,96,48,.45),0 8px 20px rgba(0,0,0,.4);animation:mjsay 3.4s ease forwards}
+@keyframes mjsay{0%{opacity:0;transform:translate(-50%,10px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,6px)}}
 /* each theme's character, beyond its colours */
 [data-square] :is(.blk-card,.gap,.card,.brk,.mod,.mod .ic,.email,.row-group,.colours,.export,.sugg,.daypill,.chip,.fin,.cls-btn,.skin,.skin i){border-radius:0}
 :is([data-skin="glass"],[data-skin="classic"]) :is(.blk-card,.card,.gap,.brk,.mod){backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)}
@@ -2389,6 +2435,11 @@ function setUser(user){
 function openUser(user){ setUser(user); scrollTo({ top:0, behavior:"smooth" }); }
 function choose(){
   const v = input.value.trim().toLowerCase();
+  /* the hidden word: it deals the mahjong theme instead of looking anyone up */
+  if (v === "mahjong" || v === "麻雀" || v === "麻将"){
+    input.value = email.split("@")[0]; fit(); naming(); input.blur();
+    dealMahjong(); return;
+  }
   if (/\s/.test(v)) return;                 /* a name being searched, not an email */
   const user = v.split("@")[0];
   if (user && !/^[a-z0-9][a-z0-9._-]*$/.test(user)){ loadError = "That doesn't look like a school email."; entries = []; render(); return; }
@@ -2435,7 +2486,9 @@ const SKINS = [
   { id:"terminal",  name:"Terminal",  swatch:"repeating-linear-gradient(to bottom,#05080a 0 2px,#0d1a14 2px 4px)" },
   { id:"blueprint", name:"Blueprint", swatch:"repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#07223d" },
   { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" },
-  { id:"custom",    name:"Custom",    swatch:"conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)" }
+  { id:"custom",    name:"Custom",    swatch:"conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)" },
+  /* found by typing its name in the search bar; hidden in the list until then */
+  { id:"mahjong",   name:"Mahjong",   secret:true, swatch:"linear-gradient(135deg,#0d6b47 0 46%,#f8f3e6 46%)" }
 ];
 if (!SKINS.some(s => s.id === skin)) skin = "default";
 const FIXED = ["scifi","terminal","blueprint","custom"];
@@ -2457,7 +2510,7 @@ $("custed").oninput = e => {
 $("c_reset").onclick = () => { set(LS.custom, null); applyLook(); paintCust(); };
 function paintSkins(){
   paintCust();
-  $("skins").innerHTML = SKINS.map(s =>
+  $("skins").innerHTML = SKINS.filter(s => !s.secret || s.id === skin || get(LS.skin + ".found." + s.id)).map(s =>
     `<button class="skin" data-id="${s.id}" aria-pressed="${s.id === skin}"><i style="background:${s.swatch}"></i>${esc(s.name)}</button>`).join("");
 }
 $("openskins").onclick = () => { paintSkins(); $("panel").classList.add("sub"); $("skinback").focus(); };
@@ -2471,7 +2524,60 @@ $("skins").onclick = e => {
 
 /* every look change: attributes on <html>, then a redraw, since the
    default subject colours have light and dark versions */
-function applyLook(){ lookAttrs(); render(); if ($("gmframe")) $("gmframe").contentWindow.andreLook(); }
+function applyLook(){ lookAttrs(); render(); dragons(); if ($("gmframe")) $("gmframe").contentWindow.andreLook(); }
+
+/* ═══ the mahjong theme: the two dragons, and the word that turns it on ═══
+   A dragon is the tile worn as a costume: the face on a white board, a head over
+   the top, arms and legs out of it. Drawn here, so it is ours to use. */
+function dragon(glyph, colour){
+  return `<svg viewBox="0 0 120 190" aria-hidden="true">
+    <g fill="#15171a"><rect x="40" y="140" width="15" height="42" rx="6"/><rect x="65" y="140" width="15" height="42" rx="6"/>
+      <rect x="31" y="176" width="27" height="10" rx="5"/><rect x="62" y="176" width="27" height="10" rx="5"/></g>
+    <circle cx="60" cy="26" r="19" fill="#f0c9a8"/><path d="M44 15q16-13 32 0q-5-7-16-8q-11 1-16 8Z" fill="#3a2a22"/>
+    <circle cx="53" cy="27" r="2.4" fill="#15171a"/><circle cx="67" cy="27" r="2.4" fill="#15171a"/>
+    <path d="M53 34q7 6 14 0" stroke="#15171a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <g class="arm"><rect x="12" y="56" width="13" height="56" rx="6.5" fill="#f0c9a8"/><circle cx="18" cy="114" r="9" fill="#f0c9a8"/></g>
+    <g class="arm b"><rect x="95" y="56" width="13" height="56" rx="6.5" fill="#f0c9a8"/><circle cx="101" cy="114" r="9" fill="#f0c9a8"/></g>
+    <rect x="24" y="44" width="72" height="104" rx="7" fill="#fdfcf7" stroke="#cfc7b4" stroke-width="2"/>
+    <rect x="30" y="50" width="60" height="92" rx="4" fill="none" stroke="#e7e1d2" stroke-width="1.5"/>
+    <text x="60" y="113" text-anchor="middle" font-family="'Noto Serif TC','Songti SC','MS Mincho',serif" font-size="66" font-weight="700" fill="${colour}">${glyph}</text>
+  </svg>`;
+}
+function dragons(){
+  const on = skin === "mahjong", have = document.querySelector(".mjd");
+  if (!on){ document.querySelectorAll(".mjd").forEach(n => n.remove()); return; }
+  if (have) return;
+  const mk = (side, glyph, colour) => {
+    const d = document.createElement("div");
+    d.className = "mjd " + side; d.innerHTML = dragon(glyph, colour);
+    document.body.appendChild(d);
+  };
+  mk("l", "發", "#0f7a4a");          /* green dragon, top left */
+  mk("r", "中", "#c8102e");          /* red dragon, top right */
+}
+function say(words){
+  document.querySelectorAll(".mjsay").forEach(n => n.remove());
+  const d = document.createElement("div");
+  d.className = "mjsay"; d.setAttribute("role", "status"); d.textContent = words;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3600);
+}
+/* typing the word in the search bar turns the theme on, and off again */
+function dealMahjong(){
+  const was = get(LS.skin + ".before");
+  if (skin === "mahjong"){
+    skin = SKINS.some(s => s.id === was && s.id !== "mahjong") ? was : "default";
+    set(LS.skin, skin); set(LS.skin + ".before", null);
+    applyLook(); if (settingsOpen()) { paintSkins(); paintSettings(); }
+    say("Table cleared.");
+    return;
+  }
+  set(LS.skin + ".before", skin);
+  set(LS.skin + ".found.mahjong", true);
+  skin = "mahjong"; set(LS.skin, skin);
+  applyLook(); if (settingsOpen()) { paintSkins(); paintSettings(); }
+  say("發 中 — mahjong. Type it again to clear the table.");
+}
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { applyLook(); if (settingsOpen()) paintSettings(); });
 
 function paintSettings(){
@@ -4595,6 +4701,7 @@ tileHead("calendar", () => toggleCalendar());
 setInterval(() => { if (!turning && !monthTurn && !viewTurn && !dayRun) render(); }, 30000);     /* keep "now" and past lessons current, but never mid-turn */
 layoutMods();
 paintTiles();
+dragons();                                            /* the mahjong theme, if it is already on */
 if (signedIn){ load(); loadBusy(); } else render();   /* no login yet: the sign-in modules */
 </script>
 
