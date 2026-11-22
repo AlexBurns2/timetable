@@ -38,10 +38,12 @@
   --shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 0 var(--mj-edge),0 2px 5px rgba(0,0,0,.6);
   --shadow-hi:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 0 var(--mj-edge),0 9px 18px rgba(0,0,0,.7);
 }
-/* every panel is a tile face */
-[data-skin="mahjong"] :is(.topbar,.hubbar,.pagehead,.pcard,.forum,.qtile,.lesson){border:var(--card-border);border-radius:10px;box-shadow:var(--shadow)}
-[data-skin="mahjong"] :is(.qtile,.lesson,.pcard):hover{box-shadow:var(--shadow-hi);transform:translateY(-3px)}
+/* every panel is a tile face: the ivory front, a bevel, and a shadow under the lower edge */
+[data-skin="mahjong"] :is(.topbar,.hubbar,.pagehead,.pcard,.qtile,.lesson){background:var(--panel);border:var(--card-border);border-radius:10px;box-shadow:var(--shadow)}
 [data-skin="mahjong"] :is(.qtile,.lesson,.pcard){transition:transform .14s ease,box-shadow .14s ease}
+[data-skin="mahjong"] :is(.qtile,.lesson,.pcard):hover{background:var(--panel);box-shadow:var(--shadow-hi);transform:translateY(-3px)}
+/* the forum stays a section of the table, marked off by a jade rule, not a tile */
+[data-skin="mahjong"] .forum{border-top:2px solid var(--mj-jade)}
 /* the suit in the corner of each tile, 萬 筒 索 in turn */
 [data-skin="mahjong"] .lesson{position:relative}
 [data-skin="mahjong"] .lesson::after{position:absolute;right:7px;bottom:5px;font:600 .8rem/1 "Noto Serif TC","Songti SC","SimSun",serif;color:var(--mj-jade);opacity:.5;pointer-events:none}
