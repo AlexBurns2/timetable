@@ -2487,8 +2487,8 @@ const SKINS = [
   { id:"blueprint", name:"Blueprint", swatch:"repeating-linear-gradient(to right,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),repeating-linear-gradient(to bottom,rgba(255,255,255,.25) 0 1px,transparent 1px 9px),#07223d" },
   { id:"brutal",    name:"Brutal",    swatch:"linear-gradient(135deg,#ffe94a 50%,#0047ff 50%)" },
   { id:"custom",    name:"Custom",    swatch:"conic-gradient(from 210deg,#ff5f6d,#ffc371,#7ee8fa,#a06cd5,#ff5f6d)" },
-  /* found by typing its name in the search bar; hidden in the list until then */
-  { id:"mahjong",   name:"Mahjong",   secret:true, swatch:"linear-gradient(135deg,#0d6b47 0 46%,#f8f3e6 46%)" }
+  /* in the list for everyone; typing its name in the search bar also deals it */
+  { id:"mahjong",   name:"Mahjong",   swatch:"linear-gradient(135deg,#0d6b47 0 46%,#f8f3e6 46%)" }
 ];
 if (!SKINS.some(s => s.id === skin)) skin = "default";
 const FIXED = ["scifi","terminal","blueprint","custom"];
@@ -2510,7 +2510,7 @@ $("custed").oninput = e => {
 $("c_reset").onclick = () => { set(LS.custom, null); applyLook(); paintCust(); };
 function paintSkins(){
   paintCust();
-  $("skins").innerHTML = SKINS.filter(s => !s.secret || s.id === skin || get(LS.skin + ".found." + s.id)).map(s =>
+  $("skins").innerHTML = SKINS.map(s =>
     `<button class="skin" data-id="${s.id}" aria-pressed="${s.id === skin}"><i style="background:${s.swatch}"></i>${esc(s.name)}</button>`).join("");
 }
 $("openskins").onclick = () => { paintSkins(); $("panel").classList.add("sub"); $("skinback").focus(); };
@@ -2562,7 +2562,7 @@ function say(words){
   document.body.appendChild(d);
   setTimeout(() => d.remove(), 3600);
 }
-/* typing the word in the search bar turns the theme on, and off again */
+/* the theme is in the list like any other; typing the word is the short way in */
 function dealMahjong(){
   const was = get(LS.skin + ".before");
   if (skin === "mahjong"){
@@ -2573,7 +2573,6 @@ function dealMahjong(){
     return;
   }
   set(LS.skin + ".before", skin);
-  set(LS.skin + ".found.mahjong", true);
   skin = "mahjong"; set(LS.skin, skin);
   applyLook(); if (settingsOpen()) { paintSkins(); paintSettings(); }
   say("發 中 — mahjong. Type it again to clear the table.");
