@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261123f">
+<link rel="stylesheet" href="theme.css?v=20261123g">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261123f"></script>
-<script src="icons.js?v=20261123f"></script>
-<script src="suggest.js?v=20261123f"></script>
+<script src="theme.js?v=20261123g"></script>
+<script src="icons.js?v=20261123g"></script>
+<script src="suggest.js?v=20261123g"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -73,7 +73,7 @@ button,select,input{font:inherit;color:inherit}
 .whoback:hover{color:var(--accent)}
 .whoback[hidden]{display:none}
 @media (max-width:520px){ .idrow .dom{display:none} }
-.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center;position:relative}
+.headbtns{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center;position:relative;margin-left:auto}   /* right-hand side even when Now and Next is off */
 /* under Home: "New poll this week", small, until you vote, open Home, or close it */
 .pollnote{position:absolute;top:calc(100% + 9px);right:0;z-index:20;display:flex;align-items:center;gap:2px;white-space:nowrap;
   padding:3px 3px 3px 11px;border-radius:999px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-hi);
