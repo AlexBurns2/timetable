@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261123b';
+const ASSET_V = '20261123d';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -87,7 +87,7 @@ const SKINS = [
     city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
   /* a secret: type "saul" in any box (below). Not in the picker. */
-  { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
+  { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton&family=Kanit:ital,wght@1,500;1,700;1,800&family=Yellowtail' },
   /* the originals */
   { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
@@ -267,6 +267,8 @@ SKINS.filter(s => s.city).forEach(s => {
   s.swatch = 'radial-gradient(circle,rgba(0,0,0,.3) 0 .55px,transparent 1px) 0 0/3px 3px,linear-gradient(' + d[0] + ',' + d[0] + '),linear-gradient(' + d[1] + ',' + d[1] + '),' +
     "linear-gradient(#000,#000),url('/images/city/" + s.id + "-t.webp') center/cover no-repeat " + d[0] + ';background-blend-mode:normal,screen,multiply,saturation,normal';
 });
+/* Better Call Saul's card: the spinning Saul himself */
+SKINS.find(s => s.id === 'saul').swatch = "url('/images/th/saul.gif') center/cover no-repeat #000;image-rendering:pixelated";
 SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'destijl') || {}).border = '#111'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
 
 /* kept for older callers; the picker shows every theme now */
@@ -523,6 +525,8 @@ function paintFavicon(){
     const bg = cs.getPropertyValue('--accent').trim(), ink = fv.ink || cs.getPropertyValue('--accent-ink').trim() || '#fff';
     const style = FAV_STYLE[sk] || 'plain', key = sk + bg + ink + style;
     if (!bg || key === favLast) return;
+    /* Better Call Saul: the spinning Saul himself (browsers that animate a GIF favicon spin him) */
+    if (sk === 'saul'){ document.querySelectorAll('link[rel~="icon"]').forEach(l => { l.type = 'image/gif'; l.href = '/images/th/saul.gif'; }); favLast = key; return; }
     const draw = () => {
       const N = 64, mk = n => { const c = document.createElement('canvas'); c.width = c.height = n || N; return c; };
       /* the letters, in a colour (or a gradient, made by fill(x)), in a shape */
@@ -1261,6 +1265,43 @@ function saulMusic(){
   }); };
   go();
 }
+/* Saul is every surface: anything the page draws with a solid background (a panel, a card, a button, a
+   bar, the poll's rows, the lobby, drawn now or later) gets .sg, and skins/saul.css puts him on it.
+   Game boards and switches keep their colours (they'd stop working), and so does anything tiny. */
+const SG_SKIP = '.stage *,[class*="board"] *,[class*="board"],canvas,img,video,svg,iframe,input[type=checkbox],input[type=radio],input[type=range],.sw,.tsw i';
+let sgObs = null, sgQ = new Set(), sgRaf = 0;
+function sgMark(root){
+  if (!root || root.nodeType !== 1) return;
+  const els = [root, ...root.querySelectorAll('*')];
+  for (const el of els){
+    if (el === document.body || el.classList.contains('sg') || el.closest('head')) continue;
+    if (el.matches(SG_SKIP)) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.position === 'fixed' && el.getBoundingClientRect().width >= innerWidth - 2) continue;
+    const m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor), a = m ? (m[1].split(',')[3] === undefined ? 1 : +m[1].split(',')[3]) : 0;
+    const grad = cs.backgroundImage.includes('gradient') && !cs.backgroundImage.includes('saul');
+    if (a < .25 && !grad) continue;
+    if (cs.backgroundImage.includes('saul')) continue;
+    if (el.offsetWidth < 16 || el.offsetHeight < 16) continue;
+    el.classList.add('sg');
+  }
+}
+function saulSurfaces(){
+  const on = document.documentElement.getAttribute('data-skin') === 'saul';
+  if (!on){ if (sgObs){ sgObs.disconnect(); sgObs = null; } return; }
+  if (!document.body) return;
+  /* after the skin's stylesheet has applied, so the colours read are Saul's */
+  setTimeout(() => sgMark(document.body), 400);
+  if (sgObs) return;
+  sgObs = new MutationObserver(list => {
+    for (const r of list) for (const n of r.addedNodes) if (n.nodeType === 1) sgQ.add(n);
+    if (!sgRaf) sgRaf = requestAnimationFrame(() => { sgRaf = 0; const q = [...sgQ]; sgQ.clear(); q.forEach(n => n.isConnected && sgMark(n)); });
+  });
+  sgObs.observe(document.body, { childList:true, subtree:true });
+}
+addEventListener('tt:look', saulSurfaces);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulSurfaces, { once:true }); else saulSurfaces();
+addEventListener('load', () => saulSurfaces());
 addEventListener('pagehide', () => { try { if (saulTune.a) sessionStorage.setItem('tt.saul_t', saulTune.a.currentTime); } catch {} });
 addEventListener('tt:look', saulMusic);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulMusic, { once:true }); else saulMusic();
