@@ -1,84 +1,122 @@
 /* ══════════════════════════════════════════════════════════════════
-   WEB 2000 — a site as built in the year of the millennium bug. Two moods
-   from the Web Design Museum's galleries. By day, the Apple Store of 2001
-   and Macromedia's pages: white with a fine pinstripe, 11px Verdana,
-   platinum bevelled panels with a one-pixel dark line, and Aqua gel
-   buttons (a stripe of blue with a highlight across the top half). Tabs
-   and rules do the layout; links are underlined. By night, a Flash site of the
-   PlayStation and 2Advanced kind: black, hairline grey boxes, tiny type in
-   capitals, orange for the live item, and square buttons that invert.
-   No rounded corners beyond the gel pills; nothing blurs; no shadows
-   beyond one pixel. Changing page is the site's own fade.
+   WEB 2000 — a website from the year of the millennium bug, built from four
+   real ones in the Web Design Museum's style of gallery.
+   By day it is the loud, friendly web of 1999: the sunset-gradient page and
+   white clouds of Webnode, the periwinkle boxes, white bevelled headlines and
+   blue-and-yellow button column of a local radio station (Lite 98.7), and
+   the colour bars of Nick.com, one colour to a section, with a round arrow
+   at the end of each. The Now and Next box is a starry navy window with the
+   green digits of a hit counter. Buttons are the grey Windows ones, with
+   underlined navy type. "NEW!" blinks. The foot has a browser status bar and
+   a visitor counter.
+   By night it is 2Advanced (2000): a medium-grey frame, nav strips in black
+   with tiny, widely spaced white capitals and a ">>" in front, a deep-blue
+   panel with a fine grid and a white double rule round it for the hero,
+   and "AUDIO: ON / OFF" in the corner. The grey is flat, nothing glows.
+   Optional pictures of yours (nothing breaks without them):
+   /images/web2000/banner.gif (468×60, top right) and /images/web2000/tile.gif
+   (a small tile, repeated over the page). Changing page is the site's own fade.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="web2000"]{
-  --w-aqua:linear-gradient(180deg,#e6f3ff 0%,#8fc6f6 45%,#3d8fe0 50%,#7cc0fa 100%);
-  --w-plat:linear-gradient(180deg,#fdfdfd,#e8e8e8 50%,#d9d9d9 51%,#ececec);
-  --w-stripe:repeating-linear-gradient(0deg,#fff 0 2px,#f1f1f1 2px 4px);
-  --w-link:#0033cc; --w-new:#e8240c;
-  --bg:#f4f4f4; --bg-img:var(--w-stripe);
-  --panel:#fff; --panel-2:#ececec; --line:#999;
-  --text:#000; --muted:#555; --accent:#336699; --accent-ink:#fff;
-  --font-ui:Verdana,Geneva,Tahoma,sans-serif; --font-display:Verdana,Geneva,Tahoma,sans-serif; --font-num:Verdana,Geneva,Tahoma,sans-serif;
+  --w-peri:#9999cc; --w-navy:#0a1a5c; --w-yel:#ffff00; --w-new:#ff0000;
+  --w-nick:#ff9a1f,#29d0ff,#b86bff,#6fe04a,#ff6fa8,#ffe400;
+  --w-stars:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Cg fill=%22%23fff%22%3E%3Ccircle cx=%228%22 cy=%2210%22 r=%221.2%22/%3E%3Ccircle cx=%2240%22 cy=%226%22 r=%22.9%22/%3E%3Ccircle cx=%2254%22 cy=%2230%22 r=%221.3%22/%3E%3Ccircle cx=%2220%22 cy=%2244%22 r=%221%22/%3E%3Ccircle cx=%2246%22 cy=%2256%22 r=%22.8%22/%3E%3Ccircle cx=%224%22 cy=%2258%22 r=%22.8%22/%3E%3Ccircle cx=%2230%22 cy=%2226%22 r=%22.7%22/%3E%3C/g%3E%3C/svg%3E"); --w-grid:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22%3E%3Cpath d=%22M0 .5H24M.5 0V24%22 stroke=%22%237fb0ff%22 stroke-opacity=%22.22%22/%3E%3C/svg%3E");
+  --bg:#c04ad0; --bg-img:linear-gradient(180deg,#5b3bd0 0%,#b84ad0 32%,#ff6f91 62%,#ffb347 84%,#ffe27a 100%);
+  --panel:#9999cc; --panel-2:#b9b9e6; --line:#333366;
+  --text:#000; --muted:#222255; --accent:#0000cc; --accent-ink:#fff;
+  --font-ui:Verdana,Geneva,Tahoma,sans-serif; --font-display:Arial,Helvetica,sans-serif; --font-num:"Courier New",monospace;
   --card-radius:0px; --radius:0px; --tint:10%; --card-accent:0px;
-  --card-border:1px solid #999; --shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #ccc; --shadow-hi:inset 1px 1px 0 #fff,inset -1px -1px 0 #ccc,0 0 0 1px #336699;
+  --card-border:2px outset #ddddff; --shadow:none; --shadow-hi:0 0 0 2px #ffff00;
   --display-tt:none; --display-ls:0; --display-w:700;
+  --w-rainbow:linear-gradient(90deg,#ff7a00,#ffe600 25%,#38e038 50%,#2fc8ff 75%,#ff5cd0);
 }
 [data-skin="web2000"][data-mode="dark"]{
-  --w-or:#ff6a00; --bg:#000; --bg-img:none; --panel:#050505; --panel-2:#111; --line:#4a4a4a;
-  --text:#d8d8d8; --muted:#808080; --accent:#ff6a00; --accent-ink:#000;
-  --card-border:1px solid #4a4a4a; --shadow:none; --shadow-hi:0 0 0 1px #ff6a00;
+  --bg:#8c8c8c; --bg-img:none; --panel:#06163f; --panel-2:#000; --line:#d4d4d4;
+  --text:#e8f0ff; --muted:#9fb6ea; --accent:#fff; --accent-ink:#000;
+  --card-border:1px solid #d4d4d4; --shadow:0 0 0 3px #8c8c8c,0 0 0 4px #dcdcdc; --shadow-hi:0 0 0 3px #8c8c8c,0 0 0 4px #fff;
+  --font-ui:Verdana,Geneva,sans-serif; --font-display:Verdana,Geneva,sans-serif;
 }
-[data-skin="web2000"] body,[data-skin="web2000"]{font-size:11px}
-:root[data-skin="web2000"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--w-plat);border:1px solid #777;border-bottom-color:#555;border-radius:0;padding:10px 16px;box-shadow:inset 0 1px 0 #fff}
-:root[data-skin="web2000"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:#000;border:0;border-bottom:1px solid var(--w-or);box-shadow:none}
-[data-skin="web2000"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 1.5rem/1.2 Verdana,Geneva,sans-serif;letter-spacing:-.02em;color:#003366}
-[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-size:1rem;letter-spacing:.3em;text-transform:uppercase;color:var(--w-or)}
-[data-skin="web2000"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-weight:700;font-size:.6875rem;letter-spacing:0;text-transform:none;color:#003366}
-[data-skin="web2000"][data-mode="dark"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-size:.5625rem;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
-/* section heads: a navy bar, as on a 2001 product page; at night a hairline with a tick */
-[data-skin="web2000"] :is(.sechd,.cathd,.forum h2){display:block;padding:3px 8px;background:linear-gradient(180deg,#5b86b4,#336699);color:#fff!important;border:1px solid #234a73}
-[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){background:none;border:0;border-bottom:1px solid #4a4a4a;color:var(--w-or)!important;padding:0 0 4px}
-:root[data-skin="web2000"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:0;box-shadow:var(--shadow)}
-[data-skin="web2000"] .forum{padding:12px 14px 14px;margin-top:20px}
-:root[data-skin="web2000"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{box-shadow:var(--shadow-hi)}
-:root[data-skin="web2000"] :is(.qtile,.tday,.gamecard,.tile,.game) .tname{color:var(--w-link);text-decoration:underline}
-[data-skin="web2000"][data-mode="dark"] :is(.qtile,.tday,.gamecard,.tile,.game) .tname{color:var(--text);text-decoration:none;text-transform:uppercase;letter-spacing:.14em}
-[data-skin="web2000"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.2rem;height:2.2rem;color:#336699!important;background:var(--w-plat);border:1px solid #888}
-[data-skin="web2000"][data-mode="dark"] .qtile .ico{background:none;border:1px solid #4a4a4a;color:var(--w-or)!important}
-/* Now and Next: a beveled data box with a progress bar like a download dialog */
-[data-skin="web2000"] .nowcard{background:#fff;border:1px solid #666;border-radius:0;box-shadow:inset 1px 1px 0 #999,inset -1px -1px 0 #fff;color:#000}
-[data-skin="web2000"] .nowcard .lbl,[data-skin="web2000"] .nowcard .count,[data-skin="web2000"] .progrow .count{color:#003366}
-[data-skin="web2000"][data-mode="dark"] .nowcard{background:#000;border:1px solid var(--w-or);box-shadow:none;color:var(--text)}
-[data-skin="web2000"][data-mode="dark"] .nowcard .lbl,[data-skin="web2000"][data-mode="dark"] .nowcard .count,[data-skin="web2000"][data-mode="dark"] .progrow .count{color:var(--w-or)}
-[data-skin="web2000"] .prog{border-radius:0;height:12px;background:#fff;border:1px solid #666;box-shadow:inset 1px 1px 0 #999}
-[data-skin="web2000"] .prog i{border-radius:0;background:repeating-linear-gradient(90deg,#3d8fe0 0 8px,#fff 8px 10px)}
-[data-skin="web2000"][data-mode="dark"] .prog{background:#000;border-color:#4a4a4a;box-shadow:none}
-[data-skin="web2000"][data-mode="dark"] .prog i{background:var(--w-or)}
-/* Aqua gel pills by day; square, inverting buttons by night */
-:root[data-skin="web2000"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:var(--w-plat);border:1px solid #6d6d6d;color:#000;font:700 .6875rem Verdana,sans-serif;box-shadow:inset 0 1px 0 #fff,0 1px 1px rgba(0,0,0,.25)}
-:root[data-skin="web2000"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--w-aqua);border-color:#1f5f9f;color:#fff;text-shadow:0 -1px 0 rgba(0,40,90,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 1px 2px rgba(0,40,90,.4)}
-:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;background:#000;border:1px solid #6a6a6a;color:var(--text);box-shadow:none;font-size:.5625rem;letter-spacing:.24em;text-transform:uppercase;font-weight:400}
-:root[data-skin="web2000"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--w-or);border-color:var(--w-or);color:#000;text-shadow:none}
-[data-skin="web2000"] :is(.newpill,.gamecard .newbanner){background:var(--w-new);color:#fff;border-radius:0;font-weight:700}
-[data-skin="web2000"] .newpill::before{content:"NEW! "}
-[data-skin="web2000"] .newsdot{background:var(--w-new);border-radius:0}
-[data-skin="web2000"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#ececec;border:2px outset #fff;border-radius:0}
-[data-skin="web2000"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#000;border:1px solid var(--w-or)}
-[data-skin="web2000"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#fff;border:2px inset #ccc;font-family:Verdana,sans-serif}
-[data-skin="web2000"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:#000;border:1px solid #4a4a4a}
-[data-skin="web2000"] .lesson{border-radius:0;box-shadow:inset 1px 1px 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(0,0,0,.2)}
-[data-skin="web2000"] .lesson.current{outline:2px dotted #000;outline-offset:1px}
-[data-skin="web2000"][data-mode="dark"] .lesson.current{outline:1px solid var(--w-or);box-shadow:0 0 0 3px #000,0 0 0 4px var(--w-or)}
-[data-skin="web2000"] :is(.dayhead.today,.dayhead.focus) .rule{background:#336699;height:3px;border-radius:0}
-[data-skin="web2000"][data-mode="dark"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--w-or)}
-[data-skin="web2000"] .breakbar{border-radius:0}
-html.fx-enter[data-skin="web2000"] .wrap{animation:none}
-
-/* ── scene: original artwork, fixed behind the page (and off on Zen and the Mahjong page, like Coquette's) ── */
-[data-skin="web2000"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMaxYMax slice%22%3E%3Cdefs%3E%3CradialGradient id=%22b%22 cx=%22.35%22 cy=%22.3%22 r=%22.8%22%3E%3Cstop offset=%220%22 stop-color=%22%23e6f3ff%22/%3E%3Cstop offset=%221%22 stop-color=%22%23336699%22 stop-opacity=%22.2%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx=%221280%22 cy=%22520%22 r=%22260%22 fill=%22url(%23b)%22 stroke=%22%23336699%22 stroke-width=%223%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%2260%22 ry=%22260%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22130%22 ry=%22260%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22200%22 ry=%22260%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22340%22 rx=%22187%22 ry=%2233%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22430%22 rx=%22243%22 ry=%2243%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22260%22 ry=%2246%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22610%22 rx=%22243%22 ry=%2243%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22700%22 rx=%22187%22 ry=%2233%22 fill=%22none%22 stroke=%22%23336699%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22400%22 ry=%2290%22 transform=%22rotate(-18 1280 520)%22 fill=%22none%22 stroke=%22%23e8240c%22 stroke-width=%223%22/%3E%3Ccircle cx=%221650%22 cy=%22410%22 r=%2214%22 fill=%22%23e8240c%22 transform=%22translate(-170 0)%22/%3E%3C/svg%3E") right bottom/cover no-repeat;opacity:0.55}
+[data-skin="web2000"]{font-size:12px}
+body{}
+[data-skin="web2000"] body{padding-bottom:30px;background-image:url("/images/web2000/tile.gif"),var(--bg-img)}
+/* the page's picture: Webnode's clouds by day; 2Advanced's blue HUD lines by night */
+[data-skin="web2000"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("/images/web2000/banner.gif") right top no-repeat,url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMidYMax slice%22%3E%3Cg transform=%22translate(70 700) scale(1.4)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1420 560) scale(1.5)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(160 380) scale(0.9)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1320 200) scale(1.1)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(60 860) scale(1.6)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1480 860) scale(1.8)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3C/svg%3E") center bottom/cover no-repeat}
+[data-skin="web2000"][data-mode="dark"] body::before{background:url("/images/web2000/banner.gif") right top no-repeat,url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMaxYMid slice%22%3E%3Cg fill=%22none%22 stroke=%22%232b5fd0%22 stroke-opacity=%22.55%22 stroke-width=%222%22%3E%3Ccircle cx=%221260%22 cy=%22420%22 r=%22140%22/%3E%3Ccircle cx=%221260%22 cy=%22420%22 r=%22210%22 stroke-dasharray=%226 10%22/%3E%3Ccircle cx=%221260%22 cy=%22420%22 r=%22300%22/%3E%3Cpath d=%22M900 420H1600M1260 60V780%22/%3E%3Crect x=%22940%22 y=%22240%22 width=%22140%22 height=%2270%22/%3E%3Crect x=%221380%22 y=%22560%22 width=%22120%22 height=%2280%22/%3E%3C/g%3E%3Cg fill=%22%23fff%22 fill-opacity=%22.5%22%3E%3Ccircle cx=%221010%22 cy=%22130%22 r=%229%22/%3E%3Ccircle cx=%221050%22 cy=%22160%22 r=%229%22/%3E%3Ccircle cx=%221050%22 cy=%22100%22 r=%229%22/%3E%3C/g%3E%3C/svg%3E") center/cover no-repeat}
 html.zen[data-skin="web2000"] body::before,[data-skin="web2000"][data-pg="hkmahjong"] body::before{display:none}
-[data-skin="web2000"][data-mode="dark"] body::before{background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMaxYMax slice%22%3E%3Cdefs%3E%3CradialGradient id=%22b%22 cx=%22.35%22 cy=%22.3%22 r=%22.8%22%3E%3Cstop offset=%220%22 stop-color=%22%232a1200%22/%3E%3Cstop offset=%221%22 stop-color=%22%23ff6a00%22 stop-opacity=%22.2%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx=%221280%22 cy=%22520%22 r=%22260%22 fill=%22url(%23b)%22 stroke=%22%23ff6a00%22 stroke-width=%223%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%2260%22 ry=%22260%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22130%22 ry=%22260%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22200%22 ry=%22260%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22340%22 rx=%22187%22 ry=%2233%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22430%22 rx=%22243%22 ry=%2243%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22260%22 ry=%2246%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22610%22 rx=%22243%22 ry=%2243%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22700%22 rx=%22187%22 ry=%2233%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%222%22/%3E%3Cellipse cx=%221280%22 cy=%22520%22 rx=%22400%22 ry=%2290%22 transform=%22rotate(-18 1280 520)%22 fill=%22none%22 stroke=%22%23ff6a00%22 stroke-width=%223%22/%3E%3Ccircle cx=%221650%22 cy=%22410%22 r=%2214%22 fill=%22%23ff6a00%22 transform=%22translate(-170 0)%22/%3E%3C/svg%3E") right bottom/cover no-repeat;opacity:.5}
-/* unique to Web 2000: the "best viewed in" badge every site of the year carried, and an Under Construction stripe on the foot */
-[data-skin="web2000"] body::after{content:"BEST VIEWED IN 1024×768 · MADE WITH NOTEPAD";position:fixed;right:10px;bottom:10px;z-index:-1;pointer-events:none;padding:3px 8px;font:700 9px Verdana,sans-serif;color:#003366;background:#ececec;border:2px outset #fff}
-[data-skin="web2000"][data-mode="dark"] body::after{color:var(--w-or);background:#000;border:1px solid var(--w-or);letter-spacing:.2em;font-weight:400}
-html.zen[data-skin="web2000"] body::after,[data-skin="web2000"][data-pg="hkmahjong"] body::after{display:none}
+/* ── the bar: by day a starry navy window with a rainbow name; by night a black strip, ">>" and tiny capitals ── */
+:root[data-skin="web2000"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--w-stars),linear-gradient(180deg,#0d2a8a,var(--w-navy));border:2px outset #aab;border-radius:0;padding:12px 18px}
+[data-skin="web2000"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 clamp(1.1rem,3vw,1.8rem)/1.2 "Comic Sans MS","Trebuchet MS",Verdana,sans-serif;background:var(--w-rainbow);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}
+[data-skin="web2000"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font:700 .6875rem Verdana,sans-serif;color:#ffe600;letter-spacing:0;text-transform:none}
+[data-skin="web2000"] :is(.brand .meta,.hubid .meta,.topbar .meta){color:#cfd8ff}
+:root[data-skin="web2000"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:#000;border:1px solid #d4d4d4;box-shadow:var(--shadow);padding:7px 12px}
+[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 .6875rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase;background:none;color:#fff;-webkit-text-fill-color:#fff}
+[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1)::before{content:">> ";letter-spacing:0}
+[data-skin="web2000"][data-mode="dark"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase;color:#fff}
+/* ── section heads: Nick.com's bars, a colour to each, with a round arrow; by night a black strip ── */
+[data-skin="web2000"] :is(.sechd,.cathd,.forum h2){display:block;padding:3px 12px;border:2px solid #000;border-radius:12px;color:#000!important;font:900 .8125rem Arial,Helvetica,sans-serif;letter-spacing:0;text-transform:none;background:#ff9a1f}
+[data-skin="web2000"] :is(.sechd,.cathd,.forum h2)::after{content:"▶";float:right;width:17px;height:17px;border-radius:50%;background:#000;color:#ffe400;font-size:8px;line-height:17px;text-align:center}
+[data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n+2) :is(.sechd,.cathd,h2){background:#29d0ff}
+[data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n+3) :is(.sechd,.cathd,h2){background:#b86bff}
+[data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n+4) :is(.sechd,.cathd,h2){background:#6fe04a}
+[data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n+5) :is(.sechd,.cathd,h2){background:#ff6fa8}
+[data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n) :is(.sechd,.cathd,h2){background:#ffe400}
+[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){background:#000!important;color:#fff!important;border:1px solid #d4d4d4;border-radius:0;padding:4px 10px;font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase}
+[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2)::after{content:"»";float:none;background:none;color:#fff;width:auto;height:auto;line-height:1;font-size:.7rem;margin-left:.6em}
+/* ── panels: periwinkle boxes with a bevel and Times for the text, headlines in a white bevelled bar (Lite 98.7); by night a deep-blue hero with a grid and a double rule ── */
+:root[data-skin="web2000"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:0;box-shadow:var(--shadow);color:#000}
+[data-skin="web2000"] :is(.pcard,.forum) :is(p,li,span:not(.sechd)){font-family:"Times New Roman",Times,serif;font-size:1.0625rem}
+[data-skin="web2000"] .pcard h2{margin:.4em 0;padding:2px 8px;background:#fff;border:2px outset #ddd;font:700 .9375rem Arial,sans-serif;color:#000}
+[data-skin="web2000"] .forum{padding:12px 14px 14px;margin-top:20px}
+:root[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum){background:var(--w-grid),linear-gradient(135deg,#031038,#0a2a80 60%,#0b3fb0);color:#e8f0ff}
+:root[data-skin="web2000"][data-mode="dark"] .pcard h2{background:none;border:0;color:#fff;font:700 1rem Verdana,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum) :is(p,li,span:not(.sechd)){font-family:Verdana,sans-serif;font-size:.75rem}
+/* Home's tiles: the blue-and-yellow button column; by night the black strips */
+:root[data-skin="web2000"] .qtile{background:linear-gradient(180deg,#5555ff,#1a1aa8);border:2px outset #bbbbff;flex-direction:row;align-items:center;gap:8px;padding:8px 12px}
+:root[data-skin="web2000"] .qtile .tname{color:#ffff00;font:900 italic .9375rem Arial,sans-serif;text-shadow:1px 1px 0 #000;text-decoration:none}
+[data-skin="web2000"] .qtile .ico{display:flex;width:1.6rem;height:1.6rem;color:#fff!important;background:none;border:0}
+:root[data-skin="web2000"] .qtile:hover{box-shadow:var(--shadow-hi)}
+:root[data-skin="web2000"][data-mode="dark"] .qtile{background:#000;border:1px solid #d4d4d4;box-shadow:var(--shadow)}
+:root[data-skin="web2000"][data-mode="dark"] .qtile .tname{color:#fff;font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase;text-shadow:none}
+[data-skin="web2000"][data-mode="dark"] .qtile .tname::before{content:">> ";letter-spacing:0}
+/* ── Now and Next: a starry navy window; the time in a hit counter's green digits ── */
+[data-skin="web2000"] .nowcard{background:var(--w-stars),var(--w-navy);color:#ffe600;border:2px outset #aab;border-radius:0;box-shadow:none}
+[data-skin="web2000"] .nowcard .t,[data-skin="web2000"] .nowcard .count,[data-skin="web2000"] .progrow .count{color:#fff;font-family:"Comic Sans MS","Trebuchet MS",sans-serif}
+[data-skin="web2000"] .nowcard .meta{color:#00ff66;font-family:"Courier New",monospace;letter-spacing:.12em}
+[data-skin="web2000"] .prog{border-radius:0;height:12px;background:#000;border:2px inset #888;box-shadow:none}
+[data-skin="web2000"] .prog i{border-radius:0;background:repeating-linear-gradient(90deg,#00ff66 0 8px,#000 8px 10px)}
+[data-skin="web2000"][data-mode="dark"] .nowcard{background:var(--w-grid),linear-gradient(135deg,#031038,#0a2a80 60%,#0b3fb0);border:1px solid #d4d4d4;box-shadow:var(--shadow);color:#fff}
+[data-skin="web2000"][data-mode="dark"] .nowcard .t{font:700 .8125rem Verdana,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+[data-skin="web2000"][data-mode="dark"] .nowcard .meta{color:#9fb6ea;font:700 .5625rem Verdana,sans-serif;letter-spacing:.3em;text-transform:uppercase}
+[data-skin="web2000"][data-mode="dark"] .prog{background:#000;border:1px solid #d4d4d4}
+[data-skin="web2000"][data-mode="dark"] .prog i{background:#fff}
+/* ── buttons: the grey Windows ones with underlined navy type (Webnode's "Get started"); by night, black strips that go white ── */
+:root[data-skin="web2000"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;background:#c0c0c0;border:2px outset #fff;color:#000080;font:700 .6875rem Verdana,sans-serif;text-decoration:underline;box-shadow:none;letter-spacing:.04em}
+:root[data-skin="web2000"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):active{border-style:inset}
+:root[data-skin="web2000"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:#ffff66;border-style:inset;color:#000080}
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){background:#000;border:1px solid #d4d4d4;color:#fff;text-decoration:none;font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase}
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:#fff;color:#000}
+/* NEW! blinks, as it did */
+[data-skin="web2000"] :is(.newpill,.gamecard .newbanner){background:var(--w-new);color:#ffff00;border-radius:0;font:900 .6875rem Arial,sans-serif;animation:w2kblink 1s steps(2,jump-none) infinite}
+[data-skin="web2000"] .newpill::before{content:"NEW! "}
+@keyframes w2kblink{50%{visibility:hidden}}
+[data-skin="web2000"] .newsdot{background:var(--w-new);border-radius:0}
+@media (prefers-reduced-motion:reduce){[data-skin="web2000"] :is(.newpill,.gamecard .newbanner){animation:none}}
+[data-skin="web2000"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#c0c0c0;border:2px outset #fff;border-radius:0;color:#000}
+[data-skin="web2000"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#06163f;border:1px solid #d4d4d4;color:#e8f0ff}
+[data-skin="web2000"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#fff;color:#000;border:2px inset #999;font-family:Verdana,sans-serif}
+[data-skin="web2000"] .lesson{border-radius:0;box-shadow:inset 1px 1px 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(0,0,0,.3);border:1px solid #000}
+[data-skin="web2000"] .lesson.current{outline:2px dotted #000;outline-offset:1px}
+[data-skin="web2000"][data-mode="dark"] .lesson.current{outline:1px solid #fff;box-shadow:0 0 0 3px #000,0 0 0 4px #fff}
+[data-skin="web2000"] :is(.dayhead.today,.dayhead.focus) .rule{background:#ff0000;height:3px;border-radius:0}
+[data-skin="web2000"][data-mode="dark"] :is(.dayhead.today,.dayhead.focus) .rule{background:#fff}
+[data-skin="web2000"] .breakbar{border-radius:0}
+/* ── the foot: a browser's status bar (Done · Internet), and the visitor counter ── */
+html[data-skin="web2000"]::after{content:"✔ Done";position:fixed;left:0;right:0;bottom:0;z-index:50;pointer-events:none;height:20px;padding:3px 10px;font:11px Tahoma,Verdana,sans-serif;color:#000;background:#d4d0c8;border-top:1px solid #fff;box-shadow:inset 0 1px 0 #808080}
+html[data-skin="web2000"]::before{content:"8 8 3 0 3 1 9 6 8";position:fixed;left:10px;bottom:28px;z-index:50;pointer-events:none;padding:2px 8px;font:bold 11px "Courier New",monospace;color:#00ff66;background:#000;border:2px inset #999;letter-spacing:.12em}
+html[data-skin="web2000"][data-mode="dark"]::after{content:"© 2000 MSC UNOFFICIAL · COPYRIGHT NOTICE";color:#e8e8e8;background:#8c8c8c;border-top:0;box-shadow:none;letter-spacing:.3em;font:700 8px Verdana,sans-serif;padding:6px 10px;text-transform:uppercase}
+html[data-skin="web2000"][data-mode="dark"]::before{content:"AUDIO: ON / OFF";left:auto;right:10px;bottom:3px;color:#e8e8e8;background:none;border:0;font:italic 700 8px Verdana,sans-serif;letter-spacing:.3em}
+html.zen[data-skin="web2000"]::before,html.zen[data-skin="web2000"]::after,[data-skin="web2000"][data-pg="hkmahjong"]::before,[data-skin="web2000"][data-pg="hkmahjong"]::after{display:none}
+[data-skin="web2000"] :is(.pcard,.forum,.hubfoot) a:not(.btn){color:#0000ee;text-decoration:underline}
+[data-skin="web2000"] :is(.pcard,.forum,.hubfoot) a:not(.btn):visited{color:#551a8b}
+[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum,.hubfoot) a:not(.btn){color:#9fc1ff}
+html.fx-enter[data-skin="web2000"] .wrap{animation:none}
