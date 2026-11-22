@@ -1,0 +1,57 @@
+/* ══════════════════════════════════════════════════════════════════
+   FRUTIGER METRO — the urban vector-grunge look of 2003–2008 (wallpaper
+   packs, MP3-player ads, club flyers): black ink on white with ONE loud
+   colour, electric blue. Concentric bullseye rings, outlined stars,
+   curling flourishes, a skyline of towers, ink splatter and drips, halftone
+   dots and a few blue speed lines (this is my own drawing in that manner,
+   not a copy of any wallpaper). Panels are white sheets with a heavy black
+   outline and a hard blue offset shadow; headings are tall condensed
+   capitals; icons sit in bullseye rings; buttons are black pills that turn
+   blue when chosen. Now and Next is a black panel with blue rings in the
+   corner. DAY is ink on paper; NIGHT is the same flyer printed on black,
+   with cyan and blue rings and white ink.
+   Scene (images/metro/scene-day.svg, scene-night.svg) sits behind, fixed.
+   Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="metro"]{
+  --m-blue:#1a6bff; --m-cyan:#2ad0ff; --m-ink:#0b0b0b;
+  --bg:#f4f6f8; --bg-img:none;
+  --panel:#fff; --panel-2:#eef3fa; --line:#0b0b0b;
+  --text:#0b0b0b; --muted:#4a5568; --accent:#1a6bff; --accent-ink:#fff;
+  --font-ui:"Sora",system-ui,sans-serif; --font-display:"Anton","Impact",sans-serif; --font-num:"Anton","Impact",sans-serif;
+  --card-radius:16px; --radius:14px; --tint:10%; --card-accent:0px;
+  --card-border:2px solid var(--m-ink); --shadow:4px 4px 0 var(--m-blue); --shadow-hi:5px 5px 0 var(--m-cyan);
+  --display-tt:uppercase; --display-ls:.04em; --display-w:400;
+}
+[data-skin="metro"][data-mode="dark"]{
+  --m-ink:#dfe9f5; --m-blue:#1e90ff;
+  --bg:#05070b;
+  --panel:rgba(8,13,22,.94); --panel-2:rgba(14,22,36,.95); --line:#2a4a78;
+  --text:#eef4fb; --muted:#8aa0bb; --accent:#2ad0ff; --accent-ink:#04101c;
+  --card-border:2px solid #dfe9f5; --shadow:4px 4px 0 #1e90ff; --shadow-hi:5px 5px 0 #2ad0ff;
+}
+[data-skin="metro"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("/images/metro/scene-day.svg") center/cover no-repeat}
+[data-skin="metro"][data-mode="dark"] body::before{background-image:url("/images/metro/scene-night.svg")}
+html.zen[data-skin="metro"] body::before,[data-pg="hkmahjong"][data-skin="metro"] body::before{display:none}
+/* the bar, hub bar and page head: white sheet, heavy outline, a star by the name */
+[data-skin="metro"] :is(.topbar,.hubbar,.pagehead){background:var(--panel);border:2px solid var(--m-ink);border-radius:16px;box-shadow:var(--shadow)}
+[data-skin="metro"] .eyebrow::before{content:"★";margin-right:.5em;color:var(--m-blue)}
+[data-skin="metro"] :is(.brand h1,h1){font-family:"Anton","Impact",sans-serif;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+/* cards */
+[data-skin="metro"] :is(.pcard,.forum,.lesson,.qtile){border:var(--card-border);border-radius:16px;box-shadow:var(--shadow)}
+[data-skin="metro"] .qtile:hover,[data-skin="metro"] .pcard:hover{box-shadow:var(--shadow-hi);transform:translate(-1px,-1px)}
+[data-skin="metro"] .qtile .tname{font:400 1.05rem "Anton","Impact",sans-serif;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
+/* icons in bullseye rings */
+[data-skin="metro"] .qtile .ico{border-radius:50%;background:var(--panel);box-shadow:0 0 0 3px var(--m-ink),0 0 0 6px var(--panel),0 0 0 9px var(--m-blue)}
+/* section heads: tall capitals with a ring bullet */
+[data-skin="metro"] :is(.sechd,.cathd){font:400 1.1rem "Anton","Impact",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
+[data-skin="metro"] :is(.sechd,.cathd)::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border-radius:50%;vertical-align:-.05em;background:radial-gradient(circle,var(--m-ink) 0 22%,var(--panel) 23% 45%,var(--m-blue) 46% 70%,var(--m-ink) 71%)}
+/* Now and Next: black panel, rings bleeding in at the corner */
+[data-skin="metro"] .nowcard{color:#fff;border:2px solid #0b0b0b;border-radius:18px;background:radial-gradient(circle at 100% 0,#fff 0 6%,#0b0b0b 6.5% 11%,#1a6bff 11.5% 17%,#0b0b0b 17.5% 22%,#2ad0ff 22.5% 27%,transparent 27.5%),linear-gradient(135deg,#0b0b0b,#0a1a33);box-shadow:var(--shadow)}
+[data-skin="metro"][data-mode="dark"] .nowcard{border-color:#2ad0ff}
+/* buttons: black pills, blue when chosen */
+[data-skin="metro"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){border-radius:999px;border:2px solid var(--m-ink);background:var(--panel);color:var(--text);font-weight:700;box-shadow:none}
+[data-skin="metro"] .btn.primary,[data-skin="metro"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="metro"] :is(.dayswitch button,.modes button,.popt).on,[data-skin="metro"] .btn:hover{background:var(--m-blue);color:#fff;border-color:var(--m-ink)}
+[data-skin="metro"] .newpill{background:var(--m-blue);color:#fff;border-radius:999px;border:2px solid var(--m-ink)}
+[data-skin="metro"] .prog{border-radius:999px;border:2px solid var(--m-ink)}
+[data-skin="metro"] dialog{border:2px solid var(--m-ink);border-radius:18px;background:var(--panel);color:var(--text);box-shadow:8px 8px 0 var(--m-blue)}

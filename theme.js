@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121c';
+const ASSET_V = '20261122a';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -73,6 +73,7 @@ const SKINS = [
   { id:'spectrum', name:'Spectrum', both:true, ic:'accent', is:'icons', css:'spectrum', font:'family=Sora:wght@300;400;600', about:"Airbrushed gradients on white, after late-90s Japanese graphic design: hairlines, tiny tracked-out type, and the full spectrum kept for the bar's underline, section marks and what you pick. Light and dark." },
   { id:'clearplastic', name:'Clear Plastic', both:true, ic:'accent', is:'icons', css:'clearplastic', font:'family=Nunito:wght@400;700;800;900', about:"A see-through game controller: grey-blue clear shell, black rubber, red, blue, green and pink buttons, and a green circuit board under the glass with light running along its traces. Ice by day, smoke by night." },
   { id:'web2000', name:'Web 2000', both:true, ic:'accent', is:'icons', css:'web2000', font:'family=Michroma', about:"A website from 1999 to 2000, built from real ones. By day: Webnode's sunset and clouds, periwinkle boxes and a blue-and-yellow button column, Nick.com's colour bars, a blinking NEW!, a hit counter and a status bar. By night: 2Advanced, with grey frame, black strips of tiny capitals and a blue grid panel." },
+  { id:'metro', name:'Frutiger Metro', both:true, ic:'accent', is:'icons', css:'metro', font:'family=Anton', about:"The urban vector look of the mid-2000s: black ink on white with one loud blue, bullseye rings, outlined stars, flourishes, a skyline and ink splatter. Heavy outlines, hard blue shadows, tall capitals. Light is ink on paper; dark is the same flyer on black with cyan rings." },
   { id:'xp',        name:'Windows XP', mod:true, both:true, ic:'tile', is:'icons', css:'xp', js:'xp' },
   { id:'bauhaus',   name:'Bauhaus',   both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
   { id:'destijl',   name:'De Stijl',  both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
@@ -239,6 +240,10 @@ const THUMBS = (() => {
       bar('rx="6" fill="#dcebf6" fill-opacity=".55" stroke="#fff" stroke-width="1.2"') + '<rect x="8" y="6" width="104" height="12" rx="6" fill="url(#p)"/><rect x="72" y="8.5" width="34" height="7" rx="3.5" fill="#0b1411" stroke="#35ff86" stroke-width=".5"/><path d="M77 12h14" stroke="#7dff9b" stroke-width="1.2"/>' +
       tiles('rx="6" fill="#dcebf6" fill-opacity=".55" stroke="#fff" stroke-width="1.2"') + [8, 44, 80].map(x => '<rect x="' + x + '" y="23" width="32" height="17" rx="6" fill="url(#p)"/>').join('') +
       [24, 60, 96].map((x, i) => '<circle cx="' + x + '" cy="31.5" r="4.6" fill="' + ['#ee3b34', '#3b7bea', '#2fbf6a'][i] + '" stroke="#fff" stroke-width=".8"/><ellipse cx="' + (x - 1.4) + '" cy="29.8" rx="1.5" ry=".9" fill="#fff"/>').join('')],
+    metro: ['#f4f6f8', '<circle cx="104" cy="12" r="22" fill="#2ad0ff" opacity=".5"/><g><circle cx="104" cy="12" r="14" fill="#0b0b0b"/><circle cx="104" cy="12" r="10" fill="#fff"/><circle cx="104" cy="12" r="6" fill="#1a6bff"/><circle cx="104" cy="12" r="2.6" fill="#0b0b0b"/></g><polygon points="14,40 16,45 21,45 17,48 19,53 14,50 9,53 11,48 7,45 12,45" fill="#fff" stroke="#0b0b0b" stroke-width="1"/>' +
+      '<path d="M0 46V38h6v-5h5v7h6v-10h6v13h7v-8h6v8h8v-6h6v6h10v-12h6v12h10v-5h6v5h20v-10h6v10H0Z" fill="#0b0b0b"/>' +
+      bar('rx="5" fill="#fff" stroke="#0b0b0b" stroke-width="1.4"') + '<rect x="12" y="10.5" width="30" height="2.6" fill="#0b0b0b"/>' +
+      tiles('rx="5" fill="#fff" stroke="#0b0b0b" stroke-width="1.4"') + [14, 50, 86].map(x => '<rect x="' + (x+2) + '" y="36" width="28" height="3" fill="#1a6bff"/>').join('')],
     web2000: ['#ff8fa0', '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b3bd0"/><stop offset=".55" stop-color="#ff6f91"/><stop offset="1" stop-color="#ffe27a"/></linearGradient></defs><rect width="120" height="46" fill="url(#a)"/><g fill="#fff"><circle cx="8" cy="36" r="9"/><circle cx="17" cy="38" r="8"/><circle cx="112" cy="30" r="9"/><circle cx="104" cy="34" r="8"/></g>' +
       '<rect x="8" y="5" width="104" height="13" fill="#0a1a5c" stroke="#aab" stroke-width="1"/><g fill="#fff"><circle cx="20" cy="8" r=".6"/><circle cx="60" cy="14" r=".6"/><circle cx="96" cy="9" r=".6"/></g><rect x="14" y="9" width="40" height="3.2" fill="#ffe600"/><rect x="76" y="9" width="30" height="3.2" fill="#00ff66"/>' +
       [8, 44, 80].map((x, i) => '<rect x="' + x + '" y="21" width="32" height="5" rx="2.5" fill="' + ['#ff9a1f', '#29d0ff', '#b86bff'][i] + '" stroke="#000" stroke-width=".7"/><rect x="' + x + '" y="26" width="32" height="14" fill="#9999cc" stroke="#ddf" stroke-width="1"/><rect x="' + (x + 4) + '" y="30" width="24" height="6" fill="#2222cc"/><path d="M' + (x + 8) + ' 33h16" stroke="#ff0" stroke-width="1.4"/>').join('')],
