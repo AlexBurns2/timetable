@@ -34,7 +34,9 @@
 
 /* ── behind everything: Saul, tiled at his own size ── */
 [data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 220px 168px repeat,#140c08;image-rendering:pixelated}
-html.zen[data-skin="saul"] body{background:transparent}
+/* Saul beats the Transparent background (Zen): the page behind is always him */
+html.zen[data-skin="saul"]{--page-bg:#140c08;background:#140c08}
+html.zen[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 220px 168px repeat,#140c08}
 .saulbg{display:none}
 
 /* ── every surface is Saul: the whole of him squashed to fit, crunchy, a wash so the words read.
