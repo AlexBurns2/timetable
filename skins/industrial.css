@@ -1,0 +1,73 @@
+/* ══════════════════════════════════════════════════════════════════
+   INDUSTRIAL — the look of industrial-design studio sites and material
+   posters: poured concrete with formwork seams, tie-holes, cracks and rust
+   bleeding out of them, and brushed-steel buttons.
+   Built like a studio site, not a wallpaper: the page is flat poured concrete,
+   the header is one slab with a long crack and rust running out of it, and
+   everything else is ruled out in thin black lines like a spec sheet, with
+   numbered FIG. labels, mono small print and one signal orange. The only
+   skeuomorphic things are the metal buttons and the gunmetal Now and Next box
+   (hazard-striped lip, orange display). Type is tall heavy Big Shoulders.
+   DAY is pale concrete; NIGHT is wet dark concrete and blued steel. Textures
+   (images/industrial/: concrete-day/night tile, slab-day/night, steel tile)
+   are drawn in code, no photographs; swap any for a real photo of the same name.
+   Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="industrial"]{
+  --i-or:#ff5a1f; --i-ink:#14171a; --i-steel:url("/images/industrial/steel.svg");
+  --i-sheen:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.05) 40%,rgba(0,0,0,.12));
+  --bg:#b9b8b2; --bg-img:url("/images/industrial/concrete-day.svg");
+  --panel:#d6d4cd; --panel-2:#c4c2bb; --line:#14171a;
+  --text:#14171a; --muted:#4a4f54; --accent:#ff5a1f; --accent-ink:#fff;
+  --font-ui:"IBM Plex Mono",ui-monospace,monospace; --font-display:"Big Shoulders Display","Impact",sans-serif; --font-num:"Big Shoulders Display","Impact",sans-serif;
+  --card-radius:0px; --radius:0px; --tint:6%; --card-accent:0px;
+  --card-border:1px solid var(--i-ink); --shadow:none; --shadow-hi:inset 0 0 0 2px var(--i-or);
+  --display-tt:uppercase; --display-ls:.02em; --display-w:900;
+}
+[data-skin="industrial"][data-mode="dark"]{
+  --i-ink:#e4e9ee; --bg:#1c2228; --bg-img:url("/images/industrial/concrete-night.svg");
+  --panel:#2a3138; --panel-2:#222930; --line:#e4e9ee;
+  --text:#e9edf1; --muted:#9aa6b2; --accent:#ff6a2d; --accent-ink:#1a0a02;
+  --i-sheen:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,0) 40%,rgba(0,0,0,.35));
+  --card-border:1px solid #e4e9ee;
+}
+[data-skin="industrial"] body{background-size:480px 480px}
+/* the header is one poured slab: crack and rust run through it, tie-hole bosses at each end */
+[data-skin="industrial"] :is(.topbar,.pagehead){background:url("/images/industrial/slab-day.svg") center/100% 100% no-repeat,var(--bg-img) 0 0/480px;border:0;border-bottom:6px solid var(--i-ink);border-radius:0;box-shadow:none;padding:28px max(20px,3vw);min-height:150px}
+[data-skin="industrial"][data-mode="dark"] :is(.topbar,.pagehead){background-image:url("/images/industrial/slab-night.svg"),var(--bg-img)}
+[data-skin="industrial"] .hubbar{background:var(--panel);border:0;border-bottom:3px solid var(--i-ink);border-radius:0;box-shadow:none}
+/* sections: flat ruled sheets, a heavy top rule, nothing glossy */
+[data-skin="industrial"] :is(.pcard,.forum){background:var(--panel);border:var(--card-border);border-top:5px solid var(--i-ink);border-radius:0;box-shadow:none}
+[data-skin="industrial"] :is(.brand h1,h1,h2){font-family:"Big Shoulders Display","Impact",sans-serif;font-weight:900;letter-spacing:.02em;text-transform:uppercase;line-height:.95}
+[data-skin="industrial"] .brand h1{font-size:clamp(2.4rem,6vw,4.4rem)}
+[data-skin="industrial"] :is(.eyebrow,.sechd,.cathd,.dayhead .dow,.lbl){font:500 .6875rem "IBM Plex Mono",monospace;letter-spacing:.18em;text-transform:uppercase}
+[data-skin="industrial"] .eyebrow::before{content:"";display:inline-block;width:.7em;height:.7em;margin-right:.7em;background:var(--i-or);animation:indled 2.4s steps(2,jump-none) infinite}
+@keyframes indled{50%{opacity:.25}}
+[data-skin="industrial"] :is(.sechd,.cathd){display:flex;align-items:center;gap:.8em;padding-bottom:.5em;border-bottom:1px solid var(--i-ink)}
+[data-skin="industrial"] :is(.sechd,.cathd)::before{content:"FIG. 0" counter(fig);counter-increment:fig;color:var(--i-or)}
+[data-skin="industrial"] .pcard,[data-skin="industrial"] .forum{counter-reset:none}
+[data-skin="industrial"] body{counter-reset:fig}
+/* home tiles: an index table; shared hairlines, a stamped number, an arrow */
+[data-skin="industrial"] .qtile{background:var(--panel);border:var(--card-border);border-radius:0;box-shadow:none;position:relative;transition:background .15s}
+[data-skin="industrial"] .qtile:hover{background:var(--i-or);color:#fff;box-shadow:none}
+[data-skin="industrial"] .qtile:hover .tname,[data-skin="industrial"] .qtile:hover .ico{color:#fff}
+[data-skin="industrial"] .qtile::after{content:"↗";position:absolute;top:10px;right:12px;font:500 .9rem "IBM Plex Mono",monospace}
+[data-skin="industrial"] .qtile .ico{width:auto;height:auto;border-radius:0;background:none;box-shadow:none;color:var(--text);font-size:1.5rem}
+[data-skin="industrial"] .qtile .tname{font:900 1.35rem "Big Shoulders Display","Impact",sans-serif;letter-spacing:.03em;text-transform:uppercase;text-decoration:none}
+/* Now and Next: gunmetal box, hazard lip, orange display */
+[data-skin="industrial"] .nowcard{color:#ffd9c7;background:linear-gradient(180deg,#0d1013,#1b2026);border:1px solid #000;border-radius:0;box-shadow:inset 0 0 0 2px #3b4248,inset 0 2px 14px rgba(0,0,0,.8);border-top:10px solid transparent;border-image:repeating-linear-gradient(-45deg,#f4c20d 0 10px,#15181b 10px 20px) 10 0 0 0}
+[data-skin="industrial"] .nowcard .t{color:var(--i-or);font-family:"Big Shoulders Display","Impact",sans-serif;font-size:1.5rem;letter-spacing:.03em;text-transform:uppercase;text-shadow:0 0 10px rgba(255,90,31,.5)}
+[data-skin="industrial"] .prog{background:#050607;border:1px solid #3b4248;border-radius:0}
+[data-skin="industrial"] .prog i{background:var(--i-or)}
+/* the one skeuomorphic part: real-feeling metal buttons. brushed, bevelled, engraved; pressing sinks them; the chosen one is orange enamel */
+[data-skin="industrial"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){
+  background:var(--i-sheen),var(--i-steel) 0 0/256px,#aeb3b8;color:#14171a;border:1px solid #14171a;border-radius:2px;font:700 .8125rem "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -3px 4px rgba(0,0,0,.3),0 2px 0 #14171a,0 3px 5px rgba(0,0,0,.4)}
+[data-skin="industrial"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){background:var(--i-sheen),var(--i-steel) 0 0/256px,#5a636c;color:#eef2f5;text-shadow:0 -1px 0 rgba(0,0,0,.7);border-color:#05070a}
+[data-skin="industrial"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):active{transform:translateY(2px);box-shadow:inset 0 3px 6px rgba(0,0,0,.55)}
+[data-skin="industrial"] .btn.primary,[data-skin="industrial"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="industrial"] :is(.dayswitch button,.modes button,.popt).on{
+  background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0) 45%,rgba(0,0,0,.2)),var(--i-steel) 0 0/256px,var(--i-or);background-blend-mode:normal,soft-light,normal;color:#fff;text-shadow:0 -1px 0 rgba(0,0,0,.5)}
+[data-skin="industrial"] .newpill{background:var(--i-or);color:#fff;border-radius:0;font:700 .65rem "IBM Plex Mono",monospace;letter-spacing:.15em;text-transform:uppercase}
+[data-skin="industrial"] .lesson{background:var(--panel-2);border:1px solid var(--i-ink);border-left:6px solid var(--c,var(--i-or));border-radius:0;box-shadow:none}
+[data-skin="industrial"] dialog{background:var(--panel);color:var(--text);border:2px solid var(--i-ink);border-radius:0;box-shadow:12px 12px 0 var(--i-or)}
+@media (prefers-reduced-motion:reduce){[data-skin="industrial"] .eyebrow::before{animation:none}}

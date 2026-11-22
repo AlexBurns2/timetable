@@ -1,0 +1,74 @@
+/* ══════════════════════════════════════════════════════════════════
+   SPECTRUM — airbrushed gradients on white, in the manner of late-90s
+   Japanese graphic design (Koichi Sato's posters and book jackets are the
+   reference: a field of colour that melts from one hue to the next, set
+   against hairlines and very small, widely spaced type; this is my
+   reading of that look, not a copy of any piece). The page is a pale sheet
+   with a soft spectrum bleeding in from one corner (pink, apricot, lemon,
+   mint, sky, lilac, each only a breath apart). Panels are clear paper with a
+   hairline, nothing heavy; the one place the full spectrum shows is a thin
+   band under the bar and the bar of the Now and Next progress. Buttons are
+   hairline pills that fill with the gradient when chosen. Type is small,
+   light and tracked out. A coral dot marks what's new. Dark mode is the
+   same gradient lit from behind on black. Changing page is the site's own
+   fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="spectrum"]{
+  --p-spec:linear-gradient(90deg,#ff9ec4,#ffb98a 20%,#ffe58a 40%,#a8f0c6 60%,#8fd3ff 80%,#c3a8ff);
+  --p-spec-v:linear-gradient(180deg,#ff9ec4,#ffb98a 20%,#ffe58a 40%,#a8f0c6 60%,#8fd3ff 80%,#c3a8ff);
+  --p-coral:#ff5a4d;
+  --bg:#fbfbfa;
+  --bg-img:radial-gradient(60% 50% at 0% 0%,rgba(255,158,196,.42),transparent 70%),radial-gradient(55% 45% at 100% 8%,rgba(143,211,255,.42),transparent 70%),radial-gradient(70% 50% at 70% 100%,rgba(168,240,198,.38),transparent 70%),radial-gradient(45% 40% at 10% 92%,rgba(255,229,138,.4),transparent 70%),#fbfbfa;
+  --panel:rgba(255,255,255,.72); --panel-2:rgba(255,255,255,.55); --line:rgba(20,20,30,.16);
+  --text:#15151c; --muted:#6c6c78; --accent:#3a3a4a; --accent-ink:#fff;
+  --font-ui:"Sora",system-ui,sans-serif; --font-display:"Sora",system-ui,sans-serif; --font-num:"Sora",system-ui,sans-serif;
+  --card-radius:6px; --radius:4px; --tint:14%; --card-accent:0px;
+  --card-border:1px solid var(--line); --shadow:0 1px 0 rgba(255,255,255,.9) inset; --shadow-hi:0 10px 30px rgba(120,100,180,.16),0 1px 0 #fff inset;
+  --display-tt:uppercase; --display-ls:.18em; --display-w:300;
+}
+[data-skin="spectrum"][data-mode="dark"]{
+  --bg:#050507;
+  --bg-img:radial-gradient(60% 50% at 0% 0%,rgba(255,90,160,.3),transparent 70%),radial-gradient(55% 45% at 100% 8%,rgba(70,170,255,.28),transparent 70%),radial-gradient(70% 50% at 70% 100%,rgba(60,230,160,.22),transparent 70%),radial-gradient(45% 40% at 10% 92%,rgba(255,200,70,.22),transparent 70%),#050507;
+  --panel:rgba(12,12,16,.7); --panel-2:rgba(20,20,26,.6); --line:rgba(255,255,255,.18);
+  --text:#f3f3f7; --muted:#9a9aa8; --accent:#f3f3f7; --accent-ink:#0a0a0e;
+  --shadow:0 1px 0 rgba(255,255,255,.08) inset; --shadow-hi:0 0 34px rgba(160,130,255,.22),0 1px 0 rgba(255,255,255,.14) inset;
+}
+:root[data-skin="spectrum"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--panel);border:var(--card-border);border-radius:6px;padding:18px 24px;position:relative;backdrop-filter:blur(14px)}
+:root[data-skin="spectrum"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;border-radius:2px;background:var(--p-spec)}
+[data-skin="spectrum"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font-weight:300;letter-spacing:.2em;font-size:clamp(1rem,2.6vw,1.5rem)}
+[data-skin="spectrum"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span,.sechd,.cathd){font-weight:400;letter-spacing:.3em;text-transform:uppercase;font-size:.5625rem;color:var(--muted)}
+/* section names: a small gradient square, then a hairline, as on a printed page */
+[data-skin="spectrum"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:.9em}
+[data-skin="spectrum"] :is(.sechd,.cathd,.forum h2)::before{content:"";width:.7em;height:.7em;background:var(--p-spec)}
+[data-skin="spectrum"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:1px;background:var(--line)}
+:root[data-skin="spectrum"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:6px;box-shadow:var(--shadow);backdrop-filter:blur(12px)}
+[data-skin="spectrum"] .forum{padding:18px 20px 20px;margin-top:24px}
+:root[data-skin="spectrum"] :is(.qtile,.tday,.gamecard,.tile,.game):hover{box-shadow:var(--shadow-hi);transform:translateY(-2px)}
+[data-skin="spectrum"] .qtile .ico{display:flex;align-items:center;justify-content:center;width:2.6rem;height:2.6rem;border-radius:50%;color:var(--text)!important;background:var(--panel-2);box-shadow:0 0 0 1px var(--line),0 0 0 5px rgba(255,255,255,.35)}
+[data-skin="spectrum"] .qtile:hover .ico{background:var(--p-spec);color:#15151c!important;box-shadow:0 0 0 1px transparent,0 0 0 5px rgba(255,255,255,.35)}
+/* Now and Next: a clear sheet with the whole spectrum as its progress bar */
+[data-skin="spectrum"] .nowcard{background:var(--panel);border:var(--card-border);border-radius:6px;backdrop-filter:blur(14px)}
+[data-skin="spectrum"] .prog{height:4px;border-radius:0;background:var(--line);box-shadow:none}
+[data-skin="spectrum"] .prog i{background:var(--p-spec);border-radius:0}
+:root[data-skin="spectrum"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:999px;background:transparent;border:1px solid var(--text);color:var(--text);font-weight:400;letter-spacing:.2em;text-transform:uppercase;font-size:.625rem;box-shadow:none}
+:root[data-skin="spectrum"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):hover{background:var(--panel)}
+:root[data-skin="spectrum"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--p-spec);border-color:transparent;color:#15151c;font-weight:600}
+[data-skin="spectrum"] :is(.newpill,.gamecard .newbanner){background:var(--p-coral);color:#fff;border-radius:999px}
+[data-skin="spectrum"] .newsdot{background:var(--p-coral)}
+[data-skin="spectrum"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(252,252,251,.97);border-radius:8px}
+[data-skin="spectrum"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:rgba(10,10,14,.97)}
+[data-skin="spectrum"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:4px;background:transparent;border:1px solid var(--line)}
+[data-skin="spectrum"] .lesson{border-radius:4px}
+[data-skin="spectrum"] .lesson.current{outline:0;box-shadow:0 0 0 1px var(--text),0 0 0 4px rgba(255,255,255,.5),0 0 28px rgba(190,150,255,.35)}
+[data-skin="spectrum"] :is(.dayhead.today,.dayhead.focus) .dow{color:var(--text)}
+[data-skin="spectrum"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--p-spec);height:2px}
+[data-skin="spectrum"] .breakbar{border-radius:0;background:none;border:0;border-block:1px solid var(--line)}
+html.fx-enter[data-skin="spectrum"] .wrap{animation:none}
+
+/* ── scene: original artwork, fixed behind the page (and off on Zen and the Mahjong page, like Coquette's) ── */
+[data-skin="spectrum"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMaxYMax slice%22%3E%3Cdefs%3E%3ClinearGradient id=%22s%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23ff9ec4%22/%3E%3Cstop offset=%22.25%22 stop-color=%22%23ffb98a%22/%3E%3Cstop offset=%22.45%22 stop-color=%22%23ffe58a%22/%3E%3Cstop offset=%22.65%22 stop-color=%22%23a8f0c6%22/%3E%3Cstop offset=%22.85%22 stop-color=%22%238fd3ff%22/%3E%3Cstop offset=%221%22 stop-color=%22%23c3a8ff%22/%3E%3C/linearGradient%3E%3CradialGradient id=%22o%22 cx=%22.35%22 cy=%22.3%22 r=%22.8%22%3E%3Cstop offset=%220%22 stop-color=%22%23fff%22 stop-opacity=%22.9%22/%3E%3Cstop offset=%22.5%22 stop-color=%22%23ffe58a%22 stop-opacity=%22.5%22/%3E%3Cstop offset=%221%22 stop-color=%22%23ff9ec4%22 stop-opacity=%22.25%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22200%22 fill=%22url(%23o)%22/%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22240%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%221.2%22 stroke-opacity=%220.8%22/%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22290%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%221.2%22 stroke-opacity=%220.6%22/%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22350%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%221.2%22 stroke-opacity=%220.45%22/%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22420%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%221.2%22 stroke-opacity=%220.32%22/%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22500%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%221.2%22 stroke-opacity=%220.22%22/%3E%3Ccircle cx=%221330%22 cy=%22250%22 r=%22590%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%221.2%22 stroke-opacity=%220.14%22/%3E%3Cpath d=%22M60 700H1540M60 710H1540%22 stroke=%22url(%23s)%22 stroke-width=%221%22 stroke-opacity=%22.5%22/%3E%3C/svg%3E") right bottom/cover no-repeat;opacity:1}
+html.zen[data-skin="spectrum"] body::before,[data-skin="spectrum"][data-pg="hkmahjong"] body::before{display:none}
+/* unique to Spectrum: a printer's colour bar along the foot of the page, as on a proof sheet, with crop marks in the corners */
+[data-skin="spectrum"] body::after{content:"";position:fixed;left:50%;bottom:8px;width:min(520px,70vw);height:8px;transform:translateX(-50%);z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,#00aeef 0 16.6%,#ec008c 0 33.3%,#fff200 0 50%,#231f20 0 66.6%,#ff9ec4 0 75%,#a8f0c6 0 83%,#8fd3ff 0 91%,#c3a8ff 0);opacity:.85;outline:1px solid rgba(20,20,30,.35)}
+html.zen[data-skin="spectrum"] body::after,[data-skin="spectrum"][data-pg="hkmahjong"] body::after{display:none}

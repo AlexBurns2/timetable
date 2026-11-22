@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121c';
+const ASSET_V = '20261122e';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -68,6 +68,13 @@ const SKINS = [
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
   { id:'dorfic',    name:'DORFic',    both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
   { id:'eco',       name:'Frutiger Eco', mod:true, both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
+  { id:'sonyad', name:'Sony Ad', both:true, ic:'accent', is:'icons', css:'sonyad', font:'family=Michroma&family=Sora:wght@400;600;700', about:"A big electronics maker\'s front page from 2000–02. Light is 2002: white, a hairline round the header corner, small navy caps with orange boxes, an orange hero of halftone dots, pale-blue tabs. Dark is 2000: scanlined red-orange, grey dot panels, blue chrome title." },
+  { id:'darkdeco', name:'Dark Deco', both:false, ic:'accent', is:'icons', css:'darkdeco', font:'family=Big+Shoulders+Display:wght@500;700;900&family=Josefin+Sans:wght@400;600;700', about:"Art Deco after the lights go down: black lacquer, bottle-green panels, brass double frames and a sunburst rising from the foot of the page. Dark only; Art Deco is the daylight one." },
+  { id:'spectrum', name:'Spectrum', both:true, ic:'accent', is:'icons', css:'spectrum', font:'family=Sora:wght@300;400;600', about:"Airbrushed gradients on white, after late-90s Japanese graphic design: hairlines, tiny tracked-out type, and the full spectrum kept for the bar's underline, section marks and what you pick. Light and dark." },
+  { id:'clearplastic', name:'Clear Plastic', both:true, ic:'accent', is:'icons', css:'clearplastic', font:'family=Nunito:wght@400;700;800;900', about:"A see-through game controller: grey-blue clear shell, black rubber, red, blue, green and pink buttons, and a green circuit board under the glass with light running along its traces. Ice by day, smoke by night." },
+  { id:'web2000', name:'Web 2000', both:true, ic:'accent', is:'icons', css:'web2000', font:'family=Michroma', about:"A website from 1999–2001. Day is the loud friendly web: sunset and clouds, periwinkle boxes, Nick-style colour bars, a hit counter and Windows 98 windows. Night is the dark Flash portal: a centred stage, 9px wide capitals, corner brackets, a blue wire grid and a segmented preloader." },
+  { id:'metro', name:'Frutiger Metro', both:true, ic:'accent', is:'icons', css:'metro', font:'family=Anton', about:"The urban vector look of the mid-2000s: black ink on white with one loud blue, bullseye rings, outlined stars, flourishes, a skyline and ink splatter. Heavy outlines, hard blue shadows, tall capitals. Light is ink on paper; dark is the same flyer on black with cyan rings." },
+  { id:'industrial', name:'Industrial', both:true, ic:'accent', is:'icons', css:'industrial', font:'family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500;700', about:"An industrial-design studio site: cracked, stained concrete with rust bleeding from the cracks, riveted brushed-steel panels, metal buttons you can press, tall heavy type and one signal orange. Light is pale concrete and steel; dark is wet concrete and blued steel. Textures are drawn in code, no photos." },
   { id:'xp',        name:'Windows XP', mod:true, both:true, ic:'tile', is:'icons', css:'xp', js:'xp' },
   { id:'bauhaus',   name:'Bauhaus',   both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
   { id:'destijl',   name:'De Stijl',  both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
@@ -83,6 +90,7 @@ const SKINS = [
   { id:'chongqing', name:'Chongqing', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Ma+Shan+Zheng',
     city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
+  { id:'mahjong',   name:'Mahjong', both:true, ic:'tile', is:'icons', css:'mahjong', font:'family=Sora:wght@400;600;700', about:"The table, not the tiles on a screen: green felt, ivory tiles for every panel, jade and dragon red. Each card carries its suit in the corner, the lesson running now is stamped 中, breaks are laid face down, and the two dragons dance in the top corners. Typing “mahjong” in any box deals it too." },
   /* a secret: type "saul" in any box (below). Not in the picker. */
   { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
   /* the originals */
@@ -217,6 +225,44 @@ const THUMBS = (() => {
       '<path d="M80.4 27L112.6 25L111.4 42.2L79.6 41Z" fill="none" stroke="#d3261a" stroke-width=".7"/>' +
       '<path d="M82.6 24.4L111.4 25.4L111 39.6L80.2 39.2Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/>' +
       '<rect x="85" y="27.8" width="4.6" height="4.6" fill="none" stroke="#d3261a" stroke-width="1"/><rect x="85" y="35" width="2" height="1.8" fill="#111"/><rect x="88.4" y="35" width="2" height="1.8" fill="#111"/><rect x="91.8" y="35" width="2" height="1.8" fill="#111"/><rect x="95.2" y="35" width="2" height="1.8" fill="#111"/>'],
+    sonyad: ['#fff', '<rect x="0" y="0" width="60" height="46" fill="#fff"/><g><rect x="60" y="0" width="60" height="46" fill="#ff9a00"/>' + [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45].map(y => '<rect x="60" y="' + y + '" width="60" height="1" fill="#e8431a"/>').join('') + '</g>' +
+      '<path d="M2 17H48Q58 17 60 7" fill="none" stroke="#000" stroke-width="1"/><path d="M3 10h22" stroke="#000" stroke-width="2.4"/><rect x="62" y="6" width="54" height="10" fill="#3a3a3a"/><path d="M64 11h24" stroke="#4aa3ff" stroke-width="2.4"/>' +
+      '<rect x="6" y="20" width="46" height="14" fill="#ff8a00"/><path d="M6 20h40l6 6" fill="none"/><circle cx="14" cy="27" r="2" fill="#ffd678" opacity=".7"/><circle cx="22" cy="27" r="2" fill="#ffd678" opacity=".7"/><circle cx="30" cy="27" r="2" fill="#ffd678" opacity=".7"/>' +
+      [4, 20, 36].map(x => '<rect x="' + x + '" y="36" width="14" height="10" rx="4" ry="4" fill="#d8e9f7"/>').join('') +
+      [64, 80, 96].map(x => '<rect x="' + x + '" y="36" width="14" height="10" fill="#ff9a00" stroke="#000" stroke-width=".6"/>').join('') + '<rect x="64" y="20" width="52" height="12" fill="#333" stroke="#ffb54a" stroke-width=".6"/>'],
+    darkdeco: ['#08090a', '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f5319"/><stop offset=".45" stop-color="#f0d98c"/><stop offset="1" stop-color="#8a6a22"/></linearGradient></defs>' +
+      [-50, -38, -26, -14, -2, 10, 22, 34, 46].map(a => '<path d="M60 52L' + (60 + 90 * Math.sin(a * Math.PI / 90)).toFixed(1) + ' ' + (52 - 90 * Math.cos(a * Math.PI / 90)).toFixed(1) + '" stroke="#c9a24a" stroke-opacity=".18" stroke-width="3"/>').join('') +
+      '<path d="M16 6H104L112 12V14L104 18H16L8 14V12Z" fill="#0d1a18" stroke="#c9a24a" stroke-width=".8"/><rect x="14" y="10.5" width="30" height="3" fill="url(#g)"/><path d="M52 18l4 3 4-3" stroke="#c9a24a" fill="none" stroke-width=".7"/>' +
+      [8, 44, 80].map(x => '<path d="M' + (x + 5) + ' 23H' + (x + 27) + 'L' + (x + 32) + ' 28V35L' + (x + 27) + ' 40H' + (x + 5) + 'L' + x + ' 35V28Z" fill="#0e1615" stroke="#c9a24a" stroke-width=".8"/>').join('') +
+      [24, 60, 96].map(x => '<path d="M' + x + ' 27.5l4 4-4 4-4-4Z" fill="none" stroke="#f0d98c" stroke-width=".9"/>').join('')],
+    spectrum: ['#fbfbfa', '<defs><linearGradient id="s" x1="0" x2="1"><stop offset="0" stop-color="#ff9ec4"/><stop offset=".2" stop-color="#ffb98a"/><stop offset=".4" stop-color="#ffe58a"/><stop offset=".6" stop-color="#a8f0c6"/><stop offset=".8" stop-color="#8fd3ff"/><stop offset="1" stop-color="#c3a8ff"/></linearGradient><filter id="b"><feGaussianBlur stdDeviation="8"/></filter></defs><g filter="url(#b)" opacity=".8"><circle cx="6" cy="2" r="18" fill="#ff9ec4"/><circle cx="116" cy="8" r="18" fill="#8fd3ff"/><circle cx="82" cy="50" r="18" fill="#a8f0c6"/><circle cx="14" cy="48" r="14" fill="#ffe58a"/></g>' +
+      bar('rx="2" fill="#fff" fill-opacity=".75" stroke="#15151c" stroke-opacity=".25" stroke-width=".6"') + '<rect x="12" y="17.2" width="96" height="1.2" fill="url(#s)"/><rect x="14" y="10.5" width="30" height="1.6" fill="#15151c"/>' +
+      tiles('rx="2" fill="#fff" fill-opacity=".7" stroke="#15151c" stroke-opacity=".22" stroke-width=".6"') + [14, 50, 86].map(x => '<rect x="' + x + '" y="34" width="20" height="1.4" fill="url(#s)"/>').join('')],
+    clearplastic: ['#d4e4ef', '<defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset=".5" stop-color="#fff" stop-opacity=".1"/><stop offset=".52" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
+      '<g fill="none" stroke="#16754a" stroke-opacity=".6" stroke-width="1.2" stroke-linecap="round"><path d="M0 8H30L36 14H70M0 24H14L20 30H52M120 12H96L90 18H78M120 36H100L94 30H60M24 46V40L30 34M70 46V38"/></g><g fill="#e8fff1" stroke="#16754a" stroke-width=".6"><circle cx="30" cy="8" r="1.6"/><circle cx="70" cy="14" r="1.6"/><circle cx="52" cy="30" r="1.6"/><circle cx="96" cy="12" r="1.6"/></g><path d="M0 24H14L20 30H52" fill="none" stroke="#35ff86" stroke-width="1.6" stroke-opacity=".9" stroke-dasharray="10 40"/>' +
+      bar('rx="6" fill="#dcebf6" fill-opacity=".55" stroke="#fff" stroke-width="1.2"') + '<rect x="8" y="6" width="104" height="12" rx="6" fill="url(#p)"/><rect x="72" y="8.5" width="34" height="7" rx="3.5" fill="#0b1411" stroke="#35ff86" stroke-width=".5"/><path d="M77 12h14" stroke="#7dff9b" stroke-width="1.2"/>' +
+      tiles('rx="6" fill="#dcebf6" fill-opacity=".55" stroke="#fff" stroke-width="1.2"') + [8, 44, 80].map(x => '<rect x="' + x + '" y="23" width="32" height="17" rx="6" fill="url(#p)"/>').join('') +
+      [24, 60, 96].map((x, i) => '<circle cx="' + x + '" cy="31.5" r="4.6" fill="' + ['#ee3b34', '#3b7bea', '#2fbf6a'][i] + '" stroke="#fff" stroke-width=".8"/><ellipse cx="' + (x - 1.4) + '" cy="29.8" rx="1.5" ry=".9" fill="#fff"/>').join('')],
+    metro: ['#f4f6f8', '<circle cx="104" cy="12" r="22" fill="#2ad0ff" opacity=".5"/><g><circle cx="104" cy="12" r="14" fill="#0b0b0b"/><circle cx="104" cy="12" r="10" fill="#fff"/><circle cx="104" cy="12" r="6" fill="#1a6bff"/><circle cx="104" cy="12" r="2.6" fill="#0b0b0b"/></g><polygon points="14,40 16,45 21,45 17,48 19,53 14,50 9,53 11,48 7,45 12,45" fill="#fff" stroke="#0b0b0b" stroke-width="1"/>' +
+      '<path d="M0 46V38h6v-5h5v7h6v-10h6v13h7v-8h6v8h8v-6h6v6h10v-12h6v12h10v-5h6v5h20v-10h6v10H0Z" fill="#0b0b0b"/>' +
+      bar('rx="5" fill="#fff" stroke="#0b0b0b" stroke-width="1.4"') + '<rect x="12" y="10.5" width="30" height="2.6" fill="#0b0b0b"/>' +
+      tiles('rx="5" fill="#fff" stroke="#0b0b0b" stroke-width="1.4"') + [14, 50, 86].map(x => '<rect x="' + (x+2) + '" y="36" width="28" height="3" fill="#1a6bff"/>').join('')],
+    industrial: ['#8d8e89', '<defs><filter id="c" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="4"/><feColorMatrix values="0 0 0 0 .55  0 0 0 0 .55  0 0 0 0 .53  .5 0 0 0 .1"/></filter></defs><rect width="120" height="46" filter="url(#c)"/><path d="M60 0l-3 9 5 8-4 10 6 12" fill="none" stroke="#161616" stroke-width="1.3"/><path d="M0 40h120v6H0Z" fill="#3b4046"/>' +
+      bar('rx="2" fill="#bfc3c7" stroke="#2b3036" stroke-width="1"') + '<rect x="9" y="6.4" width="102" height="2.2" fill="#9a4a1c" opacity=".7"/><rect x="12" y="10.5" width="30" height="3" fill="#14171a"/><rect x="82" y="9" width="24" height="6" fill="#ff5a1f"/>' +
+      tiles('rx="2" fill="#bfc3c7" stroke="#2b3036" stroke-width="1"') + [24, 60, 96].map(x => '<circle cx="' + x + '" cy="31.5" r="4.4" fill="#8a9097" stroke="#4b5157" stroke-width="1.2"/>').join('')],
+    mahjong: ['#0d6b47', '<rect width="120" height="46" fill="#0d6b47"/>' +
+      bar('rx="4" fill="#f8f3e6" stroke="#c6b48f" stroke-width=".8"') + '<rect x="8" y="15.6" width="104" height="2.4" rx="1.2" fill="#8a6f3c" fill-opacity=".45"/><rect x="12" y="9.6" width="26" height="3" rx="1.5" fill="#1b1a16"/>' +
+      '<g font-family="Noto Serif TC,Songti SC,SimSun,serif" font-weight="700"><text x="20" y="15.5" font-size="8" fill="#0f7a4a">發</text><text x="96" y="15.5" font-size="8" fill="#c8102e">中</text></g>' +
+      tiles('rx="4" fill="#f8f3e6" stroke="#c6b48f" stroke-width=".8"') + [8, 44, 80].map(x => '<rect x="' + x + '" y="37" width="32" height="3" rx="1.5" fill="#8a6f3c" fill-opacity=".45"/>').join('') +
+      '<g font-family="Noto Serif TC,Songti SC,SimSun,serif" font-weight="700" font-size="7"><text x="33" y="33" fill="#c8102e">萬</text><text x="69" y="33" fill="#0f7a4a">筒</text><text x="105" y="33" fill="#0f7a4a">索</text></g>'],
+    web2000: ['#07080b', '<defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b3bd0"/><stop offset=".55" stop-color="#ff7a3c"/><stop offset="1" stop-color="#ffd27a"/></linearGradient></defs>' +
+      '<rect x="0" y="0" width="60" height="46" fill="url(#w)"/><ellipse cx="14" cy="30" rx="12" ry="5" fill="#fff"/><ellipse cx="42" cy="38" rx="14" ry="5" fill="#fff"/>' +
+      '<rect x="60" y="0" width="60" height="46" fill="#07080b"/><g stroke="#78aaff" stroke-opacity=".3" stroke-width=".5">' +
+      [66, 74, 82, 90, 98, 106, 114].map(x => '<path d="M' + x + ' 6V40"/>').join('') + [10, 18, 26, 34].map(y => '<path d="M62 ' + y + 'H118"/>').join('') + '</g>' +
+      '<rect x="64" y="6" width="52" height="16" fill="#07142e" fill-opacity=".85"/><path d="M64 6h8M64 6v5M116 6h-8M116 6v5M64 22h8M64 22v-5M116 22h-8M116 22v-5" stroke="#d9e2ee" stroke-width="1"/><path d="M68 14h16" stroke="#fff" stroke-width="2"/><path d="M86 14h8" stroke="#49d5ff" stroke-width="2"/>' +
+      '<rect x="4" y="4" width="52" height="9" fill="#9999cc" stroke="#fff"/><rect x="6" y="6" width="20" height="2" fill="#000080"/>' +
+      [4, 22, 40].map(x => '<rect x="' + x + '" y="33" width="15" height="10" fill="#c0c0c0" stroke="#fff"/>').join('') +
+      [64, 82, 100].map(x => '<rect x="' + x + '" y="28" width="16" height="12" fill="#05070b" stroke="#2a3340"/>').join('') + '<path d="M66 34h4M84 34h4M102 34h4" stroke="#49d5ff" stroke-width="1.4"/>'],
     custom: ['#7ee8fa', '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f6d"/><stop offset=".35" stop-color="#ffc371"/><stop offset=".68" stop-color="#7ee8fa"/><stop offset="1" stop-color="#a06cd5"/></linearGradient></defs><rect width="120" height="46" fill="url(#r)"/>' +
       '<g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M34 13h52M34 23h52M34 33h52"/></g><g fill="#fff" stroke="#14121a" stroke-opacity=".35"><circle cx="50" cy="13" r="4.2"/><circle cx="74" cy="23" r="4.2"/><circle cx="42" cy="33" r="4.2"/></g>']
   };
@@ -475,6 +521,7 @@ const FAV = {
   scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
   terminal:  { shape:'square', ink:'#39ff9e', bg(x, N){ x.fillStyle = '#05080a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#39ff9e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, N - 3, N - 3); } },
   saul:      { shape:'square', ink:'#ffcc33', bg(x, N){ x.fillStyle = '#0b1638'; x.fillRect(0, 0, N, N); [['#d7263d', 0], ['#fff', N/3], ['#2a4fb8', 2*N/3]].forEach(c => { x.fillStyle = c[0]; x.fillRect(c[1], N - 7, N/3, 7); }); } },
+  mahjong:   { shape:'square', ink:'#f8f3e6', bg(x, N){ x.fillStyle = '#0d6b47'; x.fillRect(0, 0, N, N); x.fillStyle = '#f8f3e6'; x.fillRect(N*.22, N*.14, N*.56, N*.72); x.fillStyle = 'rgba(120,96,48,.45)'; x.fillRect(N*.22, N*.78, N*.56, N*.08); x.fillStyle = '#0f7a4a'; x.fillRect(N*.36, N*.3, N*.28, N*.07); x.fillRect(N*.46, N*.3, N*.08, N*.34); x.fillStyle = '#c8102e'; x.fillRect(N*.3, N*.66, N*.4, N*.07) } },
   blueprint: { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#0b3a66'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 8; i < N; i += 12){ x.fillRect(i, 0, 1, N); x.fillRect(0, i, N, 1); } } }
 };
 function favThreshold(x, n, cut, soft){            // alpha: a soft step at `cut` (rounds or squares off the edges)
@@ -1127,26 +1174,35 @@ function themesNotice(){
 { const later = () => setTimeout(themesNotice, 1500);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', later, { once:true }); else later(); }
 
-/* ── a secret, asked for by students: type "saul" in any box and the site turns into
-   Better Call Saul (skins/saul.css); type it again and the theme you had comes back.
-   Only a box holding just "saul" counts (so a name that starts with it doesn't), once
-   you stop typing for a moment or press Enter, and never a password box. The page is
-   told (tt:skin) so one that keeps its own copy of the look (the timetable) follows. */
+/* ── words that change the theme: type "saul" in any box and the site turns into
+   Better Call Saul (skins/saul.css); type "mahjong" and it turns into the mahjong
+   table (skins/mahjong.css). Type the same word again and the theme you had comes
+   back. Only a box holding just the word counts (so a name that starts with it
+   doesn't), once you stop typing for a moment or press Enter, and never a password
+   box. The page is told (tt:skin) so one that keeps its own copy of the look (the
+   timetable) follows. */
 (function(){
   if (PREVIEW) return;
+  const WORDS = {
+    saul:      { id:'saul',    note:'S’all good, man. Type “saul” again to go back.' },
+    mahjong:   { id:'mahjong', note:'發 中 — mahjong. Type “mahjong” again to clear the table.', cls:'mj' },
+    '麻雀':  { id:'mahjong', note:'發 中 — mahjong. Type “mahjong” again to clear the table.', cls:'mj' },
+    '麻将':  { id:'mahjong', note:'發 中 — mahjong. Type “mahjong” again to clear the table.', cls:'mj' }
+  };
   let timer = 0, last = 0;
   const flip = el => {
     if (!el || !/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.type === 'password') return;
-    if (String(el.value || '').trim().toLowerCase() !== 'saul' || Date.now() - last < 1500) return;
+    const word = WORDS[String(el.value || '').trim().toLowerCase()];
+    if (!word || Date.now() - last < 1500) return;
     last = Date.now();
-    const st = readState(), on = st.skin === 'saul';
-    if (on) set(LS.skin, SKIN_IDS.includes(get('tt.skin_presaul', '')) && get('tt.skin_presaul', '') !== 'saul' ? get('tt.skin_presaul', '') : 'plain');
-    else { set('tt.skin_presaul', st.skin); set(LS.skin, 'saul'); }
+    const st = readState(), on = st.skin === word.id, was = 'tt.skin_pre' + word.id;
+    if (on) set(LS.skin, SKIN_IDS.includes(get(was, '')) && get(was, '') !== word.id ? get(was, '') : 'plain');
+    else { set(was, st.skin); set(LS.skin, word.id); }
     apply();
     try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
     const n = document.createElement('div');
-    n.className = 'saulnote'; n.setAttribute('role', 'status');
-    n.textContent = on ? 'Back to your theme.' : 'S’all good, man. Type “saul” again to go back.';
+    n.className = 'saulnote' + (word.cls ? ' ' + word.cls : ''); n.setAttribute('role', 'status');
+    n.textContent = on ? 'Back to your theme.' : word.note;
     document.body.appendChild(n);
     setTimeout(() => n.remove(), 3600);
   };

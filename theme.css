@@ -413,6 +413,7 @@ html[data-nownext="off"] .hubnow:not(:has(.hubsign)){display:none!important}
 .idglass,.stterm,.sthome{display:none}
 
 /* the "saul" secret's note (theme.js): a moment at the bottom of the screen */
+.saulnote.mj{background:#f8f3e6;color:#0d4a33;box-shadow:inset 0 -3px 0 rgba(120,96,48,.5),0 8px 24px rgba(0,0,0,.35)}
 .saulnote{position:fixed;left:50%;bottom:22px;z-index:2000;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:999px;
   background:#0b1638;color:#ffcc33;font-weight:700;font-size:.875rem;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:saulnote 3.6s ease forwards;pointer-events:none}
 @keyframes saulnote{0%{opacity:0;transform:translate(-50%,8px)}8%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}

@@ -1,0 +1,86 @@
+/* ══════════════════════════════════════════════════════════════════
+   SONY AD — a big electronics maker's web front page, 2000–2002.
+   DAY (light) is the 2002 page: white, a black hairline that sweeps round
+   the header corner, tiny bold navy capitals with an orange box before each
+   link, a big orange hero with clipped corners and a field of halftone dots
+   (that is Now and Next), and pale-blue tabs with rounded shoulders for the
+   sections, their small links in burnt orange. Buttons are little orange
+   "GO"-style plates.
+   NIGHT (dark) is the 2000 page: the whole page is fine horizontal red-orange
+   scanlines; panels are dark grey with brown halftone dots and a trail of
+   blue ones; the page title is blue chrome italic, with scanlines through it;
+   the bars are flat orange with black type.
+   The look is drawn from two real pages of the period; no logo, name or
+   picture of the company is used (the title is just the site's own words).
+   Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="sonyad"]{
+  --s-or:#ff8a00; --s-or2:#ff6d00; --s-navy:#0b2a5b; --s-tab:#d8e9f7; --s-burnt:#b85a00; --s-strip:#8ea6bb;
+  --s-dots:radial-gradient(circle,rgba(255,214,120,.6) 0 5px,transparent 5.5px) 0 0/24px 24px;
+  --bg:#fff; --bg-img:none;
+  --panel:var(--s-tab); --panel-2:#eaf3fb; --line:#9fb8cf;
+  --text:#0b2a5b; --muted:#4a6584; --accent:#ff8a00; --accent-ink:#fff;
+  --font-ui:Verdana,"Segoe UI",Geneva,sans-serif; --font-display:Georgia,"Times New Roman",serif; --font-num:Verdana,sans-serif;
+  --card-radius:0px; --radius:6px; --tint:8%; --card-accent:0px;
+  --card-border:0; --shadow:none; --shadow-hi:inset 0 0 0 2px var(--s-or);
+  --display-tt:uppercase; --display-ls:.12em; --display-w:700;
+}
+[data-skin="sonyad"][data-mode="dark"]{
+  --bg:#ff8a00;
+  --bg-img:repeating-linear-gradient(0deg,#ff9a00 0 2px,#e8431a 2px 3px,#ff8a00 3px 5px);
+  --panel:#3a3a3a; --panel-2:#2e2e2e; --line:#6b3a0a;
+  --text:#f3f3f3; --muted:#c9b79c; --accent:#ff9a00; --accent-ink:#000;
+  --s-dots:radial-gradient(circle,#6b3a0a 0 5px,transparent 5.5px) 0 0/16px 16px;
+  --shadow-hi:inset 0 0 0 2px #fff;
+}
+/* header: white, with the black hairline sweeping round the corner (2002) */
+[data-skin="sonyad"] :is(.topbar,.hubbar,.pagehead){background:#fff;border:0;border-bottom:1px solid #000;border-bottom-right-radius:70px;border-radius:0 0 70px 0;box-shadow:none;padding:16px 28px 14px}
+[data-skin="sonyad"] :is(.brand h1,h1){font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#000}
+[data-skin="sonyad"] :is(.eyebrow,.sechd,.cathd,.dayhead .dow,.lbl){font:700 .6875rem Verdana,sans-serif;letter-spacing:.06em;text-transform:uppercase}
+[data-skin="sonyad"] .eyebrow::before{content:"";display:inline-block;width:.75em;height:.75em;margin-right:.6em;border:1px solid var(--s-or);background:linear-gradient(var(--s-or),var(--s-or)) center/55% 55% no-repeat,#fff;vertical-align:-.05em}
+/* Now and Next = the orange hero with clipped corners and a field of halftone dots */
+[data-skin="sonyad"] .nowcard{color:#fff;border:0;border-radius:0;background:var(--s-dots),linear-gradient(135deg,var(--s-or),var(--s-or2));clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,26px 100%,0 calc(100% - 26px));padding:16px 26px}
+[data-skin="sonyad"] .nowcard .lbl{color:#fff;text-transform:lowercase;font:400 1.05rem Verdana,sans-serif;letter-spacing:.02em}
+[data-skin="sonyad"] .nowcard .t{font:400 1.6rem Verdana,sans-serif;color:#fff;letter-spacing:0}
+[data-skin="sonyad"] .prog{background:rgba(255,255,255,.35);border-radius:0;height:5px}
+[data-skin="sonyad"] .prog i{background:#fff}
+/* sections: pale-blue tabs with rounded shoulders, navy caps head, burnt-orange links */
+[data-skin="sonyad"] :is(.pcard,.forum){background:var(--s-tab);border:0;border-radius:26px 26px 0 0;box-shadow:inset 0 -26px 0 -2px rgba(142,166,187,.55);padding-bottom:36px}
+[data-skin="sonyad"] :is(.sechd,.cathd,.forum h2,.pcard h2){font:700 1.05rem Verdana,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--s-navy)}
+[data-skin="sonyad"] a:not(.btn):not(.qtile){color:var(--s-burnt)}
+/* Home tiles: the nav strip: small bold navy caps, an orange box before each */
+[data-skin="sonyad"] .qtile{background:var(--s-tab);color:var(--s-navy);border:0;border-radius:26px 26px 0 0;box-shadow:inset 0 -22px 0 -2px rgba(142,166,187,.55)}
+[data-skin="sonyad"] .qtile:hover{box-shadow:inset 0 -22px 0 -2px rgba(142,166,187,.55),inset 0 0 0 2px var(--s-or)}
+[data-skin="sonyad"] .qtile .tname{font:700 .8125rem Verdana,sans-serif;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;color:var(--s-navy)}
+[data-skin="sonyad"] .qtile .tname::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.55em;border:1px solid var(--s-or);background:linear-gradient(var(--s-or),var(--s-or)) center/55% 55% no-repeat,#fff;vertical-align:-.08em}
+[data-skin="sonyad"] .qtile .ico{background:none;box-shadow:none;color:var(--s-navy)}
+/* buttons: small orange plates, bold white type; the others outlined */
+[data-skin="sonyad"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){background:#fff;color:var(--s-navy);border:1px solid var(--s-navy);border-radius:6px;font:700 .75rem Verdana,sans-serif;letter-spacing:.06em;text-transform:uppercase;box-shadow:none}
+[data-skin="sonyad"] .btn.primary,[data-skin="sonyad"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="sonyad"] :is(.dayswitch button,.modes button,.popt).on{background:linear-gradient(var(--s-or),var(--s-or2));color:#fff;border-color:var(--s-or2)}
+[data-skin="sonyad"] .newpill{background:var(--s-or);color:#fff;border-radius:3px;font:700 .65rem Verdana,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+[data-skin="sonyad"] .lesson{background:#fff;border:1px solid var(--line);border-left:5px solid var(--c,var(--s-or));border-radius:0;box-shadow:none;color:var(--s-navy)}
+[data-skin="sonyad"] dialog{background:var(--panel-2);color:var(--text);border:1px solid #000;border-radius:0 0 40px 0;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+/* small print at the foot, like the page's © line */
+[data-skin="sonyad"] body::after{content:"© 2002 MSC UNOFFICIAL · INDEX OF PAGES · FEEDBACK · TERMS/PRIVACY";position:fixed;left:0;right:0;bottom:8px;z-index:-1;text-align:center;pointer-events:none;font:400 .625rem Verdana,sans-serif;letter-spacing:.04em;color:var(--s-navy)}
+
+/* ── NIGHT: the 2000 page ───────────────────────────────────────── */
+[data-skin="sonyad"][data-mode="dark"] :is(.topbar,.hubbar,.pagehead){background:var(--s-dots),#3a3a3a;border:0;border-top:6px solid #ff9a00;border-bottom:3px solid #ff9a00;border-radius:0;color:#fff}
+[data-skin="sonyad"][data-mode="dark"] :is(.brand h1,h1){font-family:Verdana,Arial,sans-serif;font-style:italic;font-weight:900;text-transform:lowercase;letter-spacing:-.02em;color:transparent;background:linear-gradient(180deg,#8fd0ff 0%,#1f6bff 45%,#0a2fa0 60%,#2d7bff 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 2px 0 rgba(0,0,0,.6));font-size:clamp(2.2rem,6vw,4rem)}
+[data-skin="sonyad"][data-mode="dark"] .brand{background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.25) 3px 4px);background-clip:content-box}
+[data-skin="sonyad"][data-mode="dark"] .eyebrow{color:#ffb54a}
+[data-skin="sonyad"][data-mode="dark"] .nowcard{background:var(--s-dots),#333;color:#fff;clip-path:none;border:1px solid #ffb54a;border-radius:0}
+[data-skin="sonyad"][data-mode="dark"] .nowcard .lbl{color:#4aa3ff}
+[data-skin="sonyad"][data-mode="dark"] .prog i{background:#4aa3ff}
+[data-skin="sonyad"][data-mode="dark"] :is(.pcard,.forum){background:var(--s-dots),#3a3a3a;border:1px solid #ffb54a;border-radius:0;box-shadow:none;padding-bottom:16px;color:#f3f3f3}
+[data-skin="sonyad"][data-mode="dark"] :is(.sechd,.cathd,.forum h2,.pcard h2){color:#fff;background:#ff9a00;color:#000;display:block;padding:3px 10px}
+[data-skin="sonyad"][data-mode="dark"] a:not(.btn):not(.qtile){color:#ffb54a}
+[data-skin="sonyad"][data-mode="dark"] .qtile{background:#ff9a00;color:#000;border:1px solid #000;border-radius:0;box-shadow:none}
+[data-skin="sonyad"][data-mode="dark"] .qtile .tname{color:#000}
+[data-skin="sonyad"][data-mode="dark"] .qtile .ico{color:#000}
+[data-skin="sonyad"][data-mode="dark"] .qtile:hover{background:#fff}
+[data-skin="sonyad"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){background:#fff;color:#000;border:1px solid #000;border-radius:0}
+[data-skin="sonyad"][data-mode="dark"] .btn.primary,[data-skin="sonyad"][data-mode="dark"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="sonyad"][data-mode="dark"] :is(.dayswitch button,.modes button,.popt).on{background:#ff9a00;color:#000}
+[data-skin="sonyad"][data-mode="dark"] .lesson{background:#2e2e2e;color:#f3f3f3;border:1px solid #6b3a0a;border-left:5px solid var(--c,#ff9a00)}
+[data-skin="sonyad"][data-mode="dark"] dialog{background:#333;color:#fff;border:2px solid #ff9a00;border-radius:0}
+[data-skin="sonyad"][data-mode="dark"] body::after{content:"© 2000 MSC UNOFFICIAL";color:#fff;text-shadow:0 1px 0 #000;text-align:right;padding-right:16px}
+html.zen[data-skin="sonyad"] body::after,[data-pg="hkmahjong"][data-skin="sonyad"] body::after{display:none}

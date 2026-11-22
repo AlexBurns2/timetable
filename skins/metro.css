@@ -1,0 +1,70 @@
+/* ══════════════════════════════════════════════════════════════════
+   FRUTIGER METRO — the urban vector-grunge look of 2003–2008 (wallpaper
+   packs, MP3-player ads, club flyers): black ink on white with ONE loud
+   colour, electric blue. Concentric bullseye rings, outlined stars,
+   curling flourishes, a skyline of towers, ink splatter and drips, halftone
+   dots and a few blue speed lines (this is my own drawing in that manner,
+   not a copy of any wallpaper). Panels are flat white columns under a heavy
+   black rule; headings are tall condensed
+   capitals; icons sit in bullseye rings; buttons are square caps that turn
+   blue when chosen. Now and Next is a black panel with blue rings in the
+   corner. DAY is ink on paper; NIGHT is the same flyer printed on black,
+   with cyan and blue rings and white ink.
+   Laid out like a 2005 club or band site: the page itself is plain white (black at night); the drawing lives only in the masthead (its rings turn slowly) and as a skyline along the foot. Navigation is a black bar of tall capitals; content sits in flat white columns under a heavy rule.
+   Metro is the vector half of Frutiger Aero (per the Frutiger Aero Archive),
+   so a little of Aero's glass is let in where Aero itself would have put it:
+   the nav bar is a glossy black strip with a bright upper half, the icon discs
+   keep a gel shine, and one aurora of cyan light sits behind the masthead.
+   The rest stays flat: the point of Metro is ink, not gloss.
+   Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="metro"]{
+  --m-blue:#1a6bff; --m-cyan:#2ad0ff; --m-ink:#0b0b0b;
+  --bg:#fff; --bg-img:none;
+  --panel:#fff; --panel-2:#eef3fa; --line:#0b0b0b;
+  --text:#0b0b0b; --muted:#4a5568; --accent:#1a6bff; --accent-ink:#fff;
+  --font-ui:"Sora",system-ui,sans-serif; --font-display:"Anton","Impact",sans-serif; --font-num:"Anton","Impact",sans-serif;
+  --card-radius:0px; --radius:0px; --tint:10%; --card-accent:0px;
+  --card-border:2px solid var(--m-ink); --shadow:none; --shadow-hi:inset 0 0 0 3px var(--m-blue);
+  --display-tt:uppercase; --display-ls:.04em; --display-w:400;
+  --m-mast:url("/images/metro/masthead-day.svg"); --m-sky:url("/images/metro/skyline-day.svg");
+}
+[data-skin="metro"][data-mode="dark"]{
+  --m-ink:#dfe9f5; --m-blue:#1e90ff; --bg:#05070b;
+  --panel:#0a0f18; --panel-2:#0e1626; --line:#2a4a78;
+  --text:#eef4fb; --muted:#8aa0bb; --accent:#2ad0ff; --accent-ink:#04101c;
+  --card-border:2px solid #dfe9f5; --m-mast:url("/images/metro/masthead-night.svg"); --m-sky:url("/images/metro/skyline-night.svg");
+}
+/* skyline along the foot of the page; nothing else behind the content */
+[data-skin="metro"] body::before{content:"";position:fixed;left:0;right:0;bottom:0;height:130px;z-index:-2;pointer-events:none;background:var(--m-sky) bottom/100% 100% no-repeat}
+html.zen[data-skin="metro"] body::before,[data-pg="hkmahjong"][data-skin="metro"] body::before{display:none}
+/* masthead: the drawing, with the name on a white label like a band-site logo */
+[data-skin="metro"] :is(.topbar,.pagehead){background:var(--m-mast) right center/cover no-repeat,var(--panel);border:0;border-bottom:6px solid var(--m-ink);border-radius:0;box-shadow:none;min-height:200px;padding:24px max(18px,3vw);align-items:flex-end;position:relative}
+[data-skin="metro"] :is(.topbar,.pagehead)::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 18% 110%,rgba(42,208,255,.5),rgba(42,208,255,0) 60%),radial-gradient(60% 70% at 40% 120%,rgba(26,107,255,.35),transparent 65%)}
+[data-skin="metro"] .brand{position:relative}
+[data-skin="metro"] .hubbar{color:#fff;border:0;border-radius:0;box-shadow:inset 0 -1px 0 rgba(255,255,255,.25);background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.06) 48%,rgba(0,0,0,.25) 50%,rgba(0,0,0,.08)),var(--m-ink)}
+[data-skin="metro"] .hubbar a{color:#fff}
+[data-skin="metro"] .brand :is(h1,.eyebrow){display:inline-block;background:var(--panel);color:var(--text);padding:.05em .45em;box-shadow:6px 6px 0 var(--m-blue)}
+[data-skin="metro"] .eyebrow{font:700 .7rem "Sora",sans-serif;letter-spacing:.2em;text-transform:uppercase;box-shadow:4px 4px 0 var(--m-blue);margin-bottom:10px}
+[data-skin="metro"] .eyebrow::before{content:"★";margin-right:.5em;color:var(--m-blue)}
+[data-skin="metro"] :is(.brand h1,h1){font-family:"Anton","Impact",sans-serif;font-weight:400;letter-spacing:.03em;text-transform:uppercase;font-size:clamp(2rem,5.5vw,3.6rem);line-height:1.05}
+/* content: flat white columns under a heavy rule, no shadows, no rounding */
+[data-skin="metro"] :is(.pcard,.forum,.lesson){background:var(--panel);border:0;border-top:6px solid var(--m-ink);border-radius:0;box-shadow:none}
+[data-skin="metro"] .lesson{border-top-width:4px;border-left:0}
+[data-skin="metro"] :is(.sechd,.cathd){font:400 1.15rem "Anton","Impact",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
+[data-skin="metro"] :is(.sechd,.cathd)::before{content:"";display:inline-block;width:.8em;height:.8em;margin-right:.5em;border-radius:50%;vertical-align:-.05em;background:radial-gradient(circle,var(--m-ink) 0 22%,var(--panel) 23% 45%,var(--m-blue) 46% 70%,var(--m-ink) 71%)}
+/* tiles are the nav: black blocks of tall capitals that flood blue on hover */
+[data-skin="metro"] .qtile{background:var(--m-ink);color:var(--panel);border:0;border-radius:0;box-shadow:none;transition:background .15s}
+[data-skin="metro"] .qtile:hover{background:var(--m-blue);color:#fff;transform:none;box-shadow:none}
+[data-skin="metro"] .qtile .tname{font:400 1.25rem "Anton","Impact",sans-serif;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:inherit}
+[data-skin="metro"] .qtile .ico{border-radius:50%;color:var(--text);background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.35) 48%,rgba(0,0,0,.06) 50%,rgba(255,255,255,.5)),var(--panel);box-shadow:0 0 0 3px var(--m-ink),0 0 0 6px var(--panel),0 0 0 9px var(--m-blue),inset 0 2px 4px rgba(255,255,255,.9)}
+[data-skin="metro"][data-mode="dark"] .qtile{background:#dfe9f5;color:#05070b}
+/* Now and Next: black panel, rings in the corner, turning slowly */
+[data-skin="metro"] .nowcard{color:#fff;border:0;border-radius:0;background:radial-gradient(circle at 100% 0,#fff 0 6%,#0b0b0b 6.5% 11%,#1a6bff 11.5% 17%,#0b0b0b 17.5% 22%,#2ad0ff 22.5% 27%,transparent 27.5%),linear-gradient(135deg,#0b0b0b,#0a1a33);box-shadow:6px 6px 0 var(--m-blue)}
+[data-skin="metro"] .nowcard .t{font-family:"Anton","Impact",sans-serif;font-weight:400;letter-spacing:.04em;text-transform:uppercase;font-size:1.35rem}
+/* buttons: square, tall capitals, like the nav buttons of a band site; chosen = blue */
+[data-skin="metro"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){border-radius:0;border:2px solid var(--m-ink);background:var(--panel);color:var(--text);font:400 .95rem "Anton","Impact",sans-serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:none}
+[data-skin="metro"] .btn.primary,[data-skin="metro"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="metro"] :is(.dayswitch button,.modes button,.popt).on,[data-skin="metro"] .btn:hover{background:var(--m-blue);color:#fff;border-color:var(--m-ink)}
+[data-skin="metro"] .newpill{background:var(--m-blue);color:#fff;border-radius:0;font-family:"Anton","Impact",sans-serif;letter-spacing:.1em}
+[data-skin="metro"] .prog{border-radius:0;border:2px solid var(--m-ink)}
+[data-skin="metro"] dialog{border:3px solid var(--m-ink);border-radius:0;background:var(--panel);color:var(--text);box-shadow:10px 10px 0 var(--m-blue)}

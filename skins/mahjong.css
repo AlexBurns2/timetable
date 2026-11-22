@@ -1,0 +1,76 @@
+/* ══════════════════════════════════════════════════════════════════
+   MAHJONG — the table, not the tiles on a screen: green felt with the
+   weave showing, and every panel an ivory tile with a bevelled face and a
+   shadow under its lower edge. Jade green and dragon red do the work; the
+   type stays plain so the tiles read. Each card carries its suit in the
+   corner (萬, 筒, 索, in turn) and the lesson running now is stamped with
+   the red dragon 中; breaks are tiles laid face down. Tiles lift off the
+   table when you point at them, the way you pick one up. Buttons are small
+   tiles; the one chosen is jade. Now and Next is the wall: a black lacquer
+   box with a red edge. DAY is a lit table; NIGHT is a late game: deep green
+   felt, bone tiles, brighter jade.
+   The two dragons, 發 and 中, dance in the top corners — drawn here
+   (images/mahjong/dragon-*.svg), each animated inside its own file, and both
+   still when the device asks for less motion.
+   Typing "mahjong" in any box deals it, like "saul" (see theme.js).
+   Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="mahjong"]{
+  --mj-jade:#0f7a4a; --mj-red:#c8102e; --mj-gold:#b8923f;
+  --mj-edge:rgba(120,96,48,.5); --mj-back:#0a5a3c; --mj-face:#f8f3e6;
+  --bg:#0d6b47;
+  --bg-img:url("/images/mahjong/felt.svg") 0 0/64px,repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 2px,transparent 2px 4px),repeating-linear-gradient(-45deg,rgba(255,255,255,.045) 0 2px,transparent 2px 4px),radial-gradient(80% 55% at 50% -8%,rgba(255,255,255,.12),transparent 70%);
+  --panel:#f8f3e6; --panel-2:#ece3cd; --line:#c6b48f;
+  --text:#1b1a16; --muted:#6e6554; --accent:#0f7a4a; --accent-ink:#fff;
+  --font-ui:"Sora",system-ui,sans-serif; --font-display:"Sora",system-ui,sans-serif; --font-num:"Sora",system-ui,sans-serif;
+  --card-radius:10px; --radius:9px; --tint:22%; --card-accent:0px;
+  --card-border:1px solid rgba(120,96,48,.35);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -3px 0 var(--mj-edge),0 2px 4px rgba(0,0,0,.3);
+  --shadow-hi:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -3px 0 var(--mj-edge),0 9px 16px rgba(0,0,0,.38);
+  --display-tt:none; --display-ls:0; --display-w:700;
+}
+[data-skin="mahjong"][data-mode="dark"]{
+  --mj-jade:#3ad68c; --mj-red:#ff5566; --mj-edge:rgba(0,0,0,.65); --mj-back:#06301f; --mj-face:#e8e0cc;
+  --bg:#052b1e;
+  --panel:#232923; --panel-2:#1a201b; --line:#3d4a3f;
+  --text:#f1ead9; --muted:#9aa89a; --accent:#3ad68c; --accent-ink:#04180f;
+  --card-border:1px solid rgba(255,255,255,.1);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 0 var(--mj-edge),0 2px 5px rgba(0,0,0,.6);
+  --shadow-hi:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 0 var(--mj-edge),0 9px 18px rgba(0,0,0,.7);
+}
+/* every panel is a tile face: the ivory front, a bevel, and a shadow under the lower edge */
+[data-skin="mahjong"] :is(.topbar,.hubbar,.pagehead,.pcard,.qtile,.lesson){background:var(--panel);border:var(--card-border);border-radius:10px;box-shadow:var(--shadow)}
+[data-skin="mahjong"] :is(.qtile,.lesson,.pcard){transition:transform .14s ease,box-shadow .14s ease}
+[data-skin="mahjong"] :is(.qtile,.lesson,.pcard):hover{background:var(--panel);box-shadow:var(--shadow-hi);transform:translateY(-3px)}
+/* the forum stays a section of the table, marked off by a jade rule, not a tile */
+[data-skin="mahjong"] .forum{border-top:2px solid var(--mj-jade)}
+/* the suit in the corner of each tile, 萬 筒 索 in turn */
+[data-skin="mahjong"] .lesson{position:relative}
+[data-skin="mahjong"] .lesson::after{position:absolute;right:7px;bottom:5px;font:600 .8rem/1 "Noto Serif TC","Songti SC","SimSun",serif;color:var(--mj-jade);opacity:.5;pointer-events:none}
+[data-skin="mahjong"] .lesson:nth-of-type(3n+1)::after{content:"萬";color:var(--mj-red)}
+[data-skin="mahjong"] .lesson:nth-of-type(3n+2)::after{content:"筒"}
+[data-skin="mahjong"] .lesson:nth-of-type(3n+3)::after{content:"索"}
+[data-skin="mahjong"] .lesson.current::after{content:"中";color:var(--mj-red);opacity:.9}
+[data-skin="mahjong"] .lesson.current{outline:2px solid var(--mj-red);outline-offset:-2px}
+/* a tile laid face down: the green back */
+[data-skin="mahjong"] :is(.brk,.lesson.free,.lesson.brk){background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 6px,transparent 6px 12px),var(--mj-back);color:#e8f6ee;border-color:rgba(0,0,0,.4)}
+/* the wall: Now and Next in black lacquer with a red edge */
+[data-skin="mahjong"] .nowcard{color:#f6efe0;background:linear-gradient(180deg,#171a16,#0d100d);border:1px solid #000;border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -3px 0 var(--mj-red),0 4px 10px rgba(0,0,0,.45)}
+[data-skin="mahjong"] .nowcard .t{color:var(--mj-face)}
+[data-skin="mahjong"] .prog{background:#0a0c09;border-radius:999px;overflow:hidden}
+[data-skin="mahjong"] .prog i{background:linear-gradient(90deg,var(--mj-jade),#6fe0a8)}
+/* headings get a small jade tile mark */
+[data-skin="mahjong"] :is(.sechd,.cathd)::before{content:"";display:inline-block;width:.62em;height:.82em;margin-right:.55em;vertical-align:-.1em;border-radius:2px;background:var(--mj-face);box-shadow:inset 0 -2px 0 var(--mj-edge),0 0 0 1px var(--mj-jade)}
+/* buttons are little tiles; the chosen one is jade */
+[data-skin="mahjong"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){background:var(--panel);color:var(--text);border:var(--card-border);border-radius:9px;box-shadow:var(--shadow);font-weight:600}
+[data-skin="mahjong"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):active{transform:translateY(2px);box-shadow:inset 0 2px 5px rgba(0,0,0,.4)}
+[data-skin="mahjong"] .btn.primary,[data-skin="mahjong"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="mahjong"] :is(.dayswitch button,.modes button,.popt).on{background:var(--mj-jade);color:#fff;border-color:rgba(0,0,0,.3)}
+[data-skin="mahjong"] .newpill{background:var(--mj-red);color:#fff;border-radius:999px}
+[data-skin="mahjong"] dialog{background:var(--panel);color:var(--text);border:var(--card-border);border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -4px 0 var(--mj-edge),0 20px 50px rgba(0,0,0,.5)}
+/* ── the two dragons, dancing in opposite top corners ─────────────── */
+[data-skin="mahjong"] body::before,[data-skin="mahjong"] body::after{content:"";position:fixed;top:max(64px,env(safe-area-inset-top,0px) + 64px);width:76px;height:120px;z-index:1;pointer-events:none;background-size:contain;background-repeat:no-repeat;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+[data-skin="mahjong"] body::before{left:8px;background-image:url("/images/mahjong/dragon-green.svg")}
+[data-skin="mahjong"] body::after{right:8px;background-image:url("/images/mahjong/dragon-red.svg")}
+@media (max-width:1100px){[data-skin="mahjong"] body::before,[data-skin="mahjong"] body::after{display:none}}
+html.zen[data-skin="mahjong"] body::before,html.zen[data-skin="mahjong"] body::after,
+[data-skin="mahjong"][data-pg="hkmahjong"] body::before,[data-skin="mahjong"][data-pg="hkmahjong"] body::after{display:none}
