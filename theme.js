@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121c';
+const ASSET_V = '20261121h';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -64,10 +64,13 @@ const SKINS = [
   { id:'brutal',    name:'Neo Brutalism', both:true, ic:'tile', is:'icons', css:'brutal', font:'family=Archivo+Black&family=Space+Grotesk:wght@400;500;700' },
   { id:'maximal',   name:'Maximalism', both:true, ic:'tile', is:'icons', css:'maximal', font:'family=Archivo:wdth,wght@62..125,100..900&family=Instrument+Serif:ital@0;1' },
   { id:'scifi',     name:'Cyberpunk', both:false, ic:'accent', is:'icons', css:'scifi', font:'family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Doto:wght@500;700;900&family=JetBrains+Mono:wght@400;700' },
+  /* Synthwave: real-time 3D behind each page (fx/synth.js, Three.js), so a note says what it costs (lookRow) */
+  { id:'synth',     name:'Synthwave', both:true, mod:true, ic:'accent', is:'icons', css:'synth', font:'family=Syncopate:wght@700&family=Saira:wght@400;500;600;700',
+    note:'Its 3D backgrounds use more battery than other themes. Animation off shows a still picture instead.' },
   { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
   { id:'dorfic',    name:'DORFic',    both:true, ic:'tile', is:'icons', css:'dorfic', font:'family=Nunito:ital,wght@0,400;0,600;0,800;0,900;1,800' },
-  { id:'eco',       name:'Frutiger Eco', mod:true, both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
+  { id:'eco',       name:'Frutiger Eco', both:true, ic:'tile', is:'icons', css:'eco', font:'family=Cabin:wght@400;500;600;700' },
   { id:'xp',        name:'Windows XP', mod:true, both:true, ic:'tile', is:'icons', css:'xp', js:'xp' },
   { id:'bauhaus',   name:'Bauhaus',   both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
   { id:'destijl',   name:'De Stijl',  both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
@@ -217,6 +220,17 @@ const THUMBS = (() => {
       '<path d="M80.4 27L112.6 25L111.4 42.2L79.6 41Z" fill="none" stroke="#d3261a" stroke-width=".7"/>' +
       '<path d="M82.6 24.4L111.4 25.4L111 39.6L80.2 39.2Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/>' +
       '<rect x="85" y="27.8" width="4.6" height="4.6" fill="none" stroke="#d3261a" stroke-width="1"/><rect x="85" y="35" width="2" height="1.8" fill="#111"/><rect x="88.4" y="35" width="2" height="1.8" fill="#111"/><rect x="91.8" y="35" width="2" height="1.8" fill="#111"/><rect x="95.2" y="35" width="2" height="1.8" fill="#111"/>'],
+    /* Synthwave: the banded sun on the sea at dusk, out to the right; dark glass panels, the heading in chrome */
+    synth: ['#1c0b30', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c0b30"/><stop offset=".45" stop-color="#5a1c5e"/><stop offset=".68" stop-color="#e0527a"/></linearGradient>' +
+      '<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe39a"/><stop offset="1" stop-color="#ff3f86"/></linearGradient>' +
+      '<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".48" stop-color="#f2c8ff"/><stop offset=".5" stop-color="#6b2a7e"/><stop offset="1" stop-color="#ffb08a"/></linearGradient></defs>' +
+      '<rect width="120" height="31.5" fill="url(#k)"/><circle cx="96" cy="31.5" r="13" fill="url(#s)"/><g fill="#d24a77">' +
+      [[22.6, .8], [25.6, 1.1], [28.4, 1.5]].map(b => '<rect x="80" y="' + b[0] + '" width="32" height="' + b[1] + '"/>').join('') + '</g>' +
+      '<path d="M60 31.5L70 27.4 76 29.6 82 26.8 88 31.5Z" fill="#160a22"/><path d="M60 31.5L70 27.4 76 29.6 82 26.8 88 31.5" fill="none" stroke="#ff5fae" stroke-width=".5"/>' +
+      '<rect y="31.5" width="120" height="14.5" fill="#12081e"/><g fill="#ff8a8f" fill-opacity=".75">' + [33, 35.4, 38.2, 41.4].map((y, i) => '<rect x="' + (90 - i * 1.5) + '" y="' + y + '" width="' + (12 + i * 3) + '" height=".7"/>').join('') + '</g>' +
+      '<rect x="8" y="6" width="62" height="12" rx="3" fill="#160b26" fill-opacity=".86" stroke="#fff" stroke-opacity=".16" stroke-width=".6"/><rect x="8.8" y="17.3" width="60.4" height=".6" fill="#ff5fae"/>' +
+      '<rect x="13" y="10.2" width="30" height="3.6" rx=".8" fill="url(#c)"/>' +
+      [8, 41].map(x => '<rect x="' + x + '" y="23" width="29" height="17" rx="3" fill="#160b26" fill-opacity=".84" stroke="#fff" stroke-opacity=".14" stroke-width=".6"/><rect x="' + (x + 5) + '" y="28" width="6" height="6" rx="1.4" fill="#ff5fae"/>').join('')],
     custom: ['#7ee8fa', '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f6d"/><stop offset=".35" stop-color="#ffc371"/><stop offset=".68" stop-color="#7ee8fa"/><stop offset="1" stop-color="#a06cd5"/></linearGradient></defs><rect width="120" height="46" fill="url(#r)"/>' +
       '<g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M34 13h52M34 23h52M34 33h52"/></g><g fill="#fff" stroke="#14121a" stroke-opacity=".35"><circle cx="50" cy="13" r="4.2"/><circle cx="74" cy="23" r="4.2"/><circle cx="42" cy="33" r="4.2"/></g>']
   };
@@ -473,6 +487,9 @@ const FAV = {
   brutal:    { shape:'square', ink:'#0047ff', bg(x, N){ x.fillStyle = '#ffe94a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#000'; x.lineWidth = 8; x.strokeRect(0, 0, N, N); } },
   maximal:   { shape:'square', ink:'#14121a', bg(x, N){ [['#f5419e', 0, 0], ['#f6bd1e', N/2, 0], ['#2b6fd0', 0, N/2], ['#14a594', N/2, N/2]].forEach(q => { x.fillStyle = q[0]; x.fillRect(q[1], q[2], N/2, N/2); }); } },
   scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
+  synth:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#1c0b30'); g.addColorStop(.6, '#5a1c5e'); g.addColorStop(1, '#c8406f');      // a dusk sky, the banded sun rising at the foot
+               x.fillStyle = g; x.fillRect(0, 0, N, N); const s = x.createLinearGradient(0, N * .55, 0, N); s.addColorStop(0, '#ffd27a'); s.addColorStop(1, '#ff3f86');
+               x.fillStyle = s; x.beginPath(); x.arc(N/2, N, N * .4, Math.PI, 0); x.fill(); x.fillStyle = '#7a2160'; [N - 15, N - 9, N - 4].forEach((y, i) => x.fillRect(0, y, N, 1.5 + i)); } },
   terminal:  { shape:'square', ink:'#39ff9e', bg(x, N){ x.fillStyle = '#05080a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#39ff9e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, N - 3, N - 3); } },
   saul:      { shape:'square', ink:'#ffcc33', bg(x, N){ x.fillStyle = '#0b1638'; x.fillRect(0, 0, N, N); [['#d7263d', 0], ['#fff', N/3], ['#2a4fb8', 2*N/3]].forEach(c => { x.fillStyle = c[0]; x.fillRect(c[1], N - 7, N/3, 7); }); } },
   blueprint: { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#0b3a66'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 8; i < N; i += 12){ x.fillRect(i, 0, 1, N); x.fillRect(0, i, N, 1); } } }
@@ -914,7 +931,7 @@ function lookRow(el, after){
   d.setAttribute('aria-checked', String(fixed ? document.documentElement.style.colorScheme === 'dark' : st.mode === 'dark'));
   d.setAttribute('aria-disabled', String(fixed)); d.title = fixed ? 'This theme has one palette' : '';
   f.setAttribute('aria-checked', String(fxOn())); f.setAttribute('aria-disabled', String(reduced));
-  el.querySelector('.swhint').textContent = reduced ? 'Animation is off while Reduce motion is on.' : fixed ? 'This theme has one palette. Animation off saves battery.' : 'Animation off saves battery.';
+  el.querySelector('.swhint').textContent = reduced ? 'Animation is off while Reduce motion is on.' : sk.note ? sk.note : fixed ? 'This theme has one palette. Animation off saves battery.' : 'Animation off saves battery.';      /* sk.note: a theme that costs more says so (Synthwave) */
 }
 /* quickRow: Settings → Quick settings, in both dialogs: the ones people change most, here as well as
    in Accessibility and Display (they read the same keys, so either place shows the same). Layout,
@@ -1447,6 +1464,8 @@ addEventListener('pagehide', () => {
    something people already know).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'themes6', date:'2026-11-22', title:'Vaporwave splits into Synthwave',
+    text:'Vaporwave has been separated into a new Synthwave theme. Both have been deslopified with real 3D models and lighting.' },
   { id:'themes5', date:'2026-11-21', title:'Theme finder and more new themes',
     text:'Themes have been moved to a new theme finder page. 10 unqiue new themes have been added including DORFic, Frutiger Eco, Deconstructivism, Coquette, Bauhaus and De Stijl. The Cities Collection includes Sydney, Tokyo, Hong Kong and Chongqing, with more coming soon.' },
   { id:'reactavg', date:'2026-11-21', key:'game:react', tag:'Updated', title:'Reaction: the average of three', href:'games.html?play=react',

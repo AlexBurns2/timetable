@@ -29,6 +29,22 @@
   --v-hi:#a98be0; --v-lo:#0d0420;
 }
 html.fx-live[data-skin="vapor"]{--bg-img:none}
+/* the reworked Vaporwave, for moderators until it's released (fx/vapor.js puts vw-next on <html>): pastel daylight;
+   dark, a pastel twilight, its windows a dusky slate rather than the old deep violet */
+html.vw-next[data-skin="vapor"]{
+  --bg:#cfc6f2; --bg-img:linear-gradient(180deg,#86e0f6 0%,#afcdf7 27%,#d3b8f2 47%,#ffbedc 60%,#f4f0fa 60.2%,#f4f0fa 100%);
+}
+html.vw-next[data-skin="vapor"][data-mode="dark"]{
+  --bg:#2d3253; --bg-img:linear-gradient(180deg,#26425c 0%,#475389 27%,#8b79ae 47%,#d9a0bd 60%,#2b2c4a 60.2%,#2b2c4a 100%);
+  --panel:rgba(37,40,72,.93); --panel-2:#363b66; --line:#a5a2dc;
+  --text:#f7f0ff; --muted:#bfb9e0; --accent:#ff92d0; --accent-ink:#22203a;
+  --card-border:2px solid #a5a2dc;
+  --shadow:4px 4px 0 rgba(140,224,230,.3); --shadow-hi:6px 6px 0 rgba(255,160,210,.5);
+  --v-hi:#9d9bd2; --v-lo:#14152a;
+}
+html.fx-live.vw-next[data-skin="vapor"]{--bg-img:none}
+html.vw-next[data-skin="vapor"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:#1b1d36;color:#f7f0ff}
+html.vw-next[data-skin="vapor"][data-mode="dark"] ::selection{background:#8ce0e6;color:#1b1d36}
 [data-skin="vapor"][data-pg="home"]{--v-jp:"　ホーム"}
 [data-skin="vapor"][data-pg="timetable"]{--v-jp:"　時間割"}
 [data-skin="vapor"][data-pg="calendar"]{--v-jp:"　カレンダー"}
@@ -123,3 +139,90 @@ html.fx-in[data-skin="vapor"] .wrap{opacity:0}
 .vp-vhs.off{opacity:0;transition:opacity .06s linear}
 [data-skin="vapor"] .hubnow{height:auto;min-height:5rem}
 [data-skin="vapor"] .hubnow .nowcard .subj{flex:none;line-height:1.3}
+/* ── the visitors (moderators only, with vw-next): Windows 95 windows that turn up in the margins (fx/vapor.js; their words, fx/vapor-entity.js).
+      Above the scene and the page, below the site's own notes and sheets; never modal ── */
+html.vw-next .vw-ent{position:fixed;inset:0;z-index:40;pointer-events:none}
+html.vw-next .vw-ent[hidden]{display:none}
+html.vw-next .vw-win{position:fixed;left:0;top:0;box-sizing:border-box;pointer-events:auto;padding:3px;background:#c6c6c6;color:#111;
+  font:400 13px/1.4 Tahoma,Verdana,"Segoe UI",sans-serif;letter-spacing:0;text-align:left;text-transform:none;
+  box-shadow:inset -1px -1px #0b0b0b,inset 1px 1px #dfdfdf,inset -2px -2px #868686,inset 2px 2px #fff,5px 7px 18px rgba(60,36,110,.26);
+  opacity:0;transform:translateY(6px);transition:opacity .4s ease,transform .4s ease}
+html.vw-next .vw-win.on{opacity:1;transform:none}
+html.vw-next .vw-win.off{opacity:0;transform:none;transition-duration:.25s}
+html.vw-next[data-fx="off"] .vw-win{transition:none;transform:none}
+@media (prefers-reduced-motion:reduce){html.vw-next .vw-win{transition:none;transform:none}}
+html.vw-next .vw-win *{box-sizing:border-box}
+html.vw-next .vw-ent button{appearance:none;-webkit-appearance:none;margin:0;border:0;border-radius:0;background:none;box-shadow:none;color:#111;font:inherit;line-height:1.2;
+  text-transform:none;letter-spacing:0;text-shadow:none;min-width:0;min-height:0;cursor:default;transform:none}
+html.vw-next .vw-ent img{image-rendering:pixelated;image-rendering:crisp-edges}
+/* the title bar */
+html.vw-next .vw-tb{display:flex;align-items:center;gap:2px;height:20px;padding:0 2px;background:linear-gradient(90deg,#7cdff6,#cda6f2);color:#fff;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+html.vw-next .vw-drag .vw-tb{cursor:grabbing}
+html.vw-next .vw-tt{flex:1;min-width:0;padding-left:3px;font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.vw-next .vw-ent .vw-sys{display:grid;place-items:center;width:18px;height:18px;padding:1px}
+html.vw-next .vw-sys img{width:16px;height:16px;display:block}
+html.vw-next .vw-ent .vw-cap{position:relative;flex:none;width:16px;height:14px;padding:0;background:#c6c6c6;box-shadow:inset -1px -1px #0b0b0b,inset 1px 1px #fff,inset -2px -2px #868686}
+html.vw-next .vw-ent .vw-cap:active:not(:disabled){box-shadow:inset 1px 1px #0b0b0b,inset -1px -1px #fff,inset 2px 2px #868686}
+html.vw-next .vw-ent .vw-x{margin-left:2px}
+html.vw-next .vw-x::before,html.vw-next .vw-x::after{content:"";position:absolute;left:3px;top:6px;width:9px;height:2px;background:#111;transform:rotate(45deg)}
+html.vw-next .vw-x::after{transform:rotate(-45deg)}
+html.vw-next .vw-mn::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:2px;background:#111}
+html.vw-next .vw-mx::before{content:"";position:absolute;left:3px;top:2px;width:9px;height:8px;border:1px solid #111;border-top-width:2px;box-sizing:border-box}
+html.vw-next .vw-mx:disabled::before{border-color:#868686;box-shadow:1px 1px #fff}
+html.vw-next .vw-ent :is(.vw-sys,.vw-cap):focus-visible{outline:1px dotted #fff;outline-offset:-3px}
+/* what's in it */
+html.vw-next .vw-body{padding:12px 10px 10px}
+html.vw-next .vw-msg{display:flex;align-items:center;gap:12px;min-height:32px}
+html.vw-next .vw-msg p{margin:0;font-size:13px;line-height:1.4;color:#111}
+html.vw-next .vw-ico{flex:none;width:32px;height:32px}
+html.vw-next .vw-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:14px}
+html.vw-next .vw-ent .vw-btn{min-width:76px;height:25px;padding:0 10px;background:#c6c6c6;
+  box-shadow:inset -1px -1px #0b0b0b,inset 1px 1px #fff,inset -2px -2px #868686,inset 2px 2px #dfdfdf}
+html.vw-next .vw-ent .vw-btn.vw-def{box-shadow:0 0 0 1px #0b0b0b,inset -1px -1px #0b0b0b,inset 1px 1px #fff,inset -2px -2px #868686,inset 2px 2px #dfdfdf}
+html.vw-next .vw-ent .vw-btn:active:not(:disabled){padding-top:2px;box-shadow:0 0 0 1px #0b0b0b,inset 1px 1px #0b0b0b,inset -1px -1px #fff,inset 2px 2px #868686,inset -2px -2px #dfdfdf}
+html.vw-next .vw-ent .vw-btn:focus-visible{outline:1px dotted #111;outline-offset:-5px}
+html.vw-next .vw-ent .vw-btn:disabled{color:#868686;text-shadow:1px 1px #fff}
+html.vw-next .vw-sunk{box-shadow:inset 1px 1px #868686,inset -1px -1px #fff,inset 2px 2px #0b0b0b,inset -2px -2px #dfdfdf}
+html.vw-next .vw-addr{display:flex;align-items:center;gap:6px;margin:-4px 0 6px;font-size:12px}
+html.vw-next .vw-field{flex:1;min-width:0;padding:2px 5px;background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:inset 1px 1px #868686,inset -1px -1px #fff,inset 2px 2px #0b0b0b,inset -2px -2px #dfdfdf}
+html.vw-next .vw-pane{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:10px 6px;background:#fff;
+  box-shadow:inset 1px 1px #868686,inset -1px -1px #fff,inset 2px 2px #0b0b0b,inset -2px -2px #dfdfdf}
+html.vw-next .vw-ent .vw-fold{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;font-size:11px}
+html.vw-next .vw-fold img{width:32px;height:32px}
+html.vw-next .vw-fold span{padding:0 2px}
+html.vw-next .vw-ent .vw-fold:focus-visible{outline:0}
+html.vw-next .vw-ent .vw-fold:focus-visible span,html.vw-next .vw-ent .vw-fold:active span{background:#8a7ad6;color:#fff;outline:1px dotted #111}
+html.vw-next .vw-status{min-height:20px;margin-top:6px;padding:2px 6px;font-size:12px;box-shadow:inset 1px 1px #868686,inset -1px -1px #fff}
+html.vw-next .vw-grip{position:relative}
+html.vw-next .vw-grip::after{content:"";position:absolute;right:2px;bottom:2px;width:11px;height:11px;
+  background:linear-gradient(135deg,transparent 0 45%,#fff 45% 52%,#868686 52% 60%,transparent 60% 68%,#fff 68% 75%,#868686 75% 83%,transparent 83%)}
+html.vw-next .vw-listbox{max-height:150px;overflow:auto;background:#fff;box-shadow:inset 1px 1px #868686,inset -1px -1px #fff,inset 2px 2px #0b0b0b,inset -2px -2px #dfdfdf;padding:2px}
+html.vw-next .vw-table{width:100%;border-collapse:collapse;font-size:12px;color:#111}
+html.vw-next .vw-table th{padding:2px 6px;font-weight:400;text-align:left;background:#c6c6c6;box-shadow:inset -1px -1px #868686,inset 1px 1px #fff}
+html.vw-next .vw-table td{padding:2px 6px;white-space:nowrap}
+html.vw-next .vw-table :is(th,td):last-child{text-align:right}
+html.vw-next .vw-view{display:block;width:100%;box-shadow:0 0 0 1px #868686,1px 1px 0 1px #fff}
+/* a page from the old web: tiled paper, a sign, a counter */
+html.vw-next .vw-page{padding:12px 10px;text-align:center;color:#2a1a5a;font-family:"Times New Roman",Times,serif;
+  background:#fff repeating-linear-gradient(45deg,rgba(205,166,242,.22) 0 6px,transparent 6px 12px);
+  box-shadow:inset 1px 1px #868686,inset -1px -1px #fff,inset 2px 2px #0b0b0b,inset -2px -2px #dfdfdf}
+html.vw-next .vw-page p{margin:0 0 8px}
+html.vw-next .vw-h{font-size:20px;font-weight:700;color:#8a3ab0;font-style:italic}
+html.vw-next .vw-uc{display:inline-block;padding:3px 8px;font:700 11px/1.2 Verdana,Tahoma,sans-serif;letter-spacing:.06em;color:#111;
+  background:repeating-linear-gradient(135deg,#ffe066 0 8px,#111 8px 16px);box-shadow:inset 0 0 0 3px #ffe066}
+html.vw-next .vw-cnt{font-size:13px}
+html.vw-next .vw-cnt b{display:inline-block;padding:1px 4px;font:700 13px/1.2 "Courier New",monospace;letter-spacing:.12em;color:#7cff9a;background:#111}
+html.vw-next .vw-upd{margin:0;font-size:11px;color:#6a5a8a}
+/* the window menu (the icon at the left of the title bar) */
+html.vw-next .vw-menu{position:absolute;left:3px;top:23px;z-index:2;min-width:160px;padding:2px;background:#c6c6c6;
+  box-shadow:inset -1px -1px #0b0b0b,inset 1px 1px #dfdfdf,inset -2px -2px #868686,inset 2px 2px #fff,2px 2px 0 rgba(0,0,0,.25)}
+html.vw-next .vw-menu[hidden]{display:none}
+html.vw-next .vw-ent .vw-mi{display:block;width:100%;padding:4px 20px;text-align:left;font-size:12px}
+html.vw-next .vw-ent .vw-mi:is(:hover,:focus-visible){background:#8a7ad6;color:#fff;outline:0}
+/* on a narrow screen: small, in a bottom corner */
+html.vw-next .vw-small{font-size:12px}
+html.vw-next .vw-small .vw-body{padding:9px 8px 8px}
+html.vw-next .vw-small .vw-msg p{font-size:12px}
+html.vw-next .vw-ent .vw-small .vw-btn{min-width:62px;height:23px}

@@ -3871,3 +3871,149 @@ The owner reviewed the seven new themes and the Cities Collection and gave feedb
   - A Quick Launch "Desktop" button sits next to start (labelled on phones). The taskbar is 38px.
   - A small title bar flies from the clicked icon to the window as the page opens (off with Animation off).
 - **Photos**: `eco-panel.webp` downloaded (logged in PHOTO-LOG.md, credited in About).
+
+## 8.155 Everything but Windows XP launched; the cities' inks made consistent; Eco finished (asset version `20261121d`, `CACHE_VERSION` v82)
+- **Released to everyone** (`mod:true` removed): Coquette, DORFic, De Stijl, Frutiger Eco (after 8.154's Bauhaus, Deconstructivism and the cities). Only **Windows XP** is still moderators-only. The owner writes the What's new entry.
+- **Cities: one identity each, day and night** (cities.css). Tokyo's night was orange/amber against a red/charcoal day; Chongqing's night was red against an amber day. Now:
+  - Tokyo is red and charcoal both times (night `#100e12`/`#ff5a44`, `--ct-m-n #ff5036`, night accent `#ff6f5a`);
+  - Chongqing is amber and dark brown both times (night `#140c06`/`#ffa94e`, `--ct-m-n #ffa54a`, night accent `#ffaa52`);
+  - Sydney (teal) and Hong Kong (navy/pink) were already consistent.
+- **Frutiger Eco**:
+  - The turbine is three layers (tower, turning blades, fixed nose `eco-turbine-nose.webp`), so the hub no longer swings round backwards.
+  - New, larger, softer cloud banks (`eco-clouds-a/b.webp`, made from Aero's credited cloud photo, with irregular feathered edges instead of the rectangular fade).
+  - The solar panel is now a dual-axis tracker, one tilted panel on a post (`eco-tracker.webp`, downloaded and logged, credited); `eco-panel.webp` was deleted and its credit removed.
+
+## 8.156 Windows XP made to feel like a real XP PC; Coquette's bow credit removed (asset version `20261121e`, `CACHE_VERSION` v83)
+Windows XP is **still moderators-only** (`mod:true`) until the owner releases it. Everything is in `skins/xp.css` and `skins/xp.js`; no shared files changed and the thumbnail is unchanged.
+- **Single click** opens Home's desktop icons (the owner's request). Enter opens one too, and the arrow keys move between icons on every page.
+- **Fake multitasking**: each page visited in this browser tab stays on the taskbar as a minimised window (`sessionStorage` `msc.xpopen`, six at most, never synced). The current page is the pressed button. Right-click a taskbar button for Restore / Close; a window's X closes it and goes to the desktop.
+- **Feels instant**: hovering an icon, taskbar button, menu link or the Desktop button prefetches that page (same site, once each); pressing prefetches immediately. No new open animation.
+- **Menu bar** under each title bar: File (Desktop, Close), View (Maximise/Restore, Refresh, Dark mode), Favorites (every page), Tools (Settings, Display, Accessibility), Help (What's new, About; from other pages these go Home and open there). Works by keyboard.
+- **Explorer toolbar** on every page but the timetable: Back, Forward, Up (desktop), and an Address bar `C:\MSC Unofficial\<Page>` with a drop-down. The timetable keeps its own address bar and gains the menu bar.
+- **Start → All Programs** cascades every page. **Ctrl+Esc** opens Start; Escape closes menus.
+- **Desktop right-click** (wallpaper only): Refresh, Properties (Display settings); Home also has Arrange windows / Show the desktop.
+- **XP tooltips** (taskbar, tray, caption buttons, toolbar; the clock shows the full date), **notices as a yellow balloon** above the tray, and **XP tab controls** for Resources' Year 11/12 and Revision's practice/test.
+- **Left out on purpose**: Explorer's blue side pane (costs ~200px), XP cursors (blurry on high-DPI, override people's own), styled message boxes (alerts are the browser's), the Windows key (the OS takes it), a logon screen (full-screen cover), sounds, a status bar.
+- **Cost**: menus and tooltips are built only when opened; nothing runs on scroll. Phones and touch screens get no menu bar, toolbar, tooltips or right-click menu. The only motion is the existing open effect, still off with Animation off or reduced motion.
+- **Coquette**: the Pink Bow photo credit is removed from About and `images/th/cq-bow.webp` is deleted (Coquette uses no photos). Logged in PHOTO-LOG.md.
+
+## 8.157 Synthwave: a new 3D theme, moderators only (asset version `20261121f`, `CACHE_VERSION` v84)
+Owner's concept: split Vaporwave and Synthwave. Synthwave takes the 80s car, sun and neon look; Vaporwave goes pastel and surreal (8.158). Skin `synth`, `mod:true`, in the Theme finder's Retro-digital group after Cyberpunk.
+- **Real-time three.js** (r170, self-hosted at `lib/three/three.module.min.js` plus `addons/Reflector.js`; MIT, LICENSE alongside). It is loaded by a dynamic `import()` from `fx/synth.js`, and only for Synthwave with Animation on. No new CSP hosts; sw.js precaches nothing new.
+- **Scenes:**
+  - timetable: a code-built 80s wedge car on a magenta grid road between low-poly crags with violet-blue lit edges, toward a banded sun;
+  - Home: a skyline across a bay with lit windows and reflections, plus procedural palms (towers from Kenney City Kit Commercial, `models/synth/towers.glb`);
+  - games/finder: a glass pyramid with lit edges and a banded planet over water;
+  - calendar/free/revision and notes/resources/mahjong: quiet shore scenes, the sun on the sea with one palm.
+  - Dusk in light mode, night in dark.
+- **Round 2 (owner feedback):** the Kenney car and palms looked blocky. They were replaced by a car and palms built in code, and their GLBs deleted. The road went back to grid terrain with no palms.
+- **Round 3 (owner feedback):** the road scene now follows the owner's reference.
+  - The grid is bold: 4/3 m cells with a 2px core and glow.
+  - The hills are low and low-poly, with an irregular edge along the road, a surface-measured grid at road density, and brighter facet ridges.
+  - The road has two lanes (5⅓ m), with the car centred in the right lane.
+  - `SPEED` is 1.4 m/s, so a grid row passes the foot of the screen about once a second (motion comfort).
+  - The drive stills are WebP q58, about 102 KB desktop and 38 KB phone.
+- **Comfort and cost:**
+  - 30 fps cap (20 while a game is open), DPR ≤1 (0.7 on phones), MSAA on desktop only;
+  - half-resolution reflection and bloom; paused when hidden (fx.js); never pointer-driven.
+  - Pre-rendered stills (`images/synth/*.webp`, 20 files) show while loading. They show instead of 3D, and three.js is never fetched, with Animation off, reduced motion (site or OS), weak devices (deviceMemory ≤2, ≤2 cores, Save-Data), no WebGL 2, or inside iframes (Mahjong in Games, Theme finder preview).
+  - The battery note is in the theme's new `note` field (theme.js), shown in the Settings / Theme finder row.
+- **UI:** dark smoked glass panels, a lit horizon line on the header, page titles in Syncopate with a chrome gradient, Saira for text, a sunset-gradient primary button. `TR.synth`: the page sinks 8px out and rises 12px in; no cover.
+- **Tools:** `tools/synth/` (not deployed): conv.py rebuilds towers.glb; stills.mjs re-captures the stills; README.md.
+- **Credits:** About gets a new "3D credits" list (Kenney City Kit Commercial, three.js, Poly Haven). Downloads are logged in PHOTO-LOG.md.
+- **Open for the owner:**
+  - light panels in light mode?
+  - the battery note in the finder's preview dialog?
+
+## 8.158 Vaporwave reworked for moderators: pastel, surreal, offline-rendered 3D (same version)
+Gated in `fx/vapor.js` by `NEXT` (localStorage `msc.ismod === '1'`). Non-moderators get exactly the old Vaporwave: the agent verified 264 frames byte-identical across pages, modes and sizes.
+- **Direction:** pastel daylight (light) and dusky lavender-teal twilight (dark), checkerboards, marble, CRT, Win95 windows; the satire of digital tech. The neon violet and the car scene are gone, now Synthwave's.
+- **Round 1:** code-drawn still lifes. The owner said it felt like "AI slop... because of the 2D generated sprites".
+- **Round 2 (current):** every solid object is rendered offline in three.js (headless Chrome) with soft shadows, a glossy reflective floor and iridescent physical materials. They ship as webp: a floor plate plus subject groups placed beside the measured page column, and one portrait image per scene for phones. That is `images/th/vw-*.webp`, 58 files, 1.9 MB total; a page loads 60–190 KB.
+- **Sky:** a real cloud photo (Poly Haven Kloofendal pure sky, tinted) drifting about 1.5 px/s. Only the sun/moon haze and the Win95 windows are still drawn in code.
+- **Scenes:**
+  - timetable: a bust on an Ionic column, a CRT with our own light burst, a glass pyramid, a plant;
+  - calendar/notes: iridescent busts on pedestals;
+  - Home: columns standing in still water;
+  - games/finder: the ringed planet, moons and gem;
+  - free/revision: marble steps to a glowing doorway over clouds;
+  - resources/mahjong: a cube, cone and ball.
+- **Win95 windows (code):**
+  - the drifting Sunrise/Sunset window;
+  - dialogs with the owner's lines: "This memory is read-only." [OK], "It's over" [OK], "An alternative environment has been detected." [View] [Dismiss], "Would you like to leave this place?" [Stay] [Escape];
+  - an explorer window at `C:\<FIRSTNAME>\CONSCIOUSNESS\` (name from Home's greeting source, drawn only, never stored or sent).
+  - At most one per page. The lines copied from the reference ("Do you want to escape?", "Burn the files?") were removed at the owner's request.
+- **Next:** these fixed windows become the "entity" (owner's idea): rare DOM popups that dodge when closed and call back a few periods later. See 8.159 when built.
+- **Render sources:** Poly Haven CC0 (Marble Bust 01, Television 02, Potted Plant 01, Marble 01 texture, the Kloofendal HDRI). The re-render scripts were in the session scratchpad (`vw3d/`) and are temporary.
+- **Still to do at release:** the Vaporwave swatch and favicon colours in theme.js (around the THUMBS `vapor` entry and `FAV_STYLE`/favicon `vapor`) are the old violet; update them when NEXT becomes everyone's. Keep the old look reachable as an Original (see 8.x on legacy) if the owner wants.
+
+## 8.159 Vaporwave round 3: the entity (visitor windows) and a scene audit, moderators only (asset version `20261121g`, `CACHE_VERSION` v85)
+- **Scene audit:** the owner wanted 1–3 clear motifs per page and photos for busts. Each page against the references:
+  - timetable: one photo head (Cleveland Museum of Art, Portrait Head of a Youth) on one Ionic column, against the sun;
+  - calendar: one CRT showing the boot screen of our fictional 90s company, Opaline Systems;
+  - notes: the Apollo photo (CMA 2023.108) in our own paint-program window, purple duotone with one glitch slice. This is the only photo treatment;
+  - Home: two columns in still water and the moon;
+  - games/finder: the planet and one moon;
+  - free/revision: stairs and a doorway over a cloud floor made from the sky photo;
+  - resources/mahjong: a magenta sphere and a glass pyramid.
+  - Light-mode floors are crisp black and white. No rendered busts remain, and there are no palms.
+  - `images/th/vw-*.webp` is now 48 files, 1.8 MB.
+- **The entity** (`fx/vapor-entity.js`, loaded by fx/vapor.js for mods only): Win95 windows in a DOM layer (z 40, under toasts and sheets), draggable, never over the page column. On narrow screens only small dialogs appear, in a bottom corner, and never on the timetable.
+  - **Behaviours:**
+    - fade: leaves after 75 s, not while hovered or focused;
+    - persist: e.g. Sunrise stays across pages until closed;
+    - evade: the X makes it jump, twice, then it leaves with a last word.
+  - **Pacing** (owner-editable constants at the top):
+    - none in the first 2 sessions (a session resets after 30 min away);
+    - at least 100 min between visitors, 20% per page load (about 7% on phones), at most 4 a day, one at a time;
+    - call-backs 1–20 h later, 60% per load when due;
+    - name events only after 5 visitors, at most once per 72 h.
+  - **Content:**
+    - the owner's lines;
+    - threads ("It's over" then "It wasn't, actually."; Stay or Escape; "Do you wonder what's beyond this screen?");
+    - the rare explorer `C:\{NAME}\CONSCIOUSNESS\` and "{NAME} is attempting to delete memories. Allow?";
+    - Task Manager (thoughts.exe 99%), Recycle Bin (summer.zip, 0 bytes), Sunrise;
+    - Opaline Systems ("Thank you for choosing tomorrow.");
+    - one 90s web page (welcome.htm, hit counter).
+    - "There is nowhere you can go" is held back pending the owner (mood guardrail).
+  - **State:** per device in `msc.vwent`, never synced. The name is drawn only, never stored. The off switch is "Don't show these" in each window's system menu (`msc.vwent.off`).
+  - **Moderator preview:** `?vwent=<id>`, `?vwent=next`, `?vwent=reset`, `?vwent=on`.
+  - **Accessibility:** non-modal, never takes focus, Escape closes; `role="dialog"` with a label.
+- **Synthwave road (8.157 round 3)** is in this version too.
+- **Tools:** `tools/vapor/` holds the render pipeline (README, server, scene files, pack/ship, cut-out and grading). The sources are not in the repo; the README says where to get them.
+- **Credits:** About → Photo credits adds the two CMA photos. About → 3D credits lists Poly Haven Television 02, Marble 01 and the Kloofendal sky (Marble Bust 01 and Potted Plant 01 are no longer used). PHOTO-LOG.md is updated.
+- **Open for the owner:**
+  - a Settings toggle for visitors (shared file);
+  - "There is nowhere you can go";
+  - the loud black-and-white floors under the full-width timetable;
+  - whether the notes paint window could be mistaken for a real window.
+  - The Opaline Systems name: no company by that name was found; an unrelated "Opaline Labs" exists.
+
+## 8.160 Vaporwave timetable: the head rests on the floor, moderators only (asset version `20261121h`, `CACHE_VERSION` v86)
+- **Why:** the owner found the head-on-a-column proportions "a bit weird". The CMA photo was taken straight on at eye level. On a 1.95 m column the head sat above the camera (1.35 m), so we looked up at the capital but straight at the face. It also read as a head on a stick, with no shoulders and no base to carry it.
+- **Now:** the same photo at 2.43 m (about eight times life), resting on the checkerboard so its eyes sit on the horizon. That is the camera's height, so the photo's own perspective is right. It sits in front of the setting sun.
+  - The size and distance are chosen to fit the timetable's left gutter at 1920 × 1080. On a phone it sits a little inward so it isn't cut in half.
+  - An unseen body (`headBulk` in `tools/vapor/scenes.js`) gives it a round shadow and a contact shade, so it doesn't look like a cardboard sliver.
+- **Files:** `images/th/vw-tt-left-{l,d}.webp`, `vw-tt-phone-{l,d}.webp` and the `tt` rows of `META` in fx/vapor.js. No other image changed (md5 checked).
+- **Also tried:** a gallery pedestal with a socle, and a big head on a low plinth. The pedestal made the head small, and the marble blocks showed texture seams.
+- Non-moderators still see the old Vaporwave (checked with `msc.ismod` blocked). Credits are unchanged (same photo).
+- **Eyes (same day):** the owner found the head's direct stare uncomfortable, so its eyes are now behind a still glitch band. `tools/vapor/eyes.py` corrupts the band: smeared and slipped rows, pink and cyan channel split, a missing line. Run with band 538–668, span 150–700, seed 11. The scene loads `photo/youth-g-{l,d}.png`, and the README has the step. Nothing animates.
+- **Fill-out mockups shown to the owner (not built):**
+  - A: big vertical Japanese type (時間割) in the right margin;
+  - B: VHS on-screen text (PLAY, time, a 1998 date);
+  - C: a resident media-player window;
+  - D: Win95 desktop icons.
+  - They were made by injecting HTML in screenshots only; no site code exists for them.
+
+## 8.161 Vaporwave timetable: a turned head, pale palms, the word 時間割, moderators only (same version `20261121h`, `CACHE_VERSION` v86)
+- **Why:** the owner found the head-on stare uncanny ("one looking slightly off to the side could be better"), and asked for washed-out pale palm silhouettes and bright iridescent Japanese type (mockup A), after two reference images. Nothing since `20261121c` is committed and the Vaporwave images were never deployed, so the version stays at `h`.
+- **The head:** the same object, Portrait Head of a Youth (CMA 1947.188), in the museum's alternate view 2, three-quarters on and looking to the right, into the page. Cut out with `cutout.py` (new fifth argument: drops the studio floor's grey shadow), graded as before, eyes at camera height (2.32 m). Its eyes are hidden by a glitched panel. The owner asked first for the glitch to "follow the perspective instead of being a 2D horizontal bar" (tried: `eyes.py wrap`, a band wrapped round the head as a cylinder), then for "a rectangle in 3d space rather than a flowing ribbon" and stronger, "so the eyes don't read at all". Now `eyes.py plane`: a flat rectangle just in front of the eyes, square to the face's turn, in perspective (long edges along the eye line, 12% shorter at the far end, which stands out past the profile in the air); inside, a coarse mosaic laid out on the panel, rows smeared and slipped along it, a few blocks of the theme's colours, the colour channels parted along it; solid; a soft shadow on the face under it. The cut-out is padded 80 px each side (the head stays centred), so the card is wider and casts the panel's shadow too. Seed 7. The flat and wrap modes are unchanged. `scenes.js` takes `head=` (`youth34-g`, the default; `youth34`, no glitch; `youth-g`, the head-on glitched one).
+- **The palms:** `tools/vapor/palms.py` reduces CC0 photographs of palms against a sunset to their silhouettes (white, shape in the alpha). `fx/vapor.js` draws them far off at the horizon, after the sun and under the haze and floor, tinted pale (light: white to pale pink, about half there; dark: pale lilac to dusk pink). `ARR.tt.palms`: tall Washingtonias (Venice Beach) at the left edge, a Canary palm (Ballina) flipped at the right. Not on phones (the tall layout is one rendered picture).
+- **The word:** `tools/vapor/word.py` sets 時間割 vertically in Yu Gothic Bold (rendered into the picture; no font shipped), filled with the photograph Soap Film 1 (CC BY 4.0) recoloured onto the theme's pastels, with a bevel, a pale line, a violet outline and three slipped rows. `images/th/vw-tt-word.webp` (472 × 1100). Drawn into the still layer, centred in the right margin, up to 0.95 of the margin's width and 0.78 of the horizon's height; hidden when the margin is under 170 px (so at 1366 and on phones). Static.
+- **Files:** `images/th/vw-tt-left-{l,d}.webp`, `vw-tt-phone-{l,d}.webp` (re-rendered; md5 checked, no other render changed), new `vw-tt-word.webp` (the palm images came and went, see below); `fx/vapor.js` (META tt rows, `ARR.tt`, the palm and word drawing, the scene notes); `tools/vapor/` (`palms.py`, `word.py` new; `cutout.py`, `scenes.js`, README); `home.html` (the Soap Film 1 credit); `PHOTO-LOG.md`.
+- **Checked:** 1920 × 1080 light, 2560 × 1440 dark, 1366 × 768, phone light and dark; a non-moderator still sees the old Vaporwave.
+- **The word is the timetable's alone:** the owner said the other pages don't need it.
+
+- **Later the same day:** the owner found the alt2 head "looking too far away from the camera", and the palms "too much".
+  - The head is now the museum's view alt4, mirrored so it looks right, into the page: turned about 25 degrees (alt2 was about 50). Eyes at camera height (2.27 m), the same glitched panel fitted to it (`eyes.py plane 300 850 541 548 -.028 125 .07 80 7`). `scenes.js` default `head=youth4-g`. `eyes.py plane` now carries colours further past the outline (a slip off the end of the panel had drawn a black block).
+  - The palms are out for now: `ARR.tt` has no `palms` (the entry is left in a comment; the drawing code stays). `vw-palm-*.webp` taken out of `images/th` (copies kept in the work folder, `palms-shipped/`), and their two credits taken out of About. Soap Film 1 stays credited (the word).

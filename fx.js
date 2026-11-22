@@ -70,7 +70,7 @@ FX.gl = function(canvas, frag, pre){
 };
 
 /* ═══════════════ backgrounds ═══════════════ */
-const SCENES = { maximal:'maximal', y2k:'y2k', vapor:'vapor', scifi:'scifi', aero:'aero', eco:'eco' };       // theme → /fx/<file>.js
+const SCENES = { maximal:'maximal', y2k:'y2k', vapor:'vapor', scifi:'scifi', aero:'aero', eco:'eco', synth:'synth' };       // theme → /fx/<file>.js
 const BG = { id:'', canvas:null, scene:null, def:null, env:null, raf:0, last:0, q:1, slow:0, fps:60 };
 const loaded = {};
 let quiet = false, saving = false;
@@ -227,6 +227,7 @@ TR.studio = fade(80, 160);                       // a short cross-fade, nothing 
 TR.terminal = fade(60, 360);                     // the screen clears, then the page is printed from the top (terminal.css)
 TR.brutal = fade(120, 470);                      // the blocks are pressed flat; the next page's are stamped down in turn (brutal.css)
 TR.blueprint = fade(120, 440);                   // the sheet is plotted again, left to right (blueprint.css)
+TR.synth = fade(130, 420);                       // the page sets a few pixels like the sun; the next one rises into place out of a warm haze (synth.css). Only the page moves; the 3D scene behind is its own
 
 /* Maximalism: bands of type slide in from alternate sides, carrying the name of the page ahead, and on through */
 TR.maximal = {

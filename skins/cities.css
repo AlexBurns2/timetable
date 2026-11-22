@@ -40,8 +40,8 @@
   --ct-day-p:url(../images/city/tokyo-day-p.webp); --ct-night-p:url(../images/city/tokyo-night-p.webp);
   --ct-tint:linear-gradient(180deg,#c9c3dc 0%,#ece6ee 55%,#f0d2c4 100%); --ct-tint-n:linear-gradient(180deg,#0d0f24,#1d1838 60%,#43213a);
   --ct-name:"東京"; --ct-face:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif; --ct-w:800; --ct-ls:.02em; --ct-tt:none;
-  --accent:#d0472b; --ct-accent-n:#ffad4a; --ct-pos:center 42%; --ct-pos-n:center 50%;   /* the tower's red; its lit amber */
-  --ct-lo:#28262c; --ct-hi:#ef5340; --ct-lo-n:#0d0c11; --ct-hi-n:#ff8c3c; --ct-m:#ec3518; --ct-m-n:#ff862e; --ct-size:30vw; --ct-em:2.1;   /* charcoal and red; black and the tower's orange */
+  --accent:#d0472b; --ct-accent-n:#ff6f5a; --ct-pos:center 42%; --ct-pos-n:center 50%;   /* the tower's red, by day and lit at night */
+  --ct-lo:#28262c; --ct-hi:#ef5340; --ct-lo-n:#100e12; --ct-hi-n:#ff5a44; --ct-m:#ec3518; --ct-m-n:#ff5036; --ct-size:30vw; --ct-em:2.1;   /* charcoal and red, day and night (one identity) */
 }
 :root[data-city="hongkong"]{
   --ct-day:url(../images/city/hongkong-day.webp); --ct-night:url(../images/city/hongkong-night.webp);
@@ -56,8 +56,8 @@
   --ct-day-p:url(../images/city/chongqing-day-p.webp); --ct-night-p:url(../images/city/chongqing-night-p.webp);
   --ct-tint:linear-gradient(180deg,#c7c1b6 0%,#e6e1d6 55%,#e8cfae 100%); --ct-tint-n:linear-gradient(180deg,#120c10,#2a1616 60%,#5a2a14);
   --ct-name:"重庆"; --ct-face:"Ma Shan Zheng","STKaiti","KaiTi",serif; --ct-w:400; --ct-ls:0; --ct-tt:none;
-  --accent:#b8502a; --ct-accent-n:#ff5a4f; --ct-pos:30% 70%; --ct-pos-n:40% 60%;   /* the river's clay; the bridge's red */
-  --ct-lo:#351a18; --ct-hi:#f3a866; --ct-lo-n:#0f0808; --ct-hi-n:#ff5b3a; --ct-m:#f09e56; --ct-m-n:#ff5634; --ct-size:30vw; --ct-em:2.1;   /* chili brown and hotpot amber; black and the bridge's red */
+  --accent:#b8502a; --ct-accent-n:#ffaa52; --ct-pos:30% 70%; --ct-pos-n:40% 60%;   /* the river's clay; hotpot amber at night */
+  --ct-lo:#351a18; --ct-hi:#f3a866; --ct-lo-n:#140c06; --ct-hi-n:#ffa94e; --ct-m:#f09e56; --ct-m-n:#ffa54a; --ct-size:30vw; --ct-em:2.1;   /* chili brown and hotpot amber, day and night (one identity) */
 }
 
 /* ── the shared look: light (day) ── */
