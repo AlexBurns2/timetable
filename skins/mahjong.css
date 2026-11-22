@@ -13,6 +13,10 @@
    tile as a costume board, the green one grinning with both thumbs up, the red
    one straight-faced. Drawn here (images/mahjong/dragon-*.svg), each animated
    inside its own file, and both still when the device asks for less motion.
+   Hong Kong table furniture, for anyone who plays: the four seat winds 東南西北
+   sit in the corner of the bar, the three dice sit in the corner of the wall,
+   section heads carry the four flowers 梅蘭菊竹 in turn, "New" is a flower tile,
+   and 發 and 中 are pressed faintly into the felt behind everything.
    Typing "mahjong" in any box deals it, like "saul" (see theme.js).
    Changing page is the site's own fade.
    ══════════════════════════════════════════════════════════════════ */
@@ -75,3 +79,45 @@
 @media (max-width:1100px){[data-skin="mahjong"] body::before,[data-skin="mahjong"] body::after{display:none}}
 html.zen[data-skin="mahjong"] body::before,html.zen[data-skin="mahjong"] body::after,
 [data-skin="mahjong"][data-pg="hkmahjong"] body::before,[data-skin="mahjong"][data-pg="hkmahjong"] body::after{display:none}
+
+/* ── the table, for people who play ───────────────────────────────── */
+/* the four seat winds, in the corner of the bar */
+[data-skin="mahjong"] :is(.topbar,.pagehead){position:relative}
+[data-skin="mahjong"] :is(.topbar,.pagehead)::after{content:"東 南 西 北";position:absolute;left:18px;bottom:6px;font:600 .62rem/1 "Noto Serif TC","Songti SC","SimSun",serif;letter-spacing:.34em;color:var(--mj-jade);opacity:.5;pointer-events:none}
+/* the three dice, in the corner of the wall */
+[data-skin="mahjong"] .nowcard{position:relative}
+[data-skin="mahjong"] .nowcard::after{content:"";position:absolute;right:12px;top:10px;width:46px;height:16px;pointer-events:none;opacity:.9;
+  background:
+   radial-gradient(circle at 50% 50%,#c8102e 0 1.3px,transparent 1.4px) 3px 3px/14px 14px no-repeat,
+   linear-gradient(#fdfcf7,#e8e3d4) 3px 3px/14px 14px no-repeat,
+   radial-gradient(circle at 30% 30%,#1b1a16 0 1.2px,transparent 1.3px) 18px 1px/14px 14px no-repeat,
+   radial-gradient(circle at 70% 70%,#1b1a16 0 1.2px,transparent 1.3px) 18px 1px/14px 14px no-repeat,
+   linear-gradient(#fdfcf7,#e8e3d4) 18px 1px/14px 14px no-repeat,
+   radial-gradient(circle at 50% 50%,#c8102e 0 1.3px,transparent 1.4px) 33px 4px/14px 14px no-repeat,
+   radial-gradient(circle at 25% 25%,#1b1a16 0 1.1px,transparent 1.2px) 33px 4px/14px 14px no-repeat,
+   radial-gradient(circle at 75% 75%,#1b1a16 0 1.1px,transparent 1.2px) 33px 4px/14px 14px no-repeat,
+   linear-gradient(#fdfcf7,#e8e3d4) 33px 4px/14px 14px no-repeat;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+/* the four flowers, one to a section, in turn */
+[data-skin="mahjong"] :is(.pcard,.forum):nth-of-type(4n+1) :is(.sechd,.cathd)::after{content:"梅"}
+[data-skin="mahjong"] :is(.pcard,.forum):nth-of-type(4n+2) :is(.sechd,.cathd)::after{content:"蘭"}
+[data-skin="mahjong"] :is(.pcard,.forum):nth-of-type(4n+3) :is(.sechd,.cathd)::after{content:"菊"}
+[data-skin="mahjong"] :is(.pcard,.forum):nth-of-type(4n+4) :is(.sechd,.cathd)::after{content:"竹"}
+[data-skin="mahjong"] :is(.sechd,.cathd)::after{margin-left:.6em;font:600 .85em/1 "Noto Serif TC","Songti SC","SimSun",serif;color:var(--mj-red);opacity:.55}
+/* the seat wind over each day of the week; Friday draws the green dragon */
+[data-skin="mahjong"] .dayhead .dow::before{display:block;margin-bottom:2px;font:600 .95rem/1 "Noto Serif TC","Songti SC","SimSun",serif;color:var(--mj-jade);opacity:.8}
+[data-skin="mahjong"] .dayhead:nth-of-type(5n+1) .dow::before{content:"東"}
+[data-skin="mahjong"] .dayhead:nth-of-type(5n+2) .dow::before{content:"南"}
+[data-skin="mahjong"] .dayhead:nth-of-type(5n+3) .dow::before{content:"西"}
+[data-skin="mahjong"] .dayhead:nth-of-type(5n+4) .dow::before{content:"北"}
+[data-skin="mahjong"] .dayhead:nth-of-type(5n+5) .dow::before{content:"發";color:var(--mj-red)}
+/* "New" is a flower tile */
+[data-skin="mahjong"] .newpill{background:var(--mj-face);color:var(--mj-red);border:1px solid var(--mj-edge);border-radius:4px;box-shadow:inset 0 -2px 0 var(--mj-edge)}
+[data-skin="mahjong"] .newpill::before{content:"花 ";font-family:"Noto Serif TC","Songti SC","SimSun",serif;color:var(--mj-jade)}
+/* 發 and 中 pressed faintly into the felt, behind everything */
+[data-skin="mahjong"] body::before,[data-skin="mahjong"] body::after{z-index:2}
+[data-skin="mahjong"]{--bg-img:url("/images/mahjong/felt.svg") 0 0/64px,
+  radial-gradient(circle at 12% 78%,rgba(255,255,255,.07) 0 22vmin,transparent 22.5vmin),
+  repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 2px,transparent 2px 4px),
+  repeating-linear-gradient(-45deg,rgba(255,255,255,.045) 0 2px,transparent 2px 4px),
+  radial-gradient(80% 55% at 50% -8%,rgba(255,255,255,.12),transparent 70%)}

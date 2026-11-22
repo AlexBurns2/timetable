@@ -45,9 +45,17 @@
 <path d="M136 124q14 14 28 0" fill="none" stroke="#9c5f52" stroke-width="3" stroke-linecap="round"/>
   <ellipse cx="124" cy="116" rx="7" ry="4.5" fill="#e09a86" opacity=".3"/>
   <ellipse cx="176" cy="116" rx="7" ry="4.5" fill="#e09a86" opacity=".3"/>
-  <path d="M86 156q64-12 128 0l-4 156q-60 10-120 0Z" fill="#fbfaf6"/>
-  <path d="M86 156q64-12 128 0l-1 12q-63-11-126 0Z" fill="#eceadf"/>
-  <path d="M90 306q60 10 120 0l-1 6q-59 10-118 0Z" fill="#eceadf"/>
-  <text x="150" y="265" text-anchor="middle" font-family="Noto Serif TC,Songti SC,SimSun,MS Mincho,serif" font-size="142" font-weight="700" fill="#0d7a49">發</text>
-  <path d="M86 156q64-12 128 0l-4 156q-60 10-120 0Z" fill="none" stroke="#d6d2c4" stroke-width="2"/>
+  <!-- the costume board, cut and painted as a real tile face: ivory front, a
+       bevel round the rim, and the character carved into a sunken well -->
+  <path d="M86 156q64-12 128 0l-4 156q-60 10-120 0Z" fill="#f3efe2"/>
+  <path d="M86 156q64-12 128 0l-3 10q-61-11-122 0Z" fill="#fffefa"/>
+  <path d="M88 166q62-11 124 0l-4 136q-58 9-116 0Z" fill="#faf7ee"/>
+  <path d="M90 306q60 10 120 0l-1 6q-59 10-118 0Z" fill="#ddd8c8"/>
+  <path d="M86 156l2 10-2 146 4 6-4-162ZM214 156l-2 10 2 146-4 6 4-162Z" fill="#000" opacity=".07"/>
+  <path d="M100 180q50-8 100 0l-3 112q-47 8-94 0Z" fill="#efebdd"/>
+  <path d="M100 180q50-8 100 0l-1 5q-49-7-98 0Z" fill="#cfc9b6"/>
+  <path d="M101 287q49 7 98 0l-2 5q-47 7-94 0Z" fill="#fffdf6"/>
+  <text x="150" y="272" text-anchor="middle" font-family="Noto Serif TC,Songti SC,SimSun,MS Mincho,serif" font-size="118" font-weight="700" fill="#000" opacity=".16">發</text>
+  <text x="150" y="270" text-anchor="middle" font-family="Noto Serif TC,Songti SC,SimSun,MS Mincho,serif" font-size="118" font-weight="700" fill="#0d7a49">發</text>
+  <path d="M86 156q64-12 128 0l-4 156q-60 10-120 0Z" fill="none" stroke="#cdc7b5" stroke-width="2.4"/>
 </g></svg>
