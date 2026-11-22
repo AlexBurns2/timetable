@@ -1,0 +1,75 @@
+/* ══════════════════════════════════════════════════════════════════
+   INDUSTRIAL — the look of industrial-design studio sites and material
+   posters: poured concrete with formwork seams, tie-holes, cracks and rust
+   bleeding out of them, and brushed steel plates riveted at the corners.
+   Type is tall, narrow and heavy (Big Shoulders) with small monospaced
+   labels in the manner of a spec sheet; one signal orange for what is live
+   and what is chosen. Panels are steel plates with a rust stain creeping in
+   from the top edge and a hairline crack in one corner. Buttons are metal:
+   brushed, bevelled, with the label engraved; pressing one sinks it.
+   Now and Next is a gunmetal box with a hazard-striped lip and an orange
+   display. DAY is pale concrete and light steel; NIGHT is wet dark concrete
+   and blued steel. All the textures are drawn procedurally in images/industrial/
+   (scene-day/night.svg, steel.svg, rust-edge.svg, crack.svg): no
+   photographs, so nothing needs a licence, and any of them can be swapped for a
+   real photo of the same name.
+   Changing page is the site's own fade.
+   ══════════════════════════════════════════════════════════════════ */
+[data-skin="industrial"]{
+  --i-or:#ff5a1f; --i-steel:url("/images/industrial/steel.svg"); --i-rust:url("/images/industrial/rust-edge.svg"); --i-crack:url("/images/industrial/crack.svg");
+  --i-sheen:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.05) 40%,rgba(0,0,0,.12));
+  --i-rivet:radial-gradient(circle at 50% 50%,#fff 0 12%,#9aa0a6 14% 45%,#3b4046 50% 62%,transparent 66%);
+  --bg:#9b9b96; --bg-img:none;
+  --panel:#c5c8cb; --panel-2:#b2b6ba; --line:#4b5157;
+  --text:#14171a; --muted:#444b52; --accent:#ff5a1f; --accent-ink:#fff;
+  --font-ui:"IBM Plex Mono",ui-monospace,monospace; --font-display:"Big Shoulders Display","Impact",sans-serif; --font-num:"Big Shoulders Display","Impact",sans-serif;
+  --card-radius:3px; --radius:3px; --tint:8%; --card-accent:0px;
+  --card-border:1px solid #2b3036; --shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 3px rgba(0,0,0,.25),0 6px 10px -4px rgba(0,0,0,.5); --shadow-hi:0 0 0 2px var(--i-or),0 6px 14px -4px rgba(0,0,0,.6);
+  --display-tt:uppercase; --display-ls:.03em; --display-w:900;
+}
+[data-skin="industrial"][data-mode="dark"]{
+  --bg:#1b2026; --panel:#3a424a; --panel-2:#2c333a; --line:#0b0e11;
+  --text:#e9edf1; --muted:#a0abb6; --accent:#ff6a2d; --accent-ink:#1a0a02;
+  --i-sheen:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,0) 40%,rgba(0,0,0,.35));
+  --card-border:1px solid #05070a; --shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 3px rgba(0,0,0,.45),0 6px 12px -4px rgba(0,0,0,.8);
+}
+[data-skin="industrial"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("/images/industrial/scene-day.svg") center/cover no-repeat}
+[data-skin="industrial"][data-mode="dark"] body::before{background-image:url("/images/industrial/scene-night.svg")}
+html.zen[data-skin="industrial"] body::before,[data-pg="hkmahjong"][data-skin="industrial"] body::before{display:none}
+/* plates: brushed steel, rivets in the four corners, rust seeping from the top, a crack bottom right */
+[data-skin="industrial"] :is(.topbar,.hubbar,.pagehead,.pcard,.forum){
+  background:
+    var(--i-rivet) 6px 6px/9px 9px no-repeat,var(--i-rivet) calc(100% - 6px) 6px/9px 9px no-repeat,
+    var(--i-rivet) 6px calc(100% - 6px)/9px 9px no-repeat,var(--i-rivet) calc(100% - 6px) calc(100% - 6px)/9px 9px no-repeat,
+    var(--i-rust) top/100% 46px no-repeat,var(--i-crack) right bottom/90px no-repeat,
+    var(--i-sheen),var(--i-steel) 0 0/256px,var(--panel);
+  border:var(--card-border);border-radius:3px;box-shadow:var(--shadow);padding-left:max(1rem,16px);padding-right:max(1rem,16px)}
+[data-skin="industrial"][data-mode="dark"] :is(.topbar,.hubbar,.pagehead,.pcard,.forum){background-blend-mode:normal,normal,normal,normal,multiply,screen,normal,overlay,normal}
+/* type */
+[data-skin="industrial"] :is(.brand h1,h1,h2){font-family:"Big Shoulders Display","Impact",sans-serif;font-weight:900;letter-spacing:.03em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+[data-skin="industrial"][data-mode="dark"] :is(.brand h1,h1,h2){text-shadow:0 -1px 0 rgba(0,0,0,.7)}
+[data-skin="industrial"] :is(.eyebrow,.sechd,.cathd,.dayhead .dow,.lbl){font:500 .6875rem "IBM Plex Mono",monospace;letter-spacing:.18em;text-transform:uppercase}
+[data-skin="industrial"] .eyebrow::before{content:"";display:inline-block;width:.7em;height:.7em;margin-right:.7em;background:var(--i-or);box-shadow:0 0 6px var(--i-or)}
+[data-skin="industrial"] :is(.sechd,.cathd)::before{content:"FIG. ";color:var(--i-or)}
+/* home tiles: stamped metal blocks; icons are rivet-bossed discs */
+[data-skin="industrial"] .qtile{background:var(--i-sheen),var(--i-steel) 0 0/256px,var(--panel);border:var(--card-border);border-radius:3px;box-shadow:var(--shadow)}
+[data-skin="industrial"] .qtile .ico{width:2.6rem;height:2.6rem;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#f4f6f8,#8a9097 55%,#3b4046);box-shadow:inset 0 -2px 3px rgba(0,0,0,.4),0 0 0 3px #4b5157,0 2px 3px 3px rgba(0,0,0,.35);color:#14171a}
+[data-skin="industrial"] .qtile .tname{font:900 1.15rem "Big Shoulders Display","Impact",sans-serif;letter-spacing:.05em;text-transform:uppercase;text-decoration:none}
+[data-skin="industrial"] .qtile:hover{box-shadow:var(--shadow-hi)}
+/* Now and Next: gunmetal, hazard lip, orange display */
+[data-skin="industrial"] .nowcard{color:#ffd9c7;background:linear-gradient(180deg,#0d1013,#1b2026);border:1px solid #000;border-radius:3px;box-shadow:inset 0 0 0 2px #3b4248,inset 0 2px 14px rgba(0,0,0,.8),0 6px 10px -4px rgba(0,0,0,.7);border-top:10px solid transparent;border-image:repeating-linear-gradient(-45deg,#f4c20d 0 10px,#15181b 10px 20px) 10 0 0 0}
+[data-skin="industrial"] .nowcard .t{color:var(--i-or);font-family:"Big Shoulders Display","Impact",sans-serif;font-size:1.4rem;letter-spacing:.04em;text-transform:uppercase;text-shadow:0 0 10px rgba(255,90,31,.5)}
+[data-skin="industrial"] .prog{background:#050607;border:1px solid #3b4248;border-radius:0}
+[data-skin="industrial"] .prog i{background:var(--i-or)}
+/* metal buttons: brushed, bevelled, engraved; pressed = sunk; chosen = enamelled orange */
+[data-skin="industrial"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){
+  background:var(--i-sheen),var(--i-steel) 0 0/256px,#aeb3b8;color:#14171a;border:1px solid #2b3036;border-radius:3px;font:700 .8125rem "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -3px 4px rgba(0,0,0,.3),0 2px 0 #1b1f23,0 3px 5px rgba(0,0,0,.45)}
+[data-skin="industrial"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt){background:var(--i-sheen),var(--i-steel) 0 0/256px,#5a636c;color:#eef2f5;text-shadow:0 -1px 0 rgba(0,0,0,.7);border-color:#05070a}
+[data-skin="industrial"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):active{transform:translateY(2px);box-shadow:inset 0 3px 6px rgba(0,0,0,.55),0 0 0 #000}
+[data-skin="industrial"] .btn.primary,[data-skin="industrial"] :is(.dayswitch button,.modes button,.popt)[aria-pressed="true"],[data-skin="industrial"] :is(.dayswitch button,.modes button,.popt).on{
+  background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0) 45%,rgba(0,0,0,.2)),var(--i-steel) 0 0/256px,var(--i-or);background-blend-mode:normal,soft-light,normal;color:#fff;text-shadow:0 -1px 0 rgba(0,0,0,.5)}
+[data-skin="industrial"] .newpill{background:var(--i-or);color:#fff;border-radius:0;font:700 .65rem "IBM Plex Mono",monospace;letter-spacing:.15em;text-transform:uppercase;clip-path:polygon(0 0,100% 0,100% 70%,92% 100%,0 100%)}
+/* lessons: stamped tags */
+[data-skin="industrial"] .lesson{background:var(--i-sheen),var(--i-steel) 0 0/256px,var(--panel-2);border:1px solid #2b3036;border-left:6px solid var(--c,var(--i-or));border-radius:2px;box-shadow:var(--shadow)}
+[data-skin="industrial"] dialog{background:var(--i-sheen),var(--i-steel) 0 0/256px,var(--panel);color:var(--text);border:2px solid #2b3036;border-radius:3px;box-shadow:0 18px 40px rgba(0,0,0,.6)}
