@@ -342,6 +342,16 @@ const PRE_F = 'uniform sampler2D tSrc; uniform vec2 uTx; uniform float uThr, uKn
 const DOWN_F = 'uniform sampler2D tSrc; uniform vec2 uTx; varying vec2 vUv;\n' +
   'void main(){ vec3 c = texture2D(tSrc, vUv).rgb * 4. + texture2D(tSrc, vUv + uTx * vec2(-1., -1.)).rgb + texture2D(tSrc, vUv + uTx * vec2(1., -1.)).rgb + texture2D(tSrc, vUv + uTx * vec2(-1., 1.)).rgb + texture2D(tSrc, vUv + uTx).rgb;\n' +
   '  gl_FragColor = vec4(c / 8., 1.); }';
+/* steadying (TAA_F): each frame is drawn a fraction of a pixel off from the last (a different place in sixteen), and folded into
+   the frames before it, so what is finer than a pixel (a palm's leaflets, far off) is seen as the average of all sixteen and no
+   longer twinkles as the camera drifts. Nothing is reprojected: the scenes it runs in hardly move (the bay's camera drifts a
+   twenty-fifth of a pixel a frame). The history is held within the range of this frame's neighbours (widened by uCl of that
+   range), so nothing that moves can leave a trail. */
+const TAA_F = 'uniform sampler2D tCur, tHist; uniform vec2 uTx; uniform float uK, uCl; varying vec2 vUv;\n' + SANE +
+  'void main(){ vec3 c = sane(texture2D(tCur, vUv).rgb), lo = c, hi = c;\n' +
+  '  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++){ vec3 n = sane(texture2D(tCur, vUv + uTx * vec2(float(x), float(y))).rgb); lo = min(lo, n); hi = max(hi, n); }\n' +
+  '  vec3 e = (hi - lo) * uCl, h = clamp(sane(texture2D(tHist, vUv).rgb), lo - e, hi + e);\n' +
+  '  gl_FragColor = vec4(mix(h, c, uK), 1.); }';
 const UP_F = 'uniform sampler2D tSrc; uniform vec2 uTx; uniform float uW; varying vec2 vUv;\n' +
   'void main(){ vec3 c = texture2D(tSrc, vUv + vec2(-2. * uTx.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(2. * uTx.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(0., -2. * uTx.y)).rgb + texture2D(tSrc, vUv + vec2(0., 2. * uTx.y)).rgb;\n' +
   '  c += (texture2D(tSrc, vUv + uTx * vec2(-1., 1.)).rgb + texture2D(tSrc, vUv + uTx).rgb + texture2D(tSrc, vUv - uTx).rgb + texture2D(tSrc, vUv + uTx * vec2(1., -1.)).rgb) * 2.;\n' +
@@ -791,14 +801,21 @@ async function build(canvas, kind, dark){
   const pass = (frag, u, o) => keep(new T.ShaderMaterial(Object.assign({ uniforms:u, vertexShader:QUAD_V, fragmentShader:frag, depthTest:false, depthWrite:false }, o || {})));
   const mainRT = keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, samples:SMALL ? 0 : 4, depthBuffer:true }));
   const LV = [2, 4, 8, 16].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false })));
+  /* steadying (TAA_F), in every scene but the road (it moves too fast to fold frames together) and never in a still */
+  const TAA = !STILL && kind !== 'drive', TAA_K = .1;                   // each frame's share: about the last ten frames are in the picture
+  const histRT = TAA ? [0, 1].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false }))) : [];
+  const halton = (i, b) => { let f = 1, r = 0; while (i > 0){ f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; };
+  const JIT = Array.from({ length:16 }, (_, i) => [halton(i + 1, 2) - .5, halton(i + 1, 3) - .5]);
+  let taaN = 0, taaI = 0;                                     // frames folded in since the last fresh start; which history is the latest
   const preM = pass(PRE_F, { tSrc:{ value:null }, uTx:{ value:new T.Vector2() }, uThr:{ value:hdr ? 1 : .8 }, uKnee:{ value:.5 } });
   const downM = pass(DOWN_F, { tSrc:{ value:null }, uTx:{ value:new T.Vector2() } });
   const upM = pass(UP_F, { tSrc:{ value:null }, uTx:{ value:new T.Vector2() }, uW:{ value:.75 } }, { blending:T.AdditiveBlending, transparent:true });       // uW < 1: the widest halo is the faintest
   const compU = { tScene:{ value:mainRT.texture }, tBloom:{ value:LV[0].texture }, uBloom:{ value:.6 }, uExp:{ value:1 }, uGrain:{ value:1.5 / 255 }, uSeed:{ value:0 }, uVig:{ value:.55 } };
   const compM = pass(COMP_F, compU);
+  const taaM = pass(TAA_F, { tCur:{ value:mainRT.texture }, tHist:{ value:null }, uTx:{ value:new T.Vector2() }, uK:{ value:1 }, uCl:{ value:1 } });
   const blit = (m, target) => { quad.material = m; renderer.setRenderTarget(target); renderer.render(pscene, pcam); };
-  const bloom = () => {
-    preM.uniforms.tSrc.value = mainRT.texture; preM.uniforms.uTx.value.set(.5 / mainRT.width, .5 / mainRT.height);
+  const bloom = src => {
+    preM.uniforms.tSrc.value = src; preM.uniforms.uTx.value.set(.5 / mainRT.width, .5 / mainRT.height);
     renderer.setRenderTarget(LV[0]); renderer.clear(); blit(preM, LV[0]);
     for (let i = 1; i < LV.length; i++){ downM.uniforms.tSrc.value = LV[i - 1].texture; downM.uniforms.uTx.value.set(.5 / LV[i - 1].width, .5 / LV[i - 1].height); blit(downM, LV[i]); }
     for (let i = LV.length - 1; i > 0; i--){ upM.uniforms.tSrc.value = LV[i].texture; upM.uniforms.uTx.value.set(.5 / LV[i].width, .5 / LV[i].height); blit(upM, LV[i - 1]); }
@@ -835,22 +852,27 @@ async function build(canvas, kind, dark){
     }
     scene.traverse(o => { const m = o.material; if (m && m.isMeshStandardMaterial && m.userData.env == null) m.userData.env = m.envMapIntensity; if (m && m.isMeshStandardMaterial) m.envMapIntensity = m.userData.envK ? m.userData.envK[dk ? 1 : 0] : m.userData.env * d.env; });
     compU.uBloom.value = d.bloom * look.bloom; compU.uExp.value = d.exposure * look.exp;
-    placeSun(); makeEnv();
+    placeSun(); makeEnv(); taaN = 0;
   };
   const resize = (w, h) => {
     W = w; H = h; renderer.setSize(w, h, false);
-    mainRT.setSize(w, h);
+    mainRT.setSize(w, h); histRT.forEach(rt => rt.setSize(w, h)); taaN = 0;
     LV.forEach((rt, i) => rt.setSize(Math.max(1, Math.round(w / Math.pow(2, i + 1))), Math.max(1, Math.round(h / Math.pow(2, i + 1)))));
     if (sea && sea.getRenderTarget) sea.getRenderTarget().setSize(Math.max(64, Math.round(w * .5)), Math.max(64, Math.round(h * .5)));
     frame(); placeSun();
   };
   const render = t => {
     renderer.info.reset();
-    frame(); update(t); camera.updateMatrixWorld(); placeSun();
+    frame(); update(t); camera.updateMatrixWorld();
+    if (TAA){ const j = JIT[taaN % 16]; camera.setViewOffset(W, H, j[0], j[1], W, H); }      // a fraction of a pixel off from the last frame
+    placeSun();
     sunU.uT.value = STILL ? 0 : (t * SUN_RISE) % 1;             // the gaps in the sun rise (the owner asked): slowly, and not in the still pictures
     if (sea && sea.material.uniforms && sea.material.uniforms.uTime) sea.material.uniforms.uTime.value = t % 1000;
     renderer.setRenderTarget(mainRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
-    bloom();
+    let src = mainRT;
+    if (TAA){ const a = histRT[taaI], b = histRT[1 - taaI], u = taaM.uniforms;
+      u.tHist.value = a.texture; u.uK.value = taaN ? TAA_K : 1; u.uTx.value.set(1 / W, 1 / H); blit(taaM, b); taaI = 1 - taaI; taaN++; src = b; }
+    compU.tScene.value = src.texture; bloom(src.texture);
     compU.uSeed.value = 0;                                      // no film grain (the owner found it noise, worst in the dark): only a still dither, a level and a half deep, so the night sky doesn't band
     blit(compM, null);
   };
