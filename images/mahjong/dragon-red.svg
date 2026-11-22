@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 190" width="120" height="190">
+<style>
+.b{transform-box:view-box;transform-origin:60px 180px;animation:d 1.9s ease-in-out infinite}
+.a{transform-box:fill-box;transform-origin:top center;animation:a 1.9s ease-in-out infinite}
+.a2{animation-delay:-.95s}
+@keyframes d{0%,100%{transform:rotate(-7deg) translateY(0)}25%{transform:rotate(0) translateY(-7px)}50%{transform:rotate(7deg) translateY(0)}75%{transform:rotate(0) translateY(-7px)}}
+@keyframes a{0%,100%{transform:rotate(18deg)}50%{transform:rotate(-30deg)}}
+@media (prefers-reduced-motion:reduce){.b,.a{animation:none}}
+</style>
+<g class="b" transform="translate(60 0) scale(-1 1)">
+<g fill="#15171a"><rect x="40" y="140" width="15" height="42" rx="6"/><rect x="65" y="140" width="15" height="42" rx="6"/><rect x="31" y="176" width="27" height="10" rx="5"/><rect x="62" y="176" width="27" height="10" rx="5"/></g>
+<circle cx="60" cy="26" r="19" fill="#f0c9a8"/><path d="M44 15q16-13 32 0q-5-7-16-8q-11 1-16 8Z" fill="#3a2a22"/>
+<circle cx="53" cy="27" r="2.4" fill="#15171a"/><circle cx="67" cy="27" r="2.4" fill="#15171a"/>
+<path d="M53 34q7 6 14 0" stroke="#15171a" stroke-width="2" fill="none" stroke-linecap="round"/>
+<g class="a"><rect x="12" y="56" width="13" height="56" rx="6.5" fill="#f0c9a8"/><circle cx="18" cy="114" r="9" fill="#f0c9a8"/></g>
+<g class="a a2"><rect x="95" y="56" width="13" height="56" rx="6.5" fill="#f0c9a8"/><circle cx="101" cy="114" r="9" fill="#f0c9a8"/></g>
+<rect x="24" y="44" width="72" height="104" rx="7" fill="#fdfcf7" stroke="#cfc7b4" stroke-width="2"/>
+<rect x="30" y="50" width="60" height="92" rx="4" fill="none" stroke="#e7e1d2" stroke-width="1.5"/>
+<text x="60" y="114" text-anchor="middle" transform="translate(120 0) scale(-1 1)" font-family="Noto Serif TC,Songti SC,SimSun,MS Mincho,serif" font-size="64" font-weight="700" fill="#c8102e">中</text>
+</g></svg>

@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261122d';
+const ASSET_V = '20261122e';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -90,6 +90,7 @@ const SKINS = [
   { id:'chongqing', name:'Chongqing', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Ma+Shan+Zheng',
     city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
+  { id:'mahjong',   name:'Mahjong', both:true, ic:'tile', is:'icons', css:'mahjong', font:'family=Sora:wght@400;600;700', about:"The table, not the tiles on a screen: green felt, ivory tiles for every panel, jade and dragon red. Each card carries its suit in the corner, the lesson running now is stamped 中, breaks are laid face down, and the two dragons dance in the top corners. Typing “mahjong” in any box deals it too." },
   /* a secret: type "saul" in any box (below). Not in the picker. */
   { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
   /* the originals */
@@ -249,6 +250,11 @@ const THUMBS = (() => {
     industrial: ['#8d8e89', '<defs><filter id="c" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="4"/><feColorMatrix values="0 0 0 0 .55  0 0 0 0 .55  0 0 0 0 .53  .5 0 0 0 .1"/></filter></defs><rect width="120" height="46" filter="url(#c)"/><path d="M60 0l-3 9 5 8-4 10 6 12" fill="none" stroke="#161616" stroke-width="1.3"/><path d="M0 40h120v6H0Z" fill="#3b4046"/>' +
       bar('rx="2" fill="#bfc3c7" stroke="#2b3036" stroke-width="1"') + '<rect x="9" y="6.4" width="102" height="2.2" fill="#9a4a1c" opacity=".7"/><rect x="12" y="10.5" width="30" height="3" fill="#14171a"/><rect x="82" y="9" width="24" height="6" fill="#ff5a1f"/>' +
       tiles('rx="2" fill="#bfc3c7" stroke="#2b3036" stroke-width="1"') + [24, 60, 96].map(x => '<circle cx="' + x + '" cy="31.5" r="4.4" fill="#8a9097" stroke="#4b5157" stroke-width="1.2"/>').join('')],
+    mahjong: ['#0d6b47', '<rect width="120" height="46" fill="#0d6b47"/>' +
+      bar('rx="4" fill="#f8f3e6" stroke="#c6b48f" stroke-width=".8"') + '<rect x="8" y="15.6" width="104" height="2.4" rx="1.2" fill="#8a6f3c" fill-opacity=".45"/><rect x="12" y="9.6" width="26" height="3" rx="1.5" fill="#1b1a16"/>' +
+      '<g font-family="Noto Serif TC,Songti SC,SimSun,serif" font-weight="700"><text x="20" y="15.5" font-size="8" fill="#0f7a4a">發</text><text x="96" y="15.5" font-size="8" fill="#c8102e">中</text></g>' +
+      tiles('rx="4" fill="#f8f3e6" stroke="#c6b48f" stroke-width=".8"') + [8, 44, 80].map(x => '<rect x="' + x + '" y="37" width="32" height="3" rx="1.5" fill="#8a6f3c" fill-opacity=".45"/>').join('') +
+      '<g font-family="Noto Serif TC,Songti SC,SimSun,serif" font-weight="700" font-size="7"><text x="33" y="33" fill="#c8102e">萬</text><text x="69" y="33" fill="#0f7a4a">筒</text><text x="105" y="33" fill="#0f7a4a">索</text></g>'],
     web2000: ['#07080b', '<defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b3bd0"/><stop offset=".55" stop-color="#ff7a3c"/><stop offset="1" stop-color="#ffd27a"/></linearGradient></defs>' +
       '<rect x="0" y="0" width="60" height="46" fill="url(#w)"/><ellipse cx="14" cy="30" rx="12" ry="5" fill="#fff"/><ellipse cx="42" cy="38" rx="14" ry="5" fill="#fff"/>' +
       '<rect x="60" y="0" width="60" height="46" fill="#07080b"/><g stroke="#78aaff" stroke-opacity=".3" stroke-width=".5">' +
@@ -515,6 +521,7 @@ const FAV = {
   scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
   terminal:  { shape:'square', ink:'#39ff9e', bg(x, N){ x.fillStyle = '#05080a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#39ff9e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, N - 3, N - 3); } },
   saul:      { shape:'square', ink:'#ffcc33', bg(x, N){ x.fillStyle = '#0b1638'; x.fillRect(0, 0, N, N); [['#d7263d', 0], ['#fff', N/3], ['#2a4fb8', 2*N/3]].forEach(c => { x.fillStyle = c[0]; x.fillRect(c[1], N - 7, N/3, 7); }); } },
+  mahjong:   { shape:'square', ink:'#f8f3e6', bg(x, N){ x.fillStyle = '#0d6b47'; x.fillRect(0, 0, N, N); x.fillStyle = '#f8f3e6'; x.fillRect(N*.22, N*.14, N*.56, N*.72); x.fillStyle = 'rgba(120,96,48,.45)'; x.fillRect(N*.22, N*.78, N*.56, N*.08); x.fillStyle = '#0f7a4a'; x.fillRect(N*.36, N*.3, N*.28, N*.07); x.fillRect(N*.46, N*.3, N*.08, N*.34); x.fillStyle = '#c8102e'; x.fillRect(N*.3, N*.66, N*.4, N*.07) } },
   blueprint: { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#0b3a66'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 8; i < N; i += 12){ x.fillRect(i, 0, 1, N); x.fillRect(0, i, N, 1); } } }
 };
 function favThreshold(x, n, cut, soft){            // alpha: a soft step at `cut` (rounds or squares off the edges)
@@ -1167,26 +1174,35 @@ function themesNotice(){
 { const later = () => setTimeout(themesNotice, 1500);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', later, { once:true }); else later(); }
 
-/* ── a secret, asked for by students: type "saul" in any box and the site turns into
-   Better Call Saul (skins/saul.css); type it again and the theme you had comes back.
-   Only a box holding just "saul" counts (so a name that starts with it doesn't), once
-   you stop typing for a moment or press Enter, and never a password box. The page is
-   told (tt:skin) so one that keeps its own copy of the look (the timetable) follows. */
+/* ── words that change the theme: type "saul" in any box and the site turns into
+   Better Call Saul (skins/saul.css); type "mahjong" and it turns into the mahjong
+   table (skins/mahjong.css). Type the same word again and the theme you had comes
+   back. Only a box holding just the word counts (so a name that starts with it
+   doesn't), once you stop typing for a moment or press Enter, and never a password
+   box. The page is told (tt:skin) so one that keeps its own copy of the look (the
+   timetable) follows. */
 (function(){
   if (PREVIEW) return;
+  const WORDS = {
+    saul:      { id:'saul',    note:'S’all good, man. Type “saul” again to go back.' },
+    mahjong:   { id:'mahjong', note:'發 中 — mahjong. Type “mahjong” again to clear the table.', cls:'mj' },
+    '麻雀':  { id:'mahjong', note:'發 中 — mahjong. Type “mahjong” again to clear the table.', cls:'mj' },
+    '麻将':  { id:'mahjong', note:'發 中 — mahjong. Type “mahjong” again to clear the table.', cls:'mj' }
+  };
   let timer = 0, last = 0;
   const flip = el => {
     if (!el || !/^(INPUT|TEXTAREA)$/.test(el.tagName) || el.type === 'password') return;
-    if (String(el.value || '').trim().toLowerCase() !== 'saul' || Date.now() - last < 1500) return;
+    const word = WORDS[String(el.value || '').trim().toLowerCase()];
+    if (!word || Date.now() - last < 1500) return;
     last = Date.now();
-    const st = readState(), on = st.skin === 'saul';
-    if (on) set(LS.skin, SKIN_IDS.includes(get('tt.skin_presaul', '')) && get('tt.skin_presaul', '') !== 'saul' ? get('tt.skin_presaul', '') : 'plain');
-    else { set('tt.skin_presaul', st.skin); set(LS.skin, 'saul'); }
+    const st = readState(), on = st.skin === word.id, was = 'tt.skin_pre' + word.id;
+    if (on) set(LS.skin, SKIN_IDS.includes(get(was, '')) && get(was, '') !== word.id ? get(was, '') : 'plain');
+    else { set(was, st.skin); set(LS.skin, word.id); }
     apply();
     try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
     const n = document.createElement('div');
-    n.className = 'saulnote'; n.setAttribute('role', 'status');
-    n.textContent = on ? 'Back to your theme.' : 'S’all good, man. Type “saul” again to go back.';
+    n.className = 'saulnote' + (word.cls ? ' ' + word.cls : ''); n.setAttribute('role', 'status');
+    n.textContent = on ? 'Back to your theme.' : word.note;
     document.body.appendChild(n);
     setTimeout(() => n.remove(), 3600);
   };
