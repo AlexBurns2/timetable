@@ -1,5 +1,5 @@
 /* The Vaporwave world, page by page. A job renders one part of one scene in one light:
-     ?scene=tt|cal|home|stairs|planets|solids &mode=l|d &part=plate|left|right|phone|<float name>
+     ?scene=tt|cal|home|stairs|planets|solids &mode=l|d &part=plate|platew|left|right|phone|<float name>
    plate: the floor (or water, or cloud sea) and anything far off, alpha where the sky is
    left / right: a group on its own, with the shadow and reflection it lays on the floor (a catcher floor)
    <float>: a floating thing on its own, so the page can let it bob
@@ -9,7 +9,7 @@ import { column, marble, tv, block, glossy, pearl } from './props.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const scene = P.scene || 'tt', mode = P.mode || 'l', part = P.part || 'plate', dk = mode === 'd';
-const phone = part === 'phone', W = phone ? 900 : 2880, H = phone ? 1600 : 1200;
+const phone = part === 'phone', wide = part === 'platew', W = phone ? 900 : wide ? 5280 : 2880, H = phone ? 1600 : 1200;      /* platew: the plate again, wider (the same lens, so its middle is the plate exactly), for windows wider than 2.4 to 1 */
 const SC = {
   tt:{ hy:.6, sun:-1 }, cal:{ hy:.62, sun:1 }, notes:{ hy:.62, sun:1 }, home:{ hy:.63, sun:-1 }, stairs:{ hy:.7, sun:-1 }, planets:{ hy:.8, sun:-1 }, solids:{ hy:.62, sun:-1 } }[scene];
 const S = makeStage({ w:W, h:H, hy:SC.hy, fov:phone ? 44 : 30, camH:1.35 });
@@ -163,7 +163,7 @@ const DEF = {
 /* ── render the part asked for ── */
 const D = DEF[scene];
 let meta = { W, H, hy:SC.hy };
-if (part === 'plate' || phone){
+if (part === 'plate' || wide || phone){
   if (!D.clouds) S.setFloor(D.floor());
   if (D.water){ S.floorUni.uStr.value = 1; S.floorUni.uF0.value = .35; S.floorUni.uBlur.value = .002; }
   if (D.bg) S.world.add(await D.bg());

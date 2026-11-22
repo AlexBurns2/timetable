@@ -55,6 +55,7 @@ html.vw-next[data-skin="vapor"][data-mode="dark"] ::selection{background:#8ce0e6
 [data-skin="vapor"][data-pg="finder"]{--v-jp:"　検索"}
 [data-skin="vapor"][data-pg="mahjong"]{--v-jp:"　麻雀"}
 [data-skin="vapor"][data-pg="notes"]{--v-jp:"　ノート"}
+html.vw-next[data-skin="vapor"][data-pg="themes"]{--v-jp:"　テーマ"}
 [data-skin="vapor"] ::selection{background:#01cdfe;color:#1a0730}
 
 /* ── windows ── */
@@ -226,3 +227,262 @@ html.vw-next .vw-small{font-size:12px}
 html.vw-next .vw-small .vw-body{padding:9px 8px 8px}
 html.vw-next .vw-small .vw-msg p{font-size:12px}
 html.vw-next .vw-ent .vw-small .vw-btn{min-width:62px;height:23px}
+
+/* ══════════════════════════════════════════════════════════════════
+   The reworked Vaporwave's chrome (moderators only, with vw-next):
+   Windows 95 all the way, in the theme's lilac greys. Every edge is the
+   old four-line bevel, drawn inside the box (a white line and a pale one
+   up and to the left, a mid one and a dark one down and to the right).
+   Buttons stand out and go in; fields are sunk and white; what is chosen
+   stays in, over a dither of two colours; focus is a dotted line; the
+   scrollbars are the chunky kind. No soft or offset shadows, no round
+   corners, no see-through panels.
+   ══════════════════════════════════════════════════════════════════ */
+html.vw-next[data-skin="vapor"]{
+  --w-face:#dcd6ec; --w-hl:#fff; --w-lt:#efebf8; --w-sh:#9f96c4; --w-dk:#372d5e; --w-field:#fff; --w-ink:#1f163d;
+  --bev-out:inset -1px -1px var(--w-dk),inset 1px 1px var(--w-hl),inset -2px -2px var(--w-sh),inset 2px 2px var(--w-lt);
+  --bev-in:inset 1px 1px var(--w-sh),inset -1px -1px var(--w-hl),inset 2px 2px var(--w-dk),inset -2px -2px var(--w-lt);
+  --bev-down:inset 1px 1px var(--w-dk),inset -1px -1px var(--w-hl),inset 2px 2px var(--w-sh),inset -2px -2px var(--w-lt);
+  --bev-thin:inset 1px 1px var(--w-sh),inset -1px -1px var(--w-hl);
+  --dither:repeating-conic-gradient(var(--w-hl) 0 25%,var(--w-face) 0 50%) 0 0/2px 2px;
+  --panel:#e9e4f6; --panel-2:var(--w-face); --line:var(--w-sh); --shadow:var(--bev-out); --shadow-hi:var(--bev-out); --card-border:0 solid transparent;
+  --v-tick:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 9 9%22 shape-rendering=%22crispEdges%22%3E%3Cpath d=%22M1 3h1v1h1v1h1V4h1V3h1V2h1V1h1v2H7v1H6v1H5v1H4v1H3V6H2V5H1z%22 fill=%22%231f163d%22/%3E%3C/svg%3E");
+}
+html.vw-next[data-skin="vapor"][data-mode="dark"]{
+  --w-face:#3b406c; --w-hl:#9a9ed6; --w-lt:#5a5f97; --w-sh:#21234a; --w-dk:#0a0b1c; --w-field:#191b33; --w-ink:#f7f0ff;
+  --panel:#30345c; --panel-2:var(--w-face); --line:var(--w-sh); --shadow:var(--bev-out); --shadow-hi:var(--bev-out); --card-border:0 solid transparent;
+  --v-tick:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 9 9%22 shape-rendering=%22crispEdges%22%3E%3Cpath d=%22M1 3h1v1h1v1h1V4h1V3h1V2h1V1h1v2H7v1H6v1H5v1H4v1H3V6H2V5H1z%22 fill=%22%23f7f0ff%22/%3E%3C/svg%3E");
+}
+/* windows and panels: raised */
+html.vw-next[data-skin="vapor"] :is(.qtile,.tday,.gamecard,.tile,.game,.fpost,.nowcard,.lesson,dialog,.newsdlg,.sheet,.gatecard,.pcard,.hscstrip,.hubfoot,.sechd,.cathd,.forum h2,.gamestage:not([hidden])){border:0;box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){border:0;box-shadow:var(--bev-out);padding-top:calc(var(--vbar) + 16px)}
+html.vw-next[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{left:3px;right:3px;top:3px}
+html.vw-next[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{top:6px;right:7px}
+html.vw-next[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .wrap{border:0}
+html.vw-next[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) .pagehead{box-shadow:none;padding-top:calc(var(--vbar) + 14px)}
+/* buttons: they stand out; pressed, they go in */
+html.vw-next[data-skin="vapor"] :is(#_,.btn,.arrowbtn,.arrowbtn2,.ibtn,.pminbtn,.shelfbtn,.trk-ib,.glbtab,.rx,.rxadd,.dayswitch button,.modes button,.popt,.fyears button,.fweeks button,.fwho button,.yeartab):not(.gateskip){
+  border:0;border-radius:0;background:var(--w-face);color:var(--w-ink);box-shadow:var(--bev-out);text-shadow:none;transition:none}
+html.vw-next[data-skin="vapor"] :is(#_,.btn,.arrowbtn,.arrowbtn2,.ibtn,.pminbtn,.shelfbtn,.trk-ib,.glbtab,.rx,.rxadd,.dayswitch button,.modes button,.popt,.fyears button,.fweeks button,.fwho button,.yeartab):not(.gateskip):hover{background:var(--w-lt);color:var(--w-ink);box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"] :is(#_,.btn,.arrowbtn,.arrowbtn2,.ibtn,.pminbtn,.shelfbtn,.trk-ib,.glbtab,.rx,.rxadd,.dayswitch button,.modes button,.popt,.fyears button,.fweeks button,.fwho button,.yeartab):not(.gateskip):active{box-shadow:var(--bev-down);transform:translate(1px,1px)}
+html.vw-next[data-skin="vapor"] :is(#_,.btn,.arrowbtn,.arrowbtn2,.ibtn,.pminbtn,.shelfbtn,.trk-ib,.glbtab,.rx,.rxadd,.dayswitch button,.modes button,.popt,.fyears button,.fweeks button,.fwho button,.yeartab):focus-visible{outline:1px dotted var(--w-ink);outline-offset:-5px}
+/* the one that Enter would press: a dark line round it */
+html.vw-next[data-skin="vapor"] :is(#_,.btn.primary){background:var(--w-face);color:var(--w-ink);font-weight:700;text-shadow:none;box-shadow:0 0 0 1px var(--w-dk),var(--bev-out)}
+html.vw-next[data-skin="vapor"] :is(#_,.btn.primary):active{box-shadow:0 0 0 1px var(--w-dk),var(--bev-down)}
+/* what is chosen stays in, over the dither */
+html.vw-next[data-skin="vapor"] :is(#_,.dayswitch button,.modes button,.fyears button,.fweeks button,.fwho button,.yeartab,.rx)[aria-pressed="true"],
+html.vw-next[data-skin="vapor"] :is(#_,.popt[aria-checked="true"],.glbtab.cur){background:var(--dither);color:var(--w-ink);font-weight:700;text-shadow:none;box-shadow:var(--bev-down)}
+html.vw-next[data-skin="vapor"] :is(.dayhead.today,.dayhead.focus) .dow{background:var(--dither);color:var(--w-ink);box-shadow:var(--bev-thin)}
+/* fields: sunk, white */
+html.vw-next[data-skin="vapor"] :is(#_,input:not([type]),input[type="text"],input[type="search"],input[type="email"],input[type="number"],input[type="password"],input[type="date"],input[type="time"],input[type="url"],textarea,select,.emailrow,.gatepass,.pad,.idrow){
+  border:0;border-radius:0;background-color:var(--w-field);color:var(--w-ink);box-shadow:var(--bev-in)}
+html.vw-next[data-skin="vapor"] :is(.emailrow,.gatepass,.idrow) :is(input,textarea){box-shadow:none;background:none}
+html.vw-next[data-skin="vapor"] :is(input,textarea,select):focus-visible{outline:1px dotted var(--w-ink);outline-offset:-4px}
+html.vw-next[data-skin="vapor"] :is(#_,select){appearance:none;-webkit-appearance:none;padding-right:26px;
+  background-image:conic-gradient(from -45deg at 50% 100%,var(--w-ink) 90deg,transparent 0),linear-gradient(var(--w-face),var(--w-face)),linear-gradient(var(--w-sh),var(--w-sh));
+  background-size:8px 4px,17px calc(100% - 4px),18px calc(100% - 4px);background-position:right 7px center,right 2px center,right 2px center;background-repeat:no-repeat}
+html.vw-next[data-skin="vapor"] input[type="checkbox"]{appearance:none;-webkit-appearance:none;flex:none;width:15px;height:15px;margin:0 6px 0 0;vertical-align:-3px;border:0;border-radius:0;
+  background:var(--w-field);box-shadow:var(--bev-in);cursor:pointer}
+html.vw-next[data-skin="vapor"] input[type="checkbox"]:checked{background:var(--w-field) var(--v-tick) center/9px 9px no-repeat}
+html.vw-next[data-skin="vapor"] input[type="checkbox"]:focus-visible{outline:1px dotted var(--w-ink);outline-offset:2px}
+/* the switches: a sunk track, a raised square knob */
+html.vw-next[data-skin="vapor"] .tsw{border:0;border-radius:0;background:var(--w-face);box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"] .tsw i{border-radius:0;background:var(--w-field);box-shadow:var(--bev-in);transition:none}
+html.vw-next[data-skin="vapor"] .tsw i::after{top:2px;left:2px;width:15px;height:16px;border-radius:0;background:var(--w-face);box-shadow:var(--bev-out);transition:none}
+html.vw-next[data-skin="vapor"] .tsw[aria-checked="true"] i{background:var(--dither)}
+html.vw-next[data-skin="vapor"] .tsw[aria-checked="true"] i::after{transform:translateX(15px)}
+html.vw-next[data-skin="vapor"] .tsw:focus-visible{outline:1px dotted var(--w-ink);outline-offset:-4px}
+html.vw-next[data-skin="vapor"] a:focus-visible{outline:1px dotted currentColor;outline-offset:2px}
+/* progress: a sunk well filling with blocks */
+html.vw-next[data-skin="vapor"] .prog{border:0;box-shadow:var(--bev-in);background:var(--w-field);height:14px;padding:3px}
+html.vw-next[data-skin="vapor"] .prog i{background:repeating-linear-gradient(90deg,#8a7ad6 0 8px,transparent 8px 10px)}
+/* scrollbars: sixteen pixels, a raised thumb, arrows at the ends, the track a dither */
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar{width:16px;height:16px;background:var(--dither)}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-thumb,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-thumb{background:var(--w-face);box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-corner,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-corner{background:var(--w-face)}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-button:single-button,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-button:single-button{display:block;width:16px;height:16px;background-color:var(--w-face);background-repeat:no-repeat;background-position:center;box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-button:single-button:vertical:decrement,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-button:single-button:vertical:decrement{background-image:conic-gradient(from 135deg at 50% 0,var(--w-ink) 90deg,transparent 0);background-size:8px 4px}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-button:single-button:vertical:increment,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-button:single-button:vertical:increment{background-image:conic-gradient(from -45deg at 50% 100%,var(--w-ink) 90deg,transparent 0);background-size:8px 4px}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-button:single-button:horizontal:decrement,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-button:single-button:horizontal:decrement{background-image:conic-gradient(from 45deg at 0 50%,var(--w-ink) 90deg,transparent 0);background-size:4px 8px}
+html.vw-next[data-skin="vapor"]::-webkit-scrollbar-button:single-button:horizontal:increment,html.vw-next[data-skin="vapor"] ::-webkit-scrollbar-button:single-button:horizontal:increment{background-image:conic-gradient(from 225deg at 100% 50%,var(--w-ink) 90deg,transparent 0);background-size:4px 8px}
+@supports (-moz-appearance:none){html.vw-next[data-skin="vapor"]{scrollbar-color:var(--w-sh) var(--w-lt)}}
+html.vw-next[data-skin="vapor"] :is(#_,.btn.danger){color:#b3243a}
+html.vw-next[data-skin="vapor"][data-mode="dark"] :is(#_,.btn.danger){color:#ff9aa8}
+html.vw-next[data-skin="vapor"] :is(#_,.btn,.arrowbtn,.arrowbtn2,.popt,.yeartab,.glbtab):is(:disabled,[aria-disabled="true"]){color:var(--w-sh);text-shadow:1px 1px var(--w-hl);opacity:1}
+/* nothing is round (the dots, rings and spinners that have to be are left as they are) */
+html.vw-next[data-skin="vapor"] :is(.wrap,dialog,.sheet,.newsdlg,.pollwrap) :is(a,button,span,div,li,label,input,select,textarea,em,b,i,p,section,article,header,footer,ul,td,th,img,summary,details):not(.ldspin,.ldinline,.rvring,.rvring *,[class*="dot"],[class*="ring"],[class*="spin"],.swatches .sw,.skpal button,.sksizes button i,.qtlives i,.tpips i,.jimlive i,.pbulbs *,.chsq,.chsq *){border-radius:0}
+html.vw-next[data-skin="vapor"] .pchip::before{border-radius:0}
+/* tags and notes: a thin sunk line round them, as round a status bar's cells */
+html.vw-next[data-skin="vapor"] :is(.pchip,.newbanner,.newpill,.ptag,.rvtag,.diffpill,.plock span,.pagelede,.focusnote){box-shadow:var(--bev-thin)}
+html.vw-next[data-skin="vapor"] .plock span{background:var(--w-face);color:var(--w-ink);border:0;box-shadow:var(--bev-out)}
+html.vw-next[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) :is(.pagelede,.focusnote){box-shadow:none}
+
+/* ══════════════════════════════════════════════════════════════════
+   The reworked Vaporwave's desktop (moderators only, with vw-next;
+   fx/vapor.js builds it).
+     · On a wide screen each page's window stands off centre (html[data-vw-shift]), so the scene's main thing has the bigger margin.
+     · A taskbar along the foot of the screen (html.vw-desk while it's there): Start, a button a page, a clock.
+     · A faint still grain over everything; now and then a heading's colours part for a moment.
+   Nothing here moves with Animation off or Reduce motion.
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width:1500px){
+  html.vw-next[data-skin="vapor"][data-vw-shift="l"] body{padding-right:clamp(0px,(100vw - 1380px)*.66,640px)}
+  html.vw-next[data-skin="vapor"][data-vw-shift="r"] body{padding-left:clamp(0px,(100vw - 1380px)*.66,640px)}
+}
+html.vw-next[data-skin="vapor"]{--vw-task:0px}
+@media (min-width:761px){
+  html.vw-next.vw-desk[data-skin="vapor"]:not(.zen,.fx-quiet){--vw-task:38px}
+  html.vw-next.vw-desk[data-skin="vapor"]:not(.zen,.fx-quiet) body{padding-bottom:calc(var(--vw-task) + 6px)}
+}
+/* the site's own notes at the foot of the screen stand on the taskbar, not under it */
+html.vw-next.vw-desk[data-skin="vapor"] :is(.mscnote,.mpcopen,.mppill){bottom:calc(16px + var(--vw-task))}
+html.vw-next.vw-desk[data-skin="vapor"] .ttnote{bottom:calc(max(16px,env(safe-area-inset-bottom)) + var(--vw-task))}
+html.vw-next.vw-desk[data-skin="vapor"] .saulnote{bottom:calc(22px + var(--vw-task))}
+html.vw-next.vw-desk[data-skin="vapor"] .mpctoast{bottom:calc(66px + var(--vw-task))}
+
+html.vw-next .vw-task{position:fixed;left:0;right:0;bottom:0;z-index:41;box-sizing:border-box;height:38px;display:flex;align-items:stretch;gap:4px;padding:5px 4px 3px;
+  background:var(--w-face);color:var(--w-ink);box-shadow:inset 0 1px var(--w-lt),inset 0 2px var(--w-hl);
+  font:400 13px/1 Tahoma,Verdana,"Segoe UI",sans-serif;letter-spacing:0;text-transform:none;user-select:none;-webkit-user-select:none}
+html.vw-next .vw-task[hidden],html.zen .vw-task,html.fx-quiet .vw-task{display:none}
+@media (max-width:760px){html.vw-next .vw-task{display:none}}
+html.vw-next .vw-task *{box-sizing:border-box}
+html.vw-next .vw-task img{flex:none;width:16px;height:16px;image-rendering:pixelated;image-rendering:crisp-edges}
+html.vw-next .vw-task :is(.vw-start,.vw-tk){appearance:none;-webkit-appearance:none;display:flex;align-items:center;gap:6px;margin:0;border:0;border-radius:0;min-width:0;min-height:0;
+  background:var(--w-face);color:var(--w-ink);box-shadow:var(--bev-out);font:inherit;text-decoration:none;text-shadow:none;white-space:nowrap;cursor:default;transform:none}
+html.vw-next .vw-task .vw-start{flex:none;padding:0 9px 0 5px;font-weight:700}
+html.vw-next .vw-task .vw-tsep{flex:none;width:2px;margin:1px 1px;box-shadow:inset 1px 0 var(--w-sh),inset -1px 0 var(--w-hl)}
+html.vw-next .vw-tasks{flex:1;min-width:0;display:flex;gap:3px}
+html.vw-next .vw-task .vw-tk{flex:1 1 0;max-width:164px;padding:0 8px 0 6px;overflow:hidden}
+html.vw-next .vw-tk span{overflow:hidden;text-overflow:ellipsis}
+html.vw-next .vw-task :is(.vw-start,.vw-tk):active,html.vw-next .vw-task .vw-start[aria-expanded="true"]{box-shadow:var(--bev-down);padding-top:1px}
+html.vw-next .vw-task .vw-tk[aria-current="page"]{background:var(--dither);box-shadow:var(--bev-down);font-weight:700;padding-top:1px}
+html.vw-next .vw-task :is(.vw-start,.vw-tk):focus-visible{outline:1px dotted var(--w-ink);outline-offset:-5px}
+html.vw-next .vw-tray{flex:none;display:flex;align-items:center;gap:8px;padding:0 10px 0 8px;box-shadow:var(--bev-thin);font-variant-numeric:tabular-nums}
+@media (max-width:1100px){html.vw-next .vw-tk span{display:none} html.vw-next .vw-task .vw-tk{flex:0 0 34px;justify-content:center;padding:0}}
+/* the Start menu */
+html.vw-next .vw-sm{position:absolute;left:2px;bottom:calc(100% - 3px);display:flex;min-width:216px;padding:3px;background:var(--w-face);box-shadow:var(--bev-out)}
+html.vw-next .vw-sm[hidden]{display:none}
+html.vw-next .vw-smside{flex:none;width:26px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;background:linear-gradient(0deg,#ff71ce,#b967ff 52%,#01cdfe)}
+html.vw-next .vw-smside span{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font:400 19px/1 "VT323",ui-monospace,monospace;letter-spacing:.08em;white-space:nowrap;text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+html.vw-next .vw-smlist{flex:1;display:flex;flex-direction:column;padding:1px 0}
+html.vw-next .vw-task .vw-smi{appearance:none;-webkit-appearance:none;display:flex;align-items:center;gap:11px;width:100%;margin:0;padding:6px 30px 6px 9px;border:0;border-radius:0;background:none;box-shadow:none;
+  color:var(--w-ink);font:inherit;text-align:left;text-decoration:none;text-shadow:none;cursor:default;min-height:0;transform:none}
+html.vw-next .vw-task .vw-smi:is(:hover,:focus-visible){background:#8a7ad6;color:#fff;outline:0}
+html.vw-next .vw-task .vw-smi[role="menuitemcheckbox"]{position:relative}
+html.vw-next .vw-task .vw-smi[aria-checked="true"]::after{content:"";position:absolute;right:10px;top:50%;width:9px;height:9px;margin-top:-5px;background:var(--v-tick) center/9px 9px no-repeat}
+html.vw-next .vw-task .vw-smi[aria-checked="true"]:is(:hover,:focus-visible)::after{filter:brightness(0) invert(1)}
+html.vw-next .vw-smsep{height:2px;margin:3px 2px;box-shadow:inset 0 1px var(--w-sh),inset 0 -1px var(--w-hl)}
+/* the grain: still, over the page and the picture alike */
+html.vw-next .vw-grain{position:fixed;inset:0;z-index:1400;pointer-events:none;background-repeat:repeat;background-size:128px 128px;opacity:.55}
+html.vw-next .vw-grain[hidden]{display:none}
+html.vw-next[data-mode="dark"] .vw-grain{opacity:.7}
+@media print{html.vw-next :is(.vw-grain,.vw-task,.vw-ent){display:none!important}}
+/* a heading's colours part a little further, for a moment, every so often */
+@keyframes vwca{0%,96.4%,100%{text-shadow:2px 0 rgba(1,205,254,.8),-2px 0 rgba(255,113,206,.8);transform:none}
+  96.8%{text-shadow:6px 0 rgba(1,205,254,.85),-5px 0 rgba(255,113,206,.85);transform:translateX(1px)}
+  97.6%{text-shadow:-4px 0 rgba(1,205,254,.85),5px 0 rgba(255,113,206,.85);transform:translateX(-1px)}
+  98.4%{text-shadow:3px 1px rgba(1,205,254,.8),-3px -1px rgba(255,113,206,.8);transform:none}}
+html.vw-next[data-skin="vapor"][data-fx="on"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1){animation:vwca 13s steps(1,end) infinite}
+@media (prefers-reduced-motion:reduce){html.vw-next[data-skin="vapor"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1){animation:none}}
+html[data-motion="reduced"].vw-next[data-skin="vapor"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1){animation:none}
+
+/* ══════════════════════════════════════════════════════════════════
+   The visitors, reworked (moderators only, with vw-next).
+     · In the page's own greys (the --w- colours above), so they belong
+       to the scene in light and in dark alike.
+     · They arrive and leave in a glitch: bands of the window slip
+       sideways, its colours part, and it goes out in one bright line.
+     · New kinds: a note that types itself, something playing, a job
+       that takes its time. And the other pointer, and the copies a hung
+       window leaves behind it.
+   With Animation off, or Reduce motion, none of it moves.
+   ══════════════════════════════════════════════════════════════════ */
+html.vw-next .vw-win{background:var(--w-face);color:var(--w-ink);box-shadow:var(--bev-out);opacity:0;transform:none;transition:none}
+html.vw-next .vw-win.on{opacity:1;animation:vwin .44s steps(1,end) both}
+html.vw-next .vw-win.off{opacity:0;animation:vwout .5s steps(1,end) both}
+html.vw-next .vw-win::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:repeating-linear-gradient(to bottom,rgba(24,12,60,.24) 0 1px,transparent 1px 3px)}
+html.vw-next .vw-win.on::after{animation:vwscan .44s steps(1,end) both}
+html.vw-next .vw-win.off::after{opacity:1}
+@keyframes vwin{0%{clip-path:inset(0 0 94% 0);transform:translateX(-8px)}
+  14%{clip-path:inset(0 0 72% 0);transform:translateX(6px)}
+  28%{clip-path:inset(20% 0 46% 0);transform:translateX(-5px);filter:drop-shadow(-3px 0 rgba(255,113,206,.85)) drop-shadow(3px 0 rgba(1,205,254,.85))}
+  42%{clip-path:inset(0 0 30% 0);transform:translateX(4px);filter:none}
+  57%{clip-path:inset(10% 0 12% 0);transform:translateX(-2px)}
+  71%{clip-path:inset(0 0 5% 0);transform:translateX(2px);filter:drop-shadow(2px 0 rgba(255,113,206,.7)) drop-shadow(-2px 0 rgba(1,205,254,.7))}
+  85%{clip-path:inset(0);transform:translateX(-1px);filter:none}
+  100%{clip-path:inset(0);transform:none}}
+@keyframes vwscan{0%,84%{opacity:1}100%{opacity:0}}
+@keyframes vwout{0%{opacity:1;clip-path:inset(0);transform:none}
+  12%{opacity:1;transform:translateX(5px);filter:drop-shadow(-4px 0 rgba(255,113,206,.85)) drop-shadow(4px 0 rgba(1,205,254,.85))}
+  26%{opacity:1;clip-path:inset(0 0 16% 0);transform:translateX(-9px) skewX(-4deg)}
+  40%{opacity:1;clip-path:inset(22% 0 30% 0);transform:translateX(10px) skewX(3deg);filter:none}
+  54%{opacity:1;clip-path:inset(38% 0 42% 0);transform:translateX(-4px);filter:brightness(1.5)}
+  68%{opacity:1;clip-path:inset(46% 0 48% 0);transform:scaleX(1.05);filter:brightness(2.2)}
+  82%{opacity:1;clip-path:inset(48.5% 14% 49.5% 14%);filter:brightness(3)}
+  100%{opacity:0;clip-path:inset(50% 50% 50% 50%)}}
+html.vw-next[data-fx="off"] .vw-win,html.vw-next[data-fx="off"] .vw-win::after{animation:none!important}
+html[data-motion="reduced"].vw-next .vw-win,html[data-motion="reduced"].vw-next .vw-win::after{animation:none!important}
+@media (prefers-reduced-motion:reduce){html.vw-next .vw-win,html.vw-next .vw-win::after{animation:none!important}}
+html.vw-next .vw-ent button{color:var(--w-ink)}
+html.vw-next[data-mode="dark"] .vw-tb{background:linear-gradient(90deg,#4f78d6,#a765d8)}
+html.vw-next .vw-ent .vw-cap{background:var(--w-face);box-shadow:inset -1px -1px var(--w-dk),inset 1px 1px var(--w-hl),inset -2px -2px var(--w-sh)}
+html.vw-next .vw-ent .vw-cap:active:not(:disabled),html.vw-next .vw-ent .vw-cap.vw-press{box-shadow:inset 1px 1px var(--w-dk),inset -1px -1px var(--w-hl),inset 2px 2px var(--w-sh)}
+html.vw-next .vw-x::before,html.vw-next .vw-x::after,html.vw-next .vw-mn::before{background:var(--w-ink)}
+html.vw-next .vw-mx::before{border-color:var(--w-ink)}
+html.vw-next .vw-mx:disabled::before{border-color:var(--w-sh);box-shadow:1px 1px var(--w-hl)}
+html.vw-next .vw-msg p{color:var(--w-ink)}
+html.vw-next .vw-ent .vw-btn{background:var(--w-face);box-shadow:var(--bev-out)}
+html.vw-next .vw-ent .vw-btn.vw-def{box-shadow:0 0 0 1px var(--w-dk),var(--bev-out)}
+html.vw-next .vw-ent .vw-btn:active:not(:disabled){box-shadow:0 0 0 1px var(--w-dk),var(--bev-down)}
+html.vw-next .vw-ent .vw-btn:focus-visible{outline:1px dotted var(--w-ink)}
+html.vw-next .vw-ent .vw-btn:disabled{color:var(--w-sh);text-shadow:1px 1px var(--w-hl)}
+html.vw-next :is(.vw-field,.vw-pane,.vw-listbox){background:var(--w-field);color:var(--w-ink);box-shadow:var(--bev-in)}
+html.vw-next .vw-ent .vw-fold:focus-visible span,html.vw-next .vw-ent .vw-fold:active span{outline:1px dotted var(--w-ink)}
+html.vw-next .vw-status{box-shadow:var(--bev-thin)}
+html.vw-next .vw-grip::after{background:linear-gradient(135deg,transparent 0 45%,var(--w-hl) 45% 52%,var(--w-sh) 52% 60%,transparent 60% 68%,var(--w-hl) 68% 75%,var(--w-sh) 75% 83%,transparent 83%)}
+html.vw-next .vw-table{color:var(--w-ink)}
+html.vw-next .vw-table th{background:var(--w-face);box-shadow:inset -1px -1px var(--w-sh),inset 1px 1px var(--w-hl)}
+html.vw-next .vw-view{box-shadow:var(--bev-in);padding:2px;width:100%;height:auto}
+html.vw-next[data-mode="dark"] .vw-page{filter:brightness(.82) saturate(.9)}
+html.vw-next .vw-menu{background:var(--w-face);box-shadow:var(--bev-out)}
+/* text for a screen reader only (what's seen types itself) */
+html.vw-next .vw-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* a note being written */
+html.vw-next .vw-notepad .vw-body{padding:0 0 1px}
+html.vw-next .vw-mbar{display:flex;gap:13px;padding:3px 7px 4px;font-size:12px}
+html.vw-next .vw-mbar span::first-letter{text-decoration:underline}
+html.vw-next .vw-pad{min-height:104px;padding:6px 8px 10px;background:var(--w-field);color:var(--w-ink);box-shadow:var(--bev-in);font:400 13px/1.5 "Courier New",ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+html.vw-next .vw-caret{display:inline-block;width:7px;height:13px;margin-left:1px;vertical-align:-2px;background:var(--w-ink);animation:vwblink 1.06s steps(1,end) infinite}
+@keyframes vwblink{0%,49%{opacity:1}50%,100%{opacity:0}}
+html.vw-next[data-fx="off"] .vw-caret,html[data-motion="reduced"].vw-next .vw-caret{animation:none}
+@media (prefers-reduced-motion:reduce){html.vw-next .vw-caret{animation:none}}
+/* something playing */
+html.vw-next .vw-player .vw-body{padding:6px 5px 5px}
+html.vw-next .vw-lcd{padding:7px 8px 6px;background:#2a2148;color:#bff3f7;box-shadow:var(--bev-in);font:400 18px/1.05 "VT323",ui-monospace,monospace}
+html.vw-next .vw-lcdt{display:flex;justify-content:space-between;color:#ffb6dc}
+html.vw-next .vw-lcdj{margin-top:3px;font:400 14px/1.3 "DotGothic16","MS Gothic","Yu Gothic",sans-serif}
+html.vw-next .vw-lcde{font-size:16px;opacity:.78}
+html.vw-next .vw-bars{display:flex;align-items:flex-end;gap:2px;height:24px;margin-top:6px}
+html.vw-next .vw-bars i{flex:1;background:linear-gradient(#ff9fd0,#8fe8f2)}
+html.vw-next .vw-seek{position:relative;height:6px;margin:9px 7px 9px;background:var(--w-field);box-shadow:var(--bev-thin)}
+html.vw-next .vw-seek s{position:absolute;top:-6px;width:10px;height:18px;background:var(--w-face);box-shadow:var(--bev-out)}
+html.vw-next .vw-ctl{display:flex;gap:4px}
+html.vw-next .vw-ent .vw-pb{position:relative;width:30px;height:22px;background:var(--w-face);box-shadow:var(--bev-out)}
+html.vw-next .vw-ent .vw-pb:active{box-shadow:var(--bev-down)}
+html.vw-next .vw-ent .vw-pb:focus-visible{outline:1px dotted var(--w-ink);outline-offset:-4px}
+html.vw-next .vw-pb::before{content:"";position:absolute;left:50%;top:50%;width:9px;height:10px;margin:-5px 0 0 -4px}
+html.vw-next .vw-play::before{background:conic-gradient(from 225deg at 100% 50%,var(--w-ink) 90deg,transparent 0)}
+html.vw-next .vw-pause::before{background:linear-gradient(90deg,var(--w-ink) 0 3px,transparent 3px 6px,var(--w-ink) 6px 9px)}
+html.vw-next .vw-stop::before{background:var(--w-ink);height:9px}
+/* a job that takes its time */
+html.vw-next .vw-prog{height:19px;margin-top:11px;padding:3px;background:var(--w-field);box-shadow:var(--bev-in)}
+html.vw-next .vw-prog i{display:block;width:0;height:100%;background:repeating-linear-gradient(90deg,#8a7ad6 0 9px,transparent 9px 11px)}
+html.vw-next .vw-progress .vw-status{margin-top:5px;text-align:right}
+/* the other pointer, and the copies a hung window leaves */
+html.vw-next .vw-cur{position:fixed;left:0;top:0;z-index:3;width:16px;height:16px;pointer-events:none;opacity:0;image-rendering:pixelated;image-rendering:crisp-edges;
+  transition-property:transform,opacity;transition-duration:900ms,300ms;transition-timing-function:cubic-bezier(.35,.08,.25,1),linear}
+html.vw-next .vw-cur.on{opacity:1}
+html.vw-next .vw-stamp{opacity:1;animation:none!important;pointer-events:none}
+html.vw-next .vw-stamp *{pointer-events:none}
+html.vw-next .vw-stamp::after{display:none}
+html.vw-next .vw-stamp .vw-caret{animation:none}

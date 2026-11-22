@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121h';
+const ASSET_V = '20261121i';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -239,6 +239,17 @@ SKINS.forEach(s => {
   const t = THUMBS[s.id];
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
+});
+/* Where there is one, a tile shows a real corner of the theme's Home page instead of the drawing above (images/tf, made by
+   tools/thumbs.py from screenshots), so the pictures can't drift away from the themes. The drawing's ground colour shows until
+   the picture arrives. Vaporwave has two: the reworked one for moderators until it's released, the one everybody has for
+   everybody else. The cities keep their photographs (below) and Custom its drawing. */
+const SHOTS = 'plain studio apple classic glass paper coquette skeuo aero y2k softclub vapor editorial swiss deco brutal maximal scifi synth terminal blueprint dorfic eco xp bauhaus destijl decon saul newsprint retro'.split(' ');
+SKINS.forEach(s => {
+  if (SHOTS.indexOf(s.id) < 0) return;
+  let mod = false; try { mod = localStorage.getItem('msc.ismod') === '1'; } catch {}
+  const t = THUMBS[s.id];
+  s.swatch = "url('/images/tf/" + (s.id === 'vapor' && !mod ? 'vapor-old' : s.id) + ".webp?v=" + ASSET_V + "') center/cover no-repeat " + (t ? t[0] : 'var(--panel-2)');
 });
 /* the Cities Collection's pictures are their photos printed the way the theme prints them (skins/cities.css): a fine
    halftone over the photo in the city's two inks (the photo in greys, multiplied by the scale colour, screened with

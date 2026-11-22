@@ -4,7 +4,7 @@ import argparse, glob, json, os
 from PIL import Image
 ap = argparse.ArgumentParser(); ap.add_argument('--work', default=os.environ.get('VW_WORK', '')); a = ap.parse_args()
 OUT, FIN = os.path.join(a.work, 'out'), os.path.join(a.work, 'final'); os.makedirs(FIN, exist_ok=True)
-Q = {'plate': 88, 'phone': 86}                                  # the rest (the groups, the floating things) at 90
+Q = {'plate': 88, 'platew': 88, 'phone': 86}                                  # the rest (the groups, the floating things) at 90
 meta = {}
 for f in sorted(glob.glob(os.path.join(OUT, 'vw-*.png'))):
     n = os.path.basename(f)[:-4]; parts = n.split('-')            # vw-<scene>-<part>-<mode>

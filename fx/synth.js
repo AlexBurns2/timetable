@@ -21,9 +21,10 @@
      calendar, free, revision        shoreA   the quiet ones: the sun on the sea and one
      notes, resources, mahjong       shoreB   palm (the sun to one side, then the other)
 
-   Dusk in light mode, night (deep violet, stars) in dark. Nothing follows
-   the pointer and nothing shakes: the road and the water move, slowly,
-   and that's all. Thirty frames a second at most, drawn at no more than
+   Dusk in light mode, night (deep violet, stars) in dark. The camera never
+   follows the pointer and nothing shakes: the road comes toward us and the
+   water moves, slowly, and the car eases across its road after the pointer,
+   a little behind it. That's all. Thirty frames a second at most, drawn at no more than
    the screen's own pixels (fewer on a phone); fx.js stops it while the
    tab is hidden.
 
@@ -293,7 +294,7 @@ const COMP_F = 'uniform sampler2D tScene, tBloom; uniform float uBloom, uExp, uG
   '  c = aces(c * uExp);\n' +
   '  vec2 q = vUv - .5; c *= 1. - uVig * dot(q, q);\n' +
   '  c = mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - .055, step(.0031308, c));\n' +
-  '  float g = fract(sin(dot(gl_FragCoord.xy + uSeed, vec2(12.9898, 78.233))) * 43758.5453) - .5;\n' +
+  '  vec3 h3 = fract(vec3(gl_FragCoord.xy, uSeed) * .1031); h3 += dot(h3, h3.zyx + 31.32); float g = fract((h3.x + h3.y) * h3.z) - .5;\n' +
   '  c += g * uGrain * (1. - c * .6);\n' +
   '  gl_FragColor = vec4(c, 1.);\n}';
 
@@ -537,11 +538,20 @@ async function build(canvas, kind, dark){
     const shg = keep(new T.PlaneGeometry(2.7, 7.4)); shg.rotateX(-Math.PI / 2);
     const sh = new T.Mesh(shg, keep(new T.MeshBasicMaterial({ map:st, transparent:true, depthWrite:false, color:0x000000, opacity:.85 })));
     sh.position.set(LANE, .03, 2.6); scene.add(sh);
+    /* the car follows the pointer across its road, a little behind it: it eases over, turning slightly into the move, and settles;
+       with no pointer about it keeps its lane. Only the car: the camera stays where it is, so the picture never swings. */
+    const FOLLOW = !STILL && mm('(hover:hover) and (pointer:fine)'), REACH = ROAD - 1.12;
+    let carX = LANE, carV = 0, lastT = null;
     update = t => {
       const dist = t * SPEED;
-      gridU.uOff.value = -(dist % (4 / 3));
+      gridU.uOff.value = dist % (4 / 3);                      // the floor comes toward us, as the hills do (it ran the other way, into the picture)
       for (const c of chunks){ const zz = (((c.k * CH - dist) % LOOP) + LOOP) % LOOP; c.m.position.z = 14 + CH - zz; }
-      const a = -dist / .33; wheels.forEach(w => { w.rotation.x = a; });
+      const a = dist / .33; wheels.forEach(w => { w.rotation.x = a; });
+      const dt = lastT == null ? 0 : clamp(t - lastT, 0, .1); lastT = t;
+      const p = FX.ptr, want = FOLLOW && p && p.on ? clamp((p.x - .5) * 2.4, -1, 1) * REACH : LANE;
+      const nx = carX + (want - carX) * (1 - Math.exp(-dt / .55));
+      carV += ((dt ? (nx - carX) / dt : 0) - carV) * Math.min(1, dt * 6); carX = nx;
+      car.position.x = sh.position.x = carX; car.rotation.y = Math.PI - clamp(carV * .1, -.09, .09);
     };
     const cx = LANE - 2.05;                                   // the camera keeps its place behind the car (the road's end and the sun, at infinity, stay put)
     cams = { L:{ pos:[.3 + cx, 1.9, 10.4], at:[-3.6 + cx, 1.7, -60], fov:34 }, P:{ pos:[1.3 + cx, 2.7, 12.5], at:[1.1 + cx, 1.2, -40], fov:56 } };
@@ -725,7 +735,7 @@ async function build(canvas, kind, dark){
     if (sea && sea.material.uniforms && sea.material.uniforms.uTime) sea.material.uniforms.uTime.value = t % 1000;
     renderer.setRenderTarget(mainRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
     bloom();
-    compU.uSeed.value = STILL ? 0 : (seed = (seed + 17.37) % 1000);
+    compU.uSeed.value = STILL ? 0 : (seed = (seed + 1) % 256);      // a new grain each frame (small numbers: the old sine hash, fed big ones, could draw streaks that drifted)
     blit(compM, null);
   };
   setMode(dark);

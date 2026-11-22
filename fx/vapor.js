@@ -39,9 +39,15 @@ const PAGE = { timetable:'drive', home:'ruins', calendar:'pyramids', notes:'pyra
 const root = document.documentElement;
 const NEXT = (() => { try { return localStorage.getItem('msc.ismod') === '1'; } catch { return false; } })();
 if (NEXT) root.classList.add('vw-next');
+/* Each page's own arrangement in the reworked theme. On a wide screen its window stands off centre (shift: skins/vapor.css moves it, by
+   html[data-vw-shift]; the timetable is too wide to) and the scene's main thing takes the bigger margin. Its word (the page's name, in
+   Japanese, in big vertical type) stands in the margin named: 'l', 'r', or 'in', just right of the window, where that margin is the big one. */
+const PAGE_LAY = { timetable:{ word:'r' }, home:{ shift:'l', word:'in' }, calendar:{ shift:'l', word:'l' }, notes:{ shift:'l', word:'l' }, games:{ shift:'l', word:'l' },
+                   finder:{ shift:'l', word:'l' }, free:{ shift:'l', word:'l' }, revision:{ shift:'l', word:'l' }, resources:{ shift:'l', word:'l' }, mahjong:{ shift:'l', word:'l' }, themes:{ shift:'l', word:'l' } };
+if (NEXT){ const pl = PAGE_LAY[root.getAttribute('data-pg') || FX.page || '']; if (pl && pl.shift) root.setAttribute('data-vw-shift', pl.shift); }
 
 FX.scenes.vapor = {
-  dpr:NEXT ? 1.5 : 1, maxPx:NEXT ? 2.6e6 : 2.1e6, fps:30,
+  dpr:NEXT ? 1.5 : 1, maxPx:NEXT ? 6.2e6 : 2.1e6, fps:30,      /* the reworked scenes are still pictures, cheap to draw: at a big window's own pixels, not stretched up to it */
   create(canvas, env){
     if (NEXT) return makeNext(canvas, env);                    /* moderators: the reworked scenes, below */
     const x = canvas.getContext('2d'); if (!x) return null;
@@ -343,18 +349,19 @@ FX.scenes.vapor = {
 const PAGE_N = { timetable:'tt', home:'home', calendar:'cal', notes:'notes', games:'planets', finder:'planets',
                  free:'stairs', revision:'stairs', resources:'solids', mahjong:'solids' };
 /* each scene's pictures: the plate's size and horizon; each piece's crop (x, y, w, h) and its foot or centre (ax, ay), in plate pixels, light and dark */
-const META = /*META*/{"cal":{"d":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1056,"y":704,"w":1824,"h":496,"ax":2448,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1454,"y":704,"w":1426,"h":496,"ax":2448,"ay":1080}}},"home":{"d":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2852,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1276,"y":408,"w":1604,"h":792,"ax":2534,"ay":1116}},"l":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2169,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1298,"y":408,"w":1582,"h":792,"ax":2534,"ay":1116}}},"notes":{"d":{"phone":{"W":900,"H":1600,"hy":0.62}},"l":{"phone":{"W":900,"H":1600,"hy":0.62}}},"planets":{"d":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8}},"l":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8}}},"solids":{"d":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1887,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1731,"y":732,"w":1149,"h":468,"ax":2534,"ay":1080}},"l":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1570,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1780,"y":732,"w":1100,"h":468,"ax":2534,"ay":1080}}},"stairs":{"d":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":1788,"y":321,"w":772,"h":879,"ax":2477,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":1788,"y":321,"w":772,"h":879,"ax":2477,"ay":1080}}},"tt":{"d":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1641,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6}},"l":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1336,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6}}}};
+const META = /*META*/{"cal":{"d":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1056,"y":704,"w":1824,"h":496,"ax":2448,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1454,"y":704,"w":1426,"h":496,"ax":2448,"ay":1080}}},"home":{"d":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2852,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1276,"y":408,"w":1604,"h":792,"ax":2534,"ay":1116}},"l":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2169,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1298,"y":408,"w":1582,"h":792,"ax":2534,"ay":1116}}},"notes":{"d":{"phone":{"W":900,"H":1600,"hy":0.62}},"l":{"phone":{"W":900,"H":1600,"hy":0.62}}},"planets":{"d":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}},"l":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}}},"solids":{"d":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1887,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1731,"y":732,"w":1149,"h":468,"ax":2534,"ay":1080}},"l":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1570,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1780,"y":732,"w":1100,"h":468,"ax":2534,"ay":1080}}},"stairs":{"d":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":1788,"y":321,"w":772,"h":879,"ax":2477,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":1788,"y":321,"w":772,"h":879,"ax":2477,"ay":1080}}},"tt":{"d":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1641,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}},"l":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1336,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}}}};
 /* the scenes' own arrangements: where the sun is; the side the scene fills (busy: the visitors keep to the other); a floor or a picture borrowed
    (base: another scene's plate; panel: a picture laid in the left margin); floating things (each bobs), by the group they belong to or a fraction of the width */
+/* kw: about how wide each group's own thing is (not its shadow), as a fraction of the screen's height, so the visitors can keep off it.
+   A floating thing's place: a fraction of the width, a group's name, or { s, dx, dy }: the margin (0 left, 1 right) and a nudge from its middle. */
 const ARR = {
-  tt:     { sun:'l', busy:'l', floats:[],
-            word:true },     /* palms were here, out for now (the owner found them too much): palms:[{ n:'venice', s:'l', dx:-.1, h:.95 }, { n:'canary', s:'r', dx:.06, h:.6, flip:true }] */
-  cal:    { sun:'r', busy:'r', floats:[] },
-  notes:  { sun:'r', busy:'l', base:'cal', panel:'paint', floats:[] },
-  home:   { moon:true, floats:[] },
-  stairs: { busy:'r', cloudFloor:true, floats:[] },
-  planets:{ floats:[['moon', .16, 12], ['planet', .68, 0]] },
-  solids: { floats:[] }
+  tt:     { sun:'l', busy:'l', floats:[], kw:{ left:.2 } },     /* palms were here, out for now (the owner found them too much): palms:[{ n:'venice', s:'l', dx:-.1, h:.95 }, { n:'canary', s:'r', dx:.06, h:.6, flip:true }] */
+  cal:    { sun:'r', busy:'r', floats:[], kw:{ right:.3 } },
+  notes:  { sun:'r', busy:'r', base:'cal', panel:'paint', panelSide:'r', floats:[] },
+  home:   { moon:true, floats:[], kw:{ left:.16, right:.14 }, nudge:{ right:.09 } },      /* nudge: a group moved over a little (of the screen's height) where its margin is the big one, to leave the word room */
+  stairs: { busy:'r', cloudFloor:true, floats:[], kw:{ right:.42 } },
+  planets:{ busy:'r', floats:[['moon', { s:1, dx:.2, dy:-.13 }, 12], ['planet', { s:1, dx:0 }, 0]] },
+  solids: { busy:'r', floats:[], kw:{ left:.17, right:.24 } }
 };
 const IMV = FX.V ? '?v=' + FX.V : '';
 const IM = {};
@@ -400,7 +407,7 @@ const view95 = (g, vx, vy, vw, vh, dk) => {
   g.restore(); };
 function makeNext(canvas, env){
   const x = canvas.getContext('2d'); if (!x) return null;
-  const page = env.page, scene = PAGE_N[page] || 'stairs', A = ARR[scene];
+  const page = env.page, scene = PAGE_N[page] || 'stairs', A = ARR[scene], PL = PAGE_LAY[page] || {};
   let e = env, W = canvas.width, H = canvas.height, U = Math.min(H, W*.72);
   const r0 = rnd(91), stars = Array.from({ length:70 }, () => [r0(), r0(), .3 + r0()*.7, r0()*TAU, r0()]);
 
@@ -420,20 +427,27 @@ function makeNext(canvas, env){
 
   /* ── the pictures ── */
   const tall = () => H > W*1.42;
-  const src = p => p === 'plate' && A.base ? A.base : scene;
+  const src = p => (p === 'plate' || p === 'platew') && A.base ? A.base : scene;
   const piece = (p, dk) => pic('vw-' + src(p) + '-' + p + '-' + (dk ? 'd' : 'l'));
   const meta = (p, dk) => ((META[src(p)] || {})[dk ? 'd' : 'l'] || {})[p];
 
   /* ── the sky: the photograph, drifting; under it, a gradient for until it arrives ── */
   const SKY = dk => dk ? [[0, '#26425c'], [.42, '#46528a'], [.76, '#8a78ad'], [1, '#d9a0bd']] : [[0, '#80d9f5'], [.42, '#a9cbf7'], [.74, '#d2baf2'], [1, '#ffc2dd']];
   const HAZE = dk => dk ? '217,160,189' : '255,194,221';
+  /* The photograph is scaled once to the size it's shown at, and moved a whole pixel at a time: drawn afresh at a new fraction of a
+     pixel every frame, its grain shimmered (a faint crawling noise over the whole sky, plainest on a big screen). */
+  let skyCv = null, skyKey = '';
+  const skyAt = (im, sh, dk) => { const sw = Math.round(im.naturalWidth*sh/im.naturalHeight), k = [sw, sh, dk, gen].join();
+    if (sw*sh > 9e6) return null;                              /* too big to keep a copy of: drawn straight from the photograph */
+    if (k !== skyKey || !skyCv){ skyKey = k; skyCv = skyCv || canvas2(2, 2); skyCv.width = sw; skyCv.height = sh; const g = skyCv.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, sw, sh); }
+    return skyCv; };
   const skyBand = (hy, dk, t, flip) => {
     const g = x.createLinearGradient(0, 0, 0, hy); SKY(dk).forEach(s => g.addColorStop(s[0], s[1]));
     if (!flip){ x.fillStyle = g; x.fillRect(0, 0, W, H); }
     const im = pic('vw-sky-' + (dk ? 'd' : 'l')); if (!ok(im)) return;
-    const sh = hy + 2, sw = im.naturalWidth*sh/im.naturalHeight, off = ((t*U*.0014) % sw + sw) % sw;
-    x.save(); if (flip){ x.translate(0, 2*hy); x.scale(1, -1); }
-    for (let px0 = -off; px0 < W; px0 += sw) x.drawImage(im, px0, 0, sw + .5, sh);
+    const sh = Math.round(hy) + 2, cv = skyAt(im, sh, dk), sw = cv ? cv.width : Math.round(im.naturalWidth*sh/im.naturalHeight), off = Math.round(((t*U*.0014) % sw + sw) % sw);
+    x.save(); if (flip){ x.translate(0, 2*Math.round(hy)); x.scale(1, -1); }
+    for (let px0 = -off; px0 < W; px0 += sw){ if (cv) x.drawImage(cv, px0, 0); else x.drawImage(im, px0, 0, sw, sh); }
     x.restore(); };
   const softStars = (t, maxY) => { x.fillStyle = '#fff';
     stars.forEach(s => { x.globalAlpha = .4*s[2]*(.7 + .3*Math.sin(t*.45 + s[3]))*Math.min(1, (1 - s[1])*2); x.beginPath(); x.arc(s[0]*W, s[1]*maxY, U*.001*(1 + s[4]), 0, TAU); x.fill(); });
@@ -451,7 +465,7 @@ function makeNext(canvas, env){
     const g = x.createRadialGradient(cx, cy, R*.6, cx, cy, R*2.1); g.addColorStop(0, rgba(rgb, a)); g.addColorStop(.4, rgba(rgb, a*.4)); g.addColorStop(1, rgba(rgb, 0));
     x.fillStyle = g; x.fillRect(cx - R*2.1, cy - R*2.1, R*4.2, R*4.2);
     const cv = disc(R, top, bot); x.drawImage(cv, cx - cv.width/2, cy - cv.height/2); };
-  const breathe = t => .88 + .12*Math.sin(t*TAU/15);
+  const breathe = () => .94;                        /* the haze used to swell and fade; on a smooth sky its bands of colour crept as it did, so it holds still */
   /* palms: photographs of real palms against the sky, cut to their silhouettes (tools/vapor/palms.py), standing far off at the horizon
      and washed out pale by the haze; tinted here, once a size, from the top of the tree to its foot */
   const PALM = dk => dk ? ['rgba(196,178,240,.5)', 'rgba(217,160,189,.62)'] : ['rgba(255,255,255,.5)', 'rgba(255,214,234,.66)'];
@@ -481,22 +495,45 @@ function makeNext(canvas, env){
     if (key === fkey && front.width === W && front.height === H) return;
     fkey = key; front.width = W; front.height = H; const g = front.getContext('2d');
     if (L.tall){ const im = piece('phone', dk); if (ok(im)) g.drawImage(im, L.ox, L.oy, 900*L.s, 1600*L.s); return; }
-    const pl = piece('plate', dk); if (ok(pl)) g.drawImage(pl, L.ox, 0, L.pm.W*L.s, L.pm.H*L.s);
+    /* the floor: the plate; in a window wider than it (wider than 2.4 to 1) the wide one, rendered with the same lens; wider even than that, the wide one enlarged about the horizon */
+    const pw = W > L.pm.W*L.s + 1 ? meta('platew', dk) : null, pmm = pw || L.pm, pl = piece(pw ? 'platew' : 'plate', dk);
+    if (ok(pl)){ const w = pmm.W*L.s, k = Math.max(1, W/w); g.drawImage(pl, W/2 - w*k/2, L.hy - pmm.hy*pmm.H*L.s*k, w*k, pmm.H*L.s*k); }
+    keep = [];
     for (const p of ['left', 'right']){ const m = meta(p, dk), im = m && piece(p, dk); if (!m || !ok(im)) continue;
-      const ax = side(m.ax/m.W, U); g.drawImage(im, ax - (m.ax - m.x)*L.s, m.y*L.s, m.w*L.s, m.h*L.s); }
-    if (A.panel){ const im = pic('vw-' + scene + '-' + A.panel + '-' + (dk ? 'd' : 'l')), room = col.l - U*.05;
-      if (ok(im) && room >= 220*px()){ const w = Math.min(room, U*.5), h = w*im.naturalHeight/im.naturalWidth, x0 = (col.l - w)/2, y0 = Math.max(H*.08, L.hy*.5 - h*.55);
+      const big = (p === 'left' ? col.l : W - col.r) > U*.5, ax = side(m.ax/m.W, U) + (big ? ((A.nudge || {})[p] || 0)*U : 0); g.drawImage(im, ax - (m.ax - m.x)*L.s, m.y*L.s, m.w*L.s, m.h*L.s);
+      const kw = ((A.kw || {})[p] || .2)*U; keep.push([ax - kw/2, m.y*L.s, kw, (m.ay - m.y)*L.s + U*.03]); }
+    if (A.panel){ const im = pic('vw-' + scene + '-' + A.panel + '-' + (dk ? 'd' : 'l')), right = A.panelSide === 'r', room = (right ? W - col.r : col.l) - U*.05;
+      if (ok(im) && room >= 220*px()){ const w = Math.min(room, U*.5), h = w*im.naturalHeight/im.naturalWidth, x0 = right ? col.r + (W - col.r - w)/2 : (col.l - w)/2, y0 = Math.max(H*.08, L.hy*.5 - h*.55);
         g.save(); g.shadowColor = dk ? 'rgba(12,14,40,.45)' : 'rgba(70,44,130,.26)'; g.shadowBlur = U*.03; g.shadowOffsetX = U*.012; g.shadowOffsetY = U*.02;
-        g.drawImage(im, x0, y0, w, h); g.restore(); } }
-    if (A.word){ const im = pic('vw-' + scene + '-word'), room = W - col.r;   /* the page's word, in the margin opposite the scene (tools/vapor/word.py) */
-      if (ok(im) && room >= 170*px()){ let w = Math.min(room*.95, U*.26), h = w*im.naturalHeight/im.naturalWidth; if (h > L.hy*.78){ h = L.hy*.78; w = h*im.naturalWidth/im.naturalHeight; }
-        g.drawImage(im, side(1, U) - w/2, Math.max(H*.08, (L.hy - h)*.42), w, h); } }
+        g.drawImage(im, x0, y0, w, h); g.restore(); keep.push([x0, y0, w, h]); } }
   };
-  const floats = (t, dk) => { if (lay.tall) return;
+  /* the page's word (tools/vapor/word.py): big vertical type in the margin beside the window; now and then a pale glint passes slowly down it */
+  let wordCv = null, wordKey = '', wordBox = null;
+  const word = (t, dk) => { wordBox = null; const sd = PL.word; if (!sd || lay.tall) return;
+    const im = pic('vw-word-' + page); if (!ok(im)) return;
+    const room = sd === 'l' ? col.l : W - col.r; if (room < 170*px()) return;
+    /* Every page's word is set in the same size of type: the pictures are all made at 220 px a character, and all shown at one scale, which
+       the screen sets (about an eighth of its height a character, less if the longest word, five characters, would not fit). So a short
+       word is shorter, not bigger. Only a margin too narrow for it makes one smaller. */
+    const top = H*.09; let k = Math.min(U*.135, H*.72/5.27)/220; if (im.naturalWidth*k > room*.94) k = room*.94/im.naturalWidth;
+    const w = Math.round(im.naturalWidth*k), h = Math.round(im.naturalHeight*k);
+    const x0 = Math.round(sd === 'l' ? Math.max(side(0, U), col.l - U*.24) - w/2 : sd === 'r' ? Math.min(side(1, U), col.r + U*.24) - w/2 : col.r + U*.03), y0 = Math.round(top);
+    const wk = [w, h, gen].join(); if (wk !== wordKey || !wordCv){ wordKey = wk; wordCv = wordCv || canvas2(2, 2); wordCv.width = w; wordCv.height = h; }
+    const g = wordCv.getContext('2d'); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, w, h); g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, w, h);
+    if (e.animate){ const u = (t % 11)/11, yy = (u*2.1 - .55)*h, bh = h*.2;               /* the glint: eleven seconds from above its head to below its foot, and round again */
+      const gr = g.createLinearGradient(0, yy - bh, w*.6, yy + bh); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(.5, 'rgba(255,255,255,.46)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.globalCompositeOperation = 'source-atop'; g.fillStyle = gr; g.fillRect(0, yy - bh*2, w, bh*4); }
+    x.drawImage(wordCv, x0, y0); wordBox = [x0, y0, w, h]; };
+  /* what stands where, in the page's own pixels, for the visitors (they keep off the scene's things and the word) */
+  let keep = [], fkeep = [];
+  const stage = () => { const k = px(), all = keep.concat(fkeep, wordBox ? [wordBox] : []);
+    FX.vwStage = { keep:all.map(r => [r[0]/k, r[1]/k, r[2]/k, r[3]/k]), hy:lay.hy/k, tall:!!lay.tall }; };
+  const floats = (t, dk) => { fkeep = []; if (lay.tall) return;
     A.floats.forEach((f, i) => { const m = meta(f[0], dk), im = m && piece(f[0], dk); if (!m || !ok(im)) return;
-      let ax; if (typeof f[1] === 'number') ax = W*f[1]; else { const gm = meta(f[1], dk); if (!gm) return; ax = side(gm.ax/gm.W, U) + (m.ax - gm.ax)*lay.s; }
-      const bob = f[2] ? Math.sin(t*TAU/f[2] + i*2.1)*U*.006 : 0;
-      x.drawImage(im, ax - (m.ax - m.x)*lay.s, m.y*lay.s + bob, m.w*lay.s, m.h*lay.s); }); };
+      let ax, dy = 0; if (typeof f[1] === 'number') ax = W*f[1]; else if (typeof f[1] === 'object'){ ax = side(f[1].s, U) + U*(f[1].dx || 0); dy = U*(f[1].dy || 0); }
+      else { const gm = meta(f[1], dk); if (!gm) return; ax = side(gm.ax/gm.W, U) + (m.ax - gm.ax)*lay.s; }
+      const bob = f[2] ? Math.sin(t*TAU/f[2] + i*2.1)*U*.006 : 0, fx0 = ax - (m.ax - m.x)*lay.s, fy0 = m.y*lay.s + dy;
+      x.drawImage(im, fx0, fy0 + bob, m.w*lay.s, m.h*lay.s); fkeep.push([fx0 + m.w*lay.s*.12, fy0, m.w*lay.s*.76, m.h*lay.s]); }); };
 
   return {
     frame(t){
@@ -517,6 +554,8 @@ function makeNext(canvas, env){
       haze(hy, dk);
       build(dk); x.drawImage(front, 0, 0);
       floats(t, dk);
+      word(t, dk);
+      stage();
     },
     resize(w, h){ W = w; H = h; U = Math.min(H, W*.72); col = null; fkey = ''; },
     env(n){ e = n; },
@@ -526,25 +565,37 @@ function makeNext(canvas, env){
 /* ═══════════════════════════════════════════════════════════════════
    The visitors (moderators only, with the rest of NEXT).
 
-   Now and then a Windows 95 window turns up in the margin beside the
-   page, as if something in the machine were trying to say something.
-   Who comes, what they say and how often is fx/vapor-entity.js, a list
-   written to be edited; this is how they behave.
+   Windows 95 windows that turn up in the margins beside the page, as if
+   something in the machine were keeping itself busy, and now and then
+   trying to say something. Who comes, what they say and how often is
+   fx/vapor-entity.js, a list written to be edited; this is how they
+   behave.
      · Real windows, above the scene and below the site's own sheets and
-       notes, dragged by the title bar. Never put over the page's column:
-       they go in the margins, or on a narrow screen small in a bottom
-       corner (rarer there, and never on the timetable).
-     · One at a time. Most leave by themselves; some stay page after page
-       until closed; some, closed, turn up somewhere else.
+       notes, dragged by the title bar. They stand in the page's places:
+       the corners and middles of the margins, clear of the page's
+       column, the scene's things, the page's word and the taskbar.
+     · On a screen with margins somebody is usually about: one window,
+       sometimes two, never more; a short pause between one going and
+       the next coming. Most are passing windows (a note typing itself,
+       something playing, a job that takes its time); some are the
+       conversations, with their follow-ups hours later. On a narrow
+       screen none of that: one small window in a bottom corner, rarely,
+       and never on the timetable.
+     · They arrive and leave in a glitch (bands slipping, the colours
+       parting, a last bright line). Their words type themselves. When a
+       window's time is up another pointer, not yours, comes and presses
+       its X; a hung program is dragged off by it, leaving copies of
+       itself behind. A shy one goes when your pointer comes near.
      · Not modal: they never take the focus or hold the keyboard. Their
        buttons are buttons; Escape closes the one you're in.
      · Remembered on this device only (msc.vwent: who came, what you
-       answered, when). Off for good from any window's menu, the icon at
-       the left of its title bar (msc.vwent.off).
-     · Animation off doesn't stop them (they aren't motion); with it off,
-       or Reduce motion, they come and go without fading or sliding.
-     · Moderators can call one up: ?vwent=<id>, ?vwent=next (whoever would
-       come next, ignoring the timing), ?vwent=reset (forget everything),
+       answered, when). Off for good from any window's menu (the icon at
+       the left of its title bar) or from Start (msc.vwent.off).
+     · Animation off, or Reduce motion: no glitch, no typing, no other
+       pointer, nothing moving in them; they come and go at once.
+     · Moderators can call one up: ?vwent=<id> (or two: <id>,<id>),
+       with &vwlife=<seconds> to see it taken away again; ?vwent=next
+       (whoever would come next), ?vwent=reset (forget everything),
        ?vwent=on (after "Don't show these").
    ═══════════════════════════════════════════════════════════════════ */
 const VKEY = 'msc.vwent', VOFF = 'msc.vwent.off';
@@ -577,7 +628,46 @@ const ICONS = {
             '.oaawwbbbbwwddco', '.oaaawwbbwwdddco', '.oaaaawwwwddddco', '.oaaaabbbbdddddo', '..ooooooooooooo.', '................', '................', '................']],
   monitor:[{ o:'#30304a', m:'#2b2440', p:'#ff9ad0' },
            ['................', '.oooooooooooooo.', '.ommmmmmmmmmmmo.', '.ommmmmmmmmmmmo.', '.ommmmmmmmmpmmo.', '.ommmmmmmmmpmmo.', '.ommmmmmpmmpmmo.', '.ommpmmmpmmpmpo.',
-            '.ompmpmpmpmpmpo.', '.ommmmmmmmmmmmo.', '.oooooooooooooo.', '......oooo......', '....oooooooo....', '................', '................', '................']]
+            '.ompmpmpmpmpmpo.', '.ommmmmmmmmmmmo.', '.oooooooooooooo.', '......oooo......', '....oooooooo....', '................', '................', '................']],
+  home:   [{ o:'#30304a', r:'#ff9ad0', w:'#f4f0ff', b:'#8a7ad6' },
+           ['................', '.......oo.......', '......orro......', '.....orrrro.....', '....orrrrrro....', '...orrrrrrrro...', '..orrrrrrrrrro..', '.oooooooooooooo.',
+            '..owwwwwwwwwwo..', '..owwwoooowwwo..', '..owwwobbowwwo..', '..owwwobbowwwo..', '..owwwobbowwwo..', '..oooooooooooo..', '................', '................']],
+  tt:     [{ o:'#30304a', c:'#7cdff6', w:'#f4f0ff', p:'#ff9ad0', b:'#b9a6f2' },
+           ['................', '.oooooooooooooo.', '.occcccccccccco.', '.occcccccccccco.', '.oooooooooooooo.', '.owwwowwwwowwwo.', '.owwwowwwwowwwo.', '.oooooooooooooo.',
+            '.owwwoppppowwwo.', '.owwwoppppowwwo.', '.oooooooooooooo.', '.owwwowwwwobbbo.', '.owwwowwwwobbbo.', '.oooooooooooooo.', '................', '................']],
+  cal:    [{ o:'#30304a', r:'#ff8d96', w:'#f4f0ff', g:'#9a9ab4', p:'#ff5fb0' },
+           ['................', '...oo......oo...', '.oooooooooooooo.', '.orrrrrrrrrrrro.', '.orrrrrrrrrrrro.', '.oooooooooooooo.', '.owwwwwwwwwwwwo.', '.owgwgwgwgwgwwo.',
+            '.owwwwwwwwwwwwo.', '.owgwgwpwgwgwwo.', '.owwwwwwwwwwwwo.', '.owgwgwgwgwwwwo.', '.owwwwwwwwwwwwo.', '.oooooooooooooo.', '................', '................']],
+  clock:  [{ o:'#30304a', w:'#f4f0ff', k:'#6a4fb0' },
+           ['................', '.....oooooo.....', '...oowwwwwwoo...', '..owwwwkwwwwwo..', '..owwwwkwwwwwo..', '.owwwwwkwwwwwwo.', '.owwwwwkwwwwwwo.', '.owwwwwkkkkwwwo.',
+            '.owwwwwwwwwwwwo.', '.owwwwwwwwwwwwo.', '..owwwwwwwwwwo..', '..owwwwwwwwwwo..', '...oowwwwwwoo...', '.....oooooo.....', '................', '................']],
+  book:   [{ o:'#30304a', b:'#8a7ad6', w:'#f4f0ff', g:'#9a9ab4' },
+           ['................', '..ooooooooooo...', '.obbbbbbbbbbbo..', '.obbbbbbbbbbbo..', '.obbwwwwwwwbbo..', '.obbwgggggwbbo..', '.obbwwwwwwwbbo..', '.obbbbbbbbbbbo..',
+            '.obbbbbbbbbbbo..', '.obbbbbbbbbbbo..', '.obbbbbbbbbbbo..', '.oooooooooooooo.', '.owwwwwwwwwwwwo.', '..ooooooooooooo.', '................', '................']],
+  joy:    [{ o:'#30304a', r:'#ff8d96', w:'#e6e6ee', p:'#ff5fb0' },
+           ['................', '......oooo......', '.....orrrro.....', '.....orrrro.....', '......oooo......', '.......oo.......', '.......oo.......', '.......oo.......',
+            '..oooooooooooo..', '.owwwwwwwwwwwwo.', '.owwwwwwwwppwwo.', '.owwwwwwwwwwwwo.', '.oooooooooooooo.', '................', '................', '................']],
+  tile:   [{ o:'#30304a', w:'#f4f0ff', r:'#e5484d', g:'#7cc8a0' },
+           ['................', '...oooooooooo...', '..owwwwwwwwwwo..', '..owwwwrrwwwwo..', '..owwrrrrrrwwo..', '..owwrwrrwrwwo..', '..owwrrrrrrwwo..', '..owwwwrrwwwwo..',
+            '..owwwwrrwwwwo..', '..owwwwwwwwwwo..', '..oggggggggggo..', '..oggggggggggo..', '...oooooooooo...', '................', '................', '................']],
+  paint:  [{ o:'#30304a', w:'#f3e6c8', r:'#ff8d96', c:'#7cdff6', p:'#ff5fb0', b:'#8a7ad6', y:'#f3d77a' },
+           ['................', '.....oooooo.....', '...oowwwwwwoo...', '..owwrwwwwcwwo..', '.owwwwwwwwwwwwo.', '.owpwwwwwwwwbwo.', '.owwwwwwwwwwwwo.', '.owywwwwooowwwo.',
+            '.owwwwwwo.owwwo.', '..owwwwwooowwo..', '...oowwwwwwoo...', '.....oooooo.....', '................', '................', '................', '................']],
+  spk:    [{ o:'#30304a', g:'#9a9ab4', w:'#f4f0ff' },
+           ['................', '................', '........oo......', '.......ogo..o...', '......oggo...o..', '..ooooogwo.o..o.', '..ogggggwo..o.o.', '..ogggggwo..o.o.',
+            '..ooooogwo.o..o.', '......oggo...o..', '.......ogo..o...', '........oo......', '................', '................', '................', '................']],
+  cursor: [{ k:'#14101f', w:'#ffffff' },
+           ['k...............', 'kk..............', 'kwk.............', 'kwwk............', 'kwwwk...........', 'kwwwwk..........', 'kwwwwwk.........', 'kwwwwwwk........',
+            'kwwwwwwwk.......', 'kwwwwwwwwk......', 'kwwwwwkkkkk.....', 'kwwkwwk.........', 'kwk.kwwk........', 'kk..kwwk........', 'k....kwwk.......', '.....kkkk.......']],
+  note:   [{ o:'#30304a', c:'#7cdff6', w:'#f4f0ff', g:'#9a9ab4' },
+           ['................', '..oooooooooooo..', '..occcccccccco..', '..oooooooooooo..', '..owwwwwwwwwwo..', '..owggggggggwo..', '..owwwwwwwwwwo..', '..owggggggwwwo..',
+            '..owwwwwwwwwwo..', '..owggggggggwo..', '..owwwwwwwwwwo..', '..owggggwwwwwo..', '..owwwwwwwwwwo..', '..oooooooooooo..', '................', '................']],
+  media:  [{ o:'#30304a', m:'#2b2440', p:'#ff9ad0', w:'#e6e6ee', g:'#9a9ab4' },
+           ['................', '.oooooooooooooo.', '.ommmmmmmmmmmmo.', '.ommmmmppppmmmo.', '.ommmmmpmmpmmmo.', '.ommmmmpmmpmmmo.', '.ommmmmpmmpmmmo.', '.ommmppmmppmmmo.',
+            '.ommmppmmppmmmo.', '.ommmmmmmmmmmmo.', '.oooooooooooooo.', '.owwgwwgwwgwwwo.', '.oooooooooooooo.', '................', '................', '................']],
+  hour:   [{ o:'#30304a', w:'#f4f0ff', y:'#f3d77a' },
+           ['................', '...oooooooooo...', '...owwwwwwwwo...', '....owwwwwwo....', '....oyyyyyyo....', '.....oyyyyo.....', '......oyyo......', '.......oo.......',
+            '......owwo......', '.....owwywo.....', '....owwyywwo....', '....owyyyywo....', '...oyyyyyyyyo...', '...oooooooooo...', '................', '................']]
 };
 const iconURL = {};
 const icon = n => { if (iconURL[n]) return iconURL[n]; const d = ICONS[n] || ICONS.win, c = canvas2(16, 16), g = c.getContext('2d');
@@ -594,12 +684,14 @@ function startVisitors(){
 function visitors(){
   const C = window.VW_ENTITY; if (!C || !Array.isArray(C.events) || !document.body || document.querySelector('.vw-ent')) return;
   const P = Object.assign({ quietSessions:2, sessionGapMinutes:30, minGapMinutes:100, chancePerPage:.2, maxPerDay:4, callbackChance:.6, rareAfter:5, rareGapHours:72,
-    rareChance:.3, narrowChance:.35, appearAfterSeconds:[3, 9], fadeAfterSeconds:75 }, C.pace || {});
+    rareChance:.3, narrowChance:.35, appearAfterSeconds:[3, 9], fadeAfterSeconds:75,
+    firstAfterSeconds:[2, 5], idleSeconds:2, staySeconds:[24, 44], gapSeconds:[5, 12], secondChance:.5, secondAfterSeconds:[12, 28], maxOpen:2, storyChance:.3, typeCps:30 }, C.pace || {});
   const EV = {}; C.events.forEach(e => { if (e && e.id) EV[e.id] = e; });
   const PG = root.getAttribute('data-pg') || FX.page || '';
   const q = (() => { try { return new URLSearchParams(location.search).get('vwent'); } catch { return null; } })();
-  if (q === 'reset'){ vput({}); setVoff(false); } else if (q === 'on') setVoff(false);
+  if (q === 'reset'){ vput({}); setVoff(false); try { sessionStorage.removeItem('msc.vwamb'); } catch {} } else if (q === 'on') setVoff(false);
   const preview = q && q !== 'reset' && q !== 'on' ? q : null;
+  const lifeQ = (() => { try { return Math.max(0, +new URLSearchParams(location.search).get('vwlife') || 0); } catch { return 0; } })();      /* with ?vwent=<id>: &vwlife=<seconds> before the other pointer comes for it (else it stays) */
   /* a session: coming back after a while away */
   const t0 = Date.now();
   vupd(s => { if (!s.first) s.first = t0; if (!s.active || t0 - s.active > P.sessionGapMinutes*6e4) s.sessions = (s.sessions || 0) + 1; s.active = t0; });
@@ -610,69 +702,120 @@ function visitors(){
   const instant = () => { if (root.getAttribute('data-fx') !== 'on') return true; try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
   const fill = v => String(v == null ? '' : v).replace(/\{NAME\}/g, dosName());
   const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+  const rand = a => a[0] + Math.random()*(a[1] - a[0]), wait = ms => new Promise(r => setTimeout(r, ms));
+  const live = [];                                  /* the windows that are open */
+  const openNow = () => live.filter(o => !o.gone);
 
-  /* ── where a window may go: the margins beside the page's column, their corners; on a narrow screen, a bottom corner ── */
-  const M = 10, SIZE = { dialog:[196, 300], explorer:[270, 320], list:[250, 310], web:[240, 300], sunrise:[180, 220] };
+  /* ── the stage: where a window may stand. In the margins beside the page's column, never over the column, the scene's things, the
+        page's word, the taskbar or another window. Each margin offers its corners and its middle; the best three that are free are
+        the page's places. (On a narrow screen there are no margins: one small window, in a bottom corner, as before.) ── */
+  const M = 10, SIZE = { dialog:[196, 300], explorer:[250, 320], list:[240, 310], web:[230, 300], sunrise:[180, 220], notepad:[216, 300], player:[212, 250], progress:[216, 300] };
   const colNow = () => { const w = document.querySelector('.wrap'); if (w && w.offsetWidth){ const b = w.getBoundingClientRect(); return { l:b.left, r:b.right }; }
     const mw = Math.min(innerWidth, 1040); return { l:(innerWidth - mw)/2, r:(innerWidth + mw)/2 }; };
-  const fit = kind => { const c = colNow(), room = Math.max(c.l, innerWidth - c.r) - 2*M, s = SIZE[kind] || SIZE.dialog;
-    if (room >= s[0]) return { w:Math.round(Math.min(s[1], room)), narrow:false };
-    if (kind !== 'dialog' || PG === 'timetable') return null;
-    return { w:Math.round(Math.min(250, innerWidth - 2*M)), narrow:true }; };
-  const spots = (w, h, narrow) => { const c = colNow(), vw = innerWidth, vh = innerHeight, out = [], clampY = y => Math.max(M, Math.min(y, vh - h - M));
-    if (narrow){ for (const x of [M, vw - w - M]) out.push([x, clampY(vh - h - M)]); return out; }
-    const gs = [[M, c.l - M, 'l'], [c.r + M, vw - M, 'r']].filter(g => g[1] - g[0] >= w), free = gs.filter(g => g[2] !== busy);
-    for (const g of free.length ? free : gs) for (const x of new Set([g[0], g[1] - w])) for (const y of [vh*.1, vh - h - vh*.07]) out.push([x, clampY(y)]);
-    return out; };
-  const busy = (ARR[PAGE_N[PG]] || {}).busy;
-  const fits = (p, w, h, narrow) => { const c = colNow(); return p[0] >= 0 && p[1] >= 0 && p[0] + w <= innerWidth && p[1] + h <= innerHeight && (narrow || p[0] >= c.r || p[0] + w <= c.l); };
+  const floorY = () => { const b = document.querySelector('.vw-task'), h = b ? b.offsetHeight : 0; return (h ? b.getBoundingClientRect().top : innerHeight) - M; };
+  const hit = (a, b, pad) => a[0] < b[0] + b[2] + pad && a[0] + a[2] + pad > b[0] && a[1] < b[1] + b[3] + pad && a[1] + a[3] + pad > b[1];
+  const gutters = () => { const c = colNow(); return [{ k:'l', x0:0, x1:c.l }, { k:'r', x0:c.r, x1:innerWidth }]; };
+  const widthIn = (g, kind) => { const s = SIZE[kind] || SIZE.dialog, room = g.x1 - g.x0 - 2*M; return room >= s[0] ? Math.round(Math.min(s[1], room)) : 0; };
+  const canFit = kind => gutters().some(g => widthIn(g, kind));
+  const wide = () => canFit('dialog');
+  const ORDER = ['lbo', 'rto', 'rmo', 'rbo', 'rti', 'lto', 'lmo', 'rbi', 'rmi'];       /* margin (left, right); top, middle, bottom; outer or inner edge */
+  const free = (r, me) => { const st = FX.vwStage || {}, c = colNow();
+    if (r[0] < 0 || r[1] < 0 || r[0] + r[2] > innerWidth || r[1] + r[3] > floorY() + 1) return false;
+    if (r[0] < c.r && r[0] + r[2] > c.l) return false;
+    return !(st.keep || []).some(k => hit(r, k, 6)) && !openNow().some(o => { if (o === me) return false; const b = o.win.getBoundingClientRect(); return hit(r, [b.left, b.top, b.width, b.height], 8); }); };
+  const places = (c, kind) => { const out = [];
+    for (const g of gutters()){ const w = widthIn(g, kind); if (!w) continue; c.win.style.width = w + 'px'; const h = c.win.offsetHeight, top = M + 4, bot = floorY() - h;
+      ORDER.forEach((o, rank) => { if (o[0] !== g.k) return;
+        const x = (o[2] === 'o') === (g.k === 'l') ? g.x0 + M : g.x1 - w - M, y = o[1] === 't' ? top : o[1] === 'b' ? bot : Math.round((top + bot)/2);
+        if (!out.some(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 8) && free([x, y, w, h], c)) out.push({ x, y, w, rank }); }); }
+    return out.sort((a, b) => a.rank - b.rank).slice(0, 3); };
+  const narrowSpot = c => { const w = Math.round(Math.min(250, innerWidth - 2*M)); c.win.style.width = w + 'px'; const h = c.win.offsetHeight; return [M, innerWidth - w - M].map(x => ({ x, y:Math.max(M, innerHeight - h - M), w })); };
+  const inView = (p, w, h) => p[0] >= 0 && p[1] >= 0 && p[0] + w <= innerWidth && p[1] + h <= innerHeight;
 
   /* ── who comes next ── */
-  const eligible = (ev, s, t, ign) => {
+  const named = ev => /\{NAME\}/.test(JSON.stringify(ev));
+  const onPage = ev => !(ev.pages && ev.pages.indexOf(PG) < 0) && !(ev.notOn && ev.notOn.indexOf(PG) >= 0) && !(named(ev) && dosName() === 'USER');
+  const eligible = (ev, s, t, ign, narrow) => {
     const seen = s.seen[ev.id];
     if (seen && !(ev.again && t - seen.at > ev.again*864e5)) return false;
-    if (ev.pages && ev.pages.indexOf(PG) < 0) return false;
-    if (ev.notOn && ev.notOn.indexOf(PG) >= 0) return false;
-    if (/\{NAME\}/.test(JSON.stringify(ev)) && dosName() === 'USER') return false;           /* the name ones only when there's a name */
-    if (!fit(ev.kind || 'dialog')) return false;
+    if (!onPage(ev)) return false;
+    if (narrow ? (ev.kind || 'dialog') !== 'dialog' || PG === 'timetable' : !canFit(ev.kind || 'dialog')) return false;
     if (ev.after){ const p = s.seen[ev.after.id]; if (!p) return false; if (ev.after.button && p.b !== ev.after.button) return false;
       if (!ign){ const h = (t - p.at)/36e5; if (h < (ev.after.minHours == null ? 1 : ev.after.minHours) || h > (ev.after.maxHours || 20)) return false; } }
     if (ev.rare && !ign && ((s.count || 0) < P.rareAfter || (s.rareLast && t - s.rareLast < P.rareGapHours*36e5) || Math.random() >= P.rareChance)) return false;
     return true; };
-  const pick = ign => {
+  const weighted = pool => { let r = Math.random()*pool.reduce((a, e) => a + (e.weight || 1), 0); for (const e of pool){ r -= e.weight || 1; if (r < 0) return e; } return pool[0]; };
+  /* a narrow screen: now and then, as it always was */
+  const pickRare = ign => {
     const s = vget(), t = Date.now(); s.seen = s.seen || {};
     if (!ign){ if ((s.sessions || 0) <= P.quietSessions) return null;
       if (s.last && t - s.last < P.minGapMinutes*6e4) return null;
       if (s.day === dayOf(t) && (s.dayN || 0) >= P.maxPerDay) return null; }
-    const due = C.events.filter(e => e.after && eligible(e, s, t, ign));
+    const due = C.events.filter(e => e.after && eligible(e, s, t, ign, true));
     if (due.length && (ign || Math.random() < P.callbackChance)) return due[0];
-    if (!ign){ const f = fit('dialog'); if (Math.random() >= P.chancePerPage*(f && f.narrow ? P.narrowChance : 1)) return null; }
-    const pool = C.events.filter(e => !e.after && eligible(e, s, t, ign)); if (!pool.length) return null;
-    let r = Math.random()*pool.reduce((a, e) => a + (e.weight || 1), 0); for (const e of pool){ r -= e.weight || 1; if (r < 0) return e; } return pool[0]; };
+    if (!ign && Math.random() >= P.chancePerPage*P.narrowChance) return null;
+    const pool = C.events.filter(e => !e.after && !e.smear && eligible(e, s, t, ign, true)); return pool.length ? weighted(pool) : null; };
+  /* a screen with margins: a follow-up that's due; or one of the conversations; or one of the passing windows (not one that's just been) */
+  const recent = (() => { try { const a = JSON.parse(sessionStorage.getItem('msc.vwamb') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } })();
+  const remember = id => { recent.push(id); while (recent.length > 7) recent.shift(); try { sessionStorage.setItem('msc.vwamb', JSON.stringify(recent)); } catch {} };
+  const pickNext = () => { const s = vget(), t = Date.now(); s.seen = s.seen || {}; const isOpen = e => openNow().some(o => o.ev.id === e.id);
+    const due = C.events.filter(e => e.after && !isOpen(e) && eligible(e, s, t, false)); if (due.length && Math.random() < P.callbackChance) return due[0];
+    if (Math.random() < P.storyChance){ const pool = C.events.filter(e => !e.after && !e.ambient && !isOpen(e) && eligible(e, s, t, false)); if (pool.length) return weighted(pool); }
+    const amb = C.events.filter(e => e.ambient && !isOpen(e) && recent.indexOf(e.id) < 0 && onPage(e) && canFit(e.kind || 'dialog')); return amb.length ? weighted(amb) : null; };
+
+  /* ── the other pointer: an arrow that isn't yours. When a window's time is up it comes over and presses the X itself; one window
+        it takes by the title bar and drags, and the window leaves copies of itself behind, as a hung program's used to. With
+        Animation off, or Reduce motion, there is no other pointer: windows simply go. ── */
+  let cur = null, curAt = null, curBusy = false;
+  const curEl = () => { if (!cur){ cur = el('img', 'vw-cur'); cur.alt = ''; cur.setAttribute('aria-hidden', 'true'); cur.src = icon('cursor'); layer.appendChild(cur); } return cur; };
+  const curSet = (x, y, ms) => { const c = curEl(); c.style.transitionDuration = ms + 'ms, 300ms'; c.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)'; curAt = [x, y]; };
+  const curGo = (x, y, ms) => { curSet(x, y, ms); return wait(ms + 30); };
+  const curOut = () => { if (cur) cur.classList.remove('on'); };
+  const approach = async (tx, ty) => {
+    if (!cur || !cur.classList.contains('on') || !curAt){ curSet(tx + (tx > innerWidth/2 ? 1 : -1)*(70 + Math.random()*90), Math.min(innerHeight - 30, ty + 140 + Math.random()*120), 0); void curEl().offsetWidth; cur.classList.add('on'); await wait(160); }
+    const d = Math.hypot(tx - curAt[0], ty - curAt[1]); await curGo(tx, ty, Math.round(Math.max(520, Math.min(1300, d*2.6)))); };
+  const ghost = async job => { if (curBusy || instant() || layer.hidden) return false; curBusy = true; try { await job(); } catch {} curBusy = false; return true; };
+  const ghostClose = c => ghost(async () => { const r = c.bX.getBoundingClientRect(); await approach(r.left + r.width/2 - 3, r.top + r.height/2 - 2); if (c.gone){ curOut(); return; }
+    c.bX.classList.add('vw-press'); await wait(150); c.bX.classList.remove('vw-press'); c.leave(null); await wait(650); await curGo(curAt[0] + 22, curAt[1] + 30, 900); curOut(); });
+  const stamp = c => { if (c.stamps.length >= 14) return; const k = c.win.cloneNode(true); k.className = k.className.replace(/\b(on|off|vw-drag)\b/g, '') + ' vw-stamp'; k.removeAttribute('role'); k.removeAttribute('aria-label'); k.removeAttribute('aria-describedby'); k.setAttribute('aria-hidden', 'true');
+    k.querySelectorAll('[id]').forEach(n => n.removeAttribute('id')); k.querySelectorAll('button,a').forEach(b => { b.tabIndex = -1; }); layer.insertBefore(k, c.win); c.stamps.push(k); };
+  const ghostSmear = c => ghost(async () => { const r = c.tb.getBoundingClientRect(); await approach(r.left + r.width*.4, r.top + r.height/2); if (c.gone){ curOut(); return; }
+    const p0 = c.pos.slice(), cc = colNow(), dy = (p0[1] > innerHeight/2 ? -1 : 1)*14; let dx = (p0[0] >= cc.r ? 1 : -1)*12;      /* away from the page, unless there's no room that way */
+    if (p0[0] + dx*9 < 0 || p0[0] + r.width + dx*9 > innerWidth) dx = -dx;
+    for (let i = 1; i <= 9 && !c.gone; i++){ stamp(c); c.place([Math.max(0, Math.min(innerWidth - r.width, p0[0] + dx*i)), Math.max(0, Math.min(floorY() - 30, p0[1] + dy*i))]); curSet(curAt[0] + dx, curAt[1] + dy, 70); await wait(100); }
+    await wait(1300); if (!c.gone) c.leave(null); await wait(500); curOut(); });
 
   /* ── a window ── */
-  let cur = null;
   const show = (ev, how) => {
-    if (cur || layer.hidden) return false;
-    const kind = ev.kind || 'dialog', size = fit(kind); if (!size) return false;
-    const win = el('div', 'vw-win vw-' + kind + (size.narrow ? ' vw-small' : '')), uid = 'vw' + Math.random().toString(36).slice(2, 8);
-    win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', fill(ev.title || 'Message')); win.style.width = size.w + 'px';
+    if (layer.hidden || openNow().length >= P.maxOpen) return null;
+    const kind = ev.kind || 'dialog', roomy = wide();
+    if (roomy ? !canFit(kind) : kind !== 'dialog' || PG === 'timetable') return null;
+    const win = el('div', 'vw-win vw-' + kind + (roomy ? '' : ' vw-small')), uid = 'vw' + Math.random().toString(36).slice(2, 8);
+    const c = { ev, win, gone:false, stamps:[], pos:null };
+    win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', fill(ev.title || 'Message'));
     /* the title bar: the window menu, the name, the caption buttons */
     const tb = el('div', 'vw-tb'), sys = el('button', 'vw-sys'); sys.type = 'button'; sys.setAttribute('aria-label', 'Window menu'); sys.setAttribute('aria-haspopup', 'menu'); sys.setAttribute('aria-expanded', 'false');
-    const si = el('img'); si.alt = ''; si.src = icon(ev.icon || (kind === 'explorer' ? 'folder' : 'win')); sys.appendChild(si);
+    const si = el('img'); si.alt = ''; si.src = icon(ev.icon || { explorer:'folder', notepad:'note', player:'media', progress:'hour' }[kind] || 'win'); sys.appendChild(si);
     tb.append(sys, el('span', 'vw-tt', fill(ev.title || '')));
     const cap = (cls, label, dis) => { const b = el('button', 'vw-cap ' + cls); b.type = 'button'; b.setAttribute('aria-label', label); if (dis) b.disabled = true; tb.appendChild(b); return b; };
-    const bMin = kind !== 'dialog' ? cap('vw-mn', 'Minimise') : null; if (kind !== 'dialog') cap('vw-mx', 'Maximise', true);
-    const bX = cap('vw-x', 'Close'); win.appendChild(tb);
+    const bMin = kind !== 'dialog' && kind !== 'progress' ? cap('vw-mn', 'Minimise') : null; if (bMin) cap('vw-mx', 'Maximise', true);
+    const bX = cap('vw-x', 'Close'); win.appendChild(tb); c.tb = tb; c.bX = bX;
     /* what's in it */
-    const body = el('div', 'vw-body'); win.appendChild(body); let msg = null, status = null;
+    const body = el('div', 'vw-body'); win.appendChild(body); let msg = null, status = null, tick = 0, typing = 0, typeJob = null;
+    /* words that type themselves: the whole text is there for a screen reader from the start; what's seen arrives a letter at a time */
+    const typed = (holder, text, done) => { const sr = el('span', 'vw-sr', text), out = el('span', 'vw-typed'); out.setAttribute('aria-hidden', 'true'); holder.append(sr, out);
+      const finish = () => { clearTimeout(typing); typeJob = null; out.textContent = text; if (done) done(); };
+      if (instant() || how === 'again'){ finish(); return out; }
+      let i = 0; const step = () => { if (c.gone) return; i++; out.textContent = text.slice(0, i); if (i >= text.length){ typeJob = null; if (done) done(); return; }
+        const ch = text[i - 1]; typing = setTimeout(step, (ch === '\n' ? 520 : /[.,?:]/.test(ch) ? 240 : 1000/P.typeCps)*(.7 + Math.random()*.6)); };
+      typeJob = finish; typing = setTimeout(step, 380); return out; };
     if (kind === 'explorer'){
       const a = el('div', 'vw-addr'); a.append(el('span', null, 'Address'), el('div', 'vw-field', fill(ev.path))); body.appendChild(a);
       const pane = el('div', 'vw-pane'); (ev.folders || []).forEach(f => { const b = el('button', 'vw-fold'); b.type = 'button'; const i = el('img'); i.alt = ''; i.src = icon('folder'); b.append(i, el('span', null, fill(f.label)));
         b.addEventListener('click', () => { status.textContent = fill(f.say || ''); }); pane.appendChild(b); }); body.appendChild(pane);
       status = el('div', 'vw-status', (ev.folders || []).length + ' object(s)'); body.appendChild(status);
     } else if (kind === 'list'){
-      const tbl = el('table', 'vw-table'), th = el('thead'), hr = el('tr'), tbd = el('tbody'); (ev.columns || []).forEach(c => hr.appendChild(el('th', null, fill(c)))); th.appendChild(hr); tbl.appendChild(th);
+      const tbl = el('table', 'vw-table'), th = el('thead'), hr = el('tr'), tbd = el('tbody'); (ev.columns || []).forEach(k => hr.appendChild(el('th', null, fill(k)))); th.appendChild(hr); tbl.appendChild(th);
       (ev.rows || []).forEach(r => { const tr = el('tr'); r.forEach(v => tr.appendChild(el('td', null, fill(v)))); tbd.appendChild(tr); }); tbl.appendChild(tbd);
       const box = el('div', 'vw-listbox'); box.appendChild(tbl); body.appendChild(box); status = el('div', 'vw-status', fill(ev.foot || '')); body.appendChild(status);
     } else if (kind === 'web'){
@@ -681,11 +824,30 @@ function visitors(){
       if (ev.updated) page.appendChild(el('p', 'vw-upd', fill(ev.updated)));
       body.appendChild(page); status = el('div', 'vw-status', 'Done'); body.appendChild(status);
     } else if (kind === 'sunrise'){
-      const cw = size.w - 26, ch = Math.round(cw*.8), cv = el('canvas', 'vw-view'); cv.width = cw*2; cv.height = ch*2; cv.style.height = ch + 'px'; cv.setAttribute('aria-hidden', 'true');
+      const cw = 220, ch = Math.round(cw*.8), cv = el('canvas', 'vw-view'); cv.width = cw*2; cv.height = ch*2; cv.setAttribute('aria-hidden', 'true');
       const g = cv.getContext('2d'); g.scale(2, 2); view95(g, 0, 0, cw, ch, FX.dark && FX.dark()); body.appendChild(cv); status = el('div', 'vw-status vw-grip', ''); body.appendChild(status);
+    } else if (kind === 'notepad'){                 /* a note being written, by nobody */
+      const bar = el('div', 'vw-mbar'); bar.setAttribute('aria-hidden', 'true'); ['File', 'Edit', 'Search', 'Help'].forEach(t => bar.appendChild(el('span', null, t))); body.appendChild(bar);
+      const pad = el('div', 'vw-pad'); body.appendChild(pad); typed(pad, (ev.lines || []).map(fill).join('\n')); const caret = el('i', 'vw-caret'); caret.setAttribute('aria-hidden', 'true'); pad.appendChild(caret);
+    } else if (kind === 'player'){                  /* something playing, quietly, with no sound */
+      const lcd = el('div', 'vw-lcd'), top = el('div', 'vw-lcdt'), tm = el('span', null, ''); top.append(el('span', null, 'TRACK ' + fill(ev.track || '01')), tm);
+      const bars = el('div', 'vw-bars'); bars.setAttribute('aria-hidden', 'true'); for (let i = 0; i < 16; i++) bars.appendChild(el('i'));
+      lcd.append(top, el('div', 'vw-lcdj', fill(ev.jp || '')), el('div', 'vw-lcde', fill(ev.en || '')), bars); body.appendChild(lcd);
+      const seek = el('div', 'vw-seek'), knob = el('s'); seek.setAttribute('aria-hidden', 'true'); seek.appendChild(knob); body.appendChild(seek);
+      const ctl = el('div', 'vw-ctl'); ['Play', 'Pause', 'Stop'].forEach(k => { const b = el('button', 'vw-pb vw-' + k.toLowerCase()); b.type = 'button'; b.setAttribute('aria-label', k); ctl.appendChild(b); }); body.appendChild(ctl);
+      const len = ev.length || 213; let sec = Math.min(len - 1, ev.from || 0), playing = true;
+      const two = n => (n < 10 ? '0' : '') + n, draw = () => { tm.textContent = two(Math.floor(sec/60)) + ':' + two(sec % 60); knob.style.left = (sec/len*92).toFixed(1) + '%'; };
+      const beat = still => [...bars.children].forEach((b, i) => { b.style.height = (still ? 4 + (i*7) % 13 : 3 + Math.round((.5 + .5*Math.sin(sec*1.7 + i*1.3))*(7 + 12*Math.random()))) + 'px'; });
+      draw(); beat(true); tick = setInterval(() => { if (!playing) return; sec = (sec + 1) % len; draw(); if (!instant()) beat(false); }, 1000);
+      ctl.children[0].addEventListener('click', () => { playing = true; }); ctl.children[1].addEventListener('click', () => { playing = false; }); ctl.children[2].addEventListener('click', () => { playing = false; sec = 0; draw(); beat(true); });
     } else {
       const row = el('div', 'vw-msg'); if (ev.icon){ const i = el('img', 'vw-ico'); i.alt = ''; i.src = icon(ev.icon); row.appendChild(i); }
-      msg = el('p', null, fill(ev.text)); msg.id = uid + 't'; row.appendChild(msg); body.appendChild(row); win.setAttribute('aria-describedby', msg.id);
+      msg = el('p'); msg.id = uid + 't'; typed(msg, fill(ev.text)); row.appendChild(msg); body.appendChild(row); win.setAttribute('aria-describedby', msg.id);
+      if (kind === 'progress'){                     /* a job that takes its time */
+        const well = el('div', 'vw-prog'), bar = el('i'); well.setAttribute('aria-hidden', 'true'); well.appendChild(bar); body.appendChild(well); status = el('div', 'vw-status', ''); body.appendChild(status);
+        const end = ev.stopAt || 100; let pc = Math.min(end, ev.from || 0); const put = () => { bar.style.width = pc + '%'; status.textContent = pc + '%'; };
+        put(); tick = setInterval(() => { pc = Math.min(end, pc + 1 + Math.floor(Math.random()*4)); put(); if (pc >= end){ clearInterval(tick); if (ev.done){ if (typeJob) typeJob(); msg.textContent = fill(ev.done); } } }, 850);
+      }
     }
     const btns = el('div', 'vw-btns');
     (ev.buttons || []).forEach((bd, i) => { const b = el('button', 'vw-btn' + (i ? '' : ' vw-def'), fill(bd.label)); b.type = 'button'; if (bd.disabled) b.disabled = true; b.addEventListener('click', () => act(bd)); btns.appendChild(b); });
@@ -693,46 +855,57 @@ function visitors(){
     /* the window menu */
     const menu = el('div', 'vw-menu'); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', fill(ev.title || 'Window')); menu.hidden = true;
     const mi = (label, fn) => { const b = el('button', 'vw-mi', label); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.tabIndex = -1; b.addEventListener('click', fn); menu.appendChild(b); return b; };
-    mi('Close', () => leave('close')); mi("Don't show these", () => { setVoff(true); leave(null); });
+    mi('Close', () => leave('close')); mi("Don't show these", () => { setVoff(true); dispatchEvent(new Event('vw:visitors')); });
     win.appendChild(menu);
     layer.appendChild(win);
 
     /* where */
-    let pos = null, jumps = 0, gone = false, timer = 0, held = false;
-    const place = p => { pos = p; win.style.left = Math.round(p[0]) + 'px'; win.style.top = Math.round(p[1]) + 'px'; };
-    const h0 = win.offsetHeight, sp = spots(size.w, h0, size.narrow), was = how === 'again' && vget().open;
-    if (!sp.length){ win.remove(); return false; }
-    place(was && was.x != null && fits([was.x, was.y], size.w, h0, false) ? [was.x, was.y] : sp[Math.random()*sp.length | 0]);
+    let jumps = 0, timer = 0, held = false, lastStamp = null;
+    const place = p => { c.pos = p; win.style.left = Math.round(p[0]) + 'px'; win.style.top = Math.round(p[1]) + 'px'; }; c.place = place;
+    const was = how === 'again' && vget().open, sp = roomy ? places(c, kind) : narrowSpot(c);
+    if (!sp.length){ clearInterval(tick); clearTimeout(typing); win.remove(); return null; }
+    const pk = sp[Math.random()*sp.length | 0]; win.style.width = pk.w + 'px';
+    place(was && was.x != null && inView([was.x, was.y], win.offsetWidth, win.offsetHeight) ? [was.x, was.y] : [pk.x, pk.y]);
     if (instant()) win.classList.add('on'); else requestAnimationFrame(() => requestAnimationFrame(() => win.classList.add('on')));
-    cur = win;
-    if (how !== 'again') vupd(s => { const t = Date.now(); s.seen[ev.id] = { at:t }; s.last = t; s.count = (s.count || 0) + 1;
+    live.push(c);
+    if (ev.ambient) remember(ev.id);
+    else if (how !== 'again') vupd(s => { const t = Date.now(); s.seen[ev.id] = { at:t }; s.last = t; s.count = (s.count || 0) + 1;
       if (s.day !== dayOf(t)){ s.day = dayOf(t); s.dayN = 0; } s.dayN = (s.dayN || 0) + 1; if (ev.rare) s.rareLast = t; if (ev.stay === 'persist') s.open = { id:ev.id }; });
 
-    /* going */
-    const answer = a => vupd(s => { if (s.seen[ev.id]) s.seen[ev.id].b = a; });
-    const leave = a => { if (gone) return; gone = true; clearTimeout(timer); if (a != null) answer(a);
+    /* going: it breaks up and is gone (the copies it left, if any, go after it, one at a time) */
+    const answer = a => { if (!ev.ambient) vupd(s => { if (s.seen[ev.id]) s.seen[ev.id].b = a; }); };
+    const leave = a => { if (c.gone) return; c.gone = true; clearTimeout(timer); clearInterval(tick); clearTimeout(typing); if (a != null) answer(a);
       if (ev.stay === 'persist') vupd(s => { s.open = null; });
       win.classList.remove('on'); win.classList.add('off');
-      const rm = () => { win.remove(); if (cur === win) cur = null; }; if (instant()) rm(); else setTimeout(rm, 280); };
-    const jump = () => { const sp2 = spots(size.w, win.offsetHeight, size.narrow).filter(p => Math.hypot(p[0] - pos[0], p[1] - pos[1]) > 120); if (!sp2.length) return false;
+      c.stamps.forEach((k, i) => setTimeout(() => k.remove(), instant() ? 0 : 60 + 45*i));
+      const rm = () => { win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); went(); }; if (instant()) rm(); else setTimeout(rm, 520); };
+    c.leave = leave;
+    const jump = () => { const sp2 = (roomy ? places(c, kind) : narrowSpot(c)).filter(p => Math.hypot(p.x - c.pos[0], p.y - c.pos[1]) > 120); if (!sp2.length) return false;
       const p = sp2[Math.random()*sp2.length | 0];
-      if (instant()){ place(p); return true; }
-      win.classList.remove('on'); setTimeout(() => { place(p); requestAnimationFrame(() => win.classList.add('on')); }, 260); return true; };
-    const say = (text, ms) => { if (msg) msg.textContent = text; else if (status) status.textContent = text; btns.remove(); clearTimeout(timer); timer = setTimeout(() => leave(null), ms); };
+      if (instant()){ win.style.width = p.w + 'px'; place([p.x, p.y]); return true; }
+      win.classList.remove('on'); win.classList.add('off'); setTimeout(() => { if (c.gone) return; win.style.width = p.w + 'px'; place([p.x, p.y]); win.classList.remove('off'); void win.offsetWidth; win.classList.add('on'); }, 500); return true; };
+    const say = (text, ms) => { if (typeJob) typeJob(); if (msg) msg.textContent = text; else if (status) status.textContent = text; btns.remove(); clearTimeout(timer); timer = setTimeout(() => leave(null), ms); };
     const act = bd => { answer(bd.label);
       if (bd.do === 'reply') say(fill(bd.say || ''), 2600);
       else if (bd.do === 'flee'){ if (jumps < 2 && jump()){ jumps++; return; } leave(null); }
-      else if (bd.do === 'open'){ leave(null); const nx = EV[bd.open]; if (nx) setTimeout(() => show(nx, 'open'), instant() ? 0 : 420); }
+      else if (bd.do === 'open'){ leave(null); const nx = EV[bd.open]; if (nx) setTimeout(() => show(nx, 'open'), instant() ? 0 : 560); }
       else leave(null); };
     bX.addEventListener('click', () => {
       if (ev.stay === 'evade'){ if (jumps < 2 && jump()){ jumps++; return; } if (ev.lastWord){ answer('close'); say(fill(ev.lastWord), 1800); return; } }
       leave('close'); });
     if (bMin) bMin.addEventListener('click', () => leave(null));
-    /* it leaves by itself after a while (not while you're in it), unless it stays */
-    const arm = () => { if (ev.stay === 'persist') return; clearTimeout(timer); timer = setTimeout(() => { if (held) arm(); else leave(null); }, P.fadeAfterSeconds*1000); };
-    arm();
+    /* it leaves by itself after a while (not while you're in it), unless it stays: the other pointer comes and closes it */
+    const life = how === 'preview' ? lifeQ*1000 : ev.stay === 'persist' ? 0 : !roomy ? P.fadeAfterSeconds*1000 : ev.ambient ? rand(P.staySeconds)*1000 : P.fadeAfterSeconds*1000;
+    const arm = ms => { if (!ms) return; clearTimeout(timer); timer = setTimeout(() => { if (c.gone) return; if (held || curBusy){ arm(4000); return; }
+      (ev.smear ? ghostSmear(c) : ghostClose(c)).then(done => { if (!done && !c.gone) leave(null); }); }, ms); };
+    arm(life);
     win.addEventListener('pointerenter', () => { held = true; }); win.addEventListener('pointerleave', () => { held = false; });
     win.addEventListener('focusin', () => { held = true; }); win.addEventListener('focusout', () => { held = false; });
+    /* a shy one goes as soon as your pointer comes near */
+    if (ev.stay === 'shy'){ const born = Date.now(), near = e => { if (c.gone){ removeEventListener('pointermove', near); return; } if (Date.now() - born < 1600) return;
+        const r = win.getBoundingClientRect(), dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right), dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+        if (Math.hypot(dx, dy) < 70){ removeEventListener('pointermove', near); leave('shy'); } };
+      addEventListener('pointermove', near, { passive:true }); }
     /* the menu */
     const items = () => [...menu.querySelectorAll('.vw-mi')];
     const openMenu = () => { menu.hidden = false; sys.setAttribute('aria-expanded', 'true'); items()[0].focus(); };
@@ -740,36 +913,120 @@ function visitors(){
     sys.addEventListener('click', () => menu.hidden ? openMenu() : closeMenu(true));
     menu.addEventListener('keydown', e => { const it = items(), i = it.indexOf(document.activeElement);
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); it[(i + (e.key === 'ArrowDown' ? 1 : it.length - 1)) % it.length].focus(); } });
-    document.addEventListener('pointerdown', e => { if (!menu.hidden && !menu.contains(e.target) && !sys.contains(e.target)) closeMenu(false); }, true);
+    const offMenu = e => { if (c.gone){ document.removeEventListener('pointerdown', offMenu, true); return; } if (!menu.hidden && !menu.contains(e.target) && !sys.contains(e.target)) closeMenu(false); };
+    document.addEventListener('pointerdown', offMenu, true);
     /* Escape: the menu first, then the window */
     win.addEventListener('keydown', e => { if (e.key !== 'Escape') return; e.stopPropagation(); if (!menu.hidden) closeMenu(true); else leave('close'); });
-    /* dragged by its title bar */
+    /* dragged by its title bar (a hung one leaves copies of itself along the way) */
     tb.addEventListener('pointerdown', e => {
       if (e.button || e.target.closest('button')) return; e.preventDefault();
-      const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; try { tb.setPointerCapture(e.pointerId); } catch {} held = true; win.classList.add('vw-drag');
-      const mv = m => place([Math.max(0, Math.min(innerWidth - r.width, m.clientX - dx)), Math.max(0, Math.min(innerHeight - 24, m.clientY - dy))]);
+      const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; try { tb.setPointerCapture(e.pointerId); } catch {} held = true; win.classList.add('vw-drag'); lastStamp = c.pos.slice();
+      const mv = m => { const p = [Math.max(0, Math.min(innerWidth - r.width, m.clientX - dx)), Math.max(0, Math.min(innerHeight - 24, m.clientY - dy))];
+        if (ev.smear && Math.hypot(p[0] - lastStamp[0], p[1] - lastStamp[1]) > 16){ stamp(c); lastStamp = p.slice(); } place(p); };
       const up = () => { tb.removeEventListener('pointermove', mv); tb.removeEventListener('pointerup', up); tb.removeEventListener('pointercancel', up); held = false; win.classList.remove('vw-drag');
-        if (ev.stay === 'persist') vupd(s => { if (s.open){ s.open.x = pos[0]; s.open.y = pos[1]; } }); };
+        if (ev.stay === 'persist') vupd(s => { if (s.open){ s.open.x = c.pos[0]; s.open.y = c.pos[1]; } }); };
       tb.addEventListener('pointermove', mv); tb.addEventListener('pointerup', up); tb.addEventListener('pointercancel', up); });
     /* the screen changes size: it moves somewhere that still fits, or goes quietly */
     let rz = 0;
-    const onResize = () => { if (gone){ removeEventListener('resize', onResize); return; } clearTimeout(rz); rz = setTimeout(() => {
-      const w = win.offsetWidth, h = win.offsetHeight; if (fits(pos, w, h, size.narrow)) return;
-      const sp3 = spots(w, h, size.narrow); if (sp3.length) place(sp3[0]); else { gone = true; win.remove(); if (cur === win) cur = null; } }, 200); };
+    const onResize = () => { if (c.gone){ removeEventListener('resize', onResize); return; } clearTimeout(rz); rz = setTimeout(() => { if (c.gone) return;
+      const w = win.offsetWidth, h = win.offsetHeight; if (roomy ? free([c.pos[0], c.pos[1], w, h], c) : inView(c.pos, w, h)) return;
+      const sp3 = wide() ? places(c, kind) : kind === 'dialog' ? narrowSpot(c) : []; if (sp3.length){ win.style.width = sp3[0].w + 'px'; place([sp3[0].x, sp3[0].y]); } else { c.gone = true; clearInterval(tick); clearTimeout(timer); c.stamps.forEach(k => k.remove()); win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); } }, 200); };
     addEventListener('resize', onResize);
-    return true;
+    return c;
   };
 
-  /* ── this page: a window that stays, back again; one called up; or perhaps someone new, after a moment ── */
+  /* ── the company: on a screen with margins somebody is usually about. The first turns up a few seconds after the page opens, once
+        you've been still a moment; sometimes a second joins it; when the last one goes there's a short pause, then the next. Never
+        more than two, and none while one of the site's own dialogs is open. ── */
+  let nextAt = Date.now() + rand(P.firstAfterSeconds)*1000, secondAt = Infinity, waited = 0, lastAct = Date.now(), running = false;
+  const went = () => { const n = openNow().length, t = Date.now(); if (!n){ nextAt = t + rand(P.gapSeconds)*1000; secondAt = Infinity; } else if (Math.random() < P.secondChance) secondAt = t + rand(P.secondAfterSeconds)*1000; };
+  const stir = () => { lastAct = Date.now(); };
+  const company = () => {
+    if (!running || voff() || layer.hidden || document.hidden || !wide() || document.querySelector('dialog[open]')) return;
+    const n = openNow().length, t = Date.now(); if (n >= P.maxOpen || t < (n ? secondAt : nextAt)) return;
+    if (t - lastAct < P.idleSeconds*1000 && ++waited < 16) return;
+    waited = 0;
+    const ev = pickNext(), c = ev && show(ev, 'new'); if (!c){ if (n) secondAt = t + 6000; else nextAt = t + 3500; return; }
+    secondAt = !n && Math.random() < P.secondChance ? t + rand(P.secondAfterSeconds)*1000 : Infinity; };
+  ['pointermove', 'pointerdown', 'keydown', 'wheel'].forEach(n => addEventListener(n, stir, { passive:true, capture:true }));
+  setInterval(company, 700);
+  /* turned off (a window's menu, or Start): they all go at once; turned on again: they come back in their own time */
+  addEventListener('vw:visitors', () => { if (voff()) openNow().forEach(o => o.leave(null)); else if (wide()){ running = true; nextAt = Date.now() + 1500; } });
+
+  /* ── this page: one called up to look at (?vwent=id, or a,b for two); a window that stays, back again; then the company, or on a narrow screen perhaps one visitor ── */
+  if (preview){ const ids = preview === 'next' ? [null] : preview.split(',');
+    ids.forEach((id, i) => setTimeout(() => { const ev = id ? EV[id] : (wide() ? pickNext() : pickRare(true)); if (ev) show(ev, 'preview'); }, 700 + i*900)); return; }
+  if (voff()) return;
   const s0 = vget();
-  let ev = null, how = 'new';
-  if (preview){ ev = preview === 'next' ? pick(true) : EV[preview]; how = 'preview'; }
-  else if (voff()) return;
-  else if (s0.open && EV[s0.open.id]){ ev = EV[s0.open.id]; how = 'again'; }
-  else ev = pick(false);
-  if (!ev) return;
-  const a = P.appearAfterSeconds || [3, 9], wait = how === 'new' ? (a[0] + Math.random()*(a[1] - a[0]))*1000 : 700;
-  setTimeout(() => show(ev, how), wait);
+  if (s0.open && EV[s0.open.id]) setTimeout(() => show(EV[s0.open.id], 'again'), 700);
+  if (wide()){ running = true; return; }
+  if (s0.open && EV[s0.open.id]) return;
+  const ev = pickRare(false); if (!ev) return;
+  const a = P.appearAfterSeconds || [3, 9]; setTimeout(() => show(ev, 'new'), rand(a)*1000);
 }
-if (NEXT) startVisitors();
+/* ═══════════════════════════════════════════════════════════════════
+   The desktop's furniture (moderators only, with the rest of NEXT).
+     · A taskbar along the foot of the screen: Start (the pages again,
+       the Theme finder, Settings, the visitors on or off), a button for
+       each page with this page's pressed in, a clock. Real links and
+       buttons; nothing in it moves. Not on a narrow screen, and not
+       while a game is open. (Only pages the site already links to.)
+     · A faint still grain over everything, so the page and the picture
+       behind it read as one image.
+   ═══════════════════════════════════════════════════════════════════ */
+const TASKS = [['home', 'Home', 'home.html', 'home'], ['timetable', 'Timetable', './', 'tt'], ['calendar', 'Calendar', 'calendar.html', 'cal'], ['free', 'Free periods', 'free.html', 'clock'],
+  ['revision', 'Revision', 'revision.html', 'book'], ['resources', 'Resources', 'resources.html', 'folder'], ['games', 'Games', 'games.html', 'joy'], ['mahjong', 'Mahjong club', 'mahjong.html', 'tile']];
+function desk(){
+  if (!document.body || document.querySelector('.vw-task')) return;
+  const PG = root.getAttribute('data-pg') || FX.page || '';
+  const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+  const pix = n => { const i = el('img'); i.alt = ''; i.width = i.height = 16; i.src = icon(n); return i; };
+  /* the grain: specks of black and of white, most of them barely there */
+  const gr = el('div', 'vw-grain'); gr.setAttribute('aria-hidden', 'true');
+  { const c = canvas2(128, 128), g = c.getContext('2d'), d = g.createImageData(128, 128), r = rnd(4242);
+    for (let i = 0; i < d.data.length; i += 4){ const v = r() < .5 ? 0 : 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = Math.round(r()*r()*46); }
+    g.putImageData(d, 0, 0); gr.style.backgroundImage = 'url(' + c.toDataURL() + ')'; }
+  document.body.appendChild(gr);
+  /* the taskbar */
+  const bar = el('nav', 'vw-task'); bar.setAttribute('aria-label', 'Pages');
+  const start = el('button', 'vw-start'); start.type = 'button'; start.setAttribute('aria-haspopup', 'menu'); start.setAttribute('aria-expanded', 'false'); start.append(pix('opaline'), el('span', null, 'Start'));
+  const list = el('div', 'vw-tasks');
+  TASKS.forEach(t => { const a = el('a', 'vw-tk'); a.href = t[2]; a.title = t[1]; if (t[0] === PG) a.setAttribute('aria-current', 'page'); a.append(pix(t[3]), el('span', null, t[1])); list.appendChild(a); });
+  const tray = el('div', 'vw-tray'), clock = el('time', 'vw-clock');
+  const tick = () => { const d = new Date(), h = d.getHours(), m = d.getMinutes(); clock.textContent = ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
+    clock.dateTime = d.toISOString(); clock.title = d.toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long', year:'numeric' }); };
+  tick(); setInterval(tick, 15000);
+  const spk = pix('spk'); spk.setAttribute('aria-hidden', 'true'); tray.append(spk, clock);
+  /* the Start menu */
+  const menu = el('div', 'vw-sm'); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'Start'); menu.hidden = true;
+  const band = el('div', 'vw-smside'); band.setAttribute('aria-hidden', 'true'); band.appendChild(el('span', null, 'MSC Unofficial'));
+  const items = el('div', 'vw-smlist'); menu.append(band, items);
+  const mi = (node, ic, label) => { node.classList.add('vw-smi'); node.setAttribute('role', 'menuitem'); node.tabIndex = -1; node.append(pix(ic), el('span', null, label)); items.appendChild(node); return node; };
+  const sep = () => items.appendChild(el('div', 'vw-smsep'));
+  const all = () => [...items.querySelectorAll('.vw-smi')];
+  const open = () => { menu.hidden = false; start.setAttribute('aria-expanded', 'true'); visSync(); all()[0].focus(); };
+  const close = back => { if (menu.hidden) return; menu.hidden = true; start.setAttribute('aria-expanded', 'false'); if (back) start.focus(); };
+  TASKS.forEach(t => { const a = el('a'); a.href = t[2]; mi(a, t[3], t[1]); });
+  sep();
+  { const a = el('a'); a.href = 'themes.html'; mi(a, 'paint', 'Theme finder'); }
+  const gear = document.getElementById('themebtn');
+  if (gear){ const b = el('button'); b.type = 'button'; mi(b, 'monitor', 'Settings…'); b.addEventListener('click', () => { close(false); gear.click(); }); }
+  sep();
+  const vis = el('button'); vis.type = 'button'; mi(vis, 'win', 'Visitors'); vis.setAttribute('role', 'menuitemcheckbox');
+  const visSync = () => { vis.setAttribute('aria-checked', voff() ? 'false' : 'true'); };
+  vis.addEventListener('click', () => { setVoff(!voff()); visSync(); dispatchEvent(new Event('vw:visitors')); });
+  start.addEventListener('click', () => menu.hidden ? open() : close(true));
+  menu.addEventListener('keydown', e => { const it = all(), i = it.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); it[(i + (e.key === 'ArrowDown' ? 1 : it.length - 1)) % it.length].focus(); }
+    else if (e.key === 'Escape'){ e.preventDefault(); close(true); } else if (e.key === 'Tab') close(false); });
+  document.addEventListener('pointerdown', e => { if (!menu.hidden && !menu.contains(e.target) && !start.contains(e.target)) close(false); }, true);
+  bar.append(start, el('span', 'vw-tsep'), list, tray, menu);
+  document.body.appendChild(bar);
+  const sync = () => { const on = root.getAttribute('data-skin') === 'vapor'; bar.hidden = gr.hidden = !on; root.classList.toggle('vw-desk', on); };
+  sync(); addEventListener('tt:look', sync);
+}
+/* not inside a frame (the Mahjong board inside Games, a page previewed in the Theme finder): the page round it has its own */
+const FRAMED = (() => { try { return window.top !== window; } catch { return true; } })();
+if (NEXT && !FRAMED){ if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', desk, { once:true }); else desk(); }
+if (NEXT && !FRAMED) startVisitors();
 })();

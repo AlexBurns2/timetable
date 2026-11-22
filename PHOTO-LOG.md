@@ -105,3 +105,8 @@ was staged in the session scratchpad; only the finished pictures are in the repo
 - **Credits:** About → Photo credits lists Soap Film 1. The youth's credit already stands (the same object, another of the
   museum's photographs of it). The palm credits were taken out with the palms.
 - **Type:** 時間割 is set in Yu Gothic Bold (a Windows system font) and rendered into the picture; no font file is downloaded or shipped.
+
+**Later the same day (HANDOFF 8.162):** nothing new was downloaded.
+- Soap Film 1 (CC BY 4.0) now fills the word on every Vaporwave page and the Theme finder (`images/th/vw-word-*.webp`, eleven files); its credit in About stands.
+- The wide floors (`vw-*-platew-*.webp`, ten files, 1.1 MB) are our own renders.
+- The Theme finder's tile pictures (`images/tf/*.webp`, 31 files, 144 KB) are screenshots of our own Home page in each theme, as the demo student; they show nothing the themes don't already show and credit.

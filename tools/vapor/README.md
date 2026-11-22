@@ -62,7 +62,7 @@ python -P tools/vapor/eyes.py   <work>/photo/youth4-l.png <work>/photo/youth4-g-
 python -P tools/vapor/eyes.py   <work>/photo/youth4-d.png <work>/photo/youth4-g-d.png plane 300 850 541 548 -.028 125 .07 80 7
 python -P tools/vapor/palms.py  <work>/palms-dl/p5.jpg <work>/palms/venice.png dark .62 .04 1 1 1300 45
 python -P tools/vapor/palms.py  <work>/palms-dl/p2.jpg <work>/palms/canary.png dark .12 0 .92 .69 1100 40
-python -P tools/vapor/word.py   <work>/film-dl/soapfilm1.jpg <work>/word/tt.png 時間割 480 5
+python -P tools/vapor/word.py   <work>/film-dl/soapfilm1.jpg <work>/word/timetable.png 時間割 440 5
 python -P tools/vapor/sky.py    <work>/ph-dl/sky/kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg <work>/final 4400 540
 python -P tools/vapor/paint.py  <work>/photo/apollo.png <work>/ph-dl/sky/kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg <work>/final/vw-notes-paint-l.webp l
 python -P tools/vapor/paint.py  <work>/photo/apollo.png <work>/ph-dl/sky/kloofendal_48d_partly_cloudy_puresky_tonemapped.jpg <work>/final/vw-notes-paint-d.webp d
@@ -82,9 +82,12 @@ python -P tools/vapor/paint.py  <work>/photo/apollo.png <work>/ph-dl/sky/kloofen
   reference.) `head=` picks another: `youth4` (no glitch), `youth34-g`, `youth34`, `youth-g` (the old head-on one).
 - `palms.py` (palms are out of the scene for now) reduces a photograph of palms against the sky to their silhouette (white, the shape in the alpha); the page tints it
   pale. The numbers are the part of the photograph kept (fractions), the height, and the darkness threshold.
-- `word.py` sets the page's word vertically in Yu Gothic Bold, filled with the soap film recoloured to the theme's pastels, with a
-  bevel, a pale line, a violet outline and three slipped rows. Save the two palms and the word as WebP into `images/th`
-  (`vw-palm-venice.webp`, `vw-palm-canary.webp`, `vw-tt-word.webp`, the word 1100 px tall); `pack.py` doesn't handle them.
+- `word.py` sets a page's word vertically in Yu Gothic Bold, filled with the soap film recoloured to the theme's pastels, with a
+  bevel, a pale line, a violet outline and a slipped row to a glyph (three at most); the long-vowel bar is turned to stand
+  upright. Every page has one, all made at 440 px a glyph and saved at half that as `images/th/vw-word-<page>.webp`
+  (`pack.py` doesn't handle them), so the page can show them all at one scale. The words and their seeds: timetable 時間割 5,
+  home ホーム 12, calendar カレンダー 21, notes ノート 8, games ゲーム 14, finder 検索 3, free 空き時間 17, revision 復習 9,
+  resources 資料 6, mahjong 麻雀 11, themes テーマ 4.
 - `eyes.py` glitches a band across the head's eyes (smeared and slipped rows, parted colour channels, a missing line) so it
   doesn't stare out of the screen. The numbers are the band's rows and span in the cut-out, then the seed.
 - `sky.py` makes `vw-sky-l.webp` and `vw-sky-d.webp`, a seamless band of the photographed sky
@@ -115,6 +118,8 @@ node tools/vapor/render.mjs --work <work> "scene=tt&mode=l&part=left&n=96"
 Each scene renders these parts:
 
 - `plate`: the floor and anything far off, with alpha where the sky shows.
+- `platew`: the plate again, 5280 wide (the same lens, so its middle is the plate exactly), for windows wider than 2.4 to 1.
+  Render it for every scene with a floor (tt, cal, home, planets, solids); `runall.sh` doesn't, so render them one at a time.
 - `left` / `right`: a group on its own, with the shadow and reflection it lays on the floor.
 - floating things (`planet`, `moon`): these get their own image so the page can let them bob.
 - `phone`: the whole picture framed for a tall screen.

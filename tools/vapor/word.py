@@ -17,6 +17,9 @@ cell = int(G * 1.02); Wd = G + 2 * PAD; Hd = cell * len(text) - (cell - G) + 2 *
 mask = Image.new('L', (Wd, Hd), 0); d = ImageDraw.Draw(mask)
 for i, ch in enumerate(text):
     x0, y0, x1, y1 = font.getbbox(ch)
+    if ch in 'ー〜～':                                          # the long-vowel bar stands upright in vertical writing: the glyph, turned a quarter clockwise
+        t = Image.new('L', (2 * G, 2 * G), 0); ImageDraw.Draw(t).text((G - (x0 + x1) / 2, G - (y0 + y1) / 2), ch, font=font, fill=255)
+        t = t.rotate(-90, resample=Image.BICUBIC).crop((G // 2, G // 2, G // 2 + G, G // 2 + G)); mask.paste(255, (PAD, PAD + i * cell), t); continue
     d.text((PAD + (G - (x1 - x0)) / 2 - x0, PAD + i * cell + (G - (y1 - y0)) / 2 - y0), ch, font=font, fill=255)
 m = np.asarray(mask).astype(np.float32) / 255
 
@@ -63,11 +66,12 @@ def slide(arr, dx):
     if dx >= 0: o[:, dx:] = arr[:, :Wd - dx]
     else: o[:, :Wd + dx] = arr[:, -dx:]
     return o
-rows = sorted(rng.choice(np.arange(PAD + G // 3, Hd - PAD - G // 3), 3, replace=False))
+nsl = 2 if len(text) < 3 else 3                             # one slip to a glyph, three at most, each somewhere in its own glyph
+rows = sorted(PAD + int(gi) * cell + int(rng.integers(G // 6, G - G // 4)) for gi in rng.choice(len(text), nsl, replace=False))
 for j, y in enumerate(rows):
     h = int(rng.integers(G * .03, G * .1)); dx = int(rng.choice([-1, 1]) * rng.integers(G * .05, G * .13)); band = img[y:y + h].copy()
     img[y:y + h] = slide(band, dx)
-    if j == 1:                                                         # the doubled one: a pink and a cyan ghost either side
+    if j == nsl // 2:                                                  # the doubled one: a pink and a cyan ghost either side
         for c, ddx in ((np.array([1, .45, .8]), dx - int(G * .035)), (np.array([.4, .95, 1]), dx + int(G * .035))):
             gh = slide(band, ddx); al = gh[..., 3] * .45; seg = img[y:y + h]
             a0 = seg[..., 3:4]; na = al[..., None] + a0 * (1 - al[..., None])

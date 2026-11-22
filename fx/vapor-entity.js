@@ -1,10 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════
    Vaporwave's visitors: what they say, and when.
 
-   Now and then a Windows 95 window turns up in the margin beside the page,
-   as if something in the machine were trying to say something. This file
-   is only the words and the timing; fx/vapor.js draws the windows. It is
-   written to be edited: change a line, add one, change a number.
+   Windows 95 windows turn up in the margins beside the page, as if
+   something in the machine were keeping itself busy and, now and then,
+   trying to say something. This file is only the words and the timing;
+   fx/vapor.js draws the windows. It is written to be edited: change a
+   line, add one, change a number.
+
+   There are two sorts. The passing windows (ambient: true) come and go all
+   the time on a screen with room beside the page, and come round again: a
+   note typing itself, something playing, a job that takes its time, a line
+   or two. The conversations (the rest) each come once, and some have a
+   follow-up hours later that depends on what you answered.
 
    Write in the same voice: quiet, a little uncanny, wistful, deadpan.
    No exclamation marks. Never hopeless or threatening: if a line sounds
@@ -14,6 +21,18 @@ window.VW_ENTITY = {
 
   /* ── how often ─────────────────────────────────────────────────── */
   pace: {
+    /* on a screen with room beside the page: somebody is usually about */
+    firstAfterSeconds: [2, 5],    // after a page opens, the first window turns up within this long...
+    idleSeconds: 2,               // ...once the pointer and the keys have been still this long
+    staySeconds: [24, 44],        // how long a passing window stays before the other pointer comes and closes it
+    gapSeconds: [5, 12],          // the pause between the last one leaving and the next arriving
+    secondChance: 0.5,            // the chance that a second window joins the first...
+    secondAfterSeconds: [12, 28], // ...this long after it
+    maxOpen: 2,                   // never more than this many at once
+    storyChance: 0.3,             // the chance that the next one is a conversation rather than a passing window
+    typeCps: 30,                  // how fast their words type themselves, in letters a second
+
+    /* on a narrow screen (a phone): none of the above. One small window, rarely: */
     quietSessions: 2,        // no visitors at all in the first 2 sessions after choosing the theme
     sessionGapMinutes: 30,   // away this long, and coming back counts as a new session
     minGapMinutes: 100,      // at least this long between one visitor and the next (about two periods)
@@ -43,6 +62,10 @@ window.VW_ENTITY = {
                'persist' stays, page after page, until it's closed
                'evade'   its X makes it reappear somewhere else, twice, then it goes
                          (with `lastWord`, if it has one). Its buttons work as usual.
+               'shy'     goes the moment your pointer comes near it
+     ambient   true: a passing window (see the top of this file). It can come again.
+     smear     true: a hung program. Dragged, it leaves copies of itself behind; when its
+               time is up the other pointer drags it off the same way.
      after     a follow-up: { id, button, minHours, maxHours }. It comes only after that
                visitor (and, with `button`, only if that was the answer), between minHours
                and maxHours later. maxHours around 20 lets it wait for the next morning.
@@ -50,7 +73,11 @@ window.VW_ENTITY = {
      rare      true: one of the rare ones (see pace)
      pages     only on these pages; notOn: never on these. Page names: timetable, home,
                calendar, notes, games, finder, free, revision, resources, mahjong
-     kind      'dialog' (the default), 'explorer', 'list', 'web' or 'sunrise' (the windows with more in them)
+     kind      'dialog' (the default), 'explorer', 'list', 'web' or 'sunrise' (the windows with more in them);
+               'notepad'  lines: [...]  a note that types itself, line by line
+               'player'   track, jp, en, length (seconds), from (where it has got to): something playing.
+                          The titles are made up; no real songs.
+               'progress' text, from, stopAt, done: a bar that fills to stopAt per cent, then says `done`
 
      Opaline Systems is a company we made up: a 90s software house whose programs
      are still running, cheerfully, for nobody. Its windows are signed with its logo.
@@ -94,11 +121,11 @@ window.VW_ENTITY = {
     { id: 'taskmgr', kind: 'list', title: 'Task Manager', icon: 'monitor',
       columns: ['Image Name', 'CPU'],
       rows: [['thoughts.exe', '99'], ['daydream.exe', '01'], ['opaline_update.exe', '00'], ['System Idle Process', '00']],
-      foot: 'CPU Usage: 100%',
+      foot: 'CPU Usage: 100%', ambient: true,
       buttons: [{ label: 'End Task', disabled: true }, { label: 'Close' }] },
 
     { id: 'bin', kind: 'list', title: 'Recycle Bin', icon: 'bin',
-      columns: ['Name', 'Size'], rows: [['summer.zip', '0 bytes']], foot: '1 object(s)',
+      columns: ['Name', 'Size'], rows: [['summer.zip', '0 bytes']], foot: '1 object(s)', ambient: true,
       buttons: [{ label: 'Restore', do: 'reply', say: 'There was nothing in it to restore.' }, { label: 'Close' }] },
 
     { id: 'sunrise', kind: 'sunrise', title: 'Sunrise', icon: 'sun', stay: 'persist' },
@@ -110,11 +137,11 @@ window.VW_ENTITY = {
       title: 'Opaline System', icon: 'opaline', text: 'One user detected. Welcome back.', buttons: [{ label: 'OK' }] },
     { id: 'renew', title: 'Opaline System', icon: 'opaline', text: 'Your subscription to Summer 1998 has expired.',
       buttons: [{ label: 'Renew', do: 'reply', say: 'Renewal is no longer available.' }, { label: 'OK' }] },
-    { id: 'thanks', title: 'Opaline System', icon: 'opaline', text: 'Thank you for choosing tomorrow.', buttons: [{ label: 'OK' }] },
+    { id: 'thanks', title: 'Opaline System', icon: 'opaline', text: 'Thank you for choosing tomorrow.', buttons: [{ label: 'OK' }], ambient: true },
 
     /* a page from the old web, still up */
     { id: 'homepage', kind: 'web', title: 'welcome.htm', heading: 'Welcome to my page',
-      counter: '000001', updated: 'Last updated 14 August 1998' },
+      counter: '000001', updated: 'Last updated 14 August 1998', ambient: true },
 
     /* a thread of our own */
     { id: 'wonder', title: 'Question', text: "Do you wonder what's beyond this screen?",
@@ -127,10 +154,50 @@ window.VW_ENTITY = {
     /* and a few on their own */
     { id: 'anyone', title: 'Network', text: 'Is anyone there?',
       buttons: [{ label: 'Yes', do: 'reply', say: 'Oh. Hello.' }, { label: 'No', do: 'reply', say: 'Understood.' }] },
-    { id: 'saved', title: 'Save', text: 'Your progress has been saved somewhere.', buttons: [{ label: 'OK' }] },
-    { id: 'mild', title: 'Weather', text: 'It is a mild day in here.', buttons: [{ label: 'OK' }] },
-    { id: 'forgot', title: 'Reminder', text: 'You came here for something. It will come back to you.', buttons: [{ label: 'OK' }] },
+    { id: 'saved', title: 'Save', text: 'Your progress has been saved somewhere.', buttons: [{ label: 'OK' }], ambient: true },
+    { id: 'mild', title: 'Weather', text: 'It is a mild day in here.', buttons: [{ label: 'OK' }], ambient: true },
+    { id: 'forgot', title: 'Reminder', text: 'You came here for something. It will come back to you.', buttons: [{ label: 'OK' }], ambient: true },
     { id: 'nothing', title: 'System', text: 'This window has nothing to report.',
-      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Noted.' }
+      buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Noted.', ambient: true },
+
+    /* ── the passing windows ── */
+
+    /* notes, typing themselves */
+    { id: 'pad-list', kind: 'notepad', title: 'list.txt - Notepad', ambient: true,
+      lines: ['things to remember:', '- the light in the hall', '- a song, mostly the middle', '- where I put the'] },
+    { id: 'pad-letter', kind: 'notepad', title: 'Untitled - Notepad', ambient: true,
+      lines: ['Dear whoever finds this,', 'the machine is fine.', 'It only wanted the company.'] },
+    { id: 'pad-log', kind: 'notepad', title: 'log.txt - Notepad', ambient: true,
+      lines: ['08:55  nobody', '10:05  nobody', '11:45  somebody (you)', '11:46  hello'] },
+    { id: 'pad-forecast', kind: 'notepad', title: 'forecast.txt - Notepad', ambient: true,
+      lines: ['Forecast for inside:', 'mild, with a chance', 'of afternoon.'] },
+    { id: 'pad-readme', kind: 'notepad', title: 'README.TXT - Notepad', ambient: true,
+      lines: ['Thank you for installing', 'Opaline Sunrise 2.0.', '', 'There is no step two.'] },
+
+    /* something playing, with no sound */
+    { id: 'play-mall', kind: 'player', title: 'Media Player', ambient: true,
+      track: '03', jp: '夕暮れのモール', en: 'mall at dusk (slowed)', length: 227, from: 74 },
+    { id: 'play-pool', kind: 'player', title: 'Media Player', ambient: true,
+      track: '07', jp: 'プールサイド 1998', en: 'poolside 1998', length: 198, from: 12 },
+    { id: 'play-hold', kind: 'player', title: 'Media Player', ambient: true,
+      track: '01', jp: '保留音', en: 'hold music, extended', length: 599, from: 341 },
+    { id: 'play-rain', kind: 'player', title: 'Media Player', ambient: true,
+      track: '11', jp: '雨の日のテレビ', en: 'television on a rainy day', length: 242, from: 130 },
+
+    /* jobs that take their time */
+    { id: 'defrag', kind: 'progress', title: 'Disk Defragmenter', icon: 'hour', ambient: true,
+      text: 'Putting the afternoon back in order.', from: 12, stopAt: 99, done: '99%. The last piece is being shy.' },
+    { id: 'copying', kind: 'progress', title: 'Copying', icon: 'folder', ambient: true,
+      text: 'Copying summer.zip to Somewhere Safe.', from: 3, stopAt: 100, done: 'Copied. Nothing was lost.' },
+    { id: 'dialup', kind: 'progress', title: 'Connecting', icon: 'monitor', ambient: true,
+      text: 'Dialling the outside.', from: 0, stopAt: 64, done: 'No answer. It rang for a while, though.' },
+
+    /* a hung program: drag it, or wait for the other pointer to */
+    { id: 'frozen', title: 'daydream.exe', icon: 'hour', ambient: true, smear: true, weight: 0.7,
+      text: 'This program is not responding. It is thinking about something else.', buttons: [{ label: 'Wait' }] },
+
+    /* a shy one */
+    { id: 'peek', title: 'Window', ambient: true, stay: 'shy', weight: 0.7,
+      text: 'Oh. I did not think anyone was looking.' }
   ]
 };
