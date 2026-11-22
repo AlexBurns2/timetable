@@ -4,7 +4,7 @@ Tools for the Synthwave theme (`fx/synth.js`, `skins/synth.css`). `tools/` is no
 
 ## The towers (`models/synth/towers.glb`)
 
-Only Home's towers are models. The car and the palms are built in code in `fx/synth.js`
+Only the timetable's towers are models. The car and the palms are built in code in `fx/synth.js`
 (`carArrays` and `palmArrays`, seeded), so they have nothing to regenerate.
 
 One thing to know before tuning a material there: this Three.js (r170) ignores a material's
@@ -50,7 +50,7 @@ Re-make them after changing anything in `fx/synth.js` that changes the picture.
      as `-dusk` and `-night` (1600 × 900), plus the same with `-p` (a phone, 430 × 932 at 1.5×).
    - `--only drive,bay` does just those scenes; `--out <folder>` writes somewhere else.
    - `--t 40` sets the moment in the scene; `--quality 70` sets the WebP quality.
-   - The timetable's dense grid compresses poorly, so its stills were made with
+   - The road scene's dense grid compresses poorly, so its stills were made with
      `--only drive --quality 58` (about 125 KB on a computer, 41 KB on a phone).
 
 The page opens with `sessionStorage synth.still = 1`, which is `fx/synth.js`'s still mode: the

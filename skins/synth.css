@@ -1,8 +1,8 @@
 /* ══════════════════════════════════════════════════════════════════
    SYNTHWAVE: the 1980s idea of the future, at the end of the day.
    Behind each page (fx/synth.js) a real 3D scene lit by one low sun:
-   the car on a lit grid between crags (timetable), the towers across the bay
-   (Home), a pyramid and a planet over still water (Games, Finder), and
+   the car on a lit grid between crags (Home), the towers across the bay
+   (timetable), a pyramid and a planet over still water (Games, Finder), and
    on every other page only the sun on the sea and one palm. Dusk in
    light mode, night in dark. Until the scene is ready, and whenever it
    won't run (Animation off, Reduce motion, a weak device, no WebGL 2),
@@ -44,10 +44,10 @@
 /* ── the still picture of each page's scene (and the colour under it while it loads) ── */
 [data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-dusk.webp)}
 [data-skin="synth"][data-mode="dark"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night.webp)}
-[data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/drive-dusk.webp)}
-[data-skin="synth"][data-mode="dark"][data-pg="timetable"]{--bg-img:url(../images/synth/drive-night.webp)}
-[data-skin="synth"][data-pg="home"]{--bg-img:url(../images/synth/bay-dusk.webp)}
-[data-skin="synth"][data-mode="dark"][data-pg="home"]{--bg-img:url(../images/synth/bay-night.webp)}
+[data-skin="synth"][data-pg="home"]{--bg-img:url(../images/synth/drive-dusk.webp)}
+[data-skin="synth"][data-mode="dark"][data-pg="home"]{--bg-img:url(../images/synth/drive-night.webp)}
+[data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-dusk.webp)}
+[data-skin="synth"][data-mode="dark"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night.webp)}
 [data-skin="synth"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-dusk.webp)}
 [data-skin="synth"][data-mode="dark"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-night.webp)}
 @media (max-aspect-ratio:4/5){
@@ -55,10 +55,10 @@
   [data-skin="synth"][data-mode="dark"]{--bg-img:url(../images/synth/shore-a-night-p.webp)}
   [data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-dusk-p.webp)}
   [data-skin="synth"][data-mode="dark"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night-p.webp)}
-  [data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/drive-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"][data-pg="timetable"]{--bg-img:url(../images/synth/drive-night-p.webp)}
-  [data-skin="synth"][data-pg="home"]{--bg-img:url(../images/synth/bay-dusk-p.webp)}
-  [data-skin="synth"][data-mode="dark"][data-pg="home"]{--bg-img:url(../images/synth/bay-night-p.webp)}
+  [data-skin="synth"][data-pg="home"]{--bg-img:url(../images/synth/drive-dusk-p.webp)}
+  [data-skin="synth"][data-mode="dark"][data-pg="home"]{--bg-img:url(../images/synth/drive-night-p.webp)}
+  [data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-dusk-p.webp)}
+  [data-skin="synth"][data-mode="dark"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night-p.webp)}
   [data-skin="synth"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-dusk-p.webp)}
   [data-skin="synth"][data-mode="dark"]:is([data-pg="games"],[data-pg="finder"]){--bg-img:url(../images/synth/pyramid-night-p.webp)}
 }

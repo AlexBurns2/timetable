@@ -10,13 +10,14 @@
    soft bloom on what is brighter than white. No film grain.
    One idea a page, kept out at the sides:
 
-     timetable                       drive    the car (a coupé of the nineties), from
+     home                            drive    the car (a coupé of the nineties), from
                                               behind, on a lit grid that runs between
                                               faceted crags, their edges lit, to the
                                               banded sun; going by fast
-     home                            bay      towers across the water, their windows
+     timetable                       bay      towers across the water, their windows
                                               lit in strips, the sun going down behind
-                                              them; palms on a spit to the right
+                                              them; palms on a spit to the right. The
+                                              calm one, for the page with most to read
      games, finder                   pyramid  a pyramid of glass and lit edges in still
                                               water, turning very slowly, a planet over it
      calendar, free, revision        shoreA   the quiet ones: the sun on the sea and one
@@ -24,7 +25,7 @@
 
    Dusk in light mode, night (deep violet, stars) in dark. The camera never
    follows the pointer and nothing shakes: the road comes toward us (fast,
-   on the timetable) and the water moves, slowly, and the car eases across
+   on Home) and the water moves, slowly, and the car eases across
    its road after the pointer, a little behind it. That's all. Thirty frames a second at most, drawn at no more than
    the screen's own pixels (fewer on a phone); fx.js stops it while the
    tab is hidden.
@@ -46,7 +47,7 @@ const SMALL = mm('(pointer:coarse)') || mm('(max-width:700px)');
    synth.t = the moment). Nothing else uses it. */
 let STILL = false, STILL_T = 0;
 try { STILL = sessionStorage.getItem('synth.still') === '1'; STILL_T = +sessionStorage.getItem('synth.t') || 0; } catch {}
-const PAGE = { timetable:'drive', home:'bay', games:'pyramid', finder:'pyramid',
+const PAGE = { timetable:'bay', home:'drive', games:'pyramid', finder:'pyramid',
                calendar:'shoreA', free:'shoreA', revision:'shoreA', notes:'shoreB', resources:'shoreB', mahjong:'shoreB', hkmahjong:'shoreB' };
 const MODELS = { bay:['towers'] };                // the only models fetched; the car and the palms are built here
 const LIB = '/lib/three/three.module.min.js', REFL = '/lib/three/addons/Reflector.js';

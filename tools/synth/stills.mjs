@@ -21,7 +21,7 @@ const T = arg('t', '40'), Q = +arg('quality', '70'), PORT = +arg('port', '9333')
 const CHROME = arg('chrome', process.env.CHROME || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe'
   : process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome'));
 /* the scenes, and a page that shows each (fx/synth.js PAGE) */
-const SCENES = [['drive', '/'], ['bay', '/home.html'], ['pyramid', '/games.html'], ['shore-a', '/calendar.html'], ['shore-b', '/notes.html']];
+const SCENES = [['drive', '/home.html'], ['bay', '/'], ['pyramid', '/games.html'], ['shore-a', '/calendar.html'], ['shore-b', '/notes.html']];
 const SIZES = [{ w:1600, h:900, dpr:1, suf:'' }, { w:430, h:932, dpr:1.5, suf:'-p' }];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

@@ -4147,3 +4147,15 @@ The owner's notes on 8.164, which had not been committed (HEAD was still `e2b98a
 **Checked:** the break close up and on the Home page at 1920 × 1080 in both modes, and on a phone; twelve frames of the sun over eight seconds (the gaps' edges tracked: upward, steady); the car close up, at 1600 × 900, and behind the timetable at 1920 × 1080 in both modes; the city, sea and pyramid scenes; the stills.
 
 **Open for the owner:** whether the break is ragged enough (`rag`, one number); whether the sun's gaps should go faster or slower (`SUN_RISE`); the car and the timetable (8.164's four options, still unanswered).
+
+## 8.166 Synthwave: the road and the bay change pages (asset version `20261121l`, `CACHE_VERSION` v90)
+The owner was "concerned its too bright and cluttered" on the timetable and agreed to the swap. Moderators only, as the theme still is. Not committed.
+
+- **Timetable now has the bay** (towers across the water, the sun behind them, palms to the right): the calm scene behind the page with the most to read. **Home now has the road and the car.**
+- Three places hold the pairing and all three changed: `PAGE` in `fx/synth.js`, the still pictures' rules in `skins/synth.css` (computer and phone, dusk and night), and `SCENES` in `tools/synth/stills.mjs` (which page it opens for each scene).
+- The stills in `images/synth` are named by scene, not by page, so none were regenerated.
+- Nothing in either scene changed: the road's speed, the car, the camera and the towers are as in 8.165.
+
+**Checked:** both pages live at 1600 × 900 in dusk and night, Home at 3440 × 1235 and on a phone.
+
+**Open for the owner:** on Home at 1600 wide the car still sits half behind the tiles (its right half and lamp show past the column); on an ultrawide window it is clear. The camera turn suggested in 8.164 would still help here.
