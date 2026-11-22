@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261123a';
+const ASSET_V = '20261123b';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1240,6 +1240,30 @@ function saulBg(){
 }
 addEventListener('tt:look', saulBg);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulBg, { once:true }); else saulBg();
+
+/* Better Call Saul's theme tune (audio/saul.mp3), looping for as long as the theme is on. Browsers
+   only let sound start after a click or key, so if it's blocked it starts on the first one. Opening
+   another page carries on from where it was (sessionStorage). Off the moment the theme changes. */
+const saulTune = { a:null, wait:false };
+function saulMusic(){
+  const on = document.documentElement.getAttribute('data-skin') === 'saul';
+  const T = saulTune;
+  if (!on){ if (T.a){ T.a.pause(); T.a = null; } try { sessionStorage.removeItem('tt.saul_t'); } catch {} return; }
+  if (!T.a){
+    T.a = new Audio('/audio/saul.mp3?v=' + ASSET_V);
+    T.a.loop = true; T.a.volume = .5;
+    try { const t = +sessionStorage.getItem('tt.saul_t'); if (t > 0) T.a.currentTime = t; } catch {}
+  }
+  const go = () => { if (!T.a || !T.a.paused) return; T.a.play().catch(() => {
+    if (T.wait) return; T.wait = true;
+    const kick = () => { T.wait = false; removeEventListener('pointerdown', kick, true); removeEventListener('keydown', kick, true); go(); };
+    addEventListener('pointerdown', kick, true); addEventListener('keydown', kick, true);
+  }); };
+  go();
+}
+addEventListener('pagehide', () => { try { if (saulTune.a) sessionStorage.setItem('tt.saul_t', saulTune.a.currentTime); } catch {} });
+addEventListener('tt:look', saulMusic);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulMusic, { once:true }); else saulMusic();
 
 /* ── replies from the moderators (api/_notice.js): an answer to something you sent (an idea, a poll
    idea, a name change) shows on the next page you open, signed "MSC Unofficial" (never a moderator's

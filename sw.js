@@ -19,10 +19,10 @@
      every cache, so a broken release can always be undone from the browser.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v96';
+const CACHE_VERSION = 'v97';
 /* the pages link the shared files they changed with ?v=ASSET_V, so a new deploy never pairs a
    fresh page with a stale stylesheet; the shell pre-caches those same URLs */
-const ASSET_V = '20261123a';
+const ASSET_V = '20261123b';
 const VA = f => f + '?v=' + ASSET_V;
 const CACHE = 'msc-' + CACHE_VERSION;
 
@@ -63,7 +63,7 @@ self.addEventListener('fetch', e => {
   if (url.origin !== self.location.origin) return;        // leave other hosts alone
   if (isApi(url)) return;                                 // personal data: always the network
   if (url.pathname.startsWith('/jim/')) return;           // Jim Button audio: ranged media requests, leave to the browser
-  if (/\.(webm|mp4)$/.test(url.pathname)) return;         // video: ranged requests too, left to the browser
+  if (/\.(webm|mp4|mp3)$/.test(url.pathname)) return;     // video and music: ranged requests too, left to the browser
 
   /* the escape hatch */
   if (url.pathname === '/sw-off'){
