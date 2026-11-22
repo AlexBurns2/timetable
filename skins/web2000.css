@@ -9,13 +9,17 @@
    green digits of a hit counter. Buttons are the grey Windows ones, with
    underlined navy type. "NEW!" blinks. The foot has a browser status bar and
    a visitor counter.
-   By night it is 2Advanced (2000): a medium-grey frame, nav strips in black
-   with tiny, widely spaced white capitals and a ">>" in front, a deep-blue
-   panel with a fine grid and a white double rule round it for the hero,
-   and "AUDIO: ON / OFF" in the corner. The grey is flat, nothing glows.
-   Optional pictures of yours (nothing breaks without them):
-   /images/web2000/banner.gif (468×60, top right) and /images/web2000/tile.gif
-   (a small tile, repeated over the page). Changing page is the site's own fade.
+   By night it is the dark Flash portal of 2000–02 (2Advanced and the design
+   shops that followed it). The whole site sits on a fixed centred stage with
+   a hairline edge, the way a Flash movie sat in the middle of a black page.
+   Everything is 9–10px Verdana in wide capitals; rules are one pixel; the blue
+   is a fine grid with a single diagonal light across it, and nothing glows.
+   Panels are marked out with corner brackets instead of borders, section heads
+   are black bars with a cyan tick and "//", the progress bar is a segmented
+   Flash preloader, and the strips at the top and bottom carry the loader
+   percentage, "AUDIO: ON / OFF" and the copyright line, with a blinking cursor.
+   Optional picture of yours, day only (nothing breaks without it):
+   /images/web2000/tile.gif, a small tile repeated over the page. Changing page is the site's own fade.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="web2000"]{
   --w-peri:#9999cc; --w-navy:#0a1a5c; --w-yel:#ffff00; --w-new:#ff0000;
@@ -30,28 +34,16 @@
   --display-tt:none; --display-ls:0; --display-w:700;
   --w-rainbow:linear-gradient(90deg,#ff7a00,#ffe600 25%,#38e038 50%,#2fc8ff 75%,#ff5cd0);
 }
-[data-skin="web2000"][data-mode="dark"]{
-  --bg:#8c8c8c; --bg-img:none; --panel:#06163f; --panel-2:#000; --line:#d4d4d4;
-  --text:#e8f0ff; --muted:#9fb6ea; --accent:#fff; --accent-ink:#000;
-  --card-border:1px solid #d4d4d4; --shadow:0 0 0 3px #8c8c8c,0 0 0 4px #dcdcdc; --shadow-hi:0 0 0 3px #8c8c8c,0 0 0 4px #fff;
-  --font-ui:Verdana,Geneva,sans-serif; --font-display:Verdana,Geneva,sans-serif;
-}
 [data-skin="web2000"]{font-size:12px}
-body{}
 [data-skin="web2000"] body{padding-bottom:30px;background-image:url("/images/web2000/tile.gif"),var(--bg-img)}
-/* the page's picture: Webnode's clouds by day; 2Advanced's blue HUD lines by night */
-[data-skin="web2000"] body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("/images/web2000/banner.gif") right top no-repeat,url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMidYMax slice%22%3E%3Cg transform=%22translate(70 700) scale(1.4)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1420 560) scale(1.5)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(160 380) scale(0.9)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1320 200) scale(1.1)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(60 860) scale(1.6)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1480 860) scale(1.8)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3C/svg%3E") center bottom/cover no-repeat}
-[data-skin="web2000"][data-mode="dark"] body::before{background:url("/images/web2000/banner.gif") right top no-repeat,url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMaxYMid slice%22%3E%3Cg fill=%22none%22 stroke=%22%232b5fd0%22 stroke-opacity=%22.55%22 stroke-width=%222%22%3E%3Ccircle cx=%221260%22 cy=%22420%22 r=%22140%22/%3E%3Ccircle cx=%221260%22 cy=%22420%22 r=%22210%22 stroke-dasharray=%226 10%22/%3E%3Ccircle cx=%221260%22 cy=%22420%22 r=%22300%22/%3E%3Cpath d=%22M900 420H1600M1260 60V780%22/%3E%3Crect x=%22940%22 y=%22240%22 width=%22140%22 height=%2270%22/%3E%3Crect x=%221380%22 y=%22560%22 width=%22120%22 height=%2280%22/%3E%3C/g%3E%3Cg fill=%22%23fff%22 fill-opacity=%22.5%22%3E%3Ccircle cx=%221010%22 cy=%22130%22 r=%229%22/%3E%3Ccircle cx=%221050%22 cy=%22160%22 r=%229%22/%3E%3Ccircle cx=%221050%22 cy=%22100%22 r=%229%22/%3E%3C/g%3E%3C/svg%3E") center/cover no-repeat}
+/* the page's picture: Webnode's sunset and clouds (day only; the night page has no wallpaper) */
+[data-skin="web2000"]:not([data-mode="dark"]) body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:url("/images/web2000/banner.gif") right top no-repeat,url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1600 900%22 preserveAspectRatio=%22xMidYMax slice%22%3E%3Cg transform=%22translate(70 700) scale(1.4)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1420 560) scale(1.5)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(160 380) scale(0.9)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1320 200) scale(1.1)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(60 860) scale(1.6)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3Cg transform=%22translate(1480 860) scale(1.8)%22 fill=%22%23fff%22%3E%3Ccircle cx=%220%22 cy=%220%22 r=%2230%22/%3E%3Ccircle cx=%2234%22 cy=%22-12%22 r=%2238%22/%3E%3Ccircle cx=%2276%22 cy=%220%22 r=%2232%22/%3E%3Crect x=%22-30%22 y=%220%22 width=%22136%22 height=%2230%22 rx=%2215%22/%3E%3C/g%3E%3C/svg%3E") center bottom/cover no-repeat}
 html.zen[data-skin="web2000"] body::before,[data-skin="web2000"][data-pg="hkmahjong"] body::before{display:none}
 /* ── the bar: by day a starry navy window with a rainbow name; by night a black strip, ">>" and tiny capitals ── */
 :root[data-skin="web2000"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--w-stars),linear-gradient(180deg,#0d2a8a,var(--w-navy));border:2px outset #aab;border-radius:0;padding:12px 18px}
 [data-skin="web2000"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 clamp(1.1rem,3vw,1.8rem)/1.2 "Comic Sans MS","Trebuchet MS",Verdana,sans-serif;background:var(--w-rainbow);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0}
 [data-skin="web2000"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font:700 .6875rem Verdana,sans-serif;color:#ffe600;letter-spacing:0;text-transform:none}
 [data-skin="web2000"] :is(.brand .meta,.hubid .meta,.topbar .meta){color:#cfd8ff}
-:root[data-skin="web2000"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:#000;border:1px solid #d4d4d4;box-shadow:var(--shadow);padding:7px 12px}
-[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 .6875rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase;background:none;color:#fff;-webkit-text-fill-color:#fff}
-[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1)::before{content:">> ";letter-spacing:0}
-[data-skin="web2000"][data-mode="dark"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase;color:#fff}
 /* ── section heads: Nick.com's bars, a colour to each, with a round arrow; by night a black strip ── */
 [data-skin="web2000"] :is(.sechd,.cathd,.forum h2){display:block;padding:3px 12px;border:2px solid #000;border-radius:12px;color:#000!important;font:900 .8125rem Arial,Helvetica,sans-serif;letter-spacing:0;text-transform:none;background:#ff9a1f}
 [data-skin="web2000"] :is(.sechd,.cathd,.forum h2)::after{content:"▶";float:right;width:17px;height:17px;border-radius:50%;background:#000;color:#ffe400;font-size:8px;line-height:17px;text-align:center}
@@ -60,41 +52,26 @@ html.zen[data-skin="web2000"] body::before,[data-skin="web2000"][data-pg="hkmahj
 [data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n+4) :is(.sechd,.cathd,h2){background:#6fe04a}
 [data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n+5) :is(.sechd,.cathd,h2){background:#ff6fa8}
 [data-skin="web2000"] :is(.pcard,.forum,.qtile):nth-of-type(6n) :is(.sechd,.cathd,h2){background:#ffe400}
-[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){background:#000!important;color:#fff!important;border:1px solid #d4d4d4;border-radius:0;padding:4px 10px;font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase}
-[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2)::after{content:"»";float:none;background:none;color:#fff;width:auto;height:auto;line-height:1;font-size:.7rem;margin-left:.6em}
 /* ── panels: periwinkle boxes with a bevel and Times for the text, headlines in a white bevelled bar (Lite 98.7); by night a deep-blue hero with a grid and a double rule ── */
 :root[data-skin="web2000"] :is(.qtile,.pcard,.forum,.tday,.gamecard,.tile,.game){background:var(--panel);border:var(--card-border);border-radius:0;box-shadow:var(--shadow);color:#000}
 [data-skin="web2000"] :is(.pcard,.forum) :is(p,li,span:not(.sechd)){font-family:"Times New Roman",Times,serif;font-size:1.0625rem}
 [data-skin="web2000"] .pcard h2{margin:.4em 0;padding:2px 8px;background:#fff;border:2px outset #ddd;font:700 .9375rem Arial,sans-serif;color:#000}
 [data-skin="web2000"] .forum{padding:12px 14px 14px;margin-top:20px}
-:root[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum){background:var(--w-grid),linear-gradient(135deg,#031038,#0a2a80 60%,#0b3fb0);color:#e8f0ff}
-:root[data-skin="web2000"][data-mode="dark"] .pcard h2{background:none;border:0;color:#fff;font:700 1rem Verdana,sans-serif;letter-spacing:.2em;text-transform:uppercase}
-[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum) :is(p,li,span:not(.sechd)){font-family:Verdana,sans-serif;font-size:.75rem}
 /* Home's tiles: the blue-and-yellow button column; by night the black strips */
 :root[data-skin="web2000"] .qtile{background:linear-gradient(180deg,#5555ff,#1a1aa8);border:2px outset #bbbbff;flex-direction:row;align-items:center;gap:8px;padding:8px 12px}
 :root[data-skin="web2000"] .qtile .tname{color:#ffff00;font:900 italic .9375rem Arial,sans-serif;text-shadow:1px 1px 0 #000;text-decoration:none}
 [data-skin="web2000"] .qtile .ico{display:flex;width:1.6rem;height:1.6rem;color:#fff!important;background:none;border:0}
 :root[data-skin="web2000"] .qtile:hover{box-shadow:var(--shadow-hi)}
-:root[data-skin="web2000"][data-mode="dark"] .qtile{background:#000;border:1px solid #d4d4d4;box-shadow:var(--shadow)}
-:root[data-skin="web2000"][data-mode="dark"] .qtile .tname{color:#fff;font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase;text-shadow:none}
-[data-skin="web2000"][data-mode="dark"] .qtile .tname::before{content:">> ";letter-spacing:0}
 /* ── Now and Next: a starry navy window; the time in a hit counter's green digits ── */
 [data-skin="web2000"] .nowcard{background:var(--w-stars),var(--w-navy);color:#ffe600;border:2px outset #aab;border-radius:0;box-shadow:none}
 [data-skin="web2000"] .nowcard .t,[data-skin="web2000"] .nowcard .count,[data-skin="web2000"] .progrow .count{color:#fff;font-family:"Comic Sans MS","Trebuchet MS",sans-serif}
 [data-skin="web2000"] .nowcard .meta{color:#00ff66;font-family:"Courier New",monospace;letter-spacing:.12em}
 [data-skin="web2000"] .prog{border-radius:0;height:12px;background:#000;border:2px inset #888;box-shadow:none}
 [data-skin="web2000"] .prog i{border-radius:0;background:repeating-linear-gradient(90deg,#00ff66 0 8px,#000 8px 10px)}
-[data-skin="web2000"][data-mode="dark"] .nowcard{background:var(--w-grid),linear-gradient(135deg,#031038,#0a2a80 60%,#0b3fb0);border:1px solid #d4d4d4;box-shadow:var(--shadow);color:#fff}
-[data-skin="web2000"][data-mode="dark"] .nowcard .t{font:700 .8125rem Verdana,sans-serif;letter-spacing:.2em;text-transform:uppercase}
-[data-skin="web2000"][data-mode="dark"] .nowcard .meta{color:#9fb6ea;font:700 .5625rem Verdana,sans-serif;letter-spacing:.3em;text-transform:uppercase}
-[data-skin="web2000"][data-mode="dark"] .prog{background:#000;border:1px solid #d4d4d4}
-[data-skin="web2000"][data-mode="dark"] .prog i{background:#fff}
 /* ── buttons: the grey Windows ones with underlined navy type (Webnode's "Get started"); by night, black strips that go white ── */
 :root[data-skin="web2000"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;background:#c0c0c0;border:2px outset #fff;color:#000080;font:700 .6875rem Verdana,sans-serif;text-decoration:underline;box-shadow:none;letter-spacing:.04em}
 :root[data-skin="web2000"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):active{border-style:inset}
 :root[data-skin="web2000"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:#ffff66;border-style:inset;color:#000080}
-:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){background:#000;border:1px solid #d4d4d4;color:#fff;text-decoration:none;font:700 .5625rem Verdana,sans-serif;letter-spacing:.38em;text-transform:uppercase}
-:root[data-skin="web2000"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:#fff;color:#000}
 /* NEW! blinks, as it did */
 [data-skin="web2000"] :is(.newpill,.gamecard .newbanner){background:var(--w-new);color:#ffff00;border-radius:0;font:900 .6875rem Arial,sans-serif;animation:w2kblink 1s steps(2,jump-none) infinite}
 [data-skin="web2000"] .newpill::before{content:"NEW! "}
@@ -102,23 +79,17 @@ html.zen[data-skin="web2000"] body::before,[data-skin="web2000"][data-pg="hkmahj
 [data-skin="web2000"] .newsdot{background:var(--w-new);border-radius:0}
 @media (prefers-reduced-motion:reduce){[data-skin="web2000"] :is(.newpill,.gamecard .newbanner){animation:none}}
 [data-skin="web2000"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#c0c0c0;border:2px outset #fff;border-radius:0;color:#000}
-[data-skin="web2000"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:#06163f;border:1px solid #d4d4d4;color:#e8f0ff}
 [data-skin="web2000"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#fff;color:#000;border:2px inset #999;font-family:Verdana,sans-serif}
 [data-skin="web2000"] .lesson{border-radius:0;box-shadow:inset 1px 1px 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(0,0,0,.3);border:1px solid #000}
 [data-skin="web2000"] .lesson.current{outline:2px dotted #000;outline-offset:1px}
-[data-skin="web2000"][data-mode="dark"] .lesson.current{outline:1px solid #fff;box-shadow:0 0 0 3px #000,0 0 0 4px #fff}
 [data-skin="web2000"] :is(.dayhead.today,.dayhead.focus) .rule{background:#ff0000;height:3px;border-radius:0}
-[data-skin="web2000"][data-mode="dark"] :is(.dayhead.today,.dayhead.focus) .rule{background:#fff}
 [data-skin="web2000"] .breakbar{border-radius:0}
 /* ── the foot: a browser's status bar (Done · Internet), and the visitor counter ── */
 html[data-skin="web2000"]::after{content:"✔ Done";position:fixed;left:0;right:0;bottom:0;z-index:50;pointer-events:none;height:20px;padding:3px 10px;font:11px Tahoma,Verdana,sans-serif;color:#000;background:#d4d0c8;border-top:1px solid #fff;box-shadow:inset 0 1px 0 #808080}
 html[data-skin="web2000"]::before{content:"8 8 3 0 3 1 9 6 8";position:fixed;left:10px;bottom:28px;z-index:50;pointer-events:none;padding:2px 8px;font:bold 11px "Courier New",monospace;color:#00ff66;background:#000;border:2px inset #999;letter-spacing:.12em}
-html[data-skin="web2000"][data-mode="dark"]::after{content:"© 2000 MSC UNOFFICIAL · COPYRIGHT NOTICE";color:#e8e8e8;background:#8c8c8c;border-top:0;box-shadow:none;letter-spacing:.3em;font:700 8px Verdana,sans-serif;padding:6px 10px;text-transform:uppercase}
-html[data-skin="web2000"][data-mode="dark"]::before{content:"AUDIO: ON / OFF";left:auto;right:10px;bottom:3px;color:#e8e8e8;background:none;border:0;font:italic 700 8px Verdana,sans-serif;letter-spacing:.3em}
 html.zen[data-skin="web2000"]::before,html.zen[data-skin="web2000"]::after,[data-skin="web2000"][data-pg="hkmahjong"]::before,[data-skin="web2000"][data-pg="hkmahjong"]::after{display:none}
 [data-skin="web2000"] :is(.pcard,.forum,.hubfoot) a:not(.btn){color:#0000ee;text-decoration:underline}
 [data-skin="web2000"] :is(.pcard,.forum,.hubfoot) a:not(.btn):visited{color:#551a8b}
-[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum,.hubfoot) a:not(.btn){color:#9fc1ff}
 html.fx-enter[data-skin="web2000"] .wrap{animation:none}
 
 /* ═══ NIGHT, reworked: 2Advanced (2000) more closely ═══
@@ -126,30 +97,9 @@ html.fx-enter[data-skin="web2000"] .wrap{animation:none}
    and a ">>"; the hero a deep blue HUD (a fine grid, scan lines, a slanted light, rings and brackets, a dotted mark and the name in wide
    type); "IN PROGRESS" in a black box with a double border for Now and Next; a grey strip at the foot with small print and
    AUDIO: ON / OFF. Michroma stands in for its wide techno capitals. */
-[data-skin="web2000"][data-mode="dark"]{--w-micro:400 .5rem "Michroma",Verdana,sans-serif;--w-hud:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 900 300%22 preserveAspectRatio=%22xMaxYMid meet%22%3E%3Cdefs%3E%3CradialGradient id=%22g%22 cx=%22.78%22 cy=%22.5%22 r=%22.6%22%3E%3Cstop offset=%220%22 stop-color=%22%234f8cff%22 stop-opacity=%22.55%22/%3E%3Cstop offset=%221%22 stop-color=%22%234f8cff%22 stop-opacity=%220%22/%3E%3C/radialGradient%3E%3C/defs%3E%0A%3Crect width=%22900%22 height=%22300%22 fill=%22url(%23g)%22/%3E%0A%3Cg fill=%22none%22 stroke=%22%239cc0ff%22 stroke-opacity=%22.55%22 stroke-width=%221.2%22%3E%3Ccircle cx=%22700%22 cy=%22150%22 r=%2296%22/%3E%3Ccircle cx=%22700%22 cy=%22150%22 r=%22140%22 stroke-dasharray=%224 8%22/%3E%3Ccircle cx=%22700%22 cy=%22150%22 r=%2258%22/%3E%3Cpath d=%22M420 150H900M700 0V300%22/%3E%3Cpath d=%22M430 60l60 0M430 60v26M860 240l-60 0M860 240v-26%22/%3E%3Crect x=%22470%22 y=%22196%22 width=%22120%22 height=%2248%22/%3E%3Crect x=%22760%22 y=%2250%22 width=%2290%22 height=%2240%22/%3E%3Cpath d=%22M0 214H900%22 stroke-opacity=%22.25%22/%3E%3C/g%3E%0A%3Cg fill=%22%23fff%22%3E%3Ccircle cx=%22520%22 cy=%2296%22 r=%227%22/%3E%3Ccircle cx=%22544%22 cy=%22120%22 r=%227%22/%3E%3Ccircle cx=%22520%22 cy=%22144%22 r=%227%22/%3E%3Ccircle cx=%22544%22 cy=%2272%22 r=%227%22 fill-opacity=%22.5%22/%3E%3C/g%3E%0A%3Ctext x=%22580%22 y=%22118%22 font-family=%22Verdana,sans-serif%22 font-size=%2230%22 font-weight=%22700%22 letter-spacing=%2212%22 fill=%22%23fff%22%3EMSC UNOFFICIAL%3C/text%3E%0A%3Ctext x=%22582%22 y=%22142%22 font-family=%22Verdana,sans-serif%22 font-size=%229%22 font-weight=%22700%22 letter-spacing=%227%22 fill=%22%23cfe0ff%22%3EWWW.MSCUNOFFICIAL.COM%3C/text%3E%0A%3Ctext x=%22582%22 y=%2292%22 font-family=%22Verdana,sans-serif%22 font-size=%228%22 font-weight=%22700%22 letter-spacing=%226%22 fill=%22%23cfe0ff%22 fill-opacity=%22.8%22%3EDIGITAL TIMETABLE FOR STUDENTS%3C/text%3E%3C/svg%3E")}
-[data-skin="web2000"][data-mode="dark"] body::after{content:"";position:fixed;left:0;right:0;top:8px;height:3px;z-index:-1;pointer-events:none;border-block:1px solid #ececec}
-[data-skin="web2000"][data-mode="dark"] body{padding-top:20px}
-:root[data-skin="web2000"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:#000;border:1px solid #d4d4d4;box-shadow:none;margin-top:6px}
-[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:var(--w-micro);font-size:.625rem;letter-spacing:.34em}
-[data-skin="web2000"][data-mode="dark"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font:var(--w-micro);letter-spacing:.34em;color:#e8e8e8}
 /* the hero: the HUD */
-:root[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum){background:var(--w-hud) right center/auto 100% no-repeat,repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px),linear-gradient(115deg,transparent 40%,rgba(120,170,255,.18) 48%,transparent 56%),var(--w-grid),linear-gradient(135deg,#020b2c,#0a2a80 55%,#0d46c4);border:1px solid #e6e6e6;box-shadow:0 0 0 3px #8c8c8c,0 0 0 4px #e6e6e6;min-height:120px}
-:root[data-skin="web2000"][data-mode="dark"] .pcard h2{font:var(--w-micro);font-size:.8125rem;letter-spacing:.3em}
 /* the nav: one black box to each, as separate buttons in a row */
-:root[data-skin="web2000"][data-mode="dark"] .qtile{background:#000;border:1px solid #d4d4d4;box-shadow:none;padding:9px 12px}
-:root[data-skin="web2000"][data-mode="dark"] .qtile:hover{background:#fff}
-:root[data-skin="web2000"][data-mode="dark"] .qtile:hover :is(.tname,.ico){color:#000!important}
-:root[data-skin="web2000"][data-mode="dark"] .qtile .tname{font:var(--w-micro);letter-spacing:.34em}
-[data-skin="web2000"][data-mode="dark"] .qtile .ico{width:1.1rem;height:1.1rem;color:#fff!important}
 /* "IN PROGRESS": a black box with a double border */
-[data-skin="web2000"][data-mode="dark"] .nowcard{background:#000;border:0;outline:1px solid #e6e6e6;outline-offset:-5px;box-shadow:0 0 0 1px #e6e6e6;padding:16px 18px;color:#fff}
-[data-skin="web2000"][data-mode="dark"] .nowcard .t{font:var(--w-micro);font-size:.75rem;letter-spacing:.3em;color:#fff}
-[data-skin="web2000"][data-mode="dark"] .nowcard .meta{font:var(--w-micro);letter-spacing:.3em;color:#9fb6ea}
-[data-skin="web2000"][data-mode="dark"] .prog{height:3px;border:0;border-block:1px solid #e6e6e6;background:none}
-:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){font:var(--w-micro);letter-spacing:.3em}
-[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){font:var(--w-micro);letter-spacing:.34em}
-html[data-skin="web2000"][data-mode="dark"]::after{font:var(--w-micro);font-size:.4375rem;letter-spacing:.3em;height:22px;padding:7px 12px}
-html[data-skin="web2000"][data-mode="dark"]::before{font:italic 400 .4375rem "Michroma",Verdana,sans-serif;letter-spacing:.3em;bottom:7px}
 
 /* ── Win98 windows (day): each card gets a navy title bar with three grey buttons, like the CD Player and Paint windows on the 2000 desktop pages ── */
 [data-skin="web2000"]:not([data-mode="dark"]) .pcard{position:relative;padding-top:30px}
@@ -158,3 +108,68 @@ html[data-skin="web2000"][data-mode="dark"]::before{font:italic 400 .4375rem "Mi
   linear-gradient(#c0c0c0,#c0c0c0) right 21px center/16px 14px no-repeat,
   linear-gradient(#c0c0c0,#c0c0c0) right 37px center/16px 14px no-repeat,
   linear-gradient(90deg,#000080,#1084d0)}
+
+/* ══ NIGHT: the dark Flash portal of 2000–02 ════════════════════════ */
+[data-skin="web2000"][data-mode="dark"]{
+  --w-cy:#49d5ff; --w-blue:#0b3b8c; --w-wire:rgba(120,170,255,.16);
+  --w-grid:repeating-linear-gradient(0deg,transparent 0 11px,var(--w-wire) 11px 12px),repeating-linear-gradient(90deg,transparent 0 11px,var(--w-wire) 11px 12px);
+  --w-sweep:linear-gradient(104deg,transparent 38%,rgba(150,200,255,.18) 48%,rgba(190,225,255,.3) 50%,transparent 60%);
+  --w-br:linear-gradient(#d9e2ee,#d9e2ee) 0 0/12px 1px no-repeat,linear-gradient(#d9e2ee,#d9e2ee) 0 0/1px 12px no-repeat,
+         linear-gradient(#d9e2ee,#d9e2ee) 100% 0/12px 1px no-repeat,linear-gradient(#d9e2ee,#d9e2ee) 100% 0/1px 12px no-repeat,
+         linear-gradient(#d9e2ee,#d9e2ee) 0 100%/12px 1px no-repeat,linear-gradient(#d9e2ee,#d9e2ee) 0 100%/1px 12px no-repeat,
+         linear-gradient(#d9e2ee,#d9e2ee) 100% 100%/12px 1px no-repeat,linear-gradient(#d9e2ee,#d9e2ee) 100% 100%/1px 12px no-repeat;
+  --w-mic:700 .5625rem Verdana,Geneva,sans-serif;
+  --bg:#07080b; --bg-img:none;
+  --panel:#0b0d12; --panel-2:#0e1118; --line:#2a3340;
+  --text:#dfe6ef; --muted:#8e9bad; --accent:#49d5ff; --accent-ink:#04121a;
+  --font-ui:Verdana,Geneva,sans-serif; --font-display:Verdana,Geneva,sans-serif; --font-num:Verdana,Geneva,sans-serif;
+  --card-radius:0px; --radius:0px; --card-border:1px solid #2a3340; --shadow:none; --shadow-hi:inset 0 0 0 1px var(--w-cy);
+  --display-tt:uppercase; --display-ls:.34em; --display-w:700;
+}
+/* the stage: the site sits in a centred column with a hairline either side */
+[data-skin="web2000"][data-mode="dark"] body{max-width:1120px;margin-inline:auto;border-inline:1px solid #262f3b;background:#0a0c10;padding-top:22px;padding-bottom:26px;font-size:11px}
+/* top strip: loader percentage and a blinking cursor */
+html[data-skin="web2000"][data-mode="dark"]::before{content:"LOADED 100%  ·  MSC UNOFFICIAL  ·  v2.0";position:fixed;left:0;right:0;top:0;z-index:40;padding:4px 14px;background:#0a0c10;border-bottom:1px solid #262f3b;font:var(--w-mic);letter-spacing:.3em;color:#7f8c9e}
+html[data-skin="web2000"][data-mode="dark"]::after{content:"AUDIO: ON / OFF   ·   © 2001 MSC UNOFFICIAL   ·   ALL RIGHTS RESERVED _";position:fixed;left:0;right:0;bottom:0;z-index:40;padding:4px 14px;text-align:right;background:#0a0c10;border-top:1px solid #262f3b;font:var(--w-mic);letter-spacing:.3em;color:#7f8c9e;animation:w2kcur 1.1s steps(2,jump-none) infinite}
+@keyframes w2kcur{50%{color:#49d5ff}}
+/* header: the fine grid with one diagonal light across it */
+:root[data-skin="web2000"][data-mode="dark"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead){background:var(--w-sweep),var(--w-grid),linear-gradient(160deg,#061636,#0a2a5e 25%,#07152f 60%,#050a16);background-color:#07142e;border:0;border-block:1px solid #d9e2ee;border-radius:0;box-shadow:none;padding:22px 20px}
+[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1,.gatecard h2){font:700 .9375rem Verdana,sans-serif;letter-spacing:.42em;text-transform:uppercase;color:#fff;background:none;-webkit-text-fill-color:#fff}
+[data-skin="web2000"][data-mode="dark"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1)::before{content:">> ";color:var(--w-cy);letter-spacing:0}
+[data-skin="web2000"][data-mode="dark"] :is(.eyebrow,.sitename,.nowcard .lbl,.dayhead .dow,.ttday b,.weeklabel,.field>label,.tbhead span){font:var(--w-mic);letter-spacing:.34em;text-transform:uppercase;color:#8e9bad}
+/* section heads: black bar, cyan tick, // */
+[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2,.pcard h2){display:block;background:#05070b!important;color:#fff!important;border:0!important;border-left:3px solid var(--w-cy)!important;border-radius:0!important;padding:5px 10px!important;font:var(--w-mic)!important;font-size:.625rem!important;letter-spacing:.34em!important;text-transform:uppercase}
+[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2)::before{content:"// ";color:var(--w-cy)}
+[data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2)::after{content:none}
+/* panels: no border, corner brackets instead */
+:root[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum){background:var(--w-br),#0b0d12;border:0;border-radius:0;box-shadow:none;padding:18px}
+[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum) :is(p,li,span:not(.sechd)){font-family:Verdana,sans-serif;font-size:11px;line-height:1.7;color:#b9c4d2}
+[data-skin="web2000"][data-mode="dark"] :is(.pcard,.forum,.hubfoot) a:not(.btn){color:var(--w-cy);text-decoration:none;border-bottom:1px dotted #2a3340}
+/* nav: black boxes, >> prefix, invert on hover */
+:root[data-skin="web2000"][data-mode="dark"] .qtile{background:#05070b;border:1px solid #2a3340;border-radius:0;box-shadow:none;padding:14px 12px}
+:root[data-skin="web2000"][data-mode="dark"] .qtile:hover{background:#fff;border-color:#fff}
+:root[data-skin="web2000"][data-mode="dark"] .qtile:hover :is(.tname,.ico){color:#05070b!important}
+:root[data-skin="web2000"][data-mode="dark"] .qtile .tname{color:#fff;font:var(--w-mic);font-size:.5625rem;letter-spacing:.34em;text-transform:uppercase;text-decoration:none}
+[data-skin="web2000"][data-mode="dark"] .qtile .tname::before{content:">> ";color:var(--w-cy);letter-spacing:0}
+[data-skin="web2000"][data-mode="dark"] .qtile .ico{width:1.1rem;height:1.1rem;font-size:.95rem;background:none;box-shadow:none;color:#8e9bad!important}
+/* Now and Next: the hero panel, brackets and grid, with a status line */
+[data-skin="web2000"][data-mode="dark"] .nowcard{background:var(--w-br),var(--w-sweep),var(--w-grid),linear-gradient(160deg,#07214f,#040b1c);border:0;border-radius:0;box-shadow:none;padding:16px 18px;position:relative}
+[data-skin="web2000"][data-mode="dark"] .nowcard::after{content:"STATUS: IN PROGRESS";position:absolute;right:16px;top:14px;font:var(--w-mic);font-size:.4375rem;letter-spacing:.3em;color:var(--w-cy)}
+[data-skin="web2000"][data-mode="dark"] .nowcard .t{font:700 .8125rem Verdana,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:#fff}
+[data-skin="web2000"][data-mode="dark"] .nowcard .meta{color:#8ea6d8;font:var(--w-mic);font-size:.5rem;letter-spacing:.3em}
+/* the segmented Flash preloader */
+[data-skin="web2000"][data-mode="dark"] .prog{height:6px;border:1px solid #d9e2ee;border-radius:0;background:#05070b;padding:1px}
+[data-skin="web2000"][data-mode="dark"] .prog i{background:repeating-linear-gradient(90deg,var(--w-cy) 0 3px,transparent 3px 5px)}
+/* buttons: flat, tiny caps, invert when chosen */
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.primary){background:#05070b;border:1px solid #2a3340;border-radius:0;color:#dfe6ef;font:var(--w-mic);font-size:.5625rem;letter-spacing:.3em;text-transform:uppercase;text-decoration:none;box-shadow:none;padding:8px 14px}
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):hover{border-color:var(--w-cy);color:var(--w-cy)}
+:root[data-skin="web2000"][data-mode="dark"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-pressed="true"],.popt.on){background:#fff;border:1px solid #fff;border-radius:0;color:#05070b;font:var(--w-mic);font-size:.5625rem;letter-spacing:.3em;text-transform:uppercase;box-shadow:none;padding:8px 14px}
+[data-skin="web2000"][data-mode="dark"] .newpill{background:none;border:1px solid var(--w-cy);border-radius:0;color:var(--w-cy);font:var(--w-mic);font-size:.4375rem;letter-spacing:.3em;text-transform:uppercase;animation:none}
+/* the week: hairline cells, the current one marked by brackets */
+[data-skin="web2000"][data-mode="dark"] .lesson{background:#0b0d12;border:1px solid #1d242e;border-radius:0;box-shadow:none;color:#b9c4d2;font-size:10px}
+[data-skin="web2000"][data-mode="dark"] .lesson .s{color:#fff;font:var(--w-mic);font-size:.5625rem;letter-spacing:.22em;text-transform:uppercase}
+[data-skin="web2000"][data-mode="dark"] .lesson.current{background:var(--w-br),#071a3a;border-color:transparent}
+[data-skin="web2000"][data-mode="dark"] :is(.dayhead.today,.dayhead.focus) .rule{background:var(--w-cy)}
+[data-skin="web2000"][data-mode="dark"] .dayhead .rule{background:#1d242e;height:1px}
+[data-skin="web2000"][data-mode="dark"] :is(dialog,.newsdlg,.sheet,.gatecard){background:var(--w-br),#0b0d12;border:0;border-radius:0;color:var(--text)}
+@media (prefers-reduced-motion:reduce){html[data-skin="web2000"][data-mode="dark"]::after{animation:none}}
