@@ -15,6 +15,11 @@
    Optional picture of yours: /images/sonyad/hero.webp (a product shot with
    the subject on the right) is laid over the scene; nothing breaks without it.
    Changing page is the site's own fade.
+   LATER LAYER (from hand-picked catalogue and magazine pages of 2000–02):
+   pale blue-grey stock, a boxed date stamp at the top right ("2000.10"),
+   tiles in a hairline grid like a product sheet, section heads as a wide-spaced
+   violet bar (G E A R), spec-table rows for lessons, a one-line tagline by
+   the model plate, and in the black version a coarse photographic grain.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="sonyad"]{
   --s-verm:#e5301a; --s-led:#0a6fe0; --s-lcd:#34bbff;
@@ -99,3 +104,24 @@ html[data-skin="sonyad"][data-mode="light"]::after{content:"";position:fixed;ins
 [data-skin="sonyad"] .qtile:nth-child(8)::after{content:"08"}
 [data-skin="sonyad"] .qtile .tname{font:400 .6875rem "Michroma",sans-serif;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;color:var(--text)}
 @media (prefers-reduced-motion:reduce){[data-skin="sonyad"] .eyebrow::before{animation:none}}
+
+/* ── catalogue layer ───────────────────────────────────────────── */
+[data-skin="sonyad"]{--s-vaio:#5a5ca8;--s-hair:#9aa5b4}
+[data-skin="sonyad"]:not([data-mode="dark"]){--bg:#dde6ee;--bg-img:radial-gradient(80% 45% at 50% -8%,#fff,transparent 70%),linear-gradient(180deg,#e9f1f7,#cfdbe6 70%,#c3d0dc)}
+[data-skin="sonyad"][data-mode="dark"]{--s-vaio:#8f92e0;--s-hair:#2c3440}
+/* boxed date stamp, top right */
+html[data-skin="sonyad"]::before{content:"2000.10";position:fixed;top:12px;right:16px;z-index:41;pointer-events:none;padding:2px 10px;border:1px solid var(--s-hair);background:rgba(255,255,255,.7);font:400 .625rem "Michroma",sans-serif;letter-spacing:.2em;color:var(--s-vaio)}
+html[data-skin="sonyad"][data-mode="dark"]::before{background:rgba(0,0,0,.5);color:var(--s-lcd)}
+/* product-sheet grid: hairline cells, square, violet numbers */
+[data-skin="sonyad"] .qtile{border-radius:0;border:1px solid var(--s-hair);background:rgba(255,255,255,.55);box-shadow:none}
+[data-skin="sonyad"][data-mode="dark"] .qtile{background:rgba(10,12,16,.7)}
+[data-skin="sonyad"] .qtile::after{color:var(--s-vaio)}
+/* section heads: a wide-spaced bar, like G E A R under the VAIO mark */
+[data-skin="sonyad"] :is(.sechd,.cathd){display:inline-block;padding:3px 14px;background:var(--s-vaio);color:#fff;font:400 .625rem "Michroma",sans-serif;letter-spacing:.5em;text-transform:uppercase;border-radius:0}
+/* lessons as spec-table rows */
+[data-skin="sonyad"] .lesson{border-radius:0;border:0;border-bottom:1px solid var(--s-hair);background:transparent;box-shadow:none}
+/* tagline beside the model plate */
+[data-skin="sonyad"] body::after{content:"CLOSER THAN THE BELL.   ·   MSC-TT01 · DIGITAL TIMETABLE";color:var(--s-vaio)}
+/* black version: photographic grain over everything, very light */
+html[data-skin="sonyad"][data-mode="dark"]::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opacity:.16;mix-blend-mode:screen;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+[data-pg="hkmahjong"][data-skin="sonyad"]::before,html.zen[data-skin="sonyad"]::before{display:none}

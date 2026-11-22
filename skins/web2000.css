@@ -150,3 +150,11 @@ html.fx-enter[data-skin="web2000"] .wrap{animation:none}
 [data-skin="web2000"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){font:var(--w-micro);letter-spacing:.34em}
 html[data-skin="web2000"][data-mode="dark"]::after{font:var(--w-micro);font-size:.4375rem;letter-spacing:.3em;height:22px;padding:7px 12px}
 html[data-skin="web2000"][data-mode="dark"]::before{font:italic 400 .4375rem "Michroma",Verdana,sans-serif;letter-spacing:.3em;bottom:7px}
+
+/* ── Win98 windows (day): each card gets a navy title bar with three grey buttons, like the CD Player and Paint windows on the 2000 desktop pages ── */
+[data-skin="web2000"]:not([data-mode="dark"]) .pcard{position:relative;padding-top:30px}
+[data-skin="web2000"]:not([data-mode="dark"]) .pcard::before{content:"Timetable.exe";position:absolute;top:2px;left:2px;right:2px;height:18px;padding:0 6px;box-sizing:border-box;line-height:18px;font:700 11px Arial,Helvetica,sans-serif;color:#fff;letter-spacing:.02em;background:
+  linear-gradient(#c0c0c0,#c0c0c0) right 3px center/16px 14px no-repeat,
+  linear-gradient(#c0c0c0,#c0c0c0) right 21px center/16px 14px no-repeat,
+  linear-gradient(#c0c0c0,#c0c0c0) right 37px center/16px 14px no-repeat,
+  linear-gradient(90deg,#000080,#1084d0)}
