@@ -407,7 +407,7 @@ html.ae-vt::view-transition-group(ae-sweep),html.ae-vt::view-transition-new(ae-s
 @keyframes fxfade{from{opacity:0}to{opacity:1}}
 
 /* Display → Now and Next off: the timetable's pair and Home's Next card go (Home's sign-in prompt stays) */
-html[data-nownext="off"] .now,
+html[data-nownext="off"] .now:not(.blk),   /* not Studio's current lesson, which is .blk.now */
 html[data-nownext="off"] .hubnow:not(:has(.hubsign)){display:none!important}
 /* parts only the Studio theme shows (skins/studio.css) */
 .idglass,.stterm,.sthome{display:none}

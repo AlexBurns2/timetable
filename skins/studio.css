@@ -229,7 +229,7 @@ html[data-skin="studio"] .gamecard .ico .gi{width:19px;height:19px}
 [data-skin="studio"] .tday .newpill{background:var(--st-paper)}
 
 /* ── Now / Next: one group, two halves ── */
-[data-skin="studio"] :is(.now,.hubnow){gap:0;background:var(--st-paper);border-radius:var(--card-radius);box-shadow:var(--st-group);overflow:hidden}
+[data-skin="studio"] :is(.now:not(.blk),.hubnow){gap:0;background:var(--st-paper);border-radius:var(--card-radius);box-shadow:var(--st-group);overflow:hidden}
 [data-skin="studio"] .nowcard{background:none;border:0;border-radius:0;box-shadow:none;padding:10px 14px}
 [data-skin="studio"] .nowcard+.nowcard{box-shadow:-1px 0 0 var(--st-sep)}
 [data-skin="studio"] a.nowcard:hover{background:var(--st-hover)}
