@@ -114,6 +114,10 @@ instead. Three things did, all found in November 2026 ("a lot of flickering wher
 Also `TAA_K` went from .1 to .06 (one whole round of the sixteen shifts), which roughly halves what twinkle is left on small
 bright things, for a few per cent of softness on what moves.
 
+A phone or tablet (`SMALL`) twinkles more than a computer: its picture is drawn smaller and without multisampling, so everything
+small and lit is about a pixel across. There `TAA_K` is .03. Measure a change at a phone's size too (390 x 760 with touch on, which
+draws 273 x 532), not only at 1280 x 720: the 8.176 work never did, and the street's far city twinkled on a phone until 8.178.
+
 To check a change for flicker, compare consecutive frames, not screenshots seconds apart: slow real motion (the sun's bands, the
 fronds, the swell) looks the same as flicker in a pair of screenshots. The measure used here: replace the page's clock with one
 that steps a thirtieth of a second per frame, read the canvas after every frame for forty frames, and take each pixel's average

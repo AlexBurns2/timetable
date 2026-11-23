@@ -3,20 +3,25 @@
    box (theme.js) and the site turns into a cheap Saul Goodman late-night ad.
    Typing it again puts back the theme you had. It isn't in the picker.
    One idea, done badly on purpose: the spinning Saul (Tenor's "3D Saul" by
-   adamghik, the original 220 × 168 GIF, images/th/saul.gif) is every panel,
-   stretched and pixelated, and the page behind them too, tiled. Text goes meme:
-   Impact in white with a black outline, so it reads over him. With Animation
-   off or Reduce motion it's his first frame (images/th/saul-small.png) instead.
+   adamghik, the original 220 × 168 GIF, images/th/saul.gif) is every surface:
+   every panel, card, button, box and bar, stretched and pixelated, and the
+   page behind them too, tiled. theme.js (saulSurfaces) marks anything with a
+   solid background .sg so pages drawn later (the poll, the lobby) get him too.
+   The words are the show's logo: yellow, slanted, outlined in black, and the
+   headings in its red script. With Animation off or Reduce motion it's his
+   first frame (images/th/saul-small.png) instead.
    ══════════════════════════════════════════════════════════════════ */
 [data-skin="saul"],[data-skin="saul"][data-mode="light"]{
-  --sg-navy:#0b1638; --sg-red:#d7263d; --sg-gold:#ffcc33; --sg-blue:#2a4fb8;
+  --sg-yellow:#ffe600; --sg-red:#ff2b2b; --sg-ink:#000;
   --sg-pic:url(/images/th/saul-small.png);
-  --sg-wash:linear-gradient(rgba(5,10,30,.36),rgba(5,10,30,.36));
-  --bg:#0b1638; --bg-img:none;
-  --panel:rgba(14,27,66,.88); --panel-2:rgba(27,45,99,.9); --line:#000;
-  --text:#fff; --muted:#e8ecff; --accent:#e8364c; --accent-ink:#fff;
-  --font-display:Impact,"Anton","Haettenschweiler","Arial Narrow Bold",sans-serif;
-  --display-tt:uppercase; --display-ls:.02em; --display-w:400;
+  --sg-wash:linear-gradient(rgba(0,0,0,.34),rgba(0,0,0,.34));
+  --sg-line:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,2px 2px 0 #000;
+  --bg:#140c08; --bg-img:none;
+  --panel:#2a1a12; --panel-2:#3a2418; --line:#000;
+  --text:#ffe600; --muted:#fff3a0; --accent:#e3171e; --accent-ink:#ffe600;
+  --font-ui:"Kanit","Arial Black",sans-serif;
+  --font-display:"Yellowtail","Brush Script MT",cursive;
+  --display-tt:none; --display-ls:0; --display-w:400;
   --card-radius:0px; --radius:0px; --tint:0%; --card-accent:0px;
   --card-border:2px solid #000;
   --shadow:4px 4px 0 #000; --shadow-hi:6px 6px 0 #000;
@@ -24,38 +29,61 @@
 /* the GIF only while Animation is on (and motion isn't reduced) */
 :root[data-skin="saul"][data-fx="on"]:not([data-motion="reduced"]){ --sg-pic:url(/images/th/saul.gif) }
 @media (prefers-reduced-motion:reduce){ :root[data-skin="saul"]{ --sg-pic:url(/images/th/saul-small.png) } }
-:root[data-skin="saul"] select option{background:#0e1b42;color:#fff}
-[data-skin="saul"] ::selection{background:var(--sg-gold);color:#0b1638}
+:root[data-skin="saul"] select option{background:#000;color:var(--sg-yellow)}
+[data-skin="saul"] ::selection{background:var(--sg-red);color:var(--sg-yellow)}
 
 /* ── behind everything: Saul, tiled at his own size ── */
-[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 220px 168px repeat,#0b1638;image-rendering:pixelated}
-html.zen[data-skin="saul"] body{background:transparent}
+[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 220px 168px repeat,#140c08;image-rendering:pixelated}
+/* Saul beats the Transparent background (Zen): the page behind is always him */
+html.zen[data-skin="saul"]{--page-bg:#140c08;background:#140c08}
+html.zen[data-skin="saul"] body{background:var(--sg-wash),var(--sg-pic) 0 0 / 220px 168px repeat,#140c08}
 .saulbg{display:none}
 
-/* ── every panel is Saul: the whole of him squashed to fit, crunchy, a wash so the words read ── */
+/* ── every surface is Saul: the whole of him squashed to fit, crunchy, a wash so the words read.
+   The named ones are there from the first paint; .sg is everything else (theme.js). ── */
 [data-skin="saul"] :is(.hubbar,.pagehead,.topbar,.themebar,.tile,.qtile,.tday,.fpost,.pcard,.pad,.game,.stage,.sheet,.newsdlg,
   .gamecard,.lbbcard,.lbgcard,.lbsec,.dgc,.studypanel,.mkcard,.rvcard,.mscnote,.ttnote,.focuslock,.jimcount,
-  .lesson,.nowcard,.breakbar,.gatecard,.idrow,.tfcard,.tfpop,.tfgroup .tfsw,dialog,.setdlg){
-  background:var(--sg-wash),var(--sg-pic) center / 100% 100% no-repeat,#0b1638 !important;
-  image-rendering:pixelated;border:2px solid #000 !important;border-radius:0 !important;box-shadow:4px 4px 0 #000 !important;
+  .lesson,.nowcard,.breakbar,.gatecard,.idrow,.tfcard,.tfpop,.tfgroup .tfsw,dialog,.setdlg,
+  .btn,.arrowbtn,.arrowbtn2,.ibtn,.qtile,.subjcard,.fpanel,.planitem,.yeartab,.diffpill,.day,.card,
+  .sg,input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select){
+  background:var(--sg-wash),var(--sg-pic) center / 100% 100% no-repeat,#140c08 !important;
+  image-rendering:pixelated;border-color:#000 !important;border-radius:0 !important;
   -webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+/* the big ones get a hard black edge and drop shadow, like a sticker on the screen */
+[data-skin="saul"] :is(.hubbar,.pagehead,.topbar,.tile,.qtile,.tday,.fpost,.pcard,.pad,.game,.stage,.sheet,.newsdlg,.gamecard,
+  .lbbcard,.lbgcard,.lbsec,.studypanel,.lesson,.nowcard,.breakbar,.gatecard,.tfcard,dialog,.setdlg,.btn,.arrowbtn,.arrowbtn2,
+  .subjcard,.fpanel,.card,.sg){
+  border:2px solid #000 !important;box-shadow:4px 4px 0 #000 !important}
+[data-skin="saul"] :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select){
+  border:2px solid #000 !important;box-shadow:inset 0 0 0 999px rgba(0,0,0,.35) !important}
+/* buttons press in */
+[data-skin="saul"] :is(.btn,.arrowbtn,.arrowbtn2,.sg):is(button,a):active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000 !important}
 /* the bits inside a panel let him show through */
 [data-skin="saul"] :is(.lesson,.nowcard,.qtile,.tday,.gamecard,.fpost) :is(.ico,.tdico){background:transparent}
 
-/* ── the words: meme text ── */
-[data-skin="saul"] body{color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
-[data-skin="saul"] :is(h1,h2,h3,.pagehead h1,.pq,.gamecard h2,.qtile h2,.tname,.tdname,.lbbt){
-  font-family:Impact,"Anton",sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;color:#fff;
-  -webkit-text-stroke:1px #000;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
-[data-skin="saul"] :is(input,textarea,select){text-shadow:none;color:#111;background:#fff;border:2px solid #000;border-radius:0}
-[data-skin="saul"] :is(input,textarea)::placeholder{color:#555}
-[data-skin="saul"] .btn{background:#fff;color:#000;text-shadow:none;border:2px solid #000;border-radius:0;box-shadow:3px 3px 0 #000}
-[data-skin="saul"] :is(.btn.primary,.btn.primary:hover){background:var(--accent);border-color:#000;color:#fff;
-  text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+/* ── the words: the logo. Yellow, slanted, heavy, outlined in black ── */
+[data-skin="saul"] body{color:var(--sg-yellow);font-family:var(--font-ui);font-style:italic;font-weight:700;text-shadow:var(--sg-line)}
+[data-skin="saul"] :is(button,input,textarea,select,a,.btn,label,b,strong,small,span,p,li,td,th){font-family:var(--font-ui) !important;font-style:italic}
+[data-skin="saul"] :is(button,.btn,a.btn,input,textarea,select){color:var(--sg-yellow) !important;font-weight:700;text-shadow:var(--sg-line) !important}
+[data-skin="saul"] :is(input,textarea)::placeholder{color:#fff3a0;opacity:.75}
+[data-skin="saul"] a{color:var(--sg-yellow)}
+[data-skin="saul"] a:hover{color:#fff}
+/* icons: yellow, with the same black edge */
+[data-skin="saul"] :is(svg,[data-icon]){color:var(--sg-yellow);filter:drop-shadow(1px 1px 0 #000) drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000)}
+/* headings: the red script of "Saul", a black shadow under it */
+[data-skin="saul"] :is(h1,h2,h3,.pagehead h1,.pq,.gamecard h2,.qtile h2,.tname,.tdname,.lbbt,.aptitle h2){
+  font-family:"Yellowtail","Brush Script MT",cursive !important;font-style:normal;font-weight:400;text-transform:none;letter-spacing:0;
+  color:var(--sg-red) !important;-webkit-text-stroke:0;
+  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,3px 3px 0 #000 !important}
+[data-skin="saul"] h1{font-size:max(2.2em,1.6rem)}
+[data-skin="saul"] :is(h2,h3,.tname,.tdname,.lbbt){font-size:max(1.4em,1.3rem) !important;line-height:1.15}
+/* the main button of a form: red, like the script */
+[data-skin="saul"] :is(.btn.primary,.btn.primary:hover){box-shadow:inset 0 0 0 999px rgba(227,23,30,.55),4px 4px 0 #000 !important}
+[data-skin="saul"] .btn.danger{box-shadow:inset 0 0 0 999px rgba(227,23,30,.4),4px 4px 0 #000 !important}
 
-/* ── and his line, in the corner, in yellow like a cheap ad ── */
+/* ── and his line, in the corner, in the logo's colours ── */
 [data-skin="saul"] body::after{content:"S\2019 all good, man.";position:fixed;right:14px;bottom:10px;z-index:5;pointer-events:none;
-  font:400 1.25rem/1 Impact,"Anton",sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#ffe600;
-  -webkit-text-stroke:1px #000;text-shadow:3px 3px 0 #000;transform:rotate(-4deg)}
+  font:400 1.75rem/1 "Yellowtail","Brush Script MT",cursive;color:var(--sg-red);
+  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,3px 3px 0 #000;transform:rotate(-4deg)}
 html.zen[data-skin="saul"] body::after{display:none}
-@media (max-width:560px){ [data-skin="saul"] body::after{font-size:1rem;right:10px;bottom:8px} }
+@media (max-width:560px){ [data-skin="saul"] body::after{font-size:1.25rem;right:10px;bottom:8px} }

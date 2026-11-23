@@ -1347,7 +1347,12 @@ async function build(canvas, kind, dark){
   const mainRT = keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, samples:SMALL ? 0 : 4, depthBuffer:true }));
   const LV = [2, 4, 8, 16].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false })));
   /* steadying (TAA_F), in every scene but the road (it moves too fast to fold frames together) and never in a still */
-  const TAA = !STILL && kind !== 'drive', TAA_K = .06;                  // each frame's share: about the last sixteen frames are in the picture, one whole round of the sixteen places (at a tenth, a lit window's edge still twinkled)
+  /* each frame's share. On a computer .06: about the last sixteen frames are in the picture, one whole round of the sixteen places
+     (at a tenth, a lit window's edge still twinkled). On a phone or tablet half that: there the picture is drawn smaller and
+     without the smoothed edges a computer gets (SMALL: no multisampling), so everything small and lit (far windows, the sign, lamp
+     heads, stars) is about a pixel across and twinkled twice as much. Measured on a phone-sized picture, 2026-11-23: the busiest
+     parts of the street went from 0.70 to 0.42 levels a frame, of the bay from 0.77 to 0.41, for 3 to 6 per cent less crispness. */
+  const TAA = !STILL && kind !== 'drive', TAA_K = SMALL ? .03 : .06;
   let jitX = 0, jitY = 0;                                     // this frame's shift, for the mirror to undo
   const histRT = TAA ? [0, 1].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false }))) : [];
   const halton = (i, b) => { let f = 1, r = 0; while (i > 0){ f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; };

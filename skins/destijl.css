@@ -106,6 +106,7 @@ html.zen[data-skin="destijl"] :is(.topbar,.hubbar,.pagehead)::before,html.zen[da
 /* the timetable's head: the name, Now, Next, the buttons */
 :root[data-skin="destijl"]:not([data-header="split"]) .topbar{padding:0;gap:var(--ds-w)}
 :root[data-skin="destijl"]:not([data-header="split"]) .topbar > :is(.brand,.headbtns){background:var(--panel);align-self:stretch;margin:0}
+:root[data-skin="destijl"]:not([data-header="split"]) .topbar > .headbtns{margin-left:auto}
 :root[data-skin="destijl"]:not([data-header="split"]) .topbar > .brand{padding:14px 18px;max-width:none}
 :root[data-skin="destijl"]:not([data-header="split"]) .topbar > .now{gap:var(--ds-w)}
 /* inner pages: the title, then each button a cell of its own */

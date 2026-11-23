@@ -29,7 +29,7 @@
   --v-hi:#a98be0; --v-lo:#0d0420;
 }
 html.fx-live[data-skin="vapor"]{--bg-img:none}
-/* the reworked Vaporwave, for moderators until it's released (fx/vapor.js puts vw-next on <html>): pastel daylight;
+/* the reworked Vaporwave (theme.js puts vw-next on <html> whenever Vaporwave is on; released to everyone 2026-11-23): pastel daylight;
    dark, a pastel twilight, its windows a dusky slate rather than the old deep violet */
 html.vw-next[data-skin="vapor"]{
   --bg:#cfc6f2; --bg-img:linear-gradient(180deg,#86e0f6 0%,#afcdf7 27%,#d3b8f2 47%,#ffbedc 60%,#f4f0fa 60.2%,#f4f0fa 100%);
@@ -140,7 +140,7 @@ html.fx-in[data-skin="vapor"] .wrap{opacity:0}
 .vp-vhs.off{opacity:0;transition:opacity .06s linear}
 [data-skin="vapor"] .hubnow{height:auto;min-height:5rem}
 [data-skin="vapor"] .hubnow .nowcard .subj{flex:none;line-height:1.3}
-/* ── the messages (moderators only, with vw-next): Windows 95 windows that turn up in the margins, now and then (fx/vapor.js; their words, fx/vapor-entity.js).
+/* ── the messages (with vw-next): Windows 95 windows that turn up in the margins, now and then (fx/vapor.js; their words, fx/vapor-entity.js).
       Above the scene and the page, below the site's own notes and sheets; never modal ── */
 html.vw-next .vw-ent{position:fixed;inset:0;z-index:40;pointer-events:none}
 html.vw-next .vw-ent[hidden]{display:none}
@@ -229,7 +229,7 @@ html.vw-next .vw-small .vw-msg p{font-size:12px}
 html.vw-next .vw-ent .vw-small .vw-btn{min-width:62px;height:23px}
 
 /* ══════════════════════════════════════════════════════════════════
-   The reworked Vaporwave's chrome (moderators only, with vw-next):
+   The reworked Vaporwave's chrome (with vw-next):
    Windows 95 all the way, in the theme's lilac greys. Every edge is the
    old four-line bevel, drawn inside the box (a white line and a pale one
    up and to the left, a mid one and a dark one down and to the right).
@@ -318,7 +318,7 @@ html.vw-next[data-skin="vapor"] .plock span{background:var(--w-face);color:var(-
 html.vw-next[data-skin="vapor"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="finder"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"]) :is(.pagelede,.focusnote){box-shadow:none}
 
 /* ══════════════════════════════════════════════════════════════════
-   The reworked Vaporwave's desktop (moderators only, with vw-next;
+   The reworked Vaporwave's desktop (with vw-next;
    fx/vapor.js builds it).
      · Every page's window stands in the middle of the screen. (For a while each stood off centre on a wide screen: the owner found
        the window moving from page to page jarring.)
@@ -380,7 +380,7 @@ html.vw-next[data-skin="vapor"][data-fx="on"] :is(.brand h1,.hubid h1,.pagehead 
 html[data-motion="reduced"].vw-next[data-skin="vapor"] :is(.brand h1,.hubid h1,.pagehead h1,.hubhead h1){animation:none}
 
 /* ══════════════════════════════════════════════════════════════════
-   The messages, reworked (moderators only, with vw-next).
+   The messages, reworked (with vw-next).
      · In the page's own greys (the --w- colours above), so they belong
        to the scene in light and in dark alike.
      · One that arrives in front of you comes in a glitch (bands of the
@@ -486,7 +486,7 @@ html.vw-next .vw-stamp::after{display:none}
 html.vw-next .vw-stamp .vw-caret{animation:none}
 
 /* ══════════════════════════════════════════════════════════════════
-   Windows of their own (moderators only, with vw-next). The timetable,
+   Windows of their own (with vw-next). The timetable,
    Home's page tiles and forum, the Games and Revision sections and the
    Theme finder's groups each sit in a Windows 95 window. (They stood
    straight on the scene,

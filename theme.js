@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261121s';
+const ASSET_V = '20261123h';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -64,8 +64,8 @@ const SKINS = [
   { id:'brutal',    name:'Neo Brutalism', both:true, ic:'tile', is:'icons', css:'brutal', font:'family=Archivo+Black&family=Space+Grotesk:wght@400;500;700' },
   { id:'maximal',   name:'Maximalism', both:true, ic:'tile', is:'icons', css:'maximal', font:'family=Archivo:wdth,wght@62..125,100..900&family=Instrument+Serif:ital@0;1' },
   { id:'scifi',     name:'Cyberpunk', both:false, ic:'accent', is:'icons', css:'scifi', font:'family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Doto:wght@500;700;900&family=JetBrains+Mono:wght@400;700' },
-  /* Synthwave: real-time 3D behind each page (fx/synth.js, Three.js), so a note says what it costs (lookRow) */
-  { id:'synth',     name:'Synthwave', both:false, mod:true, ic:'accent', is:'icons', css:'synth', font:'family=Syncopate:wght@700&family=Saira:wght@400;500;600;700',
+  /* Synthwave: real-time 3D behind each page (fx/synth.js, Three.js), so a note says what it costs (lookRow). Released 2026-11-23. */
+  { id:'synth',     name:'Synthwave', both:false, ic:'accent', is:'icons', css:'synth', font:'family=Syncopate:wght@700&family=Saira:wght@400;500;600;700',
     note:'Its 3D backgrounds use more battery than other themes. Animation off shows a still picture instead.' },
   { id:'terminal',  name:'Terminal',  both:false, ic:'accent', is:'icons', css:'terminal', font:'family=JetBrains+Mono:wght@400;700' },
   { id:'blueprint', name:'Blueprint', both:false, ic:'accent', is:'icons', css:'blueprint', font:'family=Space+Mono:wght@400;700' },
@@ -87,7 +87,7 @@ const SKINS = [
     city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
   /* a secret: type "saul" in any box (below). Not in the picker. */
-  { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton' },
+  { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton&family=Kanit:ital,wght@1,500;1,700;1,800&family=Yellowtail' },
   /* the originals */
   { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
@@ -139,9 +139,10 @@ const THUMBS = (() => {
       '<radialGradient id="o" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#cdb6ff"/><stop offset="1" stop-color="#9ff0c6"/></radialGradient></defs>' +
       '<circle cx="104" cy="40" r="17" fill="url(#c)" stroke="#8a98a8" stroke-width=".6"/>' + bar('rx="6" fill="url(#c)" stroke="#8a98a8" stroke-width=".7"') + '<rect x="58" y="8" width="40" height="8" rx="4" fill="#0b0d10"/><circle cx="64" cy="12" r="1.8" fill="#c8ff2e"/>' +
       tiles('rx="6" fill="#fff" fill-opacity=".8" stroke="#aab6c4" stroke-width=".7"') + [16, 52, 88].map(x => '<circle cx="' + x + '" cy="31.5" r="4.5" fill="url(#o)"/>').join('')],
-    /* the reworked Vaporwave (moderators, until it's released): a pastel sky, the sun, a chequered floor running to the horizon, one
-       Windows 95 window (the pink-to-cyan title bar, a heading with its colours apart, a button, a sunk field) and the taskbar */
-    vapornext: ['#cdbdf3', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86e0f6"/><stop offset=".58" stop-color="#cdbdf3"/><stop offset="1" stop-color="#ffbedc"/></linearGradient>' +
+    /* Vaporwave: a pastel sky, the sun, a chequered floor running to the horizon, one Windows 95 window (the pink-to-cyan title
+       bar, a heading with its colours apart, a button, a sunk field) and the taskbar. (Its drawing before the theme was reworked,
+       a dark sky and a banded sun, went when the rework was released, 2026-11-23.) */
+    vapor: ['#cdbdf3', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86e0f6"/><stop offset=".58" stop-color="#cdbdf3"/><stop offset="1" stop-color="#ffbedc"/></linearGradient>' +
       '<linearGradient id="t" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff71ce"/><stop offset=".52" stop-color="#b967ff"/><stop offset="1" stop-color="#01cdfe"/></linearGradient>' +
       '<linearGradient id="u" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffa6cb"/><stop offset="1" stop-color="#ff5c9c"/></linearGradient></defs>' +
       '<rect width="120" height="27" fill="url(#s)"/><circle cx="22" cy="19" r="11.5" fill="url(#u)"/><rect y="27" width="120" height="19" fill="#f4f0fa"/><path fill="#2a2540" d="' +
@@ -155,12 +156,6 @@ const THUMBS = (() => {
       '<rect x="68.4" y="23" width="37" height="7.4" fill="#fff"/><path d="M68.7 30.4V23.3H105.4" fill="none" stroke="#372d5e" stroke-width=".6"/>' +
       '<rect y="40" width="120" height="6" fill="#dcd6ec"/><rect y="40" width="120" height=".6" fill="#fff"/><rect x="1.6" y="41.4" width="11" height="3.6" fill="#dcd6ec" stroke="#372d5e" stroke-width=".4"/><rect x="3.2" y="42.4" width="2" height="1.6" fill="#b967ff"/>' +
       '<rect x="15" y="41.4" width="15" height="3.6" fill="#f4f0fa" stroke="#372d5e" stroke-width=".4"/><rect x="32" y="41.4" width="15" height="3.6" fill="#dcd6ec" stroke="#9f96c4" stroke-width=".4"/><rect x="106" y="41.4" width="12.4" height="3.6" fill="#dcd6ec" stroke="#9f96c4" stroke-width=".4"/>'],
-    vapor: ['#2a0a52', '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0638"/><stop offset=".62" stop-color="#7a1a7a"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient>' +
-      '<linearGradient id="t" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff71ce"/><stop offset=".5" stop-color="#b967ff"/><stop offset="1" stop-color="#01cdfe"/></linearGradient>' +
-      '<linearGradient id="u" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe66d"/><stop offset="1" stop-color="#ff2a8a"/></linearGradient></defs>' +
-      '<rect width="120" height="31" fill="url(#s)"/><circle cx="60" cy="29" r="13" fill="url(#u)"/><g fill="#7a1a7a"><rect x="40" y="24" width="40" height="1.4"/><rect x="40" y="27.3" width="40" height="2"/></g>' +
-      '<rect y="31" width="120" height="15" fill="#0d0420"/><g stroke="#ff71ce" stroke-width=".7"><path d="M0 34h120M0 39h120M60 31V46M40 31 22 46M80 31 98 46M20 31-14 46M100 31 134 46"/></g>' +
-      '<rect x="8" y="5" width="60" height="16" fill="#23103e" stroke="#a98be0"/><rect x="9" y="6" width="58" height="4.5" fill="url(#t)"/><rect x="13" y="14" width="26" height="2.6" fill="#ffe8fb"/>'],
     editorial: ['#f4f0e8', '<rect x="8" y="6" width="104" height="2.4" fill="#1a1814"/><text x="8" y="31" font-family="Georgia,\'Times New Roman\',serif" font-size="24" letter-spacing="-1" fill="#1a1814">Aa</text>' +
       '<rect x="46" y="14" width="66" height=".8" fill="#1a1814"/>' + [20, 27, 34].map((y, i) => '<rect x="46" y="' + y + '" width="' + [44, 52, 36][i] + '" height="2.6" fill="#1a1814"/><rect x="46" y="' + (y + 4.2) + '" width="66" height=".5" fill="#b9b0a2"/>').join('') +
       '<rect x="8" y="38" width="12" height="1.6" fill="#b5432a"/>'],
@@ -252,8 +247,7 @@ const THUMBS = (() => {
   };
 })();
 SKINS.forEach(s => {
-  let next = false; try { next = s.id === 'vapor' && localStorage.getItem('msc.ismod') === '1'; } catch {}      /* at release: make vapornext the drawing for 'vapor' and drop this */
-  const t = THUMBS[next ? 'vapornext' : s.id];
+  const t = THUMBS[s.id];
   /* (single quotes round the address, and none inside it: this goes into a style="…" attribute) */
   s.swatch = t ? "url('data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 46" preserveAspectRatio="xMidYMid slice"><rect width="120" height="46" fill="' + t[0] + '"/>' + t[1] + '</svg>').replace(/'/g, '%27') + "') center/cover no-repeat" : 'var(--panel-2)';
 });
@@ -267,6 +261,8 @@ SKINS.filter(s => s.city).forEach(s => {
   s.swatch = 'radial-gradient(circle,rgba(0,0,0,.3) 0 .55px,transparent 1px) 0 0/3px 3px,linear-gradient(' + d[0] + ',' + d[0] + '),linear-gradient(' + d[1] + ',' + d[1] + '),' +
     "linear-gradient(#000,#000),url('/images/city/" + s.id + "-t.webp') center/cover no-repeat " + d[0] + ';background-blend-mode:normal,screen,multiply,saturation,normal';
 });
+/* Better Call Saul's card: the spinning Saul himself */
+SKINS.find(s => s.id === 'saul').swatch = "url('/images/th/saul.gif') center/cover no-repeat #000;image-rendering:pixelated";
 SKINS.find(s => s.id === 'plain').border = '#e5e5e8'; (SKINS.find(s => s.id === 'destijl') || {}).border = '#111'; (SKINS.find(s => s.id === 'coquette') || {}).border = '#ecd2d8'; SKINS.find(s => s.id === 'swiss').border = '#111'; SKINS.find(s => s.id === 'editorial').border = '#d6cdbf'; SKINS.find(s => s.id === 'studio').border = '#e2ddd6'; (SKINS.find(s => s.id === 'apple') || {}).border = '#d2d2d7';
 
 /* kept for older callers; the picker shows every theme now */
@@ -523,6 +519,8 @@ function paintFavicon(){
     const bg = cs.getPropertyValue('--accent').trim(), ink = fv.ink || cs.getPropertyValue('--accent-ink').trim() || '#fff';
     const style = FAV_STYLE[sk] || 'plain', key = sk + bg + ink + style;
     if (!bg || key === favLast) return;
+    /* Better Call Saul: the spinning Saul himself (browsers that animate a GIF favicon spin him) */
+    if (sk === 'saul'){ document.querySelectorAll('link[rel~="icon"]').forEach(l => { l.type = 'image/gif'; l.href = '/images/th/saul.gif'; }); favLast = key; return; }
     const draw = () => {
       const N = 64, mk = n => { const c = document.createElement('canvas'); c.width = c.height = n || N; return c; };
       /* the letters, in a colour (or a gradient, made by fill(x)), in a shape */
@@ -720,6 +718,9 @@ function paint(state){
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-pg', PG);
+  /* Vaporwave's desktop (its Windows 95 chrome, its windows) is everything in skins/vapor.css under html.vw-next. It goes on
+     here, so the first paint already has it: fx/vapor.js, which puts it on too, can arrive after the page is drawn. */
+  root.classList.toggle('vw-next', st.skin === 'vapor');
   { const sk = SKINS.find(s => s.id === st.skin); if (sk && sk.city) root.setAttribute('data-city', sk.id); else root.removeAttribute('data-city'); }
   /* Windows XP: a page kept maximised (skins/xp.js, msc.xpmax) is maximised from the first paint, not after its script */
   if (st.skin === 'xp' && PG !== 'home'){ let m = null; try { m = JSON.parse(localStorage.getItem('msc.xpmax')); } catch {} root.classList.toggle('xpmaxed', !!(m && m[PG === 'timetable' ? 'timetable' : 'page'])); }
@@ -1240,6 +1241,67 @@ function saulBg(){
 }
 addEventListener('tt:look', saulBg);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulBg, { once:true }); else saulBg();
+
+/* Better Call Saul's theme tune (audio/saul.mp3), looping for as long as the theme is on. Browsers
+   only let sound start after a click or key, so if it's blocked it starts on the first one. Opening
+   another page carries on from where it was (sessionStorage). Off the moment the theme changes. */
+const saulTune = { a:null, wait:false };
+function saulMusic(){
+  const on = document.documentElement.getAttribute('data-skin') === 'saul';
+  const T = saulTune;
+  if (!on){ if (T.a){ T.a.pause(); T.a = null; } try { sessionStorage.removeItem('tt.saul_t'); } catch {} return; }
+  if (!T.a){
+    T.a = new Audio('/audio/saul.mp3?v=' + ASSET_V);
+    T.a.loop = true; T.a.volume = .5;
+    try { const t = +sessionStorage.getItem('tt.saul_t'); if (t > 0) T.a.currentTime = t; } catch {}
+  }
+  const go = () => { if (!T.a || !T.a.paused) return; T.a.play().catch(() => {
+    if (T.wait) return; T.wait = true;
+    const kick = () => { T.wait = false; removeEventListener('pointerdown', kick, true); removeEventListener('keydown', kick, true); go(); };
+    addEventListener('pointerdown', kick, true); addEventListener('keydown', kick, true);
+  }); };
+  go();
+}
+/* Saul is every surface: anything the page draws with a solid background (a panel, a card, a button, a
+   bar, the poll's rows, the lobby, drawn now or later) gets .sg, and skins/saul.css puts him on it.
+   Game boards and switches keep their colours (they'd stop working), and so does anything tiny. */
+const SG_SKIP = '.stage *,[class*="board"] *,[class*="board"],canvas,img,video,svg,iframe,input[type=checkbox],input[type=radio],input[type=range],.sw,.tsw i';
+let sgObs = null, sgQ = new Set(), sgRaf = 0;
+function sgMark(root){
+  if (!root || root.nodeType !== 1) return;
+  const els = [root, ...root.querySelectorAll('*')];
+  for (const el of els){
+    if (el === document.body || el.classList.contains('sg') || el.closest('head')) continue;
+    if (el.matches(SG_SKIP)) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.position === 'fixed' && el.getBoundingClientRect().width >= innerWidth - 2) continue;
+    const m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor), a = m ? (m[1].split(',')[3] === undefined ? 1 : +m[1].split(',')[3]) : 0;
+    const grad = cs.backgroundImage.includes('gradient') && !cs.backgroundImage.includes('saul');
+    if (a < .25 && !grad) continue;
+    if (cs.backgroundImage.includes('saul')) continue;
+    if (el.offsetWidth < 16 || el.offsetHeight < 16) continue;
+    el.classList.add('sg');
+  }
+}
+function saulSurfaces(){
+  const on = document.documentElement.getAttribute('data-skin') === 'saul';
+  if (!on){ if (sgObs){ sgObs.disconnect(); sgObs = null; } return; }
+  if (!document.body) return;
+  /* after the skin's stylesheet has applied, so the colours read are Saul's */
+  setTimeout(() => sgMark(document.body), 400);
+  if (sgObs) return;
+  sgObs = new MutationObserver(list => {
+    for (const r of list) for (const n of r.addedNodes) if (n.nodeType === 1) sgQ.add(n);
+    if (!sgRaf) sgRaf = requestAnimationFrame(() => { sgRaf = 0; const q = [...sgQ]; sgQ.clear(); q.forEach(n => n.isConnected && sgMark(n)); });
+  });
+  sgObs.observe(document.body, { childList:true, subtree:true });
+}
+addEventListener('tt:look', saulSurfaces);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulSurfaces, { once:true }); else saulSurfaces();
+addEventListener('load', () => saulSurfaces());
+addEventListener('pagehide', () => { try { if (saulTune.a) sessionStorage.setItem('tt.saul_t', saulTune.a.currentTime); } catch {} });
+addEventListener('tt:look', saulMusic);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', saulMusic, { once:true }); else saulMusic();
 
 /* ── replies from the moderators (api/_notice.js): an answer to something you sent (an idea, a poll
    idea, a name change) shows on the next page you open, signed "MSC Unofficial" (never a moderator's

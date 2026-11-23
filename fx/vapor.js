@@ -9,7 +9,8 @@
    Drawn on a 2D canvas, slowly, at thirty frames a second. Nothing
    follows the pointer, and there is no tape noise over it.
 
-   (Moderators see a reworked set instead, for now: makeNext, at the end.)
+   (These were Vaporwave's scenes until 2026-11-23. The reworked set, makeNext
+   further down, is what everyone gets now: see NEXT. These stay, switched off.)
 
      timetable          drive     a road to a banded sun and a far skyline,
                                   low-poly hills rising either side and
@@ -34,11 +35,14 @@ const mix = (a, b, k) => 'rgb(' + Math.round(a[0] + (b[0] - a[0])*k) + ',' + Mat
 const PAGE = { timetable:'drive', home:'ruins', calendar:'pyramids', notes:'pyramids', games:'planets', finder:'planets',
                free:'stairs', revision:'stairs', resources:'solids', mahjong:'solids' };
 
-/* The reworked Vaporwave is for moderators until it's released: everyone else gets the scenes above, as they were.
-   <html> gets vw-next, which skins/vapor.css keys the new colours off. */
+/* The reworked Vaporwave. It was for moderators only while it was made; released to everyone on 2026-11-23, so NEXT is simply
+   true. (false brings back the scenes above, as they were; the stylesheet's old look comes back with them only if theme.js
+   stops putting vw-next on <html>.) <html> gets vw-next, which skins/vapor.css keys the new look off: theme.js puts it on
+   before the first paint, and it goes on here too in case this arrives first. */
 const root = document.documentElement;
-const NEXT = (() => { try { return localStorage.getItem('msc.ismod') === '1'; } catch { return false; } })();
-if (NEXT) root.classList.add('vw-next');
+const NEXT = true;
+const MOD = (() => { try { return localStorage.getItem('msc.ismod') === '1'; } catch { return false; } })();      /* (a moderator: may call a message up to look at it, see the messages) */
+if (NEXT && root.getAttribute('data-skin') === 'vapor') root.classList.add('vw-next');
 /* Each page's own arrangement in the reworked theme. Every page's window stands in the middle of the screen. (For a while each stood
    off centre on a wide screen, with the scene's main thing in the bigger margin: the owner found it jarring that the window moved from
    page to page, and uncomfortable to look at.) Its word (the page's name, in Japanese, in big vertical type) stands in the margin
@@ -658,7 +662,7 @@ function makeNext(canvas, env){
   };
 }
 /* ═══════════════════════════════════════════════════════════════════
-   The messages (moderators only, with the rest of NEXT).
+   The messages.
 
    Now and then a Windows 95 message box turns up in the margin beside
    the page. What they say and how often is fx/vapor-entity.js, a list
@@ -785,10 +789,10 @@ function visitors(){
     followUpChance:.7, rareAfter:5, rareGapHours:72, rareChance:.3, phoneChance:.5, phoneStaySeconds:75, typeCps:30, maxOpen:2 }, C.pace || {});
   const EV = {}; C.events.forEach(e => { if (e && e.id) EV[e.id] = e; });
   const PG = root.getAttribute('data-pg') || FX.page || '';
-  const q = (() => { try { return new URLSearchParams(location.search).get('vwent'); } catch { return null; } })();
+  const q = MOD ? (() => { try { return new URLSearchParams(location.search).get('vwent'); } catch { return null; } })() : null;      /* (calling one up is for moderators) */
   if (q === 'reset'){ vput({}); setVoff(false); } else if (q === 'on') setVoff(false);
   const preview = q && q !== 'reset' && q !== 'on' ? q : null;
-  const lifeQ = (() => { try { return Math.max(0, +new URLSearchParams(location.search).get('vwlife') || 0); } catch { return 0; } })();      /* with ?vwent=<id>: &vwlife=<seconds> before the other pointer comes for it (else it stays) */
+  const lifeQ = !MOD ? 0 : (() => { try { return Math.max(0, +new URLSearchParams(location.search).get('vwlife') || 0); } catch { return 0; } })();      /* with ?vwent=<id>: &vwlife=<seconds> before the other pointer comes for it (else it stays) */
   /* when the site was last looked at, on any of its pages: what tells coming back after a while from clicking through to another page */
   const t0 = Date.now(), lastSeen = vget().active || 0;
   const touch = () => vupd(s => { if (!s.first) s.first = t0; s.active = Date.now(); });
@@ -1089,7 +1093,7 @@ function visitors(){
   else if (Math.random() < P.liveChance*phoneK()) arrive(rand(P.liveAfterSeconds)*1000);
 }
 /* ═══════════════════════════════════════════════════════════════════
-   The desktop's furniture (moderators only, with the rest of NEXT).
+   The desktop's furniture.
      · A taskbar along the foot of the screen: Start (the pages again,
        the Theme finder, Settings, the messages on or off), a button for
        each page with this page's pressed in, a clock. Real links and

@@ -4393,3 +4393,88 @@ The owner (2026-11-23): "Also theres still a lot of flickering where ever theres
 - Checked: all five scenes draw with no errors; bay and pyramid compared by eye with before (same pictures).
 - **Not seen on a real screen:** all of this was measured in software rendering at 1280 x 720. The causes don't depend on the graphics card, but how the result looks at the owner's size and refresh rate is for them to say.
 
+## 8.177 Synthwave and Vaporwave on every size of screen; the messages placed loosely (committed by the owner in "synth again" while still stamped `20261121s`; it first ships as `20261123h`, v103: see 8.178)
+
+The owner (2026-11-23): "Looks perfect I think, my only concern now is whether it holds up on different screen sizes. Same with vaporwave too, make sure the hero images are always visible for common screen sizes. In the cinema scene, the cinema and distant city are the hero images, the video rental shop might be partially visible but is mainly for wide screens. In vaporwave, make sure the katakana is visible. Also make the popup placements a bit more loose and random, just keep them out of the center of the screen." Not committed by Claude.
+
+**Audited first.** Every page of both themes at fourteen browser-window sizes (1280 x 600, 1366 x 650, 1440 x 790, 1536 x 730, 1920 x 950, 2560 x 1300, 3440 x 1235; tablets 1024 x 700, 1180 x 750, 768 x 950, 820 x 1100; phones 360 x 700, 390 x 760, 430 x 850), with the page and without it. Both themes had only ever been composed on a very wide window. What turned up:
+
+- Synthwave's street: a tablet on its side lost half the sun; an upright tablet and a phone lost the city altogether; on a laptop the shop's wall stood in the page's right margin and the cinema was behind the page. The other four scenes kept their things at every size (the pyramid's planet was half off a phone).
+- Vaporwave: no katakana on any page at 1280 px; none on Home or the timetable on any laptop; the timetable's head and word both hidden on every laptop (its windows ran the whole width); other pages' things half under the window or off the screen's edge.
+
+**Synthwave's street** (`fx/synth.js`; `tools/synth/README.md` has the table):
+
+- The camera stands in one place on every screen; only the lens changes with the screen's shape (`look.cam`, which `frame()` uses when a scene has one). 16 : 9 is exactly as it was (its still came out identical), and so is 2.78 : 1 and wider (the owner's window).
+- Narrower than 16 : 9, down to a phone: the same view from side to side, more sky and wet ground. A phone takes in nine tenths of it.
+- Wider, to about 2.1 : 1 (a laptop's browser window): the same view from side to side, a little less sky and foot. The cinema's neon is then in the page's right margin, and the sun in its left. From there it opens out to the wide view.
+- The pyramid's phone camera is turned a little further right, so most of the planet is in.
+- Stills: a third for the street, `street-night-m` (1200 x 900), for a tablet on its side; `street-night-p` and `pyramid-night-p` made again. `skins/synth.css` now gives every upright screen the tall still (an upright tablet used to get the middle half of the wide one) and the street's `-m` up to 13 : 8. `tools/synth/stills.mjs` makes it.
+
+**Vaporwave** (`fx/vapor.js`, `skins/vapor.css`; `tools/vapor/README.md` section 5):
+
+- A scene's thing that would not stand whole in its margin is drawn smaller about its foot until it does, in the middle of the margin; never under 0.42 of its size. It goes by how far the thing itself reaches from its foot (`sl`, `sr`, `st` in `META`), measured from the pictures by the new `tools/vapor/reach.py` (and by `pack.py` for a fresh render). The planet's ball is what is fitted; its rings may run off.
+- The page's word shows in any margin of 84 px or more (it needed 170). One size on every page still, unless the margin is narrower than the word.
+- Home in a narrow margin: the word stands over the broken column, which is drawn short enough to end below it.
+- **The timetable's windows now stop short of the screen's edges from 1280 px wide**, by about a fifth of the screen's height a side (never under 128 px nor over 200): at the full width there was nowhere for the head or the word. At 1366 x 650 they are 1080 px wide (they were 1346); at 1920 and wider nothing changes. This is Claude's call, one rule in `skins/vapor.css` after the timetable's grid, and the owner's to reverse.
+- The margin is measured to where the page's windows begin, not to the column's padding (`wrapBox`).
+- Not done: a tablet and a phone. There the page's windows fill the screen; the word is in each page's title bar only. Left alone rather than push the page's content down; offered to the owner.
+
+**The messages** (`fx/vapor.js`, "the stage"): they stood in nine fixed places (the corners and middles of the margins). Now a random place anywhere down either side, a different one each time. Never over the page's column (a window may lean 24 px over its edge; not at all on the timetable), whole on the screen, above the taskbar, clear of another window. Claude's additions: one may stand partly in front of a scene's thing or the word but never hide more than half of it, and of the places it could stand one that hides less is the likelier. A fleeing one goes well away if it can. On a screen with no room at the sides (under about 1300 px wide on most pages) it is still one small window near a bottom corner, now a little in from it, and it no longer sits on the taskbar.
+**Checked** (headless Chrome, software rendering; the owner has not yet seen these on real screens):
+
+- Synthwave: all five scenes at the fourteen sizes, live, no errors or warnings; the street also at eight in-between shapes (square, 2 : 3, 16 : 10, 16 : 9, 2.3, 2.5, 2.7 : 1); the still fallback (Reduce motion) at six sizes for each scene, each choosing the right picture.
+- Vaporwave: every page at the fourteen sizes, light, and six pages at six sizes, dark. On every page from 1280 px wide the scene's things stand whole and the word is there.
+- The owner's window (3440 x 1235): Vaporwave's margins compared before and after, pixel for pixel: identical on every page. Synthwave's 16 : 9 still came out identical; its wide framing is the same numbers as before from 2.78 : 1.
+- At 1920 px two things moved, both because they had been touching an edge: the staircase now stands clear of the window (it ran 2 px under it), 87 px further right; the glass pyramid moved 10 px in from the screen's edge. The word moved up to 10 px on Home, Games and the timetable (the margin is measured to the windows now).
+- The messages: called up about 450 times over three runs, nine page-and-size pairs. In the last run, read from where each was put (125 of them): none over the page's column beyond the 24 px lean (none at all on the timetable), none off the screen or on the taskbar, both sides used. (The earlier runs read where each was drawn, and caught some a few pixels off in mid-arrival: that is the arrival's own jolt, not where they stand.)
+- A harmless notice turned up while checking: on Home in Vaporwave the browser reports "ResizeObserver loop completed with undelivered notifications". It comes from Home's own greeting-fitter (`fitHello`), not from any of this, and nothing is wrong on the page.
+
+## 8.178 The merge with origin/main, and the release of Synthwave and Vaporwave (version `20261123h`, `CACHE_VERSION` v103)
+
+The owner (2026-11-23): "resolve merge conflicts and release both synthwave and vaporwave". Not committed by Claude: the merge is resolved and staged in the working tree, for the owner to finish in GitHub Desktop (Continue merge) and push.
+
+**The merge.** The owner had committed the working tree ("synth again", 23c3504, still stamped `20261121s` / v97) and pulled origin/main: eight commits from another session (the Saul theme's tune, surfaces, favicon and card; Studio's tiles and poll note; the timetable header's buttons), stamped `20261123g` / v102.
+
+- 29 conflicts in 16 files (the twelve pages, `vault.html`, `games.js`, `sw.js`, `theme.js`). Every one was the version stamp and nothing else: checked by masking the stamp on both sides of each.
+- Resolved by taking the lines and setting one new stamp everywhere, later than both: `ASSET_V` `20261123h`, `CACHE_VERSION` v103. Neither old stamp is left in any file.
+- Verified: with stamps masked, each of the 16 files is byte for byte what `git merge-file` makes of the two sides and their common ancestor. Line endings kept as they were.
+- Nothing of either side was dropped: Home keeps the new credit line in About; `index.html`, `sw.js` and `theme.js` have the incoming changes.
+- Versions from here on follow the other session's way: the day's date and a letter. Next free: `20261123i` / v104. Both other sessions were told.
+
+**The release.**
+
+- **Synthwave:** `mod:true` taken off it in `theme.js`. That is all it needed: the picker, the Theme finder (it was already in Retro-digital) and `readState` go by that flag. Its note about battery stays.
+- **Vaporwave:** the reworked theme is Vaporwave now.
+  - `fx/vapor.js`: `NEXT = true` (it was "is this a moderator"). The old scenes stay in the file, switched off.
+  - `theme.js` `paint()` puts `vw-next` on `<html>` whenever the skin is Vaporwave. `skins/vapor.css` keys the whole new look off that class, and until now only `fx/vapor.js` set it, which on a reload arrives after the page is drawn: without this an ordinary visitor would have seen the old look for a moment on every reload. It comes off again when the theme changes.
+  - The Theme finder's and picker's drawing of Vaporwave is the new one (`THUMBS.vapor`; the old dark one is gone).
+  - The messages reach everyone on Vaporwave, as rarely as before. Calling one up (`?vwent=`, `&vwlife=`) is still for moderators.
+- **Windows XP** is the only theme still `mod:true`. (The Cities Collection has no such flag: the Theme finder shows it to everyone, and did before this.)
+- Not touched: `SHOWCASE` (the order the Popular strip falls back on), so Synthwave comes after the themes named there until its use is counted. What's new is the owner's to write.
+- The credits both themes need were already in About (Photo credits, 3D credits). `.vercelignore` already keeps the `.blend` files and `tools/` off the site.
+
+**Checked as an ordinary visitor** (no moderator flag on the device, and the call that would set one blocked, because the local mock answers that everyone is a moderator):
+
+- Vaporwave on the timetable, Home, Calendar and Games, light and dark, 390 to 3440 px wide: the new look is on by the time the page's HTML has loaded (before the first paint), the taskbar is there, no errors.
+- Synthwave on Home, the timetable and Games (a phone): the live scene draws, no errors.
+- The Theme finder lists Synthwave and not Windows XP; a saved Windows XP still reads as Plain.
+- `?vwent=checking` shows nothing to an ordinary visitor and a message to a moderator.
+- Saul, Studio, Frutiger Aero, Cyberpunk and Plain load with no errors after the merge.
+- After the merge and the release every Vaporwave page was shot again at the fourteen sizes as an ordinary visitor (and six pages dark): the margins match the shots taken before the merge.
+
+**Phones and tablets twinkled more than a computer; steadied.** Releasing Synthwave puts it on phones, where its flicker had never been measured (8.176 measured a computer-sized picture only). Measured now on a phone-sized picture (273 x 532, as a phone draws it):
+
+- A phone or tablet draws the picture smaller and without the smoothed edges a computer gets (`SMALL`: no multisampling), so everything small and lit (far windows, the sign's tubes, lamp heads, the bollards' lights, stars) is about a pixel across, and each frame's fraction-of-a-pixel shift moves it on and off its pixel.
+- `TAA_K` is now .03 on those devices (it stays .06 on a computer): each frame counts for half as much.
+
+  | where, on a phone | before | after |
+  |---|---|---|
+  | street, its busiest parts | 0.70 | 0.42 |
+  | bay (the timetable), its busiest parts | 0.77 | 0.41 |
+  | pyramid scene | 0.63 | 0.46 |
+  | shore scene | 0.50 | 0.26 |
+
+  (average change per pixel per frame, in levels of 255; what is left is partly real motion: the fronds, the sun's bands, the turning pyramid.) Cost: 3 to 6 per cent less crisp, and what moves is a little softer.
+- Loosening the history's clamp instead was tried first and did little (about a tenth), so it is as it was.
+- On a computer nothing changed: the bay, pyramid and shore measure the same as in 8.176 to two decimal places, and so does the street outside the palm's moving fronds. The street's new laptop and tablet framings measure like its 16 : 9 one.
+- Not done, and worth trying on a real phone: multisampling on phones (twice or four times), which is the proper cure and costs the graphics chip more.
