@@ -66,14 +66,20 @@ html.vw-next[data-skin="vapor"][data-pg="themes"]{--v-jp:"　テーマ"}
   background:var(--v-bar);color:#fff;font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.06em;
   text-shadow:1px 1px 0 rgba(80,30,120,.5);pointer-events:none}
 :root[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;right:6px;top:5px;width:62px;height:16px;pointer-events:none;
-  background:
+  background:var(--v-caps)}
+/* the three caption buttons, drawn: minimise (a bar at the foot), maximise (a window: a box, its top thick), close (a cross).
+   (Maximise was only its top bar, a line that read as nothing.) The reworked theme draws them as raised keys: --v-caps, further down. */
+[data-skin="vapor"]{--v-caps:
     linear-gradient(var(--v-glyph),var(--v-glyph)) 4px 10px/7px 2px no-repeat,
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 24px 3px/10px 2px no-repeat,
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 24px 3px/1px 10px no-repeat,
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 33px 3px/1px 10px no-repeat,
+    linear-gradient(var(--v-glyph),var(--v-glyph)) 24px 12px/10px 1px no-repeat,
     linear-gradient(45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
     linear-gradient(-45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
-    linear-gradient(var(--v-glyph),var(--v-glyph)) 25px 3px/10px 2px no-repeat,
-    linear-gradient(var(--v-key),var(--v-key)) 0 0/16px 16px no-repeat,
-    linear-gradient(var(--v-key),var(--v-key)) 21px 0/16px 16px no-repeat,
-    linear-gradient(var(--v-key),var(--v-key)) 44px 0/16px 16px no-repeat}
+    linear-gradient(var(--v-key),var(--v-key)) 0px 0px/16px 16px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 21px 0px/16px 16px no-repeat,
+    linear-gradient(var(--v-key),var(--v-key)) 44px 0px/16px 16px no-repeat}
 [data-skin="vapor"] :is(.dlg-h,.newshead,.sheethd){background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.5);border-bottom:0}
 [data-skin="vapor"] .newshead{padding-bottom:10px}
 /* ── buttons: grey, bevelled, and they go in ── */
@@ -501,13 +507,42 @@ html.vw-next[data-skin="vapor"]{
   --win-top:inset -1px 0 var(--w-dk),inset 1px 1px var(--w-hl),inset -2px 0 var(--w-sh),inset 2px 2px var(--w-lt);        /* a window's head: the bevel along its top and down its sides */
   --win-mid:inset -1px 0 var(--w-dk),inset 1px 0 var(--w-hl),inset -2px 0 var(--w-sh),inset 2px 0 var(--w-lt);            /* its sides only */
   --win-foot:inset -1px -1px var(--w-dk),inset 1px 0 var(--w-hl),inset -2px -2px var(--w-sh),inset 2px 0 var(--w-lt);     /* its sides and its foot */
-  --v-caps:linear-gradient(var(--v-glyph),var(--v-glyph)) 4px 10px/7px 2px no-repeat,
-    linear-gradient(45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
-    linear-gradient(-45deg,transparent 45%,var(--v-glyph) 45% 58%,transparent 58%) 46px 2px/12px 12px no-repeat,
-    linear-gradient(var(--v-glyph),var(--v-glyph)) 25px 3px/10px 2px no-repeat,
-    linear-gradient(var(--v-key),var(--v-key)) 0 0/16px 16px no-repeat,
-    linear-gradient(var(--v-key),var(--v-key)) 21px 0/16px 16px no-repeat,
-    linear-gradient(var(--v-key),var(--v-key)) 44px 0/16px 16px no-repeat;                                                  /* the three caption buttons, drawn (as on the pages' own title bars) */
+  /* The three caption buttons of every window that is part of the page (its header, each section's title bar), drawn in one
+     62 by 16 box at the bar's right: Windows 95's own three, the same as the messages' windows have as real buttons (.vw-cap):
+     raised grey keys 16 by 14, Minimise and Maximise together and Close a little apart; a bar at the foot, a window with a thick
+     top, a cross. (They were three flat squares, and Maximise only its top bar: the owner, 2026-11-23, of the messages' buttons:
+     "the windows should also use these symbols, for some reason it currently just uses a straight line which doesn't read as
+     anything".) First the three glyphs; then, for each key, its bevel (dark right and foot, light top and left, the shade inside
+     the dark) and its face. */
+  --v-caps:
+    linear-gradient(var(--w-ink),var(--w-ink)) 16px 10px/6px 2px no-repeat,
+    linear-gradient(var(--w-ink),var(--w-ink)) 31px 3px/9px 2px no-repeat,
+    linear-gradient(var(--w-ink),var(--w-ink)) 31px 3px/1px 8px no-repeat,
+    linear-gradient(var(--w-ink),var(--w-ink)) 39px 3px/1px 8px no-repeat,
+    linear-gradient(var(--w-ink),var(--w-ink)) 31px 10px/9px 1px no-repeat,
+    linear-gradient(45deg,transparent 40%,var(--w-ink) 40% 60%,transparent 60%) 50px 4px/7px 7px no-repeat,
+    linear-gradient(-45deg,transparent 40%,var(--w-ink) 40% 60%,transparent 60%) 50px 4px/7px 7px no-repeat,
+    linear-gradient(var(--w-dk),var(--w-dk)) 27px 1px/1px 14px no-repeat,
+    linear-gradient(var(--w-dk),var(--w-dk)) 12px 14px/16px 1px no-repeat,
+    linear-gradient(var(--w-hl),var(--w-hl)) 12px 1px/15px 1px no-repeat,
+    linear-gradient(var(--w-hl),var(--w-hl)) 12px 1px/1px 13px no-repeat,
+    linear-gradient(var(--w-sh),var(--w-sh)) 26px 2px/1px 12px no-repeat,
+    linear-gradient(var(--w-sh),var(--w-sh)) 13px 13px/14px 1px no-repeat,
+    linear-gradient(var(--w-face),var(--w-face)) 12px 1px/16px 14px no-repeat,
+    linear-gradient(var(--w-dk),var(--w-dk)) 43px 1px/1px 14px no-repeat,
+    linear-gradient(var(--w-dk),var(--w-dk)) 28px 14px/16px 1px no-repeat,
+    linear-gradient(var(--w-hl),var(--w-hl)) 28px 1px/15px 1px no-repeat,
+    linear-gradient(var(--w-hl),var(--w-hl)) 28px 1px/1px 13px no-repeat,
+    linear-gradient(var(--w-sh),var(--w-sh)) 42px 2px/1px 12px no-repeat,
+    linear-gradient(var(--w-sh),var(--w-sh)) 29px 13px/14px 1px no-repeat,
+    linear-gradient(var(--w-face),var(--w-face)) 28px 1px/16px 14px no-repeat,
+    linear-gradient(var(--w-dk),var(--w-dk)) 61px 1px/1px 14px no-repeat,
+    linear-gradient(var(--w-dk),var(--w-dk)) 46px 14px/16px 1px no-repeat,
+    linear-gradient(var(--w-hl),var(--w-hl)) 46px 1px/15px 1px no-repeat,
+    linear-gradient(var(--w-hl),var(--w-hl)) 46px 1px/1px 13px no-repeat,
+    linear-gradient(var(--w-sh),var(--w-sh)) 60px 2px/1px 12px no-repeat,
+    linear-gradient(var(--w-sh),var(--w-sh)) 47px 13px/14px 1px no-repeat,
+    linear-gradient(var(--w-face),var(--w-face)) 46px 1px/16px 14px no-repeat;
 }
 /* a title bar: the theme's pink-to-cyan strip, the name in white pixel type, the three buttons at its right */
 html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) .cathd,

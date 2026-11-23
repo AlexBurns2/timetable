@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261123i';
+const ASSET_V = '20261123j';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -234,8 +234,8 @@ const THUMBS = (() => {
     /* Synthwave: the banded sun (yellow, orange, pink) on the sea under a purple and pink sky, out to the right; dark glass panels, the heading in chrome */
     synth: ['#160a48', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#160a48"/><stop offset=".45" stop-color="#5e1a8c"/><stop offset=".72" stop-color="#ff3d88"/></linearGradient>' +
       '<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff8a2e"/><stop offset="1" stop-color="#ff2a78"/></linearGradient>' +
-      '<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".48" stop-color="#f2c8ff"/><stop offset=".5" stop-color="#6b2a7e"/><stop offset="1" stop-color="#ffb08a"/></linearGradient></defs>' +
-      '<rect width="120" height="31.5" fill="url(#k)"/><circle cx="96" cy="31.5" r="13" fill="url(#s)"/><g fill="#d24a77">' +
+      '<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".48" stop-color="#f2c8ff"/><stop offset=".5" stop-color="#6b2a7e"/><stop offset="1" stop-color="#ffb08a"/></linearGradient><clipPath id="q"><circle cx="96" cy="31.5" r="13"/></clipPath></defs>' +
+      '<rect width="120" height="31.5" fill="url(#k)"/><circle cx="96" cy="31.5" r="13" fill="url(#s)"/><g fill="#d24a77" clip-path="url(#q)">' +      /* the sun's gaps, cut to the sun (they ran out past it on both sides, as lines across the sky) */
       [[22.6, .8], [25.6, 1.1], [28.4, 1.5]].map(b => '<rect x="80" y="' + b[0] + '" width="32" height="' + b[1] + '"/>').join('') + '</g>' +
       '<path d="M60 31.5L70 27.4 76 29.6 82 26.8 88 31.5Z" fill="#160a22"/><path d="M60 31.5L70 27.4 76 29.6 82 26.8 88 31.5" fill="none" stroke="#ff5fae" stroke-width=".5"/>' +
       '<rect y="31.5" width="120" height="14.5" fill="#12081e"/><g fill="#ff8a8f" fill-opacity=".75">' + [33, 35.4, 38.2, 41.4].map((y, i) => '<rect x="' + (90 - i * 1.5) + '" y="' + y + '" width="' + (12 + i * 3) + '" height=".7"/>').join('') + '</g>' +
@@ -502,7 +502,7 @@ const FAV = {
   scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
   synth:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#1c0b30'); g.addColorStop(.6, '#5a1c5e'); g.addColorStop(1, '#c8406f');      // a dusk sky, the banded sun rising at the foot
                x.fillStyle = g; x.fillRect(0, 0, N, N); const s = x.createLinearGradient(0, N * .55, 0, N); s.addColorStop(0, '#ffd27a'); s.addColorStop(1, '#ff3f86');
-               x.fillStyle = s; x.beginPath(); x.arc(N/2, N, N * .4, Math.PI, 0); x.fill(); x.fillStyle = '#7a2160'; [N - 15, N - 9, N - 4].forEach((y, i) => x.fillRect(0, y, N, 1.5 + i)); } },
+               x.fillStyle = s; x.beginPath(); x.arc(N/2, N, N * .4, Math.PI, 0); x.fill(); x.save(); x.clip(); x.fillStyle = '#7a2160'; [N - 15, N - 9, N - 4].forEach((y, i) => x.fillRect(0, y, N, 1.5 + i)); x.restore(); } },      // (the gaps cut to the sun: they ran the whole width of the icon)
   terminal:  { shape:'square', ink:'#39ff9e', bg(x, N){ x.fillStyle = '#05080a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#39ff9e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, N - 3, N - 3); } },
   saul:      { shape:'square', ink:'#ffcc33', bg(x, N){ x.fillStyle = '#0b1638'; x.fillRect(0, 0, N, N); [['#d7263d', 0], ['#fff', N/3], ['#2a4fb8', 2*N/3]].forEach(c => { x.fillStyle = c[0]; x.fillRect(c[1], N - 7, N/3, 7); }); } },
   blueprint: { shape:'square', ink:'#fff', bg(x, N){ x.fillStyle = '#0b3a66'; x.fillRect(0, 0, N, N); x.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 8; i < N; i += 12){ x.fillRect(i, 0, 1, N); x.fillRect(0, i, N, 1); } } }

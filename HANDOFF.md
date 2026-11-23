@@ -4500,3 +4500,60 @@ It was not the colour grading (the last pass is untouched, and so is the left ha
 **Checked:** stills at 16 : 9 and at the owner's 3440 x 1235, before and after; live with the page at 1366, 1920 and 3440 wide and bare on a tablet and a phone; all five scenes and four other themes load with no errors. Flicker measured again on a computer, a phone and the wide window: the right-hand side is the same or slightly steadier (0.11 to 0.10 on a computer; the sign's thicker tubes help).
 
 **Not done:** the car's shape is unchanged. If it still looks awkward as a shape, that is the next thing to look at (it is drawn in code: `CAR2`).
+
+## 8.180 Three small things, and the car left as it was for now (version `20261123j`, `CACHE_VERSION` v105)
+
+Not committed by Claude.
+
+- **Synthwave's card in the Theme finder, and its favicon:** the sun's dark bands ran out past the sun on both sides, as lines
+  across the sky (the owner: "tiny bug in the icon, the sun bands extend past the sun"). They are cut to the sun now
+  (`theme.js`: a clip path in the card's drawing, a clip in the favicon's).
+- **Vaporwave: the three buttons at the right of every page window's title bar** are Windows 95's own three, the same as the
+  messages' windows have: raised grey keys, Minimise and Maximise together and Close a little apart; a bar at the foot, a
+  window with a thick top, a cross. They were three flat squares, and Maximise was only its top bar (the owner: "the windows
+  should also use these symbols ... it currently just uses a straight line which doesn't read as anything"). One variable,
+  `--v-caps` in `skins/vapor.css`, drawn with layered gradients so it keeps the theme's light and dark colours; the header
+  window and every section window use it. The raised keys are Claude's reading of "use these symbols" (the request named the
+  symbols, not the keys).
+- **The street's parked car: nothing changed on the site.** The owner found it awkward ("it could be the tail lights which kind
+  of imply movement"), learned it was built in code, and asked for "a CC0 model from online" instead. From a sheet of CC0
+  candidates they picked the four-door saloon of GGBotNet's "PSX Style Cars" (OpenGameArt, CC0), which was converted and tried
+  in the scene: parked, lamps unlit, no glow on the road. They then found its "pixelated textures stick out a bit", and stopped
+  the swap: "I'm not sure if it really is the best car model. Before you continue, how many tris is the current and how many
+  can I afford?" So the working tree has the old wedge again, and the trial is parked in the session scratchpad
+  (`car/parked/`: the converter, the converted model, the page code). `PHOTO-LOG.md` lists what was downloaded.
+- **Measured for that question** (the street, 1920 x 1080, one frame, every pass):
+
+  | | triangles a frame |
+  |---|---|
+  | the street with no car | 346,654 |
+  | with the wedge built in code (what is live) | 362,414: the wedge is 7,880 triangles |
+  | with the saloon | 347,282: the saloon is 312 triangles (and one picture 128 px square) |
+  | for comparison: the bay, the road, the pyramid, the shore | 79,054; 31,878; 24,304; 12,216 |
+
+  Everything in the street is drawn twice a frame (the picture, and the wet ground's mirror), so a car costs twice its own count.
+  What a car model may be, as told to the owner: up to about 20,000 triangles without a second thought (12% more than the
+  street draws now), 50,000 at the outside; its file and pictures under about 500 KB together (the cinema's model is 179 KB,
+  the two ground pictures 204 KB, three.js itself 692 KB); pictures 1024 px square, 2048 at most. At the size the car is
+  seen (250 to 350 px long) nothing past about 15,000 triangles shows. These are judgements from the counts and the files'
+  sizes, not from frame times on real hardware, which have never been measured for this theme.
+- What the page needs of a model, whoever picks it: `.glb` or `.obj`, CC0, no maker's badge on it, its parts named by what
+  they are if it has no picture (paint, glass, lamps, tyres, trim), or one picture with texture coordinates if it has.
+
+## 8.181 The street's parked car: the owner's chosen model (still version `20261123j`, v105; not committed by Claude)
+
+- The owner: "this model is what I'm going for" (Shotkey's Alfa Romeo 164, Sketchfab; they supplied the zip), "try it in the
+  scene first ... Really all that needs to be clear is windows, lights, license plate, tyres, wheels".
+- **Its licence is CC BY-SA 4.0, not the CC0 first asked for.** Told to the owner. Credited in About (3D credits), with the
+  change and the same licence stated. The two files made from it are CC BY-SA 4.0.
+- `tools/synth/car.py` (new) writes `models/synth/car.glb` (4,180 triangles, 131 KB, shape unchanged, real size 4.56 m) and
+  `images/synth/car.webp` (1024 px, 16 KB): the model's photograph-based picture redrawn in flat colours by what each part is.
+  The maker's badges, the chrome lettering and the real registration plate in the original picture are gone; plates are blank.
+- `fx/synth.js`: the wedge built in code is removed (`CAR2`); the car is an optional model (`EXTRAS`: the scene still draws if
+  it fails to load); `parseGlb` keeps a part's own normals and texture coordinates. Parked: no lit lamps, no halo, no light
+  on the road.
+- **Not done (usage limit reached mid-task):** the street's three stills still show the old wedge (run
+  `node tools/synth/stills.mjs --base <preview> --only street`); `tools/synth/README.md` has no section for the car yet; no
+  flicker measurement or phone and tablet shots with the new car; the Games road car is still built in code.
+- Checked: the street renders with the car at 16 : 9 and 3440 x 1235 with no errors; the loader change was run on all five
+  scenes earlier in the day with the trial model.

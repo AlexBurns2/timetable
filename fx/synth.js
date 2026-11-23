@@ -72,7 +72,8 @@ let STILL = false, STILL_T = 0;
 try { STILL = sessionStorage.getItem('synth.still') === '1'; STILL_T = +sessionStorage.getItem('synth.t') || 0; } catch {}
 const PAGE = { timetable:'bay', home:'street', games:'drive', finder:'pyramid',
                calendar:'pyramid', free:'pyramid', revision:'pyramid', notes:'shoreB', resources:'shoreB', mahjong:'shoreB', hkmahjong:'shoreB' };      // (2026-11-23, the owner: the cinema on Home, the road on Games, the pyramid moved on)
-const MODELS = { bay:['towers'], street:['towers', 'cinema'] };      // the only models fetched; the car and the palms are built here
+const MODELS = { bay:['towers'], street:['towers', 'cinema'] };      // the models a scene can't be drawn without (the road's car and the palms are built here)
+const EXTRAS = { street:['car'] };                                   // and those it can: the street's parked car (without it, an empty kerb)
 const LIB = '/lib/three/three.module.min.js', REFL = '/lib/three/addons/Reflector.js';
 
 function weak(){
@@ -267,39 +268,6 @@ const CAR1 = { st:CAR_ST, wheels:CAR_WHEELS, arch:CAR_ARCH, cuts:[2, 1, 2], glas
     /* the door mirrors */
     for (const sx of [-1, 1]) box(o.flat, [sx * .93, .93, .74], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
   } };
-/* ── a second car, for the street: a wedge of the eighties, parked. No real car's lines: a long low nose, a high flat tail with one
-   lamp across it, the roof set well back, slats over the rear window, crisp creases (the sections cut once, not twice), silver.
-   4.35 m long, 1.81 m wide, 1.15 m high. ── */
-const CAR2_ST = [
-  [-2.15, .30, .78, .84,  .88, .82,  .94, .76],
-  [-2.08, .24, .84, .89,  .91, .86,  .97, .80],
-  [-1.80, .21, .87, .905, .92, .875, .99, .80],
-  [-1.25, .20, .87, .905, .92, .875, 1.00, .78],      // the foot of the rear window
-  [-0.62, .20, .87, .905, .91, .87, 1.14, .66],       // the roof
-  [ 0.10, .20, .87, .905, .90, .87, 1.15, .66],
-  [ 1.00, .20, .87, .90,  .84, .865, .86, .76],       // the foot of the windscreen
-  [ 1.55, .20, .86, .895, .76, .855, .77, .78],
-  [ 2.02, .21, .84, .875, .66, .835, .665, .78],
-  [ 2.20, .26, .80, .84,  .58, .80,  .58, .74]
-];
-const CAR2 = { st:CAR2_ST, wheels:[[.8, 1.36], [-.8, 1.36], [.8, -1.3], [-.8, -1.3]], arch:.375, cuts:[1, 1, 1], glass:{ side:[-.6, .92], rear:[-1.22, -.66], front:[.16, .96] },
-  details(o, { box, X, Yv, Zv, T }){
-    /* the tail: one lamp across it (brighter each side of the middle), cut into five by dark ribs; the plate in a black band; a black bumper; two pipes */
-    box(o.tail, [0, .8, T], mul(X, .74), mul(Yv, .055), mul(Zv, .006));
-    for (const sx of [-1, 1]) box(o.hot, [sx * .46, .8, T - .004], mul(X, .2), mul(Yv, .026), mul(Zv, .004));
-    for (const x of [-.44, -.15, .15, .44]) box(o.trim, [x, .8, T - .007], mul(X, .012), mul(Yv, .058), mul(Zv, .003));
-    box(o.trim, [0, .6, T + .002], mul(X, .8), mul(Yv, .1), mul(Zv, .004));
-    box(o.plate, [0, .6, T - .003], mul(X, .2), mul(Yv, .046), mul(Zv, .003));
-    box(o.trim, [0, .42, T + .02], mul(X, .84), mul(Yv, .07), mul(Zv, .05));
-    for (const x of [-.5, -.4]) box(o.trim, [x, .33, T + .01], mul(X, .035), mul(Yv, .028), mul(Zv, .05));
-    /* the slats over the rear window: eight across it, following its slope */
-    const a = [0, 1.01, -1.2], b = [0, 1.14, -.7], d = sub(b, a), al = norm(d), up = norm(cross(al, X));
-    for (let k = 0; k < 8; k++) box(o.trim, add(add(a, mul(d, (k + .5) / 8)), mul(up, .03)), mul(X, .6), mul(al, .014), mul(up, .02));
-    /* a black rubbing strip down each side; the door mirrors (black housings: painted, one caught the shop's lamp as a white dot at the roof's corner, like a light on the roof) */
-    for (const sx of [-1, 1]) box(o.trim, [sx * .9, .52, 0], mul(X, .012), mul(Yv, .028), mul(Zv, 1.7));
-    for (const sx of [-1, 1]) box(o.trim, [sx * .95, .92, .78], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
-  } };
-
 /* ── the two times of day. Colours are sRGB; light in arbitrary units (the picture is tone-mapped at the end).
    Synthwave is dark only now (theme.js: both:false), so only night is seen: a purple sky, orange at the horizon, and the orange
    sun of dusk, as in the owner's references. Dusk is kept for the record. ── */
@@ -310,13 +278,15 @@ const DAY = {
            light:'#ff8a9a', lightI:1.5, hemiTop:'#5a2aa0', hemiBot:'#08040e', hemiI:.4, stars:.55, haze:[12, .22, 6.5, .5], sunHalo:.55, neon:'#ff3d9a', neonI:2.6, env:.5, exposure:1.0, bloom:.62 }
 };
 
-/* ── a .glb from models/synth (the lean copies: positions as int16, KHR_mesh_quantization; no textures): meshes, each
-   split into its parts (paint, glass, leaf…), with normals worked out here. A node's scale and translation turn the
-   int16 positions back into the model's units; extras.pivot is where a part turns about (the car's wheels). ── */
+/* ── a .glb from models/synth (the lean copies: positions as int16, KHR_mesh_quantization, or as plain floats; no textures
+   inside): meshes, each split into its parts (paint, glass, leaf…), with normals worked out here unless the part brings its
+   own. A node's scale and translation turn the int16 positions back into the model's units; extras.pivot is where a part turns
+   about. A part with texture coordinates keeps them (the street's parked car: its picture is a file of its own,
+   images/synth/car.webp). ── */
 function parseGlb(T, buf){
   const dv = new DataView(buf), jl = dv.getUint32(12, true);
   const j = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl))), bo = 20 + jl + 8;
-  const N = { SCALAR:1, VEC3:3, VEC4:4 }, C = { 5126:Float32Array, 5123:Uint16Array, 5122:Int16Array, 5121:Uint8Array };
+  const N = { SCALAR:1, VEC2:2, VEC3:3, VEC4:4 }, C = { 5126:Float32Array, 5123:Uint16Array, 5122:Int16Array, 5121:Uint8Array };
   const view = i => { const a = j.accessors[i], v = j.bufferViews[a.bufferView], K = C[a.componentType], s = (v.byteStride || 0) / K.BYTES_PER_ELEMENT || N[a.type];
     return { a, s, d:new K(buf, bo + (v.byteOffset || 0) + (a.byteOffset || 0), (a.count - 1) * s + N[a.type]) }; };
   const lin = x => { x /= 255; return x <= .04045 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); };
@@ -328,6 +298,7 @@ function parseGlb(T, buf){
       for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) pos[i * 3 + k] = P.d[i * P.s + k] * q * sc[k] + tr[k] - pv[k];
       g.setAttribute('position', new T.BufferAttribute(pos, 3));
       g.setIndex(new T.BufferAttribute(view(p.indices).d.slice(), 1));
+      if (p.attributes.TEXCOORD_0 != null){ const U = view(p.attributes.TEXCOORD_0), uv = new Float32Array(n * 2); for (let i = 0; i < n; i++){ uv[i * 2] = U.d[i * U.s]; uv[i * 2 + 1] = U.d[i * U.s + 1]; } g.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
       /* the model's own shading (its colour map's gradients), kept as a light and dark around the part's average */
       const col = new Float32Array(n * 3).fill(1);
       if (p.attributes.COLOR_0 != null){
@@ -337,7 +308,9 @@ function parseGlb(T, buf){
         for (let i = 0; i < n; i++){ const k = clamp(Math.pow(lum[i] / mean, .6), .6, 1.4); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = k; }
       }
       g.setAttribute('color', new T.BufferAttribute(col, 3));
-      g.computeVertexNormals(); g.computeBoundingSphere();
+      if (p.attributes.NORMAL != null){ const Q = view(p.attributes.NORMAL), nr = new Float32Array(n * 3); for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) nr[i * 3 + k] = Q.d[i * Q.s + k]; g.setAttribute('normal', new T.BufferAttribute(nr, 3)); }      // a model that brings its own normals keeps them (the parked car's)
+      else g.computeVertexNormals();
+      g.computeBoundingSphere();
       parts[j.materials[p.material].name] = g;
     }
     out[nd.name] = { parts, at:pv };
@@ -513,11 +486,13 @@ const COMP_F = 'uniform sampler2D tScene, tBloom; uniform float uBloom, uExp, uG
 
 /* ═══════════════ building a scene ═══════════════ */
 async function build(canvas, kind, dark){
-  const want = MODELS[kind] || [];
+  const want = MODELS[kind] || [], extra = EXTRAS[kind] || [];
   const water = kind !== 'drive';
   const [T, RF, ...bufs] = await Promise.all([import(LIB), water ? import(REFL) : null,
-    ...want.map(n => fetch('/models/synth/' + n + '.glb').then(r => { if (!r.ok) throw new Error('model ' + n); return r.arrayBuffer(); }))]);
+    ...want.map(n => fetch('/models/synth/' + n + '.glb').then(r => { if (!r.ok) throw new Error('model ' + n); return r.arrayBuffer(); })),
+    ...extra.map(n => fetch('/models/synth/' + n + '.glb').then(r => r.ok ? r.arrayBuffer() : null).catch(() => null))]);
   const M = {}; want.forEach((n, i) => Object.assign(M, parseGlb(T, bufs[i])));
+  extra.forEach((n, i) => { const buf = bufs[want.length + i]; if (buf) try { Object.assign(M, parseGlb(T, buf)); } catch {} });
 
   const renderer = new T.WebGLRenderer({ canvas, antialias:false, alpha:false, depth:true, stencil:false, powerPreference:'low-power' });
   renderer.setPixelRatio(1); renderer.autoClear = false; renderer.info.autoReset = false;      // counted per frame (all passes), not per render call
@@ -1015,9 +990,14 @@ async function build(canvas, kind, dark){
     if (sea.material.uniforms && sea.material.uniforms.uQuay) sea.material.uniforms.uQuay.value = GR.z0 - .15;      // past the model's far edge the ground is water
     await Promise.race([document.fonts ? document.fonts.load('700 64px Saira') : null, new Promise(r => setTimeout(r, 1500))]).catch(() => {});
     /* the ground's two scans (tools/synth/ground.py). One that doesn't come leaves the flat grey in its place: smooth ground, but the scene still draws */
+    const waits = [];
     if (sea.material.uniforms && sea.material.uniforms.tAsph){ const u = sea.material.uniforms;
       const scan = (n, slot) => new T.TextureLoader().loadAsync('/images/synth/ground-' + n + '.webp').then(t => { keep(t); t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.NoColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); t.needsUpdate = true; slot.value = t; }).catch(() => {});
-      await Promise.all([scan('asphalt', u.tAsph), scan('concrete', u.tConc)]); }
+      waits.push(scan('asphalt', u.tAsph), scan('concrete', u.tConc)); }
+    /* the parked car's picture (tools/synth/car.py). Without it there is no car: one with no picture would be a pale blank shape */
+    let carTex = null;
+    if (M.car && M.car.parts.body) waits.push(new T.TextureLoader().loadAsync('/images/synth/car.webp').then(t => { keep(t); t.flipY = false; t.colorSpace = T.SRGBColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); t.needsUpdate = true; carTex = t; }).catch(() => {}));
+    await Promise.all(waits);
     const UI = '"Saira", "Arial Narrow", sans-serif', SCRIPT = '"Segoe Script", "Brush Script MT", "Snell Roundhand", "Apple Chancery", cursive';
     const PINK = '#ff3fa8', BLUE = '#3f8cff', V = (x, y, z) => new T.Vector3(x, y, z);
     const soft2 = glowTex(128, 128, [[0, 1], [.3, .5], [.62, .14], [1, 0]]);
@@ -1285,25 +1265,24 @@ async function build(canvas, kind, dark){
       for (let x = -120; x <= 120; x += 2) list.push([x, .6, GR.z0 + .12, .06, 1.0, .06]);
       const im = new T.InstancedMesh(unit, iron, list.length); list.forEach((q, i) => { _p.set(q[0], q[1], q[2]); _q.identity(); _s.set(q[3], q[4], q[5]); im.setMatrixAt(i, _m.compose(_p, _q, _s)); }); im.computeBoundingSphere(); scene.add(im); }
 
-    /* ── the car: our wedge, in the model's place for it, along the kerb, its nose towards the sun ── */
-    { const cb = carArrays(CAR2), car = new T.Group(); car.position.set(CAR.x, 0, CAR.z); car.rotation.y = CAR.along === 'x' ? Math.PI / 2 : Math.PI; car.scale.setScalar(clamp((CAR.len || 4.4) / 4.45, .9, 1.12)); scene.add(car);
-      /* Dark and glossy: a black-violet paint that shows the sky along its top and its creases and is dark everywhere else, so the car
-         is a shape with lit edges and two red lamps. (It was silver, which under a pink sky is pink all over: pale, flat, and every
-         simple panel of it on show. The owner, 2026-11-23: "the car also looks a bit awkward". The same held on the road: a pale,
-         evenly lit body looked flat and unlit.) */
-      const paint = std({ color:'#120d1a', roughness:.33, metalness:.6, side:T.DoubleSide }), trim = std({ color:'#060409', roughness:.55, metalness:.3, side:T.DoubleSide });      // (not glassy: at .2 the shop's lamp stood on the roof as one white dot)
-      paint.userData.envK = [.42, .42];
-      const glassM = std({ color:'#05030a', roughness:.32, metalness:.9, side:T.DoubleSide }); glassM.userData.envK = [.3, .3];      // (not a mirror: the street lamp over it stood on the roof as a white light, like a police car's)
-      car.add(new T.Mesh(geoN(cb.body), paint), new T.Mesh(geo(cb.flat), paint), new T.Mesh(geoN(cb.glass), glassM));
-      car.add(new T.Mesh(geoN(cb.well), trim), new T.Mesh(geo(cb.trim), trim), new T.Mesh(geo(cb.plate), std({ color:'#8f8a9c', roughness:.6 })));
-      car.add(new T.Mesh(geo(cb.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.55, .012, .045) }))), new T.Mesh(geo(cb.hot), keep(new T.MeshBasicMaterial({ color:new T.Color(2.9, .1, .2) }))));      // red, and kept red (with more of the other two colours in it the tone curve made it pink)
-      const tyre = keep(new T.CylinderGeometry(.32, .32, .24, 28)); tyre.rotateZ(Math.PI / 2); const disc = keep(new T.CylinderGeometry(.22, .22, .02, 28)); disc.rotateZ(Math.PI / 2);
-      const tyreM = std({ color:'#060508', roughness:.9 }), discM = std({ color:'#2a2633', roughness:.34, metalness:.8 }); discM.userData.envK = [.34, .34];      // dark alloy (silver discs were two pink plates)
-      for (const [x, z] of CAR2.wheels){ const sx = Math.sign(x), w = new T.Group(); w.position.set(x, .32, z); const d = new T.Mesh(disc, discM); d.position.x = sx * .12; w.add(new T.Mesh(tyre, tyreM), d); car.add(w); }
-      for (const sx of [-1, 1]){ const h = new T.Sprite(keep(new T.SpriteMaterial({ map:soft2, color:new T.Color(1, .1, .3), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:.5, fog:false }))); h.scale.set(1.2, .7, 1); h.position.set(sx * .45, .8, -2.25); car.add(h); }
-      const shT = glowTex(128, 128, [[0, 1], [.55, .85], [.8, .35], [1, 0]]), sh = new T.Mesh(keep(new T.PlaneGeometry(2.3, 4.9)), keep(new T.MeshBasicMaterial({ map:shT, color:0x000000, transparent:true, opacity:.88, depthWrite:false })));
-      sh.rotation.x = -Math.PI / 2; sh.position.set(0, .011, 0); sh.renderOrder = 1.1; car.add(sh);
-      car.add(pool(0, .012, -3.3, 3.6, 3.4, [1, .1, .35], .55)); }
+    /* ── the car: a saloon of the late eighties, parked along the kerb in the model's place for it, its nose towards the sun.
+       The owner's choice of model (2026-11-23), not ours: Shotkey's "Alfa Romeo 164" (Sketchfab; CC BY-SA 4.0, credited in About),
+       at its own size, 4.56 m. tools/synth/car.py makes models/synth/car.glb from it, and redraws its picture (photographs of a
+       real car) in flat colours, as the rest of this scene is: bodywork, glass, lamps, plate, tyres, wheels, dark trim, and
+       nothing else. No maker's badge and nothing written on its plates. (A wedge built in code stood here. The owner: "the car
+       looks a bit awkward", "is that car a model from online or did you make that? If its the latter, replace it"; and of this
+       model's own picture: "too dissonant from the art style of the rest of the scene ... Really all that needs to be clear is
+       windows, lights, license plate, tyres, wheels".)
+       It is parked: none of its lamps is lit, and it throws no light on the road. (The wedge's tail lamps were lit, their glow on
+       the wet road behind it. The owner: "it could be the tail lights which kind of imply movement".) Its lamps are red and pale
+       glass that the street lamp falls on. A little of its own colour shows in the dark (the emissive), or its far side would be
+       a black shape. ── */
+    if (M.car && M.car.parts.body && carTex){
+      const car = new T.Group(); car.position.set(CAR.x, 0, CAR.z); car.rotation.y = CAR.along === 'x' ? Math.PI / 2 : Math.PI; scene.add(car);
+      const paint = std({ map:carTex, roughness:.45, metalness:.2, emissiveMap:carTex, emissive:new T.Color(.16, .16, .16) }); paint.userData.envK = [.25, .25];
+      car.add(new T.Mesh(M.car.parts.body, paint));
+      const shT = glowTex(128, 128, [[0, 1], [.55, .85], [.8, .35], [1, 0]]), sh = new T.Mesh(keep(new T.PlaneGeometry(2.4, 5.1)), keep(new T.MeshBasicMaterial({ map:shT, color:0x000000, transparent:true, opacity:.88, depthWrite:false })));
+      sh.rotation.x = -Math.PI / 2; sh.position.set(0, .011, 0); sh.renderOrder = 1.1; car.add(sh); }
 
     /* ── palms: in the park (one near us, its fronds hanging into the picture; a few further in, for a wide screen), by the corner where
        the street meets the waterfront, and along the water ── */

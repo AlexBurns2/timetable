@@ -134,3 +134,29 @@ session scratchpad (`gr/dl/`); only the two packed textures made from them are i
 - **Credits:** About → 3D credits lists the three Poly Haven textures used.
 - Nothing was fetched from anywhere else, and no request carried anything about the site or its owner.
 
+## Synthwave street: looking for a CC0 car (2026-11-23, nothing used yet)
+
+The owner asked whether the street's parked car was a model from online ("or did you make that? If its the latter, replace it
+with a CC0 model from online"). It was built in code. Everything below was fetched with a generic client name into the session
+scratchpad (`car/`). **Nothing from it is in the repo or on the site:** the owner paused the swap to choose a model
+("I'm not sure if it really is the best car model").
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-23 | The list of Poly Haven's models (one JSON file) | `api.polyhaven.com/assets?t=models` | (catalogue) | 550 KB | To look for a car: it has none but one under a cover |
+| 2026-11-23 | 13 OpenGameArt pages (HTML), to read each entry's licence and file list | `opengameart.org/content/...` and `/node/...`: psx-style-cars, super-retro-compact-car-pack, sports-car-lowpoly, lowpoly-cars, low-poly-car-3d, vroum-car, car-0, low-poly-car, nodes 141769, 188566, 150016, 111713, 87612 | (pages) | 0.3 MB in all | To choose from. Two were ruled out by licence (CC BY 4.0; GPL) |
+| 2026-11-23 | 4 Poly Pizza search pages (HTML) | `poly.pizza/search/...` | (pages) | 0.9 MB | Not read further |
+| 2026-11-23 | 15 preview pictures of nine CC0 entries (the pictures each page shows) | `opengameart.org/sites/default/files/...` | previews of CC0 work | 2.7 MB | Shown to the owner as one sheet; they picked out "psx02" |
+| 2026-11-23 | **PSX Style Cars**, by GGBotNet: `psx_style_cars_by_ggbot_august2023.zip` (8 cars, a wheel, a shadow, sound effects; `.blend`, `.obj`, `.png`, `.ogg`) | https://opengameart.org/content/psx-style-cars | CC0 | 2.6 MB | **Not yet.** Only Car 02's `.obj`, `.mtl` and three pictures, the wheel and the shadow were unpacked (no `.blend`, no sound). Tried in the scene; the owner found its pixelated picture "stick[s] out a bit" and stopped to reconsider the model |
+
+- If a model from this pack (or any other) is used, it needs: its entry here marked used, a line in About → 3D credits, and
+  the converter kept in `tools/synth/`. The trial converter and the converted files are in the scratchpad (`car/parked/`), not
+  the repo.
+- No request carried anything about the site or its owner.
+
+**Later the same day (HANDOFF 8.181): a model is used.** The owner chose Shotkey's "Alfa Romeo 164"
+(https://sketchfab.com/3d-models/alfa-romeo-164-251a829903074fb19bfdb9878a1c1b4b) and supplied its zip themselves (22 MB:
+`alfa-164.obj`, four 4096 px pictures). **Licence: CC BY-SA 4.0, not CC0.** Claude fetched only its public record
+(`api.sketchfab.com/v3/models/...`, 6 KB) to read the licence. In the repo: `models/synth/car.glb` (131 KB, the mesh unchanged)
+and `images/synth/car.webp` (16 KB, its picture redrawn flat: no badges, blank plates), both made by `tools/synth/car.py` and
+both CC BY-SA 4.0. Credited in About, 3D credits. The PSX pack above is not used.
