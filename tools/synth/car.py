@@ -14,7 +14,8 @@ What the page (fx/synth.js, the street scene) is given:
                          its texture coordinates. 4,180 triangles. Nothing of its shape is changed.
   images/synth/car.webp  its picture REDRAWN in flat colours, 1024 px: every bit of the picture is one kind of thing (bodywork,
                          glass, a window's surround, a lamp, a plate, a tyre, a wheel, dark trim) and has that kind's one colour.
-                         The rear lamps are one straight bar across the tail, as the real car's are.
+                         The rear lamps are one straight bar across the tail, as the real car's are. The wheels are a
+                         gunmetal and the plates a dim lilac: nothing on the car is near white.
                          Its alpha is not transparency: it says how glossy that kind is (GLOSS below; 128 = matt, 255 = a
                          mirror), which is what the page's shader goes by for the neon the car catches. It starts at 128 and
                          not at 0 so that a browser which multiplies colour by alpha on the way in loses nothing of the colour.
@@ -109,7 +110,7 @@ open(a.out, 'wb').write(struct.pack('<4sII', b'glTF', 2, 28 + len(jb) + len(bin_
 print('%s: %d triangles, %d corners; %.2f m long, %.2f wide, %.2f high; %d bytes' % (a.out, len(idx) // 3, n, hi[2] - lo[2], hi[0] - lo[0], hi[1] - lo[1], 28 + len(jb) + len(bin_)))
 
 # ── the picture redrawn flat. First, what kind of thing each bit of it is, by its colour (and by whether a wheel reads it) ──
-GLASS, PAINT, DARK, LIGHT, RED, PALE, AMBER, TYRE, DIM, TRIM = range(10); NK = 10
+GLASS, PAINT, DARK, LIGHT, RED, PALE, AMBER, TYRE, DIM, TRIM, WHEEL, PLATE = range(12); NK = 12
 kind = np.full((R, R), DARK, np.uint8)                                         # dark trim: the cladding, the bumpers, the grille
 kind[(sat < .3) & (val > .44)] = LIGHT                                         # a lamp's glass, a plate, bright metal
 kind[reddish & (sat > .38) & (val > .14)] = PAINT                              # the bodywork (a burgundy)
@@ -119,7 +120,7 @@ kind[reddish & (sat > .12) & (sat <= .55) & (val > .72)] = PALE                #
 kind[(hue >= 20) & (hue < 52) & (sat > .5) & (val > .55)] = AMBER
 kind[zero & (who == 1)] = GLASS
 kind[(who == 2) & (val < .3)] = TYRE
-kind[(who == 2) & (val >= .3)] = LIGHT                                         # the wheel itself (its holes are tyre-dark)
+kind[(who == 2) & (val >= .3)] = WHEEL                                         # the wheel itself (its holes are tyre-dark)
 def settle(kind, s):                                                           # the grain out, the edges smooth: every bit goes to the kind strongest about it
     best = np.full(kind.shape, -1., np.float32); out = kind.copy()
     for k in range(NK):
@@ -149,7 +150,7 @@ print('painted over on the bodywork: %d small things' % islands(None, PAINT, 520
 n_, cc, st, _ = cv2.connectedComponentsWithStats((kind == LIGHT).astype(np.uint8), connectivity=8); plates = 0
 for c in range(1, n_):
     x, y, w, h, ar = st[c]; r = max(w, h) / max(1, min(w, h))
-    if 12000 < w * h < 60000 and 3.4 < r < 5.6 and ar > .5 * w * h and (who[y:y + h, x:x + w] == 1).mean() > .9: kind[y:y + h, x:x + w] = LIGHT; plates += 1
+    if 12000 < w * h < 60000 and 3.4 < r < 5.6 and ar > .5 * w * h and (who[y:y + h, x:x + w] == 1).mean() > .9: kind[y:y + h, x:x + w] = PLATE; plates += 1
 print('plates blanked: %d' % plates); assert plates == 2, 'expected the two plates'
 print('painted over in the dark trim: %d small things (what is left of a badge)' % islands((LIGHT, RED, PALE, AMBER, PAINT), DARK, 2600, .9))
 # thin bright trim and stray glints on the body: gone. What is left there that is pale is a lamp or a plate
@@ -189,9 +190,14 @@ print('rear lamp bar: %d x %d px of the 2048 px picture' % (bx1 - bx0, by1 - by0
 hx = lambda s: [int(s[i:i + 2], 16) for i in (1, 3, 5)]
 # (the lamps are glass that is not lit: the car is parked. Their reds and ambers are those of an unlit lens, well below the
 #  brightness the model's picture gave them, which in the dark of this street read as lamps that were on)
-COL = {GLASS: hx('#0b1420'), PAINT: hx(a.paint), DARK: hx('#1b1a20'), LIGHT: hx('#b4bac4'), RED: hx('#8f1826'), PALE: hx('#b98d96'), AMBER: hx('#a8641c'), TYRE: hx('#08080a'), DIM: hx('#641322'), TRIM: hx('#434957')}
+# (the wheels and the plates: they were the pale grey of a lamp's glass, the brightest things on the car, and the eye went
+#  straight to them. The owner's second review, 2026-11-23: "Darken them to a muted silver or gunmetal and cut the specular so
+#  they pick up pink or cyan from the neon instead of reading near-white", and of the plate: "Drop its brightness a lot and
+#  give it a slight tint". So: a gunmetal with the street's mauve in it, and a dim lilac; both nearly matt)
+COL = {GLASS: hx('#0b1420'), PAINT: hx(a.paint), DARK: hx('#1b1a20'), LIGHT: hx('#b4bac4'), RED: hx('#8f1826'), PALE: hx('#b98d96'), AMBER: hx('#a8641c'), TYRE: hx('#08080a'), DIM: hx('#641322'), TRIM: hx('#434957'),
+       WHEEL: hx('#4a4556'), PLATE: hx('#5a5470')}
 # how glossy each kind is, 0 matt to 1 a mirror: what the neon across the street shows in (fx/synth.js, the car's material)
-GLOSS = {GLASS: 1., PAINT: .78, DARK: .22, LIGHT: .55, RED: .85, PALE: .85, AMBER: .85, TYRE: .04, DIM: .85, TRIM: .5}
+GLOSS = {GLASS: 1., PAINT: .78, DARK: .22, LIGHT: .55, RED: .85, PALE: .85, AMBER: .85, TYRE: .04, DIM: .85, TRIM: .5, WHEEL: .3, PLATE: .28}
 flat = np.zeros((R, R, 4), np.uint8)
 for k, c in COL.items(): flat[kind == k] = c + [128 + round(127 * GLOSS[k])]
 # what nothing reads takes the colour of the nearest bit that is read, so no dark creeps in along a seam when the picture is seen small
@@ -203,4 +209,4 @@ assert out[..., 3].min() >= 128
 cv2.imwrite(a.tex, cv2.cvtColor(out, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 101])      # (above 100: lossless)
 print('%s: 1024 x 1024, %d bytes' % (a.tex, os.path.getsize(a.tex)))
 if a.debug:
-    cv2.imwrite(a.debug + '-flat.png', cv2.cvtColor(out[..., :3], cv2.COLOR_RGB2BGR)); cv2.imwrite(a.debug + '-gloss.png', out[..., 3]); cv2.imwrite(a.debug + '-kinds.png', cv2.resize((kind * 25).astype(np.uint8), (1024, 1024), interpolation=cv2.INTER_NEAREST))
+    cv2.imwrite(a.debug + '-flat.png', cv2.cvtColor(out[..., :3], cv2.COLOR_RGB2BGR)); cv2.imwrite(a.debug + '-gloss.png', out[..., 3]); cv2.imwrite(a.debug + '-kinds.png', cv2.resize((kind * 20).astype(np.uint8), (1024, 1024), interpolation=cv2.INTER_NEAREST))

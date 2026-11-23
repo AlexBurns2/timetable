@@ -4606,3 +4606,39 @@ against screenshots):
 - Not done, and said to the owner: no interior or parking-light glow (the review offered it as optional). The Games road
   scene's car is still built in code.
 - About's credit line now says what was changed (repainted teal, rear lamps as one bar), as CC BY-SA asks.
+
+## 8.183 The street after the owner's second review: nothing near white, lamps that light things, haze, a puddle, a little movement (version `20261123l`, `CACHE_VERSION` v107)
+
+Not committed by Claude. The owner committed 8.182 as "car 2" (8a096ae) and sent a second review of the Home scene. The
+popup-messages session was told `l` / v107 are taken and `m` / v108 are next; the fork session had been told beforehand and
+is now archived. `fx/vapor-entity.js` shows as modified in the working tree: that is another session's work, untouched here.
+
+| The review | What changed | Where |
+|---|---|---|
+| "The wheels ... pull your eye straight to them. Darken them to a muted silver or gunmetal and cut the specular" | The wheels are a kind of their own: gunmetal with the street's mauve in it, nearly matt | `tools/synth/car.py` (`WHEEL`) |
+| "The licence plate ... Drop its brightness a lot and give it a slight tint" | The plates are a kind of their own: a dim lilac | `car.py` (`PLATE`) |
+| "The shop window is the largest near-white area ... Tinting them toward pale pink or lavender, or lowering their exposure" | The shop's room is lavender and about a quarter less bright (walls, floor, ceiling, till); its light on the pavement is lavender too | `fx/synth.js`, the video shop |
+| "Turn down the brightness of the cursive sign too" | The script sign is two thirds as bright (2.2 to 1.45), and its blue on the wall with it | same |
+| "A soft blurred reflection of the teal body and a darker contact shadow under the tyres" | A puddle on the road beside and behind the car that mirrors it (it reads the scene's own mirror picture, softened); a second, nearly black patch under each tyre. The dark streak of 8.182 is gone: it darkened the road and reflected nothing | `fx/synth.js`, the car |
+| "The glow is a flat disc ... brightest at the head and fades smoothly, perhaps with a slight streak" | One picture of light with a steep falloff and a long faint skirt, and a thin level streak through the nearer heads | `fx/synth.js`, `streetLamp` |
+| "All the halos are similar in size. Near lamps should have big, strong glare and far ones small and dim" | The glare's size and strength go by how near the lamp is: 8 m across by the car, about 4.5 m for the two up the street, 2.4 m along the waterfront | same |
+| "The lamps barely light anything ... warm spill on the pole, the wall behind it, or the pavement below" | A brighter pool straight under each head; light on the pavement from the kerb outwards; each pole lit down the side that faces its head; the lamp by the car paints its warmth on the shop's brick; the waterfront lamps have pools now (they had none) | same, and `poleLit` |
+| "The wet road under the lamps could show a stretched vertical reflection of the lamp head" | A faint streak on the road from under each head towards the viewer (not the lamp by the car: the puddle is there) | same |
+| "Add a low-density global volumetric haze under the streetlights ... gives each lamp a faint light cone ... softens the neon signs into halos ... Keep the density low" | A faint amber cone under each head, strongest by the head and gone by half way down; a faint wide glow round the cinema's sign and the shop's. No change to the fog itself, so the picture behind the page is no brighter | same |
+| "the right side is very static, maybe add some occasional flickering" | Two neon signs falter now and then: the last letter of the cinema's sign about once in 17 s, the shop's OPEN about once in 29 s, a second and a half each | `fx/synth.js`, the foot of the street scene |
+| "the ocean should have a slight wavy shimmer (not the flickering from before) like the timetable page bay scene" | The bay has a slow swell: four sizes, each left out where it would be finer than a pixel | `fx/synth.js`, the `STREET` ground shader |
+
+- **The true mirror image of a lamp head is never in the picture** in this scene: the heads are 6 to 7 m up and the camera
+  2.5 m, so each one's reflection lies below the foot of the frame. The streaks are what rough wet asphalt shows instead.
+- **Haze strength was set against the cinema.** At the first strength tried, the cone of the lamp by the car lay over the
+  cinema's tower like a veil and the cinema went pale again (the complaint of 8.179). It is weaker now, and gone by half way down.
+- **The faltering is small on purpose**: the owner is sensitive to flicker. Two small signs, rarely. The scene's frame
+  blending turns each drop-out into a dip to about half, not a blink. The stills have none, and reduced motion has no live
+  scene. If it bothers them, the two periods (17, 29) are in one line at the foot of the street scene; `update` can be removed.
+- Checked: all five scenes load with no error or warning (Home also in light mode and as an ordinary visitor). Frame-to-frame
+  change over 40 frames at three sizes is as before everywhere except the cell holding a sign that was faltering during the
+  sample (under 1 on a 0 to 255 scale). The bay's movement is too slow to register there: between two moments a second apart
+  the water changes by 1.6 on that scale on average.
+- Not measured: frame times on real hardware. The additions are ten small cones, about forty sprites and flat patches, one
+  puddle that reads the mirror picture five times a pixel, and four noise readings a pixel of water.
+- The three street stills were remade.

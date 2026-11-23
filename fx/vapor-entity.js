@@ -90,7 +90,7 @@ window.VW_ENTITY = {
       buttons: [{ label: 'no' }, { label: 'sometimes' }, { label: 'everyday' }] },
     { id: 'goback', title: 'reminder', text: 'you cannot go back there',
       buttons: [{ label: 'ok' }, { label: 'dismiss' }] },
-    { id: 'happy', title: 'hello?', text: 'are you happy with how things turned out?',
+    { id: 'happy', title: 'hello?', text: 'are you happy with how it turned out?',
       buttons: [{ label: 'next question' }, { label: 'not really' }] },
     { id: 'advice', title: 'advice', text: 'if he wanted to, he would',
       buttons: [{ label: 'unfortunately' }, { label: 'block' }] },
@@ -102,7 +102,7 @@ window.VW_ENTITY = {
       buttons: [{ label: 'delete' }, { label: 'message' }] },
 
     /* existential system messages */
-    { id: 'tomorrows', title: 'system notice', text: 'you are running out of tomorrows',
+    { id: 'maintenance', title: 'maintenance notice', text: 'you will be unavailable from 3 to 4 am',
       buttons: [{ label: 'continue' }] },
     { id: 'unsaved', title: 'You have unsaved changes.', text: 'Would you like to save the person you used to be?',
       buttons: [{ label: 'Save' }, { label: 'Discard' }] },
@@ -135,7 +135,7 @@ window.VW_ENTITY = {
     { id: 'readonly', title: 'Memory', text: 'This memory is read-only.',
       buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Fine.' },
 
-    { id: 'over', title: 'Notice', text: "It's over",
+    { id: 'over', title: 'Notice', text: "its so over",
       buttons: [{ label: 'OK' }], stay: 'evade', lastWord: 'Okay.' },
 
     { id: 'altenv', title: 'Display', text: 'An alternative environment has been detected.',
@@ -157,8 +157,11 @@ window.VW_ENTITY = {
     { id: 'renew', title: 'Subscription', text: 'Your subscription to MSC Unofficial has expired.',
       buttons: [{ label: 'Renew', do: 'reply', say: 'Renewal is no longer available.' }, { label: 'OK' }] },
 
-    { id: 'opaline', title: 'Opaline System', icon: 'opaline', text: 'Opaline OS is still running. No users have been detected since 1999.',
+    { id: 'opaline', title: 'Opaline System', icon: 'opaline', text: 'Opaline OS is still running. No users detected.',
       buttons: [{ label: 'OK' }] },
+
+    { id: 'homework', title: 'reminder', text: 'you had something due',
+      buttons: [{ label: 'when' }, { label: 'die' }] },
 
     /* a hung program: drag it, or wait for the other pointer to */
     { id: 'frozen', title: 'thoughts.exe', icon: 'hour', smear: true, weight: 0.7,
@@ -170,10 +173,10 @@ window.VW_ENTITY = {
 
     { id: 'drive', kind: 'explorer', title: 'CONSCIOUSNESS', path: 'C:\\{NAME}\\CONSCIOUSNESS\\', rare: true,
       folders: [
-        { label: 'DREAMS', say: '3 items. Still loading.' },
+        { label: 'DREAMS', say: '3 items are open in another program.' },
         { label: 'MEMORY', say: 'This folder is read-only.' },
         { label: 'DO_NOT_OPEN', say: 'Access is denied.' },
-        { label: 'SUMMER_1998', say: 'This folder is empty.' }
+        { label: 'SUMMER', say: 'This folder is empty.' }
       ] },
 
     /* windows with more in them */
@@ -191,19 +194,23 @@ window.VW_ENTITY = {
     { id: 'pad-remember', kind: 'notepad', title: 'Untitled - Notepad', weight: 0.8,
       lines: ['remember to'] },
     { id: 'pad-list', kind: 'notepad', title: 'list.txt - Notepad', weight: 0.8,
-      lines: ['things to remember:', '1.', '2.', '3. where i put the'] },
-    { id: 'pad-todo', kind: 'notepad', title: 'to do.txt - Notepad', weight: 0.8,
-      lines: ['to do:', '1. reply', '2.'] },
+      lines: ['things to remember:', '1. keys', '2. charger', '3. where i put the'] },
+    { id: 'pad-ok', kind: 'notepad', title: 'Untitled - Notepad', weight: 0.8,
+      lines: ['ok so'] },
     { id: 'pad-draft', kind: 'notepad', title: 'draft.txt - Notepad', weight: 0.8,
       lines: ['hey', 'hey, sorry', 'never mind'] },
+    { id: 'pad-todo', kind: 'notepad', title: 'to do.txt - Notepad', weight: 0.8,
+      lines: ['to do:', '- rent a car', '- drive', '- see '] },
 
     /* ── jobs that take their time ── */
     { id: 'defrag', kind: 'progress', title: 'Disk Defragmenter', icon: 'hour', weight: 0.7,
       text: 'Putting the afternoon back in order.', from: 12, stopAt: 99, done: '99%. The last piece is being shy.' },
     { id: 'copying', kind: 'progress', title: 'Copying', icon: 'folder', weight: 0.7,
-      text: 'Copying summer.zip to Somewhere Safe.', from: 3, stopAt: 100, done: 'Copied. Nothing was lost.' },
+      text: 'Copying 2019.zip to B:\backup.', from: 3, stopAt: 100, done: '56MB copied successfully.' },
     { id: 'dialup', kind: 'progress', title: 'Connecting', icon: 'monitor', weight: 0.7,
-      text: 'Dialling the outside.', from: 0, stopAt: 64, done: 'No answer. It rang for a while, though.' },
+      text: 'Dialling the outside.', from: 0, stopAt: 64, done: 'No answer. Worth a try...' },
+    { id: 'friday', kind: 'progress', title: 'Downloading', icon: 'hour', weight: 0.7,
+      text: 'Downloading Friday.', from: 0, stopAt: 80, done: 'Download paused. Will resume Friday.' },
 
     /* ── something playing, with no sound. The titles are made up; no real songs. ── */
     { id: 'play-lawn', kind: 'player', title: 'Media Player', weight: 0.8,
@@ -215,7 +222,7 @@ window.VW_ENTITY = {
     { id: 'play-soft', kind: 'player', title: 'Media Player', weight: 0.8,
       track: '11', jp: 'やわらかい家電', en: 'soft appliances', length: 242, from: 130 },
     { id: 'play-pale', kind: 'player', title: 'Media Player', weight: 0.8,
-      track: '05', jp: '青白いエスカレーター', en: 'pale escalator', length: 264, from: 201 },
+      track: '05', jp: '青白いエスカレーター', en: 'escalator', length: 264, from: 201 },
     { id: 'play-ocean', kind: 'player', title: 'Media Player', weight: 0.8,
       track: '09', jp: '二番目の海', en: 'second ocean', length: 312, from: 47 }
   ]

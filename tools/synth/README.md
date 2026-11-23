@@ -106,6 +106,10 @@ In the page (`fx/synth.js`, the street scene, "the car"):
   the shop's real lights do not reach it.
 - **Its shadow must draw after the light pools on the road** (`renderOrder` 1.3 against the pools' 1.2), or the lamp's pool
   lights the road under the car and it floats.
+- **Its reflection is a puddle**, a flat patch beside it that reads the scene's own mirror picture (the one the wet ground
+  is made from) and draws it softened, over the road and the lamp's light. It must stay out of the mirror's own pass: it
+  would be reading the picture it is being drawn into.
+- Nothing on the car is near white: wheels gunmetal, plates dim lilac. Pale parts pull the eye.
 - **`look.place` parks it by the window**, once a resize: forward along the kerb until its nose clears the page column, but
   never so far that its tail leaves the picture. The table of where it lands is in HANDOFF 8.182. If the page column's width
   changes (960 px now), nothing here needs editing: it measures `.wrap`.
@@ -119,6 +123,16 @@ Traps met while lighting it:
 | Magenta came out pale pink | Too strong: the tone curve takes the colour out of anything bright | Every term kept weak; no green in the magenta |
 | The whole top of the car was a pink wash | The mirrored glow was let in from every height | The cinema's glow is mirrored only from low elevations, where the cinema is |
 | The rear window went a flat orange | The lamp's mirrored glow too broad and too strong | A narrow lobe at a third of the strength |
+
+## The street's lamps, haze and movement (`fx/synth.js`, the street scene)
+
+- `streetLamp(x, y, z, near, { cone, streak, kerb })` gives a lamp everything but its pole: glare (size and strength by
+  `near`: 1 by the car, about .6 up the street, .4 on the waterfront), a level streak for the nearer ones, a cone of haze, a
+  pool under the head, a streak on the road towards the viewer, light on the pavement. `poleLit` lights a pole from its head.
+- **Keep the cones faint.** The lamp by the car stands in front of the cinema: a strong cone veils it and it goes pale.
+- Two signs falter (`flick`, and `update` at the foot of the scene). Not in the stills.
+- The bay's swell is in the `STREET` shader's water branch. Each size of swell is switched off where it is finer than a
+  pixel; drawn anyway, it flickers.
 
 ## The ground (`images/synth/ground-*.webp`)
 
