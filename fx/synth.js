@@ -295,9 +295,9 @@ const CAR2 = { st:CAR2_ST, wheels:[[.8, 1.36], [-.8, 1.36], [.8, -1.3], [-.8, -1
     /* the slats over the rear window: eight across it, following its slope */
     const a = [0, 1.01, -1.2], b = [0, 1.14, -.7], d = sub(b, a), al = norm(d), up = norm(cross(al, X));
     for (let k = 0; k < 8; k++) box(o.trim, add(add(a, mul(d, (k + .5) / 8)), mul(up, .03)), mul(X, .6), mul(al, .014), mul(up, .02));
-    /* a black rubbing strip down each side; the door mirrors */
+    /* a black rubbing strip down each side; the door mirrors (black housings: painted, one caught the shop's lamp as a white dot at the roof's corner, like a light on the roof) */
     for (const sx of [-1, 1]) box(o.trim, [sx * .9, .52, 0], mul(X, .012), mul(Yv, .028), mul(Zv, 1.7));
-    for (const sx of [-1, 1]) box(o.flat, [sx * .95, .92, .78], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
+    for (const sx of [-1, 1]) box(o.trim, [sx * .95, .92, .78], mul(X, .055), mul(Yv, .04), mul(Zv, .05));
   } };
 
 /* ── the two times of day. Colours are sRGB; light in arbitrary units (the picture is tone-mapped at the end).
@@ -1043,6 +1043,7 @@ async function build(canvas, kind, dark){
        the plane's middle), font, style, color, spread (set the letters evenly across this much of the width), fill (script: filled, not outlined) } */
     const tube = (a, b, col, k, r) => { const Ln = a.distanceTo(b), g = keep(new T.BoxGeometry(r || .06, r || .06, Ln));
       const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ color:new T.Color(col).multiplyScalar(k || 2.6), fog:false }))); m.position.addVectors(a, b).multiplyScalar(.5); m.lookAt(b); scene.add(m); return m; };
+    const lite = (hex, t, a) => { const n = parseInt(String(hex).slice(1), 16), c = [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v + (255 - v) * t)); return 'rgba(' + c.join(',') + ',' + a + ')'; };      // a colour, part of the way to white
     const sign = (w, h, rows, o) => {
       const PX = o.px || 96, c = canvas(Math.round(w * PX), Math.round(h * PX)), x = c.getContext('2d');
       x.lineJoin = x.lineCap = 'round'; x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -1053,7 +1054,7 @@ async function build(canvas, kind, dark){
         const lw = fs * (r.lw || .07);
         x.shadowColor = col; x.strokeStyle = x.fillStyle = col; x.lineWidth = lw; x.shadowBlur = fs * .3; put(); x.shadowBlur = fs * .1; put();
         if (r.fill){ x.lineWidth = fs * .035; x.shadowBlur = fs * .12; const f = r.fill; r.fill = false; put(); r.fill = f; }      // script: its strokes thickened
-        x.shadowBlur = 0; x.strokeStyle = '#fff6fb'; x.fillStyle = 'rgba(255,255,255,.55)'; x.lineWidth = lw * .3; put();
+        x.shadowBlur = 0; x.strokeStyle = lite(col, .62, 1); x.fillStyle = lite(col, .5, .34); x.lineWidth = lw * .3; put();      // the bright middle: the sign's own colour, lighter (pure white, and a white wash over script, made a blue sign nearly white)
       }
       const k = o.k || 2, m = new T.Mesh(keep(new T.PlaneGeometry(w, h)), keep(new T.MeshBasicMaterial({ map:tex(c), transparent:true, blending:T.AdditiveBlending, depthWrite:false, color:new T.Color(k, k, k), fog:false })));
       m.renderOrder = 2; scene.add(m); return m;
@@ -1082,9 +1083,16 @@ async function build(canvas, kind, dark){
 
     /* ── the model's neon: each colour its own light. And that light on what is near it: the canopy's rings, the fin and the wall are
        lit in the shader from where the neon is (rings of it, and points along the rest), since real lights for a dozen tubes
-       would cost far too much ── */
+       would cost far too much. Each tube lights what is close to it, strongly, and little beyond half a metre: so each tier of the
+       canopy takes its own ring's colour. (Every ring used to reach three metres, all four across every tier: blue, green, yellow
+       and red together are a pale grey, and the whole canopy was that. The owner, 2026-11-23: "possibly too washed out? The neon
+       looks a bit too pale".) ── */
     const NEON = { blue:[.05, .2, 1], cyan:[0, .72, 1], green:[.05, 1, .35], yellow:[1, .66, .04], red:[1, .03, .12], pink:[1, .06, .55], white:[1, .9, .95], orange:[1, .34, .03], purple:[.5, .1, 1] };
-    const hue = n => NEON[n] || NEON.pink, hot = (n, k) => { const c = hue(n); return new T.Color((c[0] * .93 + .07) * k, (c[1] * .93 + .07) * k, (c[2] * .93 + .07) * k); };      // a tube: its colour, a little paler, and brighter than white (so it blooms)
+    /* a tube: its colour, brighter than white (so it blooms), and kept its colour. The last pass's tone curve lifts whatever is dim
+       in a bright pixel, so a tube given even a little of the other two colours comes out pastel (it used to be mixed 7% towards
+       white: the blue ring was sky blue, the green one mint). TUBE: each colour as the tube shows it, the lesser channels held down. */
+    const TUBE = { blue:[.02, .1, 1], cyan:[0, .5, 1], green:[.02, 1, .16], yellow:[1, .5, .01], red:[1, .01, .04], pink:[1, .02, .42], white:[1, .82, .9], orange:[1, .2, .01], purple:[.36, .04, 1] };
+    const hue = n => NEON[n] || NEON.pink, hot = (n, k) => { const c = TUBE[n] || TUBE.pink; return new T.Color(c[0] * k, c[1] * k, c[2] * k); };
     const GL = L.glow || {}, rings = (GL.rings || []).slice(0, 8), gpts = (GL.pts || []).slice(0, 16);
     if (L.sign) for (const lp of (L.sign.loops || []).slice(0, 8)) if (gpts.length < 24) gpts.push({ p:[lp[0], lp[1], lp[2]], col:'pink', k:.6 });      // the sign's own tubes: a point a letter
     const NR = Math.max(1, rings.length), NP = Math.max(1, gpts.length);
@@ -1099,19 +1107,19 @@ async function build(canvas, kind, dark){
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
             '{ vec3 n = normalize(vGN) * (gl_FrontFacing ? 1. : -1.), gsum = vec3(0.);\n' +
             '  for (int i = 0; i < ' + NR + '; i++){ vec2 d2 = vGW.xz - uRing[i].xz; float rr = max(length(d2), 1e-4); vec3 q = vec3(uRing[i].x + d2.x / rr * uRing[i].w, uRing[i].y, uRing[i].z + d2.y / rr * uRing[i].w) - vGW;\n' +       /* towards the nearest point of the ring */
-            '    float d = length(q); gsum += uRingC[i] * (.25 + .75 * max(dot(n, q / max(d, 1e-4)), 0.)) * (1. - smoothstep(1., 3.2, d)) / (.1 + d * 1.6); }\n' +
-            '  for (int i = 0; i < ' + NP + '; i++){ vec3 q = uPt[i] - vGW; float d2 = dot(q, q); gsum += uPtC[i] * (.25 + .75 * max(dot(n, q * inversesqrt(d2 + 1e-5)), 0.)) * (1. - smoothstep(4., 16., d2)) / (.5 + d2 * 1.5); }\n' +
+            '    float d = length(q); gsum += uRingC[i] * (.3 + .7 * max(dot(n, q / max(d, 1e-4)), 0.)) * (1.9 * exp(-d * d * 5.5) + .1 / (1. + d * d * 2.)); }\n' +
+            '  for (int i = 0; i < ' + NP + '; i++){ vec3 q = uPt[i] - vGW; float d2 = dot(q, q); gsum += uPtC[i] * (.3 + .7 * max(dot(n, q * inversesqrt(d2 + 1e-5)), 0.)) * (1.5 * exp(-d2 * 2.6) + .1 / (1. + d2 * 1.2)); }\n' +
             '  totalEmissiveRadiance += gsum * (diffuseColor.rgb * .5 + .05) * uGlowK * ' + (k || 1).toFixed(2) + '; }'); };
-      m.customProgramCacheKey = () => 'sy-glow' + NR + '.' + NP + '.' + (k || 1); return m; };
-    const structM = glowLit(std({ color:'#221a33', roughness:.46, metalness:.3, side:T.DoubleSide }), 2.6), wallM = glowLit(std({ color:'#191536', roughness:.9, side:T.DoubleSide }), 2.2);
-    structM.userData.envK = [.3, .3]; wallM.userData.envK = [.25, .25];              // the sky's light on them, held down: they are lit by their neon
-    const look1 = { building:wallM, structure:structM, letters:std({ color:'#07050b', roughness:.55, side:T.DoubleSide }),
+      m.customProgramCacheKey = () => 'sy-glow2.' + NR + '.' + NP + '.' + (k || 1); return m; };
+    const structM = glowLit(std({ color:'#221a33', roughness:.78, metalness:.08, side:T.DoubleSide }), 2.6), wallM = glowLit(std({ color:'#191536', roughness:.9, side:T.DoubleSide }), 2.2);      // (the canopy matt: half-glossy, the forecourt's two lights put a pale sheen on its rounded ends)
+    structM.userData.envK = [.12, .12]; wallM.userData.envK = [.14, .14];            // the sky's light on them, held well down: they are lit by their neon (at .3 the canopy's rounded ends wore a pale pink sheen)
+    const look1 = { building:wallM, structure:structM, letters:glowLit(std({ color:'#07050b', roughness:.55, side:T.DoubleSide }), 1.5),      // (the letters: black holders, catching a little of their own tubes' light)
       sidewalk:std({ color:'#2b2236', roughness:.92, side:T.DoubleSide, envMapIntensity:.25 }),
-      glass:std({ color:'#0c0a18', roughness:.06, metalness:.3, transparent:true, opacity:.3, side:T.DoubleSide, depthWrite:false }) };
+      glass:std({ color:'#0c0a18', roughness:.24, metalness:.3, transparent:true, opacity:.3, side:T.DoubleSide, depthWrite:false }) };      // (not a mirror: a mirror showed the forecourt's lamp as a white dot in the middle of the window)
     for (const n in CP){ const neonN = /^neon /.test(n) ? n.slice(5) : null, mat = neonN ? keep(new T.MeshBasicMaterial({ color:hot(neonN, 2.2), fog:false })) : look1[n] || structM;
       const m = new T.Mesh(CP[n], mat); if (n === 'glass') m.renderOrder = 1.4; scene.add(m); }
     /* the sign: tubes of neon bent round the letters (which are their black holders): round each heavy stroke, down each hairline */
-    if (L.sign){ const sm = keep(new T.MeshBasicMaterial({ color:new T.Color(2.6, .5, 1.5), fog:false })), r = L.sign.r || .022;
+    if (L.sign){ const sm = keep(new T.MeshBasicMaterial({ color:new T.Color(3.0, .08, 1.1), fog:false })), r = (L.sign.r || .022) * 1.5;      // hot pink (it was nearly white), half as thick again (at 2 cm a tube was under a pixel from where we stand)
       const line = (a, closed) => { const P = []; for (let i = 0; i < a.length; i += 3) P.push(V(a[i], a[i + 1], a[i + 2])); if (P.length > 1) scene.add(new T.Mesh(tubeAlong(P, r, closed), sm)); };
       (L.sign.loops || []).forEach(a => line(a, true)); (L.sign.lines || []).forEach(a => line(a, false)); }
 
@@ -1124,7 +1132,7 @@ async function build(canvas, kind, dark){
       bk.W(bk.g, 0, 0, w, hh, '#5a1838', '#2a0c24'); bk.W(bk.g, 0, hh - .5, w, .5, 'rgba(255,190,120,.5)', 'rgba(255,190,120,0)', true);
       const cw = Math.min(3.4, w * .5), cx0 = w * .5 - cw / 2; bk.R(cx0, 0, cw, 1.05, '#1a0a18'); bk.W(bk.g, cx0 + .1, .5, cw - .2, .46, '#fff2c8', '#ffb45a'); bk.R(cx0, 1.05, cw, .06, '#e7c9a0');
       for (let i = 0; i < 3; i++){ const mx = cx0 + .08 + i * (cw - .16) / 3; bk.W(bk.g, mx, 1.75, (cw - .16) / 3 - .08, .62, '#fff6da', '#ffd9a0'); for (let k = 0; k < 4; k++) bk.R(mx + .08, 1.85 + k * .12, (cw - .16) / 3 - .3, .035, 'rgba(90,30,40,.55)'); }
-      for (const [px, c1, c2] of [[.35, '#ff5fb0', '#5a2a9a'], [w - 1.25, '#3fd0ff', '#2a2a9a']]){ bk.R(px - .05, .75, 1.0, 1.5, '#f3d9a8'); bk.W(bk.g, px, .8, .9, 1.4, c1, c2); bk.spot(bk.g, px + .45, 1.7, .5, 'rgba(255,255,255,.35)'); }
+      for (const [px, c1, c2] of [[.35, '#ff5fb0', '#5a2a9a'], [w - 1.25, '#3fd0ff', '#2a2a9a']]){ bk.R(px - .05, .75, 1.0, 1.5, '#f3d9a8'); bk.W(bk.g, px, .8, .9, 1.4, c1, c2); bk.spot(bk.g, px + .45, 1.7, .5, 'rgba(255,255,255,.12)'); }
       const fl = sheet(d, w, 24); fl.W(fl.g, 0, 0, d, w, '#4a1230', '#3a0e2a'); for (let i = 0; i < 40; i++){ const r2 = rnd(i + 3); fl.spot(fl.g, r2() * d, r2() * w, .5 + r2() * .6, 'rgba(255,150,90,.1)'); }
       const cl = sheet(d, w, 24); cl.R(0, 0, d, w, '#1a0a16'); for (let ix = .6; ix < d; ix += 1.1) for (let iz = .6; iz < w; iz += 1.1) cl.spot(cl.g, ix, iz, .22, 'rgba(255,230,180,1)');
       const sd = sheet(d, hh, 32); sd.W(sd.g, 0, 0, d, hh, '#521636', '#240a20'); sd.R(d * .3, .7, 1.1, 1.5, '#f0d4a0'); sd.W(sd.g, d * .3 + .06, .76, .98, 1.38, '#ffcf5a', '#c0306a');
@@ -1146,7 +1154,11 @@ async function build(canvas, kind, dark){
     /* the neon's light on the wet ground under the canopy, and one real light among the rings (for the car, the kerbs and the palms) */
     if (rings.length){ const c = rings[0].c, lowY = Math.min(...rings.map(q => q.c[1])), rad = Math.max(...rings.map(q => q.r));
       pool(c[0] - rad * .55, .012, c[2], rad * 2.6, rad * 2.9, [1, .2, .62], .42); pool(c[0] - rad * 1.2, .012, c[2] + rad * .5, rad * 2.2, rad * 2.2, [.25, .4, 1], .3);
-      lightAt('#ff5fb8', 34, V(c[0] - rad * .9, lowY - .5, c[2]), 17); lightAt('#5f8cff', 16, V(c[0] - rad * 1.5, 1.5, c[2] + rad * 1.1), 15);      // (out over the forecourt, low: up among the rings it put a white glint on them)
+      lightAt('#ff4fb0', 24, V(c[0] - rad * .9, lowY - 1.3, c[2]), 17); lightAt('#5f8cff', 14, V(c[0] - rad * 1.5, .55, c[2] + rad * 1.1), 15);
+      /* (both out over the forecourt, and low. Up among the rings the pink one put a white glint on them, and half a metre under the
+         lowest tier it bleached that tier. The blue one stood at head height just ahead of the car, and the car's roof showed it
+         back to us as a white-blue dot at the windscreen's top: a light on the roof, like a police car's. Below the car's waist it
+         still colours the kerb and the car's flank, and no part of the car that faces up can see it.) */
       /* small warm lamps set in the canopy's underside, round the entrance */
       const SB = bb('structure'), low = rings.reduce((a, q) => q.c[1] < a.c[1] ? q : a);
       if (SB){ const rr = low.r * .68, dot = keep(new T.CircleGeometry(.075, 12)), dm = keep(new T.MeshBasicMaterial({ color:new T.Color(3.4, 2.2, 1.2), fog:false }));
@@ -1159,14 +1171,14 @@ async function build(canvas, kind, dark){
     if (ST){
       const x0 = ST.x0, zA = ST.z0, BW = ST.z1 - ST.z0, BH = ST.y1, SD = ST.x1 - ST.x0, GF = Math.min(4.4, BH * .46), rb = rnd(7);
       const fb = sheet(BW, BH, 40), NY = [GF + .34, BH - 1.2];
-      fb.R(0, 0, BW, BH, '#3d1528'); bricks(fb, BW, BH, 5, '255,150,190', '0,0,0');
-      for (const yn of NY){                                 /* each neon line's light on the brick: strong under it, a little over it */
-        fb.W(fb.g, 0, yn - 2.7, BW, 2.7, 'rgba(255,50,160,.55)', 'rgba(255,50,160,0)', true); fb.W(fb.g, 0, yn, BW, 1.1, 'rgba(255,50,160,0)', 'rgba(255,50,160,.3)', true);
-        fb.W(fb.ge, 0, yn - 2.7, BW, 2.7, 'rgba(255,40,150,.5)', 'rgba(255,40,150,0)', true); fb.W(fb.ge, 0, yn, BW, 1.1, 'rgba(255,40,150,0)', 'rgba(255,40,150,.28)', true);
-        fb.R(0, yn - .24, BW, .36, '#8f6889'); fb.W(fb.ge, 0, yn - .24, BW, .36, 'rgba(255,90,180,.5)', 'rgba(255,60,160,.3)', true); }
+      fb.R(0, 0, BW, BH, '#2a0e20'); bricks(fb, BW, BH, 5, '255,150,190', '0,0,0');
+      for (const yn of NY){                                 /* each neon line's light on the brick: strong close under it, a little over it (it used to reach nearly three metres down, at full strength: the whole wall was pink, and pale) */
+        fb.W(fb.g, 0, yn - 1.7, BW, 1.7, 'rgba(255,40,150,.42)', 'rgba(255,40,150,0)', true); fb.W(fb.g, 0, yn, BW, .7, 'rgba(255,40,150,0)', 'rgba(255,40,150,.22)', true);
+        fb.W(fb.ge, 0, yn - 1.7, BW, 1.7, 'rgba(255,30,140,.34)', 'rgba(255,30,140,0)', true); fb.W(fb.ge, 0, yn, BW, .7, 'rgba(255,30,140,0)', 'rgba(255,30,140,.18)', true);
+        fb.R(0, yn - .24, BW, .36, '#4a1f3e'); fb.W(fb.ge, 0, yn - .24, BW, .36, 'rgba(255,60,170,.4)', 'rgba(255,40,150,.22)', true); }
       const win = (S, cx, y0, ww, wh, lit) => { const xx = cx - ww / 2;
         S.R(xx - .2, y0 - .14, ww + .4, wh + .34, '#86627f'); S.R(xx, y0, ww, wh, '#0a0612', '');
-        if (lit){ S.W(S.g, xx + .06, y0 + .06, ww - .12, wh - .12, '#d3f0e8', '#7fb6b2'); S.W(S.ge, xx + .06, y0 + .06, ww - .12, wh - .12, 'rgba(180,230,220,.6)', 'rgba(100,160,165,.42)');
+        if (lit){ S.W(S.g, xx + .06, y0 + .06, ww - .12, wh - .12, '#b3d6d4', '#5b8d92'); S.W(S.ge, xx + .06, y0 + .06, ww - .12, wh - .12, 'rgba(160,215,210,.3)', 'rgba(90,150,158,.2)');      // (dimmer: they were the palest things in the picture)
           for (let k = 0; k < 9; k++){ const cxx = (xx + .1 + k * (ww - .2) / 9) * S.K, al = (.08 + rb() * .18).toFixed(2); for (const ctx of [S.g, S.ge]){ ctx.fillStyle = 'rgba(20,40,50,' + al + ')'; ctx.fillRect(cxx, S.ch - (y0 + wh - .06) * S.K, .05 * S.K, (wh - .12) * S.K); } } }
         else S.W(S.g, xx + .06, y0 + .06, ww - .12, wh - .12, 'rgba(130,60,160,.55)', 'rgba(20,10,30,.2)');
         S.R(cx - .035, y0, .07, wh, '#150c1c', ''); S.R(xx, y0 + wh * .62, ww, .06, '#150c1c', ''); };
@@ -1174,15 +1186,15 @@ async function build(canvas, kind, dark){
       for (let i = 0; i < nW; i++) win(fb, (i + .5) * BW / nW, WY, 1.5, WH, [1, 0, 1, 1, 0][i % 5] === 1);
       /* its ground floor: a dark painted front, pale piers, the shop's window and its door (openings: the shop is behind them) */
       const DOOR = [.7, 1.95], SHOP = [2.55, BW - .75];
-      fb.R(0, 0, BW, GF, '#1b0c1d', ''); fb.W(fb.g, 0, GF - 1.2, BW, 1.2, 'rgba(255,50,160,.34)', 'rgba(255,50,160,0)', true); fb.W(fb.ge, 0, GF - 1.2, BW, 1.2, 'rgba(255,40,150,.3)', 'rgba(255,40,150,0)', true);
-      for (const px of [.06, DOOR[1] + .14, BW - .66]){ fb.W(fb.g, px, 0, .46, GF, '#c9b9d6', '#8a7a9c'); fb.R(px, 0, .07, GF, 'rgba(255,255,255,.18)'); fb.R(px + .38, 0, .08, GF, 'rgba(0,0,0,.3)'); }
+      fb.R(0, 0, BW, GF, '#170a19', ''); fb.W(fb.g, 0, GF - 1.1, BW, 1.1, 'rgba(255,40,150,.3)', 'rgba(255,40,150,0)', true); fb.W(fb.ge, 0, GF - 1.1, BW, 1.1, 'rgba(255,30,140,.24)', 'rgba(255,30,140,0)', true);
+      for (const px of [.06, DOOR[1] + .14, BW - .66]){ fb.W(fb.g, px, 0, .46, GF, '#9a89ae', '#574a6b'); fb.R(px, 0, .07, GF, 'rgba(255,255,255,.14)'); fb.R(px + .38, 0, .08, GF, 'rgba(0,0,0,.3)'); }
       fb.R(SHOP[0] - .12, .43, SHOP[1] - SHOP[0] + .24, 2.66, '#0d0712', ''); fb.R(DOOR[0] - .1, 0, DOOR[1] - DOOR[0] + .2, 2.72, '#0d0712', '');
       fb.spot(fb.g, (SHOP[0] + SHOP[1]) / 2, GF - .55, 3.4, 'rgba(50,120,255,.5)'); fb.spot(fb.ge, (SHOP[0] + SHOP[1]) / 2, GF - .55, 3.2, 'rgba(40,110,255,.42)');      // the blue of its sign on the wall
       fb.hole(SHOP[0], .55, SHOP[1] - SHOP[0], 2.42); fb.hole(DOOR[0], .04, DOOR[1] - DOOR[0], 2.58);
       /* its end wall (towards us): brick, the neon carried round, two windows a floor */
-      const fe = sheet(SD, BH, 40); fe.R(0, 0, SD, BH, '#34122a'); bricks(fe, SD, BH, 9, '255,150,190', '0,0,0');
-      for (const yn of NY){ fe.W(fe.g, 0, yn - 2.4, SD, 2.4, 'rgba(255,50,160,.45)', 'rgba(255,50,160,0)', true); fe.W(fe.ge, 0, yn - 2.4, SD, 2.4, 'rgba(255,40,150,.4)', 'rgba(255,40,150,0)', true); fe.R(0, yn - .24, SD, .36, '#8f6889'); fe.W(fe.ge, 0, yn - .24, SD, .36, 'rgba(255,90,180,.5)', 'rgba(255,60,160,.3)', true); }
-      win(fe, SD * .3, WY, 1.3, WH, false); win(fe, SD * .72, WY, 1.3, WH, true); fe.R(0, 0, SD, GF, '#1b0c1d', ''); fe.W(fe.g, 0, GF - 1.2, SD, 1.2, 'rgba(255,50,160,.3)', 'rgba(255,50,160,0)', true);
+      const fe = sheet(SD, BH, 40); fe.R(0, 0, SD, BH, '#240c1c'); bricks(fe, SD, BH, 9, '255,150,190', '0,0,0');
+      for (const yn of NY){ fe.W(fe.g, 0, yn - 1.6, SD, 1.6, 'rgba(255,40,150,.36)', 'rgba(255,40,150,0)', true); fe.W(fe.ge, 0, yn - 1.6, SD, 1.6, 'rgba(255,30,140,.3)', 'rgba(255,30,140,0)', true); fe.R(0, yn - .24, SD, .36, '#4a1f3e'); fe.W(fe.ge, 0, yn - .24, SD, .36, 'rgba(255,60,170,.4)', 'rgba(255,40,150,.22)', true); }
+      win(fe, SD * .3, WY, 1.3, WH, false); win(fe, SD * .72, WY, 1.3, WH, true); fe.R(0, 0, SD, GF, '#170a19', ''); fe.W(fe.g, 0, GF - 1.1, SD, 1.1, 'rgba(255,40,150,.26)', 'rgba(255,40,150,0)', true);
       boxAt(SD, BH, BW, x0 + SD / 2, BH / 2, zA + BW / 2, [plain, fb.mat({ alphaTest:.5 }), roofM, roofM, fe.mat(), plain]);
       for (const yn of NY){ tube(V(x0 - .14, yn, zA + .1), V(x0 - .14, yn, zA + BW + .14), PINK, 2.7, .07); tube(V(x0 - .14, yn, zA + BW + .14), V(x0 + SD - .1, yn, zA + BW + .14), PINK, 2.7, .07); }
       /* the shop inside: its own light (a bright, cool room), five metres deep. Shelves of tapes: rows of spines */
@@ -1202,13 +1214,13 @@ async function build(canvas, kind, dark){
         for (const [gx, ga] of [[1.55, SHOP[0] + 1.5], [3.0, SHOP[0] + 3.3]]) if (ga + 1.2 < BW) boxAt(.5, 1.5, 2.4, x0 + gx, .78, zA + ga + 1.2, [gm, gm, top, top, top, top]);
         boxAt(.7, 1.05, 1.7, x0 + 2.1, .55, zA + (DOOR[0] + DOOR[1]) / 2 + .1, keep(new T.MeshBasicMaterial({ color:'#3b2f66', fog:false }))); boxAt(.34, .3, .4, x0 + 2.1, 1.22, zA + DOOR[1] - .1, keep(new T.MeshBasicMaterial({ color:'#e8fbff', fog:false }))); }
       /* the window's glass and its frames; the door's */
-      const gm2 = std({ color:'#0c0a18', roughness:.06, metalness:.3, transparent:true, opacity:.2, depthWrite:false }), fr2 = std({ color:'#0b0810', roughness:.4, metalness:.6 });
+      const gm2 = std({ color:'#0c0a18', roughness:.5, metalness:.1, transparent:true, opacity:.2, depthWrite:false }), fr2 = std({ color:'#0b0810', roughness:.4, metalness:.6 });
       const pane = (a0, a1, y0, y1, ups) => { const m = wallAt(a1 - a0, y1 - y0, x0 - .01, (y0 + y1) / 2, zA + (a0 + a1) / 2, gm2, -Math.PI / 2); m.renderOrder = 1.4;
         for (let i = 0; i <= ups; i++) boxAt(.07, y1 - y0, .07, x0 - .03, (y0 + y1) / 2, zA + a0 + (a1 - a0) * i / ups, fr2); boxAt(.07, .07, a1 - a0, x0 - .03, y1, zA + (a0 + a1) / 2, fr2); boxAt(.07, .07, a1 - a0, x0 - .03, y0, zA + (a0 + a1) / 2, fr2); };
       pane(SHOP[0], SHOP[1], .55, 2.97, Math.max(2, Math.round((SHOP[1] - SHOP[0]) / 1.9))); pane(DOOR[0], DOOR[1], .04, 2.62, 1);
       /* its name in blue script over the window (our wording); OPEN in red inside the glass */
       const sw2 = Math.min(5.2, SHOP[1] - SHOP[0] + .6);
-      faceSt(sign(sw2, 1.9, [{ t:'Video', size:1.12, y:.18, x:-.3, font:SCRIPT, style:'italic 700', fill:true }, { t:'rental', size:.5, y:-.58, x:1.25, font:SCRIPT, style:'italic 700', fill:true }], { color:'#2f9bff', k:2.3 })).position.set(x0 - .2, GF - .5, zA + (SHOP[0] + SHOP[1]) / 2);
+      faceSt(sign(sw2, 1.9, [{ t:'Video', size:1.12, y:.18, x:-.3, font:SCRIPT, style:'italic 700', fill:true }, { t:'rental', size:.5, y:-.58, x:1.25, font:SCRIPT, style:'italic 700', fill:true }], { color:'#1f72ff', k:2.2 })).position.set(x0 - .2, GF - .5, zA + (SHOP[0] + SHOP[1]) / 2);
       faceSt(sign(1.1, .95, [{ t:'OPEN', size:.36, y:.17, lw:.09 }, { t:'late', size:.3, y:-.22, lw:.09 }], { color:'#ff4058', k:2.3 })).position.set(x0 + .12, 2.2, zA + SHOP[0] + .75);
       pool(x0 - 2.6, .012, zA + (SHOP[0] + SHOP[1]) / 2, 6.5, BW * .95, [.62, .92, 1], .42); lightAt('#bfeaff', 26, V(x0 - 1.4, 1.9, zA + (SHOP[0] + SHOP[1]) / 2), 13);
       /* a plain dark block beyond it, towards us: only there to close the right-hand edge of a wide screen */
@@ -1264,7 +1276,7 @@ async function build(canvas, kind, dark){
       const g = new T.Group(); g.add(new T.Mesh(pole, metal), new T.Mesh(arm, metal), new T.Mesh(head, metal), new T.Mesh(lens, keep(new T.MeshBasicMaterial({ color:new T.Color(4.2, 2.3, 1.1), fog:false }))));
       const lz = CAR.z + CAR.len / 2 + .4;                        // by the car's tail, its arm over the car (as the picture's is): from where we stand it is then between the cinema and the shop's sign, not across either
       g.position.set(kerbR, 0, lz); scene.add(g);
-      g.add(halo(V(-2.6, 7.3, 0), [1.4, .72, .36], 2.1, .5), lightAt('#ffb070', 55, V(-2.6, 6.8, 0), 26)); pool(kerbR - 2.6, .012, lz, 8, 8, [1, .5, .26], .34); }
+      g.add(halo(V(-2.6, 7.3, 0), [1.4, .66, .3], 1.6, .34) /* a small halo: the big pale one was a patch of fog in the sky */, lightAt('#ffb070', 55, V(-2.6, 6.8, 0), 26)); pool(kerbR - 2.6, .012, lz, 8, 8, [1, .5, .26], .34); }
     { const g = lamp(); g.position.set(kerbR, 0, GR.z0 + 8.2); scene.add(g); halo(V(kerbR - 1.62, 6.12, GR.z0 + 8.2), [1.4, .72, .36], 2.4, .5); pool(kerbR - 1.62, .012, GR.z0 + 8.2, 7, 7, [1, .46, .24], .36); }
     { const z = GR.z0 + 11; const g = lamp(); g.position.set(walkX - .5, 0, z); g.rotation.y = Math.PI; scene.add(g); halo(V(walkX - .5 + 1.62, 6.12, z), [1.4, .72, .36], 2.4, .5); pool(walkX + 1.1, .012, z, 7, 7, [1, .46, .24], .36); }      // (well up the street: near us it stood in the middle of the picture)
     for (const x of [-74, -50, -26, -3, 20, 44, 68]){ const g = lamp(); g.position.set(x, 0, GR.z0 + .5); g.rotation.y = Math.PI / 2; scene.add(g); halo(V(x, 6.12, GR.z0 + .5 + 1.62), [1.4, .72, .36], 2.2, .5); }
@@ -1275,13 +1287,18 @@ async function build(canvas, kind, dark){
 
     /* ── the car: our wedge, in the model's place for it, along the kerb, its nose towards the sun ── */
     { const cb = carArrays(CAR2), car = new T.Group(); car.position.set(CAR.x, 0, CAR.z); car.rotation.y = CAR.along === 'x' ? Math.PI / 2 : Math.PI; car.scale.setScalar(clamp((CAR.len || 4.4) / 4.45, .9, 1.12)); scene.add(car);
-      const paint = std({ color:'#4e4a62', roughness:.26, metalness:.88, side:T.DoubleSide }), trim = std({ color:'#08060b', roughness:.55, metalness:.3, side:T.DoubleSide });
-      paint.userData.envK = [.7, .7];                             // the sky's light on it, held down (at full strength it was a pale blank)
-      car.add(new T.Mesh(geoN(cb.body), paint), new T.Mesh(geo(cb.flat), paint), new T.Mesh(geoN(cb.glass), std({ color:'#05030a', roughness:.12, metalness:.9, side:T.DoubleSide })));
-      car.add(new T.Mesh(geoN(cb.well), trim), new T.Mesh(geo(cb.trim), trim), new T.Mesh(geo(cb.plate), std({ color:'#d8d0c2', roughness:.6 })));
-      car.add(new T.Mesh(geo(cb.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.75, .06, .14) }))), new T.Mesh(geo(cb.hot), keep(new T.MeshBasicMaterial({ color:new T.Color(3.6, .7, 1.25) }))));
+      /* Dark and glossy: a black-violet paint that shows the sky along its top and its creases and is dark everywhere else, so the car
+         is a shape with lit edges and two red lamps. (It was silver, which under a pink sky is pink all over: pale, flat, and every
+         simple panel of it on show. The owner, 2026-11-23: "the car also looks a bit awkward". The same held on the road: a pale,
+         evenly lit body looked flat and unlit.) */
+      const paint = std({ color:'#120d1a', roughness:.33, metalness:.6, side:T.DoubleSide }), trim = std({ color:'#060409', roughness:.55, metalness:.3, side:T.DoubleSide });      // (not glassy: at .2 the shop's lamp stood on the roof as one white dot)
+      paint.userData.envK = [.42, .42];
+      const glassM = std({ color:'#05030a', roughness:.32, metalness:.9, side:T.DoubleSide }); glassM.userData.envK = [.3, .3];      // (not a mirror: the street lamp over it stood on the roof as a white light, like a police car's)
+      car.add(new T.Mesh(geoN(cb.body), paint), new T.Mesh(geo(cb.flat), paint), new T.Mesh(geoN(cb.glass), glassM));
+      car.add(new T.Mesh(geoN(cb.well), trim), new T.Mesh(geo(cb.trim), trim), new T.Mesh(geo(cb.plate), std({ color:'#8f8a9c', roughness:.6 })));
+      car.add(new T.Mesh(geo(cb.tail), keep(new T.MeshBasicMaterial({ color:new T.Color(1.55, .012, .045) }))), new T.Mesh(geo(cb.hot), keep(new T.MeshBasicMaterial({ color:new T.Color(2.9, .1, .2) }))));      // red, and kept red (with more of the other two colours in it the tone curve made it pink)
       const tyre = keep(new T.CylinderGeometry(.32, .32, .24, 28)); tyre.rotateZ(Math.PI / 2); const disc = keep(new T.CylinderGeometry(.22, .22, .02, 28)); disc.rotateZ(Math.PI / 2);
-      const tyreM = std({ color:'#060508', roughness:.9 }), discM = std({ color:'#8e8a9c', roughness:.4, metalness:.85 });
+      const tyreM = std({ color:'#060508', roughness:.9 }), discM = std({ color:'#2a2633', roughness:.34, metalness:.8 }); discM.userData.envK = [.34, .34];      // dark alloy (silver discs were two pink plates)
       for (const [x, z] of CAR2.wheels){ const sx = Math.sign(x), w = new T.Group(); w.position.set(x, .32, z); const d = new T.Mesh(disc, discM); d.position.x = sx * .12; w.add(new T.Mesh(tyre, tyreM), d); car.add(w); }
       for (const sx of [-1, 1]){ const h = new T.Sprite(keep(new T.SpriteMaterial({ map:soft2, color:new T.Color(1, .1, .3), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:.5, fog:false }))); h.scale.set(1.2, .7, 1); h.position.set(sx * .45, .8, -2.25); car.add(h); }
       const shT = glowTex(128, 128, [[0, 1], [.55, .85], [.8, .35], [1, 0]]), sh = new T.Mesh(keep(new T.PlaneGeometry(2.3, 4.9)), keep(new T.MeshBasicMaterial({ map:shT, color:0x000000, transparent:true, opacity:.88, depthWrite:false })));

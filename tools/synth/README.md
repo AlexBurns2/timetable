@@ -69,6 +69,21 @@ To update the site after changing the model:
    the lines the sign's neon will follow, to check them.
 3. Re-make the street's stills (below), and bump the asset version.
 
+### Traps in lighting it (all met on 2026-11-23: "possibly too washed out? The neon looks a bit too pale")
+
+- **Coloured lights that overlap add up to grey.** The canopy's four rings each lit everything within three metres; blue, green,
+  yellow and red together are a pale grey, and the whole canopy was that. A tube's light on what is near it has to fall off
+  within about half a metre (`glowLit`), so each tier takes its own ring's colour.
+- **A bright colour needs its other two channels near nothing.** The last pass's tone curve lifts whatever is dim in a bright
+  pixel, so a tube given a little white "so it blooms" comes out pastel. `TUBE` holds the lesser channels at a few per cent.
+  The same goes for lamps: a tail lamp with 4% green in it is pink.
+- **A lamp near something glossy is a white dot on it.** A fill lamp at head height in front of the car stood on its roof like a
+  police light; the lobby's lamp stood in the middle of its window. Put a fill lamp where no surface that faces us can mirror
+  it (below the car's waist), and don't make window glass a mirror.
+- **Silver is the colour of whatever is round it.** Under a pink sky a silver car is pink all over, flat, and every simple panel
+  shows. Dark and glossy reads as a shape with lit edges.
+- **A pale thing behind a tube takes the tube away.** The shop had a pale band behind each neon line; the line was lost in it.
+
 ## The ground (`images/synth/ground-*.webp`)
 
 The street scene's road and plaza are drawn by the mirror's own shader (`STREET` in `fx/synth.js`); two small textures made

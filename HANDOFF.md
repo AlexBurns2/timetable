@@ -4478,3 +4478,25 @@ The owner (2026-11-23): "resolve merge conflicts and release both synthwave and 
 - Loosening the history's clamp instead was tried first and did little (about a tenth), so it is as it was.
 - On a computer nothing changed: the bay, pyramid and shore measure the same as in 8.176 to two decimal places, and so does the street outside the palm's moving fronds. The street's new laptop and tablet framings measure like its 16 : 9 one.
 - Not done, and worth trying on a real phone: multisampling on phones (twice or four times), which is the proper cure and costs the graphics chip more.
+
+## 8.179 Synthwave's street: the cinema side, no longer washed out; the car (version `20261123i`, `CACHE_VERSION` v104)
+
+The owner (2026-11-23), with a close view of the right-hand side of Home's scene: "I think its maybe the color grading or something, but the right side of the synthwave homepage scene just doesn't look good. It's possibly too washed out? The neon looks a bit too pale, and the car also looks a bit awkwards". Not committed by Claude.
+
+It was not the colour grading (the last pass is untouched, and so is the left half of the picture: 0.02 levels of difference). It was what the right-hand side was made of. All in the street's block of `fx/synth.js`:
+
+- **The canopy was grey because its four colours were added together.** Each neon ring lit everything within three metres, so every tier of the canopy got blue, green, yellow and red at once, which is a pale grey. Now a tube lights what is close to it, strongly, and little beyond half a metre (`glowLit`): each tier takes its own ring's colour. The same for the fin's and the sign's tubes.
+- **The tubes were pastel because they were mixed towards white.** They had 7% of white in them "so they bloom", and the tone curve at the end lifts whatever is dim in a bright pixel: blue came out sky blue, green came out mint. `TUBE` now gives each colour with its two lesser channels held low. The car's lamps and the sign's tubes got the same treatment.
+- **The sign:** its tubes hot pink (they were nearly white) and half as thick again (at 2 cm they were under a pixel from where we stand); the black letters catch a little of their own light.
+- **The building:** the sky's reflection on it turned well down, and the canopy made matt. Half-glossy, it wore a pale sheen from the sky and from the two lamps in the forecourt. It is now a dark shape against the pink sky with its neon on it.
+- **The shop:** darker brick; the neon's light on the wall kept close to the tube (it reached nearly three metres down at full strength: the whole wall was pale pink); no pale band behind the tubes; dimmer lit windows upstairs; a deeper blue sign whose bright middle is its own colour and not white (`sign`, `lite`).
+- **The car:** dark and glossy (a black-violet paint that shows the sky along its top and creases) instead of silver, which under a pink sky is pink all over and shows every flat panel. Dark alloy wheels (silver discs were two pink plates), red lamps kept red, black door mirrors.
+- **The "police light" on the car's roof** was the blue fill lamp in the forecourt, at head height just ahead of the car: the roof showed it back to us as a white-blue dot at the top of the windscreen. It now stands below the car's waist, where nothing that faces up can see it; it still colours the kerb, the car's flank and the cinema's wall.
+- The white dots in the cinema's and the shop's windows were the same thing (a lamp in mirror-smooth glass); both panes are no longer mirrors.
+- The street lamp's halo is smaller (the big pale one read as a patch of fog).
+
+**Stills:** `street-night`, `-m` and `-p` made again.
+
+**Checked:** stills at 16 : 9 and at the owner's 3440 x 1235, before and after; live with the page at 1366, 1920 and 3440 wide and bare on a tablet and a phone; all five scenes and four other themes load with no errors. Flicker measured again on a computer, a phone and the wide window: the right-hand side is the same or slightly steadier (0.11 to 0.10 on a computer; the sign's thicker tubes help).
+
+**Not done:** the car's shape is unchanged. If it still looks awkward as a shape, that is the next thing to look at (it is drawn in code: `CAR2`).
