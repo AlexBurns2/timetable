@@ -156,7 +156,49 @@ wherever its margin is, so on a wide screen a shadow that stopped at the picture
 upright line across the floor. After packing, every group's alpha should be 4 or less (of 255) along
 its left and right edges. Its bottom edge is the bottom of the screen and is left alone.
 
+`pack.py` also measures how far each group's own thing reaches from its foot, not counting its
+shadow: `sl` and `sr` to the left and right, `st` above, in the plate's pixels, written into the
+table with the rest. `reach.py` measures the same from the pictures already in `images/th` and
+writes them into `fx/vapor.js` with no work folder; run it if a picture is ever replaced by hand:
+
+```
+python -P tools/vapor/reach.py
+```
+
 Three kinds of seam have turned up in these pictures; look for them at high contrast before
 shipping a render: a texture's own joints (the marble, above); a shadow or reflection cut off at
 the edge of the picture it was rendered in (the feather, above); and anything the page draws in code
 over the picture with straight sides (the moon's light on the water was a plain rectangle).
+
+## 5. Every size of screen
+
+The scenes were laid out on a very wide screen, where each margin has room for anything. On a
+laptop the margins are 140 to 290 px. What the page does there (all in `fx/vapor.js`, `makeNext`):
+
+- **A group that would not stand whole in its margin** (part of it under the page's window, or off
+  the screen's edge) is drawn smaller about its foot until it does, in the middle of the margin.
+  It goes by `sl`, `sr` and `st` (above). Never smaller than `FIT_MIN` (0.42) of its size: in a
+  margin narrower than that allows it stays its own size at the window's edge, as it used to.
+  A group that already stands whole is not touched, so a wide screen is as it was.
+- **The floating group** (the planet and its moon): the ball is what is made to fit (`core` in
+  `ARR`, its width in the plate's pixels); the rings may run under the window and off the screen.
+  The moon keeps its place about the ball, and comes in beside it if it would be off the screen.
+- **The page's word** stands in any margin of 84 px or more (`WORD_MIN`), at the one size every
+  page uses unless the margin is narrower than the word. It used to need 170 px, which no page had
+  on a 1280 px laptop.
+- **Home**, where the word shares a margin with the broken column: on a roomy screen the word
+  stands beside the window and the column past it; in a narrow margin the word stands over the
+  column, which is drawn short enough to end below it.
+- **The timetable** is the one page whose windows ran the whole width of a laptop's screen. From
+  1280 px wide they stop short of each edge by about a fifth of the screen's height
+  (`skins/vapor.css`, the rule after the timetable's grid), which is what the head and the word
+  need. Below 1280 px it has the whole width.
+- The margin is measured to where the page's windows begin, not to the column's padding
+  (`wrapBox`): on Home, Games and the timetable that is 20 px more room a side.
+
+Not covered: a tablet and a phone. There the page's windows fill the screen and the scene shows
+only between them; the word is still in each page's title bar.
+
+To check a change, look at every page at these sizes (the browser's own window, not the screen's):
+1280 × 600, 1366 × 650, 1440 × 790, 1536 × 730, 1920 × 950, 2560 × 1300, 3440 × 1235; a tablet at
+1024 × 700 and 768 × 950; a phone at 390 × 760.

@@ -378,40 +378,73 @@ const SUN_F = 'uniform vec3 uTop, uMid, uBot, uRim; uniform float uI, uT, uHalo;
   '  vec3 c = mix(mix(uBot, uMid, smoothstep(.16, .55, y)), uTop, smoothstep(.5, .96, y)) * uI;\n' +           /* three colours foot to top, clean to the edge */
   '  float o = clamp((r - 1.) / ' + (SUN_GS - 1).toFixed(2) + ', 0., 1.), halo = (1. - disc) * pow(1. - o, 2.6) * uHalo;\n' +   /* the glow: brightest at the edge, fading outward */
   '  gl_FragColor = vec4(c * a + uRim * halo, a);\n}';
-/* the wet street: what the mirror saw, still (no swell: it rained, it stopped), drawn out down the street on damp asphalt and clear
-   in the puddles; the asphalt's grain between.
-   Inside uPlaza (x0, z0, x1, z1; a scene that sets none has none) the ground is a plaza of concrete slabs instead: paler, wet all
-   over (so more of a mirror than the road is), each slab a little different from the next (how wet it is, and how level it lies:
-   the reflection steps a touch from slab to slab, which is what says "paving" in a mirror), dark joints between. The joints are
-   averaged over the pixel (a box filter, after Quilez), so a row too far off to draw fades out instead of crawling. */
+/* the wet street. One mirror lies under the whole scene, but a wet road is no mirror (the owner: "too clean and perfect, it
+   looks more like water or a mirror ... more of a rough look like real wet asphalt"; the concrete "a bit cleaner", with "real
+   texture"). So what the mirror saw is never shown as it is:
+   - It is smeared down the screen, the way rough wet ground draws a lamp out into a streak towards whoever is looking: eleven
+     samples in a line, strongest at the mirror's own place with a long tail, each from a softened copy of the mirror's picture
+     (its mipmaps; makeSea turns them on). How long the smear is, is how rough the ground is there: a fifth of the screen's
+     height either way on the roughest road, next to nothing in a puddle. It never reaches past the horizon.
+   - Each pixel takes its samples from a slightly different height (a fixed scatter, the same every frame), so a streak is made
+     of grains, as a real one is, and a small bright thing gives a streak and not a row of copies.
+   - The road is asphalt: a scan of a real one (tAsph, images/synth/ground-asphalt.webp, grey: its grain), drawn out along the
+     street so that near us it is a speckle of a pixel or two. Its pores give little back, a few grains glint, and each grain
+     mirrors from a little elsewhere. Rougher and wetter patches some metres across come from the concrete scan's dips, seen
+     very large. (Patches must be soft and large: sharp ones a step apart made the road look like choppy water.)
+   - Inside uPlaza (x0, z0, x1, z1; a scene that sets none has none) the ground is a plaza of concrete slabs: a scan of a real
+     floor (tConc, ground-concrete.webp: r its tone, g how rough, b where it dips), each slab its own piece of it. Smoother
+     than the road, so its reflections are cleaner; clearest where water stands in the dips. Each slab lies a little out of
+     level (the reflection steps a touch from slab to slab), with dark joints between, averaged over the pixel (a box filter,
+     after Quilez) so a row too far off to draw fades out instead of crawling.
+   - Past the quay (z < uQuay) it is the bay's water, as it was: nearly a mirror.
+   The scans come through their own mipmaps, so grain too far off to see is its average, and the picture holds still. */
+const ST_N = SMALL ? 7 : 11;                                   // samples down a streak (fewer on a phone)
 const STREET = {
   name:'SynthStreet',
   uniforms:{ color:{ value:null }, tDiffuse:{ value:null }, textureMatrix:{ value:null }, uDeep:{ value:null }, uFog:{ value:null }, uFogR:{ value:null }, uRip:{ value:1 }, uQuay:{ value:-1e6 },
-             uPlaza:{ value:null }, uPave:{ value:null }, uTile:{ value:1.2 } },
+             uPlaza:{ value:null }, uPave:{ value:null }, uTile:{ value:1.2 }, tAsph:{ value:null }, tConc:{ value:null }, uRT:{ value:null }, uCot:{ value:4.4 } },
   vertexShader:'uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW;\n' +
     'void main(){ vUv = textureMatrix * vec4(position, 1.); vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
-  fragmentShader:'uniform vec3 color, uDeep, uFog, uPave; uniform sampler2D tDiffuse; uniform vec2 uFogR; uniform float uQuay, uTile; uniform vec4 uPlaza;\nvarying vec4 vUv; varying vec3 vW;\n' + GLSL_HASH +
+  fragmentShader:'uniform vec3 color, uDeep, uFog, uPave; uniform sampler2D tDiffuse, tAsph, tConc; uniform vec2 uFogR, uRT; uniform float uQuay, uTile, uCot; uniform vec4 uPlaza;\nvarying vec4 vUv; varying vec3 vW;\n' + GLSL_HASH +
     'const float JN = 46.;\n' +                                                                   /* a slab is this many joints wide */
     'void main(){\n' +
     '  vec3 V = cameraPosition - vW; float d = length(V); V /= d; vec2 p = vW.xz;\n' +
     '  float water = 1. - step(uQuay, vW.z);\n' +                                                 /* beyond the quay (z < uQuay): water */
-    '  vec2 pin = step(uPlaza.xy, p) * step(p, uPlaza.zw); float plaza = pin.x * pin.y;\n' +      /* the plaza: its slabs counted from the corner by the street */
+    '  vec2 pin = step(uPlaza.xy, p) * step(p, uPlaza.zw); float plaza = pin.x * pin.y, road = (1. - plaza) * (1. - water);\n' +      /* the plaza: its slabs counted from the corner by the street */
     '  vec2 q = (p - uPlaza.zy) / uTile + .5 / JN, qw = max(fwidth(q), vec2(1e-5)), qa = q + .5 * qw, qb = q - .5 * qw;\n' +
     '  vec2 jc = clamp((floor(qa) + min(fract(qa) * JN, 1.) - floor(qb) - min(fract(qb) * JN, 1.)) / (JN * qw), 0., 1.);\n' +
     '  float joint = plaza * (1. - (1. - jc.x) * (1. - jc.y));\n' +
     '  vec2 id = floor(q); float fine = plaza * (1. - smoothstep(.2, .7, max(qw.x, qw.y))), slab = (h21(id) - .5) * fine;\n' +      /* (slabs too small to tell apart are all alike) */
-    '  float pud = max(water, smoothstep(.5 - .12 * plaza, .64 - .08 * plaza, vnoise(p * .16 + 3.) * .65 + vnoise(p * .55) * .35 + slab * .1));\n' +
-    '  float grit = mix(vnoise(p * 2.7) * .5 + vnoise(p * 9.) * .5, .35, water);\n' +
-    '  vec4 uv = vUv; uv.x += (vnoise(vec2(p.x * 1.7, p.y * .4)) - .5) * .006 * (1. - pud) * (1. - .7 * plaza) * uv.w;\n' +
-    '  uv.y += (vnoise(vec2(p.x * .05, p.y * .7)) - .5) * .02 * water * uv.w;\n' +
-    '  uv.xy += (vec2(h21(id + 3.7), h21(id + 9.2)) - .5) * vec2(.0015, .0035) * fine * uv.w;\n' +   /* each slab lies a little out of level */
-    '  float sp = mix(mix(.014, .003, pud), mix(.008, .0025, pud), plaza) * uv.w; vec3 refl = vec3(0.);\n' +
-    '  for (int i = 0; i < 6; i++) refl += texture2DProj(tDiffuse, uv + vec4(0., (float(i) - 2.5) * sp, 0., 0.)).rgb / 6.;\n' +
+    '  float lowN = vnoise(p * .16 + 3.) * .65 + vnoise(p * .55) * .35;\n' +                      /* broad patches, wetter and drier */
+    /* the road */
+    '  float g1 = texture2D(tAsph, p * vec2(.33, .083)).r, g2 = texture2D(tAsph, p * vec2(.161, .04) + vec2(.371, .617)).r;\n' +     /* the grain, at two sizes. Drawn out along the street (a grain is a few millimetres: seen this low and this far off it would be far finer than a pixel in depth, so nothing), so that near us it is a speckle of a pixel or two, and gone further off */
+    '  float g3 = texture2D(tConc, mat2(.6, .8, -.8, .6) * p / 23. + .37).b;\n' +                                                      /* the patches a road has, some metres across: rougher here, wetter there (the concrete scan's dips, seen very large: soft shapes from a real surface) */
+    '  float grain = g1 * .5 + g2 * .5, roughA = clamp(.8 + (g3 - .5) * .55 + (.5 - lowN) * .3, .5, 1.);\n' +
+    /* the plaza */
+    '  vec2 pc = p / 4.1; vec3 C = textureGrad(tConc, pc + vec2(h21(id + 1.3), h21(id + 5.1)) * plaza, dFdx(pc), dFdy(pc)).rgb;\n' +
+    '  float pudC = smoothstep(.42, .8, (1. - C.b) * .6 + lowN * .5 + slab * .12);\n' +            /* water stands in its dips */
+    '  float roughC = clamp(.28 + (C.g - .5) * .35 + slab * .1 - pudC * .2, .05, .45);\n' +
+    '  float rough = mix(mix(roughA, roughC, plaza), .155, water);\n' +
+    /* what the mirror saw, smeared */
+    '  vec4 uv = vUv; uv.y += (vnoise(vec2(p.x * .05, p.y * .7)) - .5) * .02 * water * uv.w * (1. - smoothstep(.15, .5, fwidth(p.y * .7)));\n' +      /* the bay\'s swell, left out where it is finer than a pixel (there it only flickered) */
+    '  vec2 st = uv.xy / uv.w;\n' +
+    '  st += (vec2(g1, g2) - .5) * vec2(.004, .02) * roughA * road;\n' +                         /* each grain mirrors from a little elsewhere */                         /* each grain mirrors from a little elsewhere */
+    '  st += (vec2(h21(id + 3.7), h21(id + 9.2)) - .5) * vec2(.0015, .0035) * fine;\n' +          /* each slab lies a little out of level */
+    '  float Sv = mix(.004, .2, rough * rough);\n' +                                              /* the streak\'s half-length, in screen heights */
+    '  float below = .5 * uCot * V.y / sqrt(max(1. - V.y * V.y, 1e-4)), up = min(1., below * .85 / Sv);\n' +      /* how far under the horizon this is (the streak stops short of it) */
+    '  float stp = Sv * ' + (2 / (ST_N - 1)).toFixed(4) + ', lod0 = log2(max(stp * uRT.y, 1.)) - .9, lodMax = log2(max(below * uRT.y * .6, 1.));\n' +      /* each sample half as wide as the gap to the next... */
+    '  float jit = (h21(gl_FragCoord.xy) - .5) * stp * (1. - .7 * plaza);\n' +                                        /* ...and every pixel takes its samples from a slightly different height, so the streak is made of grains (as a real one is), not of copies */
+    '  vec3 refl = vec3(0.); float ws = 0.;\n' +
+    '  for (int i = 0; i < ' + ST_N + '; i++){ float t = float(i) * ' + (2 / (ST_N - 1)).toFixed(4) + ' - 1., w = exp(-2.4 * abs(t)), o = t * Sv + jit;\n' +
+    '    vec3 s = textureLod(tDiffuse, st + vec2(0., o * (o > 0. ? up : 1.)), min(lod0 + abs(t) * 1.3, lodMax)).rgb; float sum = s.r + s.g + s.b;\n' +
+    '    if (sum > -1. && sum < 150.){ refl += s * w; ws += w; } }\n' +                            /* (a sample that is not a number is left out: one bad pixel would otherwise darken a whole patch for a frame) */
+    '  refl /= max(ws, 1e-4);\n' +
     '  float fr = .05 + .95 * pow(1. - max(V.y, 0.), 5.);\n' +
-    '  float wet = mix(mix(.2, .9, pud), mix(.5, .93, pud) * (1. + .2 * slab) * (1. - .5 * joint), plaza);\n' +
-    '  float k = clamp(wet * (fr * 1.1 + .25), 0., 1.);\n' +
-    '  vec3 base = mix(uDeep * (.55 + .9 * grit), uPave * (.8 + .4 * grit + .3 * slab) * (1. - .45 * joint), plaza);\n' +
-    '  vec3 c = mix(base, refl * color, k);\n' +
+    '  float wetA = mix(.72, .36, roughA) * (.45 + 1.1 * grain + 7. * pow(max(grain - .6, 0.), 2.));\n' +      /* the pores give little back; a few grains glint */
+    '  float wetC = mix(.6, .93, pudC) * (1. + .2 * slab) * (1. - .5 * joint) * (1.1 - .25 * C.g);\n' +
+    '  float k = clamp(mix(mix(wetA, wetC, plaza), .9, water) * (fr * 1.1 + .25), 0., 1.);\n' +
+    '  vec3 baseA = uDeep * (.3 + 1.4 * grain) * (.75 + .5 * g3), baseC = uPave * (.55 + .9 * C.r + .3 * slab) * (1. - .45 * joint);\n' +
+    '  vec3 c = mix(mix(mix(baseA, baseC, plaza), uDeep * .865, water), refl * color, k);\n' +
     '  c = mix(c, uFog, smoothstep(uFogR.x, uFogR.y, d) * .85);\n' +
     '  gl_FragColor = vec4(c, 1.);\n}'
 };
@@ -426,8 +459,8 @@ const SEA = {
     'void main(){\n' +
     '  vec3 V = cameraPosition - vW; float d = length(V); V /= d;\n' +
     '  vec2 p = vW.xz;\n' +
-    '  float n1 = vnoise(vec2(p.x * .035, p.y * .9 + uTime * .2));\n' +
-    '  float a2 = 1. - smoothstep(.15, .5, fwidth(p.y * 2.3)), a3 = 1. - smoothstep(.15, .5, fwidth(p.y * 5.7));\n' +      /* ripples finer than a pixel, left out: they only sparkled */
+    '  float a1 = 1. - smoothstep(.15, .5, fwidth(p.y * .9)), a2 = 1. - smoothstep(.15, .5, fwidth(p.y * 2.3)), a3 = 1. - smoothstep(.15, .5, fwidth(p.y * 5.7));\n' +      /* swell and ripples finer than a pixel, left out: towards the horizon they were noise, a different noise every frame, and the water flickered (worst along the waterline) */
+    '  float n1 = mix(.5, vnoise(vec2(p.x * .035, p.y * .9 + uTime * .2)), a1);\n' +
     '  float n2 = mix(.5, vnoise(vec2(p.x * .09 - uTime * .02, p.y * 2.3 + uTime * .33)), a2);\n' +
     '  float n3 = mix(.5, vnoise(vec2(p.x * .3, p.y * 5.7 - uTime * .5)), a3);\n' +
     '  float k = uRip / (1. + d * .004);\n' +
@@ -566,7 +599,17 @@ async function build(canvas, kind, dark){
       sea = new RF.Reflector(g, { textureWidth:256, textureHeight:256, multisample:SMALL ? 0 : 4, clipBias:.002, shader:shader || SEA });      // smoothed edges in the reflection too (they were jagged, and sparkled as the water moved)
       const u = sea.material.uniforms; u.uDeep.value = new T.Color(); u.uFog.value = new T.Color(); u.uFogR.value = new T.Vector2(80, 900); u.uRip.value = rip || 1;
       u.color.value = new T.Color(.92, .9, .95);
+      /* The mirror's own picture is drawn without the frame's fraction-of-a-pixel shift (the steadying's: see render). It is half
+         the screen's size, so that shift moved every small bright thing in it (a lit window) on and off its pixels, a different
+         way each frame: the reflections flickered. Drawn from the same place every frame it holds still, and the steadying
+         still smooths how the water shows it. (The camera's own shift is put back before the main picture goes on.) */
+      const drawMirror = sea.onBeforeRender;
+      sea.onBeforeRender = function(r, s, cam){ if (!(jitX || jitY)) return drawMirror.call(this, r, s, cam);
+        cam.setViewOffset(W, H, viewX, 0, W, H); drawMirror.call(this, r, s, cam); cam.setViewOffset(W, H, viewX + jitX, jitY, W, H); };
       if (u.uPlaza){ u.uPlaza.value = new T.Vector4(1, 1, 0, 0); u.uPave.value = new T.Color(0, 0, 0); }      // (no plaza, until a scene lays one)
+      if (u.uRT){ u.uRT.value = new T.Vector2(256, 256);          /* the street: the mirror's picture with its softened copies (mipmaps), for smearing; and a flat grey until the ground's scans come */
+        const rt = sea.getRenderTarget(); rt.texture.generateMipmaps = true; rt.texture.minFilter = T.LinearMipmapLinearFilter;
+        const flat = keep(new T.DataTexture(new Uint8Array([128, 128, 128, 255]), 1, 1)); flat.needsUpdate = true; u.tAsph.value = u.tConc.value = flat; }
       dispose.push({ dispose:() => sea.dispose() });
     } else sea = new T.Mesh(g, std({ color:'#0c0716', roughness:.12, metalness:.9 }));
     sea.rotation.x = -Math.PI / 2; scene.add(sea);
@@ -594,12 +637,21 @@ async function build(canvas, kind, dark){
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
             '{ vec3 n = normalize(vSyN); float side = step(.7, 1. - abs(n.y));\n' +
             '  vec2 td = normalize(vec2(-n.z, n.x) + 1e-5); float u = dot(vSyW.xz, td) / 3.2, fy = vSyW.y / 3.6;\n' +
-            '  float row = floor(fy), cl = floor(u), h = h21(vec2(row, cl + floor(dot(vSyW.xz, vec2(n.x, n.z)) * .05) * 17.));\n' +
-            '  float run = h21(vec2(row * 1.3, floor(u / 5.) + 3.)), on = step(.42, run) * step(.18, h);\n' +
-            '  float inRow = smoothstep(.3, .36, fract(fy)) * (1. - smoothstep(.64, .7, fract(fy)));\n' +
-            '  totalEmissiveRadiance += uWin * on * inRow * side * step(6., vSyW.y) * (.55 + .9 * fract(h * 7.)); }');
+            '  float row = floor(fy), cl = floor(u), fo = floor(dot(vSyW.xz, vec2(n.x, n.z)) * .05) * 17., wu = fwidth(u), wy = fwidth(fy), f = fract(u);\n' +
+            /* Each window's edge is drawn a pixel soft, and where a lit window meets a dark one the two are blended across that
+               pixel. With hard edges, each frame (drawn a fraction of a pixel off from the last, for the steadying) saw a window's
+               edge as wholly lit or wholly dark, and the windows twinkled; so did their reflections in the water. Further off than
+               a pixel a window, they are their average. */
+            '  float cn = cl + (f > .5 ? 1. : -1.), h = h21(vec2(row, cl + fo)), hn = h21(vec2(row, cn + fo));\n' +
+            '  float b0 = step(.42, h21(vec2(row * 1.3, floor(cl / 5.) + 3.))) * step(.18, h) * (.55 + .9 * fract(h * 7.));\n' +
+            '  float b1 = step(.42, h21(vec2(row * 1.3, floor(cn / 5.) + 3.))) * step(.18, hn) * (.55 + .9 * fract(hn * 7.));\n' +
+            '  float lit = mix(b0, b1, f > .5 ? .5 * smoothstep(1. - wu, 1., f) : .5 * (1. - smoothstep(0., wu, f)));\n' +
+            '  lit = mix(lit, .476, smoothstep(.5, 1.5, wu));\n' +
+            '  float e = max(.03, wy), inRow = smoothstep(.33 - e, .33 + e, fract(fy)) * (1. - smoothstep(.67 - e, .67 + e, fract(fy)));\n' +
+            '  inRow = mix(inRow, .34, smoothstep(.35, .9, wy));\n' +
+            '  totalEmissiveRadiance += uWin * lit * inRow * side * step(6., vSyW.y); }');
       };
-      wallMat.customProgramCacheKey = () => 'sy-windows';
+      wallMat.customProgramCacheKey = () => 'sy-windows2';
       towerMat = { wall:wallMat, frame:std({ color:'#120e1a', roughness:.5, metalness:.4, envMapIntensity:.8 }), dark:std({ color:'#07050b', roughness:.7 }),
                    glass:std({ color:'#0a0812', roughness:.3, metalness:.75, envMapIntensity:1.1 }) };       // not a mirror: a mirror that small catches the sun for one frame at a time
       pal.win = win.uWin;
@@ -941,7 +993,7 @@ async function build(canvas, kind, dark){
     islet(128, -128, 22, 11, 2.2, 61);
     palm(1, 122, -126, 1.6, Math.PI + .2); palm(0, 134, -132, 1.8, 1.2);
     update = t => { pyr.rotation.y = t * 2 * Math.PI / 260; };
-    cams = { L:{ pos:[0, 7, 40], at:[10, 28, -200], fov:38 }, P:{ pos:[40, 7, 60], at:[66, 34, -200], fov:60 } };
+    cams = { L:{ pos:[0, 7, 40], at:[10, 28, -200], fov:38 }, P:{ pos:[40, 7, 60], at:[82, 34, -200], fov:60 } };      // (P: turned far enough right that a phone has most of the planet too, not half of it)
   }
 
   if (kind === 'street'){
@@ -962,6 +1014,10 @@ async function build(canvas, kind, dark){
     makeSea(2400, 1, STREET);
     if (sea.material.uniforms && sea.material.uniforms.uQuay) sea.material.uniforms.uQuay.value = GR.z0 - .15;      // past the model's far edge the ground is water
     await Promise.race([document.fonts ? document.fonts.load('700 64px Saira') : null, new Promise(r => setTimeout(r, 1500))]).catch(() => {});
+    /* the ground's two scans (tools/synth/ground.py). One that doesn't come leaves the flat grey in its place: smooth ground, but the scene still draws */
+    if (sea.material.uniforms && sea.material.uniforms.tAsph){ const u = sea.material.uniforms;
+      const scan = (n, slot) => new T.TextureLoader().loadAsync('/images/synth/ground-' + n + '.webp').then(t => { keep(t); t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.NoColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); t.needsUpdate = true; slot.value = t; }).catch(() => {});
+      await Promise.all([scan('asphalt', u.tAsph), scan('concrete', u.tConc)]); }
     const UI = '"Saira", "Arial Narrow", sans-serif', SCRIPT = '"Segoe Script", "Brush Script MT", "Snell Roundhand", "Apple Chancery", cursive';
     const PINK = '#ff3fa8', BLUE = '#3f8cff', V = (x, y, z) => new T.Vector3(x, y, z);
     const soft2 = glowTex(128, 128, [[0, 1], [.3, .5], [.62, .14], [1, 0]]);
@@ -1243,15 +1299,33 @@ async function build(canvas, kind, dark){
       for (let k = 0; k < 96; k++){ const u = (tr() + tr() + tr()) / 3 * 2 - 1, x = u * 150, near = Math.exp(-Math.pow(x / 62, 2));
         tl.push({ n:names[(tr() * 3) | 0], x, z:-478 - tr() * 44, s:(2.4 + near * 5.2 + tr() * 2.2) * (.7 + .6 * tr()), ry:((tr() * 4) | 0) * Math.PI / 2 + (tr() - .5) * .3, y:1.5 }); }
       towers(tl); }
-    /* ── where we stand: about where the model's own camera is (across the street from the buildings, well back), but lower than the
-       canopy, so its neon is seen from beneath, and turned less to the right: the sun, at the street's end, is then in the picture's
-       left, the cinema in its right, with the page's window between them. We stand in the plaza: its slabs are the picture's
-       bottom left, the bench in the sun's light on them. A wide screen sees the park's wall beyond the sun and the shop beyond the
-       cinema. A phone stands nearer and looks at the cinema. ── */
+    /* ── where we stand, and how much we take in. Always the one place: about where the model's own camera is (across the street
+       from the buildings, well back, in the plaza: its slabs are the picture's bottom left, the bench in the sun's light on them),
+       lower than the canopy, so its neon is seen from beneath. What changes with the shape of the screen is the lens, so that the two
+       things the picture is about are in it on every screen: the far city under the sun, at the street's end, on the left; the
+       cinema on the right. (The owner, 2026-11-23: "the cinema and distant city are the hero images, the video rental shop might be
+       partially visible but is mainly for wide screens".)
+         · 16 : 9 (FOV, YAW): the sun's edge at the picture's left edge, the cinema ending at its right, a sliver of the shop past it.
+         · Anything narrower, down to a phone: that same view from side to side, and more sky and more wet ground the taller the
+           screen. (It used to turn to the cinema and walk up to it as the screen narrowed: a tablet on its side lost half the sun, an
+           upright one and a phone lost the city altogether.) A phone takes in a little less from side to side (PHONE): the sun's
+           edge and the canopy's end are just cut, and the lens is no wider than looks right.
+         · Wider, up to LAP (a laptop's browser window, about 2.1 : 1): still that view from side to side, a little less of the sky and
+           of the foot (and looking up a touch, LAP_Y, or the street lamp's head would be off the top). So what stands in the page's
+           margins on a laptop is the sun and the cinema's neon, not the shop's wall.
+         · Wider than that the view opens out, mostly to the right, until at WIDE.a and beyond (the owner's own screen) the whole shop
+           is in it, and the park's wall beyond the sun.
+       These are fitted by eye to the model as it is: if the cinema moves or grows, YAW and FOV want looking at again. ── */
     const yaw = (px, pz, deg, y) => { const a = deg * Math.PI / 180; return [px + Math.sin(a) * 30, y, pz - Math.cos(a) * 30]; };      // a point 30 m off, that many degrees right of the street's line
-    const mc = (L.cam && L.cam.pos) || [-8.6, 3.7, 28], cx = mc[0], cz = mc[2] + .5, target = rings.length ? rings[0].c : [10.5, 4, -2.2];
-    cams = { L:{ pos:[cx, 2.5, cz], at:yaw(cx, cz, 14.5, 3.55), fov:25.5 }, W:{ pos:[cx, 2.5, cz], at:yaw(cx, cz, 17, 3.55), fov:25.5 },
-             P:{ pos:[cx + 5.5, 2.3, cz - 6], at:[target[0] - 2.2, 4.3, target[2] + .5], fov:54 } };
+    const mc = (L.cam && L.cam.pos) || [-8.6, 3.7, 28], cx = mc[0], cz = mc[2] + .5, EYE = [cx, 2.5, cz];
+    const AT_Y = 3.55, FOV = 25.5, YAW = 14.5, LAP = 2.1, LAP_Y = 4.02, WIDE = { a:2.78, yaw:17, fov:25.5 }, PHONE = .9;
+    const T0 = Math.tan(FOV * Math.PI / 360) * 16 / 9;                      // half the view from side to side at 16 : 9, as a tangent
+    const fovFor = (a, k) => 2 * Math.atan(T0 * k / a) * 180 / Math.PI;      // the lens that gives k of that view on a screen of shape a
+    look.cam = a => {
+      if (a >= LAP){ const t = clamp((a - LAP) / (WIDE.a - LAP), 0, 1); return { pos:EYE, at:yaw(cx, cz, lerp(YAW, WIDE.yaw, t), lerp(LAP_Y, AT_Y, t)), fov:lerp(fovFor(LAP, 1), WIDE.fov, t) }; }
+      const u = clamp((a - .5) / .25, 0, 1), v = clamp((a - 16 / 9) / (LAP - 16 / 9), 0, 1);      // u: 0 on a phone, 1 from an upright tablet on. v: 0 up to 16 : 9, 1 at a laptop's shape
+      return { pos:EYE, at:yaw(cx, cz, lerp(YAW - .3, YAW, u), lerp(AT_Y, LAP_Y, v)), fov:fovFor(a, lerp(PHONE, 1, u)) }; };
+    cams = { L:{ pos:EYE, at:yaw(cx, cz, YAW, AT_Y), fov:FOV } }; cams.P = cams.L;      // (16 : 9, for anything that asks; frame() goes by look.cam)
   }
 
   if (kind === 'shoreA' || kind === 'shoreB'){
@@ -1273,7 +1347,8 @@ async function build(canvas, kind, dark){
   const mainRT = keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, samples:SMALL ? 0 : 4, depthBuffer:true }));
   const LV = [2, 4, 8, 16].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false })));
   /* steadying (TAA_F), in every scene but the road (it moves too fast to fold frames together) and never in a still */
-  const TAA = !STILL && kind !== 'drive', TAA_K = .1;                   // each frame's share: about the last ten frames are in the picture
+  const TAA = !STILL && kind !== 'drive', TAA_K = .06;                  // each frame's share: about the last sixteen frames are in the picture, one whole round of the sixteen places (at a tenth, a lit window's edge still twinkled)
+  let jitX = 0, jitY = 0;                                     // this frame's shift, for the mirror to undo
   const histRT = TAA ? [0, 1].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false }))) : [];
   const halton = (i, b) => { let f = 1, r = 0; while (i > 0){ f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; };
   const JIT = Array.from({ length:16 }, (_, i) => [halton(i + 1, 2) - .5, halton(i + 1, 3) - .5]);
@@ -1292,13 +1367,16 @@ async function build(canvas, kind, dark){
     for (let i = LV.length - 1; i > 0; i--){ upM.uniforms.tSrc.value = LV[i].texture; upM.uniforms.uTx.value.set(.5 / LV[i].width, .5 / LV[i].height); blit(upM, LV[i - 1]); }
   };
 
-  /* ═══ the camera: one framing for a wide screen, one for a tall one, and in between ═══ */
+  /* ═══ the camera: one framing for a wide screen, one for a tall one, and in between; or, where a scene has to keep particular
+     things in the picture whatever the screen's shape (the street), its own account of where to stand for each shape (look.cam) ═══ */
   let W = 2, H = 2, viewX = 0;
   const frame = () => {
     const a = W / H, k = clamp((a - .56) / (1.6 - .56), 0, 1), L = cams.L, P = cams.P, Wc = cams.W || L, kw = cams.W ? clamp((a - 1.78) / (2.8 - 1.78), 0, 1) : 0;      // W: a framing for a very wide window, if the scene has one
-    const pos = i => lerp(lerp(P.pos[i], L.pos[i], k), Wc.pos[i], kw), at = i => lerp(lerp(P.at[i], L.at[i], k), Wc.at[i], kw);
+    const own = look.cam ? look.cam(a) : null;
+    const pos = i => own ? own.pos[i] : lerp(lerp(P.pos[i], L.pos[i], k), Wc.pos[i], kw), at = i => own ? own.at[i] : lerp(lerp(P.at[i], L.at[i], k), Wc.at[i], kw);
     camera.position.set(pos(0), pos(1), pos(2));
-    camera.fov = lerp(lerp(P.fov, L.fov, k), Wc.fov, kw); camera.aspect = a;
+    camera.fov = own ? own.fov : lerp(lerp(P.fov, L.fov, k), Wc.fov, kw); camera.aspect = a;
+    if (sea && sea.material.uniforms && sea.material.uniforms.uCot) sea.material.uniforms.uCot.value = 1 / Math.tan(camera.fov * Math.PI / 360);
     viewX = look.shift ? -Math.round(look.shift(a) * W) : 0;    // a scene can move its picture sideways (look.shift: a fraction of the width, to the right)
     if (viewX) camera.setViewOffset(W, H, viewX, 0, W, H); else { camera.clearViewOffset(); camera.updateProjectionMatrix(); }
     camera.lookAt(at(0), at(1), at(2));
@@ -1332,13 +1410,13 @@ async function build(canvas, kind, dark){
     W = w; H = h; renderer.setSize(w, h, false);
     mainRT.setSize(w, h); histRT.forEach(rt => rt.setSize(w, h)); taaN = 0;
     LV.forEach((rt, i) => rt.setSize(Math.max(1, Math.round(w / Math.pow(2, i + 1))), Math.max(1, Math.round(h / Math.pow(2, i + 1)))));
-    if (sea && sea.getRenderTarget) sea.getRenderTarget().setSize(Math.max(64, Math.round(w * .5)), Math.max(64, Math.round(h * .5)));
+    if (sea && sea.getRenderTarget){ const rw = Math.max(64, Math.round(w * .5)), rh = Math.max(64, Math.round(h * .5)); sea.getRenderTarget().setSize(rw, rh); if (sea.material.uniforms.uRT) sea.material.uniforms.uRT.value.set(rw, rh); }
     frame(); placeSun();
   };
   const render = t => {
     renderer.info.reset();
     frame(); update(t); camera.updateMatrixWorld();
-    if (TAA){ const j = JIT[taaN % 16]; camera.setViewOffset(W, H, viewX + j[0], j[1], W, H); }      // a fraction of a pixel off from the last frame
+    if (TAA){ const j = JIT[taaN % 16]; jitX = j[0]; jitY = j[1]; camera.setViewOffset(W, H, viewX + j[0], j[1], W, H); }      // a fraction of a pixel off from the last frame
     placeSun();
     sunU.uT.value = STILL ? 0 : (t * SUN_RISE) % 1; palmU.value = t % 3600;             // the gaps in the sun rise (the owner asked): slowly, and not in the still pictures
     if (sea && sea.material.uniforms && sea.material.uniforms.uTime) sea.material.uniforms.uTime.value = t % 1000;

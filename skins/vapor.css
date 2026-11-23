@@ -536,6 +536,13 @@ html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid::before{content:"";po
 html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid :is(.dayhead .dow,.tmark){background:none}
 html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid .tmark{padding:0;right:6px}
 html.vw-next[data-skin="vapor"][data-pg="timetable"] .grid :is(.dayhead.today,.dayhead.focus) .dow{background:var(--dither)}
+/* Room at the sides. On a laptop the timetable's windows ran the whole width of the screen, over the scene's head and the page's
+   word: neither could be seen. From 1280 px wide they stop short of each edge by what those two need to stand in (about a fifth
+   of the screen's height: they are sized by it; never under 128 px nor over 200). A screen wide enough for the full 1400 px and
+   that room besides is as it was; so is anything narrower than 1280 px, where the timetable needs the whole width. */
+@media (min-width:1280px){
+  html.vw-next[data-skin="vapor"][data-pg="timetable"] .wrap{max-width:min(1400px,calc(100% - 2*clamp(128px,22vh,200px) + 40px))}
+}
 
 /* ── Games and Revision: a window a section. Its heading is the title bar (anything else in the heading's row, the year's
       buttons or a link, goes under it as a toolbar); the tiles are its body ── */

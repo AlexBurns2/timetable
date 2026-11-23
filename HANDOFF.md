@@ -4351,3 +4351,45 @@ The owner (2026-11-23): "make the new cinema scene the homepage and the road see
 - Home's page no longer moves left on a wide screen (that was to clear the road). Games is not moved: its page is wider than Home's and the old rule assumed Home's width. The road scene still sets its own picture to the right (`look.shift`).
 - Checked: Home, Games and Calendar load their new scenes with no errors at 1920 x 1080.
 
+## 8.175 Synthwave's street: the road is rough wet asphalt, the plaza real concrete (version `20261121r`, `CACHE_VERSION` v96)
+
+The owner (2026-11-23), with seven photographs (four of wet asphalt at night, three of wet concrete): "I think the current reflections are too clean and perfect, it looks more like water or a mirror. Could you try to give the road more of a rough look like real wet asphalt (first four images). The concrete reflections can be a bit cleaner, you could maybe get a stock photo of concrete so it looks like it has real texture." Not committed by Claude.
+
+- **What changed is one shader** (`STREET` in `fx/synth.js`) and what feeds it. The ground is still one mirror; its picture is no longer shown as it is.
+- **Streaks:** the mirror's picture is smeared down the screen from its own mipmaps (`makeSea` switches them on for this scene only; the other scenes' water is untouched). Eleven samples in a line (seven on a phone), strongest in the middle with a long tail. The length follows how rough the ground is: up to a fifth of the screen's height either way on the road, about a fiftieth on the concrete, next to nothing in a puddle or on the bay. It is squeezed so it never crosses the horizon (`uCot`, set in `frame()`).
+- **Grain:** each pixel takes its samples from a slightly different height (a fixed scatter from `gl_FragCoord`, the same every frame), so a streak is grainy and a small lamp gives a streak instead of six copies of itself (the dashes noted in 8.173 are gone).
+- **Real surfaces:** two textures made by the new `tools/synth/ground.py` from Poly Haven's CC0 scans (logged in `PHOTO-LOG.md`, credited in About → 3D credits): `images/synth/ground-asphalt.webp` (the road's grain) and `images/synth/ground-concrete.webp` (the plaza's tone, gloss and dips). 200 KB together, fetched only when the street is drawn live. If one fails to load the ground is smooth and the scene still draws.
+- **The road:** darker, no mirror puddles any more; pores give little back, a few grains glint; rougher and wetter patches some metres across.
+- **The plaza:** the same slabs, joints and bollards as 8.173. Its reflections are softened but still readable (the sun, the city, the bench), with the concrete's own marks and patches of standing water.
+- **A trap found on the way:** the first version looked like choppy water. The cause was roughness changing sharply every half metre (a noisy texture multiplied up and clipped). Roughness now changes slowly; the README and the comment over `STREET` say so.
+- Stills: `street-night` and `street-night-p` made again.
+- Checked: bare at 3440 x 1235, 2560 x 1305, 1920 x 1080, 1536 x 864, 1024 x 768, 820 x 1180 and a phone; behind Home at 1920 and 3440; five live frames compared (road and plaza hold still; only the sun's bands and the fronds move, as before); every Synthwave scene, a Vaporwave page, Plain and a non-moderator page load with no errors.
+- Not measured on real hardware: the cost. The shader takes 11 samples of the mirror where it took 6, plus four small texture reads, and the mirror's mipmaps are remade each frame (at half the screen's size). Checks here ran in software rendering, which says nothing useful about a GPU.
+
+## 8.176 Synthwave: the water's flicker (version `20261121s`, `CACHE_VERSION` v97)
+
+The owner (2026-11-23): "Also theres still a lot of flickering where ever theres water". Not committed by Claude.
+
+- **Measured first.** Forty consecutive frames of each scene on a steady thirtieth-of-a-second clock; each pixel's average change from one frame to the next. Freezing the scene's time changed almost nothing in the water, so it was flicker and not the swell. It sat along the waterline, in the reflections of small bright things (lit windows), and on the windows themselves.
+- **Three causes, three fixes** (all in `fx/synth.js`; the README has them as traps):
+  1. The water's long swell was finer than a pixel towards the horizon, so it was noise that changed every frame. It now fades out by its own footprint, like the finer ripples already did (`SEA`'s `a1`; the same for the street's bay in `STREET`). Far water is calmer; near water is as it was.
+  2. The mirror's picture was drawn with each frame's fraction-of-a-pixel shift (the steadying's). At half the screen's size that moved every lit window on and off its pixels. The mirror is now drawn from the same place every frame (`makeSea`).
+  3. The towers' windows had hard shader-drawn edges, which the steadying turns into twinkle. Their edges are now a pixel soft and blend into the neighbouring window (`towers`).
+- **Steadying:** `TAA_K` .1 to .06. Measured cost: 1 to 2 per cent less crisp overall, about 5 per cent on what moves (fronds, the sun's bands, the near water).
+- **Result** (average change per frame in levels of 255, and the share of pixels changing by more than 4 a frame):
+
+  | where | before | after |
+  |---|---|---|
+  | bay scene, the water | 0.61, 3.1% | 0.12, 0.0% |
+  | bay scene, the towers | 0.38, 1.5% | 0.21, 0.1% |
+  | street, the bay | 0.85, 4.9% | 0.16, 0.4% |
+  | street, the far city | 0.43, 2.1% | 0.27, 0.9% |
+  | pyramid scene, the water | 0.45, 1.7% | 0.25, 0.6% (the turning pyramid's reflection is real motion) |
+  | shore scene, the water | 0.11, 0.0% | 0.05, 0.0% |
+
+- **Tried and left out:** softening the water's reflections (reading them from the mirror's mipmaps). With fixes 1 and 2 in, it added almost nothing (0.18 to 0.15), so the reflections stay as crisp as they were.
+- **What is left:** the far city's windows in the street scene still twinkle a little (they are one or two pixels each), and the stars a very little.
+- Stills: bay, pyramid, shore and street made again (the far water is calmer in them; window edges softer). The road's stills are unchanged.
+- Checked: all five scenes draw with no errors; bay and pyramid compared by eye with before (same pictures).
+- **Not seen on a real screen:** all of this was measured in software rendering at 1280 x 720. The causes don't depend on the graphics card, but how the result looks at the owner's size and refresh rate is for them to say.
+

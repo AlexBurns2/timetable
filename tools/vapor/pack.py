@@ -21,6 +21,14 @@ def feather(im, m):
     a[..., 3] = al * k[None, :]
     return Image.fromarray((a + .5).astype(np.uint8), 'RGBA')
 
+def reach(im, m):
+    # How far the thing itself (not its shadow: where the picture is more than about six tenths opaque) reaches left and right of its
+    # foot, and above it, in the plate's pixels. fx/vapor.js draws a group small enough to stand whole in a narrow margin by these.
+    # (tools/vapor/reach.py measures the same from pictures already shipped.)
+    al = np.asarray(im)[..., 3]; cols = np.where((al > 150).sum(0) > 3)[0]; rows = np.where((al > 150).sum(1) > 3)[0]
+    if not len(cols) or not len(rows): return {}
+    return {'sl': int(m['ax'] - (m['x'] + cols.min())), 'sr': int(m['x'] + cols.max() - m['ax']), 'st': int(m['ay'] - (m['y'] + rows.min()))}
+
 meta = {}
 for f in sorted(glob.glob(os.path.join(OUT, 'vw-*.png'))):
     n = os.path.basename(f)[:-4]; parts = n.split('-')            # vw-<scene>-<part>-<mode>
@@ -30,6 +38,8 @@ for f in sorted(glob.glob(os.path.join(OUT, 'vw-*.png'))):
     im = Image.open(f).convert('RGBA')
     if m and 'x' in m and part not in Q: im = feather(im, m)
     im.save(os.path.join(FIN, n + '.webp'), quality=Q.get(part, 90), alpha_quality=88, method=6)
-    if m: meta.setdefault(sc, {}).setdefault(mode, {})[part] = {k: m[k] for k in ('W', 'H', 'hy', 'x', 'y', 'w', 'h', 'ax', 'ay') if k in m}
+    if m:
+        meta.setdefault(sc, {}).setdefault(mode, {})[part] = e = {k: m[k] for k in ('W', 'H', 'hy', 'x', 'y', 'w', 'h', 'ax', 'ay') if k in m}
+        if 'ax' in m and 'x' in m: e.update(reach(im, m))
 open(os.path.join(FIN, 'meta.js'), 'w').write(json.dumps(meta, separators=(',', ':')))
 for f in sorted(glob.glob(os.path.join(FIN, 'vw-*.webp'))): print(f'{os.path.basename(f):32s} {os.path.getsize(f) // 1024:5d} KB')

@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════
    Vaporwave's messages: what they say, and when.
 
-   Now and then a Windows 95 message box turns up in the margin beside
-   the page. Rarely: three or four in a day for somebody who uses the
+   Now and then a Windows 95 message box turns up at the side of the
+   screen, beside the page (never in the middle of it). Rarely: three or four in a day for somebody who uses the
    site a lot; one, perhaps, for somebody who looks in once or twice.
    Most are found waiting when you come back after a while away, as if
    they had come while you were gone; a few arrive in front of you.

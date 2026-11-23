@@ -8,7 +8,10 @@
    usage (Node 22 or later; the site served locally, e.g. python -m http.server 3000 from the repo root):
      node tools/synth/stills.mjs [--base http://localhost:3000] [--out images/synth] [--only drive,bay]
                                  [--t 40] [--quality 70] [--chrome <path to chrome>] [--port 9333]
-   Each scene gives two files: <scene>-night (1600 x 900) and <scene>-night-p (a phone, 430 x 932 at 1.5x). Synthwave is dark only. */
+   Each scene gives two files: <scene>-night (1600 x 900) and <scene>-night-p (a phone, 430 x 932 at 1.5x). The street gives a
+   third, street-night-m (1200 x 900, a tablet on its side): cut to that shape, its 16 : 9 picture would lose the edge of the sun
+   and the end of the cinema, which are what it is a picture of. Synthwave is dark only.
+   (skins/synth.css chooses between them by the screen's shape: -p for anything upright, -m up to 13 : 8.) */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path';
 
@@ -22,7 +25,7 @@ const CHROME = arg('chrome', process.env.CHROME || (process.platform === 'win32'
   : process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome'));
 /* the scenes, and a page that shows each (fx/synth.js PAGE) */
 const SCENES = [['drive', '/games.html'], ['bay', '/'], ['pyramid', '/calendar.html'], ['street', '/home.html'], ['shore-b', '/notes.html']];
-const SIZES = [{ w:1600, h:900, dpr:1, suf:'' }, { w:430, h:932, dpr:1.5, suf:'-p' }];
+const SIZES = [{ w:1600, h:900, dpr:1, suf:'' }, { w:430, h:932, dpr:1.5, suf:'-p' }, { w:1200, h:900, dpr:1, suf:'-m', only:['street'] }];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 fs.mkdirSync(OUT, { recursive:true });
@@ -46,6 +49,7 @@ let failed = 0;
 for (const [name, url] of SCENES){
   if (ONLY && !ONLY.includes(name)) continue;
   for (const [mode, label] of [['dark', 'night']]) for (const s of SIZES){
+    if (s.only && !s.only.includes(name)) continue;
     const c = await tab();
     await c.send('Emulation.setDeviceMetricsOverride', { width:s.w, height:s.h, deviceScaleFactor:s.dpr, mobile:s.w < 700 });
     if (s.w < 700) await c.send('Emulation.setTouchEmulationEnabled', { enabled:true });

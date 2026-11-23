@@ -328,7 +328,11 @@ FX.scenes.vapor = {
    shown here as pictures, over a real sky (a Poly Haven photograph,
    tinted pastel) that drifts very slowly. Light mode: pastel daylight.
    Dark: the same places at a pastel twilight. What there is to see
-   stands out at the sides of the page's column (measured, not guessed);
+   stands out at the sides of the page's column (measured, not guessed):
+   at the size it was rendered where the margin has room for it, and
+   smaller (about its foot, so it still stands where it stood) where a
+   laptop's margin has not, so that it is seen whole and not half under
+   the page's window or off the screen's edge;
    a phone gets the whole picture framed for a tall screen. Drawn here in
    code: only the soft sun and the haze at the horizon. (The Windows 95
    windows are the messages, further down: real windows, not pictures.)
@@ -349,18 +353,20 @@ FX.scenes.vapor = {
 const PAGE_N = { timetable:'tt', home:'home', calendar:'cal', notes:'notes', games:'planets', finder:'planets',
                  free:'stairs', revision:'stairs', resources:'solids', mahjong:'solids' };
 /* each scene's pictures: the plate's size and horizon; each piece's crop (x, y, w, h) and its foot or centre (ax, ay), in plate pixels, light and dark */
-const META = /*META*/{"cal":{"d":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1056,"y":704,"w":1824,"h":496,"ax":2448,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1454,"y":704,"w":1426,"h":496,"ax":2448,"ay":1080}}},"home":{"d":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2811,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1339,"y":464,"w":1541,"h":736,"ax":2534,"ay":1116}},"l":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":1992,"h":1002,"ax":346,"ay":1116},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1401,"y":464,"w":1479,"h":736,"ax":2534,"ay":1116}}},"notes":{"d":{"phone":{"W":900,"H":1600,"hy":0.62}},"l":{"phone":{"W":900,"H":1600,"hy":0.62}}},"planets":{"d":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}},"l":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}}},"solids":{"d":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1887,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1731,"y":732,"w":1149,"h":468,"ax":2534,"ay":1080}},"l":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1570,"h":437,"ax":346,"ay":1080},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1780,"y":732,"w":1100,"h":468,"ax":2534,"ay":1080}}},"stairs":{"d":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":2176,"y":321,"w":384,"h":879,"ax":2477,"ay":1080}},"l":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":2176,"y":321,"w":384,"h":879,"ax":2477,"ay":1080}}},"tt":{"d":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1641,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}},"l":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1336,"h":618,"ax":490,"ay":912},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}}}};
+const META = /*META*/{"cal":{"d":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1056,"y":704,"w":1824,"h":496,"ax":2448,"ay":1080,"sl":192,"sr":213,"st":367}},"l":{"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1454,"y":704,"w":1426,"h":496,"ax":2448,"ay":1080,"sl":192,"sr":213,"st":367}}},"home":{"d":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":2811,"h":1002,"ax":346,"ay":1116,"sl":166,"sr":154,"st":909},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1339,"y":464,"w":1541,"h":736,"ax":2534,"ay":1116,"sl":150,"sr":165,"st":643}},"l":{"left":{"W":2880,"H":1200,"hy":0.63,"x":0,"y":198,"w":1992,"h":1002,"ax":346,"ay":1116,"sl":166,"sr":154,"st":909},"phone":{"W":900,"H":1600,"hy":0.63},"plate":{"W":2880,"H":1200,"hy":0.63},"platew":{"W":5280,"H":1200,"hy":0.63},"right":{"W":2880,"H":1200,"hy":0.63,"x":1401,"y":464,"w":1479,"h":736,"ax":2534,"ay":1116,"sl":150,"sr":165,"st":643}}},"notes":{"d":{"phone":{"W":900,"H":1600,"hy":0.62}},"l":{"phone":{"W":900,"H":1600,"hy":0.62}}},"planets":{"d":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288,"sl":87,"sr":83,"st":83},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408,"sl":517,"sr":541,"st":254},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}},"l":{"moon":{"W":2880,"H":1200,"hy":0.8,"x":366,"y":197,"w":188,"h":181,"ax":461,"ay":288,"sl":87,"sr":83,"st":83},"phone":{"W":900,"H":1600,"hy":0.8},"planet":{"W":2880,"H":1200,"hy":0.8,"x":1426,"y":145,"w":1089,"h":524,"ax":1958,"ay":408,"sl":517,"sr":541,"st":254},"plate":{"W":2880,"H":1200,"hy":0.8},"platew":{"W":5280,"H":1200,"hy":0.8}}},"solids":{"d":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1887,"h":437,"ax":346,"ay":1080,"sl":178,"sr":166,"st":309},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1731,"y":732,"w":1149,"h":468,"ax":2534,"ay":1080,"sl":244,"sr":269,"st":337}},"l":{"left":{"W":2880,"H":1200,"hy":0.62,"x":0,"y":763,"w":1570,"h":437,"ax":346,"ay":1080,"sl":178,"sr":166,"st":309},"phone":{"W":900,"H":1600,"hy":0.62},"plate":{"W":2880,"H":1200,"hy":0.62},"platew":{"W":5280,"H":1200,"hy":0.62},"right":{"W":2880,"H":1200,"hy":0.62,"x":1780,"y":732,"w":1100,"h":468,"ax":2534,"ay":1080,"sl":244,"sr":269,"st":337}}},"stairs":{"d":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":2176,"y":321,"w":384,"h":879,"ax":2477,"ay":1080,"sl":293,"sr":73,"st":751}},"l":{"phone":{"W":900,"H":1600,"hy":0.7},"plate":{"W":2880,"H":1200,"hy":0.7},"right":{"W":2880,"H":1200,"hy":0.7,"x":2176,"y":321,"w":384,"h":879,"ax":2477,"ay":1080,"sl":293,"sr":73,"st":751}}},"tt":{"d":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1641,"h":618,"ax":490,"ay":912,"sl":107,"sr":109,"st":321},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}},"l":{"left":{"W":2880,"H":1200,"hy":0.6,"x":0,"y":582,"w":1336,"h":618,"ax":490,"ay":912,"sl":107,"sr":109,"st":321},"phone":{"W":900,"H":1600,"hy":0.6},"plate":{"W":2880,"H":1200,"hy":0.6},"platew":{"W":5280,"H":1200,"hy":0.6}}}};
 /* the scenes' own arrangements: where the sun is; the side the scene fills (busy: the messages keep to the other); a floor or a picture borrowed
    (base: another scene's plate; panel: a picture laid in the left margin); floating things (each bobs), by the group they belong to or a fraction of the width */
 /* kw: about how wide each group's own thing is (not its shadow), as a fraction of the screen's height, so the messages can keep off it.
-   A floating thing's place: a fraction of the width, a group's name, or { s, dx, dy }: the margin (0 left, 1 right) and a nudge from its middle. */
+   A floating thing's place: a fraction of the width, a group's name, or { s, dx, dy }: the margin (0 left, 1 right) and a nudge from its middle.
+   core: the floating thing the others hang about, and how wide it is itself in the plate's pixels (the planet's ball, not its rings): in a
+   narrow margin it is the one made to fit, and the rest keep their places about it. */
 const ARR = {
   tt:     { sun:'l', busy:'l', floats:[], kw:{ left:.2 } },     /* palms were here, out for now (the owner found them too much): palms:[{ n:'venice', s:'l', dx:-.1, h:.95 }, { n:'canary', s:'r', dx:.06, h:.6, flip:true }] */
   cal:    { sun:'r', busy:'r', floats:[], kw:{ right:.3 } },
   notes:  { sun:'r', busy:'r', base:'cal', panel:'paint', panelSide:'r', floats:[] },
   home:   { moon:true, floats:[], kw:{ left:.16, right:.14 }, clear:'right' },      /* clear: the group that shares its margin with the page's word, and stands out past it (see build) */
   stairs: { busy:'r', cloudFloor:true, floats:[], kw:{ right:.34 } },
-  planets:{ busy:'r', floats:[['moon', { s:1, dx:.2, dy:-.13 }, 12], ['planet', { s:1, dx:0 }, 0]] },
+  planets:{ busy:'r', floats:[['moon', { s:1, dx:.2, dy:-.13 }, 12], ['planet', { s:1, dx:0 }, 0]], core:['planet', 492] },
   solids: { busy:'r', floats:[], kw:{ left:.17, right:.24 } }
 };
 const IMV = FX.V ? '?v=' + FX.V : '';
@@ -374,6 +380,16 @@ let gen = 0;
 const ok = i => !!(i && i.complete && i.naturalWidth > 0);
 const rgba = (rgb, a) => 'rgba(' + rgb + ',' + a + ')';
 const canvas2 = (w, h) => { const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.ceil(w)); cv.height = Math.max(1, Math.ceil(h)); return cv; };
+/* the page's column, in the page's own pixels: its box (l, r), and where its windows begin (il, ir: inside its padding, unless the
+   column is itself the window, with a ground of its own) */
+const wrapBox = () => { const w = document.querySelector('.wrap'); if (!w || !w.offsetWidth) return null;
+  const b = w.getBoundingClientRect(); let il = b.left, ir = b.right;
+  try { const cs = getComputedStyle(w), bg = cs.backgroundColor || '';
+    if (cs.backgroundImage === 'none' && (bg === 'transparent' || /,\s*0\)$/.test(bg))){ il += parseFloat(cs.paddingLeft) || 0; ir -= parseFloat(cs.paddingRight) || 0; } } catch {}
+  return { l:b.left, r:b.right, il, ir }; };
+/* A thing in a margin too narrow for it is drawn smaller until it stands whole there, down to this share of its size. (Smaller than
+   that it is a toy: it stays its own size, at the window's edge, as it used to on every narrow screen.) */
+const FIT_MIN = .42;
 
 /* the student's first name the DOS way (upper case, eight letters at most, else six and ~1), for the Explorer window.
    Read from what Home greets you with; only ever drawn here, never kept or sent anywhere. */
@@ -413,14 +429,17 @@ function makeNext(canvas, env){
 
   /* ── where the page's column is (canvas px) ── */
   let col = null, colAt = -1e9;
+  /* l, r: the column's own box. il, ir: where its windows begin. On a page that is one window these are the same; on a page of
+     several (Home, the timetable, Games) the windows stand inside the column's padding, and that much more of the margin is free.
+     What is laid out on a roomy screen goes by the box, as it always has; what has to fit a narrow margin goes by the windows. */
   const measure = () => {
-    const cw = canvas.clientWidth || innerWidth, s = W/cw, w = document.querySelector('.wrap');
-    let l, r;
-    if (w && w.offsetWidth){ const b = w.getBoundingClientRect(); l = b.left; r = b.right; }
-    else { const mw = Math.min(cw, scene === 'tt' ? 1440 : 1040); l = (cw - mw)/2; r = cw - l; }
-    return { l:Math.max(0, l*s), r:Math.min(W, r*s) };
+    const cw = canvas.clientWidth || innerWidth, s = W/cw, b = wrapBox();
+    let l, r, il, ir;
+    if (b){ l = b.l; r = b.r; il = b.il; ir = b.ir; }
+    else { const mw = Math.min(cw, scene === 'tt' ? 1440 : 1040); l = il = (cw - mw)/2; r = ir = cw - l; }
+    return { l:Math.max(0, l*s), r:Math.min(W, r*s), il:Math.max(0, il*s), ir:Math.min(W, ir*s) };
   };
-  const recheck = () => { const m = measure(); if (!col || Math.abs(m.l - col.l) > 2 || Math.abs(m.r - col.r) > 2){ col = null; if (FX.refresh) FX.refresh(); } };
+  const recheck = () => { const m = measure(); if (!col || Math.abs(m.l - col.l) > 2 || Math.abs(m.r - col.r) > 2 || Math.abs(m.il - col.il) > 2){ col = null; if (FX.refresh) FX.refresh(); } };
   if (document.readyState !== 'complete') addEventListener('load', recheck, { once:true });
   const rt = [setTimeout(recheck, 1400), setTimeout(recheck, 4000)];
   const px = () => W/(canvas.clientWidth || innerWidth);
@@ -498,7 +517,7 @@ function makeNext(canvas, env){
     const pm = meta('plate', dk) || { W:2880, H:1200, hy:.6 }, s = H/pm.H; return { tall:false, s, ox:W/2 - pm.W*s/2, oy:0, hy:pm.hy*H, pm };
   };
   const build = dk => {
-    const L = lay, key = [W, H, dk, Math.round(col.l), Math.round(col.r), gen].join();
+    const L = lay, key = [W, H, dk, Math.round(col.l), Math.round(col.r), Math.round(col.il), gen].join();
     if (key === fkey && front.width === W && front.height === H) return;
     fkey = key; front.width = W; front.height = H; const g = front.getContext('2d');
     if (L.tall){ const im = piece('phone', dk); if (ok(im)) g.drawImage(im, L.ox, L.oy, 900*L.s, 1600*L.s); return; }
@@ -507,12 +526,22 @@ function makeNext(canvas, env){
     if (ok(pl)){ const w = pmm.W*L.s, k = Math.max(1, W/w); g.drawImage(pl, W/2 - w*k/2, L.hy - pmm.hy*pmm.H*L.s*k, w*k, pmm.H*L.s*k); }
     keep = [];
     for (const p of ['left', 'right']){ const m = meta(p, dk), im = m && piece(p, dk); if (!m || !ok(im)) continue;
-      const kw = ((A.kw || {})[p] || .2)*U, wp = A.clear === p ? wordPlan() : null; let ax = side(m.ax/m.W, U);
-      if (wp) ax = Math.min(W - kw*.75, Math.max(ax, wp.x0 + wp.w + kw*.5 + U*.02));        /* past the word, which is beside the window (never off the screen: the word gives way instead, see wordPlan) */
-      g.drawImage(im, ax - (m.ax - m.x)*L.s, m.y*L.s, m.w*L.s, m.h*L.s);
-      keep.push([ax - kw/2, m.y*L.s, kw, (m.ay - m.y)*L.s + U*.03]); }
+      const kw = ((A.kw || {})[p] || .2)*U, wp = A.clear === p ? wordPlan() : null, s = L.s, lf = p === 'left'; let ax = side(m.ax/m.W, U), f = 1;
+      if (wp && !wp.over) ax = Math.min(W - kw*.75, Math.max(ax, wp.x0 + wp.w + kw*.5 + U*.02));        /* past the word, which is beside the window (never off the screen: the word gives way instead, see wordPlan) */
+      else {
+        /* Does it stand whole in its margin, where it is? (sl, sr, st: how far the thing itself, not its shadow, reaches left and right of
+           its foot and above it, measured from its picture: tools/vapor/pack.py.) If not, smaller, in the middle of the margin. Under the
+           page's word (Home, where a narrow margin holds both) it also ends below the word. */
+        const sl = (m.sl != null ? m.sl*s : kw/2), sr = (m.sr != null ? m.sr*s : kw/2), st = (m.st != null ? m.st : m.ay - m.y)*s, gap = U*.02;
+        const room = lf ? col.il : W - col.ir, edge = lf ? 0 : col.ir, fh = wp ? (m.ay*s - (wp.y0 + wp.h + gap))/st : 1;
+        if (!(ax - sl >= edge + gap && ax + sr <= edge + room - gap && fh >= 1)){ const k = Math.min(1, (room - 2*gap)/(sl + sr), fh);
+          if (k >= FIT_MIN){ f = k; ax = edge + (room - (sl + sr)*f)/2 + sl*f; } }
+      }
+      const top = m.ay*s - (m.ay - m.y)*s*f;
+      g.drawImage(im, ax - (m.ax - m.x)*s*f, top, m.w*s*f, m.h*s*f);
+      keep.push([ax - kw*f/2, top, kw*f, (m.ay - m.y)*s*f + U*.03]); }
     if (A.panel){ const im = pic('vw-' + scene + '-' + A.panel + '-' + (dk ? 'd' : 'l')), right = A.panelSide === 'r', room = (right ? W - col.r : col.l) - U*.05;
-      if (ok(im) && room >= 220*px()){ const w = Math.min(room, U*.5), h = w*im.naturalHeight/im.naturalWidth, x0 = right ? col.r + (W - col.r - w)/2 : (col.l - w)/2, y0 = Math.max(H*.08, L.hy*.5 - h*.55);
+      if (ok(im) && room >= 150*px()){ const w = Math.min(room, U*.5), h = w*im.naturalHeight/im.naturalWidth, x0 = right ? col.r + (W - col.r - w)/2 : (col.l - w)/2, y0 = Math.max(H*.08, L.hy*.5 - h*.55);
         g.save(); g.shadowColor = dk ? 'rgba(12,14,40,.45)' : 'rgba(70,44,130,.26)'; g.shadowBlur = U*.03; g.shadowOffsetX = U*.012; g.shadowOffsetY = U*.02;
         g.drawImage(im, x0, y0, w, h); g.restore(); keep.push([x0, y0, w, h]); } }
   };
@@ -536,17 +565,28 @@ function makeNext(canvas, env){
     q.drawImage(im, 0, yb*sc, im.naturalWidth, hb*sc, 0, 0, w, hb); q.globalCompositeOperation = 'source-in'; q.fillStyle = tint; q.fillRect(0, 0, w, hb);
     g.globalAlpha = .45; g.drawImage(tintCv, gx, yb); g.globalAlpha = 1; };
   /* where the word goes, and how big: worked out apart from drawing it, because a group that shares its margin stands clear of it (build) */
+  const WORD_MIN = 84;                              // (the page's own pixels) a margin narrower than this has no word: it could not be read
   const wordPlan = () => { const sd = PL.word; if (!sd || !lay || lay.tall || !col) return null;
     const im = pic('vw-word-' + page); if (!ok(im)) return null;
-    const room = sd === 'l' ? col.l : W - col.r; if (room < 170*px()) return null;
+    const lf = sd === 'l', room = lf ? col.il : W - col.ir; if (room < WORD_MIN*px()) return null;
     /* Every page's word is set in the same size of type: the pictures are all made at 220 px a character, and all shown at one scale, which
        the screen sets (about an eighth of its height a character, less if the longest word, five characters, would not fit). So a short
-       word is shorter, not bigger. Only a margin too narrow for it makes one smaller. */
-    const top = H*.09; let k = Math.min(U*.135, H*.72/5.27)/220; if (im.naturalWidth*k > room*.94) k = room*.94/im.naturalWidth;
-    const w = Math.round(im.naturalWidth*k), h = Math.round(im.naturalHeight*k);
-    if (A.clear && room < w + ((A.kw || {})[A.clear] || .2)*U*1.25 + U*.07) return null;      /* a margin too narrow for the word and the thing in it: the thing stays, the word goes */
-    const x0 = Math.round(sd === 'l' ? Math.max(side(0, U), col.l - U*.24) - w/2 : sd === 'r' ? Math.min(side(1, U), col.r + U*.24) - w/2 : col.r + U*.03), y0 = Math.round(top);
-    return { im, k, w, h, x0, y0 }; };
+       word is shorter, not bigger. Only a margin too narrow for it makes one smaller. (It used to be left out of any margin under 170 px:
+       every page on a 1280 px laptop, and Home and the timetable on most laptops. The owner: "make sure the katakana is visible".) */
+    const top = H*.09; let k = Math.min(U*.135, H*.72/5.27)/220; if (im.naturalWidth*k > room*.92) k = room*.92/im.naturalWidth;
+    const w = Math.round(im.naturalWidth*k), h = Math.round(im.naturalHeight*k), y0 = Math.round(top);
+    /* Home: the word shares its margin with a column. Where there is room it stands beside the window and the column moves out past it.
+       Where there isn't, it stands over the column, in the middle of the margin, and the column (the broken one: a stump) is drawn
+       short enough to end below it (build). Only if that would make a toy of the column does the word go. */
+    let over = false;
+    if (A.clear && room < w + ((A.kw || {})[A.clear] || .2)*U*1.25 + U*.07){ const m = meta(A.clear, e.dark); if (!m) return null;
+      if ((m.ay*lay.s - (y0 + h + U*.02))/((m.st != null ? m.st : m.ay - m.y)*lay.s) < FIT_MIN) return null; over = true; }
+    /* where: on a roomy screen beside the window (a quarter of the height off it, or hard by it on Home), as it always was; in a
+       narrow margin, in the middle of it; never off the screen nor under the window */
+    let cx = lf ? Math.max(room/2, col.l - U*.24) : sd === 'r' || over ? Math.min(W - room/2, col.r + U*.24) : col.r + U*.03 + w/2;
+    const pad = Math.max(0, Math.min(U*.012, (room - w)/2));
+    cx = lf ? Math.max(w/2 + pad, Math.min(cx, col.il - w/2 - pad)) : Math.min(W - w/2 - pad, Math.max(cx, col.ir + w/2 + pad));
+    return { im, k, w, h, x0:Math.round(cx - w/2), y0, over }; };
   const word = (t, dk) => { wordBox = null; const wp = wordPlan(); if (!wp) return;
     const im = wp.im, k = wp.k, w = wp.w, h = wp.h, x0 = wp.x0, y0 = wp.y0;
     const G = 220*k, pad = Math.ceil(G*.2);                                   // a character's size on the screen; room either side for a slipped row
@@ -572,11 +612,23 @@ function makeNext(canvas, env){
   const stage = () => { const k = px(), all = keep.concat(fkeep, wordBox ? [wordBox] : []);
     FX.vwStage = { keep:all.map(r => [r[0]/k, r[1]/k, r[2]/k, r[3]/k]), hy:lay.hy/k, tall:!!lay.tall }; };
   const floats = (t, dk) => { fkeep = []; if (lay.tall) return;
+    const s = lay.s;
+    /* The group's main thing (A.core) in a margin too narrow for it: smaller, in the middle of the margin (fk, its scale; cx0 and cy0,
+       where its middle was and cx1 where it is now). The others keep their places about it at that scale; one that would then be off
+       the screen comes in beside it, as far from it as before. */
+    let fk = 1, cx0 = 0, cy0 = 0, cx1 = 0, cm = null;
+    if (A.core){ const cf = A.floats.find(q => q[0] === A.core[0]); cm = cf && meta(cf[0], dk);
+      if (cm && typeof cf[1] === 'object'){ const lf = cf[1].s < .5, room = lf ? col.il : W - col.ir, edge = lf ? 0 : col.ir, cw = A.core[1]*s, gap = U*.02;
+        cx0 = cx1 = side(cf[1].s, U) + U*(cf[1].dx || 0); cy0 = cm.ay*s + U*(cf[1].dy || 0);
+        if (!(cx0 - cw/2 >= edge + gap && cx0 + cw/2 <= edge + room - gap)){ const k = Math.min(1, (room - 2*gap)/cw); if (k >= FIT_MIN){ fk = k; cx1 = edge + room/2; } } } }
     A.floats.forEach((f, i) => { const m = meta(f[0], dk), im = m && piece(f[0], dk); if (!m || !ok(im)) return;
-      let ax, dy = 0; if (typeof f[1] === 'number') ax = W*f[1]; else if (typeof f[1] === 'object'){ ax = side(f[1].s, U) + U*(f[1].dx || 0); dy = U*(f[1].dy || 0); }
-      else { const gm = meta(f[1], dk); if (!gm) return; ax = side(gm.ax/gm.W, U) + (m.ax - gm.ax)*lay.s; }
-      const bob = f[2] ? Math.sin(t*TAU/f[2] + i*2.1)*U*.006 : 0, fx0 = ax - (m.ax - m.x)*lay.s, fy0 = m.y*lay.s + dy;
-      x.drawImage(im, fx0, fy0 + bob, m.w*lay.s, m.h*lay.s); fkeep.push([fx0 + m.w*lay.s*.12, fy0, m.w*lay.s*.76, m.h*lay.s]); }); };
+      let ax, ay = m.ay*s, k = 1; if (typeof f[1] === 'number') ax = W*f[1]; else if (typeof f[1] === 'object'){ ax = side(f[1].s, U) + U*(f[1].dx || 0); ay += U*(f[1].dy || 0);
+        if (cm && (fk < 1 || cx1 !== cx0)){ k = fk; ax = cx1 + (ax - cx0)*fk; ay = cy0 + (ay - cy0)*fk;
+          if (f[0] !== A.core[0]){ const hw = m.w*s*k/2, pad = U*.012, d = Math.hypot(ax - cx1, ay - cy0), nx = Math.max(hw + pad, Math.min(W - hw - pad, ax)) - cx1;
+            if (nx !== ax - cx1 && Math.abs(nx) < d){ ay = cy0 + (ay < cy0 ? -1 : 1)*Math.sqrt(d*d - nx*nx); ax = cx1 + nx; } } } }
+      else { const gm = meta(f[1], dk); if (!gm) return; ax = side(gm.ax/gm.W, U) + (m.ax - gm.ax)*s; }
+      const bob = f[2] ? Math.sin(t*TAU/f[2] + i*2.1)*U*.006 : 0, fx0 = ax - (m.ax - m.x)*s*k, fy0 = ay - (m.ay - m.y)*s*k;
+      x.drawImage(im, fx0, fy0 + bob, m.w*s*k, m.h*s*k); fkeep.push([fx0 + m.w*s*k*.12, fy0, m.w*s*k*.76, m.h*s*k]); }); };
 
   return {
     frame(t){
@@ -621,11 +673,11 @@ function makeNext(canvas, env){
        (They used to be about most of the time, one or two at once: the
        owner found that far too many.)
      · Real windows, above the scene and below the site's own sheets and
-       notes, dragged by the title bar. They stand in the page's places:
-       the corners and middles of the margins, clear of the page's
-       column, the scene's things, the page's word and the taskbar. On a
-       narrow screen: one small window in a bottom corner, and never on
-       the timetable.
+       notes, dragged by the title bar. They stand anywhere round the
+       sides of the screen, a different place every time, and never in
+       the middle of it, where the page is (see "the stage", below). On
+       a narrow screen: one small window in a bottom corner, and never
+       on the timetable.
      · One that isn't answered stays a few minutes, and is there again
        on the next page you open, where it was. When its time is up
        another pointer, not yours, comes and presses its X; a hung
@@ -751,30 +803,47 @@ function visitors(){
   const live = [];                                  /* the windows that are open */
   const openNow = () => live.filter(o => !o.gone);
 
-  /* ── the stage: where a window may stand. In the margins beside the page's column, never over the column, the scene's things, the
-        page's word, the taskbar or another window. Each margin offers its corners and its middle; the best three that are free are
-        the page's places. (On a narrow screen there are no margins: one small window, in a bottom corner.) ── */
-  const M = 10, SIZE = { dialog:[196, 300], explorer:[250, 320], list:[240, 310], web:[230, 300], sunrise:[180, 220], notepad:[216, 300], player:[212, 250], progress:[216, 300] };
-  const colNow = () => { const w = document.querySelector('.wrap'); if (w && w.offsetWidth){ const b = w.getBoundingClientRect(); return { l:b.left, r:b.right }; }
+  /* ── the stage: where a window may stand. Loosely: anywhere down either side of the screen, a different place every time. (They
+        used to stand only in the corners and the middles of the margins, squared up to the edges, the same few places over and
+        over. The owner: "make the popup placements a bit more loose and random, just keep them out of the center of the screen".)
+        The rules that are left:
+          · never in the middle of the screen, which is the page's column. A window may lean over the column's edge by LAP, as
+            windows on a desk do; not on the timetable, whose grid is what the page is for;
+          · whole on the screen, clear of the taskbar and of any other window;
+          · never hiding more than COVER of one of the scene's things or of the page's word. It may stand partly in front of one, as
+            often happens on a laptop, where the margin holds little else; of the places it could stand, one that hides less is the
+            likelier.
+        On a screen with no room at the sides for that: one small window near a bottom corner. ── */
+  const M = 10, LAP = 24, COVER = .5, SIZE = { dialog:[196, 300], explorer:[250, 320], list:[240, 310], web:[230, 300], sunrise:[180, 220], notepad:[216, 300], player:[212, 250], progress:[216, 300] };
+  const colNow = () => { const b = wrapBox(); if (b) return { l:b.il, r:b.ir };              /* (the column's windows, not the padding round them) */
     const mw = Math.min(innerWidth, 1040); return { l:(innerWidth - mw)/2, r:(innerWidth + mw)/2 }; };
   const floorY = () => { const b = document.querySelector('.vw-task'), h = b ? b.offsetHeight : 0; return (h ? b.getBoundingClientRect().top : innerHeight) - M; };
   const hit = (a, b, pad) => a[0] < b[0] + b[2] + pad && a[0] + a[2] + pad > b[0] && a[1] < b[1] + b[3] + pad && a[1] + a[3] + pad > b[1];
-  const gutters = () => { const c = colNow(); return [{ k:'l', x0:0, x1:c.l }, { k:'r', x0:c.r, x1:innerWidth }]; };
-  const widthIn = (g, kind) => { const s = SIZE[kind] || SIZE.dialog, room = g.x1 - g.x0 - 2*M; return room >= s[0] ? Math.round(Math.min(s[1], room)) : 0; };
-  const canFit = kind => gutters().some(g => widthIn(g, kind));
+  const covers = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]))*Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]))/Math.max(1, b[2]*b[3]);      /* how much of b is behind a */
+  const lap = () => PG === 'timetable' ? 0 : LAP;
+  /* either side's strip: from the screen's edge to as far over the column as a window may lean */
+  const sides = () => { const c = colNow(), o = lap(); return [{ k:'l', x0:M, x1:c.l + o }, { k:'r', x0:c.r - o, x1:innerWidth - M }]; };
+  /* how wide a window of this kind is there: its full width where there's room to spare, less (so that it has some play from side to side) where there is little; 0: it doesn't fit */
+  const widthIn = (g, kind) => { const s = SIZE[kind] || SIZE.dialog, room = g.x1 - g.x0; return room >= s[0] ? Math.round(Math.min(s[1], Math.max(s[0], room*.86))) : 0; };
+  const canFit = kind => sides().some(g => widthIn(g, kind));
   const wide = () => canFit('dialog');
-  const ORDER = ['lbo', 'rto', 'rmo', 'rbo', 'rti', 'lto', 'lmo', 'rbi', 'rmi'];       /* margin (left, right); top, middle, bottom; outer or inner edge */
-  const free = (r, me) => { const st = FX.vwStage || {}, c = colNow();
+  const hides = r => ((FX.vwStage || {}).keep || []).reduce((m, k) => Math.max(m, covers(r, k)), 0);      /* the most it hides of any one of the scene's things */
+  const free = (r, me) => { const c = colNow(), o = lap();
     if (r[0] < 0 || r[1] < 0 || r[0] + r[2] > innerWidth || r[1] + r[3] > floorY() + 1) return false;
-    if (r[0] < c.r && r[0] + r[2] > c.l) return false;
-    return !(st.keep || []).some(k => hit(r, k, 6)) && !openNow().some(o => { if (o === me) return false; const b = o.win.getBoundingClientRect(); return hit(r, [b.left, b.top, b.width, b.height], 8); }); };
+    if (r[0] < c.r - o && r[0] + r[2] > c.l + o) return false;                    /* the middle of the screen */
+    return hides(r) <= COVER && !openNow().some(o2 => { if (o2 === me) return false; const b = o2.win.getBoundingClientRect(); return hit(r, [b.left, b.top, b.width, b.height], 8); }); };
+  /* places to stand, tried at random down each side (as many from the one side as from the other, however much wider one is) */
   const places = (c, kind) => { const out = [];
-    for (const g of gutters()){ const w = widthIn(g, kind); if (!w) continue; c.win.style.width = w + 'px'; const h = c.win.offsetHeight, top = M + 4, bot = floorY() - h;
-      ORDER.forEach((o, rank) => { if (o[0] !== g.k) return;
-        const x = (o[2] === 'o') === (g.k === 'l') ? g.x0 + M : g.x1 - w - M, y = o[1] === 't' ? top : o[1] === 'b' ? bot : Math.round((top + bot)/2);
-        if (!out.some(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 8) && free([x, y, w, h], c)) out.push({ x, y, w, rank }); }); }
-    return out.sort((a, b) => a.rank - b.rank).slice(0, 3); };
-  const narrowSpot = c => { const w = Math.round(Math.min(250, innerWidth - 2*M)); c.win.style.width = w + 'px'; const h = c.win.offsetHeight; return [M, innerWidth - w - M].map(x => ({ x, y:Math.max(M, innerHeight - h - M), w })); };
+    for (const g of sides()){ const w = widthIn(g, kind); if (!w) continue; c.win.style.width = w + 'px'; const h = c.win.offsetHeight, top = M + 4, bot = floorY() - h; if (bot < top) continue;
+      for (let i = 0, n = 0; i < 40 && n < 8; i++){ const x = Math.round(g.x0 + Math.random()*(g.x1 - g.x0 - w)), y = Math.round(top + Math.random()*(bot - top));
+        if (free([x, y, w, h], c) && !out.some(q => Math.abs(q.x - x) < 30 && Math.abs(q.y - y) < 30)){ out.push({ x, y, w, cov:hides([x, y, w, h]) }); n++; } } }
+    return out; };
+  /* one of them: any, but the less of the scene it hides the likelier (one that hides as much as it may is a third as likely as one that hides nothing) */
+  const choose = a => { const wt = a.map(q => 1 - .68*Math.min(1, (q.cov || 0)/COVER)); let r = Math.random()*wt.reduce((t, v) => t + v, 0);
+    for (let i = 0; i < a.length; i++){ r -= wt[i]; if (r < 0) return a[i]; } return a[a.length - 1]; };
+  /* no room at the sides: near a bottom corner (on anything wider than a phone a little in from it, a different little each time), above the taskbar */
+  const narrowSpot = c => { const w = Math.round(Math.min(250, innerWidth - 2*M)); c.win.style.width = w + 'px'; const h = c.win.offsetHeight, y0 = Math.max(M, floorY() - h), loose = innerWidth > 760;
+    return [0, 1].map(i => { const jx = loose ? Math.round(Math.random()*26) : 0, jy = loose ? Math.round(Math.random()*Math.max(0, Math.min(110, y0 - M))) : 0; return { x:i ? innerWidth - w - M - jx : M + jx, y:y0 - jy, w }; }); };
   const inView = (p, w, h) => p[0] >= 0 && p[1] >= 0 && p[0] + w <= innerWidth && p[1] + h <= innerHeight;
 
   /* ── who comes next: a follow-up that is due; or else one that hasn't been seen (or not for a good while), by its weight ── */
@@ -905,7 +974,7 @@ function visitors(){
     const place = p => { c.pos = p; win.style.left = Math.round(p[0]) + 'px'; win.style.top = Math.round(p[1]) + 'px'; }; c.place = place;
     const sp = roomy ? places(c, kind) : narrowSpot(c);
     if (!sp.length){ clearInterval(tick); clearTimeout(typing); win.remove(); return null; }
-    const pk = sp[Math.random()*sp.length | 0]; win.style.width = pk.w + 'px';
+    const pk = choose(sp); win.style.width = pk.w + 'px';
     const back = was && was.x != null && inView([was.x, was.y], win.offsetWidth, win.offsetHeight) && (!roomy || free([was.x, was.y, win.offsetWidth, win.offsetHeight], c));
     place(back ? [was.x, was.y] : [pk.x, pk.y]);                      // (there again where it was, if that place is clear on this page too)
     if (instant() || still) win.classList.add('on'); else requestAnimationFrame(() => requestAnimationFrame(() => win.classList.add('on')));
@@ -927,8 +996,9 @@ function visitors(){
       c.stamps.forEach((k, i) => setTimeout(() => k.remove(), instant() ? 0 : 60 + 45*i));
       const rm = () => { win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); }; if (instant()) rm(); else setTimeout(rm, 520); };
     c.leave = leave;
-    const jump = () => { const sp2 = (roomy ? places(c, kind) : narrowSpot(c)).filter(p => Math.hypot(p.x - c.pos[0], p.y - c.pos[1]) > 120); if (!sp2.length) return false;
-      const p = sp2[Math.random()*sp2.length | 0];
+    const jump = () => { const far = d => p => Math.hypot(p.x - c.pos[0], p.y - c.pos[1]) > d, all = roomy ? places(c, kind) : narrowSpot(c);
+      const sp2 = all.some(far(260)) ? all.filter(far(260)) : all.filter(far(120)); if (!sp2.length) return false;      /* well away, if there is such a place */
+      const p = choose(sp2);
       if (instant()){ win.style.width = p.w + 'px'; place([p.x, p.y]); return true; }
       win.classList.remove('on', 'vw-there'); win.classList.add('off'); setTimeout(() => { if (c.gone) return; win.style.width = p.w + 'px'; place([p.x, p.y]); win.classList.remove('off'); void win.offsetWidth; win.classList.add('on'); }, 500); return true; };
     const say = (text, ms) => { if (typeJob) typeJob(); if (msg) msg.textContent = text; else if (status) status.textContent = text; btns.remove(); clearTimeout(timer); timer = setTimeout(() => leave(null), ms); };
@@ -976,7 +1046,8 @@ function visitors(){
     let rz = 0;
     const onResize = () => { if (c.gone){ removeEventListener('resize', onResize); return; } clearTimeout(rz); rz = setTimeout(() => { if (c.gone) return;
       const w = win.offsetWidth, h = win.offsetHeight; if (roomy ? free([c.pos[0], c.pos[1], w, h], c) : inView(c.pos, w, h)) return;
-      const sp3 = wide() ? places(c, kind) : kind === 'dialog' ? narrowSpot(c) : []; if (sp3.length){ win.style.width = sp3[0].w + 'px'; place([sp3[0].x, sp3[0].y]); } else { c.gone = true; clearInterval(tick); clearTimeout(timer); c.stamps.forEach(k => k.remove()); win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); } }, 200); };
+      const sp3 = (wide() ? places(c, kind) : kind === 'dialog' ? narrowSpot(c) : []).sort((a, b) => Math.hypot(a.x - c.pos[0], a.y - c.pos[1]) - Math.hypot(b.x - c.pos[0], b.y - c.pos[1]));      /* the nearest that fits */
+      if (sp3.length){ win.style.width = sp3[0].w + 'px'; place([sp3[0].x, sp3[0].y]); } else { c.gone = true; clearInterval(tick); clearTimeout(timer); c.stamps.forEach(k => k.remove()); win.remove(); const i = live.indexOf(c); if (i >= 0) live.splice(i, 1); } }, 200); };
     addEventListener('resize', onResize);
     return c;
   };

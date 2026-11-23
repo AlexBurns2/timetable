@@ -10,7 +10,9 @@
    is ready, and whenever it won't run (Animation off, Reduce motion, a
    weak device, no WebGL 2), a still picture of the same scene:
    images/synth/<scene>-night
-   (-p: the tall crop for a phone), rendered from fx/synth.js.
+   (-p: the tall one, for any screen that is upright; -m, the street
+   only: the 4 : 3 one, for a tablet on its side), rendered from
+   fx/synth.js.
    On top, one palette (magenta, orange, deep violet) and restraint:
      · panels of dark smoked glass, a hairline round them; the only
        blur is on the bar at the head of the page;
@@ -44,13 +46,19 @@
   --sy-glass:rgba(14,6,26,.62); --sy-btn:rgba(26,12,44,.82); --sy-btn-hi:rgba(44,20,68,.88);
   --sy-chrome:linear-gradient(180deg,#ffffff 0%,#f3eaff 24%,#d6b4ff 46%,#2a0d46 48.5%,#5a1d6e 52%,#ff4f9a 74%,#ffa0c8 100%);
 }
-/* ── the still picture of each page's scene (and the colour under it while it loads). Dark only, so one picture a scene ── */
+/* ── the still picture of each page's scene (and the colour under it while it loads). Dark only. One picture a scene for a
+      screen on its side (16 : 9) and one for an upright screen (-p), each cut to the screen's own shape. An upright tablet takes
+      the tall one too: it used to take the wide one, of which it saw the middle half. And the street has a third between them
+      (-m, 4 : 3, a tablet on its side): the wide one cut to that shape lost the edge of the sun and the end of the cinema. ── */
 [data-skin="synth"]{--bg-img:url(../images/synth/street-night.webp)}
 [data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night.webp)}
 [data-skin="synth"][data-pg="games"]{--bg-img:url(../images/synth/drive-night.webp)}
 [data-skin="synth"][data-pg="timetable"]{--bg-img:url(../images/synth/bay-night.webp)}
 [data-skin="synth"]:is([data-pg="finder"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"]){--bg-img:url(../images/synth/pyramid-night.webp)}
-@media (max-aspect-ratio:4/5){
+@media (min-aspect-ratio:1001/1000) and (max-aspect-ratio:13/8){
+  [data-skin="synth"]{--bg-img:url(../images/synth/street-night-m.webp)}
+}
+@media (max-aspect-ratio:1/1){
   [data-skin="synth"]{--bg-img:url(../images/synth/street-night-p.webp)}
   [data-skin="synth"]:is([data-pg="notes"],[data-pg="resources"],[data-pg="mahjong"]){--bg-img:url(../images/synth/shore-b-night-p.webp)}
   [data-skin="synth"][data-pg="games"]{--bg-img:url(../images/synth/drive-night-p.webp)}

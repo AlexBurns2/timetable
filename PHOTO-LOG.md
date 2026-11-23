@@ -110,3 +110,27 @@ was staged in the session scratchpad; only the finished pictures are in the repo
 - Soap Film 1 (CC BY 4.0) now fills the word on every Vaporwave page and the Theme finder (`images/th/vw-word-*.webp`, eleven files); its credit in About stands.
 - The wide floors (`vw-*-platew-*.webp`, ten files, 1.1 MB) are our own renders.
 - The Theme finder's tile pictures (`images/tf/*.webp`, 31 files, 144 KB) are screenshots of our own Home page in each theme, as the demo student; they show nothing the themes don't already show and credit.
+
+## Synthwave street: scans of real asphalt and concrete for the wet ground (2026-11-23)
+
+The owner found the street's reflections "too clean and perfect, it looks more like water or a mirror", asked for the road to
+look like "real wet asphalt", and suggested "a stock photo of concrete so it looks like it has real texture". Poly Haven's
+textures are photo scans of real surfaces, CC0, and tile. Everything was fetched with a generic client name and staged in the
+session scratchpad (`gr/dl/`); only the two packed textures made from them are in the repo.
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-23 | The lists of Poly Haven's asphalt and concrete textures (two JSON files) | `api.polyhaven.com/assets?t=textures&c=asphalt`, `...&c=concrete` | (catalogue) | 19 KB, 81 KB | To choose from |
+| 2026-11-23 | 14 preview thumbnails (256 px): clean_asphalt, asphalt_track, asphalt_pit_lane, asphalt_07, asphalt_03, asphalt_01, smooth_concrete_floor, hangar_concrete_floor, concrete_floor_worn_001, scuffed_cement, garage_floor, concrete_floor_02, brushed_concrete, concrete_pavement | `cdn.polyhaven.com/asset_img/thumbs/` | CC0 | 14 PNGs, 1.5 MB in all | No (previews) |
+| 2026-11-23 | File lists for the four shortlisted (four JSON files) | `api.polyhaven.com/files/<id>` | (catalogue) | 117 KB in all | To find the maps |
+| 2026-11-23 | Asphalt Pit Lane, 1k JPG: diffuse, roughness, normal, displacement | https://polyhaven.com/a/asphalt_pit_lane | CC0 | 2.9 MB | **Yes:** its diffuse is the road's grain (`ground-asphalt.webp`). The other three maps are not used |
+| 2026-11-23 | Concrete Floor Worn 001, 1k JPG: diffuse, roughness, normal, displacement | https://polyhaven.com/a/concrete_floor_worn_001 | CC0 | 0.6 MB | **Yes:** diffuse and roughness are the plaza's tone and gloss (`ground-concrete.webp`, r and g) |
+| 2026-11-23 | Scuffed Cement, 1k JPG: diffuse, roughness, normal, displacement | https://polyhaven.com/a/scuffed_cement | CC0 | 1.6 MB | **Yes:** its displacement only, as where the ground dips and water stands (`ground-concrete.webp`, b; and, seen very large, the road's rough and wet patches) |
+| 2026-11-23 | Asphalt Track, 1k JPG: diffuse, roughness, normal, displacement | https://polyhaven.com/a/asphalt_track | CC0 | 2.4 MB | No (too fine and even to read as a road from where the scene stands) |
+
+- **Files added:** `images/synth/ground-asphalt.webp` (512 x 512, grey, 115 KB) and `images/synth/ground-concrete.webp`
+  (512 x 512, 84 KB), made by `tools/synth/ground.py` from the JPGs above. They are fetched only when Synthwave's street
+  scene is drawn live.
+- **Credits:** About → 3D credits lists the three Poly Haven textures used.
+- Nothing was fetched from anywhere else, and no request carried anything about the site or its owner.
+
