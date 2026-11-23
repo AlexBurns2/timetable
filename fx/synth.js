@@ -1254,7 +1254,7 @@ async function build(canvas, kind, dark){
       const arm = keep(new T.TubeGeometry(new T.QuadraticBezierCurve3(V(0, 5.7, 0), V(0, 7.3, 0), V(-2.3, 7.3, 0)), 18, .065, 8));
       const head = keep(new T.BoxGeometry(.8, .16, .34)); head.translate(-2.6, 7.28, 0); const lens = keep(new T.BoxGeometry(.6, .05, .24)); lens.translate(-2.6, 7.18, 0);
       const g = new T.Group(); g.add(new T.Mesh(pole, metal), new T.Mesh(arm, metal), new T.Mesh(head, metal), new T.Mesh(lens, keep(new T.MeshBasicMaterial({ color:new T.Color(4.2, 2.3, 1.1), fog:false }))));
-      const lz = CAR.z + CAR.len / 2 + .4;                        // by the car's tail, its arm over the car (as the picture's is): from where we stand it is then between the cinema and the shop's sign, not across either
+      const lz = CAR.z + CAR.len / 2 + .4;                        // by the tail of the car in the model's place for it, its arm over the roadway (as the picture's is): from where we stand it is then between the cinema and the shop's sign, not across either. (It stays there. The car itself is parked further towards us on a wide window: look.place)
       g.position.set(kerbR, 0, lz); scene.add(g);
       g.add(halo(V(-2.6, 7.3, 0), [1.4, .66, .3], 1.6, .34) /* a small halo: the big pale one was a patch of fog in the sky */, lightAt('#ffb070', 55, V(-2.6, 6.8, 0), 26)); pool(kerbR - 2.6, .012, lz, 8, 8, [1, .5, .26], .34); }
     { const g = lamp(); g.position.set(kerbR, 0, GR.z0 + 8.2); scene.add(g); halo(V(kerbR - 1.62, 6.12, GR.z0 + 8.2), [1.4, .72, .36], 2.4, .5); pool(kerbR - 1.62, .012, GR.z0 + 8.2, 7, 7, [1, .46, .24], .36); }
@@ -1265,7 +1265,7 @@ async function build(canvas, kind, dark){
       for (let x = -120; x <= 120; x += 2) list.push([x, .6, GR.z0 + .12, .06, 1.0, .06]);
       const im = new T.InstancedMesh(unit, iron, list.length); list.forEach((q, i) => { _p.set(q[0], q[1], q[2]); _q.identity(); _s.set(q[3], q[4], q[5]); im.setMatrixAt(i, _m.compose(_p, _q, _s)); }); im.computeBoundingSphere(); scene.add(im); }
 
-    /* ── the car: a saloon of the late eighties, parked along the kerb in the model's place for it, its nose towards the sun.
+    /* ── the car: a saloon of the late eighties, parked along the kerb, its nose towards the sun.
        The owner's choice of model (2026-11-23), not ours: Shotkey's "Alfa Romeo 164" (Sketchfab; CC BY-SA 4.0, credited in About),
        at its own size, 4.56 m. tools/synth/car.py makes models/synth/car.glb from it, and redraws its picture (photographs of a
        real car) in flat colours, as the rest of this scene is: bodywork, glass, lamps, plate, tyres, wheels, dark trim, and
@@ -1274,15 +1274,107 @@ async function build(canvas, kind, dark){
        model's own picture: "too dissonant from the art style of the rest of the scene ... Really all that needs to be clear is
        windows, lights, license plate, tyres, wheels".)
        It is parked: none of its lamps is lit, and it throws no light on the road. (The wedge's tail lamps were lit, their glow on
-       the wet road behind it. The owner: "it could be the tail lights which kind of imply movement".) Its lamps are red and pale
-       glass that the street lamp falls on. A little of its own colour shows in the dark (the emissive), or its far side would be
-       a black shape. ── */
+       the wet road behind it. The owner: "it could be the tail lights which kind of imply movement".)
+
+       What a review of it in the scene asked for (the owner's, 2026-11-23), and what answers each point:
+         · "The red is outside the scene's palette ... I think dark teal would be a good accent": its paint (car.py, --paint).
+         · "The neon isn't touching it. The paint reads as lit by a neutral light. It needs magenta and cyan rim lights along the
+           roof and trunk edge, soft streaks of the cinema's neon on the glass and paint, and the warm streetlamp glow on the roof":
+           the material below. The cinema and the shop are ten metres and more from it, further than their real lights reach, so
+           what they do to the car is worked out here, in its shader, from where they stand (uCin, uShop): their colour on its matt
+           colour where it is turned to them; a rim of it where the car's skin turns away from us (the roof, the boot's edge, the
+           pillars); and their glow mirrored in what is glossy, by where the mirrored ray goes (towards the cinema, towards the
+           shop, along the horizon's haze). How glossy each part is comes from the picture's alpha (car.py's GLOSS): glass most,
+           paint next, tyres not at all. The windows give back the sky (pink low down, purple above) and, in the rear one,
+           the street lamp's glow. The street lamp is a real light as well, straight over it.
+           Two traps, both met: (1) the shop's blue must light ONLY what is turned to the shop (wc). Let it wrap round onto the
+           roof and it lies on top of the cinema's magenta, and the two make a pale lavender. (2) Keep every term weak enough
+           that the tone curve leaves it its colour: magenta at twice this strength comes out pale pink.
+         · "It isn't sitting in the wet road ... a darker contact patch under the wheels would anchor it": its shadow is drawn
+           AFTER the light lying on the road (the lamp's pool, renderOrder 1.2: drawn before it, the pool lit the road under the
+           car as brightly as beside it, and the car floated), and each tyre has a small dark patch of its own. And "a blurred
+           reflection of the body": a soft dark streak on the road from the car towards us (smear, below).
+         · "A parked car shouldn't have glowing brake lamps. Leave the lamps dark": they are unlit glass (car.py's colours).
+           And, the same day: "make the taillights one straight beam going all the way across the rear like in the actual
+           car": one bar, drawn by car.py.
+         · "It's more detailed than its surroundings ...": NOT done, on purpose. The owner, straight after: "ignore the 4th point
+           about grain, I think the crisp look is good for synthwave".
+         · "On the ultrawide crop the car's front half sits behind the window ... move it further right or forward so it clears the
+           window at 16:9, 16:10 and ultrawide": look.place, below. ── */
+    const mc = (L.cam && L.cam.pos) || [-8.6, 3.7, 28], EYE0 = [mc[0], 2.5, mc[2] + .5];      // where we stand (the camera, below)
     if (M.car && M.car.parts.body && carTex){
       const car = new T.Group(); car.position.set(CAR.x, 0, CAR.z); car.rotation.y = CAR.along === 'x' ? Math.PI / 2 : Math.PI; scene.add(car);
-      const paint = std({ map:carTex, roughness:.45, metalness:.2, emissiveMap:carTex, emissive:new T.Color(.16, .16, .16) }); paint.userData.envK = [.25, .25];
-      car.add(new T.Mesh(M.car.parts.body, paint));
-      const shT = glowTex(128, 128, [[0, 1], [.55, .85], [.8, .35], [1, 0]]), sh = new T.Mesh(keep(new T.PlaneGeometry(2.4, 5.1)), keep(new T.MeshBasicMaterial({ map:shT, color:0x000000, transparent:true, opacity:.88, depthWrite:false })));
-      sh.rotation.x = -Math.PI / 2; sh.position.set(0, .011, 0); sh.renderOrder = 1.1; car.add(sh); }
+      const c0 = rings.length ? rings[0].c : [CAR.x + 8.5, 3.5, CAR.z - 10];
+      const carU = { uCin:{ value:V(c0[0], c0[1], c0[2]) }, uShop:{ value:ST ? V(ST.x0 - .2, Math.min(4.4, ST.y1 * .46) - .5, (ST.z0 + ST.z1) / 2) : V(CAR.x + 8, 3.5, CAR.z) }, uShopK:{ value:ST ? 1 : 0 },
+        uMag:{ value:new T.Color(1, .012, .45) }, uCy:{ value:new T.Color(.02, .6, 1) }, uHaze:{ value:new T.Color(1, .2, .62) },
+        uLamp:{ value:V(kerbR - 2.6, 6.8, CAR.z + CAR.len / 2 + .4) }, uWarm:{ value:new T.Color(1, .46, .18) } };      // (uLamp: the street lamp's head, above)
+      const paint = std({ map:carTex, roughness:.4, metalness:.15 }); paint.userData.envK = [.06, .06];
+      paint.onBeforeCompile = sh => { Object.assign(sh.uniforms, carU);
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCW; varying vec3 vCN;')
+          .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n vCW = (modelMatrix * vec4(transformed, 1.)).xyz; vCN = mat3(modelMatrix) * objectNormal;');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vCW; varying vec3 vCN; uniform vec3 uCin; uniform vec3 uShop; uniform vec3 uMag; uniform vec3 uCy; uniform vec3 uHaze; uniform vec3 uLamp; uniform vec3 uWarm; uniform float uShopK;')
+          .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n float carGl = clamp((sampledDiffuseColor.a - .5) * 2., 0., 1.); roughnessFactor = mix(.92, .42, carGl) - .2 * smoothstep(.86, 1., carGl);')      /* (the picture's alpha: how glossy this part is) */
+          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
+            '{ vec3 n = normalize(vCN), v = normalize(cameraPosition - vCW), r = reflect(-v, n);\n' +
+            '  float nv = max(dot(n, v), 0.), fr = pow(1. - nv, 5.);\n' +
+            '  vec3 Lm = normalize(uCin - vCW), Lc = normalize(uShop - vCW);\n' +
+            '  float wm = smoothstep(-.1, .5, dot(n, Lm)), wc = smoothstep(.35, .8, dot(n, Lc)) * uShopK;\n' +                 /* the cinema is a whole lit front: its light wraps well round. The shop's sign lights only what is turned to it */
+            '  vec3 e = diffuseColor.rgb * (vec3(.26, .29, .34) + uMag * (.10 * wm) + uCy * (.08 * wc));\n' +       /* its own colour: a little of it in the dark (or its far side is a black shape), and the neon on it */
+            '  e += fr * mix(.2, 1., carGl) * (uMag * (wm * 1.4) + uCy * (wc * 2.4));\n' +                   /* the rim */
+            '  float el = r.y * inversesqrt(max(dot(r.xz, r.xz), 1e-4)), az = atan(r.x, -r.z), dA = az - atan(Lm.x, -Lm.z), dS = az - atan(Lc.x, -Lc.z);\n' +
+            '  dA = atan(sin(dA), cos(dA)); dS = atan(sin(dS), cos(dS));\n' +
+            '  float cin = exp(-dA * dA / .2) * smoothstep(0., .1, el) * (1. - smoothstep(.22, .42, el));\n' +
+            '  float shop = exp(-dS * dS / .3) * smoothstep(0., .12, el) * (1. - smoothstep(.4, .9, el)) * uShopK;\n' +
+            '  e += (.05 + .95 * pow(1. - nv, 4.)) * carGl * (uMag * (cin * .8) + uCy * (shop * 1.1) + uHaze * (exp(-el * el / .03) * .06));\n' +      /* mirrored: the cinema, the shop, the haze along the horizon */
+            '  float glass = smoothstep(.86, 1., carGl); vec3 Ll = normalize(uLamp - vCW);\n' +
+            '  e += glass * (.06 + .5 * pow(1. - nv, 4.)) * mix(uHaze, vec3(.22, .04, .5), smoothstep(0., .6, el)) * smoothstep(-.3, 0., el) * mix(.35, 1., smoothstep(1.35, .9, vCW.y));\n' +      /* the windows give back the sky: pink low down, purple higher; more of it towards the foot of each pane */
+            '  e += uWarm * (glass * .16 * pow(max(dot(r, Ll), 0.), 4.) + carGl * .05 * pow(max(dot(n, Ll), 0.), 2.));\n' +      /* the street lamp: its glow in the rear window, and a little warmth on what faces up to it */
+            '  totalEmissiveRadiance += e; }'); };
+      paint.customProgramCacheKey = () => 'sy-car2';
+      const body = M.car.parts.body; car.add(new T.Mesh(body, paint));
+      /* its shadow on the road, and a darker patch where each tyre stands (found from the model: its lowest corners, by quarter) */
+      const dark = (w, d, x, z, op, tex) => { const m = new T.Mesh(keep(new T.PlaneGeometry(w, d)), keep(new T.MeshBasicMaterial({ map:tex, color:0x000000, transparent:true, opacity:op, depthWrite:false, fog:false })));
+        m.rotation.x = -Math.PI / 2; m.position.set(x, .016, z); m.renderOrder = 1.3; car.add(m); return m; };
+      dark(2.6, 5.4, 0, 0, .92, glowTex(128, 128, [[0, 1], [.6, .92], [.82, .45], [1, 0]]));
+      const P = body.getAttribute('position'), N = P.count, tyre = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], patch = glowTex(64, 64, [[0, 1], [.45, .9], [1, 0]]);
+      for (let i = 0; i < N; i++) if (P.getY(i) < .06){ const q = tyre[(P.getX(i) > 0 ? 1 : 0) + (P.getZ(i) > 0 ? 2 : 0)]; q[0] += P.getX(i); q[1] += P.getZ(i); q[2]++; }
+      for (const q of tyre) if (q[2]) dark(.7, 1.15, q[0] / q[2], q[1] / q[2], .9, patch);
+      /* and on the wet road towards us, what a dark car leaves there: the road gives back less light where it mirrors the car
+         (rough asphalt smears a mirror image down the picture, so it is a soft dark streak and not a picture of a car). The
+         mirror does draw the car, but smeared that far a dark thing shows as next to nothing, and the street lamp's light on
+         the road covered what was left. One soft dark patch on the ground, from the car towards where we stand (smear.at). */
+      const smT = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 128; const x = c.getContext('2d'), im = x.createImageData(64, 128);
+        for (let j = 0; j < 128; j++) for (let i = 0; i < 64; i++){ const u = Math.abs(i / 63 * 2 - 1), v = j / 127, a = (1 - clamp((u - .45) / .55, 0, 1) ** 2) * (1 - clamp((v - .22) / .78, 0, 1)) ** 1.6 * clamp(v / .04, 0, 1); im.data.set([255, 255, 255, Math.round(a * 255)], (j * 64 + i) * 4); }
+        x.putImageData(im, 0, 0); return keep(new T.CanvasTexture(c)); })();
+      const SM_L = 9, smear = new T.Mesh(keep(new T.PlaneGeometry(4.6, SM_L)), keep(new T.MeshBasicMaterial({ map:smT, color:0x01080b, transparent:true, opacity:.6, depthWrite:false, fog:false })));
+      smear.geometry.rotateX(-Math.PI / 2); smear.geometry.translate(0, 0, SM_L / 2); smear.renderOrder = 1.25; scene.add(smear);      // (its near end at its own origin; it runs out along its +z)
+      smear.at = () => { smear.position.set(car.position.x, .014, car.position.z); smear.rotation.y = Math.atan2(EYE0[0] - car.position.x, EYE0[2] - car.position.z); smear.updateMatrixWorld(); };
+      /* where along the kerb it stands goes by the window. The model's place for it is right for a phone or a tablet, where the
+         page fills the width. On anything wider the page is a column 960 px across in the middle, and at the model's place the
+         car's front half was behind it (a 16 : 9 monitor, a 21 : 9 one), or all of it (a laptop). So it is parked further
+         towards us, which on the screen is to the right and a little larger: as far as puts its nose clear of the column (GAP_L
+         of the width), but never so far that its tail leaves the picture (GAP_R) - on a laptop there is not room for both, and
+         the tail, with its lamps and its plate, is what says "a car". Nearer the kerb too (X), a hand's width off it.
+         What it comes to (measured, 8.182): clear of the column from about 1850 px wide at 16 : 9 and 16 : 10 (at 1920 by
+         23 px, with 23 px to spare at the right-hand edge: there is room for the car and no more), and at every ultrawide
+         size, where it has room to spare and stays nearer the model's place; at 1680 px a tenth of the car is behind the
+         column, at 1536 a fifth, at 1366 two fifths, at 1280 half. Worked out once a resize (every corner of the model
+         through the camera, a couple of dozen times): nothing moves between resizes. */
+      look.place = smear.at;
+      if (CAR.along !== 'x'){
+        const X = Math.min(CAR.x + .5, kerbR - CAR.wid / 2 - .2), Z0 = CAR.z, Z1 = CAR.z + 3.4, GAP_L = .03, GAP_R = .012;
+        const span = z => { let lo = 9, hi = -9; for (let i = 0; i < N; i++){ _p.set(X - P.getX(i), P.getY(i), z - P.getZ(i)).project(camera); if (_p.x < lo) lo = _p.x; if (_p.x > hi) hi = _p.x; } return [lo * .5 + .5, hi * .5 + .5]; };      // its left and right ends on the screen, as shares of the width
+        const solve = f => { let a = Z0, b = Z1; for (let i = 0; i < 14; i++){ const m = (a + b) / 2; if (f(span(m)) < 0) a = m; else b = m; } return (a + b) / 2; };      // (both ends move right as it comes towards us)
+        look.place = () => {
+          let edge = .5 + 480 / Math.max(1, innerWidth);            // the page column's right-hand edge, as a share of the width
+          try { const w = document.querySelector('.wrap'); if (w){ const r = w.getBoundingClientRect(); if (r.width > 0) edge = (r.right - (parseFloat(getComputedStyle(w).paddingRight) || 0)) / Math.max(1, innerWidth); } } catch {}
+          const t = clamp((1 - edge) / .1, 0, 1);                   // no margin beside the page (a phone, a tablet): the model's place
+          camera.updateMatrixWorld();
+          const z = t > 0 ? Math.min(solve(q => q[0] - (edge + GAP_L)), solve(q => q[1] - (1 - GAP_R))) : Z0;
+          car.position.set(X, 0, lerp(Z0, z, t)); car.updateMatrixWorld(); smear.at(); taaN = 0;
+        };
+      }
+    }
 
     /* ── palms: in the park (one near us, its fronds hanging into the picture; a few further in, for a wide screen), by the corner where
        the street meets the waterfront, and along the water ── */
@@ -1313,7 +1405,7 @@ async function build(canvas, kind, dark){
            is in it, and the park's wall beyond the sun.
        These are fitted by eye to the model as it is: if the cinema moves or grows, YAW and FOV want looking at again. ── */
     const yaw = (px, pz, deg, y) => { const a = deg * Math.PI / 180; return [px + Math.sin(a) * 30, y, pz - Math.cos(a) * 30]; };      // a point 30 m off, that many degrees right of the street's line
-    const mc = (L.cam && L.cam.pos) || [-8.6, 3.7, 28], cx = mc[0], cz = mc[2] + .5, EYE = [cx, 2.5, cz];
+    const cx = EYE0[0], cz = EYE0[2], EYE = EYE0;
     const AT_Y = 3.55, FOV = 25.5, YAW = 14.5, LAP = 2.1, LAP_Y = 4.02, WIDE = { a:2.78, yaw:17, fov:25.5 }, PHONE = .9;
     const T0 = Math.tan(FOV * Math.PI / 360) * 16 / 9;                      // half the view from side to side at 16 : 9, as a tangent
     const fovFor = (a, k) => 2 * Math.atan(T0 * k / a) * 180 / Math.PI;      // the lens that gives k of that view on a screen of shape a
@@ -1412,7 +1504,7 @@ async function build(canvas, kind, dark){
     mainRT.setSize(w, h); histRT.forEach(rt => rt.setSize(w, h)); taaN = 0;
     LV.forEach((rt, i) => rt.setSize(Math.max(1, Math.round(w / Math.pow(2, i + 1))), Math.max(1, Math.round(h / Math.pow(2, i + 1)))));
     if (sea && sea.getRenderTarget){ const rw = Math.max(64, Math.round(w * .5)), rh = Math.max(64, Math.round(h * .5)); sea.getRenderTarget().setSize(rw, rh); if (sea.material.uniforms.uRT) sea.material.uniforms.uRT.value.set(rw, rh); }
-    frame(); placeSun();
+    frame(); if (look.place) look.place(); placeSun();
   };
   const render = t => {
     renderer.info.reset();

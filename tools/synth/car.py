@@ -14,6 +14,10 @@ What the page (fx/synth.js, the street scene) is given:
                          its texture coordinates. 4,180 triangles. Nothing of its shape is changed.
   images/synth/car.webp  its picture REDRAWN in flat colours, 1024 px: every bit of the picture is one kind of thing (bodywork,
                          glass, a window's surround, a lamp, a plate, a tyre, a wheel, dark trim) and has that kind's one colour.
+                         The rear lamps are one straight bar across the tail, as the real car's are.
+                         Its alpha is not transparency: it says how glossy that kind is (GLOSS below; 128 = matt, 255 = a
+                         mirror), which is what the page's shader goes by for the neon the car catches. It starts at 128 and
+                         not at 0 so that a browser which multiplies colour by alpha on the way in loses nothing of the colour.
 
 Why redrawn. The model's own picture is photographs of a real car: beside a scene of flat colours it looked pasted in (the
 owner: "too dissonant from the art style of the rest of the scene ... Really all that needs to be clear is windows, lights,
@@ -22,11 +26,14 @@ name in chrome, and a real registration plate. In the redrawn picture the badges
 lying on the bodywork is painted over) and both plates are blank.
 
 usage (from the repo root; needs NumPy and OpenCV):
-  python -P tools/synth/car.py --src <folder holding alfa-164.obj and main.png> [--paint '#7a1f33']
+  python -P tools/synth/car.py --src <folder holding alfa-164.obj and main.png> [--paint '#0f5a66']
                                [--out models/synth/car.glb] [--tex images/synth/car.webp] [--debug <prefix>]
 
-  --paint  the bodywork's colour (the model's own is a burgundy, about #771f31)
-  --debug  also writes <prefix>-flat.png (the picture) and <prefix>-kinds.png (which kind each bit was taken for)
+  --paint  the bodywork's colour. A dark teal: the owner's choice (2026-11-23, "I think dark teal would be a good accent"),
+           the one cool thing in a street of pink, magenta and purple. The model's own is a burgundy, about #771f31, which
+           it wore here at first: "the red is outside the scene's palette".
+  --debug  also writes <prefix>-flat.png (the picture), <prefix>-gloss.png (its alpha) and <prefix>-kinds.png (which kind
+           each bit was taken for)
 
 Run it with -P and never from inside the download folder: downloaded files are data, not code.
 """
@@ -34,10 +41,10 @@ import argparse, json, os, struct
 import numpy as np, cv2
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-ap = argparse.ArgumentParser(); ap.add_argument('--src', required=True); ap.add_argument('--paint', default='#7a1f33'); ap.add_argument('--debug')
+ap = argparse.ArgumentParser(); ap.add_argument('--src', required=True); ap.add_argument('--paint', default='#0f5a66'); ap.add_argument('--debug')
 ap.add_argument('--out', default=os.path.join(REPO, 'models', 'synth', 'car.glb')); ap.add_argument('--tex', default=os.path.join(REPO, 'images', 'synth', 'car.webp'))
 a = ap.parse_args()
-CREDIT = 'Alfa Romeo 164, by Shotkey (https://sketchfab.com/shotkey). CC BY-SA 4.0. Changed: recentred; its picture redrawn in flat colours, without badges or plates.'
+CREDIT = 'Alfa Romeo 164, by Shotkey (https://sketchfab.com/shotkey). CC BY-SA 4.0. Changed: recentred; its picture redrawn in flat colours (the bodywork a dark teal), without badges or plates.'
 
 # ── the mesh: objects (the body, and the tyres), positions, normals, texture coordinates; triangles ──
 V, VT, VN, tris, obj = [], [], [], [], 'main'
@@ -149,7 +156,7 @@ print('painted over in the dark trim: %d small things (what is left of a badge)'
 n_, cc, st, _ = cv2.connectedComponentsWithStats(((kind == LIGHT) & (who == 1)).astype(np.uint8), connectivity=8); k9 = np.ones((9, 9), np.uint8); gone = 0
 for c in range(1, n_):
     x, y, w, h, ar = st[c]
-    if ar > 3600 and ar > .16 * w * h: continue                                # big and solid: a lamp, a plate
+    if ar > 3600 and ar > .33 * w * h: continue                                # big and solid: a lamp, a plate. (.33: a headlamp is .37 of its box. The streaks of glare on the front wing are .21 and the pale outline of the grille's shield .29: both go)
     x0, y0, x1, y1 = max(0, x - 6), max(0, y - 6), min(R, x + w + 6), min(R, y + h + 6); m = cc[y0:y1, x0:x1] == c; kk = kind[y0:y1, x0:x1]
     ring = (cv2.dilate(m.astype(np.uint8), k9) > 0) & ~m & used[y0:y1, x0:x1] & (kk != LIGHT) & (kk != GLASS)
     if ring.any(): kk[m] = np.bincount(kk[ring], minlength=NK).argmax(); gone += 1
@@ -160,17 +167,40 @@ g = (cv2.GaussianBlur((kind == GLASS).astype(np.float32), (0, 0), 2.5) > .5) & (
 kind[(kind == GLASS) & ~g] = TRIM; kind[g] = GLASS
 kind[(cv2.dilate(g.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))) > 0) & ~g & (who == 1)] = TRIM
 
+# the rear lamps: ONE straight bar, the whole way across the tail, as the real car's is (the owner, 2026-11-23: "make the
+# taillights one straight beam going all the way across the rear like in the actual car"). The model's picture has it too, but
+# its middle lengths are a dimmer red that the sorting above takes for bodywork, which left three separate lamps. So: the three
+# big red pieces in the tail's row are found, and one oblong is drawn from the outer end of the first to the outer end of the
+# last (its pale tip included), at the height of the middle one. Anything else of a lamp just above or below that row (the
+# outer lamps were a little taller) becomes bodywork, so the bar's edges are two straight lines.
+n_, cc, st, _ = cv2.connectedComponentsWithStats(((kind == RED) & (who == 1)).astype(np.uint8), connectivity=8)
+big = sorted([st[c] for c in range(1, n_) if st[c, cv2.CC_STAT_AREA] > 3000], key=lambda q: -q[cv2.CC_STAT_AREA])[:3]
+assert len(big) == 3, 'expected the three pieces of the rear lamp bar, found %d' % len(big)
+mid = sorted(big, key=lambda q: q[0])[1]; by0, by1 = int(mid[1]), int(mid[1] + mid[3]); bx0 = int(min(q[0] for q in big)); bx1 = int(max(q[0] + q[2] for q in big))
+assert all(q[1] < by1 and q[1] + q[3] > by0 for q in big), 'the three pieces are not in one row'
+lamp = np.isin(kind, (RED, DIM, PALE, AMBER)) & (who == 1)                     # (the outer lamps end in a pale tip: the bar runs to the end of that)
+cols = np.nonzero(lamp[by0:by1, max(0, bx0 - 140):bx1 + 140].any(0))[0] + max(0, bx0 - 140); bx0, bx1 = int(min(bx0, cols.min())), int(max(bx1, cols.max() + 1))
+box = np.zeros((R, R), bool); box[max(0, by0 - 16):by1 + 16, max(0, bx0 - 6):bx1 + 6] = True
+kind[box & np.isin(kind, (RED, DIM, PALE, AMBER)) & (who == 1)] = PAINT
+kind[by0:by1, bx0:bx1][who[by0:by1, bx0:bx1] == 1] = RED
+print('rear lamp bar: %d x %d px of the 2048 px picture' % (bx1 - bx0, by1 - by0))
+
 # ── its colours: one flat colour a kind ──
 hx = lambda s: [int(s[i:i + 2], 16) for i in (1, 3, 5)]
-COL = {GLASS: hx('#0d1826'), PAINT: hx(a.paint), DARK: hx('#1b1a20'), LIGHT: hx('#b4bac4'), RED: hx('#d81f35'), PALE: hx('#e9a3a8'), AMBER: hx('#f08a1e'), TYRE: hx('#08080a'), DIM: hx('#a01c30'), TRIM: hx('#8a909c')}
-flat = np.zeros((R, R, 3), np.uint8)
-for k, c in COL.items(): flat[kind == k] = c
+# (the lamps are glass that is not lit: the car is parked. Their reds and ambers are those of an unlit lens, well below the
+#  brightness the model's picture gave them, which in the dark of this street read as lamps that were on)
+COL = {GLASS: hx('#0b1420'), PAINT: hx(a.paint), DARK: hx('#1b1a20'), LIGHT: hx('#b4bac4'), RED: hx('#8f1826'), PALE: hx('#b98d96'), AMBER: hx('#a8641c'), TYRE: hx('#08080a'), DIM: hx('#641322'), TRIM: hx('#434957')}
+# how glossy each kind is, 0 matt to 1 a mirror: what the neon across the street shows in (fx/synth.js, the car's material)
+GLOSS = {GLASS: 1., PAINT: .78, DARK: .22, LIGHT: .55, RED: .85, PALE: .85, AMBER: .85, TYRE: .04, DIM: .85, TRIM: .5}
+flat = np.zeros((R, R, 4), np.uint8)
+for k, c in COL.items(): flat[kind == k] = c + [128 + round(127 * GLOSS[k])]
 # what nothing reads takes the colour of the nearest bit that is read, so no dark creeps in along a seam when the picture is seen small
 _, lab = cv2.distanceTransformWithLabels((~used).astype(np.uint8), cv2.DIST_L2, 3, labelType=cv2.DIST_LABEL_PIXEL)
-ys, xs = np.nonzero(used); lut = np.zeros((lab.max() + 1, 3), np.uint8); lut[lab[ys, xs]] = flat[ys, xs]; flat = np.where(used[..., None], flat, lut[lab])
+ys, xs = np.nonzero(used); lut = np.zeros((lab.max() + 1, 4), np.uint8); lut[lab[ys, xs]] = flat[ys, xs]; flat = np.where(used[..., None], flat, lut[lab])
 out = cv2.resize(flat, (1024, 1024), interpolation=cv2.INTER_AREA)
 os.makedirs(os.path.dirname(os.path.abspath(a.tex)), exist_ok=True)
-cv2.imwrite(a.tex, cv2.cvtColor(out, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_WEBP_QUALITY, 101])      # (above 100: lossless)
+assert out[..., 3].min() >= 128
+cv2.imwrite(a.tex, cv2.cvtColor(out, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 101])      # (above 100: lossless)
 print('%s: 1024 x 1024, %d bytes' % (a.tex, os.path.getsize(a.tex)))
 if a.debug:
-    cv2.imwrite(a.debug + '-flat.png', cv2.cvtColor(out, cv2.COLOR_RGB2BGR)); cv2.imwrite(a.debug + '-kinds.png', cv2.resize((kind * 25).astype(np.uint8), (1024, 1024), interpolation=cv2.INTER_NEAREST))
+    cv2.imwrite(a.debug + '-flat.png', cv2.cvtColor(out[..., :3], cv2.COLOR_RGB2BGR)); cv2.imwrite(a.debug + '-gloss.png', out[..., 3]); cv2.imwrite(a.debug + '-kinds.png', cv2.resize((kind * 25).astype(np.uint8), (1024, 1024), interpolation=cv2.INTER_NEAREST))

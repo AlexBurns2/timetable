@@ -84,6 +84,42 @@ To update the site after changing the model:
   shows. Dark and glossy reads as a shape with lit edges.
 - **A pale thing behind a tube takes the tube away.** The shop had a pale band behind each neon line; the line was lost in it.
 
+## The street's parked car (`models/synth/car.glb`, `images/synth/car.webp`)
+
+Shotkey's "Alfa Romeo 164" (Sketchfab, **CC BY-SA 4.0**: credited in About, and our two files carry the same licence). The
+owner chose it and downloaded it. `tools/synth/car.py` makes both files from the download (`alfa-164.obj`, `main.png`):
+
+```
+python -P tools/synth/car.py --src <folder holding alfa-164.obj and main.png> [--paint '#0f5a66'] [--debug <prefix>]
+```
+
+- The mesh is unchanged (4,180 triangles, its own normals). The picture is **redrawn in flat colours**: each bit of it is
+  sorted into a kind (bodywork, glass, window surround, lamp, plate, tyre, wheel, dark trim) and given that kind's one colour.
+  No badges, no lettering, blank plates. The rear lamps are one straight bar across the tail.
+- The picture's **alpha is gloss, not transparency** (128 matt to 255 mirror). The page's shader reads it.
+- `--debug` writes the flat picture, the gloss channel and the kinds as PNGs: look at them after any change to the sorting.
+- Run it from the repo root with `-P`, never from inside the download folder.
+
+In the page (`fx/synth.js`, the street scene, "the car"):
+
+- **Its light is worked out in its own shader**, from where the cinema, the shop and the street lamp stand. The cinema's and
+  the shop's real lights do not reach it.
+- **Its shadow must draw after the light pools on the road** (`renderOrder` 1.3 against the pools' 1.2), or the lamp's pool
+  lights the road under the car and it floats.
+- **`look.place` parks it by the window**, once a resize: forward along the kerb until its nose clears the page column, but
+  never so far that its tail leaves the picture. The table of where it lands is in HANDOFF 8.182. If the page column's width
+  changes (960 px now), nothing here needs editing: it measures `.wrap`.
+- The street lamp stays at the model's place for the car, whatever the car does.
+
+Traps met while lighting it:
+
+| What went wrong | Why | What holds now |
+|---|---|---|
+| The roof came out pale lavender, not magenta | The shop's blue wrapped round onto the roof and lay on top of the cinema's magenta | The blue lights only what is turned to the shop |
+| Magenta came out pale pink | Too strong: the tone curve takes the colour out of anything bright | Every term kept weak; no green in the magenta |
+| The whole top of the car was a pink wash | The mirrored glow was let in from every height | The cinema's glow is mirrored only from low elevations, where the cinema is |
+| The rear window went a flat orange | The lamp's mirrored glow too broad and too strong | A narrow lobe at a third of the strength |
+
 ## The ground (`images/synth/ground-*.webp`)
 
 The street scene's road and plaza are drawn by the mirror's own shader (`STREET` in `fx/synth.js`); two small textures made

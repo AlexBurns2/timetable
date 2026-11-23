@@ -4557,3 +4557,52 @@ Not committed by Claude.
   flicker measurement or phone and tablet shots with the new car; the Games road car is still built in code.
 - Checked: the street renders with the car at 16 : 9 and 3440 x 1235 with no errors; the loader change was run on all five
   scenes earlier in the day with the trial model.
+
+## 8.182 The parked car after the owner's review: teal, lit by the neon, standing on the road, clear of the page (version `20261123k`, `CACHE_VERSION` v106)
+
+Not committed by Claude. Both other sessions were told that `k` / v106 are taken and `20261123l` / v107 are next.
+
+The owner sent a review of the car in the Home scene (six points), then "ignore the 4th point about grain, I think the crisp
+look is good for synthwave", then "also make the taillights one straight beam going all the way across the rear like in the
+actual car". What was done, point by point:
+
+| The review | What changed | Where |
+|---|---|---|
+| "The red is outside the scene's palette ... I think dark teal would be a good accent" | The bodywork is dark teal, `#0f5a66` | `tools/synth/car.py` (`--paint`), `images/synth/car.webp` |
+| "The neon isn't touching it ... magenta and cyan rim lights along the roof and trunk edge, soft streaks of the cinema's neon on the glass and paint, and the warm streetlamp glow on the roof" | The car's material works the cinema's and the shop's light out for itself (they are too far off for their real lights to reach): magenta along the roof and at the foot of the rear window, blue on the side turned to the shop, the pink sky in the side windows, the street lamp's glow in the rear one | `fx/synth.js`, the car's block in the street scene |
+| "It isn't sitting in the wet road ... a blurred reflection of the body and a darker contact patch under the wheels" | Its shadow is drawn after the street lamp's light on the road (before, that light lay on top of the shadow and wiped it out); a dark patch under each tyre; a soft dark streak on the road from the car towards the viewer | same |
+| "It's more detailed than its surroundings ... apply the same grain, bloom and colour grade" | **Nothing, on purpose** (the owner withdrew it) | |
+| "Leave the lamps dark" | The lamps are unlit glass: darker reds and ambers than before, which had read as lit | `car.py` |
+| "one straight beam going all the way across the rear" | The rear lamps are one bar from corner to corner (the model's picture had it, but its dimmer middle lengths were being sorted as bodywork, leaving three lamps) | `car.py` |
+| "move it further right or forward so it clears the window at 16:9, 16:10 and ultrawide" | The car is parked further towards the viewer, by an amount worked out from the window: `look.place` | `fx/synth.js` |
+
+**Where the car lands** (the page column is always 960 px wide, centred; computed with the scene's own camera and checked
+against screenshots):
+
+| Window | Car against the column | To spare at the right-hand edge |
+|---|---|---|
+| 1920 x 1080 and 1920 x 1200 | clear by 23 px | 23 px |
+| 2560 x 1440, 2560 x 1600 | clear by 88 px (it stays at the model's place) | 200 px |
+| 2560 x 1080 | clear by 77 px | 216 px |
+| 3440 x 1440 | clear by 103 px | 563 px |
+| 1800 wide | 8 px behind | 22 px |
+| 1680 x 1050 | 40 px behind (a tenth of the car) | 20 px |
+| 1536 x 864 | 78 px behind (a fifth) | 18 px |
+| 1440 x 900 | 103 px behind (a third) | 17 px |
+| 1366 x 768 | 122 px behind (two fifths) | 16 px |
+| 1280 wide | 145 px behind (half) | 15 px |
+| a tablet, a phone | the page fills the width; the car is at the model's place, as before | |
+
+- **Below about 1850 px wide there is not room** for the whole car between the column and the edge of the screen: at
+  1920 px the margin is 480 px and the car is 434 px across. There the rule keeps the tail in the picture and lets the nose
+  go behind the column. The only other ways to clear it at those sizes would be a smaller or further car on the pavement, or
+  a narrower page column; neither was asked for.
+- The street lamp did not move. It stood by the tail of the car in the model's place; the car is now parked under it.
+- Checked: all five scenes load with no error or warning (Home also in light mode and as an ordinary visitor). Flicker
+  (40 consecutive frames, 1280 x 720, a phone, an ultrawide): the car's cells read 0.07 to 0.22 on a 0 to 255 scale, against
+  0.06 to 0.17 before; the rest of the picture is unchanged. The swaying palm, which is meant to move, reads about 1 to 2 on the same scale.
+- The car's triangle count is unchanged (4,180); the shadow, patches and streak add 12. `car.webp` is 15 KB.
+- The three street stills were remade (`street-night`, `-m`, `-p`): they showed the old code-built wedge until now.
+- Not done, and said to the owner: no interior or parking-light glow (the review offered it as optional). The Games road
+  scene's car is still built in code.
+- About's credit line now says what was changed (repainted teal, rear lamps as one bar), as CC BY-SA asks.

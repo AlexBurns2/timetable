@@ -160,3 +160,9 @@ scratchpad (`car/`). **Nothing from it is in the repo or on the site:** the owne
 (`api.sketchfab.com/v3/models/...`, 6 KB) to read the licence. In the repo: `models/synth/car.glb` (131 KB, the mesh unchanged)
 and `images/synth/car.webp` (16 KB, its picture redrawn flat: no badges, blank plates), both made by `tools/synth/car.py` and
 both CC BY-SA 4.0. Credited in About, 3D credits. The PSX pack above is not used.
+
+**8.182, the same day: nothing new downloaded.** The same model, converted again by `tools/synth/car.py` with the owner's
+review applied: the bodywork repainted dark teal, the rear lamps drawn as one bar across the tail, the lamps' colours those
+of unlit glass, the glare streaks on the front wing and the pale outline of the grille's shield painted over, and the picture's
+alpha now holding how glossy each part is. `images/synth/car.webp` is 15 KB. Still CC BY-SA 4.0; the credit in About says
+what was changed.
