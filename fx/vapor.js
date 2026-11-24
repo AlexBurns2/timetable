@@ -800,7 +800,7 @@ function visitors(){
 
   const layer = document.createElement('div'); layer.className = 'vw-ent'; document.body.appendChild(layer);
   const sync = () => { layer.hidden = root.getAttribute('data-skin') !== 'vapor'; }; sync(); addEventListener('tt:look', sync);
-  const instant = () => { if (root.getAttribute('data-fx') !== 'on') return true; try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
+  const instant = () => root.getAttribute('data-fx') !== 'on';      // (the site's Animation switch: theme.js turns it off for Reduce motion, and Settings can turn it back on; that choice wins)
   const fill = v => String(v == null ? '' : v).replace(/\{NAME\}/g, dosName());
   const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
   const rand = a => a[0] + Math.random()*(a[1] - a[0]), wait = ms => new Promise(r => setTimeout(r, ms));

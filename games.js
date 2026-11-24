@@ -153,6 +153,7 @@ const GAMES = [
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
   { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose Timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
   { id:'quartets', cat:'Timetable', ico:'☘️', name:'Triplets', blurb:'Find the three groups of three from your year.' },
+  { id:'fours', cat:'Timetable', ico:'🍀', name:'Quartets', blurb:'Four groups of four from your year, a new one every second day', isNew:true },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -1438,7 +1439,7 @@ BUILD.dailyguess = host => {
     for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
     for (let d = 1; d <= dim; d++){
       const date = iso(d), mine = arch.mine[date], day = arch.days[date];
-      const off = date < arch.epoch || date > arch.today;
+      const off = date < arch.epoch || date > arch.today || !!(arch.qdays && !arch.qdays.has(date));
       const state = mine && mine.won ? 'won' : mine && mine.done ? 'lost' : 'open';
       const tip = off ? '' : shortDate(date) + (mine && mine.won ? ': you got it in ' + mine.guesses : mine && mine.done ? ': you missed it' : ': not played') +
         (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
@@ -1817,8 +1818,12 @@ const QT_SQ = ['', '🟩', '🟦', '🟧', '🟥'];
 /* Triplets (from 21 November 2026): nine people, three groups of three, four mistakes and one hint you
    ask for. Earlier days are still the four-by-four Quartets they were made as, with their old hints; the
    board takes its size from the day's puzzle (K groups of K). */
-BUILD.quartets = host => {
-  head(host, 'Triplets', 'Find the three groups of three from your year.', '<div id="qt"></div>');
+/* Quartets again (from 24 November 2026): its own game, the same board with Q set. Four groups of four and seven mistakes, as it
+   was; a new puzzle every second day (on the days between, the last one, and when the next comes); its calendar has its old
+   days too (10 to 20 November), which have left Triplets' (api/_connroute.js, quartRoute). */
+const connGame = (host, Q) => {
+  const GID = Q ? 'fours' : 'quartets', P = o => Object.assign({ conn:1 }, Q ? { q:1 } : {}, o || {});
+  head(host, Q ? 'Quartets' : 'Triplets', Q ? 'Find the four groups of four from your year. A new one every second day.' : 'Find the three groups of three from your year.', '<div id="qt"></div>');
   const box = $('qt');
   let alive = true, arch = null, calMonth = null, cur = null;
   const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-AU', { month:'short', day:'numeric', timeZone:'UTC' });
@@ -1835,7 +1840,7 @@ BUILD.quartets = host => {
     clearTimeout(retryTimer);
     if (!again){ tries = 0; box.innerHTML = LD(date ? 'Loading that day…' : 'Loading today’s puzzle…', date ? '' : 'The first one each day takes a few seconds to make.'); }
     let s = null;
-    try { s = await TT.api('/api/daily', { params: Object.assign({ conn:1 }, date ? { date } : {}) }); }
+    try { s = await TT.api('/api/daily', { params: P(date ? { date } : {}) }); }
     catch (e){ s = null; }
     if (!alive) return;
     if (!s || s.none){
@@ -1854,6 +1859,7 @@ BUILD.quartets = host => {
     return '<div class="dgbar"><span class="dgwhen">Year ' + esc(s.year) + ' · <b>' + esc(s.date === s.today ? 'Today' : longDate(s.date)) + '</b></span>' +
       '<span class="dgstreak" title="Your streak: days in a row solved">🔥 <b id="qtstreak">' + (streak || 0) + '</b></span><span class="dgsp"></span>' +
       '<button class="dgchip" id="qtcalbtn" type="button" aria-expanded="' + calOpen + '" aria-controls="qtcal">Archive</button></div>' +
+      (Q && s.next && s.date !== s.today ? '<p class="how qtnext">A new Quartets every second day: the next is on <b>' + esc(longDate(s.next)) + '</b>.</p>' : '') +
       '<div class="dgcal" id="qtcal"' + (calOpen ? '' : ' hidden') + '></div>';
   }
   function wireBar(s){
@@ -1876,7 +1882,7 @@ BUILD.quartets = host => {
       if (r.streak != null) streak = r.streak;
       const left = new Set(r.tiles || []); order = order.filter(n => left.has(n)).concat((r.tiles || []).filter(n => !order.includes(n))); };
     const won = () => found.length === K && mistakes < CH;
-    markDay('quartets', s, { done, won: won(), streak });
+    markDay(GID, s, { done, won: won(), streak });
     const sel = new Set(), tried = new Set();
     let busy = false;
 
@@ -1923,13 +1929,13 @@ BUILD.quartets = host => {
       $('qtbtns').hidden = done;
     };
     const say = (t, bad) => { const m = $('qtmsg'); m.textContent = t; m.className = 'qtmsg' + (bad ? ' bad' : ''); clearTimeout(say.t); say.t = setTimeout(() => { if (m.isConnected) m.textContent = ''; }, 2600); };
-    const afterSave = () => { markDay('quartets', s, { done, won: won(), streak }); const el = $('qtstreak'); if (el) el.textContent = streak;
+    const afterSave = () => { markDay(GID, s, { done, won: won(), streak }); const el = $('qtstreak'); if (el) el.textContent = streak;
       if (arch && done){ arch.mine[s.date] = { solved:won(), done:true, mistakes }; if (!$('qtcal').hidden) paintCal(); } };
 
     /* the share card: an image of how you went (no names, no answers), and the same as text */
     const verdict = () => (won() ? (mistakes ? 'Solved with ' + mistakes + ' mistake' + (mistakes === 1 ? '' : 's') : 'Solved with no mistakes') : 'Missed it') + (hinted ? ', one hint' : '');
     const shareText = () => GAME + ' · Year ' + s.year + ' · ' + longDate(s.date) + '\n' + verdict() + '\n' +
-      log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=quartets';
+      log.map(g => g.map(l => QT_SQ[l]).join('')).join('\n') + '\nwww.mscunofficial.com/games.html?play=' + GID;
     const drawCard = () => {
       const S = 2, W = 360, sq = 34, gap = 7, rows = Math.max(1, log.length);
       const H = 168 + rows * (sq + gap);
@@ -1975,7 +1981,7 @@ BUILD.quartets = host => {
     if ($('qthint')) $('qthint').onclick = async () => {
       if (hinted || done || busy) return;
       busy = true; paintGrid();
-      try { take(await TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, hint:true } })); say('Hint: the two highlighted people are in the same group.'); }
+      try { take(await TT.api('/api/daily', { method:'POST', body:P({ date:s.date, hint:true }) })); say('Hint: the two highlighted people are in the same group.'); }
       catch (e){ say(e.message, true); }
       busy = false; paintGrid();
     };
@@ -1986,7 +1992,7 @@ BUILD.quartets = host => {
       busy = true; $('qtgo').disabled = true;
       const before = (hint.gold || []).length + (hint.blue || []).length, blueBefore = (hint.blue || []).length;
       let r;
-      try { r = await TT.api('/api/daily', { method:'POST', body:{ conn:1, date:s.date, pick } }); }
+      try { r = await TT.api('/api/daily', { method:'POST', body:P({ date:s.date, pick }) }); }
       catch (e){ busy = false; say(e.message, true); paintGrid(); return; }
       busy = false;
       if (!alive) return;
@@ -2019,7 +2025,7 @@ BUILD.quartets = host => {
   async function loadSummary(date){
     const el = $('qtsummary'); if (!el) return;
     if (!el.innerHTML) el.innerHTML = LD();
-    try { const d = await TT.api('/api/daily', { params:{ conn:1, date, summary:1 } }); if (alive && el.isConnected) renderSummary(el, d.summary, d.mine || {}); }
+    try { const d = await TT.api('/api/daily', { params:P({ date, summary:1 }) }); if (alive && el.isConnected) renderSummary(el, d.summary, d.mine || {}); }
     catch (e){ el.innerHTML = '<p class="how" style="margin:0">Could not load the results.</p>'; }
   }
   function renderSummary(el, sum, mine){
@@ -2094,8 +2100,8 @@ BUILD.quartets = host => {
     if (!arch){
       el.innerHTML = LD();
       try {
-        const d = await TT.api('/api/daily', { params:{ conn:1, archive:1 } });
-        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch };
+        const d = await TT.api('/api/daily', { params:P({ archive:1 }) });
+        arch = { days:{}, mine:d.mine || {}, today:d.today, epoch:d.epoch, qdays:Q && d.qdays ? new Set(d.qdays) : null };      // (Quartets: only its own days can be opened)
         (d.archive || []).forEach(a => arch.days[a.date] = a);
       } catch (e){ el.innerHTML = '<p class="how" style="margin:0">Couldn’t load past days.</p>'; return; }
     }
@@ -2115,7 +2121,7 @@ BUILD.quartets = host => {
     for (let i = 0; i < firstDow; i++) cells += '<span class="dgc blank"></span>';
     for (let d = 1; d <= dim; d++){
       const date = iso(d), mine = arch.mine[date], day = arch.days[date];
-      const off = date < arch.epoch || date > arch.today;
+      const off = date < arch.epoch || date > arch.today || !!(arch.qdays && !arch.qdays.has(date));
       const state = mine && mine.solved ? 'won' : mine && mine.done ? 'lost' : 'open';
       const tip = off ? '' : shortDate(date) + (mine && mine.solved ? ': solved with ' + mine.mistakes + ' mistake' + (mine.mistakes === 1 ? '' : 's') : mine && mine.done ? ': you missed it' : ': not played') +
         (day && day.played ? ' · ' + day.wins + ' of ' + day.played + ' solved' : '');
@@ -2140,6 +2146,8 @@ BUILD.quartets = host => {
   }
   return () => { alive = false; clearTimeout(retryTimer); };
 };
+BUILD.quartets = host => connGame(host, false);      // Triplets (its id is still "quartets": links and saved days use it)
+BUILD.fours = host => connGame(host, true);          // Quartets
 
 /* ── Tetris ────────────────────────────────────────────────────────
    Two modes — Sprint (clear 40 lines; deterministic weekly pieces; best
@@ -2151,7 +2159,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261123l';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124h';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

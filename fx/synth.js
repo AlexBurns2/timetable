@@ -324,10 +324,10 @@ const GLSL_HASH = 'float h21(vec2 p){ p = fract(p * vec2(233.34, 851.73)); p += 
   'float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h21(i), h21(i + vec2(1., 0.)), f.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), f.x), f.y); }\n';
 /* the sky: three colours top to horizon, a haze on the horizon, the sun's glow, stars at night */
 const SKY_V = 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); gl_Position.z = gl_Position.w; }';
-const SKY_F = 'uniform vec3 uTop, uMid, uHor, uGlow, uSun; uniform vec4 uHz; uniform float uStars;\nvarying vec3 vDir;\n' +
+const SKY_F = 'uniform vec3 uTop, uMid, uHor, uGlow, uSun; uniform vec4 uHz; uniform float uStars, uSkyY;\nvarying vec3 vDir;\n' +
   'float h31(vec3 p){ p = fract(p * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }\n' +
   'void main(){\n' +
-  '  vec3 d = normalize(vDir); float y = d.y;\n' +
+  '  vec3 d = normalize(vDir); float y = d.y * uSkyY;\n' +      /* uSkyY: how much nearer the horizon the sky's colours lie (look.skyY; 1 in most scenes) */
   '  vec3 c = mix(uHor, uMid, smoothstep(-.01, .12, y)); c = mix(c, uTop, smoothstep(.07, .34, y));\n' +
   '  c += uHor * .3 * exp(-abs(y) * 30.);\n' +
   '  float up = max(y, 0.), az = max(dot(normalize(d.xz + 1e-5), normalize(uSun.xz + 1e-5)), 0.);\n' +          /* the haze (uHz: fall-off and strength all round; fall-off and strength towards the sun). */
@@ -507,8 +507,19 @@ async function build(canvas, kind, dark){
 
   const renderer = new T.WebGLRenderer({ canvas, antialias:false, alpha:false, depth:true, stencil:false, powerPreference:'low-power' });
   renderer.setPixelRatio(1); renderer.autoClear = false; renderer.info.autoReset = false;      // counted per frame (all passes), not per render call
-  const ext = renderer.extensions, hdr = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
-  const RT_TYPE = hdr ? T.HalfFloatType : T.UnsignedByteType;
+  /* the pictures it draws into: half-float (light brighter than white, for the bloom) and, on a computer, smoothed edges (four
+     samples a pixel). Not every graphics chip and browser can make every one of these (some Macs: half-float that can be
+     drawn into but not with four samples), and one that can't isn't an error: the picture just comes out black, or never
+     comes. So each is tried on a small picture first (bufOk: does the framebuffer come out complete, with no error?), best
+     first, and the first that works is used. */
+  const glc = renderer.getContext(), ext = renderer.extensions;
+  const bufOk = (type, samples) => { let rt = null; try { while (glc.getError()) {}
+      rt = new T.WebGLRenderTarget(4, 4, { type, samples, depthBuffer:true }); renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 1); renderer.clear();
+      return glc.checkFramebufferStatus(glc.FRAMEBUFFER) === glc.FRAMEBUFFER_COMPLETE && glc.getError() === glc.NO_ERROR; }
+    catch { return false; } finally { renderer.setRenderTarget(null); if (rt) rt.dispose(); } };
+  const floatOk = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
+  const NS = SMALL ? 0 : 4, BUF = [[T.HalfFloatType, NS], [T.HalfFloatType, 0], [T.UnsignedByteType, NS], [T.UnsignedByteType, 0]].filter(([ty, n], i, all) => (ty !== T.HalfFloatType || floatOk) && all.findIndex(q => q[0] === ty && q[1] === n) === i).find(([ty, n]) => bufOk(ty, n)) || [T.UnsignedByteType, 0];
+  const hdr = BUF[0] === T.HalfFloatType, RT_TYPE = BUF[0], RT_SAMPLES = BUF[1];
   const dispose = [];                                         // everything to give back at the end
   const keep = o => { dispose.push(o); return o; };
 
@@ -517,7 +528,7 @@ async function build(canvas, kind, dark){
   const fog = new T.Fog(0x000000, 60, 900); scene.fog = fog;
 
   /* the sky: a sphere that goes where the camera goes */
-  const skyU = { uTop:{ value:new T.Color() }, uMid:{ value:new T.Color() }, uHor:{ value:new T.Color() }, uGlow:{ value:new T.Color() }, uSun:{ value:new T.Vector3(0, .07, -1) }, uStars:{ value:0 }, uHz:{ value:new T.Vector4(14, .2, 7, .45) } };
+  const skyU = { uTop:{ value:new T.Color() }, uMid:{ value:new T.Color() }, uHor:{ value:new T.Color() }, uGlow:{ value:new T.Color() }, uSun:{ value:new T.Vector3(0, .07, -1) }, uStars:{ value:0 }, uHz:{ value:new T.Vector4(14, .2, 7, .45) }, uSkyY:{ value:1 } };
   const skyMat = keep(new T.ShaderMaterial({ uniforms:skyU, vertexShader:SKY_V, fragmentShader:SKY_F, side:T.BackSide, depthWrite:false, fog:false }));
   const skyGeo = keep(new T.SphereGeometry(1000, 40, 20));
   const sky = new T.Mesh(skyGeo, skyMat); sky.renderOrder = -2; sky.frustumCulled = false; scene.add(sky);
@@ -581,7 +592,7 @@ async function build(canvas, kind, dark){
   let sea = null;
   const makeSea = (size, rip, shader) => {
     const g = keep(new T.PlaneGeometry(size, size));
-    if (RF && hdr){
+    if (RF){      // (the mirror's own picture is ordinary 8-bit: it needs no half-float buffers, so it is there on a device that has none)
       sea = new RF.Reflector(g, { textureWidth:256, textureHeight:256, multisample:SMALL ? 0 : 4, clipBias:.002, shader:shader || SEA });      // smoothed edges in the reflection too (they were jagged, and sparkled as the water moved)
       const u = sea.material.uniforms; u.uDeep.value = new T.Color(); u.uFog.value = new T.Color(); u.uFogR.value = new T.Vector2(80, 900); u.uRip.value = rip || 1;
       u.color.value = new T.Color(.92, .9, .95);
@@ -698,7 +709,7 @@ async function build(canvas, kind, dark){
   };
 
   /* ═══ the scenes ═══ */
-  let update = () => {}, cams = null, look = { bloom:1, exp:1, fogNear:60, fogFar:900, seaRip:1, sunEl:.07 };
+  let update = () => {}, cams = null, overlay = null, look = { bloom:1, exp:1, fogNear:60, fogFar:900, seaRip:1, sunEl:.07 };      // overlay: a scene drawn over the steadied picture, not into it (see render)
   const pal = { };                                         // per-scene colour changes, applied over DAY in setMode
   const DIR = (az, el) => new T.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el)).normalize();
 
@@ -996,7 +1007,19 @@ async function build(canvas, kind, dark){
        screen; the waterfront road across the street's end, the bay, and the city on its far shore under the sun, which stands at
        the street's vanishing point. Still: only the sun's bands, the palms' fronds, the steadying move. */
     const L = M.$ || {}, CP = (M.cinema || {}).parts || {}, GR = L.ground || { x0:-13, x1:29, z0:-14, z1:20 };
-    sunDir = DIR(0, .06); sunR = 104; look.fogNear = 60; look.fogFar = 1100; look.deep = '#150a26';      // the sun dead ahead down the street
+    sunDir = DIR(0, .06); sunR = 84; look.fogNear = 60; look.fogFar = 1100; look.deep = '#150a26';      // the sun dead ahead down the street
+    /* the grade (the owner, 2026-11-23: "the cinema scene is definitely the most visually impressive, but at the moment its a bit
+       washed out and there aren't enough dark tones. The timetable page is really good because the bright sun and city lights
+       are contrasted with the dark island, silhouettes and sky ... the cinema scene has a ton of light pretty much everywhere ...
+       I think the sun could be made a bit smaller so more of the darker night sky is visible"). Why it was so: this camera looks
+       out level through a long lens (25.5 degrees from top to bottom), and the sky's colours change with height above the
+       horizon: what it saw was only the bright band near the horizon, never the dark night above, which a scene that looks up
+       (the bay's) has a great deal of. And the wet road, the plaza and the bay mirror that same bright band. So, for this scene:
+       the sky's colours drawn SKY_Y times nearer the horizon (the dark night in view, and darker in every reflection); the haze
+       on the horizon at HAZE of its strength; the sun smaller (sunR, 104 before); the purple fill from the sky that lifts every
+       wall out of the dark (look.hemi) much less; a little less exposure. Measured on the bare picture at 1920 x 1080: see HANDOFF
+       8.186. */
+    look.skyY = 2.3; look.haze = .55; look.hemi = .45; look.exp = .9;
     makeSea(2400, 1, STREET);
     if (sea.material.uniforms && sea.material.uniforms.uQuay) sea.material.uniforms.uQuay.value = GR.z0 - .15;      // past the model's far edge the ground is water
     await Promise.race([document.fonts ? document.fonts.load('700 64px Saira') : null, new Promise(r => setTimeout(r, 1500))]).catch(() => {});
@@ -1084,7 +1107,8 @@ async function build(canvas, kind, dark){
        white: the blue ring was sky blue, the green one mint). TUBE: each colour as the tube shows it, the lesser channels held down. */
     const TUBE = { blue:[.02, .1, 1], cyan:[0, .5, 1], green:[.02, 1, .16], yellow:[1, .5, .01], red:[1, .01, .04], pink:[1, .02, .42], white:[1, .82, .9], orange:[1, .2, .01], purple:[.36, .04, 1] };
     const hue = n => NEON[n] || NEON.pink, hot = (n, k) => { const c = TUBE[n] || TUBE.pink; return new T.Color(c[0] * k, c[1] * k, c[2] * k); };
-    const flick = {};                                         // what falters now and then: the sign's last letter, the shop's OPEN (see update, at the foot of this scene)
+    const flick = {}, ticks = [], LAMP1 = {}, CARM = {};      // (CARM: the parked car's mesh: what must not stand behind it can cast rays at it)
+    // what moves (all of it run at the foot of this scene): flick, the neon that chases or falters and the television; ticks, each moving thing's work for a frame; LAMP1, the street lamp by the car (its glare breathes, moths circle it)
     const GL = L.glow || {}, rings = (GL.rings || []).slice(0, 8), gpts = (GL.pts || []).slice(0, 16);
     if (L.sign) for (const lp of (L.sign.loops || []).slice(0, 8)) if (gpts.length < 24) gpts.push({ p:[lp[0], lp[1], lp[2]], col:'pink', k:.6 });      // the sign's own tubes: a point a letter
     const NR = Math.max(1, rings.length), NP = Math.max(1, gpts.length);
@@ -1108,17 +1132,25 @@ async function build(canvas, kind, dark){
     const look1 = { building:wallM, structure:structM, letters:glowLit(std({ color:'#07050b', roughness:.55, side:T.DoubleSide }), 1.5),      // (the letters: black holders, catching a little of their own tubes' light)
       sidewalk:std({ color:'#2b2236', roughness:.92, side:T.DoubleSide, envMapIntensity:.25 }),
       glass:std({ color:'#0c0a18', roughness:.24, metalness:.3, transparent:true, opacity:.3, side:T.DoubleSide, depthWrite:false }) };      // (not a mirror: a mirror showed the forecourt's lamp as a white dot in the middle of the window)
+    /* the cinema's four bands of neon, and the three lines up its tower, each a material of its own so that they can light in turn
+       (the chase, at the foot of this scene). The model has all its red in one part (the lowest band and the tower's three lines):
+       it is split here, each triangle to the nearest of their heights */
+    flick.chase = [];
+    const chaseBit = (g, mat) => { scene.add(new T.Mesh(g, mat)); const pa = g.getAttribute('position'), ix = g.index.array; let y = 0; for (let i = 0; i < ix.length; i++) y += pa.getY(ix[i]); flick.chase.push({ mat, c0:mat.color.clone(), y:y / Math.max(1, ix.length) }); };
+    const redYs = rings.filter(q => q.col === 'red').map(q => q.c[1]);
     for (const n in CP){ const neonN = /^neon /.test(n) ? n.slice(5) : null, mat = neonN ? keep(new T.MeshBasicMaterial({ color:hot(neonN, 2.2), fog:false })) : look1[n] || structM;
+      if (neonN === 'red' && redYs.length > 1 && CP[n].index){ const g = CP[n], pa = g.getAttribute('position'), ix = g.index.array, groups = redYs.map(() => []);
+        for (let i = 0; i < ix.length; i += 3){ const y = (pa.getY(ix[i]) + pa.getY(ix[i + 1]) + pa.getY(ix[i + 2])) / 3; let k = 0; for (let j = 1; j < redYs.length; j++) if (Math.abs(y - redYs[j]) < Math.abs(y - redYs[k])) k = j; groups[k].push(ix[i], ix[i + 1], ix[i + 2]); }
+        for (const q of groups) if (q.length){ const g2 = keep(new T.BufferGeometry()); for (const a in g.attributes) g2.setAttribute(a, g.attributes[a]); g2.setIndex(q); g2.computeBoundingSphere(); chaseBit(g2, keep(mat.clone())); }
+        continue; }
+      if (neonN === 'red' || neonN === 'blue' || neonN === 'green' || neonN === 'yellow'){ chaseBit(CP[n], mat); continue; }
       const m = new T.Mesh(CP[n], mat); if (n === 'glass') m.renderOrder = 1.4; scene.add(m); }
+    flick.chase.sort((a, c) => a.y - c.y);                     // from the lowest band up, and on up the tower
     /* the sign: tubes of neon bent round the letters (which are their black holders): round each heavy stroke, down each hairline */
     if (L.sign){ const sm = keep(new T.MeshBasicMaterial({ color:new T.Color(3.0, .08, 1.1), fog:false })), r = (L.sign.r || .022) * 1.5;      // hot pink (it was nearly white), half as thick again (at 2 cm a tube was under a pixel from where we stand)
-      /* the letter at the end of the sign nearest us has a material of its own (smA): it is the one that falters (flicker, below).
-         Which strokes are that letter: those whose middle lies within 0.95 m of the sign's near end, along the sign */
-      const all = (L.sign.loops || []).concat(L.sign.lines || []), mid = a => { let x = 0, z = 0; for (let i = 0; i < a.length; i += 3){ x += a[i]; z += a[i + 2]; } return [x / (a.length / 3), z / (a.length / 3)]; };
-      const ax = (() => { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const a of all) for (let i = 0; i < a.length; i += 3){ x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]); z0 = Math.min(z0, a[i + 2]); z1 = Math.max(z1, a[i + 2]); } return z1 - z0 >= x1 - x0 ? { i:1, end:z1 } : { i:0, end:x1 }; })();
-      const last = a => all.length > 3 && ax.end - mid(a)[ax.i] < .95, smA = keep(sm.clone()); flick.sm = smA; flick.sm0 = sm.color.clone();
-      const line = (a, closed) => { const P = []; for (let i = 0; i < a.length; i += 3) P.push(V(a[i], a[i + 1], a[i + 2])); if (P.length > 1) scene.add(new T.Mesh(tubeAlong(P, r, closed), last(a) ? smA : sm)); };
-      (L.sign.loops || []).forEach((a, i) => { line(a, true); if (last(a) && flick.pt == null && gpts[(GL.pts || []).slice(0, 16).length + i]) flick.pt = (GL.pts || []).slice(0, 16).length + i; });      // (and that letter's own light on its holder: its place among glowLit's points)
+      const all = (L.sign.loops || []).concat(L.sign.lines || []);
+      const line = (a, closed) => { const P = []; for (let i = 0; i < a.length; i += 3) P.push(V(a[i], a[i + 1], a[i + 2])); if (P.length > 1) scene.add(new T.Mesh(tubeAlong(P, r, closed), sm)); };
+      (L.sign.loops || []).forEach(a => line(a, true));
       (L.sign.lines || []).forEach(a => line(a, false));
       /* the haze round the sign: a faint wide glow, as the air has a little mist in it (the owner's second review: the haze
          "softens the neon signs into halos"). Faint on purpose: this side of the picture was once "too washed out", and a glow
@@ -1186,7 +1218,18 @@ async function build(canvas, kind, dark){
         else S.W(S.g, xx + .06, y0 + .06, ww - .12, wh - .12, 'rgba(130,60,160,.55)', 'rgba(20,10,30,.2)');
         S.R(cx - .035, y0, .07, wh, '#150c1c', ''); S.R(xx, y0 + wh * .62, ww, .06, '#150c1c', ''); };
       const WY = GF + 1.15, WH = Math.max(1.6, Math.min(2.6, BH - GF - 2.9)), nW = Math.max(1, Math.round(BW / 3.1));
-      for (let i = 0; i < nW; i++) win(fb, (i + .5) * BW / nW, WY, 1.5, WH, [1, 0, 1, 1, 0][i % 5] === 1);
+      for (let i = 0; i < nW; i++) win(fb, (i + .5) * BW / nW, WY, 1.5, WH, [0, 1, 1, 1, 0][i % 5] === 1);
+      /* in the first of them (the one a 16 : 9 screen shows, at its right-hand edge) a dark room lit by a television: its light on
+         the glass, changing as the picture does (flick.tv, at the foot of this scene). The owner, 2026-11-23: "A flickering TV glow
+         in an upstairs window". (That window was lit, and the second, which only a wide screen shows, was dark: they swapped) */
+      { const cx = .5 * BW / nW, pw = 1.5 - .12, ph = WH - .12, K = 96, c = canvas(Math.round(pw * K), Math.round(ph * K)), x = c.getContext('2d'), w = c.width, h = c.height;
+        x.fillStyle = '#000'; x.fillRect(0, 0, w, h);
+        const gr = x.createRadialGradient(w * .5, h * .8, 0, w * .5, h * .8, w * .95); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.45, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,.16)');
+        x.fillStyle = gr; x.fillRect(0, 0, w, h);                // brightest low down, where the set is (the canvas runs downwards); a wash over the rest of the room
+        const cg = x.createLinearGradient(0, 0, 0, h * .22); cg.addColorStop(0, 'rgba(255,255,255,.45)'); cg.addColorStop(1, 'rgba(255,255,255,0)'); x.globalCompositeOperation = 'lighter'; x.fillStyle = cg; x.fillRect(0, 0, w, h * .22); x.globalCompositeOperation = 'source-over';      // and on its ceiling
+        x.fillStyle = '#000'; x.fillRect(w / 2 - .035 * K, 0, .07 * K, h); x.fillRect(0, h - (WH * .62) * K, w, .06 * K);      // the window's own bars stay dark
+        flick.tv = wallAt(pw, ph, x0 - .02, WY + .06 + ph / 2, zA + cx, keep(new T.MeshBasicMaterial({ map:tex(c), color:new T.Color(.3, .4, .8), blending:T.AdditiveBlending, transparent:true, depthWrite:false, fog:false })), -Math.PI / 2);
+        flick.tv.renderOrder = 1.45; }
       /* its ground floor: a dark painted front, pale piers, the shop's window and its door (openings: the shop is behind them) */
       const DOOR = [.7, 1.95], SHOP = [2.55, BW - .75];
       fb.R(0, 0, BW, GF, '#170a19', ''); fb.W(fb.g, 0, GF - 1.1, BW, 1.1, 'rgba(255,40,150,.3)', 'rgba(255,40,150,0)', true); fb.W(fb.ge, 0, GF - 1.1, BW, 1.1, 'rgba(255,30,140,.24)', 'rgba(255,30,140,0)', true);
@@ -1283,9 +1326,9 @@ async function build(canvas, kind, dark){
            brightest at the head and fades smoothly, perhaps with a slight streak." One picture of light (glare) that is brightest
            at its middle and falls away steeply, with a long faint skirt; and a thin level streak through the nearer heads.
            "All the halos are similar in size. Near lamps should have big, strong glare and far ones small and dim": by `near`.
-         · "a low-density global volumetric haze under the streetlights ... gives each lamp a faint light cone": a cone of faint
-           amber under each head, strongest by the head. Kept faint: "Haze lifts the blacks, so too much will raise the brightness
-           behind your UI", and two of these lamps stand behind the page.
+         · "a low-density global volumetric haze under the streetlights ... gives each lamp a faint light cone": tried, and taken
+           out the next day (the owner: the cones "narrow to a point" and are "way too thick"; "It makes the scene even more washed
+           out"). What is left of the haze is the faint glow round the two neon signs.
          · "The lamps barely light anything ... The light should pool on the ground and catch nearby surfaces": a brighter pool
            straight under the head inside the wide one; light on the pavement from the kerb outwards (it is 12 cm above the road,
            so the road's pool never reached it); the pole lit down the side that faces the head (poleLit); and the lamp by the
@@ -1303,21 +1346,18 @@ async function build(canvas, kind, dark){
       x.putImageData(im, 0, 0); return keep(new T.CanvasTexture(c)); };
     const bell = u => Math.exp(-(((u - .5) / .22) ** 2));
     const streakT = ramp(32, 128, (u, v) => bell(u) * clamp(v / .1, 0, 1) * (1 - v) ** 1.5), kerbT = ramp(64, 64, (u, v) => clamp(u / .05, 0, 1) * (1 - u) ** 1.5 * bell(v));
-    const coneM = k => keep(new T.ShaderMaterial({ transparent:true, depthWrite:false, blending:T.AdditiveBlending, side:T.DoubleSide, fog:false, uniforms:{ uCol:{ value:new T.Color(1, .5, .21).multiplyScalar(k) } },
-      vertexShader:'varying float vH; varying vec3 vN, vV; void main(){ vH = uv.y; vN = normalMatrix * normal; vec4 mv = modelViewMatrix * vec4(position, 1.); vV = -mv.xyz; gl_Position = projectionMatrix * mv; }',
-      fragmentShader:'uniform vec3 uCol; varying float vH; varying vec3 vN, vV;\n' +      /* vH: 1 at the head, 0 on the ground. Brightest looking through its middle, nothing at its outline; strongest by the head */
-        'void main(){ float f = abs(dot(normalize(vN), normalize(vV))), h = 1. - vH; gl_FragColor = vec4(uCol * (pow(f, 1.6) * (.045 / (h * h + .045)) * (1. - smoothstep(.4, .9, h)) * smoothstep(0., .03, h)), 1.); }' }));
     const PAVE = ((L.pad && L.pad.y) || .12) + .014;
-    const streetLamp = (hx, hy, hz, near, o) => { const t = clamp((near - .4) / .6, 0, 1), spr = (w, h, op) => { const q = new T.Sprite(keep(new T.SpriteMaterial({ map:glare, color:new T.Color(1.5, .68, .28), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:op, fog:false }))); q.scale.set(w, h, 1); q.position.set(hx, hy, hz); scene.add(q); };
-      spr(lerp(2.4, 8, t), lerp(2.4, 8, t), lerp(.45, .9, t)); if (near > .5) spr(lerp(1.6, 6.5, t), lerp(.07, .2, t), lerp(.14, .3, t));      // the glare, and the streak through it
-      const R = hy * .42, cg = keep(new T.ConeGeometry(R, hy, 28, 1, true)), cone = new T.Mesh(cg, coneM(o.cone || .06));      // (faint, and nearly gone by half way down: at twice this the nearest one lay over the cinema like a veil, and the cinema went pale again) cone.position.set(hx, hy / 2, hz); cone.renderOrder = 1.6; scene.add(cone);
+    const streetLamp = (hx, hy, hz, near, o) => { const t = clamp((near - .4) / .6, 0, 1), spr = (w, h, op) => { const q = new T.Sprite(keep(new T.SpriteMaterial({ map:glare, color:new T.Color(1.5, .68, .28), blending:T.AdditiveBlending, depthWrite:false, transparent:true, opacity:op, fog:false }))); q.scale.set(w, h, 1); q.position.set(hx, hy, hz); scene.add(q); return q; };
+      const glare0 = spr(lerp(2.4, 8, t), lerp(2.4, 8, t), lerp(.45, .9, t)); if (near > .5) spr(lerp(1.6, 6.5, t), lerp(.07, .2, t), lerp(.14, .3, t));      // the glare, and the streak through it
+      /* (no cone of light under the head: one stood here for a day. The owner: "it narrows to a point and its way too thick. It makes
+         the scene even more washed out than it already is") */
       pool(hx, .012, hz, 3.6, 3.6, [1, .55, .28], lerp(.2, .3, t));
       if (o.streak){ const dx = EYE0[0] - hx, dz = EYE0[2] - hz, D = Math.hypot(dx, dz), ux = dx / D, uz = dz / D, px = -uz, pz = ux, len = D * .55, w = o.streak, w1 = w * (1 - len / D), y = .0125;
         const g = keep(new T.BufferGeometry()); g.setAttribute('position', new T.Float32BufferAttribute([hx - px * w / 2, y, hz - pz * w / 2, hx + px * w / 2, y, hz + pz * w / 2, hx + ux * len + px * w1 / 2, y, hz + uz * len + pz * w1 / 2, hx + ux * len - px * w1 / 2, y, hz + uz * len - pz * w1 / 2], 3));
         g.setAttribute('uv', new T.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2)); g.setIndex([0, 1, 2, 0, 2, 3]);
         const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ map:streakT, depthWrite:false, transparent:true, blending:T.AdditiveBlending, color:new T.Color(1, .5, .24), opacity:lerp(.16, .24, t), fog:false }))); m.renderOrder = 1.2; scene.add(m); }
       if (o.kerb){ const g = keep(new T.PlaneGeometry(4.8, 7.5)); g.rotateX(-Math.PI / 2); const m = new T.Mesh(g, keep(new T.MeshBasicMaterial({ map:kerbT, depthWrite:false, transparent:true, blending:T.AdditiveBlending, color:new T.Color(1, .5, .26), opacity:lerp(.22, .34, t), fog:false })));
-        m.position.set(o.kerb[0] + o.kerb[1] * 2.4, PAVE, hz); if (o.kerb[1] < 0) m.rotation.y = Math.PI; m.renderOrder = 1.2; scene.add(m); } };      // (kerb: [the kerb's x, which side the pavement is on])
+        m.position.set(o.kerb[0] + o.kerb[1] * 2.4, PAVE, hz); if (o.kerb[1] < 0) m.rotation.y = Math.PI; m.renderOrder = 1.2; scene.add(m); } return glare0; };      // (kerb: [the kerb's x, which side the pavement is on])
     /* a pole lit by its own lamp: down the side that faces the head, falling off with distance; nothing above the lens */
     const poleLit = (m, hx, hy) => { m.onBeforeCompile = sh => {
         sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vPL; varying vec3 vNL;').replace('#include <begin_vertex>', '#include <begin_vertex>\n vPL = position; vNL = normal;');
@@ -1333,10 +1373,10 @@ async function build(canvas, kind, dark){
       const lz = CAR.z + CAR.len / 2 + .4;                        // by the tail of the car in the model's place for it, its arm over the roadway (as the picture's is): from where we stand it is then between the cinema and the shop's sign, not across either. (It stays there. The car itself is parked further towards us on a wide window: look.place)
       g.position.set(kerbR, 0, lz); scene.add(g);
       g.add(lightAt('#ffb070', 55, V(-2.6, 6.8, 0), 26)); pool(kerbR - 2.6, .012, lz, 8, 8, [1, .5, .26], .34); poleLit(metal, -2.6, 7.18);
-      streetLamp(kerbR - 2.6, 7.2, lz, 1, { cone:.1, kerb:[kerbR - .45, 1] }); }      // (the nearest: the largest glare. A broad pale halo here was once "a patch of fog in the sky": this one is a small bright middle and a faint skirt)
-    { const g = lamp(); poleLit(lampParts.metal, -1.62, 6.16); g.position.set(kerbR, 0, GR.z0 + 8.2); scene.add(g); streetLamp(kerbR - 1.62, 6.14, GR.z0 + 8.2, .62, { cone:.22, streak:1.5, kerb:[kerbR - .45, 1] }); pool(kerbR - 1.62, .012, GR.z0 + 8.2, 7, 7, [1, .46, .24], .36); }
-    { const z = GR.z0 + 11; const g = lamp(); g.position.set(walkX - .5, 0, z); g.rotation.y = Math.PI; scene.add(g); streetLamp(walkX - .5 + 1.62, 6.14, z, .66, { cone:.22, streak:1.5, kerb:[walkX, -1] }); pool(walkX + 1.1, .012, z, 7, 7, [1, .46, .24], .36); }      // (well up the street: near us it stood in the middle of the picture)
-    for (const x of [-74, -50, -26, -3, 20, 44, 68]){ const g = lamp(); g.position.set(x, 0, GR.z0 + .5); g.rotation.y = Math.PI / 2; scene.add(g); streetLamp(x, 6.14, GR.z0 + .5 + 1.62, .4, { cone:.14, streak:1.7 }); pool(x, .012, GR.z0 + .5 + 1.62, 6.5, 6.5, [1, .46, .24], .26); }      // (the far ones: small and dim, so the distance reads)
+      LAMP1.glare = streetLamp(kerbR - 2.6, 7.2, lz, 1, { kerb:[kerbR - .45, 1] }); LAMP1.head = V(kerbR - 2.6, 7.08, lz); }      // (the nearest: the largest glare. A broad pale halo here was once "a patch of fog in the sky": this one is a small bright middle and a faint skirt)
+    { const g = lamp(); poleLit(lampParts.metal, -1.62, 6.16); g.position.set(kerbR, 0, GR.z0 + 8.2); scene.add(g); streetLamp(kerbR - 1.62, 6.14, GR.z0 + 8.2, .62, { streak:1.5, kerb:[kerbR - .45, 1] }); pool(kerbR - 1.62, .012, GR.z0 + 8.2, 7, 7, [1, .46, .24], .36); }
+    { const z = GR.z0 + 11; const g = lamp(); g.position.set(walkX - .5, 0, z); g.rotation.y = Math.PI; scene.add(g); streetLamp(walkX - .5 + 1.62, 6.14, z, .66, { streak:1.5, kerb:[walkX, -1] }); pool(walkX + 1.1, .012, z, 7, 7, [1, .46, .24], .36); }      // (well up the street: near us it stood in the middle of the picture)
+    for (const x of [-74, -50, -26, -3, 20, 44, 68]){ const g = lamp(); g.position.set(x, 0, GR.z0 + .5); g.rotation.y = Math.PI / 2; scene.add(g); streetLamp(x, 6.14, GR.z0 + .5 + 1.62, .4, { streak:1.7 }); pool(x, .012, GR.z0 + .5 + 1.62, 6.5, 6.5, [1, .46, .24], .26); }      // (the far ones: small and dim, so the distance reads)
     /* a rail along the water's edge */
     { const iron = std({ color:'#0d0812', roughness:.5, metalness:.5 }), unit = keep(new T.BoxGeometry(1, 1, 1)), list = [[0, 1.05, GR.z0 + .12, 480, .06, .06], [0, .55, GR.z0 + .12, 480, .04, .04]];
       for (let x = -120; x <= 120; x += 2) list.push([x, .6, GR.z0 + .12, .06, 1.0, .06]);
@@ -1384,11 +1424,38 @@ async function build(canvas, kind, dark){
       const carU = { uCin:{ value:V(c0[0], c0[1], c0[2]) }, uShop:{ value:ST ? V(ST.x0 - .2, Math.min(4.4, ST.y1 * .46) - .5, (ST.z0 + ST.z1) / 2) : V(CAR.x + 8, 3.5, CAR.z) }, uShopK:{ value:ST ? 1 : 0 },
         uMag:{ value:new T.Color(1, .012, .45) }, uCy:{ value:new T.Color(.02, .6, 1) }, uHaze:{ value:new T.Color(1, .2, .62) },
         uLamp:{ value:V(kerbR - 2.6, 6.8, CAR.z + CAR.len / 2 + .4) }, uWarm:{ value:new T.Color(1, .46, .18) } };      // (uLamp: the street lamp's head, above)
+      /* ── the car's cabin, seen through its glass (CABIN; the owner: "make the windows read more as glass, currently they are matte
+         grey which reads more like plastic. A very simple mock interior might help"). The model has no inside: its windows are
+         a picture on a closed shell. So the glass works out what is behind it: from this point of the glass, along the line
+         from the eye, through a few boxes in the car's own space (metres; x across, y up, z to the nose; measured off the
+         model's glass, 2026-11-23): two front seats (cushion, back, headrest), the back seat and its headrests, the parcel shelf
+         under the rear window, the dashboard. What it meets is shaded dark, lit a little from above (the street lamp) and by
+         the pink of the night through the windows; where it meets nothing it leaves through the glass on the far side, and
+         there is the night outside again, dimmed. Then (above, in the material) the glass mirrors the street and the sky, more
+         so the more slantwise it is seen (Fresnel), with a crisp horizon line, the street lamp as a sharp point, the neon. ── */
+      const CABIN = 'vec3 cgCol = vec3(0.); float cgK = 0.;\n' +
+        'const int NB = 13;\n' +
+        'const vec3 BA[NB] = vec3[](vec3(-.6, .3, 0.), vec3(.12, .3, 0.), vec3(-.6, .58, -.14), vec3(.12, .58, -.14), vec3(-.49, 1.12, -.15), vec3(.23, 1.12, -.15),\n' +
+        '  vec3(-.66, .3, -1.), vec3(-.66, .56, -1.2), vec3(-.53, 1., -1.22), vec3(.27, 1., -1.22), vec3(-.7, .96, -1.5), vec3(-.7, .62, .64), vec3(-.2, .86, .5));\n' +
+        'const vec3 BB[NB] = vec3[](vec3(-.12, .6, .5), vec3(.6, .6, .5), vec3(-.12, 1.1, 0.), vec3(.6, 1.1, 0.), vec3(-.23, 1.3, -.04), vec3(.49, 1.3, -.04),\n' +
+        '  vec3(.66, .58, -.42), vec3(.66, 1., -1.), vec3(-.27, 1.14, -1.1), vec3(.53, 1.14, -1.1), vec3(.7, 1., -1.2), vec3(.7, .92, 1.05), vec3(-.5, 1.02, .56));\n' +      /* the last: the steering wheel's rim, roughly */
+        'vec3 cgBox(vec3 ro, vec3 ri, vec3 a, vec3 b){ vec3 t0 = (a - ro) * ri, t1 = (b - ro) * ri, tn = min(t0, t1), tf = max(t0, t1);\n' +
+        '  float n = max(max(tn.x, tn.y), tn.z), f = min(min(tf.x, tf.y), tf.z); return vec3(n, f, n == tn.x ? 0. : n == tn.y ? 1. : 2.); }\n' +      /* where the ray goes in, where it comes out, and through which pair of faces it went in */
+        'vec3 carCabin(vec3 ro, vec3 rd){ vec3 ri = 1. / mix(rd, vec3(1e-5), step(abs(rd), vec3(1e-5))), best = vec3(0.); float tb = 1e3; int id = -1;\n' +
+        '  for (int i = 0; i < NB; i++){ vec3 h = cgBox(ro, ri, BA[i], BB[i]); if (h.x < h.y && h.y > .01 && h.x < tb){ tb = max(h.x, .01); best = h.z < .5 ? vec3(-sign(ri.x), 0., 0.) : h.z < 1.5 ? vec3(0., -sign(ri.y), 0.) : vec3(0., 0., -sign(ri.z)); id = i; } }\n' +
+        '  vec3 night = mix(vec3(.02, .012, .03), vec3(.42, .1, .34), smoothstep(-.05, .2, rd.y));\n' +      /* what is outside, through the far windows: the street below, the pink night above */
+        '  vec3 base = id == 11 || id == 12 ? vec3(.007, .006, .009) : id == 10 ? vec3(.01, .008, .012) : vec3(.014, .011, .017);\n' +      /* the dash and the wheel darkest; the seats a little lighter, so their shapes show */
+        '  vec3 col = vec3(0.);\n' +
+        '  if (id < 0){ vec3 h = cgBox(ro, ri, vec3(-.76, .26, -1.56), vec3(.76, 1.38, 1.08)); vec3 pe = ro + rd * h.y;\n' +      /* nothing inside in the way: out through the far side of the cabin */
+        '    float win = smoothstep(.97, 1.03, pe.y) * (1. - smoothstep(1.3, 1.36, pe.y)) * step(pe.z, 1.) * step(-1.55, pe.z);\n' +
+        '    col = mix(vec3(.006, .005, .008), night * .45, win); }\n' +      /* (one way out of the function, at its end: with a second, the D3D shader compiler warned of a value possibly not set) */
+        '  else col = base * (.6 + .9 * max(best.y, 0.) + .3 * max(-best.z, 0.)) + vec3(.006, .002, .007) * max(best.y, 0.);\n' +
+        '  return col; }\n';
       const paint = std({ map:carTex, roughness:.4, metalness:.15 }); paint.userData.envK = [.06, .06];
       paint.onBeforeCompile = sh => { Object.assign(sh.uniforms, carU);
-        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCW; varying vec3 vCN;')
-          .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n vCW = (modelMatrix * vec4(transformed, 1.)).xyz; vCN = mat3(modelMatrix) * objectNormal;');
-        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vCW; varying vec3 vCN; uniform vec3 uCin; uniform vec3 uShop; uniform vec3 uMag; uniform vec3 uCy; uniform vec3 uHaze; uniform vec3 uLamp; uniform vec3 uWarm; uniform float uShopK;')
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCW; varying vec3 vCN; varying vec3 vCM; varying vec3 vCamM;')
+          .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n vCW = (modelMatrix * vec4(transformed, 1.)).xyz; vCN = mat3(modelMatrix) * objectNormal; vCM = transformed; vCamM = (inverse(modelMatrix) * vec4(cameraPosition, 1.)).xyz;');      /* (vCM, vCamM: this point and the eye in the car's own space, for its cabin) */
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vCW; varying vec3 vCN; varying vec3 vCM; varying vec3 vCamM; uniform vec3 uCin; uniform vec3 uShop; uniform vec3 uMag; uniform vec3 uCy; uniform vec3 uHaze; uniform vec3 uLamp; uniform vec3 uWarm; uniform float uShopK;\n' + CABIN)
           .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n float carGl = clamp((sampledDiffuseColor.a - .5) * 2., 0., 1.); roughnessFactor = mix(.92, .42, carGl) - .2 * smoothstep(.86, 1., carGl);')      /* (the picture's alpha: how glossy this part is) */
           .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n' +
             '{ vec3 n = normalize(vCN), v = normalize(cameraPosition - vCW), r = reflect(-v, n);\n' +
@@ -1403,11 +1470,17 @@ async function build(canvas, kind, dark){
             '  float shop = exp(-dS * dS / .3) * smoothstep(0., .12, el) * (1. - smoothstep(.4, .9, el)) * uShopK;\n' +
             '  e += (.05 + .95 * pow(1. - nv, 4.)) * carGl * (uMag * (cin * .8) + uCy * (shop * 1.1) + uHaze * (exp(-el * el / .03) * .06));\n' +      /* mirrored: the cinema, the shop, the haze along the horizon */
             '  float glass = smoothstep(.86, 1., carGl); vec3 Ll = normalize(uLamp - vCW);\n' +
-            '  e += glass * (.06 + .5 * pow(1. - nv, 4.)) * mix(uHaze, vec3(.22, .04, .5), smoothstep(0., .6, el)) * smoothstep(-.3, 0., el) * mix(.35, 1., smoothstep(1.35, .9, vCW.y));\n' +      /* the windows give back the sky: pink low down, purple higher; more of it towards the foot of each pane */
-            '  e += uWarm * (glass * .16 * pow(max(dot(r, Ll), 0.), 4.) + carGl * .05 * pow(max(dot(n, Ll), 0.), 2.));\n' +      /* the street lamp: its glow in the rear window, and a little warmth on what faces up to it */
-            '  totalEmissiveRadiance += e; }'); };
-      paint.customProgramCacheKey = () => 'sy-car2';
-      const body = M.car.parts.body; car.add(new T.Mesh(body, paint));
+            '  e += uWarm * carGl * (1. - glass) * .05 * pow(max(dot(n, Ll), 0.), 2.);\n' +      /* a little of the street lamp's warmth on what faces up to it */
+            /* the glass (see CABIN): what it mirrors, and what is behind it, by how squarely we look at it */
+            '  if (glass > .01){ float F = .05 + .95 * pow(1. - nv, 5.);\n' +
+            '    vec3 sky = el > 0. ? mix(uHaze * .75, vec3(.16, .03, .32), smoothstep(0., .45, el)) : vec3(.018, .01, .026);\n' +      /* above the horizon the sky, pink low down and purple higher; below it the dark street and buildings */
+            '    sky += vec3(1., .45, .8) * .55 * exp(-el * el / .0012);\n' +                     /* a crisp line where they meet: the bright horizon */
+            '    sky += uMag * cin * .9 + uCy * shop * .9 + uWarm * (5. * pow(max(dot(r, Ll), 0.), 700.) + .35 * pow(max(dot(r, Ll), 0.), 24.));\n' +      /* the cinema's neon and the shop's sign in it; the street lamp, sharp, with a little glow round it */
+            '    cgCol = carCabin(vCM, normalize(vCM - vCamM)) * vec3(.8, .9, .95) * (1. - F) + sky * F; cgK = glass; }\n' +
+            '  totalEmissiveRadiance += e; }')
+          .replace('#include <opaque_fragment>', 'outgoingLight = mix(outgoingLight, cgCol, cgK);\n#include <opaque_fragment>'); };      /* the glass: what was worked out for it, in place of the paint's lighting */
+      paint.customProgramCacheKey = () => 'sy-car3';
+      const body = M.car.parts.body; CARM.mesh = new T.Mesh(body, paint); car.add(CARM.mesh);
       /* its shadow on the road, and a darker patch where each tyre stands (found from the model: its lowest corners, by quarter) */
       const dark = (w, d, x, z, op, tex) => { const m = new T.Mesh(keep(new T.PlaneGeometry(w, d)), keep(new T.MeshBasicMaterial({ map:tex, color:0x000000, transparent:true, opacity:op, depthWrite:false, fog:false })));
         m.rotation.x = -Math.PI / 2; m.position.set(x, .016, z); m.renderOrder = 1.3; car.add(m); return m; };
@@ -1467,6 +1540,44 @@ async function build(canvas, kind, dark){
       }
     }
 
+    /* ── moths round the street lamp by the car. The owner, 2026-11-23: "Bugs circling the lamp. A few tiny dots orbiting the
+       light, plus a very slight 'breathing' in its bloom" (the breathing: at the foot of this scene). A few dots circling the
+       lamp's head, each on its own tilted, wobbling round, brighter close to the lamp. Drawn over the steadied picture (overlay;
+       see render). Where the page covers the lamp, none.
+       NO STEAM, for now. Asked for the same day ("Steam from a street grate or vent, rising slowly and tinted by the neon"), tried
+       three ways, and taken out: "I think you can remove the steam for now until the other fixes are in". What was learnt:
+         · From a grate behind the parked car: "it reads like exhaust or smoke from a parked car". Its source must be SEEN.
+         · As puffs of one colour each: "too uniform and too solid ... one flat, fairly opaque pink shape". Wanted: wispy, layered
+           noise climbing at different speeds, 15-25% opaque, thin at the source and billowing, fading as it rises; lit point by
+           point by what is near (magenta by the sign, the bands' colours, warm by the lamp); drifting with the breeze; in front
+           of something dark, as against the bright horizon it disappears. (A shader doing all of that was written and worked:
+           see HANDOFF 8.184.)
+         · From a vent in the cinema's wall, beside its doors: "Definitely do NOT put the vent on the cinema wall, why on earth
+           would a cinema have a vent spewing steam right in front of the entrance?" What the owner had in mind: "a manhole cover
+           or some drain grille in the street".
+         · The difficulty, for when it comes back: from where we stand, the street and forecourt that are neither behind the page
+           nor behind the car (at 1920 wide, a strip in front of the far end of the cinema's glass) have the bright sea behind
+           them, not a building. ── */
+    const pageEdge = () => { let e = .5 + 480 / Math.max(1, innerWidth); try { const w = document.querySelector('.wrap'); if (w){ const r = w.getBoundingClientRect(); if (r.width > 0) e = (r.right - (parseFloat(getComputedStyle(w).paddingRight) || 0)) / Math.max(1, innerWidth); } } catch {} return e; };      // the page column's right-hand edge, as a share of the width
+    const placers = []; { const p0 = look.place; look.place = () => { if (p0) p0(); for (const f of placers) f(); }; }
+    {
+      /* the moths */
+      if (LAMP1.head && !STILL){
+        const NB = 6, H0 = LAMP1.head, bp = new Float32Array(NB * 3), bc = new Float32Array(NB * 3), bg = keep(new T.BufferGeometry());
+        bg.setAttribute('position', new T.BufferAttribute(bp, 3)); bg.setAttribute('color', new T.BufferAttribute(bc, 3));
+        const bm = keep(new T.PointsMaterial({ size:3, sizeAttenuation:false, map:glowTex(32, 32, [[0, 1], [.4, .85], [1, 0]]), vertexColors:true, transparent:true, blending:T.AdditiveBlending, depthTest:false, depthWrite:false, fog:false }));
+        const pts = new T.Points(bg, bm); pts.frustumCulled = false; overlay = new T.Scene(); overlay.add(pts);
+        const rb = rnd(41), B = Array.from({ length:NB }, () => ({ r:.22 + rb() * .5, w:(1.3 + rb() * 1.9) * (rb() < .5 ? -1 : 1), p:rb() * 6.3, q:rb() * 6.3, tx:(rb() - .5) * .9, tz:(rb() - .5) * .9, yb:-.08 - rb() * .4 }));
+        let bugsOn = true;
+        ticks.push(t => { pts.visible = bugsOn; if (!bugsOn) return; bm.size = Math.max(2, H / 420);
+          B.forEach((b, i) => { const a = b.w * t + b.p, rr = b.r * (1 + .3 * Math.sin(t * 1.7 * Math.abs(b.w) + b.q)), cx = Math.cos(a) * rr, cz = Math.sin(a) * rr, cy = b.yb + .12 * Math.sin(t * 2.3 + b.q) + .05 * Math.sin(t * 7.1 + b.p);
+            const x = H0.x + cx, y = H0.y + cy + cx * b.tx * .5 + cz * b.tz * .5, z = H0.z + cz, d2 = (x - H0.x) ** 2 + (y - H0.y) ** 2 + (z - H0.z) ** 2, k = .7 + 1.4 * Math.exp(-d2 / .12);      // each on its own tilted round
+            bp[i * 3] = x; bp[i * 3 + 1] = y; bp[i * 3 + 2] = z; bc[i * 3] = k; bc[i * 3 + 1] = .78 * k; bc[i * 3 + 2] = .5 * k; });
+          bg.attributes.position.needsUpdate = true; bg.attributes.color.needsUpdate = true; });
+        placers.push(() => { camera.updateMatrixWorld(); _p.copy(H0).project(camera); bugsOn = _p.x * .5 + .5 > pageEdge() + .01; });
+      }
+    }
+
     /* ── palms: in the park (one near us, its fronds hanging into the picture; a few further in, for a wide screen), by the corner where
        the street meets the waterfront, and along the water ── */
     palm(0, mcam[0] - 1.9, mcam[2] - 10, .95, .3);                            // the near one: its trunk just out of an ordinary screen's left, its fronds in the picture's top corner
@@ -1506,18 +1617,37 @@ async function build(canvas, kind, dark){
       return { pos:EYE, at:yaw(cx, cz, lerp(YAW - .3, YAW, u), lerp(AT_Y, LAP_Y, v)), fov:fovFor(a, lerp(PHONE, 1, u)) }; };
     cams = { L:{ pos:EYE, at:yaw(cx, cz, YAW, AT_Y), fov:FOV } }; cams.P = cams.L;      // (16 : 9, for anything that asks; frame() goes by look.cam)
 
-    /* ── what moves on the cinema's side of the picture: two of its neon signs falter now and then. (The owner, 2026-11-23: "the
-       right side is very static, maybe add some occasional flickering".) The last letter of the cinema's sign about once in
-       17 seconds, the shop's OPEN about once in 29, each at its own moment: a second and a half in which the tube drops out,
-       comes back, drops out again and catches. Nothing else: the owner is sensitive to flicker, so it is two small things, not
-       often, and the picture's steadying (each frame is mostly the frames before it) turns the drop-outs into a dip to about
-       half and back, not a blink. The still pictures have none of it, and with reduced motion there is no live scene at all. ── */
-    { const hsh = x => { const q = Math.sin(x * 127.1 + 31.7) * 43758.5453; return q - Math.floor(q); };
-      const dip = (t, per, seed) => { const n = Math.floor(t / per), u = t - (n + hsh(n + seed) * (1 - 1.8 / per)) * per; return u < 0 || u > 1.5 ? 1 : u < .3 ? .12 : u < .48 ? 1 : u < .95 ? .08 : u < 1.08 ? .85 : u < 1.3 ? .2 : 1; };
-      const pt0 = flick.pt != null ? glowU.uPtC.value[flick.pt].clone() : null; let la = 1, lb = 1;
-      if (!STILL) update = t => { const a = flick.sm ? dip(t, 17, 1.7) : 1, b = flick.open ? dip(t, 29, 5.3) : 1;
-        if (a !== la){ la = a; flick.sm.color.copy(flick.sm0).multiplyScalar(a); if (pt0) glowU.uPtC.value[flick.pt].copy(pt0).multiplyScalar(a); }
-        if (b !== lb){ lb = b; flick.open.material.color.setScalar(2.3 * b); } }; }
+    /* ── what moves on the cinema's side of the picture, besides the moths (above). The owner, 2026-11-23: "the
+       right side is very static, maybe add some occasional flickering"; then "Chase the cinema's rainbow bands so they light in
+       sequence like a marquee, instead of just flickering one letter", and "A flickering TV glow in an upstairs window".
+         · The chase: the cinema's four bands light one after another from the bottom, and on up the three lines of its tower;
+           all hold, then dim together; a round every CH.period seconds. Each change is eased (no blinks), and dimmed is CH.lo of
+           full, not dark. Their light on the canopy (glowLit's rings) goes with them; the wet road's mirror shows it all.
+         · The shop's OPEN falters about once in 29 seconds, for a second and a half: dips (to a quarter at the least), not
+           blackouts, each change eased over a twentieth of a second.
+           NOTE: the steadying does NOT soften changes like these. It holds each pixel's history within the range of that
+           pixel's neighbours this frame, so a sign that drops out is gone in a frame. Easing must be done here. (8.183's notes
+           said the steadying turned the drop-outs into dips; that was wrong.)
+         · The television: its light changes at each cut of its picture, every third of a second to three seconds, in the cool
+           colours of a screen, now and then a warm one; eased, never a blink.
+         · The street lamp by the car: its glare swells and settles by a few per cent, slowly ("a very slight breathing").
+       None of it is in the still pictures. ── */
+    { const hsh = x => { const q = Math.sin(x * 127.1 + 31.7) * 43758.5453; return q - Math.floor(q); }, ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+      const CH = { lo:.58, step:.36, ramp:.3, hold:2.6, fade:.9, rest:.7 }, NC = flick.chase.length; CH.off = (NC - 1) * CH.step + CH.ramp + CH.hold; CH.period = CH.off + CH.fade + CH.rest;
+      flick.chase.forEach(e => { let k = -1, best = .4; rings.forEach((q, i) => { const d = Math.abs(q.c[1] - e.y); if (d < best){ best = d; k = i; } }); e.ri = k; if (k >= 0) e.g0 = glowU.uRingC.value[k].clone(); e.lv = 1; });
+      const chaseAt = (t, i) => { const u = t % CH.period; return CH.lo + (1 - CH.lo) * ease((u - i * CH.step) / CH.ramp) * (1 - ease((u - CH.off) / CH.fade)); };
+      const dip = (t, per, seed) => { const n = Math.floor(t / per), u = t - (n + hsh(n + seed) * (1 - 1.8 / per)) * per; return u < 0 || u > 1.5 ? 1 : u < .3 ? .3 : u < .48 ? 1 : u < .95 ? .25 : u < 1.08 ? .85 : u < 1.3 ? .4 : 1; };
+      const TVK = .8, TV = (() => { const r = rnd(77), P = [[.35, .5, 1], [.62, .74, 1], [.3, .78, .92], [.95, .62, .45], [.55, .42, 1], [.8, .85, 1], [.35, .5, 1]], segs = []; let t0 = 0;
+        for (let i = 0; i < 64; i++){ segs.push([t0, P[(r() * P.length) | 0], .4 + .6 * r()]); t0 += .3 + 2.7 * r() * r(); } return { segs, len:t0 }; })();
+      const tvAt = t => { const u = ((t % TV.len) + TV.len) % TV.len, S = TV.segs; let lo = 0, hi = S.length - 1; while (lo < hi){ const m = (lo + hi + 1) >> 1; if (S[m][0] <= u) lo = m; else hi = m - 1; } return S[lo]; };
+      const tvC = new T.Color(), tvT = new T.Color(), g0 = LAMP1.glare ? LAMP1.glare.material.opacity : 0; let lt = null, ob = 1;
+      if (flick.tv){ const q = tvAt(40); tvC.setRGB(q[1][0], q[1][1], q[1][2]).multiplyScalar(q[2] * TVK); flick.tv.material.color.copy(tvC); }
+      ticks.push(t => { if (STILL) return; const dt = lt == null ? 1 : clamp(t - lt, 0, .5); lt = t;
+        flick.chase.forEach((e, i) => { const v = chaseAt(t, i); if (Math.abs(v - e.lv) < 1e-3) return; e.lv = v; e.mat.color.copy(e.c0).multiplyScalar(v); if (e.ri >= 0) glowU.uRingC.value[e.ri].copy(e.g0).multiplyScalar(v); });
+        if (flick.open){ ob += (dip(t, 29, 5.3) - ob) * (1 - Math.exp(-dt / .05)); flick.open.material.color.setScalar(2.3 * ob); }
+        if (flick.tv){ const q = tvAt(t); tvT.setRGB(q[1][0], q[1][1], q[1][2]).multiplyScalar(q[2] * TVK); tvC.lerp(tvT, 1 - Math.exp(-dt / .07)); flick.tv.material.color.copy(tvC); }
+        if (LAMP1.glare) LAMP1.glare.material.opacity = g0 * (1 + .05 * Math.sin(t * 2 * Math.PI / 5.3) + .02 * Math.sin(t * 2 * Math.PI / 2.1 + 1.3)); });
+      update = t => { for (const f of ticks) f(t); }; }
   }
 
   if (kind === 'shoreA' || kind === 'shoreB'){
@@ -1536,7 +1666,7 @@ async function build(canvas, kind, dark){
   const quad = new T.Mesh(qg); quad.frustumCulled = false;
   const pscene = new T.Scene(); pscene.add(quad); const pcam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const pass = (frag, u, o) => keep(new T.ShaderMaterial(Object.assign({ uniforms:u, vertexShader:QUAD_V, fragmentShader:frag, depthTest:false, depthWrite:false }, o || {})));
-  const mainRT = keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, samples:SMALL ? 0 : 4, depthBuffer:true }));
+  const mainRT = keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, samples:RT_SAMPLES, depthBuffer:true }));      // (RT_TYPE, RT_SAMPLES: what this device can draw into; see bufOk)
   const LV = [2, 4, 8, 16].map(() => keep(new T.WebGLRenderTarget(2, 2, { type:RT_TYPE, depthBuffer:false })));
   /* steadying (TAA_F), in every scene but the road (it moves too fast to fold frames together) and never in a still */
   /* each frame's share. On a computer .06: about the last sixteen frames are in the picture, one whole round of the sixteen places
@@ -1582,12 +1712,12 @@ async function build(canvas, kind, dark){
   /* ═══ dusk or night ═══ */
   const setMode = dk => {
     const d = dk ? DAY.night : DAY.dusk;
-    skyU.uTop.value.set(d.top); skyU.uMid.value.set(d.mid); skyU.uHor.value.set(d.hor); skyU.uGlow.value.set(d.glow); skyU.uStars.value = d.stars; skyU.uHz.value.fromArray(d.haze || [14, .2, 7, .45]);
+    skyU.uTop.value.set(d.top); skyU.uMid.value.set(d.mid); skyU.uHor.value.set(d.hor); skyU.uGlow.value.set(d.glow); skyU.uStars.value = d.stars; skyU.uHz.value.fromArray(d.haze || [14, .2, 7, .45]); skyU.uSkyY.value = look.skyY || 1; skyU.uHz.value.y *= look.haze == null ? 1 : look.haze; skyU.uHz.value.w *= look.haze == null ? 1 : look.haze;
     skyU.uSun.value.copy(sunDir);
     sunU.uTop.value.set(d.sunTop); sunU.uBot.value.set(d.sunBot); sunU.uMid.value.set(d.sunMid || d.sunTop).lerp(d.sunMid ? sunU.uMid.value : sunU.uBot.value, d.sunMid ? 0 : .5); sunU.uRim.value.set(d.sunRim || d.sunBot); sunU.uI.value = d.sunI; sunU.uHalo.value = d.sunHalo == null ? .5 : d.sunHalo; sun.visible = sunR > 0;
     fog.color.set(d.fog); fog.near = look.fogNear; fog.far = look.fogFar;
     light.color.set(d.light); light.intensity = d.lightI; light.position.copy(sunDir).multiplyScalar(200);
-    hemi.color.set(d.hemiTop); hemi.groundColor.set(d.hemiBot); hemi.intensity = d.hemiI;
+    hemi.color.set(d.hemiTop); hemi.groundColor.set(d.hemiBot); hemi.intensity = d.hemiI * (look.hemi == null ? 1 : look.hemi);
     for (const m of neonMats){ m.color.set(d.neon).multiplyScalar(d.neonI * m.userData.k); }
     scene.traverse(o => { if (o.material && o.material.userData && o.material.userData.pale) o.material.color.set('#ffd9ec').multiplyScalar(dk ? .9 : 1.1); });
     if (pal.win) pal.win.value.set(dk ? '#ff4fb4' : '#ffb27a').multiplyScalar(dk ? 2.2 : 1.1);
@@ -1621,6 +1751,9 @@ async function build(canvas, kind, dark){
     let src = mainRT;
     if (TAA){ const a = histRT[taaI], b = histRT[1 - taaI], u = taaM.uniforms;
       u.tHist.value = a.texture; u.uK.value = taaN ? TAA_K : 1; u.uTx.value.set(1 / W, 1 / H); blit(taaM, b); taaI = 1 - taaI; taaN++; src = b; }
+    /* what is drawn over the steadied picture (the street's moths): small things that move a pixel or more a frame. Folded in with
+       the rest, each would be held at a sixteenth of its brightness, i.e. not there. Drawn from the unshifted camera */
+    if (overlay && TAA){ if (viewX) camera.setViewOffset(W, H, viewX, 0, W, H); else camera.clearViewOffset(); renderer.setRenderTarget(src); renderer.render(overlay, camera); }
     compU.tScene.value = src.texture; bloom(src.texture);
     compU.uSeed.value = 0;                                      // no film grain (the owner found it noise, worst in the dark): only a still dither, a level and a half deep, so the night sky doesn't band
     blit(compM, null);
@@ -1644,7 +1777,11 @@ async function build(canvas, kind, dark){
 FX.scenes.synth = {
   dpr:STILL ? 2 : SMALL ? .7 : 1, maxPx:STILL ? 4e6 : SMALL ? 5.5e5 : 1.35e6, fps:30,
   create(canvas, env){
-    if (!STILL && (weak() || mm('(prefers-reduced-motion: reduce)'))) return null;      // the stylesheet's still picture stays, and Three.js is never fetched
+    /* A device that asks to save data or is short of memory keeps the stylesheet's still picture, and Three.js is never fetched.
+       Reduce motion is NOT checked here: theme.js already turns Animation off for it (html[data-fx="off"], and then nothing
+       below starts), and someone who switches Animation back on in Settings has said they want it. (This line used to refuse
+       Reduce motion as well, so on a Mac with Reduce motion on, Synthwave stayed still whatever Settings said: 2026-11-24.) */
+    if (!STILL && weak()){ FX.why = 'weak'; return null; }
     /* in a frame (the Mahjong board inside Games, a page previewed in the Theme finder) the page around it has its own
        scene, or should: a second one would only double the cost. The frame keeps the still (or, Mahjong, plain colour). */
     try { if (!STILL && (window.top !== window || env.page === 'hkmahjong')) return null; } catch { return null; }
@@ -1652,7 +1789,7 @@ FX.scenes.synth = {
     let e = env, st = 'idle', R = null, W = canvas.width, H = canvas.height;
     canvas.classList.add('sy-wait');
     if (STILL){ root.classList.add('sy-still'); const s = document.createElement('style'); s.textContent = 'html.sy-still body{visibility:hidden}html.sy-still .fx-bg{transition:none!important;opacity:1!important}'; document.head.appendChild(s); }
-    const fail = err => { st = 'failed'; if (R) try { R.dispose(); } catch {} R = null; canvas.classList.add('sy-wait'); root.classList.remove('synth-live'); if (err){ console.warn('synth:', err && err.message || err); if (STILL) window.__synthErr = String(err && err.stack || err); } };
+    const fail = err => { st = 'failed'; if (R) try { R.dispose(); } catch {} R = null; canvas.classList.add('sy-wait'); root.classList.remove('synth-live'); if (err){ console.warn('synth:', err && err.message || err); FX.why = 'failed'; if (STILL) window.__synthErr = String(err && err.stack || err); } };      // (FX.why: Settings says the background couldn't start)
     canvas.addEventListener('webglcontextlost', ev => { ev.preventDefault(); fail('context lost'); }, { once:true });
     const start = () => {
       if (st !== 'idle') return; st = 'loading';

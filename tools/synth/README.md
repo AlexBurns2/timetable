@@ -110,6 +110,10 @@ In the page (`fx/synth.js`, the street scene, "the car"):
   is made from) and draws it softened, over the road and the lamp's light. It must stay out of the mirror's own pass: it
   would be reading the picture it is being drawn into.
 - Nothing on the car is near white: wheels gunmetal, plates dim lilac. Pale parts pull the eye.
+- A plain round emblem on the boot lid (car.py places it from the mesh, so it stays round). No maker's mark, ever.
+- **The glass** is worked out in the car's shader: a Fresnel mix of a mirrored street and sky (crisp horizon line, the lamp as a
+  sharp point, the neon) and a cabin traced through boxes in the car's own space (`CABIN`). The model has no inside; this is
+  what makes the windows read as glass rather than grey plastic. Keep the cabin dark: lighter seats looked like boxes.
 - **`look.place` parks it by the window**, once a resize: forward along the kerb until its nose clears the page column, but
   never so far that its tail leaves the picture. The table of where it lands is in HANDOFF 8.182. If the page column's width
   changes (960 px now), nothing here needs editing: it measures `.wrap`.
@@ -124,13 +128,25 @@ Traps met while lighting it:
 | The whole top of the car was a pink wash | The mirrored glow was let in from every height | The cinema's glow is mirrored only from low elevations, where the cinema is |
 | The rear window went a flat orange | The lamp's mirrored glow too broad and too strong | A narrow lobe at a third of the strength |
 
+## The street's grade
+
+The street's camera looks out level through a long lens, so it sees only the sky's bright band near the horizon, and everything
+wet mirrors that band. Its sky is therefore drawn nearer the horizon (`look.skyY`), with less haze (`look.haze`), less purple fill
+light (`look.hemi`) and a little less exposure (`look.exp`). These four exist for any scene; every scene but the street leaves
+them at 1. The owner's yardstick is the bay scene (the timetable page): a bright sun and city lights against dark silhouettes
+and a dark sky. Check a change by the luminance spread of the bare picture (HANDOFF 8.186 has the numbers), not by eye alone.
+
 ## The street's lamps, haze and movement (`fx/synth.js`, the street scene)
 
-- `streetLamp(x, y, z, near, { cone, streak, kerb })` gives a lamp everything but its pole: glare (size and strength by
-  `near`: 1 by the car, about .6 up the street, .4 on the waterfront), a level streak for the nearer ones, a cone of haze, a
-  pool under the head, a streak on the road towards the viewer, light on the pavement. `poleLit` lights a pole from its head.
-- **Keep the cones faint.** The lamp by the car stands in front of the cinema: a strong cone veils it and it goes pale.
-- Two signs falter (`flick`, and `update` at the foot of the scene). Not in the stills.
+- `streetLamp(x, y, z, near, { streak, kerb })` gives a lamp everything but its pole: glare (size and strength by `near`: 1
+  by the car, about .6 up the street, .4 on the waterfront), a level streak for the nearer ones, a pool under the head, a streak
+  on the road towards the viewer, light on the pavement. `poleLit` lights a pole from its head.
+- **No light cones.** Tried and rejected by the owner ("narrows to a point and its way too thick ... even more washed out").
+- What moves is listed at the foot of the scene (`ticks`, `flick`): the marquee chase, the OPEN sign, the television, the
+  lamp's breathing, the moths. Sudden changes must be eased in code; the steadying does not soften them. Moths and anything
+  else small and quick go in `overlay` (drawn after the steadying). None of it is in the stills.
+- No steam for now: see HANDOFF 8.184 for what was tried and what the owner wants (a manhole or drain grille in the street,
+  never a vent on the cinema).
 - The bay's swell is in the `STREET` shader's water branch. Each size of swell is switched off where it is finer than a
   pixel; drawn anyway, it flickers.
 

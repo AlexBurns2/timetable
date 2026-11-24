@@ -50,6 +50,12 @@ const dayName = d => WEEKDAY[d.slice(0, 3)] + ", Week " + d.slice(3).toUpperCase
 const NOT_A_SUBJECT = /\b(sport|study|wellbeing|mentor|roll ?call|homeroom|pastoral|assembly|tutorial|recess|lunch|break)\b/i;
 const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen"];
 const word = n => WORDS[n] || String(n);
+/* From this day, the Wednesday Extension 2 rule (planFor, x2). The owner, 2026-11-24: anyone with Maths Extension 2 on a
+   Wednesday in period 4 or 5 has it as a double through periods 4 and 5, on both Wednesdays. So once one of those lessons has
+   shown, all four are known: an Extension 2 hint after it, or "a double on Wednesday", tells you nothing. Days before keep
+   the puzzles they were made with (they are stored), and today's is never remade for it (VERSION is unchanged). */
+export const X2_FROM = "2026-11-25";
+const X2 = /\b(?:math(?:s|ematics)?)\b.*\b(?:extension|ext\.?)\s*2\b/i;
 
 /* ── seeded helpers ─────────────────────────────────────────────────── */
 export function hashStr(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -185,8 +191,12 @@ function tilesFor(h, a, slots) {
    (which subjects, period, day, teacher) are tried and scored: exactly one person must fit after hint 4
    (the third from last); more than one after hint 1; best if one person first fits at hint 3 or 4 (2 at
    a push); each hint should cut the field down; each board hint must show new tiles. */
-function planFor(a, people, slots, freq, junior, r) {
+function planFor(a, people, slots, freq, junior, r, x2) {
   const n = list => list.length;
+  /* x2: their Wednesday Extension 2 lessons (periods 4 and 5, both weeks); once any of them is on the board, all are */
+  const W = x2 ? slots.filter(k => /^wed[ab]\|[45]$/.test(k) && X2.test(a.cells[k] || "")) : [];
+  const grow = set => { if (W.length && W.some(k => set.has(k))) W.forEach(k => set.add(k)); return set; };
+  const isX2 = s => W.length > 0 && X2.test(s);
   const onBoard = a.subjects.filter(s => a.subj.has(lc(s)));
   if (onBoard.length < 3) return null;
   const common = onBoard.slice().sort((x, y) => (freq.get(lc(y)) || 0) - (freq.get(lc(x)) || 0) || x.localeCompare(y));
@@ -196,21 +206,22 @@ function planFor(a, people, slots, freq, junior, r) {
   const periods = [...new Set(slots.map(k => +k.split("|")[1]))];
   let best = null;
   for (const sa of firstOpts) {
-    const hA = { k: "subj", subjects: sa }, shownA = new Set(tilesFor(hA, a, slots));
+    const hA = { k: "subj", subjects: sa }, shownA = grow(new Set(tilesFor(hA, a, slots)));
     const S1 = people.filter(c => fits(c, hA, a, slots));
     if (n(S1) < 2) continue;
     for (const p of shuffle(periods, r)) {
       const hS = { k: "slot", p }, tS = tilesFor(hS, a, slots);
       if (tS.filter(k => !shownA.has(k)).length < 3) continue;
-      const S2 = S1.filter(c => fits(c, hS, a, slots)), shown2 = new Set([...shownA, ...tS]);
+      const S2 = S1.filter(c => fits(c, hS, a, slots)), shown2 = grow(new Set([...shownA, ...tS]));
       for (const d of shuffle(CYCLE, r)) {
         const hD = { k: "day", d }, tD = tilesFor(hD, a, slots);
         if (tD.filter(k => !shown2.has(k)).length < 3) continue;
-        const S3 = S2.filter(c => fits(c, hD, a, slots)), shown3 = new Set([...shown2, ...tD]);
+        const S3 = S2.filter(c => fits(c, hD, a, slots)), shown3 = grow(new Set([...shown2, ...tD]));
         /* the payoff: a rarer subject, rarest first, with tiles still to show */
         const rare = common.filter(s => !sa.includes(s)).reverse();
         for (const sb of rare.slice(0, 3)) {
           const hB = { k: "subj", subjects: [sb] };
+          if (isX2(sb) && W.some(k => shown3.has(k))) continue;                       // Extension 2, already seen on a Wednesday
           if (!tilesFor(hB, a, slots).some(k => !shown3.has(k))) continue;
           const S4 = S3.filter(c => fits(c, hB, a, slots));
           if (n(S4) !== 1) continue;
@@ -221,7 +232,7 @@ function planFor(a, people, slots, freq, junior, r) {
           const span = Math.log(counts[0]);
           for (const i of [1, 2, 3, 4]) if (i <= first) score -= Math.pow((Math.log(counts[i - 1]) - Math.log(Math.max(1, counts[i]))) / span - 1 / first, 2) * 2;
           score += r() * 0.3;
-          if (!best || score > best.score) best = { score, sa, p, d, sb, counts };
+          if (!best || score > best.score) best = { score, sa, p, d, sb, counts, x2seen: W.some(k => shown3.has(k)) || isX2(sb) || sa.some(isX2) };
         }
       }
     }
@@ -232,7 +243,8 @@ function planFor(a, people, slots, freq, junior, r) {
     .map(t => ({ t, n: a.teach.get(lc(t)) || 0 }));
   const twice = many.filter(x => x.n >= 2);
   const fifth = twice.length ? Object.assign({ k: "teacher" }, twice[Math.floor(r() * twice.length)])
-    : a.doubles.size ? { k: "double", d: shuffle([...a.doubles], r)[0] }
+    : (best.x2seen ? [...a.doubles].filter(d => !d.startsWith("wed")).length : a.doubles.size)
+      ? { k: "double", d: shuffle(best.x2seen ? [...a.doubles].filter(d => !d.startsWith("wed")) : [...a.doubles], r)[0] }      // never "a double on Wednesday" once their Wednesday Extension 2 has shown
     : many.length ? Object.assign({ k: "teacher" }, many[Math.floor(r() * many.length)]) : null;
   const hints = [{ k: "subj", subjects: best.sa }, { k: "slot", p: best.p }, { k: "day", d: best.d }, { k: "subj", subjects: [best.sb] }]
     .concat(fifth ? [fifth] : [], [{ k: "frees" }]);
@@ -242,7 +254,7 @@ function planFor(a, people, slots, freq, junior, r) {
 /* Make a day's puzzle from a year's timetables.
      people  [{ email, days }] (days from readTT); bells from readBells; seed a number; avoid: emails used lately
    Returns the stored puzzle or null (no one could be made certain). */
-export function makeWhose({ people: raw, bells, seed, avoid = new Set(), maxTries = 80 }) {
+export function makeWhose({ people: raw, bells, seed, avoid = new Set(), maxTries = 80, x2 = false }) {
   const r = rng(seed);
   const template = templateOf(raw, bells || {});
   const slots = CYCLE.flatMap(d => template[d].map(x => d + "|" + x.p));
@@ -254,7 +266,7 @@ export function makeWhose({ people: raw, bells, seed, avoid = new Set(), maxTrie
   let tries = 0;
   for (const a of shuffle(people.filter(p => !avoid.has(p.email) && sigs.get(p.sig) === 1 && p.nSubj >= 3), r)) {
     if (tries++ >= maxTries) break;
-    const plan = planFor(a, people, slots, freq, junior, r);
+    const plan = planFor(a, people, slots, freq, junior, r, x2);
     if (!plan) continue;
     /* who still fits after each hint */
     const fit = [people.map((_, i) => i)];
@@ -332,7 +344,7 @@ async function buildYear(year, date, deadline) {
     .order("date", { ascending: false }).limit(40);
   const avoid = new Set((recent || []).map(r => r.puzzle && r.puzzle.email).filter(Boolean));
   const puzzle = makeWhose({ people: got.sort((a, b) => a.email.localeCompare(b.email)), bells: readBells(bellsRaw),
-                             seed: hashStr("whose2|" + date + "|" + year), avoid });
+                             seed: hashStr("whose2|" + date + "|" + year), avoid, x2: date >= X2_FROM });
   if (!puzzle) return { none: "No one’s timetable is certain enough in your year today." };
   /* prove the timetable read is theirs: they're on the roster of one of their classes */
   for (const code of Object.keys(puzzle.classes).filter(c => !NOT_A_SUBJECT.test(puzzle.classes[c])).slice(0, 3)) {

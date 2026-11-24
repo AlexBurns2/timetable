@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261123l">
+<link rel="stylesheet" href="theme.css?v=20261124h">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261123l"></script>
-<script src="icons.js?v=20261123l"></script>
-<script src="suggest.js?v=20261123l"></script>
+<script src="theme.js?v=20261124h"></script>
+<script src="icons.js?v=20261124h"></script>
+<script src="suggest.js?v=20261124h"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -1087,11 +1087,14 @@ function buildSlots(){
     hasLesson: withLesson.has(v.key)
   }));
 
-  /* keep rows that hold a lesson, plus breaks that sit inside the school day */
+  /* keep rows that hold a lesson, plus breaks that sit inside the school day. Period 1 is always kept, free or not, so the
+     day starts at its bell (the owner, 2026-11-24: "Show free period 1 on the timetable so it always starts at 8:55 or
+     whenever the period 1 bell time is") */
   const taught = all.filter(r => r.hasLesson && r.start != null);
-  const first = taught.length ? Math.min(...taught.map(r => r.start)) : 0;
+  const p1 = taught.length ? all.find(r => r.key === '1' && r.kind === 'class' && r.start != null) : null;
+  const first = taught.length ? Math.min(...taught.map(r => r.start), p1 ? p1.start : Infinity) : 0;
   const last  = taught.length ? Math.max(...taught.map(r => r.start)) : 1440;
-  all = all.filter(r => r.hasLesson ||
+  all = all.filter(r => r.hasLesson || r === p1 ||
                         (r.kind !== 'class' && r.start != null &&
                          r.start >= first && r.start <= last));
 
@@ -1337,11 +1340,12 @@ function items(cyc){
     const kind = e ? e.kind : slot.kind;
     if (kind === 'class' && e) L.push({ s, e:en, lesson:e });
     else if (kind === 'assembly') L.push({ s, e:en, asm:(e && e.subject) || 'Assembly' });
-    else L.push({ s, e:en, ls:[kind === 'class' ? 'Free' : slotLabel(slot)] });
+    else L.push({ s, e:en, ls:[kind === 'class' ? 'Free' : slotLabel(slot)], p1:slot.key === '1' });
   }
   L.sort((x, y) => x.s - y.s);
-  const first = L.findIndex(x => x.lesson), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson);
-  if (first === -1) return [];
+  const firstLesson = L.findIndex(x => x.lesson), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson);
+  if (firstLesson === -1) return [];
+  const freeP1 = L.findIndex(x => x.p1), first = freeP1 >= 0 && freeP1 < firstLesson ? freeP1 : firstLesson;      // a free period 1 is shown: the day starts at its bell
   L = L.slice(first, last + 1);
   const out = [];
   for (const x of L){
@@ -2008,6 +2012,9 @@ function renderCompact(ctx){
   const GAP = CELL_GAP;         /* same value the CSS grid uses between columns */
   const columns = ctx.idx.map(i => ({ i, cyc: ctx.cycles[i], blocks: blocksFor(ctx.cycles[i]) }));
   const all = columns.flatMap(c => c.blocks);
+  /* period 1's bell on the days shown: the day starts there even when period 1 is free, and the time column marks it */
+  const p1s = columns.map(c => c.cyc && c.blocks.length ? bellFor(c.cyc, '1') : null).filter(b => b && b.start != null && b.end > b.start);
+  if (p1s.length && slots.some(sl => sl.key === '1')) all.push(...p1s.map(b => ({ start:b.start, end:b.end })));
   const dayStart = all.length ? Math.min(...all.map(b => b.start)) : 8*60;
   const dayEnd   = all.length ? Math.max(...all.map(b => b.end))   : 15*60;
   const height   = Math.max(120, (dayEnd - dayStart) * PX);

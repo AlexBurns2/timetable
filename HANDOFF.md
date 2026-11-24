@@ -4642,3 +4642,157 @@ is now archived. `fx/vapor-entity.js` shows as modified in the working tree: tha
 - Not measured: frame times on real hardware. The additions are ten small cones, about forty sprites and flat patches, one
   puddle that reads the mirror picture five times a pixel, and four noise readings a pixel of water.
 - The three street stills were remade.
+
+## 8.184 to 8.186 The street: a little life, the car's glass, and a darker grade (version `20261123m`, `CACHE_VERSION` v108)
+
+Not committed by Claude. The owner committed `20261123l` / v107 as "vapor" (7de152e); this work took `m` / v108. The
+popup-messages session was told `n` / v109 is next. **The fork session ("School HTML timetable (fork)") is archived and could not
+be told: it last believed `m` / v108 was its own next stamp.** If it is opened again, it must use `n` / v109 or later.
+
+### Corrections to 8.183 (both found this round)
+
+- **The lamp cones of 8.183 were never in the scene.** A `//` comment added at the end of a line in `streetLamp` swallowed the
+  three statements after it (`cone.position.set ...; scene.add(cone);`). 8.183's notes and its summary described cones that
+  did not render. Once fixed, the owner saw them and rejected them: "it narrows to a point and its way too thick. It makes the
+  scene even more washed out". They are now removed entirely. To catch this class of bug, scan for statements after `//` on
+  one line (the scratch script `vw/swallow.py` did; nothing else turned up).
+- **The steadying (TAA) does not soften sudden changes.** 8.183 said it turned the OPEN sign's drop-outs into "a dip to about
+  half". It does not: it clamps each pixel's history to the range of its neighbours this frame, so a sign that drops is gone in
+  one frame. The faltering is now eased in code (below), and its dips go no lower than a quarter.
+
+### 8.184 What moves on the cinema's side ("the right side is very static")
+
+- **The cinema's neon chases like a marquee** (the owner: "Chase the cinema's rainbow bands so they light in sequence like a
+  marquee, instead of just flickering one letter"). The four bands light one after another from the bottom, then the three
+  lines up the tower; all hold for 2.6 s, then dim together to 58%; a round every 6.7 s. Each change is eased over 0.3 s. Their
+  light on the canopy goes with them (glowLit's ring colours), and the wet road mirrors it. The model's red part held both the
+  lowest band and the tower lines; it is split by height in the page. The one-letter flicker of 8.183 is gone.
+- **The shop's OPEN still falters** about once in 29 s, now eased (a twentieth of a second) and never below a quarter.
+- **A television in an upstairs window**: the shop's first upstairs window (the one a 16 : 9 screen shows at its right edge) is
+  a dark room lit by a TV, with its light changing at each cut (every 0.3 to 3 s), in cool screen colours with an occasional
+  warm one, eased. (That window was lit and the second one dark: they swapped.)
+- **Moths circle the street lamp by the car**: six dots, each on its own tilted, wobbling round, brighter near the lamp. They
+  are drawn after the steadying (a new `overlay` pass in `render`), because steadied, a dot moving a pixel a frame is held at a
+  sixteenth of its brightness. No moths where the page covers the lamp (phones, tablets, narrow windows).
+- **The lamp's glare breathes**: a few per cent, over about five seconds.
+- None of this is in the still pictures.
+- **Steam: tried three ways, then removed on the owner's word** ("I think you can remove the steam for now until the other
+  fixes are in"). What was learnt, for when it comes back:
+  1. From a grate behind the car: "it reads like exhaust or smoke from a parked car". The source must be seen.
+  2. As puffs of one colour each: "too uniform and too solid". Wanted: wispy, layered noise rising at different speeds,
+     15 to 25% opaque, thin at the source and billowing, fading as it rises; lit point by point by what is near; drifting with
+     the breeze; in front of something dark (against the bright horizon it disappears). A shader that did all this was written
+     and worked: two upright sheets facing the camera, a density built from three noise layers climbing at different speeds and
+     bent by noise, thin at the source, widening, fading out by the top; lit per pixel by every lamp and neon near that point
+     (point lights, the shop's tubes as segments, the cinema's bands as rings); premultiplied blending, at most about 22% alpha.
+     It is in the transcript of this session, not in the code.
+  3. From a vent in the cinema's front wall, beside the doors: **rejected**. "Definitely do NOT put the vent on the cinema
+     wall, why on earth would a cinema have a vent spewing steam right in front of the entrance?" The owner wants "a manhole
+     cover or some drain grille in the street".
+  - The difficulty: from the street camera, the street and forecourt that are neither behind the page nor behind the car have
+    the bright sea behind them, never a building, at 16 : 9 and 16 : 10. Measured by projecting a grid of grate spots through
+    the camera and casting rays at the car's mesh: at 1920 wide only a strip in front of the far end of the cinema's glass is
+    clear; at 1680 x 1050 and smaller desktop windows nothing is. Ultrawide screens have more room.
+
+### 8.185 The car: an emblem, glass that reads as glass, a cabin
+
+- **Emblem** (the owner: "add a small circle or something to the back of the car above the tail light as an emblem"): a plain
+  round badge on the boot lid, centred, 7.5 cm above the lamp bar, about 7 cm across. A muted silver ring, a dark band, a small
+  silver middle; no maker's mark. `tools/synth/car.py` places it from the mesh (a straight-line fit from points on the tail to
+  places in the picture), so it is round on the car.
+- **Glass** (the owner: "make the windows read more as glass, currently they are matte grey which reads more like plastic. A
+  very simple mock interior might help"): the windows now mirror the street and the sky by how slantwise they are seen
+  (Fresnel). The dark street lies below a crisp horizon line, the sky above it; the street lamp shows as a sharp point with a
+  little glow round it; the cinema's neon and the shop's sign show in them too. What is not mirrored shows what is behind the
+  glass.
+- **The cabin**: the model is a closed shell, so the glass works out what is behind it. From each point of the glass, along the
+  line from the eye, it traces through boxes in the car's own space (two front seats with headrests, the back seat and its
+  headrests, the parcel shelf, the dashboard, a rough steering wheel), measured off the model's glass. Seats are shaded dark,
+  lit a little from above. Where the line meets nothing it leaves through the far windows, which show the night outside,
+  dimmed. Very subtle on purpose: shapes, not detail. (A first try with lighter seats looked like cardboard boxes.)
+- The About credit says what changed, including the emblem (CC BY-SA asks for that).
+
+### 8.186 The grade (the owner: "a bit washed out and there aren't enough dark tones ... the sun could be made a bit smaller so more of the darker night sky is visible")
+
+- **Why the street was so light:** its camera looks out level through a long lens (25.5 degrees from top to bottom), and the
+  sky's colours change with height above the horizon. So it only ever saw the bright band near the horizon, never the dark night
+  above, which the bay scene (looking up) has plenty of. The wet road, the plaza and the bay mirror that same bright band.
+- **What changed, for the street only** (new per-scene settings in `look`, read by `setMode`; every other scene keeps 1):
+  `look.skyY = 2.3`, the sky's colours drawn 2.3 times nearer the horizon (sky shader `uSkyY`); `look.haze = .55`, the
+  horizon haze at 55%; `look.hemi = .45`, the purple fill light that lifted every wall out of the dark at 45%; `look.exp = .9`;
+  the sun smaller, radius 104 to 84.
+- **Measured** (the bare picture, 1920 x 1080, luminance 0 to 1):
+
+  | | mean | median | share below 0.10 | share above 0.5 |
+  |---|---|---|---|---|
+  | the street before | 0.283 | 0.237 | 25% | 18% |
+  | the street now | 0.182 | 0.107 | 48% | 8% |
+  | the bay (the owner's model of it) | 0.175 | 0.117 | 43% | 8% |
+
+- Flicker (40 frames, three sizes): as before everywhere except the cell where the near palm's fronds sway across the edge of the
+  sun at 1280 x 720. It went from about 1.5 to 4 levels a frame, because a dark frond now moves against a dark sky and a bright
+  sun edge instead of a pink sky. That is the slow sway the owner asked for, not shimmer, but it is the busiest cell now.
+- All five scenes load with no error or warning (the checks now catch `console.error` too: a shader that fails to compile is
+  logged as an error, and the earlier hooks only caught warnings). The three street stills were remade.
+
+## 8.187 Moving backgrounds on Macs (version `20261124h`, `CACHE_VERSION` v115)
+
+Not committed by Claude. The tree is still based on 7de152e while origin/main has moved on to `20261124g` / v114 (Leaderboards,
+Beta timetable, Jim Together). The only files changed on both sides are the stamped ones, on their stamp lines. This work is
+stamped `h` / v115, above origin's, so the merge resolves to one stamp above both. The popup-messages session was told `i` /
+v116 is next; the fork session is archived.
+
+The owner: "The synthwave animations and possibly others don't work on macs". No Mac or WebKit was available to test on. Found
+and fixed, in the order most likely to matter:
+
+- **Reduce motion overrode the site's own Animation switch.** theme.js turns Animation off by default when the system asks for
+  reduced motion (macOS: Accessibility, Display, Reduce motion), and Settings, Animation turns it back on (`tt.fx = on`). But
+  `fx/synth.js` checked the system setting itself and refused to start, so on such a Mac Synthwave stayed still whatever Settings
+  said. Reproduced in Chrome with reduced motion emulated: `data-fx="on"`, Three.js never fetched. Now synth.js only refuses a
+  device that asks to save data or is short of memory; reduced motion is left to the Animation switch. `fx/vapor.js` had the
+  same check for how its pop-up windows arrive; it follows the switch too.
+- **Settings now says why.** With the system's reduced motion on and Animation not switched on, the hint under the switch reads
+  "Off because this device is set to reduce motion. Switch it on to see the moving background anyway." If a scene couldn't start
+  (`FX.why`, set by synth.js), it says so ("This device is set to save data" / "couldn't start the moving background").
+  Someone with a Mac that shows a still background can open Settings and read which it is.
+- **Synthwave's drawing buffers fall back.** It draws into half-float, multisampled buffers. A device that can't make one doesn't
+  raise an error: the picture comes out black or never comes. Each kind is now tried on a 4 x 4 picture first (framebuffer
+  complete, no GL error), best first: half-float with smoothed edges, half-float without, 8-bit with, 8-bit without.
+- **The wet road's mirror no longer needs half-float buffers.** It was skipped on any device without them (the road became plain
+  glossy metal with white streaks); its own picture is 8-bit, so it is now always there. Tested by forcing the 8-bit path: the
+  picture is nearly the same as the normal one (mean luminance 0.177 against 0.182).
+- Ruled out: no script uses syntax older Safari can't parse (scanned all `.js` and `.html` for lookbehind, static blocks,
+  `groupBy`, `toSorted`, `findLast`, `structuredClone` and others); `fx.js` uses `OffscreenCanvas` and `requestIdleCallback`
+  only behind checks.
+- Not changed: some stylesheets still stop small CSS animations under the system's reduced motion even when Animation is switched
+  on (Vaporwave's title glitch and window arrivals, Glass's drifting clouds, page-change fades in Synthwave and Eco). If the
+  owner wants the switch to win there too, those `@media (prefers-reduced-motion:reduce)` rules would key on `html[data-fx="off"]`
+  instead.
+
+## 8.188 Hints, period 1, and Quartets again (still `20261124h`, v115; not deployed, so the stamp stands)
+
+Not committed by Claude. Every game change applies from **2026-11-25**; everything up to and including the 24th plays and
+reads exactly as before (checked: old and new code give identical hints and puzzles for every day up to the 24th).
+
+- **Daily Guess Who:** English Advanced is never a hint (the owner: "everyone takes it"). `api/_daily.js`: `V3_UNTIL`
+  = 2026-11-24; from the 25th v3Hints treats English Advanced as a subject everyone takes (`noEngAdv`), so it is neither
+  "They take English Advanced" nor "They're in English Advanced with ...".
+- **Whose Timetable?, the Wednesday Extension 2 rule** (`api/_whose.js`, `X2_FROM`): someone with Maths Extension 2 on a
+  Wednesday in period 4 or 5 has it as a double through 4 and 5 on both Wednesdays, so once any of those lessons shows, all four
+  are known. From the 25th the puzzle never gives an Extension 2 hint after that (after Period 4 or 5, or the Wednesday, or
+  Extension 2 itself), and never "a double on Wednesday" once their Wednesday Extension 2 has shown. Puzzles are stored, and
+  VERSION is unchanged, so no day already made (today's included) is remade. Tested on 60 made-up senior years: with the old
+  rules 47 such hints in 126 puzzles with Wednesday Extension 2, with the new none, and every year still gets a puzzle.
+- **The timetable starts at period 1** (`index.html`): a free period 1 is kept as a row, so the full layout has it, the compact
+  layout starts at its bell, and Studio and Apple show it as "Free" at the top of the day.
+- **Quartets is back**, an eighth Timetable game on the games page (`fours`; Triplets keeps the id `quartets`), not on Home:
+  four groups of four, seven mistakes and the old hints, a new puzzle every second day from the 25th (on the days between, the
+  last one, and when the next comes). Its old days (10 to 20 November) moved from Triplets' calendar to its own: their puzzles
+  and results stay where they are, read by date. Triplets' calendar starts on the 21st. Triplets' streak is unchanged.
+  Server: `quartRoute` in `api/_connroute.js` (requests with `q=1`); new puzzles in `conn_puzzle` under `"<year>#q1"`.
+- **The owner must run one piece of SQL** (SETUP.md, Quartets): a new table `quart_result`, because `conn_result` keeps one row
+  a person a day and Triplets has every day. Until then the new Quartets days say "Quartets isn't set up yet"; the old ones play.
+- The nightly job makes a Quartets day after each year's Triplets when there's time; otherwise its first player makes it.
+- Tested: the route against in-memory tables (old days, new days, both games on one day for one person, the calendars, the
+  streak, a missing table; no row dated before the 24th changed); the games page in the local mock (both boards, both calendars).
+- Not done (the owner's to write): a What's-new entry for Quartets.

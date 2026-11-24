@@ -13,6 +13,14 @@
  * POST /api/daily {conn:1, date, pick:[names]}  → marked: the board as above, plus { right, oneAway }
  * POST /api/daily {conn:1, date, hint:true}     → Triplets' one hint, used: the board as above
  *
+ * Quartets again, from 2026-11-24 (the owner: "Add back quartets as every second day ... the old quartet games on triplets get
+ * migrated over to the new quartets"): its own game on the games page, served by the same requests with q=1 (quartRoute,
+ * below). A new puzzle every second day from QUARTETS_BACK, four groups of four and seven mistakes as before, kept under the
+ * key "<year>#q1"; its days from CONN_EPOCH to the day before TRIPLETS_FROM are the old Quartets days, played and kept exactly
+ * as they were (their puzzles and results stay where they are, under their own keys). Triplets' calendar now starts at
+ * TRIPLETS_FROM. Results for the new days go in a table of their own, quart_result (SETUP.md): conn_result allows one row a
+ * person a day, and Triplets has every day.
+ *
  * Each day's puzzle is made by _conn.js the first time anyone in the year opens
  * it (or by the nightly job), then kept, so past days can be played from the
  * calendar. Nothing here ever deletes a puzzle or a result: a day that already
@@ -28,6 +36,16 @@ import { computeStreak, sydneyDate, resolveYear } from "./_daily.js";
 import { makeQuartets, hashStr, howFor, tidyTeacher, hardness, QUARTETS_VERSION, TRIPLETS_FROM, PEOPLE_DAYS } from "./_conn.js";
 
 export const CONN_EPOCH = "2026-11-10";        // the first day of Quartets
+export const QUARTETS_BACK = "2026-11-25";     // Quartets back, every second day from here
+const QKEY = year => String(year) + "#q1";
+const shiftD = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const dayDiff = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
+const oldQ = d => d >= CONN_EPOCH && d < TRIPLETS_FROM;                          // a Quartets day from before Triplets
+const newQ = d => d >= QUARTETS_BACK && dayDiff(QUARTETS_BACK, d) % 2 === 0;     // a Quartets day from QUARTETS_BACK on
+export const isQuartetsDay = d => oldQ(d) || newQ(d);
+const latestQ = today => { let d = today; for (let i = 0; i < 40; i++, d = shiftD(d, -1)) if (isQuartetsDay(d)) return d; return null; };
+const nextQ = today => { let d = shiftD(today, 1); for (let i = 0; i < 3; i++, d = shiftD(d, 1)) if (newQ(d)) return d; return null; };
+const qDaysUpTo = today => { const out = []; for (let d = CONN_EPOCH; d <= today; d = shiftD(d, 1)) if (isQuartetsDay(d)) out.push(d); return out; };
 const MAX_MISTAKES = 7;
 /* Triplets (from TRIPLETS_FROM): three groups of three, four mistakes. Quartets days: four of four, seven. */
 const chancesFor = groups => Array.isArray(groups) && groups.length === 3 ? 4 : MAX_MISTAKES;
@@ -67,14 +85,15 @@ async function staffNames() {
 function cleanDate(d, today) {
   if (!d) return today;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(d))) return null;
-  return d > today || d < CONN_EPOCH ? null : d;
+  return d > today || d < TRIPLETS_FROM ? null : d;      // (Triplets: its earlier days are Quartets', in quartRoute)
 }
 
 /* the day's puzzle as { groups, key }, made now if it hasn't been; null if it
    couldn't be made just now */
-async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
-  const key = keyFor(year, date);
-  const selAll = () => db.from("conn_puzzle").select("year, groups").eq("date", date).in("year", allKeys(year));
+async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000, opt = {}) {
+  const Q = !!opt.q;                              // Quartets' own day (from QUARTETS_BACK): its own key, four of four
+  const key = Q ? QKEY(year) : keyFor(year, date);
+  const selAll = () => db.from("conn_puzzle").select("year, groups").eq("date", date).in("year", Q ? [QKEY(year)] : allKeys(year));
   let { data: rows, error } = await selAll();
   if (error) throw new Error("quartets read: " + error.message);
   const had = pickDay(rows);
@@ -114,11 +133,11 @@ async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
   const staff = await staffNames();
   const teacherName = raw => { const e = String(raw || "").toLowerCase();
     return e.includes("@") ? withName(NAMES, e, staff.get(e) || tidyTeacher(raw)) : tidyTeacher(raw); };
-  const seed = hashStr("conn:" + date + ":" + year);
+  const seed = hashStr((Q ? "quart:" : "conn:") + date + ":" + year);
   /* the last two months' puzzles: which categories came up when (so the same ones don't keep turning up),
      and who each category used (so it picks other people next time). Read only; nothing is changed. */
   const avoid = new Map(), usedBy = new Map(), dayMs = 864e5, today = Date.parse(date + "T00:00:00Z");
-  const { data: recent } = await db.from("conn_puzzle").select("date, groups").in("year", allKeys(year)).lt("date", date)
+  const { data: recent } = await db.from("conn_puzzle").select("date, groups").in("year", allKeys(year).concat(QKEY(year))).lt("date", date)      // both games' days
     .gte("date", new Date(today - PEOPLE_DAYS * dayMs).toISOString().slice(0, 10)).order("date", { ascending: false }).limit(PEOPLE_DAYS + 5);
   (recent || []).forEach(r => { const ago = Math.round((today - Date.parse(String(r.date).slice(0, 10) + "T00:00:00Z")) / dayMs);
     (Array.isArray(r.groups) ? r.groups : []).forEach(g => { if (!g || !g.id) return;
@@ -126,7 +145,7 @@ async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000) {
       const m = usedBy.get(g.id) || usedBy.set(g.id, new Map()).get(g.id);
       (Array.isArray(g.emails) ? g.emails : []).forEach(e => { const k = String(e).toLowerCase(); if (!m.has(k) || ago < m.get(k)) m.set(k, ago); }); }); });
   const checked = new Map(), onTimetable = (e, raw) => checked.set(e, hasClassesIn(raw));   // everyone whose timetable was read
-  const size = date >= TRIPLETS_FROM ? 3 : 4;
+  const size = Q ? 4 : date >= TRIPLETS_FROM ? 3 : 4;
   let made = await makeQuartets({ size, people, getTT, getRoster, seed, year, avoid, usedBy, teacherName, onTimetable, deadline });
   if (!made) made = await makeQuartets({ size, people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, usedBy, teacherName, onTimetable,
                                          deadline: Math.max(deadline, Date.now() + 3000) });
@@ -172,9 +191,9 @@ function designOf(stored) {
   const total = [...hs.values()].reduce((a, b) => a + b, 0);
   return { rated: lv => hs.has(lv) ? rateGroup(hs.get(lv)) : null, day: hs.size === 4 ? (total < 9 ? -1 : total > 10.5 ? 1 : 0) : hs.size === 3 ? (total < 6 ? -1 : total > 7.2 ? 1 : 0) : null };
 }
-async function summaryFor(pk, date, groups, NAMES, stored, told) {
+async function summaryFor(pk, date, groups, NAMES, stored, told, table = "conn_result") {
   const MAX_MISTAKES = chancesFor(stored);
-  const { data } = await db.from("conn_result").select("email, found, mistakes, solved, done, updated_at")
+  const { data } = await db.from(table).select("email, found, mistakes, solved, done, updated_at")
     .eq("year", pk).eq("date", date).eq("done", true).limit(2000);
   const rows = data || [];
   const nm = e => withName(NAMES, e, nameFromEmail(e));
@@ -199,6 +218,7 @@ async function summaryFor(pk, date, groups, NAMES, stored, told) {
    so the first player of the day doesn't wait while it's made */
 export async function prebuildQuartets(year, date, NAMES, deadline = Date.now() + 40000) {
   const day = await ensureConn(String(year), date, NAMES, deadline);
+  if (newQ(date) && Date.now() < deadline - 10000) try { await ensureConn(String(year), date, NAMES, deadline, { q: true }); } catch (e) { console.error("quartets (every second day):", e.message); }
   /* and any earlier day kept empty (by an older version of this code), a few a night */
   const { data: days } = await db.from("conn_puzzle").select("date, year, groups").in("year", allKeys(year)).gte("date", CONN_EPOCH).lt("date", date).limit(5000);
   const byDate = new Map(); (days || []).forEach(d => (byDate.get(d.date) || byDate.set(d.date, []).get(d.date)).push(d));
@@ -260,9 +280,9 @@ export async function connRoute(req, res, me, body, NAMES) {
   try {
     if (req.method === "GET" && req.query.archive) {
       const [{ data: days }, { data: plays }, { data: mine }] = await Promise.all([
-        db.from("conn_puzzle").select("date, year, groups").in("year", keys).gte("date", CONN_EPOCH).lte("date", today).limit(5000),
-        db.from("conn_result").select("date, year, solved").in("year", keys).eq("done", true).gte("date", CONN_EPOCH).limit(50000),
-        db.from("conn_result").select("date, year, solved, done, mistakes").eq("email", me.email).in("year", keys).gte("date", CONN_EPOCH)
+        db.from("conn_puzzle").select("date, year, groups").in("year", keys).gte("date", TRIPLETS_FROM).lte("date", today).limit(5000),
+        db.from("conn_result").select("date, year, solved").in("year", keys).eq("done", true).gte("date", TRIPLETS_FROM).limit(50000),
+        db.from("conn_result").select("date, year, solved, done, mistakes").eq("email", me.email).in("year", keys).gte("date", TRIPLETS_FROM)
       ]);
       /* each day's played puzzle (its version); a day kept empty is listed too, and made when it's opened */
       const rowsOf = new Map(); (days || []).forEach(d => (rowsOf.get(d.date) || rowsOf.set(d.date, []).get(d.date)).push(d));
@@ -271,7 +291,7 @@ export async function connRoute(req, res, me, body, NAMES) {
       Object.keys(keyOf).forEach(date => by[date] = { date, played: 0, wins: 0 });
       (plays || []).forEach(r => { const d = by[r.date]; if (d && r.year === keyOf[r.date]) { d.played++; if (r.solved) d.wins++; } });
       const m = {}; (mine || []).forEach(r => { if (r.year === keyOf[r.date]) m[r.date] = { solved: !!r.solved, done: !!r.done, mistakes: r.mistakes || 0 }; });
-      return res.status(200).json({ epoch: CONN_EPOCH, today, archive: Object.values(by).sort((a, b) => b.date.localeCompare(a.date)), mine: m });
+      return res.status(200).json({ epoch: TRIPLETS_FROM, today, archive: Object.values(by).sort((a, b) => b.date.localeCompare(a.date)), mine: m });
     }
     const date = cleanDate(req.method === "POST" ? body && body.date : req.query.date, today);
     if (!date) return res.status(400).json({ error: "That day isn't available." });
@@ -280,7 +300,7 @@ export async function connRoute(req, res, me, body, NAMES) {
     const [day, mine, streakDates] = await Promise.all([ensureConn(year, date, NAMES),
       db.from("conn_result").select("year, found, log, mistakes, solved, done, updated_at").eq("email", me.email).eq("date", date).in("year", keys),
       db.from("conn_result").select("date").eq("email", me.email).eq("solved", true).order("date", { ascending: false }).limit(120)]);
-    if (!day || !isPuzzle(day.groups)) return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, none: true, retry: true });
+    if (!day || !isPuzzle(day.groups)) return res.status(200).json({ date, today, epoch: TRIPLETS_FROM, year, none: true, retry: true });
     const stored = day.groups, pk = day.key;     // results go with the version that made the day
     /* by the names people go by today; emails stay on the server */
     const groups = stored.map(g => {
@@ -298,7 +318,7 @@ export async function connRoute(req, res, me, body, NAMES) {
     if (req.method === "GET" && req.query.summary) {
       return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored, result.done), mine: result });
     }
-    const board = async extra => res.status(200).json(Object.assign({ date, today, epoch: CONN_EPOCH, year }, boardView(groups, result, date, CH),
+    const board = async extra => res.status(200).json(Object.assign({ date, today, epoch: TRIPLETS_FROM, year }, boardView(groups, result, date, CH),
       { streak: computeStreak(result.solved && !dates.includes(date) ? [date].concat(dates) : dates, today) }, extra || {}));
     if (req.method === "GET") return board();
     if (req.method === "POST") {
@@ -339,5 +359,100 @@ export async function connRoute(req, res, me, body, NAMES) {
     console.error("quartets:", e.message);
     return res.status(502).json({ error: /does not exist|relation|schema cache|could not find/i.test(e.message)
       ? "Quartets isn't set up yet." : "Couldn't load today's Quartets." });
+  }
+}
+
+/* ── Quartets (q=1): its own game again, from 2026-11-24 ──────────────────────
+   The days: the old Quartets days (CONN_EPOCH to the day before TRIPLETS_FROM, played and kept as they were: puzzles under
+   their version keys, results in conn_result), then every second day from QUARTETS_BACK (puzzles under "<year>#q1", results
+   in quart_result). No date asked for: the latest Quartets day, so the day between two shows the last one, and says when
+   the next comes. The streak counts Quartets days in a row (every second day counts as in a row). The rest (the board, the
+   guesses, the old hints, the summary) is as Quartets always was. */
+const missingTable = e => e && /does not exist|relation|schema cache|could not find/i.test(e.message || "");
+export async function quartRoute(req, res, me, body, NAMES) {
+  const today = sydneyDate();
+  let year;
+  try { year = await resolveYear(me); } catch { year = null; }
+  if (!year) return res.status(400).json({ error: "Couldn't work out which year you're in." });
+  year = String(year);
+  const keys = allKeys(year), QK = QKEY(year);
+  /* the days you solved, from both kinds, for the streak */
+  const solvedDays = async () => {
+    const [{ data: a }, { data: b2 }] = await Promise.all([
+      db.from("conn_result").select("date").eq("email", me.email).eq("solved", true).in("year", keys).lt("date", TRIPLETS_FROM).gte("date", CONN_EPOCH),
+      db.from("quart_result").select("date").eq("email", me.email).eq("solved", true).eq("year", QK)]);
+    return new Set([...(a || []), ...(b2 || [])].map(r => String(r.date).slice(0, 10)));
+  };
+  const streakOf = (won, upto) => { const days = qDaysUpTo(upto).reverse(); let i = 0, n = 0;
+    if (days.length && !won.has(days[0])) i = 1;                                // the latest still open: count from the one before
+    for (; i < days.length && won.has(days[i]); i++) n++; return n; };
+  try {
+    if (req.method === "GET" && req.query.archive) {
+      const [{ data: oldDays }, { data: newDays }, { data: oldPlays }, { data: newPlays }, { data: oldMine }, { data: newMine }] = await Promise.all([
+        db.from("conn_puzzle").select("date, year, groups").in("year", keys).gte("date", CONN_EPOCH).lt("date", TRIPLETS_FROM).limit(5000),
+        db.from("conn_puzzle").select("date, year, groups").eq("year", QK).gte("date", QUARTETS_BACK).lte("date", today).limit(5000),
+        db.from("conn_result").select("date, year, solved").in("year", keys).eq("done", true).gte("date", CONN_EPOCH).lt("date", TRIPLETS_FROM).limit(50000),
+        db.from("quart_result").select("date, year, solved").eq("year", QK).eq("done", true).limit(50000),
+        db.from("conn_result").select("date, year, solved, done, mistakes").eq("email", me.email).in("year", keys).gte("date", CONN_EPOCH).lt("date", TRIPLETS_FROM),
+        db.from("quart_result").select("date, year, solved, done, mistakes").eq("email", me.email).eq("year", QK)]);
+      const rowsOf = new Map(); [...(oldDays || []), ...(newDays || [])].forEach(d => (rowsOf.get(d.date) || rowsOf.set(d.date, []).get(d.date)).push(d));
+      const keyOf = {}; rowsOf.forEach((rs, date) => { const p = pickDay(rs); keyOf[date] = p ? p.year : oldQ(date) ? keyFor(year, date) : QK; });
+      const qdays = qDaysUpTo(today);
+      qdays.filter(newQ).forEach(d => { if (!keyOf[d]) keyOf[d] = QK; });        // a day not made yet is made when it's opened
+      const by = {}; Object.keys(keyOf).forEach(date => by[date] = { date, played: 0, wins: 0 });
+      [...(oldPlays || []), ...(newPlays || [])].forEach(r => { const d = by[r.date]; if (d && r.year === keyOf[r.date]) { d.played++; if (r.solved) d.wins++; } });
+      const m = {}; [...(oldMine || []), ...(newMine || [])].forEach(r => { if (r.year === keyOf[r.date]) m[r.date] = { solved: !!r.solved, done: !!r.done, mistakes: r.mistakes || 0 }; });
+      return res.status(200).json({ epoch: CONN_EPOCH, today, qdays, archive: Object.values(by).sort((a, b) => b.date.localeCompare(a.date)), mine: m });
+    }
+    const raw = req.method === "POST" ? body && body.date : req.query.date;
+    const date = raw ? (/^\d{4}-\d{2}-\d{2}$/.test(raw) && raw <= today && isQuartetsDay(raw) ? raw : null) : latestQ(today);
+    if (!date) return res.status(400).json({ error: "That day isn't available." });
+    const old = oldQ(date), T = old ? "conn_result" : "quart_result", rkeys = old ? keys : [QK];
+    const [day, mine, won] = await Promise.all([old ? ensureConn(year, date, NAMES) : ensureConn(year, date, NAMES, undefined, { q: true }),
+      db.from(T).select("year, found, log, mistakes, solved, done, updated_at").eq("email", me.email).eq("date", date).in("year", rkeys),
+      solvedDays()]);
+    if (missingTable(mine.error)) throw mine.error;
+    const next = nextQ(today);
+    if (!day || !isPuzzle(day.groups)) return res.status(200).json({ date, today, epoch: CONN_EPOCH, year, next, none: true, retry: true });
+    const stored = day.groups, pk = day.key;
+    const groups = stored.map(g => {
+      const names = (g.names || []).map((n, i) => withName(NAMES, (g.emails || [])[i], n));
+      return { lv: g.lv, label: stripEmails(g.label), kind: g.kind, names, how: names.map(n => g.kind === "name" ? howFor(g.id, n) : "") };
+    });
+    const had = ((mine && mine.data) || []).find(r => r.year === pk) || null;
+    const result = had ? { found: had.found || [], log: had.log || [], mistakes: had.mistakes || 0, solved: !!had.solved, done: !!had.done }
+                       : { found: [], log: [], mistakes: 0, solved: false, done: false };
+    result.hinted = false;
+    const CH = chancesFor(stored);
+    if (req.method === "GET" && req.query.summary) return res.status(200).json({ date, summary: await summaryFor(pk, date, groups, NAMES, stored, result.done, T), mine: result });
+    const board = extra => res.status(200).json(Object.assign({ date, today, epoch: CONN_EPOCH, year, next }, boardView(groups, result, date, CH),
+      { streak: streakOf(result.solved ? new Set([...won, date]) : won, today) }, extra || {}));
+    if (req.method === "GET") return board();
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (result.done) return board();
+    const G = stored.length;
+    const pick = Array.isArray(body.pick) ? [...new Set(body.pick.map(String))] : [];
+    const lvOf = new Map(); groups.forEach(g => g.names.forEach(n => lvOf.set(n, g.lv)));
+    if (pick.length !== G || pick.some(n => !lvOf.has(n) || result.found.includes(lvOf.get(n))))
+      return res.status(400).json({ error: "Reload the page to carry on." });
+    const lvs = pick.map(n => lvOf.get(n)), right = lvs.every(l => l === lvs[0]);
+    result.log = result.log.concat([lvs]).slice(0, G + CH + 1);
+    if (right) result.found = [...new Set(result.found.concat(lvs[0]))];
+    else result.mistakes = Math.min(CH, result.mistakes + 1);
+    const most = Math.max(...groups.map(g => lvs.filter(x => x === g.lv).length));
+    result.solved = result.found.length === G && result.mistakes < CH;
+    result.done = result.solved || result.mistakes >= CH;
+    const row = { email: me.email, date, year: pk, found: result.found, log: result.log, mistakes: result.mistakes,
+      solved: result.solved, done: result.done, updated_at: new Date().toISOString() };
+    const { data: saved, error } = had
+      ? await db.from(T).update(row).eq("email", me.email).eq("date", date).eq("year", pk).eq("updated_at", had.updated_at).select("done")
+      : await db.from(T).insert(row).select("done");
+    if (error && /duplicate|unique|23505/i.test(error.message + " " + error.code)) return res.status(409).json({ error: "Too quick: try that again." });
+    if (error) { if (missingTable(error)) throw error; console.error("quartets result:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
+    if (!saved || !saved.length) return res.status(409).json({ error: "Too quick: try that again." });
+    return board({ right, oneAway: !right && most === G - 1 });
+  } catch (e) {
+    console.error("quartets (q):", e.message);
+    return res.status(502).json({ error: missingTable(e) ? "Quartets isn't set up yet." : "Couldn't load Quartets." });
   }
 }

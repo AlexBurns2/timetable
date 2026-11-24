@@ -2805,6 +2805,25 @@ alter table conn_puzzle enable row level security;   -- no policies: only the se
 alter table conn_result enable row level security;
 ```
 
+**Quartets every second day (from 2026-11-25).** Triplets has every day, and `conn_result` keeps one row a person a day,
+so the new Quartets days keep their results in a table of their own. Run once; safe to run again; nothing existing is
+touched. Until it exists, the new Quartets days say "Quartets isn't set up yet" (its old days, 10 to 20 November, still work).
+```sql
+create table if not exists quart_result (
+  email      text not null,
+  date       date not null,
+  year       text not null,           -- "<year>#q1"
+  found      jsonb not null default '[]',
+  log        jsonb not null default '[]',
+  mistakes   int  not null default 0,
+  solved     boolean not null default false,
+  done       boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (email, date)
+);
+alter table quart_result enable row level security;   -- no policies: only the server (service role) reads or writes
+```
+
 ---
 
 ## Student cache (`api/_names.js` `rosterList`, refreshed by `/api/daily-generate`)

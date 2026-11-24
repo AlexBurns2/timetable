@@ -15,7 +15,8 @@ What the page (fx/synth.js, the street scene) is given:
   images/synth/car.webp  its picture REDRAWN in flat colours, 1024 px: every bit of the picture is one kind of thing (bodywork,
                          glass, a window's surround, a lamp, a plate, a tyre, a wheel, dark trim) and has that kind's one colour.
                          The rear lamps are one straight bar across the tail, as the real car's are. The wheels are a
-                         gunmetal and the plates a dim lilac: nothing on the car is near white.
+                         gunmetal and the plates a dim lilac: nothing on the car is near white. A plain round emblem (a muted
+                         silver ring) on the boot lid, above the lamp bar.
                          Its alpha is not transparency: it says how glossy that kind is (GLOSS below; 128 = matt, 255 = a
                          mirror), which is what the page's shader goes by for the neon the car catches. It starts at 128 and
                          not at 0 so that a browser which multiplies colour by alpha on the way in loses nothing of the colour.
@@ -110,7 +111,7 @@ open(a.out, 'wb').write(struct.pack('<4sII', b'glTF', 2, 28 + len(jb) + len(bin_
 print('%s: %d triangles, %d corners; %.2f m long, %.2f wide, %.2f high; %d bytes' % (a.out, len(idx) // 3, n, hi[2] - lo[2], hi[0] - lo[0], hi[1] - lo[1], 28 + len(jb) + len(bin_)))
 
 # ── the picture redrawn flat. First, what kind of thing each bit of it is, by its colour (and by whether a wheel reads it) ──
-GLASS, PAINT, DARK, LIGHT, RED, PALE, AMBER, TYRE, DIM, TRIM, WHEEL, PLATE = range(12); NK = 12
+GLASS, PAINT, DARK, LIGHT, RED, PALE, AMBER, TYRE, DIM, TRIM, WHEEL, PLATE, EMBLEM = range(13); NK = 13
 kind = np.full((R, R), DARK, np.uint8)                                         # dark trim: the cladding, the bumpers, the grille
 kind[(sat < .3) & (val > .44)] = LIGHT                                         # a lamp's glass, a plate, bright metal
 kind[reddish & (sat > .38) & (val > .14)] = PAINT                              # the bodywork (a burgundy)
@@ -186,6 +187,24 @@ kind[box & np.isin(kind, (RED, DIM, PALE, AMBER)) & (who == 1)] = PAINT
 kind[by0:by1, bx0:bx1][who[by0:by1, bx0:bx1] == 1] = RED
 print('rear lamp bar: %d x %d px of the 2048 px picture' % (bx1 - bx0, by1 - by0))
 
+# an emblem: a plain round badge in the middle of the boot lid, just above the lamp bar (the owner, 2026-11-23: "add a small circle
+# or something to the back of the car above the tail light as an emblem"). A ring of muted silver round a dark middle, about
+# 7 cm across: no maker's mark (the model's own badge was painted out, above, and must stay out). Where it goes is worked out
+# from the mesh: over the tail's rear-facing triangles, where in the picture a point of the tail is, as a straight-line fit of
+# (x, y) on the car; then the badge's middle (on the car: halfway across, 7.5 cm above the bar's top edge) and its size are read
+# off that fit, so it is round on the car whatever the picture's scale there.
+Pm, Nm, Um, Im = np.array(pos).reshape(-1, 3), np.array(nor).reshape(-1, 3), np.array(uv).reshape(-1, 2), np.array(idx).reshape(-1, 3)
+cP, cN, cU = Pm[Im].mean(1), Nm[Im].mean(1), Um[Im].mean(1) * R
+inbar = (cU[:, 0] >= bx0) & (cU[:, 0] < bx1) & (cU[:, 1] >= by0) & (cU[:, 1] < by1)
+ybar = cP[inbar, 1].max(); zrear = cP[inbar, 2].mean()
+tail = (cN[:, 2] * np.sign(zrear) > .4) & (np.abs(cP[:, 0]) < .55) & (cP[:, 1] > ybar - .12) & (cP[:, 1] < ybar + .2)
+A = np.c_[cP[tail, 0], cP[tail, 1], np.ones(tail.sum())]; fit, *_ = np.linalg.lstsq(A, cU[tail], rcond=None)      # picture px = [x, y, 1] . fit
+assert tail.sum() > 20 and np.abs(A @ fit - cU[tail]).max() < 60, 'the tail is not one piece of the picture here'
+ec = np.array([0, ybar + .075, 1]) @ fit; ex, ey = np.hypot(*fit[0]) * .035, np.hypot(*fit[1]) * .035      # its middle, and its radius across and up, in picture px (fit[0]: px per metre across the car, fit[1]: per metre up)
+gy, gx = np.mgrid[0:R, 0:R]; rr = np.hypot((gx - ec[0]) / ex, (gy - ec[1]) / ey)
+kind[(rr <= 1) & (who == 1)] = EMBLEM; kind[(rr <= .62) & (who == 1)] = DARK; kind[(rr <= .3) & (who == 1)] = EMBLEM      # a ring, a dark band, a small round middle
+print('emblem: at %.0f, %.0f of the 2048 px picture, %.0f x %.0f px' % (ec[0], ec[1], ex * 2, ey * 2))
+
 # ── its colours: one flat colour a kind ──
 hx = lambda s: [int(s[i:i + 2], 16) for i in (1, 3, 5)]
 # (the lamps are glass that is not lit: the car is parked. Their reds and ambers are those of an unlit lens, well below the
@@ -195,9 +214,9 @@ hx = lambda s: [int(s[i:i + 2], 16) for i in (1, 3, 5)]
 #  they pick up pink or cyan from the neon instead of reading near-white", and of the plate: "Drop its brightness a lot and
 #  give it a slight tint". So: a gunmetal with the street's mauve in it, and a dim lilac; both nearly matt)
 COL = {GLASS: hx('#0b1420'), PAINT: hx(a.paint), DARK: hx('#1b1a20'), LIGHT: hx('#b4bac4'), RED: hx('#8f1826'), PALE: hx('#b98d96'), AMBER: hx('#a8641c'), TYRE: hx('#08080a'), DIM: hx('#641322'), TRIM: hx('#434957'),
-       WHEEL: hx('#4a4556'), PLATE: hx('#5a5470')}
+       WHEEL: hx('#4a4556'), PLATE: hx('#5a5470'), EMBLEM: hx('#7d8494')}
 # how glossy each kind is, 0 matt to 1 a mirror: what the neon across the street shows in (fx/synth.js, the car's material)
-GLOSS = {GLASS: 1., PAINT: .78, DARK: .22, LIGHT: .55, RED: .85, PALE: .85, AMBER: .85, TYRE: .04, DIM: .85, TRIM: .5, WHEEL: .3, PLATE: .28}
+GLOSS = {GLASS: 1., PAINT: .78, DARK: .22, LIGHT: .55, RED: .85, PALE: .85, AMBER: .85, TYRE: .04, DIM: .85, TRIM: .5, WHEEL: .3, PLATE: .28, EMBLEM: .8}
 flat = np.zeros((R, R, 4), np.uint8)
 for k, c in COL.items(): flat[kind == k] = c + [128 + round(127 * GLOSS[k])]
 # what nothing reads takes the colour of the nearest bit that is read, so no dark creeps in along a seam when the picture is seen small
@@ -209,4 +228,4 @@ assert out[..., 3].min() >= 128
 cv2.imwrite(a.tex, cv2.cvtColor(out, cv2.COLOR_RGBA2BGRA), [cv2.IMWRITE_WEBP_QUALITY, 101])      # (above 100: lossless)
 print('%s: 1024 x 1024, %d bytes' % (a.tex, os.path.getsize(a.tex)))
 if a.debug:
-    cv2.imwrite(a.debug + '-flat.png', cv2.cvtColor(out[..., :3], cv2.COLOR_RGB2BGR)); cv2.imwrite(a.debug + '-gloss.png', out[..., 3]); cv2.imwrite(a.debug + '-kinds.png', cv2.resize((kind * 20).astype(np.uint8), (1024, 1024), interpolation=cv2.INTER_NEAREST))
+    cv2.imwrite(a.debug + '-flat.png', cv2.cvtColor(out[..., :3], cv2.COLOR_RGB2BGR)); cv2.imwrite(a.debug + '-gloss.png', out[..., 3]); cv2.imwrite(a.debug + '-kinds.png', cv2.resize((kind * 19).astype(np.uint8), (1024, 1024), interpolation=cv2.INTER_NEAREST))

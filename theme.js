@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261123l';
+const ASSET_V = '20261124h';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -949,7 +949,16 @@ function lookRow(el, after){
   d.setAttribute('aria-checked', String(fixed ? document.documentElement.style.colorScheme === 'dark' : st.mode === 'dark'));
   d.setAttribute('aria-disabled', String(fixed)); d.title = fixed ? 'This theme has one palette' : '';
   f.setAttribute('aria-checked', String(fxOn())); f.setAttribute('aria-disabled', String(reduced));
-  el.querySelector('.swhint').textContent = reduced ? 'Animation is off while Reduce motion is on.' : sk.note ? sk.note : fixed ? 'This theme has one palette. Animation off saves battery.' : 'Animation off saves battery.';      /* sk.note: a theme that costs more says so (Synthwave) */
+  /* why Animation might be off, or not moving: the site's own Reduce motion; the device's (a Mac's or a phone's accessibility
+     setting: off by default then, and the switch turns it back on); a moving background that couldn't start here (FX.why,
+     set by the scene: a device short of memory or saving data, or graphics that failed) */
+  let sysReduced = false; try { sysReduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch {}
+  const why = typeof window !== 'undefined' && window.FX && window.FX.why;
+  el.querySelector('.swhint').textContent = reduced ? 'Animation is off while Reduce motion is on.'
+    : sysReduced && !fxOn() ? 'Off because this device is set to reduce motion. Switch it on to see the moving background anyway.'
+    : fxOn() && why === 'weak' ? 'This device is set to save data, so the background stays still.'
+    : fxOn() && why === 'failed' ? 'This device couldn\u2019t start the moving background, so it stays still.'
+    : sk.note ? sk.note : fixed ? 'This theme has one palette. Animation off saves battery.' : 'Animation off saves battery.';      /* sk.note: a theme that costs more says so (Synthwave) */
 }
 /* quickRow: Settings → Quick settings, in both dialogs: the ones people change most, here as well as
    in Accessibility and Display (they read the same keys, so either place shows the same). Layout,

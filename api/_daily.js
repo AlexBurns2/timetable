@@ -141,8 +141,12 @@ export function buildHints(first, last, extra) {
   extra = extra || {};
   if (extra.date && String(extra.date) <= LEGACY_UNTIL) return legacyHints(first, last);
   if (extra.date && String(extra.date) <= V2_UNTIL) return v2Hints(first, last, extra);
-  return v3Hints(first, last, extra);
+  return v3Hints(first, last, Object.assign({}, extra, { noEngAdv: !extra.date || String(extra.date) > V3_UNTIL }));
 }
+/* Days up to and including this one keep the third hint set exactly as played. From the day after, English
+   Advanced is never a hint (noEngAdv): "everyone takes it" (the owner, 2026-11-24, after complaints). */
+export const V3_UNTIL = "2026-11-24";
+const ENG_ADV = /^english\s*\(?\s*advanced\b|\badvanced\s+english\b/i;
 
 /* ── the third hint set (from the day after V2_UNTIL) ───────────────────────
    Lean on things people actually know about each other (who they sit with,
@@ -216,7 +220,7 @@ export function v3Hints(first, last, extra) {
   const year = Number(extra.year);
   const senior = year >= 11;
   /* a subject everyone in their year takes tells you nothing */
-  const common = s => !senior && (JUNIOR_CORE.test(s) || (year <= 8 && STAGE4_CORE.test(s)));
+  const common = s => (!senior && (JUNIOR_CORE.test(s) || (year <= 8 && STAGE4_CORE.test(s)))) || (extra.noEngAdv && ENG_ADV.test(s));
   const nameOf = typeof extra.nameOf === "function" ? extra.nameOf : (email, name) => name;
   const F = lettersOf(first), L = lettersOf(last);
   const FL = [...F], LL = [...L];

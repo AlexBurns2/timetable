@@ -24,7 +24,7 @@ import { displayNames, withName, stripEmails, rosterList } from "./_names.js";
 /* display-name overrides, loaded per request (see _names.js) */
 let NAMES = new Map();
 import { ensurePuzzle, resolveYear, computeStreak, sydneyDate, buildHints } from "./_daily.js";
-import { connRoute } from "./_connroute.js";
+import { connRoute, quartRoute } from "./_connroute.js";
 import { whoseRoute } from "./_whose.js";
 
 /* making a day's Quartets reads a sample of the year's timetables, which can take a while */
@@ -165,7 +165,9 @@ export default async function handler(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
   /* Quartets (?conn=1, or {conn:1}) lives here too, so it needs no function of its own */
-  if (req.query.conn || (body && body.conn)) return connRoute(req, res, me, body || {}, NAMES);
+  if (req.query.conn || (body && body.conn)) return (req.query.q || (body && body.q))
+    ? quartRoute(req, res, me, body || {}, NAMES)        // Quartets, every second day (with its old days)
+    : connRoute(req, res, me, body || {}, NAMES);
   /* Whose Timetable? (?whose=1, or {whose:1}): see _whose.js */
   if (req.query.whose || (body && body.whose)) return whoseRoute(req, res, me, body || {}, NAMES);
   const rawDate = req.method === "POST" ? (body && body.date) : req.query.date;
