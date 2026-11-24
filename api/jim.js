@@ -29,7 +29,13 @@
 
 import { db, whoami } from "./_supabase.js";
 import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
-import { displayNames, withName, nameFromLocal } from "./_names.js";
+import { displayNames, withName, nameFromLocal, yearTags, withYear } from "./_names.js";
+
+/* a Together player's name as the board shows it: "Andre Kwok (Year 12)" */
+async function boardName(email) {
+  const [names, tags] = await Promise.all([displayNames(), yearTags()]);
+  return withYear(withName(names, email, nameFromLocal(email.split("@")[0])), tags, email);
+}
 
 /* add to one player's row (read, then write the new count) */
 async function bump(key, add) {
@@ -61,10 +67,10 @@ async function together() {
       .order("score", { ascending: false }).limit(TOP)
   ]);
   if (e2) throw new Error(e2.message);
-  const names = await displayNames();
+  const [names, tags] = await Promise.all([displayNames(), yearTags()]);
   return { total: total.sum, anon: total.anon,
            top: (rows || []).map(r => { const email = r.name.slice(1);
-             return { name: withName(names, email, nameFromLocal(email.split("@")[0])), score: Number(r.score) || 0 }; }) };
+             return { name: withYear(withName(names, email, nameFromLocal(email.split("@")[0])), tags, email), score: Number(r.score) || 0 }; }) };
 }
 
 const MAX_ADD = 500;          // presses per request; turbo mode at full tilt stays well under
@@ -95,7 +101,7 @@ export default async function handler(req, res) {
         if (me && me.email) {
           const email = me.email.toLowerCase();
           const { data } = await db.from("jim_score").select("score").eq("name", "~" + email).maybeSingle();
-          out.me = { name: withName(await displayNames(), email, nameFromLocal(email.split("@")[0])), score: Number(data && data.score) || 0 };
+          out.me = { name: await boardName(email), score: Number(data && data.score) || 0 };
         }
       }
       return res.status(200).json(out);
@@ -129,7 +135,7 @@ export default async function handler(req, res) {
       try { mine = await bump(key, add); total = (await totalOf()).sum; }
       catch (e) { console.error("jim together press:", e.message); return res.status(502).json({ error: "Couldn't save the press." }); }
       let name = null;
-      if (me && me.email) name = withName(await displayNames(), me.email, nameFromLocal(me.email.split("@")[0]));
+      if (me && me.email) name = await boardName(me.email);
       return res.status(200).json({ total, mine: me && me.email ? mine : null, name });
     }
 

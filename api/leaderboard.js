@@ -31,7 +31,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList } from "./_names.js";
+import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList, yearTags, withYear } from "./_names.js";
 import { runHandler, RUN_GAMES, issueTicket, ticketAge, scoreFits, TICKET_GAMES } from "./_runs.js";
 
 /* the server runs Six Degrees' map-making and the runs: give it time */
@@ -164,7 +164,7 @@ async function siteUsers() {
 }
 
 async function board(game, metric, period, dir, meEmail, withEmail, year, years) {
-  const asc = dir === "min", names = await displayNames();
+  const asc = dir === "min", [names, tags] = await Promise.all([displayNames(), yearTags()]);
   /* one year's board: everyone's scores, filtered to that year, ranked here */
   if (year) {
     const { data } = await db.from("game_score")
@@ -174,7 +174,7 @@ async function board(game, metric, period, dir, meEmail, withEmail, year, years)
     const mine = rows.find(r => r.email === meEmail);
     const meBest = mine ? mine.score : null;
     const meRank = meBest == null ? null : 1 + rows.filter(r => asc ? r.score < meBest : r.score > meBest).length;
-    return { year, top: rows.slice(0, withEmail ? 200 : 20).map(r => { const o = { name: withName(names, r.email, r.name), score: r.score, you: r.email === meEmail };
+    return { year, top: rows.slice(0, withEmail ? 200 : 20).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
       if (withEmail) o.email = r.email; return o; }), meBest, meRank };
   }
   const { data: top } = await db.from("game_score")
@@ -191,7 +191,7 @@ async function board(game, metric, period, dir, meEmail, withEmail, year, years)
     const { count } = await q;
     meRank = (count || 0) + 1;
   }
-  return { top: (top || []).map(r => { const o = { name: withName(names, r.email, r.name), score: r.score, you: r.email === meEmail };
+  return { top: (top || []).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
     if (withEmail) o.email = r.email; return o; }), meBest, meRank };
 }
 

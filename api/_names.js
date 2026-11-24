@@ -94,7 +94,8 @@ export async function rosterList() {
   const newest = full.reduce((a, r) => Math.max(a, Date.parse(r.updated_at) || 0), 0);
   if (full.length >= 50 && Date.now() - newest < ROSTER_STALE) {
     roster = full.map(r => ({ email: r.email, first: r.first, last: r.last, year: +r.year,
-                              hasClasses: r.has_classes == null ? null : !!r.has_classes }));
+                              hasClasses: r.has_classes == null ? null : !!r.has_classes,
+                              seen: Date.parse(r.updated_at) || 0 }));   // when the nightly copy last found them (yearTags)
     rosterAt = Date.now();
     return roster;
   }
@@ -105,6 +106,31 @@ export async function rosterList() {
   rosterAt = Date.now();
   return roster;
 }
+/* "Year 9", or "Graduate", for each student, to go after their name on the
+   leaderboards: "Andre Kwok (Year 12)". The nightly copy never deletes anyone,
+   so someone who has left is a row it stopped refreshing; one who left from
+   Year 12 is a graduate, and anyone else who left gets nothing. (Read straight
+   from the school directory, without the copy, everyone listed is current.) */
+const GONE = 3 * 864e5;            // not refreshed for 3 days longer than the newest row: no longer listed
+export async function yearTags() {
+  let list = [];
+  try { list = await rosterList(); } catch { return new Map(); }
+  const newest = list.reduce((a, p) => Math.max(a, p.seen || 0), 0);
+  const tags = new Map();
+  for (const p of list) {
+    if (!p.email) continue;
+    const y = Number(p.year), here = !p.seen || p.seen >= newest - GONE;
+    const tag = here ? (y >= 7 && y <= 12 ? "Year " + y : null) : (y === 12 ? "Graduate" : null);
+    if (tag) tags.set(String(p.email).toLowerCase(), tag);
+  }
+  return tags;
+}
+/* a name with its year after it, when there is one */
+export const withYear = (name, tags, email) => {
+  const t = email && tags && tags.get(String(email).toLowerCase());
+  return t && name ? name + " (" + t + ")" : name;
+};
+
 /* the nightly job: copy the school directory into student_cache (adds and updates; never deletes) */
 export async function refreshRosterCache() {
   if (!db) return 0;
