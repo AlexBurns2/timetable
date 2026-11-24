@@ -200,8 +200,12 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk{position:absolute;left:0;right:0;cursor:pointer;container-type:inline-size}   /* 100cqw = the day's width */
 .blk.open{z-index:20;cursor:default}
 .blk.closing{z-index:19}
+/* lessons sit on the free periods' fill (the Cards colour), ringed in their subject's
+   colour; Colour strength (0-100) runs the ring from faint to the full colour */
+:root{--bs:calc(30% + var(--tint) * .7)}
+.blk-card,.card{--bd:color-mix(in srgb,var(--c) var(--bs),var(--fill));--ring:inset 0 0 0 2px var(--bd)}
 .blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
-  background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.6),var(--base,var(--bg)));      /* still to come: strong, so it stands apart from what's over */
+  background:var(--fill);box-shadow:var(--ring);
   transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .55s cubic-bezier(.34,1.4,.64,1)}
 .blk-card>*{position:relative;z-index:1}
 .blk:not(.open):hover .blk-card{filter:brightness(.97)}
@@ -221,11 +225,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.sm.open .t{padding-top:4px}
 /* over: a softer, less saturated colour behind it (still its colour, unlike the
    grey breaks), with its text left readable */
-.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--c) calc(var(--tint) * .45),var(--base,var(--bg)));filter:saturate(.6)}
+.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)));--bd:color-mix(in srgb,var(--c) calc(var(--bs) * .5),var(--fill));filter:saturate(.6)}
 .blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 25%,transparent);backdrop-filter:saturate(.7);-webkit-backdrop-filter:saturate(.7);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 /* opened, the card grows by half a day, and never by less than room for Room and Class code */
 .blk-card{--xw:max(50cqw,112px)}
-.blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
+.blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:var(--ring),0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
 /* Opened, the card is laid out at its final size from the first frame, so
    as it springs wider nothing re-wraps or shuffles: the growing bubble just
    uncovers it. The left column is exactly the closed card's text width, so
@@ -299,13 +303,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap.sm .t{flex-basis:auto}
 .gap.past{background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)));color:color-mix(in srgb,var(--fg2) 75%,var(--fg3))}
 .gap.past .t{color:inherit}
-/* recess, lunch and free periods stay grey; assembly is light blue */
-:root{--asmc:#96CBFF}
+/* recess, lunch and free periods stay grey; assembly is a lesson card ringed light blue (or its picked colour) */
 .col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
   background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
 /* assembly: light blue, its name and time centred like a break, no dot
    between them; it opens like a lesson to show the student's house */
-.blk.asm .blk-card{background:var(--asmc)}
 .blk.asm .s{color:#123660;font-size:calc(13px * var(--fs,1));font-weight:500;padding-right:0}
 .blk.asm .t{color:rgba(18,54,96,.7);font-size:calc(11.5px * var(--fs,1))}
 /* Open or closed it keeps the same centred row; opening only slides the house
@@ -320,10 +322,12 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.asm .blk-meta .det{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;text-align:center;padding-bottom:8px}
 :is(.blk,.card).asm .det-row .lbl{color:rgba(18,54,96,.62)}
 :is(.blk,.card).asm .det-row .val,:is(.blk,.card).asm .det-row.left .val{color:#123660;font-weight:600}
-.card.asm{background:var(--asmc);flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;padding:12px 14px}
+.card.asm{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;padding:12px 14px}
 .card.asm .subj{font-size:calc(14px * var(--fs,1));font-weight:500;color:#123660;padding-right:0}
 .card.asm .time{padding-top:0;color:rgba(18,54,96,.7)}
 .card.asm .blk-detail{flex-basis:100%}       /* opening only adds the house underneath */
+[data-mode="dark"] :is(.blk.asm .s,.card.asm .subj,:is(.blk,.card).asm .det-row .val){color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+[data-mode="dark"] :is(.blk.asm .t,.card.asm .time,:is(.blk,.card).asm .det-row .lbl){color:color-mix(in srgb,var(--fg) 64%,var(--c))}
 /* free periods: who in your group is free then */
 .gap .fr,.brk .fr{flex-basis:100%;font-size:calc(11.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
@@ -590,7 +594,7 @@ button.row:hover{background:var(--fill2)}
 /* opened out: pressing the bar along the top closes it */
 .gmstage{display:flex;flex-direction:column}
 .gmbar{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:8px 12px;font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.gmbar:hover{filter:brightness(.95);background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.4),var(--base,var(--bg)))}
+.gmbar:hover{filter:brightness(.95);background:color-mix(in srgb,var(--c) min(100%,calc(var(--tint) * 1.4)),var(--base,var(--bg)))}
 .gmbody{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center}
 .gmbody .gico{font-size:clamp(48px,14cqmin,96px);line-height:1}
 .gmbody small{font-size:calc(14px * var(--fs,1));color:var(--fg2)}
@@ -829,7 +833,7 @@ select.fin{appearance:auto}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
 .daypill[aria-pressed="true"]{background:var(--fill2)}
 .list{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px}
-.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.6),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
+.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:var(--fill);box-shadow:var(--ring);position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
 .card .subj{font-size:calc(17px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
 .card .teacher{font-size:calc(13px * var(--fs,1));color:color-mix(in srgb,var(--fg) 72%,var(--c));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
@@ -839,7 +843,7 @@ select.fin{appearance:auto}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
 .card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.card.past:not(.open){background:color-mix(in srgb,var(--c) calc(var(--tint) * .45),var(--base,var(--bg)));filter:saturate(.6)}
+.card.past:not(.open){background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)));--bd:color-mix(in srgb,var(--c) calc(var(--bs) * .5),var(--fill));filter:saturate(.6)}
 .brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brk .bl{font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
@@ -997,7 +1001,7 @@ select.fin{appearance:auto}
         <div class="row"><div class="rl"><strong>Cards</strong></div><input type="color" data-k="panel" aria-label="Card colour"></div>
         <div class="row"><div class="rl"><strong>Text</strong></div><input type="color" data-k="text" aria-label="Text colour"></div>
         <div class="row"><div class="rl"><strong>Accent</strong></div><input type="color" data-k="accent" aria-label="Accent colour"></div>
-        <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="8" max="60" step="1" data-k="tint" aria-label="Colour strength"></div>
+        <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="0" max="100" step="1" data-k="tint" aria-label="Colour strength"></div>
         <div class="row"><div class="rl"><strong>Font</strong></div><select class="fin" data-k="font" aria-label="Font"><option>System</option><option>DM Sans</option><option>Space Grotesk</option><option>JetBrains Mono</option><option>Space Mono</option><option>Patrick Hand</option></select></div>
         <div class="row"><div class="rl"><strong>Backdrop</strong></div><select class="fin" data-k="backdrop" aria-label="Backdrop"><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="mesh">Mesh</option></select></div>
         <div class="row"><div class="rl"><strong>Square corners</strong></div><input type="checkbox" data-k="square" aria-label="Square corners"></div>
@@ -1443,6 +1447,7 @@ function defaultColour(subject){
 /* the subject's colour: a custom pick, else the default */
 const colourFor = s => colours[s] || defaultColour(s);
 const hexFor = colourFor;
+const ASM_C = "#96CBFF", asmColour = () => colours.Assembly || ASM_C;
 
 /* ═══ load ═══ */
 let loading = false, loadError = "", staleNote = "", reqId = 0;
@@ -1987,7 +1992,7 @@ function gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, H, sk
              `${ls.map(esc).join("<i></i>")}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
-      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : e.asm ? "#96CBFF" : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
+      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : e.asm ? asmColour() : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
       h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${e.asm ? "asm" : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
            ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}${e.asm ? `--bh:${ht}px;` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id, w.left)}</div></div>`;
@@ -2033,7 +2038,7 @@ function renderList({ now, dates, days, holiday, msg, when, tasks, err }){
     }
     if (x.lesson.asm){        /* a light blue row like the breaks, that opens to show the house */
       const id = itemId(dates[sel], x);
-      h += `<div class="card asm ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}" data-k="${id}" data-code="" style="--c:#96CBFF;--rw:0ch;--p:${w.p}%">` +
+      h += `<div class="card asm ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}" data-k="${id}" data-code="" style="--c:${esc(asmColour())};--rw:0ch;--p:${w.p}%">` +
            `<span class="subj">Assembly</span><span class="time tnum">${tm}</span>${detailHtml(x.lesson, id, w.left)}</div>`;
       continue;
     }
@@ -2688,6 +2693,7 @@ finder($("freeq"), $("freesugg"), p => {
 const isHex = v => /^#[0-9a-f]{6}$/i.test(v);
 function paintColours(){
   const host = $("colours"), subs = subjectList();
+  if (subs.length) subs.push("Assembly");
   host.innerHTML = subs.length ? "" : '<div class="none">Load a timetable to colour its subjects.</div>';
   for (const s of subs){
     const teacher = (entries.find(e => e.subject === s && e.teacher) || {}).teacher || "";
@@ -2697,7 +2703,7 @@ function paintColours(){
       `<div class="hexrow"><input class="dot" type="color" aria-label="${esc(s)} colour">` +
       `<input class="hexin" type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="${esc(s)} hex code"></div>`;
     const [dot, hex] = row.querySelectorAll("input");
-    const shown = () => { const v = hexFor(s).toUpperCase(); dot.value = isHex(v) ? v : "#0A84FF"; hex.value = v; };
+    const shown = () => { const v = (s === "Assembly" ? asmColour() : hexFor(s)).toUpperCase(); dot.value = isHex(v) ? v : "#0A84FF"; hex.value = v; };
     const choose = v => { colours[s] = v.toUpperCase(); set(LS.colours, colours); render(); };
     shown();
     dot.oninput = () => { hex.value = dot.value.toUpperCase(); choose(dot.value); };
