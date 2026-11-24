@@ -4836,3 +4836,55 @@ The owner committed 8.190 as `cpu`.
 ## 8.192 Triplets' hint without the group's name (version `20261124l`, `CACHE_VERSION` v119)
 The owner committed 8.191 as `br`, then asked for the group name to come out of the hint. The board no longer sends `label`, and
 the note reads "Last chance hint: the two outlined people are in the same group." Next free stamp: `m` / v120.
+
+## 8.193 Los Angeles, Edinburgh, EDinburgh, Surrealism, Windows XP's desktop (version `20261124m`, `CACHE_VERSION` v120)
+The owner committed 8.192 as `hint`. Photos: PHOTO-LOG.md (2026-11-24); credits in About.
+
+**Cities Collection: Los Angeles and Edinburgh.** Both are visible to everyone, as the other cities are.
+- Wired into `skins/cities.css` (each city's block, page words, date stamp, print mark) and `skins/cities.js` (the date, the
+  weather words, the range, units, the print mark). Also theme.js SKINS and `CITY_DUO`, themes.html GROUPS, and
+  `api/leaderboard.js` `CITY_AT` (weather coordinates).
+- **Los Angeles:** downtown and the snowy San Gabriels by day; the grid from Griffith Park at night. The name is set in
+  Overpass (the freeway signs' Highway Gothic). Page words are in Spanish, the weather in the National Weather Service's
+  words in °F (converted on the page), the date like a US postmark (NOV 24 2026), and an airmail label ("Via Air Mail / Por
+  Avión") as its print mark.
+- **Edinburgh:** Calton Hill's cannon over the Old Town by day; the castle over Princes Street at dusk. The name is set in
+  Cormorant Garamond. Page words are in Scottish Gaelic, the weather in the Met Office's words, the date written "24th November
+  2026", and a printer's colour bar with "Printed in Edinburgh" as its print mark.
+
+**EDinburgh** (a secret theme, `ed`). Ed asked for it himself; the owner confirmed this.
+- **Trigger:** switching the timetable to his (index.html `viewUser` then `edCheck`; only a SHA-256 of his username is in
+  the code) calls `TT.edinburgh()`, which picks the theme and saves it. Merely loading a timetable never triggers it.
+- **Look:** Edinburgh with `cityAs:'edinburgh'`, with his photo stretched over the card (`html[data-ed][data-edimg]` in
+  cities.css). Picking any theme leaves it.
+- **The photo is not in the repo, which is public.** `GET /api/leaderboard?edphoto=1` (signed in) returns it from the
+  `ED_PHOTO` environment variable (base64 webp). The page keeps it in `msc.edimg`.
+- **Until the owner sets ED_PHOTO,** EDinburgh looks like plain Edinburgh. The base64 was written to the session scratchpad
+  (`ED_PHOTO.txt`, 13.7 KB).
+
+**Surrealism** (`surreal`, `mod:true`: moderators only until the owner releases it; in the Modernism group).
+- **Backgrounds:** offline renders by `tools/surreal/render.py` from four photos:
+  - Home: a ray-traced chrome sphere over the flooded Bonneville Salt Flats, with its reflection in the water;
+  - Calendar, Free periods, Revision and Notes: mirrors on the Uyuni salt crust;
+  - other pages: a disc of misty mountain displaced;
+  - Timetable: the dark Great Sand Dunes.
+- **Live parts:** `skins/surreal.js` draws the timetable's square of light (in the photo's coordinates). It glitches to a
+  far dune after 9 s and back after 6.5 s; it stays put with Animation off and is hidden in portrait. It also draws the
+  dot notation top left, a different pattern on each page.
+- **UI:** frosted panes with long, low shadows, square corners, Fraunces 300 titles and IBM Plex Mono captions. Dark mode is
+  a CSS filter on the same photos. Page change: `TR.surreal` blurs only the page.
+- **Checked:** heroes kept to the right margin at 1280, 1536 and 3440 wide.
+
+**Windows XP's desktop stays put.** The owner asked for authenticity: pages used to vanish and the wallpaper changed.
+- One wallpaper (the hill photo) on every page. The per-page walls are gone.
+- XP always opts into cross-page view transitions (theme.js `vtOptIn`). The root swaps with no cross-fade.
+- `fx.js` `pageswap` names the window being left `xp-prev`, and its start button and tray `xp-fix1…4`, so they stay out
+  of the window's picture. `pagereveal` (`xpReveal`) holds the old page until xp.js has built the new desktop
+  (`html.xpjs`, at most 1.2 s). Then, with Animation on, the old window shrinks into its taskbar button (230 ms), and the
+  new one opens with xp.js's title-bar zoom.
+- The taskbar strip moved from `.wrap::after` to `body::after`. The window element is no longer a layer of its own
+  (`.wrap{z-index:auto}`), so the start button stays on top of the bar.
+- Filmed frame by frame (scratchpad `navtest.mjs`): the desktop, icons and taskbar never blink. XP is still
+  moderators only.
+
+Next free stamp: `n` / v121.

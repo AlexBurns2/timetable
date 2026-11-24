@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261124l';
+const ASSET_V = '20261124m';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -75,6 +75,8 @@ const SKINS = [
   { id:'bauhaus',   name:'Bauhaus',   both:true, ic:'tile', is:'icons', css:'bauhaus', font:'family=Jost:wght@400;500;600;700;800' },
   { id:'destijl',   name:'De Stijl',  both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
   { id:'decon',     name:'Deconstructivism', both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
+  /* Surrealism: real landscapes with one unexplainable thing in each (skins/surreal.css, tools/surreal/render.py) */
+  { id:'surreal',   name:'Surrealism', mod:true, both:true, ic:'accent', is:'icons', css:'surreal', js:'surreal', font:'family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=IBM+Plex+Mono:wght@400;500' },
   /* Cities Collection: a digital postcard of one city each, all drawn by skins/cities.css (html[data-city]).
      city: its time zone, the locale its clock speaks, and its name as the city writes it. */
   { id:'sydney',    name:'Sydney',    both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Unbounded:wght@600;800',
@@ -85,9 +87,19 @@ const SKINS = [
     city:{ tz:'Asia/Hong_Kong', locale:'zh-HK', local:'香港' } },
   { id:'chongqing', name:'Chongqing', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Ma+Shan+Zheng',
     city:{ tz:'Asia/Shanghai', locale:'zh-CN', local:'重庆' } },
+  { id:'losangeles', name:'Los Angeles', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Overpass:wght@600;800;900',
+    city:{ tz:'America/Los_Angeles', locale:'en-US', local:'Los Angeles' } },
+  { id:'edinburgh', name:'Edinburgh', both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700',
+    city:{ tz:'Europe/London', locale:'en-GB', local:'Edinburgh' } },
   { id:'custom',    name:'Custom',    both:false, custom:true },
   /* a secret: type "saul" in any box (below). Not in the picker. */
   { id:'saul',      name:'Better Call Saul', both:false, secret:true, ic:'tile', is:'icons', css:'saul', font:'family=Anton&family=Kanit:ital,wght@1,500;1,700;1,800&family=Yellowtail' },
+  /* another, asked for by Ed himself (the owner, 24 November 2026): switch the timetable to his and the site becomes
+     EDinburgh, the Edinburgh postcard with his photo stretched over every page and nothing else changed. The photo is not
+     in the repo (which is public): the server gives it to signed-in people only (/api/leaderboard?edphoto=1, from the
+     ED_PHOTO environment variable). Picking any theme leaves it. */
+  { id:'ed',        name:'EDinburgh', both:true, secret:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700',
+    city:{ tz:'Europe/London', locale:'en-GB', local:'Edinburgh' }, cityAs:'edinburgh', back:'Pick a theme in the Theme finder to go back.' },
   /* the originals */
   { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
@@ -232,6 +244,14 @@ const THUMBS = (() => {
       '<path d="M82.6 24.4L111.4 25.4L111 39.6L80.2 39.2Z" fill="#f1f0ec" stroke="#1a1a1a" stroke-width=".7"/>' +
       '<rect x="85" y="27.8" width="4.6" height="4.6" fill="none" stroke="#d3261a" stroke-width="1"/><rect x="85" y="35" width="2" height="1.8" fill="#111"/><rect x="88.4" y="35" width="2" height="1.8" fill="#111"/><rect x="91.8" y="35" width="2" height="1.8" fill="#111"/><rect x="95.2" y="35" width="2" height="1.8" fill="#111"/>'],
     /* Synthwave: the banded sun (yellow, orange, pink) on the sea under a purple and pink sky, out to the right; dark glass panels, the heading in chrome */
+    surreal: ['#c9d6e2', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f9fd0"/><stop offset=".55" stop-color="#d9e4ee"/>' +
+      '<stop offset=".56" stop-color="#b9c4cf"/><stop offset="1" stop-color="#e9eef3"/></linearGradient><radialGradient id="o" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/>' +
+      '<stop offset=".35" stop-color="#9fb6cc"/><stop offset=".52" stop-color="#e4ecf3"/><stop offset=".56" stop-color="#5d6672"/><stop offset="1" stop-color="#2c333c"/></radialGradient></defs>' +
+      '<rect width="120" height="46" fill="url(#k)"/><circle cx="92" cy="15" r="9" fill="url(#o)"/><circle cx="92" cy="38" r="9" fill="url(#o)" opacity=".35" transform="matrix(1 0 0 -1 0 76)"/>' +
+      '<g fill="#fff">' + [[4, 3], [7, 3], [13, 3], [16, 3], [22, 3], [4, 6], [10, 6], [13, 6], [19, 6], [22, 6]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r=".9"/>').join('') + '</g>' +
+      '<rect x="14" y="12" width="56" height="10" fill="#fafaf8" fill-opacity=".8"/><rect x="18" y="15.8" width="26" height="2.4" fill="#2a3138"/>' +
+      '<rect x="14" y="27" width="26" height="13" fill="#fafaf8" fill-opacity=".74"/><rect x="44" y="27" width="26" height="13" fill="#fafaf8" fill-opacity=".74"/>' +
+      '<path d="M16 41H38M46 41H68" stroke="#24303c" stroke-opacity=".18" stroke-width="2"/>'],
     synth: ['#160a48', '<defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#160a48"/><stop offset=".45" stop-color="#5e1a8c"/><stop offset=".72" stop-color="#ff3d88"/></linearGradient>' +
       '<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff8a2e"/><stop offset="1" stop-color="#ff2a78"/></linearGradient>' +
       '<linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".48" stop-color="#f2c8ff"/><stop offset=".5" stop-color="#6b2a7e"/><stop offset="1" stop-color="#ffb08a"/></linearGradient><clipPath id="q"><circle cx="96" cy="31.5" r="13"/></clipPath></defs>' +
@@ -255,7 +275,7 @@ SKINS.forEach(s => {
    halftone over the photo in the city's two inks (the photo in greys, multiplied by the scale colour, screened with
    the dark ink). [dark ink, scale colour] for each, the day pair from cities.css. The blend rides along in the same
    style attribute as the background (every place that draws a swatch writes style="background:…"). */
-const CITY_DUO = { sydney:['#0b5560', '#f5ecdd'], tokyo:['#28262c', '#ec3518'], hongkong:['#1c2654', '#f6a792'], chongqing:['#351a18', '#f09e56'] };
+const CITY_DUO = { sydney:['#0b5560', '#f5ecdd'], tokyo:['#28262c', '#ec3518'], hongkong:['#1c2654', '#f6a792'], chongqing:['#351a18', '#f09e56'], losangeles:['#1c2a4a', '#f7cf82'], edinburgh:['#1f2a33', '#e9dab5'] };
 SKINS.filter(s => s.city).forEach(s => {
   const d = CITY_DUO[s.id] || ['#222222', '#dddddd'];
   s.swatch = 'radial-gradient(circle,rgba(0,0,0,.3) 0 .55px,transparent 1px) 0 0/3px 3px,linear-gradient(' + d[0] + ',' + d[0] + '),linear-gradient(' + d[1] + ',' + d[1] + '),' +
@@ -500,6 +520,9 @@ const FAV = {
   brutal:    { shape:'square', ink:'#0047ff', bg(x, N){ x.fillStyle = '#ffe94a'; x.fillRect(0, 0, N, N); x.strokeStyle = '#000'; x.lineWidth = 8; x.strokeRect(0, 0, N, N); } },
   maximal:   { shape:'square', ink:'#14121a', bg(x, N){ [['#f5419e', 0, 0], ['#f6bd1e', N/2, 0], ['#2b6fd0', 0, N/2], ['#14a594', N/2, N/2]].forEach(q => { x.fillStyle = q[0]; x.fillRect(q[1], q[2], N/2, N/2); }); } },
   scifi:     { shape:'cut', ink:'#08090b', bg(x, N){ x.fillStyle = '#d4ff00'; x.fillRect(0, 0, N, N); x.fillStyle = '#08090b'; x.fillRect(0, N - 7, N, 7); } },
+  surreal:   { shape:'square', ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#6f9fd0'); g.addColorStop(.55, '#dbe6ef'); g.addColorStop(.56, '#aebccb'); g.addColorStop(1, '#e8eef3');
+               x.fillStyle = g; x.fillRect(0, 0, N, N); const o = x.createRadialGradient(N * .62, N * .24, 1, N * .66, N * .3, N * .2); o.addColorStop(0, '#fff'); o.addColorStop(.5, '#a9bdd0'); o.addColorStop(.56, '#56606c'); o.addColorStop(1, '#2a3038');
+               x.fillStyle = o; x.beginPath(); x.arc(N * .68, N * .3, N * .18, 0, 7); x.fill(); } },
   synth:     { ink:'#fff', bg(x, N){ const g = x.createLinearGradient(0, 0, 0, N); g.addColorStop(0, '#1c0b30'); g.addColorStop(.6, '#5a1c5e'); g.addColorStop(1, '#c8406f');      // a dusk sky, the banded sun rising at the foot
                x.fillStyle = g; x.fillRect(0, 0, N, N); const s = x.createLinearGradient(0, N * .55, 0, N); s.addColorStop(0, '#ffd27a'); s.addColorStop(1, '#ff3f86');
                x.fillStyle = s; x.beginPath(); x.arc(N/2, N, N * .4, Math.PI, 0); x.fill(); x.save(); x.clip(); x.fillStyle = '#7a2160'; [N - 15, N - 9, N - 4].forEach((y, i) => x.fillRect(0, y, N, 1.5 + i)); x.restore(); } },      // (the gaps cut to the sun: they ran the whole width of the icon)
@@ -721,12 +744,14 @@ function paint(state){
   /* Vaporwave's desktop (its Windows 95 chrome, its windows) is everything in skins/vapor.css under html.vw-next. It goes on
      here, so the first paint already has it: fx/vapor.js, which puts it on too, can arrive after the page is drawn. */
   root.classList.toggle('vw-next', st.skin === 'vapor');
-  { const sk = SKINS.find(s => s.id === st.skin); if (sk && sk.city) root.setAttribute('data-city', sk.id); else root.removeAttribute('data-city'); }
+  { const sk = SKINS.find(s => s.id === st.skin); if (sk && sk.city) root.setAttribute('data-city', sk.cityAs || sk.id); else root.removeAttribute('data-city'); }
+  root.toggleAttribute('data-ed', st.skin === 'ed'); edImg(st.skin === 'ed');
   /* Windows XP: a page kept maximised (skins/xp.js, msc.xpmax) is maximised from the first paint, not after its script */
   if (st.skin === 'xp' && PG !== 'home'){ let m = null; try { m = JSON.parse(localStorage.getItem('msc.xpmax')); } catch {} root.classList.toggle('xpmaxed', !!(m && m[PG === 'timetable' ? 'timetable' : 'page'])); }
   else root.classList.remove('xpmaxed');
   root.setAttribute('data-fx', fxOn() ? 'on' : 'off');
-  vtOptIn((st.skin === 'y2k' || st.skin === 'aero' || st.skin === 'softclub') && fxOn());
+  /* (Windows XP: always, Animation on or off: its page change is an instant swap that only keeps the desktop from blinking) */
+  vtOptIn(((st.skin === 'y2k' || st.skin === 'aero' || st.skin === 'softclub') && fxOn()) || st.skin === 'xp');
   const ic = iconsFor(st);
   root.setAttribute('data-tileicons', ic.colour);   // icons: a colour each (tile) or the theme's (accent)
   root.setAttribute('data-gameicons', ic.style);    // icons or emoji
@@ -1073,7 +1098,7 @@ function skinPicker(field, after){
     let sn = field.querySelector('.secretnote');
     const secret = SKINS.find(x => x.secret && x.id === cur);
     if (secret){ if (!sn){ sn = document.createElement('p'); sn.className = 'hint secretnote'; grid.after(sn); }
-      sn.textContent = secret.name + ' is on. Type “saul” in any box to go back, or pick a theme in the Theme finder.'; }
+      sn.textContent = secret.name + ' is on. ' + (secret.back || 'Type “saul” in any box to go back, or pick a theme in the Theme finder.'); }
     else if (sn) sn.remove();
     if (orow){ orow.hidden = true; orow.innerHTML = ''; }
     return;
@@ -1098,7 +1123,7 @@ function skinPicker(field, after){
   let sn = field.querySelector('.secretnote');
   const secret = SKINS.find(s => s.secret && s.id === cur);
   if (secret){ if (!sn){ sn = document.createElement('p'); sn.className = 'hint secretnote'; grid.after(sn); }
-    sn.textContent = secret.name + ' is on. Type “saul” in any box to go back, or pick a theme.'; }
+    sn.textContent = secret.name + ' is on. ' + (secret.back || 'Type “saul” in any box to go back, or pick a theme.'); }
   else if (sn) sn.remove();
   if (orow){
     orow.hidden = folded && !SKINS.some(s => s.legacy && s.id === cur);
@@ -1197,6 +1222,37 @@ function themesNotice(){
   document.addEventListener('input', e => { clearTimeout(timer); const el = e.target; timer = setTimeout(() => flip(el), 700); }, true);
   document.addEventListener('keydown', e => { if (e.key === 'Enter'){ clearTimeout(timer); flip(e.target); } }, true);
 })();
+
+/* ── EDinburgh (SKINS 'ed') ──
+   edinburgh(): the timetable page calls it when someone switches to Ed's timetable. edImg(): his photo, fetched once
+   for a signed-in person and kept on the device (msc.edimg), so every page paints it from the start; until it's there
+   (or if the server has none) the page is plain Edinburgh. */
+/* (its constants are inside: apply() runs before this part of the file has been read) */
+function edImg(on){
+  const ED_KEY = 'msc.edimg', ED_RX = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/, root = document.documentElement;
+  if (!on){ root.removeAttribute('data-edimg'); root.style.removeProperty('--ed-img'); return; }
+  const use = s => { root.style.setProperty('--ed-img', 'url("' + s + '")'); root.setAttribute('data-edimg', ''); };
+  let src = ''; try { src = localStorage.getItem(ED_KEY) || ''; } catch {}
+  if (ED_RX.test(src)){ use(src); return; }
+  if (edImg.asked) return;
+  edImg.asked = true;
+  setTimeout(() => api('/api/leaderboard', { params:{ edphoto:1 } }).then(d => {
+    if (!d || !ED_RX.test(d.img || '')) return;
+    try { localStorage.setItem(ED_KEY, d.img); } catch {}
+    if (readState().skin === 'ed') use(d.img);
+  }).catch(() => {}), 0);
+}
+function edinburgh(){
+  if (PREVIEW || readState().skin === 'ed') return;
+  set(LS.skin, 'ed');
+  apply();
+  try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
+  const n = document.createElement('div');
+  n.className = 'saulnote'; n.setAttribute('role', 'status');
+  n.textContent = 'Welcome to EDinburgh. Pick a theme in the Theme finder to leave.';
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 4200);
+}
 
 /* the Theme finder switching what its frame shows (see PREVIEW) */
 if (PREVIEW){
@@ -1669,7 +1725,7 @@ function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read',
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsTag, newsSeen, tagKeys, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, siteCfg, forgetSite, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
+              apiGet, api, siteCfg, forgetSite, edinburgh, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
                  same as myEmail(), which is whose timetable you are looking at
                  and can be set without ever signing in. */

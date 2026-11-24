@@ -59,6 +59,26 @@
   --accent:#b8502a; --ct-accent-n:#ffaa52; --ct-pos:30% 70%; --ct-pos-n:40% 60%;   /* the river's clay; hotpot amber at night */
   --ct-lo:#351a18; --ct-hi:#f3a866; --ct-lo-n:#140c06; --ct-hi-n:#ffa94e; --ct-m:#f09e56; --ct-m-n:#ffa54a; --ct-size:30vw; --ct-em:2.1;   /* chili brown and hotpot amber, day and night (one identity) */
 }
+/* Los Angeles: downtown in front of the San Gabriels' snow by day, the grid lit sodium orange from Griffith Park at night.
+   Its name in Overpass, the open face made from the freeway signs' Highway Gothic. */
+:root[data-city="losangeles"]{
+  --ct-day:url(../images/city/losangeles-day.webp); --ct-night:url(../images/city/losangeles-night.webp);
+  --ct-day-p:url(../images/city/losangeles-day-p.webp); --ct-night-p:url(../images/city/losangeles-night-p.webp);
+  --ct-tint:linear-gradient(180deg,#9cc0e0 0%,#e8e4dc 55%,#f3cfa0 100%); --ct-tint-n:linear-gradient(180deg,#070a1a,#141a36 60%,#4a2a14);
+  --ct-name:"Los Angeles"; --ct-face:"Overpass",system-ui,sans-serif; --ct-w:900; --ct-ls:-.03em; --ct-tt:uppercase;
+  --accent:#d9572e; --ct-accent-n:#ffb25a; --ct-pos:center 55%; --ct-pos-n:center 45%;   /* a smoggy sunset's orange; the grid's sodium amber */
+  --ct-lo:#1c2a4a; --ct-hi:#f8d7a6; --ct-lo-n:#0a0d1e; --ct-hi-n:#ffb25a; --ct-m:#f7cf82; --ct-m-n:#ffae44; --ct-size:13vw; --ct-em:7.4;   /* haze navy and sand; night navy and amber */
+}
+/* Edinburgh: the Old Town's skyline from Calton Hill (its cannon, the castle, the Dugald Stewart monument) by day, the castle
+   over Princes Street at dusk. Its name in Cormorant, a Garamond: the city printed the Encyclopaedia Britannica. */
+:root[data-city="edinburgh"]{
+  --ct-day:url(../images/city/edinburgh-day.webp); --ct-night:url(../images/city/edinburgh-night.webp);
+  --ct-day-p:url(../images/city/edinburgh-day-p.webp); --ct-night-p:url(../images/city/edinburgh-night-p.webp);
+  --ct-tint:linear-gradient(180deg,#a9b9c8 0%,#e3e1d9 55%,#d8cdb4 100%); --ct-tint-n:linear-gradient(180deg,#070a14,#141a2c 60%,#3a2a1a);
+  --ct-name:"Edinburgh"; --ct-face:"Cormorant Garamond","Garamond",serif; --ct-w:700; --ct-ls:-.01em; --ct-tt:none;
+  --accent:#2c5b8c; --ct-accent-n:#f2c98a; --ct-pos:center 45%; --ct-pos-n:20% 40%;   /* the saltire's blue, deepened; the castle's floodlit stone */
+  --ct-lo:#1f2a33; --ct-hi:#ece0c4; --ct-lo-n:#0a0e1a; --ct-hi-n:#f2c98a; --ct-m:#e9dab5; --ct-m-n:#f1c67d; --ct-size:21vw; --ct-em:4.3;   /* slate and sandstone; night slate and lit stone */
+}
 
 /* ── the shared look: light (day) ── */
 :root[data-city]{
@@ -140,8 +160,10 @@ html[data-city][data-mode="dark"]::after{background:none;color:var(--ct-ink);-we
   :root[data-city]{--ct-edge:6px}
   html[data-city]::after{display:block;writing-mode:vertical-rl;text-indent:0;line-height:.62em;padding-top:calc(8vh - var(--ct-edge));font-size:clamp(5rem,34vw,11rem)}
   html[data-city="sydney"]::after{font-size:clamp(4rem,22vw,8rem)}
+  html[data-city="losangeles"]::after{font-size:clamp(3rem,15vw,5.5rem)}
+  html[data-city="edinburgh"]::after{font-size:clamp(4rem,21vw,7.5rem)}
   @supports (writing-mode:sideways-lr){
-    html[data-city="sydney"]::after{writing-mode:sideways-lr;padding:0 0 calc(6vh - var(--ct-edge)) calc(100vw - 2 * var(--ct-edge) - .62em)}
+    html:is([data-city="sydney"],[data-city="losangeles"],[data-city="edinburgh"])::after{writing-mode:sideways-lr;padding:0 0 calc(6vh - var(--ct-edge)) calc(100vw - 2 * var(--ct-edge) - .62em)}
   }
 }
 /* The postcard is the same on every page and doesn't move: changing page, only the page itself blurs out and
@@ -154,6 +176,8 @@ html[data-city].fx-enter .wrap{animation:ctblurin .34s ease-out backwards}
 html.zen[data-city] body::before,html.zen[data-city]::after,
 [data-city][data-pg="hkmahjong"] body::before,html[data-city][data-pg="hkmahjong"]::after{display:none}
 html.zen[data-city] body{background:transparent}
+/* EDinburgh (theme.js SKINS 'ed'): Edinburgh with Ed's photo stretched to fill the card instead of the city, as it is */
+html[data-ed][data-edimg] body::before{background:var(--ed-img) 0 0/100% 100% no-repeat #222;background-blend-mode:normal;filter:none}
 
 /* ── the site: clear frosted glass on the photograph, the same in every city ── */
 :root[data-city]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),
@@ -237,6 +261,15 @@ html.zen[data-city] body{background:transparent}
 :root[data-city="hongkong"]{--ct-small:"Noto Serif TC","PMingLiU","MingLiU",serif}
 :root[data-city="chongqing"]{--ct-small:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif}
 :root[data-city="sydney"]{--ct-small:var(--font-ui)}
+:root[data-city="losangeles"]{--ct-small:"Overpass",var(--font-ui)}
+:root[data-city="edinburgh"]{--ct-small:"Cormorant Garamond","Garamond",serif}
+/* Los Angeles in Spanish, its second language; Edinburgh in Scottish Gaelic, as on Scotland's station signs */
+:root[data-city="losangeles"][data-pg="timetable"]{--ct-word:"Horario"} :root[data-city="losangeles"][data-pg="calendar"]{--ct-word:"Calendario"} :root[data-city="losangeles"][data-pg="free"]{--ct-word:"Horas libres"}
+:root[data-city="losangeles"][data-pg="revision"]{--ct-word:"Repaso"} :root[data-city="losangeles"][data-pg="resources"]{--ct-word:"Recursos"} :root[data-city="losangeles"][data-pg="games"]{--ct-word:"Juegos"}
+:root[data-city="losangeles"][data-pg="themes"]{--ct-word:"Temas"} :root[data-city="losangeles"][data-pg="notes"]{--ct-word:"Apuntes"} :root[data-city="losangeles"][data-pg="mahjong"]{--ct-word:"Mahjong"} :root[data-city="losangeles"][data-pg="finder"]{--ct-word:"Compañeros"}
+:root[data-city="edinburgh"][data-pg="timetable"]{--ct-word:"Clàr-ama"} :root[data-city="edinburgh"][data-pg="calendar"]{--ct-word:"Mìosachan"} :root[data-city="edinburgh"][data-pg="free"]{--ct-word:"Saor-ùine"}
+:root[data-city="edinburgh"][data-pg="revision"]{--ct-word:"Ath-sgrùdadh"} :root[data-city="edinburgh"][data-pg="resources"]{--ct-word:"Goireasan"} :root[data-city="edinburgh"][data-pg="games"]{--ct-word:"Geamannan"}
+:root[data-city="edinburgh"][data-pg="themes"]{--ct-word:"Cuspairean"} :root[data-city="edinburgh"][data-pg="notes"]{--ct-word:"Notaichean"} :root[data-city="edinburgh"][data-pg="mahjong"]{--ct-word:"Mahjong"} :root[data-city="edinburgh"][data-pg="finder"]{--ct-word:"Co-oileanaich"}
 :root[data-city][data-pg="timetable"]{--ct-no:"01"} :root[data-city][data-pg="calendar"]{--ct-no:"02"} :root[data-city][data-pg="free"]{--ct-no:"03"}
 :root[data-city][data-pg="revision"]{--ct-no:"04"} :root[data-city][data-pg="resources"]{--ct-no:"05"} :root[data-city][data-pg="games"]{--ct-no:"06"}
 :root[data-city][data-pg="themes"]{--ct-no:"07"} :root[data-city][data-pg="notes"]{--ct-no:"08"} :root[data-city][data-pg="mahjong"]{--ct-no:"09"} :root[data-city][data-pg="finder"]{--ct-no:"10"}
@@ -252,6 +285,8 @@ html.zen[data-city] body{background:transparent}
 [data-city]:not([data-city="sydney"]) :is(.pagehead h1,.weeklabel)::after{content:var(--ct-word,none);display:inline-block;margin-left:.6em;font-family:var(--ct-small);
   font-size:.75rem;font-weight:600;letter-spacing:.08em;line-height:1;color:color-mix(in srgb,var(--text) 55%,transparent);vertical-align:.4em;white-space:nowrap;text-transform:none}
 [data-city]:not([data-city="sydney"]) .weeklabel::after{font-size:.6875rem;vertical-align:.1em;margin-left:.5em}
+[data-city="edinburgh"] :is(.pagehead h1,.weeklabel)::after{font-style:italic;font-size:.875rem;letter-spacing:.02em}
+[data-city="losangeles"] :is(.pagehead h1,.weeklabel)::after{text-transform:uppercase;letter-spacing:.14em;font-size:.625rem}
 /* Tokyo's station numbering: the line's letters over the stop's number, in a box ringed in the line's colour */
 [data-city="tokyo"] .pagehead h1::before{content:"MS\A" var(--ct-no,none);white-space:pre;display:inline-block;box-sizing:border-box;width:1.5rem;padding:2px 0 1px;margin-right:.45em;
   border:2px solid var(--accent);border-radius:4px;background:#fff;color:#1b1b1f;font:700 .5rem/1.05 var(--font-ui);letter-spacing:.02em;text-align:center;vertical-align:.32em}
@@ -266,6 +301,8 @@ html.zen[data-city] body{background:transparent}
 [data-city="hongkong"] .cityclock::after{font-family:var(--ct-small);font-weight:700;border-radius:1px}
 [data-city="chongqing"] .cityclock::after{border:0;padding:0;transform:none;font-family:var(--ct-small)}
 [data-city="sydney"] .cityclock::after{font-family:"Space Mono",ui-monospace,monospace;font-weight:700;letter-spacing:.08em;border-width:1.5px;border-radius:2px}
+[data-city="losangeles"] .cityclock::after{font-family:"Overpass",var(--font-ui);font-weight:800;letter-spacing:.1em;border-radius:2px}
+[data-city="edinburgh"] .cityclock::after{font-family:var(--ct-small);font-weight:700;font-style:italic;font-size:.75rem;letter-spacing:.02em;border-radius:1px}
 /* Chongqing's seal: 渝, the city's one-character name (the one on its number plates) */
 [data-city="chongqing"] .cityclock span::after{content:"渝";display:inline-grid;place-items:center;width:1.15rem;height:1.15rem;margin-left:8px;border-radius:2px;
   background:#c8322a;color:#fbefe6;font:700 .6875rem/1 var(--ct-small);vertical-align:.05em;transform:rotate(-3deg)}
@@ -347,6 +384,17 @@ html[data-city][data-pg="timetable"] :is(.ctp-series,.ctp-post,.ctp-label){displ
 .ctp-label svg text{font:500 7px var(--font-ui)}
 .ctp-label .t{letter-spacing:.12em}
 .ctp-label .p{letter-spacing:.06em;font-weight:700}
+/* Los Angeles: an airmail label, the blue one a US post office sticks on a card going overseas (in English and Spanish) */
+.ctp-air{position:absolute;left:18px;top:16px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 12px 4px;background:#1f3f8f;color:#fff;
+  border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.3);font:800 .625rem/1.15 "Overpass",var(--font-ui);letter-spacing:.16em;text-transform:uppercase;transform:rotate(-2deg);opacity:.9}
+.ctp-air span{font-weight:600;font-size:.5rem;letter-spacing:.2em;opacity:.85}
+[data-mode="dark"] .ctp-air{opacity:.7}
+/* Edinburgh: a printer's colour bar down the margin (the city printed books for two centuries), and its imprint */
+.ctp-bar{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.8}
+.ctp-bar i{display:block;width:10px;height:10px}
+.ctp-bar b{writing-mode:vertical-rl;margin-top:6px;font:600 italic .625rem/1 "Cormorant Garamond",serif;letter-spacing:.08em;color:var(--ct-mark)}
+[data-mode="dark"] .ctp-bar{opacity:.55}
+html[data-city][data-pg="timetable"] :is(.ctp-air,.ctp-bar){display:none}
 @media (max-width:700px){
-  :is(.ctp-series,.ctp-post,.ctp-label),.ctp-tombo.mid{display:none}
+  :is(.ctp-series,.ctp-post,.ctp-label,.ctp-air,.ctp-bar),.ctp-tombo.mid{display:none}
 }

@@ -87,7 +87,7 @@ const MAX_SCORE = 100000000;
 let themePop = { at: 0, order: [] };
 /* the Cities Collection's weather: each city's coordinates, and WMO weather codes in words */
 const CITY_AT = { sydney: [-33.8688, 151.2093], tokyo: [35.6762, 139.6503], hongkong: [22.3193, 114.1694], chongqing: [29.5630, 106.5516],
-  la: [34.0522, -118.2437], singapore: [1.3521, 103.8198], taipei: [25.0330, 121.5654], london: [51.5072, -0.1276] };
+  la: [34.0522, -118.2437], losangeles: [34.0522, -118.2437], edinburgh: [55.9533, -3.1883], singapore: [1.3521, 103.8198], taipei: [25.0330, 121.5654], london: [51.5072, -0.1276] };
 const cityWx = new Map();
 const WX_TEXT = c => c === 0 ? "Clear" : c === 1 ? "Mostly clear" : c === 2 ? "Partly cloudy" : c === 3 ? "Overcast" : c === 45 || c === 48 ? "Fog" :
   c >= 51 && c <= 57 ? "Drizzle" : c >= 61 && c <= 67 ? "Rain" : c >= 71 && c <= 77 ? "Snow" : c >= 80 && c <= 82 ? "Showers" :
@@ -293,6 +293,14 @@ export default async function handler(req, res) {
     /* isMod only decides whether pages show the way in to the moderator page;
        every moderator action is still checked here on the server */
     return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email) });
+  }
+  /* EDinburgh, a secret theme Ed asked for (theme.js SKINS 'ed'): his photo, to signed-in people only. It is not in the
+     repo, which is public: it's the ED_PHOTO environment variable (the picture as base64). Without it, nothing. */
+  if (req.method === "GET" && src.edphoto) {
+    const b64 = String(process.env.ED_PHOTO || "").replace(/\s+/g, "");
+    if (!/^[A-Za-z0-9+/=]{200,}$/.test(b64)) return res.status(404).json({ error: "Not here." });
+    const type = b64.startsWith("/9j/") ? "jpeg" : b64.startsWith("iVBOR") ? "png" : "webp";
+    return res.status(200).json({ img: "data:image/" + type + ";base64," + b64 });
   }
   if (req.method === "POST" && src.action === "settings") {
     if (!isAdmin(me.email))

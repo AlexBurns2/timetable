@@ -221,7 +221,8 @@ TR.destijl = fade(100, 420);                     // the same: nothing moves (des
 TR.dorfic = fade(110, 420);                      // the page lands with a small bounce (dorfic.css)
 TR.eco = fade(120, 460);                         // the page clears like a misted window (eco.css)
 TR.xp = fade(80, 160);                           // nothing fades (xp.css): the new page's window opens from what was clicked (xp.js)
-TR.decon = fade(80, 160);                        // a short cross-fade (decon.css)
+TR.decon = fade(80, 160);
+TR.surreal = fade(160, 380);                     // only the page goes soft and comes back; the place behind it never moves (surreal.css)                        // a short cross-fade (decon.css)
 TR.apple = fade(80, 160);
 TR.studio = fade(80, 160);                       // a short cross-fade, nothing else                    // quiet: no movement, barely there
 TR.terminal = fade(60, 360);                     // the screen clears, then the page is printed from the top (terminal.css)
@@ -853,8 +854,54 @@ if (nav && root.classList.contains('fx-in')){
 if (((nav && root.classList.contains('fx-in')) || vtArmed()) && writeScene()) mountBg(true); else ready(() => mountBg());
 /* the view transition's way in (Y2K Futurism, Frutiger Aero, Gen X Soft Club): the wave goes up as the new page is first
    shown, starts with the browser's wipe, and comes down when it is done */
+/* Windows XP (xp.css): one desktop from page to page. The page being left marks its window xp-prev; on the next page,
+   with Animation on, that window shrinks into its button on the taskbar (where xp.js puts the buttons: after the start
+   button and Quick Launch, 180 px each, in the order they were opened, msc.xpopen). Otherwise the pages swap at once. */
+addEventListener('pageswap', e => {
+  try {
+    if (skin() !== 'xp' || !e.viewTransition || !on()) return;
+    const pg = attr('data-pg');
+    if (pg === 'home' || pg === 'hkmahjong' || root.classList.contains('xppagemin')) return;
+    const w = document.querySelector('.wrap'); if (!w) return;
+    const r = w.getBoundingClientRect();
+    /* the start button and the tray live inside the window's element: named apart, they stay out of its picture */
+    const fix = [...w.querySelectorAll('#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns,#xptray')].slice(0, 4);
+    fix.forEach((el, i) => { el.style.viewTransitionName = 'xp-fix' + (i + 1); });
+    w.style.viewTransitionName = 'xp-prev';
+    addEventListener('pageshow', () => { w.style.viewTransitionName = ''; fix.forEach(el => { el.style.viewTransitionName = ''; }); }, { once:true });      // (back here from the cache)
+    sessionStorage.setItem('msc.xpprev', JSON.stringify({ pg, t:Date.now(), x:r.left, y:r.top }));
+  } catch {}
+});
+function xpReveal(vt){
+  let prev = null;
+  try { prev = JSON.parse(sessionStorage.getItem('msc.xpprev') || 'null'); sessionStorage.removeItem('msc.xpprev'); } catch {}
+  vt.ready.then(() => {
+    /* The new page's first frames have no desktop icons, taskbar buttons or clock yet (xp.js makes them once it has run):
+       keep the page being left on screen until it has (html.xpjs), at most 1.2 s, then swap. */
+    const pe = n => '::view-transition-' + n;
+    const anim = (k, f, o) => { try { return root.animate(f, Object.assign({ fill:'forwards' }, o, { pseudoElement:pe(k) })); } catch { return null; } };
+    const hold = anim('new(root)', [{ opacity:0 }, { opacity:0 }], { duration:1500 });
+    const t0 = Date.now();
+    const go = () => {
+      if (hold) hold.cancel();
+      /* the old start button and tray (named apart as the page was left) go with it */
+      for (let k = 1; k <= 4; k++) anim('old(xp-fix' + k + ')', [{ opacity:0 }, { opacity:0 }], { duration:400 });
+      if (!prev || Date.now() - prev.t > 8000 || !on()){ anim('old(xp-prev)', [{ opacity:0 }, { opacity:0 }], { duration:400 }); return; }
+      let list = []; try { list = JSON.parse(sessionStorage.getItem('msc.xpopen') || '[]'); } catch {}
+      const i = Math.max(0, list.findIndex(w => w && w.pg === prev.pg));
+      const tb = parseFloat(getComputedStyle(root).getPropertyValue('--xp-tbh')) || 38;
+      const tx = Math.min(innerWidth - 200, 150 + i * 182 + 90), ty = innerHeight - tb / 2;
+      const o = Math.round(tx - Math.max(0, prev.x)) + 'px ' + Math.round(ty - Math.max(0, prev.y)) + 'px';
+      anim('old(xp-prev)', [{ transformOrigin:o, transform:'scale(1)', opacity:1 }, { transformOrigin:o, transform:'scale(.06,.03)', opacity:.15, offset:.85 }, { transformOrigin:o, transform:'scale(.04,.02)', opacity:0 }],
+        { duration:230, easing:'cubic-bezier(.45,0,.85,.55)' });
+    };
+    const wait = () => { if (root.classList.contains('xpjs') || Date.now() - t0 > 1200) requestAnimationFrame(go); else setTimeout(wait, 16); };
+    wait();
+  }, () => {});
+}
 addEventListener('pagereveal', e => {
   const vt = e.viewTransition; if (!vt) return;
+  if (skin() === 'xp'){ xpReveal(vt); return; }
   if ((skin() !== 'y2k' && skin() !== 'aero' && skin() !== 'softclub') || !on()){ try { vt.skipTransition(); } catch {} return; }
   if (skin() === 'softclub'){                        /* Gen X Soft Club: both pages wash out and back, the light running past over them */
     root.classList.add('sc-vt');

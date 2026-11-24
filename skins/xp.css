@@ -128,33 +128,34 @@
   --xp-wall:linear-gradient(180deg,rgba(2,6,24,.78) 0,rgba(4,10,34,.66) 50%,rgba(2,6,14,.74) 100%),var(--xp-photo) 62% 100%/cover no-repeat,var(--xp-hill);
 }
 
-/* ══ the wallpaper (body::before), one per kind of page; all of it goes under Transparent background ══ */
+/* ══ the wallpaper (body::before): the same one on every page, as a desktop has (it used to change with the page, which
+   broke the illusion of one computer: 24 November 2026); all of it goes under Transparent background ══ */
 [data-skin="xp"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--xp-wall)}
 html.zen[data-skin="xp"] body::before,[data-skin="xp"][data-pg="hkmahjong"] body::before{display:none}
 [data-skin="xp"][data-pg="hkmahjong"]{--bg:var(--xp-face)}
 @media (max-aspect-ratio:4/5){ [data-skin="xp"]{--xp-photo:url(../images/th/xp-hill-p.webp)} [data-skin="xp"] body::before{background-position:50% 100%} }
-/* Games and Mahjong: the hill again, nearer */
-[data-skin="xp"]:is([data-pg="games"],[data-pg="mahjong"]) body::before{background-size:cover,cover;background-position:100% 100%}
-/* the timetable, behind its maximised window: just the sky */
-[data-skin="xp"][data-pg="timetable"]{--xp-wall:linear-gradient(180deg,#1d62d6 0,#3a87e8 60%,#8ec0f4 100%)}
-[data-skin="xp"][data-mode="dark"][data-pg="timetable"]{--xp-wall:linear-gradient(180deg,#020309 0,#070d22 60%,#122348 100%)}
-/* the other pages: XP's own blue light (the wallpaper that came with it), drawn */
-[data-skin="xp"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--xp-wall:
-  radial-gradient(ellipse 70% 60% at 10% 8%,rgba(255,255,255,.42),rgba(255,255,255,0) 70%),
-  radial-gradient(ellipse 120% 40% at 90% 112%,rgba(120,190,255,.45),rgba(120,190,255,0) 70%),
-  linear-gradient(168deg,rgba(255,255,255,0) 55%,rgba(255,255,255,.2) 60%,rgba(255,255,255,0) 66%),
-  linear-gradient(160deg,rgba(255,255,255,0) 66%,rgba(170,210,255,.22) 72%,rgba(255,255,255,0) 79%),
-  linear-gradient(180deg,#245bc8 0,#3e72d6 40%,#3462cd 75%,#203fa6 100%)}
-[data-skin="xp"][data-mode="dark"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="finder"],[data-pg="themes"]){--xp-wall:
-  radial-gradient(ellipse 70% 60% at 10% 8%,rgba(150,170,220,.13),rgba(255,255,255,0) 70%),
-  linear-gradient(168deg,rgba(255,255,255,0) 55%,rgba(255,255,255,.05) 60%,rgba(255,255,255,0) 66%),
-  linear-gradient(180deg,#14161c 0,#0c0d11 60%,#050506 100%)}
+/* Changing page (fx.js, pageswap / pagereveal; theme.js opts XP into cross-page view transitions, Animation on or off):
+   the page being left stays on screen until the next one is ready and then they swap at once, never a cross-fade (XP
+   didn't fade) and never a blank screen, so the wallpaper, the icons and the taskbar never blink. With Animation on, the
+   window being left (named xp-prev as it goes) shrinks into its button on the taskbar, as XP minimised a window; the new
+   one opens with XP's title-bar zoom (xp.js). */
+:root[data-skin="xp"]::view-transition-group(root),:root[data-skin="xp"]::view-transition-old(root),:root[data-skin="xp"]::view-transition-new(root),
+:root[data-skin="xp"]::view-transition-group(xp-prev),:root[data-skin="xp"]::view-transition-old(xp-prev){animation:none}
+:root[data-skin="xp"]::view-transition-old(xp-prev){mix-blend-mode:normal}
+/* the taskbar's pieces that live inside the window's element (the start button, the tray) are named xp-fix1… as the page
+   is left (fx.js), so they aren't in the picture of the window that shrinks away; the next page's own are already there */
+:root[data-skin="xp"]::view-transition-group(xp-fix1),:root[data-skin="xp"]::view-transition-group(xp-fix2),:root[data-skin="xp"]::view-transition-group(xp-fix3),:root[data-skin="xp"]::view-transition-group(xp-fix4),
+:root[data-skin="xp"]::view-transition-old(xp-fix1),:root[data-skin="xp"]::view-transition-old(xp-fix2),:root[data-skin="xp"]::view-transition-old(xp-fix3),:root[data-skin="xp"]::view-transition-old(xp-fix4){animation:none}
 [data-skin="xp"] ::selection{background:var(--xp-sel);color:#fff}
 
 /* ══ the taskbar: across the bottom of the screen on every page ══ */
-:root[data-skin="xp"]:not([data-pg="hkmahjong"]) .wrap::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(var(--xp-tbh) + var(--xp-sb));z-index:9000;pointer-events:none;
+/* (on the body, not the window's element: so it isn't part of the window when that shrinks into the taskbar). The window's
+   element is then no layer of its own (z-index auto), so the start button and the tray inside it (9001) still sit on the
+   bar (9000). */
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) .wrap{z-index:auto}
+:root[data-skin="xp"]:not([data-pg="hkmahjong"]) body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(var(--xp-tbh) + var(--xp-sb));z-index:9000;pointer-events:none;
   background:var(--xp-tb) 0 0/100% var(--xp-tbh) no-repeat,#1a47b3}
-:root[data-skin="xp"][data-mode="dark"]:not([data-pg="hkmahjong"]) .wrap::after{background-color:#000}
+:root[data-skin="xp"][data-mode="dark"]:not([data-pg="hkmahjong"]) body::after{background-color:#000}
 /* the start button: the page's Settings button */
 :root[data-skin="xp"]:not([data-pg="hkmahjong"]) :is(#themebtn,#settings){position:fixed;left:0;bottom:var(--xp-sb);top:auto;z-index:9001;width:auto;height:var(--xp-tbh);margin:0;padding:0 32px 2px 15px;
   display:flex;align-items:center;justify-content:center;border:0;border-radius:0 17px 17px 0;background:var(--xp-start);color:#fff;filter:none;
@@ -728,11 +729,11 @@ html.fx-in[data-skin="xp"] .wrap,html.fx-out[data-skin="xp"] .wrap{opacity:1;tra
 html.fx-enter[data-skin="xp"] .wrap{animation:none}
 @media (prefers-reduced-motion:no-preference){
   html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) .wrap{visibility:hidden}
-  html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) .wrap::after,
+  html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) body::after,
   html.fx-in[data-skin="xp"]:not([data-pg="home"]):not([data-pg="hkmahjong"]):not([data-motion="reduced"]) :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
 }
 :root.xpopening[data-skin="xp"] .wrap{visibility:hidden}
-:root.xpopening[data-skin="xp"] .wrap::after,:root.xpopening[data-skin="xp"] :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
+:root.xpopening[data-skin="xp"] body::after,:root.xpopening[data-skin="xp"] :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
 .xpzoom{position:fixed;z-index:9500;pointer-events:none;border-radius:7px 7px 0 0;background:var(--xp-title);box-shadow:0 0 0 1px rgba(255,255,255,.35),0 2px 6px rgba(0,20,80,.3);opacity:.92}
 #xptb .xpql[hidden]{display:none}
 :root[data-skin="xp"]:is([data-pg="games"],[data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="resources"],[data-pg="notes"],[data-pg="mahjong"],[data-pg="finder"],[data-pg="themes"]) .pagehead{
@@ -764,7 +765,7 @@ html.fx-enter[data-skin="xp"] .wrap{animation:none}
 :root.xpmaxed[data-skin="xp"] .wrap{width:auto!important;max-width:none!important;margin:0!important;border-radius:0!important;min-height:calc(100vh - var(--xp-tbh) - var(--xp-sb))}
 :root.xpmaxed[data-skin="xp"] .pagehead{border-radius:0!important}
 :root.xppagemin[data-skin="xp"] .wrap{visibility:hidden}
-:root.xppagemin[data-skin="xp"] .wrap::after,:root.xppagemin[data-skin="xp"] :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
+:root.xppagemin[data-skin="xp"] body::after,:root.xppagemin[data-skin="xp"] :is(#themebtn,#settings,.pagehead .crumbs,.topbar .headbtns){visibility:visible}
 [data-skin="xp"] .gamestage:not([hidden]){background:none}
 /* the game cards: items in the window, XP's tiles view */
 [data-skin="xp"] :is(.gamecard,.tile,.game,.lbbcard,.tfcard){background:var(--xp-white);border:1px solid var(--xp-field);border-radius:0;box-shadow:none;transition:none}

@@ -5,7 +5,8 @@
    - Home: a postage stamp in the header with the city's time, its weather now in its own words, today's
      range and the sun's times (/api/leaderboard?weather=<city>; no stamp if that fails);
    - one printed mark on the postcard itself, different for each city: Sydney's series line, Tokyo's crop
-     marks (tombo), Hong Kong's postmark, Chongqing's barcode label.
+     marks (tombo), Hong Kong's postmark, Chongqing's barcode label, Los Angeles's airmail label, Edinburgh's
+     printer's colour bar.
    It watches html[data-city] (tt:look) and takes all of it away again when another theme is picked. */
 (() => {
   'use strict';
@@ -14,7 +15,9 @@
     sydney:    { tz:'Australia/Sydney', loc:'en-AU', name:'Sydney',    local:'Sydney', lang:'en' },
     tokyo:     { tz:'Asia/Tokyo',       loc:'ja-JP', name:'Tokyo',     local:'東京',   lang:'ja' },
     hongkong:  { tz:'Asia/Hong_Kong',   loc:'zh-HK', name:'Hong Kong', local:'香港',   lang:'zh-HK' },
-    chongqing: { tz:'Asia/Shanghai',    loc:'zh-CN', name:'Chongqing', local:'重庆',   lang:'zh-CN' }
+    chongqing: { tz:'Asia/Shanghai',    loc:'zh-CN', name:'Chongqing', local:'重庆',   lang:'zh-CN' },
+    losangeles:{ tz:'America/Los_Angeles', loc:'en-US', name:'Los Angeles', local:'Los Angeles', lang:'en-US' },
+    edinburgh: { tz:'Europe/London',    loc:'en-GB', name:'Edinburgh', local:'Edinburgh', lang:'en-GB' }
   };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 
@@ -24,6 +27,13 @@
     try {
       if (id === 'tokyo') return new Intl.DateTimeFormat('ja-JP-u-ca-japanese', { timeZone:c.tz, era:'long', year:'numeric', month:'long', day:'numeric' }).format(d);
       if (id === 'sydney') return new Intl.DateTimeFormat('en-AU', { timeZone:c.tz, day:'numeric', month:'short', year:'numeric' }).format(d).replace(/\./g, '').toUpperCase();
+      /* the month first, like a US postmark (NOV 24 2026); Edinburgh's day with its ordinal (24th November 2026) */
+      if (id === 'losangeles') return new Intl.DateTimeFormat('en-US', { timeZone:c.tz, month:'short', day:'numeric', year:'numeric' }).format(d).replace(',', '').toUpperCase();
+      if (id === 'edinburgh'){
+        const p = {}; new Intl.DateTimeFormat('en-GB', { timeZone:c.tz, day:'numeric', month:'long', year:'numeric' }).formatToParts(d).forEach(x => p[x.type] = x.value);
+        const n = +p.day, th = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th';
+        return n + th + ' ' + p.month + ' ' + p.year;
+      }
       return new Intl.DateTimeFormat(c.loc, { timeZone:c.tz, year:'numeric', month:'long', day:'numeric' }).format(d);
     } catch { return ''; }
   }
@@ -48,24 +58,36 @@
     /* the Hong Kong Observatory's */
     hongkong: (k, day) => ({ clear:'天晴', mostly:'大致天晴', partly:day ? '部分時間有陽光' : '多雲', cloud:'天陰', fog:'霧', drizzle:'微雨', rain:'有雨', showers:'驟雨', snow:'下雪', snowshowers:'陣雪', storm:'雷暴' })[k],
     /* the China Meteorological Administration's (Chongqing is the fog city: 雾 comes up often) */
-    chongqing:k => ({ clear:'晴', mostly:'晴', partly:'多云', cloud:'阴', fog:'雾', drizzle:'毛毛雨', rain:'雨', showers:'阵雨', snow:'雪', snowshowers:'阵雪', storm:'雷阵雨' })[k]
+    chongqing:k => ({ clear:'晴', mostly:'晴', partly:'多云', cloud:'阴', fog:'雾', drizzle:'毛毛雨', rain:'雨', showers:'阵雨', snow:'雪', snowshowers:'阵雪', storm:'雷阵雨' })[k],
+    /* the US National Weather Service's */
+    losangeles:(k, day) => ({ clear:day ? 'Sunny' : 'Clear', mostly:day ? 'Mostly Sunny' : 'Mostly Clear', partly:day ? 'Partly Sunny' : 'Partly Cloudy', cloud:'Cloudy', fog:'Fog',
+                              drizzle:'Drizzle', rain:'Rain', showers:'Showers', snow:'Snow', snowshowers:'Snow Showers', storm:'T-storms' })[k],
+    /* the Met Office's: sunny day, clear night, sunny intervals, overcast, mist */
+    edinburgh:(k, day) => ({ clear:day ? 'Sunny day' : 'Clear night', mostly:day ? 'Sunny intervals' : 'Partly cloudy', partly:day ? 'Sunny intervals' : 'Partly cloudy', cloud:'Overcast',
+                             fog:'Mist', drizzle:'Drizzle', rain:'Light rain', showers:'Light shower', snow:'Light snow', snowshowers:'Sleet', storm:'Thunder' })[k]
   };
+  /* Los Angeles reads Fahrenheit; the server sends Celsius */
+  const F = c => Math.round(c * 9 / 5 + 32);
+  const degrees = (id, v) => id === 'losangeles' && isFinite(v) ? F(v) : v;
   /* today's range and the sun, each city's way: Min/Max like the BoM, 最高/最低 like the JMA, the HKO's
      range in 度, a mainland weather app's 9~17℃ */
   const RANGE = {
     sydney:   w => '<i>Min</i> ' + w.lo + '° <i>Max</i> ' + w.hi + '°',
     tokyo:    w => '<i>最高</i>' + w.hi + '℃ <i>最低</i>' + w.lo + '℃',
     hongkong: w => '<i>氣溫</i>' + w.lo + '–' + w.hi + '度',
-    chongqing:w => '<i>气温</i>' + w.lo + '~' + w.hi + '℃'
+    chongqing:w => '<i>气温</i>' + w.lo + '~' + w.hi + '℃',
+    losangeles:w => '<i>Hi</i> ' + F(w.hi) + '° <i>Lo</i> ' + F(w.lo) + '°',
+    edinburgh:w => '<i>High</i> ' + w.hi + '° <i>Low</i> ' + w.lo + '°'
   };
-  const SUN = { sydney:['Sunrise', 'Sunset'], tokyo:['日の出', '日の入り'], hongkong:['日出', '日落'], chongqing:['日出', '日落'] };
-  const UNIT = { sydney:'°', tokyo:'℃', hongkong:'°', chongqing:'℃' };
+  const SUN = { sydney:['Sunrise', 'Sunset'], tokyo:['日の出', '日の入り'], hongkong:['日出', '日落'], chongqing:['日出', '日落'], losangeles:['Sunrise', 'Sunset'], edinburgh:['Sunrise', 'Sunset'] };
+  const UNIT = { sydney:'°', tokyo:'℃', hongkong:'°', chongqing:'℃', losangeles:'°F', edinburgh:'°C' };
   /* "2026-11-21T06:12" is already the city's own clock: 6:12 (5:42 am in Sydney) */
   function hm(iso, id){
     const m = /T(\d\d):(\d\d)/.exec(String(iso || ''));
     if (!m) return '';
     const h = +m[1];
     if (id === 'sydney') return ((h % 12) || 12) + ':' + m[2] + (h < 12 ? ' am' : ' pm');
+    if (id === 'losangeles') return ((h % 12) || 12) + ':' + m[2] + (h < 12 ? ' AM' : ' PM');
     return (id === 'tokyo' ? String(h) : m[1]) + ':' + m[2];
   }
   /* small line drawings for the sky (24 × 24, drawn in the stamp's ink) */
@@ -138,6 +160,12 @@
         '<text x="1.5" y="40">' + e.text[0] + '</text><text x="14" y="40" textLength="38">' + e.text.slice(1, 7) + '</text><text x="60" y="40" textLength="38">' + e.text.slice(7) + '</text></svg>' +
         '<span class="p">明信片 · 定价 ¥3.00</span></div>';
     }
+    if (id === 'losangeles') return '<div class="ctp-air">Via Air Mail<span>Por Avión</span></div>';
+    if (id === 'edinburgh'){
+      /* the bar: process colours, then a grey ramp, as printed in a sheet's margin */
+      const sw = ['#00a3d9', '#e2007a', '#ffe500', '#1a1a1a', '#5a5a5a', '#9a9a9a', '#d0d0d0'];
+      return '<div class="ctp-bar">' + sw.map(c => '<i style="background:' + c + '"></i>').join('') + '<b>Printed in Edinburgh</b></div>';
+    }
     return '';
   }
 
@@ -196,11 +224,11 @@
         host.classList.add('hasctwx');
         requestAnimationFrame(refit);
       }
-      box.setAttribute('aria-label', 'In ' + c.name + ': ' + (wx.text || '') + ', ' + wx.temp + ' degrees');
+      box.setAttribute('aria-label', 'In ' + c.name + ': ' + (wx.text || '') + ', ' + degrees(id, wx.temp) + ' degrees');
       box.innerHTML = '<div class="ctwx-in">' +
         '<div class="ctwx-top"><span class="ctwx-time">' + timeHtml() + '</span>' +
-          '<span class="ctwx-temp">' + esc(wx.temp) + '<small>' + UNIT[id] + '</small></span></div>' +
-        '<div class="ctwx-now">' + sky(skyOf(k, day)) + '<b>' + esc(word) + '</b>' + (id !== 'sydney' && wx.text ? '<span lang="en">' + esc(wx.text) + '</span>' : '') + '</div>' +
+          '<span class="ctwx-temp">' + esc(degrees(id, wx.temp)) + '<small>' + UNIT[id] + '</small></span></div>' +
+        '<div class="ctwx-now">' + sky(skyOf(k, day)) + '<b>' + esc(word) + '</b>' + (!['sydney', 'losangeles', 'edinburgh'].includes(id) && wx.text ? '<span lang="en">' + esc(wx.text) + '</span>' : '') + '</div>' +
         '<div class="ctwx-row">' + (isFinite(wx.hi) && isFinite(wx.lo) ? '<span>' + RANGE[id](wx) + '</span>' : '') +
           (wx.sunrise && wx.sunset ? '<span><i>' + sun[0] + '</i> ' + hm(wx.sunrise, id) + ' <i>' + sun[1] + '</i> ' + hm(wx.sunset, id) + '</span>' : '') + '</div>' +
         '<div class="ctwx-foot"><b>' + esc(c.local) + '</b><span>' + esc(dateText(id, new Date())) + '</span></div></div>';

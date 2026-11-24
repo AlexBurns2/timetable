@@ -166,3 +166,23 @@ review applied: the bodywork repainted dark teal, the rear lamps drawn as one ba
 of unlit glass, the glare streaks on the front wing and the pale outline of the grille's shield painted over, and the picture's
 alpha now holding how glossy each part is. `images/synth/car.webp` is 15 KB. Still CC BY-SA 4.0; the credit in About says
 what was changed.
+
+## 2026-11-24: Los Angeles, Edinburgh and Surrealism (HANDOFF 8.193)
+All from Wikimedia Commons through its API, with a generic client name (no details of the site or its owner), into the session
+scratchpad (`c2/`), then cut and compressed into the repo. Choosing first meant small previews: four contact sheets of 480 px
+thumbnails (about 55 pictures in all, roughly 2 MB), none kept.
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-24 | LA Skyline Mountains2 (Nserrano), 1920 px | https://commons.wikimedia.org/wiki/File:LA_Skyline_Mountains2.jpg | CC BY-SA 3.0 | 652 KB | `images/city/losangeles-day*.webp`, `losangeles-t.webp`; credited in About |
+| 2026-11-24 | Los angeles at night ii (Hannes Flo), 1920 px | https://commons.wikimedia.org/wiki/File:Los_angeles_at_night_ii_-_Flickr_-_hannes-flo.jpg | CC BY 2.0 | 541 KB | `images/city/losangeles-night*.webp`; credited |
+| 2026-11-24 | Edinburgh cannon and old town 20211020 (Daniel Kraft), 1920 px | https://commons.wikimedia.org/wiki/File:Edinburgh_cannon_and_old_town_20211020.jpg | CC BY-SA 3.0 | 563 KB | `images/city/edinburgh-day*.webp`, `edinburgh-t.webp`; credited |
+| 2026-11-24 | Edinburgh castle (Gary Campbell-Hall), 1920 px | https://commons.wikimedia.org/wiki/File:Edinburgh_castle_(49736353732).jpg | CC BY 2.0 | 451 KB | `images/city/edinburgh-night*.webp`; credited |
+| 2026-11-24 | Looks like a mirror! Bonneville Salt Flats, flooded (m01229), 1920 px | https://commons.wikimedia.org/wiki/File:Looks_like_a_mirror!_Bonneville_Salt_Flats,_flooded_(28983556772).jpg | CC BY-SA 2.0 | 337 KB | `images/surreal/home*.webp` (with a rendered sphere), and the mirrors' skies in `plan*.webp`; credited |
+| 2026-11-24 | Mars Over Dunes (Great Sand Dunes NP), 1920 px | https://commons.wikimedia.org/wiki/File:Mars_Over_Dunes_(49179272651).jpg | public domain | 296 KB | `images/surreal/tt*.webp`; credited |
+| 2026-11-24 | Before Sunrise, Salar de Uyuni (Dimitry B.), 1920 px | https://commons.wikimedia.org/wiki/File:Before_Sunrise,_Salar_de_Uyuni,_Bolivia.jpg | CC BY 2.0 | 521 KB | `images/surreal/plan*.webp`; credited |
+| 2026-11-24 | Morning Clouds Over North Van Mountain Valley (4) (David Zhang), 1920 px | https://commons.wikimedia.org/wiki/File:Morning_Clouds_Over_North_Van_Mountain_Valley_(4).jpg | CC BY-SA 2.0 | 399 KB | `images/surreal/mist*.webp`; credited |
+| 2026-11-24 | Uyuni Salt Lake, 12-2022 (Abel Maestro Garcia), 1920 px | https://commons.wikimedia.org/wiki/File:Uyuni_Salt_Lake_(Salar_de_Uyuni),_Bolivia,_12-2022.jpg | public domain | 225 KB | **Not used** (fetched by mistake for the one above) |
+
+Not a download: the photo of a student for the secret EDinburgh theme was given by the owner in chat (with the student's
+agreement). It is **not in the repo**; it goes in the `ED_PHOTO` environment variable (see HANDOFF 8.193).
