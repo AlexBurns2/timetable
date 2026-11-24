@@ -1625,10 +1625,14 @@ function fit(){
   grid.querySelectorAll('.blk').forEach(b => b.style.setProperty('--bw', b.offsetWidth + 'px'));
   grid.querySelectorAll('.gap').forEach(g => g.classList.toggle('sm', g.offsetHeight < 72));   /* two lines only with a comfortable margin round them */
   grid.querySelectorAll('.blk:not(.open):not(.closing)').forEach(b => {
-    b.classList.remove('tight', 'sm');
+    b.classList.remove('snug', 'notime', 'tight', 'sm');
     const c = b.querySelector('.blk-card'), over = () => c.scrollHeight > c.clientHeight + 1;
-    if (b.offsetHeight < 50) b.classList.add('sm');
-    else if (over()){ b.classList.add('tight'); if (over()){ b.classList.remove('tight'); b.classList.add('sm'); } }
+    if (b.offsetHeight < 50){ b.classList.add('sm'); return; }
+    /* too full: less padding, then no time line (a long name keeps its second line and the teacher), then one line, then a bar */
+    for (const step of ['snug', 'notime']){ if (!over()) return; b.classList.add(step); }
+    if (!over()) return;
+    b.classList.remove('snug', 'notime'); b.classList.add('tight');
+    if (over()){ b.classList.remove('tight'); b.classList.add('sm'); }
   });
   grid.querySelectorAll('.stcol').forEach(c => {
     const half = c.offsetHeight / 2;

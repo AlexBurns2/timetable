@@ -426,6 +426,9 @@ html[data-skin="studio"][data-motion="reduced"] *{transition-duration:0s!importa
 [data-skin="studio"] #grid.stg .blk .m{display:block;font-size:.8125rem;margin-top:2px;color:color-mix(in srgb,var(--text) 72%,var(--c));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-skin="studio"] #grid.stg .blk .r{position:absolute;top:10px;left:calc(var(--bw,100cqw) - 12px);translate:-100% 0;font-size:.8125rem;font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--text));font-variant-numeric:tabular-nums}
 [data-skin="studio"] #grid.stg .blk .t{display:block;margin-top:auto;padding-top:4px;font-size:.75rem;white-space:nowrap;color:color-mix(in srgb,var(--text) 64%,var(--c));font-variant-numeric:tabular-nums}
+[data-skin="studio"] #grid.stg .blk.snug:not(.open) .blk-card{padding-top:8px;padding-bottom:7px}
+[data-skin="studio"] #grid.stg .blk.snug:not(.open) .r{top:8px}
+[data-skin="studio"] #grid.stg .blk.notime:not(.open) .t{display:none}
 [data-skin="studio"] #grid.stg .blk.tight:not(.open) .m{display:none}
 [data-skin="studio"] #grid.stg .blk.tight:not(.open) .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-skin="studio"] #grid.stg .blk.tight:not(.open) .blk-card{padding-top:8px;padding-bottom:7px}
