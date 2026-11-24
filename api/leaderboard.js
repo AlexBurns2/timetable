@@ -12,7 +12,11 @@
  * Table:
  *   game_score(game, metric, period, email, name, score, updated_at,
  *              primary key (game, metric, period, email))
- *   period is 'all' or 'w<week>'.
+ *   period is 'all', 'w<week>', or 'd<YYYYMMDD>' for the daily boards.
+ *
+ * Daily boards (DAILY_GAMES, e.g. Hong Kong Mahjong's daily deal): pass
+ * day=YYYYMMDD (the player's local date, within a day of the server's) and the
+ * score is also kept on that day's board, returned as `day`.
  *
  * Year groups: every board is your own year's unless you ask for another
  * (?year=7…12) or everyone's (?year=all). Scores are kept as before (one row
@@ -67,7 +71,17 @@ const DIRS = {
   "classroom:high": "max",
   "chain:best": "min",         // legacy single-puzzle Six Degrees (kept readable)
   "chain:targets": "max",      // new Six Degrees gauntlet — most targets in a run
-  "oddone:high": "max"         // Odd One Out — best score in a run
+  "oddone:high": "max",        // Odd One Out — best score in a run
+  "hkmj:dailyfaan": "max"      // Hong Kong Mahjong daily deal — faan won in the day's game
+};
+/* games with a board per day (period 'd<YYYYMMDD>'), and the most a score can be */
+const DAILY_GAMES = { "hkmj:dailyfaan": 1000 };
+/* a YYYYMMDD within a day of now (the player's local date), or null */
+const dayOf = v => {
+  const m = /^(\d{4})(\d{2})(\d{2})$/.exec(String(v == null ? "" : v));
+  if (!m) return null;
+  const t = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  return Math.abs(t - Date.now()) < 1.6 * 864e5 ? m[0] : null;
 };
 const MAX_SCORE = 100000000;
 let themePop = { at: 0, order: [] };
@@ -450,7 +464,10 @@ export default async function handler(req, res) {
   const wperiod = "w" + week;
   const isOwner = isAdmin(me.email);
 
-  const validPeriod = p => p === "all" || p === wperiod;
+  const dmax = DAILY_GAMES[game + ":" + metric], day = dmax ? dayOf(src.day) : null;
+  if (dmax && src.day != null && !day) return res.status(400).json({ error: "That isn't today." });
+  const dperiod = day ? "d" + day : null;
+  const validPeriod = p => p === "all" || p === wperiod || (dperiod && p === dperiod);
 
   if (req.method === "POST" && src.action === "wipe") {
     if (!isOwner) return res.status(403).json({ error: "Only the owner can clear this board." });
@@ -476,6 +493,7 @@ export default async function handler(req, res) {
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
     /* the games the server runs keep their own scores */
     if (RUN_GAMES.has(game)) return res.status(400).json({ error: "This game records its own scores." });
+    if (dmax && (!day || score > dmax)) return res.status(400).json({ error: day ? "That score doesn't fit the game." : "Which day?" });
     /* the rest: a ticket from when the game started, and a score that fits the time since */
     if (TICKET_GAMES.has(game)) {
       const age = await ticketAge(me, game, src.ticket);
@@ -486,6 +504,7 @@ export default async function handler(req, res) {
     try {
       await writeBest(game, metric, "all", me.email, name, score, dir);
       await writeBest(game, metric, wperiod, me.email, name, score, dir);
+      if (dperiod) await writeBest(game, metric, dperiod, me.email, name, score, dir);
     } catch (e) { console.error("leaderboard write:", e.message); return res.status(502).json({ error: "Couldn't save your score." }); }
   } else if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -497,6 +516,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     week: await board(game, metric, wperiod, dir, me.email, isOwner, scope, years),
     all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years),
+    ...(dperiod ? { day: await board(game, metric, dperiod, dir, me.email, isOwner, scope, years) } : {}),
     year: scope || "all", myYear: me.year || years.get(me.email) || null,
     canWipe: isOwner
   });
