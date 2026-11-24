@@ -291,7 +291,9 @@ BUILD.jimall = host => {
   let pending = 0, inflight = 0, sending = false, pressLocked = false;
   let server = 0, shown = 0, mine = 0, myName = null, top = null, anonTotal = 0;
   const jimAudio = new Audio(JIM_DIR + 'jim.mp3'), stanleyAudio = new Audio(JIM_DIR + 'stanley.mp3'), nameAudio = new Audio();
-  const play = a => { a.currentTime = 0; return a.play(); };
+  /* muted: the button still presses and counts, just silently (remembered on this device) */
+  let muted = !!TT.get('tt.jtmute', false);
+  const play = a => { if (muted) return Promise.resolve(); a.currentTime = 0; return a.play(); };
   const signedIn = !!(window.TT && TT.myEmail && TT.myEmail());
   /* signed out: a random id this browser keeps, so its presses have a row of their own */
   const anon = (() => { let id = TT.get('tt.jtanon', '');
@@ -332,7 +334,8 @@ BUILD.jimall = host => {
         '</div>' +
         '<div class="jimpanel">' + jimButtonHTML(label, 'jtbtn') + '</div>' +
         '<div class="jimcount"><span class="lbl">Your presses</span><span class="num" id="jtmine">' + (signedIn ? '…' : '—') + '</span></div>' +
-        '<div class="jimctl"><button class="btn" type="button" id="jtmode">Playing: <b id="jtmodelbl">JIM</b></button></div>' +
+        '<div class="jimctl"><button class="btn" type="button" id="jtmode">Playing: <b id="jtmodelbl">JIM</b></button>' +
+          '<button class="btn" type="button" id="jtmute" aria-pressed="false"></button></div>' +
         (signedIn ? '' : '<p class="how jtnote">Sign in on the timetable to get your presses on the board. They still count towards the total.</p>') +
       '</div>' +
       '<div class="glb jimlb"><div class="glbhd"><h3>Top pressers</h3><span class="jimlive"><i></i>live</span></div>' +
@@ -476,6 +479,13 @@ BUILD.jimall = host => {
   }
   $('jtbtn').addEventListener('click', press);
   $('jtmode').onclick = () => { mode = { name:'jim', jim:'random', random:'name' }[mode]; paintMode(); };
+  const paintMute = () => { const b = $('jtmute'); if (!b) return;
+    b.textContent = muted ? '🔇 Muted' : '🔊 Sound on'; b.setAttribute('aria-pressed', String(muted)); b.title = muted ? 'Turn the sound back on' : 'Mute the button'; };
+  $('jtmute').onclick = () => {
+    muted = !muted; TT.set('tt.jtmute', muted); paintMute();
+    if (muted) [nameAudio, randomAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });
+  };
+  paintMute();
   paintMode();
 
   /* your share so far: the board's row for you, once the server says who you are */
