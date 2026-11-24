@@ -320,7 +320,7 @@ BUILD.jimall = host => {
   };
   fitWide();
   addEventListener('resize', fitWide);
-  head(host, 'The Jim Button: Together', 'One button, everyone pressing it. Every press counts towards the board above it.');
+  head(host, 'The Jim Button: Together');
   const box = document.createElement('div');
   box.className = 'jim jt';
   host.appendChild(box);
