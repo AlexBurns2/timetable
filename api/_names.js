@@ -106,13 +106,24 @@ export async function rosterList() {
   rosterAt = Date.now();
   return roster;
 }
-/* "Year 9", or "Graduate", for each student, to go after their name on the
+/* ── OFF (2026-11-24): year labels on the leaderboards ─────────────────
+   Turned off because the years shown were wrong. The year comes from the school
+   directory as copied into student_cache (rosterList); check that against the
+   real years before turning it back on. Kept here, wired in but switched off, so it can come
+   back once the year is right: set SHOW_YEARS to true. It is used by
+   api/leaderboard.js (board()), api/tetris.js (TAGS) and api/jim.js (boardName,
+   together()), each as withYear(withName(…), tags, email). The year filters on
+   the boards (yearMap/boardScope) read the same year and are unchanged.
+
+   "Year 9", or "Graduate", for each student, to go after their name on the
    leaderboards: "Andre Kwok (Year 12)". The nightly copy never deletes anyone,
    so someone who has left is a row it stopped refreshing; one who left from
    Year 12 is a graduate, and anyone else who left gets nothing. (Read straight
    from the school directory, without the copy, everyone listed is current.) */
 const GONE = 3 * 864e5;            // not refreshed for 3 days longer than the newest row: no longer listed
+export const SHOW_YEARS = false;
 export async function yearTags() {
+  if (!SHOW_YEARS) return new Map();          // off: every name is left as it is
   let list = [];
   try { list = await rosterList(); } catch { return new Map(); }
   const newest = list.reduce((a, p) => Math.max(a, p.seen || 0), 0);
