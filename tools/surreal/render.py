@@ -3,8 +3,9 @@
   home   the flooded Bonneville Salt Flats, a chrome sphere floating over them (ray traced against the photo itself,
          so its reflection is that sky and that water), and its reflection in the water below
   tt     the Great Sand Dunes under the Milky Way, as photographed (the square of light over them is drawn live: skins/surreal.js)
-  plan   the Salar de Uyuni's crust before sunrise, four mirrors standing on it, each showing a piece of sky that isn't there
-  mist   a forested mountain in cloud, with a disc of it lifted out of place
+  plan   the Salar de Uyuni's crust before sunrise, a line of identical concrete gateways crossing it to the horizon, their
+         long shadows thrown toward us by a sun just risen (gates.py; mirrors on the salt were the first try, plan_mirrors_old)
+  mist   a forested mountain in cloud, with a disc of it lifted out of place (no longer used: see wreck.py, the stranded ship)
 
 usage: python render.py <folder with the downloaded photos> <out folder: images/surreal>
 The photographs (Commons; credited in Home > About) are su-flat.jpg, su-milky.jpg, su-crust.jpg, su-mist.jpg.
@@ -98,7 +99,13 @@ def home():
     s.save(os.path.join(OUT, 'orb.webp'), quality=86, method=6)
     LAYOUT['home'] = { 'w':W, 'h':H, 'orb':[cx, cy, R], 'water':yg }
 
-# ── plan: mirrors on the salt ──
+# ── plan: a line of gateways across the salt (gates.py); the mirrors below were the first try, kept for the record ──
+def plan():
+    import gates
+    out, g = gates.render(load('su-crust.jpg'))
+    save(out, 'plan', 0.70)
+    LAYOUT['plan'] = { 'gates':[[round(x, 1), round(z, 1)] for x, z in g] }
+
 def mirror(tex, quad_h, lean=0.0, edge='l'):
     """a mirror pane (tex, RGB) standing upright: returns an RGBA image of a flat rectangle seen slightly turned"""
     w0, h0 = tex.size
@@ -109,7 +116,7 @@ def mirror(tex, quad_h, lean=0.0, edge='l'):
     else: d.rectangle((w0 - max(2, w0 // 90), 0, w0, h0), fill=(250, 246, 255, 255)); d.rectangle((0, 0, max(2, w0 // 140), h0), fill=(120, 120, 150, 255))
     return out
 
-def plan():
+def plan_mirrors_old():
     ph = load('su-crust.jpg'); W, H = ph.size; hz = 0.584
     flat = load('su-flat.jpg')
     out = ph.convert('RGBA')
@@ -153,7 +160,7 @@ def plan():
         layer.alpha_composite(warped, (bb[0], bb[1]))
         out.alpha_composite(layer)
     save(out.convert('RGB'), 'plan', 0.79)
-    # the skies the mirrors show on a wide screen, drifting slowly (surreal.js): the Bonneville clouds, rose and pale
+    # (the skies the mirrors showed on a wide screen, when they were live)
     # (each is the strip and its mirror image side by side, so it repeats without a seam)
     for nm, tint in (('rose', (1.12, 0.78, 0.86)), ('pale', (0.92, 0.95, 1.08))):
         t = sky((0, 0, 1920, 560), tint, 0.72).resize((1080, 315), Image.LANCZOS)

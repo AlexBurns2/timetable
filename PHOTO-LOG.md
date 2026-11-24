@@ -196,3 +196,26 @@ of nine 480 px previews (night dune photos), none kept, then:
 | 2026-11-24 | Milky Way over Dunes (Great Sand Dunes NP), 1920 px | https://commons.wikimedia.org/wiki/File:Milky_Way_over_Dunes_(41586295991).jpg | public domain | 815 KB | `images/surreal/tt*.webp`, and the light on the dunes (`glow-a`, `glow-b`) worked out from it; credited |
 
 Mars Over Dunes (above) is **no longer used**; its credit in About was replaced.
+
+## 2026-11-24, later still: Surrealism's new scenes (HANDOFF 8.195)
+The owner found the mirrors and the mountain disc weak and suggested replacements. Previews first (one contact sheet of
+four Commons videos' poster frames; a list of Poly Haven's model files), none kept; then:
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-24 | Dusk over the sand and scattered shrubs, Mesquite Flat Sand Dunes (Z3lvs), 1920 px | https://commons.wikimedia.org/wiki/File:Dusk_over_the_sand_and_scattered_shrubs,_Mesquite_Flat_Sand_Dunes,_Death_Valley_National_Park.jpg | CC0 | 438 KB | `images/surreal/wreck*.webp` (mirrored); credited |
+| 2026-11-24 | Dutch Ship Medium, 1k glTF with its textures (Poly Haven) | https://polyhaven.com/a/dutch_ship_medium | CC0 | 8.7 MB | Rendered offline (tools/surreal/ship.html) into `images/surreal/wreck-ship.webp` and the shadow in `wreck.webp`; the model itself is not in the repo; credited in About, 3D credits |
+| 2026-11-24 | Groyne and sea waves at Curonian Spit (video), for the monolith in the surf | https://commons.wikimedia.org/wiki/File:Groyne_and_sea_waves_at_Curonian_Spit.webm | CC BY 3.0 | **not downloaded**: Wikimedia's servers refused every attempt (rate limit) | Not yet |
+
+Morning Clouds Over North Van Mountain Valley (above) is **no longer used**; its credit in About was replaced. The Bonneville
+clouds also make the ship scene's rolling clouds (`wreck-clouds.webp`), recoloured.
+
+## 2026-11-24, last: the slot through the mountain (HANDOFF 8.196)
+One contact sheet of nine 480 px previews (buttes and cliffs), none kept; then:
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-24 | Factory Butte, Utah, USA (dconvertini), 1920 px and 3840 px | https://commons.wikimedia.org/wiki/File:Factory_Butte,_Utah,_USA.jpg | CC BY-SA 2.0 | 1.0 MB + 3.4 MB | `images/surreal/slot.webp`, `slot-p.webp` (a slot cut through it by tools/surreal/slot.py); credited |
+| 2026-11-24 | Book Cliffs range from Thompson Springs (Carter Pape), 1920 px | https://commons.wikimedia.org/wiki/File:Book_Cliffs_range_from_Thompson_Springs.jpg | CC BY-SA 4.0 | 445 KB | **Not used** (a candidate; houses and a truck in front) |
+
+The wave clip for the monolith was tried again and still refused (429); two video stills were also refused.

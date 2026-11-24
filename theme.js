@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261124n';
+const ASSET_V = '20261124o';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -99,7 +99,7 @@ const SKINS = [
      in the repo (which is public): the server gives it to signed-in people only (/api/leaderboard?edphoto=1, from the
      ED_PHOTO environment variable). Picking any theme leaves it. */
   { id:'ed',        name:'EDinburgh', both:true, secret:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700',
-    city:{ tz:'Europe/London', locale:'en-GB', local:'EDinburgh' }, cityAs:'edinburgh', back:'Pick a theme in the Theme finder to go back.' },
+    city:{ tz:'Europe/London', locale:'en-GB', local:'EDinburgh' }, cityAs:'edinburgh', back:'It goes when the timetable shows someone else, or pick a theme.' },
   /* the originals */
   { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
@@ -1242,14 +1242,26 @@ function edImg(on){
     if (readState().skin === 'ed') use(d.img);
   }).catch(() => {}), 0);
 }
-function edinburgh(){
-  if (PREVIEW || readState().skin === 'ed') return;
+/* on: switch to it (remembering the theme you had); on === false: leaving Ed's timetable puts that theme back (the owner,
+   24 November: "the EDinburgh easter egg should go away whenever you leave eds timetable") */
+function edinburgh(on){
+  if (PREVIEW) return;
+  if (on === false){
+    if (readState().skin !== 'ed') return;
+    const prev = get('tt.skin_preed', '');
+    set(LS.skin, prev && prev !== 'ed' && SKIN_IDS.includes(prev) ? prev : 'plain');
+    apply();
+    try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
+    return;
+  }
+  if (readState().skin === 'ed') return;
+  set('tt.skin_preed', readState().skin);
   set(LS.skin, 'ed');
   apply();
   try { dispatchEvent(new CustomEvent('tt:skin')); } catch {}
   const n = document.createElement('div');
   n.className = 'saulnote'; n.setAttribute('role', 'status');
-  n.textContent = 'Welcome to EDinburgh. Pick a theme in the Theme finder to leave.';
+  n.textContent = 'Welcome to EDinburgh.';
   document.body.appendChild(n);
   setTimeout(() => n.remove(), 4200);
 }

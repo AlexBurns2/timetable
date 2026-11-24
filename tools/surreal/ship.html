@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./three.module.min.js"}}</script></head>
+<body><script type="module">
+/* Surrealism: the stranded ship, rendered for tools/surreal (offline; not part of the site). A pinhole camera matched to the
+   desert photo (its size, horizon, a person's eye height), the Poly Haven Dutch ship (CC0) driven nose-down into the sand and
+   cut away below the ground, lit by the dusk: the sky's cool light and the low warm sun just set on the right. Two passes:
+   the ship alone (pass=ship) and its shadow on the ground alone (pass=shadow), each on transparent. */
+import * as T from 'three';
+const Q = new URLSearchParams(location.search), num = (k, d) => +(Q.get(k) ?? d);
+const W = num('w', 1920), H = num('h', 1440), f = num('f', 1700), yh = num('yh', 740), eye = 1.7;
+const pass = Q.get('pass') || 'ship';
+const R = new T.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
+R.setPixelRatio(1); R.setSize(W, H); R.setClearColor(0x000000, 0);
+R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = num('exp', 1.0); R.outputColorSpace = T.SRGBColorSpace;
+R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap; R.localClippingEnabled = true;
+document.body.appendChild(R.domElement);
+const H2 = 2 * Math.max(yh, H - yh);
+const cam = new T.PerspectiveCamera(2 * Math.atan(H2 / 2 / f) * 180 / Math.PI, W / H2, 0.5, 5000);
+cam.setViewOffset(W, H2, 0, H2 / 2 - yh, W, H);
+cam.position.set(0, eye, 0); cam.lookAt(0, eye, -1);
+const S = new T.Scene();
+S.add(new T.HemisphereLight(0xa9bce6, 0x8c7a68, num('hemi', 1.15)));
+const sun = new T.DirectionalLight(0xffb27a, num('sun', 1.7));
+const sd = new T.Vector3(num('sx', 0.9), num('sy', 0.12), num('sz', -0.75)).normalize();
+const at = new T.Vector3(num('x', 32), 0, num('z', -115));
+sun.position.copy(at).addScaledVector(sd, 200); sun.target.position.copy(at);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096);
+const sc = sun.shadow.camera; sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 20; sc.far = 500; sun.shadow.bias = -0.0008; sun.shadow.radius = 4;
+S.add(sun, sun.target);
+const cut = [new T.Plane(new T.Vector3(0, 1, 0), 0)];        // nothing below the ground
+/* the model: a small glTF reader for this one file (three meshes, one primitive each, PBR with ARM textures) */
+const base = './m/';
+const g = await (await fetch(base + 'dutch_ship_medium_1k.gltf')).json();
+const bin = await (await fetch(base + g.buffers[0].uri)).arrayBuffer();
+const texL = new T.TextureLoader(); let pending = 0;
+const tex = (i, srgb) => { pending++; const t = texL.load(base + g.images[g.textures[i].source].uri, () => pending--, undefined, () => pending--); t.flipY = false; t.wrapS = t.wrapT = T.RepeatWrapping; if (srgb) t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t; };
+const TYPED = { 5126:Float32Array, 5123:Uint16Array, 5125:Uint32Array, 5121:Uint8Array }, N = { SCALAR:1, VEC2:2, VEC3:3, VEC4:4 };
+const acc = i => { const a = g.accessors[i], v = g.bufferViews[a.bufferView], C = TYPED[a.componentType];
+  return new C(bin, (v.byteOffset || 0) + (a.byteOffset || 0), a.count * N[a.type]); };
+const ship = new T.Group();
+g.meshes.forEach((m, mi) => m.primitives.forEach(p => {
+  const geo = new T.BufferGeometry();
+  geo.setAttribute('position', new T.BufferAttribute(acc(p.attributes.POSITION), 3));
+  geo.setAttribute('normal', new T.BufferAttribute(acc(p.attributes.NORMAL), 3));
+  geo.setAttribute('uv', new T.BufferAttribute(acc(p.attributes.TEXCOORD_0), 2));
+  geo.setIndex(new T.BufferAttribute(acc(p.indices), 1));
+  const md = g.materials[p.material], pb = md.pbrMetallicRoughness || {};
+  const arm = tex(pb.metallicRoughnessTexture.index);
+  const mat = new T.MeshStandardMaterial({ map:tex(pb.baseColorTexture.index, true), normalMap:tex(md.normalTexture.index), roughnessMap:arm, metalnessMap:arm, aoMap:arm,
+    metalness:pb.metallicFactor ?? 1, roughness:1, side:T.DoubleSide, clippingPlanes:cut, alphaTest:md.alphaMode === 'MASK' ? md.alphaCutoff : 0, transparent:false });
+  if (pass === 'shadow'){ mat.colorWrite = false; }
+  const mesh = new T.Mesh(geo, mat); mesh.castShadow = true; mesh.receiveShadow = true;
+  ship.add(mesh);
+}));
+/* stranded: nose down, turned a little toward us, listing; sunk so the bow and a third of the hull are under the sand */
+ship.rotation.order = 'YZX';
+ship.rotation.set(num('roll', -0.16), num('yaw', 0.55), num('pitch', -0.62));
+ship.position.set(at.x, num('y', 1.0), at.z);
+S.add(ship);
+if (pass === 'shadow'){
+  const ground = new T.Mesh(new T.PlaneGeometry(800, 800), new T.ShadowMaterial({ opacity:num('so', 0.42) }));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; S.add(ground);
+}
+/* wait for the textures, then draw once */
+await new Promise(r => { const tick = () => (pending > 0 ? setTimeout(tick, 100) : r()); tick(); });
+await new Promise(r => setTimeout(r, 600));
+R.render(S, cam);
+window.__png = R.domElement.toDataURL('image/png');
+document.title = 'done';
+</script></body></html>

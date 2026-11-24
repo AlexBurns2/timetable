@@ -4921,3 +4921,52 @@ more life behind.
   split along the rims, a sheen, and a long shadow far below. The timetable uses dark glass on the night.
 
 Next free stamp: `o` / v122.
+
+## 8.195 Surrealism's new scenes; EDinburgh only while it's Ed's timetable (version `20261124o`, `CACHE_VERSION` v122)
+The owner committed 8.194 as `ed`. Next free stamp: `p` / v123.
+- **EDinburgh** (the owner: "should go away whenever you leave eds timetable").
+  - `TT.edinburgh(false)` puts back the theme you had (`tt.skin_preed`).
+  - index.html `edCheck(email, atLoad)` runs on every successful load (`apply`) and on every switch (`viewUser`).
+  - Not Ed: back to your theme. Ed: EDinburgh, except opening the page on your own timetable while signed in as Ed.
+  - Checked in the mock: edinburgh → ed → edinburgh.
+- **Surrealism.** The owner: the sphere and the dunes are the strong ones; the mirrors and the mountain disc are weak.
+  - **Planners:** a line of identical concrete gateways across the Uyuni crust to the horizon (`tools/surreal/gates.py`).
+    A pinhole camera is matched to the photo. The concrete is board-formed, texture-mapped in perspective, darker toward
+    the ground. A low sun ahead and to the right throws long, soft shadows toward us. Nothing is live.
+  - **Every other page** (games, resources, finder, themes, mahjong): a Dutch sailing ship (Poly Haven, CC0) driven
+    bow-first into the Mesquite Flat dunes at dusk. The photo is mirrored so its branch and the glow go left.
+    - The ship is rendered offline by `tools/surreal/ship.html`, three.js in headless Chrome via `ship-shoot.mjs`
+      (needs `three.module.min.js` and the model in an `m/` folder beside it; neither is in the repo). It uses the same
+      camera match, is cut away below the ground and lit by the dusk, and is rendered in two passes, ship and shadow.
+    - `tools/surreal/wreck.py` composites it: a drift of the photo's own sand over the hull's foot, haze and grain, the
+      shadow baked into `wreck.webp`, and a seamless dusk cloud strip (`wreck-clouds.webp`).
+    - surreal.js puts the clouds (rolling over 260 s) behind the ship (`wreck-ship.webp`).
+  - Removed: the mirrors' live skies, the mountain disc (`mist*.webp`), and `sky-rose`/`sky-pale`.
+  - **Waiting:** the owner's idea of a black monolith half-sunk in the surf, with real moving waves as low-res found
+    footage. The clip ("Groyne and sea waves at Curonian Spit", CC BY 3.0) couldn't be downloaded: Wikimedia
+    rate-limited this machine. The games page would get that scene.
+  - Not taken up: the mountain slice (hard to make convincing) and the eye (too uncomfortable for daily pages).
+
+## 8.196 Surrealism: a slot cut through a mountain (still `20261124o`, v122: not committed since 8.195)
+The owner asked for a try at "a huge slice taken out of the mountain where its just raw earth", with distant rockfall,
+"it does need to pass as a real photo".
+- **The picture:** `tools/surreal/slot.py` takes Factory Butte (Commons, 3840 px) and traces each pixel of the cut
+  through a simple model of the butte matched to the photo's camera:
+  - a long lens, f 9000 px, horizon at row 1235;
+  - a body of revolution from the photo's silhouette, deeper behind than in front;
+  - a slot 47 m wide running straight away from us, from the caprock to the plain.
+- **The far wall** takes:
+  - the butte's colours by height (lit and shaded, from the photo's own slopes);
+  - the bedding read off the photo's sheer faces;
+  - grain high-passed from the photo's caprock and shale;
+  - mottling, and the low sun from the front left with the near wall's shadow.
+
+  Where a ray goes straight through, it shows the sky and far country beyond, from the photo's right-hand edge matched to
+  the sky above the notch. A little rubble is spilled at the foot.
+- **Crops:** wide screens see x 0–2450, y 0–1900 at 0.8 (`slot.webp`, 1960 × 1520), which puts the slot at 84%
+  across, in the right margin from about 1500 px wide up. The phone picture (`slot-p.webp`) is cut round the slot.
+- **Pages:** Games and Mahjong (surreal.js `sceneOf`); the ship moves to Resources, Finder and Themes.
+- **Live:** every 9–25 s with Animation on, a few pieces break off the far wall's visible top edge (`lip`) and fall
+  about 436 m, taking around 7 s at real gravity (2 image px to the metre), clipped to the slot's opening. They raise a
+  dust puff that billows and settles over about 9 s. The canvas draws only while something moves.
+- **Still waiting:** the monolith in the surf. Wikimedia still refuses the clip (and video stills) from this machine.

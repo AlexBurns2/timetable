@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261124n">
+<link rel="stylesheet" href="theme.css?v=20261124o">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261124n"></script>
-<script src="icons.js?v=20261124n"></script>
-<script src="suggest.js?v=20261124n"></script>
+<script src="theme.js?v=20261124o"></script>
+<script src="icons.js?v=20261124o"></script>
+<script src="suggest.js?v=20261124o"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -1251,6 +1251,7 @@ function apply(payload){
       [str(pick(p, ['FirstName','firstName'])), str(pick(p, ['LastName','lastName']))].filter(Boolean).join(' ')) : '';
   if (!displayName) displayName = nameFromEmail(payload.email || email);
   if (!entries.length) loadError = 'No lessons were returned for that address.';
+  else edCheck(payload.email || email, true);
 }
 function nameFromEmail(e){
   const parts = String(e || '').split('@')[0].split('.');
@@ -2349,17 +2350,21 @@ async function viewUser(){
   localStorage.removeItem(LS.cache);
   await load(false);
   render();
-  if (!loadError) edCheck(email);
+  if (!loadError) edCheck(email, false);
 }
-/* EDinburgh (theme.js): Ed asked for it. Switching to his timetable turns the site into it. Only a hash of his username
-   is written here. */
+/* EDinburgh (theme.js): Ed asked for it. Switching to his timetable turns the site into it, and it lasts only while his
+   timetable is the one shown: switching to anyone else, or opening this page on someone else's, puts your theme back.
+   (Opening the page on his own timetable, signed in as him, doesn't switch it on, so Ed isn't stuck in it.) Only a hash of
+   his username is written here. */
 const ED_HASH = 'c9d380ac46b57397faf5c00105219ec6d605d0a5351b7cbbde056bc2ff1a3cb0';
-async function edCheck(e){
+async function edCheck(e, atLoad){
   try {
     if (!window.TT || !TT.edinburgh || !crypto.subtle) return;
     const u = String(e || '').toLowerCase().split('@')[0];
     const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(u)))].map(b => b.toString(16).padStart(2, '0')).join('');
-    if (h === ED_HASH) TT.edinburgh();
+    if (h !== ED_HASH){ TT.edinburgh(false); return; }
+    const mine = String(((TT.get && TT.get('tt.creds', null)) || {}).email || '').toLowerCase().split('@')[0];
+    if (!atLoad || mine !== u) TT.edinburgh();
   } catch {}
 }
 $('whoami').addEventListener('input', () => { sizeWhoami(); $('whoami').closest('.idrow').classList.toggle('naming', /\s/.test($('whoami').value)); });

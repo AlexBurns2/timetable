@@ -14,10 +14,14 @@
                    of light floats over them, lighting the crests, and now
                    and then glitches to a dune further back and returns
        Calendar, Free periods, Revision, Notes
-                   the Salar de Uyuni before sunrise; mirrors stand on the
-                   salt showing a sky drifting by that isn't there
-       the rest    a forested mountain in cloud; a disc of it is lifted out
-                   of place, the mountain inside it drifting on its own
+                   the Salar de Uyuni before sunrise; a line of identical
+                   concrete gateways crosses it to the horizon, their long
+                   shadows thrown toward us (all in the picture)
+       Games, Mahjong
+                   Factory Butte with a straight slot cut through it, top to
+                   bottom; now and then rock falls from its edge (surreal.js)
+       the rest    the Mesquite Flat dunes at dusk; a Dutch sailing ship
+                   driven bow-first into the sand, clouds rolling past
    - The page: panes of glass hanging in the air. Very clear (the place
      shows through, softened), a bright edge where the light catches the
      glass, a faint split of colour along the rims as thick glass does, a
@@ -44,7 +48,7 @@
   --su-glass:blur(14px) saturate(1.45) brightness(1.06);
   --su-chip:rgba(255,255,255,.4); --su-chip-b:rgba(255,255,255,.55);
   /* the place: the mountain by default; each kind of page below (surreal.js uses the same positions) */
-  --su-img:url(../images/surreal/mist.webp); --su-img-p:url(../images/surreal/mist-p.webp); --su-pos:88% 42%; --su-fill:#9aa69c;
+  --su-img:url(../images/surreal/wreck.webp); --su-img-p:url(../images/surreal/wreck-p.webp); --su-pos:80% 52%; --su-fill:#8d93ad;
   --su-filter:none;
 }
 :root[data-skin="surreal"][data-pg="home"]{--su-img:url(../images/surreal/home.webp);--su-img-p:url(../images/surreal/home-p.webp);--su-pos:94% 34%;--su-fill:#9cc3e6}
@@ -55,6 +59,7 @@
   --su-edge:inset 0 1px 0 rgba(255,255,255,.4),inset 1px 0 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(255,255,255,.08),inset -1px 0 0 rgba(255,255,255,.08);
   --su-sheen:linear-gradient(118deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.03) 34%,rgba(255,255,255,0) 52%,rgba(255,255,255,.05) 100%);
   --su-glass:blur(12px) saturate(1.3)}
+:root[data-skin="surreal"]:is([data-pg="games"],[data-pg="mahjong"]){--su-img:url(../images/surreal/slot.webp);--su-img-p:url(../images/surreal/slot-p.webp);--su-pos:50% 16%;--su-fill:#b9c4d8}
 :root[data-skin="surreal"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="notes"]){
   --su-img:url(../images/surreal/plan.webp);--su-img-p:url(../images/surreal/plan-p.webp);--su-pos:70% 62%;--su-fill:#b9bfdc}
 :root[data-skin="surreal"][data-mode="dark"]{
@@ -150,30 +155,25 @@ html[data-skin="surreal"]:not(.zen):not([data-pg="hkmahjong"]) .sulive{display:b
   80%{opacity:.35;transform:translateX(-3px);clip-path:inset(10% 0 70% 0)}
   100%{opacity:0;transform:none;clip-path:inset(50% 0 50% 0)}
 }
-/* the planners: each mirror shows its sky (a strip and its mirror image, repeating), with a bright edge on its lit side */
-.suplan .pane{position:absolute;overflow:hidden}
-.suplan .pane i{position:absolute;left:0;top:50%;height:var(--th);width:calc(var(--T) * 2);margin-top:calc(var(--th) / -2);background-repeat:repeat-x;background-size:var(--T) 100%}
-.suplan .pane::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(255,255,255,.16),rgba(255,255,255,0) 40%,rgba(255,255,255,.08))}
-.suplan .pane.l{box-shadow:inset 3px 0 0 rgba(255,252,255,.95),inset -2px 0 0 rgba(110,110,150,.9)}
-.suplan .pane.r{box-shadow:inset -3px 0 0 rgba(255,252,255,.95),inset 2px 0 0 rgba(110,110,150,.9)}
-/* the rest: the disc, a little rim of shade inside its lower edge */
-.sumist .disc{position:absolute;border-radius:50%;overflow:hidden;box-shadow:inset 0 -6px 10px -4px rgba(10,16,12,.55),0 0 0 1px rgba(255,255,255,.08)}
-.sumist .disc i{position:absolute;display:block;background-size:100% 100%}
+/* Games and Mahjong: the falling rock and its dust (a canvas, drawn only while something falls) */
+.suslot canvas{position:absolute;left:0;top:0}
+/* the rest: the dusk clouds (a strip that repeats, fading toward the mountains) and the ship in front of them */
+.suwreck .clouds{position:absolute;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}
+.suwreck .clouds i{position:absolute;left:0;top:0;height:100%;width:calc(var(--T) * 4);background-repeat:repeat-x;background-size:var(--T) 100%}
+.suwreck .ship{position:absolute;display:block}
 /* the slow movements, only with Animation on */
 @media (prefers-reduced-motion:no-preference){
   html[data-fx="on"]:not([data-motion="reduced"]) .suhome .orb{animation:subob 13s ease-in-out infinite alternate}
   html[data-fx="on"]:not([data-motion="reduced"]) .suhome .orbr{animation:subobr 13s ease-in-out infinite alternate}
   html[data-fx="on"]:not([data-motion="reduced"]) .sulight :is(.sq,.pool){animation:subreathe 6.5s ease-in-out infinite alternate}
   html[data-fx="on"]:not([data-motion="reduced"]) .sulight .stars circle{animation:sutwinkle 5s ease-in-out infinite alternate}
-  html[data-fx="on"]:not([data-motion="reduced"]) .suplan .pane i{animation:sudrift var(--dur,150s) linear infinite}
-  html[data-fx="on"]:not([data-motion="reduced"]) .sumist .disc i{animation:sumist 34s ease-in-out infinite alternate}
+  html[data-fx="on"]:not([data-motion="reduced"]) .suwreck .clouds i{animation:sudrift 260s linear infinite}
 }
 @keyframes subob{from{transform:translateY(calc(var(--bob) * -1))}to{transform:translateY(var(--bob))}}
 @keyframes subobr{from{transform:scaleY(-1) translateY(calc(var(--bob) * -1))}to{transform:scaleY(-1) translateY(var(--bob))}}
 @keyframes subreathe{from{opacity:.82}to{opacity:1}}
 @keyframes sutwinkle{from{opacity:.15}to{opacity:.95}}
 @keyframes sudrift{to{transform:translateX(calc(var(--T) * -1))}}
-@keyframes sumist{from{transform:translateY(calc(var(--drift) * -1))}to{transform:translateY(var(--drift))}}
 
 /* changing page: the page itself goes soft and comes back (fx.js TR.surreal); the place behind never moves */
 html[data-skin="surreal"].fx-out .wrap{opacity:0;filter:blur(8px);transition:opacity .16s ease,filter .16s ease}
