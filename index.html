@@ -1346,7 +1346,8 @@ function items(cyc){
   L.sort((x, y) => x.s - y.s);
   const firstLesson = L.findIndex(x => x.lesson), last = L.length - 1 - [...L].reverse().findIndex(x => x.lesson);
   if (firstLesson === -1) return [];
-  const freeP1 = L.findIndex(x => x.p1), first = freeP1 >= 0 && freeP1 < firstLesson ? freeP1 : firstLesson;      // a free period 1 is shown: the day starts at its bell
+  /* a free period 1 is shown (the day starts at its bell), except in Studio, where the day starts at the first lesson */
+  const freeP1 = studioOn() ? -1 : L.findIndex(x => x.p1), first = freeP1 >= 0 && freeP1 < firstLesson ? freeP1 : firstLesson;
   L = L.slice(first, last + 1);
   const out = [];
   for (const x of L){
