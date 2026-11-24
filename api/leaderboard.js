@@ -234,7 +234,7 @@ async function siteStats() {
     countOf("daily_result", q => q.eq("won", true)),
     rowsOf("game_state", "mode, email, updated_at", null, 5000),
     rowsOf("game_state", "state", q => q.eq("email", "mahjong").eq("mode", "mahjong"), 1),
-    rowsOf("jim_score", "score", null, 5000),
+    rowsOf("jim_score", "score", q => q.not("name", "like", "~%"), 5000),   // ~ rows are Jim Together's
     countOf("sprint_best"),
     countOf("tetris_score"),
     countOf("zen_board"),

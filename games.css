@@ -1832,3 +1832,23 @@ html[data-motion="reduced"] .wtc.fresh{animation:none}
 .msgat{font-size:.75rem;color:var(--muted);white-space:nowrap}
 /* moderator Forum: who a thread is for */
 .modscope{flex:none;align-self:center;margin-right:6px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
+
+/* ── Jim Together: the shared LED board above the button ── */
+.jt .jimpanel{padding-top:18px}
+.jtled{width:100%;max-width:560px;padding:12px 16px 14px;border-radius:12px;background:#0b0b0c;
+  border:3px solid #26262a;box-shadow:inset 0 0 0 1px #000,inset 0 2px 14px rgba(0,0,0,.9),0 6px 18px rgba(0,0,0,.35)}
+.jtledhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;
+  font-family:var(--font-num);font-size:0.625rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:#ff9d1c;text-shadow:0 0 6px rgba(255,140,0,.75)}
+.jtlive{display:inline-flex;align-items:center;gap:6px}
+.jtlive i{width:7px;height:7px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30;animation:jimdot 1.4s ease-in-out infinite}
+.jtdigits{display:flex;justify-content:center;gap:clamp(3px,.9vw,7px);--dot:clamp(3px,1.05vw,7px)}
+.jtdig{display:grid;grid-template-columns:repeat(5,var(--dot));grid-template-rows:repeat(7,var(--dot));gap:calc(var(--dot) * .3)}
+.jtdig i{border-radius:50%;background:#2a1606}
+.jtdig i.on{background:#ffb22e;box-shadow:0 0 calc(var(--dot) * .9) rgba(255,150,20,.95)}
+.jtsep{width:calc(var(--dot) * .6)}
+.jtled.flash .jtdig i.on{animation:jtflash .35s ease-out}
+@keyframes jtflash{0%{background:#fff3c4;box-shadow:0 0 calc(var(--dot) * 1.6) rgba(255,200,80,1)}100%{}}
+.jt .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.jtnote{text-align:center;max-width:360px;margin:0}
+html[data-motion="reduced"] .jtlive i,html[data-motion="reduced"] .jtled.flash .jtdig i.on{animation:none}
