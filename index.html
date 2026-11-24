@@ -1446,22 +1446,11 @@ async function toggleRoster(item){
   const el = itemEl(id);
   if (el && rosterKey === id) openList(el);
 }
-/* opening, the room number flies from its corner into its place in the full
-   room code; closing, it flies back */
+/* the room number moves from the corner badge to the Room row when a lesson opens: no slide, it just swaps */
 function flyRoom(item, opening){
-  const badge = item.querySelector(':scope .blk-card > .r'), rk = item.querySelector('.det-row.room .rk');
-  item.classList.remove('landed');
-  if (!badge || !rk){ if (opening) item.classList.add('landed'); return; }
-  /* a flight already under way (clicking fast) carries on from where the badge is now, never from its corner */
-  const was = getComputedStyle(badge).transform;
-  badge.getAnimations().forEach(x => x.cancel());
-  const a = badge.getBoundingClientRect(), b = rk.getBoundingClientRect();
-  if (!a.width || noMotion()){ if (opening) item.classList.add('landed'); return; }
-  const shift = opening && item.matches('.stcol.end .blk') ? Math.max(item.offsetWidth / 2, 112) : 0;
-  const there = { transform:'translate(' + (b.left - a.left - shift) + 'px,' + (b.top - a.top) + 'px)' }, home = { transform:'none' };
-  const from = was && was !== 'none' ? { transform:was } : opening ? home : there;
-  const flight = badge.animate(opening ? [from, there] : [from, home], { duration:opening ? 520 : 440, easing:'cubic-bezier(.25,.8,.3,1)' });
-  if (opening) flight.onfinish = () => { if (item.classList.contains('open')) item.classList.add('landed'); };
+  const badge = item.querySelector(':scope .blk-card > .r');
+  if (badge) badge.getAnimations().forEach(x => x.cancel());
+  item.classList.toggle('landed', !!opening && item.classList.contains('open'));
 }
 /* run a layout change, then slide each line of text from where it was (FLIP) */
 function glide(item, change){
