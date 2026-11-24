@@ -289,7 +289,7 @@ const jtDigit = ch => '<span class="jtdig">' + JT_FONT[ch].join('').split('').ma
 BUILD.jimall = host => {
   let alive = true, pollTimer = null, flushTimer = null, glowTimer = null, tickTimer = null;
   let pending = 0, inflight = 0, sending = false, pressLocked = false;
-  let server = 0, shown = 0, mine = 0, myName = null, top = null;
+  let server = 0, shown = 0, mine = 0, myName = null, top = null, anonTotal = 0;
   const jimAudio = new Audio(JIM_DIR + 'jim.mp3'), stanleyAudio = new Audio(JIM_DIR + 'stanley.mp3'), nameAudio = new Audio();
   const play = a => { a.currentTime = 0; return a.play(); };
   const signedIn = !!(window.TT && TT.myEmail && TT.myEmail());
@@ -305,8 +305,19 @@ BUILD.jimall = host => {
   let label = 'JIM', hasName = false, nameFor = '', mode = 'name';
   const randomAudio = new Audio();
 
-  /* the whole window across, so the button sits in the middle of the screen with the board beside it */
-  host.style.cssText = 'position:relative;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),1500px)';
+  /* wider than the page column on a big screen, centred on the visible window (clientWidth, which
+     leaves out the scrollbar), so the button sits mid-screen with the board beside it. Only width
+     and margin are touched, and both go back when you leave: the stage is shared by every game. */
+  const fitWide = () => {
+    host.style.width = ''; host.style.marginLeft = '';
+    const vw = document.documentElement.clientWidth, base = host.getBoundingClientRect();
+    const w = Math.max(base.width, Math.min(vw - 32, 1500));
+    if (w <= base.width + 1) return;
+    host.style.width = w + 'px';
+    host.style.marginLeft = Math.round((vw - w) / 2 - base.left) + 'px';
+  };
+  fitWide();
+  addEventListener('resize', fitWide);
   head(host, 'The Jim Button: Together', 'One button, everyone pressing it. Every press counts towards the board above it.');
   const box = document.createElement('div');
   box.className = 'jim jt';
@@ -333,7 +344,9 @@ BUILD.jimall = host => {
     const b = document.querySelector('#jtbtn .name-btn'); if (!b) return;
     b.textContent = name;
     const n = name.length;
-    b.style.fontSize = 'calc(var(--jt-scale, 1) * ' + (n <= 4 ? 2.4 : n <= 6 ? 1.9 : n <= 8 ? 1.5 : n <= 11 ? 1.2 : n <= 14 ? 0.95 : 0.78) + 'rem)';
+    /* Jim's sizes for a 200px button (rem at 16px), scaled to this one's size */
+    const rem = n <= 4 ? 2.4 : n <= 6 ? 1.9 : n <= 8 ? 1.5 : n <= 11 ? 1.2 : n <= 14 ? 0.95 : 0.78;
+    b.style.fontSize = 'calc(var(--jt-size, 200px) * ' + (rem * 16 / 200).toFixed(4) + ')';
   };
   /* what the mode button says, and what the button shows until it's next pressed */
   const paintMode = () => { const l = $('jtmodelbl'); if (!l) return;
@@ -394,11 +407,13 @@ BUILD.jimall = host => {
     if (myName){ const me = rows.find(r => r.name === myName);
       if (me) me.score = Math.max(me.score, mine); else if (mine > 0) rows.push({ name:myName, score:mine });
       rows.sort((a, b) => b.score - a.score); }
-    if (!rows.length){ el.innerHTML = '<p class="how">No presses yet. Be first!</p>'; return; }
+    if (!rows.length && !anonTotal){ el.innerHTML = '<p class="how">No presses yet. Be first!</p>'; return; }
     const medals = ['🥇', '🥈', '🥉'];
+    /* signed-out presses count towards the total too, so they get a row and the board adds up */
     el.innerHTML = rows.slice(0, 20).map((r, i) =>
       '<div class="tlbrow' + (r.name === myName ? ' me' : '') + '"><span class="rk">' + (medals[i] || (i + 1)) + '</span>' +
-      '<span class="nm">' + esc(r.name) + '</span><span class="tm">' + esc(r.score.toLocaleString()) + '</span></div>').join('');
+      '<span class="nm">' + esc(r.name) + '</span><span class="tm">' + esc(r.score.toLocaleString()) + '</span></div>').join('') +
+      (anonTotal ? '<div class="tlbrow jtanon"><span class="rk">·</span><span class="nm">Not signed in</span><span class="tm">' + anonTotal.toLocaleString() + '</span></div>' : '');
   }
 
   async function poll(){
@@ -406,7 +421,7 @@ BUILD.jimall = host => {
     try {
       const d = await TT.api('/api/jim', { params:{ together:1 } });
       if (!alive) return;
-      server = Math.max(server, +d.total || 0); top = d.top || []; showTotal(); renderLB();
+      server = Math.max(server, +d.total || 0); top = d.top || []; anonTotal = +d.anon || 0; showTotal(); renderLB();
     } catch(e){ const el = $('jtrows'); if (el && !top) el.innerHTML = '<p class="how">Couldn’t reach the board (' + esc(e.message) + ').</p>'; }
   }
 
@@ -492,6 +507,8 @@ BUILD.jimall = host => {
     alive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('visibilitychange', onHide);
+    removeEventListener('resize', fitWide);
+    host.style.width = ''; host.style.marginLeft = '';
     clearTimeout(glowTimer); clearInterval(pollTimer); clearInterval(tickTimer);
     flush(true);
     [nameAudio, randomAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });

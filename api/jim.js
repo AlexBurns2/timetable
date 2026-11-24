@@ -18,7 +18,7 @@
  * The shared count is the sum of every "~" row. Each row is only written by
  * its own player, one batch at a time, so a plain read-then-write is safe and
  * it doesn't need the jim_press function (the live database didn't have it).
- * GET  /api/jim?together=1          → { total, top: [{ name, score }, …] }
+ * GET  /api/jim?together=1          → { total, anon, top: [{ name, score }, …] }  (anon: signed-out presses)
  *      …&me=1 (signed in)           → also me: { name, score }
  * POST /api/jim { together:true, add, anon } → { total, mine, name }
  *
@@ -40,16 +40,16 @@ async function bump(key, add) {
   if (e2) throw new Error(e2.message);
   return score;
 }
-/* every Together row added up, a page of 1000 at a time */
+/* every Together row added up (and the signed-out ones on their own), a page of 1000 at a time */
 async function totalOf() {
-  let sum = 0;
+  let sum = 0, anon = 0;
   for (let from = 0; from < 50000; from += 1000) {
-    const { data, error } = await db.from("jim_score").select("score").like("name", "~%").range(from, from + 999);
+    const { data, error } = await db.from("jim_score").select("name, score").like("name", "~%").range(from, from + 999);
     if (error) throw new Error(error.message);
-    (data || []).forEach(r => { sum += Number(r.score) || 0; });
+    (data || []).forEach(r => { if (r.name === "~ALL") return; const n = Number(r.score) || 0; sum += n; if (r.name.startsWith("~anon:")) anon += n; });
     if (!data || data.length < 1000) break;
   }
-  return sum;
+  return { sum, anon };
 }
 const TOP = 20;
 
@@ -62,7 +62,7 @@ async function together() {
   ]);
   if (e2) throw new Error(e2.message);
   const names = await displayNames();
-  return { total,
+  return { total: total.sum, anon: total.anon,
            top: (rows || []).map(r => { const email = r.name.slice(1);
              return { name: withName(names, email, nameFromLocal(email.split("@")[0])), score: Number(r.score) || 0 }; }) };
 }
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
       const key = me && me.email ? "~" + me.email.toLowerCase() : anon ? "~anon:" + anon : null;
       if (!key) return res.status(400).json({ error: "Who's pressing?" });
       let mine, total;
-      try { mine = await bump(key, add); total = await totalOf(); }
+      try { mine = await bump(key, add); total = (await totalOf()).sum; }
       catch (e) { console.error("jim together press:", e.message); return res.status(502).json({ error: "Couldn't save the press." }); }
       let name = null;
       if (me && me.email) name = withName(await displayNames(), me.email, nameFromLocal(me.email.split("@")[0]));
