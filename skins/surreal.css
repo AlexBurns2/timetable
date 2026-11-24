@@ -1,57 +1,76 @@
 /* ══════════════════════════════════════════════════════════════════
    SURREALISM — one idea: a real landscape, photographed, with one thing
-   in it that cannot be explained. The page floats over it like the
-   objects do.
+   in it that cannot be explained, and the page hanging in front of it
+   as panes of glass.
 
-   - Each kind of page has its own place (tools/surreal/render.py renders
-     them offline from Commons photographs, credited in About):
+   - Each kind of page has its own place. tools/surreal/render.py renders
+     the backdrops offline from Commons photographs (credited in About);
+     skins/surreal.js puts the unexplainable thing in, live, so it moves
+     very slowly (still with Animation off; baked into the picture on an
+     upright phone):
        Home        the flooded Bonneville Salt Flats; a chrome sphere hangs
-                   over them, its reflection in the water below it
-       Timetable   the Great Sand Dunes at dusk; a square of light floats
-                   over them and now and then glitches to another dune and
-                   back (skins/surreal.js; still with Animation off)
+                   over them, rising and sinking, its reflection under it
+       Timetable   the Great Sand Dunes under the Milky Way; a great square
+                   of light floats over them, lighting the crests, and now
+                   and then glitches to a dune further back and returns
        Calendar, Free periods, Revision, Notes
                    the Salar de Uyuni before sunrise; mirrors stand on the
-                   salt showing a sky that isn't there
-       the rest    a forested mountain in cloud, a disc of it lifted out of
-                   place
-   - The page is set like an art book's plates: frosted panes that hover
-     (a long soft shadow far beneath them, nothing touching the ground),
-     square corners, titles in a light Fraunces, small notes in mono.
+                   salt showing a sky drifting by that isn't there
+       the rest    a forested mountain in cloud; a disc of it is lifted out
+                   of place, the mountain inside it drifting on its own
+   - The page: panes of glass hanging in the air. Very clear (the place
+     shows through, softened), a bright edge where the light catches the
+     glass, a faint split of colour along the rims as thick glass does, a
+     sheen across, and a long soft shadow far below, nothing touching the
+     ground. Square corners; titles in a light Fraunces, notes in mono.
    - Top left on every page, a notation nobody can read: dots on a grid,
-     some missing, different on every page (surreal.js), as if each scene
-     were catalogued by something.
+     some missing, different on every page (surreal.js).
    - Dark mode is the same places after dark.
    ══════════════════════════════════════════════════════════════════ */
 :root[data-skin="surreal"]{
   --bg:#dfe4e8; --bg-img:none;
-  --panel:rgba(250,250,248,.74); --panel-2:rgba(244,245,246,.62); --line:rgba(30,40,52,.12);
-  --text:#15181c; --muted:#56606a; --accent:#36607f; --accent-ink:#fff;
+  --panel:rgba(255,255,255,.2); --panel-2:rgba(255,255,255,.14); --line:rgba(30,40,52,.14);
+  --text:#101418; --muted:#3f4954; --accent:#2f5b7c; --accent-ink:#fff;
   --font-display:"Fraunces",Georgia,serif; --display-w:300; --display-tt:none; --display-ls:-.01em;
   --su-mono:"IBM Plex Mono",ui-monospace,monospace;
-  --card-radius:2px; --radius:2px; --tint:14%; --card-accent:0px;
-  --card-border:1px solid rgba(255,255,255,.62);
-  --shadow:0 1px 1px rgba(10,20,30,.05),0 38px 46px -30px rgba(14,24,40,.42);
-  --shadow-hi:0 1px 2px rgba(10,20,30,.07),0 46px 56px -30px rgba(14,24,40,.5);
-  --su-chip:rgba(250,250,248,.82); --su-chip-b:rgba(255,255,255,.6);
-  /* the place: the mountain by default; each kind of page below */
+  --card-radius:3px; --radius:3px; --tint:14%; --card-accent:0px;
+  --card-border:1px solid rgba(255,255,255,.55);
+  /* glass: the light caught on its top and left edges, the rims' faint split of colour, the long shadow far below */
+  --su-edge:inset 0 1px 0 rgba(255,255,255,.85),inset 1px 0 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(255,255,255,.18),inset -1px 0 0 rgba(255,255,255,.18);
+  --su-split:-1px 0 0 rgba(255,96,140,.22),1px 0 0 rgba(90,170,255,.26);
+  --su-sheen:linear-gradient(118deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 34%,rgba(255,255,255,0) 52%,rgba(255,255,255,.06) 80%,rgba(255,255,255,.16) 100%);
+  --shadow:var(--su-edge),var(--su-split),0 44px 46px -34px rgba(10,20,36,.45);
+  --shadow-hi:var(--su-edge),var(--su-split),0 56px 56px -34px rgba(10,20,36,.52);
+  --su-glass:blur(14px) saturate(1.45) brightness(1.06);
+  --su-chip:rgba(255,255,255,.4); --su-chip-b:rgba(255,255,255,.55);
+  /* the place: the mountain by default; each kind of page below (surreal.js uses the same positions) */
   --su-img:url(../images/surreal/mist.webp); --su-img-p:url(../images/surreal/mist-p.webp); --su-pos:88% 42%; --su-fill:#9aa69c;
   --su-filter:none;
 }
 :root[data-skin="surreal"][data-pg="home"]{--su-img:url(../images/surreal/home.webp);--su-img-p:url(../images/surreal/home-p.webp);--su-pos:94% 34%;--su-fill:#9cc3e6}
-:root[data-skin="surreal"][data-pg="timetable"]{--su-img:url(../images/surreal/tt.webp);--su-img-p:url(../images/surreal/tt-p.webp);--su-pos:50% 40%;--su-fill:#2e2a28}
+:root[data-skin="surreal"][data-pg="timetable"]{--su-img:url(../images/surreal/tt.webp);--su-img-p:url(../images/surreal/tt-p.webp);--su-pos:50% 62%;--su-fill:#0c1426;
+  /* the night: the glass darker, the type light */
+  --panel:rgba(14,20,34,.34); --panel-2:rgba(14,20,34,.26); --line:rgba(255,255,255,.12); --text:#eef2f8; --muted:#a9b4c4; --accent:#bcd4f2; --accent-ink:#0b1220;
+  --su-chip:rgba(14,20,34,.5); --su-chip-b:rgba(255,255,255,.16); --card-border:1px solid rgba(255,255,255,.2);
+  --su-edge:inset 0 1px 0 rgba(255,255,255,.4),inset 1px 0 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(255,255,255,.08),inset -1px 0 0 rgba(255,255,255,.08);
+  --su-sheen:linear-gradient(118deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.03) 34%,rgba(255,255,255,0) 52%,rgba(255,255,255,.05) 100%);
+  --su-glass:blur(12px) saturate(1.3)}
 :root[data-skin="surreal"]:is([data-pg="calendar"],[data-pg="free"],[data-pg="revision"],[data-pg="notes"]){
   --su-img:url(../images/surreal/plan.webp);--su-img-p:url(../images/surreal/plan-p.webp);--su-pos:70% 62%;--su-fill:#b9bfdc}
 :root[data-skin="surreal"][data-mode="dark"]{
-  --bg:#0c0e12; --panel:rgba(14,16,21,.64); --panel-2:rgba(24,27,33,.58); --line:rgba(255,255,255,.1);
-  --text:#eef0f2; --muted:#a7afb8; --accent:#b9d3eb; --accent-ink:#0b1016;
-  --card-border:1px solid rgba(255,255,255,.1);
-  --shadow:0 1px 1px rgba(0,0,0,.3),0 40px 50px -30px rgba(0,0,0,.7); --shadow-hi:0 1px 2px rgba(0,0,0,.35),0 48px 60px -30px rgba(0,0,0,.8);
-  --su-chip:rgba(14,16,21,.74); --su-chip-b:rgba(255,255,255,.08);
+  --bg:#0c0e12; --panel:rgba(14,18,26,.32); --panel-2:rgba(24,28,38,.26); --line:rgba(255,255,255,.12);
+  --text:#eef0f2; --muted:#aab2bc; --accent:#b9d3eb; --accent-ink:#0b1016;
+  --card-border:1px solid rgba(255,255,255,.18);
+  --su-edge:inset 0 1px 0 rgba(255,255,255,.36),inset 1px 0 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.06),inset -1px 0 0 rgba(255,255,255,.06);
+  --su-split:-1px 0 0 rgba(255,96,140,.16),1px 0 0 rgba(90,170,255,.2);
+  --su-sheen:linear-gradient(118deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.02) 34%,rgba(255,255,255,0) 52%,rgba(255,255,255,.04) 100%);
+  --shadow:var(--su-edge),var(--su-split),0 46px 50px -34px rgba(0,0,0,.8); --shadow-hi:var(--su-edge),var(--su-split),0 58px 60px -34px rgba(0,0,0,.85);
+  --su-glass:blur(14px) saturate(1.3) brightness(.92);
+  --su-chip:rgba(14,18,26,.5); --su-chip-b:rgba(255,255,255,.12);
   /* the same places after dark */
   --su-filter:brightness(.42) saturate(.72) contrast(1.06);
 }
-:root[data-skin="surreal"][data-mode="dark"][data-pg="timetable"]{--su-filter:brightness(.62) saturate(.8)}
+:root[data-skin="surreal"][data-mode="dark"][data-pg="timetable"]{--su-filter:brightness(.8)}
 @media (max-aspect-ratio:4/5){ :root[data-skin="surreal"]{--su-img:var(--su-img-p)} }
 
 [data-skin="surreal"] body{background:var(--su-fill)}
@@ -60,28 +79,29 @@
 html.zen[data-skin="surreal"] body::before,[data-skin="surreal"][data-pg="hkmahjong"] body::before{display:none}
 html.zen[data-skin="surreal"] body{background:transparent}
 
-/* ── the page: frosted panes that hover ── */
+/* ── the page: panes of glass hanging in the air ── */
 :root[data-skin="surreal"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),
 [data-skin="surreal"] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.stage,.tfcard,.lbbcard,.fpost){
-  background-color:var(--panel);-webkit-backdrop-filter:blur(16px) saturate(1.05);backdrop-filter:blur(16px) saturate(1.05);border:var(--card-border);box-shadow:var(--shadow)}
+  background-color:var(--panel);background-image:var(--su-sheen);-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass);
+  border:var(--card-border);box-shadow:var(--shadow)}
 [data-skin="surreal"] .gamestage{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-[data-skin="surreal"] :is(.lesson,.nowcard,.breakbar,.day,.fc){-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-[data-skin="surreal"] textarea.pad{background-color:var(--panel);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+[data-skin="surreal"] :is(.lesson,.nowcard,.breakbar,.day,.fc){-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass);box-shadow:var(--su-edge),var(--su-split)}
+[data-skin="surreal"] textarea.pad{background-color:var(--panel);background-image:var(--su-sheen);-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass)}
 /* lifted a little further when pointed at, as if it rose */
 @media (hover:hover){
-  [data-skin="surreal"] :is(.qtile,.gamecard,.tile,.tday,.pcard):hover{box-shadow:var(--shadow-hi);transform:translateY(-2px)}
+  [data-skin="surreal"] :is(.qtile,.gamecard,.tile,.tday,.pcard):hover{box-shadow:var(--shadow-hi);transform:translateY(-3px)}
 }
-[data-skin="surreal"] :is(.qtile,.gamecard,.tile,.tday,.pcard){transition:box-shadow .35s ease,transform .35s ease}
+[data-skin="surreal"] :is(.qtile,.gamecard,.tile,.tday,.pcard){transition:box-shadow .45s ease,transform .45s ease}
 /* titles light and quiet; section names in small mono capitals, like a plate's caption */
 [data-skin="surreal"] :is(.hubid h1,.pagehead h1,.brand h1){font-family:var(--font-display);font-weight:300;letter-spacing:-.015em}
 [data-skin="surreal"] :is(.cathd,.tfh,.sechd,.eyebrow,.sitename){font-family:var(--su-mono);font-weight:500;font-size:.6875rem;letter-spacing:.16em;text-transform:uppercase}
 :root[data-skin="surreal"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"]){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
-/* words that sit straight on the photograph get a pale label under them (as in the Cities Collection) */
+/* words that sit straight on the photograph get a small pane of glass of their own */
 [data-skin="surreal"] :is(.weeklabel,.dayhead .dow,.tmark,.cathd,.tfh,.tflede,.reslede,.flede,.fstat:not(:empty),.fnow,.fyl,.fnote,.notesel,.padbar,.calbar h2,
   .tforig summary,.pagelede,.sechd,.tflook .swhint,.rvjump),[data-skin="surreal"][data-pg="calendar"] .grid>.dow{
-  width:fit-content;max-width:100%;box-sizing:border-box;background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b);border-radius:2px;
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--text)}
+  width:fit-content;max-width:100%;box-sizing:border-box;background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b),var(--su-edge);border-radius:2px;
+  -webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass);color:var(--text)}
 [data-skin="surreal"] :is(.tflede,.reslede,.flede,.fstat,.fnote,.pagelede,.tflook .swhint){padding:.35em .7em}
 [data-skin="surreal"] :is(.cathd,.tfh,.sechd,.calbar h2,.tforig summary,.fnow,.fyl,.rvjump){padding:.25em .6em}
 [data-skin="surreal"] .weeklabel{padding:.3em .9em;min-width:0}
@@ -91,13 +111,13 @@ html.zen[data-skin="surreal"] body{background:transparent}
 [data-skin="surreal"] .tmark{padding:1px 5px;opacity:1}
 :root[data-skin="surreal"] .breakbar{background:var(--su-chip);border:1px solid var(--su-chip-b);opacity:1;color:var(--text)}
 [data-skin="surreal"][data-view="full"] .periodcell{background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b);margin-right:6px;padding-left:6px;
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  -webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass)}
 [data-skin="surreal"] .day.out{opacity:1}
 [data-skin="surreal"] .day.out>*{opacity:.5}
-[data-skin="surreal"] .fgrid{background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b);padding:8px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-[data-skin="surreal"] .hubfoot{border-top:0;padding:10px 16px;background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+[data-skin="surreal"] .fgrid{background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b);padding:8px;-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass)}
+[data-skin="surreal"] .hubfoot{border-top:0;padding:10px 16px;background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b),var(--su-edge);-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass)}
 :root[data-skin="surreal"][data-header="split"] :is(.hubid,.phtitle,.topbar .brand){width:fit-content;max-width:100%;box-sizing:border-box;padding:8px 14px 10px;
-  background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b),var(--su-edge);-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass)}
 
 /* ── the notation, top left (surreal.js): dots on a grid, some missing ── */
 .sunote{display:none}
@@ -107,16 +127,21 @@ html[data-skin="surreal"]:not(.zen):not([data-pg="hkmahjong"]) .sunote{display:b
 [data-skin="surreal"][data-mode="dark"] .sunote{opacity:.7}
 @media (min-width:1100px){ html[data-skin="surreal"]:not(.zen) .sunote{position:fixed;left:26px;top:22px} .sunote svg{height:18px} }
 
-/* ── the timetable's square of light (surreal.js .sulight): drawn over the dunes, under the page ── */
-.sulight{display:none}
-html[data-skin="surreal"][data-pg="timetable"]:not(.zen) .sulight{display:block;position:fixed;inset:0;z-index:-1;pointer-events:none}
+/* ── the live things (surreal.js .sulive): under the page, over the photograph; an upright phone has them baked in ── */
+.sulive{display:none}
+html[data-skin="surreal"]:not(.zen):not([data-pg="hkmahjong"]) .sulive{display:block;position:fixed;inset:0;z-index:-1;pointer-events:none;filter:var(--su-filter);overflow:hidden}
+@media (max-aspect-ratio:4/5){ .sulive{display:none!important} }
+/* Home: the sphere, floating, and its reflection in the flood moving the other way */
+.suhome img{position:absolute;display:block}
+.suhome .orbr{transform:scaleY(-1);opacity:.78;filter:blur(1.2px) brightness(.88)}
+/* the timetable: the square of light, its light on the crests, the stars */
 .sulight svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
-.sulight .sq{fill:none;stroke:#fff;stroke-linejoin:round;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 12px rgba(214,232,255,.9)) drop-shadow(0 0 34px rgba(170,205,255,.55))}
-.sulight .pool{mix-blend-mode:screen}
-.sulight g{transition:none}
+.sulight .sq{fill:none;stroke:#fff;stroke-linejoin:round;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 14px rgba(214,232,255,.9)) drop-shadow(0 0 40px rgba(170,205,255,.55))}
+.sulight .pool{opacity:.95}                          /* (the dunes' light, rendered as pale light whose opacity is its strength: render.py glows) */
+.sulight .stars circle{fill:#fff}
 /* the glitch: a moment of torn, shifted slices, then gone (and the same, backwards, where it comes back) */
-.sulight g.go{animation:suglitch .24s steps(1,end) forwards}
-.sulight g.come{animation:suglitch .2s steps(1,end) reverse both}
+.sulight .sqg.go{animation:suglitch .24s steps(1,end) forwards}
+.sulight .sqg.come{animation:suglitch .2s steps(1,end) reverse both}
 @keyframes suglitch{
   0%{opacity:1;transform:none;clip-path:none}
   20%{opacity:.9;transform:translateX(7px);clip-path:inset(0 0 52% 0)}
@@ -125,7 +150,30 @@ html[data-skin="surreal"][data-pg="timetable"]:not(.zen) .sulight{display:block;
   80%{opacity:.35;transform:translateX(-3px);clip-path:inset(10% 0 70% 0)}
   100%{opacity:0;transform:none;clip-path:inset(50% 0 50% 0)}
 }
-@media (max-aspect-ratio:4/5){ .sulight{display:none!important} }
+/* the planners: each mirror shows its sky (a strip and its mirror image, repeating), with a bright edge on its lit side */
+.suplan .pane{position:absolute;overflow:hidden}
+.suplan .pane i{position:absolute;left:0;top:50%;height:var(--th);width:calc(var(--T) * 2);margin-top:calc(var(--th) / -2);background-repeat:repeat-x;background-size:var(--T) 100%}
+.suplan .pane::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(255,255,255,.16),rgba(255,255,255,0) 40%,rgba(255,255,255,.08))}
+.suplan .pane.l{box-shadow:inset 3px 0 0 rgba(255,252,255,.95),inset -2px 0 0 rgba(110,110,150,.9)}
+.suplan .pane.r{box-shadow:inset -3px 0 0 rgba(255,252,255,.95),inset 2px 0 0 rgba(110,110,150,.9)}
+/* the rest: the disc, a little rim of shade inside its lower edge */
+.sumist .disc{position:absolute;border-radius:50%;overflow:hidden;box-shadow:inset 0 -6px 10px -4px rgba(10,16,12,.55),0 0 0 1px rgba(255,255,255,.08)}
+.sumist .disc i{position:absolute;display:block;background-size:100% 100%}
+/* the slow movements, only with Animation on */
+@media (prefers-reduced-motion:no-preference){
+  html[data-fx="on"]:not([data-motion="reduced"]) .suhome .orb{animation:subob 13s ease-in-out infinite alternate}
+  html[data-fx="on"]:not([data-motion="reduced"]) .suhome .orbr{animation:subobr 13s ease-in-out infinite alternate}
+  html[data-fx="on"]:not([data-motion="reduced"]) .sulight :is(.sq,.pool){animation:subreathe 6.5s ease-in-out infinite alternate}
+  html[data-fx="on"]:not([data-motion="reduced"]) .sulight .stars circle{animation:sutwinkle 5s ease-in-out infinite alternate}
+  html[data-fx="on"]:not([data-motion="reduced"]) .suplan .pane i{animation:sudrift var(--dur,150s) linear infinite}
+  html[data-fx="on"]:not([data-motion="reduced"]) .sumist .disc i{animation:sumist 34s ease-in-out infinite alternate}
+}
+@keyframes subob{from{transform:translateY(calc(var(--bob) * -1))}to{transform:translateY(var(--bob))}}
+@keyframes subobr{from{transform:scaleY(-1) translateY(calc(var(--bob) * -1))}to{transform:scaleY(-1) translateY(var(--bob))}}
+@keyframes subreathe{from{opacity:.82}to{opacity:1}}
+@keyframes sutwinkle{from{opacity:.15}to{opacity:.95}}
+@keyframes sudrift{to{transform:translateX(calc(var(--T) * -1))}}
+@keyframes sumist{from{transform:translateY(calc(var(--drift) * -1))}to{transform:translateY(var(--drift))}}
 
 /* changing page: the page itself goes soft and comes back (fx.js TR.surreal); the place behind never moves */
 html[data-skin="surreal"].fx-out .wrap{opacity:0;filter:blur(8px);transition:opacity .16s ease,filter .16s ease}

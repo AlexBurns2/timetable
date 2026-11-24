@@ -2,12 +2,12 @@
 
   home   the flooded Bonneville Salt Flats, a chrome sphere floating over them (ray traced against the photo itself,
          so its reflection is that sky and that water), and its reflection in the water below
-  tt     the Great Sand Dunes at dusk, as photographed (the square of light over them is drawn live: skins/surreal.js)
+  tt     the Great Sand Dunes under the Milky Way, as photographed (the square of light over them is drawn live: skins/surreal.js)
   plan   the Salar de Uyuni's crust before sunrise, four mirrors standing on it, each showing a piece of sky that isn't there
   mist   a forested mountain in cloud, with a disc of it lifted out of place
 
 usage: python render.py <folder with the downloaded photos> <out folder: images/surreal>
-The photographs (Commons; credited in Home > About) are su-flat.jpg, su-dunes.jpg, su-crust.jpg, su-mist.jpg.
+The photographs (Commons; credited in Home > About) are su-flat.jpg, su-milky.jpg, su-crust.jpg, su-mist.jpg.
 Each scene is written wide (1920 across) and upright for phones (-p). Nothing here runs on the site."""
 import sys, os, math
 import numpy as np
@@ -16,13 +16,17 @@ from PIL import Image, ImageFilter, ImageDraw
 SRC, OUT = sys.argv[1], sys.argv[2]
 os.makedirs(OUT, exist_ok=True)
 def load(n): return Image.open(os.path.join(SRC, n)).convert('RGB')
-def save(im, name, focus_x, q=74):
+LAYOUT = {}
+def save(im, name, focus_x, q=74, wide=True, phone=True):
+    """wide: name.webp (the backdrop the page draws its live things over); phone: name-p.webp, cut upright round focus_x
+    (phones get the whole picture baked, nothing live)"""
     w, h = im.size
     if w > 1920: im = im.resize((1920, round(h * 1920 / w)), Image.LANCZOS); w, h = im.size
-    im.save(os.path.join(OUT, name + '.webp'), quality=q, method=6)
-    pw = round(h * 0.62); x0 = max(0, min(w - pw, round(focus_x * w - pw / 2)))
-    im.crop((x0, 0, x0 + pw, h)).save(os.path.join(OUT, name + '-p.webp'), quality=q - 2, method=6)
-    print(name, im.size, os.path.getsize(os.path.join(OUT, name + '.webp')) // 1024, 'KB')
+    if wide: im.save(os.path.join(OUT, name + '.webp'), quality=q, method=6)
+    if phone:
+        pw = round(h * 0.62); x0 = max(0, min(w - pw, round(focus_x * w - pw / 2)))
+        im.crop((x0, 0, x0 + pw, h)).save(os.path.join(OUT, name + '-p.webp'), quality=q - 2, method=6)
+    print(name, im.size, 'wide' if wide else '', 'phone' if phone else '')
 
 def bilinear(img, u, v):
     """sample an HxWx3 float array at fractional pixel coords (u across, v down), clamped"""
@@ -88,7 +92,11 @@ def home():
     dark = Image.new('RGBA', (W, H), (40, 50, 70, 0)); dark.putalpha(sh)
     out.alpha_composite(dark)
     out.alpha_composite(s, (cx - R, cy - R))
-    save(out.convert('RGB'), 'home', 0.84)
+    save(out.convert('RGB'), 'home', 0.84, wide=False)
+    # wide screens: the flat alone, and the sphere on its own (surreal.js hangs it there, floating, with its reflection)
+    save(ph, 'home', 0.84, phone=False)
+    s.save(os.path.join(OUT, 'orb.webp'), quality=86, method=6)
+    LAYOUT['home'] = { 'w':W, 'h':H, 'orb':[cx, cy, R], 'water':yg }
 
 # ── plan: mirrors on the salt ──
 def mirror(tex, quad_h, lean=0.0, edge='l'):
@@ -119,6 +127,7 @@ def plan():
         (0.615, 0.765, 0.052, 0.13, (1380, 60, 1600, 480), (1.12, 0.80, 0.88), 'l', -4),
         (0.735, 0.935, 0.125, 0.355, (520, 0, 840, 520), (0.92, 0.95, 1.08), 'l', -14)
     ]
+    LAYOUT['plan'] = { 'w':W, 'h':H, 'panes':[] }
     for (lx, by, fw, fh, box, tint, edge, tilt) in panes:
         pw, phh = round(fw * W), round(fh * H)
         tex = sky(box, tint, 0.72).resize((pw, phh), Image.LANCZOS)
@@ -126,6 +135,7 @@ def plan():
         x0, y1 = round(lx * W), round(by * H); y0 = y1 - phh
         # turned a little: one vertical edge shorter (the far one), the top and bottom edges tilt toward it
         quad_dst = [(x0, y0 + max(0, tilt)), (x0, y1), (x0 + pw, y1 - tilt * .35), (x0 + pw, y0 + max(0, -tilt))]
+        LAYOUT['plan']['panes'].append({ 'q':[[round(a, 1), round(b, 1)] for a, b in quad_dst], 'sky':'rose' if tint[0] > 1 else 'pale', 'edge':edge })
         layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
         bb = tuple(int(round(f(p[i] for p in quad_dst))) for f, i in ((min, 0), (min, 1), (max, 0), (max, 1)))
         bw, bh = bb[2] - bb[0], bb[3] - bb[1]
@@ -143,6 +153,12 @@ def plan():
         layer.alpha_composite(warped, (bb[0], bb[1]))
         out.alpha_composite(layer)
     save(out.convert('RGB'), 'plan', 0.79)
+    # the skies the mirrors show on a wide screen, drifting slowly (surreal.js): the Bonneville clouds, rose and pale
+    # (each is the strip and its mirror image side by side, so it repeats without a seam)
+    for nm, tint in (('rose', (1.12, 0.78, 0.86)), ('pale', (0.92, 0.95, 1.08))):
+        t = sky((0, 0, 1920, 560), tint, 0.72).resize((1080, 315), Image.LANCZOS)
+        two = Image.new('RGB', (2160, 315)); two.paste(t, (0, 0)); two.paste(t.transpose(Image.FLIP_LEFT_RIGHT), (1080, 0))
+        two.save(os.path.join(OUT, 'sky-' + nm + '.webp'), quality=70, method=6)
 
 # ── mist: a disc of the mountain, lifted ──
 def mist():
@@ -161,10 +177,59 @@ def mist():
     rim = rim.resize((W, H), Image.LANCZOS).filter(ImageFilter.GaussianBlur(3))
     out = Image.composite(Image.new('RGB', (W, H), (20, 26, 22)), out, rim.point(lambda v: v * 0.6))
     save(out, 'mist', 0.78)
+    LAYOUT['mist'] = { 'w':W, 'h':H, 'disc':[cx, cy, R], 'shift':[dx, -dy] }
+
+# the timetable's square of light: where it hangs (photo pixels: centre, size) and the light it throws on the dunes. The
+# light is worked out from the photograph itself so it follows the terrain: only below the skyline (traced by hand: the
+# mountain on the left, then the dune crests), falling off with distance across and in depth (how far in front of the
+# crest line a pixel lies), shaded by the sand's own moonlit shading (so slopes and hollows show), with a fine bright rim
+# along the crest right under it. Each is saved as pale light whose opacity is its strength (glow-a, glow-b; surreal.js).
+SQUARES = { 'a':(1180, 770, 420), 'b':(620, 935, 140) }
+SKYLINE = [(0, 860), (60, 862), (130, 900), (250, 935), (330, 930), (420, 952), (500, 1000), (560, 1032), (700, 1040), (780, 1016), (830, 1008),
+           (900, 1022), (1000, 1060), (1100, 1090), (1200, 1110), (1300, 1122), (1400, 1140), (1550, 1160), (1700, 1166), (1800, 1175), (1920, 1180)]
+def glows():
+    ph = load('su-milky.jpg'); W, H = ph.size
+    xs = np.arange(W); sky = np.interp(xs, [p[0] for p in SKYLINE], [p[1] for p in SKYLINE])
+    Lm = np.asarray(ph.convert('L').filter(ImageFilter.GaussianBlur(1.5)), np.float32) / 255
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    below = yy - sky[None, :]
+    terrain = np.clip(below / 3.0, 0, 1)                                    # (a 3 px feather at the skyline)
+    lo, hi = np.percentile(Lm[below > 20], [5, 97]); sand = np.clip((Lm - lo) / (hi - lo), 0, 1)
+    LAYOUT['tt']['glow'] = {}
+    for k, (cx, cy, s) in SQUARES.items():
+        dx = (xx - cx) / (s * 1.15)
+        crest = np.interp(cx, xs, sky)
+        dz = (yy - np.maximum(sky[None, :], crest - s * .1)) / (s * .42)   # in front of the crest line, roughly how far toward us
+        f = 1 / (1 + dx * dx + dz * dz) ** 1.9
+        rim = np.exp(-np.clip(below, 0, None) / 3.5) * np.exp(-dx * dx * 2.2) * (below >= 0)
+        I = terrain * (f * (0.15 + 0.9 * sand ** 0.9) * 0.72 + rim * 0.8)
+        x0, x1 = 0, W; y0 = int(max(0, sky.min() - 6))                     # (the whole width: a cut edge would show)
+        I = I[y0:, x0:x1]
+        # pale blue light whose strength is its opacity: laid over the photo it brightens it as the light would (the page
+        # can't blend a layer with the photo under it, so no screen blend)
+        rgba = np.zeros(I.shape + (4,), np.uint8); rgba[..., 0], rgba[..., 1], rgba[..., 2] = 214, 228, 255
+        rgba[..., 3] = (np.clip(I, 0, 1) * 255).astype(np.uint8)
+        Image.fromarray(rgba, 'RGBA').save(os.path.join(OUT, 'glow-' + k + '.webp'), quality=84, method=6)
+        LAYOUT['tt']['glow'][k] = [x0, y0, x1 - x0, H - y0]
+        print('glow', k, (x0, y0, x1 - x0, H - y0))
 
 def dunes():
-    ph = load('su-dunes.jpg')
-    save(ph, 'tt', 0.55)
+    """the Great Sand Dunes under the Milky Way: a sky big enough for the square of light to have its scale"""
+    ph = load('su-milky.jpg')
+    save(ph, 'tt', 0.58, q=62, phone=False)
+    LAYOUT['tt'] = { 'w':ph.size[0], 'h':ph.size[1] }
+    glows()
+    # an upright phone gets it baked: the near square, its light on the dunes, its glow
+    from PIL import ImageChops
+    W, H = ph.size; g = Image.open(os.path.join(OUT, 'glow-a.webp')).convert('RGBA')
+    out = ph.convert('RGBA'); out.alpha_composite(g, (0, H - g.size[1])); out = out.convert('RGB')
+    cx, cy, sz = SQUARES['a']; q = [(-.5, -.36), (.5, -.56), (.5, .5), (-.5, .56)]; pts = [(cx + a * sz, cy + b * sz) for a, b in q]
+    for width, blur, alpha in ((26, 30, 110), (10, 8, 200), (5, 0, 255)):
+        m = Image.new('L', (W, H), 0); ImageDraw.Draw(m).line(pts + [pts[0]], fill=alpha, width=width, joint='curve')
+        if blur: m = m.filter(ImageFilter.GaussianBlur(blur))
+        out = Image.composite(Image.new('RGB', (W, H), (232, 242, 255)), out, m)
+    save(out, 'tt', 0.58, q=62, wide=False)
 
 if __name__ == '__main__':
     for f in sys.argv[3:] or ['home', 'plan', 'mist', 'dunes']: globals()[f]()
+    import json; print('LAYOUT', json.dumps(LAYOUT))       # (copied into skins/surreal.js)

@@ -17,7 +17,9 @@
     hongkong:  { tz:'Asia/Hong_Kong',   loc:'zh-HK', name:'Hong Kong', local:'香港',   lang:'zh-HK' },
     chongqing: { tz:'Asia/Shanghai',    loc:'zh-CN', name:'Chongqing', local:'重庆',   lang:'zh-CN' },
     losangeles:{ tz:'America/Los_Angeles', loc:'en-US', name:'Los Angeles', local:'Los Angeles', lang:'en-US' },
-    edinburgh: { tz:'Europe/London',    loc:'en-GB', name:'Edinburgh', local:'Edinburgh', lang:'en-GB' }
+    edinburgh: { tz:'Europe/London',    loc:'en-GB', name:'Edinburgh', local:'Edinburgh', lang:'en-GB' },
+    /* EDinburgh (theme.js 'ed', html[data-ed]): Edinburgh in every way but its name */
+    ed:        { tz:'Europe/London',    loc:'en-GB', name:'EDinburgh', local:'EDinburgh', lang:'en-GB' }
   };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 
@@ -29,7 +31,7 @@
       if (id === 'sydney') return new Intl.DateTimeFormat('en-AU', { timeZone:c.tz, day:'numeric', month:'short', year:'numeric' }).format(d).replace(/\./g, '').toUpperCase();
       /* the month first, like a US postmark (NOV 24 2026); Edinburgh's day with its ordinal (24th November 2026) */
       if (id === 'losangeles') return new Intl.DateTimeFormat('en-US', { timeZone:c.tz, month:'short', day:'numeric', year:'numeric' }).format(d).replace(',', '').toUpperCase();
-      if (id === 'edinburgh'){
+      if (id === 'edinburgh' || id === 'ed'){
         const p = {}; new Intl.DateTimeFormat('en-GB', { timeZone:c.tz, day:'numeric', month:'long', year:'numeric' }).formatToParts(d).forEach(x => p[x.type] = x.value);
         const n = +p.day, th = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th';
         return n + th + ' ' + p.month + ' ' + p.year;
@@ -66,6 +68,7 @@
     edinburgh:(k, day) => ({ clear:day ? 'Sunny day' : 'Clear night', mostly:day ? 'Sunny intervals' : 'Partly cloudy', partly:day ? 'Sunny intervals' : 'Partly cloudy', cloud:'Overcast',
                              fog:'Mist', drizzle:'Drizzle', rain:'Light rain', showers:'Light shower', snow:'Light snow', snowshowers:'Sleet', storm:'Thunder' })[k]
   };
+  WORDS.ed = WORDS.edinburgh;
   /* Los Angeles reads Fahrenheit; the server sends Celsius */
   const F = c => Math.round(c * 9 / 5 + 32);
   const degrees = (id, v) => id === 'losangeles' && isFinite(v) ? F(v) : v;
@@ -81,6 +84,7 @@
   };
   const SUN = { sydney:['Sunrise', 'Sunset'], tokyo:['日の出', '日の入り'], hongkong:['日出', '日落'], chongqing:['日出', '日落'], losangeles:['Sunrise', 'Sunset'], edinburgh:['Sunrise', 'Sunset'] };
   const UNIT = { sydney:'°', tokyo:'℃', hongkong:'°', chongqing:'℃', losangeles:'°F', edinburgh:'°C' };
+  RANGE.ed = RANGE.edinburgh; SUN.ed = SUN.edinburgh; UNIT.ed = UNIT.edinburgh;
   /* "2026-11-21T06:12" is already the city's own clock: 6:12 (5:42 am in Sydney) */
   function hm(iso, id){
     const m = /T(\d\d):(\d\d)/.exec(String(iso || ''));
@@ -161,10 +165,10 @@
         '<span class="p">明信片 · 定价 ¥3.00</span></div>';
     }
     if (id === 'losangeles') return '<div class="ctp-air">Via Air Mail<span>Por Avión</span></div>';
-    if (id === 'edinburgh'){
+    if (id === 'edinburgh' || id === 'ed'){
       /* the bar: process colours, then a grey ramp, as printed in a sheet's margin */
       const sw = ['#00a3d9', '#e2007a', '#ffe500', '#1a1a1a', '#5a5a5a', '#9a9a9a', '#d0d0d0'];
-      return '<div class="ctp-bar">' + sw.map(c => '<i style="background:' + c + '"></i>').join('') + '<b>Printed in Edinburgh</b></div>';
+      return '<div class="ctp-bar">' + sw.map(c => '<i style="background:' + c + '"></i>').join('') + '<b>Printed in ' + CITY[id].local + '</b></div>';
     }
     return '';
   }
@@ -250,7 +254,7 @@
   }
 
   function look(){
-    const id = root.getAttribute('data-city') || '';
+    const id = root.hasAttribute('data-ed') ? 'ed' : root.getAttribute('data-city') || '';
     const want = CITY[id] ? id : '';
     if (want === on) return;
     off();

@@ -4888,3 +4888,36 @@ The owner committed 8.192 as `hint`. Photos: PHOTO-LOG.md (2026-11-24); credits 
   moderators only.
 
 Next free stamp: `n` / v121.
+
+## 8.194 EDinburgh's name, city colours, Surrealism reworked (version `20261124n`, `CACHE_VERSION` v121)
+The owner committed 8.193 as `surreal`.
+
+**EDinburgh** says EDinburgh everywhere: the big name (cities.css `:root[data-city="edinburgh"][data-ed]`), the clock
+(theme.js `cityClock` uses the `ed` entry, whose `local` is EDinburgh), and Home's weather stamp and the print line
+(cities.js `CITY.ed`, which `look()` picks when `html[data-ed]`).
+
+**City colours.** LA and Edinburgh had been too close to Chongqing and to black and white. Each city's night duotone is
+now the same pair as its day one, only deeper; Sydney is untouched (the owner: "don't touch sydney").
+- **LA:** swimming-pool ultramarine and sunset coral, day and night.
+- **Edinburgh:** bottle green and whisky gold, day and night, with a tartan red accent by day and gold at night.
+
+**Surrealism reworked** after the owner's notes: bland; the dunes lost the reference's scale; panes should be glassier;
+more life behind.
+- **Timetable:** now the Great Sand Dunes under the Milky Way. The square of light is large and high, with a
+  smaller one over a far dune for the glitch.
+- **Its light follows the terrain.** render.py `glows()` works it out from the photo: below a hand-traced skyline,
+  falling off across and in depth, shaded by the sand's own moonlight, with a rim along the crest under the square. It
+  is saved as pale light whose opacity is its strength (`glow-a`, `glow-b`). A screen blend can't reach the photo from
+  the live layer.
+- **The objects are live layers** on wide screens (surreal.js `SCENE`, in photo pixels, kept in step with the CSS
+  background positions):
+  - Home: the sphere (`orb.webp`) floats slowly, its reflection moving the other way;
+  - planners: the mirrors' skies drift (`sky-rose`, `sky-pale`, seamless strips);
+  - other pages: the disc's mountain drifts;
+  - timetable: stars twinkle and the square's glow breathes.
+
+  All of it holds still with Animation off. An upright phone gets everything baked into the -p pictures.
+- **Glass panes:** clear (about 20% white), blurred and saturated, with a bright top and left edge, a faint red and blue
+  split along the rims, a sheen, and a long shadow far below. The timetable uses dark glass on the night.
+
+Next free stamp: `o` / v122.

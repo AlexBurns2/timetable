@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261124m';
+const ASSET_V = '20261124n';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -99,7 +99,7 @@ const SKINS = [
      in the repo (which is public): the server gives it to signed-in people only (/api/leaderboard?edphoto=1, from the
      ED_PHOTO environment variable). Picking any theme leaves it. */
   { id:'ed',        name:'EDinburgh', both:true, secret:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700',
-    city:{ tz:'Europe/London', locale:'en-GB', local:'Edinburgh' }, cityAs:'edinburgh', back:'Pick a theme in the Theme finder to go back.' },
+    city:{ tz:'Europe/London', locale:'en-GB', local:'EDinburgh' }, cityAs:'edinburgh', back:'Pick a theme in the Theme finder to go back.' },
   /* the originals */
   { id:'o-paper',     name:'Notebook',  legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy', font:'family=Caveat:wght@500;700&family=Patrick+Hand' },
   { id:'o-swiss',     name:'Swiss',     legacy:true, both:true,  ic:'tile', is:'icons', css:'legacy' },
@@ -275,7 +275,7 @@ SKINS.forEach(s => {
    halftone over the photo in the city's two inks (the photo in greys, multiplied by the scale colour, screened with
    the dark ink). [dark ink, scale colour] for each, the day pair from cities.css. The blend rides along in the same
    style attribute as the background (every place that draws a swatch writes style="background:…"). */
-const CITY_DUO = { sydney:['#0b5560', '#f5ecdd'], tokyo:['#28262c', '#ec3518'], hongkong:['#1c2654', '#f6a792'], chongqing:['#351a18', '#f09e56'], losangeles:['#1c2a4a', '#f7cf82'], edinburgh:['#1f2a33', '#e9dab5'] };
+const CITY_DUO = { sydney:['#0b5560', '#f5ecdd'], tokyo:['#28262c', '#ec3518'], hongkong:['#1c2654', '#f6a792'], chongqing:['#351a18', '#f09e56'], losangeles:['#1d3a8a', '#ff9f2c'], edinburgh:['#13372d', '#edc971'] };
 SKINS.filter(s => s.city).forEach(s => {
   const d = CITY_DUO[s.id] || ['#222222', '#dddddd'];
   s.swatch = 'radial-gradient(circle,rgba(0,0,0,.3) 0 .55px,transparent 1px) 0 0/3px 3px,linear-gradient(' + d[0] + ',' + d[0] + '),linear-gradient(' + d[1] + ',' + d[1] + '),' +
@@ -1276,7 +1276,8 @@ if (PREVIEW){
 let cityTimer = 0;
 function cityClock(){
   try {
-    const sk = SKINS.find(s => s.id === document.documentElement.getAttribute('data-city')), c = sk && sk.city;
+    /* (EDinburgh draws as Edinburgh but its clock says EDinburgh: its own entry) */
+    const sk = SKINS.find(s => s.id === (document.documentElement.hasAttribute('data-ed') ? 'ed' : document.documentElement.getAttribute('data-city'))), c = sk && sk.city;
     document.querySelectorAll('.cityclock').forEach(e => { if (!c || e.dataset.clock !== sk.id) e.remove(); });
     clearInterval(cityTimer); cityTimer = 0;
     if (!c || !document.body) return;

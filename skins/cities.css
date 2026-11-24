@@ -64,20 +64,20 @@
 :root[data-city="losangeles"]{
   --ct-day:url(../images/city/losangeles-day.webp); --ct-night:url(../images/city/losangeles-night.webp);
   --ct-day-p:url(../images/city/losangeles-day-p.webp); --ct-night-p:url(../images/city/losangeles-night-p.webp);
-  --ct-tint:linear-gradient(180deg,#9cc0e0 0%,#e8e4dc 55%,#f3cfa0 100%); --ct-tint-n:linear-gradient(180deg,#070a1a,#141a36 60%,#4a2a14);
+  --ct-tint:linear-gradient(180deg,#5b86d6 0%,#f2d6cc 55%,#ffb59e 100%); --ct-tint-n:linear-gradient(180deg,#060c26,#13245a 60%,#7a3a4a);
   --ct-name:"Los Angeles"; --ct-face:"Overpass",system-ui,sans-serif; --ct-w:900; --ct-ls:-.03em; --ct-tt:uppercase;
-  --accent:#d9572e; --ct-accent-n:#ffb25a; --ct-pos:center 55%; --ct-pos-n:center 45%;   /* a smoggy sunset's orange; the grid's sodium amber */
-  --ct-lo:#1c2a4a; --ct-hi:#f8d7a6; --ct-lo-n:#0a0d1e; --ct-hi-n:#ffb25a; --ct-m:#f7cf82; --ct-m-n:#ffae44; --ct-size:13vw; --ct-em:7.4;   /* haze navy and sand; night navy and amber */
+  --accent:#e2503c; --ct-accent-n:#ff9a7a; --ct-pos:center 55%; --ct-pos-n:center 45%;   /* a pool-side sunset's coral, day and night */
+  --ct-lo:#1d3a8a; --ct-hi:#ffb59e; --ct-lo-n:#0c1a4a; --ct-hi-n:#ff9a7a; --ct-m:#ff9f2c; --ct-m-n:#ff8f44; --ct-size:13vw; --ct-em:7.4;   /* swimming-pool ultramarine and sunset coral, day and night (one identity) */
 }
 /* Edinburgh: the Old Town's skyline from Calton Hill (its cannon, the castle, the Dugald Stewart monument) by day, the castle
    over Princes Street at dusk. Its name in Cormorant, a Garamond: the city printed the Encyclopaedia Britannica. */
 :root[data-city="edinburgh"]{
   --ct-day:url(../images/city/edinburgh-day.webp); --ct-night:url(../images/city/edinburgh-night.webp);
   --ct-day-p:url(../images/city/edinburgh-day-p.webp); --ct-night-p:url(../images/city/edinburgh-night-p.webp);
-  --ct-tint:linear-gradient(180deg,#a9b9c8 0%,#e3e1d9 55%,#d8cdb4 100%); --ct-tint-n:linear-gradient(180deg,#070a14,#141a2c 60%,#3a2a1a);
+  --ct-tint:linear-gradient(180deg,#4f7a62 0%,#e6dcb8 55%,#eed58a 100%); --ct-tint-n:linear-gradient(180deg,#040c08,#0f2a1d 60%,#5a4a1e);
   --ct-name:"Edinburgh"; --ct-face:"Cormorant Garamond","Garamond",serif; --ct-w:700; --ct-ls:-.01em; --ct-tt:none;
-  --accent:#2c5b8c; --ct-accent-n:#f2c98a; --ct-pos:center 45%; --ct-pos-n:20% 40%;   /* the saltire's blue, deepened; the castle's floodlit stone */
-  --ct-lo:#1f2a33; --ct-hi:#ece0c4; --ct-lo-n:#0a0e1a; --ct-hi-n:#f2c98a; --ct-m:#e9dab5; --ct-m-n:#f1c67d; --ct-size:21vw; --ct-em:4.3;   /* slate and sandstone; night slate and lit stone */
+  --accent:#a3262a; --ct-accent-n:#e8c25e; --ct-pos:center 45%; --ct-pos-n:20% 40%;   /* a tartan's red; the gold at night */
+  --ct-lo:#13372d; --ct-hi:#eed58a; --ct-lo-n:#07170e; --ct-hi-n:#e8c25e; --ct-m:#edc971; --ct-m-n:#e7bc55; --ct-size:21vw; --ct-em:4.3;   /* bottle green and whisky gold, day and night (one identity) */
 }
 
 /* ── the shared look: light (day) ── */
@@ -176,7 +176,9 @@ html[data-city].fx-enter .wrap{animation:ctblurin .34s ease-out backwards}
 html.zen[data-city] body::before,html.zen[data-city]::after,
 [data-city][data-pg="hkmahjong"] body::before,html[data-city][data-pg="hkmahjong"]::after{display:none}
 html.zen[data-city] body{background:transparent}
-/* EDinburgh (theme.js SKINS 'ed'): Edinburgh with Ed's photo stretched to fill the card instead of the city, as it is */
+/* EDinburgh (theme.js SKINS 'ed'): Edinburgh with Ed's photo stretched to fill the card instead of the city, as it is,
+   and its own name wherever Edinburgh's would be (here the big one; cities.js and theme.js the rest) */
+:root[data-city="edinburgh"][data-ed]{--ct-name:"EDinburgh"}
 html[data-ed][data-edimg] body::before{background:var(--ed-img) 0 0/100% 100% no-repeat #222;background-blend-mode:normal;filter:none}
 
 /* ── the site: clear frosted glass on the photograph, the same in every city ── */

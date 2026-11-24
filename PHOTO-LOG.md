@@ -186,3 +186,13 @@ thumbnails (about 55 pictures in all, roughly 2 MB), none kept.
 
 Not a download: the photo of a student for the secret EDinburgh theme was given by the owner in chat (with the student's
 agreement). It is **not in the repo**; it goes in the `ED_PHOTO` environment variable (see HANDOFF 8.193).
+
+## 2026-11-24, later: Surrealism's timetable (HANDOFF 8.194)
+The owner wanted the square of light to have the scale of their reference, so the dunes needed a big sky. One contact sheet
+of nine 480 px previews (night dune photos), none kept, then:
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-24 | Milky Way over Dunes (Great Sand Dunes NP), 1920 px | https://commons.wikimedia.org/wiki/File:Milky_Way_over_Dunes_(41586295991).jpg | public domain | 815 KB | `images/surreal/tt*.webp`, and the light on the dunes (`glow-a`, `glow-b`) worked out from it; credited |
+
+Mars Over Dunes (above) is **no longer used**; its credit in About was replaced.
