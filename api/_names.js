@@ -106,8 +106,8 @@ export async function rosterList() {
   rosterAt = Date.now();
   return roster;
 }
-/* ── Year labels on the leaderboards (back on 2026-11-24; SHOW_YEARS) ──
-   History: briefly switched off the same day.
+/* ── OFF (2026-11-24): year labels on the leaderboards ─────────────────
+   Turned back on once the same day; the years were still wrong, so off again.
    Turned off because the years shown were wrong. The year comes from the school
    directory as copied into student_cache (rosterList); check that against the
    real years before turning it back on. Kept here, wired in but switched off, so it can come
@@ -122,7 +122,7 @@ export async function rosterList() {
    Year 12 is a graduate, and anyone else who left gets nothing. (Read straight
    from the school directory, without the copy, everyone listed is current.) */
 const GONE = 3 * 864e5;            // not refreshed for 3 days longer than the newest row: no longer listed
-export const SHOW_YEARS = true;
+export const SHOW_YEARS = false;
 export async function yearTags() {
   if (!SHOW_YEARS) return new Map();          // off: every name is left as it is
   let list = [];
