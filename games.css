@@ -1832,3 +1832,47 @@ html[data-motion="reduced"] .wtc.fresh{animation:none}
 .msgat{font-size:.75rem;color:var(--muted);white-space:nowrap}
 /* moderator Forum: who a thread is for */
 .modscope{flex:none;align-self:center;margin-right:6px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
+
+/* ── Jim Together: the shared LED board above the button ── */
+/* Laid out by the game's own width (container queries), so it fits any window shape:
+   wide, the button dead centre with the board in the right-hand column; middling, the
+   board beside it; narrow, the board underneath. */
+.jt{container-type:inline-size}
+.jt .jimplay{grid-template-columns:minmax(0,1fr);gap:24px}
+.jt .jimmain{gap:clamp(12px,2.2vh,22px)}
+.jt .jimlb{width:100%;max-width:420px;justify-self:center}
+@container (min-width:720px){
+  .jt .jimplay{grid-template-columns:minmax(0,1fr) minmax(220px,300px)}
+  .jt .jimlb{justify-self:stretch}
+}
+@container (min-width:1080px){
+  .jt .jimplay{grid-template-columns:minmax(0,1fr) minmax(0,600px) minmax(0,1fr)}
+  .jt .jimmain{grid-column:2}
+  .jt .jimlb{grid-column:3;max-width:320px;justify-self:start}
+}
+/* no panel behind it; the button grows with the window, but never taller than the screen allows */
+.jt .jimpanel{background:none;border:0;padding:clamp(8px,2vh,24px) 0}
+.jt .jimplay{--jt-size:clamp(190px,min(34vh,70cqi),320px)}
+.jt .btn-outer{width:var(--jt-size);height:var(--jt-size)}
+.jt .btn-ring{width:calc(var(--jt-size) * .91);height:calc(var(--jt-size) * .91)}
+.jt .name-btn{width:calc(var(--jt-size) * .81);height:calc(var(--jt-size) * .81);padding:14px}
+.jt .name-btn::before{filter:blur(6px)}
+.jtanon .nm{color:var(--muted);font-style:italic}
+
+.jtled{width:100%;max-width:560px;padding:12px 16px 14px;border-radius:12px;background:#0b0b0c;
+  border:3px solid #26262a;box-shadow:inset 0 0 0 1px #000,inset 0 2px 14px rgba(0,0,0,.9),0 6px 18px rgba(0,0,0,.35)}
+.jtledhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;
+  font-family:var(--font-num);font-size:0.625rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:#ff9d1c;text-shadow:0 0 6px rgba(255,140,0,.75)}
+.jtlive{display:inline-flex;align-items:center;gap:6px}
+.jtlive i{width:7px;height:7px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30;animation:jimdot 1.4s ease-in-out infinite}
+.jtdigits{display:flex;justify-content:center;gap:clamp(3px,1cqi,7px);--dot:clamp(3px,1.1cqi,7px)}
+.jtdig{display:grid;grid-template-columns:repeat(5,var(--dot));grid-template-rows:repeat(7,var(--dot));gap:calc(var(--dot) * .3)}
+.jtdig i{border-radius:50%;background:#2a1606}
+.jtdig i.on{background:#ffb22e;box-shadow:0 0 calc(var(--dot) * .9) rgba(255,150,20,.95)}
+.jtsep{width:calc(var(--dot) * .6)}
+.jtled.flash .jtdig i.on{animation:jtflash .35s ease-out}
+@keyframes jtflash{0%{background:#fff3c4;box-shadow:0 0 calc(var(--dot) * 1.6) rgba(255,200,80,1)}100%{}}
+.jt .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.jtnote{text-align:center;max-width:360px;margin:0}
+html[data-motion="reduced"] .jtlive i,html[data-motion="reduced"] .jtled.flash .jtdig i.on{animation:none}

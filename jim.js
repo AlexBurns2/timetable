@@ -266,3 +266,261 @@ BUILD.jim = host => {
     [nameAudio, randomAudio, achAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });
   };
 };
+
+/* ── Jim Together ──────────────────────────────────────────────────────
+   The Jim Button for everyone at once: one shared count on an LED board above
+   the button, synced across every player, and a board of who has pressed the
+   most. No achievements or reset. The button says your first name when there's
+   a recording of it (jim/<name>.wav), and JIM when there isn't; the mode button
+   under it goes your name → JIM → a random name → your name.
+   Shares /api/jim (?together=1). */
+const JT_POLL = 2000;
+/* 5×7 dot-matrix digits, one string of five 0/1 per row */
+const JT_FONT = {
+  0:['01110','10001','10011','10101','11001','10001','01110'], 1:['00100','01100','00100','00100','00100','00100','01110'],
+  2:['01110','10001','00001','00010','00100','01000','11111'], 3:['11111','00010','00100','00010','00001','10001','01110'],
+  4:['00010','00110','01010','10010','11111','00010','00010'], 5:['11111','10000','11110','00001','00001','10001','01110'],
+  6:['00110','01000','10000','11110','10001','10001','01110'], 7:['11111','00001','00010','00100','01000','01000','01000'],
+  8:['01110','10001','10001','01110','10001','10001','01110'], 9:['01110','10001','10001','01111','00001','00010','01100'],
+  ' ':['00000','00000','00000','00000','00000','00000','00000']
+};
+const jtDigit = ch => '<span class="jtdig">' + JT_FONT[ch].join('').split('').map(b => '<i' + (b === '1' ? ' class="on"' : '') + '></i>').join('') + '</span>';
+
+BUILD.jimall = host => {
+  let alive = true, pollTimer = null, flushTimer = null, glowTimer = null, tickTimer = null;
+  let pending = 0, inflight = 0, sending = false, pressLocked = false;
+  let server = 0, shown = 0, mine = 0, myName = null, top = null, anonTotal = 0;
+  const jimAudio = new Audio(JIM_DIR + 'jim.mp3'), stanleyAudio = new Audio(JIM_DIR + 'stanley.mp3'), nameAudio = new Audio();
+  /* muted: the button still presses and counts, just silently (remembered on this device) */
+  let muted = !!TT.get('tt.jtmute', false);
+  const play = a => { if (muted) return Promise.resolve(); a.currentTime = 0; return a.play(); };
+  const signedIn = !!(window.TT && TT.myEmail && TT.myEmail());
+  /* signed out: a random id this browser keeps, so its presses have a row of their own */
+  const anon = (() => { let id = TT.get('tt.jtanon', '');
+    if (!/^[a-z0-9]{8,40}$/.test(id)){ id = (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 20); TT.set('tt.jtanon', id); }
+    return id; })();
+
+  /* who you are comes from your site login: your login's first name straight away, then
+     the name the rest of the site shows for you (with any change made on the site) once
+     the server answers. Not signed in: JIM. */
+  const emailFirst = () => { const e = TT.myEmail && TT.myEmail(); return e ? e.split('@')[0].split(/[._]/)[0].replace(/\d+$/, '') : ''; };
+  let label = 'JIM', hasName = false, nameFor = '', mode = 'name';
+  const randomAudio = new Audio();
+
+  /* wider than the page column on a big screen, centred on the visible window (clientWidth, which
+     leaves out the scrollbar), so the button sits mid-screen with the board beside it. Only width
+     and margin are touched, and both go back when you leave: the stage is shared by every game. */
+  const fitWide = () => {
+    host.style.width = ''; host.style.marginLeft = '';
+    const vw = document.documentElement.clientWidth, base = host.getBoundingClientRect();
+    const w = Math.max(base.width, Math.min(vw - 32, 1500));
+    if (w <= base.width + 1) return;
+    host.style.width = w + 'px';
+    host.style.marginLeft = Math.round((vw - w) / 2 - base.left) + 'px';
+  };
+  fitWide();
+  addEventListener('resize', fitWide);
+  head(host, 'The Jim Button: Together');
+  const box = document.createElement('div');
+  box.className = 'jim jt';
+  host.appendChild(box);
+  box.innerHTML =
+    '<div class="jimplay">' +
+      '<div class="jimmain">' +
+        '<div class="jtled" role="status" aria-live="off">' +
+          '<div class="jtledhd"><span>Pressed by everyone</span><span class="jtlive"><i></i>live</span></div>' +
+          '<div class="jtdigits" id="jtdigits" aria-hidden="true"></div>' +
+          '<span class="sr" id="jtsr"></span>' +
+        '</div>' +
+        '<div class="jimpanel">' + jimButtonHTML(label, 'jtbtn') + '</div>' +
+        '<div class="jimcount"><span class="lbl">Your presses</span><span class="num" id="jtmine">' + (signedIn ? '…' : '—') + '</span></div>' +
+        '<div class="jimctl"><button class="btn" type="button" id="jtmode">Playing: <b id="jtmodelbl">JIM</b></button>' +
+          '<button class="btn" type="button" id="jtmute" aria-pressed="false"></button></div>' +
+        (signedIn ? '' : '<p class="how jtnote">Sign in on the timetable to get your presses on the board. They still count towards the total.</p>') +
+      '</div>' +
+      '<div class="glb jimlb"><div class="glbhd"><h3>Top pressers</h3><span class="jimlive"><i></i>live</span></div>' +
+        '<div id="jtrows">' + (TT.loader ? TT.loader('', '', { sm:true }) : '<p class="how">Loading…</p>') + '</div></div>' +
+    '</div>';
+
+  /* the name on the button: yours if there's a recording of it, else JIM */
+  const setLabel = name => {
+    const b = document.querySelector('#jtbtn .name-btn'); if (!b) return;
+    b.textContent = name;
+    const n = name.length;
+    /* Jim's sizes for a 200px button (rem at 16px), scaled to this one's size */
+    const rem = n <= 4 ? 2.4 : n <= 6 ? 1.9 : n <= 8 ? 1.5 : n <= 11 ? 1.2 : n <= 14 ? 0.95 : 0.78;
+    b.style.fontSize = 'calc(var(--jt-size, 200px) * ' + (rem * 16 / 200).toFixed(4) + ')';
+  };
+  /* what the mode button says, and what the button shows until it's next pressed */
+  const paintMode = () => { const l = $('jtmodelbl'); if (!l) return;
+    l.textContent = mode === 'jim' ? 'JIM' : mode === 'random' ? 'RANDOM' : (hasName ? label : 'YOUR NAME (JIM)');
+    if (mode === 'jim') setLabel('JIM'); else if (mode === 'name') setLabel(label); else setLabel('???'); };
+  /* the button says your first name when there's a recording of it, else JIM */
+  function useName(full){
+    const first = String(full || '').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z'-]/g, '');
+    if (!first || first === nameFor) return;
+    nameFor = first;
+    /* the recording itself, not names.json (which misses a few) */
+    fetch(JIM_DIR + first + '.wav', { method:'HEAD' }).then(r => r.ok, () => false).then(ok => {
+      if (!alive || nameFor !== first) return;
+      hasName = ok;
+      label = hasName ? first.toUpperCase() : 'JIM'; paintMode();
+      if (hasName){ nameAudio.src = JIM_DIR + first + '.wav'; nameAudio.load(); }
+    });
+  }
+  setLabel(label);
+  if (signedIn) useName(emailFirst());
+
+  /* ── the LED board: blank leading places, digits re-drawn only when they change ── */
+  const PLACES = 9;
+  let drawn = [];
+  function paintLED(n){
+    const s = String(Math.max(0, Math.floor(n))), w = Math.max(PLACES, s.length), str = s.padStart(w, ' ');
+    const el = $('jtdigits'); if (!el) return;
+    if (drawn.length !== w){
+      el.innerHTML = str.split('').map((ch, i) => (i && (w - i) % 3 === 0 ? '<span class="jtsep"></span>' : '') + jtDigit(ch)).join('');
+      drawn = str.split('');
+    } else {
+      const digs = el.querySelectorAll('.jtdig');
+      str.split('').forEach((ch, i) => { if (drawn[i] !== ch){ digs[i].outerHTML = jtDigit(ch); drawn[i] = ch; } });
+    }
+    $('jtsr').textContent = s + ' presses by everyone';
+  }
+  /* what the board should say: the server's count plus presses of yours it hasn't seen yet */
+  const target = () => server + pending + inflight;
+  function showTotal(){
+    const t = target();
+    if (t <= shown){ paintLED(shown); return; }
+    if (t - shown <= 1){ shown = t; paintLED(shown); return; }
+    /* other people's presses roll in over about a second */
+    clearInterval(tickTimer);
+    tickTimer = setInterval(() => {
+      const goal = target();
+      if (!alive || shown >= goal){ clearInterval(tickTimer); tickTimer = null; return; }
+      shown += Math.max(1, Math.ceil((goal - shown) / 8)); if (shown > goal) shown = goal;
+      paintLED(shown);
+    }, 60);
+  }
+
+  function renderLB(){
+    const el = $('jtrows'); if (!el) return;
+    if (!top){ return; }
+    const rows = top.slice();
+    /* your own presses still on their way */
+    if (myName){ const me = rows.find(r => r.name === myName);
+      if (me) me.score = Math.max(me.score, mine); else if (mine > 0) rows.push({ name:myName, score:mine });
+      rows.sort((a, b) => b.score - a.score); }
+    if (!rows.length && !anonTotal){ el.innerHTML = '<p class="how">No presses yet. Be first!</p>'; return; }
+    const medals = ['🥇', '🥈', '🥉'];
+    /* signed-out presses count towards the total too, so they get a row and the board adds up */
+    el.innerHTML = rows.slice(0, 20).map((r, i) =>
+      '<div class="tlbrow' + (r.name === myName ? ' me' : '') + '"><span class="rk">' + (medals[i] || (i + 1)) + '</span>' +
+      '<span class="nm">' + esc(r.name) + '</span><span class="tm">' + esc(r.score.toLocaleString()) + '</span></div>').join('') +
+      (anonTotal ? '<div class="tlbrow jtanon"><span class="rk">·</span><span class="nm">Not signed in</span><span class="tm">' + anonTotal.toLocaleString() + '</span></div>' : '');
+  }
+
+  async function poll(){
+    if (!alive || document.hidden) return;
+    try {
+      const d = await TT.api('/api/jim', { params:{ together:1 } });
+      if (!alive) return;
+      server = Math.max(server, +d.total || 0); top = d.top || []; anonTotal = +d.anon || 0; showTotal(); renderLB();
+    } catch(e){ const el = $('jtrows'); if (el && !top) el.innerHTML = '<p class="how">Couldn’t reach the board (' + esc(e.message) + ').</p>'; }
+  }
+
+  /* presses are counted here and sent in batches; a failed batch is kept and tried again */
+  function queue(){ pending++; clearTimeout(flushTimer); flushTimer = setTimeout(flush, JIM_FLUSH); }
+  async function flush(keepalive){
+    clearTimeout(flushTimer); flushTimer = null;
+    if (!pending || (sending && !keepalive)) return;
+    const add = Math.min(pending, 500);
+    pending -= add; inflight += add; sending = true;
+    try {
+      if (keepalive){
+        const c = TT.get('tt.creds', null), h = { 'Content-Type':'application/json' };
+        if (c && c.email && c.password){ h['X-School-Email'] = c.email; h['X-School-Password'] = c.password; }
+        fetch('/api/jim', { method:'POST', headers:h, body:JSON.stringify({ together:true, add, anon }), keepalive:true }).catch(() => {});
+        inflight -= add;
+      } else {
+        const d = await TT.api('/api/jim', { method:'POST', body:{ together:true, add, anon } });
+        inflight -= add;
+        server = Math.max(server, +d.total || 0);
+        if (d.mine != null){ mine = Math.max(mine, +d.mine || 0); myName = d.name || myName; if (d.name) useName(d.name); }
+        if (alive){ $('jtmine').textContent = signedIn && d.mine != null ? mine.toLocaleString() : $('jtmine').textContent; showTotal(); renderLB(); }
+      }
+    } catch(e){ inflight -= add; pending += add; if (alive && !keepalive) flushTimer = setTimeout(flush, 3000); }
+    finally { sending = false; }
+    if (pending && alive && !flushTimer) flushTimer = setTimeout(flush, JIM_FLUSH);
+  }
+
+  function press(){
+    if (pressLocked || !alive) return;
+    pressLocked = true;
+    if (signedIn && myName) mine++;
+    queue();
+    const btn = $('jtbtn'), num = $('jtmine'), led = box.querySelector('.jtled');
+    if (signedIn && myName) num.textContent = mine.toLocaleString();
+    showTotal(); renderLB();
+    num.classList.remove('pop', 'glowing'); void num.offsetWidth; num.classList.add('pop', 'glowing');
+    btn.classList.remove('pressing', 'glowing'); void btn.offsetWidth; btn.classList.add('pressing', 'glowing');
+    led.classList.remove('flash'); void led.offsetWidth; led.classList.add('flash');
+    const flash = document.createElement('div'); flash.className = 'jimflash';
+    document.body.appendChild(flash); setTimeout(() => flash.remove(), 800);
+
+    if (mode === 'random'){
+      jimNameList().then(list => { if (!alive || !list.length || mode !== 'random') return;
+        const pick = list[(Math.random() * list.length) | 0];
+        randomAudio.src = JIM_DIR + pick + '.wav'; play(randomAudio).catch(() => {}); setLabel(pick.toUpperCase()); });
+    } else if (mode === 'name' && hasName){ play(nameAudio).catch(() => play(jimAudio).catch(() => {})); setLabel(label); }
+    else { const stanley = Math.random() < 0.05; play(stanley ? stanleyAudio : jimAudio).catch(() => {}); setLabel(stanley ? 'STANLEY' : 'JIM'); }
+
+    clearTimeout(glowTimer);
+    glowTimer = setTimeout(() => { btn.classList.remove('glowing'); num.classList.remove('glowing'); pressLocked = false; }, 520);
+  }
+  $('jtbtn').addEventListener('click', press);
+  $('jtmode').onclick = () => { mode = { name:'jim', jim:'random', random:'name' }[mode]; paintMode(); };
+  const paintMute = () => { const b = $('jtmute'); if (!b) return;
+    b.textContent = muted ? '🔇 Muted' : '🔊 Sound on'; b.setAttribute('aria-pressed', String(muted)); b.title = muted ? 'Turn the sound back on' : 'Mute the button'; };
+  $('jtmute').onclick = () => {
+    muted = !muted; TT.set('tt.jtmute', muted); paintMute();
+    if (muted) [nameAudio, randomAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });
+  };
+  paintMute();
+  paintMode();
+
+  /* your share so far: the board's row for you, once the server says who you are */
+  async function whoAmI(){
+    if (!signedIn) return;
+    try {
+      const d = await TT.api('/api/jim', { params:{ together:1, me:1 } });
+      if (!alive) return;
+      if (d.me){ myName = d.me.name; mine = Math.max(mine, +d.me.score || 0); useName(d.me.name); }
+      else myName = myName || '';
+      $('jtmine').textContent = mine.toLocaleString(); renderLB();
+    } catch(e){ $('jtmine').textContent = '—'; }
+  }
+
+  const onKey = e => {
+    const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (typing) return;
+    if (e.key === ' ' && (t === document.body || box.contains(t)) && t.tagName !== 'BUTTON'){ e.preventDefault(); press(); }
+  };
+  document.addEventListener('keydown', onKey);
+  const onHide = () => { if (document.visibilityState === 'hidden') flush(true); else poll(); };
+  document.addEventListener('visibilitychange', onHide);
+
+  paintLED(0);
+  poll(); whoAmI();
+  pollTimer = setInterval(poll, JT_POLL);
+
+  return () => {
+    alive = false;
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('visibilitychange', onHide);
+    removeEventListener('resize', fitWide);
+    host.style.width = ''; host.style.marginLeft = '';
+    clearTimeout(glowTimer); clearInterval(pollTimer); clearInterval(tickTimer);
+    flush(true);
+    [nameAudio, randomAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });
+  };
+};

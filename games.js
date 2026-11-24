@@ -165,6 +165,7 @@ const GAMES = [
   { id:'mp-relay',  cat:'Multiplayer', ico:'✏️', name:'Sketch', blurb:'Write, draw, guess, and watch it drift' },
   { id:'mp-impostor', cat:'Multiplayer', ico:'🕵️', name:'Impostor', blurb:'Everyone knows the word but one' },
   { id:'mp-chess',  cat:'Multiplayer', ico:'♟️', name:'Chess', blurb:'Two play, the lobby watches' },
+  { id:'jimall',    cat:'Multiplayer', ico:'🟡', name:'The Jim Button: Together', blurb:'One button for everyone, one shared count', isNew:true },
   { id:'hkmj',   cat:'Multiplayer', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2 },
   { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
   { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat, grow, don’t crash' },
@@ -2159,7 +2160,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124h';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124i';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

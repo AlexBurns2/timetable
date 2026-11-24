@@ -165,6 +165,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .colours .none{color:var(--fg2);font-size:calc(13px * var(--fs,1))}
 .crow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
 .crow+.crow{border-top:1px solid var(--sep);padding-top:10px}
+.olpick{position:relative;width:20px;height:20px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 3px var(--oc)}
+.olpick.unset{box-shadow:none;border:2px dashed var(--line3)}
+.olpick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}
+.colours .dot{box-shadow:0 0 0 1px var(--sep)}
+.colours .clegend{font-size:calc(12px * var(--fs,1));color:var(--fg2)}
 .cname{font-size:calc(13px * var(--fs,1));font-weight:500}
 .cname small{display:block;font-size:calc(11px * var(--fs,1));color:var(--fg2);font-weight:400}
 .hexrow{display:flex;align-items:center;gap:7px}
@@ -200,8 +205,12 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk{position:absolute;left:0;right:0;cursor:pointer;container-type:inline-size}   /* 100cqw = the day's width */
 .blk.open{z-index:20;cursor:default}
 .blk.closing{z-index:19}
+/* lessons sit on the free periods' fill (the Cards colour), ringed in their subject's
+   colour; Colour strength (0-100) runs the ring from faint to the full colour */
+:root{--bs:calc(30% + var(--tint) * .7);--card:var(--fill)}      /* --card: picked under Subject colours, else the theme's fill */
+.blk-card,.card{--bd:color-mix(in srgb,var(--o,var(--c)) var(--bs),var(--card));--ring:inset 0 0 0 2px var(--bd)}
 .blk-card{position:absolute;left:0;top:0;width:100%;min-height:100%;display:flex;flex-direction:column;border-radius:10px;padding:10px 12px;overflow:hidden;
-  background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.6),var(--base,var(--bg)));      /* still to come: strong, so it stands apart from what's over */
+  background:var(--card);box-shadow:var(--ring);
   transition:width .55s cubic-bezier(.34,1.4,.64,1),box-shadow .55s cubic-bezier(.34,1.4,.64,1)}
 .blk-card>*{position:relative;z-index:1}
 .blk:not(.open):hover .blk-card{filter:brightness(.97)}
@@ -221,11 +230,11 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.sm.open .t{padding-top:4px}
 /* over: a softer, less saturated colour behind it (still its colour, unlike the
    grey breaks), with its text left readable */
-.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--c) calc(var(--tint) * .45),var(--base,var(--bg)));filter:saturate(.6)}
+.blk.past:not(.open) .blk-card{background:color-mix(in srgb,var(--card) 50%,var(--base,var(--bg)));--bd:color-mix(in srgb,var(--o,var(--c)) calc(var(--bs) * .5),var(--card));filter:saturate(.6)}
 .blk.now:not(.open) .blk-card::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);z-index:0;background:color-mix(in srgb,var(--bg) 25%,transparent);backdrop-filter:saturate(.7);-webkit-backdrop-filter:saturate(.7);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
 /* opened, the card grows by half a day, and never by less than room for Room and Class code */
 .blk-card{--xw:max(50cqw,112px)}
-.blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
+.blk.open .blk-card{width:calc(100cqw + var(--xw));box-shadow:var(--ring),0 12px 40px rgba(0,0,0,.18),0 3px 10px rgba(0,0,0,.1)}
 /* Opened, the card is laid out at its final size from the first frame, so
    as it springs wider nothing re-wraps or shuffles: the growing bubble just
    uncovers it. The left column is exactly the closed card's text width, so
@@ -293,19 +302,17 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .cls-note{grid-column:1/-1;font-size:calc(11.5px * var(--fs,1));color:var(--fg3);padding:2px 0 6px;text-align:center}
 .cls-note.err{color:var(--red)}
 
-.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--fill);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:calc(12px * var(--fs,1));color:var(--fg2);font-weight:500;overflow:hidden}
+.gap{position:absolute;left:0;right:0;border-radius:10px;background:var(--card);display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;gap:2px 6px;font-size:calc(12px * var(--fs,1));color:var(--fg2);font-weight:500;overflow:hidden}
 .gap i{width:3px;height:3px;border-radius:50%;background:currentColor}
 .gap .t{flex-basis:100%;text-align:center;font-weight:400;font-size:calc(11.5px * var(--fs,1));color:var(--fg2);white-space:nowrap}
 .gap.sm .t{flex-basis:auto}
-.gap.past{background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)));color:color-mix(in srgb,var(--fg2) 75%,var(--fg3))}
+.gap.past{background:color-mix(in srgb,var(--card) 50%,var(--base,var(--bg)));color:color-mix(in srgb,var(--fg2) 75%,var(--fg3))}
 .gap.past .t{color:inherit}
-/* recess, lunch and free periods stay grey; assembly is light blue */
-:root{--asmc:#96CBFF}
+/* recess, lunch and free periods stay grey; assembly is a lesson card ringed light blue (or its picked colour) */
 .col > .hol{position:absolute;inset:0;display:grid;place-items:center;border-radius:10px;font-size:calc(13px * var(--fs,1));font-weight:500;color:var(--fg3);
   background:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--fill) 70%,transparent) 10px 20px)}
 /* assembly: light blue, its name and time centred like a break, no dot
    between them; it opens like a lesson to show the student's house */
-.blk.asm .blk-card{background:var(--asmc)}
 .blk.asm .s{color:#123660;font-size:calc(13px * var(--fs,1));font-weight:500;padding-right:0}
 .blk.asm .t{color:rgba(18,54,96,.7);font-size:calc(11.5px * var(--fs,1))}
 /* Open or closed it keeps the same centred row; opening only slides the house
@@ -320,10 +327,12 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .blk.asm .blk-meta .det{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;text-align:center;padding-bottom:8px}
 :is(.blk,.card).asm .det-row .lbl{color:rgba(18,54,96,.62)}
 :is(.blk,.card).asm .det-row .val,:is(.blk,.card).asm .det-row.left .val{color:#123660;font-weight:600}
-.card.asm{background:var(--asmc);flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;padding:12px 14px}
+.card.asm{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:12px;padding:12px 14px}
 .card.asm .subj{font-size:calc(14px * var(--fs,1));font-weight:500;color:#123660;padding-right:0}
 .card.asm .time{padding-top:0;color:rgba(18,54,96,.7)}
 .card.asm .blk-detail{flex-basis:100%}       /* opening only adds the house underneath */
+[data-mode="dark"] :is(.blk.asm .s,.card.asm .subj,:is(.blk,.card).asm .det-row .val){color:color-mix(in srgb,var(--c) 40%,var(--fg))}
+[data-mode="dark"] :is(.blk.asm .t,.card.asm .time,:is(.blk,.card).asm .det-row .lbl){color:color-mix(in srgb,var(--fg) 64%,var(--c))}
 /* free periods: who in your group is free then */
 .gap .fr,.brk .fr{flex-basis:100%;font-size:calc(11.5px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gap .fr{text-align:center;padding:0 8px}
@@ -332,8 +341,16 @@ a.row svg{width:14px;height:14px;color:var(--fg3);flex:none}
 .gap .fn{text-align:center;padding:0 8px}
 .brk .fn{font-size:calc(12px * var(--fs,1));margin-top:2px}
 .gap.none .fr,.brk.none .fr{color:var(--fg2)}
-.gap.all,.brk.all{background:color-mix(in srgb,var(--green) 16%,var(--fill))}
-.gap.some,.brk.some{background:color-mix(in srgb,var(--green) 7%,var(--fill))}
+.gap.all,.brk.all{background:color-mix(in srgb,var(--green) 16%,var(--card))}
+.gap.some,.brk.some{background:color-mix(in srgb,var(--green) 7%,var(--card))}
+/* breaks and free periods: an outline once one is picked */
+:root[data-fo] :is(.gap,.brk){box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--fo-c) var(--bs),var(--card))}
+:root[data-fo] :is(.gap,.brk).past{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--fo-c) calc(var(--bs) * .5),var(--card))}
+/* a period with one of the shown student's timed events in it takes the event's colour */
+.blk.evhl .blk-card.blk-card.blk-card{background:color-mix(in srgb,var(--ev) 24%,var(--card));--bd:var(--ev)}
+.card.evhl.evhl.evhl{background:color-mix(in srgb,var(--ev) 24%,var(--card));--bd:var(--ev)}
+:is(.gap,.brk).evhl.evhl.evhl{background:color-mix(in srgb,var(--ev) 24%,var(--card));box-shadow:inset 0 0 0 2px var(--ev)}
+:is(.blk,.card,.gap,.brk).evhl.past:not(.open){filter:saturate(.6)}
 /* "only who's free": a lesson becomes just its count, so that line leads */
 .gap.fc .fr{font-size:calc(13px * var(--fs,1))}
 .brk.fc .bl{font-weight:600;color:color-mix(in srgb,var(--green) 70%,var(--fg))}
@@ -590,7 +607,7 @@ button.row:hover{background:var(--fill2)}
 /* opened out: pressing the bar along the top closes it */
 .gmstage{display:flex;flex-direction:column}
 .gmbar{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:8px 12px;font-size:calc(15px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg))}
-.gmbar:hover{filter:brightness(.95);background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.4),var(--base,var(--bg)))}
+.gmbar:hover{filter:brightness(.95);background:color-mix(in srgb,var(--c) min(100%,calc(var(--tint) * 1.4)),var(--base,var(--bg)))}
 .gmbody{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;text-align:center}
 .gmbody .gico{font-size:clamp(48px,14cqmin,96px);line-height:1}
 .gmbody small{font-size:calc(14px * var(--fs,1));color:var(--fg2)}
@@ -829,7 +846,7 @@ select.fin{appearance:auto}
 .daypill.today .dn,.daypill.today .dd{color:var(--fg);font-weight:700}
 .daypill[aria-pressed="true"]{background:var(--fill2)}
 .list{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px}
-.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:color-mix(in srgb,var(--c) calc(var(--tint) * 1.6),var(--base,var(--bg)));position:relative;overflow:hidden;display:flex;flex-direction:column}
+.card{cursor:pointer;border-radius:14px;padding:14px 14px 12px;background:var(--card);box-shadow:var(--ring);position:relative;overflow:hidden;display:flex;flex-direction:column}
 .card>*{position:relative;z-index:1}
 .card .subj{font-size:calc(17px * var(--fs,1));font-weight:600;color:color-mix(in srgb,var(--c) 40%,var(--fg));line-height:1.2;padding-right:calc(var(--rw,3ch) + 12px)}
 .card .teacher{font-size:calc(13px * var(--fs,1));color:color-mix(in srgb,var(--fg) 72%,var(--c));margin-top:3px;padding-right:calc(var(--rw,3ch) + 12px)}
@@ -839,11 +856,11 @@ select.fin{appearance:auto}
 .card.now{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent);outline-offset:-2px}
 .card.now:not(.open)::before{content:"";position:absolute;inset:0 0 auto 0;height:var(--p);background:color-mix(in srgb,var(--bg) 50%,transparent);
   backdrop-filter:saturate(.35);-webkit-backdrop-filter:saturate(.35);border-bottom:1.5px solid color-mix(in srgb,var(--c) 70%,#000)}
-.card.past:not(.open){background:color-mix(in srgb,var(--c) calc(var(--tint) * .45),var(--base,var(--bg)));filter:saturate(.6)}
-.brk{border-radius:14px;padding:12px 14px;background:var(--fill);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.card.past:not(.open){background:color-mix(in srgb,var(--card) 50%,var(--base,var(--bg)));--bd:color-mix(in srgb,var(--o,var(--c)) calc(var(--bs) * .5),var(--card));filter:saturate(.6)}
+.brk{border-radius:14px;padding:12px 14px;background:var(--card);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brk .bl{font-size:calc(14px * var(--fs,1));font-weight:500;color:var(--fg2)}
 .brk .bt{white-space:nowrap;font-size:calc(12px * var(--fs,1));color:var(--fg2)}
-.brk.past{background:color-mix(in srgb,var(--fill) 50%,var(--base,var(--bg)))}
+.brk.past{background:color-mix(in srgb,var(--card) 50%,var(--base,var(--bg)))}
 .brk.past :is(.bl,.bt){color:color-mix(in srgb,var(--fg2) 75%,var(--fg3))}
 /* tightened so the whole day fits on the first screen (see fitList) */
 .list.tight{padding-top:10px;gap:6px}
@@ -997,7 +1014,7 @@ select.fin{appearance:auto}
         <div class="row"><div class="rl"><strong>Cards</strong></div><input type="color" data-k="panel" aria-label="Card colour"></div>
         <div class="row"><div class="rl"><strong>Text</strong></div><input type="color" data-k="text" aria-label="Text colour"></div>
         <div class="row"><div class="rl"><strong>Accent</strong></div><input type="color" data-k="accent" aria-label="Accent colour"></div>
-        <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="8" max="60" step="1" data-k="tint" aria-label="Colour strength"></div>
+        <div class="row stack"><div class="rl"><strong>Colour strength</strong><small id="c_tint_v"></small></div><input type="range" min="0" max="100" step="1" data-k="tint" aria-label="Colour strength"></div>
         <div class="row"><div class="rl"><strong>Font</strong></div><select class="fin" data-k="font" aria-label="Font"><option>System</option><option>DM Sans</option><option>Space Grotesk</option><option>JetBrains Mono</option><option>Space Mono</option><option>Patrick Hand</option></select></div>
         <div class="row"><div class="rl"><strong>Backdrop</strong></div><select class="fin" data-k="backdrop" aria-label="Backdrop"><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="mesh">Mesh</option></select></div>
         <div class="row"><div class="rl"><strong>Square corners</strong></div><input type="checkbox" data-k="square" aria-label="Square corners"></div>
@@ -1105,7 +1122,7 @@ const apiUrl = path => API_ORIGIN + path;
 const ENDPOINT = apiUrl("/api/timetable"), DOMAIN = "education.nsw.gov.au";
 /* own keys, so typing someone's name here doesn't change the main site */
 const LS = { email:"andre.email", cache:"andre.cache", theme:"andre.theme", zen:"andre.zen", motion:"andre.motion", fs:"andre.fs", events:"andre.events", showsubj:"andre.showsubj", showwk:"andre.showwk", wkstart:"andre.wkstart", room:"andre.room", colours:"andre.colours",
-             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"tt.creds", custom:"andre.custom" };
+             skin:"andre.skin", group:"andre.freegroup", freeshow:"andre.freeshow", busy:"andre.freebusy", periods:"andre.periods", gcal:"andre.gcal", showcustom:"andre.showcustom", recentgames:"andre.recentgames", bdays:"andre.bdays", creds:"tt.creds", custom:"andre.custom", fillc:"andre.fillc", outlines:"andre.outlines" };
 const get = (k,d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 /* read-only from the main site: its A/B week correction */
@@ -1129,6 +1146,8 @@ let zen = !!get(LS.zen, false);
 let motion = get(LS.motion, "auto");
 let roomMode = get(LS.room, "number");      /* full CR1007.118 | building CR1007 | number 118 */
 let colours = get(LS.colours, {});          /* subject -> #hex override */
+let fillc = get(LS.fillc, null);             /* lessons', free periods' and breaks' fill, or the theme's */
+let outlines = get(LS.outlines, {});         /* subject (or "__free") -> #hex outline */
 let skin = get(LS.skin, "default");         /* one of SKINS */
 
 /* ═══ dates ═══ */
@@ -1443,6 +1462,27 @@ function defaultColour(subject){
 /* the subject's colour: a custom pick, else the default */
 const colourFor = s => colours[s] || defaultColour(s);
 const hexFor = colourFor;
+const ASM_C = "#96CBFF", asmColour = () => colours.Assembly || ASM_C;
+/* a picked outline as an inline --o, else the card's colour rings it */
+const olVar = s => outlines[s] ? `--o:${esc(outlines[s])};` : "";
+function paintCardVars(){
+  const r = document.documentElement;
+  if (fillc) r.style.setProperty("--card", fillc); else r.style.removeProperty("--card");
+  if (outlines.__free){ r.dataset.fo = ""; r.style.setProperty("--fo-c", outlines.__free); }
+  else { delete r.dataset.fo; r.style.removeProperty("--fo-c"); }
+}
+paintCardVars();
+/* the shown student's first timed event that overlaps a period: the period takes its colour */
+function evOver(date, x){
+  for (const e of eventsOn(ymd(date))){
+    if (!e.start) continue;
+    const s = toMinutes(e.start), en = e.end ? toMinutes(e.end) : s + 1;
+    if (s != null && s < x.e && en > x.s) return e;
+  }
+  return null;
+}
+const hm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+const evAttrs = ev => ev ? { cls:" evhl", st:`--ev:${esc(ev.colour)};`, title:ev.title + (ev.start ? " · " + evTime(ev) : "") } : { cls:"", st:"", title:"" };
 
 /* ═══ load ═══ */
 let loading = false, loadError = "", staleNote = "", reqId = 0;
@@ -1979,17 +2019,19 @@ function gridHtml({ now, dates, days, holiday, msg, when, tasks, err }, y, H, sk
       const sm = ht < 44, hideThis = x.lesson && !x.lesson.asm && !x.lesson.custom && hideSubjects();
       /* periods that overlap share the day's width */
       const lane = x.lanes ? `left:calc(${x.lane / x.lanes * 100}% + ${x.lane ? 3 : 0}px);right:calc(${(x.lanes - 1 - x.lane) / x.lanes * 100}% + ${x.lane < x.lanes - 1 ? 3 : 0}px);` : "";
+      const ev = evAttrs(x.lesson && x.lesson.custom ? null : evOver(dates[k], x));
+      const ttl = (...t) => (t = t.filter(Boolean)).length ? ` title="${esc(t.join(" · "))}"` : "";
       if (!x.lesson || hideThis){   /* free periods, breaks, and lessons when hidden */
         const fn = freeNote(x);
         const ls = hideThis ? [] : x.ls;
         const gk = x.lesson ? "" : x.keys && x.keys.length ? "isfree" : "isbrk";
-        h += `<div class="gap ${gk} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="top:${top}px;height:${ht}px"${fn ? ` title="${esc(fn.title)}"` : ""}>` +
+        h += `<div class="gap ${gk} ${hideThis ? "fc" : ""} ${w.past ? "past" : ""} ${sm ? "sm" : ""} ${fn ? fn.state : ""}${ev.cls}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="${ev.st}top:${top}px;height:${ht}px"${ttl(ev.title, fn && fn.title)}>` +
              `${ls.map(esc).join("<i></i>")}${hideThis ? "" : tm}${freeBits(fn, sm)}${hideThis && !sm ? tm : ""}</div>`;
         continue;
       }
-      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : e.asm ? "#96CBFF" : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
-      h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${e.asm ? "asm" : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}"` +
-           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}${e.asm ? `--bh:${ht}px;` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
+      const e = x.lesson, cu = e.custom, c = cu ? cu.colour : e.asm ? asmColour() : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[k], x);
+      h += `<div class="blk ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${e.asm ? "asm" : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${ht < 50 ? "sm" : ""} ${openKey === id ? "open settled landed" : ""}${ev.cls}"${ttl(ev.title)}` +
+           ` data-k="${id}" data-code="${esc(e.code)}" data-sig="${esc(sigOf(x))}" data-who="${esc(whoOf(x))}" data-span="${x.s}-${x.e}" style="--c:${esc(c)};${cu ? "" : olVar(e.asm ? "Assembly" : e.subject)}${ev.st}${cu ? `--ink:${inkOn(c)};` : ""}${e.asm ? `--bh:${ht}px;` : ""}${lane}top:${top}px;height:${ht}px;--rw:${room.length}ch;--p:${w.p}%"><div class="blk-card">` +
            `<span class="r tnum">${esc(room)}</span><span class="s">${esc(e.subject)}</span><span class="m">${esc(e.teacher)}</span>${tm}${detailHtml(e, id, w.left)}</div></div>`;
     }
     h += "</div>";
@@ -2019,27 +2061,29 @@ function renderList({ now, dates, days, holiday, msg, when, tasks, err }){
   else if (!days[sel].length) h += `<div class="lmsg">${wd(dates[sel]) > 4 ? "Nothing" : "No classes"} on ${DAYF[wd(dates[sel])]}.</div>`;
   else for (const x of days[sel]){
     const w = when(dates[sel], x), tm = `${f(x.s)} – ${f(x.e)}`;
+    const ev = evAttrs(x.lesson && x.lesson.custom ? null : evOver(dates[sel], x));
+    const ttl = (...t) => (t = t.filter(Boolean)).length ? ` title="${esc(t.join(" · "))}"` : "";
     if (!x.lesson){
       const fn = freeNote(x);
-      h += `<div class="brk ${x.keys && x.keys.length ? "isfree" : "isbrk"} ${w.past ? "past" : ""} ${fn ? fn.state : ""}"${fn ? ` title="${esc(fn.title)}"` : ""}><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
+      h += `<div class="brk ${x.keys && x.keys.length ? "isfree" : "isbrk"} ${w.past ? "past" : ""} ${fn ? fn.state : ""}${ev.cls}" style="${ev.st}"${ttl(ev.title, fn && fn.title)}><span class="bl">${x.ls.map(esc).join(" · ")}</span><span class="bt tnum">${tm}</span>` +
            freeBits(fn, false) + `</div>`;
       continue;
     }
     if (!x.lesson.asm && !x.lesson.custom && hideSubjects()){     /* only who's free: the count, then the names */
       const fn = freeNote(x);
-      h += `<div class="brk fc ${w.past ? "past" : ""} ${fn.state}" title="${esc(fn.title)}"><span class="bl">${esc(fn.count)}</span><span class="bt tnum">${tm}</span>` +
+      h += `<div class="brk fc ${w.past ? "past" : ""} ${fn.state}${ev.cls}" style="${ev.st}"${ttl(ev.title, fn.title)}><span class="bl">${esc(fn.count)}</span><span class="bt tnum">${tm}</span>` +
            (fn.names ? `<span class="fn">${esc(fn.names)}</span>` : "") + `</div>`;
       continue;
     }
     if (x.lesson.asm){        /* a light blue row like the breaks, that opens to show the house */
       const id = itemId(dates[sel], x);
-      h += `<div class="card asm ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}" data-k="${id}" data-code="" style="--c:#96CBFF;--rw:0ch;--p:${w.p}%">` +
+      h += `<div class="card asm ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}${ev.cls}"${ttl(ev.title)} data-k="${id}" data-code="" style="--c:${esc(asmColour())};${olVar("Assembly")}${ev.st}--rw:0ch;--p:${w.p}%">` +
            `<span class="subj">Assembly</span><span class="time tnum">${tm}</span>${detailHtml(x.lesson, id, w.left)}</div>`;
       continue;
     }
     const e = x.lesson, cu = e.custom, c = cu ? cu.colour : colourFor(e.subject), room = cu ? e.room : roomLabel(e.room), id = itemId(dates[sel], x);
-    h += `<div class="card ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}"` +
-         ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};${cu ? `--ink:${inkOn(c)};` : ""}--rw:${room.length}ch;--p:${w.p}%">` +
+    h += `<div class="card ${cu ? "cst cst-" + (cu.style || "tint") : ""} ${w.past ? "past" : ""} ${w.cur ? "now" : ""} ${openKey === id ? "open settled landed" : ""}${ev.cls}"${ttl(ev.title)}` +
+         ` data-k="${id}" data-code="${esc(e.code)}" style="--c:${esc(c)};${cu ? "" : olVar(e.subject)}${ev.st}${cu ? `--ink:${inkOn(c)};` : ""}--rw:${room.length}ch;--p:${w.p}%">` +
          `<span class="subj">${esc(e.subject)}</span>` + (e.teacher ? `<span class="teacher">${esc(e.teacher)}</span>` : "") +
          `<span class="room tnum">${esc(room)}</span><span class="time tnum">${tm}</span>${detailHtml(e, id, w.left)}</div>`;
   }
@@ -2686,9 +2730,41 @@ finder($("freeq"), $("freesugg"), p => {
 
 /* subject colours: the dot is a colour picker, the box takes a hex code */
 const isHex = v => /^#[0-9a-f]{6}$/i.test(v);
+/* the ring beside each colour picks that card's outline (unset: its own colour,
+   or none for breaks and free periods) */
+function olPicker(key, label, fallback){
+  const l = document.createElement("label");
+  const cur = outlines[key] || fallback;
+  l.className = "olpick" + (cur ? "" : " unset"); l.title = label + " outline";
+  if (cur) l.style.setProperty("--oc", cur);
+  l.innerHTML = `<input type="color" aria-label="${esc(label)} outline">`;
+  const inp = l.firstChild;
+  inp.value = isHex(cur || "") ? cur : "#8E8E93";
+  inp.oninput = () => { outlines[key] = inp.value.toUpperCase(); set(LS.outlines, outlines); l.classList.remove("unset"); l.style.setProperty("--oc", inp.value); paintCardVars(); render(); };
+  return l;
+}
 function paintColours(){
   const host = $("colours"), subs = subjectList();
-  host.innerHTML = subs.length ? "" : '<div class="none">Load a timetable to colour its subjects.</div>';
+  if (subs.length) subs.push("Assembly");
+  host.innerHTML = `<div class="clegend">Dot: colour · Ring: outline</div>`;
+  /* breaks and free periods: their fill (lessons sit on it too) and an outline */
+  const fr = document.createElement("div");
+  fr.className = "crow";
+  const fv = () => (fillc || getComputedStyle(document.documentElement).getPropertyValue("--fill").trim()).toUpperCase();
+  fr.innerHTML = `<div class="cname">Breaks &amp; free periods<small>Lessons sit on this colour too</small></div>` +
+    `<div class="hexrow"><input class="dot" type="color" aria-label="Breaks and free periods colour">` +
+    `<input class="hexin" type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Breaks and free periods hex code"></div>`;
+  const [fdot, fhex] = fr.querySelectorAll("input");
+  const fshown = () => { const v = fv(); fdot.value = isHex(v) ? v : "#F0F0F4"; fhex.value = isHex(v) ? v : ""; };
+  const fchoose = v => { fillc = v.toUpperCase(); set(LS.fillc, fillc); paintCardVars(); render(); };
+  fshown();
+  fdot.oninput = () => { fhex.value = fdot.value.toUpperCase(); fchoose(fdot.value); };
+  fhex.oninput = () => { const v = (fhex.value.trim().startsWith("#") ? "" : "#") + fhex.value.trim(); if (isHex(v)){ fdot.value = v; fchoose(v); } };
+  fhex.onblur = fshown;
+  fhex.onkeydown = e => { if (e.key === "Enter") fhex.blur(); };
+  fr.querySelector(".hexrow").prepend(olPicker("__free", "Breaks and free periods", ""));
+  host.appendChild(fr);
+  if (!subs.length) host.insertAdjacentHTML("beforeend", '<div class="none">Load a timetable to colour its subjects.</div>');
   for (const s of subs){
     const teacher = (entries.find(e => e.subject === s && e.teacher) || {}).teacher || "";
     const row = document.createElement("div");
@@ -2696,8 +2772,9 @@ function paintColours(){
     row.innerHTML = `<div class="cname">${esc(s)}<small>${esc(teacher)}</small></div>` +
       `<div class="hexrow"><input class="dot" type="color" aria-label="${esc(s)} colour">` +
       `<input class="hexin" type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="${esc(s)} hex code"></div>`;
-    const [dot, hex] = row.querySelectorAll("input");
-    const shown = () => { const v = hexFor(s).toUpperCase(); dot.value = isHex(v) ? v : "#0A84FF"; hex.value = v; };
+    row.querySelector(".hexrow").prepend(olPicker(s, s, s === "Assembly" ? asmColour() : hexFor(s)));
+    const [dot, hex] = row.querySelectorAll("input.dot, input.hexin");
+    const shown = () => { const v = (s === "Assembly" ? asmColour() : hexFor(s)).toUpperCase(); dot.value = isHex(v) ? v : "#0A84FF"; hex.value = v; };
     const choose = v => { colours[s] = v.toUpperCase(); set(LS.colours, colours); render(); };
     shown();
     dot.oninput = () => { hex.value = dot.value.toUpperCase(); choose(dot.value); };
@@ -2710,7 +2787,7 @@ function paintColours(){
     host.appendChild(row);
   }
 }
-$("resetcolours").onclick = () => { colours = {}; set(LS.colours, colours); paintColours(); render(); };
+$("resetcolours").onclick = () => { colours = {}; outlines = {}; fillc = null; set(LS.colours, colours); set(LS.outlines, null); set(LS.fillc, null); paintCardVars(); paintColours(); render(); };
 
 /* ═══ export .ics ═══ — the cycle mapped onto the next four weeks, as on the main timetable */
 const ymd = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
@@ -2789,11 +2866,12 @@ async function loadSubjectEvents(){
   if (!turning) render();
 }
 const savePersonal = () => set(LS.events, personal);
-const evTime = e => e.start ? f(toMinutes(e.start)) + (e.end ? " – " + f(toMinutes(e.end)) : "") : "All day";
+function evTime(e){ return e.start ? f(toMinutes(e.start)) + (e.end ? " – " + f(toMinutes(e.end)) : "") : "All day"; }
 /* everything on one day, timed ones in order after the all-day ones */
 function eventsOn(day){
   const courses = new Set(myCourses().map(c => c.key));
-  return [...personal.filter(e => e.day === day).map(e => ({ ...e, kind:"personal", colour:e.colour || EV_COLOURS[0] })),
+  const me = currentUserKey();
+  return [...personal.filter(e => e.day === day && (!e.user || e.user === me)).map(e => ({ ...e, kind:"personal", colour:e.colour || EV_COLOURS[0] })),
           ...(showSubj() ? subjectEvents : []).filter(e => e.day === day && courses.has(e.course)).map(e => ({ ...e, kind:"subject", colour:colourFor(subjectOf(e.course)) }))]
     .sort((a, b) => (a.start || "") .localeCompare(b.start || ""));
 }
@@ -2890,8 +2968,11 @@ async function importICal(){
 
 /* which period an event is: its series was picked, or its name is the period's */
 const periodFor = ev => periods.find(p => p.kind !== "own" && ((ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title))));
-const currentUserKey = () => String(email || "").split("@")[0].trim().toLowerCase();
+function currentUserKey(){ return String(email || "").split("@")[0].trim().toLowerCase(); }
 const periodVisibleForUser = p => !p.user || p.user === currentUserKey();
+/* personal events belong to one student's timetable: ones saved before that
+   go to the timetable this device had open */
+if (currentUserKey() && personal.some(e => !e.user)){ personal.forEach(e => { if (!e.user) e.user = currentUserKey(); }); savePersonal(); }
 const shownCals = () => new Set(gcal.calendars.filter(c => c.on).map(c => c.id));
 const matchedEvents = p => { const on = shownCals();
   return gcal.events.filter(ev => on.has(ev.cal) && ((ev.series && (p.series || []).includes(ev.series)) || (p.match && norm(p.match) === norm(ev.title)))); };
@@ -3827,6 +3908,7 @@ function openEvent(id, { day, kind } = {}){
     <div class="fld subjonly"><label for="evsub">Subject</label><select class="fin" id="evsub">${courses.map(c => `<option value="${esc(c.key)}">${esc(c.subject)}</option>`).join("")}</select></div>
     <div class="fld"><label for="evname">Name</label><input class="fin" id="evname" maxlength="140" placeholder="e.g. Physics exam"></div>
     <div class="fld"><label for="evday">Date</label><input class="fin" type="date" id="evday"></div>
+    <div class="fld"><label for="evper">Period</label><select class="fin" id="evper"></select></div>
     <div class="fld two"><span class="lbl2">From</span><span class="lbl2">To</span>
       <input class="fin" type="time" id="evstart" aria-label="From"><input class="fin" type="time" id="evend" aria-label="To"></div>
     <p class="evnote">Leave the times empty for an all-day event.</p>
@@ -3843,13 +3925,29 @@ function openEvent(id, { day, kind } = {}){
   $("evend").value = (old && old.end) || "";
   $("evnotes").value = (old && old.notes) || "";
   if (old && old.course) $("evsub").value = old.course;
+  /* the chosen date's periods: picking one fills in its times */
+  const perList = () => {
+    const d = toDate($("evday").value);
+    const cyc = d && schoolDay(d) ? cycleDayFor(d, cycleStart) : null;
+    return cyc ? itemsFor(cyc).filter(x => x.s != null && x.e != null) : [];
+  };
+  const paintPer = () => {
+    const ps = perList(), s = $("evstart").value, e = $("evend").value;
+    $("evper").innerHTML = `<option value="">${ps.length ? "Pick a period, or set the times" : "No periods that day"}</option>` +
+      ps.map((x, i) => { const v = hm(x.s) + "-" + hm(x.e);
+        return `<option value="${v}" ${s === hm(x.s) && e === hm(x.e) ? "selected" : ""}>${esc(x.lesson ? x.lesson.subject : x.ls.join(" · "))} · ${f(x.s)} – ${f(x.e)}</option>`; }).join("");
+  };
+  $("evper").onchange = () => { const v = $("evper").value; if (!v) return; const [a, b] = v.split("-"); $("evstart").value = a; $("evend").value = b; };
+  $("evday").addEventListener("change", paintPer);
+  $("evstart").addEventListener("input", paintPer); $("evend").addEventListener("input", paintPer);
+  paintPer();
   if (old && kind === "subject" && old.by) $("evby").textContent = "Last changed by " + old.by + ". Anyone with this subject can fix it.";
   const paint = () => {
     body.querySelectorAll("#evkind button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
     body.querySelectorAll(".subjonly").forEach(x => x.hidden = k !== "subject");
     body.querySelectorAll(".persononly").forEach(x => x.hidden = k !== "personal");
     body.querySelectorAll("#evcol .swatch").forEach(s => s.setAttribute("aria-pressed", s.dataset.c === colour));
-    $("evkindnote").innerHTML = k === "personal" ? "Only on this device."
+    $("evkindnote").innerHTML = k === "personal" ? `Only on ${currentUserKey() ? esc(currentUserKey()) + "'s" : "this"} timetable, on this device. Give it a period or times and that period takes its colour.`
       : !courses.length ? "Load a timetable to add a subject event."
       : signedIn ? "Everyone with this subject sees it, and anyone can fix it if it's wrong."
       : 'Everyone with this subject sees it. Adding or changing one needs your school login: sign in under Settings.';
@@ -3878,7 +3976,7 @@ function openEvent(id, { day, kind } = {}){
         await call("/api/calendar", { query:{ subject:1 }, body:{ action:"save", event:{ ...ev, id:old ? id : undefined } } });
         await loadSubjectEvents();
       } else {
-        const rec = { ...ev, colour, id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };
+        const rec = { ...ev, colour, user:(old && old.user) || currentUserKey(), id:old ? id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };
         personal = old ? personal.map(e => e.id === id ? rec : e) : personal.concat(rec);
         savePersonal();
       }

@@ -4796,3 +4796,9 @@ reads exactly as before (checked: old and new code give identical hints and puzz
 - Tested: the route against in-memory tables (old days, new days, both games on one day for one person, the calendars, the
   streak, a missing table; no row dated before the 24th changed); the games page in the local mock (both boards, both calendars).
 - Not done (the owner's to write): a What's-new entry for Quartets.
+
+## 8.189 Merge with origin (version `20261124i`, `CACHE_VERSION` v116)
+The owner committed 8.182 to 8.188 as `goop` and pulled `origin/main` (`2e2311b`: Leaderboards, Beta timetable, The Jim Button:
+Together). Every conflict was a version stamp except `icons.js` `GAMES`, which now holds both `fours` (Quartets) and `jimall`.
+`games.html` keeps origin's stamped `jim.js`. All pages were restamped `i` / v116, above both sides; the next free stamp is `j` /
+v117. Checked: no markers left, scripts parse, the games page loads both new games, the timetable page loads. Staged, not committed.

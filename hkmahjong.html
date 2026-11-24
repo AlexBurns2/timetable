@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bangers&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=Orbitron:wght@500;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261124h">
-<script src="theme.js?v=20261124h"></script>
+<link rel="stylesheet" href="theme.css?v=20261124i">
+<script src="theme.js?v=20261124i"></script>
 <script>
 /* In a Games module on the beta page (/beta/, in its frame #gmframe): that page's colours and type, on the module's own colour */
 const BETA = !!window.frameElement && (window.frameElement.id === 'gmframe' || new URLSearchParams(location.search).has('beta'));
@@ -92,6 +92,7 @@ input[type=text]:focus{outline:2px solid #9cc0f0;border-color:#7aa7e6}
 .lvls{display:flex;gap:6px;flex-wrap:wrap}
 .lvl{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 13px;font-size:14px}
 .lvl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.dbtabs{margin:8px 0}.dbyou td{font-weight:700}
 .seatrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .pubrooms{max-width:1000px;margin:22px auto 0}.pubrooms .nm{flex:1}.pubrooms small{color:var(--muted);font-weight:400}
 .pubtog{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:600}.pubtog input{width:auto}
@@ -2155,13 +2156,14 @@ function renderHome() {
     <button class="choice" data-go="bots"><span class="face"><b>機</b></span><strong>Choose bots</strong><small>Pick each bot's level and the rules</small></button>
     ${MULTIPLAYER ? `<button class="choice" data-go="create"><span class="face"><b>開</b></span><strong>Open a room</strong><small>Get a code for up to 3 friends</small></button>
     <button class="choice" data-go="join"><span class="face"><b>入</b></span><strong>Join a room</strong><small>Type the code a friend sent you</small></button>` : ''}
-    <button class="choice" data-mode="daily"><span class="face"><b>日</b></span><strong>Daily deal</strong><small>${store.get('daily', {})[dailyKey()] != null ? `Your best today: ${fmt(store.get('daily', {})[dailyKey()])}` : 'Same deal for everyone today'}</small></button>
+    <button class="choice" data-mode="daily"><span class="face"><b>日</b></span><strong>Daily deal</strong><small>${store.get('dailyFaan', {})[dailyKey()] != null ? `Your best today: ${store.get('dailyFaan', {})[dailyKey()]} faan` : 'Same deal for everyone today'}</small></button>
     <button class="choice" data-mode="speed"><span class="face"><b>快</b></span><strong>Quick turns</strong><small>5 seconds a turn</small></button>
     <button class="choice" data-mode="practice"><span class="face"><b>練</b></span><strong>Practice</strong><small>See the bots' hands and advice</small></button>
   </nav>
   ${MULTIPLAYER ? '<section class="pubrooms"><h3>Public rooms</h3><div id="pubRooms"><p class="sub">Looking for rooms…</p></div></section>' : ''}
   <div class="modes">
     <button class="mode" data-go="guide"><b>Rules</b></button>
+    <button class="mode" id="dailyBtn"><b>Daily board</b></button>
     <button class="mode" id="statsBtn"><b>Stats</b></button>
     <button class="mode" id="lookBtn"><b>Settings</b></button>
   </div>
@@ -2171,6 +2173,7 @@ function renderHome() {
   $('#homeAv').onclick = showProfile;
   $('#lookBtn').onclick = () => showAppearance();
   $('#statsBtn').onclick = showStats;
+  $('#dailyBtn').onclick = () => showDailyBoard();
   $('#home').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => startBotGame(b.dataset.mode));
   if (MULTIPLAYER) { renderPubRooms(); Net.pubOpen().then(h => { if (!h && $('#pubRooms')) $('#pubRooms').innerHTML = '<p class="sub">Couldn’t load the public rooms.</p>'; }); }
   $('#home').querySelectorAll('[data-go]').forEach(c => c.onclick = () => {
@@ -2251,7 +2254,7 @@ function startBotGame(mode) {
   App.ctl = new HostCtl(S, seats, false);
   show('game'); App.ctl.after();
 }
-function resetGameUI() { App.chatOpen = false; App.unread = 0; const cw = $('#chatwin'); if (cw) cw.remove(); App.callSeen = 0; App.mode = 'normal'; App.gameDealIns = 0; App.tipKey = ''; App.freshKey = ''; App.meldCounts = null; App.lastHandView = null; App.finalDismissed = false; App.logs = []; App.lastLogId = 0; App.chat = []; App.resultShown = 0; App.view = null; App.priv = null; App.sel = -1; App.discardsSeen = -1; App.tab = 'table'; closeModal(); }
+function resetGameUI() { App.chatOpen = false; App.unread = 0; const cw = $('#chatwin'); if (cw) cw.remove(); App.callSeen = 0; App.mode = 'normal'; App.gameDealIns = 0; App.dailyFaan = 0; App.tipKey = ''; App.freshKey = ''; App.meldCounts = null; App.lastHandView = null; App.finalDismissed = false; App.logs = []; App.lastLogId = 0; App.chat = []; App.resultShown = 0; App.view = null; App.priv = null; App.sel = -1; App.discardsSeen = -1; App.tab = 'table'; closeModal(); }
 function stopController() { if (App.ctl) { App.ctl.stop(); App.ctl = null; } }
 
 // ---------- host controller (authoritative game) ----------
@@ -2701,11 +2704,12 @@ function showFinal() {
   const medals = ['🥇', '🥈', '🥉', '4th'];
   const o = modal(`<h2>Game over</h2><p class="sub">Final scores after ${V.hn} hand${V.hn > 1 ? 's' : ''}.</p>
     ${rank.map((x, i) => `<div class="faanrow" style="font-size:17px;padding:8px 0"><span>${medals[i]} ${esc(x.p.n)} ${x.s === App.seat ? '<span class="tag you">you</span>' : ''}</span><b>${fmt(x.p.sc)}</b></div>`).join('')}
-    <div class="btnrow">${App.role === 'local' ? '<button class="btn primary" id="fnAgain">Play again</button>' : ''}${App.role === 'host' ? '<button class="btn primary" id="fnLobby">Back to room</button>' : ''}<button class="btn" id="fnHome">Home</button><button class="btn" id="fnClose">View table</button></div>`, { sticky: true });
+    <div class="btnrow">${App.role === 'local' ? '<button class="btn primary" id="fnAgain">Play again</button>' : ''}${App.role === 'host' ? '<button class="btn primary" id="fnLobby">Back to room</button>' : ''}${App.mode === 'daily' ? '<button class="btn" id="fnBoard">Daily board</button>' : ''}<button class="btn" id="fnHome">Home</button><button class="btn" id="fnClose">View table</button></div>`, { sticky: true });
   o.dataset.final = '1';
   const a = o.querySelector('#fnAgain'); if (a) a.onclick = () => { closeModal(); startBotGame(App.mode); };
   const l = o.querySelector('#fnLobby'); if (l) l.onclick = () => { closeModal(); hostBackToLobby(); };
   o.querySelector('#fnHome').onclick = () => { closeModal(); leaveGame(); };
+  const fb = o.querySelector('#fnBoard'); if (fb) fb.onclick = () => { App.finalDismissed = true; showDailyBoard('day'); };
   o.querySelector('#fnClose').onclick = () => { closeModal(); App.finalDismissed = true; };
 }
 function leaveGame() {
@@ -3451,6 +3455,7 @@ const Stats = {
     if (r.ty === 'win') {
       if (r.w === me) {
         d.wins++; bl.wins++; if (r.sd) d.selfDraws++;
+        if (App.mode === 'daily') App.dailyFaan = (App.dailyFaan || 0) + r.faan;
         if (r.faan > d.bestFaan) { d.bestFaan = r.faan; d.bestItems = r.it.map(x => x[0]); }
         r.it.forEach(([n]) => { d.patterns[n] = (d.patterns[n] || 0) + 1; });
         const names = r.it.map(x => x[0]);
@@ -3478,6 +3483,9 @@ const Stats = {
       this.unlock('daily');
       const day = dailyKey(), best = store.get('daily', {}); const sc = V.P[me].sc;
       if (best[day] == null || sc > best[day]) { best[day] = sc; store.set('daily', best); }
+      const fa = App.dailyFaan || 0, bf = store.get('dailyFaan', {});
+      if (bf[day] == null || fa > bf[day]) { bf[day] = fa; store.set('dailyFaan', bf); }
+      DailyBoard.post(fa);
     }
     if (App.mode === 'speed') this.unlock('speedy');
     this.save(); Cloud.push();
@@ -3495,7 +3503,7 @@ const Cloud = {
       const { state } = await TT.api('/api/gamestate', { params: { mode: 'hkmj' } });
       /* shortcut: the device with more hands wins, so two devices played apart don't add up; merge them if that matters */
       if (state && state.stats && state.stats.hands > Stats.data.hands) {
-        Stats.data = state.stats; Stats.save(); store.set('daily', state.daily || {});
+        Stats.data = state.stats; Stats.save(); store.set('daily', state.daily || {}); store.set('dailyFaan', state.dailyFaan || {});
         if (App.screen === 'home') renderHome();
       }
     } catch (e) { }
@@ -3503,8 +3511,9 @@ const Cloud = {
   push() {
     if (!this.on) return;
     const daily = Object.fromEntries(Object.entries(store.get('daily', {})).sort().slice(-30));
-    store.set('daily', daily);
-    TT.api('/api/gamestate', { method: 'PUT', body: { mode: 'hkmj', state: { stats: Stats.data, daily } } }).catch(() => { });
+    const dailyFaan = Object.fromEntries(Object.entries(store.get('dailyFaan', {})).sort().slice(-30));
+    store.set('daily', daily); store.set('dailyFaan', dailyFaan);
+    TT.api('/api/gamestate', { method: 'PUT', body: { mode: 'hkmj', state: { stats: Stats.data, daily, dailyFaan } } }).catch(() => { });
   }
 };
 function toast(html) {
@@ -3564,6 +3573,52 @@ function showReplay(V) {
 // ---------- modes ----------
 function dailyKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function dailySeed() { return +dailyKey().replace(/-/g, ''); }
+
+/* ---------- daily deal leaderboard ----------
+   Ranked by the faan you won in the day's game (every winning hand added up),
+   your best try kept. The site's shared leaderboard keeps today's board, this
+   week's and all-time; signed-out players only see their own result. */
+function lbWeek() { const n = new Date(); return Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(2024, 0, 1)) / 864e5 / 7); }
+const DailyBoard = {
+  tab: 'day', year: '', data: null, sent: null,
+  params() { return Object.assign({ game: 'hkmj', metric: 'dailyfaan', week: lbWeek(), day: dailySeed() }, this.year ? { year: this.year } : {}); },
+  post(faan) {
+    if (!Cloud.on) return;
+    this.sent = TT.api('/api/leaderboard', { method: 'POST', body: Object.assign(this.params(), { score: faan }) })
+      .then(d => { this.data = d; return d; }).catch(() => null);
+  },
+  async load() {
+    if (this.sent) { const d = await this.sent; this.sent = null; if (d) return d; }
+    return this.data = await TT.api('/api/leaderboard', { params: this.params() });
+  }
+};
+async function showDailyBoard(tab) {
+  if (tab) DailyBoard.tab = tab;
+  const mine = store.get('dailyFaan', {})[dailyKey()];
+  const o = modal('<div id="dbBody"></div>'); o.querySelector('.modal').classList.add('wide');
+  const body = o.querySelector('#dbBody');
+  const head = `<h2>Daily deal leaderboard</h2><p class="sub">Faan won in today's deal, every winning hand added up. ${mine != null ? `Your best today: <b>${mine} faan</b>.` : 'You haven\'t played today\'s deal yet.'}</p>`;
+  const close = '<div class="btnrow">' + (App.screen === 'home' ? '<button class="btn primary" id="dbPlay">Play today\'s deal</button>' : '') + '<button class="btn" id="dbClose">Close</button></div>';
+  const wire = () => {
+    body.querySelector('#dbClose').onclick = closeModal;
+    const p = body.querySelector('#dbPlay'); if (p) p.onclick = () => { closeModal(); startBotGame('daily'); };
+  };
+  if (!Cloud.on) { body.innerHTML = head + '<p class="sub">Sign in on the timetable to see everyone\'s scores.</p>' + close; wire(); return; }
+  const draw = (d, err) => {
+    const b = d && d[DailyBoard.tab === 'day' ? 'day' : DailyBoard.tab] || {}, rows = b.top || [];
+    const tabs = [['day', 'Today'], ['week', 'This week'], ['all', 'All time']];
+    const yr = d && d.myYear;
+    body.innerHTML = head + `<div class="lvls dbtabs">${tabs.map(([k, n]) => `<button class="lvl${DailyBoard.tab === k ? ' on' : ''}" data-t="${k}">${n}</button>`).join('')}</div>
+      ${yr ? `<div class="lvls dbtabs"><button class="lvl${DailyBoard.year !== 'all' ? ' on' : ''}" data-y="">Year ${esc(yr)}</button><button class="lvl${DailyBoard.year === 'all' ? ' on' : ''}" data-y="all">Everyone</button></div>` : ''}
+      ${err ? `<p class="sub">${esc(err)}</p>` : !d ? '<p class="sub">Loading…</p>' : rows.length ? `<table class="gtable">${rows.map((r, i) => `<tr${r.you ? ' class="dbyou"' : ''}><td>${i + 1}</td><td>${esc(r.name)} ${r.you ? '<span class="tag you">you</span>' : ''}</td><td style="text-align:right"><b>${r.score}</b> faan</td></tr>`).join('')}</table>
+        ${b.meRank && !rows.some(r => r.you) ? `<p class="sub">You're #${b.meRank} with ${b.meBest} faan.</p>` : ''}` : `<p class="sub">No scores ${DailyBoard.tab === 'day' ? 'today ' : DailyBoard.tab === 'week' ? 'this week ' : ''}yet. Be the first.</p>`}` + close;
+    wire();
+    body.querySelectorAll('[data-t]').forEach(x => x.onclick = () => { DailyBoard.tab = x.dataset.t; draw(d); });
+    body.querySelectorAll('[data-y]').forEach(x => x.onclick = () => { if (DailyBoard.year === x.dataset.y) return; DailyBoard.year = x.dataset.y; fetchDraw(); });
+  };
+  const fetchDraw = async () => { draw(null); try { const d = await DailyBoard.load(); if (document.body.contains(body)) draw(d); } catch (e) { if (document.body.contains(body)) draw(null, (e && e.message) || 'Couldn\'t load the board.'); } };
+  fetchDraw();
+}
 
 boot();
 

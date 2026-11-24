@@ -871,3 +871,5 @@ html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] 
 html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .stlb .lbbr{font-size:.8125rem;line-height:1.4}
 html.stfit[data-skin="studio"][data-pg="games"] .gamecard:not(:has(.stlb)) :is(.ico,h2,.mppeek){align-self:flex-start}
 html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:not(:has(.stlb)) :is(.ico,h2){align-self:center}
+/* Jim Together sits on the page, not in a white card */
+[data-skin="studio"] .stage:has(> .jt){background:none;border:0;box-shadow:none}

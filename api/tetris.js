@@ -21,7 +21,7 @@
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
-import { displayNames, withName } from "./_names.js";
+import { displayNames, withName, yearTags, withYear } from "./_names.js";
 import { yearMap, boardScope } from "./leaderboard.js";
 import { ticketAge, scoreFits } from "./_runs.js";
 
@@ -51,7 +51,7 @@ async function boardOf({ table, col, asc, narrow, extra }, me, adm) {
 }
 
 /* display-name overrides, loaded per request (see _names.js) */
-let NAMES = new Map();
+let NAMES = new Map(), TAGS = new Map();      // TAGS: "Year 12" / "Graduate" after each name
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -67,24 +67,24 @@ const ZEN_MIN = 2000, ZEN_MAX = 7200000;         // 2s … 2h
 const yr = me => ({ year: me.scope || "all" });
 async function sprintBoard(me, week, adm) {
   const b = await boardOf({ table: "tetris_score", col: "time_ms", asc: true, narrow: q => q.eq("week", week) }, me, adm);
-  return { mode: "sprint", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
+  return { mode: "sprint", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 async function zenBoard(me, adm) {
   const b = await boardOf({ table: "zen_score", col: "ms", asc: false }, me, adm);   // longer is better
-  return { mode: "zen", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
+  return { mode: "zen", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 /* all-time fastest Sprint clears (separate table from the weekly tetris_score) */
 async function sprintAllBoard(me, adm) {
   const b = await boardOf({ table: "sprint_best", col: "time_ms", asc: true }, me, adm);
-  return { mode: "sprintall", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
+  return { mode: "sprintall", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 /* Zen scoreboard: each player's most recent score alongside their all-time best */
 async function zenScoreBoard(me, adm) {
   const b = await boardOf({ table: "zen_board", col: "best", asc: false, extra: "current" }, me, adm);
-  return { mode: "zenscore", ...yr(me), top: b.rows.map(r => ({ name: withName(NAMES, r.email, r.name), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })),
+  return { mode: "zenscore", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })),
     meBest: b.meBest, meCurrent: b.mine ? b.mine.current : null, meRank: b.meRank, canWipe: adm };
 }
 
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
 
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the leaderboard." });
-  NAMES = await displayNames();
+  [NAMES, TAGS] = await Promise.all([displayNames(), yearTags()]);
   /* which year's boards (kept on this request's own "me", so two requests at once never mix) */
   me.years = await yearMap();
   me.scope = boardScope((req.method === "GET" ? req.query : (typeof req.body === "object" && req.body) || {}).year, me, me.years);
