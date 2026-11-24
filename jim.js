@@ -270,8 +270,9 @@ BUILD.jim = host => {
 /* ── Jim Together ──────────────────────────────────────────────────────
    The Jim Button for everyone at once: one shared count on an LED board above
    the button, synced across every player, and a board of who has pressed the
-   most. No achievements, no reset, no modes. The button says your first name
-   when there's a recording of it (jim/<name>.wav), and JIM when there isn't.
+   most. No achievements or reset. The button says your first name when there's
+   a recording of it (jim/<name>.wav), and JIM when there isn't; the mode button
+   under it goes your name → JIM → a random name → your name.
    Shares /api/jim (?together=1). */
 const JT_POLL = 2000;
 /* 5×7 dot-matrix digits, one string of five 0/1 per row */
@@ -292,13 +293,20 @@ BUILD.jimall = host => {
   const jimAudio = new Audio(JIM_DIR + 'jim.mp3'), stanleyAudio = new Audio(JIM_DIR + 'stanley.mp3'), nameAudio = new Audio();
   const play = a => { a.currentTime = 0; return a.play(); };
   const signedIn = !!(window.TT && TT.myEmail && TT.myEmail());
+  /* signed out: a random id this browser keeps, so its presses have a row of their own */
+  const anon = (() => { let id = TT.get('tt.jtanon', '');
+    if (!/^[a-z0-9]{8,40}$/.test(id)){ id = (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 20); TT.set('tt.jtanon', id); }
+    return id; })();
 
   /* who you are comes from your site login: your login's first name straight away, then
      the name the rest of the site shows for you (with any change made on the site) once
      the server answers. Not signed in: JIM. */
   const emailFirst = () => { const e = TT.myEmail && TT.myEmail(); return e ? e.split('@')[0].split(/[._]/)[0].replace(/\d+$/, '') : ''; };
-  let label = 'JIM', hasName = false, nameFor = '';
+  let label = 'JIM', hasName = false, nameFor = '', mode = 'name';
+  const randomAudio = new Audio();
 
+  /* the whole window across, so the button sits in the middle of the screen with the board beside it */
+  host.style.cssText = 'position:relative;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),1500px)';
   head(host, 'The Jim Button: Together', 'One button, everyone pressing it. Every press counts towards the board above it.');
   const box = document.createElement('div');
   box.className = 'jim jt';
@@ -313,6 +321,7 @@ BUILD.jimall = host => {
         '</div>' +
         '<div class="jimpanel">' + jimButtonHTML(label, 'jtbtn') + '</div>' +
         '<div class="jimcount"><span class="lbl">Your presses</span><span class="num" id="jtmine">' + (signedIn ? '…' : '—') + '</span></div>' +
+        '<div class="jimctl"><button class="btn" type="button" id="jtmode">Playing: <b id="jtmodelbl">JIM</b></button></div>' +
         (signedIn ? '' : '<p class="how jtnote">Sign in on the timetable to get your presses on the board. They still count towards the total.</p>') +
       '</div>' +
       '<div class="glb jimlb"><div class="glbhd"><h3>Top pressers</h3><span class="jimlive"><i></i>live</span></div>' +
@@ -324,8 +333,12 @@ BUILD.jimall = host => {
     const b = document.querySelector('#jtbtn .name-btn'); if (!b) return;
     b.textContent = name;
     const n = name.length;
-    b.style.fontSize = n <= 4 ? '2.4rem' : n <= 6 ? '1.9rem' : n <= 8 ? '1.5rem' : n <= 11 ? '1.2rem' : n <= 14 ? '0.95rem' : '0.78rem';
+    b.style.fontSize = 'calc(var(--jt-scale, 1) * ' + (n <= 4 ? 2.4 : n <= 6 ? 1.9 : n <= 8 ? 1.5 : n <= 11 ? 1.2 : n <= 14 ? 0.95 : 0.78) + 'rem)';
   };
+  /* what the mode button says, and what the button shows until it's next pressed */
+  const paintMode = () => { const l = $('jtmodelbl'); if (!l) return;
+    l.textContent = mode === 'jim' ? 'JIM' : mode === 'random' ? 'RANDOM' : (hasName ? label : 'YOUR NAME (JIM)');
+    if (mode === 'jim') setLabel('JIM'); else if (mode === 'name') setLabel(label); else setLabel('???'); };
   /* the button says your first name when there's a recording of it, else JIM */
   function useName(full){
     const first = String(full || '').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z'-]/g, '');
@@ -335,7 +348,7 @@ BUILD.jimall = host => {
     fetch(JIM_DIR + first + '.wav', { method:'HEAD' }).then(r => r.ok, () => false).then(ok => {
       if (!alive || nameFor !== first) return;
       hasName = ok;
-      label = hasName ? first.toUpperCase() : 'JIM'; setLabel(label);
+      label = hasName ? first.toUpperCase() : 'JIM'; paintMode();
       if (hasName){ nameAudio.src = JIM_DIR + first + '.wav'; nameAudio.load(); }
     });
   }
@@ -408,10 +421,10 @@ BUILD.jimall = host => {
       if (keepalive){
         const c = TT.get('tt.creds', null), h = { 'Content-Type':'application/json' };
         if (c && c.email && c.password){ h['X-School-Email'] = c.email; h['X-School-Password'] = c.password; }
-        fetch('/api/jim', { method:'POST', headers:h, body:JSON.stringify({ together:true, add }), keepalive:true }).catch(() => {});
+        fetch('/api/jim', { method:'POST', headers:h, body:JSON.stringify({ together:true, add, anon }), keepalive:true }).catch(() => {});
         inflight -= add;
       } else {
-        const d = await TT.api('/api/jim', { method:'POST', body:{ together:true, add } });
+        const d = await TT.api('/api/jim', { method:'POST', body:{ together:true, add, anon } });
         inflight -= add;
         server = Math.max(server, +d.total || 0);
         if (d.mine != null){ mine = Math.max(mine, +d.mine || 0); myName = d.name || myName; if (d.name) useName(d.name); }
@@ -436,13 +449,19 @@ BUILD.jimall = host => {
     const flash = document.createElement('div'); flash.className = 'jimflash';
     document.body.appendChild(flash); setTimeout(() => flash.remove(), 800);
 
-    if (hasName){ play(nameAudio).catch(() => play(jimAudio).catch(() => {})); setLabel(label); }
+    if (mode === 'random'){
+      jimNameList().then(list => { if (!alive || !list.length || mode !== 'random') return;
+        const pick = list[(Math.random() * list.length) | 0];
+        randomAudio.src = JIM_DIR + pick + '.wav'; play(randomAudio).catch(() => {}); setLabel(pick.toUpperCase()); });
+    } else if (mode === 'name' && hasName){ play(nameAudio).catch(() => play(jimAudio).catch(() => {})); setLabel(label); }
     else { const stanley = Math.random() < 0.05; play(stanley ? stanleyAudio : jimAudio).catch(() => {}); setLabel(stanley ? 'STANLEY' : 'JIM'); }
 
     clearTimeout(glowTimer);
     glowTimer = setTimeout(() => { btn.classList.remove('glowing'); num.classList.remove('glowing'); pressLocked = false; }, 520);
   }
   $('jtbtn').addEventListener('click', press);
+  $('jtmode').onclick = () => { mode = { name:'jim', jim:'random', random:'name' }[mode]; paintMode(); };
+  paintMode();
 
   /* your share so far: the board's row for you, once the server says who you are */
   async function whoAmI(){
@@ -475,6 +494,6 @@ BUILD.jimall = host => {
     document.removeEventListener('visibilitychange', onHide);
     clearTimeout(glowTimer); clearInterval(pollTimer); clearInterval(tickTimer);
     flush(true);
-    [nameAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });
+    [nameAudio, randomAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });
   };
 };

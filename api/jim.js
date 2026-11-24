@@ -13,12 +13,14 @@
  *
  * Jim Together (the multiplayer card) shares this table, under names a Jim
  * player can't type (they must start with a letter or digit):
- *   "~ALL"      every press by everyone, one shared count
- *   "~<email>"  each signed-in player's share of it (whoami; signed-out presses
- *               still count towards ~ALL)
+ *   "~<email>"   each signed-in player's presses (whoami)
+ *   "~anon:<id>" a signed-out player's, by a random id their browser keeps
+ * The shared count is the sum of every "~" row. Each row is only written by
+ * its own player, one batch at a time, so a plain read-then-write is safe and
+ * it doesn't need the jim_press function (the live database didn't have it).
  * GET  /api/jim?together=1          → { total, top: [{ name, score }, …] }
  *      …&me=1 (signed in)           → also me: { name, score }
- * POST /api/jim { together:true, add } → { total, mine, name }
+ * POST /api/jim { together:true, add, anon } → { total, mine, name }
  *
  * Table + function (SQL in SETUP.md):
  *   jim_score(name text primary key, score bigint, updated_at timestamptz)
@@ -29,19 +31,38 @@ import { db, whoami } from "./_supabase.js";
 import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
 import { displayNames, withName, nameFromLocal } from "./_names.js";
 
-const ALL = "~ALL";
+/* add to one player's row (read, then write the new count) */
+async function bump(key, add) {
+  const { data: ex, error: e1 } = await db.from("jim_score").select("score").eq("name", key).maybeSingle();
+  if (e1) throw new Error(e1.message);
+  const score = (Number(ex && ex.score) || 0) + add;
+  const { error: e2 } = await db.from("jim_score").upsert({ name: key, score, updated_at: new Date().toISOString() });
+  if (e2) throw new Error(e2.message);
+  return score;
+}
+/* every Together row added up, a page of 1000 at a time */
+async function totalOf() {
+  let sum = 0;
+  for (let from = 0; from < 50000; from += 1000) {
+    const { data, error } = await db.from("jim_score").select("score").like("name", "~%").range(from, from + 999);
+    if (error) throw new Error(error.message);
+    (data || []).forEach(r => { sum += Number(r.score) || 0; });
+    if (!data || data.length < 1000) break;
+  }
+  return sum;
+}
 const TOP = 20;
 
 /* the shared count and the biggest contributors, by their usual names */
 async function together() {
-  const [{ data: all, error: e1 }, { data: rows, error: e2 }] = await Promise.all([
-    db.from("jim_score").select("score").eq("name", ALL).maybeSingle(),
+  const [total, { data: rows, error: e2 }] = await Promise.all([
+    totalOf(),
     db.from("jim_score").select("name, score").like("name", "~%@%").gt("score", 0)
       .order("score", { ascending: false }).limit(TOP)
   ]);
-  if (e1 || e2) throw new Error((e1 || e2).message);
+  if (e2) throw new Error(e2.message);
   const names = await displayNames();
-  return { total: Number(all && all.score) || 0,
+  return { total,
            top: (rows || []).map(r => { const email = r.name.slice(1);
              return { name: withName(names, email, nameFromLocal(email.split("@")[0])), score: Number(r.score) || 0 }; }) };
 }
@@ -101,14 +122,15 @@ export default async function handler(req, res) {
       const add = Math.floor(Number(body.add));
       if (!(add >= 1 && add <= MAX_ADD)) return res.status(400).json({ error: "Bad press count." });
       const me = await whoami(req).catch(() => null);
-      const [tot, mine] = await Promise.all([
-        db.rpc("jim_press", { p_name: ALL, p_add: add }),
-        me && me.email ? db.rpc("jim_press", { p_name: "~" + me.email.toLowerCase(), p_add: add }) : Promise.resolve({ data: null })
-      ]);
-      if (tot.error || mine.error) { console.error("jim together press:", (tot.error || mine.error).message); return res.status(502).json({ error: "Couldn't save the press." }); }
+      const anon = /^[a-z0-9]{8,40}$/.test(String(body.anon || "")) ? String(body.anon) : null;
+      const key = me && me.email ? "~" + me.email.toLowerCase() : anon ? "~anon:" + anon : null;
+      if (!key) return res.status(400).json({ error: "Who's pressing?" });
+      let mine, total;
+      try { mine = await bump(key, add); total = await totalOf(); }
+      catch (e) { console.error("jim together press:", e.message); return res.status(502).json({ error: "Couldn't save the press." }); }
       let name = null;
       if (me && me.email) name = withName(await displayNames(), me.email, nameFromLocal(me.email.split("@")[0]));
-      return res.status(200).json({ total: Number(tot.data) || 0, mine: mine.data == null ? null : Number(mine.data) || 0, name });
+      return res.status(200).json({ total, mine: me && me.email ? mine : null, name });
     }
 
     const name = cleanName(body && body.name);
