@@ -9,7 +9,7 @@ const JIM_DIR = 'jim/';
 /* ADD NEW MILESTONES HERE — each needs a matching jim/<score>.m4a */
 const JIM_ACH = [1, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
                  1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
-const JIM_POLL = 4000;        // how often the open board refreshes
+const JIM_POLL = 15000;       // how often the open board refreshes (was 4 s; 15 s since 24 November 2026, to use less server time)
 const JIM_FLUSH = 800;        // presses are sent in batches, this long after the last one
 
 async function jimApi(body, keepalive){
@@ -274,7 +274,7 @@ BUILD.jim = host => {
    a recording of it (jim/<name>.wav), and JIM when there isn't; the mode button
    under it goes your name → JIM → a random name → your name.
    Shares /api/jim (?together=1). */
-const JT_POLL = 2000;
+const JT_POLL = 15000;        // Together: how often the shared count is fetched (was 2 s; your own presses still show at once)
 /* 5×7 dot-matrix digits, one string of five 0/1 per row */
 const JT_FONT = {
   0:['01110','10001','10011','10101','11001','10001','01110'], 1:['00100','01100','00100','00100','00100','00100','01110'],

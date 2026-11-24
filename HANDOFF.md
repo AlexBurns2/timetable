@@ -4802,3 +4802,18 @@ The owner committed 8.182 to 8.188 as `goop` and pulled `origin/main` (`2e2311b`
 Together). Every conflict was a version stamp except `icons.js` `GAMES`, which now holds both `fours` (Quartets) and `jimall`.
 `games.html` keeps origin's stamped `jim.js`. All pages were restamped `i` / v116, above both sides; the next free stamp is `j` /
 v117. Checked: no markers left, scripts parse, the games page loads both new games, the timetable page loads. Staged, not committed.
+
+## 8.190 Less server CPU (version `20261124j`, `CACHE_VERSION` v117)
+Fluid Active CPU was at 3h 4m of the Hobby plan's 4h. In one day's Observability, `/api/leaderboard` used 2m over 3.9K calls,
+`/api/jim` 35s over 2.5K calls, and the rest about 30s each.
+- **Site settings** (`/api/leaderboard?settings=1`, which says whether you're a moderator) were asked by `settings.js` on every
+  page, and again by `games.js`, `index.html`, `poll.js` and `themes.html`. Now there's one `TT.siteCfg()` in `theme.js`: one
+  call a page, remembered in the tab for 10 minutes (`sessionStorage` `msc.site`, for whoever is signed in).
+  `TT.forgetSite()` drops it; the moderator page calls it after changing a site setting. Checked: the games page makes one call,
+  not two, and Home opened afterwards in the same tab makes none.
+- **The Jim Button:** the open board refreshes every 15 s (Together was 2 s, solo 4 s). `api/jim.js` keeps the full count for
+  15 s on each server instance and adds the presses it saves on top, rather than adding every row up on each call.
+- **Calendar:** signed out, `calendar.html` no longer calls `/api/calendar`, which could only answer 401. It says "Sign in to
+  see and save your events." instead. `/api/calendar` showed a 51% error rate on 45 calls, cause unknown: the 401s might be all
+  of it, or not, if Vercel counts only 5xx. Its logs (Observability, then the route) would say; `andre/` (left alone) also
+  calls `?ical=1`. Next free stamp: `k` / v118.

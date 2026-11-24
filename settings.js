@@ -288,7 +288,7 @@ window.openSettings = openSettings;            // the Theme finder opens it for 
    button, which changed how the page looked for them). The server answers
    isMod and checks every moderator action again. */
 if (TTx.signedIn && TTx.signedIn() && TTx.api){
-  TTx.api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
+  TTx.siteCfg().then(d => {
     if (d && TTx.setMod) TTx.setMod(!!d.isMod);                 // (moderators' themes: theme.js)
     if (!d || !d.isMod) return;
     const b = $('openMod'); if (!b) return;

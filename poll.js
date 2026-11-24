@@ -303,7 +303,7 @@ function afterDraw(first, startAt){
     /* a preview link is for moderators choosing a show. For anyone else it does nothing (the
        server says who is a moderator), so a link can't dress the real results up under a
        made-up question and line. */
-    TT.api('/api/leaderboard', { params:{ settings:1 } }).then(s => { if (s && s.isMod){ if (isMin()) setMin(false); preview(pv, q); } }, () => {});
+    TT.siteCfg().then(s => { if (s && s.isMod){ if (isMin()) setMin(false); preview(pv, q); } }, () => {});
     return;
   }
   if (!p) return;

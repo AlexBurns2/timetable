@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261124i';
+const ASSET_V = '20261124j';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1418,6 +1418,28 @@ async function api(path, opts){
   if (!res.ok) throw new Error((data && data.error) || (res.status === 504 ? 'The server took too long to answer. Try again in a moment.' : res.status + ' ' + res.statusText));
   return data;
 }
+/* Site settings and whether you're a moderator (/api/leaderboard?settings=1). Every page wants them, so they're asked
+   once a page and remembered in this tab for 10 minutes (sessionStorage, for whoever is signed in), so going from page to
+   page doesn't call the server each time: on 24 November 2026 this one call was most of /api/leaderboard's 3.9K a day, the
+   site's largest use of server time. The server still checks every moderator action. forgetSite(): after a moderator
+   changes a setting, so the next read is fresh. */
+const SITE_KEY = 'msc.site', SITE_TTL = 10 * 60e3;
+let siteP = null;
+function siteCfg(){
+  if (siteP) return siteP;
+  const who = String(myEmail() || '').toLowerCase();
+  try {
+    const c = JSON.parse(sessionStorage.getItem(SITE_KEY) || 'null');
+    if (c && c.d && c.who === who && Date.now() - c.at < SITE_TTL && Date.now() >= c.at) return (siteP = Promise.resolve(c.d));
+  } catch {}
+  siteP = api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
+    try { if (d) sessionStorage.setItem(SITE_KEY, JSON.stringify({ who, at: Date.now(), d })); } catch {}
+    return d;
+  }, e => { siteP = null; throw e; });
+  return siteP;
+}
+function forgetSite(){ siteP = null; try { sessionStorage.removeItem(SITE_KEY); } catch {} }
+
 /* the loading indicator (styles in theme.css): what's loading, then "still
    loading" after 6 s and a plain note after 20 s. sm: a compact one. */
 const escHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
@@ -1618,7 +1640,7 @@ function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read',
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsTag, newsSeen, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
+              apiGet, api, siteCfg, forgetSite, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
                  same as myEmail(), which is whose timetable you are looking at
                  and can be set without ever signing in. */

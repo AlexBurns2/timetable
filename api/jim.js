@@ -57,12 +57,23 @@ async function totalOf() {
   }
   return { sum, anon };
 }
+/* Adding every row up on each call was most of this route's server time (24 November 2026), so a server instance keeps
+   the last full count for 15 s and adds the presses it saves itself on top. Another instance's presses show up within
+   15 s; the page only ever moves its count up (Math.max), so a slightly old total does no harm. */
+const TOTAL_TTL = 15e3;
+let TOTAL = null;                                     // { sum, anon, at }
+async function totalCached() {
+  if (TOTAL && Date.now() - TOTAL.at < TOTAL_TTL) return TOTAL;
+  const t = await totalOf();
+  TOTAL = { sum: t.sum, anon: t.anon, at: Date.now() };
+  return TOTAL;
+}
 const TOP = 20;
 
 /* the shared count and the biggest contributors, by their usual names */
 async function together() {
   const [total, { data: rows, error: e2 }] = await Promise.all([
-    totalOf(),
+    totalCached(),
     db.from("jim_score").select("name, score").like("name", "~%@%").gt("score", 0)
       .order("score", { ascending: false }).limit(TOP)
   ]);
@@ -132,7 +143,11 @@ export default async function handler(req, res) {
       const key = me && me.email ? "~" + me.email.toLowerCase() : anon ? "~anon:" + anon : null;
       if (!key) return res.status(400).json({ error: "Who's pressing?" });
       let mine, total;
-      try { mine = await bump(key, add); total = (await totalOf()).sum; }
+      try {
+        mine = await bump(key, add);
+        if (TOTAL && Date.now() - TOTAL.at < TOTAL_TTL) { TOTAL.sum += add; if (key.startsWith("~anon:")) TOTAL.anon += add; total = TOTAL.sum; }
+        else total = (await totalCached()).sum;
+      }
       catch (e) { console.error("jim together press:", e.message); return res.status(502).json({ error: "Couldn't save the press." }); }
       let name = null;
       if (me && me.email) name = await boardName(me.email);

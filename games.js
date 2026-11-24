@@ -841,7 +841,7 @@ const RV = (() => {
    if the read fails nothing changes from how the site behaved before. */
 let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false };
 function siteSettings(){
-  if (!sitePromise) sitePromise = TT.api('/api/leaderboard', { params:{ settings:1 } })
+  if (!sitePromise) sitePromise = TT.siteCfg()
     .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
                  siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
@@ -852,7 +852,7 @@ function siteSettings(){
 /* off the games page: hidden in code, or by a moderator (site settings) */
 function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id); }
 const weeklyOn = () => siteCfg.weeklyBoards;
-const forgetSiteSettings = () => { sitePromise = null; };
+const forgetSiteSettings = () => { sitePromise = null; TT.forgetSite(); };
 if (typeof TT !== 'undefined' && TT.myEmail && TT.myEmail()) siteSettings();   // warm before a board is opened
 
 let lbSeq = 0;        // bumped whenever the stage changes, so a slow mount can't land on the wrong game
@@ -2160,7 +2160,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124i';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124j';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4958,6 +4958,7 @@ BUILD.admin = host => {
         try {
           const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', hiddenGames:[...hidden] } });
           siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || [...hidden], isMod: true };
+          TT.forgetSite();                          // (the copy remembered for this tab is now out of date)
           render();
         } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
       });
@@ -4966,6 +4967,7 @@ BUILD.admin = host => {
         try {
           const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', weeklyBoards:!on } });
           siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || siteCfg.hiddenGames, isMod: true };
+          TT.forgetSite();                          // (the copy remembered for this tab is now out of date)
           render();
         } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
       };
