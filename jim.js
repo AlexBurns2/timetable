@@ -307,20 +307,10 @@ BUILD.jimall = host => {
   let label = 'JIM', hasName = false, nameFor = '', mode = 'name';
   const randomAudio = new Audio();
 
-  /* wider than the page column on a big screen, centred on the visible window (clientWidth, which
-     leaves out the scrollbar), so the button sits mid-screen with the board beside it. Only width
-     and margin are touched, and both go back when you leave: the stage is shared by every game. */
-  const fitWide = () => {
-    host.style.width = ''; host.style.marginLeft = '';
-    const vw = document.documentElement.clientWidth, base = host.getBoundingClientRect();
-    const w = Math.max(base.width, Math.min(vw - 32, 1500));
-    if (w <= base.width + 1) return;
-    host.style.width = w + 'px';
-    host.style.marginLeft = Math.round((vw - w) / 2 - base.left) + 'px';
-  };
-  fitWide();
-  addEventListener('resize', fitWide);
-  head(host, 'The Jim Button: Together');
+  /* It used to grow wider than the page column on a big screen, which spilled out of the window on themes that draw the
+     page as one (Vaporwave). Since 24 November 2026 it keeps the page's own width: the layout (games.css, .jt) is by the
+     game's width, so the board goes beside the button or under it as there's room. */
+  head(host, 'Button Pushers');
   const box = document.createElement('div');
   box.className = 'jim jt';
   host.appendChild(box);
@@ -517,8 +507,6 @@ BUILD.jimall = host => {
     alive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('visibilitychange', onHide);
-    removeEventListener('resize', fitWide);
-    host.style.width = ''; host.style.marginLeft = '';
     clearTimeout(glowTimer); clearInterval(pollTimer); clearInterval(tickTimer);
     flush(true);
     [nameAudio, randomAudio, jimAudio, stanleyAudio].forEach(a => { try { a.pause(); } catch {} });

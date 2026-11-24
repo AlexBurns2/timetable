@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261124j';
+const ASSET_V = '20261124k';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1613,24 +1613,53 @@ const NEWS = [
   { id:'dgarchive', date:'2026-11-09', key:'game:dailyguess', title:'Daily Guess Who archive',
     text:'Play past days from the calendar, and see how your year went each day.', href:'games.html?play=dailyguess' }
 ];
+/* NEW tags that have no What's-new entry (the owner writes those): key and the day it came. Newest first. */
+const TAGS = [
+  { key:'game:fours', date:'2026-11-25' },            // Quartets again
+  { key:'game:jimall', date:'2026-11-24' }            // Button Pushers
+];
 const NEWS_DAYS = 21;
 const ymd = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const recent = n => Date.now() - Date.parse(n.date + 'T00:00:00') < NEWS_DAYS * 864e5;
-/* a NEW tag on this key? (something newer than the day you last opened it) */
-function newsActive(key){
-  const seen = (get('tt.news_seen', {}) || {})[key] || '';
-  return NEWS.some(n => n.key === key && recent(n) && n.date > seen);
+/* Who sees NEW tags (the owner, 24 November 2026): only for things that came since your last visit before today, so
+   someone here for the first time sees none; and none at all when there are more than TAG_MAX of them (after a long
+   time away a page of tags says nothing). A tag goes once you open the thing. msc.lastvisit / msc.prevvisit are days,
+   kept on this device only (a synced key would cost a server call each day for everyone). Someone who used the site
+   before these keys existed counts from 2026-11-23, so what came since still shows for them. */
+const TAG_MAX = 4;
+const visitBase = (() => {
+  const LV = 'msc.lastvisit', PV = 'msc.prevvisit', rd = k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+  const today = ymd(), last = rd(LV);
+  if (last === today) return rd(PV) || today;
+  let prev = last;
+  if (!prev){
+    const before = ['tt.creds', 'tt.news_read', 'tt.news_seen', 'tt.syncedat'].some(k => { try { return localStorage.getItem(k) != null; } catch { return false; } });
+    prev = before ? '2026-11-23' : today;
+  }
+  try { localStorage.setItem(PV, prev); localStorage.setItem(LV, today); } catch {}
+  return prev;
+})();
+/* every NEW tag that could show now: [{ key, date, tag }], or none when there are too many */
+function liveTags(){
+  const today = ymd();                                // (and not before its day: one dated ahead waits for it)
+  const all = NEWS.filter(n => n.key).concat(TAGS).filter(n => recent(n) && n.date > visitBase && n.date <= today);
+  if (new Set(all.map(n => n.key)).size > TAG_MAX) return [];
+  const seen = get('tt.news_seen', {}) || {};
+  return all.filter(n => n.date > (seen[n.key] || ''));
 }
+/* a NEW tag on this key? */
+function newsActive(key){ return liveTags().some(n => n.key === key); }
+/* the keys with a tag now (Home's Games tile) */
+const tagKeys = () => [...new Set(liveTags().map(n => n.key))];
 /* what that tag says: the newest unseen entry's tag, or 'New' */
 function newsTag(key){
-  const seen = (get('tt.news_seen', {}) || {})[key] || '';
-  const n = NEWS.find(n => n.key === key && recent(n) && n.date > seen);
+  const n = liveTags().find(n => n.key === key);
   return (n && n.tag) || 'New';
 }
 function newsSeen(key){
   if (!newsActive(key)) return;
   /* today, or the date of its newest entry if that's later (one dated a day ahead still clears) */
-  const upto = NEWS.filter(n => n.key === key).reduce((d, n) => n.date > d ? n.date : d, ymd());
+  const upto = NEWS.filter(n => n.key === key).concat(TAGS.filter(n => n.key === key)).reduce((d, n) => n.date > d ? n.date : d, ymd());
   const m = Object.assign({}, get('tt.news_seen', {}) || {}); m[key] = upto; set('tt.news_seen', m);
 }
 /* the sheet: anything recent you haven't seen there yet */
@@ -1638,7 +1667,7 @@ const newsUnread = () => { const r = get('tt.news_read', '') || ''; return NEWS.
 function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read', NEWS[0].date); }
 
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
-              NEWS, newsActive, newsTag, newsSeen, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
+              NEWS, newsActive, newsTag, newsSeen, tagKeys, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
               apiGet, api, siteCfg, forgetSite, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the

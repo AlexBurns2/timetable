@@ -153,7 +153,7 @@ const GAMES = [
   { id:'dailyguess', cat:'Timetable', ico:'📅', name:'Daily Guess Who', blurb:'One mystery student a day, same for your whole year', w:2 },
   { id:'whose', cat:'Timetable', ico:'🗓️', name:'Whose Timetable?', blurb:'Someone’s fortnight from your year, filled in a hint at a time' },
   { id:'quartets', cat:'Timetable', ico:'☘️', name:'Triplets', blurb:'Find the three groups of three from your year.' },
-  { id:'fours', cat:'Timetable', ico:'🍀', name:'Quartets', blurb:'Four groups of four from your year, a new one every second day', isNew:true },
+  { id:'fours', cat:'Timetable', ico:'🍀', name:'Quartets', blurb:'Four groups of four from your year, a new one every second day' },
   { id:'guesswho', cat:'Timetable', ico:'🕵️', name:'Guess Who', blurb:'Guess the mystery classmate, grade or teacher' },
   { id:'classroom', cat:'Timetable', ico:'🚪', name:'Classroom', blurb:'Rooms, teachers and classes from your timetable' },
   { id:'chain',  cat:'Timetable', ico:'🔗', name:'Six Degrees', blurb:'Chain classmate to classmate through shared classes' },
@@ -165,7 +165,7 @@ const GAMES = [
   { id:'mp-relay',  cat:'Multiplayer', ico:'✏️', name:'Sketch', blurb:'Write, draw, guess, and watch it drift' },
   { id:'mp-impostor', cat:'Multiplayer', ico:'🕵️', name:'Impostor', blurb:'Everyone knows the word but one' },
   { id:'mp-chess',  cat:'Multiplayer', ico:'♟️', name:'Chess', blurb:'Two play, the lobby watches' },
-  { id:'jimall',    cat:'Multiplayer', ico:'🟡', name:'The Jim Button: Together', blurb:'One button for everyone, one shared count', isNew:true },
+  { id:'jimall',    cat:'Multiplayer', ico:'🟡', name:'Button Pushers', blurb:'One button for everyone, one shared count' },
   { id:'hkmj',   cat:'Multiplayer', ico:'🀄', name:'Hong Kong Mahjong', blurb:'Play against the computer, Hong Kong rules, from Easy to Master', w:2 },
   { id:'tetris', cat:'Arcade', ico:'🟦', name:'Tetris', blurb:'Sprint, Survival, Zen and Practice', w:2 },
   { id:'snake',  cat:'Arcade', ico:'🐍', name:'Snake', blurb:'Eat, grow, don’t crash' },
@@ -212,6 +212,7 @@ function gameCard(g, i){
   const c = document.createElement('button');
   /* NEW: from the What's-new list (theme.js), until you open it */
   const fresh = !g.mp && !REVISION_PAGE && !!(window.TT && TT.newsActive && TT.newsActive('game:' + g.id));
+  /* (NEW tags: theme.js TAGS and the What's-new list, so they go when the game is opened and follow the rules there) */
   c.type = 'button'; c.className = 'gamecard' + (g.isNew || g.mp || fresh ? ' isnew' : '');
   c.style.animationDelay = Math.min(i * 18, 180) + 'ms';
   /* just the icon and the name, the same height everywhere (your records are
@@ -1891,9 +1892,10 @@ const connGame = (host, Q) => {
       '<div class="qtsolved" id="qtsolved"></div>' +
       '<div class="qtgrid' + (trip ? ' qt3' : '') + '" id="qtgrid" role="group" aria-label="The ' + (trip ? 'nine' : 'sixteen') + ' people"></div>' +
       '<div class="qtlives" id="qtlives"></div>' +
+      '<p class="how qthintnote" id="qthintnote" hidden></p>' +
       '<div class="qtbtns" id="qtbtns"><button class="btn" type="button" id="qtshuf">Shuffle</button>' +
         '<button class="btn" type="button" id="qtclear">Deselect all</button>' +
-        (trip ? '<button class="btn" type="button" id="qthint">Hint</button>' : '') +
+        (trip && !s.autoHint ? '<button class="btn" type="button" id="qthint">Hint</button>' : '') +      // (from 25 November the hint comes by itself)
         '<button class="btn primary" type="button" id="qtgo" disabled>Submit</button></div>' +
       '<div class="qtmsg" id="qtmsg" role="status" aria-live="polite"></div>' +
       '<div class="qtdone" id="qtdone"></div>' +
@@ -1924,6 +1926,9 @@ const connGame = (host, Q) => {
       });
       $('qtgo').disabled = sel.size !== K || busy;
       const hb = $('qthint'); if (hb){ hb.disabled = hinted || done || busy; hb.textContent = hinted ? 'Hint used' : 'Hint'; }
+      /* Triplets' last-chance hint (from 25 November): stays on screen, with what the group is */
+      const hn = $('qthintnote'), hl = !done && hint.label && (hint.gold || []).length;
+      hn.hidden = !hl; hn.innerHTML = hl ? 'Last chance hint: the two outlined people are in the group <b>' + esc(hint.label) + '</b>.' : '';
     };
     const paintLives = () => {
       $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:CH }, (_, i) => '<i class="' + (i < CH - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
@@ -2004,7 +2009,8 @@ const connGame = (host, Q) => {
         SFX.line(found.length);
         if (done) SFX.win();
       } else {
-        say(r.oneAway ? 'One away…' : 'Not a group.', true);
+        /* with two groups of three left, every wrong pick is two from one and one from the other: "one away" says nothing */
+        say(r.oneAway ? (trip && order.length === 6 ? 'Not quite. With two groups left, every wrong pick is one away.' : 'One away…') : 'Not a group.', true);
         /* a hint just unlocked: say so (after the shake) */
         setTimeout(() => { const now = (hint.gold || []).length + (hint.blue || []).length; if (done || now <= before) return;
           if ((hint.blue || []).length > blueBefore) say('Last chance: the two people outlined in blue are in the same group.');
@@ -2160,7 +2166,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124j';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124k';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

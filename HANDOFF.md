@@ -4817,3 +4817,18 @@ Fluid Active CPU was at 3h 4m of the Hobby plan's 4h. In one day's Observability
   see and save your events." instead. `/api/calendar` showed a 51% error rate on 45 calls, cause unknown: the 401s might be all
   of it, or not, if Vercel counts only 5xx. Its logs (Observability, then the route) would say; `andre/` (left alone) also
   calls `?ical=1`. Next free stamp: `k` / v118.
+
+## 8.191 Button Pushers, Triplets' hint, NEW tags (version `20261124k`, `CACHE_VERSION` v118)
+The owner committed 8.190 as `cpu`.
+- **Button Pushers** (was The Jim Button: Together, id `jimall`) keeps the page's own width. The old `fitWide` made it wider than
+  the column, which spilled out of the Vaporwave window. Checked in Vaporwave at 1877 and 1280 wide, in Plain, and on a phone.
+- **Triplets from 25 November** (`AUTO_HINT_FROM` in `api/_connroute.js`): no Hint button, and a sent `hint` is ignored. With one
+  mistake left (3 of 4), the board sends `hint: { gold: [two people], label }` for the easiest unsolved group while two or more
+  are left. The page outlines the two and keeps a note under the lives. With two groups left, a wrong pick says "Not quite. With
+  two groups left, every wrong pick is one away." instead of "One away…" (always true there). Days before the 25th keep the
+  button and the old hint; Quartets is unchanged. Tested against in-memory tables, and in the mock with `MOCK_TODAY=2026-11-25`.
+- **NEW tags** (`theme.js`): the games' hard-coded `isNew:true` never cleared. Tags without a What's-new entry are now `TAGS`
+  (key and date). `liveTags()` shows only things dated after your last visit before today (`msc.lastvisit` / `msc.prevvisit`,
+  on the device and not synced, to save calls), and up to today. A first visit sees none, more than `TAG_MAX` (4) shows none,
+  and opening a thing clears its tag (`newsSeen`). A device with older site data and no visit keys counts from 2026-11-23.
+  Home's Games-tile pill uses `TT.tagKeys()`. Next free stamp: `l` / v119.

@@ -1257,6 +1257,7 @@ html[data-motion="reduced"] .jimflash,html[data-motion="reduced"] .jimlive i{ani
 .qttile.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 .qtlives{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 10px;font-size:0.8125rem;color:var(--muted)}
 .qtlives:empty{display:none}
+.qthintnote{text-align:center;margin:0 0 10px}                 /* Triplets' last-chance hint (from 25 November 2026) */
 .qtlives span{display:inline-flex;gap:5px}
 .qtlives i{width:10px;height:10px;border-radius:50%;background:var(--line)}
 .qtlives i.on{background:var(--text)}

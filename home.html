@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261124j">
-<script src="theme.js?v=20261124j"></script>
-<script src="icons.js?v=20261124j"></script>
+<link rel="stylesheet" href="theme.css?v=20261124k">
+<script src="theme.js?v=20261124k"></script>
+<script src="icons.js?v=20261124k"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261124j">
-<link rel="stylesheet" href="settings.css?v=20261124j">
-<link rel="stylesheet" href="poll.css?v=20261124j">
+<link rel="stylesheet" href="site.css?v=20261124k">
+<link rel="stylesheet" href="settings.css?v=20261124k">
+<link rel="stylesheet" href="poll.css?v=20261124k">
 </head>
 <body>
 <div class="wrap hub">
@@ -597,8 +597,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261124j"></script>
-<script src="poll.js?v=20261124j"></script>
+<script src="settings.js?v=20261124k"></script>
+<script src="poll.js?v=20261124k"></script>
 <script>
 /* ── Today: the daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),
@@ -622,7 +622,7 @@ loadForum();
   /* a tag on the Games tile, for a new or changed game that isn't already in the strip: New if any is
      new, Updated if they're all changes to games people know */
   const tile = document.getElementById('tileGames');
-  const other = [...new Set((TT.NEWS || []).filter(n => n.key && /^game:/.test(n.key) && !DAILY.some(g => 'game:' + g.id === n.key) && TT.newsActive(n.key)).map(n => n.key))];
+  const other = (TT.tagKeys ? TT.tagKeys() : []).filter(k => /^game:/.test(k) && !DAILY.some(g => 'game:' + g.id === k));
   const word = other.some(k => !TT.newsTag || TT.newsTag(k) === 'New') ? 'New' : 'Updated';
   if (tile && other.length && !tile.classList.contains('locked')) tile.insertAdjacentHTML('beforeend', '<span class="newpill tilepill">' + word + '</span>');
 })();

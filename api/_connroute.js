@@ -233,11 +233,20 @@ export async function prebuildQuartets(year, date, NAMES, deadline = Date.now() 
 const seeded = (list, seed) => { let h = 2166136261; for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
   const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const HINT_MARK = 0;                    // a log entry of all zeros: Triplets' hint was asked for (kept with the result)
+/* Triplets from 25 November 2026: no Hint button. With one mistake left the hint comes by itself: two people from the
+   easiest group still unsolved, and what that group is (the owner, 24 November: people were stuck once only two groups were
+   left, where every wrong pick reads "one away"). Earlier days keep the button and the hint as they were. */
+export const AUTO_HINT_FROM = "2026-11-25";
+const autoHint = (K, date) => K === 3 && String(date) >= AUTO_HINT_FROM;
 /* The hints, from the guesses so far. Triplets: the one asked for, two people from the easiest
    group still unsolved. Quartets (earlier days): two in a row wrong lights up two from the easiest
    unsolved group, a third wrong in a row a third; with one mistake left, two from another group. */
 function hintsFor(groups, result, date, CH) {
   const K = groups.length, found = result.found || [], log = (result.log || []).filter(g => !g.every(l => l === HINT_MARK));
+  if (K === 3 && autoHint(K, date)) {
+    const left = groups.filter(x => !found.includes(x.lv)), hg = left[0];
+    if (result.done || left.length < 2 || (result.mistakes || 0) < CH - 1) return { gold: [], blue: [] };
+    return { gold: seeded(hg.names, date + ":hint").slice(0, 2), blue: [], label: hg.label }; }
   if (K === 3) { const hg = groups.find(x => !found.includes(x.lv));
     return { gold: result.hinted && hg && !result.done ? seeded(hg.names, date + ":hint").slice(0, 2) : [], blue: [] }; }
   let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];
@@ -257,7 +266,7 @@ function hintsFor(groups, result, date, CH) {
 function boardView(groups, result, date, CH) {
   const sorted = groups.slice().sort((a, b) => a.lv - b.lv), found = result.found || [];
   const shown = result.done ? sorted : found.map(lv => sorted.find(g => g.lv === lv)).filter(Boolean);
-  return { size: sorted.length, chances: CH,
+  return { size: sorted.length, chances: CH, autoHint: autoHint(sorted.length, date),
     tiles: seeded(sorted.flatMap(g => g.names), date).filter(n => !shown.some(g => g.names.includes(n))),
     groups: shown.map(g => ({ lv: g.lv, label: g.label, names: g.names, how: g.how, found: found.includes(g.lv) })),
     result: { found, log: result.log || [], mistakes: result.mistakes || 0, solved: !!result.solved, done: !!result.done, hinted: !!result.hinted },
@@ -326,7 +335,7 @@ export async function connRoute(req, res, me, body, NAMES) {
       const G = stored.length;                                    // groups, and people in each (the same)
       let extra = {};
       if (body.hint) {
-        if (G !== 3 || result.hinted) return board();
+        if (G !== 3 || result.hinted || autoHint(G, date)) return board();
         result.log = result.log.concat([Array(G).fill(HINT_MARK)]); result.hinted = true;
       } else {
         /* a guess: K names, all still on the board */
