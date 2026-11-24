@@ -4832,3 +4832,7 @@ The owner committed 8.190 as `cpu`.
   on the device and not synced, to save calls), and up to today. A first visit sees none, more than `TAG_MAX` (4) shows none,
   and opening a thing clears its tag (`newsSeen`). A device with older site data and no visit keys counts from 2026-11-23.
   Home's Games-tile pill uses `TT.tagKeys()`. Next free stamp: `l` / v119.
+
+## 8.192 Triplets' hint without the group's name (version `20261124l`, `CACHE_VERSION` v119)
+The owner committed 8.191 as `br`, then asked for the group name to come out of the hint. The board no longer sends `label`, and
+the note reads "Last chance hint: the two outlined people are in the same group." Next free stamp: `m` / v120.

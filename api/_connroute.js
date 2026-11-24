@@ -234,8 +234,8 @@ const seeded = (list, seed) => { let h = 2166136261; for (const ch of String(see
   const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const HINT_MARK = 0;                    // a log entry of all zeros: Triplets' hint was asked for (kept with the result)
 /* Triplets from 25 November 2026: no Hint button. With one mistake left the hint comes by itself: two people from the
-   easiest group still unsolved, and what that group is (the owner, 24 November: people were stuck once only two groups were
-   left, where every wrong pick reads "one away"). Earlier days keep the button and the hint as they were. */
+   easiest group still unsolved (the owner, 24 November: people were stuck once only two groups were left, where every wrong
+   pick reads "one away"). Not the group's name: the owner took that out. Earlier days keep the button and the hint as they were. */
 export const AUTO_HINT_FROM = "2026-11-25";
 const autoHint = (K, date) => K === 3 && String(date) >= AUTO_HINT_FROM;
 /* The hints, from the guesses so far. Triplets: the one asked for, two people from the easiest
@@ -246,7 +246,7 @@ function hintsFor(groups, result, date, CH) {
   if (K === 3 && autoHint(K, date)) {
     const left = groups.filter(x => !found.includes(x.lv)), hg = left[0];
     if (result.done || left.length < 2 || (result.mistakes || 0) < CH - 1) return { gold: [], blue: [] };
-    return { gold: seeded(hg.names, date + ":hint").slice(0, 2), blue: [], label: hg.label }; }
+    return { gold: seeded(hg.names, date + ":hint").slice(0, 2), blue: [] }; }
   if (K === 3) { const hg = groups.find(x => !found.includes(x.lv));
     return { gold: result.hinted && hg && !result.done ? seeded(hg.names, date + ":hint").slice(0, 2) : [], blue: [] }; }
   let run = 0, step = 0, hg = null, lg = null, wrong = 0; const got = [];

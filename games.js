@@ -1926,9 +1926,9 @@ const connGame = (host, Q) => {
       });
       $('qtgo').disabled = sel.size !== K || busy;
       const hb = $('qthint'); if (hb){ hb.disabled = hinted || done || busy; hb.textContent = hinted ? 'Hint used' : 'Hint'; }
-      /* Triplets' last-chance hint (from 25 November): stays on screen, with what the group is */
-      const hn = $('qthintnote'), hl = !done && hint.label && (hint.gold || []).length;
-      hn.hidden = !hl; hn.innerHTML = hl ? 'Last chance hint: the two outlined people are in the group <b>' + esc(hint.label) + '</b>.' : '';
+      /* Triplets' last-chance hint (from 25 November): stays on screen while it's there */
+      const hn = $('qthintnote'), hl = !done && s.autoHint && (hint.gold || []).length;
+      hn.hidden = !hl; hn.textContent = hl ? 'Last chance hint: the two outlined people are in the same group.' : '';
     };
     const paintLives = () => {
       $('qtlives').innerHTML = done ? '' : 'Mistakes left <span>' + Array.from({ length:CH }, (_, i) => '<i class="' + (i < CH - mistakes ? 'on' : '') + '"></i>').join('') + '</span>';
@@ -2166,7 +2166,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124k';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261124l';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
