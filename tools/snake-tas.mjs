@@ -65,6 +65,19 @@ function closeLoop(s, budget, rnd) {
   const path = [h]; let nodes = 0;
   const take = m => { isFree[m] = 0; for (const q of nb[m]) if (isFree[q]) deg[q]--; };
   const give = m => { isFree[m] = 1; for (const q of nb[m]) if (isFree[q]) deg[q]++; };
+  const mark = new Int32Array(A); let stamp = 0;
+  // true when the empty cells left can't all be reached from here (or the tail can't be)
+  function split(c, left) {
+    stamp++; let seen = 0, tailOk = false; const st = [c]; mark[c] = stamp;
+    while (st.length) {
+      const x = st.pop();
+      for (const q of nb[x]) {
+        if (q === t) tailOk = true;
+        if (isFree[q] && mark[q] !== stamp) { mark[q] = stamp; seen++; st.push(q); }
+      }
+    }
+    return seen < left || !tailOk;
+  }
   function dfs(c, left) {
     if (++nodes > budget) return false;
     if (left === 0) return nearT[c] === 1;
@@ -79,6 +92,7 @@ function closeLoop(s, budget, rnd) {
         if (deg[q] === 1 && !nearT[q] && left - 1 > 1) ends++;
       }
       if (ends > 1) bad = true;
+      if (!bad && left > 3 && split(m, left - 1)) bad = true;
       if (!bad && dfs(m, left - 1)) return true;
       give(m); path.pop();
       if (nodes > budget) return false;
@@ -133,7 +147,7 @@ let best = existsSync(out) ? E.runTas('snake', readFileSync(out, 'utf8')) : null
 best = best && best.ok ? best.frames : Infinity;
 const from = args.salt || 1, runs = args.runs || 1;
 for (let salt = from; salt < from + runs; salt++) {
-  const t0 = Date.now(), r = solve({ budget: 20000, tries: 3, cands: 6, look: 1, ...args, salt });
+  const t0 = Date.now(), r = solve({ budget: 20000, tries: 3, cands: 6, look: 0.5, ...args, salt });
   const v = E.runTas('snake', r.s.movie), good = v.ok && v.score === 253;
   if (good && v.frames < best) {
     best = v.frames;
