@@ -5109,3 +5109,47 @@ The owner noticed that for days Triplets had been one wordplay group and two tim
   included, keep their puzzles. The first day with a chosen mix is the first one made after this is deployed (the
   nightly job runs at 1 am Sydney time).
 
+
+## 8.200 Game bans, and Jim on a diet (version `20261125c`, `CACHE_VERSION` v124)
+The owner committed 8.198 and 8.199 as `triplets rebalance`; others then merged anticheat and TAS (and used stamp `b` on four
+files), so every page is restamped `c` / v124, above both. Asked: Jim used about 1m of server time and the leaderboards 4m; one
+player had a script pressing Button Pushers around the clock. Jim stays (people use it).
+- **Bans** (`api/_settings.js`): one new `site_setting` row, `game_bans`, JSON `{ email: { g:[game ids], at } }` (`*` is every
+  game). Nothing else in the table changes, and no new table. It's read with the other settings (same query, cached a minute),
+  so it costs no extra trip. `BAN_GAMES`: snake, g2048, typing, react, tetris, hkmj, chain, oddone, classroom, dailyguess, whose,
+  quartets (Triplets), fours (Quartets), jimall (Button Pushers). The solo Jim Button can't be banned: it has no sign-in.
+  - Enforced on the server: `/api/leaderboard` (scores and the run games), `/api/tetris`, `/api/daily` (POSTs for Daily Guess
+    Who, Whose Timetable?, Triplets and Quartets), and `/api/jim` (Together presses; refused before the sign-in check when the
+    email header already names a banned player). Answer: 403 `{ banned:true }`.
+  - Banned players are left off that game's boards (game_score, the Tetris tables, Button Pushers' top list) and ranks close up.
+    Their rows are never changed: lifting a ban brings everything back. Button Pushers' shared total still includes their old
+    presses.
+  - Each person is only ever told their own bans (`bannedFrom` in `?settings=1`); the games page shows a note instead of a game
+    they're banned from. The list itself: moderators only (`?bans=1`, POST `{action:'ban', email, games}`; `[]` lifts).
+  - Moderator page → **Bans**: an email box (suggests people from the roster), a pill per game plus "Every game", Ban / Save /
+    Lift; the list shows each person's games, with an x to lift one.
+  - The player the owner named isn't in the code (the repo is public): the owner bans them from Bans once this is deployed.
+- **Jim** (`jim.js`, `api/jim.js`): both boards refresh every 5 minutes (was 15 s). Presses are counted on the page and sent at
+  most every 5 minutes, straight away at 500 waiting, or when you leave or switch tabs (keepalive); your own count still moves
+  with every press. A failed send retries after 30 s (was 3 s). Coming back to the tab refreshes at most once a minute. The
+  server keeps the shared total a minute (was 15 s), and allows one player 20 sends a minute (a script is slowed before anything
+  is read). A banned player's page stops sending and greys the button.
+- `theme.js` `TT.api` errors now carry `status` and `data` (additive).
+- Tested against `tools/local-db.mjs` (copied, with keys for jim_score and forum_reaction): 30 checks, including that no row
+  changed and `hidden_games` was untouched. In the mock: the Bans tab at 1400 and on a phone in dark mode, banning and lifting,
+  the banned note, and that four presses make no call until the tab closes, on both Jim games.
+
+## 8.201 Forum: MSC Unofficial, folded replies, votes to hide
+- **As MSC Unofficial:** moderators get an "As MSC Unofficial" box on new posts and replies (remembered on the device,
+  `tt.forumas`). The row's email is just `~msc`: nothing on the page or in the database says which moderator wrote it, on
+  purpose (the owner: it mustn't be traceable to the creators). Any moderator can delete one. Students get 403 for `as:'msc'`.
+- **Replies** are folded under "Show N replies" until opened (kept while the page is open; opened after you reply).
+- **Votes to hide:** "Vote to hide" on anyone else's post (not your own, not MSC's). A vote is a `forum_reaction` row with emoji
+  `~hide` (the react route only takes real emoji, so it can't be faked as one, and it doesn't count toward the 6 reactions).
+  At 8 (`HIDE_AT`, the owner's number) the post is folded: "Hidden after 8 votes to hide it. The vote was started by …" and "Show content". Below
+  8 the post shows "1 vote of 8 to hide this. Started by …". Starting a vote asks first and says your name will show. You
+  can take your vote back. Moderators: "Clear the votes" (Home, and the moderator page's Forum tab, which also shows the
+  counts). A thread folded by votes is never the one thread shown before the forum is opened.
+- No new tables or columns. `/andre/` (left alone) still shows hidden posts in full.
+- Tested against the in-memory database (27 checks: the old post and reaction untouched, no moderator trace anywhere) and in
+  the mock (folded, voting, shown, the composer box; desktop, dark, phone).

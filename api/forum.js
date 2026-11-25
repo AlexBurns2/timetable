@@ -51,6 +51,16 @@
  * Who a thread is for (run once; every existing post stays "for everyone"; nothing is deleted):
  *   alter table forum_post add column if not exists scope      text not null default 'all';
  *   alter table forum_post add column if not exists scope_name text;
+ *
+ * Added 25 November 2026, with no new tables or columns:
+ *   As the site: a moderator can post or reply as "MSC Unofficial" ({body, as:'msc'}). The row's email is just
+ *     "~msc": nothing on the page or in the database says which moderator wrote it, on purpose. Any moderator
+ *     can delete one.
+ *   Votes to hide: POST {action:'hidevote', id} adds your vote, or takes it back. A vote is a forum_reaction row
+ *     with emoji "~hide" (no real emoji can be that, so the reactions never show it). At HIDE_AT votes the post
+ *     is folded away behind "Show content"; nothing is deleted. Whoever started the vote is named on the post,
+ *     so it can't be used to bully someone anonymously. You can't vote on your own posts or the site's.
+ *     Moderators can clear a post's votes: POST {action:'hideclear', id}.
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
@@ -120,6 +130,10 @@ const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2
 const MAX_BODY = 1000;
 const MAX_THREADS = 60;
 const MAX_REACTIONS_EACH = 6;            // different emoji one person can put on one post
+const HIDE = "~hide";                    // a vote to hide, in forum_reaction (see the top of this file)
+const HIDE_AT = 8;                       // votes that fold a post away (the owner's number, 25 November 2026)
+const MSC = "~msc", MSC_NAME = "MSC Unofficial";    // a post made as the site: no trace of which moderator wrote it
+const isSite = email => String(email || "") === MSC;
 /* one emoji (with any skin tone, joiners or variation selectors), nothing else */
 const isEmoji = e => typeof e === "string" && e.length <= 16 &&
   /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Emoji_Component}|\u200D|\uFE0F)+$/u.test(e) &&
@@ -273,13 +287,21 @@ export default async function handler(req, res) {
 
     /* everyone's reactions, as counts per emoji plus whether one is yours.
        If the table isn't there yet, posts simply have none. */
-    const reacts = new Map();
+    const reacts = new Map(), hides = new Map();
     {
       const ids = (data || []).map(r => r.id);
       const { data: rx, error: rxErr } = ids.length
         ? await db.from("forum_reaction").select("post_id, email, emoji, created_at").in("post_id", ids).limit(20000)
         : { data: [], error: null };
       if (!rxErr) for (const x of rx || []) {
+        /* a vote to hide: counted, and who started it (the earliest vote) */
+        if (x.emoji === HIDE) {
+          const h = hides.get(x.post_id) || hides.set(x.post_id, { count: 0, mine: false, first: null }).get(x.post_id);
+          h.count++;
+          if (x.email === me.email) h.mine = true;
+          if (!h.first || String(x.created_at) < String(h.first.created_at)) h.first = x;
+          continue;
+        }
         const list = reacts.get(x.post_id) || reacts.set(x.post_id, []).get(x.post_id);
         let e = list.find(o => o.emoji === x.emoji);
         if (!e) { e = { emoji: x.emoji, count: 0, mine: false, who: [], first: String(x.created_at) }; list.push(e); }
@@ -293,11 +315,18 @@ export default async function handler(req, res) {
     const reactionsOf = id => (reacts.get(id) || [])
       .sort((a, b) => b.count - a.count || a.first.localeCompare(b.first))
       .map(({ emoji, count, mine, who }) => ({ emoji, count, mine, who }));
+    const hideOf = id => { const h = hides.get(id); if (!h) return undefined;
+      return { votes: h.count, mine: h.mine, hidden: h.count >= HIDE_AT,
+               by: h.first.email === me.email ? "you" : withName(NAMES, h.first.email, nameFromEmail(h.first.email)) }; };
     const shape = r => ({
-      id: r.id, name: withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
+      id: r.id, name: isSite(r.email) ? MSC_NAME : withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
       /* mine: yours. canDelete: yours, or anyone's for a moderator (the page
          shows a moderator's delete on other people's posts only on hover) */
       mine: r.email === me.email, canDelete: r.email === me.email || isOwner, reactions: reactionsOf(r.id),
+      /* posted as the site (who wrote it isn't kept anywhere) */
+      ...(isSite(r.email) ? { official: true } : {}),
+      /* votes to hide it (who started them is shown), and whether you can vote: not on your own, not on the site's */
+      hide: hideOf(r.id), canHide: !isSite(r.email) && r.email !== me.email,
       /* who it's for, when it isn't everyone */
       for: r.scope && r.scope !== "all" ? (String(r.scope).startsWith("year:") ? (r.scope_name || "Year " + String(r.scope).slice(5)) : (r.scope_name ? r.scope_name + " class" : "One class")) : undefined,
       /* moderators only: who it's for exactly, and the poster's year (the moderator page can change it) */
@@ -320,10 +349,10 @@ export default async function handler(req, res) {
       const poll = await pollAlong, ms = Date.now() - t0;
       if (ms > 2500) console.warn("home load slow: " + ms + "ms");          // to see in the logs if it's still slow
       return res.status(200).json({ posts: threads, poll, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined,
-        mod: isOwner || undefined, all: seeAll || undefined });
+        mod: isOwner || undefined, all: seeAll || undefined, hideAt: HIDE_AT });
     }
     return res.status(200).json({ posts: threads, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined,
-      mod: isOwner || undefined, all: seeAll || undefined });
+      mod: isOwner || undefined, all: seeAll || undefined, hideAt: HIDE_AT });
   }
 
   if (req.method === "POST") {
@@ -350,13 +379,40 @@ export default async function handler(req, res) {
         .eq("post_id", id).eq("email", me.email);
       if (readErr) { console.error("reaction read:", readErr.message); return res.status(502).json({ error: "Reactions aren't set up yet." }); }
       const already = (had || []).some(r => r.emoji === emoji);
-      if (!already && (had || []).length >= MAX_REACTIONS_EACH)
+      if (!already && (had || []).filter(r => r.emoji !== HIDE).length >= MAX_REACTIONS_EACH)
         return res.status(400).json({ error: "That's enough reactions on one post." });
       const { error } = already
         ? await db.from("forum_reaction").delete().eq("post_id", id).eq("email", me.email).eq("emoji", emoji)
         : await db.from("forum_reaction").insert({ post_id: id, email: me.email, emoji });
       if (error) { console.error("reaction:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
       return res.status(200).json({ ok: true, on: !already });
+    }
+
+    /* a vote to hide someone else's post, or taking yours back (see the top of this file) */
+    if (body.action === "hidevote") {
+      if (limited("hide:" + me.email, 20, 60e3)) return slowDown(res);
+      const id = String(body.id || "");
+      const { data: post } = await db.from("forum_post").select("id, email").eq("id", id).maybeSingle();
+      if (!post) return res.status(404).json({ error: "That post is gone." });
+      if (post.email === me.email) return res.status(400).json({ error: "You can't vote to hide your own post." });
+      if (isSite(post.email)) return res.status(400).json({ error: "Posts from MSC Unofficial can't be voted on." });
+      const { data: had, error: readErr } = await db.from("forum_reaction").select("emoji").eq("post_id", id).eq("email", me.email).eq("emoji", HIDE);
+      if (readErr) { console.error("hide vote read:", readErr.message); return res.status(502).json({ error: "Votes aren't set up yet." }); }
+      const already = (had || []).length > 0;
+      const { error } = already
+        ? await db.from("forum_reaction").delete().eq("post_id", id).eq("email", me.email).eq("emoji", HIDE)
+        : await db.from("forum_reaction").insert({ post_id: id, email: me.email, emoji: HIDE });
+      if (error) { console.error("hide vote:", error.message); return res.status(502).json({ error: "Couldn't save that." }); }
+      return res.status(200).json({ ok: true, on: !already });
+    }
+    /* moderators: clear the votes on a post, so it shows again (its words and reactions were never touched) */
+    if (body.action === "hideclear") {
+      if (!isOwner) return res.status(403).json({ error: "Moderators only." });
+      const id = String(body.id || "");
+      if (!/^[a-z0-9]{1,40}$/i.test(id)) return res.status(400).json({ error: "That isn't a post." });
+      const { error } = await db.from("forum_reaction").delete().eq("post_id", id).eq("emoji", HIDE);
+      if (error) { console.error("hide clear:", error.message); return res.status(502).json({ error: "Couldn't clear that." }); }
+      return res.status(200).json({ ok: true });
     }
 
     /* moderators: who a thread is for, everyone or a year (its replies follow it). Only who can see it
@@ -429,7 +485,9 @@ export default async function handler(req, res) {
     }
 
     const id = newId();
-    const row = { id, email: me.email, body: text, parent };
+    /* a moderator posting as the site (MSC Unofficial): the row keeps no trace of which moderator it was */
+    if (body.as === "msc" && !isOwner) return res.status(403).json({ error: "Only moderators can post as MSC Unofficial." });
+    const row = { id, email: body.as === "msc" ? MSC : me.email, body: text, parent };
     if (scoped) Object.assign(row, { scope, scope_name });
     const { error } = await db.from("forum_post").insert(row);
     if (error) { console.error("forum post:", error.message); return res.status(502).json({ error: "Couldn't post that." }); }

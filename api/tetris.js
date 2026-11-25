@@ -28,6 +28,7 @@ import { yearMap, boardScope } from "./leaderboard.js";
 import { ticketOf, scoreFits, boardWeek } from "./_runs.js";
 import { inputSigns, vetSprint, paceSigns, botty } from "./_anticheat.js";
 import { holdScore, writeTetris } from "./_review.js";
+import { isBanned, bannedIn } from "./_settings.js";
 
 /* Year groups (as leaderboard.js): each board is your own year's unless you ask
    for another (?year=7…12) or everyone's (?year=all). Scores sent need a ticket
@@ -36,10 +37,12 @@ import { holdScore, writeTetris } from "./_review.js";
 /* one board: the top (20, or 200 for a moderator), and your best and place on it */
 async function boardOf({ table, col, asc, narrow, extra }, me, adm) {
   const SCOPE = me.scope, YEARS = me.years || new Map();
+  /* people a moderator has banned from Tetris are left off (their rows stay; _settings.js) */
+  const OUT = me.banned && me.banned.size ? me.banned : null, ok = r => !OUT || !OUT.has(String(r.email).toLowerCase());
   const cols = "name, email, " + col + (extra ? ", " + extra : "");
   let q = db.from(table).select(cols); if (narrow) q = narrow(q);
-  const { data } = await q.order(col, { ascending: asc }).limit(SCOPE ? 5000 : (adm ? 200 : 20));
-  let rows = data || [];
+  const { data } = await q.order(col, { ascending: asc }).limit(SCOPE ? 5000 : (adm ? 200 : 20) + (OUT ? OUT.size : 0));
+  let rows = (data || []).filter(ok);
   if (SCOPE) rows = rows.filter(r => YEARS.get(r.email) === SCOPE);
   let mine = rows.find(r => r.email === me.email);
   if (!mine && !SCOPE) { let m = db.from(table).select(col + (extra ? ", " + extra : "")).eq("email", me.email); if (narrow) m = narrow(m);
@@ -49,7 +52,9 @@ async function boardOf({ table, col, asc, narrow, extra }, me, adm) {
   if (meBest != null) {
     if (SCOPE) meRank = 1 + rows.filter(r => asc ? r[col] < meBest : r[col] > meBest).length;
     else { let c = db.from(table).select("*", { count: "exact", head: true }); if (narrow) c = narrow(c);
-      const { count } = await (asc ? c.lt(col, meBest) : c.gt(col, meBest)); meRank = (count || 0) + 1; }
+      const { count } = await (asc ? c.lt(col, meBest) : c.gt(col, meBest)); meRank = (count || 0) + 1;
+      if (OUT) { let b = db.from(table).select("email, " + col).in("email", [...OUT]); if (narrow) b = narrow(b);
+        const { data: bad } = await b; meRank -= (bad || []).filter(r => asc ? r[col] < meBest : r[col] > meBest).length; } }
   }
   return { rows: rows.slice(0, adm ? 200 : 20), mine, meBest, meRank };
 }
@@ -110,7 +115,7 @@ export default async function handler(req, res) {
 
   const me = await whoami(req);
   if (!me) return res.status(401).json({ error: "Sign in to use the leaderboard." });
-  [NAMES, TAGS] = await Promise.all([displayNames(), yearTags()]);
+  [NAMES, TAGS, me.banned] = await Promise.all([displayNames(), yearTags(), bannedIn("tetris")]);
   /* which year's boards (kept on this request's own "me", so two requests at once never mix) */
   me.years = await yearMap();
   me.scope = boardScope((req.method === "GET" ? req.query : (typeof req.body === "object" && req.body) || {}).year, me, me.years);
@@ -192,6 +197,7 @@ export default async function handler(req, res) {
       return res.status(200).json(await boardFor(mode, me, wk, true));
     }
 
+    if (await isBanned(me.email, "tetris")) return res.status(403).json({ error: "A moderator has taken you off this game's boards.", banned: true });
     /* a ticket from when the game started, and a score that fits the time since */
     const claim = mode === "zenscore" ? Math.round(Number(body && body.score)) : mode === "zen" ? Math.round(Number(body && body.ms)) : Math.round(Number(body && body.timeMs));
     const week = weekOf(body && body.week);

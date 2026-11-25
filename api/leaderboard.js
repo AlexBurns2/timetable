@@ -57,7 +57,8 @@ export function boardScope(raw, me, years) {
   const mine = me.year || years.get(me.email);
   return mine ? String(mine) : null;
 }
-import { siteSettings, setSiteSetting } from "./_settings.js";
+import { siteSettings, setSiteSetting, isBanned, bannedIn, bannedFrom, banList, setBans, BAN_GAMES } from "./_settings.js";
+const BANNED = { error: "A moderator has taken you off this game's boards.", banned: true };
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -167,23 +168,26 @@ async function siteUsers() {
   return [...out.values()].sort((a, b) => String(b.last || "").localeCompare(String(a.last || "")));
 }
 
-async function board(game, metric, period, dir, meEmail, withEmail, year, years) {
+/* banned: people a moderator has taken off this game (_settings.js), left off the board. Their rows stay. */
+async function board(game, metric, period, dir, meEmail, withEmail, year, years, banned) {
   const asc = dir === "min", [names, tags] = await Promise.all([displayNames(), yearTags()]);
+  const out = banned && banned.size ? banned : null, ok = r => !out || !out.has(String(r.email).toLowerCase());
   /* one year's board: everyone's scores, filtered to that year, ranked here */
   if (year) {
     const { data } = await db.from("game_score")
       .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
       .order("score", { ascending: asc }).limit(5000);
-    const rows = (data || []).filter(r => years.get(r.email) === year);
+    const rows = (data || []).filter(r => years.get(r.email) === year && ok(r));
     const mine = rows.find(r => r.email === meEmail);
     const meBest = mine ? mine.score : null;
     const meRank = meBest == null ? null : 1 + rows.filter(r => asc ? r.score < meBest : r.score > meBest).length;
     return { year, top: rows.slice(0, withEmail ? 200 : 20).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
       if (withEmail) o.email = r.email; return o; }), meBest, meRank };
   }
+  const want = withEmail ? 200 : 20;                                   // owner gets the full list to edit
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
-    .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit
+    .order("score", { ascending: asc }).limit(want + (out ? out.size : 0));
   const { data: mine } = await db.from("game_score")
     .select("score").eq("game", game).eq("metric", metric).eq("period", period).eq("email", meEmail).maybeSingle();
   const meBest = mine ? mine.score : null;
@@ -194,8 +198,14 @@ async function board(game, metric, period, dir, meEmail, withEmail, year, years)
     q = asc ? q.lt("score", meBest) : q.gt("score", meBest);
     const { count } = await q;
     meRank = (count || 0) + 1;
+    /* banned people ahead of you don't count */
+    if (out) {
+      const { data: bad } = await db.from("game_score").select("email, score")
+        .eq("game", game).eq("metric", metric).eq("period", period).in("email", [...out]);
+      meRank -= (bad || []).filter(r => asc ? r.score < meBest : r.score > meBest).length;
+    }
   }
-  return { top: (top || []).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
+  return { top: (top || []).filter(ok).slice(0, want).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
     if (withEmail) o.email = r.email; return o; }), meBest, meRank };
 }
 
@@ -207,6 +217,13 @@ async function writeBest(game, metric, period, email, name, score, dir) {
     const { error } = await db.from("game_score").upsert({ game, metric, period, email, name, score });
     if (error) throw new Error(error.message);
   }
+}
+
+/* the ban list for the moderator page: each person by the name the site shows, newest ban first */
+async function bansOut() {
+  const [list, names, tags] = await Promise.all([banList(), displayNames(), yearTags()]);
+  return { games: BAN_GAMES, bans: list.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")))
+    .map(b => ({ ...b, name: withYear(withName(names, b.email, nameFromEmail(b.email)), tags, b.email) })) };
 }
 
 /* ── moderator stats: counts only, every query a read ─────────────────────── */
@@ -296,7 +313,24 @@ export default async function handler(req, res) {
   if (req.method === "GET" && src.settings) {
     /* isMod only decides whether pages show the way in to the moderator page;
        every moderator action is still checked here on the server */
-    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email) });
+    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email),
+      bannedFrom: await bannedFrom(me.email) });          // only your own bans, never anyone else's
+  }
+  /* moderator-only: who is banned from which games (Bans on the moderator page), and changing it.
+     A ban refuses that person's results for the game and leaves them off its boards; nothing is deleted. */
+  if (req.method === "GET" && src.bans) {
+    if (!isAdmin(me.email)) return res.status(403).json({ error: "Only moderators can see this." });
+    return res.status(200).json(await bansOut());
+  }
+  if (req.method === "POST" && src.action === "ban") {
+    if (!isAdmin(me.email)) return res.status(403).json({ error: "Only moderators can ban people." });
+    if (!Array.isArray(src.games) || src.games.length > 40) return res.status(400).json({ error: "Which games?" });
+    const failed = await setBans(src.email, src.games);
+    if (failed) {
+      console.error("bans:", failed);
+      return res.status(/email|game/i.test(failed) ? 400 : 502).json({ error: /email|game|many/i.test(failed) ? failed : "Couldn't save that." });
+    }
+    return res.status(200).json(await bansOut());
   }
   /* EDinburgh, a secret theme Ed asked for (theme.js SKINS 'ed'): his photo, to signed-in people only. It is not in the
      repo, which is public: it's the ED_PHOTO environment variable (the picture as base64). Without it, nothing. */
@@ -480,6 +514,7 @@ export default async function handler(req, res) {
 
   /* the games the server runs (Six Degrees, Odd One Out, Classroom) */
   if (req.method === "POST" && src.action === "run") {
+    if (await isBanned(me.email, String(src.game || ""))) return res.status(403).json(BANNED);
     const record = async (g, m, score, week) => {
       const name = nameFromEmail(me.email), d = DIRS[g + ":" + m];
       await writeBest(g, m, "all", me.email, name, score, d);
@@ -533,6 +568,7 @@ export default async function handler(req, res) {
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
     /* the games the server runs keep their own scores */
     if (RUN_GAMES.has(game)) return res.status(400).json({ error: "This game records its own scores." });
+    if (await isBanned(me.email, game)) return res.status(403).json(BANNED);
     if (dmax && (!day || score > dmax)) return res.status(400).json({ error: day ? "That score doesn't fit the game." : "Which day?" });
     /* the rest: a ticket from when the game started, and a score that fits the time since */
     const why = [];
@@ -566,10 +602,11 @@ export default async function handler(req, res) {
   const years = await yearMap();
   /* a moderator's edit answers with everyone's board (the moderator page shows them all) */
   const scope = isOwner && ["wipe", "set", "delete"].includes(src.action) ? null : boardScope(src.year, me, years);
+  const banned = await bannedIn(game);
   return res.status(200).json({
-    week: await board(game, metric, wperiod, dir, me.email, isOwner, scope, years),
-    all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years),
-    ...(dperiod ? { day: await board(game, metric, dperiod, dir, me.email, isOwner, scope, years) } : {}),
+    week: await board(game, metric, wperiod, dir, me.email, isOwner, scope, years, banned),
+    all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years, banned),
+    ...(dperiod ? { day: await board(game, metric, dperiod, dir, me.email, isOwner, scope, years, banned) } : {}),
     year: scope || "all", myYear: me.year || years.get(me.email) || null,
     canWipe: isOwner, ...(held ? { held } : {})
   });

@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261125a">
-<script src="theme.js?v=20261125b"></script>
-<script src="icons.js?v=20261125a"></script>
+<link rel="stylesheet" href="theme.css?v=20261125c">
+<script src="theme.js?v=20261125c"></script>
+<script src="icons.js?v=20261125c"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261125a">
-<link rel="stylesheet" href="settings.css?v=20261125a">
-<link rel="stylesheet" href="poll.css?v=20261125a">
+<link rel="stylesheet" href="site.css?v=20261125c">
+<link rel="stylesheet" href="settings.css?v=20261125c">
+<link rel="stylesheet" href="poll.css?v=20261125c">
 </head>
 <body>
 <div class="wrap hub">
@@ -65,6 +65,7 @@
     <div class="fnew" id="fnew">
       <textarea id="fbody" rows="1" maxlength="1000" placeholder="Say something…" aria-label="Write a post"></textarea>
       <select id="fscope" aria-label="Who it’s for" hidden></select>
+      <label class="fas" id="fas" hidden><input type="checkbox" class="fasbox" id="fasbox"><span>As MSC Unofficial</span></label>
       <button class="btn primary" id="fpost" type="button">Post</button>
     </div>
     <div class="fmsg" id="fmsg"></div>
@@ -397,18 +398,46 @@ function ago(iso){
 
 const fmsg = m => { $('fmsg').textContent = m || ''; };
 
+/* Since 25 November 2026 (api/forum.js):
+   - replies are folded under "Show N replies" until you open them (remembered while the page is open);
+   - anyone can start a vote to hide someone else's post; it is folded away at hideAt votes, behind "Show content",
+     and the person who started the vote is named on it, so it can't be used to pick on someone anonymously;
+   - moderators can post and reply as MSC Unofficial (the "As MSC Unofficial" box). Which moderator wrote one isn't
+     kept anywhere, so it can't be traced back to anyone. */
+const openReplies = new Set(), shownHidden = new Set();
+let forumMod = false, hideAt = 8;          // the server says (HIDE_AT in api/forum.js)
+const asSite = () => !!TT.get('tt.forumas', false);
+const asBox = () => forumMod ? '<label class="fas"><input type="checkbox" class="fasbox"' + (asSite() ? ' checked' : '') + '><span>As MSC Unofficial</span></label>' : '';
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
 function postCard(p, isReply){
-  return '<div class="fpost' + (isReply ? ' freply' : '') + '" data-id="' + esc(p.id) + '">' +
-    '<div class="fmeta"><b>' + esc(p.name) + '</b><span>' + esc(ago(p.at)) + '</span>' +
+  const h = p.hide, folded = !!(h && h.hidden && !shownHidden.has(p.id));
+  const n = isReply ? 0 : (p.replies || []).length, open = openReplies.has(p.id);
+  return '<div class="fpost' + (isReply ? ' freply' : '') + (p.official ? ' fofficial' : '') + (folded ? ' ffolded' : '') + '" data-id="' + esc(p.id) + '">' +
+    '<div class="fmeta"><b>' + esc(p.name) + '</b>' +
+      '<span>' + esc(ago(p.at)) + '</span>' +
       (p.for && !isReply ? '<span class="ffor" title="Only they can see it">' + esc(p.for) + '</span>' : '') +
       (p.mine || p.canDelete ? '<button class="flink fdel' + (p.mine ? '' : ' fmod') + '" type="button" data-id="' + esc(p.id) + '"' +
         (p.mine ? '' : ' title="Delete (moderator)"') + '>delete</button>' : '') +
     '</div>' +
-    '<div class="ftext">' + esc(p.body) + '</div>' +
-    '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
-    (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>' +
-      '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
-        '<textarea rows="2" maxlength="1000" placeholder="Write a reply…"></textarea>' +
+    (folded
+      ? '<div class="fhidden">Hidden after ' + plural(h.votes, 'vote', 'votes') + ' to hide it. The vote was started by <b>' + esc(h.by) + '</b>.' +
+          ' <button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Show content</button></div>'
+      : '<div class="ftext">' + esc(p.body) + '</div>' +
+        '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
+        (h ? '<div class="fvote">' + (h.hidden ? 'Hidden after ' + plural(h.votes, 'vote', 'votes') + ' to hide it'
+                                               : plural(h.votes, 'vote', 'votes') + ' of ' + hideAt + ' to hide this') +
+             '. Started by <b>' + esc(h.by) + '</b>.' +
+             (h.hidden ? ' <button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Fold it away again</button>' : '') + '</div>' : '')) +
+    '<div class="factions">' +
+      (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>') +
+      (n ? '<button class="flink frepl" type="button" data-id="' + esc(p.id) + '" aria-expanded="' + open + '">' +
+             (open ? 'Hide replies' : 'Show ' + plural(n, 'reply', 'replies')) + '</button>' : '') +
+      (p.canHide && signedIn ? '<button class="flink fhidevote" type="button" data-id="' + esc(p.id) + '">' +
+             (h && h.mine ? 'Take back my vote to hide' : h ? 'Vote to hide too' : 'Vote to hide') + '</button>' : '') +
+      (forumMod && h ? '<button class="flink fhideclear" type="button" data-id="' + esc(p.id) + '" title="Moderators: clear the votes so it shows again">Clear the votes</button>' : '') +
+    '</div>' +
+    (isReply ? '' : '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
+        '<textarea rows="2" maxlength="1000" placeholder="Write a reply…"></textarea>' + asBox() +
         '<button class="btn" type="button" data-id="' + esc(p.id) + '">Send</button></div>') +
     '</div>';
 }
@@ -490,6 +519,8 @@ async function loadForum(){
       : await TT.api('/api/forum', { params: forumParams({}) });
     lastPosts = d.posts || [];
     forumYear = d.year || null; forumFiltered = d.only === 'year';
+    forumMod = !!d.mod; hideAt = d.hideAt || 8;
+    if ($('fas')){ $('fas').hidden = !forumMod; $('fasbox').checked = asSite(); }
     yearToggle(); allToggle(d);
     scopeChoices(d);
     renderForum(lastPosts);
@@ -501,10 +532,11 @@ async function loadForum(){
 function renderForum(posts){
   POSTS.clear();
   posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
-  const shown = forumOpen ? posts : posts.slice(0, 1);
+  /* folded away by a vote: never the one thread shown before you open the forum */
+  const shown = forumOpen ? posts : posts.filter(p => !(p.hide && p.hide.hidden)).slice(0, 1);
   $('fposts').innerHTML = posts.length
     ? shown.map(p => postCard(p, false) +
-        (p.replies || []).map(r => postCard(r, true)).join('')).join('')
+        (openReplies.has(p.id) ? (p.replies || []).map(r => postCard(r, true)).join('') : '')).join('')
     : forumFiltered ? '<p class="how">Nothing from Year ' + esc(forumYear) + ' yet. Say the first thing, or turn off “Only Year ' + esc(forumYear) + '” to see everyone’s.</p>'
     : '<p class="how">Nothing here yet. Say the first thing.</p>';
   const more = posts.length - shown.length;
@@ -525,8 +557,38 @@ function wireForum(){
   document.querySelectorAll('.freplybox .btn').forEach(b => b.onclick = async () => {
     const ta = b.parentElement.querySelector('textarea'), text = ta.value.trim();
     if (!text) return;
+    const as = b.parentElement.querySelector('.fasbox');
     b.disabled = true;
-    try { await TT.api('/api/forum', { method:'POST', body:{ body:text, parent:b.dataset.id } }); ta.value=''; await loadForum(); }
+    try { await TT.api('/api/forum', { method:'POST', body:{ body:text, parent:b.dataset.id, ...(as && as.checked ? { as:'msc' } : {}) } });
+      ta.value=''; openReplies.add(b.dataset.id); await loadForum(); }
+    catch (e){ fmsg(e.message); b.disabled = false; }
+  });
+  /* "As MSC Unofficial" (moderators): remembered on this device, the same in every box */
+  document.querySelectorAll('.fasbox').forEach(x => x.onchange = () => { TT.set('tt.forumas', x.checked);
+    document.querySelectorAll('.fasbox').forEach(y => { y.checked = x.checked; }); });
+  /* a thread's replies, folded until you open them */
+  document.querySelectorAll('.frepl').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    if (openReplies.has(id)) openReplies.delete(id); else openReplies.add(id);
+    renderForum(lastPosts);
+  });
+  /* a post folded away by a vote: show it (on this page only), or fold it again */
+  document.querySelectorAll('.fshow').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    if (shownHidden.has(id)) shownHidden.delete(id); else shownHidden.add(id);
+    renderForum(lastPosts);
+  });
+  document.querySelectorAll('.fhidevote').forEach(b => b.onclick = async () => {
+    const p = POSTS.get(b.dataset.id); if (!p) return;
+    if (!p.hide && !confirm('Start a vote to hide this post?\n\nYour name will show on it as the person who started the vote. It’s hidden once ' + hideAt + ' people vote.')) return;
+    b.disabled = true; fmsg('');
+    try { await TT.api('/api/forum', { method:'POST', body:{ action:'hidevote', id:p.id } }); await loadForum(); }
+    catch (e){ fmsg(e.message); b.disabled = false; }
+  });
+  document.querySelectorAll('.fhideclear').forEach(b => b.onclick = async () => {
+    if (!confirm('Clear the votes to hide this post? It shows for everyone again.')) return;
+    b.disabled = true;
+    try { await TT.api('/api/forum', { method:'POST', body:{ action:'hideclear', id:b.dataset.id } }); await loadForum(); }
     catch (e){ fmsg(e.message); b.disabled = false; }
   });
   document.querySelectorAll('.fdel').forEach(b => b.onclick = async () => {
@@ -586,7 +648,8 @@ $('fpost').onclick = async () => {
   if (!text) return;
   fmsg(''); $('fpost').disabled = true;
   const scope = $('fscope') && !$('fscope').hidden ? $('fscope').value : 'all';
-  try { await TT.api('/api/forum', { method:'POST', body:{ body:text, scope } }); ta.value=''; await loadForum(); }
+  const as = forumMod && $('fasbox') && $('fasbox').checked ? { as:'msc' } : {};
+  try { await TT.api('/api/forum', { method:'POST', body:{ body:text, scope, ...as } }); ta.value=''; await loadForum(); }
   catch (e){ fmsg(e.message); }
   $('fpost').disabled = false;
 };
@@ -596,7 +659,7 @@ $('fbody').addEventListener('keydown', e => {
 /* one line until you click into it; it closes again if you leave it empty */
 $('fbody').addEventListener('focus', () => { $('fnew').classList.add('open'); $('fbody').rows = 3; });
 $('fbody').addEventListener('blur', () => setTimeout(() => {
-  if (!$('fbody').value.trim() && document.activeElement !== $('fpost') && document.activeElement !== $('fscope')){ $('fnew').classList.remove('open'); $('fbody').rows = 1; }
+  if (!$('fbody').value.trim() && document.activeElement !== $('fpost') && document.activeElement !== $('fscope') && document.activeElement !== $('fasbox')){ $('fnew').classList.remove('open'); $('fbody').rows = 1; }
 }, 150));
 if (!signedIn){
   /* posting needs a school login: the button takes you to sign in instead */
@@ -608,8 +671,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261125a"></script>
-<script src="poll.js?v=20261125a"></script>
+<script src="settings.js?v=20261125c"></script>
+<script src="poll.js?v=20261125c"></script>
 <script>
 /* ── Today: the daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),

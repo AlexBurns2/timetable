@@ -536,6 +536,20 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .fnew #fscope{display:none;flex:none;max-width:12rem;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
 .fnew.open #fscope:not([hidden]){display:block}
 .ffor{padding:0 7px;border:1px solid var(--line);border-radius:999px;font-size:.6875rem;font-weight:700;color:var(--text);line-height:1.6}
+/* the forum since 25 November 2026: a post's links in one row, folded replies, votes to hide, posts as the site */
+.factions{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
+.factions:empty{display:none}
+.factions .fhidevote,.factions .fhideclear{color:var(--muted);font-weight:500}
+.fvote{margin-top:8px;font-size:.78125rem;color:var(--muted)}
+.fvote b,.fhidden b{color:var(--text);font-weight:600}
+.fvote .flink,.fhidden .flink{margin:0}
+.fhidden{font-size:.8125rem;color:var(--muted);padding:6px 0 2px}
+.fpost.ffolded{border-style:dashed;background:none}
+.fpost.fofficial{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.fpost.fofficial .fmeta b{color:var(--accent)}
+.fas{display:none;flex:none;align-items:center;gap:6px;font-size:.78125rem;color:var(--muted);cursor:pointer;white-space:nowrap;align-self:center}
+.fnew.open .fas:not([hidden]),.freplybox .fas{display:inline-flex}
+.fas input{margin:0;accent-color:var(--accent)}
 /* Send a suggestion: what it is, then the line */
 .ideaform select{flex:none;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
 

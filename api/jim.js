@@ -30,6 +30,11 @@
 import { db, whoami } from "./_supabase.js";
 import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
 import { displayNames, withName, nameFromLocal, yearTags, withYear } from "./_names.js";
+import { isBanned, bannedIn } from "./_settings.js";
+
+/* Bans (moderator page → Bans, game "jimall"): a banned player's presses are refused and they're left off the
+   top list. Their row stays as it was, and so does the shared count. */
+const BANNED = { error: "A moderator has taken you off Button Pushers.", banned: true };
 
 /* a Together player's name as the board shows it: "Andre Kwok (Year 12)" */
 async function boardName(email) {
@@ -58,9 +63,10 @@ async function totalOf() {
   return { sum, anon };
 }
 /* Adding every row up on each call was most of this route's server time (24 November 2026), so a server instance keeps
-   the last full count for 15 s and adds the presses it saves itself on top. Another instance's presses show up within
-   15 s; the page only ever moves its count up (Math.max), so a slightly old total does no harm. */
-const TOTAL_TTL = 15e3;
+   the last full count for a minute and adds the presses it saves itself on top. Another instance's presses show up
+   within a minute (the pages only ask every 5 minutes now); the page only ever moves its count up (Math.max), so a
+   slightly old total does no harm. */
+const TOTAL_TTL = 60e3;
 let TOTAL = null;                                     // { sum, anon, at }
 async function totalCached() {
   if (TOTAL && Date.now() - TOTAL.at < TOTAL_TTL) return TOTAL;
@@ -72,15 +78,16 @@ const TOP = 20;
 
 /* the shared count and the biggest contributors, by their usual names */
 async function together() {
+  const banned = await bannedIn("jimall");
   const [total, { data: rows, error: e2 }] = await Promise.all([
     totalCached(),
     db.from("jim_score").select("name, score").like("name", "~%@%").gt("score", 0)
-      .order("score", { ascending: false }).limit(TOP)
+      .order("score", { ascending: false }).limit(TOP + banned.size)
   ]);
   if (e2) throw new Error(e2.message);
   const [names, tags] = await Promise.all([displayNames(), yearTags()]);
   return { total: total.sum, anon: total.anon,
-           top: (rows || []).map(r => { const email = r.name.slice(1);
+           top: (rows || []).filter(r => !banned.has(r.name.slice(1).toLowerCase())).slice(0, TOP).map(r => { const email = r.name.slice(1);
              return { name: withYear(withName(names, email, nameFromLocal(email.split("@")[0])), tags, email), score: Number(r.score) || 0 }; }) };
 }
 
@@ -113,6 +120,7 @@ export default async function handler(req, res) {
           const email = me.email.toLowerCase();
           const { data } = await db.from("jim_score").select("score").eq("name", "~" + email).maybeSingle();
           out.me = { name: await boardName(email), score: Number(data && data.score) || 0 };
+          if (await isBanned(email, "jimall")) out.banned = true;
         }
       }
       return res.status(200).json(out);
@@ -138,10 +146,18 @@ export default async function handler(req, res) {
     if (body && body.together === true) {
       const add = Math.floor(Number(body.add));
       if (!(add >= 1 && add <= MAX_ADD)) return res.status(400).json({ error: "Bad press count." });
+      /* a banned player is turned away before the sign-in check, which is the costly part (the address they send
+         is enough to refuse them: refusing never helps anyone pretending to be someone else) */
+      const said = String(req.headers["x-school-email"] || "").trim().toLowerCase();
+      if (said.includes("@") && await isBanned(said, "jimall")) return res.status(403).json(BANNED);
       const me = await whoami(req).catch(() => null);
+      if (me && me.email && await isBanned(me.email, "jimall")) return res.status(403).json(BANNED);
       const anon = /^[a-z0-9]{8,40}$/.test(String(body.anon || "")) ? String(body.anon) : null;
       const key = me && me.email ? "~" + me.email.toLowerCase() : anon ? "~anon:" + anon : null;
       if (!key) return res.status(400).json({ error: "Who's pressing?" });
+      /* the page sends at most every few minutes (more only when it has 500 presses waiting), so a player sending
+         much more often than that is a script: slowed down here, before anything is read or written */
+      if (limited("jimp:" + key, 20, 60e3)) return slowDown(res);
       let mine, total;
       try {
         mine = await bump(key, add);

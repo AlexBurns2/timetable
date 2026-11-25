@@ -747,6 +747,24 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .setrow .nm{display:flex;flex-direction:column;gap:3px;white-space:normal;overflow:visible}
 .setrow em{font-style:normal;color:var(--muted);font-size:0.78125rem;line-height:1.45}
 .setrow .btn{flex:none;min-width:62px;justify-content:center}
+/* moderator page → Bans */
+.banform{display:flex;flex-direction:column;gap:10px;padding:12px;border:var(--card-border);border-radius:var(--radius);background:var(--panel-2)}
+.banform input{width:100%;max-width:420px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);color:var(--text);font:inherit;font-size:0.875rem}
+.banform input:focus{outline:none;border-color:var(--accent)}
+.bangames{flex-wrap:wrap;gap:6px}
+.banact{display:flex;align-items:center;gap:10px}
+.banmsg{font-size:0.78125rem;color:#e5484d}
+.adminrow.banrow{align-items:flex-start;padding:10px 11px}
+.banrow .nm{display:flex;flex-direction:column;gap:4px;white-space:normal;overflow:visible}
+.banrow .ue{color:var(--muted);font-size:0.78125rem}
+.banchips{display:flex;flex-wrap:wrap;gap:5px}
+.banchip{display:inline-flex;align-items:center;gap:3px;padding:2px 4px 2px 9px;border:1px solid var(--line);border-radius:999px;font-size:0.75rem}
+.banchip button{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:0;border-radius:50%;
+  background:none;color:var(--muted);cursor:pointer}
+.banchip button:hover{color:#e5484d}
+.banchip button svg{width:11px;height:11px}
+.banrow .btn,.banrow .del{flex:none}
 
 /* ── revision: reset one subtopic's progress ── */
 .rvfoot{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
@@ -1876,4 +1894,5 @@ html[data-motion="reduced"] .wtc.fresh{animation:none}
 @keyframes jtflash{0%{background:#fff3c4;box-shadow:0 0 calc(var(--dot) * 1.6) rgba(255,200,80,1)}100%{}}
 .jt .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .jtnote{text-align:center;max-width:360px;margin:0}
+.jt .btn-outer.jtoff{opacity:.35;filter:grayscale(1);pointer-events:none}      /* banned by a moderator */
 html[data-motion="reduced"] .jtlive i,html[data-motion="reduced"] .jtled.flash .jtdig i.on{animation:none}

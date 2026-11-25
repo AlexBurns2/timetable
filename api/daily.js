@@ -26,6 +26,7 @@ let NAMES = new Map();
 import { ensurePuzzle, resolveYear, computeStreak, sydneyDate, buildHints } from "./_daily.js";
 import { connRoute, quartRoute } from "./_connroute.js";
 import { whoseRoute } from "./_whose.js";
+import { isBanned } from "./_settings.js";
 
 /* making a day's Quartets reads a sample of the year's timetables, which can take a while */
 export const config = { maxDuration: 60 };
@@ -164,6 +165,12 @@ export default async function handler(req, res) {
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
+  /* a moderator's ban (_settings.js): no playing that one (reading it is still fine; nothing is deleted) */
+  if (req.method === "POST") {
+    const conn = req.query.conn || (body && body.conn), q = req.query.q || (body && body.q);
+    const game = conn ? (q ? "fours" : "quartets") : (req.query.whose || (body && body.whose)) ? "whose" : "dailyguess";
+    if (await isBanned(me.email, game)) return res.status(403).json({ error: "A moderator has taken you off this game.", banned: true });
+  }
   /* Quartets (?conn=1, or {conn:1}) lives here too, so it needs no function of its own */
   if (req.query.conn || (body && body.conn)) return (req.query.q || (body && body.q))
     ? quartRoute(req, res, me, body || {}, NAMES)        // Quartets, every second day (with its old days)
