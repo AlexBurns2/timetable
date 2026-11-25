@@ -137,8 +137,12 @@ async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000, opt 
   /* the last two months' puzzles: which categories came up when (so the same ones don't keep turning up),
      and who each category used (so it picks other people next time). Read only; nothing is changed. */
   const avoid = new Map(), usedBy = new Map(), dayMs = 864e5, today = Date.parse(date + "T00:00:00Z");
-  const { data: recent } = await db.from("conn_puzzle").select("date, groups").in("year", allKeys(year).concat(QKEY(year))).lt("date", date)      // both games' days
+  const { data: recent } = await db.from("conn_puzzle").select("date, year, groups").in("year", allKeys(year).concat(QKEY(year))).lt("date", date)      // both games' days
     .gte("date", new Date(today - PEOPLE_DAYS * dayMs).toISOString().slice(0, 10)).order("date", { ascending: false }).limit(PEOPLE_DAYS + 5);
+  /* Triplets' last few days: how many of their groups came from timetables (so tomorrow's mix differs) */
+  const recentMix = (recent || []).filter(r => r.year !== QKEY(year) && Array.isArray(r.groups) && r.groups.length === 3)
+    .map(r => ({ ago: Math.round((today - Date.parse(String(r.date).slice(0, 10) + "T00:00:00Z")) / dayMs), tt: r.groups.filter(g => g && g.kind !== "name").length }))
+    .filter(d => d.ago <= 3);
   (recent || []).forEach(r => { const ago = Math.round((today - Date.parse(String(r.date).slice(0, 10) + "T00:00:00Z")) / dayMs);
     (Array.isArray(r.groups) ? r.groups : []).forEach(g => { if (!g || !g.id) return;
       if (!avoid.has(g.id) || ago < avoid.get(g.id)) avoid.set(g.id, ago);
@@ -146,12 +150,13 @@ async function ensureConn(year, date, NAMES, deadline = Date.now() + 40000, opt 
       (Array.isArray(g.emails) ? g.emails : []).forEach(e => { const k = String(e).toLowerCase(); if (!m.has(k) || ago < m.get(k)) m.set(k, ago); }); }); });
   const checked = new Map(), onTimetable = (e, raw) => checked.set(e, hasClassesIn(raw));   // everyone whose timetable was read
   const size = Q ? 4 : date >= TRIPLETS_FROM ? 3 : 4;
-  let made = await makeQuartets({ size, people, getTT, getRoster, seed, year, avoid, usedBy, teacherName, onTimetable, deadline });
+  let made = await makeQuartets({ size, people, getTT, getRoster, seed, year, avoid, usedBy, teacherName, onTimetable, deadline, recentMix });
   if (!made) made = await makeQuartets({ size, people, getTT, getRoster, seed: seed ^ 0x5bd1e995, year, avoid, usedBy, teacherName, onTimetable,
-                                         deadline: Math.max(deadline, Date.now() + 3000) });
+                                         deadline: Math.max(deadline, Date.now() + 3000), recentMix });
   markClasses(checked).catch(() => {});
   if (!made) { console.error("quartets: couldn't make", year, date, "from", people.length, "people"); return null; }   // not kept: tried again next visit
   if (made.tier > 0) console.warn("quartets:", year, date, "made with fallback tier", made.tier);
+  if (!made.mixKept) console.warn("triplets:", year, date, "couldn't make the day's mix of", made.mix, "timetable groups");
   /* kept: the categories and who's in them (emails stay on the server) */
   const groups = made.groups.map(g => ({ lv: g.lv, id: g.id, label: g.label, kind: g.kind, names: g.names, emails: g.emails }));
 

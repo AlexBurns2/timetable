@@ -270,7 +270,8 @@ export function tidyTeacher(t){
    category, the people it has used least lately are picked first, so the same four
    don't keep coming back together. */
 export const AVOID_DAYS = 10, PEOPLE_DAYS = 60;
-export async function makeQuartets({ size = 4, people, getTT, getRoster, seed, year, avoid = new Map(), usedBy = new Map(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000 }){
+/* recentMix: Triplets' last few days, as [{ ago, tt }] (tt: how many of its groups came from timetables) */
+export async function makeQuartets({ size = 4, people, getTT, getRoster, seed, year, avoid = new Map(), usedBy = new Map(), teacherName = tidyTeacher, onTimetable, sampleSize = 36, rosterMax = 8, fetchMax = 200, deadline = Date.now() + 40000, recentMix = [] }){
   const senior = Number(year) >= 11, K = size;          // K groups of K people (4 for Quartets, 3 for Triplets)
   const r = rng(seed), byEmail = new Map(people.map(p => [p.email, p])), inYear = new Set(byEmail.keys());
   if (avoid instanceof Set) avoid = new Map([...avoid].map(id => [id, 1]));
@@ -366,18 +367,32 @@ export async function makeQuartets({ size = 4, people, getTT, getRoster, seed, y
      name themes only, which need no timetables. The last always finds one in a
      real year, so there's a puzzle every day. Each tier gets a fresh fetch
      allowance on top of what's been read so far, within the time limit. */
-  let best = null, tierUsed = -1;
-  for (let ti = 0; ti < TIERS.length && !best; ti++){
-    const tier = TIERS[ti];
+  /* Triplets: the day's mix first, how many of the three groups come from timetables (none, one or two), never
+     yesterday's and seldom the day before's. Left to itself the draw drifts to two timetable groups and one name
+     group day after day: timetable categories outnumber name ones, the big ones never run short of fresh people,
+     and their people share more subjects, so they win on red herrings. If the day's mix can't be made, the tiers
+     are tried again without it. */
+  let mix = null;
+  if (K === 3 && ttOK){
+    const w = [0.3, 0.4, 0.3];
+    recentMix.forEach(d => { if (d.tt >= 0 && d.tt <= 2) w[d.tt] *= d.ago <= 1 ? 0 : d.ago === 2 ? 0.4 : 1; });
+    const sum = w[0] + w[1] + w[2];
+    if (sum > 0){ let x = r() * sum; mix = 0; while (mix < 2 && x >= w[mix]){ x -= w[mix]; mix++; } }
+  }
+  const plan = TIERS.map((tier, base) => ({ tier, base }));
+  if (mix != null) plan.unshift(...TIERS.slice(0, 6).map((t, base) => ({ tier:Object.assign({}, t, { mix }), base })));
+  let best = null, tierUsed = -1, mixUsed = null;
+  for (let pi = 0; pi < plan.length && !best; pi++){
+    const { tier, base } = plan[pi];
     if (!tier.names && !ttOK) continue;                                // timetable tiers need timetables
-    const budget = fetches + (ti === 0 ? fetchMax : Math.round(fetchMax / 2));
+    const budget = fetches + (pi === 0 ? fetchMax : Math.round(fetchMax / 2));
     best = await search(tier, budget);
-    if (best) tierUsed = ti;
+    if (best){ tierUsed = base; mixUsed = tier.mix ?? null; }
   }
   if (!best) return null;
   /* level 1 to 4 by how hard each group is */
   const ordered = best.groups.slice().sort((a, b) => hardness(a.c) - hardness(b.c));
-  return { herrings: best.score, tier: tierUsed, hardness: ordered.reduce((a, g) => a + hardness(g.c), 0), groups: ordered.map((g, i) => ({
+  return { herrings: best.score, tier: tierUsed, mix, mixKept: mix == null || mixUsed === mix, hardness: ordered.reduce((a, g) => a + hardness(g.c), 0), groups: ordered.map((g, i) => ({
     lv: i + 1, id: g.c.id, label: g.c.label, kind: g.c.kind,
     emails: g.m,                                                    // kept on the server only, so a later name change shows
     names: g.m.map(e => byEmail.get(e).name),
@@ -486,10 +501,13 @@ export const TIERS = [
 const scaleTier = (t, K) => K >= 4 || t.any ? t : Object.assign({}, t, { band: t.band.map(b => b * 0.68), hardest: Math.min(t.hardest, 2.5) });
 function pickFour(usable, r, avoid, tier = TIERS[0], K = 4){
   tier = scaleTier(tier, K);
-  const chosen = [], fam = {}, maxTT = tier.names ? 0 : r() < .15 ? 3 : 2;   // timetable groups: usually two, now and then three
+  const chosen = [], fam = {};
+  /* timetable groups: usually two at most, now and then three; or exactly the day's mix (Triplets) */
+  const maxTT = tier.names ? 0 : tier.mix != null ? tier.mix : r() < .15 ? 3 : 2, maxName = tier.mix != null ? K - tier.mix : K;
   const tt = x => x.kind !== 'name', specific = x => x.kind === 'class' || x.kind === 'teacher';
   for (const c of shuffle(usable, r)){
     if (tier.names && c.kind !== 'name') continue;
+    if (c.kind === 'name' && chosen.filter(o => o.kind === 'name').length >= maxName) continue;
     if (tier.avoid && avoid && avoid.has(c.id) && avoid.get(c.id) <= tier.avoid) continue;     // used lately: left out
     if (tier.fresh && c.fresh != null && c.fresh < 4) continue;                                 // or it would be the same people again
     const f = family(c);
@@ -507,6 +525,7 @@ function pickFour(usable, r, avoid, tier = TIERS[0], K = 4){
     if (chosen.length === K) break;
   }
   if (chosen.length < K) return null;
+  if (tier.mix != null && chosen.filter(tt).length !== tier.mix) return null;
   if (tier.any) return chosen;
   const total = chosen.reduce((a, c) => a + hardness(c), 0), easiest = Math.min(...chosen.map(hardness));
   const hardest = Math.max(...chosen.map(hardness));

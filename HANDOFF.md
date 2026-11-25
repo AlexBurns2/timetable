@@ -4970,3 +4970,142 @@ The owner asked for a try at "a huge slice taken out of the mountain where its j
   about 436 m, taking around 7 s at real gravity (2 image px to the metre), clipped to the slot's opening. They raise a
   dust puff that billows and settles over about 9 s. The canvas draws only while something moves.
 - **Still waiting:** the monolith in the surf. Wikimedia still refuses the clip (and video stills) from this machine.
+
+## 8.197 Surrealism: the slice redone, the monolith in the surf, phones' pictures (version `20261125a`, `CACHE_VERSION` v123)
+The owner committed 8.195–8.196 ("surea"), so this round has a new stamp. They found the slot read as "a blue rectangle
+placed over the original image": they wanted it wider, longer ("goes through the plain as well and theres no visible
+start or end"), and turned "less perpendicular to camera" (walls still vertical) so more raw rock shows. They also
+downloaded the surf clip themselves.
+- **The slice (`tools/surreal/slot.py`, rewritten):** a ray tracer through a model of the scene matched to the photo
+  (f 9000 px, horizon 1235, eye 1.7 m over the plain):
+  - the slice is two vertical planes 120 m apart at 20° from the line of sight, running away to the left, through the
+    plain, the butte and the ground below (no floor);
+  - the far wall (the right side of the opening) faces us and the sun, so it is lit, with the near wall's shadow down
+    its left side;
+  - because the butte is a cone seen from the front, an oblique vertical cut shows as a band slanting down its right
+    flank, from the cap to the plain and out of the picture's right edge. That is the geometry, not a choice. Through
+    the flat plain the cut is only a line: from 1.7 m up the plain is seen almost edge-on, and the cut's run across it
+    is off to the right of the frame.
+- **Making it read as rock:**
+  - its grain is the photo's own vertical faces: the cap's end wall, and the shale's cliff band (`ratio()` /
+    `tile()`), with their sunlit flutes kept down;
+  - colours come from the photo's slopes by height (smoothed; sky excluded), made a little darker and bluer (fresh
+    shale) and buff on the cap;
+  - the beds come from the photo's sheer faces (clipped so one strong bed can't make a step), with ledges catching the
+    sun;
+  - the ground the photo can't show (along the far wall, behind it, the near wall's top) is a height field with ridges
+    and gullies and a blocky cap top (`hf()`);
+  - the photo's front surface gets relief from its own light and shade, so the cut's edges follow its ridges;
+  - where the cut opens to the sky over the cap, real sky is cloned from just right of the cap (`CLONE`), and the old
+    cap's top edge is cleared.
+- **Live:** rock breaks off the far wall's top edge across the cap (`lip`) and falls down the face. When it leaves the
+  cut's outline (`open`, printed by slot.py), it has gone behind the near side's slopes, and 1.5–3.5 s later dust rises
+  from there and thins. Checked: a fall of about 6.5 s, the dust at about 9 s.
+- **The monolith (`tools/surreal/surf.py`, new), on Resources and Finder** (the ship keeps Themes and the rest):
+  - **Clip:** "Groyne and sea waves at Curonian Spit" (Alexander Grebenkov, CC BY 3.0, credited in About as
+    "steadied and added to"). Its first 11 s are steadied by the horizon (level and height) and the groyne's posts
+    (sideways). Measured on the output: no movement at all, to the pixel.
+  - **Slab:** 3.4 × 0.9 m, 12.5 m out of the water, 60 m out and to the right. Black, a faint rim, a wavy waterline
+    with the clip's own whitecaps kept over it, broken wash, and a rippled dark reflection.
+  - **Shadow:** it runs straight at us across the swell, the breaking waves and the sand (the low sun is hidden right
+    behind the slab). It is much too long for the clip's own light, which is the unexplained part. It is soft far from
+    the slab, and deeper on foam and sand than on water. A wider slab put the whole foreground in shadow, so nothing
+    read as a shadow.
+  - **Loop:** 306 frames at 30 fps. Its last second is faded into its first; the join is no bigger than a normal frame
+    step.
+  - **Files:** `surf.webm` (VP9, 3.2 MB) and `surf.mp4` (H.264, 2.6 MB), both 960 × 540 and silent; the stills
+    `surf.webp` (the clip's first frame, so nothing jumps when it starts) and `surf-p.webp`.
+  - **Playback (surreal.js `surf()`):** the sources are attached only once it is to play: Animation on, page visible,
+    not an upright phone, not data-saver. Otherwise nothing is fetched (checked). Animation switched off mid-way pauses
+    it where it is (checked). sw.js already leaves .webm/.mp4 to the browser. CSP `media-src 'self'` already allows it.
+- **Phones (a fix to 8.193's CSS):** the upright-phone rule only swapped `--su-img`, and every page's own rule
+  outranked it, so only the leftover pages ever got their `-p` picture. It now sets `background-image:
+  var(--su-img-p)` on the backdrop itself. Checked on Resources, Games, the timetable, Home, Calendar and Themes.
+- The popup session was told of the new stamp.
+
+## 8.198: the slice through the butte, made to read as a split (2026-11-25)
+
+Not committed since 8.197, so this rides on the same stamp (`20261125a` / v123). The owner liked the monolith and
+passed on four notes for the slice: a notch in the skyline (or sky through the top of the cleft); the inside darker the
+deeper it goes, with bright outer lips and a foreshortened side wall; the crack carried across the plain toward the
+camera, which also fixes the abrupt base; and rubble where broken rock has fallen in.
+- **Why there was no notch:** the photo's cap isn't round as the model has it. Its end (the grey wall facing us) is
+  closest, and the long red left side runs back from it, so the cap's skyline left of the old cut was already as low as
+  the far wall's top. The far wall even stood a little above it, which read as a slab laid on.
+- **Notch:** the cut now starts just right of the tower at the end's left corner (`SLOT_NX` 2010, the near wall's place
+  at the cap), so the tower stays as the near side of a notch.
+  - **First try:** that alone left the far wall's top only about 65 px under the tower, still level with the red cap
+    beside it. The owner: "looks like one uninterrupted profile at a glance".
+  - **Other angles don't help:** narrower angles and wider cuts (11–15°, 125–150 m) gained only about 50 px. They also
+    turned the near wall's shadow into a hard dark rectangle.
+  - **The saddle:** behind the prow (the end wall's top) the caprock on the cut's far side now dips 60 m (`SAD_D`;
+    `SAD_P` 60 m of flat prow, falling over `SAD_R` 160 m). It steps down bed by bed (about 8 m treads and risers).
+    The photo can't show the cap's top there; only the cut does. The far wall's top falls away from the prow, and
+    cloned sky comes about 180 px down into the cleft, between the tower and the prow.
+  - **The live lip** is now a line of points along that edge (`lip`, a list), and surreal.js picks a place anywhere
+    along it.
+  - **Stray pixels:** a few pixels in the notch that the photo's relief put in front of the cut (keeping the old cap's
+    orange rock) are filled from either side along the row.
+  - **Cap corner:** the photo's cap reaches a little higher than the model's near its right corner. Those rays now meet
+    the cap's front (`miss` in the trace); before, a sliver of the old corner was left floating in the sky.
+- **Depth:** each point of the far wall gets a sky-view factor, worked out on a 4 m grid over the wall
+  (`AO_V`/`sky_view`): from eleven directions out across the gap, the highest the near side and the butte stand against
+  the sky. It darkens both the sunlit and the shaded rock, the shade much more.
+- **Edges:** the arrises (the far wall's top edge, its front edge against the butte) and the sunlit near lip are
+  brightened by 1–2 px.
+- **Side wall:** a side wall can't be shown honestly. With parallel walls the near wall faces away from this camera
+  everywhere. Seeing it would need the slot to open toward us (a wedge, which would dead-end inside the butte) or to
+  pass round the camera. The far wall's bedding now converges more visibly instead.
+- **Rubble (`talus()`):** half-cones at the angle of repose (34°) against the far wall's foot:
+  - **Shape:** concave, rounded tops, lobed a little, every 45–95 m, each about a quarter of the wall above it, on a
+    low apron;
+  - **Blocks:** small domes of the shale with a few bigger boulders, 6% of them the cap's buff sandstone;
+  - **Light:** lit by their own slope and shadowed by the near side, as the wall is;
+  - **Tracing:** rays are marched through the gap (rays that can't reach it are skipped by an upper bound, `_T1`).
+  The visible foot of the cut is only 50–90 m tall there (it cuts the butte's apron), so the cones are 10–25 m.
+- **Fissure:** a straight crack across the plain, from the cut's foot toward us. It narrows from about a metre at the
+  cut to 13 cm by us and passes 1.5 m to our left (`SLOT_FC`).
+  - **Shading:** we look down its shaded side: a pale broken crust, darker topsoil, then silt. It is lit by sky and by
+    the sunlit side opposite, so it is brown near the top and black only deep down.
+  - **Edges:** its lips crumble in bites, it jogs a little and pinches nearly shut here and there, and the photo's own
+    tussocks and pale grass blades stand over its edges.
+  - **Why it can't be the slice itself:** a 120 m slice can't come at the camera and still meet the butte at 20°. Seen
+    from 1.7 m, anything far off on the plain is a line; only something coming close shows.
+- **Lower wall:** the shale band's runnels, tiled down the wall, read as drips, so its grain is now mostly smoothed
+  across, keeping the layers.
+- **Phone picture:** recentred on x 2300, so it runs from the cap's notch down to the foot and the crack across the
+  plain. The wide picture still shows the cut from the cap down the flank and out of its right edge. The crack is in its
+  bottom-right corner, seen on screens taller than 16:9.
+- **Live rockfall:** `lip` and `open` are reprinted and copied into surreal.js.
+
+## 8.199 Triplets: a different mix of groups each day (2026-11-25)
+
+The owner noticed that for days Triplets had been one wordplay group and two timetable groups. This is a bias in how
+`makeQuartets` picks categories, not chance:
+- **The draw:** `pickFour` takes the first three compatible categories in random order and allows up to two from
+  timetables. There are usually more timetable categories than name ones (subjects, classes and teachers, and for
+  seniors the whole-timetable profiles), and the band needs one hard group.
+- **Measured** on a typical year's categories: two timetable groups in 41% of valid draws for seniors (20% for juniors).
+- **Two things push it further, more so as the days go by:**
+  - the first tier's fresh-people rule drops small name categories once they've used their people, while big subjects
+    never run out;
+  - the red-herring ranking prefers nine people from timetable groups, who share more subjects.
+- **The fix (`api/_conn.js`), Triplets only:** each day first picks its mix: how many of its three groups come from
+  timetables (0, 1 or 2, weighted 0.3 / 0.4 / 0.3).
+  - **Spacing:** never yesterday's mix, and the day before's at 0.4 of its weight.
+  - **Fallback:** tiers 0–5 are tried with that mix (`tier.mix`: `pickFour` takes exactly that many timetable groups),
+    then all the tiers again without it. A day is never left without a puzzle, and `mixKept: false` is logged as a
+    warning if the fallback was needed.
+  - **History:** `api/_connroute.js` passes the last three days' Triplets mixes (`recentMix`) from the puzzles it
+    already reads (the same read-only query, plus the year column).
+- **Checked:**
+  - **Simulation:** every mix can be made; 26–45% of draws are valid for each, juniors and seniors.
+  - **Made-up years** (150 invented names, twelve days each): the mix changed every day, was always kept, and every day
+    made a puzzle in tier 0–2.
+  - **Comparison:** the old code on the same years ran the same mix for four days at a time and almost never made an
+    all-names day.
+  - **Quartets:** puzzles are identical before and after (it never gets a mix).
+- **Not changed:** `QUARTETS_VERSION` (bumping it would remake days that have been played). Days already made, today
+  included, keep their puzzles. The first day with a chosen mix is the first one made after this is deployed (the
+  nightly job runs at 1 am Sydney time).
+

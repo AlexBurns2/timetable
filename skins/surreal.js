@@ -8,7 +8,10 @@
        Timetable  a great square of light over the dunes, its light on the sand following every slope; it breathes a little, a few stars
                   twinkle, and now and then it glitches out and turns up over a dune further back, then comes forward
        planners   (nothing live: the line of gateways and their shadows are all in the picture)
-       Games, Mahjong  a straight slot cut through a butte; now and then a piece of its edge falls to the bottom
+       Games, Mahjong  a slice taken clean out of a butte and the ground under it; now and then rock breaks off the cut's
+                  top edge and falls down the face out of sight, and a little later some dust comes up out of it
+       Resources, Finder  the surf on a Baltic beach (a phone's clip, held still, looping), a black slab standing in the
+                  sea, its shadow running at us across the waves and the sand
        the rest   a ship driven bow-first into the dunes at dusk, clouds rolling slowly past behind its masts
      Everything is placed in the photograph's own pixels and moved with it, so it sits in the same spot at any window
      size. With Animation off (or the system asking for less motion) it all holds still. */
@@ -30,14 +33,15 @@
     tt:   { w:1920, h:1440, px:.5, py:.62 },
     /* the stranded ship (tools/surreal/wreck.py printed these): its cut-out's box, and the band of sky the clouds roll in */
     wreck: { w:1920, h:1440, px:.8, py:.52, ship:[1401, 271, 1805, 803], clouds:[0, 40, 1920, 584], tile:[876, 292] },
-    /* Factory Butte with a slot cut through it (tools/surreal/slot.py): the slot's opening (top left, top right, foot right,
-       foot left), where the far wall's top edge shows (rock breaks off there and falls down its face: further along the
-       edge than this it's hidden behind the near wall, and the sky in the gap is beyond the butte), and 2 image px to the
-       metre at the butte */
-    slot: { w:1960, h:1520, px:.5, py:.16, open:[[1600, 120], [1696, 120], [1731, 992], [1614, 992]], lip:[1673, 1694, 124], floor:990, pxm:2 }
+    /* Factory Butte with a slice taken out of it (tools/surreal/slot.py printed these): the cut's outline (rock falls
+       inside it and is hidden past it, behind the near side's slopes), the far wall's top edge from the notch up to the
+       prow (a line of points; rock breaks away anywhere along it), and 2.1 image px to the metre at the butte */
+    slot: { w:1960, h:1520, px:.5, py:.16, pxm:2.1,
+      lip:[[1621,329], [1632,320], [1642,319], [1651,318], [1661,311], [1670,298], [1680,281], [1690,262], [1699,242], [1709,224], [1718,207], [1728,202], [1738,186], [1747,183], [1757,179], [1766,179], [1776,175], [1779,174]],
+      open:[[1637,154],[1623,163],[1599,168],[1598,178],[1602,202],[1610,206],[1601,221],[1605,269],[1615,278],[1614,293],[1618,312],[1614,317],[1617,322],[1614,326],[1619,341],[1694,494],[1700,509],[1722,514],[1725,528],[1754,581],[1761,600],[1772,643],[1791,648],[1792,667],[1810,672],[1814,696],[1819,701],[1842,706],[1820,710],[1822,715],[1848,720],[1829,725],[1838,734],[1867,739],[1876,754],[1887,758],[1905,787],[1905,792],[1924,797],[1924,806],[1950,811],[1960,816],[1958,566],[1945,542],[1906,490],[1905,485],[1910,480],[1902,470],[1902,461],[1877,456],[1858,408],[1839,403],[1798,346],[1804,293],[1798,206],[1790,197],[1786,173],[1786,154]] }
   };
   const sceneOf = pg => pg === 'home' ? 'home' : pg === 'timetable' ? 'tt' : ['calendar', 'free', 'revision', 'notes'].includes(pg) ? 'plan' :
-    ['games', 'mahjong'].includes(pg) ? 'slot' : 'wreck';
+    ['games', 'mahjong'].includes(pg) ? 'slot' : ['resources', 'finder'].includes(pg) ? 'surf' : 'wreck';
   /* photo pixels to the screen (cover, positioned) */
   function mapper(S){
     const vw = innerWidth, vh = innerHeight, k = Math.max(vw / S.w, vh / S.h);
@@ -146,9 +150,11 @@
     });
   }
 
-  /* ── Games and Mahjong: the slot in the butte. Now and then a piece of the cut's top edge breaks off and falls the four
-        hundred metres to the floor of the slot, as slowly as it really would from that far away (about seven seconds), and
-        raises a little dust that drifts and settles. Drawn on a canvas only while something is falling or settling. ── */
+  /* ── Games and Mahjong: the slice through the butte (with a notch in its top, rubble at its foot and a crack across the
+        plain toward us, all in the picture). Now and then a few pieces of the far wall's top edge break away and
+        fall down its face, as slowly as they really would from that far away, until the near side's slopes hide them
+        (the cut has no bottom anyone can see); a few seconds later a little dust comes up out of it, drifts and thins.
+        Drawn on a canvas only while something is falling or settling. ── */
   function slot(){
     const S = SCENE.slot, L = stage('suslot');
     const cv = document.createElement('canvas'); L.appendChild(cv);
@@ -159,37 +165,53 @@
     const G = 9.8 * S.pxm;                               // gravity in image px per second squared
     let rocks = [], dust = [], raf = 0, t = 0, last = 0;
     const R = Math.random;
+    /* inside the cut's outline (photo px) */
+    const inside = (px, py) => {
+      let c = false; const P = S.open;
+      for (let i = 0, j = P.length - 1; i < P.length; j = i++){
+        const [xi, yi] = P[i], [xj, yj] = P[j];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    /* the far wall's top edge, down from the prow into the notch: its length, piece by piece */
+    const segs = S.lip.slice(1).map((p, i) => Math.hypot(p[0] - S.lip[i][0], p[1] - S.lip[i][1]));
+    const edge = segs.reduce((a, b) => a + b, 0);
     function fall(){
       if (!moving() || document.hidden) return;
-      const n = 1 + Math.floor(R() * 3), xa = S.lip[0] + 2 + R() * (S.lip[1] - S.lip[0] - 4);
+      const n = 1 + Math.floor(R() * 3);
+      let a = R() * edge, i = 0;
+      while (i < segs.length - 1 && a > segs[i]){ a -= segs[i]; i++; }
+      const k = a / segs[i], xa = S.lip[i][0] + (S.lip[i + 1][0] - S.lip[i][0]) * k, ya = S.lip[i][1] + (S.lip[i + 1][1] - S.lip[i][1]) * k;
       for (let i = 0; i < n; i++)
-        rocks.push({ x:xa + (R() - .5) * 5, y:S.lip[2] + R() * 3, vx:(R() - .5) * 1.2, t0:t + i * (.15 + R() * .5), s:.8 + R() * 1.4, hit:false });
+        rocks.push({ x:xa + (R() - .5) * 5, y:ya + 1 + R() * 2, vx:(R() - .5) * 1.2, t0:t + i * (.15 + R() * .5), s:.8 + R() * 1.4, gone:false });
       if (!raf){ last = 0; raf = requestAnimationFrame(frame); }
     }
     function frame(now){
       raf = 0;
       const dt = last ? Math.min(.05, (now - last) / 1000) : 0; last = now; t += dt;
       x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, innerWidth, innerHeight);
-      /* only inside the slot's opening */
+      /* only inside the cut */
       x.save(); x.beginPath(); S.open.forEach(([a, b], i) => i ? x.lineTo(m.x(a), m.y(b)) : x.moveTo(m.x(a), m.y(b))); x.closePath(); x.clip();
       for (const d of dust){
         const age = t - d.t0; if (age < 0) continue;
-        const r = (d.r0 + 30 * Math.sqrt(age)) * m.k, a = d.a * Math.max(0, 1 - age / d.life) * Math.min(1, age * 3);
-        const cx = m.x(d.x + age * 2.2), cy = m.y(d.y - 34 * Math.sqrt(age));        // billowing up, drifting a little east
+        const r = (d.r0 + 22 * Math.sqrt(age)) * m.k, a = d.a * Math.max(0, 1 - age / d.life) * Math.min(1, age * 1.5);
+        const cx = m.x(d.x + age * 1.6), cy = m.y(d.y - 26 * Math.sqrt(age));        // coming up out of the cut, drifting a little east
         const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
-        g.addColorStop(0, 'rgba(178,166,156,' + a.toFixed(3) + ')'); g.addColorStop(.55, 'rgba(178,166,156,' + (a * .5).toFixed(3) + ')'); g.addColorStop(1, 'rgba(178,166,156,0)');
+        g.addColorStop(0, 'rgba(168,162,160,' + a.toFixed(3) + ')'); g.addColorStop(.55, 'rgba(168,162,160,' + (a * .5).toFixed(3) + ')'); g.addColorStop(1, 'rgba(168,162,160,0)');
         x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill();
       }
       for (const r of rocks){
-        const age = t - r.t0; if (age < 0 || r.hit) continue;
+        const age = t - r.t0; if (age < 0 || r.gone) continue;
         const y = r.y + .5 * G * age * age, xx = r.x + r.vx * age;
-        if (y >= S.floor){ r.hit = true; dust.push({ x:xx, y:S.floor - 6, t0:t, r0:8 + r.s * 5, a:.42 + r.s * .12, life:8 + R() * 3 }); continue; }
+        /* gone behind the near side: some time later, its dust comes up from about there */
+        if (age > .4 && !inside(xx, y)){ r.gone = true; dust.push({ x:xx, y:y - 4, t0:t + 1.5 + R() * 2, r0:6 + r.s * 4, a:.26 + r.s * .08, life:9 + R() * 3 }); continue; }
         const sz = Math.max(.9, r.s * m.k * 1.6), trail = Math.min(18, G * age * .035) * m.k;
         x.strokeStyle = 'rgba(70,58,52,.35)'; x.lineWidth = sz * .8; x.beginPath(); x.moveTo(m.x(xx), m.y(y) - trail); x.lineTo(m.x(xx), m.y(y)); x.stroke();
         x.fillStyle = 'rgba(66,54,48,.9)'; x.fillRect(m.x(xx) - sz / 2, m.y(y) - sz / 2, sz, sz);
       }
       x.restore();
-      rocks = rocks.filter(r => !r.hit); dust = dust.filter(d => t - d.t0 < d.life);
+      rocks = rocks.filter(r => !r.gone); dust = dust.filter(d => t - d.t0 < d.life);
       if (rocks.length || dust.length) raf = requestAnimationFrame(frame); else x.clearRect(0, 0, innerWidth, innerHeight);
     }
     let tm = 0;
@@ -198,12 +220,43 @@
     later(() => { clearTimeout(tm); cancelAnimationFrame(raf); });
   }
 
+  /* ── Resources and Finder: the surf. The clip (tools/surreal/surf.py; its first frame is the backdrop, so nothing
+        jumps when it starts) plays only with Animation on, on a screen that isn't an upright phone, and not when the page
+        is hidden or the connection is set to save data; it isn't even fetched otherwise. Animation off mid-way: it holds
+        still where it is. ── */
+  function surf(){
+    const L = stage('susurf');
+    const v = document.createElement('video');
+    v.muted = true; v.defaultMuted = true; v.loop = true; v.playsInline = true; v.preload = 'none'; v.disablePictureInPicture = true;
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true'); v.tabIndex = -1;
+    L.appendChild(v);
+    let armed = false;                                    // (its sources only once it's to play: nothing fetched before)
+    const upright = matchMedia('(max-aspect-ratio:4/5)'), less = matchMedia('(prefers-reduced-motion: reduce)');
+    const thrift = () => !!(navigator.connection && navigator.connection.saveData);
+    const sync = () => {
+      if (moving() && !document.hidden && !upright.matches && !thrift()){
+        if (!armed){ armed = true; v.preload = 'auto';
+          v.innerHTML = '<source src="/images/surreal/surf.webm" type="video/webm"><source src="/images/surreal/surf.mp4" type="video/mp4">'; v.load(); }
+        const p = v.play(); if (p) p.catch(() => {});
+      }
+      else if (!v.paused) v.pause();
+    };
+    v.addEventListener('playing', () => v.classList.add('on'), { once:true });
+    const mo = new MutationObserver(sync); mo.observe(root, { attributes:true, attributeFilter:['data-fx', 'data-motion'] });
+    document.addEventListener('visibilitychange', sync);
+    upright.addEventListener && upright.addEventListener('change', sync); less.addEventListener && less.addEventListener('change', sync);
+    sync();
+    later(() => { mo.disconnect(); document.removeEventListener('visibilitychange', sync);
+      upright.removeEventListener && upright.removeEventListener('change', sync); less.removeEventListener && less.removeEventListener('change', sync);
+      v.pause(); v.innerHTML = ''; v.load(); });
+  }
+
   function start(){
     live = true;
     notation();
     const sc = sceneOf(root.getAttribute('data-pg') || 'home');
     if (root.getAttribute('data-pg') === 'hkmahjong') return;
-    const run = { home, tt:light, wreck, slot }[sc];         // (the planners' gateways are all in the picture)
+    const run = { home, tt:light, wreck, slot, surf }[sc];         // (the planners' gateways are all in the picture)
     if (run) run();
   }
   function look(){

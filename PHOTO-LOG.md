@@ -205,7 +205,7 @@ four Commons videos' poster frames; a list of Poly Haven's model files), none ke
 |---|---|---|---|---|---|
 | 2026-11-24 | Dusk over the sand and scattered shrubs, Mesquite Flat Sand Dunes (Z3lvs), 1920 px | https://commons.wikimedia.org/wiki/File:Dusk_over_the_sand_and_scattered_shrubs,_Mesquite_Flat_Sand_Dunes,_Death_Valley_National_Park.jpg | CC0 | 438 KB | `images/surreal/wreck*.webp` (mirrored); credited |
 | 2026-11-24 | Dutch Ship Medium, 1k glTF with its textures (Poly Haven) | https://polyhaven.com/a/dutch_ship_medium | CC0 | 8.7 MB | Rendered offline (tools/surreal/ship.html) into `images/surreal/wreck-ship.webp` and the shadow in `wreck.webp`; the model itself is not in the repo; credited in About, 3D credits |
-| 2026-11-24 | Groyne and sea waves at Curonian Spit (video), for the monolith in the surf | https://commons.wikimedia.org/wiki/File:Groyne_and_sea_waves_at_Curonian_Spit.webm | CC BY 3.0 | **not downloaded**: Wikimedia's servers refused every attempt (rate limit) | Not yet |
+| 2026-11-24 | Groyne and sea waves at Curonian Spit (video), for the monolith in the surf | https://commons.wikimedia.org/wiki/File:Groyne_and_sea_waves_at_Curonian_Spit.webm | CC BY 3.0 | **not downloaded** by me: Wikimedia's servers refused every attempt (rate limit); the owner downloaded it on 2026-11-25 (below) | See 2026-11-25 |
 
 Morning Clouds Over North Van Mountain Valley (above) is **no longer used**; its credit in About was replaced. The Bonneville
 clouds also make the ship scene's rolling clouds (`wreck-clouds.webp`), recoloured.
@@ -219,3 +219,13 @@ One contact sheet of nine 480 px previews (buttes and cliffs), none kept; then:
 | 2026-11-24 | Book Cliffs range from Thompson Springs (Carter Pape), 1920 px | https://commons.wikimedia.org/wiki/File:Book_Cliffs_range_from_Thompson_Springs.jpg | CC BY-SA 4.0 | 445 KB | **Not used** (a candidate; houses and a truck in front) |
 
 The wave clip for the monolith was tried again and still refused (429); two video stills were also refused.
+
+## 2026-11-25: the monolith in the surf, and the slice through the mountain redone (HANDOFF 8.197)
+
+| Date | What | Source | Licence | Downloaded | Used |
+|---|---|---|---|---|---|
+| 2026-11-25 | Groyne and sea waves at Curonian Spit (Alexander Grebenkov), the original 1080p clip, 31 s, 84 MB | https://commons.wikimedia.org/wiki/File:Groyne_and_sea_waves_at_Curonian_Spit.webm | CC BY 3.0 | Downloaded by the owner in their own browser and handed over (not in the repo) | Its first 11 s, steadied, with a slab and its shadow added, by tools/surreal/surf.py: `images/surreal/surf.webm`, `surf.mp4`, `surf.webp`, `surf-p.webp`; credited in About ("steadied and added to") |
+
+The author's name and licence were read from the Commons API (one metadata request, a generic client name). The slice
+through Factory Butte was rendered again from the same 3840 px photo (nothing new downloaded): its rock is now textured
+with the photo's own vertical faces (the cap's end wall, the shale's cliff band).
