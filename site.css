@@ -540,10 +540,21 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .factions{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
 .factions:empty{display:none}
 .factions .fhidevote,.factions .fhideclear{color:var(--muted);font-weight:500}
-.fvote{margin-top:8px;font-size:.78125rem;color:var(--muted)}
-.fvote b,.fhidden b{color:var(--text);font-weight:600}
-.fvote .flink,.fhidden .flink{margin:0}
-.fhidden{font-size:.8125rem;color:var(--muted);padding:6px 0 2px}
+/* the vote on hiding a post: Vote by: NAME / Hide post? / YES n  NO n */
+.fvbox{margin-top:8px;font-size:.8125rem;color:var(--muted)}
+.fvby b{color:var(--text);font-weight:600}
+.fvq{margin-top:2px;color:var(--text);font-weight:600}
+.fvbtns{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:6px}
+.fvbtn{display:inline-flex;align-items:center;gap:7px;padding:3px 12px;border:1px solid var(--line);border-radius:999px;
+  background:var(--panel-2);color:var(--text);font:inherit;font-size:.75rem;font-weight:700;letter-spacing:.04em;cursor:pointer}
+.fvbtn b{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.fvbtn:hover:not(:disabled){border-color:var(--accent)}
+.fvbtn:disabled{cursor:default}
+.fvbtn:disabled:not([aria-pressed="true"]){opacity:.6}          /* the vote's over, or you've answered (yours stays marked) */
+.fvbtn[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.fvbtn[aria-pressed="true"] b{color:var(--accent)}
+.fvbtns .flink{margin:0 0 0 4px}
+.fvend{margin-top:5px;font-size:.75rem}
 .fpost.ffolded{border-style:dashed;background:none}
 .fpost.fofficial{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .fpost.fofficial .fmeta b{color:var(--accent)}

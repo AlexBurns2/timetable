@@ -5144,12 +5144,20 @@ player had a script pressing Button Pushers around the clock. Jim stays (people 
   `tt.forumas`). The row's email is just `~msc`: nothing on the page or in the database says which moderator wrote it, on
   purpose (the owner: it mustn't be traceable to the creators). Any moderator can delete one. Students get 403 for `as:'msc'`.
 - **Replies** are folded under "Show N replies" until opened (kept while the page is open; opened after you reply).
-- **Votes to hide:** "Vote to hide" on anyone else's post (not your own, not MSC's). A vote is a `forum_reaction` row with emoji
-  `~hide` (the react route only takes real emoji, so it can't be faked as one, and it doesn't count toward the 6 reactions).
-  At 8 (`HIDE_AT`, the owner's number) the post is folded: "Hidden after 8 votes to hide it. The vote was started by …" and "Show content". Below
-  8 the post shows "1 vote of 8 to hide this. Started by …". Starting a vote asks first and says your name will show. You
-  can take your vote back. Moderators: "Clear the votes" (Home, and the moderator page's Forum tab, which also shows the
-  counts). A thread folded by votes is never the one thread shown before the forum is opened.
+- **Votes to hide** (the owner's design and wording): "Vote to hide" on anyone else's post (not your own, not MSC's) asks
+  "Vote to hide this post? 8 votes are required and your name will be shown." and counts as the starter's YES. The post
+  then shows "Vote by: NAME", "Hide post?" and YES / NO buttons with their counts. One vote each, never taken back.
+  8 yeses (`HIDE_AT`) fold the post away (the same box, with "Show content"); 4 noes (`KEEP_AT`) and it stays ("The vote
+  didn't go through."). Whichever count gets there first ends it; no votes after that. A vote is a `forum_reaction` row,
+  emoji `~hide` (yes) or `~keep` (no): the react route only takes real emoji, so neither can be faked as a reaction, and they
+  don't count toward the 6 reactions. Moderators: "Clear the votes" (Home, and the moderator page's Forum tab, which shows
+  the tally), which also lets a new vote start. A thread folded by votes is never the one thread shown before the forum is
+  opened. The wording is all in `home.html` (`voteBox()` and the vote handlers in `wireForum()`).
 - No new tables or columns. `/andre/` (left alone) still shows hidden posts in full.
-- Tested against the in-memory database (27 checks: the old post and reaction untouched, no moderator trace anywhere) and in
-  the mock (folded, voting, shown, the composer box; desktop, dark, phone).
+- Tested against the in-memory database (23 checks: the old post and reaction untouched, no moderator trace anywhere, 4 noes
+  end it, 8 yeses hide it, no second votes, no votes after the end) and in the mock (open, ended, folded and shown votes,
+  the start message, the composer box; desktop and phone).
+
+## 8.202 Votes to hide: YES / NO (version `20261125d`, `CACHE_VERSION` v125)
+The owner committed 8.200 and 8.201 as `banning`, then redesigned the votes to hide; 8.201's "Votes to hide" describes the new
+YES / NO vote. Every page is restamped `d` / v125. Next free stamp: `e` / v126.

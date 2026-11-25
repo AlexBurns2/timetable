@@ -2189,7 +2189,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261125c';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261125d';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -5284,7 +5284,7 @@ BUILD.admin = host => {
     /* votes to hide say how many and who started them (posts as MSC Unofficial keep no trace of who wrote them) */
     $('admbody').innerHTML = all.length ? all.map(p => '<div class="adminrow modpost' + (p.reply ? ' reply' : '') + '">' +
         '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' }) + (p.for ? ' · for ' + p.for : '') +
-          (p.hide ? ' · ' + p.hide.votes + ' vote' + (p.hide.votes === 1 ? '' : 's') + ' to hide' + (p.hide.hidden ? ' (hidden)' : '') + ', started by ' + p.hide.by : '')) +
+          (p.hide ? ' · vote to hide by ' + p.hide.by + ': ' + p.hide.yes + ' yes, ' + p.hide.no + ' no' + (p.hide.hidden ? ' (hidden)' : p.hide.kept ? ' (didn’t go through)' : '') : '')) +
         '</em><span class="pb">' + esc(p.body) + '</span></span>' + scopeSel(p) +
         (p.hide ? '<button class="btn" type="button" data-unhide="' + esc(p.id) + '">Clear votes</button>' : '') +
         '<button class="del" type="button" data-id="' + esc(p.id) + '">Delete</button></div>').join('')

@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261125c">
-<script src="theme.js?v=20261125c"></script>
-<script src="icons.js?v=20261125c"></script>
+<link rel="stylesheet" href="theme.css?v=20261125d">
+<script src="theme.js?v=20261125d"></script>
+<script src="icons.js?v=20261125d"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261125c">
-<link rel="stylesheet" href="settings.css?v=20261125c">
-<link rel="stylesheet" href="poll.css?v=20261125c">
+<link rel="stylesheet" href="site.css?v=20261125d">
+<link rel="stylesheet" href="settings.css?v=20261125d">
+<link rel="stylesheet" href="poll.css?v=20261125d">
 </head>
 <body>
 <div class="wrap hub">
@@ -400,12 +400,26 @@ const fmsg = m => { $('fmsg').textContent = m || ''; };
 
 /* Since 25 November 2026 (api/forum.js):
    - replies are folded under "Show N replies" until you open them (remembered while the page is open);
-   - anyone can start a vote to hide someone else's post; it is folded away at hideAt votes, behind "Show content",
-     and the person who started the vote is named on it, so it can't be used to pick on someone anonymously;
+   - anyone can start a vote to hide someone else's post ("Vote by: NAME / Hide post?", then YES and NO with their
+     counts; votes can't be taken back). hideAt yeses fold it away behind "Show content"; keepAt noes and it stays.
+     The person who started the vote is named on it, so it can't be used to pick on someone anonymously;
    - moderators can post and reply as MSC Unofficial (the "As MSC Unofficial" box). Which moderator wrote one isn't
      kept anywhere, so it can't be traced back to anyone. */
 const openReplies = new Set(), shownHidden = new Set();
-let forumMod = false, hideAt = 8;          // the server says (HIDE_AT in api/forum.js)
+let forumMod = false, hideAt = 8;          // the server says (HIDE_AT, and KEEP_AT for the noes, in api/forum.js)
+/* the vote on hiding a post: who started it, the question, and YES / NO with how many chose each. You can vote once, on
+   someone else's post, while the vote is still on; your answer stays marked. `extra`: Show content / Fold it away again */
+function voteBox(p, h, extra){
+  const can = signedIn && p.canHide && !h.mine && !h.hidden && !h.kept;
+  const btn = (v, label, n) => '<button type="button" class="fvbtn" data-id="' + esc(p.id) + '" data-v="' + v + '" aria-pressed="' + (h.mine === v) + '"' +
+    (can ? '' : ' disabled') + '>' + label + ' <b>' + n + '</b></button>';
+  return '<div class="fvbox">' +
+    '<div class="fvby">Vote by: <b>' + esc(h.by) + '</b></div>' +
+    '<div class="fvq">Hide post?</div>' +
+    '<div class="fvbtns">' + btn('yes', 'YES', h.yes) + btn('no', 'NO', h.no) + (extra || '') + '</div>' +
+    (h.kept ? '<div class="fvend">The vote didn’t go through.</div>' : '') +
+  '</div>';
+}
 const asSite = () => !!TT.get('tt.forumas', false);
 const asBox = () => forumMod ? '<label class="fas"><input type="checkbox" class="fasbox"' + (asSite() ? ' checked' : '') + '><span>As MSC Unofficial</span></label>' : '';
 const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
@@ -420,20 +434,15 @@ function postCard(p, isReply){
         (p.mine ? '' : ' title="Delete (moderator)"') + '>delete</button>' : '') +
     '</div>' +
     (folded
-      ? '<div class="fhidden">Hidden after ' + plural(h.votes, 'vote', 'votes') + ' to hide it. The vote was started by <b>' + esc(h.by) + '</b>.' +
-          ' <button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Show content</button></div>'
+      ? voteBox(p, h, '<button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Show content</button>')
       : '<div class="ftext">' + esc(p.body) + '</div>' +
         '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
-        (h ? '<div class="fvote">' + (h.hidden ? 'Hidden after ' + plural(h.votes, 'vote', 'votes') + ' to hide it'
-                                               : plural(h.votes, 'vote', 'votes') + ' of ' + hideAt + ' to hide this') +
-             '. Started by <b>' + esc(h.by) + '</b>.' +
-             (h.hidden ? ' <button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Fold it away again</button>' : '') + '</div>' : '')) +
+        (h ? voteBox(p, h, h.hidden ? '<button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Fold it away again</button>' : '') : '')) +
     '<div class="factions">' +
       (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>') +
       (n ? '<button class="flink frepl" type="button" data-id="' + esc(p.id) + '" aria-expanded="' + open + '">' +
              (open ? 'Hide replies' : 'Show ' + plural(n, 'reply', 'replies')) + '</button>' : '') +
-      (p.canHide && signedIn ? '<button class="flink fhidevote" type="button" data-id="' + esc(p.id) + '">' +
-             (h && h.mine ? 'Take back my vote to hide' : h ? 'Vote to hide too' : 'Vote to hide') + '</button>' : '') +
+      (p.canHide && signedIn && !h ? '<button class="flink fhidevote" type="button" data-id="' + esc(p.id) + '">Vote to hide</button>' : '') +
       (forumMod && h ? '<button class="flink fhideclear" type="button" data-id="' + esc(p.id) + '" title="Moderators: clear the votes so it shows again">Clear the votes</button>' : '') +
     '</div>' +
     (isReply ? '' : '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
@@ -578,13 +587,17 @@ function wireForum(){
     if (shownHidden.has(id)) shownHidden.delete(id); else shownHidden.add(id);
     renderForum(lastPosts);
   });
-  document.querySelectorAll('.fhidevote').forEach(b => b.onclick = async () => {
-    const p = POSTS.get(b.dataset.id); if (!p) return;
-    if (!p.hide && !confirm('Start a vote to hide this post?\n\nYour name will show on it as the person who started the vote. It’s hidden once ' + hideAt + ' people vote.')) return;
+  /* starting a vote (it counts as your YES), and answering one: final, there's no taking it back */
+  const vote = async (b, id, v) => {
     b.disabled = true; fmsg('');
-    try { await TT.api('/api/forum', { method:'POST', body:{ action:'hidevote', id:p.id } }); await loadForum(); }
+    try { await TT.api('/api/forum', { method:'POST', body:{ action:'hidevote', id, vote:v } }); await loadForum(); }
     catch (e){ fmsg(e.message); b.disabled = false; }
+  };
+  document.querySelectorAll('.fhidevote').forEach(b => b.onclick = () => {
+    if (!confirm('Vote to hide this post? ' + hideAt + ' votes are required and your name will be shown.')) return;
+    vote(b, b.dataset.id, 'yes');
   });
+  document.querySelectorAll('.fvbtn').forEach(b => b.onclick = () => vote(b, b.dataset.id, b.dataset.v));
   document.querySelectorAll('.fhideclear').forEach(b => b.onclick = async () => {
     if (!confirm('Clear the votes to hide this post? It shows for everyone again.')) return;
     b.disabled = true;
@@ -671,8 +684,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261125c"></script>
-<script src="poll.js?v=20261125c"></script>
+<script src="settings.js?v=20261125d"></script>
+<script src="poll.js?v=20261125d"></script>
 <script>
 /* ── Today: the daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),
