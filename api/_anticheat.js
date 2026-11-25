@@ -1,5 +1,4 @@
-// Checks on a score before it goes on a board. Anything odd is held for a moderator
-// to look at (api/_review.js) rather than thrown away, so a false alarm costs nothing.
+// Checks a score before it goes on a board. Anything odd gets held (_review.js), not thrown away.
 import { snakeReplay, g2048Replay, tetrisCheck } from "../tasengine.js";
 
 const nums = (a, max) => Array.isArray(a) ? a.slice(-max).map(Number).filter(Number.isFinite) : [];
@@ -11,7 +10,7 @@ export function spread(xs) {
   return { mean, cv: mean > 0 ? sd / mean : 0 };
 }
 
-// how tightly key presses sit at the same point between two snake steps: 0 spread out, 1 always the same
+// 0 = presses all over the place between steps, 1 = always at the same moment
 export function clockLock(phases) {
   let c = 0, s = 0;
   for (const p of phases) { c += Math.cos(2 * Math.PI * p); s += Math.sin(2 * Math.PI * p); }
@@ -85,5 +84,4 @@ export function vetOther(game, metric, score) {
   return why;
 }
 
-// people who might be better off on the TAS boards
 export const botty = why => why.some(w => /script|automation|machine|clock|frame|even|world record|full board/.test(w));

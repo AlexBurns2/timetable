@@ -27,9 +27,8 @@
  * POST {action:"run", …}) and record their own scores; a score posted for them
  * is refused. Snake, 2048, Typing, Reaction and Tetris need a ticket from when
  * the game started (POST {action:"ticket", game}), and the score has to fit the
- * time since. Snake and 2048 are replayed from the ticket's seed (_anticheat.js);
- * a score that doesn't check out is held until Alex lets it on (_review.js,
- * GET ?held=1, POST {action:"held", op, email, key}). TAS boards: _tas.js.
+ * time since. Snake and 2048 get replayed from the ticket's seed, and anything off
+ * is held for Alex (_anticheat.js, _review.js). TAS boards: _tas.js.
  */
 
 import { db, whoami, isAdmin, isReviewer } from "./_supabase.js";
@@ -535,8 +534,7 @@ export default async function handler(req, res) {
     /* the games the server runs keep their own scores */
     if (RUN_GAMES.has(game)) return res.status(400).json({ error: "This game records its own scores." });
     if (dmax && (!day || score > dmax)) return res.status(400).json({ error: day ? "That score doesn't fit the game." : "Which day?" });
-    /* the rest: a ticket from when the game started, and a score that fits the time since;
-       Snake and 2048 are played back from their seed. Anything odd waits for a check. */
+    /* the rest: a ticket from when the game started, and a score that fits the time since */
     const why = [];
     if (TICKET_GAMES.has(game)) {
       const tk = await ticketOf(me, game, src.ticket);

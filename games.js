@@ -175,7 +175,7 @@ const GAMES = [
   { id:'typing', cat:'Arcade', ico:'⌨️', name:'Typing race', blurb:'How fast can you type it?' },
   { id:'react',  cat:'Arcade', ico:'🎯', name:'Reaction', blurb:tap('Click', 'Tap') + ' the moment it turns green' },
   { id:'chess',  cat:'Arcade', ico:'♟️', name:'Chess', blurb:'Play the bot from Easy to Hard, or a friend online' },
-  { id:'tas',    cat:'Arcade', ico:'', name:'TAS runs', blurb:'Bots welcome: frame-perfect Snake, 2048 and Tetris', href:'tas.html' }
+  { id:'tas',    cat:'Arcade', ico:'', name:'TAS runs', blurb:'Bots welcome', href:'tas.html' }
 ];
 /* The games page in two labelled sections, in order (both layouts use them:
    the gallery and the classic shelves). */
@@ -889,7 +889,6 @@ function lbKnow(game){
 }
 async function lbConsider(game, value, newPersonalBest){
   if (!TT.myEmail() || !LB_GAMES[game]) return;
-  /* the run as it stands now: the score goes with the moves that made it */
   const run = lbRuns[game] ? lbRuns[game]() : undefined;
   if (run === null) return;
   if (newPersonalBest) return lbSubmit(game, value, run);
@@ -2389,7 +2388,6 @@ BUILD.tetris = (host, o) => {
   function hardDrop(now){ if (cooling(now)) return; while (!collides(piece.cells, piece.x, piece.y+1)) piece.y++; SFX.drop(); commitLock(now, true); }
   function commitLock(now, hard){
     thud(hard ? 4 : 1.5);
-    /* every piece goes in the log, so a Sprint can be played back on the server */
     if (mode!=='versus'){ elapsedMs = Date.now()-baseTime; plog.push([elapsedMs, piece.type, piece.rot, piece.x, piece.y]); if (plog.length>4000) plog.splice(0, 1000); }
     const spin = mode==='versus' && piece.type==='T' && lastRot && tCorners() >= 3;
     piece.cells.forEach((row,r)=>row.forEach((v,c)=>{ if (v && piece.y+r>=0) grid[piece.y+r][piece.x+c]=piece.type; }));
@@ -3752,7 +3750,6 @@ function snakeSolo(host){
     paintTabs(); status();
     seedUp();
   }
-  /* a ranked game is played on the server's seed, so it can be played back there */
   function seedUp(){
     rand = null; waiting = false;
     if (!ranked() || !TT.myEmail || !TT.myEmail()) return;
@@ -3792,7 +3789,7 @@ function snakeSolo(host){
     const lastD = q.length ? q[q.length - 1] : s.dir;
     const turn = !((v[0] === -lastD.x && v[1] === -lastD.y) || (v[0] === lastD.x && v[1] === lastD.y));
     if (turn && q.length < 2){ q.push({ x:v[0], y:v[1] }); if (phase === 'play') ph.push(Math.round(((performance.now() - stepAt) / interval()) % 1 * 1000) / 1000); }
-    if (phase === 'ready' && waiting){ go = true; return; }                // the seed is on its way
+    if (phase === 'ready' && waiting){ go = true; return; }
     if (phase === 'ready' || phase === 'paused') start();                  // any arrow starts it, even straight ahead
   }
   function step(){
@@ -4487,7 +4484,6 @@ BUILD.g2048 = host => {
   const refit = () => { if (fit()) paint(); };
   addEventListener('resize', refit);
   if (TOUCH) onSwipe(wrap, d => move(d), { step:30 });
-  /* the tiles come from the server's seed, so the board can be played back there */
   const begin = d => {
     if (!live || dealt) return;
     dealt = true;
@@ -4907,7 +4903,6 @@ BUILD.admin = host => {
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
   /* which themes people use (from their synced settings) */
   const THEMES = { id:'themes', name:'Themes', kind:'x' };
-  /* scores the server held back because they didn't check out: Alex lets them on or throws them out */
   const HELD = { id:'held', name:'Held scores', kind:'h' };
   const CATS = [OVERVIEW, ...(siteCfg.canReview ? [HELD] : []), POLLS, IDEAS, SCANS, THEMES, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
@@ -5233,7 +5228,7 @@ BUILD.admin = host => {
   }
   function renderHeld(){
     const list = (data && data.held) || [];
-    $('admnote').textContent = 'Scores that didn’t check out. Let one on and it goes on its boards; throw it out and it’s gone. Only you see this.';
+    $('admnote').textContent = 'Scores that didn’t check out. Only you see these.';
     if (!list.length){ $('admbody').innerHTML = '<p class="how">Nothing waiting.</p>'; return; }
     const T = { sprint:['Tetris Sprint', fmtHMS], sprintall:['Tetris Sprint', fmtHMS], zen:['Tetris Survival', fmtHMS], zenscore:['Tetris Zen', String] };
     const what = h => { if (h.kind === 't') return T[h.mode] || [h.mode, String]; const c = LB_CAT.find(x => x.id === h.game); return c ? [c.name, c.fmt] : [h.game, String]; };

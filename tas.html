@@ -60,9 +60,7 @@
     </div>
   </div>
 
-  <p class="tasintro">Tool-assisted speedruns. <b>Bots, scripts and frame-by-frame play are all allowed here</b>, so this is where the machine limit gets set.
-    Every run is a movie, one input per frame, played back on the server from a fixed seed. If it finishes, it counts. Fewest frames wins, and the first to get there keeps a tie.
-    The normal leaderboards stay for people playing live.</p>
+  <p class="tasintro"><b>Bots welcome.</b> A run is a movie, one input per frame, played back on the server. Highest score wins, fewest frames breaks a tie.</p>
 
   <div class="diffbar" id="cats" style="margin-bottom:14px"></div>
 
@@ -89,7 +87,7 @@
         <label>Speed <select id="speed"><option value="10">10 fps</option><option value="30">30 fps</option><option value="60" selected>60 fps</option><option value="240">240 fps</option><option value="1200">1200 fps</option></select></label>
         <span id="watchpos"></span>
       </div>
-      <textarea class="tasmovie" id="movie" spellcheck="false" aria-label="Movie" placeholder="Your movie shows up here as you play. Paste one in and press Load movie."></textarea>
+      <textarea class="tasmovie" id="movie" spellcheck="false" aria-label="Movie" placeholder="Your movie shows up here. Paste one in and press Load movie."></textarea>
       <div class="tasmsg" id="msg"></div>
     </div>
 
@@ -107,9 +105,9 @@
 
   <div class="tascard tasapi" style="margin-top:16px">
     <h3>For bots</h3>
-    <p>The rules are one file, <a href="tasengine.js"><code>tasengine.js</code></a>, the same one the server plays runs back with. Import it, search for a better movie, then send it with your school login in the headers:</p>
+    <p>The game rules are in <a href="tasengine.js"><code>tasengine.js</code></a>, the same file the server checks with.</p>
     <pre id="apiex"></pre>
-    <p>The answer has your <code>frames</code> and whether it beat your best. Spaces, new lines and anything after a <code>#</code> on a line are ignored, so a movie can carry notes. Thirty sends a minute at most.</p>
+    <p>Spaces, new lines and <code>#</code> comments in a movie are ignored.</p>
   </div>
 </div>
 <script type="module" src="tas.js"></script>

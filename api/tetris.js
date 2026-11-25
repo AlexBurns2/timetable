@@ -19,8 +19,7 @@
  *   sprint_best(email primary key, name, time_ms, created_at)
  *   zen_board(email primary key, name, current, best, updated_at)
  *
- * Sprint runs send every piece they placed and are replayed; a run that doesn't add
- * up is held for a check instead of going on the board (see leaderboard.js).
+ * Sprint sends every piece placed and gets replayed. Anything off is held for Alex.
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
@@ -193,8 +192,7 @@ export default async function handler(req, res) {
       return res.status(200).json(await boardFor(mode, me, wk, true));
     }
 
-    /* a ticket from when the game started, a score that fits the time since, and for Sprint
-       every piece played back from the week's seed. Anything odd is held for a check. */
+    /* a ticket from when the game started, and a score that fits the time since */
     const claim = mode === "zenscore" ? Math.round(Number(body && body.score)) : mode === "zen" ? Math.round(Number(body && body.ms)) : Math.round(Number(body && body.timeMs));
     const week = weekOf(body && body.week);
     if (mode === "sprint" && week === null) return res.status(400).json({ error: "A valid week is required." });

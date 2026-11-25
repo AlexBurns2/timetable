@@ -1,5 +1,4 @@
-// Scores held back for a check: one row per person and board in game_state
-// (mode "run:flag:<board>"), keeping the best of what they sent. Alex clears them.
+// Held scores, one game_state row per person and board ("run:flag:<board>"). Alex clears them.
 import { db } from "./_supabase.js";
 
 const MODE = key => "run:flag:" + key;

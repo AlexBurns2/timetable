@@ -13,10 +13,9 @@ export function rng(seed) {
 export const SEEDS = { snake: 271828, g2048: 314159, tetris: 161803 };
 
 export const TAS = {
-  snake100:  { game: "snake",  metric: "tas100",  name: "Snake: 100 fruit",  unit: "steps",  keys: "udlr." },
-  snakefull: { game: "snake",  metric: "tasfull", name: "Snake: full board", unit: "steps",  keys: "udlr." },
-  g2048:     { game: "g2048",  metric: "tas2048", name: "2048: reach 2048",  unit: "moves",  keys: "udlr" },
-  tetris40:  { game: "tetris", metric: "tas40",   name: "Tetris: 40 lines",  unit: "frames", keys: "LR<>DVCZAHX." }
+  snake:  { name: "Snake",  unit: "steps",  keys: "udlr." },
+  g2048:  { name: "2048",   unit: "moves",  keys: "udlr" },
+  tetris: { name: "Tetris", unit: "frames", keys: "LR<>DVCZAHX." }
 };
 export const MAX_MOVIE = 300000;
 
@@ -95,17 +94,17 @@ export function snakeReplay(seed, turns, end) {
   return { ok: true, score: g.eaten, steps: g.steps, ms, full: g.full };
 }
 
-export function snakeRun(movie, goal, seed = SEEDS.snake) {
+export function snakeRun(movie, seed = SEEDS.snake) {
   const g = snakeNew(seed);
-  goal = Math.min(goal, g.n * g.n - 3);
-  for (let i = 0; i < movie.length; i++) {
+  let at = 0;
+  for (let i = 0; i < movie.length && !g.dead && !g.full; i++) {
     const c = movie[i];
     if (!DIR[c] && c !== ".") return fail("unknown input '" + c + "' at step " + (i + 1));
+    const had = g.eaten;
     snakeStep(g, c);
-    if (g.dead) return fail("crashed on step " + g.steps + " with " + g.eaten + " eaten");
-    if (g.eaten >= goal) return { ok: true, frames: g.steps, eaten: g.eaten };
+    if (g.eaten > had) at = g.steps;
   }
-  return fail("input ran out after " + g.steps + " steps with " + g.eaten + " eaten");
+  return g.eaten ? { ok: true, score: g.eaten, frames: at } : fail("nothing eaten");
 }
 
 /* 2048 */
@@ -170,12 +169,14 @@ export function g2048Replay(seed, moves) {
 
 export function g2048Run(movie, seed = SEEDS.g2048) {
   const g = g2048New(seed);
+  let at = 0;
   for (let i = 0; i < movie.length; i++) {
     if (!LINE[movie[i]]) return fail("unknown input '" + movie[i] + "' at move " + (i + 1));
+    const had = g.score;
     if (!g2048Move(g, movie[i])) return fail("move " + (i + 1) + " goes nowhere");
-    if (g.max >= 2048) return { ok: true, frames: g.moves, score: g.score };
+    if (g.score > had) at = g.moves;
   }
-  return fail("input ran out after " + g.moves + " moves, biggest tile " + g.max);
+  return g.score ? { ok: true, score: g.score, frames: at } : fail("no score");
 }
 
 /* tetris */
@@ -252,7 +253,7 @@ const spawnX = type => (TW - SHAPES[type][0].length) >> 1;
 
 export function tetrisNew(seed, goal = 40) {
   const g = { grid: Array.from({ length: TH }, () => new Array(TW).fill(0)), next: bag(seed), queue: [], hold: null, held: false,
-    lines: 0, pieces: 0, frames: 0, goal, won: false, over: false, piece: null };
+    lines: 0, pieces: 0, frames: 0, score: 0, scoredAt: 0, goal, won: false, over: false, piece: null };
   tetrisSpawn(g, take(g));
   return g;
 }
@@ -276,6 +277,7 @@ function lock(g) {
   while (keep.length < TH) keep.unshift(new Array(TW).fill(0));
   g.grid = keep;
   g.lines += n;
+  if (n) { g.score += [0, 100, 300, 500, 800][n]; g.scoredAt = g.frames; }
   g.pieces++;
   g.held = false;
   if (g.lines >= g.goal) { g.won = true; return n; }
@@ -325,12 +327,10 @@ export function tetrisGhost(g) {
 
 export function tetrisRun(movie, seed = SEEDS.tetris) {
   const g = tetrisNew(seed, 40);
-  for (let i = 0; i < movie.length; i++) {
+  for (let i = 0; i < movie.length && !g.won && !g.over; i++) {
     if (!tetrisFrame(g, movie[i])) return fail("unknown input '" + movie[i] + "' at frame " + (i + 1));
-    if (g.won) return { ok: true, frames: g.frames, pieces: g.pieces };
-    if (g.over) return fail("topped out on frame " + g.frames);
   }
-  return fail("input ran out after " + g.frames + " frames with " + g.lines + " lines");
+  return g.score ? { ok: true, score: g.score, frames: g.scoredAt } : fail("no lines cleared");
 }
 
 // every resting spot a piece can be moved into from where it spawns
@@ -385,8 +385,7 @@ export function runTas(cat, text) {
   const movie = cleanMovie(text);
   if (!movie.length) return fail("empty movie");
   if (movie.length > MAX_MOVIE) return fail("movie is too long");
-  if (cat === "snake100") return snakeRun(movie, 100);
-  if (cat === "snakefull") return snakeRun(movie, 253);
+  if (cat === "snake") return snakeRun(movie);
   if (cat === "g2048") return g2048Run(movie);
   return tetrisRun(movie);
 }

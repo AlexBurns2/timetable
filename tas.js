@@ -4,24 +4,21 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const signedIn = () => !!(window.TT && TT.myEmail && TT.myEmail());
 
-const GOAL = { snake100: 100, snakefull: 253 };
 const RULES = {
   snake: [
-    "A 16 by 16 board that wraps at the edges. You start three long in the middle, heading right, the same as Snake's leaderboard tab.",
-    "One character a step: <code>u</code> <code>d</code> <code>l</code> <code>r</code> to turn, <code>.</code> to go straight on. Turning back on yourself does nothing.",
-    "Fruit lands on a free cell picked by seed " + E.SEEDS.snake + ": the free cells are counted row by row from the top left, and the seed picks one. Where you go changes where the next one lands.",
-    "A crash ends the run and it doesn't count."
+    "16 by 16, wraps at the edges, seed " + E.SEEDS.snake + ". Same start as the normal game.",
+    "One letter a step: <code>u</code> <code>d</code> <code>l</code> <code>r</code> to turn, <code>.</code> to go straight.",
+    "Fruit lands on a free cell the seed picks, counting row by row from the top left.",
+    "The run ends when you crash, fill the board, or the movie ends."
   ],
   g2048: [
-    "The usual 4 by 4. Two tiles to start, and one more after every move, on a free cell picked by seed " + E.SEEDS.g2048 + " (counted row by row), a 4 one time in ten.",
-    "One character a move: <code>u</code> <code>d</code> <code>l</code> <code>r</code>. A move that doesn't shift anything isn't allowed.",
-    "Make a 2048 tile in as few moves as you can. Every move changes what spawns next, so the luck is yours to steer."
+    "Seed " + E.SEEDS.g2048 + ". New tiles land on a free cell the seed picks, a 4 one time in ten.",
+    "One letter a move: <code>u</code> <code>d</code> <code>l</code> <code>r</code>. A move that shifts nothing isn't allowed."
   ],
   tetris: [
-    "A 10 by 20 board, seven-bag pieces from seed " + E.SEEDS.tetris + ", SRS rotation and kicks, 180 spins and hold, the same as the Tetris game.",
-    "One character a frame: <code>L</code> <code>R</code> move one, <code>&lt;</code> <code>&gt;</code> slide to the wall, <code>D</code> down one, <code>V</code> down to the floor, <code>C</code> clockwise, <code>Z</code> anticlockwise, <code>A</code> 180, <code>H</code> hold, <code>X</code> hard drop, <code>.</code> wait.",
-    "Pieces don't fall on their own and only lock on a hard drop. A move into a wall still costs its frame.",
-    "Clear 40 lines in the fewest frames. 60 frames is a second."
+    "40 lines, seed " + E.SEEDS.tetris + ", SRS with 180s and hold.",
+    "One letter a frame: <code>L</code> <code>R</code> move, <code>&lt;</code> <code>&gt;</code> to the wall, <code>D</code> down one, <code>V</code> to the floor, <code>C</code> <code>Z</code> <code>A</code> rotate, <code>H</code> hold, <code>X</code> drop, <code>.</code> wait.",
+    "Nothing falls on its own. 100, 300, 500 or 800 a clear."
   ]
 };
 const PADS = {
@@ -30,16 +27,16 @@ const PADS = {
   tetris: [["<", "Wall"], ["L", "Left"], ["R", "Right"], [">", "Wall"], ["D", "Down"], ["V", "Floor"], ["Z", "Anti"], ["C", "Clock"], ["A", "180"], ["H", "Hold"], ["X", "Drop"], [".", "Wait"]]
 };
 const HOW = {
-  snake: "Arrow keys or WASD turn and take a step, space goes one step straight on. Backspace takes a step back.",
-  g2048: "Arrow keys or WASD. Backspace takes a move back.",
-  tetris: "Left and right move, with shift they slide to the wall. Down drops one, shift and down to the floor. Up or X clockwise, Z anticlockwise, A for 180, C to hold, space to hard drop, full stop to wait. Backspace takes a frame back."
+  snake: "Arrows to turn, space to go straight. Backspace to undo.",
+  g2048: "Arrows to move. Backspace to undo.",
+  tetris: "Arrows move, shift slides. Up/X/Z/A rotate, C holds, space drops, full stop waits. Backspace to undo."
 };
 const TCOL = { I: "#38bdf8", O: "#facc15", T: "#c084fc", S: "#4ade80", Z: "#f87171", J: "#60a5fa", L: "#fb923c" };
 
-let cat = "snake100";
+let cat = "snake";
 try { const c = localStorage.getItem("tas.cat"); if (E.TAS[c]) cat = c; } catch {}
 let movie = "", g = null, watch = null, board = null;
-const kind = () => E.TAS[cat].game;
+const kind = () => cat;
 
 function fresh() {
   if (kind() === "snake") return E.snakeNew(E.SEEDS.snake);
@@ -47,11 +44,12 @@ function fresh() {
   return E.tetrisNew(E.SEEDS.tetris, 40);
 }
 function finished() {
-  if (kind() === "snake") return g.dead ? "crashed" : g.eaten >= GOAL[cat] || g.full ? "done" : "";
-  if (kind() === "g2048") return g.max >= 2048 ? "done" : E.g2048Over(g) ? "stuck" : "";
-  return g.won ? "done" : g.over ? "topped out" : "";
+  if (kind() === "snake") return g.dead ? "crashed" : g.full ? "board full" : "";
+  if (kind() === "g2048") return E.g2048Over(g) ? "no moves left" : "";
+  return g.won ? "40 lines" : g.over ? "topped out" : "";
 }
 function frames() { return kind() === "snake" ? g.steps : kind() === "g2048" ? g.moves : g.frames; }
+function scoreNow() { return kind() === "snake" ? g.eaten : g.score; }
 
 // one input; false when it can't be taken
 function step(ch) {
@@ -78,14 +76,11 @@ function showMovie() { const t = $("movie"); t.value = movie; t.scrollTop = t.sc
 function input(ch) {
   if (watch) stopWatch(true);
   if (!step(ch)) {
-    say(kind() === "g2048" && !finished() ? "That move doesn't shift anything." : "The run is over. Undo, or start over.", "bad");
+    say(kind() === "g2048" && !finished() ? "That move doesn't shift anything." : "Run's over. Undo or start over.", "bad");
     return;
   }
   const f = finished();
-  if (f === "done") {
-    const r = E.runTas(cat, movie);
-    say(r.ok ? "Finished in " + r.frames + " " + E.TAS[cat].unit + ". Send it in." : r.why, r.ok ? "good" : "bad");
-  } else if (f) say("The run is over: " + f + ". Undo to try something else.", "bad");
+  if (f) { const r = E.runTas(cat, movie); say(r.ok ? "Over (" + f + "): " + r.score + " in " + r.frames + " " + E.TAS[cat].unit + "." : "Over: " + f + ".", r.ok ? "good" : "bad"); }
   else say("");
   draw(); showMovie();
 }
@@ -141,11 +136,10 @@ function draw() {
   side();
 }
 function side() {
-  const u = E.TAS[cat].unit, f = finished(), st = f === "done" ? "Finished" : f ? "Over: " + f : watch ? "Watching" : "Playing";
-  const rows = [[u[0].toUpperCase() + u.slice(1), frames()]];
-  if (kind() === "snake") rows.push(["Fruit", g.eaten + " / " + GOAL[cat]]);
-  else if (kind() === "g2048") rows.push(["Biggest tile", g.max], ["Score", g.score]);
-  else rows.push(["Lines", g.lines + " / 40"], ["Pieces", g.pieces], ["Time at 60 fps", (g.frames / 60).toFixed(2) + " s"]);
+  const u = E.TAS[cat].unit, f = finished(), st = f ? "Over: " + f : watch ? "Watching" : "Playing";
+  const rows = [["Score", scoreNow()], [u[0].toUpperCase() + u.slice(1), frames()]];
+  if (kind() === "g2048") rows.push(["Biggest tile", g.max]);
+  if (kind() === "tetris") rows.push(["Lines", g.lines + " / 40"]);
   rows.push(["", st]);
   $("side").innerHTML = rows.map(([k, v]) => "<div>" + esc(k) + "<b>" + esc(v) + "</b></div>").join("");
 }
@@ -169,7 +163,7 @@ function playWatch() {
     for (let i = 0; i < per && watch.pos < watch.movie.length; i++) { step(watch.movie[watch.pos]); watch.pos++; }
     $("watchpos").textContent = watch.pos + " / " + watch.movie.length;
     draw();
-    if (watch.pos >= watch.movie.length) { watch.paused = true; $("play").textContent = "Play"; showMovie(); say("That's the whole run. Press a key to branch off from here.", "good"); return; }
+    if (watch.pos >= watch.movie.length) { watch.paused = true; $("play").textContent = "Play"; showMovie(); say("End of the run. Press a key to carry on from here.", "good"); return; }
     watch.timer = setTimeout(tick, wait);
   };
   tick();
@@ -182,7 +176,7 @@ async function startWatch(rank) {
     g = fresh(); movie = "";
     watch = { movie: E.cleanMovie(d.movie), pos: 0, paused: false, timer: 0 };
     $("watchbar").hidden = false;
-    say("Watching number " + rank + ", " + d.frames + " " + E.TAS[cat].unit + ".");
+    say("Watching #" + rank + ": " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + ".");
     playWatch();
   } catch (e) { say(e.message, "bad"); }
 }
@@ -191,16 +185,17 @@ async function startWatch(rank) {
 async function loadBoard() {
   const el = $("lb");
   $("boardtitle").textContent = E.TAS[cat].name;
-  if (!signedIn()) { el.innerHTML = '<p class="how">Sign in on the timetable to see the board and send runs.</p>'; return; }
+  if (!signedIn()) { el.innerHTML = '<p class="how">Sign in on the timetable to see the board.</p>'; return; }
   el.innerHTML = window.TT && TT.loader ? TT.loader("Loading the board…", "", { sm: true }) : "";
   try { board = await TT.api("/api/leaderboard", { params: { tas: cat } }); paintBoard(); }
   catch (e) { el.innerHTML = '<p class="how">' + esc(e.message) + "</p>"; }
 }
 function paintBoard() {
   const el = $("lb"), rows = (board && board.top) || [];
-  if (!rows.length) { el.innerHTML = '<p class="how">No runs yet. The first one sets the record.</p>'; return; }
-  el.innerHTML = rows.slice(0, 25).map(r => '<div class="tlbrow' + (r.you ? " me" : "") + '"><span class="rk">' + r.rank + '</span><span class="nm">' + esc(r.name) +
-    '</span><span class="tm">' + r.frames + '</span><button class="watch" type="button" data-rank="' + r.rank + '">Watch</button>' +
+  if (!rows.length) { el.innerHTML = '<p class="how">No runs yet.</p>'; return; }
+  el.innerHTML = '<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Score</span><span class="tm">' + esc(E.TAS[cat].unit) + '</span><span class="watch" style="visibility:hidden">Watch</span></div>' +
+    rows.slice(0, 25).map(r => '<div class="tlbrow' + (r.you ? " me" : "") + '"><span class="rk">' + r.rank + '</span><span class="nm">' + esc(r.name) +
+    '</span><span class="tm">' + r.score + '</span><span class="tm">' + r.frames + '</span><button class="watch" type="button" data-rank="' + r.rank + '">Watch</button>' +
     (board.canEdit ? '<button class="watch" type="button" data-del="' + r.rank + '">Remove</button>' : "") + "</div>").join("");
   el.querySelectorAll("[data-rank]").forEach(b => b.onclick = () => startWatch(+b.dataset.rank));
   el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
@@ -214,12 +209,12 @@ async function send() {
   if (watch) stopWatch(true);
   if (!signedIn()) return say("Sign in on the timetable first.", "bad");
   const r = E.runTas(cat, movie);
-  if (!r.ok) return say("Not finished yet: " + r.why + ".", "bad");
+  if (!r.ok) return say("Can't send that: " + r.why + ".", "bad");
   say("Sending…");
   try {
     const d = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", cat, movie } });
     board = d.board; paintBoard();
-    say(d.improved ? "Checked and on the board: " + d.frames + " " + E.TAS[cat].unit + "." : "Checked: " + d.frames + ". Your best is still " + d.best + ".", "good");
+    say(d.improved ? "On the board: " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + "." : "Checked, but your best (" + d.best.score + " in " + d.best.frames + ") is still better.", "good");
   } catch (e) { say(e.message, "bad"); }
 }
 
@@ -231,7 +226,7 @@ function pick(c) {
   [...$("cats").children].forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cat === cat)));
   $("studiotitle").textContent = E.TAS[cat].name;
   $("studiohow").textContent = HOW[kind()];
-  $("rules").innerHTML = RULES[kind()].concat(cat === "snake100" ? ["Eat 100 fruit in the fewest steps."] : cat === "snakefull" ? ["Fill the whole board, 253 fruit, in the fewest steps."] : []).map(r => "<li>" + r + "</li>").join("");
+  $("rules").innerHTML = RULES[kind()].map(r => "<li>" + r + "</li>").join("");
   $("keys").innerHTML = PADS[kind()].map(([k, l]) => '<button type="button" data-k="' + esc(k) + '">' + esc(k) + "<span>" + esc(l) + "</span></button>").join("");
   $("keys").querySelectorAll("button").forEach(b => b.onclick = () => input(b.dataset.k));
   $("apiex").textContent =
@@ -240,8 +235,8 @@ function pick(c) {
     '  headers: { "Content-Type": "application/json", "X-School-Email": EMAIL, "X-School-Password": PASSWORD },\n' +
     '  body: JSON.stringify({ action: "tas", cat: "' + cat + '", movie })\n' +
     '});\n\n' +
-    'GET /api/leaderboard?tas=' + cat + '          the board\n' +
-    'GET /api/leaderboard?tas=' + cat + '&rank=1   the record\'s movie';
+    'GET /api/leaderboard?tas=' + cat + '           board\n' +
+    'GET /api/leaderboard?tas=' + cat + '&rank=1    top movie';
   say(""); draw(); showMovie(); loadBoard();
 }
 
@@ -257,7 +252,7 @@ $("load").onclick = () => {
   let i = 0;
   for (; i < m.length; i++) if (!step(m[i])) break;
   const r = E.runTas(cat, movie);
-  say(i < m.length ? "Stopped at input " + (i + 1) + ": it can't be played there." : r.ok ? "Loaded. It finishes in " + r.frames + " " + E.TAS[cat].unit + "." : "Loaded " + movie.length + " inputs. " + r.why + ".", i < m.length ? "bad" : r.ok ? "good" : "");
+  say(i < m.length ? "Stopped at input " + (i + 1) + ", it can't be played there." : r.ok ? "Loaded: " + r.score + " in " + r.frames + " " + E.TAS[cat].unit + "." : "Loaded " + movie.length + " inputs.", i < m.length ? "bad" : r.ok ? "good" : "");
   draw(); showMovie();
 };
 $("file").onclick = () => $("picker").click();
@@ -268,7 +263,7 @@ $("picker").onchange = () => {
   rd.readAsText(f);
 };
 $("save").onclick = () => {
-  const head = "# " + E.TAS[cat].name + ", " + frames() + " " + E.TAS[cat].unit + "\n";
+  const head = "# " + E.TAS[cat].name + ", " + scoreNow() + " in " + frames() + " " + E.TAS[cat].unit + "\n";
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([head + movie.replace(/(.{80})/g, "$1\n") + "\n"], { type: "text/plain" }));
   a.download = "tas-" + cat + ".txt";
