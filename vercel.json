@@ -28,6 +28,10 @@
       "destination": "/vault.html"
     },
     {
+      "source": "/tas",
+      "destination": "/tas.html"
+    },
+    {
       "source": "/q/:code",
       "destination": "/q.html"
     },

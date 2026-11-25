@@ -27,12 +27,16 @@
  * POST {action:"run", …}) and record their own scores; a score posted for them
  * is refused. Snake, 2048, Typing, Reaction and Tetris need a ticket from when
  * the game started (POST {action:"ticket", game}), and the score has to fit the
- * time since.
+ * time since. Snake and 2048 get replayed from the ticket's seed, and anything off
+ * is held for Alex (_anticheat.js, _review.js). TAS boards: _tas.js.
  */
 
-import { db, whoami, isAdmin } from "./_supabase.js";
+import { db, whoami, isAdmin, isReviewer } from "./_supabase.js";
 import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList, yearTags, withYear } from "./_names.js";
-import { runHandler, RUN_GAMES, issueTicket, ticketAge, scoreFits, TICKET_GAMES } from "./_runs.js";
+import { runHandler, RUN_GAMES, issueTicket, ticketOf, scoreFits, TICKET_GAMES } from "./_runs.js";
+import { inputSigns, vetSnake, vet2048, vetOther, botty } from "./_anticheat.js";
+import { holdScore, heldList, takeHeld, writeTetris } from "./_review.js";
+import { tasHandler } from "./_tas.js";
 
 /* the server runs Six Degrees' map-making and the runs: give it time */
 export const config = { maxDuration: 60 };
@@ -292,7 +296,7 @@ export default async function handler(req, res) {
   if (req.method === "GET" && src.settings) {
     /* isMod only decides whether pages show the way in to the moderator page;
        every moderator action is still checked here on the server */
-    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email) });
+    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email) });
   }
   /* EDinburgh, a secret theme Ed asked for (theme.js SKINS 'ed'): his photo, to signed-in people only. It is not in the
      repo, which is public: it's the ED_PHOTO environment variable (the picture as base64). Without it, nothing. */
@@ -447,6 +451,33 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, name: name || nameFromEmail(email) });
   }
 
+  if (src.tas || src.action === "tas") {
+    try { return await tasHandler(req, res, me, src, nameFromEmail(me.email)); }
+    catch (e) { console.error("tas:", e.message); return res.status(502).json({ error: "Couldn't reach the TAS boards." }); }
+  }
+
+  if (req.method === "GET" && src.held) {
+    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check held scores." });
+    try { return res.status(200).json({ held: await heldList() }); }
+    catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't read the held scores." }); }
+  }
+  if (req.method === "POST" && src.action === "held") {
+    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check held scores." });
+    const email = String(src.email || "").toLowerCase(), key = String(src.key || "");
+    if (!email || !/^[a-z0-9:]{1,40}$/.test(key)) return res.status(400).json({ error: "Which score?" });
+    try {
+      const h = await takeHeld(email, key);
+      if (h && src.op === "ok") {
+        const name = h.name || nameFromEmail(email);
+        for (const b of h.boards || []) {
+          if (h.kind === "t") await writeTetris(email, name, b, h.score, h.week);
+          else if (DIRS[h.game + ":" + h.metric]) await writeBest(h.game, h.metric, b, email, name, h.score, DIRS[h.game + ":" + h.metric]);
+        }
+      }
+      return res.status(200).json({ held: await heldList() });
+    } catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
+  }
+
   /* the games the server runs (Six Degrees, Odd One Out, Classroom) */
   if (req.method === "POST" && src.action === "run") {
     const record = async (g, m, score, week) => {
@@ -458,8 +489,8 @@ export default async function handler(req, res) {
   }
   /* a ticket for a game played in the page (Snake, 2048, Typing, Reaction, Tetris) */
   if (req.method === "POST" && src.action === "ticket") {
-    try { const ticket = await issueTicket(me, String(src.game || ""));
-      return ticket ? res.status(200).json({ ticket }) : res.status(400).json({ error: "Unknown game." }); }
+    try { const t = await issueTicket(me, String(src.game || ""));
+      return t ? res.status(200).json({ ticket: t.id, seed: t.seed }) : res.status(400).json({ error: "Unknown game." }); }
     catch (e) { console.error("ticket:", e.message); return res.status(502).json({ error: "Couldn't start that." }); }
   }
 
@@ -475,6 +506,7 @@ export default async function handler(req, res) {
   const dmax = DAILY_GAMES[game + ":" + metric], day = dmax ? dayOf(src.day) : null;
   if (dmax && src.day != null && !day) return res.status(400).json({ error: "That isn't today." });
   const dperiod = day ? "d" + day : null;
+  let held = null;
   const validPeriod = p => p === "all" || p === wperiod || (dperiod && p === dperiod);
 
   if (req.method === "POST" && src.action === "wipe") {
@@ -497,22 +529,35 @@ export default async function handler(req, res) {
       if (error) { console.error("leaderboard set:", error.message); return res.status(502).json({ error: "Couldn't save that score." }); }
     }
   } else if (req.method === "POST") {
-    const score = Math.round(Number(src.score));
+    let score = Math.round(Number(src.score));
     if (!Number.isFinite(score) || score < 0 || score > MAX_SCORE) return res.status(400).json({ error: "That score is out of range." });
     /* the games the server runs keep their own scores */
     if (RUN_GAMES.has(game)) return res.status(400).json({ error: "This game records its own scores." });
     if (dmax && (!day || score > dmax)) return res.status(400).json({ error: day ? "That score doesn't fit the game." : "Which day?" });
     /* the rest: a ticket from when the game started, and a score that fits the time since */
+    const why = [];
     if (TICKET_GAMES.has(game)) {
-      const age = await ticketAge(me, game, src.ticket);
-      if (age == null) return res.status(400).json({ error: "Start a new game to post a score." });
-      if (!scoreFits(game, metric, score, age)) return res.status(400).json({ error: "That score doesn't fit the game." });
+      const tk = await ticketOf(me, game, src.ticket);
+      if (!tk) why.push("no ticket from a game");
+      else {
+        const v = game === "snake" ? vetSnake(tk.seed, src.run, score, tk.age)
+                : game === "g2048" ? vet2048(tk.seed, src.run, score, tk.age) : { why: [] };
+        if (v.score != null) score = v.score;
+        why.push(...v.why);
+        if (!scoreFits(game, metric, score, tk.age)) why.push("more than fits the time played");
+      }
+      why.push(...inputSigns(src.ac), ...vetOther(game, metric, score));
     }
     const name = nameFromEmail(me.email);
     try {
-      await writeBest(game, metric, "all", me.email, name, score, dir);
-      await writeBest(game, metric, wperiod, me.email, name, score, dir);
-      if (dperiod) await writeBest(game, metric, dperiod, me.email, name, score, dir);
+      if (why.length) {
+        await holdScore(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, boards: ["all", wperiod, ...(dperiod ? [dperiod] : [])], why });
+        held = { score, tas: botty(why) };
+      } else {
+        await writeBest(game, metric, "all", me.email, name, score, dir);
+        await writeBest(game, metric, wperiod, me.email, name, score, dir);
+        if (dperiod) await writeBest(game, metric, dperiod, me.email, name, score, dir);
+      }
     } catch (e) { console.error("leaderboard write:", e.message); return res.status(502).json({ error: "Couldn't save your score." }); }
   } else if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -526,6 +571,6 @@ export default async function handler(req, res) {
     all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years),
     ...(dperiod ? { day: await board(game, metric, dperiod, dir, me.email, isOwner, scope, years) } : {}),
     year: scope || "all", myYear: me.year || years.get(me.email) || null,
-    canWipe: isOwner
+    canWipe: isOwner, ...(held ? { held } : {})
   });
 }

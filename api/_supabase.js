@@ -40,6 +40,8 @@ const ADMINS = new Set([
   String(process.env.OWNER_EMAIL || "").trim().toLowerCase()
 ].filter(Boolean));
 export const isAdmin = email => ADMINS.has(String(email).toLowerCase());
+export const REVIEWER = "alex.burns6@education.nsw.gov.au";
+export const isReviewer = email => String(email).toLowerCase() === REVIEWER;
 
 /*
  * Returns { email, year, groups } for a verified caller, or null when the
