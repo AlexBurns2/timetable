@@ -377,19 +377,19 @@ export const TICKET_GAMES = new Set(["snake", "g2048", "typing", "react", "tetri
 export async function issueTicket(me, game) {
   if (!TICKET_GAMES.has(game)) return null;
   const st = (await readRow(me.email, "tickets").catch(() => null)) || {};
-  const t = st.t || {};
-  t[game] = { id: rid(), at: now(), prev: t[game] ? { id: t[game].id, at: t[game].at } : null };
+  const t = st.t || {}, seed = randomBytes(4).readUInt32BE(0);
+  t[game] = { id: rid(), at: now(), seed, prev: t[game] ? { id: t[game].id, at: t[game].at, seed: t[game].seed } : null };
   await writeRow(me.email, "tickets", { seq: 1, t }, null);
-  return t[game].id;
+  return { id: t[game].id, seed };
 }
-/* how long since that ticket was given (ms), or null when it isn't one of yours */
-export async function ticketAge(me, game, id) {
+/* the ticket a score was sent with: how long ago it was given (ms) and its seed, or null when it isn't one of yours */
+export async function ticketOf(me, game, id) {
   if (!id) return null;
   const st = await readRow(me.email, "tickets").catch(() => null);
   const t = st && st.t && st.t[game]; if (!t) return null;
   const hit = t.id === id ? t : t.prev && t.prev.id === id ? t.prev : null;
   if (!hit || now() - hit.at > 12 * 3600e3) return null;
-  return now() - hit.at;
+  return { age: now() - hit.at, seed: hit.seed == null ? null : hit.seed };
 }
 /* is this score possible in that time? (generous: a fast player is fine, a pasted number isn't) */
 export function scoreFits(game, metric, score, ms) {

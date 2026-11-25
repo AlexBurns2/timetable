@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" data-skin="plain" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TAS · MSC Unofficial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="stylesheet" href="theme.css?v=20261125a">
+<script src="theme.js?v=20261125a"></script>
+<script src="icons.js?v=20261125b"></script>
+<link rel="stylesheet" href="site.css?v=20261125a">
+<link rel="stylesheet" href="settings.css?v=20261125a">
+<link rel="stylesheet" href="games.css?v=20261125a">
+<style>
+.tasintro{max-width:720px;color:var(--muted);font-size:0.9375rem;line-height:1.55;margin:0 0 16px}
+.tasintro b{color:var(--text)}
+.tasgrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.tasgrid{grid-template-columns:minmax(0,1fr)}}
+.tascard{background:var(--panel);border:var(--card-border);border-radius:var(--card-radius);box-shadow:var(--shadow);padding:16px;min-width:0}
+.tascard h3{margin:0 0 10px;font-size:1rem}
+.tascard .how{color:var(--muted);font-size:0.8125rem;margin:0 0 12px;line-height:1.5}
+.tasview{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.tasview canvas{display:block;max-width:100%;height:auto;border-radius:calc(var(--card-radius)*.5);background:var(--panel-2)}
+.tasside{display:flex;flex-direction:column;gap:8px;font-size:0.8125rem;color:var(--muted);min-width:120px}
+.tasside b{display:block;color:var(--text);font-family:var(--font-num);font-size:1.125rem;font-variant-numeric:tabular-nums}
+.tasbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.tasbar .btn{padding:7px 12px;font-size:0.8125rem}
+.taskeys{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.taskeys button{font:inherit;font-family:var(--font-num);font-size:0.8125rem;min-width:38px;padding:6px 8px;border-radius:var(--radius);border:1px solid var(--line);background:var(--panel-2);color:var(--text);cursor:pointer}
+.taskeys button:hover{border-color:var(--accent)}
+.taskeys button span{display:block;font-family:var(--font-ui);font-size:0.625rem;color:var(--muted)}
+.tasmovie{width:100%;min-height:110px;resize:vertical;font-family:var(--font-num);font-size:0.75rem;line-height:1.4;word-break:break-all;
+  background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);padding:8px;box-sizing:border-box;margin-top:12px}
+.tasmsg{font-size:0.8125rem;min-height:1.2em;margin-top:8px}
+.tasmsg.bad{color:#e5484d}
+.tasmsg.good{color:#30a46c}
+.tasrules{font-size:0.8125rem;line-height:1.55;color:var(--muted);margin:0;padding-left:18px}
+.tasrules li{margin:2px 0}
+.tasrules code,.tasapi code{font-family:var(--font-num);font-size:0.78em;background:var(--panel-2);padding:1px 4px;border-radius:4px;color:var(--text)}
+.tasapi pre{font-family:var(--font-num);font-size:0.75rem;line-height:1.45;background:var(--panel-2);border-radius:var(--radius);padding:10px;overflow:auto;margin:8px 0;color:var(--text)}
+.tasapi p{font-size:0.8125rem;color:var(--muted);line-height:1.5;margin:8px 0}
+.tlbrow .watch{font:inherit;font-size:0.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--accent);cursor:pointer}
+.tasspeed{display:flex;align-items:center;gap:8px;font-size:0.8125rem;color:var(--muted)}
+.tasspeed select{font:inherit;color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:4px 6px}
+</style>
+</head>
+<body data-page="tas">
+<div class="wrap">
+  <div class="pagehead">
+    <div class="phtitle"><a class="sitename" href="home.html">MSC Unofficial</a><h1>TAS</h1></div>
+    <div class="crumbs">
+      <a class="btn icon" href="home.html" title="Home" aria-label="Home"><span data-icon="house"></span></a>
+      <a class="btn icon" href="games.html" title="Games" aria-label="Games"><span data-icon="arrow-left"></span></a>
+      <button class="btn icon" id="themebtn" title="Settings" aria-label="Settings"><span data-icon="gear"></span></button>
+    </div>
+  </div>
+
+  <p class="tasintro">Tool-assisted speedruns. <b>Bots, scripts and frame-by-frame play are all allowed here</b>, so this is where the machine limit gets set.
+    Every run is a movie, one input per frame, played back on the server from a fixed seed. If it finishes, it counts. Fewest frames wins, and the first to get there keeps a tie.
+    The normal leaderboards stay for people playing live.</p>
+
+  <div class="diffbar" id="cats" style="margin-bottom:14px"></div>
+
+  <div class="tasgrid">
+    <div class="tascard">
+      <h3 id="studiotitle">Studio</h3>
+      <p class="how" id="studiohow"></p>
+      <div class="tasview">
+        <canvas id="board" width="320" height="320"></canvas>
+        <div class="tasside" id="side"></div>
+      </div>
+      <div class="taskeys" id="keys"></div>
+      <div class="tasbar">
+        <button class="btn" type="button" id="undo">Undo</button>
+        <button class="btn" type="button" id="reset">Start over</button>
+        <button class="btn" type="button" id="load">Load movie</button>
+        <button class="btn" type="button" id="file">Open file</button>
+        <button class="btn" type="button" id="save">Download</button>
+        <button class="btn primary" type="button" id="send">Send run</button>
+        <input type="file" id="picker" accept=".txt,text/plain" hidden>
+      </div>
+      <div class="tasbar tasspeed" id="watchbar" hidden>
+        <button class="btn" type="button" id="play">Play</button>
+        <label>Speed <select id="speed"><option value="10">10 fps</option><option value="30">30 fps</option><option value="60" selected>60 fps</option><option value="240">240 fps</option><option value="1200">1200 fps</option></select></label>
+        <span id="watchpos"></span>
+      </div>
+      <textarea class="tasmovie" id="movie" spellcheck="false" aria-label="Movie" placeholder="Your movie shows up here as you play. Paste one in and press Load movie."></textarea>
+      <div class="tasmsg" id="msg"></div>
+    </div>
+
+    <div>
+      <div class="tascard" style="margin-bottom:16px">
+        <div class="glbhd"><h3 id="boardtitle">Board</h3></div>
+        <div id="lb"></div>
+      </div>
+      <div class="tascard">
+        <h3>Rules</h3>
+        <ul class="tasrules" id="rules"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tascard tasapi" style="margin-top:16px">
+    <h3>For bots</h3>
+    <p>The rules are one file, <a href="tasengine.js"><code>tasengine.js</code></a>, the same one the server plays runs back with. Import it, search for a better movie, then send it with your school login in the headers:</p>
+    <pre id="apiex"></pre>
+    <p>The answer has your <code>frames</code> and whether it beat your best. Spaces, new lines and anything after a <code>#</code> on a line are ignored, so a movie can carry notes. Thirty sends a minute at most.</p>
+  </div>
+</div>
+<script type="module" src="tas.js"></script>
+<script src="settings.js?v=20261125a"></script>
+</body>
+</html>

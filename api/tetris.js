@@ -18,12 +18,17 @@
  *   zen_score(email primary key, name, ms, created_at)
  *   sprint_best(email primary key, name, time_ms, created_at)
  *   zen_board(email primary key, name, current, best, updated_at)
+ *
+ * Sprint runs send every piece they placed and are replayed; a run that doesn't add
+ * up is held for a check instead of going on the board (see leaderboard.js).
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
 import { displayNames, withName, yearTags, withYear } from "./_names.js";
 import { yearMap, boardScope } from "./leaderboard.js";
-import { ticketAge, scoreFits } from "./_runs.js";
+import { ticketOf, scoreFits, boardWeek } from "./_runs.js";
+import { inputSigns, vetSprint, paceSigns, botty } from "./_anticheat.js";
+import { holdScore, writeTetris } from "./_review.js";
 
 /* Year groups (as leaderboard.js): each board is your own year's unless you ask
    for another (?year=7…12) or everyone's (?year=all). Scores sent need a ticket
@@ -188,54 +193,40 @@ export default async function handler(req, res) {
       return res.status(200).json(await boardFor(mode, me, wk, true));
     }
 
-    /* a ticket from when the game started, and a score that fits the time since */
-    const age = await ticketAge(me, "tetris", body && body.ticket);
-    if (age == null) return res.status(400).json({ error: "Start a new game to post a score." });
+    /* a ticket from when the game started, a score that fits the time since, and for Sprint
+       every piece played back from the week's seed. Anything odd is held for a check. */
     const claim = mode === "zenscore" ? Math.round(Number(body && body.score)) : mode === "zen" ? Math.round(Number(body && body.ms)) : Math.round(Number(body && body.timeMs));
-    if (!scoreFits("tetris:" + mode, null, claim, age)) return res.status(400).json({ error: "That doesn't fit the game." });
-
-    if (mode === "sprintall") {
-      const timeMs = Math.round(Number(body && body.timeMs));
-      if (!Number.isFinite(timeMs) || timeMs < SPRINT_MIN || timeMs > SPRINT_MAX) return res.status(400).json({ error: "That time is out of range." });
-      const { data: ex } = await db.from("sprint_best").select("time_ms").eq("email", me.email).maybeSingle();
-      if (!ex || timeMs < ex.time_ms) {
-        const { error } = await db.from("sprint_best").upsert({ email: me.email, name, time_ms: timeMs });
-        if (error) { console.error("sprint_best upsert:", error.message); return res.status(502).json({ error: "Couldn't save your time." }); }
-      }
-      return res.status(200).json(await sprintAllBoard(me));
-    }
-
-    if (mode === "zenscore") {
-      const score = Math.round(Number(body && body.score));
-      if (!Number.isFinite(score) || score < 0 || score > 100000000) return res.status(400).json({ error: "That score is out of range." });
-      const { data: ex } = await db.from("zen_board").select("best").eq("email", me.email).maybeSingle();
-      const best = Math.max(score, ex ? ex.best : 0);
-      const { error } = await db.from("zen_board").upsert({ email: me.email, name, current: score, best, updated_at: new Date().toISOString() });
-      if (error) { console.error("zen_board upsert:", error.message); return res.status(502).json({ error: "Couldn't save your score." }); }
-      return res.status(200).json(await zenScoreBoard(me));
-    }
-
-    if (mode === "zen") {
-      const ms = Math.round(Number(body && body.ms));
-      if (!Number.isFinite(ms) || ms < ZEN_MIN || ms > ZEN_MAX) return res.status(400).json({ error: "That time is out of range." });
-      const { data: existing } = await db.from("zen_score").select("ms").eq("email", me.email).maybeSingle();
-      if (!existing || ms > existing.ms) {                 // keep the LONGEST survival
-        const { error } = await db.from("zen_score").upsert({ email: me.email, name, ms });
-        if (error) { console.error("zen upsert:", error.message); return res.status(502).json({ error: "Couldn't save your time." }); }
-      }
-      return res.status(200).json(await zenBoard(me));
-    }
-
     const week = weekOf(body && body.week);
-    const timeMs = Math.round(Number(body && body.timeMs));
-    if (week === null) return res.status(400).json({ error: "A valid week is required." });
-    if (!Number.isFinite(timeMs) || timeMs < SPRINT_MIN || timeMs > SPRINT_MAX) return res.status(400).json({ error: "That time is out of range." });
-    const { data: existing } = await db.from("tetris_score").select("time_ms").eq("email", me.email).eq("week", week).maybeSingle();
-    if (!existing || timeMs < existing.time_ms) {          // keep the FASTEST clear
-      const { error } = await db.from("tetris_score").upsert({ email: me.email, week, name, time_ms: timeMs });
-      if (error) { console.error("tetris upsert:", error.message); return res.status(502).json({ error: "Couldn't save your time." }); }
+    if (mode === "sprint" && week === null) return res.status(400).json({ error: "A valid week is required." });
+    if (mode === "sprint" || mode === "sprintall") {
+      if (!Number.isFinite(claim) || claim < SPRINT_MIN || claim > SPRINT_MAX) return res.status(400).json({ error: "That time is out of range." });
+    } else if (mode === "zen") {
+      if (!Number.isFinite(claim) || claim < ZEN_MIN || claim > ZEN_MAX) return res.status(400).json({ error: "That time is out of range." });
+    } else if (mode === "zenscore") {
+      if (!Number.isFinite(claim) || claim < 0 || claim > 100000000) return res.status(400).json({ error: "That score is out of range." });
+    } else return res.status(400).json({ error: "Unknown board." });
+
+    const tk = await ticketOf(me, "tetris", body && body.ticket), why = [];
+    if (!tk) why.push("no ticket from a game");
+    else {
+      if (!scoreFits("tetris:" + mode, null, claim, tk.age)) why.push("more than fits the time played");
+      if (mode === "sprint" || mode === "sprintall") {
+        const w = week != null && Math.abs(week - boardWeek()) <= 1 ? week : null;
+        why.push(...vetSprint(w, body && body.run, claim, tk.age).why);
+      } else why.push(...paceSigns(body && body.run && body.run.pt));
     }
-    return res.status(200).json(await sprintBoard(me, week));
+    why.push(...inputSigns(body && body.ac));
+
+    let held = null;
+    try {
+      if (why.length) {
+        await holdScore(me.email, name, { key: "tetris:" + (mode === "sprintall" ? "sprint" : mode), kind: "t", game: "tetris", mode,
+          dir: mode === "sprint" || mode === "sprintall" ? "min" : "max", score: claim, week, boards: [mode], why });
+        held = { score: claim, tas: botty(why) };
+      } else await writeTetris(me.email, name, mode, claim, week);
+    } catch (e) { console.error("tetris " + mode + ":", e.message); return res.status(502).json({ error: "Couldn't save that." }); }
+    const out = await boardFor(mode, me, week, false);
+    return res.status(200).json(held ? { ...out, held } : out);
   }
 
   return res.status(405).json({ error: "Method not allowed" });
