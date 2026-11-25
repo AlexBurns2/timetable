@@ -717,7 +717,7 @@ loadForum();
   btn.onclick = () => {
     const unread = new Set(TT.newsUnread().map(n => n.id));
     document.getElementById('newslist').innerHTML = TT.NEWS.map(n =>
-      '<li><div class="nwhead"><b>' + esc(n.title) + '</b>' + (unread.has(n.id) ? '<span class="newpill">New</span>' : '') +
+      '<li><div class="nwhead"><b>' + esc(n.title) + '</b>' + (n.by ? '<span style="font-size:0.75rem;color:var(--text)">' + esc(n.by) + '</span>' : '') + (unread.has(n.id) ? '<span class="newpill">New</span>' : '') +
         '<span class="nwdate">' + fmt(n.date) + '</span></div>' +
       '<p>' + esc(n.text) + '</p>' + (n.href && n.href !== 'home.html' ? '<a href="' + esc(n.href) + '">Have a look →</a>' : '') +
       /* an entry can carry theme codes (custom themes to try): the code to copy, and Use */

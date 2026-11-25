@@ -1643,6 +1643,8 @@ addEventListener('pagehide', () => {
    something people already know).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'anticheat', date:'2026-11-25', title:'Anti-cheat update', by:'ryanfih',
+    text:'Snake, 2048 and Tetris scores now get checked before they go on the leaderboard. Bots can race on the new TAS boards instead.' },
   { id:'themes6', date:'2026-11-22', title:'Vaporwave splits into Synthwave',
     text:'Vaporwave has been separated into a new Synthwave theme. Both have been deslopified with real 3D models and lighting.' },
   { id:'themes5', date:'2026-11-21', title:'Theme finder and more new themes',
