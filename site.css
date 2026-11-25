@@ -540,6 +540,35 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .factions{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
 .factions:empty{display:none}
 .factions .fhidevote,.factions .fhideclear{color:var(--muted);font-weight:500}
+/* Vote to hide (and a moderator's Clear the votes): bottom right, only while the pointer is on that post */
+.fcorner{display:inline-flex;gap:14px;margin-left:auto;opacity:0;transition:opacity .15s}
+.fcorner:empty{display:none}
+.fpost:hover>.factions .fcorner,.fcorner:focus-within{opacity:1}
+@media (hover:none){ .fcorner{opacity:.55} }
+/* tags: @someone in a post (you, a little stronger), and the list that comes up as you type one */
+.ftag{color:var(--accent);font-weight:600}
+.ftag.fme{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:4px;padding:0 2px}
+.flong{display:block}
+.fnew,.freplybox{position:relative}
+.ftagpop{position:absolute;left:0;top:calc(100% + 4px);z-index:30;display:flex;flex-direction:column;min-width:230px;max-width:min(320px,100%);
+  padding:4px;background:var(--panel);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow-hi)}
+.ftagpop button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 9px;border:0;border-radius:6px;background:none;
+  color:var(--text);font:inherit;font-size:.8125rem;text-align:left;cursor:pointer}
+.ftagpop button span{font-size:.75rem;color:var(--muted)}
+.ftagpop button[aria-selected="true"],.ftagpop button:hover{background:var(--panel-2)}
+/* notifications at the top of the forum: replies in your threads, and tags */
+.fnotes{display:flex;flex-direction:column;gap:6px;margin:4px 0 14px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));
+  border-radius:var(--radius);background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+.fnotes[hidden]{display:none}
+.fnoteshd{display:flex;align-items:baseline;gap:12px;font-size:.8125rem}
+.fnoteshd .flink{margin:0 0 0 auto;font-weight:500;color:var(--muted)}
+.fnote{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border:0;border-radius:6px;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.fnote:hover{background:var(--panel-2)}
+.fnotew{font-size:.8125rem}
+.fnotew i{font-style:normal;color:var(--muted);font-size:.75rem;margin-left:8px}
+.fnotet{font-size:.78125rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.fnotemore{margin:0;font-size:.75rem;color:var(--muted)}
+.fpost.fjump{outline:2px solid var(--accent);outline-offset:2px;transition:outline-color .6s}
 /* the vote on hiding a post: Vote by: NAME / Hide post? / YES n  NO n */
 .fvbox{margin-top:8px;font-size:.8125rem;color:var(--muted)}
 .fvby b{color:var(--text);font-weight:600}

@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261125d">
-<script src="theme.js?v=20261125d"></script>
-<script src="icons.js?v=20261125d"></script>
+<link rel="stylesheet" href="theme.css?v=20261125e">
+<script src="theme.js?v=20261125e"></script>
+<script src="icons.js?v=20261125e"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261125d">
-<link rel="stylesheet" href="settings.css?v=20261125d">
-<link rel="stylesheet" href="poll.css?v=20261125d">
+<link rel="stylesheet" href="site.css?v=20261125e">
+<link rel="stylesheet" href="settings.css?v=20261125e">
+<link rel="stylesheet" href="poll.css?v=20261125e">
 </head>
 <body>
 <div class="wrap hub">
@@ -62,6 +62,7 @@
 
   <section class="forum" id="forum">
     <div class="fhead"><h2>Forum</h2><span class="fheadbtns"><button type="button" class="fyear" id="fall" aria-pressed="false" hidden>All posts</button><button type="button" class="fyear" id="fyear" aria-pressed="false" hidden></button></span></div>
+    <div class="fnotes" id="fnotes" role="region" aria-label="Notifications" hidden></div>
     <div class="fnew" id="fnew">
       <textarea id="fbody" rows="1" maxlength="1000" placeholder="Say something…" aria-label="Write a post"></textarea>
       <select id="fscope" aria-label="Who it’s for" hidden></select>
@@ -423,9 +424,25 @@ function voteBox(p, h, extra){
 const asSite = () => !!TT.get('tt.forumas', false);
 const asBox = () => forumMod ? '<label class="fas"><input type="checkbox" class="fasbox"' + (asSite() ? ' checked' : '') + '><span>As MSC Unofficial</span></label>' : '';
 const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
-function postCard(p, isReply){
+/* tags (the owner, 25 November 2026): "@alex.burns6", a login name. A reply starts with the tag of whoever you're
+   replying to (delete it if you like), typing @ suggests people, and a tag lights up in the text (yours stands out). */
+let myHandle = String((TT.myEmail && TT.myEmail()) || '').split('@')[0].toLowerCase();
+const TAG_RE = /(^|[^a-z0-9._@-])@([a-z0-9](?:[a-z0-9._-]*[a-z0-9])?)/gi;
+/* long messages: the start, and "Show full message" (opened ones stay open while the page is) */
+const LONG_CHARS = 320, LONG_LINES = 6, openLong = new Set();
+function bodyHtml(p){
+  const t = String(p.body || ''), lines = t.split('\n');
+  const long = (t.length > LONG_CHARS + 40 || lines.length > LONG_LINES + 1) && !openLong.has(p.id);
+  let s = t;
+  if (long){ s = lines.slice(0, LONG_LINES).join('\n'); if (s.length > LONG_CHARS) s = s.slice(0, LONG_CHARS).replace(/\s+\S*$/, ''); s = s.replace(/\s+$/, '') + '…'; }
+  const html = esc(s).replace(TAG_RE, (m, pre, h) => pre + '<span class="ftag' + (h.toLowerCase() === myHandle ? ' fme' : '') + '">@' + h + '</span>');
+  return '<div class="ftext">' + html + '</div>' +
+    (long ? '<button class="flink flong" type="button" data-id="' + esc(p.id) + '">Show full message</button>' : '');
+}
+const foldedReplies = p => (p.replies || []).filter((r, i) => i > 0 && !r.official);
+function postCard(p, isReply, thread){
   const h = p.hide, folded = !!(h && h.hidden && !shownHidden.has(p.id));
-  const n = isReply ? 0 : (p.replies || []).length, open = openReplies.has(p.id);
+  const hiddenReplies = isReply ? 0 : foldedReplies(p).length, open = openReplies.has(p.id);
   return '<div class="fpost' + (isReply ? ' freply' : '') + (p.official ? ' fofficial' : '') + (folded ? ' ffolded' : '') + '" data-id="' + esc(p.id) + '">' +
     '<div class="fmeta"><b>' + esc(p.name) + '</b>' +
       '<span>' + esc(ago(p.at)) + '</span>' +
@@ -435,15 +452,18 @@ function postCard(p, isReply){
     '</div>' +
     (folded
       ? voteBox(p, h, '<button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Show content</button>')
-      : '<div class="ftext">' + esc(p.body) + '</div>' +
+      : bodyHtml(p) +
         '<div class="frx" data-id="' + esc(p.id) + '">' + rxBar(p) + '</div>' +
         (h ? voteBox(p, h, h.hidden ? '<button class="flink fshow" type="button" data-id="' + esc(p.id) + '">Fold it away again</button>' : '') : '')) +
     '<div class="factions">' +
-      (isReply ? '' : '<button class="flink freplybtn" type="button" data-id="' + esc(p.id) + '">Reply</button>') +
-      (n ? '<button class="flink frepl" type="button" data-id="' + esc(p.id) + '" aria-expanded="' + open + '">' +
-             (open ? 'Hide replies' : 'Show ' + plural(n, 'reply', 'replies')) + '</button>' : '') +
-      (p.canHide && signedIn && !h ? '<button class="flink fhidevote" type="button" data-id="' + esc(p.id) + '">Vote to hide</button>' : '') +
-      (forumMod && h ? '<button class="flink fhideclear" type="button" data-id="' + esc(p.id) + '" title="Moderators: clear the votes so it shows again">Clear the votes</button>' : '') +
+      (signedIn ? '<button class="flink freplybtn" type="button" data-thread="' + esc(thread || p.id) + '" data-handle="' + esc(p.handle || '') + '">Reply</button>' : '') +
+      (hiddenReplies ? '<button class="flink frepl" type="button" data-id="' + esc(p.id) + '" aria-expanded="' + open + '">' +
+             (open ? 'Hide replies' : 'Show ' + plural(hiddenReplies, 'more reply', 'more replies')) + '</button>' : '') +
+      /* bottom right, and only while the pointer is on this post (the owner: it was cramped) */
+      '<span class="fcorner">' +
+        (p.canHide && signedIn && !h ? '<button class="flink fhidevote" type="button" data-id="' + esc(p.id) + '">Vote to hide</button>' : '') +
+        (forumMod && h ? '<button class="flink fhideclear" type="button" data-id="' + esc(p.id) + '" title="Moderators: clear the votes so it shows again">Clear the votes</button>' : '') +
+      '</span>' +
     '</div>' +
     (isReply ? '' : '<div class="freplybox" id="rb-' + esc(p.id) + '" hidden>' +
         '<textarea rows="2" maxlength="1000" placeholder="Write a reply…"></textarea>' + asBox() +
@@ -529,7 +549,9 @@ async function loadForum(){
     lastPosts = d.posts || [];
     forumYear = d.year || null; forumFiltered = d.only === 'year';
     forumMod = !!d.mod; hideAt = d.hideAt || 8;
+    if (d.me) myHandle = String(d.me).toLowerCase();
     if ($('fas')){ $('fas').hidden = !forumMod; $('fasbox').checked = asSite(); }
+    renderNotes(d.notes || []);
     yearToggle(); allToggle(d);
     scopeChoices(d);
     renderForum(lastPosts);
@@ -543,9 +565,10 @@ function renderForum(posts){
   posts.forEach(p => { POSTS.set(p.id, p); (p.replies || []).forEach(r => POSTS.set(r.id, r)); });
   /* folded away by a vote: never the one thread shown before you open the forum */
   const shown = forumOpen ? posts : posts.filter(p => !(p.hide && p.hide.hidden)).slice(0, 1);
+  /* a thread's first reply and MSC Unofficial's always show; the rest wait for "Show N more replies" */
   $('fposts').innerHTML = posts.length
-    ? shown.map(p => postCard(p, false) +
-        (openReplies.has(p.id) ? (p.replies || []).map(r => postCard(r, true)).join('') : '')).join('')
+    ? shown.map(p => { const fold = new Set(foldedReplies(p));
+        return postCard(p, false) + (p.replies || []).filter(r => openReplies.has(p.id) || !fold.has(r)).map(r => postCard(r, true, p.id)).join(''); }).join('')
     : forumFiltered ? '<p class="how">Nothing from Year ' + esc(forumYear) + ' yet. Say the first thing, or turn off “Only Year ' + esc(forumYear) + '” to see everyone’s.</p>'
     : '<p class="how">Nothing here yet. Say the first thing.</p>';
   const more = posts.length - shown.length;
@@ -558,11 +581,23 @@ function renderForum(posts){
 
 function wireForum(){
   document.querySelectorAll('.frx').forEach(wireRx);
+  /* Reply (on a thread or on a reply): the thread's reply box, started with that person's tag */
   document.querySelectorAll('.freplybtn').forEach(b => b.onclick = () => {
-    const box = $('rb-' + b.dataset.id);
-    box.hidden = !box.hidden;
-    if (!box.hidden) box.querySelector('textarea').focus();
+    const box = $('rb-' + b.dataset.thread); if (!box) return;
+    const ta = box.querySelector('textarea'), justTag = !ta.value.trim() || /^@[a-z0-9._-]+\s*$/i.test(ta.value);
+    /* the thread's own Reply again, with nothing written yet: closes the box */
+    if (!box.hidden && justTag && b.dataset.thread === b.closest('.fpost').dataset.id && ta.value.trim() === ('@' + b.dataset.handle).trim()){ box.hidden = true; return; }
+    box.hidden = false;
+    const hd = b.dataset.handle;
+    if (hd && hd !== myHandle){
+      const tag = '@' + hd + ' ';
+      if (justTag) ta.value = tag;
+      else if (!new RegExp('(^|\\s)@' + hd.replace(/[.]/g, '\\.') + '(?![a-z0-9._-])', 'i').test(ta.value)) ta.value = tag + ta.value;
+    } else if (justTag) ta.value = '';
+    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
   });
+  document.querySelectorAll('.flong').forEach(b => b.onclick = () => { openLong.add(b.dataset.id); renderForum(lastPosts); });
+  document.querySelectorAll('.freplybox textarea').forEach(tagAssist);
   document.querySelectorAll('.freplybox .btn').forEach(b => b.onclick = async () => {
     const ta = b.parentElement.querySelector('textarea'), text = ta.value.trim();
     if (!text) return;
@@ -608,6 +643,90 @@ function wireForum(){
     b.disabled = true;
     try { await TT.api('/api/forum', { method:'POST', body:{ action:'delete', id:b.dataset.id } }); await loadForum(); }
     catch (e){ fmsg(e.message); b.disabled = false; }
+  });
+}
+
+/* ── tagging: type @ and pick someone. People already in the forum come first (no trip to the server); after three
+   letters with too few of them, the student finder fills in (the same search as the timetable's). ── */
+const TAGPOP = { el:null, ta:null, items:[], i:0, timer:0 };
+function tagPeople(){
+  const m = new Map();
+  for (const p of POSTS.values()) if (p.handle && p.handle !== 'msc' && p.handle !== myHandle && !m.has(p.handle)) m.set(p.handle, p.name);
+  return [...m].map(([handle, name]) => ({ handle, name }));
+}
+const tagWord = ta => { const m = /(^|[^a-z0-9._@-])@([a-z0-9._-]*)$/i.exec(ta.value.slice(0, ta.selectionStart)); return m ? m[2] : null; };
+function closeTags(){ clearTimeout(TAGPOP.timer); if (TAGPOP.el) TAGPOP.el.remove(); TAGPOP.el = null; TAGPOP.items = []; }
+function showTags(ta, items){
+  if (!items.length){ if (TAGPOP.el) TAGPOP.el.remove(); TAGPOP.el = null; TAGPOP.items = []; return; }
+  if (!TAGPOP.el || TAGPOP.ta !== ta){ closeTags(); TAGPOP.el = document.createElement('div'); TAGPOP.el.className = 'ftagpop'; TAGPOP.el.setAttribute('role', 'listbox');
+    ta.parentElement.appendChild(TAGPOP.el); }
+  TAGPOP.ta = ta; TAGPOP.items = items; TAGPOP.i = Math.min(TAGPOP.i, items.length - 1);
+  TAGPOP.el.innerHTML = items.map((p, i) => '<button type="button" role="option" aria-selected="' + (i === TAGPOP.i) + '" data-i="' + i + '"><b>' + esc(p.name) + '</b><span>@' + esc(p.handle) + '</span></button>').join('');
+  TAGPOP.el.querySelectorAll('button').forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => pickTag(+b.dataset.i); });
+}
+function pickTag(i){
+  const ta = TAGPOP.ta, p = TAGPOP.items[i]; if (!ta || !p) return;
+  const at = ta.selectionStart, before = ta.value.slice(0, at).replace(/@([a-z0-9._-]*)$/i, '@' + p.handle + ' ');
+  ta.value = before + ta.value.slice(at).replace(/^\S*\s?/, ''); ta.setSelectionRange(before.length, before.length); ta.focus();
+  closeTags();
+}
+function tagAssist(ta){
+  if (ta.dataset.tags) return; ta.dataset.tags = '1';
+  ta.addEventListener('input', () => {
+    const q = tagWord(ta); if (q == null){ closeTags(); return; }
+    const ql = q.toLowerCase(), words = ql.replace(/[._-]+/g, ' ').replace(/\d+/g, '').trim();
+    const local = tagPeople().filter(p => !ql || p.handle.includes(ql) || (words && p.name.toLowerCase().includes(words))).slice(0, 6);
+    TAGPOP.i = 0; showTags(ta, local);
+    clearTimeout(TAGPOP.timer);
+    if (words.length >= 3 && local.length < 3) TAGPOP.timer = setTimeout(async () => {
+      try {
+        const d = await TT.api('/api/timetable', { params:{ find: words } });
+        if (tagWord(ta) !== q || document.activeElement !== ta) return;
+        const more = (d.results || []).map(r => ({ handle: String(r.email || '').split('@')[0].toLowerCase(), name: String(r.name || '') }))
+          .filter(p => p.handle && p.handle !== myHandle && !local.some(x => x.handle === p.handle));
+        showTags(ta, local.concat(more).slice(0, 6));
+      } catch {}
+    }, 450);
+  });
+  ta.addEventListener('keydown', e => {
+    if (!TAGPOP.el || TAGPOP.ta !== ta) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); TAGPOP.i = (TAGPOP.i + (e.key === 'ArrowDown' ? 1 : -1) + TAGPOP.items.length) % TAGPOP.items.length; showTags(ta, TAGPOP.items); }
+    else if ((e.key === 'Enter' && !e.ctrlKey && !e.metaKey) || e.key === 'Tab'){ e.preventDefault(); pickTag(TAGPOP.i); }
+    else if (e.key === 'Escape'){ e.preventDefault(); closeTags(); }
+  });
+  ta.addEventListener('blur', () => setTimeout(() => { if (TAGPOP.ta === ta) closeTags(); }, 120));
+}
+tagAssist($('fbody'));
+
+/* ── notifications (top of the forum): replies in your threads and posts tagging you, from the server's `notes`.
+   What you've seen is kept in your settings (tt.forumseen: a time, and the ones opened since); the first time,
+   everything before now counts as seen. Opening one goes to it in the forum. ── */
+function forumSeen(){
+  let s = TT.get('tt.forumseen', null);
+  if (!s || typeof s !== 'object' || !s.at){ s = { at: new Date().toISOString(), ids: [] }; TT.set('tt.forumseen', s); }
+  return { at: String(s.at), ids: Array.isArray(s.ids) ? s.ids : [] };
+}
+let lastNotes = [];
+function renderNotes(notes){
+  lastNotes = notes; const el = $('fnotes'); if (!el) return;
+  const seen = forumSeen(), fresh = notes.filter(n => n.at > seen.at && !seen.ids.includes(n.id));
+  el.hidden = !fresh.length;
+  if (!fresh.length){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="fnoteshd"><b>' + plural(fresh.length, 'new notification', 'new notifications') + '</b>' +
+      '<button type="button" class="flink fnotesall">Mark all as read</button></div>' +
+    fresh.slice(0, 6).map(n => '<button type="button" class="fnote" data-id="' + esc(n.id) + '" data-thread="' + esc(n.thread) + '">' +
+      '<span class="fnotew"><b>' + esc(n.name) + '</b> ' + (n.kind === 'reply' ? 'replied to your post' : 'tagged you') + '<i>' + esc(ago(n.at)) + '</i></span>' +
+      '<span class="fnotet">' + esc(n.text) + '</span></button>').join('') +
+    (fresh.length > 6 ? '<p class="fnotemore">and ' + (fresh.length - 6) + ' more</p>' : '');
+  el.querySelector('.fnotesall').onclick = () => { const newest = notes.reduce((a, n) => n.at > a ? n.at : a, seen.at);
+    TT.set('tt.forumseen', { at: newest, ids: [] }); renderNotes(lastNotes); };
+  el.querySelectorAll('.fnote').forEach(b => b.onclick = () => {
+    const s = forumSeen(); TT.set('tt.forumseen', { at: s.at, ids: s.ids.concat(b.dataset.id).slice(-60) });
+    forumOpen = true; openReplies.add(b.dataset.thread); renderForum(lastPosts || []); renderNotes(lastNotes);
+    const post = document.querySelector('.fpost[data-id="' + CSS.escape(b.dataset.id) + '"]');
+    const calm = document.documentElement.dataset.motion === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (post){ post.scrollIntoView({ block:'center', behavior: calm ? 'auto' : 'smooth' }); post.classList.add('fjump'); setTimeout(() => post.classList.remove('fjump'), 2400); }
+    else fmsg('That post isn’t in the forum as it’s showing now.');
   });
 }
 
@@ -684,8 +803,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261125d"></script>
-<script src="poll.js?v=20261125d"></script>
+<script src="settings.js?v=20261125e"></script>
+<script src="poll.js?v=20261125e"></script>
 <script>
 /* ── Today: the daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),

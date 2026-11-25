@@ -5161,3 +5161,23 @@ player had a script pressing Button Pushers around the clock. Jim stays (people 
 ## 8.202 Votes to hide: YES / NO (version `20261125d`, `CACHE_VERSION` v125)
 The owner committed 8.200 and 8.201 as `banning`, then redesigned the votes to hide; 8.201's "Votes to hide" describes the new
 YES / NO vote. Every page is restamped `d` / v125. Next free stamp: `e` / v126.
+
+## 8.203 Forum: tags, notifications, folded replies, long messages (version `20261125e`, `CACHE_VERSION` v126)
+The owner committed 8.202 as `voting`.
+- **Tags** (the owner: "like instagram or discord"): a tag is `@` and someone's login name (`@alex.burns6`, the owner's
+  example); MSC Unofficial's is `@msc`. Each post now carries its poster's `handle` (never the full email). Every post and
+  reply has a Reply link; it opens the thread's reply box started with that person's tag (delete it if you like; none for
+  yourself). Typing `@` suggests people: those already in the forum first (no server call), then, after three letters with
+  fewer than three of them, the student finder (`/api/timetable?find=`, the same search as the timetable's). Arrow keys,
+  Enter or Tab, Escape. Tags light up in posts; your own stands out.
+- **Notifications** (top of Home's forum): replies in your threads and posts tagging you, from the last three weeks of what
+  you can see. The server works them out from the posts it already reads (`notes`); nothing is stored. Seen is
+  `tt.forumseen` (your settings: a time and the ones opened since); the first time, everything before counts as seen.
+  Opening one goes to the post and outlines it. Moderators also hear about replies to MSC Unofficial's threads and `@msc`.
+- **Replies:** the first reply and MSC Unofficial's always show; the rest wait for "Show N more replies".
+- **Long messages** (more than about 360 characters or 7 lines) show their start and "Show full message".
+- **Vote to hide** (and a moderator's Clear the votes) is at the bottom right of a post, shown only while the pointer is on
+  that post (faint on touch screens), because the row was cramped.
+- Tested against the in-memory database (33 checks, including that no full email reaches the page, a tag ending a sentence
+  counts and an email address doesn't) and in the mock (tagging, picking a tag, Reply on a reply, notifications and jumping to
+  one, long messages, first-time quiet start; desktop and phone). Next free stamp: `f` / v127.

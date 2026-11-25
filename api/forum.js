@@ -23,8 +23,11 @@
  *   GET  /poll  (rewritten to /api/forum?og=1) → the share link's preview page
  *
  * Same identity model as the rest of the site: whoami() re-verifies the school
- * credentials already being sent, the display name is derived server-side, and
- * emails are never returned to the browser.
+ * credentials already being sent, and the display name is derived server-side.
+ * Full emails are never returned to the browser; since 25 November 2026 each post
+ * carries its poster's login name (`handle`, the part before the @) so people can
+ * tag each other ("@alex.burns6", the owner's choice), and `notes` lists replies in
+ * your threads and posts tagging you (Home's notifications; worked out, not stored).
  *
  * Table (Supabase → SQL editor):
  *   create table forum_post (
@@ -150,6 +153,10 @@ function voteOf(rows) {
 }
 const MSC = "~msc", MSC_NAME = "MSC Unofficial";    // a post made as the site: no trace of which moderator wrote it
 const isSite = email => String(email || "") === MSC;
+/* someone's tag: their school login name ("@alex.burns6", the owner's choice); MSC Unofficial's is "@msc" */
+const handleOf = email => isSite(email) ? "msc" : String(email || "").split("@")[0].toLowerCase();
+/* the tags in a post: @ then a login name (dots inside it, not at its end, so "@ava.one12." is ava.one12) */
+const tagsIn = text => [...String(text || "").matchAll(/(?:^|[^a-z0-9._@-])@([a-z0-9](?:[a-z0-9._-]*[a-z0-9])?)/gi)].map(m => m[1].toLowerCase());
 /* one emoji (with any skin tone, joiners or variation selectors), nothing else */
 const isEmoji = e => typeof e === "string" && e.length <= 16 &&
   /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Emoji_Component}|\u200D|\uFE0F)+$/u.test(e) &&
@@ -290,6 +297,26 @@ export default async function handler(req, res) {
       const mine = data.some(r => String(r.scope).startsWith("class:")) ? await classesOf(me.email).catch(() => new Map()) : new Map();
       data = data.filter(r => !r.scope || r.scope === "all" || r.scope === "year:" + me.year || (String(r.scope).startsWith("class:") && mine.has(String(r.scope).slice(6))));
     }
+    /* your notifications (Home): replies in your threads, and posts that tag you, by anyone else, from the last three
+       weeks of what you can see. Worked out here from the posts already read: nothing is stored. A moderator also hears
+       about replies to MSC Unofficial's threads and tags of @msc (which says nothing about who wrote them). */
+    const notes = [];
+    {
+      const minePost = e => e === me.email || (isOwner && isSite(e));
+      const myTags = new Set([handleOf(me.email), ...(isOwner ? ["msc"] : [])]);
+      const starter = new Map(data.filter(r => !r.parent).map(r => [r.id, r.email]));
+      const since = Date.now() - 21 * 864e5;
+      for (const r of data) {
+        if (notes.length >= 20) break;
+        if (minePost(r.email) || Date.parse(r.created_at) < since) continue;
+        const tagged = tagsIn(r.body).some(t => myTags.has(t));
+        const onMine = !!r.parent && minePost(starter.get(r.parent));
+        if (!tagged && !onMine) continue;
+        notes.push({ id: r.id, thread: r.parent || r.id, kind: onMine ? "reply" : "tag", at: r.created_at,
+          name: isSite(r.email) ? MSC_NAME : withName(NAMES, r.email, nameFromEmail(r.email)),
+          text: String(r.body).replace(/\s+/g, " ").slice(0, 120) });
+      }
+    }
     /* "Only my year" (Home's toggle, ?only=year): threads started by someone in another year are left
        out. Threads from people with no year here (staff) stay, as do threads aimed at a year or a class,
        and a thread kept keeps all its replies, so no conversation is cut in half. */
@@ -332,6 +359,8 @@ export default async function handler(req, res) {
                mine: mine ? (mine.emoji === HIDE ? "yes" : "no") : null, hidden: v.over === "hidden", kept: v.over === "kept" }; };
     const shape = r => ({
       id: r.id, name: isSite(r.email) ? MSC_NAME : withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
+      handle: handleOf(r.email),                    // for tagging them in a reply
+
       /* mine: yours. canDelete: yours, or anyone's for a moderator (the page
          shows a moderator's delete on other people's posts only on hover) */
       mine: r.email === me.email, canDelete: r.email === me.email || isOwner, reactions: reactionsOf(r.id),
@@ -361,10 +390,10 @@ export default async function handler(req, res) {
       const poll = await pollAlong, ms = Date.now() - t0;
       if (ms > 2500) console.warn("home load slow: " + ms + "ms");          // to see in the logs if it's still slow
       return res.status(200).json({ posts: threads, poll, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined,
-        mod: isOwner || undefined, all: seeAll || undefined, hideAt: HIDE_AT, keepAt: KEEP_AT });
+        mod: isOwner || undefined, all: seeAll || undefined, hideAt: HIDE_AT, keepAt: KEEP_AT, notes, me: handleOf(me.email) });
     }
     return res.status(200).json({ posts: threads, scopes: scoped, year: me.year || undefined, only: onlyYear && !!me.year ? "year" : undefined,
-      mod: isOwner || undefined, all: seeAll || undefined, hideAt: HIDE_AT, keepAt: KEEP_AT });
+      mod: isOwner || undefined, all: seeAll || undefined, hideAt: HIDE_AT, keepAt: KEEP_AT, notes, me: handleOf(me.email) });
   }
 
   if (req.method === "POST") {
