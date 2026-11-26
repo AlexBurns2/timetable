@@ -5162,7 +5162,7 @@ player had a script pressing Button Pushers around the clock. Jim stays (people 
 The owner committed 8.200 and 8.201 as `banning`, then redesigned the votes to hide; 8.201's "Votes to hide" describes the new
 YES / NO vote. Every page is restamped `d` / v125. Next free stamp: `e` / v126.
 
-## 8.203 Forum: tags, notifications, folded replies, long messages (version `20261125e`, `CACHE_VERSION` v126)
+## 8.203 Forum: tags, notifications, folded replies, long messages (version `20261126a`, `CACHE_VERSION` v126)
 The owner committed 8.202 as `voting`.
 - **Tags** (the owner: "like instagram or discord"): a tag is `@` and someone's login name (`@alex.burns6`, the owner's
   example); MSC Unofficial's is `@msc`. Each post now carries its poster's `handle` (never the full email). Every post and
