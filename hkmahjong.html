@@ -1084,7 +1084,7 @@ html.btlook :is(.lvl.on,.tabs button.on){background:linear-gradient(#c4579f,#8a2
 html.btlook .err{color:#ff8a8a}
 /* ===== the beta home: the game table, with the menu laid on it ===== */
 #home.bhome{padding:0!important;height:100%;max-width:none!important}
-.bh{height:100%;min-height:480px;--tw:min(8cqw,13.5cqh,108px)}
+.bh{height:100%;min-height:300px;--tw:min(8cqw,13.5cqh,108px)}
 .bh-ui{animation:bhin .4s cubic-bezier(.2,.8,.3,1) both}
 @keyframes bhin{from{opacity:0;transform:translateY(14px)}}
 .bh.leaving .bh-ui{transition:opacity .24s,transform .24s;opacity:0;transform:translateY(16px)}
@@ -1140,6 +1140,11 @@ html.btlook .err{color:#ff8a8a}
 /* the deal: my hand rises onto the rack where the menu was */
 .bt-me .tile.nw{animation:btdeal .4s cubic-bezier(.2,.8,.3,1.1) both}
 .bt-me .tile.nw:nth-child(4n+2){animation-delay:40ms}.bt-me .tile.nw:nth-child(4n+3){animation-delay:80ms}.bt-me .tile.nw:nth-child(4n){animation-delay:120ms}
+/* a phone held upright (html.rot, fitRotate): the page drawn a quarter turn round */
+html.rot,html.rot body{overflow:hidden}
+html.rot body{position:fixed;top:0;left:0;transform-origin:0 0;transform:translateX(100vw) rotate(90deg)}
+html.rot main{overflow:hidden}
+html.rot .bh{min-height:0}
 /* reactions over the seats */
 #bt .seatfloat{z-index:8}
 #bt .sf0{left:80%;top:68%}#bt .sf1{left:80%;top:24%}#bt .sf2{left:20%;top:24%}#bt .sf3{left:20%;top:68%}
@@ -2904,6 +2909,18 @@ function renderActions() {
    classic table and sends the same actions through doAction, so the other players never know. */
 const Beta = { on: store.get('betaTable', false), hand: null, pos: {}, ring: null, freshKey: '', freshUntil: 0, saidKey: '', say: [null, null, null, null], introUntil: 0, menu: false };
 document.documentElement.classList.toggle('btlook', Beta.on);
+/* a phone held upright: the beta table is a landscape table, so the whole page is turned a quarter
+   turn and drawn sideways (turn the phone to play). Popups live inside <body>, so they turn with it. */
+function fitRotate() {
+  const W = innerWidth, H = innerHeight, on = Beta.on && W < 760 && H > W * 1.15, b = document.body;
+  document.documentElement.classList.toggle('rot', on);
+  if (!b) return;
+  if (on) { b.style.width = H + 'px'; b.style.height = W + 'px'; }
+  else { b.style.width = ''; b.style.height = ''; }
+}
+addEventListener('resize', fitRotate);
+addEventListener('DOMContentLoaded', fitRotate);
+if (document.body) fitRotate();
 const PIPS = { 1: [[10, 10]], 2: [[6, 6], [14, 14]], 3: [[5, 5], [10, 10], [15, 15]], 4: [[6, 6], [14, 6], [6, 14], [14, 14]], 5: [[5, 5], [15, 5], [10, 10], [5, 15], [15, 15]], 6: [[6, 5], [14, 5], [6, 10], [14, 10], [6, 15], [14, 15]] };
 function dieSVG(n) {
   const col = n === 1 || n === 4 ? '#d0242b' : '#1d1d1d', r = n === 1 ? 2.8 : 1.7;
@@ -2921,6 +2938,7 @@ function setBeta(on) {
   Beta.on = !!on; store.set('betaTable', Beta.on); Beta.menu = false;
   const g = $('#game'); if (g) g.classList.toggle('bton', Beta.on);
   document.documentElement.classList.toggle('btlook', Beta.on);
+  fitRotate();
   if (App.view && App.screen === 'game') renderGame();
   if (App.screen === 'home') renderHome();
 }
