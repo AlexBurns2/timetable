@@ -246,6 +246,7 @@ function fetchBoardsFull(){
       if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zen' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zenscore' }, lbYearParam()) }); return [cat.id, all(d.top, 'best', cat.fmt)]; }
+      if (cat.tas){ const d = await tasRows(cat); return [cat.id, all((d.top || []).map(r => ({ name:r.name, you:r.you, row:r })), 'row', cat.fmt)]; }
     } catch (e){}
     return [cat.id, null];
   })).then(Object.fromEntries);
@@ -452,8 +453,16 @@ const LB_CAT = [
   { id:'react',     name:'Reaction',       g:{metric:'avg3'},    fmt:v=>v+' ms' },
   { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
-  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
+  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) },
+  { id:'tas-snake', name:'Snake TAS',      tas:'snake',  league:'fixed' },
+  { id:'tas-g2048', name:'2048 TAS',       tas:'g2048',  league:'fixed' },
+  { id:'tas-tetris', name:'Tetris TAS',    tas:'tetris', league:'fixed' },
+  { id:'tasr-snake', name:'Snake TAS, random seed',  tas:'snake',  league:'random' },
+  { id:'tasr-g2048', name:'2048 TAS, random seed',   tas:'g2048',  league:'random' },
+  { id:'tasr-tetris', name:'Tetris TAS, random seed', tas:'tetris', league:'random' }
 ];
+LB_CAT.filter(c => c.tas).forEach(c => { const unit = { snake:'steps', g2048:'moves', tetris:'frames' }[c.tas]; c.fmt = r => r ? r.score + ' in ' + r.frames + ' ' + unit : ''; });
+const tasRows = async cat => (await TT.api('/api/leaderboard', { params:{ tas:cat.tas, league:cat.league } }));
 let lbFocus = null;          // which board ?play=leaderboards opens on
 let lbSumCache = null;       // every board's top three, once per page (a new score clears it)
 const shortHMS = v => fmtHMS(v).replace(/^00:/, '');     // 01:23.4, not 00:01:23.4
@@ -468,6 +477,7 @@ function fetchLeaders(){
       if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zen' }, lbYearParam()) }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zenscore' }, lbYearParam()) }); return [cat.id, top3(d.top, 'best', cat.fmt)]; }
+      if (cat.tas){ const d = await tasRows(cat); return [cat.id, top3((d.top || []).map(r => ({ name:r.name, you:r.you, row:r })), 'row', cat.fmt)]; }
     } catch (e){}
     return [cat.id, null];
   })).then(Object.fromEntries);
@@ -4822,6 +4832,9 @@ function lbBoard(box, focusId){
       } else if (cur.t === 'zenscore'){
         const r = await TT.api('/api/tetris',{params:Object.assign({mode:'zenscore'}, lbYearParam())});
         const b = { top:remap(r.top,'best'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b, scope:r };
+      } else if (cur.tas){
+        const r = await tasRows(cur);
+        const b = { top:(r.top || []).map(x => ({ name:x.name, score:x, you:x.you })), meBest:r.mine, meRank:r.mine && r.mine.rank }; d = { week:b, all:b };
       }
       if (my !== seq) return;
       noteScope(d.scope || d);

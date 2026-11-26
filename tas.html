@@ -46,6 +46,10 @@
 .tasapi p{font-size:0.8125rem;color:var(--muted);line-height:1.5;margin:8px 0}
 .tlbrow .watch{font:inherit;font-size:0.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--accent);cursor:pointer}
 .tasspeed{display:flex;align-items:center;gap:8px;font-size:0.8125rem;color:var(--muted)}
+[hidden]{display:none!important}
+.tasbars{display:flex;gap:10px 18px;flex-wrap:wrap;margin-bottom:14px}
+.tasseed{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:-4px 0 14px;font-size:0.875rem;color:var(--muted)}
+.tasseed b{color:var(--text);font-family:var(--font-num)}
 .tasspeed select{font:inherit;color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:4px 6px}
 </style>
 </head>
@@ -60,9 +64,14 @@
     </div>
   </div>
 
-  <p class="tasintro"><b>Bots welcome.</b> A run is a movie, one input per frame, played back on the server. Highest score wins, fewest frames breaks a tie.</p>
+  <p class="tasintro"><b>Bots welcome.</b> A run is a movie, one input per frame, played back on the server. Highest score wins, fewest frames breaks a tie.
+    Fixed seed is the same game for everyone. Random seed gives you a new game each time, so your bot has to play it live.</p>
 
-  <div class="diffbar" id="cats" style="margin-bottom:14px"></div>
+  <div class="tasbars">
+    <div class="diffbar" id="cats"></div>
+    <div class="diffbar" id="leagues"></div>
+  </div>
+  <div class="tasseed" id="seedbar" hidden><button class="btn primary" type="button" id="newseed">New seed</button><span id="seedtime"></span></div>
 
   <div class="tasgrid">
     <div class="tascard">
@@ -110,7 +119,7 @@
     <p>Spaces, new lines and <code>#</code> comments in a movie are ignored.</p>
   </div>
 </div>
-<script type="module" src="tas.js"></script>
+<script type="module" src="tas.js?v=20261126a"></script>
 <script src="settings.js?v=20261125a"></script>
 </body>
 </html>
