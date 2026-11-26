@@ -901,7 +901,8 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 #game.bton #bt{display:block}
 .bt{position:relative;height:100%;overflow:hidden;container-type:size;user-select:none;-webkit-user-select:none;color:#f4efe2;font-family:var(--font-ui);
   background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.28)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),#2c625e}
-.bt .tile{--w:4.4cqmin;border:0;border-radius:calc(var(--w)*.13);background:linear-gradient(175deg,#fffefa,#f1ede1);
+.bt{--ig:#178a3e;--in:#1d2c80;--ir:#d1222b;--ik:#1d2c80;--tf:#fffefa}
+.bt .tile{--w:4.4cqmin;border:1px solid #4a3d2c;border-radius:calc(var(--w)*.13);background:linear-gradient(175deg,#fffefa,#f1ede1);
   box-shadow:0 calc(var(--w)*.05) 0 #d8d1bc,0 calc(var(--w)*.1) 0 #3c9e3a,0 calc(var(--w)*.16) calc(var(--w)*.16) rgba(0,0,0,.35)}
 .bt .tile svg{left:6%;top:5%;width:88%;height:90%}
 .bt .tile.claimed{transform:none;background:linear-gradient(175deg,#f9d3cd,#efb5ad)}
@@ -970,6 +971,8 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .bt-me .tile{--w:var(--tw);box-shadow:0 calc(var(--w)*-.03) 0 #e9e3d0,calc(var(--w)*.05) calc(var(--w)*-.15) 0 #2f8f35,0 calc(var(--w)*-.15) 0 #4fbd46,0 calc(var(--w)*.1) calc(var(--w)*.2) rgba(0,0,0,.4)}
 .bt-me .hand{display:flex;gap:calc(var(--tw)*.03)}
 .bt-me .hand .tile{cursor:pointer;transition:transform .12s}
+/* a raised tile keeps the room it left, so the pointer never falls off it and it can't flicker */
+.bt-me .hand .tile::after{content:'';position:absolute;left:-1px;right:-1px;top:100%;height:calc(var(--tw)*.36)}
 .bt-me .hand.active .tile:hover{transform:translateY(calc(var(--tw)*-.18))}
 .bt-me .hand .tile.sel{transform:translateY(calc(var(--tw)*-.3))!important;box-shadow:0 calc(var(--w)*-.03) 0 #e9e3d0,calc(var(--w)*.05) calc(var(--w)*-.15) 0 #2f8f35,0 calc(var(--w)*-.15) 0 #4fbd46,0 0 0 .35cqmin #ffd54a}
 .bt-me .mymelds{display:flex;gap:calc(var(--tw)*.18)}.bt-me .meld{display:flex;gap:1px}.bt-me .meld .tile{--w:calc(var(--tw)*.8)}
@@ -1490,7 +1493,10 @@ const F = c => `style="fill:${c}"`;
 const SK = (c, w) => `style="fill:none;stroke:${c};stroke-width:${w};stroke-linecap:round;stroke-linejoin:round"`;
 const n2 = x => +x.toFixed(2);
 
+let TRAD = false;      /* drawing the beta table's set: ringed coins, slimmer sticks, no corner labels */
 function coin(cx, cy, r, col) {
+  if (TRAD) return `<circle cx="${cx}" cy="${cy}" r="${r}" ${F(col)}/><circle cx="${cx}" cy="${cy}" r="${n2(r * .8)}" ${F(INK.w)}/><circle cx="${cx}" cy="${cy}" r="${n2(r * .64)}" ${F(col)}/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${n2(r * .46)}" ${F(INK.w)}/><circle cx="${cx}" cy="${cy}" r="${n2(r * .26)}" ${F(col)}/><circle cx="${cx}" cy="${cy}" r="${n2(r * .09)}" ${F(INK.w)}/>`;
   let s = `<circle cx="${cx}" cy="${cy}" r="${r}" ${F(col)}/><circle cx="${cx}" cy="${cy}" r="${n2(r * .74)}" ${F(INK.w)}/>`;
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; s += `<circle cx="${n2(cx + Math.cos(a) * r * .27)}" cy="${n2(cy + Math.sin(a) * r * .27)}" r="${n2(r * .3)}" ${F(col)}/>`; }
   return s + `<circle cx="${cx}" cy="${cy}" r="${n2(r * .12)}" ${F(INK.w)}/>`;
@@ -1503,7 +1509,7 @@ function bigDot() {
   return s + `<circle cx="30" cy="40" r="1.8" ${F(INK.w)}/>`;
 }
 function stick(x, y, h, col, rot) {
-  const w = 5.4, cw = 8.6, ch = 3.2, t = y - h / 2, b = y + h / 2, hl = Math.max(1, h / 2 - ch - 2.4);
+  const w = TRAD ? 3.8 : 5.4, cw = TRAD ? 6.6 : 8.6, ch = TRAD ? 2.6 : 3.2, t = y - h / 2, b = y + h / 2, hl = Math.max(1, h / 2 - ch - 2.4);
   let s = `<rect x="${n2(x - w / 2)}" y="${n2(t + 1)}" width="${w}" height="${n2(h - 2)}" rx="1.2" ${F(col)}/>` +
     `<rect x="${n2(x - cw / 2)}" y="${n2(t)}" width="${cw}" height="${ch}" rx="1.4" ${F(col)}/>` +
     `<rect x="${n2(x - cw / 2)}" y="${n2(b - ch)}" width="${cw}" height="${ch}" rx="1.4" ${F(col)}/>` +
@@ -2097,10 +2103,12 @@ const store = {
 // ---------- tile faces (see tiles.js) ----------
 const Look = { theme: store.get('theme', 'classic'), labels: store.get('labels', true) };
 let FACES = [];
-function buildFaces() { FACES = []; for (let t = 0; t < 42; t++) FACES[t] = faceSVG(t, Look.labels); }
+let BFACES = [], FACESET = null;      /* FACESET: the set tileHTML draws with while the beta table renders */
+function buildFaces() { FACES = []; for (let t = 0; t < 42; t++) FACES[t] = faceSVG(t, Look.labels);
+  TRAD = true; BFACES = []; for (let t = 0; t < 42; t++) BFACES[t] = faceSVG(t, false); TRAD = false; }
 buildFaces(); applyTheme(Look.theme);
 const SUITCLS = t => t < 9 ? 's-d' : t < 18 ? 's-b' : t < 27 ? 's-c' : t < 34 ? 's-h' : 's-f';
-const tileHTML = (t, cls, attrs) => `<div class="tile ${SUITCLS(t)} ${cls || ''}" data-t="${t}" title="${esc(tileName(t))}" ${attrs || ''}>${FACES[t]}</div>`;
+const tileHTML = (t, cls, attrs) => `<div class="tile ${SUITCLS(t)} ${cls || ''}" data-t="${t}" title="${esc(tileName(t))}" ${attrs || ''}>${(FACESET || FACES)[t]}</div>`;
 const backHTML = cls => `<div class="tile back ${cls || ''}"></div>`;
 const tilesHTML = (arr, cls) => `<div class="tiles">${arr.map(t => tileHTML(t, cls)).join('')}</div>`;
 function meldObj(m) { return { k: m[0] === 'c' ? 'chow' : m[0] === 'p' ? 'pung' : 'kong', t: m[1], c: !!m[2], ct: m[3] }; }
@@ -2755,7 +2763,10 @@ function betaShowPlayers() {
   clearTimeout(Beta.t1); clearTimeout(Beta.t2); iEl.classList.add('show'); Beta.introUntil = 0;
   Beta.t2 = setTimeout(() => iEl.classList.remove('show'), 2600);
 }
-function renderBeta() {
+/* only what changed is redrawn: a rack rebuilt under the pointer loses the click, and restarts the hover */
+function setHTML(el, html) { if (el && el._h !== html) { el._h = html; el.innerHTML = html; } }
+function renderBeta() { FACESET = BFACES; try { renderBeta2(); } finally { FACESET = null; } }
+function renderBeta2() {
   const V = App.view, bt = $('#bt'); if (!V || !bt || App.screen !== 'game') return;
   const pv = App.priv, now = Date.now();
   /* a new hand: fresh spots for the discards, and the dice and players once it starts */
@@ -2791,7 +2802,7 @@ function renderBeta() {
   }
   if (ringAt) Beta.ring = ringAt;
   const ring = Beta.ring && V.ph !== 'over' ? `<div class="bt-ring" style="--x:${Beta.ring.x}cqmin;--y:${Beta.ring.y}cqmin;--a:${Beta.ring.a}deg"></div>` : '';
-  $('#btpool').innerHTML = ring + pool;
+  setHTML($('#btpool'), ring + pool);
   /* each discard: the player says which tile, in a bubble by their portrait */
   if (V.ls) {
     const key = `${V.hn}:${V.ls[1]}:${V.P[V.ls[1]].d.length}`;
@@ -2806,22 +2817,22 @@ function renderBeta() {
     const fl = dec(P.f);
     opp += `<div class="bt-om o${p}">${P.m.map(m => meldHTML(m, true)).join('')}${fl.length ? `<div class="fl">${fl.map(t => tileHTML(t)).join('')}</div>` : ''}</div>`;
   }
-  $('#btopp').innerHTML = opp;
+  setHTML($('#btopp'), opp);
   /* portraits that are speaking */
   let seats = '';
   for (let s = 0; s < 4; s++) {
     const p = posOf(s), sy = Beta.say[p];
     if (sy && sy.until > now) seats += `<div class="bt-seat p${p}">${betaPortrait(V, s)}<div class="bt-say">${sy.html}</div></div>`;
   }
-  $('#btseats').innerHTML = seats;
+  setHTML($('#btseats'), seats);
   /* top right: the table and whose turn */
   const online = App.role === 'host' || App.role === 'client';
   const code = online && App.lobby && App.lobby.code ? 'ROOM ' + esc(App.lobby.code) : (App.mode === 'daily' ? 'DAILY ' + dailyKey() : 'PRACTICE TABLE');
   const status = V.ov ? 'Game over' : V.ph === 'over' ? 'Hand finished' : V.ph === 'claim' ? 'Deciding on the discard' : V.tn === App.seat ? 'Your turn' : 'Waiting for ' + esc(nameOf(V.tn));
-  $('#btid').innerHTML = `${code}<br>${WIND_EN[V.pw].toUpperCase()} ROUND · HAND ${V.hn} · ${V.wl} LEFT<br>${status}${App.deadline ? ' · <span id="bttime"></span>' : ''}`;
+  setHTML($('#btid'), `${code}<br>${WIND_EN[V.pw].toUpperCase()} ROUND · HAND ${V.hn} · ${V.wl} LEFT<br>${status}${App.deadline ? ' · <span id="bttime"></span>' : ''}`);
   /* bottom left: my seat wind, and the dice */
   const sw = (me - V.dl + 4) % 4;
-  $('#btcorner').innerHTML = `<div class="dice">${dieSVG(1)}${dieSVG(4)}${dieSVG(5)}</div>${tileHTML(27 + sw)}`;
+  setHTML($('#btcorner'), `<div class="dice">${dieSVG(1)}${dieSVG(4)}${dieSVG(5)}</div>${tileHTML(27 + sw)}`);
   /* my rack */
   const myTurn = pv && pv.my && V.ph === 'discard';
   const myfl = dec(MP.f);
@@ -2833,7 +2844,7 @@ function renderBeta() {
   else rack += `<div class="hand ${myTurn ? 'active' : ''}">${hand.map((t, i) => tileHTML(t, App.sel === i ? 'sel' : '', `data-i="${i}"`)).join('')}</div>` +
     (drawn >= 0 ? `<div class="hand drawn ${myTurn ? 'active' : ''}">${tileHTML(drawn, App.sel === hand.length ? 'sel' : '', `data-i="${hand.length}"`)}</div>`
       : hand.length < full ? '<div class="hand drawn"><div class="tile slot"></div></div>' : '');
-  $('#btme').innerHTML = rack;
+  setHTML($('#btme'), rack);
   /* choices: a framed set with a ribbon for each claim, and Skip */
   const rib = (label, attrs) => `<button class="bt-rib" ${attrs}><span>${label}</span></button>`;
   const opt = (label, tiles, claimedAt, attrs) => `<button class="bt-opt" ${attrs}><span class="bt-rib"><span>${label}</span></span><div class="box">${tiles.map((t, i) => tileHTML(t, i === claimedAt ? 'claimed' : '')).join('')}</div></button>`;
@@ -2852,14 +2863,14 @@ function renderBeta() {
     if (pv.ts) cl += rib(`Win · ${pv.ts} faan`, 'data-act="tsumo"');
     for (const k of pv.kg || []) cl += opt(k.a === 'ckong' ? 'Kong' : 'Add kong', k.a === 'ckong' ? [k.t, k.t, k.t, k.t] : [k.t], -1, `data-act="${k.a}" data-t="${k.t}"`);
   }
-  $('#btclaim').innerHTML = cl;
+  setHTML($('#btclaim'), cl);
   /* menu */
   const m = $('#btmenu');
   m.classList.toggle('open', Beta.menu);
-  m.innerHTML = `<button data-act="btplayers">Players & scores</button>${MULTIPLAYER ? `<button data-act="chat">Chat${App.unread ? ` (${App.unread})` : ''}</button>` : ''}<button data-act="settings">Settings</button><button data-act="rules">Rules</button><button data-act="replay">Replay hand</button>
+  setHTML(m, `<button data-act="btplayers">Players & scores</button>${MULTIPLAYER ? `<button data-act="chat">Chat${App.unread ? ` (${App.unread})` : ''}</button>` : ''}<button data-act="settings">Settings</button><button data-act="rules">Rules</button><button data-act="replay">Replay hand</button>
     <div class="rx">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}">${e}</button>`).join('')}</div>
-    <button data-act="beta">Classic table</button><button data-act="leave">${App.leaveAt > Date.now() ? 'Are you sure?' : 'Leave game'}</button>`;
-  $('#btmenubtn').innerHTML = `☰${App.unread ? '<i class="badge"></i>' : ''}`;
+    <button data-act="beta">Classic table</button><button data-act="leave">${App.leaveAt > Date.now() ? 'Are you sure?' : 'Leave game'}</button>`);
+  setHTML($('#btmenubtn'), `☰${App.unread ? '<i class="badge"></i>' : ''}`);
   tickTimer();
 }
 function myCtx(V, s, extra) {
