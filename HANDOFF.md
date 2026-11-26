@@ -5236,3 +5236,30 @@ an exclamation mark by the name saying "User banned from this game" on hover.
 - Tested: the ban suite (29 checks: on the boards and marked, ranks unchanged, scores and presses still refused, no row
   changed, no mark once lifted) plus the forum and year suites; the mock (Button Pushers' board, the leaderboards sheet and
   cards). Next free stamp: `e` / v130.
+
+## 8.208 Faster multiplayer: direct on the same network, and a Sydney relay (version `20261126e`, `CACHE_VERSION` v130)
+The owner committed 8.207 as `boi`, and asked to cut multiplayer latency with direct connections and a relay in Sydney
+(Firebase's rooms are in Singapore: about 110 ms for a request from Sydney, so Snake's non-host players waited roughly
+0.25 to 0.3 s to see their own turn). `rooms.js` only; the games use it exactly as before.
+- **The way each message goes:** straight to players on the same network (a WebRTC data channel), else through the Sydney
+  relay when every other player has it, else Firebase for everyone, exactly as before. You hear your own message at once.
+  Firebase stays for who's in a room, joining, the public lobby lists, anyone on an older copy, and when you're alone (so
+  a player joining a moment later still hears it). Messages that came two ways are handed over once (an id on the fast
+  paths; Firebase entries keep their old shape, since its rules aren't in the repo, so a message never goes by Firebase and
+  a fast path both).
+- **Direct, same network only** (the owner's choice): no STUN server, and only a browser's anonymous `.local` names are ever
+  passed on, never an IP address (checked: the set-up messages carry `.local` names only). Set up through the room's own
+  Firebase messages (topic `zsig`, which older copies ignore); the player with the smaller id offers; 12 s to connect, then
+  another try after two minutes. School Wi-Fi often keeps devices apart, and then it just falls back.
+- **The Sydney relay:** Supabase Realtime broadcast (protocol 2.0.0) on its own WebSocket, no library: `RELAY` at the top of
+  `rooms.js`. **Off until the owner makes the project** (a separate free Supabase project in Sydney, only for game rooms,
+  so game traffic can't touch the site's database quotas: free is 100 messages a second and 2 million a month; if it's
+  over, its connections drop and games fall back to Firebase). Then: its URL and anon/publishable key go in `RELAY`, and
+  `wss://<ref>.supabase.co` goes in the CSP's connect-src (`vercel.json`).
+- Each player's abilities go in their presence as `_v` (2) and `_r` (relay up); `peers()` and `onPeers` strip them.
+  `room.paths()` says how messages to each player go now (direct, relay, firebase).
+- Tested in two headless Chrome tabs with a stand-in Firebase shared between them (`.preview/fakefb.js`, never the real
+  one) and a stand-in relay (scratchpad `rtc/relay.mjs`): direct 0 ms, relay 1 ms, Firebase with a Singapore-like delay
+  123 ms; with a player on the old `rooms.js`, Firebase for everyone; with both fast paths, direct wins; every message once,
+  your own once; presence unchanged for the games. `hkmahjong.html` has its own copy of the room code (turn-based; not
+  changed). Next free stamp: `f` / v131.

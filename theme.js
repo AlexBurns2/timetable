@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261126d';
+const ASSET_V = '20261126e';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1693,6 +1693,8 @@ addEventListener('pagehide', () => {
    something people already know).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'multiplayer', date:'2026-11-26', title:'Multiplayer overhaul',
+    text:'Multiplayer games now support direct peer to peer connection on the same WiFi network, with a Sydney based fallback. This means that multiplayer games should be up to 100 times faster than previously.' },
   { id:'anticheat', date:'2026-11-25', title:'Anti-cheat update', by:'ryanfih',
     text:'Snake, 2048 and Tetris scores now get checked before they go on the leaderboard. Bots can race on the new TAS boards instead.' },
   { id:'themes6', date:'2026-11-22', title:'Vaporwave splits into Synthwave',
