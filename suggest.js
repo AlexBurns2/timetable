@@ -24,6 +24,8 @@ const CSS = `
   background:var(--panel,#fff);color:var(--text,#18181b);border:1px solid var(--line,#e5e5e8);border-radius:var(--radius,12px);
   box-shadow:0 10px 30px rgba(0,0,0,.14);max-height:min(320px,50vh);overflow:auto;min-width:220px}
 .sglist[hidden]{display:none}
+/* in the top layer (a popover, placed under the box by place()): above everything on the page, whatever it sits in */
+.sglist[popover]{inset:auto;margin:0;-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
 .sgitem{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:calc(var(--radius,12px) - 4px);cursor:pointer;
   font-size:0.9375rem;line-height:1.25}
 .sgitem .sgl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -76,25 +78,46 @@ function attach(input, opts){
   const id = 'sglist' + n;
   list.id = id; list.className = 'sglist'; list.setAttribute('role', 'listbox'); list.hidden = true;
   wrap.appendChild(list);
+  /* 26 November 2026 (the owner): the list showed under the timetable's own labels, and see-through in glass themes.
+     Now it opens in the browser's top layer (a popover: above everything, but still where it is, so themes still style
+     it) at the box's place, and gets a solid backing when the theme's panel colour is see-through (TT.solidBg). */
+  const pop = typeof list.showPopover === 'function';
+  if (pop) list.setAttribute('popover', 'manual');
+  const place = () => {
+    if (!pop || list.hidden) return;
+    const r = wrap.getBoundingClientRect(), w = Math.max(r.width, parseFloat(getComputedStyle(list).minWidth) || 220);
+    const left = Math.max(6, Math.min(r.left, innerWidth - w - 6)), top = r.bottom + 6;
+    Object.assign(list.style, { position:'fixed', left: left + 'px', top: top + 'px', right:'auto', width: w + 'px',
+      maxHeight: Math.max(120, Math.min(320, innerHeight - top - 10)) + 'px' });
+  };
+  const onMove = () => place();
+  const show = () => {
+    list.hidden = false;
+    if (pop && !list.matches(':popover-open')){ try { list.showPopover(); } catch (e) {}
+      addEventListener('scroll', onMove, true); addEventListener('resize', onMove); }
+    place();
+    if (window.TT && TT.solidBg) TT.solidBg(list);
+  };
   input.setAttribute('role', 'combobox');
   input.setAttribute('aria-autocomplete', 'list');
   input.setAttribute('aria-controls', id);
   input.setAttribute('aria-expanded', 'false');
 
   let items = [], active = -1, seq = 0, timer = null;
-  const close = () => { list.hidden = true; active = -1; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); };
+  const close = () => { list.hidden = true; active = -1; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant');
+    if (pop && list.matches(':popover-open')){ try { list.hidePopover(); } catch (e) {} removeEventListener('scroll', onMove, true); removeEventListener('resize', onMove); } };
   const hintOnly = () => items.length === 1 && items[0].hint;
   const paint = q => {
     if (!items.length){ close(); return; }
     if (hintOnly()){        /* a line of text, not a choice: "Searching…", "No one matches" */
       list.innerHTML = '<li class="sgempty" role="status">' + esc(items[0].hint) + '</li>';
-      list.hidden = false; input.setAttribute('aria-expanded', 'true'); input.removeAttribute('aria-activedescendant');
+      show(); input.setAttribute('aria-expanded', 'true'); input.removeAttribute('aria-activedescendant');
       return;
     }
     list.innerHTML = items.map((it, i) =>
       '<li class="sgitem" role="option" id="' + id + '-' + i + '" data-i="' + i + '" aria-selected="' + (i === active) + '">' +
       '<span class="sgl">' + mark(it.label, q) + '</span>' + (it.sub ? '<span class="sgs">' + esc(it.sub) + '</span>' : '') + '</li>').join('');
-    list.hidden = false;
+    show();
     input.setAttribute('aria-expanded', 'true');
     if (active >= 0) input.setAttribute('aria-activedescendant', id + '-' + active); else input.removeAttribute('aria-activedescendant');
     const a = list.querySelector('[aria-selected="true"]'); if (a) a.scrollIntoView({ block:'nearest' });

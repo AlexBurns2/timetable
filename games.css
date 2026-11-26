@@ -1368,6 +1368,10 @@ html[data-motion="reduced"] .qtdcaret{transition:none}
 .thn{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
 .thn em,.thall{font-style:normal;font-weight:400;color:var(--muted);font-size:0.78125rem}
 .thall{text-align:right}
+/* thumbs up and down: name, then the two counts */
+.threw:has(.thvote){grid-template-columns:22px minmax(0,1fr) auto}
+.thvote{font-size:0.8125rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.thvote b{color:var(--text)}
 .thflags{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:16px}
 .thflag{padding:10px 12px;border-radius:var(--radius);background:var(--panel-2);display:flex;flex-direction:column;gap:2px}
 .thflag b{font-family:var(--font-num);font-size:1.25rem}

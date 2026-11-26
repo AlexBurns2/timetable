@@ -213,6 +213,18 @@ async function writeBest(game, metric, period, email, name, score, dir) {
   }
 }
 
+/* thumbs up and down per theme, from everyone's synced settings (tt.themevotes: { theme: 1 | -1 }) */
+function themeVotes(rows) {
+  const out = {};
+  for (const r of rows || []) {
+    let v = r.votes; if (typeof v === "string") { try { v = JSON.parse(v); } catch { v = null; } }
+    if (!v || typeof v !== "object" || Array.isArray(v)) continue;
+    for (const [id, x] of Object.entries(v)) { if (!/^[a-z0-9-]{1,24}$/.test(id) || (x !== 1 && x !== -1)) continue;
+      const t = out[id] || (out[id] = { up: 0, down: 0 }); if (x === 1) t.up++; else t.down++; }
+  }
+  return out;
+}
+
 /* the ban list for the moderator page: each person by the name the site shows, newest ban first */
 async function bansOut() {
   const [list, names, tags] = await Promise.all([banList(), displayNames(), yearTags()]);
@@ -384,20 +396,24 @@ export default async function handler(req, res) {
     }
   }
 
-  /* the Theme finder's "Popular" strip: theme ids in order of how many people have them on (active in the
-     last 30 days first, then everyone), from synced settings. The order only: no counts, nobody's choice.
-     Read-only, worked out at most once an hour per warm instance. */
+  /* the Theme finder's top strip: theme ids in order of how many people have them on (active in the last 30 days first,
+     then everyone), and (26 November 2026) in order of thumbs: each person's thumbs up or down are in their synced
+     settings (tt.themevotes: { theme: 1 | -1 }). The orders only: no counts, nobody's choice (moderators see the counts,
+     ?themes=1). Read-only, worked out at most once an hour per warm instance. */
   if (req.method === "GET" && src.themepop) {
     if (!themePop.at || Date.now() - themePop.at > 3600e3) {
-      const { data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin"').limit(5000);
+      let { data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin", votes:data->"tt.themevotes"').limit(5000);
+      if (error) ({ data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin"').limit(5000));
       if (!error) {
         const since = Date.now() - 30 * 864e5, n = {};
         for (const r of rows || []) { const k = String(r.skin || "plain"); const t = n[k] || (n[k] = { a: 0, all: 0 }); t.all++; if (Date.parse(r.updated_at) > since) t.a++; }
-        themePop = { at: Date.now(), order: Object.entries(n).sort((x, y) => y[1].a - x[1].a || y[1].all - x[1].all).map(([k]) => k).filter(k => /^[a-z0-9-]{1,24}$/.test(k)) };
+        const ok = k => /^[a-z0-9-]{1,24}$/.test(k), v = themeVotes(rows);
+        themePop = { at: Date.now(), order: Object.entries(n).sort((x, y) => y[1].a - x[1].a || y[1].all - x[1].all).map(([k]) => k).filter(ok),
+          liked: Object.entries(v).sort((x, y) => (y[1].up - y[1].down) - (x[1].up - x[1].down) || y[1].up - x[1].up).map(([k]) => k).filter(ok) };
       } else console.warn("theme order:", error.message);
     }
     res.setHeader("Cache-Control", "private, max-age=600");
-    return res.status(200).json({ order: themePop.order || [] });
+    return res.status(200).json({ order: themePop.order || [], liked: themePop.liked || [] });
   }
 
   /* moderator-only: which themes people use, from their synced settings (prefs).
@@ -408,7 +424,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Only moderators can see this." });
     let rows, error;
     ({ data: rows, error } = await db.from("prefs")
-      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", iconstyle:data->>"tt.iconstyle", iconcolour:data->>"tt.iconcolour", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen"')
+      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", iconstyle:data->>"tt.iconstyle", iconcolour:data->>"tt.iconcolour", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen", votes:data->"tt.themevotes"')
       .limit(5000));
     if (error) {                                      // the keys couldn't be picked out: read the settings whole instead
       console.warn("themes (picked):", error.message);
@@ -416,7 +432,8 @@ export default async function handler(req, res) {
       if (error) return res.status(502).json({ error: "Couldn't read the settings." });
       rows = rows.map(r => { const d = r.data || {}, s = v => v == null ? null : String(v);
         return { updated_at: r.updated_at, skin: s(d["tt.skin"]), mode: s(d["tt.mode"]), glassanim: s(d["tt.glassanim"]), gameicons: s(d["tt.gameicons"]),
-                 tileicons: s(d["tt.tileicons"]), iconstyle: s(d["tt.iconstyle"]), iconcolour: s(d["tt.iconcolour"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]) }; });
+                 tileicons: s(d["tt.tileicons"]), iconstyle: s(d["tt.iconstyle"]), iconcolour: s(d["tt.iconcolour"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]),
+                 votes: d["tt.themevotes"] || null }; });
     }
     const since = Date.now() - 30 * 864e5, skins = {}, tally = (o, k, act) => { const t = o[k] || (o[k] = { all: 0, active: 0 }); t.all++; if (act) t.active++; };
     const flags = { dark: {}, glassAnim: {}, emoji: {}, accentIcons: {}, clouds: {}, zen: {} };
@@ -437,7 +454,8 @@ export default async function handler(req, res) {
     const f = k => flags[k].n || { all: 0, active: 0 };
     return res.status(200).json({ total: (rows || []).length, active,
       skins: Object.entries(skins).map(([id, c]) => ({ id, ...c })).sort((a, b) => b.active - a.active || b.all - a.all),
-      dark: f("dark"), glassAnim: f("glassAnim"), emoji: f("emoji"), accentIcons: f("accentIcons"), clouds: f("clouds"), zen: f("zen") });
+      dark: f("dark"), glassAnim: f("glassAnim"), emoji: f("emoji"), accentIcons: f("accentIcons"), clouds: f("clouds"), zen: f("zen"),
+      votes: themeVotes(rows) });                       // thumbs up and down per theme: moderators only
   }
 
   /* moderator-only: how far the site has spread, year by year: of the students in each year (with

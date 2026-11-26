@@ -1053,7 +1053,11 @@ const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=(Math.random()*(i
    viewer's name so the game confirms whose classes it is drawn from */
 async function loadGuessData(){
   const email = TT.myEmail();
-  const tt = await TT.apiGet({ email });
+  /* No timetable of your own (Year 12 once they've finished, or an account with no classes): the school's system says
+     "not found". Everything but "My classes" still works from the directory, so carry on without one (noTimetable). */
+  let tt, noTimetable = false;
+  try { tt = await TT.apiGet({ email }); }
+  catch (e){ if (!/no timetable was found/i.test(String(e && e.message))) throw e; tt = { timetable: [], profile: null }; noTimetable = true; }
   const viewer = personName({ Email: email }) || String(email).split('@')[0];
   const me = String(email).toLowerCase();
   const groups = (tt.profile && (tt.profile.groups || tt.profile.Groups)) || [];
@@ -1105,7 +1109,7 @@ async function loadGuessData(){
     if (s && t && !subjTeacher[s]) subjTeacher[s] = t;
   });
 
-  return { email:me, viewer, grade, classPool, rooms, subjTeacher, students:null, teachers:null };
+  return { email:me, viewer, grade, classPool, rooms, subjTeacher, students:null, teachers:null, noTimetable };
 }
 
 /* the directory doesn't name its year field consistently — pull a year number
@@ -1198,6 +1202,8 @@ BUILD.guesswho = host => {
   })();
 
   async function start(){
+    /* no timetable of your own: "My classes" can't be played, so start on your year */
+    if (gwData.noTimetable && diff === 'myclasses') diff = 'grade';
     box.innerHTML =
       '<div class="gwtop"><div class="gwdiffs" id="gwdiffs"></div>' +
       '<div class="gwyou">as <b>' + esc(gwData.viewer) + '</b></div></div>' +
@@ -1221,7 +1227,9 @@ BUILD.guesswho = host => {
     try { pool = await poolFor(diff); } catch(err){ body.innerHTML = '<p class="how">Could not load: '+esc(err.message)+'</p>'; return; }
     if (!alive) return;
     if (!pool || pool.length < 3){
-      body.innerHTML = '<p class="how">Not enough people in this pool to play. Try another difficulty, or open a timetable first.</p>';
+      body.innerHTML = '<p class="how">' + (diff === 'myclasses' && gwData.noTimetable
+        ? 'Your timetable isn’t available any more, so there are no classes to play with. Try My grade, Whole school or Teachers.'
+        : 'Not enough people in this pool to play. Try another difficulty, or open a timetable first.') + '</p>';
       return;
     }
     play(pool.slice());
@@ -2232,7 +2240,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126e';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126f';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -5372,7 +5380,16 @@ BUILD.admin = host => {
         '<span class="thname">' + esc(nameOf(s.id)) + '</span><span class="thbar"><i style="width:' + (s.active / max * 100) + '%"></i></span>' +
         '<span class="thn">' + s.active + '<em> · ' + pct(s.active, act) + '</em></span><span class="thall">' + s.all + ' in all</span></div>').join('') + '</div>' +
       '<div class="thflags">' + flag('Dark mode', d.dark || {}) + flag('Glass, animated', d.glassAnim || {}) + flag('Emoji icons, chosen', d.emoji || {}) +
-        flag('One-colour icons, chosen', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>';
+        flag('One-colour icons, chosen', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>' +
+      votesHtml(d.votes || {}, nameOf, swatch);
+  }
+  /* thumbs up and down per theme (from the Theme finder's preview; the counts are shown only here), most liked first */
+  function votesHtml(v, nameOf, swatch){
+    const rows = Object.entries(v).sort((a, b) => (b[1].up - b[1].down) - (a[1].up - a[1].down) || b[1].up - a[1].up);
+    return '<h4 class="admsub">Thumbs up and down</h4>' + (rows.length
+      ? '<div class="thlist">' + rows.map(([id, c]) => '<div class="threw"><span class="thsw" style="background:' + swatch(id) + '"></span>' +
+          '<span class="thname">' + esc(nameOf(id)) + '</span><span class="thvote"><b>' + c.up + '</b> up · <b>' + c.down + '</b> down</span></div>').join('') + '</div>'
+      : '<p class="how">Nobody has given a theme a thumbs up or down yet.</p>');
   }
   function renderHeld(){
     const list = (data && data.held) || [];
