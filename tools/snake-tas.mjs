@@ -1,4 +1,4 @@
-// node tools/snake-tas.mjs [--runs=10] [--salt=1]
+// node tools/snake-tas.mjs [--runs=10] [--salt=1] [--width=6]   (--width: beam search, slower but better)
 // Plays TAS Snake to a full board and keeps the fastest run in tools/tas-snake.txt.
 import * as E from '../tasengine.js';
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
@@ -141,13 +141,57 @@ function solve(o = {}) {
   return { s, plans, falls };
 }
 
+function adoptLoop(t, cyc) {
+  const nl = new Int32Array(A), bd = t.body;
+  for (let i = bd.length - 1; i > 0; i--) nl[bd[i]] = bd[i - 1];
+  for (let i = 0; i < cyc.length - 1; i++) nl[cyc[i]] = cyc[i + 1];
+  nl[cyc[cyc.length - 1]] = bd[bd.length - 1];
+  return nl;
+}
+function children(st, o, rnd) {
+  const out = [];
+  let s = st.s, guard = 0;
+  while (!out.length && guard++ < 4000) {
+    for (const p of paths(s, o.cands, rnd)) {
+      const t = new Sim(s); let ok = true;
+      for (const m of p) if (!t.move(m)) { ok = false; break; }
+      if (!ok) continue;
+      if (t.full) { out.push({ s: t, loop: st.loop }); continue; }
+      let cyc = null;
+      for (let k = 0; k < o.tries && !cyc; k++) cyc = closeLoop(t, o.budget, rnd);
+      if (cyc) out.push({ s: t, loop: adoptLoop(t, cyc) });
+    }
+    if (!out.length) { const t = new Sim(s); if (!t.move(st.loop[s.body[0]])) return out; s = t; if (s.full) out.push({ s, loop: st.loop }); }
+  }
+  return out;
+}
+// keeps the best `width` games after every fruit
+function beam(o) {
+  const rnd = E.rng(o.salt), ord = []; let x = 3;
+  for (let k = 0; k < N; k++) { const y = (8 + k) % N; for (let i = 0; i < N; i++) ord.push(at(x + i, y)); x = (x + N - 1) % N; }
+  const loop = new Int32Array(A); for (let i = 0; i < A; i++) loop[ord[i]] = ord[(i + 1) % A];
+  let states = [{ s: new Sim(), loop }];
+  while (!states[0].s.full) {
+    const kids = [], seen = new Set();
+    for (const st of states) for (const c of children(st, o, rnd)) {
+      const key = c.s.body.join(',') + '|' + c.s.fruit; if (seen.has(key)) continue; seen.add(key); kids.push(c);
+    }
+    if (!kids.length) return null;
+    kids.sort((a, b) => a.s.steps - b.s.steps);
+    states = kids.slice(0, o.width);
+    if (o.log && states[0].s.eaten % 25 === 0) console.log('  fruit ' + states[0].s.eaten + ', ' + states[0].s.steps + ' steps');
+  }
+  return { s: states[0].s };
+}
+
 const args = Object.fromEntries(process.argv.slice(2).map(a => a.replace(/^--/, '').split('=')).map(([k, v]) => [k, v === undefined ? true : Number(v)]));
 const out = new URL('./tas-snake.txt', import.meta.url);
 let best = existsSync(out) ? E.runTas('snake', readFileSync(out, 'utf8')) : null;
 best = best && best.ok ? best.frames : Infinity;
 const from = args.salt || 1, runs = args.runs || 1;
 for (let salt = from; salt < from + runs; salt++) {
-  const t0 = Date.now(), r = solve({ budget: 20000, tries: 3, cands: 6, look: 0.5, ...args, salt });
+  const o = { budget: 20000, tries: 3, cands: 6, look: 0.5, ...args, salt }, t0 = Date.now(), r = o.width > 1 ? beam(o) : solve(o);
+  if (!r) { console.log('seed ' + salt + ': failed'); continue; }
   const v = E.runTas('snake', r.s.movie), good = v.ok && v.score === 253;
   if (good && v.frames < best) {
     best = v.frames;
