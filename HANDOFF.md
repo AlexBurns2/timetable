@@ -5181,3 +5181,27 @@ The owner committed 8.202 as `voting`.
 - Tested against the in-memory database (33 checks, including that no full email reaches the page, a tag ending a sentence
   counts and an email address doesn't) and in the mock (tagging, picking a tag, Reply on a reply, notifications and jumping to
   one, long messages, first-time quiet start; desktop and phone). Next free stamp: `f` / v127.
+
+## 8.204 Years on posts; Years 7 to 9 see only the timetable games; staff (version `20261125f`, `CACHE_VERSION` v127)
+The owner committed 8.203 as `tags`. Asked to keep server time down: nothing here adds a request.
+- **Who you are** (`/api/leaderboard?settings=1`, already asked once a page and kept 10 minutes in the tab): now also `year`
+  (from your login's `yrNN` group, else the directory copy) and `staff` (a teacher/staff/executive/admin group, or a
+  `@det.nsw.edu.au` address; never a moderator unless they're staff). `theme.js` keeps them on the device (`msc.who`, for
+  whoever is signed in) as `TT.who()`, and marks `html[data-young]` (Years 7 to 9) and `html[data-staff]` before the page
+  draws. A tab's copy of the settings from before this has no `staff`, so it's fetched again.
+- **Years 7 to 9:** the Arcade and Multiplayer games aren't shown (`games.js` `gameHidden`, `YOUNG_HIDDEN`), nor reachable
+  by `?play=`, and the leaderboards show only Six Degrees, Odd One Out and Classroom (fewer board requests for them too).
+  Links to Mahjong club, Hong Kong Mahjong and TAS are hidden everywhere (`theme.css`), and those pages send them to Games.
+  A first visit on a device waits up to 2.5 s for the year so the arcade never flashes up. Nothing is refused on the server.
+- **Staff:** the forum is hidden (`theme.css`, Home), and `/api/forum` gives staff no posts and refuses their posting,
+  reactions and votes, before reading anything (the weekly poll is unaffected; moderators are exempt). Staff also get "A note
+  for staff" once (remembered in their settings, `tt.staffnote`): educational first and foremost, nothing more; everyone's
+  data hidden, nothing personal allowed, the forum not shown to staff; Years 7 to 9 see only the timetable games.
+- **Years on posts:** each post carries the poster's year (`yr`, from the directory copy), shown as a small number beside
+  their name. Caution: the leaderboards' year labels were switched off on 24 November because some years looked wrong
+  (`_names.js` `SHOW_YEARS`); the same years drive this, the year filters and now the Years 7 to 9 rule. If they look wrong,
+  `SHOW_YEARS_ON_POSTS` in `api/forum.js` turns the numbers off.
+- Tested: the in-memory database (13 checks: years, staff, a teacher gets no posts and can't post, react or vote, nothing
+  written, moderators unaffected) plus the earlier suites; the mock as a Year 8 student (games, a `?play=snake` link, Home's
+  Mahjong tile, mahjong.html), as a teacher (forum hidden, the note) and as Year 12 (everything, years on posts).
+  Next free stamp: `g` / v128.

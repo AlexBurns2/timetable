@@ -313,8 +313,13 @@ export default async function handler(req, res) {
   if (req.method === "GET" && src.settings) {
     /* isMod only decides whether pages show the way in to the moderator page;
        every moderator action is still checked here on the server */
+    /* your year (from your login, else the directory) and whether you're staff: Years 7 to 9 only see the timetable
+       games, and staff get a note about the site the first time (theme.js, games.js; the owner, 25 November 2026) */
+    const staff = (me.groups || []).some(g => /^(teacher|staff|executive|admin)/i.test(String(g))) || /@det\.nsw\.edu\.au$/i.test(me.email);
+    const year = staff ? null : Number(me.year || (await yearMap()).get(me.email)) || null;
     return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email),
-      bannedFrom: await bannedFrom(me.email) });          // only your own bans, never anyone else's
+      bannedFrom: await bannedFrom(me.email),             // only your own bans, never anyone else's
+      year, staff });
   }
   /* moderator-only: who is banned from which games (Bans on the moderator page), and changing it.
      A ban refuses that person's results for the game and leaves them off its boards; nothing is deleted. */

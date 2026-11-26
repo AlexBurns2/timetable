@@ -240,7 +240,7 @@ function fetchBoardsFull(){
   if (lbFullCache) return lbFullCache;
   const wk = tetrisWeek();
   const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
-  lbFullCache = Promise.all(LB_CAT.map(async cat => {
+  lbFullCache = Promise.all(lbCats().map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) }); return [cat.id, all(d.all && d.all.top, 'score', cat.fmt)]; }
       if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
@@ -372,7 +372,7 @@ function boardsSection(grid){
   if (!TT.myEmail || !TT.myEmail()) return;
   const sec = document.createElement('section'); sec.className = 'lbboards';
   sec.innerHTML = '<div class="gsec"><h2 class="cathd">Leaderboards</h2><button type="button" class="lbopen">View all</button></div>' +
-    '<div class="lbbgrid">' + LB_CAT.map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
+    '<div class="lbbgrid">' + lbCats().map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
       '<span class="lbbrows">' + LD('Loading…', '', { sm:true }) + '</span></button>').join('') + '</div>';
   grid.appendChild(sec);
   sec.querySelector('.lbopen').onclick = () => openLBSheet();
@@ -454,6 +454,9 @@ const LB_CAT = [
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
   { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
 ];
+/* Years 7 to 9 only see the timetable games' boards (the arcade ones are hidden for them, see youngNow) */
+const YOUNG_BOARDS = new Set(['chain', 'oddone', 'classroom']);
+const lbCats = () => youngNow() ? LB_CAT.filter(c => YOUNG_BOARDS.has(c.id)) : LB_CAT;
 let lbFocus = null;          // which board ?play=leaderboards opens on
 let lbSumCache = null;       // every board's top three, once per page (a new score clears it)
 const shortHMS = v => fmtHMS(v).replace(/^00:/, '');     // 01:23.4, not 00:01:23.4
@@ -461,7 +464,7 @@ function fetchLeaders(){
   if (lbSumCache) return lbSumCache;
   const wk = tetrisWeek();
   const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
-  lbSumCache = Promise.all(LB_CAT.map(async cat => {
+  lbSumCache = Promise.all(lbCats().map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) });
         return [cat.id, top3(d.all && d.all.top, 'score', cat.fmt)]; }
@@ -855,19 +858,25 @@ const RV = (() => {
    when there isn't the traffic for them: every page then shows the all-time
    board only, with no weekly / all-time toggle. Read once per page load, and
    if the read fails nothing changes from how the site behaved before. */
-let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false, canReview:false, bannedFrom:[] };
+/* year: yours (null for staff, or not known yet: then the copy theme.js keeps on this device, TT.who) */
+const whoNow = () => (window.TT && TT.who && TT.who()) || {};
+let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false, canReview:false, bannedFrom:[], year: whoNow().year || null };
 function siteSettings(){
   if (!sitePromise) sitePromise = TT.siteCfg()
     .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
                  siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
                              isMod: !!(d && d.isMod), canReview: !!(d && d.canReview),
-                             bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [] }; return siteCfg; })
+                             bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [], year: d && d.year || null }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
 }
-/* off the games page: hidden in code, or by a moderator (site settings) */
-function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id); }
+/* Years 7 to 9 (the owner, 25 November 2026): the arcade and multiplayer games aren't shown to them, only the timetable
+   games. Hidden, not explained: off the page, out of ?play= links, and their leaderboards too. */
+const youngNow = () => { const y = Number(siteCfg.year || whoNow().year); return y >= 7 && y <= 9; };
+const YOUNG_HIDDEN = new Set(['Arcade', 'Multiplayer']);
+/* off the games page: hidden in code, or by a moderator (site settings), or for Years 7 to 9 */
+function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id) || (youngNow() && YOUNG_HIDDEN.has(g.cat)); }
 /* this person's bans (only ever their own; "*" is every game). The games a ban covers are the ones whose results the
    server keeps (BAN_GAMES in api/_settings.js); Multiplayer Tetris and Snake, for one, have no boards to protect. */
 function gameBanned(id){ const b = siteCfg.bannedFrom || []; return b.includes(id) || (b.includes('*') && BAN_IDS.includes(id)); }
@@ -2189,7 +2198,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261125e';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261125f';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4793,7 +4802,8 @@ BUILD.react = host => {
 function lbBoard(box, focusId){
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
   const wk = tetrisWeek();
-  let cur = LB_CAT.find(c => c.id === focusId) || LB_CAT[0], period = 'all', data = null, seq = 0;
+  const cats = lbCats();
+  let cur = cats.find(c => c.id === focusId) || cats[0], period = 'all', data = null, seq = 0;
   box.innerHTML =
     '<div class="diffbar lbpick"></div>' +
     '<div class="glbhd"><h3 class="lbtitle"></h3>' + yearPickHTML() +
@@ -4802,7 +4812,7 @@ function lbBoard(box, focusId){
     '<div class="lbbody">' + LD() + '</div>';
   const q = sel => box.querySelector(sel);
   const pick = q('.lbpick');
-  LB_CAT.forEach(c => { const b = document.createElement('button');
+  cats.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
     b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
     pick.appendChild(b); });
@@ -10599,7 +10609,11 @@ BUILD.hkmj = host => {
   };
   /* wait for the site settings before following a ?play= link, so a hidden game stays hidden */
   if (play && TT.myEmail && TT.myEmail()) siteSettings().then(follow);
-  else if (play) follow(); else showGrid();
+  else if (play) follow();
+  /* signed in, and this device doesn't know your year yet (TT.who): wait for it (at most 2.5 s), so Years 7 to 9 never
+     see the arcade flash up and vanish */
+  else if (TT.myEmail && TT.myEmail() && TT.who && !TT.who()) Promise.race([siteSettings(), new Promise(r => setTimeout(r, 2500))]).then(showGrid);
+  else showGrid();
   /* a moderator may have shown or hidden a game: redraw once the settings arrive */
   if (!play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (!$('gamegrid').hidden) showGrid(); });
 }

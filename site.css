@@ -540,6 +540,8 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .factions{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
 .factions:empty{display:none}
 .factions .fhidevote,.factions .fhideclear{color:var(--muted);font-weight:500}
+/* the poster's year, beside their name */
+.fyr{padding:0 6px;border:1px solid var(--line);border-radius:999px;font-size:.6875rem;font-weight:700;line-height:1.55;color:var(--muted);font-variant-numeric:tabular-nums}
 /* Vote to hide (and a moderator's Clear the votes): bottom right, only while the pointer is on that post */
 .fcorner{display:inline-flex;gap:14px;margin-left:auto;opacity:0;transition:opacity .15s}
 .fcorner:empty{display:none}
