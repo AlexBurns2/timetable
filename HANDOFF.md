@@ -5318,3 +5318,9 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   (`tt.themevotes`); the hourly theme order adds `liked`. The strip's heading is now a choice: Popular, Most liked, New (New by
   each theme's date, `ADDED` in themes.html). Counts only on the moderator page (Themes, `votes`).
 - Next free stamp: `g` / v132.
+
+## 8.211 Merge with the time limit and bot boards (version `20261127a`, `CACHE_VERSION` v132)
+- origin/main brought the daily time limit for one person (`api/_usage.js`, kept as a hash) and the bot boards. They clashed
+  with this round only on version stamps (`20261126f` / v131 here, `20261126e` / v130 there). Everything now carries
+  `20261127a` / v132; pushed as `bea6e35`.
+- Next free stamp: `20261127b` / v133.
