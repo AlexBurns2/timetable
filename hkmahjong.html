@@ -892,6 +892,120 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .homefoot{margin-top:18px}
 .hints,.hints .iconbtn{color:var(--muted)}
 .hints .iconbtn{border-color:var(--line)}
+.hints .iconbtn.betabtn{border-color:#c0418f;color:#c0418f;font-weight:700}
+
+/* ===== Beta table: a second look for the same game. Only the picture changes: it reads the
+   same view and sends the same actions, so beta and classic players share one table ===== */
+#bt{display:none}
+#game.bton .game{display:none}
+#game.bton #bt{display:block}
+.bt{position:relative;height:100%;overflow:hidden;container-type:size;user-select:none;-webkit-user-select:none;color:#f4efe2;font-family:var(--font-ui);
+  background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.28)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),#2c625e}
+.bt .tile{--w:4.4cqmin;border:0;border-radius:calc(var(--w)*.13);background:linear-gradient(175deg,#fffefa,#f1ede1);
+  box-shadow:0 calc(var(--w)*.05) 0 #d8d1bc,0 calc(var(--w)*.1) 0 #3c9e3a,0 calc(var(--w)*.16) calc(var(--w)*.16) rgba(0,0,0,.35)}
+.bt .tile svg{left:6%;top:5%;width:88%;height:90%}
+.bt .tile.claimed{transform:none;background:linear-gradient(175deg,#f9d3cd,#efb5ad)}
+.bt .tile.dim{filter:none;background:linear-gradient(160deg,#5cc44c,#2f9634)}.bt .tile.dim svg{display:none}
+.bt .tile.back{background:linear-gradient(160deg,#5cc44c,#2f9634);box-shadow:0 calc(var(--w)*.1) 0 #f3eedc,0 calc(var(--w)*.16) calc(var(--w)*.16) rgba(0,0,0,.35)}
+.bt .tile.hl{outline:none;animation:none}
+/* the wall: four rows of stacked green backs, turned on the table */
+.bt-wall{position:absolute;left:51%;top:44%;width:64cqmin;height:64cqmin;transform:translate(-50%,-50%) rotate(-13deg);pointer-events:none}
+.bt-side{position:absolute;left:0;bottom:0;width:calc(64cqmin - 4.3cqmin);height:4.3cqmin;display:flex;align-items:flex-end;gap:.12cqmin;transform-origin:32cqmin calc(4.3cqmin - 32cqmin)}
+.bt-side.s1{transform:rotate(-90deg)}.bt-side.s2{transform:rotate(-180deg)}.bt-side.s3{transform:rotate(-270deg)}
+.stk2{flex:1;height:3.35cqmin;border-radius:.45cqmin;background:linear-gradient(170deg,#62c94f,#34a03a 70%,#2b8a31);
+  box-shadow:inset 0 0 0 .1cqmin rgba(10,60,10,.45),0 .32cqmin 0 #f4f0de,0 .45cqmin 0 #2f8f33,0 .78cqmin 0 #f4f0de,0 .92cqmin 0 #1f6e25,0 1.1cqmin .6cqmin rgba(0,0,0,.35);transition:opacity .35s,transform .35s}
+.stk2.gone{opacity:0;transform:translateY(-1.2cqmin)}
+/* dice */
+.bt-dice{position:absolute;left:50%;top:44%;pointer-events:none;z-index:4}
+.bt-dice svg{position:absolute;width:4.6cqmin;height:4.6cqmin;left:var(--x);top:var(--y);transform:translate(-50%,-50%) rotate(var(--r));filter:drop-shadow(0 .4cqmin .4cqmin rgba(0,0,0,.4));animation:btroll 1.1s cubic-bezier(.2,.7,.3,1) both}
+@keyframes btroll{0%{transform:translate(calc(-50% - 26cqmin),calc(-50% + 18cqmin)) rotate(calc(var(--r) - 900deg)) scale(1.3);opacity:0}15%{opacity:1}70%{transform:translate(-50%,-50%) rotate(calc(var(--r) + 25deg)) scale(1)}100%{transform:translate(-50%,-50%) rotate(var(--r))}}
+.bt-dice.out svg{animation:btfade .3s forwards}
+@keyframes btfade{to{opacity:0}}
+/* discards, tossed in the middle */
+.bt-pool{position:absolute;left:51%;top:44%;width:0;height:0;z-index:2}
+.bt-pool .tile{--w:3.9cqmin;position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%) rotate(var(--r))}
+.bt-pool .tile.hl{--w:6.6cqmin;z-index:3}
+.bt-pool .tile.new{animation:btdrop .35s cubic-bezier(.2,.8,.3,1.2)}
+@keyframes btdrop{from{transform:translate(-50%,-50%) rotate(calc(var(--r) - 40deg)) scale(1.5);opacity:.2}}
+.bt-ring{position:absolute;left:var(--x);top:var(--y);width:10.6cqmin;height:10.6cqmin;margin:-5.3cqmin 0 0 -5.3cqmin;border-radius:50%;z-index:2;
+  border:.42cqmin solid #d7b13d;box-shadow:0 0 0 .22cqmin #5d4810,inset 0 0 0 .2cqmin #6d5715,0 .5cqmin 1cqmin rgba(0,0,0,.35);transform:rotate(var(--a))}
+.bt-ring::after{content:'';position:absolute;right:-1.5cqmin;top:50%;margin-top:-1cqmin;border:1cqmin solid transparent;border-left:1.2cqmin solid #d7b13d;border-right:0}
+/* other players' hidden tiles at the screen edges */
+.bt-opp{position:absolute;display:flex;gap:.15cqmin;pointer-events:none}
+.bt-opp i{display:block;border-radius:.4cqmin;background:linear-gradient(170deg,#62c94f,#2f9634);box-shadow:inset 0 0 0 .1cqmin rgba(10,60,10,.45)}
+.bt-opp.o2{top:0;left:50%;transform:translateX(-50%)}.bt-opp.o2 i{width:2.6cqmin;height:2.4cqmin;box-shadow:inset 0 0 0 .1cqmin rgba(10,60,10,.45),0 .45cqmin 0 #f3eedc}
+.bt-opp.o1,.bt-opp.o3{flex-direction:column;top:50%;transform:translateY(-50%)}.bt-opp.o1{right:0}.bt-opp.o3{left:0}
+.bt-opp.o1 i,.bt-opp.o3 i{width:1.5cqmin;height:2.5cqmin}
+.bt-opp.o1 i{box-shadow:inset 0 0 0 .1cqmin rgba(10,60,10,.45),-.4cqmin 0 0 #f3eedc}.bt-opp.o3 i{box-shadow:inset 0 0 0 .1cqmin rgba(10,60,10,.45),.4cqmin 0 0 #f3eedc}
+.bt-om{position:absolute;display:flex;gap:.8cqmin;z-index:1;pointer-events:none}.bt-om .meld,.bt-om .fl{display:flex;gap:.1cqmin}.bt-om .tile{--w:3.1cqmin}
+.bt-om.o2{top:.6cqmin;left:10cqmin}.bt-om.o1{right:3.6cqmin;top:17cqmin;flex-direction:column;align-items:flex-end}.bt-om.o3{left:3.6cqmin;bottom:calc(var(--tw)*1.7 + 3cqmin);flex-direction:column;align-items:flex-start}
+/* players: a framed portrait that speaks up when they discard or call */
+.bt-seat{position:absolute;z-index:6;display:flex;align-items:center;gap:1.4cqmin;pointer-events:none;animation:btpop .25s ease-out}
+.bt-seat.p1,.bt-seat.p0{flex-direction:row-reverse}
+.bt-seat.p0{right:2.5cqmin;bottom:calc(var(--tw)*1.45 + 2.5cqmin)}.bt-seat.p1{right:5cqmin;top:7cqmin}.bt-seat.p2{left:5cqmin;top:4cqmin}.bt-seat.p3{left:4cqmin;bottom:calc(var(--tw)*1.45 + 7cqmin)}
+.bt-por{display:flex;flex-direction:column;align-items:center;gap:.5cqmin;font-size:2cqmin;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.bt-frame{width:10cqmin;height:10cqmin;border-radius:1.2cqmin;padding:.45cqmin;background:linear-gradient(160deg,#a98a5c,#5a4128);box-shadow:inset 0 0 0 .2cqmin #2d2015,0 .5cqmin 1cqmin rgba(0,0,0,.4)}
+.bt-frame .av{width:100%;height:100%;border-radius:.8cqmin;border:0;box-shadow:none;font-size:5.4cqmin}
+.bt-say{position:relative;min-width:8cqmin;min-height:6.6cqmin;display:grid;place-items:center;padding:.8cqmin 2.2cqmin;border-radius:1.5cqmin;background:rgba(22,22,20,.9);
+  border:.32cqmin solid #c9a86a;box-shadow:0 .4cqmin 1cqmin rgba(0,0,0,.4);font:600 2.2cqmin/1.2 var(--font-ui);max-width:34cqmin;text-align:center}
+.bt-say .tile{--w:3.6cqmin}
+.bt-say::after{content:'';position:absolute;top:50%;margin-top:-1.1cqmin;border:1.1cqmin solid transparent}
+.p0 .bt-say::after,.p1 .bt-say::after{right:-2.2cqmin;border-left-color:#c9a86a}.p2 .bt-say::after,.p3 .bt-say::after{left:-2.2cqmin;border-right-color:#c9a86a}
+@keyframes btpop{from{opacity:0;transform:scale(.85)}}
+/* corner labels */
+.bt-id{position:absolute;right:6cqmin;top:3.4cqmin;text-align:right;font:500 1.7cqmin/1.35 var(--font-ui);color:rgba(255,255,255,.88);z-index:5;pointer-events:none}
+.bt-corner{position:absolute;left:.6cqmin;bottom:.6cqmin;display:flex;flex-direction:column;align-items:center;gap:.6cqmin;z-index:5}
+.bt-corner .tile{--w:3.2cqmin}
+.bt-corner .dice{display:flex;flex-direction:column;gap:.2cqmin}.bt-corner svg{width:2.6cqmin;height:2.6cqmin}
+.bt-menubtn{position:absolute;left:1.6cqmin;top:1.6cqmin;z-index:8;width:5.4cqmin;height:5.4cqmin;border:0;padding:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f06aa8,#b9246c);color:#fff;font-size:3cqmin;font-weight:800;
+  box-shadow:0 0 0 .3cqmin #7a1648,0 .5cqmin 1cqmin rgba(0,0,0,.4);display:grid;place-items:center}
+.bt-menubtn .badge{position:absolute;right:-.4cqmin;top:-.4cqmin;width:1.6cqmin;height:1.6cqmin;border-radius:50%;background:#ffd54a}
+.bt-menu{position:absolute;left:1.6cqmin;top:8.4cqmin;z-index:9;display:none;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:rgba(20,22,22,.94);border:2px solid #c9a86a;min-width:190px}
+.bt-menu.open{display:flex}
+.bt-menu button{background:rgba(255,255,255,.06);border:0;color:#f4efe2;text-align:left;padding:8px 12px;border-radius:8px;font:600 14px var(--font-ui)}
+.bt-menu button:hover{background:rgba(255,255,255,.14)}
+.bt-menu .rx{display:flex;gap:2px}.bt-menu .rx button{padding:6px;font-size:18px;text-align:center;flex:1}
+/* my rack */
+.bt-me{position:absolute;left:0;right:0;bottom:1.4cqmin;display:flex;justify-content:center;align-items:flex-end;gap:calc(var(--tw)*.35);z-index:4}
+.bt-me .tile{--w:var(--tw);box-shadow:0 calc(var(--w)*-.03) 0 #e9e3d0,calc(var(--w)*.05) calc(var(--w)*-.15) 0 #2f8f35,0 calc(var(--w)*-.15) 0 #4fbd46,0 calc(var(--w)*.1) calc(var(--w)*.2) rgba(0,0,0,.4)}
+.bt-me .hand{display:flex;gap:calc(var(--tw)*.03)}
+.bt-me .hand .tile{cursor:pointer;transition:transform .12s}
+.bt-me .hand.active .tile:hover{transform:translateY(calc(var(--tw)*-.18))}
+.bt-me .hand .tile.sel{transform:translateY(calc(var(--tw)*-.3))!important;box-shadow:0 calc(var(--w)*-.03) 0 #e9e3d0,calc(var(--w)*.05) calc(var(--w)*-.15) 0 #2f8f35,0 calc(var(--w)*-.15) 0 #4fbd46,0 0 0 .35cqmin #ffd54a}
+.bt-me .mymelds{display:flex;gap:calc(var(--tw)*.18)}.bt-me .meld{display:flex;gap:1px}.bt-me .meld .tile{--w:calc(var(--tw)*.8)}
+.bt-me .myfl{position:absolute;left:5cqmin;bottom:calc(var(--tw)*1.5 + 1cqmin);display:flex;gap:2px}.bt-me .myfl .tile{--w:3.2cqmin}
+.bt-me .hand.active{filter:drop-shadow(0 0 1.2cqmin rgba(255,224,120,.35))}
+.bt-me .spec{position:absolute;bottom:calc(var(--tw)*1.5);font-weight:700}
+/* ribbons and the claim frame */
+.bt-claim{position:absolute;left:0;right:0;bottom:calc(var(--tw)*1.55 + 3cqmin);display:flex;justify-content:center;align-items:flex-end;gap:3cqmin;z-index:7;flex-wrap:wrap;padding:0 4cqmin}
+.bt-opt{position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;background:none;border:0;padding:0;color:inherit}
+.bt-opt .box{display:flex;gap:.3cqmin;padding:2.6cqmin 2.2cqmin 2cqmin;margin-top:-1.8cqmin;background:#161716;border-radius:.4cqmin;
+  box-shadow:0 0 0 .3cqmin #050505,0 0 0 .55cqmin #8c8371,0 0 0 .8cqmin #1a1a1a,inset 0 0 0 .5cqmin #262626,inset 0 0 0 .7cqmin #5f594c,0 1cqmin 2cqmin rgba(0,0,0,.5)}
+.bt-opt .box .tile{--w:5.6cqmin}
+.bt-opt:hover .box{box-shadow:0 0 0 .3cqmin #050505,0 0 0 .55cqmin #e0c06a,0 0 0 .8cqmin #1a1a1a,inset 0 0 0 .5cqmin #262626,inset 0 0 0 .7cqmin #5f594c,0 1cqmin 2cqmin rgba(0,0,0,.5)}
+.bt-rib{position:relative;z-index:1;display:inline-block;padding:.3cqmin;background:linear-gradient(#f3dc94,#a87f2c);clip-path:polygon(9% 0,91% 0,100% 50%,91% 100%,9% 100%,0 50%);cursor:pointer;border:0;color:inherit;font:inherit}
+.bt-rib span{display:block;padding:.6cqmin 3.4cqmin;min-width:12cqmin;text-align:center;background:linear-gradient(#c4579f,#8a2768 60%,#6d1c52);clip-path:polygon(9% 0,91% 0,100% 50%,91% 100%,9% 100%,0 50%);
+  font:700 3.1cqmin/1.15 Georgia,'Times New Roman',serif;color:#fbefd6;text-shadow:0 .2cqmin 0 #3b0c2a,0 0 .4cqmin #3b0c2a;white-space:nowrap}
+.bt-rib:hover span{filter:brightness(1.15)}
+.bt-rib .tile{--w:3cqmin;display:inline-block;vertical-align:middle;margin-left:.6cqmin}
+.bt-claim .skipcol{display:flex;flex-direction:column;align-items:center;gap:.6cqmin}
+.bt-claim .tm{font:700 1.8cqmin var(--font-ui);color:#f3e2b0;text-shadow:0 1px 2px #000}
+/* the start of a hand: every player and the table's rules */
+.bt-intro{position:absolute;inset:0;z-index:10;pointer-events:none;background:rgba(8,12,14,.8);opacity:0;transition:opacity .35s}
+.bt-intro.show{opacity:1}
+.bt-rules{position:absolute;left:50%;top:1.6cqmin;transform:translateX(-50%);display:flex;gap:.8cqmin}
+.bt-rules b{padding:.6cqmin 1.6cqmin;border-radius:2cqmin;background:linear-gradient(#7a4b2a,#4c2b16);border:.25cqmin solid #c9a86a;font:700 1.7cqmin var(--font-ui);color:#fbefd6;white-space:nowrap}
+.bt-rules b:first-child{background:linear-gradient(#c4579f,#6d1c52)}
+.bt-pcard{position:absolute;display:flex;align-items:center;gap:1.4cqmin}
+.bt-pcard .bt-por{font-size:2.1cqmin}
+.bt-pcard .sc{font:700 2.6cqmin var(--font-ui);color:#fff}
+.bt-pcard.p0{right:6cqmin;bottom:14cqmin;flex-direction:row-reverse}.bt-pcard.p1{right:6cqmin;top:9cqmin;flex-direction:row-reverse}.bt-pcard.p2{left:6cqmin;top:9cqmin}.bt-pcard.p3{left:6cqmin;bottom:14cqmin}
+.bt-pcard .dl{font:700 1.6cqmin var(--font-ui);color:#ffd54a}
+/* reactions over the seats */
+#bt .seatfloat{z-index:8}
+#bt .sf0{left:80%;top:68%}#bt .sf1{left:80%;top:24%}#bt .sf2{left:20%;top:24%}#bt .sf3{left:20%;top:68%}
+#bt .react{font-size:5cqmin}
+@media (prefers-reduced-motion:reduce){.bt *{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -2254,7 +2368,7 @@ function startBotGame(mode) {
   App.ctl = new HostCtl(S, seats, false);
   show('game'); App.ctl.after();
 }
-function resetGameUI() { App.chatOpen = false; App.unread = 0; const cw = $('#chatwin'); if (cw) cw.remove(); App.callSeen = 0; App.mode = 'normal'; App.gameDealIns = 0; App.dailyFaan = 0; App.tipKey = ''; App.freshKey = ''; App.meldCounts = null; App.lastHandView = null; App.finalDismissed = false; App.logs = []; App.lastLogId = 0; App.chat = []; App.resultShown = 0; App.view = null; App.priv = null; App.sel = -1; App.discardsSeen = -1; App.tab = 'table'; closeModal(); }
+function resetGameUI() { Beta.hand = null; Beta.menu = false; App.chatOpen = false; App.unread = 0; const cw = $('#chatwin'); if (cw) cw.remove(); App.callSeen = 0; App.mode = 'normal'; App.gameDealIns = 0; App.dailyFaan = 0; App.tipKey = ''; App.freshKey = ''; App.meldCounts = null; App.lastHandView = null; App.finalDismissed = false; App.logs = []; App.lastLogId = 0; App.chat = []; App.resultShown = 0; App.view = null; App.priv = null; App.sel = -1; App.discardsSeen = -1; App.tab = 'table'; closeModal(); }
 function stopController() { if (App.ctl) { App.ctl.stop(); App.ctl = null; } }
 
 // ---------- host controller (authoritative game) ----------
@@ -2358,7 +2472,18 @@ function buildGameSkeleton() {
      <div class="mine"><div class="actions" id="actions"></div><div class="rack" id="rack"></div><div class="hints" id="hints"></div></div>
    </div>
    <aside class="side"><div class="tabs" id="tabs"></div><div class="tabbody" id="tabbody"></div><div id="chatform"></div></aside>
+  </div>
+  <div class="bt" id="bt">
+   <div class="bt-wall">${[0, 1, 2, 3].map(i => `<div class="bt-side s${i}">${'<b class="stk2"></b>'.repeat(18)}</div>`).join('')}</div>
+   <div class="bt-pool" id="btpool"></div><div class="bt-dice" id="btdice"></div>
+   <div id="btopp"></div><div id="btseats"></div>
+   <div class="bt-id" id="btid"></div><div class="bt-corner" id="btcorner"></div>
+   <div class="bt-claim" id="btclaim"></div><div class="bt-me" id="btme"></div>
+   <button class="bt-menubtn" id="btmenubtn" data-act="btmenu" title="Menu">☰</button><div class="bt-menu" id="btmenu"></div>
+   <div class="bt-intro" id="btintro"></div>
   </div>`;
+  $('#game').classList.toggle('bton', Beta.on);
+  new ResizeObserver(() => { if (Beta.on) renderBeta(); }).observe($('#bt'));
   $('#game').addEventListener('click', onGameClick);
   new ResizeObserver(() => { fitPools(); fitRack(); }).observe($('#mjtable'));
   $('#game').addEventListener('mouseover', onGameHover);
@@ -2415,6 +2540,10 @@ function onGameClick(e) {
   const b = e.target.closest('[data-act]');
   if (b) {
     const a = b.dataset.act;
+    if (a !== 'btmenu' && Beta.menu) { Beta.menu = false; $('#btmenu').classList.remove('open'); }
+    if (a === 'beta') { setBeta(!Beta.on); return; }
+    if (a === 'btmenu') { Beta.menu = !Beta.menu; $('#btmenu').classList.toggle('open', Beta.menu); return; }
+    if (a === 'btplayers') { betaShowPlayers(); return; }
     if (a === 'discard') { const t = selectedTile(); if (t != null) doAction({ a: 'discard', t }); }
     else if (a === 'tsumo') doAction({ a: 'tsumo' });
     else if (a === 'ckong' || a === 'akong') doAction({ a, t: +b.dataset.t });
@@ -2566,6 +2695,165 @@ function renderActions() {
   }
   h += `<span class="reacts" aria-label="Reactions">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}" title="Send a reaction">${e}</button>`).join('')}${MULTIPLAYER ? `<button class="chatbtn ${App.chatOpen ? 'on' : ''}" data-act="chat" title="Open table chat">Chat<span class="badge" ${App.unread ? '' : 'hidden'}>${App.unread || ''}</span></button>` : ''}</span>`;
   el.innerHTML = `<div class="myplate">${seatPlateHTML(V, mySeatIdx())}</div>` + h; tickTimer();
+  if (Beta.on) renderBeta();
+}
+
+// ---------- the beta table ----------
+/* A second picture of the same game, on this device only: it reads App.view/App.priv like the
+   classic table and sends the same actions through doAction, so the other players never know. */
+const Beta = { on: store.get('betaTable', false), hand: null, pos: {}, ring: null, freshKey: '', freshUntil: 0, saidKey: '', say: [null, null, null, null], introUntil: 0, menu: false };
+const PIPS = { 1: [[10, 10]], 2: [[6, 6], [14, 14]], 3: [[5, 5], [10, 10], [15, 15]], 4: [[6, 6], [14, 6], [6, 14], [14, 14]], 5: [[5, 5], [15, 5], [10, 10], [5, 15], [15, 15]], 6: [[6, 5], [14, 5], [6, 10], [14, 10], [6, 15], [14, 15]] };
+function dieSVG(n) {
+  const col = n === 1 || n === 4 ? '#d0242b' : '#1d1d1d', r = n === 1 ? 2.8 : 1.7;
+  return `<svg viewBox="0 0 20 22"><rect x="0.5" y="2.5" width="19" height="19" rx="4" fill="#c9c2b0"/><rect x="0.5" y="0.5" width="19" height="19" rx="4" fill="#fffdf7" stroke="#d9d2c0" stroke-width=".6"/>${PIPS[n].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/>`).join('')}</svg>`;
+}
+function betaPortrait(V, s) { return `<div class="bt-por"><div class="bt-frame">${avatarHTML(seatAvatar(V, s), V.P[s].n)}</div><span>${esc(V.P[s].n)}</span></div>`; }
+function betaSpeak(seat, html, ms) {
+  if (!App.view || seat < 0) return;
+  const p = posOf(seat), until = Date.now() + (ms || 3000);
+  Beta.say[p] = { html, until };
+  setTimeout(() => { if (Beta.on && App.screen === 'game') renderBeta(); }, (ms || 3000) + 30);
+  if (Beta.on) renderBeta();
+}
+function setBeta(on) {
+  Beta.on = !!on; store.set('betaTable', Beta.on); Beta.menu = false;
+  const g = $('#game'); if (g) g.classList.toggle('bton', Beta.on);
+  if (App.view && App.screen === 'game') renderGame();
+}
+/* where each discard lands: picked once, a little apart from the others, and kept for the hand */
+function betaSpot(V, s, i) {
+  const k = s + ':' + i; if (Beta.pos[k]) return Beta.pos[k];
+  const r = mulberry32(V.hn * 7919 + s * 131 + i * 17 + 1), taken = Object.values(Beta.pos);
+  let best = null;
+  for (let c = 0; c < 14; c++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 23, x = Math.cos(a) * d * 1.08, y = Math.sin(a) * d;
+    const near = taken.reduce((m, q) => Math.min(m, Math.hypot(q.x - x, q.y - y)), 99), sc = Math.min(near, 7.5) - d * .03;
+    if (!best || sc > best.sc) best = { x, y, sc };
+  }
+  return (Beta.pos[k] = { x: best.x, y: best.y, r: (r() - .5) * 70 });
+}
+function betaIntro(V) {
+  const dice = [1, 2, 3].map(j => 1 + Math.floor(mulberry32(V.hn * 31 + j * 977 + V.dl)() * 6));
+  const dEl = $('#btdice'), iEl = $('#btintro');
+  dEl.className = 'bt-dice';
+  dEl.innerHTML = dice.map((n, j) => dieSVG(n).replace('<svg', `<svg style="--x:${[-4, 3.5, -1][j]}cqmin;--y:${[-1, -3.2, 3.6][j]}cqmin;--r:${[-18, 24, 8][j]}deg;animation-delay:${j * 60}ms"`)).join('');
+  const S = V.S, spicy = S.spicy === 'full' ? 'Full spicy' : 'Half spicy';
+  iEl.innerHTML = `<div class="bt-rules"><b>Hong Kong</b><b>${WIND_EN[V.pw]} round</b><b>Hand ${V.hn}</b><b>Min ${S.minFaan} faan</b><b>Max ${S.maxFaan} faan</b><b>${spicy}</b></div>` +
+    [0, 1, 2, 3].map(s => `<div class="bt-pcard p${posOf(s)}">${betaPortrait(V, s)}<div><div class="sc">${V.P[s].sc >= 0 ? '+' : ''}${fmt(V.P[s].sc)}</div><div class="dl">${WIND_EN[(s - V.dl + 4) % 4]}${s === V.dl ? ' · dealer' : ''}</div></div></div>`).join('');
+  Beta.introUntil = Date.now() + 3400;
+  clearTimeout(Beta.t1); clearTimeout(Beta.t2); clearTimeout(Beta.t3);
+  iEl.classList.remove('show');
+  Beta.t1 = setTimeout(() => { dEl.classList.add('out'); iEl.classList.add('show'); }, 1500);
+  Beta.t2 = setTimeout(() => { iEl.classList.remove('show'); if (Beta.on) renderBeta(); }, 3400);
+  Beta.t3 = setTimeout(() => { dEl.innerHTML = ''; }, 1900);
+}
+function betaShowPlayers() {
+  const V = App.view; if (!V) return; Beta.menu = false; renderBeta();
+  const iEl = $('#btintro'); betaIntro(V); $('#btdice').innerHTML = '';
+  clearTimeout(Beta.t1); clearTimeout(Beta.t2); iEl.classList.add('show'); Beta.introUntil = 0;
+  Beta.t2 = setTimeout(() => iEl.classList.remove('show'), 2600);
+}
+function renderBeta() {
+  const V = App.view, bt = $('#bt'); if (!V || !bt || App.screen !== 'game') return;
+  const pv = App.priv, now = Date.now();
+  /* a new hand: fresh spots for the discards, and the dice and players once it starts */
+  if (Beta.hand !== V.hn) {
+    const fresh = Beta.hand !== null || V.P.every(P => !P.d.length);
+    Beta.hand = V.hn; Beta.pos = {}; Beta.ring = null; Beta.say = [null, null, null, null];
+    if (fresh && V.ph !== 'over') betaIntro(V);
+  }
+  /* size of my tiles: the whole rack on one row */
+  const W = bt.clientWidth, H = bt.clientHeight, me = mySeatIdx(), MP = V.P[me];
+  const { hand, drawn } = myHandList();
+  const meldN = MP.m.reduce((a, m) => a + (m[0] === 'k' ? 4 : 3), 0);
+  const units = (App.seat < 0 ? MP.hc : hand.length) + (drawn >= 0 ? 1.4 : 0) + meldN * .82 + MP.m.length * .2 + (MP.m.length ? .4 : 0);
+  const tw = Math.max(20, Math.min(W * .86 / Math.max(units, 13), H * .12, 96));
+  bt.style.setProperty('--tw', tw + 'px');
+  /* wall */
+  const stacks = now < Beta.introUntil ? 72 : Math.min(72, Math.ceil(V.wl / 2));
+  bt.querySelectorAll('.stk2').forEach((el, i) => el.classList.toggle('gone', i < 72 - stacks));
+  /* discards */
+  let pool = '', ringAt = null;
+  for (let s = 0; s < 4; s++) {
+    const d = dec(V.P[s].d);
+    d.forEach((t, i) => {
+      const sp = betaSpot(V, s, i), last = V.ls && V.ls[1] === s && i === d.length - 1 && V.ls[0] === t;
+      if (last) {
+        const fk = `${V.hn}:${s}:${d.length}`;
+        if (Beta.freshKey !== fk) { Beta.freshKey = fk; Beta.freshUntil = now + 380; }
+        ringAt = { x: sp.x, y: sp.y, a: [90, 0, -90, 180][posOf(s)] };
+      }
+      pool += tileHTML(t, last ? 'hl' + (now < Beta.freshUntil ? ' new' : '') : '', `style="--x:${sp.x}cqmin;--y:${sp.y}cqmin;--r:${sp.r}deg"`);
+    });
+  }
+  if (ringAt) Beta.ring = ringAt;
+  const ring = Beta.ring && V.ph !== 'over' ? `<div class="bt-ring" style="--x:${Beta.ring.x}cqmin;--y:${Beta.ring.y}cqmin;--a:${Beta.ring.a}deg"></div>` : '';
+  $('#btpool').innerHTML = ring + pool;
+  /* each discard: the player says which tile, in a bubble by their portrait */
+  if (V.ls) {
+    const key = `${V.hn}:${V.ls[1]}:${V.P[V.ls[1]].d.length}`;
+    if (Beta.saidKey !== key && V.P[V.ls[1]].d.length) { Beta.saidKey = key; Beta.say[posOf(V.ls[1])] = { html: tileHTML(V.ls[0]), until: now + 3000 }; setTimeout(() => { if (Beta.on) renderBeta(); }, 3030); }
+  }
+  /* other players: hidden tiles at the edges, melds and flowers face up beside them */
+  let opp = '';
+  for (let s = 0; s < 4; s++) {
+    const p = posOf(s); if (p === 0) continue;
+    const P = V.P[s], peek = App.mode === 'practice' && App.role === 'local' && App.ctl;
+    opp += peek ? `<div class="bt-opp o${p}" style="gap:1px">${App.ctl.g.h.hands[s].map(t => tileHTML(t, '', 'style="--w:2.8cqmin"')).join('')}</div>` : `<div class="bt-opp o${p}">${'<i></i>'.repeat(P.hc)}</div>`;
+    const fl = dec(P.f);
+    opp += `<div class="bt-om o${p}">${P.m.map(m => meldHTML(m, true)).join('')}${fl.length ? `<div class="fl">${fl.map(t => tileHTML(t)).join('')}</div>` : ''}</div>`;
+  }
+  $('#btopp').innerHTML = opp;
+  /* portraits that are speaking */
+  let seats = '';
+  for (let s = 0; s < 4; s++) {
+    const p = posOf(s), sy = Beta.say[p];
+    if (sy && sy.until > now) seats += `<div class="bt-seat p${p}">${betaPortrait(V, s)}<div class="bt-say">${sy.html}</div></div>`;
+  }
+  $('#btseats').innerHTML = seats;
+  /* top right: the table and whose turn */
+  const online = App.role === 'host' || App.role === 'client';
+  const code = online && App.lobby && App.lobby.code ? 'ROOM ' + esc(App.lobby.code) : (App.mode === 'daily' ? 'DAILY ' + dailyKey() : 'PRACTICE TABLE');
+  const status = V.ov ? 'Game over' : V.ph === 'over' ? 'Hand finished' : V.ph === 'claim' ? 'Deciding on the discard' : V.tn === App.seat ? 'Your turn' : 'Waiting for ' + esc(nameOf(V.tn));
+  $('#btid').innerHTML = `${code}<br>${WIND_EN[V.pw].toUpperCase()} ROUND · HAND ${V.hn} · ${V.wl} LEFT<br>${status}${App.deadline ? ' · <span id="bttime"></span>' : ''}`;
+  /* bottom left: my seat wind, and the dice */
+  const sw = (me - V.dl + 4) % 4;
+  $('#btcorner').innerHTML = `<div class="dice">${dieSVG(1)}${dieSVG(4)}${dieSVG(5)}</div>${tileHTML(27 + sw)}`;
+  /* my rack */
+  const myTurn = pv && pv.my && V.ph === 'discard';
+  const myfl = dec(MP.f);
+  let rack = (myfl.length ? `<div class="myfl">${myfl.map(t => tileHTML(t)).join('')}</div>` : '') + (MP.m.length ? `<div class="mymelds">${MP.m.map(m => meldHTML(m, false)).join('')}</div>` : '');
+  if (App.seat < 0) rack += `<div class="hand">${new Array(MP.hc).fill(backHTML()).join('')}</div><span class="spec">Spectating</span>`;
+  else rack += `<div class="hand ${myTurn ? 'active' : ''}">${hand.map((t, i) => tileHTML(t, App.sel === i ? 'sel' : '', `data-i="${i}"`)).join('')}</div>` +
+    (drawn >= 0 ? `<div class="hand drawn ${myTurn ? 'active' : ''}">${tileHTML(drawn, App.sel === hand.length ? 'sel' : '', `data-i="${hand.length}"`)}</div>` : '');
+  $('#btme').innerHTML = rack;
+  /* choices: a framed set with a ribbon for each claim, and Skip */
+  const rib = (label, attrs) => `<button class="bt-rib" ${attrs}><span>${label}</span></button>`;
+  const opt = (label, tiles, claimedAt, attrs) => `<button class="bt-opt" ${attrs}><span class="bt-rib"><span>${label}</span></span><div class="box">${tiles.map((t, i) => tileHTML(t, i === claimedAt ? 'claimed' : '')).join('')}</div></button>`;
+  const tm = App.deadline ? '<span class="tm" id="bttime2"></span>' : '';
+  let cl = '';
+  if (V.ov) cl = rib('Final scores', 'data-act="showres"');
+  else if (V.ph === 'over') cl = rib('Result', 'data-act="showres"') + (App.role !== 'client' ? rib(V.rs && V.rs.fin ? 'Final scores' : 'Next hand', 'data-act="next"') : '');
+  else if (pv && pv.co) {
+    const t = V.cw[0];
+    if (pv.co.win) cl += opt(`Win · ${pv.co.win} faan`, [t], 0, 'data-act="claim" data-c="win"');
+    if (pv.co.kong) cl += opt('Kong', [t, t, t, t], 3, 'data-act="claim" data-c="kong"');
+    if (pv.co.pung) cl += opt('Pung', [t, t, t], 2, 'data-act="claim" data-c="pung"');
+    if (pv.co.chow) for (const st of pv.co.chow) cl += opt('Chow', [st, st + 1, st + 2], t - st, `data-act="claim" data-c="chow" data-s="${st}"`);
+    cl += `<div class="skipcol">${rib('Skip', 'data-act="claim" data-c="pass"')}${tm}</div>`;
+  } else if (myTurn) {
+    if (pv.ts) cl += rib(`Win · ${pv.ts} faan`, 'data-act="tsumo"');
+    for (const k of pv.kg || []) cl += opt(k.a === 'ckong' ? 'Kong' : 'Add kong', k.a === 'ckong' ? [k.t, k.t, k.t, k.t] : [k.t], -1, `data-act="${k.a}" data-t="${k.t}"`);
+  }
+  $('#btclaim').innerHTML = cl;
+  /* menu */
+  const m = $('#btmenu');
+  m.classList.toggle('open', Beta.menu);
+  m.innerHTML = `<button data-act="btplayers">Players & scores</button>${MULTIPLAYER ? `<button data-act="chat">Chat${App.unread ? ` (${App.unread})` : ''}</button>` : ''}<button data-act="settings">Settings</button><button data-act="rules">Rules</button><button data-act="replay">Replay hand</button>
+    <div class="rx">${REACTIONS.slice(0, 6).map((e, i) => `<button data-act="rx" data-i="${i}">${e}</button>`).join('')}</div>
+    <button data-act="beta">Classic table</button><button data-act="leave">${App.leaveAt > Date.now() ? 'Are you sure?' : 'Leave game'}</button>`;
+  $('#btmenubtn').innerHTML = `☰${App.unread ? '<i class="badge"></i>' : ''}`;
+  tickTimer();
 }
 function myCtx(V, s, extra) {
   return Object.assign({ settings: V.S, seatWind: (s - V.dl + 4) % 4, prevWind: V.pw, flowers: dec(V.P[s].f) }, extra);
@@ -2580,7 +2868,7 @@ function waitsFor(tiles, melds, V, s) {
 }
 function renderHints() {
   const el = $('#hints'), V = App.view; if (!V) return;
-  const toggle = `<button class="iconbtn" data-act="settings">Settings</button><button class="iconbtn" data-act="rules">Rules</button>`;
+  const toggle = `<button class="iconbtn" data-act="settings">Settings</button><button class="iconbtn" data-act="rules">Rules</button><button class="iconbtn betabtn" data-act="beta" title="Try the new table look. Only you see it">Beta</button>`;
   const leave = `<button class="iconbtn gleave" data-act="leave">${App.leaveAt > Date.now() ? 'Are you sure?' : 'Leave game'}</button>`;
   const tip = practiceTip();
   const tipHTML = tip ? `<span class="tipline">${esc(tip.text)}</span>` : '';
@@ -2608,6 +2896,7 @@ function tickTimer() {
   if (bar) bar.style.width = (100 * left / tot) + '%';
   if (tt) tt.textContent = Math.ceil(left / 1000) + 's';
   if (mt) mt.textContent = '⏱ ' + Math.ceil(left / 1000) + 's';
+  for (const id of ['#bttime', '#bttime2']) { const e = $(id); if (e) e.textContent = Math.ceil(left / 1000) + 's'; }
 }
 setInterval(tickTimer, 250);
 
@@ -2722,8 +3011,8 @@ function leaveGame() {
 function armLeave() {
   if ((App.view && App.view.ov) || App.leaveAt > Date.now()) return leaveGame();
   App.leaveAt = Date.now() + 3000;
-  renderHints();
-  setTimeout(() => { if (App.screen === 'game') renderHints(); }, 3000);
+  renderHints(); if (Beta.on) renderBeta();
+  setTimeout(() => { if (App.screen === 'game') { renderHints(); if (Beta.on) renderBeta(); } }, 3000);
 }
 
 // ---------- guide / scoring reference ----------
@@ -3395,13 +3684,14 @@ function celebrate(level) {
 // ---------- call pop-ups, reactions, chat bubbles over seats ----------
 const CALLS = { p: ['碰', 'Pung!'], k: ['槓', 'Kong!'], c: ['上', 'Chow!'], w: ['食糊', 'Mahjong!'], z: ['自摸', 'Self-drawn!'], r: ['搶槓', 'Robbed the kong!'] };
 function seatFloat(seat, html, cls, ms) {
-  const tb = $('#mjtable'); if (!tb || !App.view) return;
+  const tb = Beta.on ? $('#bt') : $('#mjtable'); if (!tb || !App.view) return;
   const el = document.createElement('div'); el.className = 'seatfloat sf' + posOf(seat) + ' ' + (cls || ''); el.innerHTML = html;
   tb.appendChild(el); setTimeout(() => el.remove(), ms || 1600);
 }
 function showCall(seat, code) {
   const c = CALLS[code]; if (!c) return;
   Sfx.call(code);
+  if (Beta.on) return betaSpeak(seat, c[1], 2200);
   seatFloat(seat, `<b>${c[0]}</b><span>${c[1].replace('!', '')}</span>`, 'callpop' + (code === 'w' || code === 'z' || code === 'r' ? ' big' : ''), 1700);
 }
 const REACTIONS = ['👍', '😂', '😱', '🔥', '👏', '😭', '🤔', '🙏'];
@@ -3414,7 +3704,7 @@ function sendReaction(i) {
 }
 function showReaction(seat, i) { if (REACTIONS[i] != null && seat >= 0) seatFloat(seat, REACTIONS[i], 'react', 2200); }
 function seatOfPeer(peer) { const L = App.lobby; return L ? L.seats.findIndex(x => x && x.p === peer) : -1; }
-function chatBubble(seat, text) { if (seat >= 0 && App.screen === 'game') seatFloat(seat, esc(text.length > 60 ? text.slice(0, 58) + '…' : text), 'bubble', 4200); }
+function chatBubble(seat, text) { if (seat >= 0 && App.screen === 'game' && Beta.on) betaSpeak(seat, esc(text.length > 60 ? text.slice(0, 58) + '…' : text), 4200); else if (seat >= 0 && App.screen === 'game') seatFloat(seat, esc(text.length > 60 ? text.slice(0, 58) + '…' : text), 'bubble', 4200); }
 
 // ---------- stats & achievements ----------
 const ACHIEVEMENTS = [
