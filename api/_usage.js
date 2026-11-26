@@ -3,10 +3,10 @@ import { createHash } from "node:crypto";
 import { db } from "./_supabase.js";
 
 const LIMITS = new Map([
-  ["0000000000000000000000000000000000000000000000000000000000000000", 10]       // minutes a day
+  ["975abf73778a2f88ab6db7e1acf2fb2ab35066ab3485ba1660fca60e4acc5e70", 10]       // minutes a day
 ]);
 const hash = email => createHash("sha256").update(String(email).trim().toLowerCase()).digest("hex");
-const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date());
+const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date(Date.now()));
 
 export const limitFor = email => LIMITS.get(hash(email)) || 0;
 
