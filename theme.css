@@ -430,6 +430,13 @@ html[data-motion="reduced"] .saulnote{animation:none}
 .mscnote .btn{margin-top:10px}
 @keyframes mscnote{from{opacity:0;transform:translateY(10px)}}
 html[data-motion="reduced"] .mscnote{animation:none}
+.staffnote .mscnoteb p+p{margin-top:8px}
+
+/* who sees what (theme.js markWho, the owner, 25 November 2026). Years 7 to 9: no links to the game pages they don't
+   see (games.js hides the games themselves; the pages send them back to Games). Staff: no student forum (the server
+   keeps it from them too). */
+html[data-young] a[href="mahjong.html"],html[data-young] a[href^="hkmahjong.html"],html[data-young] a[href="tas.html"],
+html[data-staff] #forum,html[data-staff] a[href="home.html?show=forum"]{display:none!important}
 
 /* Settings → Appearance: your theme and the way to the Theme finder (theme.js skinPicker, FINDER) */
 .field > .skins.skinnow{grid-template-columns:repeat(2,minmax(0,1fr))}

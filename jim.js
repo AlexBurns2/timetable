@@ -410,7 +410,7 @@ BUILD.jimall = host => {
     /* signed-out presses count towards the total too, so they get a row and the board adds up */
     el.innerHTML = rows.slice(0, 20).map((r, i) =>
       '<div class="tlbrow' + (r.name === myName ? ' me' : '') + '"><span class="rk">' + (medals[i] || (i + 1)) + '</span>' +
-      '<span class="nm">' + esc(r.name) + '</span><span class="tm">' + esc(r.score.toLocaleString()) + '</span></div>').join('') +
+      '<span class="nm">' + esc(r.name) + (window.banMark ? banMark(r) : '') + '</span><span class="tm">' + esc(r.score.toLocaleString()) + '</span></div>').join('') +
       (anonTotal ? '<div class="tlbrow jtanon"><span class="rk">·</span><span class="nm">Not signed in</span><span class="tm">' + anonTotal.toLocaleString() + '</span></div>' : '');
   }
 

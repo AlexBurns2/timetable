@@ -153,6 +153,14 @@ function voteOf(rows) {
 }
 const MSC = "~msc", MSC_NAME = "MSC Unofficial";    // a post made as the site: no trace of which moderator wrote it
 const isSite = email => String(email || "") === MSC;
+/* each poster's year beside their name (the owner, 25 November 2026), from the directory copy (rosterList), the same
+   year the "Only my year" filter and the leaderboards' year filters use. The leaderboards' own year labels were switched
+   off on 24 November because some years looked wrong (_names.js SHOW_YEARS): if these do too, set this to false. */
+const SHOW_YEARS_ON_POSTS = true;
+/* staff (as games.js and the settings decide): the forum is students' own, so it's hidden from staff, for the students'
+   privacy (the owner, 25 November 2026). Their forum requests are answered before any post is read. Moderators aren't
+   affected. The weekly poll isn't part of this. */
+const isStaff = me => (me.groups || []).some(g => /^(teacher|staff|executive|admin)/i.test(String(g))) || /@det\.nsw\.edu\.au$/i.test(String(me.email || ""));
 /* someone's tag: their school login name ("@alex.burns6", the owner's choice); MSC Unofficial's is "@msc" */
 const handleOf = email => isSite(email) ? "msc" : String(email || "").split("@")[0].toLowerCase();
 /* the tags in a post: @ then a login name (dots inside it, not at its end, so "@ava.one12." is ava.one12) */
@@ -283,6 +291,8 @@ export default async function handler(req, res) {
   })();
 
   if (req.method === "GET") {
+    /* staff: no posts (the page hides the forum); the poll still comes along for Home */
+    if (isStaff(me) && !isOwner) return res.status(200).json({ posts: [], staff: true, ...(pollAlong ? { poll: await pollAlong } : {}) });
     const scoped = await hasScope();
     const { data: all, error } = await db.from("forum_post")
       .select("id, email, body, parent, created_at" + (scoped ? ", scope, scope_name" : ""))
@@ -322,7 +332,7 @@ export default async function handler(req, res) {
        and a thread kept keeps all its replies, so no conversation is cut in half. */
     const onlyYear = req.query.only === "year" && !seeAll;
     if (!me.year) me.year = await yearOf(me);
-    const years = onlyYear && me.year || isOwner ? await yearsByEmail() : null;
+    const years = await yearsByEmail();          // the directory, cached (also gives each poster's year beside their name)
     if (onlyYear && me.year) {
       const mineYr = String(me.year);
       data = data.filter(r => r.parent || (r.scope && r.scope !== "all") || !years.has(String(r.email).toLowerCase()) || years.get(String(r.email).toLowerCase()) === mineYr);
@@ -360,6 +370,7 @@ export default async function handler(req, res) {
     const shape = r => ({
       id: r.id, name: isSite(r.email) ? MSC_NAME : withName(NAMES, r.email, nameFromEmail(r.email)), body: r.body, at: r.created_at,
       handle: handleOf(r.email),                    // for tagging them in a reply
+      yr: !SHOW_YEARS_ON_POSTS || isSite(r.email) ? undefined : Number(years.get(String(r.email).toLowerCase())) || undefined,   // their year, beside the name
 
       /* mine: yours. canDelete: yours, or anyone's for a moderator (the page
          shows a moderator's delete on other people's posts only on hover) */
@@ -409,6 +420,8 @@ export default async function handler(req, res) {
       if (!me.year) me.year = await yearOf(me);
       return pollPost(body, res, me, NAMES);
     }
+    /* everything below is the forum itself: students only */
+    if (isStaff(me) && !isOwner) return res.status(403).json({ error: "The forum is for students." });
 
     if (body.action === "react") {
       if (limited("react:" + me.email, 90, 60e3)) return slowDown(res);

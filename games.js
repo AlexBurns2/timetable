@@ -232,6 +232,9 @@ function gameCard(g, i){
   return c;
 }
 const studioGames = () => !REVISION_PAGE && ['studio','apple'].includes(document.documentElement.getAttribute('data-skin'));
+/* someone a moderator has banned from the game (moderator page → Bans): still on the board, with a "!" by the name (the owner,
+   26 November 2026). Global, so jim.js (Button Pushers) uses it too. */
+function banMark(r){ return r && r.banned ? '<span class="lbban" title="User banned from this game" aria-label="User banned from this game">!</span>' : ''; }
 /* which leaderboards (LB_CAT ids) each game's tile shows in Studio */
 const TILE_BOARDS = { chain:['chain'], oddone:['oddone'], classroom:['classroom'], snake:['snake'], g2048:['g2048'],
                       typing:['typing'], react:['react'], tetris:['tsprint', 'tsurv', 'tzen'] };
@@ -239,8 +242,8 @@ let lbFullCache = null;      // every board, every place, once per page
 function fetchBoardsFull(){
   if (lbFullCache) return lbFullCache;
   const wk = tetrisWeek();
-  const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
-  lbFullCache = Promise.all(LB_CAT.map(async cat => {
+  const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you, banned:!!r.banned })) });
+  lbFullCache = Promise.all(lbCats().map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) }); return [cat.id, all(d.all && d.all.top, 'score', cat.fmt)]; }
       if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
@@ -255,7 +258,7 @@ function fetchBoardsFull(){
 function fillTileBoards(grid){
   const boxes = [...grid.querySelectorAll('.stlb')]; if (!boxes.length) return;
   if (!TT.myEmail || !TT.myEmail()){ boxes.forEach(b => b.innerHTML = '<span class="lbbempty">Sign in to see the leaderboard</span>'); return; }
-  const row = (r, i, label) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (label || i + 1) + '</i><span class="w">' + esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>';
+  const row = (r, i, label) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (label || i + 1) + '</i><span class="w">' + esc(r.who) + banMark(r) + '</span><span class="v">' + esc(r.val) + '</span></span>';
   /* the top three, and your own place under them when you're further down */
   const list = L => { if (!L) return '<span class="lbbempty">Couldn’t load</span>'; if (!L.rows.length) return '<span class="lbbempty">No scores yet</span>';
     const me = L.rows.findIndex(r => r.you);
@@ -393,7 +396,7 @@ function boardsSection(grid){
   if (!TT.myEmail || !TT.myEmail()) return;
   const sec = document.createElement('section'); sec.className = 'lbboards';
   sec.innerHTML = '<div class="gsec"><h2 class="cathd">Leaderboards</h2><button type="button" class="lbopen">View all</button></div>' +
-    '<div class="lbbgrid">' + LB_CAT.map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
+    '<div class="lbbgrid">' + lbCats().map(c => '<button type="button" class="lbbcard" data-b="' + c.id + '"><span class="lbbt">' + esc(c.name) + '</span>' +
       '<span class="lbbrows">' + LD('Loading…', '', { sm:true }) + '</span></button>').join('') + '</div>';
   grid.appendChild(sec);
   sec.querySelector('.lbopen').onclick = () => openLBSheet();
@@ -403,7 +406,7 @@ function boardsSection(grid){
       const L = leaders[b.dataset.b], rows = b.querySelector('.lbbrows');
       if (!L){ rows.innerHTML = '<span class="lbbempty">Couldn’t load</span>'; return; }
       rows.innerHTML = L.rows.length ? L.rows.map((r, i) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (i + 1) + '</i><span class="w">' +
-          esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('')
+          esc(r.who) + banMark(r) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('')
         : '<span class="lbbempty">No scores yet</span>';
     });
   });
@@ -484,14 +487,17 @@ const LB_CAT = [
 LB_CAT.filter(c => c.tas).forEach(c => { const unit = { snake:'steps', g2048:'moves', tetris:'frames' }[c.tas];
   c.fmt = r => r ? r.score + ' in ' + r.frames + ' ' + unit + (r.lines != null ? ', ' + r.lines + ' lines' : '') : ''; });
 const tasRows = async cat => (await TT.api('/api/leaderboard', { params:{ tas:cat.tas, league:cat.league } }));
+/* Years 7 to 9 only see the timetable games' boards (the arcade ones are hidden for them, see youngNow) */
+const YOUNG_BOARDS = new Set(['chain', 'oddone', 'classroom']);
+const lbCats = () => youngNow() ? LB_CAT.filter(c => YOUNG_BOARDS.has(c.id)) : LB_CAT;
 let lbFocus = null;          // which board ?play=leaderboards opens on
 let lbSumCache = null;       // every board's top three, once per page (a new score clears it)
 const shortHMS = v => fmtHMS(v).replace(/^00:/, '');     // 01:23.4, not 00:01:23.4
 function fetchLeaders(){
   if (lbSumCache) return lbSumCache;
   const wk = tetrisWeek();
-  const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
-  lbSumCache = Promise.all(LB_CAT.map(async cat => {
+  const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you, banned:!!r.banned })) });
+  lbSumCache = Promise.all(lbCats().map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) });
         return [cat.id, top3(d.all && d.all.top, 'score', cat.fmt)]; }
@@ -887,19 +893,25 @@ const RV = (() => {
    when there isn't the traffic for them: every page then shows the all-time
    board only, with no weekly / all-time toggle. Read once per page load, and
    if the read fails nothing changes from how the site behaved before. */
-let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false, canReview:false, bannedFrom:[] };
+/* year: yours (null for staff, or not known yet: then the copy theme.js keeps on this device, TT.who) */
+const whoNow = () => (window.TT && TT.who && TT.who()) || {};
+let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false, canReview:false, bannedFrom:[], year: whoNow().year || null };
 function siteSettings(){
   if (!sitePromise) sitePromise = TT.siteCfg()
     .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
                  siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
                              isMod: !!(d && d.isMod), canReview: !!(d && d.canReview),
-                             bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [] }; return siteCfg; })
+                             bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [], year: d && d.year || null }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
 }
-/* off the games page: hidden in code, or by a moderator (site settings) */
-function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id); }
+/* Years 7 to 9 (the owner, 25 November 2026): the arcade and multiplayer games aren't shown to them, only the timetable
+   games. Hidden, not explained: off the page, out of ?play= links, and their leaderboards too. */
+const youngNow = () => { const y = Number(siteCfg.year || whoNow().year); return y >= 7 && y <= 9; };
+const YOUNG_HIDDEN = new Set(['Arcade', 'Multiplayer']);
+/* off the games page: hidden in code, or by a moderator (site settings), or for Years 7 to 9 */
+function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id) || (youngNow() && YOUNG_HIDDEN.has(g.cat)); }
 /* this person's bans (only ever their own; "*" is every game). The games a ban covers are the ones whose results the
    server keeps (BAN_GAMES in api/_settings.js); Multiplayer Tetris and Snake, for one, have no boards to protect. */
 function gameBanned(id){ const b = siteCfg.bannedFrom || []; return b.includes(id) || (b.includes('*') && BAN_IDS.includes(id)); }
@@ -998,7 +1010,7 @@ function paintLB(){
   const rows = b.top || [];
   if (!rows.length && b.meBest == null){ body.innerHTML = heldHTML(lbState.held) + '<p class="how">No scores yet. Be the first.</p>'; return; }
   let html = heldHTML(lbState.held) + rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-    '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
+    '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
   if (b.meRank && b.meRank > rows.length)
     html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(lb.fmt(b.meBest))+'</span></div>';
   body.innerHTML = html;
@@ -2221,7 +2233,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126a';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126e';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -2729,7 +2741,7 @@ BUILD.tetris = (host, o) => {
   function rowsHTML(d, fmt){
     const rows=(d && d.top)||[];
     let html=rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+fmt(r)+'</span></div>').join('');
+      '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+fmt(r)+'</span></div>').join('');
     if (d && d.meRank && d.meRank>rows.length)
       html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+fmt({time_ms:d.meBest})+'</span></div>';
     return html;
@@ -2757,7 +2769,7 @@ BUILD.tetris = (host, o) => {
     if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<p class="how">No scores yet. Set the first one.</p>'; return; }
     let html='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
       rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-        '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
+        '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
     if (d && d.meRank && d.meRank>rows.length)
       html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+(d.meCurrent||0)+'</span><span class="tm">'+(d.meBest||0)+'</span></div>';
     el.innerHTML=html;
@@ -4825,7 +4837,8 @@ BUILD.react = host => {
 function lbBoard(box, focusId){
   if (!TT.myEmail()){ box.innerHTML = '<p class="how">Sign in on the timetable to see the leaderboards.</p>'; return; }
   const wk = tetrisWeek();
-  let cur = LB_CAT.find(c => c.id === focusId) || LB_CAT[0], period = 'all', data = null, seq = 0;
+  const cats = lbCats();
+  let cur = cats.find(c => c.id === focusId) || cats[0], period = 'all', data = null, seq = 0;
   box.innerHTML =
     '<div class="diffbar lbpick"></div>' +
     '<div class="glbhd"><h3 class="lbtitle"></h3>' + yearPickHTML() +
@@ -4834,7 +4847,7 @@ function lbBoard(box, focusId){
     '<div class="lbbody">' + LD() + '</div>';
   const q = sel => box.querySelector(sel);
   const pick = q('.lbpick');
-  LB_CAT.forEach(c => { const b = document.createElement('button');
+  cats.forEach(c => { const b = document.createElement('button');
     b.type='button'; b.className='diffpill'; b.textContent=c.name; b.setAttribute('aria-pressed', c===cur);
     b.onclick = () => { cur=c; [...pick.children].forEach(x=>x.setAttribute('aria-pressed', x===b)); load(); };
     pick.appendChild(b); });
@@ -4888,7 +4901,7 @@ function lbBoard(box, focusId){
     const rows = b.top || [];
     if (!rows.length && b.meBest==null){ body.innerHTML='<p class="how">No scores yet, be the first.</p>'; return; }
     let html = rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(cur.fmt(r.score))+'</span></div>').join('');
+      '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+esc(cur.fmt(r.score))+'</span></div>').join('');
     if (b.meRank && b.meRank>rows.length)
       html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(cur.fmt(b.meBest))+'</span></div>';
     body.innerHTML = html;
@@ -5168,7 +5181,7 @@ BUILD.admin = host => {
     if (!rows.length){ body.innerHTML = '<p class="how">No scores on this board.</p>'; return; }
     body.innerHTML = rows.map((r,i) => { const v = cur.valOf(r);
       return '<div class="adminrow" data-email="'+esc(r.email||'')+'">' +
-        '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+' · '+esc(cur.fmt(v))+'</span>' +
+        '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+banMark(r)+' · '+esc(cur.fmt(v))+'</span>' +
         '<input class="sc" type="number" value="'+v+'" aria-label="value"'+(cur.unit?' title="'+cur.unit+'"':'')+'>' +
         '<button class="btn" type="button" data-act="save">Save</button>' +
         '<button class="del" type="button" data-act="del">Delete</button></div>'; }).join('');
@@ -5183,7 +5196,7 @@ BUILD.admin = host => {
     const d = data || {}, ids = d.games || [], bans = d.bans || [];
     const gname = id => id === '*' ? 'Every game' : ((GAMES.find(g => g.id === id) || {}).name || id);
     const mineOf = email => bans.find(b => b.email === String(email).trim().toLowerCase());
-    $('admnote').textContent = 'A banned person can’t save results in those games and is left off their boards. Nothing of theirs is deleted: lifting a ban brings it all back.';
+    $('admnote').textContent = 'A banned person can’t save new results in those games. They stay on the boards, with a “!” by their name, until you remove their scores.';
     const pill = id => '<button type="button" class="diffpill" data-g="' + id + '" aria-pressed="' + banForm.games.has(id) + '">' + esc(gname(id)) + '</button>';
     $('admbody').innerHTML =
       '<div class="banform">' +
@@ -10638,7 +10651,11 @@ BUILD.hkmj = host => {
   };
   /* wait for the site settings before following a ?play= link, so a hidden game stays hidden */
   if (play && TT.myEmail && TT.myEmail()) siteSettings().then(follow);
-  else if (play) follow(); else showGrid();
+  else if (play) follow();
+  /* signed in, and this device doesn't know your year yet (TT.who): wait for it (at most 2.5 s), so Years 7 to 9 never
+     see the arcade flash up and vanish */
+  else if (TT.myEmail && TT.myEmail() && TT.who && !TT.who()) Promise.race([siteSettings(), new Promise(r => setTimeout(r, 2500))]).then(showGrid);
+  else showGrid();
   /* a moderator may have shown or hidden a game: redraw once the settings arrive */
   if (!play && TT.myEmail && TT.myEmail()) siteSettings().then(() => { if (!$('gamegrid').hidden) showGrid(); });
 }

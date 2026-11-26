@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261126a';
+const ASSET_V = '20261126e';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1503,15 +1503,60 @@ function siteCfg(){
   const who = String(myEmail() || '').toLowerCase();
   try {
     const c = JSON.parse(sessionStorage.getItem(SITE_KEY) || 'null');
-    if (c && c.d && c.who === who && Date.now() - c.at < SITE_TTL && Date.now() >= c.at) return (siteP = Promise.resolve(c.d));
+    /* (a copy from before 25 November 2026 has no year/staff: fetched again) */
+    if (c && c.d && 'staff' in c.d && c.who === who && Date.now() - c.at < SITE_TTL && Date.now() >= c.at) return (siteP = Promise.resolve(c.d).then(d => (keepWho(who, d), d)));
   } catch {}
   siteP = api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
     try { if (d) sessionStorage.setItem(SITE_KEY, JSON.stringify({ who, at: Date.now(), d })); } catch {}
+    keepWho(who, d);
     return d;
   }, e => { siteP = null; throw e; });
   return siteP;
 }
 function forgetSite(){ siteP = null; try { sessionStorage.removeItem(SITE_KEY); } catch {} }
+/* Who you are, as far as the pages need to know at once (the owner, 25 November 2026): your year and whether you're staff,
+   from the settings above, kept on this device (msc.who, for whoever is signed in) so pages can decide before anything
+   loads. Years 7 to 9 don't see the arcade or multiplayer games (html[data-young], games.js); staff don't see the forum
+   (html[data-staff]; the server keeps it from them too) and get a note about the site once (staffNote). */
+const WHO_KEY = 'msc.who';
+function who(){
+  try { const w = JSON.parse(localStorage.getItem(WHO_KEY) || 'null'), me = String(myEmail() || '').toLowerCase();
+        return w && me && w.email === me ? w : null; } catch { return null; }
+}
+const youngYear = y => Number(y) >= 7 && Number(y) <= 9;
+function markWho(w){
+  const r = document.documentElement;
+  if (w && youngYear(w.year)) r.setAttribute('data-young', ''); else r.removeAttribute('data-young');
+  if (w && w.staff) r.setAttribute('data-staff', ''); else r.removeAttribute('data-staff');
+  /* the game pages of their own (Mahjong club, Hong Kong Mahjong, TAS runs) aren't for Years 7 to 9 */
+  if (w && youngYear(w.year) && /\/(mahjong|hkmahjong|tas)(\.html)?$/i.test(location.pathname)) location.replace('games.html');
+}
+function keepWho(email, d){
+  if (!email || !d || !('staff' in d)) return;
+  const w = { email, year: d.year || null, staff: !!d.staff };
+  try { localStorage.setItem(WHO_KEY, JSON.stringify(w)); } catch {}
+  markWho(w);
+  staffNote(w);
+}
+/* (marked at once from this device's copy: just after myEmail, below) */
+/* staff, once (remembered in their settings): what the site is, and why some things are hidden */
+function staffNote(w){
+  if (!w || !w.staff || PREVIEW || get('tt.staffnote', false) || document.querySelector('.mscnote')) return;
+  setTimeout(() => {
+    if (get('tt.staffnote', false) || document.querySelector('.mscnote')) return;
+    const n = document.createElement('div');
+    n.className = 'mscnote staffnote'; n.setAttribute('role', 'alertdialog'); n.setAttribute('aria-labelledby', 'staffnoteh');
+    n.innerHTML = '<p class="mscnoteh" id="staffnoteh">A note for staff</p>' +
+      '<div class="mscnoteb"><p>This site is educational first and foremost, and it isn’t meant to be anything more.</p>' +
+      '<p><b>Privacy.</b> Everyone’s data is kept hidden, and nothing personal is allowed on the site. The student forum isn’t shown to staff, for the students’ privacy.</p>' +
+      '<p><b>Games.</b> Years 7 to 9 only see the timetable games. The arcade and multiplayer games are hidden for them.</p></div>' +
+      '<button type="button" class="btn primary">Got it</button>';
+    document.body.appendChild(n);
+    const b = n.querySelector('button');
+    b.onclick = () => { n.remove(); set('tt.staffnote', true); };
+    try { b.focus({ preventScroll:true }); } catch {}
+  }, 1500);
+}
 
 /* the loading indicator (styles in theme.css): what's loading, then "still
    loading" after 6 s and a plain note after 20 s. sm: a compact one. */
@@ -1528,6 +1573,7 @@ const myEmail = () => {
   const c = get('tt.creds', null);
   return get('tt.email', (c && c.email) || '');
 };
+markWho(who());          // Years 7 to 9 and staff, from this device's copy, before anything else loads (see who())
 
 /* ── settings sync (Phase 1) ───────────────────────────────────────────
    Mirror the tt.* bag to /api/prefs, keyed by school login, so settings
@@ -1647,6 +1693,8 @@ addEventListener('pagehide', () => {
    something people already know).
    To announce something: add a line at the top. */
 const NEWS = [
+  { id:'multiplayer', date:'2026-11-26', title:'Multiplayer overhaul',
+    text:'Multiplayer games now support direct peer to peer connection on the same WiFi network, with a Sydney based fallback. This means that multiplayer games should be up to 100 times faster than previously.' },
   { id:'anticheat', date:'2026-11-25', title:'Anti-cheat update', by:'ryanfih',
     text:'Snake, 2048 and Tetris scores now get checked before they go on the leaderboard. Bots can race on the new TAS boards instead.' },
   { id:'themes6', date:'2026-11-22', title:'Vaporwave splits into Synthwave',
@@ -1744,7 +1792,7 @@ function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read',
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsTag, newsSeen, tagKeys, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, siteCfg, forgetSite, edinburgh, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
+              apiGet, api, siteCfg, forgetSite, who, edinburgh, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
                  same as myEmail(), which is whose timetable you are looking at
                  and can be set without ever signing in. */

@@ -29,6 +29,8 @@ import { ticketOf, scoreFits, boardWeek } from "./_runs.js";
 import { inputSigns, vetSprint, paceSigns, botty } from "./_anticheat.js";
 import { holdScore, writeTetris } from "./_review.js";
 import { isBanned, bannedIn } from "./_settings.js";
+/* banned from Tetris (moderator page → Bans): still on the boards, marked so the page shows "!" by the name */
+const out = (me, r) => (me.banned && me.banned.has(String(r.email).toLowerCase())) || undefined;
 
 /* Year groups (as leaderboard.js): each board is your own year's unless you ask
    for another (?year=7…12) or everyone's (?year=all). Scores sent need a ticket
@@ -37,12 +39,11 @@ import { isBanned, bannedIn } from "./_settings.js";
 /* one board: the top (20, or 200 for a moderator), and your best and place on it */
 async function boardOf({ table, col, asc, narrow, extra }, me, adm) {
   const SCOPE = me.scope, YEARS = me.years || new Map();
-  /* people a moderator has banned from Tetris are left off (their rows stay; _settings.js) */
-  const OUT = me.banned && me.banned.size ? me.banned : null, ok = r => !OUT || !OUT.has(String(r.email).toLowerCase());
+  /* (a ban only stops new scores: banned people stay on the board until a moderator removes them) */
   const cols = "name, email, " + col + (extra ? ", " + extra : "");
   let q = db.from(table).select(cols); if (narrow) q = narrow(q);
-  const { data } = await q.order(col, { ascending: asc }).limit(SCOPE ? 5000 : (adm ? 200 : 20) + (OUT ? OUT.size : 0));
-  let rows = (data || []).filter(ok);
+  const { data } = await q.order(col, { ascending: asc }).limit(SCOPE ? 5000 : (adm ? 200 : 20));
+  let rows = data || [];
   if (SCOPE) rows = rows.filter(r => YEARS.get(r.email) === SCOPE);
   let mine = rows.find(r => r.email === me.email);
   if (!mine && !SCOPE) { let m = db.from(table).select(col + (extra ? ", " + extra : "")).eq("email", me.email); if (narrow) m = narrow(m);
@@ -52,9 +53,7 @@ async function boardOf({ table, col, asc, narrow, extra }, me, adm) {
   if (meBest != null) {
     if (SCOPE) meRank = 1 + rows.filter(r => asc ? r[col] < meBest : r[col] > meBest).length;
     else { let c = db.from(table).select("*", { count: "exact", head: true }); if (narrow) c = narrow(c);
-      const { count } = await (asc ? c.lt(col, meBest) : c.gt(col, meBest)); meRank = (count || 0) + 1;
-      if (OUT) { let b = db.from(table).select("email, " + col).in("email", [...OUT]); if (narrow) b = narrow(b);
-        const { data: bad } = await b; meRank -= (bad || []).filter(r => asc ? r[col] < meBest : r[col] > meBest).length; } }
+      const { count } = await (asc ? c.lt(col, meBest) : c.gt(col, meBest)); meRank = (count || 0) + 1; }
   }
   return { rows: rows.slice(0, adm ? 200 : 20), mine, meBest, meRank };
 }
@@ -76,24 +75,24 @@ const ZEN_MIN = 2000, ZEN_MAX = 7200000;         // 2s … 2h
 const yr = me => ({ year: me.scope || "all" });
 async function sprintBoard(me, week, adm) {
   const b = await boardOf({ table: "tetris_score", col: "time_ms", asc: true, narrow: q => q.eq("week", week) }, me, adm);
-  return { mode: "sprint", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
+  return { mode: "sprint", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined, banned: out(me, r) })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 async function zenBoard(me, adm) {
   const b = await boardOf({ table: "zen_score", col: "ms", asc: false }, me, adm);   // longer is better
-  return { mode: "zen", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
+  return { mode: "zen", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.ms, you: r.email === me.email, email: adm ? r.email : undefined, banned: out(me, r) })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 /* all-time fastest Sprint clears (separate table from the weekly tetris_score) */
 async function sprintAllBoard(me, adm) {
   const b = await boardOf({ table: "sprint_best", col: "time_ms", asc: true }, me, adm);
-  return { mode: "sprintall", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
+  return { mode: "sprintall", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), time_ms: r.time_ms, you: r.email === me.email, email: adm ? r.email : undefined, banned: out(me, r) })), meBest: b.meBest, meRank: b.meRank, canWipe: adm };
 }
 
 /* Zen scoreboard: each player's most recent score alongside their all-time best */
 async function zenScoreBoard(me, adm) {
   const b = await boardOf({ table: "zen_board", col: "best", asc: false, extra: "current" }, me, adm);
-  return { mode: "zenscore", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined })),
+  return { mode: "zenscore", ...yr(me), top: b.rows.map(r => ({ name: withYear(withName(NAMES, r.email, r.name), TAGS, r.email), current: r.current, best: r.best, you: r.email === me.email, email: adm ? r.email : undefined, banned: out(me, r) })),
     meBest: b.meBest, meCurrent: b.mine ? b.mine.current : null, meRank: b.meRank, canWipe: adm };
 }
 
@@ -197,7 +196,7 @@ export default async function handler(req, res) {
       return res.status(200).json(await boardFor(mode, me, wk, true));
     }
 
-    if (await isBanned(me.email, "tetris")) return res.status(403).json({ error: "A moderator has taken you off this game's boards.", banned: true });
+    if (await isBanned(me.email, "tetris")) return res.status(403).json({ error: "A moderator has stopped your scores counting in this game.", banned: true });
     /* a ticket from when the game started, and a score that fits the time since */
     const claim = mode === "zenscore" ? Math.round(Number(body && body.score)) : mode === "zen" ? Math.round(Number(body && body.ms)) : Math.round(Number(body && body.timeMs));
     const week = weekOf(body && body.week);

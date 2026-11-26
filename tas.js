@@ -1,4 +1,4 @@
-import * as E from "./tasengine.js?v=20261126c";
+import * as E from "./tasengine.js?v=20261126f";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -283,7 +283,7 @@ async function send() {
 }
 
 /* bots: the code runs in a worker of its own, on a seed from the server */
-const ENGINE = new URL("tasengine.js?v=20261126c", location.href).href;
+const ENGINE = new URL("tasengine.js?v=20261126f", location.href).href;
 const BOT_MS = 9 * 60e3;
 const showLines = () => { $("lines").textContent = E.codeLines($("code").value) + " lines"; };
 function workerSource(code) {
@@ -312,14 +312,16 @@ function workerSource(code) {
 };`;
 }
 async function runBot() {
-  if (worker) return;
+  if (worker || $("runbot").disabled) return;
   if (watch) stopWatch(false);
   const code = $("code").value;
   try { localStorage.setItem("tas.bot." + cat, code); } catch {}
   let tk = null;
   if (signedIn()) {
+    $("runbot").disabled = true;
     try { tk = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", op: "seed", cat, league: "bot" } }); }
     catch (e) { return say(e.message, "bad"); }
+    finally { $("runbot").disabled = false; }
   }
   const sd = tk ? tk.seed : crypto.getRandomValues(new Uint32Array(1))[0];
   const url = URL.createObjectURL(new Blob([workerSource(code)], { type: "text/javascript" }));

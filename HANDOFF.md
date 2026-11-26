@@ -5162,7 +5162,7 @@ player had a script pressing Button Pushers around the clock. Jim stays (people 
 The owner committed 8.200 and 8.201 as `banning`, then redesigned the votes to hide; 8.201's "Votes to hide" describes the new
 YES / NO vote. Every page is restamped `d` / v125. Next free stamp: `e` / v126.
 
-## 8.203 Forum: tags, notifications, folded replies, long messages (version `20261126a`, `CACHE_VERSION` v126)
+## 8.203 Forum: tags, notifications, folded replies, long messages (version `20261125e`, `CACHE_VERSION` v126)
 The owner committed 8.202 as `voting`.
 - **Tags** (the owner: "like instagram or discord"): a tag is `@` and someone's login name (`@alex.burns6`, the owner's
   example); MSC Unofficial's is `@msc`. Each post now carries its poster's `handle` (never the full email). Every post and
@@ -5181,3 +5181,85 @@ The owner committed 8.202 as `voting`.
 - Tested against the in-memory database (33 checks, including that no full email reaches the page, a tag ending a sentence
   counts and an email address doesn't) and in the mock (tagging, picking a tag, Reply on a reply, notifications and jumping to
   one, long messages, first-time quiet start; desktop and phone). Next free stamp: `f` / v127.
+
+## 8.204 Years on posts; Years 7 to 9 see only the timetable games; staff (version `20261125f`, `CACHE_VERSION` v127)
+The owner committed 8.203 as `tags`. Asked to keep server time down: nothing here adds a request.
+- **Who you are** (`/api/leaderboard?settings=1`, already asked once a page and kept 10 minutes in the tab): now also `year`
+  (from your login's `yrNN` group, else the directory copy) and `staff` (a teacher/staff/executive/admin group, or a
+  `@det.nsw.edu.au` address; never a moderator unless they're staff). `theme.js` keeps them on the device (`msc.who`, for
+  whoever is signed in) as `TT.who()`, and marks `html[data-young]` (Years 7 to 9) and `html[data-staff]` before the page
+  draws. A tab's copy of the settings from before this has no `staff`, so it's fetched again.
+- **Years 7 to 9:** the Arcade and Multiplayer games aren't shown (`games.js` `gameHidden`, `YOUNG_HIDDEN`), nor reachable
+  by `?play=`, and the leaderboards show only Six Degrees, Odd One Out and Classroom (fewer board requests for them too).
+  Links to Mahjong club, Hong Kong Mahjong and TAS are hidden everywhere (`theme.css`), and those pages send them to Games.
+  A first visit on a device waits up to 2.5 s for the year so the arcade never flashes up. Nothing is refused on the server.
+- **Staff:** the forum is hidden (`theme.css`, Home), and `/api/forum` gives staff no posts and refuses their posting,
+  reactions and votes, before reading anything (the weekly poll is unaffected; moderators are exempt). Staff also get "A note
+  for staff" once (remembered in their settings, `tt.staffnote`): educational first and foremost, nothing more; everyone's
+  data hidden, nothing personal allowed, the forum not shown to staff; Years 7 to 9 see only the timetable games.
+- **Years on posts:** each post carries the poster's year (`yr`, from the directory copy), shown as a small number beside
+  their name. Caution: the leaderboards' year labels were switched off on 24 November because some years looked wrong
+  (`_names.js` `SHOW_YEARS`); the same years drive this, the year filters and now the Years 7 to 9 rule. If they look wrong,
+  `SHOW_YEARS_ON_POSTS` in `api/forum.js` turns the numbers off.
+- Tested: the in-memory database (13 checks: years, staff, a teacher gets no posts and can't post, react or vote, nothing
+  written, moderators unaffected) plus the earlier suites; the mock as a Year 8 student (games, a `?play=snake` link, Home's
+  Mahjong tile, mahjong.html), as a teacher (forum hidden, the note) and as Year 12 (everything, years on posts).
+  Next free stamp: `g` / v128.
+
+## 8.205 Merge with origin (version `20261126c`, `CACHE_VERSION` v128)
+The owner committed 8.204 as `taecher` and pulled `origin/main` (13 commits: TAS random-seed mode and TAS boards on the
+leaderboards, Mahjong beta landscape on phones). Every conflict was a version stamp except two: `games.js`, where origin's
+TAS board formats (`tasRows`) and this side's Years 7 to 9 filter (`lbCats`) were added at the same place (both kept; the
+TAS boards go through `lbCats`, so Years 7 to 9 don't see them), and `tas.html`, which takes origin's stamped `tas.js` tag.
+Origin used `20261126a`/`b` and v127, as did this side's v127: everything is restamped `20261126c` / v128, above both.
+8.203's heading had been changed to `20261126a` on origin's side; it's back to `20261125e`, the stamp that round used.
+Checked: no conflict markers left, the scripts parse, one stamp everywhere. Staged, not committed. Next free stamp: `d` / v129.
+
+## 8.206 No weekly cap on suggestions (server only, no restamp)
+The owner removed the weekly cap on suggestions: poll questions ("Suggest next week's question") and ideas for the site were
+3 a week each (`api/_poll.js`). Now there's no cap, only a flood brake of 10 a minute each, counted in memory (`limited`),
+which also drops the database read each submission used to make. Name-change requests keep their own limit (2 a week,
+`_notice.js`). Tested against the in-memory database: 10 suggestions and 6 ideas in a row saved, the 11th in a minute slowed.
+
+## 8.207 Banned players stay on the boards, with a "!" (version `20261126d`, `CACHE_VERSION` v129)
+The owner: people banned from a game should stay on its leaderboards until they're removed, mainly for Button Pushers, with
+an exclamation mark by the name saying "User banned from this game" on hover.
+- A ban now only refuses new results (as before). The boards no longer leave banned players off: `/api/leaderboard`,
+  `/api/tetris` and Button Pushers' top list (`/api/jim?together=1`) mark their rows `banned: true` instead, from the ban
+  list read with the settings (cached, no extra database trip). Ranks are the plain ones again.
+- The pages draw `banMark()` (`games.js`, a red "!" with the hover text) on every board: the in-game panels, the Tetris
+  boards, the leaderboards sheet, the board cards, Studio's tile boards, the moderator's board editor, and Button Pushers
+  (`jim.js`). The Bans tab now says they stay on the boards until their scores are removed.
+- Removing someone: the moderator page's board editor deletes a score (game boards and Tetris). Button Pushers has no
+  remove button yet, so a banned presser stays on its top list (and in the shared count) until one is added.
+- The refusal message is now "A moderator has stopped your scores counting in this game."
+- Tested: the ban suite (29 checks: on the boards and marked, ranks unchanged, scores and presses still refused, no row
+  changed, no mark once lifted) plus the forum and year suites; the mock (Button Pushers' board, the leaderboards sheet and
+  cards). Next free stamp: `e` / v130.
+
+## 8.208 Faster multiplayer: direct on the same network, and a Sydney relay (version `20261126e`, `CACHE_VERSION` v130)
+The owner committed 8.207 as `boi`, and asked to cut multiplayer latency with direct connections and a relay in Sydney
+(Firebase's rooms are in Singapore: about 110 ms for a request from Sydney, so Snake's non-host players waited roughly
+0.25 to 0.3 s to see their own turn). `rooms.js` only; the games use it exactly as before.
+- **The way each message goes:** straight to players on the same network (a WebRTC data channel), else through the Sydney
+  relay when every other player has it, else Firebase for everyone, exactly as before. You hear your own message at once.
+  Firebase stays for who's in a room, joining, the public lobby lists, anyone on an older copy, and when you're alone (so
+  a player joining a moment later still hears it). Messages that came two ways are handed over once (an id on the fast
+  paths; Firebase entries keep their old shape, since its rules aren't in the repo, so a message never goes by Firebase and
+  a fast path both).
+- **Direct, same network only** (the owner's choice): no STUN server, and only a browser's anonymous `.local` names are ever
+  passed on, never an IP address (checked: the set-up messages carry `.local` names only). Set up through the room's own
+  Firebase messages (topic `zsig`, which older copies ignore); the player with the smaller id offers; 12 s to connect, then
+  another try after two minutes. School Wi-Fi often keeps devices apart, and then it just falls back.
+- **The Sydney relay:** Supabase Realtime broadcast (protocol 2.0.0) on its own WebSocket, no library: `RELAY` at the top of
+  `rooms.js`. **Off until the owner makes the project** (a separate free Supabase project in Sydney, only for game rooms,
+  so game traffic can't touch the site's database quotas: free is 100 messages a second and 2 million a month; if it's
+  over, its connections drop and games fall back to Firebase). Then: its URL and anon/publishable key go in `RELAY`, and
+  `wss://<ref>.supabase.co` goes in the CSP's connect-src (`vercel.json`).
+- Each player's abilities go in their presence as `_v` (2) and `_r` (relay up); `peers()` and `onPeers` strip them.
+  `room.paths()` says how messages to each player go now (direct, relay, firebase).
+- Tested in two headless Chrome tabs with a stand-in Firebase shared between them (`.preview/fakefb.js`, never the real
+  one) and a stand-in relay (scratchpad `rtc/relay.mjs`): direct 0 ms, relay 1 ms, Firebase with a Singapore-like delay
+  123 ms; with a player on the old `rooms.js`, Firebase for everyone; with both fast paths, direct wins; every message once,
+  your own once; presence unchanged for the games. `hkmahjong.html` has its own copy of the room code (turn-based; not
+  changed). Next free stamp: `f` / v131.

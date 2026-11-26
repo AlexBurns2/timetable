@@ -747,6 +747,9 @@ html[data-motion="reduced"] .rvtbar i,html[data-motion="reduced"] .rvmodrow .bar
 .setrow .nm{display:flex;flex-direction:column;gap:3px;white-space:normal;overflow:visible}
 .setrow em{font-style:normal;color:var(--muted);font-size:0.78125rem;line-height:1.45}
 .setrow .btn{flex:none;min-width:62px;justify-content:center}
+/* a banned player on a leaderboard: "!" by the name, "User banned from this game" on hover */
+.lbban{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:6px;border-radius:50%;
+  background:#e5484d;color:#fff;font-size:.625rem;font-weight:800;line-height:1;vertical-align:1px;cursor:help;flex:none}
 /* moderator page → Bans */
 .banform{display:flex;flex-direction:column;gap:10px;padding:12px;border:var(--card-border);border-radius:var(--radius);background:var(--panel-2)}
 .banform input{width:100%;max-width:420px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius);

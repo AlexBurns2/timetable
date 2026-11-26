@@ -58,7 +58,7 @@ export function boardScope(raw, me, years) {
   return mine ? String(mine) : null;
 }
 import { siteSettings, setSiteSetting, isBanned, bannedIn, bannedFrom, banList, setBans, BAN_GAMES } from "./_settings.js";
-const BANNED = { error: "A moderator has taken you off this game's boards.", banned: true };
+const BANNED = { error: "A moderator has stopped your scores counting in this game.", banned: true };
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s;
 function nameFromEmail(email) {
@@ -168,26 +168,26 @@ async function siteUsers() {
   return [...out.values()].sort((a, b) => String(b.last || "").localeCompare(String(a.last || "")));
 }
 
-/* banned: people a moderator has taken off this game (_settings.js), left off the board. Their rows stay. */
+/* A ban only stops new scores: banned people stay on the boards until a moderator removes their scores, marked
+   `banned` (the page puts a "!" by the name: "User banned from this game"). The owner, 26 November 2026. */
 async function board(game, metric, period, dir, meEmail, withEmail, year, years, banned) {
   const asc = dir === "min", [names, tags] = await Promise.all([displayNames(), yearTags()]);
-  const out = banned && banned.size ? banned : null, ok = r => !out || !out.has(String(r.email).toLowerCase());
+  const flag = (o, r) => { if (banned && banned.has(String(r.email).toLowerCase())) o.banned = true; return o; };
   /* one year's board: everyone's scores, filtered to that year, ranked here */
   if (year) {
     const { data } = await db.from("game_score")
       .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
       .order("score", { ascending: asc }).limit(5000);
-    const rows = (data || []).filter(r => years.get(r.email) === year && ok(r));
+    const rows = (data || []).filter(r => years.get(r.email) === year);
     const mine = rows.find(r => r.email === meEmail);
     const meBest = mine ? mine.score : null;
     const meRank = meBest == null ? null : 1 + rows.filter(r => asc ? r.score < meBest : r.score > meBest).length;
     return { year, top: rows.slice(0, withEmail ? 200 : 20).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
-      if (withEmail) o.email = r.email; return o; }), meBest, meRank };
+      if (withEmail) o.email = r.email; return flag(o, r); }), meBest, meRank };
   }
-  const want = withEmail ? 200 : 20;                                   // owner gets the full list to edit
   const { data: top } = await db.from("game_score")
     .select("name, score, email").eq("game", game).eq("metric", metric).eq("period", period)
-    .order("score", { ascending: asc }).limit(want + (out ? out.size : 0));
+    .order("score", { ascending: asc }).limit(withEmail ? 200 : 20);   // owner gets the full list to edit
   const { data: mine } = await db.from("game_score")
     .select("score").eq("game", game).eq("metric", metric).eq("period", period).eq("email", meEmail).maybeSingle();
   const meBest = mine ? mine.score : null;
@@ -198,15 +198,9 @@ async function board(game, metric, period, dir, meEmail, withEmail, year, years,
     q = asc ? q.lt("score", meBest) : q.gt("score", meBest);
     const { count } = await q;
     meRank = (count || 0) + 1;
-    /* banned people ahead of you don't count */
-    if (out) {
-      const { data: bad } = await db.from("game_score").select("email, score")
-        .eq("game", game).eq("metric", metric).eq("period", period).in("email", [...out]);
-      meRank -= (bad || []).filter(r => asc ? r.score < meBest : r.score > meBest).length;
-    }
   }
-  return { top: (top || []).filter(ok).slice(0, want).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
-    if (withEmail) o.email = r.email; return o; }), meBest, meRank };
+  return { top: (top || []).map(r => { const o = { name: withYear(withName(names, r.email, r.name), tags, r.email), score: r.score, you: r.email === meEmail };
+    if (withEmail) o.email = r.email; return flag(o, r); }), meBest, meRank };
 }
 
 async function writeBest(game, metric, period, email, name, score, dir) {
@@ -313,8 +307,13 @@ export default async function handler(req, res) {
   if (req.method === "GET" && src.settings) {
     /* isMod only decides whether pages show the way in to the moderator page;
        every moderator action is still checked here on the server */
+    /* your year (from your login, else the directory) and whether you're staff: Years 7 to 9 only see the timetable
+       games, and staff get a note about the site the first time (theme.js, games.js; the owner, 25 November 2026) */
+    const staff = (me.groups || []).some(g => /^(teacher|staff|executive|admin)/i.test(String(g))) || /@det\.nsw\.edu\.au$/i.test(me.email);
+    const year = staff ? null : Number(me.year || (await yearMap()).get(me.email)) || null;
     return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email),
-      bannedFrom: await bannedFrom(me.email) });          // only your own bans, never anyone else's
+      bannedFrom: await bannedFrom(me.email),             // only your own bans, never anyone else's
+      year, staff });
   }
   /* moderator-only: who is banned from which games (Bans on the moderator page), and changing it.
      A ban refuses that person's results for the game and leaves them off its boards; nothing is deleted. */
@@ -602,7 +601,7 @@ export default async function handler(req, res) {
   const years = await yearMap();
   /* a moderator's edit answers with everyone's board (the moderator page shows them all) */
   const scope = isOwner && ["wipe", "set", "delete"].includes(src.action) ? null : boardScope(src.year, me, years);
-  const banned = await bannedIn(game);
+  const banned = await bannedIn(game);                 // (read with the settings: no extra trip)
   return res.status(200).json({
     week: await board(game, metric, wperiod, dir, me.email, isOwner, scope, years, banned),
     all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years, banned),
