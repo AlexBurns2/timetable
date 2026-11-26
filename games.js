@@ -246,6 +246,7 @@ function fetchBoardsFull(){
       if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zen' }, lbYearParam()) }); return [cat.id, all(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zenscore' }, lbYearParam()) }); return [cat.id, all(d.top, 'best', cat.fmt)]; }
+      if (cat.tas){ const d = await tasRows(cat); return [cat.id, all((d.top || []).map(r => ({ name:r.name, you:r.you, row:r })), 'row', cat.fmt)]; }
     } catch (e){}
     return [cat.id, null];
   })).then(Object.fromEntries);
@@ -270,14 +271,34 @@ function fillTileBoards(grid){
    zoomed too, so set it, measure, and correct once. */
 function fitGames(){
   const w = document.querySelector('.wrap'); if (!w) return;
-  const on = ['studio','apple'].includes(document.documentElement.getAttribute('data-skin')) && innerWidth > 860 && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
+  const big = ['studio','apple'].includes(document.documentElement.getAttribute('data-skin')) && innerWidth > 860;
+  const on = big && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
+  /* a game open in Studio: it fills the same one window, and the page doesn't scroll (fitStage) */
+  const play = big && !REVISION_PAGE && document.documentElement.getAttribute('data-skin') === 'studio' && $('gamestage') && !$('gamestage').hidden;
   document.documentElement.classList.toggle('stfit', on);
+  document.documentElement.classList.toggle('stplay', play);
+  if (play){ scrollTo(0, 0); w.style.height = innerHeight + 'px'; const h = w.getBoundingClientRect().height;
+    if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px'; fitStage(); return; }
+  if ($('stage')) $('stage').style.zoom = '';
   if (!on){ w.style.height = ''; return; }
   w.style.height = innerHeight + 'px';
   const h = w.getBoundingClientRect().height;
   if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
 }
 addEventListener('resize', () => fitGames());
+/* Studio, a game open: a game taller than the room left for it is drawn smaller, so all of it
+   shows without scrolling. Hong Kong Mahjong sizes its own frame to the room instead. */
+function fitStage(){
+  const st = $('stage'); if (!st || !document.documentElement.classList.contains('stplay')) return;
+  if (st.dataset.fill){ st.style.zoom = ''; return; }
+  st.style.zoom = '';
+  const room = st.clientHeight, need = st.scrollHeight;
+  if (room && need > room + 1) st.style.zoom = Math.max(.4, room / need);
+}
+{ let q = 0; const later = () => { if (!q) q = requestAnimationFrame(() => { q = 0; fitStage(); }); };
+  addEventListener('DOMContentLoaded', () => { const st = $('stage'); if (!st) return;
+    new MutationObserver(later).observe(st, { childList: true, subtree: true });
+    addEventListener('load', later, true); }); }
 /* a theme change redraws the cards, so Studio's colours and boards come and go with Studio */
 let lookSkin = document.documentElement.getAttribute('data-skin');
 addEventListener('tt:look', () => { const sk = document.documentElement.getAttribute('data-skin');
@@ -452,8 +473,16 @@ const LB_CAT = [
   { id:'react',     name:'Reaction',       g:{metric:'avg3'},    fmt:v=>v+' ms' },
   { id:'tsprint',   name:'Tetris Sprint',  t:'sprint',   fmt:v=>fmtHMS(v) },
   { id:'tsurv',     name:'Tetris Survival',t:'zen',      fmt:v=>fmtHMS(v) },
-  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) }
+  { id:'tzen',      name:'Tetris Zen',     t:'zenscore', fmt:v=>String(v) },
+  { id:'tas-snake', name:'Snake TAS',      tas:'snake',  league:'fixed' },
+  { id:'tas-g2048', name:'2048 TAS',       tas:'g2048',  league:'fixed' },
+  { id:'tas-tetris', name:'Tetris TAS',    tas:'tetris', league:'fixed' },
+  { id:'tasr-snake', name:'Snake TAS, random seed',  tas:'snake',  league:'random' },
+  { id:'tasr-g2048', name:'2048 TAS, random seed',   tas:'g2048',  league:'random' },
+  { id:'tasr-tetris', name:'Tetris TAS, random seed', tas:'tetris', league:'random' }
 ];
+LB_CAT.filter(c => c.tas).forEach(c => { const unit = { snake:'steps', g2048:'moves', tetris:'frames' }[c.tas]; c.fmt = r => r ? r.score + ' in ' + r.frames + ' ' + unit : ''; });
+const tasRows = async cat => (await TT.api('/api/leaderboard', { params:{ tas:cat.tas, league:cat.league } }));
 /* Years 7 to 9 only see the timetable games' boards (the arcade ones are hidden for them, see youngNow) */
 const YOUNG_BOARDS = new Set(['chain', 'oddone', 'classroom']);
 const lbCats = () => youngNow() ? LB_CAT.filter(c => YOUNG_BOARDS.has(c.id)) : LB_CAT;
@@ -471,6 +500,7 @@ function fetchLeaders(){
       if (cat.t === 'sprint'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'sprintall' }, lbYearParam()) }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zen'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zen' }, lbYearParam()) }); return [cat.id, top3(d.top, 'time_ms', shortHMS)]; }
       if (cat.t === 'zenscore'){ const d = await TT.api('/api/tetris', { params:Object.assign({ mode:'zenscore' }, lbYearParam()) }); return [cat.id, top3(d.top, 'best', cat.fmt)]; }
+      if (cat.tas){ const d = await tasRows(cat); return [cat.id, top3((d.top || []).map(r => ({ name:r.name, you:r.you, row:r })), 'row', cat.fmt)]; }
     } catch (e){}
     return [cat.id, null];
   })).then(Object.fromEntries);
@@ -596,6 +626,7 @@ function openGame(id){
                   : BUILD[id]($('stage'));
     lbState = null; lbSeq++;
     if (LB_GAMES[id] && !banned) mountLB(id);
+    fitGames();                     /* Studio: now it's showing, fit it to the window */
   };
   if (reduced()){ go(); return; }
   grid.classList.add('leaving');           /* fade the grid away, then swap in */
@@ -2198,7 +2229,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261125f';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126c';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4842,6 +4873,9 @@ function lbBoard(box, focusId){
       } else if (cur.t === 'zenscore'){
         const r = await TT.api('/api/tetris',{params:Object.assign({mode:'zenscore'}, lbYearParam())});
         const b = { top:remap(r.top,'best'), meBest:r.meBest, meRank:r.meRank }; d = { week:b, all:b, scope:r };
+      } else if (cur.tas){
+        const r = await tasRows(cur);
+        const b = { top:(r.top || []).map(x => ({ name:x.name, score:x, you:x.you })), meBest:r.mine, meRank:r.mine && r.mine.rank }; d = { week:b, all:b };
       }
       if (my !== seq) return;
       noteScope(d.scope || d);
@@ -10587,10 +10621,14 @@ BUILD.hkmj = host => {
   host.innerHTML = '<iframe src="/hkmahjong.html" title="Hong Kong Mahjong" style="display:block;width:100%;border:0;border-radius:10px"></iframe>';
   const frame = host.firstChild;
   /* down to just above the bottom of the window, so the whole table is on screen */
-  const fit = () => { frame.style.height = Math.max(500, innerHeight - frame.getBoundingClientRect().top - scrollY - 18) + 'px'; };
-  fit();
-  addEventListener('resize', fit);
-  return () => { removeEventListener('resize', fit); host.innerHTML = ''; host.style.cssText = ''; };
+  /* in Studio (html.stplay) it fills the stage, which fills what's left of the window */
+  host.dataset.fill = '1';
+  const fit = () => { frame.style.height = document.documentElement.classList.contains('stplay') ? Math.max(300, host.clientHeight - 12) + 'px'
+    : Math.max(500, innerHeight - frame.getBoundingClientRect().top - scrollY - 18) + 'px'; };
+  const later = () => requestAnimationFrame(fit);
+  fit(); later();
+  addEventListener('resize', later);
+  return () => { removeEventListener('resize', later); host.innerHTML = ''; host.style.cssText = ''; delete host.dataset.fill; };
 };
 
 /* Opened from another page, e.g. the beta page showing a game in a frame:

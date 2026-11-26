@@ -5205,3 +5205,12 @@ The owner committed 8.203 as `tags`. Asked to keep server time down: nothing her
   written, moderators unaffected) plus the earlier suites; the mock as a Year 8 student (games, a `?play=snake` link, Home's
   Mahjong tile, mahjong.html), as a teacher (forum hidden, the note) and as Year 12 (everything, years on posts).
   Next free stamp: `g` / v128.
+
+## 8.205 Merge with origin (version `20261126c`, `CACHE_VERSION` v128)
+The owner committed 8.204 as `taecher` and pulled `origin/main` (13 commits: TAS random-seed mode and TAS boards on the
+leaderboards, Mahjong beta landscape on phones). Every conflict was a version stamp except two: `games.js`, where origin's
+TAS board formats (`tasRows`) and this side's Years 7 to 9 filter (`lbCats`) were added at the same place (both kept; the
+TAS boards go through `lbCats`, so Years 7 to 9 don't see them), and `tas.html`, which takes origin's stamped `tas.js` tag.
+Origin used `20261126a`/`b` and v127, as did this side's v127: everything is restamped `20261126c` / v128, above both.
+8.203's heading had been changed to `20261126a` on origin's side; it's back to `20261125e`, the stamp that round used.
+Checked: no conflict markers left, the scripts parse, one stamp everywhere. Staged, not committed. Next free stamp: `d` / v129.

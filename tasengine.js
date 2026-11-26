@@ -18,6 +18,7 @@ export const TAS = {
   tetris: { name: "Tetris", unit: "frames", keys: "LR<>DVCZAHX." }
 };
 export const MAX_MOVIE = 300000;
+export const SEED_MS = 10 * 60e3;
 
 export function cleanMovie(text) {
   return String(text == null ? "" : text).replace(/#[^\n]*/g, "").replace(/\s+/g, "");
@@ -379,13 +380,14 @@ export function tetrisCheck(seed, log, goal = 40) {
   return fail("never finished");
 }
 
-export function runTas(cat, text) {
+export function runTas(cat, text, seed) {
   const c = TAS[cat];
   if (!c) return fail("unknown category");
   const movie = cleanMovie(text);
   if (!movie.length) return fail("empty movie");
   if (movie.length > MAX_MOVIE) return fail("movie is too long");
-  if (cat === "snake") return snakeRun(movie);
-  if (cat === "g2048") return g2048Run(movie);
-  return tetrisRun(movie);
+  const sd = seed == null ? SEEDS[cat] : seed >>> 0;
+  if (cat === "snake") return snakeRun(movie, sd);
+  if (cat === "g2048") return g2048Run(movie, sd);
+  return tetrisRun(movie, sd);
 }
