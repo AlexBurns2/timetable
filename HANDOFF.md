@@ -5263,3 +5263,58 @@ The owner committed 8.207 as `boi`, and asked to cut multiplayer latency with di
   123 ms; with a player on the old `rooms.js`, Firebase for everyone; with both fast paths, direct wins; every message once,
   your own once; presence unchanged for the games. `hkmahjong.html` has its own copy of the room code (turn-based; not
   changed). Next free stamp: `f` / v131.
+
+## 8.209 The Sydney relay is on
+The owner made the relay's project (Supabase, Sydney: `https://vhtjhllzlytvrnophuhh.supabase.co`) and gave its publishable
+key; both are in `rooms.js` `RELAY`, and `wss://vhtjhllzlytvrnophuhh.supabase.co` is in the CSP's connect-src (`vercel.json`).
+Checked against the real project from Sydney: 20 broadcasts between two connections, median 15 ms one way (12 to 27); Firebase
+in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
+
+## 8.210 Surrealism's gallery, matched pictures; fixes (version `20261126f`, `CACHE_VERSION` v131)
+- **Gallery** (`theme.js` surScene/surShift, `surreal.js` gallery/swapTo, `surreal.css`): the six places rotate. Each page keeps
+  its place today (the 26th) and every page moves on one at midnight (the device's time). At the left edge, halfway down: a
+  chevron up, three dots, a chevron down; a press slides this page's place on or back (1.1 s, eased; with Animation off it just
+  changes) for the rest of the day (`msc.su`, this device). Shown only where there's room beside the page. The place is
+  `html[data-su]`, set with the theme so the first paint is right; `surreal.css` keys the places (and the night dunes' darker
+  glass) on it instead of the page.
+- **Light only:** SKINS `only:'light'` (Surrealism): `data-mode` and the colour scheme forced light, the Dark mode switch
+  disabled, the Theme finder says "Light only" and previews it light.
+- **The notation** is fixed at every width (its wide-screen rule had been outranked, so it scrolled).
+- **Matched to the photographs** (the owner: things looked slapped on, and moving ones slid over the picture's pixels):
+  `photoCanvas()` draws on a canvas at the photograph's own resolution, laid on its pixel grid and enlarged with it. The sphere
+  (redrawn as it rises and sinks, its reflection too), the square of light, its glow and the stars, the rockfall and the birds
+  all use it. (A site-wide canvas style had put a faint box and border on these; `.sulive canvas` clears it.)
+- **Rockfall:** small irregular rocks, lit on one side, tumbling, knocking off ledges with a little spray, a faint trail of
+  dust, and fine dust coming up later; **birds** now and then, far off. All tiny.
+- **Boat scene:** the pale streak on the hull's lower edge (a rim of half-transparent, glinting pixels) evened out in
+  `wreck-ship.webp`; the branch at the left and the bush on the crest sway a pixel or two (`tools/surreal/brush.py` makes the
+  cut-out and the painted-out sand; `surreal.js` sway()).
+- **Monolith:** foam above the waterline (out at sea, behind the slab) no longer shows through it (`surf.py`; 14 frames had it,
+  now none); the video was rebuilt from the owner's clip.
+- **Salt pan:** `gates.py` rewritten: concrete made on each face in metres from noise (no tiling; uneven pours, tie holes,
+  rain streaks, salt crust at the foot), warm sun, cool sky, warm bounce off the salt, ambient occlusion, worn edges, shadows
+  that multiply the salt, drawn at 3x, softened to the photo's sharpness and given its grain, haze with distance.
+- **Salt pan, chipped** (the owner: "Chipping on the frames... They need to look like real objects"): each edge is broken
+  back by an amount worked out along the edge itself, so both faces that share it break in the same places. It's mostly a
+  straight edge, with now and then a nick, a steep-sided chip or a bigger piece, and some of the lintel's top corners knocked
+  off at a slant.
+  - Where the edge is the outline, the chip is cut away and what's behind shows through, with a thin rim of broken concrete.
+  - Where both faces are in view, the chip shows broken concrete: faceted (lit by its own angle), rough with aggregate,
+    lighter, darker deep in, and with a crack where it stops. The crack is about a centimetre wide, so it fades with distance
+    rather than becoming a pixel-wide line.
+  - Edges on the ground, and where a pier meets the lintel, stay whole.
+  - A few shallow flakes off the faces.
+  - Only faces turned to the camera are drawn now, since a chip must show what's behind, not the box's own back.
+  - The first try was far too dense and read as a ruin; keep it sparse. Rounded corner breaks read as erosion, so they're
+    slanted. Before-pictures: `plan-prechip.webp` in the session scratchpad.
+- Pictures and the clip are fetched with the site's version now (`IMG()`).
+- **Dropdowns** (`suggest.js`): the suggestion list opens in the browser's top layer (a popover), placed under its box, so the
+  timetable's own labels can't sit over it; and `TT.solidBg()` gives it (and the forum's emoji and tag pickers) a solid backing
+  when the theme's panel colour is see-through.
+- **Guess Who** with no timetable of one's own (Year 12 once they've finished): it carries on from the directory, starts on My
+  grade, and says why My classes can't be played (it had stopped at "No timetable was found").
+- **Skeuomorphism's close button** stays red on hover and press (the general button hover had turned it white).
+- **Thumbs up or down** on a theme, in the Theme finder's preview (quiet, by the note; signed in). Kept in synced settings
+  (`tt.themevotes`); the hourly theme order adds `liked`. The strip's heading is now a choice: Popular, Most liked, New (New by
+  each theme's date, `ADDED` in themes.html). Counts only on the moderator page (Themes, `votes`).
+- Next free stamp: `g` / v132.
