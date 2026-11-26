@@ -876,3 +876,12 @@ html.stfit[data-skin="studio"][data-pg="games"] .gamecard:not(:has(.stlb)) :is(.
 html.stfit[data-skin="studio"][data-pg="games"] .gamegrid[data-cat="Timetable"] .gamecard:not(:has(.stlb)) :is(.ico,h2){align-self:center}
 /* Jim Together sits on the page, not in a white card */
 [data-skin="studio"] .stage:has(> .jt){background:none;border:0;box-shadow:none}
+
+/* ══ Games, one open (games.js fitGames adds html.stplay): it fills the window and the page
+   never scrolls; a game taller than the room is drawn smaller (fitStage), Mahjong fills it ══ */
+html.stplay[data-skin="studio"],html.stplay[data-skin="studio"] body{overflow:hidden}
+html.stplay[data-skin="studio"] .wrap{max-width:none;box-sizing:border-box;display:flex;flex-direction:column;padding:16px 24px 18px}
+html.stplay[data-skin="studio"] .wrap>:not(#gamestage){flex:none}
+html.stplay[data-skin="studio"] #gamestage{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+html.stplay[data-skin="studio"] #gamestage>#back{flex:none;align-self:flex-start}
+html.stplay[data-skin="studio"] #stage{flex:1 1 0;min-height:0;overflow:hidden}

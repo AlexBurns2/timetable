@@ -536,6 +536,60 @@ html[data-gameicons="emoji"] .qtile .ico .ph{display:none}
 .fnew #fscope{display:none;flex:none;max-width:12rem;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
 .fnew.open #fscope:not([hidden]){display:block}
 .ffor{padding:0 7px;border:1px solid var(--line);border-radius:999px;font-size:.6875rem;font-weight:700;color:var(--text);line-height:1.6}
+/* the forum since 25 November 2026: a post's links in one row, folded replies, votes to hide, posts as the site */
+.factions{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
+.factions:empty{display:none}
+.factions .fhidevote,.factions .fhideclear{color:var(--muted);font-weight:500}
+/* Vote to hide (and a moderator's Clear the votes): bottom right, only while the pointer is on that post */
+.fcorner{display:inline-flex;gap:14px;margin-left:auto;opacity:0;transition:opacity .15s}
+.fcorner:empty{display:none}
+.fpost:hover>.factions .fcorner,.fcorner:focus-within{opacity:1}
+@media (hover:none){ .fcorner{opacity:.55} }
+/* tags: @someone in a post (you, a little stronger), and the list that comes up as you type one */
+.ftag{color:var(--accent);font-weight:600}
+.ftag.fme{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:4px;padding:0 2px}
+.flong{display:block}
+.fnew,.freplybox{position:relative}
+.ftagpop{position:absolute;left:0;top:calc(100% + 4px);z-index:30;display:flex;flex-direction:column;min-width:230px;max-width:min(320px,100%);
+  padding:4px;background:var(--panel);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow-hi)}
+.ftagpop button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 9px;border:0;border-radius:6px;background:none;
+  color:var(--text);font:inherit;font-size:.8125rem;text-align:left;cursor:pointer}
+.ftagpop button span{font-size:.75rem;color:var(--muted)}
+.ftagpop button[aria-selected="true"],.ftagpop button:hover{background:var(--panel-2)}
+/* notifications at the top of the forum: replies in your threads, and tags */
+.fnotes{display:flex;flex-direction:column;gap:6px;margin:4px 0 14px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));
+  border-radius:var(--radius);background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+.fnotes[hidden]{display:none}
+.fnoteshd{display:flex;align-items:baseline;gap:12px;font-size:.8125rem}
+.fnoteshd .flink{margin:0 0 0 auto;font-weight:500;color:var(--muted)}
+.fnote{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border:0;border-radius:6px;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.fnote:hover{background:var(--panel-2)}
+.fnotew{font-size:.8125rem}
+.fnotew i{font-style:normal;color:var(--muted);font-size:.75rem;margin-left:8px}
+.fnotet{font-size:.78125rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.fnotemore{margin:0;font-size:.75rem;color:var(--muted)}
+.fpost.fjump{outline:2px solid var(--accent);outline-offset:2px;transition:outline-color .6s}
+/* the vote on hiding a post: Vote by: NAME / Hide post? / YES n  NO n */
+.fvbox{margin-top:8px;font-size:.8125rem;color:var(--muted)}
+.fvby b{color:var(--text);font-weight:600}
+.fvq{margin-top:2px;color:var(--text);font-weight:600}
+.fvbtns{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:6px}
+.fvbtn{display:inline-flex;align-items:center;gap:7px;padding:3px 12px;border:1px solid var(--line);border-radius:999px;
+  background:var(--panel-2);color:var(--text);font:inherit;font-size:.75rem;font-weight:700;letter-spacing:.04em;cursor:pointer}
+.fvbtn b{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.fvbtn:hover:not(:disabled){border-color:var(--accent)}
+.fvbtn:disabled{cursor:default}
+.fvbtn:disabled:not([aria-pressed="true"]){opacity:.6}          /* the vote's over, or you've answered (yours stays marked) */
+.fvbtn[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.fvbtn[aria-pressed="true"] b{color:var(--accent)}
+.fvbtns .flink{margin:0 0 0 4px}
+.fvend{margin-top:5px;font-size:.75rem}
+.fpost.ffolded{border-style:dashed;background:none}
+.fpost.fofficial{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.fpost.fofficial .fmeta b{color:var(--accent)}
+.fas{display:none;flex:none;align-items:center;gap:6px;font-size:.78125rem;color:var(--muted);cursor:pointer;white-space:nowrap;align-self:center}
+.fnew.open .fas:not([hidden]),.freplybox .fas{display:inline-flex}
+.fas input{margin:0;accent-color:var(--accent)}
 /* Send a suggestion: what it is, then the line */
 .ideaform select{flex:none;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
 

@@ -271,14 +271,34 @@ function fillTileBoards(grid){
    zoomed too, so set it, measure, and correct once. */
 function fitGames(){
   const w = document.querySelector('.wrap'); if (!w) return;
-  const on = ['studio','apple'].includes(document.documentElement.getAttribute('data-skin')) && innerWidth > 860 && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
+  const big = ['studio','apple'].includes(document.documentElement.getAttribute('data-skin')) && innerWidth > 860;
+  const on = big && !$('gamegrid').hidden && !(window.Focus && Focus.active && !REVISION_PAGE && Focus.active());
+  /* a game open in Studio: it fills the same one window, and the page doesn't scroll (fitStage) */
+  const play = big && !REVISION_PAGE && document.documentElement.getAttribute('data-skin') === 'studio' && $('gamestage') && !$('gamestage').hidden;
   document.documentElement.classList.toggle('stfit', on);
+  document.documentElement.classList.toggle('stplay', play);
+  if (play){ scrollTo(0, 0); w.style.height = innerHeight + 'px'; const h = w.getBoundingClientRect().height;
+    if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px'; fitStage(); return; }
+  if ($('stage')) $('stage').style.zoom = '';
   if (!on){ w.style.height = ''; return; }
   w.style.height = innerHeight + 'px';
   const h = w.getBoundingClientRect().height;
   if (h && Math.abs(h - innerHeight) > .5) w.style.height = (innerHeight * innerHeight / h) + 'px';
 }
 addEventListener('resize', () => fitGames());
+/* Studio, a game open: a game taller than the room left for it is drawn smaller, so all of it
+   shows without scrolling. Hong Kong Mahjong sizes its own frame to the room instead. */
+function fitStage(){
+  const st = $('stage'); if (!st || !document.documentElement.classList.contains('stplay')) return;
+  if (st.dataset.fill){ st.style.zoom = ''; return; }
+  st.style.zoom = '';
+  const room = st.clientHeight, need = st.scrollHeight;
+  if (room && need > room + 1) st.style.zoom = Math.max(.4, room / need);
+}
+{ let q = 0; const later = () => { if (!q) q = requestAnimationFrame(() => { q = 0; fitStage(); }); };
+  addEventListener('DOMContentLoaded', () => { const st = $('stage'); if (!st) return;
+    new MutationObserver(later).observe(st, { childList: true, subtree: true });
+    addEventListener('load', later, true); }); }
 /* a theme change redraws the cards, so Studio's colours and boards come and go with Studio */
 let lookSkin = document.documentElement.getAttribute('data-skin');
 addEventListener('tt:look', () => { const sk = document.documentElement.getAttribute('data-skin');
@@ -595,9 +615,15 @@ function openGame(id){
     if (bentoStop){ bentoStop(); bentoStop = null; }
     st.hidden = false;
     st.style.animation = 'none'; void st.offsetWidth; st.style.animation = '';
-    stop = BUILD[id]($('stage'));
+    /* banned from it by a moderator (Bans on the moderator page): a note instead of the game. The server refuses
+       their results anyway; this is so they know why. */
+    const banned = gameBanned(id), g = GAMES.find(x => x.id === id);
+    stop = banned ? (head($('stage'), esc(g ? g.name : 'This game'), 'A moderator has taken you off this game, so you can’t play it at the moment.'),
+                     () => { $('stage').innerHTML = ''; })
+                  : BUILD[id]($('stage'));
     lbState = null; lbSeq++;
-    if (LB_GAMES[id]) mountLB(id);
+    if (LB_GAMES[id] && !banned) mountLB(id);
+    fitGames();                     /* Studio: now it's showing, fit it to the window */
   };
   if (reduced()){ go(); return; }
   grid.classList.add('leaving');           /* fade the grid away, then swap in */
@@ -860,18 +886,23 @@ const RV = (() => {
    when there isn't the traffic for them: every page then shows the all-time
    board only, with no weekly / all-time toggle. Read once per page load, and
    if the read fails nothing changes from how the site behaved before. */
-let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false, canReview:false };
+let sitePromise = null, siteCfg = { weeklyBoards:true, hiddenGames:['jim'], isMod:false, canReview:false, bannedFrom:[] };
 function siteSettings(){
   if (!sitePromise) sitePromise = TT.siteCfg()
     .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
                  siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
-                             isMod: !!(d && d.isMod), canReview: !!(d && d.canReview) }; return siteCfg; })
+                             isMod: !!(d && d.isMod), canReview: !!(d && d.canReview),
+                             bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [] }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
 }
 /* off the games page: hidden in code, or by a moderator (site settings) */
 function gameHidden(g){ return !!g.hidden || (siteCfg.hiddenGames || []).includes(g.id); }
+/* this person's bans (only ever their own; "*" is every game). The games a ban covers are the ones whose results the
+   server keeps (BAN_GAMES in api/_settings.js); Multiplayer Tetris and Snake, for one, have no boards to protect. */
+function gameBanned(id){ const b = siteCfg.bannedFrom || []; return b.includes(id) || (b.includes('*') && BAN_IDS.includes(id)); }
+const BAN_IDS = ['snake', 'g2048', 'typing', 'react', 'tetris', 'hkmj', 'chain', 'oddone', 'classroom', 'dailyguess', 'whose', 'quartets', 'fours', 'jimall'];
 const weeklyOn = () => siteCfg.weeklyBoards;
 const forgetSiteSettings = () => { sitePromise = null; TT.forgetSite(); };
 if (typeof TT !== 'undefined' && TT.myEmail && TT.myEmail()) siteSettings();   // warm before a board is opened
@@ -2189,7 +2220,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261125a';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126a';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4917,7 +4948,11 @@ BUILD.admin = host => {
   /* which themes people use (from their synced settings) */
   const THEMES = { id:'themes', name:'Themes', kind:'x' };
   const HELD = { id:'held', name:'Held scores', kind:'h' };
-  const CATS = [OVERVIEW, ...(siteCfg.canReview ? [HELD] : []), POLLS, IDEAS, SCANS, THEMES, USERS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
+  /* who a moderator has taken off which games (api/_settings.js: their results are refused and they're left off
+     those boards; nothing of theirs is deleted) */
+  const BANS = { id:'bans', name:'Bans', kind:'b' };
+  const banForm = { who:'', games:new Set() };          // kept while the tab redraws
+  const CATS = [OVERVIEW, ...(siteCfg.canReview ? [HELD] : []), POLLS, IDEAS, SCANS, THEMES, USERS, BANS, FORUM, DECKS, MJ, SETTINGS, ...GEN, ...TET];
   let cur = CATS[0], period = 'all', data = null, onboard = null;
   box.innerHTML =
     '<div class="diffbar" id="admpick" style="margin-bottom:14px"></div>' +
@@ -4945,7 +4980,7 @@ BUILD.admin = host => {
 
   function syncTabsUI(){
     /* with weekly boards turned off there is only the all-time board to edit */
-    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpiqxh'.includes(cur.kind);
+    const gen = cur.kind === 'g' && weeklyOn(), plain = 'usofdmpiqxhb'.includes(cur.kind);
     if (!weeklyOn()) period = 'all';
     [...box.querySelectorAll('.glbtab[data-p]')].forEach(t => t.style.display = gen ? '' : 'none');
     $('admsync').hidden = !cur.sync;
@@ -4977,6 +5012,12 @@ BUILD.admin = host => {
       if (cur.kind === 'q'){ data = await TT.api('/api/forum', { params:{ scans:1 } }); render(); return; }
       if (cur.kind === 'x'){ data = await TT.api('/api/leaderboard', { params:{ themes:1 } }); render(); return; }
       if (cur.kind === 'h'){ data = await TT.api('/api/leaderboard', { params:{ held:1 } }); render(); return; }
+      if (cur.kind === 'b'){
+        const [d, pp] = await Promise.all([TT.api('/api/leaderboard', { params:{ bans:1 } }),
+          admPeople || TT.api('/api/leaderboard', { params:{ users:1 } }).then(x => (x.users || []).map(u => ({ name:String(u.name || ''), email:String(u.email || '') }))).catch(() => null)]);
+        if (pp) admPeople = pp;
+        data = d; render(); return;
+      }
       if (cur.kind === 'u'){                       // roster, not a board, so no canWipe on it
         data = await TT.api('/api/leaderboard', { params:{ users:1 } });
         /* onboarding lives in its own table; fold it in by email. Optional —
@@ -5018,6 +5059,7 @@ BUILD.admin = host => {
     if (cur.kind === 'q') return renderScans();
     if (cur.kind === 'x') return renderThemes();
     if (cur.kind === 'h') return renderHeld();
+    if (cur.kind === 'b') return renderBans();
     if (cur.kind === 's'){
       const on = weeklyOn();
       $('admnote').textContent = 'These apply to the whole site, for everyone who opens it, not just to you.';
@@ -5037,7 +5079,7 @@ BUILD.admin = host => {
         b.disabled = true;
         try {
           const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', hiddenGames:[...hidden] } });
-          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || [...hidden], isMod: true };
+          siteCfg = { ...siteCfg, weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || [...hidden], isMod: true };
           TT.forgetSite();                          // (the copy remembered for this tab is now out of date)
           render();
         } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
@@ -5046,7 +5088,7 @@ BUILD.admin = host => {
         const b = $('setweekly'); b.disabled = true;
         try {
           const d = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'settings', weeklyBoards:!on } });
-          siteCfg = { weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || siteCfg.hiddenGames, isMod: true };
+          siteCfg = { ...siteCfg, weeklyBoards: d && d.weeklyBoards !== false, hiddenGames: (d && d.hiddenGames) || siteCfg.hiddenGames, isMod: true };
           TT.forgetSite();                          // (the copy remembered for this tab is now out of date)
           render();
         } catch (e){ alert('Could not save that: ' + e.message); b.disabled = false; }
@@ -5135,6 +5177,78 @@ BUILD.admin = host => {
       row.querySelector('[data-act=del]').onclick  = () => { if (confirm('Delete this score?')) edit('delete', email); };
     });
   }
+  /* ── Bans: take someone off some games (or every game), or put them back ── */
+  function renderBans(){
+    const d = data || {}, ids = d.games || [], bans = d.bans || [];
+    const gname = id => id === '*' ? 'Every game' : ((GAMES.find(g => g.id === id) || {}).name || id);
+    const mineOf = email => bans.find(b => b.email === String(email).trim().toLowerCase());
+    $('admnote').textContent = 'A banned person can’t save results in those games and is left off their boards. Nothing of theirs is deleted: lifting a ban brings it all back.';
+    const pill = id => '<button type="button" class="diffpill" data-g="' + id + '" aria-pressed="' + banForm.games.has(id) + '">' + esc(gname(id)) + '</button>';
+    $('admbody').innerHTML =
+      '<div class="banform">' +
+        '<input id="banwho" type="email" list="banpeople" autocomplete="off" spellcheck="false" placeholder="Their school email" aria-label="Who to ban" value="' + esc(banForm.who) + '">' +
+        '<datalist id="banpeople">' + (admPeople || []).filter(p => p.email).map(p => '<option value="' + esc(p.email) + '">' + esc(p.name) + '</option>').join('') + '</datalist>' +
+        '<div class="diffbar bangames" id="bangames">' + pill('*') + ids.map(pill).join('') + '</div>' +
+        '<div class="banact"><button type="button" class="btn primary" id="bango">Ban</button><span class="banmsg" id="banmsg" role="status"></span></div>' +
+      '</div>' +
+      '<h4 class="admsub">Banned now</h4>' +
+      (bans.length ? bans.map(b => '<div class="adminrow banrow" data-email="' + esc(b.email) + '">' +
+          '<span class="nm"><b>' + esc(b.name || b.email) + '</b><span class="ue">' + esc(b.email) + '</span>' +
+          '<span class="banchips">' + b.games.map(g => '<span class="banchip">' + esc(gname(g)) +
+            '<button type="button" data-lift="' + g + '" aria-label="Let them back on ' + esc(gname(g)) + '" title="Let them back on this one">' +
+            (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></span>').join('') + '</span></span>' +
+          '<button type="button" class="btn" data-act="edit">Change</button>' +
+          '<button type="button" class="del" data-act="lift">Lift</button></div>').join('')
+        : '<p class="how">Nobody is banned.</p>');
+    const who = $('banwho'), go = $('bango'), msg = $('banmsg');
+    /* the button says what it will do: ban someone new, or change an existing ban */
+    const sync = () => {
+      const had = mineOf(who.value);
+      go.textContent = !banForm.games.size ? (had ? 'Lift' : 'Ban') : had ? 'Save' : 'Ban';
+      go.disabled = !who.value.trim() || (!banForm.games.size && !had);
+      $('bangames').querySelectorAll('[data-g]').forEach(b => b.setAttribute('aria-pressed', String(banForm.games.has(b.dataset.g))));
+    };
+    who.oninput = () => {
+      banForm.who = who.value;
+      const had = mineOf(who.value);
+      if (had) banForm.games = new Set(had.games);          // someone already banned: start from what they have
+      sync();
+    };
+    $('bangames').querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
+      const g = b.dataset.g;
+      if (banForm.games.has(g)) banForm.games.delete(g);
+      else { banForm.games.add(g); if (g === '*') banForm.games = new Set(['*']); else banForm.games.delete('*'); }
+      sync();
+    });
+    const save = async (email, games, btn) => {
+      if (btn) btn.disabled = true;
+      try {
+        data = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'ban', email, games } });
+        lbSumCache = null;                                    // the boards change
+        return true;
+      } catch (e){ alert('Could not save that: ' + e.message); if (btn) btn.disabled = false; return false; }
+    };
+    go.onclick = async () => {
+      const email = who.value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.textContent = 'That doesn’t look like an email address.'; return; }
+      const games = [...banForm.games], had = mineOf(email);
+      const what = games.includes('*') ? 'every game' : games.map(gname).join(', ');
+      if (games.length && !had && !confirm('Ban ' + email + ' from ' + what + '?')) return;
+      if (await save(email, games, go)){ banForm.who = ''; banForm.games = new Set(); render(); }
+    };
+    $('admbody').querySelectorAll('.banrow').forEach(row => {
+      const email = row.dataset.email, b = mineOf(email);
+      row.querySelector('[data-act=edit]').onclick = () => { banForm.who = email; banForm.games = new Set(b.games); render(); $('banwho').focus(); };
+      row.querySelector('[data-act=lift]').onclick = async e => {
+        if (!confirm('Lift every ban on ' + email + '?')) return;
+        if (await save(email, [], e.currentTarget)) render();
+      };
+      row.querySelectorAll('[data-lift]').forEach(x => x.onclick = async () => {
+        if (await save(email, b.games.filter(g => g !== x.dataset.lift), x)) render();
+      });
+    });
+    sync();
+  }
   /* ── Overview: one card per part of the site ── */
   function renderOverview(){
     const d = data || {}, n = v => v == null ? '—' : Number(v).toLocaleString();
@@ -5201,11 +5315,19 @@ BUILD.admin = host => {
       return '<select class="modscope" data-sid="' + esc(p.id) + '" aria-label="Who this thread is for">' +
         opts.map(([v, l]) => '<option value="' + esc(v) + '"' + (v === p.scope ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select>';
     };
+    /* votes to hide say how many and who started them (posts as MSC Unofficial keep no trace of who wrote them) */
     $('admbody').innerHTML = all.length ? all.map(p => '<div class="adminrow modpost' + (p.reply ? ' reply' : '') + '">' +
-        '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' }) + (p.for ? ' · for ' + p.for : '')) +
+        '<span class="nm"><b>' + esc(p.name) + '</b> <em>' + esc(new Date(p.at).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' }) + (p.for ? ' · for ' + p.for : '') +
+          (p.hide ? ' · vote to hide by ' + p.hide.by + ': ' + p.hide.yes + ' yes, ' + p.hide.no + ' no' + (p.hide.hidden ? ' (hidden)' : p.hide.kept ? ' (didn’t go through)' : '') : '')) +
         '</em><span class="pb">' + esc(p.body) + '</span></span>' + scopeSel(p) +
+        (p.hide ? '<button class="btn" type="button" data-unhide="' + esc(p.id) + '">Clear votes</button>' : '') +
         '<button class="del" type="button" data-id="' + esc(p.id) + '">Delete</button></div>').join('')
       : '<p class="how">No posts.</p>';
+    $('admbody').querySelectorAll('[data-unhide]').forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      try { await TT.api('/api/forum', { method:'POST', body:{ action:'hideclear', id:b.dataset.unhide } }); load(); }
+      catch (e){ alert('Could not clear the votes: ' + e.message); b.disabled = false; }
+    });
     $('admbody').querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
       if (!confirm('Delete this post for everyone?')) return;
       b.disabled = true;
@@ -10489,10 +10611,14 @@ BUILD.hkmj = host => {
   host.innerHTML = '<iframe src="/hkmahjong.html" title="Hong Kong Mahjong" style="display:block;width:100%;border:0;border-radius:10px"></iframe>';
   const frame = host.firstChild;
   /* down to just above the bottom of the window, so the whole table is on screen */
-  const fit = () => { frame.style.height = Math.max(500, innerHeight - frame.getBoundingClientRect().top - scrollY - 18) + 'px'; };
-  fit();
-  addEventListener('resize', fit);
-  return () => { removeEventListener('resize', fit); host.innerHTML = ''; host.style.cssText = ''; };
+  /* in Studio (html.stplay) it fills the stage, which fills what's left of the window */
+  host.dataset.fill = '1';
+  const fit = () => { frame.style.height = document.documentElement.classList.contains('stplay') ? Math.max(300, host.clientHeight - 12) + 'px'
+    : Math.max(500, innerHeight - frame.getBoundingClientRect().top - scrollY - 18) + 'px'; };
+  const later = () => requestAnimationFrame(fit);
+  fit(); later();
+  addEventListener('resize', later);
+  return () => { removeEventListener('resize', later); host.innerHTML = ''; host.style.cssText = ''; delete host.dataset.fill; };
 };
 
 /* Opened from another page, e.g. the beta page showing a game in a frame:

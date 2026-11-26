@@ -9,8 +9,13 @@ const JIM_DIR = 'jim/';
 /* ADD NEW MILESTONES HERE — each needs a matching jim/<score>.m4a */
 const JIM_ACH = [1, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
                  1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
-const JIM_POLL = 15000;       // how often the open board refreshes (was 4 s; 15 s since 24 November 2026, to use less server time)
-const JIM_FLUSH = 800;        // presses are sent in batches, this long after the last one
+/* Server time (25 November 2026): the boards refresh every 5 minutes (was 15 s), and presses are counted on the page and
+   sent at most every 5 minutes, or straight away once 500 are waiting, or when you leave or switch tabs. Your own count
+   still goes up with every press. */
+const JIM_POLL = 5 * 60e3;    // how often the open board refreshes
+const JIM_SEND = 5 * 60e3;    // presses waiting this long are sent
+const JIM_FLUSH = 800;        // the rest of a batch of more than 500, this soon after
+const JIM_RETRY = 30e3;       // a send that failed is tried again after this
 
 async function jimApi(body, keepalive){
   const init = body ? { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body), keepalive:!!keepalive }
@@ -90,16 +95,16 @@ BUILD.jim = host => {
   }
 
   /* presses are counted locally and sent in batches; a failed send is kept and retried */
-  function queue(){ pending++; clearTimeout(flushTimer); flushTimer = setTimeout(flush, JIM_FLUSH); }
+  function queue(){ pending++; if (pending >= 500) flush(); else if (!flushTimer) flushTimer = setTimeout(flush, JIM_SEND); }
   async function flush(keepalive){
     clearTimeout(flushTimer); flushTimer = null;
     if (!pending || (sending && !keepalive)) return;
     const add = Math.min(pending, 500);
     pending -= add; sending = true;
     try { await jimApi({ name:playerName, add }, keepalive); }
-    catch(e){ pending += add; if (alive && !keepalive) flushTimer = setTimeout(flush, 3000); }
+    catch(e){ pending += add; if (alive && !keepalive) flushTimer = setTimeout(flush, JIM_RETRY); }
     finally { sending = false; }
-    if (pending && alive && !flushTimer) flushTimer = setTimeout(flush, JIM_FLUSH);
+    if (pending && alive && !flushTimer) flushTimer = setTimeout(flush, pending >= 500 ? JIM_FLUSH : JIM_SEND);
   }
 
   /* ── the game ── */
@@ -274,7 +279,7 @@ BUILD.jim = host => {
    a recording of it (jim/<name>.wav), and JIM when there isn't; the mode button
    under it goes your name → JIM → a random name → your name.
    Shares /api/jim (?together=1). */
-const JT_POLL = 15000;        // Together: how often the shared count is fetched (was 2 s; your own presses still show at once)
+const JT_POLL = 5 * 60e3;     // Together: how often the shared count is fetched (was 2 s, then 15 s; your own presses still show at once)
 /* 5×7 dot-matrix digits, one string of five 0/1 per row */
 const JT_FONT = {
   0:['01110','10001','10011','10101','11001','10001','01110'], 1:['00100','01100','00100','00100','00100','00100','01110'],
@@ -288,7 +293,7 @@ const jtDigit = ch => '<span class="jtdig">' + JT_FONT[ch].join('').split('').ma
 
 BUILD.jimall = host => {
   let alive = true, pollTimer = null, flushTimer = null, glowTimer = null, tickTimer = null;
-  let pending = 0, inflight = 0, sending = false, pressLocked = false;
+  let pending = 0, inflight = 0, sending = false, pressLocked = false, banned = false, lastPoll = 0;
   let server = 0, shown = 0, mine = 0, myName = null, top = null, anonTotal = 0;
   const jimAudio = new Audio(JIM_DIR + 'jim.mp3'), stanleyAudio = new Audio(JIM_DIR + 'stanley.mp3'), nameAudio = new Audio();
   /* muted: the button still presses and counts, just silently (remembered on this device) */
@@ -409,8 +414,16 @@ BUILD.jimall = host => {
       (anonTotal ? '<div class="tlbrow jtanon"><span class="rk">·</span><span class="nm">Not signed in</span><span class="tm">' + anonTotal.toLocaleString() + '</span></div>' : '');
   }
 
+  /* a moderator has taken this player off (moderator page → Bans): nothing more is sent, the board still shows */
+  function stopBanned(){
+    banned = true; pending = 0; clearTimeout(flushTimer); flushTimer = null;
+    const b = $('jtbtn'); if (b) b.classList.add('jtoff');
+    const note = box.querySelector('.jtnote') || box.querySelector('.jimmain').appendChild(Object.assign(document.createElement('p'), { className:'how jtnote' }));
+    note.textContent = 'A moderator has taken you off Button Pushers, so your presses don’t count.';
+  }
   async function poll(){
     if (!alive || document.hidden) return;
+    lastPoll = Date.now();
     try {
       const d = await TT.api('/api/jim', { params:{ together:1 } });
       if (!alive) return;
@@ -418,11 +431,11 @@ BUILD.jimall = host => {
     } catch(e){ const el = $('jtrows'); if (el && !top) el.innerHTML = '<p class="how">Couldn’t reach the board (' + esc(e.message) + ').</p>'; }
   }
 
-  /* presses are counted here and sent in batches; a failed batch is kept and tried again */
-  function queue(){ pending++; clearTimeout(flushTimer); flushTimer = setTimeout(flush, JIM_FLUSH); }
+  /* presses are counted here and sent in batches (at most every 5 minutes, see JIM_SEND); a failed batch is kept and tried again */
+  function queue(){ pending++; if (pending >= 500) flush(); else if (!flushTimer) flushTimer = setTimeout(flush, JIM_SEND); }
   async function flush(keepalive){
     clearTimeout(flushTimer); flushTimer = null;
-    if (!pending || (sending && !keepalive)) return;
+    if (banned || !pending || (sending && !keepalive)) return;
     const add = Math.min(pending, 500);
     pending -= add; inflight += add; sending = true;
     try {
@@ -438,13 +451,15 @@ BUILD.jimall = host => {
         if (d.mine != null){ mine = Math.max(mine, +d.mine || 0); myName = d.name || myName; if (d.name) useName(d.name); }
         if (alive){ $('jtmine').textContent = signedIn && d.mine != null ? mine.toLocaleString() : $('jtmine').textContent; showTotal(); renderLB(); }
       }
-    } catch(e){ inflight -= add; pending += add; if (alive && !keepalive) flushTimer = setTimeout(flush, 3000); }
+    } catch(e){ inflight -= add;
+      if (e && e.data && e.data.banned){ if (alive) stopBanned(); showTotal(); }
+      else { pending += add; if (alive && !keepalive) flushTimer = setTimeout(flush, JIM_RETRY); } }
     finally { sending = false; }
-    if (pending && alive && !flushTimer) flushTimer = setTimeout(flush, JIM_FLUSH);
+    if (pending && alive && !flushTimer && !banned) flushTimer = setTimeout(flush, pending >= 500 ? JIM_FLUSH : JIM_SEND);
   }
 
   function press(){
-    if (pressLocked || !alive) return;
+    if (pressLocked || !alive || banned) return;
     pressLocked = true;
     if (signedIn && myName) mine++;
     queue();
@@ -487,6 +502,7 @@ BUILD.jimall = host => {
       if (d.me){ myName = d.me.name; mine = Math.max(mine, +d.me.score || 0); useName(d.me.name); }
       else myName = myName || '';
       $('jtmine').textContent = mine.toLocaleString(); renderLB();
+      if (d.banned) stopBanned();
     } catch(e){ $('jtmine').textContent = '—'; }
   }
 
@@ -496,7 +512,8 @@ BUILD.jimall = host => {
     if (e.key === ' ' && (t === document.body || box.contains(t)) && t.tagName !== 'BUTTON'){ e.preventDefault(); press(); }
   };
   document.addEventListener('keydown', onKey);
-  const onHide = () => { if (document.visibilityState === 'hidden') flush(true); else poll(); };
+  /* back on the tab: a fresh count, but not more than once a minute */
+  const onHide = () => { if (document.visibilityState === 'hidden') flush(true); else if (Date.now() - lastPoll > 60e3) poll(); };
   document.addEventListener('visibilitychange', onHide);
 
   paintLED(0);

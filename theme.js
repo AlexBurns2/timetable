@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261125a';
+const ASSET_V = '20261126a';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1484,7 +1484,11 @@ async function api(path, opts){
                                                  : 'Couldn’t reach the server. Check your connection and try again.');
   } finally { if (timer) clearTimeout(timer); }
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((data && data.error) || (res.status === 504 ? 'The server took too long to answer. Try again in a moment.' : res.status + ' ' + res.statusText));
+  if (!res.ok){
+    const err = new Error((data && data.error) || (res.status === 504 ? 'The server took too long to answer. Try again in a moment.' : res.status + ' ' + res.statusText));
+    err.status = res.status; err.data = data;          // e.g. data.banned: a moderator's ban, so the page can stop trying
+    throw err;
+  }
   return data;
 }
 /* Site settings and whether you're a moderator (/api/leaderboard?settings=1). Every page wants them, so they're asked

@@ -5109,3 +5109,75 @@ The owner noticed that for days Triplets had been one wordplay group and two tim
   included, keep their puzzles. The first day with a chosen mix is the first one made after this is deployed (the
   nightly job runs at 1 am Sydney time).
 
+
+## 8.200 Game bans, and Jim on a diet (version `20261125c`, `CACHE_VERSION` v124)
+The owner committed 8.198 and 8.199 as `triplets rebalance`; others then merged anticheat and TAS (and used stamp `b` on four
+files), so every page is restamped `c` / v124, above both. Asked: Jim used about 1m of server time and the leaderboards 4m; one
+player had a script pressing Button Pushers around the clock. Jim stays (people use it).
+- **Bans** (`api/_settings.js`): one new `site_setting` row, `game_bans`, JSON `{ email: { g:[game ids], at } }` (`*` is every
+  game). Nothing else in the table changes, and no new table. It's read with the other settings (same query, cached a minute),
+  so it costs no extra trip. `BAN_GAMES`: snake, g2048, typing, react, tetris, hkmj, chain, oddone, classroom, dailyguess, whose,
+  quartets (Triplets), fours (Quartets), jimall (Button Pushers). The solo Jim Button can't be banned: it has no sign-in.
+  - Enforced on the server: `/api/leaderboard` (scores and the run games), `/api/tetris`, `/api/daily` (POSTs for Daily Guess
+    Who, Whose Timetable?, Triplets and Quartets), and `/api/jim` (Together presses; refused before the sign-in check when the
+    email header already names a banned player). Answer: 403 `{ banned:true }`.
+  - Banned players are left off that game's boards (game_score, the Tetris tables, Button Pushers' top list) and ranks close up.
+    Their rows are never changed: lifting a ban brings everything back. Button Pushers' shared total still includes their old
+    presses.
+  - Each person is only ever told their own bans (`bannedFrom` in `?settings=1`); the games page shows a note instead of a game
+    they're banned from. The list itself: moderators only (`?bans=1`, POST `{action:'ban', email, games}`; `[]` lifts).
+  - Moderator page → **Bans**: an email box (suggests people from the roster), a pill per game plus "Every game", Ban / Save /
+    Lift; the list shows each person's games, with an x to lift one.
+  - The player the owner named isn't in the code (the repo is public): the owner bans them from Bans once this is deployed.
+- **Jim** (`jim.js`, `api/jim.js`): both boards refresh every 5 minutes (was 15 s). Presses are counted on the page and sent at
+  most every 5 minutes, straight away at 500 waiting, or when you leave or switch tabs (keepalive); your own count still moves
+  with every press. A failed send retries after 30 s (was 3 s). Coming back to the tab refreshes at most once a minute. The
+  server keeps the shared total a minute (was 15 s), and allows one player 20 sends a minute (a script is slowed before anything
+  is read). A banned player's page stops sending and greys the button.
+- `theme.js` `TT.api` errors now carry `status` and `data` (additive).
+- Tested against `tools/local-db.mjs` (copied, with keys for jim_score and forum_reaction): 30 checks, including that no row
+  changed and `hidden_games` was untouched. In the mock: the Bans tab at 1400 and on a phone in dark mode, banning and lifting,
+  the banned note, and that four presses make no call until the tab closes, on both Jim games.
+
+## 8.201 Forum: MSC Unofficial, folded replies, votes to hide
+- **As MSC Unofficial:** moderators get an "As MSC Unofficial" box on new posts and replies (remembered on the device,
+  `tt.forumas`). The row's email is just `~msc`: nothing on the page or in the database says which moderator wrote it, on
+  purpose (the owner: it mustn't be traceable to the creators). Any moderator can delete one. Students get 403 for `as:'msc'`.
+- **Replies** are folded under "Show N replies" until opened (kept while the page is open; opened after you reply).
+- **Votes to hide** (the owner's design and wording): "Vote to hide" on anyone else's post (not your own, not MSC's) asks
+  "Vote to hide this post? 8 votes are required and your name will be shown." and counts as the starter's YES. The post
+  then shows "Vote by: NAME", "Hide post?" and YES / NO buttons with their counts. One vote each, never taken back.
+  8 yeses (`HIDE_AT`) fold the post away (the same box, with "Show content"); 4 noes (`KEEP_AT`) and it stays ("The vote
+  didn't go through."). Whichever count gets there first ends it; no votes after that. A vote is a `forum_reaction` row,
+  emoji `~hide` (yes) or `~keep` (no): the react route only takes real emoji, so neither can be faked as a reaction, and they
+  don't count toward the 6 reactions. Moderators: "Clear the votes" (Home, and the moderator page's Forum tab, which shows
+  the tally), which also lets a new vote start. A thread folded by votes is never the one thread shown before the forum is
+  opened. The wording is all in `home.html` (`voteBox()` and the vote handlers in `wireForum()`).
+- No new tables or columns. `/andre/` (left alone) still shows hidden posts in full.
+- Tested against the in-memory database (23 checks: the old post and reaction untouched, no moderator trace anywhere, 4 noes
+  end it, 8 yeses hide it, no second votes, no votes after the end) and in the mock (open, ended, folded and shown votes,
+  the start message, the composer box; desktop and phone).
+
+## 8.202 Votes to hide: YES / NO (version `20261125d`, `CACHE_VERSION` v125)
+The owner committed 8.200 and 8.201 as `banning`, then redesigned the votes to hide; 8.201's "Votes to hide" describes the new
+YES / NO vote. Every page is restamped `d` / v125. Next free stamp: `e` / v126.
+
+## 8.203 Forum: tags, notifications, folded replies, long messages (version `20261126a`, `CACHE_VERSION` v126)
+The owner committed 8.202 as `voting`.
+- **Tags** (the owner: "like instagram or discord"): a tag is `@` and someone's login name (`@alex.burns6`, the owner's
+  example); MSC Unofficial's is `@msc`. Each post now carries its poster's `handle` (never the full email). Every post and
+  reply has a Reply link; it opens the thread's reply box started with that person's tag (delete it if you like; none for
+  yourself). Typing `@` suggests people: those already in the forum first (no server call), then, after three letters with
+  fewer than three of them, the student finder (`/api/timetable?find=`, the same search as the timetable's). Arrow keys,
+  Enter or Tab, Escape. Tags light up in posts; your own stands out.
+- **Notifications** (top of Home's forum): replies in your threads and posts tagging you, from the last three weeks of what
+  you can see. The server works them out from the posts it already reads (`notes`); nothing is stored. Seen is
+  `tt.forumseen` (your settings: a time and the ones opened since); the first time, everything before counts as seen.
+  Opening one goes to the post and outlines it. Moderators also hear about replies to MSC Unofficial's threads and `@msc`.
+- **Replies:** the first reply and MSC Unofficial's always show; the rest wait for "Show N more replies".
+- **Long messages** (more than about 360 characters or 7 lines) show their start and "Show full message".
+- **Vote to hide** (and a moderator's Clear the votes) is at the bottom right of a post, shown only while the pointer is on
+  that post (faint on touch screens), because the row was cramped.
+- Tested against the in-memory database (33 checks, including that no full email reaches the page, a tag ending a sentence
+  counts and an email address doesn't) and in the mock (tagging, picking a tag, Reply on a reply, notifications and jumping to
+  one, long messages, first-time quiet start; desktop and phone). Next free stamp: `f` / v127.
