@@ -1,36 +1,38 @@
-// TAS boards. league "fixed": everyone plays the same seed. league "random": ask for a seed
-// (POST {action:"tas", op:"seed", cat, league:"random"}) and send a run on it within SEED_MS.
-//   GET ?tas=<cat>[&league=random][&rank=N]    POST {action:"tas", cat, movie[, league, ticket]}
+// TAS boards. league "fixed": everyone plays the same seed, you send a movie.
+// league "bot": you send code. Ask for a seed (POST {action:"tas", op:"seed", cat, league:"bot"}), run your bot on it,
+// then send {action:"tas", cat, league:"bot", ticket, movie, code} within SEED_MS. Ranked by score, steps, then lines.
+//   GET ?tas=<cat>[&league=bot][&rank=N]
 import { randomBytes } from "node:crypto";
 import { db, isAdmin } from "./_supabase.js";
-import { TAS, SEEDS, SEED_MS, runTas, cleanMovie, MAX_MOVIE } from "../tasengine.js";
+import { TAS, SEEDS, SEED_MS, runTas, cleanMovie, codeLines, MAX_MOVIE } from "../tasengine.js";
 import { displayNames, withName } from "./_names.js";
 import { limited, slowDown } from "./_limit.js";
 
-const MODE = (cat, lg) => (lg === "random" ? "run:tasr:" : "run:tas:") + cat;
-const better = (a, b) => !b || a.score > b.score || (a.score === b.score && (a.frames < b.frames || (a.frames === b.frames && (a.ms || 0) < (b.ms || 0))));
+const MODE = (cat, lg) => (lg === "bot" ? "run:tasb:" : "run:tas:") + cat;
+const MAX_CODE = 20000;
+const better = (a, b) => !b || a.score > b.score || (a.score === b.score && (a.frames < b.frames || (a.frames === b.frames && (a.lines || 0) < (b.lines || 0))));
 
 async function rows(cat, lg) {
   const { data, error } = await db.from("game_state")
-    .select("email, score:state->score, frames:state->frames, ms:state->ms, name:state->>name, at:state->>at").eq("mode", MODE(cat, lg)).limit(2000);
+    .select("email, score:state->score, frames:state->frames, lines:state->lines, name:state->>name, at:state->>at").eq("mode", MODE(cat, lg)).limit(2000);
   if (error) throw new Error(error.message);
-  return (data || []).map(r => ({ ...r, score: +r.score, frames: +r.frames, ms: r.ms == null ? null : +r.ms }))
-    .sort((a, b) => b.score - a.score || a.frames - b.frames || (a.ms || 0) - (b.ms || 0) || String(a.at).localeCompare(String(b.at)));
+  return (data || []).map(r => ({ ...r, score: +r.score, frames: +r.frames, lines: r.lines == null ? null : +r.lines }))
+    .sort((a, b) => b.score - a.score || a.frames - b.frames || (a.lines || 0) - (b.lines || 0) || String(a.at).localeCompare(String(b.at)));
 }
 
 export async function tasBoard(cat, me, lg = "fixed") {
   const [list, names] = await Promise.all([rows(cat, lg), displayNames()]);
   const mine = list.find(r => r.email === me.email);
   return {
-    cat, league: lg, ...TAS[cat], seed: lg === "random" ? null : SEEDS[cat], seedMs: SEED_MS,
-    top: list.slice(0, 100).map((r, i) => ({ rank: i + 1, name: withName(names, r.email, r.name), score: r.score, frames: r.frames, ms: r.ms, you: r.email === me.email })),
+    cat, league: lg, ...TAS[cat], seed: lg === "bot" ? null : SEEDS[cat], seedMs: SEED_MS,
+    top: list.slice(0, 100).map((r, i) => ({ rank: i + 1, name: withName(names, r.email, r.name), score: r.score, frames: r.frames, lines: r.lines, you: r.email === me.email })),
     mine: mine ? { rank: list.indexOf(mine) + 1, score: mine.score, frames: mine.frames } : null,
     canEdit: isAdmin(me.email)
   };
 }
 
 export async function tasHandler(req, res, me, src, name) {
-  const cat = String(src.cat || src.tas || ""), lg = src.league === "random" ? "random" : "fixed";
+  const cat = String(src.cat || src.tas || ""), lg = src.league === "bot" ? "bot" : "fixed";
   if (!TAS[cat]) return res.status(400).json({ error: "Unknown TAS board." });
   const at = rank => rows(cat, lg).then(list => list[parseInt(rank, 10) - 1]);
 
@@ -40,7 +42,8 @@ export async function tasHandler(req, res, me, src, name) {
     if (!row) return res.status(404).json({ error: "No run there." });
     const { data } = await db.from("game_state").select("state").eq("email", row.email).eq("mode", MODE(cat, lg)).maybeSingle();
     if (!data || !data.state || !data.state.movie) return res.status(404).json({ error: "No run there." });
-    return res.status(200).json({ cat, league: lg, rank: +src.rank, score: row.score, frames: row.frames, seed: data.state.seed == null ? SEEDS[cat] : data.state.seed, movie: data.state.movie });
+    return res.status(200).json({ cat, league: lg, rank: +src.rank, score: row.score, frames: row.frames, lines: row.lines,
+      seed: data.state.seed == null ? SEEDS[cat] : data.state.seed, movie: data.state.movie, code: data.state.code || null });
   }
 
   if (src.op === "delete") {
@@ -65,8 +68,10 @@ export async function tasHandler(req, res, me, src, name) {
 
   if (limited("tas:" + me.email, 30, 60000)) return slowDown(res);
   if (typeof src.movie !== "string" || src.movie.length > MAX_MOVIE * 4) return res.status(400).json({ error: "Send the movie as text." });
-  let seed = SEEDS[cat], ms = null;
-  if (lg === "random") {
+  let seed = SEEDS[cat], ms = null, lines = null;
+  if (lg === "bot") {
+    if (typeof src.code !== "string" || !src.code.trim() || src.code.length > MAX_CODE) return res.status(400).json({ error: "Send your bot's code with the run (up to " + MAX_CODE + " characters)." });
+    lines = codeLines(src.code);
     const st = await seeds(), t = st[cat];
     if (!t || t.ticket !== src.ticket) return res.status(400).json({ error: "That seed isn't yours any more. Get a new one." });
     ms = Date.now() - t.at;
@@ -76,16 +81,16 @@ export async function tasHandler(req, res, me, src, name) {
   }
   const r = runTas(cat, src.movie, seed);
   if (!r.ok) return res.status(400).json({ error: "That run doesn't work: " + r.why + ".", why: r.why });
-  r.ms = ms;
+  r.ms = ms; r.lines = lines;
 
   const { data } = await db.from("game_state").select("state").eq("email", me.email).eq("mode", MODE(cat, lg)).maybeSingle();
   const old = data && data.state, improved = better(r, old);
   if (improved) {
     const now = new Date().toISOString();
     const { error } = await db.from("game_state").upsert({ email: me.email, mode: MODE(cat, lg),
-      state: { movie: cleanMovie(src.movie), score: r.score, frames: r.frames, ms, seed: lg === "random" ? seed : null, name, at: now }, updated_at: now });
+      state: { movie: cleanMovie(src.movie), score: r.score, frames: r.frames, ms, lines, code: lg === "bot" ? src.code : undefined, seed: lg === "bot" ? seed : null, name, at: now }, updated_at: now });
     if (error) { console.error("tas:", error.message); return res.status(502).json({ error: "Couldn't save your run." }); }
   }
-  return res.status(200).json({ ok: true, score: r.score, frames: r.frames, ms, improved,
-    best: improved ? { score: r.score, frames: r.frames } : { score: old.score, frames: old.frames }, board: await tasBoard(cat, me, lg) });
+  return res.status(200).json({ ok: true, score: r.score, frames: r.frames, lines, ms, improved,
+    best: improved ? { score: r.score, frames: r.frames, lines } : { score: old.score, frames: old.frames, lines: old.lines }, board: await tasBoard(cat, me, lg) });
 }

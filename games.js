@@ -480,11 +480,12 @@ const LB_CAT = [
   { id:'tas-snake', name:'Snake TAS',      tas:'snake',  league:'fixed' },
   { id:'tas-g2048', name:'2048 TAS',       tas:'g2048',  league:'fixed' },
   { id:'tas-tetris', name:'Tetris TAS',    tas:'tetris', league:'fixed' },
-  { id:'tasr-snake', name:'Snake TAS, random seed',  tas:'snake',  league:'random' },
-  { id:'tasr-g2048', name:'2048 TAS, random seed',   tas:'g2048',  league:'random' },
-  { id:'tasr-tetris', name:'Tetris TAS, random seed', tas:'tetris', league:'random' }
+  { id:'bot-snake', name:'Snake bots',   tas:'snake',  league:'bot' },
+  { id:'bot-g2048', name:'2048 bots',     tas:'g2048',  league:'bot' },
+  { id:'bot-tetris', name:'Tetris bots',  tas:'tetris', league:'bot' }
 ];
-LB_CAT.filter(c => c.tas).forEach(c => { const unit = { snake:'steps', g2048:'moves', tetris:'frames' }[c.tas]; c.fmt = r => r ? r.score + ' in ' + r.frames + ' ' + unit : ''; });
+LB_CAT.filter(c => c.tas).forEach(c => { const unit = { snake:'steps', g2048:'moves', tetris:'frames' }[c.tas];
+  c.fmt = r => r ? r.score + ' in ' + r.frames + ' ' + unit + (r.lines != null ? ', ' + r.lines + ' lines' : '') : ''; });
 const tasRows = async cat => (await TT.api('/api/leaderboard', { params:{ tas:cat.tas, league:cat.league } }));
 /* Years 7 to 9 only see the timetable games' boards (the arcade ones are hidden for them, see youngNow) */
 const YOUNG_BOARDS = new Set(['chain', 'oddone', 'classroom']);
@@ -2240,7 +2241,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126f';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261127a';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);

@@ -1,4 +1,4 @@
-import * as E from "./tasengine.js?v=20261126f";
+import * as E from "./tasengine.js?v=20261127a";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -36,10 +36,63 @@ const TCOL = { I: "#38bdf8", O: "#facc15", T: "#c084fc", S: "#4ade80", Z: "#f871
 let cat = "snake";
 try { const c = localStorage.getItem("tas.cat"); if (E.TAS[c]) cat = c; } catch {}
 let league = "fixed";
-try { if (localStorage.getItem("tas.league") === "random") league = "random"; } catch {}
-let movie = "", g = null, watch = null, board = null, live = null, seed = E.SEEDS[cat], clock = 0;
+try { if (localStorage.getItem("tas.league") === "bot") league = "bot"; } catch {}
+let movie = "", g = null, watch = null, board = null, seed = E.SEEDS[cat], worker = null, ran = null;
 const kind = () => cat;
-const random = () => league === "random";
+const bots = () => league === "bot";
+
+const STARTER = {
+  snake: `// Called every step with the game. Return u d l r, or . to go straight on.
+// This one loops round the whole board, so it always fills it (slowly).
+function move(g) {
+  const [x, y] = g.body[0];
+  if (x === 0) return y === 0 ? "r" : "u";
+  if (y % 2 === 0) return x < 15 ? "r" : "d";
+  return x > 1 ? "l" : y === 15 ? "l" : "d";
+}`,
+  g2048: `// Called every move with the game. Return u d l r.
+// This one tries down, left, right, up, in that order.
+function move(g) {
+  for (const d of "dlru") if (E.g2048Slide(g.b, d)) return d;
+}`,
+  tetris: `// Called whenever the game needs input. Return one or more of L R < > D V C Z A H X . (a frame each).
+// This one drops each piece where the stack stays lowest with the fewest holes.
+let plan = null;
+function move(g) {
+  const p = g.piece;
+  if (!plan || plan.piece !== g.pieces) plan = { piece: g.pieces, tries: 0, ...spot(g) };
+  if (++plan.tries > 30) return "X";
+  if (p.rot !== plan.r) return "C";
+  if (p.x !== plan.x) return p.x > plan.x ? "L" : "R";
+  return "X";
+}
+function spot(g) {
+  const t = g.piece.type;
+  let best = null;
+  for (let r = 0; r < (t === "O" ? 1 : 4); r++) for (let x = -2; x < 10; x++) {
+    if (E.tetrisHits(g.grid, t, r, x, 0)) continue;
+    let y = 0; while (!E.tetrisHits(g.grid, t, r, x, y + 1)) y++;
+    let rows = g.grid.map(row => row.slice());
+    for (const [c, k] of E.CELLS[t][r]) if (y + k >= 0) rows[y + k][x + c] = 1;
+    const full = rows.filter(row => row.every(Boolean)).length;
+    rows = rows.filter(row => !row.every(Boolean));
+    let holes = 0, height = 0, bumps = 0, prev = -1;
+    for (let c = 0; c < 10; c++) {
+      let h = 0;
+      rows.forEach((row, k) => { if (row[c]) h = h || rows.length - k; else if (h) holes++; });
+      height += h; if (prev >= 0) bumps += Math.abs(h - prev); prev = h;
+    }
+    const v = full * 0.76 - height * 0.51 - holes * 0.36 - bumps * 0.18;
+    if (!best || v > best.v) best = { v, r, x };
+  }
+  return best || { r: 0, x: g.piece.x };
+}`
+};
+const BOTRULES = {
+  snake: "<code>g.body</code> is the snake as [x, y] cells, head first. <code>g.dir</code>, <code>g.fruit</code> ([x, y]), <code>g.occ</code> (256 cells, y * 16 + x, 1 where the snake is), <code>g.steps</code>, <code>g.eaten</code>.",
+  g2048: "<code>g.b</code> is the 16 cells row by row, 0 when empty. <code>g.score</code>, <code>g.moves</code>. <code>E.g2048Slide(b, d)</code> gives what a move would do, or null if nothing moves.",
+  tetris: "<code>g.grid</code> is 20 rows of 10, 0 when empty. <code>g.piece</code> ({ type, rot, x, y }), <code>g.queue</code>, <code>g.hold</code>, <code>g.lines</code>, <code>g.pieces</code>. <code>E.tetrisHits(grid, type, rot, x, y)</code> and <code>E.CELLS[type][rot]</code> help you look ahead."
+};
 
 function fresh(sd = seed) {
   if (kind() === "snake") return E.snakeNew(sd);
@@ -77,8 +130,8 @@ function say(text, tone) { const m = $("msg"); m.textContent = text || ""; m.cla
 function showMovie() { const t = $("movie"); t.value = movie; t.scrollTop = t.scrollHeight; }
 
 function input(ch) {
+  if (bots()) return;
   if (watch) stopWatch(true);
-  if (random() && !live) return say("Press New seed first.", "bad");
   if (!step(ch)) {
     say(kind() === "g2048" && !finished() ? "That move doesn't shift anything." : "Run's over. Undo or start over.", "bad");
     return;
@@ -167,22 +220,25 @@ function playWatch() {
     for (let i = 0; i < per && watch.pos < watch.movie.length; i++) { step(watch.movie[watch.pos]); watch.pos++; }
     $("watchpos").textContent = watch.pos + " / " + watch.movie.length;
     draw();
-    if (watch.pos >= watch.movie.length) { watch.paused = true; $("play").textContent = "Play"; showMovie(); say("End of the run. Press a key to carry on from here.", "good"); return; }
+    if (watch.pos >= watch.movie.length) { watch.paused = true; $("play").textContent = "Play"; showMovie(); if (!bots()) say("End of the run. Press a key to carry on from here.", "good"); return; }
     watch.timer = setTimeout(tick, wait);
   };
   tick();
 }
-async function startWatch(rank) {
+function watchMovie(m, sd, label) {
+  stopWatch(false);
+  seed = sd; g = fresh(); movie = "";
+  watch = { movie: E.cleanMovie(m), pos: 0, paused: false, timer: 0 };
+  $("watchbar").hidden = false;
+  say(label);
+  playWatch();
+}
+async function startWatch(rank, wantCode) {
   say("Loading the run…");
   try {
-    const d = await TT.api("/api/leaderboard", { params: { tas: cat, rank } });
-    stopWatch(false);
-    seed = d.seed; live = null; showSeed();
-    g = fresh(); movie = "";
-    watch = { movie: E.cleanMovie(d.movie), pos: 0, paused: false, timer: 0 };
-    $("watchbar").hidden = false;
-    say("Watching #" + rank + ": " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + ".");
-    playWatch();
+    const d = await TT.api("/api/leaderboard", { params: { tas: cat, league, rank } });
+    if (wantCode && d.code) { $("code").value = d.code; showLines(); }
+    watchMovie(d.movie, d.seed, (wantCode ? "Loaded #" + rank + "'s code. " : "") + "Watching #" + rank + ": " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + (d.lines ? ", " + d.lines + " lines" : "") + ".");
   } catch (e) { say(e.message, "bad"); }
 }
 
@@ -198,12 +254,14 @@ async function loadBoard() {
 function paintBoard() {
   const el = $("lb"), rows = (board && board.top) || [];
   if (!rows.length) { el.innerHTML = '<p class="how">No runs yet.</p>'; return; }
-  const secs = r => random() ? '<span class="tm">' + (r.ms == null ? "" : (r.ms / 1000).toFixed(1) + "s") + "</span>" : "";
-  el.innerHTML = '<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Score</span><span class="tm">' + esc(E.TAS[cat].unit) + "</span>" + (random() ? '<span class="tm">Took</span>' : "") + '<span class="watch" style="visibility:hidden">Watch</span></div>' +
+  const lines = r => bots() ? '<span class="tm">' + (r.lines == null ? "" : r.lines) + "</span>" : "";
+  el.innerHTML = '<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Score</span><span class="tm">' + esc(E.TAS[cat].unit) + "</span>" + (bots() ? '<span class="tm">Lines</span>' : "") + '<span class="watch" style="visibility:hidden">Watch</span></div>' +
     rows.slice(0, 25).map(r => '<div class="tlbrow' + (r.you ? " me" : "") + '"><span class="rk">' + r.rank + '</span><span class="nm">' + esc(r.name) +
-    '</span><span class="tm">' + r.score + '</span><span class="tm">' + r.frames + "</span>" + secs(r) + '<button class="watch" type="button" data-rank="' + r.rank + '">Watch</button>' +
+    '</span><span class="tm">' + r.score + '</span><span class="tm">' + r.frames + "</span>" + lines(r) +
+    (bots() ? '<button class="watch" type="button" data-code="' + r.rank + '">View</button>' : '<button class="watch" type="button" data-rank="' + r.rank + '">Watch</button>') +
     (board.canEdit ? '<button class="watch" type="button" data-del="' + r.rank + '">Remove</button>' : "") + "</div>").join("");
   el.querySelectorAll("[data-rank]").forEach(b => b.onclick = () => startWatch(+b.dataset.rank));
+  el.querySelectorAll("[data-code]").forEach(b => b.onclick = () => startWatch(+b.dataset.code, true));
   el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
     if (!confirm("Take this run off the board?")) return;
     try { board = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", op: "delete", cat, league, rank: +b.dataset.del } }); paintBoard(); }
@@ -214,40 +272,98 @@ function paintBoard() {
 async function send() {
   if (watch) stopWatch(true);
   if (!signedIn()) return say("Sign in on the timetable first.", "bad");
-  if (random() && !live) return say("Press New seed first.", "bad");
   const r = E.runTas(cat, movie, seed);
   if (!r.ok) return say("Can't send that: " + r.why + ".", "bad");
   say("Sending…");
   try {
-    const d = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", cat, movie, league, ticket: live && live.ticket } });
-    if (random()) { live = null; showSeed(); }
+    const d = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", cat, movie } });
     board = d.board; paintBoard();
     say(d.improved ? "On the board: " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + "." : "Checked, but your best (" + d.best.score + " in " + d.best.frames + ") is still better.", "good");
   } catch (e) { say(e.message, "bad"); }
 }
 
-function showSeed() {
-  clearInterval(clock);
-  $("seedbar").hidden = !random();
-  if (!random()) return;
-  const paint = () => {
-    if (!live) { $("seedtime").textContent = "Get a seed, then send a run on it within " + E.SEED_MS / 60000 + " minutes."; return; }
-    const left = Math.max(0, live.until - Date.now()), m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
-    $("seedtime").innerHTML = "Seed <b>" + live.seed + "</b> · " + (left ? m + ":" + String(s).padStart(2, "0") + " left" : "out of time, get a new one");
-  };
-  paint(); if (live) clock = setInterval(paint, 1000);
-}
-async function newSeed() {
-  if (!signedIn()) return say("Sign in on the timetable first.", "bad");
+/* bots: the code runs in a worker of its own, on a seed from the server */
+const ENGINE = new URL("tasengine.js?v=20261127a", location.href).href;
+const BOT_MS = 9 * 60e3;
+const showLines = () => { $("lines").textContent = E.codeLines($("code").value) + " lines"; };
+function workerSource(code) {
+  return "import * as E from " + JSON.stringify(ENGINE) + ";\n" + code + `
+;self.onmessage = ({ data: { cat, seed } }) => {
+  const g = cat === "snake" ? E.snakeNew(seed) : cat === "g2048" ? E.g2048New(seed) : E.tetrisNew(seed, 40);
+  const keys = E.TAS[cat].keys, cap = cat === "snake" ? 200000 : cat === "g2048" ? 100000 : 30000;
+  const over = () => cat === "snake" ? g.dead || g.full : cat === "g2048" ? E.g2048Over(g) : g.won || g.over;
+  let movie = "", last = Date.now();
   try {
-    const d = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", op: "seed", cat, league: "random" } });
-    if (watch) stopWatch(false);
-    live = { seed: d.seed, ticket: d.ticket, until: Date.now() + d.ms }; seed = d.seed;
-    movie = ""; g = fresh(); say("New game. Go."); draw(); showMovie(); showSeed();
+    while (!over() && movie.length < cap) {
+      const out = String(move(g, E) ?? "");
+      if (!out) break;
+      for (const c of out) {
+        if (over()) break;
+        if (!keys.includes(c)) throw new Error("move() gave " + JSON.stringify(c) + ", which isn't an input");
+        if (cat === "snake") E.snakeStep(g, c === "." ? null : c);
+        else if (cat === "g2048") { if (!E.g2048Move(g, c)) throw new Error("move " + (movie.length + 1) + " (" + c + ") doesn't shift anything"); }
+        else E.tetrisFrame(g, c);
+        movie += c;
+      }
+      if (Date.now() - last > 300) { last = Date.now(); self.postMessage({ movie }); }
+    }
+    self.postMessage({ movie, done: true });
+  } catch (e) { self.postMessage({ movie, done: true, error: String(e && e.message || e) }); }
+};`;
+}
+async function runBot() {
+  if (worker || $("runbot").disabled) return;
+  if (watch) stopWatch(false);
+  const code = $("code").value;
+  try { localStorage.setItem("tas.bot." + cat, code); } catch {}
+  let tk = null;
+  if (signedIn()) {
+    $("runbot").disabled = true;
+    try { tk = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", op: "seed", cat, league: "bot" } }); }
+    catch (e) { return say(e.message, "bad"); }
+    finally { $("runbot").disabled = false; }
+  }
+  const sd = tk ? tk.seed : crypto.getRandomValues(new Uint32Array(1))[0];
+  const url = URL.createObjectURL(new Blob([workerSource(code)], { type: "text/javascript" }));
+  const t0 = performance.now();
+  let last = { movie: "" }, timer = 0;
+  worker = new Worker(url, { type: "module" });
+  $("runbot").hidden = true; $("stopbot").hidden = false; $("sendbot").disabled = true; ran = null;
+  const finish = (why, bad) => {
+    if (!worker) return;
+    clearTimeout(timer); worker.terminate(); worker = null; URL.revokeObjectURL(url);
+    $("runbot").hidden = false; $("stopbot").hidden = true;
+    const r = E.runTas(cat, last.movie, sd), secs = ((performance.now() - t0) / 1000).toFixed(1);
+    ran = r.ok ? { seed: sd, ticket: tk && tk.ticket, movie: last.movie, code, r } : null;
+    $("sendbot").disabled = !(ran && tk);
+    const head = r.ok ? "Score " + r.score + " in " + r.frames + " " + E.TAS[cat].unit + ", " + E.codeLines(code) + " lines, ran " + secs + "s." : "No score (" + r.why + ").";
+    watchMovie(last.movie, sd, [why, head, ran && !tk ? "Sign in to send it." : ""].filter(Boolean).join(" "));
+    if (bad) $("msg").className = "tasmsg bad";
+  };
+  stopBot = () => finish("Stopped.");
+  worker.onmessage = e => {
+    last = e.data;
+    if (e.data.done) finish(e.data.error ? "Your bot stopped: " + e.data.error + "." : "", !!e.data.error);
+    else say("Running… " + e.data.movie.length + " " + E.TAS[cat].unit);
+  };
+  worker.onerror = e => { e.preventDefault(); finish("Your bot didn't run: " + (e.message || "check it for a syntax error") + ".", true); };
+  timer = setTimeout(() => finish("Stopped after " + BOT_MS / 60000 + " minutes."), BOT_MS);
+  say("Running…");
+  worker.postMessage({ cat, seed: sd });
+}
+let stopBot = () => {};
+async function sendBot() {
+  if (!ran) return;
+  say("Sending…");
+  try {
+    const d = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", cat, league: "bot", ticket: ran.ticket, movie: ran.movie, code: ran.code } });
+    ran = null; $("sendbot").disabled = true;
+    board = d.board; paintBoard();
+    say(d.improved ? "On the board: " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + ", " + d.lines + " lines." : "Checked, but your best (" + d.best.score + " in " + d.best.frames + ", " + d.best.lines + " lines) is still better.", "good");
   } catch (e) { say(e.message, "bad"); }
 }
 function setLeague(lg) {
-  league = lg; live = null;
+  league = lg;
   try { localStorage.setItem("tas.league", lg); } catch {}
   [...$("leagues").children].forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lg === league)));
   pick(cat);
@@ -255,22 +371,29 @@ function setLeague(lg) {
 
 function pick(c) {
   if (watch) stopWatch(false);
-  if (c !== cat) live = null;
-  cat = c;
+  if (worker) stopBot();
+  cat = c; ran = null;
   try { localStorage.setItem("tas.cat", c); } catch {}
-  seed = random() ? (live ? live.seed : E.SEEDS[cat]) : E.SEEDS[cat];
-  movie = ""; g = fresh(); showSeed();
+  seed = E.SEEDS[cat];
+  movie = ""; g = fresh();
+  $("manual").hidden = bots(); $("botpanel").hidden = !bots(); $("sendbot").disabled = true;
+  let saved = null; try { saved = localStorage.getItem("tas.bot." + cat); } catch {}
+  $("code").value = saved || STARTER[cat]; showLines();
   [...$("cats").children].forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cat === cat)));
   $("studiotitle").textContent = E.TAS[cat].name;
-  $("studiohow").textContent = HOW[kind()];
-  $("rules").innerHTML = RULES[kind()].concat(random() ? ["Random seed: every game has its own seed instead of the one above. Each seed works once, for " + E.SEED_MS / 60000 + " minutes."] : []).map(r => "<li>" + r + "</li>").join("");
+  $("studiohow").textContent = bots() ? "Write move(g) below and press Run bot. It plays a fresh random seed in the background, then you can send it." : HOW[kind()];
+  $("rules").innerHTML = (bots()
+    ? RULES[kind()].slice(1).concat(["Your code defines <code>move(g)</code>. It gets the game and returns the next input, or several in a row. " + BOTRULES[kind()] + " <code>E</code> is the whole engine.",
+        "Each run gets its own random seed, which works once, for " + E.SEED_MS / 60000 + " minutes. Ranked by score, then fewest " + E.TAS[cat].unit + ", then fewest lines of code (blank lines and // comments don't count). No anticheat."])
+    : RULES[kind()]).map(r => "<li>" + r + "</li>").join("");
   $("keys").innerHTML = PADS[kind()].map(([k, l]) => '<button type="button" data-k="' + esc(k) + '">' + esc(k) + "<span>" + esc(l) + "</span></button>").join("");
   $("keys").querySelectorAll("button").forEach(b => b.onclick = () => input(b.dataset.k));
   const call = body => 'await fetch("' + location.origin + '/api/leaderboard", { method: "POST",\n  headers: { "Content-Type": "application/json", "X-School-Email": EMAIL, "X-School-Password": PASSWORD },\n  body: JSON.stringify(' + body + ') })';
-  $("apiex").textContent = random()
-    ? '// 1. a seed (and a ticket for it)\nconst { seed, ticket } = await (' + call('{ action: "tas", op: "seed", cat: "' + cat + '", league: "random" }') + ').json();\n\n' +
-      '// 2. play it with your bot, then send the movie within ' + E.SEED_MS / 60000 + ' minutes\n' + call('{ action: "tas", cat: "' + cat + '", league: "random", ticket, movie }') + ';\n\n' +
-      'GET /api/leaderboard?tas=' + cat + '&league=random   board'
+  $("apiex").textContent = bots()
+    ? '// 1. a seed (and a ticket for it)\nconst { seed, ticket } = await (' + call('{ action: "tas", op: "seed", cat: "' + cat + '", league: "bot" }') + ').json();\n\n' +
+      '// 2. run your bot on it, then send its moves and its code within ' + E.SEED_MS / 60000 + ' minutes\n' + call('{ action: "tas", cat: "' + cat + '", league: "bot", ticket, movie, code }') + ';\n\n' +
+      'GET /api/leaderboard?tas=' + cat + '&league=bot           board\n' +
+      'GET /api/leaderboard?tas=' + cat + '&league=bot&rank=1    top bot, with its code'
     : call('{ action: "tas", cat: "' + cat + '", movie }') + ';\n\n' +
       'GET /api/leaderboard?tas=' + cat + '           board\n' +
       'GET /api/leaderboard?tas=' + cat + '&rank=1    top movie';
@@ -279,9 +402,14 @@ function pick(c) {
 
 $("cats").innerHTML = Object.entries(E.TAS).map(([k, c]) => '<button type="button" class="diffpill" data-cat="' + k + '">' + esc(c.name) + "</button>").join("");
 $("cats").querySelectorAll("button").forEach(b => b.onclick = () => { if (b.dataset.cat !== cat) pick(b.dataset.cat); });
-$("leagues").innerHTML = [["fixed", "Fixed seed"], ["random", "Random seed"]].map(([k, l]) => '<button type="button" class="diffpill" data-lg="' + k + '" aria-pressed="' + (k === league) + '">' + l + "</button>").join("");
+$("leagues").innerHTML = [["fixed", "TAS"], ["bot", "Bots"]].map(([k, l]) => '<button type="button" class="diffpill" data-lg="' + k + '" aria-pressed="' + (k === league) + '">' + l + "</button>").join("");
 $("leagues").querySelectorAll("button").forEach(b => b.onclick = () => { if (b.dataset.lg !== league) setLeague(b.dataset.lg); });
-$("newseed").onclick = newSeed;
+$("runbot").onclick = runBot;
+$("stopbot").onclick = () => stopBot();
+$("sendbot").onclick = sendBot;
+$("starter").onclick = () => { $("code").value = STARTER[cat]; showLines(); };
+$("code").addEventListener("input", showLines);
+$("code").addEventListener("keydown", e => { if (e.key === "Tab") { e.preventDefault(); const t = e.target, a = t.selectionStart; t.setRangeText("  ", a, t.selectionEnd, "end"); showLines(); } });
 
 $("undo").onclick = () => { if (watch) stopWatch(true); if (!movie.length) return; rebuild(movie.length - 1); say(""); draw(); showMovie(); };
 $("reset").onclick = () => { if (watch) stopWatch(false); if (movie.length > 50 && !confirm("Throw this movie away and start over?")) return; movie = ""; g = fresh(); say(""); draw(); showMovie(); };

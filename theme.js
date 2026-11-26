@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261126f';
+const ASSET_V = '20261127a';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -1530,7 +1530,7 @@ function siteCfg(){
   try {
     const c = JSON.parse(sessionStorage.getItem(SITE_KEY) || 'null');
     /* (a copy from before 25 November 2026 has no year/staff: fetched again) */
-    if (c && c.d && 'staff' in c.d && c.who === who && Date.now() - c.at < SITE_TTL && Date.now() >= c.at) return (siteP = Promise.resolve(c.d).then(d => (keepWho(who, d), d)));
+    if (c && c.d && 'staff' in c.d && 'usage' in c.d && c.who === who && Date.now() - c.at < SITE_TTL && Date.now() >= c.at) return (siteP = Promise.resolve(c.d).then(d => (keepWho(who, d), d)));
   } catch {}
   siteP = api('/api/leaderboard', { params:{ settings:1 } }).then(d => {
     try { if (d) sessionStorage.setItem(SITE_KEY, JSON.stringify({ who, at: Date.now(), d })); } catch {}
@@ -1540,6 +1540,31 @@ function siteCfg(){
   return siteP;
 }
 function forgetSite(){ siteP = null; try { sessionStorage.removeItem(SITE_KEY); } catch {} }
+/* A daily time limit for the one person who asked for it (api/_usage.js). Everyone else gets usage: null and nothing runs. */
+function watchTime(){
+  if (PREVIEW || !myEmail()) return;
+  siteCfg().then(d => {
+    if (!d || !d.usage) return;
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return;
+      api('/api/leaderboard', { method:'POST', body:{ action:'usage' } }).then(u => { if (u && u.locked) timeUp(u); }).catch(() => {});
+    };
+    if (d.usage.locked) timeUp(d.usage);
+    tick(); setInterval(tick, 30000);
+    document.addEventListener('visibilitychange', tick);
+  }).catch(() => {});
+}
+function timeUp(u){
+  if (document.getElementById('timeup')) return;
+  const el = document.createElement('div'); el.id = 'timeup';
+  el.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;' +
+    'background:var(--bg,#111);color:var(--text,#fff);font:400 1.125rem/1.5 var(--font-ui,system-ui)';
+  el.innerHTML = '<div><div style="font-size:1.75rem;font-weight:700;margin-bottom:6px">That’s your ' + u.minutes + ' minutes for today.</div><div style="opacity:.7">See you tomorrow.</div></div>';
+  document.body.appendChild(el);
+  document.documentElement.style.overflow = 'hidden';
+  addEventListener('keydown', e => { e.stopImmediatePropagation(); e.preventDefault(); }, true);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchTime, { once:true }); else setTimeout(watchTime, 0);
 /* Who you are, as far as the pages need to know at once (the owner, 25 November 2026): your year and whether you're staff,
    from the settings above, kept on this device (msc.who, for whoever is signed in) so pages can decide before anything
    loads. Years 7 to 9 don't see the arcade or multiplayer games (html[data-young], games.js); staff don't see the forum

@@ -6,3 +6,4 @@ sample/
 SETUP.md
 graphify-out/
 .graphifyignore
+tools/tas-*.txt
