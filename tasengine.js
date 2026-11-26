@@ -152,6 +152,23 @@ export function g2048Move(g, d) {
   return true;
 }
 
+// what a move would do to a board, without spawning a tile: { b, gained }, or null if nothing moves
+export function g2048Slide(b, d) {
+  if (!LINE[d]) return null;
+  const out = b.slice(); let gained = 0, moved = false;
+  for (let k = 0; k < 4; k++) {
+    const idx = LINE[d](k), vals = idx.map(i => b[i]).filter(Boolean), row = [];
+    for (let i = 0; i < vals.length; i++) {
+      if (vals[i] === vals[i + 1]) { row.push(vals[i] * 2); gained += vals[i] * 2; i++; } else row.push(vals[i]);
+    }
+    while (row.length < 4) row.push(0);
+    idx.forEach((p, j) => { if (out[p] !== row[j]) { moved = true; out[p] = row[j]; } });
+  }
+  return moved ? { b: out, gained } : null;
+}
+
+export const codeLines = code => String(code || "").split("\n").filter(l => l.trim() && !/^\s*\/\//.test(l)).length;
+
 export function g2048Over(g) {
   for (let i = 0; i < 16; i++) {
     if (!g.b[i]) return false;

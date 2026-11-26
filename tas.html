@@ -48,8 +48,8 @@
 .tasspeed{display:flex;align-items:center;gap:8px;font-size:0.8125rem;color:var(--muted)}
 [hidden]{display:none!important}
 .tasbars{display:flex;gap:10px 18px;flex-wrap:wrap;margin-bottom:14px}
-.tasseed{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:-4px 0 14px;font-size:0.875rem;color:var(--muted)}
-.tasseed b{color:var(--text);font-family:var(--font-num)}
+.tascode{min-height:260px;font-size:0.8125rem;tab-size:2;white-space:pre;overflow:auto;word-break:normal}
+.tasstat{font-size:0.8125rem;color:var(--muted);align-self:center}
 .tasspeed select{font:inherit;color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:4px 6px}
 </style>
 </head>
@@ -64,14 +64,13 @@
     </div>
   </div>
 
-  <p class="tasintro"><b>Bots welcome.</b> A run is a movie, one input per frame, played back on the server. Highest score wins, fewest frames breaks a tie.
-    Fixed seed is the same game for everyone. Random seed gives you a new game each time, so your bot has to play it live.</p>
+  <p class="tasintro"><b>TAS</b>: everyone plays the same seed and sends a movie, one input per frame. <b>Bots</b>: you send code instead, and it plays a random seed.
+    No anticheat on either. Highest score wins, then fewest steps, then (for bots) fewest lines of code.</p>
 
   <div class="tasbars">
     <div class="diffbar" id="cats"></div>
     <div class="diffbar" id="leagues"></div>
   </div>
-  <div class="tasseed" id="seedbar" hidden><button class="btn primary" type="button" id="newseed">New seed</button><span id="seedtime"></span></div>
 
   <div class="tasgrid">
     <div class="tascard">
@@ -81,6 +80,7 @@
         <canvas id="board" width="320" height="320"></canvas>
         <div class="tasside" id="side"></div>
       </div>
+      <div id="manual">
       <div class="taskeys" id="keys"></div>
       <div class="tasbar">
         <button class="btn" type="button" id="undo">Undo</button>
@@ -97,6 +97,17 @@
         <span id="watchpos"></span>
       </div>
       <textarea class="tasmovie" id="movie" spellcheck="false" aria-label="Movie" placeholder="Your movie shows up here. Paste one in and press Load movie."></textarea>
+      </div>
+      <div id="botpanel" hidden>
+        <textarea class="tasmovie tascode" id="code" spellcheck="false" aria-label="Bot code"></textarea>
+        <div class="tasbar">
+          <button class="btn primary" type="button" id="runbot">Run bot</button>
+          <button class="btn" type="button" id="stopbot" hidden>Stop</button>
+          <button class="btn" type="button" id="sendbot" disabled>Send</button>
+          <button class="btn" type="button" id="starter">Starter bot</button>
+          <span class="tasstat" id="lines"></span>
+        </div>
+      </div>
       <div class="tasmsg" id="msg"></div>
     </div>
 
@@ -119,7 +130,7 @@
     <p>Spaces, new lines and <code>#</code> comments in a movie are ignored.</p>
   </div>
 </div>
-<script type="module" src="tas.js?v=20261126b"></script>
+<script type="module" src="tas.js?v=20261126c"></script>
 <script src="settings.js?v=20261126a"></script>
 </body>
 </html>
