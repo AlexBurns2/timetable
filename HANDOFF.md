@@ -5214,3 +5214,25 @@ TAS boards go through `lbCats`, so Years 7 to 9 don't see them), and `tas.html`,
 Origin used `20261126a`/`b` and v127, as did this side's v127: everything is restamped `20261126c` / v128, above both.
 8.203's heading had been changed to `20261126a` on origin's side; it's back to `20261125e`, the stamp that round used.
 Checked: no conflict markers left, the scripts parse, one stamp everywhere. Staged, not committed. Next free stamp: `d` / v129.
+
+## 8.206 No weekly cap on suggestions (server only, no restamp)
+The owner removed the weekly cap on suggestions: poll questions ("Suggest next week's question") and ideas for the site were
+3 a week each (`api/_poll.js`). Now there's no cap, only a flood brake of 10 a minute each, counted in memory (`limited`),
+which also drops the database read each submission used to make. Name-change requests keep their own limit (2 a week,
+`_notice.js`). Tested against the in-memory database: 10 suggestions and 6 ideas in a row saved, the 11th in a minute slowed.
+
+## 8.207 Banned players stay on the boards, with a "!" (version `20261126d`, `CACHE_VERSION` v129)
+The owner: people banned from a game should stay on its leaderboards until they're removed, mainly for Button Pushers, with
+an exclamation mark by the name saying "User banned from this game" on hover.
+- A ban now only refuses new results (as before). The boards no longer leave banned players off: `/api/leaderboard`,
+  `/api/tetris` and Button Pushers' top list (`/api/jim?together=1`) mark their rows `banned: true` instead, from the ban
+  list read with the settings (cached, no extra database trip). Ranks are the plain ones again.
+- The pages draw `banMark()` (`games.js`, a red "!" with the hover text) on every board: the in-game panels, the Tetris
+  boards, the leaderboards sheet, the board cards, Studio's tile boards, the moderator's board editor, and Button Pushers
+  (`jim.js`). The Bans tab now says they stay on the boards until their scores are removed.
+- Removing someone: the moderator page's board editor deletes a score (game boards and Tetris). Button Pushers has no
+  remove button yet, so a banned presser stays on its top list (and in the shared count) until one is added.
+- The refusal message is now "A moderator has stopped your scores counting in this game."
+- Tested: the ban suite (29 checks: on the boards and marked, ranks unchanged, scores and presses still refused, no row
+  changed, no mark once lifted) plus the forum and year suites; the mock (Button Pushers' board, the leaderboards sheet and
+  cards). Next free stamp: `e` / v130.

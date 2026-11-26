@@ -13,10 +13,12 @@
  *
  * Game bans (25 November 2026): the row "game_bans" holds who a moderator has
  * taken off which games, as JSON { "<email>": { "g": [game ids], "at": iso } }
- * ("*" is every game). A banned person's results for that game are refused by
- * the server and they're left off its boards; nothing they had is deleted, so
- * lifting a ban brings it all back. The list is never sent to the pages: each
- * person is only told the games they're banned from (bannedFrom).
+ * ("*" is every game). A banned person's new results for that game are refused
+ * by the server. They stay on its boards with what they had, marked `banned`
+ * (a "!" by the name, "User banned from this game"; the owner, 26 November
+ * 2026), until a moderator removes their scores. The list itself is never sent
+ * to the pages: each person is only told the games they're banned from
+ * (bannedFrom), and a board only marks the rows on it.
  *
  * Table (Supabase → SQL editor):
  *   create table site_setting (

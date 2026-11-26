@@ -123,6 +123,7 @@
 import { db, isAdmin } from "./_supabase.js";
 import { withName, rosterList } from "./_names.js";
 import { fetchAsOwner, studentDirectory } from "./timetable.js";
+import { limited, slowDown } from "./_limit.js";
 
 export const KINDS = ["period", "student", "teacher", "class", "custom"];
 const VOTERS = "__n";                   // the tally row that counts people, not answers
@@ -135,8 +136,10 @@ const OPENS_AT = 9 * 3600 + 30 * 60;           // Monday 09:30, in seconds after
 const RESULTS_AT = 4 * 86400 + 12 * 3600;      // Friday 12:00: voting closes, the winner is out
 const WEEK_ENDS = 7 * 86400 + OPENS_AT;        // next Monday 09:30
 const MAX_Q = 120;
-const MAX_SUGGEST_A_WEEK = 3;
-const MAX_IDEA = 300, MAX_IDEAS_A_WEEK = 3;
+/* Suggestions (poll questions, ideas for the site) have no weekly cap since 26 November 2026 (the owner); there was 3 a
+   week each. Only a flood brake is left: SUGGEST_PER_MIN a minute each, counted in memory, so it costs no database read. */
+const SUGGEST_PER_MIN = 10;
+const MAX_IDEA = 300;
 
 /* ── the week, in Sydney ─────────────────────────────────────────────── */
 function sydney(d = new Date()) {
@@ -552,9 +555,7 @@ export async function pollPost(body, res, me, NAMES) {
     const question = String(body.question || "").replace(/\s+/g, " ").trim().slice(0, MAX_Q);
     const kind = KINDS.includes(body.kind) ? body.kind : "";
     if (question.length < 5) return res.status(400).json({ error: "Write a question first." });
-    const { data: mine } = await db.from("poll_suggestion").select("id").eq("email", me.email).or("kind.is.null,kind.neq.feature")
-      .gte("created_at", new Date(clock.openedAt).toISOString());   // since this week's poll opened (feature ideas don't count)
-    if ((mine || []).length >= MAX_SUGGEST_A_WEEK) return res.status(429).json({ error: "That's plenty for this week. Thanks!" });
+    if (limited("pollsuggest:" + me.email, SUGGEST_PER_MIN, 60e3)) return slowDown(res);
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     const { error } = await db.from("poll_suggestion").insert({ id, email: me.email, question, kind: kind || null });
     if (error) { console.error("poll suggest:", error.message); return res.status(502).json({ error: "Couldn't send that." }); }
@@ -563,13 +564,11 @@ export async function pollPost(body, res, me, NAMES) {
 
   /* an idea for the site (Home's footer, "Suggest a feature"). Kept with the poll
      suggestions as kind 'feature', so no table of its own; the moderator page
-     lists them under Feature ideas. Three a week each. */
+     lists them under Feature ideas. As many as anyone likes (only the flood brake). */
   if (action === "featuresuggest") {
     const idea = String(body.idea || "").replace(/\s+/g, " ").trim().slice(0, MAX_IDEA);
     if (idea.length < 5) return res.status(400).json({ error: "Write your idea first." });
-    const { data: mine } = await db.from("poll_suggestion").select("id").eq("email", me.email).eq("kind", "feature")
-      .gte("created_at", new Date(Date.now() - 7 * 864e5).toISOString());
-    if ((mine || []).length >= MAX_IDEAS_A_WEEK) return res.status(429).json({ error: "That's plenty for this week. Thanks!" });
+    if (limited("featuresuggest:" + me.email, SUGGEST_PER_MIN, 60e3)) return slowDown(res);
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     const { error } = await db.from("poll_suggestion").insert({ id, email: me.email, question: idea, kind: "feature" });
     if (error) { console.error("feature idea:", error.message); return res.status(502).json({ error: "Couldn't send that." }); }

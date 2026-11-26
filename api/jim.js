@@ -32,8 +32,8 @@ import { limited, slowDown, ipOf, crossSite } from "./_limit.js";
 import { displayNames, withName, nameFromLocal, yearTags, withYear } from "./_names.js";
 import { isBanned, bannedIn } from "./_settings.js";
 
-/* Bans (moderator page → Bans, game "jimall"): a banned player's presses are refused and they're left off the
-   top list. Their row stays as it was, and so does the shared count. */
+/* Bans (moderator page → Bans, game "jimall"): a banned player's presses are refused. They stay on the top list with
+   what they had (the owner, 26 November 2026), and their presses stay in the shared count. */
 const BANNED = { error: "A moderator has taken you off Button Pushers.", banned: true };
 
 /* a Together player's name as the board shows it: "Andre Kwok (Year 12)" */
@@ -78,17 +78,17 @@ const TOP = 20;
 
 /* the shared count and the biggest contributors, by their usual names */
 async function together() {
-  const banned = await bannedIn("jimall");
   const [total, { data: rows, error: e2 }] = await Promise.all([
     totalCached(),
     db.from("jim_score").select("name, score").like("name", "~%@%").gt("score", 0)
-      .order("score", { ascending: false }).limit(TOP + banned.size)
+      .order("score", { ascending: false }).limit(TOP)
   ]);
   if (e2) throw new Error(e2.message);
-  const [names, tags] = await Promise.all([displayNames(), yearTags()]);
+  const [names, tags, banned] = await Promise.all([displayNames(), yearTags(), bannedIn("jimall")]);
   return { total: total.sum, anon: total.anon,
-           top: (rows || []).filter(r => !banned.has(r.name.slice(1).toLowerCase())).slice(0, TOP).map(r => { const email = r.name.slice(1);
-             return { name: withYear(withName(names, email, nameFromLocal(email.split("@")[0])), tags, email), score: Number(r.score) || 0 }; }) };
+           top: (rows || []).map(r => { const email = r.name.slice(1);
+             return { name: withYear(withName(names, email, nameFromLocal(email.split("@")[0])), tags, email), score: Number(r.score) || 0,
+                      ...(banned.has(email.toLowerCase()) ? { banned: true } : {}) }; }) };     // "!" by the name on the page
 }
 
 const MAX_ADD = 500;          // presses per request; turbo mode at full tilt stays well under

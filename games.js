@@ -232,6 +232,9 @@ function gameCard(g, i){
   return c;
 }
 const studioGames = () => !REVISION_PAGE && ['studio','apple'].includes(document.documentElement.getAttribute('data-skin'));
+/* someone a moderator has banned from the game (moderator page → Bans): still on the board, with a "!" by the name (the owner,
+   26 November 2026). Global, so jim.js (Button Pushers) uses it too. */
+function banMark(r){ return r && r.banned ? '<span class="lbban" title="User banned from this game" aria-label="User banned from this game">!</span>' : ''; }
 /* which leaderboards (LB_CAT ids) each game's tile shows in Studio */
 const TILE_BOARDS = { chain:['chain'], oddone:['oddone'], classroom:['classroom'], snake:['snake'], g2048:['g2048'],
                       typing:['typing'], react:['react'], tetris:['tsprint', 'tsurv', 'tzen'] };
@@ -239,7 +242,7 @@ let lbFullCache = null;      // every board, every place, once per page
 function fetchBoardsFull(){
   if (lbFullCache) return lbFullCache;
   const wk = tetrisWeek();
-  const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
+  const all = (rows, key, fmt) => ({ rows:(rows || []).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you, banned:!!r.banned })) });
   lbFullCache = Promise.all(lbCats().map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) }); return [cat.id, all(d.all && d.all.top, 'score', cat.fmt)]; }
@@ -255,7 +258,7 @@ function fetchBoardsFull(){
 function fillTileBoards(grid){
   const boxes = [...grid.querySelectorAll('.stlb')]; if (!boxes.length) return;
   if (!TT.myEmail || !TT.myEmail()){ boxes.forEach(b => b.innerHTML = '<span class="lbbempty">Sign in to see the leaderboard</span>'); return; }
-  const row = (r, i, label) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (label || i + 1) + '</i><span class="w">' + esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>';
+  const row = (r, i, label) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (label || i + 1) + '</i><span class="w">' + esc(r.who) + banMark(r) + '</span><span class="v">' + esc(r.val) + '</span></span>';
   /* the top three, and your own place under them when you're further down */
   const list = L => { if (!L) return '<span class="lbbempty">Couldn’t load</span>'; if (!L.rows.length) return '<span class="lbbempty">No scores yet</span>';
     const me = L.rows.findIndex(r => r.you);
@@ -403,7 +406,7 @@ function boardsSection(grid){
       const L = leaders[b.dataset.b], rows = b.querySelector('.lbbrows');
       if (!L){ rows.innerHTML = '<span class="lbbempty">Couldn’t load</span>'; return; }
       rows.innerHTML = L.rows.length ? L.rows.map((r, i) => '<span class="lbbr' + (r.you ? ' me' : '') + '"><i>' + (i + 1) + '</i><span class="w">' +
-          esc(r.who) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('')
+          esc(r.who) + banMark(r) + '</span><span class="v">' + esc(r.val) + '</span></span>').join('')
         : '<span class="lbbempty">No scores yet</span>';
     });
   });
@@ -492,7 +495,7 @@ const shortHMS = v => fmtHMS(v).replace(/^00:/, '');     // 01:23.4, not 00:01:2
 function fetchLeaders(){
   if (lbSumCache) return lbSumCache;
   const wk = tetrisWeek();
-  const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you })) });
+  const top3 = (rows, key, fmt) => ({ rows:(rows || []).slice(0, 3).map(r => ({ who:r.name, val:fmt(r[key]), you:!!r.you, banned:!!r.banned })) });
   lbSumCache = Promise.all(lbCats().map(async cat => {
     try {
       if (cat.g){ const d = await TT.api('/api/leaderboard', { params:Object.assign({ game:cat.id, metric:cat.g.metric, week:wk }, lbYearParam()) });
@@ -1006,7 +1009,7 @@ function paintLB(){
   const rows = b.top || [];
   if (!rows.length && b.meBest == null){ body.innerHTML = heldHTML(lbState.held) + '<p class="how">No scores yet. Be the first.</p>'; return; }
   let html = heldHTML(lbState.held) + rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-    '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
+    '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
   if (b.meRank && b.meRank > rows.length)
     html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(lb.fmt(b.meBest))+'</span></div>';
   body.innerHTML = html;
@@ -2229,7 +2232,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126c';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126d';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -2737,7 +2740,7 @@ BUILD.tetris = (host, o) => {
   function rowsHTML(d, fmt){
     const rows=(d && d.top)||[];
     let html=rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+fmt(r)+'</span></div>').join('');
+      '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+fmt(r)+'</span></div>').join('');
     if (d && d.meRank && d.meRank>rows.length)
       html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+fmt({time_ms:d.meBest})+'</span></div>';
     return html;
@@ -2765,7 +2768,7 @@ BUILD.tetris = (host, o) => {
     if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<p class="how">No scores yet. Set the first one.</p>'; return; }
     let html='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
       rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-        '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
+        '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
     if (d && d.meRank && d.meRank>rows.length)
       html+='<div class="tlbrow me"><span class="rk">'+d.meRank+'</span><span class="nm">You</span><span class="tm">'+(d.meCurrent||0)+'</span><span class="tm">'+(d.meBest||0)+'</span></div>';
     el.innerHTML=html;
@@ -4897,7 +4900,7 @@ function lbBoard(box, focusId){
     const rows = b.top || [];
     if (!rows.length && b.meBest==null){ body.innerHTML='<p class="how">No scores yet, be the first.</p>'; return; }
     let html = rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
-      '<span class="nm">'+esc(r.name)+'</span><span class="tm">'+esc(cur.fmt(r.score))+'</span></div>').join('');
+      '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+esc(cur.fmt(r.score))+'</span></div>').join('');
     if (b.meRank && b.meRank>rows.length)
       html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(cur.fmt(b.meBest))+'</span></div>';
     body.innerHTML = html;
@@ -5177,7 +5180,7 @@ BUILD.admin = host => {
     if (!rows.length){ body.innerHTML = '<p class="how">No scores on this board.</p>'; return; }
     body.innerHTML = rows.map((r,i) => { const v = cur.valOf(r);
       return '<div class="adminrow" data-email="'+esc(r.email||'')+'">' +
-        '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+' · '+esc(cur.fmt(v))+'</span>' +
+        '<span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+banMark(r)+' · '+esc(cur.fmt(v))+'</span>' +
         '<input class="sc" type="number" value="'+v+'" aria-label="value"'+(cur.unit?' title="'+cur.unit+'"':'')+'>' +
         '<button class="btn" type="button" data-act="save">Save</button>' +
         '<button class="del" type="button" data-act="del">Delete</button></div>'; }).join('');
@@ -5192,7 +5195,7 @@ BUILD.admin = host => {
     const d = data || {}, ids = d.games || [], bans = d.bans || [];
     const gname = id => id === '*' ? 'Every game' : ((GAMES.find(g => g.id === id) || {}).name || id);
     const mineOf = email => bans.find(b => b.email === String(email).trim().toLowerCase());
-    $('admnote').textContent = 'A banned person can’t save results in those games and is left off their boards. Nothing of theirs is deleted: lifting a ban brings it all back.';
+    $('admnote').textContent = 'A banned person can’t save new results in those games. They stay on the boards, with a “!” by their name, until you remove their scores.';
     const pill = id => '<button type="button" class="diffpill" data-g="' + id + '" aria-pressed="' + banForm.games.has(id) + '">' + esc(gname(id)) + '</button>';
     $('admbody').innerHTML =
       '<div class="banform">' +
