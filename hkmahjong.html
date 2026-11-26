@@ -910,15 +910,16 @@ input[type=text],select{background:var(--panel-2);color:var(--text);border:var(-
 .bt .tile.back{background:linear-gradient(160deg,#5cc44c,#2f9634);box-shadow:0 calc(var(--w)*.1) 0 #f3eedc,0 calc(var(--w)*.16) calc(var(--w)*.16) rgba(0,0,0,.35)}
 .bt .tile.hl{outline:none;animation:none}
 /* the wall: four rows of stacked green backs, turned on the table */
-.bt-wall{--S:64cqmin;--D:5.2cqmin;--g:1.6cqmin;position:absolute;left:51%;top:44%;width:var(--S);height:var(--S);transform:translate(-50%,-50%) rotate(-4deg);pointer-events:none}
-/* four walls of 18 stacks in a pinwheel: each starts at its corner and stops a little short of the next, as on a real table */
-.bt-side{position:absolute;left:0;bottom:0;width:calc(var(--S) - var(--D) - var(--g));height:var(--D);display:flex;align-items:flex-start;gap:.1cqmin;transform-origin:calc(var(--S) / 2) calc(var(--D) - var(--S) / 2)}
+.bt-wall{--S:66cqmin;--L:75cqmin;--D:5.6cqmin;--g:2.4cqmin;--x0:calc(var(--S) - var(--D) - var(--g) - var(--L));position:absolute;left:51%;top:45%;width:var(--S);height:var(--S);transform:translate(-50%,-50%) rotate(-11deg);pointer-events:none}
+/* four long walls of 18 stacks, set apart in a pinwheel: each runs past the end of the one before it
+   and stops short of the next, as tiles are laid on a real table */
+.bt-side{position:absolute;left:var(--x0);bottom:0;width:var(--L);height:var(--D);display:flex;align-items:flex-start;gap:.12cqmin;transform-origin:calc(var(--S) / 2 - var(--x0)) calc(var(--D) - var(--S) / 2)}
 .bt-side.s1{transform:rotate(-90deg)}.bt-side.s2{transform:rotate(-180deg)}.bt-side.s3{transform:rotate(-270deg)}
-.stk2{flex:1;height:calc(var(--D) - 1.3cqmin);border-radius:.4cqmin;background:linear-gradient(175deg,#3fae55,#258a3e 65%,#1f7a37);transition:opacity .3s,transform .3s}
-.bt-side.s0 .stk2{box-shadow:inset 0 0 0 .1cqmin rgba(8,50,20,.5),0 0.30cqmin 0 #eef0dc,0 0.62cqmin 0 #2f8f45,0 0.95cqmin 0 #f2f0e0,0 1.25cqmin 0 #1d6b34,0 1.50cqmin .8cqmin rgba(0,0,0,.3)}
-.bt-side.s1 .stk2{box-shadow:inset 0 0 0 .1cqmin rgba(8,50,20,.5),-0.30cqmin 0 0 #eef0dc,-0.62cqmin 0 0 #2f8f45,-0.95cqmin 0 0 #f2f0e0,-1.25cqmin 0 0 #1d6b34,-1.50cqmin 0 .8cqmin rgba(0,0,0,.3)}
-.bt-side.s2 .stk2{box-shadow:inset 0 0 0 .1cqmin rgba(8,50,20,.5),0 -0.30cqmin 0 #eef0dc,0 -0.62cqmin 0 #2f8f45,0 -0.95cqmin 0 #f2f0e0,0 -1.25cqmin 0 #1d6b34,0 -1.50cqmin .8cqmin rgba(0,0,0,.3)}
-.bt-side.s3 .stk2{box-shadow:inset 0 0 0 .1cqmin rgba(8,50,20,.5),0.30cqmin 0 0 #eef0dc,0.62cqmin 0 0 #2f8f45,0.95cqmin 0 0 #f2f0e0,1.25cqmin 0 0 #1d6b34,1.50cqmin 0 .8cqmin rgba(0,0,0,.3)}
+.stk2{flex:1;height:calc(var(--D) - 1.2cqmin);border-radius:.45cqmin;background:linear-gradient(170deg,#52b743,#41a535 70%,#389a2e);transition:opacity .3s,transform .3s}
+.bt-side.s0 .stk2{box-shadow:inset 0 0 0 .14cqmin #2a1a0e,inset .3cqmin .3cqmin 0 rgba(255,255,255,.12),0 0.26cqmin 0 #f4f1e2,0 0.46cqmin 0 #2f8f45,0 0.72cqmin 0 #f4f1e2,0 0.92cqmin 0 #2f8f45,0 1.10cqmin 0 #2a1a0e,0 1.50cqmin .9cqmin rgba(0,0,0,.28)}
+.bt-side.s1 .stk2{box-shadow:inset 0 0 0 .14cqmin #2a1a0e,inset .3cqmin .3cqmin 0 rgba(255,255,255,.12),-0.26cqmin 0 0 #f4f1e2,-0.46cqmin 0 0 #2f8f45,-0.72cqmin 0 0 #f4f1e2,-0.92cqmin 0 0 #2f8f45,-1.10cqmin 0 0 #2a1a0e,-1.50cqmin 0 .9cqmin rgba(0,0,0,.28)}
+.bt-side.s2 .stk2{box-shadow:inset 0 0 0 .14cqmin #2a1a0e,inset .3cqmin .3cqmin 0 rgba(255,255,255,.12),0 -0.26cqmin 0 #f4f1e2,0 -0.46cqmin 0 #2f8f45,0 -0.72cqmin 0 #f4f1e2,0 -0.92cqmin 0 #2f8f45,0 -1.10cqmin 0 #2a1a0e,0 -1.50cqmin .9cqmin rgba(0,0,0,.28)}
+.bt-side.s3 .stk2{box-shadow:inset 0 0 0 .14cqmin #2a1a0e,inset .3cqmin .3cqmin 0 rgba(255,255,255,.12),0.26cqmin 0 0 #f4f1e2,0.46cqmin 0 0 #2f8f45,0.72cqmin 0 0 #f4f1e2,0.92cqmin 0 0 #2f8f45,1.10cqmin 0 0 #2a1a0e,1.50cqmin 0 .9cqmin rgba(0,0,0,.28)}
 .stk2.gone{opacity:0;transform:scale(.6)}
 /* dice */
 .bt-dice{position:absolute;left:50%;top:44%;pointer-events:none;z-index:4}
