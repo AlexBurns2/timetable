@@ -37,6 +37,7 @@ import { runHandler, RUN_GAMES, issueTicket, ticketOf, scoreFits, TICKET_GAMES }
 import { inputSigns, vetSnake, vet2048, vetOther, botty } from "./_anticheat.js";
 import { holdScore, heldList, takeHeld, writeTetris } from "./_review.js";
 import { tasHandler } from "./_tas.js";
+import { usage } from "./_usage.js";
 
 /* the server runs Six Degrees' map-making and the runs: give it time */
 export const config = { maxDuration: 60 };
@@ -313,8 +314,9 @@ export default async function handler(req, res) {
     const year = staff ? null : Number(me.year || (await yearMap()).get(me.email)) || null;
     return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email),
       bannedFrom: await bannedFrom(me.email),             // only your own bans, never anyone else's
-      year, staff });
+      year, staff, usage: await usage(me.email, false) });
   }
+  if (req.method === "POST" && src.action === "usage") return res.status(200).json(await usage(me.email, true));
   /* moderator-only: who is banned from which games (Bans on the moderator page), and changing it.
      A ban refuses that person's results for the game and leaves them off its boards; nothing is deleted. */
   if (req.method === "GET" && src.bans) {
