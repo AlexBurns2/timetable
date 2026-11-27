@@ -5324,3 +5324,21 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   with this round only on version stamps (`20261126f` / v131 here, `20261126e` / v130 there). Everything now carries
   `20261127a` / v132; pushed as `bea6e35`.
 - Next free stamp: `20261127b` / v133.
+
+## 8.212 Surrealism: each place has its own mark, and nothing vanishes in the slide (version `20261127b`, `CACHE_VERSION` v133)
+- **The notation is the place's ID** (the owner: "like IDs for the images, so they should move with the slides and each
+  slide should have its own little abstract ID"). It's seeded by the place (`surreal-place:<place>`), not the page, so a
+  place has the same mark on every page, and all six differ. In a slide the old mark leaves with its picture and the new one
+  comes in with its own, at the same speed and easing. It's still fixed to the screen otherwise (`surreal.js` notation,
+  noteSvg, setNote).
+- **Live things ride with their pictures** (the owner: the sphere, the light and the ship vanished and the monolith's clip
+  paused during the slide). `swapTo` now:
+  - starts the coming place's live things before the slide, just out of view (`runScene(next)`);
+  - waits, at most 1.5 s, for its picture and the pictures its things use (the ship, the clouds);
+  - moves each place's `.sulive` layer with the same transform as its picture;
+  - stops the going place only once it's off the screen.
+
+  The slide's picture panes are now put under the live layers (`prepend`).
+- Checked in the local preview (1600×900): mid-slide the two layers and the two marks are exactly a screen apart, the clip
+  keeps playing, the ship and the sphere are there, and afterwards only the new place's layer and mark remain. No page errors.
+- Next free stamp: `20261127c` / v134.

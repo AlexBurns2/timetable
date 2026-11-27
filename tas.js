@@ -1,4 +1,4 @@
-import * as E from "./tasengine.js?v=20261127a";
+import * as E from "./tasengine.js?v=20261127b";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -283,7 +283,7 @@ async function send() {
 }
 
 /* bots: the code runs in a worker of its own, on a seed from the server */
-const ENGINE = new URL("tasengine.js?v=20261127a", location.href).href;
+const ENGINE = new URL("tasengine.js?v=20261127b", location.href).href;
 const BOT_MS = 9 * 60e3;
 const showLines = () => { $("lines").textContent = E.codeLines($("code").value) + " lines"; };
 function workerSource(code) {

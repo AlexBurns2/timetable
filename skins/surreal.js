@@ -1,7 +1,7 @@
 /* Surrealism: its own script (theme.js skinJs), loaded the first time the theme is on. It adds what a stylesheet
    can't, and takes it all away again when another theme is picked (it watches html[data-skin], tt:look):
-   - the notation, top left on every page: dots on a grid with some missing, a different arrangement on every page,
-     the same each visit (nobody is meant to read it);
+   - the notation, top left on every page: dots on a grid with some missing, each place's own mark (like a slide's
+     catalogue number; it slides in and out with its place), the same each visit (nobody is meant to read it);
    - on a wide screen, the unexplainable thing in each place, live, over the photograph (tools/surreal/render.py made
      the backdrops; a phone held upright gets the whole picture baked and none of this):
        Home       the chrome sphere hangs over the flooded flat, rising and sinking very slowly, its reflection under it
@@ -54,10 +54,13 @@
     return { k, ox, oy, x:x => ox + x * k, y:y => oy + y * k };
   }
 
-  /* ── the notation: 2 rows of 11, about a third of the dots missing, seeded by the page ── */
-  function notation(){
-    const pg = root.getAttribute('data-pg') || 'home';
-    let h = 2166136261; for (const c of 'surreal:' + pg) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  /* ── the notation: each place's own mark, like a catalogue number on a slide (the owner, 27 November 2026: "like IDs
+        for the images... they should move with the slides"). 2 rows of 11, about a third of the dots missing, seeded by
+        the place, so a place has the same mark on every page; it slides away with its place and the next one's comes in
+        with it (swapTo). ── */
+  let note = null;
+  function noteSvg(sc){
+    let h = 2166136261; for (const c of 'surreal-place:' + sc) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
     const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
     const C = 11, R = 2, S = 6;
     let dots = '';
@@ -65,12 +68,19 @@
       const keep = rnd() > 0.34 || (c === 0 && r === 0);          // (it always starts with a dot)
       if (keep) dots += '<circle cx="' + (c * S + 3) + '" cy="' + (r * S + 3) + '" r="1.55"/>';
     }
-    const el = document.createElement('div');
-    el.className = 'sunote'; el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = '<svg viewBox="0 0 ' + (C * S) + ' ' + (R * S) + '" fill="currentColor">' + dots + '</svg>';
-    document.body.appendChild(el);
-    later(() => el.remove());
+    return '<svg viewBox="0 0 ' + (C * S) + ' ' + (R * S) + '" fill="currentColor">' + dots + '</svg>';
   }
+  function noteEl(sc){
+    const el = document.createElement('div');
+    el.className = 'sunote'; el.setAttribute('aria-hidden', 'true'); el.dataset.su = sc;
+    el.innerHTML = noteSvg(sc);
+    return el;
+  }
+  function notation(){
+    note = noteEl(sceneNow()); document.body.appendChild(note);
+    later(() => { if (note) note.remove(); note = null; });
+  }
+  function setNote(sc){ if (note && note.dataset.su !== sc){ note.dataset.su = sc; note.innerHTML = noteSvg(sc); } }
 
   /* the layer the live things go in (under the page, over the photograph; hidden on an upright phone by surreal.css) */
   function stage(cls){
@@ -444,9 +454,9 @@
   /* the place on now (theme.js surScene puts it on the page as data-su), and its live things */
   const pg = () => root.getAttribute('data-pg') || 'home';
   const sceneNow = () => root.getAttribute('data-su') || sceneOf(pg());
-  function runScene(){
+  function runScene(sc){
     bin = sceneUndo;
-    try { const run = { home, tt:light, wreck, slot, surf }[sceneNow()]; if (run) run(); }   // (the planners' gateways are all in the picture)
+    try { const run = { home, tt:light, wreck, slot, surf }[sc || sceneNow()]; if (run) run(); }   // (the planners' gateways are all in the picture)
     finally { bin = undo; }
   }
 
@@ -460,25 +470,58 @@
   function swapTo(next, up){
     const cur = sceneNow();
     if (!next || !SC[next] || next === cur || sliding) return;
-    if (!moving() || document.hidden){ stopScene(); root.setAttribute('data-su', next); runScene(); return; }
+    if (!moving() || document.hidden){ stopScene(); root.setAttribute('data-su', next); setNote(next); runScene(); return; }
     sliding = true;
     const upright = matchMedia('(max-aspect-ratio:4/5)').matches;
     const bg = k => { const c = SC[k]; return { img:IMG(c[0] + (upright ? '-p' : '')), pos:upright ? '50% 50%' : c[1], fill:c[2] }; };
-    const a = bg(cur), b = bg(next), pre = new Image();
+    const a = bg(cur), b = bg(next);
+    const ease = 'transform 1.1s cubic-bezier(.65,0,.35,1)', away = 'translateY(' + (up ? -100 : 100) + '%)';
+    /* Both places keep their live things through the slide (the owner, 27 November 2026: the sphere, the light, the ship
+       vanishing and the clip stopping while the pictures moved was jarring). The going place's run on as it leaves; the
+       coming place's start now, just out of sight, so they're there as it arrives. Each place's layer rides with its
+       picture, and the going place is only stopped once it's gone. */
+    const oldUndo = sceneUndo.splice(0), oldLayers = [...document.querySelectorAll('.sulive')];
+    const endOld = () => oldUndo.splice(0).reverse().forEach(f => { try { f(); } catch {} });
+    runScene(next);
+    const newLayers = [...document.querySelectorAll('.sulive')].filter(x => !oldLayers.includes(x));
+    newLayers.forEach(x => { x.style.transform = 'translateY(' + (up ? 100 : -100) + '%)'; });
     const go = () => {
-      stopScene();                                              // the live things go first
+      if (!live){ endOld(); sliding = false; return; }          // (the theme was switched off meanwhile)
       const L = document.createElement('div');
       L.className = 'suslide'; L.setAttribute('aria-hidden', 'true');
       const pane = (x, y) => '<div style="background-image:url(' + x.img + ');background-position:' + x.pos + ';background-color:' + x.fill + ';transform:translateY(' + y + '%)"></div>';
       L.innerHTML = pane(a, 0) + pane(b, up ? 100 : -100);
-      document.body.appendChild(L);
+      document.body.prepend(L);                                 // (under the live things)
       root.setAttribute('data-su', next);                       // (underneath, and the page's glass with it)
+      /* the places' marks go with them: the old one out with its picture, the new one in with its own (the same distance,
+         the same easing; they stay over the page, as the mark does) */
+      const H = innerHeight, old = note, nb = noteEl(next);
+      nb.style.transform = 'translateY(' + (up ? H : -H) + 'px)';
+      document.body.appendChild(nb);
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        L.children[0].style.transform = 'translateY(' + (up ? -100 : 100) + '%)'; L.children[1].style.transform = 'translateY(0)'; }));
-      setTimeout(() => { L.remove(); runScene(); sliding = false; }, 1150);
+        L.children[0].style.transform = away; L.children[1].style.transform = 'translateY(0)';
+        oldLayers.forEach(x => { x.style.transition = ease; x.style.transform = away; });
+        newLayers.forEach(x => { x.style.transition = ease; x.style.transform = 'translateY(0)'; });
+        nb.style.transition = ease; nb.style.transform = 'translateY(0)';
+        if (old){ old.style.transition = ease; old.style.transform = 'translateY(' + (up ? -H : H) + 'px)'; } }));
+      setTimeout(() => {
+        endOld(); L.remove();
+        newLayers.forEach(x => { x.style.transition = x.style.transform = ''; });
+        if (old) old.remove();
+        if (live && note === old){ note = nb; nb.style.transition = nb.style.transform = ''; }
+        else nb.remove();                                       // (the theme was switched off, or on again, meanwhile)
+        sliding = false;
+      }, 1150);
     };
-    pre.src = b.img;
-    if (pre.decode) pre.decode().then(go, go); else { pre.onload = pre.onerror = go; }
+    /* go once the coming picture, and the pictures its live things use (the ship, the clouds), are ready: 1.5 s at most */
+    const urls = [b.img];
+    newLayers.forEach(x => {
+      x.querySelectorAll('img').forEach(i => urls.push(i.src));
+      x.querySelectorAll('[style*="background-image"]').forEach(e => { const m = /url\(["']?(.*?)["']?\)/.exec(e.style.backgroundImage); if (m) urls.push(m[1]); });
+    });
+    const ready = u => new Promise(ok => { const i = new Image(); i.onload = i.onerror = ok; i.src = u; if (i.decode) i.decode().then(ok, ok); });
+    let went = false; const once = () => { if (!went){ went = true; go(); } };
+    Promise.all(urls.map(ready)).then(once); setTimeout(once, 1500);
   }
   function gallery(){
     const G = document.createElement('div');
