@@ -127,7 +127,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
   <p class="tflede">Press a theme to see the site in it first. Nothing changes until you choose “Use this theme”.</p>
   <div class="tflook" id="tflook"></div>
 
-  <section class="tfsec" aria-labelledby="tfpoph"><h2 class="tfh" id="tfpoph"><select class="tfsort" id="tfsort" aria-label="Which themes to show first"><option value="pop">Popular</option><option value="liked">Most liked</option><option value="new">New</option></select></h2><div class="tfstrip" id="tfpop"></div></section>
+  <section class="tfsec" aria-labelledby="tfpoph"><h2 class="tfh" id="tfpoph"><select class="tfsort" id="tfsort" aria-label="Which themes to show first"><option value="pop">Trending</option><option value="liked">Most liked</option><option value="new">New</option></select></h2><div class="tfstrip" id="tfpop"></div></section>
   <div id="tfgroups"></div>
   <details class="tforig" id="tforig"><summary>Original themes<em>as they were before the rebuild</em></summary><div class="tfgrid" id="tforiggrid"></div></details>
 </div>
@@ -259,7 +259,8 @@ function render(){
   paintVote();
 }
 render();
-/* The strip cycles on its own (the owner, 27 November 2026): Popular, Most liked (once there are any thumbs), New, a step
+/* (The owner, 27 November 2026: "Popular" read too much like "Most liked", so the most-used order is called Trending.)
+   The strip cycles on its own (the owner, 27 November 2026): Trending, Most liked (once there are any thumbs), New, a step
    every 8 seconds with a soft fade (a plain swap with motion reduced). It waits while the pointer or the keyboard is on
    it, while a preview is open, and while the tab is hidden; picking one from the heading stops it for this visit. */
 let cycling = true;

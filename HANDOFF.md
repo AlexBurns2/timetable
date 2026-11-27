@@ -5373,7 +5373,8 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   (signed in, not Custom). The switches keep their own pair (`.tflookrow`: as a third grid cell it had cut them to "D."
   and "A.."); the box sits 22px to their right and goes under them where the three don't fit. Vaporwave's 420px cap now
   skips that row. The footer thumbs are gone.
-- **The strip cycles on its own** (the owner): Popular, Most liked (once there are thumbs), New, every 8 s with a 0.4 s
+- **The strip's first order is called Trending** (the owner: "Popular" muddled with "Most liked"; the value is still `pop`).
+- **The strip cycles on its own** (the owner): Trending, Most liked (once there are thumbs), New, every 8 s with a 0.4 s
   fade (none with motion reduced). It waits under the pointer or keyboard focus, while a preview is open and while the tab
   is hidden; a pick from the heading stops it for the visit. The pick isn't kept any more (`tt.tfsort` unused).
 - **The preview** gets a solid backing in see-through themes (`TT.solidBg`): Surrealism's cards had shown through it.
@@ -5431,8 +5432,34 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
     name black on the yellow (it was yellow on cream); DORFic dark: the footer's links white over the
     sunset; Eco: the footer's links and section names a deeper green;
   - the preview dialog gets a solid backing in see-through themes (above).
-  Left alone: the legacy originals (as they were), Plain, Classic and Glass, things faded on purpose (days outside the
+  - Glass (the owner: complaints about reading it, "Check the dropdowns", one of the most popular themes): the
+    Leaderboards and Past polls sheets were see-through (`.sheet` is the panel colour, .09 / .42 white, no blur), so the
+    game tiles showed through the boards: `openSheet` (games.js, poll.js) now gives them `TT.solidBg`, in every
+    see-through theme. Also: grey .66 → .8 at night and #4a5170 → #3b4160 by day, a lesson's details at full strength,
+    the clouds behind a pane dimmed a little at night (brightness .8), and the themed placeholders (it had been left out).
+    Native selects and their option lists were already solid (theme.css `select option`). The games you type in
+    (Daily Guess Who, Whose Timetable?, Guess Who, Typing race) were checked in both modes: their fields, hints and
+    suggestion lists read; the Typing race's untyped words were the old faint grey and take the firmer one.
+  Left alone: the legacy originals (as they were), Plain and Classic, things faded on purpose (days outside the
   month, past periods in Studio), and XP (being rebuilt; see below). Re-measured: the changed themes went from 271
   hard-to-read texts to about 140, and what's left is mostly text with a halo or outline (not in the number) or rows
   scrolled out of a list (the harness's visibility check lets an ancestor count as a hit; `hit.contains(el)` should go).
+- **Surrealism's places, one per page** (the owner: "a lot of double up or some backgrounds are completely gone"): four
+  pages had shared one place, and a place could spend a day only on pages hardly anyone opens (on the 27th the sphere was
+  only on the Theme finder and TAS). theme.js `SU_SLOT`: the main pages one slot each (Home, Timetable, Games, Calendar,
+  Free periods, Revision, Resources), the rest sharing with a page they aren't next to. With six places Resources shares
+  Home's until the seventh (the forest) is in.
+- **Windows XP, option A** (the owner: Home's windows vanished on opening a page, which "defeats the point of the windowed
+  system"): Home stays the desktop and every other page opens on it as a window holding a framed copy of that page
+  (`skins/xp.js`, `skins/xp.css` only; framed pages get `html.xpframed`, not `?embed=1`, which hides Games' "All games" and
+  Mahjong's content). Icons, tiles, Start menu, All Programs and links inside a window open windows; taskbar switch,
+  minimise (not drawn, animations paused), restore, close, drag, resize (right and bottom), maximise, Ctrl+Esc from a
+  window; windows come back on reload (`msc.xpopen`); a page's address loaded directly (deep links too) shows the desktop
+  with that window; six windows at most (four on phones; the longest-minimised closes); a phone shows one full-screen
+  window. Caveats: without the Navigation API (Firefox, Safari) a page navigating by script reloads the desktop; a new
+  page must be added to `PAGES` in xp.js. Plain checked pixel-identical. Originals: scratchpad `xpa-orig/`.
+- **Surrealism's seventh place (a dark forest, a glowing billboard with a live clock): not built yet.** Stopped at the
+  owner's request (usage). Photo chosen, not downloaded: "Karachay-Cherkessia, Arkhyz, Taulu forest clearings after dusk",
+  Vyacheslav Argenberg, CC BY 4.0, Commons. Previews logged in `PHOTO-LOG.md`. The brand is to be an original one (no real
+  trademark). `SU_SCENES` still has six places.
 - Next free stamp: `20261127e` / v136.

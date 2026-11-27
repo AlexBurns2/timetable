@@ -631,6 +631,9 @@ function openSheet(title, fill){
   sh.innerHTML = '<div class="sheetgrab" aria-hidden="true"><i></i></div><div class="sheethd"><h2>' + esc(title) + '</h2>' +
     '<button class="btn icon sheetx" type="button" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div><div class="sheetbody"></div>';
   document.body.append(back, sh);
+  /* a see-through theme's panel (Glass, the photographic ones) let the page show through the sheet's words: a solid backing
+     in the theme's colour (complaints about Glass; 27 November 2026) */
+  if (window.TT && TT.solidBg) TT.solidBg(sh);
   document.documentElement.classList.add('sheetopen');
   const close = () => {
     removeEventListener('keydown', key, true);

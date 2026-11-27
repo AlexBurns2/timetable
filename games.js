@@ -567,6 +567,9 @@ function openSheet(title, fill){
     '<button class="btn icon sheetx" type="button" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' +
     '<div class="sheetbody"></div>';
   document.body.append(back, sh);
+  /* a see-through theme's panel (Glass, the photographic ones) let the game tiles show through the boards: a solid backing
+     in the theme's colour (complaints about Glass; 27 November 2026) */
+  if (window.TT && TT.solidBg) TT.solidBg(sh);
   document.documentElement.classList.add('sheetopen');
   const close = instant => {
     if (sheetClose !== close) return;

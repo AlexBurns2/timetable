@@ -742,8 +742,13 @@ function apply(state){
    next at midnight (this device's time), so they're all fresh each day; today (the 26th) each page has the place it always
    had. The gallery buttons (surreal.js, surShift) move one page on or back for the rest of the day (msc.su: { day, off }). */
 const SU_SCENES = ['home', 'tt', 'plan', 'slot', 'surf', 'wreck'];
-const suBase = pg => pg === 'home' ? 0 : pg === 'timetable' ? 1 : ['calendar', 'free', 'revision', 'notes'].includes(pg) ? 2 :
-  ['games', 'mahjong'].includes(pg) ? 3 : ['resources', 'finder'].includes(pg) ? 4 : 5;
+/* Each main page its own slot (the owner, 27 November 2026: "a lot of double up or some backgrounds are completely gone":
+   four pages shared one place, and a place could spend a day only on pages hardly anyone opens). The main pages take one
+   slot each, in the order people move between them, so none of them shows the same place as another on a day (with as many
+   places as main pages); the rest share with a page they aren't next to. */
+const SU_SLOT = { home:0, timetable:1, games:2, calendar:3, free:4, revision:5, resources:6,
+  themes:3, mahjong:4, hkmahjong:4, finder:5, notes:6, tas:1 };
+const suBase = pg => SU_SLOT[pg] != null ? SU_SLOT[pg] : 0;
 const suDay = () => { const d = new Date(); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 10, 26)) / 864e5); };
 function suState(){
   try { const s = JSON.parse(localStorage.getItem('msc.su') || 'null'); if (s && s.day === suDay() && s.off && typeof s.off === 'object') return s; } catch {}
