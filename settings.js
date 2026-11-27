@@ -293,6 +293,8 @@ if (TTx.signedIn && TTx.signedIn() && TTx.api){
     if (!d || !d.isMod) return;
     const b = $('openMod'); if (!b) return;
     b.hidden = false;
+    /* the ping: how many flagged scores are waiting for a moderator (they're on the boards already) */
+    if (d.flagged > 0){ b.innerHTML = 'Moderator<span class="modping">' + Number(d.flagged) + '</span>'; b.title = d.flagged + ' flagged score' + (d.flagged > 1 ? 's' : '') + ' to check'; }
     b.onclick = () => {
       $('setDlg').close();
       if (document.body.dataset.page === 'games' && typeof window.openGame === 'function') window.openGame('admin');

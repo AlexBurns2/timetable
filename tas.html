@@ -10,12 +10,12 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=20261127b">
-<script src="theme.js?v=20261127b"></script>
-<script src="icons.js?v=20261127b"></script>
-<link rel="stylesheet" href="site.css?v=20261127b">
-<link rel="stylesheet" href="settings.css?v=20261127b">
-<link rel="stylesheet" href="games.css?v=20261127b">
+<link rel="stylesheet" href="theme.css?v=20261127d">
+<script src="theme.js?v=20261127d"></script>
+<script src="icons.js?v=20261127d"></script>
+<link rel="stylesheet" href="site.css?v=20261127d">
+<link rel="stylesheet" href="settings.css?v=20261127d">
+<link rel="stylesheet" href="games.css?v=20261127d">
 <style>
 .tasintro{max-width:720px;color:var(--muted);font-size:0.9375rem;line-height:1.55;margin:0 0 16px}
 .tasintro b{color:var(--text)}
@@ -45,6 +45,10 @@
 .tasapi pre{font-family:var(--font-num);font-size:0.75rem;line-height:1.45;background:var(--panel-2);border-radius:var(--radius);padding:10px;overflow:auto;margin:8px 0;color:var(--text)}
 .tasapi p{font-size:0.8125rem;color:var(--muted);line-height:1.5;margin:8px 0}
 .tlbrow .watch{font:inherit;font-size:0.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--accent);cursor:pointer}
+/* moderators: a run that's mostly someone else's earlier one, and the button that finds them */
+.tlbrow .tcopy{font-style:normal;font-size:0.75rem;font-weight:700;color:#c2410c}
+html[data-mode="dark"] .tlbrow .tcopy{color:#fdba74}
+.tcopyrow .watch{font:inherit;font-size:0.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--accent);cursor:pointer}
 .tasspeed{display:flex;align-items:center;gap:8px;font-size:0.8125rem;color:var(--muted)}
 [hidden]{display:none!important}
 .tasbars{display:flex;gap:10px 18px;flex-wrap:wrap;margin-bottom:14px}
@@ -130,7 +134,7 @@
     <p>Spaces, new lines and <code>#</code> comments in a movie are ignored.</p>
   </div>
 </div>
-<script type="module" src="tas.js?v=20261127b"></script>
-<script src="settings.js?v=20261127b"></script>
+<script type="module" src="tas.js?v=20261127d"></script>
+<script src="settings.js?v=20261127d"></script>
 </body>
 </html>

@@ -5325,7 +5325,30 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   `20261127a` / v132; pushed as `bea6e35`.
 - Next free stamp: `20261127b` / v133.
 
-## 8.212 Surrealism: each place has its own mark, and nothing vanishes in the slide (version `20261127b`, `CACHE_VERSION` v133)
+## 8.212 Mahjong beta: a calmer home, the theme off, discards that never overlap (version `20261127b`, `CACHE_VERSION` v133)
+- **Home** (`betaHomeHTML`): the sign in the middle, my card and portrait top right as one button that opens a menu of tile buttons (Profile, Settings, Stats, Rules, Beta look). The rack is two groups: **Singleplayer** (Choose bots, Quick turns, Practice) and **Multiplayer** (Open a room, Join a room, and the public rooms list beside them). Play now, Daily deal, the Daily board button and the dice are gone from the beta home (the classic home keeps them).
+- **The table stays behind** bot setup and the lobby: `show()` keeps `#home` up as `.bgonly` (its menu hidden) under those screens. Bot setup shows everyone's picture; level buttons are tiles in the beta look.
+- **The theme is off with the beta look**: `window.TT_NOSKIN` (set before theme.js loads from `hkmj.betaTable`, and by `setBeta`) makes theme.js's `readState` return plain defaults (reduced motion still holds) and `fxOn` false. Also: Studio's card rules for `.tile`/`.game` no longer reach `data-pg="hkmahjong"`, which flattened tiles on hover.
+- **Wall**: still turned -11deg, now a closed pinwheel, squashed to .78 top to bottom (seen from my seat). Each stack's edge is counter-turned so it shows straight down the screen on every side, and on the near and right sides nearer stacks are drawn over farther ones (`wallHTML`).
+- **Discards** (`betaCells`/`betaSpot`): 85 cells of a grid wholly inside the wall, nearest the middle first, a ±5deg turn and nudge kept inside the cell, so no two ever overlap. The last discard is no longer enlarged; the ring is smaller.
+- **No hover where there's nothing to click**: table tiles carry `aria-label` instead of `title`, the pool ignores the pointer, and a claim box reacts as one button (its tiles don't). The top-right table info sits on a dark plate.
+- **Hand end**: all four portraits come up once and stay until Next hand; the winner's and discarder's words show beside them, then the score counts fade in.
+
+## 8.213 Mahjong beta: the wall as before, tossed discards, a real break (version `20261127c`, `CACHE_VERSION` v134)
+- **Wall** back to the long, overhanging pinwheel turned -11deg (no squash). Each stack shows its two tiles' sides towards the
+  bottom left of the screen on every side (`--ex/--ey`: the screen's (-.42, 1) counter-turned into each side's axes); the near
+  and right walls draw each stack over the next one along.
+- **Discards** are tossed again (any spot, ±35deg, near the middle first) but never overlap: `betaSpot` tries random spots
+  against every discard still on the table with a turned-rectangle test (`poolHit`) inside the wall's inner square
+  (`poolInside`), then sweeps spots and turns. A claimed discard's spot is freed. Pool tiles are 3.1cqmin: in 65 simulated
+  full hands (up to 83 discards on the table) none overlapped; at 3.2 some tables jammed.
+- **The wall's two ends**, as in Hong Kong rules (checked against mahjongtime.com and mahjong4friends.com): the dice total
+  is counted anticlockwise from the dealer to pick a wall and that many stacks in from its owner's right end
+  (`Beta.breakAt`). Ordinary draws come off clockwise from the break; flower and kong replacements (the engine's
+  `wall.pop`) come off the tail on the other side, counted from the flowers and kongs on the table.
+- Table info: as far from the top as from the right (3cqmin), padding set for the font's ink.
+
+## 8.214 Surrealism: each place has its own mark, and nothing vanishes in the slide (version `20261127b`, `CACHE_VERSION` v133)
 - **The notation is the place's ID** (the owner: "like IDs for the images, so they should move with the slides and each
   slide should have its own little abstract ID"). It's seeded by the place (`surreal-place:<place>`), not the page, so a
   place has the same mark on every page, and all six differ. In a slide the old mark leaves with its picture and the new one
@@ -5341,4 +5364,3 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   The slide's picture panes are now put under the live layers (`prepend`).
 - Checked in the local preview (1600×900): mid-slide the two layers and the two marks are exactly a screen apart, the clip
   keeps playing, the ship and the sphere are there, and afterwards only the new place's layer and mark remain. No page errors.
-- Next free stamp: `20261127c` / v134.

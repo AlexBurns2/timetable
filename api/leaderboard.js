@@ -27,15 +27,16 @@
  * POST {action:"run", …}) and record their own scores; a score posted for them
  * is refused. Snake, 2048, Typing, Reaction and Tetris need a ticket from when
  * the game started (POST {action:"ticket", game}), and the score has to fit the
- * time since. Snake and 2048 get replayed from the ticket's seed, and anything off
- * is held for Alex (_anticheat.js, _review.js). TAS boards: _tas.js.
+ * time since. Snake and 2048 get replayed from the ticket's seed; anything off still
+ * goes on the boards, and is flagged for the moderators to keep or remove
+ * (_anticheat.js, _review.js). TAS boards: _tas.js.
  */
 
-import { db, whoami, isAdmin, isReviewer } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList, yearTags, withYear } from "./_names.js";
 import { runHandler, RUN_GAMES, issueTicket, ticketOf, scoreFits, TICKET_GAMES } from "./_runs.js";
-import { inputSigns, vetSnake, vet2048, vetOther, botty } from "./_anticheat.js";
-import { holdScore, heldList, takeHeld, writeTetris } from "./_review.js";
+import { inputSigns, vetSnake, vet2048, vetOther } from "./_anticheat.js";
+import { noteFlag, flagCount, settleFlag, heldList, takeHeld, writeTetris, tetrisNow, tetrisPut } from "./_review.js";
 import { tasHandler } from "./_tas.js";
 import { usage } from "./_usage.js";
 
@@ -212,6 +213,19 @@ async function writeBest(game, metric, period, email, name, score, dir) {
     const { error } = await db.from("game_score").upsert({ game, metric, period, email, name, score });
     if (error) throw new Error(error.message);
   }
+  return { wrote: better, before: ex ? ex.score : null };             // (a flagged score's note: _review.js)
+}
+/* one person's entry on one board now, and putting it back (v null: no entry), for removing a flagged score */
+async function boardNow(email, st, period) {
+  const { data } = await db.from("game_score").select("score").eq("game", st.game).eq("metric", st.metric).eq("period", period).eq("email", email).maybeSingle();
+  return data ? data.score : null;
+}
+async function boardPut(email, st, period, v) {
+  const q = v == null
+    ? db.from("game_score").delete().eq("game", st.game).eq("metric", st.metric).eq("period", period).eq("email", email)
+    : db.from("game_score").upsert({ game: st.game, metric: st.metric, period, email, name: st.name || nameFromEmail(email), score: v });
+  const { error } = await q;
+  if (error) throw new Error(error.message);
 }
 
 /* thumbs up and down per theme, from everyone's synced settings (tt.themevotes: { theme: 1 | -1 }) */
@@ -324,7 +338,9 @@ export default async function handler(req, res) {
        games, and staff get a note about the site the first time (theme.js, games.js; the owner, 25 November 2026) */
     const staff = (me.groups || []).some(g => /^(teacher|staff|executive|admin)/i.test(String(g))) || /@det\.nsw\.edu\.au$/i.test(me.email);
     const year = staff ? null : Number(me.year || (await yearMap()).get(me.email)) || null;
-    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email),
+    /* moderators also get how many flagged scores are waiting (the ping on the Moderator button; one count, theirs only) */
+    const mod = isAdmin(me.email), flagged = mod ? await flagCount().catch(() => 0) : 0;
+    return res.status(200).json({ ...(await siteSettings()), isMod: mod, canReview: mod, ...(mod ? { flagged } : {}),
       bannedFrom: await bannedFrom(me.email),             // only your own bans, never anyone else's
       year, staff, usage: await usage(me.email, false) });
   }
@@ -509,15 +525,25 @@ export default async function handler(req, res) {
     catch (e) { console.error("tas:", e.message); return res.status(502).json({ error: "Couldn't reach the TAS boards." }); }
   }
 
+  /* flagged scores: any moderator sees them and decides (the owner, 27 November 2026). "keep" / "remove" answer one that's
+     already on the boards; "ok" / "drop" answer one of the older held ones, still kept off the boards. */
   if (req.method === "GET" && src.held) {
-    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check held scores." });
+    if (!isAdmin(me.email)) return res.status(403).json({ error: "Only moderators can check flagged scores." });
     try { return res.status(200).json({ held: await heldList() }); }
-    catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't read the held scores." }); }
+    catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't read the flagged scores." }); }
   }
   if (req.method === "POST" && src.action === "held") {
-    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check held scores." });
+    if (!isAdmin(me.email)) return res.status(403).json({ error: "Only moderators can check flagged scores." });
     const email = String(src.email || "").toLowerCase(), key = String(src.key || "");
     if (!email || !/^[a-z0-9:]{1,40}$/.test(key)) return res.status(400).json({ error: "Which score?" });
+    if (src.op === "keep" || src.op === "remove") {
+      try {
+        await settleFlag(email, key, src.op,
+          (st, b) => st.kind === "t" ? tetrisNow(email, st, b) : boardNow(email, st, b),
+          (st, b, v) => st.kind === "t" ? tetrisPut(email, st, b, v) : boardPut(email, st, b, v));
+        return res.status(200).json({ held: await heldList() });
+      } catch (e) { console.error("flag:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
+    }
     try {
       const h = await takeHeld(email, key);
       if (h && src.op === "ok") {
@@ -604,15 +630,14 @@ export default async function handler(req, res) {
       why.push(...inputSigns(src.ac), ...vetOther(game, metric, score));
     }
     const name = nameFromEmail(me.email);
+    /* it goes on the boards either way; a flagged one also leaves a note for the moderators to keep or remove (_review.js) */
     try {
-      if (why.length) {
-        await holdScore(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, boards: ["all", wperiod, ...(dperiod ? [dperiod] : [])], why });
-        held = { score, tas: botty(why) };
-      } else {
-        await writeBest(game, metric, "all", me.email, name, score, dir);
-        await writeBest(game, metric, wperiod, me.email, name, score, dir);
-        if (dperiod) await writeBest(game, metric, dperiod, me.email, name, score, dir);
+      const changed = {}, on = {};
+      for (const p of ["all", wperiod, ...(dperiod ? [dperiod] : [])]) {
+        const w = await writeBest(game, metric, p, me.email, name, score, dir);
+        if (w.wrote) { changed[p] = w.before; on[p] = score; }
       }
+      if (why.length) await noteFlag(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, why }, changed, on);
     } catch (e) { console.error("leaderboard write:", e.message); return res.status(502).json({ error: "Couldn't save your score." }); }
   } else if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });

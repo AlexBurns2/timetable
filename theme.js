@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261127b';
+const ASSET_V = '20261127d';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -359,6 +359,10 @@ function setMod(on){
   }
 }
 function readState(){
+  /* a page in its own fixed look (the mahjong beta table sets window.TT_NOSKIN) takes none of the theme's
+     settings: plain, dark, no zen, no custom colours, normal size and contrast. Reduced motion still holds. */
+  if (window.TT_NOSKIN) return { skin: 'plain', mode: 'dark', zen: false, custom: Object.assign({}, CUSTOM_DEFAULTS), textScale: 1, zoom: 1,
+    contrast: 'normal', motion: get(LS.motion, 'normal'), view: get(LS.view, 'compact'), outline: true, header: get(LS.header, 'unified') };
   let skin = PREVIEW ? PREVIEW.skin : get(LS.skin, 'plain');
   if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
   else if (!PREVIEW && MOD_SKINS.has(skin) && !isModHere()) skin = 'plain';
@@ -709,6 +713,7 @@ function warmSkins(){
    motion, and by default for anyone whose device asks for less motion.
    html[data-fx] carries it; fx.js and the themes' stylesheets read it. */
 function fxOn(){
+  if (window.TT_NOSKIN) return false;
   if (get(LS.motion, 'normal') === 'reduced') return false;
   const v = get('tt.fx', null);
   if (v === 'off') return false;

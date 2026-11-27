@@ -26,8 +26,8 @@ import { db, whoami, isAdmin } from "./_supabase.js";
 import { displayNames, withName, yearTags, withYear } from "./_names.js";
 import { yearMap, boardScope } from "./leaderboard.js";
 import { ticketOf, scoreFits, boardWeek } from "./_runs.js";
-import { inputSigns, vetSprint, paceSigns, botty } from "./_anticheat.js";
-import { holdScore, writeTetris } from "./_review.js";
+import { inputSigns, vetSprint, paceSigns } from "./_anticheat.js";
+import { noteFlag, writeTetris } from "./_review.js";
 import { isBanned, bannedIn } from "./_settings.js";
 /* banned from Tetris (moderator page → Bans): still on the boards, marked so the page shows "!" by the name */
 const out = (me, r) => (me.banned && me.banned.has(String(r.email).toLowerCase())) || undefined;
@@ -220,16 +220,14 @@ export default async function handler(req, res) {
     }
     why.push(...inputSigns(body && body.ac));
 
-    let held = null;
+    /* it goes on the board either way; a flagged one also leaves a note for the moderators (_review.js) */
     try {
-      if (why.length) {
-        await holdScore(me.email, name, { key: "tetris:" + (mode === "sprintall" ? "sprint" : mode), kind: "t", game: "tetris", mode,
-          dir: mode === "sprint" || mode === "sprintall" ? "min" : "max", score: claim, week, boards: [mode], why });
-        held = { score: claim, tas: botty(why) };
-      } else await writeTetris(me.email, name, mode, claim, week);
+      const w = await writeTetris(me.email, name, mode, claim, week);
+      if (why.length && w.wrote)
+        await noteFlag(me.email, name, { key: "tetris:" + (mode === "sprintall" ? "sprint" : mode), kind: "t", game: "tetris", mode,
+          dir: mode === "sprint" || mode === "sprintall" ? "min" : "max", score: claim, week, why }, { [mode]: w.before }, { [mode]: w.after });
     } catch (e) { console.error("tetris " + mode + ":", e.message); return res.status(502).json({ error: "Couldn't save that." }); }
-    const out = await boardFor(mode, me, week, false);
-    return res.status(200).json(held ? { ...out, held } : out);
+    return res.status(200).json(await boardFor(mode, me, week, false));
   }
 
   return res.status(405).json({ error: "Method not allowed" });

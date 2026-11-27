@@ -754,7 +754,9 @@ const LB_GAMES = {
    score is sent with it (the server holds a score to what fits the time since). */
 const lbTickets = {}, lbRuns = {};
 const acSeen = { u:0 };
-['keydown', 'keyup', 'pointerdown', 'mousedown', 'touchstart', 'input'].forEach(t => addEventListener(t, e => { if (!e.isTrusted) acSeen.u++; }, true));
+/* only made-up key presses count (a script playing the game sends those); browser extensions (spelling, password managers,
+   translators) send made-up clicks and typing of their own, and those had been holding honest scores (27 November 2026) */
+['keydown', 'keyup'].forEach(t => addEventListener(t, e => { if (!e.isTrusted) acSeen.u++; }, true));
 const acInfo = () => ({ u:acSeen.u, wd:navigator.webdriver === true });
 function lbTicket(game){
   acSeen.u = 0;
@@ -901,7 +903,7 @@ function siteSettings(){
     .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
                  siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
-                             isMod: !!(d && d.isMod), canReview: !!(d && d.canReview),
+                             isMod: !!(d && d.isMod), canReview: !!(d && d.canReview), flagged: d && d.flagged || 0,
                              bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [], year: d && d.year || null }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
@@ -2241,7 +2243,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261127b';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261127d';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -4969,7 +4971,8 @@ BUILD.admin = host => {
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
   /* which themes people use (from their synced settings) */
   const THEMES = { id:'themes', name:'Themes', kind:'x' };
-  const HELD = { id:'held', name:'Held scores', kind:'h' };
+  /* scores the checks flagged: on the boards already, a moderator keeps or removes each (and the older held ones) */
+  const HELD = { id:'held', name:'Flagged scores' + (siteCfg.flagged ? ' · ' + siteCfg.flagged : ''), kind:'h' };
   /* who a moderator has taken off which games (api/_settings.js: their results are refused and they're left off
      those boards; nothing of theirs is deleted) */
   const BANS = { id:'bans', name:'Bans', kind:'b' };
@@ -5392,21 +5395,33 @@ BUILD.admin = host => {
           '<span class="thname">' + esc(nameOf(id)) + '</span><span class="thvote"><b>' + c.up + '</b> up · <b>' + c.down + '</b> down</span></div>').join('') + '</div>'
       : '<p class="how">Nobody has given a theme a thumbs up or down yet.</p>');
   }
+  /* Flagged scores (the owner, 27 November 2026): a score the checks flag goes on the boards anyway, and comes here.
+     Keep: it stays, the flag goes. Remove: each board goes back to what it showed before it (a better score sent since
+     stays). The older held ones (h.live unset) were kept off the boards: Let it on or Throw out, as before. */
   function renderHeld(){
     const list = (data && data.held) || [];
-    $('admnote').textContent = 'Scores that didn’t check out. Only you see these.';
-    if (!list.length){ $('admbody').innerHTML = '<p class="how">Nothing waiting.</p>'; return; }
+    siteCfg.flagged = list.length;
+    const pill = [...$('admpick').children].find(x => x.textContent.startsWith('Flagged scores'));
+    if (pill) pill.textContent = 'Flagged scores' + (list.length ? ' · ' + list.length : '');
+    $('admnote').textContent = 'Scores the checks flagged. They’re on the boards already: keep each one, or remove it and the board goes back to what it showed before (a better score sent since stays).';
+    if (!list.length){ $('admbody').innerHTML = '<p class="how">Nothing flagged.</p>'; return; }
     const T = { sprint:['Tetris Sprint', fmtHMS], sprintall:['Tetris Sprint', fmtHMS], zen:['Tetris Survival', fmtHMS], zenscore:['Tetris Zen', String] };
     const what = h => { if (h.kind === 't') return T[h.mode] || [h.mode, String]; const c = LB_CAT.find(x => x.id === h.game); return c ? [c.name, c.fmt] : [h.game, String]; };
     $('admbody').innerHTML = list.map((h, i) => { const [name, fmt] = what(h);
       return '<div class="adminrow pollrow"><span class="nm"><b>' + esc(h.name || h.email) + ' · ' + esc(name) + ' · ' + esc(fmt(h.score)) + '</b><em>' +
+        (h.live ? '' : 'Held off the boards (from before) · ') +
         esc((h.why || []).join('; ')) + ' · ' + (h.tries > 1 ? h.tries + ' tries' + (h.also && h.also.length ? ' (others: ' + esc(h.also.join('; ')) + ')' : '') + ' · ' : '') + esc(seenAgo(h.at)) + '</em></span><span class="pact">' +
-        '<button class="btn primary" type="button" data-ok="' + i + '">Let it on</button><button class="del" type="button" data-drop="' + i + '">Throw out</button></span></div>'; }).join('');
-    const act = (b, op) => async () => { const h = list[+b.dataset[op === 'ok' ? 'ok' : 'drop']]; b.disabled = true;
+        (h.live
+          ? '<button class="btn primary" type="button" data-op="keep" data-i="' + i + '">Keep</button><button class="del" type="button" data-op="remove" data-i="' + i + '">Remove</button>'
+          : '<button class="btn primary" type="button" data-op="ok" data-i="' + i + '">Let it on</button><button class="del" type="button" data-op="drop" data-i="' + i + '">Throw out</button>') +
+        '</span></div>'; }).join('');
+    $('admbody').querySelectorAll('[data-op]').forEach(b => b.onclick = async () => {
+      const h = list[+b.dataset.i], op = b.dataset.op;
+      if (op === 'remove' && !confirm('Remove this score? Each board goes back to what ' + (h.name || 'they') + ' had before it.')) return;
+      b.disabled = true;
       try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'held', op, email:h.email, key:h.key } }); lbSumCache = null; renderHeld(); }
-      catch (e){ b.disabled = false; alert(e.message); } };
-    $('admbody').querySelectorAll('[data-ok]').forEach(b => b.onclick = act(b, 'ok'));
-    $('admbody').querySelectorAll('[data-drop]').forEach(b => b.onclick = act(b, 'drop'));
+      catch (e){ b.disabled = false; alert(e.message); }
+    });
   }
   function renderScans(){
     const codes = (data && data.codes) || [], days = (data && data.days) || [];

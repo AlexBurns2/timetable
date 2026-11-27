@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261127b">
+<link rel="stylesheet" href="theme.css?v=20261127d">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<script src="theme.js?v=20261127b"></script>
-<script src="icons.js?v=20261127b"></script>
-<script src="suggest.js?v=20261127b"></script>
+<script src="theme.js?v=20261127d"></script>
+<script src="icons.js?v=20261127d"></script>
+<script src="suggest.js?v=20261127d"></script>
 <script src="tour.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -2685,7 +2685,9 @@ $('openDisplay').onclick = () => { TT.iconButtons($('d_iccol'), $('d_icsty')); r
 /* moderators: the moderator page, from here (the server checks again) */
 if (window.TT && TT.signedIn && TT.signedIn() && TT.api) TT.siteCfg()
   .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);           // (moderators' themes: theme.js)
-                if (d && d.isMod){ $('openMod').hidden = false; $('openMod').onclick = () => { location.href = 'games.html?play=admin'; }; } }, () => {});
+                if (d && d.isMod){ $('openMod').hidden = false; $('openMod').onclick = () => { location.href = 'games.html?play=admin'; };
+                  /* the ping: flagged scores waiting for a moderator */
+                  if (d.flagged > 0){ $('openMod').innerHTML = 'Moderator<span class="modping">' + Number(d.flagged) + '</span>'; $('openMod').title = d.flagged + ' flagged score' + (d.flagged > 1 ? 's' : '') + ' to check'; } } }, () => {});
 $('openColours').onclick = () => { renderColours(); $('dlgColours').showModal(); };
 document.querySelectorAll('dialog [data-back]').forEach(b =>
   b.onclick = () => b.closest('dialog').close());

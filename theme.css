@@ -277,6 +277,9 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 
 #hdrback[hidden]{display:none}
 #openMod[hidden]{display:none}
+/* the Moderator button's ping: how many flagged scores wait for a moderator */
+.modping{display:inline-flex;align-items:center;justify-content:center;min-width:1.5em;height:1.5em;margin-left:.5em;padding:0 .4em;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);font-size:.75em;font-weight:700;line-height:1;vertical-align:.1em}
 
 /* tiles (Home, Games, Revision, Resources): one height on every page, a little
    taller on a taller screen, within a range */
