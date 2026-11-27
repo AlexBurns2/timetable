@@ -75,6 +75,15 @@ html[data-motion="reduced"] .tfcard{transition:none}
 .tfpvframe .tfpvwait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.875rem;pointer-events:none}
 .tfpvfoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px}
 .tfpvfoot .hint{flex:1;min-width:12rem;margin:0;color:var(--muted);font-size:0.8125rem}
+.tfpvfoot #tfpvback{margin-left:auto}
+/* a theme that's hard work for a computer: a small ! and why (the owner, 27 November 2026) */
+.tfpvfoot .tfwarn{display:flex;align-items:flex-start;gap:8px;color:var(--text)}
+.tfbang{flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-top:1px;border-radius:999px;
+  background:#d97706;color:#fff;font-size:12px;font-weight:800;line-height:1}
+/* a theme you gave a thumbs up: a tiny thumb in its card's top right corner */
+.tfliked{position:absolute;top:6px;right:6px;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;
+  background:var(--bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.28);pointer-events:none}
+.tfliked svg{width:13px;height:13px;fill:color-mix(in srgb,currentColor 28%,transparent);stroke:currentColor;stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
 /* the strip's heading is its own choice: Popular, Most liked or New (26 November 2026) */
 .tfsort{appearance:none;-webkit-appearance:none;border:0;margin:0;padding:0 1.1em 0 0;cursor:pointer;color:inherit;
   font:inherit;letter-spacing:inherit;text-transform:inherit;background:transparent no-repeat right center/.62em auto;
@@ -143,7 +152,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
   <div class="tfpvframe" id="tfpvframe"><span class="tfpvwait" id="tfpvwait">Loading the preview…</span>
     <iframe id="tfpvif" title="Preview of the theme" tabindex="-1"></iframe></div>
   <div class="tfpvfoot">
-    <p class="hint" id="tfpvnote">A preview of the real page. You can scroll it; nothing in it can be pressed.</p>
+    <p class="hint" id="tfpvnote" hidden></p>
     <button class="btn" type="button" id="tfpvback">Back</button>
     <button class="btn primary" type="button" id="tfpvuse">Use this theme</button>
   </div>
@@ -195,6 +204,14 @@ const stripOrder = () => sortBy === 'new'
   : sortBy === 'liked' && liked.length ? liked.concat(popular.filter(id => !liked.includes(id))) : popular;
 
 const current = () => TT.readState().skin;
+/* the themes that are hard work for a computer: the preview's footer warns (with a small !) and says why */
+const HEAVY = {
+  synth:'its 3D scenery is drawn live, which uses more battery. Animation off shows a still.',
+  xp:'every open window is a whole page running at once.',
+  surreal:'its moving pictures and video use more battery. Animation off stills them.'
+};
+/* the thumb (Rate this theme, and the small one on a liked theme's card) */
+const THUMB = '<path d="M7 10v10H4.5A1.5 1.5 0 0 1 3 18.5v-7A1.5 1.5 0 0 1 4.5 10H7Zm0 0 4-7.2c1.6.1 2.6 1.4 2.2 3L12.6 9H19a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7"/>';
 /* ── "Rate this theme:" thumbs up or down for the theme that's on (signed in; not Custom). Kept in your synced settings
    (tt.themevotes { theme: 1 | -1 }), so the server can order Most liked; pressing the same one again takes it back.
    Only moderators see the counts. The row is put in beside the switches once lookRow has drawn them (below). ── */
@@ -215,8 +232,10 @@ function paintVote(){
 const card = (id, list) => {
   const s = byId(id); if (!s) return '';
   const on = id === current();
+  const thumbed = votes()[id] === 1;               // a theme you gave a thumbs up: a small thumb in the card's corner
   return '<button type="button" class="tfcard" data-id="' + id + '" data-list="' + list + '"' + (on ? ' aria-current="true"' : '') + '>' +
     '<span class="tfsw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
+    (thumbed ? '<span class="tfliked" role="img" aria-label="Liked" title="You liked this theme"><svg viewBox="0 0 24 24" aria-hidden="true">' + THUMB + '</svg></span>' : '') +
     '<span class="tfnm"><span>' + esc(nameOf(s)) + '</span>' + (on ? '<b class="tftag on">On</b>' : s.only === 'light' ? '<b class="tftag">Light only</b>' : s.both === false && !s.custom ? '<b class="tftag">Dark only</b>' : '') + '</span></button>';
 };
 const LISTS = {};
@@ -260,7 +279,7 @@ $('tfsort').onchange = e => { sortBy = e.target.value; cycling = false; renderSt
 }
 TT.lookRow($('tflook'), () => render());
 {
-  const thumb = flip => '<svg viewBox="0 0 24 24" aria-hidden="true"' + (flip ? ' style="transform:rotate(180deg)"' : '') + '><path d="M7 10v10H4.5A1.5 1.5 0 0 1 3 18.5v-7A1.5 1.5 0 0 1 4.5 10H7Zm0 0 4-7.2c1.6.1 2.6 1.4 2.2 3L12.6 9H19a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7"/></svg>';
+  const thumb = flip => '<svg viewBox="0 0 24 24" aria-hidden="true"' + (flip ? ' style="transform:rotate(180deg)"' : '') + '>' + THUMB + '</svg>';
   rate = document.createElement('div');
   rate.className = 'tfrate'; rate.id = 'tfrate'; rate.setAttribute('role', 'group'); rate.hidden = true;
   rate.innerHTML = '<span>Rate this theme:</span>' +
@@ -275,7 +294,7 @@ TT.lookRow($('tflook'), () => render());
     const id = current(); if (!byId(id) || id === 'custom') return;
     const v = Object.assign({}, votes()), x = +b.dataset.v;
     if (v[id] === x) delete v[id]; else v[id] = x;
-    TT.set('tt.themevotes', v); paintVote();
+    TT.set('tt.themevotes', v); render();          // (render paints the box too, and the card's thumb)
   });
   paintVote();
 }
@@ -327,9 +346,13 @@ function paint(){
   const on = pv.id === current() && (one || pv.mode === TT.readState().mode);
   $('tfpvuse').textContent = on ? 'This is your theme' : 'Use ' + nameOf(s);
   $('tfpvuse').disabled = on;
-  $('tfpvnote').textContent = pv.id === 'custom'
-    ? 'Your own colours. Change them in Settings once it’s on.'
-    : 'A preview of the real page. You can scroll it; nothing in it can be pressed.';
+  /* the footer's note (the owner, 27 November 2026): no general "this is a preview" line any more; a small ! and a
+     warning on the themes that are hard work for a computer, and Custom's pointer to Settings */
+  const note = $('tfpvnote'), heavy = HEAVY[pv.id];
+  note.hidden = !(heavy || pv.id === 'custom');
+  note.className = 'hint' + (heavy ? ' tfwarn' : '');
+  note.innerHTML = heavy ? '<span class="tfbang" aria-hidden="true">!</span><span>This theme is graphically intensive: ' + esc(heavy) + '</span>'
+    : pv.id === 'custom' ? 'Your own colours. Change them in Settings once it’s on.' : '';
 }
 /* another theme or mode: told to the page already in the frame, so it switches at once */
 function show(){

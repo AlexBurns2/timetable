@@ -169,6 +169,8 @@ html.fx-live[data-skin="maximal"]{--bg-img:none}
 [data-skin="maximal"] :is(.dayhead .dow,.weeklabel){display:inline-block;width:fit-content;margin:0 auto;padding:3px 12px 2px;background:var(--panel);border:2px solid var(--line);
   font-stretch:112%;font-weight:900}
 [data-skin="maximal"] :is(.dayhead.today,.dayhead.focus) .dow{background:var(--text);color:var(--mx-yel)}
+/* (at night --text is the cream, so today's name was yellow on cream: black on the yellow instead; the legibility audit) */
+[data-skin="maximal"][data-mode="dark"] :is(.dayhead.today,.dayhead.focus) .dow{background:var(--mx-yel);color:#14121a}
 [data-skin="maximal"] .dayhead .rule{display:none}
 [data-skin="maximal"] .tmark{padding:1px 6px;background:var(--panel);border:1.5px solid var(--line);opacity:1;font-stretch:75%;font-weight:700}
 [data-skin="maximal"] .breakbar{background:var(--panel);opacity:1;border:2px dashed var(--line);border-radius:0;font-stretch:62%;font-weight:800;letter-spacing:.16em}
@@ -188,3 +190,9 @@ html.fx-enter[data-skin="maximal"] .wrap{animation:none}
 .mx-ink{background:#14121a;color:#fbf4e4}.mx-pink{background:#f5419e;color:#14121a}.mx-cream{background:#fbf4e4;color:#14121a}
 .mx-yellow{background:#f6bd1e;color:#14121a}.mx-blue{background:#2b6fd0;color:#fbf4e4}
 @container hubbar (max-width:30em){ [data-skin="maximal"] .hubid h1{font-size:1.4rem;line-height:.95;-webkit-line-clamp:3} }      /* on a phone the greeting takes two lines rather than being cut short */
+
+/* the Theme finder's loose words (group names, the strip's heading, the hint, the originals' line) sat straight on the
+   fabric and couldn't be read: each on a small label of its own, outlined like everything else (the legibility audit,
+   27 November 2026) */
+[data-skin="maximal"] :is(.tfh,.tflook .swhint,.tflede,.tforig summary,.rvjump){width:fit-content;max-width:100%;box-sizing:border-box;padding:.2em .65em;
+  background:var(--panel);color:var(--text);box-shadow:0 0 0 2px var(--line)}

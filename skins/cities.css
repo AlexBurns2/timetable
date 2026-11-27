@@ -186,6 +186,14 @@ html[data-ed][data-edimg] body::before{background:var(--ed-img) 0 0/100% 100% no
 [data-city] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.stage,.tfcard,.lbbcard,.fpost){
   background-color:var(--panel);-webkit-backdrop-filter:blur(12px) saturate(1.1);backdrop-filter:blur(12px) saturate(1.1);border:var(--card-border);box-shadow:var(--shadow)}
 [data-city] .forum{padding:16px 18px 18px}
+/* Free periods' side panels (your group, the people): frosted like the rest, so the print behind their small grey lines
+   is blurred, not read through (the legibility audit, 27 November 2026) */
+[data-city] .fpanel{-webkit-backdrop-filter:blur(12px) saturate(1.1);backdrop-filter:blur(12px) saturate(1.1)}
+/* words in the city's colour on the pale glass by day (links, the poll's chip, the boards' leaders, the clock's name):
+   a shade deeper, so they read; and the red of Sign out the same. Sydney keeps its own colours. */
+:root[data-city]:not([data-city="sydney"]):not([data-mode="dark"]) :is(.plink,.flink,.flinklike:not(.danger),.trk-link,.pchip,.lbbr .v,.lbbr .w,.tdstat,.cityclock b,#reslib){
+  color:color-mix(in srgb,var(--accent) 74%,#000)}
+:root[data-city]:not([data-city="sydney"]):not([data-mode="dark"]) .flinklike.danger{color:#b4232a}
 /* an open game: the game's own card is the glass; the holder round it and its "All games" button stays clear */
 [data-city] .gamestage{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 [data-city] :is(.lesson,.nowcard,.breakbar){-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}

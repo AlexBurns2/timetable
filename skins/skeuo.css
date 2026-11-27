@@ -124,8 +124,11 @@ html[data-fx="on"][data-skin="skeuo"] .prog i{animation:skbarber 1s linear infin
 :root[data-skin="skeuo"] :is(.btn,.arrowbtn,.dayswitch button,.popt,.modes button):not(.gateskip):active{transform:translateY(1.5px) scale(.985);filter:brightness(.9);
   box-shadow:inset 0 2px 5px rgba(0,0,0,.55),0 0 0 rgba(0,0,0,0)}
 :root[data-skin="skeuo"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){background:var(--sk-gel),var(--sk-blue);border-color:#0f3f8f;
-  color:#fff;text-shadow:0 -1px 0 rgba(0,40,110,.65)}
+  color:#fff;text-shadow:0 -1px 0 rgba(0,40,110,.65),0 1px 2px rgba(0,30,90,.55)}   /* (a soft shadow under the white too: it sat in the gloss) */
 html[data-fx="on"][data-skin="skeuo"] .btn.primary{animation:skbreathe 1.5s ease-in-out infinite alternate}      /* the one that matters breathes */
+/* a page's loose lines on the wood in full ink, not the grey (the legibility audit, 27 November 2026) */
+[data-skin="skeuo"]:not([data-mode="dark"]) :is(.tflede,.reslede,.flede,.fstat,.fnote,.pagelede,.tflook .swhint,.tforig summary,.tforig summary em){color:var(--text)}
+[data-skin="skeuo"]:not([data-mode="dark"]) .rvjump{color:#1b5fb5}
 @keyframes skbreathe{from{filter:brightness(.97)}to{filter:brightness(1.16) saturate(1.1)}}
 :root[data-skin="skeuo"] .btn.danger{color:#b3261e}
 /* a row of choices: one control in segments, the chosen one held in */

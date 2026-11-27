@@ -148,6 +148,20 @@ html[data-skin="softclub"][data-pg="hkmahjong"]::before,html[data-skin="softclub
 [data-skin="softclub"] :is(.sechd,.cathd,.forum h2){display:flex;align-items:center;gap:12px;font:700 .8125rem/1.2 "Archivo","Arimo",sans-serif;font-stretch:125%;text-transform:uppercase;letter-spacing:.04em;color:var(--sc-ink)}
 [data-skin="softclub"] :is(.sechd,.cathd){text-shadow:0 0 12px var(--sc-halo),0 0 3px var(--sc-halo)}
 [data-skin="softclub"] :is(.sechd,.cathd,.forum h2)::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--sc-ink),transparent);opacity:.35}
+/* the other words that sit straight on the photograph get the same soft halo, in full ink rather than the grey (the
+   legibility audit, 27 November 2026: the Theme finder's group names, intro and hint, the footer's links and the
+   timetable's times and days were dark type on the dark lounge and could hardly be read) */
+[data-skin="softclub"] :is(.tfh,.tflede,.tflook .swhint,.tforig summary,.reslede,.flede,.fstat,.fnote,.pagelede,.hubfoot,.tmark,.weeklabel,.dayhead .dow){
+  text-shadow:0 0 12px var(--sc-halo),0 0 4px var(--sc-halo),0 0 1px var(--sc-halo)}
+[data-skin="softclub"] :is(.tflede,.tflook .swhint,.tforig summary,.tforig summary em,.reslede,.flede,.fstat,.fnote,.pagelede,.hubfoot :is(a,button)){color:var(--sc-ink)}
+/* by day the halo isn't enough where a dark figure crosses the photograph (and a dropdown, like the Theme finder's
+   strip heading, draws no shadow at all): those words sit on a small sheet of the same frosted acrylic, and the footer
+   becomes a strip of it */
+[data-skin="softclub"]:not([data-mode="dark"]) :is(.tfh,.tflede,.tflook .swhint,.tforig summary,.reslede,.flede,.fstat:not(:empty),.fnote,.pagelede){
+  width:fit-content;max-width:100%;box-sizing:border-box;padding:.3em .7em;border-radius:2px;background:var(--panel);
+  -webkit-backdrop-filter:blur(18px) saturate(.8);backdrop-filter:blur(18px) saturate(.8);box-shadow:0 0 0 1px rgba(255,255,255,.82),var(--shadow)}
+[data-skin="softclub"]:not([data-mode="dark"]) .hubfoot{padding:10px 16px;border-radius:2px;background:var(--panel);
+  -webkit-backdrop-filter:blur(18px) saturate(.8);backdrop-filter:blur(18px) saturate(.8);box-shadow:0 0 0 1px rgba(255,255,255,.82),var(--shadow)}
 
 /* ── buttons: brushed metal, hairline; the one that matters in signal blue ── */
 :root[data-skin="softclub"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:2px;background:linear-gradient(180deg,rgba(252,255,255,.92),rgba(206,226,232,.85));

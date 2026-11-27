@@ -357,7 +357,8 @@ html[data-tileicons="accent"][data-skin="dorfic"] .qtile .ico{--tc:#ff7a00}
   -webkit-mask:var(--df-mark) 0 0/100% 11px no-repeat;mask:var(--df-mark) 0 0/100% 11px no-repeat}
 [data-skin="dorfic"] .hubfoot{color:var(--muted);text-shadow:var(--df-halo)}
 [data-skin="dorfic"] .hubfoot :is(a,.footbtn){color:#a8430a}
-[data-skin="dorfic"][data-mode="dark"] .hubfoot :is(a,.footbtn){color:#ffc28a}
+/* (peach on the sunset's orange could hardly be read: white, with a deeper shadow; the legibility audit, 27 November 2026) */
+[data-skin="dorfic"][data-mode="dark"] .hubfoot :is(a,.footbtn){color:#fff;text-shadow:0 1px 2px rgba(60,10,0,.85),0 0 10px rgba(60,10,0,.6)}
 
 /* ── Settings and the dialogs ── */
 [data-skin="dorfic"] :is(.dlg-h,.newshead){border-bottom:2px solid rgba(255,140,40,.3)}

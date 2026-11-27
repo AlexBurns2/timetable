@@ -40,8 +40,10 @@
    ══════════════════════════════════════════════════════════════════ */
 :root[data-skin="surreal"]{
   --bg:#dfe4e8; --bg-img:none;
-  --panel:rgba(255,255,255,.2); --panel-2:rgba(255,255,255,.14); --line:rgba(30,40,52,.14);
-  --text:#101418; --muted:#3f4954; --accent:#2f5b7c; --accent-ink:#fff;
+  /* (the legibility audit, 27 November 2026: the panes were .2 white, so over a dark part of a photograph, like the dusk
+     dunes, the grey words on them went under; a little milkier, and the grey and the blue a shade deeper) */
+  --panel:rgba(255,255,255,.36); --panel-2:rgba(255,255,255,.28); --line:rgba(30,40,52,.14);
+  --text:#101418; --muted:#2e3843; --accent:#264f6d; --accent-ink:#fff;
   --font-display:"Fraunces",Georgia,serif; --display-w:300; --display-tt:none; --display-ls:-.01em;
   --su-mono:"IBM Plex Mono",ui-monospace,monospace;
   --card-radius:3px; --radius:3px; --tint:14%; --card-accent:0px;
@@ -53,7 +55,7 @@
   --shadow:var(--su-edge),var(--su-split),0 44px 46px -34px rgba(10,20,36,.45);
   --shadow-hi:var(--su-edge),var(--su-split),0 56px 56px -34px rgba(10,20,36,.52);
   --su-glass:blur(14px) saturate(1.45) brightness(1.06);
-  --su-chip:rgba(255,255,255,.4); --su-chip-b:rgba(255,255,255,.55);
+  --su-chip:rgba(255,255,255,.52); --su-chip-b:rgba(255,255,255,.6);
   /* the place: the ship by default; each place below, by html[data-su] (theme.js surScene: each page its own place, moving
      on every midnight, and the gallery buttons; surreal.js uses the same positions). The night dunes bring their own
      darker glass wherever they are. */
@@ -97,9 +99,14 @@ html.zen[data-skin="surreal"] body{background:transparent}
 
 /* ── the page: panes of glass hanging in the air ── */
 :root[data-skin="surreal"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead),
-[data-skin="surreal"] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.stage,.tfcard,.lbbcard,.fpost){
+[data-skin="surreal"] :is(.qtile,.tday,.pcard,.forum,.gamecard,.tile,.game,.stage,.tfcard,.lbbcard,.fpost,.fpanel){
   background-color:var(--panel);background-image:var(--su-sheen);-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass);
   border:var(--card-border);box-shadow:var(--shadow)}
+/* the forum's "Show more posts" sits low on the pane, often over the darkest ground: a small chip of glass of its own */
+[data-skin="surreal"] .forum .fmore{width:fit-content;margin-left:auto;margin-right:auto;padding:.3em .9em;border-radius:2px;
+  background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b),var(--su-edge)}
+/* empty fields' hints in the theme's own grey (the browser's grey was too pale on the glass) */
+[data-skin="surreal"] ::placeholder{color:var(--muted);opacity:.8}
 [data-skin="surreal"] .gamestage{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 [data-skin="surreal"] :is(.lesson,.nowcard,.breakbar,.day,.fc){-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass);box-shadow:var(--su-edge),var(--su-split)}
 [data-skin="surreal"] textarea.pad{background-color:var(--panel);background-image:var(--su-sheen);-webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass)}
@@ -115,7 +122,7 @@ html.zen[data-skin="surreal"] body{background:transparent}
 
 /* words that sit straight on the photograph get a small pane of glass of their own */
 [data-skin="surreal"] :is(.weeklabel,.dayhead .dow,.tmark,.cathd,.tfh,.tflede,.reslede,.flede,.fstat:not(:empty),.fnow,.fyl,.fnote,.notesel,.padbar,.calbar h2,
-  .tforig summary,.pagelede,.sechd,.tflook .swhint,.rvjump),[data-skin="surreal"][data-pg="calendar"] .grid>.dow{
+  .tforig summary,.pagelede,.sechd,.tflook .swhint,.rvjump,.trk-foot .trk-link),[data-skin="surreal"][data-pg="calendar"] .grid>.dow{
   width:fit-content;max-width:100%;box-sizing:border-box;background:var(--su-chip);box-shadow:0 0 0 1px var(--su-chip-b),var(--su-edge);border-radius:2px;
   -webkit-backdrop-filter:var(--su-glass);backdrop-filter:var(--su-glass);color:var(--text)}
 [data-skin="surreal"] :is(.tflede,.reslede,.flede,.fstat,.fnote,.pagelede,.tflook .swhint){padding:.35em .7em}

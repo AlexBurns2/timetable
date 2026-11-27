@@ -64,7 +64,7 @@ html.vw-next[data-skin="vapor"][data-pg="themes"]{--v-jp:"　テーマ"}
 :root[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::before{content:"ＭＳＣ　ＵＮＯＦＦＩＣＩＡＬ" var(--v-jp);
   position:absolute;left:2px;right:2px;top:2px;height:var(--vbar);padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;
   background:var(--v-bar);color:#fff;font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.06em;
-  text-shadow:1px 1px 0 rgba(80,30,120,.5);pointer-events:none}
+  text-shadow:1px 1px 0 rgba(80,30,120,.72);pointer-events:none}
 :root[data-skin="vapor"]:not([data-header="split"]) :is(.topbar,.hubbar,.pagehead)::after{content:"";position:absolute;right:6px;top:5px;width:62px;height:16px;pointer-events:none;
   background:var(--v-caps)}
 /* the three caption buttons, drawn: minimise (a bar at the foot), maximise (a window: a box, its top thick), close (a cross).
@@ -80,14 +80,14 @@ html.vw-next[data-skin="vapor"][data-pg="themes"]{--v-jp:"　テーマ"}
     linear-gradient(var(--v-key),var(--v-key)) 0px 0px/16px 16px no-repeat,
     linear-gradient(var(--v-key),var(--v-key)) 21px 0px/16px 16px no-repeat,
     linear-gradient(var(--v-key),var(--v-key)) 44px 0px/16px 16px no-repeat}
-[data-skin="vapor"] :is(.dlg-h,.newshead,.sheethd){background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.5);border-bottom:0}
+[data-skin="vapor"] :is(.dlg-h,.newshead,.sheethd){background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.72);border-bottom:0}
 [data-skin="vapor"] .newshead{padding-bottom:10px}
 /* ── buttons: grey, bevelled, and they go in ── */
 :root[data-skin="vapor"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip){border-radius:0;background:var(--panel-2);box-shadow:none;
   border:2px solid;border-color:var(--v-hi) var(--v-lo) var(--v-lo) var(--v-hi)}
 :root[data-skin="vapor"] :is(.btn,.arrowbtn,.dayswitch button,.modes button,.popt):not(.gateskip):active{border-color:var(--v-lo) var(--v-hi) var(--v-hi) var(--v-lo);transform:translate(1px,1px)}
 :root[data-skin="vapor"] :is(.btn.primary,.dayswitch button[aria-pressed="true"],.modes button[aria-pressed="true"],.popt[aria-checked="true"],.arrowbtn:hover){
-  background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+  background:var(--v-bar);color:#fff;text-shadow:1px 1px 0 rgba(80,30,120,.72)}
 [data-skin="vapor"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){border-radius:0;background:#fff;color:#2a1647;border:2px solid;border-color:var(--v-lo) var(--v-hi) var(--v-hi) var(--v-lo)}
 [data-skin="vapor"][data-mode="dark"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow){background:#12052a;color:#ffe8fb}
 /* ── pixel type, its colours a little apart ── */
@@ -366,7 +366,7 @@ html.vw-next .vw-tray{flex:none;display:flex;align-items:center;gap:8px;padding:
 html.vw-next .vw-sm{position:absolute;left:2px;bottom:calc(100% - 3px);display:flex;min-width:216px;padding:3px;background:var(--w-face);box-shadow:var(--bev-out)}
 html.vw-next .vw-sm[hidden]{display:none}
 html.vw-next .vw-smside{flex:none;width:26px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;background:linear-gradient(0deg,#ff71ce,#b967ff 52%,#01cdfe)}
-html.vw-next .vw-smside span{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font:400 19px/1 "VT323",ui-monospace,monospace;letter-spacing:.08em;white-space:nowrap;text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+html.vw-next .vw-smside span{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font:400 19px/1 "VT323",ui-monospace,monospace;letter-spacing:.08em;white-space:nowrap;text-shadow:1px 1px 0 rgba(80,30,120,.72)}
 html.vw-next .vw-smlist{flex:1;display:flex;flex-direction:column;padding:1px 0}
 html.vw-next .vw-task .vw-smi{appearance:none;-webkit-appearance:none;display:flex;align-items:center;gap:11px;width:100%;margin:0;padding:6px 30px 6px 9px;border:0;border-radius:0;background:none;box-shadow:none;
   color:var(--w-ink);font:inherit;text-align:left;text-decoration:none;text-shadow:none;cursor:default;min-height:0;transform:none}
@@ -552,7 +552,7 @@ html.vw-next[data-skin="vapor"] .hubnav::before{
   display:block;box-sizing:border-box;width:auto;height:var(--vbar);margin:0;padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
   background:var(--v-bar);color:#fff;border:0;box-shadow:none;opacity:1;
   font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.16em;text-transform:uppercase;text-align:left;
-  text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+  text-shadow:1px 1px 0 rgba(80,30,120,.72)}
 html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) .cathd,
 html.vw-next[data-skin="vapor"] .forum .fhead h2{position:relative;flex:0 0 100%}
 html.vw-next[data-skin="vapor"] :is(#gamegrid > .gsec,.lbboards > .gsec) .cathd::after,
@@ -611,7 +611,7 @@ html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfsec,.tforig){margin:0 0
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig:not([open]){padding-bottom:3px}
 html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfh,.tforig summary){position:relative;display:block;box-sizing:border-box;height:var(--vbar);margin:0 -9px 12px;padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
   background:var(--v-bar);color:#fff;font:400 .8125rem/var(--vbar) "DotGothic16","MS Gothic","Yu Gothic","Hiragino Sans",Tahoma,sans-serif;letter-spacing:.16em;text-transform:uppercase;
-  text-shadow:1px 1px 0 rgba(80,30,120,.5)}
+  text-shadow:1px 1px 0 rgba(80,30,120,.72)}
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig:not([open]) summary{margin-bottom:0}
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig summary em{letter-spacing:.06em;text-transform:none;opacity:.9}
 html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfh,.tforig summary)::after{content:"";position:absolute;right:4px;top:4px;width:62px;height:16px;background:var(--v-caps);pointer-events:none}

@@ -5400,4 +5400,39 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   unless it's mostly a starter bot (`STARTER` moved into tasengine.js so the server knows them). Moderators: **Look for
   copies** under a TAS board marks pairs that share most of their start, with which was sent first (not a verdict: the
   one copied may have improved since). The copies already on the boards are the owner's to remove.
+- **The preview's footer** (the owner): no "A preview of the real page…" line; a theme that's hard work for a computer
+  shows a small amber ! and why (themes.html `HEAVY`: Synthwave, Windows XP, Surrealism); Custom keeps its pointer to
+  Settings; any other theme shows nothing there.
+- **Liked themes** (the owner): a theme you gave a thumbs up has a tiny thumb in its card's top right corner (`.tfliked`);
+  voting redraws the cards.
+- **Legibility audit** (the owner: "audit the entire site for any legibility problems … preserve the look"). Scratchpad
+  `legib.mjs` measures every visible text against the real pixels behind it: it records each text's colour, makes all
+  text transparent, screenshots each scroll step, and `legib.py` compares (WCAG ratio, median and the worst tenth). It
+  ran every theme × mode × ten pages and two dialogs (900 pages); each flagged text was then looked at in a normal
+  screenshot, since a text-shadow or outline (Saul, Synthwave's halos, Vaporwave's title bars) isn't in the number.
+  Two harness traps, for next time: tabs in one Chrome profile share localStorage (the site follows a theme change made
+  in another tab), so each page gets its own browser context; and a screenshot `clip` is in page coordinates (scrolled
+  shots were captured off by the scroll). Headless Chrome also mis-paints heavy glass after a scroll: use a tall window.
+  Fixed (small changes, each theme's look kept):
+  - everywhere but Plain, Classic and Glass: empty fields' hints in the theme's own grey (theme.css, under any
+    theme's own rule); the timetable's "@education.nsw.gov.au" a little stronger (.7 → .88);
+  - Surrealism, light: the panes .2 → .36 white, the grey and the blue a shade deeper, Free periods' panels glass, the
+    tracker's "Add a subject" and the forum's "Show more posts" on chips (the owner's screenshot: dark dunes under the
+    forum);
+  - the cities: Free periods' panels frosted (the print showed through their small grey lines); by day, words in the
+    city's colour a shade deeper and Sign out's red deeper (not Sydney: its colours stay);
+  - Softclub: the halo its section names had now on the other words on the photograph, in full ink; by day those words
+    (and the footer, as a strip) sit on small sheets of its frosted acrylic, since a dark figure crosses the photograph
+    and a dropdown (the strip's heading) draws no shadow;
+  - Aero: the same halo on intros and hints (the Theme finder's on a phone); today's day name deeper by day;
+  - Synthwave: its grey .68/.72 → .82/.84, hints .45 → .62; Vaporwave: title-bar text shadow .5 → .72;
+  - Skeuomorphism: a soft shadow under the blue gel buttons' white, loose lines on the wood in full ink;
+  - Maximalism: the Theme finder's loose words and Revision's "Go to practice" on outlined labels; at night today's day
+    name black on the yellow (it was yellow on cream); DORFic dark: the footer's links white over the
+    sunset; Eco: the footer's links and section names a deeper green;
+  - the preview dialog gets a solid backing in see-through themes (above).
+  Left alone: the legacy originals (as they were), Plain, Classic and Glass, things faded on purpose (days outside the
+  month, past periods in Studio), and XP (being rebuilt; see below). Re-measured: the changed themes went from 271
+  hard-to-read texts to about 140, and what's left is mostly text with a halo or outline (not in the number) or rows
+  scrolled out of a list (the harness's visibility check lets an ancestor count as a hit; `hit.contains(el)` should go).
 - Next free stamp: `20261127e` / v136.

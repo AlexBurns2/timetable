@@ -28,7 +28,7 @@
 [data-skin="synth"]{
   --bg:#3a1446;
   --panel:rgba(48,17,52,.82); --panel-2:rgba(64,25,70,.85); --line:rgba(255,206,232,.18);
-  --text:#fff3fb; --muted:rgba(250,222,240,.72); --accent:#ff5fae; --accent-ink:#22071a;
+  --text:#fff3fb; --muted:rgba(250,222,240,.84); --accent:#ff5fae; --accent-ink:#22071a;
   --font-ui:"Saira",system-ui,sans-serif; --font-display:"Saira",system-ui,sans-serif; --font-num:"Saira",system-ui,sans-serif;
   --card-radius:10px; --radius:8px; --tint:20%; --card-accent:3px;
   --card-border:1px solid var(--line);
@@ -42,7 +42,7 @@
 [data-skin="synth"]:is([data-mode]){
   --bg:#0d0518;
   --panel:rgba(14,7,28,.84); --panel-2:rgba(28,13,46,.87); --line:rgba(214,176,255,.16);
-  --text:#f7efff; --muted:rgba(226,208,248,.68); --accent:#ff58ae; --accent-ink:#1a0616;
+  --text:#f7efff; --muted:rgba(226,208,248,.82); --accent:#ff58ae; --accent-ink:#1a0616;
   --sy-glass:rgba(14,6,26,.62); --sy-btn:rgba(26,12,44,.82); --sy-btn-hi:rgba(44,20,68,.88);
   --sy-chrome:linear-gradient(180deg,#ffffff 0%,#f3eaff 24%,#d6b4ff 46%,#2a0d46 48.5%,#5a1d6e 52%,#ff4f9a 74%,#ffa0c8 100%);
 }
@@ -122,7 +122,7 @@ html[data-contrast="high"][data-skin="synth"] :is(.brand h1,.hubid h1,.pagehead 
 [data-skin="synth"] :is(.fnew textarea,.freplybox textarea,.emailrow,.gatepass,.pad,.idrow,.pin,.psug input,.psug select,.ideaform select,#fscope,input[type="text"],input[type="search"],input[type="email"],input[type="password"],input[type="number"],input[type="date"],input[type="time"],textarea,select){
   background-color:rgba(8,2,16,.45);color:var(--text);border-color:var(--line)}
 [data-skin="synth"] :is(input,textarea,select):focus{border-color:rgba(255,150,200,.6);outline:none;box-shadow:0 0 0 3px rgba(255,95,174,.18)}
-[data-skin="synth"] ::placeholder{color:rgba(240,214,236,.45)}
+[data-skin="synth"] ::placeholder{color:rgba(240,214,236,.62)}   /* (.45, and the grey .68-.72, faded on the pink: the legibility audit, 27 November 2026) */
 [data-skin="synth"] .prog{background:rgba(255,255,255,.1)}
 [data-skin="synth"] .prog i{background:var(--sy-sun)}
 

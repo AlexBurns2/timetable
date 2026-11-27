@@ -277,6 +277,10 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 
 #hdrback[hidden]{display:none}
 #openMod[hidden]{display:none}
+/* empty fields' hints in the theme's own grey: the browser's fixed grey all but vanished on the dark and photographic
+   themes (the legibility audit, 27 November 2026). Kept below any theme's own rule (:where), and Plain, Classic and
+   Glass keep the browser's. */
+:where(:root:not([data-skin="plain"]):not([data-skin="classic"]):not([data-skin="glass"])) ::placeholder{color:var(--muted);opacity:.85}
 /* the Moderator button's ping: how many flagged scores wait for a moderator */
 .modping{display:inline-flex;align-items:center;justify-content:center;min-width:1.5em;height:1.5em;margin-left:.5em;padding:0 .4em;border-radius:999px;
   background:var(--accent);color:var(--accent-ink);font-size:.75em;font-weight:700;line-height:1;vertical-align:.1em}
