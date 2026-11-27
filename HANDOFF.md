@@ -5324,3 +5324,13 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   with this round only on version stamps (`20261126f` / v131 here, `20261126e` / v130 there). Everything now carries
   `20261127a` / v132; pushed as `bea6e35`.
 - Next free stamp: `20261127b` / v133.
+
+## 8.212 Mahjong beta: a calmer home, the theme off, discards that never overlap (version `20261127b`, `CACHE_VERSION` v133)
+- **Home** (`betaHomeHTML`): the sign in the middle, my card and portrait top right as one button that opens a menu of tile buttons (Profile, Settings, Stats, Rules, Beta look). The rack is two groups: **Singleplayer** (Choose bots, Quick turns, Practice) and **Multiplayer** (Open a room, Join a room, and the public rooms list beside them). Play now, Daily deal, the Daily board button and the dice are gone from the beta home (the classic home keeps them).
+- **The table stays behind** bot setup and the lobby: `show()` keeps `#home` up as `.bgonly` (its menu hidden) under those screens. Bot setup shows everyone's picture; level buttons are tiles in the beta look.
+- **The theme is off with the beta look**: `window.TT_NOSKIN` (set before theme.js loads from `hkmj.betaTable`, and by `setBeta`) makes theme.js's `readState` return plain defaults (reduced motion still holds) and `fxOn` false. Also: Studio's card rules for `.tile`/`.game` no longer reach `data-pg="hkmahjong"`, which flattened tiles on hover.
+- **Wall**: still turned -11deg, now a closed pinwheel, squashed to .78 top to bottom (seen from my seat). Each stack's edge is counter-turned so it shows straight down the screen on every side, and on the near and right sides nearer stacks are drawn over farther ones (`wallHTML`).
+- **Discards** (`betaCells`/`betaSpot`): 85 cells of a grid wholly inside the wall, nearest the middle first, a ±5deg turn and nudge kept inside the cell, so no two ever overlap. The last discard is no longer enlarged; the ring is smaller.
+- **No hover where there's nothing to click**: table tiles carry `aria-label` instead of `title`, the pool ignores the pointer, and a claim box reacts as one button (its tiles don't). The top-right table info sits on a dark plate.
+- **Hand end**: all four portraits come up once and stay until Next hand; the winner's and discarder's words show beside them, then the score counts fade in.
+- Next free stamp: `20261127c` / v134.
