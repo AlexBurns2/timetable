@@ -19,10 +19,10 @@
      every cache, so a broken release can always be undone from the browser.
    ══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = 'v133';
+const CACHE_VERSION = 'v134';
 /* the pages link the shared files they changed with ?v=ASSET_V, so a new deploy never pairs a
    fresh page with a stale stylesheet; the shell pre-caches those same URLs */
-const ASSET_V = '20261127b';
+const ASSET_V = '20261127c';
 const VA = f => f + '?v=' + ASSET_V;
 const CACHE = 'msc-' + CACHE_VERSION;
 

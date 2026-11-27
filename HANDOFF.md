@@ -5333,4 +5333,18 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
 - **Discards** (`betaCells`/`betaSpot`): 85 cells of a grid wholly inside the wall, nearest the middle first, a ±5deg turn and nudge kept inside the cell, so no two ever overlap. The last discard is no longer enlarged; the ring is smaller.
 - **No hover where there's nothing to click**: table tiles carry `aria-label` instead of `title`, the pool ignores the pointer, and a claim box reacts as one button (its tiles don't). The top-right table info sits on a dark plate.
 - **Hand end**: all four portraits come up once and stay until Next hand; the winner's and discarder's words show beside them, then the score counts fade in.
-- Next free stamp: `20261127c` / v134.
+
+## 8.213 Mahjong beta: the wall as before, tossed discards, a real break (version `20261127c`, `CACHE_VERSION` v134)
+- **Wall** back to the long, overhanging pinwheel turned -11deg (no squash). Each stack shows its two tiles' sides towards the
+  bottom left of the screen on every side (`--ex/--ey`: the screen's (-.42, 1) counter-turned into each side's axes); the near
+  and right walls draw each stack over the next one along.
+- **Discards** are tossed again (any spot, ±35deg, near the middle first) but never overlap: `betaSpot` tries random spots
+  against every discard still on the table with a turned-rectangle test (`poolHit`) inside the wall's inner square
+  (`poolInside`), then sweeps spots and turns. A claimed discard's spot is freed. Pool tiles are 3.1cqmin: in 65 simulated
+  full hands (up to 83 discards on the table) none overlapped; at 3.2 some tables jammed.
+- **The wall's two ends**, as in Hong Kong rules (checked against mahjongtime.com and mahjong4friends.com): the dice total
+  is counted anticlockwise from the dealer to pick a wall and that many stacks in from its owner's right end
+  (`Beta.breakAt`). Ordinary draws come off clockwise from the break; flower and kong replacements (the engine's
+  `wall.pop`) come off the tail on the other side, counted from the flowers and kongs on the table.
+- Table info: as far from the top as from the right (3cqmin), padding set for the font's ink.
+- Next free stamp: `20261127d` / v135.
