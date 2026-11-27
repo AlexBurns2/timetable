@@ -605,6 +605,8 @@ html.vw-next[data-skin="vapor"][data-pg="themes"] .pagehead{margin-bottom:0;box-
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tflede{margin:0;max-width:none;padding:0 16px 12px;background:var(--panel);box-shadow:var(--win-mid)}
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tflook{max-width:none;margin:0 0 18px;padding:0 16px 14px;background:var(--panel);box-shadow:var(--win-foot)}
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tflook > *{max-width:420px}
+/* the row with "Rate this theme:" beside the switches (themes.html .tflookrow): the switches keep the 420, the row doesn't */
+html.vw-next[data-skin="vapor"][data-pg="themes"] .tflook > .tflookrow{max-width:none}
 html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfsec,.tforig){margin:0 0 18px;padding:3px 12px 14px;border:0;background:var(--panel);box-shadow:var(--bev-out)}
 html.vw-next[data-skin="vapor"][data-pg="themes"] .tforig:not([open]){padding-bottom:3px}
 html.vw-next[data-skin="vapor"][data-pg="themes"] :is(.tfh,.tforig summary){position:relative;display:block;box-sizing:border-box;height:var(--vbar);margin:0 -9px 12px;padding:0 84px 0 9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;

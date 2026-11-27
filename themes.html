@@ -82,10 +82,12 @@ html[data-motion="reduced"] .tfcard{transition:none}
 .tfsort:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
 .tfsort option{color:#18181b;background:#fff;text-transform:none;letter-spacing:normal}
 /* "Rate this theme:" with thumbs up or down, for the theme that's on, at the top to the right of Dark mode and Animation
-   (the owner, 27 November 2026: it had been small and easy to miss in the preview's footer). It sits in lookRow's own row
-   as a third cell, so it's the switches' height in every theme; on a phone it takes a row of its own under them. */
-.tflook .swrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
-.tfrate{display:flex;align-items:center;gap:4px;min-width:0;margin:0;padding:4px 6px 4px 12px;border:1px solid var(--line);border-radius:var(--radius);
+   (the owner, 27 November 2026: it had been small and easy to miss in the preview's footer). The switches keep their own
+   pair (never squeezed: as a third cell of their row it had cut them to "D." and "A.."), the box sits a clear gap to their
+   right at the same height, and where the three don't fit it goes under them instead. */
+.tflookrow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px 22px}
+.tflookrow .swrow{flex:0 1 420px;min-width:min(100%,300px)}
+.tfrate{flex:0 0 auto;display:flex;align-items:center;gap:4px;min-width:0;margin:0;padding:4px 6px 4px 12px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--panel-2);color:var(--text);font-size:.875rem;font-weight:600;white-space:nowrap}
 .tfrate[hidden]{display:none}
 .tfrate span{margin-right:4px}
@@ -97,8 +99,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
 .tfrate svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
 .tfrate button[aria-pressed="true"] svg{fill:color-mix(in srgb,currentColor 25%,transparent)}
 @media (max-width:640px){
-  .tflook .swrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  .tflook .tfrate{grid-column:1/-1;justify-content:space-between}
+  .tflookrow .tfrate{flex:1 1 100%;justify-content:space-between}
   .tfrate span{margin-right:auto}
 }
 </style>
@@ -265,7 +266,11 @@ TT.lookRow($('tflook'), () => render());
   rate.innerHTML = '<span>Rate this theme:</span>' +
     '<button type="button" data-v="1" aria-pressed="false" aria-label="Thumbs up">' + thumb(false) + '</button>' +
     '<button type="button" data-v="-1" aria-pressed="false" aria-label="Thumbs down">' + thumb(true) + '</button>';
-  ($('tflook').querySelector('.swrow') || $('tflook')).appendChild(rate);
+  /* the switches' row and the box side by side in a row of their own (lookRow still finds its switches inside it) */
+  const sw = $('tflook').querySelector('.swrow'), row = document.createElement('div');
+  row.className = 'tflookrow';
+  if (sw){ sw.parentNode.insertBefore(row, sw); row.appendChild(sw); } else $('tflook').appendChild(row);
+  row.appendChild(rate);
   rate.querySelectorAll('button').forEach(b => b.onclick = () => {
     const id = current(); if (!byId(id) || id === 'custom') return;
     const v = Object.assign({}, votes()), x = +b.dataset.v;

@@ -5364,3 +5364,40 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   The slide's picture panes are now put under the live layers (`prepend`).
 - Checked in the local preview (1600×900): mid-slide the two layers and the two marks are exactly a screen apart, the clip
   keeps playing, the ship and the sphere are there, and afterwards only the new place's layer and mark remain. No page errors.
+
+## 8.215 Merge, rating, flagged scores, TAS copies, the strip cycling (version `20261127d`, `CACHE_VERSION` v135)
+- **Merge**: the owner's "things" (8.214, `20261127b`) met the Mahjong beta (8.212–8.213, `20261127c`). Every clash was a
+  stamp; everything now carries `20261127d` / v135 (checked by a stamp-masked `git merge-file`). HANDOFF: theirs first.
+- **Rate this theme** (the owner: the thumbs in the preview's footer were too small to find): at the top of the Theme
+  finder, to the right of Dark mode and Animation, "Rate this theme:" with thumbs up and down for the theme that's on
+  (signed in, not Custom). The switches keep their own pair (`.tflookrow`: as a third grid cell it had cut them to "D."
+  and "A.."); the box sits 22px to their right and goes under them where the three don't fit. Vaporwave's 420px cap now
+  skips that row. The footer thumbs are gone.
+- **The strip cycles on its own** (the owner): Popular, Most liked (once there are thumbs), New, every 8 s with a 0.4 s
+  fade (none with motion reduced). It waits under the pointer or keyboard focus, while a preview is open and while the tab
+  is hidden; a pick from the heading stops it for the visit. The pick isn't kept any more (`tt.tfsort` unused).
+- **The preview** gets a solid backing in see-through themes (`TT.solidBg`): Surrealism's cards had shown through it.
+- **Anticheat loosened, then let through** (the owner: "its basically only catching legit players", then "let runs
+  through by default and still send a ping, and the moderators decide"):
+  - `_anticheat.js` keeps only what a person can't do: automation (`navigator.webdriver`), 20+ made-up key presses
+    (games.js counts only keydown/keyup now: extensions send made-up clicks and typing), a score more than its own replay
+    gives (Snake +3, 2048 ×1.25 + 200), impossible speed, a Sprint time well under its own last piece, Reaction under
+    100 ms. Gone: the clock lock, "too even", within a frame, machine pace, near a full board, a replay that can't
+    follow (the page's games aren't tasengine.js, so honest runs drift), the 200 wpm typing flag (scoreFits' 250 stays).
+  - A flagged score goes on the boards at once and leaves a note (`_review.js` `noteFlag`, game_state
+    `run:seen:<board>`) with what each board showed before. The moderator page's tab is **Flagged scores** (every
+    moderator now, not just the reviewer): **Keep** drops the note; **Remove** puts each board back where the flagged
+    score is still the one on it (a better score since is never touched; first-ever entries are taken off). Older held
+    scores (`run:flag:`) still show with Let it on / Throw out.
+  - The ping: settings answer moderators `flagged` (one count); the Moderator button (Settings, the timetable) shows it.
+  - Tested against an in-memory stand-in for the database (scratchpad `flagtest/`): ten keep/remove cases.
+- **TAS copies** (the owner: people sent other people's runs as their own; anyone could fetch a run with `?rank=N`):
+  `_tas.js` compares what runs do in the game, not their letters (Snake the heading each step, 2048 the moves, Tetris
+  each piece's resting place and holds, up to the last scoring point), so no-op padding doesn't hide a copy. A run whose
+  start is at least half of someone else's (and at least 40 steps / 30 moves / 10 pieces) is refused (409), unless the
+  sender's own earlier run already had that much of it and came first. Runs now keep `since` (when that line of your own
+  work began). Bots: code whose shape (comments and spacing gone, names all alike) is 85% someone else's is refused,
+  unless it's mostly a starter bot (`STARTER` moved into tasengine.js so the server knows them). Moderators: **Look for
+  copies** under a TAS board marks pairs that share most of their start, with which was sent first (not a verdict: the
+  one copied may have improved since). The copies already on the boards are the owner's to remove.
+- Next free stamp: `20261127e` / v136.
