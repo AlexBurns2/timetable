@@ -50,12 +50,16 @@ function deskOf(){
   try { const f = window.frameElement, d = f && f.classList.contains('xpframe') && parent.__xpDesk; return d && d.live() ? d : null; }
   catch { return null; }
 }
-/* the pages that open as windows (Home is the desktop itself; Hong Kong Mahjong has no XP; the vault is its own thing).
-   A page added to the site opens in the whole tab until it is listed here. */
-const PAGES = ['timetable', 'calendar', 'free', 'revision', 'resources', 'games', 'themes', 'mahjong', 'notes', 'finder', 'tas'];
+/* the pages that open as windows: every page at the top of the site (the timetable at "/", any name.html), so a page added
+   later opens as one by itself, but these: Home (the desktop itself), Hong Kong Mahjong (no XP: a game of its own), the vault
+   (its own thing), and the pages without the site's theme (index2, the q code page, 404). Anything else (/beta/, /api/, an
+   address with no .html) goes in the whole tab, as before. */
+const NOWIN = ['home', 'hkmahjong', 'vault', 'index2', 'q', '404'];
 const NAMES = { notes:'Notes', finder:'Student finder', tas:'TAS' };
 /* a page's name from its address, as theme.js names it (html[data-pg]) */
 const pageOf = u => { let f = u.pathname.split('/').pop().replace(/\.html$/, ''); if (!f || f === 'index') f = 'timetable'; if (f === 'poll') f = 'home'; return f; };
+const winPg = p => !!p && !NOWIN.includes(p);
+const winPage = u => u.origin === location.origin && /^\/(?:[\w-]+\.html)?$/.test(u.pathname) && winPg(pageOf(u));
 /* an address as a window keeps it: relative to the site's root ("./" for the timetable) */
 const relHref = u => (u.pathname.replace(/^\//, '') || './') + u.search + u.hash;
 /* where a link goes, from here: null (a place on this page, or not a page), 'home', 'here' (this page at another address),
@@ -68,7 +72,7 @@ function where(href){
   const p = /^\/(?:[\w-]+(?:\.html)?)?$/.test(u.pathname) ? pageOf(u) : '';
   if (p === 'home') return { to:'home', u };
   if (p && p === pg()) return { to:'here', u };
-  if (PAGES.includes(p)) return { to:'win', u, pg:p };
+  if (winPage(u)) return { to:'win', u, pg:p };
   return { to:'out', u };
 }
 /* the link a plain click is following (not one the page has dealt with, not to a new tab or a download) */
@@ -93,7 +97,7 @@ function stop(){ closeMenu(); hideTip(); const l = live; live = null; if (l) for
 let going = false;
 function toDesk(){
   if (going) return true;
-  if (R.dataset.skin !== 'xp' || !TOP || !PAGES.includes(pg())) return false;
+  if (R.dataset.skin !== 'xp' || !TOP || !winPg(pg())) return false;
   const u = new URL(location.href), t = Date.now();
   const a = opened().filter(w => w.pg !== pg());
   a.push({ v:2, pg:pg(), href:relHref(u), label:labelOf(pg()), t });
@@ -999,8 +1003,8 @@ function pagesOn(X){
       if (u && u.origin === location.origin){
         const p = pageOf(u);
         if (p === 'home' && /^\/(?:home(?:\.html)?)?$/.test(u.pathname)){ close(w); showHome(); return; }   // (Home in a window: the desktop instead)
-        if (PAGES.includes(p) && p !== w.pg) info(w, { pg:p, href:relHref(u) });
-        else if (PAGES.includes(p)) w.href = relHref(u);
+        if (winPg(p) && p !== w.pg) info(w, { pg:p, href:relHref(u) });
+        else if (winPg(p)) w.href = relHref(u);
       }
       reveal(w); history_(w); save();
     });
@@ -1011,7 +1015,7 @@ function pagesOn(X){
   const sleepIn = (w, v) => { try { const F = w.frame && w.frame.contentWindow.__xpFrame; if (F) F.sleep(v); } catch {} };
   function info(w, i){
     if (!i) return;
-    if (i.pg && i.pg !== w.pg && PAGES.includes(i.pg)){ const d = list.find(x => x !== w && x.pg === i.pg); if (d) close(d, true); w.pg = i.pg; w.el.dataset.pg = i.pg; }
+    if (i.pg && i.pg !== w.pg && winPg(i.pg)){ const d = list.find(x => x !== w && x.pg === i.pg); if (d) close(d, true); w.pg = i.pg; w.el.dataset.pg = i.pg; }
     if (i.href) w.href = i.href;
     if (i.label) w.label = i.label;
     if (i.title) w.title = i.title;
@@ -1143,7 +1147,7 @@ function pagesOn(X){
     if (!alive) return;
     let u; try { u = new URL(href, location.href); } catch { return; }
     const p = pageOf(u);
-    if (u.origin !== location.origin || !PAGES.includes(p)){ location.href = u.href; return; }
+    if (!winPage(u)){ location.href = u.href; return; }
     closeMenu();
     D.querySelectorAll('dialog[open]').forEach(d => { try { d.close(); } catch {} });
     undesk();
@@ -1234,7 +1238,7 @@ function pagesOn(X){
      minimised); a minimised one's page loads when it is first brought up */
   {
     const seen = new Map();
-    opened().forEach(r => { if (PAGES.includes(r.pg)) seen.set(r.pg, r); });
+    opened().forEach(r => { if (winPg(r.pg)) seen.set(r.pg, r); });
     let recs = [...seen.values()];
     const n = recs.length - cap();
     if (n > 0){ const drop = new Set(recs.slice().sort((a, b) => (a.t || 0) - (b.t || 0)).slice(0, n)); recs = recs.filter(r => !drop.has(r)); }

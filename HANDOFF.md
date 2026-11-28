@@ -5456,8 +5456,12 @@ in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
   minimise (not drawn, animations paused), restore, close, drag, resize (right and bottom), maximise, Ctrl+Esc from a
   window; windows come back on reload (`msc.xpopen`); a page's address loaded directly (deep links too) shows the desktop
   with that window; six windows at most (four on phones; the longest-minimised closes); a phone shows one full-screen
-  window. Caveats: without the Navigation API (Firefox, Safari) a page navigating by script reloads the desktop; a new
-  page must be added to `PAGES` in xp.js. Plain checked pixel-identical. Originals: scratchpad `xpa-orig/`.
+  window. Which pages open as windows is worked out from the address: any top-level `name.html` (or `/`) except Home,
+  Hong Kong Mahjong, the vault, `index2`, `q` and `404`, so a new page opens as a window by itself. Without the Navigation
+  API, a window's own script navigation turns that window into the new page (the desktop stays); Home's own script
+  navigation (forum Post while signed out, Settings' Moderator) reloads the desktop once, then the page opens as a window
+  and the others come back. There's no clean catch for that (scripts can't intercept `location.href`). Plain checked
+  pixel-identical. Originals: scratchpad `xpa-orig/`.
 - **Surrealism's seventh place (a dark forest, a glowing billboard with a live clock): not built yet.** Stopped at the
   owner's request (usage). Photo chosen, not downloaded: "Karachay-Cherkessia, Arkhyz, Taulu forest clearings after dusk",
   Vyacheslav Argenberg, CC BY 4.0, Commons. Previews logged in `PHOTO-LOG.md`. The brand is to be an original one (no real
