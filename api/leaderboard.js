@@ -28,14 +28,14 @@
  * is refused. Snake, 2048, Typing, Reaction and Tetris need a ticket from when
  * the game started (POST {action:"ticket", game}), and the score has to fit the
  * time since. Snake and 2048 get replayed from the ticket's seed, and anything off
- * is held for Alex (_anticheat.js, _review.js). TAS boards: _tas.js.
+ * still goes on the board but is flagged for Alex to check (_anticheat.js, _review.js). TAS boards: _tas.js.
  */
 
 import { db, whoami, isAdmin, isReviewer } from "./_supabase.js";
 import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList, yearTags, withYear } from "./_names.js";
 import { runHandler, RUN_GAMES, issueTicket, ticketOf, scoreFits, TICKET_GAMES } from "./_runs.js";
-import { inputSigns, vetSnake, vet2048, vetOther, botty } from "./_anticheat.js";
-import { holdScore, heldList, takeHeld, writeTetris } from "./_review.js";
+import { inputSigns, vetSnake, vet2048, vetOther } from "./_anticheat.js";
+import { flagScore, flaggedList, takeFlag, removeFlagged } from "./_review.js";
 import { tasHandler } from "./_tas.js";
 import { usage } from "./_usage.js";
 
@@ -212,7 +212,9 @@ async function writeBest(game, metric, period, email, name, score, dir) {
     const { error } = await db.from("game_score").upsert({ game, metric, period, email, name, score });
     if (error) throw new Error(error.message);
   }
+  return better;
 }
+const LABEL = { snake: "Snake", g2048: "2048", typing: "Typing race", react: "Reaction" };
 
 /* the ban list for the moderator page: each person by the name the site shows, newest ban first */
 async function bansOut() {
@@ -491,26 +493,21 @@ export default async function handler(req, res) {
     catch (e) { console.error("tas:", e.message); return res.status(502).json({ error: "Couldn't reach the TAS boards." }); }
   }
 
-  if (req.method === "GET" && src.held) {
-    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check held scores." });
-    try { return res.status(200).json({ held: await heldList() }); }
-    catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't read the held scores." }); }
+  if (req.method === "GET" && src.flagged) {
+    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check flagged scores." });
+    try { return res.status(200).json({ flagged: await flaggedList() }); }
+    catch (e) { console.error("flagged:", e.message); return res.status(502).json({ error: "Couldn't read the flagged scores." }); }
   }
-  if (req.method === "POST" && src.action === "held") {
-    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check held scores." });
+  /* keep it (the flag goes) or remove it (off the boards too) */
+  if (req.method === "POST" && src.action === "flagged") {
+    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check flagged scores." });
     const email = String(src.email || "").toLowerCase(), key = String(src.key || "");
     if (!email || !/^[a-z0-9:]{1,40}$/.test(key)) return res.status(400).json({ error: "Which score?" });
     try {
-      const h = await takeHeld(email, key);
-      if (h && src.op === "ok") {
-        const name = h.name || nameFromEmail(email);
-        for (const b of h.boards || []) {
-          if (h.kind === "t") await writeTetris(email, name, b, h.score, h.week);
-          else if (DIRS[h.game + ":" + h.metric]) await writeBest(h.game, h.metric, b, email, name, h.score, DIRS[h.game + ":" + h.metric]);
-        }
-      }
-      return res.status(200).json({ held: await heldList() });
-    } catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
+      const f = await takeFlag(email, key);
+      if (f && src.op === "remove") await removeFlagged(email, f);
+      return res.status(200).json({ flagged: await flaggedList() });
+    } catch (e) { console.error("flagged:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
   }
 
   /* the games the server runs (Six Degrees, Odd One Out, Classroom) */
@@ -542,7 +539,6 @@ export default async function handler(req, res) {
   const dmax = DAILY_GAMES[game + ":" + metric], day = dmax ? dayOf(src.day) : null;
   if (dmax && src.day != null && !day) return res.status(400).json({ error: "That isn't today." });
   const dperiod = day ? "d" + day : null;
-  let held = null;
   const validPeriod = p => p === "all" || p === wperiod || (dperiod && p === dperiod);
 
   if (req.method === "POST" && src.action === "wipe") {
@@ -579,7 +575,7 @@ export default async function handler(req, res) {
       else {
         const v = game === "snake" ? vetSnake(tk.seed, src.run, score, tk.age)
                 : game === "g2048" ? vet2048(tk.seed, src.run, score, tk.age) : { why: [] };
-        if (v.score != null) score = v.score;
+        if (v.score != null && v.score > score) score = v.score;
         why.push(...v.why);
         if (!scoreFits(game, metric, score, tk.age)) why.push("more than fits the time played");
       }
@@ -587,14 +583,10 @@ export default async function handler(req, res) {
     }
     const name = nameFromEmail(me.email);
     try {
-      if (why.length) {
-        await holdScore(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, boards: ["all", wperiod, ...(dperiod ? [dperiod] : [])], why });
-        held = { score, tas: botty(why) };
-      } else {
-        await writeBest(game, metric, "all", me.email, name, score, dir);
-        await writeBest(game, metric, wperiod, me.email, name, score, dir);
-        if (dperiod) await writeBest(game, metric, dperiod, me.email, name, score, dir);
-      }
+      const landed = [];
+      for (const p of ["all", wperiod, ...(dperiod ? [dperiod] : [])]) if (await writeBest(game, metric, p, me.email, name, score, dir)) landed.push(p);
+      if (why.length && landed.length)
+        await flagScore(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, boards: landed, why }, LABEL[game] || game);
     } catch (e) { console.error("leaderboard write:", e.message); return res.status(502).json({ error: "Couldn't save your score." }); }
   } else if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -609,6 +601,6 @@ export default async function handler(req, res) {
     all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years, banned),
     ...(dperiod ? { day: await board(game, metric, dperiod, dir, me.email, isOwner, scope, years, banned) } : {}),
     year: scope || "all", myYear: me.year || years.get(me.email) || null,
-    canWipe: isOwner, ...(held ? { held } : {})
+    canWipe: isOwner
   });
 }

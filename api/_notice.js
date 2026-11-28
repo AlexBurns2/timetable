@@ -48,7 +48,7 @@ async function known(email) {
 }
 
 /* a notice to one person; false if the table isn't there yet */
-async function tell(email, body, about) {
+export async function tell(email, body, about) {
   const { error } = await db.from("notice").insert({ id: newId(), email, body: clean(body, MAX_BODY), about: about ? clean(about, 300) : null });
   if (error) { if (!missing(error)) console.error("notice:", error.message); return false; }
   return true;

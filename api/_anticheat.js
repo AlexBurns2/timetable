@@ -83,5 +83,3 @@ export function vetOther(game, metric, score) {
   if (game === "typing" && score > 200) why.push("faster than the typing world record");
   return why;
 }
-
-export const botty = why => why.some(w => /script|automation|machine|clock|frame|even|world record|full board/.test(w));

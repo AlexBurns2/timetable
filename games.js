@@ -762,11 +762,6 @@ function lbTicket(game){
   return TT.api('/api/leaderboard', { method:'POST', body:{ action:'ticket', game } })
     .then(d => { if (!d || !d.ticket) return null; lbTickets[game] = d.ticket; return d; }).catch(() => null);
 }
-function heldHTML(h){
-  if (!h) return '';
-  return '<p class="how lbheld">Your score is waiting to be checked before it goes on the board.' +
-    (h.tas ? ' If a bot played it, bots race on the <a href="tas.html">TAS boards</a>.' : '') + '</p>';
-}
 /* a run the server plays (Six Degrees, Odd One Out, Classroom): one step of it */
 const runCall = (game, op, extra) => TT.api('/api/leaderboard', { method:'POST', body:Object.assign({ action:'run', game, op, week:tetrisWeek() }, extra || {}), timeout:90000 });
 /* which year's boards are shown: your own (the server's default), another year, or everyone's */
@@ -962,7 +957,7 @@ async function lbSubmit(game, score, run){
     const d = await TT.api('/api/leaderboard', { method:'POST', body:Object.assign({ game, metric:lb.metric, score, week:tetrisWeek(), ticket, run, ac:acInfo() }, lbYearParam()) });
     lbSumCache = null;   // summary strip is now stale
     lbRemember(game, d);
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.held = d.held || null; paintLB(); }
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
   } catch(e){}
   f.busy = false;
   if (f.next != null){ const n = f.next; f.next = null;
@@ -1008,8 +1003,8 @@ function paintLB(){
   const b = lbState.period === 'week' ? lbState.week : lbState.all;
   if (!b){ body.innerHTML = LD(); return; }
   const rows = b.top || [];
-  if (!rows.length && b.meBest == null){ body.innerHTML = heldHTML(lbState.held) + '<p class="how">No scores yet. Be the first.</p>'; return; }
-  let html = heldHTML(lbState.held) + rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+  if (!rows.length && b.meBest == null){ body.innerHTML = '<p class="how">No scores yet. Be the first.</p>'; return; }
+  let html = rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
     '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
   if (b.meRank && b.meRank > rows.length)
     html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(lb.fmt(b.meBest))+'</span></div>';
@@ -2380,7 +2375,7 @@ BUILD.tetris = (host, o) => {
   }
   function fillQueue(){ while (queue.length < 7) queue.push(nextType()); }
 
-  let grid, piece, hold, holdUsed, cleared, score = 0, elapsedMs = 0, plog = [], tHeld = null;
+  let grid, piece, hold, holdUsed, cleared, score = 0, elapsedMs = 0, plog = [];
   let phase = 'ready';            // 'ready' | 'playing' | 'paused' | 'over'
   let loopId, lastTick, baseTime, dropAcc = 0, pauseAt = 0, alive = true;
   let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
@@ -2597,7 +2592,7 @@ BUILD.tetris = (host, o) => {
   function begin(){
     if (mode !== 'practice' && mode !== 'versus') lbTicket('tetris');   // a score is sent with this (the server checks it)
     if (saveable()) clearState();              // starting fresh discards any saved game
-    emptyBoard(); newRng(); plog = []; tHeld = null;
+    emptyBoard(); newRng(); plog = [];
     holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
     spawnNext(performance.now());
@@ -2702,7 +2697,7 @@ BUILD.tetris = (host, o) => {
     try {
       const ticket = lbTickets.tetris, ac = acInfo();
       if (mode==='survival'){ const d = await TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'zen',ms,ticket,ac,run:{pt:placeTimes()}}, lbYearParam())});
-        tHeld = d.held || null; renderTimeLB(d, 'Longest survivals (all-time)'); }
+        renderTimeLB(d, 'Longest survivals (all-time)'); }
       else {
         /* the weekly board is still written to even while it is hidden, so turning
            weekly boards back on brings every score back with it */
@@ -2711,7 +2706,6 @@ BUILD.tetris = (host, o) => {
           TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'sprint',week:wk,timeMs:ms,ticket,ac,run}, lbYearParam())}),
           TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'sprintall',week:wk,timeMs:ms,ticket,ac,run}, lbYearParam())})
         ]);
-        tHeld = w.held || a.held || null;
         sprintBoards={week:w,all:a}; renderSprintLB();
       }
     } catch(e){}
@@ -2719,12 +2713,11 @@ BUILD.tetris = (host, o) => {
   async function submitZen(sc){
     if (!TT.myEmail()) return;
     try { const d = await TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'zenscore',score:sc,ticket:lbTickets.tetris,ac:acInfo(),run:{pt:placeTimes()}}, lbYearParam())});
-      tHeld = d.held || null; renderZenLB(d); } catch(e){}
+      renderZenLB(d); } catch(e){}
   }
   const placeTimes = () => plog.filter(e => e[1]!=='h').map(e => e[0]).slice(-3000);
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
-    tHeld = null;
     if (mode==='practice' || mode==='versus'){ el.innerHTML=''; return; }   // practice and versus have no board
     if (!TT.myEmail()){ el.innerHTML=''; return; }
     try {
@@ -2749,8 +2742,8 @@ BUILD.tetris = (host, o) => {
   function renderTimeLB(d, title){
     const el=$$('tlb'); if (!el || !alive) return;
     const rows=(d && d.top)||[];
-    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3>'+heldHTML(tHeld)+'<p class="how">No times yet. Set the first one.</p>'; return; }
-    el.innerHTML='<h3>'+title+'</h3>'+heldHTML(tHeld)+rowsHTML(d, r=>fmtHMS(r.time_ms));
+    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3>'+'<p class="how">No times yet. Set the first one.</p>'; return; }
+    el.innerHTML='<h3>'+title+'</h3>'+rowsHTML(d, r=>fmtHMS(r.time_ms));
   }
   function renderSprintLB(){
     const el=$$('tlb'); if (!el || !alive) return;
@@ -2760,14 +2753,14 @@ BUILD.tetris = (host, o) => {
       '<button type="button" class="glbtab'+(sprintTab==='all'?' cur':'')+'" data-t="all">All time</button></div>' : '';
     const rows=(d && d.top)||[];
     const body = (!rows.length && (!d||d.meBest==null)) ? '<p class="how">No times yet. Set the first one.</p>' : rowsHTML(d, r=>fmtHMS(r.time_ms));
-    el.innerHTML='<div class="glbhd"><h3>Sprint, fastest times'+(weeklyOn()?'':' (all-time)')+'</h3>'+tabs+'</div>'+heldHTML(tHeld)+body;
+    el.innerHTML='<div class="glbhd"><h3>Sprint, fastest times'+(weeklyOn()?'':' (all-time)')+'</h3>'+tabs+'</div>'+body;
     [...el.querySelectorAll('.glbtab')].forEach(b=>b.onclick=()=>{ sprintTab=b.dataset.t; renderSprintLB(); });
   }
   function renderZenLB(d){
     const el=$$('tlb'); if (!el || !alive) return;
     const rows=(d && d.top)||[];
-    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<p class="how">No scores yet. Set the first one.</p>'; return; }
-    let html='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
+    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3>'+'<p class="how">No scores yet. Set the first one.</p>'; return; }
+    let html='<h3>Zen scores</h3>'+'<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
       rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
         '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
     if (d && d.meRank && d.meRank>rows.length)
@@ -4961,7 +4954,7 @@ BUILD.admin = host => {
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
   /* which themes people use (from their synced settings) */
   const THEMES = { id:'themes', name:'Themes', kind:'x' };
-  const HELD = { id:'held', name:'Held scores', kind:'h' };
+  const HELD = { id:'flagged', name:'Flagged scores', kind:'h' };
   /* who a moderator has taken off which games (api/_settings.js: their results are refused and they're left off
      those boards; nothing of theirs is deleted) */
   const BANS = { id:'bans', name:'Bans', kind:'b' };
@@ -5025,7 +5018,7 @@ BUILD.admin = host => {
       }
       if (cur.kind === 'q'){ data = await TT.api('/api/forum', { params:{ scans:1 } }); render(); return; }
       if (cur.kind === 'x'){ data = await TT.api('/api/leaderboard', { params:{ themes:1 } }); render(); return; }
-      if (cur.kind === 'h'){ data = await TT.api('/api/leaderboard', { params:{ held:1 } }); render(); return; }
+      if (cur.kind === 'h'){ data = await TT.api('/api/leaderboard', { params:{ flagged:1 } }); render(); return; }
       if (cur.kind === 'b'){
         const [d, pp] = await Promise.all([TT.api('/api/leaderboard', { params:{ bans:1 } }),
           admPeople || TT.api('/api/leaderboard', { params:{ users:1 } }).then(x => (x.users || []).map(u => ({ name:String(u.name || ''), email:String(u.email || '') }))).catch(() => null)]);
@@ -5376,20 +5369,20 @@ BUILD.admin = host => {
         flag('One-colour icons, chosen', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>';
   }
   function renderHeld(){
-    const list = (data && data.held) || [];
-    $('admnote').textContent = 'Scores that didn’t check out. Only you see these.';
-    if (!list.length){ $('admbody').innerHTML = '<p class="how">Nothing waiting.</p>'; return; }
+    const list = (data && data.flagged) || [];
+    $('admnote').textContent = 'Scores that didn’t check out. They’re already on the boards: keep them, or take them off. Only you see these.';
+    if (!list.length){ $('admbody').innerHTML = '<p class="how">Nothing flagged.</p>'; return; }
     const T = { sprint:['Tetris Sprint', fmtHMS], sprintall:['Tetris Sprint', fmtHMS], zen:['Tetris Survival', fmtHMS], zenscore:['Tetris Zen', String] };
     const what = h => { if (h.kind === 't') return T[h.mode] || [h.mode, String]; const c = LB_CAT.find(x => x.id === h.game); return c ? [c.name, c.fmt] : [h.game, String]; };
     $('admbody').innerHTML = list.map((h, i) => { const [name, fmt] = what(h);
       return '<div class="adminrow pollrow"><span class="nm"><b>' + esc(h.name || h.email) + ' · ' + esc(name) + ' · ' + esc(fmt(h.score)) + '</b><em>' +
         esc((h.why || []).join('; ')) + ' · ' + (h.tries > 1 ? h.tries + ' tries' + (h.also && h.also.length ? ' (others: ' + esc(h.also.join('; ')) + ')' : '') + ' · ' : '') + esc(seenAgo(h.at)) + '</em></span><span class="pact">' +
-        '<button class="btn primary" type="button" data-ok="' + i + '">Let it on</button><button class="del" type="button" data-drop="' + i + '">Throw out</button></span></div>'; }).join('');
-    const act = (b, op) => async () => { const h = list[+b.dataset[op === 'ok' ? 'ok' : 'drop']]; b.disabled = true;
-      try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'held', op, email:h.email, key:h.key } }); lbSumCache = null; renderHeld(); }
+        '<button class="btn" type="button" data-keep="' + i + '">Keep</button><button class="del" type="button" data-remove="' + i + '">Remove</button></span></div>'; }).join('');
+    const act = (b, op) => async () => { const h = list[+b.dataset[op]]; b.disabled = true;
+      try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'flagged', op, email:h.email, key:h.key } }); lbSumCache = null; renderHeld(); }
       catch (e){ b.disabled = false; alert(e.message); } };
-    $('admbody').querySelectorAll('[data-ok]').forEach(b => b.onclick = act(b, 'ok'));
-    $('admbody').querySelectorAll('[data-drop]').forEach(b => b.onclick = act(b, 'drop'));
+    $('admbody').querySelectorAll('[data-keep]').forEach(b => b.onclick = act(b, 'keep'));
+    $('admbody').querySelectorAll('[data-remove]').forEach(b => b.onclick = act(b, 'remove'));
   }
   function renderScans(){
     const codes = (data && data.codes) || [], days = (data && data.days) || [];
