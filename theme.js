@@ -30,7 +30,7 @@ const set = (k, v) => {
 
 /* the version on the shared files this script loads itself (each theme's
    stylesheet in /skins, fx.js and its scenes); the pages carry the same one */
-const ASSET_V = '20261126e';
+const ASSET_V = '20261127e';
 
 /* Every theme, in the picker's order; `custom` last so it lands bottom-right.
    css:  its stylesheet, /skins/<css>.css (Plain, Classic and Glass are in theme.css)
@@ -76,7 +76,7 @@ const SKINS = [
   { id:'destijl',   name:'De Stijl',  both:true, ic:'tile', is:'icons', css:'destijl', font:'family=Work+Sans:wght@400;500;600;800' },
   { id:'decon',     name:'Deconstructivism', both:true, ic:'accent', is:'icons', css:'decon', font:'family=Syne:wght@400;500;700;800' },
   /* Surrealism: real landscapes with one unexplainable thing in each (skins/surreal.css, tools/surreal/render.py) */
-  { id:'surreal',   name:'Surrealism', mod:true, both:true, ic:'accent', is:'icons', css:'surreal', js:'surreal', font:'family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=IBM+Plex+Mono:wght@400;500' },
+  { id:'surreal',   name:'Surrealism', mod:true, both:true, only:'light', ic:'accent', is:'icons', css:'surreal', js:'surreal', font:'family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=IBM+Plex+Mono:wght@400;500' },
   /* Cities Collection: a digital postcard of one city each, all drawn by skins/cities.css (html[data-city]).
      city: its time zone, the locale its clock speaks, and its name as the city writes it. */
   { id:'sydney',    name:'Sydney',    both:true, ic:'accent', is:'icons', css:'cities', js:'cities', font:'family=Unbounded:wght@600;800',
@@ -359,6 +359,10 @@ function setMod(on){
   }
 }
 function readState(){
+  /* a page in its own fixed look (the mahjong beta table sets window.TT_NOSKIN) takes none of the theme's
+     settings: plain, dark, no zen, no custom colours, normal size and contrast. Reduced motion still holds. */
+  if (window.TT_NOSKIN) return { skin: 'plain', mode: 'dark', zen: false, custom: Object.assign({}, CUSTOM_DEFAULTS), textScale: 1, zoom: 1,
+    contrast: 'normal', motion: get(LS.motion, 'normal'), view: get(LS.view, 'compact'), outline: true, header: get(LS.header, 'unified') };
   let skin = PREVIEW ? PREVIEW.skin : get(LS.skin, 'plain');
   if (SKIN_IDS.indexOf(skin) === -1) skin = 'plain';
   else if (!PREVIEW && MOD_SKINS.has(skin) && !isModHere()) skin = 'plain';
@@ -709,6 +713,7 @@ function warmSkins(){
    motion, and by default for anyone whose device asks for less motion.
    html[data-fx] carries it; fx.js and the themes' stylesheets read it. */
 function fxOn(){
+  if (window.TT_NOSKIN) return false;
   if (get(LS.motion, 'normal') === 'reduced') return false;
   const v = get('tt.fx', null);
   if (v === 'off') return false;
@@ -733,6 +738,33 @@ function apply(state){
   try { dispatchEvent(new CustomEvent('tt:look')); } catch {}
   return st;
 }
+/* Surrealism's gallery (the owner, 26 November 2026): six places, each page on its own one, every page moving on to the
+   next at midnight (this device's time), so they're all fresh each day; today (the 26th) each page has the place it always
+   had. The gallery buttons (surreal.js, surShift) move one page on or back for the rest of the day (msc.su: { day, off }). */
+const SU_SCENES = ['home', 'tt', 'plan', 'slot', 'surf', 'wreck'];
+/* Each main page its own slot (the owner, 27 November 2026: "a lot of double up or some backgrounds are completely gone":
+   four pages shared one place, and a place could spend a day only on pages hardly anyone opens). The main pages take one
+   slot each, in the order people move between them, so none of them shows the same place as another on a day (with as many
+   places as main pages); the rest share with a page they aren't next to. */
+const SU_SLOT = { home:0, timetable:1, games:2, calendar:3, free:4, revision:5, resources:6,
+  themes:3, mahjong:4, hkmahjong:4, finder:5, notes:6, tas:1 };
+const suBase = pg => SU_SLOT[pg] != null ? SU_SLOT[pg] : 0;
+const suDay = () => { const d = new Date(); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 10, 26)) / 864e5); };
+function suState(){
+  try { const s = JSON.parse(localStorage.getItem('msc.su') || 'null'); if (s && s.day === suDay() && s.off && typeof s.off === 'object') return s; } catch {}
+  return { day: suDay(), off: {} };
+}
+function surScene(pg){
+  pg = pg || PG || 'home';
+  const i = suBase(pg) + suDay() + (Number(suState().off[pg]) || 0);
+  return SU_SCENES[((i % SU_SCENES.length) + SU_SCENES.length) % SU_SCENES.length];
+}
+function surShift(pg, d){
+  const s = suState(); s.off[pg] = (Number(s.off[pg]) || 0) + d;
+  try { localStorage.setItem('msc.su', JSON.stringify(s)); } catch {}
+  return surScene(pg);
+}
+
 function paint(state){
   const st = state || readState();
   const root = document.documentElement;
@@ -741,6 +773,8 @@ function paint(state){
 
   root.setAttribute('data-skin', st.skin);
   root.setAttribute('data-pg', PG);
+  /* Surrealism's place for this page today (surScene): set with the theme, so the first paint already shows it */
+  if (st.skin === 'surreal') root.setAttribute('data-su', surScene(PG)); else root.removeAttribute('data-su');
   /* Vaporwave's desktop (its Windows 95 chrome, its windows) is everything in skins/vapor.css under html.vw-next. It goes on
      here, so the first paint already has it: fx/vapor.js, which puts it on too, can arrive after the page is drawn. */
   root.classList.toggle('vw-next', st.skin === 'vapor');
@@ -775,7 +809,9 @@ function paint(state){
   if (clouds !== 'off'){ setCloudVars(root); vetClouds(root);
     root.style.setProperty('--cloud-d', '-' + ((Date.now() - cloudT0) / 1000).toFixed(2) + 's'); }     // where the drift has got to
   root.setAttribute('data-clouds', clouds);
-  root.setAttribute('data-mode', st.mode);
+  /* a theme with one palette of its own (only: 'light'): always that, whatever the switch says (Surrealism, 26 November 2026) */
+  const onlyMode = (SKINS.find(s => s.id === st.skin) || {}).only;
+  root.setAttribute('data-mode', onlyMode || st.mode);
   root.setAttribute('data-nownext', get('tt.nownext', true) === false ? 'off' : 'on');   // Display → Now and Next
   /* Keep native controls (the datalist autocomplete popup, text inputs,
      scrollbars) in step with the effective palette. Without this a dark page
@@ -785,9 +821,9 @@ function paint(state){
   root.style.colorScheme =
       st.skin === 'custom'
         ? (inkFor(st.custom.bg) === '#fff' ? 'dark' : 'light')
-    : (SKINS.find(s => s.id === st.skin) || {}).both === false
+    : (SKINS.find(s => s.id === st.skin) || {}).only || ((SKINS.find(s => s.id === st.skin) || {}).both === false
         ? 'dark'
-        : (st.mode === 'dark' ? 'dark' : 'light');
+        : (st.mode === 'dark' ? 'dark' : 'light'));
   root.classList.toggle('zen', !!st.zen);
   root.setAttribute('data-contrast', st.contrast);
   /* The compact grid positions cards absolutely via [data-view]; without this
@@ -961,7 +997,7 @@ function lookRow(el, after){
       '<button type="button" class="tsw" role="switch" data-k="fx"><span>Animation</span><i></i></button></div><div class="hint swhint"></div>';
     el.querySelector('[data-k="dark"]').onclick = () => {
       const st = readState(), sk = SKINS.find(x => x.id === st.skin) || {};
-      if (sk.both === false) return;
+      if (sk.both === false || sk.only) return;
       set(LS.mode, st.mode === 'dark' ? 'light' : 'dark'); apply(); lookRow(el); if (after) after();
     };
     el.querySelector('[data-k="fx"]').onclick = () => {
@@ -969,7 +1005,7 @@ function lookRow(el, after){
       set('tt.fx', fxOn() ? 'off' : 'on'); apply(); lookRow(el); if (after) after();
     };
   }
-  const st = readState(), sk = SKINS.find(x => x.id === st.skin) || {}, fixed = sk.both === false, reduced = get(LS.motion, 'normal') === 'reduced';
+  const st = readState(), sk = SKINS.find(x => x.id === st.skin) || {}, fixed = sk.both === false || !!sk.only, reduced = get(LS.motion, 'normal') === 'reduced';
   const d = el.querySelector('[data-k="dark"]'), f = el.querySelector('[data-k="fx"]');
   d.setAttribute('aria-checked', String(fixed ? document.documentElement.style.colorScheme === 'dark' : st.mode === 'dark'));
   d.setAttribute('aria-disabled', String(fixed)); d.title = fixed ? 'This theme has one palette' : '';
@@ -1583,6 +1619,23 @@ function staffNote(w){
   }, 1500);
 }
 
+/* A list or menu floating over the page (suggestions, pickers): when the theme's panel colour is see-through (the glass
+   and translucent themes), it gets a solid backing of that same colour laid over white (light text: near-black), so
+   whatever is behind never shows through its text. Opaque themes are left exactly as they are. (The owner, 26 November 2026.) */
+function solidBg(el){
+  try {
+    el.style.backgroundColor = '';
+    const cs = getComputedStyle(el);
+    const parse = s => { const n = (String(s).match(/-?[\d.]+/g) || []).map(Number), f = /^color\(/.test(s) ? 255 : 1;
+      return [n[0] * f, n[1] * f, n[2] * f, n.length > 3 ? n[3] : 1]; };
+    const [r, g, b, a] = parse(cs.backgroundColor);
+    if (!(a < 0.94)) return;
+    const t = parse(cs.color), lightText = (0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2]) / 255 > 0.5;
+    const base = lightText ? [22, 22, 26] : [252, 252, 253], mix = (c, i) => Math.round((c || 0) * a + base[i] * (1 - a));
+    el.style.backgroundColor = 'rgb(' + mix(r, 0) + ',' + mix(g, 1) + ',' + mix(b, 2) + ')';
+  } catch (e) {}
+}
+
 /* the loading indicator (styles in theme.css): what's loading, then "still
    loading" after 6 s and a plain note after 20 s. sm: a compact one. */
 const escHtml = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
@@ -1817,7 +1870,7 @@ function newsRead(){ if (NEWS.length && newsUnread().length) set('tt.news_read',
 window.TT = { LS, get, set, SKINS, skinName, SKIN_IDS, QUICK_SKINS, ASSET_V, PG, nav, fxOn, warmSkins, fxButtons, lookRow, origBox, skinFold, skinPicker, schoolBreak, iconChoice, themeCode, parseThemeCode, useThemeCode, codeBox, iconButtons,
               NEWS, newsActive, newsTag, newsSeen, tagKeys, newsUnread, newsRead, quickRow, preview: !!PREVIEW, SHOWCASE, setMod, isMod: isModHere,
               CUSTOM_FONTS, CUSTOM_DEFAULTS, inkFor, readState, apply,
-              apiGet, api, siteCfg, forgetSite, who, edinburgh, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
+              apiGet, api, siteCfg, forgetSite, who, solidBg, surScene, surShift, SU_SCENES, edinburgh, loader, myEmail, EMAIL_DOMAIN, syncPull, syncPush, layout,
               /* has a school login saved on this device. Note this is not the
                  same as myEmail(), which is whose timetable you are looking at
                  and can be set without ever signing in. */

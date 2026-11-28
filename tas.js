@@ -1,4 +1,4 @@
-import * as E from "./tasengine.js?v=20261126f";
+import * as E from "./tasengine.js?v=20261127e";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -41,53 +41,8 @@ let movie = "", g = null, watch = null, board = null, seed = E.SEEDS[cat], worke
 const kind = () => cat;
 const bots = () => league === "bot";
 
-const STARTER = {
-  snake: `// Called every step with the game. Return u d l r, or . to go straight on.
-// This one loops round the whole board, so it always fills it (slowly).
-function move(g) {
-  const [x, y] = g.body[0];
-  if (x === 0) return y === 0 ? "r" : "u";
-  if (y % 2 === 0) return x < 15 ? "r" : "d";
-  return x > 1 ? "l" : y === 15 ? "l" : "d";
-}`,
-  g2048: `// Called every move with the game. Return u d l r.
-// This one tries down, left, right, up, in that order.
-function move(g) {
-  for (const d of "dlru") if (E.g2048Slide(g.b, d)) return d;
-}`,
-  tetris: `// Called whenever the game needs input. Return one or more of L R < > D V C Z A H X . (a frame each).
-// This one drops each piece where the stack stays lowest with the fewest holes.
-let plan = null;
-function move(g) {
-  const p = g.piece;
-  if (!plan || plan.piece !== g.pieces) plan = { piece: g.pieces, tries: 0, ...spot(g) };
-  if (++plan.tries > 30) return "X";
-  if (p.rot !== plan.r) return "C";
-  if (p.x !== plan.x) return p.x > plan.x ? "L" : "R";
-  return "X";
-}
-function spot(g) {
-  const t = g.piece.type;
-  let best = null;
-  for (let r = 0; r < (t === "O" ? 1 : 4); r++) for (let x = -2; x < 10; x++) {
-    if (E.tetrisHits(g.grid, t, r, x, 0)) continue;
-    let y = 0; while (!E.tetrisHits(g.grid, t, r, x, y + 1)) y++;
-    let rows = g.grid.map(row => row.slice());
-    for (const [c, k] of E.CELLS[t][r]) if (y + k >= 0) rows[y + k][x + c] = 1;
-    const full = rows.filter(row => row.every(Boolean)).length;
-    rows = rows.filter(row => !row.every(Boolean));
-    let holes = 0, height = 0, bumps = 0, prev = -1;
-    for (let c = 0; c < 10; c++) {
-      let h = 0;
-      rows.forEach((row, k) => { if (row[c]) h = h || rows.length - k; else if (h) holes++; });
-      height += h; if (prev >= 0) bumps += Math.abs(h - prev); prev = h;
-    }
-    const v = full * 0.76 - height * 0.51 - holes * 0.36 - bumps * 0.18;
-    if (!best || v > best.v) best = { v, r, x };
-  }
-  return best || { r: 0, x: g.piece.x };
-}`
-};
+/* the starter bots live in the engine, so the server knows them too (a starter sent unchanged is nobody's copy) */
+const STARTER = E.STARTER;
 const BOTRULES = {
   snake: "<code>g.body</code> is the snake as [x, y] cells, head first. <code>g.dir</code>, <code>g.fruit</code> ([x, y]), <code>g.occ</code> (256 cells, y * 16 + x, 1 where the snake is), <code>g.steps</code>, <code>g.eaten</code>.",
   g2048: "<code>g.b</code> is the 16 cells row by row, 0 when empty. <code>g.score</code>, <code>g.moves</code>. <code>E.g2048Slide(b, d)</code> gives what a move would do, or null if nothing moves.",
@@ -251,8 +206,10 @@ async function startWatch(rank, wantCode) {
 }
 
 /* the board */
+let copyMarks = null;                                   // moderators: rank -> { of, same } after "Look for copies"
 async function loadBoard() {
   const el = $("lb");
+  copyMarks = null;
   $("boardtitle").textContent = E.TAS[cat].name;
   if (!signedIn()) { el.innerHTML = '<p class="how">Sign in on the timetable to see the board.</p>'; return; }
   el.innerHTML = window.TT && TT.loader ? TT.loader("Loading the board…", "", { sm: true }) : "";
@@ -265,14 +222,33 @@ function paintBoard() {
   const lines = r => bots() ? '<span class="tm">' + (r.lines == null ? "" : r.lines) + "</span>" : "";
   el.innerHTML = '<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Score</span><span class="tm">' + esc(E.TAS[cat].unit) + "</span>" + (bots() ? '<span class="tm">Lines</span>' : "") + '<span class="watch" style="visibility:hidden">Watch</span></div>' +
     rows.slice(0, 25).map(r => '<div class="tlbrow' + (r.you ? " me" : "") + '"><span class="rk">' + r.rank + '</span><span class="nm">' + esc(r.name) +
+    (copyMarks && copyMarks[r.rank] ? ' <em class="tcopy">' + esc(copyMarks[r.rank].join("; ")) + "</em>" : "") +
     '</span><span class="tm">' + r.score + '</span><span class="tm">' + r.frames + "</span>" + lines(r) +
     (bots() ? '<button class="watch" type="button" data-code="' + r.rank + '">View</button>' : '<button class="watch" type="button" data-rank="' + r.rank + '">Watch</button>') +
-    (board.canEdit ? '<button class="watch" type="button" data-del="' + r.rank + '">Remove</button>' : "") + "</div>").join("");
+    (board.canEdit ? '<button class="watch" type="button" data-del="' + r.rank + '">Remove</button>' : "") + "</div>").join("") +
+    /* moderators: runs already on the board that are mostly someone else's earlier run (api/_tas.js copiesOn) */
+    (board.canEdit ? '<p class="how tcopyrow"><button class="watch" type="button" id="findcopies">Look for copies</button> <span id="copynote">' +
+      (copyMarks ? (Object.keys(copyMarks).length ? "Marked: runs that share most of their " + (bots() ? "code" : "start") + ", and which was sent first. " +
+        "Someone copied may have improved their run since, so theirs can be the later one: check before you remove." : "None found.") : "") + "</span></p>" : "");
+  const fc = $("findcopies");
+  if (fc) fc.onclick = async () => {
+    fc.disabled = true; $("copynote").textContent = "Looking…";
+    try {
+      const d = await TT.api("/api/leaderboard", { params: { tas: cat, league, copies: 1 } }), what = bots() ? "same code as #" : "same start as #";
+      copyMarks = {};
+      (d.copies || []).forEach(c => {
+        (copyMarks[c.first] = copyMarks[c.first] || []).push(what + c.then + " (" + c.same + "%), sent first");
+        (copyMarks[c.then] = copyMarks[c.then] || []).push(what + c.first + " (" + c.same + "%), sent after");
+      });
+      paintBoard();
+    }
+    catch (e) { fc.disabled = false; $("copynote").textContent = e.message; }
+  };
   el.querySelectorAll("[data-rank]").forEach(b => b.onclick = () => startWatch(+b.dataset.rank));
   el.querySelectorAll("[data-code]").forEach(b => b.onclick = () => startWatch(+b.dataset.code, true));
   el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
     if (!confirm("Take this run off the board?")) return;
-    try { board = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", op: "delete", cat, league, rank: +b.dataset.del } }); paintBoard(); }
+    try { board = await TT.api("/api/leaderboard", { method: "POST", body: { action: "tas", op: "delete", cat, league, rank: +b.dataset.del } }); copyMarks = null; paintBoard(); }
     catch (e) { say(e.message, "bad"); }
   });
 }
@@ -291,7 +267,7 @@ async function send() {
 }
 
 /* bots: the code runs in a worker of its own, on a seed from the server */
-const ENGINE = new URL("tasengine.js?v=20261126f", location.href).href;
+const ENGINE = new URL("tasengine.js?v=20261127e", location.href).href;
 const BOT_MS = 9 * 60e3;
 const showLines = () => { $("lines").textContent = E.codeLines($("code").value) + " lines"; };
 function workerSource(code) {
@@ -392,8 +368,8 @@ function pick(c) {
   $("studiohow").textContent = bots() ? "Write move(g) below and press Run bot. It plays a fresh random seed in the background, then you can send it." : HOW[kind()];
   $("rules").innerHTML = (bots()
     ? RULES[kind()].slice(1).concat(["Your code defines <code>move(g)</code>. It gets the game and returns the next input, or several in a row. " + BOTRULES[kind()] + " <code>E</code> is the whole engine.",
-        "Each run gets its own random seed, which works once, for " + E.SEED_MS / 60000 + " minutes. Ranked by score, then fewest " + E.TAS[cat].unit + ", then fewest lines of code (blank lines and // comments don't count). No anticheat."])
-    : RULES[kind()]).map(r => "<li>" + r + "</li>").join("");
+        "Each run gets its own random seed, which works once, for " + E.SEED_MS / 60000 + " minutes. Ranked by score, then fewest " + E.TAS[cat].unit + ", then fewest lines of code (blank lines and // comments don't count). A bot that's mostly someone else's code isn't taken (starting from the starter is fine)."])
+    : RULES[kind()].concat(["Runs are your own: one that starts out as someone else's run isn't taken, however it's typed."])).map(r => "<li>" + r + "</li>").join("");
   $("keys").innerHTML = PADS[kind()].map(([k, l]) => '<button type="button" data-k="' + esc(k) + '">' + esc(k) + "<span>" + esc(l) + "</span></button>").join("");
   $("keys").querySelectorAll("button").forEach(b => b.onclick = () => input(b.dataset.k));
   const call = body => 'await fetch("' + location.origin + '/api/leaderboard", { method: "POST",\n  headers: { "Content-Type": "application/json", "X-School-Email": EMAIL, "X-School-Password": PASSWORD },\n  body: JSON.stringify(' + body + ') })';

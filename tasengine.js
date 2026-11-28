@@ -17,6 +17,56 @@ export const TAS = {
   g2048:  { name: "2048",   unit: "moves",  keys: "udlr" },
   tetris: { name: "Tetris", unit: "frames", keys: "LR<>DVCZAHX." }
 };
+/* the bots the TAS page starts you with (tas.js); the server knows them too, so two people sending a starter unchanged
+   aren't copying each other (api/_tas.js) */
+export const STARTER = {
+  snake: `// Called every step with the game. Return u d l r, or . to go straight on.
+// This one loops round the whole board, so it always fills it (slowly).
+function move(g) {
+  const [x, y] = g.body[0];
+  if (x === 0) return y === 0 ? "r" : "u";
+  if (y % 2 === 0) return x < 15 ? "r" : "d";
+  return x > 1 ? "l" : y === 15 ? "l" : "d";
+}`,
+  g2048: `// Called every move with the game. Return u d l r.
+// This one tries down, left, right, up, in that order.
+function move(g) {
+  for (const d of "dlru") if (E.g2048Slide(g.b, d)) return d;
+}`,
+  tetris: `// Called whenever the game needs input. Return one or more of L R < > D V C Z A H X . (a frame each).
+// This one drops each piece where the stack stays lowest with the fewest holes.
+let plan = null;
+function move(g) {
+  const p = g.piece;
+  if (!plan || plan.piece !== g.pieces) plan = { piece: g.pieces, tries: 0, ...spot(g) };
+  if (++plan.tries > 30) return "X";
+  if (p.rot !== plan.r) return "C";
+  if (p.x !== plan.x) return p.x > plan.x ? "L" : "R";
+  return "X";
+}
+function spot(g) {
+  const t = g.piece.type;
+  let best = null;
+  for (let r = 0; r < (t === "O" ? 1 : 4); r++) for (let x = -2; x < 10; x++) {
+    if (E.tetrisHits(g.grid, t, r, x, 0)) continue;
+    let y = 0; while (!E.tetrisHits(g.grid, t, r, x, y + 1)) y++;
+    let rows = g.grid.map(row => row.slice());
+    for (const [c, k] of E.CELLS[t][r]) if (y + k >= 0) rows[y + k][x + c] = 1;
+    const full = rows.filter(row => row.every(Boolean)).length;
+    rows = rows.filter(row => !row.every(Boolean));
+    let holes = 0, height = 0, bumps = 0, prev = -1;
+    for (let c = 0; c < 10; c++) {
+      let h = 0;
+      rows.forEach((row, k) => { if (row[c]) h = h || rows.length - k; else if (h) holes++; });
+      height += h; if (prev >= 0) bumps += Math.abs(h - prev); prev = h;
+    }
+    const v = full * 0.76 - height * 0.51 - holes * 0.36 - bumps * 0.18;
+    if (!best || v > best.v) best = { v, r, x };
+  }
+  return best || { r: 0, x: g.piece.x };
+}`
+};
+
 export const MAX_MOVIE = 300000;
 export const SEED_MS = 10 * 60e3;
 

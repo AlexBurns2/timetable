@@ -229,3 +229,10 @@ The wave clip for the monolith was tried again and still refused (429); two vide
 The author's name and licence were read from the Commons API (one metadata request, a generic client name). The slice
 through Factory Butte was rendered again from the same 3840 px photo (nothing new downloaded): its rock is now textured
 with the photo's own vertical faces (the cap's end wall, the shale's cliff band).
+
+## 2026-11-27: Surrealism's forest billboard (not built yet)
+Choosing a night forest clearing: Commons API searches (a generic client name), then three contact sheets of 480 px
+previews (36 pictures in all, about 1.6 MB), in the session scratchpad (`forest/dl/th*`), none used in the site. Nothing at
+full size was downloaded. The pick so far: "Karachay-Cherkessia, Arkhyz, Taulu forest clearings after dusk" (Vyacheslav
+Argenberg, CC BY 4.0, https://commons.wikimedia.org/wiki/File:Karachay-Cherkessia,_Arkhyz,_Taulu_forest_clearings_after_dusk.jpg),
+to be logged here and credited in About once it's fetched and used.

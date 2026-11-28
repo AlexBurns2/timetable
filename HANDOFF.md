@@ -5263,3 +5263,218 @@ The owner committed 8.207 as `boi`, and asked to cut multiplayer latency with di
   123 ms; with a player on the old `rooms.js`, Firebase for everyone; with both fast paths, direct wins; every message once,
   your own once; presence unchanged for the games. `hkmahjong.html` has its own copy of the room code (turn-based; not
   changed). Next free stamp: `f` / v131.
+
+## 8.209 The Sydney relay is on
+The owner made the relay's project (Supabase, Sydney: `https://vhtjhllzlytvrnophuhh.supabase.co`) and gave its publishable
+key; both are in `rooms.js` `RELAY`, and `wss://vhtjhllzlytvrnophuhh.supabase.co` is in the CSP's connect-src (`vercel.json`).
+Checked against the real project from Sydney: 20 broadcasts between two connections, median 15 ms one way (12 to 27); Firebase
+in Singapore is about 110 ms. Committed by the owner as `multiplayer overhaul`.
+
+## 8.210 Surrealism's gallery, matched pictures; fixes (version `20261126f`, `CACHE_VERSION` v131)
+- **Gallery** (`theme.js` surScene/surShift, `surreal.js` gallery/swapTo, `surreal.css`): the six places rotate. Each page keeps
+  its place today (the 26th) and every page moves on one at midnight (the device's time). At the left edge, halfway down: a
+  chevron up, three dots, a chevron down; a press slides this page's place on or back (1.1 s, eased; with Animation off it just
+  changes) for the rest of the day (`msc.su`, this device). Shown only where there's room beside the page. The place is
+  `html[data-su]`, set with the theme so the first paint is right; `surreal.css` keys the places (and the night dunes' darker
+  glass) on it instead of the page.
+- **Light only:** SKINS `only:'light'` (Surrealism): `data-mode` and the colour scheme forced light, the Dark mode switch
+  disabled, the Theme finder says "Light only" and previews it light.
+- **The notation** is fixed at every width (its wide-screen rule had been outranked, so it scrolled).
+- **Matched to the photographs** (the owner: things looked slapped on, and moving ones slid over the picture's pixels):
+  `photoCanvas()` draws on a canvas at the photograph's own resolution, laid on its pixel grid and enlarged with it. The sphere
+  (redrawn as it rises and sinks, its reflection too), the square of light, its glow and the stars, the rockfall and the birds
+  all use it. (A site-wide canvas style had put a faint box and border on these; `.sulive canvas` clears it.)
+- **Rockfall:** small irregular rocks, lit on one side, tumbling, knocking off ledges with a little spray, a faint trail of
+  dust, and fine dust coming up later; **birds** now and then, far off. All tiny.
+- **Boat scene:** the pale streak on the hull's lower edge (a rim of half-transparent, glinting pixels) evened out in
+  `wreck-ship.webp`; the branch at the left and the bush on the crest sway a pixel or two (`tools/surreal/brush.py` makes the
+  cut-out and the painted-out sand; `surreal.js` sway()).
+- **Monolith:** foam above the waterline (out at sea, behind the slab) no longer shows through it (`surf.py`; 14 frames had it,
+  now none); the video was rebuilt from the owner's clip.
+- **Salt pan:** `gates.py` rewritten: concrete made on each face in metres from noise (no tiling; uneven pours, tie holes,
+  rain streaks, salt crust at the foot), warm sun, cool sky, warm bounce off the salt, ambient occlusion, worn edges, shadows
+  that multiply the salt, drawn at 3x, softened to the photo's sharpness and given its grain, haze with distance.
+- **Salt pan, chipped** (the owner: "Chipping on the frames... They need to look like real objects"): each edge is broken
+  back by an amount worked out along the edge itself, so both faces that share it break in the same places. It's mostly a
+  straight edge, with now and then a nick, a steep-sided chip or a bigger piece, and some of the lintel's top corners knocked
+  off at a slant.
+  - Where the edge is the outline, the chip is cut away and what's behind shows through, with a thin rim of broken concrete.
+  - Where both faces are in view, the chip shows broken concrete: faceted (lit by its own angle), rough with aggregate,
+    lighter, darker deep in, and with a crack where it stops. The crack is about a centimetre wide, so it fades with distance
+    rather than becoming a pixel-wide line.
+  - Edges on the ground, and where a pier meets the lintel, stay whole.
+  - A few shallow flakes off the faces.
+  - Only faces turned to the camera are drawn now, since a chip must show what's behind, not the box's own back.
+  - The first try was far too dense and read as a ruin; keep it sparse. Rounded corner breaks read as erosion, so they're
+    slanted. Before-pictures: `plan-prechip.webp` in the session scratchpad.
+- Pictures and the clip are fetched with the site's version now (`IMG()`).
+- **Dropdowns** (`suggest.js`): the suggestion list opens in the browser's top layer (a popover), placed under its box, so the
+  timetable's own labels can't sit over it; and `TT.solidBg()` gives it (and the forum's emoji and tag pickers) a solid backing
+  when the theme's panel colour is see-through.
+- **Guess Who** with no timetable of one's own (Year 12 once they've finished): it carries on from the directory, starts on My
+  grade, and says why My classes can't be played (it had stopped at "No timetable was found").
+- **Skeuomorphism's close button** stays red on hover and press (the general button hover had turned it white).
+- **Thumbs up or down** on a theme, in the Theme finder's preview (quiet, by the note; signed in). Kept in synced settings
+  (`tt.themevotes`); the hourly theme order adds `liked`. The strip's heading is now a choice: Popular, Most liked, New (New by
+  each theme's date, `ADDED` in themes.html). Counts only on the moderator page (Themes, `votes`).
+- Next free stamp: `g` / v132.
+
+## 8.211 Merge with the time limit and bot boards (version `20261127a`, `CACHE_VERSION` v132)
+- origin/main brought the daily time limit for one person (`api/_usage.js`, kept as a hash) and the bot boards. They clashed
+  with this round only on version stamps (`20261126f` / v131 here, `20261126e` / v130 there). Everything now carries
+  `20261127a` / v132; pushed as `bea6e35`.
+- Next free stamp: `20261127b` / v133.
+
+## 8.212 Mahjong beta: a calmer home, the theme off, discards that never overlap (version `20261127b`, `CACHE_VERSION` v133)
+- **Home** (`betaHomeHTML`): the sign in the middle, my card and portrait top right as one button that opens a menu of tile buttons (Profile, Settings, Stats, Rules, Beta look). The rack is two groups: **Singleplayer** (Choose bots, Quick turns, Practice) and **Multiplayer** (Open a room, Join a room, and the public rooms list beside them). Play now, Daily deal, the Daily board button and the dice are gone from the beta home (the classic home keeps them).
+- **The table stays behind** bot setup and the lobby: `show()` keeps `#home` up as `.bgonly` (its menu hidden) under those screens. Bot setup shows everyone's picture; level buttons are tiles in the beta look.
+- **The theme is off with the beta look**: `window.TT_NOSKIN` (set before theme.js loads from `hkmj.betaTable`, and by `setBeta`) makes theme.js's `readState` return plain defaults (reduced motion still holds) and `fxOn` false. Also: Studio's card rules for `.tile`/`.game` no longer reach `data-pg="hkmahjong"`, which flattened tiles on hover.
+- **Wall**: still turned -11deg, now a closed pinwheel, squashed to .78 top to bottom (seen from my seat). Each stack's edge is counter-turned so it shows straight down the screen on every side, and on the near and right sides nearer stacks are drawn over farther ones (`wallHTML`).
+- **Discards** (`betaCells`/`betaSpot`): 85 cells of a grid wholly inside the wall, nearest the middle first, a ±5deg turn and nudge kept inside the cell, so no two ever overlap. The last discard is no longer enlarged; the ring is smaller.
+- **No hover where there's nothing to click**: table tiles carry `aria-label` instead of `title`, the pool ignores the pointer, and a claim box reacts as one button (its tiles don't). The top-right table info sits on a dark plate.
+- **Hand end**: all four portraits come up once and stay until Next hand; the winner's and discarder's words show beside them, then the score counts fade in.
+
+## 8.213 Mahjong beta: the wall as before, tossed discards, a real break (version `20261127c`, `CACHE_VERSION` v134)
+- **Wall** back to the long, overhanging pinwheel turned -11deg (no squash). Each stack shows its two tiles' sides towards the
+  bottom left of the screen on every side (`--ex/--ey`: the screen's (-.42, 1) counter-turned into each side's axes); the near
+  and right walls draw each stack over the next one along.
+- **Discards** are tossed again (any spot, ±35deg, near the middle first) but never overlap: `betaSpot` tries random spots
+  against every discard still on the table with a turned-rectangle test (`poolHit`) inside the wall's inner square
+  (`poolInside`), then sweeps spots and turns. A claimed discard's spot is freed. Pool tiles are 3.1cqmin: in 65 simulated
+  full hands (up to 83 discards on the table) none overlapped; at 3.2 some tables jammed.
+- **The wall's two ends**, as in Hong Kong rules (checked against mahjongtime.com and mahjong4friends.com): the dice total
+  is counted anticlockwise from the dealer to pick a wall and that many stacks in from its owner's right end
+  (`Beta.breakAt`). Ordinary draws come off clockwise from the break; flower and kong replacements (the engine's
+  `wall.pop`) come off the tail on the other side, counted from the flowers and kongs on the table.
+- Table info: as far from the top as from the right (3cqmin), padding set for the font's ink.
+
+## 8.214 Surrealism: each place has its own mark, and nothing vanishes in the slide (version `20261127b`, `CACHE_VERSION` v133)
+- **The notation is the place's ID** (the owner: "like IDs for the images, so they should move with the slides and each
+  slide should have its own little abstract ID"). It's seeded by the place (`surreal-place:<place>`), not the page, so a
+  place has the same mark on every page, and all six differ. In a slide the old mark leaves with its picture and the new one
+  comes in with its own, at the same speed and easing. It's still fixed to the screen otherwise (`surreal.js` notation,
+  noteSvg, setNote).
+- **Live things ride with their pictures** (the owner: the sphere, the light and the ship vanished and the monolith's clip
+  paused during the slide). `swapTo` now:
+  - starts the coming place's live things before the slide, just out of view (`runScene(next)`);
+  - waits, at most 1.5 s, for its picture and the pictures its things use (the ship, the clouds);
+  - moves each place's `.sulive` layer with the same transform as its picture;
+  - stops the going place only once it's off the screen.
+
+  The slide's picture panes are now put under the live layers (`prepend`).
+- Checked in the local preview (1600×900): mid-slide the two layers and the two marks are exactly a screen apart, the clip
+  keeps playing, the ship and the sphere are there, and afterwards only the new place's layer and mark remain. No page errors.
+
+## 8.215 Merge, rating, flagged scores, TAS copies, the strip cycling (version `20261127d`, `CACHE_VERSION` v135)
+- **Merge**: the owner's "things" (8.214, `20261127b`) met the Mahjong beta (8.212–8.213, `20261127c`). Every clash was a
+  stamp; everything now carries `20261127d` / v135 (checked by a stamp-masked `git merge-file`). HANDOFF: theirs first.
+- **Rate this theme** (the owner: the thumbs in the preview's footer were too small to find): at the top of the Theme
+  finder, to the right of Dark mode and Animation, "Rate this theme:" with thumbs up and down for the theme that's on
+  (signed in, not Custom). The switches keep their own pair (`.tflookrow`: as a third grid cell it had cut them to "D."
+  and "A.."); the box sits 22px to their right and goes under them where the three don't fit. Vaporwave's 420px cap now
+  skips that row. The footer thumbs are gone.
+- **The strip's first order is called Trending** (the owner: "Popular" muddled with "Most liked"; the value is still `pop`).
+- **The strip cycles on its own** (the owner): Trending, Most liked (once there are thumbs), New, every 8 s with a 0.4 s
+  fade (none with motion reduced). It waits under the pointer or keyboard focus, while a preview is open and while the tab
+  is hidden; a pick from the heading stops it for the visit. The pick isn't kept any more (`tt.tfsort` unused).
+- **The preview** gets a solid backing in see-through themes (`TT.solidBg`): Surrealism's cards had shown through it.
+- **Anticheat loosened, then let through** (the owner: "its basically only catching legit players", then "let runs
+  through by default and still send a ping, and the moderators decide"):
+  - `_anticheat.js` keeps only what a person can't do: automation (`navigator.webdriver`), 20+ made-up key presses
+    (games.js counts only keydown/keyup now: extensions send made-up clicks and typing), a score more than its own replay
+    gives (Snake +3, 2048 ×1.25 + 200), impossible speed, a Sprint time well under its own last piece, Reaction under
+    100 ms. Gone: the clock lock, "too even", within a frame, machine pace, near a full board, a replay that can't
+    follow (the page's games aren't tasengine.js, so honest runs drift), the 200 wpm typing flag (scoreFits' 250 stays).
+  - A flagged score goes on the boards at once and leaves a note (`_review.js` `noteFlag`, game_state
+    `run:seen:<board>`) with what each board showed before. The moderator page's tab is **Flagged scores** (every
+    moderator now, not just the reviewer): **Keep** drops the note; **Remove** puts each board back where the flagged
+    score is still the one on it (a better score since is never touched; first-ever entries are taken off). Older held
+    scores (`run:flag:`) still show with Let it on / Throw out.
+  - The ping: settings answer moderators `flagged` (one count); the Moderator button (Settings, the timetable) shows it.
+  - Tested against an in-memory stand-in for the database (scratchpad `flagtest/`): ten keep/remove cases.
+- **TAS copies** (the owner: people sent other people's runs as their own; anyone could fetch a run with `?rank=N`):
+  `_tas.js` compares what runs do in the game, not their letters (Snake the heading each step, 2048 the moves, Tetris
+  each piece's resting place and holds, up to the last scoring point), so no-op padding doesn't hide a copy. A run whose
+  start is at least half of someone else's (and at least 40 steps / 30 moves / 10 pieces) is refused (409), unless the
+  sender's own earlier run already had that much of it and came first. Runs now keep `since` (when that line of your own
+  work began). Bots: code whose shape (comments and spacing gone, names all alike) is 85% someone else's is refused,
+  unless it's mostly a starter bot (`STARTER` moved into tasengine.js so the server knows them). Moderators: **Look for
+  copies** under a TAS board marks pairs that share most of their start, with which was sent first (not a verdict: the
+  one copied may have improved since). The copies already on the boards are the owner's to remove.
+- **The preview's footer** (the owner): no "A preview of the real page…" line; a theme that's hard work for a computer
+  shows a small amber ! and why (themes.html `HEAVY`: Synthwave, Windows XP, Surrealism); Custom keeps its pointer to
+  Settings; any other theme shows nothing there.
+- **Liked themes** (the owner): a theme you gave a thumbs up has a tiny thumb in its card's top right corner (`.tfliked`);
+  voting redraws the cards.
+- **Legibility audit** (the owner: "audit the entire site for any legibility problems … preserve the look"). Scratchpad
+  `legib.mjs` measures every visible text against the real pixels behind it: it records each text's colour, makes all
+  text transparent, screenshots each scroll step, and `legib.py` compares (WCAG ratio, median and the worst tenth). It
+  ran every theme × mode × ten pages and two dialogs (900 pages); each flagged text was then looked at in a normal
+  screenshot, since a text-shadow or outline (Saul, Synthwave's halos, Vaporwave's title bars) isn't in the number.
+  Two harness traps, for next time: tabs in one Chrome profile share localStorage (the site follows a theme change made
+  in another tab), so each page gets its own browser context; and a screenshot `clip` is in page coordinates (scrolled
+  shots were captured off by the scroll). Headless Chrome also mis-paints heavy glass after a scroll: use a tall window.
+  Fixed (small changes, each theme's look kept):
+  - everywhere but Plain, Classic and Glass: empty fields' hints in the theme's own grey (theme.css, under any
+    theme's own rule); the timetable's "@education.nsw.gov.au" a little stronger (.7 → .88);
+  - Surrealism, light: the panes .2 → .36 white, the grey and the blue a shade deeper, Free periods' panels glass, the
+    tracker's "Add a subject" and the forum's "Show more posts" on chips (the owner's screenshot: dark dunes under the
+    forum);
+  - the cities: Free periods' panels frosted (the print showed through their small grey lines); by day, words in the
+    city's colour a shade deeper and Sign out's red deeper (not Sydney: its colours stay);
+  - Softclub: the halo its section names had now on the other words on the photograph, in full ink; by day those words
+    (and the footer, as a strip) sit on small sheets of its frosted acrylic, since a dark figure crosses the photograph
+    and a dropdown (the strip's heading) draws no shadow;
+  - Aero: the same halo on intros and hints (the Theme finder's on a phone); today's day name deeper by day;
+  - Synthwave: its grey .68/.72 → .82/.84, hints .45 → .62; Vaporwave: title-bar text shadow .5 → .72;
+  - Skeuomorphism: a soft shadow under the blue gel buttons' white, loose lines on the wood in full ink;
+  - Maximalism: the Theme finder's loose words and Revision's "Go to practice" on outlined labels; at night today's day
+    name black on the yellow (it was yellow on cream); DORFic dark: the footer's links white over the
+    sunset; Eco: the footer's links and section names a deeper green;
+  - the preview dialog gets a solid backing in see-through themes (above).
+  - Glass (the owner: complaints about reading it, "Check the dropdowns", one of the most popular themes): the
+    Leaderboards and Past polls sheets were see-through (`.sheet` is the panel colour, .09 / .42 white, no blur), so the
+    game tiles showed through the boards: `openSheet` (games.js, poll.js) now gives them `TT.solidBg`, in every
+    see-through theme. Also: grey .66 → .8 at night and #4a5170 → #3b4160 by day, a lesson's details at full strength,
+    the clouds behind a pane dimmed a little at night (brightness .8), and the themed placeholders (it had been left out).
+    Native selects and their option lists were already solid (theme.css `select option`). The games you type in
+    (Daily Guess Who, Whose Timetable?, Guess Who, Typing race) were checked in both modes: their fields, hints and
+    suggestion lists read; the Typing race's untyped words were the old faint grey and take the firmer one.
+  Left alone: the legacy originals (as they were), Plain and Classic, things faded on purpose (days outside the
+  month, past periods in Studio), and XP (being rebuilt; see below). Re-measured: the changed themes went from 271
+  hard-to-read texts to about 140, and what's left is mostly text with a halo or outline (not in the number) or rows
+  scrolled out of a list (the harness's visibility check lets an ancestor count as a hit; `hit.contains(el)` should go).
+- **Surrealism's places, one per page** (the owner: "a lot of double up or some backgrounds are completely gone"): four
+  pages had shared one place, and a place could spend a day only on pages hardly anyone opens (on the 27th the sphere was
+  only on the Theme finder and TAS). theme.js `SU_SLOT`: the main pages one slot each (Home, Timetable, Games, Calendar,
+  Free periods, Revision, Resources), the rest sharing with a page they aren't next to. With six places Resources shares
+  Home's until the seventh (the forest) is in.
+- **Windows XP, option A** (the owner: Home's windows vanished on opening a page, which "defeats the point of the windowed
+  system"): Home stays the desktop and every other page opens on it as a window holding a framed copy of that page
+  (`skins/xp.js`, `skins/xp.css` only; framed pages get `html.xpframed`, not `?embed=1`, which hides Games' "All games" and
+  Mahjong's content). Icons, tiles, Start menu, All Programs and links inside a window open windows; taskbar switch,
+  minimise (not drawn, animations paused), restore, close, drag, resize (right and bottom), maximise, Ctrl+Esc from a
+  window; windows come back on reload (`msc.xpopen`); a page's address loaded directly (deep links too) shows the desktop
+  with that window; six windows at most (four on phones; the longest-minimised closes); a phone shows one full-screen
+  window. Which pages open as windows is worked out from the address: any top-level `name.html` (or `/`) except Home,
+  Hong Kong Mahjong, the vault, `index2`, `q` and `404`, so a new page opens as a window by itself. Without the Navigation
+  API, a window's own script navigation turns that window into the new page (the desktop stays); Home's own script
+  navigation (forum Post while signed out, Settings' Moderator) reloads the desktop once, then the page opens as a window
+  and the others come back. There's no clean catch for that (scripts can't intercept `location.href`). Plain checked
+  pixel-identical. Originals: scratchpad `xpa-orig/`.
+- **Surrealism's seventh place (a dark forest, a glowing billboard with a live clock): not built yet.** Stopped at the
+  owner's request (usage). Photo chosen, not downloaded: "Karachay-Cherkessia, Arkhyz, Taulu forest clearings after dusk",
+  Vyacheslav Argenberg, CC BY 4.0, Commons. Previews logged in `PHOTO-LOG.md`. The brand is to be an original one (no real
+  trademark). `SU_SCENES` still has six places.
+- Next free stamp: `20261127e` / v136.
+
+## 8.216 TAS: watch a run, not its moves (version `20261127e`, `CACHE_VERSION` v136)
+
+- `GET ?tas=<cat>&rank=N` gives the movie and the bot code only to the run's owner (and moderators). Everyone else gets
+  `watch`, the movie XORed with `(i*131+7)&255` and base64'd; tas.js plays it with the Studio locked (the movie box stays
+  empty, Download and Undo give nothing, the first key after it starts a fresh game). It only stops copy and paste:
+  anyone reading tas.js can undo it, and anyone watching can see the moves, so `takenFrom` (8.215) is still what
+  refuses a copy on send.
+- The flagging from my branch (`flagScore`, notice to Alex) was dropped in the merge for 8.215's `noteFlag` /
+  `settleFlag`, which does the same and also puts boards back.
+- Next free stamp: `20261127f` / v137.

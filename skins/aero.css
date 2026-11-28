@@ -84,6 +84,11 @@ html.fx-enter.ae-drawn[data-skin="aero"] body::before{visibility:hidden}
 [data-skin="aero"][data-mode="dark"] :is(.sechd,.cathd,.forum h2){color:#ff7a66}
 [data-skin="aero"] :is(.sechd,.cathd){text-shadow:0 0 8px #fff,0 0 3px #fff,0 0 1px #fff}
 [data-skin="aero"][data-mode="dark"] :is(.sechd,.cathd){text-shadow:0 0 8px #000,0 0 3px #000,0 1px 0 #000}
+/* a page's loose lines (intros, hints, notes) straight on the photograph: the same halo, in full ink (the legibility
+   audit, 27 November 2026: the Theme finder's intro was grey on the bubbles and the sky and could hardly be read on a phone) */
+[data-skin="aero"] :is(.tflede,.tflook .swhint,.reslede,.flede,.fstat,.fnote,.pagelede,.tforig summary){color:#05395e;text-shadow:0 0 8px #fff,0 0 3px #fff,0 0 1px #fff}
+[data-skin="aero"][data-mode="dark"] :is(.tflede,.tflook .swhint,.reslede,.flede,.fstat,.fnote,.pagelede,.tforig summary){color:#ffe2da;text-shadow:0 0 8px #000,0 0 3px #000,0 0 1px #000}
+[data-skin="aero"]:not([data-mode="dark"]) .dayhead.today .dow{color:#045f9e}
 [data-skin="aero"] .forum{border-top:var(--card-border)}
 
 /* ── buttons: gel ── */

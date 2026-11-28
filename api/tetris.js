@@ -19,7 +19,7 @@
  *   sprint_best(email primary key, name, time_ms, created_at)
  *   zen_board(email primary key, name, current, best, updated_at)
  *
- * Sprint sends every piece placed and gets replayed. Anything off still goes on the board, flagged for Alex.
+ * Sprint sends every piece placed and gets replayed. Anything off is held for Alex.
  */
 
 import { db, whoami, isAdmin } from "./_supabase.js";
@@ -27,7 +27,7 @@ import { displayNames, withName, yearTags, withYear } from "./_names.js";
 import { yearMap, boardScope } from "./leaderboard.js";
 import { ticketOf, scoreFits, boardWeek } from "./_runs.js";
 import { inputSigns, vetSprint, paceSigns } from "./_anticheat.js";
-import { flagScore, writeTetris } from "./_review.js";
+import { noteFlag, writeTetris } from "./_review.js";
 import { isBanned, bannedIn } from "./_settings.js";
 /* banned from Tetris (moderator page → Bans): still on the boards, marked so the page shows "!" by the name */
 const out = (me, r) => (me.banned && me.banned.has(String(r.email).toLowerCase())) || undefined;
@@ -220,12 +220,12 @@ export default async function handler(req, res) {
     }
     why.push(...inputSigns(body && body.ac));
 
+    /* it goes on the board either way; a flagged one also leaves a note for the moderators (_review.js) */
     try {
-      const landed = await writeTetris(me.email, name, mode, claim, week);
-      if (why.length && landed)
-        await flagScore(me.email, name, { key: "tetris:" + (mode === "sprintall" ? "sprint" : mode), kind: "t", game: "tetris", mode,
-          dir: mode === "sprint" || mode === "sprintall" ? "min" : "max", score: claim, week, boards: [mode], why },
-          { sprint: "Tetris Sprint", sprintall: "Tetris Sprint", zen: "Tetris Survival", zenscore: "Tetris Zen" }[mode]);
+      const w = await writeTetris(me.email, name, mode, claim, week);
+      if (why.length && w.wrote)
+        await noteFlag(me.email, name, { key: "tetris:" + (mode === "sprintall" ? "sprint" : mode), kind: "t", game: "tetris", mode,
+          dir: mode === "sprint" || mode === "sprintall" ? "min" : "max", score: claim, week, why }, { [mode]: w.before }, { [mode]: w.after });
     } catch (e) { console.error("tetris " + mode + ":", e.message); return res.status(502).json({ error: "Couldn't save that." }); }
     return res.status(200).json(await boardFor(mode, me, week, false));
   }

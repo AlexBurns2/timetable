@@ -10,15 +10,15 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="theme.css?v=20261126e">
-<script src="theme.js?v=20261126e"></script>
-<script src="icons.js?v=20261126e"></script>
-<link rel="stylesheet" href="site.css?v=20261126e">
-<link rel="stylesheet" href="settings.css?v=20261126e">
+<link rel="stylesheet" href="theme.css?v=20261127e">
+<script src="theme.js?v=20261127e"></script>
+<script src="icons.js?v=20261127e"></script>
+<link rel="stylesheet" href="site.css?v=20261127e">
+<link rel="stylesheet" href="settings.css?v=20261127e">
 <style>
 /* ── the Theme finder: every theme, grouped, with a preview before you pick ── */
 .tflede{color:var(--muted);font-size:0.875rem;margin:0 0 14px;max-width:62ch}
-.tflook{max-width:420px;margin:0 0 22px}
+.tflook{max-width:680px;margin:0 0 22px}
 .tfh{margin:0 0 10px;font-family:var(--font-display);font-weight:var(--display-w);letter-spacing:var(--display-ls);text-transform:var(--display-tt);font-size:1.0625rem}
 .tfsec{margin:0 0 26px}
 /* a theme: its picture, its name, and whether it's the one on */
@@ -36,7 +36,10 @@
 .tftag.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 /* Popular: one strip that scrolls sideways */
 /* Popular: the four most used, a little bigger, wrapping onto rows like the groups (never sideways) */
-.tfstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tfstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;transition:opacity .4s ease}
+/* the strip moving on to its next order (it cycles on its own): out, swapped, back in */
+.tfstrip.tfout{opacity:0}
+html[data-motion="reduced"] .tfstrip{transition:none}
 /* a group: a grid */
 /* every row four across at most, Popular the same as the rest */
 .tfgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -72,6 +75,42 @@ html[data-motion="reduced"] .tfcard{transition:none}
 .tfpvframe .tfpvwait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.875rem;pointer-events:none}
 .tfpvfoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px}
 .tfpvfoot .hint{flex:1;min-width:12rem;margin:0;color:var(--muted);font-size:0.8125rem}
+.tfpvfoot #tfpvback{margin-left:auto}
+/* a theme that's hard work for a computer: a small ! and why (the owner, 27 November 2026) */
+.tfpvfoot .tfwarn{display:flex;align-items:flex-start;gap:8px;color:var(--text)}
+.tfbang{flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-top:1px;border-radius:999px;
+  background:#d97706;color:#fff;font-size:12px;font-weight:800;line-height:1}
+/* a theme you gave a thumbs up: a tiny thumb in its card's top right corner */
+.tfliked{position:absolute;top:6px;right:6px;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;
+  background:var(--bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.28);pointer-events:none}
+.tfliked svg{width:13px;height:13px;fill:color-mix(in srgb,currentColor 28%,transparent);stroke:currentColor;stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
+/* the strip's heading is its own choice: Popular, Most liked or New (26 November 2026) */
+.tfsort{appearance:none;-webkit-appearance:none;border:0;margin:0;padding:0 1.1em 0 0;cursor:pointer;color:inherit;
+  font:inherit;letter-spacing:inherit;text-transform:inherit;background:transparent no-repeat right center/.62em auto;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6'/%3E%3C/svg%3E")}
+.tfsort:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.tfsort option{color:#18181b;background:#fff;text-transform:none;letter-spacing:normal}
+/* "Rate this theme:" with thumbs up or down, for the theme that's on, at the top to the right of Dark mode and Animation
+   (the owner, 27 November 2026: it had been small and easy to miss in the preview's footer). The switches keep their own
+   pair (never squeezed: as a third cell of their row it had cut them to "D." and "A.."), the box sits a clear gap to their
+   right at the same height, and where the three don't fit it goes under them instead. */
+.tflookrow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px 22px}
+.tflookrow .swrow{flex:0 1 420px;min-width:min(100%,300px)}
+.tfrate{flex:0 0 auto;display:flex;align-items:center;gap:4px;min-width:0;margin:0;padding:4px 6px 4px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);font-size:.875rem;font-weight:600;white-space:nowrap}
+.tfrate[hidden]{display:none}
+.tfrate span{margin-right:4px}
+.tfrate button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;padding:0;border:0;border-radius:999px;
+  background:none;color:var(--muted);font:inherit;cursor:pointer}
+.tfrate button:hover{background:color-mix(in srgb,var(--text) 9%,transparent);color:var(--text)}
+.tfrate button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tfrate button[aria-pressed="true"]{color:var(--accent)}
+.tfrate svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.tfrate button[aria-pressed="true"] svg{fill:color-mix(in srgb,currentColor 25%,transparent)}
+@media (max-width:640px){
+  .tflookrow .tfrate{flex:1 1 100%;justify-content:space-between}
+  .tfrate span{margin-right:auto}
+}
 </style>
 </head>
 <body>
@@ -88,7 +127,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
   <p class="tflede">Press a theme to see the site in it first. Nothing changes until you choose “Use this theme”.</p>
   <div class="tflook" id="tflook"></div>
 
-  <section class="tfsec" aria-labelledby="tfpoph"><h2 class="tfh" id="tfpoph">Popular</h2><div class="tfstrip" id="tfpop"></div></section>
+  <section class="tfsec" aria-labelledby="tfpoph"><h2 class="tfh" id="tfpoph"><select class="tfsort" id="tfsort" aria-label="Which themes to show first"><option value="pop">Trending</option><option value="liked">Most liked</option><option value="new">New</option></select></h2><div class="tfstrip" id="tfpop"></div></section>
   <div id="tfgroups"></div>
   <details class="tforig" id="tforig"><summary>Original themes<em>as they were before the rebuild</em></summary><div class="tfgrid" id="tforiggrid"></div></details>
 </div>
@@ -113,7 +152,7 @@ html[data-motion="reduced"] .tfcard{transition:none}
   <div class="tfpvframe" id="tfpvframe"><span class="tfpvwait" id="tfpvwait">Loading the preview…</span>
     <iframe id="tfpvif" title="Preview of the theme" tabindex="-1"></iframe></div>
   <div class="tfpvfoot">
-    <p class="hint" id="tfpvnote">A preview of the real page. You can scroll it; nothing in it can be pressed.</p>
+    <p class="hint" id="tfpvnote" hidden></p>
     <button class="btn" type="button" id="tfpvback">Back</button>
     <button class="btn primary" type="button" id="tfpvuse">Use this theme</button>
   </div>
@@ -151,19 +190,63 @@ const shown = id => isMod || !WIP.includes(id);
 let popular = (TT.SHOWCASE || []).filter(id => byId(id) && !BASICS.includes(id));
 ALL.forEach(s => { if (!s.legacy && !BASICS.includes(s.id) && !popular.includes(s.id)) popular.push(s.id); });
 const POP_SHOWN = 4;                              // the four most used
+/* The strip's three orders (the owner, 26 November 2026): Popular (most used), Most liked (thumbs, from the server; until
+   there are any, Popular), New (when each theme came, newest first: from when its stylesheet joined the site). */
+const ADDED = { blueprint:'2026-11-14', brutal:'2026-11-14', deco:'2026-11-14', editorial:'2026-11-14', maximal:'2026-11-14', paper:'2026-11-14',
+  scifi:'2026-11-14', skeuo:'2026-11-14', swiss:'2026-11-14', terminal:'2026-11-14', y2k:'2026-11-14', studio:'2026-11-17', aero:'2026-11-18',
+  coquette:'2026-11-18', softclub:'2026-11-18', bauhaus:'2026-11-20', decon:'2026-11-20', destijl:'2026-11-20', dorfic:'2026-11-20', eco:'2026-11-20',
+  xp:'2026-11-20', sydney:'2026-11-21', tokyo:'2026-11-21', hongkong:'2026-11-21', chongqing:'2026-11-21', vapor:'2026-11-23', synth:'2026-11-23',
+  losangeles:'2026-11-24', edinburgh:'2026-11-24', surreal:'2026-11-24' };
+let liked = [], sortBy = 'pop';                   // (it cycles on its own now, so the last pick isn't kept: see below)
+const pos = id => ALL.findIndex(s => s.id === id);
+const stripOrder = () => sortBy === 'new'
+  ? popular.slice().sort((a, b) => String(ADDED[b] || '').localeCompare(String(ADDED[a] || '')) || pos(b) - pos(a))
+  : sortBy === 'liked' && liked.length ? liked.concat(popular.filter(id => !liked.includes(id))) : popular;
 
 const current = () => TT.readState().skin;
+/* the themes that are hard work for a computer: the preview's footer warns (with a small !) and says why */
+const HEAVY = {
+  synth:'its 3D scenery is drawn live, which uses more battery. Animation off shows a still.',
+  xp:'every open window is a whole page running at once.',
+  surreal:'its moving pictures and video use more battery. Animation off stills them.'
+};
+/* the thumb (Rate this theme, and the small one on a liked theme's card) */
+const THUMB = '<path d="M7 10v10H4.5A1.5 1.5 0 0 1 3 18.5v-7A1.5 1.5 0 0 1 4.5 10H7Zm0 0 4-7.2c1.6.1 2.6 1.4 2.2 3L12.6 9H19a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7"/>';
+/* ── "Rate this theme:" thumbs up or down for the theme that's on (signed in; not Custom). Kept in your synced settings
+   (tt.themevotes { theme: 1 | -1 }), so the server can order Most liked; pressing the same one again takes it back.
+   Only moderators see the counts. The row is put in beside the switches once lookRow has drawn them (below). ── */
+const votes = () => { const v = TT.get('tt.themevotes', {}); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+let rate = null;
+function paintVote(){
+  if (!rate) return;
+  const id = current(), s = byId(id);
+  rate.hidden = !(TT.signedIn && TT.signedIn()) || !s || id === 'custom';
+  if (rate.hidden) return;
+  const mine = votes()[id] || 0, nm = nameOf(s);
+  rate.setAttribute('aria-label', 'Rate ' + nm);
+  rate.querySelectorAll('button').forEach(b => {
+    b.setAttribute('aria-pressed', String(+b.dataset.v === mine));
+    b.title = +b.dataset.v > 0 ? 'I like ' + nm : nm + ' isn’t for me';
+  });
+}
 const card = (id, list) => {
   const s = byId(id); if (!s) return '';
   const on = id === current();
+  const thumbed = votes()[id] === 1;               // a theme you gave a thumbs up: a small thumb in the card's corner
   return '<button type="button" class="tfcard" data-id="' + id + '" data-list="' + list + '"' + (on ? ' aria-current="true"' : '') + '>' +
     '<span class="tfsw" style="background:' + s.swatch + (s.border ? ';box-shadow:inset 0 0 0 1px ' + s.border : '') + '"></span>' +
-    '<span class="tfnm"><span>' + esc(nameOf(s)) + '</span>' + (on ? '<b class="tftag on">On</b>' : s.both === false && !s.custom ? '<b class="tftag">Dark only</b>' : '') + '</span></button>';
+    (thumbed ? '<span class="tfliked" role="img" aria-label="Liked" title="You liked this theme"><svg viewBox="0 0 24 24" aria-hidden="true">' + THUMB + '</svg></span>' : '') +
+    '<span class="tfnm"><span>' + esc(nameOf(s)) + '</span>' + (on ? '<b class="tftag on">On</b>' : s.only === 'light' ? '<b class="tftag">Light only</b>' : s.both === false && !s.custom ? '<b class="tftag">Dark only</b>' : '') + '</span></button>';
 };
 const LISTS = {};
-function render(){
-  LISTS.pop = popular.filter(shown).slice(0, POP_SHOWN);
+function renderStrip(){
+  LISTS.pop = stripOrder().filter(shown).slice(0, POP_SHOWN);
+  $('tfsort').value = sortBy;
   $('tfpop').innerHTML = LISTS.pop.map(id => card(id, 'pop')).join('');
+  $('tfpop').querySelectorAll('.tfcard').forEach(b => b.onclick = () => openPreview(b.dataset.id, b.dataset.list));
+}
+function render(){
+  renderStrip();
   $('tfgroups').innerHTML = GROUPS.map(([name, ids], i) => {
     const have = ids.filter(id => byId(id) && shown(id)); LISTS['g' + i] = have;
     return have.length ? '<section class="tfsec" aria-labelledby="tfg' + i + '"><h2 class="tfh" id="tfg' + i + '">' + esc(name) + '</h2>' +
@@ -173,15 +256,56 @@ function render(){
   $('tforiggrid').innerHTML = ORIGINALS.map(id => card(id, 'orig')).join('');
   if (ORIGINALS.includes(current())) $('tforig').open = true;
   document.querySelectorAll('.tfcard').forEach(b => b.onclick = () => openPreview(b.dataset.id, b.dataset.list));
+  paintVote();
 }
 render();
+/* (The owner, 27 November 2026: "Popular" read too much like "Most liked", so the most-used order is called Trending.)
+   The strip cycles on its own (the owner, 27 November 2026): Trending, Most liked (once there are any thumbs), New, a step
+   every 8 seconds with a soft fade (a plain swap with motion reduced). It waits while the pointer or the keyboard is on
+   it, while a preview is open, and while the tab is hidden; picking one from the heading stops it for this visit. */
+let cycling = true;
+$('tfsort').onchange = e => { sortBy = e.target.value; cycling = false; renderStrip(); };
+{
+  const sec = $('tfpop').closest('section'), strip = $('tfpop');
+  const held = () => document.hidden || $('tfprev').open || sec.matches(':hover') || sec.contains(document.activeElement);
+  const still = () => document.documentElement.getAttribute('data-motion') === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setInterval(() => {
+    if (!cycling || held()) return;
+    const orders = ['pop', ...(liked.length ? ['liked'] : []), 'new'];
+    sortBy = orders[(orders.indexOf(sortBy) + 1) % orders.length];
+    if (still()) { renderStrip(); return; }
+    strip.classList.add('tfout');
+    setTimeout(() => { renderStrip(); strip.classList.remove('tfout'); }, 400);
+  }, 8000);
+}
 TT.lookRow($('tflook'), () => render());
+{
+  const thumb = flip => '<svg viewBox="0 0 24 24" aria-hidden="true"' + (flip ? ' style="transform:rotate(180deg)"' : '') + '>' + THUMB + '</svg>';
+  rate = document.createElement('div');
+  rate.className = 'tfrate'; rate.id = 'tfrate'; rate.setAttribute('role', 'group'); rate.hidden = true;
+  rate.innerHTML = '<span>Rate this theme:</span>' +
+    '<button type="button" data-v="1" aria-pressed="false" aria-label="Thumbs up">' + thumb(false) + '</button>' +
+    '<button type="button" data-v="-1" aria-pressed="false" aria-label="Thumbs down">' + thumb(true) + '</button>';
+  /* the switches' row and the box side by side in a row of their own (lookRow still finds its switches inside it) */
+  const sw = $('tflook').querySelector('.swrow'), row = document.createElement('div');
+  row.className = 'tflookrow';
+  if (sw){ sw.parentNode.insertBefore(row, sw); row.appendChild(sw); } else $('tflook').appendChild(row);
+  row.appendChild(rate);
+  rate.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const id = current(); if (!byId(id) || id === 'custom') return;
+    const v = Object.assign({}, votes()), x = +b.dataset.v;
+    if (v[id] === x) delete v[id]; else v[id] = x;
+    TT.set('tt.themevotes', v); render();          // (render paints the box too, and the card's thumb)
+  });
+  paintVote();
+}
 addEventListener('tt:look', () => { if (!$('tfprev').open) render(); });
 if (TT.signedIn && TT.signedIn()){
   TT.api('/api/leaderboard', { params:{ themepop:1 } }).then(d => {
-    const order = (d && d.order || []).filter(id => byId(id) && !byId(id).legacy && !BASICS.includes(id));
-    if (!order.length) return;
-    popular = order.concat(popular.filter(id => !order.includes(id)));
+    const keep = id => byId(id) && !byId(id).legacy && !BASICS.includes(id);
+    const order = (d && d.order || []).filter(keep);
+    liked = (d && d.liked || []).filter(keep);
+    if (order.length) popular = order.concat(popular.filter(id => !order.includes(id)));
     render();
   }, () => {});
   /* moderators see the themes still being made (the server says who's one) */
@@ -196,7 +320,8 @@ if (TT.signedIn && TT.signedIn()){
 const dlg = $('tfprev'), frame = $('tfpvframe'), ifr = $('tfpvif');
 const pv = { id:null, list:null, page:'home.html', mode:'light', loaded:false };
 const fixedDark = id => (byId(id) || {}).both === false;             // (Custom too: its own colours decide)
-const pvMode = () => fixedDark(pv.id) ? 'dark' : pv.mode;
+const onlyMode = id => (byId(id) || {}).only;                         // one palette of its own (Surrealism: light)
+const pvMode = () => onlyMode(pv.id) || (fixedDark(pv.id) ? 'dark' : pv.mode);
 /* the frame draws the page at a computer's size (a phone's on a phone) and scales it to fit */
 function fit(){
   const cw = frame.clientWidth || 600, vw = cw >= 640 ? 1280 : 390, vh = cw >= 640 ? 800 : 760, k = cw / vw;
@@ -215,16 +340,20 @@ function paint(){
   $('tfpvcount').textContent = list.length > 1 ? (i + 1) + ' of ' + list.length : '';
   $('tfpvprev').disabled = $('tfpvnext').disabled = list.length < 2;
   $('tfpvpages').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === pv.page)));
-  const one = fixedDark(pv.id);
+  const one = fixedDark(pv.id) || !!onlyMode(pv.id);
   $('tfpvmode').hidden = one; $('tfpvone').hidden = !one;
   $('tfpvone').textContent = pv.id === 'custom' ? 'Your own colours decide light or dark.' : 'This theme has one palette.';
   $('tfpvmode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === pv.mode)));
   const on = pv.id === current() && (one || pv.mode === TT.readState().mode);
   $('tfpvuse').textContent = on ? 'This is your theme' : 'Use ' + nameOf(s);
   $('tfpvuse').disabled = on;
-  $('tfpvnote').textContent = pv.id === 'custom'
-    ? 'Your own colours. Change them in Settings once it’s on.'
-    : 'A preview of the real page. You can scroll it; nothing in it can be pressed.';
+  /* the footer's note (the owner, 27 November 2026): no general "this is a preview" line any more; a small ! and a
+     warning on the themes that are hard work for a computer, and Custom's pointer to Settings */
+  const note = $('tfpvnote'), heavy = HEAVY[pv.id];
+  note.hidden = !(heavy || pv.id === 'custom');
+  note.className = 'hint' + (heavy ? ' tfwarn' : '');
+  note.innerHTML = heavy ? '<span class="tfbang" aria-hidden="true">!</span><span>This theme is graphically intensive: ' + esc(heavy) + '</span>'
+    : pv.id === 'custom' ? 'Your own colours. Change them in Settings once it’s on.' : '';
 }
 /* another theme or mode: told to the page already in the frame, so it switches at once */
 function show(){
@@ -236,6 +365,9 @@ function openPreview(id, list){
   pv.id = id; pv.list = list; pv.mode = TT.readState().mode;
   paint();
   if (!dlg.open) dlg.showModal();
+  /* a see-through theme (Surrealism's clear glass, Aero, the cities) had left the cards behind showing through the
+     preview's own words; it gets a solid backing in the theme's colour (27 November 2026) */
+  if (TT.solidBg) TT.solidBg(dlg);
   fit(); load();
 }
 const step = d => { const list = LISTS[pv.list] || []; if (list.length < 2) return; const i = list.indexOf(pv.id); pv.id = list[(i + d + list.length) % list.length]; show(); };
@@ -259,6 +391,6 @@ $('tfpvuse').onclick = () => {
 };
 })();
 </script>
-<script src="settings.js?v=20261126e"></script>
+<script src="settings.js?v=20261127e"></script>
 </body>
 </html>

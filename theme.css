@@ -58,7 +58,7 @@ select option{ background:#ffffff; color:#16181d; }
   --glass-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0017 0.0017' numOctaves='2' seed='31' result='n0'/%3E%3CfeColorMatrix in='n0' type='matrix' values='0 0 0 0 1 0 0 0 0 0.31 0 0 0 0 0.63 3.00 0 0 0 -1.50' result='c0'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.0018' numOctaves='2' seed='43' result='n1'/%3E%3CfeColorMatrix in='n1' type='matrix' values='0 0 0 0 0.22 0 0 0 0 0.32 0 0 0 0 0.96 2.60 0 0 0 -1.30' result='c1'/%3E%3CfeMerge result='m'%3E%3CfeMergeNode in='c0'/%3E%3CfeMergeNode in='c1'/%3E%3C/feMerge%3E%3CfeGaussianBlur in='m' stdDeviation='10'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");
   --panel:rgba(255,255,255,.09); --panel-2:rgba(255,255,255,.055);
   --line:rgba(255,255,255,.2);
-  --text:#f3f5fb; --muted:rgba(233,238,250,.66); --accent:#8ab4ff; --accent-ink:#0a1020;
+  --text:#f3f5fb; --muted:rgba(233,238,250,.8); --accent:#8ab4ff; --accent-ink:#0a1020;   /* (grey .66 → .8: complaints about reading Glass; the legibility audit, 27 November 2026) */
   --font-ui:"Space Grotesk",system-ui,sans-serif;
   --font-display:"Space Grotesk",system-ui,sans-serif;
   --font-num:"Space Grotesk",system-ui,sans-serif;
@@ -75,7 +75,7 @@ select option{ background:#ffffff; color:#16181d; }
   --glass-b:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300' viewBox='0 0 480 300'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0017 0.0017' numOctaves='2' seed='31' result='n0'/%3E%3CfeColorMatrix in='n0' type='matrix' values='0 0 0 0 1 0 0 0 0 0.38 0 0 0 0 0.66 3.00 0 0 0 -1.50' result='c0'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.0018' numOctaves='2' seed='43' result='n1'/%3E%3CfeColorMatrix in='n1' type='matrix' values='0 0 0 0 0.35 0 0 0 0 0.45 0 0 0 0 1 2.60 0 0 0 -1.30' result='c1'/%3E%3CfeMerge result='m'%3E%3CfeMergeNode in='c0'/%3E%3CfeMergeNode in='c1'/%3E%3C/feMerge%3E%3CfeGaussianBlur in='m' stdDeviation='10'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.62'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E");
   --panel:rgba(255,255,255,.42); --panel-2:rgba(255,255,255,.28);
   --line:rgba(255,255,255,.9);
-  --text:#12162a; --muted:#4a5170; --accent:#4a5cf0; --accent-ink:#fff;
+  --text:#12162a; --muted:#3b4160; --accent:#4a5cf0; --accent-ink:#fff;   /* (grey #4a5170 → #3b4160, the same) */
   --tint:30%;
 }
 /* Glass: the colour behind everything is clouds of fractal noise (each colour its own
@@ -109,6 +109,12 @@ html[data-motion="reduced"] body::before,html[data-motion="reduced"][data-clouds
 [data-skin="glass"] .idrow,[data-skin="glass"] .dayswitch button{
   backdrop-filter:blur(22px) saturate(180%);
   -webkit-backdrop-filter:blur(22px) saturate(180%);
+}
+/* at night the clouds behind a pane are dimmed a little, so white words don't sit on a bright pink or teal cloud
+   (complaints about reading Glass; the legibility audit, 27 November 2026) */
+[data-skin="glass"][data-mode="dark"] :is(.lesson,.nowcard,.breakbar,.btn,.topbar,.arrowbtn,dialog,.gatecard,.idrow,.dayswitch button){
+  backdrop-filter:blur(22px) saturate(160%) brightness(.8);
+  -webkit-backdrop-filter:blur(22px) saturate(160%) brightness(.8);
 }
 /* the top widget: frosted, with a bright rim and a specular sheen so it
    actually reads as glass in light mode */
@@ -277,6 +283,15 @@ html.nooutline[data-skin="classic"] .lesson .s::before{
 
 #hdrback[hidden]{display:none}
 #openMod[hidden]{display:none}
+/* empty fields' hints in the theme's own grey: the browser's fixed grey all but vanished on the dark and photographic
+   themes (the legibility audit, 27 November 2026). Kept below any theme's own rule (:where), and Plain and Classic
+   keep the browser's (Glass takes it: the owner had complaints about reading Glass). */
+/* Glass: a lesson's room, teacher and times at full strength (they were .85-.9 on the tinted glass) */
+[data-skin="glass"] .lesson :is(.r,.t,.tm){opacity:1}
+:where(:root:not([data-skin="plain"]):not([data-skin="classic"])) ::placeholder{color:var(--muted);opacity:.85}
+/* the Moderator button's ping: how many flagged scores wait for a moderator */
+.modping{display:inline-flex;align-items:center;justify-content:center;min-width:1.5em;height:1.5em;margin-left:.5em;padding:0 .4em;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);font-size:.75em;font-weight:700;line-height:1;vertical-align:.1em}
 
 /* tiles (Home, Games, Revision, Resources): one height on every page, a little
    taller on a taller screen, within a range */

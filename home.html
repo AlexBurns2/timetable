@@ -7,18 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261126e">
-<script src="theme.js?v=20261126e"></script>
-<script src="icons.js?v=20261126e"></script>
+<link rel="stylesheet" href="theme.css?v=20261127e">
+<script src="theme.js?v=20261127e"></script>
+<script src="icons.js?v=20261127e"></script>
 <script src="study.js"></script>
 <script src="tour.js"></script>
 <script src="suggest.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
 <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<link rel="stylesheet" href="site.css?v=20261126e">
-<link rel="stylesheet" href="settings.css?v=20261126e">
-<link rel="stylesheet" href="poll.css?v=20261126e">
+<link rel="stylesheet" href="site.css?v=20261127e">
+<link rel="stylesheet" href="settings.css?v=20261127e">
+<link rel="stylesheet" href="poll.css?v=20261127e">
 </head>
 <body>
 <div class="wrap hub">
@@ -515,7 +515,7 @@ function pickRx(bar, id){
   pop.className = 'rxpick'; pop.setAttribute('role', 'menu');
   pop.innerHTML = RX_PICK.map(e => '<button type="button" role="menuitem" data-e="' + e + '">' + e + '</button>').join('') +
     '<button type="button" class="rxother" role="menuitem">Other…</button>';
-  bar.appendChild(pop);
+  bar.appendChild(pop); if (TT.solidBg) TT.solidBg(pop);
   pop.querySelectorAll('[data-e]').forEach(b => b.onclick = ev => { ev.stopPropagation(); pop.remove(); toggleRx(id, b.dataset.e); });
   pop.querySelector('.rxother').onclick = ev => {
     ev.stopPropagation(); pop.remove();
@@ -662,7 +662,7 @@ function closeTags(){ clearTimeout(TAGPOP.timer); if (TAGPOP.el) TAGPOP.el.remov
 function showTags(ta, items){
   if (!items.length){ if (TAGPOP.el) TAGPOP.el.remove(); TAGPOP.el = null; TAGPOP.items = []; return; }
   if (!TAGPOP.el || TAGPOP.ta !== ta){ closeTags(); TAGPOP.el = document.createElement('div'); TAGPOP.el.className = 'ftagpop'; TAGPOP.el.setAttribute('role', 'listbox');
-    ta.parentElement.appendChild(TAGPOP.el); }
+    ta.parentElement.appendChild(TAGPOP.el); if (TT.solidBg) TT.solidBg(TAGPOP.el); }
   TAGPOP.ta = ta; TAGPOP.items = items; TAGPOP.i = Math.min(TAGPOP.i, items.length - 1);
   TAGPOP.el.innerHTML = items.map((p, i) => '<button type="button" role="option" aria-selected="' + (i === TAGPOP.i) + '" data-i="' + i + '"><b>' + esc(p.name) + '</b><span>@' + esc(p.handle) + '</span></button>').join('');
   TAGPOP.el.querySelectorAll('button').forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => pickTag(+b.dataset.i); });
@@ -806,8 +806,8 @@ if (!signedIn){
 }
 loadForum();
 </script>
-<script src="settings.js?v=20261126e"></script>
-<script src="poll.js?v=20261126e"></script>
+<script src="settings.js?v=20261127e"></script>
+<script src="poll.js?v=20261127e"></script>
 <script>
 /* ── Today: the daily games, and where you are with them ─────────────
    From what the games remember (games.js markDay, synced with your account),

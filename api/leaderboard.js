@@ -27,15 +27,16 @@
  * POST {action:"run", …}) and record their own scores; a score posted for them
  * is refused. Snake, 2048, Typing, Reaction and Tetris need a ticket from when
  * the game started (POST {action:"ticket", game}), and the score has to fit the
- * time since. Snake and 2048 get replayed from the ticket's seed, and anything off
- * still goes on the board but is flagged for Alex to check (_anticheat.js, _review.js). TAS boards: _tas.js.
+ * time since. Snake and 2048 get replayed from the ticket's seed; anything off still
+ * goes on the boards, and is flagged for the moderators to keep or remove
+ * (_anticheat.js, _review.js). TAS boards: _tas.js.
  */
 
-import { db, whoami, isAdmin, isReviewer } from "./_supabase.js";
+import { db, whoami, isAdmin } from "./_supabase.js";
 import { nameOverrides, displayNames, withName, forgetNameOverrides, rosterList, yearTags, withYear } from "./_names.js";
 import { runHandler, RUN_GAMES, issueTicket, ticketOf, scoreFits, TICKET_GAMES } from "./_runs.js";
 import { inputSigns, vetSnake, vet2048, vetOther } from "./_anticheat.js";
-import { flagScore, flaggedList, takeFlag, removeFlagged } from "./_review.js";
+import { noteFlag, flagCount, settleFlag, heldList, takeHeld, writeTetris, tetrisNow, tetrisPut } from "./_review.js";
 import { tasHandler } from "./_tas.js";
 import { usage } from "./_usage.js";
 
@@ -212,9 +213,32 @@ async function writeBest(game, metric, period, email, name, score, dir) {
     const { error } = await db.from("game_score").upsert({ game, metric, period, email, name, score });
     if (error) throw new Error(error.message);
   }
-  return better;
+  return { wrote: better, before: ex ? ex.score : null };             // (a flagged score's note: _review.js)
 }
-const LABEL = { snake: "Snake", g2048: "2048", typing: "Typing race", react: "Reaction" };
+/* one person's entry on one board now, and putting it back (v null: no entry), for removing a flagged score */
+async function boardNow(email, st, period) {
+  const { data } = await db.from("game_score").select("score").eq("game", st.game).eq("metric", st.metric).eq("period", period).eq("email", email).maybeSingle();
+  return data ? data.score : null;
+}
+async function boardPut(email, st, period, v) {
+  const q = v == null
+    ? db.from("game_score").delete().eq("game", st.game).eq("metric", st.metric).eq("period", period).eq("email", email)
+    : db.from("game_score").upsert({ game: st.game, metric: st.metric, period, email, name: st.name || nameFromEmail(email), score: v });
+  const { error } = await q;
+  if (error) throw new Error(error.message);
+}
+
+/* thumbs up and down per theme, from everyone's synced settings (tt.themevotes: { theme: 1 | -1 }) */
+function themeVotes(rows) {
+  const out = {};
+  for (const r of rows || []) {
+    let v = r.votes; if (typeof v === "string") { try { v = JSON.parse(v); } catch { v = null; } }
+    if (!v || typeof v !== "object" || Array.isArray(v)) continue;
+    for (const [id, x] of Object.entries(v)) { if (!/^[a-z0-9-]{1,24}$/.test(id) || (x !== 1 && x !== -1)) continue;
+      const t = out[id] || (out[id] = { up: 0, down: 0 }); if (x === 1) t.up++; else t.down++; }
+  }
+  return out;
+}
 
 /* the ban list for the moderator page: each person by the name the site shows, newest ban first */
 async function bansOut() {
@@ -314,7 +338,9 @@ export default async function handler(req, res) {
        games, and staff get a note about the site the first time (theme.js, games.js; the owner, 25 November 2026) */
     const staff = (me.groups || []).some(g => /^(teacher|staff|executive|admin)/i.test(String(g))) || /@det\.nsw\.edu\.au$/i.test(me.email);
     const year = staff ? null : Number(me.year || (await yearMap()).get(me.email)) || null;
-    return res.status(200).json({ ...(await siteSettings()), isMod: isAdmin(me.email), canReview: isReviewer(me.email),
+    /* moderators also get how many flagged scores are waiting (the ping on the Moderator button; one count, theirs only) */
+    const mod = isAdmin(me.email), flagged = mod ? await flagCount().catch(() => 0) : 0;
+    return res.status(200).json({ ...(await siteSettings()), isMod: mod, canReview: mod, ...(mod ? { flagged } : {}),
       bannedFrom: await bannedFrom(me.email),             // only your own bans, never anyone else's
       year, staff, usage: await usage(me.email, false) });
   }
@@ -388,20 +414,24 @@ export default async function handler(req, res) {
     }
   }
 
-  /* the Theme finder's "Popular" strip: theme ids in order of how many people have them on (active in the
-     last 30 days first, then everyone), from synced settings. The order only: no counts, nobody's choice.
-     Read-only, worked out at most once an hour per warm instance. */
+  /* the Theme finder's top strip: theme ids in order of how many people have them on (active in the last 30 days first,
+     then everyone), and (26 November 2026) in order of thumbs: each person's thumbs up or down are in their synced
+     settings (tt.themevotes: { theme: 1 | -1 }). The orders only: no counts, nobody's choice (moderators see the counts,
+     ?themes=1). Read-only, worked out at most once an hour per warm instance. */
   if (req.method === "GET" && src.themepop) {
     if (!themePop.at || Date.now() - themePop.at > 3600e3) {
-      const { data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin"').limit(5000);
+      let { data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin", votes:data->"tt.themevotes"').limit(5000);
+      if (error) ({ data: rows, error } = await db.from("prefs").select('updated_at, skin:data->>"tt.skin"').limit(5000));
       if (!error) {
         const since = Date.now() - 30 * 864e5, n = {};
         for (const r of rows || []) { const k = String(r.skin || "plain"); const t = n[k] || (n[k] = { a: 0, all: 0 }); t.all++; if (Date.parse(r.updated_at) > since) t.a++; }
-        themePop = { at: Date.now(), order: Object.entries(n).sort((x, y) => y[1].a - x[1].a || y[1].all - x[1].all).map(([k]) => k).filter(k => /^[a-z0-9-]{1,24}$/.test(k)) };
+        const ok = k => /^[a-z0-9-]{1,24}$/.test(k), v = themeVotes(rows);
+        themePop = { at: Date.now(), order: Object.entries(n).sort((x, y) => y[1].a - x[1].a || y[1].all - x[1].all).map(([k]) => k).filter(ok),
+          liked: Object.entries(v).sort((x, y) => (y[1].up - y[1].down) - (x[1].up - x[1].down) || y[1].up - x[1].up).map(([k]) => k).filter(ok) };
       } else console.warn("theme order:", error.message);
     }
     res.setHeader("Cache-Control", "private, max-age=600");
-    return res.status(200).json({ order: themePop.order || [] });
+    return res.status(200).json({ order: themePop.order || [], liked: themePop.liked || [] });
   }
 
   /* moderator-only: which themes people use, from their synced settings (prefs).
@@ -412,7 +442,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Only moderators can see this." });
     let rows, error;
     ({ data: rows, error } = await db.from("prefs")
-      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", iconstyle:data->>"tt.iconstyle", iconcolour:data->>"tt.iconcolour", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen"')
+      .select('updated_at, skin:data->>"tt.skin", mode:data->>"tt.mode", glassanim:data->>"tt.glassanim", gameicons:data->>"tt.gameicons", tileicons:data->>"tt.tileicons", iconstyle:data->>"tt.iconstyle", iconcolour:data->>"tt.iconcolour", backdrop:data->"tt.custom"->>backdrop, zen:data->>"tt.zen", votes:data->"tt.themevotes"')
       .limit(5000));
     if (error) {                                      // the keys couldn't be picked out: read the settings whole instead
       console.warn("themes (picked):", error.message);
@@ -420,7 +450,8 @@ export default async function handler(req, res) {
       if (error) return res.status(502).json({ error: "Couldn't read the settings." });
       rows = rows.map(r => { const d = r.data || {}, s = v => v == null ? null : String(v);
         return { updated_at: r.updated_at, skin: s(d["tt.skin"]), mode: s(d["tt.mode"]), glassanim: s(d["tt.glassanim"]), gameicons: s(d["tt.gameicons"]),
-                 tileicons: s(d["tt.tileicons"]), iconstyle: s(d["tt.iconstyle"]), iconcolour: s(d["tt.iconcolour"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]) }; });
+                 tileicons: s(d["tt.tileicons"]), iconstyle: s(d["tt.iconstyle"]), iconcolour: s(d["tt.iconcolour"]), backdrop: s(d["tt.custom"] && d["tt.custom"].backdrop), zen: s(d["tt.zen"]),
+                 votes: d["tt.themevotes"] || null }; });
     }
     const since = Date.now() - 30 * 864e5, skins = {}, tally = (o, k, act) => { const t = o[k] || (o[k] = { all: 0, active: 0 }); t.all++; if (act) t.active++; };
     const flags = { dark: {}, glassAnim: {}, emoji: {}, accentIcons: {}, clouds: {}, zen: {} };
@@ -441,7 +472,8 @@ export default async function handler(req, res) {
     const f = k => flags[k].n || { all: 0, active: 0 };
     return res.status(200).json({ total: (rows || []).length, active,
       skins: Object.entries(skins).map(([id, c]) => ({ id, ...c })).sort((a, b) => b.active - a.active || b.all - a.all),
-      dark: f("dark"), glassAnim: f("glassAnim"), emoji: f("emoji"), accentIcons: f("accentIcons"), clouds: f("clouds"), zen: f("zen") });
+      dark: f("dark"), glassAnim: f("glassAnim"), emoji: f("emoji"), accentIcons: f("accentIcons"), clouds: f("clouds"), zen: f("zen"),
+      votes: themeVotes(rows) });                       // thumbs up and down per theme: moderators only
   }
 
   /* moderator-only: how far the site has spread, year by year: of the students in each year (with
@@ -493,21 +525,36 @@ export default async function handler(req, res) {
     catch (e) { console.error("tas:", e.message); return res.status(502).json({ error: "Couldn't reach the TAS boards." }); }
   }
 
-  if (req.method === "GET" && src.flagged) {
-    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check flagged scores." });
-    try { return res.status(200).json({ flagged: await flaggedList() }); }
-    catch (e) { console.error("flagged:", e.message); return res.status(502).json({ error: "Couldn't read the flagged scores." }); }
+  /* flagged scores: any moderator sees them and decides (the owner, 27 November 2026). "keep" / "remove" answer one that's
+     already on the boards; "ok" / "drop" answer one of the older held ones, still kept off the boards. */
+  if (req.method === "GET" && src.held) {
+    if (!isAdmin(me.email)) return res.status(403).json({ error: "Only moderators can check flagged scores." });
+    try { return res.status(200).json({ held: await heldList() }); }
+    catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't read the flagged scores." }); }
   }
-  /* keep it (the flag goes) or remove it (off the boards too) */
-  if (req.method === "POST" && src.action === "flagged") {
-    if (!isReviewer(me.email)) return res.status(403).json({ error: "Only Alex can check flagged scores." });
+  if (req.method === "POST" && src.action === "held") {
+    if (!isAdmin(me.email)) return res.status(403).json({ error: "Only moderators can check flagged scores." });
     const email = String(src.email || "").toLowerCase(), key = String(src.key || "");
     if (!email || !/^[a-z0-9:]{1,40}$/.test(key)) return res.status(400).json({ error: "Which score?" });
+    if (src.op === "keep" || src.op === "remove") {
+      try {
+        await settleFlag(email, key, src.op,
+          (st, b) => st.kind === "t" ? tetrisNow(email, st, b) : boardNow(email, st, b),
+          (st, b, v) => st.kind === "t" ? tetrisPut(email, st, b, v) : boardPut(email, st, b, v));
+        return res.status(200).json({ held: await heldList() });
+      } catch (e) { console.error("flag:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
+    }
     try {
-      const f = await takeFlag(email, key);
-      if (f && src.op === "remove") await removeFlagged(email, f);
-      return res.status(200).json({ flagged: await flaggedList() });
-    } catch (e) { console.error("flagged:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
+      const h = await takeHeld(email, key);
+      if (h && src.op === "ok") {
+        const name = h.name || nameFromEmail(email);
+        for (const b of h.boards || []) {
+          if (h.kind === "t") await writeTetris(email, name, b, h.score, h.week);
+          else if (DIRS[h.game + ":" + h.metric]) await writeBest(h.game, h.metric, b, email, name, h.score, DIRS[h.game + ":" + h.metric]);
+        }
+      }
+      return res.status(200).json({ held: await heldList() });
+    } catch (e) { console.error("held:", e.message); return res.status(502).json({ error: "Couldn't do that." }); }
   }
 
   /* the games the server runs (Six Degrees, Odd One Out, Classroom) */
@@ -539,6 +586,7 @@ export default async function handler(req, res) {
   const dmax = DAILY_GAMES[game + ":" + metric], day = dmax ? dayOf(src.day) : null;
   if (dmax && src.day != null && !day) return res.status(400).json({ error: "That isn't today." });
   const dperiod = day ? "d" + day : null;
+  let held = null;
   const validPeriod = p => p === "all" || p === wperiod || (dperiod && p === dperiod);
 
   if (req.method === "POST" && src.action === "wipe") {
@@ -575,18 +623,21 @@ export default async function handler(req, res) {
       else {
         const v = game === "snake" ? vetSnake(tk.seed, src.run, score, tk.age)
                 : game === "g2048" ? vet2048(tk.seed, src.run, score, tk.age) : { why: [] };
-        if (v.score != null && v.score > score) score = v.score;
+        if (v.score != null) score = v.score;
         why.push(...v.why);
         if (!scoreFits(game, metric, score, tk.age)) why.push("more than fits the time played");
       }
       why.push(...inputSigns(src.ac), ...vetOther(game, metric, score));
     }
     const name = nameFromEmail(me.email);
+    /* it goes on the boards either way; a flagged one also leaves a note for the moderators to keep or remove (_review.js) */
     try {
-      const landed = [];
-      for (const p of ["all", wperiod, ...(dperiod ? [dperiod] : [])]) if (await writeBest(game, metric, p, me.email, name, score, dir)) landed.push(p);
-      if (why.length && landed.length)
-        await flagScore(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, boards: landed, why }, LABEL[game] || game);
+      const changed = {}, on = {};
+      for (const p of ["all", wperiod, ...(dperiod ? [dperiod] : [])]) {
+        const w = await writeBest(game, metric, p, me.email, name, score, dir);
+        if (w.wrote) { changed[p] = w.before; on[p] = score; }
+      }
+      if (why.length) await noteFlag(me.email, name, { key: game + ":" + metric, kind: "g", game, metric, dir, score, week, why }, changed, on);
     } catch (e) { console.error("leaderboard write:", e.message); return res.status(502).json({ error: "Couldn't save your score." }); }
   } else if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -601,6 +652,6 @@ export default async function handler(req, res) {
     all:  await board(game, metric, "all", dir, me.email, isOwner, scope, years, banned),
     ...(dperiod ? { day: await board(game, metric, dperiod, dir, me.email, isOwner, scope, years, banned) } : {}),
     year: scope || "all", myYear: me.year || years.get(me.email) || null,
-    canWipe: isOwner
+    canWipe: isOwner, ...(held ? { held } : {})
   });
 }

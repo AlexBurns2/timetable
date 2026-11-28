@@ -567,6 +567,9 @@ function openSheet(title, fill){
     '<button class="btn icon sheetx" type="button" aria-label="Close">' + (window.Icon ? Icon.svg('x') : '&#10005;') + '</button></div>' +
     '<div class="sheetbody"></div>';
   document.body.append(back, sh);
+  /* a see-through theme's panel (Glass, the photographic ones) let the game tiles show through the boards: a solid backing
+     in the theme's colour (complaints about Glass; 27 November 2026) */
+  if (window.TT && TT.solidBg) TT.solidBg(sh);
   document.documentElement.classList.add('sheetopen');
   const close = instant => {
     if (sheetClose !== close) return;
@@ -754,13 +757,20 @@ const LB_GAMES = {
    score is sent with it (the server holds a score to what fits the time since). */
 const lbTickets = {}, lbRuns = {};
 const acSeen = { u:0 };
-['keydown', 'keyup', 'pointerdown', 'mousedown', 'touchstart', 'input'].forEach(t => addEventListener(t, e => { if (!e.isTrusted) acSeen.u++; }, true));
+/* only made-up key presses count (a script playing the game sends those); browser extensions (spelling, password managers,
+   translators) send made-up clicks and typing of their own, and those had been holding honest scores (27 November 2026) */
+['keydown', 'keyup'].forEach(t => addEventListener(t, e => { if (!e.isTrusted) acSeen.u++; }, true));
 const acInfo = () => ({ u:acSeen.u, wd:navigator.webdriver === true });
 function lbTicket(game){
   acSeen.u = 0;
   if (!TT.myEmail || !TT.myEmail()) return Promise.resolve(null);
   return TT.api('/api/leaderboard', { method:'POST', body:{ action:'ticket', game } })
     .then(d => { if (!d || !d.ticket) return null; lbTickets[game] = d.ticket; return d; }).catch(() => null);
+}
+function heldHTML(h){
+  if (!h) return '';
+  return '<p class="how lbheld">Your score is waiting to be checked before it goes on the board.' +
+    (h.tas ? ' If a bot played it, bots race on the <a href="tas.html">TAS boards</a>.' : '') + '</p>';
 }
 /* a run the server plays (Six Degrees, Odd One Out, Classroom): one step of it */
 const runCall = (game, op, extra) => TT.api('/api/leaderboard', { method:'POST', body:Object.assign({ action:'run', game, op, week:tetrisWeek() }, extra || {}), timeout:90000 });
@@ -896,7 +906,7 @@ function siteSettings(){
     .then(d => { if (d && TT.setMod) TT.setMod(!!d.isMod);        // (moderators' themes: theme.js)
                  siteCfg = { weeklyBoards: d && d.weeklyBoards !== false,
                              hiddenGames: d && Array.isArray(d.hiddenGames) ? d.hiddenGames : siteCfg.hiddenGames,
-                             isMod: !!(d && d.isMod), canReview: !!(d && d.canReview),
+                             isMod: !!(d && d.isMod), canReview: !!(d && d.canReview), flagged: d && d.flagged || 0,
                              bannedFrom: d && Array.isArray(d.bannedFrom) ? d.bannedFrom : [], year: d && d.year || null }; return siteCfg; })
     .catch(() => siteCfg);
   return sitePromise;
@@ -957,7 +967,7 @@ async function lbSubmit(game, score, run){
     const d = await TT.api('/api/leaderboard', { method:'POST', body:Object.assign({ game, metric:lb.metric, score, week:tetrisWeek(), ticket, run, ac:acInfo() }, lbYearParam()) });
     lbSumCache = null;   // summary strip is now stale
     lbRemember(game, d);
-    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; paintLB(); }
+    if (lbState && lbState.game === game){ lbState.week = d.week; lbState.all = d.all; lbState.held = d.held || null; paintLB(); }
   } catch(e){}
   f.busy = false;
   if (f.next != null){ const n = f.next; f.next = null;
@@ -1003,8 +1013,8 @@ function paintLB(){
   const b = lbState.period === 'week' ? lbState.week : lbState.all;
   if (!b){ body.innerHTML = LD(); return; }
   const rows = b.top || [];
-  if (!rows.length && b.meBest == null){ body.innerHTML = '<p class="how">No scores yet. Be the first.</p>'; return; }
-  let html = rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
+  if (!rows.length && b.meBest == null){ body.innerHTML = heldHTML(lbState.held) + '<p class="how">No scores yet. Be the first.</p>'; return; }
+  let html = heldHTML(lbState.held) + rows.map((r,i) => '<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
     '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+esc(lb.fmt(r.score))+'</span></div>').join('');
   if (b.meRank && b.meRank > rows.length)
     html += '<div class="tlbrow me"><span class="rk">'+b.meRank+'</span><span class="nm">You</span><span class="tm">'+esc(lb.fmt(b.meBest))+'</span></div>';
@@ -1049,7 +1059,11 @@ const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=(Math.random()*(i
    viewer's name so the game confirms whose classes it is drawn from */
 async function loadGuessData(){
   const email = TT.myEmail();
-  const tt = await TT.apiGet({ email });
+  /* No timetable of your own (Year 12 once they've finished, or an account with no classes): the school's system says
+     "not found". Everything but "My classes" still works from the directory, so carry on without one (noTimetable). */
+  let tt, noTimetable = false;
+  try { tt = await TT.apiGet({ email }); }
+  catch (e){ if (!/no timetable was found/i.test(String(e && e.message))) throw e; tt = { timetable: [], profile: null }; noTimetable = true; }
   const viewer = personName({ Email: email }) || String(email).split('@')[0];
   const me = String(email).toLowerCase();
   const groups = (tt.profile && (tt.profile.groups || tt.profile.Groups)) || [];
@@ -1101,7 +1115,7 @@ async function loadGuessData(){
     if (s && t && !subjTeacher[s]) subjTeacher[s] = t;
   });
 
-  return { email:me, viewer, grade, classPool, rooms, subjTeacher, students:null, teachers:null };
+  return { email:me, viewer, grade, classPool, rooms, subjTeacher, students:null, teachers:null, noTimetable };
 }
 
 /* the directory doesn't name its year field consistently — pull a year number
@@ -1194,6 +1208,8 @@ BUILD.guesswho = host => {
   })();
 
   async function start(){
+    /* no timetable of your own: "My classes" can't be played, so start on your year */
+    if (gwData.noTimetable && diff === 'myclasses') diff = 'grade';
     box.innerHTML =
       '<div class="gwtop"><div class="gwdiffs" id="gwdiffs"></div>' +
       '<div class="gwyou">as <b>' + esc(gwData.viewer) + '</b></div></div>' +
@@ -1217,7 +1233,9 @@ BUILD.guesswho = host => {
     try { pool = await poolFor(diff); } catch(err){ body.innerHTML = '<p class="how">Could not load: '+esc(err.message)+'</p>'; return; }
     if (!alive) return;
     if (!pool || pool.length < 3){
-      body.innerHTML = '<p class="how">Not enough people in this pool to play. Try another difficulty, or open a timetable first.</p>';
+      body.innerHTML = '<p class="how">' + (diff === 'myclasses' && gwData.noTimetable
+        ? 'Your timetable isn’t available any more, so there are no classes to play with. Try My grade, Whole school or Teachers.'
+        : 'Not enough people in this pool to play. Try another difficulty, or open a timetable first.') + '</p>';
       return;
     }
     play(pool.slice());
@@ -2228,7 +2246,7 @@ let roomsLoad = null;
 function loadRooms(){
   if (window.Rooms) return Promise.resolve(window.Rooms);
   return roomsLoad || (roomsLoad = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'rooms.js?v=20261126e';
+    const s = document.createElement('script'); s.src = 'rooms.js?v=20261127e';
     s.onload = () => window.Rooms ? res(window.Rooms) : rej(new Error('Couldn’t load the online rooms.'));
     s.onerror = () => { roomsLoad = null; rej(new Error('Couldn’t load the online rooms.')); };
     document.head.appendChild(s);
@@ -2375,7 +2393,7 @@ BUILD.tetris = (host, o) => {
   }
   function fillQueue(){ while (queue.length < 7) queue.push(nextType()); }
 
-  let grid, piece, hold, holdUsed, cleared, score = 0, elapsedMs = 0, plog = [];
+  let grid, piece, hold, holdUsed, cleared, score = 0, elapsedMs = 0, plog = [], tHeld = null;
   let phase = 'ready';            // 'ready' | 'playing' | 'paused' | 'over'
   let loopId, lastTick, baseTime, dropAcc = 0, pauseAt = 0, alive = true;
   let moveDir = 0, dasStart = 0, arrLast = 0, dasCharged = false, softHeld = false;
@@ -2592,7 +2610,7 @@ BUILD.tetris = (host, o) => {
   function begin(){
     if (mode !== 'practice' && mode !== 'versus') lbTicket('tetris');   // a score is sent with this (the server checks it)
     if (saveable()) clearState();              // starting fresh discards any saved game
-    emptyBoard(); newRng(); plog = [];
+    emptyBoard(); newRng(); plog = []; tHeld = null;
     holdUsed=false; moveDir=0; dasCharged=false; softHeld=false; rotHeld=false; rotCharged=false;
     grounded=false; lockStart=0; lockResets=0; dropAcc=0;
     spawnNext(performance.now());
@@ -2697,7 +2715,7 @@ BUILD.tetris = (host, o) => {
     try {
       const ticket = lbTickets.tetris, ac = acInfo();
       if (mode==='survival'){ const d = await TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'zen',ms,ticket,ac,run:{pt:placeTimes()}}, lbYearParam())});
-        renderTimeLB(d, 'Longest survivals (all-time)'); }
+        tHeld = d.held || null; renderTimeLB(d, 'Longest survivals (all-time)'); }
       else {
         /* the weekly board is still written to even while it is hidden, so turning
            weekly boards back on brings every score back with it */
@@ -2706,6 +2724,7 @@ BUILD.tetris = (host, o) => {
           TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'sprint',week:wk,timeMs:ms,ticket,ac,run}, lbYearParam())}),
           TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'sprintall',week:wk,timeMs:ms,ticket,ac,run}, lbYearParam())})
         ]);
+        tHeld = w.held || a.held || null;
         sprintBoards={week:w,all:a}; renderSprintLB();
       }
     } catch(e){}
@@ -2713,11 +2732,12 @@ BUILD.tetris = (host, o) => {
   async function submitZen(sc){
     if (!TT.myEmail()) return;
     try { const d = await TT.api('/api/tetris',{method:'POST',body:Object.assign({mode:'zenscore',score:sc,ticket:lbTickets.tetris,ac:acInfo(),run:{pt:placeTimes()}}, lbYearParam())});
-      renderZenLB(d); } catch(e){}
+      tHeld = d.held || null; renderZenLB(d); } catch(e){}
   }
   const placeTimes = () => plog.filter(e => e[1]!=='h').map(e => e[0]).slice(-3000);
   async function loadLB(){
     const el=$$('tlb'); if (!el) return;
+    tHeld = null;
     if (mode==='practice' || mode==='versus'){ el.innerHTML=''; return; }   // practice and versus have no board
     if (!TT.myEmail()){ el.innerHTML=''; return; }
     try {
@@ -2742,8 +2762,8 @@ BUILD.tetris = (host, o) => {
   function renderTimeLB(d, title){
     const el=$$('tlb'); if (!el || !alive) return;
     const rows=(d && d.top)||[];
-    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3>'+'<p class="how">No times yet. Set the first one.</p>'; return; }
-    el.innerHTML='<h3>'+title+'</h3>'+rowsHTML(d, r=>fmtHMS(r.time_ms));
+    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>'+title+'</h3>'+heldHTML(tHeld)+'<p class="how">No times yet. Set the first one.</p>'; return; }
+    el.innerHTML='<h3>'+title+'</h3>'+heldHTML(tHeld)+rowsHTML(d, r=>fmtHMS(r.time_ms));
   }
   function renderSprintLB(){
     const el=$$('tlb'); if (!el || !alive) return;
@@ -2753,14 +2773,14 @@ BUILD.tetris = (host, o) => {
       '<button type="button" class="glbtab'+(sprintTab==='all'?' cur':'')+'" data-t="all">All time</button></div>' : '';
     const rows=(d && d.top)||[];
     const body = (!rows.length && (!d||d.meBest==null)) ? '<p class="how">No times yet. Set the first one.</p>' : rowsHTML(d, r=>fmtHMS(r.time_ms));
-    el.innerHTML='<div class="glbhd"><h3>Sprint, fastest times'+(weeklyOn()?'':' (all-time)')+'</h3>'+tabs+'</div>'+body;
+    el.innerHTML='<div class="glbhd"><h3>Sprint, fastest times'+(weeklyOn()?'':' (all-time)')+'</h3>'+tabs+'</div>'+heldHTML(tHeld)+body;
     [...el.querySelectorAll('.glbtab')].forEach(b=>b.onclick=()=>{ sprintTab=b.dataset.t; renderSprintLB(); });
   }
   function renderZenLB(d){
     const el=$$('tlb'); if (!el || !alive) return;
     const rows=(d && d.top)||[];
-    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3>'+'<p class="how">No scores yet. Set the first one.</p>'; return; }
-    let html='<h3>Zen scores</h3>'+'<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
+    if (!rows.length && (!d || d.meBest==null)){ el.innerHTML='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<p class="how">No scores yet. Set the first one.</p>'; return; }
+    let html='<h3>Zen scores</h3>'+heldHTML(tHeld)+'<div class="tlbrow tlbhd"><span class="rk">#</span><span class="nm">Player</span><span class="tm">Now</span><span class="tm">Best</span></div>'+
       rows.map((r,i)=>'<div class="tlbrow'+(r.you?' me':'')+'"><span class="rk">'+(i+1)+'</span>'+
         '<span class="nm">'+esc(r.name)+banMark(r)+'</span><span class="tm">'+r.current+'</span><span class="tm">'+r.best+'</span></div>').join('');
     if (d && d.meRank && d.meRank>rows.length)
@@ -4954,7 +4974,8 @@ BUILD.admin = host => {
   const SCANS = { id:'scans', name:'QR scans', kind:'q' };
   /* which themes people use (from their synced settings) */
   const THEMES = { id:'themes', name:'Themes', kind:'x' };
-  const HELD = { id:'flagged', name:'Flagged scores', kind:'h' };
+  /* scores the checks flagged: on the boards already, a moderator keeps or removes each (and the older held ones) */
+  const HELD = { id:'held', name:'Flagged scores' + (siteCfg.flagged ? ' · ' + siteCfg.flagged : ''), kind:'h' };
   /* who a moderator has taken off which games (api/_settings.js: their results are refused and they're left off
      those boards; nothing of theirs is deleted) */
   const BANS = { id:'bans', name:'Bans', kind:'b' };
@@ -5018,7 +5039,7 @@ BUILD.admin = host => {
       }
       if (cur.kind === 'q'){ data = await TT.api('/api/forum', { params:{ scans:1 } }); render(); return; }
       if (cur.kind === 'x'){ data = await TT.api('/api/leaderboard', { params:{ themes:1 } }); render(); return; }
-      if (cur.kind === 'h'){ data = await TT.api('/api/leaderboard', { params:{ flagged:1 } }); render(); return; }
+      if (cur.kind === 'h'){ data = await TT.api('/api/leaderboard', { params:{ held:1 } }); render(); return; }
       if (cur.kind === 'b'){
         const [d, pp] = await Promise.all([TT.api('/api/leaderboard', { params:{ bans:1 } }),
           admPeople || TT.api('/api/leaderboard', { params:{ users:1 } }).then(x => (x.users || []).map(u => ({ name:String(u.name || ''), email:String(u.email || '') }))).catch(() => null)]);
@@ -5366,23 +5387,44 @@ BUILD.admin = host => {
         '<span class="thname">' + esc(nameOf(s.id)) + '</span><span class="thbar"><i style="width:' + (s.active / max * 100) + '%"></i></span>' +
         '<span class="thn">' + s.active + '<em> · ' + pct(s.active, act) + '</em></span><span class="thall">' + s.all + ' in all</span></div>').join('') + '</div>' +
       '<div class="thflags">' + flag('Dark mode', d.dark || {}) + flag('Glass, animated', d.glassAnim || {}) + flag('Emoji icons, chosen', d.emoji || {}) +
-        flag('One-colour icons, chosen', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>';
+        flag('One-colour icons, chosen', d.accentIcons || {}) + flag('Custom with clouds', d.clouds || {}) + flag('Transparent background', d.zen || {}) + '</div>' +
+      votesHtml(d.votes || {}, nameOf, swatch);
   }
+  /* thumbs up and down per theme (from the Theme finder's preview; the counts are shown only here), most liked first */
+  function votesHtml(v, nameOf, swatch){
+    const rows = Object.entries(v).sort((a, b) => (b[1].up - b[1].down) - (a[1].up - a[1].down) || b[1].up - a[1].up);
+    return '<h4 class="admsub">Thumbs up and down</h4>' + (rows.length
+      ? '<div class="thlist">' + rows.map(([id, c]) => '<div class="threw"><span class="thsw" style="background:' + swatch(id) + '"></span>' +
+          '<span class="thname">' + esc(nameOf(id)) + '</span><span class="thvote"><b>' + c.up + '</b> up · <b>' + c.down + '</b> down</span></div>').join('') + '</div>'
+      : '<p class="how">Nobody has given a theme a thumbs up or down yet.</p>');
+  }
+  /* Flagged scores (the owner, 27 November 2026): a score the checks flag goes on the boards anyway, and comes here.
+     Keep: it stays, the flag goes. Remove: each board goes back to what it showed before it (a better score sent since
+     stays). The older held ones (h.live unset) were kept off the boards: Let it on or Throw out, as before. */
   function renderHeld(){
-    const list = (data && data.flagged) || [];
-    $('admnote').textContent = 'Scores that didn’t check out. They’re already on the boards: keep them, or take them off. Only you see these.';
+    const list = (data && data.held) || [];
+    siteCfg.flagged = list.length;
+    const pill = [...$('admpick').children].find(x => x.textContent.startsWith('Flagged scores'));
+    if (pill) pill.textContent = 'Flagged scores' + (list.length ? ' · ' + list.length : '');
+    $('admnote').textContent = 'Scores the checks flagged. They’re on the boards already: keep each one, or remove it and the board goes back to what it showed before (a better score sent since stays).';
     if (!list.length){ $('admbody').innerHTML = '<p class="how">Nothing flagged.</p>'; return; }
     const T = { sprint:['Tetris Sprint', fmtHMS], sprintall:['Tetris Sprint', fmtHMS], zen:['Tetris Survival', fmtHMS], zenscore:['Tetris Zen', String] };
     const what = h => { if (h.kind === 't') return T[h.mode] || [h.mode, String]; const c = LB_CAT.find(x => x.id === h.game); return c ? [c.name, c.fmt] : [h.game, String]; };
     $('admbody').innerHTML = list.map((h, i) => { const [name, fmt] = what(h);
       return '<div class="adminrow pollrow"><span class="nm"><b>' + esc(h.name || h.email) + ' · ' + esc(name) + ' · ' + esc(fmt(h.score)) + '</b><em>' +
+        (h.live ? '' : 'Held off the boards (from before) · ') +
         esc((h.why || []).join('; ')) + ' · ' + (h.tries > 1 ? h.tries + ' tries' + (h.also && h.also.length ? ' (others: ' + esc(h.also.join('; ')) + ')' : '') + ' · ' : '') + esc(seenAgo(h.at)) + '</em></span><span class="pact">' +
-        '<button class="btn" type="button" data-keep="' + i + '">Keep</button><button class="del" type="button" data-remove="' + i + '">Remove</button></span></div>'; }).join('');
-    const act = (b, op) => async () => { const h = list[+b.dataset[op]]; b.disabled = true;
-      try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'flagged', op, email:h.email, key:h.key } }); lbSumCache = null; renderHeld(); }
-      catch (e){ b.disabled = false; alert(e.message); } };
-    $('admbody').querySelectorAll('[data-keep]').forEach(b => b.onclick = act(b, 'keep'));
-    $('admbody').querySelectorAll('[data-remove]').forEach(b => b.onclick = act(b, 'remove'));
+        (h.live
+          ? '<button class="btn primary" type="button" data-op="keep" data-i="' + i + '">Keep</button><button class="del" type="button" data-op="remove" data-i="' + i + '">Remove</button>'
+          : '<button class="btn primary" type="button" data-op="ok" data-i="' + i + '">Let it on</button><button class="del" type="button" data-op="drop" data-i="' + i + '">Throw out</button>') +
+        '</span></div>'; }).join('');
+    $('admbody').querySelectorAll('[data-op]').forEach(b => b.onclick = async () => {
+      const h = list[+b.dataset.i], op = b.dataset.op;
+      if (op === 'remove' && !confirm('Remove this score? Each board goes back to what ' + (h.name || 'they') + ' had before it.')) return;
+      b.disabled = true;
+      try { data = await TT.api('/api/leaderboard', { method:'POST', body:{ action:'held', op, email:h.email, key:h.key } }); lbSumCache = null; renderHeld(); }
+      catch (e){ b.disabled = false; alert(e.message); }
+    });
   }
   function renderScans(){
     const codes = (data && data.codes) || [], days = (data && data.days) || [];

@@ -165,7 +165,9 @@ def comp(img, j):
     tt = j / 30.0
     wl = fyb + 2.2 * np.sin(xx * 0.09 + tt * 5.1) + 1.4 * np.sin(xx * 0.23 - tt * 7.3) + 1.5 * np.sin(tt * 1.7)
     under = np.clip((yy - wl) / 1.5, 0, 1)                                         # below the water's line: hidden
-    foam = np.clip((lum - 0.62) / 0.15, 0, 1) * (np.abs(yy - fyb) < 26)            # whitecaps over its foot
+    # whitecaps over its foot: only a splash a few pixels up its face from the water's line. (Foam higher up in the clip is
+    # further out to sea, behind the slab: letting that through showed waves breaking through the monolith. 26 Nov 2026.)
+    foam = np.clip((lum - 0.62) / 0.15, 0, 1) * np.clip(1 - (wl - yy) / 4.0, 0, 1) * (np.abs(yy - fyb) < 26)
     a = body * (1 - under) * (1 - foam)
     S = slab + rim[..., None] * np.array([1.0, 0.93, 0.82]) * 0.32
     S = S + rng.standard_normal(S.shape[:2])[..., None] * 0.012
