@@ -131,7 +131,7 @@ function showMovie() { const t = $("movie"); t.value = movie; t.scrollTop = t.sc
 
 function input(ch) {
   if (bots()) return;
-  if (watch) stopWatch(true);
+  if (watch) { const locked = watch.locked; stopWatch(!locked); if (locked) { seed = E.SEEDS[cat]; g = fresh(); movie = ""; } }
   if (!step(ch)) {
     say(kind() === "g2048" && !finished() ? "That move doesn't shift anything." : "Run's over. Undo or start over.", "bad");
     return;
@@ -218,17 +218,23 @@ function playWatch() {
   const fps = +$("speed").value, per = Math.max(1, Math.round(fps / 60)), wait = Math.max(16, 1000 / fps);
   const tick = () => {
     for (let i = 0; i < per && watch.pos < watch.movie.length; i++) { step(watch.movie[watch.pos]); watch.pos++; }
+    if (watch.locked) movie = "";
     $("watchpos").textContent = watch.pos + " / " + watch.movie.length;
     draw();
-    if (watch.pos >= watch.movie.length) { watch.paused = true; $("play").textContent = "Play"; showMovie(); if (!bots()) say("End of the run. Press a key to carry on from here.", "good"); return; }
+    if (watch.pos >= watch.movie.length) {
+      watch.paused = true; $("play").textContent = "Play";
+      if (!watch.locked) { showMovie(); if (!bots()) say("End of the run. Press a key to carry on from here.", "good"); }
+      return;
+    }
     watch.timer = setTimeout(tick, wait);
   };
   tick();
 }
-function watchMovie(m, sd, label) {
+const unscramble = w => { const raw = atob(w); let m = ""; for (let i = 0; i < raw.length; i++) m += String.fromCharCode(raw.charCodeAt(i) ^ ((i * 131 + 7) & 255)); return m; };
+function watchMovie(m, sd, label, locked) {
   stopWatch(false);
   seed = sd; g = fresh(); movie = "";
-  watch = { movie: E.cleanMovie(m), pos: 0, paused: false, timer: 0 };
+  watch = { movie: E.cleanMovie(m), pos: 0, paused: false, timer: 0, locked: !!locked };
   $("watchbar").hidden = false;
   say(label);
   playWatch();
@@ -238,7 +244,9 @@ async function startWatch(rank, wantCode) {
   try {
     const d = await TT.api("/api/leaderboard", { params: { tas: cat, league, rank } });
     if (wantCode && d.code) { $("code").value = d.code; showLines(); }
-    watchMovie(d.movie, d.seed, (wantCode ? "Loaded #" + rank + "'s code. " : "") + "Watching #" + rank + ": " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + (d.lines ? ", " + d.lines + " lines" : "") + ".");
+    const moves = d.own ? d.movie : unscramble(d.watch);
+    watchMovie(moves, d.seed, (wantCode && d.code ? "Loaded your code. " : "") + "Watching #" + rank + ": " + d.score + " in " + d.frames + " " + E.TAS[cat].unit + (d.lines ? ", " + d.lines + " lines" : "") + "." +
+      (d.own ? "" : " Their moves" + (bots() ? " and code" : "") + " stay theirs."), !d.own);
   } catch (e) { say(e.message, "bad"); }
 }
 

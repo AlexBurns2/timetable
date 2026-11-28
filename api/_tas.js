@@ -10,6 +10,10 @@ import { limited, slowDown } from "./_limit.js";
 
 const MODE = (cat, lg) => (lg === "bot" ? "run:tasb:" : "run:tas:") + cat;
 const MAX_CODE = 20000;
+// anyone can watch a run, but only its owner gets the moves (or the code); a watcher gets them scrambled
+const scramble = m => Buffer.from(m).map((c, i) => c ^ ((i * 131 + 7) & 255)).toString("base64");
+const plainCode = c => String(c || "").replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, "");
+const sharedStart = (a, b) => { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; };
 const better = (a, b) => !b || a.score > b.score || (a.score === b.score && (a.frames < b.frames || (a.frames === b.frames && (a.lines || 0) < (b.lines || 0))));
 
 async function rows(cat, lg) {
@@ -42,8 +46,10 @@ export async function tasHandler(req, res, me, src, name) {
     if (!row) return res.status(404).json({ error: "No run there." });
     const { data } = await db.from("game_state").select("state").eq("email", row.email).eq("mode", MODE(cat, lg)).maybeSingle();
     if (!data || !data.state || !data.state.movie) return res.status(404).json({ error: "No run there." });
+    const own = row.email === me.email || isAdmin(me.email), m = cleanMovie(data.state.movie);
     return res.status(200).json({ cat, league: lg, rank: +src.rank, score: row.score, frames: row.frames, lines: row.lines,
-      seed: data.state.seed == null ? SEEDS[cat] : data.state.seed, movie: data.state.movie, code: data.state.code || null });
+      seed: data.state.seed == null ? SEEDS[cat] : data.state.seed, own,
+      ...(own ? { movie: m, code: data.state.code || null } : { watch: scramble(m) }) });
   }
 
   if (src.op === "delete") {
@@ -81,6 +87,16 @@ export async function tasHandler(req, res, me, src, name) {
   }
   const r = runTas(cat, src.movie, seed);
   if (!r.ok) return res.status(400).json({ error: "That run doesn't work: " + r.why + ".", why: r.why });
+  /* no passing off someone else's run (or a run built on it), or someone else's bot */
+  const { data: rivals } = await db.from("game_state").select("email, movie:state->>movie, code:state->>code").eq("mode", MODE(cat, lg)).neq("email", me.email).limit(2000);
+  const mine = cleanMovie(src.movie), myCode = plainCode(src.code);
+  for (const o of rivals || []) {
+    if (lg === "bot" && o.code && plainCode(o.code) === myCode) return res.status(400).json({ error: "That's someone else's bot." });
+    if (lg === "fixed" && o.movie) {
+      const same = sharedStart(mine, cleanMovie(o.movie));
+      if (same >= Math.min(mine.length, 200) && same >= mine.length / 4) return res.status(400).json({ error: "That run starts the same as someone else's. Make your own." });
+    }
+  }
   r.ms = ms; r.lines = lines;
 
   const { data } = await db.from("game_state").select("state").eq("email", me.email).eq("mode", MODE(cat, lg)).maybeSingle();
